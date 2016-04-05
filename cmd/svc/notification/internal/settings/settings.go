@@ -7,7 +7,7 @@ import (
 
 // ReceiveNotificationsConfig represents the config controlling if notifications are disabled or not
 var ReceiveNotificationsConfig = &settings.Config{
-	Title:          "Receive notifications",
+	Title:          "Receive Notifications",
 	AllowSubkeys:   false,
 	Key:            notification.ReceiveNotificationsSettingsKey,
 	Type:           settings.ConfigType_BOOLEAN,
@@ -21,32 +21,52 @@ var ReceiveNotificationsConfig = &settings.Config{
 	},
 }
 
-// NotificationPreferenceConfig represents the config controlling when notifications are sent
-var NotificationPreferenceConfig = &settings.Config{
-	Title:          "Notification Preference",
-	AllowSubkeys:   false,
-	Key:            notification.NotificationPreferencesSettingsKey,
-	Type:           settings.ConfigType_MULTI_SELECT,
-	PossibleOwners: []settings.OwnerType{settings.OwnerType_INTERNAL_ENTITY},
-	Config: &settings.Config_MultiSelect{
-		MultiSelect: &settings.MultiSelectConfig{
-			Items: []*settings.Item{
-				{
-					ID:    "notification_preference_all",
-					Label: "All activity",
-				},
-				{
-					ID:    "notification_preference_referenced_only",
-					Label: "Notify for @references only",
-				},
+var (
+	ThreadActivityNotificationPreferenceAllMessages    = "notification_preference_all"
+	ThreadActivityNotificationPreferenceReferencedOnly = "notification_preference_referenced_only"
+	ThreadActivityNotificationPreferenceOff            = "notification_preference_off"
+)
+
+var threadActivityNotificationPreferenceSingleSelect = &settings.Config_SingleSelect{
+	SingleSelect: &settings.SingleSelectConfig{
+		Items: []*settings.Item{
+			{
+				ID:    ThreadActivityNotificationPreferenceAllMessages,
+				Label: "All messages",
 			},
-			Default: &settings.MultiSelectValue{
-				Items: []*settings.ItemValue{
-					{
-						ID: "notification_preference_all",
-					},
-				},
+			{
+				ID:    ThreadActivityNotificationPreferenceReferencedOnly,
+				Label: "@ only",
+			},
+			{
+				ID:    ThreadActivityNotificationPreferenceOff,
+				Label: "Notifications off",
+			},
+		},
+		Default: &settings.SingleSelectValue{
+			Item: &settings.ItemValue{
+				ID: ThreadActivityNotificationPreferenceAllMessages,
 			},
 		},
 	},
+}
+
+// TeamNotificationPreferenceConfig represents the config controlling when notifications are sent for activity on team threads
+var TeamNotificationPreferenceConfig = &settings.Config{
+	Title:          "Team Messages",
+	AllowSubkeys:   false,
+	Key:            notification.TeamNotificationPreferencesSettingsKey,
+	Type:           settings.ConfigType_SINGLE_SELECT,
+	PossibleOwners: []settings.OwnerType{settings.OwnerType_INTERNAL_ENTITY},
+	Config:         threadActivityNotificationPreferenceSingleSelect,
+}
+
+// PatientNotificationPreferenceConfig represents the config controlling when notifications are sent for activity on patient threads
+var PatientNotificationPreferenceConfig = &settings.Config{
+	Title:          "Patient Messages",
+	AllowSubkeys:   false,
+	Key:            notification.PatientNotificationPreferencesSettingsKey,
+	Type:           settings.ConfigType_SINGLE_SELECT,
+	PossibleOwners: []settings.OwnerType{settings.OwnerType_INTERNAL_ENTITY},
+	Config:         threadActivityNotificationPreferenceSingleSelect,
 }

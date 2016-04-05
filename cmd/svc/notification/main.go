@@ -108,7 +108,8 @@ func main() {
 		settingsClient,
 		[]*settings.Config{
 			nsettings.ReceiveNotificationsConfig,
-			nsettings.NotificationPreferenceConfig,
+			nsettings.TeamNotificationPreferenceConfig,
+			nsettings.PatientNotificationPreferenceConfig,
 		})
 	if err != nil {
 		golog.Fatalf("Unable to register configs with the settings service: %s", err.Error())

@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/cmd/svc/notification/internal/dal"
+	nsettings "github.com/sprucehealth/backend/cmd/svc/notification/internal/settings"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
@@ -200,7 +201,22 @@ func (s *service) processNotification(data string) error {
 // TODO: mraines: This section of code has become incredibly push and new_message specific. It needs a desperate refactor before any other
 //   notification work is done.
 func (s *service) processPushNotification(n *notification.Notification) error {
+	// Filter the entity list for org specific settings since the entity is scoped to the org
 	entitiesToNotify, err := s.filterNodesWithNotificationsDisabled(n.EntitiesToNotify)
+	if err != nil {
+		return errors.Trace(err)
+	}
+	switch n.Type {
+	case notification.DeprecatedNewMessageOnThread:
+		// do nothing in this case since we don't have the information to filter properly
+	case notification.NewMessageOnInternalThread:
+		entitiesToNotify, err = s.filterNodesForThreadActivityPreferences(entitiesToNotify, n.EntitiesAtReferenced, notification.TeamNotificationPreferencesSettingsKey)
+	case notification.NewMessageOnExternalThread:
+		entitiesToNotify, err = s.filterNodesForThreadActivityPreferences(entitiesToNotify, n.EntitiesAtReferenced, notification.PatientNotificationPreferencesSettingsKey)
+	default:
+		golog.Errorf("Unable to handle unknown notification type %s", n.Type)
+		return nil
+	}
 	if err != nil {
 		return errors.Trace(err)
 	}
@@ -223,12 +239,8 @@ func (s *service) processPushNotification(n *notification.Notification) error {
 		}
 	}
 
-	accountIDsToNotify, err := s.filterNodesWithNotificationsDisabled(accountIDsFromExternalIDs(externalIDsResp.ExternalIDs))
-	if err != nil {
-		return errors.Trace(err)
-	}
-	for _, accountID := range accountIDsToNotify {
-		if err := s.sendPushNotificationToExternalGroupID(accountID, n); err != nil {
+	for _, accountID := range externalIDsResp.ExternalIDs {
+		if err := s.sendPushNotificationToExternalGroupID(accountID.ID, n); err != nil {
 			golog.Errorf(err.Error())
 		}
 	}
@@ -247,13 +259,45 @@ func (s *service) filterNodesWithNotificationsDisabled(nodes []string) ([]string
 		})
 		// If we failed to get the notification settings then just fail. We'd rather not notify than notify someone disabled
 		if err != nil {
-			return nil, errors.Trace(err)
+			golog.Errorf("Error while getting notification preference setting for node %s ignoring: %s", nID, err)
+			continue
+		}
+		if len(resp.Values) == 0 {
+			golog.Warningf("Expected a value to be returned for settings key %s and node id %s but got 0. Skipping this node", notification.ReceiveNotificationsSettingsKey, nID)
+			continue
 		}
 		if len(resp.Values) != 1 {
-			golog.Warningf("Expected only 1 value to be returned for settings key %s and node id %s but got %d. Continuing with first value", notification.ReceiveNotificationsSettingsKey, nID, nodes)
+			golog.Warningf("Expected only 1 value to be returned for settings key %s and node id %s but got %d. Continuing with first value", notification.ReceiveNotificationsSettingsKey, nID, len(resp.Values))
 		}
 		if resp.Values[0].GetBoolean().Value {
 			filteredNodes = append(filteredNodes, nID)
+		}
+	}
+	return filteredNodes, nil
+}
+
+func (s *service) filterNodesForThreadActivityPreferences(entityIDs []string, atReferencedEntityIDs map[string]struct{}, activityPreferenceSettingsKey string) ([]string, error) {
+	// Filter any nodes who explicitly have notifications disabled from the list
+	filteredNodes := make([]string, 0, len(entityIDs))
+	for _, eID := range entityIDs {
+		// TODO: Perhaps we should have a bulk version of this call
+		// TODO: It would be great to live in a world where the settings service pushed changed settings to hosts that are interested in them
+		singleSelect, err := settings.GetSingleSelectValue(context.Background(), s.settingsClient, &settings.GetValuesRequest{
+			Keys:   []*settings.ConfigKey{{Key: activityPreferenceSettingsKey}},
+			NodeID: eID,
+		})
+		// If we failed to get the notification settings then just fail. We'd rather not notify than notify someone disabled
+		if err != nil {
+			golog.Errorf("Error while getting activity preference setting for node %s ignoring: %s", eID, err)
+			continue
+		}
+		switch singleSelect.Item.ID {
+		case nsettings.ThreadActivityNotificationPreferenceAllMessages:
+			filteredNodes = append(filteredNodes, eID)
+		case nsettings.ThreadActivityNotificationPreferenceReferencedOnly:
+			if _, ok := atReferencedEntityIDs[eID]; ok {
+				filteredNodes = append(filteredNodes, eID)
+			}
 		}
 	}
 	return filteredNodes, nil

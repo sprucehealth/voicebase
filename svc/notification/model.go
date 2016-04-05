@@ -17,15 +17,29 @@ type DeviceDeregistrationInfo struct {
 	DeviceID string `json:"device_id"`
 }
 
+// Type represents the type associated with the notification info
+type Type string
+
+const (
+	// DeprecatedNewMessageOnThread is for backwards compatibility ahd should be removed once all producers have been updated
+	DeprecatedNewMessageOnThread Type = ""
+	// NewMessageOnInternalThread represents that the notification is for activity on an internal thread
+	NewMessageOnInternalThread Type = "new_message_on_internal_thread"
+	// NewMessageOnExternalThread represents that the notification is for activity on an external thread
+	NewMessageOnExternalThread Type = "new_message_on_external_thread"
+)
+
 // Notification represents the information to be transformed into a notification
 type Notification struct {
-	UnreadCounts     map[string]int    `json:"unread_counts"`
-	ShortMessages    map[string]string `json:"short_message"`
-	CollapseKey      string            `json:"collapse_key"`
-	DedupeKey        string            `json:"dedupe_key"`
-	OrganizationID   string            `json:"organization_id"`
-	SavedQueryID     string            `json:"saved_query_id"`
-	ThreadID         string            `json:"thread_id"`
-	MessageID        string            `json:"message_id"`
-	EntitiesToNotify []string          `json:"entities_to_notify"`
+	UnreadCounts         map[string]int      `json:"unread_counts"`
+	ShortMessages        map[string]string   `json:"short_message"`
+	CollapseKey          string              `json:"collapse_key"`
+	DedupeKey            string              `json:"dedupe_key"`
+	OrganizationID       string              `json:"organization_id"`
+	SavedQueryID         string              `json:"saved_query_id"`
+	ThreadID             string              `json:"thread_id"`
+	MessageID            string              `json:"message_id"`
+	EntitiesToNotify     []string            `json:"entities_to_notify"`
+	EntitiesAtReferenced map[string]struct{} `json:"entities_at_referenced"`
+	Type                 Type                `json:"type"`
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/cmd/svc/notification/internal/dal"
 	testdal "github.com/sprucehealth/backend/cmd/svc/notification/internal/dal/test"
+	nsettings "github.com/sprucehealth/backend/cmd/svc/notification/internal/settings"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/model"
 	"github.com/sprucehealth/backend/libs/ptr"
@@ -281,6 +282,23 @@ func expectFilterNodesWithNotificationsDisabled(t *testing.T, sc *smock.Client, 
 	}
 }
 
+func expectFilterNodesForThreadActivityPreferences(t *testing.T, sc *smock.Client, key string, nodes, ids []string) {
+	test.Assert(t, len(nodes) == len(ids), "Expected the number of nodes and values to be equal for mocking")
+	for i, n := range nodes {
+		sc.Expect(mock.NewExpectation(sc.GetValues, &settings.GetValuesRequest{
+			Keys:   []*settings.ConfigKey{{Key: key}},
+			NodeID: n,
+		}).WithReturns(&settings.GetValuesResponse{
+			Values: []*settings.Value{
+				{
+					Type:  settings.ConfigType_SINGLE_SELECT,
+					Value: &settings.Value_SingleSelect{SingleSelect: &settings.SingleSelectValue{Item: &settings.ItemValue{ID: ids[i]}}},
+				},
+			},
+		}, nil))
+	}
+}
+
 func TestProcessNotification(t *testing.T) {
 	dl := testdal.NewMockDAL(t)
 	defer dl.Finish()
@@ -302,18 +320,16 @@ func TestProcessNotification(t *testing.T) {
 	})
 	cSvc := svc.(*service)
 
-	entitiesToNotify := []string{"entity:1", "entity:2", "entity:3", "entity:4"}
+	entitiesToNotify := []string{"entity:1", "entity:2", "entity:4"}
 	notificationData, err := json.Marshal(&notification.Notification{
 		ShortMessages: map[string]string{
 			"entity:1": "",
 			"entity:2": "ShortMessage2",
-			"entity:3": "ShortMessage3",
 			"entity:4": "ShortMessage4",
 		},
 		UnreadCounts: map[string]int{
 			"entity:1": 1,
 			"entity:2": 2,
-			"entity:3": 3,
 			"entity:4": 4,
 		},
 		CollapseKey:      "collapse",
@@ -327,7 +343,7 @@ func TestProcessNotification(t *testing.T) {
 	test.OK(t, err)
 
 	// Check the settings for each entity
-	expectFilterNodesWithNotificationsDisabled(t, sc, entitiesToNotify, []bool{true, true, false, true})
+	expectFilterNodesWithNotificationsDisabled(t, sc, []string{"entity:1", "entity:2", "entity:4"}, []bool{true, true, true})
 
 	// Lookup account IDs for the entities via their external identifiers, we should have filtered 1
 	dc.Expect(mock.NewExpectation(dc.ExternalIDs, &directory.ExternalIDsRequest{
@@ -339,9 +355,6 @@ func TestProcessNotification(t *testing.T) {
 			{ID: "account_4", EntityID: "entity:4"},
 		},
 	}, nil))
-
-	// Check the settings for each account
-	expectFilterNodesWithNotificationsDisabled(t, sc, []string{"account_1", "account_2", "account_4"}, []bool{true, true, true})
 
 	// Lookup the push configs for each external group id (account)
 	dl.Expect(mock.NewExpectation(dl.PushConfigsForExternalGroupID, "account_1").WithReturns([]*dal.PushConfig{
@@ -546,19 +559,16 @@ func TestProcessNotificationDisabledEndpoint(t *testing.T) {
 	})
 	test.OK(t, err)
 
-	expectFilterNodesWithNotificationsDisabled(t, sc, []string{"entity:1", "entity:2"}, []bool{true, true})
+	expectFilterNodesWithNotificationsDisabled(t, sc, []string{"entity:1", "entity:2"}, []bool{true, false})
 
 	// Lookup account IDs for the entities via their external identifiers
 	dc.Expect(mock.NewExpectation(dc.ExternalIDs, &directory.ExternalIDsRequest{
-		EntityIDs: []string{"entity:1", "entity:2"},
+		EntityIDs: []string{"entity:1"},
 	}).WithReturns(&directory.ExternalIDsResponse{
 		ExternalIDs: []*directory.ExternalID{
 			{ID: "account_1", EntityID: "entity:1"},
-			{ID: "account_2", EntityID: "entity:2"},
 		},
 	}, nil))
-
-	expectFilterNodesWithNotificationsDisabled(t, sc, []string{"account_1", "account_2"}, []bool{true, false})
 
 	// Lookup the push configs for each external group id (account)
 	dl.Expect(mock.NewExpectation(dl.PushConfigsForExternalGroupID, "account_1").WithReturns([]*dal.PushConfig{
@@ -616,6 +626,362 @@ func TestProcessNotificationDisabledEndpoint(t *testing.T) {
 		Message:          ptr.String(string(msg)),
 		MessageStructure: jsonStructure,
 		TargetArn:        ptr.String("account1:pushEndpoint2"),
+	}))
+
+	cSvc.processNotification(string(notificationData))
+}
+
+func TestProcessNotificationInternalMessage(t *testing.T) {
+	dl := testdal.NewMockDAL(t)
+	defer dl.Finish()
+	dc := dmock.New(t)
+	defer dc.Finish()
+	snsAPI := mock.NewSNSAPI(t)
+	defer snsAPI.Finish()
+	sqsAPI := mock.NewSQSAPI(t)
+	defer sqsAPI.Finish()
+	sc := smock.New(t)
+	defer sc.Finish()
+	svc := New(dl, dc, sc, &Config{
+		NotificationSQSURL:              notificationSQSURL,
+		AppleDeviceRegistrationSNSARN:   appleDeviceRegistrationSNSARN,
+		AndriodDeviceRegistrationSNSARN: andriodDeviceRegistrationSNSARN,
+		SQSAPI:    sqsAPI,
+		SNSAPI:    snsAPI,
+		WebDomain: "testDomain",
+	})
+	cSvc := svc.(*service)
+
+	entitiesToNotify := []string{"entity:1", "entity:2", "entity:3", "entity:4"}
+	notificationData, err := json.Marshal(&notification.Notification{
+		ShortMessages: map[string]string{
+			"entity:1": "",
+			"entity:2": "ShortMessage2",
+			"entity:3": "ShortMessage3",
+			"entity:4": "ShortMessage4",
+		},
+		UnreadCounts: map[string]int{
+			"entity:1": 1,
+			"entity:2": 2,
+			"entity:3": 3,
+			"entity:4": 4,
+		},
+		CollapseKey:          "collapse",
+		DedupeKey:            "dedupe",
+		ThreadID:             "ThreadID",
+		OrganizationID:       "OrganizationID",
+		MessageID:            "ItemID",
+		SavedQueryID:         "SavedQueryID",
+		EntitiesToNotify:     entitiesToNotify,
+		EntitiesAtReferenced: map[string]struct{}{"entity:2": struct{}{}, "entity:3": struct{}{}},
+		Type:                 notification.NewMessageOnInternalThread,
+	})
+	test.OK(t, err)
+
+	// Check the settings for each account
+	expectFilterNodesWithNotificationsDisabled(t, sc, []string{"entity:1", "entity:2", "entity:3", "entity:4"}, []bool{true, true, false, false})
+
+	// Check the setting for the entities
+	expectFilterNodesForThreadActivityPreferences(t, sc, notification.TeamNotificationPreferencesSettingsKey, []string{"entity:1", "entity:2"}, []string{
+		nsettings.ThreadActivityNotificationPreferenceAllMessages,
+		nsettings.ThreadActivityNotificationPreferenceReferencedOnly,
+	})
+
+	// Lookup account IDs for the entities via their external identifiers, we should have filtered 1
+	dc.Expect(mock.NewExpectation(dc.ExternalIDs, &directory.ExternalIDsRequest{
+		EntityIDs: []string{"entity:1", "entity:2"},
+	}).WithReturns(&directory.ExternalIDsResponse{
+		ExternalIDs: []*directory.ExternalID{
+			{ID: "account_1", EntityID: "entity:1"},
+			{ID: "account_2", EntityID: "entity:2"},
+		},
+	}, nil))
+
+	// Lookup the push configs for each external group id (account)
+	dl.Expect(mock.NewExpectation(dl.PushConfigsForExternalGroupID, "account_1").WithReturns([]*dal.PushConfig{
+		{PushEndpoint: "account1:pushEndpoint1", Platform: "iOS"},
+		{PushEndpoint: "account1:pushEndpoint2", Platform: "android"},
+	}, nil))
+
+	// Build out expected notification structures
+	iData, err := json.Marshal(&iOSPushNotification{
+		PushData: &iOSPushData{
+			ContentAvailable: 1,
+		},
+		ThreadID:       "ThreadID",
+		OrganizationID: "OrganizationID",
+		MessageID:      "ItemID",
+		SavedQueryID:   "SavedQueryID",
+	})
+	test.OK(t, err)
+	aData, err := json.Marshal(&androidPushNotification{
+		CollapseKey: "collapse",
+		PushData: &androidPushData{
+			Message:        "",
+			Background:     true,
+			UnreadCount:    1,
+			URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
+			ThreadID:       "ThreadID",
+			OrganizationID: "OrganizationID",
+			MessageID:      "ItemID",
+			SavedQueryID:   "SavedQueryID",
+			PushID:         "dedupe",
+		},
+	})
+	test.OK(t, err)
+	snsNote := &snsNotification{
+		DefaultMessage: "",
+		IOSSandBox:     string(iData),
+		IOS:            string(iData),
+		Android:        string(aData),
+	}
+	msg, err := json.Marshal(snsNote)
+	test.OK(t, err)
+
+	// Send out the push notifications
+	snsAPI.Expect(mock.NewExpectation(snsAPI.Publish, &sns.PublishInput{
+		Message:          ptr.String(string(msg)),
+		MessageStructure: jsonStructure,
+		TargetArn:        ptr.String("account1:pushEndpoint1"),
+	}))
+	snsAPI.Expect(mock.NewExpectation(snsAPI.Publish, &sns.PublishInput{
+		Message:          ptr.String(string(msg)),
+		MessageStructure: jsonStructure,
+		TargetArn:        ptr.String("account1:pushEndpoint2"),
+	}))
+
+	// Repeat for the next thread member
+	dl.Expect(mock.NewExpectation(dl.PushConfigsForExternalGroupID, "account_2").WithReturns([]*dal.PushConfig{
+		{PushEndpoint: "account2:pushEndpoint1", Platform: "iOS"},
+		{PushEndpoint: "account2:pushEndpoint2", Platform: "android"},
+	}, nil))
+
+	// Build out expected notification structures
+	iData, err = json.Marshal(&iOSPushNotification{
+		PushData: &iOSPushData{
+			Alert: "ShortMessage2",
+			//Badge: 2,
+			URL:   deeplink.OrgURL("testDomain", "OrganizationID"),
+			Sound: "default",
+		},
+		ThreadID:       "ThreadID",
+		OrganizationID: "OrganizationID",
+		MessageID:      "ItemID",
+		SavedQueryID:   "SavedQueryID",
+	})
+	test.OK(t, err)
+	aData, err = json.Marshal(&androidPushNotification{
+		CollapseKey: "collapse",
+		PushData: &androidPushData{
+			Message:        "ShortMessage2",
+			Background:     false,
+			UnreadCount:    2,
+			URL:            deeplink.OrgURL("testDomain", "OrganizationID"),
+			ThreadID:       "ThreadID",
+			OrganizationID: "OrganizationID",
+			MessageID:      "ItemID",
+			SavedQueryID:   "SavedQueryID",
+			PushID:         "dedupe",
+		},
+	})
+	test.OK(t, err)
+	snsNote = &snsNotification{
+		DefaultMessage: "ShortMessage2",
+		IOSSandBox:     string(iData),
+		IOS:            string(iData),
+		Android:        string(aData),
+	}
+	msg, err = json.Marshal(snsNote)
+	test.OK(t, err)
+
+	// Send out the push notifications
+	snsAPI.Expect(mock.NewExpectation(snsAPI.Publish, &sns.PublishInput{
+		Message:          ptr.String(string(msg)),
+		MessageStructure: jsonStructure,
+		TargetArn:        ptr.String("account2:pushEndpoint1"),
+	}))
+	snsAPI.Expect(mock.NewExpectation(snsAPI.Publish, &sns.PublishInput{
+		Message:          ptr.String(string(msg)),
+		MessageStructure: jsonStructure,
+		TargetArn:        ptr.String("account2:pushEndpoint2"),
+	}))
+
+	cSvc.processNotification(string(notificationData))
+}
+
+func TestProcessNotificationExternalMessage(t *testing.T) {
+	dl := testdal.NewMockDAL(t)
+	defer dl.Finish()
+	dc := dmock.New(t)
+	defer dc.Finish()
+	snsAPI := mock.NewSNSAPI(t)
+	defer snsAPI.Finish()
+	sqsAPI := mock.NewSQSAPI(t)
+	defer sqsAPI.Finish()
+	sc := smock.New(t)
+	defer sc.Finish()
+	svc := New(dl, dc, sc, &Config{
+		NotificationSQSURL:              notificationSQSURL,
+		AppleDeviceRegistrationSNSARN:   appleDeviceRegistrationSNSARN,
+		AndriodDeviceRegistrationSNSARN: andriodDeviceRegistrationSNSARN,
+		SQSAPI:    sqsAPI,
+		SNSAPI:    snsAPI,
+		WebDomain: "testDomain",
+	})
+	cSvc := svc.(*service)
+
+	entitiesToNotify := []string{"entity:1", "entity:2", "entity:3", "entity:4"}
+	notificationData, err := json.Marshal(&notification.Notification{
+		ShortMessages: map[string]string{
+			"entity:1": "",
+			"entity:2": "ShortMessage2",
+			"entity:3": "ShortMessage3",
+			"entity:4": "ShortMessage4",
+		},
+		UnreadCounts: map[string]int{
+			"entity:1": 1,
+			"entity:2": 2,
+			"entity:3": 3,
+			"entity:4": 4,
+		},
+		CollapseKey:          "collapse",
+		DedupeKey:            "dedupe",
+		ThreadID:             "ThreadID",
+		OrganizationID:       "OrganizationID",
+		MessageID:            "ItemID",
+		SavedQueryID:         "SavedQueryID",
+		EntitiesToNotify:     entitiesToNotify,
+		EntitiesAtReferenced: map[string]struct{}{"entity:2": struct{}{}, "entity:3": struct{}{}},
+		Type:                 notification.NewMessageOnExternalThread,
+	})
+	test.OK(t, err)
+
+	// Check the settings for each account
+	expectFilterNodesWithNotificationsDisabled(t, sc, []string{"entity:1", "entity:2", "entity:3", "entity:4"}, []bool{true, true, false, false})
+
+	// Check the setting for the entities
+	expectFilterNodesForThreadActivityPreferences(t, sc, notification.PatientNotificationPreferencesSettingsKey, []string{"entity:1", "entity:2"}, []string{
+		nsettings.ThreadActivityNotificationPreferenceAllMessages,
+		nsettings.ThreadActivityNotificationPreferenceReferencedOnly,
+	})
+
+	// Lookup account IDs for the entities via their external identifiers, we should have filtered 1
+	dc.Expect(mock.NewExpectation(dc.ExternalIDs, &directory.ExternalIDsRequest{
+		EntityIDs: []string{"entity:1", "entity:2"},
+	}).WithReturns(&directory.ExternalIDsResponse{
+		ExternalIDs: []*directory.ExternalID{
+			{ID: "account_1", EntityID: "entity:1"},
+			{ID: "account_2", EntityID: "entity:2"},
+		},
+	}, nil))
+
+	// Lookup the push configs for each external group id (account)
+	dl.Expect(mock.NewExpectation(dl.PushConfigsForExternalGroupID, "account_1").WithReturns([]*dal.PushConfig{
+		{PushEndpoint: "account1:pushEndpoint1", Platform: "iOS"},
+		{PushEndpoint: "account1:pushEndpoint2", Platform: "android"},
+	}, nil))
+
+	// Build out expected notification structures
+	iData, err := json.Marshal(&iOSPushNotification{
+		PushData: &iOSPushData{
+			ContentAvailable: 1,
+		},
+		ThreadID:       "ThreadID",
+		OrganizationID: "OrganizationID",
+		MessageID:      "ItemID",
+		SavedQueryID:   "SavedQueryID",
+	})
+	test.OK(t, err)
+	aData, err := json.Marshal(&androidPushNotification{
+		CollapseKey: "collapse",
+		PushData: &androidPushData{
+			Message:        "",
+			Background:     true,
+			UnreadCount:    1,
+			URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
+			ThreadID:       "ThreadID",
+			OrganizationID: "OrganizationID",
+			MessageID:      "ItemID",
+			SavedQueryID:   "SavedQueryID",
+			PushID:         "dedupe",
+		},
+	})
+	test.OK(t, err)
+	snsNote := &snsNotification{
+		DefaultMessage: "",
+		IOSSandBox:     string(iData),
+		IOS:            string(iData),
+		Android:        string(aData),
+	}
+	msg, err := json.Marshal(snsNote)
+	test.OK(t, err)
+
+	// Send out the push notifications
+	snsAPI.Expect(mock.NewExpectation(snsAPI.Publish, &sns.PublishInput{
+		Message:          ptr.String(string(msg)),
+		MessageStructure: jsonStructure,
+		TargetArn:        ptr.String("account1:pushEndpoint1"),
+	}))
+	snsAPI.Expect(mock.NewExpectation(snsAPI.Publish, &sns.PublishInput{
+		Message:          ptr.String(string(msg)),
+		MessageStructure: jsonStructure,
+		TargetArn:        ptr.String("account1:pushEndpoint2"),
+	}))
+
+	// Repeat for the next thread member
+	dl.Expect(mock.NewExpectation(dl.PushConfigsForExternalGroupID, "account_2").WithReturns([]*dal.PushConfig{
+		{PushEndpoint: "account2:pushEndpoint1", Platform: "iOS"},
+		{PushEndpoint: "account2:pushEndpoint2", Platform: "android"},
+	}, nil))
+
+	// Build out expected notification structures
+	iData, err = json.Marshal(&iOSPushNotification{
+		PushData: &iOSPushData{
+			Alert: "ShortMessage2",
+			//Badge: 2,
+			URL:   deeplink.OrgURL("testDomain", "OrganizationID"),
+			Sound: "default",
+		},
+		ThreadID:       "ThreadID",
+		OrganizationID: "OrganizationID",
+		MessageID:      "ItemID",
+		SavedQueryID:   "SavedQueryID",
+	})
+	test.OK(t, err)
+	aData, err = json.Marshal(&androidPushNotification{
+		CollapseKey: "collapse",
+		PushData: &androidPushData{
+			Message:        "ShortMessage2",
+			Background:     false,
+			UnreadCount:    2,
+			URL:            deeplink.OrgURL("testDomain", "OrganizationID"),
+			ThreadID:       "ThreadID",
+			OrganizationID: "OrganizationID",
+			MessageID:      "ItemID",
+			SavedQueryID:   "SavedQueryID",
+			PushID:         "dedupe",
+		},
+	})
+	test.OK(t, err)
+	snsNote = &snsNotification{
+		DefaultMessage: "ShortMessage2",
+		IOSSandBox:     string(iData),
+		IOS:            string(iData),
+		Android:        string(aData),
+	}
+	msg, err = json.Marshal(snsNote)
+	test.OK(t, err)
+
+	// Send out the push notifications
+	snsAPI.Expect(mock.NewExpectation(snsAPI.Publish, &sns.PublishInput{
+		Message:          ptr.String(string(msg)),
+		MessageStructure: jsonStructure,
+		TargetArn:        ptr.String("account2:pushEndpoint1"),
+	}))
+	snsAPI.Expect(mock.NewExpectation(snsAPI.Publish, &sns.PublishInput{
+		Message:          ptr.String(string(msg)),
+		MessageStructure: jsonStructure,
+		TargetArn:        ptr.String("account2:pushEndpoint2"),
 	}))
 
 	cSvc.processNotification(string(notificationData))
