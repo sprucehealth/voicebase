@@ -49,7 +49,6 @@ func TestCreateThreadMutation_NoExistingThreads(t *testing.T) {
 		LastName:      "lastName",
 		GroupName:     "groupName",
 		ShortTitle:    "shortTitle",
-		DisplayName:   "firstName middleInitial. lastName, shortTitle",
 		LongTitle:     "longTitle",
 		Note:          "note",
 	}
@@ -69,7 +68,9 @@ func TestCreateThreadMutation_NoExistingThreads(t *testing.T) {
 		ID:       "e_patient",
 		Type:     directory.EntityType_EXTERNAL,
 		Contacts: contacts,
-		Info:     entityInfo,
+		Info: &directory.EntityInfo{
+			DisplayName: "firstName middleInitial. lastName, shortTitle",
+		},
 	}, nil))
 
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateEmptyThread, &threading.CreateEmptyThreadRequest{
@@ -78,10 +79,12 @@ func TestCreateThreadMutation_NoExistingThreads(t *testing.T) {
 		FromEntityID:    "e_creator",
 		PrimaryEntityID: "e_patient",
 		Summary:         "New conversation",
+		SystemTitle:     "firstName middleInitial. lastName, shortTitle",
 		Type:            threading.ThreadType_EXTERNAL,
 	}).WithReturns(&threading.Thread{
 		ID:              "t_1",
 		PrimaryEntityID: "e_patient",
+		Type:            threading.ThreadType_EXTERNAL,
 	}, nil))
 
 	res := g.query(ctx, `
@@ -163,8 +166,8 @@ func TestCreateThreadMutation_DifferentOrg(t *testing.T) {
 			Info: &directory.EntityInfo{
 				FirstName:     "differentName",
 				MiddleInitial: "middleInitial",
+				DisplayName:   "differentName middleInitial. lastName, shortTitle",
 				LastName:      "lastName",
-				DisplayName:   "firstName middleInitial. lastName, shortTitle",
 				GroupName:     "groupName",
 				ShortTitle:    "shortTitle",
 				LongTitle:     "longTitle",
@@ -182,7 +185,6 @@ func TestCreateThreadMutation_DifferentOrg(t *testing.T) {
 		FirstName:     "firstName",
 		MiddleInitial: "middleInitial",
 		LastName:      "lastName",
-		DisplayName:   "firstName middleInitial. lastName, shortTitle",
 		GroupName:     "groupName",
 		ShortTitle:    "shortTitle",
 		LongTitle:     "longTitle",
@@ -204,19 +206,24 @@ func TestCreateThreadMutation_DifferentOrg(t *testing.T) {
 		ID:       "e_patient",
 		Type:     directory.EntityType_EXTERNAL,
 		Contacts: contacts,
-		Info:     entityInfo,
+		Info: &directory.EntityInfo{
+			DisplayName: "firstName middleInitial. lastName, shortTitle",
+		},
 	}, nil))
 
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateEmptyThread, &threading.CreateEmptyThreadRequest{
 		UUID:            "zztop",
 		OrganizationID:  "e_org",
 		FromEntityID:    "e_creator",
+		SystemTitle:     "firstName middleInitial. lastName, shortTitle",
 		PrimaryEntityID: "e_patient",
 		Summary:         "New conversation",
 		Type:            threading.ThreadType_EXTERNAL,
 	}).WithReturns(&threading.Thread{
 		ID:              "t_1",
+		Type:            threading.ThreadType_EXTERNAL,
 		PrimaryEntityID: "e_patient",
+		SystemTitle:     "firstName middleInitial. lastName, shortTitle",
 	}, nil))
 
 	res := g.query(ctx, `
@@ -297,13 +304,7 @@ func TestCreateThreadMutation_ExistingThreads_DifferentName(t *testing.T) {
 				{ContactType: directory.ContactType_EMAIL, Value: "someone@example.com", Label: "Email"},
 			},
 			Info: &directory.EntityInfo{
-				FirstName:     "differentName",
-				MiddleInitial: "middleInitial",
-				LastName:      "lastName",
-				GroupName:     "groupName",
-				ShortTitle:    "shortTitle",
-				LongTitle:     "longTitle",
-				Note:          "note",
+				DisplayName: "(415) 555-5555",
 			},
 			Memberships: []*directory.Entity{
 				{ID: "e_org"},
@@ -317,13 +318,7 @@ func TestCreateThreadMutation_ExistingThreads_DifferentName(t *testing.T) {
 				{ContactType: directory.ContactType_PHONE, Value: "+16305555555", Label: "Phone"},
 			},
 			Info: &directory.EntityInfo{
-				FirstName:     "otherName",
-				MiddleInitial: "middleInitial",
-				LastName:      "lastName",
-				GroupName:     "groupName",
-				ShortTitle:    "shortTitle",
-				LongTitle:     "longTitle",
-				Note:          "note",
+				DisplayName: "someone@example.com",
 			},
 			Memberships: []*directory.Entity{
 				{ID: "e_org"},
@@ -332,11 +327,11 @@ func TestCreateThreadMutation_ExistingThreads_DifferentName(t *testing.T) {
 	}, nil))
 
 	g.ra.Expect(mock.NewExpectation(g.ra.ThreadsForMember, "e_existing_1", true).WithReturns([]*threading.Thread{
-		{ID: "t_1", OrganizationID: "e_org", PrimaryEntityID: "e_existing_1"},
+		{ID: "t_1", OrganizationID: "e_org", PrimaryEntityID: "e_existing_1", SystemTitle: "(415) 555-5555", Type: threading.ThreadType_EXTERNAL},
 	}, nil))
 
 	g.ra.Expect(mock.NewExpectation(g.ra.ThreadsForMember, "e_existing_2", true).WithReturns([]*threading.Thread{
-		{ID: "t_2", OrganizationID: "e_org", PrimaryEntityID: "e_existing_2"},
+		{ID: "t_2", OrganizationID: "e_org", PrimaryEntityID: "e_existing_2", SystemTitle: "someone@example.com", Type: threading.ThreadType_EXTERNAL},
 	}, nil))
 
 	res := g.query(ctx, `
@@ -445,6 +440,7 @@ func TestCreateThreadMutation_ExistingThreads_SameName(t *testing.T) {
 				MiddleInitial: "middleInitial",
 				LastName:      "lastName",
 				GroupName:     "groupName",
+				DisplayName:   "differentName middleInitial. lastName, shortTitle",
 				ShortTitle:    "shortTitle",
 				LongTitle:     "longTitle",
 				Note:          "note",
@@ -464,6 +460,7 @@ func TestCreateThreadMutation_ExistingThreads_SameName(t *testing.T) {
 				FirstName:     "firstName",
 				MiddleInitial: "middleInitial",
 				LastName:      "lastName",
+				DisplayName:   "firstName middleInitial. lastName, shortTitle",
 				GroupName:     "groupName",
 				ShortTitle:    "shortTitle",
 				LongTitle:     "longTitle",
@@ -476,11 +473,11 @@ func TestCreateThreadMutation_ExistingThreads_SameName(t *testing.T) {
 	}, nil))
 
 	g.ra.Expect(mock.NewExpectation(g.ra.ThreadsForMember, "e_existing_1", true).WithReturns([]*threading.Thread{
-		{ID: "t_1", OrganizationID: "e_org", PrimaryEntityID: "e_existing_1"},
+		{ID: "t_1", OrganizationID: "e_org", PrimaryEntityID: "e_existing_1", Type: threading.ThreadType_EXTERNAL},
 	}, nil))
 
 	g.ra.Expect(mock.NewExpectation(g.ra.ThreadsForMember, "e_existing_2", true).WithReturns([]*threading.Thread{
-		{ID: "t_2", OrganizationID: "e_org", PrimaryEntityID: "e_existing_2"},
+		{ID: "t_2", OrganizationID: "e_org", PrimaryEntityID: "e_existing_2", Type: threading.ThreadType_EXTERNAL},
 	}, nil))
 
 	res := g.query(ctx, `

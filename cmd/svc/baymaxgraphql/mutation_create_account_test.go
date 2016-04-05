@@ -55,14 +55,16 @@ func TestCreateAccountMutation(t *testing.T) {
 		Type: directory.EntityType_ORGANIZATION,
 	}).WithReturns(&directory.Entity{
 		ID: "e_org",
+		Info: &directory.EntityInfo{
+			DisplayName: "org",
+		},
 	}, nil))
 
 	// Create internal entity
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateEntity, &directory.CreateEntityRequest{
 		EntityInfo: &directory.EntityInfo{
-			FirstName:   "first",
-			LastName:    "last",
-			DisplayName: "first last",
+			FirstName: "first",
+			LastName:  "last",
 		},
 		Type:                      directory.EntityType_INTERNAL,
 		ExternalID:                "a_1",
@@ -76,6 +78,9 @@ func TestCreateAccountMutation(t *testing.T) {
 		},
 	}).WithReturns(&directory.Entity{
 		ID: "e_int",
+		Info: &directory.EntityInfo{
+			DisplayName: "first last",
+		},
 	}, nil))
 
 	// Create saved query
@@ -277,9 +282,8 @@ func TestCreateAccountMutation_InviteColleague(t *testing.T) {
 	// Create internal entity
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateEntity, &directory.CreateEntityRequest{
 		EntityInfo: &directory.EntityInfo{
-			FirstName:   "first",
-			LastName:    "last",
-			DisplayName: "first last",
+			FirstName: "first",
+			LastName:  "last",
 		},
 		Type:                      directory.EntityType_INTERNAL,
 		ExternalID:                "a_1",
@@ -293,6 +297,9 @@ func TestCreateAccountMutation_InviteColleague(t *testing.T) {
 		},
 	}).WithReturns(&directory.Entity{
 		ID: "e_int",
+		Info: &directory.EntityInfo{
+			DisplayName: "first last",
+		},
 	}, nil))
 
 	// Create saved query

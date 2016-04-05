@@ -103,6 +103,9 @@ func TestIncomingSMS_NewUser_SMS(t *testing.T) {
 		Memberships: []*directory.Entity{
 			organizationEntity,
 		},
+		Info: &directory.EntityInfo{
+			DisplayName: "(206) 877-3590",
+		},
 		Contacts: []*directory.Contact{
 			{
 				Value: "+12068773590",
@@ -199,6 +202,9 @@ func TestIncomingSMS_NewUser_Email(t *testing.T) {
 				Value:       "patient@example.com",
 				ContactType: directory.ContactType_EMAIL,
 			},
+		},
+		Info: &directory.EntityInfo{
+			DisplayName: "patient@example.com",
 		},
 	}
 
@@ -606,6 +612,9 @@ func TestIncomingVoicemail_NewUser(t *testing.T) {
 			{
 				Value: "+12068773590",
 			},
+		},
+		Info: &directory.EntityInfo{
+			DisplayName: "(206) 877-3590",
 		},
 	}
 

@@ -115,11 +115,6 @@ var createThreadMutation = &graphql.Field{
 		}
 
 		var err error
-		entityInfo.DisplayName, err = buildDisplayName(entityInfo, contactInfos)
-		if err != nil {
-			return nil, errors.InternalError(ctx, err)
-		}
-
 		createForContact, err := contactFromInput(input["createForContactInfo"])
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
@@ -290,6 +285,7 @@ var createThreadMutation = &graphql.Field{
 			PrimaryEntityID: primaryEnt.ID,
 			Summary:         "New conversation",
 			Type:            threading.ThreadType_EXTERNAL,
+			SystemTitle:     primaryEnt.Info.DisplayName,
 		})
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)

@@ -404,20 +404,24 @@ func TestCreateEntitySparse(t *testing.T) {
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
 	name := "batman"
+	firstName := "Batman"
 	eType := directory.EntityType_INTERNAL
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.InsertEntity, &dal.Entity{
 		DisplayName: name,
+		FirstName:   firstName,
 		Type:        dal.EntityTypeInternal,
 		Status:      dal.EntityStatusActive,
 	}), eID1, nil))
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), &dal.Entity{
 		ID:          eID1,
 		DisplayName: name,
+		FirstName:   firstName,
 		Type:        dal.EntityTypeInternal,
 	}, nil))
 	resp, err := s.CreateEntity(context.Background(), &directory.CreateEntityRequest{
 		EntityInfo: &directory.EntityInfo{
 			DisplayName: name,
+			FirstName:   firstName,
 		},
 		Type: eType,
 	})
@@ -853,7 +857,6 @@ func TestUpdateEntity(t *testing.T) {
 	}, nil))
 
 	dl.Expect(mock.NewExpectation(dl.UpdateEntity, eID1, &dal.EntityUpdate{
-		DisplayName:   ptr.String("batman"),
 		FirstName:     ptr.String(""),
 		LastName:      ptr.String(""),
 		MiddleInitial: ptr.String(""),
@@ -900,7 +903,7 @@ func TestUpdateEntityWithContacts(t *testing.T) {
 	}, nil))
 
 	dl.Expect(mock.NewExpectation(dl.UpdateEntity, eID1, &dal.EntityUpdate{
-		DisplayName:   ptr.String("batman"),
+		DisplayName:   ptr.String("1"),
 		FirstName:     ptr.String(""),
 		LastName:      ptr.String(""),
 		MiddleInitial: ptr.String(""),
@@ -930,7 +933,7 @@ func TestUpdateEntityWithContacts(t *testing.T) {
 
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), &dal.Entity{
 		ID:          eID1,
-		DisplayName: "batman",
+		DisplayName: "1",
 		Note:        "I am the knight",
 		Type:        dal.EntityTypeInternal,
 	}, nil))
@@ -959,7 +962,7 @@ func TestUpdateEntityWithContacts(t *testing.T) {
 	test.OK(t, err)
 
 	test.AssertNotNil(t, resp.Entity)
-	test.Equals(t, "batman", resp.Entity.Info.DisplayName)
+	test.Equals(t, "1", resp.Entity.Info.DisplayName)
 	test.Equals(t, "I am the knight", resp.Entity.Info.Note)
 	test.Equals(t, eID1.String(), resp.Entity.ID)
 }
@@ -976,7 +979,7 @@ func TestUpdateEntityWithSerializedContacts(t *testing.T) {
 	}, nil))
 
 	dl.Expect(mock.NewExpectation(dl.UpdateEntity, eID1, &dal.EntityUpdate{
-		DisplayName:   ptr.String("batman"),
+		DisplayName:   ptr.String("1"),
 		FirstName:     ptr.String(""),
 		LastName:      ptr.String(""),
 		MiddleInitial: ptr.String(""),
@@ -1013,7 +1016,7 @@ func TestUpdateEntityWithSerializedContacts(t *testing.T) {
 
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), &dal.Entity{
 		ID:          eID1,
-		DisplayName: "batman",
+		DisplayName: "1",
 		Note:        "I am the knight",
 		Type:        dal.EntityTypeInternal,
 	}, nil))
@@ -1049,7 +1052,7 @@ func TestUpdateEntityWithSerializedContacts(t *testing.T) {
 	test.OK(t, err)
 
 	test.AssertNotNil(t, resp.Entity)
-	test.Equals(t, "batman", resp.Entity.Info.DisplayName)
+	test.Equals(t, "1", resp.Entity.Info.DisplayName)
 	test.Equals(t, "I am the knight", resp.Entity.Info.Note)
 	test.Equals(t, eID1.String(), resp.Entity.ID)
 }

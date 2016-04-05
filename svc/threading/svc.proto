@@ -310,6 +310,7 @@ message UpdateThreadRequest {
 	string user_title = 3;
 	repeated string add_member_entity_ids = 4 [(gogoproto.customname) = "AddMemberEntityIDs"];
 	repeated string remove_member_entity_ids = 5 [(gogoproto.customname) = "RemoveMemberEntityIDs"];
+	string system_title = 6;
 }
 
 message UpdateThreadResponse {
@@ -330,6 +331,7 @@ message CreateThreadRequest {
 	string user_title = 12;
 	ThreadType type = 13;
 	repeated string member_entity_ids = 14 [(gogoproto.customname) = "MemberEntityIDs"];
+	string system_title = 15;
 }
 
 message CreateThreadResponse {
@@ -347,6 +349,7 @@ message CreateEmptyThreadRequest {
 	string user_title = 8;
 	ThreadType type = 9;
 	repeated string member_entity_ids = 10 [(gogoproto.customname) = "MemberEntityIDs"];
+	string system_title = 11;
 }
 
 message CreateEmptyThreadResponse {

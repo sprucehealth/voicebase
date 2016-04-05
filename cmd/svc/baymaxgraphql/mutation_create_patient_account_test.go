@@ -44,11 +44,10 @@ func TestCreatePatientAccountMutation(t *testing.T) {
 	// Create account entity
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateEntity, &directory.CreateEntityRequest{
 		EntityInfo: &directory.EntityInfo{
-			FirstName:   "first",
-			LastName:    "last",
-			DisplayName: "first last",
-			Gender:      directory.EntityInfo_MALE,
-			DOB:         &directory.Date{Month: 7, Day: 25, Year: 1986},
+			FirstName: "first",
+			LastName:  "last",
+			Gender:    directory.EntityInfo_MALE,
+			DOB:       &directory.Date{Month: 7, Day: 25, Year: 1986},
 		},
 		Type:       directory.EntityType_PATIENT,
 		ExternalID: "a_1",
@@ -61,6 +60,9 @@ func TestCreatePatientAccountMutation(t *testing.T) {
 		},
 	}).WithReturns(&directory.Entity{
 		ID: "e_int",
+		Info: &directory.EntityInfo{
+			DisplayName: "first last",
+		},
 	}, nil))
 
 	res := g.query(ctx, `

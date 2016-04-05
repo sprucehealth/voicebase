@@ -110,16 +110,7 @@ func TestNodeQuery(t *testing.T) {
 		PrimaryEntityID: "entity_2",
 		Type:            threading.ThreadType_EXTERNAL,
 	}, nil))
-	ra.Expect(mock.NewExpectation(ra.Entity, "entity_2", []directory.EntityInformation{
-		directory.EntityInformation_CONTACTS,
-	}, int64(0)).WithReturns(&directory.Entity{
-		Type: directory.EntityType_EXTERNAL,
-		ID:   "entity_2",
-		Info: &directory.EntityInfo{
-			DisplayName: "Someone",
-			Gender:      directory.EntityInfo_FEMALE,
-		},
-	}, nil))
+
 	ra.Expect(mock.NewExpectation(ra.EntityForAccountID, "entity_1", acc.ID).WithReturns(
 		&directory.Entity{
 			Type: directory.EntityType_INTERNAL,
@@ -139,27 +130,12 @@ func TestNodeQuery(t *testing.T) {
 		ID:              id,
 		OrganizationID:  "entity_1",
 		PrimaryEntityID: "entity_2",
+		SystemTitle:     "Someone",
 		Type:            threading.ThreadType_EXTERNAL,
 		Unread:          true,
 		UnreadReference: true,
 	}, nil))
-	ra.Expect(mock.NewExpectation(ra.Entity, "entity_2", []directory.EntityInformation{
-		directory.EntityInformation_CONTACTS,
-	}, int64(0)).WithReturns(
-		&directory.Entity{
-			Type: directory.EntityType_EXTERNAL,
-			ID:   "entity_2",
-			Info: &directory.EntityInfo{
-				DisplayName: "Someone",
-				Gender:      directory.EntityInfo_FEMALE,
-			},
-			Memberships: []*directory.Entity{
-				{
-					Type: directory.EntityType_ORGANIZATION,
-					ID:   "entity_1",
-				},
-			},
-		}, nil))
+
 	res, err = nodeField.Resolve(p)
 	test.OK(t, err)
 	res.(*models.Thread).PrimaryEntity = nil

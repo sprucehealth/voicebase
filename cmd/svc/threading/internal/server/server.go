@@ -122,6 +122,10 @@ func (s *threadsServer) CreateEmptyThread(ctx context.Context, in *threading.Cre
 		return nil, grpcErrorf(codes.InvalidArgument, "FromEntityID is required for TEAM threads")
 	}
 
+	if in.Type == threading.ThreadType_EXTERNAL && in.SystemTitle == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "SystemTitle is required for EXTERNAL threads")
+	}
+
 	tt, err := transformThreadTypeFromRequest(in.Type)
 	if err != nil {
 		return nil, grpcErrorf(codes.InvalidArgument, "Invalid thread type")
@@ -136,6 +140,9 @@ func (s *threadsServer) CreateEmptyThread(ctx context.Context, in *threading.Cre
 		}
 	case threading.ThreadType_SETUP:
 		systemTitle = setupThreadTitle
+	case threading.ThreadType_EXTERNAL:
+		systemTitle = in.SystemTitle
+
 	}
 
 	var threadID models.ThreadID
@@ -185,7 +192,7 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 	switch in.Type {
 	case threading.ThreadType_EXTERNAL, threading.ThreadType_TEAM:
 	default:
-		return nil, grpcErrorf(codes.InvalidArgument, fmt.Sprintf("Type '%s' not allowed for CreateEmptyThread", in.Type.String()))
+		return nil, grpcErrorf(codes.InvalidArgument, fmt.Sprintf("Type '%s' not allowed for CreateThread", in.Type.String()))
 	}
 	if in.OrganizationID == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "OrganizationID is required")
@@ -193,6 +200,10 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 	if in.FromEntityID == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "FromEntityID is required")
 	}
+	if in.Type == threading.ThreadType_EXTERNAL && in.SystemTitle == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "SystemTitle is required")
+	}
+
 	tt, err := transformThreadTypeFromRequest(in.Type)
 	if err != nil {
 		return nil, grpcErrorf(codes.InvalidArgument, "Invalid thread type")
@@ -221,6 +232,8 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 		}
 	case threading.ThreadType_SETUP:
 		systemTitle = setupThreadTitle
+	case threading.ThreadType_EXTERNAL:
+		systemTitle = in.SystemTitle
 	}
 
 	// TODO: validate any attachments
@@ -1035,9 +1048,14 @@ func (s *threadsServer) UpdateThread(ctx context.Context, in *threading.UpdateTh
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
-	// For now to be safe make sure to only allow updating team threads
-	if thread.Type != models.ThreadTypeTeam {
-		return nil, grpcErrorf(codes.PermissionDenied, "Can only update team threads")
+
+	// can only update system title for an external thread
+	switch thread.Type {
+	case models.ThreadTypeTeam:
+	default:
+		if len(in.RemoveMemberEntityIDs) > 0 || len(in.AddMemberEntityIDs) > 0 || in.SystemTitle == "" {
+			return nil, grpcErrorf(codes.PermissionDenied, "Can only update system title for non team threads")
+		}
 	}
 
 	var systemTitle string
@@ -1073,6 +1091,9 @@ func (s *threadsServer) UpdateThread(ctx context.Context, in *threading.UpdateTh
 		update := &dal.ThreadUpdate{}
 		if in.UserTitle != "" {
 			update.UserTitle = &in.UserTitle
+		}
+		if in.SystemTitle != "" {
+			update.SystemTitle = &in.SystemTitle
 		}
 		if len(in.AddMemberEntityIDs) != 0 || len(in.RemoveMemberEntityIDs) != 0 {
 			if err := dl.UpdateThreadMembers(ctx, tid, memberIDs); err != nil {

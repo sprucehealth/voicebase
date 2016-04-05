@@ -167,7 +167,6 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 			Provisioned: false,
 		},
 	}
-	entityInfo.DisplayName, _ = buildDisplayName(entityInfo, contacts)
 	res, err := ram.CreateAccount(ctx, req)
 	if err != nil {
 		switch grpc.Code(err) {

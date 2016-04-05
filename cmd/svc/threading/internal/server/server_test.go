@@ -65,6 +65,7 @@ func TestCreateEmptyThread(t *testing.T) {
 		OrganizationID:     "o1",
 		PrimaryEntityID:    "e2",
 		LastMessageSummary: "summ",
+		SystemTitle:        "system title",
 		Type:               models.ThreadTypeExternal,
 	}
 	dl.Expect(mock.NewExpectation(dl.CreateThread, th).WithReturns(thid, nil))
@@ -87,6 +88,7 @@ func TestCreateEmptyThread(t *testing.T) {
 		OrganizationID:  "o1",
 		FromEntityID:    "e1",
 		PrimaryEntityID: "e2",
+		SystemTitle:     "system title",
 		Summary:         "summ",
 		Type:            threading.ThreadType_EXTERNAL,
 	})
@@ -117,7 +119,7 @@ func TestCreateThread(t *testing.T) {
 
 	thid, err := models.NewThreadID()
 	test.OK(t, err)
-	th := &models.Thread{OrganizationID: "o1", PrimaryEntityID: "e1", Type: models.ThreadTypeExternal}
+	th := &models.Thread{OrganizationID: "o1", PrimaryEntityID: "e1", Type: models.ThreadTypeExternal, SystemTitle: "system title"}
 	dl.Expect(mock.NewExpectation(dl.CreateThread, th).WithReturns(thid, nil))
 
 	dl.Expect(mock.NewExpectation(dl.UpdateThreadEntity, thid, "e1", (*dal.ThreadEntityUpdate)(nil)).WithReturns(nil))
@@ -178,6 +180,7 @@ func TestCreateThread(t *testing.T) {
 		OrganizationID: "o1",
 		FromEntityID:   "e1",
 		MessageTitle:   "foo % woo",
+		SystemTitle:    "system title",
 		Text:           "<ref id=\"e2\" type=\"Entity\">Foo</ref> bar",
 		Internal:       true,
 		Source: &threading.Endpoint{

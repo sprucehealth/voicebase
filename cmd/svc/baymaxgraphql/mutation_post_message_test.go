@@ -33,6 +33,8 @@ func TestPostMessage(t *testing.T) {
 		ID:              threadID,
 		OrganizationID:  orgID,
 		PrimaryEntityID: extEntID,
+		SystemTitle:     "Barro",
+		Type:            threading.ThreadType_EXTERNAL,
 	}, nil))
 	// Looking up the account's entity for the org
 	g.ra.Expect(mock.NewExpectation(g.ra.EntityForAccountID, orgID, acc.ID).WithReturns(
@@ -99,6 +101,8 @@ func TestPostMessage(t *testing.T) {
 		Thread: &threading.Thread{
 			ID:                   threadID,
 			OrganizationID:       orgID,
+			Type:                 threading.ThreadType_EXTERNAL,
+			SystemTitle:          "Barro",
 			PrimaryEntityID:      extEntID,
 			LastMessageTimestamp: now,
 			LastMessageSummary:   "Schmee: foo",

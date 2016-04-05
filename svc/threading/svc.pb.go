@@ -1106,6 +1106,7 @@ type UpdateThreadRequest struct {
 	UserTitle             string   `protobuf:"bytes,3,opt,name=user_title,proto3" json:"user_title,omitempty"`
 	AddMemberEntityIDs    []string `protobuf:"bytes,4,rep,name=add_member_entity_ids" json:"add_member_entity_ids,omitempty"`
 	RemoveMemberEntityIDs []string `protobuf:"bytes,5,rep,name=remove_member_entity_ids" json:"remove_member_entity_ids,omitempty"`
+	SystemTitle           string   `protobuf:"bytes,6,opt,name=system_title,proto3" json:"system_title,omitempty"`
 }
 
 func (m *UpdateThreadRequest) Reset()      { *m = UpdateThreadRequest{} }
@@ -1139,6 +1140,7 @@ type CreateThreadRequest struct {
 	UserTitle       string        `protobuf:"bytes,12,opt,name=user_title,proto3" json:"user_title,omitempty"`
 	Type            ThreadType    `protobuf:"varint,13,opt,name=type,proto3,enum=threading.ThreadType" json:"type,omitempty"`
 	MemberEntityIDs []string      `protobuf:"bytes,14,rep,name=member_entity_ids" json:"member_entity_ids,omitempty"`
+	SystemTitle     string        `protobuf:"bytes,15,opt,name=system_title,proto3" json:"system_title,omitempty"`
 }
 
 func (m *CreateThreadRequest) Reset()      { *m = CreateThreadRequest{} }
@@ -1197,6 +1199,7 @@ type CreateEmptyThreadRequest struct {
 	UserTitle       string     `protobuf:"bytes,8,opt,name=user_title,proto3" json:"user_title,omitempty"`
 	Type            ThreadType `protobuf:"varint,9,opt,name=type,proto3,enum=threading.ThreadType" json:"type,omitempty"`
 	MemberEntityIDs []string   `protobuf:"bytes,10,rep,name=member_entity_ids" json:"member_entity_ids,omitempty"`
+	SystemTitle     string     `protobuf:"bytes,11,opt,name=system_title,proto3" json:"system_title,omitempty"`
 }
 
 func (m *CreateEmptyThreadRequest) Reset()      { *m = CreateEmptyThreadRequest{} }
@@ -3027,6 +3030,9 @@ func (this *UpdateThreadRequest) Equal(that interface{}) bool {
 			return false
 		}
 	}
+	if this.SystemTitle != that1.SystemTitle {
+		return false
+	}
 	return true
 }
 func (this *UpdateThreadResponse) Equal(that interface{}) bool {
@@ -3128,6 +3134,9 @@ func (this *CreateThreadRequest) Equal(that interface{}) bool {
 			return false
 		}
 	}
+	if this.SystemTitle != that1.SystemTitle {
+		return false
+	}
 	return true
 }
 func (this *CreateThreadResponse) Equal(that interface{}) bool {
@@ -3209,6 +3218,9 @@ func (this *CreateEmptyThreadRequest) Equal(that interface{}) bool {
 		if this.MemberEntityIDs[i] != that1.MemberEntityIDs[i] {
 			return false
 		}
+	}
+	if this.SystemTitle != that1.SystemTitle {
+		return false
 	}
 	return true
 }
@@ -4241,12 +4253,13 @@ func (this *UpdateThreadRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 8)
+	s := make([]string, 0, 9)
 	s = append(s, "&threading.UpdateThreadRequest{")
 	s = append(s, "ThreadID: "+fmt.Sprintf("%#v", this.ThreadID)+",\n")
 	s = append(s, "UserTitle: "+fmt.Sprintf("%#v", this.UserTitle)+",\n")
 	s = append(s, "AddMemberEntityIDs: "+fmt.Sprintf("%#v", this.AddMemberEntityIDs)+",\n")
 	s = append(s, "RemoveMemberEntityIDs: "+fmt.Sprintf("%#v", this.RemoveMemberEntityIDs)+",\n")
+	s = append(s, "SystemTitle: "+fmt.Sprintf("%#v", this.SystemTitle)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -4266,7 +4279,7 @@ func (this *CreateThreadRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 17)
+	s := make([]string, 0, 18)
 	s = append(s, "&threading.CreateThreadRequest{")
 	s = append(s, "UUID: "+fmt.Sprintf("%#v", this.UUID)+",\n")
 	s = append(s, "OrganizationID: "+fmt.Sprintf("%#v", this.OrganizationID)+",\n")
@@ -4287,6 +4300,7 @@ func (this *CreateThreadRequest) GoString() string {
 	s = append(s, "UserTitle: "+fmt.Sprintf("%#v", this.UserTitle)+",\n")
 	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
 	s = append(s, "MemberEntityIDs: "+fmt.Sprintf("%#v", this.MemberEntityIDs)+",\n")
+	s = append(s, "SystemTitle: "+fmt.Sprintf("%#v", this.SystemTitle)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -4310,7 +4324,7 @@ func (this *CreateEmptyThreadRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 12)
+	s := make([]string, 0, 13)
 	s = append(s, "&threading.CreateEmptyThreadRequest{")
 	s = append(s, "UUID: "+fmt.Sprintf("%#v", this.UUID)+",\n")
 	s = append(s, "OrganizationID: "+fmt.Sprintf("%#v", this.OrganizationID)+",\n")
@@ -4320,6 +4334,7 @@ func (this *CreateEmptyThreadRequest) GoString() string {
 	s = append(s, "UserTitle: "+fmt.Sprintf("%#v", this.UserTitle)+",\n")
 	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
 	s = append(s, "MemberEntityIDs: "+fmt.Sprintf("%#v", this.MemberEntityIDs)+",\n")
+	s = append(s, "SystemTitle: "+fmt.Sprintf("%#v", this.SystemTitle)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -6836,6 +6851,12 @@ func (m *UpdateThreadRequest) MarshalTo(data []byte) (int, error) {
 			i += copy(data[i:], s)
 		}
 	}
+	if len(m.SystemTitle) > 0 {
+		data[i] = 0x32
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.SystemTitle)))
+		i += copy(data[i:], m.SystemTitle)
+	}
 	return i, nil
 }
 
@@ -6988,6 +7009,12 @@ func (m *CreateThreadRequest) MarshalTo(data []byte) (int, error) {
 			i += copy(data[i:], s)
 		}
 	}
+	if len(m.SystemTitle) > 0 {
+		data[i] = 0x7a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.SystemTitle)))
+		i += copy(data[i:], m.SystemTitle)
+	}
 	return i, nil
 }
 
@@ -7105,6 +7132,12 @@ func (m *CreateEmptyThreadRequest) MarshalTo(data []byte) (int, error) {
 			i++
 			i += copy(data[i:], s)
 		}
+	}
+	if len(m.SystemTitle) > 0 {
+		data[i] = 0x5a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.SystemTitle)))
+		i += copy(data[i:], m.SystemTitle)
 	}
 	return i, nil
 }
@@ -8428,6 +8461,10 @@ func (m *UpdateThreadRequest) Size() (n int) {
 			n += 1 + l + sovSvc(uint64(l))
 		}
 	}
+	l = len(m.SystemTitle)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
 	return n
 }
 
@@ -8500,6 +8537,10 @@ func (m *CreateThreadRequest) Size() (n int) {
 			n += 1 + l + sovSvc(uint64(l))
 		}
 	}
+	l = len(m.SystemTitle)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
 	return n
 }
 
@@ -8556,6 +8597,10 @@ func (m *CreateEmptyThreadRequest) Size() (n int) {
 			l = len(s)
 			n += 1 + l + sovSvc(uint64(l))
 		}
+	}
+	l = len(m.SystemTitle)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
 	}
 	return n
 }
@@ -9345,6 +9390,7 @@ func (this *UpdateThreadRequest) String() string {
 		`UserTitle:` + fmt.Sprintf("%v", this.UserTitle) + `,`,
 		`AddMemberEntityIDs:` + fmt.Sprintf("%v", this.AddMemberEntityIDs) + `,`,
 		`RemoveMemberEntityIDs:` + fmt.Sprintf("%v", this.RemoveMemberEntityIDs) + `,`,
+		`SystemTitle:` + fmt.Sprintf("%v", this.SystemTitle) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -9377,6 +9423,7 @@ func (this *CreateThreadRequest) String() string {
 		`UserTitle:` + fmt.Sprintf("%v", this.UserTitle) + `,`,
 		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
 		`MemberEntityIDs:` + fmt.Sprintf("%v", this.MemberEntityIDs) + `,`,
+		`SystemTitle:` + fmt.Sprintf("%v", this.SystemTitle) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -9406,6 +9453,7 @@ func (this *CreateEmptyThreadRequest) String() string {
 		`UserTitle:` + fmt.Sprintf("%v", this.UserTitle) + `,`,
 		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
 		`MemberEntityIDs:` + fmt.Sprintf("%v", this.MemberEntityIDs) + `,`,
+		`SystemTitle:` + fmt.Sprintf("%v", this.SystemTitle) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -15045,6 +15093,35 @@ func (m *UpdateThreadRequest) Unmarshal(data []byte) error {
 			}
 			m.RemoveMemberEntityIDs = append(m.RemoveMemberEntityIDs, string(data[iNdEx:postIndex]))
 			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SystemTitle", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SystemTitle = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])
@@ -15544,6 +15621,35 @@ func (m *CreateThreadRequest) Unmarshal(data []byte) error {
 			}
 			m.MemberEntityIDs = append(m.MemberEntityIDs, string(data[iNdEx:postIndex]))
 			iNdEx = postIndex
+		case 15:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SystemTitle", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SystemTitle = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])
@@ -15960,6 +16066,35 @@ func (m *CreateEmptyThreadRequest) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.MemberEntityIDs = append(m.MemberEntityIDs, string(data[iNdEx:postIndex]))
+			iNdEx = postIndex
+		case 11:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SystemTitle", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SystemTitle = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

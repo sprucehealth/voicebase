@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
@@ -14,7 +13,6 @@ import (
 	lmedia "github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/auth"
-	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/notification"
@@ -52,58 +50,9 @@ func hydrateThreads(ctx context.Context, ram raccess.ResourceAccessor, threads [
 		}
 	}
 
-	// Get the set of entitiy IDs we need to lookup
-	var entityIDs []string
-	for _, t := range threads {
-		if t.PrimaryEntity == nil && t.PrimaryEntityID != "" {
-			entityIDs = append(entityIDs, t.PrimaryEntityID)
-		}
-	}
-
-	eMap := conc.NewMap()
-	par := conc.NewParallel()
-
-	entityIDs = dedupeStrings(entityIDs)
-	for _, entityID := range entityIDs {
-
-		eID := entityID
-		par.Go(func() error {
-			entity, err := ram.Entity(ctx, eID, []directory.EntityInformation{directory.EntityInformation_CONTACTS}, 0)
-			if err != nil {
-				return errors.Trace(err)
-			}
-			eMap.Set(entity.ID, entity)
-			return nil
-		})
-	}
-
-	if err := par.Wait(); err != nil {
-		return errors.Trace(err)
-	}
-
 	for _, t := range threads {
 		if t.MessageCount == 0 && t.Type == models.ThreadTypeTeam {
 			t.EmptyStateTextMarkup = "This is the beginning of a conversation that is visible to everyone in your organization.\n\nInvite some colleagues to join and then send a message here to get things started."
-		}
-		if t.PrimaryEntityID != "" && (t.Type == models.ThreadTypeExternal || t.Title == "") {
-			if t.PrimaryEntity == nil {
-				primaryEntity := eMap.Get(t.PrimaryEntityID)
-				if primaryEntity == nil {
-					return errors.Trace(fmt.Errorf("primary entity %s not found for thread %s", t.PrimaryEntityID, t.ID))
-				}
-				if _, ok := primaryEntity.(*directory.Entity); !ok {
-					return errors.Trace(fmt.Errorf("expected type Entity but got %T", primaryEntity))
-				}
-				t.PrimaryEntity = primaryEntity.(*directory.Entity)
-
-			}
-			t.Title = threadTitleForEntity(t.PrimaryEntity)
-			// TODO: remove this once old threads are migrated
-			if t.Type == models.ThreadTypeUnknown {
-				// TODO: checking the thread title is crazy brittle but for now don't have a way to tell apart SYSTEM entities
-				t.AllowInternalMessages = t.PrimaryEntity.Type == directory.EntityType_EXTERNAL || (t.PrimaryEntity.Type == directory.EntityType_SYSTEM && !strings.HasPrefix(t.Title, "Team "))
-				t.AllowDelete = t.PrimaryEntity.Type == directory.EntityType_EXTERNAL
-			}
 		}
 	}
 

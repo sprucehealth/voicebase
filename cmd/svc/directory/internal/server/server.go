@@ -145,6 +145,17 @@ func (s *server) CreateEntity(ctx context.Context, rd *directory.CreateEntityReq
 				Year:  int(rd.EntityInfo.DOB.Year),
 			}
 		}
+
+		var displayName string
+		if rd.EntityInfo.DisplayName != "" {
+			displayName = rd.EntityInfo.DisplayName
+		} else {
+			displayName = buildDisplayName(rd.EntityInfo, rd.Contacts)
+			if len(displayName) == 0 {
+				return errors.Trace(errors.New("Not enough information to build the display name for entity"))
+			}
+		}
+
 		entityID, err := dl.InsertEntity(&dal.Entity{
 			Type:          entityType,
 			Status:        dal.EntityStatusActive,
@@ -152,7 +163,7 @@ func (s *server) CreateEntity(ctx context.Context, rd *directory.CreateEntityReq
 			MiddleInitial: rd.EntityInfo.MiddleInitial,
 			LastName:      rd.EntityInfo.LastName,
 			GroupName:     rd.EntityInfo.GroupName,
-			DisplayName:   rd.EntityInfo.DisplayName,
+			DisplayName:   displayName,
 			ShortTitle:    rd.EntityInfo.ShortTitle,
 			LongTitle:     rd.EntityInfo.LongTitle,
 			Gender:        entityGender,
@@ -283,17 +294,27 @@ func (s *server) UpdateEntity(ctx context.Context, rd *directory.UpdateEntityReq
 
 	var pbEntity *directory.Entity
 	if err := s.dl.Transact(func(dl dal.DAL) error {
-		_, err := dl.UpdateEntity(eID, &dal.EntityUpdate{
+
+		// only update the display name if there is a list of contacts
+		// available
+		var displayName *string
+		if len(rd.Contacts) > 0 {
+			dp := buildDisplayName(rd.EntityInfo, rd.Contacts)
+			if len(dp) > 0 {
+				displayName = ptr.String(dp)
+			}
+		}
+
+		if _, err := dl.UpdateEntity(eID, &dal.EntityUpdate{
 			FirstName:     &rd.EntityInfo.FirstName,
 			MiddleInitial: &rd.EntityInfo.MiddleInitial,
 			LastName:      &rd.EntityInfo.LastName,
 			GroupName:     &rd.EntityInfo.GroupName,
-			DisplayName:   &rd.EntityInfo.DisplayName,
+			DisplayName:   displayName,
 			ShortTitle:    &rd.EntityInfo.ShortTitle,
 			LongTitle:     &rd.EntityInfo.LongTitle,
 			Note:          &rd.EntityInfo.Note,
-		})
-		if err != nil {
+		}); err != nil {
 			return errors.Trace(err)
 		}
 
@@ -576,12 +597,27 @@ func (s *server) CreateContact(ctx context.Context, rd *directory.CreateContactR
 		}); err != nil {
 			return errors.Trace(err)
 		}
+
 		entity, err := dl.Entity(entityID)
 		if err != nil {
 			return errors.Trace(err)
 		}
+
 		pbEntity, err = getPBEntity(dl, entity, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation), nil)
-		return errors.Trace(err)
+		if err != nil {
+			return errors.Trace(err)
+		}
+
+		if displayName := buildDisplayName(pbEntity.Info, pbEntity.Contacts); len(displayName) > 0 {
+			pbEntity.Info.DisplayName = displayName
+			if _, err := dl.UpdateEntity(entityID, &dal.EntityUpdate{
+				DisplayName: ptr.String(displayName),
+			}); err != nil {
+				return errors.Trace(err)
+			}
+		}
+
+		return nil
 	}); err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -634,7 +670,16 @@ func (s *server) CreateContacts(ctx context.Context, rd *directory.CreateContact
 			return errors.Trace(err)
 		}
 		pbEntity, err = getPBEntity(dl, entity, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation), nil)
-		return errors.Trace(err)
+
+		if displayName := buildDisplayName(pbEntity.Info, pbEntity.Contacts); len(displayName) > 0 {
+			pbEntity.Info.DisplayName = displayName
+			if _, err := dl.UpdateEntity(entityID, &dal.EntityUpdate{
+				DisplayName: ptr.String(displayName),
+			}); err != nil {
+				return errors.Trace(err)
+			}
+		}
+		return nil
 	}); err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -702,7 +747,16 @@ func (s *server) UpdateContacts(ctx context.Context, rd *directory.UpdateContact
 			return errors.Trace(err)
 		}
 		pbEntity, err = getPBEntity(dl, entity, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation), nil)
-		return errors.Trace(err)
+
+		if displayName := buildDisplayName(pbEntity.Info, pbEntity.Contacts); len(displayName) > 0 {
+			pbEntity.Info.DisplayName = displayName
+			if _, err := dl.UpdateEntity(entityID, &dal.EntityUpdate{
+				DisplayName: ptr.String(displayName),
+			}); err != nil {
+				return errors.Trace(err)
+			}
+		}
+		return nil
 	}); err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -743,8 +797,18 @@ func (s *server) DeleteContacts(ctx context.Context, rd *directory.DeleteContact
 		if err != nil {
 			return errors.Trace(err)
 		}
+
 		pbEntity, err = getPBEntity(dl, entity, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation), []dal.EntityStatus{})
-		return errors.Trace(err)
+
+		if displayName := buildDisplayName(pbEntity.Info, pbEntity.Contacts); len(displayName) > 0 {
+			pbEntity.Info.DisplayName = displayName
+			if _, err := dl.UpdateEntity(entityID, &dal.EntityUpdate{
+				DisplayName: ptr.String(displayName),
+			}); err != nil {
+				return errors.Trace(err)
+			}
+		}
+		return nil
 	}); err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -986,4 +1050,40 @@ func hasRequestedInfo(requestedInformation []directory.EntityInformation, target
 		}
 	}
 	return false
+}
+
+func buildDisplayName(info *directory.EntityInfo, contacts []*directory.Contact) string {
+	if info.FirstName != "" || info.LastName != "" {
+		var displayName string
+		if info.FirstName != "" {
+			displayName = info.FirstName
+		}
+		if info.MiddleInitial != "" {
+			displayName += " " + info.MiddleInitial
+		}
+		if info.LastName != "" {
+			displayName += " " + info.LastName
+		}
+
+		if info.ShortTitle != "" {
+			displayName += ", " + info.ShortTitle
+		}
+		return displayName
+	} else if info.GroupName != "" {
+		return info.GroupName
+	}
+
+	// pick the display name to be the first contact value
+	for _, c := range contacts {
+		if c.ContactType == directory.ContactType_PHONE {
+			pn, err := phone.Format(c.Value, phone.Pretty)
+			if err != nil {
+				return c.Value
+			}
+			return pn
+		}
+		return c.Value
+	}
+
+	return ""
 }

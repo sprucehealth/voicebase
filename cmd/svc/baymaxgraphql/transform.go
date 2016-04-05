@@ -37,27 +37,6 @@ func transformAccountToResponse(a *auth.Account) models.Account {
 	return nil
 }
 
-func threadTitleForEntity(e *directory.Entity) string {
-	if e.Type == directory.EntityType_ORGANIZATION {
-		return fmt.Sprintf("Team %s", e.Info.DisplayName)
-	}
-	if e.Info.DisplayName != "" {
-		return e.Info.DisplayName
-	}
-	for _, c := range e.Contacts {
-		if c.ContactType == directory.ContactType_PHONE {
-			pn, err := phone.Format(c.Value, phone.Pretty)
-			if err != nil {
-				return c.Value
-			}
-			return pn
-		}
-		return c.Value
-	}
-	// TODO: not sure what to use when there's no name or contacts
-	return e.ID
-}
-
 func transformContactsToResponse(contacts []*directory.Contact) ([]*models.ContactInfo, error) {
 	cs := make([]*models.ContactInfo, len(contacts))
 	for i, c := range contacts {
@@ -349,16 +328,7 @@ func transformEntityToResponse(staticURLPrefix string, e *directory.Entity, sh *
 		IsInternal:            e.Type == directory.EntityType_INTERNAL,
 		LastModifiedTimestamp: e.LastModifiedTimestamp,
 	}
-	if ent.DisplayName == "" {
-		// TODO: the display name will eventually be generated in the diretory service but for now this is a safety check since this must never be empty
-		ent.DisplayName, err = buildDisplayName(e.Info, e.Contacts)
-		if err != nil {
-			golog.Errorf("Failed to generate display name for entity %s: %s", e.ID, err)
-		}
-		if ent.DisplayName == "" {
-			ent.DisplayName = e.ID
-		}
-	}
+
 	switch e.Type {
 	case directory.EntityType_ORGANIZATION:
 		ent.Avatar = &models.Image{

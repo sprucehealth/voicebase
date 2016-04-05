@@ -75,3 +75,5 @@ cmd/svc/excommsclient
 cmd/svc/settings/settings
 cmd/svc/settings/schema/state-*
 cmd/cli/generateinvitelink/generateinvitelink
+cmd/cli/threadsystemtitle/threadsystemtitle
+cmd/cli/entitydisplayname/entitydisplayname

@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 )
 
@@ -75,11 +76,6 @@ var updateEntityMutation = &graphql.Field{
 			return nil, errors.InternalError(ctx, err)
 		}
 
-		entityInfo.DisplayName, err = buildDisplayName(entityInfo, contacts)
-		if err != nil {
-			return nil, errors.InternalError(ctx, err)
-		}
-
 		serializedContactInput, _ := entityInfoInput["serializedContacts"].([]interface{})
 		serializedContacts := make([]*directory.SerializedClientEntityContact, len(serializedContactInput))
 		for i, sci := range serializedContactInput {
@@ -110,6 +106,20 @@ var updateEntityMutation = &graphql.Field{
 		})
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
+		}
+
+		// update the system title for all threads that have this entity as their primary entity
+		threads, err := ram.ThreadsForMember(ctx, entity.ID, true)
+		if err != nil {
+			return nil, errors.InternalError(ctx, err)
+		}
+		for _, thread := range threads {
+			if _, err := ram.UpdateThread(ctx, &threading.UpdateThreadRequest{
+				ThreadID:    thread.ID,
+				SystemTitle: entity.Info.DisplayName,
+			}); err != nil {
+				return nil, errors.InternalError(ctx, err)
+			}
 		}
 
 		sh := gqlctx.SpruceHeaders(ctx)

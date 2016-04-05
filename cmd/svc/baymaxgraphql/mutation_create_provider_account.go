@@ -235,10 +235,7 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 				Provisioned: false,
 			},
 		}
-		entityInfo.DisplayName, err = buildDisplayName(entityInfo, contacts)
-		if err != nil {
-			return nil, errors.InternalError(ctx, err)
-		}
+
 		// Create entity
 		ent, err := ram.CreateEntity(ctx, &directory.CreateEntityRequest{
 			EntityInfo:                entityInfo,

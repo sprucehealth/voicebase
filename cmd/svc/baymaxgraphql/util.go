@@ -163,37 +163,6 @@ func entityInfoFromInput(ei interface{}) (*directory.EntityInfo, error) {
 	return entityInfo, nil
 }
 
-func buildDisplayName(info *directory.EntityInfo, contacts []*directory.Contact) (string, error) {
-	if info.FirstName != "" || info.LastName != "" {
-		var displayName string
-		if info.MiddleInitial != "" {
-			displayName = info.FirstName + " " + info.MiddleInitial + ". " + info.LastName
-		} else {
-			displayName = info.FirstName + " " + info.LastName
-		}
-		if info.ShortTitle != "" {
-			displayName += ", " + info.ShortTitle
-		}
-		return displayName, nil
-	} else if info.GroupName != "" {
-		return info.GroupName, nil
-	}
-
-	// pick the display name to be the first contact value
-	for _, c := range contacts {
-		if c.ContactType == directory.ContactType_PHONE {
-			pn, err := phone.Format(c.Value, phone.Pretty)
-			if err != nil {
-				return c.Value, nil
-			}
-			return pn, nil
-		}
-		return c.Value, nil
-	}
-
-	return "", errors.New("Display name cannot be empty and not enough information was supplied to infer one")
-}
-
 // isValidPlane0Unicode returns true iff the provided string only has valid plane 0 unicode (no emoji)
 func isValidPlane0Unicode(s string) bool {
 	for _, r := range s {
