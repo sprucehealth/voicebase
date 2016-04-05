@@ -196,7 +196,7 @@ func (tt ThreadType) Value() (driver.Value, error) {
 // Validate returns nil iff the value of the type is valid
 func (tt ThreadType) Validate() error {
 	switch tt {
-	case ThreadTypeUnknown, ThreadTypeExternal, ThreadTypeTeam, ThreadTypeSetup, ThreadTypeSupport:
+	case ThreadTypeUnknown, ThreadTypeExternal, ThreadTypeTeam, ThreadTypeSetup, ThreadTypeSupport, ThreadTypeLegacyTeam:
 		return nil
 	}
 	return errors.Trace(fmt.Errorf("unknown thread type '%s'", string(tt)))

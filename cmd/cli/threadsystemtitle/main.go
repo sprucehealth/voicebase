@@ -53,9 +53,11 @@ func main() {
 			ThreadID: threadID,
 		})
 		if err != nil {
-			golog.Fatalf("Unable to lookup thread %s: %s", threadID, err.Error())
+			golog.Errorf("Unable to lookup thread %s: %s", threadID, err.Error())
+			continue
 		} else if res.Thread == nil {
-			golog.Fatalf("Expected thread %s to exist but got back null thread", threadID)
+			golog.Errorf("Expected thread %s to exist but got back null thread", threadID)
+			continue
 		}
 		thread := res.Thread
 
@@ -77,7 +79,7 @@ func main() {
 				})
 			if err != nil {
 				golog.Fatalf("Unable to lookup entity information for %s: %s", thread.PrimaryEntityID, err.Error())
-			} else if len(res.Entities) != 0 {
+			} else if len(res.Entities) != 1 {
 				golog.Fatalf("Expected 1 entity for %s but got %d", thread.PrimaryEntityID, len(res.Entities))
 			}
 			systemTitle = res.Entities[0].Info.DisplayName
