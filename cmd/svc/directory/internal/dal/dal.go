@@ -2,6 +2,7 @@ package dal
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	"fmt"
 	"runtime"
 	"strings"
@@ -231,6 +232,10 @@ func (t EntityType) String() string {
 	return string(t)
 }
 
+func (t EntityType) Value() (driver.Value, error) {
+	return string(t), nil
+}
+
 // Scan allows for scanning of EntityType from a database conforming to the sql.Scanner interface
 func (t *EntityType) Scan(src interface{}) error {
 	var err error
@@ -266,6 +271,10 @@ func ParseEntityStatus(s string) (EntityStatus, error) {
 
 func (t EntityStatus) String() string {
 	return string(t)
+}
+
+func (t EntityStatus) Value() (driver.Value, error) {
+	return string(t), nil
 }
 
 // Scan allows for scanning of EntityStatus from a database conforming to the sql.Scanner interface
@@ -307,6 +316,10 @@ func (t EntityGender) String() string {
 	return string(t)
 }
 
+func (t EntityGender) Value() (driver.Value, error) {
+	return string(t), nil
+}
+
 // Scan allows for scanning of EntityGender from a database conforming to the sql.Scanner interface
 func (t *EntityGender) Scan(src interface{}) error {
 	var err error
@@ -346,6 +359,10 @@ func (t EntityMembershipStatus) String() string {
 	return string(t)
 }
 
+func (t EntityMembershipStatus) Value() (driver.Value, error) {
+	return string(t), nil
+}
+
 // Scan allows for scanning of EntityMembershipStatus from a database conforming to the sql.Scanner interface
 func (t *EntityMembershipStatus) Scan(src interface{}) error {
 	var err error
@@ -383,6 +400,10 @@ func (t EntityContactType) String() string {
 	return string(t)
 }
 
+func (t EntityContactType) Value() (driver.Value, error) {
+	return string(t), nil
+}
+
 // Scan allows for scanning of EntityContactType from a database conforming to the sql.Scanner interface
 func (t *EntityContactType) Scan(src interface{}) error {
 	var err error
@@ -418,6 +439,10 @@ func ParseSerializedClientEntityContactPlatform(s string) (SerializedClientEntit
 
 func (t SerializedClientEntityContactPlatform) String() string {
 	return string(t)
+}
+
+func (t SerializedClientEntityContactPlatform) Value() (driver.Value, error) {
+	return string(t), nil
 }
 
 // Scan allows for scanning of SerializedClientEntityContactPlatform from a database conforming to the sql.Scanner interface
@@ -581,7 +606,7 @@ func (d *dal) InsertEntity(model *Entity) (EntityID, error) {
 		  (?, ?, ?, ?, ?,
 		   ?, ?, ?, ?, ?,
 		   ?, ?, ?)`,
-		model.DisplayName, model.FirstName, model.GroupName, model.Type.String(), model.Status.String(),
+		model.DisplayName, model.FirstName, model.GroupName, model.Type, model.Status,
 		model.ID, model.MiddleInitial, model.LastName, model.Note, model.ShortTitle,
 		model.LongTitle, model.Gender, model.DOB)
 	if err != nil {
@@ -646,10 +671,10 @@ func (d *dal) UpdateEntity(id EntityID, update *EntityUpdate) (int64, error) {
 		args.Append("long_title", *update.LongTitle)
 	}
 	if update.Type != nil {
-		args.Append("type", update.Type.String())
+		args.Append("type", update.Type)
 	}
 	if update.Status != nil {
-		args.Append("status", update.Status.String())
+		args.Append("status", update.Status)
 	}
 	if update.MiddleInitial != nil {
 		args.Append("middle_initial", *update.MiddleInitial)
@@ -754,7 +779,7 @@ func (d *dal) InsertEntityMembership(model *EntityMembership) error {
 	_, err := d.db.Exec(
 		`INSERT INTO entity_membership
           (entity_id, target_entity_id, status)
-          VALUES (?, ?, ?)`, model.EntityID, model.TargetEntityID, model.Status.String())
+          VALUES (?, ?, ?)`, model.EntityID, model.TargetEntityID, model.Status)
 	if err != nil {
 		return errors.Trace(err)
 	}
@@ -815,7 +840,7 @@ func (d *dal) InsertEntityContact(model *EntityContact) (EntityContactID, error)
 	_, err := d.db.Exec(
 		`INSERT INTO entity_contact
           (id, entity_id, type, value, provisioned, label)
-          VALUES (?, ?, ?, ?, ?, ?)`, model.ID, model.EntityID, model.Type.String(), model.Value, model.Provisioned, model.Label)
+          VALUES (?, ?, ?, ?, ?, ?)`, model.ID, model.EntityID, model.Type, model.Value, model.Provisioned, model.Label)
 	if err != nil {
 		return EmptyEntityContactID(), errors.Trace(err)
 	}
@@ -838,7 +863,7 @@ func (d *dal) InsertEntityContacts(models []*EntityContact) error {
 			}
 			models[i].ID = id
 		}
-		ins.Append(m.ID, m.EntityID, m.Type.String(), m.Value, m.Provisioned, m.Label)
+		ins.Append(m.ID, m.EntityID, m.Type, m.Value, m.Provisioned, m.Label)
 	}
 	_, err := d.db.Exec(
 		`INSERT IGNORE INTO entity_contact
@@ -899,7 +924,7 @@ func (d *dal) EntityContact(id EntityContactID) (*EntityContact, error) {
 func (d *dal) UpdateEntityContact(id EntityContactID, update *EntityContactUpdate) (int64, error) {
 	args := dbutil.MySQLVarArgs()
 	if update.Type != nil {
-		args.Append("type", update.Type.String())
+		args.Append("type", update.Type)
 	}
 	if update.Value != nil {
 		args.Append("value", *update.Value)
@@ -1052,14 +1077,14 @@ func (d *dal) UpsertSerializedClientEntityContact(model *SerializedClientEntityC
 		`INSERT INTO serialized_client_entity_contact
           (entity_id, serialized_entity_contact, platform)
           VALUES (?, ?, ?)
-          ON DUPLICATE KEY UPDATE serialized_entity_contact=VALUES(serialized_entity_contact)`, model.EntityID, model.SerializedEntityContact, model.Platform.String())
+          ON DUPLICATE KEY UPDATE serialized_entity_contact=VALUES(serialized_entity_contact)`, model.EntityID, model.SerializedEntityContact, model.Platform)
 	return errors.Trace(err)
 }
 
 // SerializedClientEntityContact retrieves a serialized_client_entity_contact record
 func (d *dal) SerializedClientEntityContact(entityID EntityID, platform SerializedClientEntityContactPlatform) (*SerializedClientEntityContact, error) {
 	row := d.db.QueryRow(
-		selectSerializedClientEntityContact+` WHERE entity_id = ? AND platform = ?`, entityID, platform.String())
+		selectSerializedClientEntityContact+` WHERE entity_id = ? AND platform = ?`, entityID, platform)
 	model, err := scanSerializedClientEntityContact(row)
 	return model, errors.Trace(err)
 }
