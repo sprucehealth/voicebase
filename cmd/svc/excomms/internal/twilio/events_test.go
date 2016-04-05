@@ -1270,9 +1270,51 @@ func testIncomingCallStatus(t *testing.T, incomingStatus rawmsg.TwilioParams_Cal
 		From:           "+12068773590",
 		To:             "+17348465522",
 		DialCallStatus: incomingStatus,
+		CallSID:        "12345",
 	}
 
-	es := NewEventHandler(nil, nil, nil, ms, clock.New(), nil, "", "", "", "", nil, storage.NewTestStore(nil))
+	md := dalmock.New(t)
+	defer md.Finish()
+
+	md.Expect(mock.NewExpectation(md.LookupIncomingCall, params.CallSID).WithReturns(&models.IncomingCall{
+		OrganizationID: "o1",
+		Source:         phone.Number(params.From),
+		Destination:    phone.Number(params.To),
+	}, nil))
+
+	mdir := directorymock.New(t)
+	defer mdir.Finish()
+
+	mdir.Expect(mock.NewExpectation(mdir.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: "o1",
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth: 1,
+			EntityInformation: []directory.EntityInformation{
+				directory.EntityInformation_EXTERNAL_IDS,
+				directory.EntityInformation_MEMBERS,
+			},
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{
+				ID:   "o1",
+				Type: directory.EntityType_ORGANIZATION,
+				Members: []*directory.Entity{
+					{
+						ID:   "p1",
+						Type: directory.EntityType_INTERNAL,
+					},
+				},
+				ExternalIDs: []string{"account_1"},
+			},
+		},
+	}, nil))
+
+	es := NewEventHandler(mdir, nil, md, ms, clock.New(), nil, "", "", "", "", nil, storage.NewTestStore(nil))
 
 	twiml, err := processIncomingCallStatus(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
@@ -1390,12 +1432,9 @@ func TestProcessVoicemail(t *testing.T) {
 	}
 
 	ms := &mockSNS_Twilio{}
+	md := dalmock.New(t)
+	defer md.Finish()
 
-	md := &mockDAL_Twilio{
-		Expector: &mock.Expector{
-			T: t,
-		},
-	}
 	md.Expect(mock.NewExpectation(md.StoreIncomingRawMessage, &rawmsg.Incoming{
 		Type: rawmsg.Incoming_TWILIO_VOICEMAIL,
 		Message: &rawmsg.Incoming_Twilio{
@@ -1403,7 +1442,45 @@ func TestProcessVoicemail(t *testing.T) {
 		},
 	}))
 
-	es := NewEventHandler(nil, nil, md, ms, clock.New(), nil, "", "", "", "", nil, storage.NewTestStore(nil))
+	md.Expect(mock.NewExpectation(md.LookupIncomingCall, params.CallSID).WithReturns(&models.IncomingCall{
+		OrganizationID: "o1",
+		Source:         phone.Number(params.From),
+		Destination:    phone.Number(params.To),
+	}, nil))
+
+	mdir := directorymock.New(t)
+	defer mdir.Finish()
+
+	mdir.Expect(mock.NewExpectation(mdir.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: "o1",
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth: 1,
+			EntityInformation: []directory.EntityInformation{
+				directory.EntityInformation_EXTERNAL_IDS,
+				directory.EntityInformation_MEMBERS,
+			},
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{
+				ID:   "o1",
+				Type: directory.EntityType_ORGANIZATION,
+				Members: []*directory.Entity{
+					{
+						ID:   "p1",
+						Type: directory.EntityType_INTERNAL,
+					},
+				},
+				ExternalIDs: []string{"account_1"},
+			},
+		},
+	}, nil))
+
+	es := NewEventHandler(mdir, nil, md, ms, clock.New(), nil, "", "", "", "", nil, storage.NewTestStore(nil))
 
 	twiml, err := processVoicemail(context.Background(), params, es.(*eventsHandler))
 	if err != nil {

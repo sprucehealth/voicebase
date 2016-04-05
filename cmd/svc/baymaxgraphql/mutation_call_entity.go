@@ -268,7 +268,6 @@ var callEntityMutation = &graphql.Field{
 				UserId: acc.ID,
 				Properties: map[string]interface{}{
 					"org_id":                   org.ID,
-					"destination":              destinationPhoneNumber,
 					"originating_phone_number": originatingPhoneNumber,
 					"proxy_phone_number":       ires.ProxyPhoneNumber,
 					"platform":                 headers.Platform.String(),

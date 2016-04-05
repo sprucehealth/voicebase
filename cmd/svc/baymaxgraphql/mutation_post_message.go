@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
@@ -335,7 +336,7 @@ var postMessageMutation = &graphql.Field{
 		}
 
 		svc.segmentio.Track(&analytics.Track{
-			Event:  "posted-message",
+			Event:  fmt.Sprintf("posted-message-%s", strings.ToLower(thr.Type.String())),
 			UserId: acc.ID,
 			Properties: map[string]interface{}{
 				"organization_id": thr.OrganizationID,

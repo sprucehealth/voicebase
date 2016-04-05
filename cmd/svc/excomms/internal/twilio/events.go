@@ -3,7 +3,6 @@ package twilio
 import (
 	"fmt"
 	"html"
-	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
@@ -15,7 +14,6 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/sns"
 	excommsSettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
-	"github.com/sprucehealth/backend/svc/auth"
 
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/conc"
@@ -28,8 +26,6 @@ import (
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/settings"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 )
 
 var (
@@ -586,6 +582,7 @@ func processIncomingCallStatus(ctx context.Context, params *rawmsg.TwilioParams,
 				golog.Errorf(err.Error())
 			}
 		})
+		trackInboundCall(eh, params.CallSID, "answered")
 
 	case rawmsg.TwilioParams_CALL_STATUS_UNDEFINED:
 	default:
@@ -677,63 +674,6 @@ func processOutgoingCallStatus(ctx context.Context, params *rawmsg.TwilioParams,
 	return "", nil
 }
 
-func trackOutboundCall(eh *eventsHandler, callerEntityID, orgID, destination string, durationInSeconds uint32) {
-	conc.Go(func() {
-		res, err := eh.directory.LookupEntities(
-			context.Background(),
-			&directory.LookupEntitiesRequest{
-				LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-				LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-					EntityID: callerEntityID,
-				},
-				RequestedInformation: &directory.RequestedInformation{
-					Depth: 0,
-					EntityInformation: []directory.EntityInformation{
-						directory.EntityInformation_EXTERNAL_IDS,
-					},
-				},
-				Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
-			})
-		if err != nil {
-			golog.Errorf("Unable to lookup entity %s: %s", callerEntityID, err)
-		} else if len(res.Entities) != 1 {
-			golog.Errorf("Expected 1 entity but got %d for %s", len(res.Entities), callerEntityID)
-		}
-
-		var accountID string
-		for _, externalID := range res.Entities[0].ExternalIDs {
-			if strings.HasPrefix(externalID, auth.AccountIDPrefix) {
-				accountID = externalID
-				break
-			}
-		}
-		if accountID == "" {
-			golog.Errorf("No accountID found for entity %s", res.Entities[0].ID)
-			return
-		}
-
-		msg := &analytics.Track{
-			Event:  "outbound-call-connected",
-			UserId: accountID,
-			Properties: map[string]interface{}{
-				"caller_entity_id":    callerEntityID,
-				"org_id":              orgID,
-				"duration_in_seconds": durationInSeconds,
-				"destination":         destination,
-			},
-		}
-
-		if eh.segmentClient == nil {
-			golog.Infof("SegmentIO Track(%+v)", msg)
-			return
-		}
-
-		if err := eh.segmentClient.Track(msg); err != nil {
-			golog.Errorf("SegmentIO Track(%+v) failed: %s", msg, err)
-		}
-	})
-}
-
 func processVoicemail(ctx context.Context, params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
 
 	rawMessageID, err := eh.dal.StoreIncomingRawMessage(&rawmsg.Incoming{
@@ -745,6 +685,8 @@ func processVoicemail(ctx context.Context, params *rawmsg.TwilioParams, eh *even
 	if err != nil {
 		return "", errors.Trace(err)
 	}
+
+	trackInboundCall(eh, params.CallSID, "voicemail")
 
 	conc.Go(func() {
 		if err := sns.Publish(eh.sns, eh.incomingRawMsgTopic, &sns.IncomingRawMessageNotification{
@@ -770,119 +712,4 @@ func processOutgoingSMSStatus(ctx context.Context, params *rawmsg.TwilioParams, 
 		golog.Errorf("Failed to send message %s", params.MessageSID)
 	}
 	return "", nil
-}
-
-func getForwardingListForProvisionedPhoneNumber(ctx context.Context, phoneNumber, organizationID string, eh *eventsHandler) ([]string, error) {
-
-	settingsRes, err := eh.settings.GetValues(ctx, &settings.GetValuesRequest{
-		Keys: []*settings.ConfigKey{
-			{
-				Key:    excommsSettings.ConfigKeyForwardingList,
-				Subkey: phoneNumber,
-			},
-		},
-		NodeID: organizationID,
-	})
-	if err != nil {
-		return nil, errors.Trace(err)
-	} else if len(settingsRes.Values) != 1 {
-		return nil, errors.Trace(fmt.Errorf("Expected single value for forwarding list of provisioned phone number %s but got back %d", phoneNumber, len(settingsRes.Values)))
-	} else if settingsRes.Values[0].GetStringList() == nil {
-		return nil, errors.Trace(fmt.Errorf("Expected string list value but got %T", settingsRes.Values[0]))
-	}
-
-	forwardingListMap := make(map[string]bool, len(settingsRes.Values[0].GetStringList().Values))
-	forwardingList := make([]string, 0, len(settingsRes.Values[0].GetStringList().Values))
-	for _, s := range settingsRes.Values[0].GetStringList().Values {
-		if forwardingListMap[s] {
-			continue
-		}
-		forwardingListMap[s] = true
-		forwardingList = append(forwardingList, s)
-	}
-
-	return forwardingList, nil
-}
-
-func determineExternalEntityName(ctx context.Context, source phone.Number, organizationID string, eh *eventsHandler) (string, error) {
-	// determine the external entity if possible so that we can announce their name
-	res, err := eh.directory.LookupEntitiesByContact(
-		ctx,
-		&directory.LookupEntitiesByContactRequest{
-			ContactValue: source.String(),
-			RequestedInformation: &directory.RequestedInformation{
-				Depth: 0,
-				EntityInformation: []directory.EntityInformation{
-					directory.EntityInformation_CONTACTS,
-					directory.EntityInformation_MEMBERSHIPS,
-				},
-			},
-			Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
-		})
-	if err != nil {
-		if grpc.Code(err) == codes.NotFound {
-			return "", nil
-		}
-		return "", errors.Trace(err)
-	}
-	for _, e := range res.Entities {
-
-		// only deal with external parties
-		if e.Type != directory.EntityType_EXTERNAL {
-			continue
-		}
-
-		// find the entity that has a membership to the organization
-		for _, m := range e.Memberships {
-			if m.ID == organizationID {
-				// only use the display name if the first and last name
-				// exist. We use this fact as an indicator that the display name
-				// is probably the name of the patient (versus phone number or email address).
-				if e.Info.FirstName != "" && e.Info.LastName != "" {
-					return e.Info.DisplayName, nil
-				}
-			}
-		}
-	}
-	return "", nil
-}
-
-func determineEntityWithProvisionedEndpoint(eh *eventsHandler, endpoint string, depth int64) (*directory.Entity, error) {
-	res, err := eh.directory.LookupEntitiesByContact(
-		context.Background(),
-		&directory.LookupEntitiesByContactRequest{
-			ContactValue: endpoint,
-			RequestedInformation: &directory.RequestedInformation{
-				Depth: depth,
-				EntityInformation: []directory.EntityInformation{
-					directory.EntityInformation_MEMBERS,
-					directory.EntityInformation_MEMBERSHIPS,
-					directory.EntityInformation_CONTACTS,
-				},
-			},
-			Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
-		})
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
-
-	// only one entity should exist with the provisioned value
-	var entity *directory.Entity
-	for _, e := range res.Entities {
-		for _, c := range e.Contacts {
-			if c.Provisioned && c.Value == endpoint {
-				if entity != nil {
-					return nil, errors.Trace(fmt.Errorf("More than 1 entity found with provisioned endpoint %s", endpoint))
-				}
-
-				entity = e
-			}
-		}
-	}
-
-	if entity == nil {
-		return nil, errors.Trace(fmt.Errorf("No entity found for provisioned endpoint %s", endpoint))
-	}
-
-	return entity, nil
 }

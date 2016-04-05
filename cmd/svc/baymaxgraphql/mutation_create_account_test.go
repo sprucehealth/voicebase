@@ -122,7 +122,7 @@ func TestCreateAccountMutation(t *testing.T) {
 		Type:                 threading.ThreadType_SUPPORT,
 		SystemTitle1:         supportThreadTitle,
 		SystemTitle2:         supportThreadTitle + " (org)",
-	}).WithReturns(&threading.CreateLinkedThreadsResponse{}, nil))
+	}).WithReturns(&threading.CreateLinkedThreadsResponse{Thread1: &threading.Thread{}, Thread2: &threading.Thread{}}, nil))
 
 	// Create onboarding thread
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateEntity, &directory.CreateEntityRequest{

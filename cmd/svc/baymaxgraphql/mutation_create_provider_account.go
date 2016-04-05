@@ -17,6 +17,7 @@ import (
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/invite"
+	"github.com/sprucehealth/backend/svc/notification/deeplink"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 	"google.golang.org/grpc"
@@ -261,6 +262,7 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 		return nil, errors.InternalError(ctx, err)
 	}
 
+	var createLinkedThreadsResponse *threading.CreateLinkedThreadsResponse
 	if inv == nil {
 		// Create initial threads, but don't fail entirely on errors as this isn't critical to the account existing,
 		// and because a hard fail leaves the account around but makes it look like it failed it's best just to
@@ -296,10 +298,11 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 			})
 			return err
 		})
+
 		if err := par.Wait(); err != nil {
 			golog.Errorf("Failed to create entity for support thread for org %s: %s", orgEntityID, err)
 		} else {
-			_, err = ram.CreateLinkedThreads(ctx, &threading.CreateLinkedThreadsRequest{
+			createLinkedThreadsResponse, err = ram.CreateLinkedThreads(ctx, &threading.CreateLinkedThreadsRequest{
 				Organization1ID:      orgEntityID,
 				Organization2ID:      svc.spruceOrgID,
 				PrimaryEntity1ID:     tsEnt1.ID,
@@ -356,6 +359,12 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 		}
 	}
 	conc.Go(func() {
+
+		var supportLink string
+		if createLinkedThreadsResponse != nil {
+			supportLink = deeplink.ThreadURLShareable(svc.webDomain, svc.spruceOrgID, createLinkedThreadsResponse.Thread2.ID)
+		}
+
 		svc.segmentio.Identify(&analytics.Identify{
 			UserId: res.Account.ID,
 			Traits: map[string]interface{}{
@@ -367,6 +376,7 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 				"organization_name": orgName,
 				"platform":          platform,
 				"createdAt":         time.Now().Unix(),
+				"support_link":      supportLink,
 			},
 			Context: map[string]interface{}{
 				"ip":        remoteAddrFromParams(p),
