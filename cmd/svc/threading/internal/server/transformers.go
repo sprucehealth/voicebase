@@ -72,6 +72,8 @@ func transformThreadTypeToResponse(tt models.ThreadType) (threading.ThreadType, 
 		return threading.ThreadType_SETUP, nil
 	case models.ThreadTypeSupport:
 		return threading.ThreadType_SUPPORT, nil
+	case models.ThreadTypeLegacyTeam:
+		return threading.ThreadType_LEGACY_TEAM, nil
 	}
 	return threading.ThreadType_UNKNOWN, errors.Trace(fmt.Errorf("unknown thread type '%s'", tt))
 }
@@ -87,6 +89,8 @@ func transformThreadTypeFromRequest(tt threading.ThreadType) (models.ThreadType,
 		return models.ThreadTypeSetup, nil
 	case threading.ThreadType_SUPPORT:
 		return models.ThreadTypeSupport, nil
+	case threading.ThreadType_LEGACY_TEAM:
+		return models.ThreadTypeLegacyTeam, nil
 	}
 	return models.ThreadTypeUnknown, errors.Trace(fmt.Errorf("unknown thread type '%s'", tt))
 }
