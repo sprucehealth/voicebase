@@ -24,13 +24,13 @@ WHERE t.type = ''
 AND t.id in (select thread_id from thread_items where data like '%Invite some colleagues to join and then send%');
 
 -- Only EXTERNAL threads can be deleted so lets go ahead and mark those threads as EXTERNAL
-UPDATE threads 
+UPDATE threads as t
 SET t.type = 'EXTERNAL'
 WHERE t.type = ''
 AND t.deleted = true;
 
 -- The reamining threads that are none of the above types are essentially external threads
-UPDATE threads
+UPDATE threads as t
 SET t.type='EXTERNAL'
 WHERE t.type = '';
 

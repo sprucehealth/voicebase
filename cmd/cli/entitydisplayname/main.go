@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/model"
@@ -56,7 +57,7 @@ func main() {
 			})
 		if err != nil {
 			golog.Fatalf("Unable to lookup entity information for %s: %s", entityID, err.Error())
-		} else if len(res.Entities) != 0 {
+		} else if len(res.Entities) != 1 {
 			golog.Fatalf("Expected 1 entity for %s but got %d", entityID, len(res.Entities))
 		}
 
@@ -98,7 +99,7 @@ func getEntityIDs() ([]string, error) {
 			return nil, err
 		}
 
-		entityIDInt64, err := strconv.ParseUint(row[0], 10, 64)
+		entityIDInt64, err := strconv.ParseUint(strings.TrimSpace(row[0]), 10, 64)
 		if err != nil {
 			return nil, err
 		}
