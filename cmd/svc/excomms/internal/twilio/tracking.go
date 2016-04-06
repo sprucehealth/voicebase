@@ -52,6 +52,10 @@ func trackInboundCall(eh *eventsHandler, callSID, eventSuffix string) {
 		// entity provider they map to, to see who actually answered the call.
 		for _, member := range res.Entities[0].Members {
 
+			if member.Type != directory.EntityType_INTERNAL {
+				continue
+			}
+
 			accountID := determineAccountID(member)
 			if accountID == "" {
 				golog.Errorf("No accountID found for entity %s", member.ID)
