@@ -248,9 +248,6 @@ func (s *server) SerializedEntityContact(ctx context.Context, rd *directory.Seri
 }
 
 func (s *server) validateCreateEntityRequest(rd *directory.CreateEntityRequest) error {
-	if rd.Type != directory.EntityType_EXTERNAL && rd.EntityInfo.DisplayName == "" {
-		return grpcErrorf(codes.InvalidArgument, "DisplayName cannot be empty for non external entities")
-	}
 	if rd.InitialMembershipEntityID != "" {
 		eID, err := dal.ParseEntityID(rd.InitialMembershipEntityID)
 		if err != nil {
@@ -383,15 +380,13 @@ func (s *server) validateUpdateEntityRequest(rd *directory.UpdateEntityRequest) 
 	if err != nil {
 		return grpcErrorf(codes.InvalidArgument, "Unable to parse entity ID")
 	}
-	entity, err := s.dl.Entity(eID)
+	_, err = s.dl.Entity(eID)
 	if api.IsErrNotFound(err) {
 		return grpcErrorf(codes.NotFound, err.Error())
 	} else if err != nil {
 		return grpcErrorf(codes.Internal, err.Error())
 	}
-	if entity.Type != dal.EntityTypeExternal && rd.EntityInfo.DisplayName == "" {
-		return grpcErrorf(codes.InvalidArgument, "Display Name cannot be empty for non external entities")
-	}
+
 	return nil
 }
 
