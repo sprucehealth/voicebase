@@ -9,14 +9,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sprucehealth/backend/libs/golog"
-
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/idgen"
 	modellib "github.com/sprucehealth/backend/libs/model"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/transactional/tsql"
 	"github.com/sprucehealth/backend/svc/directory"
 )
@@ -235,11 +235,8 @@ func (t EntityType) String() string {
 	return string(t)
 }
 
-func (t *EntityType) Value() (driver.Value, error) {
-	if t == nil {
-		return nil, nil
-	}
-	return string(*t), nil
+func (t EntityType) Value() (driver.Value, error) {
+	return string(t), nil
 }
 
 // Scan allows for scanning of EntityType from a database conforming to the sql.Scanner interface
@@ -279,11 +276,8 @@ func (t EntityStatus) String() string {
 	return string(t)
 }
 
-func (t *EntityStatus) Value() (driver.Value, error) {
-	if t == nil {
-		return nil, nil
-	}
-	return string(*t), nil
+func (t EntityStatus) Value() (driver.Value, error) {
+	return string(t), nil
 }
 
 // Scan allows for scanning of EntityStatus from a database conforming to the sql.Scanner interface
@@ -325,11 +319,8 @@ func (t EntityGender) String() string {
 	return string(t)
 }
 
-func (t *EntityGender) Value() (driver.Value, error) {
-	if t == nil {
-		return nil, nil
-	}
-	return string(*t), nil
+func (t EntityGender) Value() (driver.Value, error) {
+	return string(t), nil
 }
 
 // Scan allows for scanning of EntityGender from a database conforming to the sql.Scanner interface
@@ -371,11 +362,8 @@ func (t EntityMembershipStatus) String() string {
 	return string(t)
 }
 
-func (t *EntityMembershipStatus) Value() (driver.Value, error) {
-	if t == nil {
-		return nil, nil
-	}
-	return string(*t), nil
+func (t EntityMembershipStatus) Value() (driver.Value, error) {
+	return string(t), nil
 }
 
 // Scan allows for scanning of EntityMembershipStatus from a database conforming to the sql.Scanner interface
@@ -415,11 +403,8 @@ func (t EntityContactType) String() string {
 	return string(t)
 }
 
-func (t *EntityContactType) Value() (driver.Value, error) {
-	if t == nil {
-		return nil, nil
-	}
-	return string(*t), nil
+func (t EntityContactType) Value() (driver.Value, error) {
+	return string(t), nil
 }
 
 // Scan allows for scanning of EntityContactType from a database conforming to the sql.Scanner interface
@@ -459,11 +444,8 @@ func (t SerializedClientEntityContactPlatform) String() string {
 	return string(t)
 }
 
-func (t *SerializedClientEntityContactPlatform) Value() (driver.Value, error) {
-	if t == nil {
-		return nil, nil
-	}
-	return string(*t), nil
+func (t SerializedClientEntityContactPlatform) Value() (driver.Value, error) {
+	return string(t), nil
 }
 
 // Scan allows for scanning of SerializedClientEntityContactPlatform from a database conforming to the sql.Scanner interface
@@ -618,6 +600,12 @@ func (d *dal) InsertEntity(model *Entity) (EntityID, error) {
 		}
 		model.ID = id
 	}
+
+	var gender *string
+	if model.Gender != nil {
+		gender = ptr.String(model.Gender.String())
+	}
+
 	_, err := d.db.Exec(
 		`INSERT INTO entity
           (display_name, first_name, group_name, type, status, 
@@ -629,7 +617,7 @@ func (d *dal) InsertEntity(model *Entity) (EntityID, error) {
 		   ?, ?, ?)`,
 		model.DisplayName, model.FirstName, model.GroupName, model.Type, model.Status,
 		model.ID, model.MiddleInitial, model.LastName, model.Note, model.ShortTitle,
-		model.LongTitle, model.Gender, model.DOB)
+		model.LongTitle, gender, model.DOB)
 	if err != nil {
 		return EmptyEntityID(), errors.Trace(err)
 	}
