@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/sprucehealth/backend/libs/golog"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dbutil"
@@ -79,7 +81,8 @@ func (d *dal) Transact(trans func(dal DAL) error) (err error) {
 			buf = buf[:runtime.Stack(buf, false)]
 
 			tx.Rollback()
-			err = errors.Trace(fmt.Errorf("Encountered panic during transaction execution: %v", string(buf)))
+			golog.Errorf("Stack trace: %s", string(buf))
+			err = errors.Trace(fmt.Errorf("Encountered panic during transaction execution: %v", r))
 		}
 	}()
 	if err := trans(tdal); err != nil {
