@@ -235,8 +235,11 @@ func (t EntityType) String() string {
 	return string(t)
 }
 
-func (t EntityType) Value() (driver.Value, error) {
-	return string(t), nil
+func (t *EntityType) Value() (driver.Value, error) {
+	if t == nil {
+		return nil, nil
+	}
+	return string(*t), nil
 }
 
 // Scan allows for scanning of EntityType from a database conforming to the sql.Scanner interface
@@ -276,8 +279,11 @@ func (t EntityStatus) String() string {
 	return string(t)
 }
 
-func (t EntityStatus) Value() (driver.Value, error) {
-	return string(t), nil
+func (t *EntityStatus) Value() (driver.Value, error) {
+	if t == nil {
+		return nil, nil
+	}
+	return string(*t), nil
 }
 
 // Scan allows for scanning of EntityStatus from a database conforming to the sql.Scanner interface
@@ -319,8 +325,11 @@ func (t EntityGender) String() string {
 	return string(t)
 }
 
-func (t EntityGender) Value() (driver.Value, error) {
-	return string(t), nil
+func (t *EntityGender) Value() (driver.Value, error) {
+	if t == nil {
+		return nil, nil
+	}
+	return string(*t), nil
 }
 
 // Scan allows for scanning of EntityGender from a database conforming to the sql.Scanner interface
@@ -362,8 +371,11 @@ func (t EntityMembershipStatus) String() string {
 	return string(t)
 }
 
-func (t EntityMembershipStatus) Value() (driver.Value, error) {
-	return string(t), nil
+func (t *EntityMembershipStatus) Value() (driver.Value, error) {
+	if t == nil {
+		return nil, nil
+	}
+	return string(*t), nil
 }
 
 // Scan allows for scanning of EntityMembershipStatus from a database conforming to the sql.Scanner interface
@@ -403,8 +415,11 @@ func (t EntityContactType) String() string {
 	return string(t)
 }
 
-func (t EntityContactType) Value() (driver.Value, error) {
-	return string(t), nil
+func (t *EntityContactType) Value() (driver.Value, error) {
+	if t == nil {
+		return nil, nil
+	}
+	return string(*t), nil
 }
 
 // Scan allows for scanning of EntityContactType from a database conforming to the sql.Scanner interface
@@ -444,8 +459,11 @@ func (t SerializedClientEntityContactPlatform) String() string {
 	return string(t)
 }
 
-func (t SerializedClientEntityContactPlatform) Value() (driver.Value, error) {
-	return string(t), nil
+func (t *SerializedClientEntityContactPlatform) Value() (driver.Value, error) {
+	if t == nil {
+		return nil, nil
+	}
+	return string(*t), nil
 }
 
 // Scan allows for scanning of SerializedClientEntityContactPlatform from a database conforming to the sql.Scanner interface
