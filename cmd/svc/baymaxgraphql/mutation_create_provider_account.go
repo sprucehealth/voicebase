@@ -373,7 +373,6 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 				"organization_name": orgName,
 				"platform":          platform,
 				"createdAt":         time.Now().Unix(),
-				"support_link":      supportLink,
 			},
 			Context: map[string]interface{}{
 				"ip":        remoteAddrFromParams(p),
@@ -385,6 +384,7 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 			GroupId: orgEntityID,
 			Traits: map[string]interface{}{
 				"name": orgName,
+				"support_link": supportLink,
 			},
 		})
 		props := map[string]interface{}{
