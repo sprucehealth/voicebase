@@ -383,7 +383,7 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 			UserId:  res.Account.ID,
 			GroupId: orgEntityID,
 			Traits: map[string]interface{}{
-				"name": orgName,
+				"name":         orgName,
 				"support_link": supportLink,
 			},
 		})

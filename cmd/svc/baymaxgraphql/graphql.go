@@ -235,6 +235,7 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 	}
 	ctx = gqlctx.WithRequestID(ctx, requestID)
 	ctx = gqlctx.WithSpruceHeaders(ctx, sHeaders)
+	ctx = gqlctx.WithQuery(ctx, req.Query)
 
 	result := conc.NewMap()
 	response := graphql.Do(graphql.Params{

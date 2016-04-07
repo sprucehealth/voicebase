@@ -14,6 +14,7 @@ const (
 	ctxClientEncryptionKey
 	ctxRequestID
 	ctxAuthToken
+	ctxQuery
 )
 
 // WithSpruceHeaders attaches the provided spruce headers onto a copy of the provided context
@@ -50,6 +51,17 @@ func WithRequestID(ctx context.Context, id uint64) context.Context {
 func RequestID(ctx context.Context) uint64 {
 	id, _ := ctx.Value(ctxRequestID).(uint64)
 	return id
+}
+
+// WithQuery attaches the query string to the context
+func WithQuery(ctx context.Context, query string) context.Context {
+	return context.WithValue(ctx, ctxQuery, query)
+}
+
+// Query returns the query string for the request
+func Query(ctx context.Context) string {
+	query, _ := ctx.Value(ctxQuery).(string)
+	return query
 }
 
 // WithAccount attaches the provided account onto a copy of the provided context
