@@ -145,19 +145,20 @@ type command interface {
 type commandNew func(*config) (command, error)
 
 var commands = map[string]commandNew{
-	"account":        newAccountCmd,
-	"decodeid":       newDecodeIDCmd,
-	"deletecontact":  newDeleteContactCmd,
-	"encodeid":       newEncodeIDCmd,
-	"entity":         newEntityCmd,
-	"moveentity":     newMoveEntityCmd,
-	"getsetting":     newGetSettingCmd,
-	"setsetting":     newSetSettingCmd,
-	"thread":         newThreadCmd,
-	"changeorgemail": newChangeOrgEmailCmd,
-	"blockaccount":   newBlockAccountCmd,
-	"updateentity":   newUpdateEntityCmd,
-	"setgreeting":    newSetGreetingCmd,
+	"account":             newAccountCmd,
+	"decodeid":            newDecodeIDCmd,
+	"deletecontact":       newDeleteContactCmd,
+	"encodeid":            newEncodeIDCmd,
+	"entity":              newEntityCmd,
+	"moveentity":          newMoveEntityCmd,
+	"getsetting":          newGetSettingCmd,
+	"setsetting":          newSetSettingCmd,
+	"thread":              newThreadCmd,
+	"changeorgemail":      newChangeOrgEmailCmd,
+	"blockaccount":        newBlockAccountCmd,
+	"updateentity":        newUpdateEntityCmd,
+	"setgreeting":         newSetGreetingCmd,
+	"migratesetupthreads": newMigrateSetupThreadsCmd,
 }
 
 func main() {

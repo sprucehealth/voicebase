@@ -80,6 +80,7 @@ type ResourceAccessor interface {
 	EntitiesForExternalID(ctx context.Context, externalID string, entityInfo []directory.EntityInformation, depth int64, statuses []directory.EntityStatus) ([]*directory.Entity, error)
 	InitiatePhoneCall(ctx context.Context, req *excomms.InitiatePhoneCallRequest) (*excomms.InitiatePhoneCallResponse, error)
 	MarkThreadAsRead(ctx context.Context, threadID, entityID string) error
+	OnboardingThreadEvent(ctx context.Context, req *threading.OnboardingThreadEventRequest) (*threading.OnboardingThreadEventResponse, error)
 	PatientEntity(ctx context.Context, a *models.PatientAccount) (*directory.Entity, error)
 	PostMessage(ctx context.Context, req *threading.PostMessageRequest) (*threading.PostMessageResponse, error)
 	ProvisionPhoneNumber(ctx context.Context, req *excomms.ProvisionPhoneNumberRequest) (*excomms.ProvisionPhoneNumberResponse, error)
@@ -552,6 +553,13 @@ func (m *resourceAccessor) MarkThreadAsRead(ctx context.Context, threadID, entit
 		return err
 	}
 	return nil
+}
+
+func (m *resourceAccessor) OnboardingThreadEvent(ctx context.Context, req *threading.OnboardingThreadEventRequest) (*threading.OnboardingThreadEventResponse, error) {
+	if err := m.canAccessResource(ctx, req.GetEntityID(), m.orgsForOrganization); err != nil {
+		return nil, err
+	}
+	return m.threading.OnboardingThreadEvent(ctx, req)
 }
 
 func (m *resourceAccessor) PatientEntity(ctx context.Context, acc *models.PatientAccount) (*directory.Entity, error) {

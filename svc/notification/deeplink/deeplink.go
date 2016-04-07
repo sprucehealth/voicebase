@@ -2,7 +2,10 @@ package deeplink
 
 // https://docs.google.com/document/d/1kuJszqKi45z2WFly0xhWMOLyvw0S5Z7gFAu0K5AgCAk/edit#heading=h.5mqpvpoen3ud
 
-import "fmt"
+import (
+	"fmt"
+	"net/url"
+)
 
 func deepLinkBase(webDomain string) string {
 	return fmt.Sprintf("https://%s", webDomain)
@@ -76,4 +79,19 @@ func OrgSettingsPhoneURL(webDomain, organizationID string) string {
 // OrgSettingsNotificationsURL returns a deeplink compatible URL to the notification settings for a particular organization
 func OrgSettingsNotificationsURL(webDomain, organizationID string) string {
 	return fmt.Sprintf("%s/settings/notifications", OrgURL(webDomain, organizationID))
+}
+
+// OrgColleagueInviteURL returns a deeplink compatible URL to the colleague invite
+func OrgColleagueInviteURL(webDomain, organizationID string) string {
+	return fmt.Sprintf("%s/invite", OrgURL(webDomain, organizationID))
+}
+
+// PostEventURL returns a deeplink compatible URL that trigger the postEvent mutation
+func PostEventURL(webDomain, event string, values url.Values) string {
+	if values == nil {
+		values = url.Values(map[string][]string{"name": {event}})
+	} else {
+		values.Set("name", event)
+	}
+	return deepLinkBase(webDomain) + "/post_event?" + values.Encode()
 }

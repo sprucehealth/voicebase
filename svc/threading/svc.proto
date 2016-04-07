@@ -439,6 +439,48 @@ message LinkedThreadResponse {
 	bool prependSender = 2;
 }
 
+message KeyValue {
+	string key = 1;
+	string value = 2;
+}
+
+message GenericSetupEvent {
+	string name = 1;
+	repeated KeyValue attributes = 2;
+}
+
+message ProvisionedPhoneEvent {
+	string phone_number = 1;
+}
+
+message OnboardingThreadEventRequest {
+	enum LookupByType {
+		INVALID_LOOKUP_BY_TYPE = 0;
+		THREAD_ID = 1;
+		ENTITY_ID = 2;
+	}
+	LookupByType lookup_by_type = 1;
+	oneof lookup_by {
+		string thread_id = 2 [(gogoproto.customname) = "ThreadID"];
+		string entity_id = 3 [(gogoproto.customname) = "EntityID"];
+	}
+
+	enum EventType {
+		INVALID_EVENT_TYPE = 0;
+		GENERIC_SETUP = 1;
+		PROVISIONED_PHONE = 2;
+	}
+	EventType event_type = 4;
+	oneof event {
+		GenericSetupEvent generic_setup = 5;
+		ProvisionedPhoneEvent provisioned_phone = 6;
+	}
+}
+
+message OnboardingThreadEventResponse {
+	Thread thread = 1;
+}
+
 service Threads {
 	// CreateSavedQuery saves a query for later use
 	rpc CreateSavedQuery(CreateSavedQueryRequest) returns (CreateSavedQueryResponse);
@@ -458,6 +500,8 @@ service Threads {
 	rpc LinkedThread(LinkedThreadRequest) returns (LinkedThreadResponse);
 	// MarThreadAsRead marks all posts in a thread as read by an entity
 	rpc MarkThreadAsRead(MarkThreadAsReadRequest) returns (MarkThreadAsReadResponse);
+	// OnboardThreadEvent processes an event in an onboarding thread
+	rpc OnboardingThreadEvent(OnboardingThreadEventRequest) returns (OnboardingThreadEventResponse);
 	// PostMessage posts a message into a specified thread
 	rpc PostMessage(PostMessageRequest) returns (PostMessageResponse);
 	// QueryThreads queries the list of threads in an organization

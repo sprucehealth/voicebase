@@ -11,9 +11,9 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/dal"
-	"github.com/sprucehealth/backend/cmd/svc/threading/internal/onboarding"
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/server"
 	tsettings "github.com/sprucehealth/backend/cmd/svc/threading/internal/settings"
+	"github.com/sprucehealth/backend/cmd/svc/threading/internal/setupthread"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/dbutil"
@@ -120,10 +120,6 @@ func main() {
 
 	dl := dal.New(db)
 
-	w := onboarding.NewWorker(eSQS, dl, *flagWebDomain, *flagSQSEventsURL, *flagSQSThreadingURL)
-	w.Start()
-	defer w.Stop(time.Second * 10)
-
 	// register the settings with the service
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	_, err = settings.RegisterConfigs(
@@ -140,6 +136,10 @@ func main() {
 	srv := server.NewThreadsServer(clock.New(), dl, eSNS, *flagSNSTopicARN, notificationClient, directoryClient, settingsClient, *flagWebDomain)
 	threading.InitMetrics(srv, bootSvc.MetricsRegistry.Scope("server"))
 
+	w := setupthread.NewWorker(eSQS, workerClient{srv: srv}, *flagSQSEventsURL)
+	w.Start()
+	defer w.Stop(time.Second * 10)
+
 	s := grpc.NewServer()
 	threading.RegisterThreadsServer(s, srv)
 	golog.Infof("Starting Threads service on %s...", *flagListen)
@@ -153,4 +153,14 @@ func main() {
 	}()
 
 	boot.WaitForTermination()
+}
+
+// workerClient allows using the server directly as a client. avoids the worker from having to make calls out and back in
+// which would introduce a weird start-time dependency due to running in the same process.
+type workerClient struct {
+	srv threading.ThreadsServer
+}
+
+func (wc workerClient) OnboardingThreadEvent(ctx context.Context, req *threading.OnboardingThreadEventRequest, opts ...grpc.CallOption) (*threading.OnboardingThreadEventResponse, error) {
+	return wc.srv.OnboardingThreadEvent(ctx, req)
 }

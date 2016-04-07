@@ -4,7 +4,10 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
+	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/threading"
 	"golang.org/x/net/context"
 )
 
@@ -14,15 +17,111 @@ func TestPostEventMutation(t *testing.T) {
 
 	ctx := context.Background()
 	acc := &auth.Account{
-		ID: "a_1",
+		ID:   "a_1",
+		Type: auth.AccountType_PROVIDER,
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
 
+	// Non setup events are currently ignored
 	res := g.query(ctx, `
 		mutation _ {
 			postEvent(input: {
 				clientMutationId: "a1b2c3",
 				eventName: "someEvent",
+			}) {
+				clientMutationId
+				success
+			}
+		}`, nil)
+	responseEquals(t, `{
+		"data": {
+			"postEvent": {
+				"clientMutationId": "a1b2c3",
+				"success": true
+			}
+		}}`, res)
+
+	// no org_id
+
+	g.ra.Expect(mock.NewExpectation(g.ra.EntitiesForExternalID,
+		acc.ID, []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS}, int64(0),
+		[]directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	).WithReturns([]*directory.Entity{
+		{
+			ID: "ent",
+			Memberships: []*directory.Entity{
+				{ID: "org", Type: directory.EntityType_ORGANIZATION},
+			},
+		},
+	}, nil))
+	g.ra.Expect(mock.NewExpectation(g.ra.OnboardingThreadEvent,
+		&threading.OnboardingThreadEventRequest{
+			LookupByType: threading.OnboardingThreadEventRequest_ENTITY_ID,
+			LookupBy: &threading.OnboardingThreadEventRequest_EntityID{
+				EntityID: "org",
+			},
+			EventType: threading.OnboardingThreadEventRequest_GENERIC_SETUP,
+			Event: &threading.OnboardingThreadEventRequest_GenericSetup{
+				GenericSetup: &threading.GenericSetupEvent{
+					Name:       "setup_answering_service",
+					Attributes: []*threading.KeyValue{},
+				},
+			},
+		},
+	))
+
+	res = g.query(ctx, `
+		mutation _ {
+			postEvent(input: {
+				clientMutationId: "a1b2c3",
+				eventName: "setup_answering_service",
+			}) {
+				clientMutationId
+				success
+			}
+		}`, nil)
+	responseEquals(t, `{
+		"data": {
+			"postEvent": {
+				"clientMutationId": "a1b2c3",
+				"success": true
+			}
+		}}`, res)
+
+	// with org_id
+
+	g.ra.Expect(mock.NewExpectation(g.ra.EntityForAccountID, "0rg", acc.ID).WithReturns(&directory.Entity{
+		ID: "ent",
+	}, nil))
+	g.ra.Expect(mock.NewExpectation(g.ra.OnboardingThreadEvent,
+		&threading.OnboardingThreadEventRequest{
+			LookupByType: threading.OnboardingThreadEventRequest_ENTITY_ID,
+			LookupBy: &threading.OnboardingThreadEventRequest_EntityID{
+				EntityID: "0rg",
+			},
+			EventType: threading.OnboardingThreadEventRequest_GENERIC_SETUP,
+			Event: &threading.OnboardingThreadEventRequest_GenericSetup{
+				GenericSetup: &threading.GenericSetupEvent{
+					Name: "setup_answering_service",
+					Attributes: []*threading.KeyValue{
+						{Key: "org_id", Value: "0rg"},
+					},
+				},
+			},
+		},
+	))
+
+	res = g.query(ctx, `
+		mutation _ {
+			postEvent(input: {
+				clientMutationId: "a1b2c3",
+				eventName: "setup_answering_service",
+				attributes: [
+					{
+						key: "org_id",
+						value: "0rg",
+					}
+				]
 			}) {
 				clientMutationId
 				success

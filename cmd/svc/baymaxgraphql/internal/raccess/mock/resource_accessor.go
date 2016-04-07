@@ -239,7 +239,7 @@ func (m *ResourceAccessor) EntitiesByContact(ctx context.Context, contactValue s
 }
 
 func (m *ResourceAccessor) EntitiesForExternalID(ctx context.Context, externalID string, entityInfo []directory.EntityInformation, depth int64, statuses []directory.EntityStatus) ([]*directory.Entity, error) {
-	rets := m.Record(externalID, entityInfo, depth)
+	rets := m.Record(externalID, entityInfo, depth, statuses)
 	if len(rets) == 0 {
 		return nil, nil
 	}
@@ -263,6 +263,14 @@ func (m *ResourceAccessor) MarkThreadAsRead(ctx context.Context, threadID, entit
 	}
 
 	return mock.SafeError(rets[0])
+}
+
+func (m *ResourceAccessor) OnboardingThreadEvent(ctx context.Context, req *threading.OnboardingThreadEventRequest) (*threading.OnboardingThreadEventResponse, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*threading.OnboardingThreadEventResponse), mock.SafeError(rets[1])
 }
 
 func (m *ResourceAccessor) PatientEntity(ctx context.Context, a *models.PatientAccount) (*directory.Entity, error) {

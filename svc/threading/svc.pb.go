@@ -70,6 +70,11 @@
 		CreateOnboardingThreadResponse
 		LinkedThreadRequest
 		LinkedThreadResponse
+		KeyValue
+		GenericSetupEvent
+		ProvisionedPhoneEvent
+		OnboardingThreadEventRequest
+		OnboardingThreadEventResponse
 */
 package threading
 
@@ -250,6 +255,44 @@ var QueryThreadsRequest_Type_value = map[string]int32{
 	"ADHOC":          0,
 	"SAVED":          1,
 	"ALL_FOR_VIEWER": 2,
+}
+
+type OnboardingThreadEventRequest_LookupByType int32
+
+const (
+	OnboardingThreadEventRequest_INVALID_LOOKUP_BY_TYPE OnboardingThreadEventRequest_LookupByType = 0
+	OnboardingThreadEventRequest_THREAD_ID              OnboardingThreadEventRequest_LookupByType = 1
+	OnboardingThreadEventRequest_ENTITY_ID              OnboardingThreadEventRequest_LookupByType = 2
+)
+
+var OnboardingThreadEventRequest_LookupByType_name = map[int32]string{
+	0: "INVALID_LOOKUP_BY_TYPE",
+	1: "THREAD_ID",
+	2: "ENTITY_ID",
+}
+var OnboardingThreadEventRequest_LookupByType_value = map[string]int32{
+	"INVALID_LOOKUP_BY_TYPE": 0,
+	"THREAD_ID":              1,
+	"ENTITY_ID":              2,
+}
+
+type OnboardingThreadEventRequest_EventType int32
+
+const (
+	OnboardingThreadEventRequest_INVALID_EVENT_TYPE OnboardingThreadEventRequest_EventType = 0
+	OnboardingThreadEventRequest_GENERIC_SETUP      OnboardingThreadEventRequest_EventType = 1
+	OnboardingThreadEventRequest_PROVISIONED_PHONE  OnboardingThreadEventRequest_EventType = 2
+)
+
+var OnboardingThreadEventRequest_EventType_name = map[int32]string{
+	0: "INVALID_EVENT_TYPE",
+	1: "GENERIC_SETUP",
+	2: "PROVISIONED_PHONE",
+}
+var OnboardingThreadEventRequest_EventType_value = map[string]int32{
+	"INVALID_EVENT_TYPE": 0,
+	"GENERIC_SETUP":      1,
+	"PROVISIONED_PHONE":  2,
 }
 
 type Iterator struct {
@@ -1419,6 +1462,219 @@ func (m *LinkedThreadResponse) GetThread() *Thread {
 	return nil
 }
 
+type KeyValue struct {
+	Key   string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	Value string `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+}
+
+func (m *KeyValue) Reset()      { *m = KeyValue{} }
+func (*KeyValue) ProtoMessage() {}
+
+type GenericSetupEvent struct {
+	Name       string      `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Attributes []*KeyValue `protobuf:"bytes,2,rep,name=attributes" json:"attributes,omitempty"`
+}
+
+func (m *GenericSetupEvent) Reset()      { *m = GenericSetupEvent{} }
+func (*GenericSetupEvent) ProtoMessage() {}
+
+func (m *GenericSetupEvent) GetAttributes() []*KeyValue {
+	if m != nil {
+		return m.Attributes
+	}
+	return nil
+}
+
+type ProvisionedPhoneEvent struct {
+	PhoneNumber string `protobuf:"bytes,1,opt,name=phone_number,proto3" json:"phone_number,omitempty"`
+}
+
+func (m *ProvisionedPhoneEvent) Reset()      { *m = ProvisionedPhoneEvent{} }
+func (*ProvisionedPhoneEvent) ProtoMessage() {}
+
+type OnboardingThreadEventRequest struct {
+	LookupByType OnboardingThreadEventRequest_LookupByType `protobuf:"varint,1,opt,name=lookup_by_type,proto3,enum=threading.OnboardingThreadEventRequest_LookupByType" json:"lookup_by_type,omitempty"`
+	// Types that are valid to be assigned to LookupBy:
+	//	*OnboardingThreadEventRequest_ThreadID
+	//	*OnboardingThreadEventRequest_EntityID
+	LookupBy  isOnboardingThreadEventRequest_LookupBy `protobuf_oneof:"lookup_by"`
+	EventType OnboardingThreadEventRequest_EventType  `protobuf:"varint,4,opt,name=event_type,proto3,enum=threading.OnboardingThreadEventRequest_EventType" json:"event_type,omitempty"`
+	// Types that are valid to be assigned to Event:
+	//	*OnboardingThreadEventRequest_GenericSetup
+	//	*OnboardingThreadEventRequest_ProvisionedPhone
+	Event isOnboardingThreadEventRequest_Event `protobuf_oneof:"event"`
+}
+
+func (m *OnboardingThreadEventRequest) Reset()      { *m = OnboardingThreadEventRequest{} }
+func (*OnboardingThreadEventRequest) ProtoMessage() {}
+
+type isOnboardingThreadEventRequest_LookupBy interface {
+	isOnboardingThreadEventRequest_LookupBy()
+	Equal(interface{}) bool
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+type isOnboardingThreadEventRequest_Event interface {
+	isOnboardingThreadEventRequest_Event()
+	Equal(interface{}) bool
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+
+type OnboardingThreadEventRequest_ThreadID struct {
+	ThreadID string `protobuf:"bytes,2,opt,name=thread_id,proto3,oneof"`
+}
+type OnboardingThreadEventRequest_EntityID struct {
+	EntityID string `protobuf:"bytes,3,opt,name=entity_id,proto3,oneof"`
+}
+type OnboardingThreadEventRequest_GenericSetup struct {
+	GenericSetup *GenericSetupEvent `protobuf:"bytes,5,opt,name=generic_setup,oneof"`
+}
+type OnboardingThreadEventRequest_ProvisionedPhone struct {
+	ProvisionedPhone *ProvisionedPhoneEvent `protobuf:"bytes,6,opt,name=provisioned_phone,oneof"`
+}
+
+func (*OnboardingThreadEventRequest_ThreadID) isOnboardingThreadEventRequest_LookupBy()      {}
+func (*OnboardingThreadEventRequest_EntityID) isOnboardingThreadEventRequest_LookupBy()      {}
+func (*OnboardingThreadEventRequest_GenericSetup) isOnboardingThreadEventRequest_Event()     {}
+func (*OnboardingThreadEventRequest_ProvisionedPhone) isOnboardingThreadEventRequest_Event() {}
+
+func (m *OnboardingThreadEventRequest) GetLookupBy() isOnboardingThreadEventRequest_LookupBy {
+	if m != nil {
+		return m.LookupBy
+	}
+	return nil
+}
+func (m *OnboardingThreadEventRequest) GetEvent() isOnboardingThreadEventRequest_Event {
+	if m != nil {
+		return m.Event
+	}
+	return nil
+}
+
+func (m *OnboardingThreadEventRequest) GetThreadID() string {
+	if x, ok := m.GetLookupBy().(*OnboardingThreadEventRequest_ThreadID); ok {
+		return x.ThreadID
+	}
+	return ""
+}
+
+func (m *OnboardingThreadEventRequest) GetEntityID() string {
+	if x, ok := m.GetLookupBy().(*OnboardingThreadEventRequest_EntityID); ok {
+		return x.EntityID
+	}
+	return ""
+}
+
+func (m *OnboardingThreadEventRequest) GetGenericSetup() *GenericSetupEvent {
+	if x, ok := m.GetEvent().(*OnboardingThreadEventRequest_GenericSetup); ok {
+		return x.GenericSetup
+	}
+	return nil
+}
+
+func (m *OnboardingThreadEventRequest) GetProvisionedPhone() *ProvisionedPhoneEvent {
+	if x, ok := m.GetEvent().(*OnboardingThreadEventRequest_ProvisionedPhone); ok {
+		return x.ProvisionedPhone
+	}
+	return nil
+}
+
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*OnboardingThreadEventRequest) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), []interface{}) {
+	return _OnboardingThreadEventRequest_OneofMarshaler, _OnboardingThreadEventRequest_OneofUnmarshaler, []interface{}{
+		(*OnboardingThreadEventRequest_ThreadID)(nil),
+		(*OnboardingThreadEventRequest_EntityID)(nil),
+		(*OnboardingThreadEventRequest_GenericSetup)(nil),
+		(*OnboardingThreadEventRequest_ProvisionedPhone)(nil),
+	}
+}
+
+func _OnboardingThreadEventRequest_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*OnboardingThreadEventRequest)
+	// lookup_by
+	switch x := m.LookupBy.(type) {
+	case *OnboardingThreadEventRequest_ThreadID:
+		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
+		_ = b.EncodeStringBytes(x.ThreadID)
+	case *OnboardingThreadEventRequest_EntityID:
+		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
+		_ = b.EncodeStringBytes(x.EntityID)
+	case nil:
+	default:
+		return fmt.Errorf("OnboardingThreadEventRequest.LookupBy has unexpected type %T", x)
+	}
+	// event
+	switch x := m.Event.(type) {
+	case *OnboardingThreadEventRequest_GenericSetup:
+		_ = b.EncodeVarint(5<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.GenericSetup); err != nil {
+			return err
+		}
+	case *OnboardingThreadEventRequest_ProvisionedPhone:
+		_ = b.EncodeVarint(6<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.ProvisionedPhone); err != nil {
+			return err
+		}
+	case nil:
+	default:
+		return fmt.Errorf("OnboardingThreadEventRequest.Event has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _OnboardingThreadEventRequest_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*OnboardingThreadEventRequest)
+	switch tag {
+	case 2: // lookup_by.thread_id
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		x, err := b.DecodeStringBytes()
+		m.LookupBy = &OnboardingThreadEventRequest_ThreadID{x}
+		return true, err
+	case 3: // lookup_by.entity_id
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		x, err := b.DecodeStringBytes()
+		m.LookupBy = &OnboardingThreadEventRequest_EntityID{x}
+		return true, err
+	case 5: // event.generic_setup
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(GenericSetupEvent)
+		err := b.DecodeMessage(msg)
+		m.Event = &OnboardingThreadEventRequest_GenericSetup{msg}
+		return true, err
+	case 6: // event.provisioned_phone
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(ProvisionedPhoneEvent)
+		err := b.DecodeMessage(msg)
+		m.Event = &OnboardingThreadEventRequest_ProvisionedPhone{msg}
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+type OnboardingThreadEventResponse struct {
+	Thread *Thread `protobuf:"bytes,1,opt,name=thread" json:"thread,omitempty"`
+}
+
+func (m *OnboardingThreadEventResponse) Reset()      { *m = OnboardingThreadEventResponse{} }
+func (*OnboardingThreadEventResponse) ProtoMessage() {}
+
+func (m *OnboardingThreadEventResponse) GetThread() *Thread {
+	if m != nil {
+		return m.Thread
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*Iterator)(nil), "threading.Iterator")
 	proto.RegisterType((*Thread)(nil), "threading.Thread")
@@ -1481,6 +1737,11 @@ func init() {
 	proto.RegisterType((*CreateOnboardingThreadResponse)(nil), "threading.CreateOnboardingThreadResponse")
 	proto.RegisterType((*LinkedThreadRequest)(nil), "threading.LinkedThreadRequest")
 	proto.RegisterType((*LinkedThreadResponse)(nil), "threading.LinkedThreadResponse")
+	proto.RegisterType((*KeyValue)(nil), "threading.KeyValue")
+	proto.RegisterType((*GenericSetupEvent)(nil), "threading.GenericSetupEvent")
+	proto.RegisterType((*ProvisionedPhoneEvent)(nil), "threading.ProvisionedPhoneEvent")
+	proto.RegisterType((*OnboardingThreadEventRequest)(nil), "threading.OnboardingThreadEventRequest")
+	proto.RegisterType((*OnboardingThreadEventResponse)(nil), "threading.OnboardingThreadEventResponse")
 	proto.RegisterEnum("threading.ThreadType", ThreadType_name, ThreadType_value)
 	proto.RegisterEnum("threading.Iterator_Direction", Iterator_Direction_name, Iterator_Direction_value)
 	proto.RegisterEnum("threading.ThreadItem_Type", ThreadItem_Type_name, ThreadItem_Type_value)
@@ -1489,6 +1750,8 @@ func init() {
 	proto.RegisterEnum("threading.Endpoint_Channel", Endpoint_Channel_name, Endpoint_Channel_value)
 	proto.RegisterEnum("threading.Attachment_Type", Attachment_Type_name, Attachment_Type_value)
 	proto.RegisterEnum("threading.QueryThreadsRequest_Type", QueryThreadsRequest_Type_name, QueryThreadsRequest_Type_value)
+	proto.RegisterEnum("threading.OnboardingThreadEventRequest_LookupByType", OnboardingThreadEventRequest_LookupByType_name, OnboardingThreadEventRequest_LookupByType_value)
+	proto.RegisterEnum("threading.OnboardingThreadEventRequest_EventType", OnboardingThreadEventRequest_EventType_name, OnboardingThreadEventRequest_EventType_value)
 }
 func (x ThreadType) String() string {
 	s, ok := ThreadType_name[int32(x)]
@@ -1541,6 +1804,20 @@ func (x Attachment_Type) String() string {
 }
 func (x QueryThreadsRequest_Type) String() string {
 	s, ok := QueryThreadsRequest_Type_name[int32(x)]
+	if ok {
+		return s
+	}
+	return strconv.Itoa(int(x))
+}
+func (x OnboardingThreadEventRequest_LookupByType) String() string {
+	s, ok := OnboardingThreadEventRequest_LookupByType_name[int32(x)]
+	if ok {
+		return s
+	}
+	return strconv.Itoa(int(x))
+}
+func (x OnboardingThreadEventRequest_EventType) String() string {
+	s, ok := OnboardingThreadEventRequest_EventType_name[int32(x)]
 	if ok {
 		return s
 	}
@@ -3747,6 +4024,263 @@ func (this *LinkedThreadResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *KeyValue) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*KeyValue)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Key != that1.Key {
+		return false
+	}
+	if this.Value != that1.Value {
+		return false
+	}
+	return true
+}
+func (this *GenericSetupEvent) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*GenericSetupEvent)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Name != that1.Name {
+		return false
+	}
+	if len(this.Attributes) != len(that1.Attributes) {
+		return false
+	}
+	for i := range this.Attributes {
+		if !this.Attributes[i].Equal(that1.Attributes[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *ProvisionedPhoneEvent) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*ProvisionedPhoneEvent)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.PhoneNumber != that1.PhoneNumber {
+		return false
+	}
+	return true
+}
+func (this *OnboardingThreadEventRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*OnboardingThreadEventRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.LookupByType != that1.LookupByType {
+		return false
+	}
+	if that1.LookupBy == nil {
+		if this.LookupBy != nil {
+			return false
+		}
+	} else if this.LookupBy == nil {
+		return false
+	} else if !this.LookupBy.Equal(that1.LookupBy) {
+		return false
+	}
+	if this.EventType != that1.EventType {
+		return false
+	}
+	if that1.Event == nil {
+		if this.Event != nil {
+			return false
+		}
+	} else if this.Event == nil {
+		return false
+	} else if !this.Event.Equal(that1.Event) {
+		return false
+	}
+	return true
+}
+func (this *OnboardingThreadEventRequest_ThreadID) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*OnboardingThreadEventRequest_ThreadID)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.ThreadID != that1.ThreadID {
+		return false
+	}
+	return true
+}
+func (this *OnboardingThreadEventRequest_EntityID) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*OnboardingThreadEventRequest_EntityID)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.EntityID != that1.EntityID {
+		return false
+	}
+	return true
+}
+func (this *OnboardingThreadEventRequest_GenericSetup) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*OnboardingThreadEventRequest_GenericSetup)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.GenericSetup.Equal(that1.GenericSetup) {
+		return false
+	}
+	return true
+}
+func (this *OnboardingThreadEventRequest_ProvisionedPhone) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*OnboardingThreadEventRequest_ProvisionedPhone)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.ProvisionedPhone.Equal(that1.ProvisionedPhone) {
+		return false
+	}
+	return true
+}
+func (this *OnboardingThreadEventResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*OnboardingThreadEventResponse)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.Thread.Equal(that1.Thread) {
+		return false
+	}
+	return true
+}
 func (this *Iterator) GoString() string {
 	if this == nil {
 		return "nil"
@@ -4630,6 +5164,101 @@ func (this *LinkedThreadResponse) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *KeyValue) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&threading.KeyValue{")
+	s = append(s, "Key: "+fmt.Sprintf("%#v", this.Key)+",\n")
+	s = append(s, "Value: "+fmt.Sprintf("%#v", this.Value)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GenericSetupEvent) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&threading.GenericSetupEvent{")
+	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
+	if this.Attributes != nil {
+		s = append(s, "Attributes: "+fmt.Sprintf("%#v", this.Attributes)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *ProvisionedPhoneEvent) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&threading.ProvisionedPhoneEvent{")
+	s = append(s, "PhoneNumber: "+fmt.Sprintf("%#v", this.PhoneNumber)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *OnboardingThreadEventRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 10)
+	s = append(s, "&threading.OnboardingThreadEventRequest{")
+	s = append(s, "LookupByType: "+fmt.Sprintf("%#v", this.LookupByType)+",\n")
+	if this.LookupBy != nil {
+		s = append(s, "LookupBy: "+fmt.Sprintf("%#v", this.LookupBy)+",\n")
+	}
+	s = append(s, "EventType: "+fmt.Sprintf("%#v", this.EventType)+",\n")
+	if this.Event != nil {
+		s = append(s, "Event: "+fmt.Sprintf("%#v", this.Event)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *OnboardingThreadEventRequest_ThreadID) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&threading.OnboardingThreadEventRequest_ThreadID{` +
+		`ThreadID:` + fmt.Sprintf("%#v", this.ThreadID) + `}`}, ", ")
+	return s
+}
+func (this *OnboardingThreadEventRequest_EntityID) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&threading.OnboardingThreadEventRequest_EntityID{` +
+		`EntityID:` + fmt.Sprintf("%#v", this.EntityID) + `}`}, ", ")
+	return s
+}
+func (this *OnboardingThreadEventRequest_GenericSetup) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&threading.OnboardingThreadEventRequest_GenericSetup{` +
+		`GenericSetup:` + fmt.Sprintf("%#v", this.GenericSetup) + `}`}, ", ")
+	return s
+}
+func (this *OnboardingThreadEventRequest_ProvisionedPhone) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&threading.OnboardingThreadEventRequest_ProvisionedPhone{` +
+		`ProvisionedPhone:` + fmt.Sprintf("%#v", this.ProvisionedPhone) + `}`}, ", ")
+	return s
+}
+func (this *OnboardingThreadEventResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&threading.OnboardingThreadEventResponse{")
+	if this.Thread != nil {
+		s = append(s, "Thread: "+fmt.Sprintf("%#v", this.Thread)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func valueToGoStringSvc(v interface{}, typ string) string {
 	rv := reflect.ValueOf(v)
 	if rv.IsNil() {
@@ -4681,6 +5310,8 @@ type ThreadsClient interface {
 	LinkedThread(ctx context.Context, in *LinkedThreadRequest, opts ...grpc.CallOption) (*LinkedThreadResponse, error)
 	// MarThreadAsRead marks all posts in a thread as read by an entity
 	MarkThreadAsRead(ctx context.Context, in *MarkThreadAsReadRequest, opts ...grpc.CallOption) (*MarkThreadAsReadResponse, error)
+	// OnboardThreadEvent processes an event in an onboarding thread
+	OnboardingThreadEvent(ctx context.Context, in *OnboardingThreadEventRequest, opts ...grpc.CallOption) (*OnboardingThreadEventResponse, error)
 	// PostMessage posts a message into a specified thread
 	PostMessage(ctx context.Context, in *PostMessageRequest, opts ...grpc.CallOption) (*PostMessageResponse, error)
 	// QueryThreads queries the list of threads in an organization
@@ -4790,6 +5421,15 @@ func (c *threadsClient) LinkedThread(ctx context.Context, in *LinkedThreadReques
 func (c *threadsClient) MarkThreadAsRead(ctx context.Context, in *MarkThreadAsReadRequest, opts ...grpc.CallOption) (*MarkThreadAsReadResponse, error) {
 	out := new(MarkThreadAsReadResponse)
 	err := grpc.Invoke(ctx, "/threading.Threads/MarkThreadAsRead", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *threadsClient) OnboardingThreadEvent(ctx context.Context, in *OnboardingThreadEventRequest, opts ...grpc.CallOption) (*OnboardingThreadEventResponse, error) {
+	out := new(OnboardingThreadEventResponse)
+	err := grpc.Invoke(ctx, "/threading.Threads/OnboardingThreadEvent", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -4925,6 +5565,8 @@ type ThreadsServer interface {
 	LinkedThread(context.Context, *LinkedThreadRequest) (*LinkedThreadResponse, error)
 	// MarThreadAsRead marks all posts in a thread as read by an entity
 	MarkThreadAsRead(context.Context, *MarkThreadAsReadRequest) (*MarkThreadAsReadResponse, error)
+	// OnboardThreadEvent processes an event in an onboarding thread
+	OnboardingThreadEvent(context.Context, *OnboardingThreadEventRequest) (*OnboardingThreadEventResponse, error)
 	// PostMessage posts a message into a specified thread
 	PostMessage(context.Context, *PostMessageRequest) (*PostMessageResponse, error)
 	// QueryThreads queries the list of threads in an organization
@@ -5057,6 +5699,18 @@ func _Threads_MarkThreadAsRead_Handler(srv interface{}, ctx context.Context, dec
 		return nil, err
 	}
 	out, err := srv.(ThreadsServer).MarkThreadAsRead(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func _Threads_OnboardingThreadEvent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(OnboardingThreadEventRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(ThreadsServer).OnboardingThreadEvent(ctx, in)
 	if err != nil {
 		return nil, err
 	}
@@ -5246,6 +5900,10 @@ var _Threads_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "MarkThreadAsRead",
 			Handler:    _Threads_MarkThreadAsRead_Handler,
+		},
+		{
+			MethodName: "OnboardingThreadEvent",
+			Handler:    _Threads_OnboardingThreadEvent_Handler,
 		},
 		{
 			MethodName: "PostMessage",
@@ -7850,6 +8508,210 @@ func (m *LinkedThreadResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *KeyValue) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *KeyValue) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Key) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Key)))
+		i += copy(data[i:], m.Key)
+	}
+	if len(m.Value) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Value)))
+		i += copy(data[i:], m.Value)
+	}
+	return i, nil
+}
+
+func (m *GenericSetupEvent) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *GenericSetupEvent) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Name) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Name)))
+		i += copy(data[i:], m.Name)
+	}
+	if len(m.Attributes) > 0 {
+		for _, msg := range m.Attributes {
+			data[i] = 0x12
+			i++
+			i = encodeVarintSvc(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	return i, nil
+}
+
+func (m *ProvisionedPhoneEvent) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *ProvisionedPhoneEvent) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.PhoneNumber) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.PhoneNumber)))
+		i += copy(data[i:], m.PhoneNumber)
+	}
+	return i, nil
+}
+
+func (m *OnboardingThreadEventRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *OnboardingThreadEventRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.LookupByType != 0 {
+		data[i] = 0x8
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.LookupByType))
+	}
+	if m.LookupBy != nil {
+		nn37, err := m.LookupBy.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += nn37
+	}
+	if m.EventType != 0 {
+		data[i] = 0x20
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.EventType))
+	}
+	if m.Event != nil {
+		nn38, err := m.Event.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += nn38
+	}
+	return i, nil
+}
+
+func (m *OnboardingThreadEventRequest_ThreadID) MarshalTo(data []byte) (int, error) {
+	i := 0
+	data[i] = 0x12
+	i++
+	i = encodeVarintSvc(data, i, uint64(len(m.ThreadID)))
+	i += copy(data[i:], m.ThreadID)
+	return i, nil
+}
+func (m *OnboardingThreadEventRequest_EntityID) MarshalTo(data []byte) (int, error) {
+	i := 0
+	data[i] = 0x1a
+	i++
+	i = encodeVarintSvc(data, i, uint64(len(m.EntityID)))
+	i += copy(data[i:], m.EntityID)
+	return i, nil
+}
+func (m *OnboardingThreadEventRequest_GenericSetup) MarshalTo(data []byte) (int, error) {
+	i := 0
+	if m.GenericSetup != nil {
+		data[i] = 0x2a
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.GenericSetup.Size()))
+		n39, err := m.GenericSetup.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n39
+	}
+	return i, nil
+}
+func (m *OnboardingThreadEventRequest_ProvisionedPhone) MarshalTo(data []byte) (int, error) {
+	i := 0
+	if m.ProvisionedPhone != nil {
+		data[i] = 0x32
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.ProvisionedPhone.Size()))
+		n40, err := m.ProvisionedPhone.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n40
+	}
+	return i, nil
+}
+func (m *OnboardingThreadEventResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *OnboardingThreadEventResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Thread != nil {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Thread.Size()))
+		n41, err := m.Thread.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n41
+	}
+	return i, nil
+}
+
 func encodeFixed64Svc(data []byte, offset int, v uint64) int {
 	data[offset] = uint8(v)
 	data[offset+1] = uint8(v >> 8)
@@ -9043,6 +9905,106 @@ func (m *LinkedThreadResponse) Size() (n int) {
 	return n
 }
 
+func (m *KeyValue) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Key)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.Value)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *GenericSetupEvent) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if len(m.Attributes) > 0 {
+		for _, e := range m.Attributes {
+			l = e.Size()
+			n += 1 + l + sovSvc(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *ProvisionedPhoneEvent) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.PhoneNumber)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *OnboardingThreadEventRequest) Size() (n int) {
+	var l int
+	_ = l
+	if m.LookupByType != 0 {
+		n += 1 + sovSvc(uint64(m.LookupByType))
+	}
+	if m.LookupBy != nil {
+		n += m.LookupBy.Size()
+	}
+	if m.EventType != 0 {
+		n += 1 + sovSvc(uint64(m.EventType))
+	}
+	if m.Event != nil {
+		n += m.Event.Size()
+	}
+	return n
+}
+
+func (m *OnboardingThreadEventRequest_ThreadID) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.ThreadID)
+	n += 1 + l + sovSvc(uint64(l))
+	return n
+}
+func (m *OnboardingThreadEventRequest_EntityID) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.EntityID)
+	n += 1 + l + sovSvc(uint64(l))
+	return n
+}
+func (m *OnboardingThreadEventRequest_GenericSetup) Size() (n int) {
+	var l int
+	_ = l
+	if m.GenericSetup != nil {
+		l = m.GenericSetup.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+func (m *OnboardingThreadEventRequest_ProvisionedPhone) Size() (n int) {
+	var l int
+	_ = l
+	if m.ProvisionedPhone != nil {
+		l = m.ProvisionedPhone.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+func (m *OnboardingThreadEventResponse) Size() (n int) {
+	var l int
+	_ = l
+	if m.Thread != nil {
+		l = m.Thread.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
 func sovSvc(x uint64) (n int) {
 	for {
 		n++
@@ -9863,6 +10825,101 @@ func (this *LinkedThreadResponse) String() string {
 	s := strings.Join([]string{`&LinkedThreadResponse{`,
 		`Thread:` + strings.Replace(fmt.Sprintf("%v", this.Thread), "Thread", "Thread", 1) + `,`,
 		`PrependSender:` + fmt.Sprintf("%v", this.PrependSender) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *KeyValue) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&KeyValue{`,
+		`Key:` + fmt.Sprintf("%v", this.Key) + `,`,
+		`Value:` + fmt.Sprintf("%v", this.Value) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GenericSetupEvent) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GenericSetupEvent{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`Attributes:` + strings.Replace(fmt.Sprintf("%v", this.Attributes), "KeyValue", "KeyValue", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ProvisionedPhoneEvent) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ProvisionedPhoneEvent{`,
+		`PhoneNumber:` + fmt.Sprintf("%v", this.PhoneNumber) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *OnboardingThreadEventRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&OnboardingThreadEventRequest{`,
+		`LookupByType:` + fmt.Sprintf("%v", this.LookupByType) + `,`,
+		`LookupBy:` + fmt.Sprintf("%v", this.LookupBy) + `,`,
+		`EventType:` + fmt.Sprintf("%v", this.EventType) + `,`,
+		`Event:` + fmt.Sprintf("%v", this.Event) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *OnboardingThreadEventRequest_ThreadID) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&OnboardingThreadEventRequest_ThreadID{`,
+		`ThreadID:` + fmt.Sprintf("%v", this.ThreadID) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *OnboardingThreadEventRequest_EntityID) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&OnboardingThreadEventRequest_EntityID{`,
+		`EntityID:` + fmt.Sprintf("%v", this.EntityID) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *OnboardingThreadEventRequest_GenericSetup) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&OnboardingThreadEventRequest_GenericSetup{`,
+		`GenericSetup:` + strings.Replace(fmt.Sprintf("%v", this.GenericSetup), "GenericSetupEvent", "GenericSetupEvent", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *OnboardingThreadEventRequest_ProvisionedPhone) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&OnboardingThreadEventRequest_ProvisionedPhone{`,
+		`ProvisionedPhone:` + strings.Replace(fmt.Sprintf("%v", this.ProvisionedPhone), "ProvisionedPhoneEvent", "ProvisionedPhoneEvent", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *OnboardingThreadEventResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&OnboardingThreadEventResponse{`,
+		`Thread:` + strings.Replace(fmt.Sprintf("%v", this.Thread), "Thread", "Thread", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -18163,6 +19220,596 @@ func (m *LinkedThreadResponse) Unmarshal(data []byte) error {
 				}
 			}
 			m.PrependSender = bool(v != 0)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *KeyValue) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: KeyValue: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: KeyValue: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Key = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Value", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Value = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GenericSetupEvent) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GenericSetupEvent: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GenericSetupEvent: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Attributes", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Attributes = append(m.Attributes, &KeyValue{})
+			if err := m.Attributes[len(m.Attributes)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ProvisionedPhoneEvent) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ProvisionedPhoneEvent: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ProvisionedPhoneEvent: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PhoneNumber", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PhoneNumber = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *OnboardingThreadEventRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: OnboardingThreadEventRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: OnboardingThreadEventRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LookupByType", wireType)
+			}
+			m.LookupByType = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.LookupByType |= (OnboardingThreadEventRequest_LookupByType(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ThreadID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.LookupBy = &OnboardingThreadEventRequest_ThreadID{string(data[iNdEx:postIndex])}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.LookupBy = &OnboardingThreadEventRequest_EntityID{string(data[iNdEx:postIndex])}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EventType", wireType)
+			}
+			m.EventType = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.EventType |= (OnboardingThreadEventRequest_EventType(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field GenericSetup", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &GenericSetupEvent{}
+			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Event = &OnboardingThreadEventRequest_GenericSetup{v}
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ProvisionedPhone", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &ProvisionedPhoneEvent{}
+			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Event = &OnboardingThreadEventRequest_ProvisionedPhone{v}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *OnboardingThreadEventResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: OnboardingThreadEventResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: OnboardingThreadEventResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Thread", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Thread == nil {
+				m.Thread = &Thread{}
+			}
+			if err := m.Thread.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])

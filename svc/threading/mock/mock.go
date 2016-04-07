@@ -103,6 +103,15 @@ func (c *Client) MarkThreadAsRead(ctx context.Context, in *threading.MarkThreadA
 	return rets[0].(*threading.MarkThreadAsReadResponse), mock.SafeError(rets[1])
 }
 
+// OnboardingThreadEvent updated the setup thread due to an event
+func (c *Client) OnboardingThreadEvent(ctx context.Context, in *threading.OnboardingThreadEventRequest, opts ...grpc.CallOption) (*threading.OnboardingThreadEventResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*threading.OnboardingThreadEventResponse), mock.SafeError(rets[1])
+}
+
 // PostMessage posts a message into a specified thread
 func (c *Client) PostMessage(ctx context.Context, in *threading.PostMessageRequest, opts ...grpc.CallOption) (*threading.PostMessageResponse, error) {
 	rets := c.Expector.Record(in)

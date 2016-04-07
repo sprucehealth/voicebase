@@ -43,6 +43,10 @@ func (c *setGreetingCmd) run(args []string) error {
 	bucket := fs.String("s3_bucket", "", "S3 bucket for where the greeting should be stored")
 	prefix := fs.String("s3_prefix", "", "prefix for the file on s3")
 	fileName := fs.String("file_name", "", "name of file containing the greeting")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	args = fs.Args()
 
 	scn := bufio.NewScanner(os.Stdin)
 

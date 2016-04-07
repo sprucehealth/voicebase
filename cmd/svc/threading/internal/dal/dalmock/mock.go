@@ -41,6 +41,14 @@ func (dl *DAL) CreateSavedQuery(ctx context.Context, sq *models.SavedQuery) (mod
 	return rets[0].(models.SavedQueryID), mock.SafeError(rets[1])
 }
 
+func (dl *DAL) CreateSetupThreadState(ctx context.Context, threadID models.ThreadID, entityID string) error {
+	rets := dl.Expector.Record(threadID, entityID)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[0])
+}
+
 func (dl *DAL) CreateThread(ctx context.Context, thread *models.Thread) (models.ThreadID, error) {
 	rets := dl.Expector.Record(thread)
 	if len(rets) == 0 {
@@ -97,22 +105,6 @@ func (dl *DAL) LinkedThread(ctx context.Context, threadID models.ThreadID) (*mod
 	return rets[0].(*models.Thread), rets[1].(bool), mock.SafeError(rets[2])
 }
 
-func (dl *DAL) OnboardingState(ctx context.Context, threadID models.ThreadID, opts ...dal.QueryOption) (*models.OnboardingState, error) {
-	rets := dl.Expector.Record(append([]interface{}{threadID}, optsToInterfaces(opts)...)...)
-	if len(rets) == 0 {
-		return nil, nil
-	}
-	return rets[0].(*models.OnboardingState), mock.SafeError(rets[1])
-}
-
-func (dl *DAL) OnboardingStateForEntity(ctx context.Context, entityID string, opts ...dal.QueryOption) (*models.OnboardingState, error) {
-	rets := dl.Expector.Record(append([]interface{}{entityID}, optsToInterfaces(opts)...)...)
-	if len(rets) == 0 {
-		return nil, nil
-	}
-	return rets[0].(*models.OnboardingState), mock.SafeError(rets[1])
-}
-
 func (dl *DAL) PostMessage(ctx context.Context, req *dal.PostMessageRequest) (*models.ThreadItem, error) {
 	rets := dl.Expector.Record(req)
 	if len(rets) == 0 {
@@ -143,6 +135,22 @@ func (dl *DAL) SavedQueries(ctx context.Context, entityID string) ([]*models.Sav
 		return nil, nil
 	}
 	return rets[0].([]*models.SavedQuery), mock.SafeError(rets[1])
+}
+
+func (dl *DAL) SetupThreadState(ctx context.Context, threadID models.ThreadID, opts ...dal.QueryOption) (*models.SetupThreadState, error) {
+	rets := dl.Expector.Record(threadID)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*models.SetupThreadState), mock.SafeError(rets[1])
+}
+
+func (dl *DAL) SetupThreadStateForEntity(ctx context.Context, entityID string, opts ...dal.QueryOption) (*models.SetupThreadState, error) {
+	rets := dl.Expector.Record(entityID)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*models.SetupThreadState), mock.SafeError(rets[1])
 }
 
 func (dl *DAL) Thread(ctx context.Context, id models.ThreadID, opts ...dal.QueryOption) (*models.Thread, error) {
@@ -201,12 +209,20 @@ func (dl *DAL) ThreadsForMember(ctx context.Context, entityID string, primaryOnl
 	return rets[0].([]*models.Thread), mock.SafeError(rets[1])
 }
 
-func (dl *DAL) ThreadsForOrg(ctx context.Context, organizationID string) ([]*models.Thread, error) {
-	rets := dl.Expector.Record(organizationID)
+func (dl *DAL) ThreadsForOrg(ctx context.Context, organizationID string, typ models.ThreadType, limit int) ([]*models.Thread, error) {
+	rets := dl.Expector.Record(organizationID, typ, limit)
 	if len(rets) == 0 {
 		return nil, nil
 	}
 	return rets[0].([]*models.Thread), mock.SafeError(rets[1])
+}
+
+func (dl *DAL) UpdateSetupThreadState(ctx context.Context, threadID models.ThreadID, update *dal.SetupThreadStateUpdate) error {
+	rets := dl.Expector.Record(threadID, update)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[0])
 }
 
 func (dl *DAL) UpdateThread(ctx context.Context, threadID models.ThreadID, update *dal.ThreadUpdate) error {
@@ -227,14 +243,6 @@ func (dl *DAL) UpdateThreadEntity(ctx context.Context, threadID models.ThreadID,
 
 func (dl *DAL) UpdateThreadMembers(ctx context.Context, threadID models.ThreadID, members []string) error {
 	rets := dl.Expector.Record(threadID, members)
-	if len(rets) == 0 {
-		return nil
-	}
-	return mock.SafeError(rets[0])
-}
-
-func (dl *DAL) UpdateOnboardingState(ctx context.Context, threadID models.ThreadID, update *dal.OnboardingStateUpdate) error {
-	rets := dl.Expector.Record(threadID, update)
 	if len(rets) == 0 {
 		return nil
 	}

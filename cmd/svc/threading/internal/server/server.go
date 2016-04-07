@@ -1502,7 +1502,6 @@ func (s *threadsServer) getNotificationText(ctx context.Context, thread *models.
 }
 
 func (s *threadsServer) isAlertAllMessagesEnabled(ctx context.Context, entityID string) bool {
-
 	booleanValue, err := settings.GetBooleanValue(ctx, s.settingsClient, &settings.GetValuesRequest{
 		Keys:   []*settings.ConfigKey{{Key: threading.AlertAllMessages}},
 		NodeID: entityID,
@@ -1516,7 +1515,6 @@ func (s *threadsServer) isAlertAllMessagesEnabled(ctx context.Context, entityID 
 }
 
 func (s *threadsServer) isClearTextMessageNotificationsEnabled(ctx context.Context, organizationID string) bool {
-
 	booleanValue, err := settings.GetBooleanValue(ctx, s.settingsClient, &settings.GetValuesRequest{
 		Keys:   []*settings.ConfigKey{{Key: threading.ClearTextMessageNotifications}},
 		NodeID: organizationID,

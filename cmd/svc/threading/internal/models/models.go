@@ -274,8 +274,8 @@ type SavedQuery struct {
 	Modified       time.Time
 }
 
-// OnboardingState is the state of an onboarding thread
-type OnboardingState struct {
+// SetupThreadState is the state of a setup thread
+type SetupThreadState struct {
 	ThreadID ThreadID
 	Step     int
 }
@@ -291,6 +291,8 @@ func SummaryFromText(textMarkup string) (string, error) {
 		// Shouldn't fail here since the parsing should have done validation
 		return "", errors.Trace(err)
 	}
+	plainText = strings.Replace(plainText, "\n", " ", -1)
+	plainText = strings.Replace(plainText, "  ", " ", -1)
 	pt := textutil.TruncateUTF8(plainText, 1000)
 	if pt != plainText {
 		pt += "…"

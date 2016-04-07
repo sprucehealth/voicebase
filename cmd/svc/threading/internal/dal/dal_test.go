@@ -285,6 +285,55 @@ func TestThreadEntities(t *testing.T) {
 	test.Equals(t, time.Unix(1e6, 0), *ents[tid.String()].LastReferenced)
 }
 
+func TestThreadsForOrg(t *testing.T) {
+	dt := setupTest(t)
+	defer dt.cleanup(t)
+
+	dal := New(dt.db)
+	ctx := context.Background()
+
+	_, err := dal.CreateThread(ctx, &models.Thread{
+		OrganizationID:             "org1",
+		Type:                       models.ThreadTypeTeam,
+		LastMessageSummary:         "summary",
+		LastMessageTimestamp:       time.Unix(2, 0),
+		LastExternalMessageSummary: "extsummary",
+	})
+	test.OK(t, err)
+
+	tid2, err := dal.CreateThread(ctx, &models.Thread{
+		OrganizationID:             "org1",
+		Type:                       models.ThreadTypeSupport,
+		LastMessageSummary:         "summary",
+		LastMessageTimestamp:       time.Unix(2, 0),
+		LastExternalMessageSummary: "extsummary",
+	})
+	test.OK(t, err)
+
+	_, err = dal.CreateThread(ctx, &models.Thread{
+		OrganizationID:             "org2",
+		Type:                       models.ThreadTypeSupport,
+		LastMessageSummary:         "summary",
+		LastMessageTimestamp:       time.Unix(2, 0),
+		LastExternalMessageSummary: "extsummary",
+	})
+	test.OK(t, err)
+
+	threads, err := dal.ThreadsForOrg(ctx, "org1", "", 10)
+	test.OK(t, err)
+	test.Equals(t, 2, len(threads))
+	for _, th := range threads {
+		test.Equals(t, th.OrganizationID, "org1")
+	}
+
+	threads, err = dal.ThreadsForOrg(ctx, "org1", models.ThreadTypeSupport, 10)
+	test.OK(t, err)
+	test.Equals(t, 1, len(threads))
+	test.Equals(t, threads[0].ID, tid2)
+	test.Equals(t, threads[0].OrganizationID, "org1")
+	test.Equals(t, threads[0].Type, models.ThreadTypeSupport)
+}
+
 func TestUpdateThreadMembers(t *testing.T) {
 	dt := setupTest(t)
 	defer dt.cleanup(t)
@@ -344,6 +393,41 @@ func TestUpdateThreadMembers(t *testing.T) {
 	test.Equals(t, tes[1].Member, false)
 	test.Equals(t, tes[2].EntityID, "e3")
 	test.Equals(t, tes[2].Member, true)
+}
+
+func TestSetupThreadState(t *testing.T) {
+	dt := setupTest(t)
+	defer dt.cleanup(t)
+
+	dal := New(dt.db)
+	ctx := context.Background()
+
+	tid, err := dal.CreateThread(ctx, &models.Thread{
+		OrganizationID:             "org",
+		Type:                       models.ThreadTypeSetup,
+		LastMessageSummary:         "summary",
+		LastMessageTimestamp:       time.Unix(2, 0),
+		LastExternalMessageSummary: "extsummary",
+	})
+	test.OK(t, err)
+	test.OK(t, dal.CreateSetupThreadState(ctx, tid, "ent"))
+
+	state, err := dal.SetupThreadState(ctx, tid)
+	test.OK(t, err)
+	test.Equals(t, tid, state.ThreadID)
+	test.Equals(t, 0, state.Step)
+
+	state, err = dal.SetupThreadStateForEntity(ctx, "ent")
+	test.OK(t, err)
+	test.Equals(t, tid, state.ThreadID)
+	test.Equals(t, 0, state.Step)
+
+	test.OK(t, dal.UpdateSetupThreadState(ctx, tid, &SetupThreadStateUpdate{Step: ptr.Int(1)}))
+
+	state, err = dal.SetupThreadState(ctx, tid, ForUpdate)
+	test.OK(t, err)
+	test.Equals(t, tid, state.ThreadID)
+	test.Equals(t, 1, state.Step)
 }
 
 type teByID []*models.ThreadEntity
