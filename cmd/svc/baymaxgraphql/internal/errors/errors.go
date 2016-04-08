@@ -69,7 +69,7 @@ func InternalError(ctx context.Context, err error) error {
 			"Well Formed InternalError: The following error was well formed but still logged as Internal. Omitting internal wrapper: %s [RequestID %d]", err, rid)
 		return err
 	}
-	golog.LogDepthf(1, golog.ERR, "InternalError: %s [RequestID %d]", err, rid)
+	golog.Context("requestID", rid, "query", gqlctx.Query(ctx)).LogDepthf(1, golog.ERR, "InternalError: %s", err)
 	userMessage := "Something went wrong on the server."
 	if !environment.IsProd() {
 		return gqlerrors.FormattedError{
