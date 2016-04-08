@@ -43,7 +43,7 @@ func (e ErrInvalidIterator) Error() string {
 }
 
 const (
-	maxThreadCount         = 1000
+	maxThreadCount         = 5000
 	defaultThreadCount     = 20
 	maxThreadItemCount     = 1000
 	defaultThreadItemCount = 20
