@@ -842,6 +842,7 @@ func (s *threadsServer) SavedQueries(ctx context.Context, in *threading.SavedQue
 
 // Thread looks up and returns a single thread by ID
 func (s *threadsServer) Thread(ctx context.Context, in *threading.ThreadRequest) (*threading.ThreadResponse, error) {
+	golog.Debugf("Querying for thread %s", in.ThreadID)
 	tid, err := models.ParseThreadID(in.ThreadID)
 	if err != nil {
 		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadID")
@@ -860,6 +861,7 @@ func (s *threadsServer) Thread(ctx context.Context, in *threading.ThreadRequest)
 		return nil, internalError(err)
 	}
 	if in.ViewerEntityID != "" {
+		golog.Debugf("Populating viewer information for (entity_id, thread) (%s,%s)", in.ViewerEntityID, th.ID)
 		ts, err := s.hydrateThreadForViewer(ctx, []*threading.Thread{th}, in.ViewerEntityID)
 		if err != nil {
 			return nil, internalError(err)
@@ -871,6 +873,8 @@ func (s *threadsServer) Thread(ctx context.Context, in *threading.ThreadRequest)
 		// } else if th.Type == threading.ThreadType_TEAM {
 		// 	// Require a viewer entity for private threads
 		// 	return nil, grpcErrorf(codes.NotFound, "Thread not found")
+	} else {
+		golog.Debugf("No viewer entity information for thread %s", in.ThreadID)
 	}
 	return &threading.ThreadResponse{
 		Thread: th,
@@ -1129,18 +1133,20 @@ func (s *threadsServer) hydrateThreadForViewer(ctx context.Context, ts []*thread
 		if t.MessageCount > 0 || t.Type == threading.ThreadType_TEAM {
 			id, err := models.ParseThreadID(t.ID)
 			if err != nil {
-				return ts, errors.Trace(err)
+				return nil, errors.Trace(err)
 			}
 			tIDs = append(tIDs, id)
 		}
 	}
 	if len(tIDs) == 0 {
+		golog.Debugf("No threadIDs populated..returning original list")
 		return ts, nil
 	}
 
+	golog.Debugf("Looking up thread entities for threads %v with viewerEntityID %s", tIDs, viewerEntityID)
 	tes, err := s.dal.ThreadEntities(ctx, tIDs, viewerEntityID)
 	if err != nil {
-		return ts, errors.Trace(err)
+		return nil, errors.Trace(err)
 	}
 
 	ts2 := make([]*threading.Thread, 0, len(ts))
@@ -1149,8 +1155,11 @@ func (s *threadsServer) hydrateThreadForViewer(ctx context.Context, ts []*thread
 		if t.MessageCount > 0 {
 			t.Unread = te == nil || te.LastViewed == nil || (t.LastMessageTimestamp > uint64(te.LastViewed.Unix()))
 		}
+
 		// Filter out threads which the viewer doesn't have access to
+		golog.Debugf("Thread type %s", t.Type)
 		if t.Type != threading.ThreadType_TEAM || (te != nil && te.Member) {
+			golog.Debugf("Appending thread %s to hydrated list", t.ID)
 			ts2 = append(ts2, t)
 		}
 	}
