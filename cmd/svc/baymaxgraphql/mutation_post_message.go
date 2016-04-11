@@ -222,9 +222,13 @@ var postMessageMutation = &graphql.Field{
 			}
 			// TODO: Verify that the media at the ID exists
 			url := svc.media.URL(mAttachment["mediaID"].(string))
+			var title string
+			if _, ok := mAttachment["title"]; ok {
+				title = mAttachment["title"].(string)
+			}
 			attachment := &threading.Attachment{
 				Type:  mAttachmentType,
-				Title: mAttachment["title"].(string),
+				Title: title,
 				URL:   url,
 			}
 			switch mAttachmentType {

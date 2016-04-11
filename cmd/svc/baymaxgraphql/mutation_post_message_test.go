@@ -87,7 +87,7 @@ func TestPostMessage(t *testing.T) {
 		Attachments: []*threading.Attachment{
 			&threading.Attachment{
 				Type:  threading.Attachment_IMAGE,
-				Title: "title",
+				Title: "",
 				URL:   "mediaID",
 				Data: &threading.Attachment_Image{
 					Image: &threading.ImageAttachment{
@@ -153,8 +153,7 @@ func TestPostMessage(t *testing.T) {
 					attachments: [{
          				attachmentType: IMAGE
          				contentType: "image/jpeg"
-         				mediaID: "mediaID"
-         				title: "title"
+         				mediaID: "mediaID" 
         			}]
 				}
 			}) {

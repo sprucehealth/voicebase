@@ -90,6 +90,7 @@ func (m *mediaHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *
 
 	res := &imedia.POSTResponse{
 		MediaID: mediaID,
+		URL:     m.media.URL(mediaID),
 	}
 	httputil.JSONResponse(w, http.StatusOK, res)
 }
