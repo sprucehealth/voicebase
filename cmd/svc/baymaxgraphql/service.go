@@ -24,18 +24,18 @@ import (
 )
 
 type service struct {
-	notification        notification.Client
-	settings            settings.SettingsClient
-	invite              invite.InviteClient
-	mediaSigner         *media.Signer
-	emailDomain         string
-	webDomain           string
-	staticURLPrefix     string
-	spruceOrgID         string
-	segmentio           *segmentIOWrapper
-	media               *lmedia.Service
-	sns                 snsiface.SNSAPI
-	supportMessageTopic string
+	notification           notification.Client
+	settings               settings.SettingsClient
+	invite                 invite.InviteClient
+	mediaSigner            *media.Signer
+	emailDomain            string
+	webDomain              string
+	staticURLPrefix        string
+	spruceOrgID            string
+	segmentio              *segmentIOWrapper
+	media                  *lmedia.Service
+	sns                    snsiface.SNSAPI
+	supportMessageTopicARN string
 	// TODO: Remove this
 	serviceNumber phone.Number
 }
