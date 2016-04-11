@@ -1,18 +1,24 @@
 package main
 
 import (
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"testing"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	ramock "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess/mock"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/device"
+	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/graphql"
+	"github.com/sprucehealth/graphql/gqlerrors"
+
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 )
@@ -215,6 +221,52 @@ func TestNodeQuery(t *testing.T) {
 	res, err = nodeField.Resolve(p)
 	test.OK(t, err)
 	test.Equals(t, &models.SavedThreadQuery{ID: id, OrganizationID: "entity_1"}, res)
+	mock.FinishAll(ra)
+}
+
+func TestTeamThread_OlderVersion(t *testing.T) {
+	nodeField := queryType.Fields()["node"]
+
+	ra := ramock.New(t)
+	acc := &auth.Account{ID: "account_12345"}
+	ctx := context.Background()
+	ctx = gqlctx.WithAccount(ctx, acc)
+	ctx = gqlctx.WithSpruceHeaders(ctx, &device.SpruceHeaders{
+		AppType:         "baymax",
+		AppEnvironment:  "dev",
+		AppVersion:      &encoding.Version{Major: 1},
+		AppBuild:        "001",
+		Platform:        common.IOS,
+		PlatformVersion: "7.1.1",
+		Device:          "Phone",
+		DeviceModel:     "iPhone6,1",
+		DeviceID:        "12917415",
+	})
+	p := graphql.ResolveParams{
+		Context: ctx,
+		Info: graphql.ResolveInfo{
+			RootValue: map[string]interface{}{
+				raccess.ParamKey: ra,
+				"service":        &service{},
+			},
+		},
+	}
+
+	id := "t_123"
+	p.Args = map[string]interface{}{
+		"id": id,
+	}
+	ra.Expect(mock.NewExpectation(ra.Thread, id, "").WithReturns(&threading.Thread{
+		ID:              id,
+		OrganizationID:  "entity_1",
+		PrimaryEntityID: "entity_2",
+		Type:            threading.ThreadType_TEAM,
+	}, nil))
+
+	_, err := nodeField.Resolve(p)
+	fe, ok := err.(gqlerrors.FormattedError)
+	test.Equals(t, true, ok)
+	test.Equals(t, string(errors.ErrTypeNotSupported), fe.Type)
 	mock.FinishAll(ra)
 }
 

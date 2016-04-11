@@ -46,7 +46,11 @@ func ExtractSpruceHeaders(w http.ResponseWriter, r *http.Request) *SpruceHeaders
 	sHeaders := SpruceHeaders{}
 
 	// S-Version
-	if hdr := r.Header.Get(spruceVersionHeader); hdr != "" {
+	hdr := r.Header.Get(spruceVersionHeader)
+	if hdr == "" {
+		hdr = r.Header.Get(strings.ToLower(spruceVersionHeader))
+	}
+	if hdr != "" {
 		parts := strings.Split(hdr, ";")
 		if len(parts) > 0 {
 			sHeaders.AppType = parts[0]

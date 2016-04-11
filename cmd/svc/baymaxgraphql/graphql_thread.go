@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/notification/deeplink"
 	"github.com/sprucehealth/backend/svc/threading"
+
 	"github.com/sprucehealth/graphql"
 	"golang.org/x/net/context"
 )
