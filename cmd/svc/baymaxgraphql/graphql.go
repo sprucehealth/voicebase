@@ -105,7 +105,7 @@ func NewGraphQL(
 	segmentClient *analytics.Client,
 	media *lmedia.Service,
 	sns snsiface.SNSAPI,
-	orgEventOperationalTopicARN string,
+	supportMessageTopicARN string,
 	metricsRegistry metrics.Registry,
 ) httputil.ContextHandler {
 	statRequests := metrics.NewCounter()
@@ -130,7 +130,7 @@ func NewGraphQL(
 			segmentio:       &segmentIOWrapper{Client: segmentClient},
 			media:           media,
 			sns:             sns,
-			orgEventOperationalTopic: *flagOrgEventOperationalTopicARN,
+			supportMessageTopicARN: supportMessageTopicARN,
 		},
 		statRequests:       statRequests,
 		statResponseErrors: statResponseErrors,

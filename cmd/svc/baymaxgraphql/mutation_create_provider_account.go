@@ -374,7 +374,7 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 			orgCreatedOperationalEvent.SpruceSupportThreadID = createLinkedThreadsResponse.Thread2.ID
 			orgCreatedOperationalEvent.InitialProviderEntityID = accEntityID
 
-			if err := awsutil.PublishToSNSTopic(svc.sns, svc.orgEventOperationalTopic, orgCreatedOperationalEvent); err != nil {
+			if err := awsutil.PublishToSNSTopic(svc.sns, svc.supportMessageTopic, orgCreatedOperationalEvent); err != nil {
 				golog.Errorf("Unable to publish to org event operational topic: %s", err.Error())
 			}
 

@@ -63,10 +63,10 @@ var (
 	flagThreadingAddr = flag.String("threading_addr", "", "host:port of threading service")
 
 	// Messages
-	flagSQSDeviceRegistrationURL    = flag.String("sqs_device_registration_url", "", "the sqs url for device registration messages")
-	flagSQSDeviceDeregistrationURL  = flag.String("sqs_device_deregistration_url", "", "the sqs url for device deregistration messages")
-	flagSQSNotificationURL          = flag.String("sqs_notification_url", "", "the sqs url for notification queueing")
-	flagOrgEventOperationalTopicARN = flag.String("sns_org_event_operational_topic", "", "sns topic on which to post org created events")
+	flagSQSDeviceRegistrationURL   = flag.String("sqs_device_registration_url", "", "the sqs url for device registration messages")
+	flagSQSDeviceDeregistrationURL = flag.String("sqs_device_deregistration_url", "", "the sqs url for device deregistration messages")
+	flagSQSNotificationURL         = flag.String("sqs_notification_url", "", "the sqs url for notification queueing")
+	flagSupportMessageTopicARN     = flag.String("sns_support_message_arn", "", "sns topic on which to post org created events for sending support message")
 
 	// Encryption
 	flagKMSKeyARN = flag.String("kms_key_arn", "", "the arn of the master key that should be used to encrypt outbound and decrypt inbound data")
@@ -217,8 +217,8 @@ func main() {
 	if *flagEmailDomain == "" {
 		golog.Fatalf("Email domain not specified")
 	}
-	if *flagOrgEventOperationalTopicARN == "" {
-		golog.Fatalf("SNS topic for posting org events for operational purposes not specified")
+	if *flagSupportMessageTopicARN == "" {
+		golog.Fatalf("SNS topic for posting requests to send support message")
 	}
 
 	sigKeys := strings.Split(*flagSigKeys, ",")
@@ -261,7 +261,7 @@ func main() {
 		segmentClient,
 		media,
 		eSNS,
-		*flagOrgEventOperationalTopicARN,
+		*flagSupportMessageTopicARN,
 		svc.MetricsRegistry.Scope("handler"))
 	r.Handle("/graphql", httputil.ToContextHandler(cors.New(cors.Options{
 		AllowedOrigins:   corsOrigins,
