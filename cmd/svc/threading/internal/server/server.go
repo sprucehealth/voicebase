@@ -1253,9 +1253,11 @@ func (s *threadsServer) notifyMembersOfPublishMessage(ctx context.Context, orgID
 		// Figure out who should receive notifications
 		var entities []*directory.Entity
 		if thread.Type == models.ThreadTypeTeam {
-			entIDs := make([]string, len(threadEntities))
-			for i, te := range threadEntities {
-				entIDs[i] = te.EntityID
+			entIDs := make([]string, 0, len(threadEntities))
+			for _, te := range threadEntities {
+				if te.Member {
+					entIDs = append(entIDs, te.EntityID)
+				}
 			}
 			resp, err := s.directoryClient.LookupEntities(ctx, &directory.LookupEntitiesRequest{
 				LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,

@@ -1559,6 +1559,84 @@ func TestNotifyMembersOfPublishMessage(t *testing.T) {
 	}, tiID, publishingEntity)
 }
 
+func TestNotifyMembersOfPublishMessage_Team(t *testing.T) {
+	t.Parallel()
+	dl := dalmock.New(t)
+	defer dl.Finish()
+	directoryClient := mock_directory.New(t)
+	defer directoryClient.Finish()
+	notificationClient := mock_notification.New(t)
+	defer notificationClient.Finish()
+	sm := mock_settings.New(t)
+	defer sm.Finish()
+	tID, err := models.NewThreadID()
+	test.OK(t, err)
+	tiID, err := models.NewThreadItemID()
+	test.OK(t, err)
+	sqID, err := models.NewSavedQueryID()
+	test.OK(t, err)
+	publishingEntity := "publishingEntity"
+	orgID := "orgID"
+	readTime := time.Now()
+	clk := clock.NewManaged(readTime)
+	srv := NewThreadsServer(clk, dl, nil, "arn", notificationClient, directoryClient, sm, "WEBDOMAIN")
+	csrv := srv.(*threadsServer)
+
+	directoryClient.Expect(mock.NewExpectation(directoryClient.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
+			BatchEntityID: &directory.IDList{
+				IDs: []string{"notify1", "notify3"},
+			},
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{},
+		},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{
+				ID: "notify1",
+			},
+			{
+				ID: "notify3",
+			},
+		},
+	}, nil))
+
+	dl.Expect(mock.NewExpectation(dl.EntitiesForThread, tID).WithReturns([]*models.ThreadEntity{
+		{ThreadID: tID, EntityID: "notify1", LastViewed: nil, LastUnreadNotify: nil, Member: true},
+		{ThreadID: tID, EntityID: "notify2", LastViewed: ptr.Time(clk.Now()), LastUnreadNotify: nil},
+		{ThreadID: tID, EntityID: "notify3", LastViewed: ptr.Time(clk.Now()), LastUnreadNotify: ptr.Time(clk.Now()), Member: true},
+		{ThreadID: tID, EntityID: publishingEntity, LastViewed: nil, LastUnreadNotify: nil},
+	}, nil))
+
+	expectIsClearTextMessageNotificationsEnabled(sm, orgID, false)
+	expectIsAlertAllMessagesEnabled(sm, "notify1", true)
+	expectIsAlertAllMessagesEnabled(sm, "notify3", true)
+
+	notificationClient.Expect(mock.NewExpectation(notificationClient.SendNotification, &notification.Notification{
+		ShortMessages: map[string]string{
+			"notify1": "You have a new message",
+			"notify3": "You have a new message",
+		},
+		UnreadCounts:     nil,
+		OrganizationID:   orgID,
+		SavedQueryID:     sqID.String(),
+		ThreadID:         tID.String(),
+		MessageID:        tiID.String(),
+		CollapseKey:      newMessageNotificationKey,
+		DedupeKey:        newMessageNotificationKey,
+		EntitiesToNotify: []string{"notify1", "notify3"},
+	}))
+
+	csrv.notifyMembersOfPublishMessage(context.Background(), orgID, sqID, &models.Thread{
+		ID:             tID,
+		Type:           models.ThreadTypeTeam,
+		OrganizationID: orgID,
+	}, tiID, publishingEntity)
+}
+
 func TestNotifyMembersOfPublishMessageClearTextSupportThread(t *testing.T) {
 	t.Parallel()
 	dl := dalmock.New(t)
