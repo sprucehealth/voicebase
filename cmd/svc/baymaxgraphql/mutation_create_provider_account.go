@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
@@ -18,6 +19,7 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/notification/deeplink"
+	"github.com/sprucehealth/backend/svc/operational"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 	"google.golang.org/grpc"
@@ -210,6 +212,8 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 
 	var orgEntityID string
 	var accEntityID string
+	var orgCreatedOperationalEvent *operational.NewOrgCreatedEvent
+
 	{
 		if inv == nil {
 			// Create organization
@@ -224,6 +228,9 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 				return nil, err
 			}
 			orgEntityID = ent.ID
+			orgCreatedOperationalEvent = &operational.NewOrgCreatedEvent{
+				OrgCreated: time.Now().Unix(),
+			}
 		} else {
 			orgEntityID = inv.GetColleague().OrganizationEntityID
 		}
@@ -360,6 +367,17 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 		var supportLink string
 		if createLinkedThreadsResponse != nil {
 			supportLink = deeplink.ThreadURLShareable(svc.webDomain, svc.spruceOrgID, createLinkedThreadsResponse.Thread2.ID)
+		}
+
+		if orgCreatedOperationalEvent != nil {
+			orgCreatedOperationalEvent.OrgSupportThreadID = createLinkedThreadsResponse.Thread1.ID
+			orgCreatedOperationalEvent.SpruceSupportThreadID = createLinkedThreadsResponse.Thread2.ID
+			orgCreatedOperationalEvent.InitialProviderEntityID = accEntityID
+
+			if err := awsutil.PublishToSNSTopic(svc.sns, svc.orgEventOperationalTopic, orgCreatedOperationalEvent); err != nil {
+				golog.Errorf("Unable to publish to org event operational topic: %s", err.Error())
+			}
+
 		}
 
 		svc.segmentio.Identify(&analytics.Identify{

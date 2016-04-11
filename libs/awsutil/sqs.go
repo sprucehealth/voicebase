@@ -44,6 +44,23 @@ type SQSWorker struct {
 // wants to communicate that the message should not be deleted yet as it has not been processed.
 var ErrMsgNotProcessedYet = errors.New("sqs message not processed yet")
 
+// ErrDelayedRetry is a specific error to signal to the worker to retry
+// processing of the sqs message after the specified duration (set to be the visibility
+// timeout of the message)
+type ErrDelayedRetry struct {
+	Duration time.Duration
+}
+
+func (e ErrDelayedRetry) Error() string {
+	return fmt.Sprintf("retry after %s", e.Duration.String())
+}
+
+func ErrRetryAfter(duration time.Duration) error {
+	return &ErrDelayedRetry{
+		Duration: duration,
+	}
+}
+
 // NewSQSWorker returns a worker that consumes SQS messages
 // and passes them through the provided process function
 func NewSQSWorker(
@@ -104,8 +121,17 @@ func (w *SQSWorker) Start() {
 
 			for _, item := range sqsRes.Messages {
 				if err := w.processF(*item.Body); err != nil {
-					// TODO: Find a better way to communicate that the message has not been processed yet.
+
 					if errors.Cause(err) == ErrMsgNotProcessedYet {
+						continue
+					} else if edr, ok := errors.Cause(err).(*ErrDelayedRetry); ok {
+						if _, err := w.sqsAPI.ChangeMessageVisibility(&sqs.ChangeMessageVisibilityInput{
+							QueueUrl:          ptr.String(w.sqsURL),
+							ReceiptHandle:     item.ReceiptHandle,
+							VisibilityTimeout: ptr.Int64(int64(edr.Duration.Seconds())),
+						}); err != nil {
+							golog.Errorf("Failed to change message visibility: %s", err.Error())
+						}
 						continue
 					}
 					golog.Errorf(err.Error())

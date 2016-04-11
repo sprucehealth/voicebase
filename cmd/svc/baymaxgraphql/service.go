@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
@@ -23,16 +24,18 @@ import (
 )
 
 type service struct {
-	notification    notification.Client
-	settings        settings.SettingsClient
-	invite          invite.InviteClient
-	mediaSigner     *media.Signer
-	emailDomain     string
-	webDomain       string
-	staticURLPrefix string
-	spruceOrgID     string
-	segmentio       *segmentIOWrapper
-	media           *lmedia.Service
+	notification             notification.Client
+	settings                 settings.SettingsClient
+	invite                   invite.InviteClient
+	mediaSigner              *media.Signer
+	emailDomain              string
+	webDomain                string
+	staticURLPrefix          string
+	spruceOrgID              string
+	segmentio                *segmentIOWrapper
+	media                    *lmedia.Service
+	sns                      snsiface.SNSAPI
+	orgEventOperationalTopic string
 	// TODO: Remove this
 	serviceNumber phone.Number
 }

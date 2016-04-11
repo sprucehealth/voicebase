@@ -11,3 +11,10 @@ option (gogoproto.goproto_enum_prefix_all) = true;
 message BlockAccountRequest {
     string account_id = 1 [(gogoproto.customname) = "AccountID"];
 }
+
+message NewOrgCreatedEvent {
+	string initial_provider_entity_id = 1 [(gogoproto.customname) = "InitialProviderEntityID"];
+	string org_support_thread_id = 2 [(gogoproto.customname) = "OrgSupportThreadID"];
+	string spruce_support_thread_id = 3 [(gogoproto.customname) = "SpruceSupportThreadID"];
+	int64 org_created = 4;
+}

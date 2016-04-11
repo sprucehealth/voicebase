@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/kms"
+	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/rs/cors"
 	"github.com/segmentio/analytics-go"
@@ -62,9 +63,10 @@ var (
 	flagThreadingAddr = flag.String("threading_addr", "", "host:port of threading service")
 
 	// Messages
-	flagSQSDeviceRegistrationURL   = flag.String("sqs_device_registration_url", "", "the sqs url for device registration messages")
-	flagSQSDeviceDeregistrationURL = flag.String("sqs_device_deregistration_url", "", "the sqs url for device deregistration messages")
-	flagSQSNotificationURL         = flag.String("sqs_notification_url", "", "the sqs url for notification queueing")
+	flagSQSDeviceRegistrationURL    = flag.String("sqs_device_registration_url", "", "the sqs url for device registration messages")
+	flagSQSDeviceDeregistrationURL  = flag.String("sqs_device_deregistration_url", "", "the sqs url for device deregistration messages")
+	flagSQSNotificationURL          = flag.String("sqs_notification_url", "", "the sqs url for notification queueing")
+	flagOrgEventOperationalTopicARN = flag.String("sns_org_event_operational_topic", "", "sns topic on which to post org created events")
 
 	// Encryption
 	flagKMSKeyARN = flag.String("kms_key_arn", "", "the arn of the master key that should be used to encrypt outbound and decrypt inbound data")
@@ -187,6 +189,11 @@ func main() {
 	if err != nil {
 		golog.Fatalf("Unable to initialize Encrypted SQS: %s", err)
 	}
+	eSNS, err := awsutil.NewEncryptedSNS(*flagKMSKeyARN, kms.New(awsSession), sns.New(awsSession))
+	if err != nil {
+		golog.Fatalf("Unable to initialize enrypted sns: %s", err.Error())
+		return
+	}
 	notificationClient := notification.NewClient(
 		eSQS,
 		&notification.ClientConfig{
@@ -209,6 +216,9 @@ func main() {
 	}
 	if *flagEmailDomain == "" {
 		golog.Fatalf("Email domain not specified")
+	}
+	if *flagOrgEventOperationalTopicARN == "" {
+		golog.Fatalf("SNS topic for posting org events for operational purposes not specified")
 	}
 
 	sigKeys := strings.Split(*flagSigKeys, ",")
@@ -234,7 +244,25 @@ func main() {
 	media := media.New(storage.NewS3(awsSession, *flagStorageBucket, "media"), storage.NewS3(awsSession, *flagStorageBucket, "media-cache"), 0, 0)
 
 	r := mux.NewRouter()
-	gqlHandler := NewGraphQL(authClient, directoryClient, threadingClient, exCommsClient, notificationClient, settingsClient, inviteClient, ms, *flagEmailDomain, *flagWebDomain, pn, *flagSpruceOrgID, *flagStaticURLPrefix, segmentClient, media, svc.MetricsRegistry.Scope("handler"))
+	gqlHandler := NewGraphQL(
+		authClient,
+		directoryClient,
+		threadingClient,
+		exCommsClient,
+		notificationClient,
+		settingsClient,
+		inviteClient,
+		ms,
+		*flagEmailDomain,
+		*flagWebDomain,
+		pn,
+		*flagSpruceOrgID,
+		*flagStaticURLPrefix,
+		segmentClient,
+		media,
+		eSNS,
+		*flagOrgEventOperationalTopicARN,
+		svc.MetricsRegistry.Scope("handler"))
 	r.Handle("/graphql", httputil.ToContextHandler(cors.New(cors.Options{
 		AllowedOrigins:   corsOrigins,
 		AllowedMethods:   []string{httputil.Get, httputil.Options, httputil.Post},

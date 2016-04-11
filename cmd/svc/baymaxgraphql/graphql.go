@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
@@ -103,6 +104,8 @@ func NewGraphQL(
 	staticURLPrefix string,
 	segmentClient *analytics.Client,
 	media *lmedia.Service,
+	sns snsiface.SNSAPI,
+	orgEventOperationalTopicARN string,
 	metricsRegistry metrics.Registry,
 ) httputil.ContextHandler {
 	statRequests := metrics.NewCounter()
@@ -126,6 +129,8 @@ func NewGraphQL(
 			staticURLPrefix: staticURLPrefix,
 			segmentio:       &segmentIOWrapper{Client: segmentClient},
 			media:           media,
+			sns:             sns,
+			orgEventOperationalTopic: *flagOrgEventOperationalTopicARN,
 		},
 		statRequests:       statRequests,
 		statResponseErrors: statResponseErrors,

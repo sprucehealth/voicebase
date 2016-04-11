@@ -49,3 +49,24 @@ func (e *encryptedSNS) Publish(in *sns.PublishInput) (*sns.PublishOutput, error)
 	}
 	return e.SNSAPI.Publish(in)
 }
+
+type marshaller interface {
+	Marshal() ([]byte, error)
+}
+
+func PublishToSNSTopic(snsCLI snsiface.SNSAPI, topic string, m marshaller) error {
+	data, err := m.Marshal()
+	if err != nil {
+		return errors.Trace(err)
+	}
+
+	_, err = snsCLI.Publish(&sns.PublishInput{
+		Message:  ptr.String(base64.StdEncoding.EncodeToString(data)),
+		TopicArn: ptr.String(topic),
+	})
+	if err != nil {
+		return errors.Trace(err)
+	}
+
+	return nil
+}

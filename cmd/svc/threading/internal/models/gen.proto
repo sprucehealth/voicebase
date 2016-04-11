@@ -92,3 +92,4 @@ message GenericAttachment {
 	string mimetype = 1;
 	string url = 2 [(gogoproto.customname) = "URL"];
 }
+

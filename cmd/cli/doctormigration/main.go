@@ -164,8 +164,8 @@ func main() {
 		ctxt := &context{
 			PatientFirstName: patient.FirstName,
 			CCName:           cc.FirstName,
-			OldDoctorName:    oldDoctor.ShortDisplayName,
-			NewDoctorName:    newDoctor.ShortDisplayName,
+			OldDoctorName:    oldDoctor.LongDisplayName,
+			NewDoctorName:    newDoctor.LongDisplayName,
 		}
 
 		var b bytes.Buffer
