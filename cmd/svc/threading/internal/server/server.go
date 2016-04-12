@@ -1143,7 +1143,6 @@ func (s *threadsServer) hydrateThreadForViewer(ctx context.Context, ts []*thread
 		return ts, nil
 	}
 
-	golog.Debugf("Looking up thread entities for threads %v with viewerEntityID %s", tIDs, viewerEntityID)
 	tes, err := s.dal.ThreadEntities(ctx, tIDs, viewerEntityID)
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -1195,6 +1194,10 @@ func (s *threadsServer) publishMessage(ctx context.Context, orgID, primaryEntity
 
 // teamThreadSystemTitle generates a system title for a thread and verifies that all members are part of the expected organization
 func (s *threadsServer) teamThreadSystemTitle(ctx context.Context, orgID string, memberEntityIDs []string) (string, error) {
+	if len(memberEntityIDs) == 0 {
+		return "", nil
+	}
+
 	res, err := s.directoryClient.LookupEntities(ctx, &directory.LookupEntitiesRequest{
 		LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
 		LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
@@ -1259,23 +1262,25 @@ func (s *threadsServer) notifyMembersOfPublishMessage(ctx context.Context, orgID
 					entIDs = append(entIDs, te.EntityID)
 				}
 			}
-			resp, err := s.directoryClient.LookupEntities(ctx, &directory.LookupEntitiesRequest{
-				LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
-				LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
-					BatchEntityID: &directory.IDList{
-						IDs: entIDs,
+			if len(entIDs) != 0 {
+				resp, err := s.directoryClient.LookupEntities(ctx, &directory.LookupEntitiesRequest{
+					LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
+					LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
+						BatchEntityID: &directory.IDList{
+							IDs: entIDs,
+						},
 					},
-				},
-				RequestedInformation: &directory.RequestedInformation{
-					Depth:             0,
-					EntityInformation: []directory.EntityInformation{},
-				},
-			})
-			if err != nil {
-				golog.Errorf("Failed to fetch entities to notify about thread %s: %s", thread.ID, err)
-				return
+					RequestedInformation: &directory.RequestedInformation{
+						Depth:             0,
+						EntityInformation: []directory.EntityInformation{},
+					},
+				})
+				if err != nil {
+					golog.Errorf("Failed to fetch entities to notify about thread %s: %s", thread.ID, err)
+					return
+				}
+				entities = resp.Entities
 			}
-			entities = resp.Entities
 		} else {
 			// TODO: for now treating all other types the same which is the old behavior
 			// Lookup all members of the org this thread belongs to and notify them of the new message unless they published it
@@ -1303,6 +1308,10 @@ func (s *threadsServer) notifyMembersOfPublishMessage(ctx context.Context, orgID
 					entities = append(entities, m)
 				}
 			}
+		}
+
+		if len(entities) == 0 {
+			return
 		}
 
 		teMap := make(map[string]*models.ThreadEntity, len(threadEntities))

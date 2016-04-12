@@ -1883,6 +1883,57 @@ func TestUpdateThread(t *testing.T) {
 	}, resp)
 }
 
+func TestUpdateThread_LastPersonLeaves(t *testing.T) {
+	t.Parallel()
+	dl := dalmock.New(t)
+	defer dl.Finish()
+	sm := mock_settings.New(t)
+	defer sm.Finish()
+	directoryClient := mock_directory.New(t)
+	defer directoryClient.Finish()
+
+	tID, err := models.NewThreadID()
+	test.OK(t, err)
+	srv := NewThreadsServer(nil, dl, nil, "arn", nil, directoryClient, sm, "WEBDOMAIN")
+
+	dl.Expect(mock.NewExpectation(dl.Thread, tID).WithReturns(&models.Thread{
+		ID:             tID,
+		OrganizationID: "org",
+		Type:           models.ThreadTypeTeam,
+	}, nil))
+
+	dl.Expect(mock.NewExpectation(dl.EntitiesForThread, tID).WithReturns([]*models.ThreadEntity{
+		{EntityID: "ent1", Member: true},
+	}, nil))
+
+	dl.Expect(mock.NewExpectation(dl.UpdateThreadMembers, tID, []string{}).WithReturns(nil))
+
+	dl.Expect(mock.NewExpectation(dl.UpdateThread, tID, &dal.ThreadUpdate{
+		SystemTitle: ptr.String(""),
+	}).WithReturns(nil))
+
+	dl.Expect(mock.NewExpectation(dl.Thread, tID).WithReturns(&models.Thread{
+		ID:                   tID,
+		SystemTitle:          "",
+		Created:              time.Unix(1, 0),
+		LastMessageTimestamp: time.Unix(1, 0),
+	}, nil))
+
+	resp, err := srv.UpdateThread(nil, &threading.UpdateThreadRequest{
+		ThreadID:              tID.String(),
+		RemoveMemberEntityIDs: []string{"ent1"},
+	})
+	test.OK(t, err)
+	test.Equals(t, &threading.UpdateThreadResponse{
+		Thread: &threading.Thread{
+			ID:                   tID.String(),
+			CreatedTimestamp:     1,
+			LastMessageTimestamp: 1,
+			SystemTitle:          "",
+		},
+	}, resp)
+}
+
 func TestDeleteThread(t *testing.T) {
 	t.Parallel()
 	dl := dalmock.New(t)
