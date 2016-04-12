@@ -105,6 +105,51 @@ func TestCreateEmptyThread(t *testing.T) {
 			Type:                 threading.ThreadType_EXTERNAL,
 		},
 	}, res)
+
+	// Test secure external threads
+	th = &models.Thread{
+		OrganizationID:     "o1",
+		PrimaryEntityID:    "e2",
+		LastMessageSummary: "summ",
+		SystemTitle:        "system title",
+		Type:               models.ThreadTypeSecureExternal,
+	}
+	dl.Expect(mock.NewExpectation(dl.CreateThread, th).WithReturns(thid, nil))
+	dl.Expect(mock.NewExpectation(dl.UpdateThreadMembers, thid, []string{"e2", "e1", "e1"}))
+	th2 = &models.Thread{
+		ID:                   thid,
+		OrganizationID:       "o1",
+		PrimaryEntityID:      "e2",
+		LastMessageTimestamp: now,
+		LastMessageSummary:   "summ",
+		Created:              now,
+		MessageCount:         0,
+		Type:                 models.ThreadTypeSecureExternal,
+	}
+	dl.Expect(mock.NewExpectation(dl.Thread, thid).WithReturns(th2, nil))
+
+	res, err = srv.CreateEmptyThread(nil, &threading.CreateEmptyThreadRequest{
+		OrganizationID:  "o1",
+		FromEntityID:    "e1",
+		PrimaryEntityID: "e2",
+		SystemTitle:     "system title",
+		Summary:         "summ",
+		MemberEntityIDs: []string{"e2", "e1"},
+		Type:            threading.ThreadType_SECURE_EXTERNAL,
+	})
+	test.OK(t, err)
+	test.Equals(t, &threading.CreateEmptyThreadResponse{
+		Thread: &threading.Thread{
+			ID:                   th2.ID.String(),
+			OrganizationID:       "o1",
+			PrimaryEntityID:      "e2",
+			LastMessageTimestamp: uint64(now.Unix()),
+			LastMessageSummary:   "summ",
+			CreatedTimestamp:     uint64(now.Unix()),
+			MessageCount:         0,
+			Type:                 threading.ThreadType_SECURE_EXTERNAL,
+		},
+	}, res)
 }
 
 func TestCreateThread(t *testing.T) {

@@ -26,6 +26,7 @@ const (
 	phoneNumberKey          = "PhoneNumber"
 	typeKey                 = "Type"
 	urlKey                  = "URL"
+	parkedEntityIDKey       = "ParkedEntityID"
 	valuesKey               = "Values"
 )
 
@@ -161,6 +162,7 @@ func (d *dal) InsertInvite(ctx context.Context, invite *models.Invite) error {
 			emailKey:                {S: &invite.Email},
 			phoneNumberKey:          {S: &invite.PhoneNumber},
 			urlKey:                  {S: &invite.URL},
+			parkedEntityIDKey:       {S: &invite.ParkedEntityID},
 			createdTimestampKey:     {N: ptr.String(strconv.FormatInt(invite.Created.UnixNano(), 10))},
 			valuesKey:               {M: valuesAttr},
 		},
@@ -200,6 +202,7 @@ func (d *dal) InviteForToken(ctx context.Context, token string) (*models.Invite,
 		Email:                *res.Item[emailKey].S,
 		PhoneNumber:          *res.Item[phoneNumberKey].S,
 		URL:                  *res.Item[urlKey].S,
+		ParkedEntityID:       *res.Item[parkedEntityIDKey].S,
 		Created:              time.Unix(ct/1e9, ct%1e9),
 	}
 	valuesAttr := res.Item[valuesKey].M

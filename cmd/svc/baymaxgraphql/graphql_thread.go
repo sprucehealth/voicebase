@@ -36,6 +36,7 @@ var threadType = graphql.NewObject(
 			"allowRemoveMembers":    &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowSMSAttachments":   &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowUpdateTitle":      &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"allowExternalDelivery": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"emptyStateTextMarkup":  &graphql.Field{Type: graphql.String},
 			"id": &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
 			"lastMessageTimestamp": &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
@@ -78,7 +79,7 @@ var threadType = graphql.NewObject(
 					sh := gqlctx.SpruceHeaders(ctx)
 					ms := make([]*models.Entity, len(members))
 					for i, em := range members {
-						e, err := transformEntityToResponse(svc.staticURLPrefix, em, sh)
+						e, err := transformEntityToResponse(svc.staticURLPrefix, em, sh, acc)
 						if err != nil {
 							return nil, err
 						}
@@ -113,7 +114,7 @@ var threadType = graphql.NewObject(
 						}
 						ms := make([]*models.Entity, len(members))
 						for i, em := range members {
-							e, err := transformEntityToResponse(svc.staticURLPrefix, em, gqlctx.SpruceHeaders(ctx))
+							e, err := transformEntityToResponse(svc.staticURLPrefix, em, gqlctx.SpruceHeaders(ctx), acc)
 							if err != nil {
 								return nil, err
 							}
@@ -133,7 +134,7 @@ var threadType = graphql.NewObject(
 						entities := make([]*models.Entity, 0, len(orgEntity.Members))
 						for _, em := range orgEntity.Members {
 							if em.Type == directory.EntityType_INTERNAL {
-								ent, err := transformEntityToResponse(svc.staticURLPrefix, em, gqlctx.SpruceHeaders(ctx))
+								ent, err := transformEntityToResponse(svc.staticURLPrefix, em, gqlctx.SpruceHeaders(ctx), acc)
 								if err != nil {
 									return nil, errors.InternalError(ctx, err)
 								}
@@ -155,7 +156,7 @@ var threadType = graphql.NewObject(
 						return nil, errors.InternalError(ctx, errors.New("thread is nil"))
 					}
 					// No endpoints for team threads
-					if th.Type == models.ThreadTypeTeam {
+					if th.Type == models.ThreadTypeTeam || th.Type == models.ThreadTypeSecureExternal {
 						return nil, nil
 					}
 
@@ -189,7 +190,7 @@ var threadType = graphql.NewObject(
 						return nil, errors.InternalError(ctx, errors.New("thread is nil"))
 					}
 					// No endpoints for team threads
-					if th.Type == models.ThreadTypeTeam {
+					if th.Type == models.ThreadTypeTeam || th.Type == models.ThreadTypeSecureExternal {
 						return nil, nil
 					}
 
@@ -254,7 +255,7 @@ var threadType = graphql.NewObject(
 						return nil, errors.InternalError(ctx, err)
 					}
 					sh := gqlctx.SpruceHeaders(ctx)
-					ent, err := transformEntityToResponse(svc.staticURLPrefix, pe, sh)
+					ent, err := transformEntityToResponse(svc.staticURLPrefix, pe, sh, gqlctx.Account(ctx))
 					if err != nil {
 						return nil, errors.InternalError(ctx, fmt.Errorf("failed to transform entity: %s", err))
 					}
@@ -357,7 +358,7 @@ func lookupThread(ctx context.Context, ram raccess.ResourceAccessor, threadID, v
 		return nil, err
 	}
 
-	th, err := transformThreadToResponse(thread)
+	th, err := transformThreadToResponse(thread, gqlctx.Account(ctx))
 	if err != nil {
 		return nil, errors.InternalError(ctx, err)
 	}

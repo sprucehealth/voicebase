@@ -195,7 +195,7 @@ var provisionPhoneNumberMutation = &graphql.Field{
 			golog.Errorf("Unable to create forwarding list for the provisioned phone number: %s", err.Error())
 		}
 
-		orgRes, err := transformOrganizationToResponse(svc.staticURLPrefix, createContactRes.Entity, entity, sh)
+		orgRes, err := transformOrganizationToResponse(svc.staticURLPrefix, createContactRes.Entity, entity, sh, acc)
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}

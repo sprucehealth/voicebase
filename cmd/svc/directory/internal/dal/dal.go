@@ -34,6 +34,7 @@ type DAL interface {
 	UpdateSerializedClientEntityContact(entityID EntityID, platform SerializedClientEntityContactPlatform, update *SerializedClientEntityContactUpdate) (int64, error)
 	DeleteSerializedClientEntityContact(entityID EntityID, platform SerializedClientEntityContactPlatform) (int64, error)
 	InsertExternalEntityID(model *ExternalEntityID) error
+	InsertExternalEntityIDs(model []*ExternalEntityID) error
 	ExternalEntityIDs(externalID string) ([]*ExternalEntityID, error)
 	ExternalEntityIDsForEntities(entityID []EntityID) ([]*ExternalEntityID, error)
 	InsertEntityMembership(model *EntityMembership) error
@@ -554,6 +555,7 @@ type Entity struct {
 	LongTitle     string
 	Gender        *EntityGender
 	DOB           *encoding.Date
+	AccountID     string
 	Created       time.Time
 	Modified      time.Time
 }
@@ -575,6 +577,9 @@ type EntityUpdate struct {
 	ShortTitle    *string
 	LongTitle     *string
 	Note          *string
+	Gender        *EntityGender
+	DOB           *encoding.Date
+	AccountID     *string
 }
 
 // SerializedClientEntityContact represents a serialized_client_entity_contact record
@@ -610,14 +615,14 @@ func (d *dal) InsertEntity(model *Entity) (EntityID, error) {
 		`INSERT INTO entity
           (display_name, first_name, group_name, type, status, 
 		   id, middle_initial, last_name, note, short_title, 
-		   long_title, gender, dob)
+		   long_title, gender, dob, account_id)
           VALUES 
 		  (?, ?, ?, ?, ?,
 		   ?, ?, ?, ?, ?,
-		   ?, ?, ?)`,
+		   ?, ?, ?, ?)`,
 		model.DisplayName, model.FirstName, model.GroupName, model.Type, model.Status,
 		model.ID, model.MiddleInitial, model.LastName, model.Note, model.ShortTitle,
-		model.LongTitle, gender, model.DOB)
+		model.LongTitle, gender, model.DOB, model.AccountID)
 	if err != nil {
 		return EmptyEntityID(), errors.Trace(err)
 	}
@@ -691,6 +696,15 @@ func (d *dal) UpdateEntity(id EntityID, update *EntityUpdate) (int64, error) {
 	if update.LastName != nil {
 		args.Append("last_name", *update.LastName)
 	}
+	if update.Gender != nil {
+		args.Append("gender", update.Gender.String())
+	}
+	if update.DOB != nil {
+		args.Append("dob", update.DOB)
+	}
+	if update.AccountID != nil {
+		args.Append("account_id", update.AccountID)
+	}
 	if update.Note != nil {
 		args.Append("note", *update.Note)
 	}
@@ -725,9 +739,30 @@ func (d *dal) DeleteEntity(id EntityID) (int64, error) {
 // InsertExternalEntityID inserts a external_entity_id record
 func (d *dal) InsertExternalEntityID(model *ExternalEntityID) error {
 	_, err := d.db.Exec(
-		`INSERT INTO external_entity_id
+		`INSERT IGNORE INTO external_entity_id
           (entity_id, external_id)
           VALUES (?, ?)`, model.EntityID, model.ExternalID)
+	if err != nil {
+		return errors.Trace(err)
+	}
+
+	return nil
+}
+
+// InsertExternalEntityIDs inserts a set of external_entity_id record
+func (d *dal) InsertExternalEntityIDs(models []*ExternalEntityID) error {
+	if len(models) == 0 {
+		return nil
+	}
+
+	ins := dbutil.MySQLMultiInsert(len(models))
+	for _, m := range models {
+		ins.Append(m.EntityID, m.ExternalID)
+	}
+	_, err := d.db.Exec(
+		`INSERT IGNORE INTO external_entity_id
+          (entity_id, external_id)
+          VALUES `+ins.Query(), ins.Values()...)
 	if err != nil {
 		return errors.Trace(err)
 	}
@@ -1196,7 +1231,7 @@ func scanEvent(row dbutil.Scanner) (*Event, error) {
 }
 
 const selectEntity = `
-    SELECT entity.id, entity.middle_initial, entity.last_name, entity.note, entity.created, entity.modified, entity.display_name, entity.first_name, entity.group_name, entity.type, entity.status, entity.short_title, entity.long_title, entity.gender, entity.dob
+    SELECT entity.id, entity.middle_initial, entity.last_name, entity.note, entity.created, entity.modified, entity.display_name, entity.first_name, entity.group_name, entity.type, entity.status, entity.short_title, entity.long_title, entity.gender, entity.dob, entity.account_id
       FROM entity`
 
 func andEntityStatusIN(ss []EntityStatus) string {
@@ -1217,7 +1252,7 @@ func scanEntity(row dbutil.Scanner) (*Entity, error) {
 	m := entityPool.Get().(*Entity)
 	m.ID = EmptyEntityID()
 
-	err := row.Scan(&m.ID, &m.MiddleInitial, &m.LastName, &m.Note, &m.Created, &m.Modified, &m.DisplayName, &m.FirstName, &m.GroupName, &m.Type, &m.Status, &m.ShortTitle, &m.LongTitle, &m.Gender, &m.DOB)
+	err := row.Scan(&m.ID, &m.MiddleInitial, &m.LastName, &m.Note, &m.Created, &m.Modified, &m.DisplayName, &m.FirstName, &m.GroupName, &m.Type, &m.Status, &m.ShortTitle, &m.LongTitle, &m.Gender, &m.DOB, &m.AccountID)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(api.ErrNotFound("directory - Entity not found"))
 	}

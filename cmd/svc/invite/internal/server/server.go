@@ -39,6 +39,8 @@ const complexTokenLength = 16
 
 type complexTokenGen struct{}
 
+const phiAttributeText = "PROTECTED_PHI"
+
 func (t *complexTokenGen) GenerateToken() (string, error) {
 	b := make([]byte, complexTokenLength)
 	if _, err := io.ReadFull(rand.Reader, b); err != nil {
@@ -216,8 +218,8 @@ func (s *server) InviteColleagues(ctx context.Context, in *invite.InviteColleagu
 			ctx,
 			complexTokenGenerator,
 			org, inviter,
-			"", c.Email, c.PhoneNumber, string(inviteClientDataJSON),
-			models.ColleagueInvite)
+			"", "", c.Email, c.PhoneNumber, string(inviteClientDataJSON),
+			models.ColleagueInvite, nil)
 	}
 
 	events.Publish(s.sns, s.eventsTopic, events.Service_INVITE, &invite.Event{
@@ -243,12 +245,6 @@ func (s *server) InvitePatients(ctx context.Context, in *invite.InvitePatientsRe
 	}
 	// Validate all colleague information
 	for _, c := range in.Patients {
-		if c.Email == "" {
-			return nil, grpcErrorf(codes.InvalidArgument, "Email is required")
-		}
-		if !validate.Email(c.Email) {
-			return nil, grpcErrorf(codes.InvalidArgument, fmt.Sprintf("Email '%s' is invalid", c.Email))
-		}
 		if c.PhoneNumber == "" {
 			return nil, grpcErrorf(codes.InvalidArgument, "Phone number is required")
 		}
@@ -291,8 +287,9 @@ func (s *server) InvitePatients(ctx context.Context, in *invite.InvitePatientsRe
 			ctx,
 			simpleTokenGenerator,
 			org, inviter,
-			p.FirstName, p.Email, p.PhoneNumber, string(inviteClientDataJSON),
-			models.PatientInvite)
+			p.FirstName, p.ParkedEntityID, "", p.PhoneNumber, string(inviteClientDataJSON),
+			models.PatientInvite,
+			nil)
 	}
 
 	events.Publish(s.sns, s.eventsTopic, events.Service_INVITE, &invite.Event{
@@ -311,8 +308,9 @@ func (s *server) proccessInvite(
 	ctx context.Context,
 	tokenGenerator common.TokenGenerator,
 	org, inviter *directory.Entity,
-	firstName, email, phoneNumber, inviteClientDataStr string,
-	inviteType models.InviteType) error {
+	firstName, parkedEntityID, email, phoneNumber, inviteClientDataStr string,
+	inviteType models.InviteType,
+	additionalValues map[string]string) error {
 	// TODO: enqueue invite rather than sending directly
 	var token, inviteURL string
 	var err error
@@ -324,6 +322,9 @@ func (s *server) proccessInvite(
 		values := map[string]string{
 			"invite_token": token,
 			"client_data":  inviteClientDataStr,
+		}
+		for k, v := range additionalValues {
+			values[k] = v
 		}
 		if s.webInviteURL != nil {
 			// Close the URL to avoid modifying the template
@@ -342,15 +343,23 @@ func (s *server) proccessInvite(
 			golog.Errorf("Failed to generate branch URL: %s", err)
 			continue
 		}
+		pn := phoneNumber
+		// We do not store phone numbers or emails for patients in dynamodb since it doesn't support simple encryption at rest
+		if inviteType == models.PatientInvite {
+			// We can't have these being empty attributes so populate them with informative info
+			pn = phiAttributeText
+			email = phiAttributeText
+		}
 		err = s.dal.InsertInvite(ctx, &models.Invite{
 			Token:                token,
 			Type:                 inviteType,
 			OrganizationEntityID: org.ID,
 			InviterEntityID:      inviter.ID,
 			Email:                email,
-			PhoneNumber:          phoneNumber,
+			PhoneNumber:          pn,
 			Created:              s.clk.Now(),
 			URL:                  inviteURL,
+			ParkedEntityID:       parkedEntityID,
 			Values:               values,
 		})
 		if err == nil {
@@ -401,6 +410,7 @@ func (s *server) sendColleagueOutbound(ctx context.Context, email, inviteURL, to
 }
 
 func (s *server) sendPatientOutbound(ctx context.Context, firstName, phoneNumber, inviteURL, token string, org, inviter *directory.Entity) error {
+	golog.Debugf("Sending outbound patient invite messaging. URL: %s, Token: %s", inviteURL, token)
 	_, err := s.excommsClient.SendMessage(ctx, &excomms.SendMessageRequest{
 		Channel: excomms.ChannelType_SMS,
 		Message: &excomms.SendMessageRequest_SMS{
@@ -470,7 +480,7 @@ func (s *server) LookupInvite(ctx context.Context, in *invite.LookupInviteReques
 		}
 		return nil, errors.Trace(err)
 	}
-	if inv.Type != models.ColleagueInvite {
+	if inv.Type != models.ColleagueInvite && inv.Type != models.PatientInvite {
 		return nil, grpcErrorf(codes.Internal, "unsupported invite type "+string(inv.Type))
 	}
 	values := make([]*invite.AttributionValue, 0, len(inv.Values))
@@ -480,9 +490,11 @@ func (s *server) LookupInvite(ctx context.Context, in *invite.LookupInviteReques
 			Value: v,
 		})
 	}
-	return &invite.LookupInviteResponse{
-		Type: invite.LookupInviteResponse_COLLEAGUE,
-		Invite: &invite.LookupInviteResponse_Colleague{
+	resp := &invite.LookupInviteResponse{Values: values}
+	switch inv.Type {
+	case models.ColleagueInvite:
+		resp.Type = invite.LookupInviteResponse_COLLEAGUE
+		resp.Invite = &invite.LookupInviteResponse_Colleague{
 			Colleague: &invite.ColleagueInvite{
 				OrganizationEntityID: inv.OrganizationEntityID,
 				InviterEntityID:      inv.InviterEntityID,
@@ -491,9 +503,20 @@ func (s *server) LookupInvite(ctx context.Context, in *invite.LookupInviteReques
 					PhoneNumber: inv.PhoneNumber,
 				},
 			},
-		},
-		Values: values,
-	}, nil
+		}
+	case models.PatientInvite:
+		resp.Type = invite.LookupInviteResponse_PATIENT
+		resp.Invite = &invite.LookupInviteResponse_Patient{
+			Patient: &invite.PatientInvite{
+				OrganizationEntityID: inv.OrganizationEntityID,
+				InviterEntityID:      inv.InviterEntityID,
+				Patient: &invite.Patient{
+					ParkedEntityID: inv.ParkedEntityID,
+				},
+			},
+		}
+	}
+	return resp, nil
 }
 
 // SetAttributionData associate attribution data with a device

@@ -205,7 +205,7 @@ var createThreadMutation = &graphql.Field{
 						golog.Errorf("Thread %s not part of organization %s but entity %s is", t.OrganizationID, orgID, t.PrimaryEntityID)
 						continue
 					}
-					th, err := transformThreadToResponse(t)
+					th, err := transformThreadToResponse(t, acc)
 					if err != nil {
 						return nil, errors.InternalError(ctx, err)
 					}
@@ -290,7 +290,7 @@ var createThreadMutation = &graphql.Field{
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}
-		th, err := transformThreadToResponse(thread)
+		th, err := transformThreadToResponse(thread, acc)
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}

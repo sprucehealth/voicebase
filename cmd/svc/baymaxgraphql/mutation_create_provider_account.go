@@ -223,6 +223,8 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 					DisplayName: organizationName,
 				},
 				Type: directory.EntityType_ORGANIZATION,
+				// For now map organizations into the root creating account so they can edit it.
+				AccountID: res.Account.ID,
 			})
 			if err != nil {
 				return nil, err
@@ -250,6 +252,7 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 			ExternalID:                res.Account.ID,
 			InitialMembershipEntityID: orgEntityID,
 			Contacts:                  contacts,
+			AccountID:                 res.Account.ID,
 		})
 		if err != nil {
 			return nil, err
@@ -351,7 +354,7 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 	var platform string
 	if headers != nil {
 		platform = headers.Platform.String()
-		golog.Infof("Provider Account created. ID = %s Device = %s", res.Account.ID, headers.DeviceID)
+		golog.Debugf("Provider Account created. ID = %s Device = %s", res.Account.ID, headers.DeviceID)
 	}
 	orgName := organizationName
 	if inv != nil {
@@ -391,6 +394,7 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 				"organization_name": orgName,
 				"platform":          platform,
 				"createdAt":         time.Now().Unix(),
+				"type":              "provider",
 			},
 			Context: map[string]interface{}{
 				"ip":        remoteAddrFromParams(p),

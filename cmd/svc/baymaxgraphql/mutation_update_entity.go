@@ -123,7 +123,7 @@ var updateEntityMutation = &graphql.Field{
 		}
 
 		sh := gqlctx.SpruceHeaders(ctx)
-		e, err := transformEntityToResponse(svc.staticURLPrefix, entity, sh)
+		e, err := transformEntityToResponse(svc.staticURLPrefix, entity, sh, acc)
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}

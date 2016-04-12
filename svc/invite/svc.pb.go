@@ -114,9 +114,11 @@ func (m *ColleagueInvite) GetColleague() *Colleague {
 }
 
 type Patient struct {
-	FirstName   string `protobuf:"bytes,1,opt,name=first_name,proto3" json:"first_name,omitempty"`
-	Email       string `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
-	PhoneNumber string `protobuf:"bytes,3,opt,name=phone_number,proto3" json:"phone_number,omitempty"`
+	// First name is only used when inviting a patient. It is not stored and not returned by LookupInvite
+	FirstName string `protobuf:"bytes,1,opt,name=first_name,proto3" json:"first_name,omitempty"`
+	// Phone number is only used when inviting a patient. It is not stored and not returned by LookupInvite
+	PhoneNumber    string `protobuf:"bytes,2,opt,name=phone_number,proto3" json:"phone_number,omitempty"`
+	ParkedEntityID string `protobuf:"bytes,3,opt,name=parked_entity_id,proto3" json:"parked_entity_id,omitempty"`
 }
 
 func (m *Patient) Reset()      { *m = Patient{} }
@@ -145,17 +147,17 @@ func (m *InvitePatientsResponse) Reset()      { *m = InvitePatientsResponse{} }
 func (*InvitePatientsResponse) ProtoMessage() {}
 
 type PatientInvite struct {
-	OrganizationEntityID string     `protobuf:"bytes,1,opt,name=organization_entity_id,proto3" json:"organization_entity_id,omitempty"`
-	InviterEntityID      string     `protobuf:"bytes,2,opt,name=inviter_entity_id,proto3" json:"inviter_entity_id,omitempty"`
-	Colleague            *Colleague `protobuf:"bytes,3,opt,name=colleague" json:"colleague,omitempty"`
+	OrganizationEntityID string   `protobuf:"bytes,1,opt,name=organization_entity_id,proto3" json:"organization_entity_id,omitempty"`
+	InviterEntityID      string   `protobuf:"bytes,2,opt,name=inviter_entity_id,proto3" json:"inviter_entity_id,omitempty"`
+	Patient              *Patient `protobuf:"bytes,3,opt,name=patient" json:"patient,omitempty"`
 }
 
 func (m *PatientInvite) Reset()      { *m = PatientInvite{} }
 func (*PatientInvite) ProtoMessage() {}
 
-func (m *PatientInvite) GetColleague() *Colleague {
+func (m *PatientInvite) GetPatient() *Patient {
 	if m != nil {
-		return m.Colleague
+		return m.Patient
 	}
 	return nil
 }
@@ -492,10 +494,10 @@ func (this *Patient) Equal(that interface{}) bool {
 	if this.FirstName != that1.FirstName {
 		return false
 	}
-	if this.Email != that1.Email {
+	if this.PhoneNumber != that1.PhoneNumber {
 		return false
 	}
-	if this.PhoneNumber != that1.PhoneNumber {
+	if this.ParkedEntityID != that1.ParkedEntityID {
 		return false
 	}
 	return true
@@ -584,7 +586,7 @@ func (this *PatientInvite) Equal(that interface{}) bool {
 	if this.InviterEntityID != that1.InviterEntityID {
 		return false
 	}
-	if !this.Colleague.Equal(that1.Colleague) {
+	if !this.Patient.Equal(that1.Patient) {
 		return false
 	}
 	return true
@@ -899,8 +901,8 @@ func (this *Patient) GoString() string {
 	s := make([]string, 0, 7)
 	s = append(s, "&invite.Patient{")
 	s = append(s, "FirstName: "+fmt.Sprintf("%#v", this.FirstName)+",\n")
-	s = append(s, "Email: "+fmt.Sprintf("%#v", this.Email)+",\n")
 	s = append(s, "PhoneNumber: "+fmt.Sprintf("%#v", this.PhoneNumber)+",\n")
+	s = append(s, "ParkedEntityID: "+fmt.Sprintf("%#v", this.ParkedEntityID)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -935,8 +937,8 @@ func (this *PatientInvite) GoString() string {
 	s = append(s, "&invite.PatientInvite{")
 	s = append(s, "OrganizationEntityID: "+fmt.Sprintf("%#v", this.OrganizationEntityID)+",\n")
 	s = append(s, "InviterEntityID: "+fmt.Sprintf("%#v", this.InviterEntityID)+",\n")
-	if this.Colleague != nil {
-		s = append(s, "Colleague: "+fmt.Sprintf("%#v", this.Colleague)+",\n")
+	if this.Patient != nil {
+		s = append(s, "Patient: "+fmt.Sprintf("%#v", this.Patient)+",\n")
 	}
 	s = append(s, "}")
 	return strings.Join(s, "")
@@ -1394,17 +1396,17 @@ func (m *Patient) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintSvc(data, i, uint64(len(m.FirstName)))
 		i += copy(data[i:], m.FirstName)
 	}
-	if len(m.Email) > 0 {
-		data[i] = 0x12
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.Email)))
-		i += copy(data[i:], m.Email)
-	}
 	if len(m.PhoneNumber) > 0 {
-		data[i] = 0x1a
+		data[i] = 0x12
 		i++
 		i = encodeVarintSvc(data, i, uint64(len(m.PhoneNumber)))
 		i += copy(data[i:], m.PhoneNumber)
+	}
+	if len(m.ParkedEntityID) > 0 {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.ParkedEntityID)))
+		i += copy(data[i:], m.ParkedEntityID)
 	}
 	return i, nil
 }
@@ -1496,11 +1498,11 @@ func (m *PatientInvite) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintSvc(data, i, uint64(len(m.InviterEntityID)))
 		i += copy(data[i:], m.InviterEntityID)
 	}
-	if m.Colleague != nil {
+	if m.Patient != nil {
 		data[i] = 0x1a
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.Colleague.Size()))
-		n2, err := m.Colleague.MarshalTo(data[i:])
+		i = encodeVarintSvc(data, i, uint64(m.Patient.Size()))
+		n2, err := m.Patient.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -1833,11 +1835,11 @@ func (m *Patient) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
-	l = len(m.Email)
+	l = len(m.PhoneNumber)
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
-	l = len(m.PhoneNumber)
+	l = len(m.ParkedEntityID)
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
@@ -1881,8 +1883,8 @@ func (m *PatientInvite) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
-	if m.Colleague != nil {
-		l = m.Colleague.Size()
+	if m.Patient != nil {
+		l = m.Patient.Size()
 		n += 1 + l + sovSvc(uint64(l))
 	}
 	return n
@@ -2055,8 +2057,8 @@ func (this *Patient) String() string {
 	}
 	s := strings.Join([]string{`&Patient{`,
 		`FirstName:` + fmt.Sprintf("%v", this.FirstName) + `,`,
-		`Email:` + fmt.Sprintf("%v", this.Email) + `,`,
 		`PhoneNumber:` + fmt.Sprintf("%v", this.PhoneNumber) + `,`,
+		`ParkedEntityID:` + fmt.Sprintf("%v", this.ParkedEntityID) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2089,7 +2091,7 @@ func (this *PatientInvite) String() string {
 	s := strings.Join([]string{`&PatientInvite{`,
 		`OrganizationEntityID:` + fmt.Sprintf("%v", this.OrganizationEntityID) + `,`,
 		`InviterEntityID:` + fmt.Sprintf("%v", this.InviterEntityID) + `,`,
-		`Colleague:` + strings.Replace(fmt.Sprintf("%v", this.Colleague), "Colleague", "Colleague", 1) + `,`,
+		`Patient:` + strings.Replace(fmt.Sprintf("%v", this.Patient), "Patient", "Patient", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2693,35 +2695,6 @@ func (m *Patient) Unmarshal(data []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Email", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Email = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field PhoneNumber", wireType)
 			}
 			var stringLen uint64
@@ -2748,6 +2721,35 @@ func (m *Patient) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.PhoneNumber = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ParkedEntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ParkedEntityID = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -3048,7 +3050,7 @@ func (m *PatientInvite) Unmarshal(data []byte) error {
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Colleague", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Patient", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -3072,10 +3074,10 @@ func (m *PatientInvite) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Colleague == nil {
-				m.Colleague = &Colleague{}
+			if m.Patient == nil {
+				m.Patient = &Patient{}
 			}
-			if err := m.Colleague.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.Patient.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

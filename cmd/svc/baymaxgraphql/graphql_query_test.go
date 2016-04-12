@@ -149,6 +149,7 @@ func TestNodeQuery(t *testing.T) {
 		ID: id,
 		AllowInternalMessages: true,
 		AllowDelete:           true,
+		AllowExternalDelivery: true,
 		OrganizationID:        "entity_1",
 		PrimaryEntityID:       "entity_2",
 		Title:                 "Someone",

@@ -168,6 +168,7 @@ func (s *server) CreateEntity(ctx context.Context, rd *directory.CreateEntityReq
 			LongTitle:     rd.EntityInfo.LongTitle,
 			Gender:        entityGender,
 			DOB:           dob,
+			AccountID:     rd.AccountID,
 			Note:          rd.EntityInfo.Note,
 		})
 		if err != nil {
@@ -222,6 +223,36 @@ func (s *server) CreateEntity(ctx context.Context, rd *directory.CreateEntityReq
 	return &directory.CreateEntityResponse{
 		Entity: pbEntity,
 	}, nil
+}
+
+func (s *server) CreateExternalIDs(ctx context.Context, rd *directory.CreateExternalIDsRequest) (out *directory.CreateExternalIDsResponse, err error) {
+	if golog.Default().L(golog.DEBUG) {
+		golog.Debugf("Entering server.server.CreateExternalIDs: %+v", rd)
+		defer func() { golog.Debugf("Leaving server.server.CreateExternalIDs... %+v", out) }()
+	}
+
+	if rd.EntityID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "EntityID cannot be empty")
+	}
+	if err = s.dl.Transact(func(dl dal.DAL) error {
+		models := make([]*dal.ExternalEntityID, 0, len(rd.ExternalIDs))
+		for _, eID := range rd.ExternalIDs {
+			entityID, err := dal.ParseEntityID(rd.EntityID)
+			if err != nil {
+				return grpcErrorf(codes.InvalidArgument, err.Error())
+			}
+			models = append(models, &dal.ExternalEntityID{EntityID: entityID, ExternalID: eID})
+		}
+		if len(models) != 0 {
+			if err := dl.InsertExternalEntityIDs(models); err != nil {
+				return errors.Trace(err)
+			}
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return &directory.CreateExternalIDsResponse{}, nil
 }
 
 func (s *server) SerializedEntityContact(ctx context.Context, rd *directory.SerializedEntityContactRequest) (out *directory.SerializedEntityContactResponse, err error) {
@@ -302,6 +333,24 @@ func (s *server) UpdateEntity(ctx context.Context, rd *directory.UpdateEntityReq
 			}
 		}
 
+		var gender *dal.EntityGender
+		if rd.EntityInfo.Gender != directory.EntityInfo_UNKNOWN {
+			g, err := dal.ParseEntityGender(rd.EntityInfo.Gender.String())
+			if err != nil {
+				return grpcErrorf(codes.InvalidArgument, "Unknown entity gender %s", rd.EntityInfo.Gender.String())
+			}
+			gender = &g
+		}
+
+		var dob *encoding.Date
+		if rd.EntityInfo.DOB != nil {
+			dob = &encoding.Date{
+				Month: int(rd.EntityInfo.DOB.Month),
+				Day:   int(rd.EntityInfo.DOB.Day),
+				Year:  int(rd.EntityInfo.DOB.Year),
+			}
+		}
+
 		if _, err := dl.UpdateEntity(eID, &dal.EntityUpdate{
 			FirstName:     &rd.EntityInfo.FirstName,
 			MiddleInitial: &rd.EntityInfo.MiddleInitial,
@@ -310,6 +359,9 @@ func (s *server) UpdateEntity(ctx context.Context, rd *directory.UpdateEntityReq
 			DisplayName:   displayName,
 			ShortTitle:    &rd.EntityInfo.ShortTitle,
 			LongTitle:     &rd.EntityInfo.LongTitle,
+			Gender:        gender,
+			DOB:           dob,
+			AccountID:     &rd.AccountID,
 			Note:          &rd.EntityInfo.Note,
 		}); err != nil {
 			return errors.Trace(err)
@@ -982,6 +1034,7 @@ func dalEntityAsPBEntity(dEntity *dal.Entity) *directory.Entity {
 		ID:                    dEntity.ID.String(),
 		CreatedTimestamp:      uint64(dEntity.Created.Unix()),
 		LastModifiedTimestamp: uint64(dEntity.Modified.Unix()),
+		AccountID:             dEntity.AccountID,
 	}
 	entityType, ok := directory.EntityType_value[dEntity.Type.String()]
 	if !ok {

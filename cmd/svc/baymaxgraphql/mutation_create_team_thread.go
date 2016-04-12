@@ -127,7 +127,7 @@ var createTeamThreadMutation = &graphql.Field{
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}
-		th, err := transformThreadToResponse(thread)
+		th, err := transformThreadToResponse(thread, acc)
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}

@@ -6,6 +6,7 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -61,6 +62,7 @@ type ResourceAccessor interface {
 	CreateEmptyThread(ctx context.Context, req *threading.CreateEmptyThreadRequest) (*threading.Thread, error)
 	CreateEntity(ctx context.Context, req *directory.CreateEntityRequest) (*directory.Entity, error)
 	CreateEntityDomain(ctx context.Context, organizationID, subdomain string) error
+	CreateExternalIDs(ctx context.Context, req *directory.CreateExternalIDsRequest) error
 	CreateLinkedThreads(ctx context.Context, req *threading.CreateLinkedThreadsRequest) (*threading.CreateLinkedThreadsResponse, error)
 	CreateOnboardingThread(ctx context.Context, req *threading.CreateOnboardingThreadRequest) (*threading.CreateOnboardingThreadResponse, error)
 	CreatePasswordResetToken(ctx context.Context, email string) (*auth.CreatePasswordResetTokenResponse, error)
@@ -71,11 +73,13 @@ type ResourceAccessor interface {
 	Entity(ctx context.Context, entityID string, entityInfo []directory.EntityInformation, depth int64) (*directory.Entity, error)
 	Entities(ctx context.Context, orgID string, entityIDs []string, entityInfo []directory.EntityInformation) ([]*directory.Entity, error)
 	EntityDomain(ctx context.Context, entityID, domain string) (*directory.LookupEntityDomainResponse, error)
+	// TODO: Rename this EntityForOrgAndAccountID
 	EntityForAccountID(ctx context.Context, orgID, accountID string) (*directory.Entity, error)
 	EntitiesByContact(ctx context.Context, contactValue string, entityInfo []directory.EntityInformation, depth int64, statuses []directory.EntityStatus) ([]*directory.Entity, error)
 	EntitiesForExternalID(ctx context.Context, externalID string, entityInfo []directory.EntityInformation, depth int64, statuses []directory.EntityStatus) ([]*directory.Entity, error)
 	InitiatePhoneCall(ctx context.Context, req *excomms.InitiatePhoneCallRequest) (*excomms.InitiatePhoneCallResponse, error)
 	MarkThreadAsRead(ctx context.Context, threadID, entityID string) error
+	PatientEntity(ctx context.Context, a *models.PatientAccount) (*directory.Entity, error)
 	PostMessage(ctx context.Context, req *threading.PostMessageRequest) (*threading.PostMessageResponse, error)
 	ProvisionPhoneNumber(ctx context.Context, req *excomms.ProvisionPhoneNumberRequest) (*excomms.ProvisionPhoneNumberResponse, error)
 	ProvisionEmailAddress(ctx context.Context, req *excomms.ProvisionEmailAddressRequest) (*excomms.ProvisionEmailAddressResponse, error)
@@ -91,6 +95,7 @@ type ResourceAccessor interface {
 	ThreadMembers(ctx context.Context, orgID string, req *threading.ThreadMembersRequest) ([]*directory.Entity, error)
 	ThreadsForMember(ctx context.Context, entityID string, primaryOnly bool) ([]*threading.Thread, error)
 	Unauthenticate(ctx context.Context, token string) error
+	UnauthorizedCreateExternalIDs(ctx context.Context, req *directory.CreateExternalIDsRequest) error
 	UpdateContacts(ctx context.Context, req *directory.UpdateContactsRequest) (*directory.Entity, error)
 	UpdateEntity(ctx context.Context, req *directory.UpdateEntityRequest) (*directory.Entity, error)
 	UpdatePassword(ctx context.Context, token, code, newPassword string) error
@@ -257,6 +262,13 @@ func (m *resourceAccessor) CreateEntityDomain(ctx context.Context, organizationI
 		return err
 	}
 	return nil
+}
+
+func (m *resourceAccessor) CreateExternalIDs(ctx context.Context, req *directory.CreateExternalIDsRequest) error {
+	if err := m.canAccessResource(ctx, req.EntityID, m.orgsForEntity); err != nil {
+		return err
+	}
+	return m.createExternalIDs(ctx, req)
 }
 
 func (m *resourceAccessor) CreateLinkedThreads(ctx context.Context, req *threading.CreateLinkedThreadsRequest) (*threading.CreateLinkedThreadsResponse, error) {
@@ -452,6 +464,17 @@ func (m *resourceAccessor) MarkThreadAsRead(ctx context.Context, threadID, entit
 	return nil
 }
 
+func (m *resourceAccessor) PatientEntity(ctx context.Context, account *models.PatientAccount) (*directory.Entity, error) {
+	entities, err := m.EntitiesForExternalID(ctx, account.GetID(), []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS}, 0, nil)
+	if err != nil {
+		return nil, err
+	}
+	if len(entities) != 1 {
+		return nil, fmt.Errorf("AccountEntity: Expected to find 1 entity for external id %s but found %d", account.GetID(), len(entities))
+	}
+	return entities[0], nil
+}
+
 func (m *resourceAccessor) PostMessage(ctx context.Context, req *threading.PostMessageRequest) (*threading.PostMessageResponse, error) {
 	if err := m.canAccessResource(ctx, req.ThreadID, m.orgsForThread); err != nil {
 		return nil, err
@@ -635,8 +658,11 @@ func (m *resourceAccessor) ThreadsForMember(ctx context.Context, entityID string
 }
 
 func (m *resourceAccessor) QueryThreads(ctx context.Context, req *threading.QueryThreadsRequest) (*threading.QueryThreadsResponse, error) {
-	if err := m.canAccessResource(ctx, req.OrganizationID, m.orgsForOrganization); err != nil {
-		return nil, err
+	// TODO: Add auth check that the calling account owns the viewing entity
+	if req.OrganizationID != "" {
+		if err := m.canAccessResource(ctx, req.OrganizationID, m.orgsForOrganization); err != nil {
+			return nil, err
+		}
 	}
 	res, err := m.queryThreads(ctx, req)
 	if err != nil {
@@ -660,6 +686,10 @@ func (m *resourceAccessor) Unauthenticate(ctx context.Context, token string) err
 		return err
 	}
 	return nil
+}
+
+func (m *resourceAccessor) UnauthorizedCreateExternalIDs(ctx context.Context, req *directory.CreateExternalIDsRequest) error {
+	return m.createExternalIDs(ctx, req)
 }
 
 func (m *resourceAccessor) UpdateContacts(ctx context.Context, req *directory.UpdateContactsRequest) (*directory.Entity, error) {
@@ -858,6 +888,11 @@ func (m *resourceAccessor) createEntityDomain(ctx context.Context, organizationI
 		return err
 	}
 	return nil
+}
+
+func (m *resourceAccessor) createExternalIDs(ctx context.Context, req *directory.CreateExternalIDsRequest) error {
+	_, err := m.directory.CreateExternalIDs(ctx, req)
+	return err
 }
 
 func (m *resourceAccessor) createSavedQuery(ctx context.Context, req *threading.CreateSavedQueryRequest) (*threading.CreateSavedQueryResponse, error) {

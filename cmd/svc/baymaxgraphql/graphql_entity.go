@@ -72,7 +72,7 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 		"displayName":   &graphql.Field{Type: graphql.String},
 		"longTitle":     &graphql.Field{Type: graphql.String},
 		"shortTitle":    &graphql.Field{Type: graphql.String},
-		"gender":        &graphql.Field{Type: genderEnumType},
+		"gender":        &graphql.Field{Type: graphql.NewNonNull(genderEnumType)},
 		"dob":           &graphql.Field{Type: dateType},
 		"note":          &graphql.Field{Type: graphql.String},
 		"initials": &graphql.Field{
@@ -126,6 +126,8 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 		},
 		"isInternal":            &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		"lastModifiedTimestamp": &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+		"hasAccount":            &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+		"allowEdit":             &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 	},
 })
 
@@ -155,7 +157,7 @@ func lookupEntity(ctx context.Context, svc *service, ram raccess.ResourceAccesso
 				return nil, errors.InternalError(ctx, err)
 			}
 			if e != nil {
-				org.Entity, err = transformEntityToResponse(svc.staticURLPrefix, e, sh)
+				org.Entity, err = transformEntityToResponse(svc.staticURLPrefix, e, sh, gqlctx.Account(ctx))
 				if err != nil {
 					return nil, errors.InternalError(ctx, err)
 				}
@@ -163,7 +165,7 @@ func lookupEntity(ctx context.Context, svc *service, ram raccess.ResourceAccesso
 		}
 		return org, nil
 	case directory.EntityType_INTERNAL, directory.EntityType_EXTERNAL, directory.EntityType_SYSTEM:
-		e, err := transformEntityToResponse(svc.staticURLPrefix, em, sh)
+		e, err := transformEntityToResponse(svc.staticURLPrefix, em, sh, gqlctx.Account(ctx))
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}

@@ -248,9 +248,10 @@ func TestInvitePatients(t *testing.T) {
 		OrganizationEntityID: "org",
 		InviterEntityID:      "ent",
 		Type:                 models.PatientInvite,
-		Email:                "someone@example.com",
-		PhoneNumber:          "+15555551212",
+		PhoneNumber:          phiAttributeText,
+		Email:                phiAttributeText,
 		URL:                  "https://example.com/invite",
+		ParkedEntityID:       "parkedEntityID",
 		Created:              clk.Now(),
 		Values:               values,
 	}).WithReturns(nil))
@@ -286,7 +287,7 @@ func TestInvitePatients(t *testing.T) {
 		OrganizationEntityID: "org",
 		InviterEntityID:      "ent",
 		Patients: []*invite.Patient{
-			{FirstName: "Alfred", Email: "someone@example.com", PhoneNumber: "+15555551212"},
+			{FirstName: "Alfred", PhoneNumber: "+15555551212", ParkedEntityID: "parkedEntityID"},
 		},
 	})
 	test.OK(t, err)

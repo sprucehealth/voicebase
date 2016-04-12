@@ -14,6 +14,9 @@ const (
 	createAccountErrorCodeInvalidPassword         = "INVALID_PASSWORD"
 	createAccountErrorCodeInvalidPhoneNumber      = "INVALID_PHONE_NUMBER"
 	createAccountErrorCodeInvalidDOB              = "INVALID_DOB"
+	createAccountErrorCodeInviteRequired          = "INVITE_REQUIRED"
+	createAccountErrorCodeInviteEmailMismatch     = "INVITE_EMAIL_MISMATCH"
+	createAccountErrorCodeInvitePhoneMismatch     = "INVITE_PHONE_MISMATCH"
 )
 
 var createAccountErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
@@ -50,6 +53,18 @@ var createAccountErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
 		createAccountErrorCodeInvalidDOB: &graphql.EnumValueConfig{
 			Value:       createAccountErrorCodeInvalidDOB,
 			Description: "The provided date of birth is invalid",
+		},
+		createAccountErrorCodeInviteRequired: &graphql.EnumValueConfig{
+			Value:       createAccountErrorCodeInviteRequired,
+			Description: "An invite is required to create an account with this device",
+		},
+		createAccountErrorCodeInviteEmailMismatch: &graphql.EnumValueConfig{
+			Value:       createAccountErrorCodeInviteEmailMismatch,
+			Description: "The provided email doesn't match the invite",
+		},
+		createAccountErrorCodeInvitePhoneMismatch: &graphql.EnumValueConfig{
+			Value:       createAccountErrorCodeInvitePhoneMismatch,
+			Description: "The provided phone number doesn't match the invite",
 		},
 	},
 })
