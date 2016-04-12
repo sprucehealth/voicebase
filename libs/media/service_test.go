@@ -39,6 +39,13 @@ func TestService(t *testing.T) {
 	_, _, err = store.Get("2")
 	test.OK(t, err)
 
+	meta, err = svc.GetMeta("1")
+	test.OK(t, err)
+	test.Equals(t, "image/jpeg", meta.MimeType)
+	test.Equals(t, 80, meta.Width)
+	test.Equals(t, 64, meta.Height)
+	test.Assert(t, meta.Size > 0, "Size should be > 0")
+
 	img, meta, err = svc.Get("1", nil)
 	test.OK(t, err)
 	test.Equals(t, "image/jpeg", meta.MimeType)
