@@ -216,7 +216,7 @@ message UpdateEntityRequest {
 	RequestedInformation requested_information = 3;
 	repeated   Contact contacts = 4;
 	repeated   SerializedClientEntityContact serialized_entity_contacts = 5;
-	string     account_id = 6 [(gogoproto.customname) = "AccountID"]; 
+	string     account_id = 6 [(gogoproto.customname) = "AccountID"];
 }
 
 message UpdateEntityResponse {
