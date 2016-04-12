@@ -97,6 +97,43 @@ func (s *S3) Get(id string) ([]byte, http.Header, error) {
 	return buf.Bytes(), headers, nil
 }
 
+func (s *S3) GetHeader(id string) (http.Header, error) {
+	region, bkt, path, err := s.parseURI(id)
+	if err != nil {
+		return nil, err
+	}
+	_ = region
+	head, err := s.s3.HeadObject(&s3.HeadObjectInput{
+		Bucket: &bkt,
+		Key:    &path,
+	})
+	if e, ok := err.(awsError); ok {
+		if e.StatusCode() == http.StatusNotFound {
+			return nil, ErrNoObject
+		}
+		return nil, err
+	} else if err != nil {
+		return nil, err
+	}
+	return s3Header(head.ContentType, head.ContentLength, head.Metadata), nil
+}
+
+func s3Header(contentType *string, contentLength *int64, metadata map[string]*string) http.Header {
+	header := http.Header{}
+	if contentType != nil {
+		header.Set("Content-Type", *contentType)
+	}
+	if contentLength != nil {
+		header.Set("Content-Length", strconv.FormatInt(*contentLength, 10))
+	}
+	for k, v := range metadata {
+		if v != nil {
+			header.Set(k, *v)
+		}
+	}
+	return header
+}
+
 func (s *S3) GetReader(id string) (io.ReadCloser, http.Header, error) {
 	region, bkt, path, err := s.parseURI(id)
 	if err != nil {
@@ -116,19 +153,7 @@ func (s *S3) GetReader(id string) (io.ReadCloser, http.Header, error) {
 	} else if err != nil {
 		return nil, nil, err
 	}
-	header := http.Header{}
-	if obj.ContentType != nil {
-		header.Set("Content-Type", *obj.ContentType)
-	}
-	if obj.ContentLength != nil {
-		header.Set("Content-Length", strconv.FormatInt(*obj.ContentLength, 10))
-	}
-	for k, v := range obj.Metadata {
-		if v != nil {
-			header.Set(k, *v)
-		}
-	}
-	return obj.Body, header, nil
+	return obj.Body, s3Header(obj.ContentType, obj.ContentLength, obj.Metadata), nil
 }
 
 func (s *S3) Delete(id string) error {

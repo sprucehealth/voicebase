@@ -72,6 +72,14 @@ func (s *testStore) Get(id string) ([]byte, http.Header, error) {
 	return o.Data, o.Headers, nil
 }
 
+func (s *testStore) GetHeader(id string) (http.Header, error) {
+	_, headers, err := s.Get(id)
+	if err != nil {
+		return nil, err
+	}
+	return headers, nil
+}
+
 func (s *testStore) GetReader(id string) (io.ReadCloser, http.Header, error) {
 	data, headers, err := s.Get(id)
 	if err != nil {

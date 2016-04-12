@@ -157,6 +157,15 @@ func (s *Service) Get(id string, size *Size) (image.Image, *Meta, error) {
 	return img, meta, errors.Trace(err)
 }
 
+// GetMeta returns the metadata associated with a media entry
+func (s *Service) GetMeta(id string) (*Meta, error) {
+	h, err := s.store.GetHeader(s.store.IDFromName(id))
+	if err != nil {
+		return nil, err
+	}
+	return metaFromHeaders(h), nil
+}
+
 // GetReader returns a reader for the requested size of image and the mimetype.
 // If size is nil then the original image is returned.
 func (s *Service) GetReader(id string, size *Size) (io.ReadCloser, *Meta, error) {

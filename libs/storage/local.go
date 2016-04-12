@@ -90,25 +90,37 @@ func (s *local) Get(id string) ([]byte, http.Header, error) {
 	return b, headers, err
 }
 
-func (s *local) GetReader(id string) (io.ReadCloser, http.Header, error) {
+func (s *local) GetHeader(id string) (http.Header, error) {
+	return localHeader(id)
+}
+
+func localHeader(id string) (http.Header, error) {
 	f, err := os.Open(id + ".meta")
 	if os.IsNotExist(err) {
-		return nil, nil, ErrNoObject
+		return nil, ErrNoObject
 	} else if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	defer f.Close()
 	var meta map[string]string
 	if err := json.NewDecoder(f).Decode(&meta); err != nil {
-		return nil, nil, err
-	}
-	f, err = os.Open(id)
-	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	h := http.Header{}
 	for k, v := range meta {
 		h.Set(k, v)
+	}
+	return h, nil
+}
+
+func (s *local) GetReader(id string) (io.ReadCloser, http.Header, error) {
+	h, err := localHeader(id)
+	if err != nil {
+		return nil, nil, err
+	}
+	f, err := os.Open(id)
+	if err != nil {
+		return nil, nil, err
 	}
 	return f, h, nil
 }

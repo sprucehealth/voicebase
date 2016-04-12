@@ -64,7 +64,6 @@ var attachmentInputType = graphql.NewInputObject(
 			"title":          &graphql.InputObjectFieldConfig{Type: graphql.String},
 			"mediaID":        &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 			"attachmentType": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(attachmentInputTypeEnum)},
-			"contentType":    &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 		},
 	},
 )
@@ -233,9 +232,13 @@ var postMessageMutation = &graphql.Field{
 			}
 			switch mAttachmentType {
 			case threading.Attachment_IMAGE:
+				meta, err := svc.media.GetMeta(mAttachment["mediaID"].(string))
+				if err != nil {
+					return nil, err
+				}
 				attachment.Data = &threading.Attachment_Image{
 					Image: &threading.ImageAttachment{
-						Mimetype: mAttachment["contentType"].(string),
+						Mimetype: meta.MimeType,
 						URL:      url,
 					},
 				}

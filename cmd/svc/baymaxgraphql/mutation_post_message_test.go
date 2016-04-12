@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/libs/media"
+	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -16,6 +18,11 @@ import (
 func TestPostMessage(t *testing.T) {
 	g := newGQL(t)
 	defer g.finish()
+	g.svc.media = media.New(storage.NewTestStore(map[string]*storage.TestObject{
+		"mediaID": &storage.TestObject{
+			Headers: map[string][]string{"Content-Type": []string{"image/jpeg"}},
+		},
+	}), storage.NewTestStore(nil), 100, 100)
 
 	ctx := context.Background()
 	acc := &auth.Account{
@@ -152,7 +159,6 @@ func TestPostMessage(t *testing.T) {
 					internal: false
 					attachments: [{
          				attachmentType: IMAGE
-         				contentType: "image/jpeg"
          				mediaID: "mediaID" 
         			}]
 				}
