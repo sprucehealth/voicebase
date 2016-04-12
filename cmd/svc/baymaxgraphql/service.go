@@ -44,7 +44,6 @@ func hydrateThreads(ctx context.Context, ram raccess.ResourceAccessor, threads [
 	if len(threads) == 0 {
 		return nil
 	}
-
 	// TODO: for now requiring that all threads are in the same org which is currently the case
 	orgID := threads[0].OrganizationID
 	for _, t := range threads[1:] {
@@ -52,13 +51,6 @@ func hydrateThreads(ctx context.Context, ram raccess.ResourceAccessor, threads [
 			return errors.Trace(fmt.Errorf("org %s doesn't match %s", t.OrganizationID, orgID))
 		}
 	}
-
-	for _, t := range threads {
-		if t.MessageCount == 0 && t.Type == models.ThreadTypeTeam {
-			t.EmptyStateTextMarkup = "This is the beginning of a conversation that is visible to everyone in your organization.\n\nInvite some colleagues to join and then send a message here to get things started."
-		}
-	}
-
 	return nil
 }
 

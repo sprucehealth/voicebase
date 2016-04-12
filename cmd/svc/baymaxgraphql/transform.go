@@ -90,6 +90,9 @@ func transformThreadToResponse(t *threading.Thread) (*models.Thread, error) {
 		th.AllowRemoveMembers = true
 		th.AllowUpdateTitle = true
 		th.Type = models.ThreadTypeTeam
+		if t.MessageCount == 0 {
+			th.EmptyStateTextMarkup = "This is the beginning of your team conversation.\nSend a message to get things started."
+		}
 	case threading.ThreadType_EXTERNAL:
 		th.AllowDelete = true
 		th.AllowInternalMessages = true
