@@ -78,3 +78,4 @@ cmd/cli/generateinvitelink/generateinvitelink
 cmd/cli/threadsystemtitle/threadsystemtitle
 cmd/cli/entitydisplayname/entitydisplayname
 cmd/cli/doctormigration/doctormigration
+cmv/cli/spruceadmin/spruceadmin

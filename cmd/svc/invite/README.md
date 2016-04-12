@@ -10,13 +10,13 @@ Start a local dynamodb
 
 Setup tables using terraform
 
-	$ mkdir schema/env-local
+	$ mkdir -p schema/env-local
 	$ cd schema/env-local
 	# replace the IP address below with an appropriate one"
 	$ cat > aws.tf <<EOF
 	provider "aws" {
 	    region = "us-east-1"
-	    dynamodb_endpoint = "http://192.168.99.100:7777"
+	    dynamodb_endpoint = "http://localhost:7777"
 	}
 	EOF
 	ln -s ../dynamodb.tf
@@ -31,5 +31,5 @@ Setup up Terraform
 	$ terraform remote config -backend=s3 -backend-config="bucket=spruce-terraform" -backend-config="encrypt=true" -backend-config="key=invite-dev.tfstate" -backend-config="region=us-east-1"
 	$ cd ../env-staging
 	$ terraform remote config -backend=s3 -backend-config="bucket=spruce-terraform" -backend-config="encrypt=true" -backend-config="key=invite-staging.tfstate" -backend-config="region=us-east-1"
-	$ cd ../end-prod
+	$ cd ../env-prod
 	$ terraform remote config -backend=s3 -backend-config="bucket=spruce-infra" -backend-config="encrypt=true" -backend-config="key=invite-prod.tfstate" -backend-config="region=us-east-1"

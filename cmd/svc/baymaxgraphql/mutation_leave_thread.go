@@ -27,7 +27,6 @@ var leaveThreadOutputType = graphql.NewObject(graphql.ObjectConfig{
 		"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		"errorCode":        &graphql.Field{Type: leaveThreadErrorCodeEnum},
 		"errorMessage":     &graphql.Field{Type: graphql.String},
-		"thread":           &graphql.Field{Type: graphql.NewNonNull(threadType)},
 	},
 	IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 		_, ok := value.(*leaveThreadOutput)

@@ -14,7 +14,7 @@ import (
 
 // Service describes the methods required to proprly expose the case service functionality
 type Service interface {
-	ChangeCareProvider(caseID int64, desiredProviderID, changeAuthorDoctorID int64) error
+	ChangeCareProvider(caseID, desiredProviderID, changeAuthorProviderID int64) error
 	ElligibleCareProvidersForCase(caseID int64) ([]*common.Doctor, error)
 }
 
@@ -42,7 +42,7 @@ func NewService(svcDAL svcDAL) Service {
 	return &service{svcDAL: svcDAL}
 }
 
-func (s *service) ChangeCareProvider(caseID int64, desiredProviderID, changeAuthorDoctorID int64) error {
+func (s *service) ChangeCareProvider(caseID, desiredProviderID, changeAuthorProviderID int64) error {
 	oldProvider, err := s.svcDAL.GetActiveCareTeamMemberForCase(api.RoleDoctor, caseID)
 	if api.IsErrNotFound(err) {
 		oldProvider = nil
@@ -62,7 +62,7 @@ func (s *service) ChangeCareProvider(caseID int64, desiredProviderID, changeAuth
 
 	return errors.Trace(s.svcDAL.Transact(func(svcDAL api.DataAPI) error {
 		if oldProvider != nil {
-			pa, err := s.svcDAL.GetPatientCaseCareProviderAssignment(oldProvider.ProviderID, caseID)
+			pa, err := svcDAL.GetPatientCaseCareProviderAssignment(oldProvider.ProviderID, caseID)
 			if err != nil {
 				return errors.Trace(err)
 			}
@@ -78,9 +78,9 @@ func (s *service) ChangeCareProvider(caseID int64, desiredProviderID, changeAuth
 			return errors.Trace(err)
 		}
 
-		_, err := s.svcDAL.InsertPatientCaseNote(&model.PatientCaseNote{
+		_, err := svcDAL.InsertPatientCaseNote(&model.PatientCaseNote{
 			CaseID:         caseID,
-			AuthorDoctorID: changeAuthorDoctorID,
+			AuthorDoctorID: changeAuthorProviderID,
 			NoteText:       fmt.Sprintf("This case has been assigned to %s %s", newProvider.FirstName, newProvider.LastName),
 		})
 		return errors.Trace(err)

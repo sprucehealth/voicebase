@@ -75,6 +75,14 @@ func (dl *mockDAL) InsertExternalEntityID(model *dal.ExternalEntityID) error {
 	return mock.SafeError(rets[1])
 }
 
+func (dl *mockDAL) InsertExternalEntityIDs(models []*dal.ExternalEntityID) error {
+	rets := dl.Expector.Record(models)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[1])
+}
+
 func (dl *mockDAL) ExternalEntityIDs(externalID string) ([]*dal.ExternalEntityID, error) {
 	rets := dl.Expector.Record(externalID)
 	if len(rets) == 0 {

@@ -104,15 +104,15 @@ func (s *threadsServer) CreateSavedQuery(ctx context.Context, in *threading.Crea
 // CreateEmptyThread create a new thread with no messages
 func (s *threadsServer) CreateEmptyThread(ctx context.Context, in *threading.CreateEmptyThreadRequest) (*threading.CreateEmptyThreadResponse, error) {
 	switch in.Type {
-	case threading.ThreadType_EXTERNAL, threading.ThreadType_TEAM:
+	case threading.ThreadType_EXTERNAL, threading.ThreadType_SECURE_EXTERNAL, threading.ThreadType_TEAM:
 	default:
 		return nil, grpcErrorf(codes.InvalidArgument, fmt.Sprintf("Type '%s' not allowed for CreateEmptyThread", in.Type.String()))
 	}
 	if in.OrganizationID == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "OrganizationID is required")
 	}
-	if in.PrimaryEntityID == "" && in.Type != threading.ThreadType_TEAM {
-		return nil, grpcErrorf(codes.InvalidArgument, "PrimaryEntityID is required for non-team threads")
+	if in.PrimaryEntityID == "" && in.Type != threading.ThreadType_TEAM && in.Type != threading.ThreadType_SECURE_EXTERNAL {
+		return nil, grpcErrorf(codes.InvalidArgument, "PrimaryEntityID is required for non app only threads")
 	}
 	if in.Summary == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "Summary is required")
@@ -122,8 +122,8 @@ func (s *threadsServer) CreateEmptyThread(ctx context.Context, in *threading.Cre
 		return nil, grpcErrorf(codes.InvalidArgument, "FromEntityID is required for TEAM threads")
 	}
 
-	if in.Type == threading.ThreadType_EXTERNAL && in.SystemTitle == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "SystemTitle is required for EXTERNAL threads")
+	if (in.Type == threading.ThreadType_EXTERNAL || in.Type == threading.ThreadType_SECURE_EXTERNAL) && in.SystemTitle == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "SystemTitle is required for EXTERNAL and SECURE_EXTERNAL threads")
 	}
 
 	tt, err := transformThreadTypeFromRequest(in.Type)
@@ -140,9 +140,8 @@ func (s *threadsServer) CreateEmptyThread(ctx context.Context, in *threading.Cre
 		}
 	case threading.ThreadType_SETUP:
 		systemTitle = setupThreadTitle
-	case threading.ThreadType_EXTERNAL:
+	case threading.ThreadType_EXTERNAL, threading.ThreadType_SECURE_EXTERNAL:
 		systemTitle = in.SystemTitle
-
 	}
 
 	var threadID models.ThreadID
@@ -158,7 +157,7 @@ func (s *threadsServer) CreateEmptyThread(ctx context.Context, in *threading.Cre
 		if err != nil {
 			return errors.Trace(err)
 		}
-		if in.Type == threading.ThreadType_TEAM {
+		if in.Type == threading.ThreadType_TEAM || in.Type == threading.ThreadType_SECURE_EXTERNAL {
 			// Make sure posted is a member
 			in.MemberEntityIDs = append(in.MemberEntityIDs, in.FromEntityID)
 			if err := dl.UpdateThreadMembers(ctx, threadID, in.MemberEntityIDs); err != nil {
@@ -750,9 +749,12 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 	}, nil
 }
 
-// QueryThreads queries the list of threads in an organization
+// QueryThreads queries the list of threads
 func (s *threadsServer) QueryThreads(ctx context.Context, in *threading.QueryThreadsRequest) (*threading.QueryThreadsResponse, error) {
-	// TODO: ignoring query entirely for now and returning all threads in an org instead
+	if in.Type != threading.QueryThreadsRequest_ALL_FOR_VIEWER && in.OrganizationID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "Organization ID required for non ALL_FOR_VIEWER queries")
+	}
+	// TODO: ignoring query entirely for now and returning all threads matching
 	d := dal.FromStart
 	if in.Iterator.Direction == threading.Iterator_FROM_END {
 		d = dal.FromEnd
@@ -1143,7 +1145,6 @@ func (s *threadsServer) hydrateThreadForViewer(ctx context.Context, ts []*thread
 		return ts, nil
 	}
 
-	golog.Debugf("Looking up thread entities for threads %v with viewerEntityID %s", tIDs, viewerEntityID)
 	tes, err := s.dal.ThreadEntities(ctx, tIDs, viewerEntityID)
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -1195,6 +1196,10 @@ func (s *threadsServer) publishMessage(ctx context.Context, orgID, primaryEntity
 
 // teamThreadSystemTitle generates a system title for a thread and verifies that all members are part of the expected organization
 func (s *threadsServer) teamThreadSystemTitle(ctx context.Context, orgID string, memberEntityIDs []string) (string, error) {
+	if len(memberEntityIDs) == 0 {
+		return "", nil
+	}
+
 	res, err := s.directoryClient.LookupEntities(ctx, &directory.LookupEntitiesRequest{
 		LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
 		LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
@@ -1259,23 +1264,25 @@ func (s *threadsServer) notifyMembersOfPublishMessage(ctx context.Context, orgID
 					entIDs = append(entIDs, te.EntityID)
 				}
 			}
-			resp, err := s.directoryClient.LookupEntities(ctx, &directory.LookupEntitiesRequest{
-				LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
-				LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
-					BatchEntityID: &directory.IDList{
-						IDs: entIDs,
+			if len(entIDs) != 0 {
+				resp, err := s.directoryClient.LookupEntities(ctx, &directory.LookupEntitiesRequest{
+					LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
+					LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
+						BatchEntityID: &directory.IDList{
+							IDs: entIDs,
+						},
 					},
-				},
-				RequestedInformation: &directory.RequestedInformation{
-					Depth:             0,
-					EntityInformation: []directory.EntityInformation{},
-				},
-			})
-			if err != nil {
-				golog.Errorf("Failed to fetch entities to notify about thread %s: %s", thread.ID, err)
-				return
+					RequestedInformation: &directory.RequestedInformation{
+						Depth:             0,
+						EntityInformation: []directory.EntityInformation{},
+					},
+				})
+				if err != nil {
+					golog.Errorf("Failed to fetch entities to notify about thread %s: %s", thread.ID, err)
+					return
+				}
+				entities = resp.Entities
 			}
-			entities = resp.Entities
 		} else {
 			// TODO: for now treating all other types the same which is the old behavior
 			// Lookup all members of the org this thread belongs to and notify them of the new message unless they published it
@@ -1303,6 +1310,10 @@ func (s *threadsServer) notifyMembersOfPublishMessage(ctx context.Context, orgID
 					entities = append(entities, m)
 				}
 			}
+		}
+
+		if len(entities) == 0 {
+			return
 		}
 
 		teMap := make(map[string]*models.ThreadEntity, len(threadEntities))

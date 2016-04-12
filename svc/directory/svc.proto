@@ -13,7 +13,7 @@ enum EntityType {
 	INTERNAL = 1;
 	EXTERNAL = 2;
 	SYSTEM = 3;
-        PATIENT = 4;
+    PATIENT = 4;
 }
 
 enum EntityInformation {
@@ -62,7 +62,7 @@ message EntityInfo {
 	string     short_title = 7;
 	string     long_title = 8;
 	Gender     gender = 10;
-	Date        dob = 9 [(gogoproto.customname) = "DOB"];
+	Date       dob = 9 [(gogoproto.customname) = "DOB"];
 }
 
 message Entity {
@@ -77,6 +77,7 @@ message Entity {
 	EntityStatus status = 10;
 	uint64 created_timestamp = 11;
 	uint64 last_modified_timestamp = 12;
+	string account_id = 13 [(gogoproto.customname) = "AccountID"];
 }
 
 message SerializedClientEntityContact {
@@ -132,6 +133,7 @@ message CreateEntityRequest {
 	repeated   Contact contacts = 5;
 	RequestedInformation requested_information = 6;
 	EntityInfo entity_info = 7;
+	string     account_id = 8 [(gogoproto.customname) = "AccountID"];
 }
 
 message CreateEntityResponse {
@@ -214,6 +216,7 @@ message UpdateEntityRequest {
 	RequestedInformation requested_information = 3;
 	repeated   Contact contacts = 4;
 	repeated   SerializedClientEntityContact serialized_entity_contacts = 5;
+	string     account_id = 6 [(gogoproto.customname) = "AccountID"]; 
 }
 
 message UpdateEntityResponse {
@@ -255,12 +258,20 @@ message DeleteEntityRequest {
 
 message DeleteEntityResponse {}
 
+message CreateExternalIDsRequest {
+	string   entity_id = 1 [(gogoproto.customname) = "EntityID"];
+	repeated string external_ids = 2 [(gogoproto.customname) = "ExternalIDs"];
+}
+
+message CreateExternalIDsResponse {}
+
 service Directory {
 	// TODO: 1/22/16 - Remove the single version of this call once this code has been deployed and all callers have been changed and deployed
 	rpc CreateContact (CreateContactRequest) returns (CreateContactResponse);
 	rpc CreateContacts (CreateContactsRequest) returns (CreateContactsResponse);
 	rpc CreateEntityDomain (CreateEntityDomainRequest) returns (CreateEntityDomainResponse);
 	rpc CreateEntity (CreateEntityRequest) returns (CreateEntityResponse);
+	rpc CreateExternalIDs (CreateExternalIDsRequest) returns (CreateExternalIDsResponse);
 	rpc CreateMembership (CreateMembershipRequest) returns (CreateMembershipResponse);
 	rpc DeleteContacts (DeleteContactsRequest) returns (DeleteContactsResponse);
 	rpc DeleteEntity (DeleteEntityRequest) returns (DeleteEntityResponse);

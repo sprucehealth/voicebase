@@ -98,12 +98,13 @@ var _ = math.Inf
 type ThreadType int32
 
 const (
-	ThreadType_UNKNOWN     ThreadType = 0
-	ThreadType_EXTERNAL    ThreadType = 1
-	ThreadType_TEAM        ThreadType = 2
-	ThreadType_SETUP       ThreadType = 3
-	ThreadType_SUPPORT     ThreadType = 4
-	ThreadType_LEGACY_TEAM ThreadType = 5
+	ThreadType_UNKNOWN         ThreadType = 0
+	ThreadType_EXTERNAL        ThreadType = 1
+	ThreadType_TEAM            ThreadType = 2
+	ThreadType_SETUP           ThreadType = 3
+	ThreadType_SUPPORT         ThreadType = 4
+	ThreadType_LEGACY_TEAM     ThreadType = 5
+	ThreadType_SECURE_EXTERNAL ThreadType = 6
 )
 
 var ThreadType_name = map[int32]string{
@@ -113,14 +114,16 @@ var ThreadType_name = map[int32]string{
 	3: "SETUP",
 	4: "SUPPORT",
 	5: "LEGACY_TEAM",
+	6: "SECURE_EXTERNAL",
 }
 var ThreadType_value = map[string]int32{
-	"UNKNOWN":     0,
-	"EXTERNAL":    1,
-	"TEAM":        2,
-	"SETUP":       3,
-	"SUPPORT":     4,
-	"LEGACY_TEAM": 5,
+	"UNKNOWN":         0,
+	"EXTERNAL":        1,
+	"TEAM":            2,
+	"SETUP":           3,
+	"SUPPORT":         4,
+	"LEGACY_TEAM":     5,
+	"SECURE_EXTERNAL": 6,
 }
 
 type Iterator_Direction int32
@@ -231,17 +234,20 @@ var Attachment_Type_value = map[string]int32{
 type QueryThreadsRequest_Type int32
 
 const (
-	QueryThreadsRequest_ADHOC QueryThreadsRequest_Type = 0
-	QueryThreadsRequest_SAVED QueryThreadsRequest_Type = 1
+	QueryThreadsRequest_ADHOC          QueryThreadsRequest_Type = 0
+	QueryThreadsRequest_SAVED          QueryThreadsRequest_Type = 1
+	QueryThreadsRequest_ALL_FOR_VIEWER QueryThreadsRequest_Type = 2
 )
 
 var QueryThreadsRequest_Type_name = map[int32]string{
 	0: "ADHOC",
 	1: "SAVED",
+	2: "ALL_FOR_VIEWER",
 }
 var QueryThreadsRequest_Type_value = map[string]int32{
-	"ADHOC": 0,
-	"SAVED": 1,
+	"ADHOC":          0,
+	"SAVED":          1,
+	"ALL_FOR_VIEWER": 2,
 }
 
 type Iterator struct {

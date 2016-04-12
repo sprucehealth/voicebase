@@ -103,6 +103,15 @@ func (c *Client) ExternalIDs(ctx context.Context, in *directory.ExternalIDsReque
 	return rets[0].(*directory.ExternalIDsResponse), mock.SafeError(rets[1])
 }
 
+// CreateExternalIDs returns the external ids that map to a set of entity ids
+func (c *Client) CreateExternalIDs(ctx context.Context, in *directory.CreateExternalIDsRequest, opts ...grpc.CallOption) (*directory.CreateExternalIDsResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*directory.CreateExternalIDsResponse), mock.SafeError(rets[1])
+}
+
 // LookupEntityDomain returns the domain for the provided entity info
 func (c *Client) LookupEntityDomain(ctx context.Context, in *directory.LookupEntityDomainRequest, opts ...grpc.CallOption) (*directory.LookupEntityDomainResponse, error) {
 	rets := c.Expector.Record(in)

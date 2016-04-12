@@ -45,6 +45,8 @@
 		SerializedEntityContactResponse
 		DeleteEntityRequest
 		DeleteEntityResponse
+		CreateExternalIDsRequest
+		CreateExternalIDsResponse
 */
 package directory
 
@@ -265,6 +267,7 @@ type Entity struct {
 	Status                EntityStatus        `protobuf:"varint,10,opt,name=status,proto3,enum=directory.EntityStatus" json:"status,omitempty"`
 	CreatedTimestamp      uint64              `protobuf:"varint,11,opt,name=created_timestamp,proto3" json:"created_timestamp,omitempty"`
 	LastModifiedTimestamp uint64              `protobuf:"varint,12,opt,name=last_modified_timestamp,proto3" json:"last_modified_timestamp,omitempty"`
+	AccountID             string              `protobuf:"bytes,13,opt,name=account_id,proto3" json:"account_id,omitempty"`
 }
 
 func (m *Entity) Reset()      { *m = Entity{} }
@@ -495,6 +498,7 @@ type CreateEntityRequest struct {
 	Contacts                  []*Contact            `protobuf:"bytes,5,rep,name=contacts" json:"contacts,omitempty"`
 	RequestedInformation      *RequestedInformation `protobuf:"bytes,6,opt,name=requested_information" json:"requested_information,omitempty"`
 	EntityInfo                *EntityInfo           `protobuf:"bytes,7,opt,name=entity_info" json:"entity_info,omitempty"`
+	AccountID                 string                `protobuf:"bytes,8,opt,name=account_id,proto3" json:"account_id,omitempty"`
 }
 
 func (m *CreateEntityRequest) Reset()      { *m = CreateEntityRequest{} }
@@ -716,6 +720,7 @@ type UpdateEntityRequest struct {
 	RequestedInformation     *RequestedInformation            `protobuf:"bytes,3,opt,name=requested_information" json:"requested_information,omitempty"`
 	Contacts                 []*Contact                       `protobuf:"bytes,4,rep,name=contacts" json:"contacts,omitempty"`
 	SerializedEntityContacts []*SerializedClientEntityContact `protobuf:"bytes,5,rep,name=serialized_entity_contacts" json:"serialized_entity_contacts,omitempty"`
+	AccountID                string                           `protobuf:"bytes,6,opt,name=account_id,proto3" json:"account_id,omitempty"`
 }
 
 func (m *UpdateEntityRequest) Reset()      { *m = UpdateEntityRequest{} }
@@ -865,6 +870,20 @@ type DeleteEntityResponse struct {
 func (m *DeleteEntityResponse) Reset()      { *m = DeleteEntityResponse{} }
 func (*DeleteEntityResponse) ProtoMessage() {}
 
+type CreateExternalIDsRequest struct {
+	EntityID    string   `protobuf:"bytes,1,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
+	ExternalIDs []string `protobuf:"bytes,2,rep,name=external_ids" json:"external_ids,omitempty"`
+}
+
+func (m *CreateExternalIDsRequest) Reset()      { *m = CreateExternalIDsRequest{} }
+func (*CreateExternalIDsRequest) ProtoMessage() {}
+
+type CreateExternalIDsResponse struct {
+}
+
+func (m *CreateExternalIDsResponse) Reset()      { *m = CreateExternalIDsResponse{} }
+func (*CreateExternalIDsResponse) ProtoMessage() {}
+
 func init() {
 	proto.RegisterType((*ExternalID)(nil), "directory.ExternalID")
 	proto.RegisterType((*Date)(nil), "directory.Date")
@@ -902,6 +921,8 @@ func init() {
 	proto.RegisterType((*SerializedEntityContactResponse)(nil), "directory.SerializedEntityContactResponse")
 	proto.RegisterType((*DeleteEntityRequest)(nil), "directory.DeleteEntityRequest")
 	proto.RegisterType((*DeleteEntityResponse)(nil), "directory.DeleteEntityResponse")
+	proto.RegisterType((*CreateExternalIDsRequest)(nil), "directory.CreateExternalIDsRequest")
+	proto.RegisterType((*CreateExternalIDsResponse)(nil), "directory.CreateExternalIDsResponse")
 	proto.RegisterEnum("directory.EntityType", EntityType_name, EntityType_value)
 	proto.RegisterEnum("directory.EntityInformation", EntityInformation_name, EntityInformation_value)
 	proto.RegisterEnum("directory.EntityStatus", EntityStatus_name, EntityStatus_value)
@@ -1146,6 +1167,9 @@ func (this *Entity) Equal(that interface{}) bool {
 		return false
 	}
 	if this.LastModifiedTimestamp != that1.LastModifiedTimestamp {
+		return false
+	}
+	if this.AccountID != that1.AccountID {
 		return false
 	}
 	return true
@@ -1495,6 +1519,9 @@ func (this *CreateEntityRequest) Equal(that interface{}) bool {
 		return false
 	}
 	if !this.EntityInfo.Equal(that1.EntityInfo) {
+		return false
+	}
+	if this.AccountID != that1.AccountID {
 		return false
 	}
 	return true
@@ -1951,6 +1978,9 @@ func (this *UpdateEntityRequest) Equal(that interface{}) bool {
 			return false
 		}
 	}
+	if this.AccountID != that1.AccountID {
+		return false
+	}
 	return true
 }
 func (this *UpdateEntityResponse) Equal(that interface{}) bool {
@@ -2200,6 +2230,61 @@ func (this *DeleteEntityResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *CreateExternalIDsRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*CreateExternalIDsRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.EntityID != that1.EntityID {
+		return false
+	}
+	if len(this.ExternalIDs) != len(that1.ExternalIDs) {
+		return false
+	}
+	for i := range this.ExternalIDs {
+		if this.ExternalIDs[i] != that1.ExternalIDs[i] {
+			return false
+		}
+	}
+	return true
+}
+func (this *CreateExternalIDsResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*CreateExternalIDsResponse)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	return true
+}
 func (this *ExternalID) GoString() string {
 	if this == nil {
 		return "nil"
@@ -2248,7 +2333,7 @@ func (this *Entity) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 15)
+	s := make([]string, 0, 16)
 	s = append(s, "&directory.Entity{")
 	s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
 	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
@@ -2269,6 +2354,7 @@ func (this *Entity) GoString() string {
 	s = append(s, "Status: "+fmt.Sprintf("%#v", this.Status)+",\n")
 	s = append(s, "CreatedTimestamp: "+fmt.Sprintf("%#v", this.CreatedTimestamp)+",\n")
 	s = append(s, "LastModifiedTimestamp: "+fmt.Sprintf("%#v", this.LastModifiedTimestamp)+",\n")
+	s = append(s, "AccountID: "+fmt.Sprintf("%#v", this.AccountID)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -2384,7 +2470,7 @@ func (this *CreateEntityRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 10)
+	s := make([]string, 0, 11)
 	s = append(s, "&directory.CreateEntityRequest{")
 	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
 	s = append(s, "ExternalID: "+fmt.Sprintf("%#v", this.ExternalID)+",\n")
@@ -2398,6 +2484,7 @@ func (this *CreateEntityRequest) GoString() string {
 	if this.EntityInfo != nil {
 		s = append(s, "EntityInfo: "+fmt.Sprintf("%#v", this.EntityInfo)+",\n")
 	}
+	s = append(s, "AccountID: "+fmt.Sprintf("%#v", this.AccountID)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -2581,7 +2668,7 @@ func (this *UpdateEntityRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 9)
+	s := make([]string, 0, 10)
 	s = append(s, "&directory.UpdateEntityRequest{")
 	s = append(s, "EntityID: "+fmt.Sprintf("%#v", this.EntityID)+",\n")
 	if this.EntityInfo != nil {
@@ -2596,6 +2683,7 @@ func (this *UpdateEntityRequest) GoString() string {
 	if this.SerializedEntityContacts != nil {
 		s = append(s, "SerializedEntityContacts: "+fmt.Sprintf("%#v", this.SerializedEntityContacts)+",\n")
 	}
+	s = append(s, "AccountID: "+fmt.Sprintf("%#v", this.AccountID)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -2707,6 +2795,26 @@ func (this *DeleteEntityResponse) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *CreateExternalIDsRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&directory.CreateExternalIDsRequest{")
+	s = append(s, "EntityID: "+fmt.Sprintf("%#v", this.EntityID)+",\n")
+	s = append(s, "ExternalIDs: "+fmt.Sprintf("%#v", this.ExternalIDs)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *CreateExternalIDsResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 4)
+	s = append(s, "&directory.CreateExternalIDsResponse{")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func valueToGoStringSvc(v interface{}, typ string) string {
 	rv := reflect.ValueOf(v)
 	if rv.IsNil() {
@@ -2745,6 +2853,7 @@ type DirectoryClient interface {
 	CreateContacts(ctx context.Context, in *CreateContactsRequest, opts ...grpc.CallOption) (*CreateContactsResponse, error)
 	CreateEntityDomain(ctx context.Context, in *CreateEntityDomainRequest, opts ...grpc.CallOption) (*CreateEntityDomainResponse, error)
 	CreateEntity(ctx context.Context, in *CreateEntityRequest, opts ...grpc.CallOption) (*CreateEntityResponse, error)
+	CreateExternalIDs(ctx context.Context, in *CreateExternalIDsRequest, opts ...grpc.CallOption) (*CreateExternalIDsResponse, error)
 	CreateMembership(ctx context.Context, in *CreateMembershipRequest, opts ...grpc.CallOption) (*CreateMembershipResponse, error)
 	DeleteContacts(ctx context.Context, in *DeleteContactsRequest, opts ...grpc.CallOption) (*DeleteContactsResponse, error)
 	DeleteEntity(ctx context.Context, in *DeleteEntityRequest, opts ...grpc.CallOption) (*DeleteEntityResponse, error)
@@ -2795,6 +2904,15 @@ func (c *directoryClient) CreateEntityDomain(ctx context.Context, in *CreateEnti
 func (c *directoryClient) CreateEntity(ctx context.Context, in *CreateEntityRequest, opts ...grpc.CallOption) (*CreateEntityResponse, error) {
 	out := new(CreateEntityResponse)
 	err := grpc.Invoke(ctx, "/directory.Directory/CreateEntity", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *directoryClient) CreateExternalIDs(ctx context.Context, in *CreateExternalIDsRequest, opts ...grpc.CallOption) (*CreateExternalIDsResponse, error) {
+	out := new(CreateExternalIDsResponse)
+	err := grpc.Invoke(ctx, "/directory.Directory/CreateExternalIDs", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2899,6 +3017,7 @@ type DirectoryServer interface {
 	CreateContacts(context.Context, *CreateContactsRequest) (*CreateContactsResponse, error)
 	CreateEntityDomain(context.Context, *CreateEntityDomainRequest) (*CreateEntityDomainResponse, error)
 	CreateEntity(context.Context, *CreateEntityRequest) (*CreateEntityResponse, error)
+	CreateExternalIDs(context.Context, *CreateExternalIDsRequest) (*CreateExternalIDsResponse, error)
 	CreateMembership(context.Context, *CreateMembershipRequest) (*CreateMembershipResponse, error)
 	DeleteContacts(context.Context, *DeleteContactsRequest) (*DeleteContactsResponse, error)
 	DeleteEntity(context.Context, *DeleteEntityRequest) (*DeleteEntityResponse, error)
@@ -2957,6 +3076,18 @@ func _Directory_CreateEntity_Handler(srv interface{}, ctx context.Context, dec f
 		return nil, err
 	}
 	out, err := srv.(DirectoryServer).CreateEntity(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func _Directory_CreateExternalIDs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(CreateExternalIDsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(DirectoryServer).CreateExternalIDs(ctx, in)
 	if err != nil {
 		return nil, err
 	}
@@ -3102,6 +3233,10 @@ var _Directory_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateEntity",
 			Handler:    _Directory_CreateEntity_Handler,
+		},
+		{
+			MethodName: "CreateExternalIDs",
+			Handler:    _Directory_CreateExternalIDs_Handler,
 		},
 		{
 			MethodName: "CreateMembership",
@@ -3399,6 +3534,12 @@ func (m *Entity) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x60
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.LastModifiedTimestamp))
+	}
+	if len(m.AccountID) > 0 {
+		data[i] = 0x6a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.AccountID)))
+		i += copy(data[i:], m.AccountID)
 	}
 	return i, nil
 }
@@ -3736,6 +3877,12 @@ func (m *CreateEntityRequest) MarshalTo(data []byte) (int, error) {
 			return 0, err
 		}
 		i += n7
+	}
+	if len(m.AccountID) > 0 {
+		data[i] = 0x42
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.AccountID)))
+		i += copy(data[i:], m.AccountID)
 	}
 	return i, nil
 }
@@ -4277,6 +4424,12 @@ func (m *UpdateEntityRequest) MarshalTo(data []byte) (int, error) {
 			i += n
 		}
 	}
+	if len(m.AccountID) > 0 {
+		data[i] = 0x32
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.AccountID)))
+		i += copy(data[i:], m.AccountID)
+	}
 	return i, nil
 }
 
@@ -4558,6 +4711,63 @@ func (m *DeleteEntityResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *CreateExternalIDsRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CreateExternalIDsRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.EntityID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.EntityID)))
+		i += copy(data[i:], m.EntityID)
+	}
+	if len(m.ExternalIDs) > 0 {
+		for _, s := range m.ExternalIDs {
+			data[i] = 0x12
+			i++
+			l = len(s)
+			for l >= 1<<7 {
+				data[i] = uint8(uint64(l)&0x7f | 0x80)
+				l >>= 7
+				i++
+			}
+			data[i] = uint8(l)
+			i++
+			i += copy(data[i:], s)
+		}
+	}
+	return i, nil
+}
+
+func (m *CreateExternalIDsResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CreateExternalIDsResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	return i, nil
+}
+
 func encodeFixed64Svc(data []byte, offset int, v uint64) int {
 	data[offset] = uint8(v)
 	data[offset+1] = uint8(v >> 8)
@@ -4710,6 +4920,10 @@ func (m *Entity) Size() (n int) {
 	}
 	if m.LastModifiedTimestamp != 0 {
 		n += 1 + sovSvc(uint64(m.LastModifiedTimestamp))
+	}
+	l = len(m.AccountID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
 	}
 	return n
 }
@@ -4865,6 +5079,10 @@ func (m *CreateEntityRequest) Size() (n int) {
 	}
 	if m.EntityInfo != nil {
 		l = m.EntityInfo.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.AccountID)
+	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
 	return n
@@ -5096,6 +5314,10 @@ func (m *UpdateEntityRequest) Size() (n int) {
 			n += 1 + l + sovSvc(uint64(l))
 		}
 	}
+	l = len(m.AccountID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
 	return n
 }
 
@@ -5208,6 +5430,28 @@ func (m *DeleteEntityResponse) Size() (n int) {
 	return n
 }
 
+func (m *CreateExternalIDsRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.EntityID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if len(m.ExternalIDs) > 0 {
+		for _, s := range m.ExternalIDs {
+			l = len(s)
+			n += 1 + l + sovSvc(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *CreateExternalIDsResponse) Size() (n int) {
+	var l int
+	_ = l
+	return n
+}
+
 func sovSvc(x uint64) (n int) {
 	for {
 		n++
@@ -5279,6 +5523,7 @@ func (this *Entity) String() string {
 		`Status:` + fmt.Sprintf("%v", this.Status) + `,`,
 		`CreatedTimestamp:` + fmt.Sprintf("%v", this.CreatedTimestamp) + `,`,
 		`LastModifiedTimestamp:` + fmt.Sprintf("%v", this.LastModifiedTimestamp) + `,`,
+		`AccountID:` + fmt.Sprintf("%v", this.AccountID) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -5400,6 +5645,7 @@ func (this *CreateEntityRequest) String() string {
 		`Contacts:` + strings.Replace(fmt.Sprintf("%v", this.Contacts), "Contact", "Contact", 1) + `,`,
 		`RequestedInformation:` + strings.Replace(fmt.Sprintf("%v", this.RequestedInformation), "RequestedInformation", "RequestedInformation", 1) + `,`,
 		`EntityInfo:` + strings.Replace(fmt.Sprintf("%v", this.EntityInfo), "EntityInfo", "EntityInfo", 1) + `,`,
+		`AccountID:` + fmt.Sprintf("%v", this.AccountID) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -5568,6 +5814,7 @@ func (this *UpdateEntityRequest) String() string {
 		`RequestedInformation:` + strings.Replace(fmt.Sprintf("%v", this.RequestedInformation), "RequestedInformation", "RequestedInformation", 1) + `,`,
 		`Contacts:` + strings.Replace(fmt.Sprintf("%v", this.Contacts), "Contact", "Contact", 1) + `,`,
 		`SerializedEntityContacts:` + strings.Replace(fmt.Sprintf("%v", this.SerializedEntityContacts), "SerializedClientEntityContact", "SerializedClientEntityContact", 1) + `,`,
+		`AccountID:` + fmt.Sprintf("%v", this.AccountID) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -5662,6 +5909,26 @@ func (this *DeleteEntityResponse) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&DeleteEntityResponse{`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CreateExternalIDsRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CreateExternalIDsRequest{`,
+		`EntityID:` + fmt.Sprintf("%v", this.EntityID) + `,`,
+		`ExternalIDs:` + fmt.Sprintf("%v", this.ExternalIDs) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CreateExternalIDsResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CreateExternalIDsResponse{`,
 		`}`,
 	}, "")
 	return s
@@ -6532,6 +6799,35 @@ func (m *Entity) Unmarshal(data []byte) error {
 					break
 				}
 			}
+		case 13:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AccountID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AccountID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])
@@ -7502,6 +7798,35 @@ func (m *CreateEntityRequest) Unmarshal(data []byte) error {
 			if err := m.EntityInfo.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
+			iNdEx = postIndex
+		case 8:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AccountID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AccountID = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -9234,6 +9559,35 @@ func (m *UpdateEntityRequest) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AccountID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AccountID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])
@@ -10075,6 +10429,164 @@ func (m *DeleteEntityResponse) Unmarshal(data []byte) error {
 		}
 		if fieldNum <= 0 {
 			return fmt.Errorf("proto: DeleteEntityResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CreateExternalIDsRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CreateExternalIDsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CreateExternalIDsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.EntityID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ExternalIDs", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ExternalIDs = append(m.ExternalIDs, string(data[iNdEx:postIndex]))
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CreateExternalIDsResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CreateExternalIDsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CreateExternalIDsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		default:

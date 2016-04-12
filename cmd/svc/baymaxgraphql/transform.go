@@ -65,7 +65,7 @@ func transformContactsToResponse(contacts []*directory.Contact) ([]*models.Conta
 	return cs, nil
 }
 
-func transformThreadToResponse(t *threading.Thread) (*models.Thread, error) {
+func transformThreadToResponse(t *threading.Thread, viewingAccount *auth.Account) (*models.Thread, error) {
 	th := &models.Thread{
 		ID:                         t.ID,
 		OrganizationID:             t.OrganizationID,
@@ -90,10 +90,17 @@ func transformThreadToResponse(t *threading.Thread) (*models.Thread, error) {
 		th.AllowRemoveMembers = true
 		th.AllowUpdateTitle = true
 		th.Type = models.ThreadTypeTeam
+		if t.MessageCount == 0 {
+			th.EmptyStateTextMarkup = "This is the beginning of your team conversation.\nSend a message to get things started."
+		}
 	case threading.ThreadType_EXTERNAL:
 		th.AllowDelete = true
 		th.AllowInternalMessages = true
+		th.AllowExternalDelivery = true
 		th.Type = models.ThreadTypeExternal
+	case threading.ThreadType_SECURE_EXTERNAL:
+		th.AllowInternalMessages = viewingAccount.Type == auth.AccountType_PROVIDER
+		th.Type = models.ThreadTypeSecureExternal
 	case threading.ThreadType_SETUP:
 		if th.Title == "" {
 			th.Title = onboardingThreadTitle
@@ -287,7 +294,7 @@ func transformSavedQueryToResponse(sq *threading.SavedQuery) (*models.SavedThrea
 	}, nil
 }
 
-func transformEntityToResponse(staticURLPrefix string, e *directory.Entity, sh *device.SpruceHeaders) (*models.Entity, error) {
+func transformEntityToResponse(staticURLPrefix string, e *directory.Entity, sh *device.SpruceHeaders, viewingAccount *auth.Account) (*models.Entity, error) {
 	oc, err := transformContactsToResponse(e.Contacts)
 	if err != nil {
 		return nil, errors.Trace(fmt.Errorf("failed to transform contacts for entity %s: %s", e.ID, err))
@@ -327,6 +334,8 @@ func transformEntityToResponse(staticURLPrefix string, e *directory.Entity, sh *
 		Note:                  e.Info.Note,
 		IsInternal:            e.Type == directory.EntityType_INTERNAL,
 		LastModifiedTimestamp: e.LastModifiedTimestamp,
+		HasAccount:            e.AccountID != "",
+		AllowEdit:             canEditEntity(e, viewingAccount),
 	}
 
 	switch e.Type {
@@ -384,7 +393,27 @@ func transformEntityToResponse(staticURLPrefix string, e *directory.Entity, sh *
 	return ent, nil
 }
 
-func transformOrganizationToResponse(staticURLPrefix string, org *directory.Entity, provider *directory.Entity, sh *device.SpruceHeaders) (*models.Organization, error) {
+func canEditEntity(e *directory.Entity, viewingAccount *auth.Account) bool {
+	// An unauthenticated use can never can never edit
+	if viewingAccount == nil || e == nil {
+		return false
+	}
+
+	// If the viewer owns the entity then they can always edit it
+	if e.AccountID == viewingAccount.ID {
+		return true
+	}
+
+	// If the viewer is a provider and the entity is an external entity then they can edit
+	if viewingAccount.Type == auth.AccountType_PROVIDER &&
+		e.Type == directory.EntityType_EXTERNAL {
+		return true
+	}
+
+	return false
+}
+
+func transformOrganizationToResponse(staticURLPrefix string, org *directory.Entity, provider *directory.Entity, sh *device.SpruceHeaders, viewingAccount *auth.Account) (*models.Organization, error) {
 	o := &models.Organization{
 		ID:   org.ID,
 		Name: org.Info.DisplayName,
@@ -397,7 +426,7 @@ func transformOrganizationToResponse(staticURLPrefix string, org *directory.Enti
 
 	o.Contacts = oc
 
-	e, err := transformEntityToResponse(staticURLPrefix, provider, sh)
+	e, err := transformEntityToResponse(staticURLPrefix, provider, sh, viewingAccount)
 	if err != nil {
 		return nil, err
 	}

@@ -260,6 +260,7 @@ func (d *dal) DeleteThread(ctx context.Context, threadID models.ThreadID) error 
 	return errors.Trace(err)
 }
 
+// TODO: Optimize the ALL_FOR_VIEWER case
 func (d *dal) IterateThreads(ctx context.Context, orgEntityID, viewerEntityID string, forExternal bool, it *Iterator) (*ThreadConnection, error) {
 	if it.Count > maxThreadCount {
 		it.Count = maxThreadCount
@@ -271,8 +272,18 @@ func (d *dal) IterateThreads(ctx context.Context, orgEntityID, viewerEntityID st
 	if forExternal {
 		orderField = "last_external_message_timestamp"
 	}
-	cond := []string{"organization_id = ?", "deleted = ?"}
-	vals := []interface{}{viewerEntityID, orgEntityID, false}
+	var cond []string
+	vals := []interface{}{viewerEntityID}
+	joinType := "JOIN"
+	if orgEntityID != "" {
+		// If an organization id has been specified then invert our search and filter
+		cond = []string{"organization_id = ?"}
+		vals = append(vals, orgEntityID)
+		joinType = "LEFT OUTER JOIN"
+	}
+	cond = append(cond, "deleted = ?")
+	vals = append(vals, false)
+
 	// Build query based on iterator in descending order so start = later and end = earlier.
 	if it.StartCursor != "" {
 		cond = append(cond, "("+dbutil.EscapeMySQLName(orderField)+" < ?)")
@@ -304,7 +315,7 @@ func (d *dal) IterateThreads(ctx context.Context, orgEntityID, viewerEntityID st
 			t.last_external_message_summary, t.last_primary_entity_endpoints, t.created, t.message_count, t.type, COALESCE(t.system_title, ''), COALESCE(t.user_title, ''),
 			te.thread_id, te.entity_id, te.member, te.joined, te.last_viewed, te.last_unread_notify, te.last_referenced
 		FROM threads t
-		LEFT OUTER JOIN thread_entities te ON te.thread_id = t.id AND te.entity_id = ?
+		`+joinType+` thread_entities te ON te.entity_id = ? AND te.thread_id = t.id 
 		WHERE `+where+order+limit, vals...)
 	if err != nil {
 		return nil, errors.Trace(err)

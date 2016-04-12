@@ -310,7 +310,8 @@ func main() {
 		}
 	}
 
-	h := httputil.LoggingHandler(r, webRequestLogger)
+	h := httputil.CompressResponse(r)
+	h = httputil.LoggingHandler(h, webRequestLogger)
 
 	fmt.Printf("Listening on %s\n", *flagListenAddr)
 

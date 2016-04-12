@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
@@ -70,7 +71,7 @@ var organizationType = graphql.NewObject(
 						return nil, errors.New("entity not found for organization")
 					}
 					sh := gqlctx.SpruceHeaders(ctx)
-					rE, err := transformEntityToResponse(svc.staticURLPrefix, e, sh)
+					rE, err := transformEntityToResponse(svc.staticURLPrefix, e, sh, gqlctx.Account(ctx))
 					if err != nil {
 						return nil, errors.InternalError(ctx, err)
 					}
@@ -102,7 +103,7 @@ var organizationType = graphql.NewObject(
 					entities := make([]*models.Entity, 0, len(orgEntity.Members))
 					for _, em := range orgEntity.Members {
 						if em.Type == directory.EntityType_INTERNAL {
-							ent, err := transformEntityToResponse(svc.staticURLPrefix, em, sh)
+							ent, err := transformEntityToResponse(svc.staticURLPrefix, em, sh, gqlctx.Account(ctx))
 							if err != nil {
 								return nil, errors.InternalError(ctx, err)
 							}
@@ -114,27 +115,29 @@ var organizationType = graphql.NewObject(
 			},
 			"savedThreadQueries": &graphql.Field{
 				Type: graphql.NewList(graphql.NewNonNull(savedThreadQueryType)),
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					org := p.Source.(*models.Organization)
-					if org.Entity == nil || org.Entity.ID == "" {
-						return nil, errors.New("no entity for organization")
-					}
-					ram := raccess.ResourceAccess(p)
-					ctx := p.Context
-					sqs, err := ram.SavedQueries(ctx, org.Entity.ID)
-					if err != nil {
-						return nil, err
-					}
-					var qs []*models.SavedThreadQuery
-					for _, q := range sqs {
-						qs = append(qs, &models.SavedThreadQuery{
-							ID:             q.ID,
-							OrganizationID: org.ID,
-							// TODO: query
-						})
-					}
-					return qs, nil
-				},
+				Resolve: apiaccess.Authenticated(
+					apiaccess.Provider(
+						func(p graphql.ResolveParams) (interface{}, error) {
+							org := p.Source.(*models.Organization)
+							if org.Entity == nil || org.Entity.ID == "" {
+								return nil, errors.New("no entity for organization")
+							}
+							ram := raccess.ResourceAccess(p)
+							ctx := p.Context
+							sqs, err := ram.SavedQueries(ctx, org.Entity.ID)
+							if err != nil {
+								return nil, err
+							}
+							var qs []*models.SavedThreadQuery
+							for _, q := range sqs {
+								qs = append(qs, &models.SavedThreadQuery{
+									ID:             q.ID,
+									OrganizationID: org.ID,
+									// TODO: query
+								})
+							}
+							return qs, nil
+						})),
 			},
 			"deeplink": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.String),

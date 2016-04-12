@@ -40,9 +40,17 @@ type Me struct {
 	ClientEncryptionKey string  `json:"clientEncryptionKey"`
 }
 
+type AccountType string
+
+const (
+	AccountTypePatient  AccountType = "PATIENT"
+	AccountTypeProvider AccountType = "PROVIDER"
+)
+
 type Account interface {
 	// This method is unfortunatly named, but don't want to cover the exported ID
 	GetID() string
+	Type() AccountType
 }
 
 // ProviderAccount represents the information associated with a provider's account
@@ -54,6 +62,10 @@ func (a *ProviderAccount) GetID() string {
 	return a.ID
 }
 
+func (a *ProviderAccount) Type() AccountType {
+	return AccountTypeProvider
+}
+
 // PatientAccount represents the information associated with a patient's account
 type PatientAccount struct {
 	ID string `json:"id"`
@@ -61,6 +73,10 @@ type PatientAccount struct {
 
 func (a *PatientAccount) GetID() string {
 	return a.ID
+}
+
+func (a *PatientAccount) Type() AccountType {
+	return AccountTypePatient
 }
 
 type DOB struct {
@@ -85,6 +101,8 @@ type Entity struct {
 	Contacts              []*ContactInfo `json:"contacts"`
 	IsInternal            bool           `json:"isInternal"`
 	LastModifiedTimestamp uint64         `json:"lastModifiedTimestamp"`
+	HasAccount            bool           `json:"hasAccount"`
+	AllowEdit             bool           `json:"allowEdit"`
 	Avatar                *Image
 }
 
@@ -150,12 +168,13 @@ type AudioAttachment struct {
 }
 
 const (
-	ThreadTypeUnknown    = "UNKNOWN" // TODO: remove this once old threads are migrated
-	ThreadTypeExternal   = "EXTERNAL"
-	ThreadTypeTeam       = "TEAM"
-	ThreadTypeSetup      = "SETUP"
-	ThreadTypeSupport    = "SUPPORT"
-	ThreadTypeLegacyTeam = "LEGACY_TEAM"
+	ThreadTypeUnknown        = "UNKNOWN" // TODO: remove this once old threads are migrated
+	ThreadTypeExternal       = "EXTERNAL"
+	ThreadTypeTeam           = "TEAM"
+	ThreadTypeSetup          = "SETUP"
+	ThreadTypeSupport        = "SUPPORT"
+	ThreadTypeLegacyTeam     = "LEGACY_TEAM"
+	ThreadTypeSecureExternal = "SECURE_EXTERNAL"
 )
 
 type Thread struct {
@@ -175,6 +194,7 @@ type Thread struct {
 	AllowLeave                 bool   `json:"allowLeave"`
 	AllowRemoveMembers         bool   `json:"allowRemoveMembers"`
 	AllowUpdateTitle           bool   `json:"allowUpdateTitle"`
+	AllowExternalDelivery      bool   `json:"allowExternalDelivery"`
 	LastPrimaryEntityEndpoints []*Endpoint
 	EmptyStateTextMarkup       string `json:"emptyStateTextMarkup,omitempty"`
 	MessageCount               int    `json:"messageCount"`

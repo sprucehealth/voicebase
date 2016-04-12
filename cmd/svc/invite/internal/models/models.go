@@ -22,6 +22,7 @@ type Invite struct {
 	Email                string
 	PhoneNumber          string
 	URL                  string
+	ParkedEntityID       string
 	Created              time.Time
 	Values               map[string]string
 }

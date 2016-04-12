@@ -52,7 +52,8 @@ func TestCreateAccountMutation(t *testing.T) {
 			GroupName:   "org",
 			DisplayName: "org",
 		},
-		Type: directory.EntityType_ORGANIZATION,
+		Type:      directory.EntityType_ORGANIZATION,
+		AccountID: "a_1",
 	}).WithReturns(&directory.Entity{
 		ID: "e_org",
 		Info: &directory.EntityInfo{
@@ -76,6 +77,7 @@ func TestCreateAccountMutation(t *testing.T) {
 				Provisioned: false,
 			},
 		},
+		AccountID: "a_1",
 	}).WithReturns(&directory.Entity{
 		ID: "e_int",
 		Info: &directory.EntityInfo{
@@ -295,6 +297,7 @@ func TestCreateAccountMutation_InviteColleague(t *testing.T) {
 				Provisioned: false,
 			},
 		},
+		AccountID: "a_1",
 	}).WithReturns(&directory.Entity{
 		ID: "e_int",
 		Info: &directory.EntityInfo{

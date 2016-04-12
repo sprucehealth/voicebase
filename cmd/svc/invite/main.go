@@ -4,19 +4,22 @@ import (
 	"flag"
 	"log"
 	"net"
-	"net/http"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sprucehealth/backend/boot"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/stub"
 	"github.com/sprucehealth/backend/cmd/svc/invite/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/invite/internal/server"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/branch"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/invite"
@@ -56,13 +59,17 @@ func main() {
 	if err != nil {
 		golog.Fatalf(err.Error())
 	}
-
-	db := dynamodb.New(awsSession)
-
-	// Start management server
-	go func() {
-		golog.Fatalf("%s", http.ListenAndServe(":8005", nil))
-	}()
+	var db *dynamodb.DynamoDB
+	if *flagDynamoDBEndpoint != "" {
+		dynamoConfig := &aws.Config{
+			Region:     ptr.String("us-east-1"),
+			DisableSSL: ptr.Bool(true),
+			Endpoint:   flagDynamoDBEndpoint,
+		}
+		db = dynamodb.New(session.New(dynamoConfig))
+	} else {
+		db = dynamodb.New(awsSession)
+	}
 
 	if *flagDirectoryAddr == "" {
 		golog.Fatalf("Directory service not configured")
@@ -74,15 +81,16 @@ func main() {
 	defer conn.Close()
 	directoryClient := directory.NewDirectoryClient(conn)
 
-	if *flagExcommsAddr == "" {
-		golog.Fatalf("Excomms service not configured")
+	var exCommsClient excomms.ExCommsClient
+	if *flagExcommsAddr == "stub" {
+		exCommsClient = stub.NewStubExcommsClient()
+	} else {
+		conn, err = grpc.Dial(*flagExcommsAddr, grpc.WithInsecure())
+		if err != nil {
+			golog.Fatalf("Unable to connect to excomms service: %s", err)
+		}
+		exCommsClient = excomms.NewExCommsClient(conn)
 	}
-	conn, err = grpc.Dial(*flagExcommsAddr, grpc.WithInsecure())
-	if err != nil {
-		golog.Fatalf("Unable to connect to excomms service: %s", err)
-	}
-	defer conn.Close()
-	excommsClient := excomms.NewExCommsClient(conn)
 
 	sg := sendgrid.NewSendGridClientWithApiKey(*flagSendGridKey)
 	branchCli := branch.NewClient(*flagBranchKey)
@@ -93,7 +101,7 @@ func main() {
 		return
 	}
 
-	srv := server.New(dal.New(db, environment.GetCurrent()), nil, directoryClient, excommsClient, eSNS, branchCli, sg, *flagFromEmail, *flagServiceNumber, *flagEventsTopic, *flagWebInviteURL)
+	srv := server.New(dal.New(db, environment.GetCurrent()), nil, directoryClient, exCommsClient, eSNS, branchCli, sg, *flagFromEmail, *flagServiceNumber, *flagEventsTopic, *flagWebInviteURL)
 	invite.InitMetrics(srv, svc.MetricsRegistry.Scope("server"))
 	s := grpc.NewServer()
 	defer s.Stop()

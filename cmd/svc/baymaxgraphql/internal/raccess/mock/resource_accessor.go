@@ -3,6 +3,7 @@ package mock
 import (
 	"testing"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
@@ -116,6 +117,15 @@ func (m *ResourceAccessor) CreateEntity(ctx context.Context, req *directory.Crea
 
 func (m *ResourceAccessor) CreateEntityDomain(ctx context.Context, organizationID, subdomain string) error {
 	rets := m.Record(organizationID, subdomain)
+	if len(rets) == 0 {
+		return nil
+	}
+
+	return mock.SafeError(rets[0])
+}
+
+func (m *ResourceAccessor) CreateExternalIDs(ctx context.Context, req *directory.CreateExternalIDsRequest) error {
+	rets := m.Record(req)
 	if len(rets) == 0 {
 		return nil
 	}
@@ -255,6 +265,15 @@ func (m *ResourceAccessor) MarkThreadAsRead(ctx context.Context, threadID, entit
 	return mock.SafeError(rets[0])
 }
 
+func (m *ResourceAccessor) PatientEntity(ctx context.Context, a *models.PatientAccount) (*directory.Entity, error) {
+	rets := m.Record(a)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].(*directory.Entity), mock.SafeError(rets[1])
+}
+
 func (m *ResourceAccessor) PostMessage(ctx context.Context, req *threading.PostMessageRequest) (*threading.PostMessageResponse, error) {
 	rets := m.Record(req)
 	if len(rets) == 0 {
@@ -383,6 +402,15 @@ func (m *ResourceAccessor) ThreadMembers(ctx context.Context, orgID string, req 
 
 func (m *ResourceAccessor) Unauthenticate(ctx context.Context, token string) error {
 	rets := m.Record(token)
+	if len(rets) == 0 {
+		return nil
+	}
+
+	return mock.SafeError(rets[0])
+}
+
+func (m *ResourceAccessor) UnauthorizedCreateExternalIDs(ctx context.Context, req *directory.CreateExternalIDsRequest) error {
+	rets := m.Record(req)
 	if len(rets) == 0 {
 		return nil
 	}

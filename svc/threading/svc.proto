@@ -33,6 +33,7 @@ enum ThreadType {
 	SETUP = 3;
 	SUPPORT = 4;
 	LEGACY_TEAM = 5;
+	SECURE_EXTERNAL = 6;
 }
 
 message Thread {
@@ -233,6 +234,7 @@ message QueryThreadsRequest {
 	enum Type {
 		ADHOC = 0;
 		SAVED = 1;
+		ALL_FOR_VIEWER = 2; 
 	}
 	Type type = 3;
 	oneof query_type {

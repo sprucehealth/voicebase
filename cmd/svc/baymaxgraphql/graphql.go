@@ -267,6 +267,8 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 			golog.Errorf("[%s] %s\n%s", e.Type, e.Message, e.StackTrace)
 			// The stack trace shouldn't be serialized in the response but clear it out just to be sure
 			e.StackTrace = ""
+		} else {
+			golog.Warningf("GraphQL error response %s: %s (%s)\n%s", e.Type, e.Message, e.UserMessage, req.Query)
 		}
 		// Wrap any non well formed gql errors as internal
 		if errors.Type(e) == errors.ErrTypeUnknown {

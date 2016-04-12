@@ -1,21 +1,97 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
+	"golang.org/x/net/context"
+
+	"github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/conc"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/invite"
+	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 	"google.golang.org/grpc"
 )
+
+const (
+	createPatientAccountErrorCodeAccountExists           = "ACCOUNT_EXISTS"
+	createPatientAccountErrorCodeInvalidEmail            = "INVALID_EMAIL"
+	createPatientAccountErrorCodeInvalidFirstName        = "INVALID_FIRST_NAME"
+	createPatientAccountErrorCodeInvalidLastName         = "INVALID_LAST_NAME"
+	createPatientAccountErrorCodeInvalidOrganizationName = "INVALID_ORGANIZATION_NAME"
+	createPatientAccountErrorCodeInvalidPassword         = "INVALID_PASSWORD"
+	createPatientAccountErrorCodeInvalidPhoneNumber      = "INVALID_PHONE_NUMBER"
+	createPatientAccountErrorCodeInvalidDOB              = "INVALID_DOB"
+	createPatientAccountErrorCodeInviteRequired          = "INVITE_REQUIRED"
+	createPatientAccountErrorCodeInviteEmailMismatch     = "INVITE_EMAIL_MISMATCH"
+	createPatientAccountErrorCodeInvitePhoneMismatch     = "INVITE_PHONE_MISMATCH"
+	createPatientAccountErrorCodeEmailNotVerified        = "EMAIL_NOT_VERIFIED"
+)
+
+var createPatientAccountErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
+	Name: "CreatePatientAccountErrorCode",
+	Values: graphql.EnumValueConfigMap{
+		createPatientAccountErrorCodeInvalidEmail: &graphql.EnumValueConfig{
+			Value:       createPatientAccountErrorCodeInvalidEmail,
+			Description: "The provided email is invalid",
+		},
+		createPatientAccountErrorCodeInvalidPassword: &graphql.EnumValueConfig{
+			Value:       createPatientAccountErrorCodeInvalidPassword,
+			Description: "The provided password is invalid",
+		},
+		createPatientAccountErrorCodeInvalidPhoneNumber: &graphql.EnumValueConfig{
+			Value:       createPatientAccountErrorCodeInvalidPhoneNumber,
+			Description: "The provided phone number is invalid",
+		},
+		createPatientAccountErrorCodeAccountExists: &graphql.EnumValueConfig{
+			Value:       createPatientAccountErrorCodeAccountExists,
+			Description: "An account exists with the provided email address",
+		},
+		createPatientAccountErrorCodeInvalidOrganizationName: &graphql.EnumValueConfig{
+			Value:       createPatientAccountErrorCodeInvalidOrganizationName,
+			Description: "The provided organization name is invalid",
+		},
+		createPatientAccountErrorCodeInvalidFirstName: &graphql.EnumValueConfig{
+			Value:       createPatientAccountErrorCodeInvalidFirstName,
+			Description: "The provided first name is invalid",
+		},
+		createPatientAccountErrorCodeInvalidLastName: &graphql.EnumValueConfig{
+			Value:       createPatientAccountErrorCodeInvalidLastName,
+			Description: "The provided last name is invalid",
+		},
+		createAccountErrorCodeInvalidDOB: &graphql.EnumValueConfig{
+			Value:       createPatientAccountErrorCodeInvalidDOB,
+			Description: "The provided date of birth is invalid",
+		},
+		createPatientAccountErrorCodeInviteRequired: &graphql.EnumValueConfig{
+			Value:       createPatientAccountErrorCodeInviteRequired,
+			Description: "An invite is required to create an account with this device",
+		},
+		createPatientAccountErrorCodeInviteEmailMismatch: &graphql.EnumValueConfig{
+			Value:       createPatientAccountErrorCodeInviteEmailMismatch,
+			Description: "The provided email doesn't match the invite",
+		},
+		createPatientAccountErrorCodeInvitePhoneMismatch: &graphql.EnumValueConfig{
+			Value:       createPatientAccountErrorCodeInvitePhoneMismatch,
+			Description: "The provided phone number doesn't match the invite",
+		},
+		createPatientAccountErrorCodeEmailNotVerified: &graphql.EnumValueConfig{
+			Value:       createPatientAccountErrorCodeEmailNotVerified,
+			Description: "The email associated with this account creation has not been verified.",
+		},
+	},
+})
 
 type createPatientAccountOutput struct {
 	ClientMutationID    string         `json:"clientMutationId,omitempty"`
@@ -35,7 +111,7 @@ const (
 )
 
 var genderEnumType = graphql.NewEnum(graphql.EnumConfig{
-	Name:        "GenderType",
+	Name:        "Gender",
 	Description: "The gender of a thing",
 	Values: graphql.EnumValueConfigMap{
 		genderUnknown: &graphql.EnumValueConfig{
@@ -66,16 +142,15 @@ var dateInputType = graphql.NewInputObject(graphql.InputObjectConfig{
 var createPatientAccountInputType = graphql.NewInputObject(graphql.InputObjectConfig{
 	Name: "CreatePatientAccountInput",
 	Fields: graphql.InputObjectConfigFieldMap{
-		"clientMutationId": newClientMutationIDInputField(),
-		"uuid":             newUUIDInputField(),
-		"email":            &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-		"password":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-		"firstName":        &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-		"lastName":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-		"dob":              &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(dateInputType)},
-		"gender":           &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(genderEnumType)},
-		// TODO: This will not stay as is. This will be retrieved from the invite code
-		"phoneNumber": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+		"clientMutationId":       newClientMutationIDInputField(),
+		"uuid":                   newUUIDInputField(),
+		"email":                  &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+		"password":               &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+		"firstName":              &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+		"lastName":               &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+		"dob":                    &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(dateInputType)},
+		"gender":                 &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(genderEnumType)},
+		"emailVerificationToken": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 	},
 })
 
@@ -84,7 +159,7 @@ var createPatientAccountOutputType = graphql.NewObject(graphql.ObjectConfig{
 	Fields: graphql.Fields{
 		"clientMutationId":    newClientmutationIDOutputField(),
 		"success":             &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-		"errorCode":           &graphql.Field{Type: createAccountErrorCodeEnum},
+		"errorCode":           &graphql.Field{Type: createPatientAccountErrorCodeEnum},
 		"errorMessage":        &graphql.Field{Type: graphql.String},
 		"token":               &graphql.Field{Type: graphql.String},
 		"account":             &graphql.Field{Type: accountInterfaceType},
@@ -107,25 +182,82 @@ var createPatientAccountMutation = &graphql.Field{
 }
 
 func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput, error) {
+	svc := serviceFromParams(p)
 	ram := raccess.ResourceAccess(p)
 	ctx := p.Context
 	input := p.Args["input"].(map[string]interface{})
 	mutationID, _ := input["clientMutationId"].(string)
 
+	inv, err := svc.inviteInfo(ctx)
+	if err != nil {
+		return nil, errors.InternalError(ctx, err)
+	}
+
+	if inv == nil {
+		return &createPatientAccountOutput{
+			ClientMutationID: mutationID,
+			Success:          false,
+			ErrorCode:        createPatientAccountErrorCodeInviteRequired,
+			ErrorMessage:     "An invite from a provider is required to create an account with this device.",
+		}, nil
+	}
+
+	// Sanity check to make sure we fail early in case we forgot to handle all new invite types
+	if inv.Type != invite.LookupInviteResponse_PATIENT {
+		return nil, errors.InternalError(ctx, fmt.Errorf("unknown invite type %s", inv.Type.String()))
+	}
 	req := &auth.CreateAccountRequest{
 		Email:    input["email"].(string),
 		Password: input["password"].(string),
 		Type:     auth.AccountType_PATIENT,
 	}
+	if req.Password == "" {
+		return &createPatientAccountOutput{
+			ClientMutationID: mutationID,
+			Success:          false,
+			ErrorCode:        createPatientAccountErrorCodeInvalidPassword,
+			ErrorMessage:     "Password cannot be empty",
+		}, nil
+	}
+	invPhone, err := contactForParkedEntity(ctx, ram, inv.GetPatient().Patient.ParkedEntityID, directory.ContactType_PHONE)
+	if err != nil {
+		return nil, errors.InternalError(ctx, fmt.Errorf("Encountered error whil getting parked phone number for account creation: %s", err))
+	}
+	pn, err := phone.ParseNumber(invPhone)
+	if err != nil {
+		return &createPatientAccountOutput{
+			ClientMutationID: mutationID,
+			Success:          false,
+			ErrorCode:        createPatientAccountErrorCodeInvalidPhoneNumber,
+			ErrorMessage:     "Please enter a valid phone number.",
+		}, nil
+	}
+	req.PhoneNumber = pn.String()
 	req.Email = strings.TrimSpace(req.Email)
 	if !validate.Email(req.Email) {
 		return &createPatientAccountOutput{
 			ClientMutationID: mutationID,
 			Success:          false,
-			ErrorCode:        createAccountErrorCodeInvalidEmail,
+			ErrorCode:        createPatientAccountErrorCodeInvalidEmail,
 			ErrorMessage:     "Please enter a valid email address.",
 		}, nil
 	}
+	// Assert that the email was verified
+	if _, err := ram.VerifiedValue(ctx, input["emailVerificationToken"].(string)); err != nil {
+		if grpc.Code(err) == auth.ValueNotYetVerified {
+			return &createPatientAccountOutput{
+				ClientMutationID: mutationID,
+				Success:          false,
+				ErrorCode:        createPatientAccountErrorCodeEmailNotVerified,
+				ErrorMessage:     "The email associated with this account creation has not been verified.",
+			}, nil
+		}
+		return nil, errors.InternalError(ctx, fmt.Errorf("Encountered error while checking if email has been verified: %s", err))
+	}
+	if inv.GetPatient().Patient.ParkedEntityID == "" {
+		return nil, errors.InternalError(ctx, fmt.Errorf("Unable to find parked entity account associated with invite %+v", inv))
+	}
+
 	entityInfo, err := entityInfoFromInput(input)
 	if err != nil {
 		return nil, errors.InternalError(ctx, err)
@@ -137,7 +269,7 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 		return &createPatientAccountOutput{
 			ClientMutationID: mutationID,
 			Success:          false,
-			ErrorCode:        createAccountErrorCodeInvalidFirstName,
+			ErrorCode:        createPatientAccountErrorCodeInvalidFirstName,
 			ErrorMessage:     "Please enter a valid first name.",
 		}, nil
 	}
@@ -145,27 +277,9 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 		return &createPatientAccountOutput{
 			ClientMutationID: mutationID,
 			Success:          false,
-			ErrorCode:        createAccountErrorCodeInvalidLastName,
+			ErrorCode:        createPatientAccountErrorCodeInvalidLastName,
 			ErrorMessage:     "Please enter a valid last name.",
 		}, nil
-	}
-	// TODO: This will come from the token
-	pn, err := phone.ParseNumber(input["phoneNumber"].(string))
-	if err != nil {
-		return &createPatientAccountOutput{
-			ClientMutationID: mutationID,
-			Success:          false,
-			ErrorCode:        createAccountErrorCodeInvalidPhoneNumber,
-			ErrorMessage:     "Please enter a valid phone number.",
-		}, nil
-	}
-	req.PhoneNumber = pn.String()
-	contacts := []*directory.Contact{
-		{
-			ContactType: directory.ContactType_PHONE,
-			Value:       req.PhoneNumber,
-			Provisioned: false,
-		},
 	}
 	res, err := ram.CreateAccount(ctx, req)
 	if err != nil {
@@ -174,21 +288,21 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 			return &createPatientAccountOutput{
 				ClientMutationID: mutationID,
 				Success:          false,
-				ErrorCode:        createAccountErrorCodeAccountExists,
+				ErrorCode:        createPatientAccountErrorCodeAccountExists,
 				ErrorMessage:     "An account already exists with the entered email address.",
 			}, nil
 		case auth.InvalidEmail:
 			return &createPatientAccountOutput{
 				ClientMutationID: mutationID,
 				Success:          false,
-				ErrorCode:        createAccountErrorCodeInvalidEmail,
+				ErrorCode:        createPatientAccountErrorCodeInvalidEmail,
 				ErrorMessage:     "Please enter a valid email address.",
 			}, nil
 		case auth.InvalidPhoneNumber:
 			return &createPatientAccountOutput{
 				ClientMutationID: mutationID,
 				Success:          false,
-				ErrorCode:        createAccountErrorCodeInvalidPhoneNumber,
+				ErrorCode:        createPatientAccountErrorCodeInvalidPhoneNumber,
 				ErrorMessage:     "Please enter a valid phone number.",
 			}, nil
 		}
@@ -196,23 +310,44 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 	}
 	gqlctx.InPlaceWithAccount(ctx, res.Account)
 
-	// TODO: mraines: Add DOB validation
+	// Associate the parked entity with the account
+	if err = ram.UnauthorizedCreateExternalIDs(ctx, &directory.CreateExternalIDsRequest{
+		EntityID:    inv.GetPatient().Patient.ParkedEntityID,
+		ExternalIDs: []string{res.Account.ID},
+	}); err != nil {
+		return nil, errors.InternalError(ctx, err)
+	}
 
-	// Create entity
-	_, err = ram.CreateEntity(ctx, &directory.CreateEntityRequest{
+	// Update our parked entity
+	patientEntity, err := ram.UpdateEntity(ctx, &directory.UpdateEntityRequest{
+		EntityID:   inv.GetPatient().Patient.ParkedEntityID,
 		EntityInfo: entityInfo,
-		Type:       directory.EntityType_PATIENT,
-		// TODO: Formalize this root identifier somehwere
-		ExternalID: res.Account.ID,
-		Contacts:   contacts,
+		AccountID:  res.Account.ID,
 	})
 	if err != nil {
 		return nil, errors.InternalError(ctx, err)
 	}
 
-	// TODO: Create saved query
-	// TODO: Analytics
+	// Since the patient may have changed their name, asynchronously update the thread
+	conc.Go(func() {
+		threads, err := ram.ThreadsForMember(context.Background(), inv.GetPatient().Patient.ParkedEntityID, true)
+		if err != nil {
+			golog.Errorf("Encountered error when attempting to get threads for parked entity %q to update title: %s", inv.GetPatient().Patient.ParkedEntityID, err)
+			return
+		}
+		for _, th := range threads {
+			if _, err := ram.UpdateThread(context.Background(), &threading.UpdateThreadRequest{
+				ThreadID:    th.ID,
+				SystemTitle: patientEntity.Info.DisplayName,
+			}); err != nil {
+				golog.Errorf("Encountered error when attempting to update thread title for new patient account: %s", err)
+				return
+			}
+		}
+	})
 
+	// Record Analytics
+	recordCreatePatientAccountAnalytics(ctx, ram, svc, p, inv, res.Account, inv.GetPatient().OrganizationEntityID, inv.GetPatient().Patient.ParkedEntityID)
 	result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)
 	result.Set("auth_token", res.Token.Value)
 	result.Set("auth_expiration", time.Unix(int64(res.Token.ExpirationEpoch), 0))
@@ -224,4 +359,47 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 		Account:             transformAccountToResponse(res.Account),
 		ClientEncryptionKey: res.Token.ClientEncryptionKey,
 	}, nil
+}
+
+func recordCreatePatientAccountAnalytics(
+	ctx context.Context,
+	ram raccess.ResourceAccessor,
+	svc *service,
+	p graphql.ResolveParams,
+	inv *invite.LookupInviteResponse,
+	account *auth.Account,
+	orgID, accEntityID string) {
+	// Record analytics
+	headers := gqlctx.SpruceHeaders(ctx)
+	var platform string
+	if headers != nil {
+		platform = headers.Platform.String()
+		golog.Debugf("Patient Account created. ID = %s Device = %s", account.ID, headers.DeviceID)
+	}
+	conc.Go(func() {
+		svc.segmentio.Identify(&analytics.Identify{
+			UserId: account.ID,
+			Traits: map[string]interface{}{
+				"platform":  platform,
+				"createdAt": time.Now().Unix(),
+				"type":      "patient",
+			},
+			Context: map[string]interface{}{
+				"ip":        remoteAddrFromParams(p),
+				"userAgent": userAgentFromParams(p),
+			},
+		})
+		props := map[string]interface{}{
+			"entity_id":       accEntityID,
+			"organization_id": orgID,
+		}
+		if inv != nil {
+			props["invite"] = inv.Type.String()
+		}
+		svc.segmentio.Track(&analytics.Track{
+			Event:      "signedup",
+			UserId:     account.ID,
+			Properties: props,
+		})
+	})
 }

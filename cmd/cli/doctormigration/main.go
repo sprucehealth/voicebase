@@ -21,7 +21,7 @@ import (
 
 var (
 	dbHost      = flag.String("db_host", "", "mysql database host")
-	dbPort      = flag.Int("dp_port", 3306, "mysql database port")
+	dbPort      = flag.Int("db_port", 3306, "mysql database port")
 	dbName      = flag.String("db_name", "", "mysql database name")
 	dbUsername  = flag.String("db_username", "", "mysql database username")
 	dbPassword  = flag.String("db_password", "", "mysql database password")

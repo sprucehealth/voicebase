@@ -863,6 +863,7 @@ func TestUpdateEntity(t *testing.T) {
 		GroupName:     ptr.String(""),
 		ShortTitle:    ptr.String(""),
 		LongTitle:     ptr.String(""),
+		AccountID:     ptr.String("account_id"),
 		Note:          ptr.String("I am the knight"),
 	}))
 
@@ -882,6 +883,7 @@ func TestUpdateEntity(t *testing.T) {
 			DisplayName: "batman",
 			Note:        "I am the knight",
 		},
+		AccountID: "account_id",
 	})
 	test.OK(t, err)
 
@@ -910,6 +912,7 @@ func TestUpdateEntityWithContacts(t *testing.T) {
 		GroupName:     ptr.String(""),
 		ShortTitle:    ptr.String(""),
 		LongTitle:     ptr.String(""),
+		AccountID:     ptr.String(""),
 		Note:          ptr.String("I am the knight"),
 	}))
 
@@ -986,6 +989,7 @@ func TestUpdateEntityWithSerializedContacts(t *testing.T) {
 		GroupName:     ptr.String(""),
 		ShortTitle:    ptr.String(""),
 		LongTitle:     ptr.String(""),
+		AccountID:     ptr.String(""),
 		Note:          ptr.String("I am the knight"),
 	}))
 

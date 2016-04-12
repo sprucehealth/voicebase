@@ -167,6 +167,8 @@ const (
 	// ThreadTypeLegacyInternal is a thread that represents the legacy internal thread
 	// visible to all members of the org for internal communication.
 	ThreadTypeLegacyTeam ThreadType = "LEGACY_TEAM"
+	// ThreadTypeSecureExternal is a thread with with an external entity (e.g. patient) limited to secure in app communication
+	ThreadTypeSecureExternal ThreadType = "SECURE_EXTERNAL"
 )
 
 // Scan implements sql.Scanner and expects src to be nil or of type string or []byte
@@ -196,7 +198,7 @@ func (tt ThreadType) Value() (driver.Value, error) {
 // Validate returns nil iff the value of the type is valid
 func (tt ThreadType) Validate() error {
 	switch tt {
-	case ThreadTypeUnknown, ThreadTypeExternal, ThreadTypeTeam, ThreadTypeSetup, ThreadTypeSupport, ThreadTypeLegacyTeam:
+	case ThreadTypeUnknown, ThreadTypeExternal, ThreadTypeTeam, ThreadTypeSetup, ThreadTypeSupport, ThreadTypeLegacyTeam, ThreadTypeSecureExternal:
 		return nil
 	}
 	return errors.Trace(fmt.Errorf("unknown thread type '%s'", string(tt)))
