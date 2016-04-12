@@ -69,6 +69,8 @@ type command interface {
 type commandNew func(api.DataAPI, patientcase.Service) (command, error)
 
 var commands = map[string]commandNew{
+	"careteam":      newCareTeamCmd,
+	"case":          newCaseCmd,
 	"movecase":      newMoveCaseCmd,
 	"searchdoctors": newSearchDoctorsCmd,
 }

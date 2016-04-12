@@ -62,7 +62,7 @@ func (s *service) ChangeCareProvider(caseID, desiredProviderID, changeAuthorProv
 
 	return errors.Trace(s.svcDAL.Transact(func(svcDAL api.DataAPI) error {
 		if oldProvider != nil {
-			pa, err := s.svcDAL.GetPatientCaseCareProviderAssignment(oldProvider.ProviderID, caseID)
+			pa, err := svcDAL.GetPatientCaseCareProviderAssignment(oldProvider.ProviderID, caseID)
 			if err != nil {
 				return errors.Trace(err)
 			}
@@ -78,7 +78,7 @@ func (s *service) ChangeCareProvider(caseID, desiredProviderID, changeAuthorProv
 			return errors.Trace(err)
 		}
 
-		_, err := s.svcDAL.InsertPatientCaseNote(&model.PatientCaseNote{
+		_, err := svcDAL.InsertPatientCaseNote(&model.PatientCaseNote{
 			CaseID:         caseID,
 			AuthorDoctorID: changeAuthorProviderID,
 			NoteText:       fmt.Sprintf("This case has been assigned to %s %s", newProvider.FirstName, newProvider.LastName),
