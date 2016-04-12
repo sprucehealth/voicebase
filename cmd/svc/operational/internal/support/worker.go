@@ -98,6 +98,7 @@ func NewWorker(
 		sqs:       sqs,
 		threading: threading,
 		directory: directory,
+		clock:     clock.New(),
 	}
 
 	w.worker = awsutil.NewSQSWorker(sqs, queueURL, w.processSNSEvent)
