@@ -194,6 +194,11 @@ func (d *dal) InviteForToken(ctx context.Context, token string) (*models.Invite,
 	if err != nil {
 		golog.Errorf("Invalid created time in invite for token %s", token)
 	}
+	// Not all invites have associated parked entity ID's
+	var parkedEntityID string
+	if peID, ok := res.Item[parkedEntityIDKey]; ok {
+		parkedEntityID = *peID.S
+	}
 	inv := &models.Invite{
 		Token:                token,
 		Type:                 models.InviteType(*res.Item[typeKey].S),
@@ -202,7 +207,7 @@ func (d *dal) InviteForToken(ctx context.Context, token string) (*models.Invite,
 		Email:                *res.Item[emailKey].S,
 		PhoneNumber:          *res.Item[phoneNumberKey].S,
 		URL:                  *res.Item[urlKey].S,
-		ParkedEntityID:       *res.Item[parkedEntityIDKey].S,
+		ParkedEntityID:       parkedEntityID,
 		Created:              time.Unix(ct/1e9, ct%1e9),
 	}
 	valuesAttr := res.Item[valuesKey].M
