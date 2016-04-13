@@ -37,6 +37,7 @@ var threadType = graphql.NewObject(
 			"allowSMSAttachments":   &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowUpdateTitle":      &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowExternalDelivery": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"allowMentions":         &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"emptyStateTextMarkup":  &graphql.Field{Type: graphql.String},
 			"id": &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
 			"lastMessageTimestamp": &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},

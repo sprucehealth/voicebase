@@ -89,6 +89,7 @@ func transformThreadToResponse(t *threading.Thread, viewingAccount *auth.Account
 		th.AllowLeave = true
 		th.AllowRemoveMembers = true
 		th.AllowUpdateTitle = true
+		th.AllowMentions = true
 		th.Type = models.ThreadTypeTeam
 		if t.MessageCount == 0 {
 			th.EmptyStateTextMarkup = "This is the beginning of your team conversation.\nSend a message to get things started."
@@ -97,6 +98,7 @@ func transformThreadToResponse(t *threading.Thread, viewingAccount *auth.Account
 		th.AllowDelete = true
 		th.AllowInternalMessages = true
 		th.AllowExternalDelivery = true
+		th.AllowMentions = true
 		th.Type = models.ThreadTypeExternal
 	case threading.ThreadType_SECURE_EXTERNAL:
 		th.AllowInternalMessages = viewingAccount.Type == auth.AccountType_PROVIDER

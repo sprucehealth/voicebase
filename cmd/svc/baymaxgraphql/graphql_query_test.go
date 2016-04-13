@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"testing"
+
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
@@ -150,6 +151,7 @@ func TestNodeQuery(t *testing.T) {
 		AllowInternalMessages: true,
 		AllowDelete:           true,
 		AllowExternalDelivery: true,
+		AllowMentions:         true,
 		OrganizationID:        "entity_1",
 		PrimaryEntityID:       "entity_2",
 		Title:                 "Someone",

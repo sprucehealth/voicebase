@@ -195,6 +195,7 @@ type Thread struct {
 	AllowRemoveMembers         bool   `json:"allowRemoveMembers"`
 	AllowUpdateTitle           bool   `json:"allowUpdateTitle"`
 	AllowExternalDelivery      bool   `json:"allowExternalDelivery"`
+	AllowMentions              bool   `json:"allowMentions"`
 	LastPrimaryEntityEndpoints []*Endpoint
 	EmptyStateTextMarkup       string `json:"emptyStateTextMarkup,omitempty"`
 	MessageCount               int    `json:"messageCount"`
