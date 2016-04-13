@@ -51,9 +51,9 @@ var selectableItemInputType = graphql.NewInputObject(
 	},
 )
 
-var selectableItemsInputType = graphql.NewInputObject(
+var selectableItemArrayInputType = graphql.NewInputObject(
 	graphql.InputObjectConfig{
-		Name: "SelectableItemsInput",
+		Name: "SelectableItemArrayInput",
 		Fields: graphql.InputObjectConfigFieldMap{
 			"items": &graphql.InputObjectFieldConfig{Type: graphql.NewList(graphql.NewNonNull(selectableItemInputType))},
 		},
@@ -85,13 +85,9 @@ var modifySettingInputType = graphql.NewInputObject(
 				Type:        stringListInputType,
 				Description: "StringList Setting value",
 			},
-			"multiSelectValue": &graphql.InputObjectFieldConfig{
-				Type:        selectableItemsInputType,
-				Description: "MultiSelect Setting value",
-			},
-			"singleSelectValue": &graphql.InputObjectFieldConfig{
-				Type:        selectableItemsInputType,
-				Description: "SingleSelect Setting value",
+			"selectValue": &graphql.InputObjectFieldConfig{
+				Type:        selectableItemArrayInputType,
+				Description: "SelectSetting value",
 			},
 		},
 	},
@@ -226,7 +222,7 @@ var modifySettingMutation = &graphql.Field{
 
 		switch config.Type {
 		case settings.ConfigType_SINGLE_SELECT:
-			value, ok := input["singleSelectValue"].(map[string]interface{})
+			value, ok := input["selectValue"].(map[string]interface{})
 			if !ok {
 				return nil, fmt.Errorf("Expected a list of selected items to be set for config %s.%s but got none", key, subkey)
 			}
@@ -246,7 +242,7 @@ var modifySettingMutation = &graphql.Field{
 				},
 			}
 		case settings.ConfigType_MULTI_SELECT:
-			value, ok := input["multiSelectValue"].(map[string]interface{})
+			value, ok := input["selectValue"].(map[string]interface{})
 			if !ok {
 				return nil, fmt.Errorf("Expected a list of selected items to be set for config %s.%s but got none", key, subkey)
 			}

@@ -89,12 +89,13 @@ var selectSettingType = graphql.NewObject(
 			settingsInterfaceType,
 		},
 		Fields: graphql.Fields{
-			"key":         &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-			"subkey":      &graphql.Field{Type: graphql.String},
-			"title":       &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-			"description": &graphql.Field{Type: graphql.String},
-			"options":     &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(selectableItemType))},
-			"value":       &graphql.Field{Type: graphql.NewNonNull(settingValueInterfaceType)},
+			"key":                     &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"subkey":                  &graphql.Field{Type: graphql.String},
+			"title":                   &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"description":             &graphql.Field{Type: graphql.String},
+			"options":                 &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(selectableItemType))},
+			"value":                   &graphql.Field{Type: graphql.NewNonNull(settingValueInterfaceType)},
+			"allowsMultipleSelection": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 			_, ok := value.(*models.SelectSetting)

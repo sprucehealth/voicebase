@@ -268,12 +268,13 @@ type SelectableItem struct {
 }
 
 type SelectSetting struct {
-	Key         string                  `json:"key"`
-	Subkey      string                  `json:"subkey,omitempty"`
-	Title       string                  `json:"title"`
-	Description string                  `json:"description"`
-	Options     []*SelectableItem       `json:"options"`
-	Value       *SelectableSettingValue `json:"value"`
+	Key                     string                  `json:"key"`
+	Subkey                  string                  `json:"subkey,omitempty"`
+	Title                   string                  `json:"title"`
+	Description             string                  `json:"description"`
+	Options                 []*SelectableItem       `json:"options"`
+	Value                   *SelectableSettingValue `json:"value"`
+	AllowsMultipleSelection bool                    `json:"allowsMultipleSelection"`
 }
 
 // setting values
@@ -294,6 +295,7 @@ type SelectableItemValue struct {
 	ID   string `json:"id"`
 	Text string `json:"text"`
 }
+
 type SelectableSettingValue struct {
 	Items  []*SelectableItemValue `json:"items"`
 	Key    string                 `json:"key"`
@@ -301,7 +303,6 @@ type SelectableSettingValue struct {
 }
 
 // force upgrade status
-
 type ForceUpgradeStatus struct {
 	URL         string `json:"url"`
 	Upgrade     bool   `json:"upgrade"`

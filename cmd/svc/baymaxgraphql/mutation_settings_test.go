@@ -409,7 +409,7 @@ func TestModifySetting_MultiSelect(t *testing.T) {
 				clientMutationId: "a1b2c3",
 				nodeID: $nodeID,
 				key: $key,
-				multiSelectValue: {
+				selectValue: {
 					items: [{
 							id: "option1"
 						},{
@@ -425,6 +425,9 @@ func TestModifySetting_MultiSelect(t *testing.T) {
 					subkey
 					title
 					description
+					... on SelectSetting {
+						allowsMultipleSelection
+					}
 					value {
 						__typename
 						... on SelectableSettingValue {
@@ -446,6 +449,7 @@ func TestModifySetting_MultiSelect(t *testing.T) {
 		"modifySetting": {
 			"clientMutationId": "a1b2c3",
 			"setting": {
+				"allowsMultipleSelection": true,
 				"description": "Hi",
 				"key": "2fa",
 				"subkey": null,
@@ -546,7 +550,7 @@ func TestModifySetting_SingleSelect(t *testing.T) {
 				clientMutationId: "a1b2c3",
 				nodeID: $nodeID,
 				key: $key,
-				singleSelectValue: {
+				selectValue: {
 					items: [{
 							id: "option1"
 						}
@@ -560,6 +564,9 @@ func TestModifySetting_SingleSelect(t *testing.T) {
 					subkey
 					title
 					description
+					... on SelectSetting {
+						allowsMultipleSelection
+					}
 					value {
 						__typename
 						... on SelectableSettingValue {
@@ -581,6 +588,7 @@ func TestModifySetting_SingleSelect(t *testing.T) {
 		"modifySetting": {
 			"clientMutationId": "a1b2c3",
 			"setting": {
+				"allowsMultipleSelection": false,
 				"description": "Hi",
 				"key": "2fa",
 				"subkey": null,

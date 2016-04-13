@@ -473,10 +473,11 @@ func transformBooleanSettingToResponse(config *settings.Config, value *settings.
 
 func transformMultiSelectToResponse(config *settings.Config, value *settings.Value) *models.SelectSetting {
 	ss := &models.SelectSetting{
-		Key:         config.Key,
-		Subkey:      value.Key.Subkey,
-		Title:       config.Title,
-		Description: config.Description,
+		Key:                     config.Key,
+		Subkey:                  value.Key.Subkey,
+		Title:                   config.Title,
+		Description:             config.Description,
+		AllowsMultipleSelection: config.Type == settings.ConfigType_MULTI_SELECT,
 	}
 
 	var items []*settings.Item
