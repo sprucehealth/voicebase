@@ -130,24 +130,10 @@ func (w *Worker) processSNSEvent(msg string) error {
 
 func (w *Worker) processEvent(event *operational.NewOrgCreatedEvent) error {
 	orgCreationTime := time.Unix(event.OrgCreated, 0)
+	currentTimePST := w.clock.Now().In(californiaLocation)
 
-	// during support hours
-	if withinSupportHours(orgCreationTime) {
+	if withinSupportHours(currentTimePST) {
 		if w.clock.Now().Sub(orgCreationTime) >= postMessageThreshold {
-			return w.postMessage(event)
-		}
-	} else {
-		// during non support hours
-		// post message if current time past 9:00 am PST
-		currentTimePST := w.clock.Now().In(californiaLocation)
-
-		// before midnight
-		if currentTimePST.Hour() >= 12 && currentTimePST.Hour() <= 23 {
-			return awsutil.ErrRetryAfter(15 * time.Minute)
-		}
-
-		// only post if after 9:00am PST
-		if currentTimePST.Hour() >= spruceSupportDelayedMessageHour {
 			return w.postMessage(event)
 		}
 	}
@@ -221,22 +207,22 @@ func (w *Worker) postMessage(event *operational.NewOrgCreatedEvent) error {
 	return nil
 }
 
-func withinSupportHours(orgCreationTime time.Time) bool {
-	orgCreationTimePST := orgCreationTime.In(californiaLocation)
-	if orgCreationTimePST.Hour() < spruceSupportStartHour {
+func withinSupportHours(timeInPST time.Time) bool {
+
+	if timeInPST.Hour() < spruceSupportStartHour {
 		return false
 	}
 
-	if orgCreationTimePST.Hour() == spruceSupportStartHour {
-		return orgCreationTimePST.Minute() >= spruceSupportStartMinute
+	if timeInPST.Hour() == spruceSupportStartHour {
+		return timeInPST.Minute() >= spruceSupportStartMinute
 	}
 
-	if orgCreationTimePST.Hour() > spruceSupportEndHour {
+	if timeInPST.Hour() > spruceSupportEndHour {
 		return false
 	}
 
-	if orgCreationTimePST.Hour() == spruceSupportEndHour {
-		return orgCreationTimePST.Minute() <= spruceSupportEndMinute
+	if timeInPST.Hour() == spruceSupportEndHour {
+		return timeInPST.Minute() <= spruceSupportEndMinute
 	}
 
 	return true

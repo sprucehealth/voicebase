@@ -28,12 +28,12 @@ func TestPostSupportMessage_DuringSupportHours_Wait(t *testing.T) {
 }
 
 func TestPostSupportMessage_DuringSupportHours_Post(t *testing.T) {
-	orgCreatedTime, err := time.ParseInLocation(timeFormat, "Jan 2, 2016 at 3:04pm", californiaLocation)
+	orgCreatedTime, err := time.ParseInLocation(timeFormat, "Jan 2, 2016 at 3:04am", californiaLocation)
 	test.OK(t, err)
-	mclock := clock.NewManaged(orgCreatedTime.Add(time.Hour + postMessageThreshold))
+	mclock := clock.NewManaged(orgCreatedTime.Add(12 * time.Hour))
 	testSuccessfulPost(t, mclock, orgCreatedTime.Unix())
 
-	orgCreatedTime, err = time.ParseInLocation(timeFormat, "Jan 2, 2016 at 10:29pm", californiaLocation)
+	orgCreatedTime, err = time.ParseInLocation(timeFormat, "Jan 2, 2016 at 10:29am", californiaLocation)
 	test.OK(t, err)
 	mclock = clock.NewManaged(orgCreatedTime.Add(time.Hour + postMessageThreshold))
 	testSuccessfulPost(t, mclock, orgCreatedTime.Unix())
@@ -41,6 +41,11 @@ func TestPostSupportMessage_DuringSupportHours_Post(t *testing.T) {
 	orgCreatedTime, err = time.ParseInLocation(timeFormat, "Jan 2, 2016 at 7:31am", californiaLocation)
 	test.OK(t, err)
 	mclock = clock.NewManaged(orgCreatedTime.Add(time.Hour + postMessageThreshold))
+	testSuccessfulPost(t, mclock, orgCreatedTime.Unix())
+
+	orgCreatedTime, err = time.ParseInLocation(timeFormat, "Jan 2, 2016 at 3:30am", californiaLocation)
+	test.OK(t, err)
+	mclock = clock.NewManaged(orgCreatedTime.Add(5 * time.Hour))
 	testSuccessfulPost(t, mclock, orgCreatedTime.Unix())
 }
 
@@ -60,7 +65,7 @@ func TestPostSupportMessage_AfterBusinessHours_Wait(t *testing.T) {
 	mclock = clock.NewManaged(orgCreatedTime.Add(time.Hour + postMessageThreshold))
 	testWaitToPost(t, mclock, orgCreatedTime.Unix())
 
-	orgCreatedTime, err = time.ParseInLocation(timeFormat, "Jan 2, 2016 at 7:29am", californiaLocation)
+	orgCreatedTime, err = time.ParseInLocation(timeFormat, "Jan 2, 2016 at 6:15am", californiaLocation)
 	test.OK(t, err)
 	mclock = clock.NewManaged(orgCreatedTime.Add(time.Hour + postMessageThreshold))
 	testWaitToPost(t, mclock, orgCreatedTime.Unix())
@@ -74,7 +79,7 @@ func TestPostSupportMessage_AfterBusinessHours_Post(t *testing.T) {
 }
 
 func TestPostSupportMessage_AlreadyPosted(t *testing.T) {
-	orgCreatedTime, err := time.ParseInLocation(timeFormat, "Jan 2, 2016 at 3:04pm", californiaLocation)
+	orgCreatedTime, err := time.ParseInLocation(timeFormat, "Jan 2, 2016 at 3:04am", californiaLocation)
 	test.OK(t, err)
 	mclock := clock.NewManaged(orgCreatedTime.Add(12 * time.Hour))
 
