@@ -1481,18 +1481,6 @@ func TestMarkThreadAsReadExistingMembership(t *testing.T) {
 	test.Equals(t, &threading.MarkThreadAsReadResponse{}, resp)
 }
 
-func expectGetNotificationText(mdal *dalmock.DAL, sm *mock_settings.Client, messageID models.ThreadItemID, threadType models.ThreadType, messageText, organizationID string, isClearTextAnser bool) {
-	expectIsClearTextMessageNotificationsEnabled(sm, organizationID, isClearTextAnser)
-	if isClearTextAnser || threadType == models.ThreadTypeSupport {
-		mdal.Expect(mock.NewExpectation(mdal.ThreadItem, messageID).WithReturns(&models.ThreadItem{
-			Type: models.ItemTypeMessage,
-			Data: &models.Message{
-				Text: messageText,
-			},
-		}, nil))
-	}
-}
-
 func expectIsClearTextMessageNotificationsEnabled(sm *mock_settings.Client, organizationID string, answer bool) {
 	sm.Expect(mock.NewExpectation(sm.GetValues, &settings.GetValuesRequest{
 		Keys:   []*settings.ConfigKey{{Key: threading.ClearTextMessageNotifications}},
@@ -1578,30 +1566,44 @@ func TestNotifyMembersOfPublishMessage(t *testing.T) {
 
 	expectIsClearTextMessageNotificationsEnabled(sm, orgID, false)
 	expectIsAlertAllMessagesEnabled(sm, "notify1", true)
-	expectIsAlertAllMessagesEnabled(sm, "notify2", true)
-	expectIsAlertAllMessagesEnabled(sm, "notify3", true)
 
 	notificationClient.Expect(mock.NewExpectation(notificationClient.SendNotification, &notification.Notification{
 		ShortMessages: map[string]string{
 			"notify1": "You have a new message",
-			"notify2": "You have a new message",
-			"notify3": "You have a new message",
+			"notify2": "You have a new mention in a thread",
+			"notify3": "You have a new mention in a thread",
 		},
-		UnreadCounts:     nil,
-		OrganizationID:   orgID,
-		SavedQueryID:     sqID.String(),
-		ThreadID:         tID.String(),
-		MessageID:        tiID.String(),
-		CollapseKey:      newMessageNotificationKey,
-		DedupeKey:        newMessageNotificationKey,
-		EntitiesToNotify: []string{"notify1", "notify2", "notify3"},
+		UnreadCounts:         nil,
+		OrganizationID:       orgID,
+		SavedQueryID:         sqID.String(),
+		ThreadID:             tID.String(),
+		MessageID:            tiID.String(),
+		CollapseKey:          newMessageNotificationKey,
+		DedupeKey:            newMessageNotificationKey,
+		EntitiesToNotify:     []string{"notify1", "notify2", "notify3"},
+		EntitiesAtReferenced: map[string]struct{}{"notify2": struct{}{}, "notify3": struct{}{}},
 	}))
 
 	csrv.notifyMembersOfPublishMessage(context.Background(), orgID, sqID, &models.Thread{
 		ID:             tID,
 		Type:           models.ThreadTypeExternal,
 		OrganizationID: orgID,
-	}, tiID, publishingEntity)
+	}, &models.ThreadItem{
+		ID:   tiID,
+		Type: models.ItemTypeMessage,
+		Data: &models.Message{
+			TextRefs: []*models.Reference{
+				&models.Reference{
+					Type: models.Reference_ENTITY,
+					ID:   "notify2",
+				},
+				&models.Reference{
+					Type: models.Reference_ENTITY,
+					ID:   "notify3",
+				},
+			},
+		},
+	}, publishingEntity)
 }
 
 func TestNotifyMembersOfPublishMessage_Team(t *testing.T) {
@@ -1665,21 +1667,26 @@ func TestNotifyMembersOfPublishMessage_Team(t *testing.T) {
 			"notify1": "You have a new message",
 			"notify3": "You have a new message",
 		},
-		UnreadCounts:     nil,
-		OrganizationID:   orgID,
-		SavedQueryID:     sqID.String(),
-		ThreadID:         tID.String(),
-		MessageID:        tiID.String(),
-		CollapseKey:      newMessageNotificationKey,
-		DedupeKey:        newMessageNotificationKey,
-		EntitiesToNotify: []string{"notify1", "notify3"},
+		UnreadCounts:         nil,
+		OrganizationID:       orgID,
+		SavedQueryID:         sqID.String(),
+		ThreadID:             tID.String(),
+		MessageID:            tiID.String(),
+		CollapseKey:          newMessageNotificationKey,
+		DedupeKey:            newMessageNotificationKey,
+		EntitiesToNotify:     []string{"notify1", "notify3"},
+		EntitiesAtReferenced: map[string]struct{}{},
 	}))
 
 	csrv.notifyMembersOfPublishMessage(context.Background(), orgID, sqID, &models.Thread{
 		ID:             tID,
 		Type:           models.ThreadTypeTeam,
 		OrganizationID: orgID,
-	}, tiID, publishingEntity)
+	}, &models.ThreadItem{
+		ID:   tiID,
+		Type: models.ItemTypeMessage,
+		Data: &models.Message{},
+	}, publishingEntity)
 }
 
 func TestNotifyMembersOfPublishMessageClearTextSupportThread(t *testing.T) {
@@ -1737,7 +1744,6 @@ func TestNotifyMembersOfPublishMessageClearTextSupportThread(t *testing.T) {
 		{ThreadID: tID, EntityID: publishingEntity, LastViewed: nil, LastUnreadNotify: nil},
 	}, nil))
 
-	expectGetNotificationText(dl, sm, tiID, models.ThreadTypeSupport, "Clear Text Message", orgID, false)
 	expectIsAlertAllMessagesEnabled(sm, "notify1", true)
 	expectIsAlertAllMessagesEnabled(sm, "notify2", true)
 	expectIsAlertAllMessagesEnabled(sm, "notify3", true)
@@ -1748,14 +1754,15 @@ func TestNotifyMembersOfPublishMessageClearTextSupportThread(t *testing.T) {
 			"notify2": "Clear Text Message",
 			"notify3": "Clear Text Message",
 		},
-		UnreadCounts:     nil,
-		OrganizationID:   orgID,
-		SavedQueryID:     sqID.String(),
-		ThreadID:         tID.String(),
-		MessageID:        tiID.String(),
-		CollapseKey:      newMessageNotificationKey,
-		DedupeKey:        newMessageNotificationKey,
-		EntitiesToNotify: []string{"notify1", "notify2", "notify3"},
+		UnreadCounts:         nil,
+		OrganizationID:       orgID,
+		SavedQueryID:         sqID.String(),
+		ThreadID:             tID.String(),
+		MessageID:            tiID.String(),
+		CollapseKey:          newMessageNotificationKey,
+		DedupeKey:            newMessageNotificationKey,
+		EntitiesToNotify:     []string{"notify1", "notify2", "notify3"},
+		EntitiesAtReferenced: map[string]struct{}{},
 	}))
 
 	csrv.notifyMembersOfPublishMessage(context.Background(), orgID, sqID, &models.Thread{
@@ -1763,7 +1770,13 @@ func TestNotifyMembersOfPublishMessageClearTextSupportThread(t *testing.T) {
 		Type:           models.ThreadTypeSupport,
 		OrganizationID: orgID,
 		UserTitle:      "ThreadTitle",
-	}, tiID, publishingEntity)
+	}, &models.ThreadItem{
+		ID:   tiID,
+		Type: models.ItemTypeMessage,
+		Data: &models.Message{
+			Text: "Clear Text Message",
+		},
+	}, publishingEntity)
 }
 
 func TestNotifyMembersOfPublishMessageClearTextEnabled(t *testing.T) {
@@ -1821,7 +1834,7 @@ func TestNotifyMembersOfPublishMessageClearTextEnabled(t *testing.T) {
 		{ThreadID: tID, EntityID: publishingEntity, LastViewed: nil, LastUnreadNotify: nil},
 	}, nil))
 
-	expectGetNotificationText(dl, sm, tiID, models.ThreadTypeExternal, "Clear Text Message", orgID, true)
+	expectIsClearTextMessageNotificationsEnabled(sm, orgID, true)
 	expectIsAlertAllMessagesEnabled(sm, "notify1", true)
 	expectIsAlertAllMessagesEnabled(sm, "notify2", true)
 	expectIsAlertAllMessagesEnabled(sm, "notify3", true)
@@ -1832,14 +1845,15 @@ func TestNotifyMembersOfPublishMessageClearTextEnabled(t *testing.T) {
 			"notify2": "ThreadTitle: Clear Text Message",
 			"notify3": "ThreadTitle: Clear Text Message",
 		},
-		UnreadCounts:     nil,
-		OrganizationID:   orgID,
-		SavedQueryID:     sqID.String(),
-		ThreadID:         tID.String(),
-		MessageID:        tiID.String(),
-		CollapseKey:      newMessageNotificationKey,
-		DedupeKey:        newMessageNotificationKey,
-		EntitiesToNotify: []string{"notify1", "notify2", "notify3"},
+		UnreadCounts:         nil,
+		OrganizationID:       orgID,
+		SavedQueryID:         sqID.String(),
+		ThreadID:             tID.String(),
+		MessageID:            tiID.String(),
+		CollapseKey:          newMessageNotificationKey,
+		DedupeKey:            newMessageNotificationKey,
+		EntitiesToNotify:     []string{"notify1", "notify2", "notify3"},
+		EntitiesAtReferenced: map[string]struct{}{},
 	}))
 
 	csrv.notifyMembersOfPublishMessage(context.Background(), orgID, sqID, &models.Thread{
@@ -1847,7 +1861,13 @@ func TestNotifyMembersOfPublishMessageClearTextEnabled(t *testing.T) {
 		Type:           models.ThreadTypeExternal,
 		OrganizationID: orgID,
 		UserTitle:      "ThreadTitle",
-	}, tiID, publishingEntity)
+	}, &models.ThreadItem{
+		ID:   tiID,
+		Type: models.ItemTypeMessage,
+		Data: &models.Message{
+			Text: "Clear Text Message",
+		},
+	}, publishingEntity)
 }
 
 func TestUpdateThread(t *testing.T) {

@@ -315,7 +315,7 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 		return nil, internalError(err)
 	}
 	s.publishMessage(ctx, in.OrganizationID, in.FromEntityID, threadID, it, in.UUID)
-	s.notifyMembersOfPublishMessage(ctx, thread.OrganizationID, models.EmptySavedQueryID(), thread, item.ID, in.FromEntityID)
+	s.notifyMembersOfPublishMessage(ctx, thread.OrganizationID, models.EmptySavedQueryID(), thread, item, in.FromEntityID)
 	return &threading.CreateThreadResponse{
 		ThreadID:   threadID.String(),
 		ThreadItem: it,
@@ -734,14 +734,14 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 		return nil, internalError(err)
 	}
 	s.publishMessage(ctx, thread.OrganizationID, thread.PrimaryEntityID, threadID, it, in.UUID)
-	s.notifyMembersOfPublishMessage(ctx, thread.OrganizationID, models.EmptySavedQueryID(), thread, item.ID, in.FromEntityID)
+	s.notifyMembersOfPublishMessage(ctx, thread.OrganizationID, models.EmptySavedQueryID(), thread, item, in.FromEntityID)
 	if linkedItem != nil {
 		it2, err := transformThreadItemToResponse(linkedItem, linkedThread.OrganizationID)
 		if err != nil {
 			return nil, internalError(err)
 		}
 		s.publishMessage(ctx, linkedThread.OrganizationID, linkedThread.PrimaryEntityID, linkedThread.ID, it2, "")
-		s.notifyMembersOfPublishMessage(ctx, linkedThread.OrganizationID, models.EmptySavedQueryID(), linkedThread, linkedItem.ID, linkedItem.ActorEntityID)
+		s.notifyMembersOfPublishMessage(ctx, linkedThread.OrganizationID, models.EmptySavedQueryID(), linkedThread, linkedItem, linkedItem.ActorEntityID)
 	}
 	return &threading.PostMessageResponse{
 		Item:   it,
@@ -1236,7 +1236,8 @@ func (s *threadsServer) teamThreadSystemTitle(ctx context.Context, orgID string,
 
 const newMessageNotificationKey = "new_message" // This is used for both collapse and dedupe
 
-func (s *threadsServer) notifyMembersOfPublishMessage(ctx context.Context, orgID string, savedQueryID models.SavedQueryID, thread *models.Thread, messageID models.ThreadItemID, publishingEntityID string) {
+func (s *threadsServer) notifyMembersOfPublishMessage(ctx context.Context, orgID string, savedQueryID models.SavedQueryID, thread *models.Thread, message *models.ThreadItem, publishingEntityID string) {
+	messageID := message.ID
 	if s.notificationClient == nil || s.directoryClient == nil {
 		golog.Debugf("Member notification aborted because either notification client or directory client is not configured")
 		return
@@ -1321,7 +1322,8 @@ func (s *threadsServer) notifyMembersOfPublishMessage(ctx context.Context, orgID
 			teMap[te.EntityID] = te
 		}
 
-		notificationText := s.getNotificationText(ctx, thread, messageID)
+		notificationText := s.getNotificationText(ctx, thread, message)
+		mentionedEntityIDs := getReferencedEntities(ctx, thread, message)
 
 		// Track the messages we want to send and how many unread threads there were
 		messages := make(map[string]string)
@@ -1337,8 +1339,10 @@ func (s *threadsServer) notifyMembersOfPublishMessage(ctx context.Context, orgID
 				}
 
 				te := teMap[ent.ID]
-
-				if s.isAlertAllMessagesEnabled(ctx, ent.ID) {
+				if _, ok := mentionedEntityIDs[ent.ID]; ok {
+					// TODO: Get confirmation about this copy
+					messages[ent.ID] = "You have a new mention in a thread"
+				} else if s.isAlertAllMessagesEnabled(ctx, ent.ID) {
 					messages[ent.ID] = notificationText
 				} else if te == nil || te.LastUnreadNotify == nil || (te.LastViewed != nil && te.LastViewed.After(*te.LastUnreadNotify)) {
 					// Only send a notification if no notification has been sent or the person has viewed the thread since the last notification
@@ -1371,37 +1375,52 @@ func (s *threadsServer) notifyMembersOfPublishMessage(ctx context.Context, orgID
 			EntitiesToNotify: directory.EntityIDs(entities),
 			// Note: Parameterizing with these may not be the best. The notification infterface needs to be
 			//   rethought, but going with this for now
-			DedupeKey:   newMessageNotificationKey,
-			CollapseKey: newMessageNotificationKey,
+			DedupeKey:            newMessageNotificationKey,
+			CollapseKey:          newMessageNotificationKey,
+			EntitiesAtReferenced: mentionedEntityIDs,
 		}); err != nil {
 			golog.Errorf("Failed to notify members: %s", err)
 		}
 	})
 }
 
-func (s *threadsServer) getNotificationText(ctx context.Context, thread *models.Thread, messageID models.ThreadItemID) string {
-	notificationText := "You have a new message"
-	isClearText := s.isClearTextMessageNotificationsEnabled(ctx, thread.OrganizationID) || thread.Type == models.ThreadTypeSupport
-	if isClearText {
-		message, err := s.dal.ThreadItem(ctx, messageID)
-		if err != nil {
-			golog.Errorf("Encountered error when attempting to get message for clear text notification for message id %s", messageID)
-			return notificationText
+func getReferencedEntities(ctx context.Context, thread *models.Thread, message *models.ThreadItem) map[string]struct{} {
+	referencedEntityIDs := make(map[string]struct{})
+	if message.Type == models.ItemTypeMessage {
+		// TODO: Optimizatoin: Refactor and merge the converion of the data to models.Message for use by both notification text and refs
+		msg, ok := message.Data.(*models.Message)
+		if !ok {
+			golog.Errorf("Failed to convert thread item data to message for referenced entities for item id %s", message.ID)
+			return referencedEntityIDs
 		}
+		for _, ref := range msg.TextRefs {
+			if ref.Type == models.Reference_ENTITY {
+				referencedEntityIDs[ref.ID] = struct{}{}
+			}
+		}
+	}
+	return referencedEntityIDs
+}
+
+func (s *threadsServer) getNotificationText(ctx context.Context, thread *models.Thread, message *models.ThreadItem) string {
+	notificationText := "You have a new message"
+	isClearText := thread.Type == models.ThreadTypeSupport || s.isClearTextMessageNotificationsEnabled(ctx, thread.OrganizationID)
+	if isClearText {
 		if message.Type == models.ItemTypeMessage {
+			// TODO: Optimizatoin: Refactor and merge the converion of the data to models.Message for use by both notification text and refs
 			msg, ok := message.Data.(*models.Message)
 			if !ok {
-				golog.Errorf("Failed to convert thread item data to message for clear text notification for item id %s", messageID)
+				golog.Errorf("Failed to convert thread item data to message for clear text notification for item id %s", message.ID)
 				return notificationText
 			}
 			bmlText, err := bml.Parse(msg.Text)
 			if err != nil {
-				golog.Errorf("Failed to convert thread item data to message for clear text notification for item id %s: %s", messageID, err)
+				golog.Errorf("Failed to convert thread item data to message for clear text notification for item id %s: %s", message.ID, err)
 				return notificationText
 			}
 			plainText, err := bmlText.PlainText()
 			if err != nil {
-				golog.Errorf("Failed to convert thread item data to message for clear text notification for item id %s: %s", messageID, err)
+				golog.Errorf("Failed to convert thread item data to message for clear text notification for item id %s: %s", message.ID, err)
 				return notificationText
 			}
 			notificationText = plainText
