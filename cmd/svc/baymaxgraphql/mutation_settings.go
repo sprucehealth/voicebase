@@ -13,6 +13,7 @@ import (
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/graphql"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 type modifySettingOutput struct {
@@ -351,7 +352,7 @@ var modifySettingMutation = &graphql.Field{
 			Value:  val,
 		})
 		if err != nil {
-			if grpc.Code(err) == settings.InvalidUserValue {
+			if grpc.Code(err) == settings.InvalidUserValue || grpc.Code(err) == codes.InvalidArgument {
 				return &modifySettingOutput{
 					ClientMutationID: mutationID,
 					Success:          false,
