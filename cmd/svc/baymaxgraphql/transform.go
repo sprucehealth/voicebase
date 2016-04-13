@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/bml"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -82,6 +83,9 @@ func transformThreadToResponse(t *threading.Thread, viewingAccount *auth.Account
 	if th.Title == "" {
 		th.Title = t.SystemTitle
 	}
+
+	allowMentions := !environment.IsProd()
+
 	switch t.Type {
 	case threading.ThreadType_TEAM:
 		th.AllowAddMembers = true
@@ -89,7 +93,7 @@ func transformThreadToResponse(t *threading.Thread, viewingAccount *auth.Account
 		th.AllowLeave = true
 		th.AllowRemoveMembers = true
 		th.AllowUpdateTitle = true
-		th.AllowMentions = true
+		th.AllowMentions = allowMentions
 		th.Type = models.ThreadTypeTeam
 		if t.MessageCount == 0 {
 			th.EmptyStateTextMarkup = "This is the beginning of your team conversation.\nSend a message to get things started."
@@ -98,7 +102,7 @@ func transformThreadToResponse(t *threading.Thread, viewingAccount *auth.Account
 		th.AllowDelete = true
 		th.AllowInternalMessages = true
 		th.AllowExternalDelivery = true
-		th.AllowMentions = true
+		th.AllowMentions = allowMentions
 		th.Type = models.ThreadTypeExternal
 	case threading.ThreadType_SECURE_EXTERNAL:
 		th.AllowInternalMessages = viewingAccount.Type == auth.AccountType_PROVIDER
