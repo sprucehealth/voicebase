@@ -69,6 +69,18 @@ func (c *entityCmd) run(args []string) error {
 }
 
 func lookupAndDisplayEntity(ctx context.Context, dirCli directory.DirectoryClient, entityID string, info []directory.EntityInformation) (*directory.Entity, error) {
+	// TODO: prod doesn't yet have the account_id field so we need to always pull the external IDs to get it
+	found := false
+	for _, inf := range info {
+		if inf == directory.EntityInformation_EXTERNAL_IDS {
+			found = true
+			break
+		}
+	}
+	if !found {
+		info = append(info, directory.EntityInformation_EXTERNAL_IDS)
+	}
+
 	req := &directory.LookupEntitiesRequest{
 		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
 		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
@@ -91,6 +103,11 @@ func lookupAndDisplayEntity(ctx context.Context, dirCli directory.DirectoryClien
 		fmt.Fprintf(os.Stderr, "Expected 1 entity, got %d\n", len(res.Entities))
 	}
 	ent := res.Entities[0]
+
+	// TODO: remove this once prod has the account_id field
+	if ent.AccountID == "" && len(ent.ExternalIDs) != 0 {
+		ent.AccountID = ent.ExternalIDs[0]
+	}
 
 	displayEntity("", ent)
 
