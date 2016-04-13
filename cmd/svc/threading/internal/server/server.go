@@ -1236,7 +1236,14 @@ func (s *threadsServer) teamThreadSystemTitle(ctx context.Context, orgID string,
 
 const newMessageNotificationKey = "new_message" // This is used for both collapse and dedupe
 
-func (s *threadsServer) notifyMembersOfPublishMessage(ctx context.Context, orgID string, savedQueryID models.SavedQueryID, thread *models.Thread, message *models.ThreadItem, publishingEntityID string) {
+func (s *threadsServer) notifyMembersOfPublishMessage(
+	ctx context.Context,
+	orgID string,
+	savedQueryID models.SavedQueryID,
+	thread *models.Thread,
+	message *models.ThreadItem,
+	publishingEntityID string,
+) {
 	messageID := message.ID
 	if s.notificationClient == nil || s.directoryClient == nil {
 		golog.Debugf("Member notification aborted because either notification client or directory client is not configured")
@@ -1314,6 +1321,7 @@ func (s *threadsServer) notifyMembersOfPublishMessage(ctx context.Context, orgID
 		}
 
 		if len(entities) == 0 {
+			golog.Debugf("No entities to notify of new message on thread %s", thread.ID)
 			return
 		}
 
