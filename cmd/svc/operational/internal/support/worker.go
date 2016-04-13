@@ -53,7 +53,7 @@ const (
 	// post delayed message after 9:00 am PST
 	spruceSupportDelayedMessageHour = 9
 
-	supportMessage = `Hi {{.ProviderName}} - great to see you on here! My name is {{.SupportPersonName}} (I’m a real person, promise). We only recently launched Spruce, so I’m checking in with everyone that signs up to make sure the product makes sense. Any questions so far?
+	supportMessage = `Hi {{.ProviderName}} - great to see you on here! My name is {{.SupportPersonName}}. We only recently launched Spruce, so I’m checking in with everyone that signs up to make sure the product makes sense. Any questions so far?
 
 BTW, we put together a brief tutorial, which you can access here: bit.ly/22VjkkX.`
 	supportPersonName = "Caitrin"

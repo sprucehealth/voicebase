@@ -191,7 +191,7 @@ func testSuccessfulPost(t *testing.T, mclock clock.Clock, orgCreationTime int64)
 	}, nil))
 
 	mthreading.Expect(mock.NewExpectation(mthreading.PostMessage, &threading.PostMessageRequest{
-		Text: `Hi Dr. Jham - great to see you on here! My name is Caitrin (I’m a real person, promise). We only recently launched Spruce, so I’m checking in with everyone that signs up to make sure the product makes sense. Any questions so far?
+		Text: `Hi Dr. Jham - great to see you on here! My name is Caitrin. We only recently launched Spruce, so I’m checking in with everyone that signs up to make sure the product makes sense. Any questions so far?
 
 BTW, we put together a brief tutorial, which you can access here: bit.ly/22VjkkX.`,
 		Summary:      "Automated message from Spruce support",
