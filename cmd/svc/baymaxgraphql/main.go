@@ -135,8 +135,6 @@ func main() {
 
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 
-	// keep team conversations off by default in prod, but on in non-prod
-	baymaxgraphqlsettings.TeamConversationsConfig.GetBoolean().Default.Value = !environment.IsProd()
 	_, err = settings.RegisterConfigs(
 		ctx,
 		settingsClient,
