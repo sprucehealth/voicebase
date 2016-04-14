@@ -188,7 +188,7 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 	input := p.Args["input"].(map[string]interface{})
 	mutationID, _ := input["clientMutationId"].(string)
 
-	inv, err := svc.inviteInfo(ctx)
+	inv, _, err := svc.inviteAndAttributionInfo(ctx)
 	if err != nil {
 		return nil, errors.InternalError(ctx, err)
 	}

@@ -143,7 +143,7 @@ func makeVerifyPhoneNumberResolve(forAccountCreation bool) func(p graphql.Resolv
 
 		// Provided phone number must match what was provided during invite if here through invite
 		if forAccountCreation {
-			inv, err := svc.inviteInfo(ctx)
+			inv, _, err := svc.inviteAndAttributionInfo(ctx)
 			if err != nil {
 				return nil, errors.InternalError(ctx, err)
 			}

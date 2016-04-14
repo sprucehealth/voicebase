@@ -95,7 +95,7 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 
 	mutationID, _ := input["clientMutationId"].(string)
 
-	inv, err := svc.inviteInfo(ctx)
+	inv, attribValues, err := svc.inviteAndAttributionInfo(ctx)
 	if err != nil {
 		return nil, errors.InternalError(ctx, err)
 	}
@@ -366,7 +366,6 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 		}
 	}
 	conc.Go(func() {
-
 		var supportLink string
 		if createLinkedThreadsResponse != nil {
 			supportLink = deeplink.ThreadURLShareable(svc.webDomain, svc.spruceOrgID, createLinkedThreadsResponse.Thread2.ID)
@@ -382,20 +381,40 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 			}
 
 		}
-
+		userTraits := map[string]interface{}{
+			"name":              res.Account.FirstName + " " + res.Account.LastName,
+			"first_name":        res.Account.FirstName,
+			"last_name":         res.Account.LastName,
+			"email":             req.Email,
+			"title":             entityInfo.ShortTitle,
+			"organization_name": orgName,
+			"platform":          platform,
+			"createdAt":         time.Now().Unix(),
+			"type":              "provider",
+		}
+		groupTraits := map[string]interface{}{
+			"name":         orgName,
+			"support_link": supportLink,
+		}
+		eventProps := map[string]interface{}{
+			"entity_id":       accEntityID,
+			"organization_id": orgEntityID,
+		}
+		if inv != nil {
+			eventProps["invite"] = inv.Type.String()
+			userTraits["inviter_entity_id"] = inv.GetColleague().InviterEntityID
+		}
+		if s := attribValues["adjust_adgroup"]; s != "" {
+			eventProps["adjust_adgroup"] = s
+			userTraits["adjust_adgroup"] = s
+			// Creating new org so likely we want to track source on it as well
+			if inv == nil {
+				groupTraits["adjust_adgroup"] = s
+			}
+		}
 		svc.segmentio.Identify(&analytics.Identify{
 			UserId: res.Account.ID,
-			Traits: map[string]interface{}{
-				"name":              res.Account.FirstName + " " + res.Account.LastName,
-				"first_name":        res.Account.FirstName,
-				"last_name":         res.Account.LastName,
-				"email":             req.Email,
-				"title":             entityInfo.ShortTitle,
-				"organization_name": orgName,
-				"platform":          platform,
-				"createdAt":         time.Now().Unix(),
-				"type":              "provider",
-			},
+			Traits: userTraits,
 			Context: map[string]interface{}{
 				"ip":        remoteAddrFromParams(p),
 				"userAgent": userAgentFromParams(p),
@@ -404,22 +423,12 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 		svc.segmentio.Group(&analytics.Group{
 			UserId:  res.Account.ID,
 			GroupId: orgEntityID,
-			Traits: map[string]interface{}{
-				"name":         orgName,
-				"support_link": supportLink,
-			},
+			Traits:  groupTraits,
 		})
-		props := map[string]interface{}{
-			"entity_id":       accEntityID,
-			"organization_id": orgEntityID,
-		}
-		if inv != nil {
-			props["invite"] = inv.Type.String()
-		}
 		svc.segmentio.Track(&analytics.Track{
 			Event:      "signedup",
 			UserId:     res.Account.ID,
-			Properties: props,
+			Properties: eventProps,
 		})
 	})
 

@@ -287,7 +287,7 @@ func (c *cityService) populateCareRatingForCity(city *models.City) (*response.Sp
 func (c *cityService) populateUVIndexForCity(city *models.City) (*response.SpruceScoreSection, error) {
 	uvIndex, err := c.uvService.DailyUVIndexByCityState(city.Name, city.StateAbbreviation)
 	if err != nil {
-		golog.Warningf("Unable to get uvIndex for city %d: %s", city.ID, err.Error())
+		golog.Warningf("Unable to get uvIndex for city id='%s' name='%s' state='%s': %s", city.ID, city.Name, city.StateAbbreviation, err)
 		return nil, nil
 	}
 

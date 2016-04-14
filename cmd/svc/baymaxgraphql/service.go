@@ -83,10 +83,10 @@ func createAndSendSMSVerificationCode(ctx context.Context, ram raccess.ResourceA
 	return resp.VerificationCode.Token, nil
 }
 
-func (s *service) inviteInfo(ctx context.Context) (*invite.LookupInviteResponse, error) {
+func (s *service) inviteAndAttributionInfo(ctx context.Context) (*invite.LookupInviteResponse, map[string]string, error) {
 	sh := gqlctx.SpruceHeaders(ctx)
 	if sh == nil || sh.DeviceID == "" {
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	res, err := s.invite.AttributionData(ctx, &invite.AttributionDataRequest{
@@ -94,31 +94,31 @@ func (s *service) inviteInfo(ctx context.Context) (*invite.LookupInviteResponse,
 	})
 	if err != nil {
 		if grpc.Code(err) == codes.NotFound {
-			return nil, nil
+			return nil, nil, nil
 		}
-		return nil, errors.Trace(err)
+		return nil, nil, errors.Trace(err)
 	}
 
+	attribValues := make(map[string]string, len(res.Values))
 	var inviteToken string
 	for _, v := range res.Values {
 		if v.Key == "invite_token" {
 			inviteToken = v.Value
-			break
 		}
+		attribValues[v.Key] = v.Value
 	}
 	if inviteToken == "" {
-		return nil, nil
+		return nil, attribValues, nil
 	}
 
 	ires, err := s.invite.LookupInvite(ctx, &invite.LookupInviteRequest{
 		Token: inviteToken,
 	})
-	if err != nil {
-		if grpc.Code(err) == codes.NotFound {
-			return nil, nil
-		}
-		return nil, errors.Trace(err)
+	if grpc.Code(err) == codes.NotFound {
+		return nil, attribValues, nil
+	} else if err != nil {
+		return nil, nil, errors.Trace(err)
 	}
 
-	return ires, nil
+	return ires, attribValues, nil
 }

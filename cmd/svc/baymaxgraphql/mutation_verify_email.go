@@ -111,7 +111,7 @@ func makeVerifyEmailResolve(forAccountCreation bool) func(p graphql.ResolveParam
 
 		// If here for account creation then we require an invite to be mapped to the device
 		if forAccountCreation {
-			inv, err := svc.inviteInfo(ctx)
+			inv, _, err := svc.inviteAndAttributionInfo(ctx)
 			if err != nil {
 				return nil, errors.InternalError(ctx, err)
 			}
