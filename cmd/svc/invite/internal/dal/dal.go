@@ -151,21 +151,24 @@ func (d *dal) InsertInvite(ctx context.Context, invite *models.Invite) error {
 	for k, v := range invite.Values {
 		valuesAttr[k] = &dynamodb.AttributeValue{S: ptr.String(v)}
 	}
+	item := map[string]*dynamodb.AttributeValue{
+		inviteTokenKey:          {S: &invite.Token},
+		typeKey:                 {S: ptr.String(string(invite.Type))},
+		organizationEntityIDKey: {S: &invite.OrganizationEntityID},
+		inviterEntityIDKey:      {S: &invite.InviterEntityID},
+		emailKey:                {S: &invite.Email},
+		phoneNumberKey:          {S: &invite.PhoneNumber},
+		urlKey:                  {S: &invite.URL},
+		createdTimestampKey:     {N: ptr.String(strconv.FormatInt(invite.Created.UnixNano(), 10))},
+		valuesKey:               {M: valuesAttr},
+	}
+	if invite.ParkedEntityID != "" {
+		item[parkedEntityIDKey] = &dynamodb.AttributeValue{S: &invite.ParkedEntityID}
+	}
 	_, err := d.db.PutItem(&dynamodb.PutItemInput{
 		TableName:           &d.inviteTable,
 		ConditionExpression: ptr.String("attribute_not_exists(" + inviteTokenKey + ")"),
-		Item: map[string]*dynamodb.AttributeValue{
-			inviteTokenKey:          {S: &invite.Token},
-			typeKey:                 {S: ptr.String(string(invite.Type))},
-			organizationEntityIDKey: {S: &invite.OrganizationEntityID},
-			inviterEntityIDKey:      {S: &invite.InviterEntityID},
-			emailKey:                {S: &invite.Email},
-			phoneNumberKey:          {S: &invite.PhoneNumber},
-			urlKey:                  {S: &invite.URL},
-			parkedEntityIDKey:       {S: &invite.ParkedEntityID},
-			createdTimestampKey:     {N: ptr.String(strconv.FormatInt(invite.Created.UnixNano(), 10))},
-			valuesKey:               {M: valuesAttr},
-		},
+		Item:                item,
 	})
 	if err != nil {
 		if e, ok := err.(awserr.RequestFailure); ok && e.Code() == "ConditionalCheckFailedException" {

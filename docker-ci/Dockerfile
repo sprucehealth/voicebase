@@ -34,7 +34,8 @@ RUN cd /usr/local && \
 	ln -s /usr/local/node-v5.2.0-linux-x64/bin/npm /usr/local/bin/npm
 
 # Install docker
-ADD https://get.docker.com/builds/Linux/x86_64/docker-latest /usr/bin/docker
+RUN cd /usr/bin && \
+	curl -s https://get.docker.com/builds/Linux/x86_64/docker-latest.tgz | tar -zxf -
 RUN chmod +x /usr/bin/docker
 
 COPY ./my.cnf /etc/mysql/my.cnf

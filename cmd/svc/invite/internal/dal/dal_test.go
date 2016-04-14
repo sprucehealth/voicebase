@@ -130,6 +130,36 @@ func TestInviteColleague(t *testing.T) {
 	test.Equals(t, invite, in)
 }
 
+func TestInvitePatient(t *testing.T) {
+	db := testDB(t)
+	dal := New(db, "local")
+	ctx := context.Background()
+
+	_, err := dal.InviteForToken(ctx, "nope")
+	test.Equals(t, ErrNotFound, errors.Cause(err))
+
+	invite := &models.Invite{
+		Type:                 models.ColleagueInvite,
+		OrganizationEntityID: "e_1",
+		InviterEntityID:      "e_2",
+		Token:                randomID(),
+		Email:                "someone@somewhere.com",
+		PhoneNumber:          "+15551112222",
+		URL:                  "https://example.com",
+		ParkedEntityID:       "parkedEntityID",
+		Created:              time.Unix(123, 0),
+		Values:               map[string]string{"foo": "bar"},
+	}
+	test.OK(t, dal.InsertInvite(ctx, invite))
+
+	// Trying to insert the same token twice should fail
+	test.Equals(t, ErrDuplicateInviteToken, errors.Cause(dal.InsertInvite(ctx, invite)))
+
+	in, err := dal.InviteForToken(ctx, invite.Token)
+	test.OK(t, err)
+	test.Equals(t, invite, in)
+}
+
 func randomID() string {
 	return strconv.FormatInt(rand.Int63(), 10)
 }
