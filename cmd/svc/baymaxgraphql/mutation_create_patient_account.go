@@ -320,9 +320,11 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 
 	// Update our parked entity
 	patientEntity, err := ram.UpdateEntity(ctx, &directory.UpdateEntityRequest{
-		EntityID:   inv.GetPatient().Patient.ParkedEntityID,
-		EntityInfo: entityInfo,
-		AccountID:  res.Account.ID,
+		EntityID:         inv.GetPatient().Patient.ParkedEntityID,
+		UpdateEntityInfo: true,
+		EntityInfo:       entityInfo,
+		UpdateAccountID:  true,
+		AccountID:        res.Account.ID,
 	})
 	if err != nil {
 		return nil, errors.InternalError(ctx, err)

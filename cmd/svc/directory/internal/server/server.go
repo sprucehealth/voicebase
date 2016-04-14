@@ -311,9 +311,11 @@ func (s *server) UpdateEntity(ctx context.Context, rd *directory.UpdateEntityReq
 		golog.Debugf("Entering server.server.UpdateEntity: %+v", rd)
 		defer func() { golog.Debugf("Leaving server.server.UpdateEntity... %+v", out) }()
 	}
-	if err := s.validateUpdateEntityRequest(rd); err != nil {
+	oldEnt, err := s.validateUpdateEntityRequest(rd)
+	if err != nil {
 		return nil, err
 	}
+	defer oldEnt.Recycle()
 
 	eID, err := dal.ParseEntityID(rd.EntityID)
 	if err != nil {
@@ -322,89 +324,103 @@ func (s *server) UpdateEntity(ctx context.Context, rd *directory.UpdateEntityReq
 
 	var pbEntity *directory.Entity
 	if err := s.dl.Transact(func(dl dal.DAL) error {
+		entityUpdate := &dal.EntityUpdate{}
 
-		// only update the display name if there is a list of contacts
-		// available
-		var displayName *string
-		if len(rd.Contacts) > 0 {
-			dp := buildDisplayName(rd.EntityInfo, rd.Contacts)
-			if len(dp) > 0 {
-				displayName = ptr.String(dp)
+		entityInfo := dalEntityAsPBEntityInfo(oldEnt)
+		if rd.UpdateEntityInfo {
+			entityInfo = rd.EntityInfo
+			entityUpdate.FirstName = &rd.EntityInfo.FirstName
+			entityUpdate.MiddleInitial = &rd.EntityInfo.MiddleInitial
+			entityUpdate.LastName = &rd.EntityInfo.LastName
+			entityUpdate.GroupName = &rd.EntityInfo.GroupName
+			entityUpdate.ShortTitle = &rd.EntityInfo.ShortTitle
+			entityUpdate.LongTitle = &rd.EntityInfo.LongTitle
+			entityUpdate.Note = &rd.EntityInfo.Note
+			if rd.EntityInfo.Gender != directory.EntityInfo_UNKNOWN {
+				g, err := dal.ParseEntityGender(rd.EntityInfo.Gender.String())
+				if err != nil {
+					return grpcErrorf(codes.InvalidArgument, "Unknown entity gender %s", rd.EntityInfo.Gender.String())
+				}
+				entityUpdate.Gender = &g
+			}
+			if rd.EntityInfo.DOB != nil {
+				entityUpdate.DOB = &encoding.Date{
+					Month: int(rd.EntityInfo.DOB.Month),
+					Day:   int(rd.EntityInfo.DOB.Day),
+					Year:  int(rd.EntityInfo.DOB.Year),
+				}
 			}
 		}
 
-		var gender *dal.EntityGender
-		if rd.EntityInfo.Gender != directory.EntityInfo_UNKNOWN {
-			g, err := dal.ParseEntityGender(rd.EntityInfo.Gender.String())
-			if err != nil {
-				return grpcErrorf(codes.InvalidArgument, "Unknown entity gender %s", rd.EntityInfo.Gender.String())
-			}
-			gender = &g
+		if rd.UpdateAccountID {
+			entityUpdate.AccountID = &rd.AccountID
 		}
 
-		var dob *encoding.Date
-		if rd.EntityInfo.DOB != nil {
-			dob = &encoding.Date{
-				Month: int(rd.EntityInfo.DOB.Month),
-				Day:   int(rd.EntityInfo.DOB.Day),
-				Year:  int(rd.EntityInfo.DOB.Year),
-			}
-		}
-
-		if _, err := dl.UpdateEntity(eID, &dal.EntityUpdate{
-			FirstName:     &rd.EntityInfo.FirstName,
-			MiddleInitial: &rd.EntityInfo.MiddleInitial,
-			LastName:      &rd.EntityInfo.LastName,
-			GroupName:     &rd.EntityInfo.GroupName,
-			DisplayName:   displayName,
-			ShortTitle:    &rd.EntityInfo.ShortTitle,
-			LongTitle:     &rd.EntityInfo.LongTitle,
-			Gender:        gender,
-			DOB:           dob,
-			AccountID:     &rd.AccountID,
-			Note:          &rd.EntityInfo.Note,
-		}); err != nil {
-			return errors.Trace(err)
-		}
-
-		// Delete existing contact info
-		if _, err := dl.DeleteEntityContactsForEntityID(eID); err != nil {
-			return errors.Trace(err)
-		}
-
-		// Build out the contacts we want to insert
-		contacts := make([]*dal.EntityContact, len(rd.Contacts))
-		for i, contact := range rd.Contacts {
-			contactType, err := dal.ParseEntityContactType(directory.ContactType_name[int32(contact.ContactType)])
-			if err != nil {
+		var contacts []*directory.Contact
+		if rd.UpdateContacts {
+			// Delete existing contact info
+			if _, err := dl.DeleteEntityContactsForEntityID(eID); err != nil {
 				return errors.Trace(err)
 			}
-			contacts[i] = &dal.EntityContact{
-				EntityID:    eID,
-				Type:        contactType,
-				Value:       contact.Value,
-				Provisioned: contact.Provisioned,
-				Label:       contact.Label,
+
+			// Insert the new set of contacts
+			if len(rd.Contacts) != 0 {
+				dalContacts := make([]*dal.EntityContact, len(rd.Contacts))
+				for i, contact := range rd.Contacts {
+					contactType, err := dal.ParseEntityContactType(directory.ContactType_name[int32(contact.ContactType)])
+					if err != nil {
+						return errors.Trace(err)
+					}
+					dalContacts[i] = &dal.EntityContact{
+						EntityID:    eID,
+						Type:        contactType,
+						Value:       contact.Value,
+						Provisioned: contact.Provisioned,
+						Label:       contact.Label,
+					}
+				}
+				if err := dl.InsertEntityContacts(dalContacts); err != nil {
+					return errors.Trace(err)
+				}
+
+				contacts = rd.Contacts
+			}
+		} else {
+			// For external entities need to fetch the contacts to build the display name
+			if oldEnt.Type == dal.EntityTypeExternal {
+				cs, err := dl.EntityContacts(eID)
+				if err != nil {
+					return errors.Trace(err)
+				}
+				contacts = make([]*directory.Contact, len(cs))
+				for i, c := range cs {
+					contacts[i] = dalEntityContactAsPBContact(c)
+				}
 			}
 		}
 
-		// Insert the new set of contact records
-		if err := dl.InsertEntityContacts(contacts); err != nil {
+		if dp := buildDisplayName(entityInfo, contacts); dp != "" {
+			entityUpdate.DisplayName = &dp
+		}
+
+		if _, err := dl.UpdateEntity(eID, entityUpdate); err != nil {
 			return errors.Trace(err)
 		}
 
 		// Upsert any serialized entity contact info
-		for _, sec := range rd.SerializedEntityContacts {
-			platform, err := dal.ParseSerializedClientEntityContactPlatform(directory.Platform_name[int32(sec.Platform)])
-			if err != nil {
-				return grpcErrorf(codes.InvalidArgument, "Error parsing platform type: %s", err)
-			}
-			if err := dl.UpsertSerializedClientEntityContact(&dal.SerializedClientEntityContact{
-				EntityID:                eID,
-				Platform:                platform,
-				SerializedEntityContact: sec.SerializedEntityContact,
-			}); err != nil {
-				return grpcErrorf(codes.Internal, err.Error())
+		if rd.UpdateSerializedEntityContacts {
+			for _, sec := range rd.SerializedEntityContacts {
+				platform, err := dal.ParseSerializedClientEntityContactPlatform(directory.Platform_name[int32(sec.Platform)])
+				if err != nil {
+					return grpcErrorf(codes.InvalidArgument, "Error parsing platform type: %s", err)
+				}
+				if err := dl.UpsertSerializedClientEntityContact(&dal.SerializedClientEntityContact{
+					EntityID:                eID,
+					Platform:                platform,
+					SerializedEntityContact: sec.SerializedEntityContact,
+				}); err != nil {
+					return grpcErrorf(codes.Internal, err.Error())
+				}
 			}
 		}
 
@@ -423,23 +439,23 @@ func (s *server) UpdateEntity(ctx context.Context, rd *directory.UpdateEntityReq
 	}, nil
 }
 
-func (s *server) validateUpdateEntityRequest(rd *directory.UpdateEntityRequest) error {
+func (s *server) validateUpdateEntityRequest(rd *directory.UpdateEntityRequest) (*dal.Entity, error) {
 	if golog.Default().L(golog.DEBUG) {
 		golog.Debugf("Entering server.server.validateUpdateEntityRequest: %+v", rd)
 		defer func() { golog.Debugf("Leaving server.server.validateUpdateEntityRequest...") }()
 	}
 	eID, err := dal.ParseEntityID(rd.EntityID)
 	if err != nil {
-		return grpcErrorf(codes.InvalidArgument, "Unable to parse entity ID")
+		return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse entity ID")
 	}
-	_, err = s.dl.Entity(eID)
+	ent, err := s.dl.Entity(eID)
 	if api.IsErrNotFound(err) {
-		return grpcErrorf(codes.NotFound, err.Error())
+		return nil, grpcErrorf(codes.NotFound, err.Error())
 	} else if err != nil {
-		return grpcErrorf(codes.Internal, err.Error())
+		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 
-	return nil
+	return ent, nil
 }
 
 func (s *server) ExternalIDs(ctx context.Context, rd *directory.ExternalIDsRequest) (out *directory.ExternalIDsResponse, err error) {
@@ -717,7 +733,9 @@ func (s *server) CreateContacts(ctx context.Context, rd *directory.CreateContact
 			return errors.Trace(err)
 		}
 		pbEntity, err = getPBEntity(dl, entity, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation), nil)
-
+		if err != nil {
+			return errors.Trace(err)
+		}
 		if displayName := buildDisplayName(pbEntity.Info, pbEntity.Contacts); len(displayName) > 0 {
 			pbEntity.Info.DisplayName = displayName
 			if _, err := dl.UpdateEntity(entityID, &dal.EntityUpdate{
@@ -794,6 +812,9 @@ func (s *server) UpdateContacts(ctx context.Context, rd *directory.UpdateContact
 			return errors.Trace(err)
 		}
 		pbEntity, err = getPBEntity(dl, entity, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation), nil)
+		if err != nil {
+			return errors.Trace(err)
+		}
 
 		if displayName := buildDisplayName(pbEntity.Info, pbEntity.Contacts); len(displayName) > 0 {
 			pbEntity.Info.DisplayName = displayName
@@ -846,6 +867,9 @@ func (s *server) DeleteContacts(ctx context.Context, rd *directory.DeleteContact
 		}
 
 		pbEntity, err = getPBEntity(dl, entity, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation), []dal.EntityStatus{})
+		if err != nil {
+			return errors.Trace(err)
+		}
 
 		if displayName := buildDisplayName(pbEntity.Info, pbEntity.Contacts); len(displayName) > 0 {
 			pbEntity.Info.DisplayName = displayName
@@ -924,7 +948,10 @@ func getPBEntities(dl dal.DAL, dEntities []*dal.Entity, entityInformation []dire
 // Note: How we optimize this deep crawl is very likely to change
 func getPBEntity(dl dal.DAL, dEntity *dal.Entity, entityInformation []directory.EntityInformation, depth int64, statuses []dal.EntityStatus) (*directory.Entity, error) {
 	id := dEntity.ID
-	entity := dalEntityAsPBEntity(dEntity)
+	entity, err := dalEntityAsPBEntity(dEntity)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
 	if depth >= 0 {
 		if hasRequestedInfo(entityInformation, directory.EntityInformation_MEMBERSHIPS) {
 			memberships, err := getPBMemberships(dl, id, entityInformation, depth-1, statuses)
@@ -1029,7 +1056,7 @@ func dalEntityContactAsPBContact(dEntityContact *dal.EntityContact) *directory.C
 
 // dalEntityAsPBEntity transforms a dal entity to a svc entity.
 // the dal entity must not be used after this call.
-func dalEntityAsPBEntity(dEntity *dal.Entity) *directory.Entity {
+func dalEntityAsPBEntity(dEntity *dal.Entity) (*directory.Entity, error) {
 	entity := &directory.Entity{
 		ID:                    dEntity.ID.String(),
 		CreatedTimestamp:      uint64(dEntity.Created.Unix()),
@@ -1038,42 +1065,45 @@ func dalEntityAsPBEntity(dEntity *dal.Entity) *directory.Entity {
 	}
 	entityType, ok := directory.EntityType_value[dEntity.Type.String()]
 	if !ok {
-		golog.Errorf("Unknown entity type %s when converting to PB format", dEntity.Type)
+		return nil, fmt.Errorf("unknown entity type %s when converting to PB format", dEntity.Type)
 	}
 	entity.Type = directory.EntityType(entityType)
 	entityStatus, ok := directory.EntityStatus_value[dEntity.Status.String()]
 	if !ok {
-		golog.Errorf("Unknown entity status %s when converting to PB format", dEntity.Status)
-	}
-
-	var entityGender directory.EntityInfo_Gender
-	if dEntity.Gender != nil {
-		entityGender = directory.EntityInfo_Gender(directory.EntityInfo_Gender_value[dEntity.Gender.String()])
-	}
-	var dob *directory.Date
-	if dEntity.DOB != nil {
-		dob = &directory.Date{
-			Month: uint32(dEntity.DOB.Month),
-			Day:   uint32(dEntity.DOB.Day),
-			Year:  uint32(dEntity.DOB.Year),
-		}
+		return nil, fmt.Errorf("unknown entity status %s when converting to PB format", dEntity.Status)
 	}
 
 	entity.Status = directory.EntityStatus(entityStatus)
-	entity.Info = &directory.EntityInfo{
-		FirstName:     dEntity.FirstName,
-		MiddleInitial: dEntity.MiddleInitial,
-		LastName:      dEntity.LastName,
-		GroupName:     dEntity.GroupName,
-		DisplayName:   dEntity.DisplayName,
-		ShortTitle:    dEntity.ShortTitle,
-		LongTitle:     dEntity.LongTitle,
+	entity.Info = dalEntityAsPBEntityInfo(dEntity)
+	dEntity.Recycle()
+	return entity, nil
+}
+
+func dalEntityAsPBEntityInfo(de *dal.Entity) *directory.EntityInfo {
+	var entityGender directory.EntityInfo_Gender
+	if de.Gender != nil {
+		entityGender = directory.EntityInfo_Gender(directory.EntityInfo_Gender_value[de.Gender.String()])
+	}
+	var dob *directory.Date
+	if de.DOB != nil {
+		dob = &directory.Date{
+			Month: uint32(de.DOB.Month),
+			Day:   uint32(de.DOB.Day),
+			Year:  uint32(de.DOB.Year),
+		}
+	}
+	return &directory.EntityInfo{
+		FirstName:     de.FirstName,
+		MiddleInitial: de.MiddleInitial,
+		LastName:      de.LastName,
+		GroupName:     de.GroupName,
+		DisplayName:   de.DisplayName,
+		ShortTitle:    de.ShortTitle,
+		LongTitle:     de.LongTitle,
 		Gender:        entityGender,
 		DOB:           dob,
-		Note:          dEntity.Note,
+		Note:          de.Note,
 	}
-	dEntity.Recycle()
-	return entity
 }
 
 // Note: Much letters. Many length. So convention.

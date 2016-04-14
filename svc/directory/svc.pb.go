@@ -715,12 +715,16 @@ func (m *CreateContactsResponse) GetEntity() *Entity {
 }
 
 type UpdateEntityRequest struct {
-	EntityID                 string                           `protobuf:"bytes,1,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
-	EntityInfo               *EntityInfo                      `protobuf:"bytes,2,opt,name=entity_info" json:"entity_info,omitempty"`
-	RequestedInformation     *RequestedInformation            `protobuf:"bytes,3,opt,name=requested_information" json:"requested_information,omitempty"`
-	Contacts                 []*Contact                       `protobuf:"bytes,4,rep,name=contacts" json:"contacts,omitempty"`
-	SerializedEntityContacts []*SerializedClientEntityContact `protobuf:"bytes,5,rep,name=serialized_entity_contacts" json:"serialized_entity_contacts,omitempty"`
-	AccountID                string                           `protobuf:"bytes,6,opt,name=account_id,proto3" json:"account_id,omitempty"`
+	EntityID                       string                           `protobuf:"bytes,1,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
+	UpdateEntityInfo               bool                             `protobuf:"varint,7,opt,name=update_entity_info,proto3" json:"update_entity_info,omitempty"`
+	EntityInfo                     *EntityInfo                      `protobuf:"bytes,2,opt,name=entity_info" json:"entity_info,omitempty"`
+	RequestedInformation           *RequestedInformation            `protobuf:"bytes,3,opt,name=requested_information" json:"requested_information,omitempty"`
+	UpdateContacts                 bool                             `protobuf:"varint,8,opt,name=update_contacts,proto3" json:"update_contacts,omitempty"`
+	Contacts                       []*Contact                       `protobuf:"bytes,4,rep,name=contacts" json:"contacts,omitempty"`
+	UpdateSerializedEntityContacts bool                             `protobuf:"varint,9,opt,name=update_serialized_entity_contacts,proto3" json:"update_serialized_entity_contacts,omitempty"`
+	SerializedEntityContacts       []*SerializedClientEntityContact `protobuf:"bytes,5,rep,name=serialized_entity_contacts" json:"serialized_entity_contacts,omitempty"`
+	UpdateAccountID                bool                             `protobuf:"varint,10,opt,name=update_account_id,proto3" json:"update_account_id,omitempty"`
+	AccountID                      string                           `protobuf:"bytes,6,opt,name=account_id,proto3" json:"account_id,omitempty"`
 }
 
 func (m *UpdateEntityRequest) Reset()      { *m = UpdateEntityRequest{} }
@@ -1956,10 +1960,16 @@ func (this *UpdateEntityRequest) Equal(that interface{}) bool {
 	if this.EntityID != that1.EntityID {
 		return false
 	}
+	if this.UpdateEntityInfo != that1.UpdateEntityInfo {
+		return false
+	}
 	if !this.EntityInfo.Equal(that1.EntityInfo) {
 		return false
 	}
 	if !this.RequestedInformation.Equal(that1.RequestedInformation) {
+		return false
+	}
+	if this.UpdateContacts != that1.UpdateContacts {
 		return false
 	}
 	if len(this.Contacts) != len(that1.Contacts) {
@@ -1970,6 +1980,9 @@ func (this *UpdateEntityRequest) Equal(that interface{}) bool {
 			return false
 		}
 	}
+	if this.UpdateSerializedEntityContacts != that1.UpdateSerializedEntityContacts {
+		return false
+	}
 	if len(this.SerializedEntityContacts) != len(that1.SerializedEntityContacts) {
 		return false
 	}
@@ -1977,6 +1990,9 @@ func (this *UpdateEntityRequest) Equal(that interface{}) bool {
 		if !this.SerializedEntityContacts[i].Equal(that1.SerializedEntityContacts[i]) {
 			return false
 		}
+	}
+	if this.UpdateAccountID != that1.UpdateAccountID {
+		return false
 	}
 	if this.AccountID != that1.AccountID {
 		return false
@@ -2668,21 +2684,25 @@ func (this *UpdateEntityRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 10)
+	s := make([]string, 0, 14)
 	s = append(s, "&directory.UpdateEntityRequest{")
 	s = append(s, "EntityID: "+fmt.Sprintf("%#v", this.EntityID)+",\n")
+	s = append(s, "UpdateEntityInfo: "+fmt.Sprintf("%#v", this.UpdateEntityInfo)+",\n")
 	if this.EntityInfo != nil {
 		s = append(s, "EntityInfo: "+fmt.Sprintf("%#v", this.EntityInfo)+",\n")
 	}
 	if this.RequestedInformation != nil {
 		s = append(s, "RequestedInformation: "+fmt.Sprintf("%#v", this.RequestedInformation)+",\n")
 	}
+	s = append(s, "UpdateContacts: "+fmt.Sprintf("%#v", this.UpdateContacts)+",\n")
 	if this.Contacts != nil {
 		s = append(s, "Contacts: "+fmt.Sprintf("%#v", this.Contacts)+",\n")
 	}
+	s = append(s, "UpdateSerializedEntityContacts: "+fmt.Sprintf("%#v", this.UpdateSerializedEntityContacts)+",\n")
 	if this.SerializedEntityContacts != nil {
 		s = append(s, "SerializedEntityContacts: "+fmt.Sprintf("%#v", this.SerializedEntityContacts)+",\n")
 	}
+	s = append(s, "UpdateAccountID: "+fmt.Sprintf("%#v", this.UpdateAccountID)+",\n")
 	s = append(s, "AccountID: "+fmt.Sprintf("%#v", this.AccountID)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
@@ -4430,6 +4450,46 @@ func (m *UpdateEntityRequest) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintSvc(data, i, uint64(len(m.AccountID)))
 		i += copy(data[i:], m.AccountID)
 	}
+	if m.UpdateEntityInfo {
+		data[i] = 0x38
+		i++
+		if m.UpdateEntityInfo {
+			data[i] = 1
+		} else {
+			data[i] = 0
+		}
+		i++
+	}
+	if m.UpdateContacts {
+		data[i] = 0x40
+		i++
+		if m.UpdateContacts {
+			data[i] = 1
+		} else {
+			data[i] = 0
+		}
+		i++
+	}
+	if m.UpdateSerializedEntityContacts {
+		data[i] = 0x48
+		i++
+		if m.UpdateSerializedEntityContacts {
+			data[i] = 1
+		} else {
+			data[i] = 0
+		}
+		i++
+	}
+	if m.UpdateAccountID {
+		data[i] = 0x50
+		i++
+		if m.UpdateAccountID {
+			data[i] = 1
+		} else {
+			data[i] = 0
+		}
+		i++
+	}
 	return i, nil
 }
 
@@ -5318,6 +5378,18 @@ func (m *UpdateEntityRequest) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
+	if m.UpdateEntityInfo {
+		n += 2
+	}
+	if m.UpdateContacts {
+		n += 2
+	}
+	if m.UpdateSerializedEntityContacts {
+		n += 2
+	}
+	if m.UpdateAccountID {
+		n += 2
+	}
 	return n
 }
 
@@ -5815,6 +5887,10 @@ func (this *UpdateEntityRequest) String() string {
 		`Contacts:` + strings.Replace(fmt.Sprintf("%v", this.Contacts), "Contact", "Contact", 1) + `,`,
 		`SerializedEntityContacts:` + strings.Replace(fmt.Sprintf("%v", this.SerializedEntityContacts), "SerializedClientEntityContact", "SerializedClientEntityContact", 1) + `,`,
 		`AccountID:` + fmt.Sprintf("%v", this.AccountID) + `,`,
+		`UpdateEntityInfo:` + fmt.Sprintf("%v", this.UpdateEntityInfo) + `,`,
+		`UpdateContacts:` + fmt.Sprintf("%v", this.UpdateContacts) + `,`,
+		`UpdateSerializedEntityContacts:` + fmt.Sprintf("%v", this.UpdateSerializedEntityContacts) + `,`,
+		`UpdateAccountID:` + fmt.Sprintf("%v", this.UpdateAccountID) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -9588,6 +9664,86 @@ func (m *UpdateEntityRequest) Unmarshal(data []byte) error {
 			}
 			m.AccountID = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
+		case 7:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UpdateEntityInfo", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.UpdateEntityInfo = bool(v != 0)
+		case 8:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UpdateContacts", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.UpdateContacts = bool(v != 0)
+		case 9:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UpdateSerializedEntityContacts", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.UpdateSerializedEntityContacts = bool(v != 0)
+		case 10:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UpdateAccountID", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.UpdateAccountID = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])

@@ -212,10 +212,15 @@ message CreateContactsResponse {
 
 message UpdateEntityRequest {
 	string     entity_id = 1 [(gogoproto.customname) = "EntityID"];
-	EntityInfo entity_info = 2;
 	RequestedInformation requested_information = 3;
+
+	bool       update_entity_info = 7;
+	EntityInfo entity_info = 2;
+	bool       update_contacts = 8;
 	repeated   Contact contacts = 4;
+	bool       update_serialized_entity_contacts = 9;
 	repeated   SerializedClientEntityContact serialized_entity_contacts = 5;
+	bool       update_account_id = 10 [(gogoproto.customname) = "UpdateAccountID"];
 	string     account_id = 6 [(gogoproto.customname) = "AccountID"];
 }
 

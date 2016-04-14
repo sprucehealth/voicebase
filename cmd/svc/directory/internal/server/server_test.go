@@ -30,6 +30,7 @@ func TestLookupEntitiesByEntityID(t *testing.T) {
 			ID:          eID1,
 			DisplayName: "entity1",
 			Type:        dal.EntityTypeExternal,
+			Status:      dal.EntityStatusActive,
 		},
 	}, nil))
 	resp, err := s.LookupEntities(context.Background(), &directory.LookupEntitiesRequest{
@@ -107,11 +108,13 @@ func TestLookupEntitiesByExternalID(t *testing.T) {
 			ID:          eID1,
 			DisplayName: "entity1",
 			Type:        dal.EntityTypeInternal,
+			Status:      dal.EntityStatusActive,
 		},
 		{
 			ID:          eID2,
 			DisplayName: "entity2",
 			Type:        dal.EntityTypeInternal,
+			Status:      dal.EntityStatusActive,
 		},
 	}, nil))
 	resp, err := s.LookupEntities(context.Background(), &directory.LookupEntitiesRequest{
@@ -170,11 +173,13 @@ func TestLookupEntitiesByContact(t *testing.T) {
 			ID:          eID1,
 			DisplayName: "entity1",
 			Type:        dal.EntityTypeInternal,
+			Status:      dal.EntityStatusActive,
 		},
 		{
 			ID:          eID2,
 			DisplayName: "entity2",
 			Type:        dal.EntityTypeInternal,
+			Status:      dal.EntityStatusActive,
 		},
 	}, nil))
 	resp, err := s.LookupEntitiesByContact(context.Background(), &directory.LookupEntitiesByContactRequest{
@@ -270,6 +275,7 @@ func TestCreateEntityFull(t *testing.T) {
 		ID:          eID1,
 		DisplayName: name,
 		Type:        dal.EntityTypeInternal,
+		Status:      dal.EntityStatusActive,
 	}, nil))
 	resp, err := s.CreateEntity(context.Background(), &directory.CreateEntityRequest{
 		EntityInfo: &directory.EntityInfo{
@@ -417,6 +423,7 @@ func TestCreateEntitySparse(t *testing.T) {
 		DisplayName: name,
 		FirstName:   firstName,
 		Type:        dal.EntityTypeInternal,
+		Status:      dal.EntityStatusActive,
 	}, nil))
 	resp, err := s.CreateEntity(context.Background(), &directory.CreateEntityRequest{
 		EntityInfo: &directory.EntityInfo{
@@ -453,6 +460,7 @@ func TestCreateMembership(t *testing.T) {
 		ID:          eID1,
 		DisplayName: "newmember",
 		Type:        dal.EntityTypeInternal,
+		Status:      dal.EntityStatusActive,
 	}, nil))
 	resp, err := s.CreateMembership(context.Background(), &directory.CreateMembershipRequest{
 		EntityID:       eID1.String(),
@@ -517,6 +525,7 @@ func TestCreateContact(t *testing.T) {
 		ID:          eID1,
 		DisplayName: "batman",
 		Type:        dal.EntityTypeInternal,
+		Status:      dal.EntityStatusActive,
 	}, nil))
 	resp, err := s.CreateContact(context.Background(), &directory.CreateContactRequest{
 		EntityID: eID1.String(),
@@ -623,6 +632,7 @@ func TestLookupEntitiesAdditionalInformationGraphCrawl(t *testing.T) {
 			ID:          eID1,
 			DisplayName: "entity1",
 			Type:        dal.EntityTypeExternal,
+			Status:      dal.EntityStatusActive,
 		},
 	}, nil))
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.EntityMemberships, eID1), []*dal.EntityMembership{
@@ -635,6 +645,7 @@ func TestLookupEntitiesAdditionalInformationGraphCrawl(t *testing.T) {
 			ID:          eID2,
 			DisplayName: "entity2",
 			Type:        dal.EntityTypeExternal,
+			Status:      dal.EntityStatusActive,
 		},
 	}, nil))
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.EntityMemberships, eID2), []*dal.EntityMembership{}, nil))
@@ -651,8 +662,9 @@ func TestLookupEntitiesAdditionalInformationGraphCrawl(t *testing.T) {
 	}, nil))
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.EntityMembers, eID1, statuses), []*dal.Entity{
 		{
-			ID:   eID3,
-			Type: dal.EntityTypeInternal,
+			ID:     eID3,
+			Type:   dal.EntityTypeInternal,
+			Status: dal.EntityStatusActive,
 		},
 	}, nil))
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.EntityMemberships, eID3), []*dal.EntityMembership{}, nil))
@@ -738,6 +750,7 @@ func TestCreateContacts(t *testing.T) {
 		ID:          eID1,
 		DisplayName: "batman",
 		Type:        dal.EntityTypeInternal,
+		Status:      dal.EntityStatusActive,
 	}, nil))
 	resp, err := s.CreateContacts(context.Background(), &directory.CreateContactsRequest{
 		EntityID: eID1.String(),
@@ -771,7 +784,10 @@ func TestUpdateContacts(t *testing.T) {
 	test.OK(t, err)
 	phoneType := dal.EntityContactTypePhone
 	emailType := dal.EntityContactTypeEmail
-	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), &dal.Entity{}, nil))
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), &dal.Entity{
+		Type:   dal.EntityTypeInternal,
+		Status: dal.EntityStatusActive,
+	}, nil))
 
 	dl.Expect(mock.NewExpectation(dl.UpdateEntityContact, eCID1, &dal.EntityContactUpdate{
 		Type:  &phoneType,
@@ -787,6 +803,7 @@ func TestUpdateContacts(t *testing.T) {
 		ID:          eID1,
 		DisplayName: "batman",
 		Type:        dal.EntityTypeInternal,
+		Status:      dal.EntityStatusActive,
 	}, nil))
 
 	resp, err := s.UpdateContacts(context.Background(), &directory.UpdateContactsRequest{
@@ -832,6 +849,7 @@ func TestDeleteContacts(t *testing.T) {
 		ID:          eID1,
 		DisplayName: "batman",
 		Type:        dal.EntityTypeInternal,
+		Status:      dal.EntityStatusActive,
 	}, nil))
 
 	resp, err := s.DeleteContacts(context.Background(), &directory.DeleteContactsRequest{
@@ -856,6 +874,8 @@ func TestUpdateEntity(t *testing.T) {
 		Type: dal.EntityTypeInternal,
 	}, nil))
 
+	dl.Expect(mock.NewExpectation(dl.DeleteEntityContactsForEntityID, eID1))
+
 	dl.Expect(mock.NewExpectation(dl.UpdateEntity, eID1, &dal.EntityUpdate{
 		FirstName:     ptr.String(""),
 		LastName:      ptr.String(""),
@@ -867,23 +887,25 @@ func TestUpdateEntity(t *testing.T) {
 		Note:          ptr.String("I am the knight"),
 	}))
 
-	dl.Expect(mock.NewExpectation(dl.DeleteEntityContactsForEntityID, eID1))
-	dl.Expect(mock.NewExpectation(dl.InsertEntityContacts, []*dal.EntityContact{}))
-
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), &dal.Entity{
 		ID:          eID1,
 		DisplayName: "batman",
 		Note:        "I am the knight",
 		Type:        dal.EntityTypeInternal,
+		Status:      dal.EntityStatusActive,
 	}, nil))
 
 	resp, err := s.UpdateEntity(context.Background(), &directory.UpdateEntityRequest{
-		EntityID: eID1.String(),
+		EntityID:         eID1.String(),
+		UpdateEntityInfo: true,
 		EntityInfo: &directory.EntityInfo{
 			DisplayName: "batman",
 			Note:        "I am the knight",
 		},
-		AccountID: "account_id",
+		UpdateAccountID: true,
+		AccountID:       "account_id",
+		UpdateContacts:  true,
+		Contacts:        nil,
 	})
 	test.OK(t, err)
 
@@ -904,18 +926,6 @@ func TestUpdateEntityWithContacts(t *testing.T) {
 		Type: dal.EntityTypeInternal,
 	}, nil))
 
-	dl.Expect(mock.NewExpectation(dl.UpdateEntity, eID1, &dal.EntityUpdate{
-		DisplayName:   ptr.String("1"),
-		FirstName:     ptr.String(""),
-		LastName:      ptr.String(""),
-		MiddleInitial: ptr.String(""),
-		GroupName:     ptr.String(""),
-		ShortTitle:    ptr.String(""),
-		LongTitle:     ptr.String(""),
-		AccountID:     ptr.String(""),
-		Note:          ptr.String("I am the knight"),
-	}))
-
 	dl.Expect(mock.NewExpectation(dl.DeleteEntityContactsForEntityID, eID1))
 	dl.Expect(mock.NewExpectation(dl.InsertEntityContacts, []*dal.EntityContact{
 		{
@@ -934,19 +944,34 @@ func TestUpdateEntityWithContacts(t *testing.T) {
 		},
 	}))
 
+	dl.Expect(mock.NewExpectation(dl.UpdateEntity, eID1, &dal.EntityUpdate{
+		DisplayName:   ptr.String("1"),
+		FirstName:     ptr.String(""),
+		LastName:      ptr.String(""),
+		MiddleInitial: ptr.String(""),
+		GroupName:     ptr.String(""),
+		ShortTitle:    ptr.String(""),
+		LongTitle:     ptr.String(""),
+		AccountID:     nil,
+		Note:          ptr.String("I am the knight"),
+	}))
+
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), &dal.Entity{
 		ID:          eID1,
 		DisplayName: "1",
 		Note:        "I am the knight",
 		Type:        dal.EntityTypeInternal,
+		Status:      dal.EntityStatusActive,
 	}, nil))
 
 	resp, err := s.UpdateEntity(context.Background(), &directory.UpdateEntityRequest{
-		EntityID: eID1.String(),
+		EntityID:         eID1.String(),
+		UpdateEntityInfo: true,
 		EntityInfo: &directory.EntityInfo{
 			DisplayName: "batman",
 			Note:        "I am the knight",
 		},
+		UpdateContacts: true,
 		Contacts: []*directory.Contact{
 			{
 				Value:       "1",
@@ -981,18 +1006,6 @@ func TestUpdateEntityWithSerializedContacts(t *testing.T) {
 		Type: dal.EntityTypeInternal,
 	}, nil))
 
-	dl.Expect(mock.NewExpectation(dl.UpdateEntity, eID1, &dal.EntityUpdate{
-		DisplayName:   ptr.String("1"),
-		FirstName:     ptr.String(""),
-		LastName:      ptr.String(""),
-		MiddleInitial: ptr.String(""),
-		GroupName:     ptr.String(""),
-		ShortTitle:    ptr.String(""),
-		LongTitle:     ptr.String(""),
-		AccountID:     ptr.String(""),
-		Note:          ptr.String("I am the knight"),
-	}))
-
 	dl.Expect(mock.NewExpectation(dl.DeleteEntityContactsForEntityID, eID1))
 	dl.Expect(mock.NewExpectation(dl.InsertEntityContacts, []*dal.EntityContact{
 		{
@@ -1011,6 +1024,18 @@ func TestUpdateEntityWithSerializedContacts(t *testing.T) {
 		},
 	}))
 
+	dl.Expect(mock.NewExpectation(dl.UpdateEntity, eID1, &dal.EntityUpdate{
+		DisplayName:   ptr.String("1"),
+		FirstName:     ptr.String(""),
+		LastName:      ptr.String(""),
+		MiddleInitial: ptr.String(""),
+		GroupName:     ptr.String(""),
+		ShortTitle:    ptr.String(""),
+		LongTitle:     ptr.String(""),
+		AccountID:     ptr.String("abc"),
+		Note:          ptr.String("I am the knight"),
+	}))
+
 	dl.Expect(mock.NewExpectation(dl.UpsertSerializedClientEntityContact,
 		&dal.SerializedClientEntityContact{
 			EntityID:                eID1,
@@ -1023,14 +1048,17 @@ func TestUpdateEntityWithSerializedContacts(t *testing.T) {
 		DisplayName: "1",
 		Note:        "I am the knight",
 		Type:        dal.EntityTypeInternal,
+		Status:      dal.EntityStatusActive,
 	}, nil))
 
 	resp, err := s.UpdateEntity(context.Background(), &directory.UpdateEntityRequest{
-		EntityID: eID1.String(),
+		EntityID:         eID1.String(),
+		UpdateEntityInfo: true,
 		EntityInfo: &directory.EntityInfo{
 			DisplayName: "batman",
 			Note:        "I am the knight",
 		},
+		UpdateContacts: true,
 		Contacts: []*directory.Contact{
 			{
 				Value:       "1",
@@ -1045,6 +1073,7 @@ func TestUpdateEntityWithSerializedContacts(t *testing.T) {
 				ContactType: directory.ContactType_PHONE,
 			},
 		},
+		UpdateSerializedEntityContacts: true,
 		SerializedEntityContacts: []*directory.SerializedClientEntityContact{
 			{
 				EntityID:                eID1.String(),
@@ -1052,6 +1081,8 @@ func TestUpdateEntityWithSerializedContacts(t *testing.T) {
 				SerializedEntityContact: []byte("{\"data\":\"serialized\"}"),
 			},
 		},
+		UpdateAccountID: true,
+		AccountID:       "abc",
 	})
 	test.OK(t, err)
 

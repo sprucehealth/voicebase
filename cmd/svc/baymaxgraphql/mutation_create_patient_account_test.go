@@ -52,7 +52,7 @@ func TestCreatePatientAccountMutation(t *testing.T) {
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Entity, "parkedEntityID", []directory.EntityInformation{directory.EntityInformation_CONTACTS}, int64(0)).WithReturns(&directory.Entity{
 		Contacts: []*directory.Contact{
-			&directory.Contact{
+			{
 				ContactType: directory.ContactType_PHONE,
 				Value:       "+14155551212",
 			},
@@ -95,7 +95,8 @@ func TestCreatePatientAccountMutation(t *testing.T) {
 
 	// Update the parked account entity
 	g.ra.Expect(mock.NewExpectation(g.ra.UpdateEntity, &directory.UpdateEntityRequest{
-		EntityID: "parkedEntityID",
+		EntityID:         "parkedEntityID",
+		UpdateEntityInfo: true,
 		EntityInfo: &directory.EntityInfo{
 			FirstName: "first",
 			LastName:  "last",
@@ -106,7 +107,8 @@ func TestCreatePatientAccountMutation(t *testing.T) {
 				Year:  1986,
 			},
 		},
-		AccountID: "a_1",
+		UpdateAccountID: true,
+		AccountID:       "a_1",
 	}).WithReturns(&directory.Entity{
 		Info: &directory.EntityInfo{
 			DisplayName: "first last",
@@ -123,7 +125,7 @@ func TestCreatePatientAccountMutation(t *testing.T) {
 
 	// Update any threads we find with the new display name
 	g.ra.Expect(mock.NewExpectation(g.ra.ThreadsForMember, "parkedEntityID", true).WithReturns([]*threading.Thread{
-		&threading.Thread{ID: "threadID"},
+		{ID: "threadID"},
 	}, nil))
 	g.ra.Expect(mock.NewExpectation(g.ra.UpdateThread, &threading.UpdateThreadRequest{
 		ThreadID:    "threadID",

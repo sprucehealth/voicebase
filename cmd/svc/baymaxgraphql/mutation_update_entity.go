@@ -95,10 +95,13 @@ var updateEntityMutation = &graphql.Field{
 		}
 
 		entity, err := ram.UpdateEntity(ctx, &directory.UpdateEntityRequest{
-			EntityID:                 entID,
-			EntityInfo:               entityInfo,
-			Contacts:                 contacts,
-			SerializedEntityContacts: serializedContacts,
+			EntityID:                       entID,
+			UpdateEntityInfo:               true,
+			EntityInfo:                     entityInfo,
+			UpdateContacts:                 true,
+			Contacts:                       contacts,
+			UpdateSerializedEntityContacts: true,
+			SerializedEntityContacts:       serializedContacts,
 			RequestedInformation: &directory.RequestedInformation{
 				Depth:             0,
 				EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},

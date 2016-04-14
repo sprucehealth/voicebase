@@ -58,10 +58,13 @@ func TestUpdateEntityMutation(t *testing.T) {
 			SerializedEntityContact: []byte("{\"data\":\"serialized\"}")},
 	}
 	g.ra.Expect(mock.NewExpectation(g.ra.UpdateEntity, &directory.UpdateEntityRequest{
-		EntityID:                 entityID,
-		EntityInfo:               entityInfo,
-		Contacts:                 contacts,
-		SerializedEntityContacts: serializedContacts,
+		EntityID:                       entityID,
+		UpdateEntityInfo:               true,
+		EntityInfo:                     entityInfo,
+		UpdateContacts:                 true,
+		Contacts:                       contacts,
+		UpdateSerializedEntityContacts: true,
+		SerializedEntityContacts:       serializedContacts,
 		RequestedInformation: &directory.RequestedInformation{
 			Depth:             0,
 			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
