@@ -6,17 +6,18 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/sprucehealth/backend/libs/dbutil"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
+	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
 	"google.golang.org/grpc"
 )
@@ -31,6 +32,7 @@ type config struct {
 	AuthAddr      string
 	DirectoryAddr string
 	ExCommsAddr   string
+	SettingsAddr  string
 	ThreadingAddr string
 }
 
@@ -65,6 +67,17 @@ func (c *config) exCommsClient() (excomms.ExCommsClient, error) {
 		return nil, fmt.Errorf("Unable to connect to excomms service: %s", err)
 	}
 	return excomms.NewExCommsClient(conn), nil
+}
+
+func (c *config) settingsClient() (settings.SettingsClient, error) {
+	if c.SettingsAddr == "" {
+		return nil, errors.New("Settings service address required")
+	}
+	conn, err := grpc.Dial(c.SettingsAddr, grpc.WithInsecure())
+	if err != nil {
+		return nil, fmt.Errorf("Unable to connect to settings service: %s", err)
+	}
+	return settings.NewSettingsClient(conn), nil
 }
 
 func (c *config) threadingClient() (threading.ThreadsClient, error) {
@@ -137,6 +150,8 @@ var commands = map[string]commandNew{
 	"encodeid":      newEncodeIDCmd,
 	"entity":        newEntityCmd,
 	"moveentity":    newMoveEntityCmd,
+	"getsetting":    newGetSettingCmd,
+	"setsetting":    newSetSettingCmd,
 }
 
 func main() {
@@ -161,7 +176,8 @@ func main() {
 				golog.Fatalf(err.Error())
 			}
 			if err := c.run(flag.Args()[1:]); err != nil {
-				golog.Fatalf(err.Error())
+				fmt.Fprintf(os.Stderr, "FAILED: %s\n", err)
+				os.Exit(2)
 			}
 			os.Exit(0)
 		}

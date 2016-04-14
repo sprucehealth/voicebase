@@ -40,7 +40,7 @@ func newAccountCmd(cnf *config) (command, error) {
 }
 
 func (c *accountCmd) run(args []string) error {
-	fs := flag.NewFlagSet("entity", flag.ExitOnError)
+	fs := flag.NewFlagSet("account", flag.ExitOnError)
 	accountID := fs.String("account_id", "", "ID of the account")
 	email := fs.String("email", "", "Email of the account")
 	withEntities := fs.Bool("entities", false, "Display related entities")

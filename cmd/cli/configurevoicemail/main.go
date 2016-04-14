@@ -23,7 +23,7 @@ var (
 	flagAWSAccessKey      = flag.String("aws_access_key", "", "Access `key` for AWS")
 	flagAWSSecretKey      = flag.String("aws_secret_key", "", "Secret `key` for AWS")
 	flagBucket            = flag.String("bucket", "", "bucket where voicemail is to be stored")
-	flagPrefix            = flag.String("prefix", "", "prefix for storage bucket")
+	flagPrefix            = flag.String("prefix", "voicemail-greetings", "prefix for storage bucket")
 	flagEntityID          = flag.String("encoded_entity_id", "", "entityID in encoded form")
 	flagPhoneNumber       = flag.String("phone_number", "", "phone number for which to turn on custom voicemail greeting")
 )
@@ -108,10 +108,6 @@ func validate() {
 		golog.Fatalf("setting service address not specified")
 	} else if *flagVoicemailFileName == "" {
 		golog.Fatalf("voicemail filename not specified")
-	} else if *flagAWSAccessKey == "" {
-		golog.Fatalf("aws access key not specified")
-	} else if *flagAWSSecretKey == "" {
-		golog.Fatalf("aws secret key not specified")
 	} else if *flagBucket == "" {
 		golog.Fatalf("bucket not specified")
 	} else if *flagPrefix == "" {

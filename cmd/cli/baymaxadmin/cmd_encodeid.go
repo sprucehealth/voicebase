@@ -17,7 +17,7 @@ func newEncodeIDCmd(cnf *config) (command, error) {
 }
 
 func (c *encodeIDCmd) run(args []string) error {
-	fs := flag.NewFlagSet("deletecontact", flag.ExitOnError)
+	fs := flag.NewFlagSet("encodeid", flag.ExitOnError)
 	prefix := fs.String("prefix", "", "Optional ID prefix")
 	if err := fs.Parse(args); err != nil {
 		return err

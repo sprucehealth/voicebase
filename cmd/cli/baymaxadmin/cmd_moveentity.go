@@ -43,7 +43,7 @@ func newMoveEntityCmd(cnf *config) (command, error) {
 }
 
 func (c *moveEntityCmd) run(args []string) error {
-	fs := flag.NewFlagSet("deletecontact", flag.ExitOnError)
+	fs := flag.NewFlagSet("moveentity", flag.ExitOnError)
 	entityID := fs.String("entity_id", "", "ID of the entity that has the contact")
 	newOrganizationID := fs.String("new_org_id", "", "ID of the organization where to move the entity")
 	if err := fs.Parse(args); err != nil {
