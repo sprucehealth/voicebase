@@ -136,7 +136,8 @@ func (d *dal) LookupProvisionedEndpoint(provisionedFor string, endpointType mode
 		SELECT endpoint, endpoint_type, provisioned_for, created, deprovisioned, deprovisioned_timestamp, deprovisioned_reason 
 		FROM provisioned_endpoint
 		WHERE provisioned_for = ?
-		AND endpoint_type = ?`, provisionedFor, endpointType).Scan(
+		AND endpoint_type = ?
+		AND deprovisioned = false`, provisionedFor, endpointType).Scan(
 		&ppn.Endpoint,
 		&ppn.EndpointType,
 		&ppn.ProvisionedFor,
