@@ -88,8 +88,6 @@ func displayThread(t *threading.Thread) {
 	fmt.Printf("    Last Message Timestamp: %s\n", time.Unix(int64(t.LastMessageTimestamp), 0))
 	fmt.Printf("    Created Timestamp: %s\n", time.Unix(int64(t.CreatedTimestamp), 0))
 	fmt.Printf("    Message Count: %d\n", t.MessageCount)
-	fmt.Printf("    System Title: %s\n", t.SystemTitle)
-	fmt.Printf("    User Title: %s\n", t.UserTitle)
 	if len(t.Members) != 0 {
 		fmt.Printf("    Members:\n")
 		fmt.Printf("        EntityID\n")
