@@ -430,6 +430,15 @@ message CreateOnboardingThreadResponse {
 	Thread thread = 1;
 }
 
+message LinkedThreadRequest {
+	string thread_id = 1 [(gogoproto.customname) = "ThreadID"];
+}
+
+message LinkedThreadResponse {
+	Thread thread = 1;
+	bool prependSender = 2;
+}
+
 service Threads {
 	// CreateSavedQuery saves a query for later use
 	rpc CreateSavedQuery(CreateSavedQueryRequest) returns (CreateSavedQueryResponse);
@@ -445,6 +454,8 @@ service Threads {
 	rpc DeleteMessage(DeleteMessageRequest) returns (DeleteMessageResponse);
 	// DeleteThread deletes a thread
 	rpc DeleteThread(DeleteThreadRequest) returns (DeleteThreadResponse);
+	// LinkedThread returns the linked thread of one exists
+	rpc LinkedThread(LinkedThreadRequest) returns (LinkedThreadResponse);
 	// MarThreadAsRead marks all posts in a thread as read by an entity
 	rpc MarkThreadAsRead(MarkThreadAsReadRequest) returns (MarkThreadAsReadResponse);
 	// PostMessage posts a message into a specified thread

@@ -152,6 +152,7 @@ var commands = map[string]commandNew{
 	"moveentity":    newMoveEntityCmd,
 	"getsetting":    newGetSettingCmd,
 	"setsetting":    newSetSettingCmd,
+	"thread":        newThreadCmd,
 }
 
 func main() {

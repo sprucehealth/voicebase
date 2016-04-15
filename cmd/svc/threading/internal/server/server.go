@@ -503,6 +503,30 @@ func (s *threadsServer) DeleteThread(ctx context.Context, in *threading.DeleteTh
 	return &threading.DeleteThreadResponse{}, nil
 }
 
+func (s *threadsServer) LinkedThread(ctx context.Context, in *threading.LinkedThreadRequest) (*threading.LinkedThreadResponse, error) {
+	if in.ThreadID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "ThreadID is required")
+	}
+	threadID, err := models.ParseThreadID(in.ThreadID)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadID")
+	}
+	thread, prependSender, err := s.dal.LinkedThread(ctx, threadID)
+	if errors.Cause(err) == dal.ErrNotFound {
+		return nil, grpcErrorf(codes.NotFound, "Linked thread not found")
+	} else if err != nil {
+		return nil, internalError(err)
+	}
+	th, err := transformThreadToResponse(thread, false)
+	if err != nil {
+		return nil, internalError(err)
+	}
+	return &threading.LinkedThreadResponse{
+		Thread:        th,
+		PrependSender: prependSender,
+	}, nil
+}
+
 // MarkThreadAsRead marks all posts in a thread as read by an entity
 func (s *threadsServer) MarkThreadAsRead(ctx context.Context, in *threading.MarkThreadAsReadRequest) (*threading.MarkThreadAsReadResponse, error) {
 	if in.ThreadID == "" {

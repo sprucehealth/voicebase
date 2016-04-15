@@ -716,9 +716,9 @@ func (m *CreateContactsResponse) GetEntity() *Entity {
 
 type UpdateEntityRequest struct {
 	EntityID                       string                           `protobuf:"bytes,1,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
+	RequestedInformation           *RequestedInformation            `protobuf:"bytes,3,opt,name=requested_information" json:"requested_information,omitempty"`
 	UpdateEntityInfo               bool                             `protobuf:"varint,7,opt,name=update_entity_info,proto3" json:"update_entity_info,omitempty"`
 	EntityInfo                     *EntityInfo                      `protobuf:"bytes,2,opt,name=entity_info" json:"entity_info,omitempty"`
-	RequestedInformation           *RequestedInformation            `protobuf:"bytes,3,opt,name=requested_information" json:"requested_information,omitempty"`
 	UpdateContacts                 bool                             `protobuf:"varint,8,opt,name=update_contacts,proto3" json:"update_contacts,omitempty"`
 	Contacts                       []*Contact                       `protobuf:"bytes,4,rep,name=contacts" json:"contacts,omitempty"`
 	UpdateSerializedEntityContacts bool                             `protobuf:"varint,9,opt,name=update_serialized_entity_contacts,proto3" json:"update_serialized_entity_contacts,omitempty"`
@@ -730,16 +730,16 @@ type UpdateEntityRequest struct {
 func (m *UpdateEntityRequest) Reset()      { *m = UpdateEntityRequest{} }
 func (*UpdateEntityRequest) ProtoMessage() {}
 
-func (m *UpdateEntityRequest) GetEntityInfo() *EntityInfo {
+func (m *UpdateEntityRequest) GetRequestedInformation() *RequestedInformation {
 	if m != nil {
-		return m.EntityInfo
+		return m.RequestedInformation
 	}
 	return nil
 }
 
-func (m *UpdateEntityRequest) GetRequestedInformation() *RequestedInformation {
+func (m *UpdateEntityRequest) GetEntityInfo() *EntityInfo {
 	if m != nil {
-		return m.RequestedInformation
+		return m.EntityInfo
 	}
 	return nil
 }
@@ -1960,13 +1960,13 @@ func (this *UpdateEntityRequest) Equal(that interface{}) bool {
 	if this.EntityID != that1.EntityID {
 		return false
 	}
+	if !this.RequestedInformation.Equal(that1.RequestedInformation) {
+		return false
+	}
 	if this.UpdateEntityInfo != that1.UpdateEntityInfo {
 		return false
 	}
 	if !this.EntityInfo.Equal(that1.EntityInfo) {
-		return false
-	}
-	if !this.RequestedInformation.Equal(that1.RequestedInformation) {
 		return false
 	}
 	if this.UpdateContacts != that1.UpdateContacts {
@@ -2687,12 +2687,12 @@ func (this *UpdateEntityRequest) GoString() string {
 	s := make([]string, 0, 14)
 	s = append(s, "&directory.UpdateEntityRequest{")
 	s = append(s, "EntityID: "+fmt.Sprintf("%#v", this.EntityID)+",\n")
+	if this.RequestedInformation != nil {
+		s = append(s, "RequestedInformation: "+fmt.Sprintf("%#v", this.RequestedInformation)+",\n")
+	}
 	s = append(s, "UpdateEntityInfo: "+fmt.Sprintf("%#v", this.UpdateEntityInfo)+",\n")
 	if this.EntityInfo != nil {
 		s = append(s, "EntityInfo: "+fmt.Sprintf("%#v", this.EntityInfo)+",\n")
-	}
-	if this.RequestedInformation != nil {
-		s = append(s, "RequestedInformation: "+fmt.Sprintf("%#v", this.RequestedInformation)+",\n")
 	}
 	s = append(s, "UpdateContacts: "+fmt.Sprintf("%#v", this.UpdateContacts)+",\n")
 	if this.Contacts != nil {

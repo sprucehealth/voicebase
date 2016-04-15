@@ -85,6 +85,15 @@ func (c *Client) DeleteThread(ctx context.Context, in *threading.DeleteThreadReq
 	return rets[0].(*threading.DeleteThreadResponse), mock.SafeError(rets[1])
 }
 
+// LinkedThread returns the linked thread of one exists
+func (c *Client) LinkedThread(ctx context.Context, in *threading.LinkedThreadRequest, opts ...grpc.CallOption) (*threading.LinkedThreadResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*threading.LinkedThreadResponse), mock.SafeError(rets[1])
+}
+
 // MarkThreadAsRead marks all posts in a thread as read by an entity
 func (c *Client) MarkThreadAsRead(ctx context.Context, in *threading.MarkThreadAsReadRequest, opts ...grpc.CallOption) (*threading.MarkThreadAsReadResponse, error) {
 	rets := c.Expector.Record(in)

@@ -68,6 +68,8 @@
 		CreateLinkedThreadsResponse
 		CreateOnboardingThreadRequest
 		CreateOnboardingThreadResponse
+		LinkedThreadRequest
+		LinkedThreadResponse
 */
 package threading
 
@@ -1395,6 +1397,28 @@ func (m *CreateOnboardingThreadResponse) GetThread() *Thread {
 	return nil
 }
 
+type LinkedThreadRequest struct {
+	ThreadID string `protobuf:"bytes,1,opt,name=thread_id,proto3" json:"thread_id,omitempty"`
+}
+
+func (m *LinkedThreadRequest) Reset()      { *m = LinkedThreadRequest{} }
+func (*LinkedThreadRequest) ProtoMessage() {}
+
+type LinkedThreadResponse struct {
+	Thread        *Thread `protobuf:"bytes,1,opt,name=thread" json:"thread,omitempty"`
+	PrependSender bool    `protobuf:"varint,2,opt,name=prependSender,proto3" json:"prependSender,omitempty"`
+}
+
+func (m *LinkedThreadResponse) Reset()      { *m = LinkedThreadResponse{} }
+func (*LinkedThreadResponse) ProtoMessage() {}
+
+func (m *LinkedThreadResponse) GetThread() *Thread {
+	if m != nil {
+		return m.Thread
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*Iterator)(nil), "threading.Iterator")
 	proto.RegisterType((*Thread)(nil), "threading.Thread")
@@ -1455,6 +1479,8 @@ func init() {
 	proto.RegisterType((*CreateLinkedThreadsResponse)(nil), "threading.CreateLinkedThreadsResponse")
 	proto.RegisterType((*CreateOnboardingThreadRequest)(nil), "threading.CreateOnboardingThreadRequest")
 	proto.RegisterType((*CreateOnboardingThreadResponse)(nil), "threading.CreateOnboardingThreadResponse")
+	proto.RegisterType((*LinkedThreadRequest)(nil), "threading.LinkedThreadRequest")
+	proto.RegisterType((*LinkedThreadResponse)(nil), "threading.LinkedThreadResponse")
 	proto.RegisterEnum("threading.ThreadType", ThreadType_name, ThreadType_value)
 	proto.RegisterEnum("threading.Iterator_Direction", Iterator_Direction_name, Iterator_Direction_value)
 	proto.RegisterEnum("threading.ThreadItem_Type", ThreadItem_Type_name, ThreadItem_Type_value)
@@ -3668,6 +3694,59 @@ func (this *CreateOnboardingThreadResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *LinkedThreadRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*LinkedThreadRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.ThreadID != that1.ThreadID {
+		return false
+	}
+	return true
+}
+func (this *LinkedThreadResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*LinkedThreadResponse)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.Thread.Equal(that1.Thread) {
+		return false
+	}
+	if this.PrependSender != that1.PrependSender {
+		return false
+	}
+	return true
+}
 func (this *Iterator) GoString() string {
 	if this == nil {
 		return "nil"
@@ -4528,6 +4607,29 @@ func (this *CreateOnboardingThreadResponse) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *LinkedThreadRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&threading.LinkedThreadRequest{")
+	s = append(s, "ThreadID: "+fmt.Sprintf("%#v", this.ThreadID)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *LinkedThreadResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&threading.LinkedThreadResponse{")
+	if this.Thread != nil {
+		s = append(s, "Thread: "+fmt.Sprintf("%#v", this.Thread)+",\n")
+	}
+	s = append(s, "PrependSender: "+fmt.Sprintf("%#v", this.PrependSender)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func valueToGoStringSvc(v interface{}, typ string) string {
 	rv := reflect.ValueOf(v)
 	if rv.IsNil() {
@@ -4575,6 +4677,8 @@ type ThreadsClient interface {
 	DeleteMessage(ctx context.Context, in *DeleteMessageRequest, opts ...grpc.CallOption) (*DeleteMessageResponse, error)
 	// DeleteThread deletes a thread
 	DeleteThread(ctx context.Context, in *DeleteThreadRequest, opts ...grpc.CallOption) (*DeleteThreadResponse, error)
+	// LinkedThread returns the linked thread of one exists
+	LinkedThread(ctx context.Context, in *LinkedThreadRequest, opts ...grpc.CallOption) (*LinkedThreadResponse, error)
 	// MarThreadAsRead marks all posts in a thread as read by an entity
 	MarkThreadAsRead(ctx context.Context, in *MarkThreadAsReadRequest, opts ...grpc.CallOption) (*MarkThreadAsReadResponse, error)
 	// PostMessage posts a message into a specified thread
@@ -4668,6 +4772,15 @@ func (c *threadsClient) DeleteMessage(ctx context.Context, in *DeleteMessageRequ
 func (c *threadsClient) DeleteThread(ctx context.Context, in *DeleteThreadRequest, opts ...grpc.CallOption) (*DeleteThreadResponse, error) {
 	out := new(DeleteThreadResponse)
 	err := grpc.Invoke(ctx, "/threading.Threads/DeleteThread", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *threadsClient) LinkedThread(ctx context.Context, in *LinkedThreadRequest, opts ...grpc.CallOption) (*LinkedThreadResponse, error) {
+	out := new(LinkedThreadResponse)
+	err := grpc.Invoke(ctx, "/threading.Threads/LinkedThread", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -4808,6 +4921,8 @@ type ThreadsServer interface {
 	DeleteMessage(context.Context, *DeleteMessageRequest) (*DeleteMessageResponse, error)
 	// DeleteThread deletes a thread
 	DeleteThread(context.Context, *DeleteThreadRequest) (*DeleteThreadResponse, error)
+	// LinkedThread returns the linked thread of one exists
+	LinkedThread(context.Context, *LinkedThreadRequest) (*LinkedThreadResponse, error)
 	// MarThreadAsRead marks all posts in a thread as read by an entity
 	MarkThreadAsRead(context.Context, *MarkThreadAsReadRequest) (*MarkThreadAsReadResponse, error)
 	// PostMessage posts a message into a specified thread
@@ -4918,6 +5033,18 @@ func _Threads_DeleteThread_Handler(srv interface{}, ctx context.Context, dec fun
 		return nil, err
 	}
 	out, err := srv.(ThreadsServer).DeleteThread(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func _Threads_LinkedThread_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(LinkedThreadRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(ThreadsServer).LinkedThread(ctx, in)
 	if err != nil {
 		return nil, err
 	}
@@ -5111,6 +5238,10 @@ var _Threads_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteThread",
 			Handler:    _Threads_DeleteThread_Handler,
+		},
+		{
+			MethodName: "LinkedThread",
+			Handler:    _Threads_LinkedThread_Handler,
 		},
 		{
 			MethodName: "MarkThreadAsRead",
@@ -7657,6 +7788,68 @@ func (m *CreateOnboardingThreadResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *LinkedThreadRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *LinkedThreadRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.ThreadID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.ThreadID)))
+		i += copy(data[i:], m.ThreadID)
+	}
+	return i, nil
+}
+
+func (m *LinkedThreadResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *LinkedThreadResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Thread != nil {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Thread.Size()))
+		n36, err := m.Thread.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n36
+	}
+	if m.PrependSender {
+		data[i] = 0x10
+		i++
+		if m.PrependSender {
+			data[i] = 1
+		} else {
+			data[i] = 0
+		}
+		i++
+	}
+	return i, nil
+}
+
 func encodeFixed64Svc(data []byte, offset int, v uint64) int {
 	data[offset] = uint8(v)
 	data[offset+1] = uint8(v >> 8)
@@ -8827,6 +9020,29 @@ func (m *CreateOnboardingThreadResponse) Size() (n int) {
 	return n
 }
 
+func (m *LinkedThreadRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.ThreadID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *LinkedThreadResponse) Size() (n int) {
+	var l int
+	_ = l
+	if m.Thread != nil {
+		l = m.Thread.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if m.PrependSender {
+		n += 2
+	}
+	return n
+}
+
 func sovSvc(x uint64) (n int) {
 	for {
 		n++
@@ -9626,6 +9842,27 @@ func (this *CreateOnboardingThreadResponse) String() string {
 	}
 	s := strings.Join([]string{`&CreateOnboardingThreadResponse{`,
 		`Thread:` + strings.Replace(fmt.Sprintf("%v", this.Thread), "Thread", "Thread", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *LinkedThreadRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&LinkedThreadRequest{`,
+		`ThreadID:` + fmt.Sprintf("%v", this.ThreadID) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *LinkedThreadResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&LinkedThreadResponse{`,
+		`Thread:` + strings.Replace(fmt.Sprintf("%v", this.Thread), "Thread", "Thread", 1) + `,`,
+		`PrependSender:` + fmt.Sprintf("%v", this.PrependSender) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -17744,6 +17981,188 @@ func (m *CreateOnboardingThreadResponse) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *LinkedThreadRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: LinkedThreadRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: LinkedThreadRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ThreadID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ThreadID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *LinkedThreadResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: LinkedThreadResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: LinkedThreadResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Thread", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Thread == nil {
+				m.Thread = &Thread{}
+			}
+			if err := m.Thread.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PrependSender", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.PrependSender = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])
