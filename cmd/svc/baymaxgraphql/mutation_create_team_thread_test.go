@@ -101,7 +101,7 @@ func TestCreateTeamThreadMutation(t *testing.T) {
 				"success": true,
 				"thread": {
 					"allowAddMembers": true,
-					"allowDelete": true,
+					"allowDelete": false,
 					"allowInternalMessages": false,
 					"allowLeave": true,
 					"allowRemoveMembers": true,

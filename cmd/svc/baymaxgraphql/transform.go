@@ -89,7 +89,6 @@ func transformThreadToResponse(t *threading.Thread, viewingAccount *auth.Account
 	switch t.Type {
 	case threading.ThreadType_TEAM:
 		th.AllowAddMembers = true
-		th.AllowDelete = true
 		th.AllowLeave = true
 		th.AllowRemoveMembers = true
 		th.AllowUpdateTitle = true
