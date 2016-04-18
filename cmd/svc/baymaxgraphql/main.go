@@ -308,7 +308,11 @@ func main() {
 		}
 	}
 
-	h := httputil.CompressResponse(r)
+	var h httputil.ContextHandler = r
+	// TODO: for now only compressing in dev to check app compatibility
+	if environment.IsDev() {
+		h = httputil.CompressResponse(h)
+	}
 	h = httputil.LoggingHandler(h, webRequestLogger)
 
 	fmt.Printf("Listening on %s\n", *flagListenAddr)

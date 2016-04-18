@@ -167,7 +167,7 @@ var authenticateMutation = &graphql.Field{
 			}
 			return &authenticateOutput{
 				ClientMutationID: mutationID,
-				Success:          true,
+				Success:          false,
 				ErrorCode:        authenticateErrorCodeTwoFactorRequired,
 				ErrorMessage:     "A verification code has been sent to your primary phone number. You must enter the received code to complete authentication.",
 				Token:            token,
