@@ -80,7 +80,11 @@ func (c *moveCaseCmd) run(args []string) error {
 	if err != nil {
 		return fmt.Errorf("Failed to get patient: %s", err)
 	}
-	fmt.Printf("Patient: %s %s\n", patient.FirstName, patient.LastName)
+	patientInitials := patient.FirstName[:1]
+	if len(patient.LastName) > 0 {
+		patientInitials = patient.LastName[:1]
+	}
+	fmt.Printf("Patient Initials: %s\n", patientInitials)
 
 	if *caseID == 0 {
 		cases, err := c.dataAPI.GetCasesForPatient(patient.ID, nil)
