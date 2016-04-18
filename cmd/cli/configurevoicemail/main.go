@@ -24,7 +24,7 @@ var (
 	flagAWSSecretKey      = flag.String("aws_secret_key", "", "Secret `key` for AWS")
 	flagBucket            = flag.String("bucket", "", "bucket where voicemail is to be stored")
 	flagPrefix            = flag.String("prefix", "voicemail-greetings", "prefix for storage bucket")
-	flagEntityID          = flag.String("encoded_entity_id", "", "entityID in encoded form")
+	flagEntityID          = flag.String("org_entity_id", "", "entityID of the organization in encoded form")
 	flagPhoneNumber       = flag.String("phone_number", "", "phone number for which to turn on custom voicemail greeting")
 )
 
