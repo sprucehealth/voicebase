@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/compat"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/test"
 	"golang.org/x/net/context"
@@ -65,7 +66,7 @@ func TestPatientCapabilitiesHandler(t *testing.T) {
 
 	// Missing app info
 	authAPI.appInfo = &api.AppInfo{
-		Platform: common.IOS,
+		Platform: device.IOS,
 		Version:  &encoding.Version{Major: 1, Minor: 0, Patch: 0},
 	}
 	w = httptest.NewRecorder()

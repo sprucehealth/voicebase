@@ -10,6 +10,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -287,7 +288,7 @@ type requestData struct {
 	reviewUpgradeType encoding.VersionComponent
 	patientAppVersion *encoding.Version
 	doctorAppVersion  *encoding.Version
-	platform          common.Platform
+	platform          device.Platform
 
 	// parsed layouts
 	intakeLayout   *info_intake.InfoIntakeLayout
@@ -714,7 +715,7 @@ func parsePlatform(r *http.Request, rData *requestData) error {
 	}
 
 	var err error
-	if rData.platform, err = common.ParsePlatform(platform); err != nil {
+	if rData.platform, err = device.ParsePlatform(platform); err != nil {
 		return err
 	}
 
@@ -889,10 +890,10 @@ func reviewContext(patientLayout *info_intake.InfoIntakeLayout) (map[string]inte
 				case info_intake.QuestionTypeMultipleChoice:
 					if sub := que.SubQuestionsConfig; sub != nil {
 						data := []info_intake.TitleSubItemsDescriptionContentData{
-							info_intake.TitleSubItemsDescriptionContentData{
+							{
 								Title: "Title",
 								SubItems: []*info_intake.DescriptionContentData{
-									&info_intake.DescriptionContentData{
+									{
 										Description: "Description",
 										Content:     "Content",
 									},
@@ -909,10 +910,10 @@ func reviewContext(patientLayout *info_intake.InfoIntakeLayout) (map[string]inte
 					}
 				case info_intake.QuestionTypeAutocomplete:
 					data := []info_intake.TitleSubItemsDescriptionContentData{
-						info_intake.TitleSubItemsDescriptionContentData{
+						{
 							Title: "Title",
 							SubItems: []*info_intake.DescriptionContentData{
-								&info_intake.DescriptionContentData{
+								{
 									Description: "Description",
 									Content:     "Content",
 								},

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 )
@@ -28,7 +29,7 @@ func (f *feedbackHomeCard) Validate() error {
 
 // HomeCardForCase returns a home card to get feedback from the patient
 // based on the current rating level configuration.
-func HomeCardForCase(feedbackClient DAL, caseID int64, platform common.Platform) (common.ClientView, error) {
+func HomeCardForCase(feedbackClient DAL, caseID int64, platform device.Platform) (common.ClientView, error) {
 
 	feedbackFor := ForCase(caseID)
 

@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/mandrill"
@@ -69,7 +70,7 @@ func TestPatientNotification_SinglePreference(t *testing.T) {
 		},
 		pushConfigList: []*common.PushConfigData{
 			{
-				Platform:       common.IOS,
+				Platform:       device.IOS,
 				AppType:        "Patient",
 				AppEnvironment: "Dev",
 			},
@@ -80,7 +81,7 @@ func TestPatientNotification_SinglePreference(t *testing.T) {
 	push := &mockSNS{}
 	sms := &mockSMSAPI{}
 	configs := config.NotificationConfigs(map[string]*config.NotificationConfig{
-		"iOS-Patient-Dev": &config.NotificationConfig{},
+		"iOS-Patient-Dev": {},
 	})
 
 	n := NewManager(mda, nil, push, sms, email, "2068888888", &configs, metrics.NewRegistry())
@@ -163,7 +164,7 @@ func TestPatientNotification_MultiplePreference(t *testing.T) {
 		},
 		pushConfigList: []*common.PushConfigData{
 			{
-				Platform:       common.IOS,
+				Platform:       device.IOS,
 				AppType:        "Patient",
 				AppEnvironment: "Dev",
 			},
@@ -174,7 +175,7 @@ func TestPatientNotification_MultiplePreference(t *testing.T) {
 	push := &mockSNS{}
 	sms := &mockSMSAPI{}
 	configs := config.NotificationConfigs(map[string]*config.NotificationConfig{
-		"iOS-Patient-Dev": &config.NotificationConfig{},
+		"iOS-Patient-Dev": {},
 	})
 
 	n := NewManager(mda, nil, push, sms, email, "2068888888", &configs, metrics.NewRegistry())

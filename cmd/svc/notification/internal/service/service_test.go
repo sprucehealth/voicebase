@@ -7,7 +7,6 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/sns"
-	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/cmd/svc/notification/internal/dal"
 	testdal "github.com/sprucehealth/backend/cmd/svc/notification/internal/dal/test"
 	nsettings "github.com/sprucehealth/backend/cmd/svc/notification/internal/settings"
@@ -86,7 +85,7 @@ func TestProcessNewDeviceRegistrationIOS(t *testing.T) {
 	test.OK(t, err)
 
 	// Lookup the device and don't find it
-	dl.Expect(mock.NewExpectation(dl.PushConfigForDeviceToken, "DeviceToken").WithReturns((*dal.PushConfig)(nil), api.ErrNotFound("not found")))
+	dl.Expect(mock.NewExpectation(dl.PushConfigForDeviceToken, "DeviceToken").WithReturns((*dal.PushConfig)(nil), dal.ErrNotFound))
 
 	// Generate an endpoint for the device
 	snsAPI.Expect(mock.NewExpectation(snsAPI.CreatePlatformEndpoint, &sns.CreatePlatformEndpointInput{
@@ -145,7 +144,7 @@ func TestProcessNewDeviceRegistrationAndroid(t *testing.T) {
 	test.OK(t, err)
 
 	// Lookup the device and don't find it
-	dl.Expect(mock.NewExpectation(dl.PushConfigForDeviceToken, "DeviceToken").WithReturns((*dal.PushConfig)(nil), api.ErrNotFound("not found")))
+	dl.Expect(mock.NewExpectation(dl.PushConfigForDeviceToken, "DeviceToken").WithReturns((*dal.PushConfig)(nil), dal.ErrNotFound))
 
 	// Generate an endpoint for the device
 	snsAPI.Expect(mock.NewExpectation(snsAPI.CreatePlatformEndpoint, &sns.CreatePlatformEndpointInput{
@@ -673,7 +672,7 @@ func TestProcessNotificationInternalMessage(t *testing.T) {
 		MessageID:            "ItemID",
 		SavedQueryID:         "SavedQueryID",
 		EntitiesToNotify:     entitiesToNotify,
-		EntitiesAtReferenced: map[string]struct{}{"entity:2": struct{}{}, "entity:3": struct{}{}},
+		EntitiesAtReferenced: map[string]struct{}{"entity:2": {}, "entity:3": {}},
 		Type:                 notification.NewMessageOnInternalThread,
 	})
 	test.OK(t, err)
@@ -851,7 +850,7 @@ func TestProcessNotificationExternalMessage(t *testing.T) {
 		MessageID:            "ItemID",
 		SavedQueryID:         "SavedQueryID",
 		EntitiesToNotify:     entitiesToNotify,
-		EntitiesAtReferenced: map[string]struct{}{"entity:2": struct{}{}, "entity:3": struct{}{}},
+		EntitiesAtReferenced: map[string]struct{}{"entity:2": {}, "entity:3": {}},
 		Type:                 notification.NewMessageOnExternalThread,
 	})
 	test.OK(t, err)

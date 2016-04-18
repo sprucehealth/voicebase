@@ -7,6 +7,7 @@ import (
 
 	attributionModel "github.com/sprucehealth/backend/attribution/model"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/errors"
@@ -614,11 +615,11 @@ type IntakeLayoutAPI interface {
 	IntakeLayoutForReviewLayoutVersion(reviewMajor, reviewMinor int, pathwayID int64, skuType string) ([]byte, int64, error)
 	ReviewLayoutForIntakeLayoutVersionID(layoutVersionID int64, pathwayID int64, skuType string) ([]byte, int64, error)
 	ReviewLayoutForIntakeLayoutVersion(intakeMajor, intakeMinor int, pathwayID int64, skuType string) ([]byte, int64, error)
-	IntakeLayoutForAppVersion(appVersion *encoding.Version, platform common.Platform, pathwayID, languageID int64, skuType string) ([]byte, int64, error)
-	IntakeLayoutVersionIDForAppVersion(appVersion *encoding.Version, platform common.Platform, pathwayID, languageID int64, skuType string) (int64, error)
-	CreateAppVersionMapping(appVersion *encoding.Version, platform common.Platform, layoutMajor int, role, purpose string, pathwayID int64, skuType string) error
+	IntakeLayoutForAppVersion(appVersion *encoding.Version, platform device.Platform, pathwayID, languageID int64, skuType string) ([]byte, int64, error)
+	IntakeLayoutVersionIDForAppVersion(appVersion *encoding.Version, platform device.Platform, pathwayID, languageID int64, skuType string) (int64, error)
+	CreateAppVersionMapping(appVersion *encoding.Version, platform device.Platform, layoutMajor int, role, purpose string, pathwayID int64, skuType string) error
 	UpdateActiveLayouts(purpose string, version *encoding.Version, layoutTemplateID int64, layoutIDs []int64, pathwayID int64, skuID *int64) error
-	LatestAppVersionSupported(pathwayID int64, skuID *int64, platform common.Platform, role, purpose string) (*encoding.Version, error)
+	LatestAppVersionSupported(pathwayID int64, skuID *int64, platform device.Platform, role, purpose string) (*encoding.Version, error)
 	LayoutTemplateVersionBeyondVersion(versionInfo *VersionInfo, role, purpose string, pathwayID int64, skuID *int64) (*LayoutTemplateVersion, error)
 	GetActiveDoctorDiagnosisLayout(pathwayID int64) (*LayoutVersion, error)
 	GetPatientLayout(layoutVersionID, languageID int64) (*LayoutVersion, error)
@@ -1020,7 +1021,7 @@ const (
 type AppInfo struct {
 	Version         *encoding.Version
 	Build           string
-	Platform        common.Platform
+	Platform        device.Platform
 	PlatformVersion string
 	Device          string
 	DeviceModel     string
@@ -1063,7 +1064,7 @@ type AuthAPI interface {
 	PermissionsForAccount(accountID int64) ([]string, error)
 	GroupsForAccount(accountID int64) ([]*common.AccountGroup, error)
 	UpdateGroupsForAccount(accountID int64, groups map[int64]bool) error
-	UpdateAppDevice(accountID int64, appVersion *encoding.Version, p common.Platform, platformVersion, device, deviceModel, build string) error
+	UpdateAppDevice(accountID int64, appVersion *encoding.Version, p device.Platform, platformVersion, device, deviceModel, build string) error
 	LatestAppInfo(accountID int64) (*AppInfo, error)
 }
 

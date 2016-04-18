@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"golang.org/x/net/context"
@@ -21,7 +22,7 @@ type patientAppInfoHandler struct {
 type appInfo struct {
 	Version         *encoding.Version `json:"version"`
 	Build           string            `json:"build"`
-	Platform        common.Platform   `json:"platform"`
+	Platform        device.Platform   `json:"platform"`
 	PlatformVersion string            `json:"platform_version"`
 	Device          string            `json:"device"`
 	DeviceModel     string            `json:"device_model"`

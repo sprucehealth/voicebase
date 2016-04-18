@@ -22,7 +22,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	flags "github.com/jessevdk/go-flags"
 	"github.com/sprucehealth/backend/boot"
-	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -40,11 +40,11 @@ type DosespotConfig struct {
 type NotificationConfig struct {
 	SNSApplicationEndpoint string          `long:"sns_application_endpoint" description:"SNS Application endpoint for push notification"`
 	IsApnsSandbox          bool            `long:"apns_sandbox"`
-	Platform               common.Platform `long:"platform"`
+	Platform               device.Platform `long:"platform"`
 	URLScheme              string          `long:"url_scheme" description:"URL scheme to include in communication for deep linking into app"`
 }
 
-func DetermineNotificationConfigName(platform common.Platform, appType, appEnvironment string) string {
+func DetermineNotificationConfigName(platform device.Platform, appType, appEnvironment string) string {
 	return fmt.Sprintf("%s-%s-%s", platform.String(), appType, appEnvironment)
 }
 

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -324,7 +325,7 @@ func (m *auth) GetPhoneNumbersForAccount(accountID int64) ([]*common.PhoneNumber
 	return numbers, nil
 }
 
-func (m *auth) UpdateAppDevice(accountID int64, appVersion *encoding.Version, p common.Platform, platformVersion, device, deviceModel, build string) error {
+func (m *auth) UpdateAppDevice(accountID int64, appVersion *encoding.Version, p device.Platform, platformVersion, device, deviceModel, build string) error {
 	if appVersion == nil {
 		return nil
 	}

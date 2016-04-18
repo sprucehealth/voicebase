@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dbutil"
@@ -153,7 +154,7 @@ func (d *dataService) ReviewLayoutForIntakeLayoutVersion(intakeMajor, intakeMino
 	return layout, layoutVersionID, nil
 }
 
-func (d *dataService) IntakeLayoutForAppVersion(appVersion *encoding.Version, platform common.Platform, pathwayID, languageID int64, skuType string) ([]byte, int64, error) {
+func (d *dataService) IntakeLayoutForAppVersion(appVersion *encoding.Version, platform device.Platform, pathwayID, languageID int64, skuType string) ([]byte, int64, error) {
 
 	if appVersion == nil || appVersion.IsZero() {
 		return nil, 0, errors.New("No app version specified")
@@ -190,7 +191,7 @@ func (d *dataService) IntakeLayoutForAppVersion(appVersion *encoding.Version, pl
 	return layout, layoutVersionID, nil
 }
 
-func (d *dataService) majorLayoutVersionSupportedByAppVersion(appVersion *encoding.Version, platform common.Platform, pathwayID int64, role, purpose string, skuType string) (int, error) {
+func (d *dataService) majorLayoutVersionSupportedByAppVersion(appVersion *encoding.Version, platform device.Platform, pathwayID int64, role, purpose string, skuType string) (int, error) {
 	skuID, err := d.skuIDFromType(skuType)
 	if err != nil {
 		return 0, err
@@ -225,7 +226,7 @@ func (d *dataService) majorLayoutVersionSupportedByAppVersion(appVersion *encodi
 	return intakeMajor, nil
 }
 
-func (d *dataService) IntakeLayoutVersionIDForAppVersion(appVersion *encoding.Version, platform common.Platform, pathwayID, languageID int64, skuType string) (int64, error) {
+func (d *dataService) IntakeLayoutVersionIDForAppVersion(appVersion *encoding.Version, platform device.Platform, pathwayID, languageID int64, skuType string) (int64, error) {
 	if appVersion == nil || appVersion.IsZero() {
 		return 0, errors.New("No app version specified")
 	}
@@ -290,7 +291,7 @@ func (d *dataService) CreateLayoutMapping(intakeMajor, intakeMinor, reviewMajor,
 	return err
 }
 
-func (d *dataService) CreateAppVersionMapping(appVersion *encoding.Version, platform common.Platform,
+func (d *dataService) CreateAppVersionMapping(appVersion *encoding.Version, platform device.Platform,
 	layoutMajor int, role, purpose string, pathwayID int64, skuType string) error {
 
 	if appVersion == nil || appVersion.IsZero() {
@@ -1293,7 +1294,7 @@ func (d *dataService) GetPhotoSlotsInfo(questionID, languageID int64) ([]*info_i
 	return photoSlotInfoList, nil
 }
 
-func (d *dataService) LatestAppVersionSupported(pathwayID int64, skuID *int64, platform common.Platform, role, purpose string) (*encoding.Version, error) {
+func (d *dataService) LatestAppVersionSupported(pathwayID int64, skuID *int64, platform device.Platform, role, purpose string) (*encoding.Version, error) {
 	var version encoding.Version
 	vals := []interface{}{pathwayID, platform.String(), role, purpose}
 	whereClause := "clinical_pathway_id = ? AND platform = ? AND role = ? AND purpose = ?"

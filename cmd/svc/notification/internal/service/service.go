@@ -6,13 +6,10 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/net/context"
-
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
-	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/cmd/svc/notification/internal/dal"
 	nsettings "github.com/sprucehealth/backend/cmd/svc/notification/internal/settings"
 	"github.com/sprucehealth/backend/libs/awsutil"
@@ -26,6 +23,7 @@ import (
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/notification/deeplink"
 	"github.com/sprucehealth/backend/svc/settings"
+	"golang.org/x/net/context"
 )
 
 // Config represents the configurations required to operate the notification service
@@ -104,7 +102,7 @@ func (s *service) processDeviceRegistration(data string) error {
 
 	// Check to see if we already have this device token registered
 	pushConfig, err := s.dl.PushConfigForDeviceToken(registrationInfo.DeviceToken)
-	if api.IsErrNotFound(err) {
+	if errors.Cause(err) == dal.ErrNotFound {
 		// Generate a new endpoint if we don't already have this device token registered
 		endpointARN, err := s.generateEndpointARN(registrationInfo)
 		if err != nil {

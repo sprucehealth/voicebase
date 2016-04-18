@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/samuel/go-metrics/metrics"
-	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/cmd/svc/directory/internal/dal"
 	mock_dal "github.com/sprucehealth/backend/cmd/svc/directory/internal/dal/test"
 	"github.com/sprucehealth/backend/encoding"
@@ -322,7 +321,7 @@ func TestCreateEntityInitialEntityNotFound(t *testing.T) {
 			Provisioned: true,
 		},
 	}
-	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID2), (*dal.Entity)(nil), api.ErrNotFound("not found")))
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID2), (*dal.Entity)(nil), dal.ErrNotFound))
 	_, err = s.CreateEntity(context.Background(), &directory.CreateEntityRequest{
 		EntityInfo: &directory.EntityInfo{
 			DisplayName: name,
@@ -481,7 +480,7 @@ func TestCreateMembershipEntityNotFound(t *testing.T) {
 	test.OK(t, err)
 	eID2, err := dal.NewEntityID()
 	test.OK(t, err)
-	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), (*dal.Entity)(nil), api.ErrNotFound("not found")))
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), (*dal.Entity)(nil), dal.ErrNotFound))
 	_, err = s.CreateMembership(context.Background(), &directory.CreateMembershipRequest{
 		EntityID:       eID1.String(),
 		TargetEntityID: eID2.String(),
@@ -500,7 +499,7 @@ func TestCreateMembershipTargetEntityNotFound(t *testing.T) {
 	eID2, err := dal.NewEntityID()
 	test.OK(t, err)
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), &dal.Entity{}, nil))
-	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID2), (*dal.Entity)(nil), api.ErrNotFound("not found")))
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID2), (*dal.Entity)(nil), dal.ErrNotFound))
 	_, err = s.CreateMembership(context.Background(), &directory.CreateMembershipRequest{
 		EntityID:       eID1.String(),
 		TargetEntityID: eID2.String(),
@@ -547,7 +546,7 @@ func TestCreateContactEntityNotFound(t *testing.T) {
 	s := New(dl, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
-	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), (*dal.Entity)(nil), api.ErrNotFound("not found")))
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), (*dal.Entity)(nil), dal.ErrNotFound))
 	_, err = s.CreateContact(context.Background(), &directory.CreateContactRequest{
 		EntityID: eID1.String(),
 		Contact: &directory.Contact{
@@ -1129,7 +1128,7 @@ func TestSerializedEntityContactNotFound(t *testing.T) {
 	test.OK(t, err)
 	platform := dal.SerializedClientEntityContactPlatformIOS
 
-	dl.Expect(mock.NewExpectation(dl.SerializedClientEntityContact, eID1, platform).WithReturns((*dal.SerializedClientEntityContact)(nil), api.ErrNotFound("foo")))
+	dl.Expect(mock.NewExpectation(dl.SerializedClientEntityContact, eID1, platform).WithReturns((*dal.SerializedClientEntityContact)(nil), dal.ErrNotFound))
 
 	resp, err := s.SerializedEntityContact(context.Background(), &directory.SerializedEntityContactRequest{
 		EntityID: eID1.String(),

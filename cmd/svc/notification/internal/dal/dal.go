@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/idgen"
@@ -13,6 +12,9 @@ import (
 	"github.com/sprucehealth/backend/libs/transactional/tsql"
 	"github.com/sprucehealth/backend/svc/notification"
 )
+
+// ErrNotFound is returned when an item is not found
+var ErrNotFound = errors.New("notification/dal: item not found")
 
 // DAL represents the methods required to provide data access layer functionality
 type DAL interface {
@@ -254,7 +256,7 @@ func scanPushConfig(row dbutil.Scanner) (*PushConfig, error) {
 
 	err := row.Scan(&m.ID, &m.ExternalGroupID, &m.Platform, &m.DeviceID, &m.DeviceModel, &m.Created, &m.Modified, &m.DeviceToken, &m.PushEndpoint, &m.PlatformVersion, &m.AppVersion, &m.Device)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(api.ErrNotFound(" - PushConfig not found"))
+		return nil, errors.Trace(ErrNotFound)
 	}
 	return &m, errors.Trace(err)
 }

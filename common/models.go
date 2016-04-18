@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/pharmacy"
 )
@@ -822,7 +823,7 @@ type PushConfigData struct {
 	AccountID       int64
 	DeviceToken     string
 	PushEndpoint    string
-	Platform        Platform
+	Platform        device.Platform
 	PlatformVersion string
 	AppType         string
 	AppEnvironment  string

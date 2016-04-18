@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	imedia "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/media"
@@ -72,19 +72,19 @@ func (m *mediaHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *
 
 	file, _, err := r.FormFile("media")
 	if err != nil {
-		apiservice.WriteUserError(w, http.StatusBadRequest, "Missing or invalid media in parameters: "+err.Error())
+		http.Error(w, "Missing or invalid media in parameters: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 	defer file.Close()
 
 	mediaID, err := media.NewID()
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		httpInternalError(ctx, w, err)
 		return
 	}
 
 	if _, err = m.media.PutReader(mediaID, file); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		httpInternalError(ctx, w, err)
 		return
 	}
 
@@ -189,4 +189,16 @@ func copyWithHeaders(w http.ResponseWriter, r io.Reader, contentLen int, mimeTyp
 	// Note: We are currently not attaching a Last-Modified header on responses
 	httputil.FarFutureCacheHeaders(w.Header(), time.Now())
 	io.Copy(w, r)
+}
+
+func httpInternalError(ctx context.Context, w http.ResponseWriter, err error) {
+	requestID := gqlctx.RequestID(ctx)
+	golog.Context(
+		"RequestID", requestID,
+	).LogDepthf(1, golog.ERR, err.Error())
+	if environment.IsDev() {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	} else {
+		http.Error(w, "Internal Error", http.StatusInternalServerError)
+	}
 }

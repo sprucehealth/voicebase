@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
-	_ "net/http/pprof" // imported for implicitly registered handlers
 	"os"
 	"path"
 	"strings"
@@ -20,6 +19,8 @@ import (
 	mediastore "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
 	baymaxgraphqlsettings "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/settings"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/stub"
+	"github.com/sprucehealth/backend/device"
+	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -309,10 +310,16 @@ func main() {
 	}
 
 	var h httputil.ContextHandler = r
-	// TODO: for now only compressing in dev to check app compatibility
-	if environment.IsDev() {
-		h = httputil.CompressResponse(h)
-	}
+	ch := httputil.CompressResponse(h)
+	h = httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+		sh := gqlctx.SpruceHeaders(ctx)
+		// TODO: don't compress response for Android app < 1.2. Remove this when no longer needed.
+		if sh.Platform != device.Android || sh.AppVersion.GreaterThanOrEqualTo(&encoding.Version{Major: 1, Minor: 2, Patch: 0}) {
+			ch.ServeHTTP(ctx, w, r)
+		} else {
+			h.ServeHTTP(ctx, w, r)
+		}
+	})
 	h = httputil.LoggingHandler(h, webRequestLogger)
 
 	fmt.Printf("Listening on %s\n", *flagListenAddr)

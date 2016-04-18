@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/cmd/svc/auth/internal/dal"
 	mock_dal "github.com/sprucehealth/backend/cmd/svc/auth/internal/dal/test"
 	authSetting "github.com/sprucehealth/backend/cmd/svc/auth/internal/settings"
@@ -77,7 +76,7 @@ func TestGetAccountNotFound(t *testing.T) {
 	test.OK(t, err)
 	aID1, err := dal.NewAccountID()
 	test.OK(t, err)
-	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Account, aID1), (*dal.Account)(nil), api.ErrNotFound("not found")))
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Account, aID1), (*dal.Account)(nil), dal.ErrNotFound))
 	_, err = s.GetAccount(context.Background(), &auth.GetAccountRequest{AccountID: aID1.String()})
 	test.Assert(t, err != nil, "Expected an error")
 	test.Equals(t, codes.NotFound, grpc.Code(err))
@@ -435,7 +434,7 @@ func TestAuthenticateLoginNoEmail(t *testing.T) {
 	test.OK(t, err)
 	email := "test@email.com"
 	password := "password"
-	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.AccountForEmail, email), (*dal.Account)(nil), api.ErrNotFound("not found")))
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.AccountForEmail, email), (*dal.Account)(nil), dal.ErrNotFound))
 	_, err = s.AuthenticateLogin(context.Background(), &auth.AuthenticateLoginRequest{
 		Email:           email,
 		Password:        password,
@@ -806,7 +805,7 @@ func TestCheckAuthenticationNoToken(t *testing.T) {
 	s = svr
 	token := "123abc"
 	tokenAttributes := map[string]string{"token": "attribute"}
-	dl.Expect(mock.NewExpectation(dl.AuthToken, token+":tokenattribute", mClock.Now(), true).WithReturns((*dal.AuthToken)(nil), api.ErrNotFound("not found")))
+	dl.Expect(mock.NewExpectation(dl.AuthToken, token+":tokenattribute", mClock.Now(), true).WithReturns((*dal.AuthToken)(nil), dal.ErrNotFound))
 	resp, err := s.CheckAuthentication(context.Background(), &auth.CheckAuthenticationRequest{
 		Token:           token,
 		TokenAttributes: tokenAttributes,
@@ -846,7 +845,7 @@ func TestCreateAccount(t *testing.T) {
 	signer, err := sig.NewSigner([][]byte{[]byte(clientEncryptionSecret)}, sha512.New)
 	test.OK(t, err)
 	// Check for the account by email
-	dl.Expect(mock.NewExpectation(dl.AccountForEmail, email).WithReturns((*dal.Account)(nil), api.ErrNotFound("foo")))
+	dl.Expect(mock.NewExpectation(dl.AccountForEmail, email).WithReturns((*dal.Account)(nil), dal.ErrNotFound))
 	dl.Expect(mock.NewExpectationFn(dl.InsertAccount, func(p ...interface{}) {
 		test.Equals(t, 1, len(p))
 		account, ok := p[0].(*dal.Account)
@@ -1103,7 +1102,7 @@ func TestVerifiedValueNotFound(t *testing.T) {
 	test.OK(t, err)
 	token := "123abc"
 
-	dl.Expect(mock.NewExpectation(dl.VerificationCode, token).WithReturns((*dal.VerificationCode)(nil), api.ErrNotFound("foo")))
+	dl.Expect(mock.NewExpectation(dl.VerificationCode, token).WithReturns((*dal.VerificationCode)(nil), dal.ErrNotFound))
 
 	resp, err := s.VerifiedValue(context.Background(), &auth.VerifiedValueRequest{
 		Token: token,
@@ -1188,7 +1187,7 @@ func TestCheckPasswordResetTokenNotFound(t *testing.T) {
 	test.OK(t, err)
 	token := "123abc"
 
-	dl.Expect(mock.NewExpectation(dl.VerificationCode, token).WithReturns((*dal.VerificationCode)(nil), api.ErrNotFound("foo")))
+	dl.Expect(mock.NewExpectation(dl.VerificationCode, token).WithReturns((*dal.VerificationCode)(nil), dal.ErrNotFound))
 
 	resp, err := s.CheckPasswordResetToken(context.Background(), &auth.CheckPasswordResetTokenRequest{
 		Token: token,
@@ -1291,7 +1290,7 @@ func TestCreatePasswordResetTokenEmailNotFound(t *testing.T) {
 	test.OK(t, err)
 	email := "test@test.com"
 
-	dl.Expect(mock.NewExpectation(dl.AccountForEmail, email).WithReturns((*dal.Account)(nil), api.ErrNotFound("foo")))
+	dl.Expect(mock.NewExpectation(dl.AccountForEmail, email).WithReturns((*dal.Account)(nil), dal.ErrNotFound))
 
 	resp, err := s.CreatePasswordResetToken(context.Background(), &auth.CreatePasswordResetTokenRequest{
 		Email: email,
@@ -1356,7 +1355,7 @@ func TestUpdatePasswordNotFound(t *testing.T) {
 	code := "123456"
 	newPassword := "newPassword"
 
-	dl.Expect(mock.NewExpectation(dl.VerificationCode, token).WithReturns((*dal.VerificationCode)(nil), api.ErrNotFound("foo")))
+	dl.Expect(mock.NewExpectation(dl.VerificationCode, token).WithReturns((*dal.VerificationCode)(nil), dal.ErrNotFound))
 
 	resp, err := s.UpdatePassword(context.Background(), &auth.UpdatePasswordRequest{
 		Token:       token,

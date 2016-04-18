@@ -4,12 +4,10 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
-
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	ramock "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess/mock"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
@@ -19,7 +17,6 @@ import (
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/graphql"
 	"github.com/sprucehealth/graphql/gqlerrors"
-
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 )
@@ -239,7 +236,7 @@ func TestTeamThread_OlderVersion(t *testing.T) {
 		AppEnvironment:  "dev",
 		AppVersion:      &encoding.Version{Major: 1},
 		AppBuild:        "001",
-		Platform:        common.IOS,
+		Platform:        device.IOS,
 		PlatformVersion: "7.1.1",
 		Device:          "Phone",
 		DeviceModel:     "iPhone6,1",

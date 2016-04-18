@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 
 	"github.com/aws/aws-sdk-go/service/sns"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
 )
@@ -88,7 +88,7 @@ func renderNotification(notificationConfig *config.NotificationConfig, message *
 		DefaultMessage: message.ShortMessage,
 	}
 	switch notificationConfig.Platform {
-	case common.Android:
+	case device.Android:
 		jsonData, err := json.Marshal(&androidPushNotification{
 			Data: androidPushData{
 				Message: snsNote.DefaultMessage,
@@ -101,7 +101,7 @@ func renderNotification(notificationConfig *config.NotificationConfig, message *
 			snsNote.Android = string(jsonData)
 		}
 
-	case common.IOS:
+	case device.IOS:
 		iosNotification := &iOSPushNotification{
 			Badge: badgeCount,
 			Alert: snsNote.DefaultMessage,

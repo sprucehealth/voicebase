@@ -13,6 +13,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/test"
@@ -58,7 +59,7 @@ func TestPushNotificationsLive(t *testing.T) {
 	dataAPI := &pushMockDataAPI{
 		pushConfigData: []*common.PushConfigData{{
 			PushEndpoint:   endpoint,
-			Platform:       common.IOS,
+			Platform:       device.IOS,
 			AppType:        "patient",
 			AppEnvironment: "staging",
 		}},
@@ -66,7 +67,7 @@ func TestPushNotificationsLive(t *testing.T) {
 	authAPI := &pushMockAuthAPI{}
 	configs := &config.NotificationConfigs{
 		"iOS-patient-staging": &config.NotificationConfig{
-			Platform: common.IOS,
+			Platform: device.IOS,
 		},
 	}
 	m := NewManager(dataAPI, authAPI, snsCli, nil, nil, "", configs, metrics.NewRegistry())
@@ -96,7 +97,7 @@ func TestPushNotifications_EndpointDisabled(t *testing.T) {
 	conc.Testing = true
 	dataAPI := &pushMockDataAPI{
 		pushConfigData: []*common.PushConfigData{{
-			Platform:       common.IOS,
+			Platform:       device.IOS,
 			AppType:        "patient",
 			AppEnvironment: "staging",
 		}},
@@ -104,7 +105,7 @@ func TestPushNotifications_EndpointDisabled(t *testing.T) {
 	authAPI := &pushMockAuthAPI{}
 	configs := &config.NotificationConfigs{
 		"iOS-patient-staging": &config.NotificationConfig{
-			Platform: common.IOS,
+			Platform: device.IOS,
 		},
 	}
 	m := NewManager(dataAPI, authAPI, &mockSNSAPI_endpointdisabled{}, nil, nil, "", configs, metrics.NewRegistry())

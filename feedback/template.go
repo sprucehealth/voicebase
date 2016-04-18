@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/errors"
 )
 
@@ -24,7 +24,7 @@ type FeedbackTemplate interface {
 	Validate() error
 
 	// ClientView is the client view representation of the feedback template.
-	ClientView(id int64, platform common.Platform) interface{}
+	ClientView(id int64, platform device.Platform) interface{}
 
 	// ParseAndValidateResponse unmarshales the provided jsonData into an instance of appropriate type
 	// and then ensures that the response represents a complete response based on the template type.
@@ -121,7 +121,7 @@ type freeTextClientView struct {
 	ButtonTitle string `json:"button_title"`
 }
 
-func (f *FreeTextTemplate) ClientView(id int64, platform common.Platform) interface{} {
+func (f *FreeTextTemplate) ClientView(id int64, platform device.Platform) interface{} {
 	return &freeTextClientView{
 		ID:          id,
 		Type:        FTFreetext,
@@ -216,15 +216,15 @@ type openURLClientView struct {
 	URL         string          `json:"url"`
 }
 
-func (o *OpenURLTemplate) ClientView(id int64, platform common.Platform) interface{} {
+func (o *OpenURLTemplate) ClientView(id int64, platform device.Platform) interface{} {
 
 	var iconURL, openURL, bodyText string
 	switch platform {
-	case common.Android:
+	case device.Android:
 		iconURL = o.AndroidConfig.IconURL
 		openURL = o.AndroidConfig.OpenURL
 		bodyText = o.AndroidConfig.BodyText
-	case common.IOS:
+	case device.IOS:
 		iconURL = o.IOSConfig.IconURL
 		openURL = o.IOSConfig.OpenURL
 		bodyText = o.IOSConfig.BodyText
@@ -355,7 +355,7 @@ type potentialAnswerClientView struct {
 	FreeTextRequired bool   `json:"free_text_required"`
 }
 
-func (m *MultipleChoiceTemplate) ClientView(id int64, platform common.Platform) interface{} {
+func (m *MultipleChoiceTemplate) ClientView(id int64, platform device.Platform) interface{} {
 	pa := make([]potentialAnswerClientView, len(m.PotentialAnswers))
 	for i, pItem := range m.PotentialAnswers {
 		pa[i] = potentialAnswerClientView{

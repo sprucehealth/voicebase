@@ -6,7 +6,6 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/environment"
@@ -308,7 +307,7 @@ func transformEntityToResponse(staticURLPrefix string, e *directory.Entity, sh *
 
 	isEditable := false
 	if e.Type != directory.EntityType_SYSTEM && sh != nil {
-		if sh.Platform == common.IOS {
+		if sh.Platform == device.IOS {
 			isEditable = sh.AppVersion != nil && !sh.AppVersion.Equals(&encoding.Version{Major: 1})
 		} else {
 			isEditable = true

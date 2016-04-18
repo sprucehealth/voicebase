@@ -8,20 +8,19 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/attribution/model"
-
-	"golang.org/x/net/context"
-
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/attribution/model"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/ratelimit"
 	taggingTest "github.com/sprucehealth/backend/tagging/test"
 	"github.com/sprucehealth/backend/test"
+	"golang.org/x/net/context"
 )
 
 type mockDataAPI_PatientVisitHandler struct {
@@ -75,7 +74,7 @@ func (m *mockDataAPI_PatientVisitHandler) PathwayForTag(tag string, opts api.Pat
 func (m *mockDataAPI_PatientVisitHandler) SKUForPathway(tag string, category common.SKUCategoryType) (*common.SKU, error) {
 	return m.sku, nil
 }
-func (m *mockDataAPI_PatientVisitHandler) IntakeLayoutVersionIDForAppVersion(appVersion *encoding.Version, platform common.Platform, pathwayID, languageID int64, skuType string) (int64, error) {
+func (m *mockDataAPI_PatientVisitHandler) IntakeLayoutVersionIDForAppVersion(appVersion *encoding.Version, platform device.Platform, pathwayID, languageID int64, skuType string) (int64, error) {
 	return 0, nil
 }
 func (m *mockDataAPI_PatientVisitHandler) CreatePatientVisit(visit *common.PatientVisit, requestedDoctorID *int64, practiceExtension bool) (int64, error) {

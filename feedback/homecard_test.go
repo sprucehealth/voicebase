@@ -3,7 +3,7 @@ package feedback
 import (
 	"testing"
 
-	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/device"
 )
 
 type mockFeedbackClient_homecard struct {
@@ -28,7 +28,7 @@ func TestHomeCard_NoPendingPatientFeedback(t *testing.T) {
 		pf: &PatientFeedback{},
 	}
 
-	hc, err := HomeCardForCase(m, 10, common.IOS)
+	hc, err := HomeCardForCase(m, 10, device.IOS)
 	if err != nil {
 		t.Fatal(err)
 	} else if hc != nil {
@@ -38,7 +38,7 @@ func TestHomeCard_NoPendingPatientFeedback(t *testing.T) {
 	// test feedback that has been dismissed
 	m.pf.Dismissed = true
 
-	hc, err = HomeCardForCase(m, 10, common.IOS)
+	hc, err = HomeCardForCase(m, 10, device.IOS)
 	if err != nil {
 		t.Fatal(err)
 	} else if hc != nil {
@@ -52,7 +52,7 @@ func TestHomeCard_NoRatingConfig(t *testing.T) {
 			Pending: true,
 		},
 	}
-	hc, err := HomeCardForCase(m, 10, common.IOS)
+	hc, err := HomeCardForCase(m, 10, device.IOS)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,7 +82,7 @@ func TestHomeCard_WithRatingConfig(t *testing.T) {
 			5: "good_freetext",
 		},
 		tagToFeedbackMap: map[string]*FeedbackTemplateData{
-			"yelp": &FeedbackTemplateData{
+			"yelp": {
 				ID:   1,
 				Tag:  "yelp",
 				Type: FTOpenURL,
@@ -94,7 +94,7 @@ func TestHomeCard_WithRatingConfig(t *testing.T) {
 					},
 				},
 			},
-			"appstore": &FeedbackTemplateData{
+			"appstore": {
 				ID:   2,
 				Tag:  "appstore",
 				Type: FTOpenURL,
@@ -107,7 +107,7 @@ func TestHomeCard_WithRatingConfig(t *testing.T) {
 					},
 				},
 			},
-			"bad_freetext": &FeedbackTemplateData{
+			"bad_freetext": {
 				ID:   3,
 				Tag:  "bad_freetext",
 				Type: FTFreetext,
@@ -117,7 +117,7 @@ func TestHomeCard_WithRatingConfig(t *testing.T) {
 					ButtonTitle:     "button_title",
 				},
 			},
-			"good_freetext": &FeedbackTemplateData{
+			"good_freetext": {
 				ID:   4,
 				Tag:  "good_freetext",
 				Type: FTFreetext,
@@ -130,7 +130,7 @@ func TestHomeCard_WithRatingConfig(t *testing.T) {
 		},
 	}
 
-	hc, err := HomeCardForCase(m, 10, common.Android)
+	hc, err := HomeCardForCase(m, 10, device.Android)
 	if err != nil {
 		t.Fatal(err)
 	}

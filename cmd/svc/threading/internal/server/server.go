@@ -8,7 +8,6 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
-	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/models"
 	"github.com/sprucehealth/backend/libs/bml"
@@ -463,7 +462,7 @@ func (s *threadsServer) DeleteThread(ctx context.Context, in *threading.DeleteTh
 
 	// If we can't find the thread then just return success
 	thread, err := s.dal.Thread(ctx, threadID)
-	if api.IsErrNotFound(err) {
+	if errors.Cause(err) == dal.ErrNotFound {
 		return &threading.DeleteThreadResponse{}, nil
 	} else if err != nil {
 		return nil, internalError(err)
@@ -922,7 +921,7 @@ func (s *threadsServer) ThreadItem(ctx context.Context, in *threading.ThreadItem
 	}
 
 	th, err := s.dal.Thread(ctx, item.ThreadID)
-	if api.IsErrNotFound(err) {
+	if errors.Cause(err) == dal.ErrNotFound {
 		return nil, grpcErrorf(codes.NotFound, "Thread %s not found", tid)
 	} else if err != nil {
 		return nil, internalError(err)
@@ -971,7 +970,7 @@ func (s *threadsServer) ThreadItems(ctx context.Context, in *threading.ThreadIte
 	}
 
 	th, err := s.dal.Thread(ctx, tid)
-	if api.IsErrNotFound(err) {
+	if errors.Cause(err) == dal.ErrNotFound {
 		return nil, grpcErrorf(codes.NotFound, "Thread %s not found", tid)
 	} else if err != nil {
 		return nil, internalError(err)

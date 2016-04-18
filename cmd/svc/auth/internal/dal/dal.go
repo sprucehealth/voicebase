@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -16,6 +15,9 @@ import (
 	"github.com/sprucehealth/backend/libs/transactional/tsql"
 	"github.com/sprucehealth/backend/svc/auth"
 )
+
+// ErrNotFound is returned when an item is not found
+var ErrNotFound = errors.New("auth/dal: item not found")
 
 // DAL represents the methods required to provide data access layer functionality
 type DAL interface {
@@ -988,7 +990,7 @@ func scanAccount(row dbutil.Scanner) (*Account, error) {
 
 	err := row.Scan(&m.PrimaryAccountPhoneID, &m.Password, &m.Status, &m.Created, &m.PrimaryAccountEmailID, &m.FirstName, &m.LastName, &m.Modified, &m.ID, &m.Type)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(api.ErrNotFound("auth - Account not found"))
+		return nil, errors.Trace(ErrNotFound)
 	}
 	return &m, errors.Trace(err)
 }
@@ -1003,7 +1005,7 @@ func scanAuthToken(row dbutil.Scanner) (*AuthToken, error) {
 
 	err := row.Scan(&m.Token, &m.ClientEncryptionKey, &m.AccountID, &m.Created, &m.Expires, &m.Shadow)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(api.ErrNotFound("auth - AuthToken not found"))
+		return nil, errors.Trace(ErrNotFound)
 	}
 	return &m, errors.Trace(err)
 }
@@ -1021,7 +1023,7 @@ func scanAccountEvent(row dbutil.Scanner) (*AccountEvent, error) {
 
 	err := row.Scan(&m.ID, &m.AccountID, &m.AccountEmailID, &m.AccountPhoneID, &m.Event)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(api.ErrNotFound("auth - AccountEvent not found"))
+		return nil, errors.Trace(ErrNotFound)
 	}
 	return &m, errors.Trace(err)
 }
@@ -1037,7 +1039,7 @@ func scanAccountPhone(row dbutil.Scanner) (*AccountPhone, error) {
 
 	err := row.Scan(&m.AccountID, &m.PhoneNumber, &m.Status, &m.Verified, &m.Created, &m.Modified, &m.ID)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(api.ErrNotFound("auth - AccountPhone not found"))
+		return nil, errors.Trace(ErrNotFound)
 	}
 	return &m, errors.Trace(err)
 }
@@ -1053,7 +1055,7 @@ func scanAccountEmail(row dbutil.Scanner) (*AccountEmail, error) {
 
 	err := row.Scan(&m.Email, &m.Status, &m.Verified, &m.Created, &m.Modified, &m.ID, &m.AccountID)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(api.ErrNotFound("auth - AccountEmail not found"))
+		return nil, errors.Trace(ErrNotFound)
 	}
 	return &m, errors.Trace(err)
 }
@@ -1067,7 +1069,7 @@ func scanVerificationCode(row dbutil.Scanner) (*VerificationCode, error) {
 
 	err := row.Scan(&m.VerifiedValue, &m.Consumed, &m.Created, &m.Expires, &m.Token, &m.Code, &m.VerificationType)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(api.ErrNotFound("auth - VerificationCode not found"))
+		return nil, errors.Trace(ErrNotFound)
 	}
 	return &m, errors.Trace(err)
 }
@@ -1082,7 +1084,7 @@ func scanTwoFactorLogin(row dbutil.Scanner) (*TwoFactorLogin, error) {
 
 	err := row.Scan(&m.AccountID, &m.DeviceID, &m.LastLogin)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(api.ErrNotFound("auth - TwoFactorLogin not found"))
+		return nil, errors.Trace(ErrNotFound)
 	}
 	return &m, errors.Trace(err)
 }

@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/samuel/go-metrics/metrics"
-	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/cmd/svc/directory/internal/dal"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/errors"
@@ -268,10 +267,10 @@ func (s *server) SerializedEntityContact(ctx context.Context, rd *directory.Seri
 		return nil, grpcErrorf(codes.InvalidArgument, "Error parsing platform type: %s", err)
 	}
 	sec, err := s.dl.SerializedClientEntityContact(entityID, platform)
-	if !api.IsErrNotFound(err) && err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
-	} else if api.IsErrNotFound(err) {
+	if errors.Cause(err) == dal.ErrNotFound {
 		return nil, grpcErrorf(codes.NotFound, "No serialized entity contact exists for entity id %s and platform %s", entityID, platform)
+	} else if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 	return &directory.SerializedEntityContactResponse{
 		SerializedEntityContact: dalSerializedClientEntityContactAsPBSerializedClientEntityContact(sec),
@@ -449,7 +448,7 @@ func (s *server) validateUpdateEntityRequest(rd *directory.UpdateEntityRequest) 
 		return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse entity ID")
 	}
 	ent, err := s.dl.Entity(eID)
-	if api.IsErrNotFound(err) {
+	if errors.Cause(err) == dal.ErrNotFound {
 		return nil, grpcErrorf(codes.NotFound, err.Error())
 	} else if err != nil {
 		return nil, grpcErrorf(codes.Internal, err.Error())
@@ -486,7 +485,7 @@ func doesEntityExist(dl dal.DAL, entityID dal.EntityID) (bool, error) {
 		defer func() { golog.Debugf("Leaving server.doesEntityExist...") }()
 	}
 	_, err := dl.Entity(entityID)
-	if api.IsErrNotFound(err) {
+	if errors.Cause(err) == dal.ErrNotFound {
 		return false, nil
 	}
 	return true, errors.Trace(err)
@@ -594,7 +593,7 @@ func (s *server) LookupEntityDomain(ctx context.Context, in *directory.LookupEnt
 	}
 
 	queriedEntityID, queriedDomain, err := s.dl.EntityDomain(entityID, ptr.String(in.Domain))
-	if api.IsErrNotFound(errors.Cause(err)) {
+	if errors.Cause(err) == dal.ErrNotFound {
 		return nil, grpcErrorf(codes.NotFound, "entity_domain not found")
 	} else if err != nil {
 		return nil, grpcErrorf(codes.Internal, err.Error())

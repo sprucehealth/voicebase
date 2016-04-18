@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/device"
 )
 
 func TestFreeTextResponseValidation(t *testing.T) {
@@ -136,7 +136,7 @@ func TestOpenURLTemplate_ClientView(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cv := out.ClientView(5, common.Android)
+	cv := out.ClientView(5, device.Android)
 	if iconURL := cv.(*openURLClientView).Body.IconURL; iconURL != "android_icon" {
 		t.Fatalf("Expected urls for android but got %s instead", iconURL)
 	}
@@ -147,7 +147,7 @@ func TestOpenURLTemplate_ClientView(t *testing.T) {
 		t.Fatalf("Expected urls for android but got %s instead", bodyText)
 	}
 
-	cv = out.ClientView(5, common.IOS)
+	cv = out.ClientView(5, device.IOS)
 
 	if iconURL := cv.(*openURLClientView).Body.IconURL; iconURL != "ios_icon" {
 		t.Fatalf("Expected urls for android but got %s instead", iconURL)

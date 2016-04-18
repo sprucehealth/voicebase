@@ -3,11 +3,10 @@ package media
 import (
 	"net/url"
 	"strconv"
+	"testing"
 
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/test"
-
-	"testing"
 )
 
 func TestSigner(t *testing.T) {

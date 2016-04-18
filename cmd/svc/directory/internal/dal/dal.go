@@ -9,7 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/errors"
@@ -20,6 +19,9 @@ import (
 	"github.com/sprucehealth/backend/libs/transactional/tsql"
 	"github.com/sprucehealth/backend/svc/directory"
 )
+
+// ErrNotFound is returned when an item is not found
+var ErrNotFound = errors.New("directory/dal: item not found")
 
 // DAL represents the methods required to provide data access layer functionality
 type DAL interface {
@@ -1102,7 +1104,7 @@ func (d *dal) EntityDomain(id *EntityID, domain *string) (EntityID, string, erro
 		SELECT entity_id, domain
 		FROM entity_domain
 		WHERE `+strings.Join(where, " AND "), vals...).Scan(&queriedEntityID, &queriedDomain); err == sql.ErrNoRows {
-		return EmptyEntityID(), "", errors.Trace(api.ErrNotFound("entity_domain not found"))
+		return EmptyEntityID(), "", errors.Trace(ErrNotFound)
 	} else if err != nil {
 		return EmptyEntityID(), "", errors.Trace(err)
 	}
@@ -1177,7 +1179,7 @@ func scanExternalEntityID(row dbutil.Scanner) (*ExternalEntityID, error) {
 
 	err := row.Scan(&m.Created, &m.Modified, &m.EntityID, &m.ExternalID)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(api.ErrNotFound("directory - ExternalEntityID not found"))
+		return nil, errors.Trace(ErrNotFound)
 	}
 	return &m, errors.Trace(err)
 }
@@ -1193,7 +1195,7 @@ func scanEntityMembership(row dbutil.Scanner) (*EntityMembership, error) {
 
 	err := row.Scan(&m.EntityID, &m.TargetEntityID, &m.Status, &m.Created, &m.Modified)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(api.ErrNotFound("directory - EntityMembership not found"))
+		return nil, errors.Trace(ErrNotFound)
 	}
 	return &m, errors.Trace(err)
 }
@@ -1209,7 +1211,7 @@ func scanEntityContact(row dbutil.Scanner) (*EntityContact, error) {
 
 	err := row.Scan(&m.Modified, &m.ID, &m.EntityID, &m.Type, &m.Value, &m.Created, &m.Provisioned, &m.Label)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(api.ErrNotFound("directory - EntityContact not found"))
+		return nil, errors.Trace(ErrNotFound)
 	}
 	return m, errors.Trace(err)
 }
@@ -1225,7 +1227,7 @@ func scanEvent(row dbutil.Scanner) (*Event, error) {
 
 	err := row.Scan(&m.ID, &m.EntityID, &m.Event, &m.Created)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(api.ErrNotFound("directory - Event not found"))
+		return nil, errors.Trace(ErrNotFound)
 	}
 	return &m, errors.Trace(err)
 }
@@ -1254,7 +1256,7 @@ func scanEntity(row dbutil.Scanner) (*Entity, error) {
 
 	err := row.Scan(&m.ID, &m.MiddleInitial, &m.LastName, &m.Note, &m.Created, &m.Modified, &m.DisplayName, &m.FirstName, &m.GroupName, &m.Type, &m.Status, &m.ShortTitle, &m.LongTitle, &m.Gender, &m.DOB, &m.AccountID)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(api.ErrNotFound("directory - Entity not found"))
+		return nil, errors.Trace(ErrNotFound)
 	}
 	return m, errors.Trace(err)
 }
@@ -1268,7 +1270,7 @@ func scanSerializedClientEntityContact(row dbutil.Scanner) (*SerializedClientEnt
 
 	err := row.Scan(&m.EntityID, &m.SerializedEntityContact, &m.Platform, &m.Created, &m.Modified)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(api.ErrNotFound("directory - SerializedClientEntityContact not found"))
+		return nil, errors.Trace(ErrNotFound)
 	}
 	return &m, errors.Trace(err)
 }

@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/cmd/svc/auth/internal/dal"
 	authSetting "github.com/sprucehealth/backend/cmd/svc/auth/internal/settings"
 	"github.com/sprucehealth/backend/common"
@@ -70,7 +69,7 @@ func New(dl dal.DAL, settings settings.SettingsClient, clientEncryptionKeySecret
 
 func (s *server) AuthenticateLogin(ctx context.Context, rd *auth.AuthenticateLoginRequest) (*auth.AuthenticateLoginResponse, error) {
 	account, err := s.dal.AccountForEmail(rd.Email)
-	if api.IsErrNotFound(err) {
+	if errors.Cause(err) == dal.ErrNotFound {
 		return nil, grpcErrorf(auth.EmailNotFound, "Unknown email: %s", rd.Email)
 	} else if err != nil {
 		return nil, grpcIErrorf(err.Error())
@@ -132,7 +131,7 @@ const (
 // deviceNeeds2FA determines if a device needs a 2FA login
 func (s *server) deviceNeeds2FA(accountID dal.AccountID, deviceID string) bool {
 	tfl, err := s.dal.TwoFactorLogin(accountID, deviceID)
-	if api.IsErrNotFound(err) {
+	if errors.Cause(err) == dal.ErrNotFound {
 		return true
 	} else if err != nil {
 		// if we encountered an unexpected error, log it and determine we need 2FA
@@ -148,7 +147,7 @@ func (s *server) AuthenticateLoginWithCode(ctx context.Context, rd *auth.Authent
 	}
 
 	verificationCode, err := s.dal.VerificationCode(rd.Token)
-	if api.IsErrNotFound(err) {
+	if errors.Cause(err) == dal.ErrNotFound {
 		return nil, grpcErrorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
 	} else if err != nil {
 		return nil, grpcIErrorf(err.Error())
@@ -218,7 +217,7 @@ func (s *server) CheckAuthentication(ctx context.Context, rd *auth.CheckAuthenti
 		// Lock the row for update to avoid race conditions since we might rotate it
 		// TODO: There are come optimizations we could do around this lock
 		aToken, err := dl.AuthToken(attributedToken, s.clk.Now(), true)
-		if api.IsErrNotFound(err) {
+		if errors.Cause(err) == dal.ErrNotFound {
 			return nil
 		} else if err != nil {
 			return errors.Trace(err)
@@ -285,7 +284,7 @@ func (s *server) CheckVerificationCode(ctx context.Context, rd *auth.CheckVerifi
 	}
 
 	verificationCode, err := s.dal.VerificationCode(rd.Token)
-	if api.IsErrNotFound(err) {
+	if errors.Cause(err) == dal.ErrNotFound {
 		return nil, grpcErrorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
 	} else if err != nil {
 		return nil, grpcIErrorf(err.Error())
@@ -333,7 +332,7 @@ func (s *server) CheckPasswordResetToken(ctx context.Context, rd *auth.CheckPass
 	}
 
 	verificationCode, err := s.dal.VerificationCode(rd.Token)
-	if api.IsErrNotFound(err) {
+	if errors.Cause(err) == dal.ErrNotFound {
 		return nil, grpcErrorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
 	} else if err != nil {
 		return nil, grpcIErrorf(err.Error())
@@ -353,7 +352,7 @@ func (s *server) CheckPasswordResetToken(ctx context.Context, rd *auth.CheckPass
 	}
 
 	account, err := s.dal.Account(accountID)
-	if api.IsErrNotFound(err) {
+	if errors.Cause(err) == dal.ErrNotFound {
 		return nil, grpcIErrorf("No account maps to the ID contained in the provided token %q:%q", rd.Token, accountID.String())
 	} else if err != nil {
 		return nil, grpcIErrorf(err.Error())
@@ -414,7 +413,7 @@ func (s *server) CreateAccount(ctx context.Context, rd *auth.CreateAccountReques
 
 	// TODO: This is check should be coupled with some idempotency changes to actually be correct. Just detecting the duyplicate for now.
 	acc, err := s.dal.AccountForEmail(rd.Email)
-	if err != nil && !api.IsErrNotFound(err) {
+	if err != nil && errors.Cause(err) != dal.ErrNotFound {
 		return nil, grpcIErrorf(err.Error())
 	} else if acc != nil {
 		return nil, grpcErrorf(auth.DuplicateEmail, "The email %s is already in use by an account", rd.Email)
@@ -536,7 +535,7 @@ func (s *server) CreateVerificationCode(ctx context.Context, rd *auth.CreateVeri
 
 func (s *server) CreatePasswordResetToken(ctx context.Context, rd *auth.CreatePasswordResetTokenRequest) (*auth.CreatePasswordResetTokenResponse, error) {
 	account, err := s.dal.AccountForEmail(rd.Email)
-	if api.IsErrNotFound(err) {
+	if errors.Cause(err) == dal.ErrNotFound {
 		return nil, grpcErrorf(codes.NotFound, err.Error())
 	} else if err != nil {
 		return nil, grpcIErrorf(err.Error())
@@ -556,7 +555,7 @@ func (s *server) GetAccount(ctx context.Context, rd *auth.GetAccountRequest) (*a
 		return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse provided account ID")
 	}
 	account, err := s.dal.Account(id)
-	if api.IsErrNotFound(err) {
+	if errors.Cause(err) == dal.ErrNotFound {
 		return nil, grpcErrorf(codes.NotFound, "Account with ID %s not found", rd.AccountID)
 	}
 	return &auth.GetAccountResponse{
@@ -589,7 +588,7 @@ func (s *server) UpdatePassword(ctx context.Context, rd *auth.UpdatePasswordRequ
 	}
 
 	verificationCode, err := s.dal.VerificationCode(rd.Token)
-	if api.IsErrNotFound(err) {
+	if errors.Cause(err) == dal.ErrNotFound {
 		return nil, grpcErrorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
 	} else if err != nil {
 		return nil, grpcIErrorf(err.Error())
@@ -639,7 +638,7 @@ func (s *server) VerifiedValue(ctx context.Context, rd *auth.VerifiedValueReques
 	}
 
 	verificationCode, err := s.dal.VerificationCode(rd.Token)
-	if api.IsErrNotFound(err) {
+	if errors.Cause(err) == dal.ErrNotFound {
 		return nil, grpcErrorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
 	} else if err != nil {
 		return nil, grpcIErrorf(err.Error())
@@ -663,7 +662,7 @@ func (s *server) BlockAccount(ctx context.Context, req *auth.BlockAccountRequest
 	}
 
 	account, err := s.dal.Account(accountID)
-	if api.IsErrNotFound(err) {
+	if errors.Cause(err) == dal.ErrNotFound {
 		return nil, grpcErrorf(codes.NotFound, err.Error())
 	} else if err != nil {
 		return nil, grpcErrorf(codes.Internal, err.Error())

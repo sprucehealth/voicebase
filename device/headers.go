@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -30,7 +29,7 @@ type SpruceHeaders struct {
 	AppEnvironment   string // (Feature,Dev,Demo,Beta,etc)
 	AppVersion       *encoding.Version
 	AppBuild         string
-	Platform         common.Platform
+	Platform         Platform
 	PlatformVersion  string
 	Device           string
 	DeviceModel      string
@@ -75,7 +74,7 @@ func ExtractSpruceHeaders(w http.ResponseWriter, r *http.Request) *SpruceHeaders
 		parts := strings.Split(hdr, ";")
 		if len(parts) > 0 {
 			var err error
-			sHeaders.Platform, err = common.ParsePlatform(parts[0])
+			sHeaders.Platform, err = ParsePlatform(parts[0])
 			if err != nil {
 				golog.Warningf("Unable to determine platfrom from request header %s. Ignoring error for now: %s", parts[0], err)
 				sHeaders.Platform = ("")

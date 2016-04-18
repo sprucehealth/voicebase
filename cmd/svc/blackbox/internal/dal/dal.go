@@ -6,12 +6,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/transactional/tsql"
 )
+
+// ErrNotFound is returned when an item is not found
+var ErrNotFound = errors.New("blackbox/dal: item not found")
 
 // DAL represents the methods required to provide data access layer functionality
 type DAL interface {
@@ -254,7 +256,7 @@ func (d *dal) SuiteRun(id SuiteRunID) (*SuiteRun, error) {
 		`SELECT tests_failed, start, finish, id, suite_name, status, tests_passed
           FROM suite_run
           WHERE id = ?`, id.Uint64()).Scan(&model.TestsFailed, &model.Start, &model.Finish, &idv, &model.SuiteName, &model.Status, &model.TestsPassed); err == sql.ErrNoRows {
-		return nil, errors.Trace(api.ErrNotFound("suite_run not found"))
+		return nil, errors.Trace(ErrNotFound)
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -330,7 +332,7 @@ func (d *dal) SuiteTestRun(id SuiteTestRunID) (*SuiteTestRun, error) {
 		`SELECT id, suite_run_id, test_name, status, message, start, finish
           FROM suite_test_run
           WHERE id = ?`, id.Uint64()).Scan(&idv, &suiteRunIDv, &model.TestName, &model.Status, &model.Message, &model.Start, &model.Finish); err == sql.ErrNoRows {
-		return nil, errors.Trace(api.ErrNotFound("suite_test_run not found"))
+		return nil, errors.Trace(ErrNotFound)
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -427,7 +429,7 @@ func (d *dal) Profile(id ProfileID) (*Profile, error) {
 		`SELECT profile_key, result_ms, id, created
           FROM profile
           WHERE id = ?`, id.Uint64()).Scan(&model.ProfileKey, &model.ResultMS, &idv, &model.Created); err == sql.ErrNoRows {
-		return nil, errors.Trace(api.ErrNotFound("profile not found"))
+		return nil, errors.Trace(ErrNotFound)
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	}

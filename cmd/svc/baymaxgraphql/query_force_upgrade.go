@@ -5,7 +5,6 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/graphql"
 )
@@ -36,7 +35,7 @@ var forceUpgradeQuery = &graphql.Field{
 		// all the information we need to make the decision of whether or not to force upgrade.
 		if sh.AppVersion == nil {
 			return nil, fmt.Errorf("app version not specified in request header")
-		} else if sh.Platform == common.Platform("") {
+		} else if sh.Platform == "" {
 			return nil, fmt.Errorf("platform not specified in request header")
 		} else if sh.PlatformVersion == "" {
 			return nil, fmt.Errorf("platform versin required")
