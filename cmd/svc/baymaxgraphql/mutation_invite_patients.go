@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
@@ -20,10 +21,11 @@ import (
 )
 
 type invitePatientsOutput struct {
-	ClientMutationID string `json:"clientMutationId,omitempty"`
-	Success          bool   `json:"success"`
-	ErrorCode        string `json:"errorCode,omitempty"`
-	ErrorMessage     string `json:"errorMessage,omitempty"`
+	ClientMutationID string           `json:"clientMutationId,omitempty"`
+	Success          bool             `json:"success"`
+	ErrorCode        string           `json:"errorCode,omitempty"`
+	ErrorMessage     string           `json:"errorMessage,omitempty"`
+	PatientThreads   []*models.Thread `json:"patientThreads"`
 }
 
 var invitePatientsInfoType = graphql.NewInputObject(graphql.InputObjectConfig{
@@ -76,6 +78,7 @@ var invitePatientsOutputType = graphql.NewObject(graphql.ObjectConfig{
 		"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		"errorCode":        &graphql.Field{Type: invitePatientsErrorCodeEnum},
 		"errorMessage":     &graphql.Field{Type: graphql.String},
+		"patientThreads":   &graphql.Field{Type: graphql.NewList(threadType)},
 	},
 	IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 		_, ok := value.(*invitePatientsOutput)
@@ -143,9 +146,11 @@ var invitePatientsMutation = &graphql.Field{
 					}
 				}
 
+				threads := make([]*threading.Thread, len(patientsInput))
+
 				// Next do any writes to prevent partial failure due to validation
 				patients := make([]*invite.Patient, 0, len(patientsInput))
-				for _, p := range patientsInput {
+				for i, p := range patientsInput {
 					m := p.(map[string]interface{})
 					pat := &invite.Patient{
 						FirstName: m["firstName"].(string),
@@ -192,6 +197,7 @@ var invitePatientsMutation = &graphql.Field{
 					if err != nil {
 						return nil, errors.InternalError(ctx, err)
 					}
+					threads[i] = thread
 					golog.Debugf("Created empty thread %s for parked entity %s", thread.ID, patientEntity.ID)
 					patients = append(patients, pat)
 				}
@@ -209,9 +215,18 @@ var invitePatientsMutation = &graphql.Field{
 					UserId: acc.ID,
 				})
 
+				patientThreads := make([]*models.Thread, len(threads))
+				for i, thread := range threads {
+					th, err := transformThreadToResponse(thread, acc)
+					if err != nil {
+						return nil, errors.InternalError(ctx, err)
+					}
+					patientThreads[i] = th
+				}
 				return &invitePatientsOutput{
 					ClientMutationID: mutationID,
 					Success:          true,
+					PatientThreads:   patientThreads,
 				}, nil
 			})),
 }
