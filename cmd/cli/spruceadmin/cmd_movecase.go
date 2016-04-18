@@ -82,7 +82,7 @@ func (c *moveCaseCmd) run(args []string) error {
 	}
 	patientInitials := patient.FirstName[:1]
 	if len(patient.LastName) > 0 {
-		patientInitials = patient.LastName[:1]
+		patientInitials += patient.LastName[:1]
 	}
 	fmt.Printf("Patient Initials: %s\n", patientInitials)
 
