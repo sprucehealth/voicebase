@@ -7,7 +7,7 @@ import (
 
 // ReceiveNotificationsConfig represents the config controlling if notifications are disabled or not
 var ReceiveNotificationsConfig = &settings.Config{
-	Title:          "Receive Notifications",
+	Title:          "Receive Push Notifications",
 	AllowSubkeys:   false,
 	Key:            notification.ReceiveNotificationsSettingsKey,
 	Type:           settings.ConfigType_BOOLEAN,
@@ -53,7 +53,7 @@ var threadActivityNotificationPreferenceSingleSelect = &settings.Config_SingleSe
 
 // TeamNotificationPreferenceConfig represents the config controlling when notifications are sent for activity on team threads
 var TeamNotificationPreferenceConfig = &settings.Config{
-	Title:          "Team Messages",
+	Title:          "Team Conversations",
 	AllowSubkeys:   false,
 	Key:            notification.TeamNotificationPreferencesSettingsKey,
 	Type:           settings.ConfigType_SINGLE_SELECT,
@@ -63,7 +63,7 @@ var TeamNotificationPreferenceConfig = &settings.Config{
 
 // PatientNotificationPreferenceConfig represents the config controlling when notifications are sent for activity on patient threads
 var PatientNotificationPreferenceConfig = &settings.Config{
-	Title:          "Patient Messages",
+	Title:          "Patient Conversations",
 	AllowSubkeys:   false,
 	Key:            notification.PatientNotificationPreferencesSettingsKey,
 	Type:           settings.ConfigType_SINGLE_SELECT,
