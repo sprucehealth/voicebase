@@ -1391,6 +1391,14 @@ func (s *threadsServer) notifyMembersOfPublishMessage(
 			return
 		}
 
+		var nType notification.Type
+		switch thread.Type {
+		case models.ThreadTypeExternal, models.ThreadTypeSecureExternal:
+			nType = notification.NewMessageOnExternalThread
+		case models.ThreadTypeTeam, models.ThreadTypeLegacyTeam:
+			nType = notification.NewMessageOnInternalThread
+		}
+
 		// Note: We always send the unread push to all interested entities.
 		//   This is because clients rely on the push to update state.
 		//   An empty ShortMessage for an entity indicated that a notification
@@ -1409,6 +1417,7 @@ func (s *threadsServer) notifyMembersOfPublishMessage(
 			DedupeKey:            newMessageNotificationKey,
 			CollapseKey:          newMessageNotificationKey,
 			EntitiesAtReferenced: mentionedEntityIDs,
+			Type:                 nType,
 		}); err != nil {
 			golog.Errorf("Failed to notify members: %s", err)
 		}
