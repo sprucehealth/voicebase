@@ -31,8 +31,8 @@ type invitePatientsOutput struct {
 var invitePatientsInfoType = graphql.NewInputObject(graphql.InputObjectConfig{
 	Name: "InvitePatientsInfo",
 	Fields: graphql.InputObjectConfigFieldMap{
-		"firstName":   &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-		"lastName":    &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+		"firstName":   &graphql.InputObjectFieldConfig{Type: graphql.String},
+		"lastName":    &graphql.InputObjectFieldConfig{Type: graphql.String},
 		"email":       &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 		"phoneNumber": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 	},
@@ -49,6 +49,7 @@ var invitePatientsInputType = graphql.NewInputObject(graphql.InputObjectConfig{
 
 const (
 	invitePatientsErrorCodeInvalidFirstName   = "INVALID_FIRST_NAME"
+	invitePatientsErrorCodeInvalidLastName    = "INVALID_LAST_NAME"
 	invitePatientsErrorCodeInvalidEmail       = "INVALID_EMAIL"
 	invitePatientsErrorCodeInvalidPhoneNumber = "INVALID_PHONE_NUMBER"
 )
@@ -59,6 +60,10 @@ var invitePatientsErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
 		invitePatientsErrorCodeInvalidFirstName: &graphql.EnumValueConfig{
 			Value:       invitePatientsErrorCodeInvalidFirstName,
 			Description: "The provided first name is invalid",
+		},
+		invitePatientsErrorCodeInvalidLastName: &graphql.EnumValueConfig{
+			Value:       invitePatientsErrorCodeInvalidLastName,
+			Description: "The provided last name is invalid",
 		},
 		invitePatientsErrorCodeInvalidEmail: &graphql.EnumValueConfig{
 			Value:       invitePatientsErrorCodeInvalidEmail,
@@ -117,7 +122,16 @@ var invitePatientsMutation = &graphql.Field{
 					m := p.(map[string]interface{})
 					email := m["email"].(string)
 					phoneNumber := m["phoneNumber"].(string)
-					firstName := m["firstName"].(string)
+					var firstName string
+					iFirstName, ok := m["firstName"]
+					if ok {
+						firstName = iFirstName.(string)
+					}
+					var lastName string
+					iLastName, ok := m["lastName"]
+					if ok {
+						lastName = iLastName.(string)
+					}
 					if !validate.Email(email) {
 						return &invitePatientsOutput{
 							ClientMutationID: mutationID,
@@ -136,12 +150,20 @@ var invitePatientsMutation = &graphql.Field{
 							ErrorMessage:     fmt.Sprintf("The phone number '%s' not valid.", phoneNumber),
 						}, nil
 					}
-					if firstName == "" || !isValidPlane0Unicode(firstName) {
-						return &createPatientAccountOutput{
+					if firstName != "" && !isValidPlane0Unicode(firstName) {
+						return &invitePatientsOutput{
 							ClientMutationID: mutationID,
 							Success:          false,
 							ErrorCode:        invitePatientsErrorCodeInvalidFirstName,
 							ErrorMessage:     "Please enter a valid first name.",
+						}, nil
+					}
+					if lastName != "" && !isValidPlane0Unicode(lastName) {
+						return &invitePatientsOutput{
+							ClientMutationID: mutationID,
+							Success:          false,
+							ErrorCode:        invitePatientsErrorCodeInvalidLastName,
+							ErrorMessage:     "Please enter a valid last name.",
 						}, nil
 					}
 				}
@@ -152,12 +174,22 @@ var invitePatientsMutation = &graphql.Field{
 				patients := make([]*invite.Patient, 0, len(patientsInput))
 				for i, p := range patientsInput {
 					m := p.(map[string]interface{})
+					var firstName string
+					iFirstName, ok := m["firstName"]
+					if ok {
+						firstName = iFirstName.(string)
+					}
+					var lastName string
+					iLastName, ok := m["lastName"]
+					if ok {
+						lastName = iLastName.(string)
+					}
 					pat := &invite.Patient{
-						FirstName: m["firstName"].(string),
+						FirstName: firstName,
 					}
 
 					// Create a parked entity for the account
-					lastName := m["lastName"].(string)
+
 					email := m["email"].(string)
 					// Can only ignore this err because we checked it above
 					fpn, _ := phone.Format(m["phoneNumber"].(string), phone.E164)

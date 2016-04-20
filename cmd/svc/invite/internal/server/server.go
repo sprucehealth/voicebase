@@ -268,10 +268,14 @@ func (s *server) InvitePatients(ctx context.Context, in *invite.InvitePatientsRe
 	}
 
 	for _, p := range in.Patients {
+		welcomeText := "Welcome!"
+		if p.FirstName != "" {
+			welcomeText = fmt.Sprintf("Welcome %s!", p.FirstName)
+		}
 		inviteClientDataJSON, err := json.Marshal(colleagueInviteClientData{
 			OrganizationInvite: organizationInvite{
 				Popover: popover{
-					Title:      fmt.Sprintf("Welcome %s!", p.FirstName),
+					Title:      welcomeText,
 					Message:    fmt.Sprintf("Let's create your account so you can start securely messaging with %s.", org.Info.DisplayName),
 					ButtonText: "Get Started",
 				},
@@ -411,11 +415,29 @@ func (s *server) sendColleagueOutbound(ctx context.Context, email, inviteURL, to
 
 func (s *server) sendPatientOutbound(ctx context.Context, firstName, phoneNumber, inviteURL, token string, org, inviter *directory.Entity) error {
 	golog.Debugf("Sending outbound patient invite messaging. URL: %s, Token: %s", inviteURL, token)
+	msgText := fmt.Sprintf("%s has invited you to use Spruce for secure messaging and digital care.", org.Info.DisplayName)
+	if firstName != "" {
+		msgText = fmt.Sprintf("%s - ", firstName) + msgText
+	}
 	_, err := s.excommsClient.SendMessage(ctx, &excomms.SendMessageRequest{
 		Channel: excomms.ChannelType_SMS,
 		Message: &excomms.SendMessageRequest_SMS{
 			SMS: &excomms.SMSMessage{
-				Text:            fmt.Sprintf("%s - %s has invited you to use Spruce for secure messaging and digital care. Get the app now and join them. %s [%s]", firstName, org.Info.DisplayName, inviteURL, token),
+				Text:            msgText,
+				FromPhoneNumber: s.fromNumber,
+				ToPhoneNumber:   phoneNumber,
+			},
+		},
+	})
+	if err != nil {
+		return errors.Trace(err)
+	}
+	msgText = fmt.Sprintf("Get the Spruce app now and join them. %s [%s]", inviteURL, token)
+	_, err = s.excommsClient.SendMessage(ctx, &excomms.SendMessageRequest{
+		Channel: excomms.ChannelType_SMS,
+		Message: &excomms.SendMessageRequest_SMS{
+			SMS: &excomms.SMSMessage{
+				Text:            msgText,
 				FromPhoneNumber: s.fromNumber,
 				ToPhoneNumber:   phoneNumber,
 			},
