@@ -1582,6 +1582,7 @@ func TestNotifyMembersOfPublishMessage(t *testing.T) {
 		DedupeKey:            newMessageNotificationKey,
 		EntitiesToNotify:     []string{"notify1", "notify2", "notify3"},
 		EntitiesAtReferenced: map[string]struct{}{"notify2": struct{}{}, "notify3": struct{}{}},
+		Type:                 notification.NewMessageOnExternalThread,
 	}))
 
 	csrv.notifyMembersOfPublishMessage(context.Background(), orgID, sqID, &models.Thread{
@@ -1676,6 +1677,7 @@ func TestNotifyMembersOfPublishMessage_Team(t *testing.T) {
 		DedupeKey:            newMessageNotificationKey,
 		EntitiesToNotify:     []string{"notify1", "notify3"},
 		EntitiesAtReferenced: map[string]struct{}{},
+		Type:                 notification.NewMessageOnInternalThread,
 	}))
 
 	csrv.notifyMembersOfPublishMessage(context.Background(), orgID, sqID, &models.Thread{
@@ -1854,6 +1856,7 @@ func TestNotifyMembersOfPublishMessageClearTextEnabled(t *testing.T) {
 		DedupeKey:            newMessageNotificationKey,
 		EntitiesToNotify:     []string{"notify1", "notify2", "notify3"},
 		EntitiesAtReferenced: map[string]struct{}{},
+		Type:                 notification.NewMessageOnExternalThread,
 	}))
 
 	csrv.notifyMembersOfPublishMessage(context.Background(), orgID, sqID, &models.Thread{
