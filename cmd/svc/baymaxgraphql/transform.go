@@ -118,6 +118,9 @@ func transformThreadToResponse(t *threading.Thread, viewingAccount *auth.Account
 		th.Type = models.ThreadTypeSupport
 		// only allow internal messages for the spruce support org
 		th.AllowInternalMessages = th.OrganizationID == *flagSpruceOrgID
+
+		// only allow @ mentions if we are working in the spruce support thread.
+		th.AllowMentions = th.OrganizationID == *flagSpruceOrgID
 	case threading.ThreadType_LEGACY_TEAM:
 		th.Type = models.ThreadTypeLegacyTeam
 	case threading.ThreadType_UNKNOWN: // TODO: remove this once old threads are migrated
