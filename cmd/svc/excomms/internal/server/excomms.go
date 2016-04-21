@@ -250,6 +250,30 @@ func (e *excommsService) DeprovisionPhoneNumber(ctx context.Context, in *excomms
 	return &excomms.DeprovisionPhoneNumberResponse{}, nil
 }
 
+func (e *excommsService) DeprovisionEmail(ctx context.Context, in *excomms.DeprovisionEmailRequest) (*excomms.DeprovisionEmailResponse, error) {
+	if in.Email == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "email required")
+	}
+
+	if err := e.dal.Transact(func(dl dal.DAL) error {
+		rowsUpdated, err := dl.UpdateProvisionedEndpoint(in.Email, models.EndpointTypeEmail, &dal.ProvisionedEndpointUpdate{
+			Deprovisioned:          ptr.Bool(true),
+			DeprovisionedTimestamp: ptr.Time(e.clock.Now()),
+			DeprovisionedReason:    ptr.String(in.Reason),
+		})
+		if err != nil {
+			return err
+		} else if rowsUpdated > 1 {
+			return fmt.Errorf("Expected no morem than 1 row to be updated but got %d rows updated when deprovisioning %s", rowsUpdated, in.Email)
+		}
+		return nil
+	}); err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	return &excomms.DeprovisionEmailResponse{}, nil
+}
+
 // SendMessage sends the message over an external channel as specified in the SendMessageRequest.
 func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessageRequest) (*excomms.SendMessageResponse, error) {
 

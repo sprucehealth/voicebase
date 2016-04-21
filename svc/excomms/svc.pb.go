@@ -28,6 +28,8 @@
 		ProvisionPhoneNumberResponse
 		DeprovisionPhoneNumberRequest
 		DeprovisionPhoneNumberResponse
+		DeprovisionEmailRequest
+		DeprovisionEmailResponse
 		ProvisionEmailAddressRequest
 		ProvisionEmailAddressResponse
 */
@@ -718,6 +720,20 @@ type DeprovisionPhoneNumberResponse struct {
 func (m *DeprovisionPhoneNumberResponse) Reset()      { *m = DeprovisionPhoneNumberResponse{} }
 func (*DeprovisionPhoneNumberResponse) ProtoMessage() {}
 
+type DeprovisionEmailRequest struct {
+	Email  string `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	Reason string `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`
+}
+
+func (m *DeprovisionEmailRequest) Reset()      { *m = DeprovisionEmailRequest{} }
+func (*DeprovisionEmailRequest) ProtoMessage() {}
+
+type DeprovisionEmailResponse struct {
+}
+
+func (m *DeprovisionEmailResponse) Reset()      { *m = DeprovisionEmailResponse{} }
+func (*DeprovisionEmailResponse) ProtoMessage() {}
+
 type ProvisionEmailAddressRequest struct {
 	ProvisionFor string `protobuf:"bytes,1,opt,name=provision_for,proto3" json:"provision_for,omitempty"`
 	EmailAddress string `protobuf:"bytes,2,opt,name=email_address,proto3" json:"email_address,omitempty"`
@@ -753,6 +769,8 @@ func init() {
 	proto.RegisterType((*ProvisionPhoneNumberResponse)(nil), "excomms.ProvisionPhoneNumberResponse")
 	proto.RegisterType((*DeprovisionPhoneNumberRequest)(nil), "excomms.DeprovisionPhoneNumberRequest")
 	proto.RegisterType((*DeprovisionPhoneNumberResponse)(nil), "excomms.DeprovisionPhoneNumberResponse")
+	proto.RegisterType((*DeprovisionEmailRequest)(nil), "excomms.DeprovisionEmailRequest")
+	proto.RegisterType((*DeprovisionEmailResponse)(nil), "excomms.DeprovisionEmailResponse")
 	proto.RegisterType((*ProvisionEmailAddressRequest)(nil), "excomms.ProvisionEmailAddressRequest")
 	proto.RegisterType((*ProvisionEmailAddressResponse)(nil), "excomms.ProvisionEmailAddressResponse")
 	proto.RegisterEnum("excomms.ChannelType", ChannelType_name, ChannelType_value)
@@ -1635,6 +1653,56 @@ func (this *DeprovisionPhoneNumberResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *DeprovisionEmailRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*DeprovisionEmailRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Email != that1.Email {
+		return false
+	}
+	if this.Reason != that1.Reason {
+		return false
+	}
+	return true
+}
+func (this *DeprovisionEmailResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*DeprovisionEmailResponse)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	return true
+}
 func (this *ProvisionEmailAddressRequest) Equal(that interface{}) bool {
 	if that == nil {
 		if this == nil {
@@ -1989,6 +2057,26 @@ func (this *DeprovisionPhoneNumberResponse) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *DeprovisionEmailRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&excomms.DeprovisionEmailRequest{")
+	s = append(s, "Email: "+fmt.Sprintf("%#v", this.Email)+",\n")
+	s = append(s, "Reason: "+fmt.Sprintf("%#v", this.Reason)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *DeprovisionEmailResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 4)
+	s = append(s, "&excomms.DeprovisionEmailResponse{")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func (this *ProvisionEmailAddressRequest) GoString() string {
 	if this == nil {
 		return "nil"
@@ -2049,6 +2137,8 @@ type ExCommsClient interface {
 	ProvisionPhoneNumber(ctx context.Context, in *ProvisionPhoneNumberRequest, opts ...grpc.CallOption) (*ProvisionPhoneNumberResponse, error)
 	// DeprovisionPhoneNumber releases the phone number if one is currently provisioned.
 	DeprovisionPhoneNumber(ctx context.Context, in *DeprovisionPhoneNumberRequest, opts ...grpc.CallOption) (*DeprovisionPhoneNumberResponse, error)
+	// DeprovisionEmail deprovisions the email address if one is currently provisioned
+	DeprovisionEmail(ctx context.Context, in *DeprovisionEmailRequest, opts ...grpc.CallOption) (*DeprovisionEmailResponse, error)
 	// ProvisionEmailAddress provisions an email address for the requester.
 	ProvisionEmailAddress(ctx context.Context, in *ProvisionEmailAddressRequest, opts ...grpc.CallOption) (*ProvisionEmailAddressResponse, error)
 	// SendMessage sends the message over an external channel as specified in the SendMessageRequest.
@@ -2092,6 +2182,15 @@ func (c *exCommsClient) DeprovisionPhoneNumber(ctx context.Context, in *Deprovis
 	return out, nil
 }
 
+func (c *exCommsClient) DeprovisionEmail(ctx context.Context, in *DeprovisionEmailRequest, opts ...grpc.CallOption) (*DeprovisionEmailResponse, error) {
+	out := new(DeprovisionEmailResponse)
+	err := grpc.Invoke(ctx, "/excomms.ExComms/DeprovisionEmail", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *exCommsClient) ProvisionEmailAddress(ctx context.Context, in *ProvisionEmailAddressRequest, opts ...grpc.CallOption) (*ProvisionEmailAddressResponse, error) {
 	out := new(ProvisionEmailAddressResponse)
 	err := grpc.Invoke(ctx, "/excomms.ExComms/ProvisionEmailAddress", in, out, c.cc, opts...)
@@ -2128,6 +2227,8 @@ type ExCommsServer interface {
 	ProvisionPhoneNumber(context.Context, *ProvisionPhoneNumberRequest) (*ProvisionPhoneNumberResponse, error)
 	// DeprovisionPhoneNumber releases the phone number if one is currently provisioned.
 	DeprovisionPhoneNumber(context.Context, *DeprovisionPhoneNumberRequest) (*DeprovisionPhoneNumberResponse, error)
+	// DeprovisionEmail deprovisions the email address if one is currently provisioned
+	DeprovisionEmail(context.Context, *DeprovisionEmailRequest) (*DeprovisionEmailResponse, error)
 	// ProvisionEmailAddress provisions an email address for the requester.
 	ProvisionEmailAddress(context.Context, *ProvisionEmailAddressRequest) (*ProvisionEmailAddressResponse, error)
 	// SendMessage sends the message over an external channel as specified in the SendMessageRequest.
@@ -2170,6 +2271,18 @@ func _ExComms_DeprovisionPhoneNumber_Handler(srv interface{}, ctx context.Contex
 		return nil, err
 	}
 	out, err := srv.(ExCommsServer).DeprovisionPhoneNumber(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func _ExComms_DeprovisionEmail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(DeprovisionEmailRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(ExCommsServer).DeprovisionEmail(ctx, in)
 	if err != nil {
 		return nil, err
 	}
@@ -2227,6 +2340,10 @@ var _ExComms_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeprovisionPhoneNumber",
 			Handler:    _ExComms_DeprovisionPhoneNumber_Handler,
+		},
+		{
+			MethodName: "DeprovisionEmail",
+			Handler:    _ExComms_DeprovisionEmail_Handler,
 		},
 		{
 			MethodName: "ProvisionEmailAddress",
@@ -3023,6 +3140,54 @@ func (m *DeprovisionPhoneNumberResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *DeprovisionEmailRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *DeprovisionEmailRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Email) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Email)))
+		i += copy(data[i:], m.Email)
+	}
+	if len(m.Reason) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Reason)))
+		i += copy(data[i:], m.Reason)
+	}
+	return i, nil
+}
+
+func (m *DeprovisionEmailResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *DeprovisionEmailResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	return i, nil
+}
+
 func (m *ProvisionEmailAddressRequest) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -3497,6 +3662,26 @@ func (m *DeprovisionPhoneNumberResponse) Size() (n int) {
 	return n
 }
 
+func (m *DeprovisionEmailRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Email)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.Reason)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *DeprovisionEmailResponse) Size() (n int) {
+	var l int
+	_ = l
+	return n
+}
+
 func (m *ProvisionEmailAddressRequest) Size() (n int) {
 	var l int
 	_ = l
@@ -3835,6 +4020,26 @@ func (this *DeprovisionPhoneNumberResponse) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&DeprovisionPhoneNumberResponse{`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DeprovisionEmailRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&DeprovisionEmailRequest{`,
+		`Email:` + fmt.Sprintf("%v", this.Email) + `,`,
+		`Reason:` + fmt.Sprintf("%v", this.Reason) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DeprovisionEmailResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&DeprovisionEmailResponse{`,
 		`}`,
 	}, "")
 	return s
@@ -6412,6 +6617,164 @@ func (m *DeprovisionPhoneNumberResponse) Unmarshal(data []byte) error {
 		}
 		if fieldNum <= 0 {
 			return fmt.Errorf("proto: DeprovisionPhoneNumberResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DeprovisionEmailRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DeprovisionEmailRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DeprovisionEmailRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Email", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Email = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Reason", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Reason = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DeprovisionEmailResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DeprovisionEmailResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DeprovisionEmailResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		default:

@@ -23,6 +23,23 @@ import (
 // ErrNotFound is returned when an item is not found
 var ErrNotFound = errors.New("directory/dal: item not found")
 
+type QueryOption int
+
+const (
+	ForUpdate QueryOption = 1 << iota
+)
+
+type queryOptions []QueryOption
+
+func (qos queryOptions) Has(opt QueryOption) bool {
+	for _, o := range qos {
+		if o == opt {
+			return true
+		}
+	}
+	return false
+}
+
 // DAL represents the methods required to provide data access layer functionality
 type DAL interface {
 	Transact(trans func(dal DAL) error) (err error)
@@ -54,8 +71,8 @@ type DAL interface {
 	Event(id EventID) (*Event, error)
 	UpdateEvent(id EventID, update *EventUpdate) (int64, error)
 	DeleteEvent(id EventID) (int64, error)
-	EntityDomain(id *EntityID, domain *string) (EntityID, string, error)
-	InsertEntityDomain(id EntityID, domain string) error
+	EntityDomain(id *EntityID, domain *string, opts ...QueryOption) (EntityID, string, error)
+	UpsertEntityDomain(id EntityID, domain string) error
 }
 
 type dal struct {
@@ -1081,7 +1098,11 @@ func (d *dal) DeleteEvent(id EventID) (int64, error) {
 	return aff, errors.Trace(err)
 }
 
-func (d *dal) EntityDomain(id *EntityID, domain *string) (EntityID, string, error) {
+func (d *dal) EntityDomain(id *EntityID, domain *string, opts ...QueryOption) (EntityID, string, error) {
+	var forUpdateSQL string
+	if queryOptions(opts).Has(ForUpdate) {
+		forUpdateSQL = ` FOR UPDATE`
+	}
 	if id == nil && domain == nil {
 		return EmptyEntityID(), "", errors.Trace(errors.New("either entity_id or domain must be specified to lookup entity_domain"))
 	}
@@ -1103,7 +1124,7 @@ func (d *dal) EntityDomain(id *EntityID, domain *string) (EntityID, string, erro
 	if err := d.db.QueryRow(`
 		SELECT entity_id, domain
 		FROM entity_domain
-		WHERE `+strings.Join(where, " AND "), vals...).Scan(&queriedEntityID, &queriedDomain); err == sql.ErrNoRows {
+		WHERE `+strings.Join(where, " AND ")+forUpdateSQL, vals...).Scan(&queriedEntityID, &queriedDomain); err == sql.ErrNoRows {
 		return EmptyEntityID(), "", errors.Trace(ErrNotFound)
 	} else if err != nil {
 		return EmptyEntityID(), "", errors.Trace(err)
@@ -1112,7 +1133,7 @@ func (d *dal) EntityDomain(id *EntityID, domain *string) (EntityID, string, erro
 	return queriedEntityID, queriedDomain, nil
 }
 
-func (d *dal) InsertEntityDomain(id EntityID, domain string) error {
+func (d *dal) UpsertEntityDomain(id EntityID, domain string) error {
 	_, err := d.db.Exec(`REPLACE INTO entity_domain (entity_id, domain) VALUES (?,?)`, id, domain)
 	return errors.Trace(err)
 }

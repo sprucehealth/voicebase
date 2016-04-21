@@ -41,3 +41,7 @@ func (e *excommsClient) SendMessage(ctx context.Context, in *excomms.SendMessage
 func (e *excommsClient) InitiatePhoneCall(ctx context.Context, in *excomms.InitiatePhoneCallRequest, opts ...grpc.CallOption) (*excomms.InitiatePhoneCallResponse, error) {
 	return &excomms.InitiatePhoneCallResponse{}, nil
 }
+
+func (e *excommsClient) DeprovisionEmail(ctx context.Context, in *excomms.DeprovisionEmailRequest, opts ...grpc.CallOption) (*excomms.DeprovisionEmailResponse, error) {
+	return &excomms.DeprovisionEmailResponse{}, nil
+}

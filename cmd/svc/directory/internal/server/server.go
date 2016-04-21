@@ -619,11 +619,49 @@ func (s *server) CreateEntityDomain(ctx context.Context, in *directory.CreateEnt
 		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 
-	if err := s.dl.InsertEntityDomain(eID, strings.ToLower(in.Domain)); err != nil {
+	if err := s.dl.UpsertEntityDomain(eID, strings.ToLower(in.Domain)); err != nil {
 		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 
 	return &directory.CreateEntityDomainResponse{}, nil
+}
+
+func (s *server) UpdateEntityDomain(ctx context.Context, in *directory.UpdateEntityDomainRequest) (*directory.UpdateEntityDomainResponse, error) {
+	if in.EntityID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "entity_id required")
+	} else if in.Domain == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "domain required")
+	} else if len(in.Domain) > 255 {
+		return nil, grpcErrorf(codes.InvalidArgument, "domain can only be 255 characters in length")
+	}
+
+	eiD, err := dal.ParseEntityID(in.EntityID)
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	if err := s.dl.Transact(func(dl dal.DAL) error {
+		// ensure that a domain for the entity exists before updating it
+		if _, _, err := dl.EntityDomain(&eiD, nil, dal.ForUpdate); errors.Cause(err) == dal.ErrNotFound {
+			return errors.Trace(fmt.Errorf("directory: cannot update domain for an entity %s that does not have a domain", eiD.String()))
+		}
+
+		// ensure that no one else already has the domain being requested
+		if entityID, _, err := dl.EntityDomain(nil, ptr.String(in.Domain)); err != nil && errors.Cause(err) != dal.ErrNotFound {
+			return errors.Trace(err)
+		} else if err == nil && entityID.String() != "" && entityID.String() != in.EntityID {
+			return errors.Trace(fmt.Errorf("directory: domain %s already taken", in.Domain))
+		}
+
+		if err := dl.UpsertEntityDomain(eiD, strings.ToLower(in.Domain)); err != nil {
+			return errors.Trace(err)
+		}
+		return nil
+	}); err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	return &directory.UpdateEntityDomainResponse{}, nil
 }
 
 func (s *server) CreateContact(ctx context.Context, rd *directory.CreateContactRequest) (out *directory.CreateContactResponse, err error) {

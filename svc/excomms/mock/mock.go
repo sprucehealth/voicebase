@@ -69,3 +69,11 @@ func (c *Client) InitiatePhoneCall(ctx context.Context, in *excomms.InitiatePhon
 	}
 	return rets[0].(*excomms.InitiatePhoneCallResponse), mock.SafeError(rets[1])
 }
+
+func (c *Client) DeprovisionEmail(ctx context.Context, in *excomms.DeprovisionEmailRequest, opts ...grpc.CallOption) (*excomms.DeprovisionEmailResponse, error) {
+	rets := c.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*excomms.DeprovisionEmailResponse), mock.SafeError(rets[1])
+}

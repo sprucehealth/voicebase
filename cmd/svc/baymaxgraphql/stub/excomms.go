@@ -50,3 +50,7 @@ func (sc *stubExCommsClient) SendMessage(ctx context.Context, in *excomms.SendMe
 func (sc *stubExCommsClient) InitiatePhoneCall(ctx context.Context, in *excomms.InitiatePhoneCallRequest, opts ...grpc.CallOption) (*excomms.InitiatePhoneCallResponse, error) {
 	return nil, errNotSupportedInStub
 }
+
+func (sc *stubExCommsClient) DeprovisionEmail(ctx context.Context, in *excomms.DeprovisionEmailRequest, opts ...grpc.CallOption) (*excomms.DeprovisionEmailResponse, error) {
+	return &excomms.DeprovisionEmailResponse{}, nil
+}

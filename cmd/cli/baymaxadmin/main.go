@@ -34,6 +34,7 @@ type config struct {
 	ExCommsAddr   string
 	SettingsAddr  string
 	ThreadingAddr string
+	Env           string
 }
 
 func (c *config) authClient() (auth.AuthClient, error) {
@@ -144,15 +145,18 @@ type command interface {
 type commandNew func(*config) (command, error)
 
 var commands = map[string]commandNew{
-	"account":       newAccountCmd,
-	"decodeid":      newDecodeIDCmd,
-	"deletecontact": newDeleteContactCmd,
-	"encodeid":      newEncodeIDCmd,
-	"entity":        newEntityCmd,
-	"moveentity":    newMoveEntityCmd,
-	"getsetting":    newGetSettingCmd,
-	"setsetting":    newSetSettingCmd,
-	"thread":        newThreadCmd,
+	"account":        newAccountCmd,
+	"decodeid":       newDecodeIDCmd,
+	"deletecontact":  newDeleteContactCmd,
+	"encodeid":       newEncodeIDCmd,
+	"entity":         newEntityCmd,
+	"moveentity":     newMoveEntityCmd,
+	"getsetting":     newGetSettingCmd,
+	"setsetting":     newSetSettingCmd,
+	"thread":         newThreadCmd,
+	"changeorgemail": newChangeOrgEmailCmd,
+	"blockaccount":   newBlockAccountCmd,
+	"updateentity":   newUpdateEntityCmd,
 }
 
 func main() {
@@ -166,6 +170,7 @@ func main() {
 	flag.StringVar(&cnf.DBPassword, "db_password", cnf.DBPassword, "mysql database `password`")
 	flag.StringVar(&cnf.DirectoryAddr, "directory_addr", cnf.DirectoryAddr, "`host:port` of directory service")
 	flag.StringVar(&cnf.ThreadingAddr, "threading_addr", cnf.ThreadingAddr, "`host:port` of treading service")
+	flag.StringVar(&cnf.Env, "env", cnf.Env, "environment that baymaxadmin is running against")
 	flag.Parse()
 
 	cmd := flag.Arg(0)

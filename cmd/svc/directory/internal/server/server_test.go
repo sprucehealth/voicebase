@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/directory/internal/dal"
 	mock_dal "github.com/sprucehealth/backend/cmd/svc/directory/internal/dal/test"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -588,10 +589,29 @@ func TestCreateEntityDomain(t *testing.T) {
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
 
-	dl.Expect(mock.NewExpectation(dl.InsertEntityDomain, eID1, "domain"))
+	dl.Expect(mock.NewExpectation(dl.UpsertEntityDomain, eID1, "domain"))
 	_, err = s.CreateEntityDomain(context.Background(), &directory.CreateEntityDomainRequest{
 		EntityID: eID1.String(),
 		Domain:   "domain",
+	})
+	test.OK(t, err)
+	mock.FinishAll(dl)
+}
+
+func TestUpdateEntityDomain(t *testing.T) {
+	t.Parallel()
+	dl := mock_dal.NewMockDAL(t)
+	s := New(dl, metrics.NewRegistry())
+	eID1, err := dal.NewEntityID()
+	test.OK(t, err)
+
+	dl.Expect(mock.NewExpectation(dl.EntityDomain, &eID1, (*string)(nil), []interface{}{dal.ForUpdate}).WithReturns(eID1, "oldDomain", nil))
+	dl.Expect(mock.NewExpectation(dl.EntityDomain, (*dal.EntityID)(nil), ptr.String("newDomain")).WithReturns(eID1, "", errors.Trace(dal.ErrNotFound)))
+
+	dl.Expect(mock.NewExpectation(dl.UpsertEntityDomain, eID1, "newdomain"))
+	_, err = s.UpdateEntityDomain(context.Background(), &directory.UpdateEntityDomainRequest{
+		EntityID: eID1.String(),
+		Domain:   "newDomain",
 	})
 	test.OK(t, err)
 	mock.FinishAll(dl)
@@ -604,7 +624,7 @@ func TestLookupEntityDomain(t *testing.T) {
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
 
-	dl.Expect(mock.NewExpectation(dl.EntityDomain, &eID1).WithReturns(eID1, "hello", nil))
+	dl.Expect(mock.NewExpectation(dl.EntityDomain, &eID1, ptr.String("")).WithReturns(eID1, "hello", nil))
 	res, err := s.LookupEntityDomain(context.Background(), &directory.LookupEntityDomainRequest{
 		EntityID: eID1.String(),
 	})

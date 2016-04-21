@@ -188,6 +188,16 @@ message DeprovisionPhoneNumberResponse {
 
 }
 
+
+message DeprovisionEmailRequest {
+	string email = 1;
+	string reason = 2;
+}
+
+message DeprovisionEmailResponse {
+}
+
+
 message ProvisionEmailAddressRequest {
 	string provision_for = 1;
 	string email_address = 2;
@@ -207,6 +217,9 @@ service ExComms {
 
 	// DeprovisionPhoneNumber releases the phone number if one is currently provisioned.
 	rpc DeprovisionPhoneNumber (DeprovisionPhoneNumberRequest) returns (DeprovisionPhoneNumberResponse);
+
+	// DeprovisionEmail deprovisions the email address if one is currently provisioned
+	rpc DeprovisionEmail (DeprovisionEmailRequest) returns (DeprovisionEmailResponse);
 
 	// ProvisionEmailAddress provisions an email address for the requester.
 	rpc ProvisionEmailAddress (ProvisionEmailAddressRequest) returns (ProvisionEmailAddressResponse);

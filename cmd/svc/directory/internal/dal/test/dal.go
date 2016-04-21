@@ -219,8 +219,13 @@ func (dl *mockDAL) DeleteEvent(id dal.EventID) (int64, error) {
 	return rets[0].(int64), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) EntityDomain(id *dal.EntityID, domain *string) (dal.EntityID, string, error) {
-	rets := dl.Expector.Record(id)
+func (dl *mockDAL) EntityDomain(id *dal.EntityID, domain *string, opts ...dal.QueryOption) (dal.EntityID, string, error) {
+	var rets []interface{}
+	if len(opts) == 0 {
+		rets = dl.Expector.Record(id, domain)
+	} else {
+		rets = dl.Expector.Record(id, domain, optsToInterfaces(opts))
+	}
 	if len(rets) == 0 {
 		return dal.EmptyEntityID(), "", nil
 	}
@@ -228,7 +233,7 @@ func (dl *mockDAL) EntityDomain(id *dal.EntityID, domain *string) (dal.EntityID,
 	return rets[0].(dal.EntityID), rets[1].(string), mock.SafeError(rets[2])
 }
 
-func (dl *mockDAL) InsertEntityDomain(id dal.EntityID, domain string) error {
+func (dl *mockDAL) UpsertEntityDomain(id dal.EntityID, domain string) error {
 	rets := dl.Expector.Record(id, domain)
 	if len(rets) == 0 {
 		return nil
@@ -274,4 +279,12 @@ func (dl *mockDAL) Transact(trans func(dal dal.DAL) error) (err error) {
 		return errors.Trace(err)
 	}
 	return nil
+}
+
+func optsToInterfaces(opts []dal.QueryOption) []interface{} {
+	ifs := make([]interface{}, len(opts))
+	for i, o := range opts {
+		ifs[i] = o
+	}
+	return ifs
 }

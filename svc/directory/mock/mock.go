@@ -139,6 +139,14 @@ func (c *Client) CreateEntityDomain(ctx context.Context, in *directory.CreateEnt
 	return rets[0].(*directory.CreateEntityDomainResponse), mock.SafeError(rets[1])
 }
 
+func (c *Client) UpdateEntityDomain(ctx context.Context, in *directory.UpdateEntityDomainRequest, opts ...grpc.CallOption) (*directory.UpdateEntityDomainResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*directory.UpdateEntityDomainResponse), mock.SafeError(rets[1])
+}
+
 // UpdateEntity returns the external ids that map to a set of entity ids
 func (c *Client) UpdateEntity(ctx context.Context, in *directory.UpdateEntityRequest, opts ...grpc.CallOption) (*directory.UpdateEntityResponse, error) {
 	rets := c.Expector.Record(in)

@@ -200,6 +200,14 @@ message CreateEntityDomainRequest {
 
 message CreateEntityDomainResponse {}
 
+
+message UpdateEntityDomainRequest {
+	string entity_id = 1 [(gogoproto.customname) = "EntityID"];
+	string domain = 2;
+}
+
+message UpdateEntityDomainResponse {}
+
 message CreateContactsRequest {
 	string entity_id = 1 [(gogoproto.customname) = "EntityID"];
 	repeated Contact contacts = 2;
@@ -275,6 +283,7 @@ service Directory {
 	rpc CreateContact (CreateContactRequest) returns (CreateContactResponse);
 	rpc CreateContacts (CreateContactsRequest) returns (CreateContactsResponse);
 	rpc CreateEntityDomain (CreateEntityDomainRequest) returns (CreateEntityDomainResponse);
+	rpc UpdateEntityDomain (UpdateEntityDomainRequest) returns (UpdateEntityDomainResponse);
 	rpc CreateEntity (CreateEntityRequest) returns (CreateEntityResponse);
 	rpc CreateExternalIDs (CreateExternalIDsRequest) returns (CreateExternalIDsResponse);
 	rpc CreateMembership (CreateMembershipRequest) returns (CreateMembershipResponse);
