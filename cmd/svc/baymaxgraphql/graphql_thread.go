@@ -122,7 +122,12 @@ var threadType = graphql.NewObject(
 							ms[i] = e
 						}
 						return ms, nil
-					case models.ThreadTypeExternal:
+					case models.ThreadTypeExternal, models.ThreadTypeSupport:
+
+						// no addressable entities to return for a support thread not in spruce support
+						if th.Type == models.ThreadTypeSupport && th.OrganizationID != *flagSpruceOrgID {
+							return nil, nil
+						}
 						orgEntity, err := ram.Entity(ctx, th.OrganizationID, []directory.EntityInformation{
 							directory.EntityInformation_MEMBERS,
 							// TODO: don't always need contacts
