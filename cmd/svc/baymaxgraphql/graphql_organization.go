@@ -7,6 +7,8 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	baymaxgraphqlsettings "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/settings"
+	"github.com/sprucehealth/backend/environment"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/notification/deeplink"
 	"github.com/sprucehealth/backend/svc/settings"
@@ -46,6 +48,10 @@ var organizationType = graphql.NewObject(
 					}
 					return booleanValue.Value, nil
 				},
+			},
+			"allowCreateSecureThread": &graphql.Field{
+				Type:    graphql.NewNonNull(graphql.Boolean),
+				Resolve: isSecureThreadsEnabled(),
 			},
 			"entity": &graphql.Field{
 				Type: entityType,
@@ -150,3 +156,42 @@ var organizationType = graphql.NewObject(
 		},
 	},
 )
+
+func isSecureThreadsEnabled() func(p graphql.ResolveParams) (interface{}, error) {
+	return func(p graphql.ResolveParams) (interface{}, error) {
+		if !environment.IsProd() {
+			return true, nil
+		}
+		svc := serviceFromParams(p)
+		ctx := p.Context
+		var orgID string
+		switch s := p.Source.(type) {
+		case *models.Organization:
+			if s == nil {
+				return false, nil
+			}
+			orgID = s.ID
+		case *models.Thread:
+			if s == nil {
+				return false, nil
+			}
+			orgID = s.OrganizationID
+		default:
+			golog.Errorf("Unhandled source type %T for isSecureThreadsEnabled, returning false", s)
+			return false, nil
+		}
+
+		booleanValue, err := settings.GetBooleanValue(ctx, svc.settings, &settings.GetValuesRequest{
+			NodeID: orgID,
+			Keys: []*settings.ConfigKey{
+				{
+					Key: baymaxgraphqlsettings.ConfigKeyCreateSecureThread,
+				},
+			},
+		})
+		if err != nil {
+			return nil, errors.InternalError(ctx, err)
+		}
+		return booleanValue.Value, nil
+	}
+}

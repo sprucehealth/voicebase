@@ -851,7 +851,9 @@ func TestQueryThreads(t *testing.T) {
 	defer dl.Finish()
 	sm := mock_settings.New(t)
 	defer sm.Finish()
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil, sm, "WEBDOMAIN")
+	dm := mock_directory.New(t)
+	defer dm.Finish()
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dm, sm, "WEBDOMAIN")
 
 	orgID := "entity:1"
 	peID := "entity:2"
@@ -860,9 +862,22 @@ func TestQueryThreads(t *testing.T) {
 	now := time.Now()
 	created := time.Now()
 
+	dm.Expect(mock.NewExpectation(dm.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: peID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth: 0,
+		},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{Type: directory.EntityType_PATIENT},
+		}}, nil))
+
 	// Adhoc query
 
-	dl.Expect(mock.NewExpectation(dl.IterateThreads, orgID, "", false, &dal.Iterator{
+	dl.Expect(mock.NewExpectation(dl.IterateThreads, orgID, peID, true, &dal.Iterator{
 		EndCursor: "c1",
 		Direction: dal.FromEnd,
 		Count:     11,
@@ -872,10 +887,12 @@ func TestQueryThreads(t *testing.T) {
 			{
 				Cursor: "c2",
 				Thread: &models.Thread{
-					ID:                   tID,
-					OrganizationID:       orgID,
-					PrimaryEntityID:      peID,
-					LastMessageTimestamp: now,
+					ID:                           tID,
+					OrganizationID:               orgID,
+					PrimaryEntityID:              peID,
+					LastMessageTimestamp:         now,
+					LastExternalMessageTimestamp: now,
+					LastExternalMessageSummary:   "ExternalSummary",
 					LastPrimaryEntityEndpoints: models.EndpointList{
 						Endpoints: []*models.Endpoint{
 							{
@@ -894,6 +911,7 @@ func TestQueryThreads(t *testing.T) {
 
 	res, err := srv.QueryThreads(nil, &threading.QueryThreadsRequest{
 		OrganizationID: orgID,
+		ViewerEntityID: peID,
 		Iterator: &threading.Iterator{
 			EndCursor: "c1",
 			Direction: threading.Iterator_FROM_END,
@@ -914,6 +932,7 @@ func TestQueryThreads(t *testing.T) {
 					OrganizationID:       orgID,
 					PrimaryEntityID:      peID,
 					LastMessageTimestamp: uint64(now.Unix()),
+					LastMessageSummary:   "ExternalSummary",
 					LastPrimaryEntityEndpoints: []*threading.Endpoint{
 						{
 							Channel: threading.Endpoint_SMS,
@@ -922,7 +941,7 @@ func TestQueryThreads(t *testing.T) {
 					},
 					CreatedTimestamp: uint64(created.Unix()),
 					MessageCount:     32,
-					Unread:           false,
+					Unread:           true,
 					Type:             threading.ThreadType_EXTERNAL,
 				},
 				Cursor: "c2",
@@ -937,11 +956,12 @@ func TestQueryThreadsWithViewer(t *testing.T) {
 	defer dl.Finish()
 	sm := mock_settings.New(t)
 	defer sm.Finish()
-
+	dm := mock_directory.New(t)
+	defer dm.Finish()
 	clk := clock.NewManaged(time.Unix(1e6, 0))
 	now := clk.Now()
 
-	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, sm, "WEBDOMAIN")
+	srv := NewThreadsServer(clk, dl, nil, "arn", nil, dm, sm, "WEBDOMAIN")
 
 	orgID := "entity:1"
 	peID := "entity:2"
@@ -951,6 +971,19 @@ func TestQueryThreadsWithViewer(t *testing.T) {
 	test.OK(t, err)
 	tID3, err := models.NewThreadID()
 	test.OK(t, err)
+
+	dm.Expect(mock.NewExpectation(dm.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: peID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth: 0,
+		},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{Type: directory.EntityType_INTERNAL},
+		}}, nil))
 
 	// Adhoc query
 	dl.Expect(mock.NewExpectation(dl.IterateThreads, orgID, peID, false, &dal.Iterator{
@@ -1103,7 +1136,9 @@ func TestThread(t *testing.T) {
 	defer dl.Finish()
 	sm := mock_settings.New(t)
 	defer sm.Finish()
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil, sm, "WEBDOMAIN")
+	dm := mock_directory.New(t)
+	defer dm.Finish()
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dm, sm, "WEBDOMAIN")
 
 	thID, err := models.NewThreadID()
 	test.OK(t, err)
@@ -1114,12 +1149,14 @@ func TestThread(t *testing.T) {
 
 	dl.Expect(mock.NewExpectation(dl.Thread, thID).WithReturns(
 		&models.Thread{
-			ID:                   thID,
-			OrganizationID:       orgID,
-			PrimaryEntityID:      entID,
-			LastMessageTimestamp: now,
-			Created:              created,
-			MessageCount:         32,
+			ID:                           thID,
+			OrganizationID:               orgID,
+			PrimaryEntityID:              entID,
+			LastMessageTimestamp:         now,
+			LastExternalMessageTimestamp: now,
+			LastExternalMessageSummary:   "ExternalSummary",
+			Created:                      created,
+			MessageCount:                 32,
 		}, nil))
 	res, err := srv.Thread(nil, &threading.ThreadRequest{
 		ThreadID: thID.String(),
@@ -1132,6 +1169,7 @@ func TestThread(t *testing.T) {
 			PrimaryEntityID:      entID,
 			LastMessageTimestamp: uint64(now.Unix()),
 			CreatedTimestamp:     uint64(created.Unix()),
+			LastMessageSummary:   "ExternalSummary",
 			MessageCount:         32,
 			Unread:               false,
 		},
@@ -1144,7 +1182,9 @@ func TestThreadWithViewer(t *testing.T) {
 	defer dl.Finish()
 	sm := mock_settings.New(t)
 	defer sm.Finish()
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil, sm, "WEBDOMAIN")
+	dm := mock_directory.New(t)
+	defer dm.Finish()
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dm, sm, "WEBDOMAIN")
 
 	thID, err := models.NewThreadID()
 	test.OK(t, err)
@@ -1152,6 +1192,19 @@ func TestThreadWithViewer(t *testing.T) {
 	entID := "e1"
 	now := time.Now()
 	created := time.Now()
+
+	dm.Expect(mock.NewExpectation(dm.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: entID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth: 0,
+		},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{Type: directory.EntityType_INTERNAL},
+		}}, nil))
 
 	dl.Expect(mock.NewExpectation(dl.Thread, thID).WithReturns(
 		&models.Thread{
@@ -1196,7 +1249,9 @@ func TestThreadWithViewerNoMembership(t *testing.T) {
 	defer dl.Finish()
 	sm := mock_settings.New(t)
 	defer sm.Finish()
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil, sm, "WEBDOMAIN")
+	dm := mock_directory.New(t)
+	defer dm.Finish()
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dm, sm, "WEBDOMAIN")
 
 	thID, err := models.NewThreadID()
 	test.OK(t, err)
@@ -1204,6 +1259,19 @@ func TestThreadWithViewerNoMembership(t *testing.T) {
 	entID := "e1"
 	now := time.Now()
 	created := time.Now()
+
+	dm.Expect(mock.NewExpectation(dm.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: entID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth: 0,
+		},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{Type: directory.EntityType_INTERNAL},
+		}}, nil))
 
 	dl.Expect(mock.NewExpectation(dl.Thread, thID).WithReturns(
 		&models.Thread{
@@ -1240,7 +1308,9 @@ func TestThreadWithViewerNoMessages(t *testing.T) {
 	defer dl.Finish()
 	sm := mock_settings.New(t)
 	defer sm.Finish()
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil, sm, "WEBDOMAIN")
+	dm := mock_directory.New(t)
+	defer dm.Finish()
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dm, sm, "WEBDOMAIN")
 
 	thID, err := models.NewThreadID()
 	test.OK(t, err)
@@ -1248,6 +1318,19 @@ func TestThreadWithViewerNoMessages(t *testing.T) {
 	entID := "e1"
 	now := time.Now()
 	created := time.Now()
+
+	dm.Expect(mock.NewExpectation(dm.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: entID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth: 0,
+		},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{Type: directory.EntityType_INTERNAL},
+		}}, nil))
 
 	dl.Expect(mock.NewExpectation(dl.Thread, thID).WithReturns(
 		&models.Thread{
@@ -1282,7 +1365,9 @@ func TestSavedQuery(t *testing.T) {
 	defer dl.Finish()
 	sm := mock_settings.New(t)
 	defer sm.Finish()
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil, sm, "WEBDOMAIN")
+	dm := mock_directory.New(t)
+	defer dm.Finish()
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dm, sm, "WEBDOMAIN")
 
 	sqID, err := models.NewSavedQueryID()
 	test.OK(t, err)

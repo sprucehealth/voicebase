@@ -28,6 +28,7 @@ var threadType = graphql.NewObject(
 			nodeInterfaceType,
 		},
 		Fields: graphql.Fields{
+			"id":                    &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
 			"allowAddMembers":       &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowDelete":           &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowEmailAttachments": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
@@ -38,8 +39,11 @@ var threadType = graphql.NewObject(
 			"allowUpdateTitle":      &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowExternalDelivery": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowMentions":         &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-			"emptyStateTextMarkup":  &graphql.Field{Type: graphql.String},
-			"id": &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+			"allowInvitePatientToSecureThread": &graphql.Field{
+				Type:    graphql.NewNonNull(graphql.Boolean),
+				Resolve: isSecureThreadsEnabled(),
+			},
+			"emptyStateTextMarkup": &graphql.Field{Type: graphql.String},
 			"lastMessageTimestamp": &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
 			"subtitle":             &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"title":                &graphql.Field{Type: graphql.NewNonNull(graphql.String)},

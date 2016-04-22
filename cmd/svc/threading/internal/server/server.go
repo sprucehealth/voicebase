@@ -782,7 +782,12 @@ func (s *threadsServer) QueryThreads(ctx context.Context, in *threading.QueryThr
 	if in.Iterator.Direction == threading.Iterator_FROM_END {
 		d = dal.FromEnd
 	}
-	forExternal := false // TODO: set to true for EXTERNAL entities
+
+	forExternal, err := s.forExternalViewer(ctx, in.ViewerEntityID)
+	if err != nil {
+		return nil, err
+	}
+
 	ir, err := s.dal.IterateThreads(ctx, in.OrganizationID, in.ViewerEntityID, forExternal, &dal.Iterator{
 		StartCursor: in.Iterator.StartCursor,
 		EndCursor:   in.Iterator.EndCursor,
@@ -873,7 +878,10 @@ func (s *threadsServer) Thread(ctx context.Context, in *threading.ThreadRequest)
 		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadID")
 	}
 
-	forExternal := false // TODO: set to true for EXTERNAL entities
+	forExternal, err := s.forExternalViewer(ctx, in.ViewerEntityID)
+	if err != nil {
+		return nil, err
+	}
 
 	thread, err := s.dal.Thread(ctx, tid)
 	if errors.Cause(err) == dal.ErrNotFound {
@@ -943,7 +951,10 @@ func (s *threadsServer) ThreadsForMember(ctx context.Context, in *threading.Thre
 		return nil, internalError(err)
 	}
 
-	forExternal := false // TODO: set to true for EXTERNAL entities
+	forExternal, err := s.forExternalViewer(ctx, in.EntityID)
+	if err != nil {
+		return nil, err
+	}
 
 	res := &threading.ThreadsForMemberResponse{
 		Threads: make([]*threading.Thread, len(threads)),
@@ -976,7 +987,10 @@ func (s *threadsServer) ThreadItems(ctx context.Context, in *threading.ThreadIte
 		return nil, internalError(err)
 	}
 
-	forExternal := false // TODO: set to true for EXTERNAL entities
+	forExternal, err := s.forExternalViewer(ctx, in.ViewerEntityID)
+	if err != nil {
+		return nil, err
+	}
 
 	d := dal.FromStart
 	if in.Iterator.Direction == threading.Iterator_FROM_END {
@@ -1540,4 +1554,27 @@ func parseRefsAndNormalize(s string) (string, []*models.Reference, error) {
 func internalError(err error) error {
 	golog.LogDepthf(-1, golog.ERR, err.Error())
 	return grpcErrorf(codes.Internal, errors.Trace(err).Error())
+}
+
+func (s *threadsServer) forExternalViewer(ctx context.Context, viewerEntityID string) (bool, error) {
+	// Default to not showing internal notes for privacy reasons
+	forExternal := true
+	if viewerEntityID != "" {
+		ent, err := directory.SingleEntity(ctx, s.directoryClient, &directory.LookupEntitiesRequest{
+			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+				EntityID: viewerEntityID,
+			},
+			RequestedInformation: &directory.RequestedInformation{
+				Depth: 0,
+			},
+		})
+		if grpc.Code(err) == codes.NotFound {
+			return false, grpcErrorf(codes.NotFound, "Viewing entity %s not found", viewerEntityID)
+		} else if err != nil {
+			return false, internalError(err)
+		}
+		forExternal = ent.Type == directory.EntityType_EXTERNAL || ent.Type == directory.EntityType_PATIENT
+	}
+	return forExternal, nil
 }
