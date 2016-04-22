@@ -121,7 +121,7 @@ func TestAfterHours_IncomingCall_DefaultGreeting(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 	expected := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
-<Response><Gather action="/twilio/call/afterhours_patient_entered_digits" method="POST" timeout="5" numDigits="1"><Say voice="alice">You have reached Dewabi Corp. If this is an emergency, please hang up and dial 911.</Say><Say voice="alice">Otherwise, press 1 to leave an urgent message, 2 to leave a non-urgent message.</Say></Gather><Redirect>/twilio/call/afterhours_greeting</Redirect></Response>`)
+<Response><Gather action="/twilio/call/afterhours_patient_entered_digits" method="POST" timeout="5" numDigits="1"><Say voice="alice">You have reached Dewabi Corp. If this is an emergency, please hang up and dial 9 1 1.</Say><Say voice="alice">Otherwise, press 1 to leave an urgent message, 2 to leave a non-urgent message.</Say></Gather><Redirect>/twilio/call/afterhours_greeting</Redirect></Response>`)
 
 	if twiml != expected {
 		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)

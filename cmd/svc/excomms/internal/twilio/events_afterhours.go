@@ -60,7 +60,7 @@ func afterHoursCallTriage(ctx context.Context, orgEntity *directory.Entity, para
 		verbs = []interface{}{
 			&twiml.Say{
 				Voice: "alice",
-				Text:  fmt.Sprintf("You have reached %s. If this is an emergency, please hang up and dial 911.", orgEntity.Info.DisplayName),
+				Text:  fmt.Sprintf("You have reached %s. If this is an emergency, please hang up and dial 9 1 1.", orgEntity.Info.DisplayName),
 			},
 			&twiml.Say{
 				Voice: "alice",
