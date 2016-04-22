@@ -363,7 +363,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 			case excomms.IncomingCallEventItem_LEFT_VOICEMAIL, excomms.IncomingCallEventItem_LEFT_URGENT_VOICEMAIL:
 				title = bml.BML{"Voicemail"}
 				if pem.GetIncoming().Type == excomms.IncomingCallEventItem_LEFT_URGENT_VOICEMAIL {
-					summary = "Called, left urgent voicemail"
+					summary = "Called, left URGENT voicemail"
 					title = bml.BML{"URGENT Voicemail"}
 					urgentVoicemail = true
 				} else {
