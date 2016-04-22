@@ -115,21 +115,6 @@ var VoicemailOptionConfig = &settings.Config{
 	},
 }
 
-var TakeMessageCofnig = &settings.Config{
-	Title:          "Take message after voicemail is played",
-	Key:            ConfigKeySendCallsToVoicemail,
-	PossibleOwners: []settings.OwnerType{settings.OwnerType_ORGANIZATION},
-	AllowSubkeys:   true,
-	Type:           settings.ConfigType_BOOLEAN,
-	Config: &settings.Config_Boolean{
-		Boolean: &settings.BooleanConfig{
-			Default: &settings.BooleanValue{
-				Value: true,
-			},
-		},
-	},
-}
-
 //
 // AFTER HOURS CONFIGURATION
 //
