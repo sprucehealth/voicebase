@@ -377,7 +377,6 @@ func TestProcessNotification(t *testing.T) {
 		PushData: &androidPushData{
 			Message:        "",
 			Background:     true,
-			UnreadCount:    1,
 			URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
 			ThreadID:       "ThreadID",
 			OrganizationID: "OrganizationID",
@@ -419,8 +418,7 @@ func TestProcessNotification(t *testing.T) {
 	iData, err = json.Marshal(&iOSPushNotification{
 		PushData: &iOSPushData{
 			Alert: "ShortMessage2",
-			//Badge: 2,
-			URL:   deeplink.OrgURL("testDomain", "OrganizationID"),
+			URL:   deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
 			Sound: "default",
 		},
 		ThreadID:       "ThreadID",
@@ -434,8 +432,7 @@ func TestProcessNotification(t *testing.T) {
 		PushData: &androidPushData{
 			Message:        "ShortMessage2",
 			Background:     false,
-			UnreadCount:    2,
-			URL:            deeplink.OrgURL("testDomain", "OrganizationID"),
+			URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
 			ThreadID:       "ThreadID",
 			OrganizationID: "OrganizationID",
 			MessageID:      "ItemID",
@@ -474,8 +471,7 @@ func TestProcessNotification(t *testing.T) {
 	iData, err = json.Marshal(&iOSPushNotification{
 		PushData: &iOSPushData{
 			Alert: "ShortMessage4",
-			////Badge: 4,
-			URL:   deeplink.OrgURL("testDomain", "OrganizationID"),
+			URL:   deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
 			Sound: "default",
 		},
 		ThreadID:       "ThreadID",
@@ -489,8 +485,7 @@ func TestProcessNotification(t *testing.T) {
 		PushData: &androidPushData{
 			Message:        "ShortMessage4",
 			Background:     false,
-			UnreadCount:    4,
-			URL:            deeplink.OrgURL("testDomain", "OrganizationID"),
+			URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
 			ThreadID:       "ThreadID",
 			OrganizationID: "OrganizationID",
 			MessageID:      "ItemID",
@@ -581,7 +576,6 @@ func TestProcessNotificationDisabledEndpoint(t *testing.T) {
 			Sound: "default",
 			Alert: "ShortMessage",
 			URL:   deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
-			//Badge: 1,
 		},
 		ThreadID:       "ThreadID",
 		OrganizationID: "OrganizationID",
@@ -599,7 +593,6 @@ func TestProcessNotificationDisabledEndpoint(t *testing.T) {
 			MessageID:      "ItemID",
 			SavedQueryID:   "SavedQueryID",
 			PushID:         "dedupe",
-			UnreadCount:    1,
 		},
 	})
 	test.OK(t, err)
@@ -718,7 +711,6 @@ func TestProcessNotificationInternalMessage(t *testing.T) {
 		PushData: &androidPushData{
 			Message:        "",
 			Background:     true,
-			UnreadCount:    1,
 			URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
 			ThreadID:       "ThreadID",
 			OrganizationID: "OrganizationID",
@@ -759,8 +751,7 @@ func TestProcessNotificationInternalMessage(t *testing.T) {
 	iData, err = json.Marshal(&iOSPushNotification{
 		PushData: &iOSPushData{
 			Alert: "ShortMessage2",
-			//Badge: 2,
-			URL:   deeplink.OrgURL("testDomain", "OrganizationID"),
+			URL:   deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
 			Sound: "default",
 		},
 		ThreadID:       "ThreadID",
@@ -774,8 +765,7 @@ func TestProcessNotificationInternalMessage(t *testing.T) {
 		PushData: &androidPushData{
 			Message:        "ShortMessage2",
 			Background:     false,
-			UnreadCount:    2,
-			URL:            deeplink.OrgURL("testDomain", "OrganizationID"),
+			URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
 			ThreadID:       "ThreadID",
 			OrganizationID: "OrganizationID",
 			MessageID:      "ItemID",
@@ -896,7 +886,6 @@ func TestProcessNotificationExternalMessage(t *testing.T) {
 		PushData: &androidPushData{
 			Message:        "",
 			Background:     true,
-			UnreadCount:    1,
 			URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
 			ThreadID:       "ThreadID",
 			OrganizationID: "OrganizationID",
@@ -937,8 +926,7 @@ func TestProcessNotificationExternalMessage(t *testing.T) {
 	iData, err = json.Marshal(&iOSPushNotification{
 		PushData: &iOSPushData{
 			Alert: "ShortMessage2",
-			//Badge: 2,
-			URL:   deeplink.OrgURL("testDomain", "OrganizationID"),
+			URL:   deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
 			Sound: "default",
 		},
 		ThreadID:       "ThreadID",
@@ -952,8 +940,7 @@ func TestProcessNotificationExternalMessage(t *testing.T) {
 		PushData: &androidPushData{
 			Message:        "ShortMessage2",
 			Background:     false,
-			UnreadCount:    2,
-			URL:            deeplink.OrgURL("testDomain", "OrganizationID"),
+			URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
 			ThreadID:       "ThreadID",
 			OrganizationID: "OrganizationID",
 			MessageID:      "ItemID",

@@ -406,21 +406,16 @@ type androidPushData struct {
 
 func generateNotification(webDomain string, n *notification.Notification, targetID string) *snsNotification {
 	msg := n.ShortMessages[targetID]
-	unreadCount := n.UnreadCounts[targetID]
-	url := deeplink.OrgURL(webDomain, n.OrganizationID)
-	if unreadCount == 1 {
-		url = deeplink.ThreadMessageURLShareable(webDomain, n.OrganizationID, n.ThreadID, n.MessageID)
-	}
+	url := deeplink.ThreadMessageURLShareable(webDomain, n.OrganizationID, n.ThreadID, n.MessageID)
+
 	iOSData := &iOSPushData{
 		Alert: msg,
 		URL:   url,
 		Sound: "default",
-		//Badge: unreadCount,
 	}
 	if msg == "" {
 		iOSData = &iOSPushData{
 			ContentAvailable: 1,
-			//Badge: unreadCount,
 		}
 	}
 	isNotifData, err := json.Marshal(&iOSPushNotification{
@@ -443,7 +438,6 @@ func generateNotification(webDomain string, n *notification.Notification, target
 			SavedQueryID:   n.SavedQueryID,
 			ThreadID:       n.ThreadID,
 			MessageID:      n.MessageID,
-			UnreadCount:    unreadCount,
 			PushID:         n.DedupeKey,
 		},
 	})
