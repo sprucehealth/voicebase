@@ -157,6 +157,7 @@ var commands = map[string]commandNew{
 	"changeorgemail": newChangeOrgEmailCmd,
 	"blockaccount":   newBlockAccountCmd,
 	"updateentity":   newUpdateEntityCmd,
+	"setgreeting":    newSetGreetingCmd,
 }
 
 func main() {

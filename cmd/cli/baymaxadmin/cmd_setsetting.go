@@ -99,6 +99,15 @@ func (c *setSettingCmd) run(args []string) error {
 				Value: b,
 			},
 		}
+	case settings.ConfigType_SINGLE_SELECT:
+		val.Type = settings.ConfigType_SINGLE_SELECT
+		val.Value = &settings.Value_SingleSelect{
+			SingleSelect: &settings.SingleSelectValue{
+				Item: &settings.ItemValue{
+					ID: *value,
+				},
+			},
+		}
 	default:
 		return fmt.Errorf("Unsupported type %s", config.Type)
 	}
