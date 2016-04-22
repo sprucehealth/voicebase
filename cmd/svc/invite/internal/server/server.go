@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/sendgrid/sendgrid-go"
@@ -17,6 +18,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/branch"
 	"github.com/sprucehealth/backend/libs/clock"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
@@ -97,6 +99,22 @@ type organizationInvite struct {
 
 type colleagueInviteClientData struct {
 	OrganizationInvite organizationInvite `json:"organization_invite"`
+}
+
+type greeting struct {
+	Title      string `json:"title"`
+	Message    string `json:"message"`
+	ButtonText string `json:"button_text"`
+}
+
+type patientInvite struct {
+	Greeting greeting `json:"greeting"`
+	OrgID    string   `json:"org_id"`
+	OrgName  string   `json:"org_name"`
+}
+
+type patientInviteClientData struct {
+	PatientInvite patientInvite `json:"patient_invite"`
 }
 
 // SendGridClient is the interface implemented by SendGrid clients
@@ -272,9 +290,9 @@ func (s *server) InvitePatients(ctx context.Context, in *invite.InvitePatientsRe
 		if p.FirstName != "" {
 			welcomeText = fmt.Sprintf("Welcome %s!", p.FirstName)
 		}
-		inviteClientDataJSON, err := json.Marshal(colleagueInviteClientData{
-			OrganizationInvite: organizationInvite{
-				Popover: popover{
+		inviteClientDataJSON, err := json.Marshal(patientInviteClientData{
+			PatientInvite: patientInvite{
+				Greeting: greeting{
 					Title:      welcomeText,
 					Message:    fmt.Sprintf("Let's create your account so you can start securely messaging with %s.", org.Info.DisplayName),
 					ButtonText: "Get Started",
@@ -432,16 +450,18 @@ func (s *server) sendPatientOutbound(ctx context.Context, firstName, phoneNumber
 	if err != nil {
 		return errors.Trace(err)
 	}
-	msgText = fmt.Sprintf("Get the Spruce app now and join them. %s [%s]", inviteURL, token)
-	_, err = s.excommsClient.SendMessage(ctx, &excomms.SendMessageRequest{
-		Channel: excomms.ChannelType_SMS,
-		Message: &excomms.SendMessageRequest_SMS{
-			SMS: &excomms.SMSMessage{
-				Text:            msgText,
-				FromPhoneNumber: s.fromNumber,
-				ToPhoneNumber:   phoneNumber,
+	conc.AfterFunc(time.Second*1, func() {
+		msgText = fmt.Sprintf("Get the Spruce app now and join them. %s [%s]", inviteURL, token)
+		_, err = s.excommsClient.SendMessage(ctx, &excomms.SendMessageRequest{
+			Channel: excomms.ChannelType_SMS,
+			Message: &excomms.SendMessageRequest_SMS{
+				SMS: &excomms.SMSMessage{
+					Text:            msgText,
+					FromPhoneNumber: s.fromNumber,
+					ToPhoneNumber:   phoneNumber,
+				},
 			},
-		},
+		})
 	})
 	return errors.Trace(err)
 }
