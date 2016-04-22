@@ -154,22 +154,6 @@ func (w *BlockAccountWorker) processEvent(bar *operational.BlockAccountRequest) 
 		}
 
 		// TODO: Delete the spruce support thread in the spruce org.
-
-		// deprovision any provisioned phone number for the org
-		for _, c := range orgLookupRes.Entities[0].Contacts {
-			if !(c.Provisioned && c.ContactType == directory.ContactType_PHONE) {
-				continue
-			}
-
-			// deprovision the phone number
-			_, err := w.excomms.DeprovisionPhoneNumber(ctx, &excomms.DeprovisionPhoneNumberRequest{
-				PhoneNumber: c.Value,
-				Reason:      "block account",
-			})
-			if err != nil {
-				return errors.Trace(err)
-			}
-		}
 	}
 
 	// record the fact that the account was blocked

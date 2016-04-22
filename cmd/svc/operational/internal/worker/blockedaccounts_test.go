@@ -9,7 +9,6 @@ import (
 	authmock "github.com/sprucehealth/backend/svc/auth/mock"
 	"github.com/sprucehealth/backend/svc/directory"
 	directorymock "github.com/sprucehealth/backend/svc/directory/mock"
-	"github.com/sprucehealth/backend/svc/excomms"
 	excommsmock "github.com/sprucehealth/backend/svc/excomms/mock"
 	"github.com/sprucehealth/backend/svc/operational"
 	threadingmock "github.com/sprucehealth/backend/svc/threading/mock"
@@ -103,11 +102,6 @@ func TestBlockAccountWorker(t *testing.T) {
 			},
 		},
 	}, nil))
-
-	me.Expect(mock.NewExpectation(me.DeprovisionPhoneNumber, &excomms.DeprovisionPhoneNumberRequest{
-		PhoneNumber: "+17348465522",
-		Reason:      "block account",
-	}))
 
 	md.Expect(mock.NewExpectation(md.MarkAccountAsBlocked, accountID))
 
