@@ -10,12 +10,12 @@ const (
 	ConfigKeyVoicemailOption          = "voicemail_option"
 	ConfigKeyTranscribeVoicemail      = "transcribe_voicemail"
 	ConfigKeyIncomingCallOption       = "incoming_call_option"
-	ConfigKeyAfterHoursGreetingOption = "after_hours_greeting_option"
+	ConfigKeyAfterHoursGreetingOption = "afterhours_greeting_option"
 )
 
 const (
 	IncomingCallOptionCallForwardingList   = "call_forwarding_list"
-	IncomingCallOptionCallTriageAfterHours = "binary_triage_after_hours"
+	IncomingCallOptionAfterHoursCallTriage = "afterhours_call_triage"
 )
 
 //
@@ -37,7 +37,7 @@ var IncomingCallBehaviorConfig = &settings.Config{
 					Label: "Call Forwarding List",
 				},
 				{
-					ID:    IncomingCallOptionCallTriageAfterHours,
+					ID:    IncomingCallOptionAfterHoursCallTriage,
 					Label: "Direct to after hours phone tree",
 				},
 			},
@@ -135,8 +135,8 @@ var TakeMessageCofnig = &settings.Config{
 //
 
 const (
-	AfterHoursGreetingOptionDefault = "afterhours_message_option_default"
-	AfterHoursGreetingOptionCustom  = "afterhours_message_option_custom"
+	AfterHoursGreetingOptionDefault = "afterhours_greeting_option_default"
+	AfterHoursGreetingOptionCustom  = "afterhours_greeting_option_custom"
 )
 
 var AfterHoursGreetingOptionConfig = &settings.Config{

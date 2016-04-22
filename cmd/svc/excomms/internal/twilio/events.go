@@ -22,16 +22,28 @@ import (
 
 var (
 	twilioEventsHandlers = map[rawmsg.TwilioEvent]twilioEventHandleFunc{
+
+		// incoming calls
 		rawmsg.TwilioEvent_PROCESS_INCOMING_CALL:        processIncomingCall,
-		rawmsg.TwilioEvent_PROCESS_OUTGOING_CALL:        processOutgoingCall,
-		rawmsg.TwilioEvent_PROVIDER_ENTERED_DIGITS:      providerEnteredDigits,
 		rawmsg.TwilioEvent_PROVIDER_CALL_CONNECTED:      providerCallConnected,
+		rawmsg.TwilioEvent_PROVIDER_ENTERED_DIGITS:      providerEnteredDigits,
 		rawmsg.TwilioEvent_TWIML_REQUESTED_VOICEMAIL:    voicemailTWIML,
 		rawmsg.TwilioEvent_PROCESS_INCOMING_CALL_STATUS: processIncomingCallStatus,
 		rawmsg.TwilioEvent_PROCESS_VOICEMAIL:            processVoicemail,
-		rawmsg.TwilioEvent_PROCESS_OUTGOING_CALL_STATUS: processOutgoingCallStatus,
-		rawmsg.TwilioEvent_PROCESS_SMS_STATUS:           processOutgoingSMSStatus,
 		rawmsg.TwilioEvent_NO_OP:                        processNoOp,
+
+		// outgoing calls
+		rawmsg.TwilioEvent_PROCESS_OUTGOING_CALL:        processOutgoingCall,
+		rawmsg.TwilioEvent_PROCESS_OUTGOING_CALL_STATUS: processOutgoingCallStatus,
+
+		// sms
+		rawmsg.TwilioEvent_PROCESS_SMS_STATUS: processOutgoingSMSStatus,
+
+		// after hours
+		rawmsg.TwilioEvent_AFTERHOURS_GREETING:               afterHoursGreeting,
+		rawmsg.TwilioEvent_AFTERHOURS_PATIENT_ENTERED_DIGITS: afterHoursPatientEnteredDigits,
+		rawmsg.TwilioEvent_AFTERHOURS_VOICEMAIL:              afterHoursVoicemailTWIML,
+		rawmsg.TwilioEvent_AFTERHOURS_PROCESS_VOICEMAIL:      afterHoursProcessVoicemail,
 	}
 	maxPhoneNumbers = 10
 )

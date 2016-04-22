@@ -37,16 +37,20 @@ var _ = math.Inf
 type TwilioEvent int32
 
 const (
-	TwilioEvent_PROCESS_INCOMING_CALL        TwilioEvent = 0
-	TwilioEvent_PROVIDER_CALL_CONNECTED      TwilioEvent = 1
-	TwilioEvent_PROVIDER_ENTERED_DIGITS      TwilioEvent = 2
-	TwilioEvent_TWIML_REQUESTED_VOICEMAIL    TwilioEvent = 3
-	TwilioEvent_PROCESS_INCOMING_CALL_STATUS TwilioEvent = 4
-	TwilioEvent_PROCESS_OUTGOING_CALL        TwilioEvent = 6
-	TwilioEvent_PROCESS_VOICEMAIL            TwilioEvent = 7
-	TwilioEvent_PROCESS_OUTGOING_CALL_STATUS TwilioEvent = 8
-	TwilioEvent_PROCESS_SMS_STATUS           TwilioEvent = 9
-	TwilioEvent_NO_OP                        TwilioEvent = 10
+	TwilioEvent_PROCESS_INCOMING_CALL             TwilioEvent = 0
+	TwilioEvent_PROVIDER_CALL_CONNECTED           TwilioEvent = 1
+	TwilioEvent_PROVIDER_ENTERED_DIGITS           TwilioEvent = 2
+	TwilioEvent_TWIML_REQUESTED_VOICEMAIL         TwilioEvent = 3
+	TwilioEvent_PROCESS_INCOMING_CALL_STATUS      TwilioEvent = 4
+	TwilioEvent_PROCESS_OUTGOING_CALL             TwilioEvent = 6
+	TwilioEvent_PROCESS_VOICEMAIL                 TwilioEvent = 7
+	TwilioEvent_PROCESS_OUTGOING_CALL_STATUS      TwilioEvent = 8
+	TwilioEvent_PROCESS_SMS_STATUS                TwilioEvent = 9
+	TwilioEvent_NO_OP                             TwilioEvent = 10
+	TwilioEvent_AFTERHOURS_GREETING               TwilioEvent = 11
+	TwilioEvent_AFTERHOURS_PATIENT_ENTERED_DIGITS TwilioEvent = 12
+	TwilioEvent_AFTERHOURS_VOICEMAIL              TwilioEvent = 13
+	TwilioEvent_AFTERHOURS_PROCESS_VOICEMAIL      TwilioEvent = 14
 )
 
 var TwilioEvent_name = map[int32]string{
@@ -60,18 +64,26 @@ var TwilioEvent_name = map[int32]string{
 	8:  "PROCESS_OUTGOING_CALL_STATUS",
 	9:  "PROCESS_SMS_STATUS",
 	10: "NO_OP",
+	11: "AFTERHOURS_GREETING",
+	12: "AFTERHOURS_PATIENT_ENTERED_DIGITS",
+	13: "AFTERHOURS_VOICEMAIL",
+	14: "AFTERHOURS_PROCESS_VOICEMAIL",
 }
 var TwilioEvent_value = map[string]int32{
-	"PROCESS_INCOMING_CALL":        0,
-	"PROVIDER_CALL_CONNECTED":      1,
-	"PROVIDER_ENTERED_DIGITS":      2,
-	"TWIML_REQUESTED_VOICEMAIL":    3,
-	"PROCESS_INCOMING_CALL_STATUS": 4,
-	"PROCESS_OUTGOING_CALL":        6,
-	"PROCESS_VOICEMAIL":            7,
-	"PROCESS_OUTGOING_CALL_STATUS": 8,
-	"PROCESS_SMS_STATUS":           9,
-	"NO_OP":                        10,
+	"PROCESS_INCOMING_CALL":             0,
+	"PROVIDER_CALL_CONNECTED":           1,
+	"PROVIDER_ENTERED_DIGITS":           2,
+	"TWIML_REQUESTED_VOICEMAIL":         3,
+	"PROCESS_INCOMING_CALL_STATUS":      4,
+	"PROCESS_OUTGOING_CALL":             6,
+	"PROCESS_VOICEMAIL":                 7,
+	"PROCESS_OUTGOING_CALL_STATUS":      8,
+	"PROCESS_SMS_STATUS":                9,
+	"NO_OP":                             10,
+	"AFTERHOURS_GREETING":               11,
+	"AFTERHOURS_PATIENT_ENTERED_DIGITS": 12,
+	"AFTERHOURS_VOICEMAIL":              13,
+	"AFTERHOURS_PROCESS_VOICEMAIL":      14,
 }
 
 type TwilioParams_CallStatus int32

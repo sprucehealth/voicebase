@@ -35,7 +35,8 @@ func NewRoutingService(
 	settings settings.SettingsClient,
 	sns snsiface.SNSAPI,
 	blockAccountsTopicARN string,
-	kmsKeyARN string) (RoutingService, error) {
+	kmsKeyARN,
+	webDomain string) (RoutingService, error) {
 
 	externalMessageQueue, err := awsutil.NewEncryptedSQS(kmsKeyARN, kms.New(awsSession), sqs.New(awsSession))
 	if err != nil {
@@ -70,6 +71,9 @@ func NewRoutingService(
 				blockAccountsTopicARN,
 				directory,
 				threading,
+				settings,
+				excomms,
+				webDomain,
 			),
 			appmsg.NewWorker(
 				appMessageQueue,

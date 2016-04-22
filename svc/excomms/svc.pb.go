@@ -140,20 +140,23 @@ var PublishedExternalMessage_Direction_value = map[string]int32{
 type IncomingCallEventItem_Type int32
 
 const (
-	IncomingCallEventItem_ANSWERED       IncomingCallEventItem_Type = 0
-	IncomingCallEventItem_UNANSWERED     IncomingCallEventItem_Type = 1
-	IncomingCallEventItem_LEFT_VOICEMAIL IncomingCallEventItem_Type = 2
+	IncomingCallEventItem_ANSWERED              IncomingCallEventItem_Type = 0
+	IncomingCallEventItem_UNANSWERED            IncomingCallEventItem_Type = 1
+	IncomingCallEventItem_LEFT_VOICEMAIL        IncomingCallEventItem_Type = 2
+	IncomingCallEventItem_LEFT_URGENT_VOICEMAIL IncomingCallEventItem_Type = 3
 )
 
 var IncomingCallEventItem_Type_name = map[int32]string{
 	0: "ANSWERED",
 	1: "UNANSWERED",
 	2: "LEFT_VOICEMAIL",
+	3: "LEFT_URGENT_VOICEMAIL",
 }
 var IncomingCallEventItem_Type_value = map[string]int32{
-	"ANSWERED":       0,
-	"UNANSWERED":     1,
-	"LEFT_VOICEMAIL": 2,
+	"ANSWERED":              0,
+	"UNANSWERED":            1,
+	"LEFT_VOICEMAIL":        2,
+	"LEFT_URGENT_VOICEMAIL": 3,
 }
 
 type OutgoingCallEventItem_Type int32

@@ -72,3 +72,18 @@ func GetBooleanValue(ctx context.Context, client SettingsClient, req *GetValuesR
 	}
 	return res.Values[0].GetBoolean(), nil
 }
+
+// GetStringListValue is a helper method to return a string list value for the provided request.
+func GetStringListValue(ctx context.Context, client SettingsClient, req *GetValuesRequest) (*StringListValue, error) {
+	res, err := client.GetValues(ctx, req)
+	if err != nil {
+		return nil, errors.Trace(err)
+	} else if len(res.Values) == 0 {
+		return nil, errors.Trace(ErrValueNotFound)
+	} else if len(res.Values) != 1 {
+		return nil, errors.Trace(ErrMoreThanOneValueFound)
+	} else if res.Values[0].GetStringList() == nil {
+		return nil, errors.Trace(fmt.Errorf("Expected string list value for revealing sender instead got %T", res.Values[0].Value))
+	}
+	return res.Values[0].GetStringList(), nil
+}

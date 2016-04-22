@@ -12,16 +12,20 @@ import (
 )
 
 var twilioEventMapper = map[string]rawmsg.TwilioEvent{
-	"process_incoming_call":        rawmsg.TwilioEvent_PROCESS_INCOMING_CALL,
-	"process_outgoing_call":        rawmsg.TwilioEvent_PROCESS_OUTGOING_CALL,
-	"process_incoming_call_status": rawmsg.TwilioEvent_PROCESS_INCOMING_CALL_STATUS,
-	"process_outgoing_call_status": rawmsg.TwilioEvent_PROCESS_OUTGOING_CALL_STATUS,
-	"process_voicemail":            rawmsg.TwilioEvent_PROCESS_VOICEMAIL,
-	"provider_call_connected":      rawmsg.TwilioEvent_PROVIDER_CALL_CONNECTED,
-	"provider_entered_digits":      rawmsg.TwilioEvent_PROVIDER_ENTERED_DIGITS,
-	"twiml_voicemail":              rawmsg.TwilioEvent_TWIML_REQUESTED_VOICEMAIL,
-	"process_sms_status":           rawmsg.TwilioEvent_PROCESS_SMS_STATUS,
-	"no_op":                        rawmsg.TwilioEvent_NO_OP,
+	"process_incoming_call":             rawmsg.TwilioEvent_PROCESS_INCOMING_CALL,
+	"process_outgoing_call":             rawmsg.TwilioEvent_PROCESS_OUTGOING_CALL,
+	"process_incoming_call_status":      rawmsg.TwilioEvent_PROCESS_INCOMING_CALL_STATUS,
+	"process_outgoing_call_status":      rawmsg.TwilioEvent_PROCESS_OUTGOING_CALL_STATUS,
+	"process_voicemail":                 rawmsg.TwilioEvent_PROCESS_VOICEMAIL,
+	"provider_call_connected":           rawmsg.TwilioEvent_PROVIDER_CALL_CONNECTED,
+	"provider_entered_digits":           rawmsg.TwilioEvent_PROVIDER_ENTERED_DIGITS,
+	"twiml_voicemail":                   rawmsg.TwilioEvent_TWIML_REQUESTED_VOICEMAIL,
+	"process_sms_status":                rawmsg.TwilioEvent_PROCESS_SMS_STATUS,
+	"no_op":                             rawmsg.TwilioEvent_NO_OP,
+	"afterhours_greeting":               rawmsg.TwilioEvent_AFTERHOURS_GREETING,
+	"afterhours_patient_entered_digits": rawmsg.TwilioEvent_AFTERHOURS_PATIENT_ENTERED_DIGITS,
+	"afterhours_voicemail":              rawmsg.TwilioEvent_AFTERHOURS_VOICEMAIL,
+	"afterhours_process_voicemail":      rawmsg.TwilioEvent_AFTERHOURS_PROCESS_VOICEMAIL,
 }
 
 type twilioRequestHandler struct {

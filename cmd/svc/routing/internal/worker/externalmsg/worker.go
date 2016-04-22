@@ -12,17 +12,18 @@ import (
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
+	excommsSettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/bml"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/worker"
-	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
+	"github.com/sprucehealth/backend/svc/notification/deeplink"
 	"github.com/sprucehealth/backend/svc/operational"
+	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -37,6 +38,9 @@ type externalMessageWorker struct {
 	blockAccountsTopicARN string
 	directory             directory.DirectoryClient
 	threading             threading.ThreadsClient
+	settings              settings.SettingsClient
+	excomms               excomms.ExCommsClient
+	webDomain             string
 }
 
 // NewWorker returns a worker that consumes SQS messages
@@ -48,6 +52,9 @@ func NewWorker(
 	blockAccountsTopicARN string,
 	directory directory.DirectoryClient,
 	threading threading.ThreadsClient,
+	settings settings.SettingsClient,
+	excomms excomms.ExCommsClient,
+	webDomain string,
 ) worker.Worker {
 	return &externalMessageWorker{
 		sqsAPI:                sqsAPI,
@@ -56,6 +63,9 @@ func NewWorker(
 		blockAccountsTopicARN: blockAccountsTopicARN,
 		directory:             directory,
 		threading:             threading,
+		settings:              settings,
+		excomms:               excomms,
+		webDomain:             webDomain,
 	}
 }
 
@@ -135,7 +145,8 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 	ctx := context.Background()
 
 	var toEntities, fromEntities, externalEntities []*directory.Entity
-	var organizationID, externalChannelID string
+	var orgEntity *directory.Entity
+	var externalChannelID string
 	var contactType directory.ContactType
 	switch pem.Type {
 	case excomms.PublishedExternalMessage_SMS, excomms.PublishedExternalMessage_OUTGOING_CALL_EVENT, excomms.PublishedExternalMessage_INCOMING_CALL_EVENT:
@@ -203,8 +214,8 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 			return nil
 		}
 
-		organizationID = determineOrganizationID(toEntity)
-		fromEntities = determineExternalEntities(fromEntityLookupRes, organizationID)
+		orgEntity = determineOrganization(toEntity)
+		fromEntities = determineExternalEntities(fromEntityLookupRes, orgEntity.ID)
 		externalEntities = fromEntities
 		externalChannelID = pem.FromChannelID
 	case excomms.PublishedExternalMessage_OUTBOUND:
@@ -221,7 +232,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 			return errors.Trace(err)
 		}
 
-		organizationID = determineOrganizationID(fromEntities[0])
+		orgEntity = determineOrganization(fromEntities[0])
 		externalEntities = toEntities
 		externalChannelID = pem.ToChannelID
 	}
@@ -240,7 +251,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 			ctx,
 			&directory.CreateEntityRequest{
 				Type: directory.EntityType_EXTERNAL,
-				InitialMembershipEntityID: organizationID,
+				InitialMembershipEntityID: orgEntity.ID,
 				RequestedInformation: &directory.RequestedInformation{
 					Depth: 1,
 					EntityInformation: []directory.EntityInformation{
@@ -296,6 +307,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 		var title bml.BML
 		var fromName, toName string
 		var fromEntity, toEntity *directory.Entity
+		var urgentVoicemail bool
 
 		switch pem.Direction {
 		case excomms.PublishedExternalMessage_INBOUND:
@@ -348,9 +360,14 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 			case excomms.IncomingCallEventItem_UNANSWERED:
 				title = bml.BML{"Inbound call, no answer"}
 				summary = "Called, no answer"
-			case excomms.IncomingCallEventItem_LEFT_VOICEMAIL:
+			case excomms.IncomingCallEventItem_LEFT_VOICEMAIL, excomms.IncomingCallEventItem_LEFT_URGENT_VOICEMAIL:
 				title = bml.BML{"Voicemail"}
-				summary = "Called, left voicemail"
+				if pem.GetIncoming().Type == excomms.IncomingCallEventItem_LEFT_URGENT_VOICEMAIL {
+					summary = "Called, left urgent voicemail"
+					urgentVoicemail = true
+				} else {
+					summary = "Called, left voicemail"
+				}
 
 				if len(strings.TrimSpace(pem.GetIncoming().TranscriptionText)) > 0 {
 					text = "Transcription: " + strconv.Quote(strings.TrimSpace(pem.GetIncoming().TranscriptionText))
@@ -438,10 +455,10 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 			golog.Debugf("External thread for %s not found. Creating...", externalEntity.Contacts[0].Value)
 
 			// create thread if one doesn't exist
-			_, err := r.threading.CreateThread(
+			threadRes, err := r.threading.CreateThread(
 				ctx,
 				&threading.CreateThreadRequest{
-					OrganizationID: organizationID,
+					OrganizationID: orgEntity.ID,
 					FromEntityID:   externalEntity.ID,
 					Source: &threading.Endpoint{
 						Channel: endpointChannel,
@@ -465,6 +482,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 			if err != nil {
 				return errors.Trace(err)
 			}
+			externalThread = threadRes.Thread
 		} else {
 			golog.Debugf("External thread for %s found. Posting to existing thread...", externalEntity.Contacts[0].Value)
 			// post message if thread exists
@@ -495,6 +513,10 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 			}
 		}
 		golog.Debugf("Message posted from %s → %s : %s", fromEntity.ID, toEntity.ID, text)
+
+		if urgentVoicemail {
+			r.notifyOfUrgentVoicemail(ctx, orgEntity, externalThread)
+		}
 	}
 
 	return nil
@@ -544,152 +566,63 @@ func (e *externalMessageWorker) determineAccountIDsOfProvidersInOrg(ctx context.
 	return accountIDs, nil
 }
 
-func determineAccountIDFromEntityExternalID(ent *directory.Entity) string {
-	for _, externalID := range ent.ExternalIDs {
-		if strings.HasPrefix(externalID, auth.AccountIDPrefix) {
-			return externalID
+func (e *externalMessageWorker) notifyOfUrgentVoicemail(ctx context.Context, orgEntity *directory.Entity, thread *threading.Thread) error {
+	var sprucePhoneNumber string
+	for _, c := range orgEntity.Contacts {
+		if c.Provisioned && c.ContactType == directory.ContactType_PHONE {
+			sprucePhoneNumber = c.Value
+			break
 		}
 	}
-	return ""
-}
 
-func determineDisplayName(channelID string, contactType directory.ContactType, entity *directory.Entity) string {
-	fromName := channelID
-	if entity.Info != nil && entity.Info.DisplayName != "" {
-		return entity.Info.DisplayName
-	} else if contactType == directory.ContactType_PHONE {
-		formattedPhone, err := phone.Format(fromName, phone.Pretty)
-		if err == nil {
-			return formattedPhone
-		}
-	}
-	return fromName
-}
-
-func lookupEntities(ctx context.Context, entityID string, dir directory.DirectoryClient) ([]*directory.Entity, error) {
-	res, err := dir.LookupEntities(
-		ctx,
-		&directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-				EntityID: entityID,
-			},
-			RequestedInformation: &directory.RequestedInformation{
-				Depth: 1,
-				EntityInformation: []directory.EntityInformation{
-					directory.EntityInformation_MEMBERSHIPS,
-					directory.EntityInformation_CONTACTS,
+	forwardingListValue, err := settings.GetStringListValue(
+		context.Background(),
+		e.settings,
+		&settings.GetValuesRequest{
+			NodeID: orgEntity.ID,
+			Keys: []*settings.ConfigKey{
+				{
+					Key:    excommsSettings.ConfigKeyForwardingList,
+					Subkey: sprucePhoneNumber,
 				},
 			},
 		})
 	if err != nil {
-		return nil, errors.Trace(err)
+		return errors.Trace(err)
 	}
-	return res.Entities, nil
-}
 
-func lookupEntitiesByContact(ctx context.Context, contactValue string, dir directory.DirectoryClient) (*directory.LookupEntitiesByContactResponse, error) {
-	res, err := dir.LookupEntitiesByContact(
-		ctx,
-		&directory.LookupEntitiesByContactRequest{
-			ContactValue: contactValue,
-			RequestedInformation: &directory.RequestedInformation{
-				Depth: 1,
-				EntityInformation: []directory.EntityInformation{
-					directory.EntityInformation_MEMBERSHIPS,
-					directory.EntityInformation_CONTACTS,
-					directory.EntityInformation_EXTERNAL_IDS,
+	for _, item := range forwardingListValue.Values {
+
+		if _, err := e.excomms.SendMessage(ctx, &excomms.SendMessageRequest{
+			Channel: excomms.ChannelType_SMS,
+			Message: &excomms.SendMessageRequest_SMS{
+				SMS: &excomms.SMSMessage{
+					Text:            "You have received an urgent voicemail on Spruce.",
+					FromPhoneNumber: sprucePhoneNumber,
+					ToPhoneNumber:   item,
 				},
 			},
-			Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
-		},
-	)
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
-	return res, nil
-}
-
-func determineOrganizationID(entity *directory.Entity) string {
-	if entity.Type == directory.EntityType_ORGANIZATION {
-		return entity.ID
-	}
-
-	for _, m := range entity.Memberships {
-		if m.Type == directory.EntityType_ORGANIZATION {
-			return m.ID
+		}); err != nil {
+			golog.Warningf("Unable to send sms from %s to %s for urgent voicemail", sprucePhoneNumber, item)
 		}
-	}
 
-	return ""
-}
-
-func determineProviderOrOrgEntity(res *directory.LookupEntitiesByContactResponse, value string) *directory.Entity {
-	if res == nil {
-		return nil
-	}
-	for _, entity := range res.Entities {
-		switch entity.Type {
-		case directory.EntityType_ORGANIZATION, directory.EntityType_INTERNAL:
-		case directory.EntityType_EXTERNAL:
-			continue
-		}
-		for _, c := range entity.Contacts {
-
-			if strings.EqualFold(c.Value, value) {
-				return entity
+		// 1 second later send a second text with the deeplink in there
+		toPhoneNumber := item
+		time.AfterFunc(time.Second, func() {
+			if _, err := e.excomms.SendMessage(ctx, &excomms.SendMessageRequest{
+				Channel: excomms.ChannelType_SMS,
+				Message: &excomms.SendMessageRequest_SMS{
+					SMS: &excomms.SMSMessage{
+						Text:            fmt.Sprintf("Urgent voicemail here: %s", deeplink.ThreadURLShareable(e.webDomain, orgEntity.ID, thread.ID)),
+						FromPhoneNumber: sprucePhoneNumber,
+						ToPhoneNumber:   toPhoneNumber,
+					},
+				},
+			}); err != nil {
+				golog.Warningf("Unable to send sms from %s to %s for urgent voicemail", sprucePhoneNumber, item)
 			}
-		}
+		})
 	}
+
 	return nil
-}
-
-func determineExternalEntities(res *directory.LookupEntitiesByContactResponse, organizationID string) []*directory.Entity {
-	if res == nil {
-		return nil
-	}
-
-	externalEntities := make([]*directory.Entity, 0, len(res.Entities))
-	for _, entity := range res.Entities {
-		if entity.Type != directory.EntityType_EXTERNAL {
-			continue
-		}
-		// if entity is external, determine membership to the specified organization.
-		for _, m := range entity.Memberships {
-			if m.Type == directory.EntityType_ORGANIZATION && m.ID == organizationID {
-				externalEntities = append(externalEntities, entity)
-			}
-		}
-	}
-	return externalEntities
-}
-
-var spamTextPhrases = []string{
-	"(WeChat Verification Code)",
-	"Your TALK2 verification code is",
-	"is your verification code for Instanumber",
-	"Your Swytch PIN :",
-	"The code is only used for removing WeChat restrictions. Do not share it with anyone.",
-	"You can also tap on this link to verify your phone: v.whatsapp.com",
-	"Close this message and enter the code into Facebook to confirm your phone number.",
-	"[Alibaba Group]Your verification code for validation is",
-	"PayPal: Your mobile number is linked to your account. To check balance, reply with BAL",
-	"Your ESIAtalk number is",
-	"is your Facebook confirmation code",
-	"is your AOL verification code.",
-	"Jelastic account activation code:",
-	"Your textPlus access code is",
-}
-
-func isMessageSpam(pem *excomms.PublishedExternalMessage) bool {
-
-	if pem.Type == excomms.PublishedExternalMessage_SMS && pem.Direction == excomms.PublishedExternalMessage_INBOUND {
-		text := pem.GetSMSItem().Text
-		for _, phrase := range spamTextPhrases {
-			if strings.Contains(text, phrase) {
-				return true
-			}
-		}
-	}
-	return false
 }

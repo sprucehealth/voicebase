@@ -36,6 +36,11 @@ type ProvisionedEndpointUpdate struct {
 	DeprovisionedTimestamp *time.Time
 }
 
+type IncomingCallUpdate struct {
+	Afterhours *bool
+	Urgent     *bool
+}
+
 type DAL interface {
 	// Transact encapsulates the provided function in a transaction and handles rollback and commit actions
 	Transact(func(DAL) error) error
@@ -71,6 +76,9 @@ type DAL interface {
 
 	// LookupIncomingCall identifies an incoming call by the SID
 	LookupIncomingCall(sid string) (*models.IncomingCall, error)
+
+	// UpdateIncomingCall allows updating of the mutable properties of the incoming call
+	UpdateIncomingCall(sid string, update *IncomingCallUpdate) (int64, error)
 
 	// AvailableProxyPhoneNumbers returns a list of proxy phone numbers available for reservation for a given originatingNumber.
 	AvailableProxyPhoneNumbers(originatingPhoneNumber phone.Number) ([]*models.ProxyPhoneNumber, error)
@@ -596,26 +604,57 @@ func (d *dal) LookupMedia(ids []string) (map[string]*models.Media, error) {
 }
 
 func (d *dal) CreateIncomingCall(ic *models.IncomingCall) error {
-	_, err := d.db.Exec(`REPLACE INTO incoming_call (call_sid, source, destination, organization_id) VALUES (?,?,?,?)`, ic.CallSID, ic.Source, ic.Destination, ic.OrganizationID)
+	_, err := d.db.Exec(`REPLACE INTO incoming_call (call_sid, source, destination, organization_id, afterhours, urgent) VALUES (?,?,?,?,?,?)`, ic.CallSID, ic.Source, ic.Destination, ic.OrganizationID, ic.AfterHours, ic.Urgent)
 	return errors.Trace(err)
 }
 
 func (d *dal) LookupIncomingCall(sid string) (*models.IncomingCall, error) {
 	var ic models.IncomingCall
 	if err := d.db.QueryRow(`
-		SELECT call_sid, source, destination, organization_id
+		SELECT call_sid, source, destination, organization_id, afterhours, urgent
 		FROM incoming_call
 		WHERE call_sid = ?`, sid).Scan(
 		&ic.CallSID,
 		&ic.Source,
 		&ic.Destination,
-		&ic.OrganizationID); err == sql.ErrNoRows {
+		&ic.OrganizationID,
+		&ic.AfterHours,
+		&ic.Urgent); err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrIncomingCallNotFound)
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
 
 	return &ic, nil
+}
+
+func (d *dal) UpdateIncomingCall(sid string, update *IncomingCallUpdate) (int64, error) {
+	args := dbutil.MySQLVarArgs()
+	if update.Afterhours != nil {
+		args.Append("afterhours", *update.Afterhours)
+	}
+	if update.Urgent != nil {
+		args.Append("urgent", *update.Urgent)
+	}
+
+	if args == nil || args.IsEmpty() {
+		return 0, nil
+	}
+
+	res, err := d.db.Exec(`
+		UPDATE incoming_call
+		SET `+args.ColumnsForUpdate()+`
+		WHERE call_sid = ?`, append(args.Values(), sid)...)
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+
+	rowsUpdated, err := res.RowsAffected()
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+
+	return rowsUpdated, nil
 }
 
 func (d *dal) CreateDeletedResource(resource, resourceID string) error {

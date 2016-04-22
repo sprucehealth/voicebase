@@ -51,6 +51,7 @@ message IncomingCallEventItem {
 		ANSWERED = 0;
 		UNANSWERED = 1;
 		LEFT_VOICEMAIL = 2;
+		LEFT_URGENT_VOICEMAIL = 3;
 	}
 	Type type = 1;
 	uint32 duration_in_seconds = 2;

@@ -28,6 +28,7 @@ var config struct {
 	kmsKeyARN             string
 	blockAccountsTopicARN string
 	settingsServiceURL    string
+	webDomain             string
 }
 
 func init() {
@@ -41,6 +42,7 @@ func init() {
 	flag.StringVar(&config.inAppMessageQueue, "queue_inapp_message", "", "queue name for receiving in app messages")
 	flag.StringVar(&config.kmsKeyARN, "kms_key_arn", "", "the arn of the master key that should be used to encrypt outbound and decrypt inbound data")
 	flag.StringVar(&config.blockAccountsTopicARN, "block_accounts_topic_arn", "", "arn of the block accounts sns topic")
+	flag.StringVar(&config.webDomain, "web_domain", "", "the baymax webapp domain")
 
 }
 
@@ -118,6 +120,7 @@ func main() {
 		eSNS,
 		config.blockAccountsTopicARN,
 		config.kmsKeyARN,
+		config.webDomain,
 	)
 	if err != nil {
 		golog.Fatalf(err.Error())

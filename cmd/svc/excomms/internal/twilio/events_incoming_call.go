@@ -25,7 +25,13 @@ import (
 
 func processIncomingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
 
-	entity, err := determineEntityWithProvisionedEndpoint(eh, params.To, 2)
+	entity, err := directory.SingleEntityByContact(ctx, eh.directory, &directory.LookupEntitiesByContactRequest{
+		ContactValue: params.To,
+		RequestedInformation: &directory.RequestedInformation{
+			Depth: 0,
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	})
 	if err != nil {
 		return "", errors.Trace(err)
 	} else if entity.Type != directory.EntityType_ORGANIZATION {
@@ -42,26 +48,46 @@ func processIncomingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 		return "", errors.Trace(err)
 	}
 
+	incomingCallBehaviorValue, err := settings.GetSingleSelectValue(ctx, eh.settings, &settings.GetValuesRequest{
+		NodeID: organizationID,
+		Keys: []*settings.ConfigKey{
+			{
+				Key:    excommsSettings.ConfigKeyIncomingCallOption,
+				Subkey: params.To,
+			},
+		},
+	})
+	if err != nil {
+		return "", errors.Trace(err)
+	}
+
 	if err := eh.dal.CreateIncomingCall(&models.IncomingCall{
 		Source:         source,
 		Destination:    destination,
 		OrganizationID: organizationID,
 		CallSID:        params.CallSID,
+		AfterHours:     incomingCallBehaviorValue.Item.ID == excommsSettings.IncomingCallOptionAfterHoursCallTriage,
 	}); err != nil {
 		return "", errors.Trace(err)
 	}
 
-	return callForwardingList(ctx, organizationID, entity, params, eh)
+	switch incomingCallBehaviorValue.Item.ID {
+	case excommsSettings.IncomingCallOptionCallForwardingList:
+		return callForwardingList(ctx, entity, params, eh)
+	case excommsSettings.IncomingCallOptionAfterHoursCallTriage:
+		return afterHoursCallTriage(ctx, entity, params, eh)
+	}
 
+	return "", errors.Trace(fmt.Errorf("not ensure what to do with call to %s", params.To))
 }
 
 // STEP: If call forwarding list, then send all calls to voicemail or simultaneously call numbers in list?
 
-func callForwardingList(ctx context.Context, organizationID string, entity *directory.Entity, params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
+func callForwardingList(ctx context.Context, orgEntity *directory.Entity, params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
 	// check if the send all calls to voicemail flag is turned on for the phone number
 	// at the org level. If so, then direct the call to voicemail rather than ringing any number in the call list.
 	sendAllCallsToVoicemailValue, err := settings.GetBooleanValue(ctx, eh.settings, &settings.GetValuesRequest{
-		NodeID: organizationID,
+		NodeID: orgEntity.ID,
 		Keys: []*settings.ConfigKey{
 			{
 				Key:    excommsSettings.ConfigKeySendCallsToVoicemail,
@@ -70,21 +96,14 @@ func callForwardingList(ctx context.Context, organizationID string, entity *dire
 		},
 	})
 	if err != nil {
-		return "", errors.Trace(fmt.Errorf("Unable to get the setting to direct all calls to voicemail for org %s: %s", organizationID, err.Error()))
+		return "", errors.Trace(fmt.Errorf("Unable to get the setting to direct all calls to voicemail for org %s: %s", orgEntity.ID, err.Error()))
 	} else if sendAllCallsToVoicemailValue.Value {
 		return voicemailTWIML(ctx, params, eh)
 	}
 
-	forwardingList, err := getForwardingListForProvisionedPhoneNumber(ctx, params.To, organizationID, eh)
+	forwardingList, err := getForwardingListForProvisionedPhoneNumber(ctx, params.To, orgEntity.ID, eh)
 	if err != nil {
 		return "", errors.Trace(err)
-	}
-
-	var providersInOrg []*directory.Entity
-	for _, member := range entity.Members {
-		if member.Type == directory.EntityType_INTERNAL {
-			providersInOrg = append(providersInOrg, member)
-		}
 	}
 
 	numbers := make([]interface{}, 0, maxPhoneNumbers)
@@ -95,7 +114,7 @@ func callForwardingList(ctx context.Context, organizationID string, entity *dire
 			continue
 		}
 		if len(numbers) == maxPhoneNumbers {
-			golog.Errorf("Org %s is currently configured to simultaneously call more than 10 numbers when that is the maximum that twilio supports.", organizationID)
+			golog.Errorf("Org %s is currently configured to simultaneously call more than 10 numbers when that is the maximum that twilio supports.", orgEntity.ID)
 			break
 		}
 
@@ -202,34 +221,21 @@ func providerEnteredDigits(ctx context.Context, params *rawmsg.TwilioParams, eh 
 // based on configuration.
 
 func voicemailTWIML(ctx context.Context, params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
-
-	entity, err := determineEntityWithProvisionedEndpoint(eh, params.To, 1)
+	entity, err := directory.SingleEntityByContact(ctx, eh.directory, &directory.LookupEntitiesByContactRequest{
+		ContactValue: params.To,
+		RequestedInformation: &directory.RequestedInformation{
+			Depth: 0,
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	})
 	if err != nil {
 		return "", errors.Trace(err)
+	} else if entity.Type != directory.EntityType_ORGANIZATION {
+		return "", errors.Trace(fmt.Errorf("Expected entity %s to be of type %s but got %s", entity.ID, directory.EntityType_ORGANIZATION, entity.Type))
 	}
 
-	var orgName string
-	var orgID string
-	switch entity.Type {
-	case directory.EntityType_ORGANIZATION:
-		orgName = entity.Info.DisplayName
-		orgID = entity.ID
-	case directory.EntityType_INTERNAL:
-		for _, m := range entity.Memberships {
-			if m.Type != directory.EntityType_ORGANIZATION {
-				continue
-			}
-
-			// find the organization that has this number listed as the provisioned number
-			for _, c := range m.Contacts {
-				if c.Provisioned && c.Value == params.To {
-					orgName = m.Info.DisplayName
-					orgID = m.ID
-					break
-				}
-			}
-		}
-	}
+	orgName := entity.Info.DisplayName
+	orgID := entity.ID
 
 	// check whether to use custom voicemail or not
 	var customVoicemailURL string

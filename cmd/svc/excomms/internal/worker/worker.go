@@ -235,6 +235,16 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 			})
 		}
 
+		incomingCall, err := w.dal.LookupIncomingCall(params.CallSID)
+		if err != nil {
+			return errors.Trace(err)
+		}
+
+		incomingType := excomms.IncomingCallEventItem_LEFT_VOICEMAIL
+		if incomingCall.AfterHours && incomingCall.Urgent {
+			incomingType = excomms.IncomingCallEventItem_LEFT_URGENT_VOICEMAIL
+		}
+
 		sns.Publish(w.snsAPI, w.externalMessageTopic, &excomms.PublishedExternalMessage{
 			FromChannelID: params.From,
 			ToChannelID:   params.To,
@@ -243,7 +253,7 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 			Type:          excomms.PublishedExternalMessage_INCOMING_CALL_EVENT,
 			Item: &excomms.PublishedExternalMessage_Incoming{
 				Incoming: &excomms.IncomingCallEventItem{
-					Type:                excomms.IncomingCallEventItem_LEFT_VOICEMAIL,
+					Type:                incomingType,
 					DurationInSeconds:   params.RecordingDuration,
 					VoicemailURL:        media.URL,
 					VoicemailDurationNS: uint64(media.Duration.Nanoseconds()),

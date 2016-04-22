@@ -74,6 +74,8 @@ type IncomingCall struct {
 	Source         phone.Number
 	Destination    phone.Number
 	OrganizationID string
+	Urgent         bool
+	AfterHours     bool
 }
 
 // CallEvent represents an entry pertaining to a call event
