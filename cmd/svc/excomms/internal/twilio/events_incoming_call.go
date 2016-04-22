@@ -48,56 +48,47 @@ func processIncomingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 		return "", errors.Trace(err)
 	}
 
-	incomingCallBehaviorValue, err := settings.GetSingleSelectValue(ctx, eh.settings, &settings.GetValuesRequest{
-		NodeID: organizationID,
-		Keys: []*settings.ConfigKey{
-			{
-				Key:    excommsSettings.ConfigKeyIncomingCallOption,
-				Subkey: params.To,
-			},
-		},
-	})
-	if err != nil {
-		return "", errors.Trace(err)
-	}
-
 	if err := eh.dal.CreateIncomingCall(&models.IncomingCall{
 		Source:         source,
 		Destination:    destination,
 		OrganizationID: organizationID,
 		CallSID:        params.CallSID,
-		AfterHours:     incomingCallBehaviorValue.Item.ID == excommsSettings.IncomingCallOptionAfterHoursCallTriage,
 	}); err != nil {
 		return "", errors.Trace(err)
 	}
 
-	switch incomingCallBehaviorValue.Item.ID {
-	case excommsSettings.IncomingCallOptionCallForwardingList:
-		return callForwardingList(ctx, entity, params, eh)
-	case excommsSettings.IncomingCallOptionAfterHoursCallTriage:
-		return afterHoursCallTriage(ctx, entity, params, eh)
-	}
-
-	return "", errors.Trace(fmt.Errorf("not ensure what to do with call to %s", params.To))
+	return callForwardingList(ctx, entity, params, eh)
 }
 
 // STEP: If call forwarding list, then send all calls to voicemail or simultaneously call numbers in list?
 
 func callForwardingList(ctx context.Context, orgEntity *directory.Entity, params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
-	// check if the send all calls to voicemail flag is turned on for the phone number
-	// at the org level. If so, then direct the call to voicemail rather than ringing any number in the call list.
-	sendAllCallsToVoicemailValue, err := settings.GetBooleanValue(ctx, eh.settings, &settings.GetValuesRequest{
+
+	valuesRes, err := eh.settings.GetValues(ctx, &settings.GetValuesRequest{
 		NodeID: orgEntity.ID,
 		Keys: []*settings.ConfigKey{
 			{
 				Key:    excommsSettings.ConfigKeySendCallsToVoicemail,
 				Subkey: params.To,
 			},
+			{
+				Key:    excommsSettings.ConfigKeyAfterHoursVociemailEnabled,
+				Subkey: params.To,
+			},
 		},
 	})
 	if err != nil {
-		return "", errors.Trace(fmt.Errorf("Unable to get the setting to direct all calls to voicemail for org %s: %s", orgEntity.ID, err.Error()))
-	} else if sendAllCallsToVoicemailValue.Value {
+		return "", errors.Trace(fmt.Errorf("Unable to get settings for org %s: %s", orgEntity.ID, err.Error()))
+	} else if len(valuesRes.Values) != 2 {
+		return "", errors.Trace(fmt.Errorf("Expected 2 values to be returned but got %d for org %s", len(valuesRes.Values), orgEntity.ID))
+	}
+
+	sendAllCallsToVoicemail := valuesRes.Values[0].GetBoolean().Value
+	afterHoursVoicemailEnabled := valuesRes.Values[1].GetBoolean().Value
+
+	if sendAllCallsToVoicemail && afterHoursVoicemailEnabled {
+		return afterHoursCallTriage(ctx, orgEntity, params, eh)
+	} else if sendAllCallsToVoicemail {
 		return voicemailTWIML(ctx, params, eh)
 	}
 
@@ -126,6 +117,9 @@ func callForwardingList(ctx context.Context, orgEntity *directory.Entity, params
 
 	// if there are no numbers in the forwarding list, then direct calls to voicemail
 	if len(numbers) == 0 {
+		if afterHoursVoicemailEnabled {
+			return afterHoursCallTriage(ctx, orgEntity, params, eh)
+		}
 		return voicemailTWIML(ctx, params, eh)
 	}
 
@@ -147,6 +141,24 @@ func callForwardingList(ctx context.Context, orgEntity *directory.Entity, params
 		},
 	)
 	return tw.GenerateTwiML()
+}
+
+func sendToVoicemail(ctx context.Context, orgEntity *directory.Entity, params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
+	afterHoursVoicemailValue, err := settings.GetBooleanValue(ctx, eh.settings, &settings.GetValuesRequest{
+		NodeID: orgEntity.ID,
+		Keys: []*settings.ConfigKey{
+			{
+				Key:    excommsSettings.ConfigKeyAfterHoursVociemailEnabled,
+				Subkey: params.To,
+			},
+		},
+	})
+	if err != nil {
+		return "", errors.Trace(err)
+	} else if afterHoursVoicemailValue.Value {
+		return afterHoursCallTriage(ctx, orgEntity, params, eh)
+	}
+	return voicemailTWIML(ctx, params, eh)
 }
 
 // STEP: For each number from the forwarding list that is called, call screen
@@ -352,7 +364,26 @@ func processIncomingCallStatus(ctx context.Context, params *rawmsg.TwilioParams,
 
 	case rawmsg.TwilioParams_CALL_STATUS_UNDEFINED:
 	default:
-		return voicemailTWIML(ctx, params, eh)
+		incomingCall, err := eh.dal.LookupIncomingCall(params.CallSID)
+		if err != nil {
+			return "", errors.Trace(err)
+		}
+
+		entity, err := directory.SingleEntity(ctx, eh.directory, &directory.LookupEntitiesRequest{
+			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+				EntityID: incomingCall.OrganizationID,
+			},
+			RequestedInformation: &directory.RequestedInformation{
+				Depth: 0,
+			},
+			Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		})
+		if err != nil {
+			return "", errors.Trace(err)
+		}
+
+		return sendToVoicemail(ctx, entity, params, eh)
 	}
 
 	// delete the dialed call

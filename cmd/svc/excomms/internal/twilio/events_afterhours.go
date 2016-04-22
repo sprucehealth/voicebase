@@ -23,6 +23,15 @@ import (
 
 func afterHoursCallTriage(ctx context.Context, orgEntity *directory.Entity, params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
 
+	// mark the fact that the incoming call was an after hours call
+	if rowsUpdated, err := eh.dal.UpdateIncomingCall(params.CallSID, &dal.IncomingCallUpdate{
+		Afterhours: ptr.Bool(true),
+	}); err != nil {
+		return "", errors.Trace(err)
+	} else if rowsUpdated > 1 {
+		return "", errors.Trace(fmt.Errorf("Expected 1 row to be updated instead got %d rows updated", rowsUpdated))
+	}
+
 	// check whether to use custom voicemail or not
 	var afterHoursGreetingURL string
 	singleSelectValue, err := settings.GetSingleSelectValue(ctx, eh.settings, &settings.GetValuesRequest{
@@ -122,7 +131,7 @@ func afterHoursPatientEnteredDigits(ctx context.Context, params *rawmsg.TwilioPa
 		Urgent: ptr.Bool(urgent),
 	}); err != nil {
 		return "", errors.Trace(fmt.Errorf("Unable to update incoming call %s : %s", params.CallSID, err))
-	} else if rowsUpdated != 1 {
+	} else if rowsUpdated > 1 {
 		return "", errors.Trace(fmt.Errorf("Expected 1 row to be updated for call %s but got %d", params.CallSID, rowsUpdated))
 	}
 

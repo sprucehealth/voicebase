@@ -58,43 +58,28 @@ func TestIncoming_Organization(t *testing.T) {
 	defer msettings.Finish()
 
 	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
-		NodeID: orgID,
-		Keys: []*settings.ConfigKey{
-			{
-				Key:    excommsSettings.ConfigKeyIncomingCallOption,
-				Subkey: practicePhoneNumber,
-			},
-		},
-	}).WithReturns(&settings.GetValuesResponse{
-		Values: []*settings.Value{
-			{
-				Type: settings.ConfigType_SINGLE_SELECT,
-				Value: &settings.Value_SingleSelect{
-					SingleSelect: &settings.SingleSelectValue{
-						Item: &settings.ItemValue{
-							ID: excommsSettings.IncomingCallOptionCallForwardingList,
-						},
-					},
-				},
-			},
-		},
-	}, nil))
-
-	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
 		Keys: []*settings.ConfigKey{
 			{
 				Key:    excommsSettings.ConfigKeySendCallsToVoicemail,
 				Subkey: practicePhoneNumber,
 			},
+			{
+				Key:    excommsSettings.ConfigKeyAfterHoursVociemailEnabled,
+				Subkey: practicePhoneNumber,
+			},
 		},
 		NodeID: orgID,
 	}).WithReturns(&settings.GetValuesResponse{
 		Values: []*settings.Value{
 			{
-				Key: &settings.ConfigKey{
-					Key:    excommsSettings.ConfigKeySendCallsToVoicemail,
-					Subkey: practicePhoneNumber,
+				Type: settings.ConfigType_BOOLEAN,
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: false,
+					},
 				},
+			},
+			{
 				Type: settings.ConfigType_BOOLEAN,
 				Value: &settings.Value_Boolean{
 					Boolean: &settings.BooleanValue{
@@ -188,43 +173,28 @@ func TestIncoming_Organization_MultipleContacts(t *testing.T) {
 	defer msettings.Finish()
 
 	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
-		NodeID: orgID,
-		Keys: []*settings.ConfigKey{
-			{
-				Key:    excommsSettings.ConfigKeyIncomingCallOption,
-				Subkey: practicePhoneNumber,
-			},
-		},
-	}).WithReturns(&settings.GetValuesResponse{
-		Values: []*settings.Value{
-			{
-				Type: settings.ConfigType_SINGLE_SELECT,
-				Value: &settings.Value_SingleSelect{
-					SingleSelect: &settings.SingleSelectValue{
-						Item: &settings.ItemValue{
-							ID: excommsSettings.IncomingCallOptionCallForwardingList,
-						},
-					},
-				},
-			},
-		},
-	}, nil))
-
-	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
 		Keys: []*settings.ConfigKey{
 			{
 				Key:    excommsSettings.ConfigKeySendCallsToVoicemail,
 				Subkey: practicePhoneNumber,
 			},
+			{
+				Key:    excommsSettings.ConfigKeyAfterHoursVociemailEnabled,
+				Subkey: practicePhoneNumber,
+			},
 		},
 		NodeID: orgID,
 	}).WithReturns(&settings.GetValuesResponse{
 		Values: []*settings.Value{
 			{
-				Key: &settings.ConfigKey{
-					Key:    excommsSettings.ConfigKeySendCallsToVoicemail,
-					Subkey: practicePhoneNumber,
+				Type: settings.ConfigType_BOOLEAN,
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: false,
+					},
 				},
+			},
+			{
 				Type: settings.ConfigType_BOOLEAN,
 				Value: &settings.Value_Boolean{
 					Boolean: &settings.BooleanValue{
@@ -318,47 +288,32 @@ func TestIncoming_Organization_MultipleContacts_SendCallsToVoicemail(t *testing.
 	defer msettings.Finish()
 
 	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
-		NodeID: orgID,
-		Keys: []*settings.ConfigKey{
-			{
-				Key:    excommsSettings.ConfigKeyIncomingCallOption,
-				Subkey: practicePhoneNumber,
-			},
-		},
-	}).WithReturns(&settings.GetValuesResponse{
-		Values: []*settings.Value{
-			{
-				Type: settings.ConfigType_SINGLE_SELECT,
-				Value: &settings.Value_SingleSelect{
-					SingleSelect: &settings.SingleSelectValue{
-						Item: &settings.ItemValue{
-							ID: excommsSettings.IncomingCallOptionCallForwardingList,
-						},
-					},
-				},
-			},
-		},
-	}, nil))
-
-	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
 		Keys: []*settings.ConfigKey{
 			{
 				Key:    excommsSettings.ConfigKeySendCallsToVoicemail,
 				Subkey: practicePhoneNumber,
 			},
+			{
+				Key:    excommsSettings.ConfigKeyAfterHoursVociemailEnabled,
+				Subkey: practicePhoneNumber,
+			},
 		},
 		NodeID: orgID,
 	}).WithReturns(&settings.GetValuesResponse{
 		Values: []*settings.Value{
 			{
-				Key: &settings.ConfigKey{
-					Key:    excommsSettings.ConfigKeySendCallsToVoicemail,
-					Subkey: practicePhoneNumber,
-				},
 				Type: settings.ConfigType_BOOLEAN,
 				Value: &settings.Value_Boolean{
 					Boolean: &settings.BooleanValue{
 						Value: true,
+					},
+				},
+			},
+			{
+				Type: settings.ConfigType_BOOLEAN,
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: false,
 					},
 				},
 			},
@@ -1007,14 +962,28 @@ func testIncomingCallStatus_Other(t *testing.T, incomingStatus rawmsg.TwilioPara
 		From:           "+12068773590",
 		To:             "+17348465522",
 		DialCallStatus: incomingStatus,
+		CallSID:        "callSID12345",
 	}
 
 	orgID := "12345"
 	providerID := "p1"
 	providerPersonalPhone := "+14152222222"
 	practicePhoneNumber := "+17348465522"
-	md := &mockDirectoryService_Twilio{
-		entitiesList: []*directory.Entity{
+
+	md := directorymock.New(t)
+	defer md.Finish()
+
+	md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: orgID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth: 0,
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
 			{
 				ID:   orgID,
 				Type: directory.EntityType_ORGANIZATION,
@@ -1041,10 +1010,75 @@ func testIncomingCallStatus_Other(t *testing.T, incomingStatus rawmsg.TwilioPara
 				},
 			},
 		},
-	}
+	}, nil))
+
+	md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesByContactRequest{
+		ContactValue: practicePhoneNumber,
+
+		RequestedInformation: &directory.RequestedInformation{
+			Depth: 0,
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	}).WithReturns(&directory.LookupEntitiesByContactResponse{
+		Entities: []*directory.Entity{
+			{
+				ID:   orgID,
+				Type: directory.EntityType_ORGANIZATION,
+				Contacts: []*directory.Contact{
+					{
+						ContactType: directory.ContactType_PHONE,
+						Value:       practicePhoneNumber,
+						Provisioned: true,
+					},
+				},
+				Info: &directory.EntityInfo{
+					DisplayName: "Dewabi Corp",
+				},
+				Members: []*directory.Entity{
+					{
+						ID: providerID,
+						Contacts: []*directory.Contact{
+							{
+								ContactType: directory.ContactType_PHONE,
+								Value:       providerPersonalPhone,
+							},
+						},
+					},
+				},
+			},
+		},
+	}, nil))
+
+	mdal := dalmock.New(t)
+	defer mdal.Finish()
+
+	mdal.Expect(mock.NewExpectation(mdal.LookupIncomingCall, params.CallSID).WithReturns(&models.IncomingCall{
+		OrganizationID: orgID,
+	}, nil))
 
 	msettings := settingsmock.New(t)
 	defer msettings.Finish()
+
+	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
+		Keys: []*settings.ConfigKey{
+			{
+				Key:    excommsSettings.ConfigKeyAfterHoursVociemailEnabled,
+				Subkey: practicePhoneNumber,
+			},
+		},
+		NodeID: orgID,
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Type: settings.ConfigType_BOOLEAN,
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: false,
+					},
+				},
+			},
+		},
+	}, nil))
 
 	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
 		Keys: []*settings.ConfigKey{
@@ -1095,7 +1129,7 @@ func testIncomingCallStatus_Other(t *testing.T, incomingStatus rawmsg.TwilioPara
 		},
 	}, nil))
 
-	es := NewEventHandler(md, msettings, nil, ms, clock.New(), nil, "https://test.com", "", "", "", nil, storage.NewTestStore(nil))
+	es := NewEventHandler(md, msettings, mdal, ms, clock.New(), nil, "https://test.com", "", "", "", nil, storage.NewTestStore(nil))
 
 	twiml, err := processIncomingCallStatus(context.Background(), params, es.(*eventsHandler))
 	if err != nil {

@@ -5,50 +5,13 @@ import (
 )
 
 const (
-	ConfigKeyForwardingList           = "forwarding_list"
-	ConfigKeySendCallsToVoicemail     = "send_calls_to_voicemail"
-	ConfigKeyVoicemailOption          = "voicemail_option"
-	ConfigKeyTranscribeVoicemail      = "transcribe_voicemail"
-	ConfigKeyIncomingCallOption       = "incoming_call_option"
-	ConfigKeyAfterHoursGreetingOption = "afterhours_greeting_option"
+	ConfigKeyForwardingList             = "forwarding_list"
+	ConfigKeySendCallsToVoicemail       = "send_calls_to_voicemail"
+	ConfigKeyVoicemailOption            = "voicemail_option"
+	ConfigKeyTranscribeVoicemail        = "transcribe_voicemail"
+	ConfigKeyAfterHoursVociemailEnabled = "afterhours_voicemail_enabled"
+	ConfigKeyAfterHoursGreetingOption   = "afterhours_greeting_option"
 )
-
-const (
-	IncomingCallOptionCallForwardingList   = "call_forwarding_list"
-	IncomingCallOptionAfterHoursCallTriage = "afterhours_call_triage"
-)
-
-//
-// TOP LEVEL INCOMING CALL CONFIGURATION
-//
-
-var IncomingCallBehaviorConfig = &settings.Config{
-	Title:          "Incoming call behavior",
-	Description:    "How to act on an incoming call",
-	Key:            ConfigKeyIncomingCallOption,
-	AllowSubkeys:   true,
-	Type:           settings.ConfigType_SINGLE_SELECT,
-	PossibleOwners: []settings.OwnerType{settings.OwnerType_ORGANIZATION},
-	Config: &settings.Config_SingleSelect{
-		SingleSelect: &settings.SingleSelectConfig{
-			Items: []*settings.Item{
-				{
-					ID:    IncomingCallOptionCallForwardingList,
-					Label: "Call Forwarding List",
-				},
-				{
-					ID:    IncomingCallOptionAfterHoursCallTriage,
-					Label: "Direct to after hours phone tree",
-				},
-			},
-			Default: &settings.SingleSelectValue{
-				Item: &settings.ItemValue{
-					ID: IncomingCallOptionCallForwardingList,
-				},
-			},
-		},
-	},
-}
 
 //
 //	CALL LIST CONFIGURATION
@@ -118,6 +81,21 @@ var VoicemailOptionConfig = &settings.Config{
 //
 // AFTER HOURS CONFIGURATION
 //
+
+var AfterHoursVoicemailEnabledConfig = &settings.Config{
+	Title:          "Enable/disable afterhours voicemail",
+	Key:            ConfigKeyAfterHoursVociemailEnabled,
+	PossibleOwners: []settings.OwnerType{settings.OwnerType_ORGANIZATION},
+	AllowSubkeys:   true,
+	Type:           settings.ConfigType_BOOLEAN,
+	Config: &settings.Config_Boolean{
+		Boolean: &settings.BooleanConfig{
+			Default: &settings.BooleanValue{
+				Value: false,
+			},
+		},
+	},
+}
 
 const (
 	AfterHoursGreetingOptionDefault = "afterhours_greeting_option_default"

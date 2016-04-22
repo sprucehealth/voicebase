@@ -21,7 +21,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-func TestAfterHours_IncomingCall_DefaultGreeting(t *testing.T) {
+func TestAfterHours_IncomingCall_SendAllCallsToVM_DefaultGreeting(t *testing.T) {
 	orgID := "12345"
 	// providerPersonalPhone := "+14152222222"
 	patientPhone := "+14151111111"
@@ -56,7 +56,6 @@ func TestAfterHours_IncomingCall_DefaultGreeting(t *testing.T) {
 		OrganizationID: orgID,
 		Source:         phone.Number(patientPhone),
 		Destination:    phone.Number(practicePhoneNumber),
-		AfterHours:     true,
 		CallSID:        callSID,
 	}))
 
@@ -64,27 +63,41 @@ func TestAfterHours_IncomingCall_DefaultGreeting(t *testing.T) {
 	defer msettings.Finish()
 
 	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
-		NodeID: orgID,
 		Keys: []*settings.ConfigKey{
 			{
-				Key:    excommsSettings.ConfigKeyIncomingCallOption,
+				Key:    excommsSettings.ConfigKeySendCallsToVoicemail,
+				Subkey: practicePhoneNumber,
+			},
+			{
+				Key:    excommsSettings.ConfigKeyAfterHoursVociemailEnabled,
 				Subkey: practicePhoneNumber,
 			},
 		},
+		NodeID: orgID,
 	}).WithReturns(&settings.GetValuesResponse{
 		Values: []*settings.Value{
 			{
-				Type: settings.ConfigType_SINGLE_SELECT,
-				Value: &settings.Value_SingleSelect{
-					SingleSelect: &settings.SingleSelectValue{
-						Item: &settings.ItemValue{
-							ID: excommsSettings.IncomingCallOptionAfterHoursCallTriage,
-						},
+				Type: settings.ConfigType_BOOLEAN,
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: true,
+					},
+				},
+			},
+			{
+				Type: settings.ConfigType_BOOLEAN,
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: true,
 					},
 				},
 			},
 		},
 	}, nil))
+
+	mdal.Expect(mock.NewExpectation(mdal.UpdateIncomingCall, callSID, &dal.IncomingCallUpdate{
+		Afterhours: ptr.Bool(true),
+	}).WithReturns(int64(1), nil))
 
 	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
 		NodeID: orgID,
@@ -128,7 +141,120 @@ func TestAfterHours_IncomingCall_DefaultGreeting(t *testing.T) {
 	}
 }
 
-func TestAfterHours_IncomingCall_CustomGreeting(t *testing.T) {
+func TestAfterHours_IncomingCallStatus(t *testing.T) {
+	orgID := "12345"
+	// providerPersonalPhone := "+14152222222"
+	patientPhone := "+14151111111"
+	practicePhoneNumber := "+14150000000"
+	callSID := "12345"
+
+	mdir := dirmock.New(t)
+	defer mdir.Finish()
+
+	mdir.Expect(mock.NewExpectation(mdir.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: orgID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth: 0,
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{
+				ID:   orgID,
+				Type: directory.EntityType_ORGANIZATION,
+				Info: &directory.EntityInfo{
+					DisplayName: "Dewabi Corp",
+				},
+			},
+		},
+	}, nil))
+
+	mdal := dalmock.New(t)
+	defer mdal.Finish()
+
+	mdal.Expect(mock.NewExpectation(mdal.LookupIncomingCall, callSID).WithReturns(&models.IncomingCall{
+		OrganizationID: orgID,
+	}, nil))
+
+	msettings := settingsmock.New(t)
+	defer msettings.Finish()
+
+	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
+		Keys: []*settings.ConfigKey{
+			{
+				Key:    excommsSettings.ConfigKeyAfterHoursVociemailEnabled,
+				Subkey: practicePhoneNumber,
+			},
+		},
+		NodeID: orgID,
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Key: &settings.ConfigKey{
+					Key:    excommsSettings.ConfigKeyAfterHoursVociemailEnabled,
+					Subkey: practicePhoneNumber,
+				},
+				Type: settings.ConfigType_BOOLEAN,
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: true,
+					},
+				},
+			},
+		},
+	}, nil))
+
+	mdal.Expect(mock.NewExpectation(mdal.UpdateIncomingCall, callSID, &dal.IncomingCallUpdate{
+		Afterhours: ptr.Bool(true),
+	}).WithReturns(int64(1), nil))
+
+	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
+		NodeID: orgID,
+		Keys: []*settings.ConfigKey{
+			{
+				Key:    excommsSettings.ConfigKeyAfterHoursGreetingOption,
+				Subkey: practicePhoneNumber,
+			},
+		},
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Type: settings.ConfigType_SINGLE_SELECT,
+				Value: &settings.Value_SingleSelect{
+					SingleSelect: &settings.SingleSelectValue{
+						Item: &settings.ItemValue{
+							ID: excommsSettings.AfterHoursGreetingOptionDefault,
+						},
+					},
+				},
+			},
+		},
+	}, nil))
+
+	es := NewEventHandler(mdir, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, storage.NewTestStore(nil))
+	params := &rawmsg.TwilioParams{
+		From:           patientPhone,
+		To:             practicePhoneNumber,
+		CallSID:        callSID,
+		DialCallStatus: rawmsg.TwilioParams_NO_ANSWER,
+	}
+
+	twiml, err := processIncomingCallStatus(context.Background(), params, es.(*eventsHandler))
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
+<Response><Gather action="/twilio/call/afterhours_patient_entered_digits" method="POST" timeout="5" numDigits="1"><Say voice="alice">You have reached Dewabi Corp. If this is an emergency, please hang up and dial 9 1 1.</Say><Say voice="alice">Otherwise, press 1 to leave an urgent message, 2 to leave a non-urgent message.</Say></Gather><Redirect>/twilio/call/afterhours_greeting</Redirect></Response>`)
+
+	if twiml != expected {
+		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
+	}
+}
+
+func TestAfterHours_IncomingCall_SendAllCallsToVM_CustomGreeting(t *testing.T) {
 	orgID := "12345"
 	// providerPersonalPhone := "+14152222222"
 	patientPhone := "+14151111111"
@@ -164,34 +290,47 @@ func TestAfterHours_IncomingCall_CustomGreeting(t *testing.T) {
 		Source:         phone.Number(patientPhone),
 		Destination:    phone.Number(practicePhoneNumber),
 		CallSID:        callSID,
-		AfterHours:     true,
 	}))
 
 	msettings := settingsmock.New(t)
 	defer msettings.Finish()
 
 	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
-		NodeID: orgID,
 		Keys: []*settings.ConfigKey{
 			{
-				Key:    excommsSettings.ConfigKeyIncomingCallOption,
+				Key:    excommsSettings.ConfigKeySendCallsToVoicemail,
+				Subkey: practicePhoneNumber,
+			},
+			{
+				Key:    excommsSettings.ConfigKeyAfterHoursVociemailEnabled,
 				Subkey: practicePhoneNumber,
 			},
 		},
+		NodeID: orgID,
 	}).WithReturns(&settings.GetValuesResponse{
 		Values: []*settings.Value{
 			{
-				Type: settings.ConfigType_SINGLE_SELECT,
-				Value: &settings.Value_SingleSelect{
-					SingleSelect: &settings.SingleSelectValue{
-						Item: &settings.ItemValue{
-							ID: excommsSettings.IncomingCallOptionAfterHoursCallTriage,
-						},
+				Type: settings.ConfigType_BOOLEAN,
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: true,
+					},
+				},
+			},
+			{
+				Type: settings.ConfigType_BOOLEAN,
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: true,
 					},
 				},
 			},
 		},
 	}, nil))
+
+	mdal.Expect(mock.NewExpectation(mdal.UpdateIncomingCall, callSID, &dal.IncomingCallUpdate{
+		Afterhours: ptr.Bool(true),
+	}).WithReturns(int64(1), nil))
 
 	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
 		NodeID: orgID,
