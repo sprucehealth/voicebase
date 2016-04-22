@@ -252,31 +252,6 @@ func TestIncoming_Organization(t *testing.T) {
 	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
 		Keys: []*settings.ConfigKey{
 			{
-				Key:    excommsSettings.ConfigKeyForwardingList,
-				Subkey: practicePhoneNumber,
-			},
-		},
-		NodeID: orgID,
-	}).WithReturns(&settings.GetValuesResponse{
-		Values: []*settings.Value{
-			{
-				Key: &settings.ConfigKey{
-					Key:    excommsSettings.ConfigKeyForwardingList,
-					Subkey: practicePhoneNumber,
-				},
-				Type: settings.ConfigType_STRING_LIST,
-				Value: &settings.Value_StringList{
-					StringList: &settings.StringListValue{
-						Values: []string{providerPersonalPhone},
-					},
-				},
-			},
-		},
-	}, nil))
-
-	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
-		Keys: []*settings.ConfigKey{
-			{
 				Key:    excommsSettings.ConfigKeySendCallsToVoicemail,
 				Subkey: practicePhoneNumber,
 			},
@@ -293,6 +268,31 @@ func TestIncoming_Organization(t *testing.T) {
 				Value: &settings.Value_Boolean{
 					Boolean: &settings.BooleanValue{
 						Value: false,
+					},
+				},
+			},
+		},
+	}, nil))
+
+	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
+		Keys: []*settings.ConfigKey{
+			{
+				Key:    excommsSettings.ConfigKeyForwardingList,
+				Subkey: practicePhoneNumber,
+			},
+		},
+		NodeID: orgID,
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Key: &settings.ConfigKey{
+					Key:    excommsSettings.ConfigKeyForwardingList,
+					Subkey: practicePhoneNumber,
+				},
+				Type: settings.ConfigType_STRING_LIST,
+				Value: &settings.Value_StringList{
+					StringList: &settings.StringListValue{
+						Values: []string{providerPersonalPhone},
 					},
 				},
 			},
@@ -355,30 +355,6 @@ func TestIncoming_Organization_MultipleContacts(t *testing.T) {
 
 	msettings := settingsmock.New(t)
 	defer msettings.Finish()
-	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
-		Keys: []*settings.ConfigKey{
-			{
-				Key:    excommsSettings.ConfigKeyForwardingList,
-				Subkey: practicePhoneNumber,
-			},
-		},
-		NodeID: orgID,
-	}).WithReturns(&settings.GetValuesResponse{
-		Values: []*settings.Value{
-			{
-				Key: &settings.ConfigKey{
-					Key:    excommsSettings.ConfigKeyForwardingList,
-					Subkey: practicePhoneNumber,
-				},
-				Type: settings.ConfigType_STRING_LIST,
-				Value: &settings.Value_StringList{
-					StringList: &settings.StringListValue{
-						Values: []string{listedNumber1, listedNumber2, listedNumber3},
-					},
-				},
-			},
-		},
-	}, nil))
 
 	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
 		Keys: []*settings.ConfigKey{
@@ -399,6 +375,31 @@ func TestIncoming_Organization_MultipleContacts(t *testing.T) {
 				Value: &settings.Value_Boolean{
 					Boolean: &settings.BooleanValue{
 						Value: false,
+					},
+				},
+			},
+		},
+	}, nil))
+
+	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
+		Keys: []*settings.ConfigKey{
+			{
+				Key:    excommsSettings.ConfigKeyForwardingList,
+				Subkey: practicePhoneNumber,
+			},
+		},
+		NodeID: orgID,
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Key: &settings.ConfigKey{
+					Key:    excommsSettings.ConfigKeyForwardingList,
+					Subkey: practicePhoneNumber,
+				},
+				Type: settings.ConfigType_STRING_LIST,
+				Value: &settings.Value_StringList{
+					StringList: &settings.StringListValue{
+						Values: []string{listedNumber1, listedNumber2, listedNumber3},
 					},
 				},
 			},
@@ -426,9 +427,6 @@ func TestIncoming_Organization_MultipleContacts(t *testing.T) {
 
 func TestIncoming_Organization_MultipleContacts_SendCallsToVoicemail(t *testing.T) {
 	orgID := "12345"
-	listedNumber1 := "+14152222222"
-	listedNumber2 := "+14153333333"
-	listedNumber3 := "+14154444444"
 	patientPhone := "+14151111111"
 	practicePhoneNumber := "+14150000000"
 	callSID := "12345"
@@ -464,30 +462,6 @@ func TestIncoming_Organization_MultipleContacts_SendCallsToVoicemail(t *testing.
 
 	msettings := settingsmock.New(t)
 	defer msettings.Finish()
-	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
-		Keys: []*settings.ConfigKey{
-			{
-				Key:    excommsSettings.ConfigKeyForwardingList,
-				Subkey: practicePhoneNumber,
-			},
-		},
-		NodeID: orgID,
-	}).WithReturns(&settings.GetValuesResponse{
-		Values: []*settings.Value{
-			{
-				Key: &settings.ConfigKey{
-					Key:    excommsSettings.ConfigKeyForwardingList,
-					Subkey: practicePhoneNumber,
-				},
-				Type: settings.ConfigType_STRING_LIST,
-				Value: &settings.Value_StringList{
-					StringList: &settings.StringListValue{
-						Values: []string{listedNumber1, listedNumber2, listedNumber3},
-					},
-				},
-			},
-		},
-	}, nil))
 
 	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
 		Keys: []*settings.ConfigKey{
