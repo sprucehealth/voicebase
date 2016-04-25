@@ -42,3 +42,41 @@ func TestGo(t *testing.T) {
 		t.Fatal("Expected function never ran")
 	}
 }
+
+func TestAfterFunc(t *testing.T) {
+	var success bool
+	done := make(chan bool, 1)
+
+	AfterFunc(time.Second*1, func() {
+		success = true
+		done <- true
+	})
+
+	select {
+	case <-done:
+		if !success {
+			t.Fatal("Success should be true but was false")
+		}
+	case <-time.After(time.Second * 5):
+		t.Fatal("Expected function never ran")
+	}
+
+	Testing = true
+	defer func() { Testing = false }()
+
+	success = false
+	done = make(chan bool, 1)
+	AfterFunc(time.Second*1, func() {
+		success = true
+		done <- true
+	})
+
+	select {
+	case <-done:
+		if !success {
+			t.Fatal("Success should be true but was false")
+		}
+	case <-time.After(time.Second):
+		t.Fatal("Expected function never ran")
+	}
+}
