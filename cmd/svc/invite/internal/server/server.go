@@ -449,10 +449,9 @@ func (s *server) sendPatientOutbound(ctx context.Context, firstName, phoneNumber
 	}); err != nil {
 		return errors.Trace(err)
 	}
-	golog.Debugf("Sent: %s", msgText)
 	conc.AfterFunc(time.Second*1, func() {
 		msgText = fmt.Sprintf("Get the Spruce app now and join them. %s [%s]", inviteURL, token)
-		if _, err := s.excommsClient.SendMessage(ctx, &excomms.SendMessageRequest{
+		if _, err := s.excommsClient.SendMessage(context.Background(), &excomms.SendMessageRequest{
 			Channel: excomms.ChannelType_SMS,
 			Message: &excomms.SendMessageRequest_SMS{
 				SMS: &excomms.SMSMessage{
@@ -463,8 +462,6 @@ func (s *server) sendPatientOutbound(ctx context.Context, firstName, phoneNumber
 			},
 		}); err != nil {
 			golog.Errorf("Encountered an error while sending patient invite SMS: %s", err)
-		} else {
-			golog.Debugf("Sent: %s", msgText)
 		}
 	})
 	return nil
