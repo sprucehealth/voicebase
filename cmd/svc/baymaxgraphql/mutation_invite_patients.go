@@ -266,7 +266,8 @@ var invitePatientsMutation = &graphql.Field{
 func contactForParkedEntity(ctx context.Context, ram raccess.ResourceAccessor, parkedEntityID string, contactType directory.ContactType) (string, error) {
 	var entityContact string
 	// Since we don't store PHI for patients in the invites, get the email to verify from the parked entity contacts
-	parkedEntity, err := ram.Entity(ctx, parkedEntityID, []directory.EntityInformation{directory.EntityInformation_CONTACTS}, 0)
+	// Make this as an unauthorized call since we have no context around the caller other than token
+	parkedEntity, err := ram.UnauthorizedEntity(ctx, parkedEntityID, []directory.EntityInformation{directory.EntityInformation_CONTACTS}, 0)
 	if err != nil {
 		return "", fmt.Errorf("Encountered an error while looking up parked entity %q to get %s: %s", parkedEntityID, contactType.String(), err)
 	}

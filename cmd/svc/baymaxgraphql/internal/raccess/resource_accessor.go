@@ -96,6 +96,7 @@ type ResourceAccessor interface {
 	ThreadsForMember(ctx context.Context, entityID string, primaryOnly bool) ([]*threading.Thread, error)
 	Unauthenticate(ctx context.Context, token string) error
 	UnauthorizedCreateExternalIDs(ctx context.Context, req *directory.CreateExternalIDsRequest) error
+	UnauthorizedEntity(ctx context.Context, entityID string, entityInfo []directory.EntityInformation, depth int64) (*directory.Entity, error)
 	UpdateContacts(ctx context.Context, req *directory.UpdateContactsRequest) (*directory.Entity, error)
 	UpdateEntity(ctx context.Context, req *directory.UpdateEntityRequest) (*directory.Entity, error)
 	UpdatePassword(ctx context.Context, token, code, newPassword string) error
@@ -690,6 +691,14 @@ func (m *resourceAccessor) Unauthenticate(ctx context.Context, token string) err
 
 func (m *resourceAccessor) UnauthorizedCreateExternalIDs(ctx context.Context, req *directory.CreateExternalIDsRequest) error {
 	return m.createExternalIDs(ctx, req)
+}
+
+func (m *resourceAccessor) UnauthorizedEntity(ctx context.Context, entityID string, entityInfo []directory.EntityInformation, depth int64) (*directory.Entity, error) {
+	res, err := m.entity(ctx, entityID, entityInfo, depth, nil)
+	if err != nil {
+		return nil, err
+	}
+	return res.Entities[0], nil
 }
 
 func (m *resourceAccessor) UpdateContacts(ctx context.Context, req *directory.UpdateContactsRequest) (*directory.Entity, error) {

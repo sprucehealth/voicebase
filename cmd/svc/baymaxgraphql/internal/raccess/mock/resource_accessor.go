@@ -418,6 +418,15 @@ func (m *ResourceAccessor) UnauthorizedCreateExternalIDs(ctx context.Context, re
 	return mock.SafeError(rets[0])
 }
 
+func (m *ResourceAccessor) UnauthorizedEntity(ctx context.Context, entityID string, entityInfo []directory.EntityInformation, depth int64) (*directory.Entity, error) {
+	rets := m.Record(entityID, entityInfo, depth)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].(*directory.Entity), mock.SafeError(rets[0])
+}
+
 func (m *ResourceAccessor) UpdateContacts(ctx context.Context, req *directory.UpdateContactsRequest) (*directory.Entity, error) {
 	rets := m.Record(req)
 	if len(rets) == 0 {
