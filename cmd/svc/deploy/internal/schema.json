@@ -1,0 +1,264 @@
+{
+	"app_name": "deploy",
+	"tables": {
+		"deployable_group": {
+			"columns": {
+				"id": {
+					"primary_key": true
+				},
+				"name": {
+					"type": "string",
+					"mutable": true
+				},
+				"description": {
+					"type": "string",
+					"mutable": true
+				},
+				"created": {
+					"type": "time.Time"
+				},
+				"modified": {
+					"type": "time.Time"
+				}
+			}
+		},
+		"deployable": {
+			"columns": {
+				"id": {
+					"primary_key": true
+				},
+				"deployable_group_id": {
+					"foreign_key": {
+						"table_name": "deployable_group",
+						"column_name": "id"
+					},
+					"mutable": true
+				},
+				"name": {
+					"type": "string",
+					"mutable": true
+				},
+				"description": {
+					"type": "string",
+					"mutable": true
+				},
+				"created": {
+					"type": "time.Time"
+				},
+				"modified": {
+					"type": "time.Time"
+				}
+			}
+		},
+		"environment": {
+			"columns": {
+				"id": {
+					"primary_key": true
+				},
+				"deployable_group_id": {
+					"foreign_key": {
+						"table_name": "deployable_group",
+						"column_name": "id"
+					},
+					"mutable": true
+				},
+				"name": {
+					"type": "string",
+					"mutable": true
+				},
+				"description": {
+					"type": "string",
+					"mutable": true
+				},
+				"created": {
+					"type": "time.Time"
+				},
+				"modified": {
+					"type": "time.Time"
+				}
+			}
+		},
+		"deployable_config": {
+			"columns": {
+				"id": {
+					"primary_key": true
+				},
+				"deployable_id": {
+					"foreign_key": {
+						"table_name": "deployable",
+						"column_name": "id"
+					},
+					"mutable": true
+				},
+				"environment_id": {
+					"foreign_key": {
+						"table_name": "environment",
+						"column_name": "id"
+					},
+					"mutable": true
+				},
+				"status": {
+					"valid_string_values": [
+						"ACTIVE",
+						"DEPRECATED"
+					],
+					"mutable": true
+				},
+				"created": {
+					"type": "time.Time"
+				}
+			}
+		},
+		"deployable_config_value": {
+			"columns": {
+				"deployable_config_id": {
+					"foreign_key": {
+						"table_name": "deployable_config",
+						"column_name": "id"
+					}
+				},
+				"name": {
+					"type": "string"
+				},
+				"value": {
+					"type": "string"
+				},
+				"created": {
+					"type": "time.Time"
+				}
+			}
+		},
+		"environment_config": {
+			"columns": {
+				"id": {
+					"primary_key": true
+				},
+				"environment_id": {
+					"foreign_key": {
+						"table_name": "environment",
+						"column_name": "id"
+					},
+					"mutable": true
+				},
+				"status": {
+					"valid_string_values": [
+						"ACTIVE",
+						"DEPRECATED"
+					],
+					"mutable": true
+				},
+				"created": {
+					"type": "time.Time"
+				}
+			}
+		},
+		"environment_config_value": {
+			"columns": {
+				"environment_config_id": {
+					"foreign_key": {
+						"table_name": "deployable_config",
+						"column_name": "id"
+					}
+				},
+				"name": {
+					"type": "string"
+				},
+				"value": {
+					"type": "string"
+				},
+				"created": {
+					"type": "time.Time"
+				}
+			}
+		},
+		"deployable_vector": {
+			"columns": {
+				"id": {
+					"primary_key": true
+				},
+				"deployable_id": {
+					"foreign_key": {
+						"table_name": "deployable",
+						"column_name": "id"
+					}
+				},
+				"source_type": {
+					"valid_string_values": [
+						"DOCKER_REPO",
+						"ENVIRONMENT_ID"
+					]
+				},
+				"source_value": {
+					"type": "*string"
+				},
+				"source_environment_id": {
+					"foreign_key": {
+						"table_name": "environment",
+						"column_name": "id"
+					}
+				},
+				"target_environment_id": {
+					"foreign_key": {
+						"table_name": "environment",
+						"column_name": "id"
+					}
+				},
+				"created": {
+					"type": "time.Time"
+				}
+			}
+		},
+		"deployment": {
+			"columns": {
+				"id": {
+					"primary_key": true
+				},
+				"deployable_id": {
+					"foreign_key": {
+						"table_name": "deployable",
+						"column_name": "id"
+					}
+				},
+				"environment_id": {
+					"foreign_key": {
+						"table_name": "environment",
+						"column_name": "id"
+					}
+				},
+				"deployable_config_id": {
+					"foreign_key": {
+						"table_name": "deployable_config",
+						"column_name": "id"
+					}
+				},
+				"deployable_vector_id": {
+					"foreign_key": {
+						"table_name": "deployable_vector",
+						"column_name": "id"
+					}
+				},
+				"type": {
+					"valid_string_values": [
+						"ECS"
+					]
+				},
+				"data": {
+					"type": "[]byte"
+				},
+				"status": {
+					"valid_string_values": [
+						"PENDING",
+						"IN_PROGRESS",
+						"COMPLETE"
+					]
+				},
+				"build_number": {
+					"type": "string"
+				},
+				"created": {
+					"type": "time.Time"
+				}
+			}
+		}
+	}
+}

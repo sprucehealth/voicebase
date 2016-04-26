@@ -1,0 +1,283 @@
+syntax = "proto3";
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_enum_prefix_all) = true;
+
+package deploy;
+
+message DeployableGroup {
+	string id = 1 [(gogoproto.customname) = "ID"];
+	string name = 2;
+	string description = 3;
+	uint64 created_timestamp = 4;
+	uint64 modified_timestamp = 5;
+}
+
+message Environment {
+	string   id = 1 [(gogoproto.customname) = "ID"];
+	string   deployable_group_id = 2[(gogoproto.customname) = "DeployableGroupID"];
+	string   name = 3;
+	string   description = 4;
+	bool   is_prod = 5;
+	uint64 created_timestamp = 6;
+	uint64 modified_timestamp = 7;
+}
+
+message EnvironmentConfig {
+    enum DeployableConfigStatus {
+		UNKNOWN = 0;
+		ACTIVE = 1;
+		DEPRECATED = 2;
+	}
+	string id = 1 [(gogoproto.customname) = "ID"];
+	string environment_id = 2 [(gogoproto.customname) = "EnvironmentID"];
+	string status = 3;
+	map<string,string> values = 4;
+}
+
+message Deployable {
+	string id = 1 [(gogoproto.customname) = "ID"];
+	string deployable_group_id = 2 [(gogoproto.customname) = "DeployableGroupID"];
+	string name = 4;
+	string description = 5;
+	uint64 created_timestamp = 7;
+	uint64 modified_timestamp = 8;
+}
+
+message DeployableConfig {
+    enum DeployableConfigStatus {
+		UNKNOWN = 0;
+		ACTIVE = 1;
+		DEPRECATED = 2;
+	}
+	string id = 1 [(gogoproto.customname) = "ID"];
+	string environment_id = 2 [(gogoproto.customname) = "EnvironmentID"];
+	string deployable_id = 3 [(gogoproto.customname) = "DeployableID"];
+	string status = 4;
+	map<string,string> values = 5;
+}
+
+// TODO: Should we use an RVN and optomistic locking here?
+message Deployment {
+	enum DeploymentType {
+		UNKNOWN = 0;
+		ECS = 1;
+	}
+	enum DeploymentStatus {
+		UNKNOWN_STATUS = 0;
+		PENDING = 1;
+		IN_PROGRESS = 2;
+		COMPLETE = 3;
+		FAILED = 4;
+	}
+	string id = 1 [(gogoproto.customname) = "ID"];
+	uint64 deployment_number = 2; 
+	string environment_id = 3 [(gogoproto.customname) = "EnvironmentID"];
+	string deployable_id = 4 [(gogoproto.customname) = "DeployableID"];
+	string deployable_config_id = 5 [(gogoproto.customname) = "DeployableConfigID"];
+	string deployable_vector_id = 6 [(gogoproto.customname) = "DeployableVectorID"];
+	DeploymentType type = 7;
+	oneof deployment_oneof {
+		ECSDeployment ecs_deployment = 8;
+	}
+	DeploymentStatus status = 9;
+	string build_number = 10;
+	uint64 started_timestamp = 11;
+	uint64 completed_timestamp = 12;
+}
+
+message ECSDeployment {
+	string image = 1;
+	string cluster_deployable_config_name = 2;
+}
+
+// Vector: Directed line. Source to target connection.
+message DeployableVector {
+	enum DeployableVectorSourceType {
+		UNKNOWN = 0;
+		BUILD = 1;
+		ENVIRONMENT_ID = 2;
+	}
+	string id = 1 [(gogoproto.customname) = "ID"];
+	string deployable_id = 2 [(gogoproto.customname) = "DeployableID"];
+	DeployableVectorSourceType source_type = 3;
+	oneof deployment_source_oneof {
+		string environment_id = 4 [(gogoproto.customname) = "EnvironmentID"];
+	}
+	string target_environment_id = 5 [(gogoproto.customname) = "TargetEnvironmentID"];
+}
+
+message CreateDeployableGroupRequest {
+	string name = 1;
+	string description = 2;
+}
+
+message CreateDeployableGroupResponse {
+	DeployableGroup deployable_group = 1;
+}
+
+message CreateEnvironmentRequest {
+	string deployable_group_id = 1 [(gogoproto.customname) = "DeployableGroupID"];
+	string name = 2;
+	string description = 3;
+	bool is_prod = 4;
+}
+
+message CreateEnvironmentResponse {
+	Environment environment = 1;
+}
+
+message CreateDeployableRequest {
+	string deployable_group_id = 1 [(gogoproto.customname) = "DeployableGroupID"];
+	string name = 2;
+	string description = 3;
+}
+
+message CreateDeployableResponse {
+	Deployable deployable = 1;
+}
+
+message CreateEnvironmentConfigRequest {
+	string environment_id = 1 [(gogoproto.customname) = "EnvironmentID"];
+	string source_config_id = 2 [(gogoproto.customname) = "SourceConfigID"]; 
+	repeated string omit_from_source = 4;
+	map<string,string> values = 3;
+}
+
+message CreateEnvironmentConfigResponse {
+	EnvironmentConfig config = 1;
+}
+
+message CreateDeployableConfigRequest {
+	string deployable_id = 1 [(gogoproto.customname) = "DeployableID"];
+	string environment_id = 2  [(gogoproto.customname) = "EnvironmentID"];
+	string source_config_id = 3 [(gogoproto.customname) = "SourceConfigID"];
+	repeated string omit_from_source = 4;
+	map<string,string> values = 5;
+}
+
+message CreateDeployableConfigResponse {
+	DeployableConfig config = 1;
+}
+
+message CreateDeployableVectorRequest {
+    enum DeployableVectorSourceType {
+		UNKNOWN = 0;
+		BUILD = 1;
+		ENVIRONMENT_ID = 2;
+	}
+	string deployable_id = 1 [(gogoproto.customname) = "DeployableID"];
+	DeployableVectorSourceType source_type = 2;
+	oneof deployment_source_oneof {
+		string environment_id = 4 [(gogoproto.customname) = "SourceEnvironmentID"];
+	}
+	string target_environment_id = 5 [(gogoproto.customname) = "TargetEnvironmentID"];
+}
+
+message CreateDeployableVectorResponse {
+	DeployableVector vector = 1;
+}
+
+message DeployableGroupsRequest {}
+
+message DeployableGroupsResponse {
+	repeated DeployableGroup deployable_groups = 1;
+}
+
+message EnvironmentsRequest {
+	string deployable_group_id = 1 [(gogoproto.customname) = "DeployableGroupID"];
+}
+
+message EnvironmentsResponse {
+	repeated Environment environments = 1;
+}
+
+message EnvironmentConfigsRequest {
+	string environment_id = 1 [(gogoproto.customname) = "EnvironmentID"];
+	string status = 2;
+}
+
+message EnvironmentConfigsResponse {
+	repeated EnvironmentConfig configs = 1;
+}
+
+message DeployablesRequest {
+	string deployable_group_id = 1 [(gogoproto.customname) = "DeployableGroupID"];
+}
+
+message DeployablesResponse {
+	repeated Deployable deployables = 1;
+}
+
+message DeployableConfigsRequest {
+	string deployable_id = 1 [(gogoproto.customname) = "DeployableID"];
+	string environment_id = 2 [(gogoproto.customname) = "EnvironmentID"];
+	string status = 3;
+}
+
+message DeployableConfigsResponse {
+	repeated DeployableConfig configs = 1;
+}
+
+message DeployableVectorsRequest {
+	string deployable_id = 1 [(gogoproto.customname) = "DeployableID"];
+}
+
+message DeployableVectorsResponse {
+	repeated DeployableVector vectors = 1;
+}
+
+message ReportBuildCompleteRequest {
+	enum BuildArtifactType {
+		UNKNOWN = 0;
+		DOCKER_IMAGE = 1;
+	}
+	
+	string deployable_id = 1 [(gogoproto.customname) = "DeployableID"];
+	string build_number = 2 [(gogoproto.customname) = "BuildNumber"];
+	BuildArtifactType artifact_type = 3;
+	oneof build_artifact_oneof {
+		string docker_image = 4;
+	}
+}
+
+message ReportBuildCompleteResponse {
+	repeated Deployment deployments = 1;
+}
+
+message DeploymentsRequest {
+	enum Status {
+		ANY = 0;
+		PENDING = 1;
+		IN_PROGRESS = 2;
+		COMPLETE = 3;
+		FAILED = 4;
+	}
+    string deployable_id = 1 [(gogoproto.customname) = "DeployableID"];
+	Status status = 2;
+}
+
+message DeploymentsResponse {
+	repeated Deployment deployments = 1;
+}
+
+// Deploy provides mechanisms that deploy software to the infrastructure
+service Deploy {
+	rpc CreateDeployable (CreateDeployableRequest) returns (CreateDeployableResponse);
+	rpc CreateDeployableConfig (CreateDeployableConfigRequest) returns (CreateDeployableConfigResponse);
+	rpc CreateDeployableGroup (CreateDeployableGroupRequest) returns (CreateDeployableGroupResponse);
+	rpc CreateDeployableVector (CreateDeployableVectorRequest) returns (CreateDeployableVectorResponse);
+	rpc CreateEnvironment (CreateEnvironmentRequest) returns (CreateEnvironmentResponse);
+	rpc CreateEnvironmentConfig (CreateEnvironmentConfigRequest) returns (CreateEnvironmentConfigResponse);
+	rpc Deployables (DeployablesRequest) returns (DeployablesResponse);
+	rpc DeployableConfigs (DeployableConfigsRequest) returns (DeployableConfigsResponse);
+	rpc DeployableGroups (DeployableGroupsRequest) returns (DeployableGroupsResponse);
+	rpc DeployableVectors (DeployableVectorsRequest) returns (DeployableVectorsResponse);
+	rpc Deployments (DeploymentsRequest) returns (DeploymentsResponse);
+	rpc Environments (EnvironmentsRequest) returns (EnvironmentsResponse);
+	rpc EnvironmentConfigs (EnvironmentConfigsRequest) returns (EnvironmentConfigsResponse);
+	rpc ReportBuildComplete (ReportBuildCompleteRequest) returns (ReportBuildCompleteResponse);
+}

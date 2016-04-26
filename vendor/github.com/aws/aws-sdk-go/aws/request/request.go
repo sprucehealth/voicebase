@@ -131,7 +131,7 @@ func (r *Request) SetStringBody(s string) {
 
 // SetReaderBody will set the request's body reader.
 func (r *Request) SetReaderBody(reader io.ReadSeeker) {
-	r.HTTPRequest.Body = ioutil.NopCloser(reader)
+	r.HTTPRequest.Body = newOffsetReader(reader, 0)
 	r.Body = reader
 }
 
@@ -223,26 +223,44 @@ func (r *Request) Sign() error {
 // be executed in the order they were set.
 func (r *Request) Send() error {
 	for {
-		r.Sign()
-		if r.Error != nil {
-			return r.Error
-		}
-
 		if aws.BoolValue(r.Retryable) {
 			if r.Config.LogLevel.Matches(aws.LogDebugWithRequestRetries) {
 				r.Config.Logger.Log(fmt.Sprintf("DEBUG: Retrying Request %s/%s, attempt %d",
 					r.ClientInfo.ServiceName, r.Operation.Name, r.RetryCount))
 			}
 
-			// Re-seek the body back to the original point in for a retry so that
-			// send will send the body's contents again in the upcoming request.
-			r.Body.Seek(r.BodyStart, 0)
-			r.HTTPRequest.Body = ioutil.NopCloser(r.Body)
+			var body io.ReadCloser
+			if reader, ok := r.HTTPRequest.Body.(*offsetReader); ok {
+				body = reader.CloseAndCopy(r.BodyStart)
+			} else {
+				if r.Config.Logger != nil {
+					r.Config.Logger.Log("Request body type has been overwritten. May cause race conditions")
+				}
+				r.Body.Seek(r.BodyStart, 0)
+				body = ioutil.NopCloser(r.Body)
+			}
+
+			r.HTTPRequest = copyHTTPRequest(r.HTTPRequest, body)
+			if r.HTTPResponse != nil && r.HTTPResponse.Body != nil {
+				// Closing response body. Since we are setting a new request to send off, this
+				// response will get squashed and leaked.
+				r.HTTPResponse.Body.Close()
+			}
 		}
+
+		r.Sign()
+		if r.Error != nil {
+			return r.Error
+		}
+
 		r.Retryable = nil
 
 		r.Handlers.Send.Run(r)
 		if r.Error != nil {
+			if strings.Contains(r.Error.Error(), "net/http: request canceled") {
+				return r.Error
+			}
+
 			err := r.Error
 			r.Handlers.Retry.Run(r)
 			r.Handlers.AfterRetry.Run(r)
