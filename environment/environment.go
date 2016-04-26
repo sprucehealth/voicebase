@@ -6,6 +6,7 @@ package environment
 import "sync"
 
 const (
+	Corp    = "corp"
 	Dev     = "dev"
 	Prod    = "prod"
 	Test    = "test"
@@ -37,6 +38,10 @@ func GetCurrent() string {
 
 func IsTest() bool {
 	return current == Test
+}
+
+func IsCorp() bool {
+	return current == Corp
 }
 
 func IsDev() bool {
