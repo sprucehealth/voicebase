@@ -7,6 +7,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/sprucehealth/backend/cmd/svc/deploy/internal/dal"
+	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/svc/deploy"
@@ -17,7 +18,14 @@ func (m *Manager) processECSDeployment(d *dal.Deployment) error {
 	if err != nil {
 		return err
 	}
-	res, err := m.ecsCli.RegisterTaskDefinition(rTDefInput)
+	// Assume the correct role. For now hack this.
+	// TODO: Figure out how to track roles vs envs
+	aECSCli, err := awsutil.AssumedECSCli(m.stsCli, "arn:aws:iam::758505115169:role/dev-deploy-ecs", d.ID.String())
+	if err != nil {
+		return err
+	}
+
+	res, err := aECSCli.RegisterTaskDefinition(rTDefInput)
 	if err != nil {
 		return err
 	}
@@ -32,7 +40,7 @@ func (m *Manager) processECSDeployment(d *dal.Deployment) error {
 	if err != nil {
 		return err
 	}
-	uRes, err := m.ecsCli.UpdateService(&ecs.UpdateServiceInput{
+	uRes, err := aECSCli.UpdateService(&ecs.UpdateServiceInput{
 		//TODO: Get the service name from the deployable config somehow
 		Cluster:        ptr.String(fmt.Sprintf("%s-svc", env.Name)),
 		Service:        ptr.String(dep.Name),

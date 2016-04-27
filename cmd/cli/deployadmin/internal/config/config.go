@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/aws/aws-sdk-go/service/ecs"
-	"github.com/aws/aws-sdk-go/service/ecs/ecsiface"
+	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/aws/aws-sdk-go/service/sts/stsiface"
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/svc/deploy"
 	"google.golang.org/grpc"
@@ -27,10 +27,10 @@ func (c *Config) DeployClient() (deploy.DeployClient, error) {
 	return deploy.NewDeployClient(conn), nil
 }
 
-func (c *Config) ECSClient() (ecsiface.ECSAPI, error) {
+func (c *Config) STSClient() (stsiface.STSAPI, error) {
 	awsSession, err := c.App.AWSSession()
 	if err != nil {
 		return nil, fmt.Errorf("Unable to create AWSSession: %s", err)
 	}
-	return ecs.New(awsSession), nil
+	return sts.New(awsSession), nil
 }

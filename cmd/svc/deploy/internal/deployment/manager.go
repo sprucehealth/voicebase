@@ -8,6 +8,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/ecs/ecsiface"
 	"github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/aws/aws-sdk-go/service/sts/stsiface"
 	"github.com/sprucehealth/backend/cmd/svc/deploy/internal/dal"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -19,6 +21,7 @@ import (
 type Manager struct {
 	dl      dal.DAL
 	ecsCli  ecsiface.ECSAPI
+	stsCli  stsiface.STSAPI
 	nWorker worker.Worker
 	dWorker worker.Worker
 }
@@ -28,6 +31,7 @@ func NewManager(dl dal.DAL, awsSession *session.Session, eventsQueueURL string) 
 	m := &Manager{
 		dl:     dl,
 		ecsCli: ecs.New(awsSession),
+		stsCli: sts.New(awsSession),
 	}
 	m.nWorker = newNotificationWorker(m, sqs.New(awsSession), eventsQueueURL)
 	m.dWorker = worker.NewRepeat(time.Second*30, m.deploymentDiscovery)

@@ -12,15 +12,16 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/aws/aws-sdk-go/service/ecs"
-	"github.com/aws/aws-sdk-go/service/ecs/ecsiface"
+	"github.com/aws/aws-sdk-go/service/sts/stsiface"
 	"github.com/sprucehealth/backend/cmd/cli/deployadmin/internal/config"
+	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/svc/deploy"
 )
 
 type cloneECSTaskDefinitionToDeployableConfigCmd struct {
 	cnf       *config.Config
 	deployCli deploy.DeployClient
-	ecsCli    ecsiface.ECSAPI
+	stsCli    stsiface.STSAPI
 }
 
 func NewCloneECSTaskDefinitionToDeployableConfigCmdCmd(cnf *config.Config) (Command, error) {
@@ -28,14 +29,14 @@ func NewCloneECSTaskDefinitionToDeployableConfigCmdCmd(cnf *config.Config) (Comm
 	if err != nil {
 		return nil, err
 	}
-	ecsCli, err := cnf.ECSClient()
+	stsCli, err := cnf.STSClient()
 	if err != nil {
 		return nil, err
 	}
 	return &cloneECSTaskDefinitionToDeployableConfigCmd{
 		cnf:       cnf,
 		deployCli: deployCli,
-		ecsCli:    ecsCli,
+		stsCli:    stsCli,
 	}, nil
 }
 
@@ -50,6 +51,12 @@ func (c *cloneECSTaskDefinitionToDeployableConfigCmd) Run(args []string) error {
 	args = fs.Args()
 
 	scn := bufio.NewScanner(os.Stdin)
+	// Assume the correct role. For now hack this.
+	// TODO: Figure out how to track roles vs envs
+	aECSCli, err := awsutil.AssumedECSCli(c.stsCli, "arn:aws:iam::758505115169:role/dev-deploy-ecs", d.ID.String())
+	if err != nil {
+		return err
+	}
 
 	if *depID == "" {
 		*depID = prompt(scn, "DeployableID: ")
@@ -69,7 +76,8 @@ func (c *cloneECSTaskDefinitionToDeployableConfigCmd) Run(args []string) error {
 			return errors.New("Family Name is required")
 		}
 	}
-	res, err := c.ecsCli.DescribeTaskDefinition(&ecs.DescribeTaskDefinitionInput{
+
+	res, err := aECSCli.DescribeTaskDefinition(&ecs.DescribeTaskDefinitionInput{
 		TaskDefinition: familyName,
 	})
 	if err != nil {
