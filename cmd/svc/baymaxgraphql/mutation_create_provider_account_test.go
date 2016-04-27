@@ -161,6 +161,7 @@ func TestCreateProviderAccountMutation(t *testing.T) {
 				clientEncryptionKey
 				account {
 					id
+					type
 				}
 			}
 		}`, nil)
@@ -170,7 +171,8 @@ func TestCreateProviderAccountMutation(t *testing.T) {
 	"data": {
 		"createProviderAccount": {
 			"account": {
-				"id": "a_1"
+				"id": "a_1",
+				"type": "PROVIDER"
 			},
 			"clientEncryptionKey": "supersecretkey",
 			"clientMutationId": "a1b2c3",

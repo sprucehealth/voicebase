@@ -20,6 +20,12 @@ var patientAccountType = graphql.NewObject(
 		},
 		Fields: graphql.Fields{
 			"id": &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+			"type": &graphql.Field{
+				Type: graphql.NewNonNull(accountTypeEnum),
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					return string(models.AccountTypePatient), nil
+				},
+			},
 			"entity": &graphql.Field{
 				Type: graphql.NewNonNull(entityType),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {

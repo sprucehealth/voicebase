@@ -169,6 +169,7 @@ func TestCreatePatientAccountMutation(t *testing.T) {
 				clientEncryptionKey
 				account {
 					id
+					type
 					... on PatientAccount {
 						entity {
 							firstName
@@ -200,7 +201,8 @@ func TestCreatePatientAccountMutation(t *testing.T) {
 					"gender": "MALE",
 					"lastName": "last"
 				},
-				"id": "a_1"
+				"id": "a_1",
+				"type": "PATIENT"
 			},
 			"clientEncryptionKey": "supersecretkey",
 			"clientMutationId": "a1b2c3",

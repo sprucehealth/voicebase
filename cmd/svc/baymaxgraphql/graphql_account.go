@@ -22,11 +22,26 @@ var meType = graphql.NewObject(
 	},
 )
 
+var accountTypeEnum = graphql.NewEnum(graphql.EnumConfig{
+	Name: "AccountType",
+	Values: graphql.EnumValueConfigMap{
+		string(models.AccountTypePatient): &graphql.EnumValueConfig{
+			Value:       string(models.AccountTypePatient),
+			Description: "A patient account",
+		},
+		string(models.AccountTypeProvider): &graphql.EnumValueConfig{
+			Value:       string(models.AccountTypeProvider),
+			Description: "A provider account",
+		},
+	},
+})
+
 var accountInterfaceType = graphql.NewInterface(
 	graphql.InterfaceConfig{
 		Name: "Account",
 		Fields: graphql.Fields{
 			"id":            &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+			"type":          &graphql.Field{Type: graphql.NewNonNull(accountTypeEnum)},
 			"organizations": &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(organizationType))},
 		},
 	},

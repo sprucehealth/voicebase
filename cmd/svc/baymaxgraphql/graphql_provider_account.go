@@ -14,6 +14,12 @@ var providerAccountType = graphql.NewObject(
 		},
 		Fields: graphql.Fields{
 			"id": &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+			"type": &graphql.Field{
+				Type: graphql.NewNonNull(accountTypeEnum),
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					return string(models.AccountTypeProvider), nil
+				},
+			},
 			"organizations": &graphql.Field{
 				Type: graphql.NewList(graphql.NewNonNull(organizationType)),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
