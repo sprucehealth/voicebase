@@ -331,14 +331,16 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 	}
 
 	// Since the patient may have changed their name, asynchronously update the thread
+	// Async contexts are cloned to preserve the permissions of the caller
+	asyncCtx := gqlctx.Clone(ctx)
 	conc.Go(func() {
-		threads, err := ram.ThreadsForMember(context.Background(), inv.GetPatient().Patient.ParkedEntityID, true)
+		threads, err := ram.ThreadsForMember(asyncCtx, inv.GetPatient().Patient.ParkedEntityID, true)
 		if err != nil {
 			golog.Errorf("Encountered error when attempting to get threads for parked entity %q to update title: %s", inv.GetPatient().Patient.ParkedEntityID, err)
 			return
 		}
 		for _, th := range threads {
-			if _, err := ram.UpdateThread(context.Background(), &threading.UpdateThreadRequest{
+			if _, err := ram.UpdateThread(asyncCtx, &threading.UpdateThreadRequest{
 				ThreadID:    th.ID,
 				SystemTitle: patientEntity.Info.DisplayName,
 			}); err != nil {

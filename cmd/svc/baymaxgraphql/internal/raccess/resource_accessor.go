@@ -54,6 +54,7 @@ type ResourceAccessor interface {
 	Account(ctx context.Context, accountID string) (*auth.Account, error)
 	AuthenticateLogin(ctx context.Context, email, password string) (*auth.AuthenticateLoginResponse, error)
 	AuthenticateLoginWithCode(ctx context.Context, token, code string) (*auth.AuthenticateLoginWithCodeResponse, error)
+	CanPostMessage(ctx context.Context, threadID string) error
 	CheckPasswordResetToken(ctx context.Context, token string) (*auth.CheckPasswordResetTokenResponse, error)
 	CheckVerificationCode(ctx context.Context, token, code string) (*auth.CheckVerificationCodeResponse, error)
 	CreateAccount(ctx context.Context, req *auth.CreateAccountRequest) (*auth.CreateAccountResponse, error)
@@ -476,10 +477,15 @@ func (m *resourceAccessor) PatientEntity(ctx context.Context, account *models.Pa
 	return entities[0], nil
 }
 
+func (m *resourceAccessor) CanPostMessage(ctx context.Context, threadID string) error {
+	return m.canAccessResource(ctx, threadID, m.orgsForThread)
+}
+
 func (m *resourceAccessor) PostMessage(ctx context.Context, req *threading.PostMessageRequest) (*threading.PostMessageResponse, error) {
-	if err := m.canAccessResource(ctx, req.ThreadID, m.orgsForThread); err != nil {
+	if err := m.CanPostMessage(ctx, req.ThreadID); err != nil {
 		return nil, err
 	}
+
 	res, err := m.postMessage(ctx, req)
 	if err != nil {
 		return nil, err

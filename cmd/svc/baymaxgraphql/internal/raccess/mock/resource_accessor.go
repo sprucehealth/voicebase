@@ -274,6 +274,15 @@ func (m *ResourceAccessor) PatientEntity(ctx context.Context, a *models.PatientA
 	return rets[0].(*directory.Entity), mock.SafeError(rets[1])
 }
 
+func (m *ResourceAccessor) CanPostMessage(ctx context.Context, threadID string) error {
+	rets := m.Record(threadID)
+	if len(rets) == 0 {
+		return nil
+	}
+
+	return mock.SafeError(rets[1])
+}
+
 func (m *ResourceAccessor) PostMessage(ctx context.Context, req *threading.PostMessageRequest) (*threading.PostMessageResponse, error) {
 	rets := m.Record(req)
 	if len(rets) == 0 {

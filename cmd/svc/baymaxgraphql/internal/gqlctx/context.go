@@ -64,6 +64,18 @@ func Query(ctx context.Context) string {
 	return query
 }
 
+// Clone created a new Background context and copies all relevent baymax values from the parent into the new context
+func Clone(pCtx context.Context) context.Context {
+	cCtx := context.Background()
+	cCtx = WithRequestID(cCtx, RequestID(pCtx))
+	cCtx = WithSpruceHeaders(cCtx, SpruceHeaders(pCtx))
+	cCtx = WithAuthToken(cCtx, AuthToken(pCtx))
+	cCtx = WithQuery(cCtx, Query(pCtx))
+	cCtx = WithAccount(cCtx, Account(pCtx))
+	cCtx = WithClientEncryptionKey(cCtx, ClientEncryptionKey(pCtx))
+	return cCtx
+}
+
 // WithAccount attaches the provided account onto a copy of the provided context
 func WithAccount(ctx context.Context, acc *auth.Account) context.Context {
 	// Never set a nil account so that we can update it in place. It's kind

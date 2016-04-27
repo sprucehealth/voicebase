@@ -66,7 +66,8 @@ func transformContactsToResponse(contacts []*directory.Contact) ([]*models.Conta
 
 func transformThreadToResponse(t *threading.Thread, viewingAccount *auth.Account) (*models.Thread, error) {
 	th := &models.Thread{
-		ID:                         t.ID,
+		ID: t.ID,
+		AllowInternalMessages:      isPostInternalMessageAllowed(t, viewingAccount),
 		OrganizationID:             t.OrganizationID,
 		PrimaryEntityID:            t.PrimaryEntityID,
 		Subtitle:                   t.LastMessageSummary,
@@ -95,26 +96,21 @@ func transformThreadToResponse(t *threading.Thread, viewingAccount *auth.Account
 		}
 	case threading.ThreadType_EXTERNAL:
 		th.AllowDelete = true
-		th.AllowInternalMessages = true
 		th.AllowExternalDelivery = true
 		th.AllowMentions = true
 		th.Type = models.ThreadTypeExternal
 	case threading.ThreadType_SECURE_EXTERNAL:
-		th.AllowInternalMessages = viewingAccount.Type == auth.AccountType_PROVIDER
 		th.Type = models.ThreadTypeSecureExternal
 	case threading.ThreadType_SETUP:
 		if th.Title == "" {
 			th.Title = onboardingThreadTitle
 		}
-		th.AllowInternalMessages = true
 		th.Type = models.ThreadTypeSetup
 	case threading.ThreadType_SUPPORT:
 		if th.Title == "" {
 			th.Title = supportThreadTitle
 		}
 		th.Type = models.ThreadTypeSupport
-		// only allow internal messages for the spruce support org
-		th.AllowInternalMessages = th.OrganizationID == *flagSpruceOrgID
 
 		// only allow @ mentions if we are working in the spruce support thread.
 		th.AllowMentions = th.OrganizationID == *flagSpruceOrgID
@@ -132,6 +128,20 @@ func transformThreadToResponse(t *threading.Thread, viewingAccount *auth.Account
 		}
 	}
 	return th, nil
+}
+
+func isPostInternalMessageAllowed(t *threading.Thread, acc *auth.Account) bool {
+	switch t.Type {
+	case threading.ThreadType_EXTERNAL:
+		return true
+	case threading.ThreadType_SECURE_EXTERNAL:
+		return acc.Type == auth.AccountType_PROVIDER
+	case threading.ThreadType_SETUP:
+		return true
+	case threading.ThreadType_SUPPORT:
+		return t.OrganizationID == *flagSpruceOrgID
+	}
+	return false
 }
 
 func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID string, mediaSigner *media.Signer) (*models.ThreadItem, error) {

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/segmentio/analytics-go"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
@@ -101,6 +102,7 @@ var postMessageInputType = graphql.NewInputObject(
 
 const (
 	postMessageErrorCodeThreadDoesNotExist = "THREAD_DOES_NOT_EXIST"
+	postMessageErrorCodeInternalNotAllowed = "INTERNAL_MESSAGE_NOT_ALLOWED"
 )
 
 var postMessageErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
@@ -109,6 +111,10 @@ var postMessageErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
 		postMessageErrorCodeThreadDoesNotExist: &graphql.EnumValueConfig{
 			Value:       postMessageErrorCodeThreadDoesNotExist,
 			Description: "Thread with provided ID does not exist.",
+		},
+		postMessageErrorCodeInternalNotAllowed: &graphql.EnumValueConfig{
+			Value:       postMessageErrorCodeInternalNotAllowed,
+			Description: "The caller is not allowed to post internal messages",
 		},
 	},
 })
@@ -137,14 +143,11 @@ var postMessageMutation = &graphql.Field{
 	Args: graphql.FieldConfigArgument{
 		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(postMessageInputType)},
 	},
-	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+	Resolve: apiaccess.Authenticated(func(p graphql.ResolveParams) (interface{}, error) {
 		svc := serviceFromParams(p)
 		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
 		acc := gqlctx.Account(ctx)
-		if acc == nil {
-			return nil, errors.ErrNotAuthenticated(ctx)
-		}
 
 		input := p.Args["input"].(map[string]interface{})
 		mutationID, _ := input["clientMutationId"].(string)
@@ -164,12 +167,22 @@ var postMessageMutation = &graphql.Field{
 			return nil, err
 		}
 
+		isInternalMsg := msg["internal"].(bool)
+		if isInternalMsg && !isPostInternalMessageAllowed(thr, acc) {
+			return &postMessageOutput{
+				Success:      false,
+				ErrorCode:    postMessageErrorCodeInternalNotAllowed,
+				ErrorMessage: "Internal messages are not allowed.",
+			}, nil
+		}
+
+		if err := ram.CanPostMessage(ctx, thr.ID); err != nil {
+			return nil, err
+		}
+
 		ent, err := ram.EntityForAccountID(ctx, thr.OrganizationID, acc.ID)
 		if err != nil {
 			return nil, err
-		}
-		if ent == nil || ent.Type != directory.EntityType_INTERNAL {
-			return nil, errors.UserError(ctx, errors.ErrTypeNotAuthorized, "Not a member of the organization")
 		}
 
 		var primaryEntity *directory.Entity
@@ -251,7 +264,7 @@ var postMessageMutation = &graphql.Field{
 		req := &threading.PostMessageRequest{
 			ThreadID:     threadID,
 			Text:         text,
-			Internal:     msg["internal"].(bool),
+			Internal:     isInternalMsg,
 			FromEntityID: ent.ID,
 			Source: &threading.Endpoint{
 				Channel: threading.Endpoint_APP,
@@ -370,5 +383,5 @@ var postMessageMutation = &graphql.Field{
 			ItemEdge:         &Edge{Node: it, Cursor: ConnectionCursor(pmres.Item.ID)},
 			Thread:           th,
 		}, nil
-	},
+	}),
 }
