@@ -72,7 +72,7 @@ func (c *cloneECSTaskDefinitionToDeployableConfigCmd) Run(args []string) error {
 
 	// Assume the correct role. For now hack this.
 	// TODO: Figure out how to track roles vs envs
-	aECSCli, err := awsutil.AssumedECSCli(c.stsCli, "arn:aws:iam::758505115169:role/dev-deploy-ecs", fmt.Sprintf("clone-%s-%s-%s", depID, envID, familyName))
+	aECSCli, err := awsutil.AssumedECSCli(c.stsCli, "arn:aws:iam::758505115169:role/dev-deploy-ecs", fmt.Sprintf("clone-%s-%s-%s", *depID, *envID, *familyName))
 	if err != nil {
 		return err
 	}
