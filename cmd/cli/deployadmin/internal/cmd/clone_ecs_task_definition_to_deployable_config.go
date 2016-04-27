@@ -51,13 +51,6 @@ func (c *cloneECSTaskDefinitionToDeployableConfigCmd) Run(args []string) error {
 	args = fs.Args()
 
 	scn := bufio.NewScanner(os.Stdin)
-	// Assume the correct role. For now hack this.
-	// TODO: Figure out how to track roles vs envs
-	aECSCli, err := awsutil.AssumedECSCli(c.stsCli, "arn:aws:iam::758505115169:role/dev-deploy-ecs", d.ID.String())
-	if err != nil {
-		return err
-	}
-
 	if *depID == "" {
 		*depID = prompt(scn, "DeployableID: ")
 		if *depID == "" {
@@ -75,6 +68,13 @@ func (c *cloneECSTaskDefinitionToDeployableConfigCmd) Run(args []string) error {
 		if *envID == "" {
 			return errors.New("Family Name is required")
 		}
+	}
+
+	// Assume the correct role. For now hack this.
+	// TODO: Figure out how to track roles vs envs
+	aECSCli, err := awsutil.AssumedECSCli(c.stsCli, "arn:aws:iam::758505115169:role/dev-deploy-ecs", fmt.Sprintf("clone-%s-%s-%s", depID, envID, familyName))
+	if err != nil {
+		return err
 	}
 
 	res, err := aECSCli.DescribeTaskDefinition(&ecs.DescribeTaskDefinitionInput{
