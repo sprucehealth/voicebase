@@ -33,7 +33,13 @@ func SingleEntity(ctx context.Context, client DirectoryClient, req *LookupEntiti
 	} else if len(res.Entities) == 0 {
 		return nil, ErrEntityNotFound
 	} else if len(res.Entities) != 1 {
-		return nil, fmt.Errorf("expected single entity but got %d", len(res.Entities))
+		var id string
+		if req.LookupKeyType == LookupEntitiesRequest_ENTITY_ID {
+			id = req.GetEntityID()
+		} else if req.LookupKeyType == LookupEntitiesRequest_EXTERNAL_ID {
+			id = req.GetExternalID()
+		}
+		return nil, fmt.Errorf("expected single entity for %s but got %d", id, len(res.Entities))
 	}
 	return res.Entities[0], nil
 }
@@ -48,7 +54,7 @@ func SingleEntityByContact(ctx context.Context, client DirectoryClient, req *Loo
 	} else if len(res.Entities) == 0 {
 		return nil, ErrEntityNotFound
 	} else if len(res.Entities) != 1 {
-		return nil, fmt.Errorf("expected single entity but got %d", len(res.Entities))
+		return nil, fmt.Errorf("expected single entity for %s but got %d", req.ContactValue, len(res.Entities))
 	}
 
 	return res.Entities[0], nil
