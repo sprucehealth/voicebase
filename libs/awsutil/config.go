@@ -14,7 +14,7 @@ import (
 func Config(region, accessKey, secretKey, token string) (*aws.Config, error) {
 	var cred *credentials.Credentials
 	if accessKey != "" && secretKey != "" {
-		cred = credentials.NewStaticCredentials(accessKey, secretKey, "")
+		cred = credentials.NewStaticCredentials(accessKey, secretKey, token)
 	} else {
 		cred = credentials.NewEnvCredentials()
 		if v, err := cred.Get(); err != nil || v.AccessKeyID == "" || v.SecretAccessKey == "" {
