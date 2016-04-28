@@ -8,8 +8,10 @@ import (
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/routing/internal"
+	"github.com/sprucehealth/backend/cmd/svc/routing/internal/dal"
 	rsettings "github.com/sprucehealth/backend/cmd/svc/routing/internal/settings"
 	"github.com/sprucehealth/backend/libs/awsutil"
+	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
@@ -29,6 +31,13 @@ var config struct {
 	blockAccountsTopicARN string
 	settingsServiceURL    string
 	webDomain             string
+	dbHost                string
+	dbPort                int
+	dbPassword            string
+	dbCACert              string
+	dbTLS                 string
+	dbUserName            string
+	dbName                string
 }
 
 func init() {
@@ -37,6 +46,15 @@ func init() {
 	flag.StringVar(&config.threadServiceURL, "threading_addr", "", "`host:port`to connect to threading service")
 	flag.StringVar(&config.excommsServiceURL, "excomms_addr", "", "`host:port` to connect to excomms service")
 	flag.StringVar(&config.settingsServiceURL, "settings_addr", "", "`host:port` to connect to settings service")
+
+	// database
+	flag.StringVar(&config.dbHost, "db_host", "", "database host")
+	flag.StringVar(&config.dbPassword, "db_password", "", "database password")
+	flag.StringVar(&config.dbName, "db_name", "", "database name")
+	flag.StringVar(&config.dbUserName, "db_username", "", "database username")
+	flag.IntVar(&config.dbPort, "db_port", 3306, "database port")
+	flag.StringVar(&config.dbCACert, "db_ca_cert", "", "Path to database CA certificate")
+	flag.StringVar(&config.dbTLS, "db_tls", "skip-verify", "Enable TLS for database connection (one of 'true', 'false', 'skip-verify'). Ignored if CA cert provided.")
 
 	flag.StringVar(&config.externalMessageQueue, "queue_external_message", "", "queue name for receiving external messages")
 	flag.StringVar(&config.inAppMessageQueue, "queue_inapp_message", "", "queue name for receiving in app messages")
@@ -109,6 +127,20 @@ func main() {
 		return
 	}
 
+	db, err := dbutil.ConnectMySQL(&dbutil.DBConfig{
+		User:          config.dbUserName,
+		Password:      config.dbPassword,
+		Host:          config.dbHost,
+		Port:          config.dbPort,
+		Name:          config.dbName,
+		CACert:        config.dbCACert,
+		EnableTLS:     config.dbTLS == "true" || config.dbTLS == "skip-verify",
+		SkipVerifyTLS: config.dbTLS == "skip-verify",
+	})
+	if err != nil {
+		golog.Fatalf(err.Error())
+	}
+
 	routingService, err := internal.NewRoutingService(
 		awsSession,
 		config.externalMessageQueue,
@@ -121,6 +153,7 @@ func main() {
 		config.blockAccountsTopicARN,
 		config.kmsKeyARN,
 		config.webDomain,
+		dal.NewDAL(db),
 	)
 	if err != nil {
 		golog.Fatalf(err.Error())

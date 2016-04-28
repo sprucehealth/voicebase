@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/sprucehealth/backend/cmd/svc/routing/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/routing/internal/worker/appmsg"
 	"github.com/sprucehealth/backend/cmd/svc/routing/internal/worker/externalmsg"
 	"github.com/sprucehealth/backend/libs/awsutil"
@@ -36,7 +37,8 @@ func NewRoutingService(
 	sns snsiface.SNSAPI,
 	blockAccountsTopicARN string,
 	kmsKeyARN,
-	webDomain string) (RoutingService, error) {
+	webDomain string,
+	dal dal.DAL) (RoutingService, error) {
 
 	externalMessageQueue, err := awsutil.NewEncryptedSQS(kmsKeyARN, kms.New(awsSession), sqs.New(awsSession))
 	if err != nil {
@@ -74,6 +76,7 @@ func NewRoutingService(
 				settings,
 				excomms,
 				webDomain,
+				dal,
 			),
 			appmsg.NewWorker(
 				appMessageQueue,

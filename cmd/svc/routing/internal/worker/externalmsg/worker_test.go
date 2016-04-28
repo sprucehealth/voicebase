@@ -270,6 +270,79 @@ func TestIncomingSMS_NewUser_Email(t *testing.T) {
 	}
 }
 
+func TestIncomingEmail_ProviderOrOrgNotFound(t *testing.T) {
+
+	// Setup
+	organizationEntity := &directory.Entity{
+		ID:   "10",
+		Type: directory.EntityType_ORGANIZATION,
+	}
+	providerEntity := &directory.Entity{
+		ID:   "1",
+		Type: directory.EntityType_INTERNAL,
+		Memberships: []*directory.Entity{
+			organizationEntity,
+		},
+	}
+	externalEntityToBeCreated := &directory.Entity{
+		ID:   "2",
+		Type: directory.EntityType_EXTERNAL,
+		Memberships: []*directory.Entity{
+			organizationEntity,
+		},
+		Contacts: []*directory.Contact{
+			{
+				Value:       "patient@example.com",
+				ContactType: directory.ContactType_EMAIL,
+			},
+		},
+		Info: &directory.EntityInfo{
+			DisplayName: "patient@example.com",
+		},
+	}
+
+	fromChannelID := "patient@example.com"
+	toChannelID := "doctor@mypractice.baymax.com"
+
+	md := &mockDirectoryService{
+		entityIDToEntityMapping: map[string]*directory.Entity{
+			organizationEntity.ID: organizationEntity,
+			providerEntity.ID:     providerEntity,
+		},
+		contactToEntitiesMapping: map[string][]*directory.Entity{
+			toChannelID: {organizationEntity},
+		},
+		entityToCreate: externalEntityToBeCreated,
+	}
+	mt := &mockThreadsService{}
+
+	e := &externalMessageWorker{
+		directory: md,
+		threading: mt,
+	}
+
+	pem := &excomms.PublishedExternalMessage{
+		FromChannelID: fromChannelID,
+		ToChannelID:   toChannelID,
+		Type:          excomms.PublishedExternalMessage_EMAIL,
+		Item: &excomms.PublishedExternalMessage_EmailItem{
+			EmailItem: &excomms.EmailItem{
+				Subject: "Hello",
+				Body:    "body",
+				Attachments: []*excomms.MediaAttachment{
+					{
+						URL:         "s3://test/1234",
+						ContentType: "image/jpeg",
+						Name:        "Testing",
+					},
+				},
+			},
+		},
+	}
+
+	test.Equals(t, errLogMessageAsErrored, e.process(pem))
+}
+
 func TestIncomingSMS_ExistingUser_SMS(t *testing.T) {
 
 	// Setup
@@ -860,7 +933,7 @@ func TestWeChatSpam(t *testing.T) {
 		snsAPI:    snsAPI,
 		directory: mdir,
 	}
-	if err := e.process(&excomms.PublishedExternalMessage{
+	test.Equals(t, errLogMessageAsSpam, e.process(&excomms.PublishedExternalMessage{
 		FromChannelID: fromChannelID,
 		ToChannelID:   toChannelID,
 		Type:          excomms.PublishedExternalMessage_SMS,
@@ -870,8 +943,5 @@ func TestWeChatSpam(t *testing.T) {
 				Text: text,
 			},
 		},
-	}); err != nil {
-		t.Fatal(err)
-	}
-
+	}))
 }

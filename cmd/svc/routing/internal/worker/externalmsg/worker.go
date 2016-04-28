@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 	excommsSettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
+	"github.com/sprucehealth/backend/cmd/svc/routing/internal/dal"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/bml"
 	"github.com/sprucehealth/backend/libs/errors"
@@ -41,6 +42,7 @@ type externalMessageWorker struct {
 	settings              settings.SettingsClient
 	excomms               excomms.ExCommsClient
 	webDomain             string
+	dal                   dal.DAL
 }
 
 // NewWorker returns a worker that consumes SQS messages
@@ -55,6 +57,7 @@ func NewWorker(
 	settings settings.SettingsClient,
 	excomms excomms.ExCommsClient,
 	webDomain string,
+	dal dal.DAL,
 ) worker.Worker {
 	return &externalMessageWorker{
 		sqsAPI:                sqsAPI,
@@ -66,8 +69,18 @@ func NewWorker(
 		settings:              settings,
 		excomms:               excomms,
 		webDomain:             webDomain,
+		dal:                   dal,
 	}
 }
+
+var errLogMessageAsErrored = errors.New("errored external message")
+var errLogMessageAsSpam = errors.New("spam external message")
+
+const (
+	statusProcessed = "PROCESSED"
+	statusError     = "ERROR"
+	statusSpam      = "SPAM"
+)
 
 func (r *externalMessageWorker) Start() {
 	if r.started {
@@ -108,8 +121,22 @@ func (r *externalMessageWorker) Start() {
 				}
 				golog.Debugf("Process message %s.", *item.ReceiptHandle)
 
+				status := statusProcessed
 				if err := r.process(&pem); err != nil {
-					golog.Errorf(err.Error())
+
+					switch err {
+					case errLogMessageAsErrored:
+						status = statusError
+					case errLogMessageAsSpam:
+						status = statusSpam
+					default:
+						golog.Errorf(err.Error())
+						continue
+					}
+				}
+
+				if err := r.dal.LogExternalMessage(data, pem.Type.String(), pem.FromChannelID, pem.ToChannelID, status); err != nil {
+					golog.Errorf("Unable to persist message to database: %s", err.Error())
 					continue
 				}
 
@@ -177,7 +204,10 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 
 		toEntity := determineProviderOrOrgEntity(toEntityLookupRes, pem.ToChannelID)
 		if toEntity == nil {
-			return errors.Trace(fmt.Errorf("No organization or provider found for %s", pem.ToChannelID))
+			golog.Errorf(`No organization or provider found for %s.
+				Note that this message will be considered processed and will be marked as errored in the database.
+				If this message should be routed to a thread, then manual intervention will be required to put the message back into the SQS queue after the issue has been resolved.`, pem.ToChannelID)
+			return errLogMessageAsErrored
 		}
 		toEntities = []*directory.Entity{toEntity}
 
@@ -211,7 +241,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 			}
 
 			// routing complete if message is spam
-			return nil
+			return errLogMessageAsSpam
 		}
 
 		orgEntity = determineOrganization(toEntity)
