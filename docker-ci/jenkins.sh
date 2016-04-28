@@ -49,6 +49,18 @@ docker run --rm=true --name=$NAME \
 	-v /var/run/docker.sock:/var/run/docker.sock \
     $NAME
 
+declare -A devDeployableMap
+devDeployableMap["auth"]="deployable_0E1V9I2MO0O00"
+devDeployableMap["settings"]="deployable_0E2KVI78O0O00"
+devDeployableMap["routing"]="deployable_0E2L0O5R80O00"
+devDeployableMap["threading"]="deployable_0E2L0O6CO0O00"
+devDeployableMap["baymaxgraphql"]="deployable_0E2L0O6UG0O00"
+devDeployableMap["invite"]="deployable_0E2L0O7H00O00"
+devDeployableMap["excomms-api"]="deployable_0E2L0O8HG0O00"
+devDeployableMap["excomms"]="deployable_0E2L0O98G0O00"
+devDeployableMap["notification"]="deployable_0E2L0O9PG0O00"
+devDeployableMap["directory"]="deployable_0E2L0Q5000O00"
+
 if [[ "$DEPLOY_TO_S3" != "" ]]; then
 	# Tag any generated images with the remote repo and push
 	IMAGES=$(docker images -q -f label=version=$BRANCH-$BUILD_ID)
@@ -62,6 +74,11 @@ if [[ "$DEPLOY_TO_S3" != "" ]]; then
 		until docker push $REMOTETAG || [ $NEXT_WAIT_TIME -eq 4 ]; do
 			sleep $(( NEXT_WAIT_TIME++ ))
 		done
+		IFS=':' read -a STAG <<< "$TAG"
+		if [[ ${devDeployableMap[${STAG[0]}]} != "" ]]; then
+			echo "Notifying Deploy Service of successful build $TAG"
+			aws sqs send-message --queue-url=https://sqs.us-east-1.amazonaws.com/137987605457/corp-deploy-events --message-body="{\"deployable_id\":\"${devDeployableMap[${STAG[0]}]}\",\"build_number\":\"$BUILD_ID\",\"image\":\"$REMOTETAG\"}" --region=us-east-1
+		fi
 		docker rmi $REMOTETAG
 		docker rmi $TAG
 	done
