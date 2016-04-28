@@ -7,6 +7,15 @@ import (
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/slack"
+)
+
+const (
+	deploymentWebhookURL = "https://hooks.slack.com/services/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"
+	deployUserName       = "deploy"
+	deployChannel        = "#x-backend-deployments"
+	deployGoodEmoji      = ":construction_worker:"
+	deployBadEmoji       = ":boom:"
 )
 
 func (m *Manager) deploymentDiscovery() {
@@ -35,22 +44,68 @@ func (m *Manager) deploymentDiscovery() {
 	}
 }
 
-func (m *Manager) processDeployment(dep *dal.Deployment) error {
-	if dep == nil {
+func postStartMessage(depl *dal.Deployment, dep *dal.Deployable, env *dal.Environment) {
+	if err := slack.Post(deploymentWebhookURL, &slack.Message{
+		Text:      fmt.Sprintf("Starting deployment for %s:%s to environment %s", dep.Name, depl.BuildNumber, env.Name),
+		Username:  deployUserName,
+		Channel:   deployChannel,
+		IconEmoji: deployGoodEmoji,
+	}); err != nil {
+		golog.Errorf("Failed to post start message to slack: %s", err)
+	}
+}
+
+func postCompleteMessage(depl *dal.Deployment, dep *dal.Deployable, env *dal.Environment) {
+	if err := slack.Post(deploymentWebhookURL, &slack.Message{
+		Text:      fmt.Sprintf("Completed deployment for %s:%s to environment %s", dep.Name, depl.BuildNumber, env.Name),
+		Username:  deployUserName,
+		Channel:   deployChannel,
+		IconEmoji: deployGoodEmoji,
+	}); err != nil {
+		golog.Errorf("Failed to post completed message to slack: %s", err)
+	}
+}
+
+func postFailedMessage(depl *dal.Deployment, dep *dal.Deployable, env *dal.Environment, err error) {
+	if err := slack.Post(deploymentWebhookURL, &slack.Message{
+		Text:      fmt.Sprintf("Failed deployment for %s:%s to environment %s - %s", dep.Name, depl.BuildNumber, env.Name, err),
+		Username:  deployUserName,
+		Channel:   deployChannel,
+		IconEmoji: deployBadEmoji,
+	}); err != nil {
+		golog.Errorf("Failed to post failed message to slack: %s", err)
+	}
+}
+
+func (m *Manager) processDeployment(depl *dal.Deployment) error {
+	if depl == nil {
 		return nil
 	}
+
+	dep, err := m.dl.Deployable(depl.DeployableID)
+	if err != nil {
+		return err
+	}
+	env, err := m.dl.Environment(depl.EnvironmentID)
+	if err != nil {
+		return err
+	}
+
 	// dispatch the deployment based on the type
-	switch dep.Type {
+	switch depl.Type {
 	case dal.DeploymentTypeEcs:
 		conc.Go(func() {
-			if err := m.processECSDeployment(dep); err != nil {
-				m.failDeployment(dep.ID, err)
+			postStartMessage(depl, dep, env)
+			if err := m.processECSDeployment(depl); err != nil {
+				postFailedMessage(depl, dep, env, err)
+				m.failDeployment(depl.ID, err)
 			} else {
-				m.completeDeployment(dep.ID)
+				postCompleteMessage(depl, dep, env)
+				m.completeDeployment(depl.ID)
 			}
 		})
 	default:
-		return fmt.Errorf("Unknown deployment type %s", dep.Type)
+		return fmt.Errorf("Unknown deployment type %s", depl.Type)
 	}
 	return nil
 }
@@ -66,7 +121,7 @@ func (m *Manager) failDeployment(id dal.DeploymentID, err error) {
 
 func (m *Manager) completeDeployment(id dal.DeploymentID) {
 	golog.Infof("Completing deployment %s", id)
-	if err := m.dl.SetDeploymentStatus(id, dal.DeploymentStatusFailed); err != nil {
+	if err := m.dl.SetDeploymentStatus(id, dal.DeploymentStatusComplete); err != nil {
 		golog.Errorf("Encountered error while marking deployment %s as COMPLETE: %s", id, err)
 	}
 	return
