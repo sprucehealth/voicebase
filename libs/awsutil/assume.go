@@ -1,8 +1,6 @@
 package awsutil
 
 import (
-	"fmt"
-
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/ecs/ecsiface"
@@ -35,9 +33,6 @@ func assumedCreds(stsCli stsiface.STSAPI, roleARN, sessionName string) (*sts.Cre
 }
 
 func sessionFromCreds(sCreds *sts.Credentials) (*session.Session, error) {
-	fmt.Println("AccessID:", *sCreds.AccessKeyId)
-	fmt.Println("SecretKey:", *sCreds.SecretAccessKey)
-	fmt.Println("SessionToken:", *sCreds.SessionToken)
 	// TODO: Hack region for now
 	awsConfig, err := Config("us-east-1", *sCreds.AccessKeyId, *sCreds.SecretAccessKey, *sCreds.SessionToken)
 	if err != nil {
