@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
+	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/twilio"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -29,20 +31,67 @@ var twilioEventMapper = map[string]rawmsg.TwilioEvent{
 }
 
 type twilioRequestHandler struct {
-	eventsHandler twilio.EventHandler
+	eventsHandler           twilio.EventHandler
+	statRequests            *metrics.Counter
+	statResponseErrors      *metrics.Counter
+	statLatency             metrics.Histogram
+	eventStatRequests       map[string]*metrics.Counter
+	eventStatResponseErrors map[string]*metrics.Counter
+	eventStatLatency        map[string]metrics.Histogram
 }
 
-func NewTwilioRequestHandler(eventsHandler twilio.EventHandler) httputil.ContextHandler {
+func NewTwilioRequestHandler(eventsHandler twilio.EventHandler,
+	metricsRegistry metrics.Registry) httputil.ContextHandler {
+
+	statRequests := metrics.NewCounter()
+	statResponseErrors := metrics.NewCounter()
+	statLatency := metrics.NewUnbiasedHistogram()
+	metricsRegistry.Add("requests", statRequests)
+	metricsRegistry.Add("response_errors", statResponseErrors)
+	metricsRegistry.Add("latency_us", statLatency)
+
+	eventStatRequests := make(map[string]*metrics.Counter)
+	eventStatResponseErrors := make(map[string]*metrics.Counter)
+	eventStatLatency := make(map[string]metrics.Histogram)
+
+	for event := range twilioEventMapper {
+		sRequests := metrics.NewCounter()
+		sResponseErrors := metrics.NewCounter()
+		sLatency := metrics.NewUnbiasedHistogram()
+
+		eventScope := metricsRegistry.Scope(event)
+		eventScope.Add("requests", sRequests)
+		eventScope.Add("response_errors", sResponseErrors)
+		eventScope.Add("latency_us", sLatency)
+
+		eventStatRequests[event] = sRequests
+		eventStatResponseErrors[event] = sResponseErrors
+		eventStatLatency[event] = sLatency
+	}
+
 	return &twilioRequestHandler{
-		eventsHandler: eventsHandler,
+		eventsHandler:           eventsHandler,
+		statRequests:            statRequests,
+		statResponseErrors:      statResponseErrors,
+		statLatency:             statLatency,
+		eventStatRequests:       eventStatRequests,
+		eventStatLatency:        eventStatLatency,
+		eventStatResponseErrors: eventStatResponseErrors,
 	}
 }
 
 func (t *twilioRequestHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	t.statRequests.Inc(1)
+	st := time.Now()
+	defer func() {
+		t.statLatency.Update(time.Since(st).Nanoseconds() / 1e3)
+	}()
+
 	p, err := twilio.ParamsFromRequest(r)
 	if err != nil {
 		golog.Errorf("Unable to parse twilio parameters from request: %s", err.Error())
 		w.WriteHeader(http.StatusBadRequest)
+		t.statResponseErrors.Inc(1)
 		return
 	}
 
@@ -51,13 +100,21 @@ func (t *twilioRequestHandler) ServeHTTP(ctx context.Context, w http.ResponseWri
 	if !ok {
 		golog.Errorf("Unable to process event %s", event)
 		w.WriteHeader(http.StatusBadRequest)
+		t.statResponseErrors.Inc(1)
 		return
 	}
+
+	t.eventStatRequests[event].Inc(1)
+	defer func() {
+		t.eventStatLatency[event].Update(time.Since(st).Nanoseconds() / 1e3)
+	}()
 
 	twiml, err := t.eventsHandler.Process(ctx, twilioEvent, p)
 	if err != nil {
 		golog.Errorf(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
+		t.statResponseErrors.Inc(1)
+		t.eventStatResponseErrors[event].Inc(1)
 		return
 	}
 
