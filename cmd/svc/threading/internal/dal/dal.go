@@ -860,8 +860,8 @@ func (d *dal) UpdateThreadEntity(ctx context.Context, threadID models.ThreadID, 
 
 	if args == nil || args.IsEmpty() {
 		_, err := d.db.Exec(`
-			INSERT IGNORE INTO thread_entities (thread_id, entity_id)
-			VALUES (?, ?)`, threadID, entityID)
+			INSERT INTO thread_entities (thread_id, entity_id)
+			VALUES (?, ?) ON DUPLICATE KEY UPDATE thread_id=thread_id`, threadID, entityID)
 		return errors.Trace(err)
 	}
 

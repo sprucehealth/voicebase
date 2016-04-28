@@ -3,6 +3,7 @@ package gqlctx
 import (
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/svc/auth"
+	"github.com/sprucehealth/backend/svc/directory"
 	"golang.org/x/net/context"
 )
 
@@ -10,6 +11,7 @@ type ctxKey int
 
 const (
 	ctxAccount ctxKey = iota
+	ctxAccountEntities
 	ctxSpruceHeaders
 	ctxClientEncryptionKey
 	ctxRequestID
@@ -103,6 +105,23 @@ func Account(ctx context.Context) *auth.Account {
 		return nil
 	}
 	return acc
+}
+
+// WithAccountEntities attaches a map of orgID (intent) to entity for all of the account's entities onto the provided context
+func WithAccountEntities(ctx context.Context, entitiesByOrg map[string]*directory.Entity) context.Context {
+	if entitiesByOrg == nil {
+		entitiesByOrg = make(map[string]*directory.Entity)
+	}
+	return context.WithValue(ctx, ctxAccountEntities, entitiesByOrg)
+}
+
+// AccountEntities returns the mapping of between orgs and account entities from the provided context
+func AccountEntities(ctx context.Context) map[string]*directory.Entity {
+	ents, _ := ctx.Value(ctxAccountEntities).(map[string]*directory.Entity)
+	if ents == nil {
+		return nil
+	}
+	return ents
 }
 
 // WithClientEncryptionKey attaches the provided account onto a copy of the provided context

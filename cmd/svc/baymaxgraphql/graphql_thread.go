@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
@@ -310,68 +311,71 @@ var threadType = graphql.NewObject(
 			"items": &graphql.Field{
 				Type: graphql.NewNonNull(threadItemConnectionType.ConnectionType),
 				Args: NewConnectionArguments(nil),
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					ctx := p.Context
-					t := p.Source.(*models.Thread)
-					if t == nil {
-						return nil, errors.InternalError(ctx, errors.New("thread is nil"))
-					}
-					svc := serviceFromParams(p)
-					ram := raccess.ResourceAccess(p)
-					acc := gqlctx.Account(p.Context)
-					if acc == nil {
-						return nil, errors.ErrNotAuthenticated(ctx)
-					}
+				Resolve: apiaccess.Authenticated(
+					func(p graphql.ResolveParams) (interface{}, error) {
+						ctx := p.Context
+						t := p.Source.(*models.Thread)
+						if t == nil {
+							return nil, errors.InternalError(ctx, errors.New("thread is nil"))
+						}
+						svc := serviceFromParams(p)
+						ram := raccess.ResourceAccess(p)
+						acc := gqlctx.Account(p.Context)
 
-					req := &threading.ThreadItemsRequest{
-						ThreadID: t.ID,
-						// TODO: ViewerEntityID
-						Iterator: &threading.Iterator{},
-					}
-					if s, ok := p.Args["after"].(string); ok {
-						req.Iterator.StartCursor = s
-					}
-					if s, ok := p.Args["before"].(string); ok {
-						req.Iterator.EndCursor = s
-					}
-					if i, ok := p.Args["last"].(int); ok {
-						req.Iterator.Count = uint32(i)
-						req.Iterator.Direction = threading.Iterator_FROM_END
-					} else if i, ok := p.Args["first"].(int); ok {
-						req.Iterator.Count = uint32(i)
-						req.Iterator.Direction = threading.Iterator_FROM_START
-					} else {
-						req.Iterator.Count = 20 // default
-						req.Iterator.Direction = threading.Iterator_FROM_START
-					}
-					res, err := ram.ThreadItems(ctx, req)
-					if err != nil {
-						return nil, err
-					}
-
-					cn := &Connection{
-						Edges: make([]*Edge, len(res.Edges)),
-					}
-					if req.Iterator.Direction == threading.Iterator_FROM_START {
-						cn.PageInfo.HasNextPage = res.HasMore
-					} else {
-						cn.PageInfo.HasPreviousPage = res.HasMore
-					}
-
-					for i, e := range res.Edges {
-						it, err := transformThreadItemToResponse(e.Item, "", acc.ID, svc.mediaSigner)
+						ent, err := ram.EntityForAccountID(ctx, t.OrganizationID, acc.ID)
 						if err != nil {
-							golog.Errorf("Failed to transform thread item %s: %s", e.Item.ID, err)
-							continue
+							return nil, errors.InternalError(ctx, err)
 						}
-						cn.Edges[i] = &Edge{
-							Node:   it,
-							Cursor: ConnectionCursor(e.Cursor),
-						}
-					}
 
-					return cn, nil
-				},
+						req := &threading.ThreadItemsRequest{
+							ThreadID:       t.ID,
+							ViewerEntityID: ent.ID,
+							Iterator:       &threading.Iterator{},
+						}
+						if s, ok := p.Args["after"].(string); ok {
+							req.Iterator.StartCursor = s
+						}
+						if s, ok := p.Args["before"].(string); ok {
+							req.Iterator.EndCursor = s
+						}
+						if i, ok := p.Args["last"].(int); ok {
+							req.Iterator.Count = uint32(i)
+							req.Iterator.Direction = threading.Iterator_FROM_END
+						} else if i, ok := p.Args["first"].(int); ok {
+							req.Iterator.Count = uint32(i)
+							req.Iterator.Direction = threading.Iterator_FROM_START
+						} else {
+							req.Iterator.Count = 20 // default
+							req.Iterator.Direction = threading.Iterator_FROM_START
+						}
+						res, err := ram.ThreadItems(ctx, req)
+						if err != nil {
+							return nil, err
+						}
+
+						cn := &Connection{
+							Edges: make([]*Edge, len(res.Edges)),
+						}
+						if req.Iterator.Direction == threading.Iterator_FROM_START {
+							cn.PageInfo.HasNextPage = res.HasMore
+						} else {
+							cn.PageInfo.HasPreviousPage = res.HasMore
+						}
+
+						for i, e := range res.Edges {
+							it, err := transformThreadItemToResponse(e.Item, "", acc.ID, svc.mediaSigner)
+							if err != nil {
+								golog.Errorf("Failed to transform thread item %s: %s", e.Item.ID, err)
+								continue
+							}
+							cn.Edges[i] = &Edge{
+								Node:   it,
+								Cursor: ConnectionCursor(e.Cursor),
+							}
+						}
+
+						return cn, nil
+					}),
 			},
 			"deeplink": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.String),

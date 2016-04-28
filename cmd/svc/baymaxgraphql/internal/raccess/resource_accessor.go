@@ -390,8 +390,18 @@ func (m *resourceAccessor) EntityDomain(ctx context.Context, entityID, domain st
 	return res, nil
 }
 
-// TODO: This is currently a single org account hack
 func (m *resourceAccessor) EntityForAccountID(ctx context.Context, orgID, accountID string) (*directory.Entity, error) {
+	// Check our cached account entities first
+	acc := gqlctx.Account(ctx)
+	if acc != nil && acc.ID == accountID {
+		ents := gqlctx.AccountEntities(ctx)
+		if ents != nil {
+			ent, ok := ents[orgID]
+			if ok {
+				return ent, nil
+			}
+		}
+	}
 	// Note: Authorization is done at the next level down
 	entities, err := m.EntitiesForExternalID(ctx, accountID, []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS}, 0, nil)
 	if err != nil {

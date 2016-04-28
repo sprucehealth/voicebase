@@ -1557,26 +1557,24 @@ func internalError(err error) error {
 }
 
 func (s *threadsServer) forExternalViewer(ctx context.Context, viewerEntityID string) (bool, error) {
-	// FIXME: internal messages are getting filtered out of views for providers.
-	return false, nil
-	// // Default to not showing internal notes for privacy reasons
-	// forExternal := true
-	// if viewerEntityID != "" {
-	// 	ent, err := directory.SingleEntity(ctx, s.directoryClient, &directory.LookupEntitiesRequest{
-	// 		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-	// 		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-	// 			EntityID: viewerEntityID,
-	// 		},
-	// 		RequestedInformation: &directory.RequestedInformation{
-	// 			Depth: 0,
-	// 		},
-	// 	})
-	// 	if grpc.Code(err) == codes.NotFound {
-	// 		return false, grpcErrorf(codes.NotFound, "Viewing entity %s not found", viewerEntityID)
-	// 	} else if err != nil {
-	// 		return false, internalError(err)
-	// 	}
-	// 	forExternal = ent.Type == directory.EntityType_EXTERNAL || ent.Type == directory.EntityType_PATIENT
-	// }
-	// return forExternal, nil
+	// Default to not showing internal notes for privacy reasons
+	forExternal := true
+	if viewerEntityID != "" {
+		ent, err := directory.SingleEntity(ctx, s.directoryClient, &directory.LookupEntitiesRequest{
+			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+				EntityID: viewerEntityID,
+			},
+			RequestedInformation: &directory.RequestedInformation{
+				Depth: 0,
+			},
+		})
+		if grpc.Code(err) == codes.NotFound {
+			return false, grpcErrorf(codes.NotFound, "Viewing entity %s not found", viewerEntityID)
+		} else if err != nil {
+			return false, internalError(err)
+		}
+		forExternal = ent.Type == directory.EntityType_EXTERNAL || ent.Type == directory.EntityType_PATIENT
+	}
+	return forExternal, nil
 }

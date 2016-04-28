@@ -234,6 +234,14 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 	// then the account can be updated in the context.
 	ctx = gqlctx.WithAccount(ctx, acc)
 
+	// Since we are authenticated, cache a collection of entity information for the account
+	eMap, err := h.orgToEntityMapForAccount(ctx, acc)
+	if err != nil {
+		// Don't hard fail here since we want functionality not involving this context to still work
+		golog.Errorf("Failed to collect org to entity map for account %s: %s", acc.ID, err)
+	}
+	ctx = gqlctx.WithAccountEntities(ctx, eMap)
+
 	requestID, err := idgen.NewID()
 	if err != nil {
 		golog.Errorf("failed to generate request ID: %s", err)
@@ -288,4 +296,28 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 	}
 
 	httputil.JSONResponse(w, http.StatusOK, response)
+}
+
+func (h *graphQLHandler) orgToEntityMapForAccount(ctx context.Context, acc *auth.Account) (map[string]*directory.Entity, error) {
+	if acc == nil {
+		return make(map[string]*directory.Entity), nil
+	}
+	entities, err := h.ram.EntitiesForExternalID(
+		ctx,
+		acc.ID,
+		[]directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
+		0,
+		[]directory.EntityStatus{directory.EntityStatus_ACTIVE})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	entMap := make(map[string]*directory.Entity, len(entities))
+	for _, ent := range entities {
+		for _, membership := range ent.Memberships {
+			if membership.Type == directory.EntityType_ORGANIZATION {
+				entMap[membership.ID] = ent
+			}
+		}
+	}
+	return entMap, nil
 }
