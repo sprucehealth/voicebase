@@ -45,7 +45,7 @@ type DAL interface {
 	Transact(trans func(dal DAL) error) (err error)
 	InsertEntity(model *Entity) (EntityID, error)
 	Entity(id EntityID) (*Entity, error)
-	Entities(ids []EntityID, statuses []EntityStatus) ([]*Entity, error)
+	Entities(ids []EntityID, statuses []EntityStatus, types []EntityType) ([]*Entity, error)
 	UpdateEntity(id EntityID, update *EntityUpdate) (int64, error)
 	DeleteEntity(id EntityID) (int64, error)
 	UpsertSerializedClientEntityContact(model *SerializedClientEntityContact) error
@@ -58,7 +58,7 @@ type DAL interface {
 	ExternalEntityIDsForEntities(entityID []EntityID) ([]*ExternalEntityID, error)
 	InsertEntityMembership(model *EntityMembership) error
 	EntityMemberships(id EntityID) ([]*EntityMembership, error)
-	EntityMembers(id EntityID, statuses []EntityStatus) ([]*Entity, error)
+	EntityMembers(id EntityID, statuses []EntityStatus, types []EntityType) ([]*Entity, error)
 	InsertEntityContact(model *EntityContact) (EntityContactID, error)
 	InsertEntityContacts(models []*EntityContact) error
 	EntityContact(id EntityContactID) (*EntityContact, error)
@@ -658,7 +658,7 @@ func (d *dal) Entity(id EntityID) (*Entity, error) {
 }
 
 // Entities returns the entity record associated with the provided IDs
-func (d *dal) Entities(ids []EntityID, statuses []EntityStatus) ([]*Entity, error) {
+func (d *dal) Entities(ids []EntityID, statuses []EntityStatus, types []EntityType) ([]*Entity, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
@@ -668,7 +668,7 @@ func (d *dal) Entities(ids []EntityID, statuses []EntityStatus) ([]*Entity, erro
 		vals[i] = v
 	}
 	rows, err := d.db.Query(
-		selectEntity+` WHERE id IN (`+dbutil.MySQLArgs(len(ids))+`) `+andEntityStatusIN(statuses), vals...)
+		selectEntity+` WHERE id IN (`+dbutil.MySQLArgs(len(ids))+`) `+andEntityStatusIn(statuses)+` `+andEntityTypeIn(types), vals...)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -871,10 +871,10 @@ func (d *dal) EntityMemberships(id EntityID) ([]*EntityMembership, error) {
 }
 
 // EntityMembers returns all the members of the provided entity id
-func (d *dal) EntityMembers(id EntityID, statuses []EntityStatus) ([]*Entity, error) {
+func (d *dal) EntityMembers(id EntityID, statuses []EntityStatus, types []EntityType) ([]*Entity, error) {
 	rows, err := d.db.Query(
 		selectEntity+` JOIN entity_membership ON entity_membership.entity_id = entity.id
-		  WHERE entity_membership.target_entity_id = ? `+andEntityStatusIN(statuses), id)
+		  WHERE entity_membership.target_entity_id = ? `+andEntityStatusIn(statuses)+` `+andEntityTypeIn(types), id)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -1257,18 +1257,28 @@ const selectEntity = `
     SELECT entity.id, entity.middle_initial, entity.last_name, entity.note, entity.created, entity.modified, entity.display_name, entity.first_name, entity.group_name, entity.type, entity.status, entity.short_title, entity.long_title, entity.gender, entity.dob, entity.account_id
       FROM entity`
 
-func andEntityStatusIN(ss []EntityStatus) string {
+func andEntityStatusIn(ss []EntityStatus) string {
 	if len(ss) == 0 {
 		return ""
 	}
-	q := `AND entity.status IN (`
+
+	statuses := make([]string, len(ss))
 	for i, s := range ss {
-		q += `'` + string(s) + `'`
-		if i != (len(ss) - 1) {
-			q += ", "
-		}
+		statuses[i] = `'` + string(s) + `'`
 	}
-	return q + `)`
+	return fmt.Sprintf(`AND entity.status IN (%s)`, strings.Join(statuses, ","))
+}
+
+func andEntityTypeIn(types []EntityType) string {
+	if len(types) == 0 {
+		return ""
+	}
+
+	typeStrings := make([]string, len(types))
+	for i, t := range types {
+		typeStrings[i] = `'` + string(t) + `'`
+	}
+	return fmt.Sprintf(`AND entity.type IN (%s)`, strings.Join(typeStrings, ","))
 }
 
 func scanEntity(row dbutil.Scanner) (*Entity, error) {

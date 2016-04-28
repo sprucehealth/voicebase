@@ -25,7 +25,7 @@ func TestLookupEntitiesByEntityID(t *testing.T) {
 	s := New(dl, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
-	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{eID1}, ([]dal.EntityStatus)(nil)), []*dal.Entity{
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{eID1}, ([]dal.EntityStatus)(nil), []dal.EntityType{}), []*dal.Entity{
 		{
 			ID:          eID1,
 			DisplayName: "entity1",
@@ -55,7 +55,7 @@ func TestLookupEntitiesByBatchEntityID(t *testing.T) {
 	test.OK(t, err)
 	eID2, err := dal.NewEntityID()
 	test.OK(t, err)
-	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{eID1, eID2}, ([]dal.EntityStatus)(nil)), []*dal.Entity{
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{eID1, eID2}, ([]dal.EntityStatus)(nil), []dal.EntityType{}), []*dal.Entity{
 		{
 			ID:          eID1,
 			DisplayName: "entity1",
@@ -103,7 +103,7 @@ func TestLookupEntitiesByExternalID(t *testing.T) {
 			EntityID: eID2,
 		},
 	}, nil))
-	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{eID1, eID2}, ([]dal.EntityStatus)(nil)), []*dal.Entity{
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{eID1, eID2}, ([]dal.EntityStatus)(nil), []dal.EntityType{}), []*dal.Entity{
 		{
 			ID:          eID1,
 			DisplayName: "entity1",
@@ -139,7 +139,7 @@ func TestLookupEntitiesNoResults(t *testing.T) {
 	s := New(dl, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
-	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{eID1}, []dal.EntityStatus{dal.EntityStatusActive}), []*dal.Entity{}, nil))
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{eID1}, []dal.EntityStatus{dal.EntityStatusActive}, []dal.EntityType{}), []*dal.Entity{}, nil))
 	_, err = s.LookupEntities(context.Background(), &directory.LookupEntitiesRequest{
 		LookupKeyType:  directory.LookupEntitiesRequest_ENTITY_ID,
 		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{EntityID: eID1.String()},
@@ -168,7 +168,7 @@ func TestLookupEntitiesByContact(t *testing.T) {
 			EntityID: eID2,
 		},
 	}, nil))
-	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{eID1, eID2}, []dal.EntityStatus{dal.EntityStatusActive, dal.EntityStatusDeleted}), []*dal.Entity{
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{eID1, eID2}, []dal.EntityStatus{dal.EntityStatusActive, dal.EntityStatusDeleted}, []dal.EntityType{}), []*dal.Entity{
 		{
 			ID:          eID1,
 			DisplayName: "entity1",
@@ -646,7 +646,9 @@ func TestLookupEntitiesAdditionalInformationGraphCrawl(t *testing.T) {
 	eID3, err := dal.NewEntityID()
 	test.OK(t, err)
 	statuses := []dal.EntityStatus{dal.EntityStatusActive}
-	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{eID1}, statuses), []*dal.Entity{
+	rootTypes := []dal.EntityType{dal.EntityTypeOrganization}
+	childTypes := []dal.EntityType{dal.EntityTypeInternal}
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{eID1}, statuses, rootTypes), []*dal.Entity{
 		{
 			ID:          eID1,
 			DisplayName: "entity1",
@@ -659,7 +661,7 @@ func TestLookupEntitiesAdditionalInformationGraphCrawl(t *testing.T) {
 			TargetEntityID: eID2,
 		},
 	}, nil))
-	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{eID2}, statuses), []*dal.Entity{
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{eID2}, statuses, childTypes), []*dal.Entity{
 		{
 			ID:          eID2,
 			DisplayName: "entity2",
@@ -668,8 +670,8 @@ func TestLookupEntitiesAdditionalInformationGraphCrawl(t *testing.T) {
 		},
 	}, nil))
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.EntityMemberships, eID2), []*dal.EntityMembership{}, nil))
-	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{}, statuses), []*dal.Entity{}, nil))
-	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.EntityMembers, eID2, statuses), []*dal.Entity{}, nil))
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{}, statuses, childTypes), []*dal.Entity{}, nil))
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.EntityMembers, eID2, statuses, childTypes), []*dal.Entity{}, nil))
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.ExternalEntityIDsForEntities, []dal.EntityID{eID2}), []*dal.ExternalEntityID{
 		{ExternalID: "external2"},
 	}, nil))
@@ -679,7 +681,7 @@ func TestLookupEntitiesAdditionalInformationGraphCrawl(t *testing.T) {
 			Value: "+12345678912",
 		},
 	}, nil))
-	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.EntityMembers, eID1, statuses), []*dal.Entity{
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.EntityMembers, eID1, statuses, childTypes), []*dal.Entity{
 		{
 			ID:     eID3,
 			Type:   dal.EntityTypeInternal,
@@ -687,8 +689,8 @@ func TestLookupEntitiesAdditionalInformationGraphCrawl(t *testing.T) {
 		},
 	}, nil))
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.EntityMemberships, eID3), []*dal.EntityMembership{}, nil))
-	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{}, statuses), []*dal.Entity{}, nil))
-	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.EntityMembers, eID3, statuses), []*dal.Entity{}, nil))
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{}, statuses, childTypes), []*dal.Entity{}, nil))
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.EntityMembers, eID3, statuses, childTypes), []*dal.Entity{}, nil))
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.ExternalEntityIDsForEntities, []dal.EntityID{eID3}), []*dal.ExternalEntityID{
 		{ExternalID: "external3"},
 	}, nil))
@@ -719,7 +721,9 @@ func TestLookupEntitiesAdditionalInformationGraphCrawl(t *testing.T) {
 				directory.EntityInformation_MEMBERSHIPS,
 			},
 		},
-		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes:  []directory.EntityType{directory.EntityType_ORGANIZATION},
+		ChildTypes: []directory.EntityType{directory.EntityType_INTERNAL},
 	})
 	test.OK(t, err)
 

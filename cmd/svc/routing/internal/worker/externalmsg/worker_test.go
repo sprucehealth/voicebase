@@ -909,6 +909,8 @@ func TestWeChatSpam(t *testing.T) {
 				directory.EntityInformation_EXTERNAL_IDS,
 			},
 		},
+		RootTypes:  []directory.EntityType{directory.EntityType_ORGANIZATION},
+		ChildTypes: []directory.EntityType{directory.EntityType_INTERNAL},
 	}).WithReturns(&directory.LookupEntitiesResponse{
 		Entities: []*directory.Entity{
 			{

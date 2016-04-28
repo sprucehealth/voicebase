@@ -124,10 +124,10 @@ func testSendMessageSMS(t *testing.T, revealSender bool) {
 		RequestedInformation: &directory.RequestedInformation{
 			Depth: 1,
 			EntityInformation: []directory.EntityInformation{
-				directory.EntityInformation_MEMBERS,
 				directory.EntityInformation_CONTACTS,
 			},
 		},
+		RootTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
 	}))
 	md.Expect(mock.NewExpectation(md.LookupEntities, context.Background(), &directory.LookupEntitiesRequest{
 		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
@@ -137,10 +137,10 @@ func testSendMessageSMS(t *testing.T, revealSender bool) {
 		RequestedInformation: &directory.RequestedInformation{
 			Depth: 1,
 			EntityInformation: []directory.EntityInformation{
-				directory.EntityInformation_MEMBERS,
 				directory.EntityInformation_CONTACTS,
 			},
 		},
+		RootTypes: []directory.EntityType{directory.EntityType_EXTERNAL},
 	}))
 
 	if revealSender {
@@ -313,10 +313,10 @@ func testSendingEmail(t *testing.T, revealSender bool) {
 		RequestedInformation: &directory.RequestedInformation{
 			Depth: 1,
 			EntityInformation: []directory.EntityInformation{
-				directory.EntityInformation_MEMBERS,
 				directory.EntityInformation_CONTACTS,
 			},
 		},
+		RootTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
 	}))
 	md.Expect(mock.NewExpectation(md.LookupEntities, context.Background(), &directory.LookupEntitiesRequest{
 		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
@@ -326,10 +326,10 @@ func testSendingEmail(t *testing.T, revealSender bool) {
 		RequestedInformation: &directory.RequestedInformation{
 			Depth: 1,
 			EntityInformation: []directory.EntityInformation{
-				directory.EntityInformation_MEMBERS,
 				directory.EntityInformation_CONTACTS,
 			},
 		},
+		RootTypes: []directory.EntityType{directory.EntityType_EXTERNAL},
 	}))
 
 	if revealSender {
@@ -501,10 +501,10 @@ func TestSendMessage_Multiple(t *testing.T) {
 		RequestedInformation: &directory.RequestedInformation{
 			Depth: 1,
 			EntityInformation: []directory.EntityInformation{
-				directory.EntityInformation_MEMBERS,
 				directory.EntityInformation_CONTACTS,
 			},
 		},
+		RootTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
 	}))
 	md.Expect(mock.NewExpectation(md.LookupEntities, context.Background(), &directory.LookupEntitiesRequest{
 		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
@@ -514,10 +514,10 @@ func TestSendMessage_Multiple(t *testing.T) {
 		RequestedInformation: &directory.RequestedInformation{
 			Depth: 1,
 			EntityInformation: []directory.EntityInformation{
-				directory.EntityInformation_MEMBERS,
 				directory.EntityInformation_CONTACTS,
 			},
 		},
+		RootTypes: []directory.EntityType{directory.EntityType_EXTERNAL},
 	}))
 
 	msettings := settingsmock.New(t)

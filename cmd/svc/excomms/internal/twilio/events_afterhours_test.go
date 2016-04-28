@@ -36,7 +36,9 @@ func TestAfterHours_IncomingCall_SendAllCallsToVM_DefaultGreeting(t *testing.T) 
 		RequestedInformation: &directory.RequestedInformation{
 			Depth: 0,
 		},
-		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes:  []directory.EntityType{directory.EntityType_ORGANIZATION},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION, directory.EntityType_INTERNAL},
 	}).WithReturns(&directory.LookupEntitiesByContactResponse{
 		Entities: []*directory.Entity{
 			{
@@ -269,7 +271,9 @@ func TestAfterHours_IncomingCall_SendAllCallsToVM_CustomGreeting(t *testing.T) {
 		RequestedInformation: &directory.RequestedInformation{
 			Depth: 0,
 		},
-		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes:  []directory.EntityType{directory.EntityType_ORGANIZATION},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION, directory.EntityType_INTERNAL},
 	}).WithReturns(&directory.LookupEntitiesByContactResponse{
 		Entities: []*directory.Entity{
 			{

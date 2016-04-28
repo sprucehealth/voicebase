@@ -357,6 +357,8 @@ type LookupEntitiesRequest struct {
 	LookupKeyOneof       isLookupEntitiesRequest_LookupKeyOneof `protobuf_oneof:"lookup_key_oneof"`
 	RequestedInformation *RequestedInformation                  `protobuf:"bytes,4,opt,name=requested_information" json:"requested_information,omitempty"`
 	Statuses             []EntityStatus                         `protobuf:"varint,5,rep,name=statuses,enum=directory.EntityStatus" json:"statuses,omitempty"`
+	RootTypes            []EntityType                           `protobuf:"varint,7,rep,name=root_types,enum=directory.EntityType" json:"root_types,omitempty"`
+	ChildTypes           []EntityType                           `protobuf:"varint,8,rep,name=child_types,enum=directory.EntityType" json:"child_types,omitempty"`
 }
 
 func (m *LookupEntitiesRequest) Reset()      { *m = LookupEntitiesRequest{} }
@@ -586,6 +588,8 @@ type LookupEntitiesByContactRequest struct {
 	ContactValue         string                `protobuf:"bytes,1,opt,name=contact_value,proto3" json:"contact_value,omitempty"`
 	RequestedInformation *RequestedInformation `protobuf:"bytes,4,opt,name=requested_information" json:"requested_information,omitempty"`
 	Statuses             []EntityStatus        `protobuf:"varint,5,rep,name=statuses,enum=directory.EntityStatus" json:"statuses,omitempty"`
+	RootTypes            []EntityType          `protobuf:"varint,6,rep,name=root_types,enum=directory.EntityType" json:"root_types,omitempty"`
+	ChildTypes           []EntityType          `protobuf:"varint,7,rep,name=child_types,enum=directory.EntityType" json:"child_types,omitempty"`
 }
 
 func (m *LookupEntitiesByContactRequest) Reset()      { *m = LookupEntitiesByContactRequest{} }
@@ -1393,6 +1397,22 @@ func (this *LookupEntitiesRequest) Equal(that interface{}) bool {
 			return false
 		}
 	}
+	if len(this.RootTypes) != len(that1.RootTypes) {
+		return false
+	}
+	for i := range this.RootTypes {
+		if this.RootTypes[i] != that1.RootTypes[i] {
+			return false
+		}
+	}
+	if len(this.ChildTypes) != len(that1.ChildTypes) {
+		return false
+	}
+	for i := range this.ChildTypes {
+		if this.ChildTypes[i] != that1.ChildTypes[i] {
+			return false
+		}
+	}
 	return true
 }
 func (this *LookupEntitiesRequest_EntityID) Equal(that interface{}) bool {
@@ -1697,6 +1717,22 @@ func (this *LookupEntitiesByContactRequest) Equal(that interface{}) bool {
 	}
 	for i := range this.Statuses {
 		if this.Statuses[i] != that1.Statuses[i] {
+			return false
+		}
+	}
+	if len(this.RootTypes) != len(that1.RootTypes) {
+		return false
+	}
+	for i := range this.RootTypes {
+		if this.RootTypes[i] != that1.RootTypes[i] {
+			return false
+		}
+	}
+	if len(this.ChildTypes) != len(that1.ChildTypes) {
+		return false
+	}
+	for i := range this.ChildTypes {
+		if this.ChildTypes[i] != that1.ChildTypes[i] {
 			return false
 		}
 	}
@@ -2501,7 +2537,7 @@ func (this *LookupEntitiesRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 10)
+	s := make([]string, 0, 12)
 	s = append(s, "&directory.LookupEntitiesRequest{")
 	s = append(s, "LookupKeyType: "+fmt.Sprintf("%#v", this.LookupKeyType)+",\n")
 	if this.LookupKeyOneof != nil {
@@ -2511,6 +2547,8 @@ func (this *LookupEntitiesRequest) GoString() string {
 		s = append(s, "RequestedInformation: "+fmt.Sprintf("%#v", this.RequestedInformation)+",\n")
 	}
 	s = append(s, "Statuses: "+fmt.Sprintf("%#v", this.Statuses)+",\n")
+	s = append(s, "RootTypes: "+fmt.Sprintf("%#v", this.RootTypes)+",\n")
+	s = append(s, "ChildTypes: "+fmt.Sprintf("%#v", this.ChildTypes)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -2628,13 +2666,15 @@ func (this *LookupEntitiesByContactRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 7)
+	s := make([]string, 0, 9)
 	s = append(s, "&directory.LookupEntitiesByContactRequest{")
 	s = append(s, "ContactValue: "+fmt.Sprintf("%#v", this.ContactValue)+",\n")
 	if this.RequestedInformation != nil {
 		s = append(s, "RequestedInformation: "+fmt.Sprintf("%#v", this.RequestedInformation)+",\n")
 	}
 	s = append(s, "Statuses: "+fmt.Sprintf("%#v", this.Statuses)+",\n")
+	s = append(s, "RootTypes: "+fmt.Sprintf("%#v", this.RootTypes)+",\n")
+	s = append(s, "ChildTypes: "+fmt.Sprintf("%#v", this.ChildTypes)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -3886,6 +3926,20 @@ func (m *LookupEntitiesRequest) MarshalTo(data []byte) (int, error) {
 			i = encodeVarintSvc(data, i, uint64(num))
 		}
 	}
+	if len(m.RootTypes) > 0 {
+		for _, num := range m.RootTypes {
+			data[i] = 0x38
+			i++
+			i = encodeVarintSvc(data, i, uint64(num))
+		}
+	}
+	if len(m.ChildTypes) > 0 {
+		for _, num := range m.ChildTypes {
+			data[i] = 0x40
+			i++
+			i = encodeVarintSvc(data, i, uint64(num))
+		}
+	}
 	return i, nil
 }
 
@@ -4203,6 +4257,20 @@ func (m *LookupEntitiesByContactRequest) MarshalTo(data []byte) (int, error) {
 	if len(m.Statuses) > 0 {
 		for _, num := range m.Statuses {
 			data[i] = 0x28
+			i++
+			i = encodeVarintSvc(data, i, uint64(num))
+		}
+	}
+	if len(m.RootTypes) > 0 {
+		for _, num := range m.RootTypes {
+			data[i] = 0x30
+			i++
+			i = encodeVarintSvc(data, i, uint64(num))
+		}
+	}
+	if len(m.ChildTypes) > 0 {
+		for _, num := range m.ChildTypes {
+			data[i] = 0x38
 			i++
 			i = encodeVarintSvc(data, i, uint64(num))
 		}
@@ -5238,6 +5306,16 @@ func (m *LookupEntitiesRequest) Size() (n int) {
 			n += 1 + sovSvc(uint64(e))
 		}
 	}
+	if len(m.RootTypes) > 0 {
+		for _, e := range m.RootTypes {
+			n += 1 + sovSvc(uint64(e))
+		}
+	}
+	if len(m.ChildTypes) > 0 {
+		for _, e := range m.ChildTypes {
+			n += 1 + sovSvc(uint64(e))
+		}
+	}
 	return n
 }
 
@@ -5386,6 +5464,16 @@ func (m *LookupEntitiesByContactRequest) Size() (n int) {
 	}
 	if len(m.Statuses) > 0 {
 		for _, e := range m.Statuses {
+			n += 1 + sovSvc(uint64(e))
+		}
+	}
+	if len(m.RootTypes) > 0 {
+		for _, e := range m.RootTypes {
+			n += 1 + sovSvc(uint64(e))
+		}
+	}
+	if len(m.ChildTypes) > 0 {
+		for _, e := range m.ChildTypes {
 			n += 1 + sovSvc(uint64(e))
 		}
 	}
@@ -5845,6 +5933,8 @@ func (this *LookupEntitiesRequest) String() string {
 		`LookupKeyOneof:` + fmt.Sprintf("%v", this.LookupKeyOneof) + `,`,
 		`RequestedInformation:` + strings.Replace(fmt.Sprintf("%v", this.RequestedInformation), "RequestedInformation", "RequestedInformation", 1) + `,`,
 		`Statuses:` + fmt.Sprintf("%v", this.Statuses) + `,`,
+		`RootTypes:` + fmt.Sprintf("%v", this.RootTypes) + `,`,
+		`ChildTypes:` + fmt.Sprintf("%v", this.ChildTypes) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -5959,6 +6049,8 @@ func (this *LookupEntitiesByContactRequest) String() string {
 		`ContactValue:` + fmt.Sprintf("%v", this.ContactValue) + `,`,
 		`RequestedInformation:` + strings.Replace(fmt.Sprintf("%v", this.RequestedInformation), "RequestedInformation", "RequestedInformation", 1) + `,`,
 		`Statuses:` + fmt.Sprintf("%v", this.Statuses) + `,`,
+		`RootTypes:` + fmt.Sprintf("%v", this.RootTypes) + `,`,
+		`ChildTypes:` + fmt.Sprintf("%v", this.ChildTypes) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -7773,6 +7865,46 @@ func (m *LookupEntitiesRequest) Unmarshal(data []byte) error {
 			}
 			m.LookupKeyOneof = &LookupEntitiesRequest_BatchEntityID{v}
 			iNdEx = postIndex
+		case 7:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RootTypes", wireType)
+			}
+			var v EntityType
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (EntityType(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.RootTypes = append(m.RootTypes, v)
+		case 8:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ChildTypes", wireType)
+			}
+			var v EntityType
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (EntityType(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.ChildTypes = append(m.ChildTypes, v)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])
@@ -8722,6 +8854,46 @@ func (m *LookupEntitiesByContactRequest) Unmarshal(data []byte) error {
 				}
 			}
 			m.Statuses = append(m.Statuses, v)
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RootTypes", wireType)
+			}
+			var v EntityType
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (EntityType(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.RootTypes = append(m.RootTypes, v)
+		case 7:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ChildTypes", wireType)
+			}
+			var v EntityType
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (EntityType(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.ChildTypes = append(m.ChildTypes, v)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])

@@ -163,10 +163,10 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 			RequestedInformation: &directory.RequestedInformation{
 				Depth: 1,
 				EntityInformation: []directory.EntityInformation{
-					directory.EntityInformation_MEMBERS,
 					directory.EntityInformation_CONTACTS,
 				},
 			},
+			RootTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
 		},
 	)
 	if err != nil {
@@ -186,10 +186,10 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 			RequestedInformation: &directory.RequestedInformation{
 				Depth: 1,
 				EntityInformation: []directory.EntityInformation{
-					directory.EntityInformation_MEMBERS,
 					directory.EntityInformation_CONTACTS,
 				},
 			},
+			RootTypes: []directory.EntityType{directory.EntityType_EXTERNAL},
 		})
 	if err != nil {
 		return errors.Trace(err)

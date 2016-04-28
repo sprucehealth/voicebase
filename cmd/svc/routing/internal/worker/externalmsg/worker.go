@@ -578,6 +578,8 @@ func (e *externalMessageWorker) determineAccountIDsOfProvidersInOrg(ctx context.
 						directory.EntityInformation_EXTERNAL_IDS,
 					},
 				},
+				RootTypes:  []directory.EntityType{directory.EntityType_ORGANIZATION},
+				ChildTypes: []directory.EntityType{directory.EntityType_INTERNAL},
 			})
 		if err != nil {
 			return nil, errors.Trace(err)

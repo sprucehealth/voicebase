@@ -30,7 +30,9 @@ func processIncomingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 		RequestedInformation: &directory.RequestedInformation{
 			Depth: 0,
 		},
-		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes:  []directory.EntityType{directory.EntityType_ORGANIZATION},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION, directory.EntityType_INTERNAL},
 	})
 	if err != nil {
 		return "", errors.Trace(err)
@@ -238,7 +240,8 @@ func voicemailTWIML(ctx context.Context, params *rawmsg.TwilioParams, eh *events
 		RequestedInformation: &directory.RequestedInformation{
 			Depth: 0,
 		},
-		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
 	})
 	if err != nil {
 		return "", errors.Trace(err)

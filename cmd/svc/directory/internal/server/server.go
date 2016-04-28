@@ -96,14 +96,25 @@ func (s *server) LookupEntities(ctx context.Context, rd *directory.LookupEntitie
 	if err != nil {
 		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
 	}
-	entities, err := s.dl.Entities(entityIDs, statuses)
+
+	rootTypes, err := transformEntityTypes(rd.RootTypes)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
+	}
+
+	childTypes, err := transformEntityTypes(rd.ChildTypes)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
+	}
+
+	entities, err := s.dl.Entities(entityIDs, statuses, rootTypes)
 	if err != nil {
 		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 	if len(entities) == 0 {
 		return nil, grpcErrorf(codes.NotFound, "No entities located matching query")
 	}
-	pbEntities, err := getPBEntities(s.dl, entities, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation), statuses)
+	pbEntities, err := getPBEntities(s.dl, entities, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation), statuses, childTypes)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -214,7 +225,7 @@ func (s *server) CreateEntity(ctx context.Context, rd *directory.CreateEntityReq
 			return errors.Trace(err)
 		}
 
-		pbEntity, err = getPBEntity(dl, entity, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation), nil)
+		pbEntity, err = getPBEntity(dl, entity, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation), nil, nil)
 		return errors.Trace(err)
 	}); err != nil {
 		return nil, errors.Trace(err)
@@ -428,7 +439,7 @@ func (s *server) UpdateEntity(ctx context.Context, rd *directory.UpdateEntityReq
 			return errors.Trace(err)
 		}
 
-		pbEntity, err = getPBEntity(dl, entity, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation), nil)
+		pbEntity, err = getPBEntity(dl, entity, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation), nil, nil)
 		return errors.Trace(err)
 	}); err != nil {
 		return nil, errors.Trace(err)
@@ -530,7 +541,8 @@ func (s *server) CreateMembership(ctx context.Context, rd *directory.CreateMembe
 	if err != nil {
 		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
-	pbEntity, err := getPBEntity(s.dl, entity, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation), nil)
+
+	pbEntity, err := getPBEntity(s.dl, entity, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation), nil, nil)
 	if err != nil {
 		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
@@ -562,12 +574,20 @@ func (s *server) LookupEntitiesByContact(ctx context.Context, rd *directory.Look
 	if err != nil {
 		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
 	}
-	entities, err := s.dl.Entities(entityIDs, statuses)
+	rootTypes, err := transformEntityTypes(rd.RootTypes)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
+	}
+	childTypes, err := transformEntityTypes(rd.ChildTypes)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
+	}
+	entities, err := s.dl.Entities(entityIDs, statuses, rootTypes)
 	if err != nil {
 		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 
-	pbEntities, err := getPBEntities(s.dl, entities, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation), statuses)
+	pbEntities, err := getPBEntities(s.dl, entities, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation), statuses, childTypes)
 	if err != nil {
 		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
@@ -703,7 +723,7 @@ func (s *server) CreateContact(ctx context.Context, rd *directory.CreateContactR
 			return errors.Trace(err)
 		}
 
-		pbEntity, err = getPBEntity(dl, entity, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation), nil)
+		pbEntity, err = getPBEntity(dl, entity, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation), nil, nil)
 		if err != nil {
 			return errors.Trace(err)
 		}
@@ -769,7 +789,8 @@ func (s *server) CreateContacts(ctx context.Context, rd *directory.CreateContact
 		if err != nil {
 			return errors.Trace(err)
 		}
-		pbEntity, err = getPBEntity(dl, entity, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation), nil)
+
+		pbEntity, err = getPBEntity(dl, entity, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation), nil, nil)
 		if err != nil {
 			return errors.Trace(err)
 		}
@@ -848,7 +869,8 @@ func (s *server) UpdateContacts(ctx context.Context, rd *directory.UpdateContact
 		if err != nil {
 			return errors.Trace(err)
 		}
-		pbEntity, err = getPBEntity(dl, entity, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation), nil)
+
+		pbEntity, err = getPBEntity(dl, entity, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation), nil, nil)
 		if err != nil {
 			return errors.Trace(err)
 		}
@@ -903,7 +925,7 @@ func (s *server) DeleteContacts(ctx context.Context, rd *directory.DeleteContact
 			return errors.Trace(err)
 		}
 
-		pbEntity, err = getPBEntity(dl, entity, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation), []dal.EntityStatus{})
+		pbEntity, err = getPBEntity(dl, entity, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation), []dal.EntityStatus{}, nil)
 		if err != nil {
 			return errors.Trace(err)
 		}
@@ -959,6 +981,19 @@ func transformEntityStatuses(ss []directory.EntityStatus) ([]dal.EntityStatus, e
 	return dss, nil
 }
 
+func transformEntityTypes(types []directory.EntityType) ([]dal.EntityType, error) {
+	transformedTypes := make([]dal.EntityType, len(types))
+	for i, t := range types {
+		parsedType, err := dal.ParseEntityType(t.String())
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		transformedTypes[i] = parsedType
+	}
+
+	return transformedTypes, nil
+}
+
 func transformExternalIDs(dExternalEntityIDs []*dal.ExternalEntityID) []*directory.ExternalID {
 	pExternalID := make([]*directory.ExternalID, len(dExternalEntityIDs))
 	for i, eID := range dExternalEntityIDs {
@@ -970,10 +1005,10 @@ func transformExternalIDs(dExternalEntityIDs []*dal.ExternalEntityID) []*directo
 	return pExternalID
 }
 
-func getPBEntities(dl dal.DAL, dEntities []*dal.Entity, entityInformation []directory.EntityInformation, depth int64, statuses []dal.EntityStatus) ([]*directory.Entity, error) {
+func getPBEntities(dl dal.DAL, dEntities []*dal.Entity, entityInformation []directory.EntityInformation, depth int64, statuses []dal.EntityStatus, types []dal.EntityType) ([]*directory.Entity, error) {
 	pbEntities := make([]*directory.Entity, len(dEntities))
 	for i, e := range dEntities {
-		pbEntity, err := getPBEntity(dl, e, entityInformation, depth, statuses)
+		pbEntity, err := getPBEntity(dl, e, entityInformation, depth, statuses, types)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
@@ -983,7 +1018,7 @@ func getPBEntities(dl dal.DAL, dEntities []*dal.Entity, entityInformation []dire
 }
 
 // Note: How we optimize this deep crawl is very likely to change
-func getPBEntity(dl dal.DAL, dEntity *dal.Entity, entityInformation []directory.EntityInformation, depth int64, statuses []dal.EntityStatus) (*directory.Entity, error) {
+func getPBEntity(dl dal.DAL, dEntity *dal.Entity, entityInformation []directory.EntityInformation, depth int64, statuses []dal.EntityStatus, types []dal.EntityType) (*directory.Entity, error) {
 	id := dEntity.ID
 	entity, err := dalEntityAsPBEntity(dEntity)
 	if err != nil {
@@ -991,14 +1026,15 @@ func getPBEntity(dl dal.DAL, dEntity *dal.Entity, entityInformation []directory.
 	}
 	if depth >= 0 {
 		if hasRequestedInfo(entityInformation, directory.EntityInformation_MEMBERSHIPS) {
-			memberships, err := getPBMemberships(dl, id, entityInformation, depth-1, statuses)
+			memberships, err := getPBMemberships(dl, id, entityInformation, depth-1, statuses, types)
 			if err != nil {
 				return nil, errors.Trace(err)
 			}
 			entity.Memberships = memberships
 		}
 		if hasRequestedInfo(entityInformation, directory.EntityInformation_MEMBERS) {
-			members, err := getPBMembers(dl, id, entityInformation, depth-1, statuses)
+
+			members, err := getPBMembers(dl, id, entityInformation, depth-1, statuses, types)
 			if err != nil {
 				return nil, errors.Trace(err)
 			}
@@ -1023,7 +1059,7 @@ func getPBEntity(dl dal.DAL, dEntity *dal.Entity, entityInformation []directory.
 	return entity, nil
 }
 
-func getPBMemberships(dl dal.DAL, entityID dal.EntityID, entityInformation []directory.EntityInformation, depth int64, statuses []dal.EntityStatus) ([]*directory.Entity, error) {
+func getPBMemberships(dl dal.DAL, entityID dal.EntityID, entityInformation []directory.EntityInformation, depth int64, statuses []dal.EntityStatus, types []dal.EntityType) ([]*directory.Entity, error) {
 	memberships, err := dl.EntityMemberships(entityID)
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -1032,20 +1068,20 @@ func getPBMemberships(dl dal.DAL, entityID dal.EntityID, entityInformation []dir
 	for i, membership := range memberships {
 		entityIDs[i] = membership.TargetEntityID
 	}
-	entities, err := dl.Entities(entityIDs, statuses)
+	entities, err := dl.Entities(entityIDs, statuses, types)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	pbEntities, err := getPBEntities(dl, entities, entityInformation, depth, statuses)
+	pbEntities, err := getPBEntities(dl, entities, entityInformation, depth, statuses, types)
 	return pbEntities, errors.Trace(err)
 }
 
-func getPBMembers(dl dal.DAL, entityID dal.EntityID, entityInformation []directory.EntityInformation, depth int64, statuses []dal.EntityStatus) ([]*directory.Entity, error) {
-	members, err := dl.EntityMembers(entityID, statuses)
+func getPBMembers(dl dal.DAL, entityID dal.EntityID, entityInformation []directory.EntityInformation, depth int64, statuses []dal.EntityStatus, types []dal.EntityType) ([]*directory.Entity, error) {
+	members, err := dl.EntityMembers(entityID, statuses, types)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	pbEntities, err := getPBEntities(dl, members, entityInformation, depth, statuses)
+	pbEntities, err := getPBEntities(dl, members, entityInformation, depth, statuses, types)
 	return pbEntities, errors.Trace(err)
 }
 

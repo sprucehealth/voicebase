@@ -1018,7 +1018,8 @@ func testIncomingCallStatus_Other(t *testing.T, incomingStatus rawmsg.TwilioPara
 		RequestedInformation: &directory.RequestedInformation{
 			Depth: 0,
 		},
-		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
 	}).WithReturns(&directory.LookupEntitiesByContactResponse{
 		Entities: []*directory.Entity{
 			{
