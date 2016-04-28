@@ -144,23 +144,14 @@ func (m *Manager) deploymentForBuildComplete(ev *deploy.BuildCompleteEvent) (*da
 		BuildNumber:  ev.BuildNumber,
 		Status:       dal.DeploymentStatusPending,
 	}
-	switch ev.BuildArtifact.Type() {
-	case deploy.DockerImage:
-		dockerImage := ev.BuildArtifact.(*deploy.DockerImageArtifact)
-		depData := &deploy.ECSDeployment{
-			Image: dockerImage.Image,
-			// TODO: Figure out a better way to manage this rather than special casing the config
-			ClusterDeployableConfigName: "cluster_name",
-		}
-		data, err := depData.Marshal()
-		if err != nil {
-			return nil, err
-		}
-		deploym.Data = data
-		deploym.Type = dal.DeploymentTypeEcs
-	default:
-		return nil, fmt.Errorf("Unknown build artifact type %s", ev.BuildArtifact.Type())
+	depData := &deploy.ECSDeployment{
+		Image: ev.Image,
 	}
-
+	data, err := depData.Marshal()
+	if err != nil {
+		return nil, err
+	}
+	deploym.Data = data
+	deploym.Type = dal.DeploymentTypeEcs
 	return deploym, nil
 }

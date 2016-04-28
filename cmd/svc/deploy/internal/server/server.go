@@ -636,9 +636,9 @@ func (s *server) ReportBuildComplete(ctx context.Context, in *deploy.ReportBuild
 		if in.GetDockerImage() == "" {
 			return nil, grpcErrorf(codes.InvalidArgument, "image cannot be empty for artifacts of type %s", deploy.ReportBuildCompleteRequest_DOCKER_IMAGE.String())
 		}
-		ev.BuildArtifact = &deploy.DockerImageArtifact{
-			Image: in.GetDockerImage(),
-		}
+		ev.Image = in.GetDockerImage()
+	default:
+		return nil, grpcErrorf(codes.InvalidArgument, "unknown artifact type", in.ArtifactType.String())
 	}
 
 	deploymentIDs, err := s.manager.ProcessBuildCompleteEvent(ev)
