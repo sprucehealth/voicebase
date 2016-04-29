@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"strings"
 
+	"golang.org/x/net/context"
+
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/bml"
@@ -64,7 +67,7 @@ func transformContactsToResponse(contacts []*directory.Contact) ([]*models.Conta
 	return cs, nil
 }
 
-func transformThreadToResponse(t *threading.Thread, viewingAccount *auth.Account) (*models.Thread, error) {
+func transformThreadToResponse(ctx context.Context, ram raccess.ResourceAccessor, t *threading.Thread, viewingAccount *auth.Account) (*models.Thread, error) {
 	th := &models.Thread{
 		ID: t.ID,
 		AllowInternalMessages:      isPostInternalMessageAllowed(t, viewingAccount),
@@ -76,8 +79,9 @@ func transformThreadToResponse(t *threading.Thread, viewingAccount *auth.Account
 		UnreadReference:            t.UnreadReference,
 		MessageCount:               int(t.MessageCount),
 		LastPrimaryEntityEndpoints: make([]*models.Endpoint, len(t.LastPrimaryEntityEndpoints)),
-		Type:  t.Type.String(),
-		Title: t.UserTitle,
+		EmptyStateTextMarkup:       threadEmptyStateTextMarkup(ctx, ram, t, viewingAccount),
+		Type:                       t.Type.String(),
+		Title:                      t.UserTitle,
 	}
 	if th.Title == "" {
 		th.Title = t.SystemTitle
@@ -91,9 +95,6 @@ func transformThreadToResponse(t *threading.Thread, viewingAccount *auth.Account
 		th.AllowUpdateTitle = true
 		th.AllowMentions = true
 		th.Type = models.ThreadTypeTeam
-		if t.MessageCount == 0 {
-			th.EmptyStateTextMarkup = "This is the beginning of your team conversation.\nSend a message to get things started."
-		}
 	case threading.ThreadType_EXTERNAL:
 		th.AllowDelete = true
 		th.AllowExternalDelivery = true
@@ -143,6 +144,27 @@ func isPostInternalMessageAllowed(t *threading.Thread, acc *auth.Account) bool {
 		return t.OrganizationID == *flagSpruceOrgID
 	}
 	return false
+}
+
+func threadEmptyStateTextMarkup(ctx context.Context, ram raccess.ResourceAccessor, t *threading.Thread, viewingAccount *auth.Account) string {
+	if t.MessageCount != 0 {
+		return ""
+	}
+	switch t.Type {
+	case threading.ThreadType_TEAM:
+		return "This is the beginning of your team conversation.\nSend a message to get things started."
+	case threading.ThreadType_SECURE_EXTERNAL:
+		if viewingAccount.Type == auth.AccountType_PROVIDER {
+			esm, err := ram.Entity(ctx, t.PrimaryEntityID, nil, 0)
+			if err != nil {
+				// Just log it. Don't block the thread
+				golog.Errorf("Failed to get primary entity %s for thread %s to populate empty state markup", t.PrimaryEntityID, t.ID)
+			} else {
+				return fmt.Sprintf("We've sent an invitation to %s to create a Spruce account and join the conversation.\n\nWe recommend sending a personal welcome message to kick things off.", esm.Info.DisplayName)
+			}
+		}
+	}
+	return ""
 }
 
 func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID string, mediaSigner *media.Signer) (*models.ThreadItem, error) {

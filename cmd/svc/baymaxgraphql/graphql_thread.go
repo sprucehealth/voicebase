@@ -407,7 +407,7 @@ func lookupThread(ctx context.Context, ram raccess.ResourceAccessor, threadID, v
 		return nil, err
 	}
 
-	th, err := transformThreadToResponse(thread, gqlctx.Account(ctx))
+	th, err := transformThreadToResponse(ctx, ram, thread, gqlctx.Account(ctx))
 	if err != nil {
 		return nil, errors.InternalError(ctx, err)
 	}

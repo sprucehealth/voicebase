@@ -249,7 +249,7 @@ var invitePatientsMutation = &graphql.Field{
 
 				patientThreads := make([]*models.Thread, len(threads))
 				for i, thread := range threads {
-					th, err := transformThreadToResponse(thread, acc)
+					th, err := transformThreadToResponse(ctx, ram, thread, acc)
 					if err != nil {
 						return nil, errors.InternalError(ctx, err)
 					}

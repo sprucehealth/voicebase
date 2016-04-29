@@ -103,7 +103,7 @@ var updateThreadMutation = &graphql.Field{
 			thread = res.Thread
 		}
 
-		th, err := transformThreadToResponse(thread, acc)
+		th, err := transformThreadToResponse(ctx, ram, thread, acc)
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}

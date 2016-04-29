@@ -83,7 +83,7 @@ var savedThreadQueryType = graphql.NewObject(
 					}
 					threads := make([]*models.Thread, len(res.Edges))
 					for i, e := range res.Edges {
-						t, err := transformThreadToResponse(e.Thread, acc)
+						t, err := transformThreadToResponse(ctx, ram, e.Thread, acc)
 						if err != nil {
 							return nil, errors.InternalError(ctx, fmt.Errorf("Failed to transform thread: %s", err))
 						}

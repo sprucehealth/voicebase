@@ -92,7 +92,7 @@ func patientThreads(p graphql.ResolveParams, a *models.PatientAccount) (*Connect
 	}
 	threads := make([]*models.Thread, len(res.Edges))
 	for i, e := range res.Edges {
-		t, err := transformThreadToResponse(e.Thread, gqlctx.Account(ctx))
+		t, err := transformThreadToResponse(ctx, ram, e.Thread, gqlctx.Account(ctx))
 		if err != nil {
 			return nil, errors.InternalError(ctx, fmt.Errorf("Failed to transform thread: %s", err))
 		}
