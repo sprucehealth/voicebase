@@ -134,6 +134,12 @@ func (s *server) GetValues(ctx context.Context, in *settings.GetValuesRequest) (
 					StringList: config.GetStringList().Default,
 				}
 			}
+		case models.ConfigType_INTEGER:
+			if config.GetInteger().Default != nil {
+				val.Value = &models.Value_Integer{
+					Integer: config.GetInteger().Default,
+				}
+			}
 		default:
 			return nil, grpcErrorf(codes.Unimplemented, "config type %s not supported", config.Type)
 		}
