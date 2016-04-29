@@ -162,7 +162,7 @@ var threadType = graphql.NewObject(
 							ms[i] = e
 						}
 						return ms, nil
-					case models.ThreadTypeExternal, models.ThreadTypeSupport:
+					case models.ThreadTypeExternal, models.ThreadTypeSupport, models.ThreadTypeLegacyTeam:
 
 						// no addressable entities to return for a support thread not in spruce support
 						if th.Type == models.ThreadTypeSupport && th.OrganizationID != *flagSpruceOrgID {

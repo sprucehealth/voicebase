@@ -116,6 +116,7 @@ func transformThreadToResponse(t *threading.Thread, viewingAccount *auth.Account
 		th.AllowMentions = th.OrganizationID == *flagSpruceOrgID
 	case threading.ThreadType_LEGACY_TEAM:
 		th.Type = models.ThreadTypeLegacyTeam
+		th.AllowMentions = true
 	case threading.ThreadType_UNKNOWN: // TODO: remove this once old threads are migrated
 		th.Type = models.ThreadTypeUnknown
 	default:
