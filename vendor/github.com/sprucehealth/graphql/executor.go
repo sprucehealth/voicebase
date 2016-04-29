@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"sync"
 
 	"github.com/sprucehealth/graphql/gqlerrors"
 	"github.com/sprucehealth/graphql/language/ast"
@@ -78,9 +79,8 @@ type ExecutionContext struct {
 }
 
 func buildExecutionContext(p BuildExecutionCtxParams) (*ExecutionContext, error) {
-	eCtx := &ExecutionContext{}
-	operations := map[string]ast.Definition{}
-	fragments := map[string]ast.Definition{}
+	operations := make(map[string]ast.Definition)
+	fragments := make(map[string]ast.Definition)
 	for _, statement := range p.AST.Definitions {
 		switch stm := statement.(type) {
 		case *ast.OperationDefinition:
@@ -100,14 +100,14 @@ func buildExecutionContext(p BuildExecutionCtxParams) (*ExecutionContext, error)
 		}
 	}
 
-	if (p.OperationName == "") && (len(operations) != 1) {
+	if p.OperationName == "" && len(operations) != 1 {
 		return nil, errors.New("Must provide operation name if query contains multiple operations.")
 	}
 
 	opName := p.OperationName
 	if opName == "" {
 		// get first opName
-		for k, _ := range operations {
+		for k := range operations {
 			opName = k
 			break
 		}
@@ -123,13 +123,15 @@ func buildExecutionContext(p BuildExecutionCtxParams) (*ExecutionContext, error)
 		return nil, err
 	}
 
-	eCtx.Schema = p.Schema
-	eCtx.Fragments = fragments
-	eCtx.Root = p.Root
-	eCtx.Operation = operation
-	eCtx.VariableValues = variableValues
-	eCtx.Errors = p.Errors
-	eCtx.Context = p.Context
+	eCtx := &ExecutionContext{
+		Schema:         p.Schema,
+		Fragments:      fragments,
+		Root:           p.Root,
+		Operation:      operation,
+		VariableValues: variableValues,
+		Errors:         p.Errors,
+		Context:        p.Context,
+	}
 	return eCtx, nil
 }
 
@@ -160,9 +162,8 @@ func executeOperation(p ExecuteOperationParams) *Result {
 
 	if p.Operation.GetOperation() == "mutation" {
 		return executeFieldsSerially(executeFieldsParams)
-	} else {
-		return executeFields(executeFieldsParams)
 	}
+	return executeFields(executeFieldsParams)
 }
 
 // Extracts the root type of the operation from the schema.
@@ -180,9 +181,8 @@ func getOperationRootType(schema Schema, operation ast.Definition) (*Object, err
 			return nil, errors.New("Schema is not configured for mutations")
 		}
 		return mutationType, nil
-	default:
-		return nil, errors.New("Can only execute queries and mutations")
 	}
+	return nil, errors.New("Can only execute queries and mutations")
 }
 
 type ExecuteFieldsParams struct {
@@ -195,13 +195,13 @@ type ExecuteFieldsParams struct {
 // Implements the "Evaluating selection sets" section of the spec for "write" mode.
 func executeFieldsSerially(p ExecuteFieldsParams) *Result {
 	if p.Source == nil {
-		p.Source = map[string]interface{}{}
+		p.Source = make(map[string]interface{})
 	}
 	if p.Fields == nil {
-		p.Fields = map[string][]*ast.Field{}
+		p.Fields = make(map[string][]*ast.Field)
 	}
 
-	finalResults := map[string]interface{}{}
+	finalResults := make(map[string]interface{})
 	for responseName, fieldASTs := range p.Fields {
 		resolved, state := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
 		if state.hasNoFieldDefs {
@@ -219,13 +219,13 @@ func executeFieldsSerially(p ExecuteFieldsParams) *Result {
 // Implements the "Evaluating selection sets" section of the spec for "read" mode.
 func executeFields(p ExecuteFieldsParams) *Result {
 	if p.Source == nil {
-		p.Source = map[string]interface{}{}
+		p.Source = make(map[string]interface{})
 	}
 	if p.Fields == nil {
-		p.Fields = map[string][]*ast.Field{}
+		p.Fields = make(map[string][]*ast.Field)
 	}
 
-	finalResults := map[string]interface{}{}
+	finalResults := make(map[string]interface{})
 	for responseName, fieldASTs := range p.Fields {
 		resolved, state := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs)
 		if state.hasNoFieldDefs {
@@ -245,19 +245,18 @@ type CollectFieldsParams struct {
 	OperationType        *Object
 	SelectionSet         *ast.SelectionSet
 	Fields               map[string][]*ast.Field
-	VisitedFragmentNames map[string]bool
+	VisitedFragmentNames map[string]struct{}
 }
 
 // Given a selectionSet, adds all of the fields in that selection to
 // the passed in map of fields, and returns it at the end.
 func collectFields(p CollectFieldsParams) map[string][]*ast.Field {
-
 	fields := p.Fields
 	if fields == nil {
-		fields = map[string][]*ast.Field{}
+		fields = make(map[string][]*ast.Field)
 	}
 	if p.VisitedFragmentNames == nil {
-		p.VisitedFragmentNames = map[string]bool{}
+		p.VisitedFragmentNames = make(map[string]struct{})
 	}
 	if p.SelectionSet == nil {
 		return fields
@@ -269,9 +268,6 @@ func collectFields(p CollectFieldsParams) map[string][]*ast.Field {
 				continue
 			}
 			name := getFieldEntryKey(selection)
-			if _, ok := fields[name]; !ok {
-				fields[name] = []*ast.Field{}
-			}
 			fields[name] = append(fields[name], selection)
 		case *ast.InlineFragment:
 
@@ -292,11 +288,11 @@ func collectFields(p CollectFieldsParams) map[string][]*ast.Field {
 			if selection.Name != nil {
 				fragName = selection.Name.Value
 			}
-			if visited, ok := p.VisitedFragmentNames[fragName]; (ok && visited) ||
+			if _, ok := p.VisitedFragmentNames[fragName]; ok ||
 				!shouldIncludeNode(p.ExeContext, selection.Directives) {
 				continue
 			}
-			p.VisitedFragmentNames[fragName] = true
+			p.VisitedFragmentNames[fragName] = struct{}{}
 			fragment, hasFragment := p.ExeContext.Fragments[fragName]
 			if !hasFragment {
 				continue
@@ -324,7 +320,6 @@ func collectFields(p CollectFieldsParams) map[string][]*ast.Field {
 // Determines if a field should be included based on the @include and @skip
 // directives, where @skip has higher precedence than @include.
 func shouldIncludeNode(eCtx *ExecutionContext, directives []*ast.Directive) bool {
-
 	defaultReturnValue := true
 
 	var skipAST *ast.Directive
@@ -384,7 +379,6 @@ func shouldIncludeNode(eCtx *ExecutionContext, directives []*ast.Directive) bool
 
 // Determines if a fragment is applicable to the given type.
 func doesFragmentConditionMatch(eCtx *ExecutionContext, fragment ast.Node, ttype *Object) bool {
-
 	switch fragment := fragment.(type) {
 	case *ast.FragmentDefinition:
 		conditionalType, err := typeFromAST(eCtx.Schema, fragment.TypeCondition)
@@ -420,7 +414,6 @@ func doesFragmentConditionMatch(eCtx *ExecutionContext, fragment ast.Node, ttype
 
 // Implements the logic to compute the key of a given field’s entry
 func getFieldEntryKey(node *ast.Field) string {
-
 	if node.Alias != nil && node.Alias.Value != "" {
 		return node.Alias.Value
 	}
@@ -647,8 +640,8 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 	}
 
 	// Collect sub-fields to execute to complete this value.
-	subFieldASTs := map[string][]*ast.Field{}
-	visitedFragmentNames := map[string]bool{}
+	subFieldASTs := make(map[string][]*ast.Field)
+	visitedFragmentNames := make(map[string]struct{})
 	for _, fieldAST := range fieldASTs {
 		if fieldAST == nil {
 			continue
@@ -677,6 +670,16 @@ func completeValue(eCtx *ExecutionContext, returnType Type, fieldASTs []*ast.Fie
 
 }
 
+type structFieldInfo struct {
+	index     int
+	omitempty bool
+}
+
+var (
+	structTypeCacheMu sync.RWMutex
+	structTypeCache   = make(map[reflect.Type]map[string]structFieldInfo) // struct type -> field name -> field info
+)
+
 func defaultResolveFn(p ResolveParams) (interface{}, error) {
 	// try to resolve p.Source as a struct first
 	sourceVal := reflect.ValueOf(p.Source)
@@ -686,28 +689,43 @@ func defaultResolveFn(p ResolveParams) (interface{}, error) {
 	if !sourceVal.IsValid() {
 		return nil, nil
 	}
-	if sourceVal.Type().Kind() == reflect.Struct {
+	sourceType := sourceVal.Type()
+	if sourceType.Kind() == reflect.Struct {
+		structTypeCacheMu.RLock()
+		sm := structTypeCache[sourceType]
+		structTypeCacheMu.RUnlock()
+		// Cache a mapping of fields for the struct
 		// find field based on struct's json tag
 		// we could potentially create a custom `graphql` tag, but its unnecessary at this point
 		// since graphql speaks to client in a json-like way anyway
 		// so json tags are a good way to start with
-		for i := 0; i < sourceVal.NumField(); i++ {
-			valueField := sourceVal.Field(i)
-			typeField := sourceVal.Type().Field(i)
-			// try matching the field name first
-			if typeField.Name == p.Info.FieldName {
-				return valueField.Interface(), nil
+		if sm == nil {
+			structTypeCacheMu.Lock()
+			// Check again in case someone beat us
+			sm = structTypeCache[sourceType]
+			if sm == nil {
+				sm = make(map[string]structFieldInfo)
+				for i := 0; i < sourceType.NumField(); i++ {
+					typeField := sourceType.Field(i)
+					tag := typeField.Tag
+					jsonTag := tag.Get("json")
+					jsonOptions := strings.Split(jsonTag, ",")
+					if len(jsonOptions) == 0 {
+						sm[typeField.Name] = structFieldInfo{index: i}
+					} else {
+						omitempty := len(jsonOptions) > 1 && jsonOptions[1] == "omitempty"
+						sm[jsonOptions[0]] = structFieldInfo{index: i, omitempty: omitempty}
+						sm[typeField.Name] = structFieldInfo{index: i, omitempty: omitempty}
+					}
+				}
+				structTypeCache[sourceType] = sm
 			}
-			tag := typeField.Tag
-			jsonTag := tag.Get("json")
-			jsonOptions := strings.Split(jsonTag, ",")
-			if len(jsonOptions) == 0 {
-				continue
-			}
-			if jsonOptions[0] != p.Info.FieldName {
-				continue
-			}
-			if len(jsonOptions) > 1 && jsonOptions[1] == "omitempty" && isEmptyValue(valueField) {
+			structTypeCacheMu.Unlock()
+		}
+
+		if field, ok := sm[p.Info.FieldName]; ok {
+			valueField := sourceVal.Field(field.index)
+			if field.omitempty && isEmptyValue(valueField) {
 				return nil, nil
 			}
 			return valueField.Interface(), nil
@@ -743,7 +761,6 @@ func defaultResolveFn(p ResolveParams) (interface{}, error) {
  * definitions, which would cause issues.
  */
 func getFieldDef(schema Schema, parentType *Object, fieldName string) *FieldDefinition {
-
 	if parentType == nil {
 		return nil
 	}
