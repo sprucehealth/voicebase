@@ -235,7 +235,7 @@ type SerializedEntityContact struct {
 
 type SavedThreadQuery struct {
 	ID             string `json:"id"`
-	OrganizationID string `json:"id"`
+	OrganizationID string `json:"organizationID"`
 }
 
 type Organization struct {
