@@ -201,6 +201,51 @@ func TestRegisterConfig_Boolean(t *testing.T) {
 	mock.FinishAll(md)
 }
 
+func TestRegisterConfig_Integer(t *testing.T) {
+	md := dalmock.New(t)
+	md.Expect(mock.NewExpectation(md.SetConfigs, []*models.Config{
+		{
+			Title:          "hello",
+			Description:    "hi",
+			Key:            "testingkey",
+			Type:           models.ConfigType_INTEGER,
+			PossibleOwners: []models.OwnerType{},
+			AllowSubkeys:   true,
+			Config: &models.Config_Integer{
+				Integer: &models.IntegerConfig{
+					Default: &models.IntegerValue{
+						Value: 10,
+					},
+				},
+			},
+		},
+	}))
+
+	server := New(md)
+	_, err := server.RegisterConfigs(context.Background(), &settings.RegisterConfigsRequest{
+		Configs: []*settings.Config{
+			{
+				Title:          "hello",
+				Description:    "hi",
+				Key:            "testingkey",
+				Type:           settings.ConfigType_INTEGER,
+				AllowSubkeys:   true,
+				PossibleOwners: []settings.OwnerType{},
+				Config: &settings.Config_Integer{
+					Integer: &settings.IntegerConfig{
+						Default: &settings.IntegerValue{
+							Value: 10,
+						},
+					},
+				},
+			},
+		},
+	})
+	test.OK(t, err)
+
+	mock.FinishAll(md)
+}
+
 func TestRegisterConfig_StringList(t *testing.T) {
 	md := dalmock.New(t)
 	md.Expect(mock.NewExpectation(md.SetConfigs, []*models.Config{

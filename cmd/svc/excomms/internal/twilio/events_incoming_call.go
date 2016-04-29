@@ -77,16 +77,21 @@ func callForwardingList(ctx context.Context, orgEntity *directory.Entity, params
 				Key:    excommsSettings.ConfigKeyAfterHoursVociemailEnabled,
 				Subkey: params.To,
 			},
+			{
+				Key:    excommsSettings.ConfigKeyForwardingListTimeout,
+				Subkey: params.To,
+			},
 		},
 	})
 	if err != nil {
 		return "", errors.Trace(fmt.Errorf("Unable to get settings for org %s: %s", orgEntity.ID, err.Error()))
-	} else if len(valuesRes.Values) != 2 {
-		return "", errors.Trace(fmt.Errorf("Expected 2 values to be returned but got %d for org %s", len(valuesRes.Values), orgEntity.ID))
+	} else if len(valuesRes.Values) != 3 {
+		return "", errors.Trace(fmt.Errorf("Expected 3 values to be returned but got %d for org %s", len(valuesRes.Values), orgEntity.ID))
 	}
 
 	sendAllCallsToVoicemail := valuesRes.Values[0].GetBoolean().Value
 	afterHoursVoicemailEnabled := valuesRes.Values[1].GetBoolean().Value
+	timeoutInSeconds := valuesRes.Values[2].GetInteger().Value
 
 	if sendAllCallsToVoicemail && afterHoursVoicemailEnabled {
 		return afterHoursCallTriage(ctx, orgEntity, params, eh)
@@ -137,7 +142,7 @@ func callForwardingList(ctx context.Context, orgEntity *directory.Entity, params
 		},
 		&twiml.Dial{
 			CallerID:         params.To,
-			TimeoutInSeconds: 30,
+			TimeoutInSeconds: uint(timeoutInSeconds),
 			Action:           "/twilio/call/process_incoming_call_status",
 			Nouns:            numbers,
 		},

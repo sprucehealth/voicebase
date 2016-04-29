@@ -14,6 +14,8 @@
 		Value
 		BooleanConfig
 		BooleanValue
+		IntegerConfig
+		IntegerValue
 		StringListConfig
 		StringListValue
 		Item
@@ -52,6 +54,7 @@ const (
 	ConfigType_MULTI_SELECT  ConfigType = 1
 	ConfigType_STRING_LIST   ConfigType = 2
 	ConfigType_BOOLEAN       ConfigType = 3
+	ConfigType_INTEGER       ConfigType = 4
 )
 
 var ConfigType_name = map[int32]string{
@@ -59,12 +62,14 @@ var ConfigType_name = map[int32]string{
 	1: "MULTI_SELECT",
 	2: "STRING_LIST",
 	3: "BOOLEAN",
+	4: "INTEGER",
 }
 var ConfigType_value = map[string]int32{
 	"SINGLE_SELECT": 0,
 	"MULTI_SELECT":  1,
 	"STRING_LIST":   2,
 	"BOOLEAN":       3,
+	"INTEGER":       4,
 }
 
 // OwnerType enumerates the possible owners for a particular config
@@ -102,6 +107,7 @@ type Config struct {
 	//	*Config_StringList
 	//	*Config_SingleSelect
 	//	*Config_MultiSelect
+	//	*Config_Integer
 	Config isConfig_Config `protobuf_oneof:"config"`
 }
 
@@ -127,11 +133,15 @@ type Config_SingleSelect struct {
 type Config_MultiSelect struct {
 	MultiSelect *MultiSelectConfig `protobuf:"bytes,13,opt,name=multi_select,oneof"`
 }
+type Config_Integer struct {
+	Integer *IntegerConfig `protobuf:"bytes,14,opt,name=integer,oneof"`
+}
 
 func (*Config_Boolean) isConfig_Config()      {}
 func (*Config_StringList) isConfig_Config()   {}
 func (*Config_SingleSelect) isConfig_Config() {}
 func (*Config_MultiSelect) isConfig_Config()  {}
+func (*Config_Integer) isConfig_Config()      {}
 
 func (m *Config) GetConfig() isConfig_Config {
 	if m != nil {
@@ -168,6 +178,13 @@ func (m *Config) GetMultiSelect() *MultiSelectConfig {
 	return nil
 }
 
+func (m *Config) GetInteger() *IntegerConfig {
+	if x, ok := m.GetConfig().(*Config_Integer); ok {
+		return x.Integer
+	}
+	return nil
+}
+
 // XXX_OneofFuncs is for the internal use of the proto package.
 func (*Config) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), []interface{}) {
 	return _Config_OneofMarshaler, _Config_OneofUnmarshaler, []interface{}{
@@ -175,6 +192,7 @@ func (*Config) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error,
 		(*Config_StringList)(nil),
 		(*Config_SingleSelect)(nil),
 		(*Config_MultiSelect)(nil),
+		(*Config_Integer)(nil),
 	}
 }
 
@@ -200,6 +218,11 @@ func _Config_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
 	case *Config_MultiSelect:
 		_ = b.EncodeVarint(13<<3 | proto.WireBytes)
 		if err := b.EncodeMessage(x.MultiSelect); err != nil {
+			return err
+		}
+	case *Config_Integer:
+		_ = b.EncodeVarint(14<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.Integer); err != nil {
 			return err
 		}
 	case nil:
@@ -244,6 +267,14 @@ func _Config_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer)
 		err := b.DecodeMessage(msg)
 		m.Config = &Config_MultiSelect{msg}
 		return true, err
+	case 14: // config.integer
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(IntegerConfig)
+		err := b.DecodeMessage(msg)
+		m.Config = &Config_Integer{msg}
+		return true, err
 	default:
 		return false, nil
 	}
@@ -269,6 +300,7 @@ type Value struct {
 	//	*Value_StringList
 	//	*Value_SingleSelect
 	//	*Value_MultiSelect
+	//	*Value_Integer
 	Value isValue_Value `protobuf_oneof:"value"`
 }
 
@@ -294,11 +326,15 @@ type Value_SingleSelect struct {
 type Value_MultiSelect struct {
 	MultiSelect *MultiSelectValue `protobuf:"bytes,13,opt,name=multi_select,oneof"`
 }
+type Value_Integer struct {
+	Integer *IntegerValue `protobuf:"bytes,14,opt,name=integer,oneof"`
+}
 
 func (*Value_Boolean) isValue_Value()      {}
 func (*Value_StringList) isValue_Value()   {}
 func (*Value_SingleSelect) isValue_Value() {}
 func (*Value_MultiSelect) isValue_Value()  {}
+func (*Value_Integer) isValue_Value()      {}
 
 func (m *Value) GetValue() isValue_Value {
 	if m != nil {
@@ -349,6 +385,13 @@ func (m *Value) GetMultiSelect() *MultiSelectValue {
 	return nil
 }
 
+func (m *Value) GetInteger() *IntegerValue {
+	if x, ok := m.GetValue().(*Value_Integer); ok {
+		return x.Integer
+	}
+	return nil
+}
+
 // XXX_OneofFuncs is for the internal use of the proto package.
 func (*Value) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), []interface{}) {
 	return _Value_OneofMarshaler, _Value_OneofUnmarshaler, []interface{}{
@@ -356,6 +399,7 @@ func (*Value) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, 
 		(*Value_StringList)(nil),
 		(*Value_SingleSelect)(nil),
 		(*Value_MultiSelect)(nil),
+		(*Value_Integer)(nil),
 	}
 }
 
@@ -381,6 +425,11 @@ func _Value_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
 	case *Value_MultiSelect:
 		_ = b.EncodeVarint(13<<3 | proto.WireBytes)
 		if err := b.EncodeMessage(x.MultiSelect); err != nil {
+			return err
+		}
+	case *Value_Integer:
+		_ = b.EncodeVarint(14<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.Integer); err != nil {
 			return err
 		}
 	case nil:
@@ -425,6 +474,14 @@ func _Value_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) 
 		err := b.DecodeMessage(msg)
 		m.Value = &Value_MultiSelect{msg}
 		return true, err
+	case 14: // value.integer
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(IntegerValue)
+		err := b.DecodeMessage(msg)
+		m.Value = &Value_Integer{msg}
+		return true, err
 	default:
 		return false, nil
 	}
@@ -450,6 +507,27 @@ type BooleanValue struct {
 
 func (m *BooleanValue) Reset()      { *m = BooleanValue{} }
 func (*BooleanValue) ProtoMessage() {}
+
+type IntegerConfig struct {
+	Default *IntegerValue `protobuf:"bytes,1,opt,name=default" json:"default,omitempty"`
+}
+
+func (m *IntegerConfig) Reset()      { *m = IntegerConfig{} }
+func (*IntegerConfig) ProtoMessage() {}
+
+func (m *IntegerConfig) GetDefault() *IntegerValue {
+	if m != nil {
+		return m.Default
+	}
+	return nil
+}
+
+type IntegerValue struct {
+	Value int64 `protobuf:"varint,1,opt,name=value,proto3" json:"value,omitempty"`
+}
+
+func (m *IntegerValue) Reset()      { *m = IntegerValue{} }
+func (*IntegerValue) ProtoMessage() {}
 
 type StringListConfig struct {
 	Default *StringListValue `protobuf:"bytes,1,opt,name=default" json:"default,omitempty"`
@@ -568,6 +646,8 @@ func init() {
 	proto.RegisterType((*Value)(nil), "models.Value")
 	proto.RegisterType((*BooleanConfig)(nil), "models.BooleanConfig")
 	proto.RegisterType((*BooleanValue)(nil), "models.BooleanValue")
+	proto.RegisterType((*IntegerConfig)(nil), "models.IntegerConfig")
+	proto.RegisterType((*IntegerValue)(nil), "models.IntegerValue")
 	proto.RegisterType((*StringListConfig)(nil), "models.StringListConfig")
 	proto.RegisterType((*StringListValue)(nil), "models.StringListValue")
 	proto.RegisterType((*Item)(nil), "models.Item")
@@ -750,6 +830,31 @@ func (this *Config_MultiSelect) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *Config_Integer) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*Config_Integer)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.Integer.Equal(that1.Integer) {
+		return false
+	}
+	return true
+}
 func (this *ConfigKey) Equal(that interface{}) bool {
 	if that == nil {
 		if this == nil {
@@ -915,6 +1020,31 @@ func (this *Value_MultiSelect) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *Value_Integer) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*Value_Integer)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.Integer.Equal(that1.Integer) {
+		return false
+	}
+	return true
+}
 func (this *BooleanConfig) Equal(that interface{}) bool {
 	if that == nil {
 		if this == nil {
@@ -949,6 +1079,56 @@ func (this *BooleanValue) Equal(that interface{}) bool {
 	}
 
 	that1, ok := that.(*BooleanValue)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Value != that1.Value {
+		return false
+	}
+	return true
+}
+func (this *IntegerConfig) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*IntegerConfig)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.Default.Equal(that1.Default) {
+		return false
+	}
+	return true
+}
+func (this *IntegerValue) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*IntegerValue)
 	if !ok {
 		return false
 	}
@@ -1207,7 +1387,7 @@ func (this *Config) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 15)
+	s := make([]string, 0, 16)
 	s = append(s, "&models.Config{")
 	s = append(s, "Title: "+fmt.Sprintf("%#v", this.Title)+",\n")
 	s = append(s, "Description: "+fmt.Sprintf("%#v", this.Description)+",\n")
@@ -1254,6 +1434,14 @@ func (this *Config_MultiSelect) GoString() string {
 		`MultiSelect:` + fmt.Sprintf("%#v", this.MultiSelect) + `}`}, ", ")
 	return s
 }
+func (this *Config_Integer) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&models.Config_Integer{` +
+		`Integer:` + fmt.Sprintf("%#v", this.Integer) + `}`}, ", ")
+	return s
+}
 func (this *ConfigKey) GoString() string {
 	if this == nil {
 		return "nil"
@@ -1269,7 +1457,7 @@ func (this *Value) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 10)
+	s := make([]string, 0, 11)
 	s = append(s, "&models.Value{")
 	if this.Config != nil {
 		s = append(s, "Config: "+fmt.Sprintf("%#v", this.Config)+",\n")
@@ -1315,6 +1503,14 @@ func (this *Value_MultiSelect) GoString() string {
 		`MultiSelect:` + fmt.Sprintf("%#v", this.MultiSelect) + `}`}, ", ")
 	return s
 }
+func (this *Value_Integer) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&models.Value_Integer{` +
+		`Integer:` + fmt.Sprintf("%#v", this.Integer) + `}`}, ", ")
+	return s
+}
 func (this *BooleanConfig) GoString() string {
 	if this == nil {
 		return "nil"
@@ -1333,6 +1529,28 @@ func (this *BooleanValue) GoString() string {
 	}
 	s := make([]string, 0, 5)
 	s = append(s, "&models.BooleanValue{")
+	s = append(s, "Value: "+fmt.Sprintf("%#v", this.Value)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *IntegerConfig) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&models.IntegerConfig{")
+	if this.Default != nil {
+		s = append(s, "Default: "+fmt.Sprintf("%#v", this.Default)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *IntegerValue) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&models.IntegerValue{")
 	s = append(s, "Value: "+fmt.Sprintf("%#v", this.Value)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
@@ -1593,6 +1811,20 @@ func (m *Config_MultiSelect) MarshalTo(data []byte) (int, error) {
 	}
 	return i, nil
 }
+func (m *Config_Integer) MarshalTo(data []byte) (int, error) {
+	i := 0
+	if m.Integer != nil {
+		data[i] = 0x72
+		i++
+		i = encodeVarintModels(data, i, uint64(m.Integer.Size()))
+		n6, err := m.Integer.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n6
+	}
+	return i, nil
+}
 func (m *ConfigKey) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -1642,28 +1874,28 @@ func (m *Value) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintModels(data, i, uint64(m.Config.Size()))
-		n6, err := m.Config.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n6
-	}
-	if m.Key != nil {
-		data[i] = 0x12
-		i++
-		i = encodeVarintModels(data, i, uint64(m.Key.Size()))
-		n7, err := m.Key.MarshalTo(data[i:])
+		n7, err := m.Config.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n7
 	}
-	if m.Value != nil {
-		nn8, err := m.Value.MarshalTo(data[i:])
+	if m.Key != nil {
+		data[i] = 0x12
+		i++
+		i = encodeVarintModels(data, i, uint64(m.Key.Size()))
+		n8, err := m.Key.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += nn8
+		i += n8
+	}
+	if m.Value != nil {
+		nn9, err := m.Value.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += nn9
 	}
 	return i, nil
 }
@@ -1674,11 +1906,11 @@ func (m *Value_Boolean) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x52
 		i++
 		i = encodeVarintModels(data, i, uint64(m.Boolean.Size()))
-		n9, err := m.Boolean.MarshalTo(data[i:])
+		n10, err := m.Boolean.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n9
+		i += n10
 	}
 	return i, nil
 }
@@ -1688,11 +1920,11 @@ func (m *Value_StringList) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x5a
 		i++
 		i = encodeVarintModels(data, i, uint64(m.StringList.Size()))
-		n10, err := m.StringList.MarshalTo(data[i:])
+		n11, err := m.StringList.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n10
+		i += n11
 	}
 	return i, nil
 }
@@ -1702,11 +1934,11 @@ func (m *Value_SingleSelect) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x62
 		i++
 		i = encodeVarintModels(data, i, uint64(m.SingleSelect.Size()))
-		n11, err := m.SingleSelect.MarshalTo(data[i:])
+		n12, err := m.SingleSelect.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n11
+		i += n12
 	}
 	return i, nil
 }
@@ -1716,11 +1948,25 @@ func (m *Value_MultiSelect) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x6a
 		i++
 		i = encodeVarintModels(data, i, uint64(m.MultiSelect.Size()))
-		n12, err := m.MultiSelect.MarshalTo(data[i:])
+		n13, err := m.MultiSelect.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n12
+		i += n13
+	}
+	return i, nil
+}
+func (m *Value_Integer) MarshalTo(data []byte) (int, error) {
+	i := 0
+	if m.Integer != nil {
+		data[i] = 0x72
+		i++
+		i = encodeVarintModels(data, i, uint64(m.Integer.Size()))
+		n14, err := m.Integer.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n14
 	}
 	return i, nil
 }
@@ -1743,11 +1989,11 @@ func (m *BooleanConfig) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintModels(data, i, uint64(m.Default.Size()))
-		n13, err := m.Default.MarshalTo(data[i:])
+		n15, err := m.Default.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n13
+		i += n15
 	}
 	return i, nil
 }
@@ -1780,6 +2026,57 @@ func (m *BooleanValue) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *IntegerConfig) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *IntegerConfig) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Default != nil {
+		data[i] = 0xa
+		i++
+		i = encodeVarintModels(data, i, uint64(m.Default.Size()))
+		n16, err := m.Default.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n16
+	}
+	return i, nil
+}
+
+func (m *IntegerValue) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *IntegerValue) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Value != 0 {
+		data[i] = 0x8
+		i++
+		i = encodeVarintModels(data, i, uint64(m.Value))
+	}
+	return i, nil
+}
+
 func (m *StringListConfig) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -1799,11 +2096,11 @@ func (m *StringListConfig) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintModels(data, i, uint64(m.Default.Size()))
-		n14, err := m.Default.MarshalTo(data[i:])
+		n17, err := m.Default.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n14
+		i += n17
 	}
 	return i, nil
 }
@@ -1922,11 +2219,11 @@ func (m *MultiSelectConfig) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x12
 		i++
 		i = encodeVarintModels(data, i, uint64(m.Default.Size()))
-		n15, err := m.Default.MarshalTo(data[i:])
+		n18, err := m.Default.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n15
+		i += n18
 	}
 	return i, nil
 }
@@ -1962,11 +2259,11 @@ func (m *SingleSelectConfig) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x12
 		i++
 		i = encodeVarintModels(data, i, uint64(m.Default.Size()))
-		n16, err := m.Default.MarshalTo(data[i:])
+		n19, err := m.Default.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n16
+		i += n19
 	}
 	return i, nil
 }
@@ -2020,11 +2317,11 @@ func (m *SingleSelectValue) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintModels(data, i, uint64(m.Item.Size()))
-		n17, err := m.Item.MarshalTo(data[i:])
+		n20, err := m.Item.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n17
+		i += n20
 	}
 	return i, nil
 }
@@ -2157,6 +2454,15 @@ func (m *Config_MultiSelect) Size() (n int) {
 	}
 	return n
 }
+func (m *Config_Integer) Size() (n int) {
+	var l int
+	_ = l
+	if m.Integer != nil {
+		l = m.Integer.Size()
+		n += 1 + l + sovModels(uint64(l))
+	}
+	return n
+}
 func (m *ConfigKey) Size() (n int) {
 	var l int
 	_ = l
@@ -2224,6 +2530,15 @@ func (m *Value_MultiSelect) Size() (n int) {
 	}
 	return n
 }
+func (m *Value_Integer) Size() (n int) {
+	var l int
+	_ = l
+	if m.Integer != nil {
+		l = m.Integer.Size()
+		n += 1 + l + sovModels(uint64(l))
+	}
+	return n
+}
 func (m *BooleanConfig) Size() (n int) {
 	var l int
 	_ = l
@@ -2239,6 +2554,25 @@ func (m *BooleanValue) Size() (n int) {
 	_ = l
 	if m.Value {
 		n += 2
+	}
+	return n
+}
+
+func (m *IntegerConfig) Size() (n int) {
+	var l int
+	_ = l
+	if m.Default != nil {
+		l = m.Default.Size()
+		n += 1 + l + sovModels(uint64(l))
+	}
+	return n
+}
+
+func (m *IntegerValue) Size() (n int) {
+	var l int
+	_ = l
+	if m.Value != 0 {
+		n += 1 + sovModels(uint64(m.Value))
 	}
 	return n
 }
@@ -2423,6 +2757,16 @@ func (this *Config_MultiSelect) String() string {
 	}, "")
 	return s
 }
+func (this *Config_Integer) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Config_Integer{`,
+		`Integer:` + strings.Replace(fmt.Sprintf("%v", this.Integer), "IntegerConfig", "IntegerConfig", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func (this *ConfigKey) String() string {
 	if this == nil {
 		return "nil"
@@ -2486,6 +2830,16 @@ func (this *Value_MultiSelect) String() string {
 	}, "")
 	return s
 }
+func (this *Value_Integer) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Value_Integer{`,
+		`Integer:` + strings.Replace(fmt.Sprintf("%v", this.Integer), "IntegerValue", "IntegerValue", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func (this *BooleanConfig) String() string {
 	if this == nil {
 		return "nil"
@@ -2501,6 +2855,26 @@ func (this *BooleanValue) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&BooleanValue{`,
+		`Value:` + fmt.Sprintf("%v", this.Value) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *IntegerConfig) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&IntegerConfig{`,
+		`Default:` + strings.Replace(fmt.Sprintf("%v", this.Default), "IntegerValue", "IntegerValue", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *IntegerValue) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&IntegerValue{`,
 		`Value:` + fmt.Sprintf("%v", this.Value) + `,`,
 		`}`,
 	}, "")
@@ -2923,6 +3297,38 @@ func (m *Config) Unmarshal(data []byte) error {
 			}
 			m.Config = &Config_MultiSelect{v}
 			iNdEx = postIndex
+		case 14:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Integer", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowModels
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthModels
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &IntegerConfig{}
+			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Config = &Config_Integer{v}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipModels(data[iNdEx:])
@@ -3275,6 +3681,38 @@ func (m *Value) Unmarshal(data []byte) error {
 			}
 			m.Value = &Value_MultiSelect{v}
 			iNdEx = postIndex
+		case 14:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Integer", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowModels
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthModels
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &IntegerValue{}
+			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Value = &Value_Integer{v}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipModels(data[iNdEx:])
@@ -3428,6 +3866,158 @@ func (m *BooleanValue) Unmarshal(data []byte) error {
 				}
 			}
 			m.Value = bool(v != 0)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipModels(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthModels
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *IntegerConfig) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowModels
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: IntegerConfig: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: IntegerConfig: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Default", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowModels
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthModels
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Default == nil {
+				m.Default = &IntegerValue{}
+			}
+			if err := m.Default.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipModels(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthModels
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *IntegerValue) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowModels
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: IntegerValue: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: IntegerValue: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Value", wireType)
+			}
+			m.Value = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowModels
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.Value |= (int64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipModels(data[iNdEx:])

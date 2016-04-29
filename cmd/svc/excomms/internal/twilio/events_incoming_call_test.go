@@ -67,6 +67,10 @@ func TestIncoming_Organization(t *testing.T) {
 				Key:    excommsSettings.ConfigKeyAfterHoursVociemailEnabled,
 				Subkey: practicePhoneNumber,
 			},
+			{
+				Key:    excommsSettings.ConfigKeyForwardingListTimeout,
+				Subkey: practicePhoneNumber,
+			},
 		},
 		NodeID: orgID,
 	}).WithReturns(&settings.GetValuesResponse{
@@ -84,6 +88,14 @@ func TestIncoming_Organization(t *testing.T) {
 				Value: &settings.Value_Boolean{
 					Boolean: &settings.BooleanValue{
 						Value: false,
+					},
+				},
+			},
+			{
+				Type: settings.ConfigType_INTEGER,
+				Value: &settings.Value_Integer{
+					Integer: &settings.IntegerValue{
+						Value: 50,
 					},
 				},
 			},
@@ -127,7 +139,7 @@ func TestIncoming_Organization(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 	expected := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
-<Response><Pause length="2"></Pause><Dial action="/twilio/call/process_incoming_call_status" timeout="30" callerId="%s"><Number url="/twilio/call/provider_call_connected">%s</Number></Dial></Response>`, practicePhoneNumber, providerPersonalPhone)
+<Response><Pause length="2"></Pause><Dial action="/twilio/call/process_incoming_call_status" timeout="50" callerId="%s"><Number url="/twilio/call/provider_call_connected">%s</Number></Dial></Response>`, practicePhoneNumber, providerPersonalPhone)
 
 	if twiml != expected {
 		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
@@ -182,6 +194,10 @@ func TestIncoming_Organization_MultipleContacts(t *testing.T) {
 				Key:    excommsSettings.ConfigKeyAfterHoursVociemailEnabled,
 				Subkey: practicePhoneNumber,
 			},
+			{
+				Key:    excommsSettings.ConfigKeyForwardingListTimeout,
+				Subkey: practicePhoneNumber,
+			},
 		},
 		NodeID: orgID,
 	}).WithReturns(&settings.GetValuesResponse{
@@ -199,6 +215,14 @@ func TestIncoming_Organization_MultipleContacts(t *testing.T) {
 				Value: &settings.Value_Boolean{
 					Boolean: &settings.BooleanValue{
 						Value: false,
+					},
+				},
+			},
+			{
+				Type: settings.ConfigType_INTEGER,
+				Value: &settings.Value_Integer{
+					Integer: &settings.IntegerValue{
+						Value: 30,
 					},
 				},
 			},
@@ -297,6 +321,10 @@ func TestIncoming_Organization_MultipleContacts_SendCallsToVoicemail(t *testing.
 				Key:    excommsSettings.ConfigKeyAfterHoursVociemailEnabled,
 				Subkey: practicePhoneNumber,
 			},
+			{
+				Key:    excommsSettings.ConfigKeyForwardingListTimeout,
+				Subkey: practicePhoneNumber,
+			},
 		},
 		NodeID: orgID,
 	}).WithReturns(&settings.GetValuesResponse{
@@ -314,6 +342,14 @@ func TestIncoming_Organization_MultipleContacts_SendCallsToVoicemail(t *testing.
 				Value: &settings.Value_Boolean{
 					Boolean: &settings.BooleanValue{
 						Value: false,
+					},
+				},
+			},
+			{
+				Type: settings.ConfigType_INTEGER,
+				Value: &settings.Value_Integer{
+					Integer: &settings.IntegerValue{
+						Value: 30,
 					},
 				},
 			},

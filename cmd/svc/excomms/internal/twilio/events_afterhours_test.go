@@ -74,6 +74,10 @@ func TestAfterHours_IncomingCall_SendAllCallsToVM_DefaultGreeting(t *testing.T) 
 				Key:    excommsSettings.ConfigKeyAfterHoursVociemailEnabled,
 				Subkey: practicePhoneNumber,
 			},
+			{
+				Key:    excommsSettings.ConfigKeyForwardingListTimeout,
+				Subkey: practicePhoneNumber,
+			},
 		},
 		NodeID: orgID,
 	}).WithReturns(&settings.GetValuesResponse{
@@ -91,6 +95,14 @@ func TestAfterHours_IncomingCall_SendAllCallsToVM_DefaultGreeting(t *testing.T) 
 				Value: &settings.Value_Boolean{
 					Boolean: &settings.BooleanValue{
 						Value: true,
+					},
+				},
+			},
+			{
+				Type: settings.ConfigType_INTEGER,
+				Value: &settings.Value_Integer{
+					Integer: &settings.IntegerValue{
+						Value: 30,
 					},
 				},
 			},
@@ -309,6 +321,10 @@ func TestAfterHours_IncomingCall_SendAllCallsToVM_CustomGreeting(t *testing.T) {
 				Key:    excommsSettings.ConfigKeyAfterHoursVociemailEnabled,
 				Subkey: practicePhoneNumber,
 			},
+			{
+				Key:    excommsSettings.ConfigKeyForwardingListTimeout,
+				Subkey: practicePhoneNumber,
+			},
 		},
 		NodeID: orgID,
 	}).WithReturns(&settings.GetValuesResponse{
@@ -326,6 +342,14 @@ func TestAfterHours_IncomingCall_SendAllCallsToVM_CustomGreeting(t *testing.T) {
 				Value: &settings.Value_Boolean{
 					Boolean: &settings.BooleanValue{
 						Value: true,
+					},
+				},
+			},
+			{
+				Type: settings.ConfigType_INTEGER,
+				Value: &settings.Value_Integer{
+					Integer: &settings.IntegerValue{
+						Value: 30,
 					},
 				},
 			},

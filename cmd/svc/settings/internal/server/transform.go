@@ -29,6 +29,14 @@ func transformConfigToModel(config *settings.Config) *models.Config {
 				},
 			},
 		}
+	case models.ConfigType_INTEGER:
+		m.Config = &models.Config_Integer{
+			Integer: &models.IntegerConfig{
+				Default: &models.IntegerValue{
+					Value: config.GetInteger().GetDefault().Value,
+				},
+			},
+		}
 	case models.ConfigType_MULTI_SELECT:
 		m.Config = &models.Config_MultiSelect{
 			MultiSelect: &models.MultiSelectConfig{
@@ -112,6 +120,14 @@ func transformModelToConfig(config *models.Config) *settings.Config {
 				},
 			},
 		}
+	case models.ConfigType_INTEGER:
+		c.Config = &settings.Config_Integer{
+			Integer: &settings.IntegerConfig{
+				Default: &settings.IntegerValue{
+					Value: config.GetInteger().Default.Value,
+				},
+			},
+		}
 	case models.ConfigType_MULTI_SELECT:
 		c.Config = &settings.Config_MultiSelect{
 			MultiSelect: &settings.MultiSelectConfig{
@@ -178,6 +194,13 @@ func transformModelToValue(value *models.Value) *settings.Value {
 		if value.GetBoolean() != nil {
 			v.GetBoolean().Value = value.GetBoolean().Value
 		}
+	case models.ConfigType_INTEGER:
+		v.Value = &settings.Value_Integer{
+			Integer: &settings.IntegerValue{},
+		}
+		if value.GetInteger() != nil {
+			v.GetInteger().Value = value.GetInteger().Value
+		}
 	case models.ConfigType_STRING_LIST:
 		v.Value = &settings.Value_StringList{
 			StringList: &settings.StringListValue{},
@@ -226,6 +249,14 @@ func transformValueToModel(value *settings.Value) *models.Value {
 			v.Value = &models.Value_Boolean{
 				Boolean: &models.BooleanValue{
 					Value: value.GetBoolean().Value,
+				},
+			}
+		}
+	case settings.ConfigType_INTEGER:
+		if value.GetInteger() != nil {
+			v.Value = &models.Value_Integer{
+				Integer: &models.IntegerValue{
+					Value: value.GetInteger().Value,
 				},
 			}
 		}
