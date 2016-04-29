@@ -46,7 +46,7 @@ func (m *Manager) deploymentDiscovery() {
 
 func postStartMessage(depl *dal.Deployment, dep *dal.Deployable, env *dal.Environment) {
 	if err := slack.Post(deploymentWebhookURL, &slack.Message{
-		Text:      fmt.Sprintf("Starting deployment for %s:%s to environment %s", dep.Name, depl.BuildNumber, env.Name),
+		Text:      fmt.Sprintf("`STARTING` deployment for `%s:%s` to environment `%s`", dep.Name, depl.BuildNumber, env.Name),
 		Username:  deployUserName,
 		Channel:   deployChannel,
 		IconEmoji: deployGoodEmoji,
@@ -57,7 +57,7 @@ func postStartMessage(depl *dal.Deployment, dep *dal.Deployable, env *dal.Enviro
 
 func postCompleteMessage(depl *dal.Deployment, dep *dal.Deployable, env *dal.Environment) {
 	if err := slack.Post(deploymentWebhookURL, &slack.Message{
-		Text:      fmt.Sprintf("Completed deployment for %s:%s to environment %s", dep.Name, depl.BuildNumber, env.Name),
+		Text:      fmt.Sprintf("`COMPLETED` deployment for `%s:%s` to environment `%s`", dep.Name, depl.BuildNumber, env.Name),
 		Username:  deployUserName,
 		Channel:   deployChannel,
 		IconEmoji: deployGoodEmoji,
@@ -68,7 +68,7 @@ func postCompleteMessage(depl *dal.Deployment, dep *dal.Deployable, env *dal.Env
 
 func postFailedMessage(depl *dal.Deployment, dep *dal.Deployable, env *dal.Environment, err error) {
 	if err := slack.Post(deploymentWebhookURL, &slack.Message{
-		Text:      fmt.Sprintf("Failed deployment for %s:%s to environment %s - %s", dep.Name, depl.BuildNumber, env.Name, err),
+		Text:      fmt.Sprintf("`FAILED` deployment for `%s:%s` to environment `%s`- `%s`", dep.Name, depl.BuildNumber, env.Name, err),
 		Username:  deployUserName,
 		Channel:   deployChannel,
 		IconEmoji: deployBadEmoji,
