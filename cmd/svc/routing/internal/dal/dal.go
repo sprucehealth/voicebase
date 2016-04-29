@@ -22,6 +22,6 @@ func NewDAL(db *sql.DB) DAL {
 }
 
 func (d *dal) LogExternalMessage(data []byte, dataType, from, to string, status string) error {
-	_, err := d.db.Exec(`INSERT INTO externalmsg (data, type, from, to, status) VALUES (?,?,?,?,?)`, data, dataType, from, to, status)
+	_, err := d.db.Exec(`INSERT INTO externalmsg (data, type, from_endpoint_id, to_endpoint_id, status) VALUES (?,?,?,?,?)`, data, dataType, from, to, status)
 	return errors.Trace(err)
 }
