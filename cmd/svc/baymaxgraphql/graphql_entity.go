@@ -164,7 +164,7 @@ func lookupEntity(ctx context.Context, svc *service, ram raccess.ResourceAccesso
 			}
 		}
 		return org, nil
-	case directory.EntityType_INTERNAL, directory.EntityType_EXTERNAL, directory.EntityType_SYSTEM:
+	case directory.EntityType_INTERNAL, directory.EntityType_EXTERNAL, directory.EntityType_SYSTEM, directory.EntityType_PATIENT:
 		e, err := transformEntityToResponse(svc.staticURLPrefix, em, sh, gqlctx.Account(ctx))
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
