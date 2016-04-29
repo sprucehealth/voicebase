@@ -11,6 +11,7 @@ const (
 	ConfigKeyTranscribeVoicemail        = "transcribe_voicemail"
 	ConfigKeyAfterHoursVociemailEnabled = "afterhours_voicemail_enabled"
 	ConfigKeyAfterHoursGreetingOption   = "afterhours_greeting_option"
+	ConfigKeyForwardingListTimeout      = "forwarding_list_timeout"
 )
 
 //
@@ -39,6 +40,21 @@ var SendCallsToVoicemailConfig = &settings.Config{
 		Boolean: &settings.BooleanConfig{
 			Default: &settings.BooleanValue{
 				Value: false,
+			},
+		},
+	},
+}
+
+var ForwardingListTimeoutConfig = &settings.Config{
+	Title:          "Timeout for directing calls to voicemail",
+	Key:            ConfigKeyForwardingListTimeout,
+	PossibleOwners: []settings.OwnerType{settings.OwnerType_ORGANIZATION},
+	AllowSubkeys:   true,
+	Type:           settings.ConfigType_INTEGER,
+	Config: &settings.Config_Integer{
+		Integer: &settings.IntegerConfig{
+			Default: &settings.IntegerValue{
+				Value: 30,
 			},
 		},
 	},

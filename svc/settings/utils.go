@@ -87,3 +87,18 @@ func GetStringListValue(ctx context.Context, client SettingsClient, req *GetValu
 	}
 	return res.Values[0].GetStringList(), nil
 }
+
+// GetIntegerValue is a helper method to return an integer for the provided request.
+func GetIntegerValue(ctx context.Context, client SettingsClient, req *GetValuesRequest) (*IntegerValue, error) {
+	res, err := client.GetValues(ctx, req)
+	if err != nil {
+		return nil, errors.Trace(err)
+	} else if len(res.Values) == 0 {
+		return nil, errors.Trace(ErrValueNotFound)
+	} else if len(res.Values) != 1 {
+		return nil, errors.Trace(ErrMoreThanOneValueFound)
+	} else if res.Values[0].GetInteger() == nil {
+		return nil, errors.Trace(fmt.Errorf("Expected boolean value for revealing sender instead got %T", res.Values[0].Value))
+	}
+	return res.Values[0].GetInteger(), nil
+}
