@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
+	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/invite"
 
@@ -217,11 +218,12 @@ const (
 )
 
 type checkVerificationCodeOutput struct {
-	ClientMutationID string         `json:"clientMutationId,omitempty"`
-	Success          bool           `json:"success"`
-	ErrorCode        string         `json:"errorCode,omitempty"`
-	ErrorMessage     string         `json:"errorMessage,omitempty"`
-	Account          models.Account `json:"account"`
+	ClientMutationID   string                     `json:"clientMutationId,omitempty"`
+	Success            bool                       `json:"success"`
+	ErrorCode          string                     `json:"errorCode,omitempty"`
+	ErrorMessage       string                     `json:"errorMessage,omitempty"`
+	Account            models.Account             `json:"account"`
+	VerifiedEntityInfo *models.VerifiedEntityInfo `json:"verifiedEntityInfo"`
 }
 
 var checkVerificationCodeErrorCodeEnum = graphql.NewEnum(
@@ -253,15 +255,27 @@ var checkVerificationCodeInputType = graphql.NewInputObject(
 	},
 )
 
+var verifiedEntityInfo = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "VerifiedEntityInfo",
+		Fields: graphql.Fields{
+			"firstName": &graphql.Field{Type: graphql.String},
+			"lastName":  &graphql.Field{Type: graphql.String},
+			"email":     &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		},
+	},
+)
+
 var checkVerificationCodeOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "CheckVerificationCodePayload",
 		Fields: graphql.Fields{
-			"clientMutationId": newClientmutationIDOutputField(),
-			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-			"errorCode":        &graphql.Field{Type: checkVerificationCodeErrorCodeEnum},
-			"errorMessage":     &graphql.Field{Type: graphql.String},
-			"account":          &graphql.Field{Type: accountInterfaceType},
+			"clientMutationId":   newClientmutationIDOutputField(),
+			"success":            &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"errorCode":          &graphql.Field{Type: checkVerificationCodeErrorCodeEnum},
+			"errorMessage":       &graphql.Field{Type: graphql.String},
+			"account":            &graphql.Field{Type: accountInterfaceType},
+			"verifiedEntityInfo": &graphql.Field{Type: verifiedEntityInfo},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 			_, ok := value.(*checkVerificationCodeOutput)
@@ -276,6 +290,7 @@ var checkVerificationCodeMutation = &graphql.Field{
 		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(checkVerificationCodeInputType)},
 	},
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+		svc := serviceFromParams(p)
 		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
 
@@ -305,10 +320,32 @@ var checkVerificationCodeMutation = &graphql.Field{
 			return nil, errors.New("Failed to check verification code")
 		}
 
+		// If the value we just verified was an email address and this device is associated with a patient invite
+		// then send back the parked entity info
+		var verifiedEntityInfo *models.VerifiedEntityInfo
+		if validate.Email(resp.Value) {
+			inv, _, err := svc.inviteAndAttributionInfo(ctx)
+			if err != nil {
+				return nil, errors.InternalError(ctx, err)
+			}
+			if inv != nil && inv.Type == invite.LookupInviteResponse_PATIENT {
+				parkedEntity, err := ram.UnauthorizedEntity(ctx, inv.GetPatient().Patient.ParkedEntityID, []directory.EntityInformation{}, 0)
+				if err != nil {
+					return nil, errors.InternalError(ctx, fmt.Errorf("Encountered an error while looking up parked entity %q: %s", inv.GetPatient().Patient.ParkedEntityID, err))
+				}
+				verifiedEntityInfo = &models.VerifiedEntityInfo{
+					FirstName: parkedEntity.Info.FirstName,
+					LastName:  parkedEntity.Info.LastName,
+					Email:     resp.Value,
+				}
+			}
+		}
+
 		return &checkVerificationCodeOutput{
-			ClientMutationID: mutationID,
-			Success:          true,
-			Account:          transformAccountToResponse(resp.Account),
+			ClientMutationID:   mutationID,
+			Success:            true,
+			Account:            transformAccountToResponse(resp.Account),
+			VerifiedEntityInfo: verifiedEntityInfo,
 		}, nil
 	},
 }

@@ -143,6 +143,12 @@ type Message struct {
 	Refs            []*Reference  `json:"refs,omitempty"`
 }
 
+type VerifiedEntityInfo struct {
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	Email     string `json:"email"`
+}
+
 type Attachment struct {
 	Title string      `json:"title"`
 	URL   string      `json:"url"`

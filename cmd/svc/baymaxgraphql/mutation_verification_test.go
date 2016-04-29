@@ -200,3 +200,83 @@ func TestVerifyPhoneNumberForAccountCreationMutation_SprucePhoneNumber(t *testin
 	}
 }`, string(b))
 }
+
+func TestVerifyEmailCodeEntityInfo_Invite(t *testing.T) {
+	g := newGQL(t)
+	defer g.finish()
+
+	ctx := context.Background()
+	var acc *auth.Account
+	ctx = gqlctx.WithAccount(ctx, acc)
+	ctx = gqlctx.WithSpruceHeaders(ctx, &device.SpruceHeaders{
+		DeviceID: "DevID",
+	})
+
+	// Check the verification code
+	g.ra.Expect(mock.NewExpectation(g.ra.CheckVerificationCode, "token", "123456").WithReturns(
+		&auth.CheckVerificationCodeResponse{
+			Value: "email@email.com",
+		}, nil))
+
+	g.inviteC.Expect(mock.NewExpectation(g.inviteC.AttributionData, &invite.AttributionDataRequest{
+		DeviceID: "DevID",
+	}).WithReturns(&invite.AttributionDataResponse{
+		Values: []*invite.AttributionValue{
+			{Key: "invite_token", Value: "InviteToken"},
+		},
+	}, nil))
+	g.inviteC.Expect(mock.NewExpectation(g.inviteC.LookupInvite, &invite.LookupInviteRequest{
+		Token: "InviteToken",
+	}).WithReturns(&invite.LookupInviteResponse{
+		Type: invite.LookupInviteResponse_PATIENT,
+		Invite: &invite.LookupInviteResponse_Patient{
+			Patient: &invite.PatientInvite{
+				Patient: &invite.Patient{
+					ParkedEntityID: "parkedEntityID",
+				},
+				OrganizationEntityID: "e_org_inv",
+			},
+		},
+	}, nil))
+
+	g.ra.Expect(mock.NewExpectation(g.ra.UnauthorizedEntity, "parkedEntityID", []directory.EntityInformation{}, int64(0)).WithReturns(
+		&directory.Entity{
+			Info: &directory.EntityInfo{
+				FirstName: "bat",
+				LastName:  "man",
+			},
+		}, nil))
+
+	res := g.query(ctx, `
+		mutation _ {
+			checkVerificationCode(input: {
+				token: "token",
+				code: "123456"
+			}) {
+				success
+				errorCode
+				errorMessage
+				verifiedEntityInfo {
+      				firstName
+      				lastName
+      				email
+    			}
+			}
+		}`, nil)
+	b, err := json.MarshalIndent(res, "", "\t")
+	test.OK(t, err)
+	test.Equals(t, `{
+	"data": {
+		"checkVerificationCode": {
+			"errorCode": null,
+			"errorMessage": null,
+			"success": true,
+			"verifiedEntityInfo": {
+				"email": "email@email.com",
+				"firstName": "bat",
+				"lastName": "man"
+			}
+		}
+	}
+}`, string(b))
+}
