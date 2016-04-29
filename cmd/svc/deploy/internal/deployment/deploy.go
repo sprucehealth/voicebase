@@ -13,7 +13,6 @@ import (
 const (
 	deploymentWebhookURL = "https://hooks.slack.com/services/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"
 	deployUserName       = "deploy"
-	deployChannel        = "#x-backend-deployments"
 	deployGoodEmoji      = ":construction_worker:"
 	deployBadEmoji       = ":boom:"
 )
