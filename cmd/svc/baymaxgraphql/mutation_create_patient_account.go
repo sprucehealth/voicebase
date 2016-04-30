@@ -325,6 +325,10 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 		EntityInfo:       entityInfo,
 		UpdateAccountID:  true,
 		AccountID:        res.Account.ID,
+		UpdateContacts:   true,
+		Contacts: []*directory.Contact{
+			{ContactType: directory.ContactType_EMAIL, Value: req.Email},
+		},
 	})
 	if err != nil {
 		return nil, errors.InternalError(ctx, err)

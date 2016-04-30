@@ -109,6 +109,8 @@ func TestCreatePatientAccountMutation(t *testing.T) {
 		},
 		UpdateAccountID: true,
 		AccountID:       "a_1",
+		UpdateContacts:  true,
+		Contacts:        []*directory.Contact{{ContactType: directory.ContactType_EMAIL, Value: "someoneElse@somewhere.com"}},
 	}).WithReturns(&directory.Entity{
 		Info: &directory.EntityInfo{
 			DisplayName: "first last",
