@@ -305,7 +305,7 @@ func (h *graphQLHandler) orgToEntityMapForAccount(ctx context.Context, acc *auth
 	entities, err := h.ram.EntitiesForExternalID(
 		ctx,
 		acc.ID,
-		[]directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
+		[]directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
 		0,
 		[]directory.EntityStatus{directory.EntityStatus_ACTIVE})
 	if err != nil {
