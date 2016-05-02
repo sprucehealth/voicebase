@@ -81,6 +81,7 @@ func transformThreadToResponse(ctx context.Context, ram raccess.ResourceAccessor
 		LastPrimaryEntityEndpoints: make([]*models.Endpoint, len(t.LastPrimaryEntityEndpoints)),
 		EmptyStateTextMarkup:       threadEmptyStateTextMarkup(ctx, ram, t, viewingAccount),
 		Type:                       t.Type.String(),
+		TypeIndicator:              threadTypeIndicator(t),
 		Title:                      t.UserTitle,
 	}
 	if th.Title == "" {
@@ -130,6 +131,16 @@ func transformThreadToResponse(ctx context.Context, ram raccess.ResourceAccessor
 		}
 	}
 	return th, nil
+}
+
+func threadTypeIndicator(t *threading.Thread) string {
+	switch t.Type {
+	case threading.ThreadType_SECURE_EXTERNAL:
+		return models.ThreadTypeIndicatorLock
+	case threading.ThreadType_TEAM:
+		return models.ThreadTypeIndicatorGroup
+	}
+	return models.ThreadTypeIndicatorNone
 }
 
 func isPostInternalMessageAllowed(t *threading.Thread, acc *auth.Account) bool {

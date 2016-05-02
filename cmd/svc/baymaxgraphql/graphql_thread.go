@@ -56,6 +56,24 @@ var threadTypeEnum = graphql.NewEnum(graphql.EnumConfig{
 	},
 })
 
+var threadTypeIndicatorEnum = graphql.NewEnum(graphql.EnumConfig{
+	Name: "ThreadTypeIndicator",
+	Values: graphql.EnumValueConfigMap{
+		models.ThreadTypeIndicatorNone: &graphql.EnumValueConfig{
+			Value:       models.ThreadTypeIndicatorNone,
+			Description: "No indicator is provided for this thread type",
+		},
+		models.ThreadTypeIndicatorLock: &graphql.EnumValueConfig{
+			Value:       models.ThreadTypeIndicatorLock,
+			Description: "Describes that the thread can be described with the lock indicator",
+		},
+		models.ThreadTypeIndicatorGroup: &graphql.EnumValueConfig{
+			Value:       models.ThreadTypeIndicatorGroup,
+			Description: "Describes that the thread can be described with the group indicator",
+		},
+	},
+})
+
 var threadType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "Thread",
@@ -65,6 +83,7 @@ var threadType = graphql.NewObject(
 		Fields: graphql.Fields{
 			"id":                    &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
 			"type":                  &graphql.Field{Type: graphql.NewNonNull(threadTypeEnum)},
+			"typeIndicator":         &graphql.Field{Type: graphql.NewNonNull(threadTypeIndicatorEnum)},
 			"allowAddMembers":       &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowDelete":           &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowEmailAttachments": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},

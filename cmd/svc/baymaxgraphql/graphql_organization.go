@@ -9,6 +9,7 @@ import (
 	baymaxgraphqlsettings "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/settings"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/notification/deeplink"
 	"github.com/sprucehealth/backend/svc/settings"
@@ -159,9 +160,6 @@ var organizationType = graphql.NewObject(
 
 func isSecureThreadsEnabled() func(p graphql.ResolveParams) (interface{}, error) {
 	return func(p graphql.ResolveParams) (interface{}, error) {
-		if !environment.IsProd() {
-			return true, nil
-		}
 		svc := serviceFromParams(p)
 		ctx := p.Context
 		var orgID string
@@ -172,7 +170,8 @@ func isSecureThreadsEnabled() func(p graphql.ResolveParams) (interface{}, error)
 			}
 			orgID = s.ID
 		case *models.Thread:
-			if s == nil {
+			acc := gqlctx.Account(ctx)
+			if s == nil || acc == nil || s.Type != models.ThreadTypeExternal || acc.Type != auth.AccountType_PROVIDER {
 				return false, nil
 			}
 			orgID = s.OrganizationID
@@ -181,6 +180,9 @@ func isSecureThreadsEnabled() func(p graphql.ResolveParams) (interface{}, error)
 			return false, nil
 		}
 
+		if !environment.IsProd() {
+			return true, nil
+		}
 		booleanValue, err := settings.GetBooleanValue(ctx, svc.settings, &settings.GetValuesRequest{
 			NodeID: orgID,
 			Keys: []*settings.ConfigKey{

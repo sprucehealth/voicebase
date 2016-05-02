@@ -156,6 +156,7 @@ func TestNodeQuery(t *testing.T) {
 		Type:            models.ThreadTypeExternal,
 		Unread:          true,
 		UnreadReference: true,
+		TypeIndicator:   "NONE",
 	}, res)
 	mock.FinishAll(ra)
 

@@ -27,6 +27,7 @@ func TestAssociateInviteMutation(t *testing.T) {
 	g.inviteC.Expect(mock.NewExpectation(g.inviteC.LookupInvite, &invite.LookupInviteRequest{
 		Token: "token",
 	}).WithReturns(&invite.LookupInviteResponse{
+		Type:   invite.LookupInviteResponse_COLLEAGUE,
 		Values: []*invite.AttributionValue{{Key: "foo", Value: "bar"}},
 	}, nil))
 
@@ -43,6 +44,7 @@ func TestAssociateInviteMutation(t *testing.T) {
 			}) {
 				clientMutationId
 				success
+				inviteType
 				values {
 					key
 					value
@@ -55,6 +57,7 @@ func TestAssociateInviteMutation(t *testing.T) {
 	"data": {
 		"associateInvite": {
 			"clientMutationId": "a1b2c3",
+			"inviteType": "COLLEAGUE",
 			"success": true,
 			"values": [
 				{

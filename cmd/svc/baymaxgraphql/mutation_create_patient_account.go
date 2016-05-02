@@ -193,7 +193,7 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 		return nil, errors.InternalError(ctx, err)
 	}
 
-	if inv == nil {
+	if inv == nil || inv.Type != invite.LookupInviteResponse_PATIENT {
 		return &createPatientAccountOutput{
 			ClientMutationID: mutationID,
 			Success:          false,
@@ -202,10 +202,6 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 		}, nil
 	}
 
-	// Sanity check to make sure we fail early in case we forgot to handle all new invite types
-	if inv.Type != invite.LookupInviteResponse_PATIENT {
-		return nil, errors.InternalError(ctx, fmt.Errorf("unknown invite type %s", inv.Type.String()))
-	}
 	req := &auth.CreateAccountRequest{
 		Email:    input["email"].(string),
 		Password: input["password"].(string),

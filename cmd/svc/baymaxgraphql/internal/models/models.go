@@ -183,6 +183,12 @@ const (
 	ThreadTypeSecureExternal = "SECURE_EXTERNAL"
 )
 
+const (
+	ThreadTypeIndicatorNone  = "NONE"
+	ThreadTypeIndicatorLock  = "LOCK"
+	ThreadTypeIndicatorGroup = "GROUP"
+)
+
 type Thread struct {
 	ID                         string `json:"id"`
 	OrganizationID             string `json:"organizationID"`
@@ -206,6 +212,7 @@ type Thread struct {
 	EmptyStateTextMarkup       string `json:"emptyStateTextMarkup,omitempty"`
 	MessageCount               int    `json:"messageCount"`
 	Type                       string `json:"type"`
+	TypeIndicator              string `json:"typeIndicator"`
 
 	Mu            sync.RWMutex
 	PrimaryEntity *directory.Entity
