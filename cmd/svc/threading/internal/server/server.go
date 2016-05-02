@@ -1273,6 +1273,7 @@ func (s *threadsServer) teamThreadSystemTitle(ctx context.Context, orgID string,
 
 const newMessageNotificationKey = "new_message" // This is used for both collapse and dedupe
 
+// TODO: mraines: This code is spagetti poo (I wrote it), refactor
 func (s *threadsServer) notifyMembersOfPublishMessage(
 	ctx context.Context,
 	orgID string,
@@ -1301,7 +1302,7 @@ func (s *threadsServer) notifyMembersOfPublishMessage(
 		}
 
 		// Figure out who should receive notifications
-		var entities []*directory.Entity
+		var recieverEntityIDs []string
 		if thread.Type == models.ThreadTypeTeam {
 			entIDs := make([]string, 0, len(threadEntities))
 			for _, te := range threadEntities {
@@ -1326,7 +1327,9 @@ func (s *threadsServer) notifyMembersOfPublishMessage(
 					golog.Errorf("Failed to fetch entities to notify about thread %s: %s", thread.ID, err)
 					return
 				}
-				entities = resp.Entities
+				for _, e := range resp.Entities {
+					recieverEntityIDs = append(recieverEntityIDs, e.ID)
+				}
 			}
 		} else {
 			// TODO: for now treating all other types the same which is the old behavior
@@ -1352,12 +1355,17 @@ func (s *threadsServer) notifyMembersOfPublishMessage(
 			org := resp.Entities[0]
 			for _, m := range org.Members {
 				if m.Type == directory.EntityType_INTERNAL && m.ID != publishingEntityID {
-					entities = append(entities, m)
+					recieverEntityIDs = append(recieverEntityIDs, m.ID)
 				}
+			}
+
+			// If this is a secure external thread, then also notify the primary entity if the thread item is not internal
+			if thread.Type == models.ThreadTypeSecureExternal && !message.Internal && thread.PrimaryEntityID != publishingEntityID {
+				recieverEntityIDs = append(recieverEntityIDs, thread.PrimaryEntityID)
 			}
 		}
 
-		if len(entities) == 0 {
+		if len(recieverEntityIDs) == 0 {
 			golog.Debugf("No entities to notify of new message on thread %s", thread.ID)
 			return
 		}
@@ -1378,25 +1386,24 @@ func (s *threadsServer) notifyMembersOfPublishMessage(
 			// Update the memberships for everyone who needs to be notified
 			// Note: It takes human interaction for this update state to trigger so shouldn't be too often.
 			now := s.clk.Now()
-			for _, ent := range entities {
-				if ent.ID == publishingEntityID {
+			for _, entID := range recieverEntityIDs {
+				if entID == publishingEntityID {
 					continue
 				}
 
-				te := teMap[ent.ID]
-				if _, ok := mentionedEntityIDs[ent.ID]; ok {
-					// TODO: Get confirmation about this copy
-					messages[ent.ID] = "You have a new mention in a thread"
-				} else if s.isAlertAllMessagesEnabled(ctx, ent.ID) {
-					messages[ent.ID] = notificationText
+				te := teMap[entID]
+				if _, ok := mentionedEntityIDs[entID]; ok {
+					messages[entID] = "You have a new mention in a thread"
+				} else if s.isAlertAllMessagesEnabled(ctx, entID) {
+					messages[entID] = notificationText
 				} else if te == nil || te.LastUnreadNotify == nil || (te.LastViewed != nil && te.LastViewed.After(*te.LastUnreadNotify)) {
 					// Only send a notification if no notification has been sent or the person has viewed the thread since the last notification
-					if err := dl.UpdateThreadEntity(ctx, thread.ID, ent.ID, &dal.ThreadEntityUpdate{
+					if err := dl.UpdateThreadEntity(ctx, thread.ID, entID, &dal.ThreadEntityUpdate{
 						LastUnreadNotify: &now,
 					}); err != nil {
 						return errors.Trace(err)
 					}
-					messages[ent.ID] = notificationText
+					messages[entID] = notificationText
 				}
 			}
 			return nil
@@ -1425,7 +1432,7 @@ func (s *threadsServer) notifyMembersOfPublishMessage(
 			SavedQueryID:     savedQueryID.String(),
 			ThreadID:         thread.ID.String(),
 			MessageID:        messageID.String(),
-			EntitiesToNotify: directory.EntityIDs(entities),
+			EntitiesToNotify: recieverEntityIDs,
 			// Note: Parameterizing with these may not be the best. The notification infterface needs to be
 			//   rethought, but going with this for now
 			DedupeKey:            newMessageNotificationKey,

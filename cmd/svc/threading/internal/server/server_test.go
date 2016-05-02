@@ -1958,6 +1958,196 @@ func TestNotifyMembersOfPublishMessageClearTextEnabled(t *testing.T) {
 	}, publishingEntity)
 }
 
+func TestNotifyMembersOfPublishMessageSecureExternalNonInternal(t *testing.T) {
+	t.Parallel()
+	dl := dalmock.New(t)
+	defer dl.Finish()
+	directoryClient := mock_directory.New(t)
+	defer directoryClient.Finish()
+	notificationClient := mock_notification.New(t)
+	defer notificationClient.Finish()
+	sm := mock_settings.New(t)
+	defer sm.Finish()
+	tID, err := models.NewThreadID()
+	test.OK(t, err)
+	tiID, err := models.NewThreadItemID()
+	test.OK(t, err)
+	sqID, err := models.NewSavedQueryID()
+	test.OK(t, err)
+	publishingEntity := "publishingEntity"
+	orgID := "orgID"
+	readTime := time.Now()
+	clk := clock.NewManaged(readTime)
+	srv := NewThreadsServer(clk, dl, nil, "arn", notificationClient, directoryClient, sm, "WEBDOMAIN")
+	csrv := srv.(*threadsServer)
+
+	directoryClient.Expect(mock.NewExpectation(directoryClient.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: orgID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERS},
+		},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{
+				ID: orgID,
+				Members: []*directory.Entity{
+					{ID: "notify1", Type: directory.EntityType_INTERNAL, CreatedTimestamp: uint64(time.Unix(1, 0).Unix())},
+					{ID: "notify2", Type: directory.EntityType_INTERNAL, CreatedTimestamp: uint64(time.Unix(0, 0).Unix())},
+					{ID: "notify3", Type: directory.EntityType_INTERNAL, CreatedTimestamp: uint64(time.Unix(0, 0).Unix())},
+					{ID: publishingEntity, Type: directory.EntityType_INTERNAL},
+					{ID: "doNotNotify", Type: directory.EntityType_ORGANIZATION},
+					{ID: "doNotNotify2", Type: directory.EntityType_EXTERNAL},
+				},
+			},
+		},
+	}, nil))
+
+	dl.Expect(mock.NewExpectation(dl.EntitiesForThread, tID).WithReturns([]*models.ThreadEntity{
+		{ThreadID: tID, EntityID: "notify1", LastViewed: nil, LastUnreadNotify: nil},
+		{ThreadID: tID, EntityID: "notify2", LastViewed: ptr.Time(clk.Now()), LastUnreadNotify: nil},
+		{ThreadID: tID, EntityID: "notify3", LastViewed: ptr.Time(clk.Now()), LastUnreadNotify: ptr.Time(clk.Now())},
+		{ThreadID: tID, EntityID: publishingEntity, LastViewed: nil, LastUnreadNotify: nil},
+	}, nil))
+
+	expectIsClearTextMessageNotificationsEnabled(sm, orgID, false)
+	expectIsAlertAllMessagesEnabled(sm, "notify1", true)
+	expectIsAlertAllMessagesEnabled(sm, "notify2", true)
+	expectIsAlertAllMessagesEnabled(sm, "notify3", true)
+	expectIsAlertAllMessagesEnabled(sm, "patientNotify1", true)
+
+	notificationClient.Expect(mock.NewExpectation(notificationClient.SendNotification, &notification.Notification{
+		ShortMessages: map[string]string{
+			"notify1":        "You have a new message",
+			"notify2":        "You have a new message",
+			"notify3":        "You have a new message",
+			"patientNotify1": "You have a new message",
+		},
+		UnreadCounts:         nil,
+		OrganizationID:       orgID,
+		SavedQueryID:         sqID.String(),
+		ThreadID:             tID.String(),
+		MessageID:            tiID.String(),
+		CollapseKey:          newMessageNotificationKey,
+		DedupeKey:            newMessageNotificationKey,
+		EntitiesToNotify:     []string{"notify1", "notify2", "notify3", "patientNotify1"},
+		EntitiesAtReferenced: map[string]struct{}{},
+		Type:                 notification.NewMessageOnExternalThread,
+	}))
+
+	csrv.notifyMembersOfPublishMessage(context.Background(), orgID, sqID, &models.Thread{
+		ID:              tID,
+		Type:            models.ThreadTypeSecureExternal,
+		OrganizationID:  orgID,
+		UserTitle:       "ThreadTitle",
+		PrimaryEntityID: "patientNotify1",
+	}, &models.ThreadItem{
+		ID:   tiID,
+		Type: models.ItemTypeMessage,
+		Data: &models.Message{
+			Text: "Clear Text Message",
+		},
+		Internal: false,
+	}, publishingEntity)
+}
+
+func TestNotifyMembersOfPublishMessageSecureExternalInternal(t *testing.T) {
+	t.Parallel()
+	dl := dalmock.New(t)
+	defer dl.Finish()
+	directoryClient := mock_directory.New(t)
+	defer directoryClient.Finish()
+	notificationClient := mock_notification.New(t)
+	defer notificationClient.Finish()
+	sm := mock_settings.New(t)
+	defer sm.Finish()
+	tID, err := models.NewThreadID()
+	test.OK(t, err)
+	tiID, err := models.NewThreadItemID()
+	test.OK(t, err)
+	sqID, err := models.NewSavedQueryID()
+	test.OK(t, err)
+	publishingEntity := "publishingEntity"
+	orgID := "orgID"
+	readTime := time.Now()
+	clk := clock.NewManaged(readTime)
+	srv := NewThreadsServer(clk, dl, nil, "arn", notificationClient, directoryClient, sm, "WEBDOMAIN")
+	csrv := srv.(*threadsServer)
+
+	directoryClient.Expect(mock.NewExpectation(directoryClient.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: orgID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERS},
+		},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{
+				ID: orgID,
+				Members: []*directory.Entity{
+					{ID: "notify1", Type: directory.EntityType_INTERNAL, CreatedTimestamp: uint64(time.Unix(1, 0).Unix())},
+					{ID: "notify2", Type: directory.EntityType_INTERNAL, CreatedTimestamp: uint64(time.Unix(0, 0).Unix())},
+					{ID: "notify3", Type: directory.EntityType_INTERNAL, CreatedTimestamp: uint64(time.Unix(0, 0).Unix())},
+					{ID: publishingEntity, Type: directory.EntityType_INTERNAL},
+					{ID: "doNotNotify", Type: directory.EntityType_ORGANIZATION},
+					{ID: "doNotNotify2", Type: directory.EntityType_EXTERNAL},
+				},
+			},
+		},
+	}, nil))
+
+	dl.Expect(mock.NewExpectation(dl.EntitiesForThread, tID).WithReturns([]*models.ThreadEntity{
+		{ThreadID: tID, EntityID: "notify1", LastViewed: nil, LastUnreadNotify: nil},
+		{ThreadID: tID, EntityID: "notify2", LastViewed: ptr.Time(clk.Now()), LastUnreadNotify: nil},
+		{ThreadID: tID, EntityID: "notify3", LastViewed: ptr.Time(clk.Now()), LastUnreadNotify: ptr.Time(clk.Now())},
+		{ThreadID: tID, EntityID: publishingEntity, LastViewed: nil, LastUnreadNotify: nil},
+	}, nil))
+
+	expectIsClearTextMessageNotificationsEnabled(sm, orgID, false)
+	expectIsAlertAllMessagesEnabled(sm, "notify1", true)
+	expectIsAlertAllMessagesEnabled(sm, "notify2", true)
+	expectIsAlertAllMessagesEnabled(sm, "notify3", true)
+
+	notificationClient.Expect(mock.NewExpectation(notificationClient.SendNotification, &notification.Notification{
+		ShortMessages: map[string]string{
+			"notify1": "You have a new message",
+			"notify2": "You have a new message",
+			"notify3": "You have a new message",
+		},
+		UnreadCounts:         nil,
+		OrganizationID:       orgID,
+		SavedQueryID:         sqID.String(),
+		ThreadID:             tID.String(),
+		MessageID:            tiID.String(),
+		CollapseKey:          newMessageNotificationKey,
+		DedupeKey:            newMessageNotificationKey,
+		EntitiesToNotify:     []string{"notify1", "notify2", "notify3"},
+		EntitiesAtReferenced: map[string]struct{}{},
+		Type:                 notification.NewMessageOnExternalThread,
+	}))
+
+	csrv.notifyMembersOfPublishMessage(context.Background(), orgID, sqID, &models.Thread{
+		ID:              tID,
+		Type:            models.ThreadTypeSecureExternal,
+		OrganizationID:  orgID,
+		UserTitle:       "ThreadTitle",
+		PrimaryEntityID: "patientNotify1",
+	}, &models.ThreadItem{
+		ID:   tiID,
+		Type: models.ItemTypeMessage,
+		Data: &models.Message{
+			Text: "Clear Text Message",
+		},
+		Internal: true,
+	}, publishingEntity)
+}
+
 func TestUpdateThread(t *testing.T) {
 	t.Parallel()
 	dl := dalmock.New(t)
