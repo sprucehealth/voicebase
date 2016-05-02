@@ -234,13 +234,21 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 	// then the account can be updated in the context.
 	ctx = gqlctx.WithAccount(ctx, acc)
 
-	// Since we are authenticated, cache a collection of entity information for the account
+	// Since we are authenticated, cache a collection of entity information for the account orgs
 	eMap, err := h.orgToEntityMapForAccount(ctx, acc)
 	if err != nil {
 		// Don't hard fail here since we want functionality not involving this context to still work
 		golog.Errorf("Failed to collect org to entity map for account %s: %s", acc.ID, err)
 	}
-	ctx = gqlctx.WithAccountEntities(ctx, eMap)
+	ctx = gqlctx.WithAccountEntities(ctx, gqlctx.NewEntityCache(eMap))
+	// Bootstrap the entity cache with our account entity information
+	ctx = gqlctx.WithEntities(ctx, gqlctx.NewEntityCache(func(ini map[string]*directory.Entity) map[string]*directory.Entity {
+		eCache := make(map[string]*directory.Entity, len(eMap))
+		for _, e := range eMap {
+			eCache[e.ID] = e
+		}
+		return eCache
+	}(eMap)))
 
 	requestID, err := idgen.NewID()
 	if err != nil {

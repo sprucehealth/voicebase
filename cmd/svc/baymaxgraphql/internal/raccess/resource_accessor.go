@@ -342,7 +342,73 @@ func (m *resourceAccessor) DeleteThread(ctx context.Context, threadID, entityID 
 	return nil
 }
 
+func cachedEntities(ctx context.Context, entityIDs []string, wantedInfo []directory.EntityInformation, depth int64) ([]*directory.Entity, []string) {
+	// Currently we can only cache entities with a search depth of 0
+	if depth != 0 {
+		return nil, entityIDs
+	}
+	notFoundEntIDs := make([]string, 0, len(entityIDs))
+	cachedEnts := make([]*directory.Entity, 0, len(entityIDs))
+	for _, eID := range entityIDs {
+		cE := cachedEntity(ctx, eID, wantedInfo, depth)
+		if cE != nil {
+			cachedEnts = append(cachedEnts, cE)
+		} else {
+			notFoundEntIDs = append(notFoundEntIDs, eID)
+		}
+	}
+	return cachedEnts, notFoundEntIDs
+}
+
+func cachedEntity(ctx context.Context, entityID string, wantedInfo []directory.EntityInformation, depth int64) *directory.Entity {
+	if depth != 0 {
+		return nil
+	}
+
+	ec := gqlctx.Entities(ctx)
+	if ec == nil {
+		return nil
+	}
+	ent := ec.Get(entityID)
+	if ent == nil {
+		return nil
+	}
+	// Determine if our cached value has enough information to meet the request
+	// TODO: We could hash what we have to make the lookups faster, but that would require an alloc for every cache check. For now just iterate till something else is figured
+	for _, wei := range wantedInfo {
+		var found bool
+		for _, ei := range ent.IncludedInformation {
+			if ei == wei {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return nil
+		}
+	}
+	return ent
+}
+
+func cacheEntities(ctx context.Context, ents []*directory.Entity) {
+	ec := gqlctx.Entities(ctx)
+	if ec == nil {
+		return
+	}
+	for _, ent := range ents {
+		// Note: Perhaps read then write? Depends on if we only call this after a remote call
+		ec.Set(ent.ID, ent)
+		for _, mem := range append(ent.Members, ent.Memberships...) {
+			ec.Set(mem.ID, mem)
+		}
+	}
+}
+
 func (m *resourceAccessor) Entity(ctx context.Context, entityID string, entityInfo []directory.EntityInformation, depth int64) (*directory.Entity, error) {
+	ent := cachedEntity(ctx, entityID, entityInfo, depth)
+	if ent != nil {
+		return ent, nil
+	}
 	if err := m.canAccessResource(ctx, entityID, m.orgsForEntity); err != nil {
 		return nil, err
 	}
@@ -350,10 +416,19 @@ func (m *resourceAccessor) Entity(ctx context.Context, entityID string, entityIn
 	if err != nil {
 		return nil, err
 	}
+	cacheEntities(ctx, res.Entities)
 	return res.Entities[0], nil
 }
 
 func (m *resourceAccessor) Entities(ctx context.Context, orgID string, entityIDs []string, entityInfo []directory.EntityInformation) ([]*directory.Entity, error) {
+	// Check our cache for the entities and filter anything we already have
+	// A depth of 0 will return everything but members of members
+	var depth int64
+	cachedEnts, notFoundEntIDs := cachedEntities(ctx, entityIDs, entityInfo, depth)
+	if len(notFoundEntIDs) == 0 {
+		return cachedEnts, nil
+	}
+
 	if err := m.canAccessResource(ctx, orgID, m.orgsForOrganization); err != nil {
 		return nil, err
 	}
@@ -362,10 +437,10 @@ func (m *resourceAccessor) Entities(ctx context.Context, orgID string, entityIDs
 		&directory.LookupEntitiesRequest{
 			LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
 			LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
-				BatchEntityID: &directory.IDList{IDs: entityIDs},
+				BatchEntityID: &directory.IDList{IDs: notFoundEntIDs},
 			},
 			RequestedInformation: &directory.RequestedInformation{
-				Depth:             1,
+				Depth:             depth,
 				EntityInformation: entityInfo,
 			},
 			Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
@@ -373,7 +448,8 @@ func (m *resourceAccessor) Entities(ctx context.Context, orgID string, entityIDs
 	if err != nil {
 		return nil, err
 	}
-	return res.Entities, nil
+	cacheEntities(ctx, res.Entities)
+	return append(res.Entities, cachedEnts...), nil
 }
 
 func (m *resourceAccessor) EntityDomain(ctx context.Context, entityID, domain string) (*directory.LookupEntityDomainResponse, error) {
@@ -396,8 +472,8 @@ func (m *resourceAccessor) EntityForAccountID(ctx context.Context, orgID, accoun
 	if acc != nil && acc.ID == accountID {
 		ents := gqlctx.AccountEntities(ctx)
 		if ents != nil {
-			ent, ok := ents[orgID]
-			if ok {
+			ent := ents.Get(orgID)
+			if ent != nil {
 				return ent, nil
 			}
 		}
@@ -426,6 +502,7 @@ func (m *resourceAccessor) EntitiesByContact(ctx context.Context, contactValue s
 		}
 		return nil, err
 	}
+	cacheEntities(ctx, res.Entities)
 	return res.Entities, nil
 }
 
@@ -442,6 +519,7 @@ func (m *resourceAccessor) EntitiesForExternalID(ctx context.Context, externalID
 		}
 		return nil, err
 	}
+	cacheEntities(ctx, res.Entities)
 	return res.Entities, nil
 }
 
@@ -476,14 +554,15 @@ func (m *resourceAccessor) MarkThreadAsRead(ctx context.Context, threadID, entit
 	return nil
 }
 
-func (m *resourceAccessor) PatientEntity(ctx context.Context, account *models.PatientAccount) (*directory.Entity, error) {
-	entities, err := m.EntitiesForExternalID(ctx, account.GetID(), []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS}, 0, nil)
+func (m *resourceAccessor) PatientEntity(ctx context.Context, acc *models.PatientAccount) (*directory.Entity, error) {
+	entities, err := m.EntitiesForExternalID(ctx, acc.GetID(), []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS}, 0, nil)
 	if err != nil {
 		return nil, err
 	}
 	if len(entities) != 1 {
-		return nil, fmt.Errorf("AccountEntity: Expected to find 1 entity for external id %s but found %d", account.GetID(), len(entities))
+		return nil, fmt.Errorf("AccountEntity: Expected to find 1 entity for external id %s but found %d", acc.GetID(), len(entities))
 	}
+	cacheEntities(ctx, entities)
 	return entities[0], nil
 }
 
@@ -642,25 +721,31 @@ func (m *resourceAccessor) ThreadMembers(ctx context.Context, orgID string, req 
 	for i, m := range res.Members {
 		entIDs[i] = m.EntityID
 	}
+
+	// Check our cache for the entities and filter anything we already have
+	var depth int64
+	entInfo := []directory.EntityInformation{directory.EntityInformation_CONTACTS}
+	cachedEnts, notFoundEntIDs := cachedEntities(ctx, entIDs, entInfo, depth)
+	if len(notFoundEntIDs) == 0 {
+		return cachedEnts, nil
+	}
 	leres, err := m.directory.LookupEntities(ctx, &directory.LookupEntitiesRequest{
 		LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
 		LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
 			BatchEntityID: &directory.IDList{
-				IDs: entIDs,
+				IDs: notFoundEntIDs,
 			},
 		},
 		RequestedInformation: &directory.RequestedInformation{
-			Depth: 0,
-			EntityInformation: []directory.EntityInformation{
-				directory.EntityInformation_CONTACTS,
-			},
+			Depth:             depth,
+			EntityInformation: entInfo,
 		},
 		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 	})
 	if err != nil {
 		return nil, errors.InternalError(ctx, err)
 	}
-	return leres.Entities, nil
+	return append(leres.Entities, cachedEnts...), nil
 }
 
 func (m *resourceAccessor) ThreadsForMember(ctx context.Context, entityID string, primaryOnly bool) ([]*threading.Thread, error) {

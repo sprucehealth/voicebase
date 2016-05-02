@@ -40,6 +40,99 @@ func new(t *testing.T) *ratest {
 	return &rat
 }
 
+func TestEntityCaching(t *testing.T) {
+	rat := new(t)
+	defer rat.finish()
+	ctx := context.Background()
+	ctx = gqlctx.WithEntities(ctx, gqlctx.NewEntityCache(nil))
+	var depth int64
+	accountID := "accountID"
+	orgID := "orgID"
+	acc := &auth.Account{
+		ID: accountID,
+	}
+	ctx = gqlctx.WithAccount(ctx, acc)
+	entID1 := "entityID1"
+	entID2 := "entityID2"
+	entityInfo1 := []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS}
+	entityInfo2 := []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS, directory.EntityInformation_MEMBERS}
+	expectOrgsForEntity(rat, entID1, orgID)
+	expectOrgsForEntityForExternalID(rat, accountID, orgID)
+	rat.dC.Expect(mock.NewExpectation(rat.dC.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: entID1,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             depth,
+			EntityInformation: entityInfo1,
+		},
+	}).WithReturns(&directory.LookupEntitiesResponse{Entities: []*directory.Entity{
+		{ID: entID1, IncludedInformation: entityInfo1},
+	}}, nil))
+	ent, err := rat.ra.Entity(ctx, entID1, entityInfo1, depth)
+	test.OK(t, err)
+	test.Equals(t, ent.ID, entID1)
+
+	// The next call for this ent should be cached
+	ent, err = rat.ra.Entity(ctx, entID1, entityInfo1, depth)
+	test.OK(t, err)
+	test.Equals(t, ent.ID, entID1)
+
+	// Modify the info request to break the cache
+	rat.dC.Expect(mock.NewExpectation(rat.dC.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: entID1,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             depth,
+			EntityInformation: entityInfo2,
+		},
+	}).WithReturns(&directory.LookupEntitiesResponse{Entities: []*directory.Entity{
+		{ID: entID1, IncludedInformation: entityInfo2},
+	}}, nil))
+	ent, err = rat.ra.Entity(ctx, entID1, entityInfo2, depth)
+	test.OK(t, err)
+	test.Equals(t, ent.ID, entID1)
+
+	// Calls for info 1 and 2 should be cached
+	ent, err = rat.ra.Entity(ctx, entID1, entityInfo1, depth)
+	test.OK(t, err)
+	test.Equals(t, ent.ID, entID1)
+	ent, err = rat.ra.Entity(ctx, entID1, entityInfo2, depth)
+	test.OK(t, err)
+	test.Equals(t, ent.ID, entID1)
+
+	// Only the call for the second entity should be required
+	expectOrgsForEntityForExternalID(rat, accountID, orgID)
+	rat.dC.Expect(mock.NewExpectation(rat.dC.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
+			BatchEntityID: &directory.IDList{IDs: []string{entID2}},
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             depth,
+			EntityInformation: entityInfo2,
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	}).WithReturns(&directory.LookupEntitiesResponse{Entities: []*directory.Entity{
+		{ID: entID2, IncludedInformation: entityInfo2},
+	}}, nil))
+	ents, err := rat.ra.Entities(ctx, orgID, []string{entID1, entID2}, entityInfo2)
+	test.OK(t, err)
+	test.Equals(t, len(ents), 2)
+	test.Equals(t, ents[0].ID, entID2)
+	test.Equals(t, ents[1].ID, entID1)
+
+	// Neither should be required a second time
+	ents, err = rat.ra.Entities(ctx, orgID, []string{entID1, entID2}, entityInfo2)
+	test.OK(t, err)
+	test.Equals(t, len(ents), 2)
+	test.Equals(t, ents[1].ID, entID2)
+	test.Equals(t, ents[0].ID, entID1)
+}
+
 func TestAccessAccount(t *testing.T) {
 	accountID := "account_12345"
 	ctx := context.Background()

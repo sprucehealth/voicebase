@@ -3,7 +3,6 @@ package gqlctx
 import (
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/svc/auth"
-	"github.com/sprucehealth/backend/svc/directory"
 	"golang.org/x/net/context"
 )
 
@@ -12,6 +11,7 @@ type ctxKey int
 const (
 	ctxAccount ctxKey = iota
 	ctxAccountEntities
+	ctxEntities
 	ctxSpruceHeaders
 	ctxClientEncryptionKey
 	ctxRequestID
@@ -75,6 +75,8 @@ func Clone(pCtx context.Context) context.Context {
 	cCtx = WithQuery(cCtx, Query(pCtx))
 	cCtx = WithAccount(cCtx, Account(pCtx))
 	cCtx = WithClientEncryptionKey(cCtx, ClientEncryptionKey(pCtx))
+	cCtx = WithAccountEntities(cCtx, AccountEntities(pCtx))
+	cCtx = WithEntities(cCtx, Entities(pCtx))
 	return cCtx
 }
 
@@ -108,20 +110,17 @@ func Account(ctx context.Context) *auth.Account {
 }
 
 // WithAccountEntities attaches a map of orgID (intent) to entity for all of the account's entities onto the provided context
-func WithAccountEntities(ctx context.Context, entitiesByOrg map[string]*directory.Entity) context.Context {
-	if entitiesByOrg == nil {
-		entitiesByOrg = make(map[string]*directory.Entity)
-	}
+func WithAccountEntities(ctx context.Context, entitiesByOrg *EntityCache) context.Context {
 	return context.WithValue(ctx, ctxAccountEntities, entitiesByOrg)
 }
 
 // AccountEntities returns the mapping of between orgs and account entities from the provided context
-func AccountEntities(ctx context.Context) map[string]*directory.Entity {
-	ents, _ := ctx.Value(ctxAccountEntities).(map[string]*directory.Entity)
-	if ents == nil {
+func AccountEntities(ctx context.Context) *EntityCache {
+	ec, _ := ctx.Value(ctxAccountEntities).(*EntityCache)
+	if ec == nil {
 		return nil
 	}
-	return ents
+	return ec
 }
 
 // WithClientEncryptionKey attaches the provided account onto a copy of the provided context
@@ -134,4 +133,18 @@ func WithClientEncryptionKey(ctx context.Context, clientEncryptionKey string) co
 func ClientEncryptionKey(ctx context.Context) string {
 	cek, _ := ctx.Value(ctxClientEncryptionKey).(string)
 	return cek
+}
+
+// WithEntities attaches an entity cache to the provided context to be used for the life of the request
+func WithEntities(ctx context.Context, entitiesByID *EntityCache) context.Context {
+	return context.WithValue(ctx, ctxEntities, entitiesByID)
+}
+
+// Entities returns the mapping of between entity id and entities from the provided context
+func Entities(ctx context.Context) *EntityCache {
+	ec, _ := ctx.Value(ctxEntities).(*EntityCache)
+	if ec == nil {
+		return nil
+	}
+	return ec
 }
