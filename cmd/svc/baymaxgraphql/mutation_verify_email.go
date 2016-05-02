@@ -170,13 +170,13 @@ func createAndSendVerificationEmail(ctx context.Context, ram raccess.ResourceAcc
 		return "", errors.Trace(err)
 	}
 
-	body := fmt.Sprintf("Your verification code is %s", resp.VerificationCode.Code)
+	body := fmt.Sprintf("During sign up, please enter this code when prompted: %s\nIf you have any troubles, we're here to help - simply reply to this email!\n\nThanks,\nThe Team at Spruce", resp.VerificationCode.Code)
 	golog.Debugf("Sending email verification %q to %s", body, email)
 	if err := ram.SendMessage(ctx, &excomms.SendMessageRequest{
 		Channel: excomms.ChannelType_EMAIL,
 		Message: &excomms.SendMessageRequest_Email{
 			Email: &excomms.EmailMessage{
-				Subject:          "Email Verification",
+				Subject:          "Your Email Verification Code",
 				FromName:         "Spruce Support",
 				FromEmailAddress: "support@sprucehealth.com",
 				Body:             body,
