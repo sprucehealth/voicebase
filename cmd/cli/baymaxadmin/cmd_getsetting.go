@@ -78,6 +78,8 @@ func (c *getSettingCmd) run(args []string) error {
 		switch v.Type {
 		case settings.ConfigType_BOOLEAN:
 			fmt.Printf(" = %t\n", v.GetBoolean().Value)
+		case settings.ConfigType_INTEGER:
+			fmt.Printf(" = %d\n", v.GetInteger().Value)
 		case settings.ConfigType_SINGLE_SELECT:
 			item := v.GetSingleSelect().Item
 			fmt.Printf(" = [%s] %s\n", item.ID, item.FreeTextResponse)

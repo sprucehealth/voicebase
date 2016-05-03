@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/sprucehealth/backend/libs/dbutil"
@@ -196,7 +197,12 @@ func main() {
 	}
 
 	fmt.Printf("Available commands:\n")
+	cmdList := make([]string, 0, len(commands))
 	for name := range commands {
+		cmdList = append(cmdList, name)
+	}
+	sort.Strings(cmdList)
+	for _, name := range cmdList {
 		fmt.Printf("\t%s\n", name)
 	}
 	os.Exit(1)
