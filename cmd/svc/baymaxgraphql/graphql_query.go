@@ -20,7 +20,8 @@ import (
 
 // TOOD: this is a stubbed entity currently used in the primaryEntity for a thread. see comment there for more information
 var stubEntity = &models.Entity{
-	ID: "entity_stub",
+	ID:                    "entity_stub",
+	Gender:                genderUnknown,
 	LastModifiedTimestamp: 1458949057,
 }
 
