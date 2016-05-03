@@ -44,7 +44,7 @@ func (c *threadCmd) run(args []string) error {
 	scn := bufio.NewScanner(os.Stdin)
 
 	if *threadID == "" {
-		*threadID = prompt(scn, "Entity ID: ")
+		*threadID = prompt(scn, "Thread ID: ")
 	}
 	if *threadID == "" {
 		return errors.New("Thread ID is required")
