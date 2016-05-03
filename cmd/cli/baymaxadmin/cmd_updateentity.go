@@ -6,10 +6,10 @@ import (
 	"flag"
 	"fmt"
 	"os"
-
-	"golang.org/x/net/context"
+	"strings"
 
 	"github.com/sprucehealth/backend/svc/directory"
+	"golang.org/x/net/context"
 )
 
 type updateEntityCmd struct {
@@ -71,27 +71,27 @@ func (c *updateEntityCmd) run(args []string) error {
 
 	var update bool
 	if *firstName != "" {
-		entity.Info.FirstName = *firstName
+		entity.Info.FirstName = strings.TrimSpace(*firstName)
 		update = true
 	}
 	if *lastName != "" {
-		entity.Info.LastName = *lastName
+		entity.Info.LastName = strings.TrimSpace(*lastName)
 		update = true
 	}
 	if *middleInitial != "" {
-		entity.Info.MiddleInitial = *middleInitial
+		entity.Info.MiddleInitial = strings.TrimSpace(*middleInitial)
 		update = true
 	}
 	if *groupName != "" {
-		entity.Info.GroupName = *groupName
+		entity.Info.GroupName = strings.TrimSpace(*groupName)
 		update = true
 	}
 	if *shortTitle != "" {
-		entity.Info.ShortTitle = *shortTitle
+		entity.Info.ShortTitle = strings.TrimSpace(*shortTitle)
 		update = true
 	}
 	if *longTitle != "" {
-		entity.Info.LongTitle = *longTitle
+		entity.Info.LongTitle = strings.TrimSpace(*longTitle)
 		update = true
 	}
 
