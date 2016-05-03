@@ -376,6 +376,7 @@ type iOSPushNotification struct {
 	SavedQueryID   string       `json:"saved_query_id"`
 	ThreadID       string       `json:"thread_id"`
 	MessageID      string       `json:"message_id"`
+	URL            string       `json:"url"`
 }
 
 // https://developer.apple.com/library/ios/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/Chapters/TheNotificationPayload.html#//apple_ref/doc/uid/TP40008194-CH107-SW1
@@ -384,7 +385,6 @@ type iOSPushData struct {
 	Badge            int    `json:"badge"`
 	ContentAvailable int    `json:"content-available"`
 	Sound            string `json:"sound"`
-	URL              string `json:"url"`
 }
 
 type androidPushNotification struct {
@@ -410,7 +410,6 @@ func generateNotification(webDomain string, n *notification.Notification, target
 
 	iOSData := &iOSPushData{
 		Alert: msg,
-		URL:   url,
 		Sound: "default",
 	}
 	if msg == "" {
@@ -424,6 +423,7 @@ func generateNotification(webDomain string, n *notification.Notification, target
 		SavedQueryID:   n.SavedQueryID,
 		ThreadID:       n.ThreadID,
 		MessageID:      n.MessageID,
+		URL:            url,
 	})
 	if err != nil {
 		golog.Errorf("Error while serializing ios notification data: %s", err)
