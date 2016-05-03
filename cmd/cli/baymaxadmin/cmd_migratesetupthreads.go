@@ -121,7 +121,7 @@ func orgIDsWithoutSetupThread(db *sql.DB) ([]string, error) {
 	}
 
 	// Get a list of organization IDs that already have a setup thread
-	rows, err = db.Query(`SELECT distinct organization_id FROM threads WHERE type = ?`, "SETUP")
+	rows, err = db.Query(`SELECT distinct organization_id FROM threads WHERE type = ? AND deleted = ?`, "SETUP", false)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to get list of org IDs with setup thread: %s", err)
 	}
