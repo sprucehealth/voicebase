@@ -132,7 +132,7 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 		}
 		// Really should be exactly one, but to not blow up for our own support forum only err when none exist.
 		if len(supportThreads) < 1 {
-			return nil, grpcErrorf(codes.Internal, "Expected at least support thread for org %s", setupThread.OrganizationID)
+			return nil, grpcErrorf(codes.Internal, "Expected at least 1 support thread for org %s", setupThread.OrganizationID)
 		}
 		supportThread := supportThreads[0]
 
@@ -181,11 +181,13 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 				}
 				newStep = 3
 			case eventSetupTelemedicine:
+				supportThreadURL := deeplink.ThreadURLShareable(s.webDomain, setupThread.OrganizationID, supportThread.ID.String())
 				msgBML = bml.BML{
 					`Interested in engaging patients digitally with e-visits, video calls, care plans (including eprescribing),`,
 					` mobile billpay, appointment reminders, and satisfaction surveys? Digital care on Spruce enables you to`,
 					` simultaneously offer a standout patient experience and streamline your practice efficiency. The Digital`,
-					` Practice offering on Spruce is coming soon: just message us in Spruce Support if you would like to be a part of the private beta.`,
+					` Practice offering on Spruce is coming soon: just message us in `, &bml.Anchor{HREF: supportThreadURL, Text: "Spruce Support"},
+					` if you would like to be a part of the private beta.`,
 				}
 				newStep = 4
 			default:
