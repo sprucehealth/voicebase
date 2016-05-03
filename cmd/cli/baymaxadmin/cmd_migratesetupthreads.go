@@ -79,7 +79,7 @@ func (c *migrateSetupThreadsCmd) run(args []string) error {
 		fmt.Printf("Creating thread for org %s\n", orgID)
 		entRes, err := c.directoryCli.CreateEntity(ctx, &directory.CreateEntityRequest{
 			EntityInfo: &directory.EntityInfo{
-				GroupName: "Setup",
+				GroupName: "Setup Assistant",
 			},
 			Type: directory.EntityType_SYSTEM,
 			InitialMembershipEntityID: orgID,

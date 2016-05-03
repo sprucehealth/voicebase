@@ -27,7 +27,7 @@ import (
 
 const (
 	supportThreadTitle    = "Spruce Support"
-	onboardingThreadTitle = "Setup"
+	onboardingThreadTitle = "Setup Assistant"
 	teamSpruceInitialText = `This is a support conversation with Spruce Health.
 
 If you're unsure about anything or need some help, send us a message here and a member of the Spruce Health team will respond.`
