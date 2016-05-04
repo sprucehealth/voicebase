@@ -106,9 +106,11 @@ var createThreadMutation = &graphql.Field{
 			if err != nil {
 				return nil, errors.InternalError(ctx, err)
 			}
-			contactInfos, err = contactListFromInput(entityInfoInput["contactInfos"].([]interface{}), true)
-			if err != nil {
-				return nil, errors.InternalError(ctx, err)
+			if ci, _ := entityInfoInput["contactInfos"].([]interface{}); len(ci) != 0 {
+				contactInfos, err = contactListFromInput(ci, true)
+				if err != nil {
+					return nil, errors.InternalError(ctx, err)
+				}
 			}
 		} else {
 			entityInfo = &directory.EntityInfo{}
