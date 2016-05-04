@@ -67,6 +67,7 @@ type DAL interface {
 	Deployments(depID DeployableID) ([]*Deployment, error)
 	DeploymentsForStatus(depID DeployableID, status DeploymentStatus) ([]*Deployment, error)
 	DeleteDeployment(id DeploymentID) (int64, error)
+	ActiveDeployment(depID DeployableID, envID EnvironmentID) (*Deployment, error)
 	NextPendingDeployment() (*Deployment, error)
 	SetDeploymentStatus(id DeploymentID, s DeploymentStatus) error
 }
@@ -570,6 +571,7 @@ type Deployable struct {
 	DeployableGroupID DeployableGroupID
 	Name              string
 	Description       string
+	GitURL            string
 }
 
 // DeployableUpdate represents the mutable aspects of a deployable record
@@ -648,6 +650,7 @@ type Deployment struct {
 	EnvironmentID      EnvironmentID
 	DeployableConfigID DeployableConfigID
 	DeployableVectorID DeployableVectorID
+	GitHash            string
 	Created            time.Time
 }
 
@@ -782,8 +785,8 @@ func (d *dal) InsertDeployable(model *Deployable) (DeployableID, error) {
 	}
 	_, err := d.db.Exec(
 		`INSERT INTO deployable
-          (id, deployable_group_id, name, description)
-          VALUES (?, ?, ?, ?)`, model.ID, model.DeployableGroupID, model.Name, model.Description)
+          (id, deployable_group_id, name, description, git_url)
+          VALUES (?, ?, ?, ?)`, model.ID, model.DeployableGroupID, model.Name, model.Description, model.GitURL)
 	if err != nil {
 		return EmptyDeployableID(), errors.Trace(err)
 	}
@@ -1162,8 +1165,8 @@ func (d *dal) InsertDeployment(model *Deployment) (DeploymentID, error) {
 	}
 	_, err := d.db.Exec(
 		`INSERT INTO deployment
-          (id, type, data, status, build_number, deployable_id, environment_id, deployable_config_id, deployable_vector_id)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, model.ID, model.Type.String(), model.Data, model.Status.String(), model.BuildNumber, model.DeployableID, model.EnvironmentID, model.DeployableConfigID, model.DeployableVectorID)
+          (id, type, data, status, build_number, deployable_id, environment_id, deployable_config_id, deployable_vector_id, git_hash)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, model.ID, model.Type.String(), model.Data, model.Status.String(), model.BuildNumber, model.DeployableID, model.EnvironmentID, model.DeployableConfigID, model.DeployableVectorID, model.GitHash)
 	if err != nil {
 		return EmptyDeploymentID(), errors.Trace(err)
 	}
@@ -1175,6 +1178,13 @@ func (d *dal) InsertDeployment(model *Deployment) (DeploymentID, error) {
 func (d *dal) Deployment(id DeploymentID) (*Deployment, error) {
 	row := d.db.QueryRow(
 		selectDeployment+` WHERE id = ?`, id.Val)
+	model, err := scanDeployment(row)
+	return model, errors.Trace(err)
+}
+
+func (d *dal) ActiveDeployment(depID DeployableID, envID EnvironmentID) (*Deployment, error) {
+	row := d.db.QueryRow(
+		selectDeployment+` WHERE deployable_id = ? AND environment_id = ? AND status = 'COMPLETE' ORDER BY deployment_number DESC LIMIT 1`, depID, envID)
 	model, err := scanDeployment(row)
 	return model, errors.Trace(err)
 }
@@ -1482,7 +1492,7 @@ func scanDeployableGroup(row dbutil.Scanner) (*DeployableGroup, error) {
 }
 
 const selectDeployable = `
-    SELECT deployable.id, deployable.deployable_group_id, deployable.name, deployable.description, deployable.created, deployable.modified
+    SELECT deployable.id, deployable.deployable_group_id, deployable.name, deployable.description, deployable.git_url, deployable.created, deployable.modified
       FROM deployable`
 
 func scanDeployable(row dbutil.Scanner) (*Deployable, error) {
@@ -1490,7 +1500,7 @@ func scanDeployable(row dbutil.Scanner) (*Deployable, error) {
 	m.ID = EmptyDeployableID()
 	m.DeployableGroupID = EmptyDeployableGroupID()
 
-	err := row.Scan(&m.ID, &m.DeployableGroupID, &m.Name, &m.Description, &m.Created, &m.Modified)
+	err := row.Scan(&m.ID, &m.DeployableGroupID, &m.Name, &m.Description, &m.GitURL, &m.Created, &m.Modified)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrNotFound)
 	}
@@ -1577,7 +1587,7 @@ func scanDeployableConfigValue(row dbutil.Scanner) (*DeployableConfigValue, erro
 }
 
 const selectDeployment = `
-    SELECT deployment.id, deployment.deployment_number, deployment.type, deployment.data, deployment.status, deployment.build_number, deployment.deployable_id, deployment.environment_id, deployment.deployable_config_id, deployment.deployable_vector_id, deployment.created
+    SELECT deployment.id, deployment.deployment_number, deployment.type, deployment.data, deployment.status, deployment.build_number, deployment.deployable_id, deployment.environment_id, deployment.deployable_config_id, deployment.deployable_vector_id, deployment.git_hash, deployment.created
       FROM deployment`
 
 func scanDeployment(row dbutil.Scanner) (*Deployment, error) {
@@ -1588,7 +1598,7 @@ func scanDeployment(row dbutil.Scanner) (*Deployment, error) {
 	m.DeployableConfigID = EmptyDeployableConfigID()
 	m.DeployableVectorID = EmptyDeployableVectorID()
 
-	err := row.Scan(&m.ID, &m.DeploymentNumber, &m.Type, &m.Data, &m.Status, &m.BuildNumber, &m.DeployableID, &m.EnvironmentID, &m.DeployableConfigID, &m.DeployableVectorID, &m.Created)
+	err := row.Scan(&m.ID, &m.DeploymentNumber, &m.Type, &m.Data, &m.Status, &m.BuildNumber, &m.DeployableID, &m.EnvironmentID, &m.DeployableConfigID, &m.DeployableVectorID, &m.GitHash, &m.Created)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrNotFound)
 	}

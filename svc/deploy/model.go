@@ -5,4 +5,5 @@ type BuildCompleteEvent struct {
 	DeployableID string `json:"deployable_id"`
 	BuildNumber  string `json:"build_number"`
 	Image        string `json:"image"`
+	GitHash      string `json:"git_hash"`
 }

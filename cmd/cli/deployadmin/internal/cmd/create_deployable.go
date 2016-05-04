@@ -33,6 +33,7 @@ func (c *createDeployableCmd) Run(args []string) error {
 	name := fs.String("name", "", "Name of the deployable")
 	description := fs.String("description", "", "Description of the group")
 	groupID := fs.String("deployable_group_id", "", "The deployable group that this deployable is for")
+	gitURL := fs.String("git_url", "https://github.com/SpruceHealth/backend", "The URL of the git repo for this deployable Default: 'https://github.com/SpruceHealth/backend'")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -64,6 +65,7 @@ func (c *createDeployableCmd) Run(args []string) error {
 		Name:              *name,
 		Description:       *description,
 		DeployableGroupID: *groupID,
+		GitURL:            *gitURL,
 	})
 	if err != nil {
 		return err

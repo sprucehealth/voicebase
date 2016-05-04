@@ -62,6 +62,7 @@ func transformDeployableToResponse(dep *dal.Deployable) *deploy.Deployable {
 		DeployableGroupID: dep.DeployableGroupID.String(),
 		CreatedTimestamp:  uint64(dep.Created.Unix()),
 		ModifiedTimestamp: uint64(dep.Modified.Unix()),
+		GitURL:            dep.GitURL,
 	}
 }
 
@@ -133,6 +134,7 @@ func transformDeploymentToResponse(d *dal.Deployment) (*deploy.Deployment, error
 		DeployableConfigID: d.DeployableConfigID.String(),
 		DeployableVectorID: d.DeployableVectorID.String(),
 		BuildNumber:        d.BuildNumber,
+		GitHash:            d.GitHash,
 	}
 	switch d.Type {
 	case dal.DeploymentTypeEcs:

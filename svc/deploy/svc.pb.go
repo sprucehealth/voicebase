@@ -279,6 +279,7 @@ type Deployable struct {
 	Description       string `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty"`
 	CreatedTimestamp  uint64 `protobuf:"varint,7,opt,name=created_timestamp,proto3" json:"created_timestamp,omitempty"`
 	ModifiedTimestamp uint64 `protobuf:"varint,8,opt,name=modified_timestamp,proto3" json:"modified_timestamp,omitempty"`
+	GitURL            string `protobuf:"bytes,9,opt,name=git_url,proto3" json:"git_url,omitempty"`
 }
 
 func (m *Deployable) Reset()      { *m = Deployable{} }
@@ -318,6 +319,7 @@ type Deployment struct {
 	BuildNumber        string                       `protobuf:"bytes,10,opt,name=build_number,proto3" json:"build_number,omitempty"`
 	StartedTimestamp   uint64                       `protobuf:"varint,11,opt,name=started_timestamp,proto3" json:"started_timestamp,omitempty"`
 	CompletedTimestamp uint64                       `protobuf:"varint,12,opt,name=completed_timestamp,proto3" json:"completed_timestamp,omitempty"`
+	GitHash            string                       `protobuf:"bytes,13,opt,name=git_hash,proto3" json:"git_hash,omitempty"`
 }
 
 func (m *Deployment) Reset()      { *m = Deployment{} }
@@ -524,6 +526,7 @@ type CreateDeployableRequest struct {
 	DeployableGroupID string `protobuf:"bytes,1,opt,name=deployable_group_id,proto3" json:"deployable_group_id,omitempty"`
 	Name              string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	Description       string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	GitURL            string `protobuf:"bytes,4,opt,name=git_url,proto3" json:"git_url,omitempty"`
 }
 
 func (m *CreateDeployableRequest) Reset()      { *m = CreateDeployableRequest{} }
@@ -1194,6 +1197,9 @@ func (this *Deployable) Equal(that interface{}) bool {
 	if this.ModifiedTimestamp != that1.ModifiedTimestamp {
 		return false
 	}
+	if this.GitURL != that1.GitURL {
+		return false
+	}
 	return true
 }
 func (this *DeployableConfig) Equal(that interface{}) bool {
@@ -1298,6 +1304,9 @@ func (this *Deployment) Equal(that interface{}) bool {
 		return false
 	}
 	if this.CompletedTimestamp != that1.CompletedTimestamp {
+		return false
+	}
+	if this.GitHash != that1.GitHash {
 		return false
 	}
 	return true
@@ -1562,6 +1571,9 @@ func (this *CreateDeployableRequest) Equal(that interface{}) bool {
 		return false
 	}
 	if this.Description != that1.Description {
+		return false
+	}
+	if this.GitURL != that1.GitURL {
 		return false
 	}
 	return true
@@ -2370,7 +2382,7 @@ func (this *Deployable) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 10)
+	s := make([]string, 0, 11)
 	s = append(s, "&deploy.Deployable{")
 	s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
 	s = append(s, "DeployableGroupID: "+fmt.Sprintf("%#v", this.DeployableGroupID)+",\n")
@@ -2378,6 +2390,7 @@ func (this *Deployable) GoString() string {
 	s = append(s, "Description: "+fmt.Sprintf("%#v", this.Description)+",\n")
 	s = append(s, "CreatedTimestamp: "+fmt.Sprintf("%#v", this.CreatedTimestamp)+",\n")
 	s = append(s, "ModifiedTimestamp: "+fmt.Sprintf("%#v", this.ModifiedTimestamp)+",\n")
+	s = append(s, "GitURL: "+fmt.Sprintf("%#v", this.GitURL)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -2411,7 +2424,7 @@ func (this *Deployment) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 16)
+	s := make([]string, 0, 17)
 	s = append(s, "&deploy.Deployment{")
 	s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
 	s = append(s, "DeploymentNumber: "+fmt.Sprintf("%#v", this.DeploymentNumber)+",\n")
@@ -2427,6 +2440,7 @@ func (this *Deployment) GoString() string {
 	s = append(s, "BuildNumber: "+fmt.Sprintf("%#v", this.BuildNumber)+",\n")
 	s = append(s, "StartedTimestamp: "+fmt.Sprintf("%#v", this.StartedTimestamp)+",\n")
 	s = append(s, "CompletedTimestamp: "+fmt.Sprintf("%#v", this.CompletedTimestamp)+",\n")
+	s = append(s, "GitHash: "+fmt.Sprintf("%#v", this.GitHash)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -2525,11 +2539,12 @@ func (this *CreateDeployableRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 7)
+	s := make([]string, 0, 8)
 	s = append(s, "&deploy.CreateDeployableRequest{")
 	s = append(s, "DeployableGroupID: "+fmt.Sprintf("%#v", this.DeployableGroupID)+",\n")
 	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
 	s = append(s, "Description: "+fmt.Sprintf("%#v", this.Description)+",\n")
+	s = append(s, "GitURL: "+fmt.Sprintf("%#v", this.GitURL)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -3495,6 +3510,12 @@ func (m *Deployable) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.ModifiedTimestamp))
 	}
+	if len(m.GitURL) > 0 {
+		data[i] = 0x4a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.GitURL)))
+		i += copy(data[i:], m.GitURL)
+	}
 	return i, nil
 }
 
@@ -3639,6 +3660,12 @@ func (m *Deployment) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x60
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.CompletedTimestamp))
+	}
+	if len(m.GitHash) > 0 {
+		data[i] = 0x6a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.GitHash)))
+		i += copy(data[i:], m.GitHash)
 	}
 	return i, nil
 }
@@ -3907,6 +3934,12 @@ func (m *CreateDeployableRequest) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintSvc(data, i, uint64(len(m.Description)))
 		i += copy(data[i:], m.Description)
+	}
+	if len(m.GitURL) > 0 {
+		data[i] = 0x22
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.GitURL)))
+		i += copy(data[i:], m.GitURL)
 	}
 	return i, nil
 }
@@ -4811,6 +4844,10 @@ func (m *Deployable) Size() (n int) {
 	if m.ModifiedTimestamp != 0 {
 		n += 1 + sovSvc(uint64(m.ModifiedTimestamp))
 	}
+	l = len(m.GitURL)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
 	return n
 }
 
@@ -4888,6 +4925,10 @@ func (m *Deployment) Size() (n int) {
 	}
 	if m.CompletedTimestamp != 0 {
 		n += 1 + sovSvc(uint64(m.CompletedTimestamp))
+	}
+	l = len(m.GitHash)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
 	}
 	return n
 }
@@ -5013,6 +5054,10 @@ func (m *CreateDeployableRequest) Size() (n int) {
 		n += 1 + l + sovSvc(uint64(l))
 	}
 	l = len(m.Description)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.GitURL)
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
@@ -5427,6 +5472,7 @@ func (this *Deployable) String() string {
 		`Description:` + fmt.Sprintf("%v", this.Description) + `,`,
 		`CreatedTimestamp:` + fmt.Sprintf("%v", this.CreatedTimestamp) + `,`,
 		`ModifiedTimestamp:` + fmt.Sprintf("%v", this.ModifiedTimestamp) + `,`,
+		`GitURL:` + fmt.Sprintf("%v", this.GitURL) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -5472,6 +5518,7 @@ func (this *Deployment) String() string {
 		`BuildNumber:` + fmt.Sprintf("%v", this.BuildNumber) + `,`,
 		`StartedTimestamp:` + fmt.Sprintf("%v", this.StartedTimestamp) + `,`,
 		`CompletedTimestamp:` + fmt.Sprintf("%v", this.CompletedTimestamp) + `,`,
+		`GitHash:` + fmt.Sprintf("%v", this.GitHash) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -5573,6 +5620,7 @@ func (this *CreateDeployableRequest) String() string {
 		`DeployableGroupID:` + fmt.Sprintf("%v", this.DeployableGroupID) + `,`,
 		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
 		`Description:` + fmt.Sprintf("%v", this.Description) + `,`,
+		`GitURL:` + fmt.Sprintf("%v", this.GitURL) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -6701,6 +6749,35 @@ func (m *Deployable) Unmarshal(data []byte) error {
 					break
 				}
 			}
+		case 9:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field GitURL", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.GitURL = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])
@@ -7329,6 +7406,35 @@ func (m *Deployment) Unmarshal(data []byte) error {
 					break
 				}
 			}
+		case 13:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field GitHash", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.GitHash = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])
@@ -8189,6 +8295,35 @@ func (m *CreateDeployableRequest) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.Description = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field GitURL", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.GitURL = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

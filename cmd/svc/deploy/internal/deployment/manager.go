@@ -101,6 +101,7 @@ func (m *Manager) ProcessBuildCompleteEvent(ev *deploy.BuildCompleteEvent) ([]da
 				EnvironmentID:      v.TargetEnvironmentID,
 				DeployableConfigID: activeConfig.ID,
 				DeployableVectorID: v.ID,
+				GitHash:            ev.GitHash,
 			})
 			if err != nil {
 				return err

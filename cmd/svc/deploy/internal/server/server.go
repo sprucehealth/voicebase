@@ -61,6 +61,7 @@ func (s *server) CreateDeployable(ctx context.Context, in *deploy.CreateDeployab
 		Name:              in.Name,
 		Description:       in.Description,
 		DeployableGroupID: groupID,
+		GitURL:            in.GitURL,
 	})
 	if err != nil {
 		return nil, grpcErrorf(codes.Internal, err.Error())

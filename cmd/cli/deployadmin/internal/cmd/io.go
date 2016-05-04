@@ -48,7 +48,7 @@ func printDeployables(deps []*deploy.Deployable) {
 }
 
 func printDeployable(dep *deploy.Deployable) {
-	pprint("Deployable: %s (name %s) (description %q) (deployable group %s)\n", dep.ID, dep.Name, dep.Description, dep.DeployableGroupID)
+	pprint("Deployable: %s (name %s) (description %q) (deployable group %s) (git url %s)\n", dep.ID, dep.Name, dep.Description, dep.DeployableGroupID, dep.GitURL)
 }
 
 func printEnvironmentConfigs(cs []*deploy.EnvironmentConfig) {
@@ -98,8 +98,8 @@ func printDeployments(ds []*deploy.Deployment) {
 }
 
 func printDeployment(d *deploy.Deployment) {
-	pprint("Deployment: %s (deployable %s) (environment %s) (status %s) (deployable config %s) (deployable vector %s) (type %s) (build number %s) (deployment number %d)\n",
-		d.ID, d.DeployableID, d.EnvironmentID, d.Status.String(), d.DeployableConfigID, d.DeployableVectorID, d.Type.String(), d.BuildNumber, d.DeploymentNumber)
+	pprint("Deployment: %s (deployable %s) (environment %s) (status %s) (deployable config %s) (deployable vector %s) (type %s) (build number %s) (deployment number %d) (git hash %s)\n",
+		d.ID, d.DeployableID, d.EnvironmentID, d.Status.String(), d.DeployableConfigID, d.DeployableVectorID, d.Type.String(), d.BuildNumber, d.DeploymentNumber, d.GitHash)
 	switch d.Type {
 	case deploy.Deployment_ECS:
 		ecsDeployment := d.GetEcsDeployment()

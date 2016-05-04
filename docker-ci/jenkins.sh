@@ -27,6 +27,11 @@ BRANCH=$(echo $GIT_BRANCH | cut -d'/' -f2)
 if [[ "$REVISION_ID" != "" ]]; then
 	BRANCH="D${REVISION_ID}"
 fi
+
+GIT_REV="$GIT_COMMIT"
+if [ "$GIT_REV" = "" ]; then
+    GIT_REV=$(git rev-parse HEAD)
+fi
 MEMPATH="/mnt/mem/jenkins/$BUILD_TAG"
 mkdir -p $MEMPATH
 docker run --rm=true --name=$NAME \
@@ -80,7 +85,7 @@ if [[ "$DEPLOY_TO_S3" != "" ]]; then
 			IFS=',' read -a DEPLOYABLES <<< "${devDeployableMap[${STAG[0]}]}"
 			for DEPLOYABLE in ${DEPLOYABLES[@]}; do
 				echo "Notifying Deploy Service of successful build $DEPLOYABLE - $TAG"
-				aws sqs send-message --queue-url=https://sqs.us-east-1.amazonaws.com/137987605457/corp-deploy-events --message-body="{\"deployable_id\":\"$DEPLOYABLE\",\"build_number\":\"$BUILD_ID\",\"image\":\"$REMOTETAG\"}" --region=us-east-1
+				aws sqs send-message --queue-url=https://sqs.us-east-1.amazonaws.com/137987605457/corp-deploy-events --message-body="{\"deployable_id\":\"$DEPLOYABLE\",\"build_number\":\"$BUILD_ID\",\"image\":\"$REMOTETAG\",\"git_hash\":\"$GIT_REV\"}" --region=us-east-1
 			done
 		fi
 		docker rmi $REMOTETAG

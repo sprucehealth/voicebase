@@ -53,14 +53,18 @@ func postStartMessage(depl *dal.Deployment, dep *dal.Deployable, env *dal.Enviro
 	}
 }
 
-func postCompleteMessage(depl *dal.Deployment, dep *dal.Deployable, env *dal.Environment) {
+func postCompleteMessage(prevDepl *dal.Deployment, depl *dal.Deployment, dep *dal.Deployable, env *dal.Environment) {
 	if err := slack.Post(deploymentWebhookURL, &slack.Message{
-		Text:      fmt.Sprintf("`COMPLETED` deployment for `%s:%s` to environment `%s`", dep.Name, depl.BuildNumber, env.Name),
+		Text:      fmt.Sprintf("`COMPLETED` deployment for `%s:%s` to environment `%s`\n`Changes:%s`", dep.Name, depl.BuildNumber, env.Name, compareURL(dep.GitURL, prevDepl.GitHash, depl.GitHash)),
 		Username:  deployUserName,
 		IconEmoji: deployGoodEmoji,
 	}); err != nil {
 		golog.Errorf("Failed to post completed message to slack: %s", err)
 	}
+}
+
+func compareURL(gitURL, prevHash, newHash string) string {
+	return fmt.Sprintf("%s/compare/%s...%s", gitURL, prevHash, newHash)
 }
 
 func postFailedMessage(depl *dal.Deployment, dep *dal.Deployable, env *dal.Environment, err error) {
@@ -77,7 +81,10 @@ func (m *Manager) processDeployment(depl *dal.Deployment) error {
 	if depl == nil {
 		return nil
 	}
-
+	pdep, err := m.dl.ActiveDeployment(depl.DeployableID, depl.EnvironmentID)
+	if err != nil {
+		return err
+	}
 	dep, err := m.dl.Deployable(depl.DeployableID)
 	if err != nil {
 		return err
@@ -96,7 +103,7 @@ func (m *Manager) processDeployment(depl *dal.Deployment) error {
 				postFailedMessage(depl, dep, env, err)
 				m.failDeployment(depl.ID, err)
 			} else {
-				postCompleteMessage(depl, dep, env)
+				postCompleteMessage(pdep, depl, dep, env)
 				m.completeDeployment(depl.ID)
 			}
 		})

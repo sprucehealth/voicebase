@@ -187,6 +187,7 @@ FROM scratch
 
 LABEL version=$TAG
 LABEL svc=$SVC
+LABEL revision=$REV
 
 WORKDIR /workspace
 ADD . /workspace
