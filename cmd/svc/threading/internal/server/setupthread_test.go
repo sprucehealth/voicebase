@@ -114,6 +114,11 @@ func TestOnboardingThreadEvent_PROVISIONED_PHONE(t *testing.T) {
 
 	dl.Expect(mock.NewExpectation(dl.SetupThreadStateForEntity, "org").WithReturns(&models.SetupThreadState{ThreadID: setupTID, Step: 1}, nil))
 	dl.Expect(mock.NewExpectation(dl.Thread, setupTID).WithReturns(&models.Thread{ID: setupTID, OrganizationID: "org"}, nil))
+	dl.Expect(mock.NewExpectation(dl.ThreadsForOrg, "org", models.ThreadTypeSupport, 1).WithReturns(
+		[]*models.Thread{
+			{ID: supportTID, Type: models.ThreadTypeSupport},
+		}, nil))
+	dl.Expect(mock.NewExpectation(dl.Thread, setupTID).WithReturns(&models.Thread{ID: setupTID, OrganizationID: "org"}, nil))
 
 	res, err = srv.OnboardingThreadEvent(nil, &threading.OnboardingThreadEventRequest{
 		LookupByType: threading.OnboardingThreadEventRequest_ENTITY_ID,
@@ -193,7 +198,7 @@ func TestOnboardingThreadEvent_GENERIC_SETUP_eventSetupTeamMessaging(t *testing.
 			{ID: supportTID, Type: models.ThreadTypeSupport},
 		}, nil))
 	dl.Expect(mock.NewExpectation(dl.SetupThreadState, setupTID).WithReturns(&models.SetupThreadState{ThreadID: setupTID, Step: 0}, nil))
-	dl.Expect(mock.NewExpectation(dl.UpdateSetupThreadState, setupTID, &dal.SetupThreadStateUpdate{Step: ptr.Int(3)}).WithReturns(nil))
+	dl.Expect(mock.NewExpectation(dl.UpdateSetupThreadState, setupTID, &dal.SetupThreadStateUpdate{Step: ptr.Int(4)}).WithReturns(nil))
 	dl.Expect(mock.NewExpectation(dl.PostMessage, &dal.PostMessageRequest{
 		Text:     "After <a href=\"https://WEBDOMAIN/org/org/invite\">adding teammates</a>, you can start a new team conversation from the home screen and message 1:1 or in group chats. You can also collaborate and make notes within the context of patient conversations (patients won’t see this activity, but your teammates will).",
 		Summary:  "Setup: After adding teammates, you can start a new team conversation from the home screen and message 1:1 or in group chats. You can also collaborate and make notes within the context of patient conversations (patients won’t see this activity, but your teammates will).",
@@ -236,7 +241,7 @@ func TestOnboardingThreadEvent_GENERIC_SETUP_eventSetupTelemedicine(t *testing.T
 			{ID: supportTID, Type: models.ThreadTypeSupport},
 		}, nil))
 	dl.Expect(mock.NewExpectation(dl.SetupThreadState, setupTID).WithReturns(&models.SetupThreadState{ThreadID: setupTID, Step: 0}, nil))
-	dl.Expect(mock.NewExpectation(dl.UpdateSetupThreadState, setupTID, &dal.SetupThreadStateUpdate{Step: ptr.Int(4)}).WithReturns(nil))
+	dl.Expect(mock.NewExpectation(dl.UpdateSetupThreadState, setupTID, &dal.SetupThreadStateUpdate{Step: ptr.Int(8)}).WithReturns(nil))
 	dl.Expect(mock.NewExpectation(dl.PostMessage, &dal.PostMessageRequest{
 		Text:     "Interested in engaging patients digitally with e-visits, video calls, care plans (including eprescribing), mobile billpay, appointment reminders, and satisfaction surveys? Digital care on Spruce enables you to simultaneously offer a standout patient experience and streamline your practice efficiency. The Digital Practice offering on Spruce is coming soon: just message us in <a href=\"https://WEBDOMAIN/org/org/thread/" + supportTID.String() + "\">Spruce Support</a> if you would like to be a part of the private beta.",
 		Summary:  "Setup: Interested in engaging patients digitally with e-visits, video calls, care plans (including eprescribing), mobile billpay, appointment reminders, and satisfaction surveys? Digital care on Spruce enables you to simultaneously offer a standout patient experience and streamline your practice efficiency. The Digital Practice offering on Spruce is coming soon: just message us in Spruce Support if you would like to be a part of the private beta.",

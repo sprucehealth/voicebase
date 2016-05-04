@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/svc/notification/deeplink"
 	"github.com/sprucehealth/backend/svc/threading"
 	"golang.org/x/net/context"
@@ -120,26 +121,25 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 
-	// The events only have an effect when the thread is in its initial (first message) state
-	if state.Step == 0 {
-		setupThread, err := s.dal.Thread(ctx, state.ThreadID)
-		if err != nil {
-			return nil, grpcErrorf(codes.Internal, err.Error())
-		}
-		supportThreads, err := s.dal.ThreadsForOrg(ctx, setupThread.OrganizationID, models.ThreadTypeSupport, 1)
-		if err != nil {
-			return nil, grpcErrorf(codes.Internal, err.Error())
-		}
-		// Really should be exactly one, but to not blow up for our own support forum only err when none exist.
-		if len(supportThreads) < 1 {
-			return nil, grpcErrorf(codes.Internal, "Expected at least 1 support thread for org %s", setupThread.OrganizationID)
-		}
-		supportThread := supportThreads[0]
+	setupThread, err := s.dal.Thread(ctx, state.ThreadID)
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+	supportThreads, err := s.dal.ThreadsForOrg(ctx, setupThread.OrganizationID, models.ThreadTypeSupport, 1)
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+	// Really should be exactly one, but to not blow up for our own support forum only err when none exist.
+	if len(supportThreads) < 1 {
+		return nil, grpcErrorf(codes.Internal, "Expected at least 1 support thread for org %s", setupThread.OrganizationID)
+	}
+	supportThread := supportThreads[0]
 
-		var newStep int
-		var msgBML bml.BML
-		switch in.EventType {
-		case threading.OnboardingThreadEventRequest_PROVISIONED_PHONE:
+	var newStepBit int
+	var msgBML bml.BML
+	switch in.EventType {
+	case threading.OnboardingThreadEventRequest_PROVISIONED_PHONE:
+		if state.Step&1 == 0 {
 			// Second phone line
 			pn, err := phone.ParseNumber(in.GetProvisionedPhone().PhoneNumber)
 			if err != nil {
@@ -156,11 +156,13 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 				` If you have any questions about using Spruce, just message us in `,
 				&bml.Anchor{HREF: supportThreadURL, Text: "Spruce Support"}, ` and we’ll reply to help you.`,
 			}
-			newStep = 1
-		case threading.OnboardingThreadEventRequest_GENERIC_SETUP:
-			ev := in.GetGenericSetup()
-			switch ev.Name {
-			case eventSetupAnsweringService:
+			newStepBit = 1
+		}
+	case threading.OnboardingThreadEventRequest_GENERIC_SETUP:
+		ev := in.GetGenericSetup()
+		switch ev.Name {
+		case eventSetupAnsweringService:
+			if state.Step&2 == 0 {
 				phoneSetupURL := deeplink.OrgSettingsPhoneURL(s.webDomain, setupThread.OrganizationID)
 				supportThreadURL := deeplink.ThreadURLShareable(s.webDomain, setupThread.OrganizationID, supportThread.ID.String())
 				msgBML = bml.BML{
@@ -171,16 +173,20 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 					` Just send us a message in `, &bml.Anchor{HREF: supportThreadURL, Text: "Spruce Support"},
 					` with the configuration you would like, and someone from Spruce will reply to help you.`,
 				}
-				newStep = 2
-			case eventSetupTeamMessaging:
+				newStepBit = 2
+			}
+		case eventSetupTeamMessaging:
+			if state.Step&4 == 0 {
 				inviteURL := deeplink.OrgColleagueInviteURL(s.webDomain, setupThread.OrganizationID)
 				msgBML = bml.BML{
 					`After `, &bml.Anchor{HREF: inviteURL, Text: "adding teammates"}, `, you can start a new team conversation`,
 					` from the home screen and message 1:1 or in group chats. You can also collaborate and make notes within`,
 					` the context of patient conversations (patients won’t see this activity, but your teammates will).`,
 				}
-				newStep = 3
-			case eventSetupTelemedicine:
+				newStepBit = 4
+			}
+		case eventSetupTelemedicine:
+			if state.Step&8 == 0 {
 				supportThreadURL := deeplink.ThreadURLShareable(s.webDomain, setupThread.OrganizationID, supportThread.ID.String())
 				msgBML = bml.BML{
 					`Interested in engaging patients digitally with e-visits, video calls, care plans (including eprescribing),`,
@@ -189,48 +195,48 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 					` Practice offering on Spruce is coming soon: just message us in `, &bml.Anchor{HREF: supportThreadURL, Text: "Spruce Support"},
 					` if you would like to be a part of the private beta.`,
 				}
-				newStep = 4
-			default:
-				return nil, grpcErrorf(codes.Internal, "Unhandled onboarding setup event '%s' for org %s", in.Event, setupThread.OrganizationID)
+				newStepBit = 8
 			}
 		default:
-			golog.Debugf("Unhandled onboarding thread event '%s'", in.Event)
+			return nil, grpcErrorf(codes.Internal, "Unhandled onboarding setup event '%s' for org %s", in.Event, setupThread.OrganizationID)
 		}
-		if msgBML != nil {
-			msg, err := msgBML.Format()
+	default:
+		golog.Debugf("Unhandled onboarding thread event '%s'", in.Event)
+	}
+	if msgBML != nil {
+		msg, err := msgBML.Format()
+		if err != nil {
+			return nil, grpcErrorf(codes.Internal, "invalid onboarding message BML: %s", err)
+		}
+		var summary string
+		if msg != "" {
+			summary, err = models.SummaryFromText("Setup: " + msg)
 			if err != nil {
-				return nil, grpcErrorf(codes.Internal, "invalid onboarding message BML: %s", err)
+				return nil, grpcErrorf(codes.Internal, "Failed to generate summary for event %s", in.EventType)
 			}
-			var summary string
-			if msg != "" {
-				summary, err = models.SummaryFromText("Setup: " + msg)
-				if err != nil {
-					return nil, grpcErrorf(codes.Internal, "Failed to generate summary for event %s", in.EventType)
-				}
-			}
-			if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
-				// Query the state again so we can lock it and recheck the step to make sure there's no concurrent update
-				state, err := dl.SetupThreadState(ctx, setupThread.ID, dal.ForUpdate)
-				if err != nil {
-					return errors.Trace(err)
-				}
-				if state.Step != 0 {
-					// Not an error, someone just got here before us
-					return nil
-				}
-				if err := dl.UpdateSetupThreadState(ctx, setupThread.ID, &dal.SetupThreadStateUpdate{Step: &newStep}); err != nil {
-					return errors.Trace(err)
-				}
-				_, err = dl.PostMessage(ctx, &dal.PostMessageRequest{
-					ThreadID:     setupThread.ID,
-					FromEntityID: setupThread.PrimaryEntityID,
-					Text:         msg,
-					Summary:      summary,
-				})
+		}
+		if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
+			// Query the state again so we can lock it and recheck the step to make sure there's no concurrent update
+			state, err := dl.SetupThreadState(ctx, setupThread.ID, dal.ForUpdate)
+			if err != nil {
 				return errors.Trace(err)
-			}); err != nil {
-				return nil, grpcErrorf(codes.Internal, err.Error())
 			}
+			if state.Step&newStepBit != 0 {
+				// Not an error, someone just got here before us
+				return nil
+			}
+			if err := dl.UpdateSetupThreadState(ctx, setupThread.ID, &dal.SetupThreadStateUpdate{Step: ptr.Int(state.Step | newStepBit)}); err != nil {
+				return errors.Trace(err)
+			}
+			_, err = dl.PostMessage(ctx, &dal.PostMessageRequest{
+				ThreadID:     setupThread.ID,
+				FromEntityID: setupThread.PrimaryEntityID,
+				Text:         msg,
+				Summary:      summary,
+			})
+			return errors.Trace(err)
+		}); err != nil {
+			return nil, grpcErrorf(codes.Internal, err.Error())
 		}
 	}
 
