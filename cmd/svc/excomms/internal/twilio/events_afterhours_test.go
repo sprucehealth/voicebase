@@ -23,7 +23,7 @@ import (
 
 func TestAfterHours_IncomingCall_SendAllCallsToVM_DefaultGreeting(t *testing.T) {
 	orgID := "12345"
-	// providerPersonalPhone := "+14152222222"
+	providerPersonalPhone := "+14152222222"
 	patientPhone := "+14151111111"
 	practicePhoneNumber := "+14150000000"
 	callSID := "12345"
@@ -78,6 +78,14 @@ func TestAfterHours_IncomingCall_SendAllCallsToVM_DefaultGreeting(t *testing.T) 
 				Key:    excommsSettings.ConfigKeyForwardingListTimeout,
 				Subkey: practicePhoneNumber,
 			},
+			{
+				Key:    excommsSettings.ConfigKeyForwardingList,
+				Subkey: practicePhoneNumber,
+			},
+			{
+				Key:    excommsSettings.ConfigKeyPauseBeforeCallConnect,
+				Subkey: practicePhoneNumber,
+			},
 		},
 		NodeID: orgID,
 	}).WithReturns(&settings.GetValuesResponse{
@@ -106,12 +114,28 @@ func TestAfterHours_IncomingCall_SendAllCallsToVM_DefaultGreeting(t *testing.T) 
 					},
 				},
 			},
+			{
+				Key: &settings.ConfigKey{
+					Key:    excommsSettings.ConfigKeyForwardingList,
+					Subkey: practicePhoneNumber,
+				},
+				Type: settings.ConfigType_STRING_LIST,
+				Value: &settings.Value_StringList{
+					StringList: &settings.StringListValue{
+						Values: []string{providerPersonalPhone},
+					},
+				},
+			},
+			{
+				Type: settings.ConfigType_INTEGER,
+				Value: &settings.Value_Integer{
+					Integer: &settings.IntegerValue{
+						Value: 0,
+					},
+				},
+			},
 		},
 	}, nil))
-
-	mdal.Expect(mock.NewExpectation(mdal.UpdateIncomingCall, callSID, &dal.IncomingCallUpdate{
-		Afterhours: ptr.Bool(true),
-	}).WithReturns(int64(1), nil))
 
 	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
 		NodeID: orgID,
@@ -135,6 +159,10 @@ func TestAfterHours_IncomingCall_SendAllCallsToVM_DefaultGreeting(t *testing.T) 
 			},
 		},
 	}, nil))
+
+	mdal.Expect(mock.NewExpectation(mdal.UpdateIncomingCall, callSID, &dal.IncomingCallUpdate{
+		Afterhours: ptr.Bool(true),
+	}).WithReturns(int64(1), nil))
 
 	es := NewEventHandler(mdir, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, storage.NewTestStore(nil))
 	params := &rawmsg.TwilioParams{
@@ -270,7 +298,7 @@ func TestAfterHours_IncomingCallStatus(t *testing.T) {
 
 func TestAfterHours_IncomingCall_SendAllCallsToVM_CustomGreeting(t *testing.T) {
 	orgID := "12345"
-	// providerPersonalPhone := "+14152222222"
+	providerPersonalPhone := "+14152222222"
 	patientPhone := "+14151111111"
 	practicePhoneNumber := "+14150000000"
 	callSID := "12345"
@@ -325,6 +353,14 @@ func TestAfterHours_IncomingCall_SendAllCallsToVM_CustomGreeting(t *testing.T) {
 				Key:    excommsSettings.ConfigKeyForwardingListTimeout,
 				Subkey: practicePhoneNumber,
 			},
+			{
+				Key:    excommsSettings.ConfigKeyForwardingList,
+				Subkey: practicePhoneNumber,
+			},
+			{
+				Key:    excommsSettings.ConfigKeyPauseBeforeCallConnect,
+				Subkey: practicePhoneNumber,
+			},
 		},
 		NodeID: orgID,
 	}).WithReturns(&settings.GetValuesResponse{
@@ -353,6 +389,26 @@ func TestAfterHours_IncomingCall_SendAllCallsToVM_CustomGreeting(t *testing.T) {
 					},
 				},
 			},
+			{
+				Key: &settings.ConfigKey{
+					Key:    excommsSettings.ConfigKeyForwardingList,
+					Subkey: practicePhoneNumber,
+				},
+				Type: settings.ConfigType_STRING_LIST,
+				Value: &settings.Value_StringList{
+					StringList: &settings.StringListValue{
+						Values: []string{providerPersonalPhone},
+					},
+				},
+			},
+			{
+				Type: settings.ConfigType_INTEGER,
+				Value: &settings.Value_Integer{
+					Integer: &settings.IntegerValue{
+						Value: 0,
+					},
+				},
+			},
 		},
 	}, nil))
 
@@ -361,13 +417,13 @@ func TestAfterHours_IncomingCall_SendAllCallsToVM_CustomGreeting(t *testing.T) {
 	}).WithReturns(int64(1), nil))
 
 	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
-		NodeID: orgID,
 		Keys: []*settings.ConfigKey{
 			{
 				Key:    excommsSettings.ConfigKeyAfterHoursGreetingOption,
 				Subkey: practicePhoneNumber,
 			},
 		},
+		NodeID: orgID,
 	}).WithReturns(&settings.GetValuesResponse{
 		Values: []*settings.Value{
 			{

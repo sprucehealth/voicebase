@@ -97,6 +97,7 @@ func runService(bootSvc *boot.Service) {
 			excommsSettings.AfterHoursGreetingOptionConfig,
 			excommsSettings.AfterHoursVoicemailEnabledConfig,
 			excommsSettings.ForwardingListTimeoutConfig,
+			excommsSettings.PauseBeforeCallConnectConfig,
 		})
 	if err != nil {
 		golog.Fatalf("Unable to register configs with the settings service: %s", err.Error())

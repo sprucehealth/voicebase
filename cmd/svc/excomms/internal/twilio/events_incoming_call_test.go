@@ -71,6 +71,14 @@ func TestIncoming_Organization(t *testing.T) {
 				Key:    excommsSettings.ConfigKeyForwardingListTimeout,
 				Subkey: practicePhoneNumber,
 			},
+			{
+				Key:    excommsSettings.ConfigKeyForwardingList,
+				Subkey: practicePhoneNumber,
+			},
+			{
+				Key:    excommsSettings.ConfigKeyPauseBeforeCallConnect,
+				Subkey: practicePhoneNumber,
+			},
 		},
 		NodeID: orgID,
 	}).WithReturns(&settings.GetValuesResponse{
@@ -99,19 +107,6 @@ func TestIncoming_Organization(t *testing.T) {
 					},
 				},
 			},
-		},
-	}, nil))
-
-	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
-		Keys: []*settings.ConfigKey{
-			{
-				Key:    excommsSettings.ConfigKeyForwardingList,
-				Subkey: practicePhoneNumber,
-			},
-		},
-		NodeID: orgID,
-	}).WithReturns(&settings.GetValuesResponse{
-		Values: []*settings.Value{
 			{
 				Key: &settings.ConfigKey{
 					Key:    excommsSettings.ConfigKeyForwardingList,
@@ -121,6 +116,14 @@ func TestIncoming_Organization(t *testing.T) {
 				Value: &settings.Value_StringList{
 					StringList: &settings.StringListValue{
 						Values: []string{providerPersonalPhone},
+					},
+				},
+			},
+			{
+				Type: settings.ConfigType_INTEGER,
+				Value: &settings.Value_Integer{
+					Integer: &settings.IntegerValue{
+						Value: 0,
 					},
 				},
 			},
@@ -139,7 +142,7 @@ func TestIncoming_Organization(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 	expected := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
-<Response><Pause length="2"></Pause><Dial action="/twilio/call/process_incoming_call_status" timeout="50" callerId="%s"><Number url="/twilio/call/provider_call_connected">%s</Number></Dial></Response>`, practicePhoneNumber, providerPersonalPhone)
+<Response><Dial action="/twilio/call/process_incoming_call_status" timeout="50" callerId="%s"><Number url="/twilio/call/provider_call_connected">%s</Number></Dial></Response>`, practicePhoneNumber, providerPersonalPhone)
 
 	if twiml != expected {
 		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
@@ -198,6 +201,14 @@ func TestIncoming_Organization_MultipleContacts(t *testing.T) {
 				Key:    excommsSettings.ConfigKeyForwardingListTimeout,
 				Subkey: practicePhoneNumber,
 			},
+			{
+				Key:    excommsSettings.ConfigKeyForwardingList,
+				Subkey: practicePhoneNumber,
+			},
+			{
+				Key:    excommsSettings.ConfigKeyPauseBeforeCallConnect,
+				Subkey: practicePhoneNumber,
+			},
 		},
 		NodeID: orgID,
 	}).WithReturns(&settings.GetValuesResponse{
@@ -226,19 +237,6 @@ func TestIncoming_Organization_MultipleContacts(t *testing.T) {
 					},
 				},
 			},
-		},
-	}, nil))
-
-	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
-		Keys: []*settings.ConfigKey{
-			{
-				Key:    excommsSettings.ConfigKeyForwardingList,
-				Subkey: practicePhoneNumber,
-			},
-		},
-		NodeID: orgID,
-	}).WithReturns(&settings.GetValuesResponse{
-		Values: []*settings.Value{
 			{
 				Key: &settings.ConfigKey{
 					Key:    excommsSettings.ConfigKeyForwardingList,
@@ -248,6 +246,14 @@ func TestIncoming_Organization_MultipleContacts(t *testing.T) {
 				Value: &settings.Value_StringList{
 					StringList: &settings.StringListValue{
 						Values: []string{listedNumber1, listedNumber2, listedNumber3},
+					},
+				},
+			},
+			{
+				Type: settings.ConfigType_INTEGER,
+				Value: &settings.Value_Integer{
+					Integer: &settings.IntegerValue{
+						Value: 0,
 					},
 				},
 			},
@@ -266,7 +272,7 @@ func TestIncoming_Organization_MultipleContacts(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 	expected := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
-<Response><Pause length="2"></Pause><Dial action="/twilio/call/process_incoming_call_status" timeout="30" callerId="+14150000000"><Number url="/twilio/call/provider_call_connected">+14152222222</Number><Number url="/twilio/call/provider_call_connected">+14153333333</Number><Number url="/twilio/call/provider_call_connected">+14154444444</Number></Dial></Response>`)
+<Response><Dial action="/twilio/call/process_incoming_call_status" timeout="30" callerId="+14150000000"><Number url="/twilio/call/provider_call_connected">+14152222222</Number><Number url="/twilio/call/provider_call_connected">+14153333333</Number><Number url="/twilio/call/provider_call_connected">+14154444444</Number></Dial></Response>`)
 
 	if twiml != expected {
 		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
@@ -325,6 +331,14 @@ func TestIncoming_Organization_MultipleContacts_SendCallsToVoicemail(t *testing.
 				Key:    excommsSettings.ConfigKeyForwardingListTimeout,
 				Subkey: practicePhoneNumber,
 			},
+			{
+				Key:    excommsSettings.ConfigKeyForwardingList,
+				Subkey: practicePhoneNumber,
+			},
+			{
+				Key:    excommsSettings.ConfigKeyPauseBeforeCallConnect,
+				Subkey: practicePhoneNumber,
+			},
 		},
 		NodeID: orgID,
 	}).WithReturns(&settings.GetValuesResponse{
@@ -350,6 +364,26 @@ func TestIncoming_Organization_MultipleContacts_SendCallsToVoicemail(t *testing.
 				Value: &settings.Value_Integer{
 					Integer: &settings.IntegerValue{
 						Value: 30,
+					},
+				},
+			},
+			{
+				Key: &settings.ConfigKey{
+					Key:    excommsSettings.ConfigKeyForwardingList,
+					Subkey: practicePhoneNumber,
+				},
+				Type: settings.ConfigType_STRING_LIST,
+				Value: &settings.Value_StringList{
+					StringList: &settings.StringListValue{
+						Values: []string{},
+					},
+				},
+			},
+			{
+				Type: settings.ConfigType_INTEGER,
+				Value: &settings.Value_Integer{
+					Integer: &settings.IntegerValue{
+						Value: 0,
 					},
 				},
 			},
@@ -457,11 +491,11 @@ func TestProviderCallConnected(t *testing.T) {
 		RequestedInformation: &directory.RequestedInformation{
 			Depth: 0,
 			EntityInformation: []directory.EntityInformation{
-				directory.EntityInformation_CONTACTS,
 				directory.EntityInformation_MEMBERSHIPS,
 			},
 		},
-		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{directory.EntityType_EXTERNAL},
 	}).WithReturns(&directory.LookupEntitiesByContactResponse{
 		Entities: []*directory.Entity{
 			{
@@ -488,7 +522,7 @@ func TestProviderCallConnected(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 	expected := `<?xml version="1.0" encoding="UTF-8"?>
-<Response><Gather action="/twilio/call/provider_entered_digits" method="POST" timeout="5" numDigits="1"><Say voice="alice">You have an incoming call from JS</Say><Say voice="alice">Press 1 to answer.</Say></Gather><Hangup></Hangup></Response>`
+<Response><Gather action="/twilio/call/provider_entered_digits" method="POST" timeout="10" numDigits="1"><Say voice="alice">You have an incoming call from JS</Say><Say voice="alice">Press 1 to answer.</Say></Gather><Hangup></Hangup></Response>`
 
 	if twiml != expected {
 		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
@@ -528,11 +562,11 @@ func TestProviderCallConnected_NoName(t *testing.T) {
 		RequestedInformation: &directory.RequestedInformation{
 			Depth: 0,
 			EntityInformation: []directory.EntityInformation{
-				directory.EntityInformation_CONTACTS,
 				directory.EntityInformation_MEMBERSHIPS,
 			},
 		},
-		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{directory.EntityType_EXTERNAL},
 	}).WithReturns(&directory.LookupEntitiesByContactResponse{
 		Entities: []*directory.Entity{
 			{
@@ -555,7 +589,7 @@ func TestProviderCallConnected_NoName(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 	expected := `<?xml version="1.0" encoding="UTF-8"?>
-<Response><Gather action="/twilio/call/provider_entered_digits" method="POST" timeout="5" numDigits="1"><Say voice="alice">You have an incoming call from 206 111 1111</Say><Say voice="alice">Press 1 to answer.</Say></Gather><Hangup></Hangup></Response>`
+<Response><Gather action="/twilio/call/provider_entered_digits" method="POST" timeout="10" numDigits="1"><Say voice="alice">You have an incoming call from 206 111 1111</Say><Say voice="alice">Press 1 to answer.</Say></Gather><Hangup></Hangup></Response>`
 
 	if twiml != expected {
 		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
@@ -615,11 +649,11 @@ func TestProviderEnteredDigits_EnteredOtherDigit(t *testing.T) {
 		RequestedInformation: &directory.RequestedInformation{
 			Depth: 0,
 			EntityInformation: []directory.EntityInformation{
-				directory.EntityInformation_CONTACTS,
 				directory.EntityInformation_MEMBERSHIPS,
 			},
 		},
-		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{directory.EntityType_EXTERNAL},
 	}).WithReturns(&directory.LookupEntitiesByContactResponse{
 		Entities: []*directory.Entity{
 			{
@@ -646,7 +680,7 @@ func TestProviderEnteredDigits_EnteredOtherDigit(t *testing.T) {
 	}
 
 	expected := `<?xml version="1.0" encoding="UTF-8"?>
-<Response><Gather action="/twilio/call/provider_entered_digits" method="POST" timeout="5" numDigits="1"><Say voice="alice">You have an incoming call from JS</Say><Say voice="alice">Press 1 to answer.</Say></Gather><Hangup></Hangup></Response>`
+<Response><Gather action="/twilio/call/provider_entered_digits" method="POST" timeout="10" numDigits="1"><Say voice="alice">You have an incoming call from JS</Say><Say voice="alice">Press 1 to answer.</Say></Gather><Hangup></Hangup></Response>`
 
 	if expected != twiml {
 		t.Fatalf(`\nExpected: %s\nGot:%s`, expected, twiml)

@@ -12,6 +12,7 @@ const (
 	ConfigKeyAfterHoursVociemailEnabled = "afterhours_voicemail_enabled"
 	ConfigKeyAfterHoursGreetingOption   = "afterhours_greeting_option"
 	ConfigKeyForwardingListTimeout      = "forwarding_list_timeout"
+	ConfigKeyPauseBeforeCallConnect     = "pause_before_call_connect"
 )
 
 //
@@ -89,6 +90,26 @@ var VoicemailOptionConfig = &settings.Config{
 				Item: &settings.ItemValue{
 					ID: VoicemailOptionDefault,
 				},
+			},
+		},
+	},
+}
+
+// PauseBeforeCallConnectConfig defines the config for how long to wait
+// before connecting an incoming call to an organization. The reason that this
+// configuration exists is to work around a known issue with providers forwarding
+// google voice numbers into spruce, where that setup only works if there is a 2 second
+// pause before the call is connected.
+var PauseBeforeCallConnectConfig = &settings.Config{
+	Title:          "Number of seconds to pause before connecting the call",
+	Key:            ConfigKeyPauseBeforeCallConnect,
+	PossibleOwners: []settings.OwnerType{settings.OwnerType_ORGANIZATION},
+	AllowSubkeys:   true,
+	Type:           settings.ConfigType_INTEGER,
+	Config: &settings.Config_Integer{
+		Integer: &settings.IntegerConfig{
+			Default: &settings.IntegerValue{
+				Value: 0,
 			},
 		},
 	},

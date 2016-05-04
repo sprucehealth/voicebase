@@ -81,17 +81,27 @@ func callForwardingList(ctx context.Context, orgEntity *directory.Entity, params
 				Key:    excommsSettings.ConfigKeyForwardingListTimeout,
 				Subkey: params.To,
 			},
+			{
+				Key:    excommsSettings.ConfigKeyForwardingList,
+				Subkey: params.To,
+			},
+			{
+				Key:    excommsSettings.ConfigKeyPauseBeforeCallConnect,
+				Subkey: params.To,
+			},
 		},
 	})
 	if err != nil {
 		return "", errors.Trace(fmt.Errorf("Unable to get settings for org %s: %s", orgEntity.ID, err.Error()))
-	} else if len(valuesRes.Values) != 3 {
-		return "", errors.Trace(fmt.Errorf("Expected 3 values to be returned but got %d for org %s", len(valuesRes.Values), orgEntity.ID))
+	} else if len(valuesRes.Values) != 5 {
+		return "", errors.Trace(fmt.Errorf("Expected 5 values to be returned but got %d for org %s", len(valuesRes.Values), orgEntity.ID))
 	}
 
 	sendAllCallsToVoicemail := valuesRes.Values[0].GetBoolean().Value
 	afterHoursVoicemailEnabled := valuesRes.Values[1].GetBoolean().Value
 	timeoutInSeconds := valuesRes.Values[2].GetInteger().Value
+	forwardingList := valuesRes.Values[3].GetStringList().Values
+	pauseBeforeCallConnectInSeconds := valuesRes.Values[4].GetInteger().Value
 
 	if sendAllCallsToVoicemail && afterHoursVoicemailEnabled {
 		return afterHoursCallTriage(ctx, orgEntity, params, eh)
@@ -99,13 +109,15 @@ func callForwardingList(ctx context.Context, orgEntity *directory.Entity, params
 		return voicemailTWIML(ctx, params, eh)
 	}
 
-	forwardingList, err := getForwardingListForProvisionedPhoneNumber(ctx, params.To, orgEntity.ID, eh)
-	if err != nil {
-		return "", errors.Trace(err)
-	}
-
 	numbers := make([]interface{}, 0, maxPhoneNumbers)
+	forwardingListMap := make(map[string]struct{}, len(forwardingList))
 	for _, p := range forwardingList {
+
+		if _, ok := forwardingListMap[p]; ok {
+			continue
+		}
+		forwardingListMap[p] = struct{}{}
+
 		parsedPn, err := phone.Format(p, phone.E164)
 		if err != nil {
 			golog.Errorf("Unable to parse phone number %s: %s", p, err.Error())
@@ -136,17 +148,20 @@ func callForwardingList(ctx context.Context, orgEntity *directory.Entity, params
 		ResourceID: params.CallSID,
 	})
 
-	tw := twiml.NewResponse(
-		&twiml.Pause{
-			Length: uint(2),
-		},
-		&twiml.Dial{
-			CallerID:         params.To,
-			TimeoutInSeconds: uint(timeoutInSeconds),
-			Action:           "/twilio/call/process_incoming_call_status",
-			Nouns:            numbers,
-		},
-	)
+	verbs := make([]interface{}, 0, 2)
+	if pauseBeforeCallConnectInSeconds > 0 {
+		verbs = append(verbs, &twiml.Pause{
+			Length: uint(pauseBeforeCallConnectInSeconds),
+		})
+	}
+	verbs = append(verbs, &twiml.Dial{
+		CallerID:         params.To,
+		TimeoutInSeconds: uint(timeoutInSeconds),
+		Action:           "/twilio/call/process_incoming_call_status",
+		Nouns:            numbers,
+	})
+
+	tw := twiml.NewResponse(verbs...)
 	return tw.GenerateTwiML()
 }
 
@@ -198,7 +213,7 @@ func providerCallConnected(ctx context.Context, params *rawmsg.TwilioParams, eh 
 		&twiml.Gather{
 			Action:           "/twilio/call/provider_entered_digits",
 			Method:           "POST",
-			TimeoutInSeconds: 5,
+			TimeoutInSeconds: 10,
 			NumDigits:        1,
 			Verbs: []interface{}{
 				&twiml.Say{
