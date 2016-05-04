@@ -381,8 +381,8 @@ type iOSPushNotification struct {
 
 // https://developer.apple.com/library/ios/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/Chapters/TheNotificationPayload.html#//apple_ref/doc/uid/TP40008194-CH107-SW1
 type iOSPushData struct {
-	Alert            string `json:"alert"`
-	Badge            int    `json:"badge"`
+	Alert string `json:"alert"`
+	//Badge            int    `json:"badge"`
 	ContentAvailable int    `json:"content-available"`
 	Sound            string `json:"sound"`
 }

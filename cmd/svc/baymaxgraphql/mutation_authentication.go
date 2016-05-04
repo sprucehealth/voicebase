@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
@@ -21,10 +22,11 @@ import (
 // authenticate
 
 const (
-	authenticateErrorCodeTwoFactorRequired = "TWO_FACTOR_REQUIRED"
-	authenticateErrorCodeAccountNotFound   = "ACCOUNT_NOT_FOUND"
-	authenticateErrorCodePasswordMismatch  = "PASSWORD_MISMATCH"
-	authenticateErrorCodeInvalidCode       = "INVALID_CODE"
+	authenticateErrorCodeTwoFactorRequired         = "TWO_FACTOR_REQUIRED"
+	authenticateErrorCodeAccountNotFound           = "ACCOUNT_NOT_FOUND"
+	authenticateErrorCodePasswordMismatch          = "PASSWORD_MISMATCH"
+	authenticateErrorCodeInvalidCode               = "INVALID_CODE"
+	authenticateErrorCodePatientPlatformNotAllowed = "PATIENT_PLATFORM_NOT_ALLOWED"
 )
 
 type authenticateOutput struct {
@@ -57,6 +59,10 @@ var authenticateErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
 		authenticateErrorCodeInvalidCode: &graphql.EnumValueConfig{
 			Value:       authenticateErrorCodeInvalidCode,
 			Description: "Code doesn't match",
+		},
+		authenticateErrorCodePatientPlatformNotAllowed: &graphql.EnumValueConfig{
+			Value:       authenticateErrorCodePatientPlatformNotAllowed,
+			Description: "Patient accounts are not allowed to authenticate on this platform",
 		},
 	},
 })
@@ -150,6 +156,15 @@ var authenticateMutation = &graphql.Field{
 			default:
 				return nil, errors.InternalError(ctx, err)
 			}
+		}
+		headers := gqlctx.SpruceHeaders(ctx)
+		if headers.Platform != device.Android && headers.Platform != device.IOS {
+			return &authenticateOutput{
+				ClientMutationID: mutationID,
+				Success:          false,
+				ErrorCode:        authenticateErrorCodePatientPlatformNotAllowed,
+				ErrorMessage:     "Patient accounts may only log in on Android and iOS.",
+			}, nil
 		}
 		if res.TwoFactorRequired {
 			twoFactorPhoneNumber, err := phone.ParseNumber(res.TwoFactorPhoneNumber)

@@ -19,6 +19,9 @@ func TestAuthenticateMutation(t *testing.T) {
 	ctx := context.Background()
 	var acc *auth.Account
 	ctx = gqlctx.WithAccount(ctx, acc)
+	ctx = gqlctx.WithSpruceHeaders(ctx, &device.SpruceHeaders{
+		Platform: device.Android,
+	})
 
 	email := "someone@example.com"
 	password := "toomanysecrets"
