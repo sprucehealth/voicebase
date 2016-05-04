@@ -1,14 +1,6 @@
 package main
 
-import (
-	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
-	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
-	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
-	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/svc/directory"
-	"github.com/sprucehealth/backend/svc/notification"
-	"github.com/sprucehealth/graphql"
-)
+import "github.com/sprucehealth/graphql"
 
 func newClientMutationIDInputField() *graphql.InputObjectFieldConfig {
 	return &graphql.InputObjectFieldConfig{
@@ -150,78 +142,6 @@ var markThreadAsReadOutputType = graphql.NewObject(
 var mutationType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Mutation",
 	Fields: graphql.Fields{
-		"registerDeviceForPush": &graphql.Field{
-			Type: graphql.NewNonNull(registerDeviceForPushOutputType),
-			Args: graphql.FieldConfigArgument{
-				"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(registerDeviceForPushInputType)},
-			},
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				svc := serviceFromParams(p)
-				ctx := p.Context
-				acc := gqlctx.Account(ctx)
-				sh := gqlctx.SpruceHeaders(ctx)
-				if acc == nil {
-					return nil, errors.ErrNotAuthenticated(ctx)
-				}
-				golog.Debugf("Registering Device For Push: Account:%s Device:%+v", acc.ID, sh)
-				input := p.Args["input"].(map[string]interface{})
-				mutationID, _ := input["clientMutationId"].(string)
-				deviceToken, _ := input["deviceToken"].(string)
-				if err := svc.notification.RegisterDeviceForPush(&notification.DeviceRegistrationInfo{
-					ExternalGroupID: acc.ID,
-					DeviceToken:     deviceToken,
-					Platform:        sh.Platform.String(),
-					PlatformVersion: sh.PlatformVersion,
-					AppVersion:      sh.AppVersion.String(),
-					Device:          sh.Device,
-					DeviceModel:     sh.DeviceModel,
-					DeviceID:        sh.DeviceID,
-				}); err != nil {
-					golog.Errorf(err.Error())
-					return nil, errors.New("device registration failed")
-				}
-
-				return &registerDeviceForPushOutput{
-					ClientMutationID: mutationID,
-					Success:          true,
-				}, nil
-			},
-		},
-		"markThreadAsRead": &graphql.Field{
-			Type: graphql.NewNonNull(markThreadAsReadOutputType),
-			Args: graphql.FieldConfigArgument{
-				"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(markThreadAsReadInputType)},
-			},
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				ram := raccess.ResourceAccess(p)
-				ctx := p.Context
-				acc := gqlctx.Account(ctx)
-				if acc == nil {
-					return nil, errors.ErrNotAuthenticated(ctx)
-				}
-
-				input := p.Args["input"].(map[string]interface{})
-				mutationID, _ := input["clientMutationId"].(string)
-				threadID, _ := input["threadID"].(string)
-				orgID, _ := input["organizationID"].(string)
-				ent, err := ram.EntityForAccountID(ctx, orgID, acc.ID)
-				if err != nil {
-					return nil, errors.InternalError(ctx, err)
-				}
-				if ent == nil || ent.Type != directory.EntityType_INTERNAL {
-					return nil, errors.New("not authorized")
-				}
-
-				if err = ram.MarkThreadAsRead(ctx, threadID, ent.ID); err != nil {
-					return nil, err
-				}
-
-				return &markThreadAsReadOutput{
-					ClientMutationID: mutationID,
-					Success:          true,
-				}, nil
-			},
-		},
 		"addContactInfos":                     addContactInfosMutation,
 		"associateAttribution":                associateAttributionMutation,
 		"associateInvite":                     associateInviteMutation,
@@ -240,12 +160,14 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 		"inviteColleagues":                    inviteColleaguesMutation,
 		"invitePatients":                      invitePatientsMutation,
 		"leaveThread":                         leaveThreadMutation,
+		"markThreadAsRead":                    markThreadAsReadMutation,
 		"modifySetting":                       modifySettingMutation,
 		"passwordReset":                       passwordResetMutation,
 		"postEvent":                           postEventMutation,
 		"provisionEmail":                      provisionEmailMutation,
 		"postMessage":                         postMessageMutation,
 		"provisionPhoneNumber":                provisionPhoneNumberMutation,
+		"registerDeviceForPush":               registerDeviceForPushMutation,
 		"requestPasswordReset":                requestPasswordResetMutation,
 		"unauthenticate":                      unauthenticateMutation,
 		"updateContactInfos":                  updateContactInfosMutation,
