@@ -461,6 +461,15 @@ func TestPostMessagePatientSecureExternal(t *testing.T) {
 			},
 		},
 	}, nil))
+	// since this is a patient thread there should be an org lookup
+	// Looking up the primary entity on the thread
+	g.ra.Expect(mock.NewExpectation(g.ra.Entity, orgID, ([]directory.EntityInformation)(nil), int64(0)).WithReturns(&directory.Entity{
+		ID:   extEntID,
+		Type: directory.EntityType_ORGANIZATION,
+		Info: &directory.EntityInfo{
+			DisplayName: "OrganizationName",
+		},
+	}, nil))
 	res := g.query(ctx, `
 		mutation _ ($threadID: ID!) {
 			postMessage(input: {
@@ -508,6 +517,7 @@ func TestPostMessagePatientSecureExternal(t *testing.T) {
 					subtitle
 					allowInternalMessages
 					isDeletable
+					typeIndicator
 				}
 			}
 		}`, map[string]interface{}{
@@ -543,7 +553,8 @@ func TestPostMessagePatientSecureExternal(t *testing.T) {
 				"isDeletable": false,
 				"lastMessageTimestamp": 123456789,
 				"subtitle": "Schmee: foo",
-				"title": "Barro"
+				"title": "OrganizationName",
+				"typeIndicator": "NONE"
 			}
 		}
 	}

@@ -84,8 +84,8 @@ func transformThreadToResponse(ctx context.Context, ram raccess.ResourceAccessor
 		LastPrimaryEntityEndpoints: make([]*models.Endpoint, len(t.LastPrimaryEntityEndpoints)),
 		EmptyStateTextMarkup:       threadEmptyStateTextMarkup(ctx, ram, t, viewingAccount),
 		Type:                       t.Type.String(),
-		TypeIndicator:              threadTypeIndicator(t),
-		Title:                      t.UserTitle,
+		TypeIndicator:              threadTypeIndicator(t, viewingAccount),
+		Title:                      threadTitle(ctx, ram, t, viewingAccount),
 	}
 	if th.Title == "" {
 		th.Title = t.SystemTitle
@@ -136,12 +136,14 @@ func transformThreadToResponse(ctx context.Context, ram raccess.ResourceAccessor
 	return th, nil
 }
 
-func threadTypeIndicator(t *threading.Thread) string {
-	switch t.Type {
-	case threading.ThreadType_SECURE_EXTERNAL:
-		return models.ThreadTypeIndicatorLock
-	case threading.ThreadType_TEAM:
-		return models.ThreadTypeIndicatorGroup
+func threadTypeIndicator(t *threading.Thread, acc *auth.Account) string {
+	if acc.Type != auth.AccountType_PATIENT {
+		switch t.Type {
+		case threading.ThreadType_SECURE_EXTERNAL:
+			return models.ThreadTypeIndicatorLock
+		case threading.ThreadType_TEAM:
+			return models.ThreadTypeIndicatorGroup
+		}
 	}
 	return models.ThreadTypeIndicatorNone
 }
@@ -158,6 +160,19 @@ func isPostInternalMessageAllowed(t *threading.Thread, acc *auth.Account) bool {
 		return t.OrganizationID == *flagSpruceOrgID
 	}
 	return false
+}
+
+func threadTitle(ctx context.Context, ram raccess.ResourceAccessor, t *threading.Thread, acc *auth.Account) string {
+	if acc.Type != auth.AccountType_PATIENT {
+		return t.UserTitle
+	}
+	org, err := ram.Entity(ctx, t.OrganizationID, nil, 0)
+	if err != nil {
+		// Log it and return the user title, don't block
+		golog.Errorf("Failed to get org entity %s for thread %s to populate patient thread title", t.PrimaryEntityID, t.ID)
+		return t.UserTitle
+	}
+	return org.Info.DisplayName
 }
 
 func threadEmptyStateTextMarkup(ctx context.Context, ram raccess.ResourceAccessor, t *threading.Thread, viewingAccount *auth.Account) string {
