@@ -56,8 +56,7 @@ devDeployableMap["routing"]="deployable_0E2L0O5R80O00"
 devDeployableMap["threading"]="deployable_0E2L0O6CO0O00"
 devDeployableMap["baymaxgraphql"]="deployable_0E2L0O6UG0O00"
 devDeployableMap["invite"]="deployable_0E2L0O7H00O00"
-devDeployableMap["excomms-api"]="deployable_0E2L0O8HG0O00"
-devDeployableMap["excomms"]="deployable_0E2L0O98G0O00"
+devDeployableMap["excomms"]="deployable_0E2L0O98G0O00,deployable_0E2L0O8HG0O00"
 devDeployableMap["notification"]="deployable_0E2L0O9PG0O00"
 devDeployableMap["directory"]="deployable_0E2L0Q5000O00"
 devDeployableMap["operational"]="deployable_0E38JIGJG0O00"
@@ -78,8 +77,11 @@ if [[ "$DEPLOY_TO_S3" != "" ]]; then
 		done
 		IFS=':' read -a STAG <<< "$TAG"
 		if [[ ${devDeployableMap[${STAG[0]}]} != "" ]]; then
-			echo "Notifying Deploy Service of successful build $TAG"
-			aws sqs send-message --queue-url=https://sqs.us-east-1.amazonaws.com/137987605457/corp-deploy-events --message-body="{\"deployable_id\":\"${devDeployableMap[${STAG[0]}]}\",\"build_number\":\"$BUILD_ID\",\"image\":\"$REMOTETAG\"}" --region=us-east-1
+			IFS=',' read -a DEPLOYABLES <<< "${devDeployableMap[${STAG[0]}]}"
+			for DEPLOYABLE in ${DEPLOYABLES[@]}; do
+				echo "Notifying Deploy Service of successful build $DEPLOYABLE - $TAG"
+				aws sqs send-message --queue-url=https://sqs.us-east-1.amazonaws.com/137987605457/corp-deploy-events --message-body="{\"deployable_id\":\"$DEPLOYABLE\",\"build_number\":\"$BUILD_ID\",\"image\":\"$REMOTETAG\"}" --region=us-east-1
+			done
 		fi
 		docker rmi $REMOTETAG
 		docker rmi $TAG
