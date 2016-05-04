@@ -562,6 +562,15 @@ func (s *server) LookupInvite(ctx context.Context, in *invite.LookupInviteReques
 	return resp, nil
 }
 
+// MarkInviteConsumed deletes the associated invite and records it's consumption
+func (s *server) MarkInviteConsumed(ctx context.Context, in *invite.MarkInviteConsumedRequest) (*invite.MarkInviteConsumedResponse, error) {
+	// TODO: Record consumption metrics
+	if err := s.dal.DeleteInvite(ctx, in.Token); err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+	return &invite.MarkInviteConsumedResponse{}, nil
+}
+
 // SetAttributionData associate attribution data with a device
 func (s *server) SetAttributionData(ctx context.Context, in *invite.SetAttributionDataRequest) (*invite.SetAttributionDataResponse, error) {
 	if in.DeviceID == "" {

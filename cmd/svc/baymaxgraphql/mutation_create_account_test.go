@@ -316,6 +316,9 @@ func TestCreateAccountMutation_InviteColleague(t *testing.T) {
 		},
 	}, nil))
 
+	// Clean up our invite
+	g.inviteC.Expect(mock.NewExpectation(g.inviteC.MarkInviteConsumed, &invite.MarkInviteConsumedRequest{Token: "InviteToken"}).WithReturns(&invite.MarkInviteConsumedResponse{}, nil))
+
 	// Analytics looks up the organization to get the name for invites
 	g.ra.Expect(mock.NewExpectation(g.ra.Entity, "e_org_inv", []directory.EntityInformation(nil), int64(0)).WithReturns(
 		&directory.Entity{

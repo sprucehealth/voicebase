@@ -53,6 +53,12 @@ message PatientInvite {
 	Patient patient = 3;
 }
 
+message MarkInviteConsumedRequest {
+	string token = 1;
+}
+
+message MarkInviteConsumedResponse {}
+
 message LookupInviteRequest {
 	string token = 1;
 }
@@ -100,6 +106,8 @@ service Invite {
 	rpc InvitePatients(InvitePatientsRequest) returns (InvitePatientsResponse);
 	// LookupInvite returns information about an invite by token
 	rpc LookupInvite(LookupInviteRequest) returns (LookupInviteResponse);
+	// MarkInviteConsumed deletes the associated invite and records it's consumption
+	rpc MarkInviteConsumed(MarkInviteConsumedRequest) returns (MarkInviteConsumedResponse);
 	// SetAttributionData associate attribution data with a device
 	rpc SetAttributionData(SetAttributionDataRequest) returns (SetAttributionDataResponse);
 }

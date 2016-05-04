@@ -86,6 +86,8 @@ func createAndSendSMSVerificationCode(ctx context.Context, ram raccess.ResourceA
 	return resp.VerificationCode.Token, nil
 }
 
+const inviteTokenAttributionKey = "invite_token"
+
 func (s *service) inviteAndAttributionInfo(ctx context.Context) (*invite.LookupInviteResponse, map[string]string, error) {
 	sh := gqlctx.SpruceHeaders(ctx)
 	if sh == nil || sh.DeviceID == "" {
@@ -105,7 +107,7 @@ func (s *service) inviteAndAttributionInfo(ctx context.Context) (*invite.LookupI
 	attribValues := make(map[string]string, len(res.Values))
 	var inviteToken string
 	for _, v := range res.Values {
-		if v.Key == "invite_token" {
+		if v.Key == inviteTokenAttributionKey {
 			inviteToken = v.Value
 		}
 		attribValues[v.Key] = v.Value

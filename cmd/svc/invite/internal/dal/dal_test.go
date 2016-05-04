@@ -160,6 +160,15 @@ func TestInvitePatient(t *testing.T) {
 	test.Equals(t, invite, in)
 }
 
+func TestDeleteInvite(t *testing.T) {
+	db := testDB(t)
+	dal := New(db, "local")
+	ctx := context.Background()
+
+	err := dal.DeleteInvite(ctx, "nope")
+	test.OK(t, err)
+}
+
 func randomID() string {
 	return strconv.FormatInt(rand.Int63(), 10)
 }

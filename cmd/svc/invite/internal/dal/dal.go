@@ -39,9 +39,10 @@ var ErrDuplicateInviteToken = errors.New("invite/dal: an invite with the provide
 // DAL is the interface implemented by a data access layer for the invite service
 type DAL interface {
 	AttributionData(ctx context.Context, deviceID string) (map[string]string, error)
-	SetAttributionData(ctx context.Context, deviceID string, values map[string]string) error
+	DeleteInvite(ctx context.Context, token string) error
 	InsertInvite(ctx context.Context, invite *models.Invite) error
 	InviteForToken(ctx context.Context, token string) (*models.Invite, error)
+	SetAttributionData(ctx context.Context, deviceID string, values map[string]string) error
 }
 
 type dal struct {
@@ -219,4 +220,14 @@ func (d *dal) InviteForToken(ctx context.Context, token string) (*models.Invite,
 		inv.Values[k] = *v.S
 	}
 	return inv, nil
+}
+
+func (d *dal) DeleteInvite(ctx context.Context, token string) error {
+	_, err := d.db.DeleteItem(&dynamodb.DeleteItemInput{
+		Key: map[string]*dynamodb.AttributeValue{
+			inviteTokenKey: {S: &token},
+		},
+		TableName: &d.inviteTable,
+	})
+	return errors.Trace(err)
 }

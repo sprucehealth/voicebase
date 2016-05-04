@@ -433,6 +433,15 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 		})
 	})
 
+	// Mark the invite as consumed if one was used
+	if inv != nil && !ignorePhoneNumberCheckForInvite(inv) {
+		conc.Go(func() {
+			if _, err := svc.invite.MarkInviteConsumed(ctx, &invite.MarkInviteConsumedRequest{Token: attribValues[inviteTokenAttributionKey]}); err != nil {
+				golog.Errorf("Error while marking invite with code %q as consumed: %s", attribValues[inviteTokenAttributionKey], err)
+			}
+		})
+	}
+
 	result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)
 	result.Set("auth_token", res.Token.Value)
 	result.Set("auth_expiration", time.Unix(int64(res.Token.ExpirationEpoch), 0))

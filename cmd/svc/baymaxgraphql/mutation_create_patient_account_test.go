@@ -134,6 +134,9 @@ func TestCreatePatientAccountMutation(t *testing.T) {
 		SystemTitle: "first last",
 	}).WithReturns(&threading.UpdateThreadResponse{}, nil))
 
+	// Clean up our invite
+	g.inviteC.Expect(mock.NewExpectation(g.inviteC.MarkInviteConsumed, &invite.MarkInviteConsumedRequest{Token: "InviteToken"}).WithReturns(&invite.MarkInviteConsumedResponse{}, nil))
+
 	// Query the acount entity
 	g.ra.Expect(mock.NewExpectation(g.ra.PatientEntity, &models.PatientAccount{
 		ID: "a_1",

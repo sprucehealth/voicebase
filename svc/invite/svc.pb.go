@@ -17,6 +17,8 @@
 		InvitePatientsRequest
 		InvitePatientsResponse
 		PatientInvite
+		MarkInviteConsumedRequest
+		MarkInviteConsumedResponse
 		LookupInviteRequest
 		LookupInviteResponse
 		AttributionValue
@@ -161,6 +163,19 @@ func (m *PatientInvite) GetPatient() *Patient {
 	}
 	return nil
 }
+
+type MarkInviteConsumedRequest struct {
+	Token string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+}
+
+func (m *MarkInviteConsumedRequest) Reset()      { *m = MarkInviteConsumedRequest{} }
+func (*MarkInviteConsumedRequest) ProtoMessage() {}
+
+type MarkInviteConsumedResponse struct {
+}
+
+func (m *MarkInviteConsumedResponse) Reset()      { *m = MarkInviteConsumedResponse{} }
+func (*MarkInviteConsumedResponse) ProtoMessage() {}
 
 type LookupInviteRequest struct {
 	Token string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
@@ -338,6 +353,8 @@ func init() {
 	proto.RegisterType((*InvitePatientsRequest)(nil), "invite.InvitePatientsRequest")
 	proto.RegisterType((*InvitePatientsResponse)(nil), "invite.InvitePatientsResponse")
 	proto.RegisterType((*PatientInvite)(nil), "invite.PatientInvite")
+	proto.RegisterType((*MarkInviteConsumedRequest)(nil), "invite.MarkInviteConsumedRequest")
+	proto.RegisterType((*MarkInviteConsumedResponse)(nil), "invite.MarkInviteConsumedResponse")
 	proto.RegisterType((*LookupInviteRequest)(nil), "invite.LookupInviteRequest")
 	proto.RegisterType((*LookupInviteResponse)(nil), "invite.LookupInviteResponse")
 	proto.RegisterType((*AttributionValue)(nil), "invite.AttributionValue")
@@ -587,6 +604,53 @@ func (this *PatientInvite) Equal(that interface{}) bool {
 		return false
 	}
 	if !this.Patient.Equal(that1.Patient) {
+		return false
+	}
+	return true
+}
+func (this *MarkInviteConsumedRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*MarkInviteConsumedRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Token != that1.Token {
+		return false
+	}
+	return true
+}
+func (this *MarkInviteConsumedResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*MarkInviteConsumedResponse)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
 		return false
 	}
 	return true
@@ -943,6 +1007,25 @@ func (this *PatientInvite) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *MarkInviteConsumedRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&invite.MarkInviteConsumedRequest{")
+	s = append(s, "Token: "+fmt.Sprintf("%#v", this.Token)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *MarkInviteConsumedResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 4)
+	s = append(s, "&invite.MarkInviteConsumedResponse{")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func (this *LookupInviteRequest) GoString() string {
 	if this == nil {
 		return "nil"
@@ -1081,6 +1164,8 @@ type InviteClient interface {
 	InvitePatients(ctx context.Context, in *InvitePatientsRequest, opts ...grpc.CallOption) (*InvitePatientsResponse, error)
 	// LookupInvite returns information about an invite by token
 	LookupInvite(ctx context.Context, in *LookupInviteRequest, opts ...grpc.CallOption) (*LookupInviteResponse, error)
+	// MarkInviteConsumed deletes the associated invite and records it's consumption
+	MarkInviteConsumed(ctx context.Context, in *MarkInviteConsumedRequest, opts ...grpc.CallOption) (*MarkInviteConsumedResponse, error)
 	// SetAttributionData associate attribution data with a device
 	SetAttributionData(ctx context.Context, in *SetAttributionDataRequest, opts ...grpc.CallOption) (*SetAttributionDataResponse, error)
 }
@@ -1129,6 +1214,15 @@ func (c *inviteClient) LookupInvite(ctx context.Context, in *LookupInviteRequest
 	return out, nil
 }
 
+func (c *inviteClient) MarkInviteConsumed(ctx context.Context, in *MarkInviteConsumedRequest, opts ...grpc.CallOption) (*MarkInviteConsumedResponse, error) {
+	out := new(MarkInviteConsumedResponse)
+	err := grpc.Invoke(ctx, "/invite.Invite/MarkInviteConsumed", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *inviteClient) SetAttributionData(ctx context.Context, in *SetAttributionDataRequest, opts ...grpc.CallOption) (*SetAttributionDataResponse, error) {
 	out := new(SetAttributionDataResponse)
 	err := grpc.Invoke(ctx, "/invite.Invite/SetAttributionData", in, out, c.cc, opts...)
@@ -1149,6 +1243,8 @@ type InviteServer interface {
 	InvitePatients(context.Context, *InvitePatientsRequest) (*InvitePatientsResponse, error)
 	// LookupInvite returns information about an invite by token
 	LookupInvite(context.Context, *LookupInviteRequest) (*LookupInviteResponse, error)
+	// MarkInviteConsumed deletes the associated invite and records it's consumption
+	MarkInviteConsumed(context.Context, *MarkInviteConsumedRequest) (*MarkInviteConsumedResponse, error)
 	// SetAttributionData associate attribution data with a device
 	SetAttributionData(context.Context, *SetAttributionDataRequest) (*SetAttributionDataResponse, error)
 }
@@ -1205,6 +1301,18 @@ func _Invite_LookupInvite_Handler(srv interface{}, ctx context.Context, dec func
 	return out, nil
 }
 
+func _Invite_MarkInviteConsumed_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(MarkInviteConsumedRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(InviteServer).MarkInviteConsumed(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func _Invite_SetAttributionData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(SetAttributionDataRequest)
 	if err := dec(in); err != nil {
@@ -1236,6 +1344,10 @@ var _Invite_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "LookupInvite",
 			Handler:    _Invite_LookupInvite_Handler,
+		},
+		{
+			MethodName: "MarkInviteConsumed",
+			Handler:    _Invite_MarkInviteConsumed_Handler,
 		},
 		{
 			MethodName: "SetAttributionData",
@@ -1508,6 +1620,48 @@ func (m *PatientInvite) MarshalTo(data []byte) (int, error) {
 		}
 		i += n2
 	}
+	return i, nil
+}
+
+func (m *MarkInviteConsumedRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *MarkInviteConsumedRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Token) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Token)))
+		i += copy(data[i:], m.Token)
+	}
+	return i, nil
+}
+
+func (m *MarkInviteConsumedResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *MarkInviteConsumedResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
 	return i, nil
 }
 
@@ -1890,6 +2044,22 @@ func (m *PatientInvite) Size() (n int) {
 	return n
 }
 
+func (m *MarkInviteConsumedRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Token)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *MarkInviteConsumedResponse) Size() (n int) {
+	var l int
+	_ = l
+	return n
+}
+
 func (m *LookupInviteRequest) Size() (n int) {
 	var l int
 	_ = l
@@ -2092,6 +2262,25 @@ func (this *PatientInvite) String() string {
 		`OrganizationEntityID:` + fmt.Sprintf("%v", this.OrganizationEntityID) + `,`,
 		`InviterEntityID:` + fmt.Sprintf("%v", this.InviterEntityID) + `,`,
 		`Patient:` + strings.Replace(fmt.Sprintf("%v", this.Patient), "Patient", "Patient", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *MarkInviteConsumedRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&MarkInviteConsumedRequest{`,
+		`Token:` + fmt.Sprintf("%v", this.Token) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *MarkInviteConsumedResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&MarkInviteConsumedResponse{`,
 		`}`,
 	}, "")
 	return s
@@ -3081,6 +3270,135 @@ func (m *PatientInvite) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MarkInviteConsumedRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MarkInviteConsumedRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MarkInviteConsumedRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Token", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Token = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MarkInviteConsumedResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MarkInviteConsumedResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MarkInviteConsumedResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])

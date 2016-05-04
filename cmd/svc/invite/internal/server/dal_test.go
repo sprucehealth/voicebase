@@ -39,3 +39,8 @@ func (dl *mockDAL) InviteForToken(ctx context.Context, token string) (*models.In
 	r := dl.Expector.Record(token)
 	return r[0].(*models.Invite), mock.SafeError(r[1])
 }
+
+func (dl *mockDAL) DeleteInvite(ctx context.Context, token string) error {
+	r := dl.Expector.Record(token)
+	return mock.SafeError(r[0])
+}

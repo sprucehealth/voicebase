@@ -51,3 +51,9 @@ func (c *Client) SetAttributionData(ctx context.Context, in *invite.SetAttributi
 	ret := c.Expector.Record(in)
 	return ret[0].(*invite.SetAttributionDataResponse), mock.SafeError(ret[1])
 }
+
+// MarkInviteConsumed deleted an invite
+func (c *Client) MarkInviteConsumed(ctx context.Context, in *invite.MarkInviteConsumedRequest, opts ...grpc.CallOption) (*invite.MarkInviteConsumedResponse, error) {
+	ret := c.Expector.Record(in)
+	return ret[0].(*invite.MarkInviteConsumedResponse), mock.SafeError(ret[1])
+}

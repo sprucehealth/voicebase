@@ -463,3 +463,16 @@ func TestLookupInvite(t *testing.T) {
 		Values: []*invite.AttributionValue{{Key: "foo", Value: "bar"}},
 	}, res)
 }
+
+func TestMarkInviteConsumed(t *testing.T) {
+	dl := newMockDAL(t)
+	defer dl.Finish()
+	snsC := mock.NewSNSAPI(t)
+	defer snsC.Finish()
+	srv := New(dl, nil, nil, nil, snsC, nil, nil, "", "", "", "")
+
+	dl.Expect(mock.NewExpectation(dl.DeleteInvite, "testtoken").WithReturns(nil))
+	res, err := srv.MarkInviteConsumed(nil, &invite.MarkInviteConsumedRequest{Token: "testtoken"})
+	test.OK(t, err)
+	test.Equals(t, &invite.MarkInviteConsumedResponse{}, res)
+}

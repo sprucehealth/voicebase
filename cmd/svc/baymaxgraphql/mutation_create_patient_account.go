@@ -188,7 +188,7 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 	input := p.Args["input"].(map[string]interface{})
 	mutationID, _ := input["clientMutationId"].(string)
 
-	inv, _, err := svc.inviteAndAttributionInfo(ctx)
+	inv, atts, err := svc.inviteAndAttributionInfo(ctx)
 	if err != nil {
 		return nil, errors.InternalError(ctx, err)
 	}
@@ -349,6 +349,14 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 			}
 		}
 	})
+	// Mark the invite as consumed
+	if inv != nil {
+		conc.Go(func() {
+			if _, err := svc.invite.MarkInviteConsumed(ctx, &invite.MarkInviteConsumedRequest{Token: atts[inviteTokenAttributionKey]}); err != nil {
+				golog.Errorf("Error while marking invite with code %q as consumed: %s", atts[inviteTokenAttributionKey], err)
+			}
+		})
+	}
 
 	// Record Analytics
 	recordCreatePatientAccountAnalytics(ctx, ram, svc, p, inv, res.Account, inv.GetPatient().OrganizationEntityID, inv.GetPatient().Patient.ParkedEntityID)
