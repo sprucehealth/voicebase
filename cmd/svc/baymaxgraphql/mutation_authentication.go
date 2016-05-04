@@ -158,7 +158,7 @@ var authenticateMutation = &graphql.Field{
 			}
 		}
 		headers := gqlctx.SpruceHeaders(ctx)
-		if headers.Platform != device.Android && headers.Platform != device.IOS {
+		if res.Account.Type == auth.AccountType_PATIENT && (headers.Platform != device.Android && headers.Platform != device.IOS) {
 			return &authenticateOutput{
 				ClientMutationID: mutationID,
 				Success:          false,
