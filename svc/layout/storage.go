@@ -67,6 +67,7 @@ func (s *layoutStore) GetIntake(location string) (*Intake, error) {
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
+	defer reader.Close()
 
 	var intake Intake
 	if err := json.NewDecoder(reader).Decode(&intake); err != nil {
@@ -80,6 +81,7 @@ func (s *layoutStore) GetReview(location string) (*visitreview.SectionListView, 
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
+	defer reader.Close()
 
 	var jsonMap map[string]interface{}
 	if err := json.NewDecoder(reader).Decode(&jsonMap); err != nil {
@@ -110,6 +112,7 @@ func (s *layoutStore) GetSAML(location string) (string, error) {
 	if err != nil {
 		return "", errors.Trace(err)
 	}
+	defer reader.Close()
 
 	samlData, err := ioutil.ReadAll(reader)
 	if err != nil {
@@ -155,7 +158,7 @@ func (s *layoutStore) putCompressedData(name, contentType string, writeFunc func
 	return location, nil
 }
 
-func (s *layoutStore) getCompressedData(location string) (io.Reader, error) {
+func (s *layoutStore) getCompressedData(location string) (io.ReadCloser, error) {
 
 	reader, _, err := s.store.GetReader(location)
 	if err != nil {

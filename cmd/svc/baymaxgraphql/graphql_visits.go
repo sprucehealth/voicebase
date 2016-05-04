@@ -19,7 +19,7 @@ var visitCategoryConnectionType = ConnectionDefinitions(ConnectionConfig{
 })
 
 var visitCategoriesField = &graphql.Field{
-	Type: graphql.NewNonNull(visitCategoryConnectionType.ConnectionType),
+	Type: visitCategoryConnectionType.ConnectionType,
 	Args: NewConnectionArguments(nil),
 	Resolve: apiaccess.Authenticated(
 		apiaccess.Provider(
@@ -52,7 +52,7 @@ var visitCategoriesField = &graphql.Field{
 				if err != nil {
 					return nil, errors.InternalError(ctx, err)
 				}
-				sort.Sort(ByVisitCategoryName(res.Categories))
+				sort.Sort(byVisitCategoryName(res.Categories))
 
 				cn := &Connection{
 					Edges: make([]*Edge, len(res.Categories)),
@@ -100,7 +100,7 @@ var visitCategoryType = graphql.NewObject(
 							if err != nil {
 								return nil, errors.InternalError(ctx, err)
 							}
-							sort.Sort(ByVisitLayoutName(res.VisitLayouts))
+							sort.Sort(byVisitLayoutName(res.VisitLayouts))
 
 							cn := &Connection{
 								Edges: make([]*Edge, len(res.VisitLayouts)),

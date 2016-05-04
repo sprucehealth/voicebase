@@ -104,7 +104,7 @@ var threadType = graphql.NewObject(
 						return false, nil
 					}
 
-					if acc.Type == auth.AccountType_PATIENT {
+					if acc.Type != auth.AccountType_PROVIDER {
 						return false, nil
 					}
 

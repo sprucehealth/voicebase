@@ -667,18 +667,18 @@ func transformVisitLayoutVersionToResponse(version *layout.VisitLayoutVersion, s
 	}, nil
 }
 
-type ByVisitLayoutName []*layout.VisitLayout
+type byVisitLayoutName []*layout.VisitLayout
 
-func (c ByVisitLayoutName) Len() int      { return len(c) }
-func (c ByVisitLayoutName) Swap(i, j int) { c[i], c[j] = c[j], c[i] }
-func (c ByVisitLayoutName) Less(i, j int) bool {
+func (c byVisitLayoutName) Len() int      { return len(c) }
+func (c byVisitLayoutName) Swap(i, j int) { c[i], c[j] = c[j], c[i] }
+func (c byVisitLayoutName) Less(i, j int) bool {
 	return strings.Compare(strings.ToLower(c[i].Name), strings.ToLower(c[j].Name)) < 0
 }
 
-type ByVisitCategoryName []*layout.VisitCategory
+type byVisitCategoryName []*layout.VisitCategory
 
-func (c ByVisitCategoryName) Len() int      { return len(c) }
-func (c ByVisitCategoryName) Swap(i, j int) { c[i], c[j] = c[j], c[i] }
-func (c ByVisitCategoryName) Less(i, j int) bool {
+func (c byVisitCategoryName) Len() int      { return len(c) }
+func (c byVisitCategoryName) Swap(i, j int) { c[i], c[j] = c[j], c[i] }
+func (c byVisitCategoryName) Less(i, j int) bool {
 	return strings.Compare(strings.ToLower(c[i].Name), strings.ToLower(c[j].Name)) < 0
 }

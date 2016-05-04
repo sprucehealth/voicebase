@@ -11,7 +11,7 @@ import (
 )
 
 func TestTransform(t *testing.T) {
-	testTransform(t, "athletes_foot.saml")
+	testTransform(t, "testdata/athletes_foot.saml")
 }
 
 func testTransform(t *testing.T, fileName string) {
@@ -40,7 +40,7 @@ func testTransform(t *testing.T, fileName string) {
 }
 
 func TestReviewGeneration(t *testing.T) {
-	file, err := os.Open("athletes_foot.saml")
+	file, err := os.Open("testdata/athletes_foot.saml")
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

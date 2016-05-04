@@ -329,6 +329,7 @@ func (d *dal) VisitLayouts(visitCategoryID models.VisitCategoryID) ([]*models.Vi
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
+	defer rows.Close()
 
 	var layouts []*models.VisitLayout
 	for rows.Next() {
