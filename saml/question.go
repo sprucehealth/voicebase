@@ -16,7 +16,9 @@ func questionParser(p *parser, line string) interface{} {
 	que := &Question{
 		Details: &QuestionDetails{
 			// The default question type is single select unless overriding by a directive
-			Type: "q_type_single_select",
+			Type: QuestionTypeSingleSelect,
+			// The default is for a question to be required unless otherwise specified via a directive
+			Required: boolPtr(true),
 		},
 	}
 
@@ -36,18 +38,21 @@ func questionParser(p *parser, line string) interface{} {
 		default:
 			p.err("Unknown question directive [%s]", name)
 		case "select many":
-			que.Details.Type = "q_type_multiple_choice"
+			que.Details.Type = QuestionTypeMultipleChoice
 		case "segmented":
-			que.Details.Type = "q_type_segmented_control"
+			que.Details.Type = QuestionTypeSegmentedControl
 		case "single entry":
-			que.Details.Type = "q_type_single_entry"
+			que.Details.Type = QuestionTypeSingleEntry
 		case "free text":
-			que.Details.Type = "q_type_free_text"
+			que.Details.Type = QuestionTypeFreeText
 		case "photo":
-			que.Details.Type = "q_type_photo_section"
+			que.Details.Type = QuestionTypePhotoSection
+			if que.Details.Tag == "" {
+				que.Details.Tag = generateTagForQuestion(p, line)
+			}
 		case "medication picker":
 			que.Details.ToPrefill = boolPtr(true)
-			que.Details.Type = "q_type_autocomplete"
+			que.Details.Type = QuestionTypeAutocomplete
 			que.Details.AdditionalFields = &QuestionAdditionalFields{
 				AddButtonText:    "Add Medication",
 				AddText:          "Add Medication",
@@ -154,15 +159,7 @@ func questionParser(p *parser, line string) interface{} {
 			case "summary":
 				que.Details.Summary = value
 				if que.Details.Tag == "" {
-					tag := tagFromText(que.Details.Summary)
-					que.Details.Tag = tag
-					// Guarantee a unique tag
-					i := 2
-					for p.qTags[que.Details.Tag] {
-						que.Details.Tag = fmt.Sprintf("%s_%d", tag, i)
-						i++
-					}
-					p.qTags[que.Details.Tag] = true
+					que.Details.Tag = generateTagForQuestion(p, que.Details.Summary)
 				}
 			case "help":
 				if que.Details.AdditionalFields == nil {
@@ -234,7 +231,9 @@ func questionParser(p *parser, line string) interface{} {
 		}
 
 		// Answer
-		ans := &Answer{}
+		ans := &Answer{
+			Type: defaultAnswerTypeForQuestionType(que.Details.Type),
+		}
 		if len(que.Details.AnswerGroups) != 0 {
 			ag := que.Details.AnswerGroups[len(que.Details.AnswerGroups)-1]
 			ag.Answers = append(ag.Answers, ans)
@@ -248,6 +247,7 @@ func questionParser(p *parser, line string) interface{} {
 		}
 
 		// Answer directives
+
 		directives, line := p.parseDirectives(line)
 		for name, dir := range directives {
 			switch name {
@@ -449,4 +449,29 @@ func questionParser(p *parser, line string) interface{} {
 	}
 
 	return qb
+}
+
+func generateTagForQuestion(p *parser, text string) string {
+	tag := tagFromText(text)
+
+	// Guarantee a unique tag
+	i := 2
+	for p.qTags[tag] {
+		tag = fmt.Sprintf("%s_%d", tag, i)
+		i++
+	}
+	p.qTags[tag] = true
+	return tag
+}
+
+func defaultAnswerTypeForQuestionType(questionType string) string {
+	switch questionType {
+	case "q_type_multiple_choice":
+		return "a_type_multiple_choice"
+	case "q_type_single_select":
+		return "a_type_single_select"
+	case "q_type_segmented_control":
+		return "a_type_segmented_control"
+	}
+	return ""
 }

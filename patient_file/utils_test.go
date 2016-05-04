@@ -6,11 +6,12 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/info_intake"
+	"github.com/sprucehealth/backend/libs/visitreview"
 	"github.com/sprucehealth/backend/test"
 )
 
 func TestBuildContext_PhotoPopulation(t *testing.T) {
-	context := common.NewViewContext(nil)
+	context := visitreview.NewViewContext(nil)
 	question := &info_intake.Question{
 		QuestionTag: "q_test_me",
 	}
@@ -43,7 +44,7 @@ func TestBuildContext_PhotoPopulation(t *testing.T) {
 	// the photos should get populated under the <q_tag>:photos
 	// key with data transformed into the view data that is expected by
 	// the photo views.
-	viewData := data.([]info_intake.TitlePhotoListData)
+	viewData := data.([]visitreview.TitlePhotoListData)
 	testTitlePhotoListData(viewData, photoSections, t)
 
 	// at this point the global collection of photos should be the same
@@ -83,21 +84,21 @@ func TestBuildContext_PhotoPopulation(t *testing.T) {
 	// from both questions for the key patient_visit_photos
 	data, ok = context.Get("patient_visit_photos")
 	test.Equals(t, true, ok)
-	viewData = data.([]info_intake.TitlePhotoListData)
+	viewData = data.([]visitreview.TitlePhotoListData)
 	testTitlePhotoListData(viewData, append(photoSections, photoSections2...), t)
 
 	// the context should have the photo list also populated for
 	// q_test_me2:photos
 	data, ok = context.Get("q_test_me2:photos")
 	test.Equals(t, true, ok)
-	testTitlePhotoListData(data.([]info_intake.TitlePhotoListData), photoSections2, t)
+	testTitlePhotoListData(data.([]visitreview.TitlePhotoListData), photoSections2, t)
 
 }
 
 // This test is to ensure that the other free text gets populated alongside the other selection with
 // comma separated values for the other free text entered
 func TestOtherFreeTextPopulation(t *testing.T) {
-	context := common.NewViewContext(nil)
+	context := visitreview.NewViewContext(nil)
 	question := &info_intake.Question{
 		QuestionID:  101,
 		QuestionTag: "q_test_me",
@@ -159,7 +160,7 @@ func TestOtherFreeTextPopulation(t *testing.T) {
 	// the context should have the q_test_me:photos key populated
 	data, ok := context.Get("q_test_me:answers")
 	test.Equals(t, true, ok)
-	dataList := data.([]info_intake.CheckedUncheckedData)
+	dataList := data.([]visitreview.CheckedUncheckedData)
 	test.Equals(t, 3, len(dataList))
 	test.Equals(t, true, dataList[0].IsChecked)
 	test.Equals(t, "answer1 - other1, other2, other3", dataList[0].Value)
@@ -170,7 +171,7 @@ func TestOtherFreeTextPopulation(t *testing.T) {
 
 }
 
-func testTitlePhotoListData(tpld []info_intake.TitlePhotoListData, photoSections []*common.PhotoIntakeSection, t *testing.T) {
+func testTitlePhotoListData(tpld []visitreview.TitlePhotoListData, photoSections []*common.PhotoIntakeSection, t *testing.T) {
 	test.Equals(t, len(photoSections), len(tpld))
 	for j, photoSection := range photoSections {
 		test.Equals(t, photoSection.Name, tpld[j].Title)

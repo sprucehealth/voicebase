@@ -13,6 +13,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/www"
 	"golang.org/x/net/context"
@@ -90,7 +91,7 @@ func (h *parentalConsentImageAPIHandler) post(ctx context.Context, w http.Respon
 	}
 	defer file.Close()
 
-	size, err := common.SeekerSize(file)
+	size, err := media.SeekerSize(file)
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return

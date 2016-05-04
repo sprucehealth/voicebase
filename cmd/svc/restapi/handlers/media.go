@@ -15,10 +15,10 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/imageutil"
+	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/storage"
 	"golang.org/x/net/context"
 )
@@ -252,7 +252,7 @@ func (h *mediaHandler) post(ctx context.Context, w http.ResponseWriter, r *http.
 	}
 	defer file.Close()
 
-	size, err := common.SeekerSize(file)
+	size, err := media.SeekerSize(file)
 	if err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return

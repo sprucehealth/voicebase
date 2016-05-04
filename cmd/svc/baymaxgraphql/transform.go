@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -12,11 +13,13 @@ import (
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/bml"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/layout"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
 )
@@ -586,4 +589,81 @@ func transformEntityContactToEndpoint(c *directory.Contact) (*models.Endpoint, e
 		ID:           c.Value,
 		DisplayValue: displayValue,
 	}, nil
+}
+
+func transformVisitCategoryToResponse(vc *layout.VisitCategory) *models.VisitCategory {
+	return &models.VisitCategory{
+		ID:   vc.ID,
+		Name: vc.Name,
+	}
+}
+
+func transformVisitLayoutToResponse(vl *layout.VisitLayout) *models.VisitLayout {
+	return &models.VisitLayout{
+		ID:   vl.ID,
+		Name: vl.Name,
+	}
+}
+
+func transformVisitLayoutVersionToResponse(version *layout.VisitLayoutVersion, store layout.Storage) (*models.VisitLayoutVersion, error) {
+
+	par := conc.NewParallel()
+
+	var samlLayout []byte
+	var reviewLayout []byte
+	par.Go(func() error {
+
+		samlIntake, err := store.GetSAML(version.SAMLLocation)
+		if err != nil {
+			return errors.Trace(err)
+		}
+
+		samlLayout, err = json.Marshal(samlIntake)
+		if err != nil {
+			return errors.Trace(err)
+		}
+		return nil
+	})
+
+	par.Go(func() error {
+		var err error
+		review, err := store.GetReview(version.ReviewLayoutLocation)
+		if err != nil {
+			return errors.Trace(err)
+		}
+
+		// TODO: Build out preview mode for the intake
+
+		reviewLayout, err = json.Marshal(review)
+		if err != nil {
+			return errors.Trace(err)
+		}
+		return nil
+	})
+
+	if err := par.Wait(); err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	return &models.VisitLayoutVersion{
+		ID:           version.ID,
+		SAMLLayout:   string(samlLayout),
+		ReviewLayout: string(reviewLayout),
+	}, nil
+}
+
+type ByVisitLayoutName []*layout.VisitLayout
+
+func (c ByVisitLayoutName) Len() int      { return len(c) }
+func (c ByVisitLayoutName) Swap(i, j int) { c[i], c[j] = c[j], c[i] }
+func (c ByVisitLayoutName) Less(i, j int) bool {
+	return strings.Compare(strings.ToLower(c[i].Name), strings.ToLower(c[j].Name)) < 0
+}
+
+type ByVisitCategoryName []*layout.VisitCategory
+
+func (c ByVisitCategoryName) Len() int      { return len(c) }
+func (c ByVisitCategoryName) Swap(i, j int) { c[i], c[j] = c[j], c[i] }
+func (c ByVisitCategoryName) Less(i, j int) bool {
+	return strings.Compare(strings.ToLower(c[i].Name), strings.ToLower(c[j].Name)) < 0
 }

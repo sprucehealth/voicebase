@@ -8,7 +8,6 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	excommsSettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/media"
@@ -111,7 +110,7 @@ func (c *setGreetingCmd) run(args []string) error {
 		return errors.Trace(err)
 	}
 
-	size, err := common.SeekerSize(mp3File)
+	size, err := media.SeekerSize(mp3File)
 	if err != nil {
 		return errors.Trace(err)
 	}

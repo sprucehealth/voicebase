@@ -80,3 +80,4 @@ cmd/cli/entitydisplayname/entitydisplayname
 cmd/cli/doctormigration/doctormigration
 cmd/cli/spruceadmin/spruceadmin
 cmd/cli/baymaxadmin/baymaxadmin
+cmd/svc/layout/layout

@@ -34,6 +34,7 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/invite"
+	"github.com/sprucehealth/backend/svc/layout"
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
@@ -42,18 +43,19 @@ import (
 )
 
 var (
-	flagListenAddr      = flag.String("listen_addr", "127.0.0.1:8080", "host:port to listen on")
-	flagResourcePath    = flag.String("resource_path", "", "Path to resources (defaults to use GOPATH)")
-	flagAPIDomain       = flag.String("api_domain", "", "API `domain`")
-	flagWebDomain       = flag.String("web_domain", "", "Web `domain`")
-	flagStorageBucket   = flag.String("storage_bucket", "", "storage bucket for media")
-	flagSigKeys         = flag.String("signature_keys_csv", "", "csv signature keys")
-	flagEmailDomain     = flag.String("email_domain", "", "domain to use for email address provisioning")
-	flagServiceNumber   = flag.String("service_phone_number", "", "TODO: This should be managed by the excomms service")
-	flagSpruceOrgID     = flag.String("spruce_org_id", "", "`ID` for the Spruce support organization")
-	flagStaticURLPrefix = flag.String("static_url_prefix", "", "URL prefix of static assets")
-	flagSegmentIOKey    = flag.String("segmentio_key", "", "Segment IO API `key`")
-	flagBehindProxy     = flag.Bool("behind_proxy", false, "Flag to indicate when the service is behind a proxy")
+	flagListenAddr          = flag.String("listen_addr", "127.0.0.1:8080", "host:port to listen on")
+	flagResourcePath        = flag.String("resource_path", "", "Path to resources (defaults to use GOPATH)")
+	flagAPIDomain           = flag.String("api_domain", "", "API `domain`")
+	flagWebDomain           = flag.String("web_domain", "", "Web `domain`")
+	flagStorageBucket       = flag.String("storage_bucket", "", "storage bucket for media")
+	flagSigKeys             = flag.String("signature_keys_csv", "", "csv signature keys")
+	flagEmailDomain         = flag.String("email_domain", "", "domain to use for email address provisioning")
+	flagServiceNumber       = flag.String("service_phone_number", "", "TODO: This should be managed by the excomms service")
+	flagSpruceOrgID         = flag.String("spruce_org_id", "", "`ID` for the Spruce support organization")
+	flagStaticURLPrefix     = flag.String("static_url_prefix", "", "URL prefix of static assets")
+	flagSegmentIOKey        = flag.String("segmentio_key", "", "Segment IO API `key`")
+	flagBehindProxy         = flag.Bool("behind_proxy", false, "Flag to indicate when the service is behind a proxy")
+	flagLayoutStoreS3Prefix = flag.String("s3_prefix_saml", "", "S3 Prefix for layouts")
 
 	// Services
 	flagAuthAddr      = flag.String("auth_addr", "", "host:port of auth service")
@@ -62,6 +64,7 @@ var (
 	flagInviteAddr    = flag.String("invite_addr", "", "host:port of invites service")
 	flagSettingsAddr  = flag.String("settings_addr", "", "host:port of settings service")
 	flagThreadingAddr = flag.String("threading_addr", "", "host:port of threading service")
+	flagLayoutAddr    = flag.String("layout_addr", "", "host:port of layout service")
 
 	// Messages
 	flagSQSDeviceRegistrationURL   = flag.String("sqs_device_registration_url", "", "the sqs url for device registration messages")
@@ -134,14 +137,26 @@ func main() {
 	}
 	settingsClient := settings.NewSettingsClient(conn)
 
+	if *flagLayoutAddr == "" {
+		golog.Fatalf("Layout service not configured")
+	}
+	conn, err = grpc.Dial(*flagLayoutAddr, grpc.WithInsecure())
+	if err != nil {
+		golog.Fatalf("Unable to connect to Layout service: %s", err)
+	}
+	layoutClient := layout.NewLayoutClient(conn)
+
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 
+	// enable for non-prod
+	baymaxgraphqlsettings.VisitAttachmentsConfig.GetBoolean().Default.Value = !environment.IsProd()
 	_, err = settings.RegisterConfigs(
 		ctx,
 		settingsClient,
 		[]*settings.Config{
 			baymaxgraphqlsettings.TeamConversationsConfig,
 			baymaxgraphqlsettings.SecureThreadsConfig,
+			baymaxgraphqlsettings.VisitAttachmentsConfig,
 		})
 	if err != nil {
 		golog.Fatalf("Unable to register configs with the settings service: %s", err.Error())
@@ -220,6 +235,9 @@ func main() {
 	if *flagSupportMessageTopicARN == "" {
 		golog.Fatalf("SNS topic for posting requests to send support message")
 	}
+	if *flagLayoutStoreS3Prefix == "" {
+		golog.Fatalf("S3 Prefix for SAML documents not specified")
+	}
 
 	sigKeys := strings.Split(*flagSigKeys, ",")
 	sigKeysByteSlice := make([][]byte, len(sigKeys))
@@ -252,6 +270,8 @@ func main() {
 		notificationClient,
 		settingsClient,
 		inviteClient,
+		layoutClient,
+		layout.NewStore(storage.NewS3(awsSession, *flagStorageBucket, *flagLayoutStoreS3Prefix)),
 		ms,
 		*flagEmailDomain,
 		*flagWebDomain,

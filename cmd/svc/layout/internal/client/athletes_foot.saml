@@ -1,0 +1,859 @@
+[screen template "Triage Emergency"]
+[type "screen_type_triage"]
+[title "Next Steps"]
+[content header title "You should seek in-person medical evaluation today. A local emergency department is an appropriate option, as is your primary care provider (if you can be seen immediately today)."]
+[body text "If you have health insurance, you should contact your insurance company to find out which providers are covered under your plan. Locate your insurance card and call the listed Member Services number. A representative will help you locate your nearest in-network emergency department. If you are too ill to accomplish this, call 911 and go to the nearest emergency department.\n\nIf you do not have health insurance, go to the most convenient emergency department."]
+[bottom button title "I Understand"]
+[end screen template]
+
+[screen template "Triage Urgent Care"]
+[type "screen_type_triage"]
+[title "Next Steps"]
+[content header title "You should seek in-person medical evaluation today. A local urgent care is an appropriate option, as is your primary care provider."]
+[body text "If you have health insurance, you should contact your insurance company to find out which providers are covered under your plan. Locate your insurance card and call the listed Member Services number. A representative will help you locate your nearest in-network urgent care center or other appropriate provider. If you are too ill to accomplish this, call 911 and go to the nearest emergency department.\n\nIf you do not have health insurance, go to the most convenient urgent care or emergency department. "]
+[bottom button title "I Understand"]
+[end screen template]
+
+[screen template "Triage Primary Care"]
+[type "screen_type_triage"]
+[title "Next Steps"]
+[content header title "You should seek in-person care with a primary care provider. Look for a doctor, nurse practitioner, or physician assistant who specializes in obstetrics and gynecology, internal medicine, family medicine, or general practice."]
+[body text "If you have health insurance, you should contact your insurance company to find out which providers are covered under your plan. Locate your insurance card and call the listed Member Services number. A representative will help you locate your nearest in-network primary care center or other appropriate provider.\n\nIf you do not have health insurance, contact your local county hospital or go to www.healthcare.gov to learn about healthcare options."]
+[bottom button title "I Understand"]
+[end screen template]
+
+[screen template "Triage To Rash Popup"]
+[type "screen_type_warning_popup"]
+[content header title "We recommend you start a new \"Rash\" visit"]
+[body text "Your answers suggest that your doctor will be in a better position to evaluate your condition if you submit a \"Rash\" visit instead."]
+[bottom button title "Next Steps"]
+[end screen template]
+
+[screen template "Triage To Rash Screen"]
+[type "screen_type_triage"]
+[title "Next Steps"]
+[content header title "Begin Your Rash Visit"]
+[body text "This visit will gather all the information your doctor needs to diagnose your rash."]
+[bottom button title "OKAY"]
+[triage pathway tag "derm_rash"]
+[triage abandon]
+[end screen template]
+
+[triage "systemic"]
+[screen]
+[type "screen_type_warning_popup"]
+[content header title "We're going to have to end your visit here."]
+[body text "Your symptoms suggest that you may need more immediate medical attention than we can currently provide. A local emergency department is an appropriate option, as is your primary care provider."]
+[bottom button title "Next Steps"]
+[end screen]
+[include screen "Triage Emergency"]
+[end include screen]
+[end triage]
+
+[triage "daily_activities"]
+[screen]
+[type "screen_type_warning_popup"]
+[content header title "We're going to have to end your visit here."]
+[body text "Any illness that prevents you from completing your basic daily activities should be evaluated urgently and in person by a medical professional. Please tap 'Next Steps' for how to proceed."]
+[bottom button title "Next Steps"]
+[end screen]
+[include screen "Triage Emergency"]
+[end include screen]
+[end triage]
+
+[triage "hospitalized"]
+[screen]
+[type "screen_type_warning_popup"]
+[content header title "We're going to have to end your visit here."]
+[body text "Any illness that has already required hospitalization should be reassessed urgently and in person by a medical professional. Please attempt to reach the staff at your previous hospital, or tap 'Next Steps' for how to proceed."]
+[bottom button title "Next Steps"]
+[end screen]
+[include screen "Triage Urgent Care"]
+[end include screen]
+[end triage]
+
+[triage "torash"]
+[include screen "Triage To Rash Popup"]
+[end include screen]
+[include screen "Triage To Rash Screen"]
+[end include screen]
+[end triage]
+
+
+
+[comment]
+Main) Age check (automatic)
+<18 or >80 → triage out
+
+Main) Gender check
+Male
+Female
+Other → get clarification, continue on
+[end comment]
+
+[triage "mouth_and_groin_rash"]
+[screen]
+[type "screen_type_warning_popup"]
+[content header title "We're going to have to end your visit here."]
+[body text "Athlete's foot, ringworm, and other minor fungal skin infections do not typically cause a rash that affects the mouth and groin. We worry that you might have a different condition. Please tap 'Next Steps' for how to proceed."]
+[bottom button title "Next Steps"]
+[end screen]
+[include screen "Triage Urgent Care"]
+[end include screen]
+[end triage]
+
+[triage "inside_mouth_or_throat"]
+[screen]
+[type "screen_type_warning_popup"]
+[content header title "We're going to have to end your visit here."]
+[body text "Athlete's foot, ringworm, and other minor fungal skin infections do not typically cause a rash inside the mouth or throat. We worry that you might have a different condition. Please tap 'Next Steps' for how to proceed."]
+[bottom button title "Next Steps"]
+[end screen]
+[include screen "Triage Urgent Care"]
+[end include screen]
+[end triage]
+
+[triage "groin"]
+[screen]
+[type "screen_type_warning_popup"]
+[content header title "We're going to have to end your visit here."]
+[body text "Athlete's foot, ringworm, and other minor fungal skin infections do not typically cause a rash on the mucous membranes of the genital area. We worry that you might have a different condition. Please tap 'Next Steps' for how to proceed."]
+[bottom button title "Next Steps"]
+[end screen]
+[include screen "Triage Urgent Care"]
+[end include screen]
+[end triage]
+
+[patient section "Your Symptoms"]
+[transition message "We'll start by asking you questions about your symptoms."]
+
+[MD section "Systemic or Dangerous Symptoms"]
+
+HPI) Let's make sure Spruce is right for you. Are you experiencing any of the following? [select many]
+[summary "Systemic or dangerous symptoms"]
+[help "This question helps assess whether you're healthy enough to be diagnosed and treated remotely."]
+[alert "Patient endorses: XXX"]
+Extreme fatigue or ill feeling [alert] → HPI.fatigue
+Fever or shaking chills → triage:systemic
+Unintentional weight loss → triage:systemic
+Vomiting → triage:systemic
+None of the above [none]
+
+HPI.fatigue) Are you still able to complete basic daily activities, such as walking, eating, and caring for yourself?
+[summary "Able to complete daily activities"]
+Yes
+Barely → triage:systemic
+No → triage:systemic
+
+[MD section "Symptom Course"]
+
+HPI) When did this rash start?
+[summary "Rash time course"]
+Less than 1 week ago
+1 to 4 weeks ago
+1 to 12 months ago
+Longer than 1 year ago
+I don't know
+
+HPI) Have you experienced this type of rash before?
+	[summary "Experienced this type of rash before"]
+Yes, very often or constantly → HPI.rashbefore
+Yes, a few times → HPI.rashbefore
+Yes, once → HPI.rashbefore
+No, never
+I'm not sure
+
+HPI.rashbefore) Is this rash similar to athlete's foot, ringworm, or other fungal rashes that you have had before?
+[summary "Similar to prior athlete's foot, ringworm, or other fungal rashes"]
+Yes, very similar
+Yes, somewhat similar → HPI.rashbefore.different
+No → HPI.rashbefore.different
+
+HPI.rashbefore.different) What about this rash is different? [free text]
+		[summary "What's different about current rash"]
+[placeholder "Describe any differences you've noticed..."]
+
+[MD section "Locations"]
+
+HPI) Which areas of your body are currently affected? [select many]
+[summary "Affected areas"]
+[post condition "HPI.mouth and HPI.just_groin → triage:mouth_and_groin_rash"]
+[Answer Group "Head & Neck"]
+Face → Photo.face
+Mouth → HPI.mouth
+Scalp → Photo.scalp
+Neck → Photo.neck
+[Answer Group "Torso"]
+Chest → Photo.chest
+Back → Photo.back
+Abdomen → Photo.abdomen
+Groin → HPI.groin, HPI.just_groin, Photo.groin
+Buttocks → HPI.groin, Photo.buttocks
+[Answer Group "Arms & Hands"]
+Arms → Photo.arms
+Hands → HPI.hands, Photo.hands
+[Answer Group "Legs & Feet"]
+Legs → Photo.legs
+Feet → HPI.feet, Photo.feet
+[Answer Group "Other Locations"]
+Other location [textbox]
+
+HPI.hands) Where on your hands is the rash located? [select many]
+	[summary "Hand locations"]
+Top
+Palms
+Both top and palms
+
+HPI.feet) Where on your feet is the rash located? [select many]
+	[summary "Feet locations"]
+Top 
+Bottom
+In between toes
+
+HPI.mouth) Where in or on your mouth is the rash? [select many]
+	[summary "Mouth locations"]
+Lips → Photo.lips
+Inside mouth → triage:inside_mouth_or_throat
+Throat → triage:inside_mouth_or_throat
+
+HPI.groin) Does the rash affect any of the following areas? [select many]
+	[summary "Groin locations"]
+	[condition "female"]
+Labia [help "Folds of skin that surround the opening of the vagina"] → triage:groin
+Vagina → triage:groin
+Anus → triage:groin
+None of the above [none]
+
+HPI.groin) Does the rash affect any of the following areas? [select many]
+	[summary "Groin locations"]
+[condition "male"]
+Tip (opening) of penis → triage:groin
+Shaft of penis
+Base of penis
+Scrotum [help "Pouch of skin that contains the testicles"]
+Anus → triage:groin
+None of the above [none]
+
+HPI) Is the rash in or between skin creases?
+[summary "Rash mostly in skin creases"]
+[subtitle "(e.g., elbows or behind knees)"]
+Yes
+No
+
+HPI) Has the location of the rash changed since it started?
+	[summary "Change in rash location"]
+Yes, it affects more parts of my body now → HPI.began
+Yes, it affects fewer parts of my body now → HPI.began
+No change in location
+I don't know
+
+HPI.began) Select the locations where the rash began: [select many]
+	[summary "Locations where rash began"]
+[Answer Group "Head & Neck"]
+Face
+Mouth
+Scalp
+Neck
+[Answer Group "Torso"]
+Chest
+Back
+Abdomen
+Groin
+Buttocks
+[Answer Group "Arms & Hands"]
+Arms
+Hands
+[Answer Group "Legs & Feet"]
+Legs
+Feet
+[Answer Group "Other Locations"]
+Other location [textbox]
+
+HPI) Have you noticed any changes in your fingernails or toenails?
+	[summary "Changes in fingernails or toenails"]
+Yes → HPI.nails
+No
+
+HPI.nails) How many fingernails are affected?
+	[summary "Number of fingernails affected"]
+None
+1 → Photo.fingernails
+2 to 9 → Photo.fingernails
+All of them → Photo.fingernails
+
+HPI.nails) How many toenails are affected?
+	[summary "Number of toenails affected"]
+None
+1 → Photo.toenails
+2 to 9 → Photo.toenails
+All of them → Photo.toenails
+
+HPI.nails) What nail changes have you noticed? [select many]
+	[summary "Type of nail changes"]
+Pitting [help "Small pinprick holes that appear on the nail surface."]
+Waving or denting [help "Uneven nail surface in the form of ridges."]
+Discoloration
+Breaking or splitting
+Thinning
+Thickening
+Other [textbox]
+
+HPI.nails) Do these nail changes occur with the rash?
+	[summary "Do nail changes occur with the rash"]
+Yes, they come and go with the rash
+No, they seem unrelated to the rash
+I'm not sure
+
+HPI.nails) How long have you been experiencing nail problems?
+[summary "Duration of nail changes"]
+Less than 1 week
+1 to 4 weeks
+1 to 12 months
+More than 1 year
+I don't know
+
+[MD section "Characteristics"] 
+
+HPI) Is the rash itchy?
+[summary "Is the rash itchy"]
+Yes → HPI.itch
+No
+
+HPI.itch) How bad is the itch?
+[summary "Itchiness rating"]
+10 - Worst possible itch
+9
+8
+7
+6
+5 - Moderate itch
+4
+3
+2
+1 - Very mild itch
+
+HPI) Are you scratching or picking at the rash?
+	[summary "Scratching or picking"]
+Yes
+No
+
+HPI) Describe the rash: [select many]
+[summary "Rash characteristics"]
+Oily
+Dry
+Scaly or flaky
+Blisters with fluid
+Crusting
+Painful or tender
+Swollen
+Warm or hot
+Flat
+Bumpy
+Firm or hard
+Other [textbox]
+
+HPI) Does discomfort from the rash make your daily activities difficult?
+	[summary "Discomfort from rash makes daily activities difficult"]
+Yes, a lot → HPI.adlcheck
+Yes, a little
+No
+
+HPI.adlcheck) Are you still able to complete basic daily activities, such as walking, eating, and caring for yourself?
+[summary "Able to complete daily activities"]
+Yes
+Barely → triage:daily_activities
+No → triage:daily_activities
+
+[MD section "Etiologies"] 
+
+HPI) Does anybody who lives with you have a similar rash or a fungal infection?
+	[summary "Recent rash contacts"] 
+Yes
+No
+I don't know
+
+SHX) A variety of factors can influence athlete's foot and other fungal skin rashes. Do you regularly do any of the following? [select many]
+[summary "Influencing SHX factors"]
+Smoke cigarettes or another form of tobacco
+Use gyms, pools, or other shared athletic spaces
+Own any pets or spend time with animals → SHX.animals
+Wear shoes that make your feet sweat
+Work with children
+Spend time in very hot or cold places
+Spend time in very dry or humid places
+None of the above [none]
+
+SHX.animals) Which animals are you regularly exposed to? [select many]
+[summary "Types of regular animal exposure"]
+Dogs
+Cats
+Birds
+Reptiles or amphibians
+Farm animals
+Other [textbox]
+
+HPI) Tell us about any cosmetic or bath products that may have come into contact with the affected areas: [select many]
+[subtitle "Include brand names."]
+[summary "Product survey"]
+[Answer Group "Skin Care Products"]
+Lotions or creams [textbox]
+Soaps or washes [textbox]
+Other skin care products [textbox]
+[Answer Group "Hair Care Products"]
+Shampoo [textbox]
+Conditioner [textbox]
+Other hair care products [textbox] 
+[Answer Group "Laundry Products"]
+Detergent [textbox]
+Other laundry products [textbox]
+
+[comment]
+[MD section "Physical Exam"]
+[end comment]
+
+[patient section "Photos"]
+[transition message "Now let's take photos for your doctor to make a diagnosis."]
+
+[screen "Take photos of the areas currently affected by athlete's foot or ringworm."]
+[type "screen_type_photo"]
+[subtitle "Photo quality matters. Your doctor will use these photos to make a diagnosis."]
+[summary "Areas Affected by Athlete's Foot or Ringworm"]
+
+Photo.face) Face [photo]
+[photo slot "Face Front"]
+[tip "Center your face in the dotted lines."]
+[tip (inline) "Take a portrait photo."]
+[overlay image URL "spruce:///image/photo_face_outline"]
+[photo missing error message "A photo of the front of your face is required to continue."]
+[initial camera direction "front"]
+[photo slot "Side"]
+[tip "Turn your face to the side."]
+[tip (inline) "Take a photo of the left side of your face."]
+[tip subtext "Just move your face, not your phone."]
+[tip style "point_left"]
+[overlay image URL "spruce:///image/photo_face_outline"]
+[photo missing error message "A photo of the side of your face is required to continue."]
+[initial camera direction "front"]
+[photo slot "Other Side"]
+[tip "Now turn to the other side."]
+[tip (inline) "Take a photo of the right side of your face."]
+[tip subtext "Just move your face, not your phone."]
+[tip style "point_right"]
+[overlay image URL "spruce:///image/photo_face_outline"]
+[photo missing error message "A second photo of the side of your face is required to continue."]
+[initial camera direction "front"]
+[photo slot "Face"]
+[optional]
+
+Photo.lips) Lips [photo]
+[photo slot "Lips"]
+[photo missing error message "A photo of your lips is required to continue."]
+[initial camera direction "front"]
+
+Photo.scalp) Scalp [photo]
+[photo slot "Scalp"]
+[tip "Pull back or part hair so your scalp is visible."]
+[tip subtext "Use a mirror to help take this photo."] 
+[photo missing error message "A photo of this area is required to continue."]
+[initial camera direction "back"]
+[flash auto]
+
+Photo.neck) Neck [photo]
+[photo slot "Neck"]
+[photo missing error message "A photo of this area is required to continue."]
+[initial camera direction "front"]
+
+Photo.chest) Chest [photo]
+[photo slot "Chest"]
+[tip "Remove any clothing covering your chest."]
+[tip subtext "Undergarments are okay."]
+[photo missing error message "A photo of this area is required to continue."]
+[initial camera direction "front"]
+
+Photo.back) Back [photo]
+[photo slot "Back"]
+[tip "This is a tough photo to take, using a mirror can help."]
+[photo missing error message "A photo of this area is required to continue."]
+[initial camera direction "front"]
+
+Photo.arms) Arms [photo]
+[photo slot "Arms"]
+[photo missing error message "A photo of this area is required to continue."]
+[initial camera direction "back"]
+[flash auto]
+
+Photo.legs) Legs [photo]
+[photo slot "Legs"]
+[photo missing error message "A photo of this area is required to continue."]
+[initial camera direction "back"]
+[flash auto]
+
+Photo.abdomen) Abdomen [photo]
+[photo slot "Abdomen"]
+[photo missing error message "A photo of this area is required to continue."]
+[initial camera direction "back"]
+[flash auto]
+
+Photo.groin) Groin [photo]
+[photo slot "Groin"]
+[photo missing error message "A photo of this area is required to continue."]
+[initial camera direction "back"]
+[flash auto]
+
+Photo.buttocks) Buttocks [photo]
+[photo slot "Buttocks"]
+[tip "This is a tough photo to take, using a mirror can help."]
+[photo missing error message "A photo of this area is required to continue."]
+[initial camera direction "back"]
+[flash auto]
+
+Photo.feet) Feet [photo]
+[photo slot "Tops of Feet"]
+[tip "Take photos of the tops of your feet resting on a flat surface."]
+[photo missing error message "Photos of the tops of your feet are required to continue."]
+[initial camera direction "back"]
+[flash auto]
+[photo slot "Bottoms of Feet"]
+[tip "Now take photos of the bottoms of your feet."]
+[tip (inline) "Take photos of the bottoms of your feet."]
+[photo missing error message "Photos of the bottoms of your feet are required to continue."]
+[initial camera direction "back"]
+[flash auto]
+[photo slot "Between Toes"]
+[tip "Spread your toes apart and take photos of the areas between your toes."]
+[photo missing error message "A photo of this area is required to continue."]
+[initial camera direction "back"]
+[flash auto]
+
+Photo.hands) Hands [photo]
+[photo slot "Tops of Hands"]
+[tip "Take photos of the tops of your hands resting on a flat surface."]
+[photo missing error message "Photos of the tops of your hands are required to continue."]
+[initial camera direction "back"]
+[flash auto]
+[photo slot "Palms of Hands"]
+[tip "Now turn your hands over and take photos of the palms of your hands."]
+[tip (inline) "Take photos of the palms of your hands."]
+[photo missing error message "Photos of the palms of your hands are required to continue."]
+[initial camera direction "back"]
+[flash auto]
+
+Photo) Other Location [photo] [optional]
+[allows multiple sections]
+[user defined section title]
+[photo slot "Other Location"]
+[initial camera direction "back"]
+[flash auto]
+
+[end screen]
+
+[screen "Take photos of the nail changes you're experiencing."]
+[type "screen_type_photo"]
+[subtitle "Certain nail changes are important for diagnosis."]
+[summary "Nails"]
+
+Photo.fingernails) Fingernails [photo]
+[photo slot "Fingernails"]
+[tip "Make sure your doctor can clearly see your natural nails."]
+[photo missing error message "Add a photo of your fingernails to continue."]
+[initial camera direction "back"]
+[flash auto]
+
+Photo.toenails) Toenails [photo]
+[photo slot "Toenails"]
+[tip "Make sure your doctor can clearly see your natural nails."]
+[photo missing error message "Add a photo of your toenails to continue."]
+[initial camera direction "back"]
+[flash auto]
+
+[end screen]
+
+[patient section "Medical History"]
+[transition message "Now we'll ask you some questions about your medical history."]
+
+[MD section "Previously Seen"]
+
+Seen) Have you already seen a doctor or other healthcare professional for athlete's foot or ringworm?
+[summary "Previously seen by a healthcare professional for this condition"]
+Yes → Seen.yes
+No
+
+Seen.yes) What type of healthcare provider did you see? [select many]
+[summary "Type of healthcare provider previously seen"]
+Internal medicine, family practice, or general practitioner
+Dermatologist
+Nurse practitioner or physician assistant
+I was hospitalized for it → triage:hospitalized
+Other [textbox]
+
+Seen.yes) What diagnosis were you given for this rash? [select many]
+[summary "Previous diagnosis"]
+Atopic dermatitis
+Athlete's foot (tinea pedis)
+Contact dermatitis
+Drug reaction
+Eczema
+Fungal skin infection
+Jock itch (tinea cruris)
+Psoriasis
+Ringworm (tinea corporis)
+Tinea
+Unknown rash
+Other [textbox]
+I don't remember [none]
+
+Seen.yes) Did your healthcare provider do any testing? [select many]
+[summary "Tests performed"]
+Lab tests → Seen.yes.info
+Skin scraping → Seen.yes.info
+Skin biopsy [help "A biopsy is a procedure to remove a piece of tissue or a sample of cells from your body so that it can be analyzed in a laboratory."] → Seen.yes.info
+Other [textbox] → Seen.yes.info
+None of the above [none]
+
+[subquestions]
+[screen]
+
+Seen.yes.info) Tell us about the <parent_answer_text> your healthcare provider performed: [free text]
+[summary "Test details"]
+[placeholder "Describe the test type and results, and when it was done…"]
+
+[end screen]
+[end subquestions]
+
+Seen.yes) Share any other relevant information about your previous visit: [optional] [free text]
+[summary "Additional information about previous visit"]
+[placeholder "Optional…"]
+
+[MD section "Treatments Tried"]
+
+Treatments) Have you tried any treatments for athlete's foot or ringworm?
+[summary "Tried treatments before"]
+Yes → Treatments.tried
+No
+
+Treatments.tried) What treatments have you tried for athlete's foot or ringworm? [select many]
+[summary "Which treatments"] 
+Clotrimazole (Lotrimin)
+Miconazole 
+Terbinafine (Lamisil)
+Tolnaftate (Tinactin)
+Ointments or lotions (e.g., Vaseline or Aveeno)
+Topical steroids (e.g., hydrocortisone)
+Oral steroids (e.g., prednisone)
+Ciclopirox
+Econazole (Ecoza)
+Ketoconazole (Nizoral)
+Naftifine (Naftin)
+Oxiconazole (Oxistat)
+Griseofulvin
+Other [textbox]
+
+[subquestions]
+[screen "Tell us more about <parent_answer_text>:"]
+
+Treatments.tried.info) How long did you use it for? [segmented]
+[summary "Used for"]
+Days
+Weeks
+Months
+Years
+
+Treatments.tried.info) Did you use it as instructed by its packaging or by a healthcare provider? [segmented]
+[summary "Used as instructed"]
+Yes
+Mostly
+No
+
+Treatments.tried.info) Was it helpful? [segmented]
+[summary "Helpful"]
+Yes
+No
+
+Treatments.tried.info) Do you need a new prescription for it? [segmented]
+[summary "New prescription needed"]
+Yes
+No
+
+[end screen]
+[end subquestions]
+
+[MD section "Medical Conditions"]
+
+PMH) Do you have any of the following medical conditions? [select many]
+[summary "Medical conditions"]
+[subtitle "You'll have a chance to tell your doctor about other medical conditions later."]
+[alert "Patient has: XXX"]
+Asthma
+Crohn's disease
+Diabetes [alert] → PMH.diabetes
+Eczema (atopic dermatitis)
+Food allergies
+HIV [alert] → PMH.hiv
+Liver disease → PMH.liver
+Psoriasis
+Rheumatoid arthritis
+Seasonal allergies
+Ulcerative colitis
+None of the above [none]
+
+PMH.diabetes) Have you had a hemoglobin A1c level checked in the past year?
+[summary "HbA1c level checked in past year"]
+Yes → PMH.diabetes.a1c
+No → PMH.diabetes.fsbg
+I don't know → PMH.diabetes.fsbg
+
+PMH.diabetes.a1c) What was your most recent hemoglobin A1c level? [free text]
+[summary "Most recent HbA1c level"]
+
+PMH.diabetes.fsbg) Are your fingerstick blood glucose measurements normally between 100 and 200 mg/dL?
+[summary "Fingerstick blood glucose levels normally 100–200 mg/dL"]
+Yes
+No
+I don't check regularly
+
+PMH.hiv) Do you currently have AIDS?
+[summary "AIDS"]
+[subtitle "CD4 count <200"]
+Yes → triage out
+No
+I don't know → triage out
+
+PMH.hiv) Do you have a clinic that you follow up with regularly to manage your HIV?
+[summary "Regular HIV management clinic"]
+Yes
+No
+
+PMH.liver) What type of liver disease do you have? [select many]
+[summary "Type of liver disease"]
+Cirrhosis
+Primary biliary cirrhosis
+Sclerosing cholangitis
+Viral hepatitis (e.g., hepatitis B or C)
+Drug-induced cholestasis
+Biliary obstruction
+Other [textbox]
+I don't know [none]
+
+[MD section "Female History"]
+
+FHPI) Are you currently pregnant or planning to become pregnant?
+[summary "Pregnant or planning"]
+[alert "XXX"]
+[condition "female"]
+Yes, pregnant [summary "Pregnant"] [alert] → FHPI.pregnant
+Yes, planning [summary "Planning pregnancy"] [alert] → FHPI.notpregnant, FHPI.planning
+No → FHPI.notpregnant
+
+FHPI.pregnant) Which trimester are you currently in?
+[summary "Trimester"]
+[help "1st Trimester: Week 1 to Week 12\n2nd Trimester: Week 13 to Week 27\n3rd Trimester: Week 28 to Birth"]
+First
+Second
+Third
+
+FHPI.planning) When will you begin trying to get pregnant?
+[summary "When planning to get pregnant"]
+[subtitle "This influences which medications are safe for you to use."]
+I'm trying right now
+Within the next few months
+Sometime this year
+Next year or later
+
+FHPI.notpregnant) Are you currently breastfeeding?
+[summary "Breastfeeding"]
+[alert "Patient is breastfeeding"]
+Yes [alert]
+No
+
+[MD section "Other History"]
+
+PMH) Do you have any other current medical conditions or important past medical history? [free text] [optional]
+[summary "Other important medication information"]
+[subtitle "Anything for which you see a doctor or take medication is useful to know."]
+[placeholder "Optional…"]
+
+[MD section "Family History"]
+
+FHX) Do any of your first-degree relatives have any of the following conditions? [select many]
+[summary "First-degree family medical history"]
+[help "First-degree relatives include parents, siblings, and children. Second-degree relatives include grandparents."]
+Asthma
+Athlete's foot
+Eczema
+Food allergies
+Fungal skin infection (e.g., ringworm or jock itch)
+Fungal toenail infection
+Seasonal allergies
+None of the above [none]
+I'm not sure [none]
+
+[MD section "Medications"]
+
+Meds) Are there any medications that you take or use regularly?
+[summary "Regularly taking or using medications"]
+[global]
+[prefill]
+[tag "q_regularly_taking_medications"]
+Yes → Meds.medications
+No
+
+Meds.medications) Do you take any of the following medications? [select many]
+[summary "Immunosuppressant medications"]
+Prednisone
+Adalimumab (Humira)
+Etanercept (Enbrel)
+Infliximab (Remicade)
+Cyclosporine
+Mycophenolate (Cellcept)
+Tacrolimus (Prograf)
+Other immunosuppressant drug
+None of the above [none]
+
+Meds.medications) Which medications do you take or use regularly? [medication picker]
+[global]
+[tag "q_current_medications_entry"]
+[summary "Medications taken or used"]
+
+Meds) Are there any supplements that you take regularly?
+[summary "Regularly taking supplements"]
+[subtitle "(e.g., vitamins or herbs)"]
+[global]
+[prefill]
+[tag "q_regularly_taking_supplements"]
+Yes → Meds.supplements
+No
+
+Meds.supplements) Which supplements do you take regularly? [free text]
+[summary "Supplements taken"]
+[global]
+[prefill]
+[tag "q_supplements_taken"]
+[placeholder "List the supplements or herbs you take and how often..."]
+
+Meds) Are you allergic to any medications?
+[summary "Allergic to medications"]
+[global]
+[prefill]
+[tag "q_allergic_to_medications"]
+Yes → Meds.allergies
+No
+
+Meds.allergies) Which medications are you allergic to? [medication picker]
+[summary "Medication allergies"]
+[alert "Allergic to XXX"]
+[global]
+[tag "q_allergic_medication_entry"]
+
+Meds) What type of prescription coverage do you have?
+[summary "Prescription insurance coverage"]
+[global]
+[prefill]
+[tag "q_insurance_coverage"]
+[alert "Patient insurance: XXX"]
+Brand name and generic
+Generic only
+Medicaid [alert]
+I don't know
+I don't have health insurance [tag "q_insurance_coverage_i_dont_have_insurance"] [alert]
+
+[FIN]

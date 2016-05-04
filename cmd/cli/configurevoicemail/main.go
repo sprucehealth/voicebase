@@ -6,7 +6,6 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	excommsSettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/media"
@@ -63,7 +62,7 @@ func main() {
 		golog.Fatalf(err.Error())
 	}
 
-	size, err := common.SeekerSize(mp3File)
+	size, err := media.SeekerSize(mp3File)
 	if err != nil {
 		golog.Fatalf(err.Error())
 	}

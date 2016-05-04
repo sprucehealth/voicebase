@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/storage"
 	invitemock "github.com/sprucehealth/backend/svc/invite/mock"
+	layoutmock "github.com/sprucehealth/backend/svc/layout/mock"
 	notificationmock "github.com/sprucehealth/backend/svc/notification/mock"
 	settingsmock "github.com/sprucehealth/backend/svc/settings/mock"
 	"github.com/sprucehealth/backend/test"
@@ -21,9 +22,11 @@ import (
 type gql struct {
 	inviteC       *invitemock.Client
 	settingsC     *settingsmock.Client
+	layoutC       *layoutmock.Client
 	notificationC *notificationmock.Client
 	svc           *service
 	ra            *ramock.ResourceAccessor
+	layoutStore   *layoutmock.Store
 }
 
 func newGQL(t *testing.T) *gql {
@@ -32,7 +35,9 @@ func newGQL(t *testing.T) *gql {
 	g.inviteC = invitemock.New(t)
 	g.settingsC = settingsmock.New(t)
 	g.notificationC = notificationmock.New(t)
+	g.layoutC = layoutmock.New(t)
 	g.ra = ramock.New(t)
+	g.layoutStore = layoutmock.NewStore(t)
 	g.svc = &service{
 		invite:       g.inviteC,
 		settings:     g.settingsC,
@@ -41,6 +46,8 @@ func newGQL(t *testing.T) *gql {
 		segmentio:    &segmentIOWrapper{},
 		media:        media.New(storage.NewTestStore(nil), storage.NewTestStore(nil), 100, 100),
 		sns:          &awsutil.SNS{},
+		layout:       g.layoutC,
+		layoutStore:  g.layoutStore,
 	}
 	return &g
 }
@@ -67,6 +74,8 @@ func (g *gql) finish() {
 	g.settingsC.Finish()
 	g.notificationC.Finish()
 	g.ra.Finish()
+	g.layoutC.Finish()
+	g.layoutStore.Finish()
 }
 
 func responseEquals(t *testing.T, expected string, actual interface{}) {

@@ -102,7 +102,7 @@ func (c *setSettingCmd) run(args []string) error {
 	case settings.ConfigType_INTEGER:
 		i, err := strconv.ParseInt(*value, 10, 64)
 		if err != nil {
-			return fmt.Errorf("Failed to parse value as integer: %s", err)
+			return fmt.Errorf("Failed to parse value as int: %s", err)
 		}
 		val.Type = settings.ConfigType_INTEGER
 		val.Value = &settings.Value_Integer{

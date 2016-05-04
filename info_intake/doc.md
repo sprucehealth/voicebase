@@ -178,7 +178,7 @@ Note that we don't yet have a "condensed" form of the layout to send to the pati
 ### Populating patient answers for doctor
 The represent of patient answers to the doctor is decoupled from its input. This is intentionally done to provide flexible ways in which to show patient input to the doctor, as well as populate other relevant information in the visit that may be needed for the doctor. 
 
-The doctor's review layout is defined as an array of views (and subviews) versus an array of questions (and subquestions). You can find the view definitions in the `info_intake` package in the `DVisitReviewTypeRegistry`. The view tree for the doctor is populated each time the doctor makes a call to get the visit for review. 
+The doctor's review layout is defined as an array of views (and subviews) versus an array of questions (and subquestions). You can find the view definitions in the `info_intake` package in the `TypeRegistry`. The view tree for the doctor is populated each time the doctor makes a call to get the visit for review. 
 
  *Note that while the patient input representation for the doctor is decoupled from the input, it is still linked to the intake layout in that the questions from the intake layout are keys to data that each view in the review layout is to be populated with. The intake and review layouts are thought of as pairs, as defined in the [layout versioning documentation](https://github.com/sprucehealth/backend/issues/90).*
 

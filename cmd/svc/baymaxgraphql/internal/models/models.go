@@ -203,6 +203,7 @@ type Thread struct {
 	AllowInternalMessages      bool   `json:"allowInternalMessages"`
 	AllowSMSAttachments        bool   `json:"allowSMSAttachments"`
 	AllowEmailAttachment       bool   `json:"allowEmailAttachments"`
+	AllowVisitAttachment       bool   `json:"allowVisitAttachments"`
 	AllowLeave                 bool   `json:"allowLeave"`
 	AllowRemoveMembers         bool   `json:"allowRemoveMembers"`
 	AllowUpdateTitle           bool   `json:"allowUpdateTitle"`
@@ -321,4 +322,22 @@ type ForceUpgradeStatus struct {
 	URL         string `json:"url"`
 	Upgrade     bool   `json:"upgrade"`
 	UserMessage string `json:"userMessage"`
+}
+
+// visits
+
+type VisitCategory struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+type VisitLayout struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+type VisitLayoutVersion struct {
+	ID           string `json:"id"`
+	SAMLLayout   string `json:"samlLayout"`
+	ReviewLayout string `json:"reviewLayout"`
 }

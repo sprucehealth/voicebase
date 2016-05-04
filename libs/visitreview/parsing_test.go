@@ -1,24 +1,23 @@
-package info_intake
+package visitreview
 
 import (
 	"encoding/json"
 	"io/ioutil"
 	"testing"
 
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/mapstructure"
 )
 
 func TestParsingTemplateForDoctorVisitReview(t *testing.T) {
 
-	parseTemplateFromFile("../test/data/major-review-test.json", t)
+	parseTemplateFromFile("../../test/data/major-review-test.json", t)
 }
 
 func TestParsingLayoutForDoctorVisitReview(t *testing.T) {
-	parseTemplateFromFile("../test/data/review.json", t)
+	parseTemplateFromFile("../../test/data/review.json", t)
 }
 
-func parseTemplateFromFile(fileLocation string, t *testing.T) DVisitReviewSectionListView {
+func parseTemplateFromFile(fileLocation string, t *testing.T) SectionListView {
 	fileContents, err := ioutil.ReadFile(fileLocation)
 	if err != nil {
 		t.Fatalf("error parsing file: %s", err)
@@ -30,11 +29,11 @@ func parseTemplateFromFile(fileLocation string, t *testing.T) DVisitReviewSectio
 		t.Fatalf("error unmarshalling file contents into json: %s", err)
 	}
 
-	sectionList := &DVisitReviewSectionListView{}
+	sectionList := &SectionListView{}
 	decoderConfig := &mapstructure.DecoderConfig{
 		Result:   sectionList,
 		TagName:  "json",
-		Registry: *DVisitReviewViewTypeRegistry,
+		Registry: *TypeRegistry,
 	}
 
 	d, err := mapstructure.NewDecoder(decoderConfig)
@@ -51,10 +50,10 @@ func parseTemplateFromFile(fileLocation string, t *testing.T) DVisitReviewSectio
 }
 
 func TestRenderingLayoutForDoctorVisitReview(t *testing.T) {
-	viewContext := common.NewViewContext(map[string]interface{}{})
+	viewContext := NewViewContext(map[string]interface{}{})
 	populateCompleteViewContext(viewContext)
 
-	sectionList := parseTemplateFromFile("../test/data/major-review-test.json", t)
+	sectionList := parseTemplateFromFile("../../test/data/major-review-test.json", t)
 	_, err := sectionList.Render(viewContext)
 	if err != nil {
 		t.Fatalf("Error rendering layout:%s", err)
@@ -62,7 +61,7 @@ func TestRenderingLayoutForDoctorVisitReview(t *testing.T) {
 }
 
 func TestRenderingLayoutForDoctorVisitReview_ContentLabels(t *testing.T) {
-	viewContext := common.NewViewContext(map[string]interface{}{})
+	viewContext := NewViewContext(map[string]interface{}{})
 	populateCompleteViewContext(viewContext)
 
 	// change one of the content labels list content to populate CheckedUncheckedData items
@@ -86,7 +85,7 @@ func TestRenderingLayoutForDoctorVisitReview_ContentLabels(t *testing.T) {
 		},
 	})
 
-	sectionList := parseTemplateFromFile("../test/data/major-review-test.json", t)
+	sectionList := parseTemplateFromFile("../../test/data/major-review-test.json", t)
 	_, err := sectionList.Render(viewContext)
 	if err != nil {
 		t.Fatalf("Error rendering layout:%s", err)
@@ -109,14 +108,14 @@ func TestRenderingLayoutForDoctorVisitReview_ContentLabels(t *testing.T) {
 }
 
 func TestRenderingLayoutForDoctorVisitReview_EmptyStateViews(t *testing.T) {
-	viewContext := common.NewViewContext(map[string]interface{}{})
+	viewContext := NewViewContext(map[string]interface{}{})
 	populateCompleteViewContext(viewContext)
 
 	// delete certain entries and specify the empty state instead
 	viewContext.Delete("patient_visit_alerts")
 	viewContext.Set("patient_visit_alerts:empty_state_text", "No alerts specified")
 
-	sectionList := parseTemplateFromFile("../test/data/major-review-test.json", t)
+	sectionList := parseTemplateFromFile("../../test/data/major-review-test.json", t)
 	_, err := sectionList.Render(viewContext)
 	if err != nil {
 		t.Fatalf("Error rendering layout:%s", err)
@@ -132,7 +131,7 @@ func TestRenderingLayoutForDoctorVisitReview_EmptyStateViews(t *testing.T) {
 
 }
 
-func populateCompleteViewContext(viewContext *common.ViewContext) {
+func populateCompleteViewContext(viewContext *ViewContext) {
 	viewContext.Set("patient_visit_photos", []PhotoData{
 		PhotoData{
 			Title:          "Left Photo",

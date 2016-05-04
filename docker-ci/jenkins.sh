@@ -61,6 +61,7 @@ devDeployableMap["excomms"]="deployable_0E2L0O98G0O00"
 devDeployableMap["notification"]="deployable_0E2L0O9PG0O00"
 devDeployableMap["directory"]="deployable_0E2L0Q5000O00"
 devDeployableMap["operational"]="deployable_0E38JIGJG0O00"
+devDeployableMap["layout"]="deployable_0E6H974S00O00"
 
 if [[ "$DEPLOY_TO_S3" != "" ]]; then
 	# Tag any generated images with the remote repo and push

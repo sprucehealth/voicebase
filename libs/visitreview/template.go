@@ -1,8 +1,13 @@
-package common
+package visitreview
 
 import "fmt"
 
-// The ViewContext is a generic container for data that Views consume
+const (
+	ConditionKeyExists    = "key_exists"
+	ConditionAnyKeyExists = "any_key_exists"
+)
+
+// ViewContext is a generic container for data that Views consume
 // from when being rendered. Data exists in the ViewContext based on keys
 // which are specified in the "content_config" of a view definition in the template
 type ViewContext struct {
@@ -33,9 +38,15 @@ func (c *ViewContext) Delete(key string) {
 	delete(c.context, key)
 }
 
+// Typed is an interface implemented by structs that can return their own type name
+type Typed interface {
+	TypeName() string
+}
+
 type View interface {
 	Typed
 	Render(context *ViewContext) (map[string]interface{}, error)
+	Validate() error
 }
 
 type ViewRenderingError struct {
@@ -51,14 +62,14 @@ func NewViewRenderingError(message string) ViewRenderingError {
 	return ViewRenderingError{Message: message}
 }
 
-// The ViewCondition is a structure found in the ContentConfig
+// ViewCondition is a structure found in the ContentConfig
 // of views. The Operand defines the type of implementation to use
 // to evaluate the condition based on the key, to either true or false
 // which essentially indicates whether or not to include the view in the rendering
 type ViewCondition struct {
-	Op   string   `json:"op"`
-	Key  string   `json:"key"`
-	Keys []string `json:"keys"`
+	Op   string   `json:"op,omitempty"`
+	Key  string   `json:"key,omitempty"`
+	Keys []string `json:"keys,omitempty"`
 }
 
 type ViewConditionEvaluationError struct {
@@ -78,7 +89,7 @@ type ConditionEvaluator interface {
 type KeyExistsEvaluator int64
 
 func (d KeyExistsEvaluator) EvaluateCondition(condition ViewCondition, context *ViewContext) (bool, error) {
-	if condition.Op != "key_exists" {
+	if condition.Op != ConditionKeyExists {
 		return false, ViewConditionEvaluationError{Message: fmt.Sprintf("Condition evaluation called with wrong operand. Expected key_exists but got %s", condition.Op)}
 	}
 
@@ -89,7 +100,7 @@ func (d KeyExistsEvaluator) EvaluateCondition(condition ViewCondition, context *
 type AnyKeyExistsEvaluator int64
 
 func (d AnyKeyExistsEvaluator) EvaluateCondition(condition ViewCondition, context *ViewContext) (bool, error) {
-	if condition.Op != "any_key_exists" {
+	if condition.Op != ConditionAnyKeyExists {
 		return false, ViewConditionEvaluationError{Message: fmt.Sprintf("Expected operand any_key_exists but got %s", condition.Op)}
 	}
 
@@ -106,8 +117,8 @@ func (d AnyKeyExistsEvaluator) EvaluateCondition(condition ViewCondition, contex
 var conditionEvaluators = make(map[string]ConditionEvaluator)
 
 func init() {
-	conditionEvaluators["key_exists"] = KeyExistsEvaluator(0)
-	conditionEvaluators["any_key_exists"] = AnyKeyExistsEvaluator(0)
+	conditionEvaluators[ConditionKeyExists] = KeyExistsEvaluator(0)
+	conditionEvaluators[ConditionAnyKeyExists] = AnyKeyExistsEvaluator(0)
 }
 
 func EvaluateConditionForView(view View, condition ViewCondition, context *ViewContext) (bool, error) {

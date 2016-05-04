@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/www"
@@ -119,7 +119,7 @@ func (h *uploadHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r 
 		case nil:
 			defer file.Close()
 
-			size, err := common.SeekerSize(file)
+			size, err := media.SeekerSize(file)
 			if err != nil {
 				www.InternalServerError(w, r, err)
 				return

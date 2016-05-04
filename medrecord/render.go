@@ -13,9 +13,9 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/sig"
+	"github.com/sprucehealth/backend/libs/visitreview"
 	"github.com/sprucehealth/backend/patient_file"
 	"github.com/sprucehealth/backend/treatment_plan"
 	"github.com/sprucehealth/mapstructure"
@@ -766,11 +766,11 @@ type intakeLayoutRenderer struct {
 }
 
 func (lr *intakeLayoutRenderer) render(layout map[string]interface{}) error {
-	sectionList := &info_intake.DVisitReviewSectionListView{}
+	sectionList := &visitreview.SectionListView{}
 	decoderConfig := &mapstructure.DecoderConfig{
 		Result:   sectionList,
 		TagName:  "json",
-		Registry: *info_intake.DVisitReviewViewTypeRegistry,
+		Registry: *visitreview.TypeRegistry,
 	}
 
 	d, err := mapstructure.NewDecoder(decoderConfig)
@@ -795,7 +795,7 @@ func (lr *intakeLayoutRenderer) render(layout map[string]interface{}) error {
 	return nil
 }
 
-func (lr *intakeLayoutRenderer) renderView(view common.View) error {
+func (lr *intakeLayoutRenderer) renderView(view visitreview.View) error {
 	if view == nil {
 		return nil
 	}
@@ -803,7 +803,7 @@ func (lr *intakeLayoutRenderer) renderView(view common.View) error {
 	switch v := view.(type) {
 	default:
 		return fmt.Errorf("unknown view type %T", view)
-	case *info_intake.DVisitReviewStandardPhotosSectionView:
+	case *visitreview.StandardPhotosSectionView:
 		lr.wr.WriteString(`<div class="standard-photos-section">`)
 		lr.wr.WriteString(`<h3>` + v.Title + `</h3>`)
 		for _, s := range v.Subsections {
@@ -812,16 +812,16 @@ func (lr *intakeLayoutRenderer) renderView(view common.View) error {
 			}
 		}
 		lr.wr.WriteString(`</div>`)
-	case *info_intake.DVisitReviewStandardPhotosSubsectionView:
+	case *visitreview.StandardPhotosSubsectionView:
 		lr.wr.WriteString(`<div class="standard-photos-subsection">`)
 		if err := lr.renderView(v.SubsectionView); err != nil {
 			return err
 		}
 		lr.wr.WriteString(`</div>`)
-	case *info_intake.DVisitReviewStandardPhotosListView:
+	case *visitreview.StandardPhotosListView:
 		// TODO: this seems currently unused
-		return fmt.Errorf("DVisitReviewStandardPhotosListView not supported")
-	case *info_intake.DVisitReviewTitlePhotosItemsListView:
+		return fmt.Errorf("StandardPhotosListView not supported")
+	case *visitreview.TitlePhotosItemsListView:
 		lr.wr.WriteString(`<div class="title-photos-items-list">`)
 		for _, it := range v.Items {
 			lr.wr.WriteString(`<h4>` + it.Title + `</h4>`)
@@ -841,7 +841,7 @@ func (lr *intakeLayoutRenderer) renderView(view common.View) error {
 			lr.wr.WriteString(`</div>`)
 		}
 		lr.wr.WriteString(`</div>`)
-	case *info_intake.DVisitReviewStandardSectionView:
+	case *visitreview.StandardSectionView:
 		lr.wr.WriteString(`<div class="standard-section">`)
 		if v.Title != "" {
 			lr.wr.WriteString(`<h3>` + v.Title + `</h3>`)
@@ -852,7 +852,7 @@ func (lr *intakeLayoutRenderer) renderView(view common.View) error {
 			}
 		}
 		lr.wr.WriteString(`</div>`)
-	case *info_intake.DVisitReviewStandardSubsectionView:
+	case *visitreview.StandardSubsectionView:
 		if len(v.Rows) != 0 {
 			lr.wr.WriteString(`<div class="standard-subsection">`)
 			if v.Title != "" && v.Title != "Alerts" { // The "Alerts" title gets repeated twice
@@ -865,13 +865,13 @@ func (lr *intakeLayoutRenderer) renderView(view common.View) error {
 			}
 			lr.wr.WriteString(`</div>`)
 		}
-	case *info_intake.DVisitReviewStandardOneColumnRowView:
+	case *visitreview.StandardOneColumnRowView:
 		lr.wr.WriteString(`<div class="standard-one-column-row">`)
 		if err := lr.renderView(v.SingleView); err != nil {
 			return err
 		}
 		lr.wr.WriteString(`</div>`)
-	case *info_intake.DVisitReviewStandardTwoColumnRowView:
+	case *visitreview.StandardTwoColumnRowView:
 		lr.wr.WriteString(`<div class="standard-two-column-row row">`)
 		lr.wr.WriteString(`<div class="col-xs-6 left">`)
 		if err := lr.renderView(v.LeftView); err != nil {
@@ -884,7 +884,7 @@ func (lr *intakeLayoutRenderer) renderView(view common.View) error {
 		}
 		lr.wr.WriteString(`</div>`)
 		lr.wr.WriteString(`</div>`)
-	case *info_intake.DVisitReviewDividedViewsList:
+	case *visitreview.DividedViewsList:
 		lr.wr.WriteString(`<div class="divided-views-list">`)
 		for _, d := range v.DividedViews {
 			if err := lr.renderView(d); err != nil {
@@ -892,7 +892,7 @@ func (lr *intakeLayoutRenderer) renderView(view common.View) error {
 			}
 		}
 		lr.wr.WriteString(`</div>`)
-	case *info_intake.DVisitReviewAlertLabelsList:
+	case *visitreview.AlertLabelsList:
 		lr.wr.WriteString(`<div class="alert-labels-list">`)
 		if len(v.Values) == 0 {
 			if err := lr.renderView(v.EmptyStateView); err != nil {
@@ -907,13 +907,13 @@ func (lr *intakeLayoutRenderer) renderView(view common.View) error {
 			lr.wr.WriteString(`</ul>`)
 		}
 		lr.wr.WriteString(`</div>`)
-	case *info_intake.DVisitReviewTitleLabelsList:
+	case *visitreview.TitleLabelsList:
 		lr.wr.WriteString(`<div class="title-labels-list">`)
 		for _, s := range v.Values {
 			lr.wr.WriteString(`<div>` + s + `</div>`)
 		}
 		lr.wr.WriteString(`</div>`)
-	case *info_intake.DVisitReviewContentLabelsList:
+	case *visitreview.ContentLabelsList:
 		lr.wr.WriteString(`<div class="content-labels-list">`)
 		if len(v.Values) == 0 {
 			if err := lr.renderView(v.EmptyStateView); err != nil {
@@ -925,7 +925,7 @@ func (lr *intakeLayoutRenderer) renderView(view common.View) error {
 			}
 		}
 		lr.wr.WriteString(`</div>`)
-	case *info_intake.DVisitReviewCheckXItemsList:
+	case *visitreview.CheckXItemsList:
 		lr.wr.WriteString(`<div class="check-x-items-list">`)
 		for _, it := range v.Items {
 			if it.IsChecked {
@@ -935,7 +935,7 @@ func (lr *intakeLayoutRenderer) renderView(view common.View) error {
 			}
 		}
 		lr.wr.WriteString(`</div>`)
-	case *info_intake.DVisitReviewTitleSubItemsLabelContentItemsList:
+	case *visitreview.TitleSubItemsLabelContentItemsList:
 		lr.wr.WriteString(`<div class="title-sub-items-label-content-items-list">`)
 		if len(v.Items) == 0 {
 			if err := lr.renderView(v.EmptyStateView); err != nil {
@@ -953,7 +953,7 @@ func (lr *intakeLayoutRenderer) renderView(view common.View) error {
 			lr.wr.WriteString(`</div>`)
 		}
 		lr.wr.WriteString(`</div>`)
-	case *info_intake.DVisitReviewTitleSubtitleLabels:
+	case *visitreview.TitleSubtitleLabels:
 		lr.wr.WriteString(`<div class="title-subtitle-labels">`)
 		if v.Title == "" {
 			if err := lr.renderView(v.EmptyStateView); err != nil {
@@ -966,11 +966,11 @@ func (lr *intakeLayoutRenderer) renderView(view common.View) error {
 			}
 		}
 		lr.wr.WriteString(`</div>`)
-	case *info_intake.DVisitReviewEmptyLabelView:
+	case *visitreview.EmptyLabelView:
 		lr.wr.WriteString(`<div class="empty-label-view">`)
 		lr.wr.WriteString(v.Text)
 		lr.wr.WriteString(`</div>`)
-	case *info_intake.DVisitReviewEmptyTitleSubtitleLabelView:
+	case *visitreview.EmptyTitleSubtitleLabelView:
 		lr.wr.WriteString(`<div class="empty-title-subtitle-label-view">`)
 		lr.wr.WriteString(`<div class="title"><strong>` + v.Title + `</strong></div>`)
 		if v.Subtitle != "" {

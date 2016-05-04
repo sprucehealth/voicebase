@@ -9,11 +9,11 @@ import (
 	"strings"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/visitreview"
 	"github.com/sprucehealth/backend/www"
 	"github.com/sprucehealth/mapstructure"
 	"golang.org/x/net/context"
@@ -292,7 +292,7 @@ type requestData struct {
 
 	// parsed layouts
 	intakeLayout   *info_intake.InfoIntakeLayout
-	reviewLayout   *info_intake.DVisitReviewSectionListView
+	reviewLayout   *visitreview.SectionListView
 	reviewJS       map[string]interface{}
 	diagnoseLayout *info_intake.DiagnosisIntake
 }
@@ -509,7 +509,7 @@ func (rData *requestData) validateUpgradePathsAndLayouts(r *http.Request, dataAP
 		if rData.intakeUpgradeType == encoding.Patch {
 			patchUpgrade = true
 			var rJS map[string]interface{}
-			var reviewLayout *info_intake.DVisitReviewSectionListView
+			var reviewLayout *visitreview.SectionListView
 			data, _, err := dataAPI.ReviewLayoutForIntakeLayoutVersion(rData.intakeLayoutInfo.Version.Major,
 				rData.intakeLayoutInfo.Version.Minor, rData.pathwayID, rData.skuType)
 			if err != nil {
@@ -578,11 +578,11 @@ func (rData *requestData) parseAndValidateDiagnosisLayout(r *http.Request, dataA
 	return nil
 }
 
-func decodeReviewJSIntoLayout(reviewJS map[string]interface{}, reviewLayout **info_intake.DVisitReviewSectionListView) error {
+func decodeReviewJSIntoLayout(reviewJS map[string]interface{}, reviewLayout **visitreview.SectionListView) error {
 	d, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 		Result:   reviewLayout,
 		TagName:  "json",
-		Registry: *info_intake.DVisitReviewViewTypeRegistry,
+		Registry: *visitreview.TypeRegistry,
 	})
 	if err != nil {
 		return err
@@ -596,7 +596,7 @@ func decodeReviewJSIntoLayout(reviewJS map[string]interface{}, reviewLayout **in
 }
 
 func validateIntakeReviewPair(r *http.Request, intakeLayout *info_intake.InfoIntakeLayout, reviewJS map[string]interface{},
-	reviewLayout *info_intake.DVisitReviewSectionListView, dataAPI api.DataAPI) error {
+	reviewLayout *visitreview.SectionListView, dataAPI api.DataAPI) error {
 
 	if err := api.FillIntakeLayout(intakeLayout, dataAPI, api.LanguageIDEnglish); err != nil {
 		// TODO: this could be a validation error (unknown question or answer) or an internal error.
@@ -617,7 +617,7 @@ func validateIntakeReviewPair(r *http.Request, intakeLayout *info_intake.InfoInt
 	if err != nil {
 		return err
 	}
-	if _, err = reviewLayout.Render(common.NewViewContext(context)); err != nil {
+	if _, err = reviewLayout.Render(visitreview.NewViewContext(context)); err != nil {
 		return err
 	}
 
@@ -871,11 +871,11 @@ func reviewContext(patientLayout *info_intake.InfoIntakeLayout) (map[string]inte
 			for _, que := range scr.Questions {
 				switch que.QuestionType {
 				case info_intake.QuestionTypePhotoSection:
-					photoList := make([]info_intake.TitlePhotoListData, len(que.PhotoSlots))
+					photoList := make([]visitreview.TitlePhotoListData, len(que.PhotoSlots))
 					for i, slot := range que.PhotoSlots {
-						photoList[i] = info_intake.TitlePhotoListData{
+						photoList[i] = visitreview.TitlePhotoListData{
 							Title:  slot.Name,
-							Photos: []info_intake.PhotoData{},
+							Photos: []visitreview.PhotoData{},
 						}
 					}
 					context["patient_visit_photos"] = photoList
@@ -889,10 +889,10 @@ func reviewContext(patientLayout *info_intake.InfoIntakeLayout) (map[string]inte
 					context[que.QuestionTag+":answers"] = "Answer"
 				case info_intake.QuestionTypeMultipleChoice:
 					if sub := que.SubQuestionsConfig; sub != nil {
-						data := []info_intake.TitleSubItemsDescriptionContentData{
+						data := []visitreview.TitleSubItemsDescriptionContentData{
 							{
 								Title: "Title",
-								SubItems: []*info_intake.DescriptionContentData{
+								SubItems: []*visitreview.DescriptionContentData{
 									{
 										Description: "Description",
 										Content:     "Content",
@@ -904,15 +904,15 @@ func reviewContext(patientLayout *info_intake.InfoIntakeLayout) (map[string]inte
 						context[que.QuestionTag+":answers"] = data
 					} else {
 						context[que.QuestionTag+":question_summary"] = "Summary"
-						context[que.QuestionTag+":answers"] = []info_intake.CheckedUncheckedData{
+						context[que.QuestionTag+":answers"] = []visitreview.CheckedUncheckedData{
 							{Value: "Value", IsChecked: true},
 						}
 					}
 				case info_intake.QuestionTypeAutocomplete:
-					data := []info_intake.TitleSubItemsDescriptionContentData{
+					data := []visitreview.TitleSubItemsDescriptionContentData{
 						{
 							Title: "Title",
-							SubItems: []*info_intake.DescriptionContentData{
+							SubItems: []*visitreview.DescriptionContentData{
 								{
 									Description: "Description",
 									Content:     "Content",

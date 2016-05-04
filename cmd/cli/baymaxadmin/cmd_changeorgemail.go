@@ -7,9 +7,13 @@ import (
 	"os"
 	"strings"
 
+	"google.golang.org/grpc"
+
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
+	"google.golang.org/grpc/codes"
+
 	"golang.org/x/net/context"
 )
 
@@ -147,12 +151,26 @@ func (c *changeOrgEmailCmd) run(args []string) error {
 		}
 	}
 
-	// lets go ahead and update the entity domain
-	if _, err := c.dirCli.UpdateEntityDomain(ctx, &directory.UpdateEntityDomainRequest{
-		EntityID: *orgEntityID,
-		Domain:   *domain,
-	}); err != nil {
+	// check if domain already taken
+	res, err := c.dirCli.LookupEntityDomain(ctx, &directory.LookupEntityDomainRequest{
+		Domain: *domain,
+	})
+	if err != nil && grpc.Code(err) != codes.NotFound {
 		return errors.Trace(err)
+	}
+
+	if !strings.HasSuffix(*orgEntityID, res.EntityID) {
+		return errors.Trace(fmt.Errorf("domain %s already taken by %s", *domain, res.EntityID))
+	}
+
+	if res.EntityID == "" {
+		// lets go ahead and update the entity domain
+		if _, err := c.dirCli.UpdateEntityDomain(ctx, &directory.UpdateEntityDomainRequest{
+			EntityID: *orgEntityID,
+			Domain:   *domain,
+		}); err != nil {
+			return errors.Trace(err)
+		}
 	}
 
 	// delete the existing contact for the entity

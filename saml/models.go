@@ -5,9 +5,19 @@ import "strings"
 type FlashState string
 
 const (
-	FlashOff  FlashState = "off"
-	FlashOn   FlashState = "on"
-	FlashAuto FlashState = "auto"
+	FlashOff                     FlashState = "off"
+	FlashOn                      FlashState = "on"
+	FlashAuto                    FlashState = "auto"
+	QuestionTypeSingleSelect     string     = "q_type_single_select"
+	QuestionTypeSingleEntry      string     = "q_type_single_entry"
+	QuestionTypeMultipleChoice   string     = "q_type_multiple_choice"
+	QuestionTypeSegmentedControl string     = "q_type_segmented_control"
+	QuestionTypeAutocomplete     string     = "q_type_autocomplete"
+	QuestionTypeFreeText         string     = "q_type_free_text"
+	QuestionTypePhotoSection     string     = "q_type_photo_section"
+	ScreenTypePhoto              string     = "screen_type_photo"
+	ScreenTypeQuestions          string     = "screen_type_questions"
+	ScreenTypePharmacy           string     = "screen_type_pharmacy"
 )
 
 type Intake struct {

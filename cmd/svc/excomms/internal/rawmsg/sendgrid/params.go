@@ -8,7 +8,6 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/ptr"
@@ -66,7 +65,7 @@ func ParamsFromRequest(r *http.Request, store storage.Store) (*rawmsg.SendGridIn
 				Type:     attachmentInfoJSON[key].Type,
 			}
 
-			size, err := common.SeekerSize(fileHandle)
+			size, err := media.SeekerSize(fileHandle)
 			if err != nil {
 				return nil, nil, errors.Trace(err)
 			}

@@ -1,0 +1,164 @@
+syntax = "proto3";
+
+package layout;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_enum_prefix_all) = true;
+
+message VisitLayout {
+	string id = 1 [(gogoproto.customname) = "ID"];
+	string name = 2;
+	string category_id = 3 [(gogoproto.customname) = "CategoryID"];
+	VisitLayoutVersion version = 4;
+}
+
+message VisitLayoutVersion {
+	string id = 1 [(gogoproto.customname) = "ID"];
+	string saml_location = 2 [(gogoproto.customname) = "SAMLLocation"];
+	string intake_layout_location  = 3;
+	string review_layout_location = 4;
+}
+
+message VisitCategory {
+	string id = 1 [(gogoproto.customname) = "ID"];
+	string name = 2;
+}
+
+message ListVisitLayoutsRequest {
+	string visit_category_id = 1 [(gogoproto.customname) = "VisitCategoryID"];	
+}
+
+message ListVisitLayoutsResponse {
+	repeated VisitLayout visitLayouts = 1;
+}
+
+message ListVisitCategoriesRequest {}
+
+message ListVisitCategoriesResponse {
+	repeated VisitCategory categories = 1;
+}
+
+message CreateVisitLayoutRequest {
+	string name = 1;
+	string category_id = 2 [(gogoproto.customname) = "CategoryID"];
+	string saml = 3 [(gogoproto.customname) = "SAML"];
+}
+
+message CreateVisitLayoutResponse {
+	VisitLayout visit_layout = 1;
+}
+
+message GetVisitLayoutRequest {
+	string id = 1 [(gogoproto.customname) = "ID"];
+	bool include_version_information = 3;
+}
+
+message GetVisitLayoutResponse {
+	VisitLayout visit_layout = 1;
+}
+
+message GetVisitLayoutByVersionRequest {
+	string visit_layout_version_id = 1 [(gogoproto.customname) = "VisitLayoutVersionID"];
+}
+
+message GetVisitLayoutByVersionResponse {
+	VisitLayout visit_layout = 1;
+}
+
+
+message UpdateVisitLayoutRequest {
+	string visit_layout_id = 1 [(gogoproto.customname) = "VisitLayoutID"];
+	
+	bool update_name = 2;
+	string name = 3;
+	
+	bool update_category = 4;
+	string category_id = 5 [(gogoproto.customname) = "CategoryID"];
+	
+	bool update_saml = 6 [(gogoproto.customname) = "UpdateSAML"];
+	string saml = 7 [(gogoproto.customname) = "SAML"];
+
+}
+
+message UpdateVisitLayoutResponse {
+	VisitLayout visit_layout = 1;
+}
+
+message DeleteVisitLayoutRequest {
+	string visit_layout_id = 1 [(gogoproto.customname) = "VisitLayoutID"];
+}
+
+message DeleteVisitLayoutResponse {
+}
+
+message CreateVisitCategoryRequest {
+	string name = 1;	
+}
+
+message CreateVisitCategoryResponse {
+	VisitCategory category = 1;
+}
+
+message UpdateVisitCategoryRequest {
+	string visit_category_id = 1 [(gogoproto.customname) = "VisitCategoryID"];
+	string name = 2;
+}
+
+message UpdateVisitCategoryResponse {
+	VisitCategory category = 1;
+}
+
+message DeleteVisitCategoryRequest {
+	string visit_category_id = 1 [(gogoproto.customname) = "VisitCategoryID"];
+}
+
+message DeleteVisitCategoryResponse {
+}
+
+message GetVisitLayoutVersionRequest {
+	string id = 1 [(gogoproto.customname) = "ID"];
+	string visit_layout_id = 2 [(gogoproto.customname) = "VisitLayoutID"];
+}
+
+message GetVisitLayoutVersionResponse {
+	VisitLayoutVersion visit_layout_version = 1;
+}
+
+message GetVisitCategoryRequest {
+	string id = 1 [(gogoproto.customname) = "ID"];
+}
+
+message GetVisitCategoryResponse {
+	VisitCategory visit_category = 1;
+}
+
+service Layout {
+
+	rpc ListVisitLayouts (ListVisitLayoutsRequest) returns (ListVisitLayoutsResponse);
+
+	rpc ListVisitCategories (ListVisitCategoriesRequest) returns (ListVisitCategoriesResponse);
+
+	rpc CreateVisitLayout (CreateVisitLayoutRequest) returns (CreateVisitLayoutResponse);
+
+	rpc GetVisitCategory(GetVisitCategoryRequest) returns (GetVisitCategoryResponse);
+
+	rpc GetVisitLayout (GetVisitLayoutRequest) returns (GetVisitLayoutResponse);
+
+	rpc GetVisitLayoutByVersion (GetVisitLayoutByVersionRequest) returns (GetVisitLayoutByVersionResponse);
+
+	rpc GetVisitLayoutVersion (GetVisitLayoutVersionRequest) returns (GetVisitLayoutVersionResponse);
+
+	rpc UpdateVisitLayout (UpdateVisitLayoutRequest) returns (UpdateVisitLayoutResponse);
+
+	rpc DeleteVisitLayout (DeleteVisitLayoutRequest) returns (DeleteVisitLayoutResponse);
+
+	rpc CreateVisitCategory (CreateVisitCategoryRequest) returns (CreateVisitCategoryResponse);	
+
+	rpc UpdateVisitCategory (UpdateVisitCategoryRequest) returns (UpdateVisitCategoryResponse);
+
+	rpc DeleteVisitCategory (DeleteVisitCategoryRequest) returns (DeleteVisitCategoryResponse);
+
+}

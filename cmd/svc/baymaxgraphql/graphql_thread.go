@@ -8,11 +8,13 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	baymaxgraphqlsettings "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/settings"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/notification/deeplink"
+	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
-
 	"github.com/sprucehealth/graphql"
 	"golang.org/x/net/context"
 )
@@ -87,6 +89,40 @@ var threadType = graphql.NewObject(
 			"allowAddMembers":       &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowDelete":           &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowEmailAttachments": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"allowVisitAttachments": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.Boolean),
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					svc := serviceFromParams(p)
+					ctx := p.Context
+					th := p.Source.(*models.Thread)
+					acc := gqlctx.Account(p.Context)
+					if acc == nil {
+						return nil, errors.ErrNotAuthenticated(ctx)
+					}
+
+					if th.Type != models.ThreadTypeSecureExternal {
+						return false, nil
+					}
+
+					if acc.Type == auth.AccountType_PATIENT {
+						return false, nil
+					}
+
+					booleanValue, err := settings.GetBooleanValue(ctx, svc.settings, &settings.GetValuesRequest{
+						NodeID: th.OrganizationID,
+						Keys: []*settings.ConfigKey{
+							{
+								Key: baymaxgraphqlsettings.ConfigKeyVisitAttachments,
+							},
+						},
+					})
+
+					if err != nil {
+						return false, errors.InternalError(ctx, err)
+					}
+					return booleanValue, nil
+				},
+			},
 			"allowInternalMessages": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowLeave":            &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowRemoveMembers":    &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
@@ -94,6 +130,7 @@ var threadType = graphql.NewObject(
 			"allowUpdateTitle":      &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowExternalDelivery": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowMentions":         &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+
 			"allowInvitePatientToSecureThread": &graphql.Field{
 				Type:    graphql.NewNonNull(graphql.Boolean),
 				Resolve: isSecureThreadsEnabled(),

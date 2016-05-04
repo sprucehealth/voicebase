@@ -9,9 +9,9 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/visitreview"
 	"github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/mapstructure"
 	"golang.org/x/net/context"
@@ -176,11 +176,11 @@ func VisitReviewLayout(
 
 	// then we provide the registry from which to pick out the types of native structures
 	// to use when parsing the template into a native go structure
-	sectionList := info_intake.DVisitReviewSectionListView{}
+	sectionList := visitreview.SectionListView{}
 	decoderConfig := &mapstructure.DecoderConfig{
 		Result:   &sectionList,
 		TagName:  "json",
-		Registry: *info_intake.DVisitReviewViewTypeRegistry,
+		Registry: *visitreview.TypeRegistry,
 	}
 
 	d, err := mapstructure.NewDecoder(decoderConfig)

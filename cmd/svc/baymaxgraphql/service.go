@@ -16,6 +16,7 @@ import (
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/invite"
+	"github.com/sprucehealth/backend/svc/layout"
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/settings"
 	"golang.org/x/net/context"
@@ -27,6 +28,7 @@ type service struct {
 	notification           notification.Client
 	settings               settings.SettingsClient
 	invite                 invite.InviteClient
+	layout                 layout.LayoutClient
 	mediaSigner            *media.Signer
 	emailDomain            string
 	webDomain              string
@@ -38,6 +40,7 @@ type service struct {
 	supportMessageTopicARN string
 	// TODO: Remove this
 	serviceNumber phone.Number
+	layoutStore   layout.Storage
 }
 
 func hydrateThreads(ctx context.Context, ram raccess.ResourceAccessor, threads []*models.Thread) error {

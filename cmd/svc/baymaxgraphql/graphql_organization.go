@@ -146,6 +146,7 @@ var organizationType = graphql.NewObject(
 							return qs, nil
 						})),
 			},
+			"visitCategories": visitCategoriesField,
 			"deeplink": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.String),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {

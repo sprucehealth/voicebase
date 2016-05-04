@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"io"
 	"math/big"
-	"os"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -86,15 +85,6 @@ func NewQueue(awsSession *session.Session, queueName string) (*SQSQueue, error) 
 		QueueService: sq,
 		QueueURL:     *res.QueueUrl,
 	}, nil
-}
-
-func SeekerSize(sk io.Seeker) (int64, error) {
-	size, err := sk.Seek(0, os.SEEK_END)
-	if err != nil {
-		return 0, err
-	}
-	_, err = sk.Seek(0, os.SEEK_SET)
-	return size, err
 }
 
 func GenerateRandomNumber(maxNum int64, maxDigits int) (string, error) {

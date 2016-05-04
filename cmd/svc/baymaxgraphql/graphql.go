@@ -26,6 +26,7 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/invite"
+	"github.com/sprucehealth/backend/svc/layout"
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
@@ -96,6 +97,8 @@ func NewGraphQL(
 	notificationClient notification.Client,
 	settings settings.SettingsClient,
 	invite invite.InviteClient,
+	layout layout.LayoutClient,
+	layoutStore layout.Storage,
 	mediaSigner *media.Signer,
 	emailDomain string,
 	webDomain string,
@@ -125,12 +128,14 @@ func NewGraphQL(
 			serviceNumber:   serviceNumber,
 			settings:        settings,
 			invite:          invite,
+			layout:          layout,
 			spruceOrgID:     spruceOrgID,
 			staticURLPrefix: staticURLPrefix,
 			segmentio:       &segmentIOWrapper{Client: segmentClient},
 			media:           media,
 			sns:             sns,
 			supportMessageTopicARN: supportMessageTopicARN,
+			layoutStore:            layoutStore,
 		},
 		statRequests:       statRequests,
 		statResponseErrors: statResponseErrors,

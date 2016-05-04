@@ -11,11 +11,12 @@ import (
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/libs/visitreview"
 )
 
 // This interface is used to populate the ViewContext with data pertaining to a single question
 type patientQAViewContextPopulator interface {
-	populateViewContextWithPatientQA(patientAnswers []common.Answer, question *info_intake.Question, context *common.ViewContext) error
+	populateViewContextWithPatientQA(patientAnswers []common.Answer, question *info_intake.Question, context *visitreview.ViewContext) error
 }
 
 var patientQAPopulators map[string]patientQAViewContextPopulator = make(map[string]patientQAViewContextPopulator, 0)
@@ -31,13 +32,13 @@ func init() {
 	patientQAPopulators[info_intake.QuestionTypePhoto] = qaViewContextPopulator(populatePatientPhotos)
 }
 
-type qaViewContextPopulator func([]common.Answer, *info_intake.Question, *common.ViewContext) error
+type qaViewContextPopulator func([]common.Answer, *info_intake.Question, *visitreview.ViewContext) error
 
-func (q qaViewContextPopulator) populateViewContextWithPatientQA(patientAnswers []common.Answer, question *info_intake.Question, context *common.ViewContext) error {
+func (q qaViewContextPopulator) populateViewContextWithPatientQA(patientAnswers []common.Answer, question *info_intake.Question, context *visitreview.ViewContext) error {
 	return q(patientAnswers, question, context)
 }
 
-func populateMultipleChoiceAnswers(patientAnswers []common.Answer, question *info_intake.Question, context *common.ViewContext) error {
+func populateMultipleChoiceAnswers(patientAnswers []common.Answer, question *info_intake.Question, context *visitreview.ViewContext) error {
 	if len(patientAnswers) == 0 {
 		populateEmptyStateTextIfPresent(question, context)
 		return nil
@@ -48,7 +49,7 @@ func populateMultipleChoiceAnswers(patientAnswers []common.Answer, question *inf
 		return populateAnswersForQuestionsWithSubanswers(patientAnswers, question, context)
 	}
 
-	checkedUncheckedItems := make([]info_intake.CheckedUncheckedData, 0)
+	checkedUncheckedItems := make([]visitreview.CheckedUncheckedData, 0)
 	var otherTextEntries []string
 	for _, potentialAnswer := range question.PotentialAnswers {
 		answerSelected := false
@@ -68,7 +69,7 @@ func populateMultipleChoiceAnswers(patientAnswers []common.Answer, question *inf
 			answerText = fmt.Sprintf("%s - %s", answerText, strings.Join(otherTextEntries, ", "))
 		}
 
-		checkedUncheckedItems = append(checkedUncheckedItems, info_intake.CheckedUncheckedData{
+		checkedUncheckedItems = append(checkedUncheckedItems, visitreview.CheckedUncheckedData{
 			Value:     answerText,
 			IsChecked: answerSelected,
 		})
@@ -79,7 +80,7 @@ func populateMultipleChoiceAnswers(patientAnswers []common.Answer, question *inf
 	return nil
 }
 
-func populateSingleEntryAnswers(patientAnswers []common.Answer, question *info_intake.Question, context *common.ViewContext) error {
+func populateSingleEntryAnswers(patientAnswers []common.Answer, question *info_intake.Question, context *visitreview.ViewContext) error {
 	if len(patientAnswers) == 0 {
 		populateEmptyStateTextIfPresent(question, context)
 		return nil
@@ -103,7 +104,7 @@ func populateSingleEntryAnswers(patientAnswers []common.Answer, question *info_i
 	return nil
 }
 
-func populateAnswersForQuestionsWithSubanswers(patientAnswers []common.Answer, question *info_intake.Question, context *common.ViewContext) error {
+func populateAnswersForQuestionsWithSubanswers(patientAnswers []common.Answer, question *info_intake.Question, context *visitreview.ViewContext) error {
 	if len(patientAnswers) == 0 {
 		populateEmptyStateTextIfPresent(question, context)
 		return nil
@@ -123,25 +124,25 @@ func populateAnswersForQuestionsWithSubanswers(patientAnswers []common.Answer, q
 		}
 	}
 
-	data := make([]info_intake.TitleSubItemsDescriptionContentData, len(patientAnswers))
+	data := make([]visitreview.TitleSubItemsDescriptionContentData, len(patientAnswers))
 	for i, patientAnswer := range patientAnswers {
 		pAnswer := patientAnswer.(*common.AnswerIntake)
-		items := make([]*info_intake.DescriptionContentData, 0, len(pAnswer.SubAnswers))
+		items := make([]*visitreview.DescriptionContentData, 0, len(pAnswer.SubAnswers))
 		for _, subAnswer := range pAnswer.SubAnswers {
 			// user-entered answer gets priority, then any summary for an answer, followed by the potential answer
 			// if it exists
 			if subAnswer.AnswerText != "" {
-				items = append(items, &info_intake.DescriptionContentData{
+				items = append(items, &visitreview.DescriptionContentData{
 					Description: qMapping[subAnswer.QuestionID.Int64()].QuestionSummary,
 					Content:     subAnswer.AnswerText,
 				})
 			} else if subAnswer.AnswerSummary != "" {
-				items = append(items, &info_intake.DescriptionContentData{
+				items = append(items, &visitreview.DescriptionContentData{
 					Description: qMapping[subAnswer.QuestionID.Int64()].QuestionSummary,
 					Content:     subAnswer.AnswerSummary,
 				})
 			} else if subAnswer.PotentialAnswer != "" {
-				items = append(items, &info_intake.DescriptionContentData{
+				items = append(items, &visitreview.DescriptionContentData{
 					Description: qMapping[subAnswer.QuestionID.Int64()].QuestionSummary,
 					Content:     subAnswer.PotentialAnswer,
 				})
@@ -154,7 +155,7 @@ func populateAnswersForQuestionsWithSubanswers(patientAnswers []common.Answer, q
 			title = pAnswer.PotentialAnswer
 		}
 
-		data[i] = info_intake.TitleSubItemsDescriptionContentData{
+		data[i] = visitreview.TitleSubItemsDescriptionContentData{
 			Title:    title,
 			SubItems: items,
 		}
@@ -167,7 +168,7 @@ func populateAnswersForQuestionsWithSubanswers(patientAnswers []common.Answer, q
 // if there are no patient answers for this question,
 // check if the empty state text is specified in the additional fields
 // of the question
-func populateEmptyStateTextIfPresent(question *info_intake.Question, context *common.ViewContext) {
+func populateEmptyStateTextIfPresent(question *info_intake.Question, context *visitreview.ViewContext) {
 	emptyStateText, ok := question.AdditionalFields["empty_state_text"]
 	if !ok {
 		return
@@ -177,36 +178,36 @@ func populateEmptyStateTextIfPresent(question *info_intake.Question, context *co
 	context.Set(fmt.Sprintf("%s:empty_state_text", question.QuestionTag), emptyStateText)
 }
 
-func populatePatientPhotos(answeredPhotoSections []common.Answer, question *info_intake.Question, context *common.ViewContext) error {
+func populatePatientPhotos(answeredPhotoSections []common.Answer, question *info_intake.Question, context *visitreview.ViewContext) error {
 	if len(answeredPhotoSections) == 0 {
 		return nil
 	}
 
-	var items []info_intake.TitlePhotoListData
+	var items []visitreview.TitlePhotoListData
 	// continue to populate the global patient_visit_photos
 	// key for backwards compatibility, given that acne related
 	// doctor reviews expect this key to exist.
 	photoData, ok := context.Get("patient_visit_photos")
 
 	if !ok || photoData == nil {
-		items = make([]info_intake.TitlePhotoListData, 0, len(answeredPhotoSections))
+		items = make([]visitreview.TitlePhotoListData, 0, len(answeredPhotoSections))
 	} else {
-		items = photoData.([]info_intake.TitlePhotoListData)
+		items = photoData.([]visitreview.TitlePhotoListData)
 	}
 
 	// keep track of the question specific items so that we can create a key to link to
 	// photos pertaining to a question
-	questionSpecificItems := make([]info_intake.TitlePhotoListData, 0, len(answeredPhotoSections))
+	questionSpecificItems := make([]visitreview.TitlePhotoListData, 0, len(answeredPhotoSections))
 
 	for _, photoSection := range answeredPhotoSections {
 		pIntakeSection := photoSection.(*common.PhotoIntakeSection)
-		item := info_intake.TitlePhotoListData{
+		item := visitreview.TitlePhotoListData{
 			Title:  pIntakeSection.Name,
-			Photos: make([]info_intake.PhotoData, len(pIntakeSection.Photos)),
+			Photos: make([]visitreview.PhotoData, len(pIntakeSection.Photos)),
 		}
 
 		for i, photoIntakeSlot := range pIntakeSection.Photos {
-			item.Photos[i] = info_intake.PhotoData{
+			item.Photos[i] = visitreview.PhotoData{
 				Title:    photoIntakeSlot.Name,
 				PhotoID:  photoIntakeSlot.PhotoID,
 				PhotoURL: photoIntakeSlot.PhotoURL,
@@ -228,7 +229,7 @@ func buildContext(
 	visitLayout *info_intake.InfoIntakeLayout,
 	pat *common.Patient,
 	visit *common.PatientVisit,
-	doctor *common.Doctor) (*common.ViewContext, error) {
+	doctor *common.Doctor) (*visitreview.ViewContext, error) {
 
 	context, err := populateContextForRenderingLayout(
 		visitLayout.Answers(),
@@ -251,8 +252,8 @@ func populateContextForRenderingLayout(
 	patient *common.Patient,
 	visit *common.PatientVisit,
 	doctor *common.Doctor,
-) (*common.ViewContext, error) {
-	context := common.NewViewContext(nil)
+) (*visitreview.ViewContext, error) {
+	context := visitreview.NewViewContext(nil)
 
 	// populate alerts
 	alerts, err := dataAPI.AlertsForVisit(visit.ID.Int64())
@@ -322,7 +323,7 @@ func populateParentInfo(
 	mediaStore *mediastore.Store,
 	expirationDuration time.Duration,
 	patient *common.Patient,
-	context *common.ViewContext,
+	context *visitreview.ViewContext,
 ) error {
 	consents, err := dataAPI.ParentalConsent(patient.ID)
 	if err != nil {
@@ -382,9 +383,9 @@ func populateParentInfo(
 	context.Set("parent_relationship:value", consent.Relationship)
 
 	// Parent Photo ID
-	photoSection := info_intake.TitlePhotoListData{
+	photoSection := visitreview.TitlePhotoListData{
 		Title:  "ID Verification",
-		Photos: make([]info_intake.PhotoData, 0, 2),
+		Photos: make([]visitreview.PhotoData, 0, 2),
 	}
 
 	// Include parent photo ids if present
@@ -394,7 +395,7 @@ func populateParentInfo(
 			return errors.Trace(err)
 		}
 
-		photoSection.Photos = append(photoSection.Photos, info_intake.PhotoData{
+		photoSection.Photos = append(photoSection.Photos, visitreview.PhotoData{
 			Title:    "ID Verification",
 			PhotoID:  *proof.GovernmentIDPhotoID,
 			PhotoURL: signedURL,
@@ -407,13 +408,13 @@ func populateParentInfo(
 			return errors.Trace(err)
 		}
 
-		photoSection.Photos = append(photoSection.Photos, info_intake.PhotoData{
+		photoSection.Photos = append(photoSection.Photos, visitreview.PhotoData{
 			Title:    "ID Verification",
 			PhotoID:  *proof.SelfiePhotoID,
 			PhotoURL: signedURL,
 		})
 	}
-	context.Set("parent_photo_verification", []info_intake.TitlePhotoListData{photoSection})
+	context.Set("parent_photo_verification", []visitreview.TitlePhotoListData{photoSection})
 
 	return nil
 }

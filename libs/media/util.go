@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"io"
+	"os"
 )
 
 // NewID returns an ID that conforms to the media id specifications
@@ -16,4 +17,13 @@ func NewID() (string, error) {
 	}
 
 	return fmt.Sprintf("%x-%x-%x-%x-%x-%x", buff[0:4], buff[4:6], buff[6:8], buff[8:10], buff[10:12], buff[12:]), nil
+}
+
+func SeekerSize(sk io.Seeker) (int64, error) {
+	size, err := sk.Seek(0, os.SEEK_END)
+	if err != nil {
+		return 0, err
+	}
+	_, err = sk.Seek(0, os.SEEK_SET)
+	return size, err
 }
