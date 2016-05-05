@@ -18,6 +18,7 @@ import (
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
+	"github.com/sprucehealth/backend/svc/layout"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
 	"google.golang.org/grpc"
@@ -35,6 +36,7 @@ type config struct {
 	ExCommsAddr   string
 	SettingsAddr  string
 	ThreadingAddr string
+	LayoutAddr    string
 	Env           string
 }
 
@@ -91,6 +93,18 @@ func (c *config) threadingClient() (threading.ThreadsClient, error) {
 		return nil, fmt.Errorf("Unable to connect to threading service: %s", err)
 	}
 	return threading.NewThreadsClient(conn), nil
+}
+
+func (c *config) layoutClient() (layout.LayoutClient, error) {
+	if c.LayoutAddr == "" {
+		return nil, errors.New("Layout service address required")
+	}
+
+	conn, err := grpc.Dial(c.LayoutAddr, grpc.WithInsecure())
+	if err != nil {
+		return nil, fmt.Errorf("Unable to connect to layout service: %s", err)
+	}
+	return layout.NewLayoutClient(conn), nil
 }
 
 func (c *config) directoryDB() (*sql.DB, error) {
@@ -160,6 +174,7 @@ var commands = map[string]commandNew{
 	"updateentity":        newUpdateEntityCmd,
 	"setgreeting":         newSetGreetingCmd,
 	"migratesetupthreads": newMigrateSetupThreadsCmd,
+	"uploadlayout":        newUploadLayoutCmd,
 }
 
 func main() {
@@ -173,7 +188,9 @@ func main() {
 	flag.StringVar(&cnf.DBPassword, "db_password", cnf.DBPassword, "mysql database `password`")
 	flag.StringVar(&cnf.DirectoryAddr, "directory_addr", cnf.DirectoryAddr, "`host:port` of directory service")
 	flag.StringVar(&cnf.ThreadingAddr, "threading_addr", cnf.ThreadingAddr, "`host:port` of treading service")
+	flag.StringVar(&cnf.LayoutAddr, "layout_addr", cnf.LayoutAddr, "`host:port` of layout service")
 	flag.StringVar(&cnf.Env, "env", cnf.Env, "environment that baymaxadmin is running against")
+
 	flag.Parse()
 
 	cmd := flag.Arg(0)

@@ -324,6 +324,10 @@
 		{
 			"ImportPath": "gopkg.in/yaml.v2",
 			"Rev": "a1c4bcb6c278a41992e2f4f0f29a44b4146daa5c"
+		},
+		{
+			"ImportPath": "github.com/sajari/docconv",
+			"Rev": "58ce7c24dbfe10223dcb51d378d5d89361942ba6"
 		}
 	]
 }

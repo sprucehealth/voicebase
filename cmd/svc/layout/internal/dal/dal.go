@@ -158,7 +158,7 @@ func (d *dal) VisitLayout(ctx context.Context, id models.VisitLayoutID) (*models
 	layout.ID = models.EmptyVisitLayoutID()
 	if err := d.db.QueryRow(`
 		SELECT id, name, visit_category_id, deleted
-		FROM visit_category 
+		FROM visit_layout 
 		WHERE id = ?
 		AND deleted = 0`, id).Scan(
 		&layout.ID,

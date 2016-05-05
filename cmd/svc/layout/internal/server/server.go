@@ -180,6 +180,7 @@ func (s *server) UpdateVisitLayout(ctx context.Context, in *layout.UpdateVisitLa
 			return errors.Trace(fmt.Errorf("Expected 1 row to be updated for visit layout %s but got %d", visitLayoutID, rowsUpdated))
 		}
 
+		layoutVersionToCreate.VisitLayoutID = visitLayoutID
 		if layoutVersionToCreate != nil {
 			_, err := dl.CreateVisitLayoutVersion(ctx, layoutVersionToCreate)
 			if err != nil {
