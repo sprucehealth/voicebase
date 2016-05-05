@@ -106,7 +106,7 @@ func (m *Manager) taskDefinitionInputForDeployment(d *dal.Deployment) (*ecs.Regi
 	}
 	return &ecs.RegisterTaskDefinitionInput{
 		ContainerDefinitions: []*ecs.ContainerDefinition{
-			&ecs.ContainerDefinition{
+			{
 				Image:       ptr.String(ecsDeployment.Image),
 				Cpu:         &cpu,
 				Memory:      &memory,
@@ -116,9 +116,10 @@ func (m *Manager) taskDefinitionInputForDeployment(d *dal.Deployment) (*ecs.Regi
 				Name:         ptr.String(dep.Name),
 				PortMappings: portMappings,
 				LogConfiguration: &ecs.LogConfiguration{
-					LogDriver: ptr.String("syslog"),
+					LogDriver: ptr.String("awslogs"),
 					Options: map[string]*string{
-						"tag": ptr.String(fmt.Sprintf("%s-%s", env.Name, dep.Name)),
+						"awslogs-group":  ptr.String(fmt.Sprintf("%s-%s", env.Name, dep.Name)),
+						"awslogs-region": ptr.String("us-east-1"), // TODO: dynamically set this once we do multi-region
 					},
 				},
 			},
