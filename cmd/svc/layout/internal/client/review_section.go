@@ -73,7 +73,7 @@ func subsectionViewForScreens(title string, screens []*saml.Screen) (visitreview
 		subsectionView.Rows = append(subsectionView.Rows, views...)
 
 		for _, question := range screen.Questions {
-			keys = append(keys, answersKey(question.Details.Tag))
+			keys = append(keys, visitreview.AnswersKey(question.Details.Tag))
 		}
 	}
 

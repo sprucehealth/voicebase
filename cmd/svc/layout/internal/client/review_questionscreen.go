@@ -46,21 +46,21 @@ func viewForQuestionWithSubQuestions(question *saml.Question) visitreview.View {
 		ContentConfig: &visitreview.ContentConfig{
 			ViewCondition: visitreview.ViewCondition{
 				Op:  visitreview.ConditionKeyExists,
-				Key: answersKey(tag),
+				Key: visitreview.AnswersKey(tag),
 			},
 		},
 		LeftView: &visitreview.TitleLabelsList{
 			ContentConfig: &visitreview.ContentConfig{
-				Key: questionSummaryKey(tag),
+				Key: visitreview.QuestionSummaryKey(tag),
 			},
 		},
 		RightView: &visitreview.TitleSubItemsLabelContentItemsList{
 			ContentConfig: &visitreview.ContentConfig{
-				Key: answersKey(tag),
+				Key: visitreview.AnswersKey(tag),
 			},
 			EmptyStateView: &visitreview.EmptyLabelView{
 				ContentConfig: &visitreview.ContentConfig{
-					Key: emptyStateTextKey(tag),
+					Key: visitreview.EmptyStateTextKey(tag),
 				},
 			},
 		},
@@ -73,17 +73,17 @@ func viewForQuestionWithSingleAnswer(question *saml.Question) visitreview.View {
 		ContentConfig: &visitreview.ContentConfig{
 			ViewCondition: visitreview.ViewCondition{
 				Op:  visitreview.ConditionKeyExists,
-				Key: answersKey(tag),
+				Key: visitreview.AnswersKey(tag),
 			},
 		},
 		LeftView: &visitreview.TitleLabelsList{
 			ContentConfig: &visitreview.ContentConfig{
-				Key: questionSummaryKey(tag),
+				Key: visitreview.QuestionSummaryKey(tag),
 			},
 		},
 		RightView: &visitreview.ContentLabelsList{
 			ContentConfig: &visitreview.ContentConfig{
-				Key: answersKey(tag),
+				Key: visitreview.AnswersKey(tag),
 			},
 		},
 	}
@@ -95,17 +95,17 @@ func viewForQuestionWithMultipleAnswers(question *saml.Question) visitreview.Vie
 		ContentConfig: &visitreview.ContentConfig{
 			ViewCondition: visitreview.ViewCondition{
 				Op:  visitreview.ConditionKeyExists,
-				Key: answersKey(tag),
+				Key: visitreview.AnswersKey(tag),
 			},
 		},
 		LeftView: &visitreview.TitleLabelsList{
 			ContentConfig: &visitreview.ContentConfig{
-				Key: questionSummaryKey(tag),
+				Key: visitreview.QuestionSummaryKey(tag),
 			},
 		},
 		RightView: &visitreview.CheckXItemsList{
 			ContentConfig: &visitreview.ContentConfig{
-				Key: answersKey(tag),
+				Key: visitreview.AnswersKey(tag),
 			},
 		},
 	}

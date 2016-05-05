@@ -1,0 +1,4066 @@
+{
+  "transitions": [
+    {
+      "message": "We'll start by asking you questions about your symptoms.",
+      "buttons": [
+        {
+          "button_text": "Begin",
+          "tap_url": "spruce:///action/view_next_visit_section",
+          "style": "filled"
+        }
+      ]
+    },
+    {
+      "message": "Now let's take photos for your doctor to make a diagnosis.",
+      "buttons": [
+        {
+          "button_text": "Continue",
+          "tap_url": "spruce:///action/view_next_visit_section",
+          "style": "filled"
+        }
+      ]
+    },
+    {
+      "message": "Now we'll ask you some questions about your medical history.",
+      "buttons": [
+        {
+          "button_text": "Continue",
+          "tap_url": "spruce:///action/view_next_visit_section",
+          "style": "filled"
+        }
+      ]
+    },
+    {
+      "message": "That's all the information your doctor will need!",
+      "buttons": [
+        {
+          "button_text": "Continue",
+          "tap_url": "spruce:///action/view_next_visit_section",
+          "style": "filled"
+        }
+      ]
+    }
+  ],
+  "sections": [
+    {
+      "id": "section_0E73N766OIO00",
+      "title": "Your Symptoms",
+      "screens": [
+        {
+          "id": "screen_0E73N766OIO02",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "systemic_or_dangerous_symptoms",
+              "question_title": "Let's make sure Spruce is right for you. Are you experiencing any of the following?",
+              "question_title_has_tokens": false,
+              "type": "q_type_multiple_choice",
+              "question_summary": "Systemic or dangerous symptoms",
+              "additional_fields": {
+                "popup": {
+                  "text": "This question helps assess whether you're healthy enough to be diagnosed and treated remotely."
+                }
+              },
+              "potential_answers": [
+                {
+                  "id": "systemic_or_dangerous_symptoms_extreme_fatigue_or_ill_feeling",
+                  "potential_answer": "Extreme fatigue or ill feeling",
+                  "potential_answer_summary": "Extreme fatigue or ill feeling",
+                  "type": "a_type_multiple_choice",
+                  "to_alert": true
+                },
+                {
+                  "id": "systemic_or_dangerous_symptoms_fever_or_shaking_chills",
+                  "potential_answer": "Fever or shaking chills",
+                  "potential_answer_summary": "Fever or shaking chills",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "systemic_or_dangerous_symptoms_unintentional_weight_loss",
+                  "potential_answer": "Unintentional weight loss",
+                  "potential_answer_summary": "Unintentional weight loss",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "systemic_or_dangerous_symptoms_vomiting",
+                  "potential_answer": "Vomiting",
+                  "potential_answer_summary": "Vomiting",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "systemic_or_dangerous_symptoms_none_of_the_above",
+                  "potential_answer": "None of the above",
+                  "potential_answer_summary": "None of the above",
+                  "type": "a_type_multiple_choice_none"
+                }
+              ],
+              "required": true,
+              "alert_text": "Patient endorses: XXX",
+              "to_alert": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO04",
+          "header_title_has_tokens": false,
+          "type": "screen_type_warning_popup",
+          "condition": {
+            "op": "answer_contains_any",
+            "question_id": "systemic_or_dangerous_symptoms",
+            "potential_answers_id": [
+              "systemic_or_dangerous_symptoms_fever_or_shaking_chills",
+              "systemic_or_dangerous_symptoms_unintentional_weight_loss",
+              "systemic_or_dangerous_symptoms_vomiting"
+            ]
+          },
+          "body": {
+            "text": "Your symptoms suggest that you may need more immediate medical attention than we can currently provide. A local emergency department is an appropriate option, as is your primary care provider."
+          },
+          "bottom_button_title": "Next Steps",
+          "content_header_title": "We're going to have to end your visit here."
+        },
+        {
+          "id": "screen_0E73N766OIO06",
+          "header_title_has_tokens": false,
+          "type": "screen_type_triage",
+          "condition": {
+            "op": "answer_contains_any",
+            "question_id": "systemic_or_dangerous_symptoms",
+            "potential_answers_id": [
+              "systemic_or_dangerous_symptoms_fever_or_shaking_chills",
+              "systemic_or_dangerous_symptoms_unintentional_weight_loss",
+              "systemic_or_dangerous_symptoms_vomiting"
+            ]
+          },
+          "body": {
+            "text": "If you have health insurance, you should contact your insurance company to find out which providers are covered under your plan. Locate your insurance card and call the listed Member Services number. A representative will help you locate your nearest in-network emergency department. If you are too ill to accomplish this, call 911 and go to the nearest emergency department.\n\nIf you do not have health insurance, go to the most convenient emergency department."
+          },
+          "bottom_button_title": "I Understand",
+          "content_header_title": "You should seek in-person medical evaluation today. A local emergency department is an appropriate option, as is your primary care provider (if you can be seen immediately today).",
+          "screen_title": "Next Steps"
+        },
+        {
+          "id": "screen_0E73N766OIO08",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "able_to_complete_daily_activities",
+              "question_title": "Are you still able to complete basic daily activities, such as walking, eating, and caring for yourself?",
+              "question_title_has_tokens": false,
+              "type": "q_type_single_select",
+              "question_summary": "Able to complete daily activities",
+              "potential_answers": [
+                {
+                  "id": "able_to_complete_daily_activities_yes",
+                  "potential_answer": "Yes",
+                  "potential_answer_summary": "Yes",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "able_to_complete_daily_activities_barely",
+                  "potential_answer": "Barely",
+                  "potential_answer_summary": "Barely",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "able_to_complete_daily_activities_no",
+                  "potential_answer": "No",
+                  "potential_answer_summary": "No",
+                  "type": "a_type_single_select"
+                }
+              ],
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "systemic_or_dangerous_symptoms",
+                "potential_answers_id": [
+                  "systemic_or_dangerous_symptoms_extreme_fatigue_or_ill_feeling"
+                ]
+              },
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO0A",
+          "header_title_has_tokens": false,
+          "type": "screen_type_warning_popup",
+          "condition": {
+            "op": "answer_contains_any",
+            "question_id": "able_to_complete_daily_activities",
+            "potential_answers_id": [
+              "able_to_complete_daily_activities_barely",
+              "able_to_complete_daily_activities_no"
+            ]
+          },
+          "body": {
+            "text": "Your symptoms suggest that you may need more immediate medical attention than we can currently provide. A local emergency department is an appropriate option, as is your primary care provider."
+          },
+          "bottom_button_title": "Next Steps",
+          "content_header_title": "We're going to have to end your visit here."
+        },
+        {
+          "id": "screen_0E73N766OIO0C",
+          "header_title_has_tokens": false,
+          "type": "screen_type_triage",
+          "condition": {
+            "op": "answer_contains_any",
+            "question_id": "able_to_complete_daily_activities",
+            "potential_answers_id": [
+              "able_to_complete_daily_activities_barely",
+              "able_to_complete_daily_activities_no"
+            ]
+          },
+          "body": {
+            "text": "If you have health insurance, you should contact your insurance company to find out which providers are covered under your plan. Locate your insurance card and call the listed Member Services number. A representative will help you locate your nearest in-network emergency department. If you are too ill to accomplish this, call 911 and go to the nearest emergency department.\n\nIf you do not have health insurance, go to the most convenient emergency department."
+          },
+          "bottom_button_title": "I Understand",
+          "content_header_title": "You should seek in-person medical evaluation today. A local emergency department is an appropriate option, as is your primary care provider (if you can be seen immediately today).",
+          "screen_title": "Next Steps"
+        },
+        {
+          "id": "screen_0E73N766OIO0E",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "rash_time_course",
+              "question_title": "When did this rash start?",
+              "question_title_has_tokens": false,
+              "type": "q_type_single_select",
+              "question_summary": "Rash time course",
+              "potential_answers": [
+                {
+                  "id": "rash_time_course_less_than_1_week_ago",
+                  "potential_answer": "Less than 1 week ago",
+                  "potential_answer_summary": "Less than 1 week ago",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "rash_time_course_1_to_4_weeks_ago",
+                  "potential_answer": "1 to 4 weeks ago",
+                  "potential_answer_summary": "1 to 4 weeks ago",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "rash_time_course_1_to_12_months_ago",
+                  "potential_answer": "1 to 12 months ago",
+                  "potential_answer_summary": "1 to 12 months ago",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "rash_time_course_longer_than_1_year_ago",
+                  "potential_answer": "Longer than 1 year ago",
+                  "potential_answer_summary": "Longer than 1 year ago",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "rash_time_course_i_dont_know",
+                  "potential_answer": "I don't know",
+                  "potential_answer_summary": "I don't know",
+                  "type": "a_type_single_select"
+                }
+              ],
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO0G",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "experienced_this_type_of_rash_before",
+              "question_title": "Have you experienced this type of rash before?",
+              "question_title_has_tokens": false,
+              "type": "q_type_single_select",
+              "question_summary": "Experienced this type of rash before",
+              "potential_answers": [
+                {
+                  "id": "experienced_this_type_of_rash_before_yes_very_often_or_constantly",
+                  "potential_answer": "Yes, very often or constantly",
+                  "potential_answer_summary": "Yes, very often or constantly",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "experienced_this_type_of_rash_before_yes_a_few_times",
+                  "potential_answer": "Yes, a few times",
+                  "potential_answer_summary": "Yes, a few times",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "experienced_this_type_of_rash_before_yes_once",
+                  "potential_answer": "Yes, once",
+                  "potential_answer_summary": "Yes, once",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "experienced_this_type_of_rash_before_no_never",
+                  "potential_answer": "No, never",
+                  "potential_answer_summary": "No, never",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "experienced_this_type_of_rash_before_im_not_sure",
+                  "potential_answer": "I'm not sure",
+                  "potential_answer_summary": "I'm not sure",
+                  "type": "a_type_single_select"
+                }
+              ],
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO0I",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "similar_to_prior_athletes_foot_ringworm_or_other_fungal_rashes",
+              "question_title": "Is this rash similar to athlete's foot, ringworm, or other fungal rashes that you have had before?",
+              "question_title_has_tokens": false,
+              "type": "q_type_single_select",
+              "question_summary": "Similar to prior athlete's foot, ringworm, or other fungal rashes",
+              "potential_answers": [
+                {
+                  "id": "similar_to_prior_athletes_foot_ringworm_or_other_fungal_rashes_yes_very_similar",
+                  "potential_answer": "Yes, very similar",
+                  "potential_answer_summary": "Yes, very similar",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "similar_to_prior_athletes_foot_ringworm_or_other_fungal_rashes_yes_somewhat_similar",
+                  "potential_answer": "Yes, somewhat similar",
+                  "potential_answer_summary": "Yes, somewhat similar",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "similar_to_prior_athletes_foot_ringworm_or_other_fungal_rashes_no",
+                  "potential_answer": "No",
+                  "potential_answer_summary": "No",
+                  "type": "a_type_single_select"
+                }
+              ],
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "experienced_this_type_of_rash_before",
+                "potential_answers_id": [
+                  "experienced_this_type_of_rash_before_yes_very_often_or_constantly",
+                  "experienced_this_type_of_rash_before_yes_a_few_times",
+                  "experienced_this_type_of_rash_before_yes_once"
+                ]
+              },
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO0K",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "whats_different_about_current_rash",
+              "question_title": "What about this rash is different?",
+              "question_title_has_tokens": false,
+              "type": "q_type_free_text",
+              "question_summary": "What's different about current rash",
+              "additional_fields": {
+                "placeholder_text": "Describe any differences you've noticed..."
+              },
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "similar_to_prior_athletes_foot_ringworm_or_other_fungal_rashes",
+                "potential_answers_id": [
+                  "similar_to_prior_athletes_foot_ringworm_or_other_fungal_rashes_yes_somewhat_similar",
+                  "similar_to_prior_athletes_foot_ringworm_or_other_fungal_rashes_no"
+                ]
+              },
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO0M",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "affected_areas",
+              "question_title": "Which areas of your body are currently affected?",
+              "question_title_has_tokens": false,
+              "type": "q_type_multiple_choice",
+              "question_summary": "Affected areas",
+              "additional_fields": {
+                "answer_groups": [
+                  {
+                    "count": 4,
+                    "title": "Head & Neck"
+                  },
+                  {
+                    "count": 5,
+                    "title": "Torso"
+                  },
+                  {
+                    "count": 2,
+                    "title": "Arms & Hands"
+                  },
+                  {
+                    "count": 2,
+                    "title": "Legs & Feet"
+                  },
+                  {
+                    "count": 1,
+                    "title": "Other Locations"
+                  }
+                ]
+              },
+              "potential_answers": [
+                {
+                  "id": "affected_areas_face",
+                  "potential_answer": "Face",
+                  "potential_answer_summary": "Face",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "affected_areas_mouth",
+                  "potential_answer": "Mouth",
+                  "potential_answer_summary": "Mouth",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "affected_areas_scalp",
+                  "potential_answer": "Scalp",
+                  "potential_answer_summary": "Scalp",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "affected_areas_neck",
+                  "potential_answer": "Neck",
+                  "potential_answer_summary": "Neck",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "affected_areas_chest",
+                  "potential_answer": "Chest",
+                  "potential_answer_summary": "Chest",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "affected_areas_back",
+                  "potential_answer": "Back",
+                  "potential_answer_summary": "Back",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "affected_areas_abdomen",
+                  "potential_answer": "Abdomen",
+                  "potential_answer_summary": "Abdomen",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "affected_areas_groin",
+                  "potential_answer": "Groin",
+                  "potential_answer_summary": "Groin",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "affected_areas_buttocks",
+                  "potential_answer": "Buttocks",
+                  "potential_answer_summary": "Buttocks",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "affected_areas_arms",
+                  "potential_answer": "Arms",
+                  "potential_answer_summary": "Arms",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "affected_areas_hands",
+                  "potential_answer": "Hands",
+                  "potential_answer_summary": "Hands",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "affected_areas_legs",
+                  "potential_answer": "Legs",
+                  "potential_answer_summary": "Legs",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "affected_areas_feet",
+                  "potential_answer": "Feet",
+                  "potential_answer_summary": "Feet",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "affected_areas_other_location",
+                  "potential_answer": "Other location",
+                  "potential_answer_summary": "Other location",
+                  "type": "a_type_multiple_choice_other_free_text"
+                }
+              ],
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO0O",
+          "header_title_has_tokens": false,
+          "type": "screen_type_warning_popup",
+          "condition": {
+            "op": "and",
+            "operands": [
+              {
+                "op": "answer_contains_any",
+                "question_id": "affected_areas",
+                "potential_answers_id": [
+                  "affected_areas_mouth"
+                ]
+              },
+              {
+                "op": "answer_contains_any",
+                "question_id": "affected_areas",
+                "potential_answers_id": [
+                  "affected_areas_groin"
+                ]
+              }
+            ]
+          },
+          "body": {
+            "text": "Athlete's foot, ringworm, and other minor fungal skin infections do not typically cause a rash that affects the mouth and groin. We worry that you might have a different condition. Please tap 'Next Steps' for how to proceed."
+          },
+          "bottom_button_title": "Next Steps",
+          "content_header_title": "We're going to have to end your visit here."
+        },
+        {
+          "id": "screen_0E73N766OIO0Q",
+          "header_title_has_tokens": false,
+          "type": "screen_type_triage",
+          "condition": {
+            "op": "and",
+            "operands": [
+              {
+                "op": "answer_contains_any",
+                "question_id": "affected_areas",
+                "potential_answers_id": [
+                  "affected_areas_mouth"
+                ]
+              },
+              {
+                "op": "answer_contains_any",
+                "question_id": "affected_areas",
+                "potential_answers_id": [
+                  "affected_areas_groin"
+                ]
+              }
+            ]
+          },
+          "body": {
+            "text": "If you have health insurance, you should contact your insurance company to find out which providers are covered under your plan. Locate your insurance card and call the listed Member Services number. A representative will help you locate your nearest in-network urgent care center or other appropriate provider. If you are too ill to accomplish this, call 911 and go to the nearest emergency department.\n\nIf you do not have health insurance, go to the most convenient urgent care or emergency department. "
+          },
+          "bottom_button_title": "I Understand",
+          "content_header_title": "You should seek in-person medical evaluation today. A local urgent care is an appropriate option, as is your primary care provider.",
+          "screen_title": "Next Steps"
+        },
+        {
+          "id": "screen_0E73N766OIO0S",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "hand_locations",
+              "question_title": "Where on your hands is the rash located?",
+              "question_title_has_tokens": false,
+              "type": "q_type_multiple_choice",
+              "question_summary": "Hand locations",
+              "potential_answers": [
+                {
+                  "id": "hand_locations_top",
+                  "potential_answer": "Top",
+                  "potential_answer_summary": "Top",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "hand_locations_palms",
+                  "potential_answer": "Palms",
+                  "potential_answer_summary": "Palms",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "hand_locations_both_top_and_palms",
+                  "potential_answer": "Both top and palms",
+                  "potential_answer_summary": "Both top and palms",
+                  "type": "a_type_multiple_choice"
+                }
+              ],
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "affected_areas",
+                "potential_answers_id": [
+                  "affected_areas_hands"
+                ]
+              },
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO0U",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "feet_locations",
+              "question_title": "Where on your feet is the rash located?",
+              "question_title_has_tokens": false,
+              "type": "q_type_multiple_choice",
+              "question_summary": "Feet locations",
+              "potential_answers": [
+                {
+                  "id": "feet_locations_top",
+                  "potential_answer": "Top",
+                  "potential_answer_summary": "Top",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "feet_locations_bottom",
+                  "potential_answer": "Bottom",
+                  "potential_answer_summary": "Bottom",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "feet_locations_in_between_toes",
+                  "potential_answer": "In between toes",
+                  "potential_answer_summary": "In between toes",
+                  "type": "a_type_multiple_choice"
+                }
+              ],
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "affected_areas",
+                "potential_answers_id": [
+                  "affected_areas_feet"
+                ]
+              },
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO10",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "mouth_locations",
+              "question_title": "Where in or on your mouth is the rash?",
+              "question_title_has_tokens": false,
+              "type": "q_type_multiple_choice",
+              "question_summary": "Mouth locations",
+              "potential_answers": [
+                {
+                  "id": "mouth_locations_lips",
+                  "potential_answer": "Lips",
+                  "potential_answer_summary": "Lips",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "mouth_locations_inside_mouth",
+                  "potential_answer": "Inside mouth",
+                  "potential_answer_summary": "Inside mouth",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "mouth_locations_throat",
+                  "potential_answer": "Throat",
+                  "potential_answer_summary": "Throat",
+                  "type": "a_type_multiple_choice"
+                }
+              ],
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "affected_areas",
+                "potential_answers_id": [
+                  "affected_areas_mouth"
+                ]
+              },
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO12",
+          "header_title_has_tokens": false,
+          "type": "screen_type_warning_popup",
+          "condition": {
+            "op": "answer_contains_any",
+            "question_id": "mouth_locations",
+            "potential_answers_id": [
+              "mouth_locations_inside_mouth",
+              "mouth_locations_throat"
+            ]
+          },
+          "body": {
+            "text": "Athlete's foot, ringworm, and other minor fungal skin infections do not typically cause a rash inside the mouth or throat. We worry that you might have a different condition. Please tap 'Next Steps' for how to proceed."
+          },
+          "bottom_button_title": "Next Steps",
+          "content_header_title": "We're going to have to end your visit here."
+        },
+        {
+          "id": "screen_0E73N766OIO14",
+          "header_title_has_tokens": false,
+          "type": "screen_type_triage",
+          "condition": {
+            "op": "answer_contains_any",
+            "question_id": "mouth_locations",
+            "potential_answers_id": [
+              "mouth_locations_inside_mouth",
+              "mouth_locations_throat"
+            ]
+          },
+          "body": {
+            "text": "If you have health insurance, you should contact your insurance company to find out which providers are covered under your plan. Locate your insurance card and call the listed Member Services number. A representative will help you locate your nearest in-network urgent care center or other appropriate provider. If you are too ill to accomplish this, call 911 and go to the nearest emergency department.\n\nIf you do not have health insurance, go to the most convenient urgent care or emergency department. "
+          },
+          "bottom_button_title": "I Understand",
+          "content_header_title": "You should seek in-person medical evaluation today. A local urgent care is an appropriate option, as is your primary care provider.",
+          "screen_title": "Next Steps"
+        },
+        {
+          "id": "screen_0E73N766OIO16",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "groin_locations",
+              "question_title": "Does the rash affect any of the following areas?",
+              "question_title_has_tokens": false,
+              "type": "q_type_multiple_choice",
+              "question_summary": "Groin locations",
+              "potential_answers": [
+                {
+                  "id": "groin_locations_labia",
+                  "potential_answer": "Labia",
+                  "potential_answer_summary": "Labia",
+                  "type": "a_type_multiple_choice",
+                  "client_data": {
+                    "popup": {
+                      "text": "Folds of skin that surround the opening of the vagina"
+                    }
+                  }
+                },
+                {
+                  "id": "groin_locations_vagina",
+                  "potential_answer": "Vagina",
+                  "potential_answer_summary": "Vagina",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "groin_locations_anus",
+                  "potential_answer": "Anus",
+                  "potential_answer_summary": "Anus",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "groin_locations_none_of_the_above",
+                  "potential_answer": "None of the above",
+                  "potential_answer_summary": "None of the above",
+                  "type": "a_type_multiple_choice_none"
+                }
+              ],
+              "condition": {
+                "op": "and",
+                "operands": [
+                  {
+                    "op": "answer_contains_any",
+                    "question_id": "affected_areas",
+                    "potential_answers_id": [
+                      "affected_areas_groin",
+                      "affected_areas_buttocks"
+                    ]
+                  },
+                  {
+                    "op": "gender_equals",
+                    "gender": "female"
+                  }
+                ]
+              },
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO18",
+          "header_title_has_tokens": false,
+          "type": "screen_type_warning_popup",
+          "condition": {
+            "op": "answer_contains_any",
+            "question_id": "groin_locations",
+            "potential_answers_id": [
+              "groin_locations_labia",
+              "groin_locations_vagina",
+              "groin_locations_anus"
+            ]
+          },
+          "body": {
+            "text": "Athlete's foot, ringworm, and other minor fungal skin infections do not typically cause a rash on the mucous membranes of the genital area. We worry that you might have a different condition. Please tap 'Next Steps' for how to proceed."
+          },
+          "bottom_button_title": "Next Steps",
+          "content_header_title": "We're going to have to end your visit here."
+        },
+        {
+          "id": "screen_0E73N766OIO1A",
+          "header_title_has_tokens": false,
+          "type": "screen_type_triage",
+          "condition": {
+            "op": "answer_contains_any",
+            "question_id": "groin_locations",
+            "potential_answers_id": [
+              "groin_locations_labia",
+              "groin_locations_vagina",
+              "groin_locations_anus"
+            ]
+          },
+          "body": {
+            "text": "If you have health insurance, you should contact your insurance company to find out which providers are covered under your plan. Locate your insurance card and call the listed Member Services number. A representative will help you locate your nearest in-network urgent care center or other appropriate provider. If you are too ill to accomplish this, call 911 and go to the nearest emergency department.\n\nIf you do not have health insurance, go to the most convenient urgent care or emergency department. "
+          },
+          "bottom_button_title": "I Understand",
+          "content_header_title": "You should seek in-person medical evaluation today. A local urgent care is an appropriate option, as is your primary care provider.",
+          "screen_title": "Next Steps"
+        },
+        {
+          "id": "screen_0E73N766OIO1C",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "groin_locations_2",
+              "question_title": "Does the rash affect any of the following areas?",
+              "question_title_has_tokens": false,
+              "type": "q_type_multiple_choice",
+              "question_summary": "Groin locations",
+              "potential_answers": [
+                {
+                  "id": "groin_locations_2_tip_opening_of_penis",
+                  "potential_answer": "Tip (opening) of penis",
+                  "potential_answer_summary": "Tip (opening) of penis",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "groin_locations_2_shaft_of_penis",
+                  "potential_answer": "Shaft of penis",
+                  "potential_answer_summary": "Shaft of penis",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "groin_locations_2_base_of_penis",
+                  "potential_answer": "Base of penis",
+                  "potential_answer_summary": "Base of penis",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "groin_locations_2_scrotum",
+                  "potential_answer": "Scrotum",
+                  "potential_answer_summary": "Scrotum",
+                  "type": "a_type_multiple_choice",
+                  "client_data": {
+                    "popup": {
+                      "text": "Pouch of skin that contains the testicles"
+                    }
+                  }
+                },
+                {
+                  "id": "groin_locations_2_anus",
+                  "potential_answer": "Anus",
+                  "potential_answer_summary": "Anus",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "groin_locations_2_none_of_the_above",
+                  "potential_answer": "None of the above",
+                  "potential_answer_summary": "None of the above",
+                  "type": "a_type_multiple_choice_none"
+                }
+              ],
+              "condition": {
+                "op": "and",
+                "operands": [
+                  {
+                    "op": "answer_contains_any",
+                    "question_id": "affected_areas",
+                    "potential_answers_id": [
+                      "affected_areas_groin",
+                      "affected_areas_buttocks"
+                    ]
+                  },
+                  {
+                    "op": "gender_equals",
+                    "gender": "male"
+                  }
+                ]
+              },
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO1E",
+          "header_title_has_tokens": false,
+          "type": "screen_type_warning_popup",
+          "condition": {
+            "op": "answer_contains_any",
+            "question_id": "groin_locations_2",
+            "potential_answers_id": [
+              "groin_locations_2_tip_opening_of_penis",
+              "groin_locations_2_anus"
+            ]
+          },
+          "body": {
+            "text": "Athlete's foot, ringworm, and other minor fungal skin infections do not typically cause a rash on the mucous membranes of the genital area. We worry that you might have a different condition. Please tap 'Next Steps' for how to proceed."
+          },
+          "bottom_button_title": "Next Steps",
+          "content_header_title": "We're going to have to end your visit here."
+        },
+        {
+          "id": "screen_0E73N766OIO1G",
+          "header_title_has_tokens": false,
+          "type": "screen_type_triage",
+          "condition": {
+            "op": "answer_contains_any",
+            "question_id": "groin_locations_2",
+            "potential_answers_id": [
+              "groin_locations_2_tip_opening_of_penis",
+              "groin_locations_2_anus"
+            ]
+          },
+          "body": {
+            "text": "If you have health insurance, you should contact your insurance company to find out which providers are covered under your plan. Locate your insurance card and call the listed Member Services number. A representative will help you locate your nearest in-network urgent care center or other appropriate provider. If you are too ill to accomplish this, call 911 and go to the nearest emergency department.\n\nIf you do not have health insurance, go to the most convenient urgent care or emergency department. "
+          },
+          "bottom_button_title": "I Understand",
+          "content_header_title": "You should seek in-person medical evaluation today. A local urgent care is an appropriate option, as is your primary care provider.",
+          "screen_title": "Next Steps"
+        },
+        {
+          "id": "screen_0E73N766OIO1I",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "rash_mostly_in_skin_creases",
+              "question_title": "Is the rash in or between skin creases?",
+              "question_title_has_tokens": false,
+              "type": "q_type_single_select",
+              "question_subtext": "(e.g., elbows or behind knees)",
+              "question_summary": "Rash mostly in skin creases",
+              "potential_answers": [
+                {
+                  "id": "rash_mostly_in_skin_creases_yes",
+                  "potential_answer": "Yes",
+                  "potential_answer_summary": "Yes",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "rash_mostly_in_skin_creases_no",
+                  "potential_answer": "No",
+                  "potential_answer_summary": "No",
+                  "type": "a_type_single_select"
+                }
+              ],
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO1K",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "change_in_rash_location",
+              "question_title": "Has the location of the rash changed since it started?",
+              "question_title_has_tokens": false,
+              "type": "q_type_single_select",
+              "question_summary": "Change in rash location",
+              "potential_answers": [
+                {
+                  "id": "change_in_rash_location_yes_it_affects_more_parts_of_my_body_now",
+                  "potential_answer": "Yes, it affects more parts of my body now",
+                  "potential_answer_summary": "Yes, it affects more parts of my body now",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "change_in_rash_location_yes_it_affects_fewer_parts_of_my_body_now",
+                  "potential_answer": "Yes, it affects fewer parts of my body now",
+                  "potential_answer_summary": "Yes, it affects fewer parts of my body now",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "change_in_rash_location_no_change_in_location",
+                  "potential_answer": "No change in location",
+                  "potential_answer_summary": "No change in location",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "change_in_rash_location_i_dont_know",
+                  "potential_answer": "I don't know",
+                  "potential_answer_summary": "I don't know",
+                  "type": "a_type_single_select"
+                }
+              ],
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO1M",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "locations_where_rash_began",
+              "question_title": "Select the locations where the rash began:",
+              "question_title_has_tokens": false,
+              "type": "q_type_multiple_choice",
+              "question_summary": "Locations where rash began",
+              "additional_fields": {
+                "answer_groups": [
+                  {
+                    "count": 4,
+                    "title": "Head & Neck"
+                  },
+                  {
+                    "count": 5,
+                    "title": "Torso"
+                  },
+                  {
+                    "count": 2,
+                    "title": "Arms & Hands"
+                  },
+                  {
+                    "count": 2,
+                    "title": "Legs & Feet"
+                  },
+                  {
+                    "count": 1,
+                    "title": "Other Locations"
+                  }
+                ]
+              },
+              "potential_answers": [
+                {
+                  "id": "locations_where_rash_began_face",
+                  "potential_answer": "Face",
+                  "potential_answer_summary": "Face",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "locations_where_rash_began_mouth",
+                  "potential_answer": "Mouth",
+                  "potential_answer_summary": "Mouth",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "locations_where_rash_began_scalp",
+                  "potential_answer": "Scalp",
+                  "potential_answer_summary": "Scalp",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "locations_where_rash_began_neck",
+                  "potential_answer": "Neck",
+                  "potential_answer_summary": "Neck",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "locations_where_rash_began_chest",
+                  "potential_answer": "Chest",
+                  "potential_answer_summary": "Chest",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "locations_where_rash_began_back",
+                  "potential_answer": "Back",
+                  "potential_answer_summary": "Back",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "locations_where_rash_began_abdomen",
+                  "potential_answer": "Abdomen",
+                  "potential_answer_summary": "Abdomen",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "locations_where_rash_began_groin",
+                  "potential_answer": "Groin",
+                  "potential_answer_summary": "Groin",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "locations_where_rash_began_buttocks",
+                  "potential_answer": "Buttocks",
+                  "potential_answer_summary": "Buttocks",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "locations_where_rash_began_arms",
+                  "potential_answer": "Arms",
+                  "potential_answer_summary": "Arms",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "locations_where_rash_began_hands",
+                  "potential_answer": "Hands",
+                  "potential_answer_summary": "Hands",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "locations_where_rash_began_legs",
+                  "potential_answer": "Legs",
+                  "potential_answer_summary": "Legs",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "locations_where_rash_began_feet",
+                  "potential_answer": "Feet",
+                  "potential_answer_summary": "Feet",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "locations_where_rash_began_other_location",
+                  "potential_answer": "Other location",
+                  "potential_answer_summary": "Other location",
+                  "type": "a_type_multiple_choice_other_free_text"
+                }
+              ],
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "change_in_rash_location",
+                "potential_answers_id": [
+                  "change_in_rash_location_yes_it_affects_more_parts_of_my_body_now",
+                  "change_in_rash_location_yes_it_affects_fewer_parts_of_my_body_now"
+                ]
+              },
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO1O",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "changes_in_fingernails_or_toenails",
+              "question_title": "Have you noticed any changes in your fingernails or toenails?",
+              "question_title_has_tokens": false,
+              "type": "q_type_single_select",
+              "question_summary": "Changes in fingernails or toenails",
+              "potential_answers": [
+                {
+                  "id": "changes_in_fingernails_or_toenails_yes",
+                  "potential_answer": "Yes",
+                  "potential_answer_summary": "Yes",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "changes_in_fingernails_or_toenails_no",
+                  "potential_answer": "No",
+                  "potential_answer_summary": "No",
+                  "type": "a_type_single_select"
+                }
+              ],
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO1Q",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "number_of_fingernails_affected",
+              "question_title": "How many fingernails are affected?",
+              "question_title_has_tokens": false,
+              "type": "q_type_single_select",
+              "question_summary": "Number of fingernails affected",
+              "potential_answers": [
+                {
+                  "id": "number_of_fingernails_affected_none",
+                  "potential_answer": "None",
+                  "potential_answer_summary": "None",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "number_of_fingernails_affected_1",
+                  "potential_answer": "1",
+                  "potential_answer_summary": "1",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "number_of_fingernails_affected_2_to_9",
+                  "potential_answer": "2 to 9",
+                  "potential_answer_summary": "2 to 9",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "number_of_fingernails_affected_all_of_them",
+                  "potential_answer": "All of them",
+                  "potential_answer_summary": "All of them",
+                  "type": "a_type_single_select"
+                }
+              ],
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "changes_in_fingernails_or_toenails",
+                "potential_answers_id": [
+                  "changes_in_fingernails_or_toenails_yes"
+                ]
+              },
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO1S",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "number_of_toenails_affected",
+              "question_title": "How many toenails are affected?",
+              "question_title_has_tokens": false,
+              "type": "q_type_single_select",
+              "question_summary": "Number of toenails affected",
+              "potential_answers": [
+                {
+                  "id": "number_of_toenails_affected_none",
+                  "potential_answer": "None",
+                  "potential_answer_summary": "None",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "number_of_toenails_affected_1",
+                  "potential_answer": "1",
+                  "potential_answer_summary": "1",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "number_of_toenails_affected_2_to_9",
+                  "potential_answer": "2 to 9",
+                  "potential_answer_summary": "2 to 9",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "number_of_toenails_affected_all_of_them",
+                  "potential_answer": "All of them",
+                  "potential_answer_summary": "All of them",
+                  "type": "a_type_single_select"
+                }
+              ],
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "changes_in_fingernails_or_toenails",
+                "potential_answers_id": [
+                  "changes_in_fingernails_or_toenails_yes"
+                ]
+              },
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO1U",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "type_of_nail_changes",
+              "question_title": "What nail changes have you noticed?",
+              "question_title_has_tokens": false,
+              "type": "q_type_multiple_choice",
+              "question_summary": "Type of nail changes",
+              "potential_answers": [
+                {
+                  "id": "type_of_nail_changes_pitting",
+                  "potential_answer": "Pitting",
+                  "potential_answer_summary": "Pitting",
+                  "type": "a_type_multiple_choice",
+                  "client_data": {
+                    "popup": {
+                      "text": "Small pinprick holes that appear on the nail surface."
+                    }
+                  }
+                },
+                {
+                  "id": "type_of_nail_changes_waving_or_denting",
+                  "potential_answer": "Waving or denting",
+                  "potential_answer_summary": "Waving or denting",
+                  "type": "a_type_multiple_choice",
+                  "client_data": {
+                    "popup": {
+                      "text": "Uneven nail surface in the form of ridges."
+                    }
+                  }
+                },
+                {
+                  "id": "type_of_nail_changes_discoloration",
+                  "potential_answer": "Discoloration",
+                  "potential_answer_summary": "Discoloration",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "type_of_nail_changes_breaking_or_splitting",
+                  "potential_answer": "Breaking or splitting",
+                  "potential_answer_summary": "Breaking or splitting",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "type_of_nail_changes_thinning",
+                  "potential_answer": "Thinning",
+                  "potential_answer_summary": "Thinning",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "type_of_nail_changes_thickening",
+                  "potential_answer": "Thickening",
+                  "potential_answer_summary": "Thickening",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "type_of_nail_changes_other",
+                  "potential_answer": "Other",
+                  "potential_answer_summary": "Other",
+                  "type": "a_type_multiple_choice_other_free_text"
+                }
+              ],
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "changes_in_fingernails_or_toenails",
+                "potential_answers_id": [
+                  "changes_in_fingernails_or_toenails_yes"
+                ]
+              },
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO20",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "do_nail_changes_occur_with_the_rash",
+              "question_title": "Do these nail changes occur with the rash?",
+              "question_title_has_tokens": false,
+              "type": "q_type_single_select",
+              "question_summary": "Do nail changes occur with the rash",
+              "potential_answers": [
+                {
+                  "id": "do_nail_changes_occur_with_the_rash_yes_they_come_and_go_with_the_rash",
+                  "potential_answer": "Yes, they come and go with the rash",
+                  "potential_answer_summary": "Yes, they come and go with the rash",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "do_nail_changes_occur_with_the_rash_no_they_seem_unrelated_to_the_rash",
+                  "potential_answer": "No, they seem unrelated to the rash",
+                  "potential_answer_summary": "No, they seem unrelated to the rash",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "do_nail_changes_occur_with_the_rash_im_not_sure",
+                  "potential_answer": "I'm not sure",
+                  "potential_answer_summary": "I'm not sure",
+                  "type": "a_type_single_select"
+                }
+              ],
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "changes_in_fingernails_or_toenails",
+                "potential_answers_id": [
+                  "changes_in_fingernails_or_toenails_yes"
+                ]
+              },
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO22",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "duration_of_nail_changes",
+              "question_title": "How long have you been experiencing nail problems?",
+              "question_title_has_tokens": false,
+              "type": "q_type_single_select",
+              "question_summary": "Duration of nail changes",
+              "potential_answers": [
+                {
+                  "id": "duration_of_nail_changes_less_than_1_week",
+                  "potential_answer": "Less than 1 week",
+                  "potential_answer_summary": "Less than 1 week",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "duration_of_nail_changes_1_to_4_weeks",
+                  "potential_answer": "1 to 4 weeks",
+                  "potential_answer_summary": "1 to 4 weeks",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "duration_of_nail_changes_1_to_12_months",
+                  "potential_answer": "1 to 12 months",
+                  "potential_answer_summary": "1 to 12 months",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "duration_of_nail_changes_more_than_1_year",
+                  "potential_answer": "More than 1 year",
+                  "potential_answer_summary": "More than 1 year",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "duration_of_nail_changes_i_dont_know",
+                  "potential_answer": "I don't know",
+                  "potential_answer_summary": "I don't know",
+                  "type": "a_type_single_select"
+                }
+              ],
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "changes_in_fingernails_or_toenails",
+                "potential_answers_id": [
+                  "changes_in_fingernails_or_toenails_yes"
+                ]
+              },
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO24",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "is_the_rash_itchy",
+              "question_title": "Is the rash itchy?",
+              "question_title_has_tokens": false,
+              "type": "q_type_single_select",
+              "question_summary": "Is the rash itchy",
+              "potential_answers": [
+                {
+                  "id": "is_the_rash_itchy_yes",
+                  "potential_answer": "Yes",
+                  "potential_answer_summary": "Yes",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "is_the_rash_itchy_no",
+                  "potential_answer": "No",
+                  "potential_answer_summary": "No",
+                  "type": "a_type_single_select"
+                }
+              ],
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO26",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "itchiness_rating",
+              "question_title": "How bad is the itch?",
+              "question_title_has_tokens": false,
+              "type": "q_type_single_select",
+              "question_summary": "Itchiness rating",
+              "potential_answers": [
+                {
+                  "id": "itchiness_rating_10_worst_possible_itch",
+                  "potential_answer": "10 - Worst possible itch",
+                  "potential_answer_summary": "10 - Worst possible itch",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "itchiness_rating_9",
+                  "potential_answer": "9",
+                  "potential_answer_summary": "9",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "itchiness_rating_8",
+                  "potential_answer": "8",
+                  "potential_answer_summary": "8",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "itchiness_rating_7",
+                  "potential_answer": "7",
+                  "potential_answer_summary": "7",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "itchiness_rating_6",
+                  "potential_answer": "6",
+                  "potential_answer_summary": "6",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "itchiness_rating_5_moderate_itch",
+                  "potential_answer": "5 - Moderate itch",
+                  "potential_answer_summary": "5 - Moderate itch",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "itchiness_rating_4",
+                  "potential_answer": "4",
+                  "potential_answer_summary": "4",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "itchiness_rating_3",
+                  "potential_answer": "3",
+                  "potential_answer_summary": "3",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "itchiness_rating_2",
+                  "potential_answer": "2",
+                  "potential_answer_summary": "2",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "itchiness_rating_1_very_mild_itch",
+                  "potential_answer": "1 - Very mild itch",
+                  "potential_answer_summary": "1 - Very mild itch",
+                  "type": "a_type_single_select"
+                }
+              ],
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "is_the_rash_itchy",
+                "potential_answers_id": [
+                  "is_the_rash_itchy_yes"
+                ]
+              },
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO28",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "scratching_or_picking",
+              "question_title": "Are you scratching or picking at the rash?",
+              "question_title_has_tokens": false,
+              "type": "q_type_single_select",
+              "question_summary": "Scratching or picking",
+              "potential_answers": [
+                {
+                  "id": "scratching_or_picking_yes",
+                  "potential_answer": "Yes",
+                  "potential_answer_summary": "Yes",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "scratching_or_picking_no",
+                  "potential_answer": "No",
+                  "potential_answer_summary": "No",
+                  "type": "a_type_single_select"
+                }
+              ],
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO2A",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "rash_characteristics",
+              "question_title": "Describe the rash:",
+              "question_title_has_tokens": false,
+              "type": "q_type_multiple_choice",
+              "question_summary": "Rash characteristics",
+              "potential_answers": [
+                {
+                  "id": "rash_characteristics_oily",
+                  "potential_answer": "Oily",
+                  "potential_answer_summary": "Oily",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "rash_characteristics_dry",
+                  "potential_answer": "Dry",
+                  "potential_answer_summary": "Dry",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "rash_characteristics_scaly_or_flaky",
+                  "potential_answer": "Scaly or flaky",
+                  "potential_answer_summary": "Scaly or flaky",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "rash_characteristics_blisters_with_fluid",
+                  "potential_answer": "Blisters with fluid",
+                  "potential_answer_summary": "Blisters with fluid",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "rash_characteristics_crusting",
+                  "potential_answer": "Crusting",
+                  "potential_answer_summary": "Crusting",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "rash_characteristics_painful_or_tender",
+                  "potential_answer": "Painful or tender",
+                  "potential_answer_summary": "Painful or tender",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "rash_characteristics_swollen",
+                  "potential_answer": "Swollen",
+                  "potential_answer_summary": "Swollen",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "rash_characteristics_warm_or_hot",
+                  "potential_answer": "Warm or hot",
+                  "potential_answer_summary": "Warm or hot",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "rash_characteristics_flat",
+                  "potential_answer": "Flat",
+                  "potential_answer_summary": "Flat",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "rash_characteristics_bumpy",
+                  "potential_answer": "Bumpy",
+                  "potential_answer_summary": "Bumpy",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "rash_characteristics_firm_or_hard",
+                  "potential_answer": "Firm or hard",
+                  "potential_answer_summary": "Firm or hard",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "rash_characteristics_other",
+                  "potential_answer": "Other",
+                  "potential_answer_summary": "Other",
+                  "type": "a_type_multiple_choice_other_free_text"
+                }
+              ],
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO2C",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "discomfort_from_rash_makes_daily_activities_difficult",
+              "question_title": "Does discomfort from the rash make your daily activities difficult?",
+              "question_title_has_tokens": false,
+              "type": "q_type_single_select",
+              "question_summary": "Discomfort from rash makes daily activities difficult",
+              "potential_answers": [
+                {
+                  "id": "discomfort_from_rash_makes_daily_activities_difficult_yes_a_lot",
+                  "potential_answer": "Yes, a lot",
+                  "potential_answer_summary": "Yes, a lot",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "discomfort_from_rash_makes_daily_activities_difficult_yes_a_little",
+                  "potential_answer": "Yes, a little",
+                  "potential_answer_summary": "Yes, a little",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "discomfort_from_rash_makes_daily_activities_difficult_no",
+                  "potential_answer": "No",
+                  "potential_answer_summary": "No",
+                  "type": "a_type_single_select"
+                }
+              ],
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO2E",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "able_to_complete_daily_activities_2",
+              "question_title": "Are you still able to complete basic daily activities, such as walking, eating, and caring for yourself?",
+              "question_title_has_tokens": false,
+              "type": "q_type_single_select",
+              "question_summary": "Able to complete daily activities",
+              "potential_answers": [
+                {
+                  "id": "able_to_complete_daily_activities_2_yes",
+                  "potential_answer": "Yes",
+                  "potential_answer_summary": "Yes",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "able_to_complete_daily_activities_2_barely",
+                  "potential_answer": "Barely",
+                  "potential_answer_summary": "Barely",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "able_to_complete_daily_activities_2_no",
+                  "potential_answer": "No",
+                  "potential_answer_summary": "No",
+                  "type": "a_type_single_select"
+                }
+              ],
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "discomfort_from_rash_makes_daily_activities_difficult",
+                "potential_answers_id": [
+                  "discomfort_from_rash_makes_daily_activities_difficult_yes_a_lot"
+                ]
+              },
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO2G",
+          "header_title_has_tokens": false,
+          "type": "screen_type_warning_popup",
+          "condition": {
+            "op": "answer_contains_any",
+            "question_id": "able_to_complete_daily_activities_2",
+            "potential_answers_id": [
+              "able_to_complete_daily_activities_2_barely",
+              "able_to_complete_daily_activities_2_no"
+            ]
+          },
+          "body": {
+            "text": "Any illness that prevents you from completing your basic daily activities should be evaluated urgently and in person by a medical professional. Please tap 'Next Steps' for how to proceed."
+          },
+          "bottom_button_title": "Next Steps",
+          "content_header_title": "We're going to have to end your visit here."
+        },
+        {
+          "id": "screen_0E73N766OIO2I",
+          "header_title_has_tokens": false,
+          "type": "screen_type_triage",
+          "condition": {
+            "op": "answer_contains_any",
+            "question_id": "able_to_complete_daily_activities_2",
+            "potential_answers_id": [
+              "able_to_complete_daily_activities_2_barely",
+              "able_to_complete_daily_activities_2_no"
+            ]
+          },
+          "body": {
+            "text": "If you have health insurance, you should contact your insurance company to find out which providers are covered under your plan. Locate your insurance card and call the listed Member Services number. A representative will help you locate your nearest in-network emergency department. If you are too ill to accomplish this, call 911 and go to the nearest emergency department.\n\nIf you do not have health insurance, go to the most convenient emergency department."
+          },
+          "bottom_button_title": "I Understand",
+          "content_header_title": "You should seek in-person medical evaluation today. A local emergency department is an appropriate option, as is your primary care provider (if you can be seen immediately today).",
+          "screen_title": "Next Steps"
+        },
+        {
+          "id": "screen_0E73N766OIO2K",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "recent_rash_contacts",
+              "question_title": "Does anybody who lives with you have a similar rash or a fungal infection?",
+              "question_title_has_tokens": false,
+              "type": "q_type_single_select",
+              "question_summary": "Recent rash contacts",
+              "potential_answers": [
+                {
+                  "id": "recent_rash_contacts_yes",
+                  "potential_answer": "Yes",
+                  "potential_answer_summary": "Yes",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "recent_rash_contacts_no",
+                  "potential_answer": "No",
+                  "potential_answer_summary": "No",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "recent_rash_contacts_i_dont_know",
+                  "potential_answer": "I don't know",
+                  "potential_answer_summary": "I don't know",
+                  "type": "a_type_single_select"
+                }
+              ],
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO2M",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "influencing_shx_factors",
+              "question_title": "A variety of factors can influence athlete's foot and other fungal skin rashes. Do you regularly do any of the following?",
+              "question_title_has_tokens": false,
+              "type": "q_type_multiple_choice",
+              "question_summary": "Influencing SHX factors",
+              "potential_answers": [
+                {
+                  "id": "influencing_shx_factors_smoke_cigarettes_or_another_form_of_tobacco",
+                  "potential_answer": "Smoke cigarettes or another form of tobacco",
+                  "potential_answer_summary": "Smoke cigarettes or another form of tobacco",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "influencing_shx_factors_use_gyms_pools_or_other_shared_athletic_spaces",
+                  "potential_answer": "Use gyms, pools, or other shared athletic spaces",
+                  "potential_answer_summary": "Use gyms, pools, or other shared athletic spaces",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "influencing_shx_factors_own_any_pets_or_spend_time_with_animals",
+                  "potential_answer": "Own any pets or spend time with animals",
+                  "potential_answer_summary": "Own any pets or spend time with animals",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "influencing_shx_factors_wear_shoes_that_make_your_feet_sweat",
+                  "potential_answer": "Wear shoes that make your feet sweat",
+                  "potential_answer_summary": "Wear shoes that make your feet sweat",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "influencing_shx_factors_work_with_children",
+                  "potential_answer": "Work with children",
+                  "potential_answer_summary": "Work with children",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "influencing_shx_factors_spend_time_in_very_hot_or_cold_places",
+                  "potential_answer": "Spend time in very hot or cold places",
+                  "potential_answer_summary": "Spend time in very hot or cold places",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "influencing_shx_factors_spend_time_in_very_dry_or_humid_places",
+                  "potential_answer": "Spend time in very dry or humid places",
+                  "potential_answer_summary": "Spend time in very dry or humid places",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "influencing_shx_factors_none_of_the_above",
+                  "potential_answer": "None of the above",
+                  "potential_answer_summary": "None of the above",
+                  "type": "a_type_multiple_choice_none"
+                }
+              ],
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO2O",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "types_of_regular_animal_exposure",
+              "question_title": "Which animals are you regularly exposed to?",
+              "question_title_has_tokens": false,
+              "type": "q_type_multiple_choice",
+              "question_summary": "Types of regular animal exposure",
+              "potential_answers": [
+                {
+                  "id": "types_of_regular_animal_exposure_dogs",
+                  "potential_answer": "Dogs",
+                  "potential_answer_summary": "Dogs",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "types_of_regular_animal_exposure_cats",
+                  "potential_answer": "Cats",
+                  "potential_answer_summary": "Cats",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "types_of_regular_animal_exposure_birds",
+                  "potential_answer": "Birds",
+                  "potential_answer_summary": "Birds",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "types_of_regular_animal_exposure_reptiles_or_amphibians",
+                  "potential_answer": "Reptiles or amphibians",
+                  "potential_answer_summary": "Reptiles or amphibians",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "types_of_regular_animal_exposure_farm_animals",
+                  "potential_answer": "Farm animals",
+                  "potential_answer_summary": "Farm animals",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "types_of_regular_animal_exposure_other",
+                  "potential_answer": "Other",
+                  "potential_answer_summary": "Other",
+                  "type": "a_type_multiple_choice_other_free_text"
+                }
+              ],
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "influencing_shx_factors",
+                "potential_answers_id": [
+                  "influencing_shx_factors_own_any_pets_or_spend_time_with_animals"
+                ]
+              },
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO2Q",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "product_survey",
+              "question_title": "Tell us about any cosmetic or bath products that may have come into contact with the affected areas:",
+              "question_title_has_tokens": false,
+              "type": "q_type_multiple_choice",
+              "question_subtext": "Include brand names.",
+              "question_summary": "Product survey",
+              "additional_fields": {
+                "answer_groups": [
+                  {
+                    "count": 3,
+                    "title": "Skin Care Products"
+                  },
+                  {
+                    "count": 3,
+                    "title": "Hair Care Products"
+                  },
+                  {
+                    "count": 2,
+                    "title": "Laundry Products"
+                  }
+                ]
+              },
+              "potential_answers": [
+                {
+                  "id": "product_survey_lotions_or_creams",
+                  "potential_answer": "Lotions or creams",
+                  "potential_answer_summary": "Lotions or creams",
+                  "type": "a_type_multiple_choice_other_free_text"
+                },
+                {
+                  "id": "product_survey_soaps_or_washes",
+                  "potential_answer": "Soaps or washes",
+                  "potential_answer_summary": "Soaps or washes",
+                  "type": "a_type_multiple_choice_other_free_text"
+                },
+                {
+                  "id": "product_survey_other_skin_care_products",
+                  "potential_answer": "Other skin care products",
+                  "potential_answer_summary": "Other skin care products",
+                  "type": "a_type_multiple_choice_other_free_text"
+                },
+                {
+                  "id": "product_survey_shampoo",
+                  "potential_answer": "Shampoo",
+                  "potential_answer_summary": "Shampoo",
+                  "type": "a_type_multiple_choice_other_free_text"
+                },
+                {
+                  "id": "product_survey_conditioner",
+                  "potential_answer": "Conditioner",
+                  "potential_answer_summary": "Conditioner",
+                  "type": "a_type_multiple_choice_other_free_text"
+                },
+                {
+                  "id": "product_survey_other_hair_care_products",
+                  "potential_answer": "Other hair care products",
+                  "potential_answer_summary": "Other hair care products",
+                  "type": "a_type_multiple_choice_other_free_text"
+                },
+                {
+                  "id": "product_survey_detergent",
+                  "potential_answer": "Detergent",
+                  "potential_answer_summary": "Detergent",
+                  "type": "a_type_multiple_choice_other_free_text"
+                },
+                {
+                  "id": "product_survey_other_laundry_products",
+                  "potential_answer": "Other laundry products",
+                  "potential_answer_summary": "Other laundry products",
+                  "type": "a_type_multiple_choice_other_free_text"
+                }
+              ],
+              "required": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "section_0E73N766OIO2S",
+      "title": "Photos",
+      "screens": [
+        {
+          "id": "screen_0E73N766OIO2U",
+          "header_title": "Take photos of the areas currently affected by athlete's foot or ringworm.",
+          "header_title_has_tokens": false,
+          "header_subtitle": "Photo quality matters. Your doctor will use these photos to make a diagnosis.",
+          "header_summary": "Areas Affected by Athlete's Foot or Ringworm",
+          "questions": [
+            {
+              "id": "face",
+              "question_title": "Face",
+              "question_title_has_tokens": false,
+              "type": "q_type_photo_section",
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "affected_areas",
+                "potential_answers_id": [
+                  "affected_areas_face"
+                ]
+              },
+              "required": true,
+              "photo_slots": [
+                {
+                  "id": "photoSlot_0E73N766OIO30",
+                  "name": "Face Front",
+                  "client_data": {
+                    "tip": "Center your face in the dotted lines.",
+                    "overlay_image_url": "spruce:///image/photo_face_outline",
+                    "photo_missing_error_message": "A photo of the front of your face is required to continue.",
+                    "initial_camera_direction": "front",
+                    "tips": {
+                      "inline": {
+                        "tip": "Take a portrait photo."
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "photoSlot_0E73N766OIO32",
+                  "name": "Side",
+                  "client_data": {
+                    "tip": "Turn your face to the side.",
+                    "tip_subtext": "Just move your face, not your phone.",
+                    "tip_style": "point_left",
+                    "overlay_image_url": "spruce:///image/photo_face_outline",
+                    "photo_missing_error_message": "A photo of the side of your face is required to continue.",
+                    "initial_camera_direction": "front",
+                    "tips": {
+                      "inline": {
+                        "tip": "Take a photo of the left side of your face."
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "photoSlot_0E73N766OIO34",
+                  "name": "Other Side",
+                  "client_data": {
+                    "tip": "Now turn to the other side.",
+                    "tip_subtext": "Just move your face, not your phone.",
+                    "tip_style": "point_right",
+                    "overlay_image_url": "spruce:///image/photo_face_outline",
+                    "photo_missing_error_message": "A second photo of the side of your face is required to continue.",
+                    "initial_camera_direction": "front",
+                    "tips": {
+                      "inline": {
+                        "tip": "Take a photo of the right side of your face."
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "photoSlot_0E73N766OIO36",
+                  "name": "Face",
+                  "required": false,
+                  "client_data": null
+                }
+              ]
+            },
+            {
+              "id": "lips",
+              "question_title": "Lips",
+              "question_title_has_tokens": false,
+              "type": "q_type_photo_section",
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "mouth_locations",
+                "potential_answers_id": [
+                  "mouth_locations_lips"
+                ]
+              },
+              "required": true,
+              "photo_slots": [
+                {
+                  "id": "photoSlot_0E73N766OIO38",
+                  "name": "Lips",
+                  "client_data": {
+                    "photo_missing_error_message": "A photo of your lips is required to continue.",
+                    "initial_camera_direction": "front"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "scalp",
+              "question_title": "Scalp",
+              "question_title_has_tokens": false,
+              "type": "q_type_photo_section",
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "affected_areas",
+                "potential_answers_id": [
+                  "affected_areas_scalp"
+                ]
+              },
+              "required": true,
+              "photo_slots": [
+                {
+                  "id": "photoSlot_0E73N766OIO3A",
+                  "name": "Scalp",
+                  "client_data": {
+                    "tip": "Pull back or part hair so your scalp is visible.",
+                    "tip_subtext": "Use a mirror to help take this photo.",
+                    "photo_missing_error_message": "A photo of this area is required to continue.",
+                    "initial_camera_direction": "back",
+                    "flash": "auto"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "neck",
+              "question_title": "Neck",
+              "question_title_has_tokens": false,
+              "type": "q_type_photo_section",
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "affected_areas",
+                "potential_answers_id": [
+                  "affected_areas_neck"
+                ]
+              },
+              "required": true,
+              "photo_slots": [
+                {
+                  "id": "photoSlot_0E73N766OIO3C",
+                  "name": "Neck",
+                  "client_data": {
+                    "photo_missing_error_message": "A photo of this area is required to continue.",
+                    "initial_camera_direction": "front"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "chest",
+              "question_title": "Chest",
+              "question_title_has_tokens": false,
+              "type": "q_type_photo_section",
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "affected_areas",
+                "potential_answers_id": [
+                  "affected_areas_chest"
+                ]
+              },
+              "required": true,
+              "photo_slots": [
+                {
+                  "id": "photoSlot_0E73N766OIO3E",
+                  "name": "Chest",
+                  "client_data": {
+                    "tip": "Remove any clothing covering your chest.",
+                    "tip_subtext": "Undergarments are okay.",
+                    "photo_missing_error_message": "A photo of this area is required to continue.",
+                    "initial_camera_direction": "front"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "back",
+              "question_title": "Back",
+              "question_title_has_tokens": false,
+              "type": "q_type_photo_section",
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "affected_areas",
+                "potential_answers_id": [
+                  "affected_areas_back"
+                ]
+              },
+              "required": true,
+              "photo_slots": [
+                {
+                  "id": "photoSlot_0E73N766OIO3G",
+                  "name": "Back",
+                  "client_data": {
+                    "tip": "This is a tough photo to take, using a mirror can help.",
+                    "photo_missing_error_message": "A photo of this area is required to continue.",
+                    "initial_camera_direction": "front"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "arms",
+              "question_title": "Arms",
+              "question_title_has_tokens": false,
+              "type": "q_type_photo_section",
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "affected_areas",
+                "potential_answers_id": [
+                  "affected_areas_arms"
+                ]
+              },
+              "required": true,
+              "photo_slots": [
+                {
+                  "id": "photoSlot_0E73N766OIO3I",
+                  "name": "Arms",
+                  "client_data": {
+                    "photo_missing_error_message": "A photo of this area is required to continue.",
+                    "initial_camera_direction": "back",
+                    "flash": "auto"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "legs",
+              "question_title": "Legs",
+              "question_title_has_tokens": false,
+              "type": "q_type_photo_section",
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "affected_areas",
+                "potential_answers_id": [
+                  "affected_areas_legs"
+                ]
+              },
+              "required": true,
+              "photo_slots": [
+                {
+                  "id": "photoSlot_0E73N766OIO3K",
+                  "name": "Legs",
+                  "client_data": {
+                    "photo_missing_error_message": "A photo of this area is required to continue.",
+                    "initial_camera_direction": "back",
+                    "flash": "auto"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "abdomen",
+              "question_title": "Abdomen",
+              "question_title_has_tokens": false,
+              "type": "q_type_photo_section",
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "affected_areas",
+                "potential_answers_id": [
+                  "affected_areas_abdomen"
+                ]
+              },
+              "required": true,
+              "photo_slots": [
+                {
+                  "id": "photoSlot_0E73N766OIO3M",
+                  "name": "Abdomen",
+                  "client_data": {
+                    "photo_missing_error_message": "A photo of this area is required to continue.",
+                    "initial_camera_direction": "back",
+                    "flash": "auto"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "groin",
+              "question_title": "Groin",
+              "question_title_has_tokens": false,
+              "type": "q_type_photo_section",
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "affected_areas",
+                "potential_answers_id": [
+                  "affected_areas_groin"
+                ]
+              },
+              "required": true,
+              "photo_slots": [
+                {
+                  "id": "photoSlot_0E73N766OIO3O",
+                  "name": "Groin",
+                  "client_data": {
+                    "photo_missing_error_message": "A photo of this area is required to continue.",
+                    "initial_camera_direction": "back",
+                    "flash": "auto"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "buttocks",
+              "question_title": "Buttocks",
+              "question_title_has_tokens": false,
+              "type": "q_type_photo_section",
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "affected_areas",
+                "potential_answers_id": [
+                  "affected_areas_buttocks"
+                ]
+              },
+              "required": true,
+              "photo_slots": [
+                {
+                  "id": "photoSlot_0E73N766OIO3Q",
+                  "name": "Buttocks",
+                  "client_data": {
+                    "tip": "This is a tough photo to take, using a mirror can help.",
+                    "photo_missing_error_message": "A photo of this area is required to continue.",
+                    "initial_camera_direction": "back",
+                    "flash": "auto"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "feet",
+              "question_title": "Feet",
+              "question_title_has_tokens": false,
+              "type": "q_type_photo_section",
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "affected_areas",
+                "potential_answers_id": [
+                  "affected_areas_feet"
+                ]
+              },
+              "required": true,
+              "photo_slots": [
+                {
+                  "id": "photoSlot_0E73N766OIO3S",
+                  "name": "Tops of Feet",
+                  "client_data": {
+                    "tip": "Take photos of the tops of your feet resting on a flat surface.",
+                    "photo_missing_error_message": "Photos of the tops of your feet are required to continue.",
+                    "initial_camera_direction": "back",
+                    "flash": "auto"
+                  }
+                },
+                {
+                  "id": "photoSlot_0E73N766OIO3U",
+                  "name": "Bottoms of Feet",
+                  "client_data": {
+                    "tip": "Now take photos of the bottoms of your feet.",
+                    "photo_missing_error_message": "Photos of the bottoms of your feet are required to continue.",
+                    "initial_camera_direction": "back",
+                    "flash": "auto",
+                    "tips": {
+                      "inline": {
+                        "tip": "Take photos of the bottoms of your feet."
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "photoSlot_0E73N766OIO40",
+                  "name": "Between Toes",
+                  "client_data": {
+                    "tip": "Spread your toes apart and take photos of the areas between your toes.",
+                    "photo_missing_error_message": "A photo of this area is required to continue.",
+                    "initial_camera_direction": "back",
+                    "flash": "auto"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "hands",
+              "question_title": "Hands",
+              "question_title_has_tokens": false,
+              "type": "q_type_photo_section",
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "affected_areas",
+                "potential_answers_id": [
+                  "affected_areas_hands"
+                ]
+              },
+              "required": true,
+              "photo_slots": [
+                {
+                  "id": "photoSlot_0E73N766OIO42",
+                  "name": "Tops of Hands",
+                  "client_data": {
+                    "tip": "Take photos of the tops of your hands resting on a flat surface.",
+                    "photo_missing_error_message": "Photos of the tops of your hands are required to continue.",
+                    "initial_camera_direction": "back",
+                    "flash": "auto"
+                  }
+                },
+                {
+                  "id": "photoSlot_0E73N766OIO44",
+                  "name": "Palms of Hands",
+                  "client_data": {
+                    "tip": "Now turn your hands over and take photos of the palms of your hands.",
+                    "photo_missing_error_message": "Photos of the palms of your hands are required to continue.",
+                    "initial_camera_direction": "back",
+                    "flash": "auto",
+                    "tips": {
+                      "inline": {
+                        "tip": "Take photos of the palms of your hands."
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "id": "other_location",
+              "question_title": "Other Location",
+              "question_title_has_tokens": false,
+              "type": "q_type_photo_section",
+              "additional_fields": {
+                "allows_multiple_sections": true,
+                "user_defined_section_title": true
+              },
+              "required": false,
+              "photo_slots": [
+                {
+                  "id": "photoSlot_0E73N766OIO46",
+                  "name": "Other Location",
+                  "client_data": {
+                    "initial_camera_direction": "back",
+                    "flash": "auto"
+                  }
+                }
+              ]
+            }
+          ],
+          "type": "screen_type_photo"
+        },
+        {
+          "id": "screen_0E73N766OIO48",
+          "header_title": "Take photos of the nail changes you're experiencing.",
+          "header_title_has_tokens": false,
+          "header_subtitle": "Certain nail changes are important for diagnosis.",
+          "header_summary": "Nails",
+          "questions": [
+            {
+              "id": "fingernails",
+              "question_title": "Fingernails",
+              "question_title_has_tokens": false,
+              "type": "q_type_photo_section",
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "number_of_fingernails_affected",
+                "potential_answers_id": [
+                  "number_of_fingernails_affected_1",
+                  "number_of_fingernails_affected_2_to_9",
+                  "number_of_fingernails_affected_all_of_them"
+                ]
+              },
+              "required": true,
+              "photo_slots": [
+                {
+                  "id": "photoSlot_0E73N766OIO4A",
+                  "name": "Fingernails",
+                  "client_data": {
+                    "tip": "Make sure your doctor can clearly see your natural nails.",
+                    "photo_missing_error_message": "Add a photo of your fingernails to continue.",
+                    "initial_camera_direction": "back",
+                    "flash": "auto"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "toenails",
+              "question_title": "Toenails",
+              "question_title_has_tokens": false,
+              "type": "q_type_photo_section",
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "number_of_toenails_affected",
+                "potential_answers_id": [
+                  "number_of_toenails_affected_1",
+                  "number_of_toenails_affected_2_to_9",
+                  "number_of_toenails_affected_all_of_them"
+                ]
+              },
+              "required": true,
+              "photo_slots": [
+                {
+                  "id": "photoSlot_0E73N766OIO4C",
+                  "name": "Toenails",
+                  "client_data": {
+                    "tip": "Make sure your doctor can clearly see your natural nails.",
+                    "photo_missing_error_message": "Add a photo of your toenails to continue.",
+                    "initial_camera_direction": "back",
+                    "flash": "auto"
+                  }
+                }
+              ]
+            }
+          ],
+          "type": "screen_type_photo"
+        }
+      ]
+    },
+    {
+      "id": "section_0E73N766OIO4E",
+      "title": "Medical History",
+      "screens": [
+        {
+          "id": "screen_0E73N766OIO4G",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "previously_seen_by_a_healthcare_professional_for_this_condition",
+              "question_title": "Have you already seen a doctor or other healthcare professional for athlete's foot or ringworm?",
+              "question_title_has_tokens": false,
+              "type": "q_type_single_select",
+              "question_summary": "Previously seen by a healthcare professional for this condition",
+              "potential_answers": [
+                {
+                  "id": "previously_seen_by_a_healthcare_professional_for_this_condition_yes",
+                  "potential_answer": "Yes",
+                  "potential_answer_summary": "Yes",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "previously_seen_by_a_healthcare_professional_for_this_condition_no",
+                  "potential_answer": "No",
+                  "potential_answer_summary": "No",
+                  "type": "a_type_single_select"
+                }
+              ],
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO4I",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "type_of_healthcare_provider_previously_seen",
+              "question_title": "What type of healthcare provider did you see?",
+              "question_title_has_tokens": false,
+              "type": "q_type_multiple_choice",
+              "question_summary": "Type of healthcare provider previously seen",
+              "potential_answers": [
+                {
+                  "id": "type_of_healthcare_provider_previously_seen_internal_medicine_family_practice_or_general_practitioner",
+                  "potential_answer": "Internal medicine, family practice, or general practitioner",
+                  "potential_answer_summary": "Internal medicine, family practice, or general practitioner",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "type_of_healthcare_provider_previously_seen_dermatologist",
+                  "potential_answer": "Dermatologist",
+                  "potential_answer_summary": "Dermatologist",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "type_of_healthcare_provider_previously_seen_nurse_practitioner_or_physician_assistant",
+                  "potential_answer": "Nurse practitioner or physician assistant",
+                  "potential_answer_summary": "Nurse practitioner or physician assistant",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "type_of_healthcare_provider_previously_seen_i_was_hospitalized_for_it",
+                  "potential_answer": "I was hospitalized for it",
+                  "potential_answer_summary": "I was hospitalized for it",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "type_of_healthcare_provider_previously_seen_other",
+                  "potential_answer": "Other",
+                  "potential_answer_summary": "Other",
+                  "type": "a_type_multiple_choice_other_free_text"
+                }
+              ],
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "previously_seen_by_a_healthcare_professional_for_this_condition",
+                "potential_answers_id": [
+                  "previously_seen_by_a_healthcare_professional_for_this_condition_yes"
+                ]
+              },
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO4K",
+          "header_title_has_tokens": false,
+          "type": "screen_type_warning_popup",
+          "condition": {
+            "op": "answer_contains_any",
+            "question_id": "type_of_healthcare_provider_previously_seen",
+            "potential_answers_id": [
+              "type_of_healthcare_provider_previously_seen_i_was_hospitalized_for_it"
+            ]
+          },
+          "body": {
+            "text": "Any illness that has already required hospitalization should be reassessed urgently and in person by a medical professional. Please attempt to reach the staff at your previous hospital, or tap 'Next Steps' for how to proceed."
+          },
+          "bottom_button_title": "Next Steps",
+          "content_header_title": "We're going to have to end your visit here."
+        },
+        {
+          "id": "screen_0E73N766OIO4M",
+          "header_title_has_tokens": false,
+          "type": "screen_type_triage",
+          "condition": {
+            "op": "answer_contains_any",
+            "question_id": "type_of_healthcare_provider_previously_seen",
+            "potential_answers_id": [
+              "type_of_healthcare_provider_previously_seen_i_was_hospitalized_for_it"
+            ]
+          },
+          "body": {
+            "text": "If you have health insurance, you should contact your insurance company to find out which providers are covered under your plan. Locate your insurance card and call the listed Member Services number. A representative will help you locate your nearest in-network urgent care center or other appropriate provider. If you are too ill to accomplish this, call 911 and go to the nearest emergency department.\n\nIf you do not have health insurance, go to the most convenient urgent care or emergency department. "
+          },
+          "bottom_button_title": "I Understand",
+          "content_header_title": "You should seek in-person medical evaluation today. A local urgent care is an appropriate option, as is your primary care provider.",
+          "screen_title": "Next Steps"
+        },
+        {
+          "id": "screen_0E73N766OIO4O",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "previous_diagnosis",
+              "question_title": "What diagnosis were you given for this rash?",
+              "question_title_has_tokens": false,
+              "type": "q_type_multiple_choice",
+              "question_summary": "Previous diagnosis",
+              "potential_answers": [
+                {
+                  "id": "previous_diagnosis_atopic_dermatitis",
+                  "potential_answer": "Atopic dermatitis",
+                  "potential_answer_summary": "Atopic dermatitis",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "previous_diagnosis_athletes_foot_tinea_pedis",
+                  "potential_answer": "Athlete's foot (tinea pedis)",
+                  "potential_answer_summary": "Athlete's foot (tinea pedis)",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "previous_diagnosis_contact_dermatitis",
+                  "potential_answer": "Contact dermatitis",
+                  "potential_answer_summary": "Contact dermatitis",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "previous_diagnosis_drug_reaction",
+                  "potential_answer": "Drug reaction",
+                  "potential_answer_summary": "Drug reaction",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "previous_diagnosis_eczema",
+                  "potential_answer": "Eczema",
+                  "potential_answer_summary": "Eczema",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "previous_diagnosis_fungal_skin_infection",
+                  "potential_answer": "Fungal skin infection",
+                  "potential_answer_summary": "Fungal skin infection",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "previous_diagnosis_jock_itch_tinea_cruris",
+                  "potential_answer": "Jock itch (tinea cruris)",
+                  "potential_answer_summary": "Jock itch (tinea cruris)",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "previous_diagnosis_psoriasis",
+                  "potential_answer": "Psoriasis",
+                  "potential_answer_summary": "Psoriasis",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "previous_diagnosis_ringworm_tinea_corporis",
+                  "potential_answer": "Ringworm (tinea corporis)",
+                  "potential_answer_summary": "Ringworm (tinea corporis)",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "previous_diagnosis_tinea",
+                  "potential_answer": "Tinea",
+                  "potential_answer_summary": "Tinea",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "previous_diagnosis_unknown_rash",
+                  "potential_answer": "Unknown rash",
+                  "potential_answer_summary": "Unknown rash",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "previous_diagnosis_other",
+                  "potential_answer": "Other",
+                  "potential_answer_summary": "Other",
+                  "type": "a_type_multiple_choice_other_free_text"
+                },
+                {
+                  "id": "previous_diagnosis_i_dont_remember",
+                  "potential_answer": "I don't remember",
+                  "potential_answer_summary": "I don't remember",
+                  "type": "a_type_multiple_choice_none"
+                }
+              ],
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "previously_seen_by_a_healthcare_professional_for_this_condition",
+                "potential_answers_id": [
+                  "previously_seen_by_a_healthcare_professional_for_this_condition_yes"
+                ]
+              },
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO4Q",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "tests_performed",
+              "question_title": "Did your healthcare provider do any testing?",
+              "question_title_has_tokens": false,
+              "type": "q_type_multiple_choice",
+              "question_summary": "Tests performed",
+              "potential_answers": [
+                {
+                  "id": "tests_performed_lab_tests",
+                  "potential_answer": "Lab tests",
+                  "potential_answer_summary": "Lab tests",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "tests_performed_skin_scraping",
+                  "potential_answer": "Skin scraping",
+                  "potential_answer_summary": "Skin scraping",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "tests_performed_skin_biopsy",
+                  "potential_answer": "Skin biopsy",
+                  "potential_answer_summary": "Skin biopsy",
+                  "type": "a_type_multiple_choice",
+                  "client_data": {
+                    "popup": {
+                      "text": "A biopsy is a procedure to remove a piece of tissue or a sample of cells from your body so that it can be analyzed in a laboratory."
+                    }
+                  }
+                },
+                {
+                  "id": "tests_performed_other",
+                  "potential_answer": "Other",
+                  "potential_answer_summary": "Other",
+                  "type": "a_type_multiple_choice_other_free_text"
+                },
+                {
+                  "id": "tests_performed_none_of_the_above",
+                  "potential_answer": "None of the above",
+                  "potential_answer_summary": "None of the above",
+                  "type": "a_type_multiple_choice_none"
+                }
+              ],
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "previously_seen_by_a_healthcare_professional_for_this_condition",
+                "potential_answers_id": [
+                  "previously_seen_by_a_healthcare_professional_for_this_condition_yes"
+                ]
+              },
+              "required": true,
+              "subquestions_config": {
+                "screens": [
+                  {
+                    "id": "screen_0E73N766OIO4S",
+                    "header_title_has_tokens": false,
+                    "questions": [
+                      {
+                        "id": "test_details",
+                        "question_title": "Tell us about the <parent_answer_text> your healthcare provider performed:",
+                        "question_title_has_tokens": true,
+                        "type": "q_type_free_text",
+                        "question_summary": "Test details",
+                        "additional_fields": {
+                          "placeholder_text": "Describe the test type and results, and when it was done…"
+                        },
+                        "condition": {
+                          "op": "answer_contains_any",
+                          "question_id": "tests_performed",
+                          "potential_answers_id": [
+                            "tests_performed_lab_tests",
+                            "tests_performed_skin_scraping",
+                            "tests_performed_skin_biopsy",
+                            "tests_performed_other"
+                          ]
+                        },
+                        "required": true
+                      }
+                    ],
+                    "type": "screen_type_questions"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO4U",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "additional_information_about_previous_visit",
+              "question_title": "Share any other relevant information about your previous visit:",
+              "question_title_has_tokens": false,
+              "type": "q_type_free_text",
+              "question_summary": "Additional information about previous visit",
+              "additional_fields": {
+                "placeholder_text": "Optional…"
+              },
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "previously_seen_by_a_healthcare_professional_for_this_condition",
+                "potential_answers_id": [
+                  "previously_seen_by_a_healthcare_professional_for_this_condition_yes"
+                ]
+              },
+              "required": false
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO50",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "tried_treatments_before",
+              "question_title": "Have you tried any treatments for athlete's foot or ringworm?",
+              "question_title_has_tokens": false,
+              "type": "q_type_single_select",
+              "question_summary": "Tried treatments before",
+              "potential_answers": [
+                {
+                  "id": "tried_treatments_before_yes",
+                  "potential_answer": "Yes",
+                  "potential_answer_summary": "Yes",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "tried_treatments_before_no",
+                  "potential_answer": "No",
+                  "potential_answer_summary": "No",
+                  "type": "a_type_single_select"
+                }
+              ],
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO52",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "which_treatments",
+              "question_title": "What treatments have you tried for athlete's foot or ringworm?",
+              "question_title_has_tokens": false,
+              "type": "q_type_multiple_choice",
+              "question_summary": "Which treatments",
+              "potential_answers": [
+                {
+                  "id": "which_treatments_clotrimazole_lotrimin",
+                  "potential_answer": "Clotrimazole (Lotrimin)",
+                  "potential_answer_summary": "Clotrimazole (Lotrimin)",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "which_treatments_miconazole",
+                  "potential_answer": "Miconazole",
+                  "potential_answer_summary": "Miconazole",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "which_treatments_terbinafine_lamisil",
+                  "potential_answer": "Terbinafine (Lamisil)",
+                  "potential_answer_summary": "Terbinafine (Lamisil)",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "which_treatments_tolnaftate_tinactin",
+                  "potential_answer": "Tolnaftate (Tinactin)",
+                  "potential_answer_summary": "Tolnaftate (Tinactin)",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "which_treatments_ointments_or_lotions_eg_vaseline_or_aveeno",
+                  "potential_answer": "Ointments or lotions (e.g., Vaseline or Aveeno)",
+                  "potential_answer_summary": "Ointments or lotions (e.g., Vaseline or Aveeno)",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "which_treatments_topical_steroids_eg_hydrocortisone",
+                  "potential_answer": "Topical steroids (e.g., hydrocortisone)",
+                  "potential_answer_summary": "Topical steroids (e.g., hydrocortisone)",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "which_treatments_oral_steroids_eg_prednisone",
+                  "potential_answer": "Oral steroids (e.g., prednisone)",
+                  "potential_answer_summary": "Oral steroids (e.g., prednisone)",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "which_treatments_ciclopirox",
+                  "potential_answer": "Ciclopirox",
+                  "potential_answer_summary": "Ciclopirox",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "which_treatments_econazole_ecoza",
+                  "potential_answer": "Econazole (Ecoza)",
+                  "potential_answer_summary": "Econazole (Ecoza)",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "which_treatments_ketoconazole_nizoral",
+                  "potential_answer": "Ketoconazole (Nizoral)",
+                  "potential_answer_summary": "Ketoconazole (Nizoral)",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "which_treatments_naftifine_naftin",
+                  "potential_answer": "Naftifine (Naftin)",
+                  "potential_answer_summary": "Naftifine (Naftin)",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "which_treatments_oxiconazole_oxistat",
+                  "potential_answer": "Oxiconazole (Oxistat)",
+                  "potential_answer_summary": "Oxiconazole (Oxistat)",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "which_treatments_griseofulvin",
+                  "potential_answer": "Griseofulvin",
+                  "potential_answer_summary": "Griseofulvin",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "which_treatments_other",
+                  "potential_answer": "Other",
+                  "potential_answer_summary": "Other",
+                  "type": "a_type_multiple_choice_other_free_text"
+                }
+              ],
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "tried_treatments_before",
+                "potential_answers_id": [
+                  "tried_treatments_before_yes"
+                ]
+              },
+              "required": true,
+              "subquestions_config": {
+                "screens": [
+                  {
+                    "id": "screen_0E73N766OIO54",
+                    "header_title": "Tell us more about <parent_answer_text>:",
+                    "header_title_has_tokens": true,
+                    "questions": [
+                      {
+                        "id": "used_for",
+                        "question_title": "How long did you use it for?",
+                        "question_title_has_tokens": false,
+                        "type": "q_type_segmented_control",
+                        "question_summary": "Used for",
+                        "potential_answers": [
+                          {
+                            "id": "used_for_days",
+                            "potential_answer": "Days",
+                            "potential_answer_summary": "Days",
+                            "type": "a_type_segmented_control"
+                          },
+                          {
+                            "id": "used_for_weeks",
+                            "potential_answer": "Weeks",
+                            "potential_answer_summary": "Weeks",
+                            "type": "a_type_segmented_control"
+                          },
+                          {
+                            "id": "used_for_months",
+                            "potential_answer": "Months",
+                            "potential_answer_summary": "Months",
+                            "type": "a_type_segmented_control"
+                          },
+                          {
+                            "id": "used_for_years",
+                            "potential_answer": "Years",
+                            "potential_answer_summary": "Years",
+                            "type": "a_type_segmented_control"
+                          }
+                        ],
+                        "required": true
+                      },
+                      {
+                        "id": "used_as_instructed",
+                        "question_title": "Did you use it as instructed by its packaging or by a healthcare provider?",
+                        "question_title_has_tokens": false,
+                        "type": "q_type_segmented_control",
+                        "question_summary": "Used as instructed",
+                        "potential_answers": [
+                          {
+                            "id": "used_as_instructed_yes",
+                            "potential_answer": "Yes",
+                            "potential_answer_summary": "Yes",
+                            "type": "a_type_segmented_control"
+                          },
+                          {
+                            "id": "used_as_instructed_mostly",
+                            "potential_answer": "Mostly",
+                            "potential_answer_summary": "Mostly",
+                            "type": "a_type_segmented_control"
+                          },
+                          {
+                            "id": "used_as_instructed_no",
+                            "potential_answer": "No",
+                            "potential_answer_summary": "No",
+                            "type": "a_type_segmented_control"
+                          }
+                        ],
+                        "required": true
+                      },
+                      {
+                        "id": "helpful",
+                        "question_title": "Was it helpful?",
+                        "question_title_has_tokens": false,
+                        "type": "q_type_segmented_control",
+                        "question_summary": "Helpful",
+                        "potential_answers": [
+                          {
+                            "id": "helpful_yes",
+                            "potential_answer": "Yes",
+                            "potential_answer_summary": "Yes",
+                            "type": "a_type_segmented_control"
+                          },
+                          {
+                            "id": "helpful_no",
+                            "potential_answer": "No",
+                            "potential_answer_summary": "No",
+                            "type": "a_type_segmented_control"
+                          }
+                        ],
+                        "required": true
+                      },
+                      {
+                        "id": "new_prescription_needed",
+                        "question_title": "Do you need a new prescription for it?",
+                        "question_title_has_tokens": false,
+                        "type": "q_type_segmented_control",
+                        "question_summary": "New prescription needed",
+                        "potential_answers": [
+                          {
+                            "id": "new_prescription_needed_yes",
+                            "potential_answer": "Yes",
+                            "potential_answer_summary": "Yes",
+                            "type": "a_type_segmented_control"
+                          },
+                          {
+                            "id": "new_prescription_needed_no",
+                            "potential_answer": "No",
+                            "potential_answer_summary": "No",
+                            "type": "a_type_segmented_control"
+                          }
+                        ],
+                        "required": true
+                      }
+                    ],
+                    "type": "screen_type_questions"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO56",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "medical_conditions",
+              "question_title": "Do you have any of the following medical conditions?",
+              "question_title_has_tokens": false,
+              "type": "q_type_multiple_choice",
+              "question_subtext": "You'll have a chance to tell your doctor about other medical conditions later.",
+              "question_summary": "Medical conditions",
+              "potential_answers": [
+                {
+                  "id": "medical_conditions_asthma",
+                  "potential_answer": "Asthma",
+                  "potential_answer_summary": "Asthma",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "medical_conditions_crohns_disease",
+                  "potential_answer": "Crohn's disease",
+                  "potential_answer_summary": "Crohn's disease",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "medical_conditions_diabetes",
+                  "potential_answer": "Diabetes",
+                  "potential_answer_summary": "Diabetes",
+                  "type": "a_type_multiple_choice",
+                  "to_alert": true
+                },
+                {
+                  "id": "medical_conditions_eczema_atopic_dermatitis",
+                  "potential_answer": "Eczema (atopic dermatitis)",
+                  "potential_answer_summary": "Eczema (atopic dermatitis)",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "medical_conditions_food_allergies",
+                  "potential_answer": "Food allergies",
+                  "potential_answer_summary": "Food allergies",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "medical_conditions_hiv",
+                  "potential_answer": "HIV",
+                  "potential_answer_summary": "HIV",
+                  "type": "a_type_multiple_choice",
+                  "to_alert": true
+                },
+                {
+                  "id": "medical_conditions_liver_disease",
+                  "potential_answer": "Liver disease",
+                  "potential_answer_summary": "Liver disease",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "medical_conditions_psoriasis",
+                  "potential_answer": "Psoriasis",
+                  "potential_answer_summary": "Psoriasis",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "medical_conditions_rheumatoid_arthritis",
+                  "potential_answer": "Rheumatoid arthritis",
+                  "potential_answer_summary": "Rheumatoid arthritis",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "medical_conditions_seasonal_allergies",
+                  "potential_answer": "Seasonal allergies",
+                  "potential_answer_summary": "Seasonal allergies",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "medical_conditions_ulcerative_colitis",
+                  "potential_answer": "Ulcerative colitis",
+                  "potential_answer_summary": "Ulcerative colitis",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "medical_conditions_none_of_the_above",
+                  "potential_answer": "None of the above",
+                  "potential_answer_summary": "None of the above",
+                  "type": "a_type_multiple_choice_none"
+                }
+              ],
+              "required": true,
+              "alert_text": "Patient has: XXX",
+              "to_alert": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO58",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "hba1c_level_checked_in_past_year",
+              "question_title": "Have you had a hemoglobin A1c level checked in the past year?",
+              "question_title_has_tokens": false,
+              "type": "q_type_single_select",
+              "question_summary": "HbA1c level checked in past year",
+              "potential_answers": [
+                {
+                  "id": "hba1c_level_checked_in_past_year_yes",
+                  "potential_answer": "Yes",
+                  "potential_answer_summary": "Yes",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "hba1c_level_checked_in_past_year_no",
+                  "potential_answer": "No",
+                  "potential_answer_summary": "No",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "hba1c_level_checked_in_past_year_i_dont_know",
+                  "potential_answer": "I don't know",
+                  "potential_answer_summary": "I don't know",
+                  "type": "a_type_single_select"
+                }
+              ],
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "medical_conditions",
+                "potential_answers_id": [
+                  "medical_conditions_diabetes"
+                ]
+              },
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO5A",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "most_recent_hba1c_level",
+              "question_title": "What was your most recent hemoglobin A1c level?",
+              "question_title_has_tokens": false,
+              "type": "q_type_free_text",
+              "question_summary": "Most recent HbA1c level",
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "hba1c_level_checked_in_past_year",
+                "potential_answers_id": [
+                  "hba1c_level_checked_in_past_year_yes"
+                ]
+              },
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO5C",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "fingerstick_blood_glucose_levels_normally_100200_mgdl",
+              "question_title": "Are your fingerstick blood glucose measurements normally between 100 and 200 mg/dL?",
+              "question_title_has_tokens": false,
+              "type": "q_type_single_select",
+              "question_summary": "Fingerstick blood glucose levels normally 100–200 mg/dL",
+              "potential_answers": [
+                {
+                  "id": "fingerstick_blood_glucose_levels_normally_100200_mgdl_yes",
+                  "potential_answer": "Yes",
+                  "potential_answer_summary": "Yes",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "fingerstick_blood_glucose_levels_normally_100200_mgdl_no",
+                  "potential_answer": "No",
+                  "potential_answer_summary": "No",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "fingerstick_blood_glucose_levels_normally_100200_mgdl_i_dont_check_regularly",
+                  "potential_answer": "I don't check regularly",
+                  "potential_answer_summary": "I don't check regularly",
+                  "type": "a_type_single_select"
+                }
+              ],
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "hba1c_level_checked_in_past_year",
+                "potential_answers_id": [
+                  "hba1c_level_checked_in_past_year_no",
+                  "hba1c_level_checked_in_past_year_i_dont_know"
+                ]
+              },
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO5E",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "aids",
+              "question_title": "Do you currently have AIDS?",
+              "question_title_has_tokens": false,
+              "type": "q_type_single_select",
+              "question_subtext": "CD4 count <200",
+              "question_summary": "AIDS",
+              "potential_answers": [
+                {
+                  "id": "aids_yes",
+                  "potential_answer": "Yes",
+                  "potential_answer_summary": "Yes",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "aids_no",
+                  "potential_answer": "No",
+                  "potential_answer_summary": "No",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "aids_i_dont_know",
+                  "potential_answer": "I don't know",
+                  "potential_answer_summary": "I don't know",
+                  "type": "a_type_single_select"
+                }
+              ],
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "medical_conditions",
+                "potential_answers_id": [
+                  "medical_conditions_hiv"
+                ]
+              },
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO5G",
+          "header_title_has_tokens": false,
+          "type": "screen_type_warning_popup",
+          "condition": {
+            "op": "answer_contains_any",
+            "question_id": "aids",
+            "potential_answers_id": [
+              "aids_yes",
+              "aids_i_dont_know"
+            ]
+          },
+          "body": {
+            "text": "Your symptoms and medical history suggest that you may need more immediate medical attention than we can currently provide. A local emergency department is an appropriate option, as is your primary care provider."
+          },
+          "bottom_button_title": "Next Steps",
+          "content_header_title": "We're going to have to end your visit here."
+        },
+        {
+          "id": "screen_0E73N766OIO5I",
+          "header_title_has_tokens": false,
+          "type": "screen_type_triage",
+          "condition": {
+            "op": "answer_contains_any",
+            "question_id": "aids",
+            "potential_answers_id": [
+              "aids_yes",
+              "aids_i_dont_know"
+            ]
+          },
+          "body": {
+            "text": "If you have health insurance, you should contact your insurance company to find out which providers are covered under your plan. Locate your insurance card and call the listed Member Services number. A representative will help you locate your nearest in-network emergency department. If you are too ill to call and do not have someone to assist you, go to the most convenient emergency department.\n\nIf you do not have health insurance, go to the most convenient emergency department."
+          },
+          "bottom_button_title": "I Understand",
+          "content_header_title": "You should seek in-person medical evaluation today.",
+          "screen_title": "Next Steps"
+        },
+        {
+          "id": "screen_0E73N766OIO5K",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "regular_hiv_management_clinic",
+              "question_title": "Do you have a clinic that you follow up with regularly to manage your HIV?",
+              "question_title_has_tokens": false,
+              "type": "q_type_single_select",
+              "question_summary": "Regular HIV management clinic",
+              "potential_answers": [
+                {
+                  "id": "regular_hiv_management_clinic_yes",
+                  "potential_answer": "Yes",
+                  "potential_answer_summary": "Yes",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "regular_hiv_management_clinic_no",
+                  "potential_answer": "No",
+                  "potential_answer_summary": "No",
+                  "type": "a_type_single_select"
+                }
+              ],
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "medical_conditions",
+                "potential_answers_id": [
+                  "medical_conditions_hiv"
+                ]
+              },
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO5M",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "type_of_liver_disease",
+              "question_title": "What type of liver disease do you have?",
+              "question_title_has_tokens": false,
+              "type": "q_type_multiple_choice",
+              "question_summary": "Type of liver disease",
+              "potential_answers": [
+                {
+                  "id": "type_of_liver_disease_cirrhosis",
+                  "potential_answer": "Cirrhosis",
+                  "potential_answer_summary": "Cirrhosis",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "type_of_liver_disease_primary_biliary_cirrhosis",
+                  "potential_answer": "Primary biliary cirrhosis",
+                  "potential_answer_summary": "Primary biliary cirrhosis",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "type_of_liver_disease_sclerosing_cholangitis",
+                  "potential_answer": "Sclerosing cholangitis",
+                  "potential_answer_summary": "Sclerosing cholangitis",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "type_of_liver_disease_viral_hepatitis_eg_hepatitis_b_or_c",
+                  "potential_answer": "Viral hepatitis (e.g., hepatitis B or C)",
+                  "potential_answer_summary": "Viral hepatitis (e.g., hepatitis B or C)",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "type_of_liver_disease_drug_induced_cholestasis",
+                  "potential_answer": "Drug-induced cholestasis",
+                  "potential_answer_summary": "Drug-induced cholestasis",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "type_of_liver_disease_biliary_obstruction",
+                  "potential_answer": "Biliary obstruction",
+                  "potential_answer_summary": "Biliary obstruction",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "type_of_liver_disease_other",
+                  "potential_answer": "Other",
+                  "potential_answer_summary": "Other",
+                  "type": "a_type_multiple_choice_other_free_text"
+                },
+                {
+                  "id": "type_of_liver_disease_i_dont_know",
+                  "potential_answer": "I don't know",
+                  "potential_answer_summary": "I don't know",
+                  "type": "a_type_multiple_choice_none"
+                }
+              ],
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "medical_conditions",
+                "potential_answers_id": [
+                  "medical_conditions_liver_disease"
+                ]
+              },
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO5O",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "pregnant_or_planning",
+              "question_title": "Are you currently pregnant or planning to become pregnant?",
+              "question_title_has_tokens": false,
+              "type": "q_type_single_select",
+              "question_summary": "Pregnant or planning",
+              "potential_answers": [
+                {
+                  "id": "pregnant_or_planning_yes_pregnant",
+                  "potential_answer": "Yes, pregnant",
+                  "potential_answer_summary": "Pregnant",
+                  "type": "a_type_single_select",
+                  "to_alert": true
+                },
+                {
+                  "id": "pregnant_or_planning_yes_planning",
+                  "potential_answer": "Yes, planning",
+                  "potential_answer_summary": "Planning pregnancy",
+                  "type": "a_type_single_select",
+                  "to_alert": true
+                },
+                {
+                  "id": "pregnant_or_planning_no",
+                  "potential_answer": "No",
+                  "potential_answer_summary": "No",
+                  "type": "a_type_single_select"
+                }
+              ],
+              "condition": {
+                "op": "gender_equals",
+                "gender": "female"
+              },
+              "required": true,
+              "alert_text": "XXX",
+              "to_alert": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO5Q",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "trimester",
+              "question_title": "Which trimester are you currently in?",
+              "question_title_has_tokens": false,
+              "type": "q_type_single_select",
+              "question_summary": "Trimester",
+              "additional_fields": {
+                "popup": {
+                  "text": "1st Trimester: Week 1 to Week 12\n2nd Trimester: Week 13 to Week 27\n3rd Trimester: Week 28 to Birth"
+                }
+              },
+              "potential_answers": [
+                {
+                  "id": "trimester_first",
+                  "potential_answer": "First",
+                  "potential_answer_summary": "First",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "trimester_second",
+                  "potential_answer": "Second",
+                  "potential_answer_summary": "Second",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "trimester_third",
+                  "potential_answer": "Third",
+                  "potential_answer_summary": "Third",
+                  "type": "a_type_single_select"
+                }
+              ],
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "pregnant_or_planning",
+                "potential_answers_id": [
+                  "pregnant_or_planning_yes_pregnant"
+                ]
+              },
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO5S",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "when_planning_to_get_pregnant",
+              "question_title": "When will you begin trying to get pregnant?",
+              "question_title_has_tokens": false,
+              "type": "q_type_single_select",
+              "question_subtext": "This influences which medications are safe for you to use.",
+              "question_summary": "When planning to get pregnant",
+              "potential_answers": [
+                {
+                  "id": "when_planning_to_get_pregnant_im_trying_right_now",
+                  "potential_answer": "I'm trying right now",
+                  "potential_answer_summary": "I'm trying right now",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "when_planning_to_get_pregnant_within_the_next_few_months",
+                  "potential_answer": "Within the next few months",
+                  "potential_answer_summary": "Within the next few months",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "when_planning_to_get_pregnant_sometime_this_year",
+                  "potential_answer": "Sometime this year",
+                  "potential_answer_summary": "Sometime this year",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "when_planning_to_get_pregnant_next_year_or_later",
+                  "potential_answer": "Next year or later",
+                  "potential_answer_summary": "Next year or later",
+                  "type": "a_type_single_select"
+                }
+              ],
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "pregnant_or_planning",
+                "potential_answers_id": [
+                  "pregnant_or_planning_yes_planning"
+                ]
+              },
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO5U",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "breastfeeding",
+              "question_title": "Are you currently breastfeeding?",
+              "question_title_has_tokens": false,
+              "type": "q_type_single_select",
+              "question_summary": "Breastfeeding",
+              "potential_answers": [
+                {
+                  "id": "breastfeeding_yes",
+                  "potential_answer": "Yes",
+                  "potential_answer_summary": "Yes",
+                  "type": "a_type_single_select",
+                  "to_alert": true
+                },
+                {
+                  "id": "breastfeeding_no",
+                  "potential_answer": "No",
+                  "potential_answer_summary": "No",
+                  "type": "a_type_single_select"
+                }
+              ],
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "pregnant_or_planning",
+                "potential_answers_id": [
+                  "pregnant_or_planning_yes_planning",
+                  "pregnant_or_planning_no"
+                ]
+              },
+              "required": true,
+              "alert_text": "Patient is breastfeeding",
+              "to_alert": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO60",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "other_important_medication_information",
+              "question_title": "Do you have any other current medical conditions or important past medical history?",
+              "question_title_has_tokens": false,
+              "type": "q_type_free_text",
+              "question_subtext": "Anything for which you see a doctor or take medication is useful to know.",
+              "question_summary": "Other important medication information",
+              "additional_fields": {
+                "placeholder_text": "Optional…"
+              },
+              "required": false
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO62",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "first_degree_family_medical_history",
+              "question_title": "Do any of your first-degree relatives have any of the following conditions?",
+              "question_title_has_tokens": false,
+              "type": "q_type_multiple_choice",
+              "question_summary": "First-degree family medical history",
+              "additional_fields": {
+                "popup": {
+                  "text": "First-degree relatives include parents, siblings, and children. Second-degree relatives include grandparents."
+                }
+              },
+              "potential_answers": [
+                {
+                  "id": "first_degree_family_medical_history_asthma",
+                  "potential_answer": "Asthma",
+                  "potential_answer_summary": "Asthma",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "first_degree_family_medical_history_athletes_foot",
+                  "potential_answer": "Athlete's foot",
+                  "potential_answer_summary": "Athlete's foot",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "first_degree_family_medical_history_eczema",
+                  "potential_answer": "Eczema",
+                  "potential_answer_summary": "Eczema",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "first_degree_family_medical_history_food_allergies",
+                  "potential_answer": "Food allergies",
+                  "potential_answer_summary": "Food allergies",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "first_degree_family_medical_history_fungal_skin_infection_eg_ringworm_or_jock_itch",
+                  "potential_answer": "Fungal skin infection (e.g., ringworm or jock itch)",
+                  "potential_answer_summary": "Fungal skin infection (e.g., ringworm or jock itch)",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "first_degree_family_medical_history_fungal_toenail_infection",
+                  "potential_answer": "Fungal toenail infection",
+                  "potential_answer_summary": "Fungal toenail infection",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "first_degree_family_medical_history_seasonal_allergies",
+                  "potential_answer": "Seasonal allergies",
+                  "potential_answer_summary": "Seasonal allergies",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "first_degree_family_medical_history_none_of_the_above",
+                  "potential_answer": "None of the above",
+                  "potential_answer_summary": "None of the above",
+                  "type": "a_type_multiple_choice_none"
+                },
+                {
+                  "id": "first_degree_family_medical_history_im_not_sure",
+                  "potential_answer": "I'm not sure",
+                  "potential_answer_summary": "I'm not sure",
+                  "type": "a_type_multiple_choice_none"
+                }
+              ],
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO64",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "q_regularly_taking_medications",
+              "question_title": "Are there any medications that you take or use regularly?",
+              "question_title_has_tokens": false,
+              "type": "q_type_single_select",
+              "question_summary": "Regularly taking or using medications",
+              "potential_answers": [
+                {
+                  "id": "q_regularly_taking_medications_yes",
+                  "potential_answer": "Yes",
+                  "potential_answer_summary": "Yes",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "q_regularly_taking_medications_no",
+                  "potential_answer": "No",
+                  "potential_answer_summary": "No",
+                  "type": "a_type_single_select"
+                }
+              ],
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO66",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "immunosuppressant_medications",
+              "question_title": "Do you take any of the following medications?",
+              "question_title_has_tokens": false,
+              "type": "q_type_multiple_choice",
+              "question_summary": "Immunosuppressant medications",
+              "potential_answers": [
+                {
+                  "id": "immunosuppressant_medications_prednisone",
+                  "potential_answer": "Prednisone",
+                  "potential_answer_summary": "Prednisone",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "immunosuppressant_medications_adalimumab_humira",
+                  "potential_answer": "Adalimumab (Humira)",
+                  "potential_answer_summary": "Adalimumab (Humira)",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "immunosuppressant_medications_etanercept_enbrel",
+                  "potential_answer": "Etanercept (Enbrel)",
+                  "potential_answer_summary": "Etanercept (Enbrel)",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "immunosuppressant_medications_infliximab_remicade",
+                  "potential_answer": "Infliximab (Remicade)",
+                  "potential_answer_summary": "Infliximab (Remicade)",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "immunosuppressant_medications_cyclosporine",
+                  "potential_answer": "Cyclosporine",
+                  "potential_answer_summary": "Cyclosporine",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "immunosuppressant_medications_mycophenolate_cellcept",
+                  "potential_answer": "Mycophenolate (Cellcept)",
+                  "potential_answer_summary": "Mycophenolate (Cellcept)",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "immunosuppressant_medications_tacrolimus_prograf",
+                  "potential_answer": "Tacrolimus (Prograf)",
+                  "potential_answer_summary": "Tacrolimus (Prograf)",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "immunosuppressant_medications_other_immunosuppressant_drug",
+                  "potential_answer": "Other immunosuppressant drug",
+                  "potential_answer_summary": "Other immunosuppressant drug",
+                  "type": "a_type_multiple_choice"
+                },
+                {
+                  "id": "immunosuppressant_medications_none_of_the_above",
+                  "potential_answer": "None of the above",
+                  "potential_answer_summary": "None of the above",
+                  "type": "a_type_multiple_choice_none"
+                }
+              ],
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "q_regularly_taking_medications",
+                "potential_answers_id": [
+                  "q_regularly_taking_medications_yes"
+                ]
+              },
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO68",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "q_current_medications_entry",
+              "question_title": "Which medications do you take or use regularly?",
+              "question_title_has_tokens": false,
+              "type": "q_type_autocomplete",
+              "question_summary": "Medications taken or used",
+              "additional_fields": {
+                "placeholder_text": "Type to add a medication",
+                "add_button_text": "Add Medication",
+                "add_text": "Add Medication",
+                "empty_state_text": "No medications specified",
+                "remove_button_text": "Remove Medication",
+                "save_button_text": "Save"
+              },
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "q_regularly_taking_medications",
+                "potential_answers_id": [
+                  "q_regularly_taking_medications_yes"
+                ]
+              },
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO6A",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "q_regularly_taking_supplements",
+              "question_title": "Are there any supplements that you take regularly?",
+              "question_title_has_tokens": false,
+              "type": "q_type_single_select",
+              "question_subtext": "(e.g., vitamins or herbs)",
+              "question_summary": "Regularly taking supplements",
+              "potential_answers": [
+                {
+                  "id": "q_regularly_taking_supplements_yes",
+                  "potential_answer": "Yes",
+                  "potential_answer_summary": "Yes",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "q_regularly_taking_supplements_no",
+                  "potential_answer": "No",
+                  "potential_answer_summary": "No",
+                  "type": "a_type_single_select"
+                }
+              ],
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO6C",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "q_supplements_taken",
+              "question_title": "Which supplements do you take regularly?",
+              "question_title_has_tokens": false,
+              "type": "q_type_free_text",
+              "question_summary": "Supplements taken",
+              "additional_fields": {
+                "placeholder_text": "List the supplements or herbs you take and how often..."
+              },
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "q_regularly_taking_supplements",
+                "potential_answers_id": [
+                  "q_regularly_taking_supplements_yes"
+                ]
+              },
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO6E",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "q_allergic_to_medications",
+              "question_title": "Are you allergic to any medications?",
+              "question_title_has_tokens": false,
+              "type": "q_type_single_select",
+              "question_summary": "Allergic to medications",
+              "potential_answers": [
+                {
+                  "id": "q_allergic_to_medications_yes",
+                  "potential_answer": "Yes",
+                  "potential_answer_summary": "Yes",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "q_allergic_to_medications_no",
+                  "potential_answer": "No",
+                  "potential_answer_summary": "No",
+                  "type": "a_type_single_select"
+                }
+              ],
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO6G",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "q_allergic_medication_entry",
+              "question_title": "Which medications are you allergic to?",
+              "question_title_has_tokens": false,
+              "type": "q_type_autocomplete",
+              "question_summary": "Medication allergies",
+              "additional_fields": {
+                "placeholder_text": "Type to add a medication",
+                "add_button_text": "Add Medication",
+                "add_text": "Add Medication",
+                "empty_state_text": "No medications specified",
+                "remove_button_text": "Remove Medication",
+                "save_button_text": "Save"
+              },
+              "condition": {
+                "op": "answer_contains_any",
+                "question_id": "q_allergic_to_medications",
+                "potential_answers_id": [
+                  "q_allergic_to_medications_yes"
+                ]
+              },
+              "required": true,
+              "alert_text": "Allergic to XXX",
+              "to_alert": true
+            }
+          ]
+        },
+        {
+          "id": "screen_0E73N766OIO6I",
+          "header_title_has_tokens": false,
+          "questions": [
+            {
+              "id": "q_insurance_coverage",
+              "question_title": "What type of prescription coverage do you have?",
+              "question_title_has_tokens": false,
+              "type": "q_type_single_select",
+              "question_summary": "Prescription insurance coverage",
+              "potential_answers": [
+                {
+                  "id": "q_insurance_coverage_brand_name_and_generic",
+                  "potential_answer": "Brand name and generic",
+                  "potential_answer_summary": "Brand name and generic",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "q_insurance_coverage_generic_only",
+                  "potential_answer": "Generic only",
+                  "potential_answer_summary": "Generic only",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "q_insurance_coverage_medicaid",
+                  "potential_answer": "Medicaid",
+                  "potential_answer_summary": "Medicaid",
+                  "type": "a_type_single_select",
+                  "to_alert": true
+                },
+                {
+                  "id": "q_insurance_coverage_i_dont_know",
+                  "potential_answer": "I don't know",
+                  "potential_answer_summary": "I don't know",
+                  "type": "a_type_single_select"
+                },
+                {
+                  "id": "q_insurance_coverage_i_dont_have_insurance",
+                  "potential_answer": "I don't have health insurance",
+                  "potential_answer_summary": "I don't have health insurance",
+                  "type": "a_type_single_select",
+                  "to_alert": true
+                }
+              ],
+              "required": true,
+              "alert_text": "Patient insurance: XXX",
+              "to_alert": true
+            }
+          ]
+        },
+        {
+          "id": "",
+          "header_title_has_tokens": false,
+          "type": "screen_type_pharmacy"
+        }
+      ]
+    }
+  ]
+}

@@ -13,7 +13,7 @@ func viewForPhotoScreen(screen *saml.Screen) visitreview.View {
 
 	keys := make([]string, len(screen.Questions))
 	for i, question := range screen.Questions {
-		keys[i] = photosKey(question.Details.Tag)
+		keys[i] = visitreview.PhotosKey(question.Details.Tag)
 		sectionView.Subsections[i] = viewForPhotoQuestion(question)
 	}
 
@@ -33,12 +33,12 @@ func viewForPhotoQuestion(question *saml.Question) visitreview.View {
 		ContentConfig: &visitreview.ContentConfig{
 			ViewCondition: visitreview.ViewCondition{
 				Op:  visitreview.ConditionKeyExists,
-				Key: photosKey(tag),
+				Key: visitreview.PhotosKey(tag),
 			},
 		},
 		SubsectionView: &visitreview.TitlePhotosItemsListView{
 			ContentConfig: &visitreview.ContentConfig{
-				Key: photosKey(tag),
+				Key: visitreview.PhotosKey(tag),
 			},
 		},
 	}

@@ -95,7 +95,7 @@ func (d *StandardPhotosSectionView) Validate() error {
 }
 
 func (d *StandardPhotosSectionView) Render(context *ViewContext) (map[string]interface{}, error) {
-	if d.ContentConfig.ViewCondition.Op != "" {
+	if d.ContentConfig != nil && d.ContentConfig.ViewCondition.Op != "" {
 		if result, err := EvaluateConditionForView(d, d.ContentConfig.ViewCondition, context); err != nil || !result {
 			return nil, err
 		}
@@ -144,7 +144,7 @@ func (d *StandardPhotosSubsectionView) Validate() error {
 }
 
 func (d *StandardPhotosSubsectionView) Render(context *ViewContext) (map[string]interface{}, error) {
-	if d.ContentConfig.ViewCondition.Op != "" {
+	if d.ContentConfig != nil && d.ContentConfig.ViewCondition.Op != "" {
 		if result, err := EvaluateConditionForView(d, d.ContentConfig.ViewCondition, context); err != nil || !result {
 			return nil, err
 		}
@@ -219,7 +219,7 @@ func (d *TitlePhotosItemsListView) Validate() error {
 }
 
 func (d *TitlePhotosItemsListView) Render(context *ViewContext) (map[string]interface{}, error) {
-	if d.ContentConfig.ViewCondition.Op != "" {
+	if d.ContentConfig != nil && d.ContentConfig.ViewCondition.Op != "" {
 		if result, err := EvaluateConditionForView(d, d.ContentConfig.ViewCondition, context); err != nil || !result {
 			return nil, err
 		}
@@ -267,7 +267,7 @@ func (d *StandardSectionView) TypeName() string {
 }
 
 func (d *StandardSectionView) Render(context *ViewContext) (map[string]interface{}, error) {
-	if d.ContentConfig.ViewCondition.Op != "" {
+	if d.ContentConfig != nil && d.ContentConfig.ViewCondition.Op != "" {
 		if result, err := EvaluateConditionForView(d, d.ContentConfig.ViewCondition, context); err != nil || !result {
 			return nil, errors.Trace(err)
 		}
@@ -312,7 +312,7 @@ func (d *StandardSubsectionView) Validate() error {
 }
 
 func (d *StandardSubsectionView) Render(context *ViewContext) (map[string]interface{}, error) {
-	if d.ContentConfig.ViewCondition.Op != "" {
+	if d.ContentConfig != nil && d.ContentConfig.ViewCondition.Op != "" {
 		if result, err := EvaluateConditionForView(d, d.ContentConfig.ViewCondition, context); err != nil || !result {
 			return nil, err
 		}
@@ -357,7 +357,7 @@ func (d *StandardOneColumnRowView) Validate() error {
 }
 
 func (d *StandardOneColumnRowView) Render(context *ViewContext) (map[string]interface{}, error) {
-	if d.ContentConfig.ViewCondition.Op != "" {
+	if d.ContentConfig != nil && d.ContentConfig.ViewCondition.Op != "" {
 		if result, err := EvaluateConditionForView(d, d.ContentConfig.ViewCondition, context); err != nil || !result {
 			return nil, err
 		}
@@ -404,7 +404,7 @@ func (d *StandardTwoColumnRowView) Validate() error {
 }
 
 func (d *StandardTwoColumnRowView) Render(context *ViewContext) (map[string]interface{}, error) {
-	if d.ContentConfig.ViewCondition.Op != "" {
+	if d.ContentConfig != nil && d.ContentConfig.ViewCondition.Op != "" {
 		if result, err := EvaluateConditionForView(d, d.ContentConfig.ViewCondition, context); err != nil || !result {
 			return nil, err
 		}
@@ -688,7 +688,7 @@ func (d *TitleSubItemsLabelContentItemsList) Render(context *ViewContext) (map[s
 
 	items, ok := content.([]TitleSubItemsDescriptionContentData)
 	if !ok {
-		return nil, NewViewRenderingError(fmt.Sprintf("Expected content of type []TitleSubItemsDescriptionContentData for view type %s", d.TypeName()))
+		return nil, NewViewRenderingError(fmt.Sprintf("Expected content of type []TitleSubItemsDescriptionContentData for view type %s for key %s", d.TypeName(), d.ContentConfig.Key))
 	}
 	d.Items = items
 	renderedView["items"] = items
@@ -720,7 +720,7 @@ func (d *TitleSubtitleLabels) Validate() error {
 }
 
 func (d *TitleSubtitleLabels) Render(context *ViewContext) (map[string]interface{}, error) {
-	if d.ContentConfig.ViewCondition.Op != "" {
+	if d.ContentConfig != nil && d.ContentConfig.ViewCondition.Op != "" {
 		if result, err := EvaluateConditionForView(d, d.ContentConfig.ViewCondition, context); err != nil || !result {
 			return nil, err
 		}

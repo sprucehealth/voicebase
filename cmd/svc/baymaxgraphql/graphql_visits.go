@@ -161,9 +161,9 @@ var visitLayoutVersionType = graphql.NewObject(
 			nodeInterfaceType,
 		},
 		Fields: graphql.Fields{
-			"id":           &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
-			"samlLayout":   &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-			"reviewLayout": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"id":            &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+			"samlLayout":    &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"layoutPreview": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		},
 	},
 )

@@ -57,7 +57,7 @@ type Screen struct {
 	HeaderSubtitle       string            `json:"header_subtitle,omitempty"`
 	HeaderSummary        string            `json:"header_summary,omitempty"`
 	Questions            []*Question       `json:"questions,omitempty"`
-	Type                 string            `json:"screen_type,omitempty"`
+	Type                 string            `json:"type,omitempty"`
 	Condition            *Condition        `json:"condition,omitempty"`
 	Body                 *Body             `json:"body,omitempty"`
 	BottomButtonTitle    string            `json:"bottom_button_title,omitempty"`

@@ -117,6 +117,7 @@ func TestVisitCategories(t *testing.T) {
 				ID:                   "2.2.1",
 				SAMLLocation:         "2.2.1.SAMLLocation",
 				ReviewLayoutLocation: "2.2.1.ReviewLayoutLocation",
+				IntakeLayoutLocation: "2.2.1.IntakeLayoutLocation",
 			},
 		}, nil))
 
@@ -125,6 +126,12 @@ func TestVisitCategories(t *testing.T) {
 			g.layoutStore.GetSAML,
 			"2.2.1.SAMLLocation",
 		).WithReturns("2.2.1.SAMLLayout", nil))
+
+	g.layoutStore.Expect(
+		mock.NewExpectation(
+			g.layoutStore.GetIntake,
+			"2.2.1.IntakeLayoutLocation",
+		).WithReturns(&layout.Intake{}, nil))
 
 	g.layoutStore.Expect(
 		mock.NewExpectation(
@@ -143,6 +150,7 @@ func TestVisitCategories(t *testing.T) {
 				ID:                   "2.1.1",
 				SAMLLocation:         "2.1.1.SAMLLocation",
 				ReviewLayoutLocation: "2.1.1.ReviewLayoutLocation",
+				IntakeLayoutLocation: "2.1.1.IntakeLayoutLocation",
 			},
 		}, nil))
 
@@ -151,6 +159,12 @@ func TestVisitCategories(t *testing.T) {
 			g.layoutStore.GetSAML,
 			"2.1.1.SAMLLocation",
 		).WithReturns("2.1.1.SAMLLayout", nil))
+
+	g.layoutStore.Expect(
+		mock.NewExpectation(
+			g.layoutStore.GetIntake,
+			"2.1.1.IntakeLayoutLocation",
+		).WithReturns(&layout.Intake{}, nil))
 
 	g.layoutStore.Expect(
 		mock.NewExpectation(
@@ -183,6 +197,7 @@ func TestVisitCategories(t *testing.T) {
 				ID:                   "1.1.1",
 				SAMLLocation:         "1.1.1.SAMLLocation",
 				ReviewLayoutLocation: "1.1.1.ReviewLayoutLocation",
+				IntakeLayoutLocation: "1.1.1.IntakeLayoutLocation",
 			},
 		}, nil))
 
@@ -194,11 +209,17 @@ func TestVisitCategories(t *testing.T) {
 
 	g.layoutStore.Expect(
 		mock.NewExpectation(
+			g.layoutStore.GetIntake,
+			"1.1.1.IntakeLayoutLocation",
+		).WithReturns(&layout.Intake{}, nil))
+
+	g.layoutStore.Expect(
+		mock.NewExpectation(
 			g.layoutStore.GetReview,
 			"1.1.1.ReviewLayoutLocation",
 		).WithReturns(&visitreview.SectionListView{}, nil))
 
-	g.query(ctx, `
+	res := g.query(ctx, `
  query _ {
    organization(id: "entity_org1") {
 	visitCategories(first: 100) {
@@ -213,7 +234,7 @@ func TestVisitCategories(t *testing.T) {
 			     		name
 			     		version {
 			     			samlLayout
-			     			reviewLayout
+			     			layoutPreview
 			     		}
 			     		}
 			     		}
@@ -225,5 +246,5 @@ func TestVisitCategories(t *testing.T) {
  }
 `, nil)
 
-	// too hard to check output but if the expectations with the mocks are met that is sufficient for now
+	responseEquals(t, `{"data":{"organization":{"visitCategories":{"edges":[{"node":{"id":"2","name":"A","visitLayouts":{"edges":[{"node":{"id":"2.2","name":"c","version":{"layoutPreview":"{\"sections\":[],\"type\":\"d_visit_review:sections_list\"}","samlLayout":"\"2.2.1.SAMLLayout\""}}},{"node":{"id":"2.1","name":"D","version":{"layoutPreview":"{\"sections\":[],\"type\":\"d_visit_review:sections_list\"}","samlLayout":"\"2.1.1.SAMLLayout\""}}}]}}},{"node":{"id":"1","name":"B","visitLayouts":{"edges":[{"node":{"id":"1.1","name":"e","version":{"layoutPreview":"{\"sections\":[],\"type\":\"d_visit_review:sections_list\"}","samlLayout":"\"1.1.1.SAMLLayout\""}}}]}}}]}}}}`, res)
 }

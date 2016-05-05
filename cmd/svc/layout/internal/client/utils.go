@@ -24,19 +24,3 @@ func transformPopup(popup *saml.Popup) *layout.Popup {
 		Text: popup.Text,
 	}
 }
-
-func answersKey(tag string) string {
-	return tag + ":answers"
-}
-
-func questionSummaryKey(tag string) string {
-	return tag + ":question_summary"
-}
-
-func emptyStateTextKey(tag string) string {
-	return tag + ":empty_state_text"
-}
-
-func photosKey(tag string) string {
-	return tag + ":photos"
-}

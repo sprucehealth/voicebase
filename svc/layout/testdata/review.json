@@ -1,0 +1,2112 @@
+{
+  "sections": [
+    {
+      "title": "Alerts",
+      "subsections": [
+        {
+          "title": "Alerts",
+          "rows": [
+            {
+              "view": {
+                "values": null,
+                "empty_state_view": {
+                  "Text": "",
+                  "content_config": {
+                    "key": "visit_alerts:empty_state_text",
+                    "condition": {}
+                  },
+                  "type": "d_visit_review:empty_label"
+                },
+                "content_config": {
+                  "key": "visit_alerts",
+                  "condition": {}
+                },
+                "type": "d_visit_review:alert_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "visit_alerts"
+                }
+              },
+              "type": "d_visit_review:standard_one_column_row"
+            }
+          ],
+          "type": "d_visit_review:standard_subsection"
+        }
+      ],
+      "type": "d_visit_review:standard_section"
+    },
+    {
+      "title": "Areas Affected by Athlete's Foot or Ringworm",
+      "subsections": [
+        {
+          "view": {
+            "items": null,
+            "content_config": {
+              "key": "face:photos",
+              "condition": {}
+            },
+            "type": "d_visit_review:title_photos_items_list"
+          },
+          "content_config": {
+            "condition": {
+              "op": "key_exists",
+              "key": "face:photos"
+            }
+          },
+          "type": "d_visit_review:standard_photo_subsection"
+        },
+        {
+          "view": {
+            "items": null,
+            "content_config": {
+              "key": "lips:photos",
+              "condition": {}
+            },
+            "type": "d_visit_review:title_photos_items_list"
+          },
+          "content_config": {
+            "condition": {
+              "op": "key_exists",
+              "key": "lips:photos"
+            }
+          },
+          "type": "d_visit_review:standard_photo_subsection"
+        },
+        {
+          "view": {
+            "items": null,
+            "content_config": {
+              "key": "scalp:photos",
+              "condition": {}
+            },
+            "type": "d_visit_review:title_photos_items_list"
+          },
+          "content_config": {
+            "condition": {
+              "op": "key_exists",
+              "key": "scalp:photos"
+            }
+          },
+          "type": "d_visit_review:standard_photo_subsection"
+        },
+        {
+          "view": {
+            "items": null,
+            "content_config": {
+              "key": "neck:photos",
+              "condition": {}
+            },
+            "type": "d_visit_review:title_photos_items_list"
+          },
+          "content_config": {
+            "condition": {
+              "op": "key_exists",
+              "key": "neck:photos"
+            }
+          },
+          "type": "d_visit_review:standard_photo_subsection"
+        },
+        {
+          "view": {
+            "items": null,
+            "content_config": {
+              "key": "chest:photos",
+              "condition": {}
+            },
+            "type": "d_visit_review:title_photos_items_list"
+          },
+          "content_config": {
+            "condition": {
+              "op": "key_exists",
+              "key": "chest:photos"
+            }
+          },
+          "type": "d_visit_review:standard_photo_subsection"
+        },
+        {
+          "view": {
+            "items": null,
+            "content_config": {
+              "key": "back:photos",
+              "condition": {}
+            },
+            "type": "d_visit_review:title_photos_items_list"
+          },
+          "content_config": {
+            "condition": {
+              "op": "key_exists",
+              "key": "back:photos"
+            }
+          },
+          "type": "d_visit_review:standard_photo_subsection"
+        },
+        {
+          "view": {
+            "items": null,
+            "content_config": {
+              "key": "arms:photos",
+              "condition": {}
+            },
+            "type": "d_visit_review:title_photos_items_list"
+          },
+          "content_config": {
+            "condition": {
+              "op": "key_exists",
+              "key": "arms:photos"
+            }
+          },
+          "type": "d_visit_review:standard_photo_subsection"
+        },
+        {
+          "view": {
+            "items": null,
+            "content_config": {
+              "key": "legs:photos",
+              "condition": {}
+            },
+            "type": "d_visit_review:title_photos_items_list"
+          },
+          "content_config": {
+            "condition": {
+              "op": "key_exists",
+              "key": "legs:photos"
+            }
+          },
+          "type": "d_visit_review:standard_photo_subsection"
+        },
+        {
+          "view": {
+            "items": null,
+            "content_config": {
+              "key": "abdomen:photos",
+              "condition": {}
+            },
+            "type": "d_visit_review:title_photos_items_list"
+          },
+          "content_config": {
+            "condition": {
+              "op": "key_exists",
+              "key": "abdomen:photos"
+            }
+          },
+          "type": "d_visit_review:standard_photo_subsection"
+        },
+        {
+          "view": {
+            "items": null,
+            "content_config": {
+              "key": "groin:photos",
+              "condition": {}
+            },
+            "type": "d_visit_review:title_photos_items_list"
+          },
+          "content_config": {
+            "condition": {
+              "op": "key_exists",
+              "key": "groin:photos"
+            }
+          },
+          "type": "d_visit_review:standard_photo_subsection"
+        },
+        {
+          "view": {
+            "items": null,
+            "content_config": {
+              "key": "buttocks:photos",
+              "condition": {}
+            },
+            "type": "d_visit_review:title_photos_items_list"
+          },
+          "content_config": {
+            "condition": {
+              "op": "key_exists",
+              "key": "buttocks:photos"
+            }
+          },
+          "type": "d_visit_review:standard_photo_subsection"
+        },
+        {
+          "view": {
+            "items": null,
+            "content_config": {
+              "key": "feet:photos",
+              "condition": {}
+            },
+            "type": "d_visit_review:title_photos_items_list"
+          },
+          "content_config": {
+            "condition": {
+              "op": "key_exists",
+              "key": "feet:photos"
+            }
+          },
+          "type": "d_visit_review:standard_photo_subsection"
+        },
+        {
+          "view": {
+            "items": null,
+            "content_config": {
+              "key": "hands:photos",
+              "condition": {}
+            },
+            "type": "d_visit_review:title_photos_items_list"
+          },
+          "content_config": {
+            "condition": {
+              "op": "key_exists",
+              "key": "hands:photos"
+            }
+          },
+          "type": "d_visit_review:standard_photo_subsection"
+        },
+        {
+          "view": {
+            "items": null,
+            "content_config": {
+              "key": "other_location:photos",
+              "condition": {}
+            },
+            "type": "d_visit_review:title_photos_items_list"
+          },
+          "content_config": {
+            "condition": {
+              "op": "key_exists",
+              "key": "other_location:photos"
+            }
+          },
+          "type": "d_visit_review:standard_photo_subsection"
+        }
+      ],
+      "content_config": {
+        "condition": {
+          "op": "any_key_exists",
+          "keys": [
+            "face:photos",
+            "lips:photos",
+            "scalp:photos",
+            "neck:photos",
+            "chest:photos",
+            "back:photos",
+            "arms:photos",
+            "legs:photos",
+            "abdomen:photos",
+            "groin:photos",
+            "buttocks:photos",
+            "feet:photos",
+            "hands:photos",
+            "other_location:photos"
+          ]
+        }
+      },
+      "type": "d_visit_review:standard_photo_section"
+    },
+    {
+      "title": "Nails",
+      "subsections": [
+        {
+          "view": {
+            "items": null,
+            "content_config": {
+              "key": "fingernails:photos",
+              "condition": {}
+            },
+            "type": "d_visit_review:title_photos_items_list"
+          },
+          "content_config": {
+            "condition": {
+              "op": "key_exists",
+              "key": "fingernails:photos"
+            }
+          },
+          "type": "d_visit_review:standard_photo_subsection"
+        },
+        {
+          "view": {
+            "items": null,
+            "content_config": {
+              "key": "toenails:photos",
+              "condition": {}
+            },
+            "type": "d_visit_review:title_photos_items_list"
+          },
+          "content_config": {
+            "condition": {
+              "op": "key_exists",
+              "key": "toenails:photos"
+            }
+          },
+          "type": "d_visit_review:standard_photo_subsection"
+        }
+      ],
+      "content_config": {
+        "condition": {
+          "op": "any_key_exists",
+          "keys": [
+            "fingernails:photos",
+            "toenails:photos"
+          ]
+        }
+      },
+      "type": "d_visit_review:standard_photo_section"
+    },
+    {
+      "title": "Your Symptoms",
+      "subsections": [
+        {
+          "title": "Systemic or Dangerous Symptoms",
+          "rows": [
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "systemic_or_dangerous_symptoms:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "items": null,
+                "content_config": {
+                  "key": "systemic_or_dangerous_symptoms:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:check_x_items_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "systemic_or_dangerous_symptoms:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "able_to_complete_daily_activities:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "able_to_complete_daily_activities:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "able_to_complete_daily_activities:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            }
+          ],
+          "content_config": {
+            "condition": {
+              "op": "any_key_exists",
+              "keys": [
+                "systemic_or_dangerous_symptoms:answers",
+                "able_to_complete_daily_activities:answers"
+              ]
+            }
+          },
+          "type": "d_visit_review:standard_subsection"
+        },
+        {
+          "title": "Symptom Course",
+          "rows": [
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "rash_time_course:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "rash_time_course:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "rash_time_course:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "experienced_this_type_of_rash_before:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "experienced_this_type_of_rash_before:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "experienced_this_type_of_rash_before:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "similar_to_prior_athletes_foot_ringworm_or_other_fungal_rashes:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "similar_to_prior_athletes_foot_ringworm_or_other_fungal_rashes:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "similar_to_prior_athletes_foot_ringworm_or_other_fungal_rashes:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "whats_different_about_current_rash:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "whats_different_about_current_rash:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "whats_different_about_current_rash:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            }
+          ],
+          "content_config": {
+            "condition": {
+              "op": "any_key_exists",
+              "keys": [
+                "rash_time_course:answers",
+                "experienced_this_type_of_rash_before:answers",
+                "similar_to_prior_athletes_foot_ringworm_or_other_fungal_rashes:answers",
+                "whats_different_about_current_rash:answers"
+              ]
+            }
+          },
+          "type": "d_visit_review:standard_subsection"
+        },
+        {
+          "title": "Locations",
+          "rows": [
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "affected_areas:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "items": null,
+                "content_config": {
+                  "key": "affected_areas:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:check_x_items_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "affected_areas:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "hand_locations:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "items": null,
+                "content_config": {
+                  "key": "hand_locations:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:check_x_items_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "hand_locations:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "feet_locations:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "items": null,
+                "content_config": {
+                  "key": "feet_locations:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:check_x_items_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "feet_locations:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "mouth_locations:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "items": null,
+                "content_config": {
+                  "key": "mouth_locations:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:check_x_items_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "mouth_locations:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "groin_locations:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "items": null,
+                "content_config": {
+                  "key": "groin_locations:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:check_x_items_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "groin_locations:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "groin_locations_2:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "items": null,
+                "content_config": {
+                  "key": "groin_locations_2:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:check_x_items_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "groin_locations_2:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "rash_mostly_in_skin_creases:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "rash_mostly_in_skin_creases:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "rash_mostly_in_skin_creases:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "change_in_rash_location:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "change_in_rash_location:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "change_in_rash_location:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "locations_where_rash_began:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "items": null,
+                "content_config": {
+                  "key": "locations_where_rash_began:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:check_x_items_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "locations_where_rash_began:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "changes_in_fingernails_or_toenails:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "changes_in_fingernails_or_toenails:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "changes_in_fingernails_or_toenails:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "number_of_fingernails_affected:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "number_of_fingernails_affected:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "number_of_fingernails_affected:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "number_of_toenails_affected:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "number_of_toenails_affected:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "number_of_toenails_affected:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "type_of_nail_changes:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "items": null,
+                "content_config": {
+                  "key": "type_of_nail_changes:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:check_x_items_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "type_of_nail_changes:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "do_nail_changes_occur_with_the_rash:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "do_nail_changes_occur_with_the_rash:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "do_nail_changes_occur_with_the_rash:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "duration_of_nail_changes:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "duration_of_nail_changes:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "duration_of_nail_changes:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            }
+          ],
+          "content_config": {
+            "condition": {
+              "op": "any_key_exists",
+              "keys": [
+                "affected_areas:answers",
+                "hand_locations:answers",
+                "feet_locations:answers",
+                "mouth_locations:answers",
+                "groin_locations:answers",
+                "groin_locations_2:answers",
+                "rash_mostly_in_skin_creases:answers",
+                "change_in_rash_location:answers",
+                "locations_where_rash_began:answers",
+                "changes_in_fingernails_or_toenails:answers",
+                "number_of_fingernails_affected:answers",
+                "number_of_toenails_affected:answers",
+                "type_of_nail_changes:answers",
+                "do_nail_changes_occur_with_the_rash:answers",
+                "duration_of_nail_changes:answers"
+              ]
+            }
+          },
+          "type": "d_visit_review:standard_subsection"
+        },
+        {
+          "title": "Characteristics",
+          "rows": [
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "is_the_rash_itchy:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "is_the_rash_itchy:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "is_the_rash_itchy:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "itchiness_rating:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "itchiness_rating:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "itchiness_rating:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "scratching_or_picking:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "scratching_or_picking:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "scratching_or_picking:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "rash_characteristics:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "items": null,
+                "content_config": {
+                  "key": "rash_characteristics:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:check_x_items_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "rash_characteristics:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "discomfort_from_rash_makes_daily_activities_difficult:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "discomfort_from_rash_makes_daily_activities_difficult:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "discomfort_from_rash_makes_daily_activities_difficult:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "able_to_complete_daily_activities_2:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "able_to_complete_daily_activities_2:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "able_to_complete_daily_activities_2:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            }
+          ],
+          "content_config": {
+            "condition": {
+              "op": "any_key_exists",
+              "keys": [
+                "is_the_rash_itchy:answers",
+                "itchiness_rating:answers",
+                "scratching_or_picking:answers",
+                "rash_characteristics:answers",
+                "discomfort_from_rash_makes_daily_activities_difficult:answers",
+                "able_to_complete_daily_activities_2:answers"
+              ]
+            }
+          },
+          "type": "d_visit_review:standard_subsection"
+        },
+        {
+          "title": "Etiologies",
+          "rows": [
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "recent_rash_contacts:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "recent_rash_contacts:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "recent_rash_contacts:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "influencing_shx_factors:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "items": null,
+                "content_config": {
+                  "key": "influencing_shx_factors:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:check_x_items_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "influencing_shx_factors:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "types_of_regular_animal_exposure:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "items": null,
+                "content_config": {
+                  "key": "types_of_regular_animal_exposure:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:check_x_items_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "types_of_regular_animal_exposure:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "product_survey:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "items": null,
+                "content_config": {
+                  "key": "product_survey:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:check_x_items_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "product_survey:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            }
+          ],
+          "content_config": {
+            "condition": {
+              "op": "any_key_exists",
+              "keys": [
+                "recent_rash_contacts:answers",
+                "influencing_shx_factors:answers",
+                "types_of_regular_animal_exposure:answers",
+                "product_survey:answers"
+              ]
+            }
+          },
+          "type": "d_visit_review:standard_subsection"
+        }
+      ],
+      "type": "d_visit_review:standard_section"
+    },
+    {
+      "title": "Medical History",
+      "subsections": [
+        {
+          "title": "Previously Seen",
+          "rows": [
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "previously_seen_by_a_healthcare_professional_for_this_condition:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "previously_seen_by_a_healthcare_professional_for_this_condition:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "previously_seen_by_a_healthcare_professional_for_this_condition:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "type_of_healthcare_provider_previously_seen:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "items": null,
+                "content_config": {
+                  "key": "type_of_healthcare_provider_previously_seen:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:check_x_items_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "type_of_healthcare_provider_previously_seen:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "previous_diagnosis:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "items": null,
+                "content_config": {
+                  "key": "previous_diagnosis:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:check_x_items_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "previous_diagnosis:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "tests_performed:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "items": null,
+                "empty_state_view": {
+                  "Text": "",
+                  "content_config": {
+                    "key": "tests_performed:empty_state_text",
+                    "condition": {}
+                  },
+                  "type": "d_visit_review:empty_label"
+                },
+                "content_config": {
+                  "key": "tests_performed:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_subitems_description_content_labels_divided_items_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "tests_performed:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "additional_information_about_previous_visit:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "additional_information_about_previous_visit:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "additional_information_about_previous_visit:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            }
+          ],
+          "content_config": {
+            "condition": {
+              "op": "any_key_exists",
+              "keys": [
+                "previously_seen_by_a_healthcare_professional_for_this_condition:answers",
+                "type_of_healthcare_provider_previously_seen:answers",
+                "previous_diagnosis:answers",
+                "tests_performed:answers",
+                "additional_information_about_previous_visit:answers"
+              ]
+            }
+          },
+          "type": "d_visit_review:standard_subsection"
+        },
+        {
+          "title": "Treatments Tried",
+          "rows": [
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "tried_treatments_before:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "tried_treatments_before:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "tried_treatments_before:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "which_treatments:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "items": null,
+                "empty_state_view": {
+                  "Text": "",
+                  "content_config": {
+                    "key": "which_treatments:empty_state_text",
+                    "condition": {}
+                  },
+                  "type": "d_visit_review:empty_label"
+                },
+                "content_config": {
+                  "key": "which_treatments:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_subitems_description_content_labels_divided_items_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "which_treatments:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            }
+          ],
+          "content_config": {
+            "condition": {
+              "op": "any_key_exists",
+              "keys": [
+                "tried_treatments_before:answers",
+                "which_treatments:answers"
+              ]
+            }
+          },
+          "type": "d_visit_review:standard_subsection"
+        },
+        {
+          "title": "Medical Conditions",
+          "rows": [
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "medical_conditions:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "items": null,
+                "content_config": {
+                  "key": "medical_conditions:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:check_x_items_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "medical_conditions:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "hba1c_level_checked_in_past_year:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "hba1c_level_checked_in_past_year:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "hba1c_level_checked_in_past_year:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "most_recent_hba1c_level:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "most_recent_hba1c_level:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "most_recent_hba1c_level:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "fingerstick_blood_glucose_levels_normally_100200_mgdl:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "fingerstick_blood_glucose_levels_normally_100200_mgdl:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "fingerstick_blood_glucose_levels_normally_100200_mgdl:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "aids:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "aids:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "aids:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "regular_hiv_management_clinic:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "regular_hiv_management_clinic:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "regular_hiv_management_clinic:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "type_of_liver_disease:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "items": null,
+                "content_config": {
+                  "key": "type_of_liver_disease:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:check_x_items_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "type_of_liver_disease:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            }
+          ],
+          "content_config": {
+            "condition": {
+              "op": "any_key_exists",
+              "keys": [
+                "medical_conditions:answers",
+                "hba1c_level_checked_in_past_year:answers",
+                "most_recent_hba1c_level:answers",
+                "fingerstick_blood_glucose_levels_normally_100200_mgdl:answers",
+                "aids:answers",
+                "regular_hiv_management_clinic:answers",
+                "type_of_liver_disease:answers"
+              ]
+            }
+          },
+          "type": "d_visit_review:standard_subsection"
+        },
+        {
+          "title": "Female History",
+          "rows": [
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "pregnant_or_planning:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "pregnant_or_planning:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "pregnant_or_planning:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "trimester:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "trimester:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "trimester:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "when_planning_to_get_pregnant:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "when_planning_to_get_pregnant:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "when_planning_to_get_pregnant:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "breastfeeding:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "breastfeeding:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "breastfeeding:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            }
+          ],
+          "content_config": {
+            "condition": {
+              "op": "any_key_exists",
+              "keys": [
+                "pregnant_or_planning:answers",
+                "trimester:answers",
+                "when_planning_to_get_pregnant:answers",
+                "breastfeeding:answers"
+              ]
+            }
+          },
+          "type": "d_visit_review:standard_subsection"
+        },
+        {
+          "title": "Other History",
+          "rows": [
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "other_important_medication_information:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "other_important_medication_information:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "other_important_medication_information:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            }
+          ],
+          "content_config": {
+            "condition": {
+              "op": "any_key_exists",
+              "keys": [
+                "other_important_medication_information:answers"
+              ]
+            }
+          },
+          "type": "d_visit_review:standard_subsection"
+        },
+        {
+          "title": "Family History",
+          "rows": [
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "first_degree_family_medical_history:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "items": null,
+                "content_config": {
+                  "key": "first_degree_family_medical_history:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:check_x_items_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "first_degree_family_medical_history:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            }
+          ],
+          "content_config": {
+            "condition": {
+              "op": "any_key_exists",
+              "keys": [
+                "first_degree_family_medical_history:answers"
+              ]
+            }
+          },
+          "type": "d_visit_review:standard_subsection"
+        },
+        {
+          "title": "Medications",
+          "rows": [
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "q_regularly_taking_medications:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "q_regularly_taking_medications:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "q_regularly_taking_medications:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "immunosuppressant_medications:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "items": null,
+                "content_config": {
+                  "key": "immunosuppressant_medications:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:check_x_items_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "immunosuppressant_medications:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "q_current_medications_entry:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "q_current_medications_entry:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "q_current_medications_entry:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "q_regularly_taking_supplements:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "q_regularly_taking_supplements:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "q_regularly_taking_supplements:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "q_supplements_taken:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "q_supplements_taken:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "q_supplements_taken:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "q_allergic_to_medications:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "q_allergic_to_medications:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "q_allergic_to_medications:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "q_allergic_medication_entry:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "q_allergic_medication_entry:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "q_allergic_medication_entry:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            },
+            {
+              "left_view": {
+                "values": null,
+                "content_config": {
+                  "key": "q_insurance_coverage:question_summary",
+                  "condition": {}
+                },
+                "type": "d_visit_review:title_labels_list"
+              },
+              "right_view": {
+                "values": null,
+                "empty_state_view": null,
+                "content_config": {
+                  "key": "q_insurance_coverage:answers",
+                  "condition": {}
+                },
+                "type": "d_visit_review:content_labels_list"
+              },
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "q_insurance_coverage:answers"
+                }
+              },
+              "type": "d_visit_review:standard_two_column_row"
+            }
+          ],
+          "content_config": {
+            "condition": {
+              "op": "any_key_exists",
+              "keys": [
+                "q_regularly_taking_medications:answers",
+                "immunosuppressant_medications:answers",
+                "q_current_medications_entry:answers",
+                "q_regularly_taking_supplements:answers",
+                "q_supplements_taken:answers",
+                "q_allergic_to_medications:answers",
+                "q_allergic_medication_entry:answers",
+                "q_insurance_coverage:answers"
+              ]
+            }
+          },
+          "type": "d_visit_review:standard_subsection"
+        }
+      ],
+      "type": "d_visit_review:standard_section"
+    }
+  ],
+  "type": "d_visit_review:sections_list"
+}

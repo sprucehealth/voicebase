@@ -625,7 +625,7 @@ func transformVisitLayoutVersionToResponse(version *layout.VisitLayoutVersion, s
 	par := conc.NewParallel()
 
 	var samlLayout []byte
-	var reviewLayout []byte
+	var layoutPreview []byte
 	par.Go(func() error {
 
 		samlIntake, err := store.GetSAML(version.SAMLLocation)
@@ -641,15 +641,23 @@ func transformVisitLayoutVersionToResponse(version *layout.VisitLayoutVersion, s
 	})
 
 	par.Go(func() error {
-		var err error
+
+		intake, err := store.GetIntake(version.IntakeLayoutLocation)
+		if err != nil {
+			return errors.Trace(err)
+		}
+
 		review, err := store.GetReview(version.ReviewLayoutLocation)
 		if err != nil {
 			return errors.Trace(err)
 		}
 
-		// TODO: Build out preview mode for the intake
+		intakePreview, err := layout.GenerateVisitLayoutPreview(intake, review)
+		if err != nil {
+			return errors.Trace(err)
+		}
 
-		reviewLayout, err = json.Marshal(review)
+		layoutPreview, err = json.Marshal(intakePreview)
 		if err != nil {
 			return errors.Trace(err)
 		}
@@ -661,9 +669,9 @@ func transformVisitLayoutVersionToResponse(version *layout.VisitLayoutVersion, s
 	}
 
 	return &models.VisitLayoutVersion{
-		ID:           version.ID,
-		SAMLLayout:   string(samlLayout),
-		ReviewLayout: string(reviewLayout),
+		ID:            version.ID,
+		SAMLLayout:    string(samlLayout),
+		LayoutPreview: string(layoutPreview),
 	}, nil
 }
 

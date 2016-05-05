@@ -337,7 +337,7 @@ type VisitLayout struct {
 }
 
 type VisitLayoutVersion struct {
-	ID           string `json:"id"`
-	SAMLLayout   string `json:"samlLayout"`
-	ReviewLayout string `json:"reviewLayout"`
+	ID            string `json:"id"`
+	SAMLLayout    string `json:"samlLayout"`
+	LayoutPreview string `json:"layoutPreview"`
 }

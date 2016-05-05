@@ -81,11 +81,6 @@ func TestReviewGeneration(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	_, err = json.Marshal(dermReviewLayout)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
 	// fmt.Println(string(jsonData))
 	// fmt.Println()
 
