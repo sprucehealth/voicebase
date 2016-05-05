@@ -11,7 +11,6 @@ import (
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/svc/auth"
-	"github.com/sprucehealth/backend/svc/layout"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 	"golang.org/x/net/context"
@@ -94,11 +93,11 @@ var queryType = graphql.NewObject(
 						return lookupThreadWithReadStatus(ctx, ram, acc, id)
 					case "ti":
 						return lookupThreadItem(ctx, ram, svc.mediaSigner, id)
-					case layout.VisitLayoutIDPrefix:
+					case "visitLayout":
 						return lookupVisitLayout(ctx, svc, id)
-					case layout.VisitLayoutVersionIDPrefix:
+					case "visitLayoutVersion":
 						return lookupVisitLayoutVersion(ctx, svc, id)
-					case layout.VisitCategoryIDPrefix:
+					case "visitCategory":
 						return lookupVisitCategory(ctx, svc, id)
 					}
 					return nil, errors.New("unknown node type")
