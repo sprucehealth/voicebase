@@ -26,7 +26,7 @@ func TestReserveNumber_NewReservation(t *testing.T) {
 	organizationID := "o1"
 	mclock := clock.NewManaged(time.Now())
 
-	md.Expect(mock.NewExpectation(md.ActiveProxyPhoneNumberReservation, originatingPhoneNumber, phone.Ptr(destinationPhoneNumber), phone.Ptr(phone.Number(""))).
+	md.Expect(mock.NewExpectation(md.ActiveProxyPhoneNumberReservation, phone.Ptr(originatingPhoneNumber), phone.Ptr(destinationPhoneNumber), phone.Ptr(phone.Number(""))).
 		WithReturns(nil, dal.ErrProxyPhoneNumberReservationNotFound))
 	md.Expect(mock.NewExpectation(md.AvailableProxyPhoneNumbers, originatingPhoneNumber).WithReturns(
 		[]*models.ProxyPhoneNumber{
@@ -63,7 +63,7 @@ func TestReserveNumber_ExistingReservation(t *testing.T) {
 	organizationID := "o1"
 	mclock := clock.NewManaged(time.Now())
 
-	md.Expect(mock.NewExpectation(md.ActiveProxyPhoneNumberReservation, originatingPhoneNumber, phone.Ptr(destinationPhoneNumber), phone.Ptr(phone.Number(""))).
+	md.Expect(mock.NewExpectation(md.ActiveProxyPhoneNumberReservation, phone.Ptr(originatingPhoneNumber), phone.Ptr(destinationPhoneNumber), phone.Ptr(phone.Number(""))).
 		WithReturns(&models.ProxyPhoneNumberReservation{
 			ProxyPhoneNumber:       proxyPhoneNumber,
 			DestinationPhoneNumber: destinationPhoneNumber,
@@ -97,7 +97,7 @@ func TestReserveNumber_NewReservation_SameSourceDestinationPair(t *testing.T) {
 	organizationID := "o1"
 	mclock := clock.NewManaged(time.Now())
 
-	md.Expect(mock.NewExpectation(md.ActiveProxyPhoneNumberReservation, originatingPhoneNumber, phone.Ptr(destinationPhoneNumber), phone.Ptr(phone.Number(""))).
+	md.Expect(mock.NewExpectation(md.ActiveProxyPhoneNumberReservation, phone.Ptr(originatingPhoneNumber), phone.Ptr(destinationPhoneNumber), phone.Ptr(phone.Number(""))).
 		WithReturns(&models.ProxyPhoneNumberReservation{
 			ProxyPhoneNumber:       proxyPhoneNumber,
 			DestinationPhoneNumber: destinationPhoneNumber,
@@ -145,7 +145,7 @@ func TestReserveNumber_LastReserved(t *testing.T) {
 	organizationID := "o1"
 	mclock := clock.NewManaged(time.Now())
 
-	md.Expect(mock.NewExpectation(md.ActiveProxyPhoneNumberReservation, originatingPhoneNumber, phone.Ptr(destinationPhoneNumber), phone.Ptr(phone.Number(""))).
+	md.Expect(mock.NewExpectation(md.ActiveProxyPhoneNumberReservation, phone.Ptr(originatingPhoneNumber), phone.Ptr(destinationPhoneNumber), phone.Ptr(phone.Number(""))).
 		WithReturns(nil, dal.ErrProxyPhoneNumberReservationNotFound))
 	md.Expect(mock.NewExpectation(md.AvailableProxyPhoneNumbers, originatingPhoneNumber).WithReturns(
 		[]*models.ProxyPhoneNumber{
@@ -191,7 +191,7 @@ func TestReserveNumber_BeyondGracePeriod(t *testing.T) {
 	organizationID := "o1"
 	mclock := clock.NewManaged(time.Now())
 
-	md.Expect(mock.NewExpectation(md.ActiveProxyPhoneNumberReservation, originatingPhoneNumber, phone.Ptr(destinationPhoneNumber), phone.Ptr(phone.Number(""))).
+	md.Expect(mock.NewExpectation(md.ActiveProxyPhoneNumberReservation, phone.Ptr(originatingPhoneNumber), phone.Ptr(destinationPhoneNumber), phone.Ptr(phone.Number(""))).
 		WithReturns(nil, dal.ErrProxyPhoneNumberReservationNotFound))
 	md.Expect(mock.NewExpectation(md.AvailableProxyPhoneNumbers, originatingPhoneNumber).WithReturns(
 		[]*models.ProxyPhoneNumber{

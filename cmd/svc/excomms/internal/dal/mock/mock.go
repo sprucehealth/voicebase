@@ -130,7 +130,7 @@ func (m *mockDAL) UpdateActiveProxyPhoneNumberReservation(originatingPhoneNumber
 	return rets[0].(int64), mock.SafeError(rets[1])
 }
 
-func (m *mockDAL) ActiveProxyPhoneNumberReservation(originatingPhoneNumber phone.Number, destinationPhoneNumber, proxyPhoneNumber *phone.Number) (*models.ProxyPhoneNumberReservation, error) {
+func (m *mockDAL) ActiveProxyPhoneNumberReservation(originatingPhoneNumber, destinationPhoneNumber, proxyPhoneNumber *phone.Number) (*models.ProxyPhoneNumberReservation, error) {
 	rets := m.Record(originatingPhoneNumber, destinationPhoneNumber, proxyPhoneNumber)
 	if len(rets) == 0 {
 		return nil, nil

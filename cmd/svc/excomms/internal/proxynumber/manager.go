@@ -63,7 +63,7 @@ func (m *manager) ReserveNumber(originatingPhoneNumber, destinationPhoneNumber p
 
 		// check if an active reservation already exists for the source/destination pair and the same source/destination entity pair, and if
 		// so, extend the reservation and return the same number rather than reserving a new number
-		ppnr, err := dl.ActiveProxyPhoneNumberReservation(originatingPhoneNumber, phone.Ptr(destinationPhoneNumber), nil)
+		ppnr, err := dl.ActiveProxyPhoneNumberReservation(phone.Ptr(originatingPhoneNumber), phone.Ptr(destinationPhoneNumber), nil)
 		if err != nil && errors.Cause(err) != dal.ErrProxyPhoneNumberReservationNotFound {
 			return errors.Trace(err)
 		} else if ppnr != nil && (ppnr.DestinationEntityID == destinationEntityID && ppnr.OwnerEntityID == sourceEntityID) {
@@ -141,7 +141,7 @@ func (m *manager) ReserveNumber(originatingPhoneNumber, destinationPhoneNumber p
 
 func (m *manager) ActiveReservation(originatingNumber, proxyNumber phone.Number) (*models.ProxyPhoneNumberReservation, error) {
 	// look for an active reservation on the proxy phone number
-	ppnr, err := m.dal.ActiveProxyPhoneNumberReservation(originatingNumber, nil, phone.Ptr(proxyNumber))
+	ppnr, err := m.dal.ActiveProxyPhoneNumberReservation(phone.Ptr(originatingNumber), nil, phone.Ptr(proxyNumber))
 	if errors.Cause(err) == dal.ErrProxyPhoneNumberReservationNotFound {
 		return nil, errors.Trace(fmt.Errorf("No active reservation found for proxy number: %s, originating number:%s", proxyNumber, originatingNumber))
 	} else if err != nil {

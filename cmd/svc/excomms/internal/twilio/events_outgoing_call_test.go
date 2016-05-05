@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
+	dalmock "github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal/mock"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
 	proxynumber "github.com/sprucehealth/backend/cmd/svc/excomms/internal/proxynumber/mock"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
@@ -26,6 +27,45 @@ func TestOutgoing_Process(t *testing.T) {
 
 func TestOutgoing_Expired(t *testing.T) {
 	testOutgoing(t, true, "")
+}
+
+func TestOutgoing_BlockedCallerID(t *testing.T) {
+	providerPersonalPhoneNumber := phone.Number(phone.NumberBlocked)
+	proxyPhoneNumber := phone.Number("+14152222222")
+	organizationID := "1234"
+	providerID := "0000"
+	callSID := "8888"
+	conc.Testing = true
+
+	mdal := dalmock.New(t)
+	defer mdal.Finish()
+
+	mdal.Expect(mock.NewExpectation(mdal.ActiveProxyPhoneNumberReservation, (*phone.Number)(nil), (*phone.Number)(nil), phone.Ptr(proxyPhoneNumber)).WithReturns(&models.ProxyPhoneNumberReservation{
+		OrganizationID: organizationID,
+		OwnerEntityID:  providerID,
+	}, nil))
+
+	mclock := clock.NewManaged(time.Now())
+
+	es := NewEventHandler(nil, nil, mdal, &mockSNS_Twilio{}, mclock, nil, "https://test.com", "", "", "", nil, storage.NewTestStore(nil))
+
+	params := &rawmsg.TwilioParams{
+		From:    providerPersonalPhoneNumber.String(),
+		To:      proxyPhoneNumber.String(),
+		CallSID: callSID,
+	}
+
+	twiml, err := processOutgoingCall(context.Background(), params, es.(*eventsHandler))
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expected := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
+<Response><Say voice="alice">Outbound calls cannot be made from a phone with blocked caller ID. We use the phone number you are calling from to verify your identity and connect the call via your Spruce phone number. Please try again after unblocking your caller ID.</Say><Say voice="alice">Thank you!</Say></Response>`)
+	if twiml != expected {
+		t.Fatalf("\nExpected %s\nGot %s", expected, twiml)
+	}
 }
 
 func TestOutgoing_PatientName(t *testing.T) {

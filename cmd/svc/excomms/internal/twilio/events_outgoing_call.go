@@ -35,6 +35,29 @@ func processOutgoingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 		return "", errors.Trace(err)
 	}
 
+	if !originatingPhoneNumber.IsCallable() {
+		conc.Go(func() {
+			var additionalMsg string
+			activeReservation, err := eh.dal.ActiveProxyPhoneNumberReservation(nil, nil, phone.Ptr(proxyPhoneNumber))
+			if err != nil && errors.Cause(err) != dal.ErrProxyPhoneNumberReservationNotFound {
+				golog.Errorf("Unable to retrieve active reservation for %s: %s", proxyPhoneNumber, err)
+			} else if activeReservation != nil {
+				additionalMsg = fmt.Sprintf(" It is likely %s from org %s.", activeReservation.OrganizationID, activeReservation.OwnerEntityID)
+			}
+			golog.Errorf("@baymax-support Someone attempted to make an outbound call from a phone with blocked callerID.%s", additionalMsg)
+		})
+
+		return twiml.NewResponse(
+			&twiml.Say{
+				Text:  "Outbound calls cannot be made from a phone with blocked caller ID. We use the phone number you are calling from to verify your identity and connect the call via your Spruce phone number. Please try again after unblocking your caller ID.",
+				Voice: "alice",
+			},
+			&twiml.Say{
+				Text:  "Thank you!",
+				Voice: "alice",
+			}).GenerateTwiML()
+	}
+
 	// look for an active reservation on the proxy phone number
 	ppnr, err := eh.proxyNumberManager.ActiveReservation(originatingPhoneNumber, proxyPhoneNumber)
 	if err != nil {

@@ -93,7 +93,7 @@ type DAL interface {
 
 	// ActiveProxyPhoneNumberReservation returns an unexpired (aka "active") reservation uniquely identified by the (originatingPhoneNumber, destinationPhoneNumber) or
 	// (originatingPhoneNumber, proxyPhoneNumber) pair.
-	ActiveProxyPhoneNumberReservation(originatingPhoneNumber phone.Number, destinationPhoneNumber, proxyPhoneNumber *phone.Number) (*models.ProxyPhoneNumberReservation, error)
+	ActiveProxyPhoneNumberReservation(originatingPhoneNumber, destinationPhoneNumber, proxyPhoneNumber *phone.Number) (*models.ProxyPhoneNumberReservation, error)
 
 	// SetCurrentOriginatingNumber sets the provided originaing number for the entityID.
 	SetCurrentOriginatingNumber(phoneNumber phone.Number, entityID, deviceID string) error
@@ -373,13 +373,15 @@ func (d *dal) CreateProxyPhoneNumberReservation(model *models.ProxyPhoneNumberRe
 	return errors.Trace(err)
 }
 
-func (d *dal) ActiveProxyPhoneNumberReservation(originatingPhoneNumber phone.Number, destinationPhoneNumber, proxyPhoneNumber *phone.Number) (*models.ProxyPhoneNumberReservation, error) {
+func (d *dal) ActiveProxyPhoneNumberReservation(originatingPhoneNumber, destinationPhoneNumber, proxyPhoneNumber *phone.Number) (*models.ProxyPhoneNumberReservation, error) {
 
 	where := make([]string, 0, 3)
 	vals := make([]interface{}, 0, 3)
 
-	where = append(where, "originating_phone_number = ?")
-	vals = append(vals, originatingPhoneNumber)
+	if originatingPhoneNumber != nil {
+		where = append(where, "originating_phone_number = ?")
+		vals = append(vals, *originatingPhoneNumber)
+	}
 
 	if destinationPhoneNumber != nil {
 		where = append(where, "destination_phone_number = ?")
