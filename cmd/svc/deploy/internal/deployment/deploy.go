@@ -55,7 +55,7 @@ func postStartMessage(depl *dal.Deployment, dep *dal.Deployable, env *dal.Enviro
 
 func postCompleteMessage(prevDepl *dal.Deployment, depl *dal.Deployment, dep *dal.Deployable, env *dal.Environment) {
 	if err := slack.Post(deploymentWebhookURL, &slack.Message{
-		Text:      fmt.Sprintf("`COMPLETED` deployment for `%s:%s` to environment `%s`\n`Changes:%s`", dep.Name, depl.BuildNumber, env.Name, compareURL(dep.GitURL, prevDepl.GitHash, depl.GitHash)),
+		Text:      fmt.Sprintf("`COMPLETED` deployment for `%s:%s` to environment `%s`\nChanges: %s", dep.Name, depl.BuildNumber, env.Name, compareURL(dep.GitURL, prevDepl.GitHash, depl.GitHash)),
 		Username:  deployUserName,
 		IconEmoji: deployGoodEmoji,
 	}); err != nil {
