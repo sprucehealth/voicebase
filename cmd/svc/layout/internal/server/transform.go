@@ -35,5 +35,6 @@ func transformVisitLayoutVersionToResponse(visitLayoutVersion *models.VisitLayou
 		ID:                   visitLayoutVersion.ID.String(),
 		SAMLLocation:         visitLayoutVersion.SAMLLocation,
 		ReviewLayoutLocation: visitLayoutVersion.ReviewLayoutLocation,
+		IntakeLayoutLocation: visitLayoutVersion.IntakeLayoutLocation,
 	}
 }
