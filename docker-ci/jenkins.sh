@@ -68,6 +68,7 @@ devDeployableMap["operational"]="deployable_0E38JIGJG0O00"
 devDeployableMap["layout"]="deployable_0E6H974S00O00"
 
 if [[ "$DEPLOY_TO_S3" != "" ]]; then
+	echo "Pushing images for revision: $GIT_REV"
 	# Tag any generated images with the remote repo and push
 	IMAGES=$(docker images -q -f label=version=$BRANCH-$BUILD_ID)
 	echo $IMAGES
