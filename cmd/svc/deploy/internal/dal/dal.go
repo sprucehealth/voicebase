@@ -786,7 +786,7 @@ func (d *dal) InsertDeployable(model *Deployable) (DeployableID, error) {
 	_, err := d.db.Exec(
 		`INSERT INTO deployable
           (id, deployable_group_id, name, description, git_url)
-          VALUES (?, ?, ?, ?)`, model.ID, model.DeployableGroupID, model.Name, model.Description, model.GitURL)
+          VALUES (?, ?, ?, ?, ?)`, model.ID, model.DeployableGroupID, model.Name, model.Description, model.GitURL)
 	if err != nil {
 		return EmptyDeployableID(), errors.Trace(err)
 	}
@@ -1166,7 +1166,7 @@ func (d *dal) InsertDeployment(model *Deployment) (DeploymentID, error) {
 	_, err := d.db.Exec(
 		`INSERT INTO deployment
           (id, type, data, status, build_number, deployable_id, environment_id, deployable_config_id, deployable_vector_id, git_hash)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, model.ID, model.Type.String(), model.Data, model.Status.String(), model.BuildNumber, model.DeployableID, model.EnvironmentID, model.DeployableConfigID, model.DeployableVectorID, model.GitHash)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, model.ID, model.Type.String(), model.Data, model.Status.String(), model.BuildNumber, model.DeployableID, model.EnvironmentID, model.DeployableConfigID, model.DeployableVectorID, model.GitHash)
 	if err != nil {
 		return EmptyDeploymentID(), errors.Trace(err)
 	}
