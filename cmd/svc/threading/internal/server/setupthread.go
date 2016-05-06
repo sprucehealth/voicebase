@@ -189,7 +189,7 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 				msgBML = bml.BML{
 					`Interested in engaging patients digitally with virtual visits, video calls, care plans (including e-prescribing),`,
 					` mobile payment, appointment reminders, and satisfaction surveys? Digital care on Spruce enables you to`,
-					` offer a standout patient experience and streamline your practice efficiency. The Digital Practive offering`,
+					` offer a standout patient experience and streamline your practice efficiency. The Digital Practice offering`,
 					` on Spruce is coming soon: message us in `, &bml.Anchor{HREF: supportThreadURL, Text: "Spruce Support"},
 					` if you would like to be a part of the private beta.`,
 				}
