@@ -41,6 +41,7 @@ type Service struct {
 		awsRegion              string
 		memcachedDiscoveryAddr string
 		memcachedHosts         string
+		jsonLogs               bool
 	}
 	awsSessionOnce sync.Once
 	awsSession     *session.Session
@@ -65,6 +66,7 @@ func NewService(name string) *Service {
 	flag.StringVar(&svc.flags.awsRegion, "aws_region", "us-east-1", "AWS `region`")
 	flag.StringVar(&svc.flags.memcachedDiscoveryAddr, "memcached_discovery_addr", "", "host:port of memcached discovery service")
 	flag.StringVar(&svc.flags.memcachedHosts, "memcached_hosts", "", "Comma separate host:port list of memcached server addresses")
+	flag.BoolVar(&svc.flags.jsonLogs, "json_logs", false, "Enable JSON formatted logs")
 
 	ParseFlags(strings.ToUpper(name) + "_")
 
@@ -75,6 +77,10 @@ func NewService(name string) *Service {
 		golog.Fatalf("-env flag required")
 	}
 	environment.SetCurrent(svc.flags.env)
+
+	if svc.flags.jsonLogs {
+		golog.Default().SetHandler(golog.WriterHandler(os.Stderr, golog.JSONFormatter()))
+	}
 
 	if svc.flags.debug {
 		golog.Default().SetLevel(golog.DEBUG)
