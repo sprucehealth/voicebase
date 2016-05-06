@@ -40,17 +40,17 @@ func (s *threadsServer) CreateOnboardingThread(ctx context.Context, in *threadin
 		"org_id":         {in.OrganizationID},
 	})
 	msgBML := bml.BML{
-		"Welcome to Spruce! How would you like to use Spruce?\n\n",
+		"Welcome! How would you like to use Spruce? (You can tap on multiple options)\n\n",
 
 		&bml.Anchor{HREF: phoneSetupURL, Text: "Second phone line"},
-		" to exchange calls and texts with patients, without disclosing your personal number\n\n",
+		" for calls and texts with patients, without disclosing your personal number.\n\n",
 
 		&bml.Anchor{HREF: answeringServiceURL, Text: "Automated answering service"},
-		" that takes and transcribes urgent voicemails and notifies you\n\n",
+		" that transcribes urgent voicemails and notifies you.\n\n",
 
-		"Secure, HIPAA-compliant collaboration and ", &bml.Anchor{HREF: teamMessagingURL, Text: "messaging with teammates"}, " about care\n\n",
+		&bml.Anchor{HREF: teamMessagingURL, Text: "Secure team chat and care coordination"}, ".\n\n",
 
-		"Digital care and ", &bml.Anchor{HREF: telemedicineURL, Text: "telemedicine"}, " with patients",
+		"Digital care and ", &bml.Anchor{HREF: telemedicineURL, Text: "telemedicine"}, ".",
 	}
 	msg, err := msgBML.Format()
 	if err != nil {
@@ -152,9 +152,8 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 				prettyPhone = pn.String()
 			}
 			msgBML = bml.BML{
-				`Success! You can now use your Spruce number ` + prettyPhone + ` for calls, texts, and voicemails with patients.`,
-				` If you have any questions about using Spruce, just message us in `,
-				&bml.Anchor{HREF: supportThreadURL, Text: "Spruce Support"}, ` and we’ll reply to help you.`,
+				`You can now use your Spruce number ` + prettyPhone + ` for calls, texts, and voicemails with patients.`,
+				` Just message us in `, &bml.Anchor{HREF: supportThreadURL, Text: "Spruce Support"}, ` if you have any questions or problems.`,
 			}
 			newStepBit = 1
 		}
@@ -166,12 +165,11 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 				phoneSetupURL := deeplink.OrgSettingsPhoneURL(s.webDomain, setupThread.OrganizationID)
 				supportThreadURL := deeplink.ThreadURLShareable(s.webDomain, setupThread.OrganizationID, supportThread.ID.String())
 				msgBML = bml.BML{
-					`Great! First let’s `, &bml.Anchor{HREF: phoneSetupURL, Text: "set up your Spruce number"},
-					` if you haven’t already. Voicemails left with your Spruce number will be automatically transcribed,`,
-					` and you will receive a notifications on your phone. We can also enable more advanced configurations,`,
-					` such as custom greetings, special handling for urgent voicemails, and after-hours oncall rotations.`,
-					` Just send us a message in `, &bml.Anchor{HREF: supportThreadURL, Text: "Spruce Support"},
-					` with the configuration you would like, and someone from Spruce will reply to help you.`,
+					`For $25/provider/month your Spruce line can triage and transcribe patient voicemails, notifying you`,
+					` via text when an urgent voicemail is received. You can also add teammates to create an on-call rotation.`,
+					` To do this, first `, &bml.Anchor{HREF: phoneSetupURL, Text: "set up your Spruce number"},
+					` if you haven’t already. Then tell us in `, &bml.Anchor{HREF: supportThreadURL, Text: "Spruce Support"},
+					` that you would like to enable the answering service feature.`,
 				}
 				newStepBit = 2
 			}
@@ -181,7 +179,7 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 				msgBML = bml.BML{
 					`After `, &bml.Anchor{HREF: inviteURL, Text: "adding teammates"}, `, you can start a new team conversation`,
 					` from the home screen and message 1:1 or in group chats. You can also collaborate and make notes within`,
-					` the context of patient conversations (patients won’t see this activity, but your teammates will).`,
+					` patient conversations (patients won’t see this activity, but your teammates will).`,
 				}
 				newStepBit = 4
 			}
@@ -189,10 +187,10 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 			if state.Step&8 == 0 {
 				supportThreadURL := deeplink.ThreadURLShareable(s.webDomain, setupThread.OrganizationID, supportThread.ID.String())
 				msgBML = bml.BML{
-					`Interested in engaging patients digitally with e-visits, video calls, care plans (including eprescribing),`,
-					` mobile billpay, appointment reminders, and satisfaction surveys? Digital care on Spruce enables you to`,
-					` simultaneously offer a standout patient experience and streamline your practice efficiency. The Digital`,
-					` Practice offering on Spruce is coming soon: just message us in `, &bml.Anchor{HREF: supportThreadURL, Text: "Spruce Support"},
+					`Interested in engaging patients digitally with virtual visits, video calls, care plans (including e-prescribing),`,
+					` mobile payment, appointment reminders, and satisfaction surveys? Digital care on Spruce enables you to`,
+					` offer a standout patient experience and streamline your practice efficiency. The Digital Practive offering`,
+					` on Spruce is coming soon: message us in `, &bml.Anchor{HREF: supportThreadURL, Text: "Spruce Support"},
 					` if you would like to be a part of the private beta.`,
 				}
 				newStepBit = 8

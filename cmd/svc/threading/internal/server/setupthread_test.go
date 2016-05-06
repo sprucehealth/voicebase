@@ -27,7 +27,7 @@ func TestCreateOnboardingThread(t *testing.T) {
 	dl.Expect(mock.NewExpectation(dl.CreateThread, &models.Thread{
 		OrganizationID:     "o1",
 		PrimaryEntityID:    "e2",
-		LastMessageSummary: "Setup: Welcome to Spruce! How would you like to use Spruce? Second phone line to exchange calls and texts with patients, without disclosing your personal number Automated answering service that takes and transcribes urgent voicemails and notifies you Secure, HIPAA-compliant collaboration and messaging with teammates about care Digital care and telemedicine with patients",
+		LastMessageSummary: "Setup: Welcome! How would you like to use Spruce? (You can tap on multiple options) Second phone line for calls and texts with patients, without disclosing your personal number. Automated answering service that transcribes urgent voicemails and notifies you. Secure team chat and care coordination. Digital care and telemedicine.",
 		Type:               models.ThreadTypeSetup,
 	}).WithReturns(thid, nil))
 
@@ -35,8 +35,8 @@ func TestCreateOnboardingThread(t *testing.T) {
 		ThreadID:     thid,
 		FromEntityID: "e2",
 		Internal:     false,
-		Text:         "Welcome to Spruce! How would you like to use Spruce?\n\n<a href=\"https://WEBDOMAIN/org/o1/settings/phone\">Second phone line</a> to exchange calls and texts with patients, without disclosing your personal number\n\n<a href=\"https://WEBDOMAIN/post_event?name=setup_answering_service&amp;org_id=o1&amp;refresh_thread=1\">Automated answering service</a> that takes and transcribes urgent voicemails and notifies you\n\nSecure, HIPAA-compliant collaboration and <a href=\"https://WEBDOMAIN/post_event?name=setup_team_messaging&amp;org_id=o1&amp;refresh_thread=1\">messaging with teammates</a> about care\n\nDigital care and <a href=\"https://WEBDOMAIN/post_event?name=setup_telemedicine&amp;org_id=o1&amp;refresh_thread=1\">telemedicine</a> with patients",
-		Summary:      "Setup: Welcome to Spruce! How would you like to use Spruce? Second phone line to exchange calls and texts with patients, without disclosing your personal number Automated answering service that takes and transcribes urgent voicemails and notifies you Secure, HIPAA-compliant collaboration and messaging with teammates about care Digital care and telemedicine with patients",
+		Text:         "Welcome! How would you like to use Spruce? (You can tap on multiple options)\n\n<a href=\"https://WEBDOMAIN/org/o1/settings/phone\">Second phone line</a> for calls and texts with patients, without disclosing your personal number.\n\n<a href=\"https://WEBDOMAIN/post_event?name=setup_answering_service&amp;org_id=o1&amp;refresh_thread=1\">Automated answering service</a> that transcribes urgent voicemails and notifies you.\n\n<a href=\"https://WEBDOMAIN/post_event?name=setup_team_messaging&amp;org_id=o1&amp;refresh_thread=1\">Secure team chat and care coordination</a>.\n\nDigital care and <a href=\"https://WEBDOMAIN/post_event?name=setup_telemedicine&amp;org_id=o1&amp;refresh_thread=1\">telemedicine</a>.",
+		Summary:      "Setup: Welcome! How would you like to use Spruce? (You can tap on multiple options) Second phone line for calls and texts with patients, without disclosing your personal number. Automated answering service that transcribes urgent voicemails and notifies you. Secure team chat and care coordination. Digital care and telemedicine.",
 	}).WithReturns(&models.ThreadItem{}, nil))
 
 	dl.Expect(mock.NewExpectation(dl.CreateOnboardingState, thid, "o1").WithReturns(nil))
@@ -89,8 +89,8 @@ func TestOnboardingThreadEvent_PROVISIONED_PHONE(t *testing.T) {
 	dl.Expect(mock.NewExpectation(dl.SetupThreadState, setupTID).WithReturns(&models.SetupThreadState{ThreadID: setupTID, Step: 0}, nil))
 	dl.Expect(mock.NewExpectation(dl.UpdateSetupThreadState, setupTID, &dal.SetupThreadStateUpdate{Step: ptr.Int(1)}).WithReturns(nil))
 	dl.Expect(mock.NewExpectation(dl.PostMessage, &dal.PostMessageRequest{
-		Text:     "Success! You can now use your Spruce number (415) 555-1212 for calls, texts, and voicemails with patients. If you have any questions about using Spruce, just message us in <a href=\"https://WEBDOMAIN/org/org/thread/" + supportTID.String() + "\">Spruce Support</a> and we’ll reply to help you.",
-		Summary:  "Setup: Success! You can now use your Spruce number (415) 555-1212 for calls, texts, and voicemails with patients. If you have any questions about using Spruce, just message us in Spruce Support and we’ll reply to help you.",
+		Text:     "You can now use your Spruce number (415) 555-1212 for calls, texts, and voicemails with patients. Just message us in <a href=\"https://WEBDOMAIN/org/org/thread/" + supportTID.String() + "\">Spruce Support</a> if you have any questions or problems.",
+		Summary:  "Setup: You can now use your Spruce number (415) 555-1212 for calls, texts, and voicemails with patients. Just message us in Spruce Support if you have any questions or problems.",
 		ThreadID: setupTID,
 	}).WithReturns(&models.ThreadItem{}, nil))
 	dl.Expect(mock.NewExpectation(dl.Thread, setupTID).WithReturns(&models.Thread{ID: setupTID, OrganizationID: "org"}, nil))
@@ -157,8 +157,8 @@ func TestOnboardingThreadEvent_GENERIC_SETUP_eventSetupAnsweringService(t *testi
 	dl.Expect(mock.NewExpectation(dl.SetupThreadState, setupTID).WithReturns(&models.SetupThreadState{ThreadID: setupTID, Step: 0}, nil))
 	dl.Expect(mock.NewExpectation(dl.UpdateSetupThreadState, setupTID, &dal.SetupThreadStateUpdate{Step: ptr.Int(2)}).WithReturns(nil))
 	dl.Expect(mock.NewExpectation(dl.PostMessage, &dal.PostMessageRequest{
-		Text:     "Great! First let’s <a href=\"https://WEBDOMAIN/org/org/settings/phone\">set up your Spruce number</a> if you haven’t already. Voicemails left with your Spruce number will be automatically transcribed, and you will receive a notifications on your phone. We can also enable more advanced configurations, such as custom greetings, special handling for urgent voicemails, and after-hours oncall rotations. Just send us a message in <a href=\"https://WEBDOMAIN/org/org/thread/" + supportTID.String() + "\">Spruce Support</a> with the configuration you would like, and someone from Spruce will reply to help you.",
-		Summary:  "Setup: Great! First let’s set up your Spruce number if you haven’t already. Voicemails left with your Spruce number will be automatically transcribed, and you will receive a notifications on your phone. We can also enable more advanced configurations, such as custom greetings, special handling for urgent voicemails, and after-hours oncall rotations. Just send us a message in Spruce Support with the configuration you would like, and someone from Spruce will reply to help you.",
+		Text:     "For $25/provider/month your Spruce line can triage and transcribe patient voicemails, notifying you via text when an urgent voicemail is received. You can also add teammates to create an on-call rotation. To do this, first <a href=\"https://WEBDOMAIN/org/org/settings/phone\">set up your Spruce number</a> if you haven’t already. Then tell us in <a href=\"https://WEBDOMAIN/org/org/thread/" + supportTID.String() + "\">Spruce Support</a> that you would like to enable the answering service feature.",
+		Summary:  "Setup: For $25/provider/month your Spruce line can triage and transcribe patient voicemails, notifying you via text when an urgent voicemail is received. You can also add teammates to create an on-call rotation. To do this, first set up your Spruce number if you haven’t already. Then tell us in Spruce Support that you would like to enable the answering service feature.",
 		ThreadID: setupTID,
 	}).WithReturns(&models.ThreadItem{}, nil))
 	dl.Expect(mock.NewExpectation(dl.Thread, setupTID).WithReturns(&models.Thread{ID: setupTID, OrganizationID: "org"}, nil))
@@ -200,8 +200,8 @@ func TestOnboardingThreadEvent_GENERIC_SETUP_eventSetupTeamMessaging(t *testing.
 	dl.Expect(mock.NewExpectation(dl.SetupThreadState, setupTID).WithReturns(&models.SetupThreadState{ThreadID: setupTID, Step: 0}, nil))
 	dl.Expect(mock.NewExpectation(dl.UpdateSetupThreadState, setupTID, &dal.SetupThreadStateUpdate{Step: ptr.Int(4)}).WithReturns(nil))
 	dl.Expect(mock.NewExpectation(dl.PostMessage, &dal.PostMessageRequest{
-		Text:     "After <a href=\"https://WEBDOMAIN/org/org/invite\">adding teammates</a>, you can start a new team conversation from the home screen and message 1:1 or in group chats. You can also collaborate and make notes within the context of patient conversations (patients won’t see this activity, but your teammates will).",
-		Summary:  "Setup: After adding teammates, you can start a new team conversation from the home screen and message 1:1 or in group chats. You can also collaborate and make notes within the context of patient conversations (patients won’t see this activity, but your teammates will).",
+		Text:     "After <a href=\"https://WEBDOMAIN/org/org/invite\">adding teammates</a>, you can start a new team conversation from the home screen and message 1:1 or in group chats. You can also collaborate and make notes within patient conversations (patients won’t see this activity, but your teammates will).",
+		Summary:  "Setup: After adding teammates, you can start a new team conversation from the home screen and message 1:1 or in group chats. You can also collaborate and make notes within patient conversations (patients won’t see this activity, but your teammates will).",
 		ThreadID: setupTID,
 	}).WithReturns(&models.ThreadItem{}, nil))
 	dl.Expect(mock.NewExpectation(dl.Thread, setupTID).WithReturns(&models.Thread{ID: setupTID, OrganizationID: "org"}, nil))
@@ -243,8 +243,8 @@ func TestOnboardingThreadEvent_GENERIC_SETUP_eventSetupTelemedicine(t *testing.T
 	dl.Expect(mock.NewExpectation(dl.SetupThreadState, setupTID).WithReturns(&models.SetupThreadState{ThreadID: setupTID, Step: 0}, nil))
 	dl.Expect(mock.NewExpectation(dl.UpdateSetupThreadState, setupTID, &dal.SetupThreadStateUpdate{Step: ptr.Int(8)}).WithReturns(nil))
 	dl.Expect(mock.NewExpectation(dl.PostMessage, &dal.PostMessageRequest{
-		Text:     "Interested in engaging patients digitally with e-visits, video calls, care plans (including eprescribing), mobile billpay, appointment reminders, and satisfaction surveys? Digital care on Spruce enables you to simultaneously offer a standout patient experience and streamline your practice efficiency. The Digital Practice offering on Spruce is coming soon: just message us in <a href=\"https://WEBDOMAIN/org/org/thread/" + supportTID.String() + "\">Spruce Support</a> if you would like to be a part of the private beta.",
-		Summary:  "Setup: Interested in engaging patients digitally with e-visits, video calls, care plans (including eprescribing), mobile billpay, appointment reminders, and satisfaction surveys? Digital care on Spruce enables you to simultaneously offer a standout patient experience and streamline your practice efficiency. The Digital Practice offering on Spruce is coming soon: just message us in Spruce Support if you would like to be a part of the private beta.",
+		Text:     "Interested in engaging patients digitally with virtual visits, video calls, care plans (including e-prescribing), mobile payment, appointment reminders, and satisfaction surveys? Digital care on Spruce enables you to offer a standout patient experience and streamline your practice efficiency. The Digital Practive offering on Spruce is coming soon: message us in <a href=\"https://WEBDOMAIN/org/org/thread/" + supportTID.String() + "\">Spruce Support</a> if you would like to be a part of the private beta.",
+		Summary:  "Setup: Interested in engaging patients digitally with virtual visits, video calls, care plans (including e-prescribing), mobile payment, appointment reminders, and satisfaction surveys? Digital care on Spruce enables you to offer a standout patient experience and streamline your practice efficiency. The Digital Practive offering on Spruce is coming soon: message us in Spruce Support if you would like to be a part of the private beta.",
 		ThreadID: setupTID,
 	}).WithReturns(&models.ThreadItem{}, nil))
 	dl.Expect(mock.NewExpectation(dl.Thread, setupTID).WithReturns(&models.Thread{ID: setupTID, OrganizationID: "org"}, nil))
