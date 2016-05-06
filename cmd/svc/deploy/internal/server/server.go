@@ -620,6 +620,36 @@ func (s *server) Environments(ctx context.Context, in *deploy.EnvironmentsReques
 	}, nil
 }
 
+// Promote reports that a deployable or deployable group should be promoted to all available outbound vectors
+func (s *server) Promote(ctx context.Context, in *deploy.PromotionRequest) (*deploy.PromotionResponse, error) {
+	if in.DeploymentID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "deployment id cannot be empty")
+	}
+
+	deploymentIDs, err := s.manager.ProcessPromotionEvent(&deploy.PromotionEvent{
+		DeploymentID: in.DeploymentID,
+	})
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	deployments := make([]*dal.Deployment, len(deploymentIDs))
+	for i, dID := range deploymentIDs {
+		deployments[i], err = s.dl.Deployment(dID)
+		if err != nil {
+			return nil, grpcErrorf(codes.Internal, err.Error())
+		}
+	}
+
+	rDeployments, err := transformDeploymentsToResponse(deployments)
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+	return &deploy.PromotionResponse{
+		Deployments: rDeployments,
+	}, nil
+}
+
 // ReportBuildComplete reports the completion of a build for deployment
 func (s *server) ReportBuildComplete(ctx context.Context, in *deploy.ReportBuildCompleteRequest) (*deploy.ReportBuildCompleteResponse, error) {
 	ev := &deploy.BuildCompleteEvent{}

@@ -45,6 +45,8 @@
 		ReportBuildCompleteResponse
 		DeploymentsRequest
 		DeploymentsResponse
+		PromotionRequest
+		PromotionResponse
 */
 package deploy
 
@@ -938,6 +940,27 @@ func (m *DeploymentsResponse) GetDeployments() []*Deployment {
 	return nil
 }
 
+type PromotionRequest struct {
+	DeploymentID string `protobuf:"bytes,1,opt,name=deployment_id,proto3" json:"deployment_id,omitempty"`
+}
+
+func (m *PromotionRequest) Reset()      { *m = PromotionRequest{} }
+func (*PromotionRequest) ProtoMessage() {}
+
+type PromotionResponse struct {
+	Deployments []*Deployment `protobuf:"bytes,1,rep,name=deployments" json:"deployments,omitempty"`
+}
+
+func (m *PromotionResponse) Reset()      { *m = PromotionResponse{} }
+func (*PromotionResponse) ProtoMessage() {}
+
+func (m *PromotionResponse) GetDeployments() []*Deployment {
+	if m != nil {
+		return m.Deployments
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*DeployableGroup)(nil), "deploy.DeployableGroup")
 	proto.RegisterType((*Environment)(nil), "deploy.Environment")
@@ -975,6 +998,8 @@ func init() {
 	proto.RegisterType((*ReportBuildCompleteResponse)(nil), "deploy.ReportBuildCompleteResponse")
 	proto.RegisterType((*DeploymentsRequest)(nil), "deploy.DeploymentsRequest")
 	proto.RegisterType((*DeploymentsResponse)(nil), "deploy.DeploymentsResponse")
+	proto.RegisterType((*PromotionRequest)(nil), "deploy.PromotionRequest")
+	proto.RegisterType((*PromotionResponse)(nil), "deploy.PromotionResponse")
 	proto.RegisterEnum("deploy.EnvironmentConfig_DeployableConfigStatus", EnvironmentConfig_DeployableConfigStatus_name, EnvironmentConfig_DeployableConfigStatus_value)
 	proto.RegisterEnum("deploy.DeployableConfig_DeployableConfigStatus", DeployableConfig_DeployableConfigStatus_name, DeployableConfig_DeployableConfigStatus_value)
 	proto.RegisterEnum("deploy.Deployment_DeploymentType", Deployment_DeploymentType_name, Deployment_DeploymentType_value)
@@ -2323,6 +2348,61 @@ func (this *DeploymentsResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *PromotionRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*PromotionRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.DeploymentID != that1.DeploymentID {
+		return false
+	}
+	return true
+}
+func (this *PromotionResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*PromotionResponse)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if len(this.Deployments) != len(that1.Deployments) {
+		return false
+	}
+	for i := range this.Deployments {
+		if !this.Deployments[i].Equal(that1.Deployments[i]) {
+			return false
+		}
+	}
+	return true
+}
 func (this *DeployableGroup) GoString() string {
 	if this == nil {
 		return "nil"
@@ -2862,6 +2942,28 @@ func (this *DeploymentsResponse) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *PromotionRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&deploy.PromotionRequest{")
+	s = append(s, "DeploymentID: "+fmt.Sprintf("%#v", this.DeploymentID)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *PromotionResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&deploy.PromotionResponse{")
+	if this.Deployments != nil {
+		s = append(s, "Deployments: "+fmt.Sprintf("%#v", this.Deployments)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func valueToGoStringSvc(v interface{}, typ string) string {
 	rv := reflect.ValueOf(v)
 	if rv.IsNil() {
@@ -2908,6 +3010,7 @@ type DeployClient interface {
 	Deployments(ctx context.Context, in *DeploymentsRequest, opts ...grpc.CallOption) (*DeploymentsResponse, error)
 	Environments(ctx context.Context, in *EnvironmentsRequest, opts ...grpc.CallOption) (*EnvironmentsResponse, error)
 	EnvironmentConfigs(ctx context.Context, in *EnvironmentConfigsRequest, opts ...grpc.CallOption) (*EnvironmentConfigsResponse, error)
+	Promote(ctx context.Context, in *PromotionRequest, opts ...grpc.CallOption) (*PromotionResponse, error)
 	ReportBuildComplete(ctx context.Context, in *ReportBuildCompleteRequest, opts ...grpc.CallOption) (*ReportBuildCompleteResponse, error)
 }
 
@@ -3036,6 +3139,15 @@ func (c *deployClient) EnvironmentConfigs(ctx context.Context, in *EnvironmentCo
 	return out, nil
 }
 
+func (c *deployClient) Promote(ctx context.Context, in *PromotionRequest, opts ...grpc.CallOption) (*PromotionResponse, error) {
+	out := new(PromotionResponse)
+	err := grpc.Invoke(ctx, "/deploy.Deploy/Promote", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *deployClient) ReportBuildComplete(ctx context.Context, in *ReportBuildCompleteRequest, opts ...grpc.CallOption) (*ReportBuildCompleteResponse, error) {
 	out := new(ReportBuildCompleteResponse)
 	err := grpc.Invoke(ctx, "/deploy.Deploy/ReportBuildComplete", in, out, c.cc, opts...)
@@ -3061,6 +3173,7 @@ type DeployServer interface {
 	Deployments(context.Context, *DeploymentsRequest) (*DeploymentsResponse, error)
 	Environments(context.Context, *EnvironmentsRequest) (*EnvironmentsResponse, error)
 	EnvironmentConfigs(context.Context, *EnvironmentConfigsRequest) (*EnvironmentConfigsResponse, error)
+	Promote(context.Context, *PromotionRequest) (*PromotionResponse, error)
 	ReportBuildComplete(context.Context, *ReportBuildCompleteRequest) (*ReportBuildCompleteResponse, error)
 }
 
@@ -3224,6 +3337,18 @@ func _Deploy_EnvironmentConfigs_Handler(srv interface{}, ctx context.Context, de
 	return out, nil
 }
 
+func _Deploy_Promote_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(PromotionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(DeployServer).Promote(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func _Deploy_ReportBuildComplete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(ReportBuildCompleteRequest)
 	if err := dec(in); err != nil {
@@ -3291,6 +3416,10 @@ var _Deploy_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "EnvironmentConfigs",
 			Handler:    _Deploy_EnvironmentConfigs_Handler,
+		},
+		{
+			MethodName: "Promote",
+			Handler:    _Deploy_Promote_Handler,
 		},
 		{
 			MethodName: "ReportBuildComplete",
@@ -4711,6 +4840,60 @@ func (m *DeploymentsResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *PromotionRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *PromotionRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.DeploymentID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.DeploymentID)))
+		i += copy(data[i:], m.DeploymentID)
+	}
+	return i, nil
+}
+
+func (m *PromotionResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *PromotionResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Deployments) > 0 {
+		for _, msg := range m.Deployments {
+			data[i] = 0xa
+			i++
+			i = encodeVarintSvc(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	return i, nil
+}
+
 func encodeFixed64Svc(data []byte, offset int, v uint64) int {
 	data[offset] = uint8(v)
 	data[offset+1] = uint8(v >> 8)
@@ -5395,6 +5578,28 @@ func (m *DeploymentsResponse) Size() (n int) {
 	return n
 }
 
+func (m *PromotionRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.DeploymentID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *PromotionResponse) Size() (n int) {
+	var l int
+	_ = l
+	if len(m.Deployments) > 0 {
+		for _, e := range m.Deployments {
+			l = e.Size()
+			n += 1 + l + sovSvc(uint64(l))
+		}
+	}
+	return n
+}
+
 func sovSvc(x uint64) (n int) {
 	for {
 		n++
@@ -5906,6 +6111,26 @@ func (this *DeploymentsResponse) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&DeploymentsResponse{`,
+		`Deployments:` + strings.Replace(fmt.Sprintf("%v", this.Deployments), "Deployment", "Deployment", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PromotionRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PromotionRequest{`,
+		`DeploymentID:` + fmt.Sprintf("%v", this.DeploymentID) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PromotionResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PromotionResponse{`,
 		`Deployments:` + strings.Replace(fmt.Sprintf("%v", this.Deployments), "Deployment", "Deployment", 1) + `,`,
 		`}`,
 	}, "")
@@ -10739,6 +10964,166 @@ func (m *DeploymentsResponse) Unmarshal(data []byte) error {
 		}
 		if fieldNum <= 0 {
 			return fmt.Errorf("proto: DeploymentsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Deployments", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Deployments = append(m.Deployments, &Deployment{})
+			if err := m.Deployments[len(m.Deployments)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *PromotionRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PromotionRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PromotionRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DeploymentID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.DeploymentID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *PromotionResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PromotionResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PromotionResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:

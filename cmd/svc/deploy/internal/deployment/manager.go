@@ -19,19 +19,21 @@ import (
 
 // Manager represents the driver for deployments and event processing
 type Manager struct {
-	dl      dal.DAL
-	ecsCli  ecsiface.ECSAPI
-	stsCli  stsiface.STSAPI
-	nWorker worker.Worker
-	dWorker worker.Worker
+	dl         dal.DAL
+	ecsCli     ecsiface.ECSAPI
+	stsCli     stsiface.STSAPI
+	awsSession *session.Session
+	nWorker    worker.Worker
+	dWorker    worker.Worker
 }
 
 // NewManager returns an initialized instance of Manager
 func NewManager(dl dal.DAL, awsSession *session.Session, eventsQueueURL string) *Manager {
 	m := &Manager{
-		dl:     dl,
-		ecsCli: ecs.New(awsSession),
-		stsCli: sts.New(awsSession),
+		dl:         dl,
+		ecsCli:     ecs.New(awsSession),
+		stsCli:     sts.New(awsSession),
+		awsSession: awsSession,
 	}
 	m.nWorker = newNotificationWorker(m, sqs.New(awsSession), eventsQueueURL)
 	m.dWorker = worker.NewRepeat(time.Second*30, m.deploymentDiscovery)
@@ -81,13 +83,34 @@ func (m *Manager) ProcessBuildCompleteEvent(ev *deploy.BuildCompleteEvent) ([]da
 	if err != nil {
 		return nil, err
 	} else if len(vectors) == 0 {
-		golog.Warningf("Recieved build complete event for deployable %s but no deployable vectors exist with source BUILD")
+		golog.Warningf("Recieved build complete event for deployable %s but no deployable vectors exist with source BUILD", deploym.DeployableID)
 		return nil, nil
 	}
 
-	ids := make([]dal.DeploymentID, len(vectors))
+	return m.deploy(vectors, deploym)
+}
+
+// ProcessPromotionEvent processes an event representing a promotion
+func (m *Manager) ProcessPromotionEvent(ev *deploy.PromotionEvent) ([]dal.DeploymentID, error) {
+	deploym, sourceEnv, err := m.deploymentForPromotion(ev)
+	if err != nil {
+		return nil, err
+	}
+
+	vectors, err := m.dl.DeployableVectorsForDeployableAndSourceEnvironment(deploym.DeployableID, sourceEnv)
+	if err != nil {
+		return nil, err
+	} else if len(vectors) == 0 {
+		golog.Warningf("Recieved promotion complete event for deployment %s but no deployable vectors exist for deployable %s with source env %s", ev.DeploymentID, deploym.DeployableID, sourceEnv)
+		return nil, nil
+	}
+	return m.deploy(vectors, deploym)
+}
+
+func (m *Manager) deploy(dvs []*dal.DeployableVector, deploym *dal.Deployment) ([]dal.DeploymentID, error) {
+	ids := make([]dal.DeploymentID, len(dvs))
 	if err := m.dl.Transact(func(dl dal.DAL) error {
-		for i, v := range vectors {
+		for i, v := range dvs {
 			activeConfig, err := m.activeDepoyableConfig(deploym.DeployableID, v.TargetEnvironmentID)
 			if err != nil {
 				return err
@@ -101,7 +124,7 @@ func (m *Manager) ProcessBuildCompleteEvent(ev *deploy.BuildCompleteEvent) ([]da
 				EnvironmentID:      v.TargetEnvironmentID,
 				DeployableConfigID: activeConfig.ID,
 				DeployableVectorID: v.ID,
-				GitHash:            ev.GitHash,
+				GitHash:            deploym.GitHash,
 			})
 			if err != nil {
 				return err
@@ -144,6 +167,7 @@ func (m *Manager) deploymentForBuildComplete(ev *deploy.BuildCompleteEvent) (*da
 		DeployableID: depID,
 		BuildNumber:  ev.BuildNumber,
 		Status:       dal.DeploymentStatusPending,
+		GitHash:      ev.GitHash,
 	}
 	depData := &deploy.ECSDeployment{
 		Image: ev.Image,
@@ -155,4 +179,26 @@ func (m *Manager) deploymentForBuildComplete(ev *deploy.BuildCompleteEvent) (*da
 	deploym.Data = data
 	deploym.Type = dal.DeploymentTypeEcs
 	return deploym, nil
+}
+
+func (m *Manager) deploymentForPromotion(ev *deploy.PromotionEvent) (*dal.Deployment, dal.EnvironmentID, error) {
+	depID, err := dal.ParseDeploymentID(ev.DeploymentID)
+	if err != nil {
+		return nil, dal.EmptyEnvironmentID(), fmt.Errorf("deployment id %q is invalid", ev.DeploymentID)
+	}
+	if _, err = m.dl.Deployment(depID); err != nil {
+		if errors.Cause(err) == dal.ErrNotFound {
+			return nil, dal.EmptyEnvironmentID(), fmt.Errorf("Not Found: Deployment: %q", depID)
+		}
+		return nil, dal.EmptyEnvironmentID(), err
+	}
+	dDeployment, err := m.dl.Deployment(depID)
+	return &dal.Deployment{
+		DeployableID: dDeployment.DeployableID,
+		BuildNumber:  dDeployment.BuildNumber,
+		Status:       dal.DeploymentStatusPending,
+		Type:         dDeployment.Type,
+		Data:         dDeployment.Data,
+		GitHash:      dDeployment.GitHash,
+	}, dDeployment.EnvironmentID, nil
 }

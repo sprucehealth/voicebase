@@ -267,6 +267,14 @@ message DeploymentsResponse {
 	repeated Deployment deployments = 1;
 }
 
+message PromotionRequest {
+    string deployment_id = 1 [(gogoproto.customname) = "DeploymentID"];
+}
+
+message PromotionResponse {
+	repeated Deployment deployments = 1;
+}
+
 // Deploy provides mechanisms that deploy software to the infrastructure
 service Deploy {
 	rpc CreateDeployable (CreateDeployableRequest) returns (CreateDeployableResponse);
@@ -282,5 +290,6 @@ service Deploy {
 	rpc Deployments (DeploymentsRequest) returns (DeploymentsResponse);
 	rpc Environments (EnvironmentsRequest) returns (EnvironmentsResponse);
 	rpc EnvironmentConfigs (EnvironmentConfigsRequest) returns (EnvironmentConfigsResponse);
+	rpc Promote (PromotionRequest) returns (PromotionResponse);
 	rpc ReportBuildComplete (ReportBuildCompleteRequest) returns (ReportBuildCompleteResponse);
 }

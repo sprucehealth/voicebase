@@ -24,6 +24,7 @@ type DAL interface {
 	DeployableVector(id DeployableVectorID) (*DeployableVector, error)
 	DeployableVectorsForDeployable(depID DeployableID) ([]*DeployableVector, error)
 	DeployableVectorsForDeployableAndSource(id DeployableID, source DeployableVectorSourceType) ([]*DeployableVector, error)
+	DeployableVectorsForDeployableAndSourceEnvironment(depID DeployableID, sourceEnv EnvironmentID) ([]*DeployableVector, error)
 	DeployableVectorForDeployableSourceTarget(depID DeployableID, sourceType DeployableVectorSourceType, sourceEnvID, targetEnvID EnvironmentID) (*DeployableVector, error)
 	DeleteDeployableVector(id DeployableVectorID) (int64, error)
 	InsertDeployableGroup(model *DeployableGroup) (DeployableGroupID, error)
@@ -738,6 +739,26 @@ func (d *dal) DeployableVectorsForDeployable(depID DeployableID) ([]*DeployableV
 func (d *dal) DeployableVectorsForDeployableAndSource(depID DeployableID, source DeployableVectorSourceType) ([]*DeployableVector, error) {
 	rows, err := d.db.Query(
 		selectDeployableVector+` WHERE deployable_id = ? AND source_type = ?`, depID.Val, source.String())
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	defer rows.Close()
+
+	var models []*DeployableVector
+	for rows.Next() {
+		model, err := scanDeployableVector(rows)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		models = append(models, model)
+	}
+	return models, errors.Trace(err)
+}
+
+// DeployableVectorsForDeployableAndSourceEnvironment retrieves all deployable vector records for a given deployable id and source en
+func (d *dal) DeployableVectorsForDeployableAndSourceEnvironment(depID DeployableID, sourceEnv EnvironmentID) ([]*DeployableVector, error) {
+	rows, err := d.db.Query(
+		selectDeployableVector+` WHERE deployable_id = ? AND source_environment_id = ?`, depID.Val, sourceEnv.Val)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

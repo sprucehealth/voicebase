@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/aws/aws-sdk-go/service/ecs/ecsiface"
 	"github.com/sprucehealth/backend/cmd/svc/deploy/internal/dal"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -18,29 +19,35 @@ func (m *Manager) processECSDeployment(d *dal.Deployment) error {
 	if err != nil {
 		return err
 	}
-	// Assume the correct role. For now hack this.
-	// TODO: Figure out how to track roles vs envs
-	aECSCli, err := awsutil.AssumedECSCli(m.stsCli, "arn:aws:iam::758505115169:role/dev-deploy-ecs", d.ID.String())
+	env, err := m.dl.Environment(d.EnvironmentID)
 	if err != nil {
 		return err
 	}
+	// Assume the correct role. For now hack this.
+	// TODO: Figure out how to track roles vs envs
+	// If it's not prod, assume the dev role. This is the jank.
+	var ecsCli ecsiface.ECSAPI
+	if !env.IsProd {
+		ecsCli, err = awsutil.AssumedECSCli(m.stsCli, "arn:aws:iam::758505115169:role/dev-deploy-ecs", d.ID.String())
+		if err != nil {
+			return err
+		}
+	} else {
+		ecsCli = ecs.New(m.awsSession)
+	}
 
-	res, err := aECSCli.RegisterTaskDefinition(rTDefInput)
+	res, err := ecsCli.RegisterTaskDefinition(rTDefInput)
 	if err != nil {
 		return err
 	}
 	golog.Infof("Registered Task Definition %s:%d", *res.TaskDefinition.Family, *res.TaskDefinition.Revision)
 
 	// TODO: Starting to take some shortcuts from here out for the sake of time, all marked with TODO
-	env, err := m.dl.Environment(d.EnvironmentID)
-	if err != nil {
-		return err
-	}
 	dep, err := m.dl.Deployable(d.DeployableID)
 	if err != nil {
 		return err
 	}
-	uRes, err := aECSCli.UpdateService(&ecs.UpdateServiceInput{
+	uRes, err := ecsCli.UpdateService(&ecs.UpdateServiceInput{
 		//TODO: Get the service name from the deployable config somehow
 		Cluster:        ptr.String(fmt.Sprintf("%s-svc", env.Name)),
 		Service:        ptr.String(dep.Name),

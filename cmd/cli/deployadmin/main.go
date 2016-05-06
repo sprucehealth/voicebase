@@ -54,6 +54,7 @@ var commands = map[string]cmd.CommandNew{
 	"list_deployments":                               cmd.NewListDeploymentsCmd,
 	"list_environments":                              cmd.NewListEnvironmentsCmd,
 	"list_environment_configs":                       cmd.NewListEnvironmentConfigsCmd,
+	"promote":                                        cmd.NewPromoteCmd,
 	"report_build_complete":                          cmd.NewReportBuildCompleteCmd,
 }
 

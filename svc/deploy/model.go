@@ -7,3 +7,8 @@ type BuildCompleteEvent struct {
 	Image        string `json:"image"`
 	GitHash      string `json:"git_hash"`
 }
+
+// PromotionEvent represents the notification that is ingested by the deploy service to trigger promotion deployments
+type PromotionEvent struct {
+	DeploymentID string `json:"deployment_id"`
+}
