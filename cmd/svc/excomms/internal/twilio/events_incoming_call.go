@@ -128,6 +128,12 @@ func callForwardingList(ctx context.Context, orgEntity *directory.Entity, params
 			break
 		}
 
+		// don't include phone number in the list if it matches the incoming number
+		if parsedPn == params.To {
+			golog.Warningf("Found a phone number in the forwarding list that matches the destination number: %s", params.To)
+			continue
+		}
+
 		numbers = append(numbers, &twiml.Number{
 			URL:  "/twilio/call/provider_call_connected",
 			Text: parsedPn,

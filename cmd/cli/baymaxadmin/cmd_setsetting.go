@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/sprucehealth/backend/svc/settings"
 	"golang.org/x/net/context"
@@ -117,6 +118,14 @@ func (c *setSettingCmd) run(args []string) error {
 				Item: &settings.ItemValue{
 					ID: *value,
 				},
+			},
+		}
+	case settings.ConfigType_STRING_LIST:
+		stringList := strings.Split(*value, "|")
+		val.Type = settings.ConfigType_STRING_LIST
+		val.Value = &settings.Value_StringList{
+			StringList: &settings.StringListValue{
+				Values: stringList,
 			},
 		}
 	default:
