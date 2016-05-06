@@ -31,7 +31,7 @@ func (f FormatterFunc) Format(e *Entry) []byte {
 }
 
 // JSONFormatter returns a Formatter that transforms a log entry into JSON
-func JSONFormatter() Formatter {
+func JSONFormatter(newLine bool) Formatter {
 	return FormatterFunc(func(e *Entry) []byte {
 		js := make(map[string]interface{}, len(e.Ctx)/2+4)
 		for i := 0; i < len(e.Ctx); i += 2 {
@@ -53,6 +53,9 @@ func JSONFormatter() Formatter {
 		if err != nil {
 			b, _ = json.Marshal(map[string]string{"JSONFormatterError": err.Error()})
 			return b
+		}
+		if newLine {
+			b = append(b, '\n')
 		}
 		return b
 	})

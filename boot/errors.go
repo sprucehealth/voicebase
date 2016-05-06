@@ -15,7 +15,7 @@ import (
 )
 
 func SNSLogHandler(snsCli snsiface.SNSAPI, topic, name string, subHandler golog.Handler, rateLimiter ratelimit.KeyedRateLimiter, metricsRegistry metrics.Registry) golog.Handler {
-	jsonFmt := golog.JSONFormatter()
+	jsonFmt := golog.JSONFormatter(false)
 	longFmt := golog.LongFormFormatter()
 	statTotal := metrics.NewCounter()
 	statFailed := metrics.NewCounter()

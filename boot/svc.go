@@ -79,7 +79,7 @@ func NewService(name string) *Service {
 	environment.SetCurrent(svc.flags.env)
 
 	if svc.flags.jsonLogs {
-		golog.Default().SetHandler(golog.WriterHandler(os.Stderr, golog.JSONFormatter()))
+		golog.Default().SetHandler(golog.WriterHandler(os.Stderr, golog.JSONFormatter(true)))
 	}
 
 	if svc.flags.debug {
