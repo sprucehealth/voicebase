@@ -25,7 +25,7 @@ func TestNodeQuery(t *testing.T) {
 	nodeField := queryType.Fields()["node"]
 
 	ra := ramock.New(t)
-	acc := &auth.Account{ID: "account_12345"}
+	acc := &auth.Account{ID: "account_12345", Type: auth.AccountType_PROVIDER}
 	ctx := context.Background()
 	ctx = gqlctx.WithAccount(ctx, acc)
 	p := graphql.ResolveParams{
@@ -73,7 +73,7 @@ func TestNodeQuery(t *testing.T) {
 		Contacts: []*models.ContactInfo{},
 		Entity: &models.Entity{
 			ID:          "entity_222",
-			IsEditable:  true,
+			IsEditable:  false,
 			DisplayName: "Mem",
 			Contacts:    []*models.ContactInfo{},
 			IsInternal:  true,
@@ -99,7 +99,7 @@ func TestNodeQuery(t *testing.T) {
 	}, nil))
 	res, err = nodeField.Resolve(p)
 	test.OK(t, err)
-	test.Equals(t, &models.Entity{ID: id, IsEditable: true, IsInternal: false, DisplayName: "Someone", Contacts: []*models.ContactInfo{}, Gender: "MALE"}, res)
+	test.Equals(t, &models.Entity{ID: id, IsEditable: true, AllowEdit: true, IsInternal: false, DisplayName: "Someone", Contacts: []*models.ContactInfo{}, Gender: "MALE"}, res)
 	mock.FinishAll(ra)
 
 	// Thread

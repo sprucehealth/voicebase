@@ -366,15 +366,6 @@ func transformEntityToResponse(staticURLPrefix string, e *directory.Entity, sh *
 		return nil, errors.Trace(fmt.Errorf("failed to transform contacts for entity %s: %s", e.ID, err))
 	}
 
-	isEditable := false
-	if e.Type != directory.EntityType_SYSTEM && sh != nil {
-		if sh.Platform == device.IOS {
-			isEditable = sh.AppVersion != nil && !sh.AppVersion.Equals(&encoding.Version{Major: 1})
-		} else {
-			isEditable = true
-		}
-	}
-
 	var dob *models.DOB
 	if e.Info.DOB != nil {
 		dob = &models.DOB{
@@ -386,7 +377,7 @@ func transformEntityToResponse(staticURLPrefix string, e *directory.Entity, sh *
 
 	ent := &models.Entity{
 		ID:                    e.ID,
-		IsEditable:            isEditable,
+		IsEditable:            canEditEntity(e, viewingAccount, sh),
 		Contacts:              oc,
 		FirstName:             e.Info.FirstName,
 		MiddleInitial:         e.Info.MiddleInitial,
@@ -401,7 +392,7 @@ func transformEntityToResponse(staticURLPrefix string, e *directory.Entity, sh *
 		IsInternal:            e.Type == directory.EntityType_INTERNAL,
 		LastModifiedTimestamp: e.LastModifiedTimestamp,
 		HasAccount:            e.AccountID != "",
-		AllowEdit:             canEditEntity(e, viewingAccount),
+		AllowEdit:             canEditEntity(e, viewingAccount, sh),
 	}
 
 	switch e.Type {
@@ -459,7 +450,7 @@ func transformEntityToResponse(staticURLPrefix string, e *directory.Entity, sh *
 	return ent, nil
 }
 
-func canEditEntity(e *directory.Entity, viewingAccount *auth.Account) bool {
+func canEditEntity(e *directory.Entity, viewingAccount *auth.Account, sh *device.SpruceHeaders) bool {
 	// An unauthenticated use can never can never edit
 	if viewingAccount == nil || e == nil {
 		return false
@@ -473,7 +464,11 @@ func canEditEntity(e *directory.Entity, viewingAccount *auth.Account) bool {
 	// If the viewer is a provider and the entity is an external entity then they can edit
 	if viewingAccount.Type == auth.AccountType_PROVIDER &&
 		e.Type == directory.EntityType_EXTERNAL {
-		return true
+		if sh.Platform == device.IOS {
+			return (sh.AppVersion != nil && !sh.AppVersion.Equals(&encoding.Version{Major: 1}))
+		} else {
+			return true
+		}
 	}
 
 	return false

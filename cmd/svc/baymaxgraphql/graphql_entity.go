@@ -63,8 +63,11 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 		nodeInterfaceType,
 	},
 	Fields: graphql.Fields{
-		"id":            &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
-		"isEditable":    &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+		"id": &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+		"isEditable": &graphql.Field{
+			Type:              graphql.NewNonNull(graphql.Boolean),
+			DeprecationReason: "Use allowEdit instead.",
+		},
 		"firstName":     &graphql.Field{Type: graphql.String},
 		"middleInitial": &graphql.Field{Type: graphql.String},
 		"lastName":      &graphql.Field{Type: graphql.String},
