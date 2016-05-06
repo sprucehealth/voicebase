@@ -131,7 +131,7 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 	}
 	// Really should be exactly one, but to not blow up for our own support forum only err when none exist.
 	if len(supportThreads) < 1 {
-		return nil, grpcErrorf(codes.Internal, "Expected at least 1 support thread for org %s", setupThread.OrganizationID)
+		return nil, grpcErrorf(codes.FailedPrecondition, "Expected at least 1 support thread for org %s", setupThread.OrganizationID)
 	}
 	supportThread := supportThreads[0]
 
@@ -143,7 +143,7 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 			// Second phone line
 			pn, err := phone.ParseNumber(in.GetProvisionedPhone().PhoneNumber)
 			if err != nil {
-				return nil, grpcErrorf(codes.Internal, "Invalid phone number '%s' for org %s", in.GetProvisionedPhone().PhoneNumber, setupThread.OrganizationID)
+				return nil, grpcErrorf(codes.InvalidArgument, "Invalid phone number '%s' for org %s", in.GetProvisionedPhone().PhoneNumber, setupThread.OrganizationID)
 			}
 			supportThreadURL := deeplink.ThreadURLShareable(s.webDomain, setupThread.OrganizationID, supportThread.ID.String())
 			prettyPhone, err := pn.Format(phone.Pretty)

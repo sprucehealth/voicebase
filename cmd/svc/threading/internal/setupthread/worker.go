@@ -91,7 +91,16 @@ func (w *Worker) processEvent(env *events.Envelope) error {
 						},
 					},
 				})
-				if err != nil && grpc.Code(err) != codes.NotFound {
+				if err != nil {
+					switch grpc.Code(err) {
+					case codes.NotFound:
+						// Nothing to do, no setup thread
+						return nil
+					case codes.FailedPrecondition, codes.InvalidArgument:
+						// Can't retry these errors
+						golog.Errorf("Failed to update onboarding thread when provisioning endpoint for entity %s: %s", e.ForEntityID, err.Error())
+						return nil
+					}
 					return errors.Trace(err)
 				}
 			}
