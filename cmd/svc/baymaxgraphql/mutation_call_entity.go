@@ -187,7 +187,7 @@ var callEntityMutation = &graphql.Field{
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}
-		if calleeEnt == nil || calleeEnt.Type != directory.EntityType_EXTERNAL {
+		if calleeEnt == nil || (calleeEnt.Type != directory.EntityType_EXTERNAL && calleeEnt.Type != directory.EntityType_PATIENT) {
 			return &callEntityOutput{
 				ClientMutationID: mutationID,
 				Success:          false,

@@ -383,7 +383,7 @@ type iOSPushNotification struct {
 type iOSPushData struct {
 	Alert string `json:"alert"`
 	//Badge            int    `json:"badge"`
-	ContentAvailable int    `json:"content-available"`
+	ContentAvailable int    `json:"content-available,omitempty"`
 	Sound            string `json:"sound"`
 }
 
@@ -409,13 +409,11 @@ func generateNotification(webDomain string, n *notification.Notification, target
 	url := deeplink.ThreadMessageURLShareable(webDomain, n.OrganizationID, n.ThreadID, n.MessageID)
 
 	iOSData := &iOSPushData{
-		Alert: msg,
-		Sound: "default",
+		Alert:            msg,
+		ContentAvailable: 1,
 	}
-	if msg == "" {
-		iOSData = &iOSPushData{
-			ContentAvailable: 1,
-		}
+	if msg != "" {
+		iOSData.Sound = "default"
 	}
 	isNotifData, err := json.Marshal(&iOSPushNotification{
 		PushData:       iOSData,

@@ -220,7 +220,7 @@ var associateInviteMutation = &graphql.Field{
 				ClientMutationID: mutationID,
 				Success:          false,
 				ErrorCode:        associateInviteErrorCodeInvalidInvite,
-				ErrorMessage:     "The invite token does not match a valid invite.",
+				ErrorMessage:     "Sorry, the invite code you entered is not valid. Please re-enter the code or contact your healthcare provider.",
 			}, nil
 		} else if err != nil {
 			return nil, errors.InternalError(ctx, err)

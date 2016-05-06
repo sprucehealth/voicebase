@@ -323,6 +323,7 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 		UpdateContacts:   true,
 		Contacts: []*directory.Contact{
 			{ContactType: directory.ContactType_EMAIL, Value: req.Email},
+			{ContactType: directory.ContactType_PHONE, Value: req.PhoneNumber},
 		},
 	})
 	if err != nil {

@@ -130,7 +130,6 @@ var threadType = graphql.NewObject(
 			"allowUpdateTitle":      &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowExternalDelivery": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowMentions":         &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-
 			"allowInvitePatientToSecureThread": &graphql.Field{
 				Type:    graphql.NewNonNull(graphql.Boolean),
 				Resolve: isSecureThreadsEnabled(),

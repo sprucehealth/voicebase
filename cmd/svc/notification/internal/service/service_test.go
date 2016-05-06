@@ -418,8 +418,9 @@ func TestProcessNotification(t *testing.T) {
 	// Build out expected notification structures
 	iData, err = json.Marshal(&iOSPushNotification{
 		PushData: &iOSPushData{
-			Alert: "ShortMessage2",
-			Sound: "default",
+			Alert:            "ShortMessage2",
+			Sound:            "default",
+			ContentAvailable: 1,
 		},
 		URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
 		ThreadID:       "ThreadID",
@@ -471,8 +472,9 @@ func TestProcessNotification(t *testing.T) {
 	// Build out expected notification structures
 	iData, err = json.Marshal(&iOSPushNotification{
 		PushData: &iOSPushData{
-			Alert: "ShortMessage4",
-			Sound: "default",
+			Alert:            "ShortMessage4",
+			Sound:            "default",
+			ContentAvailable: 1,
 		},
 		URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
 		ThreadID:       "ThreadID",
@@ -574,8 +576,9 @@ func TestProcessNotificationDisabledEndpoint(t *testing.T) {
 	// Build out expected notification structure
 	iData, err := json.Marshal(&iOSPushNotification{
 		PushData: &iOSPushData{
-			Sound: "default",
-			Alert: "ShortMessage",
+			Sound:            "default",
+			Alert:            "ShortMessage",
+			ContentAvailable: 1,
 		},
 		URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
 		ThreadID:       "ThreadID",
@@ -752,8 +755,9 @@ func TestProcessNotificationInternalMessage(t *testing.T) {
 	// Build out expected notification structures
 	iData, err = json.Marshal(&iOSPushNotification{
 		PushData: &iOSPushData{
-			Alert: "ShortMessage2",
-			Sound: "default",
+			Alert:            "ShortMessage2",
+			Sound:            "default",
+			ContentAvailable: 1,
 		},
 		URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
 		ThreadID:       "ThreadID",
@@ -928,8 +932,9 @@ func TestProcessNotificationExternalMessage(t *testing.T) {
 	// Build out expected notification structures
 	iData, err = json.Marshal(&iOSPushNotification{
 		PushData: &iOSPushData{
-			Alert: "ShortMessage2",
-			Sound: "default",
+			Alert:            "ShortMessage2",
+			Sound:            "default",
+			ContentAvailable: 1,
 		},
 		URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
 		ThreadID:       "ThreadID",

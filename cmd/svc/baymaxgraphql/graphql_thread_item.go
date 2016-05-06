@@ -3,12 +3,14 @@ package main
 import (
 	"fmt"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/notification/deeplink"
 	"github.com/sprucehealth/graphql"
@@ -65,7 +67,7 @@ var messageType = graphql.NewObject(
 			"textMarkup":    &graphql.Field{Type: graphql.String},
 			"refs": &graphql.Field{
 				Type: graphql.NewList(graphql.NewNonNull(nodeInterfaceType)),
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: apiaccess.Authenticated(func(p graphql.ResolveParams) (interface{}, error) {
 					ram := raccess.ResourceAccess(p)
 					svc := serviceFromParams(p)
 					ctx := p.Context
@@ -90,22 +92,28 @@ var messageType = graphql.NewObject(
 						}
 					}
 					return refs, nil
-				},
+				}),
 			},
 			"source":       &graphql.Field{Type: graphql.NewNonNull(endpointType)},
 			"destinations": &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(endpointType))},
 			"attachments":  &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(attachmentType))},
 			"viewDetails": &graphql.Field{
 				Type: graphql.NewList(graphql.NewNonNull(threadItemViewDetailsType)),
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: apiaccess.Authenticated(func(p graphql.ResolveParams) (interface{}, error) {
 					ctx := p.Context
+					// patients cannot see item view details
+					acc := gqlctx.Account(ctx)
+					if acc.Type == auth.AccountType_PATIENT {
+						return []interface{}{}, nil
+					}
+
 					m := p.Source.(*models.Message)
 					if m == nil {
 						return nil, errors.InternalError(ctx, errors.New("message is nil"))
 					}
 					ram := raccess.ResourceAccess(p)
 					return lookupThreadItemViewDetails(ctx, ram, m.ThreadItemID)
-				},
+				}),
 			},
 			// TODO: "editor: Entity"
 			// TODO: "editedTimestamp: Int"

@@ -168,7 +168,7 @@ var postMessageMutation = &graphql.Field{
 		}
 
 		isInternalMsg := msg["internal"].(bool)
-		if isInternalMsg && !isPostInternalMessageAllowed(thr, acc) {
+		if isInternalMsg && !allowInternalMessages(thr, acc) {
 			return &postMessageOutput{
 				Success:      false,
 				ErrorCode:    postMessageErrorCodeInternalNotAllowed,

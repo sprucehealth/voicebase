@@ -72,7 +72,8 @@ func transformContactsToResponse(contacts []*directory.Contact) ([]*models.Conta
 func transformThreadToResponse(ctx context.Context, ram raccess.ResourceAccessor, t *threading.Thread, viewingAccount *auth.Account) (*models.Thread, error) {
 	th := &models.Thread{
 		ID: t.ID,
-		AllowInternalMessages:      isPostInternalMessageAllowed(t, viewingAccount),
+		AllowInternalMessages:      allowInternalMessages(t, viewingAccount),
+		AllowMentions:              allowMentions(t, viewingAccount),
 		OrganizationID:             t.OrganizationID,
 		PrimaryEntityID:            t.PrimaryEntityID,
 		Subtitle:                   t.LastMessageSummary,
@@ -96,12 +97,10 @@ func transformThreadToResponse(ctx context.Context, ram raccess.ResourceAccessor
 		th.AllowLeave = true
 		th.AllowRemoveMembers = true
 		th.AllowUpdateTitle = true
-		th.AllowMentions = true
 		th.Type = models.ThreadTypeTeam
 	case threading.ThreadType_EXTERNAL:
 		th.AllowDelete = true
 		th.AllowExternalDelivery = true
-		th.AllowMentions = true
 		th.Type = models.ThreadTypeExternal
 	case threading.ThreadType_SECURE_EXTERNAL:
 		th.Type = models.ThreadTypeSecureExternal
@@ -115,12 +114,8 @@ func transformThreadToResponse(ctx context.Context, ram raccess.ResourceAccessor
 			th.Title = supportThreadTitle
 		}
 		th.Type = models.ThreadTypeSupport
-
-		// only allow @ mentions if we are working in the spruce support thread.
-		th.AllowMentions = th.OrganizationID == *flagSpruceOrgID
 	case threading.ThreadType_LEGACY_TEAM:
 		th.Type = models.ThreadTypeLegacyTeam
-		th.AllowMentions = true
 	case threading.ThreadType_UNKNOWN: // TODO: remove this once old threads are migrated
 		th.Type = models.ThreadTypeUnknown
 	default:
@@ -147,7 +142,23 @@ func threadTypeIndicator(t *threading.Thread, acc *auth.Account) string {
 	return models.ThreadTypeIndicatorNone
 }
 
-func isPostInternalMessageAllowed(t *threading.Thread, acc *auth.Account) bool {
+func allowMentions(t *threading.Thread, acc *auth.Account) bool {
+	switch t.Type {
+	case threading.ThreadType_TEAM:
+		return true
+	case threading.ThreadType_EXTERNAL:
+		return true
+	case threading.ThreadType_SECURE_EXTERNAL:
+		return acc.Type == auth.AccountType_PROVIDER
+	case threading.ThreadType_LEGACY_TEAM:
+		return true
+	case threading.ThreadType_SUPPORT:
+		return t.OrganizationID == *flagSpruceOrgID
+	}
+	return false
+}
+
+func allowInternalMessages(t *threading.Thread, acc *auth.Account) bool {
 	switch t.Type {
 	case threading.ThreadType_EXTERNAL:
 		return true
