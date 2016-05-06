@@ -9,7 +9,6 @@ import (
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
-
 	"github.com/sprucehealth/backend/test"
 	"golang.org/x/net/context"
 )

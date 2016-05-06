@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"runtime/debug"
 
-	"github.com/sprucehealth/backend/svc/directory"
-
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
@@ -14,8 +12,8 @@ import (
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/auth"
+	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/invite"
-
 	"github.com/sprucehealth/graphql"
 	"google.golang.org/grpc"
 )

@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 
-	"golang.org/x/net/context"
-
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -14,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/graphql"
+	"golang.org/x/net/context"
 )
 
 // verifyEmail

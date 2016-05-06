@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"testing"
 
-	"google.golang.org/grpc/codes"
-
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
@@ -15,6 +13,7 @@ import (
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/test"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc/codes"
 )
 
 func TestVerifyEmailForAccountCreationMutation_Invite(t *testing.T) {
@@ -83,7 +82,7 @@ func TestVerifyEmailForAccountCreationMutation_Invite(t *testing.T) {
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Entity, "parkedEntityID", []directory.EntityInformation{directory.EntityInformation_CONTACTS}, int64(0)).WithReturns(&directory.Entity{
 		Contacts: []*directory.Contact{
-			&directory.Contact{
+			{
 				ContactType: directory.ContactType_EMAIL,
 				Value:       "someone@example.com",
 			},

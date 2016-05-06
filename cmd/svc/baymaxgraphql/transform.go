@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"golang.org/x/net/context"
-
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
@@ -22,6 +20,7 @@ import (
 	"github.com/sprucehealth/backend/svc/layout"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
+	"golang.org/x/net/context"
 )
 
 func transformAccountToResponse(a *auth.Account) models.Account {

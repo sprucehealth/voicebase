@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 
-	"golang.org/x/net/context"
-
 	"github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
@@ -18,6 +16,7 @@ import (
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
+	"golang.org/x/net/context"
 )
 
 type invitePatientsOutput struct {
@@ -198,11 +197,11 @@ var invitePatientsMutation = &graphql.Field{
 						Type: directory.EntityType_PATIENT,
 						InitialMembershipEntityID: orgID,
 						Contacts: []*directory.Contact{
-							&directory.Contact{
+							{
 								ContactType: directory.ContactType_EMAIL,
 								Value:       email,
 							},
-							&directory.Contact{
+							{
 								ContactType: directory.ContactType_PHONE,
 								Value:       pat.PhoneNumber,
 							},

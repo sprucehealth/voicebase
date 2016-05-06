@@ -1,6 +1,8 @@
 package main
 
 import (
+	"testing"
+
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	baymaxgraphqlsettings "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/settings"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
@@ -10,8 +12,6 @@ import (
 	"github.com/sprucehealth/backend/svc/layout"
 	"github.com/sprucehealth/backend/svc/settings"
 	"golang.org/x/net/context"
-
-	"testing"
 )
 
 func TestVisitCategories(t *testing.T) {
