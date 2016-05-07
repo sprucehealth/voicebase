@@ -62,9 +62,11 @@ func (c *createDeployableVectorCmd) Run(args []string) error {
 	dSourceType := deploy.CreateDeployableVectorRequest_DeployableVectorSourceType(iSourceType)
 
 	if dSourceType == deploy.CreateDeployableVectorRequest_ENVIRONMENT_ID {
-		*sourceValue = prompt(scn, "Source EnvironmentID: ")
 		if *sourceValue == "" {
-			return errors.New("Source Environment ID is required")
+			*sourceValue = prompt(scn, "Source EnvironmentID: ")
+			if *sourceValue == "" {
+				return errors.New("Source Environment ID is required")
+			}
 		}
 	}
 	if *targetEnvID == "" {

@@ -53,9 +53,9 @@ func postStartMessage(depl *dal.Deployment, dep *dal.Deployable, env *dal.Enviro
 	}
 }
 
-func postCompleteMessage(prevDepl *dal.Deployment, depl *dal.Deployment, dep *dal.Deployable, env *dal.Environment) {
+func postCompleteMessage(prevDeplHash string, depl *dal.Deployment, dep *dal.Deployable, env *dal.Environment) {
 	if err := slack.Post(deploymentWebhookURL, &slack.Message{
-		Text:      fmt.Sprintf("`COMPLETED` deployment for `%s:%s` to environment `%s`\nChanges: %s", dep.Name, depl.BuildNumber, env.Name, compareURL(dep.GitURL, prevDepl.GitHash, depl.GitHash)),
+		Text:      fmt.Sprintf("`COMPLETED` deployment for `%s:%s` to environment `%s`\nChanges: %s", dep.Name, depl.BuildNumber, env.Name, compareURL(dep.GitURL, prevDeplHash, depl.GitHash)),
 		Username:  deployUserName,
 		IconEmoji: deployGoodEmoji,
 	}); err != nil {
@@ -81,10 +81,6 @@ func (m *Manager) processDeployment(depl *dal.Deployment) error {
 	if depl == nil {
 		return nil
 	}
-	pdep, err := m.dl.ActiveDeployment(depl.DeployableID, depl.EnvironmentID)
-	if err != nil {
-		return err
-	}
 	dep, err := m.dl.Deployable(depl.DeployableID)
 	if err != nil {
 		return err
@@ -93,6 +89,14 @@ func (m *Manager) processDeployment(depl *dal.Deployment) error {
 	if err != nil {
 		return err
 	}
+	pdep, err := m.dl.ActiveDeployment(depl.DeployableID, depl.EnvironmentID)
+	if errors.Cause(err) == dal.ErrNotFound {
+		golog.Errorf("No active deployment found. Assuming first deployment in environment %s for deployable %s", env.Name, dep.Name)
+		pdep = &dal.Deployment{GitHash: "NONE"}
+	} else if err != nil {
+		return err
+	}
+	previousHash := pdep.GitHash
 
 	// dispatch the deployment based on the type
 	switch depl.Type {
@@ -103,7 +107,7 @@ func (m *Manager) processDeployment(depl *dal.Deployment) error {
 				postFailedMessage(depl, dep, env, err)
 				m.failDeployment(depl.ID, err)
 			} else {
-				postCompleteMessage(pdep, depl, dep, env)
+				postCompleteMessage(previousHash, depl, dep, env)
 				m.completeDeployment(depl.ID)
 			}
 		})
