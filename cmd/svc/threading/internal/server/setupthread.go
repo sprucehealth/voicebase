@@ -50,7 +50,7 @@ func (s *threadsServer) CreateOnboardingThread(ctx context.Context, in *threadin
 
 		&bml.Anchor{HREF: teamMessagingURL, Text: "Secure team chat and care coordination"}, ".\n\n",
 
-		"Digital care and ", &bml.Anchor{HREF: telemedicineURL, Text: "telemedicine"}, ".",
+		&bml.Anchor{HREF: telemedicineURL, Text: "Digital care and telemedicine"}, ".",
 	}
 	msg, err := msgBML.Format()
 	if err != nil {
@@ -165,9 +165,9 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 				phoneSetupURL := deeplink.OrgSettingsPhoneURL(s.webDomain, setupThread.OrganizationID)
 				supportThreadURL := deeplink.ThreadURLShareable(s.webDomain, setupThread.OrganizationID, supportThread.ID.String())
 				msgBML = bml.BML{
-					`For $25/provider/month your Spruce line can triage and transcribe patient voicemails, notifying you`,
-					` via text when an urgent voicemail is received. You can also add teammates to create an on-call rotation.`,
-					` To do this, first `, &bml.Anchor{HREF: phoneSetupURL, Text: "set up your Spruce number"},
+					`As a paid feature your Spruce line can triage and transcribe patient voicemails, notifying you`,
+					" via text when an urgent voicemail is received. You can also add teammates to create an on-call rotation.\n\n",
+					`To do this, first `, &bml.Anchor{HREF: phoneSetupURL, Text: "set up your Spruce number"},
 					` if you haven’t already. Then tell us in `, &bml.Anchor{HREF: supportThreadURL, Text: "Spruce Support"},
 					` that you would like to enable the answering service feature.`,
 				}
@@ -178,7 +178,8 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 				inviteURL := deeplink.OrgColleagueInviteURL(s.webDomain, setupThread.OrganizationID)
 				msgBML = bml.BML{
 					`After `, &bml.Anchor{HREF: inviteURL, Text: "adding teammates"}, `, you can start a new team conversation`,
-					` from the home screen and message 1:1 or in group chats. You can also collaborate and make notes within`,
+					" from the home screen and message 1:1 or in group chats.\n\n",
+					`You can also collaborate and make notes within`,
 					` patient conversations (patients won’t see this activity, but your teammates will).`,
 				}
 				newStepBit = 4
@@ -188,7 +189,8 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 				supportThreadURL := deeplink.ThreadURLShareable(s.webDomain, setupThread.OrganizationID, supportThread.ID.String())
 				msgBML = bml.BML{
 					`Interested in engaging patients digitally with virtual visits, video calls, care plans (including e-prescribing),`,
-					` mobile payment, appointment reminders, and satisfaction surveys? Digital care on Spruce enables you to`,
+					" mobile payment, appointment reminders, and satisfaction surveys?\n\n",
+					`Digital care on Spruce enables you to`,
 					` offer a standout patient experience and streamline your practice efficiency. The Digital Practice offering`,
 					` on Spruce is coming soon: message us in `, &bml.Anchor{HREF: supportThreadURL, Text: "Spruce Support"},
 					` if you would like to be a part of the private beta.`,
