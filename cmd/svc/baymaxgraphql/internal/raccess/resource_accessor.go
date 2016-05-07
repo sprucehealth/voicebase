@@ -9,8 +9,10 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/auth"
+	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
+	"github.com/sprucehealth/backend/svc/layout"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 	"golang.org/x/net/context"
@@ -104,6 +106,10 @@ type ResourceAccessor interface {
 	UpdatePassword(ctx context.Context, token, code, newPassword string) error
 	UpdateThread(ctx context.Context, req *threading.UpdateThreadRequest) (*threading.UpdateThreadResponse, error)
 	VerifiedValue(ctx context.Context, token string) (string, error)
+	VisitLayout(ctx context.Context, req *layout.GetVisitLayoutRequest) (*layout.GetVisitLayoutResponse, error)
+	CreateVisit(ctx context.Context, req *care.CreateVisitRequest) (*care.CreateVisitResponse, error)
+	Visit(ctx context.Context, req *care.GetVisitRequest) (*care.GetVisitResponse, error)
+	VisitLayoutVersion(ctx context.Context, req *layout.GetVisitLayoutVersionRequest) (*layout.GetVisitLayoutVersionResponse, error)
 }
 
 type resourceAccessor struct {
@@ -112,16 +118,27 @@ type resourceAccessor struct {
 	directory directory.DirectoryClient
 	threading threading.ThreadsClient
 	excomms   excomms.ExCommsClient
+	layout    layout.LayoutClient
+	care      care.CareClient
 }
 
 // New returns an initialized instance of resourceAccessor
-func New(auth auth.AuthClient, directory directory.DirectoryClient, threading threading.ThreadsClient, excomms excomms.ExCommsClient) ResourceAccessor {
+func New(
+	auth auth.AuthClient,
+	directory directory.DirectoryClient,
+	threading threading.ThreadsClient,
+	excomms excomms.ExCommsClient,
+	layout layout.LayoutClient,
+	care care.CareClient,
+) ResourceAccessor {
 	return &resourceAccessor{
 		rMap:      newResourceMap(),
 		auth:      auth,
 		directory: directory,
 		threading: threading,
 		excomms:   excomms,
+		layout:    layout,
+		care:      care,
 	}
 }
 
@@ -845,6 +862,71 @@ func (m *resourceAccessor) UpdateThread(ctx context.Context, req *threading.Upda
 		return nil, err
 	}
 	return m.threading.UpdateThread(ctx, req)
+}
+
+func (m *resourceAccessor) VisitLayout(ctx context.Context, req *layout.GetVisitLayoutRequest) (*layout.GetVisitLayoutResponse, error) {
+	if !m.isAccountType(ctx, auth.AccountType_PROVIDER) {
+		return nil, errors.ErrNotAuthorized(ctx, req.ID)
+	}
+
+	res, err := m.layout.GetVisitLayout(ctx, req)
+	if grpc.Code(err) == codes.NotFound {
+		return nil, errors.ErrNotFound(ctx, req.ID)
+	} else if err != nil {
+		return nil, errors.InternalError(ctx, err)
+	}
+	return res, nil
+}
+
+func (m *resourceAccessor) CreateVisit(ctx context.Context, req *care.CreateVisitRequest) (*care.CreateVisitResponse, error) {
+	if !m.isAccountType(ctx, auth.AccountType_PROVIDER) {
+		return nil, errors.ErrNotAuthorized(ctx, req.LayoutVersionID)
+	}
+
+	if err := m.canAccessResource(ctx, req.EntityID, m.orgsForEntity); err != nil {
+		return nil, err
+	}
+
+	res, err := m.care.CreateVisit(ctx, req)
+	if err != nil {
+		return nil, errors.InternalError(ctx, err)
+	}
+
+	return res, nil
+}
+
+func (m *resourceAccessor) Visit(ctx context.Context, req *care.GetVisitRequest) (*care.GetVisitResponse, error) {
+	// first get the visit then check whether or not caller can access resource
+	res, err := m.care.GetVisit(ctx, req)
+	if err != nil {
+		if grpc.Code(err) == codes.NotFound {
+			return nil, errors.ErrNotFound(ctx, req.ID)
+		}
+
+		return nil, errors.InternalError(ctx, err)
+	}
+
+	if err := m.canAccessResource(ctx, res.Visit.EntityID, m.orgsForEntity); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (m *resourceAccessor) VisitLayoutVersion(ctx context.Context, req *layout.GetVisitLayoutVersionRequest) (*layout.GetVisitLayoutVersionResponse, error) {
+
+	res, err := m.layout.GetVisitLayoutVersion(ctx, req)
+	if grpc.Code(err) == codes.NotFound {
+		return nil, errors.ErrNotFound(ctx, req.ID)
+	} else if err != nil {
+		return nil, errors.InternalError(ctx, err)
+	}
+	return res, nil
+}
+
+func (m *resourceAccessor) isAccountType(ctx context.Context, accType auth.AccountType) bool {
+	acc := gqlctx.Account(ctx)
+	return acc != nil && acc.Type == accType
 }
 
 func (m *resourceAccessor) canAccessResource(ctx context.Context, resourceID string, missF func(ctx context.Context, resourceID string) (map[string]struct{}, error)) error {

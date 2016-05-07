@@ -86,6 +86,11 @@ func OrgColleagueInviteURL(webDomain, organizationID string) string {
 	return fmt.Sprintf("%s/invite", OrgURL(webDomain, organizationID))
 }
 
+// VisitID returns a deeplink compatible URL to the visit
+func VisitURL(webDomain, visitID string) string {
+	return fmt.Sprintf("%s/visit/%s", deepLinkBase(webDomain), visitID)
+}
+
 // PostEventURL returns a deeplink compatible URL that trigger the postEvent mutation
 func PostEventURL(webDomain, event string, values url.Values) string {
 	if values == nil {

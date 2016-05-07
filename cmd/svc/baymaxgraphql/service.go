@@ -14,6 +14,7 @@ import (
 	lmedia "github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/auth"
+	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/layout"
@@ -29,6 +30,7 @@ type service struct {
 	settings               settings.SettingsClient
 	invite                 invite.InviteClient
 	layout                 layout.LayoutClient
+	care                   care.CareClient
 	mediaSigner            *media.Signer
 	emailDomain            string
 	webDomain              string

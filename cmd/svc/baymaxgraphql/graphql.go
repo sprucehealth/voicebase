@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -23,6 +24,7 @@ import (
 	lmedia "github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/auth"
+	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/invite"
@@ -59,6 +61,10 @@ func init() {
 	}
 	// This is done here rather than at declaration time to avoid an unresolvable compile time decleration loop
 	nodeInterfaceType.ResolveType = func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+		if value == nil {
+			return nil
+		}
+
 		switch value.(type) {
 		case *models.ProviderAccount:
 			return providerAccountType
@@ -74,8 +80,16 @@ func init() {
 			return threadType
 		case *models.ThreadItem:
 			return threadItemType
+		case *models.VisitCategory:
+			return visitCategoryType
+		case *models.VisitLayout:
+			return visitLayoutType
+		case *models.VisitLayoutVersion:
+			return visitLayoutVersionType
+		case *models.Visit:
+			return visitType
 		}
-		return nil
+		panic(fmt.Sprintf("Unknown type for value: %T", value))
 	}
 }
 
@@ -98,6 +112,7 @@ func NewGraphQL(
 	settings settings.SettingsClient,
 	invite invite.InviteClient,
 	layout layout.LayoutClient,
+	care care.CareClient,
 	layoutStore layout.Storage,
 	mediaSigner *media.Signer,
 	emailDomain string,
@@ -119,7 +134,7 @@ func NewGraphQL(
 	metricsRegistry.Add("latency_us", statLatency)
 	return &graphQLHandler{
 		auth: authClient,
-		ram:  raccess.New(authClient, directoryClient, threadingClient, exComms),
+		ram:  raccess.New(authClient, directoryClient, threadingClient, exComms, layout, care),
 		service: &service{
 			notification:    notificationClient,
 			mediaSigner:     mediaSigner,
@@ -129,6 +144,7 @@ func NewGraphQL(
 			settings:        settings,
 			invite:          invite,
 			layout:          layout,
+			care:            care,
 			spruceOrgID:     spruceOrgID,
 			staticURLPrefix: staticURLPrefix,
 			segmentio:       &segmentIOWrapper{Client: segmentClient},

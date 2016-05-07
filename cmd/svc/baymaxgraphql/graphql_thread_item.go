@@ -9,10 +9,10 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/libs/caremessenger/deeplink"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
-	"github.com/sprucehealth/backend/svc/notification/deeplink"
 	"github.com/sprucehealth/graphql"
 	"golang.org/x/net/context"
 )
@@ -201,6 +201,22 @@ var audioAttachmentType = graphql.NewObject(
 	},
 )
 
+var bannerButtonAttachmentType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "BannerButtonAttachment",
+		Fields: graphql.Fields{
+			"title":   &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"ctaText": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"iconURL": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"tapURL":  &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		},
+		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+			_, ok := value.(*models.BannerButtonAttachment)
+			return ok
+		},
+	},
+)
+
 var attachmentDataType = graphql.NewUnion(
 	graphql.UnionConfig{
 		Name:        "AttachmentData",
@@ -208,6 +224,7 @@ var attachmentDataType = graphql.NewUnion(
 		Types: []*graphql.Object{
 			imageAttachmentType,
 			audioAttachmentType,
+			bannerButtonAttachmentType,
 		},
 	},
 )
@@ -305,7 +322,7 @@ var threadItemType = graphql.NewObject(
 	},
 )
 
-func lookupThreadItem(ctx context.Context, ram raccess.ResourceAccessor, mediaSigner *media.Signer, threadItemID string) (interface{}, error) {
+func lookupThreadItem(ctx context.Context, ram raccess.ResourceAccessor, mediaSigner *media.Signer, threadItemID, webdomain string) (interface{}, error) {
 	threadItem, err := ram.ThreadItem(ctx, threadItemID)
 	if err != nil {
 		return nil, err
@@ -315,7 +332,7 @@ func lookupThreadItem(ctx context.Context, ram raccess.ResourceAccessor, mediaSi
 		return nil, errors.ErrNotAuthenticated(ctx)
 	}
 
-	it, err := transformThreadItemToResponse(threadItem, "", account.ID, mediaSigner)
+	it, err := transformThreadItemToResponse(threadItem, "", account.ID, webdomain, mediaSigner)
 	if err != nil {
 		return nil, errors.InternalError(ctx, err)
 	}

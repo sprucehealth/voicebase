@@ -9,10 +9,10 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	baymaxgraphqlsettings "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/settings"
+	"github.com/sprucehealth/backend/libs/caremessenger/deeplink"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
-	"github.com/sprucehealth/backend/svc/notification/deeplink"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
@@ -418,7 +418,7 @@ var threadType = graphql.NewObject(
 						}
 
 						for i, e := range res.Edges {
-							it, err := transformThreadItemToResponse(e.Item, "", acc.ID, svc.mediaSigner)
+							it, err := transformThreadItemToResponse(e.Item, "", acc.ID, svc.webDomain, svc.mediaSigner)
 							if err != nil {
 								golog.Errorf("Failed to transform thread item %s: %s", e.Item.ID, err)
 								continue

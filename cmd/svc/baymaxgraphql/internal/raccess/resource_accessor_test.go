@@ -9,9 +9,11 @@ import (
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
 	amock "github.com/sprucehealth/backend/svc/auth/mock"
+	vmock "github.com/sprucehealth/backend/svc/care/mock"
 	"github.com/sprucehealth/backend/svc/directory"
 	dmock "github.com/sprucehealth/backend/svc/directory/mock"
 	emock "github.com/sprucehealth/backend/svc/excomms/mock"
+	lmock "github.com/sprucehealth/backend/svc/layout/mock"
 	"github.com/sprucehealth/backend/svc/threading"
 	tmock "github.com/sprucehealth/backend/svc/threading/mock"
 	"github.com/sprucehealth/backend/test"
@@ -23,6 +25,8 @@ type ratest struct {
 	dC *dmock.Client
 	tC *tmock.Client
 	eC *emock.Client
+	lC *lmock.Client
+	vC *vmock.Client
 	ra ResourceAccessor
 }
 
@@ -36,7 +40,9 @@ func new(t *testing.T) *ratest {
 	rat.dC = dmock.New(t)
 	rat.tC = tmock.New(t)
 	rat.eC = emock.New(t)
-	rat.ra = New(rat.aC, rat.dC, rat.tC, rat.eC)
+	rat.lC = lmock.New(t)
+	rat.vC = vmock.New(t)
+	rat.ra = New(rat.aC, rat.dC, rat.tC, rat.eC, rat.lC, rat.vC)
 	return &rat
 }
 

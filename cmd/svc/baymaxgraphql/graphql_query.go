@@ -92,13 +92,15 @@ var queryType = graphql.NewObject(
 					case "t":
 						return lookupThreadWithReadStatus(ctx, ram, acc, id)
 					case "ti":
-						return lookupThreadItem(ctx, ram, svc.mediaSigner, id)
+						return lookupThreadItem(ctx, ram, svc.mediaSigner, id, svc.webDomain)
 					case "visitLayout":
 						return lookupVisitLayout(ctx, svc, id)
 					case "visitLayoutVersion":
 						return lookupVisitLayoutVersion(ctx, svc, id)
 					case "visitCategory":
 						return lookupVisitCategory(ctx, svc, id)
+					case "visit":
+						return lookupVisit(ctx, svc, ram, id)
 					}
 					return nil, errors.New("unknown node type")
 				},
@@ -148,6 +150,22 @@ var queryType = graphql.NewObject(
 						return nil, errors.ErrNotAuthenticated(ctx)
 					}
 					return lookupThreadWithReadStatus(ctx, ram, acc, p.Args["id"].(string))
+				},
+			},
+			"visit": &graphql.Field{
+				Type: graphql.NewNonNull(visitType),
+				Args: graphql.FieldConfigArgument{
+					"id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+				},
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					svc := serviceFromParams(p)
+					ram := raccess.ResourceAccess(p)
+					ctx := p.Context
+					acc := gqlctx.Account(ctx)
+					if acc == nil {
+						return nil, errors.ErrNotAuthenticated(ctx)
+					}
+					return lookupVisit(ctx, svc, ram, p.Args["id"].(string))
 				},
 			},
 			"subdomain": &graphql.Field{

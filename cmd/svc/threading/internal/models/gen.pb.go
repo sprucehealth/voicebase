@@ -19,6 +19,7 @@
 		ImageAttachment
 		AudioAttachment
 		GenericAttachment
+		VisitAttachment
 */
 package models
 
@@ -98,17 +99,20 @@ const (
 	Attachment_IMAGE   Attachment_Type = 0
 	Attachment_AUDIO   Attachment_Type = 1
 	Attachment_GENERIC Attachment_Type = 2
+	Attachment_VISIT   Attachment_Type = 4
 )
 
 var Attachment_Type_name = map[int32]string{
 	0: "IMAGE",
 	1: "AUDIO",
 	2: "GENERIC",
+	4: "VISIT",
 }
 var Attachment_Type_value = map[string]int32{
 	"IMAGE":   0,
 	"AUDIO":   1,
 	"GENERIC": 2,
+	"VISIT":   4,
 }
 
 type Reference struct {
@@ -216,6 +220,7 @@ type Attachment struct {
 	//	*Attachment_Image
 	//	*Attachment_Audio
 	//	*Attachment_Generic
+	//	*Attachment_Visit
 	Data isAttachment_Data `protobuf_oneof:"data"`
 }
 
@@ -238,10 +243,14 @@ type Attachment_Audio struct {
 type Attachment_Generic struct {
 	Generic *GenericAttachment `protobuf:"bytes,12,opt,name=generic,oneof"`
 }
+type Attachment_Visit struct {
+	Visit *VisitAttachment `protobuf:"bytes,13,opt,name=visit,oneof"`
+}
 
 func (*Attachment_Image) isAttachment_Data()   {}
 func (*Attachment_Audio) isAttachment_Data()   {}
 func (*Attachment_Generic) isAttachment_Data() {}
+func (*Attachment_Visit) isAttachment_Data()   {}
 
 func (m *Attachment) GetData() isAttachment_Data {
 	if m != nil {
@@ -271,12 +280,20 @@ func (m *Attachment) GetGeneric() *GenericAttachment {
 	return nil
 }
 
+func (m *Attachment) GetVisit() *VisitAttachment {
+	if x, ok := m.GetData().(*Attachment_Visit); ok {
+		return x.Visit
+	}
+	return nil
+}
+
 // XXX_OneofFuncs is for the internal use of the proto package.
 func (*Attachment) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), []interface{}) {
 	return _Attachment_OneofMarshaler, _Attachment_OneofUnmarshaler, []interface{}{
 		(*Attachment_Image)(nil),
 		(*Attachment_Audio)(nil),
 		(*Attachment_Generic)(nil),
+		(*Attachment_Visit)(nil),
 	}
 }
 
@@ -297,6 +314,11 @@ func _Attachment_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
 	case *Attachment_Generic:
 		_ = b.EncodeVarint(12<<3 | proto.WireBytes)
 		if err := b.EncodeMessage(x.Generic); err != nil {
+			return err
+		}
+	case *Attachment_Visit:
+		_ = b.EncodeVarint(13<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.Visit); err != nil {
 			return err
 		}
 	case nil:
@@ -333,6 +355,14 @@ func _Attachment_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buf
 		err := b.DecodeMessage(msg)
 		m.Data = &Attachment_Generic{msg}
 		return true, err
+	case 13: // data.visit
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(VisitAttachment)
+		err := b.DecodeMessage(msg)
+		m.Data = &Attachment_Visit{msg}
+		return true, err
 	default:
 		return false, nil
 	}
@@ -366,6 +396,14 @@ type GenericAttachment struct {
 func (m *GenericAttachment) Reset()      { *m = GenericAttachment{} }
 func (*GenericAttachment) ProtoMessage() {}
 
+type VisitAttachment struct {
+	VisitID   string `protobuf:"bytes,1,opt,name=visit_id,proto3" json:"visit_id,omitempty"`
+	VisitName string `protobuf:"bytes,2,opt,name=visit_name,proto3" json:"visit_name,omitempty"`
+}
+
+func (m *VisitAttachment) Reset()      { *m = VisitAttachment{} }
+func (*VisitAttachment) ProtoMessage() {}
+
 func init() {
 	proto.RegisterType((*Reference)(nil), "models.Reference")
 	proto.RegisterType((*Message)(nil), "models.Message")
@@ -377,6 +415,7 @@ func init() {
 	proto.RegisterType((*ImageAttachment)(nil), "models.ImageAttachment")
 	proto.RegisterType((*AudioAttachment)(nil), "models.AudioAttachment")
 	proto.RegisterType((*GenericAttachment)(nil), "models.GenericAttachment")
+	proto.RegisterType((*VisitAttachment)(nil), "models.VisitAttachment")
 	proto.RegisterEnum("models.Reference_Type", Reference_Type_name, Reference_Type_value)
 	proto.RegisterEnum("models.Message_Status", Message_Status_name, Message_Status_value)
 	proto.RegisterEnum("models.Endpoint_Channel", Endpoint_Channel_name, Endpoint_Channel_value)
@@ -734,6 +773,31 @@ func (this *Attachment_Generic) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *Attachment_Visit) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*Attachment_Visit)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.Visit.Equal(that1.Visit) {
+		return false
+	}
+	return true
+}
 func (this *ImageAttachment) Equal(that interface{}) bool {
 	if that == nil {
 		if this == nil {
@@ -830,6 +894,34 @@ func (this *GenericAttachment) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *VisitAttachment) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*VisitAttachment)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.VisitID != that1.VisitID {
+		return false
+	}
+	if this.VisitName != that1.VisitName {
+		return false
+	}
+	return true
+}
 func (this *Reference) GoString() string {
 	if this == nil {
 		return "nil"
@@ -919,7 +1011,7 @@ func (this *Attachment) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 10)
+	s := make([]string, 0, 11)
 	s = append(s, "&models.Attachment{")
 	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
 	s = append(s, "Title: "+fmt.Sprintf("%#v", this.Title)+",\n")
@@ -952,6 +1044,14 @@ func (this *Attachment_Generic) GoString() string {
 	}
 	s := strings.Join([]string{`&models.Attachment_Generic{` +
 		`Generic:` + fmt.Sprintf("%#v", this.Generic) + `}`}, ", ")
+	return s
+}
+func (this *Attachment_Visit) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&models.Attachment_Visit{` +
+		`Visit:` + fmt.Sprintf("%#v", this.Visit) + `}`}, ", ")
 	return s
 }
 func (this *ImageAttachment) GoString() string {
@@ -988,6 +1088,17 @@ func (this *GenericAttachment) GoString() string {
 	s = append(s, "&models.GenericAttachment{")
 	s = append(s, "Mimetype: "+fmt.Sprintf("%#v", this.Mimetype)+",\n")
 	s = append(s, "URL: "+fmt.Sprintf("%#v", this.URL)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *VisitAttachment) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&models.VisitAttachment{")
+	s = append(s, "VisitID: "+fmt.Sprintf("%#v", this.VisitID)+",\n")
+	s = append(s, "VisitName: "+fmt.Sprintf("%#v", this.VisitName)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1350,6 +1461,20 @@ func (m *Attachment_Generic) MarshalTo(data []byte) (int, error) {
 	}
 	return i, nil
 }
+func (m *Attachment_Visit) MarshalTo(data []byte) (int, error) {
+	i := 0
+	if m.Visit != nil {
+		data[i] = 0x6a
+		i++
+		i = encodeVarintGen(data, i, uint64(m.Visit.Size()))
+		n7, err := m.Visit.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n7
+	}
+	return i, nil
+}
 func (m *ImageAttachment) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -1456,6 +1581,36 @@ func (m *GenericAttachment) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintGen(data, i, uint64(len(m.URL)))
 		i += copy(data[i:], m.URL)
+	}
+	return i, nil
+}
+
+func (m *VisitAttachment) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *VisitAttachment) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.VisitID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintGen(data, i, uint64(len(m.VisitID)))
+		i += copy(data[i:], m.VisitID)
+	}
+	if len(m.VisitName) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintGen(data, i, uint64(len(m.VisitName)))
+		i += copy(data[i:], m.VisitName)
 	}
 	return i, nil
 }
@@ -1650,6 +1805,15 @@ func (m *Attachment_Generic) Size() (n int) {
 	}
 	return n
 }
+func (m *Attachment_Visit) Size() (n int) {
+	var l int
+	_ = l
+	if m.Visit != nil {
+		l = m.Visit.Size()
+		n += 1 + l + sovGen(uint64(l))
+	}
+	return n
+}
 func (m *ImageAttachment) Size() (n int) {
 	var l int
 	_ = l
@@ -1698,6 +1862,20 @@ func (m *GenericAttachment) Size() (n int) {
 		n += 1 + l + sovGen(uint64(l))
 	}
 	l = len(m.URL)
+	if l > 0 {
+		n += 1 + l + sovGen(uint64(l))
+	}
+	return n
+}
+
+func (m *VisitAttachment) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.VisitID)
+	if l > 0 {
+		n += 1 + l + sovGen(uint64(l))
+	}
+	l = len(m.VisitName)
 	if l > 0 {
 		n += 1 + l + sovGen(uint64(l))
 	}
@@ -1833,6 +2011,16 @@ func (this *Attachment_Generic) String() string {
 	}, "")
 	return s
 }
+func (this *Attachment_Visit) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Attachment_Visit{`,
+		`Visit:` + strings.Replace(fmt.Sprintf("%v", this.Visit), "VisitAttachment", "VisitAttachment", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func (this *ImageAttachment) String() string {
 	if this == nil {
 		return "nil"
@@ -1866,6 +2054,17 @@ func (this *GenericAttachment) String() string {
 	s := strings.Join([]string{`&GenericAttachment{`,
 		`Mimetype:` + fmt.Sprintf("%v", this.Mimetype) + `,`,
 		`URL:` + fmt.Sprintf("%v", this.URL) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *VisitAttachment) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&VisitAttachment{`,
+		`VisitID:` + fmt.Sprintf("%v", this.VisitID) + `,`,
+		`VisitName:` + fmt.Sprintf("%v", this.VisitName) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2907,6 +3106,38 @@ func (m *Attachment) Unmarshal(data []byte) error {
 			}
 			m.Data = &Attachment_Generic{v}
 			iNdEx = postIndex
+		case 13:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Visit", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGen
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGen
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &VisitAttachment{}
+			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Data = &Attachment_Visit{v}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGen(data[iNdEx:])
@@ -3306,6 +3537,114 @@ func (m *GenericAttachment) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.URL = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGen(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthGen
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *VisitAttachment) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGen
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: VisitAttachment: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: VisitAttachment: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VisitID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGen
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGen
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.VisitID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VisitName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGen
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGen
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.VisitName = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

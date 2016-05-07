@@ -161,6 +161,13 @@ type ImageAttachment struct {
 	Image    *Image `json:"image"`
 }
 
+type BannerButtonAttachment struct {
+	Title   string `json:"title"`
+	CTAText string `json:"ctaText"`
+	IconURL string `json:"iconURL"`
+	TapURL  string `json:"tapURL"`
+}
+
 type Image struct {
 	URL    string `json:"url"`
 	Width  int    `json:"width"`
@@ -340,4 +347,13 @@ type VisitLayoutVersion struct {
 	ID            string `json:"id"`
 	SAMLLayout    string `json:"samlLayout"`
 	LayoutPreview string `json:"layoutPreview"`
+}
+
+type Visit struct {
+	ID                  string `json:"id"`
+	Name                string `json:"name"`
+	CanReview           bool   `json:"canReview"`
+	CanModify           bool   `json:"canModify"`
+	LayoutContainer     string `json:"layoutContainer"`
+	LayoutContainerType string `json:"layoutContainerType"`
 }

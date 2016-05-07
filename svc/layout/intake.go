@@ -9,15 +9,8 @@ const (
 // Intake is a layout object that the patient app
 // consumes to display the visit to a patient for intake purposes.
 type Intake struct {
-	Header      *Header           `json:"visit_overview_header,omitempty"`
 	Transitions []*TransitionItem `json:"transitions,omitempty"`
 	Sections    []*Section        `json:"sections"`
-}
-
-type Header struct {
-	Title    string `json:"title"`
-	Subtitle string `json:"subtitle"`
-	IconURL  string `json:"icon_url,omitempty"`
 }
 
 type TransitionItem struct {

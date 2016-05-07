@@ -63,6 +63,7 @@ message Attachment {
 		IMAGE = 0;
 		AUDIO = 1;
 		GENERIC = 2;
+		VISIT = 4;
 	}
 	Type type = 1;
 	string title = 2;
@@ -71,6 +72,7 @@ message Attachment {
 		ImageAttachment image = 10;
 		AudioAttachment audio = 11;
 		GenericAttachment generic = 12;
+		VisitAttachment visit = 13;
 	}
 }
 
@@ -91,5 +93,10 @@ message AudioAttachment {
 message GenericAttachment {
 	string mimetype = 1;
 	string url = 2 [(gogoproto.customname) = "URL"];
+}
+
+message VisitAttachment {
+	string visit_id = 1 [(gogoproto.customname) = "VisitID"];
+	string visit_name = 2;
 }
 

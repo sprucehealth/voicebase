@@ -7,8 +7,10 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
+	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
+	"github.com/sprucehealth/backend/svc/layout"
 	"github.com/sprucehealth/backend/svc/threading"
 	"golang.org/x/net/context"
 )
@@ -477,6 +479,39 @@ func (m *ResourceAccessor) UpdateThread(ctx context.Context, req *threading.Upda
 		return nil, nil
 	}
 	return rets[0].(*threading.UpdateThreadResponse), mock.SafeError(rets[1])
+}
+
+func (m *ResourceAccessor) VisitLayout(ctx context.Context, req *layout.GetVisitLayoutRequest) (*layout.GetVisitLayoutResponse, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].(*layout.GetVisitLayoutResponse), mock.SafeError(rets[1])
+}
+
+func (m *ResourceAccessor) CreateVisit(ctx context.Context, req *care.CreateVisitRequest) (*care.CreateVisitResponse, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*care.CreateVisitResponse), mock.SafeError(rets[1])
+}
+
+func (m *ResourceAccessor) Visit(ctx context.Context, req *care.GetVisitRequest) (*care.GetVisitResponse, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*care.GetVisitResponse), mock.SafeError(rets[1])
+}
+
+func (m *ResourceAccessor) VisitLayoutVersion(ctx context.Context, req *layout.GetVisitLayoutVersionRequest) (*layout.GetVisitLayoutVersionResponse, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*layout.GetVisitLayoutVersionResponse), mock.SafeError(rets[1])
 }
 
 func (m *ResourceAccessor) VerifiedValue(ctx context.Context, token string) (string, error) {

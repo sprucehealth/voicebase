@@ -44,6 +44,13 @@ func ErrNotAuthorized(ctx context.Context, resourceID string) error {
 	return UserError(ctx, ErrTypeNotAuthorized, "This account is not authorized to access the requested resource.")
 }
 
+func ErrNotSupported(ctx context.Context, err error) error {
+	acc := gqlctx.Account(ctx)
+	rid := gqlctx.RequestID(ctx)
+	golog.LogDepthf(1, golog.WARN, "Account %+v NotSupported: %s [Request: %d]", acc, err.Error(), rid)
+	return UserError(ctx, ErrTypeNotSupported, "This functionality is not supported.")
+}
+
 // ErrNotFound returns the standard not found error
 func ErrNotFound(ctx context.Context, resourceID string) error {
 	acc := gqlctx.Account(ctx)

@@ -5,17 +5,20 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/bml"
+	"github.com/sprucehealth/backend/libs/caremessenger/deeplink"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/auth"
+	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/layout"
 	"github.com/sprucehealth/backend/svc/settings"
@@ -206,7 +209,7 @@ func threadEmptyStateTextMarkup(ctx context.Context, ram raccess.ResourceAccesso
 	return ""
 }
 
-func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID string, mediaSigner *media.Signer) (*models.ThreadItem, error) {
+func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, webDomain string, mediaSigner *media.Signer) (*models.ThreadItem, error) {
 	it := &models.ThreadItem{
 		ID:             item.ID,
 		UUID:           uuid,
@@ -298,6 +301,14 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID s
 					return nil, err
 				}
 				a.URL = signedURL
+			case threading.Attachment_VISIT:
+				v := a.GetVisit()
+				data = &models.BannerButtonAttachment{
+					Title:   v.VisitName,
+					CTAText: "View Visit",
+					TapURL:  deeplink.VisitURL(webDomain, v.VisitID),
+					IconURL: "TODO",
+				}
 			case threading.Attachment_GENERIC_URL:
 				d := a.GetGenericURL()
 
@@ -694,4 +705,99 @@ func (c byVisitCategoryName) Len() int      { return len(c) }
 func (c byVisitCategoryName) Swap(i, j int) { c[i], c[j] = c[j], c[i] }
 func (c byVisitCategoryName) Less(i, j int) bool {
 	return strings.Compare(strings.ToLower(c[i].Name), strings.ToLower(c[j].Name)) < 0
+}
+
+// Visit
+
+type header struct {
+	Title    string `json:"title"`
+	Subtitle string `json:"subtitle"`
+	IconURL  string `json:"icon_url"`
+}
+
+type checkout struct {
+	HeaderImageURL string `json:"header_image_url"`
+	HeaderText     string `json:"header_text"`
+	FooterText     string `json:"footer_text"`
+}
+
+type submissionConfirmation struct {
+	Title       string `json:"title"`
+	TopText     string `json:"top_text"`
+	BottomText  string `json:"bottom_text"`
+	ButtonTitle string `json:"button_title"`
+}
+
+type intakeContainer struct {
+	ID                     string                  `json:"id"`
+	Header                 *header                 `json:"header"`
+	Checkout               *checkout               `json:"checkout"`
+	SubmissionConfirmation *submissionConfirmation `json:"submission_confirmation"`
+	Intake                 *layout.Intake          `json:"intake"`
+}
+
+func transformVisitToResponse(ctx context.Context, visit *care.Visit, layoutVersion *layout.VisitLayoutVersion, layoutStore layout.Storage) (*models.Visit, error) {
+
+	acc := gqlctx.Account(ctx)
+	if acc == nil {
+		return nil, errors.Trace(fmt.Errorf("expected acccount to not be nil but it was"))
+	}
+
+	intake, err := layoutStore.GetIntake(layoutVersion.IntakeLayoutLocation)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	var container interface{}
+	var layoutContainerType string
+	switch acc.Type {
+	case auth.AccountType_PATIENT:
+		layoutContainerType = layoutContainerTypeIntake
+		container = &intakeContainer{
+			ID: visit.ID,
+			Header: &header{
+				Title:    visit.Name,
+				Subtitle: "", // TODO
+			},
+			Checkout: &checkout{
+				HeaderText: "Submit your visit",
+				FooterText: "", // TODO
+			},
+			SubmissionConfirmation: &submissionConfirmation{
+				Title:       "Visit Submitted",
+				TopText:     fmt.Sprintf("Your %s visit has been submitted.", visit.Name),
+				BottomText:  "Your doctor will review your visit and respond for any additional question.",
+				ButtonTitle: "Continue",
+			},
+			Intake: intake,
+		}
+
+	case auth.AccountType_PROVIDER:
+		layoutContainerType = layoutContainerTypeReview
+		review, err := layoutStore.GetReview(layoutVersion.ReviewLayoutLocation)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+
+		container, err = layout.GenerateVisitLayoutPreview(intake, review)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+
+		// TODO: Build actual review
+	}
+
+	containerData, err := json.Marshal(container)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	return &models.Visit{
+		ID:                  visit.ID,
+		Name:                visit.Name,
+		CanReview:           acc.Type == auth.AccountType_PROVIDER && visit.Submitted,
+		CanModify:           acc.Type == auth.AccountType_PATIENT && !visit.Submitted,
+		LayoutContainer:     string(containerData),
+		LayoutContainerType: layoutContainerType,
+	}, nil
 }

@@ -31,6 +31,7 @@ import (
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/svc/auth"
+	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/invite"
@@ -65,6 +66,7 @@ var (
 	flagSettingsAddr  = flag.String("settings_addr", "", "host:port of settings service")
 	flagThreadingAddr = flag.String("threading_addr", "", "host:port of threading service")
 	flagLayoutAddr    = flag.String("layout_addr", "", "host:port of layout service")
+	flagCareAddr      = flag.String("care_addr", "", "host:port of care service")
 
 	// Messages
 	flagSQSDeviceRegistrationURL   = flag.String("sqs_device_registration_url", "", "the sqs url for device registration messages")
@@ -145,6 +147,15 @@ func main() {
 		golog.Fatalf("Unable to connect to Layout service: %s", err)
 	}
 	layoutClient := layout.NewLayoutClient(conn)
+
+	if *flagCareAddr == "" {
+		golog.Fatalf("Care service not configured")
+	}
+	conn, err = grpc.Dial(*flagCareAddr, grpc.WithInsecure())
+	if err != nil {
+		golog.Fatalf("Unable to connect to care service: %s", err)
+	}
+	careClient := care.NewCareClient(conn)
 
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 
@@ -271,6 +282,7 @@ func main() {
 		settingsClient,
 		inviteClient,
 		layoutClient,
+		careClient,
 		layout.NewStore(storage.NewS3(awsSession, *flagStorageBucket, *flagLayoutStoreS3Prefix)),
 		ms,
 		*flagEmailDomain,

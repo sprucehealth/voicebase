@@ -34,11 +34,7 @@ func testSAML(t *testing.T, name string, store Storage) {
 func TestIntake(t *testing.T) {
 	store := NewStore(storage.NewTestStore(nil))
 
-	testIntake := &Intake{
-		Header: &Header{
-			Title: "Hello",
-		},
-	}
+	testIntake := &Intake{}
 
 	intakeLocation, err := store.PutIntake("test", testIntake)
 	if err != nil {

@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package care;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_enum_prefix_all) = true;
+
+message Visit {
+	string id = 1 [(gogoproto.customname) = "ID"];
+	string name = 2;
+	string layout_version_id = 3 [(gogoproto.customname) = "LayoutVersionID"];
+	string entity_id = 4 [(gogoproto.customname) = "EntityID"];
+	bool submitted = 5;
+}
+
+message CreateVisitRequest {
+	string layout_version_id = 1 [(gogoproto.customname) = "LayoutVersionID"];
+	string entity_id = 2 [(gogoproto.customname) = "EntityID"];
+	string name = 3;
+}
+
+message CreateVisitResponse {
+	Visit visit = 1;
+}
+
+message GetVisitRequest {
+	string id = 1 [(gogoproto.customname) = "ID"];
+}
+
+message GetVisitResponse {
+	Visit visit = 1;
+}	
+
+service Care {
+	rpc CreateVisit(CreateVisitRequest) returns (CreateVisitResponse);
+	rpc GetVisit(GetVisitRequest) returns (GetVisitResponse);
+// 	rpc SubmitVisit(SubmitVisitRequest) returns (SubmitVisitResponse);
+//	rpc SubmitAnswer(SubmitAnswerRequest) returns (SubmitAnswerResponse);
+//	rpc GetAnswersForVisit(GetAnswersForVisitRequest) returns (GetAnswersForVisitResponse);
+}

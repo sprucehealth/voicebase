@@ -12,8 +12,11 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/bml"
+	"github.com/sprucehealth/backend/libs/caremessenger/deeplink"
 	"github.com/sprucehealth/backend/libs/phone"
+	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/layout"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 )
@@ -46,6 +49,7 @@ var messageInputType = graphql.NewInputObject(
 
 var (
 	attachmentTypeImage = "IMAGE"
+	attachmentTypeVisit = "VISIT"
 )
 
 var attachmentInputTypeEnum = graphql.NewEnum(graphql.EnumConfig{
@@ -55,6 +59,10 @@ var attachmentInputTypeEnum = graphql.NewEnum(graphql.EnumConfig{
 			Value:       attachmentTypeImage,
 			Description: "The attachment type representing an image",
 		},
+		attachmentTypeVisit: &graphql.EnumValueConfig{
+			Value:       attachmentTypeVisit,
+			Description: "The attachment type representing a visit",
+		},
 	},
 })
 
@@ -63,7 +71,7 @@ var attachmentInputType = graphql.NewInputObject(
 		Name: "AttachmentInput",
 		Fields: graphql.InputObjectConfigFieldMap{
 			"title":          &graphql.InputObjectFieldConfig{Type: graphql.String},
-			"mediaID":        &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"mediaID":        &graphql.InputObjectFieldConfig{Type: graphql.String},
 			"attachmentType": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(attachmentInputTypeEnum)},
 		},
 	},
@@ -73,6 +81,8 @@ func attachmentTypeEnumAsThreadingEnum(t string) (threading.Attachment_Type, err
 	switch t {
 	case attachmentTypeImage:
 		return threading.Attachment_IMAGE, nil
+	case attachmentTypeVisit:
+		return threading.Attachment_VISIT, nil
 	}
 	return threading.Attachment_Type(0), fmt.Errorf("Unknown attachment type %s", t)
 }
@@ -233,26 +243,63 @@ var postMessageMutation = &graphql.Field{
 				return nil, err
 			}
 			// TODO: Verify that the media at the ID exists
-			url := svc.media.URL(mAttachment["mediaID"].(string))
+			mediaID := svc.media.URL(mAttachment["mediaID"].(string))
 			var title string
 			if _, ok := mAttachment["title"]; ok {
 				title = mAttachment["title"].(string)
 			}
-			attachment := &threading.Attachment{
-				Type:  mAttachmentType,
-				Title: title,
-				URL:   url,
-			}
+			var attachment *threading.Attachment
 			switch mAttachmentType {
+			case threading.Attachment_VISIT:
+
+				// can only attach visits on secure external threads
+				if thr.Type != threading.ThreadType_SECURE_EXTERNAL {
+					return nil, errors.ErrNotSupported(ctx, fmt.Errorf("Cannot attach a visit to thread of type %s", thr.Type.String()))
+				}
+
+				// ensure that the visit layout exists from which to create a visit
+				visitLayoutRes, err := ram.VisitLayout(ctx, &layout.GetVisitLayoutRequest{
+					ID: mediaID,
+				})
+				if err != nil {
+					return nil, err
+				}
+
+				// create the visit from the visit layout
+				createVisitRes, err := ram.CreateVisit(ctx, &care.CreateVisitRequest{
+					EntityID:        thr.PrimaryEntityID,
+					Name:            visitLayoutRes.VisitLayout.Name,
+					LayoutVersionID: visitLayoutRes.VisitLayout.Version.ID,
+				})
+				if err != nil {
+					return nil, err
+				}
+
+				attachment = &threading.Attachment{
+					Type:  mAttachmentType,
+					Title: createVisitRes.Visit.Name,
+					URL:   deeplink.VisitURL(svc.webDomain, createVisitRes.Visit.ID),
+					Data: &threading.Attachment_Visit{
+						Visit: &threading.VisitAttachment{
+							VisitID:   createVisitRes.Visit.ID,
+							VisitName: createVisitRes.Visit.Name,
+						},
+					},
+				}
 			case threading.Attachment_IMAGE:
 				meta, err := svc.media.GetMeta(mAttachment["mediaID"].(string))
 				if err != nil {
 					return nil, err
 				}
-				attachment.Data = &threading.Attachment_Image{
-					Image: &threading.ImageAttachment{
-						Mimetype: meta.MimeType,
-						URL:      url,
+				attachment = &threading.Attachment{
+					Type:  mAttachmentType,
+					Title: title,
+					URL:   mediaID,
+					Data: &threading.Attachment_Image{
+						Image: &threading.ImageAttachment{
+							Mimetype: meta.MimeType,
+							URL:      mediaID,
+						},
 					},
 				}
 			default:
@@ -280,65 +327,20 @@ var postMessageMutation = &graphql.Field{
 
 		dests, _ := msg["destinations"].([]interface{})
 
-		var title bml.BML
-
-		// For a message to be considered by sending externally it needs to not be marked as internal,
-		// sent by someone who is internal, and there needs to be a primary entity on the thread.
-		isExternal := !req.Internal && thr.PrimaryEntityID != "" && ent.Type == directory.EntityType_INTERNAL && primaryEntity.Type == directory.EntityType_EXTERNAL
-		if isExternal && len(dests) != 0 {
-			destSet := make(map[string]struct{}, len(dests))
-			for _, d := range dests {
-				endpoint, _ := d.(map[string]interface{})
-				endpointChannel, _ := endpoint["channel"].(string)
-				endpointID, _ := endpoint["id"].(string)
-				var ct directory.ContactType
-				var ec threading.Endpoint_Channel
-				switch endpointChannel {
-				case models.EndpointChannelEmail:
-					ct = directory.ContactType_EMAIL
-					ec = threading.Endpoint_EMAIL
-				case models.EndpointChannelSMS:
-					ct = directory.ContactType_PHONE
-					ec = threading.Endpoint_SMS
-				default:
-					return nil, fmt.Errorf("unsupported destination endpoint channel %q", endpointChannel)
-				}
-				var e *threading.Endpoint
-				// Assert that the provided destination matches one of the contacts for the primary entity on the thread
-				for _, c := range primaryEntity.Contacts {
-					if c.ContactType == ct && c.Value == endpointID {
-						e = &threading.Endpoint{
-							Channel: ec,
-							ID:      c.Value,
-						}
-						break
-					}
-				}
-				if e == nil {
-					return nil, fmt.Errorf("The provided destination contact info does not belong to the primary entity for this thread: %q, %q", endpointChannel, endpointID)
-				}
-				req.Destinations = append(req.Destinations, e)
-				switch e.Channel {
-				case threading.Endpoint_SMS:
-					destSet["SMS"] = struct{}{}
-				case threading.Endpoint_EMAIL:
-					destSet["Email"] = struct{}{}
-				}
-			}
-			destTitles := make([]string, 0, len(destSet))
-			for d := range destSet {
-				destTitles = append(destTitles, d)
-			}
-			sort.Strings(destTitles)
-			for _, d := range destTitles {
-				if len(title) != 0 {
-					title = append(title, " & ")
-				}
-				title = append(title, d)
-			}
-		} else if req.Internal {
-			title = append(title[:0], "Internal")
+		title, err := buildMessageTitleBasedOnDestinations(req, dests, thr, ent, primaryEntity)
+		if err != nil {
+			return nil, err
 		}
+
+		if len(title) == 0 {
+			for _, a := range req.Attachments {
+				if a.Type == threading.Attachment_VISIT {
+					title = append(title, "Shared a visit:")
+					break
+				}
+			}
+		}
+
 		uuid, ok := msg["uuid"].(string)
 		if ok {
 			req.UUID = uuid
@@ -364,7 +366,7 @@ var postMessageMutation = &graphql.Field{
 			},
 		})
 
-		it, err := transformThreadItemToResponse(pmres.Item, req.UUID, acc.ID, svc.mediaSigner)
+		it, err := transformThreadItemToResponse(pmres.Item, req.UUID, acc.ID, svc.webDomain, svc.mediaSigner)
 		if err != nil {
 			return nil, errors.InternalError(ctx, fmt.Errorf("failed to transform thread item: %s", err))
 		}
@@ -384,4 +386,71 @@ var postMessageMutation = &graphql.Field{
 			Thread:           th,
 		}, nil
 	}),
+}
+
+func buildMessageTitleBasedOnDestinations(
+	req *threading.PostMessageRequest,
+	dests []interface{},
+	thr *threading.Thread,
+	fromEntity, primaryEntity *directory.Entity,
+) (bml.BML, error) {
+	var title bml.BML
+	// For a message to be considered by sending externally it needs to not be marked as internal,
+	// sent by someone who is internal, and there needs to be a primary entity on the thread.
+	isExternal := !req.Internal && thr.PrimaryEntityID != "" && fromEntity.Type == directory.EntityType_INTERNAL && primaryEntity.Type == directory.EntityType_EXTERNAL
+	if isExternal && len(dests) != 0 {
+		destSet := make(map[string]struct{}, len(dests))
+		for _, d := range dests {
+			endpoint, _ := d.(map[string]interface{})
+			endpointChannel, _ := endpoint["channel"].(string)
+			endpointID, _ := endpoint["id"].(string)
+			var ct directory.ContactType
+			var ec threading.Endpoint_Channel
+			switch endpointChannel {
+			case models.EndpointChannelEmail:
+				ct = directory.ContactType_EMAIL
+				ec = threading.Endpoint_EMAIL
+			case models.EndpointChannelSMS:
+				ct = directory.ContactType_PHONE
+				ec = threading.Endpoint_SMS
+			default:
+				return nil, fmt.Errorf("unsupported destination endpoint channel %q", endpointChannel)
+			}
+			var e *threading.Endpoint
+			// Assert that the provided destination matches one of the contacts for the primary entity on the thread
+			for _, c := range primaryEntity.Contacts {
+				if c.ContactType == ct && c.Value == endpointID {
+					e = &threading.Endpoint{
+						Channel: ec,
+						ID:      c.Value,
+					}
+					break
+				}
+			}
+			if e == nil {
+				return nil, fmt.Errorf("The provided destination contact info does not belong to the primary entity for this thread: %q, %q", endpointChannel, endpointID)
+			}
+			req.Destinations = append(req.Destinations, e)
+			switch e.Channel {
+			case threading.Endpoint_SMS:
+				destSet["SMS"] = struct{}{}
+			case threading.Endpoint_EMAIL:
+				destSet["Email"] = struct{}{}
+			}
+		}
+		destTitles := make([]string, 0, len(destSet))
+		for d := range destSet {
+			destTitles = append(destTitles, d)
+		}
+		sort.Strings(destTitles)
+		for _, d := range destTitles {
+			if len(title) != 0 {
+				title = append(title, " & ")
+			}
+			title = append(title, d)
+		}
+	} else if req.Internal {
+		title = append(title[:0], "Internal")
+	}
+	return title, nil
 }
