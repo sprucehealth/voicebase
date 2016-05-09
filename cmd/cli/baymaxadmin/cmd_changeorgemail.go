@@ -157,20 +157,18 @@ func (c *changeOrgEmailCmd) run(args []string) error {
 	})
 	if err != nil && grpc.Code(err) != codes.NotFound {
 		return errors.Trace(err)
-	}
-
-	if !strings.HasSuffix(*orgEntityID, res.EntityID) {
-		return errors.Trace(fmt.Errorf("domain %s already taken by %s", *domain, res.EntityID))
-	}
-
-	if res.EntityID == "" {
-		// lets go ahead and update the entity domain
-		if _, err := c.dirCli.UpdateEntityDomain(ctx, &directory.UpdateEntityDomainRequest{
-			EntityID: *orgEntityID,
-			Domain:   *domain,
-		}); err != nil {
-			return errors.Trace(err)
+	} else if res != nil {
+		if !strings.HasSuffix(*orgEntityID, res.EntityID) {
+			return errors.Trace(fmt.Errorf("domain %s already taken by %s", *domain, res.EntityID))
 		}
+	}
+
+	// Update the entity domain
+	if _, err := c.dirCli.UpdateEntityDomain(ctx, &directory.UpdateEntityDomainRequest{
+		EntityID: *orgEntityID,
+		Domain:   *domain,
+	}); err != nil {
+		return errors.Trace(err)
 	}
 
 	// delete the existing contact for the entity
