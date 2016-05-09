@@ -97,7 +97,7 @@ var threadType = graphql.NewObject(
 					th := p.Source.(*models.Thread)
 					acc := gqlctx.Account(p.Context)
 					if acc == nil {
-						return nil, errors.ErrNotAuthenticated(ctx)
+						return false, errors.ErrNotAuthenticated(ctx)
 					}
 
 					if th.Type != models.ThreadTypeSecureExternal {
@@ -120,7 +120,7 @@ var threadType = graphql.NewObject(
 					if err != nil {
 						return false, errors.InternalError(ctx, err)
 					}
-					return booleanValue, nil
+					return booleanValue.Value, nil
 				},
 			},
 			"allowInternalMessages": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
