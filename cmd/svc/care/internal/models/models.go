@@ -1,11 +1,13 @@
 package models
 
+import "time"
+
 type Visit struct {
 	ID                 VisitID
 	Name               string
 	LayoutVersionID    string
 	EntityID           string
 	Submitted          bool
-	SubmittedTimestamp *uint64
-	Created            int64
+	SubmittedTimestamp *time.Time
+	Created            time.Time
 }
