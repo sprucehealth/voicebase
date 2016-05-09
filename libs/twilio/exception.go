@@ -19,6 +19,16 @@ const (
 	// or send a message to an invalid phone number.
 	// https://www.twilio.com/docs/api/errors/21211
 	ErrorCodeInvalidToPhoneNumber = 21211
+
+	// ErrorCodeNotMessageCapableFromPhoneNumber is returned when there is an attempt to send a
+	// message from a phone number that is not a valid, message-capable phone number.
+	// https://www.twilio.com/docs/api/errors/21606
+	ErrorCodeNotMessageCapableFromPhoneNumber = 21606
+
+	// ErrorCodeMessageLengthExceeded is returned when the concatenated message body exceeds
+	// the 1600 character limit.
+	// https://www.twilio.com/docs/api/errors/21617
+	ErrorCodeMessageLengthExceeded = 21617
 )
 
 // Exception holds information about error response returned by Twilio API

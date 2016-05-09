@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"google.golang.org/grpc"
+
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 	rsettings "github.com/sprucehealth/backend/cmd/svc/routing/internal/settings"
@@ -270,6 +272,13 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 				},
 			)
 			if err != nil {
+				switch grpc.Code(err) {
+				case excomms.ErrorCodeMessageLengthExceeded:
+					golog.Errorf("Unable to send message as the message length was exceeded. Dropping message for now as handling this situation requires manual intervention. Support team should inform user of the situation. Error: %s", err)
+					return nil
+				case excomms.ErrorCodeSMSIncapableFromPhoneNumber:
+					golog.Errorf("Unable to send message as the from phone number does not have SMS capabilities. Dropping this message for now as handling this situation requires manual intervention. Support team should handle mis-provisioned phone number. Error :%s", err)
+				}
 				return errors.Trace(fmt.Errorf("Unable to send message originating from thread item id : %s: %s", pti.GetItem().ID, err))
 			}
 			golog.Debugf("Sent SMS %s → %s. Text %s", orgContact.Value, d.ID, pti.GetItem().GetMessage().Text)

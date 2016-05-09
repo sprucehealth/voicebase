@@ -315,11 +315,18 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 		})
 		if err != nil {
 			if e, ok := err.(*twilio.Exception); ok {
-				if e.Code == twilio.ErrorCodeInvalidToPhoneNumber {
+				switch e.Code {
+				case twilio.ErrorCodeInvalidToPhoneNumber:
 					// drop the message since the phone number is invalid.
 					// TODO: In the future we might want to indicate to the provider
 					// that they entered an invalid phone number?
 					return &excomms.SendMessageResponse{}, nil
+				case twilio.ErrorCodeMessageLengthExceeded:
+					return nil, grpcErrorf(excomms.ErrorCodeMessageLengthExceeded, "message length can only be 1600 characters in length, message lenght was %d characters", len(in.GetSMS().Text))
+				case twilio.ErrorCodeNotMessageCapableFromPhoneNumber:
+					return nil, grpcErrorf(excomms.ErrorCodeSMSIncapableFromPhoneNumber, "from phone number %s does not have SMS capabilities", in.GetSMS().FromPhoneNumber)
+				}
+				if e.Code == twilio.ErrorCodeInvalidToPhoneNumber {
 				}
 			}
 			return nil, grpcErrorf(codes.Internal, err.Error())

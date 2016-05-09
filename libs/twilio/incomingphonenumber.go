@@ -15,6 +15,7 @@ type IncomingPhoneNumberIFace interface {
 	PurchaseLocal(params PurchasePhoneNumberParams) (*IncomingPhoneNumber, *Response, error)
 	List(params ListPurchasedPhoneNumberParams) (*ListPurchasedPhoneNumbersResponse, *Response, error)
 	Delete(sid string) (*Response, error)
+	Update(sid string, update UpdatePurchasedPhoneNumberParams) (*IncomingPhoneNumber, *Response, error)
 }
 
 type IncomingPhoneNumber struct {
@@ -56,6 +57,10 @@ type PurchasePhoneNumberParams struct {
 	PhoneNumber         string `url:"PhoneNumber,omitempty"`
 	VoiceApplicationSID string `url:"VoiceApplicationSid,omitempty"`
 	SMSApplicationSID   string `url:"SmsApplicationSid,omitempty"`
+}
+
+type UpdatePurchasedPhoneNumberParams struct {
+	AccountSID string `url:"AccountSid"`
 }
 
 type ListPurchasedPhoneNumberParams struct {
@@ -113,6 +118,28 @@ func (i *IncomingPhoneNumberService) List(params ListPurchasedPhoneNumberParams)
 	}
 
 	l := new(ListPurchasedPhoneNumbersResponse)
+	resp, err := i.client.Do(req, l)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return l, resp, nil
+}
+
+func (i *IncomingPhoneNumberService) Update(sid string, update UpdatePurchasedPhoneNumberParams) (*IncomingPhoneNumber, *Response, error) {
+	u := i.client.EndPoint("IncomingPhoneNumbers", sid)
+
+	v, err := query.Values(update)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	req, err := i.client.NewRequest("PUT", u.String(), strings.NewReader(v.Encode()))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	l := new(IncomingPhoneNumber)
 	resp, err := i.client.Do(req, l)
 	if err != nil {
 		return nil, nil, err

@@ -47,3 +47,12 @@ func (m *MockIncomingPhoneNumberService) Delete(sid string) (*twilio.Response, e
 
 	return rets[0].(*twilio.Response), mock.SafeError(rets[1])
 }
+
+func (m *MockIncomingPhoneNumberService) Update(sid string, update twilio.UpdatePurchasedPhoneNumberParams) (*twilio.IncomingPhoneNumber, *twilio.Response, error) {
+	rets := m.Record(sid, update)
+	if len(rets) == 0 {
+		return nil, nil, nil
+	}
+
+	return rets[0].(*twilio.IncomingPhoneNumber), rets[1].(*twilio.Response), mock.SafeError(rets[2])
+}
