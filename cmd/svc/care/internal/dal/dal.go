@@ -51,7 +51,6 @@ func (d *dal) Visit(ctx context.Context, id models.VisitID) (*models.Visit, erro
 		&visit.Name,
 		&visit.LayoutVersionID,
 		&visit.EntityID,
-		&visit.EntityID,
 		&visit.Submitted,
 		&visit.Created,
 		&visit.SubmittedTimestamp); err == sql.ErrNoRows {
