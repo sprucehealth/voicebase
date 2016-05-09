@@ -1,10 +1,10 @@
 CREATE TABLE visit (
 	id BIGINT UNSIGNED NOT NULL,
-	name VARCHAR(255) NOT NULL CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+	name VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
 	layout_version_id VARCHAR(128) NOT NULL,
 	created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	entity_id VARCHAR(128) NOT NULL,
 	submitted TINYINT(1) NOT NULL DEFAULT 0,
-	submitted_timestamp TIMESTAMP
+	submitted_timestamp TIMESTAMP,
 	PRIMARY KEY (id)
 );

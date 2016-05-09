@@ -46,7 +46,7 @@ func init() {
 }
 
 func main() {
-	svc := boot.NewService("visit")
+	svc := boot.NewService("care")
 
 	if config.s3Bucket == "" {
 		golog.Fatalf("s3_bucket required")
@@ -91,7 +91,7 @@ func main() {
 	careServer := grpc.NewServer()
 	careService := server.New(dal.New(db), layoutClient, layout.NewStore(storage.NewS3(awsSession, config.s3Bucket, config.s3Prefix)))
 
-	care.InitMetrics(careServer, svc.MetricsRegistry.Scope("visit"))
+	care.InitMetrics(careServer, svc.MetricsRegistry.Scope("care"))
 	care.RegisterCareServer(careServer, careService)
 
 	conc.Go(func() {
