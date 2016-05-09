@@ -21,6 +21,7 @@ func transformVisitLayoutToResponse(visitLayout *models.VisitLayout, layoutVersi
 
 	if layoutVersion != nil {
 		tVisitLayout.Version = &layout.VisitLayoutVersion{
+			ID:                   layoutVersion.ID.String(),
 			SAMLLocation:         layoutVersion.SAMLLocation,
 			IntakeLayoutLocation: layoutVersion.IntakeLayoutLocation,
 			ReviewLayoutLocation: layoutVersion.ReviewLayoutLocation,
