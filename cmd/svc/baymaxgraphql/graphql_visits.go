@@ -19,11 +19,11 @@ var layoutContainerType = graphql.NewEnum(graphql.EnumConfig{
 	Name:        "LayoutContainerType",
 	Description: "Type of the layout container to represent a visit",
 	Values: graphql.EnumValueConfigMap{
-		callEntityTypeConnectParties: &graphql.EnumValueConfig{
+		layoutContainerTypeIntake: &graphql.EnumValueConfig{
 			Value:       layoutContainerTypeIntake,
 			Description: "Representation of a visit for the patient",
 		},
-		callEntityTypeReturnPhoneNumber: &graphql.EnumValueConfig{
+		layoutContainerTypeReview: &graphql.EnumValueConfig{
 			Value:       layoutContainerTypeReview,
 			Description: "Representation of a visit for the provider",
 		},
