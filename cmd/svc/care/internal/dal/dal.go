@@ -43,6 +43,7 @@ func (d *dal) CreateVisit(ctx context.Context, visit *models.Visit) (models.Visi
 
 func (d *dal) Visit(ctx context.Context, id models.VisitID) (*models.Visit, error) {
 	var visit models.Visit
+	visit.ID = models.EmptyVisitID()
 	if err := d.db.QueryRow(`
 		SELECT id, name, layout_version_id, entity_id, submitted, created, submitted_timestamp
 		FROM visit
