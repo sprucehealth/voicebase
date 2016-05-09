@@ -243,7 +243,6 @@ var postMessageMutation = &graphql.Field{
 				return nil, err
 			}
 			// TODO: Verify that the media at the ID exists
-			mediaID := svc.media.URL(mAttachment["mediaID"].(string))
 			var title string
 			if _, ok := mAttachment["title"]; ok {
 				title = mAttachment["title"].(string)
@@ -259,7 +258,7 @@ var postMessageMutation = &graphql.Field{
 
 				// ensure that the visit layout exists from which to create a visit
 				visitLayoutRes, err := ram.VisitLayout(ctx, &layout.GetVisitLayoutRequest{
-					ID: mediaID,
+					ID: mAttachment["mediaID"].(string),
 				})
 				if err != nil {
 					return nil, err
@@ -287,6 +286,7 @@ var postMessageMutation = &graphql.Field{
 					},
 				}
 			case threading.Attachment_IMAGE:
+				mediaID := svc.media.URL(mAttachment["mediaID"].(string))
 				meta, err := svc.media.GetMeta(mAttachment["mediaID"].(string))
 				if err != nil {
 					return nil, err
