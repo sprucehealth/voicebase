@@ -104,7 +104,8 @@ func afterHoursGreeting(ctx context.Context, params *rawmsg.TwilioParams, eh *ev
 		RequestedInformation: &directory.RequestedInformation{
 			Depth: 0,
 		},
-		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
 	})
 	if err != nil {
 		return "", errors.Trace(err)
@@ -152,7 +153,8 @@ func afterHoursVoicemailTWIML(ctx context.Context, params *rawmsg.TwilioParams, 
 		RequestedInformation: &directory.RequestedInformation{
 			Depth: 0,
 		},
-		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
 	})
 	if err != nil {
 		return "", errors.Trace(err)

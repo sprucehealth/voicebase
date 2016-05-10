@@ -549,7 +549,8 @@ func TestAfterHours_Voicemail(t *testing.T) {
 		RequestedInformation: &directory.RequestedInformation{
 			Depth: 0,
 		},
-		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
 	}).WithReturns(&directory.LookupEntitiesByContactResponse{
 		Entities: []*directory.Entity{
 			{
@@ -621,7 +622,8 @@ func TestAfterHours_Voicemail_Transcription(t *testing.T) {
 		RequestedInformation: &directory.RequestedInformation{
 			Depth: 0,
 		},
-		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
 	}).WithReturns(&directory.LookupEntitiesByContactResponse{
 		Entities: []*directory.Entity{
 			{
