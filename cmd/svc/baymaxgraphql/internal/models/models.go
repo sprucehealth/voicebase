@@ -103,6 +103,7 @@ type Entity struct {
 	LastModifiedTimestamp uint64         `json:"lastModifiedTimestamp"`
 	HasAccount            bool           `json:"hasAccount"`
 	AllowEdit             bool           `json:"allowEdit"`
+	HasPendingInvite      bool           `json:"hasPendingInvite"`
 	Avatar                *Image
 }
 

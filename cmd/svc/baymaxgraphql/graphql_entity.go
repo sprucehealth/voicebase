@@ -131,6 +131,7 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 		"lastModifiedTimestamp": &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
 		"hasAccount":            &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		"allowEdit":             &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+		"hasPendingInvite":      &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 	},
 })
 

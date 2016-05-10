@@ -415,6 +415,7 @@ func transformEntityToResponse(staticURLPrefix string, e *directory.Entity, sh *
 		LastModifiedTimestamp: e.LastModifiedTimestamp,
 		HasAccount:            e.AccountID != "",
 		AllowEdit:             canEditEntity(e, viewingAccount, sh),
+		HasPendingInvite:      false,
 	}
 
 	switch e.Type {
