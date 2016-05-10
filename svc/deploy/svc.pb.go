@@ -47,6 +47,8 @@
 		DeploymentsResponse
 		PromotionRequest
 		PromotionResponse
+		PromoteGroupRequest
+		PromoteGroupResponse
 */
 package deploy
 
@@ -836,6 +838,7 @@ type ReportBuildCompleteRequest struct {
 	// Types that are valid to be assigned to BuildArtifactOneof:
 	//	*ReportBuildCompleteRequest_DockerImage
 	BuildArtifactOneof isReportBuildCompleteRequest_BuildArtifactOneof `protobuf_oneof:"build_artifact_oneof"`
+	GitHash            string                                          `protobuf:"bytes,5,opt,name=git_hash,proto3" json:"git_hash,omitempty"`
 }
 
 func (m *ReportBuildCompleteRequest) Reset()      { *m = ReportBuildCompleteRequest{} }
@@ -961,6 +964,29 @@ func (m *PromotionResponse) GetDeployments() []*Deployment {
 	return nil
 }
 
+type PromoteGroupRequest struct {
+	DeployableGroupID string `protobuf:"bytes,1,opt,name=deployable_group_id,proto3" json:"deployable_group_id,omitempty"`
+	BuildNumber       string `protobuf:"bytes,2,opt,name=build_number,proto3" json:"build_number,omitempty"`
+	EnvironmentID     string `protobuf:"bytes,3,opt,name=environment_id,proto3" json:"environment_id,omitempty"`
+}
+
+func (m *PromoteGroupRequest) Reset()      { *m = PromoteGroupRequest{} }
+func (*PromoteGroupRequest) ProtoMessage() {}
+
+type PromoteGroupResponse struct {
+	Deployments []*Deployment `protobuf:"bytes,1,rep,name=deployments" json:"deployments,omitempty"`
+}
+
+func (m *PromoteGroupResponse) Reset()      { *m = PromoteGroupResponse{} }
+func (*PromoteGroupResponse) ProtoMessage() {}
+
+func (m *PromoteGroupResponse) GetDeployments() []*Deployment {
+	if m != nil {
+		return m.Deployments
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*DeployableGroup)(nil), "deploy.DeployableGroup")
 	proto.RegisterType((*Environment)(nil), "deploy.Environment")
@@ -1000,6 +1026,8 @@ func init() {
 	proto.RegisterType((*DeploymentsResponse)(nil), "deploy.DeploymentsResponse")
 	proto.RegisterType((*PromotionRequest)(nil), "deploy.PromotionRequest")
 	proto.RegisterType((*PromotionResponse)(nil), "deploy.PromotionResponse")
+	proto.RegisterType((*PromoteGroupRequest)(nil), "deploy.PromoteGroupRequest")
+	proto.RegisterType((*PromoteGroupResponse)(nil), "deploy.PromoteGroupResponse")
 	proto.RegisterEnum("deploy.EnvironmentConfig_DeployableConfigStatus", EnvironmentConfig_DeployableConfigStatus_name, EnvironmentConfig_DeployableConfigStatus_value)
 	proto.RegisterEnum("deploy.DeployableConfig_DeployableConfigStatus", DeployableConfig_DeployableConfigStatus_name, DeployableConfig_DeployableConfigStatus_value)
 	proto.RegisterEnum("deploy.Deployment_DeploymentType", Deployment_DeploymentType_name, Deployment_DeploymentType_value)
@@ -2233,6 +2261,9 @@ func (this *ReportBuildCompleteRequest) Equal(that interface{}) bool {
 	} else if !this.BuildArtifactOneof.Equal(that1.BuildArtifactOneof) {
 		return false
 	}
+	if this.GitHash != that1.GitHash {
+		return false
+	}
 	return true
 }
 func (this *ReportBuildCompleteRequest_DockerImage) Equal(that interface{}) bool {
@@ -2382,6 +2413,67 @@ func (this *PromotionResponse) Equal(that interface{}) bool {
 	}
 
 	that1, ok := that.(*PromotionResponse)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if len(this.Deployments) != len(that1.Deployments) {
+		return false
+	}
+	for i := range this.Deployments {
+		if !this.Deployments[i].Equal(that1.Deployments[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *PromoteGroupRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*PromoteGroupRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.DeployableGroupID != that1.DeployableGroupID {
+		return false
+	}
+	if this.BuildNumber != that1.BuildNumber {
+		return false
+	}
+	if this.EnvironmentID != that1.EnvironmentID {
+		return false
+	}
+	return true
+}
+func (this *PromoteGroupResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*PromoteGroupResponse)
 	if !ok {
 		return false
 	}
@@ -2888,7 +2980,7 @@ func (this *ReportBuildCompleteRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 8)
+	s := make([]string, 0, 9)
 	s = append(s, "&deploy.ReportBuildCompleteRequest{")
 	s = append(s, "DeployableID: "+fmt.Sprintf("%#v", this.DeployableID)+",\n")
 	s = append(s, "BuildNumber: "+fmt.Sprintf("%#v", this.BuildNumber)+",\n")
@@ -2896,6 +2988,7 @@ func (this *ReportBuildCompleteRequest) GoString() string {
 	if this.BuildArtifactOneof != nil {
 		s = append(s, "BuildArtifactOneof: "+fmt.Sprintf("%#v", this.BuildArtifactOneof)+",\n")
 	}
+	s = append(s, "GitHash: "+fmt.Sprintf("%#v", this.GitHash)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -2964,6 +3057,30 @@ func (this *PromotionResponse) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *PromoteGroupRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&deploy.PromoteGroupRequest{")
+	s = append(s, "DeployableGroupID: "+fmt.Sprintf("%#v", this.DeployableGroupID)+",\n")
+	s = append(s, "BuildNumber: "+fmt.Sprintf("%#v", this.BuildNumber)+",\n")
+	s = append(s, "EnvironmentID: "+fmt.Sprintf("%#v", this.EnvironmentID)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *PromoteGroupResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&deploy.PromoteGroupResponse{")
+	if this.Deployments != nil {
+		s = append(s, "Deployments: "+fmt.Sprintf("%#v", this.Deployments)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func valueToGoStringSvc(v interface{}, typ string) string {
 	rv := reflect.ValueOf(v)
 	if rv.IsNil() {
@@ -3011,6 +3128,7 @@ type DeployClient interface {
 	Environments(ctx context.Context, in *EnvironmentsRequest, opts ...grpc.CallOption) (*EnvironmentsResponse, error)
 	EnvironmentConfigs(ctx context.Context, in *EnvironmentConfigsRequest, opts ...grpc.CallOption) (*EnvironmentConfigsResponse, error)
 	Promote(ctx context.Context, in *PromotionRequest, opts ...grpc.CallOption) (*PromotionResponse, error)
+	PromoteGroup(ctx context.Context, in *PromoteGroupRequest, opts ...grpc.CallOption) (*PromoteGroupResponse, error)
 	ReportBuildComplete(ctx context.Context, in *ReportBuildCompleteRequest, opts ...grpc.CallOption) (*ReportBuildCompleteResponse, error)
 }
 
@@ -3148,6 +3266,15 @@ func (c *deployClient) Promote(ctx context.Context, in *PromotionRequest, opts .
 	return out, nil
 }
 
+func (c *deployClient) PromoteGroup(ctx context.Context, in *PromoteGroupRequest, opts ...grpc.CallOption) (*PromoteGroupResponse, error) {
+	out := new(PromoteGroupResponse)
+	err := grpc.Invoke(ctx, "/deploy.Deploy/PromoteGroup", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *deployClient) ReportBuildComplete(ctx context.Context, in *ReportBuildCompleteRequest, opts ...grpc.CallOption) (*ReportBuildCompleteResponse, error) {
 	out := new(ReportBuildCompleteResponse)
 	err := grpc.Invoke(ctx, "/deploy.Deploy/ReportBuildComplete", in, out, c.cc, opts...)
@@ -3174,6 +3301,7 @@ type DeployServer interface {
 	Environments(context.Context, *EnvironmentsRequest) (*EnvironmentsResponse, error)
 	EnvironmentConfigs(context.Context, *EnvironmentConfigsRequest) (*EnvironmentConfigsResponse, error)
 	Promote(context.Context, *PromotionRequest) (*PromotionResponse, error)
+	PromoteGroup(context.Context, *PromoteGroupRequest) (*PromoteGroupResponse, error)
 	ReportBuildComplete(context.Context, *ReportBuildCompleteRequest) (*ReportBuildCompleteResponse, error)
 }
 
@@ -3349,6 +3477,18 @@ func _Deploy_Promote_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return out, nil
 }
 
+func _Deploy_PromoteGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(PromoteGroupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(DeployServer).PromoteGroup(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func _Deploy_ReportBuildComplete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(ReportBuildCompleteRequest)
 	if err := dec(in); err != nil {
@@ -3420,6 +3560,10 @@ var _Deploy_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Promote",
 			Handler:    _Deploy_Promote_Handler,
+		},
+		{
+			MethodName: "PromoteGroup",
+			Handler:    _Deploy_PromoteGroup_Handler,
 		},
 		{
 			MethodName: "ReportBuildComplete",
@@ -4740,6 +4884,12 @@ func (m *ReportBuildCompleteRequest) MarshalTo(data []byte) (int, error) {
 		}
 		i += nn11
 	}
+	if len(m.GitHash) > 0 {
+		data[i] = 0x2a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.GitHash)))
+		i += copy(data[i:], m.GitHash)
+	}
 	return i, nil
 }
 
@@ -4875,6 +5025,72 @@ func (m *PromotionResponse) Marshal() (data []byte, err error) {
 }
 
 func (m *PromotionResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Deployments) > 0 {
+		for _, msg := range m.Deployments {
+			data[i] = 0xa
+			i++
+			i = encodeVarintSvc(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	return i, nil
+}
+
+func (m *PromoteGroupRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *PromoteGroupRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.DeployableGroupID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.DeployableGroupID)))
+		i += copy(data[i:], m.DeployableGroupID)
+	}
+	if len(m.BuildNumber) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.BuildNumber)))
+		i += copy(data[i:], m.BuildNumber)
+	}
+	if len(m.EnvironmentID) > 0 {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.EnvironmentID)))
+		i += copy(data[i:], m.EnvironmentID)
+	}
+	return i, nil
+}
+
+func (m *PromoteGroupResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *PromoteGroupResponse) MarshalTo(data []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -5531,6 +5747,10 @@ func (m *ReportBuildCompleteRequest) Size() (n int) {
 	if m.BuildArtifactOneof != nil {
 		n += m.BuildArtifactOneof.Size()
 	}
+	l = len(m.GitHash)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
 	return n
 }
 
@@ -5589,6 +5809,36 @@ func (m *PromotionRequest) Size() (n int) {
 }
 
 func (m *PromotionResponse) Size() (n int) {
+	var l int
+	_ = l
+	if len(m.Deployments) > 0 {
+		for _, e := range m.Deployments {
+			l = e.Size()
+			n += 1 + l + sovSvc(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *PromoteGroupRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.DeployableGroupID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.BuildNumber)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.EnvironmentID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *PromoteGroupResponse) Size() (n int) {
 	var l int
 	_ = l
 	if len(m.Deployments) > 0 {
@@ -6071,6 +6321,7 @@ func (this *ReportBuildCompleteRequest) String() string {
 		`BuildNumber:` + fmt.Sprintf("%v", this.BuildNumber) + `,`,
 		`ArtifactType:` + fmt.Sprintf("%v", this.ArtifactType) + `,`,
 		`BuildArtifactOneof:` + fmt.Sprintf("%v", this.BuildArtifactOneof) + `,`,
+		`GitHash:` + fmt.Sprintf("%v", this.GitHash) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -6131,6 +6382,28 @@ func (this *PromotionResponse) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&PromotionResponse{`,
+		`Deployments:` + strings.Replace(fmt.Sprintf("%v", this.Deployments), "Deployment", "Deployment", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PromoteGroupRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PromoteGroupRequest{`,
+		`DeployableGroupID:` + fmt.Sprintf("%v", this.DeployableGroupID) + `,`,
+		`BuildNumber:` + fmt.Sprintf("%v", this.BuildNumber) + `,`,
+		`EnvironmentID:` + fmt.Sprintf("%v", this.EnvironmentID) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PromoteGroupResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PromoteGroupResponse{`,
 		`Deployments:` + strings.Replace(fmt.Sprintf("%v", this.Deployments), "Deployment", "Deployment", 1) + `,`,
 		`}`,
 	}, "")
@@ -10737,6 +11010,35 @@ func (m *ReportBuildCompleteRequest) Unmarshal(data []byte) error {
 			}
 			m.BuildArtifactOneof = &ReportBuildCompleteRequest_DockerImage{string(data[iNdEx:postIndex])}
 			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field GitHash", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.GitHash = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])
@@ -11124,6 +11426,224 @@ func (m *PromotionResponse) Unmarshal(data []byte) error {
 		}
 		if fieldNum <= 0 {
 			return fmt.Errorf("proto: PromotionResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Deployments", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Deployments = append(m.Deployments, &Deployment{})
+			if err := m.Deployments[len(m.Deployments)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *PromoteGroupRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PromoteGroupRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PromoteGroupRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DeployableGroupID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.DeployableGroupID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BuildNumber", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.BuildNumber = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EnvironmentID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.EnvironmentID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *PromoteGroupResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PromoteGroupResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PromoteGroupResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:

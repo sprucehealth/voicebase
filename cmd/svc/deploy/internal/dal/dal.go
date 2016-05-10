@@ -68,6 +68,7 @@ type DAL interface {
 	Deployments(depID DeployableID) ([]*Deployment, error)
 	DeploymentsForStatus(depID DeployableID, status DeploymentStatus) ([]*Deployment, error)
 	DeleteDeployment(id DeploymentID) (int64, error)
+	DeploymentsForDeploymentGroup(depID DeployableGroupID, envID EnvironmentID, buildNumber string) ([]*Deployment, error)
 	ActiveDeployment(depID DeployableID, envID EnvironmentID) (*Deployment, error)
 	NextPendingDeployment() (*Deployment, error)
 	SetDeploymentStatus(id DeploymentID, s DeploymentStatus) error
@@ -1208,6 +1209,30 @@ func (d *dal) ActiveDeployment(depID DeployableID, envID EnvironmentID) (*Deploy
 		selectDeployment+` WHERE deployable_id = ? AND environment_id = ? AND status = 'COMPLETE' ORDER BY deployment_number DESC LIMIT 1`, depID, envID)
 	model, err := scanDeployment(row)
 	return model, errors.Trace(err)
+}
+
+func (d *dal) DeploymentsForDeploymentGroup(depID DeployableGroupID, envID EnvironmentID, buildNumber string) ([]*Deployment, error) {
+	rows, err := d.db.Query(
+		selectDeployment+` WHERE status = 'COMPLETE' environment_id = ? AND build_number = ? AND deployable_id IN (SELECT id FROM deployable WHERE deployable_group_id = ?);`, envID.Val, buildNumber, depID)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	defer rows.Close()
+
+	var models []*Deployment
+	// do a little janky deduping incase multiple instances of the same build number have been deployed. Can likely fix this in the query somehow
+	foundDeployables := make(map[uint64]struct{})
+	for rows.Next() {
+		model, err := scanDeployment(rows)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		if _, ok := foundDeployables[model.DeployableID.Val]; !ok {
+			models = append(models, model)
+			foundDeployables[model.DeployableID.Val] = struct{}{}
+		}
+	}
+	return models, errors.Trace(err)
 }
 
 // TODO: Lock retrieval of pending deployments on a deployable if there is one IN_PROGRESS

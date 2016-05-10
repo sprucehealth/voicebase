@@ -33,6 +33,7 @@ func (c *reportBuildCompleteCmd) Run(args []string) error {
 	fs := flag.NewFlagSet("report_build_complete", flag.ExitOnError)
 	depID := fs.String("deployable_id", "", "The deployable this build is for")
 	buildNumber := fs.String("build_number", "", "The build number for this build artifact")
+	gitHash := fs.String("git_hash", "", "The git has of this build")
 	image := fs.String("image", "", "The docker image for this artifact")
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -60,6 +61,10 @@ func (c *reportBuildCompleteCmd) Run(args []string) error {
 		}
 	}
 
+	if *gitHash == "" {
+		*gitHash = "NONE_PROVIDED"
+	}
+
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
 	defer cancel()
@@ -71,6 +76,7 @@ func (c *reportBuildCompleteCmd) Run(args []string) error {
 		BuildArtifactOneof: &deploy.ReportBuildCompleteRequest_DockerImage{
 			DockerImage: *image,
 		},
+		GitHash: *gitHash,
 	})
 	if err != nil {
 		return err

@@ -245,6 +245,7 @@ message ReportBuildCompleteRequest {
 	oneof build_artifact_oneof {
 		string docker_image = 4;
 	}
+	string git_hash = 5;
 }
 
 message ReportBuildCompleteResponse {
@@ -275,6 +276,16 @@ message PromotionResponse {
 	repeated Deployment deployments = 1;
 }
 
+message PromoteGroupRequest {
+    string deployable_group_id = 1 [(gogoproto.customname) = "DeployableGroupID"];
+	string build_number = 2;
+	string environment_id = 3 [(gogoproto.customname) = "EnvironmentID"];
+}
+
+message PromoteGroupResponse {
+	repeated Deployment deployments = 1;
+}
+
 // Deploy provides mechanisms that deploy software to the infrastructure
 service Deploy {
 	rpc CreateDeployable (CreateDeployableRequest) returns (CreateDeployableResponse);
@@ -291,5 +302,6 @@ service Deploy {
 	rpc Environments (EnvironmentsRequest) returns (EnvironmentsResponse);
 	rpc EnvironmentConfigs (EnvironmentConfigsRequest) returns (EnvironmentConfigsResponse);
 	rpc Promote (PromotionRequest) returns (PromotionResponse);
+	rpc PromoteGroup (PromoteGroupRequest) returns (PromoteGroupResponse); 
 	rpc ReportBuildComplete (ReportBuildCompleteRequest) returns (ReportBuildCompleteResponse);
 }

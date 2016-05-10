@@ -1,6 +1,9 @@
 package server
 
 import (
+	"fmt"
+	"strconv"
+
 	"github.com/sprucehealth/backend/cmd/svc/deploy/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/deploy/internal/deployment"
 	"github.com/sprucehealth/backend/libs/errors"
@@ -650,6 +653,82 @@ func (s *server) Promote(ctx context.Context, in *deploy.PromotionRequest) (*dep
 	}, nil
 }
 
+// PromoteGroup reports that all deployments of a deployable group with a given build number should be promoted out of the target environment
+func (s *server) PromoteGroup(ctx context.Context, in *deploy.PromoteGroupRequest) (*deploy.PromoteGroupResponse, error) {
+	if in.DeployableGroupID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "deployable group id cannot be empty")
+	}
+	depID, err := dal.ParseDeployableGroupID(in.DeployableGroupID)
+	if err != nil {
+		return nil, fmt.Errorf("deployable group id %q is invalid", in.DeployableGroupID)
+	}
+	if _, err = s.dl.DeployableGroup(depID); err != nil {
+		if errors.Cause(err) == dal.ErrNotFound {
+			return nil, fmt.Errorf("Not Found: Deployable Group: %q", depID)
+		}
+		return nil, err
+	}
+
+	if in.BuildNumber == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "build number cannot be empty")
+	}
+	if _, err := strconv.ParseInt(in.BuildNumber, 10, 64); err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "cannot parse build number %s: %s", in.BuildNumber, err)
+	}
+
+	if in.EnvironmentID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "environment id cannot be empty")
+	}
+	envID, err := dal.ParseEnvironmentID(in.EnvironmentID)
+	if err != nil {
+		return nil, fmt.Errorf("environment id %q is invalid", in.EnvironmentID)
+	}
+	if _, err = s.dl.Environment(envID); err != nil {
+		if errors.Cause(err) == dal.ErrNotFound {
+			return nil, fmt.Errorf("Not Found: Environment: %q", envID)
+		}
+		return nil, err
+	}
+
+	depls, err := s.dl.DeploymentsForDeploymentGroup(depID, envID, in.BuildNumber)
+	if err != nil {
+		return nil, err
+	}
+	if len(depls) == 0 {
+		return nil, grpcErrorf(codes.FailedPrecondition, "No existing deployments matching the criteria were found")
+	}
+
+	var deploymentIDs []dal.DeploymentID
+	for _, depl := range depls {
+		dIDs, err := s.manager.ProcessPromotionEvent(&deploy.PromotionEvent{
+			DeploymentID: depl.ID.String(),
+		})
+		if err != nil {
+			return nil, err
+		}
+		deploymentIDs = append(deploymentIDs, dIDs...)
+	}
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	deployments := make([]*dal.Deployment, len(deploymentIDs))
+	for i, dID := range deploymentIDs {
+		deployments[i], err = s.dl.Deployment(dID)
+		if err != nil {
+			return nil, grpcErrorf(codes.Internal, err.Error())
+		}
+	}
+
+	rDeployments, err := transformDeploymentsToResponse(deployments)
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+	return &deploy.PromoteGroupResponse{
+		Deployments: rDeployments,
+	}, nil
+}
+
 // ReportBuildComplete reports the completion of a build for deployment
 func (s *server) ReportBuildComplete(ctx context.Context, in *deploy.ReportBuildCompleteRequest) (*deploy.ReportBuildCompleteResponse, error) {
 	ev := &deploy.BuildCompleteEvent{}
@@ -659,6 +738,10 @@ func (s *server) ReportBuildComplete(ctx context.Context, in *deploy.ReportBuild
 	ev.DeployableID = in.DeployableID
 	if in.BuildNumber == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "build number cannot be empty")
+	}
+	ev.GitHash = in.GitHash
+	if in.GitHash == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "git hash cannot be empty")
 	}
 	ev.BuildNumber = in.BuildNumber
 
