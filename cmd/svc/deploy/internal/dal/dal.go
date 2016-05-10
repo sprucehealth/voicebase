@@ -1213,7 +1213,7 @@ func (d *dal) ActiveDeployment(depID DeployableID, envID EnvironmentID) (*Deploy
 
 func (d *dal) DeploymentsForDeploymentGroup(depID DeployableGroupID, envID EnvironmentID, buildNumber string) ([]*Deployment, error) {
 	rows, err := d.db.Query(
-		selectDeployment+` WHERE status = 'COMPLETE' environment_id = ? AND build_number = ? AND deployable_id IN (SELECT id FROM deployable WHERE deployable_group_id = ?);`, envID.Val, buildNumber, depID)
+		selectDeployment+` WHERE status = 'COMPLETE' AND environment_id = ? AND build_number = ? AND deployable_id IN (SELECT id FROM deployable WHERE deployable_group_id = ?);`, envID.Val, buildNumber, depID)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
