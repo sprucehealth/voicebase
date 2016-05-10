@@ -80,7 +80,7 @@ var provisionEmailErrorCodeEnum = graphql.NewEnum(
 var provisionEmailOutputType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "ProvisionEmailPayload",
 	Fields: graphql.Fields{
-		"clientMutationId": newClientmutationIDOutputField(),
+		"clientMutationId": newClientMutationIDOutputField(),
 		"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		"errorCode":        &graphql.Field{Type: provisionEmailErrorCodeEnum},
 		"errorMessage":     &graphql.Field{Type: graphql.String},

@@ -27,6 +27,22 @@ func (m *mockDAL) Transact(ctx context.Context, trans func(ctx context.Context, 
 	return trans(ctx, m)
 }
 
+func (m *mockDAL) CarePlan(ctx context.Context, id models.CarePlanID) (*models.CarePlan, error) {
+	rets := m.Record(id)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*models.CarePlan), mock.SafeError(rets[1])
+}
+
+func (m *mockDAL) CreateCarePlan(ctx context.Context, cp *models.CarePlan) (models.CarePlanID, error) {
+	rets := m.Record(cp)
+	if len(rets) == 0 {
+		return models.EmptyCarePlanID(), nil
+	}
+	return rets[0].(models.CarePlanID), mock.SafeError(rets[1])
+}
+
 func (m *mockDAL) CreateVisit(ctx context.Context, visit *models.Visit) (models.VisitID, error) {
 	rets := m.Record(visit)
 	if len(rets) == 0 {
@@ -34,6 +50,14 @@ func (m *mockDAL) CreateVisit(ctx context.Context, visit *models.Visit) (models.
 	}
 
 	return rets[0].(models.VisitID), mock.SafeError(rets[1])
+}
+
+func (m *mockDAL) SubmitCarePlan(ctx context.Context, id models.CarePlanID, parentID string) error {
+	rets := m.Record(id, parentID)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[0])
 }
 
 func (m *mockDAL) Visit(ctx context.Context, id models.VisitID, opts ...dal.QueryOption) (*models.Visit, error) {

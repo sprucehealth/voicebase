@@ -13,6 +13,7 @@ import (
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
+	"github.com/sprucehealth/backend/libs/textutil"
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -156,7 +157,7 @@ var createPatientAccountInputType = graphql.NewInputObject(graphql.InputObjectCo
 var createPatientAccountOutputType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "CreatePatientAccountPayload",
 	Fields: graphql.Fields{
-		"clientMutationId":    newClientmutationIDOutputField(),
+		"clientMutationId":    newClientMutationIDOutputField(),
 		"success":             &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		"errorCode":           &graphql.Field{Type: createPatientAccountErrorCodeEnum},
 		"errorMessage":        &graphql.Field{Type: graphql.String},
@@ -260,7 +261,7 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 
 	req.FirstName = strings.TrimSpace(entityInfo.FirstName)
 	req.LastName = strings.TrimSpace(entityInfo.LastName)
-	if req.FirstName == "" || !isValidPlane0Unicode(req.FirstName) {
+	if req.FirstName == "" || !textutil.IsValidPlane0Unicode(req.FirstName) {
 		return &createPatientAccountOutput{
 			ClientMutationID: mutationID,
 			Success:          false,
@@ -268,7 +269,7 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 			ErrorMessage:     "Please enter a valid first name.",
 		}, nil
 	}
-	if req.LastName == "" || !isValidPlane0Unicode(req.LastName) {
+	if req.LastName == "" || !textutil.IsValidPlane0Unicode(req.LastName) {
 		return &createPatientAccountOutput{
 			ClientMutationID: mutationID,
 			Success:          false,

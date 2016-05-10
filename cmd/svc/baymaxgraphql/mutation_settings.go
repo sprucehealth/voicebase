@@ -115,7 +115,7 @@ var modifySettingOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "ModifySettingPayload",
 		Fields: graphql.Fields{
-			"clientMutationId": newClientmutationIDOutputField(),
+			"clientMutationId": newClientMutationIDOutputField(),
 			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"errorCode":        &graphql.Field{Type: modifySettingErrorCodeEnum},
 			"errorMessage":     &graphql.Field{Type: graphql.String},

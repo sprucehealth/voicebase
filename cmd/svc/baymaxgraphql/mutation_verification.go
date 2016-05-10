@@ -64,7 +64,7 @@ var verifyPhoneNumberInputType = graphql.NewInputObject(graphql.InputObjectConfi
 var verifyPhoneNumberOutputType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "VerifyPhoneNumberPayload",
 	Fields: graphql.Fields{
-		"clientMutationId": newClientmutationIDOutputField(),
+		"clientMutationId": newClientMutationIDOutputField(),
 		"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		"errorCode":        &graphql.Field{Type: verifyPhoneNumberErrorCodeEnum},
 		"errorMessage":     &graphql.Field{Type: graphql.String},
@@ -268,7 +268,7 @@ var checkVerificationCodeOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "CheckVerificationCodePayload",
 		Fields: graphql.Fields{
-			"clientMutationId":   newClientmutationIDOutputField(),
+			"clientMutationId":   newClientMutationIDOutputField(),
 			"success":            &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"errorCode":          &graphql.Field{Type: checkVerificationCodeErrorCodeEnum},
 			"errorMessage":       &graphql.Field{Type: graphql.String},

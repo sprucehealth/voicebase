@@ -27,7 +27,7 @@ var updateThreadErrorCodeEnum = graphql.String
 var updateThreadOutputType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "UpdateThreadPayload",
 	Fields: graphql.Fields{
-		"clientMutationId": newClientmutationIDOutputField(),
+		"clientMutationId": newClientMutationIDOutputField(),
 		"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		"errorCode":        &graphql.Field{Type: updateThreadErrorCodeEnum},
 		"errorMessage":     &graphql.Field{Type: graphql.String},

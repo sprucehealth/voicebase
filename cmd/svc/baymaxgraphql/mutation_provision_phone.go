@@ -66,7 +66,7 @@ var provisionPhoneNumberOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "ProvisionPhoneNumberPayload",
 		Fields: graphql.Fields{
-			"clientMutationId": newClientmutationIDOutputField(),
+			"clientMutationId": newClientMutationIDOutputField(),
 			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"errorCode":        &graphql.Field{Type: provisionPhoneNumberErrorCodeEnum},
 			"errorMessage":     &graphql.Field{Type: graphql.String},

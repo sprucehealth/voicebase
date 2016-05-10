@@ -221,6 +221,15 @@ func transformThreadItemToResponse(item *models.ThreadItem, orgID string) (*thre
 						VisitName: data.VisitName,
 					},
 				}
+			case models.Attachment_CARE_PLAN:
+				data := a.GetCarePlan()
+				at.Type = threading.Attachment_CARE_PLAN
+				at.Data = &threading.Attachment_CarePlan{
+					CarePlan: &threading.CarePlanAttachment{
+						CarePlanID:   data.CarePlanID,
+						CarePlanName: data.CarePlanName,
+					},
+				}
 			default:
 				return nil, errors.New("invalid attachment type " + a.Type.String())
 
@@ -315,6 +324,15 @@ func transformAttachmentsFromRequest(atts []*threading.Attachment) ([]*models.At
 				Visit: &models.VisitAttachment{
 					VisitName: data.VisitName,
 					VisitID:   data.VisitID,
+				},
+			}
+		case threading.Attachment_CARE_PLAN:
+			data := a.GetCarePlan()
+			at.Type = models.Attachment_CARE_PLAN
+			at.Data = &models.Attachment_CarePlan{
+				CarePlan: &models.CarePlanAttachment{
+					CarePlanName: data.CarePlanName,
+					CarePlanID:   data.CarePlanID,
 				},
 			}
 		default:

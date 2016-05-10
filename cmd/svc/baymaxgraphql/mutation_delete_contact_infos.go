@@ -33,7 +33,7 @@ var deleteContactInfosErrorCodeEnum = graphql.String
 var deleteContactInfosOutputType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "DeleteContactInfosPayload",
 	Fields: graphql.Fields{
-		"clientMutationId": newClientmutationIDOutputField(),
+		"clientMutationId": newClientMutationIDOutputField(),
 		"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		"errorCode":        &graphql.Field{Type: deleteContactInfosErrorCodeEnum},
 		"errorMessage":     &graphql.Field{Type: graphql.String},

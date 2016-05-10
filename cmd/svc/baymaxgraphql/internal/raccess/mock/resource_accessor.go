@@ -72,6 +72,14 @@ func (m *ResourceAccessor) CheckVerificationCode(ctx context.Context, token, cod
 	return rets[0].(*auth.CheckVerificationCodeResponse), mock.SafeError(rets[1])
 }
 
+func (m *ResourceAccessor) CarePlan(ctx context.Context, id string) (*care.CarePlan, error) {
+	rets := m.Record(id)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*care.CarePlan), mock.SafeError(rets[1])
+}
+
 func (m *ResourceAccessor) CreateAccount(ctx context.Context, req *auth.CreateAccountRequest) (*auth.CreateAccountResponse, error) {
 	rets := m.Record(req)
 	if len(rets) == 0 {
@@ -79,6 +87,14 @@ func (m *ResourceAccessor) CreateAccount(ctx context.Context, req *auth.CreateAc
 	}
 
 	return rets[0].(*auth.CreateAccountResponse), mock.SafeError(rets[1])
+}
+
+func (m *ResourceAccessor) CreateCarePlan(ctx context.Context, req *care.CreateCarePlanRequest) (*care.CreateCarePlanResponse, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*care.CreateCarePlanResponse), mock.SafeError(rets[1])
 }
 
 func (m *ResourceAccessor) CreateContact(ctx context.Context, req *directory.CreateContactRequest) (*directory.CreateContactResponse, error) {
@@ -363,6 +379,14 @@ func (m *ResourceAccessor) SerializedEntityContact(ctx context.Context, entityID
 	}
 
 	return rets[0].(*directory.SerializedClientEntityContact), mock.SafeError(rets[1])
+}
+
+func (m *ResourceAccessor) SubmitCarePlan(ctx context.Context, cp *care.CarePlan, parentID string) error {
+	rets := m.Record(cp, parentID)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[0])
 }
 
 func (m *ResourceAccessor) Thread(ctx context.Context, threadID, viewerEntityID string) (*threading.Thread, error) {

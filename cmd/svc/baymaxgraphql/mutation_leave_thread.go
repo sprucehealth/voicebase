@@ -23,7 +23,7 @@ var leaveThreadErrorCodeEnum = graphql.String
 var leaveThreadOutputType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "LeaveThreadPayload",
 	Fields: graphql.Fields{
-		"clientMutationId": newClientmutationIDOutputField(),
+		"clientMutationId": newClientMutationIDOutputField(),
 		"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		"errorCode":        &graphql.Field{Type: leaveThreadErrorCodeEnum},
 		"errorMessage":     &graphql.Field{Type: graphql.String},

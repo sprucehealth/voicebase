@@ -60,7 +60,7 @@ var inviteColleaguesErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
 var inviteColleaguesOutputType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "InviteColleaguesPayload",
 	Fields: graphql.Fields{
-		"clientMutationId": newClientmutationIDOutputField(),
+		"clientMutationId": newClientMutationIDOutputField(),
 		"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		"errorCode":        &graphql.Field{Type: inviteColleaguesErrorCodeEnum},
 		"errorMessage":     &graphql.Field{Type: graphql.String},

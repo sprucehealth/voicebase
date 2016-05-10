@@ -58,7 +58,7 @@ var requestPasswordResetOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "RequestPasswordResetPayload",
 		Fields: graphql.Fields{
-			"clientMutationId": newClientmutationIDOutputField(),
+			"clientMutationId": newClientMutationIDOutputField(),
 			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"errorCode":        &graphql.Field{Type: requestPasswordResetErrorCodeEnum},
 			"errorMessage":     &graphql.Field{Type: graphql.String},
@@ -152,7 +152,7 @@ var checkPasswordResetTokenOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "CheckPasswordResetTokenPayload",
 		Fields: graphql.Fields{
-			"clientMutationId":          newClientmutationIDOutputField(),
+			"clientMutationId":          newClientMutationIDOutputField(),
 			"success":                   &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"errorCode":                 &graphql.Field{Type: checkPasswordResetTokenErrorCodeEnum},
 			"errorMessage":              &graphql.Field{Type: graphql.String},
@@ -329,7 +329,7 @@ var passwordResetOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "PasswordResetPayload",
 		Fields: graphql.Fields{
-			"clientMutationId": newClientmutationIDOutputField(),
+			"clientMutationId": newClientMutationIDOutputField(),
 			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"errorCode":        &graphql.Field{Type: passwordResetErrorCodeEnum},
 			"errorMessage":     &graphql.Field{Type: graphql.String},

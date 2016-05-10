@@ -9,7 +9,7 @@ func newClientMutationIDInputField() *graphql.InputObjectFieldConfig {
 	}
 }
 
-func newClientmutationIDOutputField() *graphql.Field {
+func newClientMutationIDOutputField() *graphql.Field {
 	return &graphql.Field{
 		Description: "This field is for Relay compatibility and should not be used otherwise.",
 		Type:        graphql.String,
@@ -88,7 +88,7 @@ var registerDeviceForPushOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "RegisterDeviceForPushPayload",
 		Fields: graphql.Fields{
-			"clientMutationId": newClientmutationIDOutputField(),
+			"clientMutationId": newClientMutationIDOutputField(),
 			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"errorCode":        &graphql.Field{Type: registerDeviceForPushErrorCodeEnum},
 			"errorMessage":     &graphql.Field{Type: graphql.String},
@@ -127,7 +127,7 @@ var markThreadAsReadOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "MarkThreadAsReadPayload",
 		Fields: graphql.Fields{
-			"clientMutationId": newClientmutationIDOutputField(),
+			"clientMutationId": newClientMutationIDOutputField(),
 			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"errorCode":        &graphql.Field{Type: markThreadAsReadErrorCodeEnum},
 			"errorMessage":     &graphql.Field{Type: graphql.String},
@@ -151,6 +151,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 		"checkPasswordResetToken":             checkPasswordResetTokenMutation,
 		"checkVerificationCode":               checkVerificationCodeMutation,
 		"createAccount":                       createAccountMutation,
+		"createCarePlan":                      createCarePlanMutation,
 		"createProviderAccount":               createProviderAccountMutation,
 		"createPatientAccount":                createPatientAccountMutation,
 		"createTeamThread":                    createTeamThreadMutation,

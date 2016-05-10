@@ -69,7 +69,7 @@ var verifyEmailOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "VerifyEmailPayload",
 		Fields: graphql.Fields{
-			"clientMutationId": newClientmutationIDOutputField(),
+			"clientMutationId": newClientMutationIDOutputField(),
 			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"errorCode":        &graphql.Field{Type: verifyEmailErrorCodeEnum},
 			"errorMessage":     &graphql.Field{Type: graphql.String},

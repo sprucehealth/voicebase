@@ -17,6 +17,7 @@ import (
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
+	"github.com/sprucehealth/backend/libs/textutil"
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -65,7 +66,7 @@ var createProviderAccountInputType = graphql.NewInputObject(graphql.InputObjectC
 var createProviderAccountOutputType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "CreateProviderAccountPayload",
 	Fields: graphql.Fields{
-		"clientMutationId":    newClientmutationIDOutputField(),
+		"clientMutationId":    newClientMutationIDOutputField(),
 		"success":             &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		"errorCode":           &graphql.Field{Type: createAccountErrorCodeEnum},
 		"errorMessage":        &graphql.Field{Type: graphql.String},
@@ -128,7 +129,7 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 
 	req.FirstName = strings.TrimSpace(entityInfo.FirstName)
 	req.LastName = strings.TrimSpace(entityInfo.LastName)
-	if req.FirstName == "" || !isValidPlane0Unicode(req.FirstName) {
+	if req.FirstName == "" || !textutil.IsValidPlane0Unicode(req.FirstName) {
 		return &createProviderAccountOutput{
 			ClientMutationID: mutationID,
 			Success:          false,
@@ -136,7 +137,7 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 			ErrorMessage:     "Please enter a valid first name.",
 		}, nil
 	}
-	if req.LastName == "" || !isValidPlane0Unicode(req.LastName) {
+	if req.LastName == "" || !textutil.IsValidPlane0Unicode(req.LastName) {
 		return &createProviderAccountOutput{
 			ClientMutationID: mutationID,
 			Success:          false,
@@ -149,7 +150,7 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 	if inv == nil {
 		organizationName, _ = input["organizationName"].(string)
 		organizationName = strings.TrimSpace(organizationName)
-		if organizationName == "" || !isValidPlane0Unicode(organizationName) {
+		if organizationName == "" || !textutil.IsValidPlane0Unicode(organizationName) {
 			return &createProviderAccountOutput{
 				ClientMutationID: mutationID,
 				Success:          false,

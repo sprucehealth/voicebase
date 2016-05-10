@@ -99,7 +99,7 @@ var createAccountInputType = graphql.NewInputObject(graphql.InputObjectConfig{
 var createAccountOutputType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "CreateAccountPayload",
 	Fields: graphql.Fields{
-		"clientMutationId":    newClientmutationIDOutputField(),
+		"clientMutationId":    newClientMutationIDOutputField(),
 		"success":             &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		"errorCode":           &graphql.Field{Type: createAccountErrorCodeEnum},
 		"errorMessage":        &graphql.Field{Type: graphql.String},

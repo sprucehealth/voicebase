@@ -32,7 +32,7 @@ var deleteThreadErrorCodeEnum = graphql.String
 var deleteThreadOutputType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "DeleteThreadPayload",
 	Fields: graphql.Fields{
-		"clientMutationId": newClientmutationIDOutputField(),
+		"clientMutationId": newClientMutationIDOutputField(),
 		"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		"errorCode":        &graphql.Field{Type: deleteThreadErrorCodeEnum},
 		"errorMessage":     &graphql.Field{Type: graphql.String},

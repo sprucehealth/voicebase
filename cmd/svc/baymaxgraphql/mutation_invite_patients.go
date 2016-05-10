@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
+	"github.com/sprucehealth/backend/libs/textutil"
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/invite"
@@ -78,7 +79,7 @@ var invitePatientsErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
 var invitePatientsOutputType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "InvitePatientsPayload",
 	Fields: graphql.Fields{
-		"clientMutationId": newClientmutationIDOutputField(),
+		"clientMutationId": newClientMutationIDOutputField(),
 		"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		"errorCode":        &graphql.Field{Type: invitePatientsErrorCodeEnum},
 		"errorMessage":     &graphql.Field{Type: graphql.String},
@@ -149,7 +150,7 @@ var invitePatientsMutation = &graphql.Field{
 							ErrorMessage:     fmt.Sprintf("The phone number '%s' not valid.", phoneNumber),
 						}, nil
 					}
-					if firstName != "" && !isValidPlane0Unicode(firstName) {
+					if firstName != "" && !textutil.IsValidPlane0Unicode(firstName) {
 						return &invitePatientsOutput{
 							ClientMutationID: mutationID,
 							Success:          false,
@@ -157,7 +158,7 @@ var invitePatientsMutation = &graphql.Field{
 							ErrorMessage:     "Please enter a valid first name.",
 						}, nil
 					}
-					if lastName != "" && !isValidPlane0Unicode(lastName) {
+					if lastName != "" && !textutil.IsValidPlane0Unicode(lastName) {
 						return &invitePatientsOutput{
 							ClientMutationID: mutationID,
 							Success:          false,

@@ -44,7 +44,7 @@ var associateAttributionOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "AssociateAttributionPayload",
 		Fields: graphql.Fields{
-			"clientMutationId": newClientmutationIDOutputField(),
+			"clientMutationId": newClientMutationIDOutputField(),
 			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"errorCode":        &graphql.Field{Type: associateAttributionErrorCodeEnum},
 			"errorMessage":     &graphql.Field{Type: graphql.String},
@@ -154,7 +154,7 @@ var associateInviteOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "AssociateInvitePayload",
 		Fields: graphql.Fields{
-			"clientMutationId": newClientmutationIDOutputField(),
+			"clientMutationId": newClientMutationIDOutputField(),
 			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"errorCode":        &graphql.Field{Type: associateInviteErrorCodeEnum},
 			"errorMessage":     &graphql.Field{Type: graphql.String},

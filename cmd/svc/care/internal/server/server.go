@@ -251,3 +251,114 @@ func (s *server) GetAnswersForVisit(ctx context.Context, in *care.GetAnswersForV
 		AnswersJSON: string(answerJSONData),
 	}, nil
 }
+
+func (s *server) CarePlan(ctx context.Context, in *care.CarePlanRequest) (*care.CarePlanResponse, error) {
+	if in.ID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "care plan id is required")
+	}
+	id, err := models.ParseCarePlanID(in.ID)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "care plan id is invalid")
+	}
+	cp, err := s.dal.CarePlan(ctx, id)
+	if errors.Cause(err) == dal.ErrNotFound {
+		return nil, grpcErrorf(codes.NotFound, "care plan %s not found", id)
+	} else if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+	cpr, err := transformCarePlanToResponse(cp)
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+	return &care.CarePlanResponse{CarePlan: cpr}, nil
+}
+
+func (s *server) CreateCarePlan(ctx context.Context, in *care.CreateCarePlanRequest) (*care.CreateCarePlanResponse, error) {
+	if in.Name == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "care plan name is required")
+	}
+	cp := &models.CarePlan{
+		Name:         in.Name,
+		CreatorID:    in.CreatorID,
+		Treatments:   make([]*models.CarePlanTreatment, len(in.Treatments)),
+		Instructions: make([]*models.CarePlanInstruction, len(in.Instructions)),
+	}
+	for i, ins := range in.Instructions {
+		cp.Instructions[i] = &models.CarePlanInstruction{Title: ins.Title, Steps: ins.Steps}
+	}
+	for i, t := range in.Treatments {
+		var availability models.TreatmentAvailability
+		switch t.Availability {
+		case care.CarePlanTreatment_UNKNOWN:
+			availability = models.TreatmentAvailabilityUnknown
+		case care.CarePlanTreatment_OTC:
+			availability = models.TreatmentAvailabilityOTC
+		case care.CarePlanTreatment_RX:
+			availability = models.TreatmentAvailabilityRx
+		default:
+			return nil, grpcErrorf(codes.InvalidArgument, "unknown treatment availability '%s'", t.Availability.String())
+		}
+		cp.Treatments[i] = &models.CarePlanTreatment{
+			EPrescribe:           t.EPrescribe,
+			Availability:         availability,
+			Name:                 t.Name,
+			Route:                t.Route,
+			Form:                 t.Form,
+			MedicationID:         t.MedicationID,
+			Dosage:               t.Dosage,
+			DispenseType:         t.DispenseType,
+			DispenseNumber:       int(t.DispenseNumber),
+			Refills:              int(t.Refills),
+			SubstitutionsAllowed: t.SubstitutionsAllowed,
+			DaysSupply:           int(t.DaysSupply),
+			Sig:                  t.Sig,
+			PharmacyID:           t.PharmacyID,
+			PharmacyInstructions: t.PharmacyInstructions,
+		}
+	}
+	id, err := s.dal.CreateCarePlan(ctx, cp)
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+	// Re-query to get actual values for timestamps
+	cp, err = s.dal.CarePlan(ctx, id)
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+	cpr, err := transformCarePlanToResponse(cp)
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+	return &care.CreateCarePlanResponse{CarePlan: cpr}, nil
+}
+
+func (s *server) SubmitCarePlan(ctx context.Context, in *care.SubmitCarePlanRequest) (*care.SubmitCarePlanResponse, error) {
+	if in.ID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "care plan id is required")
+	}
+	if in.ParentID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "care plan parent ID is required")
+	}
+	id, err := models.ParseCarePlanID(in.ID)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "care plan id is invalid")
+	}
+	if err := s.dal.SubmitCarePlan(ctx, id, in.ParentID); errors.Cause(err) == dal.ErrNotFound {
+		return nil, grpcErrorf(codes.NotFound, "care plan %s not found", id)
+	} else if errors.Cause(err) == dal.ErrAlreadySubmitted {
+		return nil, grpcErrorf(codes.AlreadyExists, "care plan %s already submitted", id)
+	} else if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+	cp, err := s.dal.CarePlan(ctx, id)
+	if errors.Cause(err) == dal.ErrNotFound {
+		return nil, grpcErrorf(codes.NotFound, "care plan %s not found", id)
+	} else if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+	cpr, err := transformCarePlanToResponse(cp)
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+	return &care.SubmitCarePlanResponse{CarePlan: cpr}, nil
+}

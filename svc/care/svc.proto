@@ -59,10 +59,88 @@ message SubmitVisitRequest {
 
 message SubmitVisitResponse {}
 
+message CarePlan {
+	string id = 1 [(gogoproto.customname) = "ID"];
+	string name = 2;
+	repeated CarePlanTreatment treatments = 3;
+	repeated CarePlanInstruction instructions = 4;
+	uint64 created_timestamp = 5;
+	string creator_id = 6 [(gogoproto.customname) = "CreatorID"];
+	bool submitted = 7;
+	string parent_id = 8 [(gogoproto.customname) = "ParentID"];
+	uint64 submitted_timestamp = 9;
+}
+
+message CarePlanTreatment {
+	enum Availability {
+		UNKNOWN = 0;
+		OTC = 1;
+		RX = 2;
+	}
+	bool ePrescribe = 1;
+	Availability availability = 2;
+	string name = 3;
+	string route = 4;
+	string form = 5;
+	string medication_id = 6 [(gogoproto.customname) = "MedicationID"];
+	string dosage = 7;
+	string dispenseType = 8;
+	uint32 dispense_number = 9;
+	uint32 refills = 10;
+	bool substitutions_allowed = 11;
+	uint32 days_supply = 12;
+	string sig = 13;
+	string pharmacy_id = 14 [(gogoproto.customname) = "PharmacyID"];
+	string pharmacy_instructions = 15;
+}
+
+message CarePlanInstruction {
+	string title = 1;
+	repeated string steps = 2;
+}
+
+message CarePlanRequest {
+	string id = 1 [(gogoproto.customname) = "ID"];
+}
+
+message CarePlanResponse {
+	CarePlan care_plan = 1;
+}
+
+message CreateCarePlanRequest {
+	string name = 1;
+	repeated CarePlanTreatment treatments = 2;
+	repeated CarePlanInstruction instructions = 3;
+	string creator_id = 4 [(gogoproto.customname) = "CreatorID"];
+}
+
+message CreateCarePlanResponse {
+	CarePlan care_plan = 1;
+}
+
+message SubmitCarePlanRequest {
+	string id = 1 [(gogoproto.customname) = "ID"];
+	string parent_id = 2 [(gogoproto.customname) = "ParentID"];
+}
+
+message SubmitCarePlanResponse {
+	CarePlan care_plan = 1;
+}
+
 service Care {
 	rpc CreateVisit(CreateVisitRequest) returns (CreateVisitResponse);
 	rpc GetVisit(GetVisitRequest) returns (GetVisitResponse);
 	rpc CreateVisitAnswers(CreateVisitAnswersRequest) returns (CreateVisitAnswersResponse);
 	rpc GetAnswersForVisit(GetAnswersForVisitRequest) returns (GetAnswersForVisitResponse);
 	rpc SubmitVisit(SubmitVisitRequest) returns (SubmitVisitResponse);
+
+	// Care plans
+
+	// CarePlan returns a care plan by its ID
+	rpc CarePlan(CarePlanRequest) returns (CarePlanResponse);
+	// CreateCarePlan creates a new care plan
+	rpc CreateCarePlan(CreateCarePlanRequest) returns (CreateCarePlanResponse);
+	// SubmitCarePlan submits a care plan and attaches it to a parent, it can only be called once per care plan.
+	// Any Rx attached to the care plan will be submitted at this point.
+	rpc SubmitCarePlan(SubmitCarePlanRequest) returns (SubmitCarePlanResponse);
 }

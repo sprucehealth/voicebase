@@ -1,96 +1,18 @@
 package dal
 
 import (
-	"database/sql"
-	"fmt"
-	"io/ioutil"
-	"math/rand"
-	"os"
-	"path/filepath"
 	"sort"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/models"
-	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/ptr"
+	"github.com/sprucehealth/backend/libs/testsql"
 	"github.com/sprucehealth/backend/test"
 	"golang.org/x/net/context"
 )
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
-
-type dbTest struct {
-	db   *sql.DB
-	name string
-}
-
-func setupTest(t *testing.T) *dbTest {
-	user := os.Getenv("TEST_DB_USER")
-	if user == "" {
-		t.Skip("Missing TEST_DB_USER")
-	}
-
-	migrations, err := filepath.Glob("../../schema/*.sql")
-	test.OK(t, err)
-	sort.Strings(migrations)
-
-	dbName := fmt.Sprintf("test_threading_%d", rand.Int())
-	db, err := dbutil.ConnectMySQL(&dbutil.DBConfig{
-		Host:     "localhost",
-		Name:     "mysql",
-		User:     user,
-		Password: "",
-	})
-	test.OK(t, err)
-	_, err = db.Exec(`CREATE DATABASE ` + dbName)
-	test.OK(t, err)
-	_, err = db.Exec(`USE ` + dbName)
-	test.OK(t, err)
-	for _, m := range migrations {
-		b, err := ioutil.ReadFile(m)
-		if err != nil {
-			db.Exec(`DELETE DATABASE ` + dbName)
-			t.Fatal(err)
-		}
-		s := string(b)
-		lines := strings.Split(s, "\n")
-		nonEmpty := make([]string, 0, len(lines))
-		for _, l := range lines {
-			if i := strings.Index(l, "--"); i >= 0 {
-				l = l[:i]
-			}
-			l := strings.TrimSpace(l)
-			if l != "" {
-				nonEmpty = append(nonEmpty, l)
-			}
-		}
-		stmts := strings.Split(strings.Join(nonEmpty, "\n"), ";")
-		for _, st := range stmts {
-			st = strings.TrimSpace(st)
-			if st != "" {
-				if _, err := db.Exec(st); err != nil {
-					db.Exec(`DELETE DATABASE ` + dbName)
-					t.Fatalf("Failed to apply migration %s: %s\nstatement: %s", m, err, st)
-				}
-			}
-		}
-	}
-	return &dbTest{
-		db:   db,
-		name: dbName,
-	}
-}
-
-func (dt *dbTest) cleanup(t *testing.T) {
-	_, err := dt.db.Exec(`DROP DATABASE ` + dt.name)
-	if err != nil {
-		t.Log(err)
-	}
-}
+const schemaGlob = "../../schema/*.sql"
 
 func TestTimeCursor(t *testing.T) {
 	t.Parallel()
@@ -120,10 +42,10 @@ func TestDedupeStrings(t *testing.T) {
 }
 
 func TestIterateThreads(t *testing.T) {
-	dt := setupTest(t)
-	defer dt.cleanup(t)
+	dt := testsql.Setup(t, schemaGlob)
+	defer dt.Cleanup(t)
 
-	dal := New(dt.db)
+	dal := New(dt.DB)
 	ctx := context.Background()
 
 	// Create external thread
@@ -189,10 +111,10 @@ func TestIterateThreads(t *testing.T) {
 }
 
 func TestThread(t *testing.T) {
-	dt := setupTest(t)
-	defer dt.cleanup(t)
+	dt := testsql.Setup(t, schemaGlob)
+	defer dt.Cleanup(t)
 
-	dal := New(dt.db)
+	dal := New(dt.DB)
 	ctx := context.Background()
 
 	tid, err := dal.CreateThread(ctx, &models.Thread{
@@ -219,10 +141,10 @@ func TestThread(t *testing.T) {
 }
 
 func TestUpdateThread(t *testing.T) {
-	dt := setupTest(t)
-	defer dt.cleanup(t)
+	dt := testsql.Setup(t, schemaGlob)
+	defer dt.Cleanup(t)
 
-	dal := New(dt.db)
+	dal := New(dt.DB)
 	ctx := context.Background()
 
 	tid, err := dal.CreateThread(ctx, &models.Thread{
@@ -250,10 +172,10 @@ func TestUpdateThread(t *testing.T) {
 }
 
 func TestThreadEntities(t *testing.T) {
-	dt := setupTest(t)
-	defer dt.cleanup(t)
+	dt := testsql.Setup(t, schemaGlob)
+	defer dt.Cleanup(t)
 
-	dal := New(dt.db)
+	dal := New(dt.DB)
 	ctx := context.Background()
 
 	tid, err := dal.CreateThread(ctx, &models.Thread{
@@ -286,10 +208,10 @@ func TestThreadEntities(t *testing.T) {
 }
 
 func TestThreadsForOrg(t *testing.T) {
-	dt := setupTest(t)
-	defer dt.cleanup(t)
+	dt := testsql.Setup(t, schemaGlob)
+	defer dt.Cleanup(t)
 
-	dal := New(dt.db)
+	dal := New(dt.DB)
 	ctx := context.Background()
 
 	_, err := dal.CreateThread(ctx, &models.Thread{
@@ -335,10 +257,10 @@ func TestThreadsForOrg(t *testing.T) {
 }
 
 func TestUpdateThreadMembers(t *testing.T) {
-	dt := setupTest(t)
-	defer dt.cleanup(t)
+	dt := testsql.Setup(t, schemaGlob)
+	defer dt.Cleanup(t)
 
-	dal := New(dt.db)
+	dal := New(dt.DB)
 	ctx := context.Background()
 
 	tid, err := dal.CreateThread(ctx, &models.Thread{
@@ -396,10 +318,10 @@ func TestUpdateThreadMembers(t *testing.T) {
 }
 
 func TestSetupThreadState(t *testing.T) {
-	dt := setupTest(t)
-	defer dt.cleanup(t)
+	dt := testsql.Setup(t, schemaGlob)
+	defer dt.Cleanup(t)
 
-	dal := New(dt.db)
+	dal := New(dt.DB)
 	ctx := context.Background()
 
 	tid, err := dal.CreateThread(ctx, &models.Thread{

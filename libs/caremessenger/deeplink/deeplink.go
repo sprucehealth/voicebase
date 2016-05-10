@@ -11,6 +11,14 @@ func deepLinkBase(webDomain string) string {
 	return fmt.Sprintf("https://%s", webDomain)
 }
 
+// CarePlanURL returns a deeplink compatible URL to the care plan
+func CarePlanURL(webDomain, threadID, carePlanID string) string {
+	if threadID == "" {
+		return fmt.Sprintf("%s/careplan/%s", deepLinkBase(webDomain), carePlanID)
+	}
+	return fmt.Sprintf("%s/thread/%s/careplan/%s", deepLinkBase(webDomain), threadID, carePlanID)
+}
+
 // OrgURL returns a deeplink compatible URL to a particular organization
 func OrgURL(webDomain, organizationID string) string {
 	return fmt.Sprintf("%s/org/%s", deepLinkBase(webDomain), organizationID)
@@ -86,7 +94,7 @@ func OrgColleagueInviteURL(webDomain, organizationID string) string {
 	return fmt.Sprintf("%s/invite", OrgURL(webDomain, organizationID))
 }
 
-// VisitID returns a deeplink compatible URL to the visit
+// VisitURL returns a deeplink compatible URL to the visit
 func VisitURL(webDomain, threadID, visitID string) string {
 	return fmt.Sprintf("%s/thread/%s/visit/%s", deepLinkBase(webDomain), threadID, visitID)
 }

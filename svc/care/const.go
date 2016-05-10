@@ -1,5 +1,8 @@
 package care
 
+// ID prefixes
 const (
-	VisitIDPrefix = "visit_"
+	CarePlanIDPrefix          = "cp_"
+	CarePlanTreatmentIDPrefix = "cptr_"
+	VisitIDPrefix             = "visit_"
 )

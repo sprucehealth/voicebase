@@ -63,6 +63,7 @@ message Attachment {
 		IMAGE = 0;
 		AUDIO = 1;
 		GENERIC = 2;
+		CARE_PLAN = 3;
 		VISIT = 4;
 	}
 	Type type = 1;
@@ -73,6 +74,7 @@ message Attachment {
 		AudioAttachment audio = 11;
 		GenericAttachment generic = 12;
 		VisitAttachment visit = 13;
+		CarePlanAttachment care_plan = 14;
 	}
 }
 
@@ -100,3 +102,7 @@ message VisitAttachment {
 	string visit_name = 2;
 }
 
+message CarePlanAttachment {
+	string care_plan_id = 1 [(gogoproto.customname) = "CarePlanID"];
+	string care_plan_name = 2;
+}

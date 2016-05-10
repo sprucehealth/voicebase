@@ -101,6 +101,8 @@ var queryType = graphql.NewObject(
 						return lookupVisitCategory(ctx, svc, id)
 					case "visit":
 						return lookupVisit(ctx, svc, ram, id)
+					case "cp":
+						return lookupCarePlan(ctx, ram, id)
 					}
 					return nil, errors.New("unknown node type")
 				},
@@ -195,8 +197,10 @@ var queryType = graphql.NewObject(
 					}, nil
 				},
 			},
-			"setting":            settingsQuery,
+			"carePlan":           carePlanQuery,
 			"forceUpgradeStatus": forceUpgradeQuery,
+			"medicationSearch":   medicationSearchQuery,
+			"setting":            settingsQuery,
 		},
 	},
 )

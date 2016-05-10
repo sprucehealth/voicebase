@@ -6,6 +6,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/client"
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/models"
 	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/svc/care"
 )
 
 type answerModelToResponseTransformerFunc func(answer *models.Answer) (client.Answer, error)
@@ -163,4 +164,60 @@ func transformAutocompleteAnswerToResponse(answer *models.Answer) (client.Answer
 	}
 
 	return autocompleteAnswer, nil
+}
+
+func transformCarePlanToResponse(cp *models.CarePlan) (*care.CarePlan, error) {
+	cpr := &care.CarePlan{
+		ID:               cp.ID.String(),
+		Name:             cp.Name,
+		CreatedTimestamp: uint64(cp.Created.Unix()),
+		ParentID:         cp.ParentID,
+		CreatorID:        cp.CreatorID,
+	}
+	if cp.Submitted != nil {
+		cpr.Submitted = true
+		cpr.SubmittedTimestamp = uint64(cp.Submitted.Unix())
+	}
+
+	cpr.Instructions = make([]*care.CarePlanInstruction, len(cp.Instructions))
+	for i, ins := range cp.Instructions {
+		cpr.Instructions[i] = &care.CarePlanInstruction{
+			Title: ins.Title,
+			Steps: ins.Steps,
+		}
+	}
+
+	cpr.Treatments = make([]*care.CarePlanTreatment, len(cp.Treatments))
+	for i, t := range cp.Treatments {
+		var availability care.CarePlanTreatment_Availability
+		switch t.Availability {
+		case models.TreatmentAvailabilityUnknown:
+			availability = care.CarePlanTreatment_UNKNOWN
+		case models.TreatmentAvailabilityOTC:
+			availability = care.CarePlanTreatment_OTC
+		case models.TreatmentAvailabilityRx:
+			availability = care.CarePlanTreatment_RX
+		default:
+			return nil, errors.Trace(fmt.Errorf("unknown treatment availability '%s' while transforming treatment '%s' to response", t.Availability, t.ID))
+		}
+		cpr.Treatments[i] = &care.CarePlanTreatment{
+			EPrescribe:           t.EPrescribe,
+			Availability:         availability,
+			Name:                 t.Name,
+			Route:                t.Route,
+			Form:                 t.Form,
+			MedicationID:         t.MedicationID,
+			Dosage:               t.Dosage,
+			DispenseType:         t.DispenseType,
+			DispenseNumber:       uint32(t.DispenseNumber),
+			Refills:              uint32(t.Refills),
+			SubstitutionsAllowed: t.SubstitutionsAllowed,
+			DaysSupply:           uint32(t.DaysSupply),
+			Sig:                  t.Sig,
+			PharmacyID:           t.PharmacyID,
+			PharmacyInstructions: t.PharmacyInstructions,
+		}
+	}
+
+	return cpr, nil
 }

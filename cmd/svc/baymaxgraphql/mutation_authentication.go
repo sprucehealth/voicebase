@@ -82,7 +82,7 @@ var authenticateOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "AuthenticatePayload",
 		Fields: graphql.Fields{
-			"clientMutationId": newClientmutationIDOutputField(),
+			"clientMutationId": newClientMutationIDOutputField(),
 			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"errorCode":        &graphql.Field{Type: authenticateErrorCodeEnum},
 			"errorMessage":     &graphql.Field{Type: graphql.String},
@@ -336,7 +336,7 @@ var unauthenticateOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "UnauthenticatePayload",
 		Fields: graphql.Fields{
-			"clientMutationId": newClientmutationIDOutputField(),
+			"clientMutationId": newClientMutationIDOutputField(),
 			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"errorCode":        &graphql.Field{Type: unauthenticateErrorCodeEnum},
 			"errorMessage":     &graphql.Field{Type: graphql.String},

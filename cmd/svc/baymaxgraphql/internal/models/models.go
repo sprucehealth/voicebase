@@ -207,16 +207,17 @@ type Thread struct {
 	Unread                     bool   `json:"unread"`
 	UnreadReference            bool   `json:"unreadReference"`
 	AllowAddMembers            bool   `json:"allowAddMembers"`
+	AllowCarePlanAttachments   bool   `json:"allowCarePlanAttachments"`
 	AllowDelete                bool   `json:"allowDelete"`
-	AllowInternalMessages      bool   `json:"allowInternalMessages"`
-	AllowSMSAttachments        bool   `json:"allowSMSAttachments"`
 	AllowEmailAttachment       bool   `json:"allowEmailAttachments"`
-	AllowVisitAttachment       bool   `json:"allowVisitAttachments"`
-	AllowLeave                 bool   `json:"allowLeave"`
-	AllowRemoveMembers         bool   `json:"allowRemoveMembers"`
-	AllowUpdateTitle           bool   `json:"allowUpdateTitle"`
 	AllowExternalDelivery      bool   `json:"allowExternalDelivery"`
+	AllowInternalMessages      bool   `json:"allowInternalMessages"`
+	AllowLeave                 bool   `json:"allowLeave"`
 	AllowMentions              bool   `json:"allowMentions"`
+	AllowRemoveMembers         bool   `json:"allowRemoveMembers"`
+	AllowSMSAttachments        bool   `json:"allowSMSAttachments"`
+	AllowUpdateTitle           bool   `json:"allowUpdateTitle"`
+	AllowVisitAttachment       bool   `json:"allowVisitAttachments"`
 	LastPrimaryEntityEndpoints []*Endpoint
 	EmptyStateTextMarkup       string `json:"emptyStateTextMarkup,omitempty"`
 	MessageCount               int    `json:"messageCount"`
@@ -359,4 +360,77 @@ type Visit struct {
 	LayoutContainerType string `json:"layoutContainerType"`
 
 	EntityID string `json:"-"`
+}
+
+type CarePlan struct {
+	ID                 string                 `json:"id"`
+	Name               string                 `json:"name"`
+	Treatments         []*CarePlanTreatment   `json:"treatments"`
+	Instructions       []*CarePlanInstruction `json:"instructions"`
+	CreatedTimestamp   uint64                 `json:"createdTimestamp"`
+	Submitted          bool                   `json:"submitted"`
+	SubmittedTimestamp uint64                 `json:"submittedTimestamp,omitempty"`
+	ParentID           string                 `json:"parentID,omitempty"`
+	CreatorID          string                 `json:"creatorID,omitempty"`
+}
+
+type CarePlanTreatment struct {
+	EPrescribe           bool   `json:"ePrescribe"`
+	Name                 string `json:"name"`
+	Form                 string `json:"form"`
+	Route                string `json:"route"`
+	Availability         string `json:"availability"`
+	Dosage               string `json:"dosage"`
+	DispenseType         string `json:"dispenseType"`
+	DispenseNumber       int    `json:"dispenseNumber"`
+	Refills              int    `json:"refills"`
+	SubstitutionsAllowed bool   `json:"substitutionsAllowed"`
+	DaysSupply           int    `json:"daysSupply"`
+	Sig                  string `json:"sig"`
+	PharmacyInstructions string `json:"pharmacyInstructions"`
+}
+
+type CarePlanInstruction struct {
+	Title string   `json:"title"`
+	Steps []string `json:"steps"`
+}
+
+const (
+	TreatmentAvailabilityUnknown = "UNKNOWN"
+	TreatmentAvailabilityOTC     = "OTC"
+	TreatmentAvailabilityRx      = "RX"
+)
+
+type Pharmacy struct {
+	ID              string   `json:"id"`
+	Name            string   `json:"name"`
+	Address         *Address `json:"address"`
+	PhoneNumber     string   `json:"phoneNumber"`
+	Retail          bool     `json:"retail"`
+	TwentyFourHours bool     `json:"twentyFourHours"`
+	Specialty       bool     `json:"specialty"`
+	MailOrder       bool     `json:"mailOrder"`
+}
+
+type Address struct {
+	Address1  string `json:"address1"`
+	Address2  string `json:"address2"`
+	City      string `json:"city"`
+	StateCode string `json:"stateCode"`
+	Country   string `json:"country"`
+	ZipCode   string `json:"zipCode"`
+}
+
+type Medication struct {
+	ID      string              `json:"id"`
+	Name    string              `json:"name"`
+	Route   string              `json:"route"`
+	Form    string              `json:"form"`
+	Dosages []*MedicationDosage `json:"dosages"`
+}
+
+type MedicationDosage struct {
+	Dosage       string `json:"dosage"`
+	DispenseType string `json:"dispenseType"`
+	OTC          bool   `json:"otc"`
 }

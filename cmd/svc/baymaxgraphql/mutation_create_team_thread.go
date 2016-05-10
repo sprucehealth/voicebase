@@ -48,7 +48,7 @@ type createTeamThreadOutput struct {
 var createTeamThreadOutputType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "CreateTeamThreadPayload",
 	Fields: graphql.Fields{
-		"clientMutationId": newClientmutationIDOutputField(),
+		"clientMutationId": newClientMutationIDOutputField(),
 		"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		"errorCode":        &graphql.Field{Type: createTeamThreadErrorCodeEnum},
 		"errorMessage":     &graphql.Field{Type: graphql.String},

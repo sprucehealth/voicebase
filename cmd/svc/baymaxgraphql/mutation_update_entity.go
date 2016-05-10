@@ -36,7 +36,7 @@ var updateEntityErrorCodeEnum = graphql.String
 var updateEntityOutputType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "UpdateEntityPayload",
 	Fields: graphql.Fields{
-		"clientMutationId": newClientmutationIDOutputField(),
+		"clientMutationId": newClientMutationIDOutputField(),
 		"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		"errorCode":        &graphql.Field{Type: updateEntityErrorCodeEnum},
 		"errorMessage":     &graphql.Field{Type: graphql.String},

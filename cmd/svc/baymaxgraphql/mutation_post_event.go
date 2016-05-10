@@ -40,7 +40,7 @@ var postEventErrorCodeEnum = graphql.String
 var postEventOutputType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "PostEventPayload",
 	Fields: graphql.Fields{
-		"clientMutationId": newClientmutationIDOutputField(),
+		"clientMutationId": newClientMutationIDOutputField(),
 		"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		"errorCode":        &graphql.Field{Type: postEventErrorCodeEnum},
 		"errorMessage":     &graphql.Field{Type: graphql.String},

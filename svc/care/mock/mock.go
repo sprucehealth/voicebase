@@ -21,6 +21,22 @@ func New(t *testing.T) *Client {
 	}
 }
 
+func (c *Client) CarePlan(ctx context.Context, in *care.CarePlanRequest, opts ...grpc.CallOption) (*care.CarePlanResponse, error) {
+	rets := c.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*care.CarePlanResponse), mock.SafeError(rets[1])
+}
+
+func (c *Client) CreateCarePlan(ctx context.Context, in *care.CreateCarePlanRequest, opts ...grpc.CallOption) (*care.CreateCarePlanResponse, error) {
+	rets := c.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*care.CreateCarePlanResponse), mock.SafeError(rets[1])
+}
+
 func (c *Client) CreateVisit(ctx context.Context, in *care.CreateVisitRequest, opts ...grpc.CallOption) (*care.CreateVisitResponse, error) {
 	rets := c.Record(in)
 	if len(rets) == 0 {
@@ -28,6 +44,7 @@ func (c *Client) CreateVisit(ctx context.Context, in *care.CreateVisitRequest, o
 	}
 	return rets[0].(*care.CreateVisitResponse), mock.SafeError(rets[1])
 }
+
 func (c *Client) GetVisit(ctx context.Context, in *care.GetVisitRequest, opts ...grpc.CallOption) (*care.GetVisitResponse, error) {
 	rets := c.Record(in)
 	if len(rets) == 0 {
@@ -36,6 +53,7 @@ func (c *Client) GetVisit(ctx context.Context, in *care.GetVisitRequest, opts ..
 
 	return rets[0].(*care.GetVisitResponse), mock.SafeError(rets[1])
 }
+
 func (c *Client) CreateVisitAnswers(ctx context.Context, in *care.CreateVisitAnswersRequest, opts ...grpc.CallOption) (*care.CreateVisitAnswersResponse, error) {
 	rets := c.Record(in)
 	if len(rets) == 0 {
@@ -51,6 +69,14 @@ func (c *Client) GetAnswersForVisit(ctx context.Context, in *care.GetAnswersForV
 	}
 
 	return rets[0].(*care.GetAnswersForVisitResponse), mock.SafeError(rets[1])
+}
+
+func (c *Client) SubmitCarePlan(ctx context.Context, in *care.SubmitCarePlanRequest, opts ...grpc.CallOption) (*care.SubmitCarePlanResponse, error) {
+	rets := c.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*care.SubmitCarePlanResponse), mock.SafeError(rets[1])
 }
 
 func (c *Client) SubmitVisit(ctx context.Context, in *care.SubmitVisitRequest, opts ...grpc.CallOption) (*care.SubmitVisitResponse, error) {

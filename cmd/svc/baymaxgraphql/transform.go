@@ -44,6 +44,44 @@ func transformAccountToResponse(a *auth.Account) models.Account {
 	return nil
 }
 
+func transformCarePlanToResponse(cp *care.CarePlan) (*models.CarePlan, error) {
+	cpr := &models.CarePlan{
+		ID:                 cp.ID,
+		Name:               cp.Name,
+		Instructions:       make([]*models.CarePlanInstruction, len(cp.Instructions)),
+		Treatments:         make([]*models.CarePlanTreatment, len(cp.Treatments)),
+		CreatedTimestamp:   cp.CreatedTimestamp,
+		Submitted:          cp.Submitted,
+		SubmittedTimestamp: cp.SubmittedTimestamp,
+		ParentID:           cp.ParentID,
+		CreatorID:          cp.CreatorID,
+	}
+	for i, ins := range cp.Instructions {
+		cpr.Instructions[i] = &models.CarePlanInstruction{
+			Title: ins.Title,
+			Steps: ins.Steps,
+		}
+	}
+	for i, t := range cp.Treatments {
+		cpr.Treatments[i] = &models.CarePlanTreatment{
+			EPrescribe:           t.EPrescribe,
+			Name:                 t.Name,
+			Form:                 t.Form,
+			Route:                t.Route,
+			Availability:         t.Availability.String(),
+			Dosage:               t.Dosage,
+			DispenseType:         t.DispenseType,
+			DispenseNumber:       int(t.DispenseNumber),
+			Refills:              int(t.Refills),
+			SubstitutionsAllowed: t.SubstitutionsAllowed,
+			DaysSupply:           int(t.DaysSupply),
+			Sig:                  t.Sig,
+			PharmacyInstructions: t.PharmacyInstructions,
+		}
+	}
+	return cpr, nil
+}
+
 func transformContactsToResponse(contacts []*directory.Contact) ([]*models.ContactInfo, error) {
 	cs := make([]*models.ContactInfo, len(contacts))
 	for i, c := range contacts {
@@ -109,6 +147,7 @@ func transformThreadToResponse(ctx context.Context, ram raccess.ResourceAccessor
 		th.Type = models.ThreadTypeExternal
 	case threading.ThreadType_SECURE_EXTERNAL:
 		th.Type = models.ThreadTypeSecureExternal
+		th.AllowCarePlanAttachments = true
 	case threading.ThreadType_SETUP:
 		if th.Title == "" {
 			th.Title = onboardingThreadTitle
@@ -310,6 +349,14 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 					CTAText: "View Visit",
 					TapURL:  deeplink.VisitURL(webDomain, item.ThreadID, v.VisitID),
 					IconURL: "https://static.sprucehealth.com/cm/icon_visit",
+				}
+			case threading.Attachment_CARE_PLAN:
+				cp := a.GetCarePlan()
+				data = &models.BannerButtonAttachment{
+					Title:   cp.CarePlanName,
+					CTAText: "View Care Plan",
+					TapURL:  deeplink.CarePlanURL(webDomain, item.ThreadID, cp.CarePlanID),
+					IconURL: "https://static.sprucehealth.com/cm/icon_care_plan",
 				}
 			case threading.Attachment_GENERIC_URL:
 				d := a.GetGenericURL()

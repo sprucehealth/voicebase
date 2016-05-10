@@ -20,6 +20,15 @@
 		GetAnswersForVisitResponse
 		SubmitVisitRequest
 		SubmitVisitResponse
+		CarePlan
+		CarePlanTreatment
+		CarePlanInstruction
+		CarePlanRequest
+		CarePlanResponse
+		CreateCarePlanRequest
+		CreateCarePlanResponse
+		SubmitCarePlanRequest
+		SubmitCarePlanResponse
 */
 package care
 
@@ -28,10 +37,11 @@ import fmt "fmt"
 import math "math"
 import _ "github.com/gogo/protobuf/gogoproto"
 
+import strconv "strconv"
+
 import strings "strings"
 import github_com_gogo_protobuf_proto "github.com/gogo/protobuf/proto"
 import sort "sort"
-import strconv "strconv"
 import reflect "reflect"
 
 import (
@@ -45,6 +55,25 @@ import io "io"
 var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
+
+type CarePlanTreatment_Availability int32
+
+const (
+	CarePlanTreatment_UNKNOWN CarePlanTreatment_Availability = 0
+	CarePlanTreatment_OTC     CarePlanTreatment_Availability = 1
+	CarePlanTreatment_RX      CarePlanTreatment_Availability = 2
+)
+
+var CarePlanTreatment_Availability_name = map[int32]string{
+	0: "UNKNOWN",
+	1: "OTC",
+	2: "RX",
+}
+var CarePlanTreatment_Availability_value = map[string]int32{
+	"UNKNOWN": 0,
+	"OTC":     1,
+	"RX":      2,
+}
 
 type Visit struct {
 	ID              string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -145,6 +174,145 @@ type SubmitVisitResponse struct {
 func (m *SubmitVisitResponse) Reset()      { *m = SubmitVisitResponse{} }
 func (*SubmitVisitResponse) ProtoMessage() {}
 
+type CarePlan struct {
+	ID                 string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name               string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Treatments         []*CarePlanTreatment   `protobuf:"bytes,3,rep,name=treatments" json:"treatments,omitempty"`
+	Instructions       []*CarePlanInstruction `protobuf:"bytes,4,rep,name=instructions" json:"instructions,omitempty"`
+	CreatedTimestamp   uint64                 `protobuf:"varint,5,opt,name=created_timestamp,proto3" json:"created_timestamp,omitempty"`
+	CreatorID          string                 `protobuf:"bytes,6,opt,name=creator_id,proto3" json:"creator_id,omitempty"`
+	Submitted          bool                   `protobuf:"varint,7,opt,name=submitted,proto3" json:"submitted,omitempty"`
+	ParentID           string                 `protobuf:"bytes,8,opt,name=parent_id,proto3" json:"parent_id,omitempty"`
+	SubmittedTimestamp uint64                 `protobuf:"varint,9,opt,name=submitted_timestamp,proto3" json:"submitted_timestamp,omitempty"`
+}
+
+func (m *CarePlan) Reset()      { *m = CarePlan{} }
+func (*CarePlan) ProtoMessage() {}
+
+func (m *CarePlan) GetTreatments() []*CarePlanTreatment {
+	if m != nil {
+		return m.Treatments
+	}
+	return nil
+}
+
+func (m *CarePlan) GetInstructions() []*CarePlanInstruction {
+	if m != nil {
+		return m.Instructions
+	}
+	return nil
+}
+
+type CarePlanTreatment struct {
+	EPrescribe           bool                           `protobuf:"varint,1,opt,name=ePrescribe,proto3" json:"ePrescribe,omitempty"`
+	Availability         CarePlanTreatment_Availability `protobuf:"varint,2,opt,name=availability,proto3,enum=care.CarePlanTreatment_Availability" json:"availability,omitempty"`
+	Name                 string                         `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	Route                string                         `protobuf:"bytes,4,opt,name=route,proto3" json:"route,omitempty"`
+	Form                 string                         `protobuf:"bytes,5,opt,name=form,proto3" json:"form,omitempty"`
+	MedicationID         string                         `protobuf:"bytes,6,opt,name=medication_id,proto3" json:"medication_id,omitempty"`
+	Dosage               string                         `protobuf:"bytes,7,opt,name=dosage,proto3" json:"dosage,omitempty"`
+	DispenseType         string                         `protobuf:"bytes,8,opt,name=dispenseType,proto3" json:"dispenseType,omitempty"`
+	DispenseNumber       uint32                         `protobuf:"varint,9,opt,name=dispense_number,proto3" json:"dispense_number,omitempty"`
+	Refills              uint32                         `protobuf:"varint,10,opt,name=refills,proto3" json:"refills,omitempty"`
+	SubstitutionsAllowed bool                           `protobuf:"varint,11,opt,name=substitutions_allowed,proto3" json:"substitutions_allowed,omitempty"`
+	DaysSupply           uint32                         `protobuf:"varint,12,opt,name=days_supply,proto3" json:"days_supply,omitempty"`
+	Sig                  string                         `protobuf:"bytes,13,opt,name=sig,proto3" json:"sig,omitempty"`
+	PharmacyID           string                         `protobuf:"bytes,14,opt,name=pharmacy_id,proto3" json:"pharmacy_id,omitempty"`
+	PharmacyInstructions string                         `protobuf:"bytes,15,opt,name=pharmacy_instructions,proto3" json:"pharmacy_instructions,omitempty"`
+}
+
+func (m *CarePlanTreatment) Reset()      { *m = CarePlanTreatment{} }
+func (*CarePlanTreatment) ProtoMessage() {}
+
+type CarePlanInstruction struct {
+	Title string   `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
+	Steps []string `protobuf:"bytes,2,rep,name=steps" json:"steps,omitempty"`
+}
+
+func (m *CarePlanInstruction) Reset()      { *m = CarePlanInstruction{} }
+func (*CarePlanInstruction) ProtoMessage() {}
+
+type CarePlanRequest struct {
+	ID string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+}
+
+func (m *CarePlanRequest) Reset()      { *m = CarePlanRequest{} }
+func (*CarePlanRequest) ProtoMessage() {}
+
+type CarePlanResponse struct {
+	CarePlan *CarePlan `protobuf:"bytes,1,opt,name=care_plan" json:"care_plan,omitempty"`
+}
+
+func (m *CarePlanResponse) Reset()      { *m = CarePlanResponse{} }
+func (*CarePlanResponse) ProtoMessage() {}
+
+func (m *CarePlanResponse) GetCarePlan() *CarePlan {
+	if m != nil {
+		return m.CarePlan
+	}
+	return nil
+}
+
+type CreateCarePlanRequest struct {
+	Name         string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Treatments   []*CarePlanTreatment   `protobuf:"bytes,2,rep,name=treatments" json:"treatments,omitempty"`
+	Instructions []*CarePlanInstruction `protobuf:"bytes,3,rep,name=instructions" json:"instructions,omitempty"`
+	CreatorID    string                 `protobuf:"bytes,4,opt,name=creator_id,proto3" json:"creator_id,omitempty"`
+}
+
+func (m *CreateCarePlanRequest) Reset()      { *m = CreateCarePlanRequest{} }
+func (*CreateCarePlanRequest) ProtoMessage() {}
+
+func (m *CreateCarePlanRequest) GetTreatments() []*CarePlanTreatment {
+	if m != nil {
+		return m.Treatments
+	}
+	return nil
+}
+
+func (m *CreateCarePlanRequest) GetInstructions() []*CarePlanInstruction {
+	if m != nil {
+		return m.Instructions
+	}
+	return nil
+}
+
+type CreateCarePlanResponse struct {
+	CarePlan *CarePlan `protobuf:"bytes,1,opt,name=care_plan" json:"care_plan,omitempty"`
+}
+
+func (m *CreateCarePlanResponse) Reset()      { *m = CreateCarePlanResponse{} }
+func (*CreateCarePlanResponse) ProtoMessage() {}
+
+func (m *CreateCarePlanResponse) GetCarePlan() *CarePlan {
+	if m != nil {
+		return m.CarePlan
+	}
+	return nil
+}
+
+type SubmitCarePlanRequest struct {
+	ID       string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	ParentID string `protobuf:"bytes,2,opt,name=parent_id,proto3" json:"parent_id,omitempty"`
+}
+
+func (m *SubmitCarePlanRequest) Reset()      { *m = SubmitCarePlanRequest{} }
+func (*SubmitCarePlanRequest) ProtoMessage() {}
+
+type SubmitCarePlanResponse struct {
+	CarePlan *CarePlan `protobuf:"bytes,1,opt,name=care_plan" json:"care_plan,omitempty"`
+}
+
+func (m *SubmitCarePlanResponse) Reset()      { *m = SubmitCarePlanResponse{} }
+func (*SubmitCarePlanResponse) ProtoMessage() {}
+
+func (m *SubmitCarePlanResponse) GetCarePlan() *CarePlan {
+	if m != nil {
+		return m.CarePlan
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*Visit)(nil), "care.Visit")
 	proto.RegisterType((*CreateVisitRequest)(nil), "care.CreateVisitRequest")
@@ -157,6 +325,23 @@ func init() {
 	proto.RegisterType((*GetAnswersForVisitResponse)(nil), "care.GetAnswersForVisitResponse")
 	proto.RegisterType((*SubmitVisitRequest)(nil), "care.SubmitVisitRequest")
 	proto.RegisterType((*SubmitVisitResponse)(nil), "care.SubmitVisitResponse")
+	proto.RegisterType((*CarePlan)(nil), "care.CarePlan")
+	proto.RegisterType((*CarePlanTreatment)(nil), "care.CarePlanTreatment")
+	proto.RegisterType((*CarePlanInstruction)(nil), "care.CarePlanInstruction")
+	proto.RegisterType((*CarePlanRequest)(nil), "care.CarePlanRequest")
+	proto.RegisterType((*CarePlanResponse)(nil), "care.CarePlanResponse")
+	proto.RegisterType((*CreateCarePlanRequest)(nil), "care.CreateCarePlanRequest")
+	proto.RegisterType((*CreateCarePlanResponse)(nil), "care.CreateCarePlanResponse")
+	proto.RegisterType((*SubmitCarePlanRequest)(nil), "care.SubmitCarePlanRequest")
+	proto.RegisterType((*SubmitCarePlanResponse)(nil), "care.SubmitCarePlanResponse")
+	proto.RegisterEnum("care.CarePlanTreatment_Availability", CarePlanTreatment_Availability_name, CarePlanTreatment_Availability_value)
+}
+func (x CarePlanTreatment_Availability) String() string {
+	s, ok := CarePlanTreatment_Availability_name[int32(x)]
+	if ok {
+		return s
+	}
+	return strconv.Itoa(int(x))
 }
 func (this *Visit) Equal(that interface{}) bool {
 	if that == nil {
@@ -457,6 +642,337 @@ func (this *SubmitVisitResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *CarePlan) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*CarePlan)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.ID != that1.ID {
+		return false
+	}
+	if this.Name != that1.Name {
+		return false
+	}
+	if len(this.Treatments) != len(that1.Treatments) {
+		return false
+	}
+	for i := range this.Treatments {
+		if !this.Treatments[i].Equal(that1.Treatments[i]) {
+			return false
+		}
+	}
+	if len(this.Instructions) != len(that1.Instructions) {
+		return false
+	}
+	for i := range this.Instructions {
+		if !this.Instructions[i].Equal(that1.Instructions[i]) {
+			return false
+		}
+	}
+	if this.CreatedTimestamp != that1.CreatedTimestamp {
+		return false
+	}
+	if this.CreatorID != that1.CreatorID {
+		return false
+	}
+	if this.Submitted != that1.Submitted {
+		return false
+	}
+	if this.ParentID != that1.ParentID {
+		return false
+	}
+	if this.SubmittedTimestamp != that1.SubmittedTimestamp {
+		return false
+	}
+	return true
+}
+func (this *CarePlanTreatment) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*CarePlanTreatment)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.EPrescribe != that1.EPrescribe {
+		return false
+	}
+	if this.Availability != that1.Availability {
+		return false
+	}
+	if this.Name != that1.Name {
+		return false
+	}
+	if this.Route != that1.Route {
+		return false
+	}
+	if this.Form != that1.Form {
+		return false
+	}
+	if this.MedicationID != that1.MedicationID {
+		return false
+	}
+	if this.Dosage != that1.Dosage {
+		return false
+	}
+	if this.DispenseType != that1.DispenseType {
+		return false
+	}
+	if this.DispenseNumber != that1.DispenseNumber {
+		return false
+	}
+	if this.Refills != that1.Refills {
+		return false
+	}
+	if this.SubstitutionsAllowed != that1.SubstitutionsAllowed {
+		return false
+	}
+	if this.DaysSupply != that1.DaysSupply {
+		return false
+	}
+	if this.Sig != that1.Sig {
+		return false
+	}
+	if this.PharmacyID != that1.PharmacyID {
+		return false
+	}
+	if this.PharmacyInstructions != that1.PharmacyInstructions {
+		return false
+	}
+	return true
+}
+func (this *CarePlanInstruction) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*CarePlanInstruction)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Title != that1.Title {
+		return false
+	}
+	if len(this.Steps) != len(that1.Steps) {
+		return false
+	}
+	for i := range this.Steps {
+		if this.Steps[i] != that1.Steps[i] {
+			return false
+		}
+	}
+	return true
+}
+func (this *CarePlanRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*CarePlanRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.ID != that1.ID {
+		return false
+	}
+	return true
+}
+func (this *CarePlanResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*CarePlanResponse)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.CarePlan.Equal(that1.CarePlan) {
+		return false
+	}
+	return true
+}
+func (this *CreateCarePlanRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*CreateCarePlanRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Name != that1.Name {
+		return false
+	}
+	if len(this.Treatments) != len(that1.Treatments) {
+		return false
+	}
+	for i := range this.Treatments {
+		if !this.Treatments[i].Equal(that1.Treatments[i]) {
+			return false
+		}
+	}
+	if len(this.Instructions) != len(that1.Instructions) {
+		return false
+	}
+	for i := range this.Instructions {
+		if !this.Instructions[i].Equal(that1.Instructions[i]) {
+			return false
+		}
+	}
+	if this.CreatorID != that1.CreatorID {
+		return false
+	}
+	return true
+}
+func (this *CreateCarePlanResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*CreateCarePlanResponse)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.CarePlan.Equal(that1.CarePlan) {
+		return false
+	}
+	return true
+}
+func (this *SubmitCarePlanRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*SubmitCarePlanRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.ID != that1.ID {
+		return false
+	}
+	if this.ParentID != that1.ParentID {
+		return false
+	}
+	return true
+}
+func (this *SubmitCarePlanResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*SubmitCarePlanResponse)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.CarePlan.Equal(that1.CarePlan) {
+		return false
+	}
+	return true
+}
 func (this *Visit) GoString() string {
 	if this == nil {
 		return "nil"
@@ -579,6 +1095,137 @@ func (this *SubmitVisitResponse) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *CarePlan) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 13)
+	s = append(s, "&care.CarePlan{")
+	s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
+	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
+	if this.Treatments != nil {
+		s = append(s, "Treatments: "+fmt.Sprintf("%#v", this.Treatments)+",\n")
+	}
+	if this.Instructions != nil {
+		s = append(s, "Instructions: "+fmt.Sprintf("%#v", this.Instructions)+",\n")
+	}
+	s = append(s, "CreatedTimestamp: "+fmt.Sprintf("%#v", this.CreatedTimestamp)+",\n")
+	s = append(s, "CreatorID: "+fmt.Sprintf("%#v", this.CreatorID)+",\n")
+	s = append(s, "Submitted: "+fmt.Sprintf("%#v", this.Submitted)+",\n")
+	s = append(s, "ParentID: "+fmt.Sprintf("%#v", this.ParentID)+",\n")
+	s = append(s, "SubmittedTimestamp: "+fmt.Sprintf("%#v", this.SubmittedTimestamp)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *CarePlanTreatment) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 19)
+	s = append(s, "&care.CarePlanTreatment{")
+	s = append(s, "EPrescribe: "+fmt.Sprintf("%#v", this.EPrescribe)+",\n")
+	s = append(s, "Availability: "+fmt.Sprintf("%#v", this.Availability)+",\n")
+	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
+	s = append(s, "Route: "+fmt.Sprintf("%#v", this.Route)+",\n")
+	s = append(s, "Form: "+fmt.Sprintf("%#v", this.Form)+",\n")
+	s = append(s, "MedicationID: "+fmt.Sprintf("%#v", this.MedicationID)+",\n")
+	s = append(s, "Dosage: "+fmt.Sprintf("%#v", this.Dosage)+",\n")
+	s = append(s, "DispenseType: "+fmt.Sprintf("%#v", this.DispenseType)+",\n")
+	s = append(s, "DispenseNumber: "+fmt.Sprintf("%#v", this.DispenseNumber)+",\n")
+	s = append(s, "Refills: "+fmt.Sprintf("%#v", this.Refills)+",\n")
+	s = append(s, "SubstitutionsAllowed: "+fmt.Sprintf("%#v", this.SubstitutionsAllowed)+",\n")
+	s = append(s, "DaysSupply: "+fmt.Sprintf("%#v", this.DaysSupply)+",\n")
+	s = append(s, "Sig: "+fmt.Sprintf("%#v", this.Sig)+",\n")
+	s = append(s, "PharmacyID: "+fmt.Sprintf("%#v", this.PharmacyID)+",\n")
+	s = append(s, "PharmacyInstructions: "+fmt.Sprintf("%#v", this.PharmacyInstructions)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *CarePlanInstruction) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&care.CarePlanInstruction{")
+	s = append(s, "Title: "+fmt.Sprintf("%#v", this.Title)+",\n")
+	s = append(s, "Steps: "+fmt.Sprintf("%#v", this.Steps)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *CarePlanRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&care.CarePlanRequest{")
+	s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *CarePlanResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&care.CarePlanResponse{")
+	if this.CarePlan != nil {
+		s = append(s, "CarePlan: "+fmt.Sprintf("%#v", this.CarePlan)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *CreateCarePlanRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 8)
+	s = append(s, "&care.CreateCarePlanRequest{")
+	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
+	if this.Treatments != nil {
+		s = append(s, "Treatments: "+fmt.Sprintf("%#v", this.Treatments)+",\n")
+	}
+	if this.Instructions != nil {
+		s = append(s, "Instructions: "+fmt.Sprintf("%#v", this.Instructions)+",\n")
+	}
+	s = append(s, "CreatorID: "+fmt.Sprintf("%#v", this.CreatorID)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *CreateCarePlanResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&care.CreateCarePlanResponse{")
+	if this.CarePlan != nil {
+		s = append(s, "CarePlan: "+fmt.Sprintf("%#v", this.CarePlan)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *SubmitCarePlanRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&care.SubmitCarePlanRequest{")
+	s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
+	s = append(s, "ParentID: "+fmt.Sprintf("%#v", this.ParentID)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *SubmitCarePlanResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&care.SubmitCarePlanResponse{")
+	if this.CarePlan != nil {
+		s = append(s, "CarePlan: "+fmt.Sprintf("%#v", this.CarePlan)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func valueToGoStringSvc(v interface{}, typ string) string {
 	rv := reflect.ValueOf(v)
 	if rv.IsNil() {
@@ -617,6 +1264,13 @@ type CareClient interface {
 	CreateVisitAnswers(ctx context.Context, in *CreateVisitAnswersRequest, opts ...grpc.CallOption) (*CreateVisitAnswersResponse, error)
 	GetAnswersForVisit(ctx context.Context, in *GetAnswersForVisitRequest, opts ...grpc.CallOption) (*GetAnswersForVisitResponse, error)
 	SubmitVisit(ctx context.Context, in *SubmitVisitRequest, opts ...grpc.CallOption) (*SubmitVisitResponse, error)
+	// CarePlan returns a care plan by its ID
+	CarePlan(ctx context.Context, in *CarePlanRequest, opts ...grpc.CallOption) (*CarePlanResponse, error)
+	// CreateCarePlan creates a new care plan
+	CreateCarePlan(ctx context.Context, in *CreateCarePlanRequest, opts ...grpc.CallOption) (*CreateCarePlanResponse, error)
+	// SubmitCarePlan submits a care plan and attaches it to a parent, it can only be called once per care plan.
+	// Any Rx attached to the care plan will be submitted at this point.
+	SubmitCarePlan(ctx context.Context, in *SubmitCarePlanRequest, opts ...grpc.CallOption) (*SubmitCarePlanResponse, error)
 }
 
 type careClient struct {
@@ -672,6 +1326,33 @@ func (c *careClient) SubmitVisit(ctx context.Context, in *SubmitVisitRequest, op
 	return out, nil
 }
 
+func (c *careClient) CarePlan(ctx context.Context, in *CarePlanRequest, opts ...grpc.CallOption) (*CarePlanResponse, error) {
+	out := new(CarePlanResponse)
+	err := grpc.Invoke(ctx, "/care.Care/CarePlan", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *careClient) CreateCarePlan(ctx context.Context, in *CreateCarePlanRequest, opts ...grpc.CallOption) (*CreateCarePlanResponse, error) {
+	out := new(CreateCarePlanResponse)
+	err := grpc.Invoke(ctx, "/care.Care/CreateCarePlan", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *careClient) SubmitCarePlan(ctx context.Context, in *SubmitCarePlanRequest, opts ...grpc.CallOption) (*SubmitCarePlanResponse, error) {
+	out := new(SubmitCarePlanResponse)
+	err := grpc.Invoke(ctx, "/care.Care/SubmitCarePlan", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for Care service
 
 type CareServer interface {
@@ -680,6 +1361,13 @@ type CareServer interface {
 	CreateVisitAnswers(context.Context, *CreateVisitAnswersRequest) (*CreateVisitAnswersResponse, error)
 	GetAnswersForVisit(context.Context, *GetAnswersForVisitRequest) (*GetAnswersForVisitResponse, error)
 	SubmitVisit(context.Context, *SubmitVisitRequest) (*SubmitVisitResponse, error)
+	// CarePlan returns a care plan by its ID
+	CarePlan(context.Context, *CarePlanRequest) (*CarePlanResponse, error)
+	// CreateCarePlan creates a new care plan
+	CreateCarePlan(context.Context, *CreateCarePlanRequest) (*CreateCarePlanResponse, error)
+	// SubmitCarePlan submits a care plan and attaches it to a parent, it can only be called once per care plan.
+	// Any Rx attached to the care plan will be submitted at this point.
+	SubmitCarePlan(context.Context, *SubmitCarePlanRequest) (*SubmitCarePlanResponse, error)
 }
 
 func RegisterCareServer(s *grpc.Server, srv CareServer) {
@@ -746,6 +1434,42 @@ func _Care_SubmitVisit_Handler(srv interface{}, ctx context.Context, dec func(in
 	return out, nil
 }
 
+func _Care_CarePlan_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(CarePlanRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(CareServer).CarePlan(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func _Care_CreateCarePlan_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(CreateCarePlanRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(CareServer).CreateCarePlan(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func _Care_SubmitCarePlan_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(SubmitCarePlanRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(CareServer).SubmitCarePlan(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 var _Care_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "care.Care",
 	HandlerType: (*CareServer)(nil),
@@ -769,6 +1493,18 @@ var _Care_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SubmitVisit",
 			Handler:    _Care_SubmitVisit_Handler,
+		},
+		{
+			MethodName: "CarePlan",
+			Handler:    _Care_CarePlan_Handler,
+		},
+		{
+			MethodName: "CreateCarePlan",
+			Handler:    _Care_CreateCarePlan_Handler,
+		},
+		{
+			MethodName: "SubmitCarePlan",
+			Handler:    _Care_SubmitCarePlan_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{},
@@ -1098,6 +1834,435 @@ func (m *SubmitVisitResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *CarePlan) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CarePlan) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.ID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.ID)))
+		i += copy(data[i:], m.ID)
+	}
+	if len(m.Name) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Name)))
+		i += copy(data[i:], m.Name)
+	}
+	if len(m.Treatments) > 0 {
+		for _, msg := range m.Treatments {
+			data[i] = 0x1a
+			i++
+			i = encodeVarintSvc(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	if len(m.Instructions) > 0 {
+		for _, msg := range m.Instructions {
+			data[i] = 0x22
+			i++
+			i = encodeVarintSvc(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	if m.CreatedTimestamp != 0 {
+		data[i] = 0x28
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.CreatedTimestamp))
+	}
+	if len(m.CreatorID) > 0 {
+		data[i] = 0x32
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.CreatorID)))
+		i += copy(data[i:], m.CreatorID)
+	}
+	if m.Submitted {
+		data[i] = 0x38
+		i++
+		if m.Submitted {
+			data[i] = 1
+		} else {
+			data[i] = 0
+		}
+		i++
+	}
+	if len(m.ParentID) > 0 {
+		data[i] = 0x42
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.ParentID)))
+		i += copy(data[i:], m.ParentID)
+	}
+	if m.SubmittedTimestamp != 0 {
+		data[i] = 0x48
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.SubmittedTimestamp))
+	}
+	return i, nil
+}
+
+func (m *CarePlanTreatment) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CarePlanTreatment) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.EPrescribe {
+		data[i] = 0x8
+		i++
+		if m.EPrescribe {
+			data[i] = 1
+		} else {
+			data[i] = 0
+		}
+		i++
+	}
+	if m.Availability != 0 {
+		data[i] = 0x10
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Availability))
+	}
+	if len(m.Name) > 0 {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Name)))
+		i += copy(data[i:], m.Name)
+	}
+	if len(m.Route) > 0 {
+		data[i] = 0x22
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Route)))
+		i += copy(data[i:], m.Route)
+	}
+	if len(m.Form) > 0 {
+		data[i] = 0x2a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Form)))
+		i += copy(data[i:], m.Form)
+	}
+	if len(m.MedicationID) > 0 {
+		data[i] = 0x32
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.MedicationID)))
+		i += copy(data[i:], m.MedicationID)
+	}
+	if len(m.Dosage) > 0 {
+		data[i] = 0x3a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Dosage)))
+		i += copy(data[i:], m.Dosage)
+	}
+	if len(m.DispenseType) > 0 {
+		data[i] = 0x42
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.DispenseType)))
+		i += copy(data[i:], m.DispenseType)
+	}
+	if m.DispenseNumber != 0 {
+		data[i] = 0x48
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.DispenseNumber))
+	}
+	if m.Refills != 0 {
+		data[i] = 0x50
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Refills))
+	}
+	if m.SubstitutionsAllowed {
+		data[i] = 0x58
+		i++
+		if m.SubstitutionsAllowed {
+			data[i] = 1
+		} else {
+			data[i] = 0
+		}
+		i++
+	}
+	if m.DaysSupply != 0 {
+		data[i] = 0x60
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.DaysSupply))
+	}
+	if len(m.Sig) > 0 {
+		data[i] = 0x6a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Sig)))
+		i += copy(data[i:], m.Sig)
+	}
+	if len(m.PharmacyID) > 0 {
+		data[i] = 0x72
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.PharmacyID)))
+		i += copy(data[i:], m.PharmacyID)
+	}
+	if len(m.PharmacyInstructions) > 0 {
+		data[i] = 0x7a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.PharmacyInstructions)))
+		i += copy(data[i:], m.PharmacyInstructions)
+	}
+	return i, nil
+}
+
+func (m *CarePlanInstruction) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CarePlanInstruction) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Title) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Title)))
+		i += copy(data[i:], m.Title)
+	}
+	if len(m.Steps) > 0 {
+		for _, s := range m.Steps {
+			data[i] = 0x12
+			i++
+			l = len(s)
+			for l >= 1<<7 {
+				data[i] = uint8(uint64(l)&0x7f | 0x80)
+				l >>= 7
+				i++
+			}
+			data[i] = uint8(l)
+			i++
+			i += copy(data[i:], s)
+		}
+	}
+	return i, nil
+}
+
+func (m *CarePlanRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CarePlanRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.ID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.ID)))
+		i += copy(data[i:], m.ID)
+	}
+	return i, nil
+}
+
+func (m *CarePlanResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CarePlanResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.CarePlan != nil {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.CarePlan.Size()))
+		n3, err := m.CarePlan.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n3
+	}
+	return i, nil
+}
+
+func (m *CreateCarePlanRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CreateCarePlanRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Name) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Name)))
+		i += copy(data[i:], m.Name)
+	}
+	if len(m.Treatments) > 0 {
+		for _, msg := range m.Treatments {
+			data[i] = 0x12
+			i++
+			i = encodeVarintSvc(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	if len(m.Instructions) > 0 {
+		for _, msg := range m.Instructions {
+			data[i] = 0x1a
+			i++
+			i = encodeVarintSvc(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	if len(m.CreatorID) > 0 {
+		data[i] = 0x22
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.CreatorID)))
+		i += copy(data[i:], m.CreatorID)
+	}
+	return i, nil
+}
+
+func (m *CreateCarePlanResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CreateCarePlanResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.CarePlan != nil {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.CarePlan.Size()))
+		n4, err := m.CarePlan.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n4
+	}
+	return i, nil
+}
+
+func (m *SubmitCarePlanRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *SubmitCarePlanRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.ID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.ID)))
+		i += copy(data[i:], m.ID)
+	}
+	if len(m.ParentID) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.ParentID)))
+		i += copy(data[i:], m.ParentID)
+	}
+	return i, nil
+}
+
+func (m *SubmitCarePlanResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *SubmitCarePlanResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.CarePlan != nil {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.CarePlan.Size()))
+		n5, err := m.CarePlan.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n5
+	}
+	return i, nil
+}
+
 func encodeFixed64Svc(data []byte, offset int, v uint64) int {
 	data[offset] = uint8(v)
 	data[offset+1] = uint8(v >> 8)
@@ -1266,6 +2431,205 @@ func (m *SubmitVisitResponse) Size() (n int) {
 	return n
 }
 
+func (m *CarePlan) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.ID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if len(m.Treatments) > 0 {
+		for _, e := range m.Treatments {
+			l = e.Size()
+			n += 1 + l + sovSvc(uint64(l))
+		}
+	}
+	if len(m.Instructions) > 0 {
+		for _, e := range m.Instructions {
+			l = e.Size()
+			n += 1 + l + sovSvc(uint64(l))
+		}
+	}
+	if m.CreatedTimestamp != 0 {
+		n += 1 + sovSvc(uint64(m.CreatedTimestamp))
+	}
+	l = len(m.CreatorID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if m.Submitted {
+		n += 2
+	}
+	l = len(m.ParentID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if m.SubmittedTimestamp != 0 {
+		n += 1 + sovSvc(uint64(m.SubmittedTimestamp))
+	}
+	return n
+}
+
+func (m *CarePlanTreatment) Size() (n int) {
+	var l int
+	_ = l
+	if m.EPrescribe {
+		n += 2
+	}
+	if m.Availability != 0 {
+		n += 1 + sovSvc(uint64(m.Availability))
+	}
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.Route)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.Form)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.MedicationID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.Dosage)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.DispenseType)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if m.DispenseNumber != 0 {
+		n += 1 + sovSvc(uint64(m.DispenseNumber))
+	}
+	if m.Refills != 0 {
+		n += 1 + sovSvc(uint64(m.Refills))
+	}
+	if m.SubstitutionsAllowed {
+		n += 2
+	}
+	if m.DaysSupply != 0 {
+		n += 1 + sovSvc(uint64(m.DaysSupply))
+	}
+	l = len(m.Sig)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.PharmacyID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.PharmacyInstructions)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *CarePlanInstruction) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Title)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if len(m.Steps) > 0 {
+		for _, s := range m.Steps {
+			l = len(s)
+			n += 1 + l + sovSvc(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *CarePlanRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.ID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *CarePlanResponse) Size() (n int) {
+	var l int
+	_ = l
+	if m.CarePlan != nil {
+		l = m.CarePlan.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *CreateCarePlanRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if len(m.Treatments) > 0 {
+		for _, e := range m.Treatments {
+			l = e.Size()
+			n += 1 + l + sovSvc(uint64(l))
+		}
+	}
+	if len(m.Instructions) > 0 {
+		for _, e := range m.Instructions {
+			l = e.Size()
+			n += 1 + l + sovSvc(uint64(l))
+		}
+	}
+	l = len(m.CreatorID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *CreateCarePlanResponse) Size() (n int) {
+	var l int
+	_ = l
+	if m.CarePlan != nil {
+		l = m.CarePlan.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *SubmitCarePlanRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.ID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.ParentID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *SubmitCarePlanResponse) Size() (n int) {
+	var l int
+	_ = l
+	if m.CarePlan != nil {
+		l = m.CarePlan.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
 func sovSvc(x uint64) (n int) {
 	for {
 		n++
@@ -1393,6 +2757,123 @@ func (this *SubmitVisitResponse) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&SubmitVisitResponse{`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CarePlan) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CarePlan{`,
+		`ID:` + fmt.Sprintf("%v", this.ID) + `,`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`Treatments:` + strings.Replace(fmt.Sprintf("%v", this.Treatments), "CarePlanTreatment", "CarePlanTreatment", 1) + `,`,
+		`Instructions:` + strings.Replace(fmt.Sprintf("%v", this.Instructions), "CarePlanInstruction", "CarePlanInstruction", 1) + `,`,
+		`CreatedTimestamp:` + fmt.Sprintf("%v", this.CreatedTimestamp) + `,`,
+		`CreatorID:` + fmt.Sprintf("%v", this.CreatorID) + `,`,
+		`Submitted:` + fmt.Sprintf("%v", this.Submitted) + `,`,
+		`ParentID:` + fmt.Sprintf("%v", this.ParentID) + `,`,
+		`SubmittedTimestamp:` + fmt.Sprintf("%v", this.SubmittedTimestamp) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CarePlanTreatment) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CarePlanTreatment{`,
+		`EPrescribe:` + fmt.Sprintf("%v", this.EPrescribe) + `,`,
+		`Availability:` + fmt.Sprintf("%v", this.Availability) + `,`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`Route:` + fmt.Sprintf("%v", this.Route) + `,`,
+		`Form:` + fmt.Sprintf("%v", this.Form) + `,`,
+		`MedicationID:` + fmt.Sprintf("%v", this.MedicationID) + `,`,
+		`Dosage:` + fmt.Sprintf("%v", this.Dosage) + `,`,
+		`DispenseType:` + fmt.Sprintf("%v", this.DispenseType) + `,`,
+		`DispenseNumber:` + fmt.Sprintf("%v", this.DispenseNumber) + `,`,
+		`Refills:` + fmt.Sprintf("%v", this.Refills) + `,`,
+		`SubstitutionsAllowed:` + fmt.Sprintf("%v", this.SubstitutionsAllowed) + `,`,
+		`DaysSupply:` + fmt.Sprintf("%v", this.DaysSupply) + `,`,
+		`Sig:` + fmt.Sprintf("%v", this.Sig) + `,`,
+		`PharmacyID:` + fmt.Sprintf("%v", this.PharmacyID) + `,`,
+		`PharmacyInstructions:` + fmt.Sprintf("%v", this.PharmacyInstructions) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CarePlanInstruction) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CarePlanInstruction{`,
+		`Title:` + fmt.Sprintf("%v", this.Title) + `,`,
+		`Steps:` + fmt.Sprintf("%v", this.Steps) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CarePlanRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CarePlanRequest{`,
+		`ID:` + fmt.Sprintf("%v", this.ID) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CarePlanResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CarePlanResponse{`,
+		`CarePlan:` + strings.Replace(fmt.Sprintf("%v", this.CarePlan), "CarePlan", "CarePlan", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CreateCarePlanRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CreateCarePlanRequest{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`Treatments:` + strings.Replace(fmt.Sprintf("%v", this.Treatments), "CarePlanTreatment", "CarePlanTreatment", 1) + `,`,
+		`Instructions:` + strings.Replace(fmt.Sprintf("%v", this.Instructions), "CarePlanInstruction", "CarePlanInstruction", 1) + `,`,
+		`CreatorID:` + fmt.Sprintf("%v", this.CreatorID) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CreateCarePlanResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CreateCarePlanResponse{`,
+		`CarePlan:` + strings.Replace(fmt.Sprintf("%v", this.CarePlan), "CarePlan", "CarePlan", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SubmitCarePlanRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&SubmitCarePlanRequest{`,
+		`ID:` + fmt.Sprintf("%v", this.ID) + `,`,
+		`ParentID:` + fmt.Sprintf("%v", this.ParentID) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SubmitCarePlanResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&SubmitCarePlanResponse{`,
+		`CarePlan:` + strings.Replace(fmt.Sprintf("%v", this.CarePlan), "CarePlan", "CarePlan", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2484,6 +3965,1433 @@ func (m *SubmitVisitResponse) Unmarshal(data []byte) error {
 			return fmt.Errorf("proto: SubmitVisitResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CarePlan) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CarePlan: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CarePlan: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Treatments", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Treatments = append(m.Treatments, &CarePlanTreatment{})
+			if err := m.Treatments[len(m.Treatments)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Instructions", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Instructions = append(m.Instructions, &CarePlanInstruction{})
+			if err := m.Instructions[len(m.Instructions)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CreatedTimestamp", wireType)
+			}
+			m.CreatedTimestamp = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.CreatedTimestamp |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CreatorID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.CreatorID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 7:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Submitted", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Submitted = bool(v != 0)
+		case 8:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ParentID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ParentID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 9:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SubmittedTimestamp", wireType)
+			}
+			m.SubmittedTimestamp = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.SubmittedTimestamp |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CarePlanTreatment) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CarePlanTreatment: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CarePlanTreatment: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EPrescribe", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.EPrescribe = bool(v != 0)
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Availability", wireType)
+			}
+			m.Availability = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.Availability |= (CarePlanTreatment_Availability(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Route", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Route = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Form", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Form = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MedicationID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.MedicationID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Dosage", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Dosage = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 8:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DispenseType", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.DispenseType = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 9:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DispenseNumber", wireType)
+			}
+			m.DispenseNumber = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.DispenseNumber |= (uint32(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 10:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Refills", wireType)
+			}
+			m.Refills = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.Refills |= (uint32(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 11:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SubstitutionsAllowed", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.SubstitutionsAllowed = bool(v != 0)
+		case 12:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DaysSupply", wireType)
+			}
+			m.DaysSupply = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.DaysSupply |= (uint32(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 13:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Sig", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Sig = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 14:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PharmacyID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PharmacyID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 15:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PharmacyInstructions", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PharmacyInstructions = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CarePlanInstruction) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CarePlanInstruction: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CarePlanInstruction: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Title", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Title = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Steps", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Steps = append(m.Steps, string(data[iNdEx:postIndex]))
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CarePlanRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CarePlanRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CarePlanRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CarePlanResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CarePlanResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CarePlanResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CarePlan", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.CarePlan == nil {
+				m.CarePlan = &CarePlan{}
+			}
+			if err := m.CarePlan.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CreateCarePlanRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CreateCarePlanRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CreateCarePlanRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Treatments", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Treatments = append(m.Treatments, &CarePlanTreatment{})
+			if err := m.Treatments[len(m.Treatments)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Instructions", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Instructions = append(m.Instructions, &CarePlanInstruction{})
+			if err := m.Instructions[len(m.Instructions)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CreatorID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.CreatorID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CreateCarePlanResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CreateCarePlanResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CreateCarePlanResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CarePlan", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.CarePlan == nil {
+				m.CarePlan = &CarePlan{}
+			}
+			if err := m.CarePlan.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *SubmitCarePlanRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SubmitCarePlanRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SubmitCarePlanRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ParentID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ParentID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *SubmitCarePlanResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SubmitCarePlanResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SubmitCarePlanResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CarePlan", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.CarePlan == nil {
+				m.CarePlan = &CarePlan{}
+			}
+			if err := m.CarePlan.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])

@@ -96,7 +96,7 @@ var callEntityInputType = graphql.NewInputObject(graphql.InputObjectConfig{
 var callEntityOutputType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "CallEntityPayload",
 	Fields: graphql.Fields{
-		"clientMutationId": newClientmutationIDOutputField(),
+		"clientMutationId": newClientMutationIDOutputField(),
 		"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		"errorCode":        &graphql.Field{Type: callEntityErrorCodeEnum},
 		"errorMessage":     &graphql.Field{Type: graphql.String},

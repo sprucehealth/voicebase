@@ -163,19 +163,6 @@ func entityInfoFromInput(ei interface{}) (*directory.EntityInfo, error) {
 	return entityInfo, nil
 }
 
-// isValidPlane0Unicode returns true iff the provided string only has valid plane 0 unicode (no emoji)
-func isValidPlane0Unicode(s string) bool {
-	for _, r := range s {
-		if !utf8.ValidRune(r) {
-			return false
-		}
-		if utf8.RuneLen(r) > 3 {
-			return false
-		}
-	}
-	return true
-}
-
 func initialsForEntity(e *models.Entity) string {
 	var first, last rune
 	if e.FirstName != "" {

@@ -2,6 +2,7 @@ package dal
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -20,14 +21,27 @@ type VisitUpdate struct {
 
 type DAL interface {
 	Transact(context.Context, func(context.Context, DAL) error) error
+
+	CarePlan(context.Context, models.CarePlanID) (*models.CarePlan, error)
+	CreateCarePlan(context.Context, *models.CarePlan) (models.CarePlanID, error)
 	CreateVisit(context.Context, *models.Visit) (models.VisitID, error)
-	Visit(ctx context.Context, id models.VisitID, opts ...QueryOption) (*models.Visit, error)
-	UpdateVisit(ctx context.Context, id models.VisitID, update *VisitUpdate) (int64, error)
 	CreateVisitAnswer(ctx context.Context, visitID models.VisitID, actoryEntityID string, answer *models.Answer) error
+	SubmitCarePlan(ctx context.Context, id models.CarePlanID, parentID string) error
+	UpdateVisit(ctx context.Context, id models.VisitID, update *VisitUpdate) (int64, error)
+	Visit(ctx context.Context, id models.VisitID, opts ...QueryOption) (*models.Visit, error)
 	VisitAnswers(ctx context.Context, visitID models.VisitID, questionIDs []string) (map[string]*models.Answer, error)
 }
 
-var ErrNotFound = errors.New("care/dal: not found")
+var (
+	// ErrAlreadySubmitted is returned when an object is already submitted
+	ErrAlreadySubmitted = errors.New("care/dal: already submitted")
+	// ErrNotFound is returned when a requested object is not found
+	ErrNotFound = errors.New("care/dal: not found")
+)
+
+type carePlanInstructions struct {
+	Instructions []*models.CarePlanInstruction `json:"instructions"`
+}
 
 type dal struct {
 	db tsql.DB
@@ -154,7 +168,6 @@ func (d *dal) UpdateVisit(ctx context.Context, id models.VisitID, update *VisitU
 }
 
 func (d *dal) CreateVisitAnswer(ctx context.Context, visitID models.VisitID, actoryEntityID string, answer *models.Answer) error {
-
 	answerData, err := answer.Marshal()
 	if err != nil {
 		return errors.Trace(err)
@@ -194,4 +207,132 @@ func (d *dal) VisitAnswers(ctx context.Context, visitID models.VisitID, question
 		answerMap[answer.QuestionID] = &answer
 	}
 	return answerMap, errors.Trace(rows.Err())
+}
+
+func (d *dal) CarePlan(ctx context.Context, id models.CarePlanID) (*models.CarePlan, error) {
+	cp := &models.CarePlan{ID: id}
+	var parentID sql.NullString
+	var instructionsJSON []byte
+	row := d.db.QueryRow(`
+		SELECT name, creator_id, instructions_json, created, parent_id, submitted
+		FROM care_plan
+		WHERE id = ?`, id)
+	err := row.Scan(&cp.Name, &cp.CreatorID, &instructionsJSON, &cp.Created, &parentID, &cp.Submitted)
+	if err == sql.ErrNoRows {
+		return nil, errors.Trace(ErrNotFound)
+	} else if err != nil {
+		return nil, errors.Trace(err)
+	}
+	cp.ParentID = parentID.String
+	var ins carePlanInstructions
+	if err := json.Unmarshal(instructionsJSON, &ins); err != nil {
+		return nil, errors.Trace(err)
+	}
+	cp.Instructions = ins.Instructions
+
+	rows, err := d.db.Query(`
+		SELECT id, medication_id, eprescribe, name, form, route, availability, dosage,
+			dispense_type, dispense_number, refills, substitutions_allowed, days_supply, sig,
+			pharmacy_id, pharmacy_instructions
+		FROM care_plan_treatment
+		WHERE care_plan_id = ?`, id)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		t := &models.CarePlanTreatment{ID: models.EmptyCarePlanTreatmentID()}
+		err := rows.Scan(
+			&t.ID, &t.MedicationID, &t.EPrescribe, &t.Name, &t.Form, &t.Route, &t.Availability, &t.Dosage,
+			&t.DispenseType, &t.DispenseNumber, &t.Refills, &t.SubstitutionsAllowed, &t.DaysSupply, &t.Sig,
+			&t.PharmacyID, &t.PharmacyInstructions)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		cp.Treatments = append(cp.Treatments, t)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	return cp, nil
+}
+
+func (d *dal) CreateCarePlan(ctx context.Context, cp *models.CarePlan) (models.CarePlanID, error) {
+	id, err := models.NewCarePlanID()
+	if err != nil {
+		return id, errors.Trace(err)
+	}
+
+	instructionsJSON, err := json.Marshal(carePlanInstructions{Instructions: cp.Instructions})
+	if err != nil {
+		return id, errors.Trace(err)
+	}
+
+	tx, err := d.db.Begin()
+	if err != nil {
+		return id, errors.Trace(err)
+	}
+
+	_, err = tx.Exec(`INSERT INTO care_plan (id, name, creator_id, instructions_json) VALUES (?,?,?,?)`,
+		id, cp.Name, cp.CreatorID, instructionsJSON)
+	if err != nil {
+		tx.Rollback()
+		return id, errors.Trace(err)
+	}
+
+	ins := dbutil.MySQLMultiInsert(len(cp.Treatments))
+	for _, t := range cp.Treatments {
+		tID, err := models.NewCarePlanTreatmentID()
+		if err != nil {
+			return id, errors.Trace(err)
+		}
+		t.ID = tID
+		ins.Append(tID, id, t.MedicationID, t.EPrescribe, t.Name, t.Form, t.Route, t.Availability, t.Dosage,
+			t.DispenseType, t.DispenseNumber, t.Refills, t.SubstitutionsAllowed, t.DaysSupply, t.Sig,
+			t.PharmacyID, t.PharmacyInstructions)
+	}
+	if !ins.IsEmpty() {
+		_, err := tx.Exec(`
+			INSERT INTO care_plan_treatment (
+				id, care_plan_id, medication_id, eprescribe, name, form, route, availability, dosage,
+				dispense_type, dispense_number, refills, substitutions_allowed, days_supply, sig,
+				pharmacy_id, pharmacy_instructions) VALUES `+ins.Query(), ins.Values()...)
+		if err != nil {
+			tx.Rollback()
+			return id, errors.Trace(err)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return id, errors.Trace(err)
+	}
+
+	cp.ID = id
+	return id, nil
+}
+
+func (d *dal) SubmitCarePlan(ctx context.Context, id models.CarePlanID, parentID string) error {
+	// Make sure the care plan exists to be able to return a proper error. Might as well preemptively check the submitted state at the same time.
+	var submitted *time.Time
+	if err := d.db.QueryRow(`SELECT submitted FROM care_plan WHERE id = ?`, id).Scan(&submitted); err == sql.ErrNoRows {
+		return errors.Trace(ErrNotFound)
+	} else if err != nil {
+		return errors.Trace(err)
+	}
+	if submitted != nil {
+		return errors.Trace(ErrAlreadySubmitted)
+	}
+	res, err := d.db.Exec(`UPDATE care_plan SET submitted = NOW(), parent_id = ? WHERE id = ? AND submitted IS NULL`, parentID, id)
+	if err != nil {
+		return errors.Trace(err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return errors.Trace(err)
+	}
+	if n == 0 {
+		return errors.Trace(ErrAlreadySubmitted)
+	}
+	return nil
 }

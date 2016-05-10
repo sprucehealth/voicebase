@@ -20,6 +20,7 @@
 		AudioAttachment
 		GenericAttachment
 		VisitAttachment
+		CarePlanAttachment
 */
 package models
 
@@ -96,23 +97,26 @@ var Endpoint_Channel_value = map[string]int32{
 type Attachment_Type int32
 
 const (
-	Attachment_IMAGE   Attachment_Type = 0
-	Attachment_AUDIO   Attachment_Type = 1
-	Attachment_GENERIC Attachment_Type = 2
-	Attachment_VISIT   Attachment_Type = 4
+	Attachment_IMAGE     Attachment_Type = 0
+	Attachment_AUDIO     Attachment_Type = 1
+	Attachment_GENERIC   Attachment_Type = 2
+	Attachment_CARE_PLAN Attachment_Type = 3
+	Attachment_VISIT     Attachment_Type = 4
 )
 
 var Attachment_Type_name = map[int32]string{
 	0: "IMAGE",
 	1: "AUDIO",
 	2: "GENERIC",
+	3: "CARE_PLAN",
 	4: "VISIT",
 }
 var Attachment_Type_value = map[string]int32{
-	"IMAGE":   0,
-	"AUDIO":   1,
-	"GENERIC": 2,
-	"VISIT":   4,
+	"IMAGE":     0,
+	"AUDIO":     1,
+	"GENERIC":   2,
+	"CARE_PLAN": 3,
+	"VISIT":     4,
 }
 
 type Reference struct {
@@ -221,6 +225,7 @@ type Attachment struct {
 	//	*Attachment_Audio
 	//	*Attachment_Generic
 	//	*Attachment_Visit
+	//	*Attachment_CarePlan
 	Data isAttachment_Data `protobuf_oneof:"data"`
 }
 
@@ -246,11 +251,15 @@ type Attachment_Generic struct {
 type Attachment_Visit struct {
 	Visit *VisitAttachment `protobuf:"bytes,13,opt,name=visit,oneof"`
 }
+type Attachment_CarePlan struct {
+	CarePlan *CarePlanAttachment `protobuf:"bytes,14,opt,name=care_plan,oneof"`
+}
 
-func (*Attachment_Image) isAttachment_Data()   {}
-func (*Attachment_Audio) isAttachment_Data()   {}
-func (*Attachment_Generic) isAttachment_Data() {}
-func (*Attachment_Visit) isAttachment_Data()   {}
+func (*Attachment_Image) isAttachment_Data()    {}
+func (*Attachment_Audio) isAttachment_Data()    {}
+func (*Attachment_Generic) isAttachment_Data()  {}
+func (*Attachment_Visit) isAttachment_Data()    {}
+func (*Attachment_CarePlan) isAttachment_Data() {}
 
 func (m *Attachment) GetData() isAttachment_Data {
 	if m != nil {
@@ -287,6 +296,13 @@ func (m *Attachment) GetVisit() *VisitAttachment {
 	return nil
 }
 
+func (m *Attachment) GetCarePlan() *CarePlanAttachment {
+	if x, ok := m.GetData().(*Attachment_CarePlan); ok {
+		return x.CarePlan
+	}
+	return nil
+}
+
 // XXX_OneofFuncs is for the internal use of the proto package.
 func (*Attachment) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), []interface{}) {
 	return _Attachment_OneofMarshaler, _Attachment_OneofUnmarshaler, []interface{}{
@@ -294,6 +310,7 @@ func (*Attachment) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) er
 		(*Attachment_Audio)(nil),
 		(*Attachment_Generic)(nil),
 		(*Attachment_Visit)(nil),
+		(*Attachment_CarePlan)(nil),
 	}
 }
 
@@ -319,6 +336,11 @@ func _Attachment_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
 	case *Attachment_Visit:
 		_ = b.EncodeVarint(13<<3 | proto.WireBytes)
 		if err := b.EncodeMessage(x.Visit); err != nil {
+			return err
+		}
+	case *Attachment_CarePlan:
+		_ = b.EncodeVarint(14<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.CarePlan); err != nil {
 			return err
 		}
 	case nil:
@@ -363,6 +385,14 @@ func _Attachment_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buf
 		err := b.DecodeMessage(msg)
 		m.Data = &Attachment_Visit{msg}
 		return true, err
+	case 14: // data.care_plan
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(CarePlanAttachment)
+		err := b.DecodeMessage(msg)
+		m.Data = &Attachment_CarePlan{msg}
+		return true, err
 	default:
 		return false, nil
 	}
@@ -404,6 +434,14 @@ type VisitAttachment struct {
 func (m *VisitAttachment) Reset()      { *m = VisitAttachment{} }
 func (*VisitAttachment) ProtoMessage() {}
 
+type CarePlanAttachment struct {
+	CarePlanID   string `protobuf:"bytes,1,opt,name=care_plan_id,proto3" json:"care_plan_id,omitempty"`
+	CarePlanName string `protobuf:"bytes,2,opt,name=care_plan_name,proto3" json:"care_plan_name,omitempty"`
+}
+
+func (m *CarePlanAttachment) Reset()      { *m = CarePlanAttachment{} }
+func (*CarePlanAttachment) ProtoMessage() {}
+
 func init() {
 	proto.RegisterType((*Reference)(nil), "models.Reference")
 	proto.RegisterType((*Message)(nil), "models.Message")
@@ -416,6 +454,7 @@ func init() {
 	proto.RegisterType((*AudioAttachment)(nil), "models.AudioAttachment")
 	proto.RegisterType((*GenericAttachment)(nil), "models.GenericAttachment")
 	proto.RegisterType((*VisitAttachment)(nil), "models.VisitAttachment")
+	proto.RegisterType((*CarePlanAttachment)(nil), "models.CarePlanAttachment")
 	proto.RegisterEnum("models.Reference_Type", Reference_Type_name, Reference_Type_value)
 	proto.RegisterEnum("models.Message_Status", Message_Status_name, Message_Status_value)
 	proto.RegisterEnum("models.Endpoint_Channel", Endpoint_Channel_name, Endpoint_Channel_value)
@@ -798,6 +837,31 @@ func (this *Attachment_Visit) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *Attachment_CarePlan) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*Attachment_CarePlan)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.CarePlan.Equal(that1.CarePlan) {
+		return false
+	}
+	return true
+}
 func (this *ImageAttachment) Equal(that interface{}) bool {
 	if that == nil {
 		if this == nil {
@@ -922,6 +986,34 @@ func (this *VisitAttachment) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *CarePlanAttachment) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*CarePlanAttachment)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.CarePlanID != that1.CarePlanID {
+		return false
+	}
+	if this.CarePlanName != that1.CarePlanName {
+		return false
+	}
+	return true
+}
 func (this *Reference) GoString() string {
 	if this == nil {
 		return "nil"
@@ -1011,7 +1103,7 @@ func (this *Attachment) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 11)
+	s := make([]string, 0, 12)
 	s = append(s, "&models.Attachment{")
 	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
 	s = append(s, "Title: "+fmt.Sprintf("%#v", this.Title)+",\n")
@@ -1052,6 +1144,14 @@ func (this *Attachment_Visit) GoString() string {
 	}
 	s := strings.Join([]string{`&models.Attachment_Visit{` +
 		`Visit:` + fmt.Sprintf("%#v", this.Visit) + `}`}, ", ")
+	return s
+}
+func (this *Attachment_CarePlan) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&models.Attachment_CarePlan{` +
+		`CarePlan:` + fmt.Sprintf("%#v", this.CarePlan) + `}`}, ", ")
 	return s
 }
 func (this *ImageAttachment) GoString() string {
@@ -1099,6 +1199,17 @@ func (this *VisitAttachment) GoString() string {
 	s = append(s, "&models.VisitAttachment{")
 	s = append(s, "VisitID: "+fmt.Sprintf("%#v", this.VisitID)+",\n")
 	s = append(s, "VisitName: "+fmt.Sprintf("%#v", this.VisitName)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *CarePlanAttachment) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&models.CarePlanAttachment{")
+	s = append(s, "CarePlanID: "+fmt.Sprintf("%#v", this.CarePlanID)+",\n")
+	s = append(s, "CarePlanName: "+fmt.Sprintf("%#v", this.CarePlanName)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1475,6 +1586,20 @@ func (m *Attachment_Visit) MarshalTo(data []byte) (int, error) {
 	}
 	return i, nil
 }
+func (m *Attachment_CarePlan) MarshalTo(data []byte) (int, error) {
+	i := 0
+	if m.CarePlan != nil {
+		data[i] = 0x72
+		i++
+		i = encodeVarintGen(data, i, uint64(m.CarePlan.Size()))
+		n8, err := m.CarePlan.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n8
+	}
+	return i, nil
+}
 func (m *ImageAttachment) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -1611,6 +1736,36 @@ func (m *VisitAttachment) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintGen(data, i, uint64(len(m.VisitName)))
 		i += copy(data[i:], m.VisitName)
+	}
+	return i, nil
+}
+
+func (m *CarePlanAttachment) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CarePlanAttachment) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.CarePlanID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintGen(data, i, uint64(len(m.CarePlanID)))
+		i += copy(data[i:], m.CarePlanID)
+	}
+	if len(m.CarePlanName) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintGen(data, i, uint64(len(m.CarePlanName)))
+		i += copy(data[i:], m.CarePlanName)
 	}
 	return i, nil
 }
@@ -1814,6 +1969,15 @@ func (m *Attachment_Visit) Size() (n int) {
 	}
 	return n
 }
+func (m *Attachment_CarePlan) Size() (n int) {
+	var l int
+	_ = l
+	if m.CarePlan != nil {
+		l = m.CarePlan.Size()
+		n += 1 + l + sovGen(uint64(l))
+	}
+	return n
+}
 func (m *ImageAttachment) Size() (n int) {
 	var l int
 	_ = l
@@ -1876,6 +2040,20 @@ func (m *VisitAttachment) Size() (n int) {
 		n += 1 + l + sovGen(uint64(l))
 	}
 	l = len(m.VisitName)
+	if l > 0 {
+		n += 1 + l + sovGen(uint64(l))
+	}
+	return n
+}
+
+func (m *CarePlanAttachment) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.CarePlanID)
+	if l > 0 {
+		n += 1 + l + sovGen(uint64(l))
+	}
+	l = len(m.CarePlanName)
 	if l > 0 {
 		n += 1 + l + sovGen(uint64(l))
 	}
@@ -2021,6 +2199,16 @@ func (this *Attachment_Visit) String() string {
 	}, "")
 	return s
 }
+func (this *Attachment_CarePlan) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Attachment_CarePlan{`,
+		`CarePlan:` + strings.Replace(fmt.Sprintf("%v", this.CarePlan), "CarePlanAttachment", "CarePlanAttachment", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func (this *ImageAttachment) String() string {
 	if this == nil {
 		return "nil"
@@ -2065,6 +2253,17 @@ func (this *VisitAttachment) String() string {
 	s := strings.Join([]string{`&VisitAttachment{`,
 		`VisitID:` + fmt.Sprintf("%v", this.VisitID) + `,`,
 		`VisitName:` + fmt.Sprintf("%v", this.VisitName) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CarePlanAttachment) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CarePlanAttachment{`,
+		`CarePlanID:` + fmt.Sprintf("%v", this.CarePlanID) + `,`,
+		`CarePlanName:` + fmt.Sprintf("%v", this.CarePlanName) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3138,6 +3337,38 @@ func (m *Attachment) Unmarshal(data []byte) error {
 			}
 			m.Data = &Attachment_Visit{v}
 			iNdEx = postIndex
+		case 14:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CarePlan", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGen
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGen
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &CarePlanAttachment{}
+			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Data = &Attachment_CarePlan{v}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGen(data[iNdEx:])
@@ -3645,6 +3876,114 @@ func (m *VisitAttachment) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.VisitName = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGen(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthGen
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CarePlanAttachment) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGen
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CarePlanAttachment: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CarePlanAttachment: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CarePlanID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGen
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGen
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.CarePlanID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CarePlanName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGen
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGen
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.CarePlanName = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

@@ -32,7 +32,7 @@ var updateContactInfosErrorCodeEnum = graphql.String
 var updateContactInfosOutputType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "UpdateContactInfosPayload",
 	Fields: graphql.Fields{
-		"clientMutationId": newClientmutationIDOutputField(),
+		"clientMutationId": newClientMutationIDOutputField(),
 		"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		"errorCode":        &graphql.Field{Type: updateContactInfosErrorCodeEnum},
 		"errorMessage":     &graphql.Field{Type: graphql.String},

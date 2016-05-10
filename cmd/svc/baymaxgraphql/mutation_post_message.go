@@ -13,6 +13,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/bml"
 	"github.com/sprucehealth/backend/libs/caremessenger/deeplink"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -48,8 +49,9 @@ var messageInputType = graphql.NewInputObject(
 )
 
 var (
-	attachmentTypeImage = "IMAGE"
-	attachmentTypeVisit = "VISIT"
+	attachmentTypeImage    = "IMAGE"
+	attachmentTypeVisit    = "VISIT"
+	attachmentTypeCarePlan = "CARE_PLAN"
 )
 
 var attachmentInputTypeEnum = graphql.NewEnum(graphql.EnumConfig{
@@ -62,6 +64,10 @@ var attachmentInputTypeEnum = graphql.NewEnum(graphql.EnumConfig{
 		attachmentTypeVisit: &graphql.EnumValueConfig{
 			Value:       attachmentTypeVisit,
 			Description: "The attachment type representing a visit",
+		},
+		attachmentTypeCarePlan: &graphql.EnumValueConfig{
+			Value:       attachmentTypeCarePlan,
+			Description: "The attachment type representing a care plan",
 		},
 	},
 })
@@ -83,6 +89,9 @@ func attachmentTypeEnumAsThreadingEnum(t string) (threading.Attachment_Type, err
 		return threading.Attachment_IMAGE, nil
 	case attachmentTypeVisit:
 		return threading.Attachment_VISIT, nil
+	case attachmentTypeCarePlan:
+		return threading.Attachment_CARE_PLAN, nil
+
 	}
 	return threading.Attachment_Type(0), fmt.Errorf("Unknown attachment type %s", t)
 }
@@ -113,6 +122,7 @@ var postMessageInputType = graphql.NewInputObject(
 const (
 	postMessageErrorCodeThreadDoesNotExist = "THREAD_DOES_NOT_EXIST"
 	postMessageErrorCodeInternalNotAllowed = "INTERNAL_MESSAGE_NOT_ALLOWED"
+	postMessageErrorCodeInvalidAttachment  = "INVALID_ATTACHMENT"
 )
 
 var postMessageErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
@@ -126,6 +136,10 @@ var postMessageErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
 			Value:       postMessageErrorCodeInternalNotAllowed,
 			Description: "The caller is not allowed to post internal messages",
 		},
+		postMessageErrorCodeInvalidAttachment: &graphql.EnumValueConfig{
+			Value:       postMessageErrorCodeInvalidAttachment,
+			Description: "At least one attachment is invalid",
+		},
 	},
 })
 
@@ -133,7 +147,7 @@ var postMessageOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "PostMessagePayload",
 		Fields: graphql.Fields{
-			"clientMutationId": newClientmutationIDOutputField(),
+			"clientMutationId": newClientMutationIDOutputField(),
 			"uuid":             &graphql.Field{Type: graphql.String},
 			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"errorCode":        &graphql.Field{Type: postMessageErrorCodeEnum},
@@ -231,6 +245,9 @@ var postMessageMutation = &graphql.Field{
 		}
 		summary := fmt.Sprintf("%s: %s", fromName, plainText)
 
+		// Need to track the care plans so we can flag them as submitted after posting
+		var carePlans []*care.CarePlan
+
 		var msgAttachments []interface{}
 		if mas, ok := msg["attachments"]; ok {
 			msgAttachments = mas.([]interface{})
@@ -250,7 +267,6 @@ var postMessageMutation = &graphql.Field{
 			var attachment *threading.Attachment
 			switch mAttachmentType {
 			case threading.Attachment_VISIT:
-
 				// can only attach visits on secure external threads
 				if thr.Type != threading.ThreadType_SECURE_EXTERNAL {
 					return nil, errors.ErrNotSupported(ctx, fmt.Errorf("Cannot attach a visit to thread of type %s", thr.Type.String()))
@@ -283,6 +299,37 @@ var postMessageMutation = &graphql.Field{
 						Visit: &threading.VisitAttachment{
 							VisitID:   createVisitRes.Visit.ID,
 							VisitName: createVisitRes.Visit.Name,
+						},
+					},
+				}
+			case threading.Attachment_CARE_PLAN:
+				// can only attach visits on secure external threads
+				if thr.Type != threading.ThreadType_SECURE_EXTERNAL {
+					return nil, errors.ErrNotSupported(ctx, fmt.Errorf("Cannot attach a care plan to thread of type %s", thr.Type.String()))
+				}
+
+				// Make sure the care plan exists, the poster has access to it, and it hasn't yet been submitted
+				cp, err := ram.CarePlan(ctx, mAttachment["mediaID"].(string))
+				if err != nil {
+					return nil, err
+				}
+				if cp.Submitted {
+					return &postMessageOutput{
+						Success:      false,
+						ErrorCode:    postMessageErrorCodeInvalidAttachment,
+						ErrorMessage: "The attached care plan has already been submitted.",
+					}, nil
+				}
+				carePlans = append(carePlans, cp)
+
+				attachment = &threading.Attachment{
+					Type:  mAttachmentType,
+					Title: cp.Name,
+					URL:   deeplink.CarePlanURL(svc.webDomain, thr.ID, cp.ID),
+					Data: &threading.Attachment_CarePlan{
+						CarePlan: &threading.CarePlanAttachment{
+							CarePlanID:   cp.ID,
+							CarePlanName: cp.Name,
 						},
 					},
 				}
@@ -339,6 +386,10 @@ var postMessageMutation = &graphql.Field{
 					title = append(title, "Shared a visit:")
 					break
 				}
+				if a.Type == threading.Attachment_CARE_PLAN {
+					title = append(title, "Shared a care plan:")
+					break
+				}
 			}
 		}
 
@@ -356,6 +407,15 @@ var postMessageMutation = &graphql.Field{
 		pmres, err := ram.PostMessage(ctx, req)
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
+		}
+
+		// Flag care plans as submitted and attached to this message
+		for _, cp := range carePlans {
+			if err := ram.SubmitCarePlan(ctx, cp, pmres.Item.ID); err != nil {
+				// Don't return an error here since it's too late to do much about this. Best to let the
+				// mutation succeed and log these to be fixed up by hand.
+				golog.Errorf("[MANUAL_INTERVENTION] Failed to submit care plan %s for thread item %s: %s", cp.ID, pmres.Item.ID, err)
+			}
 		}
 
 		svc.segmentio.Track(&analytics.Track{

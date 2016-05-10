@@ -57,9 +57,11 @@ type ResourceAccessor interface {
 	AuthenticateLogin(ctx context.Context, email, password string) (*auth.AuthenticateLoginResponse, error)
 	AuthenticateLoginWithCode(ctx context.Context, token, code string) (*auth.AuthenticateLoginWithCodeResponse, error)
 	CanPostMessage(ctx context.Context, threadID string) error
+	CarePlan(ctx context.Context, id string) (*care.CarePlan, error)
 	CheckPasswordResetToken(ctx context.Context, token string) (*auth.CheckPasswordResetTokenResponse, error)
 	CheckVerificationCode(ctx context.Context, token, code string) (*auth.CheckVerificationCodeResponse, error)
 	CreateAccount(ctx context.Context, req *auth.CreateAccountRequest) (*auth.CreateAccountResponse, error)
+	CreateCarePlan(ctx context.Context, req *care.CreateCarePlanRequest) (*care.CreateCarePlanResponse, error)
 	CreateContact(ctx context.Context, req *directory.CreateContactRequest) (*directory.CreateContactResponse, error)
 	CreateContacts(ctx context.Context, req *directory.CreateContactsRequest) (*directory.CreateContactsResponse, error)
 	CreateEmptyThread(ctx context.Context, req *threading.CreateEmptyThreadRequest) (*threading.Thread, error)
@@ -92,6 +94,7 @@ type ResourceAccessor interface {
 	SavedQueries(ctx context.Context, entityID string) ([]*threading.SavedQuery, error)
 	SendMessage(ctx context.Context, req *excomms.SendMessageRequest) error
 	SerializedEntityContact(ctx context.Context, entityID string, platform directory.Platform) (*directory.SerializedClientEntityContact, error)
+	SubmitCarePlan(ctx context.Context, cp *care.CarePlan, parentID string) error
 	Thread(ctx context.Context, threadID, viewerEntityID string) (*threading.Thread, error)
 	ThreadItem(ctx context.Context, threadItemID string) (*threading.ThreadItem, error)
 	ThreadItems(ctx context.Context, req *threading.ThreadItemsRequest) (*threading.ThreadItemsResponse, error)
@@ -201,6 +204,20 @@ func (m *resourceAccessor) AuthenticateLoginWithCode(ctx context.Context, token,
 	return resp, nil
 }
 
+func (m *resourceAccessor) CarePlan(ctx context.Context, id string) (*care.CarePlan, error) {
+	// Authorization: if the care plan has no parent (not yet submitted), then only permit the owner (match account ID)
+	// access to it. If it has been submitted, then fetch the object the parent ID references (e.g. thread item) and validate
+	// the account has access to the thread.
+	golog.Errorf("TODO: implement authorization for CarePlan")
+	res, err := m.care.CarePlan(ctx, &care.CarePlanRequest{ID: id})
+	if grpc.Code(err) == codes.NotFound {
+		return nil, errors.ErrNotFound(ctx, fmt.Sprintf("care plan %s not found", id))
+	} else if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return res.CarePlan, nil
+}
+
 func (m *resourceAccessor) CheckPasswordResetToken(ctx context.Context, token string) (*auth.CheckPasswordResetTokenResponse, error) {
 	// Note: There is no authorization required for this operation.
 	resp, err := m.auth.CheckPasswordResetToken(ctx, &auth.CheckPasswordResetTokenRequest{
@@ -232,6 +249,11 @@ func (m *resourceAccessor) CreateAccount(ctx context.Context, req *auth.CreateAc
 		return nil, err
 	}
 	return resp, nil
+}
+
+func (m *resourceAccessor) CreateCarePlan(ctx context.Context, req *care.CreateCarePlanRequest) (*care.CreateCarePlanResponse, error) {
+	// NOTE: There is no authorization required for this operation.
+	return m.care.CreateCarePlan(ctx, req)
 }
 
 func (m *resourceAccessor) CreateContact(ctx context.Context, req *directory.CreateContactRequest) (*directory.CreateContactResponse, error) {
@@ -662,6 +684,13 @@ func (m *resourceAccessor) SendMessage(ctx context.Context, req *excomms.SendMes
 		return err
 	}
 	return nil
+}
+
+func (m *resourceAccessor) SubmitCarePlan(ctx context.Context, cp *care.CarePlan, parentID string) error {
+	// Authorization is the same as for CarePlan
+	golog.Errorf("TODO: implement authorization for SubmitCarePlan")
+	_, err := m.care.SubmitCarePlan(ctx, &care.SubmitCarePlanRequest{ID: cp.ID, ParentID: parentID})
+	return err
 }
 
 func (m *resourceAccessor) SerializedEntityContact(ctx context.Context, entityID string, platform directory.Platform) (*directory.SerializedClientEntityContact, error) {

@@ -26,7 +26,7 @@ func Provider(f func(p graphql.ResolveParams) (interface{}, error),
 	return func(p graphql.ResolveParams) (interface{}, error) {
 		ctx := p.Context
 		acc := gqlctx.Account(ctx)
-		if acc.Type != auth.AccountType_PROVIDER {
+		if acc == nil || acc.Type != auth.AccountType_PROVIDER {
 			return nil, errors.ErrNotAuthorized(ctx, "PROVIDER_ONLY_API")
 		}
 		return f(p)
@@ -39,7 +39,7 @@ func Patient(f func(p graphql.ResolveParams) (interface{}, error),
 	return func(p graphql.ResolveParams) (interface{}, error) {
 		ctx := p.Context
 		acc := gqlctx.Account(ctx)
-		if acc.Type != auth.AccountType_PATIENT {
+		if acc == nil || acc.Type != auth.AccountType_PATIENT {
 			return nil, errors.ErrNotAuthorized(ctx, "PATIENT_ONLY_API")
 		}
 		return f(p)

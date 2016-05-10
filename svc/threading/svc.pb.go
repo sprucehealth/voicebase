@@ -26,6 +26,7 @@
 		AudioAttachment
 		GenericURLAttachment
 		VisitAttachment
+		CarePlanAttachment
 		PublishedThreadItem
 		PostMessageRequest
 		PostMessageResponse
@@ -227,6 +228,7 @@ const (
 	Attachment_AUDIO       Attachment_Type = 1
 	Attachment_GENERIC_URL Attachment_Type = 2
 	Attachment_VISIT       Attachment_Type = 3
+	Attachment_CARE_PLAN   Attachment_Type = 4
 )
 
 var Attachment_Type_name = map[int32]string{
@@ -234,12 +236,14 @@ var Attachment_Type_name = map[int32]string{
 	1: "AUDIO",
 	2: "GENERIC_URL",
 	3: "VISIT",
+	4: "CARE_PLAN",
 }
 var Attachment_Type_value = map[string]int32{
 	"IMAGE":       0,
 	"AUDIO":       1,
 	"GENERIC_URL": 2,
 	"VISIT":       3,
+	"CARE_PLAN":   4,
 }
 
 type QueryThreadsRequest_Type int32
@@ -607,6 +611,7 @@ type Attachment struct {
 	//	*Attachment_Audio
 	//	*Attachment_GenericURL
 	//	*Attachment_Visit
+	//	*Attachment_CarePlan
 	Data isAttachment_Data `protobuf_oneof:"data"`
 }
 
@@ -632,11 +637,15 @@ type Attachment_GenericURL struct {
 type Attachment_Visit struct {
 	Visit *VisitAttachment `protobuf:"bytes,13,opt,name=visit,oneof"`
 }
+type Attachment_CarePlan struct {
+	CarePlan *CarePlanAttachment `protobuf:"bytes,14,opt,name=care_plan,oneof"`
+}
 
 func (*Attachment_Image) isAttachment_Data()      {}
 func (*Attachment_Audio) isAttachment_Data()      {}
 func (*Attachment_GenericURL) isAttachment_Data() {}
 func (*Attachment_Visit) isAttachment_Data()      {}
+func (*Attachment_CarePlan) isAttachment_Data()   {}
 
 func (m *Attachment) GetData() isAttachment_Data {
 	if m != nil {
@@ -673,6 +682,13 @@ func (m *Attachment) GetVisit() *VisitAttachment {
 	return nil
 }
 
+func (m *Attachment) GetCarePlan() *CarePlanAttachment {
+	if x, ok := m.GetData().(*Attachment_CarePlan); ok {
+		return x.CarePlan
+	}
+	return nil
+}
+
 // XXX_OneofFuncs is for the internal use of the proto package.
 func (*Attachment) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), []interface{}) {
 	return _Attachment_OneofMarshaler, _Attachment_OneofUnmarshaler, []interface{}{
@@ -680,6 +696,7 @@ func (*Attachment) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) er
 		(*Attachment_Audio)(nil),
 		(*Attachment_GenericURL)(nil),
 		(*Attachment_Visit)(nil),
+		(*Attachment_CarePlan)(nil),
 	}
 }
 
@@ -705,6 +722,11 @@ func _Attachment_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
 	case *Attachment_Visit:
 		_ = b.EncodeVarint(13<<3 | proto.WireBytes)
 		if err := b.EncodeMessage(x.Visit); err != nil {
+			return err
+		}
+	case *Attachment_CarePlan:
+		_ = b.EncodeVarint(14<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.CarePlan); err != nil {
 			return err
 		}
 	case nil:
@@ -749,6 +771,14 @@ func _Attachment_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buf
 		err := b.DecodeMessage(msg)
 		m.Data = &Attachment_Visit{msg}
 		return true, err
+	case 14: // data.care_plan
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(CarePlanAttachment)
+		err := b.DecodeMessage(msg)
+		m.Data = &Attachment_CarePlan{msg}
+		return true, err
 	default:
 		return false, nil
 	}
@@ -788,6 +818,14 @@ type VisitAttachment struct {
 
 func (m *VisitAttachment) Reset()      { *m = VisitAttachment{} }
 func (*VisitAttachment) ProtoMessage() {}
+
+type CarePlanAttachment struct {
+	CarePlanID   string `protobuf:"bytes,1,opt,name=care_plan_id,proto3" json:"care_plan_id,omitempty"`
+	CarePlanName string `protobuf:"bytes,2,opt,name=care_plan_name,proto3" json:"care_plan_name,omitempty"`
+}
+
+func (m *CarePlanAttachment) Reset()      { *m = CarePlanAttachment{} }
+func (*CarePlanAttachment) ProtoMessage() {}
 
 type PublishedThreadItem struct {
 	UUID            string      `protobuf:"bytes,1,opt,name=uuid,proto3" json:"uuid,omitempty"`
@@ -1731,6 +1769,7 @@ func init() {
 	proto.RegisterType((*AudioAttachment)(nil), "threading.AudioAttachment")
 	proto.RegisterType((*GenericURLAttachment)(nil), "threading.GenericURLAttachment")
 	proto.RegisterType((*VisitAttachment)(nil), "threading.VisitAttachment")
+	proto.RegisterType((*CarePlanAttachment)(nil), "threading.CarePlanAttachment")
 	proto.RegisterType((*PublishedThreadItem)(nil), "threading.PublishedThreadItem")
 	proto.RegisterType((*PostMessageRequest)(nil), "threading.PostMessageRequest")
 	proto.RegisterType((*PostMessageResponse)(nil), "threading.PostMessageResponse")
@@ -2525,6 +2564,31 @@ func (this *Attachment_Visit) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *Attachment_CarePlan) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*Attachment_CarePlan)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.CarePlan.Equal(that1.CarePlan) {
+		return false
+	}
+	return true
+}
 func (this *ImageAttachment) Equal(that interface{}) bool {
 	if that == nil {
 		if this == nil {
@@ -2642,6 +2706,34 @@ func (this *VisitAttachment) Equal(that interface{}) bool {
 		return false
 	}
 	if this.VisitName != that1.VisitName {
+		return false
+	}
+	return true
+}
+func (this *CarePlanAttachment) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*CarePlanAttachment)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.CarePlanID != that1.CarePlanID {
+		return false
+	}
+	if this.CarePlanName != that1.CarePlanName {
 		return false
 	}
 	return true
@@ -4578,7 +4670,7 @@ func (this *Attachment) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 11)
+	s := make([]string, 0, 12)
 	s = append(s, "&threading.Attachment{")
 	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
 	s = append(s, "Title: "+fmt.Sprintf("%#v", this.Title)+",\n")
@@ -4619,6 +4711,14 @@ func (this *Attachment_Visit) GoString() string {
 	}
 	s := strings.Join([]string{`&threading.Attachment_Visit{` +
 		`Visit:` + fmt.Sprintf("%#v", this.Visit) + `}`}, ", ")
+	return s
+}
+func (this *Attachment_CarePlan) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&threading.Attachment_CarePlan{` +
+		`CarePlan:` + fmt.Sprintf("%#v", this.CarePlan) + `}`}, ", ")
 	return s
 }
 func (this *ImageAttachment) GoString() string {
@@ -4665,6 +4765,17 @@ func (this *VisitAttachment) GoString() string {
 	s = append(s, "&threading.VisitAttachment{")
 	s = append(s, "VisitID: "+fmt.Sprintf("%#v", this.VisitID)+",\n")
 	s = append(s, "VisitName: "+fmt.Sprintf("%#v", this.VisitName)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *CarePlanAttachment) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&threading.CarePlanAttachment{")
+	s = append(s, "CarePlanID: "+fmt.Sprintf("%#v", this.CarePlanID)+",\n")
+	s = append(s, "CarePlanName: "+fmt.Sprintf("%#v", this.CarePlanName)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -6772,6 +6883,20 @@ func (m *Attachment_Visit) MarshalTo(data []byte) (int, error) {
 	}
 	return i, nil
 }
+func (m *Attachment_CarePlan) MarshalTo(data []byte) (int, error) {
+	i := 0
+	if m.CarePlan != nil {
+		data[i] = 0x72
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.CarePlan.Size()))
+		n13, err := m.CarePlan.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n13
+	}
+	return i, nil
+}
 func (m *ImageAttachment) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -6907,6 +7032,36 @@ func (m *VisitAttachment) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *CarePlanAttachment) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CarePlanAttachment) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.CarePlanID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.CarePlanID)))
+		i += copy(data[i:], m.CarePlanID)
+	}
+	if len(m.CarePlanName) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.CarePlanName)))
+		i += copy(data[i:], m.CarePlanName)
+	}
+	return i, nil
+}
+
 func (m *PublishedThreadItem) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -6950,11 +7105,11 @@ func (m *PublishedThreadItem) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x2a
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Item.Size()))
-		n13, err := m.Item.MarshalTo(data[i:])
+		n14, err := m.Item.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n13
+		i += n14
 	}
 	return i, nil
 }
@@ -6996,11 +7151,11 @@ func (m *PostMessageRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x22
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Source.Size()))
-		n14, err := m.Source.MarshalTo(data[i:])
+		n15, err := m.Source.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n14
+		i += n15
 	}
 	if len(m.Destinations) > 0 {
 		for _, msg := range m.Destinations {
@@ -7076,21 +7231,21 @@ func (m *PostMessageResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Item.Size()))
-		n15, err := m.Item.MarshalTo(data[i:])
+		n16, err := m.Item.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n15
+		i += n16
 	}
 	if m.Thread != nil {
 		data[i] = 0x12
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Thread.Size()))
-		n16, err := m.Thread.MarshalTo(data[i:])
+		n17, err := m.Thread.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n16
+		i += n17
 	}
 	return i, nil
 }
@@ -7179,11 +7334,11 @@ func (m *ThreadItemsRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Iterator.Size()))
-		n17, err := m.Iterator.MarshalTo(data[i:])
+		n18, err := m.Iterator.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n17
+		i += n18
 	}
 	return i, nil
 }
@@ -7207,11 +7362,11 @@ func (m *ThreadItemEdge) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Item.Size()))
-		n18, err := m.Item.MarshalTo(data[i:])
+		n19, err := m.Item.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n18
+		i += n19
 	}
 	if len(m.Cursor) > 0 {
 		data[i] = 0x12
@@ -7287,11 +7442,11 @@ func (m *QueryThreadsRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x12
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Iterator.Size()))
-		n19, err := m.Iterator.MarshalTo(data[i:])
+		n20, err := m.Iterator.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n19
+		i += n20
 	}
 	if m.Type != 0 {
 		data[i] = 0x18
@@ -7305,11 +7460,11 @@ func (m *QueryThreadsRequest) MarshalTo(data []byte) (int, error) {
 		i += copy(data[i:], m.ViewerEntityID)
 	}
 	if m.QueryType != nil {
-		nn20, err := m.QueryType.MarshalTo(data[i:])
+		nn21, err := m.QueryType.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += nn20
+		i += nn21
 	}
 	return i, nil
 }
@@ -7320,11 +7475,11 @@ func (m *QueryThreadsRequest_Query) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x52
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Query.Size()))
-		n21, err := m.Query.MarshalTo(data[i:])
+		n22, err := m.Query.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n21
+		i += n22
 	}
 	return i, nil
 }
@@ -7355,11 +7510,11 @@ func (m *ThreadEdge) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Thread.Size()))
-		n22, err := m.Thread.MarshalTo(data[i:])
+		n23, err := m.Thread.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n22
+		i += n23
 	}
 	if len(m.Cursor) > 0 {
 		data[i] = 0x12
@@ -7513,11 +7668,11 @@ func (m *ThreadResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Thread.Size()))
-		n23, err := m.Thread.MarshalTo(data[i:])
+		n24, err := m.Thread.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n23
+		i += n24
 	}
 	return i, nil
 }
@@ -7553,11 +7708,11 @@ func (m *CreateSavedQueryRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Query.Size()))
-		n24, err := m.Query.MarshalTo(data[i:])
+		n25, err := m.Query.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n24
+		i += n25
 	}
 	return i, nil
 }
@@ -7581,11 +7736,11 @@ func (m *CreateSavedQueryResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.SavedQuery.Size()))
-		n25, err := m.SavedQuery.MarshalTo(data[i:])
+		n26, err := m.SavedQuery.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n25
+		i += n26
 	}
 	return i, nil
 }
@@ -7621,11 +7776,11 @@ func (m *UpdateSavedQueryRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Query.Size()))
-		n26, err := m.Query.MarshalTo(data[i:])
+		n27, err := m.Query.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n26
+		i += n27
 	}
 	return i, nil
 }
@@ -7829,11 +7984,11 @@ func (m *UpdateThreadResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Thread.Size()))
-		n27, err := m.Thread.MarshalTo(data[i:])
+		n28, err := m.Thread.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n27
+		i += n28
 	}
 	return i, nil
 }
@@ -7875,11 +8030,11 @@ func (m *CreateThreadRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x22
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Source.Size()))
-		n28, err := m.Source.MarshalTo(data[i:])
+		n29, err := m.Source.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n28
+		i += n29
 	}
 	if len(m.Destinations) > 0 {
 		for _, msg := range m.Destinations {
@@ -7993,21 +8148,21 @@ func (m *CreateThreadResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x12
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.ThreadItem.Size()))
-		n29, err := m.ThreadItem.MarshalTo(data[i:])
+		n30, err := m.ThreadItem.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n29
+		i += n30
 	}
 	if m.Thread != nil {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Thread.Size()))
-		n30, err := m.Thread.MarshalTo(data[i:])
+		n31, err := m.Thread.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n30
+		i += n31
 	}
 	return i, nil
 }
@@ -8111,11 +8266,11 @@ func (m *CreateEmptyThreadResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Thread.Size()))
-		n31, err := m.Thread.MarshalTo(data[i:])
+		n32, err := m.Thread.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n31
+		i += n32
 	}
 	return i, nil
 }
@@ -8281,11 +8436,11 @@ func (m *SavedQueryResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.SavedQuery.Size()))
-		n32, err := m.SavedQuery.MarshalTo(data[i:])
+		n33, err := m.SavedQuery.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n32
+		i += n33
 	}
 	return i, nil
 }
@@ -8339,11 +8494,11 @@ func (m *ThreadItemResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Item.Size()))
-		n33, err := m.Item.MarshalTo(data[i:])
+		n34, err := m.Item.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n33
+		i += n34
 	}
 	return i, nil
 }
@@ -8518,21 +8673,21 @@ func (m *CreateLinkedThreadsResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Thread1.Size()))
-		n34, err := m.Thread1.MarshalTo(data[i:])
+		n35, err := m.Thread1.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n34
+		i += n35
 	}
 	if m.Thread2 != nil {
 		data[i] = 0x12
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Thread2.Size()))
-		n35, err := m.Thread2.MarshalTo(data[i:])
+		n36, err := m.Thread2.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n35
+		i += n36
 	}
 	return i, nil
 }
@@ -8592,11 +8747,11 @@ func (m *CreateOnboardingThreadResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Thread.Size()))
-		n36, err := m.Thread.MarshalTo(data[i:])
+		n37, err := m.Thread.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n36
+		i += n37
 	}
 	return i, nil
 }
@@ -8644,11 +8799,11 @@ func (m *LinkedThreadResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Thread.Size()))
-		n37, err := m.Thread.MarshalTo(data[i:])
+		n38, err := m.Thread.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n37
+		i += n38
 	}
 	if m.PrependSender {
 		data[i] = 0x10
@@ -8774,11 +8929,11 @@ func (m *OnboardingThreadEventRequest) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintSvc(data, i, uint64(m.LookupByType))
 	}
 	if m.LookupBy != nil {
-		nn38, err := m.LookupBy.MarshalTo(data[i:])
+		nn39, err := m.LookupBy.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += nn38
+		i += nn39
 	}
 	if m.EventType != 0 {
 		data[i] = 0x20
@@ -8786,11 +8941,11 @@ func (m *OnboardingThreadEventRequest) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintSvc(data, i, uint64(m.EventType))
 	}
 	if m.Event != nil {
-		nn39, err := m.Event.MarshalTo(data[i:])
+		nn40, err := m.Event.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += nn39
+		i += nn40
 	}
 	return i, nil
 }
@@ -8817,11 +8972,11 @@ func (m *OnboardingThreadEventRequest_GenericSetup) MarshalTo(data []byte) (int,
 		data[i] = 0x2a
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.GenericSetup.Size()))
-		n40, err := m.GenericSetup.MarshalTo(data[i:])
+		n41, err := m.GenericSetup.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n40
+		i += n41
 	}
 	return i, nil
 }
@@ -8831,11 +8986,11 @@ func (m *OnboardingThreadEventRequest_ProvisionedPhone) MarshalTo(data []byte) (
 		data[i] = 0x32
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.ProvisionedPhone.Size()))
-		n41, err := m.ProvisionedPhone.MarshalTo(data[i:])
+		n42, err := m.ProvisionedPhone.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n41
+		i += n42
 	}
 	return i, nil
 }
@@ -8858,11 +9013,11 @@ func (m *OnboardingThreadEventResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Thread.Size()))
-		n42, err := m.Thread.MarshalTo(data[i:])
+		n43, err := m.Thread.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n42
+		i += n43
 	}
 	return i, nil
 }
@@ -9246,6 +9401,15 @@ func (m *Attachment_Visit) Size() (n int) {
 	}
 	return n
 }
+func (m *Attachment_CarePlan) Size() (n int) {
+	var l int
+	_ = l
+	if m.CarePlan != nil {
+		l = m.CarePlan.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
 func (m *ImageAttachment) Size() (n int) {
 	var l int
 	_ = l
@@ -9305,6 +9469,20 @@ func (m *VisitAttachment) Size() (n int) {
 		n += 1 + l + sovSvc(uint64(l))
 	}
 	l = len(m.VisitName)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *CarePlanAttachment) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.CarePlanID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.CarePlanName)
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
@@ -10438,6 +10616,16 @@ func (this *Attachment_Visit) String() string {
 	}, "")
 	return s
 }
+func (this *Attachment_CarePlan) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Attachment_CarePlan{`,
+		`CarePlan:` + strings.Replace(fmt.Sprintf("%v", this.CarePlan), "CarePlanAttachment", "CarePlanAttachment", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func (this *ImageAttachment) String() string {
 	if this == nil {
 		return "nil"
@@ -10481,6 +10669,17 @@ func (this *VisitAttachment) String() string {
 	s := strings.Join([]string{`&VisitAttachment{`,
 		`VisitID:` + fmt.Sprintf("%v", this.VisitID) + `,`,
 		`VisitName:` + fmt.Sprintf("%v", this.VisitName) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CarePlanAttachment) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CarePlanAttachment{`,
+		`CarePlanID:` + fmt.Sprintf("%v", this.CarePlanID) + `,`,
+		`CarePlanName:` + fmt.Sprintf("%v", this.CarePlanName) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -13376,6 +13575,38 @@ func (m *Attachment) Unmarshal(data []byte) error {
 			}
 			m.Data = &Attachment_Visit{v}
 			iNdEx = postIndex
+		case 14:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CarePlan", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &CarePlanAttachment{}
+			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Data = &Attachment_CarePlan{v}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])
@@ -13864,6 +14095,114 @@ func (m *VisitAttachment) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.VisitName = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CarePlanAttachment) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CarePlanAttachment: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CarePlanAttachment: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CarePlanID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.CarePlanID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CarePlanName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.CarePlanName = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

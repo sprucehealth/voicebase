@@ -53,7 +53,7 @@ var submitVisitAnswersErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
 var submitVisitAnswersOutputType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "SubmitVisitAnswersPayload",
 	Fields: graphql.Fields{
-		"clientMutationId": newClientmutationIDOutputField(),
+		"clientMutationId": newClientMutationIDOutputField(),
 		"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		"errorCode":        &graphql.Field{Type: submitVisitAnswersErrorCodeEnum},
 		"errorMessage":     &graphql.Field{Type: graphql.String},

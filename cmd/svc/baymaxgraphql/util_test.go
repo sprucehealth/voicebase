@@ -7,11 +7,6 @@ import (
 	"github.com/sprucehealth/backend/test"
 )
 
-func TestIsValidPlane0Unicode(t *testing.T) {
-	test.Equals(t, true, isValidPlane0Unicode(`This is a välid string`))
-	test.Equals(t, false, isValidPlane0Unicode(`This is not 😡`))
-}
-
 func TestInitialsForEntity(t *testing.T) {
 	test.Equals(t, "", initialsForEntity(&models.Entity{FirstName: "", LastName: ""}))
 	test.Equals(t, "A", initialsForEntity(&models.Entity{FirstName: "Aphex", LastName: ""}))
