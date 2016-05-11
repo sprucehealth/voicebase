@@ -39,7 +39,7 @@ func (sg *sg) SendMessage(em *models.EmailMessage) error {
 		},
 	}
 	if sgMail.Text == "" {
-		sgMail.Text = "attachments"
+		sgMail.Text = "\t"
 	}
 
 	// Stream in any media attachments
