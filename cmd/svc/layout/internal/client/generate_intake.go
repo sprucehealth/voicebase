@@ -35,13 +35,6 @@ func GenerateIntakeLayout(intake *saml.Intake) (*layout.Intake, error) {
 		}
 	}
 
-	// append the pharmacy screen to the last section
-	if len(intake.Sections) > 0 {
-		visitIntake.Sections[len(intake.Sections)-1].Screens = append(visitIntake.Sections[len(intake.Sections)-1].Screens, &layout.Screen{
-			Type: "screen_type_pharmacy",
-		})
-	}
-
 	return visitIntake, nil
 }
 

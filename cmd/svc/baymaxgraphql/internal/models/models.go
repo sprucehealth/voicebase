@@ -357,4 +357,6 @@ type Visit struct {
 	CanModify           bool   `json:"canModify"`
 	LayoutContainer     string `json:"layoutContainer"`
 	LayoutContainerType string `json:"layoutContainerType"`
+
+	EntityID string `json:"-"`
 }

@@ -277,7 +277,7 @@ var postMessageMutation = &graphql.Field{
 				attachment = &threading.Attachment{
 					Type:  mAttachmentType,
 					Title: createVisitRes.Visit.Name,
-					URL:   deeplink.VisitURL(svc.webDomain, createVisitRes.Visit.ID),
+					URL:   deeplink.VisitURL(svc.webDomain, thr.ID, createVisitRes.Visit.ID),
 					Data: &threading.Attachment_Visit{
 						Visit: &threading.VisitAttachment{
 							VisitID:   createVisitRes.Visit.ID,
