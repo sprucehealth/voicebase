@@ -38,6 +38,9 @@ func (sg *sg) SendMessage(em *models.EmailMessage) error {
 			},
 		},
 	}
+	if sgMail.Text == "" {
+		sgMail.Text = "attachments"
+	}
 
 	// Stream in any media attachments
 	for i, url := range em.MediaURLs {
