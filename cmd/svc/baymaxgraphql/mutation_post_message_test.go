@@ -163,7 +163,7 @@ func TestPostMessage(t *testing.T) {
 					internal: false
 					attachments: [{
          				attachmentType: IMAGE
-         				mediaID: "mediaID" 
+         				mediaID: "mediaID"
         			}]
 				}
 			}) {
@@ -338,7 +338,7 @@ func TestPostMessage_VisitAttachment(t *testing.T) {
 			&threading.Attachment{
 				Type:  threading.Attachment_VISIT,
 				Title: "Sinus Infection",
-				URL:   "https://test.com/visit/visit_12345",
+				URL:   "https://test.com/thread/t1/visit/visit_12345",
 				Data: &threading.Attachment_Visit{
 					Visit: &threading.VisitAttachment{
 						VisitID:   "visit_12345",
@@ -402,7 +402,7 @@ func TestPostMessage_VisitAttachment(t *testing.T) {
 					internal: false
 					attachments: [{
          				attachmentType: VISIT
-         				mediaID: "visitLayout_12345" 
+         				mediaID: "visitLayout_12345"
         			}]
 				}
 			}) {
@@ -726,7 +726,7 @@ func TestPostMessagePatientSecureExternal(t *testing.T) {
 					internal: false
 					attachments: [{
          				attachmentType: IMAGE
-         				mediaID: "mediaID" 
+         				mediaID: "mediaID"
         			}]
 				}
 			}) {

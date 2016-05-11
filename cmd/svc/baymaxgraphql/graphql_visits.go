@@ -1,7 +1,9 @@
 package main
 
 import (
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/svc/care"
@@ -39,6 +41,29 @@ var visitType = graphql.NewObject(
 		Fields: graphql.Fields{
 			"id":   &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
 			"name": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"entity": &graphql.Field{
+				Type: graphql.NewNonNull(entityType),
+				Resolve: apiaccess.Authenticated(
+					func(p graphql.ResolveParams) (interface{}, error) {
+						svc := serviceFromParams(p)
+						ctx := p.Context
+						ram := raccess.ResourceAccess(p)
+						visit := p.Source.(*models.Visit)
+
+						e, err := ram.Entity(ctx, visit.EntityID, nil, 0)
+						if err != nil {
+							return nil, errors.InternalError(ctx, err)
+						}
+
+						entity, err := transformEntityToResponse(svc.staticURLPrefix, e, gqlctx.SpruceHeaders(ctx), gqlctx.Account(ctx))
+						if err != nil {
+							return nil, errors.InternalError(ctx, err)
+						}
+
+						return entity, nil
+					},
+				),
+			},
 			"canReview": &graphql.Field{
 				Type:        graphql.NewNonNull(graphql.Boolean),
 				Description: "Indicates whether or not a provider can review a visit. Returns true only for a provider when the patient has submitted the visit.",
@@ -78,5 +103,6 @@ func lookupVisit(ctx context.Context, svc *service, ram raccess.ResourceAccessor
 	if err != nil {
 		return nil, errors.InternalError(ctx, err)
 	}
+
 	return visit, nil
 }

@@ -308,8 +308,8 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 				data = &models.BannerButtonAttachment{
 					Title:   v.VisitName,
 					CTAText: "View Visit",
-					TapURL:  deeplink.VisitURL(webDomain, v.VisitID),
-					IconURL: "TODO",
+					TapURL:  deeplink.VisitURL(webDomain, item.ThreadID, v.VisitID),
+					IconURL: "https://static.sprucehealth.com/cm/icon_visit",
 				}
 			case threading.Attachment_GENERIC_URL:
 				d := a.GetGenericURL()
@@ -797,6 +797,7 @@ func transformVisitToResponse(ctx context.Context, visit *care.Visit, layoutVers
 
 	return &models.Visit{
 		ID:                  visit.ID,
+		EntityID:            visit.EntityID,
 		Name:                visit.Name,
 		CanReview:           acc.Type == auth.AccountType_PROVIDER && visit.Submitted,
 		CanModify:           acc.Type == auth.AccountType_PATIENT && !visit.Submitted,
