@@ -339,6 +339,9 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 		}
 		resizedURLs[i] = signedURL
 	}
+	if len(resizedURLs) != 0 {
+		golog.Debugf("Resized media URLs: %v", resizedURLs)
+	}
 
 	switch in.Channel {
 	case excomms.ChannelType_VOICE:
