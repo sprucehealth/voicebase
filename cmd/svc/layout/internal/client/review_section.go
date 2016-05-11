@@ -28,7 +28,9 @@ func viewsForPhotoSection(section *saml.Section) ([]visitreview.View, error) {
 			return nil, errors.Trace(err)
 		}
 
-		views = append(views, subsectionView)
+		views = append(views, &visitreview.StandardSectionView{
+			Subsections: []visitreview.View{subsectionView},
+		})
 	}
 
 	return views, nil
