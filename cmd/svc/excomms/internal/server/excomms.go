@@ -28,7 +28,14 @@ import (
 )
 
 // go vet doesn't like that the first argument to grpcErrorf is not a string so alias the function with a different name :(
-var grpcErrorf = grpc.Errorf
+func grpcErrorf(c codes.Code, format string, a ...interface{}) error {
+	if c == codes.Internal {
+		golog.LogDepthf(1, golog.ERR, "Excomms - Internal GRPC Error: %s", fmt.Sprintf(format, a...))
+	}
+	return grpcErrf(c, format, a...)
+}
+
+var grpcErrf = grpc.Errorf
 
 type excommsService struct {
 	twilio               *twilio.Client
