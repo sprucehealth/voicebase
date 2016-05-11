@@ -14,6 +14,12 @@
 		CreateVisitResponse
 		GetVisitRequest
 		GetVisitResponse
+		CreateVisitAnswersRequest
+		CreateVisitAnswersResponse
+		GetAnswersForVisitRequest
+		GetAnswersForVisitResponse
+		SubmitVisitRequest
+		SubmitVisitResponse
 */
 package care
 
@@ -46,6 +52,7 @@ type Visit struct {
 	LayoutVersionID string `protobuf:"bytes,3,opt,name=layout_version_id,proto3" json:"layout_version_id,omitempty"`
 	EntityID        string `protobuf:"bytes,4,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
 	Submitted       bool   `protobuf:"varint,5,opt,name=submitted,proto3" json:"submitted,omitempty"`
+	OrganizationID  string `protobuf:"bytes,6,opt,name=organization_id,proto3" json:"organization_id,omitempty"`
 }
 
 func (m *Visit) Reset()      { *m = Visit{} }
@@ -55,6 +62,7 @@ type CreateVisitRequest struct {
 	LayoutVersionID string `protobuf:"bytes,1,opt,name=layout_version_id,proto3" json:"layout_version_id,omitempty"`
 	EntityID        string `protobuf:"bytes,2,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
 	Name            string `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	OrganizationID  string `protobuf:"bytes,4,opt,name=organization_id,proto3" json:"organization_id,omitempty"`
 }
 
 func (m *CreateVisitRequest) Reset()      { *m = CreateVisitRequest{} }
@@ -95,12 +103,60 @@ func (m *GetVisitResponse) GetVisit() *Visit {
 	return nil
 }
 
+type CreateVisitAnswersRequest struct {
+	VisitID       string `protobuf:"bytes,1,opt,name=visit_id,proto3" json:"visit_id,omitempty"`
+	AnswersJSON   string `protobuf:"bytes,2,opt,name=answers_json,proto3" json:"answers_json,omitempty"`
+	ActorEntityID string `protobuf:"bytes,3,opt,name=actory_entity_id,proto3" json:"actory_entity_id,omitempty"`
+}
+
+func (m *CreateVisitAnswersRequest) Reset()      { *m = CreateVisitAnswersRequest{} }
+func (*CreateVisitAnswersRequest) ProtoMessage() {}
+
+type CreateVisitAnswersResponse struct {
+}
+
+func (m *CreateVisitAnswersResponse) Reset()      { *m = CreateVisitAnswersResponse{} }
+func (*CreateVisitAnswersResponse) ProtoMessage() {}
+
+type GetAnswersForVisitRequest struct {
+	VisitID string `protobuf:"bytes,1,opt,name=visit_id,proto3" json:"visit_id,omitempty"`
+}
+
+func (m *GetAnswersForVisitRequest) Reset()      { *m = GetAnswersForVisitRequest{} }
+func (*GetAnswersForVisitRequest) ProtoMessage() {}
+
+type GetAnswersForVisitResponse struct {
+	AnswersJSON string `protobuf:"bytes,1,opt,name=answers_json,proto3" json:"answers_json,omitempty"`
+}
+
+func (m *GetAnswersForVisitResponse) Reset()      { *m = GetAnswersForVisitResponse{} }
+func (*GetAnswersForVisitResponse) ProtoMessage() {}
+
+type SubmitVisitRequest struct {
+	VisitID string `protobuf:"bytes,1,opt,name=visit_id,proto3" json:"visit_id,omitempty"`
+}
+
+func (m *SubmitVisitRequest) Reset()      { *m = SubmitVisitRequest{} }
+func (*SubmitVisitRequest) ProtoMessage() {}
+
+type SubmitVisitResponse struct {
+}
+
+func (m *SubmitVisitResponse) Reset()      { *m = SubmitVisitResponse{} }
+func (*SubmitVisitResponse) ProtoMessage() {}
+
 func init() {
 	proto.RegisterType((*Visit)(nil), "care.Visit")
 	proto.RegisterType((*CreateVisitRequest)(nil), "care.CreateVisitRequest")
 	proto.RegisterType((*CreateVisitResponse)(nil), "care.CreateVisitResponse")
 	proto.RegisterType((*GetVisitRequest)(nil), "care.GetVisitRequest")
 	proto.RegisterType((*GetVisitResponse)(nil), "care.GetVisitResponse")
+	proto.RegisterType((*CreateVisitAnswersRequest)(nil), "care.CreateVisitAnswersRequest")
+	proto.RegisterType((*CreateVisitAnswersResponse)(nil), "care.CreateVisitAnswersResponse")
+	proto.RegisterType((*GetAnswersForVisitRequest)(nil), "care.GetAnswersForVisitRequest")
+	proto.RegisterType((*GetAnswersForVisitResponse)(nil), "care.GetAnswersForVisitResponse")
+	proto.RegisterType((*SubmitVisitRequest)(nil), "care.SubmitVisitRequest")
+	proto.RegisterType((*SubmitVisitResponse)(nil), "care.SubmitVisitResponse")
 }
 func (this *Visit) Equal(that interface{}) bool {
 	if that == nil {
@@ -137,6 +193,9 @@ func (this *Visit) Equal(that interface{}) bool {
 	if this.Submitted != that1.Submitted {
 		return false
 	}
+	if this.OrganizationID != that1.OrganizationID {
+		return false
+	}
 	return true
 }
 func (this *CreateVisitRequest) Equal(that interface{}) bool {
@@ -166,6 +225,9 @@ func (this *CreateVisitRequest) Equal(that interface{}) bool {
 		return false
 	}
 	if this.Name != that1.Name {
+		return false
+	}
+	if this.OrganizationID != that1.OrganizationID {
 		return false
 	}
 	return true
@@ -245,17 +307,168 @@ func (this *GetVisitResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *CreateVisitAnswersRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*CreateVisitAnswersRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.VisitID != that1.VisitID {
+		return false
+	}
+	if this.AnswersJSON != that1.AnswersJSON {
+		return false
+	}
+	if this.ActorEntityID != that1.ActorEntityID {
+		return false
+	}
+	return true
+}
+func (this *CreateVisitAnswersResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*CreateVisitAnswersResponse)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	return true
+}
+func (this *GetAnswersForVisitRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*GetAnswersForVisitRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.VisitID != that1.VisitID {
+		return false
+	}
+	return true
+}
+func (this *GetAnswersForVisitResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*GetAnswersForVisitResponse)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.AnswersJSON != that1.AnswersJSON {
+		return false
+	}
+	return true
+}
+func (this *SubmitVisitRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*SubmitVisitRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.VisitID != that1.VisitID {
+		return false
+	}
+	return true
+}
+func (this *SubmitVisitResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*SubmitVisitResponse)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	return true
+}
 func (this *Visit) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 9)
+	s := make([]string, 0, 10)
 	s = append(s, "&care.Visit{")
 	s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
 	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
 	s = append(s, "LayoutVersionID: "+fmt.Sprintf("%#v", this.LayoutVersionID)+",\n")
 	s = append(s, "EntityID: "+fmt.Sprintf("%#v", this.EntityID)+",\n")
 	s = append(s, "Submitted: "+fmt.Sprintf("%#v", this.Submitted)+",\n")
+	s = append(s, "OrganizationID: "+fmt.Sprintf("%#v", this.OrganizationID)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -263,11 +476,12 @@ func (this *CreateVisitRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 7)
+	s := make([]string, 0, 8)
 	s = append(s, "&care.CreateVisitRequest{")
 	s = append(s, "LayoutVersionID: "+fmt.Sprintf("%#v", this.LayoutVersionID)+",\n")
 	s = append(s, "EntityID: "+fmt.Sprintf("%#v", this.EntityID)+",\n")
 	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
+	s = append(s, "OrganizationID: "+fmt.Sprintf("%#v", this.OrganizationID)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -302,6 +516,66 @@ func (this *GetVisitResponse) GoString() string {
 	if this.Visit != nil {
 		s = append(s, "Visit: "+fmt.Sprintf("%#v", this.Visit)+",\n")
 	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *CreateVisitAnswersRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&care.CreateVisitAnswersRequest{")
+	s = append(s, "VisitID: "+fmt.Sprintf("%#v", this.VisitID)+",\n")
+	s = append(s, "AnswersJSON: "+fmt.Sprintf("%#v", this.AnswersJSON)+",\n")
+	s = append(s, "ActorEntityID: "+fmt.Sprintf("%#v", this.ActorEntityID)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *CreateVisitAnswersResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 4)
+	s = append(s, "&care.CreateVisitAnswersResponse{")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetAnswersForVisitRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&care.GetAnswersForVisitRequest{")
+	s = append(s, "VisitID: "+fmt.Sprintf("%#v", this.VisitID)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetAnswersForVisitResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&care.GetAnswersForVisitResponse{")
+	s = append(s, "AnswersJSON: "+fmt.Sprintf("%#v", this.AnswersJSON)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *SubmitVisitRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&care.SubmitVisitRequest{")
+	s = append(s, "VisitID: "+fmt.Sprintf("%#v", this.VisitID)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *SubmitVisitResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 4)
+	s = append(s, "&care.SubmitVisitResponse{")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -340,6 +614,9 @@ var _ grpc.ClientConn
 type CareClient interface {
 	CreateVisit(ctx context.Context, in *CreateVisitRequest, opts ...grpc.CallOption) (*CreateVisitResponse, error)
 	GetVisit(ctx context.Context, in *GetVisitRequest, opts ...grpc.CallOption) (*GetVisitResponse, error)
+	CreateVisitAnswers(ctx context.Context, in *CreateVisitAnswersRequest, opts ...grpc.CallOption) (*CreateVisitAnswersResponse, error)
+	GetAnswersForVisit(ctx context.Context, in *GetAnswersForVisitRequest, opts ...grpc.CallOption) (*GetAnswersForVisitResponse, error)
+	SubmitVisit(ctx context.Context, in *SubmitVisitRequest, opts ...grpc.CallOption) (*SubmitVisitResponse, error)
 }
 
 type careClient struct {
@@ -368,11 +645,41 @@ func (c *careClient) GetVisit(ctx context.Context, in *GetVisitRequest, opts ...
 	return out, nil
 }
 
+func (c *careClient) CreateVisitAnswers(ctx context.Context, in *CreateVisitAnswersRequest, opts ...grpc.CallOption) (*CreateVisitAnswersResponse, error) {
+	out := new(CreateVisitAnswersResponse)
+	err := grpc.Invoke(ctx, "/care.Care/CreateVisitAnswers", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *careClient) GetAnswersForVisit(ctx context.Context, in *GetAnswersForVisitRequest, opts ...grpc.CallOption) (*GetAnswersForVisitResponse, error) {
+	out := new(GetAnswersForVisitResponse)
+	err := grpc.Invoke(ctx, "/care.Care/GetAnswersForVisit", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *careClient) SubmitVisit(ctx context.Context, in *SubmitVisitRequest, opts ...grpc.CallOption) (*SubmitVisitResponse, error) {
+	out := new(SubmitVisitResponse)
+	err := grpc.Invoke(ctx, "/care.Care/SubmitVisit", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for Care service
 
 type CareServer interface {
 	CreateVisit(context.Context, *CreateVisitRequest) (*CreateVisitResponse, error)
 	GetVisit(context.Context, *GetVisitRequest) (*GetVisitResponse, error)
+	CreateVisitAnswers(context.Context, *CreateVisitAnswersRequest) (*CreateVisitAnswersResponse, error)
+	GetAnswersForVisit(context.Context, *GetAnswersForVisitRequest) (*GetAnswersForVisitResponse, error)
+	SubmitVisit(context.Context, *SubmitVisitRequest) (*SubmitVisitResponse, error)
 }
 
 func RegisterCareServer(s *grpc.Server, srv CareServer) {
@@ -403,6 +710,42 @@ func _Care_GetVisit_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return out, nil
 }
 
+func _Care_CreateVisitAnswers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(CreateVisitAnswersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(CareServer).CreateVisitAnswers(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func _Care_GetAnswersForVisit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(GetAnswersForVisitRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(CareServer).GetAnswersForVisit(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func _Care_SubmitVisit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(SubmitVisitRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(CareServer).SubmitVisit(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 var _Care_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "care.Care",
 	HandlerType: (*CareServer)(nil),
@@ -414,6 +757,18 @@ var _Care_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetVisit",
 			Handler:    _Care_GetVisit_Handler,
+		},
+		{
+			MethodName: "CreateVisitAnswers",
+			Handler:    _Care_CreateVisitAnswers_Handler,
+		},
+		{
+			MethodName: "GetAnswersForVisit",
+			Handler:    _Care_GetAnswersForVisit_Handler,
+		},
+		{
+			MethodName: "SubmitVisit",
+			Handler:    _Care_SubmitVisit_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{},
@@ -468,6 +823,12 @@ func (m *Visit) MarshalTo(data []byte) (int, error) {
 		}
 		i++
 	}
+	if len(m.OrganizationID) > 0 {
+		data[i] = 0x32
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.OrganizationID)))
+		i += copy(data[i:], m.OrganizationID)
+	}
 	return i, nil
 }
 
@@ -503,6 +864,12 @@ func (m *CreateVisitRequest) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintSvc(data, i, uint64(len(m.Name)))
 		i += copy(data[i:], m.Name)
+	}
+	if len(m.OrganizationID) > 0 {
+		data[i] = 0x22
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.OrganizationID)))
+		i += copy(data[i:], m.OrganizationID)
 	}
 	return i, nil
 }
@@ -587,6 +954,150 @@ func (m *GetVisitResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *CreateVisitAnswersRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CreateVisitAnswersRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.VisitID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.VisitID)))
+		i += copy(data[i:], m.VisitID)
+	}
+	if len(m.AnswersJSON) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.AnswersJSON)))
+		i += copy(data[i:], m.AnswersJSON)
+	}
+	if len(m.ActorEntityID) > 0 {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.ActorEntityID)))
+		i += copy(data[i:], m.ActorEntityID)
+	}
+	return i, nil
+}
+
+func (m *CreateVisitAnswersResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CreateVisitAnswersResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	return i, nil
+}
+
+func (m *GetAnswersForVisitRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *GetAnswersForVisitRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.VisitID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.VisitID)))
+		i += copy(data[i:], m.VisitID)
+	}
+	return i, nil
+}
+
+func (m *GetAnswersForVisitResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *GetAnswersForVisitResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.AnswersJSON) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.AnswersJSON)))
+		i += copy(data[i:], m.AnswersJSON)
+	}
+	return i, nil
+}
+
+func (m *SubmitVisitRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *SubmitVisitRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.VisitID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.VisitID)))
+		i += copy(data[i:], m.VisitID)
+	}
+	return i, nil
+}
+
+func (m *SubmitVisitResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *SubmitVisitResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	return i, nil
+}
+
 func encodeFixed64Svc(data []byte, offset int, v uint64) int {
 	data[offset] = uint8(v)
 	data[offset+1] = uint8(v >> 8)
@@ -636,6 +1147,10 @@ func (m *Visit) Size() (n int) {
 	if m.Submitted {
 		n += 2
 	}
+	l = len(m.OrganizationID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
 	return n
 }
 
@@ -651,6 +1166,10 @@ func (m *CreateVisitRequest) Size() (n int) {
 		n += 1 + l + sovSvc(uint64(l))
 	}
 	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.OrganizationID)
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
@@ -687,6 +1206,66 @@ func (m *GetVisitResponse) Size() (n int) {
 	return n
 }
 
+func (m *CreateVisitAnswersRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.VisitID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.AnswersJSON)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.ActorEntityID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *CreateVisitAnswersResponse) Size() (n int) {
+	var l int
+	_ = l
+	return n
+}
+
+func (m *GetAnswersForVisitRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.VisitID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *GetAnswersForVisitResponse) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.AnswersJSON)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *SubmitVisitRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.VisitID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *SubmitVisitResponse) Size() (n int) {
+	var l int
+	_ = l
+	return n
+}
+
 func sovSvc(x uint64) (n int) {
 	for {
 		n++
@@ -710,6 +1289,7 @@ func (this *Visit) String() string {
 		`LayoutVersionID:` + fmt.Sprintf("%v", this.LayoutVersionID) + `,`,
 		`EntityID:` + fmt.Sprintf("%v", this.EntityID) + `,`,
 		`Submitted:` + fmt.Sprintf("%v", this.Submitted) + `,`,
+		`OrganizationID:` + fmt.Sprintf("%v", this.OrganizationID) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -722,6 +1302,7 @@ func (this *CreateVisitRequest) String() string {
 		`LayoutVersionID:` + fmt.Sprintf("%v", this.LayoutVersionID) + `,`,
 		`EntityID:` + fmt.Sprintf("%v", this.EntityID) + `,`,
 		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`OrganizationID:` + fmt.Sprintf("%v", this.OrganizationID) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -752,6 +1333,66 @@ func (this *GetVisitResponse) String() string {
 	}
 	s := strings.Join([]string{`&GetVisitResponse{`,
 		`Visit:` + strings.Replace(fmt.Sprintf("%v", this.Visit), "Visit", "Visit", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CreateVisitAnswersRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CreateVisitAnswersRequest{`,
+		`VisitID:` + fmt.Sprintf("%v", this.VisitID) + `,`,
+		`AnswersJSON:` + fmt.Sprintf("%v", this.AnswersJSON) + `,`,
+		`ActorEntityID:` + fmt.Sprintf("%v", this.ActorEntityID) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CreateVisitAnswersResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CreateVisitAnswersResponse{`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetAnswersForVisitRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetAnswersForVisitRequest{`,
+		`VisitID:` + fmt.Sprintf("%v", this.VisitID) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetAnswersForVisitResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetAnswersForVisitResponse{`,
+		`AnswersJSON:` + fmt.Sprintf("%v", this.AnswersJSON) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SubmitVisitRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&SubmitVisitRequest{`,
+		`VisitID:` + fmt.Sprintf("%v", this.VisitID) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SubmitVisitResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&SubmitVisitResponse{`,
 		`}`,
 	}, "")
 	return s
@@ -929,6 +1570,35 @@ func (m *Visit) Unmarshal(data []byte) error {
 				}
 			}
 			m.Submitted = bool(v != 0)
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OrganizationID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.OrganizationID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])
@@ -1065,6 +1735,35 @@ func (m *CreateVisitRequest) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.Name = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OrganizationID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.OrganizationID = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -1311,6 +2010,480 @@ func (m *GetVisitResponse) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CreateVisitAnswersRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CreateVisitAnswersRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CreateVisitAnswersRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VisitID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.VisitID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AnswersJSON", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AnswersJSON = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ActorEntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ActorEntityID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CreateVisitAnswersResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CreateVisitAnswersResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CreateVisitAnswersResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetAnswersForVisitRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetAnswersForVisitRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetAnswersForVisitRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VisitID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.VisitID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetAnswersForVisitResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetAnswersForVisitResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetAnswersForVisitResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AnswersJSON", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AnswersJSON = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *SubmitVisitRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SubmitVisitRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SubmitVisitRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VisitID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.VisitID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *SubmitVisitResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SubmitVisitResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SubmitVisitResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])

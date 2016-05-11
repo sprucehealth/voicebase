@@ -109,7 +109,10 @@ type ResourceAccessor interface {
 	VisitLayout(ctx context.Context, req *layout.GetVisitLayoutRequest) (*layout.GetVisitLayoutResponse, error)
 	CreateVisit(ctx context.Context, req *care.CreateVisitRequest) (*care.CreateVisitResponse, error)
 	Visit(ctx context.Context, req *care.GetVisitRequest) (*care.GetVisitResponse, error)
+	SubmitVisit(ctx context.Context, req *care.SubmitVisitRequest) (*care.SubmitVisitResponse, error)
 	VisitLayoutVersion(ctx context.Context, req *layout.GetVisitLayoutVersionRequest) (*layout.GetVisitLayoutVersionResponse, error)
+	CreateVisitAnswers(ctx context.Context, req *care.CreateVisitAnswersRequest) (*care.CreateVisitAnswersResponse, error)
+	GetAnswersForVisit(ctx context.Context, req *care.GetAnswersForVisitRequest) (*care.GetAnswersForVisitResponse, error)
 }
 
 type resourceAccessor struct {
@@ -913,6 +916,21 @@ func (m *resourceAccessor) Visit(ctx context.Context, req *care.GetVisitRequest)
 	return res, nil
 }
 
+func (m *resourceAccessor) SubmitVisit(ctx context.Context, req *care.SubmitVisitRequest) (*care.SubmitVisitResponse, error) {
+	_, err := m.Visit(ctx, &care.GetVisitRequest{
+		ID: req.VisitID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if !m.isAccountType(ctx, auth.AccountType_PATIENT) {
+		return nil, errors.ErrNotAuthorized(ctx, req.VisitID)
+	}
+
+	return m.care.SubmitVisit(ctx, req)
+}
+
 func (m *resourceAccessor) VisitLayoutVersion(ctx context.Context, req *layout.GetVisitLayoutVersionRequest) (*layout.GetVisitLayoutVersionResponse, error) {
 
 	res, err := m.layout.GetVisitLayoutVersion(ctx, req)
@@ -921,6 +939,42 @@ func (m *resourceAccessor) VisitLayoutVersion(ctx context.Context, req *layout.G
 	} else if err != nil {
 		return nil, errors.InternalError(ctx, err)
 	}
+	return res, nil
+}
+
+func (m *resourceAccessor) CreateVisitAnswers(ctx context.Context, req *care.CreateVisitAnswersRequest) (*care.CreateVisitAnswersResponse, error) {
+	// only the patient can submit answers
+	if !m.isAccountType(ctx, auth.AccountType_PATIENT) {
+		return nil, errors.ErrNotAuthorized(ctx, req.VisitID)
+	}
+
+	if err := m.canAccessResource(ctx, req.ActorEntityID, m.orgsForEntity); err != nil {
+		return nil, err
+	}
+
+	res, err := m.care.CreateVisitAnswers(ctx, req)
+	if err != nil {
+		if grpc.Code(err) == codes.NotFound {
+			return nil, errors.ErrNotFound(ctx, req.VisitID)
+		}
+		return nil, err
+	}
+	return res, nil
+}
+
+func (m *resourceAccessor) GetAnswersForVisit(ctx context.Context, req *care.GetAnswersForVisitRequest) (*care.GetAnswersForVisitResponse, error) {
+	_, err := m.Visit(ctx, &care.GetVisitRequest{
+		ID: req.VisitID,
+	})
+	if err != nil {
+		return nil, errors.InternalError(ctx, err)
+	}
+
+	res, err := m.care.GetAnswersForVisit(ctx, req)
+	if err != nil {
+		return nil, errors.InternalError(ctx, err)
+	}
+
 	return res, nil
 }
 

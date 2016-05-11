@@ -99,7 +99,7 @@ func lookupVisit(ctx context.Context, svc *service, ram raccess.ResourceAccessor
 		return nil, err
 	}
 
-	visit, err := transformVisitToResponse(ctx, res.Visit, layoutVersionRes.VisitLayoutVersion, svc.layoutStore)
+	visit, err := transformVisitToResponse(ctx, ram, res.Visit, layoutVersionRes.VisitLayoutVersion, svc.layoutStore)
 	if err != nil {
 		return nil, errors.InternalError(ctx, err)
 	}

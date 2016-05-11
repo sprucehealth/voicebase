@@ -36,3 +36,28 @@ func (c *Client) GetVisit(ctx context.Context, in *care.GetVisitRequest, opts ..
 
 	return rets[0].(*care.GetVisitResponse), mock.SafeError(rets[1])
 }
+func (c *Client) CreateVisitAnswers(ctx context.Context, in *care.CreateVisitAnswersRequest, opts ...grpc.CallOption) (*care.CreateVisitAnswersResponse, error) {
+	rets := c.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*care.CreateVisitAnswersResponse), mock.SafeError(rets[1])
+}
+
+func (c *Client) GetAnswersForVisit(ctx context.Context, in *care.GetAnswersForVisitRequest, opts ...grpc.CallOption) (*care.GetAnswersForVisitResponse, error) {
+	rets := c.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].(*care.GetAnswersForVisitResponse), mock.SafeError(rets[1])
+}
+
+func (c *Client) SubmitVisit(ctx context.Context, in *care.SubmitVisitRequest, opts ...grpc.CallOption) (*care.SubmitVisitResponse, error) {
+	rets := c.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].(*care.SubmitVisitResponse), mock.SafeError(rets[1])
+}

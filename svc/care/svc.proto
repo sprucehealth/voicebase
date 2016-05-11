@@ -14,12 +14,14 @@ message Visit {
 	string layout_version_id = 3 [(gogoproto.customname) = "LayoutVersionID"];
 	string entity_id = 4 [(gogoproto.customname) = "EntityID"];
 	bool submitted = 5;
+	string organization_id = 6 [(gogoproto.customname)="OrganizationID"];
 }
 
 message CreateVisitRequest {
 	string layout_version_id = 1 [(gogoproto.customname) = "LayoutVersionID"];
 	string entity_id = 2 [(gogoproto.customname) = "EntityID"];
 	string name = 3;
+	string organization_id = 4 [(gogoproto.customname) = "OrganizationID"];
 }
 
 message CreateVisitResponse {
@@ -32,12 +34,35 @@ message GetVisitRequest {
 
 message GetVisitResponse {
 	Visit visit = 1;
-}	
+}
+
+message CreateVisitAnswersRequest {
+	string visit_id = 1 [(gogoproto.customname) = "VisitID"];
+	string answers_json = 2 [(gogoproto.customname) = "AnswersJSON"];
+	string actory_entity_id = 3 [(gogoproto.customname) = "ActorEntityID"];
+}
+
+message CreateVisitAnswersResponse {
+}
+
+message GetAnswersForVisitRequest {
+	string visit_id = 1 [(gogoproto.customname) = "VisitID"];
+}
+
+message GetAnswersForVisitResponse {
+	string answers_json = 1 [(gogoproto.customname) = "AnswersJSON"];
+}
+
+message SubmitVisitRequest {
+	string visit_id = 1 [(gogoproto.customname)="VisitID"];
+}
+
+message SubmitVisitResponse {}
 
 service Care {
 	rpc CreateVisit(CreateVisitRequest) returns (CreateVisitResponse);
 	rpc GetVisit(GetVisitRequest) returns (GetVisitResponse);
-// 	rpc SubmitVisit(SubmitVisitRequest) returns (SubmitVisitResponse);
-//	rpc SubmitAnswer(SubmitAnswerRequest) returns (SubmitAnswerResponse);
-//	rpc GetAnswersForVisit(GetAnswersForVisitRequest) returns (GetAnswersForVisitResponse);
+	rpc CreateVisitAnswers(CreateVisitAnswersRequest) returns (CreateVisitAnswersResponse);
+	rpc GetAnswersForVisit(GetAnswersForVisitRequest) returns (GetAnswersForVisitResponse);
+	rpc SubmitVisit(SubmitVisitRequest) returns (SubmitVisitResponse);
 }

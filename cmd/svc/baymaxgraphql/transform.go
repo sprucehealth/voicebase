@@ -737,9 +737,11 @@ type intakeContainer struct {
 	Checkout               *checkout               `json:"checkout"`
 	SubmissionConfirmation *submissionConfirmation `json:"submission_confirmation"`
 	Intake                 *layout.Intake          `json:"intake"`
+	Answers                json.RawMessage         `json:"answers"`
+	RequireAddress         bool                    `json:"require_address"`
 }
 
-func transformVisitToResponse(ctx context.Context, visit *care.Visit, layoutVersion *layout.VisitLayoutVersion, layoutStore layout.Storage) (*models.Visit, error) {
+func transformVisitToResponse(ctx context.Context, ram raccess.ResourceAccessor, visit *care.Visit, layoutVersion *layout.VisitLayoutVersion, layoutStore layout.Storage) (*models.Visit, error) {
 
 	acc := gqlctx.Account(ctx)
 	if acc == nil {
@@ -747,6 +749,13 @@ func transformVisitToResponse(ctx context.Context, visit *care.Visit, layoutVers
 	}
 
 	intake, err := layoutStore.GetIntake(layoutVersion.IntakeLayoutLocation)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	answersForVisitRes, err := ram.GetAnswersForVisit(ctx, &care.GetAnswersForVisitRequest{
+		VisitID: visit.ID,
+	})
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -772,7 +781,8 @@ func transformVisitToResponse(ctx context.Context, visit *care.Visit, layoutVers
 				BottomText:  "Your doctor will review your visit and respond for any additional question.",
 				ButtonTitle: "Continue",
 			},
-			Intake: intake,
+			Intake:  intake,
+			Answers: json.RawMessage(answersForVisitRes.AnswersJSON),
 		}
 
 	case auth.AccountType_PROVIDER:

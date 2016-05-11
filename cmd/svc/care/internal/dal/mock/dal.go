@@ -23,6 +23,10 @@ func New(t *testing.T) *mockDAL {
 	}
 }
 
+func (m *mockDAL) Transact(ctx context.Context, trans func(ctx context.Context, dl dal.DAL) error) error {
+	return trans(ctx, m)
+}
+
 func (m *mockDAL) CreateVisit(ctx context.Context, visit *models.Visit) (models.VisitID, error) {
 	rets := m.Record(visit)
 	if len(rets) == 0 {
@@ -32,7 +36,7 @@ func (m *mockDAL) CreateVisit(ctx context.Context, visit *models.Visit) (models.
 	return rets[0].(models.VisitID), mock.SafeError(rets[1])
 }
 
-func (m *mockDAL) Visit(ctx context.Context, id models.VisitID) (*models.Visit, error) {
+func (m *mockDAL) Visit(ctx context.Context, id models.VisitID, opts ...dal.QueryOption) (*models.Visit, error) {
 	rets := m.Record(id)
 
 	if len(rets) == 0 {
@@ -40,4 +44,31 @@ func (m *mockDAL) Visit(ctx context.Context, id models.VisitID) (*models.Visit, 
 	}
 
 	return rets[0].(*models.Visit), mock.SafeError(rets[1])
+}
+
+func (m *mockDAL) UpdateVisit(ctx context.Context, id models.VisitID, update *dal.VisitUpdate) (int64, error) {
+	rets := m.Record(id, update)
+	if len(rets) == 0 {
+		return 0, nil
+	}
+
+	return rets[0].(int64), mock.SafeError(rets[1])
+}
+
+func (m *mockDAL) CreateVisitAnswer(ctx context.Context, visitID models.VisitID, actoryEntityID string, answer *models.Answer) error {
+	rets := m.Record(visitID, actoryEntityID, answer)
+
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[0])
+}
+
+func (m *mockDAL) VisitAnswers(ctx context.Context, visitID models.VisitID, questionIDs []string) (map[string]*models.Answer, error) {
+	rets := m.Record(visitID, questionIDs)
+
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(map[string]*models.Answer), mock.SafeError(rets[1])
 }

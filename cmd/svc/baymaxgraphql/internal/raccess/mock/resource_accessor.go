@@ -506,6 +506,14 @@ func (m *ResourceAccessor) Visit(ctx context.Context, req *care.GetVisitRequest)
 	return rets[0].(*care.GetVisitResponse), mock.SafeError(rets[1])
 }
 
+func (m *ResourceAccessor) SubmitVisit(ctx context.Context, req *care.SubmitVisitRequest) (*care.SubmitVisitResponse, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*care.SubmitVisitResponse), mock.SafeError(rets[1])
+}
+
 func (m *ResourceAccessor) VisitLayoutVersion(ctx context.Context, req *layout.GetVisitLayoutVersionRequest) (*layout.GetVisitLayoutVersionResponse, error) {
 	rets := m.Record(req)
 	if len(rets) == 0 {
@@ -521,4 +529,22 @@ func (m *ResourceAccessor) VerifiedValue(ctx context.Context, token string) (str
 	}
 
 	return rets[0].(string), mock.SafeError(rets[1])
+}
+
+func (m *ResourceAccessor) CreateVisitAnswers(ctx context.Context, req *care.CreateVisitAnswersRequest) (*care.CreateVisitAnswersResponse, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].(*care.CreateVisitAnswersResponse), mock.SafeError(rets[1])
+}
+
+func (m *ResourceAccessor) GetAnswersForVisit(ctx context.Context, req *care.GetAnswersForVisitRequest) (*care.GetAnswersForVisitResponse, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].(*care.GetAnswersForVisitResponse), mock.SafeError(rets[1])
 }

@@ -7,6 +7,7 @@ type Visit struct {
 	Name               string
 	LayoutVersionID    string
 	EntityID           string
+	OrganizationID     string
 	Submitted          bool
 	SubmittedTimestamp *time.Time
 	Created            time.Time

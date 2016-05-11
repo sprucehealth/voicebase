@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+package models;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_enum_prefix_all) = true;
+
+
+message Answer {
+  string question_id = 1 [(gogoproto.customname) = "QuestionID"];
+  string type = 2;
+  oneof answer {
+    FreeTextAnswer free_text = 10;
+    MultipleChoiceAnswer multiple_choice = 11;
+    SingleSelectAnswer single_select = 12;
+    AutocompleteAnswer autocomplete = 13;
+    PhotoSectionAnswer photo_section = 14;
+    SingleEntryAnswer single_entry = 15;
+    SegmentedControlAnswer segmented_control = 16;
+  }
+}
+
+message FreeTextAnswer {
+  string free_text = 1;
+}
+
+message MultipleChoiceAnswer {
+  repeated AnswerOption selected_answers = 1;
+}
+
+message SingleSelectAnswer {
+  AnswerOption selected_answer = 1;
+}
+
+message SegmentedControlAnswer {
+  AnswerOption selected_answer = 1;
+}
+
+message SingleEntryAnswer {
+  string free_text = 1;
+}
+
+message AnswerOption {
+  string id = 1 [(gogoproto.customname) = "ID"];
+  string free_text = 2;
+  map<string,Answer> sub_answers = 3;
+}
+
+message AutocompleteAnswerItem {
+  string answer = 1;
+  map<string,Answer> sub_answers = 2;
+}
+
+message AutocompleteAnswer {
+  repeated AutocompleteAnswerItem items = 1;
+}
+
+message PhotoSectionAnswer {
+  message PhotoSectionItem {
+    message PhotoSlotItem {
+        string slot_id = 1 [(gogoproto.customname) = "SlotID"];
+        string name = 2;
+        string media_id = 3 [(gogoproto.customname) = "MediaID"];
+    }
+
+    string name = 1;
+    repeated PhotoSlotItem slots = 2;
+  }
+
+  repeated PhotoSectionItem sections = 1;
+}
