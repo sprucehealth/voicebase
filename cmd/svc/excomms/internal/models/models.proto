@@ -32,6 +32,7 @@ message EmailMessage {
 	string from_email = 5;
 	string to_name = 6;
 	string to_email = 7;
+	repeated string media_urls = 8 [(gogoproto.customname) = "MediaURLs"];
 }
 
 message SMSMessage {
@@ -41,6 +42,7 @@ message SMSMessage {
 	string text = 4;
 	uint64 date_created = 5;
 	uint64 date_sent = 6;
+	repeated string media_urls = 7 [(gogoproto.customname) = "MediaURLs"];
 }
 
 message DeleteResourceRequest {

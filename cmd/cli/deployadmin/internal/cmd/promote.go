@@ -29,7 +29,7 @@ func NewPromoteCmd(cnf *config.Config) (Command, error) {
 }
 
 func (c *promoteCmd) Run(args []string) error {
-	fs := flag.NewFlagSet("promoteCmd", flag.ExitOnError)
+	fs := flag.NewFlagSet("promote", flag.ExitOnError)
 	depID := fs.String("deployment_id", "", "The deployment to promote")
 	if err := fs.Parse(args); err != nil {
 		return err

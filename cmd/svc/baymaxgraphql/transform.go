@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
-	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/device"
@@ -16,6 +15,7 @@ import (
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/care"
@@ -77,6 +77,8 @@ func transformThreadToResponse(ctx context.Context, ram raccess.ResourceAccessor
 		ID: t.ID,
 		AllowInternalMessages:      allowInternalMessages(t, viewingAccount),
 		AllowMentions:              allowMentions(t, viewingAccount),
+		AllowSMSAttachments:        true,
+		AllowEmailAttachment:       true,
 		OrganizationID:             t.OrganizationID,
 		PrimaryEntityID:            t.PrimaryEntityID,
 		Subtitle:                   t.LastMessageSummary,

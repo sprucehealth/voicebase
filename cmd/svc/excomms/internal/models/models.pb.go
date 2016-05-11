@@ -185,25 +185,27 @@ func _SentMessage_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Bu
 }
 
 type EmailMessage struct {
-	ID        string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Subject   string `protobuf:"bytes,2,opt,name=subject,proto3" json:"subject,omitempty"`
-	Body      string `protobuf:"bytes,3,opt,name=body,proto3" json:"body,omitempty"`
-	FromName  string `protobuf:"bytes,4,opt,name=from_name,proto3" json:"from_name,omitempty"`
-	FromEmail string `protobuf:"bytes,5,opt,name=from_email,proto3" json:"from_email,omitempty"`
-	ToName    string `protobuf:"bytes,6,opt,name=to_name,proto3" json:"to_name,omitempty"`
-	ToEmail   string `protobuf:"bytes,7,opt,name=to_email,proto3" json:"to_email,omitempty"`
+	ID        string   `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Subject   string   `protobuf:"bytes,2,opt,name=subject,proto3" json:"subject,omitempty"`
+	Body      string   `protobuf:"bytes,3,opt,name=body,proto3" json:"body,omitempty"`
+	FromName  string   `protobuf:"bytes,4,opt,name=from_name,proto3" json:"from_name,omitempty"`
+	FromEmail string   `protobuf:"bytes,5,opt,name=from_email,proto3" json:"from_email,omitempty"`
+	ToName    string   `protobuf:"bytes,6,opt,name=to_name,proto3" json:"to_name,omitempty"`
+	ToEmail   string   `protobuf:"bytes,7,opt,name=to_email,proto3" json:"to_email,omitempty"`
+	MediaURLs []string `protobuf:"bytes,8,rep,name=media_urls" json:"media_urls,omitempty"`
 }
 
 func (m *EmailMessage) Reset()      { *m = EmailMessage{} }
 func (*EmailMessage) ProtoMessage() {}
 
 type SMSMessage struct {
-	ID              string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	FromPhoneNumber string `protobuf:"bytes,2,opt,name=from_phone_number,proto3" json:"from_phone_number,omitempty"`
-	ToPhoneNumber   string `protobuf:"bytes,3,opt,name=to_phone_number,proto3" json:"to_phone_number,omitempty"`
-	Text            string `protobuf:"bytes,4,opt,name=text,proto3" json:"text,omitempty"`
-	DateCreated     uint64 `protobuf:"varint,5,opt,name=date_created,proto3" json:"date_created,omitempty"`
-	DateSent        uint64 `protobuf:"varint,6,opt,name=date_sent,proto3" json:"date_sent,omitempty"`
+	ID              string   `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	FromPhoneNumber string   `protobuf:"bytes,2,opt,name=from_phone_number,proto3" json:"from_phone_number,omitempty"`
+	ToPhoneNumber   string   `protobuf:"bytes,3,opt,name=to_phone_number,proto3" json:"to_phone_number,omitempty"`
+	Text            string   `protobuf:"bytes,4,opt,name=text,proto3" json:"text,omitempty"`
+	DateCreated     uint64   `protobuf:"varint,5,opt,name=date_created,proto3" json:"date_created,omitempty"`
+	DateSent        uint64   `protobuf:"varint,6,opt,name=date_sent,proto3" json:"date_sent,omitempty"`
+	MediaURLs       []string `protobuf:"bytes,7,rep,name=media_urls" json:"media_urls,omitempty"`
 }
 
 func (m *SMSMessage) Reset()      { *m = SMSMessage{} }
@@ -373,6 +375,14 @@ func (this *EmailMessage) Equal(that interface{}) bool {
 	if this.ToEmail != that1.ToEmail {
 		return false
 	}
+	if len(this.MediaURLs) != len(that1.MediaURLs) {
+		return false
+	}
+	for i := range this.MediaURLs {
+		if this.MediaURLs[i] != that1.MediaURLs[i] {
+			return false
+		}
+	}
 	return true
 }
 func (this *SMSMessage) Equal(that interface{}) bool {
@@ -412,6 +422,14 @@ func (this *SMSMessage) Equal(that interface{}) bool {
 	}
 	if this.DateSent != that1.DateSent {
 		return false
+	}
+	if len(this.MediaURLs) != len(that1.MediaURLs) {
+		return false
+	}
+	for i := range this.MediaURLs {
+		if this.MediaURLs[i] != that1.MediaURLs[i] {
+			return false
+		}
 	}
 	return true
 }
@@ -479,7 +497,7 @@ func (this *EmailMessage) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 11)
+	s := make([]string, 0, 12)
 	s = append(s, "&models.EmailMessage{")
 	s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
 	s = append(s, "Subject: "+fmt.Sprintf("%#v", this.Subject)+",\n")
@@ -488,6 +506,7 @@ func (this *EmailMessage) GoString() string {
 	s = append(s, "FromEmail: "+fmt.Sprintf("%#v", this.FromEmail)+",\n")
 	s = append(s, "ToName: "+fmt.Sprintf("%#v", this.ToName)+",\n")
 	s = append(s, "ToEmail: "+fmt.Sprintf("%#v", this.ToEmail)+",\n")
+	s = append(s, "MediaURLs: "+fmt.Sprintf("%#v", this.MediaURLs)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -495,7 +514,7 @@ func (this *SMSMessage) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 10)
+	s := make([]string, 0, 11)
 	s = append(s, "&models.SMSMessage{")
 	s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
 	s = append(s, "FromPhoneNumber: "+fmt.Sprintf("%#v", this.FromPhoneNumber)+",\n")
@@ -503,6 +522,7 @@ func (this *SMSMessage) GoString() string {
 	s = append(s, "Text: "+fmt.Sprintf("%#v", this.Text)+",\n")
 	s = append(s, "DateCreated: "+fmt.Sprintf("%#v", this.DateCreated)+",\n")
 	s = append(s, "DateSent: "+fmt.Sprintf("%#v", this.DateSent)+",\n")
+	s = append(s, "MediaURLs: "+fmt.Sprintf("%#v", this.MediaURLs)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -674,6 +694,21 @@ func (m *EmailMessage) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintModels(data, i, uint64(len(m.ToEmail)))
 		i += copy(data[i:], m.ToEmail)
 	}
+	if len(m.MediaURLs) > 0 {
+		for _, s := range m.MediaURLs {
+			data[i] = 0x42
+			i++
+			l = len(s)
+			for l >= 1<<7 {
+				data[i] = uint8(uint64(l)&0x7f | 0x80)
+				l >>= 7
+				i++
+			}
+			data[i] = uint8(l)
+			i++
+			i += copy(data[i:], s)
+		}
+	}
 	return i, nil
 }
 
@@ -725,6 +760,21 @@ func (m *SMSMessage) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x30
 		i++
 		i = encodeVarintModels(data, i, uint64(m.DateSent))
+	}
+	if len(m.MediaURLs) > 0 {
+		for _, s := range m.MediaURLs {
+			data[i] = 0x3a
+			i++
+			l = len(s)
+			for l >= 1<<7 {
+				data[i] = uint8(uint64(l)&0x7f | 0x80)
+				l >>= 7
+				i++
+			}
+			data[i] = uint8(l)
+			i++
+			i += copy(data[i:], s)
+		}
 	}
 	return i, nil
 }
@@ -857,6 +907,12 @@ func (m *EmailMessage) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovModels(uint64(l))
 	}
+	if len(m.MediaURLs) > 0 {
+		for _, s := range m.MediaURLs {
+			l = len(s)
+			n += 1 + l + sovModels(uint64(l))
+		}
+	}
 	return n
 }
 
@@ -884,6 +940,12 @@ func (m *SMSMessage) Size() (n int) {
 	}
 	if m.DateSent != 0 {
 		n += 1 + sovModels(uint64(m.DateSent))
+	}
+	if len(m.MediaURLs) > 0 {
+		for _, s := range m.MediaURLs {
+			l = len(s)
+			n += 1 + l + sovModels(uint64(l))
+		}
 	}
 	return n
 }
@@ -960,6 +1022,7 @@ func (this *EmailMessage) String() string {
 		`FromEmail:` + fmt.Sprintf("%v", this.FromEmail) + `,`,
 		`ToName:` + fmt.Sprintf("%v", this.ToName) + `,`,
 		`ToEmail:` + fmt.Sprintf("%v", this.ToEmail) + `,`,
+		`MediaURLs:` + fmt.Sprintf("%v", this.MediaURLs) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -975,6 +1038,7 @@ func (this *SMSMessage) String() string {
 		`Text:` + fmt.Sprintf("%v", this.Text) + `,`,
 		`DateCreated:` + fmt.Sprintf("%v", this.DateCreated) + `,`,
 		`DateSent:` + fmt.Sprintf("%v", this.DateSent) + `,`,
+		`MediaURLs:` + fmt.Sprintf("%v", this.MediaURLs) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1440,6 +1504,35 @@ func (m *EmailMessage) Unmarshal(data []byte) error {
 			}
 			m.ToEmail = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
+		case 8:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MediaURLs", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowModels
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthModels
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.MediaURLs = append(m.MediaURLs, string(data[iNdEx:postIndex]))
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipModels(data[iNdEx:])
@@ -1644,6 +1737,35 @@ func (m *SMSMessage) Unmarshal(data []byte) error {
 					break
 				}
 			}
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MediaURLs", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowModels
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthModels
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.MediaURLs = append(m.MediaURLs, string(data[iNdEx:postIndex]))
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipModels(data[iNdEx:])

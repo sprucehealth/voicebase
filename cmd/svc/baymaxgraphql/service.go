@@ -5,13 +5,12 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
-	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
-	lmedia "github.com/sprucehealth/backend/libs/media"
+	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/care"
@@ -37,7 +36,7 @@ type service struct {
 	staticURLPrefix        string
 	spruceOrgID            string
 	segmentio              *segmentIOWrapper
-	media                  *lmedia.Service
+	media                  *media.Service
 	sns                    snsiface.SNSAPI
 	supportMessageTopicARN string
 	// TODO: Remove this

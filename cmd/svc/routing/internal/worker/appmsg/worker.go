@@ -234,6 +234,14 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 		revealSender = res.Values[0].GetBoolean().Value
 	}
 
+	var mediaURLs []string
+	for _, at := range pti.GetItem().GetMessage().Attachments {
+		// TODO: Add async video support?
+		if at.Type == threading.Attachment_IMAGE {
+			mediaURLs = append(mediaURLs, at.URL)
+		}
+	}
+
 	// Perform the outbound operations for any remaining valid destinations
 	orgEntity := orgLookupRes.Entities[0]
 	for _, d := range destinations {
@@ -267,6 +275,7 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 							FromPhoneNumber: orgContact.Value,
 							ToPhoneNumber:   d.ID,
 							Text:            plainText,
+							MediaURLs:       mediaURLs,
 						},
 					},
 				},
@@ -311,6 +320,7 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 							FromName:         fromName,
 							FromEmailAddress: orgContact.Value,
 							ToEmailAddress:   d.ID,
+							MediaURLs:        mediaURLs,
 						},
 					},
 				},

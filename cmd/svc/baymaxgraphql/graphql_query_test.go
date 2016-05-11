@@ -147,6 +147,8 @@ func TestNodeQuery(t *testing.T) {
 		ID: id,
 		AllowInternalMessages: true,
 		AllowDelete:           true,
+		AllowSMSAttachments:   true,
+		AllowEmailAttachment:  true,
 		AllowExternalDelivery: true,
 		AllowMentions:         true,
 		OrganizationID:        "entity_1",

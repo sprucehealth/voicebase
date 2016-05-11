@@ -31,6 +31,7 @@ var config struct {
 	blockAccountsTopicARN string
 	settingsServiceURL    string
 	webDomain             string
+	storageBucket         string
 	dbHost                string
 	dbPort                int
 	dbPassword            string
@@ -61,7 +62,6 @@ func init() {
 	flag.StringVar(&config.kmsKeyARN, "kms_key_arn", "", "the arn of the master key that should be used to encrypt outbound and decrypt inbound data")
 	flag.StringVar(&config.blockAccountsTopicARN, "block_accounts_topic_arn", "", "arn of the block accounts sns topic")
 	flag.StringVar(&config.webDomain, "web_domain", "", "the baymax webapp domain")
-
 }
 
 func main() {
@@ -72,7 +72,6 @@ func main() {
 		grpc.WithInsecure())
 	if err != nil {
 		golog.Fatalf("Unable to communicate with directory service: %s", err.Error())
-		return
 	}
 	defer directoryConn.Close()
 
@@ -81,7 +80,6 @@ func main() {
 		grpc.WithInsecure())
 	if err != nil {
 		golog.Fatalf("Unable to communicate with thread service: %s", err.Error())
-		return
 	}
 	defer threadConn.Close()
 
@@ -90,7 +88,6 @@ func main() {
 		grpc.WithInsecure())
 	if err != nil {
 		golog.Fatalf("Unable to communicate with excomms service: %s", err.Error())
-		return
 	}
 	defer excommsConn.Close()
 
@@ -99,7 +96,6 @@ func main() {
 		grpc.WithInsecure())
 	if err != nil {
 		golog.Fatalf("Unable to communicate with settings service: %s", err.Error())
-		return
 	}
 	defer settingsConn.Close()
 	settingsClient := settings.NewSettingsClient(settingsConn)
@@ -124,7 +120,6 @@ func main() {
 	eSNS, err := awsutil.NewEncryptedSNS(config.kmsKeyARN, kms.New(awsSession), sns.New(awsSession))
 	if err != nil {
 		golog.Fatalf("Unable to initialize enrypted sns: %s", err.Error())
-		return
 	}
 
 	db, err := dbutil.ConnectMySQL(&dbutil.DBConfig{

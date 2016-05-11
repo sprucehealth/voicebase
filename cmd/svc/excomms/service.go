@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/kms"
@@ -19,7 +20,9 @@ import (
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/ptr"
+	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/libs/twilio"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -123,6 +126,24 @@ func runService(bootSvc *boot.Service) {
 
 	proxyNumberManager := proxynumber.NewManager(dl, clock.New())
 
+	if config.apiDomain == "" {
+		golog.Fatalf("api_domain is required")
+	}
+	if config.sigKeys == "" {
+		golog.Fatalf("signature_keys_csv is required")
+	}
+
+	sigKeys := strings.Split(config.sigKeys, ",")
+	sigKeysByteSlice := make([][]byte, len(sigKeys))
+	for i, sk := range sigKeys {
+		sigKeysByteSlice[i] = []byte(sk)
+	}
+	signer, err := sig.NewSigner(sigKeysByteSlice, nil)
+	if err != nil {
+		golog.Fatalf("Failed to create signer: %s", err.Error())
+	}
+	ms := media.NewSigner("https://"+config.apiDomain+"/media", signer)
+
 	excommsService := server.NewService(
 		config.twilioAccountSID,
 		config.twilioAuthToken,
@@ -136,7 +157,8 @@ func runService(bootSvc *boot.Service) {
 		clock.New(),
 		server.NewSendgridClient(config.sendgridAPIKey),
 		server.NewIDGenerator(),
-		proxyNumberManager)
+		proxyNumberManager,
+		ms)
 	excomms.InitMetrics(excommsService, bootSvc.MetricsRegistry.Scope("server"))
 
 	excommsServer := grpc.NewServer()

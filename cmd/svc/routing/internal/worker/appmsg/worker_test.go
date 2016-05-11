@@ -102,6 +102,7 @@ func testSendMessageSMS(t *testing.T, revealSender bool) {
 				FromPhoneNumber: "+17348465522",
 				ToPhoneNumber:   "+12068773590",
 				Text:            text,
+				MediaURLs:       []string{"image/attachment/url"},
 			},
 		},
 	}))
@@ -202,6 +203,10 @@ func testSendMessageSMS(t *testing.T, revealSender bool) {
 							Channel: threading.Endpoint_SMS,
 						},
 					},
+					Attachments: []*threading.Attachment{
+						{Type: threading.Attachment_IMAGE, URL: "image/attachment/url"},
+						{Type: threading.Attachment_GENERIC_URL, URL: "generic/url"},
+					},
 				},
 			},
 		},
@@ -291,6 +296,7 @@ func testSendingEmail(t *testing.T, revealSender bool) {
 				FromName:         fromName,
 				FromEmailAddress: "doctor@practice.baymax.com",
 				ToEmailAddress:   "patient@test.com",
+				MediaURLs:        []string{"image/attachment/url"},
 			},
 		},
 	}))
@@ -390,6 +396,10 @@ func testSendingEmail(t *testing.T, revealSender bool) {
 							ID:      "patient@test.com",
 							Channel: threading.Endpoint_EMAIL,
 						},
+					},
+					Attachments: []*threading.Attachment{
+						{Type: threading.Attachment_IMAGE, URL: "image/attachment/url"},
+						{Type: threading.Attachment_GENERIC_URL, URL: "generic/url"},
 					},
 				},
 			},

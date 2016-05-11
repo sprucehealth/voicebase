@@ -106,12 +106,14 @@ message EmailMessage {
 	string from_email_address = 4;
 	string to_name = 5;
 	string to_email_address = 6;
+	repeated string media_urls = 7 [(gogoproto.customname) = "MediaURLs"];
 }
 
 message SMSMessage {
 	string text = 1;
 	string from_phone_number = 2;
 	string to_phone_number = 3;
+	repeated string media_urls = 4 [(gogoproto.customname) = "MediaURLs"];
 }
 
 message SendMessageResponse {

@@ -395,7 +395,7 @@ func buildMessageTitleBasedOnDestinations(
 	fromEntity, primaryEntity *directory.Entity,
 ) (bml.BML, error) {
 	var title bml.BML
-	// For a message to be considered by sending externally it needs to not be marked as internal,
+	// For a message to be considered by sending externally it needs to marked as not internal,
 	// sent by someone who is internal, and there needs to be a primary entity on the thread.
 	isExternal := !req.Internal && thr.PrimaryEntityID != "" && fromEntity.Type == directory.EntityType_INTERNAL && primaryEntity.Type == directory.EntityType_EXTERNAL
 	if isExternal && len(dests) != 0 {

@@ -20,11 +20,11 @@ import (
 type mediaHandler struct {
 	auth        auth.AuthClient
 	media       *media.Service
-	mediaSigner *imedia.Signer
+	mediaSigner *media.Signer
 }
 
 // NewMediaHandler returns an initialized instance of mediaHandler
-func NewMediaHandler(auth auth.AuthClient, media *media.Service, mediaSigner *imedia.Signer) httputil.ContextHandler {
+func NewMediaHandler(auth auth.AuthClient, media *media.Service, mediaSigner *media.Signer) httputil.ContextHandler {
 	return &mediaHandler{
 		auth:        auth,
 		media:       media,
@@ -95,25 +95,11 @@ func (m *mediaHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *
 }
 
 func (m *mediaHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	acc, errCode := m.checkAuth(ctx, r)
-	if errCode != 0 {
-		w.WriteHeader(errCode)
-		return
-	}
-
-	ctx = gqlctx.WithAccount(ctx, acc)
-
 	// get media related params
 	mimetype := r.FormValue("mimetype")
 	mediaID := r.FormValue("id")
 	signature := r.FormValue("sig")
 
-	if mimetype == "" {
-		httputil.JSONResponse(w, http.StatusBadRequest, errorMsg{
-			Message: "mimetype is required",
-		})
-		return
-	}
 	if mediaID == "" {
 		httputil.JSONResponse(w, http.StatusBadRequest, errorMsg{
 			Message: "id is required",
@@ -158,12 +144,34 @@ func (m *mediaHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *h
 			return
 		}
 	}
-	// verify signature
-	if !m.mediaSigner.ValidateSignature(mediaID, mimetype, acc.ID, width, height, crop, signature) {
-		httputil.JSONResponse(w, http.StatusForbidden, errorMsg{
-			Message: "Signature does not match",
-		})
-		return
+	expires := time.Time{}
+	expiresStr := r.FormValue("expires")
+	if expiresStr != "" {
+		expiresUnix, err := strconv.ParseInt(expiresStr, 10, 64)
+		if err != nil {
+			httputil.JSONResponse(w, http.StatusBadRequest, errorMsg{
+				Message: fmt.Sprintf("Unable to parse expiration epoch %s: %s", expiresStr, err),
+			})
+			return
+		}
+		expires = time.Unix(expiresUnix, 0)
+	}
+
+	// First check if this is a valid unauthenticated request
+	if !m.mediaSigner.ValidateSignature(mediaID, mimetype, "", width, height, crop, expires, signature) {
+		// If not a valid unauthenticated signature, check the authenticated sig version
+		acc, errCode := m.checkAuth(ctx, r)
+		if errCode != 0 {
+			w.WriteHeader(errCode)
+			return
+		}
+		ctx = gqlctx.WithAccount(ctx, acc)
+		if !m.mediaSigner.ValidateSignature(mediaID, mimetype, acc.ID, width, height, crop, expires, signature) {
+			httputil.JSONResponse(w, http.StatusForbidden, errorMsg{
+				Message: "Signature does not match",
+			})
+			return
+		}
 	}
 
 	// server media

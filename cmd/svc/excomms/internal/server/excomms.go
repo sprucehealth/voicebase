@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
@@ -13,6 +14,7 @@ import (
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/twilio"
@@ -41,6 +43,7 @@ type excommsService struct {
 	emailClient          EmailClient
 	idgen                idGenerator
 	proxyNumberManager   proxynumber.Manager
+	signer               *media.Signer
 }
 
 func NewService(
@@ -54,7 +57,8 @@ func NewService(
 	clock clock.Clock,
 	emailClient EmailClient,
 	idgen idGenerator,
-	proxyNumberManager proxynumber.Manager) excomms.ExCommsServer {
+	proxyNumberManager proxynumber.Manager,
+	signer *media.Signer) excomms.ExCommsServer {
 
 	es := &excommsService{
 		apiURL:               apiURL,
@@ -69,6 +73,7 @@ func NewService(
 		emailClient:          emailClient,
 		idgen:                idgen,
 		proxyNumberManager:   proxyNumberManager,
+		signer:               signer,
 	}
 	return es
 }
@@ -305,6 +310,29 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 		Destination: destination,
 	}
 
+	// Get our internal media information and size and externalize it
+	var mediaURLs []string
+	switch in.Channel {
+	case excomms.ChannelType_SMS:
+		mediaURLs = in.GetSMS().MediaURLs
+	case excomms.ChannelType_EMAIL:
+		mediaURLs = in.GetEmail().MediaURLs
+	}
+	resizedURLs := make([]string, len(mediaURLs))
+	for i, mURL := range mediaURLs {
+		// default everything to a max size of 3264x3264
+		mediaID, err := media.ParseMediaID(mURL)
+		if err != nil {
+			grpcErrorf(codes.Internal, err.Error())
+		}
+
+		signedURL, err := e.signer.ExpiringSignedURL(mediaID, "", "", 3264, 3264, false, e.clock.Now().Add(time.Minute*15))
+		if err != nil {
+			grpcErrorf(codes.Internal, err.Error())
+		}
+		resizedURLs[i] = signedURL
+	}
+
 	switch in.Channel {
 	case excomms.ChannelType_VOICE:
 		return nil, grpcErrorf(codes.Unimplemented, "not implemented")
@@ -312,6 +340,7 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 		msg, _, err := e.twilio.Messages.Send(in.GetSMS().FromPhoneNumber, in.GetSMS().ToPhoneNumber, twilio.MessageParams{
 			ApplicationSid: e.twilioApplicationSID,
 			Body:           in.GetSMS().Text,
+			MediaUrl:       resizedURLs,
 		})
 		if err != nil {
 			if e, ok := err.(*twilio.Exception); ok {
@@ -322,7 +351,7 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 					// that they entered an invalid phone number?
 					return &excomms.SendMessageResponse{}, nil
 				case twilio.ErrorCodeMessageLengthExceeded:
-					return nil, grpcErrorf(excomms.ErrorCodeMessageLengthExceeded, "message length can only be 1600 characters in length, message lenght was %d characters", len(in.GetSMS().Text))
+					return nil, grpcErrorf(excomms.ErrorCodeMessageLengthExceeded, "message length can only be 1600 characters in length, message length was %d characters", len(in.GetSMS().Text))
 				case twilio.ErrorCodeNotMessageCapableFromPhoneNumber:
 					return nil, grpcErrorf(excomms.ErrorCodeSMSIncapableFromPhoneNumber, "from phone number %s does not have SMS capabilities", in.GetSMS().FromPhoneNumber)
 				}
@@ -339,6 +368,7 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 				ID:              msg.Sid,
 				DateCreated:     uint64(msg.DateCreated.Unix()),
 				DateSent:        uint64(msg.DateSent.Unix()),
+				MediaURLs:       resizedURLs,
 			},
 		}
 	case excomms.ChannelType_EMAIL:
@@ -346,6 +376,7 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 		if err != nil {
 			return nil, grpcErrorf(codes.Internal, err.Error())
 		}
+
 		sentMessage.Message = &models.SentMessage_EmailMsg{
 			EmailMsg: &models.EmailMessage{
 				ID:        strconv.FormatInt(int64(id), 10),
@@ -355,6 +386,7 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 				FromEmail: in.GetEmail().FromEmailAddress,
 				ToName:    in.GetEmail().ToName,
 				ToEmail:   in.GetEmail().ToEmailAddress,
+				MediaURLs: resizedURLs,
 			},
 		}
 		sentMessage.ID = id

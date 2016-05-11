@@ -16,8 +16,10 @@ import (
 
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/conc"
+	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/ptr"
+	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/libs/twilio"
 	twiliomock "github.com/sprucehealth/backend/libs/twilio/mock"
@@ -419,9 +421,18 @@ func TestSendMessage_SMS(t *testing.T) {
 		},
 		msg: &twilio.Message{},
 	}
+	clk := clock.NewManaged(time.Now())
+	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
+	test.OK(t, err)
+	signer := media.NewSigner("apiDomain", sig)
+	resizedURL1, err := signer.ExpiringSignedURL("mediaid1", "", "", 3264, 3264, false, clk.Now().Add(time.Minute*15))
+	test.OK(t, err)
+	resizedURL2, err := signer.ExpiringSignedURL("mediaid2", "", "", 3264, 3264, false, clk.Now().Add(time.Minute*15))
+	test.OK(t, err)
 	mm.Expect(mock.NewExpectation(mm.Send, "+17348465522", "+14152222222", twilio.MessageParams{
 		Body:           "hello",
 		ApplicationSid: "1234",
+		MediaUrl:       []string{resizedURL1, resizedURL2},
 	}))
 
 	md := &mockDAL_Excomms{
@@ -441,6 +452,7 @@ func TestSendMessage_SMS(t *testing.T) {
 				Text:            "hello",
 				DateCreated:     uint64(time.Time{}.Unix()),
 				DateSent:        uint64(time.Time{}.Unix()),
+				MediaURLs:       []string{resizedURL1, resizedURL2},
 			},
 		},
 		Destination: "+14152222222",
@@ -450,10 +462,12 @@ func TestSendMessage_SMS(t *testing.T) {
 		twilio:               twilio.NewClient("", "", nil),
 		dal:                  md,
 		twilioApplicationSID: "1234",
+		clock:                clk,
+		signer:               signer,
 	}
 	es.twilio.Messages = mm
 
-	_, err := es.SendMessage(context.Background(), &excomms.SendMessageRequest{
+	_, err = es.SendMessage(context.Background(), &excomms.SendMessageRequest{
 		UUID:    "tag",
 		Channel: excomms.ChannelType_SMS,
 		Message: &excomms.SendMessageRequest_SMS{
@@ -461,6 +475,7 @@ func TestSendMessage_SMS(t *testing.T) {
 				FromPhoneNumber: "+17348465522",
 				ToPhoneNumber:   "+14152222222",
 				Text:            "hello",
+				MediaURLs:       []string{"s3://region/bucket/media/mediaid1", "s3://region/bucket/media/mediaid2"},
 			},
 		},
 	})
@@ -517,6 +532,14 @@ func TestSendMessage_Email(t *testing.T) {
 			T: t,
 		},
 	}
+	clk := clock.NewManaged(time.Now())
+	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
+	test.OK(t, err)
+	signer := media.NewSigner("apiDomain", sig)
+	resizedURL1, err := signer.ExpiringSignedURL("mediaid1", "", "", 3264, 3264, false, clk.Now().Add(time.Minute*15))
+	test.OK(t, err)
+	resizedURL2, err := signer.ExpiringSignedURL("mediaid2", "", "", 3264, 3264, false, clk.Now().Add(time.Minute*15))
+	test.OK(t, err)
 	em := &models.EmailMessage{
 		ID:        "1",
 		Subject:   "Hi",
@@ -524,6 +547,7 @@ func TestSendMessage_Email(t *testing.T) {
 		FromName:  "Joe Schmoe",
 		FromEmail: "joe@schmoe.com",
 		ToEmail:   "patient@example.com",
+		MediaURLs: []string{resizedURL1, resizedURL2},
 	}
 	me.Expect(mock.NewExpectation(me.SendMessage, em))
 
@@ -548,9 +572,11 @@ func TestSendMessage_Email(t *testing.T) {
 		dal:         md,
 		emailClient: me,
 		idgen:       newMockIDGen(),
+		clock:       clk,
+		signer:      signer,
 	}
 
-	_, err := es.SendMessage(context.Background(), &excomms.SendMessageRequest{
+	_, err = es.SendMessage(context.Background(), &excomms.SendMessageRequest{
 		UUID:    "tag",
 		Channel: excomms.ChannelType_EMAIL,
 		Message: &excomms.SendMessageRequest_Email{
@@ -560,6 +586,7 @@ func TestSendMessage_Email(t *testing.T) {
 				FromName:         "Joe Schmoe",
 				FromEmailAddress: "joe@schmoe.com",
 				ToEmailAddress:   "patient@example.com",
+				MediaURLs:        []string{"s3://region/bucket/media/mediaid1", "s3://region/bucket/media/mediaid2"},
 			},
 		},
 	})

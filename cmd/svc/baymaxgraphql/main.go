@@ -16,7 +16,6 @@ import (
 	"github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
-	mediastore "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
 	baymaxgraphqlsettings "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/settings"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/stub"
 	"github.com/sprucehealth/backend/device"
@@ -260,7 +259,7 @@ func main() {
 		golog.Fatalf("Failed to create signer: %s", err.Error())
 	}
 
-	ms := mediastore.NewSigner("https://"+*flagAPIDomain+"/media", signer)
+	ms := media.NewSigner("https://"+*flagAPIDomain+"/media", signer)
 
 	corsOrigins := []string{"https://" + *flagWebDomain}
 

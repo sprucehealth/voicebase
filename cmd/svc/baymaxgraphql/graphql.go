@@ -12,7 +12,6 @@ import (
 	"github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
-	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/device"
@@ -21,7 +20,7 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/idgen"
-	lmedia "github.com/sprucehealth/backend/libs/media"
+	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/care"
@@ -121,7 +120,7 @@ func NewGraphQL(
 	spruceOrgID string,
 	staticURLPrefix string,
 	segmentClient *analytics.Client,
-	media *lmedia.Service,
+	media *media.Service,
 	sns snsiface.SNSAPI,
 	supportMessageTopicARN string,
 	metricsRegistry metrics.Registry,
