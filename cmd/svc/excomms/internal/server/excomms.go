@@ -357,7 +357,7 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 			})
 		}
 		if err := parallel.Wait(); err != nil {
-			grpcErrorf(codes.Internal, err.Error())
+			return nil, grpcErrorf(codes.Internal, err.Error())
 		}
 	}
 
