@@ -16,6 +16,7 @@ func transformVisitToResponse(v *models.Visit) *care.Visit {
 		Submitted:       v.Submitted,
 		LayoutVersionID: v.LayoutVersionID,
 		EntityID:        v.EntityID,
+		OrganizationID:  v.OrganizationID,
 	}
 }
 
