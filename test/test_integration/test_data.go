@@ -28,6 +28,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/erx"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
@@ -37,7 +38,7 @@ import (
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/dispatch"
-	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/libs/dosespot"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
@@ -386,8 +387,8 @@ func setupTest() (*TestData, error) {
 		ERxStatusQueue:      &common.SQSQueue{QueueService: &awsutil.SQS{}, QueueURL: "local-status-erx"},
 		ERxRoutingQueue:     &common.SQSQueue{QueueService: &awsutil.SQS{}, QueueURL: "local-routing-erx"},
 		ERxAPI: &erx.StubErxService{
-			SelectMedicationFunc: func(clinicianID int64, name, strength string) (*erx.MedicationSelectResponse, error) {
-				return &erx.MedicationSelectResponse{}, nil
+			SelectMedicationFunc: func(clinicianID int64, name, strength string) (*dosespot.MedicationSelectResponse, error) {
+				return &dosespot.MedicationSelectResponse{}, nil
 			},
 		},
 		MedicalRecordQueue: &common.SQSQueue{QueueService: &awsutil.SQS{}, QueueURL: "local-medrecord"},

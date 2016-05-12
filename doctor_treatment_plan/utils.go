@@ -7,11 +7,12 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/erx"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/dispatch"
-	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/libs/dosespot"
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
@@ -210,7 +211,7 @@ func sendCaseMessageAndPublishTPActivatedEvent(dataAPI api.DataAPI, dispatcher *
 			PersonID: doctor.PersonID,
 			Body:     message,
 			Attachments: []*common.CaseMessageAttachment{
-				&common.CaseMessageAttachment{
+				{
 					ItemType: common.AttachmentTypeTreatmentPlan,
 					ItemID:   treatmentPlan.ID.Int64(),
 				},
@@ -334,7 +335,7 @@ func validateTreatments(treatments []*common.Treatment,
 	return nil
 }
 
-func CreateTreatmentFromMedication(medication *erx.MedicationSelectResponse, medicationStrength, medicationName string) (*common.Treatment, *api.DrugDescription) {
+func CreateTreatmentFromMedication(medication *dosespot.MedicationSelectResponse, medicationStrength, medicationName string) (*common.Treatment, *api.DrugDescription) {
 	// starting refills at 0 because we default to 0 even when doctor
 	// does not enter something
 	t := &common.Treatment{
@@ -365,7 +366,7 @@ func CreateTreatmentFromMedication(medication *erx.MedicationSelectResponse, med
 	return t, d
 }
 
-func createDrugDescription(treatment *common.Treatment, medication *erx.MedicationSelectResponse) *api.DrugDescription {
+func createDrugDescription(treatment *common.Treatment, medication *dosespot.MedicationSelectResponse) *api.DrugDescription {
 	scheduleInt, err := strconv.Atoi(medication.Schedule)
 	if err != nil {
 		scheduleInt = 0

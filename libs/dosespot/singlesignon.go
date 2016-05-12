@@ -1,4 +1,4 @@
-package erx
+package dosespot
 
 import (
 	"bytes"

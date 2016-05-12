@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/erx"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/www"
 	"golang.org/x/net/context"

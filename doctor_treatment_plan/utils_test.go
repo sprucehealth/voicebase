@@ -4,9 +4,10 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/erx"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/libs/dosespot"
 )
 
 func TestParseSections(t *testing.T) {
@@ -45,8 +46,8 @@ type erxAPI_validateTreatments struct {
 	erx.ERxAPI
 }
 
-func (e *erxAPI_validateTreatments) SelectMedication(clinicianID int64, drugInternalName, dosageStrength string) (*erx.MedicationSelectResponse, error) {
-	return &erx.MedicationSelectResponse{}, nil
+func (e *erxAPI_validateTreatments) SelectMedication(clinicianID int64, drugInternalName, dosageStrength string) (*dosespot.MedicationSelectResponse, error) {
+	return &dosespot.MedicationSelectResponse{}, nil
 }
 
 func TestValidateDuplicateTreatments(t *testing.T) {

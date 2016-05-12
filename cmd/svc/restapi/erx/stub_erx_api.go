@@ -6,7 +6,8 @@ import (
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
-	pharmacySearch "github.com/sprucehealth/backend/pharmacy"
+	"github.com/sprucehealth/backend/libs/dosespot"
+	"github.com/sprucehealth/backend/pharmacy"
 )
 
 type StubErxService struct {
@@ -14,7 +15,7 @@ type StubErxService struct {
 
 	RefillRequestPrescriptionIDs         map[int64]int64
 	PatientDetailsToReturn               *common.Patient
-	PharmacyDetailsToReturn              *pharmacySearch.PharmacyData
+	PharmacyDetailsToReturn              *pharmacy.PharmacyData
 	RefillRxRequestQueueToReturn         []*common.RefillRequestItem
 	TransmissionErrorsForPrescriptionIds []int64
 	PrescriptionIDsToReturn              []int64
@@ -22,7 +23,7 @@ type StubErxService struct {
 	PharmacyToSendPrescriptionTo         int64
 	ExpectedRxReferenceNumber            string
 
-	SelectMedicationFunc func(clinicianID int64, name, strength string) (*MedicationSelectResponse, error)
+	SelectMedicationFunc func(clinicianID int64, name, strength string) (*dosespot.MedicationSelectResponse, error)
 }
 
 func (s *StubErxService) GetDrugNamesForDoctor(clinicianID int64, prefix string) ([]string, error) {
@@ -41,7 +42,7 @@ func (s *StubErxService) SearchForMedicationStrength(clinicianID int64, medicati
 	return nil, nil
 }
 
-func (s *StubErxService) SelectMedication(clinicianID int64, medicationName, medicationStrength string) (*MedicationSelectResponse, error) {
+func (s *StubErxService) SelectMedication(clinicianID int64, medicationName, medicationStrength string) (*dosespot.MedicationSelectResponse, error) {
 	if s.SelectMedicationFunc != nil {
 		return s.SelectMedicationFunc(clinicianID, medicationName, medicationStrength)
 	}
@@ -78,7 +79,7 @@ func (s *StubErxService) SendMultiplePrescriptions(clinicianID int64, Patient *c
 	return nil, nil
 }
 
-func (s *StubErxService) SearchForPharmacies(clinicianID int64, city, state, zipcode, name string, pharmacyTypes []string) ([]*pharmacySearch.PharmacyData, error) {
+func (s *StubErxService) SearchForPharmacies(clinicianID int64, city, state, zipcode, name string, pharmacyTypes []string) ([]*pharmacy.PharmacyData, error) {
 	return nil, nil
 }
 
@@ -127,7 +128,7 @@ func (s *StubErxService) GetPatientDetails(erxPatientID int64) (*common.Patient,
 	return s.PatientDetailsToReturn, nil
 }
 
-func (s *StubErxService) GetPharmacyDetails(pharmacyID int64) (*pharmacySearch.PharmacyData, error) {
+func (s *StubErxService) GetPharmacyDetails(pharmacyID int64) (*pharmacy.PharmacyData, error) {
 	return s.PharmacyDetailsToReturn, nil
 }
 
