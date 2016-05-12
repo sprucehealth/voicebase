@@ -2,7 +2,6 @@ package server
 
 import (
 	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -15,6 +14,7 @@ import (
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/ptr"
@@ -52,6 +52,7 @@ type excommsService struct {
 	idgen                idGenerator
 	proxyNumberManager   proxynumber.Manager
 	signer               *media.Signer
+	httpClient           httputil.Client
 }
 
 func NewService(
@@ -82,6 +83,7 @@ func NewService(
 		idgen:                idgen,
 		proxyNumberManager:   proxyNumberManager,
 		signer:               signer,
+		httpClient:           &httputil.DefaultClient{},
 	}
 	return es
 }
@@ -347,7 +349,7 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 		for _, rURL := range resizedURLs {
 			parallel.Go(func() error {
 				// TODO: Maybe we want to specify a timeout here? Pretty sure our implementation wont hang forever though
-				resp, err := http.Head(rURL)
+				resp, err := e.httpClient.Head(rURL)
 				if err != nil {
 					return err
 				}
