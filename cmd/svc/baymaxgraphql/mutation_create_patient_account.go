@@ -351,8 +351,9 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 	})
 	// Mark the invite as consumed
 	if inv != nil {
+		aCtx := gqlctx.Clone(ctx)
 		conc.Go(func() {
-			if _, err := svc.invite.MarkInviteConsumed(ctx, &invite.MarkInviteConsumedRequest{Token: atts[inviteTokenAttributionKey]}); err != nil {
+			if _, err := svc.invite.MarkInviteConsumed(aCtx, &invite.MarkInviteConsumedRequest{Token: atts[inviteTokenAttributionKey]}); err != nil {
 				golog.Errorf("Error while marking invite with code %q as consumed: %s", atts[inviteTokenAttributionKey], err)
 			}
 		})
