@@ -38,6 +38,8 @@ type errorMsg struct {
 
 func (m *mediaHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
+	case httputil.Head:
+		m.serveHEAD(ctx, w, r)
 	case httputil.Get:
 		m.serveGET(ctx, w, r)
 	case httputil.Post:
@@ -95,6 +97,14 @@ func (m *mediaHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *
 }
 
 func (m *mediaHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	m.serve(ctx, w, r, false)
+}
+
+func (m *mediaHandler) serveHEAD(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	m.serve(ctx, w, r, true)
+}
+
+func (m *mediaHandler) serve(ctx context.Context, w http.ResponseWriter, r *http.Request, headersOnly bool) {
 	// get media related params
 	mimetype := r.FormValue("mimetype")
 	mediaID := r.FormValue("id")
@@ -186,17 +196,20 @@ func (m *mediaHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *h
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	copyWithHeaders(w, rc, meta.Size, meta.MimeType)
+	copyWith(w, rc, meta.Size, meta.MimeType, headersOnly)
 }
 
-func copyWithHeaders(w http.ResponseWriter, r io.Reader, contentLen int, mimeType string) {
+func copyWith(w http.ResponseWriter, r io.Reader, contentLen int, mimeType string, headersOnly bool) {
 	w.Header().Set("Content-Type", mimeType)
 	if contentLen > 0 {
 		w.Header().Set("Content-Length", strconv.Itoa(contentLen))
 	}
-	// Note: We are currently not attaching a Last-Modified header on responses
-	httputil.FarFutureCacheHeaders(w.Header(), time.Now())
-	io.Copy(w, r)
+
+	if !headersOnly {
+		// Note: We are currently not attaching a Last-Modified header on responses
+		httputil.FarFutureCacheHeaders(w.Header(), time.Now())
+		io.Copy(w, r)
+	}
 }
 
 func httpInternalError(ctx context.Context, w http.ResponseWriter, err error) {
