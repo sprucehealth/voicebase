@@ -8,40 +8,22 @@ import (
 
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/svc/layout"
-	"github.com/sprucehealth/mapstructure"
 )
 
 func TestParsing(t *testing.T) {
-
-	var questionToAnswerMap map[string]Answer
-	decoderConfig := &mapstructure.DecoderConfig{
-		Result:   &questionToAnswerMap,
-		TagName:  "json",
-		Registry: *typeRegistry,
-	}
-
-	d, err := mapstructure.NewDecoder(decoderConfig)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	fileData, err := ioutil.ReadFile("testdata/answers.json")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	var jsonMap map[string]interface{}
-	if err := json.Unmarshal(fileData, &jsonMap); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := d.Decode(jsonMap); err != nil {
+	visitAnswers, err := Decode(string(fileData))
+	if err != nil {
 		t.Fatal(err)
 	}
 
 	// lets unmarshal decoded object and ensure it is the same as the content
 	// in the file
-	jsonData, err := json.Marshal(questionToAnswerMap)
+	jsonData, err := json.Marshal(visitAnswers)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -435,26 +417,24 @@ func TestMultipleChoiceQuestionWithSubanswers(t *testing.T) {
 			{
 				ID: "10",
 				Subanswers: map[string]Answer{
-					"sq1": &FreeTextQuestionAnswer{
-						Type: "q_type_free_text",
-						Text: "hello",
-					},
 					"sq2": &SegmentedControlQuestionAnswer{
 						Type: "q_type_segmented_control",
 						PotentialAnswer: &PotentialAnswerItem{
 							ID: "100",
 						},
 					},
+					"sq1": &FreeTextQuestionAnswer{
+						Type: "q_type_free_text",
+						Text: "hello",
+					},
 				},
-			},
-			{
-				ID: "11",
 			},
 		},
 	}
 
 	err := m.Validate(&layout.Question{
-		Type: "q_type_multiple_choice",
+		Type:     "q_type_multiple_choice",
+		Required: ptr.Bool(true),
 		PotentialAnswers: []*layout.PotentialAnswer{
 			{
 				ID:   "10",
@@ -474,12 +454,14 @@ func TestMultipleChoiceQuestionWithSubanswers(t *testing.T) {
 				{
 					Questions: []*layout.Question{
 						{
-							ID:   "sq1",
-							Type: "q_type_free_text",
+							ID:       "sq1",
+							Required: ptr.Bool(true),
+							Type:     "q_type_free_text",
 						},
 						{
-							ID:   "sq2",
-							Type: "q_type_segmented_control",
+							ID:       "sq2",
+							Required: ptr.Bool(true),
+							Type:     "q_type_segmented_control",
 							PotentialAnswers: []*layout.PotentialAnswer{
 								{
 									ID: "100",
@@ -496,144 +478,6 @@ func TestMultipleChoiceQuestionWithSubanswers(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatal(err)
-	}
-}
-
-func TestMultipleChoiceQuestionWithSubanswer_Invalid(t *testing.T) {
-
-	// subanswers for option missing
-
-	m := &MultipleChoiceQuestionAnswer{
-		PotentialAnswers: []*PotentialAnswerItem{
-			{
-				ID: "10",
-				Subanswers: map[string]Answer{
-					"sq1": &FreeTextQuestionAnswer{
-						Type: "q_type_free_text",
-						Text: "hello",
-					},
-					"sq2": &SegmentedControlQuestionAnswer{
-						Type: "q_type_segmented_control",
-						PotentialAnswer: &PotentialAnswerItem{
-							ID: "100",
-						},
-					},
-				},
-			},
-			{
-				ID: "11",
-			},
-		},
-	}
-
-	err := m.Validate(&layout.Question{
-		Type: "q_type_multiple_choice",
-		PotentialAnswers: []*layout.PotentialAnswer{
-			{
-				ID:   "10",
-				Type: "a_type_multiple_choice",
-			},
-			{
-				ID:   "11",
-				Type: "a_type_multiple_choice",
-			},
-			{
-				ID:   "12",
-				Type: "a_type_multiple_choice_none",
-			},
-		},
-		SubQuestionsConfig: &layout.SubQuestionsConfig{
-			Screens: []*layout.Screen{
-				{
-					Questions: []*layout.Question{
-						{
-							ID:       "sq1",
-							Type:     "q_type_free_text",
-							Required: ptr.Bool(true),
-						},
-						{
-							ID:       "sq2",
-							Type:     "q_type_segmented_control",
-							Required: ptr.Bool(true),
-							PotentialAnswers: []*layout.PotentialAnswer{
-								{
-									ID: "100",
-								},
-								{
-									ID: "101",
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	})
-	if err == nil {
-		t.Fatalf("expected error but got none")
-	}
-
-	// required subanswer missing
-
-	m = &MultipleChoiceQuestionAnswer{
-		PotentialAnswers: []*PotentialAnswerItem{
-			{
-				ID: "10",
-				Subanswers: map[string]Answer{
-					"sq1": &FreeTextQuestionAnswer{
-						Type: "q_type_free_text",
-						Text: "hello",
-					},
-				},
-			},
-		},
-	}
-
-	err = m.Validate(&layout.Question{
-		Type: "q_type_multiple_choice",
-		PotentialAnswers: []*layout.PotentialAnswer{
-			{
-				ID:   "10",
-				Type: "a_type_multiple_choice",
-			},
-			{
-				ID:   "11",
-				Type: "a_type_multiple_choice",
-			},
-			{
-				ID:   "12",
-				Type: "a_type_multiple_choice_none",
-			},
-		},
-		SubQuestionsConfig: &layout.SubQuestionsConfig{
-			Screens: []*layout.Screen{
-				{
-					Questions: []*layout.Question{
-						{
-							ID:       "sq1",
-							Type:     "q_type_free_text",
-							Required: ptr.Bool(true),
-						},
-						{
-							ID:       "sq2",
-							Type:     "q_type_segmented_control",
-							Required: ptr.Bool(true),
-							PotentialAnswers: []*layout.PotentialAnswer{
-								{
-									ID: "100",
-								},
-								{
-									ID: "101",
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	})
-	if err == nil {
-		t.Fatalf("expected error but got none")
 	}
 }
 

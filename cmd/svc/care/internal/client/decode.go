@@ -7,10 +7,10 @@ import (
 	"github.com/sprucehealth/mapstructure"
 )
 
-func Decode(answersJSON string) (map[string]Answer, error) {
-	var questionToAnswerMap map[string]Answer
+func Decode(answersJSON string) (*VisitAnswers, error) {
+	var visitAnswers VisitAnswers
 	decoderConfig := &mapstructure.DecoderConfig{
-		Result:   &questionToAnswerMap,
+		Result:   &visitAnswers,
 		TagName:  "json",
 		Registry: *typeRegistry,
 	}
@@ -28,5 +28,5 @@ func Decode(answersJSON string) (map[string]Answer, error) {
 	if err := d.Decode(jsonMap); err != nil {
 		return nil, errors.Trace(err)
 	}
-	return questionToAnswerMap, nil
+	return &visitAnswers, nil
 }

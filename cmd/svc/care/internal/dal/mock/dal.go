@@ -88,6 +88,16 @@ func (m *mockDAL) CreateVisitAnswer(ctx context.Context, visitID models.VisitID,
 	return mock.SafeError(rets[0])
 }
 
+func (m *mockDAL) DeleteVisitAnswers(ctx context.Context, visitID models.VisitID, questionIDs []string) (int64, error) {
+	rets := m.Record(visitID, questionIDs)
+
+	if len(rets) == 0 {
+		return 0, nil
+	}
+
+	return rets[1].(int64), mock.SafeError(rets[1])
+}
+
 func (m *mockDAL) VisitAnswers(ctx context.Context, visitID models.VisitID, questionIDs []string) (map[string]*models.Answer, error) {
 	rets := m.Record(visitID, questionIDs)
 

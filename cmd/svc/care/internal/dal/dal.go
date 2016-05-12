@@ -29,6 +29,7 @@ type DAL interface {
 	SubmitCarePlan(ctx context.Context, id models.CarePlanID, parentID string) error
 	UpdateVisit(ctx context.Context, id models.VisitID, update *VisitUpdate) (int64, error)
 	Visit(ctx context.Context, id models.VisitID, opts ...QueryOption) (*models.Visit, error)
+	DeleteVisitAnswers(ctx context.Context, visitID models.VisitID, questionIDs []string) (int64, error)
 	VisitAnswers(ctx context.Context, visitID models.VisitID, questionIDs []string) (map[string]*models.Answer, error)
 }
 
@@ -179,6 +180,26 @@ func (d *dal) CreateVisitAnswer(ctx context.Context, visitID models.VisitID, act
 	}
 
 	return nil
+}
+
+func (d *dal) DeleteVisitAnswers(ctx context.Context, visitID models.VisitID, questionIDs []string) (int64, error) {
+	if len(questionIDs) == 0 {
+		return 0, nil
+	}
+	res, err := d.db.Exec(`
+		DELETE FROM visit_answer
+		WHERE visit_id = ?
+		AND question_id in (`+dbutil.MySQLArgs(len(questionIDs))+`)`, dbutil.AppendStringsToInterfaceSlice([]interface{}{visitID}, questionIDs)...)
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+
+	rowsDeleted, err := res.RowsAffected()
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+
+	return rowsDeleted, nil
 }
 
 func (d *dal) VisitAnswers(ctx context.Context, visitID models.VisitID, questionIDs []string) (map[string]*models.Answer, error) {

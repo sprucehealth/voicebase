@@ -124,9 +124,16 @@ func (s *server) CreateVisitAnswers(ctx context.Context, in *care.CreateVisitAns
 		return nil, grpcErrorf(codes.InvalidArgument, "unable to parse visit_id %s: %s", in.VisitID, err)
 	}
 
-	questionIDToAnswerMap, err := client.Decode(in.AnswersJSON)
+	visitAnswers, err := client.Decode(in.AnswersJSON)
 	if err != nil {
 		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	// ensure that no answer in the clear answers array is also an answer mentioned in the answer dictionary
+	for _, questionID := range visitAnswers.ClearAnswers {
+		if _, ok := visitAnswers.Answers[questionID]; ok {
+			return nil, grpcErrorf(care.ErrorInvalidAnswer, "question %s specified in list to clear answers for as well as in dictionary with answer", questionID)
+		}
 	}
 
 	visit, err := s.dal.Visit(ctx, visitID)
@@ -156,7 +163,7 @@ func (s *server) CreateVisitAnswers(ctx context.Context, in *care.CreateVisitAns
 	}
 
 	// validate each incoming answer against the question in the intake
-	for questionID, answer := range questionIDToAnswerMap {
+	for questionID, answer := range visitAnswers.Answers {
 		question, ok := questionInIntakeMap[questionID]
 		if !ok {
 			return nil, grpcErrorf(codes.InvalidArgument, "question %s not in visit intake for %s", questionID, visit.ID)
@@ -168,8 +175,8 @@ func (s *server) CreateVisitAnswers(ctx context.Context, in *care.CreateVisitAns
 	}
 
 	// transform the incoming answers to the internal models and store
-	transformedAnswers := make([]*models.Answer, 0, len(questionIDToAnswerMap))
-	for questionID, answer := range questionIDToAnswerMap {
+	transformedAnswers := make([]*models.Answer, 0, len(visitAnswers.Answers))
+	for questionID, answer := range visitAnswers.Answers {
 		transformedAnswer, err := transformAnswerToModel(questionID, answer)
 		if err != nil {
 			return nil, grpcErrorf(codes.Internal, err.Error())
@@ -183,6 +190,14 @@ func (s *server) CreateVisitAnswers(ctx context.Context, in *care.CreateVisitAns
 			if err := dl.CreateVisitAnswer(ctx, visitID, in.ActorEntityID, answer); err != nil {
 				return errors.Trace(err)
 			}
+
+			rowsDeleted, err := dl.DeleteVisitAnswers(ctx, visitID, visitAnswers.ClearAnswers)
+			if err != nil {
+				return errors.Trace(err)
+			} else if rowsDeleted > int64(len(visitAnswers.ClearAnswers)) {
+				return errors.Trace(fmt.Errorf("more rows attempted to be deleted (%d) than anticpated (%d)", rowsDeleted, len(visitAnswers.ClearAnswers)))
+			}
+
 		}
 		return nil
 	}); err != nil {

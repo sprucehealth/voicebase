@@ -9,6 +9,14 @@ import (
 	"github.com/sprucehealth/mapstructure"
 )
 
+// VisitAnswers is the object the client sends to set answers and clear some answers.
+type VisitAnswers struct {
+	// Answers is a map of questionID to answer to set for each question in the intake.
+	Answers map[string]Answer `json:"answers,omitempty"`
+	// ClearAnswers is a list of questionIDs to clear out answers for.
+	ClearAnswers []string `json:"clear_answers,omitempty"`
+}
+
 // Answer is the client side representation of any answer to a question in an intake.
 type Answer interface {
 	mapstructure.Typed
@@ -331,16 +339,8 @@ func validateQuestionType(answer Answer, question *layout.Question) error {
 }
 
 func validateSubAnswers(optionSelectedID string, subanswers map[string]Answer, question *layout.Question) error {
-	if question.SubQuestionsConfig != nil && len(subanswers) == 0 {
-		for _, subScreen := range question.SubQuestionsConfig.Screens {
-			for _, subQuestion := range subScreen.Questions {
-				if isQuestionRequired(subQuestion) {
-					return fmt.Errorf("answer %s for question %s does not have subanswers when expected", optionSelectedID, question.ID)
-				}
-			}
-		}
-	}
 
+	subQuestionsAnswered := make(map[string]struct{})
 	for subQuestionID, subanswer := range subanswers {
 		// ensure that the question exists in the subquestion config
 		if question.SubQuestionsConfig == nil {
@@ -348,12 +348,10 @@ func validateSubAnswers(optionSelectedID string, subanswers map[string]Answer, q
 		}
 
 		subQuestionFound := false
-		subQuestionsAnswered := make(map[string]struct{})
 		for _, subScreen := range question.SubQuestionsConfig.Screens {
 			for _, subQuestion := range subScreen.Questions {
 				if subQuestion.ID == subQuestionID {
 					subQuestionFound = true
-					subQuestionsAnswered[subQuestionID] = struct{}{}
 					if err := subanswer.Validate(subQuestion); err != nil {
 						return fmt.Errorf("answer %s for question %s has an invalid subanswer: %s", optionSelectedID, question.ID, err)
 					}
@@ -364,15 +362,7 @@ func validateSubAnswers(optionSelectedID string, subanswers map[string]Answer, q
 		if !subQuestionFound {
 			return fmt.Errorf("answer %s for question %s has a subanswer for which the subquestion %s was not found", optionSelectedID, question.ID, subQuestionID)
 		}
-
-		// ensure that all required subquestions were answered
-		for _, subScreen := range question.SubQuestionsConfig.Screens {
-			for _, subQuestion := range subScreen.Questions {
-				if _, ok := subQuestionsAnswered[subQuestion.ID]; !ok && isQuestionRequired(subQuestion) {
-					return fmt.Errorf("answer %s for question %s does not have %s subquestion answered when it is required", optionSelectedID, question.ID, subQuestion.ID)
-				}
-			}
-		}
+		subQuestionsAnswered[subQuestionID] = struct{}{}
 	}
 	return nil
 }
