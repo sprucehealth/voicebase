@@ -1,7 +1,11 @@
 // Package conc includes helpers for concurrency patterns that avoid some of the most common pitfalls.
 package conc
 
-import "time"
+import (
+	"time"
+
+	"golang.org/x/net/context"
+)
 
 // Testing should be set to true when running tests for code that use this package.
 // This makes all functionality synchronous and makes tests deterministic.
@@ -14,6 +18,16 @@ func Go(f func()) {
 		go f()
 	} else {
 		f()
+	}
+}
+
+// GoCtx runs the provided function in a go routine witht the provided context ayschronously
+// and synchronously if it is
+func GoCtx(ctx context.Context, f func(ctx context.Context)) {
+	if !Testing {
+		go f(ctx)
+	} else {
+		f(ctx)
 	}
 }
 
