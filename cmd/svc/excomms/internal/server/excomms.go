@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -341,6 +342,23 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 	}
 	if len(resizedURLs) != 0 {
 		golog.Debugf("Resized media URLs: %v", resizedURLs)
+		parallel := conc.NewParallel()
+		// Perform GET calls on our resized urls so that the resize doesn't take place on the subsequent HEAD calls
+		for _, rURL := range resizedURLs {
+			parallel.Go(func() error {
+				// TODO: Maybe we want to specify a timeout here? Pretty sure our implementation wont hang forever though
+				resp, err := http.Head(rURL)
+				if err != nil {
+					return err
+				}
+				// Note: Not sure if we need to do this if we didn't read from it, but just to be safe
+				resp.Body.Close()
+				return nil
+			})
+		}
+		if err := parallel.Wait(); err != nil {
+			grpcErrorf(codes.Internal, err.Error())
+		}
 	}
 
 	switch in.Channel {
