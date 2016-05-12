@@ -1,4 +1,4 @@
-FROM ubuntu:latest
+FROM ubuntu:14.04
 MAINTAINER Spruce Backend <backend@sprucehealth.com>
 RUN apt-get update # January 20, 2015
 RUN apt-get -y upgrade
