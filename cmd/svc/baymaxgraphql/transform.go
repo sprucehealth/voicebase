@@ -417,7 +417,7 @@ func transformEntityToResponse(staticURLPrefix string, e *directory.Entity, sh *
 		LastModifiedTimestamp: e.LastModifiedTimestamp,
 		HasAccount:            e.AccountID != "",
 		AllowEdit:             canEditEntity(e, viewingAccount, sh),
-		HasPendingInvite:      false,
+		HasPendingInvite:      entityHasPendingInvite(e),
 	}
 
 	switch e.Type {
@@ -475,6 +475,13 @@ func transformEntityToResponse(staticURLPrefix string, e *directory.Entity, sh *
 	return ent, nil
 }
 
+func entityHasPendingInvite(ent *directory.Entity) bool {
+	// TODO: We should actually look this up. But for now we can do a poor man's version.
+	// If an entity is a Patient and has not created an account then in the current system
+	// they MUST have a pending invite.
+	return ent.Type == directory.EntityType_PATIENT && ent.AccountID == ""
+}
+
 func canEditEntity(e *directory.Entity, viewingAccount *auth.Account, sh *device.SpruceHeaders) bool {
 	// An unauthenticated use can never can never edit
 	if viewingAccount == nil || e == nil {
@@ -491,9 +498,8 @@ func canEditEntity(e *directory.Entity, viewingAccount *auth.Account, sh *device
 		e.Type == directory.EntityType_EXTERNAL {
 		if sh.Platform == device.IOS {
 			return (sh.AppVersion != nil && !sh.AppVersion.Equals(&encoding.Version{Major: 1}))
-		} else {
-			return true
 		}
+		return true
 	}
 
 	return false
