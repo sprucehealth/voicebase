@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/sprucehealth/backend/cmd/svc/restapi/erx"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/surescripts"
 )
 

@@ -429,6 +429,13 @@ func TestSendMessage_SMS(t *testing.T) {
 	test.OK(t, err)
 	resizedURL2, err := signer.ExpiringSignedURL("mediaid2", "", "", 3264, 3264, false, clk.Now().Add(time.Minute*15))
 	test.OK(t, err)
+	mHTTPClient := mock.NewHttpClient(t)
+	mHTTPClient.Expect(mock.NewExpectation(mHTTPClient.Head, resizedURL1).WithReturns(&http.Response{
+		Body: ioutil.NopCloser(nil),
+	}, nil))
+	mHTTPClient.Expect(mock.NewExpectation(mHTTPClient.Head, resizedURL2).WithReturns(&http.Response{
+		Body: ioutil.NopCloser(nil),
+	}, nil))
 	mm.Expect(mock.NewExpectation(mm.Send, "+17348465522", "+14152222222", twilio.MessageParams{
 		Body:           "hello",
 		ApplicationSid: "1234",
@@ -464,6 +471,7 @@ func TestSendMessage_SMS(t *testing.T) {
 		twilioApplicationSID: "1234",
 		clock:                clk,
 		signer:               signer,
+		httpClient:           mHTTPClient,
 	}
 	es.twilio.Messages = mm
 
@@ -540,6 +548,13 @@ func TestSendMessage_Email(t *testing.T) {
 	test.OK(t, err)
 	resizedURL2, err := signer.ExpiringSignedURL("mediaid2", "", "", 3264, 3264, false, clk.Now().Add(time.Minute*15))
 	test.OK(t, err)
+	mHTTPClient := mock.NewHttpClient(t)
+	mHTTPClient.Expect(mock.NewExpectation(mHTTPClient.Head, resizedURL1).WithReturns(&http.Response{
+		Body: ioutil.NopCloser(nil),
+	}, nil))
+	mHTTPClient.Expect(mock.NewExpectation(mHTTPClient.Head, resizedURL2).WithReturns(&http.Response{
+		Body: ioutil.NopCloser(nil),
+	}, nil))
 	em := &models.EmailMessage{
 		ID:        "1",
 		Subject:   "Hi",
@@ -574,6 +589,7 @@ func TestSendMessage_Email(t *testing.T) {
 		idgen:       newMockIDGen(),
 		clock:       clk,
 		signer:      signer,
+		httpClient:  mHTTPClient,
 	}
 
 	_, err = es.SendMessage(context.Background(), &excomms.SendMessageRequest{

@@ -7,7 +7,8 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/audit"
-	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/erx"
+	"github.com/sprucehealth/backend/libs/dosespot"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/www"
@@ -22,11 +23,11 @@ type drugSearchAPIHandler struct {
 }
 
 type drugStrength struct {
-	ParsedGenericName string                        `json:"parsed_generic_name"`
-	Strength          string                        `json:"strength"`
-	Error             string                        `json:"error,omitempty"`
-	GuideID           int64                         `json:"guide_id,string"`
-	Medication        *erx.MedicationSelectResponse `json:"medication"`
+	ParsedGenericName string                             `json:"parsed_generic_name"`
+	Strength          string                             `json:"strength"`
+	Error             string                             `json:"error,omitempty"`
+	GuideID           int64                              `json:"guide_id,string"`
+	Medication        *dosespot.MedicationSelectResponse `json:"medication"`
 }
 
 type drugSearchResult struct {

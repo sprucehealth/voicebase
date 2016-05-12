@@ -7,7 +7,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/erx"
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
