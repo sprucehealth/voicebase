@@ -775,14 +775,14 @@ func (c byVisitCategoryName) Less(i, j int) bool {
 
 type header struct {
 	Title    string `json:"title"`
-	Subtitle string `json:"subtitle"`
-	IconURL  string `json:"icon_url"`
+	Subtitle string `json:"subtitle,omitempty"`
+	IconURL  string `json:"icon_url,omitempty"`
 }
 
 type checkout struct {
-	HeaderImageURL string `json:"header_image_url"`
+	HeaderImageURL string `json:"header_image_url,omitempty"`
 	HeaderText     string `json:"header_text"`
-	FooterText     string `json:"footer_text"`
+	FooterText     string `json:"footer_text,omitempty"`
 }
 
 type submissionConfirmation struct {
