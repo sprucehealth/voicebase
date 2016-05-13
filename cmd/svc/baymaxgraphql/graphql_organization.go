@@ -7,7 +7,6 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	baymaxgraphqlsettings "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/settings"
-	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/caremessenger/deeplink"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/auth"
@@ -179,10 +178,6 @@ func isSecureThreadsEnabled() func(p graphql.ResolveParams) (interface{}, error)
 		default:
 			golog.Errorf("Unhandled source type %T for isSecureThreadsEnabled, returning false", s)
 			return false, nil
-		}
-
-		if !environment.IsProd() {
-			return true, nil
 		}
 		booleanValue, err := settings.GetBooleanValue(ctx, svc.settings, &settings.GetValuesRequest{
 			NodeID: orgID,
