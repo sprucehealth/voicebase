@@ -84,13 +84,11 @@ func SetupRoutes(r *mux.Router, config *Config) {
 	}
 
 	r.Handle("/dermatology", newStaticHandler(r, config.TemplateLoader, "home/home.html", "Spruce", nil))
-	// r.Handle("/about", newStaticHandler(r, config.TemplateLoader, "home/about.html", "About | Spruce", nil))
 	r.Handle("/conditions-treated", newStaticHandler(r, config.TemplateLoader, "home/conditions.html", "Conditions Treated | Spruce", nil))
 	r.Handle("/contact", newStaticHandler(r, config.TemplateLoader, "home/contact.html", "Contact | Spruce", nil))
 	r.Handle("/faq", newStaticHandler(r, config.TemplateLoader, "home/faq.html", "FAQ | Spruce", faqCtx))
 	r.Handle("/free-visit-terms", newStaticHandler(r, config.TemplateLoader, "home/free-visit-terms.html", "Free Visit Terms & Conditions | Spruce", nil))
 	r.Handle("/meet-the-doctors", newStaticHandler(r, config.TemplateLoader, "home/meet-the-doctors.html", "Meet the Doctors | Spruce", nil))
-	r.Handle("/providers", newStaticHandler(r, config.TemplateLoader, "home/providers.html", "For Providers | Spruce", nil))
 	r.Handle("/terms", newStaticHandler(r, config.TemplateLoader, "home/terms.html", "Terms & Conditions | Spruce", nil))
 	r.Handle("/terms/2015-03-31", newStaticHandler(r, config.TemplateLoader, "home/terms-2015-03-31.html", "Terms & Conditions | Spruce", nil))
 	r.Handle("/app", newStaticHandler(r, config.TemplateLoader, "home/referral.html", "Get the App | Spruce", func() interface{} {
