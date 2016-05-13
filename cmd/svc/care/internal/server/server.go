@@ -40,12 +40,15 @@ func (s *server) CreateVisit(ctx context.Context, in *care.CreateVisitRequest) (
 		return nil, grpcErrorf(codes.InvalidArgument, "layout_version_id required")
 	} else if in.Name == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "name required")
+	} else if in.OrganizationID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "organization_id required")
 	}
 
 	visitToCreate := &models.Visit{
 		Name:            in.Name,
 		LayoutVersionID: in.LayoutVersionID,
 		EntityID:        in.EntityID,
+		OrganizationID:  in.OrganizationID,
 	}
 
 	_, err := s.dal.CreateVisit(ctx, visitToCreate)
