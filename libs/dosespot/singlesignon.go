@@ -35,7 +35,6 @@ func generateRandomAlphaNumString(n int) []byte {
 
 // Steps to create the singleSignOnUserIDVerify is spelled out in the
 func createSingleSignOnUserIDVerify(phrase []byte, clinicKey string, userID int64) []byte {
-
 	// STEP 1: first 22 characters from phrase
 	first22Pharse := phrase[:22]
 
@@ -56,7 +55,6 @@ func createSingleSignOnUserIDVerify(phrase []byte, clinicKey string, userID int6
 }
 
 func createSingleSignOn(phrase []byte, clinicKey string) []byte {
-
 	// STEPS 2 - 4: Compute the hash of the phrase concatenated with the key
 	sha512Hash := sha512.New()
 	sha512Hash.Write(phrase)
