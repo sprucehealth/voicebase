@@ -41,9 +41,10 @@ func TestTransformToResponse_PhotoSection(t *testing.T) {
 				Name: "SectionName",
 				Slots: []*client.PhotoSlotItem{
 					{
-						Name:    "SlotName",
-						SlotID:  "SlotID1",
-						PhotoID: "PhotoID1",
+						Name:     "SlotName",
+						SlotID:   "SlotID1",
+						PhotoID:  "PhotoID1",
+						PhotoURL: "https://placekitten.com/600/800",
 					},
 				},
 			},

@@ -38,9 +38,10 @@ func init() {
 // PHOTO SECTION
 
 type PhotoSlotItem struct {
-	Name    string `json:"name"`
-	SlotID  string `json:"slot_id"`
-	PhotoID string `json:"photo_id"`
+	Name     string `json:"name"`
+	SlotID   string `json:"slot_id"`
+	PhotoID  string `json:"photo_id"`
+	PhotoURL string `json:"url,omitempty"`
 }
 
 type PhotoSectionItem struct {

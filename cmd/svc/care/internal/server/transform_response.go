@@ -51,9 +51,10 @@ func transformPhotoSectionToResponse(answer *models.Answer) (client.Answer, erro
 
 		for j, photoSlot := range photoSection.Slots {
 			photoSectionAnswer.PhotoSections[i].Slots[j] = &client.PhotoSlotItem{
-				Name:    photoSlot.Name,
-				SlotID:  photoSlot.SlotID,
-				PhotoID: photoSlot.MediaID,
+				Name:     photoSlot.Name,
+				SlotID:   photoSlot.SlotID,
+				PhotoID:  photoSlot.MediaID,
+				PhotoURL: "https://placekitten.com/600/800", //TODO
 			}
 		}
 	}
