@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/dosespot"
 	"github.com/sprucehealth/backend/test"
 )
 
@@ -230,11 +231,11 @@ func TestAddTreatments_FallbackToSelectMedication(t *testing.T) {
 	var name, strength string
 	var count int
 	stubERxAPI := testData.Config.ERxAPI.(*erx.StubErxService)
-	stubERxAPI.SelectMedicationFunc = func(clinicianID int64, medicationName, medicationStrength string) (*erx.MedicationSelectResponse, error) {
+	stubERxAPI.SelectMedicationFunc = func(clinicianID int64, medicationName, medicationStrength string) (*dosespot.MedicationSelectResponse, error) {
 		name = medicationName
 		strength = medicationStrength
 		count++
-		return &erx.MedicationSelectResponse{
+		return &dosespot.MedicationSelectResponse{
 			DispenseUnitID:          treatment1.DispenseUnitID.Int64(),
 			DispenseUnitDescription: treatment1.DispenseUnitDescription,
 			MatchedDrugName:         treatment1.DrugInternalName,
