@@ -241,9 +241,17 @@ func threadEmptyStateTextMarkup(ctx context.Context, ram raccess.ResourceAccesso
 			esm, err := ram.Entity(ctx, t.PrimaryEntityID, nil, 0)
 			if err != nil {
 				// Just log it. Don't block the thread
-				golog.Errorf("Failed to get primary entity %s for thread %s to populate empty state markup", t.PrimaryEntityID, t.ID)
+				golog.Errorf("Failed to get primary entity %s for thread %s to populate empty state markup: %s", t.PrimaryEntityID, t.ID, err)
 			} else {
-				return fmt.Sprintf("We've sent an invitation to %s to create a Spruce account and join the conversation.\n\nWe recommend sending a personal welcome message to kick things off.", esm.Info.DisplayName)
+				return fmt.Sprintf("We've sent an invitation to %s to download the Spruce application and connect with you. You can message the patient below -- we recommend sending a personal welcome to kick things off.\n\nYou can also make internal notes about the patient’s care. These are not sent to the patient but are visible to you and your teammates.", esm.Info.DisplayName)
+			}
+		} else if viewingAccount.Type == auth.AccountType_PATIENT {
+			esm, err := ram.Entity(ctx, t.OrganizationID, nil, 0)
+			if err != nil {
+				// Just log it. Don't block the thread
+				golog.Errorf("Failed to get organization entity %s for thread %s to populate empty state markup: %s", t.OrganizationID, t.ID, err)
+			} else {
+				return fmt.Sprintf("Welcome to your conversation with %s.", esm.Info.DisplayName)
 			}
 		}
 	}
