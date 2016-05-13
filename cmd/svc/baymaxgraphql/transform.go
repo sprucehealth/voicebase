@@ -356,7 +356,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 					Title:   v.VisitName,
 					CTAText: "View Visit",
 					TapURL:  deeplink.VisitURL(webDomain, item.ThreadID, v.VisitID),
-					IconURL: "https://static.sprucehealth.com/cm/icon_visit",
+					IconURL: "http://spruce-static.s3.amazonaws.com/caremessenger/icon_visit@2x.png",
 				}
 			case threading.Attachment_CARE_PLAN:
 				cp := a.GetCarePlan()
@@ -364,7 +364,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 					Title:   cp.CarePlanName,
 					CTAText: "View Care Plan",
 					TapURL:  deeplink.CarePlanURL(webDomain, item.ThreadID, cp.CarePlanID),
-					IconURL: "https://static.sprucehealth.com/cm/icon_care_plan",
+					IconURL: "http://spruce-static.s3.amazonaws.com/caremessenger/icon_cp@2x.png",
 				}
 			case threading.Attachment_GENERIC_URL:
 				d := a.GetGenericURL()
