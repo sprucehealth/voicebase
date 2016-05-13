@@ -132,6 +132,8 @@ func (s *server) CreateVisitAnswers(ctx context.Context, in *care.CreateVisitAns
 		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 
+	visitAnswers.DeleteNilAnswers()
+
 	// ensure that no answer in the clear answers array is also an answer mentioned in the answer dictionary
 	for _, questionID := range visitAnswers.ClearAnswers {
 		if _, ok := visitAnswers.Answers[questionID]; ok {
@@ -180,6 +182,7 @@ func (s *server) CreateVisitAnswers(ctx context.Context, in *care.CreateVisitAns
 	// transform the incoming answers to the internal models and store
 	transformedAnswers := make([]*models.Answer, 0, len(visitAnswers.Answers))
 	for questionID, answer := range visitAnswers.Answers {
+
 		transformedAnswer, err := transformAnswerToModel(questionID, answer)
 		if err != nil {
 			return nil, grpcErrorf(codes.Internal, err.Error())

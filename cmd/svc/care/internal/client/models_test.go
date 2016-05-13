@@ -8,6 +8,7 @@ import (
 
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/svc/layout"
+	"github.com/sprucehealth/backend/test"
 )
 
 func TestParsing(t *testing.T) {
@@ -31,6 +32,27 @@ func TestParsing(t *testing.T) {
 	if strings.TrimSpace(string(jsonData)) != strings.TrimSpace(string(fileData)) {
 		t.Fatalf("Expected:\n '%s'\n\nGot:\n '%s'", string(fileData), string(jsonData))
 	}
+}
+
+func TestVisitAnswers_NilAnswers(t *testing.T) {
+	v := &VisitAnswers{
+		Answers: map[string]Answer{
+			"10": &FreeTextQuestionAnswer{
+				Text: "hello",
+			},
+			"11": nil,
+		},
+	}
+	v.DeleteNilAnswers()
+
+	test.Equals(t, &VisitAnswers{
+		Answers: map[string]Answer{
+			"10": &FreeTextQuestionAnswer{
+				Text: "hello",
+			},
+		},
+	}, v)
+
 }
 
 func TestPhotoSectionAnswer(t *testing.T) {
@@ -427,6 +449,73 @@ func TestMultipleChoiceQuestionWithSubanswers(t *testing.T) {
 						Type: "q_type_free_text",
 						Text: "hello",
 					},
+				},
+			},
+		},
+	}
+
+	err := m.Validate(&layout.Question{
+		Type:     "q_type_multiple_choice",
+		Required: ptr.Bool(true),
+		PotentialAnswers: []*layout.PotentialAnswer{
+			{
+				ID:   "10",
+				Type: "a_type_multiple_choice",
+			},
+			{
+				ID:   "11",
+				Type: "a_type_multiple_choice",
+			},
+			{
+				ID:   "12",
+				Type: "a_type_multiple_choice_none",
+			},
+		},
+		SubQuestionsConfig: &layout.SubQuestionsConfig{
+			Screens: []*layout.Screen{
+				{
+					Questions: []*layout.Question{
+						{
+							ID:       "sq1",
+							Required: ptr.Bool(true),
+							Type:     "q_type_free_text",
+						},
+						{
+							ID:       "sq2",
+							Required: ptr.Bool(true),
+							Type:     "q_type_segmented_control",
+							PotentialAnswers: []*layout.PotentialAnswer{
+								{
+									ID: "100",
+								},
+								{
+									ID: "101",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestMultipleChoiceQuestionWithSubanswers_NilAnswers(t *testing.T) {
+	m := &MultipleChoiceQuestionAnswer{
+		PotentialAnswers: []*PotentialAnswerItem{
+			{
+				ID: "10",
+				Subanswers: map[string]Answer{
+					"sq2": &SegmentedControlQuestionAnswer{
+						Type: "q_type_segmented_control",
+						PotentialAnswer: &PotentialAnswerItem{
+							ID: "100",
+						},
+					},
+					"sq3": nil,
 				},
 			},
 		},

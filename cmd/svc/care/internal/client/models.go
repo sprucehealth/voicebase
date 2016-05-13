@@ -17,6 +17,14 @@ type VisitAnswers struct {
 	ClearAnswers []string `json:"clear_answers,omitempty"`
 }
 
+func (v *VisitAnswers) DeleteNilAnswers() {
+	for questionID, answer := range v.Answers {
+		if answer == nil {
+			delete(v.Answers, questionID)
+		}
+	}
+}
+
 // Answer is the client side representation of any answer to a question in an intake.
 type Answer interface {
 	mapstructure.Typed
@@ -123,6 +131,16 @@ type PotentialAnswerItem struct {
 	Subanswers map[string]Answer `json:"answers,omitempty"`
 }
 
+func (p *PotentialAnswerItem) DeleteNilAnswers() {
+
+	for questionID, answer := range p.Subanswers {
+		if answer == nil {
+			delete(p.Subanswers, questionID)
+		}
+	}
+
+}
+
 type MultipleChoiceQuestionAnswer struct {
 	Type             string                 `json:"type"`
 	PotentialAnswers []*PotentialAnswerItem `json:"potential_answers"`
@@ -169,6 +187,8 @@ func (m *MultipleChoiceQuestionAnswer) Validate(question *layout.Question) error
 		if noneOfTheAboveSelected && len(m.PotentialAnswers) > 1 {
 			return errors.Trace(fmt.Errorf("answer for question %s cannot have none of the above and another answer selected", question.ID))
 		}
+
+		optionSelected.DeleteNilAnswers()
 
 		// validate subanswers
 		if err := validateSubAnswers(optionSelected.ID, optionSelected.Subanswers, question); err != nil {
@@ -298,6 +318,15 @@ type AutocompleteItem struct {
 	Subanswers map[string]Answer `json:"answers,omitempty"`
 }
 
+func (a *AutocompleteItem) DeleteNilAnswers() {
+
+	for questionID, answer := range a.Subanswers {
+		if answer == nil {
+			delete(a.Subanswers, questionID)
+		}
+	}
+}
+
 type AutocompleteQuestionAnswer struct {
 	Type    string              `json:"type"`
 	Answers []*AutocompleteItem `json:"items"`
@@ -343,6 +372,7 @@ func validateSubAnswers(optionSelectedID string, subanswers map[string]Answer, q
 
 	subQuestionsAnswered := make(map[string]struct{})
 	for subQuestionID, subanswer := range subanswers {
+
 		// ensure that the question exists in the subquestion config
 		if question.SubQuestionsConfig == nil {
 			return fmt.Errorf("question %s doed not have a subquestion config but subanswers specified for it", question.ID)
