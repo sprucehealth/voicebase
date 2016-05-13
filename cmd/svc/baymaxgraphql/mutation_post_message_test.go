@@ -712,6 +712,13 @@ func TestPostMessagePatientSecureExternal(t *testing.T) {
 			DisplayName: "OrganizationName",
 		},
 	}, nil))
+	g.ra.Expect(mock.NewExpectation(g.ra.Entity, orgID, ([]directory.EntityInformation)(nil), int64(0)).WithReturns(&directory.Entity{
+		ID:   extEntID,
+		Type: directory.EntityType_ORGANIZATION,
+		Info: &directory.EntityInfo{
+			DisplayName: "OrganizationName",
+		},
+	}, nil))
 	res := g.query(ctx, `
 		mutation _ ($threadID: ID!) {
 			postMessage(input: {
@@ -760,6 +767,7 @@ func TestPostMessagePatientSecureExternal(t *testing.T) {
 					allowInternalMessages
 					isDeletable
 					typeIndicator
+					emptyStateTextMarkup
 				}
 			}
 		}`, map[string]interface{}{
@@ -791,6 +799,7 @@ func TestPostMessagePatientSecureExternal(t *testing.T) {
 			"success": true,
 			"thread": {
 				"allowInternalMessages": false,
+				"emptyStateTextMarkup": "Welcome to your conversation with OrganizationName.",
 				"id": "t1",
 				"isDeletable": false,
 				"lastMessageTimestamp": 123456789,
