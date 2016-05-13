@@ -15,7 +15,7 @@ const (
 // GenerateVisitLayoutPreview returns a preview of the intake with dummy responses populated.
 func GenerateVisitLayoutPreview(intake *Intake, review *visitreview.SectionListView) (map[string]interface{}, error) {
 	context := visitreview.NewViewContext(nil)
-	context.Set(visitreview.EmptyStateTextKey("visit_alerts"), "<Alerts go here>")
+	context.Set("visit_alerts", []string{"<Alerts generated based on patient responses to questions in the visit go here>"})
 
 	for _, section := range intake.Sections {
 		for _, screen := range section.Screens {
