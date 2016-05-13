@@ -54,6 +54,7 @@ func (m *resourceMap) Set(resourceID string, orgIDs map[string]struct{}) {
 // ResourceAccessor defines an interface for the retreival and authorization of resources
 type ResourceAccessor interface {
 	Account(ctx context.Context, accountID string) (*auth.Account, error)
+	ActiveEntity(ctx context.Context, entityID string, entityInfo []directory.EntityInformation, depth int64) (*directory.Entity, error)
 	AuthenticateLogin(ctx context.Context, email, password string) (*auth.AuthenticateLoginResponse, error)
 	AuthenticateLoginWithCode(ctx context.Context, token, code string) (*auth.AuthenticateLoginWithCodeResponse, error)
 	CanPostMessage(ctx context.Context, threadID string) error
@@ -73,6 +74,8 @@ type ResourceAccessor interface {
 	CreatePasswordResetToken(ctx context.Context, email string) (*auth.CreatePasswordResetTokenResponse, error)
 	CreateSavedQuery(ctx context.Context, req *threading.CreateSavedQueryRequest) error
 	CreateVerificationCode(ctx context.Context, codeType auth.VerificationCodeType, valueToVerify string) (*auth.CreateVerificationCodeResponse, error)
+	CreateVisit(ctx context.Context, req *care.CreateVisitRequest) (*care.CreateVisitResponse, error)
+	CreateVisitAnswers(ctx context.Context, req *care.CreateVisitAnswersRequest) (*care.CreateVisitAnswersResponse, error)
 	DeleteContacts(ctx context.Context, req *directory.DeleteContactsRequest) (*directory.Entity, error)
 	DeleteThread(ctx context.Context, threadID, entityID string) error
 	Entity(ctx context.Context, entityID string, entityInfo []directory.EntityInformation, depth int64) (*directory.Entity, error)
@@ -82,6 +85,7 @@ type ResourceAccessor interface {
 	EntityForAccountID(ctx context.Context, orgID, accountID string) (*directory.Entity, error)
 	EntitiesByContact(ctx context.Context, contactValue string, entityInfo []directory.EntityInformation, depth int64, statuses []directory.EntityStatus) ([]*directory.Entity, error)
 	EntitiesForExternalID(ctx context.Context, externalID string, entityInfo []directory.EntityInformation, depth int64, statuses []directory.EntityStatus) ([]*directory.Entity, error)
+	GetAnswersForVisit(ctx context.Context, req *care.GetAnswersForVisitRequest) (*care.GetAnswersForVisitResponse, error)
 	InitiatePhoneCall(ctx context.Context, req *excomms.InitiatePhoneCallRequest) (*excomms.InitiatePhoneCallResponse, error)
 	MarkThreadAsRead(ctx context.Context, threadID, entityID string) error
 	OnboardingThreadEvent(ctx context.Context, req *threading.OnboardingThreadEventRequest) (*threading.OnboardingThreadEventResponse, error)
@@ -95,6 +99,7 @@ type ResourceAccessor interface {
 	SendMessage(ctx context.Context, req *excomms.SendMessageRequest) error
 	SerializedEntityContact(ctx context.Context, entityID string, platform directory.Platform) (*directory.SerializedClientEntityContact, error)
 	SubmitCarePlan(ctx context.Context, cp *care.CarePlan, parentID string) error
+	SubmitVisit(ctx context.Context, req *care.SubmitVisitRequest) (*care.SubmitVisitResponse, error)
 	Thread(ctx context.Context, threadID, viewerEntityID string) (*threading.Thread, error)
 	ThreadItem(ctx context.Context, threadItemID string) (*threading.ThreadItem, error)
 	ThreadItems(ctx context.Context, req *threading.ThreadItemsRequest) (*threading.ThreadItemsResponse, error)
@@ -109,13 +114,9 @@ type ResourceAccessor interface {
 	UpdatePassword(ctx context.Context, token, code, newPassword string) error
 	UpdateThread(ctx context.Context, req *threading.UpdateThreadRequest) (*threading.UpdateThreadResponse, error)
 	VerifiedValue(ctx context.Context, token string) (string, error)
-	VisitLayout(ctx context.Context, req *layout.GetVisitLayoutRequest) (*layout.GetVisitLayoutResponse, error)
-	CreateVisit(ctx context.Context, req *care.CreateVisitRequest) (*care.CreateVisitResponse, error)
 	Visit(ctx context.Context, req *care.GetVisitRequest) (*care.GetVisitResponse, error)
-	SubmitVisit(ctx context.Context, req *care.SubmitVisitRequest) (*care.SubmitVisitResponse, error)
 	VisitLayoutVersion(ctx context.Context, req *layout.GetVisitLayoutVersionRequest) (*layout.GetVisitLayoutVersionResponse, error)
-	CreateVisitAnswers(ctx context.Context, req *care.CreateVisitAnswersRequest) (*care.CreateVisitAnswersResponse, error)
-	GetAnswersForVisit(ctx context.Context, req *care.GetAnswersForVisitRequest) (*care.GetAnswersForVisitResponse, error)
+	VisitLayout(ctx context.Context, req *layout.GetVisitLayoutRequest) (*layout.GetVisitLayoutResponse, error)
 }
 
 type resourceAccessor struct {
@@ -445,6 +446,22 @@ func cacheEntities(ctx context.Context, ents []*directory.Entity) {
 			ec.Set(mem.ID, mem)
 		}
 	}
+}
+
+func (m *resourceAccessor) ActiveEntity(ctx context.Context, entityID string, entityInfo []directory.EntityInformation, depth int64) (*directory.Entity, error) {
+	ent := cachedEntity(ctx, entityID, entityInfo, depth)
+	if ent != nil {
+		return ent, nil
+	}
+	if err := m.canAccessResource(ctx, entityID, m.orgsForEntity); err != nil {
+		return nil, err
+	}
+	res, err := m.entity(ctx, entityID, entityInfo, depth, []directory.EntityStatus{directory.EntityStatus_ACTIVE})
+	if err != nil {
+		return nil, err
+	}
+	cacheEntities(ctx, res.Entities)
+	return res.Entities[0], nil
 }
 
 func (m *resourceAccessor) Entity(ctx context.Context, entityID string, entityInfo []directory.EntityInformation, depth int64) (*directory.Entity, error) {

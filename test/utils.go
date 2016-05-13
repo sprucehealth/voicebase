@@ -32,6 +32,13 @@ func Equals(t testing.TB, exp, act interface{}) {
 	}
 }
 
+// EqualsCase is a utility equals function that reports the test case name on failure
+func EqualsCase(t testing.TB, caseName string, exp, act interface{}) {
+	if !reflect.DeepEqual(exp, act) {
+		t.Fatalf(pretty.Sprintf("[%s]:[%s] difference: %s", caseName, CallerString(1), pretty.Diff(exp, act)))
+	}
+}
+
 // AssertNil fails the test if the provided value is not nil
 func AssertNil(t testing.TB, e interface{}) {
 	if !reflect.ValueOf(e).IsNil() {

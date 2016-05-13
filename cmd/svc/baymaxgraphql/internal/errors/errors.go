@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/graphql/gqlerrors"
 	"golang.org/x/net/context"
 )
@@ -40,10 +41,12 @@ func ErrNotAuthenticated(ctx context.Context) error {
 func ErrNotAuthorized(ctx context.Context, resourceID string) error {
 	acc := gqlctx.Account(ctx)
 	rid := gqlctx.RequestID(ctx)
-	golog.LogDepthf(1, golog.WARN, "NotAuthorized: Account %+v attempted to access resource %s and is not authorized [RequestID %d]", acc, resourceID, rid)
+	//Fuzz identifiables before logging att the err level
+	golog.LogDepthf(1, golog.ERR, "NotAuthorized: Account %+v attempted to access resource %s and is not authorized [RequestID %d]", auth.ObfuscateAccount(acc), resourceID, rid)
 	return UserError(ctx, ErrTypeNotAuthorized, "This account is not authorized to access the requested resource.")
 }
 
+// ErrNotSupported returns the standard not not supported user error
 func ErrNotSupported(ctx context.Context, err error) error {
 	acc := gqlctx.Account(ctx)
 	rid := gqlctx.RequestID(ctx)

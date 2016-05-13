@@ -224,7 +224,7 @@ var threadType = graphql.NewObject(
 						if th.Type == models.ThreadTypeSupport && th.OrganizationID != *flagSpruceOrgID {
 							return nil, nil
 						}
-						orgEntity, err := ram.Entity(ctx, th.OrganizationID, []directory.EntityInformation{
+						orgEntity, err := ram.ActiveEntity(ctx, th.OrganizationID, []directory.EntityInformation{
 							directory.EntityInformation_MEMBERS,
 							// TODO: don't always need contacts
 							directory.EntityInformation_CONTACTS,

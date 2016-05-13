@@ -212,6 +212,15 @@ func (m *ResourceAccessor) DeleteThread(ctx context.Context, threadID, entityID 
 	return mock.SafeError(rets[0])
 }
 
+func (m *ResourceAccessor) ActiveEntity(ctx context.Context, entityID string, entityInfo []directory.EntityInformation, depth int64) (*directory.Entity, error) {
+	rets := m.Record(entityID, entityInfo, depth)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].(*directory.Entity), mock.SafeError(rets[1])
+}
+
 func (m *ResourceAccessor) Entity(ctx context.Context, entityID string, entityInfo []directory.EntityInformation, depth int64) (*directory.Entity, error) {
 	rets := m.Record(entityID, entityInfo, depth)
 	if len(rets) == 0 {
