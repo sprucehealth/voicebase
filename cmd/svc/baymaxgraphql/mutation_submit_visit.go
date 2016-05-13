@@ -140,10 +140,8 @@ var submitVisitMutation = &graphql.Field{
 				}
 
 				var titleBML bml.BML
-				titleBML = append(titleBML, "Completed a visit: ", &bml.Ref{
-					Type: bml.AttachmentRef,
-					URL:  deeplink.VisitURL(svc.webDomain, thread.ID, visitID),
-					ID:   visitID,
+				titleBML = append(titleBML, "Completed a visit: ", &bml.Anchor{
+					HREF: deeplink.VisitURL(svc.webDomain, thread.ID, visitID),
 					Text: visitRes.Visit.Name,
 				})
 
@@ -155,7 +153,7 @@ var submitVisitMutation = &graphql.Field{
 				postMessageRes, err := ram.PostMessage(ctx, &threading.PostMessageRequest{
 					ThreadID:     thread.ID,
 					FromEntityID: visitRes.Visit.EntityID,
-					Summary:      fmt.Sprintf("%s:%s", entity.Info.DisplayName, "Completed a visit"),
+					Summary:      fmt.Sprintf("%s:%s", entity.Info.DisplayName, " Completed a visit"),
 					UUID:         uuid,
 					Title:        titleStr,
 				})

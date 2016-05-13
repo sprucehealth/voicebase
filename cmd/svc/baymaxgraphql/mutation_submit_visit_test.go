@@ -64,8 +64,8 @@ func TestSubmitVisit(t *testing.T) {
 	g.ra.Expect(mock.NewExpectation(g.ra.PostMessage, &threading.PostMessageRequest{
 		FromEntityID: entityID,
 		ThreadID:     threadID,
-		Summary:      "Joe Schmoe:Completed a visit",
-		Title:        "Completed a visit: <ref id=\"visit_12345\" type=\"thread_attachment\" url=\"https://test.com/thread/threadID/visit/visit_12345\">infection</ref>",
+		Summary:      "Joe Schmoe: Completed a visit",
+		Title:        "Completed a visit: <a href=\"https://test.com/thread/threadID/visit/visit_12345\">infection</a>",
 	}).WithReturns(&threading.PostMessageResponse{
 		Thread: &threading.Thread{
 			ID:             threadID,

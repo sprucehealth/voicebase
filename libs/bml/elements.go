@@ -33,9 +33,6 @@ type RefType string
 const (
 	// EntityRef is an entity as owned by the directory service
 	EntityRef RefType = "entity"
-
-	// AttachmentRef is an attachment in a thread
-	AttachmentRef RefType = "thread_attachment"
 )
 
 // Ref is a reference to a node type (object with an ID)
@@ -43,7 +40,6 @@ type Ref struct {
 	XMLName string  `xml:"ref"`
 	ID      string  `xml:"id,attr"`
 	Type    RefType `xml:"type,attr"`
-	URL     string  `xml:"url,attr,omitempty"`
 	Text    string  `xml:",chardata"`
 }
 
@@ -68,7 +64,6 @@ func (r *Ref) Validate() error {
 	if r.Text == "" {
 		return ErrValidation{Element: "ref", Reason: "text required"}
 	}
-	// url is optional
 	return nil
 }
 
