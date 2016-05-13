@@ -62,7 +62,8 @@ func TestCreateThreadMutation_NoExistingThreads(t *testing.T) {
 		Contacts:                  contacts,
 		EntityInfo:                entityInfo,
 		RequestedInformation: &directory.RequestedInformation{
-			Depth: 0,
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
 		},
 	}).WithReturns(&directory.Entity{
 		ID:       "e_patient",
@@ -202,7 +203,8 @@ func TestCreateThreadMutation_DifferentOrg(t *testing.T) {
 		Contacts:                  contacts,
 		EntityInfo:                entityInfo,
 		RequestedInformation: &directory.RequestedInformation{
-			Depth: 0,
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
 		},
 	}).WithReturns(&directory.Entity{
 		ID:       "e_patient",

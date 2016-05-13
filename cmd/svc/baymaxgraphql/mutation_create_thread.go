@@ -273,7 +273,8 @@ var createThreadMutation = &graphql.Field{
 			Contacts:                  contactInfos,
 			EntityInfo:                entityInfo,
 			RequestedInformation: &directory.RequestedInformation{
-				Depth: 0,
+				Depth:             0,
+				EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
 			},
 		})
 		if err != nil {
