@@ -91,7 +91,7 @@ func (r *externalMessageWorker) Start() {
 	go func() {
 		for {
 			sqsRes, err := r.sqsAPI.ReceiveMessage(&sqs.ReceiveMessageInput{
-				QueueUrl:            ptr.String(r.sqsURL),
+				QueueUrl:            &r.sqsURL,
 				MaxNumberOfMessages: ptr.Int64(1),
 				VisibilityTimeout:   ptr.Int64(60 * 5),
 				WaitTimeSeconds:     ptr.Int64(20),
@@ -123,14 +123,13 @@ func (r *externalMessageWorker) Start() {
 
 				status := statusProcessed
 				if err := r.process(&pem); err != nil {
-
 					switch err {
 					case errLogMessageAsErrored:
 						status = statusError
 					case errLogMessageAsSpam:
 						status = statusSpam
 					default:
-						golog.Errorf(err.Error())
+						golog.Context("handle", *item.ReceiptHandle).Errorf(err.Error())
 						continue
 					}
 				}
@@ -143,7 +142,7 @@ func (r *externalMessageWorker) Start() {
 				// delete the message just handled
 				_, err = r.sqsAPI.DeleteMessage(
 					&sqs.DeleteMessageInput{
-						QueueUrl:      ptr.String(r.sqsURL),
+						QueueUrl:      &r.sqsURL,
 						ReceiptHandle: item.ReceiptHandle,
 					},
 				)
@@ -166,7 +165,6 @@ func (r *externalMessageWorker) Started() bool {
 }
 
 func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) error {
-
 	golog.Debugf("Processing incoming external message: %s → %s. Direction: %s", pem.FromChannelID, pem.ToChannelID, pem.Direction.String())
 
 	ctx := context.Background()
@@ -232,7 +230,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 
 				_, err = r.snsAPI.Publish(&sns.PublishInput{
 					Message:  ptr.String(base64.StdEncoding.EncodeToString(data)),
-					TopicArn: ptr.String(r.blockAccountsTopicARN),
+					TopicArn: &r.blockAccountsTopicARN,
 				})
 				if err != nil {
 					golog.Errorf("Unable to publish message to block accounts topic for account %s: %s", accountID, err.Error())

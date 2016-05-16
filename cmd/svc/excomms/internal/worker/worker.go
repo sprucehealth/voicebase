@@ -57,7 +57,7 @@ func NewWorker(
 	resourceCleanerTopic string) (*IncomingRawMessageWorker, error) {
 
 	res, err := sqsAPI.GetQueueUrl(&sqs.GetQueueUrlInput{
-		QueueName: ptr.String(incomingRawMessageQueueName),
+		QueueName: &incomingRawMessageQueueName,
 	})
 	if err != nil {
 		return nil, err
@@ -89,7 +89,7 @@ func (w *IncomingRawMessageWorker) Start() {
 		for {
 
 			sqsRes, err := w.sqsAPI.ReceiveMessage(&sqs.ReceiveMessageInput{
-				QueueUrl:            ptr.String(w.sqsURL),
+				QueueUrl:            &w.sqsURL,
 				MaxNumberOfMessages: ptr.Int64(1),
 				VisibilityTimeout:   ptr.Int64(60 * 5),
 				WaitTimeSeconds:     ptr.Int64(20),
@@ -121,14 +121,14 @@ func (w *IncomingRawMessageWorker) Start() {
 				golog.Debugf("Process message %s", *item.ReceiptHandle)
 
 				if err := w.process(&notif); err != nil {
-					golog.Errorf(err.Error())
+					golog.Context("handle", *item.ReceiptHandle).Errorf(err.Error())
 					continue
 				}
 
 				// delete the message just handled
 				_, err = w.sqsAPI.DeleteMessage(
 					&sqs.DeleteMessageInput{
-						QueueUrl:      ptr.String(w.sqsURL),
+						QueueUrl:      &w.sqsURL,
 						ReceiptHandle: item.ReceiptHandle,
 					},
 				)
@@ -343,16 +343,15 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 }
 
 func (w *IncomingRawMessageWorker) uploadTwilioMediaToS3(contentType, url string) (*models.Media, error) {
-
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return nil, errors.Trace(err)
+		return nil, errors.Annotatef(errors.Trace(err), "failed to create GET request for url '%s'", url)
 	}
 	req.SetBasicAuth(w.twilioAccountSID, w.twilioAuthToken)
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, errors.Trace(err)
+		return nil, errors.Annotatef(errors.Trace(err), "GET failed on url '%s'", url)
 	}
 	defer res.Body.Close()
 
