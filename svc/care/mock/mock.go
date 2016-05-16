@@ -71,6 +71,14 @@ func (c *Client) GetAnswersForVisit(ctx context.Context, in *care.GetAnswersForV
 	return rets[0].(*care.GetAnswersForVisitResponse), mock.SafeError(rets[1])
 }
 
+func (c *Client) SearchMedications(ctx context.Context, in *care.SearchMedicationsRequest, opts ...grpc.CallOption) (*care.SearchMedicationsResponse, error) {
+	rets := c.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*care.SearchMedicationsResponse), mock.SafeError(rets[1])
+}
+
 func (c *Client) SubmitCarePlan(ctx context.Context, in *care.SubmitCarePlanRequest, opts ...grpc.CallOption) (*care.SubmitCarePlanResponse, error) {
 	rets := c.Record(in)
 	if len(rets) == 0 {

@@ -2,10 +2,11 @@ package main
 
 import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
-	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/graphql"
-	"strings"
 )
 
 var medicationType = graphql.NewObject(
@@ -40,36 +41,6 @@ var medicationDosageType = graphql.NewObject(
 	},
 )
 
-var stubMedications = []*models.Medication{
-	{ID: "Benzoyl Peroxide Topical (topical - lotion)", Name: "Benzoyl Peroxide Topical", Route: "topical", Form: "lotion", Dosages: []*models.MedicationDosage{
-		{Dosage: "10%", DispenseType: "Tube(s)", OTC: true},
-		{Dosage: "3%", DispenseType: "Tube(s)", OTC: false},
-		{Dosage: "4%", DispenseType: "Tube(s)", OTC: false},
-		{Dosage: "4.25%", DispenseType: "Tube(s)", OTC: false},
-		{Dosage: "5%", DispenseType: "Tube(s)", OTC: true},
-		{Dosage: "6%", DispenseType: "Tube(s)", OTC: true},
-		{Dosage: "7%", DispenseType: "Tube(s)", OTC: true},
-		{Dosage: "9%", DispenseType: "Tube(s)", OTC: false},
-	}},
-	{ID: "Omeprazole (oral - delayed release capsule)", Name: "Omeprazole", Route: "oral", Form: "delayed release capsule", Dosages: []*models.MedicationDosage{
-		{Dosage: "10 mg", DispenseType: "Capsule(s)", OTC: false},
-		{Dosage: "20 mg", DispenseType: "Capsule(s)", OTC: true},
-		{Dosage: "40 mg", DispenseType: "Capsule(s)", OTC: false},
-	}},
-	{ID: "Tretinoin Topical (topical - cream)", Name: "Tretinoin Topical", Route: "topical", Form: "cream", Dosages: []*models.MedicationDosage{
-		{Dosage: "0.025%", DispenseType: "Tube(s)", OTC: false},
-		{Dosage: "0.05%", DispenseType: "Tube(s)", OTC: false},
-		{Dosage: "0.1%", DispenseType: "Tube(s)", OTC: false},
-	}},
-	{ID: "Tretinoin Topical (topical - gel)", Name: "Tretinoin Topical", Route: "topical", Form: "gel", Dosages: []*models.MedicationDosage{
-		{Dosage: "0.01%", DispenseType: "Tube(s)", OTC: false},
-		{Dosage: "0.025%", DispenseType: "Tube(s)", OTC: false},
-		{Dosage: "0.04%", DispenseType: "Tube(s)", OTC: false},
-		{Dosage: "0.05%", DispenseType: "Tube(s)", OTC: false},
-		{Dosage: "0.1%", DispenseType: "Tube(s)", OTC: false},
-	}},
-}
-
 var medicationSearchQuery = &graphql.Field{
 	Type: graphql.NewNonNull(graphql.NewList(medicationType)),
 	Args: graphql.FieldConfigArgument{
@@ -77,20 +48,31 @@ var medicationSearchQuery = &graphql.Field{
 	},
 	Resolve: apiaccess.Provider(func(p graphql.ResolveParams) (interface{}, error) {
 		ctx := p.Context
-		acc := gqlctx.Account(p.Context)
-
-		_ = ctx
-		_ = acc
+		ram := raccess.ResourceAccess(p)
 
 		nameQuery := p.Args["name"].(string)
 
-		// TODO: actually implement this against DoseSpot API
+		res, err := ram.SearchMedications(ctx, &care.SearchMedicationsRequest{Query: nameQuery})
+		if err != nil {
+			return nil, errors.InternalError(ctx, err)
+		}
 
-		var meds []*models.Medication
-		nameQuery = strings.ToLower(nameQuery)
-		for _, m := range stubMedications {
-			if strings.Contains(strings.ToLower(m.Name), nameQuery) {
-				meds = append(meds, m)
+		meds := make([]*models.Medication, len(res.Medications))
+		for i, m := range res.Medications {
+			dosages := make([]*models.MedicationDosage, len(m.Strengths))
+			for j, st := range m.Strengths {
+				dosages[j] = &models.MedicationDosage{
+					Dosage:       st.Strength,
+					DispenseType: st.DispenseUnit,
+					OTC:          st.OTC,
+				}
+			}
+			meds[i] = &models.Medication{
+				ID:      m.ID,
+				Name:    m.Name,
+				Route:   m.Route,
+				Form:    m.Form,
+				Dosages: dosages,
 			}
 		}
 		return meds, nil

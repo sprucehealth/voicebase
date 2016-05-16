@@ -4,13 +4,32 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
+	"github.com/sprucehealth/backend/svc/care"
 	"golang.org/x/net/context"
 )
 
 func TestMedicationSearchQuery(t *testing.T) {
 	g := newGQL(t)
 	defer g.finish()
+
+	g.ra.Expect(mock.NewExpectation(g.ra.SearchMedications, &care.SearchMedicationsRequest{Query: "Omep"}).WithReturns(
+		&care.SearchMedicationsResponse{
+			Medications: []*care.Medication{
+				{
+					ID:    "Omeprazole (oral - delayed release capsule)",
+					Name:  "Omeprazole",
+					Route: "oral",
+					Form:  "delayed release capsule",
+					Strengths: []*care.MedicationStrength{
+						{Strength: "10 mg", DispenseUnit: "Capsule(s)", OTC: false},
+						{Strength: "20 mg", DispenseUnit: "Capsule(s)", OTC: true},
+						{Strength: "40 mg", DispenseUnit: "Capsule(s)", OTC: false},
+					},
+				},
+			},
+		}, nil))
 
 	ctx := context.Background()
 	acc := &auth.Account{

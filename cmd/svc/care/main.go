@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/server"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/dbutil"
+	"github.com/sprucehealth/backend/libs/dosespot"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/svc/care"
@@ -18,17 +19,21 @@ import (
 )
 
 var config struct {
-	dbHost        string
-	dbPort        int
-	dbPassword    string
-	dbTLS         string
-	dbUserName    string
-	dbName        string
-	dbCACert      string
-	listeningPort int
-	s3Bucket      string
-	s3Prefix      string
-	layoutAddr    string
+	dbHost               string
+	dbPort               int
+	dbPassword           string
+	dbTLS                string
+	dbUserName           string
+	dbName               string
+	dbCACert             string
+	listeningPort        int
+	s3Bucket             string
+	s3Prefix             string
+	layoutAddr           string
+	doseSpotClinicKey    string
+	doseSpotClinicID     int64
+	doseSpotUserID       int64
+	doseSpotSOAPEndpoint string
 }
 
 func init() {
@@ -43,19 +48,32 @@ func init() {
 	flag.StringVar(&config.s3Bucket, "s3_bucket", "", "name of S3 bucket where layouts are stored")
 	flag.StringVar(&config.s3Prefix, "s3_prefix", "", "prefix for layouts in s3 bucket")
 	flag.StringVar(&config.layoutAddr, "layout_addr", "", "`host:port` to communicate with the layout service")
+	flag.StringVar(&config.doseSpotClinicKey, "dosespot_clinic_key", "", "DoseSpot clinic key")
+	flag.StringVar(&config.doseSpotSOAPEndpoint, "dosespot_soap_endpoint", "", "DoseSpot SOAP endpoint URL")
+	flag.Int64Var(&config.doseSpotClinicID, "dosespot_clinic_id", 0, "DoseSpot clinic ID")
+	flag.Int64Var(&config.doseSpotUserID, "dosespot_user_id", 0, "DoseSpot user ID")
 }
 
 func main() {
 	svc := boot.NewService("care")
 
-	if config.s3Bucket == "" {
+	switch {
+	case config.s3Bucket == "":
 		golog.Fatalf("s3_bucket required")
-	} else if config.s3Prefix == "" {
+	case config.s3Prefix == "":
 		golog.Fatalf("s3_prefix required")
-	} else if config.listeningPort == 0 {
+	case config.listeningPort == 0:
 		golog.Fatalf("listening_port required")
-	} else if config.layoutAddr == "" {
+	case config.layoutAddr == "":
 		golog.Fatalf("layout_addr required")
+	case config.doseSpotClinicKey == "":
+		golog.Fatalf("dose_spot_clinic_key required")
+	case config.doseSpotSOAPEndpoint == "":
+		golog.Fatalf("dosespot_soap_endpoint required")
+	case config.doseSpotClinicID == 0:
+		golog.Fatalf("dosespot_clinic_id required")
+	case config.doseSpotUserID == 0:
+		golog.Fatalf("dosespot_user_id required")
 	}
 
 	db, err := dbutil.ConnectMySQL(&dbutil.DBConfig{
@@ -83,13 +101,15 @@ func main() {
 	}
 	layoutClient := layout.NewLayoutClient(conn)
 
+	doseSpotClient := dosespot.New(config.doseSpotClinicID, config.doseSpotUserID, config.doseSpotClinicKey, config.doseSpotSOAPEndpoint, "http://www.dosespot.com/API/11/", svc.MetricsRegistry.Scope("dosespot"))
+
 	awsSession, err := svc.AWSSession()
 	if err != nil {
 		golog.Fatalf(err.Error())
 	}
 
 	careServer := grpc.NewServer()
-	careService := server.New(dal.New(db), layoutClient, layout.NewStore(storage.NewS3(awsSession, config.s3Bucket, config.s3Prefix)))
+	careService := server.New(dal.New(db), layoutClient, layout.NewStore(storage.NewS3(awsSession, config.s3Bucket, config.s3Prefix)), doseSpotClient)
 
 	care.InitMetrics(careServer, svc.MetricsRegistry.Scope("care"))
 	care.RegisterCareServer(careServer, careService)

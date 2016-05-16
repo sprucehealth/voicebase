@@ -8,7 +8,7 @@ const (
 	PharmacyTypeSpecialty       = "SpecialtyPharmacy"
 )
 
-type ERxAPI interface {
+type API interface {
 	ApproveRefillRequest(clinicianID, erxRefillRequestQueueItemID, approvedRefillAmount int64, comments string) (int64, error)
 	DenyRefillRequest(clinicianID, erxRefillRequestQueueItemID int64, denialReason, comments string) (int64, error)
 	GetDrugNamesForDoctor(clinicianID int64, prefix string) ([]string, error)

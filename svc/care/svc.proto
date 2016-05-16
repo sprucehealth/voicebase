@@ -84,7 +84,7 @@ message CarePlanTreatment {
 	string form = 5;
 	string medication_id = 6 [(gogoproto.customname) = "MedicationID"];
 	string dosage = 7;
-	string dispenseType = 8;
+	string dispense_type = 8;
 	uint32 dispense_number = 9;
 	uint32 refills = 10;
 	bool substitutions_allowed = 11;
@@ -127,6 +127,36 @@ message SubmitCarePlanResponse {
 	CarePlan care_plan = 1;
 }
 
+message Medication {
+	string id = 1 [(gogoproto.customname) = "ID"];
+	string name = 2;
+	string route = 3;
+	string form = 4;
+	repeated MedicationStrength strengths = 5;
+}
+
+message MedicationStrength {
+	bool otc = 1 [(gogoproto.customname) = "OTC"];
+	uint32 schedule = 2;
+	string strength = 3;
+	string dispense_unit = 4;
+	string generic_name = 5;
+	uint64 lexi_gen_product_id = 6 [(gogoproto.customname) = "LexiGenProductID"];
+	uint64 lexi_drug_syn_id = 7 [(gogoproto.customname) = "LexiDrugSynID"];
+	uint64 lexi_synonym_type_id = 8 [(gogoproto.customname) = "LexiSynonymTypeID"];
+	string ndc = 9 [(gogoproto.customname) = "NDC"];
+}
+
+message SearchMedicationsRequest {
+	uint64 clinic_id = 1 [(gogoproto.customname) = "ClinicID"];
+	uint64 clinician_id = 2 [(gogoproto.customname) = "ClinicianID"];
+	string query = 3;
+}
+
+message SearchMedicationsResponse {
+	repeated Medication medications = 1;
+}
+
 service Care {
 	rpc CreateVisit(CreateVisitRequest) returns (CreateVisitResponse);
 	rpc GetVisit(GetVisitRequest) returns (GetVisitResponse);
@@ -143,4 +173,8 @@ service Care {
 	// SubmitCarePlan submits a care plan and attaches it to a parent, it can only be called once per care plan.
 	// Any Rx attached to the care plan will be submitted at this point.
 	rpc SubmitCarePlan(SubmitCarePlanRequest) returns (SubmitCarePlanResponse);
+
+	// Medication and Rx
+
+	rpc SearchMedications(SearchMedicationsRequest) returns (SearchMedicationsResponse);
 }

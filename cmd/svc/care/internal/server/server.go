@@ -3,12 +3,17 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/client"
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/models"
+	"github.com/sprucehealth/backend/libs/conc"
+	"github.com/sprucehealth/backend/libs/dosespot"
 	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/layout"
@@ -23,13 +28,15 @@ type server struct {
 	layoutStore layout.Storage
 	dal         dal.DAL
 	layout      layout.LayoutClient
+	doseSpot    dosespot.API
 }
 
-func New(dal dal.DAL, layoutClient layout.LayoutClient, layoutStore layout.Storage) care.CareServer {
+func New(dal dal.DAL, layoutClient layout.LayoutClient, layoutStore layout.Storage, doseSpotClient dosespot.API) care.CareServer {
 	return &server{
 		layoutStore: layoutStore,
 		dal:         dal,
 		layout:      layoutClient,
+		doseSpot:    doseSpotClient,
 	}
 }
 
@@ -351,6 +358,81 @@ func (s *server) CreateCarePlan(ctx context.Context, in *care.CreateCarePlanRequ
 		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 	return &care.CreateCarePlanResponse{CarePlan: cpr}, nil
+}
+
+func (s *server) SearchMedications(ctx context.Context, in *care.SearchMedicationsRequest) (*care.SearchMedicationsResponse, error) {
+	// TODO: use clinic ID from request
+	// TODO: really need to cache this as it does a ton of requests against the DoseSpot API
+
+	// DoseSpot doesn't return results for any searches shorter than 3 characters so don't bother trying and just return an empty list.
+	if len(in.Query) < 3 {
+		return &care.SearchMedicationsResponse{}, nil
+	}
+
+	clinicianID := int64(in.ClinicianID)
+
+	names, err := s.doseSpot.GetDrugNamesForDoctor(clinicianID, in.Query)
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	medications := make([]*care.Medication, len(names))
+	par := conc.NewParallel()
+	for i, name := range names {
+		medIndex := i
+		medName := name
+		par.Go(func() error {
+			strengths, err := s.doseSpot.SearchForMedicationStrength(clinicianID, medName)
+			if err != nil {
+				return errors.Trace(err)
+			}
+			medStrengths := make([]*care.MedicationStrength, len(strengths))
+			var route, form string
+			for i, strength := range strengths {
+				med, err := s.doseSpot.SelectMedication(clinicianID, medName, strength)
+				if err != nil {
+					return errors.Trace(err)
+				}
+				genName, err := dosespot.ParseGenericName(med)
+				if err != nil {
+					golog.Errorf("Failed to parse generic name '%s': %s", med.GenericProductName, err)
+				}
+				schedule, _ := strconv.ParseUint(med.Schedule, 10, 64)
+				// route and form are the same for each strength, but it's the only place they come down
+				route = med.RouteDescription
+				form = med.DoseFormDescription
+				medStrengths[i] = &care.MedicationStrength{
+					OTC:               med.OTC,
+					Schedule:          uint32(schedule),
+					Strength:          med.StrengthDescription,
+					DispenseUnit:      med.DispenseUnitDescription,
+					GenericName:       genName,
+					LexiGenProductID:  uint64(med.LexiGenProductID),
+					LexiDrugSynID:     uint64(med.LexiDrugSynID),
+					LexiSynonymTypeID: uint64(med.LexiSynonymTypeID),
+					NDC:               med.RepresentativeNDC,
+				}
+			}
+			// Since we lookup the medication by the name use it as the ID and parse out the "(route - form)" from it to generate a user friendly name
+			medID := medName
+			if i := strings.IndexRune(medName, '('); i > 1 {
+				medName = medName[:i-1] // -1 to remove space before '('
+			}
+			medications[medIndex] = &care.Medication{
+				ID:        medID,
+				Name:      medName,
+				Route:     route,
+				Form:      form,
+				Strengths: medStrengths,
+			}
+			return nil
+		})
+	}
+	if err := par.Wait(); err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	return &care.SearchMedicationsResponse{Medications: medications}, nil
 }
 
 func (s *server) SubmitCarePlan(ctx context.Context, in *care.SubmitCarePlanRequest) (*care.SubmitCarePlanResponse, error) {

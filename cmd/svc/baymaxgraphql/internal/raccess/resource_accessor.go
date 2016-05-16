@@ -96,6 +96,7 @@ type ResourceAccessor interface {
 	QueryThreads(ctx context.Context, req *threading.QueryThreadsRequest) (*threading.QueryThreadsResponse, error)
 	SavedQuery(ctx context.Context, savedQueryID string) (*threading.SavedQuery, error)
 	SavedQueries(ctx context.Context, entityID string) ([]*threading.SavedQuery, error)
+	SearchMedications(ctx context.Context, req *care.SearchMedicationsRequest) (*care.SearchMedicationsResponse, error)
 	SendMessage(ctx context.Context, req *excomms.SendMessageRequest) error
 	SerializedEntityContact(ctx context.Context, entityID string, platform directory.Platform) (*directory.SerializedClientEntityContact, error)
 	SubmitCarePlan(ctx context.Context, cp *care.CarePlan, parentID string) error
@@ -691,6 +692,11 @@ func (m *resourceAccessor) SavedQuery(ctx context.Context, savedQueryID string) 
 		return nil, err
 	}
 	return res.SavedQuery, nil
+}
+
+func (m *resourceAccessor) SearchMedications(ctx context.Context, req *care.SearchMedicationsRequest) (*care.SearchMedicationsResponse, error) {
+	// No auth required for this.
+	return m.care.SearchMedications(ctx, req)
 }
 
 func (m *resourceAccessor) SendMessage(ctx context.Context, req *excomms.SendMessageRequest) error {
