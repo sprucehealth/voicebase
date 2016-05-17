@@ -1054,8 +1054,8 @@ func getPBEntity(dl dal.DAL, dEntity *dal.Entity, entityInformation []directory.
 			}
 			entity.Contacts = contacts
 		}
+		entity.IncludedInformation = entityInformation
 	}
-	entity.IncludedInformation = entityInformation
 	return entity, nil
 }
 

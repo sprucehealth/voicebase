@@ -46,6 +46,58 @@ func TestLookupEntitiesByEntityID(t *testing.T) {
 	test.Equals(t, directory.EntityType_EXTERNAL, resp.Entities[0].Type)
 }
 
+func TestLookupEntitiesByEntityIDNonZeroDepth(t *testing.T) {
+	t.Parallel()
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+	s := New(dl, metrics.NewRegistry())
+	eID1, err := dal.NewEntityID()
+	test.OK(t, err)
+
+	eID2, err := dal.NewEntityID()
+	test.OK(t, err)
+
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{eID1}, ([]dal.EntityStatus)(nil), []dal.EntityType{}), []*dal.Entity{
+		{
+			ID:          eID1,
+			DisplayName: "entity1",
+			Type:        dal.EntityTypeOrganization,
+			Status:      dal.EntityStatusActive,
+		},
+	}, nil))
+	dl.Expect(mock.NewExpectation(dl.EntityMembers, eID1, []dal.EntityStatus(nil), []dal.EntityType{}).WithReturns([]*dal.Entity{
+		{
+			ID:          eID2,
+			DisplayName: "entity2",
+			Type:        dal.EntityTypeInternal,
+			Status:      dal.EntityStatusActive,
+		},
+	}, nil))
+	dl.Expect(mock.NewExpectation(dl.EntityContacts, eID1).WithReturns([]*dal.EntityContact{
+		{
+			EntityID: eID1,
+			Type:     dal.EntityContactTypePhone,
+			Value:    "+1734846552",
+		},
+	}, nil))
+	resp, err := s.LookupEntities(context.Background(), &directory.LookupEntitiesRequest{
+		LookupKeyType:  directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{EntityID: eID1.String()},
+		RequestedInformation: &directory.RequestedInformation{
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERS, directory.EntityInformation_CONTACTS},
+			Depth:             0,
+		},
+	})
+	test.OK(t, err)
+
+	test.Equals(t, 1, len(resp.Entities))
+	test.Equals(t, eID1.String(), resp.Entities[0].ID)
+	test.Equals(t, []directory.EntityInformation{directory.EntityInformation_MEMBERS, directory.EntityInformation_CONTACTS}, resp.Entities[0].IncludedInformation)
+	test.Equals(t, ([]directory.EntityInformation)(nil), resp.Entities[0].Members[0].IncludedInformation)
+	test.Equals(t, "entity1", resp.Entities[0].Info.DisplayName)
+	test.Equals(t, directory.EntityType_ORGANIZATION, resp.Entities[0].Type)
+}
+
 func TestLookupEntitiesByBatchEntityID(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
