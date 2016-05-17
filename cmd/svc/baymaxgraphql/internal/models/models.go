@@ -1,11 +1,5 @@
 package models
 
-import (
-	"sync"
-
-	"github.com/sprucehealth/backend/svc/directory"
-)
-
 /*
 Notes about GraphQL package compatibility:
 - can't use custom types for things like `type someEnum string` so just use `string`
@@ -223,9 +217,6 @@ type Thread struct {
 	MessageCount               int    `json:"messageCount"`
 	Type                       string `json:"type"`
 	TypeIndicator              string `json:"typeIndicator"`
-
-	Mu            sync.RWMutex
-	PrimaryEntity *directory.Entity
 }
 
 type ThreadItem struct {

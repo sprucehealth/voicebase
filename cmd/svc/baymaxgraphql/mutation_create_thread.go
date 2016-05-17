@@ -191,12 +191,6 @@ var createThreadMutation = &graphql.Field{
 					}
 				}
 
-				// Build a map of entities by ID so later we can lookup primary entity efficiently to generate thread tiel
-				entMap := make(map[string]*directory.Entity, len(existingEntities))
-				for _, e := range existingEntities {
-					entMap[e.ID] = e
-				}
-
 				var theOneThread *models.Thread
 				var matchedName bool
 				existingThreads := make([]*models.Thread, len(threads))
@@ -211,7 +205,6 @@ var createThreadMutation = &graphql.Field{
 					if err != nil {
 						return nil, errors.InternalError(ctx, err)
 					}
-					th.PrimaryEntity = entMap[t.PrimaryEntityID]
 					if err := hydrateThreads(ctx, ram, []*models.Thread{th}); err != nil {
 						return nil, errors.InternalError(ctx, err)
 					}
@@ -297,7 +290,6 @@ var createThreadMutation = &graphql.Field{
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}
-		th.PrimaryEntity = primaryEnt
 		if err := hydrateThreads(ctx, ram, []*models.Thread{th}); err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}

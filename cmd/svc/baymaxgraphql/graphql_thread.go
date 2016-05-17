@@ -263,7 +263,7 @@ var threadType = graphql.NewObject(
 					}
 
 					ram := raccess.ResourceAccess(p)
-					ent, err := primaryEntityForThread(ctx, ram, th)
+					ent, err := ram.Entity(ctx, th.PrimaryEntityID, []directory.EntityInformation{directory.EntityInformation_CONTACTS}, 0)
 					if err != nil {
 						return nil, err
 					}
@@ -297,7 +297,7 @@ var threadType = graphql.NewObject(
 					}
 
 					ram := raccess.ResourceAccess(p)
-					ent, err := primaryEntityForThread(ctx, ram, th)
+					ent, err := ram.Entity(ctx, th.PrimaryEntityID, []directory.EntityInformation{directory.EntityInformation_CONTACTS}, 0)
 					if err != nil {
 						return nil, err
 					}
@@ -352,9 +352,9 @@ var threadType = graphql.NewObject(
 					}
 
 					ram := raccess.ResourceAccess(p)
-					pe, err := primaryEntityForThread(ctx, ram, th)
+					pe, err := ram.Entity(ctx, th.PrimaryEntityID, []directory.EntityInformation{directory.EntityInformation_CONTACTS}, 0)
 					if err != nil {
-						return nil, errors.InternalError(ctx, err)
+						return nil, err
 					}
 					sh := gqlctx.SpruceHeaders(ctx)
 					ent, err := transformEntityToResponse(svc.staticURLPrefix, pe, sh, gqlctx.Account(ctx))
@@ -472,26 +472,4 @@ func lookupThread(ctx context.Context, ram raccess.ResourceAccessor, threadID, v
 		return nil, errors.InternalError(ctx, err)
 	}
 	return th, nil
-}
-
-func primaryEntityForThread(ctx context.Context, ram raccess.ResourceAccessor, t *models.Thread) (*directory.Entity, error) {
-	t.Mu.RLock()
-	if t.PrimaryEntity != nil {
-		t.Mu.RUnlock()
-		return t.PrimaryEntity, nil
-	}
-	t.Mu.RUnlock()
-
-	t.Mu.Lock()
-	defer t.Mu.Unlock()
-
-	// Could have been fetched by someone else at this point
-	if t.PrimaryEntity != nil {
-		return t.PrimaryEntity, nil
-	}
-	ent, err := ram.Entity(ctx, t.PrimaryEntityID, []directory.EntityInformation{
-		directory.EntityInformation_CONTACTS,
-	}, 0)
-	t.PrimaryEntity = ent
-	return ent, err
 }

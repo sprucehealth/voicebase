@@ -436,7 +436,6 @@ var postMessageMutation = &graphql.Field{
 			return nil, errors.InternalError(ctx, fmt.Errorf("failed to transform thread: %s", err))
 		}
 
-		th.PrimaryEntity = primaryEntity
 		if err := hydrateThreads(ctx, ram, []*models.Thread{th}); err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}

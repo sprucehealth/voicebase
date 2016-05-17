@@ -501,7 +501,7 @@ func (m *resourceAccessor) Entities(ctx context.Context, orgID string, entityIDs
 			},
 			RequestedInformation: &directory.RequestedInformation{
 				Depth:             depth,
-				EntityInformation: entityInfo,
+				EntityInformation: entityInfoWithContacts(entityInfo),
 			},
 			Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 		})
@@ -1247,7 +1247,6 @@ func (m *resourceAccessor) entity(ctx context.Context, entityID string, entityIn
 	if len(entityInfo) == 0 {
 		entityInfo = []directory.EntityInformation{
 			directory.EntityInformation_MEMBERSHIPS,
-			directory.EntityInformation_CONTACTS,
 		}
 	}
 	res, err := m.directory.LookupEntities(ctx,
@@ -1258,7 +1257,7 @@ func (m *resourceAccessor) entity(ctx context.Context, entityID string, entityIn
 			},
 			RequestedInformation: &directory.RequestedInformation{
 				Depth:             depth,
-				EntityInformation: entityInfo,
+				EntityInformation: entityInfoWithContacts(entityInfo),
 			},
 			Statuses: statuses,
 		})
@@ -1286,7 +1285,6 @@ func (m *resourceAccessor) entitiesForContact(ctx context.Context, contactValue 
 	if len(entityInfo) == 0 {
 		entityInfo = []directory.EntityInformation{
 			directory.EntityInformation_MEMBERSHIPS,
-			directory.EntityInformation_CONTACTS,
 		}
 	}
 	res, err := m.directory.LookupEntitiesByContact(ctx,
@@ -1294,7 +1292,7 @@ func (m *resourceAccessor) entitiesForContact(ctx context.Context, contactValue 
 			ContactValue: contactValue,
 			RequestedInformation: &directory.RequestedInformation{
 				Depth:             depth,
-				EntityInformation: entityInfo,
+				EntityInformation: entityInfoWithContacts(entityInfo),
 			},
 			Statuses: statuses,
 		})
@@ -1308,7 +1306,6 @@ func (m *resourceAccessor) entitiesForExternalID(ctx context.Context, externalID
 	if len(entityInfo) == 0 {
 		entityInfo = []directory.EntityInformation{
 			directory.EntityInformation_MEMBERSHIPS,
-			directory.EntityInformation_CONTACTS,
 		}
 	}
 	res, err := m.directory.LookupEntities(ctx,
@@ -1319,7 +1316,7 @@ func (m *resourceAccessor) entitiesForExternalID(ctx context.Context, externalID
 			},
 			RequestedInformation: &directory.RequestedInformation{
 				Depth:             depth,
-				EntityInformation: entityInfo,
+				EntityInformation: entityInfoWithContacts(entityInfo),
 			},
 			Statuses: statuses,
 		})
@@ -1507,4 +1504,14 @@ func (m *resourceAccessor) verifiedValue(ctx context.Context, token string) (*au
 		return nil, err
 	}
 	return res, nil
+}
+
+// entityInfoWithContacts adds contacts in the requested information if not already included
+func entityInfoWithContacts(info []directory.EntityInformation) []directory.EntityInformation {
+	for _, ei := range info {
+		if ei == directory.EntityInformation_CONTACTS {
+			return info
+		}
+	}
+	return append(info, directory.EntityInformation_CONTACTS)
 }
