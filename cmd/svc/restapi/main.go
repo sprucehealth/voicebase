@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"net/http"
 	_ "net/http/pprof"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -102,6 +103,10 @@ func main() {
 	_, err := config.Parse(&conf)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if conf.BaseConfig.JSONLogs {
+		golog.Default().SetHandler(golog.WriterHandler(os.Stderr, golog.JSONFormatter(true)))
 	}
 
 	if conf.Debug {

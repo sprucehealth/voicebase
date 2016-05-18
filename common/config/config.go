@@ -82,6 +82,7 @@ type BaseConfig struct {
 	Environment  string `short:"e" long:"env" description:"Current environment (dev, stage, prod)"`
 	Syslog       bool   `long:"syslog" description:"Log to syslog"`
 	Stats        *Stats `group:"Stats" toml:"stats"`
+	JSONLogs     bool   `long:"json_logs" description:"JSON formatted logs"`
 
 	Version bool `long:"version" description:"Show version and exit" toml:"-"`
 
