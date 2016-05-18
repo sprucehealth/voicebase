@@ -25,6 +25,13 @@ func OK(t testing.TB, err error) {
 	}
 }
 
+// OKCase fails the test if an err is not nil and reports the case name
+func OKCase(t testing.TB, caseName string, err error) {
+	if err != nil {
+		t.Fatalf("[%s]:unexpected error [%s]: %s", caseName, CallerString(1), err.Error())
+	}
+}
+
 // Equals fails the test if exp is not equal to act.
 func Equals(t testing.TB, exp, act interface{}) {
 	if !reflect.DeepEqual(exp, act) {
