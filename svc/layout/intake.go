@@ -13,6 +13,34 @@ type Intake struct {
 	Sections    []*Section        `json:"sections"`
 }
 
+// QuestionMap returns a map of questionID to question
+// in the intake.
+func (i *Intake) QuestionMap() map[string]*Question {
+	questionMap := make(map[string]*Question)
+	for _, section := range i.Sections {
+		for _, screen := range section.Screens {
+			for _, question := range screen.Questions {
+				questionMap[question.ID] = question
+			}
+		}
+	}
+	return questionMap
+}
+
+// Questions returns an ordered list of questions as encountered
+// in the intake
+func (i *Intake) Questions() []*Question {
+	var questions []*Question
+	for _, section := range i.Sections {
+		for _, screen := range section.Screens {
+			for _, question := range screen.Questions {
+				questions = append(questions, question)
+			}
+		}
+	}
+	return questions
+}
+
 type TransitionItem struct {
 	Message string    `json:"message"`
 	Buttons []*Button `json:"buttons"`
@@ -88,6 +116,19 @@ type Question struct {
 	PhotoSlots         []*PhotoSlot              `json:"photo_slots,omitempty"`
 	SubQuestionsConfig *SubQuestionsConfig       `json:"subquestions_config,omitempty"`
 	ToAlert            *bool                     `json:"to_alert,omitempty"`
+}
+
+func (q *Question) SubQuestions() []*Question {
+	if q.SubQuestionsConfig == nil {
+		return nil
+	}
+	var subquestions []*Question
+	for _, screen := range q.SubQuestionsConfig.Screens {
+		for _, question := range screen.Questions {
+			subquestions = append(subquestions, question)
+		}
+	}
+	return subquestions
 }
 
 type QuestionAdditionalFields struct {

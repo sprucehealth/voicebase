@@ -754,7 +754,7 @@ func transformVisitLayoutVersionToResponse(version *layout.VisitLayoutVersion, s
 			return errors.Trace(err)
 		}
 
-		intakePreview, err := layout.GenerateVisitLayoutPreview(intake, review)
+		intakePreview, err := care.GenerateVisitLayoutPreview(intake, review)
 		if err != nil {
 			return errors.Trace(err)
 		}
@@ -793,38 +793,7 @@ func (c byVisitCategoryName) Less(i, j int) bool {
 	return strings.Compare(strings.ToLower(c[i].Name), strings.ToLower(c[j].Name)) < 0
 }
 
-// Visit
-
-type header struct {
-	Title    string `json:"title"`
-	Subtitle string `json:"subtitle,omitempty"`
-	IconURL  string `json:"icon_url,omitempty"`
-}
-
-type checkout struct {
-	HeaderImageURL string `json:"header_image_url,omitempty"`
-	HeaderText     string `json:"header_text"`
-	FooterText     string `json:"footer_text,omitempty"`
-}
-
-type submissionConfirmation struct {
-	Title       string `json:"title"`
-	TopText     string `json:"top_text"`
-	BottomText  string `json:"bottom_text"`
-	ButtonTitle string `json:"button_title"`
-}
-
-type intakeContainer struct {
-	ID                     string                  `json:"id"`
-	Header                 *header                 `json:"header"`
-	Checkout               *checkout               `json:"checkout"`
-	SubmissionConfirmation *submissionConfirmation `json:"submission_confirmation"`
-	Intake                 *layout.Intake          `json:"intake"`
-	Answers                json.RawMessage         `json:"answers"`
-	RequireAddress         bool                    `json:"require_address"`
-}
-
-func transformVisitToResponse(ctx context.Context, ram raccess.ResourceAccessor, visit *care.Visit, layoutVersion *layout.VisitLayoutVersion, layoutStore layout.Storage) (*models.Visit, error) {
+func transformVisitToResponse(ctx context.Context, ram raccess.ResourceAccessor, orgEntity *directory.Entity, visit *care.Visit, layoutVersion *layout.VisitLayoutVersion, layoutStore layout.Storage) (*models.Visit, error) {
 
 	acc := gqlctx.Account(ctx)
 	if acc == nil {
@@ -837,35 +806,25 @@ func transformVisitToResponse(ctx context.Context, ram raccess.ResourceAccessor,
 	}
 
 	answersForVisitRes, err := ram.GetAnswersForVisit(ctx, &care.GetAnswersForVisitRequest{
-		VisitID: visit.ID,
+		VisitID:              visit.ID,
+		SerializedForPatient: acc.Type == auth.AccountType_PATIENT,
 	})
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 
-	var container interface{}
+	var containerData []byte
 	var layoutContainerType string
 	switch acc.Type {
 	case auth.AccountType_PATIENT:
 		layoutContainerType = layoutContainerTypeIntake
-		container = &intakeContainer{
-			ID: visit.ID,
-			Header: &header{
-				Title:    visit.Name,
-				Subtitle: "", // TODO
-			},
-			Checkout: &checkout{
-				HeaderText: "Submit your visit",
-				FooterText: "", // TODO
-			},
-			SubmissionConfirmation: &submissionConfirmation{
-				Title:       "Visit Submitted",
-				TopText:     fmt.Sprintf("Your %s visit has been submitted.", visit.Name),
-				BottomText:  "Your doctor will review your visit and respond for any additional question.",
-				ButtonTitle: "Continue",
-			},
-			Intake:  intake,
-			Answers: json.RawMessage(answersForVisitRes.AnswersJSON),
+		containerData, err = care.PopulateVisitIntake(intake, &care.VisitData{
+			PatientAnswersJSON: []byte(answersForVisitRes.PatientAnswersJSON),
+			Visit:              visit,
+			OrgEntity:          orgEntity,
+		})
+		if err != nil {
+			return nil, errors.Trace(err)
 		}
 
 	case auth.AccountType_PROVIDER:
@@ -875,17 +834,10 @@ func transformVisitToResponse(ctx context.Context, ram raccess.ResourceAccessor,
 			return nil, errors.Trace(err)
 		}
 
-		container, err = layout.GenerateVisitLayoutPreview(intake, review)
+		containerData, err = care.PopulateVisitReview(intake, review, answersForVisitRes.Answers, visit)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-
-		// TODO: Build actual review
-	}
-
-	containerData, err := json.Marshal(container)
-	if err != nil {
-		return nil, errors.Trace(err)
 	}
 
 	return &models.Visit{

@@ -107,7 +107,17 @@ func lookupVisit(ctx context.Context, svc *service, ram raccess.ResourceAccessor
 		return nil, err
 	}
 
-	visit, err := transformVisitToResponse(ctx, ram, res.Visit, layoutVersionRes.VisitLayoutVersion, svc.layoutStore)
+	orgEntity, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: res.Visit.OrganizationID,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	visit, err := transformVisitToResponse(ctx, ram, orgEntity, res.Visit, layoutVersionRes.VisitLayoutVersion, svc.layoutStore)
 	if err != nil {
 		return nil, errors.InternalError(ctx, err)
 	}

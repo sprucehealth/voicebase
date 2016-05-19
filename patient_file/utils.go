@@ -2,6 +2,7 @@ package patient_file
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -209,7 +210,7 @@ func populatePatientPhotos(answeredPhotoSections []common.Answer, question *info
 		for i, photoIntakeSlot := range pIntakeSection.Photos {
 			item.Photos[i] = visitreview.PhotoData{
 				Title:    photoIntakeSlot.Name,
-				PhotoID:  photoIntakeSlot.PhotoID,
+				PhotoID:  strconv.FormatInt(photoIntakeSlot.PhotoID, 10),
 				PhotoURL: photoIntakeSlot.PhotoURL,
 			}
 		}
@@ -397,7 +398,7 @@ func populateParentInfo(
 
 		photoSection.Photos = append(photoSection.Photos, visitreview.PhotoData{
 			Title:    "ID Verification",
-			PhotoID:  *proof.GovernmentIDPhotoID,
+			PhotoID:  strconv.FormatInt(*proof.GovernmentIDPhotoID, 10),
 			PhotoURL: signedURL,
 		})
 	}
@@ -410,7 +411,7 @@ func populateParentInfo(
 
 		photoSection.Photos = append(photoSection.Photos, visitreview.PhotoData{
 			Title:    "ID Verification",
-			PhotoID:  *proof.SelfiePhotoID,
+			PhotoID:  strconv.FormatInt(*proof.SelfiePhotoID, 10),
 			PhotoURL: signedURL,
 		})
 	}

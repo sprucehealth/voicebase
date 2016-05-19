@@ -1,4 +1,4 @@
-package layout
+package care
 
 import (
 	"encoding/json"
@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/libs/visitreview"
+	"github.com/sprucehealth/backend/svc/layout"
 	"github.com/sprucehealth/mapstructure"
 )
 
@@ -16,7 +17,7 @@ func TestBuildPreviewContext(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var intake Intake
+	var intake layout.Intake
 	if err := json.Unmarshal(intakeData, &intake); err != nil {
 		t.Fatal(err)
 	}

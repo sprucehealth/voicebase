@@ -1,4 +1,4 @@
-package layout
+package care
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/visitreview"
 	"github.com/sprucehealth/backend/saml"
+	"github.com/sprucehealth/backend/svc/layout"
 )
 
 const (
@@ -13,33 +14,34 @@ const (
 )
 
 // GenerateVisitLayoutPreview returns a preview of the intake with dummy responses populated.
-func GenerateVisitLayoutPreview(intake *Intake, review *visitreview.SectionListView) (map[string]interface{}, error) {
+// This enables the provider to preview a visitLayout as it would look once submited by the patient.
+func GenerateVisitLayoutPreview(intake *layout.Intake, review *visitreview.SectionListView) (map[string]interface{}, error) {
 	context := visitreview.NewViewContext(nil)
 	context.Set("visit_alerts", []string{"<Alerts generated based on patient responses to questions in the visit go here>"})
 
 	for _, section := range intake.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
-				var builder buildContextFunc
+				var builder buildPreviewContextFunc
 
 				if question.SubQuestionsConfig != nil && len(question.SubQuestionsConfig.Screens) > 0 {
-					builder = builderQuestionWithSubanswers
+					builder = buildPreviewQuestionWithSubanswers
 				} else {
 					switch question.Type {
 
 					case saml.QuestionTypeAutocomplete,
 						saml.QuestionTypeFreeText,
 						saml.QuestionTypeSingleEntry:
-						builder = builderQuestionFreeText
+						builder = buildPreviewQuestionFreeText
 
 					case saml.QuestionTypeMultipleChoice:
-						builder = builderQuestionWithOptions
+						builder = buildPreviewQuestionWithOptions
 
 					case saml.QuestionTypeSingleSelect, saml.QuestionTypeSegmentedControl:
-						builder = builderQuestionWithSingleResponse
+						builder = buildPreviewQuestionWithSingleResponse
 
 					case saml.QuestionTypePhotoSection:
-						builder = builderQuestionWithPhotoSlots
+						builder = buildPreviewQuestionWithPhotoSlots
 
 					default:
 						return nil, errors.Trace(fmt.Errorf("context builder not found for question of type: %s", question.Type))
@@ -56,9 +58,9 @@ func GenerateVisitLayoutPreview(intake *Intake, review *visitreview.SectionListV
 	return review.Render(context)
 }
 
-type buildContextFunc func(*Question, *visitreview.ViewContext) error
+type buildPreviewContextFunc func(*layout.Question, *visitreview.ViewContext) error
 
-func builderQuestionWithOptions(question *Question, context *visitreview.ViewContext) error {
+func buildPreviewQuestionWithOptions(question *layout.Question, context *visitreview.ViewContext) error {
 	checkeUncheckedItems := make([]visitreview.CheckedUncheckedData, 0, len(question.PotentialAnswers))
 	for _, option := range question.PotentialAnswers {
 		checkeUncheckedItems = append(checkeUncheckedItems, visitreview.CheckedUncheckedData{
@@ -72,7 +74,7 @@ func builderQuestionWithOptions(question *Question, context *visitreview.ViewCon
 	return nil
 }
 
-func builderQuestionWithSingleResponse(question *Question, context *visitreview.ViewContext) error {
+func buildPreviewQuestionWithSingleResponse(question *layout.Question, context *visitreview.ViewContext) error {
 	possibleOptions := make([]string, 0, len(question.PotentialAnswers))
 	for _, option := range question.PotentialAnswers {
 		possibleOptions = append(possibleOptions, option.Summary)
@@ -83,15 +85,15 @@ func builderQuestionWithSingleResponse(question *Question, context *visitreview.
 	return nil
 }
 
-func builderQuestionFreeText(question *Question, context *visitreview.ViewContext) error {
+func buildPreviewQuestionFreeText(question *layout.Question, context *visitreview.ViewContext) error {
 	context.Set(visitreview.QuestionSummaryKey(question.ID), question.Summary)
 	context.Set(visitreview.AnswersKey(question.ID), responsePlaceholder)
 	return nil
 }
 
-func builderQuestionWithSubanswers(question *Question, context *visitreview.ViewContext) error {
+func buildPreviewQuestionWithSubanswers(question *layout.Question, context *visitreview.ViewContext) error {
 
-	subquestionMap := make(map[string]*Question)
+	subquestionMap := make(map[string]*layout.Question)
 	for _, screen := range question.SubQuestionsConfig.Screens {
 		for _, question := range screen.Questions {
 			subquestionMap[question.ID] = question
@@ -119,7 +121,7 @@ func builderQuestionWithSubanswers(question *Question, context *visitreview.View
 	return nil
 }
 
-func builderQuestionWithPhotoSlots(question *Question, context *visitreview.ViewContext) error {
+func buildPreviewQuestionWithPhotoSlots(question *layout.Question, context *visitreview.ViewContext) error {
 
 	context.Set(visitreview.PhotosKey(question.ID), []visitreview.TitlePhotoListData{
 		{

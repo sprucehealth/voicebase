@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -832,7 +833,11 @@ func (lr *intakeLayoutRenderer) renderView(view visitreview.View) error {
 			lr.wr.WriteString(`</div>`)
 			lr.wr.WriteString(`<div class="row">`)
 			for _, p := range it.Photos {
-				mediaURL, err := lr.mediaStore.SignedURL(p.PhotoID, lr.expiration)
+				photoID, err := strconv.ParseInt(p.PhotoID, 10, 64)
+				if err != nil {
+					return err
+				}
+				mediaURL, err := lr.mediaStore.SignedURL(photoID, lr.expiration)
 				if err != nil {
 					return err
 				}

@@ -265,21 +265,35 @@ func (s *server) GetAnswersForVisit(ctx context.Context, in *care.GetAnswersForV
 		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 
-	transformedAnswerMap := make(map[string]client.Answer, len(answerMap))
+	if in.SerializedForPatient {
+		transformedAnswerMap := make(map[string]client.Answer, len(answerMap))
+		for questionID, answer := range answerMap {
+			transformedAnswerMap[questionID], err = transformAnswerModelToResponse(answer)
+			if err != nil {
+				return nil, grpcErrorf(codes.Internal, err.Error())
+			}
+		}
+
+		answerJSONData, err := json.Marshal(transformedAnswerMap)
+		if err != nil {
+			return nil, grpcErrorf(codes.Internal, err.Error())
+		}
+
+		return &care.GetAnswersForVisitResponse{
+			PatientAnswersJSON: string(answerJSONData),
+		}, nil
+	}
+
+	transformedAnswerMap := make(map[string]*care.Answer, len(answerMap))
 	for questionID, answer := range answerMap {
-		transformedAnswerMap[questionID], err = transformAnswerModelToResponse(answer)
+		transformedAnswerMap[questionID], err = transformAnswerModelToSVCResponse(answer)
 		if err != nil {
 			return nil, grpcErrorf(codes.Internal, err.Error())
 		}
 	}
 
-	answerJSONData, err := json.Marshal(transformedAnswerMap)
-	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
-	}
-
 	return &care.GetAnswersForVisitResponse{
-		AnswersJSON: string(answerJSONData),
+		Answers: transformedAnswerMap,
 	}, nil
 }
 

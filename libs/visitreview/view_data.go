@@ -2,7 +2,7 @@ package visitreview
 
 type PhotoData struct {
 	Title          string `json:"title"`
-	PhotoID        int64  `json:"-"`
+	PhotoID        string `json:"photo_id"`
 	PhotoURL       string `json:"photo_url"`
 	PlaceholderURL string `json:"placeholder_url"`
 }

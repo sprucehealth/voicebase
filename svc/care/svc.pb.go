@@ -10,6 +10,16 @@
 
 	It has these top-level messages:
 		Visit
+		Answer
+		FreeTextAnswer
+		MultipleChoiceAnswer
+		SingleSelectAnswer
+		SegmentedControlAnswer
+		SingleEntryAnswer
+		AnswerOption
+		AutocompleteAnswerItem
+		AutocompleteAnswer
+		PhotoSectionAnswer
 		CreateVisitRequest
 		CreateVisitResponse
 		GetVisitRequest
@@ -47,11 +57,14 @@ import strings "strings"
 import github_com_gogo_protobuf_proto "github.com/gogo/protobuf/proto"
 import sort "sort"
 import reflect "reflect"
+import github_com_gogo_protobuf_sortkeys "github.com/gogo/protobuf/sortkeys"
 
 import (
 	context "golang.org/x/net/context"
 	grpc "google.golang.org/grpc"
 )
+
+import errors "errors"
 
 import io "io"
 
@@ -79,6 +92,9 @@ var CarePlanTreatment_Availability_value = map[string]int32{
 	"RX":      2,
 }
 
+// Visit is a unit of information requested from a patient
+// to provide a provider with information to aid in the diagnosis
+// of a patient condition.
 type Visit struct {
 	ID              string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name            string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
@@ -91,6 +107,395 @@ type Visit struct {
 
 func (m *Visit) Reset()      { *m = Visit{} }
 func (*Visit) ProtoMessage() {}
+
+// Anwer represents a response to a particular question in the visit.
+type Answer struct {
+	QuestionID string `protobuf:"bytes,1,opt,name=question_id,proto3" json:"question_id,omitempty"`
+	// Types that are valid to be assigned to Answer:
+	//	*Answer_FreeText
+	//	*Answer_MultipleChoice
+	//	*Answer_SingleSelect
+	//	*Answer_Autocomplete
+	//	*Answer_PhotoSection
+	//	*Answer_SingleEntry
+	//	*Answer_SegmentedControl
+	Answer isAnswer_Answer `protobuf_oneof:"answer"`
+}
+
+func (m *Answer) Reset()      { *m = Answer{} }
+func (*Answer) ProtoMessage() {}
+
+type isAnswer_Answer interface {
+	isAnswer_Answer()
+	Equal(interface{}) bool
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+
+type Answer_FreeText struct {
+	FreeText *FreeTextAnswer `protobuf:"bytes,10,opt,name=free_text,oneof"`
+}
+type Answer_MultipleChoice struct {
+	MultipleChoice *MultipleChoiceAnswer `protobuf:"bytes,11,opt,name=multiple_choice,oneof"`
+}
+type Answer_SingleSelect struct {
+	SingleSelect *SingleSelectAnswer `protobuf:"bytes,12,opt,name=single_select,oneof"`
+}
+type Answer_Autocomplete struct {
+	Autocomplete *AutocompleteAnswer `protobuf:"bytes,13,opt,name=autocomplete,oneof"`
+}
+type Answer_PhotoSection struct {
+	PhotoSection *PhotoSectionAnswer `protobuf:"bytes,14,opt,name=photo_section,oneof"`
+}
+type Answer_SingleEntry struct {
+	SingleEntry *SingleEntryAnswer `protobuf:"bytes,15,opt,name=single_entry,oneof"`
+}
+type Answer_SegmentedControl struct {
+	SegmentedControl *SegmentedControlAnswer `protobuf:"bytes,16,opt,name=segmented_control,oneof"`
+}
+
+func (*Answer_FreeText) isAnswer_Answer()         {}
+func (*Answer_MultipleChoice) isAnswer_Answer()   {}
+func (*Answer_SingleSelect) isAnswer_Answer()     {}
+func (*Answer_Autocomplete) isAnswer_Answer()     {}
+func (*Answer_PhotoSection) isAnswer_Answer()     {}
+func (*Answer_SingleEntry) isAnswer_Answer()      {}
+func (*Answer_SegmentedControl) isAnswer_Answer() {}
+
+func (m *Answer) GetAnswer() isAnswer_Answer {
+	if m != nil {
+		return m.Answer
+	}
+	return nil
+}
+
+func (m *Answer) GetFreeText() *FreeTextAnswer {
+	if x, ok := m.GetAnswer().(*Answer_FreeText); ok {
+		return x.FreeText
+	}
+	return nil
+}
+
+func (m *Answer) GetMultipleChoice() *MultipleChoiceAnswer {
+	if x, ok := m.GetAnswer().(*Answer_MultipleChoice); ok {
+		return x.MultipleChoice
+	}
+	return nil
+}
+
+func (m *Answer) GetSingleSelect() *SingleSelectAnswer {
+	if x, ok := m.GetAnswer().(*Answer_SingleSelect); ok {
+		return x.SingleSelect
+	}
+	return nil
+}
+
+func (m *Answer) GetAutocomplete() *AutocompleteAnswer {
+	if x, ok := m.GetAnswer().(*Answer_Autocomplete); ok {
+		return x.Autocomplete
+	}
+	return nil
+}
+
+func (m *Answer) GetPhotoSection() *PhotoSectionAnswer {
+	if x, ok := m.GetAnswer().(*Answer_PhotoSection); ok {
+		return x.PhotoSection
+	}
+	return nil
+}
+
+func (m *Answer) GetSingleEntry() *SingleEntryAnswer {
+	if x, ok := m.GetAnswer().(*Answer_SingleEntry); ok {
+		return x.SingleEntry
+	}
+	return nil
+}
+
+func (m *Answer) GetSegmentedControl() *SegmentedControlAnswer {
+	if x, ok := m.GetAnswer().(*Answer_SegmentedControl); ok {
+		return x.SegmentedControl
+	}
+	return nil
+}
+
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*Answer) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), []interface{}) {
+	return _Answer_OneofMarshaler, _Answer_OneofUnmarshaler, []interface{}{
+		(*Answer_FreeText)(nil),
+		(*Answer_MultipleChoice)(nil),
+		(*Answer_SingleSelect)(nil),
+		(*Answer_Autocomplete)(nil),
+		(*Answer_PhotoSection)(nil),
+		(*Answer_SingleEntry)(nil),
+		(*Answer_SegmentedControl)(nil),
+	}
+}
+
+func _Answer_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*Answer)
+	// answer
+	switch x := m.Answer.(type) {
+	case *Answer_FreeText:
+		_ = b.EncodeVarint(10<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.FreeText); err != nil {
+			return err
+		}
+	case *Answer_MultipleChoice:
+		_ = b.EncodeVarint(11<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.MultipleChoice); err != nil {
+			return err
+		}
+	case *Answer_SingleSelect:
+		_ = b.EncodeVarint(12<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.SingleSelect); err != nil {
+			return err
+		}
+	case *Answer_Autocomplete:
+		_ = b.EncodeVarint(13<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.Autocomplete); err != nil {
+			return err
+		}
+	case *Answer_PhotoSection:
+		_ = b.EncodeVarint(14<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.PhotoSection); err != nil {
+			return err
+		}
+	case *Answer_SingleEntry:
+		_ = b.EncodeVarint(15<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.SingleEntry); err != nil {
+			return err
+		}
+	case *Answer_SegmentedControl:
+		_ = b.EncodeVarint(16<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.SegmentedControl); err != nil {
+			return err
+		}
+	case nil:
+	default:
+		return fmt.Errorf("Answer.Answer has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _Answer_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*Answer)
+	switch tag {
+	case 10: // answer.free_text
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(FreeTextAnswer)
+		err := b.DecodeMessage(msg)
+		m.Answer = &Answer_FreeText{msg}
+		return true, err
+	case 11: // answer.multiple_choice
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(MultipleChoiceAnswer)
+		err := b.DecodeMessage(msg)
+		m.Answer = &Answer_MultipleChoice{msg}
+		return true, err
+	case 12: // answer.single_select
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(SingleSelectAnswer)
+		err := b.DecodeMessage(msg)
+		m.Answer = &Answer_SingleSelect{msg}
+		return true, err
+	case 13: // answer.autocomplete
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(AutocompleteAnswer)
+		err := b.DecodeMessage(msg)
+		m.Answer = &Answer_Autocomplete{msg}
+		return true, err
+	case 14: // answer.photo_section
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(PhotoSectionAnswer)
+		err := b.DecodeMessage(msg)
+		m.Answer = &Answer_PhotoSection{msg}
+		return true, err
+	case 15: // answer.single_entry
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(SingleEntryAnswer)
+		err := b.DecodeMessage(msg)
+		m.Answer = &Answer_SingleEntry{msg}
+		return true, err
+	case 16: // answer.segmented_control
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(SegmentedControlAnswer)
+		err := b.DecodeMessage(msg)
+		m.Answer = &Answer_SegmentedControl{msg}
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+// FreeTextAnswer represents a free text response to a question.
+type FreeTextAnswer struct {
+	FreeText string `protobuf:"bytes,1,opt,name=free_text,proto3" json:"free_text,omitempty"`
+}
+
+func (m *FreeTextAnswer) Reset()      { *m = FreeTextAnswer{} }
+func (*FreeTextAnswer) ProtoMessage() {}
+
+// MultipleChoiceAnswer represents a response that contains multiple options
+// selected by the patient from a list of available options in a question.
+type MultipleChoiceAnswer struct {
+	SelectedAnswers []*AnswerOption `protobuf:"bytes,1,rep,name=selected_answers" json:"selected_answers,omitempty"`
+}
+
+func (m *MultipleChoiceAnswer) Reset()      { *m = MultipleChoiceAnswer{} }
+func (*MultipleChoiceAnswer) ProtoMessage() {}
+
+func (m *MultipleChoiceAnswer) GetSelectedAnswers() []*AnswerOption {
+	if m != nil {
+		return m.SelectedAnswers
+	}
+	return nil
+}
+
+// SingleSelectAnswer represents a response that contains a single option
+// selected from a list of available options.
+type SingleSelectAnswer struct {
+	SelectedAnswer *AnswerOption `protobuf:"bytes,1,opt,name=selected_answer" json:"selected_answer,omitempty"`
+}
+
+func (m *SingleSelectAnswer) Reset()      { *m = SingleSelectAnswer{} }
+func (*SingleSelectAnswer) ProtoMessage() {}
+
+func (m *SingleSelectAnswer) GetSelectedAnswer() *AnswerOption {
+	if m != nil {
+		return m.SelectedAnswer
+	}
+	return nil
+}
+
+// SegmentedControlAnswer represents a single option selected from a list of
+// available options.
+type SegmentedControlAnswer struct {
+	SelectedAnswer *AnswerOption `protobuf:"bytes,1,opt,name=selected_answer" json:"selected_answer,omitempty"`
+}
+
+func (m *SegmentedControlAnswer) Reset()      { *m = SegmentedControlAnswer{} }
+func (*SegmentedControlAnswer) ProtoMessage() {}
+
+func (m *SegmentedControlAnswer) GetSelectedAnswer() *AnswerOption {
+	if m != nil {
+		return m.SelectedAnswer
+	}
+	return nil
+}
+
+// SingleEntryAnswer represents a single free text response to a question.
+type SingleEntryAnswer struct {
+	FreeText string `protobuf:"bytes,1,opt,name=free_text,proto3" json:"free_text,omitempty"`
+}
+
+func (m *SingleEntryAnswer) Reset()      { *m = SingleEntryAnswer{} }
+func (*SingleEntryAnswer) ProtoMessage() {}
+
+// AnswerOption represents a single selection that is part of an answer.
+type AnswerOption struct {
+	ID         string             `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	FreeText   string             `protobuf:"bytes,2,opt,name=free_text,proto3" json:"free_text,omitempty"`
+	SubAnswers map[string]*Answer `protobuf:"bytes,3,rep,name=sub_answers" json:"sub_answers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value"`
+}
+
+func (m *AnswerOption) Reset()      { *m = AnswerOption{} }
+func (*AnswerOption) ProtoMessage() {}
+
+func (m *AnswerOption) GetSubAnswers() map[string]*Answer {
+	if m != nil {
+		return m.SubAnswers
+	}
+	return nil
+}
+
+// AutocompleteAnswerItem represents a single entry that is part of the
+// autocomplete answer.
+type AutocompleteAnswerItem struct {
+	Answer     string             `protobuf:"bytes,1,opt,name=answer,proto3" json:"answer,omitempty"`
+	SubAnswers map[string]*Answer `protobuf:"bytes,2,rep,name=sub_answers" json:"sub_answers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value"`
+}
+
+func (m *AutocompleteAnswerItem) Reset()      { *m = AutocompleteAnswerItem{} }
+func (*AutocompleteAnswerItem) ProtoMessage() {}
+
+func (m *AutocompleteAnswerItem) GetSubAnswers() map[string]*Answer {
+	if m != nil {
+		return m.SubAnswers
+	}
+	return nil
+}
+
+// AutocompleteAnswer represents a response to a question that uses an
+// external data source to autocomplete the answer.
+type AutocompleteAnswer struct {
+	Items []*AutocompleteAnswerItem `protobuf:"bytes,1,rep,name=items" json:"items,omitempty"`
+}
+
+func (m *AutocompleteAnswer) Reset()      { *m = AutocompleteAnswer{} }
+func (*AutocompleteAnswer) ProtoMessage() {}
+
+func (m *AutocompleteAnswer) GetItems() []*AutocompleteAnswerItem {
+	if m != nil {
+		return m.Items
+	}
+	return nil
+}
+
+// PhotoSectionAnswer represents a series of photos pertaining to a question.
+type PhotoSectionAnswer struct {
+	Sections []*PhotoSectionAnswer_PhotoSectionItem `protobuf:"bytes,1,rep,name=sections" json:"sections,omitempty"`
+}
+
+func (m *PhotoSectionAnswer) Reset()      { *m = PhotoSectionAnswer{} }
+func (*PhotoSectionAnswer) ProtoMessage() {}
+
+func (m *PhotoSectionAnswer) GetSections() []*PhotoSectionAnswer_PhotoSectionItem {
+	if m != nil {
+		return m.Sections
+	}
+	return nil
+}
+
+type PhotoSectionAnswer_PhotoSectionItem struct {
+	Name  string                                               `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Slots []*PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem `protobuf:"bytes,2,rep,name=slots" json:"slots,omitempty"`
+}
+
+func (m *PhotoSectionAnswer_PhotoSectionItem) Reset()      { *m = PhotoSectionAnswer_PhotoSectionItem{} }
+func (*PhotoSectionAnswer_PhotoSectionItem) ProtoMessage() {}
+
+func (m *PhotoSectionAnswer_PhotoSectionItem) GetSlots() []*PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem {
+	if m != nil {
+		return m.Slots
+	}
+	return nil
+}
+
+type PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem struct {
+	SlotID  string `protobuf:"bytes,1,opt,name=slot_id,proto3" json:"slot_id,omitempty"`
+	Name    string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	MediaID string `protobuf:"bytes,3,opt,name=media_id,proto3" json:"media_id,omitempty"`
+	URL     string `protobuf:"bytes,4,opt,name=url,proto3" json:"url,omitempty"`
+}
+
+func (m *PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem) Reset() {
+	*m = PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem{}
+}
+func (*PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem) ProtoMessage() {}
 
 type CreateVisitRequest struct {
 	LayoutVersionID string `protobuf:"bytes,1,opt,name=layout_version_id,proto3" json:"layout_version_id,omitempty"`
@@ -154,18 +559,27 @@ func (m *CreateVisitAnswersResponse) Reset()      { *m = CreateVisitAnswersRespo
 func (*CreateVisitAnswersResponse) ProtoMessage() {}
 
 type GetAnswersForVisitRequest struct {
-	VisitID string `protobuf:"bytes,1,opt,name=visit_id,proto3" json:"visit_id,omitempty"`
+	VisitID              string `protobuf:"bytes,1,opt,name=visit_id,proto3" json:"visit_id,omitempty"`
+	SerializedForPatient bool   `protobuf:"varint,2,opt,name=serialized_for_patient,proto3" json:"serialized_for_patient,omitempty"`
 }
 
 func (m *GetAnswersForVisitRequest) Reset()      { *m = GetAnswersForVisitRequest{} }
 func (*GetAnswersForVisitRequest) ProtoMessage() {}
 
 type GetAnswersForVisitResponse struct {
-	AnswersJSON string `protobuf:"bytes,1,opt,name=answers_json,proto3" json:"answers_json,omitempty"`
+	PatientAnswersJSON string             `protobuf:"bytes,1,opt,name=patient_answers_json,proto3" json:"patient_answers_json,omitempty"`
+	Answers            map[string]*Answer `protobuf:"bytes,2,rep,name=answers" json:"answers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value"`
 }
 
 func (m *GetAnswersForVisitResponse) Reset()      { *m = GetAnswersForVisitResponse{} }
 func (*GetAnswersForVisitResponse) ProtoMessage() {}
+
+func (m *GetAnswersForVisitResponse) GetAnswers() map[string]*Answer {
+	if m != nil {
+		return m.Answers
+	}
+	return nil
+}
 
 type SubmitVisitRequest struct {
 	VisitID string `protobuf:"bytes,1,opt,name=visit_id,proto3" json:"visit_id,omitempty"`
@@ -377,6 +791,18 @@ func (m *SearchMedicationsResponse) GetMedications() []*Medication {
 
 func init() {
 	proto.RegisterType((*Visit)(nil), "care.Visit")
+	proto.RegisterType((*Answer)(nil), "care.Answer")
+	proto.RegisterType((*FreeTextAnswer)(nil), "care.FreeTextAnswer")
+	proto.RegisterType((*MultipleChoiceAnswer)(nil), "care.MultipleChoiceAnswer")
+	proto.RegisterType((*SingleSelectAnswer)(nil), "care.SingleSelectAnswer")
+	proto.RegisterType((*SegmentedControlAnswer)(nil), "care.SegmentedControlAnswer")
+	proto.RegisterType((*SingleEntryAnswer)(nil), "care.SingleEntryAnswer")
+	proto.RegisterType((*AnswerOption)(nil), "care.AnswerOption")
+	proto.RegisterType((*AutocompleteAnswerItem)(nil), "care.AutocompleteAnswerItem")
+	proto.RegisterType((*AutocompleteAnswer)(nil), "care.AutocompleteAnswer")
+	proto.RegisterType((*PhotoSectionAnswer)(nil), "care.PhotoSectionAnswer")
+	proto.RegisterType((*PhotoSectionAnswer_PhotoSectionItem)(nil), "care.PhotoSectionAnswer.PhotoSectionItem")
+	proto.RegisterType((*PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem)(nil), "care.PhotoSectionAnswer.PhotoSectionItem.PhotoSlotItem")
 	proto.RegisterType((*CreateVisitRequest)(nil), "care.CreateVisitRequest")
 	proto.RegisterType((*CreateVisitResponse)(nil), "care.CreateVisitResponse")
 	proto.RegisterType((*GetVisitRequest)(nil), "care.GetVisitRequest")
@@ -448,6 +874,541 @@ func (this *Visit) Equal(that interface{}) bool {
 		return false
 	}
 	if this.CreatorID != that1.CreatorID {
+		return false
+	}
+	return true
+}
+func (this *Answer) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*Answer)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.QuestionID != that1.QuestionID {
+		return false
+	}
+	if that1.Answer == nil {
+		if this.Answer != nil {
+			return false
+		}
+	} else if this.Answer == nil {
+		return false
+	} else if !this.Answer.Equal(that1.Answer) {
+		return false
+	}
+	return true
+}
+func (this *Answer_FreeText) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*Answer_FreeText)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.FreeText.Equal(that1.FreeText) {
+		return false
+	}
+	return true
+}
+func (this *Answer_MultipleChoice) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*Answer_MultipleChoice)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.MultipleChoice.Equal(that1.MultipleChoice) {
+		return false
+	}
+	return true
+}
+func (this *Answer_SingleSelect) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*Answer_SingleSelect)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.SingleSelect.Equal(that1.SingleSelect) {
+		return false
+	}
+	return true
+}
+func (this *Answer_Autocomplete) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*Answer_Autocomplete)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.Autocomplete.Equal(that1.Autocomplete) {
+		return false
+	}
+	return true
+}
+func (this *Answer_PhotoSection) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*Answer_PhotoSection)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.PhotoSection.Equal(that1.PhotoSection) {
+		return false
+	}
+	return true
+}
+func (this *Answer_SingleEntry) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*Answer_SingleEntry)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.SingleEntry.Equal(that1.SingleEntry) {
+		return false
+	}
+	return true
+}
+func (this *Answer_SegmentedControl) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*Answer_SegmentedControl)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.SegmentedControl.Equal(that1.SegmentedControl) {
+		return false
+	}
+	return true
+}
+func (this *FreeTextAnswer) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*FreeTextAnswer)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.FreeText != that1.FreeText {
+		return false
+	}
+	return true
+}
+func (this *MultipleChoiceAnswer) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*MultipleChoiceAnswer)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if len(this.SelectedAnswers) != len(that1.SelectedAnswers) {
+		return false
+	}
+	for i := range this.SelectedAnswers {
+		if !this.SelectedAnswers[i].Equal(that1.SelectedAnswers[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *SingleSelectAnswer) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*SingleSelectAnswer)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.SelectedAnswer.Equal(that1.SelectedAnswer) {
+		return false
+	}
+	return true
+}
+func (this *SegmentedControlAnswer) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*SegmentedControlAnswer)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.SelectedAnswer.Equal(that1.SelectedAnswer) {
+		return false
+	}
+	return true
+}
+func (this *SingleEntryAnswer) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*SingleEntryAnswer)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.FreeText != that1.FreeText {
+		return false
+	}
+	return true
+}
+func (this *AnswerOption) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*AnswerOption)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.ID != that1.ID {
+		return false
+	}
+	if this.FreeText != that1.FreeText {
+		return false
+	}
+	if len(this.SubAnswers) != len(that1.SubAnswers) {
+		return false
+	}
+	for i := range this.SubAnswers {
+		if !this.SubAnswers[i].Equal(that1.SubAnswers[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *AutocompleteAnswerItem) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*AutocompleteAnswerItem)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Answer != that1.Answer {
+		return false
+	}
+	if len(this.SubAnswers) != len(that1.SubAnswers) {
+		return false
+	}
+	for i := range this.SubAnswers {
+		if !this.SubAnswers[i].Equal(that1.SubAnswers[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *AutocompleteAnswer) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*AutocompleteAnswer)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if len(this.Items) != len(that1.Items) {
+		return false
+	}
+	for i := range this.Items {
+		if !this.Items[i].Equal(that1.Items[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *PhotoSectionAnswer) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*PhotoSectionAnswer)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if len(this.Sections) != len(that1.Sections) {
+		return false
+	}
+	for i := range this.Sections {
+		if !this.Sections[i].Equal(that1.Sections[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *PhotoSectionAnswer_PhotoSectionItem) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*PhotoSectionAnswer_PhotoSectionItem)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Name != that1.Name {
+		return false
+	}
+	if len(this.Slots) != len(that1.Slots) {
+		return false
+	}
+	for i := range this.Slots {
+		if !this.Slots[i].Equal(that1.Slots[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.SlotID != that1.SlotID {
+		return false
+	}
+	if this.Name != that1.Name {
+		return false
+	}
+	if this.MediaID != that1.MediaID {
+		return false
+	}
+	if this.URL != that1.URL {
 		return false
 	}
 	return true
@@ -640,6 +1601,9 @@ func (this *GetAnswersForVisitRequest) Equal(that interface{}) bool {
 	if this.VisitID != that1.VisitID {
 		return false
 	}
+	if this.SerializedForPatient != that1.SerializedForPatient {
+		return false
+	}
 	return true
 }
 func (this *GetAnswersForVisitResponse) Equal(that interface{}) bool {
@@ -662,8 +1626,16 @@ func (this *GetAnswersForVisitResponse) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if this.AnswersJSON != that1.AnswersJSON {
+	if this.PatientAnswersJSON != that1.PatientAnswersJSON {
 		return false
+	}
+	if len(this.Answers) != len(that1.Answers) {
+		return false
+	}
+	for i := range this.Answers {
+		if !this.Answers[i].Equal(that1.Answers[i]) {
+			return false
+		}
 	}
 	return true
 }
@@ -1213,6 +2185,228 @@ func (this *Visit) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *Answer) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 12)
+	s = append(s, "&care.Answer{")
+	s = append(s, "QuestionID: "+fmt.Sprintf("%#v", this.QuestionID)+",\n")
+	if this.Answer != nil {
+		s = append(s, "Answer: "+fmt.Sprintf("%#v", this.Answer)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *Answer_FreeText) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&care.Answer_FreeText{` +
+		`FreeText:` + fmt.Sprintf("%#v", this.FreeText) + `}`}, ", ")
+	return s
+}
+func (this *Answer_MultipleChoice) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&care.Answer_MultipleChoice{` +
+		`MultipleChoice:` + fmt.Sprintf("%#v", this.MultipleChoice) + `}`}, ", ")
+	return s
+}
+func (this *Answer_SingleSelect) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&care.Answer_SingleSelect{` +
+		`SingleSelect:` + fmt.Sprintf("%#v", this.SingleSelect) + `}`}, ", ")
+	return s
+}
+func (this *Answer_Autocomplete) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&care.Answer_Autocomplete{` +
+		`Autocomplete:` + fmt.Sprintf("%#v", this.Autocomplete) + `}`}, ", ")
+	return s
+}
+func (this *Answer_PhotoSection) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&care.Answer_PhotoSection{` +
+		`PhotoSection:` + fmt.Sprintf("%#v", this.PhotoSection) + `}`}, ", ")
+	return s
+}
+func (this *Answer_SingleEntry) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&care.Answer_SingleEntry{` +
+		`SingleEntry:` + fmt.Sprintf("%#v", this.SingleEntry) + `}`}, ", ")
+	return s
+}
+func (this *Answer_SegmentedControl) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&care.Answer_SegmentedControl{` +
+		`SegmentedControl:` + fmt.Sprintf("%#v", this.SegmentedControl) + `}`}, ", ")
+	return s
+}
+func (this *FreeTextAnswer) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&care.FreeTextAnswer{")
+	s = append(s, "FreeText: "+fmt.Sprintf("%#v", this.FreeText)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *MultipleChoiceAnswer) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&care.MultipleChoiceAnswer{")
+	if this.SelectedAnswers != nil {
+		s = append(s, "SelectedAnswers: "+fmt.Sprintf("%#v", this.SelectedAnswers)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *SingleSelectAnswer) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&care.SingleSelectAnswer{")
+	if this.SelectedAnswer != nil {
+		s = append(s, "SelectedAnswer: "+fmt.Sprintf("%#v", this.SelectedAnswer)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *SegmentedControlAnswer) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&care.SegmentedControlAnswer{")
+	if this.SelectedAnswer != nil {
+		s = append(s, "SelectedAnswer: "+fmt.Sprintf("%#v", this.SelectedAnswer)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *SingleEntryAnswer) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&care.SingleEntryAnswer{")
+	s = append(s, "FreeText: "+fmt.Sprintf("%#v", this.FreeText)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *AnswerOption) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&care.AnswerOption{")
+	s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
+	s = append(s, "FreeText: "+fmt.Sprintf("%#v", this.FreeText)+",\n")
+	keysForSubAnswers := make([]string, 0, len(this.SubAnswers))
+	for k, _ := range this.SubAnswers {
+		keysForSubAnswers = append(keysForSubAnswers, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForSubAnswers)
+	mapStringForSubAnswers := "map[string]*Answer{"
+	for _, k := range keysForSubAnswers {
+		mapStringForSubAnswers += fmt.Sprintf("%#v: %#v,", k, this.SubAnswers[k])
+	}
+	mapStringForSubAnswers += "}"
+	if this.SubAnswers != nil {
+		s = append(s, "SubAnswers: "+mapStringForSubAnswers+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *AutocompleteAnswerItem) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&care.AutocompleteAnswerItem{")
+	s = append(s, "Answer: "+fmt.Sprintf("%#v", this.Answer)+",\n")
+	keysForSubAnswers := make([]string, 0, len(this.SubAnswers))
+	for k, _ := range this.SubAnswers {
+		keysForSubAnswers = append(keysForSubAnswers, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForSubAnswers)
+	mapStringForSubAnswers := "map[string]*Answer{"
+	for _, k := range keysForSubAnswers {
+		mapStringForSubAnswers += fmt.Sprintf("%#v: %#v,", k, this.SubAnswers[k])
+	}
+	mapStringForSubAnswers += "}"
+	if this.SubAnswers != nil {
+		s = append(s, "SubAnswers: "+mapStringForSubAnswers+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *AutocompleteAnswer) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&care.AutocompleteAnswer{")
+	if this.Items != nil {
+		s = append(s, "Items: "+fmt.Sprintf("%#v", this.Items)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *PhotoSectionAnswer) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&care.PhotoSectionAnswer{")
+	if this.Sections != nil {
+		s = append(s, "Sections: "+fmt.Sprintf("%#v", this.Sections)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *PhotoSectionAnswer_PhotoSectionItem) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&care.PhotoSectionAnswer_PhotoSectionItem{")
+	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
+	if this.Slots != nil {
+		s = append(s, "Slots: "+fmt.Sprintf("%#v", this.Slots)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 8)
+	s = append(s, "&care.PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem{")
+	s = append(s, "SlotID: "+fmt.Sprintf("%#v", this.SlotID)+",\n")
+	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
+	s = append(s, "MediaID: "+fmt.Sprintf("%#v", this.MediaID)+",\n")
+	s = append(s, "URL: "+fmt.Sprintf("%#v", this.URL)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func (this *CreateVisitRequest) GoString() string {
 	if this == nil {
 		return "nil"
@@ -1286,9 +2480,10 @@ func (this *GetAnswersForVisitRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 5)
+	s := make([]string, 0, 6)
 	s = append(s, "&care.GetAnswersForVisitRequest{")
 	s = append(s, "VisitID: "+fmt.Sprintf("%#v", this.VisitID)+",\n")
+	s = append(s, "SerializedForPatient: "+fmt.Sprintf("%#v", this.SerializedForPatient)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1296,9 +2491,22 @@ func (this *GetAnswersForVisitResponse) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 5)
+	s := make([]string, 0, 6)
 	s = append(s, "&care.GetAnswersForVisitResponse{")
-	s = append(s, "AnswersJSON: "+fmt.Sprintf("%#v", this.AnswersJSON)+",\n")
+	s = append(s, "PatientAnswersJSON: "+fmt.Sprintf("%#v", this.PatientAnswersJSON)+",\n")
+	keysForAnswers := make([]string, 0, len(this.Answers))
+	for k, _ := range this.Answers {
+		keysForAnswers = append(keysForAnswers, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForAnswers)
+	mapStringForAnswers := "map[string]*Answer{"
+	for _, k := range keysForAnswers {
+		mapStringForAnswers += fmt.Sprintf("%#v: %#v,", k, this.Answers[k])
+	}
+	mapStringForAnswers += "}"
+	if this.Answers != nil {
+		s = append(s, "Answers: "+mapStringForAnswers+",\n")
+	}
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1885,6 +3093,513 @@ func (m *Visit) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *Answer) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Answer) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.QuestionID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.QuestionID)))
+		i += copy(data[i:], m.QuestionID)
+	}
+	if m.Answer != nil {
+		nn1, err := m.Answer.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += nn1
+	}
+	return i, nil
+}
+
+func (m *Answer_FreeText) MarshalTo(data []byte) (int, error) {
+	i := 0
+	if m.FreeText != nil {
+		data[i] = 0x52
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.FreeText.Size()))
+		n2, err := m.FreeText.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n2
+	}
+	return i, nil
+}
+func (m *Answer_MultipleChoice) MarshalTo(data []byte) (int, error) {
+	i := 0
+	if m.MultipleChoice != nil {
+		data[i] = 0x5a
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.MultipleChoice.Size()))
+		n3, err := m.MultipleChoice.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n3
+	}
+	return i, nil
+}
+func (m *Answer_SingleSelect) MarshalTo(data []byte) (int, error) {
+	i := 0
+	if m.SingleSelect != nil {
+		data[i] = 0x62
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.SingleSelect.Size()))
+		n4, err := m.SingleSelect.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n4
+	}
+	return i, nil
+}
+func (m *Answer_Autocomplete) MarshalTo(data []byte) (int, error) {
+	i := 0
+	if m.Autocomplete != nil {
+		data[i] = 0x6a
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Autocomplete.Size()))
+		n5, err := m.Autocomplete.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n5
+	}
+	return i, nil
+}
+func (m *Answer_PhotoSection) MarshalTo(data []byte) (int, error) {
+	i := 0
+	if m.PhotoSection != nil {
+		data[i] = 0x72
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.PhotoSection.Size()))
+		n6, err := m.PhotoSection.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n6
+	}
+	return i, nil
+}
+func (m *Answer_SingleEntry) MarshalTo(data []byte) (int, error) {
+	i := 0
+	if m.SingleEntry != nil {
+		data[i] = 0x7a
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.SingleEntry.Size()))
+		n7, err := m.SingleEntry.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n7
+	}
+	return i, nil
+}
+func (m *Answer_SegmentedControl) MarshalTo(data []byte) (int, error) {
+	i := 0
+	if m.SegmentedControl != nil {
+		data[i] = 0x82
+		i++
+		data[i] = 0x1
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.SegmentedControl.Size()))
+		n8, err := m.SegmentedControl.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n8
+	}
+	return i, nil
+}
+func (m *FreeTextAnswer) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *FreeTextAnswer) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.FreeText) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.FreeText)))
+		i += copy(data[i:], m.FreeText)
+	}
+	return i, nil
+}
+
+func (m *MultipleChoiceAnswer) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *MultipleChoiceAnswer) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.SelectedAnswers) > 0 {
+		for _, msg := range m.SelectedAnswers {
+			data[i] = 0xa
+			i++
+			i = encodeVarintSvc(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	return i, nil
+}
+
+func (m *SingleSelectAnswer) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *SingleSelectAnswer) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.SelectedAnswer != nil {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.SelectedAnswer.Size()))
+		n9, err := m.SelectedAnswer.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n9
+	}
+	return i, nil
+}
+
+func (m *SegmentedControlAnswer) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *SegmentedControlAnswer) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.SelectedAnswer != nil {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.SelectedAnswer.Size()))
+		n10, err := m.SelectedAnswer.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n10
+	}
+	return i, nil
+}
+
+func (m *SingleEntryAnswer) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *SingleEntryAnswer) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.FreeText) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.FreeText)))
+		i += copy(data[i:], m.FreeText)
+	}
+	return i, nil
+}
+
+func (m *AnswerOption) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *AnswerOption) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.ID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.ID)))
+		i += copy(data[i:], m.ID)
+	}
+	if len(m.FreeText) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.FreeText)))
+		i += copy(data[i:], m.FreeText)
+	}
+	if len(m.SubAnswers) > 0 {
+		for k, _ := range m.SubAnswers {
+			data[i] = 0x1a
+			i++
+			v := m.SubAnswers[k]
+			if v == nil {
+				return 0, errors.New("proto: map has nil element")
+			}
+			msgSize := v.Size()
+			mapSize := 1 + len(k) + sovSvc(uint64(len(k))) + 1 + msgSize + sovSvc(uint64(msgSize))
+			i = encodeVarintSvc(data, i, uint64(mapSize))
+			data[i] = 0xa
+			i++
+			i = encodeVarintSvc(data, i, uint64(len(k)))
+			i += copy(data[i:], k)
+			data[i] = 0x12
+			i++
+			i = encodeVarintSvc(data, i, uint64(v.Size()))
+			n11, err := v.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n11
+		}
+	}
+	return i, nil
+}
+
+func (m *AutocompleteAnswerItem) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *AutocompleteAnswerItem) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Answer) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Answer)))
+		i += copy(data[i:], m.Answer)
+	}
+	if len(m.SubAnswers) > 0 {
+		for k, _ := range m.SubAnswers {
+			data[i] = 0x12
+			i++
+			v := m.SubAnswers[k]
+			if v == nil {
+				return 0, errors.New("proto: map has nil element")
+			}
+			msgSize := v.Size()
+			mapSize := 1 + len(k) + sovSvc(uint64(len(k))) + 1 + msgSize + sovSvc(uint64(msgSize))
+			i = encodeVarintSvc(data, i, uint64(mapSize))
+			data[i] = 0xa
+			i++
+			i = encodeVarintSvc(data, i, uint64(len(k)))
+			i += copy(data[i:], k)
+			data[i] = 0x12
+			i++
+			i = encodeVarintSvc(data, i, uint64(v.Size()))
+			n12, err := v.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n12
+		}
+	}
+	return i, nil
+}
+
+func (m *AutocompleteAnswer) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *AutocompleteAnswer) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Items) > 0 {
+		for _, msg := range m.Items {
+			data[i] = 0xa
+			i++
+			i = encodeVarintSvc(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	return i, nil
+}
+
+func (m *PhotoSectionAnswer) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *PhotoSectionAnswer) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Sections) > 0 {
+		for _, msg := range m.Sections {
+			data[i] = 0xa
+			i++
+			i = encodeVarintSvc(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	return i, nil
+}
+
+func (m *PhotoSectionAnswer_PhotoSectionItem) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *PhotoSectionAnswer_PhotoSectionItem) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Name) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Name)))
+		i += copy(data[i:], m.Name)
+	}
+	if len(m.Slots) > 0 {
+		for _, msg := range m.Slots {
+			data[i] = 0x12
+			i++
+			i = encodeVarintSvc(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	return i, nil
+}
+
+func (m *PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.SlotID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.SlotID)))
+		i += copy(data[i:], m.SlotID)
+	}
+	if len(m.Name) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Name)))
+		i += copy(data[i:], m.Name)
+	}
+	if len(m.MediaID) > 0 {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.MediaID)))
+		i += copy(data[i:], m.MediaID)
+	}
+	if len(m.URL) > 0 {
+		data[i] = 0x22
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.URL)))
+		i += copy(data[i:], m.URL)
+	}
+	return i, nil
+}
+
 func (m *CreateVisitRequest) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -1952,11 +3667,11 @@ func (m *CreateVisitResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Visit.Size()))
-		n1, err := m.Visit.MarshalTo(data[i:])
+		n13, err := m.Visit.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n1
+		i += n13
 	}
 	return i, nil
 }
@@ -2004,11 +3719,11 @@ func (m *GetVisitResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Visit.Size()))
-		n2, err := m.Visit.MarshalTo(data[i:])
+		n14, err := m.Visit.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n2
+		i += n14
 	}
 	return i, nil
 }
@@ -2088,6 +3803,16 @@ func (m *GetAnswersForVisitRequest) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintSvc(data, i, uint64(len(m.VisitID)))
 		i += copy(data[i:], m.VisitID)
 	}
+	if m.SerializedForPatient {
+		data[i] = 0x10
+		i++
+		if m.SerializedForPatient {
+			data[i] = 1
+		} else {
+			data[i] = 0
+		}
+		i++
+	}
 	return i, nil
 }
 
@@ -2106,11 +3831,36 @@ func (m *GetAnswersForVisitResponse) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if len(m.AnswersJSON) > 0 {
+	if len(m.PatientAnswersJSON) > 0 {
 		data[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.AnswersJSON)))
-		i += copy(data[i:], m.AnswersJSON)
+		i = encodeVarintSvc(data, i, uint64(len(m.PatientAnswersJSON)))
+		i += copy(data[i:], m.PatientAnswersJSON)
+	}
+	if len(m.Answers) > 0 {
+		for k, _ := range m.Answers {
+			data[i] = 0x12
+			i++
+			v := m.Answers[k]
+			if v == nil {
+				return 0, errors.New("proto: map has nil element")
+			}
+			msgSize := v.Size()
+			mapSize := 1 + len(k) + sovSvc(uint64(len(k))) + 1 + msgSize + sovSvc(uint64(msgSize))
+			i = encodeVarintSvc(data, i, uint64(mapSize))
+			data[i] = 0xa
+			i++
+			i = encodeVarintSvc(data, i, uint64(len(k)))
+			i += copy(data[i:], k)
+			data[i] = 0x12
+			i++
+			i = encodeVarintSvc(data, i, uint64(v.Size()))
+			n15, err := v.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n15
+		}
 	}
 	return i, nil
 }
@@ -2437,11 +4187,11 @@ func (m *CarePlanResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.CarePlan.Size()))
-		n3, err := m.CarePlan.MarshalTo(data[i:])
+		n16, err := m.CarePlan.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n3
+		i += n16
 	}
 	return i, nil
 }
@@ -2519,11 +4269,11 @@ func (m *CreateCarePlanResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.CarePlan.Size()))
-		n4, err := m.CarePlan.MarshalTo(data[i:])
+		n17, err := m.CarePlan.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n4
+		i += n17
 	}
 	return i, nil
 }
@@ -2577,11 +4327,11 @@ func (m *SubmitCarePlanResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.CarePlan.Size()))
-		n5, err := m.CarePlan.MarshalTo(data[i:])
+		n18, err := m.CarePlan.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n5
+		i += n18
 	}
 	return i, nil
 }
@@ -2836,6 +4586,244 @@ func (m *Visit) Size() (n int) {
 	return n
 }
 
+func (m *Answer) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.QuestionID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if m.Answer != nil {
+		n += m.Answer.Size()
+	}
+	return n
+}
+
+func (m *Answer_FreeText) Size() (n int) {
+	var l int
+	_ = l
+	if m.FreeText != nil {
+		l = m.FreeText.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+func (m *Answer_MultipleChoice) Size() (n int) {
+	var l int
+	_ = l
+	if m.MultipleChoice != nil {
+		l = m.MultipleChoice.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+func (m *Answer_SingleSelect) Size() (n int) {
+	var l int
+	_ = l
+	if m.SingleSelect != nil {
+		l = m.SingleSelect.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+func (m *Answer_Autocomplete) Size() (n int) {
+	var l int
+	_ = l
+	if m.Autocomplete != nil {
+		l = m.Autocomplete.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+func (m *Answer_PhotoSection) Size() (n int) {
+	var l int
+	_ = l
+	if m.PhotoSection != nil {
+		l = m.PhotoSection.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+func (m *Answer_SingleEntry) Size() (n int) {
+	var l int
+	_ = l
+	if m.SingleEntry != nil {
+		l = m.SingleEntry.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+func (m *Answer_SegmentedControl) Size() (n int) {
+	var l int
+	_ = l
+	if m.SegmentedControl != nil {
+		l = m.SegmentedControl.Size()
+		n += 2 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+func (m *FreeTextAnswer) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.FreeText)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *MultipleChoiceAnswer) Size() (n int) {
+	var l int
+	_ = l
+	if len(m.SelectedAnswers) > 0 {
+		for _, e := range m.SelectedAnswers {
+			l = e.Size()
+			n += 1 + l + sovSvc(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *SingleSelectAnswer) Size() (n int) {
+	var l int
+	_ = l
+	if m.SelectedAnswer != nil {
+		l = m.SelectedAnswer.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *SegmentedControlAnswer) Size() (n int) {
+	var l int
+	_ = l
+	if m.SelectedAnswer != nil {
+		l = m.SelectedAnswer.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *SingleEntryAnswer) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.FreeText)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *AnswerOption) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.ID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.FreeText)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if len(m.SubAnswers) > 0 {
+		for k, v := range m.SubAnswers {
+			_ = k
+			_ = v
+			l = 0
+			if v != nil {
+				l = v.Size()
+			}
+			mapEntrySize := 1 + len(k) + sovSvc(uint64(len(k))) + 1 + l + sovSvc(uint64(l))
+			n += mapEntrySize + 1 + sovSvc(uint64(mapEntrySize))
+		}
+	}
+	return n
+}
+
+func (m *AutocompleteAnswerItem) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Answer)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if len(m.SubAnswers) > 0 {
+		for k, v := range m.SubAnswers {
+			_ = k
+			_ = v
+			l = 0
+			if v != nil {
+				l = v.Size()
+			}
+			mapEntrySize := 1 + len(k) + sovSvc(uint64(len(k))) + 1 + l + sovSvc(uint64(l))
+			n += mapEntrySize + 1 + sovSvc(uint64(mapEntrySize))
+		}
+	}
+	return n
+}
+
+func (m *AutocompleteAnswer) Size() (n int) {
+	var l int
+	_ = l
+	if len(m.Items) > 0 {
+		for _, e := range m.Items {
+			l = e.Size()
+			n += 1 + l + sovSvc(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *PhotoSectionAnswer) Size() (n int) {
+	var l int
+	_ = l
+	if len(m.Sections) > 0 {
+		for _, e := range m.Sections {
+			l = e.Size()
+			n += 1 + l + sovSvc(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *PhotoSectionAnswer_PhotoSectionItem) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if len(m.Slots) > 0 {
+		for _, e := range m.Slots {
+			l = e.Size()
+			n += 1 + l + sovSvc(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.SlotID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.MediaID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.URL)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
 func (m *CreateVisitRequest) Size() (n int) {
 	var l int
 	_ = l
@@ -2923,15 +4911,30 @@ func (m *GetAnswersForVisitRequest) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
+	if m.SerializedForPatient {
+		n += 2
+	}
 	return n
 }
 
 func (m *GetAnswersForVisitResponse) Size() (n int) {
 	var l int
 	_ = l
-	l = len(m.AnswersJSON)
+	l = len(m.PatientAnswersJSON)
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
+	}
+	if len(m.Answers) > 0 {
+		for k, v := range m.Answers {
+			_ = k
+			_ = v
+			l = 0
+			if v != nil {
+				l = v.Size()
+			}
+			mapEntrySize := 1 + len(k) + sovSvc(uint64(len(k))) + 1 + l + sovSvc(uint64(l))
+			n += mapEntrySize + 1 + sovSvc(uint64(mapEntrySize))
+		}
 	}
 	return n
 }
@@ -3273,6 +5276,224 @@ func (this *Visit) String() string {
 	}, "")
 	return s
 }
+func (this *Answer) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Answer{`,
+		`QuestionID:` + fmt.Sprintf("%v", this.QuestionID) + `,`,
+		`Answer:` + fmt.Sprintf("%v", this.Answer) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Answer_FreeText) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Answer_FreeText{`,
+		`FreeText:` + strings.Replace(fmt.Sprintf("%v", this.FreeText), "FreeTextAnswer", "FreeTextAnswer", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Answer_MultipleChoice) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Answer_MultipleChoice{`,
+		`MultipleChoice:` + strings.Replace(fmt.Sprintf("%v", this.MultipleChoice), "MultipleChoiceAnswer", "MultipleChoiceAnswer", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Answer_SingleSelect) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Answer_SingleSelect{`,
+		`SingleSelect:` + strings.Replace(fmt.Sprintf("%v", this.SingleSelect), "SingleSelectAnswer", "SingleSelectAnswer", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Answer_Autocomplete) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Answer_Autocomplete{`,
+		`Autocomplete:` + strings.Replace(fmt.Sprintf("%v", this.Autocomplete), "AutocompleteAnswer", "AutocompleteAnswer", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Answer_PhotoSection) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Answer_PhotoSection{`,
+		`PhotoSection:` + strings.Replace(fmt.Sprintf("%v", this.PhotoSection), "PhotoSectionAnswer", "PhotoSectionAnswer", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Answer_SingleEntry) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Answer_SingleEntry{`,
+		`SingleEntry:` + strings.Replace(fmt.Sprintf("%v", this.SingleEntry), "SingleEntryAnswer", "SingleEntryAnswer", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Answer_SegmentedControl) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Answer_SegmentedControl{`,
+		`SegmentedControl:` + strings.Replace(fmt.Sprintf("%v", this.SegmentedControl), "SegmentedControlAnswer", "SegmentedControlAnswer", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *FreeTextAnswer) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&FreeTextAnswer{`,
+		`FreeText:` + fmt.Sprintf("%v", this.FreeText) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *MultipleChoiceAnswer) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&MultipleChoiceAnswer{`,
+		`SelectedAnswers:` + strings.Replace(fmt.Sprintf("%v", this.SelectedAnswers), "AnswerOption", "AnswerOption", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SingleSelectAnswer) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&SingleSelectAnswer{`,
+		`SelectedAnswer:` + strings.Replace(fmt.Sprintf("%v", this.SelectedAnswer), "AnswerOption", "AnswerOption", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SegmentedControlAnswer) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&SegmentedControlAnswer{`,
+		`SelectedAnswer:` + strings.Replace(fmt.Sprintf("%v", this.SelectedAnswer), "AnswerOption", "AnswerOption", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SingleEntryAnswer) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&SingleEntryAnswer{`,
+		`FreeText:` + fmt.Sprintf("%v", this.FreeText) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *AnswerOption) String() string {
+	if this == nil {
+		return "nil"
+	}
+	keysForSubAnswers := make([]string, 0, len(this.SubAnswers))
+	for k, _ := range this.SubAnswers {
+		keysForSubAnswers = append(keysForSubAnswers, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForSubAnswers)
+	mapStringForSubAnswers := "map[string]*Answer{"
+	for _, k := range keysForSubAnswers {
+		mapStringForSubAnswers += fmt.Sprintf("%v: %v,", k, this.SubAnswers[k])
+	}
+	mapStringForSubAnswers += "}"
+	s := strings.Join([]string{`&AnswerOption{`,
+		`ID:` + fmt.Sprintf("%v", this.ID) + `,`,
+		`FreeText:` + fmt.Sprintf("%v", this.FreeText) + `,`,
+		`SubAnswers:` + mapStringForSubAnswers + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *AutocompleteAnswerItem) String() string {
+	if this == nil {
+		return "nil"
+	}
+	keysForSubAnswers := make([]string, 0, len(this.SubAnswers))
+	for k, _ := range this.SubAnswers {
+		keysForSubAnswers = append(keysForSubAnswers, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForSubAnswers)
+	mapStringForSubAnswers := "map[string]*Answer{"
+	for _, k := range keysForSubAnswers {
+		mapStringForSubAnswers += fmt.Sprintf("%v: %v,", k, this.SubAnswers[k])
+	}
+	mapStringForSubAnswers += "}"
+	s := strings.Join([]string{`&AutocompleteAnswerItem{`,
+		`Answer:` + fmt.Sprintf("%v", this.Answer) + `,`,
+		`SubAnswers:` + mapStringForSubAnswers + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *AutocompleteAnswer) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&AutocompleteAnswer{`,
+		`Items:` + strings.Replace(fmt.Sprintf("%v", this.Items), "AutocompleteAnswerItem", "AutocompleteAnswerItem", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PhotoSectionAnswer) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PhotoSectionAnswer{`,
+		`Sections:` + strings.Replace(fmt.Sprintf("%v", this.Sections), "PhotoSectionAnswer_PhotoSectionItem", "PhotoSectionAnswer_PhotoSectionItem", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PhotoSectionAnswer_PhotoSectionItem) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PhotoSectionAnswer_PhotoSectionItem{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`Slots:` + strings.Replace(fmt.Sprintf("%v", this.Slots), "PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem", "PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem{`,
+		`SlotID:` + fmt.Sprintf("%v", this.SlotID) + `,`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`MediaID:` + fmt.Sprintf("%v", this.MediaID) + `,`,
+		`URL:` + fmt.Sprintf("%v", this.URL) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func (this *CreateVisitRequest) String() string {
 	if this == nil {
 		return "nil"
@@ -3344,6 +5565,7 @@ func (this *GetAnswersForVisitRequest) String() string {
 	}
 	s := strings.Join([]string{`&GetAnswersForVisitRequest{`,
 		`VisitID:` + fmt.Sprintf("%v", this.VisitID) + `,`,
+		`SerializedForPatient:` + fmt.Sprintf("%v", this.SerializedForPatient) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3352,8 +5574,19 @@ func (this *GetAnswersForVisitResponse) String() string {
 	if this == nil {
 		return "nil"
 	}
+	keysForAnswers := make([]string, 0, len(this.Answers))
+	for k, _ := range this.Answers {
+		keysForAnswers = append(keysForAnswers, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForAnswers)
+	mapStringForAnswers := "map[string]*Answer{"
+	for _, k := range keysForAnswers {
+		mapStringForAnswers += fmt.Sprintf("%v: %v,", k, this.Answers[k])
+	}
+	mapStringForAnswers += "}"
 	s := strings.Join([]string{`&GetAnswersForVisitResponse{`,
-		`AnswersJSON:` + fmt.Sprintf("%v", this.AnswersJSON) + `,`,
+		`PatientAnswersJSON:` + fmt.Sprintf("%v", this.PatientAnswersJSON) + `,`,
+		`Answers:` + mapStringForAnswers + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3778,6 +6011,1571 @@ func (m *Visit) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.CreatorID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Answer) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Answer: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Answer: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field QuestionID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.QuestionID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 10:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FreeText", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &FreeTextAnswer{}
+			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Answer = &Answer_FreeText{v}
+			iNdEx = postIndex
+		case 11:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MultipleChoice", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &MultipleChoiceAnswer{}
+			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Answer = &Answer_MultipleChoice{v}
+			iNdEx = postIndex
+		case 12:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SingleSelect", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &SingleSelectAnswer{}
+			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Answer = &Answer_SingleSelect{v}
+			iNdEx = postIndex
+		case 13:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Autocomplete", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &AutocompleteAnswer{}
+			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Answer = &Answer_Autocomplete{v}
+			iNdEx = postIndex
+		case 14:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PhotoSection", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &PhotoSectionAnswer{}
+			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Answer = &Answer_PhotoSection{v}
+			iNdEx = postIndex
+		case 15:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SingleEntry", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &SingleEntryAnswer{}
+			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Answer = &Answer_SingleEntry{v}
+			iNdEx = postIndex
+		case 16:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SegmentedControl", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &SegmentedControlAnswer{}
+			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Answer = &Answer_SegmentedControl{v}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *FreeTextAnswer) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: FreeTextAnswer: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: FreeTextAnswer: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FreeText", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.FreeText = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MultipleChoiceAnswer) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MultipleChoiceAnswer: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MultipleChoiceAnswer: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SelectedAnswers", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SelectedAnswers = append(m.SelectedAnswers, &AnswerOption{})
+			if err := m.SelectedAnswers[len(m.SelectedAnswers)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *SingleSelectAnswer) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SingleSelectAnswer: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SingleSelectAnswer: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SelectedAnswer", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.SelectedAnswer == nil {
+				m.SelectedAnswer = &AnswerOption{}
+			}
+			if err := m.SelectedAnswer.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *SegmentedControlAnswer) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SegmentedControlAnswer: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SegmentedControlAnswer: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SelectedAnswer", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.SelectedAnswer == nil {
+				m.SelectedAnswer = &AnswerOption{}
+			}
+			if err := m.SelectedAnswer.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *SingleEntryAnswer) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SingleEntryAnswer: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SingleEntryAnswer: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FreeText", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.FreeText = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *AnswerOption) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AnswerOption: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AnswerOption: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FreeText", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.FreeText = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SubAnswers", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			var keykey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				keykey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			var stringLenmapkey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLenmapkey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLenmapkey := int(stringLenmapkey)
+			if intStringLenmapkey < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postStringIndexmapkey := iNdEx + intStringLenmapkey
+			if postStringIndexmapkey > l {
+				return io.ErrUnexpectedEOF
+			}
+			mapkey := string(data[iNdEx:postStringIndexmapkey])
+			iNdEx = postStringIndexmapkey
+			var valuekey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				valuekey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			var mapmsglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				mapmsglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if mapmsglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postmsgIndex := iNdEx + mapmsglen
+			if mapmsglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if postmsgIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			mapvalue := &Answer{}
+			if err := mapvalue.Unmarshal(data[iNdEx:postmsgIndex]); err != nil {
+				return err
+			}
+			iNdEx = postmsgIndex
+			if m.SubAnswers == nil {
+				m.SubAnswers = make(map[string]*Answer)
+			}
+			m.SubAnswers[mapkey] = mapvalue
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *AutocompleteAnswerItem) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AutocompleteAnswerItem: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AutocompleteAnswerItem: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Answer", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Answer = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SubAnswers", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			var keykey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				keykey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			var stringLenmapkey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLenmapkey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLenmapkey := int(stringLenmapkey)
+			if intStringLenmapkey < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postStringIndexmapkey := iNdEx + intStringLenmapkey
+			if postStringIndexmapkey > l {
+				return io.ErrUnexpectedEOF
+			}
+			mapkey := string(data[iNdEx:postStringIndexmapkey])
+			iNdEx = postStringIndexmapkey
+			var valuekey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				valuekey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			var mapmsglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				mapmsglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if mapmsglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postmsgIndex := iNdEx + mapmsglen
+			if mapmsglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if postmsgIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			mapvalue := &Answer{}
+			if err := mapvalue.Unmarshal(data[iNdEx:postmsgIndex]); err != nil {
+				return err
+			}
+			iNdEx = postmsgIndex
+			if m.SubAnswers == nil {
+				m.SubAnswers = make(map[string]*Answer)
+			}
+			m.SubAnswers[mapkey] = mapvalue
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *AutocompleteAnswer) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AutocompleteAnswer: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AutocompleteAnswer: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Items", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Items = append(m.Items, &AutocompleteAnswerItem{})
+			if err := m.Items[len(m.Items)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *PhotoSectionAnswer) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PhotoSectionAnswer: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PhotoSectionAnswer: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Sections", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Sections = append(m.Sections, &PhotoSectionAnswer_PhotoSectionItem{})
+			if err := m.Sections[len(m.Sections)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *PhotoSectionAnswer_PhotoSectionItem) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PhotoSectionItem: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PhotoSectionItem: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Slots", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Slots = append(m.Slots, &PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem{})
+			if err := m.Slots[len(m.Slots)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PhotoSlotItem: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PhotoSlotItem: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SlotID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SlotID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MediaID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.MediaID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field URL", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.URL = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -4485,6 +8283,26 @@ func (m *GetAnswersForVisitRequest) Unmarshal(data []byte) error {
 			}
 			m.VisitID = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SerializedForPatient", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.SerializedForPatient = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])
@@ -4537,7 +8355,7 @@ func (m *GetAnswersForVisitResponse) Unmarshal(data []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field AnswersJSON", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field PatientAnswersJSON", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -4562,7 +8380,123 @@ func (m *GetAnswersForVisitResponse) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.AnswersJSON = string(data[iNdEx:postIndex])
+			m.PatientAnswersJSON = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Answers", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			var keykey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				keykey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			var stringLenmapkey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLenmapkey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLenmapkey := int(stringLenmapkey)
+			if intStringLenmapkey < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postStringIndexmapkey := iNdEx + intStringLenmapkey
+			if postStringIndexmapkey > l {
+				return io.ErrUnexpectedEOF
+			}
+			mapkey := string(data[iNdEx:postStringIndexmapkey])
+			iNdEx = postStringIndexmapkey
+			var valuekey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				valuekey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			var mapmsglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				mapmsglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if mapmsglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postmsgIndex := iNdEx + mapmsglen
+			if mapmsglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if postmsgIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			mapvalue := &Answer{}
+			if err := mapvalue.Unmarshal(data[iNdEx:postmsgIndex]); err != nil {
+				return err
+			}
+			iNdEx = postmsgIndex
+			if m.Answers == nil {
+				m.Answers = make(map[string]*Answer)
+			}
+			m.Answers[mapkey] = mapvalue
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
