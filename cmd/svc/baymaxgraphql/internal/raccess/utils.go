@@ -48,7 +48,7 @@ func EntityInOrgForAccountID(ctx context.Context, ram ResourceAccessor, req *dir
 // Entity returns a single expected entity for the directory request.
 func Entity(ctx context.Context, ram ResourceAccessor, req *directory.LookupEntitiesRequest) (*directory.Entity, error) {
 
-	if req.LookupKeyType != directory.LookupEntitiesRequest_ENTITY_ID {
+	if req.LookupKeyType != directory.LookupEntitiesRequest_ENTITY_ID && req.LookupKeyType != directory.LookupEntitiesRequest_EXTERNAL_ID {
 		return nil, fmt.Errorf("Expected lookup of type %s but got %s", directory.LookupEntitiesRequest_ENTITY_ID, req.LookupKeyType)
 	}
 
@@ -56,7 +56,11 @@ func Entity(ctx context.Context, ram ResourceAccessor, req *directory.LookupEnti
 	if err != nil {
 		return nil, err
 	} else if len(entities) != 1 {
-		return nil, errors.Trace(fmt.Errorf("Expected 1 entity got %d for %s", len(entities), req.GetEntityID()))
+		id := req.GetEntityID()
+		if id == "" {
+			id = req.GetExternalID()
+		}
+		return nil, errors.Trace(fmt.Errorf("Expected 1 entity got %d for %s", len(entities), id))
 	}
 
 	return entities[0], nil
