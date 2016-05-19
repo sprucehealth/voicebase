@@ -55,7 +55,7 @@ func TestSignerRoundTrip(t *testing.T) {
 			Path: "/path",
 			Params: url.Values{
 				"a": []string{"b", "c"},
-			}, 
+			},
 			Expires:      ptr.Time(startTime.Add(time.Minute * 15)),
 			ValidatePath: "/path",
 			ValidateParams: url.Values{
