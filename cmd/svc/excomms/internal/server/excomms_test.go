@@ -732,6 +732,8 @@ func TestInitiatePhoneCall_OriginatingNumberSpecified(t *testing.T) {
 				directory.EntityInformation_MEMBERSHIPS,
 			},
 		},
+		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
 	}).WithReturns(&directory.LookupEntitiesResponse{
 		Entities: []*directory.Entity{
 			{
@@ -751,10 +753,12 @@ func TestInitiatePhoneCall_OriginatingNumberSpecified(t *testing.T) {
 	md.Expect(mock.NewExpectation(md.LookupEntitiesByContact, &directory.LookupEntitiesByContactRequest{
 		ContactValue: destinationPhoneNumber.String(),
 		RequestedInformation: &directory.RequestedInformation{
-			Depth:             1,
+			Depth:             0,
 			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
 		},
-		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes:  []directory.EntityType{directory.EntityType_EXTERNAL, directory.EntityType_PATIENT},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
 	}).WithReturns(&directory.LookupEntitiesByContactResponse{
 		Entities: []*directory.Entity{
 			{
@@ -848,6 +852,8 @@ func TestInitiatePhoneCall_OriginatingNumberNotSpecified_ButExists(t *testing.T)
 				directory.EntityInformation_MEMBERSHIPS,
 			},
 		},
+		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
 	}).WithReturns(&directory.LookupEntitiesResponse{
 		Entities: []*directory.Entity{
 			{
@@ -867,10 +873,12 @@ func TestInitiatePhoneCall_OriginatingNumberNotSpecified_ButExists(t *testing.T)
 	md.Expect(mock.NewExpectation(md.LookupEntitiesByContact, &directory.LookupEntitiesByContactRequest{
 		ContactValue: destinationPhoneNumber.String(),
 		RequestedInformation: &directory.RequestedInformation{
-			Depth:             1,
+			Depth:             0,
 			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
 		},
-		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes:  []directory.EntityType{directory.EntityType_EXTERNAL, directory.EntityType_PATIENT},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
 	}).WithReturns(&directory.LookupEntitiesByContactResponse{
 		Entities: []*directory.Entity{
 			{
@@ -965,6 +973,8 @@ func TestInitiatePhoneCall_OriginatingNumberNotSpecified_DoesNotExist(t *testing
 				directory.EntityInformation_MEMBERSHIPS,
 			},
 		},
+		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
 	}).WithReturns(&directory.LookupEntitiesResponse{
 		Entities: []*directory.Entity{
 			{
@@ -990,10 +1000,12 @@ func TestInitiatePhoneCall_OriginatingNumberNotSpecified_DoesNotExist(t *testing
 	md.Expect(mock.NewExpectation(md.LookupEntitiesByContact, &directory.LookupEntitiesByContactRequest{
 		ContactValue: destinationPhoneNumber.String(),
 		RequestedInformation: &directory.RequestedInformation{
-			Depth:             1,
+			Depth:             0,
 			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
 		},
-		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes:  []directory.EntityType{directory.EntityType_EXTERNAL, directory.EntityType_PATIENT},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
 	}).WithReturns(&directory.LookupEntitiesByContactResponse{
 		Entities: []*directory.Entity{
 			{
@@ -1132,6 +1144,8 @@ func TestInitiatePhoneCall_InvalidCaller(t *testing.T) {
 			Depth:             0,
 			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS, directory.EntityInformation_MEMBERSHIPS},
 		},
+		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
 	}).WithReturns(&directory.LookupEntitiesResponse{}, grpcErrorf(codes.NotFound, "")))
 
 	mdal := &mockDAL_Excomms{
@@ -1183,6 +1197,8 @@ func TestInitiatePhoneCall_InvalidCallee(t *testing.T) {
 			Depth:             0,
 			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS, directory.EntityInformation_MEMBERSHIPS},
 		},
+		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
 	}).WithReturns(&directory.LookupEntitiesResponse{
 		Entities: []*directory.Entity{
 			{
@@ -1200,10 +1216,12 @@ func TestInitiatePhoneCall_InvalidCallee(t *testing.T) {
 	md.Expect(mock.NewExpectation(md.LookupEntitiesByContact, &directory.LookupEntitiesByContactRequest{
 		ContactValue: "+14152222222",
 		RequestedInformation: &directory.RequestedInformation{
-			Depth:             1,
+			Depth:             0,
 			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
 		},
-		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes:  []directory.EntityType{directory.EntityType_EXTERNAL, directory.EntityType_PATIENT},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
 	}).WithReturns(&directory.LookupEntitiesByContactResponse{}, grpcErrorf(codes.NotFound, "")))
 
 	mdal := &mockDAL_Excomms{

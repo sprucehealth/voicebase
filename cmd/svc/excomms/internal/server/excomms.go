@@ -445,57 +445,48 @@ func (e *excommsService) InitiatePhoneCall(ctx context.Context, in *excomms.Init
 	}
 
 	// ensure organization exists
-	lookupEntitiesRes, err := e.directory.LookupEntities(
-		ctx,
-		&directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-				EntityID: in.OrganizationID,
-			},
-		})
-	if grpc.Code(err) == codes.NotFound {
+	_, err := directory.SingleEntity(ctx, e.directory, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: in.OrganizationID,
+		},
+	})
+	if err == directory.ErrEntityNotFound {
 		return nil, grpcErrorf(codes.NotFound, "organization with id %s not found", in.OrganizationID)
 	} else if err != nil {
 		return nil, grpcErrorf(codes.Internal, err.Error())
-	} else if len(lookupEntitiesRes.Entities) != 1 {
-		return nil, grpcErrorf(codes.Internal, "organization with id %s not found", "Expected 1 org entity buy got back %d", len(lookupEntitiesRes.Entities))
 	}
 
 	// ensure caller belongs to the organization
-	var sourceEntity *directory.Entity
-	lookupEntitiesRes, err = e.directory.LookupEntities(
-		ctx,
-		&directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-				EntityID: in.CallerEntityID,
+	sourceEntity, err := directory.SingleEntity(ctx, e.directory, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: in.CallerEntityID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth: 0,
+			EntityInformation: []directory.EntityInformation{
+				directory.EntityInformation_CONTACTS,
+				directory.EntityInformation_MEMBERSHIPS,
 			},
-			RequestedInformation: &directory.RequestedInformation{
-				Depth: 0,
-				EntityInformation: []directory.EntityInformation{
-					directory.EntityInformation_CONTACTS,
-					directory.EntityInformation_MEMBERSHIPS,
-				},
-			},
-		})
-	if grpc.Code(err) == codes.NotFound {
+		},
+		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	})
+	if err == directory.ErrEntityNotFound {
 		return nil, grpcErrorf(codes.NotFound, "caller %s not found", in.CallerEntityID)
 	} else if err != nil {
 		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 
-	for _, entity := range lookupEntitiesRes.Entities {
-		if sourceEntity != nil {
+	var organizationFound bool
+	for _, m := range sourceEntity.Memberships {
+		if m.Type == directory.EntityType_ORGANIZATION && m.ID == in.OrganizationID {
+			organizationFound = true
 			break
 		}
-		for _, m := range entity.Memberships {
-			if m.Type == directory.EntityType_ORGANIZATION && m.ID == in.OrganizationID {
-				sourceEntity = entity
-				break
-			}
-		}
 	}
-	if sourceEntity == nil {
+	if !organizationFound {
 		return nil, grpcErrorf(codes.NotFound, "%s is not the phone number of a caller belonging to the organization.", in.FromPhoneNumber)
 	}
 
@@ -506,10 +497,12 @@ func (e *excommsService) InitiatePhoneCall(ctx context.Context, in *excomms.Init
 		&directory.LookupEntitiesByContactRequest{
 			ContactValue: in.ToPhoneNumber,
 			RequestedInformation: &directory.RequestedInformation{
-				Depth:             1,
+				Depth:             0,
 				EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
 			},
-			Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+			Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+			RootTypes:  []directory.EntityType{directory.EntityType_EXTERNAL, directory.EntityType_PATIENT},
+			ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
 		})
 	if grpc.Code(err) == codes.NotFound {
 		return nil, grpcErrorf(codes.NotFound, "callee %s not found", in.ToPhoneNumber)
@@ -521,9 +514,6 @@ func (e *excommsService) InitiatePhoneCall(ctx context.Context, in *excomms.Init
 	for _, entity := range lookupByContacRes.Entities {
 		if destinationEntity != nil {
 			break
-		}
-		if entity.Type != directory.EntityType_EXTERNAL {
-			continue
 		}
 		for _, m := range entity.Memberships {
 			if m.Type == directory.EntityType_ORGANIZATION && m.ID == in.OrganizationID {
