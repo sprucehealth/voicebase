@@ -190,7 +190,7 @@ var callEntityMutation = &graphql.Field{
 				EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
 			},
 			Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
-			RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL, directory.EntityType_PATIENT},
+			RootTypes:  []directory.EntityType{directory.EntityType_EXTERNAL, directory.EntityType_PATIENT},
 			ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
 		})
 		if err != nil {
