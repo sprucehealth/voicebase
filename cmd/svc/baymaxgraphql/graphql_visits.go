@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/svc/care"
+	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/layout"
 	"github.com/sprucehealth/graphql"
 	"golang.org/x/net/context"
@@ -50,7 +51,14 @@ var visitType = graphql.NewObject(
 						ram := raccess.ResourceAccess(p)
 						visit := p.Source.(*models.Visit)
 
-						e, err := ram.Entity(ctx, visit.EntityID, nil, 0)
+						e, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+							LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+							LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+								EntityID: visit.EntityID,
+							},
+							Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+							RootTypes: []directory.EntityType{directory.EntityType_PATIENT},
+						})
 						if err != nil {
 							return nil, errors.InternalError(ctx, err)
 						}

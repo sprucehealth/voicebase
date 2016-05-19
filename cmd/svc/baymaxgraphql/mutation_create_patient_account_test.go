@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
-	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
@@ -50,11 +49,25 @@ func TestCreatePatientAccountMutation(t *testing.T) {
 		},
 	}, nil))
 
-	g.ra.Expect(mock.NewExpectation(g.ra.Entity, "parkedEntityID", []directory.EntityInformation{directory.EntityInformation_CONTACTS}, int64(0)).WithReturns(&directory.Entity{
-		Contacts: []*directory.Contact{
-			{
-				ContactType: directory.ContactType_PHONE,
-				Value:       "+14155551212",
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: "parkedEntityID",
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			EntityInformation: []directory.EntityInformation{
+				directory.EntityInformation_CONTACTS,
+			},
+			Depth: 0,
+		},
+		RootTypes: []directory.EntityType{directory.EntityType_PATIENT},
+	}).WithReturns([]*directory.Entity{
+		{
+			Contacts: []*directory.Contact{
+				{
+					ContactType: directory.ContactType_PHONE,
+					Value:       "+14155551212",
+				},
 			},
 		},
 	}, nil))
@@ -141,18 +154,29 @@ func TestCreatePatientAccountMutation(t *testing.T) {
 	g.inviteC.Expect(mock.NewExpectation(g.inviteC.MarkInviteConsumed, &invite.MarkInviteConsumedRequest{Token: "InviteToken"}).WithReturns(&invite.MarkInviteConsumedResponse{}, nil))
 
 	// Query the acount entity
-	g.ra.Expect(mock.NewExpectation(g.ra.PatientEntity, &models.PatientAccount{
-		ID: "a_1",
-	}).WithReturns(&directory.Entity{
-		Info: &directory.EntityInfo{
-			FirstName: "first",
-			LastName:  "last",
-			DOB: &directory.Date{
-				Month: 7,
-				Day:   25,
-				Year:  1986,
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+			ExternalID: "a_1",
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
+		},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{directory.EntityType_PATIENT},
+	}).WithReturns([]*directory.Entity{
+		{
+			Info: &directory.EntityInfo{
+				FirstName: "first",
+				LastName:  "last",
+				DOB: &directory.Date{
+					Month: 7,
+					Day:   25,
+					Year:  1986,
+				},
+				Gender: directory.EntityInfo_MALE,
 			},
-			Gender: directory.EntityInfo_MALE,
 		},
 	}, nil))
 
@@ -168,7 +192,7 @@ func TestCreatePatientAccountMutation(t *testing.T) {
 				dob: {
 					month: 7,
 					day: 25,
-					year: 1986,	
+					year: 1986,
 				},
 				emailVerificationToken: "emailToken",
 			}) {

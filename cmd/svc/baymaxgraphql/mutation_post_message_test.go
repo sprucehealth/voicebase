@@ -47,8 +47,20 @@ func TestPostMessage(t *testing.T) {
 		Type:            threading.ThreadType_EXTERNAL,
 	}, nil))
 	g.ra.Expect(mock.NewExpectation(g.ra.CanPostMessage, threadID))
-	// Looking up the account's entity for the org
-	g.ra.Expect(mock.NewExpectation(g.ra.EntityForAccountID, orgID, acc.ID).WithReturns(
+
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+			ExternalID: acc.ID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
+		},
+		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	}).WithReturns([]*directory.Entity{
 		&directory.Entity{
 			ID:   entID,
 			Type: directory.EntityType_INTERNAL,
@@ -58,24 +70,36 @@ func TestPostMessage(t *testing.T) {
 			Memberships: []*directory.Entity{
 				{ID: orgID, Type: directory.EntityType_ORGANIZATION},
 			},
-		}, nil))
+		},
+	}, nil))
 
 	// Looking up the primary entity on the thread
-	g.ra.Expect(mock.NewExpectation(g.ra.Entity, extEntID, []directory.EntityInformation{
-		directory.EntityInformation_CONTACTS,
-	}, int64(0)).WithReturns(&directory.Entity{
-		ID:   extEntID,
-		Type: directory.EntityType_EXTERNAL,
-		Info: &directory.EntityInfo{
-			DisplayName: "Barro",
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: extEntID,
 		},
-		Contacts: []*directory.Contact{
-			{
-				ContactType: directory.ContactType_PHONE,
-				Value:       entPhoneNumber,
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	}).WithReturns([]*directory.Entity{
+		&directory.Entity{
+			ID:   extEntID,
+			Type: directory.EntityType_EXTERNAL,
+			Info: &directory.EntityInfo{
+				DisplayName: "Barro",
+			},
+			Contacts: []*directory.Contact{
+				{
+					ContactType: directory.ContactType_PHONE,
+					Value:       entPhoneNumber,
+				},
 			},
 		},
 	}, nil))
+
 	// Posting the message
 	now := uint64(123456789)
 	g.ra.Expect(mock.NewExpectation(g.ra.PostMessage, &threading.PostMessageRequest{
@@ -268,8 +292,20 @@ func TestPostMessage_VisitAttachment(t *testing.T) {
 		Type:            threading.ThreadType_SECURE_EXTERNAL,
 	}, nil))
 	g.ra.Expect(mock.NewExpectation(g.ra.CanPostMessage, threadID))
-	// Looking up the account's entity for the org
-	g.ra.Expect(mock.NewExpectation(g.ra.EntityForAccountID, orgID, acc.ID).WithReturns(
+
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+			ExternalID: acc.ID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
+		},
+		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	}).WithReturns([]*directory.Entity{
 		&directory.Entity{
 			ID:   entID,
 			Type: directory.EntityType_INTERNAL,
@@ -279,21 +315,32 @@ func TestPostMessage_VisitAttachment(t *testing.T) {
 			Memberships: []*directory.Entity{
 				{ID: orgID, Type: directory.EntityType_ORGANIZATION},
 			},
-		}, nil))
+		},
+	}, nil))
 
 	// Looking up the primary entity on the thread
-	g.ra.Expect(mock.NewExpectation(g.ra.Entity, extEntID, []directory.EntityInformation{
-		directory.EntityInformation_CONTACTS,
-	}, int64(0)).WithReturns(&directory.Entity{
-		ID:   extEntID,
-		Type: directory.EntityType_EXTERNAL,
-		Info: &directory.EntityInfo{
-			DisplayName: "Barro",
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: extEntID,
 		},
-		Contacts: []*directory.Contact{
-			{
-				ContactType: directory.ContactType_PHONE,
-				Value:       entPhoneNumber,
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	}).WithReturns([]*directory.Entity{
+		&directory.Entity{
+			ID:   extEntID,
+			Type: directory.EntityType_EXTERNAL,
+			Info: &directory.EntityInfo{
+				DisplayName: "Barro",
+			},
+			Contacts: []*directory.Contact{
+				{
+					ContactType: directory.ContactType_PHONE,
+					Value:       entPhoneNumber,
+				},
 			},
 		},
 	}, nil))
@@ -499,7 +546,19 @@ func TestPostMessageDestinationNotContactOfPrimary(t *testing.T) {
 	}, nil))
 	g.ra.Expect(mock.NewExpectation(g.ra.CanPostMessage, threadID))
 	// Looking up the account's entity for the org
-	g.ra.Expect(mock.NewExpectation(g.ra.EntityForAccountID, orgID, acc.ID).WithReturns(
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+			ExternalID: acc.ID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
+		},
+		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	}).WithReturns([]*directory.Entity{
 		&directory.Entity{
 			ID:   entID,
 			Type: directory.EntityType_INTERNAL,
@@ -509,23 +568,36 @@ func TestPostMessageDestinationNotContactOfPrimary(t *testing.T) {
 			Memberships: []*directory.Entity{
 				{ID: orgID, Type: directory.EntityType_ORGANIZATION},
 			},
-		}, nil))
-	// Looking up the primary entity on the thread
-	g.ra.Expect(mock.NewExpectation(g.ra.Entity, extEntID, []directory.EntityInformation{
-		directory.EntityInformation_CONTACTS,
-	}, int64(0)).WithReturns(&directory.Entity{
-		ID:   extEntID,
-		Type: directory.EntityType_EXTERNAL,
-		Info: &directory.EntityInfo{
-			DisplayName: "Barro",
 		},
-		Contacts: []*directory.Contact{
-			{
-				ContactType: directory.ContactType_PHONE,
-				Value:       entPhoneNumber,
+	}, nil))
+
+	// Looking up the primary entity on the thread
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: extEntID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	}).WithReturns([]*directory.Entity{
+		&directory.Entity{
+			ID:   extEntID,
+			Type: directory.EntityType_EXTERNAL,
+			Info: &directory.EntityInfo{
+				DisplayName: "Barro",
+			},
+			Contacts: []*directory.Contact{
+				{
+					ContactType: directory.ContactType_PHONE,
+					Value:       entPhoneNumber,
+				},
 			},
 		},
 	}, nil))
+
 	res := g.query(ctx, `
 		mutation _ ($threadID: ID!) {
 			postMessage(input: {
@@ -615,7 +687,19 @@ func TestPostMessagePatientSecureExternal(t *testing.T) {
 	}, nil))
 	g.ra.Expect(mock.NewExpectation(g.ra.CanPostMessage, threadID))
 	// Looking up the account's entity for the org
-	g.ra.Expect(mock.NewExpectation(g.ra.EntityForAccountID, orgID, acc.ID).WithReturns(
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+			ExternalID: acc.ID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
+		},
+		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	}).WithReturns([]*directory.Entity{
 		&directory.Entity{
 			ID:   entID,
 			Type: directory.EntityType_PATIENT,
@@ -625,24 +709,36 @@ func TestPostMessagePatientSecureExternal(t *testing.T) {
 			Memberships: []*directory.Entity{
 				{ID: orgID, Type: directory.EntityType_ORGANIZATION},
 			},
-		}, nil))
+		},
+	}, nil))
 
 	// Looking up the primary entity on the thread
-	g.ra.Expect(mock.NewExpectation(g.ra.Entity, extEntID, []directory.EntityInformation{
-		directory.EntityInformation_CONTACTS,
-	}, int64(0)).WithReturns(&directory.Entity{
-		ID:   extEntID,
-		Type: directory.EntityType_PATIENT,
-		Info: &directory.EntityInfo{
-			DisplayName: "Barro",
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: extEntID,
 		},
-		Contacts: []*directory.Contact{
-			{
-				ContactType: directory.ContactType_PHONE,
-				Value:       entPhoneNumber,
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	}).WithReturns([]*directory.Entity{
+		&directory.Entity{
+			ID:   extEntID,
+			Type: directory.EntityType_EXTERNAL,
+			Info: &directory.EntityInfo{
+				DisplayName: "Barro",
+			},
+			Contacts: []*directory.Contact{
+				{
+					ContactType: directory.ContactType_PHONE,
+					Value:       entPhoneNumber,
+				},
 			},
 		},
 	}, nil))
+
 	// Posting the message
 	now := uint64(123456789)
 	g.ra.Expect(mock.NewExpectation(g.ra.PostMessage, &threading.PostMessageRequest{
@@ -703,22 +799,43 @@ func TestPostMessagePatientSecureExternal(t *testing.T) {
 			},
 		},
 	}, nil))
+
 	// since this is a patient thread there should be an org lookup
 	// Looking up the primary entity on the thread
-	g.ra.Expect(mock.NewExpectation(g.ra.Entity, orgID, ([]directory.EntityInformation)(nil), int64(0)).WithReturns(&directory.Entity{
-		ID:   extEntID,
-		Type: directory.EntityType_ORGANIZATION,
-		Info: &directory.EntityInfo{
-			DisplayName: "OrganizationName",
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: orgID,
+		},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	}).WithReturns([]*directory.Entity{
+		&directory.Entity{
+			ID:   extEntID,
+			Type: directory.EntityType_ORGANIZATION,
+			Info: &directory.EntityInfo{
+				DisplayName: "OrganizationName",
+			},
 		},
 	}, nil))
-	g.ra.Expect(mock.NewExpectation(g.ra.Entity, orgID, ([]directory.EntityInformation)(nil), int64(0)).WithReturns(&directory.Entity{
-		ID:   extEntID,
-		Type: directory.EntityType_ORGANIZATION,
-		Info: &directory.EntityInfo{
-			DisplayName: "OrganizationName",
+
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: orgID,
+		},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	}).WithReturns([]*directory.Entity{
+		&directory.Entity{
+			ID:   extEntID,
+			Type: directory.EntityType_ORGANIZATION,
+			Info: &directory.EntityInfo{
+				DisplayName: "OrganizationName",
+			},
 		},
 	}, nil))
+
 	res := g.query(ctx, `
 		mutation _ ($threadID: ID!) {
 			postMessage(input: {

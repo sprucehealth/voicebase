@@ -332,12 +332,20 @@ func (h *graphQLHandler) orgToEntityMapForAccount(ctx context.Context, acc *auth
 	if acc == nil {
 		return make(map[string]*directory.Entity), nil
 	}
-	entities, err := h.ram.EntitiesForExternalID(
-		ctx,
-		acc.ID,
-		[]directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
-		0,
-		[]directory.EntityStatus{directory.EntityStatus_ACTIVE})
+
+	entities, err := h.ram.Entities(ctx, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+			ExternalID: acc.ID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
+		},
+		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	})
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

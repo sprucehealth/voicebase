@@ -122,7 +122,19 @@ var createThreadMutation = &graphql.Field{
 			return nil, errors.InternalError(ctx, err)
 		}
 
-		creatorEnt, err := ram.EntityForAccountID(ctx, orgID, acc.ID)
+		creatorEnt, err := raccess.EntityInOrgForAccountID(ctx, ram, &directory.LookupEntitiesRequest{
+			LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+			LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+				ExternalID: acc.ID,
+			},
+			RequestedInformation: &directory.RequestedInformation{
+				Depth:             0,
+				EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
+			},
+			Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+			RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+			ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+		}, orgID)
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}
@@ -132,19 +144,25 @@ var createThreadMutation = &graphql.Field{
 
 		// Check for an existing entity with the provided contact info
 		var existingEntities []*directory.Entity
-		entities, err := ram.EntitiesByContact(ctx, createForContact.Value, []directory.EntityInformation{
-			directory.EntityInformation_MEMBERSHIPS}, 1, []directory.EntityStatus{directory.EntityStatus_ACTIVE})
+
+		entities, err := ram.EntitiesByContact(ctx, &directory.LookupEntitiesByContactRequest{
+			ContactValue: createForContact.Value,
+			RequestedInformation: &directory.RequestedInformation{
+				EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
+				Depth:             1,
+			},
+			Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+			RootTypes:  []directory.EntityType{directory.EntityType_EXTERNAL},
+			ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+		})
 		if err == nil {
-			// Filter out entities that aren't external as that's all we're dealing with right now
 			existingEntities = make([]*directory.Entity, 0, len(entities))
 			for _, e := range entities {
-				if e.Type == directory.EntityType_EXTERNAL {
-					// Make sure entity is a member of the chosen organization
-					for _, em := range e.Memberships {
-						if em.ID == orgID {
-							existingEntities = append(existingEntities, e)
-							break
-						}
+				// Make sure entity is a member of the chosen organization
+				for _, em := range e.Memberships {
+					if em.ID == orgID {
+						existingEntities = append(existingEntities, e)
+						break
 					}
 				}
 			}

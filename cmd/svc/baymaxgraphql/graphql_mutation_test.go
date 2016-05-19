@@ -32,33 +32,51 @@ func TestProvisionEmail_Organization(t *testing.T) {
 	emailToProvision := "sup@pup.amdava.com"
 
 	// Looking up the orgnaization entity
-	g.ra.Expect(mock.NewExpectation(g.ra.Entity, organizationID, []directory.EntityInformation{
-		directory.EntityInformation_MEMBERSHIPS,
-		directory.EntityInformation_CONTACTS,
-	}, int64(0)).WithReturns(&directory.Entity{
-		ID:   organizationID,
-		Type: directory.EntityType_ORGANIZATION,
-		Info: &directory.EntityInfo{
-			DisplayName: "Schmee",
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: organizationID,
 		},
-		Memberships: []*directory.Entity{
-			{
-				ID:   organizationID,
-				Type: directory.EntityType_ORGANIZATION,
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+		},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	}).WithReturns([]*directory.Entity{
+		{
+			ID:   organizationID,
+			Type: directory.EntityType_ORGANIZATION,
+			Info: &directory.EntityInfo{
+				DisplayName: "Schmee",
 			},
 		},
 	}, nil))
 
-	g.ra.Expect(mock.NewExpectation(g.ra.EntityForAccountID, organizationID, acc.ID).WithReturns(&directory.Entity{
-		ID:   entityID,
-		Type: directory.EntityType_ORGANIZATION,
-		Info: &directory.EntityInfo{
-			DisplayName: "Schmee",
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+			ExternalID: acc.ID,
 		},
-		Memberships: []*directory.Entity{
-			{
-				ID:   organizationID,
-				Type: directory.EntityType_ORGANIZATION,
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
+		},
+		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	}).WithReturns([]*directory.Entity{
+		{
+			ID:   entityID,
+			Type: directory.EntityType_ORGANIZATION,
+			Info: &directory.EntityInfo{
+				DisplayName: "Schmee",
+			},
+			Memberships: []*directory.Entity{
+				{
+					ID:   organizationID,
+					Type: directory.EntityType_ORGANIZATION,
+				},
 			},
 		},
 	}, nil))
@@ -172,26 +190,38 @@ func TestProvisionEmail_Internal(t *testing.T) {
 	subdomain := "pup"
 	emailToProvision := "sup@pup.amdava.com"
 
-	// Looking up the organization entity
-	g.ra.Expect(mock.NewExpectation(g.ra.Entity, entityID, []directory.EntityInformation{
-		directory.EntityInformation_CONTACTS,
-		directory.EntityInformation_MEMBERSHIPS,
-		directory.EntityInformation_EXTERNAL_IDS,
-	}, int64(0)).WithReturns(
-		&directory.Entity{
-			ID:   entityID,
-			Type: directory.EntityType_INTERNAL,
-			Info: &directory.EntityInfo{
-				DisplayName: "Schmee",
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: entityID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth: 0,
+			EntityInformation: []directory.EntityInformation{
+				directory.EntityInformation_MEMBERSHIPS,
+				directory.EntityInformation_CONTACTS,
+				directory.EntityInformation_EXTERNAL_IDS,
 			},
-			Memberships: []*directory.Entity{
-				{
-					ID:   organizationID,
-					Type: directory.EntityType_ORGANIZATION,
+		},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{directory.EntityType_INTERNAL, directory.EntityType_ORGANIZATION},
+	}).WithReturns(
+		[]*directory.Entity{
+			{
+				ID:   entityID,
+				Type: directory.EntityType_INTERNAL,
+				Info: &directory.EntityInfo{
+					DisplayName: "Schmee",
 				},
-			},
-			ExternalIDs: []string{
-				acc.ID,
+				Memberships: []*directory.Entity{
+					{
+						ID:   organizationID,
+						Type: directory.EntityType_ORGANIZATION,
+					},
+				},
+				ExternalIDs: []string{
+					acc.ID,
+				},
 			},
 		}, nil))
 
@@ -304,28 +334,51 @@ func TestProvisionEmail_Organization_DomainExists(t *testing.T) {
 	subdomain := "pup"
 	emailToProvision := "sup@pup.amdava.com"
 
-	g.ra.Expect(mock.NewExpectation(g.ra.Entity, organizationID, []directory.EntityInformation{
-		directory.EntityInformation_MEMBERSHIPS,
-		directory.EntityInformation_CONTACTS,
-	}, int64(0)).WithReturns(&directory.Entity{
-		ID:   organizationID,
-		Type: directory.EntityType_ORGANIZATION,
-		Info: &directory.EntityInfo{
-			DisplayName: "Schmee",
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: organizationID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+		},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	}).WithReturns([]*directory.Entity{
+		{
+			ID:   organizationID,
+			Type: directory.EntityType_ORGANIZATION,
+			Info: &directory.EntityInfo{
+				DisplayName: "Schmee",
+			},
 		},
 	}, nil))
 
-	// Looking up the orgnaization entity
-	g.ra.Expect(mock.NewExpectation(g.ra.EntityForAccountID, organizationID, acc.ID).WithReturns(&directory.Entity{
-		ID:   entityID,
-		Type: directory.EntityType_ORGANIZATION,
-		Info: &directory.EntityInfo{
-			DisplayName: "Schmee",
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+			ExternalID: acc.ID,
 		},
-		Memberships: []*directory.Entity{
-			{
-				ID:   organizationID,
-				Type: directory.EntityType_ORGANIZATION,
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
+		},
+		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	}).WithReturns([]*directory.Entity{
+		{
+			ID:   entityID,
+			Type: directory.EntityType_ORGANIZATION,
+			Info: &directory.EntityInfo{
+				DisplayName: "Schmee",
+			},
+			Memberships: []*directory.Entity{
+				{
+					ID:   organizationID,
+					Type: directory.EntityType_ORGANIZATION,
+				},
 			},
 		},
 	}, nil))
@@ -440,27 +493,51 @@ func TestProvisionEmail_Organization_DomainInUse(t *testing.T) {
 	subdomain := "pup"
 
 	// Looking up the orgnaization entity
-	g.ra.Expect(mock.NewExpectation(g.ra.Entity, organizationID, []directory.EntityInformation{
-		directory.EntityInformation_MEMBERSHIPS,
-		directory.EntityInformation_CONTACTS,
-	}, int64(0)).WithReturns(&directory.Entity{
-		ID:   organizationID,
-		Type: directory.EntityType_ORGANIZATION,
-		Info: &directory.EntityInfo{
-			DisplayName: "Schmee",
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: organizationID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+		},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	}).WithReturns([]*directory.Entity{
+		{
+			ID:   organizationID,
+			Type: directory.EntityType_ORGANIZATION,
+			Info: &directory.EntityInfo{
+				DisplayName: "Schmee",
+			},
 		},
 	}, nil))
 
-	g.ra.Expect(mock.NewExpectation(g.ra.EntityForAccountID, organizationID, acc.ID).WithReturns(&directory.Entity{
-		ID:   entityID,
-		Type: directory.EntityType_ORGANIZATION,
-		Info: &directory.EntityInfo{
-			DisplayName: "Schmee",
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+			ExternalID: acc.ID,
 		},
-		Memberships: []*directory.Entity{
-			{
-				ID:   organizationID,
-				Type: directory.EntityType_ORGANIZATION,
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
+		},
+		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	}).WithReturns([]*directory.Entity{
+		{
+			ID:   entityID,
+			Type: directory.EntityType_INTERNAL,
+			Info: &directory.EntityInfo{
+				DisplayName: "Schmee",
+			},
+			Memberships: []*directory.Entity{
+				{
+					ID:   organizationID,
+					Type: directory.EntityType_ORGANIZATION,
+				},
 			},
 		},
 	}, nil))
@@ -522,34 +599,58 @@ func TestProvisionEmail_Organization_EmailInUse(t *testing.T) {
 	ctx = gqlctx.WithAccount(ctx, acc)
 
 	g.svc.emailDomain = "amdava.com"
-	entityID := "e1"
+	// entityID := "e1"
 	organizationID := "o1"
 	localPart := "sup"
 	subdomain := "pup"
 	emailToProvision := "sup@pup.amdava.com"
 
 	// Looking up the orgnaization entity
-	g.ra.Expect(mock.NewExpectation(g.ra.Entity, organizationID, []directory.EntityInformation{
-		directory.EntityInformation_MEMBERSHIPS,
-		directory.EntityInformation_CONTACTS,
-	}, int64(0)).WithReturns(&directory.Entity{
-		ID:   organizationID,
-		Type: directory.EntityType_ORGANIZATION,
-		Info: &directory.EntityInfo{
-			DisplayName: "Schmee",
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: organizationID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+		},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	}).WithReturns([]*directory.Entity{
+		{
+			ID:   organizationID,
+			Type: directory.EntityType_ORGANIZATION,
+			Info: &directory.EntityInfo{
+				DisplayName: "Schmee",
+			},
 		},
 	}, nil))
 
-	g.ra.Expect(mock.NewExpectation(g.ra.EntityForAccountID, organizationID, acc.ID).WithReturns(&directory.Entity{
-		ID:   entityID,
-		Type: directory.EntityType_ORGANIZATION,
-		Info: &directory.EntityInfo{
-			DisplayName: "Schmee",
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+			ExternalID: acc.ID,
 		},
-		Memberships: []*directory.Entity{
-			{
-				ID:   organizationID,
-				Type: directory.EntityType_ORGANIZATION,
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
+		},
+		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	}).WithReturns([]*directory.Entity{
+		{
+			ID:   organizationID,
+			Type: directory.EntityType_ORGANIZATION,
+			Info: &directory.EntityInfo{
+				DisplayName: "Schmee",
+			},
+			Memberships: []*directory.Entity{
+				{
+					ID:   organizationID,
+					Type: directory.EntityType_ORGANIZATION,
+				},
 			},
 		},
 	}, nil))

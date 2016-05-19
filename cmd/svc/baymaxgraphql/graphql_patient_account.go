@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 )
@@ -55,7 +56,18 @@ func patientThreads(p graphql.ResolveParams, a *models.PatientAccount) (*Connect
 	if gqlctx.Account(ctx) == nil {
 		return nil, errors.ErrNotAuthenticated(ctx)
 	}
-	ent, err := ram.PatientEntity(ctx, a)
+	ent, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+			ExternalID: a.GetID(),
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
+		},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{directory.EntityType_PATIENT},
+	})
 	if err != nil {
 		return nil, errors.InternalError(ctx, err)
 	}
@@ -117,9 +129,22 @@ func patientEntity(p graphql.ResolveParams, a *models.PatientAccount) (*models.E
 	if gqlctx.Account(ctx) == nil {
 		return nil, errors.ErrNotAuthenticated(ctx)
 	}
-	ent, err := ram.PatientEntity(ctx, a)
+	entities, err := ram.Entities(ctx, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+			ExternalID: a.GetID(),
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
+		},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{directory.EntityType_PATIENT},
+	})
 	if err != nil {
 		return nil, errors.InternalError(ctx, err)
+	} else if len(entities) != 1 {
+		return nil, fmt.Errorf("expected 1 entity for %s but got %d back", a.GetID(), len(entities))
 	}
-	return transformEntityToResponse(svc.staticURLPrefix, ent, gqlctx.SpruceHeaders(ctx), gqlctx.Account(ctx))
+	return transformEntityToResponse(svc.staticURLPrefix, entities[0], gqlctx.SpruceHeaders(ctx), gqlctx.Account(ctx))
 }

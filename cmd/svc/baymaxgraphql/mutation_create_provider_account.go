@@ -362,7 +362,14 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 	}
 	orgName := organizationName
 	if inv != nil {
-		oe, err := ram.Entity(ctx, orgEntityID, nil, 0)
+		oe, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+				EntityID: orgEntityID,
+			},
+			Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+			RootTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+		})
 		if err != nil {
 			golog.Errorf("Failed to lookup organization %s: %s", orgEntityID, err)
 		} else {

@@ -224,11 +224,20 @@ var threadType = graphql.NewObject(
 						if th.Type == models.ThreadTypeSupport && th.OrganizationID != *flagSpruceOrgID {
 							return nil, nil
 						}
-						orgEntity, err := ram.ActiveEntity(ctx, th.OrganizationID, []directory.EntityInformation{
-							directory.EntityInformation_MEMBERS,
-							// TODO: don't always need contacts
-							directory.EntityInformation_CONTACTS,
-						}, 0)
+
+						orgEntity, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+							LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+							LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+								EntityID: th.OrganizationID,
+							},
+							RequestedInformation: &directory.RequestedInformation{
+								Depth:             0,
+								EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERS, directory.EntityInformation_CONTACTS},
+							},
+							Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+							RootTypes:  []directory.EntityType{directory.EntityType_ORGANIZATION},
+							ChildTypes: []directory.EntityType{directory.EntityType_INTERNAL},
+						})
 						if err != nil {
 							return nil, err
 						}
@@ -263,7 +272,18 @@ var threadType = graphql.NewObject(
 					}
 
 					ram := raccess.ResourceAccess(p)
-					ent, err := ram.Entity(ctx, th.PrimaryEntityID, []directory.EntityInformation{directory.EntityInformation_CONTACTS}, 0)
+					ent, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+						LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+						LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+							EntityID: th.PrimaryEntityID,
+						},
+						RequestedInformation: &directory.RequestedInformation{
+							Depth:             0,
+							EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+						},
+						Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+						RootTypes: []directory.EntityType{directory.EntityType_INTERNAL},
+					})
 					if err != nil {
 						return nil, err
 					}
@@ -297,7 +317,19 @@ var threadType = graphql.NewObject(
 					}
 
 					ram := raccess.ResourceAccess(p)
-					ent, err := ram.Entity(ctx, th.PrimaryEntityID, []directory.EntityInformation{directory.EntityInformation_CONTACTS}, 0)
+
+					ent, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+						LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+						LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+							EntityID: th.PrimaryEntityID,
+						},
+						RequestedInformation: &directory.RequestedInformation{
+							Depth:             0,
+							EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+						},
+						Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+						RootTypes: []directory.EntityType{directory.EntityType_INTERNAL},
+					})
 					if err != nil {
 						return nil, err
 					}
@@ -352,7 +384,18 @@ var threadType = graphql.NewObject(
 					}
 
 					ram := raccess.ResourceAccess(p)
-					pe, err := ram.Entity(ctx, th.PrimaryEntityID, []directory.EntityInformation{directory.EntityInformation_CONTACTS}, 0)
+					pe, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+						LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+						LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+							EntityID: th.PrimaryEntityID,
+						},
+						RequestedInformation: &directory.RequestedInformation{
+							Depth:             0,
+							EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+						},
+						Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+						RootTypes: []directory.EntityType{directory.EntityType_INTERNAL},
+					})
 					if err != nil {
 						return nil, err
 					}
@@ -378,7 +421,19 @@ var threadType = graphql.NewObject(
 						ram := raccess.ResourceAccess(p)
 						acc := gqlctx.Account(p.Context)
 
-						ent, err := ram.EntityForAccountID(ctx, t.OrganizationID, acc.ID)
+						ent, err := raccess.EntityInOrgForAccountID(ctx, ram, &directory.LookupEntitiesRequest{
+							LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+							LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+								ExternalID: acc.ID,
+							},
+							RequestedInformation: &directory.RequestedInformation{
+								Depth:             0,
+								EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
+							},
+							Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+							RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+							ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+						}, t.OrganizationID)
 						if err != nil {
 							return nil, errors.InternalError(ctx, err)
 						}

@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/libs/bml"
 	"github.com/sprucehealth/backend/libs/caremessenger/deeplink"
 	"github.com/sprucehealth/backend/svc/care"
+	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 	"google.golang.org/grpc"
@@ -134,7 +135,14 @@ var submitVisitMutation = &graphql.Field{
 					return nil, errors.InternalError(ctx, fmt.Errorf("thread in organization %s not found", visitRes.Visit.OrganizationID))
 				}
 
-				entity, err := ram.Entity(ctx, visitRes.Visit.EntityID, nil, 0)
+				entity, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+					LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+						EntityID: visitRes.Visit.EntityID,
+					},
+					Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+					RootTypes: []directory.EntityType{directory.EntityType_PATIENT},
+				})
 				if err != nil {
 					return nil, errors.InternalError(ctx, err)
 				}

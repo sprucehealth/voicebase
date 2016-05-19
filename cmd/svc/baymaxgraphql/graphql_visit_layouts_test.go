@@ -23,30 +23,53 @@ func TestVisitCategories(t *testing.T) {
 	g := newGQL(t)
 	defer g.finish()
 
-	g.ra.Expect(
-		mock.NewExpectation(
-			g.ra.Entity,
-			orgID,
-			[]directory.EntityInformation{directory.EntityInformation_CONTACTS},
-			int64(0)).WithReturns(&directory.Entity{
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: orgID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	}).WithReturns([]*directory.Entity{
+		{
 			ID:   orgID,
 			Type: directory.EntityType_ORGANIZATION,
 			Info: &directory.EntityInfo{
 				DisplayName: "test",
 			},
-		}, nil))
+		},
+	}, nil))
 
-	g.ra.Expect(
-		mock.NewExpectation(
-			g.ra.EntityForAccountID,
-			orgID,
-			acc.ID).WithReturns(&directory.Entity{
-			ID:   orgID,
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+			ExternalID: acc.ID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
+		},
+		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	}).WithReturns([]*directory.Entity{
+		{
+			ID:   "entity",
 			Type: directory.EntityType_INTERNAL,
 			Info: &directory.EntityInfo{
 				DisplayName: "test",
 			},
-		}, nil))
+			Memberships: []*directory.Entity{
+				{
+					ID:   orgID,
+					Type: directory.EntityType_ORGANIZATION,
+				},
+			},
+		},
+	}, nil))
 
 	g.settingsC.Expect(
 		mock.NewExpectation(
@@ -230,7 +253,7 @@ func TestVisitCategories(t *testing.T) {
 			     	visitLayouts(first: 100) {
 			     		edges {
 			     			node {
-			     		id 
+			     		id
 			     		name
 			     		version {
 			     			samlLayout

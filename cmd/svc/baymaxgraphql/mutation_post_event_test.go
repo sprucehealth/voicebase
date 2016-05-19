@@ -43,17 +43,29 @@ func TestPostEventMutation(t *testing.T) {
 
 	// no org_id
 
-	g.ra.Expect(mock.NewExpectation(g.ra.EntitiesForExternalID,
-		acc.ID, []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS}, int64(0),
-		[]directory.EntityStatus{directory.EntityStatus_ACTIVE},
-	).WithReturns([]*directory.Entity{
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities,
+		&directory.LookupEntitiesRequest{
+			LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+			LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+				ExternalID: acc.ID,
+			},
+			RequestedInformation: &directory.RequestedInformation{
+				Depth:             0,
+				EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
+			},
+			Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+			RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+			ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+		}).WithReturns([]*directory.Entity{
 		{
-			ID: "ent",
+			ID:   "ent",
+			Type: directory.EntityType_INTERNAL,
 			Memberships: []*directory.Entity{
 				{ID: "org", Type: directory.EntityType_ORGANIZATION},
 			},
 		},
 	}, nil))
+
 	g.ra.Expect(mock.NewExpectation(g.ra.OnboardingThreadEvent,
 		&threading.OnboardingThreadEventRequest{
 			LookupByType: threading.OnboardingThreadEventRequest_ENTITY_ID,
@@ -90,9 +102,31 @@ func TestPostEventMutation(t *testing.T) {
 
 	// with org_id
 
-	g.ra.Expect(mock.NewExpectation(g.ra.EntityForAccountID, "0rg", acc.ID).WithReturns(&directory.Entity{
-		ID: "ent",
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+			ExternalID: acc.ID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
+		},
+		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	}).WithReturns([]*directory.Entity{
+		{
+			ID:   "ent",
+			Type: directory.EntityType_INTERNAL,
+			Memberships: []*directory.Entity{
+				{
+					ID:   "0rg",
+					Type: directory.EntityType_ORGANIZATION,
+				},
+			},
+		},
 	}, nil))
+
 	g.ra.Expect(mock.NewExpectation(g.ra.OnboardingThreadEvent,
 		&threading.OnboardingThreadEventRequest{
 			LookupByType: threading.OnboardingThreadEventRequest_ENTITY_ID,

@@ -50,8 +50,14 @@ func TestVerifyPhoneNumberForAccountCreationMutation_Invite(t *testing.T) {
 		},
 	}, nil))
 
-	g.ra.Expect(mock.NewExpectation(g.ra.EntitiesByContact, "+14155551212",
-		[]directory.EntityInformation{directory.EntityInformation_CONTACTS}, int64(0), []directory.EntityStatus{directory.EntityStatus_ACTIVE}))
+	g.ra.Expect(mock.NewExpectation(g.ra.EntitiesByContact, &directory.LookupEntitiesByContactRequest{
+		ContactValue: "+14155551212",
+		RequestedInformation: &directory.RequestedInformation{
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+			Depth:             0,
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	}))
 
 	res := g.query(ctx, `
 		mutation _ {
@@ -102,8 +108,14 @@ func TestVerifyPhoneNumberForAccountCreationMutation_Invite(t *testing.T) {
 		},
 	}, nil))
 
-	g.ra.Expect(mock.NewExpectation(g.ra.EntitiesByContact, "+14155551212",
-		[]directory.EntityInformation{directory.EntityInformation_CONTACTS}, int64(0), []directory.EntityStatus{directory.EntityStatus_ACTIVE}))
+	g.ra.Expect(mock.NewExpectation(g.ra.EntitiesByContact, &directory.LookupEntitiesByContactRequest{
+		ContactValue: "+14155551212",
+		RequestedInformation: &directory.RequestedInformation{
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+			Depth:             0,
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	}))
 
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateVerificationCode, auth.VerificationCodeType_PHONE, "+14155551212").WithReturns(
 		&auth.CreateVerificationCodeResponse{
@@ -160,8 +172,14 @@ func TestVerifyPhoneNumberForAccountCreationMutation_SprucePhoneNumber(t *testin
 		DeviceID: "DevID",
 	})
 
-	g.ra.Expect(mock.NewExpectation(g.ra.EntitiesByContact, "+14155551212",
-		[]directory.EntityInformation{directory.EntityInformation_CONTACTS}, int64(0), []directory.EntityStatus{directory.EntityStatus_ACTIVE}).WithReturns(
+	g.ra.Expect(mock.NewExpectation(g.ra.EntitiesByContact, &directory.LookupEntitiesByContactRequest{
+		ContactValue: "+14155551212",
+		RequestedInformation: &directory.RequestedInformation{
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+			Depth:             0,
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	}).WithReturns(
 		[]*directory.Entity{
 			{
 				Contacts: []*directory.Contact{
@@ -237,13 +255,20 @@ func TestVerifyEmailCodeEntityInfo_Invite(t *testing.T) {
 		},
 	}, nil))
 
-	g.ra.Expect(mock.NewExpectation(g.ra.UnauthorizedEntity, "parkedEntityID", []directory.EntityInformation{}, int64(0)).WithReturns(
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: "parkedEntityID",
+		},
+		RootTypes: []directory.EntityType{directory.EntityType_PATIENT},
+	}).WithReturns([]*directory.Entity{
 		&directory.Entity{
 			Info: &directory.EntityInfo{
 				FirstName: "bat",
 				LastName:  "man",
 			},
-		}, nil))
+		},
+	}, nil))
 
 	res := g.query(ctx, `
 		mutation _ {

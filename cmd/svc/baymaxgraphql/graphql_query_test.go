@@ -44,27 +44,54 @@ func TestNodeQuery(t *testing.T) {
 	p.Args = map[string]interface{}{
 		"id": id,
 	}
-	ra.Expect(mock.NewExpectation(ra.Entity, id, []directory.EntityInformation{
-		directory.EntityInformation_CONTACTS,
-	}, int64(0)).WithReturns(
-		&directory.Entity{
-			Type: directory.EntityType_ORGANIZATION,
-			ID:   id,
-			Info: &directory.EntityInfo{
-				DisplayName: "Org",
+
+	ra.Expect(mock.NewExpectation(ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: id,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	}).WithReturns(
+		[]*directory.Entity{
+			{
+				Type: directory.EntityType_ORGANIZATION,
+				ID:   id,
+				Info: &directory.EntityInfo{
+					DisplayName: "Org",
+				},
 			},
 		}, nil))
-	ra.Expect(mock.NewExpectation(ra.EntityForAccountID, id, acc.ID).WithReturns(
-		&directory.Entity{
-			Type: directory.EntityType_INTERNAL,
-			ID:   "entity_222",
-			Info: &directory.EntityInfo{
-				DisplayName: "Mem",
-			},
-			Memberships: []*directory.Entity{
-				{ID: id},
+
+	ra.Expect(mock.NewExpectation(ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+			ExternalID: acc.ID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
+		},
+		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	}).WithReturns(
+		[]*directory.Entity{
+			{
+				Type: directory.EntityType_INTERNAL,
+				ID:   "entity_222",
+				Info: &directory.EntityInfo{
+					DisplayName: "Mem",
+				},
+				Memberships: []*directory.Entity{
+					{ID: id},
+				},
 			},
 		}, nil))
+
 	res, err := nodeField.Resolve(p)
 	test.OK(t, err)
 	test.Equals(t, &models.Organization{
@@ -88,15 +115,28 @@ func TestNodeQuery(t *testing.T) {
 	p.Args = map[string]interface{}{
 		"id": id,
 	}
-	ra.Expect(mock.NewExpectation(ra.Entity, id, []directory.EntityInformation{
-		directory.EntityInformation_CONTACTS}, int64(0)).WithReturns(&directory.Entity{
-		Type: directory.EntityType_EXTERNAL,
-		ID:   id,
-		Info: &directory.EntityInfo{
-			DisplayName: "Someone",
-			Gender:      directory.EntityInfo_MALE,
+
+	ra.Expect(mock.NewExpectation(ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: id,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	}).WithReturns([]*directory.Entity{
+		{
+			Type: directory.EntityType_EXTERNAL,
+			ID:   id,
+			Info: &directory.EntityInfo{
+				DisplayName: "Someone",
+				Gender:      directory.EntityInfo_MALE,
+			},
 		},
 	}, nil))
+
 	res, err = nodeField.Resolve(p)
 	test.OK(t, err)
 	test.Equals(t, &models.Entity{ID: id, IsEditable: true, AllowEdit: true, IsInternal: false, DisplayName: "Someone", Contacts: []*models.ContactInfo{}, Gender: "MALE"}, res)
@@ -115,21 +155,36 @@ func TestNodeQuery(t *testing.T) {
 		Type:            threading.ThreadType_EXTERNAL,
 	}, nil))
 
-	ra.Expect(mock.NewExpectation(ra.EntityForAccountID, "entity_1", acc.ID).WithReturns(
-		&directory.Entity{
-			Type: directory.EntityType_INTERNAL,
-			ID:   "entity_222",
-			Info: &directory.EntityInfo{
-				DisplayName: "Someone",
-				Gender:      directory.EntityInfo_FEMALE,
-			},
-			Memberships: []*directory.Entity{
-				{
-					Type: directory.EntityType_ORGANIZATION,
-					ID:   "entity_1",
+	ra.Expect(mock.NewExpectation(ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+			ExternalID: acc.ID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
+		},
+		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	}).WithReturns(
+		[]*directory.Entity{
+			{
+				Type: directory.EntityType_INTERNAL,
+				ID:   "entity_222",
+				Info: &directory.EntityInfo{
+					DisplayName: "Someone",
+					Gender:      directory.EntityInfo_FEMALE,
+				},
+				Memberships: []*directory.Entity{
+					{
+						Type: directory.EntityType_ORGANIZATION,
+						ID:   "entity_1",
+					},
 				},
 			},
 		}, nil))
+
 	ra.Expect(mock.NewExpectation(ra.Thread, id, "entity_222").WithReturns(&threading.Thread{
 		ID:              id,
 		OrganizationID:  "entity_1",

@@ -316,7 +316,19 @@ var modifySettingMutation = &graphql.Field{
 			// out in the wild.
 			if key == excommsSettings.ConfigKeySendCallsToVoicemail {
 				if _, ok := node.(*models.Entity); ok {
-					entity, err := ram.Entity(ctx, nodeID, []directory.EntityInformation{directory.EntityInformation_CONTACTS, directory.EntityInformation_MEMBERSHIPS}, 1)
+					entity, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+						LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+						LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+							EntityID: nodeID,
+						},
+						RequestedInformation: &directory.RequestedInformation{
+							Depth:             1,
+							EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERS, directory.EntityInformation_CONTACTS},
+						},
+						Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+						RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+						ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+					})
 					if err != nil {
 						return nil, fmt.Errorf("Unable to lookup entity for %s: %s", nodeID, err.Error())
 					}

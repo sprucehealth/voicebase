@@ -121,11 +121,18 @@ var provisionEmailMutation = &graphql.Field{
 		var orgEntity *directory.Entity
 		var err error
 		if entityID != "" {
-			ent, err = ram.Entity(ctx, entityID, []directory.EntityInformation{
-				directory.EntityInformation_CONTACTS,
-				directory.EntityInformation_MEMBERSHIPS,
-				directory.EntityInformation_EXTERNAL_IDS,
-			}, 0)
+			ent, err = raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+				LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+				LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+					EntityID: entityID,
+				},
+				RequestedInformation: &directory.RequestedInformation{
+					Depth:             0,
+					EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS, directory.EntityInformation_EXTERNAL_IDS},
+				},
+				Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+				RootTypes: []directory.EntityType{directory.EntityType_INTERNAL, directory.EntityType_ORGANIZATION},
+			})
 			if err != nil {
 				return nil, err
 			} else if ent.Type != directory.EntityType_INTERNAL {
@@ -154,14 +161,35 @@ var provisionEmailMutation = &graphql.Field{
 			}
 
 		} else if organizationID != "" {
-			orgEntity, err = ram.Entity(ctx, organizationID, []directory.EntityInformation{
-				directory.EntityInformation_MEMBERSHIPS,
-				directory.EntityInformation_CONTACTS,
-			}, 0)
+			orgEntity, err = raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+				LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+				LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+					EntityID: organizationID,
+				},
+				RequestedInformation: &directory.RequestedInformation{
+					Depth:             0,
+					EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+				},
+				Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+				RootTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+			})
 			if err != nil {
 				return nil, errors.InternalError(ctx, err)
 			}
-			ent, err = ram.EntityForAccountID(ctx, organizationID, acc.ID)
+
+			ent, err = raccess.EntityInOrgForAccountID(ctx, ram, &directory.LookupEntitiesRequest{
+				LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+				LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+					ExternalID: acc.ID,
+				},
+				RequestedInformation: &directory.RequestedInformation{
+					Depth:             0,
+					EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
+				},
+				Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+				RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+				ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+			}, organizationID)
 			if err != nil {
 				return nil, err
 			}

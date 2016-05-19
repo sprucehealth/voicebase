@@ -80,12 +80,22 @@ func accountOrganizations(p graphql.ResolveParams, a models.Account) ([]*models.
 		// Shouldn't be possible I don't think
 		return nil, errors.InternalError(ctx, errors.New("nil account"))
 	}
-	entities, err := ram.EntitiesForExternalID(ctx, a.GetID(), []directory.EntityInformation{
-		directory.EntityInformation_MEMBERSHIPS,
-		directory.EntityInformation_CONTACTS,
-	}, 1, nil)
+
+	entities, err := ram.Entities(ctx, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+			ExternalID: a.GetID(),
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             1,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
+		},
+		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	})
 	if err != nil {
-		return nil, errors.InternalError(ctx, err)
+		return nil, errors.InternalError(ctx, fmt.Errorf("unable to lookup entities for %s: %s", a.GetID(), err))
 	}
 
 	sh := gqlctx.SpruceHeaders(p.Context)

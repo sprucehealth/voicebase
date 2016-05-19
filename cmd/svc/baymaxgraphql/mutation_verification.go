@@ -118,10 +118,12 @@ func makeVerifyPhoneNumberResolve(forAccountCreation bool) func(p graphql.Resolv
 		}
 
 		// ensure that the phone number is not a provisioned phone number
-		entities, err := ram.EntitiesByContact(ctx, pn.String(), []directory.EntityInformation{
-			directory.EntityInformation_CONTACTS,
-		}, 0, []directory.EntityStatus{
-			directory.EntityStatus_ACTIVE,
+		entities, err := ram.EntitiesByContact(ctx, &directory.LookupEntitiesByContactRequest{
+			ContactValue: pn.String(),
+			Statuses:     []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+			RequestedInformation: &directory.RequestedInformation{
+				EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+			},
 		})
 		if err != nil {
 			golog.Errorf("Unable to lookup entity by contact: %s", err.Error())
@@ -327,10 +329,20 @@ var checkVerificationCodeMutation = &graphql.Field{
 				return nil, errors.InternalError(ctx, err)
 			}
 			if inv != nil && inv.Type == invite.LookupInviteResponse_PATIENT {
-				parkedEntity, err := ram.UnauthorizedEntity(ctx, inv.GetPatient().Patient.ParkedEntityID, []directory.EntityInformation{}, 0)
+				entities, err := ram.Entities(ctx, &directory.LookupEntitiesRequest{
+					LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+						EntityID: inv.GetPatient().Patient.ParkedEntityID,
+					},
+					RootTypes: []directory.EntityType{directory.EntityType_PATIENT},
+				}, raccess.EntityQueryOptionUnathorized)
 				if err != nil {
 					return nil, errors.InternalError(ctx, fmt.Errorf("Encountered an error while looking up parked entity %q: %s", inv.GetPatient().Patient.ParkedEntityID, err))
+				} else if len(entities) > 1 {
+					return "", errors.InternalError(ctx, fmt.Errorf("Expected 1 entity to be returned for %s but got back %d", inv.GetPatient().Patient.ParkedEntityID, len(entities)))
 				}
+				parkedEntity := entities[0]
+
 				verifiedEntityInfo = &models.VerifiedEntityInfo{
 					FirstName: parkedEntity.Info.FirstName,
 					LastName:  parkedEntity.Info.LastName,

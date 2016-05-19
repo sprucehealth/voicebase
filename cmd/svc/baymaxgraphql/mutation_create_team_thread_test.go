@@ -47,12 +47,26 @@ func TestCreateTeamThreadMutation(t *testing.T) {
 		},
 	}, nil))
 
-	g.ra.Expect(mock.NewExpectation(g.ra.EntityForAccountID, organizationID, acc.ID).WithReturns(
-		&directory.Entity{
-			ID:   "e_creator",
-			Type: directory.EntityType_INTERNAL,
-			Memberships: []*directory.Entity{
-				{ID: "e_org", Type: directory.EntityType_ORGANIZATION},
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+			ExternalID: acc.ID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
+		},
+		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	}).WithReturns(
+		[]*directory.Entity{
+			{
+				ID:   "e_creator",
+				Type: directory.EntityType_INTERNAL,
+				Memberships: []*directory.Entity{
+					{ID: "e_org", Type: directory.EntityType_ORGANIZATION},
+				},
 			},
 		}, nil))
 

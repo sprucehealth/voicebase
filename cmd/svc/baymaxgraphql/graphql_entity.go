@@ -136,7 +136,17 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 })
 
 func lookupEntity(ctx context.Context, svc *service, ram raccess.ResourceAccessor, entityID string) (interface{}, error) {
-	em, err := ram.Entity(ctx, entityID, []directory.EntityInformation{directory.EntityInformation_CONTACTS}, 0)
+	em, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: entityID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +166,19 @@ func lookupEntity(ctx context.Context, svc *service, ram raccess.ResourceAccesso
 
 		acc := gqlctx.Account(ctx)
 		if acc != nil {
-			e, err := ram.EntityForAccountID(ctx, org.ID, acc.ID)
+			e, err := raccess.EntityInOrgForAccountID(ctx, ram, &directory.LookupEntitiesRequest{
+				LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+				LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+					ExternalID: acc.ID,
+				},
+				RequestedInformation: &directory.RequestedInformation{
+					Depth:             0,
+					EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
+				},
+				Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+				RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+				ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+			}, org.ID)
 			if err != nil {
 				return nil, errors.InternalError(ctx, err)
 			}

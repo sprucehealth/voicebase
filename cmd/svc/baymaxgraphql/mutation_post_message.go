@@ -204,16 +204,38 @@ var postMessageMutation = &graphql.Field{
 			return nil, err
 		}
 
-		ent, err := ram.EntityForAccountID(ctx, thr.OrganizationID, acc.ID)
+		ent, err := raccess.EntityInOrgForAccountID(ctx, ram, &directory.LookupEntitiesRequest{
+			LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+			LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+				ExternalID: acc.ID,
+			},
+			RequestedInformation: &directory.RequestedInformation{
+				Depth:             0,
+				EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
+			},
+			Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+			RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+			ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+		}, thr.OrganizationID)
 		if err != nil {
 			return nil, err
 		}
 
 		var primaryEntity *directory.Entity
 		if thr.PrimaryEntityID != "" {
-			primaryEntity, err = ram.Entity(ctx, thr.PrimaryEntityID, []directory.EntityInformation{directory.EntityInformation_CONTACTS}, 0)
+			primaryEntity, err = raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+				LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+				LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+					EntityID: thr.PrimaryEntityID,
+				},
+				RequestedInformation: &directory.RequestedInformation{
+					Depth:             0,
+					EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+				},
+				Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+			})
 			if err != nil {
-				return nil, err
+				return nil, errors.InternalError(ctx, err)
 			}
 		}
 

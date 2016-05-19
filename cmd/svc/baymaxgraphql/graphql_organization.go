@@ -69,7 +69,19 @@ var organizationType = graphql.NewObject(
 						return nil, errors.ErrNotAuthenticated(ctx)
 					}
 
-					e, err := ram.EntityForAccountID(ctx, org.ID, acc.ID)
+					e, err := raccess.EntityInOrgForAccountID(ctx, ram, &directory.LookupEntitiesRequest{
+						LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+						LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+							ExternalID: acc.ID,
+						},
+						RequestedInformation: &directory.RequestedInformation{
+							Depth:             0,
+							EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
+						},
+						Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+						RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+						ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+					}, org.ID)
 					if err != nil {
 						return nil, errors.InternalError(ctx, err)
 					}
@@ -97,11 +109,15 @@ var organizationType = graphql.NewObject(
 					ctx := p.Context
 					sh := gqlctx.SpruceHeaders(ctx)
 
-					orgEntity, err := ram.Entity(ctx, org.ID, []directory.EntityInformation{
-						directory.EntityInformation_MEMBERS,
-						// TODO: don't always need contacts
-						directory.EntityInformation_CONTACTS,
-					}, 0)
+					orgEntity, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+						RequestedInformation: &directory.RequestedInformation{
+							EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERS, directory.EntityInformation_CONTACTS},
+							Depth:             0,
+						},
+						Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+						RootTypes:  []directory.EntityType{directory.EntityType_ORGANIZATION},
+						ChildTypes: []directory.EntityType{directory.EntityType_INTERNAL},
+					})
 					if err != nil {
 						return nil, err
 					}

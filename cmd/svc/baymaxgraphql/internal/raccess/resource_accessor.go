@@ -6,7 +6,6 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
-	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/care"
@@ -51,10 +50,30 @@ func (m *resourceMap) Set(resourceID string, orgIDs map[string]struct{}) {
 	m.rMap[resourceID] = orgIDs
 }
 
+// EntityQueryOptions allows specifying of options when attempting to query
+// for entities via the resource accessor
+type EntityQueryOption int
+
+const (
+	// EntityQueryOptionUnathorized is an option used to skip authorization checks when
+	// querying for entities
+	EntityQueryOptionUnathorized EntityQueryOption = 1 << iota
+)
+
+type entityQueryOptions []EntityQueryOption
+
+func (e entityQueryOptions) has(opt EntityQueryOption) bool {
+	for _, o := range e {
+		if o == opt {
+			return true
+		}
+	}
+	return false
+}
+
 // ResourceAccessor defines an interface for the retreival and authorization of resources
 type ResourceAccessor interface {
 	Account(ctx context.Context, accountID string) (*auth.Account, error)
-	ActiveEntity(ctx context.Context, entityID string, entityInfo []directory.EntityInformation, depth int64) (*directory.Entity, error)
 	AuthenticateLogin(ctx context.Context, email, password string) (*auth.AuthenticateLoginResponse, error)
 	AuthenticateLoginWithCode(ctx context.Context, token, code string) (*auth.AuthenticateLoginWithCodeResponse, error)
 	CanPostMessage(ctx context.Context, threadID string) error
@@ -78,25 +97,20 @@ type ResourceAccessor interface {
 	CreateVisitAnswers(ctx context.Context, req *care.CreateVisitAnswersRequest) (*care.CreateVisitAnswersResponse, error)
 	DeleteContacts(ctx context.Context, req *directory.DeleteContactsRequest) (*directory.Entity, error)
 	DeleteThread(ctx context.Context, threadID, entityID string) error
-	Entity(ctx context.Context, entityID string, entityInfo []directory.EntityInformation, depth int64) (*directory.Entity, error)
-	Entities(ctx context.Context, orgID string, entityIDs []string, entityInfo []directory.EntityInformation) ([]*directory.Entity, error)
+	Entities(ctx context.Context, req *directory.LookupEntitiesRequest, opts ...EntityQueryOption) ([]*directory.Entity, error)
+	EntitiesByContact(ctx context.Context, req *directory.LookupEntitiesByContactRequest) ([]*directory.Entity, error)
 	EntityDomain(ctx context.Context, entityID, domain string) (*directory.LookupEntityDomainResponse, error)
-	// TODO: Rename this EntityForOrgAndAccountID
-	EntityForAccountID(ctx context.Context, orgID, accountID string) (*directory.Entity, error)
-	EntitiesByContact(ctx context.Context, contactValue string, entityInfo []directory.EntityInformation, depth int64, statuses []directory.EntityStatus) ([]*directory.Entity, error)
-	EntitiesForExternalID(ctx context.Context, externalID string, entityInfo []directory.EntityInformation, depth int64, statuses []directory.EntityStatus) ([]*directory.Entity, error)
 	GetAnswersForVisit(ctx context.Context, req *care.GetAnswersForVisitRequest) (*care.GetAnswersForVisitResponse, error)
 	InitiatePhoneCall(ctx context.Context, req *excomms.InitiatePhoneCallRequest) (*excomms.InitiatePhoneCallResponse, error)
 	MarkThreadAsRead(ctx context.Context, threadID, entityID string) error
 	OnboardingThreadEvent(ctx context.Context, req *threading.OnboardingThreadEventRequest) (*threading.OnboardingThreadEventResponse, error)
-	PatientEntity(ctx context.Context, a *models.PatientAccount) (*directory.Entity, error)
 	PostMessage(ctx context.Context, req *threading.PostMessageRequest) (*threading.PostMessageResponse, error)
-	ProvisionPhoneNumber(ctx context.Context, req *excomms.ProvisionPhoneNumberRequest) (*excomms.ProvisionPhoneNumberResponse, error)
 	ProvisionEmailAddress(ctx context.Context, req *excomms.ProvisionEmailAddressRequest) (*excomms.ProvisionEmailAddressResponse, error)
+	ProvisionPhoneNumber(ctx context.Context, req *excomms.ProvisionPhoneNumberRequest) (*excomms.ProvisionPhoneNumberResponse, error)
 	QueryThreads(ctx context.Context, req *threading.QueryThreadsRequest) (*threading.QueryThreadsResponse, error)
-	SavedQuery(ctx context.Context, savedQueryID string) (*threading.SavedQuery, error)
 	SavedQueries(ctx context.Context, entityID string) ([]*threading.SavedQuery, error)
 	SearchMedications(ctx context.Context, req *care.SearchMedicationsRequest) (*care.SearchMedicationsResponse, error)
+	SavedQuery(ctx context.Context, savedQueryID string) (*threading.SavedQuery, error)
 	SendMessage(ctx context.Context, req *excomms.SendMessageRequest) error
 	SerializedEntityContact(ctx context.Context, entityID string, platform directory.Platform) (*directory.SerializedClientEntityContact, error)
 	SubmitCarePlan(ctx context.Context, cp *care.CarePlan, parentID string) error
@@ -109,15 +123,14 @@ type ResourceAccessor interface {
 	ThreadsForMember(ctx context.Context, entityID string, primaryOnly bool) ([]*threading.Thread, error)
 	Unauthenticate(ctx context.Context, token string) error
 	UnauthorizedCreateExternalIDs(ctx context.Context, req *directory.CreateExternalIDsRequest) error
-	UnauthorizedEntity(ctx context.Context, entityID string, entityInfo []directory.EntityInformation, depth int64) (*directory.Entity, error)
 	UpdateContacts(ctx context.Context, req *directory.UpdateContactsRequest) (*directory.Entity, error)
 	UpdateEntity(ctx context.Context, req *directory.UpdateEntityRequest) (*directory.Entity, error)
 	UpdatePassword(ctx context.Context, token, code, newPassword string) error
 	UpdateThread(ctx context.Context, req *threading.UpdateThreadRequest) (*threading.UpdateThreadResponse, error)
 	VerifiedValue(ctx context.Context, token string) (string, error)
 	Visit(ctx context.Context, req *care.GetVisitRequest) (*care.GetVisitResponse, error)
-	VisitLayoutVersion(ctx context.Context, req *layout.GetVisitLayoutVersionRequest) (*layout.GetVisitLayoutVersionResponse, error)
 	VisitLayout(ctx context.Context, req *layout.GetVisitLayoutRequest) (*layout.GetVisitLayoutResponse, error)
+	VisitLayoutVersion(ctx context.Context, req *layout.GetVisitLayoutVersionRequest) (*layout.GetVisitLayoutVersionResponse, error)
 }
 
 type resourceAccessor struct {
@@ -449,70 +462,6 @@ func cacheEntities(ctx context.Context, ents []*directory.Entity) {
 	}
 }
 
-func (m *resourceAccessor) ActiveEntity(ctx context.Context, entityID string, entityInfo []directory.EntityInformation, depth int64) (*directory.Entity, error) {
-	ent := cachedEntity(ctx, entityID, entityInfo, depth)
-	if ent != nil {
-		return ent, nil
-	}
-	if err := m.canAccessResource(ctx, entityID, m.orgsForEntity); err != nil {
-		return nil, err
-	}
-	res, err := m.entity(ctx, entityID, entityInfo, depth, []directory.EntityStatus{directory.EntityStatus_ACTIVE})
-	if err != nil {
-		return nil, err
-	}
-	cacheEntities(ctx, res.Entities)
-	return res.Entities[0], nil
-}
-
-func (m *resourceAccessor) Entity(ctx context.Context, entityID string, entityInfo []directory.EntityInformation, depth int64) (*directory.Entity, error) {
-	ent := cachedEntity(ctx, entityID, entityInfo, depth)
-	if ent != nil {
-		return ent, nil
-	}
-	if err := m.canAccessResource(ctx, entityID, m.orgsForEntity); err != nil {
-		return nil, err
-	}
-	res, err := m.entity(ctx, entityID, entityInfo, depth, nil)
-	if err != nil {
-		return nil, err
-	}
-	cacheEntities(ctx, res.Entities)
-	return res.Entities[0], nil
-}
-
-func (m *resourceAccessor) Entities(ctx context.Context, orgID string, entityIDs []string, entityInfo []directory.EntityInformation) ([]*directory.Entity, error) {
-	// Check our cache for the entities and filter anything we already have
-	// A depth of 0 will return everything but members of members
-	var depth int64
-	cachedEnts, notFoundEntIDs := cachedEntities(ctx, entityIDs, entityInfo, depth)
-	if len(notFoundEntIDs) == 0 {
-		return cachedEnts, nil
-	}
-
-	if err := m.canAccessResource(ctx, orgID, m.orgsForOrganization); err != nil {
-		return nil, err
-	}
-	// TODO: verify access to entities based on their org memberships. that's expensive so avoiding for now
-	res, err := m.directory.LookupEntities(ctx,
-		&directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
-				BatchEntityID: &directory.IDList{IDs: notFoundEntIDs},
-			},
-			RequestedInformation: &directory.RequestedInformation{
-				Depth:             depth,
-				EntityInformation: entityInfoWithContacts(entityInfo),
-			},
-			Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
-		})
-	if err != nil {
-		return nil, err
-	}
-	cacheEntities(ctx, res.Entities)
-	return append(res.Entities, cachedEnts...), nil
-}
-
 func (m *resourceAccessor) EntityDomain(ctx context.Context, entityID, domain string) (*directory.LookupEntityDomainResponse, error) {
 	// Only do an authorization check if they are specifying an entity id
 	if entityID != "" {
@@ -527,53 +476,65 @@ func (m *resourceAccessor) EntityDomain(ctx context.Context, entityID, domain st
 	return res, nil
 }
 
-func (m *resourceAccessor) EntityForAccountID(ctx context.Context, orgID, accountID string) (*directory.Entity, error) {
-	// Check our cached account entities first
-	acc := gqlctx.Account(ctx)
-	if acc != nil && acc.ID == accountID {
-		ents := gqlctx.AccountEntities(ctx)
-		if ents != nil {
-			ent := ents.Get(orgID)
-			if ent != nil {
-				return ent, nil
-			}
-		}
-	}
-	// Note: Authorization is done at the next level down
-	entities, err := m.EntitiesForExternalID(ctx, accountID, []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS}, 0, nil)
-	if err != nil {
-		return nil, err
-	}
-	for _, e := range entities {
-		for _, e2 := range e.GetMemberships() {
-			if e2.Type == directory.EntityType_ORGANIZATION && e2.ID == orgID {
-				return e, nil
-			}
-		}
-	}
-	return nil, errors.ErrNotFound(ctx, fmt.Sprintf("(entity for account %s and org %s)", accountID, orgID))
-}
-
-func (m *resourceAccessor) EntitiesByContact(ctx context.Context, contactValue string, entityInfo []directory.EntityInformation, depth int64, statuses []directory.EntityStatus) ([]*directory.Entity, error) {
+func (m *resourceAccessor) EntitiesByContact(ctx context.Context, req *directory.LookupEntitiesByContactRequest) ([]*directory.Entity, error) {
 	// Note: There is no authorization required for this operation.
-	res, err := m.entitiesForContact(ctx, contactValue, entityInfo, depth, statuses)
+	res, err := m.directory.LookupEntitiesByContact(ctx, req)
 	if err != nil {
 		if grpc.Code(err) == codes.NotFound {
 			return nil, nil
 		}
 		return nil, err
 	}
+
 	cacheEntities(ctx, res.Entities)
 	return res.Entities, nil
 }
 
-func (m *resourceAccessor) EntitiesForExternalID(ctx context.Context, externalID string, entityInfo []directory.EntityInformation, depth int64, statuses []directory.EntityStatus) ([]*directory.Entity, error) {
+func (m *resourceAccessor) Entities(ctx context.Context, req *directory.LookupEntitiesRequest, opts ...EntityQueryOption) ([]*directory.Entity, error) {
+
 	// TODO: externalID at the moment at least is always an account. this should change if that ever changes
 	acc := gqlctx.Account(ctx)
-	if acc == nil || acc.ID != externalID {
+	if acc == nil {
 		return nil, errors.ErrNotAuthenticated(ctx)
 	}
-	res, err := m.entitiesForExternalID(ctx, externalID, entityInfo, depth, statuses)
+
+	// auth check
+	if !entityQueryOptions(opts).has(EntityQueryOptionUnathorized) {
+		switch req.LookupKeyType {
+		case directory.LookupEntitiesRequest_ENTITY_ID:
+			ent := cachedEntity(ctx, req.GetEntityID(), req.RequestedInformation.EntityInformation, req.RequestedInformation.Depth)
+			if ent != nil {
+				return []*directory.Entity{ent}, nil
+			}
+			if err := m.canAccessResource(ctx, req.GetEntityID(), m.orgsForEntity); err != nil {
+				return nil, err
+			}
+		case directory.LookupEntitiesRequest_EXTERNAL_ID:
+			if req.GetExternalID() != acc.ID {
+				return nil, errors.ErrNotAuthenticated(ctx)
+			}
+		case directory.LookupEntitiesRequest_BATCH_ENTITY_ID:
+
+			// ensure that individual requesting can access each of the entities in the request
+			for _, entityID := range req.GetBatchEntityID().IDs {
+				if err := m.canAccessResource(ctx, entityID, m.orgsForEntity); err != nil {
+					return nil, err
+				}
+			}
+			// TODO: verify access to entities based on their org memberships. that's expensive so avoiding for now
+		}
+	}
+
+	if req.LookupKeyType == directory.LookupEntitiesRequest_BATCH_ENTITY_ID {
+		// Check our cache for the entities and filter anything we already have
+		// A depth of 0 will return everything but members of members
+		cachedEnts, notFoundEntIDs := cachedEntities(ctx, req.GetBatchEntityID().IDs, req.RequestedInformation.EntityInformation, req.RequestedInformation.Depth)
+		if len(notFoundEntIDs) == 0 {
+			return cachedEnts, nil
+		}
+	}
+
+	res, err := m.directory.LookupEntities(ctx, req)
 	if err != nil {
 		if grpc.Code(err) == codes.NotFound {
 			return nil, nil
@@ -620,18 +581,6 @@ func (m *resourceAccessor) OnboardingThreadEvent(ctx context.Context, req *threa
 		return nil, err
 	}
 	return m.threading.OnboardingThreadEvent(ctx, req)
-}
-
-func (m *resourceAccessor) PatientEntity(ctx context.Context, acc *models.PatientAccount) (*directory.Entity, error) {
-	entities, err := m.EntitiesForExternalID(ctx, acc.GetID(), []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS}, 0, nil)
-	if err != nil {
-		return nil, err
-	}
-	if len(entities) != 1 {
-		return nil, fmt.Errorf("AccountEntity: Expected to find 1 entity for external id %s but found %d", acc.GetID(), len(entities))
-	}
-	cacheEntities(ctx, entities)
-	return entities[0], nil
 }
 
 func (m *resourceAccessor) CanPostMessage(ctx context.Context, threadID string) error {
@@ -782,10 +731,23 @@ func (m *resourceAccessor) ThreadMembers(ctx context.Context, orgID string, req 
 	}
 	// Make sure viewer is a member of the thread
 	acc := gqlctx.Account(ctx)
-	ent, err := m.EntityForAccountID(ctx, orgID, acc.ID)
+	if acc == nil {
+		return nil, errors.ErrNotAuthorized(ctx, req.ThreadID)
+	}
+	ent, err := EntityInOrgForAccountID(ctx, m, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+			ExternalID: acc.ID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
+		},
+	}, orgID)
 	if err != nil {
 		return nil, err
 	}
+
 	var found bool
 	for _, mem := range res.Members {
 		if mem.EntityID == ent.ID {
@@ -872,14 +834,6 @@ func (m *resourceAccessor) Unauthenticate(ctx context.Context, token string) err
 
 func (m *resourceAccessor) UnauthorizedCreateExternalIDs(ctx context.Context, req *directory.CreateExternalIDsRequest) error {
 	return m.createExternalIDs(ctx, req)
-}
-
-func (m *resourceAccessor) UnauthorizedEntity(ctx context.Context, entityID string, entityInfo []directory.EntityInformation, depth int64) (*directory.Entity, error) {
-	res, err := m.entity(ctx, entityID, entityInfo, depth, nil)
-	if err != nil {
-		return nil, err
-	}
-	return res.Entities[0], nil
 }
 
 func (m *resourceAccessor) UpdateContacts(ctx context.Context, req *directory.UpdateContactsRequest) (*directory.Entity, error) {
@@ -1089,16 +1043,39 @@ func (m *resourceAccessor) canAccessResource(ctx context.Context, resourceID str
 
 func (m *resourceAccessor) orgsForEntity(ctx context.Context, entityID string) (map[string]struct{}, error) {
 	// Don't do any status checks. Authorization is for all existing resources
-	res, err := m.entity(ctx, entityID, []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS}, 0, nil)
+	res, err := m.directory.LookupEntities(ctx, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: entityID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
+			Depth:             0,
+		},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	})
 	if err != nil {
 		return nil, err
+	} else if len(res.Entities) != 1 {
+		return nil, fmt.Errorf("Expected 1 entity for %s but got %d", entityID, len(res.Entities))
 	}
+
 	return orgsForEntity(res.Entities[0]), nil
 }
 
 func (m *resourceAccessor) orgsForEntityForExternalID(ctx context.Context, externalID string) (map[string]struct{}, error) {
 	// Don't do any status checks. Authorization is for all existing resources
-	res, err := m.entitiesForExternalID(ctx, externalID, []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS}, 0, nil)
+
+	res, err := m.directory.LookupEntities(ctx, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+			ExternalID: externalID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
+			Depth:             0,
+		},
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -1249,33 +1226,6 @@ func (m *resourceAccessor) deleteThread(ctx context.Context, threadID, entityID 
 	return nil
 }
 
-func (m *resourceAccessor) entity(ctx context.Context, entityID string, entityInfo []directory.EntityInformation, depth int64, statuses []directory.EntityStatus) (*directory.LookupEntitiesResponse, error) {
-	if len(entityInfo) == 0 {
-		entityInfo = []directory.EntityInformation{
-			directory.EntityInformation_MEMBERSHIPS,
-		}
-	}
-	res, err := m.directory.LookupEntities(ctx,
-		&directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-				EntityID: entityID,
-			},
-			RequestedInformation: &directory.RequestedInformation{
-				Depth:             depth,
-				EntityInformation: entityInfoWithContacts(entityInfo),
-			},
-			Statuses: statuses,
-		})
-	if err != nil {
-		return nil, err
-	}
-	if len(res.Entities) != 1 {
-		return nil, errors.InternalError(ctx, fmt.Errorf("Expected only 1 entity to be returned for id %s but found %d", entityID, len(res.Entities)))
-	}
-	return res, nil
-}
-
 func (m *resourceAccessor) entityDomain(ctx context.Context, entityID, domain string) (*directory.LookupEntityDomainResponse, error) {
 	resp, err := m.directory.LookupEntityDomain(ctx, &directory.LookupEntityDomainRequest{
 		EntityID: entityID,
@@ -1285,51 +1235,6 @@ func (m *resourceAccessor) entityDomain(ctx context.Context, entityID, domain st
 		return nil, err
 	}
 	return resp, nil
-}
-
-func (m *resourceAccessor) entitiesForContact(ctx context.Context, contactValue string, entityInfo []directory.EntityInformation, depth int64, statuses []directory.EntityStatus) (*directory.LookupEntitiesByContactResponse, error) {
-	if len(entityInfo) == 0 {
-		entityInfo = []directory.EntityInformation{
-			directory.EntityInformation_MEMBERSHIPS,
-		}
-	}
-	res, err := m.directory.LookupEntitiesByContact(ctx,
-		&directory.LookupEntitiesByContactRequest{
-			ContactValue: contactValue,
-			RequestedInformation: &directory.RequestedInformation{
-				Depth:             depth,
-				EntityInformation: entityInfoWithContacts(entityInfo),
-			},
-			Statuses: statuses,
-		})
-	if err != nil {
-		return nil, err
-	}
-	return res, nil
-}
-
-func (m *resourceAccessor) entitiesForExternalID(ctx context.Context, externalID string, entityInfo []directory.EntityInformation, depth int64, statuses []directory.EntityStatus) (*directory.LookupEntitiesResponse, error) {
-	if len(entityInfo) == 0 {
-		entityInfo = []directory.EntityInformation{
-			directory.EntityInformation_MEMBERSHIPS,
-		}
-	}
-	res, err := m.directory.LookupEntities(ctx,
-		&directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
-				ExternalID: externalID,
-			},
-			RequestedInformation: &directory.RequestedInformation{
-				Depth:             depth,
-				EntityInformation: entityInfoWithContacts(entityInfo),
-			},
-			Statuses: statuses,
-		})
-	if err != nil {
-		return nil, err
-	}
-	return res, nil
 }
 
 func (m *resourceAccessor) markThreadAsRead(ctx context.Context, threadID, entityID string) error {

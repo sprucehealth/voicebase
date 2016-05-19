@@ -92,8 +92,19 @@ var postEventMutation = &graphql.Field{
 			var ent *directory.Entity
 			if orgID == "" {
 				// TODO: for now support the event not including the orgID, eventually this shouldn't be necessary
-				entities, err := ram.EntitiesForExternalID(ctx, acc.ID,
-					[]directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS}, 0, []directory.EntityStatus{directory.EntityStatus_ACTIVE})
+				entities, err := ram.Entities(ctx, &directory.LookupEntitiesRequest{
+					LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+					LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+						ExternalID: acc.ID,
+					},
+					RequestedInformation: &directory.RequestedInformation{
+						Depth:             0,
+						EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
+					},
+					Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+					RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+					ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+				})
 				if err != nil {
 					return nil, errors.InternalError(ctx, err)
 				}
@@ -109,7 +120,19 @@ var postEventMutation = &graphql.Field{
 					}
 				}
 			} else {
-				e, err := ram.EntityForAccountID(ctx, orgID, acc.ID)
+				e, err := raccess.EntityInOrgForAccountID(ctx, ram, &directory.LookupEntitiesRequest{
+					LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+					LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+						ExternalID: acc.ID,
+					},
+					RequestedInformation: &directory.RequestedInformation{
+						Depth:             0,
+						EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
+					},
+					Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+					RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+					ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+				}, orgID)
 				if err != nil {
 					return nil, errors.InternalError(ctx, err)
 				}

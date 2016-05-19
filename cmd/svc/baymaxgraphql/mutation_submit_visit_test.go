@@ -54,10 +54,19 @@ func TestSubmitVisit(t *testing.T) {
 		},
 	}, nil))
 
-	g.ra.Expect(mock.NewExpectation(g.ra.Entity, entityID, []directory.EntityInformation(nil), int64(0)).WithReturns(&directory.Entity{
-		ID: entityID,
-		Info: &directory.EntityInfo{
-			DisplayName: "Joe Schmoe",
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: entityID,
+		},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{directory.EntityType_PATIENT},
+	}).WithReturns([]*directory.Entity{
+		&directory.Entity{
+			ID: entityID,
+			Info: &directory.EntityInfo{
+				DisplayName: "Joe Schmoe",
+			},
 		},
 	}, nil))
 
@@ -74,10 +83,19 @@ func TestSubmitVisit(t *testing.T) {
 		},
 	}, nil))
 
-	g.ra.Expect(mock.NewExpectation(g.ra.Entity, orgID, []directory.EntityInformation(nil), int64(0)).WithReturns(&directory.Entity{
-		ID: orgID,
-		Info: &directory.EntityInfo{
-			DisplayName: "ORG NAME",
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: orgID,
+		},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	}).WithReturns([]*directory.Entity{
+		&directory.Entity{
+			ID: orgID,
+			Info: &directory.EntityInfo{
+				DisplayName: "ORG NAME",
+			},
 		},
 	}, nil))
 

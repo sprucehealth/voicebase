@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
@@ -9,7 +11,6 @@ import (
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 	"golang.org/x/net/context"
-	"strings"
 )
 
 var treatmentAvailabilityType = graphql.NewEnum(
@@ -80,7 +81,19 @@ var carePlanType = graphql.NewObject(
 						// Shouldn't be possible as care plans are only attached to secure patient threads
 						return nil, errors.InternalError(ctx, fmt.Errorf("No primary entity on thread %s for care plan %s", th.ID, cp.ID))
 					}
-					ent, err := ram.Entity(ctx, th.PrimaryEntityID, []directory.EntityInformation{directory.EntityInformation_CONTACTS}, 0)
+
+					ent, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+						LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+						LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+							EntityID: th.PrimaryEntityID,
+						},
+						RequestedInformation: &directory.RequestedInformation{
+							Depth:             0,
+							EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+						},
+						Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+						RootTypes: []directory.EntityType{directory.EntityType_PATIENT},
+					})
 					if err != nil {
 						return nil, errors.InternalError(ctx, err)
 					}

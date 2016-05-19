@@ -109,7 +109,19 @@ var invitePatientsMutation = &graphql.Field{
 				mutationID, _ := input["clientMutationId"].(string)
 				orgID := input["organizationID"].(string)
 				patientsInput := input["patients"].([]interface{})
-				inviterEnt, err := ram.EntityForAccountID(ctx, orgID, acc.ID)
+				inviterEnt, err := raccess.EntityInOrgForAccountID(ctx, ram, &directory.LookupEntitiesRequest{
+					LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+					LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+						ExternalID: acc.ID,
+					},
+					RequestedInformation: &directory.RequestedInformation{
+						Depth:             0,
+						EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
+					},
+					Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+					RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+					ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+				}, orgID)
 				if err != nil {
 					return nil, errors.InternalError(ctx, err)
 				}
@@ -267,10 +279,26 @@ func contactForParkedEntity(ctx context.Context, ram raccess.ResourceAccessor, p
 	var entityContact string
 	// Since we don't store PHI for patients in the invites, get the email to verify from the parked entity contacts
 	// Make this as an unauthorized call since we have no context around the caller other than token
-	parkedEntity, err := ram.UnauthorizedEntity(ctx, parkedEntityID, []directory.EntityInformation{directory.EntityInformation_CONTACTS}, 0)
+	entities, err := ram.Entities(ctx, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: parkedEntityID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			EntityInformation: []directory.EntityInformation{
+				directory.EntityInformation_CONTACTS,
+			},
+			Depth: 0,
+		},
+		RootTypes: []directory.EntityType{directory.EntityType_PATIENT},
+	}, raccess.EntityQueryOptionUnathorized)
 	if err != nil {
 		return "", fmt.Errorf("Encountered an error while looking up parked entity %q to get %s: %s", parkedEntityID, contactType.String(), err)
+	} else if len(entities) > 1 {
+		return "", fmt.Errorf("Expected 1 entity to be returned for %s but got back %d", parkedEntityID, len(entities))
 	}
+	parkedEntity := entities[0]
+
 	for _, c := range parkedEntity.Contacts {
 		if c.ContactType == contactType {
 			if entityContact != "" {

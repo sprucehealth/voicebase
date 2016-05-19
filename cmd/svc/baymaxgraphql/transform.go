@@ -220,7 +220,15 @@ func threadTitle(ctx context.Context, ram raccess.ResourceAccessor, t *threading
 	if acc.Type != auth.AccountType_PATIENT {
 		return t.UserTitle
 	}
-	org, err := ram.Entity(ctx, t.OrganizationID, nil, 0)
+
+	org, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: t.OrganizationID,
+		},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	})
 	if err != nil {
 		// Log it and return the user title, don't block
 		golog.Errorf("Failed to get org entity %s for thread %s to populate patient thread title", t.PrimaryEntityID, t.ID)
@@ -238,7 +246,14 @@ func threadEmptyStateTextMarkup(ctx context.Context, ram raccess.ResourceAccesso
 		return "This is the beginning of your team conversation.\nSend a message to get things started."
 	case threading.ThreadType_SECURE_EXTERNAL:
 		if viewingAccount.Type == auth.AccountType_PROVIDER {
-			esm, err := ram.Entity(ctx, t.PrimaryEntityID, nil, 0)
+			esm, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+				LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+				LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+					EntityID: t.PrimaryEntityID,
+				},
+				Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+				RootTypes: []directory.EntityType{directory.EntityType_PATIENT},
+			})
 			if err != nil {
 				// Just log it. Don't block the thread
 				golog.Errorf("Failed to get primary entity %s for thread %s to populate empty state markup: %s", t.PrimaryEntityID, t.ID, err)
@@ -246,7 +261,14 @@ func threadEmptyStateTextMarkup(ctx context.Context, ram raccess.ResourceAccesso
 				return fmt.Sprintf("We've sent an invitation to %s to download the Spruce application and connect with you. You can message the patient below -- we recommend sending a personal welcome to kick things off.\n\nYou can also make internal notes about the patient’s care. These are not sent to the patient but are visible to you and your teammates.", esm.Info.DisplayName)
 			}
 		} else if viewingAccount.Type == auth.AccountType_PATIENT {
-			esm, err := ram.Entity(ctx, t.OrganizationID, nil, 0)
+			esm, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+				LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+				LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+					EntityID: t.OrganizationID,
+				},
+				Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+				RootTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+			})
 			if err != nil {
 				// Just log it. Don't block the thread
 				golog.Errorf("Failed to get organization entity %s for thread %s to populate empty state markup: %s", t.OrganizationID, t.ID, err)

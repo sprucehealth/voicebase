@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/graphql"
 	"golang.org/x/net/context"
 )
@@ -32,7 +33,12 @@ var threadItemViewDetailsType = graphql.NewObject(
 					}
 
 					ram := raccess.ResourceAccess(p)
-					e, err := ram.Entity(ctx, tivd.ActorEntityID, nil, 0)
+					e, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+						LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+						LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+							EntityID: tivd.ActorEntityID,
+						},
+					})
 					if err != nil {
 						return nil, err
 					}

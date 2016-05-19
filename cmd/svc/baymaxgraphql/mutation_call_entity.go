@@ -180,14 +180,23 @@ var callEntityMutation = &graphql.Field{
 			}
 		}
 
-		calleeEnt, err := ram.Entity(ctx, entityID, []directory.EntityInformation{
-			directory.EntityInformation_CONTACTS,
-			directory.EntityInformation_MEMBERSHIPS,
-		}, 0)
+		calleeEnt, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+				EntityID: entityID,
+			},
+			RequestedInformation: &directory.RequestedInformation{
+				Depth:             0,
+				EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
+			},
+			Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+			RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL, directory.EntityType_PATIENT},
+			ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+		})
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}
-		if calleeEnt == nil || (calleeEnt.Type != directory.EntityType_EXTERNAL && calleeEnt.Type != directory.EntityType_PATIENT) {
+		if calleeEnt == nil {
 			return &callEntityOutput{
 				ClientMutationID: mutationID,
 				Success:          false,
@@ -222,7 +231,20 @@ var callEntityMutation = &graphql.Field{
 			}, nil
 		}
 
-		callerEnt, err := ram.EntityForAccountID(ctx, org.ID, acc.ID)
+		callerEnt, err := raccess.EntityInOrgForAccountID(ctx, ram, &directory.LookupEntitiesRequest{
+			LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+			LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+				ExternalID: acc.ID,
+			},
+			RequestedInformation: &directory.RequestedInformation{
+				Depth:             0,
+				EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
+			},
+			Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+			RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+			ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+		}, org.ID)
+
 		if err != nil {
 			return nil, err
 		}

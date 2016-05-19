@@ -320,10 +320,19 @@ func TestCreateAccountMutation_InviteColleague(t *testing.T) {
 	g.inviteC.Expect(mock.NewExpectation(g.inviteC.MarkInviteConsumed, &invite.MarkInviteConsumedRequest{Token: "InviteToken"}).WithReturns(&invite.MarkInviteConsumedResponse{}, nil))
 
 	// Analytics looks up the organization to get the name for invites
-	g.ra.Expect(mock.NewExpectation(g.ra.Entity, "e_org_inv", []directory.EntityInformation(nil), int64(0)).WithReturns(
-		&directory.Entity{
-			Info: &directory.EntityInfo{
-				DisplayName: "The Org",
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: "e_org_inv",
+		},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	}).WithReturns(
+		[]*directory.Entity{
+			{
+				Info: &directory.EntityInfo{
+					DisplayName: "The Org",
+				},
 			},
 		}, nil))
 

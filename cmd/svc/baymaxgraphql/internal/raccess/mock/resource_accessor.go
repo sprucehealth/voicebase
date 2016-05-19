@@ -3,7 +3,6 @@ package mock
 import (
 	"testing"
 
-	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
@@ -212,32 +211,6 @@ func (m *ResourceAccessor) DeleteThread(ctx context.Context, threadID, entityID 
 	return mock.SafeError(rets[0])
 }
 
-func (m *ResourceAccessor) ActiveEntity(ctx context.Context, entityID string, entityInfo []directory.EntityInformation, depth int64) (*directory.Entity, error) {
-	rets := m.Record(entityID, entityInfo, depth)
-	if len(rets) == 0 {
-		return nil, nil
-	}
-
-	return rets[0].(*directory.Entity), mock.SafeError(rets[1])
-}
-
-func (m *ResourceAccessor) Entity(ctx context.Context, entityID string, entityInfo []directory.EntityInformation, depth int64) (*directory.Entity, error) {
-	rets := m.Record(entityID, entityInfo, depth)
-	if len(rets) == 0 {
-		return nil, nil
-	}
-
-	return rets[0].(*directory.Entity), mock.SafeError(rets[1])
-}
-
-func (m *ResourceAccessor) Entities(ctx context.Context, orgID string, entityIDs []string, entityInfo []directory.EntityInformation) ([]*directory.Entity, error) {
-	rets := m.Record(orgID, entityIDs, entityInfo)
-	if len(rets) == 0 {
-		return nil, nil
-	}
-	return rets[0].([]*directory.Entity), mock.SafeError(rets[1])
-}
-
 func (m *ResourceAccessor) EntityDomain(ctx context.Context, entityID, domain string) (*directory.LookupEntityDomainResponse, error) {
 	rets := m.Record(entityID, domain)
 	if len(rets) == 0 {
@@ -247,17 +220,8 @@ func (m *ResourceAccessor) EntityDomain(ctx context.Context, entityID, domain st
 	return rets[0].(*directory.LookupEntityDomainResponse), mock.SafeError(rets[1])
 }
 
-func (m *ResourceAccessor) EntityForAccountID(ctx context.Context, orgID, accountID string) (*directory.Entity, error) {
-	rets := m.Record(orgID, accountID)
-	if len(rets) == 0 {
-		return nil, nil
-	}
-
-	return rets[0].(*directory.Entity), mock.SafeError(rets[1])
-}
-
-func (m *ResourceAccessor) EntitiesByContact(ctx context.Context, contactValue string, entityInfo []directory.EntityInformation, depth int64, statuses []directory.EntityStatus) ([]*directory.Entity, error) {
-	rets := m.Record(contactValue, entityInfo, depth, statuses)
+func (m *ResourceAccessor) EntitiesByContact(ctx context.Context, req *directory.LookupEntitiesByContactRequest) ([]*directory.Entity, error) {
+	rets := m.Record(req)
 	if len(rets) == 0 {
 		return nil, nil
 	}
@@ -265,8 +229,8 @@ func (m *ResourceAccessor) EntitiesByContact(ctx context.Context, contactValue s
 	return rets[0].([]*directory.Entity), mock.SafeError(rets[1])
 }
 
-func (m *ResourceAccessor) EntitiesForExternalID(ctx context.Context, externalID string, entityInfo []directory.EntityInformation, depth int64, statuses []directory.EntityStatus) ([]*directory.Entity, error) {
-	rets := m.Record(externalID, entityInfo, depth, statuses)
+func (m *ResourceAccessor) Entities(ctx context.Context, req *directory.LookupEntitiesRequest, opts ...raccess.EntityQueryOption) ([]*directory.Entity, error) {
+	rets := m.Record(req)
 	if len(rets) == 0 {
 		return nil, nil
 	}
@@ -298,15 +262,6 @@ func (m *ResourceAccessor) OnboardingThreadEvent(ctx context.Context, req *threa
 		return nil, nil
 	}
 	return rets[0].(*threading.OnboardingThreadEventResponse), mock.SafeError(rets[1])
-}
-
-func (m *ResourceAccessor) PatientEntity(ctx context.Context, a *models.PatientAccount) (*directory.Entity, error) {
-	rets := m.Record(a)
-	if len(rets) == 0 {
-		return nil, nil
-	}
-
-	return rets[0].(*directory.Entity), mock.SafeError(rets[1])
 }
 
 func (m *ResourceAccessor) CanPostMessage(ctx context.Context, threadID string) error {
@@ -476,15 +431,6 @@ func (m *ResourceAccessor) UnauthorizedCreateExternalIDs(ctx context.Context, re
 	}
 
 	return mock.SafeError(rets[0])
-}
-
-func (m *ResourceAccessor) UnauthorizedEntity(ctx context.Context, entityID string, entityInfo []directory.EntityInformation, depth int64) (*directory.Entity, error) {
-	rets := m.Record(entityID, entityInfo, depth)
-	if len(rets) == 0 {
-		return nil, nil
-	}
-
-	return rets[0].(*directory.Entity), mock.SafeError(rets[0])
 }
 
 func (m *ResourceAccessor) UpdateContacts(ctx context.Context, req *directory.UpdateContactsRequest) (*directory.Entity, error) {

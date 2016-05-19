@@ -215,9 +215,20 @@ var settingsQuery = &graphql.Field{
 		// TODO: Remove this workaround once we feel confident that there are no < v1.2 clients on iOS and < v1.1 on android
 		// out in the wild.
 		if key == excommsSettings.ConfigKeySendCallsToVoicemail {
-			entity, err := ram.Entity(ctx, nodeID, []directory.EntityInformation{directory.EntityInformation_CONTACTS, directory.EntityInformation_MEMBERSHIPS}, 1)
+			entity, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+				LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+				LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+					EntityID: nodeID,
+				},
+				RequestedInformation: &directory.RequestedInformation{
+					Depth:             1,
+					EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
+				},
+				Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+				RootTypes: []directory.EntityType{directory.EntityType_INTERNAL, directory.EntityType_ORGANIZATION},
+			})
 			if err != nil {
-				return nil, fmt.Errorf("Unable to get entity %s: %s", nodeID, err.Error())
+				return nil, errors.InternalError(ctx, err)
 			}
 			if entity.Type == directory.EntityType_INTERNAL {
 				for _, membership := range entity.Memberships {

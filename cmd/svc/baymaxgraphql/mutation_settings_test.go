@@ -49,13 +49,23 @@ func TestModifySetting_Boolean(t *testing.T) {
 		},
 	}, nil))
 
-	g.ra.Expect(mock.NewExpectation(g.ra.Entity, nodeID, []directory.EntityInformation{
-		directory.EntityInformation_CONTACTS,
-	}, int64(0)).WithReturns(&directory.Entity{
-		Type: directory.EntityType_INTERNAL,
-		ID:   nodeID,
-		Info: &directory.EntityInfo{
-			DisplayName: "HI",
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: nodeID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	}).WithReturns([]*directory.Entity{
+		&directory.Entity{
+			Type: directory.EntityType_INTERNAL,
+			ID:   nodeID,
+			Info: &directory.EntityInfo{
+				DisplayName: "HI",
+			},
 		},
 	}, nil))
 
@@ -155,13 +165,23 @@ func TestModifySetting_StringList(t *testing.T) {
 		},
 	}, nil))
 
-	g.ra.Expect(mock.NewExpectation(g.ra.Entity, nodeID, []directory.EntityInformation{
-		directory.EntityInformation_CONTACTS,
-	}, int64(0)).WithReturns(&directory.Entity{
-		Type: directory.EntityType_INTERNAL,
-		ID:   nodeID,
-		Info: &directory.EntityInfo{
-			DisplayName: "HI",
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: nodeID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	}).WithReturns([]*directory.Entity{
+		&directory.Entity{
+			Type: directory.EntityType_INTERNAL,
+			ID:   nodeID,
+			Info: &directory.EntityInfo{
+				DisplayName: "HI",
+			},
 		},
 	}, nil))
 
@@ -268,13 +288,23 @@ func TestModifySetting_StringList_InvalidInput(t *testing.T) {
 		},
 	}, nil))
 
-	g.ra.Expect(mock.NewExpectation(g.ra.Entity, nodeID, []directory.EntityInformation{
-		directory.EntityInformation_CONTACTS,
-	}, int64(0)).WithReturns(&directory.Entity{
-		Type: directory.EntityType_INTERNAL,
-		ID:   nodeID,
-		Info: &directory.EntityInfo{
-			DisplayName: "HI",
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: nodeID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	}).WithReturns([]*directory.Entity{
+		&directory.Entity{
+			Type: directory.EntityType_INTERNAL,
+			ID:   nodeID,
+			Info: &directory.EntityInfo{
+				DisplayName: "HI",
+			},
 		},
 	}, nil))
 
@@ -371,13 +401,23 @@ func TestModifySetting_MultiSelect(t *testing.T) {
 		},
 	}, nil))
 
-	g.ra.Expect(mock.NewExpectation(g.ra.Entity, nodeID, []directory.EntityInformation{
-		directory.EntityInformation_CONTACTS,
-	}, int64(0)).WithReturns(&directory.Entity{
-		Type: directory.EntityType_INTERNAL,
-		ID:   nodeID,
-		Info: &directory.EntityInfo{
-			DisplayName: "HI",
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: nodeID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	}).WithReturns([]*directory.Entity{
+		&directory.Entity{
+			Type: directory.EntityType_INTERNAL,
+			ID:   nodeID,
+			Info: &directory.EntityInfo{
+				DisplayName: "HI",
+			},
 		},
 	}, nil))
 
@@ -517,13 +557,23 @@ func TestModifySetting_SingleSelect(t *testing.T) {
 		},
 	}, nil))
 
-	g.ra.Expect(mock.NewExpectation(g.ra.Entity, nodeID, []directory.EntityInformation{
-		directory.EntityInformation_CONTACTS,
-	}, int64(0)).WithReturns(&directory.Entity{
-		Type: directory.EntityType_INTERNAL,
-		ID:   nodeID,
-		Info: &directory.EntityInfo{
-			DisplayName: "HI",
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: nodeID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	}).WithReturns([]*directory.Entity{
+		&directory.Entity{
+			Type: directory.EntityType_INTERNAL,
+			ID:   nodeID,
+			Info: &directory.EntityInfo{
+				DisplayName: "HI",
+			},
 		},
 	}, nil))
 
@@ -642,13 +692,23 @@ func TestModifySetting_InvalidOwner(t *testing.T) {
 		},
 	}, nil))
 
-	g.ra.Expect(mock.NewExpectation(g.ra.Entity, nodeID, []directory.EntityInformation{
-		directory.EntityInformation_CONTACTS,
-	}, int64(0)).WithReturns(&directory.Entity{
-		Type: directory.EntityType_INTERNAL,
-		ID:   nodeID,
-		Info: &directory.EntityInfo{
-			DisplayName: "HI",
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: nodeID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	}).WithReturns([]*directory.Entity{
+		&directory.Entity{
+			Type: directory.EntityType_INTERNAL,
+			ID:   nodeID,
+			Info: &directory.EntityInfo{
+				DisplayName: "HI",
+			},
 		},
 	}, nil))
 

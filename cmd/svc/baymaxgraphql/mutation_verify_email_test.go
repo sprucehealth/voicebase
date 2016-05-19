@@ -80,11 +80,24 @@ func TestVerifyEmailForAccountCreationMutation_Invite(t *testing.T) {
 		},
 	}, nil))
 
-	g.ra.Expect(mock.NewExpectation(g.ra.Entity, "parkedEntityID", []directory.EntityInformation{directory.EntityInformation_CONTACTS}, int64(0)).WithReturns(&directory.Entity{
-		Contacts: []*directory.Contact{
-			{
-				ContactType: directory.ContactType_EMAIL,
-				Value:       "someone@example.com",
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: "parkedEntityID",
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			EntityInformation: []directory.EntityInformation{
+				directory.EntityInformation_CONTACTS,
+			},
+		},
+		RootTypes: []directory.EntityType{directory.EntityType_PATIENT},
+	}).WithReturns([]*directory.Entity{
+		&directory.Entity{
+			Contacts: []*directory.Contact{
+				{
+					ContactType: directory.ContactType_EMAIL,
+					Value:       "someone@example.com",
+				},
 			},
 		},
 	}, nil))
