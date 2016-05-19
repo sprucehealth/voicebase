@@ -393,8 +393,7 @@ var threadType = graphql.NewObject(
 							Depth:             0,
 							EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
 						},
-						Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
-						RootTypes: []directory.EntityType{directory.EntityType_INTERNAL},
+						Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 					})
 					if err != nil {
 						return nil, err
