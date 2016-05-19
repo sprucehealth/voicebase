@@ -102,6 +102,10 @@ var organizationType = graphql.NewObject(
 							EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERS, directory.EntityInformation_CONTACTS},
 							Depth:             0,
 						},
+						LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+						LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+							EntityID: org.ID,
+						},
 						Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 						RootTypes:  []directory.EntityType{directory.EntityType_ORGANIZATION},
 						ChildTypes: []directory.EntityType{directory.EntityType_INTERNAL},
