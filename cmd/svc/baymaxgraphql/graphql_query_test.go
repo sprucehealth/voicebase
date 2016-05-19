@@ -66,31 +66,18 @@ func TestNodeQuery(t *testing.T) {
 			},
 		}, nil))
 
-	ra.Expect(mock.NewExpectation(ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
-			ExternalID: acc.ID,
-		},
-		RequestedInformation: &directory.RequestedInformation{
-			Depth:             0,
-			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
-		},
-		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
-		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
-		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
-	}).WithReturns(
-		[]*directory.Entity{
-			{
-				Type: directory.EntityType_INTERNAL,
-				ID:   "entity_222",
-				Info: &directory.EntityInfo{
-					DisplayName: "Mem",
-				},
-				Memberships: []*directory.Entity{
-					{ID: id},
-				},
+	expectEntityInOrgForAccountID(ra, acc.ID, []*directory.Entity{
+		{
+			Type: directory.EntityType_INTERNAL,
+			ID:   "entity_222",
+			Info: &directory.EntityInfo{
+				DisplayName: "Mem",
 			},
-		}, nil))
+			Memberships: []*directory.Entity{
+				{ID: id},
+			},
+		},
+	})
 
 	res, err := nodeField.Resolve(p)
 	test.OK(t, err)
@@ -155,35 +142,22 @@ func TestNodeQuery(t *testing.T) {
 		Type:            threading.ThreadType_EXTERNAL,
 	}, nil))
 
-	ra.Expect(mock.NewExpectation(ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
-			ExternalID: acc.ID,
-		},
-		RequestedInformation: &directory.RequestedInformation{
-			Depth:             0,
-			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
-		},
-		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
-		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
-		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
-	}).WithReturns(
-		[]*directory.Entity{
-			{
-				Type: directory.EntityType_INTERNAL,
-				ID:   "entity_222",
-				Info: &directory.EntityInfo{
-					DisplayName: "Someone",
-					Gender:      directory.EntityInfo_FEMALE,
-				},
-				Memberships: []*directory.Entity{
-					{
-						Type: directory.EntityType_ORGANIZATION,
-						ID:   "entity_1",
-					},
+	expectEntityInOrgForAccountID(ra, acc.ID, []*directory.Entity{
+		{
+			Type: directory.EntityType_INTERNAL,
+			ID:   "entity_222",
+			Info: &directory.EntityInfo{
+				DisplayName: "Someone",
+				Gender:      directory.EntityInfo_FEMALE,
+			},
+			Memberships: []*directory.Entity{
+				{
+					Type: directory.EntityType_ORGANIZATION,
+					ID:   "entity_1",
 				},
 			},
-		}, nil))
+		},
+	})
 
 	ra.Expect(mock.NewExpectation(ra.Thread, id, "entity_222").WithReturns(&threading.Thread{
 		ID:              id,

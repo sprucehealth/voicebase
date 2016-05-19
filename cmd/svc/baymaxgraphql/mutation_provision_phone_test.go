@@ -30,19 +30,7 @@ func TestProvisionPhone(t *testing.T) {
 	entityID := "12345"
 	areaCode := "203"
 
-	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
-			ExternalID: acc.ID,
-		},
-		RequestedInformation: &directory.RequestedInformation{
-			Depth:             0,
-			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
-		},
-		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
-		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
-		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
-	}).WithReturns([]*directory.Entity{
+	expectEntityInOrgForAccountID(g.ra, acc.ID, []*directory.Entity{
 		&directory.Entity{
 			ID:   "aodhigh",
 			Type: directory.EntityType_INTERNAL,
@@ -59,7 +47,7 @@ func TestProvisionPhone(t *testing.T) {
 				{ID: entityID, Type: directory.EntityType_ORGANIZATION},
 			},
 		},
-	}, nil))
+	})
 
 	g.ra.Expect(mock.NewExpectation(g.ra.ProvisionPhoneNumber, &excomms.ProvisionPhoneNumberRequest{
 		ProvisionFor: entityID,
@@ -175,19 +163,7 @@ func TestProvisionPhone_Unavailable(t *testing.T) {
 	entityID := "12345"
 	areaCode := "203"
 
-	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
-			ExternalID: acc.ID,
-		},
-		RequestedInformation: &directory.RequestedInformation{
-			Depth:             0,
-			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
-		},
-		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
-		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
-		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
-	}).WithReturns([]*directory.Entity{
+	expectEntityInOrgForAccountID(g.ra, acc.ID, []*directory.Entity{
 		&directory.Entity{
 			ID:   "aodhigh",
 			Type: directory.EntityType_INTERNAL,
@@ -198,7 +174,7 @@ func TestProvisionPhone_Unavailable(t *testing.T) {
 				{ID: entityID, Type: directory.EntityType_ORGANIZATION},
 			},
 		},
-	}, nil))
+	})
 
 	g.ra.Expect(mock.NewExpectation(g.ra.ProvisionPhoneNumber, &excomms.ProvisionPhoneNumberRequest{
 		ProvisionFor: entityID,

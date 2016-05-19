@@ -53,19 +53,7 @@ func TestProvisionEmail_Organization(t *testing.T) {
 		},
 	}, nil))
 
-	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
-			ExternalID: acc.ID,
-		},
-		RequestedInformation: &directory.RequestedInformation{
-			Depth:             0,
-			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
-		},
-		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
-		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
-		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
-	}).WithReturns([]*directory.Entity{
+	expectEntityInOrgForAccountID(g.ra, acc.ID, []*directory.Entity{
 		{
 			ID:   entityID,
 			Type: directory.EntityType_ORGANIZATION,
@@ -79,7 +67,7 @@ func TestProvisionEmail_Organization(t *testing.T) {
 				},
 			},
 		},
-	}, nil))
+	})
 
 	// Lookup whether the domain exists or not
 	g.ra.Expect(mock.NewExpectation(g.ra.EntityDomain, organizationID, "").WithReturns(&directory.LookupEntityDomainResponse{}, grpcErrorf(codes.NotFound, "")))
@@ -355,19 +343,7 @@ func TestProvisionEmail_Organization_DomainExists(t *testing.T) {
 		},
 	}, nil))
 
-	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
-			ExternalID: acc.ID,
-		},
-		RequestedInformation: &directory.RequestedInformation{
-			Depth:             0,
-			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
-		},
-		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
-		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
-		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
-	}).WithReturns([]*directory.Entity{
+	expectEntityInOrgForAccountID(g.ra, acc.ID, []*directory.Entity{
 		{
 			ID:   entityID,
 			Type: directory.EntityType_ORGANIZATION,
@@ -381,7 +357,7 @@ func TestProvisionEmail_Organization_DomainExists(t *testing.T) {
 				},
 			},
 		},
-	}, nil))
+	})
 
 	// Lookup whether the domain exists or not
 	g.ra.Expect(mock.NewExpectation(g.ra.EntityDomain, organizationID, "").WithReturns(&directory.LookupEntityDomainResponse{
@@ -514,19 +490,7 @@ func TestProvisionEmail_Organization_DomainInUse(t *testing.T) {
 		},
 	}, nil))
 
-	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
-			ExternalID: acc.ID,
-		},
-		RequestedInformation: &directory.RequestedInformation{
-			Depth:             0,
-			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
-		},
-		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
-		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
-		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
-	}).WithReturns([]*directory.Entity{
+	expectEntityInOrgForAccountID(g.ra, acc.ID, []*directory.Entity{
 		{
 			ID:   entityID,
 			Type: directory.EntityType_INTERNAL,
@@ -540,7 +504,7 @@ func TestProvisionEmail_Organization_DomainInUse(t *testing.T) {
 				},
 			},
 		},
-	}, nil))
+	})
 
 	// Lookup whether the domain exists or not
 	g.ra.Expect(mock.NewExpectation(g.ra.EntityDomain, organizationID, "").WithReturns(&directory.LookupEntityDomainResponse{
@@ -627,19 +591,7 @@ func TestProvisionEmail_Organization_EmailInUse(t *testing.T) {
 		},
 	}, nil))
 
-	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
-			ExternalID: acc.ID,
-		},
-		RequestedInformation: &directory.RequestedInformation{
-			Depth:             0,
-			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
-		},
-		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
-		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
-		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
-	}).WithReturns([]*directory.Entity{
+	expectEntityInOrgForAccountID(g.ra, acc.ID, []*directory.Entity{
 		{
 			ID:   organizationID,
 			Type: directory.EntityType_ORGANIZATION,
@@ -653,8 +605,7 @@ func TestProvisionEmail_Organization_EmailInUse(t *testing.T) {
 				},
 			},
 		},
-	}, nil))
-
+	})
 	// Lookup whether the domain exists or not
 	g.ra.Expect(mock.NewExpectation(g.ra.EntityDomain, organizationID, "").WithReturns(&directory.LookupEntityDomainResponse{
 		EntityID: organizationID,

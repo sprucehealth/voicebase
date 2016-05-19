@@ -177,19 +177,7 @@ var provisionEmailMutation = &graphql.Field{
 				return nil, errors.InternalError(ctx, err)
 			}
 
-			ent, err = raccess.EntityInOrgForAccountID(ctx, ram, &directory.LookupEntitiesRequest{
-				LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-				LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
-					ExternalID: acc.ID,
-				},
-				RequestedInformation: &directory.RequestedInformation{
-					Depth:             0,
-					EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
-				},
-				Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
-				RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
-				ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
-			}, organizationID)
+			ent, err = entityInOrgForAccountID(ctx, ram, organizationID, acc)
 			if err != nil {
 				return nil, err
 			}

@@ -10,6 +10,8 @@ import (
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/libs/testhelpers/mock"
+	"github.com/sprucehealth/backend/svc/directory"
 	invitemock "github.com/sprucehealth/backend/svc/invite/mock"
 	layoutmock "github.com/sprucehealth/backend/svc/layout/mock"
 	notificationmock "github.com/sprucehealth/backend/svc/notification/mock"
@@ -87,4 +89,21 @@ func responseEquals(t *testing.T, expected string, actual interface{}) {
 	var exp interface{}
 	test.OK(t, json.Unmarshal([]byte(expected), &exp))
 	test.Equals(t, exp, act)
+}
+
+func expectEntityInOrgForAccountID(ra *ramock.ResourceAccessor, accountID string, results []*directory.Entity) {
+	ra.Expect(mock.NewExpectation(ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+			ExternalID: accountID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
+		},
+		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL, directory.EntityType_PATIENT},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	}).WithReturns(
+		results, nil))
 }

@@ -69,19 +69,7 @@ var organizationType = graphql.NewObject(
 						return nil, errors.ErrNotAuthenticated(ctx)
 					}
 
-					e, err := raccess.EntityInOrgForAccountID(ctx, ram, &directory.LookupEntitiesRequest{
-						LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-						LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
-							ExternalID: acc.ID,
-						},
-						RequestedInformation: &directory.RequestedInformation{
-							Depth:             0,
-							EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
-						},
-						Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
-						RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
-						ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
-					}, org.ID)
+					e, err := entityInOrgForAccountID(ctx, ram, org.ID, acc)
 					if err != nil {
 						return nil, errors.InternalError(ctx, err)
 					}
