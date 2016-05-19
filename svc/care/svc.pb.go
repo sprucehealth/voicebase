@@ -86,6 +86,7 @@ type Visit struct {
 	EntityID        string `protobuf:"bytes,4,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
 	Submitted       bool   `protobuf:"varint,5,opt,name=submitted,proto3" json:"submitted,omitempty"`
 	OrganizationID  string `protobuf:"bytes,6,opt,name=organization_id,proto3" json:"organization_id,omitempty"`
+	CreatorID       string `protobuf:"bytes,7,opt,name=creator_id,proto3" json:"creator_id,omitempty"`
 }
 
 func (m *Visit) Reset()      { *m = Visit{} }
@@ -96,6 +97,7 @@ type CreateVisitRequest struct {
 	EntityID        string `protobuf:"bytes,2,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
 	Name            string `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
 	OrganizationID  string `protobuf:"bytes,4,opt,name=organization_id,proto3" json:"organization_id,omitempty"`
+	CreatorID       string `protobuf:"bytes,5,opt,name=creator_id,proto3" json:"creator_id,omitempty"`
 }
 
 func (m *CreateVisitRequest) Reset()      { *m = CreateVisitRequest{} }
@@ -445,6 +447,9 @@ func (this *Visit) Equal(that interface{}) bool {
 	if this.OrganizationID != that1.OrganizationID {
 		return false
 	}
+	if this.CreatorID != that1.CreatorID {
+		return false
+	}
 	return true
 }
 func (this *CreateVisitRequest) Equal(that interface{}) bool {
@@ -477,6 +482,9 @@ func (this *CreateVisitRequest) Equal(that interface{}) bool {
 		return false
 	}
 	if this.OrganizationID != that1.OrganizationID {
+		return false
+	}
+	if this.CreatorID != that1.CreatorID {
 		return false
 	}
 	return true
@@ -1193,7 +1201,7 @@ func (this *Visit) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 10)
+	s := make([]string, 0, 11)
 	s = append(s, "&care.Visit{")
 	s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
 	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
@@ -1201,6 +1209,7 @@ func (this *Visit) GoString() string {
 	s = append(s, "EntityID: "+fmt.Sprintf("%#v", this.EntityID)+",\n")
 	s = append(s, "Submitted: "+fmt.Sprintf("%#v", this.Submitted)+",\n")
 	s = append(s, "OrganizationID: "+fmt.Sprintf("%#v", this.OrganizationID)+",\n")
+	s = append(s, "CreatorID: "+fmt.Sprintf("%#v", this.CreatorID)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1208,12 +1217,13 @@ func (this *CreateVisitRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 8)
+	s := make([]string, 0, 9)
 	s = append(s, "&care.CreateVisitRequest{")
 	s = append(s, "LayoutVersionID: "+fmt.Sprintf("%#v", this.LayoutVersionID)+",\n")
 	s = append(s, "EntityID: "+fmt.Sprintf("%#v", this.EntityID)+",\n")
 	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
 	s = append(s, "OrganizationID: "+fmt.Sprintf("%#v", this.OrganizationID)+",\n")
+	s = append(s, "CreatorID: "+fmt.Sprintf("%#v", this.CreatorID)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1866,6 +1876,12 @@ func (m *Visit) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintSvc(data, i, uint64(len(m.OrganizationID)))
 		i += copy(data[i:], m.OrganizationID)
 	}
+	if len(m.CreatorID) > 0 {
+		data[i] = 0x3a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.CreatorID)))
+		i += copy(data[i:], m.CreatorID)
+	}
 	return i, nil
 }
 
@@ -1907,6 +1923,12 @@ func (m *CreateVisitRequest) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintSvc(data, i, uint64(len(m.OrganizationID)))
 		i += copy(data[i:], m.OrganizationID)
+	}
+	if len(m.CreatorID) > 0 {
+		data[i] = 0x2a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.CreatorID)))
+		i += copy(data[i:], m.CreatorID)
 	}
 	return i, nil
 }
@@ -2807,6 +2829,10 @@ func (m *Visit) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
+	l = len(m.CreatorID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
 	return n
 }
 
@@ -2826,6 +2852,10 @@ func (m *CreateVisitRequest) Size() (n int) {
 		n += 1 + l + sovSvc(uint64(l))
 	}
 	l = len(m.OrganizationID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.CreatorID)
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
@@ -3238,6 +3268,7 @@ func (this *Visit) String() string {
 		`EntityID:` + fmt.Sprintf("%v", this.EntityID) + `,`,
 		`Submitted:` + fmt.Sprintf("%v", this.Submitted) + `,`,
 		`OrganizationID:` + fmt.Sprintf("%v", this.OrganizationID) + `,`,
+		`CreatorID:` + fmt.Sprintf("%v", this.CreatorID) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3251,6 +3282,7 @@ func (this *CreateVisitRequest) String() string {
 		`EntityID:` + fmt.Sprintf("%v", this.EntityID) + `,`,
 		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
 		`OrganizationID:` + fmt.Sprintf("%v", this.OrganizationID) + `,`,
+		`CreatorID:` + fmt.Sprintf("%v", this.CreatorID) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3718,6 +3750,35 @@ func (m *Visit) Unmarshal(data []byte) error {
 			}
 			m.OrganizationID = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CreatorID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.CreatorID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])
@@ -3883,6 +3944,35 @@ func (m *CreateVisitRequest) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.OrganizationID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CreatorID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.CreatorID = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

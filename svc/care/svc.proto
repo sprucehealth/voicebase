@@ -15,6 +15,7 @@ message Visit {
 	string entity_id = 4 [(gogoproto.customname) = "EntityID"];
 	bool submitted = 5;
 	string organization_id = 6 [(gogoproto.customname)="OrganizationID"];
+	string creator_id = 7 [(gogoproto.customname)="CreatorID"];
 }
 
 message CreateVisitRequest {
@@ -22,6 +23,7 @@ message CreateVisitRequest {
 	string entity_id = 2 [(gogoproto.customname) = "EntityID"];
 	string name = 3;
 	string organization_id = 4 [(gogoproto.customname) = "OrganizationID"];
+	string creator_id = 5 [(gogoproto.customname) = "CreatorID"];
 }
 
 message CreateVisitResponse {

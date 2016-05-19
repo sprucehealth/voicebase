@@ -102,7 +102,7 @@ func (d *dal) CreateVisit(ctx context.Context, visit *models.Visit) (models.Visi
 		return models.EmptyVisitID(), errors.Trace(err)
 	}
 
-	_, err = d.db.Exec(`INSERT INTO visit (id, name, layout_version_id, entity_id, organization_id) VALUES (?,?,?,?,?)`, id, visit.Name, visit.LayoutVersionID, visit.EntityID, visit.OrganizationID)
+	_, err = d.db.Exec(`INSERT INTO visit (id, name, layout_version_id, entity_id, creator_id, organization_id) VALUES (?,?,?,?,?,?)`, id, visit.Name, visit.LayoutVersionID, visit.EntityID, visit.CreatorID, visit.OrganizationID)
 	if err != nil {
 		return models.EmptyVisitID(), errors.Trace(err)
 	}
@@ -120,13 +120,14 @@ func (d *dal) Visit(ctx context.Context, id models.VisitID, opts ...QueryOption)
 	var visit models.Visit
 	visit.ID = models.EmptyVisitID()
 	if err := d.db.QueryRow(`
-		SELECT id, name, layout_version_id, entity_id, organization_id, submitted, created, submitted_timestamp
+		SELECT id, name, layout_version_id, entity_id, creator_id, organization_id, submitted, created, submitted_timestamp
 		FROM visit
 		WHERE id = ?`+forUpdate, id).Scan(
 		&visit.ID,
 		&visit.Name,
 		&visit.LayoutVersionID,
 		&visit.EntityID,
+		&visit.CreatorID,
 		&visit.OrganizationID,
 		&visit.Submitted,
 		&visit.Created,

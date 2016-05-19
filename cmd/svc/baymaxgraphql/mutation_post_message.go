@@ -296,6 +296,7 @@ var postMessageMutation = &graphql.Field{
 					Name:            visitLayoutRes.VisitLayout.Name,
 					LayoutVersionID: visitLayoutRes.VisitLayout.Version.ID,
 					OrganizationID:  thr.OrganizationID,
+					CreatorID:       ent.ID,
 				})
 				if err != nil {
 					return nil, err

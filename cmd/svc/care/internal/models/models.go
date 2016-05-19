@@ -11,4 +11,5 @@ type Visit struct {
 	Submitted          bool
 	SubmittedTimestamp *time.Time
 	Created            time.Time
+	CreatorID          string
 }

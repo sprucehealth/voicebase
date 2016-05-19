@@ -337,6 +337,7 @@ func TestPostMessage_VisitAttachment(t *testing.T) {
 		LayoutVersionID: "visitLayoutVersion_123456",
 		Name:            "Sinus Infection",
 		OrganizationID:  orgID,
+		CreatorID:       entID,
 	}).WithReturns(&care.CreateVisitResponse{
 		Visit: &care.Visit{
 			ID:   "visit_12345",
