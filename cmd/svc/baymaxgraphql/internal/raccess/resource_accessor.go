@@ -492,14 +492,15 @@ func (m *resourceAccessor) EntitiesByContact(ctx context.Context, req *directory
 
 func (m *resourceAccessor) Entities(ctx context.Context, req *directory.LookupEntitiesRequest, opts ...EntityQueryOption) ([]*directory.Entity, error) {
 
-	// TODO: externalID at the moment at least is always an account. this should change if that ever changes
-	acc := gqlctx.Account(ctx)
-	if acc == nil {
-		return nil, errors.ErrNotAuthenticated(ctx)
-	}
-
 	// auth check
 	if !entityQueryOptions(opts).has(EntityQueryOptionUnathorized) {
+
+		// TODO: externalID at the moment at least is always an account. this should change if that ever changes
+		acc := gqlctx.Account(ctx)
+		if acc == nil {
+			return nil, errors.ErrNotAuthenticated(ctx)
+		}
+
 		switch req.LookupKeyType {
 		case directory.LookupEntitiesRequest_ENTITY_ID:
 
