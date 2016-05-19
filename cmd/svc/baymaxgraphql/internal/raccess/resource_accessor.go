@@ -502,7 +502,14 @@ func (m *resourceAccessor) Entities(ctx context.Context, req *directory.LookupEn
 	if !entityQueryOptions(opts).has(EntityQueryOptionUnathorized) {
 		switch req.LookupKeyType {
 		case directory.LookupEntitiesRequest_ENTITY_ID:
-			ent := cachedEntity(ctx, req.GetEntityID(), req.RequestedInformation.EntityInformation, req.RequestedInformation.Depth)
+
+			var entityInformation []directory.EntityInformation
+			var depth int64
+			if req.RequestedInformation != nil {
+				entityInformation = req.RequestedInformation.EntityInformation
+				depth = req.RequestedInformation.Depth
+			}
+			ent := cachedEntity(ctx, req.GetEntityID(), entityInformation, depth)
 			if ent != nil {
 				return []*directory.Entity{ent}, nil
 			}
