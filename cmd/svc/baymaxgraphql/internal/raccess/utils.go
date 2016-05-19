@@ -55,7 +55,7 @@ func Entity(ctx context.Context, ram ResourceAccessor, req *directory.LookupEnti
 	entities, err := ram.Entities(ctx, req)
 	if err != nil {
 		return nil, err
-	} else if len(entities) > 1 {
+	} else if len(entities) != 1 {
 		return nil, errors.Trace(fmt.Errorf("Expected 1 entity got %d for %s", len(entities), req.GetEntityID()))
 	}
 
