@@ -1,0 +1,1 @@
+ALTER TABLE visit ADD COLUMN creator_id VARCHAR(128) NOT NULL DEFAULT 'dummy';
