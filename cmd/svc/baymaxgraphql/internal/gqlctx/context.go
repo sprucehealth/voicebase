@@ -1,7 +1,8 @@
 package gqlctx
 
 import (
-	"github.com/sprucehealth/backend/device"
+	"github.com/sprucehealth/backend/device/devicectx"
+	"github.com/sprucehealth/backend/libs/trace/tracectx"
 	"github.com/sprucehealth/backend/svc/auth"
 	"golang.org/x/net/context"
 )
@@ -12,47 +13,21 @@ const (
 	ctxAccount ctxKey = iota
 	ctxAccountEntities
 	ctxEntities
-	ctxSpruceHeaders
 	ctxClientEncryptionKey
-	ctxRequestID
-	ctxAuthToken
 	ctxQuery
+	ctxAuthToken
 )
 
-// WithSpruceHeaders attaches the provided spruce headers onto a copy of the provided context
-func WithSpruceHeaders(ctx context.Context, sh *device.SpruceHeaders) context.Context {
-	return context.WithValue(ctx, ctxSpruceHeaders, sh)
-}
-
-// SpruceHeaders returns the spruce headers which may be nil
-func SpruceHeaders(ctx context.Context) *device.SpruceHeaders {
-	sh, _ := ctx.Value(ctxSpruceHeaders).(*device.SpruceHeaders)
-	if sh == nil {
-		return &device.SpruceHeaders{}
-	}
-	return sh
-}
-
-// WithAuthToken attaches the provided auth token onto a copy of the provided context
-func WithAuthToken(ctx context.Context, token string) context.Context {
-	return context.WithValue(ctx, ctxAuthToken, token)
-}
-
-// AuthToken returns the auth token which may be empty
-func AuthToken(ctx context.Context) string {
-	token, _ := ctx.Value(ctxAuthToken).(string)
-	return token
-}
-
-// WithRequestID attaches the provided request id onto a copy of the provided context
-func WithRequestID(ctx context.Context, id uint64) context.Context {
-	return context.WithValue(ctx, ctxRequestID, id)
-}
-
-// RequestID returns the request id which may be empty
-func RequestID(ctx context.Context) uint64 {
-	id, _ := ctx.Value(ctxRequestID).(uint64)
-	return id
+// Clone created a new Background context and copies all relevent baymax values from the parent into the new context
+func Clone(pCtx context.Context) context.Context {
+	cCtx := context.Background()
+	cCtx = devicectx.WithSpruceHeaders(pCtx, devicectx.SpruceHeaders(pCtx))
+	cCtx = tracectx.WithRequestID(pCtx, tracectx.RequestID(pCtx))
+	cCtx = WithAccount(cCtx, Account(pCtx))
+	cCtx = WithClientEncryptionKey(cCtx, ClientEncryptionKey(pCtx))
+	cCtx = WithAccountEntities(cCtx, AccountEntities(pCtx))
+	cCtx = WithEntities(cCtx, Entities(pCtx))
+	return cCtx
 }
 
 // WithQuery attaches the query string to the context
@@ -66,18 +41,15 @@ func Query(ctx context.Context) string {
 	return query
 }
 
-// Clone created a new Background context and copies all relevent baymax values from the parent into the new context
-func Clone(pCtx context.Context) context.Context {
-	cCtx := context.Background()
-	cCtx = WithRequestID(cCtx, RequestID(pCtx))
-	cCtx = WithSpruceHeaders(cCtx, SpruceHeaders(pCtx))
-	cCtx = WithAuthToken(cCtx, AuthToken(pCtx))
-	cCtx = WithQuery(cCtx, Query(pCtx))
-	cCtx = WithAccount(cCtx, Account(pCtx))
-	cCtx = WithClientEncryptionKey(cCtx, ClientEncryptionKey(pCtx))
-	cCtx = WithAccountEntities(cCtx, AccountEntities(pCtx))
-	cCtx = WithEntities(cCtx, Entities(pCtx))
-	return cCtx
+// WithAuthToken attaches the provided auth token onto a copy of the provided context
+func WithAuthToken(ctx context.Context, token string) context.Context {
+	return context.WithValue(ctx, ctxAuthToken, token)
+}
+
+// AuthToken returns the auth token which may be empty
+func AuthToken(ctx context.Context) string {
+	token, _ := ctx.Value(ctxAuthToken).(string)
+	return token
 }
 
 // WithAccount attaches the provided account onto a copy of the provided context

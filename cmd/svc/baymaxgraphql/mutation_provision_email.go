@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
@@ -103,7 +104,7 @@ var provisionEmailMutation = &graphql.Field{
 		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
 		acc := gqlctx.Account(ctx)
-		sh := gqlctx.SpruceHeaders(ctx)
+		sh := devicectx.SpruceHeaders(ctx)
 
 		if acc == nil {
 			return nil, errors.ErrNotAuthenticated(ctx)
@@ -288,7 +289,7 @@ var provisionEmailMutation = &graphql.Field{
 				return nil, errors.InternalError(ctx, err)
 			}
 		} else {
-			sh := gqlctx.SpruceHeaders(ctx)
+			sh := devicectx.SpruceHeaders(ctx)
 			e, err = transformEntityToResponse(svc.staticURLPrefix, createContactRes.Entity, sh, acc)
 			if err != nil {
 				return nil, errors.InternalError(ctx, err)

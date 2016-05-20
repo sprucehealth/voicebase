@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
@@ -125,7 +126,7 @@ var updateEntityMutation = &graphql.Field{
 			}
 		}
 
-		sh := gqlctx.SpruceHeaders(ctx)
+		sh := devicectx.SpruceHeaders(ctx)
 		e, err := transformEntityToResponse(svc.staticURLPrefix, entity, sh, acc)
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)

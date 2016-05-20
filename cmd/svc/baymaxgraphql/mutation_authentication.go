@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/device"
+	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
@@ -157,7 +158,7 @@ var authenticateMutation = &graphql.Field{
 				return nil, errors.InternalError(ctx, err)
 			}
 		}
-		headers := gqlctx.SpruceHeaders(ctx)
+		headers := devicectx.SpruceHeaders(ctx)
 		if res.Account.Type == auth.AccountType_PATIENT && (headers.Platform != device.Android && headers.Platform != device.IOS) {
 			return &authenticateOutput{
 				ClientMutationID: mutationID,
@@ -193,7 +194,7 @@ var authenticateMutation = &graphql.Field{
 		token := res.Token.Value
 		expires := time.Unix(int64(res.Token.ExpirationEpoch), 0)
 
-		eh := gqlctx.SpruceHeaders(ctx)
+		eh := devicectx.SpruceHeaders(ctx)
 
 		conc.Go(func() {
 			svc.segmentio.Track(&analytics.Track{
@@ -277,7 +278,7 @@ var authenticateWithCodeMutation = &graphql.Field{
 		result.Set("auth_token", res.Token.Value)
 		result.Set("auth_expiration", time.Unix(int64(res.Token.ExpirationEpoch), 0))
 
-		eh := gqlctx.SpruceHeaders(ctx)
+		eh := devicectx.SpruceHeaders(ctx)
 
 		conc.Go(func() {
 			svc.segmentio.Track(&analytics.Track{
@@ -373,7 +374,7 @@ var unauthenticateMutation = &graphql.Field{
 		}
 
 		msg := "Unauthenticate called."
-		headers := gqlctx.SpruceHeaders(ctx)
+		headers := devicectx.SpruceHeaders(ctx)
 		if headers != nil && headers.DeviceID != "" {
 			if err := svc.notification.DeregisterDeviceForPush(headers.DeviceID); err != nil {
 				return nil, errors.InternalError(ctx, err)

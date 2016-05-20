@@ -15,11 +15,8 @@ import (
 	"github.com/rs/cors"
 	"github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/boot"
-	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	baymaxgraphqlsettings "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/settings"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/stub"
-	"github.com/sprucehealth/backend/device"
-	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -29,6 +26,7 @@ import (
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/shttputil"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -322,37 +320,8 @@ func main() {
 		r.Handle("/schema", newSchemaHandler())
 	}
 
-	webRequestLogger := func(ctx context.Context, ev *httputil.RequestEvent) {
-		contextVals := []interface{}{
-			"Method", ev.Request.Method,
-			"URL", ev.URL.String(),
-			"UserAgent", ev.Request.UserAgent(),
-			"RequestID", gqlctx.RequestID(ctx),
-			"RemoteAddr", remoteAddrFromRequest(ev.Request, *flagBehindProxy),
-			"StatusCode", ev.StatusCode,
-		}
-
-		log := golog.Context(contextVals...)
-
-		if ev.Panic != nil {
-			log.Criticalf("http: panic: %v\n%s", ev.Panic, ev.StackTrace)
-		} else {
-			log.Infof("baymaxgraphql")
-		}
-	}
-
-	var h httputil.ContextHandler = r
-	ch := httputil.CompressResponse(h)
-	h = httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-		sh := gqlctx.SpruceHeaders(ctx)
-		// TODO: don't compress response for Android app < 1.2. Remove this when no longer needed.
-		if sh.Platform != device.Android || sh.AppVersion.GreaterThanOrEqualTo(&encoding.Version{Major: 1, Minor: 2, Patch: 0}) {
-			ch.ServeHTTP(ctx, w, r)
-		} else {
-			h.ServeHTTP(ctx, w, r)
-		}
-	})
-	h = httputil.LoggingHandler(h, webRequestLogger)
+	h := shttputil.CompressResponse(r, httputil.CompressResponse)
+	h = httputil.LoggingHandler(h, shttputil.WebRequestLogger(*flagBehindProxy))
 
 	fmt.Printf("Listening on %s\n", *flagListenAddr)
 

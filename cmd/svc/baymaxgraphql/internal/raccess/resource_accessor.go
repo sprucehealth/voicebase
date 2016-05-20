@@ -6,6 +6,7 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/care"
@@ -192,7 +193,7 @@ func (m *resourceAccessor) Account(ctx context.Context, accountID string) (*auth
 }
 
 func (m *resourceAccessor) AuthenticateLogin(ctx context.Context, email, password string) (*auth.AuthenticateLoginResponse, error) {
-	headers := gqlctx.SpruceHeaders(ctx)
+	headers := devicectx.SpruceHeaders(ctx)
 	// Note: There is no authorization required for this operation.
 	resp, err := m.auth.AuthenticateLogin(ctx, &auth.AuthenticateLoginRequest{
 		Email:    email,
@@ -206,7 +207,7 @@ func (m *resourceAccessor) AuthenticateLogin(ctx context.Context, email, passwor
 }
 
 func (m *resourceAccessor) AuthenticateLoginWithCode(ctx context.Context, token, code string) (*auth.AuthenticateLoginWithCodeResponse, error) {
-	headers := gqlctx.SpruceHeaders(ctx)
+	headers := devicectx.SpruceHeaders(ctx)
 	// Note: There is no authorization required for this operation.
 	resp, err := m.auth.AuthenticateLoginWithCode(ctx, &auth.AuthenticateLoginWithCodeRequest{
 		Token:    token,
@@ -257,7 +258,7 @@ func (m *resourceAccessor) CheckVerificationCode(ctx context.Context, token, cod
 }
 
 func (m *resourceAccessor) CreateAccount(ctx context.Context, req *auth.CreateAccountRequest) (*auth.CreateAccountResponse, error) {
-	headers := gqlctx.SpruceHeaders(ctx)
+	headers := devicectx.SpruceHeaders(ctx)
 	req.DeviceID = headers.DeviceID
 	resp, err := m.auth.CreateAccount(ctx, req)
 	if err != nil {

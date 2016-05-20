@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
@@ -146,5 +147,5 @@ func patientEntity(p graphql.ResolveParams, a *models.PatientAccount) (*models.E
 	} else if len(entities) != 1 {
 		return nil, fmt.Errorf("expected 1 entity for %s but got %d back", a.GetID(), len(entities))
 	}
-	return transformEntityToResponse(svc.staticURLPrefix, entities[0], gqlctx.SpruceHeaders(ctx), gqlctx.Account(ctx))
+	return transformEntityToResponse(svc.staticURLPrefix, entities[0], devicectx.SpruceHeaders(ctx), gqlctx.Account(ctx))
 }

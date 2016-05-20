@@ -5,6 +5,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/graphql"
 )
@@ -85,7 +86,7 @@ var addContactInfosMutation = &graphql.Field{
 			return nil, err
 		}
 
-		sh := gqlctx.SpruceHeaders(ctx)
+		sh := devicectx.SpruceHeaders(ctx)
 		e, err := transformEntityToResponse(svc.staticURLPrefix, resp.Entity, sh, acc)
 		if err != nil {
 			return nil, err

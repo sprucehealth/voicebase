@@ -15,6 +15,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/device"
+	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -22,6 +23,7 @@ import (
 	"github.com/sprucehealth/backend/libs/idgen"
 	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/phone"
+	"github.com/sprucehealth/backend/libs/trace/tracectx"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -276,8 +278,8 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 	if err != nil {
 		golog.Errorf("failed to generate request ID: %s", err)
 	}
-	ctx = gqlctx.WithRequestID(ctx, requestID)
-	ctx = gqlctx.WithSpruceHeaders(ctx, sHeaders)
+	ctx = tracectx.WithRequestID(ctx, requestID)
+	ctx = devicectx.WithSpruceHeaders(ctx, sHeaders)
 	ctx = gqlctx.WithQuery(ctx, req.Query)
 
 	result := conc.NewMap()

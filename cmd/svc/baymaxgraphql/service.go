@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
-	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -90,7 +90,7 @@ func createAndSendSMSVerificationCode(ctx context.Context, ram raccess.ResourceA
 const inviteTokenAttributionKey = "invite_token"
 
 func (s *service) inviteAndAttributionInfo(ctx context.Context) (*invite.LookupInviteResponse, map[string]string, error) {
-	sh := gqlctx.SpruceHeaders(ctx)
+	sh := devicectx.SpruceHeaders(ctx)
 	if sh == nil || sh.DeviceID == "" {
 		return nil, nil, nil
 	}

@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/trace/tracectx"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/graphql/gqlerrors"
 	"golang.org/x/net/context"
@@ -40,7 +41,7 @@ func ErrNotAuthenticated(ctx context.Context) error {
 // ErrNotAuthorized returns the standard not authorized user error
 func ErrNotAuthorized(ctx context.Context, resourceID string) error {
 	acc := gqlctx.Account(ctx)
-	rid := gqlctx.RequestID(ctx)
+	rid := tracectx.RequestID(ctx)
 	//Fuzz identifiables before logging att the err level
 	golog.LogDepthf(1, golog.ERR, "NotAuthorized: Account %+v attempted to access resource %s and is not authorized [RequestID %d]", auth.ObfuscateAccount(acc), resourceID, rid)
 	return UserError(ctx, ErrTypeNotAuthorized, "This account is not authorized to access the requested resource.")
@@ -49,7 +50,7 @@ func ErrNotAuthorized(ctx context.Context, resourceID string) error {
 // ErrNotSupported returns the standard not not supported user error
 func ErrNotSupported(ctx context.Context, err error) error {
 	acc := gqlctx.Account(ctx)
-	rid := gqlctx.RequestID(ctx)
+	rid := tracectx.RequestID(ctx)
 	golog.LogDepthf(1, golog.WARN, "Account %+v NotSupported: %s [Request: %d]", acc, err.Error(), rid)
 	return UserError(ctx, ErrTypeNotSupported, "This functionality is not supported.")
 }
@@ -57,7 +58,7 @@ func ErrNotSupported(ctx context.Context, err error) error {
 // ErrNotFound returns the standard not found error
 func ErrNotFound(ctx context.Context, resourceID string) error {
 	acc := gqlctx.Account(ctx)
-	rid := gqlctx.RequestID(ctx)
+	rid := tracectx.RequestID(ctx)
 	golog.LogDepthf(1, golog.WARN, "NotFound: Account %+v requested resource %s and it was not found [RequestID %d]", acc, resourceID, rid)
 	return UserError(ctx, ErrTypeNotFound, "This requested resource could not be found.")
 }
@@ -65,7 +66,7 @@ func ErrNotFound(ctx context.Context, resourceID string) error {
 // UserError created a message with user facing content
 func UserError(ctx context.Context, typ ErrorType, m string, a ...interface{}) error {
 	return gqlerrors.FormattedError{
-		Message:     fmt.Sprintf("Request %d", gqlctx.RequestID(ctx)),
+		Message:     fmt.Sprintf("Request %d", tracectx.RequestID(ctx)),
 		Type:        string(typ),
 		UserMessage: fmt.Sprintf(m, a...),
 	}
@@ -74,7 +75,7 @@ func UserError(ctx context.Context, typ ErrorType, m string, a ...interface{}) e
 // InternalError logs the provided internal error and returns a sanitized
 // versions since we don't want internal details leaking over graphql errors.
 func InternalError(ctx context.Context, err error) error {
-	rid := gqlctx.RequestID(ctx)
+	rid := tracectx.RequestID(ctx)
 	if Type(err) != ErrTypeUnknown {
 		golog.LogDepthf(1, golog.WARN,
 			"Well Formed InternalError: The following error was well formed but still logged as Internal. Omitting internal wrapper: %s [RequestID %d]", err, rid)

@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/graphql"
 	"golang.org/x/net/context"
@@ -155,7 +156,7 @@ func lookupEntity(ctx context.Context, svc *service, ram raccess.ResourceAccesso
 		return nil, errors.InternalError(ctx, fmt.Errorf("failed to transform entity contacts: %+v", err))
 	}
 
-	sh := gqlctx.SpruceHeaders(ctx)
+	sh := devicectx.SpruceHeaders(ctx)
 	switch em.Type {
 	case directory.EntityType_ORGANIZATION:
 		org := &models.Organization{

@@ -6,6 +6,7 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/device"
+	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/invite"
@@ -22,7 +23,7 @@ func TestAssociateInviteMutation(t *testing.T) {
 	var acc *auth.Account
 	ctx = gqlctx.WithAccount(ctx, acc)
 	sh := &device.SpruceHeaders{DeviceID: "deviceID"}
-	ctx = gqlctx.WithSpruceHeaders(ctx, sh)
+	ctx = devicectx.WithSpruceHeaders(ctx, sh)
 
 	g.inviteC.Expect(mock.NewExpectation(g.inviteC.LookupInvite, &invite.LookupInviteRequest{
 		Token: "token",
@@ -78,7 +79,7 @@ func TestAssociateInviteMutation_NotFound(t *testing.T) {
 	var acc *auth.Account
 	ctx = gqlctx.WithAccount(ctx, acc)
 	sh := &device.SpruceHeaders{DeviceID: "deviceID"}
-	ctx = gqlctx.WithSpruceHeaders(ctx, sh)
+	ctx = devicectx.WithSpruceHeaders(ctx, sh)
 
 	g.inviteC.Expect(mock.NewExpectation(g.inviteC.LookupInvite, &invite.LookupInviteRequest{
 		Token: "token",

@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
-	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/graphql"
@@ -65,7 +65,7 @@ var associateAttributionMutation = &graphql.Field{
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 		svc := serviceFromParams(p)
 		ctx := p.Context
-		sh := gqlctx.SpruceHeaders(ctx)
+		sh := devicectx.SpruceHeaders(ctx)
 		if sh.DeviceID == "" {
 			return nil, errors.New("missing device ID")
 		}
@@ -204,7 +204,7 @@ var associateInviteMutation = &graphql.Field{
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 		svc := serviceFromParams(p)
 		ctx := p.Context
-		sh := gqlctx.SpruceHeaders(ctx)
+		sh := devicectx.SpruceHeaders(ctx)
 		if sh.DeviceID == "" {
 			return nil, errors.New("missing device ID")
 		}

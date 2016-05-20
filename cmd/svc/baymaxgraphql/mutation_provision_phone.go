@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	excommssettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
+	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -90,7 +91,7 @@ var provisionPhoneNumberMutation = &graphql.Field{
 		ctx := p.Context
 		svc := serviceFromParams(p)
 		acc := gqlctx.Account(ctx)
-		sh := gqlctx.SpruceHeaders(ctx)
+		sh := devicectx.SpruceHeaders(ctx)
 
 		if acc == nil {
 			return nil, errors.ErrNotAuthenticated(ctx)

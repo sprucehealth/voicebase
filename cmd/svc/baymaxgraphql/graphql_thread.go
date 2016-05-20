@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	baymaxgraphqlsettings "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/settings"
+	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/libs/caremessenger/deeplink"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/auth"
@@ -173,7 +174,7 @@ var threadType = graphql.NewObject(
 					if err != nil {
 						return nil, err
 					}
-					sh := gqlctx.SpruceHeaders(ctx)
+					sh := devicectx.SpruceHeaders(ctx)
 					ms := make([]*models.Entity, len(members))
 					for i, em := range members {
 						e, err := transformEntityToResponse(svc.staticURLPrefix, em, sh, acc)
@@ -211,7 +212,7 @@ var threadType = graphql.NewObject(
 						}
 						ms := make([]*models.Entity, len(members))
 						for i, em := range members {
-							e, err := transformEntityToResponse(svc.staticURLPrefix, em, gqlctx.SpruceHeaders(ctx), acc)
+							e, err := transformEntityToResponse(svc.staticURLPrefix, em, devicectx.SpruceHeaders(ctx), acc)
 							if err != nil {
 								return nil, err
 							}
@@ -245,7 +246,7 @@ var threadType = graphql.NewObject(
 						entities := make([]*models.Entity, 0, len(orgEntity.Members))
 						for _, em := range orgEntity.Members {
 							if em.Type == directory.EntityType_INTERNAL {
-								ent, err := transformEntityToResponse(svc.staticURLPrefix, em, gqlctx.SpruceHeaders(ctx), acc)
+								ent, err := transformEntityToResponse(svc.staticURLPrefix, em, devicectx.SpruceHeaders(ctx), acc)
 								if err != nil {
 									return nil, errors.InternalError(ctx, err)
 								}
@@ -396,7 +397,7 @@ var threadType = graphql.NewObject(
 					if err != nil {
 						return nil, err
 					}
-					sh := gqlctx.SpruceHeaders(ctx)
+					sh := devicectx.SpruceHeaders(ctx)
 					ent, err := transformEntityToResponse(svc.staticURLPrefix, pe, sh, gqlctx.Account(ctx))
 					if err != nil {
 						return nil, errors.InternalError(ctx, fmt.Errorf("failed to transform entity: %s", err))

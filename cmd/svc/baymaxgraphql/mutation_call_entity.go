@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
@@ -133,7 +134,7 @@ var callEntityMutation = &graphql.Field{
 		ctx := p.Context
 		acc := gqlctx.Account(ctx)
 		svc := serviceFromParams(p)
-		headers := gqlctx.SpruceHeaders(ctx)
+		headers := devicectx.SpruceHeaders(ctx)
 
 		if acc == nil {
 			return nil, errors.ErrNotAuthenticated(ctx)

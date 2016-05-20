@@ -6,6 +6,7 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/device"
+	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/test"
@@ -19,7 +20,7 @@ func TestAuthenticateMutation(t *testing.T) {
 	ctx := context.Background()
 	var acc *auth.Account
 	ctx = gqlctx.WithAccount(ctx, acc)
-	ctx = gqlctx.WithSpruceHeaders(ctx, &device.SpruceHeaders{
+	ctx = devicectx.WithSpruceHeaders(ctx, &device.SpruceHeaders{
 		Platform: device.Android,
 	})
 
@@ -74,7 +75,7 @@ func TestUnauthenticateMutation(t *testing.T) {
 	acc := &auth.Account{ID: "a_1"}
 	ctx = gqlctx.WithAccount(ctx, acc)
 	ctx = gqlctx.WithAuthToken(ctx, "token")
-	ctx = gqlctx.WithSpruceHeaders(ctx, &device.SpruceHeaders{DeviceID: "deviceID"})
+	ctx = devicectx.WithSpruceHeaders(ctx, &device.SpruceHeaders{DeviceID: "deviceID"})
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Unauthenticate, "token").WithReturns(&auth.UnauthenticateResponse{}, nil))
 	g.notificationC.Expect(mock.NewExpectation(g.notificationC.DeregisterDeviceForPush, "deviceID"))
@@ -141,7 +142,7 @@ func TestUnauthenticateMutationNoDeviceID(t *testing.T) {
 	acc := &auth.Account{ID: "a_1"}
 	ctx = gqlctx.WithAccount(ctx, acc)
 	ctx = gqlctx.WithAuthToken(ctx, "token")
-	ctx = gqlctx.WithSpruceHeaders(ctx, &device.SpruceHeaders{DeviceID: ""})
+	ctx = devicectx.WithSpruceHeaders(ctx, &device.SpruceHeaders{DeviceID: ""})
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Unauthenticate, "token").WithReturns(&auth.UnauthenticateResponse{}, nil))
 

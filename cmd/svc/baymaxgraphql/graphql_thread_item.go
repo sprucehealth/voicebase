@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/libs/caremessenger/deeplink"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/media"
@@ -298,7 +299,7 @@ var threadItemType = graphql.NewObject(
 						return nil, err
 					}
 
-					sh := gqlctx.SpruceHeaders(ctx)
+					sh := devicectx.SpruceHeaders(ctx)
 					ent, err := transformEntityToResponse(svc.staticURLPrefix, entity, sh, gqlctx.Account(ctx))
 					if err != nil {
 						return nil, errors.InternalError(ctx, fmt.Errorf("failed to transform entity: %s", err))

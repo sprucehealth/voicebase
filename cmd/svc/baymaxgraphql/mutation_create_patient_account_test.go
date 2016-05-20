@@ -6,6 +6,7 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/device"
+	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -24,7 +25,7 @@ func TestCreatePatientAccountMutation(t *testing.T) {
 	var acc *auth.Account
 	ctx = gqlctx.WithAccount(ctx, acc)
 
-	ctx = gqlctx.WithSpruceHeaders(ctx, &device.SpruceHeaders{
+	ctx = devicectx.WithSpruceHeaders(ctx, &device.SpruceHeaders{
 		DeviceID: "DevID",
 	})
 

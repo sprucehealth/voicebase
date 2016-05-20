@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	baymaxgraphqlsettings "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/settings"
+	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/libs/caremessenger/deeplink"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/auth"
@@ -76,7 +77,7 @@ var organizationType = graphql.NewObject(
 					if e == nil {
 						return nil, errors.New("entity not found for organization")
 					}
-					sh := gqlctx.SpruceHeaders(ctx)
+					sh := devicectx.SpruceHeaders(ctx)
 					rE, err := transformEntityToResponse(svc.staticURLPrefix, e, sh, gqlctx.Account(ctx))
 					if err != nil {
 						return nil, errors.InternalError(ctx, err)
@@ -95,7 +96,7 @@ var organizationType = graphql.NewObject(
 					ram := raccess.ResourceAccess(p)
 					svc := serviceFromParams(p)
 					ctx := p.Context
-					sh := gqlctx.SpruceHeaders(ctx)
+					sh := devicectx.SpruceHeaders(ctx)
 
 					orgEntity, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
 						RequestedInformation: &directory.RequestedInformation{

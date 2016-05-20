@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/svc/auth"
@@ -36,7 +37,7 @@ var queryType = graphql.NewObject(
 					acc := gqlctx.Account(p.Context)
 					svc := serviceFromParams(p)
 
-					headers := gqlctx.SpruceHeaders(ctx)
+					headers := devicectx.SpruceHeaders(ctx)
 					if acc == nil {
 						return nil, errors.ErrNotAuthenticated(p.Context)
 					}
@@ -214,7 +215,7 @@ func lookupThreadWithReadStatus(ctx context.Context, ram raccess.ResourceAccesso
 		return nil, errors.InternalError(ctx, fmt.Errorf("account=%+v threadID=%s: %s", gqlctx.Account(ctx), id, err))
 	}
 
-	headers := gqlctx.SpruceHeaders(ctx)
+	headers := devicectx.SpruceHeaders(ctx)
 	if th.Type == threading.ThreadType_TEAM.String() {
 		if !headers.AppVersion.GreaterThanOrEqualTo(&encoding.Version{Major: 1, Minor: 1, Patch: 0}) {
 			return nil, errors.UserError(ctx, errors.ErrTypeNotSupported, "Team Conversations does not work on this version. Please refresh your browser or update your app to open this thread.")

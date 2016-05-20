@@ -4,6 +4,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/graphql"
@@ -18,7 +19,7 @@ var registerDeviceForPushMutation = &graphql.Field{
 		svc := serviceFromParams(p)
 		ctx := p.Context
 		acc := gqlctx.Account(ctx)
-		sh := gqlctx.SpruceHeaders(ctx)
+		sh := devicectx.SpruceHeaders(ctx)
 		golog.Debugf("Registering Device For Push: Account:%s Device:%+v", acc.ID, sh)
 		input := p.Args["input"].(map[string]interface{})
 		mutationID, _ := input["clientMutationId"].(string)

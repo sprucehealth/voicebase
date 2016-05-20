@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	ramock "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess/mock"
 	"github.com/sprucehealth/backend/device"
+	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
@@ -262,7 +263,7 @@ func TestTeamThread_OlderVersion(t *testing.T) {
 	acc := &auth.Account{ID: "account_12345"}
 	ctx := context.Background()
 	ctx = gqlctx.WithAccount(ctx, acc)
-	ctx = gqlctx.WithSpruceHeaders(ctx, &device.SpruceHeaders{
+	ctx = devicectx.WithSpruceHeaders(ctx, &device.SpruceHeaders{
 		AppType:         "baymax",
 		AppEnvironment:  "dev",
 		AppVersion:      &encoding.Version{Major: 1},

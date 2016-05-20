@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
@@ -383,7 +384,7 @@ func recordCreatePatientAccountAnalytics(
 	account *auth.Account,
 	orgID, accEntityID string) {
 	// Record analytics
-	headers := gqlctx.SpruceHeaders(ctx)
+	headers := devicectx.SpruceHeaders(ctx)
 	var platform string
 	if headers != nil {
 		platform = headers.Platform.String()

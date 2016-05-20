@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/graphql"
 	"golang.org/x/net/context"
@@ -98,7 +99,7 @@ func accountOrganizations(p graphql.ResolveParams, a models.Account) ([]*models.
 		return nil, errors.InternalError(ctx, fmt.Errorf("unable to lookup entities for %s: %s", a.GetID(), err))
 	}
 
-	sh := gqlctx.SpruceHeaders(p.Context)
+	sh := devicectx.SpruceHeaders(p.Context)
 
 	var orgs []*models.Organization
 	for _, e := range entities {

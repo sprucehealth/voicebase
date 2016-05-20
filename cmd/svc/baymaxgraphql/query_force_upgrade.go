@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/graphql"
 )
@@ -28,7 +28,7 @@ var forceUpgradeQuery = &graphql.Field{
 	Type: graphql.NewNonNull(forceUpgradeStatusType),
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 
-		sh := gqlctx.SpruceHeaders(p.Context)
+		sh := devicectx.SpruceHeaders(p.Context)
 
 		// TODO: The logic of whether or not to force upgrade is intentionally left out for now
 		// so that we can add the work if and when we need it. For now just ensuring that we have

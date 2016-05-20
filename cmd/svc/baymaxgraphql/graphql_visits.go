@@ -6,6 +6,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/layout"
@@ -63,7 +64,7 @@ var visitType = graphql.NewObject(
 							return nil, errors.InternalError(ctx, err)
 						}
 
-						entity, err := transformEntityToResponse(svc.staticURLPrefix, e, gqlctx.SpruceHeaders(ctx), gqlctx.Account(ctx))
+						entity, err := transformEntityToResponse(svc.staticURLPrefix, e, devicectx.SpruceHeaders(ctx), gqlctx.Account(ctx))
 						if err != nil {
 							return nil, errors.InternalError(ctx, err)
 						}
