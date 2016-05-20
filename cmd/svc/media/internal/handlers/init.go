@@ -3,6 +3,7 @@ package handlers
 import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/rs/cors"
+	"github.com/sprucehealth/backend/cmd/svc/media/internal/dal"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/mux"
@@ -16,6 +17,7 @@ func InitRoutes(
 	awsSession *session.Session,
 	authClient auth.AuthClient,
 	urlSigner *urlutil.Signer,
+	dal dal.DAL,
 	webDomain string) {
 	corsOrigins := []string{"https://" + webDomain}
 	r.Handle("/media/{id:"+media.IDRegexPattern+"}", httputil.ToContextHandler(cors.New(cors.Options{
