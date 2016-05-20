@@ -1,18 +1,11 @@
 package httputil
 
-/*
-FIXME: This package uses the analytics package which is unfortunate
-because it's tightly coupled. Ideally a better solution should be found
-that doesn't require this relationship to exist.
-*/
-
 import (
 	"net/http"
 	"net/url"
 	"os"
 	"runtime"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -45,27 +38,19 @@ func init() {
 	}
 }
 
-// contextKey provides a unique type to be used as a private namespace for values in the context.
-type contextKey int
+type requestIDContextKey struct{}
 
-const (
-	requestIDContextKey contextKey = iota
-
-	// LogMapContextKey is used for referencing a map
-	// in the context object to be used as key/value storage
-	// to log contextual information.
-	LogMapContextKey
-)
+// LogMapContextKey is used for referencing a map
+// in the context object to be used as key/value storage
+// to log contextual information.
+type logMapContextKey struct{}
 
 // CtxLogMap returns access to the log map that can be used to add
 // contextual information for logging purposes. If the logMap
 // doesn't exist, then returns false.
-func CtxLogMap(ctx context.Context) (conc.Map, bool) {
-	v := ctx.Value(LogMapContextKey)
-	if v == nil {
-		return nil, false
-	}
-	return v.(conc.Map), true
+func CtxLogMap(ctx context.Context) *conc.Map {
+	m, _ := ctx.Value(logMapContextKey{}).(*conc.Map)
+	return m
 }
 
 // RequestEvent is a request/response log event
@@ -110,8 +95,13 @@ func (w *loggingResponseWriter) Write(bytes []byte) (int, error) {
 // not exist because a handler has not been wrapped with RequestIDHandler then
 // this returns 0.
 func RequestID(ctx context.Context) uint64 {
-	reqID, _ := ctx.Value(requestIDContextKey).(uint64)
+	reqID, _ := ctx.Value(requestIDContextKey{}).(uint64)
 	return reqID
+}
+
+// CtxWithRequestID adds a request ID to the context
+func CtxWithRequestID(ctx context.Context, id uint64) context.Context {
+	return context.WithValue(ctx, requestIDContextKey{}, id)
 }
 
 type requestIDHandler struct {
@@ -131,7 +121,7 @@ func (h *requestIDHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter,
 		golog.Errorf("Failed to generate request ID: %s", err.Error())
 	}
 	w.Header().Set("S-Request-ID", strconv.FormatUint(requestID, 10))
-	h.h.ServeHTTP(context.WithValue(ctx, requestIDContextKey, requestID), w, r)
+	h.h.ServeHTTP(CtxWithRequestID(ctx, requestID), w, r)
 }
 
 // LogFunc is a function that logs http request events. The RequestEvent object is only
@@ -139,15 +129,20 @@ func (h *requestIDHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter,
 type LogFunc func(context.Context, *RequestEvent)
 
 type loggingHandler struct {
-	h    ContextHandler
-	alog LogFunc
+	h           ContextHandler
+	appName     string
+	behindProxy bool
+	alog        LogFunc
 }
 
-// LoggingHandler wraps a handler to provide request logging.
-func LoggingHandler(h ContextHandler, alog LogFunc) ContextHandler {
+// LoggingHandler wraps a handler to provide request logging. alog is optional, but
+// if provided it overrides the default logging to golog.
+func LoggingHandler(h ContextHandler, appName string, behindProxy bool, alog LogFunc) ContextHandler {
 	return &loggingHandler{
-		h:    h,
-		alog: alog,
+		h:           h,
+		behindProxy: behindProxy,
+		appName:     appName,
+		alog:        alog,
 	}
 }
 
@@ -160,7 +155,7 @@ func (h *loggingHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 
 	startTime := time.Now()
 
-	ctx = context.WithValue(ctx, LogMapContextKey, conc.NewMap())
+	ctx = context.WithValue(ctx, logMapContextKey{}, conc.NewMap())
 
 	// Save the URL here incase it gets mangled by the time
 	// the defer gets called. This can happen when using http.StripPrefix
@@ -171,10 +166,6 @@ func (h *loggingHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 	defer func() {
 		rerr := recover()
 
-		remoteAddr := r.RemoteAddr
-		if idx := strings.LastIndex(remoteAddr, ":"); idx > 0 {
-			remoteAddr = remoteAddr[:idx]
-		}
 		ev := requestEventPool.Get().(*RequestEvent)
 		*ev = RequestEvent{
 			Timestamp:       startTime,
@@ -182,7 +173,7 @@ func (h *loggingHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 			ResponseHeaders: logrw.Header(),
 			Request:         r,
 			URL:             &earl,
-			RemoteAddr:      remoteAddr,
+			RemoteAddr:      RemoteAddrFromRequest(r, h.behindProxy),
 			ResponseTime:    time.Since(startTime),
 			ServerHostname:  hostname,
 		}
@@ -202,7 +193,32 @@ func (h *loggingHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 			}
 		}
 
-		h.alog(ctx, ev)
+		if h.alog != nil {
+			h.alog(ctx, ev)
+		} else {
+			var contextVals []interface{}
+			CtxLogMap(ctx).Transact(func(m map[string]interface{}) {
+				contextVals = make([]interface{}, 0, 2*(len(m)+7))
+				for k, v := range m {
+					contextVals = append(contextVals, k, v)
+				}
+			})
+			contextVals = append(contextVals,
+				"App", h.appName,
+				"Method", ev.Request.Method,
+				"URL", ev.URL.String(),
+				"UserAgent", ev.Request.UserAgent(),
+				"RequestID", RequestID(ctx),
+				"RemoteAddr", ev.RemoteAddr,
+				"StatusCode", ev.StatusCode,
+			)
+			log := golog.Context(contextVals...)
+			if ev.Panic != nil {
+				log.Criticalf("http: panic: %v\n%s", ev.Panic, ev.StackTrace)
+			} else {
+				log.Infof(h.appName + " httprequest")
+			}
+		}
 
 		requestEventPool.Put(ev)
 		loggingResponseWriterPool.Put(logrw)

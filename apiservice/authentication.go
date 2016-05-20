@@ -51,10 +51,8 @@ func (a *authenticatedHandler) ServeHTTP(ctx context.Context, w http.ResponseWri
 		return
 	}
 
-	// add the accountID to the logging map
-	logMap, ok := httputil.CtxLogMap(ctx)
-	if ok && account != nil {
-		logMap.Set("AccountID", account.ID)
+	if account != nil {
+		httputil.CtxLogMap(ctx).Set("AccountID", account.ID)
 	}
 
 	a.h.ServeHTTP(ctx, w, r)

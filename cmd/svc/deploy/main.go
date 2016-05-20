@@ -5,8 +5,6 @@ import (
 	"net"
 	"strconv"
 
-	"google.golang.org/grpc"
-
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/deploy/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/deploy/internal/deployment"
@@ -14,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/deploy"
+	"google.golang.org/grpc"
 )
 
 var config struct {

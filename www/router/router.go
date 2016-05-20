@@ -269,7 +269,7 @@ func New(c *Config) httputil.ContextHandler {
 
 	h := httputil.SecurityHandler(secureRedirectHandler)
 	if !environment.IsTest() {
-		h = httputil.LoggingHandler(h, webRequestLogger)
+		h = httputil.LoggingHandler(h, "www", false, webRequestLogger)
 	}
 	h = httputil.DecompressRequest(httputil.RequestIDHandler(h))
 	if c.CompressResponse {

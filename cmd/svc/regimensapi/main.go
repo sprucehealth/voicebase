@@ -345,7 +345,7 @@ func setupRouter(metricsRegistry metrics.Registry) (*mux.Router, httputil.Contex
 	rxGuideHandler := handlers.NewRXGuide(rxGuideSvc)
 	router.Handle(`/rxguide`, rxGuideHandler)
 	router.Handle(`/rxguide/{drug_name:[A-Za-z0-9 _.,!"'/$-]+}`, rxGuideHandler)
-	h := httputil.LoggingHandler(router, requestLogger)
+	h := httputil.LoggingHandler(router, "regimensapi", false, requestLogger)
 	h = httputil.MetricsHandler(h, metricsRegistry.Scope("regimensapi"))
 	h = httputil.RequestIDHandler(h)
 	h = httputil.CompressResponse(httputil.DecompressRequest(h))

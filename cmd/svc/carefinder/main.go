@@ -29,6 +29,7 @@ type config struct {
 	YelpConsumerSecret            string
 	GoogleStaticMapsKey           string
 	GoogleStatciMapsURLSigningKey string
+	BehindProxy                   bool
 }
 
 var c = &config{}
@@ -50,6 +51,7 @@ func init() {
 	flag.StringVar(&c.YelpConsumerSecret, "yelp_consumer_secret", "", "Consumer secret to query yelp api")
 	flag.StringVar(&c.GoogleStaticMapsKey, "google_static_map_key", "", "Key for using google static maps api to generate map urls.")
 	flag.StringVar(&c.GoogleStatciMapsURLSigningKey, "google_static_map_url_signing_key", "", "URL signing key to sign urls generated for google static maps.")
+	flag.BoolVar(&c.BehindProxy, "behind_proxy", false, "Set this flag if behind a proxy")
 }
 
 func main() {

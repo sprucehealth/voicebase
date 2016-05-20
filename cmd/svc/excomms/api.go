@@ -23,7 +23,6 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/go-proxy-protocol/proxyproto"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
@@ -99,27 +98,7 @@ func runAPI(bootSvc *boot.Service) {
 	router.Handle("/twilio/call/{event}", handlers.NewTwilioRequestHandler(eh, bootSvc.MetricsRegistry.Scope("voice")))
 	router.Handle("/sendgrid/email", handlers.NewSendGridHandler(config.incomingRawMessageTopic, eSNS, dl, store))
 
-	webRequestLogger := func(ctx context.Context, ev *httputil.RequestEvent) {
-
-		contextVals := []interface{}{
-			"Method", ev.Request.Method,
-			"URL", ev.URL.String(),
-			"UserAgent", ev.Request.UserAgent(),
-			"RequestID", httputil.RequestID(ctx),
-			"RemoteAddr", ev.RemoteAddr,
-			"StatusCode", ev.StatusCode,
-		}
-
-		log := golog.Context(contextVals...)
-
-		if ev.Panic != nil {
-			log.Criticalf("http: panic: %v\n%s", ev.Panic, ev.StackTrace)
-		} else {
-			log.Infof("excommsapi")
-		}
-	}
-
-	h := httputil.LoggingHandler(router, webRequestLogger)
+	h := httputil.LoggingHandler(router, "excommsapi", config.behindProxy, nil)
 	h = httputil.RequestIDHandler(h)
 	h = httputil.CompressResponse(httputil.DecompressRequest(h))
 	serve(h)

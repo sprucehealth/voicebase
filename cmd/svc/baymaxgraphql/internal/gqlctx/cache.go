@@ -9,7 +9,7 @@ import (
 // EntityCache represents a thread safe map of key to entity objects we have encountered
 // This cache is intended to be used in conjunction with request context
 type EntityCache struct {
-	cMap conc.Map
+	cMap *conc.Map
 }
 
 // NewEntityCache returns an initialized instance of EntityCache

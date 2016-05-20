@@ -21,7 +21,7 @@ func TestRemoteAddrFromRequest(t *testing.T) {
 		},
 		"ValidProxy": {
 			Request: &http.Request{
-				RemoteAddr: "notTemoteAddr",
+				RemoteAddr: "notRemoteAddr",
 				Header: http.Header{
 					"X-Forwarded-For": []string{"remoteAddr"},
 				},

@@ -362,7 +362,7 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 
 	// Record Analytics
 	recordCreatePatientAccountAnalytics(ctx, ram, svc, p, inv, res.Account, inv.GetPatient().OrganizationEntityID, inv.GetPatient().Patient.ParkedEntityID)
-	result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)
+	result := p.Info.RootValue.(map[string]interface{})["result"].(*conc.Map)
 	result.Set("auth_token", res.Token.Value)
 	result.Set("auth_expiration", time.Unix(int64(res.Token.ExpirationEpoch), 0))
 

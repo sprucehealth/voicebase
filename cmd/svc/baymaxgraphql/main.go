@@ -321,7 +321,9 @@ func main() {
 	}
 
 	h := shttputil.CompressResponse(r, httputil.CompressResponse)
-	h = httputil.LoggingHandler(h, shttputil.WebRequestLogger(*flagBehindProxy))
+	h = httputil.LoggingHandler(h, "baymaxgraphql", *flagBehindProxy, nil)
+
+	h = httputil.RequestIDHandler(h)
 
 	fmt.Printf("Listening on %s\n", *flagListenAddr)
 

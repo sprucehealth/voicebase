@@ -13,7 +13,6 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/media"
-	"github.com/sprucehealth/backend/libs/trace/tracectx"
 	"github.com/sprucehealth/backend/svc/auth"
 	"golang.org/x/net/context"
 )
@@ -214,7 +213,7 @@ func copyWith(w http.ResponseWriter, r io.Reader, contentLen int, mimeType strin
 }
 
 func httpInternalError(ctx context.Context, w http.ResponseWriter, err error) {
-	requestID := tracectx.RequestID(ctx)
+	requestID := httputil.RequestID(ctx)
 	golog.Context(
 		"RequestID", requestID,
 	).LogDepthf(1, golog.ERR, err.Error())

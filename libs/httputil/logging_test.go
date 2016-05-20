@@ -36,6 +36,8 @@ func TestLoggingHandler(t *testing.T) {
 			}
 			w.WriteHeader(http.StatusNotImplemented)
 		}),
+		"test",
+		false,
 		func(ctx context.Context, ev *RequestEvent) {
 			lastEvent = *ev
 			events++
@@ -103,6 +105,8 @@ func (nullResponseWriter) WriteHeader(int)             {}
 func BenchmarkLoggingHandler(b *testing.B) {
 	h := LoggingHandler(ContextHandlerFunc(
 		func(context.Context, http.ResponseWriter, *http.Request) {}),
+		"test",
+		false,
 		func(context.Context, *RequestEvent) {})
 	ctx := context.Background()
 	r, err := http.NewRequest("GET", "/patho?a=b", nil)

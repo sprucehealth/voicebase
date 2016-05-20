@@ -220,7 +220,7 @@ var authenticateMutation = &graphql.Field{
 		// TODO: updating the context this is safe for now because the GraphQL pkg serializes mutations.
 		// that likely won't change, but this still isn't a great way to update the context.
 		gqlctx.InPlaceWithAccount(ctx, res.Account)
-		result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)
+		result := p.Info.RootValue.(map[string]interface{})["result"].(*conc.Map)
 		result.Set("auth_token", token)
 		result.Set("auth_expiration", expires)
 
@@ -274,7 +274,7 @@ var authenticateWithCodeMutation = &graphql.Field{
 				return nil, errors.InternalError(ctx, err)
 			}
 		}
-		result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)
+		result := p.Info.RootValue.(map[string]interface{})["result"].(*conc.Map)
 		result.Set("auth_token", res.Token.Value)
 		result.Set("auth_expiration", time.Unix(int64(res.Token.ExpirationEpoch), 0))
 
@@ -369,7 +369,7 @@ var unauthenticateMutation = &graphql.Field{
 			if err := ram.Unauthenticate(ctx, token); err != nil {
 				return nil, errors.InternalError(ctx, err)
 			}
-			result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)
+			result := p.Info.RootValue.(map[string]interface{})["result"].(*conc.Map)
 			result.Set("unauthenticated", true)
 		}
 

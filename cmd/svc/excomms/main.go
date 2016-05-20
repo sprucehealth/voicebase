@@ -38,6 +38,7 @@ var config struct {
 	segmentIOKey            string
 	apiDomain               string
 	sigKeys                 string
+	behindProxy             bool
 }
 
 func init() {
@@ -71,6 +72,7 @@ func init() {
 	flag.StringVar(&config.segmentIOKey, "segmentio_key", "", "Segment IO API `key`")
 	flag.StringVar(&config.apiDomain, "api_domain", "", "The baymax api domain")
 	flag.StringVar(&config.sigKeys, "signature_keys_csv", "", "csv signature keys")
+	flag.BoolVar(&config.behindProxy, "behind_proxy", false, "Set to true if behind a proxy")
 }
 
 func main() {

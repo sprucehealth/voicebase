@@ -31,7 +31,6 @@ import (
 	"github.com/sprucehealth/backend/feedback"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/cfg"
-	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -354,12 +353,11 @@ func buildRESTAPI(
 			"StatusCode", av.StatusCode,
 		}
 
-		logMap, ok := ctx.Value(httputil.LogMapContextKey).(conc.Map)
-		if ok {
-			for k, v := range logMap.Snapshot() {
+		httputil.CtxLogMap(ctx).Transact(func(m map[string]interface{}) {
+			for k, v := range m {
 				contextVals = append(contextVals, k, v)
 			}
-		}
+		})
 
 		log := golog.Context(contextVals...)
 
@@ -372,7 +370,7 @@ func buildRESTAPI(
 	}
 
 	h := httputil.SecurityHandler(muxHandler)
-	h = httputil.LoggingHandler(h, webRequestLogger)
+	h = httputil.LoggingHandler(h, "restapi", false, webRequestLogger)
 	h = httputil.MetricsHandler(h, metricsRegistry.Scope("restapi"))
 	h = httputil.RequestIDHandler(h)
 	h = httputil.DecompressRequest(h)

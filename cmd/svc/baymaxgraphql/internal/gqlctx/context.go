@@ -2,7 +2,7 @@ package gqlctx
 
 import (
 	"github.com/sprucehealth/backend/device/devicectx"
-	"github.com/sprucehealth/backend/libs/trace/tracectx"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/svc/auth"
 	"golang.org/x/net/context"
 )
@@ -22,7 +22,7 @@ const (
 func Clone(pCtx context.Context) context.Context {
 	cCtx := context.Background()
 	cCtx = devicectx.WithSpruceHeaders(pCtx, devicectx.SpruceHeaders(pCtx))
-	cCtx = tracectx.WithRequestID(pCtx, tracectx.RequestID(pCtx))
+	cCtx = httputil.CtxWithRequestID(pCtx, httputil.RequestID(pCtx))
 	cCtx = WithAccount(cCtx, Account(pCtx))
 	cCtx = WithClientEncryptionKey(cCtx, ClientEncryptionKey(pCtx))
 	cCtx = WithAccountEntities(cCtx, AccountEntities(pCtx))

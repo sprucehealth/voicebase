@@ -10,7 +10,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/directory/internal/server"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
-	pb "github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/directory"
 	"google.golang.org/grpc"
 )
 
@@ -68,9 +68,9 @@ func main() {
 	}
 	srvMetricsRegistry := svc.MetricsRegistry.Scope("server")
 	srv := server.New(dal.New(db), srvMetricsRegistry)
-	pb.InitMetrics(srv, srvMetricsRegistry)
+	directory.InitMetrics(srv, srvMetricsRegistry)
 	s := grpc.NewServer()
-	pb.RegisterDirectoryServer(s, srv)
+	directory.RegisterDirectoryServer(s, srv)
 	golog.Infof("Starting DirectoryService on %s...", listenAddress)
 	go s.Serve(lis)
 

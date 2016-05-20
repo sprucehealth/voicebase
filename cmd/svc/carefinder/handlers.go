@@ -10,15 +10,12 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/yelp"
 	configlib "github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/environment"
-	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/www"
-	"golang.org/x/net/context"
 )
 
 func buildCareFinder(c *config) httputil.ContextHandler {
-
 	// connect to database
 	configDB := &configlib.DB{
 		User:     c.DBUserName,
@@ -75,21 +72,7 @@ func buildCareFinder(c *config) httputil.ContextHandler {
 	router.Handle("/dermatologist-near-me/{state}", handlers.NewStatePageHandler(templateLoader, stateService, cityDAL, c.WebURL))
 	router.Handle("/dermatologist-near-me/{state}/{city}", handlers.NewCityPageHandler(templateLoader, cityService))
 
-	webRequestLogger := func(ctx context.Context, ev *httputil.RequestEvent) {
-		log := golog.Context(
-			"Method", ev.Request.Method,
-			"URL", ev.URL.String(),
-			"UserAgent", ev.Request.UserAgent(),
-			"RemoteAddr", ev.Request.Referer(),
-			"StatusCode", ev.StatusCode,
-		)
-		if ev.Panic != nil {
-			log.Criticalf("http: panic: %v\n%s", ev.Panic, ev.StackTrace)
-		} else {
-			log.Infof("carefinder")
-		}
-	}
-	h := httputil.LoggingHandler(router, webRequestLogger)
+	h := httputil.LoggingHandler(router, "carefinder", c.BehindProxy, nil)
 	h = httputil.DecompressRequest(h)
 	return httputil.CompressResponse(h)
 }

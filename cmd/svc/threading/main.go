@@ -89,12 +89,10 @@ func main() {
 	eSNS, err := awsutil.NewEncryptedSNS(*flagKMSKeyARN, kms.New(awsSession), sns.New(awsSession))
 	if err != nil {
 		golog.Fatalf("Unable to initialize enrypted sns: %s", err.Error())
-		return
 	}
 	eSQS, err := awsutil.NewEncryptedSQS(*flagKMSKeyARN, kms.New(awsSession), sqs.New(awsSession))
 	if err != nil {
 		golog.Fatalf("Unable to initialize enrypted sqs: %s", err.Error())
-		return
 	}
 
 	// Start management server

@@ -453,7 +453,7 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 		})
 	}
 
-	result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)
+	result := p.Info.RootValue.(map[string]interface{})["result"].(*conc.Map)
 	result.Set("auth_token", res.Token.Value)
 	result.Set("auth_expiration", time.Unix(int64(res.Token.ExpirationEpoch), 0))
 

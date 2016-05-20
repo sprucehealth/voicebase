@@ -20,10 +20,8 @@ import (
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"github.com/sprucehealth/backend/libs/idgen"
 	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/phone"
-	"github.com/sprucehealth/backend/libs/trace/tracectx"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -258,6 +256,13 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 	// then the account can be updated in the context.
 	ctx = gqlctx.WithAccount(ctx, acc)
 
+	httputil.CtxLogMap(ctx).Transact(func(m map[string]interface{}) {
+		m["Query"] = req.Query
+		if acc != nil {
+			m["AccountID"] = acc.ID
+		}
+	})
+
 	// Since we are authenticated, cache a collection of entity information for the account orgs
 	eMap, err := h.orgToEntityMapForAccount(ctx, acc)
 	if err != nil {
@@ -274,11 +279,6 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 		return eCache
 	}(eMap)))
 
-	requestID, err := idgen.NewID()
-	if err != nil {
-		golog.Errorf("failed to generate request ID: %s", err)
-	}
-	ctx = tracectx.WithRequestID(ctx, requestID)
 	ctx = devicectx.WithSpruceHeaders(ctx, sHeaders)
 	ctx = gqlctx.WithQuery(ctx, req.Query)
 
@@ -301,19 +301,22 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 
 	if len(response.Errors) != 0 {
 		h.statResponseErrors.Inc(1)
-	}
-	for i, e := range response.Errors {
-		if e.StackTrace != "" {
-			golog.Errorf("[%s] %s\n%s", e.Type, e.Message, e.StackTrace)
-			// The stack trace shouldn't be serialized in the response but clear it out just to be sure
-			e.StackTrace = ""
-		} else {
-			golog.Warningf("GraphQL error response %s: %s (%s)\n%s", e.Type, e.Message, e.UserMessage, req.Query)
+		errorTypes := make([]string, len(response.Errors))
+		for i, e := range response.Errors {
+			errorTypes[i] = e.Type
+			if e.StackTrace != "" {
+				golog.Errorf("[%s] %s\n%s", e.Type, e.Message, e.StackTrace)
+				// The stack trace shouldn't be serialized in the response but clear it out just to be sure
+				e.StackTrace = ""
+			} else {
+				golog.Warningf("GraphQL error response %s: %s (%s)\n%s", e.Type, e.Message, e.UserMessage, req.Query)
+			}
+			// Wrap any non well formed gql errors as internal
+			if errors.Type(e) == errors.ErrTypeUnknown {
+				response.Errors[i] = errors.InternalError(ctx, e).(gqlerrors.FormattedError)
+			}
 		}
-		// Wrap any non well formed gql errors as internal
-		if errors.Type(e) == errors.ErrTypeUnknown {
-			response.Errors[i] = errors.InternalError(ctx, e).(gqlerrors.FormattedError)
-		}
+		httputil.CtxLogMap(ctx).Set("GraphQLErrors", strings.Join(errorTypes, " "))
 	}
 
 	if token, ok := result.Get("auth_token").(string); ok {

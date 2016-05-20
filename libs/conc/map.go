@@ -2,60 +2,69 @@ package conc
 
 import "sync"
 
-// Map provides an interface for any object to conform to
-// that provides key/value storage.
-type Map interface {
-	// Get returns value for key if it exists, nil otherwise.
-	Get(key string) interface{}
-
-	// Set sets the value for the key.
-	Set(key string, value interface{})
-
-	// Delete delets the value for the key if present.
-	Delete(key string)
-
-	// Snapshot returns a current snapshot of the map
-	// to make it easy to iterate over.
-	Snapshot() map[string]interface{}
-}
-
-type concurrentMap struct {
-	cmap map[string]interface{}
+// Map is a concurrent implementation of a map
+type Map struct {
 	mux  sync.RWMutex
+	cmap map[string]interface{}
 }
 
 // NewMap returns a map for concurrent access.
-func NewMap() Map {
-	return &concurrentMap{
+func NewMap() *Map {
+	return &Map{
 		cmap: make(map[string]interface{}),
 	}
 }
 
-func (c *concurrentMap) Get(key string) interface{} {
+// Get returns a value from the map or nil if the key does not exist
+func (c *Map) Get(key string) interface{} {
+	if c == nil {
+		return nil
+	}
 	c.mux.RLock()
 	defer c.mux.RUnlock()
 	return c.cmap[key]
 }
 
-func (c *concurrentMap) Set(key string, value interface{}) {
+// Set sets, possibly overwriting, a value in the map
+func (c *Map) Set(key string, value interface{}) {
+	if c == nil {
+		return
+	}
 	c.mux.Lock()
 	defer c.mux.Unlock()
 	c.cmap[key] = value
 }
 
-func (c *concurrentMap) Delete(key string) {
+// Delete deletes a value from the map
+func (c *Map) Delete(key string) {
+	if c == nil {
+		return
+	}
 	c.mux.Lock()
 	defer c.mux.Unlock()
 	delete(c.cmap, key)
 }
 
-func (c *concurrentMap) Snapshot() map[string]interface{} {
+// Transact locks the map, calls the provided functions, and unlocks the map on return.
+func (c *Map) Transact(fn func(map[string]interface{})) {
+	if c == nil {
+		return
+	}
+	c.mux.Lock()
+	defer c.mux.Unlock()
+	fn(c.cmap)
+}
+
+// Snapshot returns a copy of the underlying values
+func (c *Map) Snapshot() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
 	c.mux.RLock()
 	defer c.mux.RUnlock()
 	snapshot := make(map[string]interface{}, len(c.cmap))
 	for k, v := range c.cmap {
 		snapshot[k] = v
 	}
-
 	return snapshot
 }
