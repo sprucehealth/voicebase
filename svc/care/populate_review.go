@@ -391,7 +391,7 @@ func builderQuestionWithPhotoSlots(question *layout.Question, answer *Answer, co
 }
 
 func populateEmptyStateTextIfPresent(question *layout.Question, context *visitreview.ViewContext) {
-	if question.AdditionalFields.EmptyStateText == "" {
+	if question.AdditionalFields == nil || question.AdditionalFields.EmptyStateText == "" {
 		return
 	}
 
