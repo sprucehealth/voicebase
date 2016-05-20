@@ -79,6 +79,22 @@ func (c *Client) SearchMedications(ctx context.Context, in *care.SearchMedicatio
 	return rets[0].(*care.SearchMedicationsResponse), mock.SafeError(rets[1])
 }
 
+func (c *Client) SearchAllergyMedications(ctx context.Context, in *care.SearchAllergyMedicationsRequest, opts ...grpc.CallOption) (*care.SearchAllergyMedicationsResponse, error) {
+	rets := c.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*care.SearchAllergyMedicationsResponse), mock.SafeError(rets[1])
+}
+
+func (c *Client) SearchSelfReportedMedications(ctx context.Context, in *care.SearchSelfReportedMedicationsRequest, opts ...grpc.CallOption) (*care.SearchSelfReportedMedicationsResponse, error) {
+	rets := c.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*care.SearchSelfReportedMedicationsResponse), mock.SafeError(rets[1])
+}
+
 func (c *Client) SubmitCarePlan(ctx context.Context, in *care.SubmitCarePlanRequest, opts ...grpc.CallOption) (*care.SubmitCarePlanResponse, error) {
 	rets := c.Record(in)
 	if len(rets) == 0 {

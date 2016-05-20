@@ -30,6 +30,26 @@ func transformQuestion(question *saml.Question) (*layout.Question, error) {
 		ToAlert:            question.Details.ToAlert,
 	}
 
+	// TODO: Move the autocomplete params specification to the SAML layer.
+	// However doing so currently requires a ton of updates to the SAML given that
+	// allergy and medication questions are in almost every SAML. So for now
+	// hardcoding the autocomplete params.
+	if tQuestion.ID == "q_allergic_medication_entry" {
+		if tQuestion.AdditionalFields == nil {
+			tQuestion.AdditionalFields = &layout.QuestionAdditionalFields{}
+		}
+		tQuestion.AdditionalFields.AutocompleteParams = map[string]string{
+			"source": "PATIENT_ALLERGY",
+		}
+	} else if tQuestion.ID == "q_current_medications_entry" {
+		if tQuestion.AdditionalFields == nil {
+			tQuestion.AdditionalFields = &layout.QuestionAdditionalFields{}
+		}
+		tQuestion.AdditionalFields.AutocompleteParams = map[string]string{
+			"source": "PATIENT_DRUG",
+		}
+	}
+
 	var err error
 	tQuestion.PhotoSlots, err = transformPhotoSlots(question.Details.PhotoSlots)
 	if err != nil {

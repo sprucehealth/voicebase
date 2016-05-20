@@ -452,6 +452,41 @@ func (s *server) SearchMedications(ctx context.Context, in *care.SearchMedicatio
 	return &care.SearchMedicationsResponse{Medications: medications}, nil
 }
 
+func (s *server) SearchSelfReportedMedications(ctx context.Context, in *care.SearchSelfReportedMedicationsRequest) (*care.SearchSelfReportedMedicationsResponse, error) {
+	// TODO: Cache results
+
+	// DoseSpot doesn't return results for any searches shorter than 3 characters so don't bother trying and just return an empty list.
+	if len(in.Query) < 3 {
+		return &care.SearchSelfReportedMedicationsResponse{}, nil
+	}
+
+	results, err := s.doseSpot.GetDrugNamesForPatient(in.Query)
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	return &care.SearchSelfReportedMedicationsResponse{
+		Results: results,
+	}, nil
+}
+
+func (s *server) SearchAllergyMedications(ctx context.Context, in *care.SearchAllergyMedicationsRequest) (*care.SearchAllergyMedicationsResponse, error) {
+	// TODO: Cache results
+
+	// DoseSpot doesn't return results for any searches shorter than 3 characters so don't bother trying and just return an empty list.
+	if len(in.Query) < 3 {
+		return &care.SearchAllergyMedicationsResponse{}, nil
+	}
+
+	results, err := s.doseSpot.SearchForAllergyRelatedMedications(in.Query)
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	return &care.SearchAllergyMedicationsResponse{
+		Results: results,
+	}, nil
+}
 func (s *server) SubmitCarePlan(ctx context.Context, in *care.SubmitCarePlanRequest) (*care.SubmitCarePlanResponse, error) {
 	if in.ID == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "care plan id is required")

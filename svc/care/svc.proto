@@ -243,6 +243,22 @@ message SearchMedicationsResponse {
 	repeated Medication medications = 1;
 }
 
+message SearchSelfReportedMedicationsRequest {
+	string query = 1;
+}
+
+message SearchSelfReportedMedicationsResponse {
+	repeated string results = 1;
+}
+
+message SearchAllergyMedicationsRequest {
+	string query = 1;
+}
+
+message SearchAllergyMedicationsResponse {
+	repeated string results = 1;
+}
+
 service Care {
 	rpc CreateVisit(CreateVisitRequest) returns (CreateVisitResponse);
 	rpc GetVisit(GetVisitRequest) returns (GetVisitResponse);
@@ -262,5 +278,12 @@ service Care {
 
 	// Medication and Rx
 
+	// SearchMedication
 	rpc SearchMedications(SearchMedicationsRequest) returns (SearchMedicationsResponse);
+
+	// SearchSelfReportedMedications does a search for self reported medication names based on specified query.
+	rpc SearchSelfReportedMedications(SearchSelfReportedMedicationsRequest) returns (SearchSelfReportedMedicationsResponse);
+
+	// SearchAllergyMedications does a search against the drug database for allergy medications based on the specified query.
+	rpc SearchAllergyMedications(SearchAllergyMedicationsRequest) returns (SearchAllergyMedicationsResponse);
 }

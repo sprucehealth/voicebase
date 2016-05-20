@@ -132,16 +132,17 @@ func (q *Question) SubQuestions() []*Question {
 }
 
 type QuestionAdditionalFields struct {
-	PlaceholderText         string         `json:"placeholder_text,omitempty"`
-	Popup                   *Popup         `json:"popup,omitempty"`
-	AllowsMultipleSections  *bool          `json:"allows_multiple_sections,omitempty"`
-	UserDefinedSectionTitle *bool          `json:"user_defined_section_title,omitempty"`
-	AddButtonText           string         `json:"add_button_text,omitempty"`
-	AddText                 string         `json:"add_text,omitempty"`
-	EmptyStateText          string         `json:"empty_state_text,omitempty"`
-	RemoveButtonText        string         `json:"remove_button_text,omitempty"`
-	SaveButtonText          string         `json:"save_button_text,omitempty"`
-	AnswerGroups            []*AnswerGroup `json:"answer_groups,omitempty"`
+	PlaceholderText         string            `json:"placeholder_text,omitempty"`
+	Popup                   *Popup            `json:"popup,omitempty"`
+	AllowsMultipleSections  *bool             `json:"allows_multiple_sections,omitempty"`
+	UserDefinedSectionTitle *bool             `json:"user_defined_section_title,omitempty"`
+	AddButtonText           string            `json:"add_button_text,omitempty"`
+	AddText                 string            `json:"add_text,omitempty"`
+	EmptyStateText          string            `json:"empty_state_text,omitempty"`
+	RemoveButtonText        string            `json:"remove_button_text,omitempty"`
+	SaveButtonText          string            `json:"save_button_text,omitempty"`
+	AnswerGroups            []*AnswerGroup    `json:"answer_groups,omitempty"`
+	AutocompleteParams      map[string]string `json:"autocomplete_params,omitempty"`
 }
 
 type AnswerGroup struct {

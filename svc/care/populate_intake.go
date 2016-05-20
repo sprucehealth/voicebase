@@ -65,8 +65,8 @@ func PopulateVisitIntake(intake *layout.Intake, data *VisitData) ([]byte, error)
 		},
 		SubmissionConfirmation: &submissionConfirmation{
 			Title:       "Visit Submitted",
-			TopText:     fmt.Sprintf("Your %s visit has been submitted.", data.Visit.Name),
-			BottomText:  "Your care team will review your visit and respond for any additional questions.",
+			TopText:     "Your visit has been submitted!",
+			BottomText:  fmt.Sprintf("%s will review your visit shortly.", orgName),
 			ButtonTitle: "Continue",
 		},
 		Intake:  intake,

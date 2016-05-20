@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/net/context"
+
 	dalmock "github.com/sprucehealth/backend/cmd/svc/care/internal/dal/mock"
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/models"
 	"github.com/sprucehealth/backend/libs/conc"
@@ -255,6 +257,58 @@ func TestSearchMedications(t *testing.T) {
 					},
 				},
 			},
+		},
+	}, res)
+}
+
+func TestSelfReportedMedicationsSearch(t *testing.T) {
+	t.Parallel()
+	dsMock := dosespotmock.New(t)
+	srv := New(nil, nil, nil, dsMock)
+
+	dsMock.Expect(mock.NewExpectation(dsMock.GetDrugNamesForPatient, "Advil").WithReturns(
+		[]string{
+			"Advil 1",
+			"Advil 2",
+			"Advil 3",
+		}, nil))
+
+	res, err := srv.SearchSelfReportedMedications(context.Background(), &care.SearchSelfReportedMedicationsRequest{
+		Query: "Advil",
+	})
+
+	test.OK(t, err)
+	test.Equals(t, &care.SearchSelfReportedMedicationsResponse{
+		Results: []string{
+			"Advil 1",
+			"Advil 2",
+			"Advil 3",
+		},
+	}, res)
+}
+
+func TestAllergyMedicationsSearch(t *testing.T) {
+	t.Parallel()
+	dsMock := dosespotmock.New(t)
+	srv := New(nil, nil, nil, dsMock)
+
+	dsMock.Expect(mock.NewExpectation(dsMock.SearchForAllergyRelatedMedications, "Advil").WithReturns(
+		[]string{
+			"Advil 1",
+			"Advil 2",
+			"Advil 3",
+		}, nil))
+
+	res, err := srv.SearchAllergyMedications(context.Background(), &care.SearchAllergyMedicationsRequest{
+		Query: "Advil",
+	})
+
+	test.OK(t, err)
+	test.Equals(t, &care.SearchAllergyMedicationsResponse{
+		Results: []string{
+			"Advil 1",
+			"Advil 2",
+			"Advil 3",
 		},
 	}, res)
 }

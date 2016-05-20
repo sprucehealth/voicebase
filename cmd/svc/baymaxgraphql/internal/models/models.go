@@ -425,3 +425,9 @@ type MedicationDosage struct {
 	DispenseType string `json:"dispenseType"`
 	OTC          bool   `json:"otc"`
 }
+
+type VisitAutocompleteSearchResult struct {
+	ID       string `json:"id,omitempty"`
+	Subtitle string `json:"subtitle"`
+	Title    string `json:"title"`
+}

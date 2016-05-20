@@ -335,6 +335,22 @@ func (m *ResourceAccessor) SearchMedications(ctx context.Context, req *care.Sear
 	return rets[0].(*care.SearchMedicationsResponse), mock.SafeError(rets[1])
 }
 
+func (m *ResourceAccessor) SearchAllergyMedications(ctx context.Context, req *care.SearchAllergyMedicationsRequest) (*care.SearchAllergyMedicationsResponse, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*care.SearchAllergyMedicationsResponse), mock.SafeError(rets[1])
+}
+
+func (m *ResourceAccessor) SearchSelfReportedMedications(ctx context.Context, req *care.SearchSelfReportedMedicationsRequest) (*care.SearchSelfReportedMedicationsResponse, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*care.SearchSelfReportedMedicationsResponse), mock.SafeError(rets[1])
+}
+
 func (m *ResourceAccessor) SendMessage(ctx context.Context, req *excomms.SendMessageRequest) error {
 	rets := m.Record(req)
 	if len(rets) == 0 {

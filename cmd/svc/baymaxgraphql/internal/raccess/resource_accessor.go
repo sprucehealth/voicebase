@@ -110,8 +110,10 @@ type ResourceAccessor interface {
 	ProvisionPhoneNumber(ctx context.Context, req *excomms.ProvisionPhoneNumberRequest) (*excomms.ProvisionPhoneNumberResponse, error)
 	QueryThreads(ctx context.Context, req *threading.QueryThreadsRequest) (*threading.QueryThreadsResponse, error)
 	SavedQueries(ctx context.Context, entityID string) ([]*threading.SavedQuery, error)
-	SearchMedications(ctx context.Context, req *care.SearchMedicationsRequest) (*care.SearchMedicationsResponse, error)
 	SavedQuery(ctx context.Context, savedQueryID string) (*threading.SavedQuery, error)
+	SearchAllergyMedications(ctx context.Context, req *care.SearchAllergyMedicationsRequest) (*care.SearchAllergyMedicationsResponse, error)
+	SearchMedications(ctx context.Context, req *care.SearchMedicationsRequest) (*care.SearchMedicationsResponse, error)
+	SearchSelfReportedMedications(ctx context.Context, req *care.SearchSelfReportedMedicationsRequest) (*care.SearchSelfReportedMedicationsResponse, error)
 	SendMessage(ctx context.Context, req *excomms.SendMessageRequest) error
 	SerializedEntityContact(ctx context.Context, entityID string, platform directory.Platform) (*directory.SerializedClientEntityContact, error)
 	SubmitCarePlan(ctx context.Context, cp *care.CarePlan, parentID string) error
@@ -650,6 +652,14 @@ func (m *resourceAccessor) SavedQuery(ctx context.Context, savedQueryID string) 
 		return nil, err
 	}
 	return res.SavedQuery, nil
+}
+
+func (m *resourceAccessor) SearchAllergyMedications(ctx context.Context, req *care.SearchAllergyMedicationsRequest) (*care.SearchAllergyMedicationsResponse, error) {
+	return m.care.SearchAllergyMedications(ctx, req)
+}
+
+func (m *resourceAccessor) SearchSelfReportedMedications(ctx context.Context, req *care.SearchSelfReportedMedicationsRequest) (*care.SearchSelfReportedMedicationsResponse, error) {
+	return m.care.SearchSelfReportedMedications(ctx, req)
 }
 
 func (m *resourceAccessor) SearchMedications(ctx context.Context, req *care.SearchMedicationsRequest) (*care.SearchMedicationsResponse, error) {

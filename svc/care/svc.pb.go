@@ -43,6 +43,10 @@
 		MedicationStrength
 		SearchMedicationsRequest
 		SearchMedicationsResponse
+		SearchSelfReportedMedicationsRequest
+		SearchSelfReportedMedicationsResponse
+		SearchAllergyMedicationsRequest
+		SearchAllergyMedicationsResponse
 */
 package care
 
@@ -789,6 +793,34 @@ func (m *SearchMedicationsResponse) GetMedications() []*Medication {
 	return nil
 }
 
+type SearchSelfReportedMedicationsRequest struct {
+	Query string `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
+}
+
+func (m *SearchSelfReportedMedicationsRequest) Reset()      { *m = SearchSelfReportedMedicationsRequest{} }
+func (*SearchSelfReportedMedicationsRequest) ProtoMessage() {}
+
+type SearchSelfReportedMedicationsResponse struct {
+	Results []string `protobuf:"bytes,1,rep,name=results" json:"results,omitempty"`
+}
+
+func (m *SearchSelfReportedMedicationsResponse) Reset()      { *m = SearchSelfReportedMedicationsResponse{} }
+func (*SearchSelfReportedMedicationsResponse) ProtoMessage() {}
+
+type SearchAllergyMedicationsRequest struct {
+	Query string `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
+}
+
+func (m *SearchAllergyMedicationsRequest) Reset()      { *m = SearchAllergyMedicationsRequest{} }
+func (*SearchAllergyMedicationsRequest) ProtoMessage() {}
+
+type SearchAllergyMedicationsResponse struct {
+	Results []string `protobuf:"bytes,1,rep,name=results" json:"results,omitempty"`
+}
+
+func (m *SearchAllergyMedicationsResponse) Reset()      { *m = SearchAllergyMedicationsResponse{} }
+func (*SearchAllergyMedicationsResponse) ProtoMessage() {}
+
 func init() {
 	proto.RegisterType((*Visit)(nil), "care.Visit")
 	proto.RegisterType((*Answer)(nil), "care.Answer")
@@ -826,6 +858,10 @@ func init() {
 	proto.RegisterType((*MedicationStrength)(nil), "care.MedicationStrength")
 	proto.RegisterType((*SearchMedicationsRequest)(nil), "care.SearchMedicationsRequest")
 	proto.RegisterType((*SearchMedicationsResponse)(nil), "care.SearchMedicationsResponse")
+	proto.RegisterType((*SearchSelfReportedMedicationsRequest)(nil), "care.SearchSelfReportedMedicationsRequest")
+	proto.RegisterType((*SearchSelfReportedMedicationsResponse)(nil), "care.SearchSelfReportedMedicationsResponse")
+	proto.RegisterType((*SearchAllergyMedicationsRequest)(nil), "care.SearchAllergyMedicationsRequest")
+	proto.RegisterType((*SearchAllergyMedicationsResponse)(nil), "care.SearchAllergyMedicationsResponse")
 	proto.RegisterEnum("care.CarePlanTreatment_Availability", CarePlanTreatment_Availability_name, CarePlanTreatment_Availability_value)
 }
 func (x CarePlanTreatment_Availability) String() string {
@@ -2169,6 +2205,116 @@ func (this *SearchMedicationsResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *SearchSelfReportedMedicationsRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*SearchSelfReportedMedicationsRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Query != that1.Query {
+		return false
+	}
+	return true
+}
+func (this *SearchSelfReportedMedicationsResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*SearchSelfReportedMedicationsResponse)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if len(this.Results) != len(that1.Results) {
+		return false
+	}
+	for i := range this.Results {
+		if this.Results[i] != that1.Results[i] {
+			return false
+		}
+	}
+	return true
+}
+func (this *SearchAllergyMedicationsRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*SearchAllergyMedicationsRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Query != that1.Query {
+		return false
+	}
+	return true
+}
+func (this *SearchAllergyMedicationsResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*SearchAllergyMedicationsResponse)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if len(this.Results) != len(that1.Results) {
+		return false
+	}
+	for i := range this.Results {
+		if this.Results[i] != that1.Results[i] {
+			return false
+		}
+	}
+	return true
+}
 func (this *Visit) GoString() string {
 	if this == nil {
 		return "nil"
@@ -2718,6 +2864,46 @@ func (this *SearchMedicationsResponse) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *SearchSelfReportedMedicationsRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&care.SearchSelfReportedMedicationsRequest{")
+	s = append(s, "Query: "+fmt.Sprintf("%#v", this.Query)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *SearchSelfReportedMedicationsResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&care.SearchSelfReportedMedicationsResponse{")
+	s = append(s, "Results: "+fmt.Sprintf("%#v", this.Results)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *SearchAllergyMedicationsRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&care.SearchAllergyMedicationsRequest{")
+	s = append(s, "Query: "+fmt.Sprintf("%#v", this.Query)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *SearchAllergyMedicationsResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&care.SearchAllergyMedicationsResponse{")
+	s = append(s, "Results: "+fmt.Sprintf("%#v", this.Results)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func valueToGoStringSvc(v interface{}, typ string) string {
 	rv := reflect.ValueOf(v)
 	if rv.IsNil() {
@@ -2763,7 +2949,12 @@ type CareClient interface {
 	// SubmitCarePlan submits a care plan and attaches it to a parent, it can only be called once per care plan.
 	// Any Rx attached to the care plan will be submitted at this point.
 	SubmitCarePlan(ctx context.Context, in *SubmitCarePlanRequest, opts ...grpc.CallOption) (*SubmitCarePlanResponse, error)
+	// SearchMedication
 	SearchMedications(ctx context.Context, in *SearchMedicationsRequest, opts ...grpc.CallOption) (*SearchMedicationsResponse, error)
+	// SearchSelfReportedMedications does a search for self reported medication names based on specified query.
+	SearchSelfReportedMedications(ctx context.Context, in *SearchSelfReportedMedicationsRequest, opts ...grpc.CallOption) (*SearchSelfReportedMedicationsResponse, error)
+	// SearchAllergyMedications does a search against the drug database for allergy medications based on the specified query.
+	SearchAllergyMedications(ctx context.Context, in *SearchAllergyMedicationsRequest, opts ...grpc.CallOption) (*SearchAllergyMedicationsResponse, error)
 }
 
 type careClient struct {
@@ -2855,6 +3046,24 @@ func (c *careClient) SearchMedications(ctx context.Context, in *SearchMedication
 	return out, nil
 }
 
+func (c *careClient) SearchSelfReportedMedications(ctx context.Context, in *SearchSelfReportedMedicationsRequest, opts ...grpc.CallOption) (*SearchSelfReportedMedicationsResponse, error) {
+	out := new(SearchSelfReportedMedicationsResponse)
+	err := grpc.Invoke(ctx, "/care.Care/SearchSelfReportedMedications", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *careClient) SearchAllergyMedications(ctx context.Context, in *SearchAllergyMedicationsRequest, opts ...grpc.CallOption) (*SearchAllergyMedicationsResponse, error) {
+	out := new(SearchAllergyMedicationsResponse)
+	err := grpc.Invoke(ctx, "/care.Care/SearchAllergyMedications", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for Care service
 
 type CareServer interface {
@@ -2870,7 +3079,12 @@ type CareServer interface {
 	// SubmitCarePlan submits a care plan and attaches it to a parent, it can only be called once per care plan.
 	// Any Rx attached to the care plan will be submitted at this point.
 	SubmitCarePlan(context.Context, *SubmitCarePlanRequest) (*SubmitCarePlanResponse, error)
+	// SearchMedication
 	SearchMedications(context.Context, *SearchMedicationsRequest) (*SearchMedicationsResponse, error)
+	// SearchSelfReportedMedications does a search for self reported medication names based on specified query.
+	SearchSelfReportedMedications(context.Context, *SearchSelfReportedMedicationsRequest) (*SearchSelfReportedMedicationsResponse, error)
+	// SearchAllergyMedications does a search against the drug database for allergy medications based on the specified query.
+	SearchAllergyMedications(context.Context, *SearchAllergyMedicationsRequest) (*SearchAllergyMedicationsResponse, error)
 }
 
 func RegisterCareServer(s *grpc.Server, srv CareServer) {
@@ -2985,6 +3199,30 @@ func _Care_SearchMedications_Handler(srv interface{}, ctx context.Context, dec f
 	return out, nil
 }
 
+func _Care_SearchSelfReportedMedications_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(SearchSelfReportedMedicationsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(CareServer).SearchSelfReportedMedications(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func _Care_SearchAllergyMedications_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(SearchAllergyMedicationsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(CareServer).SearchAllergyMedications(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 var _Care_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "care.Care",
 	HandlerType: (*CareServer)(nil),
@@ -3024,6 +3262,14 @@ var _Care_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SearchMedications",
 			Handler:    _Care_SearchMedications_Handler,
+		},
+		{
+			MethodName: "SearchSelfReportedMedications",
+			Handler:    _Care_SearchSelfReportedMedications_Handler,
+		},
+		{
+			MethodName: "SearchAllergyMedications",
+			Handler:    _Care_SearchAllergyMedications_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{},
@@ -4526,6 +4772,120 @@ func (m *SearchMedicationsResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *SearchSelfReportedMedicationsRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *SearchSelfReportedMedicationsRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Query) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Query)))
+		i += copy(data[i:], m.Query)
+	}
+	return i, nil
+}
+
+func (m *SearchSelfReportedMedicationsResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *SearchSelfReportedMedicationsResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Results) > 0 {
+		for _, s := range m.Results {
+			data[i] = 0xa
+			i++
+			l = len(s)
+			for l >= 1<<7 {
+				data[i] = uint8(uint64(l)&0x7f | 0x80)
+				l >>= 7
+				i++
+			}
+			data[i] = uint8(l)
+			i++
+			i += copy(data[i:], s)
+		}
+	}
+	return i, nil
+}
+
+func (m *SearchAllergyMedicationsRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *SearchAllergyMedicationsRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Query) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Query)))
+		i += copy(data[i:], m.Query)
+	}
+	return i, nil
+}
+
+func (m *SearchAllergyMedicationsResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *SearchAllergyMedicationsResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Results) > 0 {
+		for _, s := range m.Results {
+			data[i] = 0xa
+			i++
+			l = len(s)
+			for l >= 1<<7 {
+				data[i] = uint8(uint64(l)&0x7f | 0x80)
+				l >>= 7
+				i++
+			}
+			data[i] = uint8(l)
+			i++
+			i += copy(data[i:], s)
+		}
+	}
+	return i, nil
+}
+
 func encodeFixed64Svc(data []byte, offset int, v uint64) int {
 	data[offset] = uint8(v)
 	data[offset+1] = uint8(v >> 8)
@@ -5247,6 +5607,50 @@ func (m *SearchMedicationsResponse) Size() (n int) {
 	return n
 }
 
+func (m *SearchSelfReportedMedicationsRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Query)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *SearchSelfReportedMedicationsResponse) Size() (n int) {
+	var l int
+	_ = l
+	if len(m.Results) > 0 {
+		for _, s := range m.Results {
+			l = len(s)
+			n += 1 + l + sovSvc(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *SearchAllergyMedicationsRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Query)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *SearchAllergyMedicationsResponse) Size() (n int) {
+	var l int
+	_ = l
+	if len(m.Results) > 0 {
+		for _, s := range m.Results {
+			l = len(s)
+			n += 1 + l + sovSvc(uint64(l))
+		}
+	}
+	return n
+}
+
 func sovSvc(x uint64) (n int) {
 	for {
 		n++
@@ -5777,6 +6181,46 @@ func (this *SearchMedicationsResponse) String() string {
 	}
 	s := strings.Join([]string{`&SearchMedicationsResponse{`,
 		`Medications:` + strings.Replace(fmt.Sprintf("%v", this.Medications), "Medication", "Medication", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SearchSelfReportedMedicationsRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&SearchSelfReportedMedicationsRequest{`,
+		`Query:` + fmt.Sprintf("%v", this.Query) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SearchSelfReportedMedicationsResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&SearchSelfReportedMedicationsResponse{`,
+		`Results:` + fmt.Sprintf("%v", this.Results) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SearchAllergyMedicationsRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&SearchAllergyMedicationsRequest{`,
+		`Query:` + fmt.Sprintf("%v", this.Query) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SearchAllergyMedicationsResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&SearchAllergyMedicationsResponse{`,
+		`Results:` + fmt.Sprintf("%v", this.Results) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -10710,6 +11154,322 @@ func (m *SearchMedicationsResponse) Unmarshal(data []byte) error {
 			if err := m.Medications[len(m.Medications)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *SearchSelfReportedMedicationsRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SearchSelfReportedMedicationsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SearchSelfReportedMedicationsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Query", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Query = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *SearchSelfReportedMedicationsResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SearchSelfReportedMedicationsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SearchSelfReportedMedicationsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Results", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Results = append(m.Results, string(data[iNdEx:postIndex]))
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *SearchAllergyMedicationsRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SearchAllergyMedicationsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SearchAllergyMedicationsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Query", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Query = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *SearchAllergyMedicationsResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SearchAllergyMedicationsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SearchAllergyMedicationsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Results", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Results = append(m.Results, string(data[iNdEx:postIndex]))
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

@@ -198,10 +198,11 @@ var queryType = graphql.NewObject(
 					}, nil
 				},
 			},
-			"carePlan":           carePlanQuery,
-			"forceUpgradeStatus": forceUpgradeQuery,
-			"medicationSearch":   medicationSearchQuery,
-			"setting":            settingsQuery,
+			"carePlan":                carePlanQuery,
+			"forceUpgradeStatus":      forceUpgradeQuery,
+			"medicationSearch":        medicationSearchQuery,
+			"visitAutocompleteSearch": visitAutocompleteSearchQuery,
+			"setting":                 settingsQuery,
 		},
 	},
 )

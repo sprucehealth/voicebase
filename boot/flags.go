@@ -31,3 +31,7 @@ func ParseFlags(envPrefix string) {
 		os.Exit(0)
 	}
 }
+
+func RequiredFlags(flags ...*string) {
+
+}
