@@ -29,6 +29,16 @@ func TestRemoteAddrFromRequest(t *testing.T) {
 			BehindProxy: true,
 			Expected:    "remoteAddr",
 		},
+		"MultiProxy": {
+			Request: &http.Request{
+				RemoteAddr: "notRemoteAddr",
+				Header: http.Header{
+					"X-Forwarded-For": []string{"remoteAddr,otherAddr,someThing"},
+				},
+			},
+			BehindProxy: true,
+			Expected:    "remoteAddr",
+		},
 		"UnknownRemote": {
 			Request: &http.Request{
 				RemoteAddr: "",
