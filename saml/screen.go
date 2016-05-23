@@ -28,9 +28,6 @@ func screenTypeParser(p *parser, v, blockName string, scr *Screen) interface{} {
 	if scr == nil {
 		scr = &Screen{
 			HeaderTitle: v,
-			// by default screen type is a container of questions
-			// unless otherwise specified via a directive.
-			Type: "screen_type_questions",
 		}
 	}
 
