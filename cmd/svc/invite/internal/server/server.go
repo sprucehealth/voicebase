@@ -413,10 +413,10 @@ func (s *server) sendColleagueOutbound(ctx context.Context, email, inviteURL, to
 	// TODO: use a template
 	err := s.sg.Send(&sendgrid.SGMail{
 		To:      []string{email},
-		Subject: fmt.Sprintf("Invite to join %s", org.Info.DisplayName),
+		Subject: fmt.Sprintf("Invite to join %s on Spruce", org.Info.DisplayName),
 		Text: fmt.Sprintf(
-			"I would like you to join my organization %s\n%s\n\nBest,\n%s",
-			org.Info.DisplayName, inviteURL, inviter.Info.DisplayName),
+			"Spruce is a communication and digital care app. By joining %s on Spruce, you'll be able to collaborate with colleagues around your patients' care, securely and efficiently.\n\nClick this link to get started:%s\n\nOnce you've created your account, you're all set to start catching up on the latest conversation.\n\nIf you have any troubles, we're here to help - simply reply to this email!\n\nThanks,\nThe Team at Spruce\n\nP.S.: Learn more about Spruce here: https://www.sprucehealth.com",
+			org.Info.DisplayName, inviteURL),
 		From:     s.fromEmail,
 		FromName: inviter.Info.DisplayName,
 		SMTPAPIHeader: smtpapi.SMTPAPIHeader{
