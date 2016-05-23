@@ -680,7 +680,59 @@ var (
 	structTypeCache   = make(map[reflect.Type]map[string]structFieldInfo) // struct type -> field name -> field info
 )
 
+func fieldInfoForStruct(structType reflect.Type) map[string]structFieldInfo {
+	structTypeCacheMu.RLock()
+	sm := structTypeCache[structType]
+	structTypeCacheMu.RUnlock()
+	if sm != nil {
+		return sm
+	}
+
+	// Cache a mapping of fields for the struct
+	// Use json tag for the field name. We could potentially create a custom `graphql` tag,
+	// but its unnecessary at this point since graphql speaks to client in a json-like way
+	// anyway so json tags are a good way to start with
+
+	structTypeCacheMu.Lock()
+	defer structTypeCacheMu.Unlock()
+
+	// Check again in case someone beat us
+	sm = structTypeCache[structType]
+	if sm != nil {
+		return sm
+	}
+
+	sm = make(map[string]structFieldInfo)
+	for i := 0; i < structType.NumField(); i++ {
+		field := structType.Field(i)
+		if field.PkgPath != "" && !field.Anonymous {
+			continue
+		}
+		tag := field.Tag
+		jsonTag := tag.Get("json")
+		jsonOptions := strings.Split(jsonTag, ",")
+		if len(jsonOptions) == 0 {
+			sm[field.Name] = structFieldInfo{index: i}
+		} else {
+			omitempty := len(jsonOptions) > 1 && jsonOptions[1] == "omitempty"
+			sm[field.Name] = structFieldInfo{index: i, omitempty: omitempty}
+			sm[jsonOptions[0]] = structFieldInfo{index: i, omitempty: omitempty}
+		}
+	}
+	structTypeCache[structType] = sm
+	return sm
+}
+
 func defaultResolveFn(p ResolveParams) (interface{}, error) {
+	// try p.Source as a map[string]interface
+	if sourceMap, ok := p.Source.(map[string]interface{}); ok {
+		property := sourceMap[p.Info.FieldName]
+		if fn, ok := property.(func() interface{}); ok {
+			return fn(), nil
+		}
+		return property, nil
+	}
+
 	// try to resolve p.Source as a struct first
 	sourceVal := reflect.ValueOf(p.Source)
 	if sourceVal.IsValid() && sourceVal.Type().Kind() == reflect.Ptr {
@@ -691,38 +743,7 @@ func defaultResolveFn(p ResolveParams) (interface{}, error) {
 	}
 	sourceType := sourceVal.Type()
 	if sourceType.Kind() == reflect.Struct {
-		structTypeCacheMu.RLock()
-		sm := structTypeCache[sourceType]
-		structTypeCacheMu.RUnlock()
-		// Cache a mapping of fields for the struct
-		// find field based on struct's json tag
-		// we could potentially create a custom `graphql` tag, but its unnecessary at this point
-		// since graphql speaks to client in a json-like way anyway
-		// so json tags are a good way to start with
-		if sm == nil {
-			structTypeCacheMu.Lock()
-			// Check again in case someone beat us
-			sm = structTypeCache[sourceType]
-			if sm == nil {
-				sm = make(map[string]structFieldInfo)
-				for i := 0; i < sourceType.NumField(); i++ {
-					typeField := sourceType.Field(i)
-					tag := typeField.Tag
-					jsonTag := tag.Get("json")
-					jsonOptions := strings.Split(jsonTag, ",")
-					if len(jsonOptions) == 0 {
-						sm[typeField.Name] = structFieldInfo{index: i}
-					} else {
-						omitempty := len(jsonOptions) > 1 && jsonOptions[1] == "omitempty"
-						sm[jsonOptions[0]] = structFieldInfo{index: i, omitempty: omitempty}
-						sm[typeField.Name] = structFieldInfo{index: i, omitempty: omitempty}
-					}
-				}
-				structTypeCache[sourceType] = sm
-			}
-			structTypeCacheMu.Unlock()
-		}
-
+		sm := fieldInfoForStruct(sourceType)
 		if field, ok := sm[p.Info.FieldName]; ok {
 			valueField := sourceVal.Field(field.index)
 			if field.omitempty && isEmptyValue(valueField) {
@@ -731,20 +752,6 @@ func defaultResolveFn(p ResolveParams) (interface{}, error) {
 			return valueField.Interface(), nil
 		}
 		return nil, nil
-	}
-
-	// try p.Source as a map[string]interface
-	if sourceMap, ok := p.Source.(map[string]interface{}); ok {
-		property := sourceMap[p.Info.FieldName]
-		val := reflect.ValueOf(property)
-		if val.IsValid() && val.Type().Kind() == reflect.Func {
-			// try type casting the func to the most basic func signature
-			// for more complex signatures, user have to define ResolveFn
-			if propertyFn, ok := property.(func() interface{}); ok {
-				return propertyFn(), nil
-			}
-		}
-		return property, nil
 	}
 
 	// last resort, return nil
