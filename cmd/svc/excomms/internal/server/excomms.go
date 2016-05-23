@@ -384,6 +384,8 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 					return nil, grpcErrorf(excomms.ErrorCodeMessageLengthExceeded, "message length can only be 1600 characters in length, message length was %d characters", len(in.GetSMS().Text))
 				case twilio.ErrorCodeNotMessageCapableFromPhoneNumber:
 					return nil, grpcErrorf(excomms.ErrorCodeSMSIncapableFromPhoneNumber, "from phone number %s does not have SMS capabilities", in.GetSMS().FromPhoneNumber)
+				case twilio.ErrorNoSMSSupportToNumber:
+					return nil, grpcErrorf(excomms.ErrorCodeMessageDeliveryFailed, "the `to` phone number %s is not reachable via sms or mms", in.GetSMS().ToPhoneNumber)
 				}
 				if e.Code == twilio.ErrorCodeInvalidToPhoneNumber {
 				}

@@ -29,6 +29,10 @@ const (
 	// the 1600 character limit.
 	// https://www.twilio.com/docs/api/errors/21617
 	ErrorCodeMessageLengthExceeded = 21617
+
+	// ErrorNoSMSSupportToNumber is returned when the `To` number is not reachable via SMS or MMS.
+	// https://www.twilio.com/docs/api/errors/21612
+	ErrorNoSMSSupportToNumber = 21612
 )
 
 // Exception holds information about error response returned by Twilio API

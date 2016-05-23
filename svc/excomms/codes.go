@@ -10,4 +10,8 @@ const (
 	// ErrorCodeSMSIncapableFromPhoneNumber indicates that the from number is not
 	// capable of sending SMS.
 	ErrorCodeSMSIncapableFromPhoneNumber gcode.Code = 101
+
+	// ErrorCodeMessageDeliveryFailed indicates that the message cannot be delivered
+	// to the destination.
+	ErrorCodeMessageDeliveryFailed gcode.Code = 102
 )
