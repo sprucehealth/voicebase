@@ -379,7 +379,13 @@ func writeStruct(w *textWriter, sv reflect.Value) error {
 	}
 
 	// Extensions (the XXX_extensions field).
-	pv := sv.Addr()
+	pv := sv
+	if pv.CanAddr() {
+		pv = sv.Addr()
+	} else {
+		pv = reflect.New(sv.Type())
+		pv.Elem().Set(sv)
+	}
 	if pv.Type().Implements(extendableProtoType) {
 		if err := writeExtensions(w, pv); err != nil {
 			return err
@@ -567,12 +573,12 @@ func writeUnknownStruct(w *textWriter, data []byte) (err error) {
 			return ferr
 		}
 		if wire != WireStartGroup {
-			if err := w.WriteByte(':'); err != nil {
+			if err = w.WriteByte(':'); err != nil {
 				return err
 			}
 		}
 		if !w.compact || wire == WireStartGroup {
-			if err := w.WriteByte(' '); err != nil {
+			if err = w.WriteByte(' '); err != nil {
 				return err
 			}
 		}

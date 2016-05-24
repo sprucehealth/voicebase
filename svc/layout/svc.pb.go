@@ -62,15 +62,20 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+const _ = proto.GoGoProtoPackageIsVersion1
+
 type VisitLayout struct {
 	ID         string              `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name       string              `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	CategoryID string              `protobuf:"bytes,3,opt,name=category_id,proto3" json:"category_id,omitempty"`
+	CategoryID string              `protobuf:"bytes,3,opt,name=category_id,json=categoryId,proto3" json:"category_id,omitempty"`
 	Version    *VisitLayoutVersion `protobuf:"bytes,4,opt,name=version" json:"version,omitempty"`
 }
 
-func (m *VisitLayout) Reset()      { *m = VisitLayout{} }
-func (*VisitLayout) ProtoMessage() {}
+func (m *VisitLayout) Reset()                    { *m = VisitLayout{} }
+func (*VisitLayout) ProtoMessage()               {}
+func (*VisitLayout) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{0} }
 
 func (m *VisitLayout) GetVersion() *VisitLayoutVersion {
 	if m != nil {
@@ -81,35 +86,39 @@ func (m *VisitLayout) GetVersion() *VisitLayoutVersion {
 
 type VisitLayoutVersion struct {
 	ID                   string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	SAMLLocation         string `protobuf:"bytes,2,opt,name=saml_location,proto3" json:"saml_location,omitempty"`
-	IntakeLayoutLocation string `protobuf:"bytes,3,opt,name=intake_layout_location,proto3" json:"intake_layout_location,omitempty"`
-	ReviewLayoutLocation string `protobuf:"bytes,4,opt,name=review_layout_location,proto3" json:"review_layout_location,omitempty"`
+	SAMLLocation         string `protobuf:"bytes,2,opt,name=saml_location,json=samlLocation,proto3" json:"saml_location,omitempty"`
+	IntakeLayoutLocation string `protobuf:"bytes,3,opt,name=intake_layout_location,json=intakeLayoutLocation,proto3" json:"intake_layout_location,omitempty"`
+	ReviewLayoutLocation string `protobuf:"bytes,4,opt,name=review_layout_location,json=reviewLayoutLocation,proto3" json:"review_layout_location,omitempty"`
 }
 
-func (m *VisitLayoutVersion) Reset()      { *m = VisitLayoutVersion{} }
-func (*VisitLayoutVersion) ProtoMessage() {}
+func (m *VisitLayoutVersion) Reset()                    { *m = VisitLayoutVersion{} }
+func (*VisitLayoutVersion) ProtoMessage()               {}
+func (*VisitLayoutVersion) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{1} }
 
 type VisitCategory struct {
 	ID   string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 }
 
-func (m *VisitCategory) Reset()      { *m = VisitCategory{} }
-func (*VisitCategory) ProtoMessage() {}
+func (m *VisitCategory) Reset()                    { *m = VisitCategory{} }
+func (*VisitCategory) ProtoMessage()               {}
+func (*VisitCategory) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{2} }
 
 type ListVisitLayoutsRequest struct {
-	VisitCategoryID string `protobuf:"bytes,1,opt,name=visit_category_id,proto3" json:"visit_category_id,omitempty"`
+	VisitCategoryID string `protobuf:"bytes,1,opt,name=visit_category_id,json=visitCategoryId,proto3" json:"visit_category_id,omitempty"`
 }
 
-func (m *ListVisitLayoutsRequest) Reset()      { *m = ListVisitLayoutsRequest{} }
-func (*ListVisitLayoutsRequest) ProtoMessage() {}
+func (m *ListVisitLayoutsRequest) Reset()                    { *m = ListVisitLayoutsRequest{} }
+func (*ListVisitLayoutsRequest) ProtoMessage()               {}
+func (*ListVisitLayoutsRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{3} }
 
 type ListVisitLayoutsResponse struct {
 	VisitLayouts []*VisitLayout `protobuf:"bytes,1,rep,name=visitLayouts" json:"visitLayouts,omitempty"`
 }
 
-func (m *ListVisitLayoutsResponse) Reset()      { *m = ListVisitLayoutsResponse{} }
-func (*ListVisitLayoutsResponse) ProtoMessage() {}
+func (m *ListVisitLayoutsResponse) Reset()                    { *m = ListVisitLayoutsResponse{} }
+func (*ListVisitLayoutsResponse) ProtoMessage()               {}
+func (*ListVisitLayoutsResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{4} }
 
 func (m *ListVisitLayoutsResponse) GetVisitLayouts() []*VisitLayout {
 	if m != nil {
@@ -121,15 +130,17 @@ func (m *ListVisitLayoutsResponse) GetVisitLayouts() []*VisitLayout {
 type ListVisitCategoriesRequest struct {
 }
 
-func (m *ListVisitCategoriesRequest) Reset()      { *m = ListVisitCategoriesRequest{} }
-func (*ListVisitCategoriesRequest) ProtoMessage() {}
+func (m *ListVisitCategoriesRequest) Reset()                    { *m = ListVisitCategoriesRequest{} }
+func (*ListVisitCategoriesRequest) ProtoMessage()               {}
+func (*ListVisitCategoriesRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{5} }
 
 type ListVisitCategoriesResponse struct {
 	Categories []*VisitCategory `protobuf:"bytes,1,rep,name=categories" json:"categories,omitempty"`
 }
 
-func (m *ListVisitCategoriesResponse) Reset()      { *m = ListVisitCategoriesResponse{} }
-func (*ListVisitCategoriesResponse) ProtoMessage() {}
+func (m *ListVisitCategoriesResponse) Reset()                    { *m = ListVisitCategoriesResponse{} }
+func (*ListVisitCategoriesResponse) ProtoMessage()               {}
+func (*ListVisitCategoriesResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{6} }
 
 func (m *ListVisitCategoriesResponse) GetCategories() []*VisitCategory {
 	if m != nil {
@@ -140,19 +151,21 @@ func (m *ListVisitCategoriesResponse) GetCategories() []*VisitCategory {
 
 type CreateVisitLayoutRequest struct {
 	Name       string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	CategoryID string `protobuf:"bytes,2,opt,name=category_id,proto3" json:"category_id,omitempty"`
+	CategoryID string `protobuf:"bytes,2,opt,name=category_id,json=categoryId,proto3" json:"category_id,omitempty"`
 	SAML       string `protobuf:"bytes,3,opt,name=saml,proto3" json:"saml,omitempty"`
 }
 
-func (m *CreateVisitLayoutRequest) Reset()      { *m = CreateVisitLayoutRequest{} }
-func (*CreateVisitLayoutRequest) ProtoMessage() {}
+func (m *CreateVisitLayoutRequest) Reset()                    { *m = CreateVisitLayoutRequest{} }
+func (*CreateVisitLayoutRequest) ProtoMessage()               {}
+func (*CreateVisitLayoutRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{7} }
 
 type CreateVisitLayoutResponse struct {
-	VisitLayout *VisitLayout `protobuf:"bytes,1,opt,name=visit_layout" json:"visit_layout,omitempty"`
+	VisitLayout *VisitLayout `protobuf:"bytes,1,opt,name=visit_layout,json=visitLayout" json:"visit_layout,omitempty"`
 }
 
-func (m *CreateVisitLayoutResponse) Reset()      { *m = CreateVisitLayoutResponse{} }
-func (*CreateVisitLayoutResponse) ProtoMessage() {}
+func (m *CreateVisitLayoutResponse) Reset()                    { *m = CreateVisitLayoutResponse{} }
+func (*CreateVisitLayoutResponse) ProtoMessage()               {}
+func (*CreateVisitLayoutResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{8} }
 
 func (m *CreateVisitLayoutResponse) GetVisitLayout() *VisitLayout {
 	if m != nil {
@@ -163,18 +176,20 @@ func (m *CreateVisitLayoutResponse) GetVisitLayout() *VisitLayout {
 
 type GetVisitLayoutRequest struct {
 	ID                        string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	IncludeVersionInformation bool   `protobuf:"varint,3,opt,name=include_version_information,proto3" json:"include_version_information,omitempty"`
+	IncludeVersionInformation bool   `protobuf:"varint,3,opt,name=include_version_information,json=includeVersionInformation,proto3" json:"include_version_information,omitempty"`
 }
 
-func (m *GetVisitLayoutRequest) Reset()      { *m = GetVisitLayoutRequest{} }
-func (*GetVisitLayoutRequest) ProtoMessage() {}
+func (m *GetVisitLayoutRequest) Reset()                    { *m = GetVisitLayoutRequest{} }
+func (*GetVisitLayoutRequest) ProtoMessage()               {}
+func (*GetVisitLayoutRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{9} }
 
 type GetVisitLayoutResponse struct {
-	VisitLayout *VisitLayout `protobuf:"bytes,1,opt,name=visit_layout" json:"visit_layout,omitempty"`
+	VisitLayout *VisitLayout `protobuf:"bytes,1,opt,name=visit_layout,json=visitLayout" json:"visit_layout,omitempty"`
 }
 
-func (m *GetVisitLayoutResponse) Reset()      { *m = GetVisitLayoutResponse{} }
-func (*GetVisitLayoutResponse) ProtoMessage() {}
+func (m *GetVisitLayoutResponse) Reset()                    { *m = GetVisitLayoutResponse{} }
+func (*GetVisitLayoutResponse) ProtoMessage()               {}
+func (*GetVisitLayoutResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{10} }
 
 func (m *GetVisitLayoutResponse) GetVisitLayout() *VisitLayout {
 	if m != nil {
@@ -184,18 +199,24 @@ func (m *GetVisitLayoutResponse) GetVisitLayout() *VisitLayout {
 }
 
 type GetVisitLayoutByVersionRequest struct {
-	VisitLayoutVersionID string `protobuf:"bytes,1,opt,name=visit_layout_version_id,proto3" json:"visit_layout_version_id,omitempty"`
+	VisitLayoutVersionID string `protobuf:"bytes,1,opt,name=visit_layout_version_id,json=visitLayoutVersionId,proto3" json:"visit_layout_version_id,omitempty"`
 }
 
 func (m *GetVisitLayoutByVersionRequest) Reset()      { *m = GetVisitLayoutByVersionRequest{} }
 func (*GetVisitLayoutByVersionRequest) ProtoMessage() {}
+func (*GetVisitLayoutByVersionRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptorSvc, []int{11}
+}
 
 type GetVisitLayoutByVersionResponse struct {
-	VisitLayout *VisitLayout `protobuf:"bytes,1,opt,name=visit_layout" json:"visit_layout,omitempty"`
+	VisitLayout *VisitLayout `protobuf:"bytes,1,opt,name=visit_layout,json=visitLayout" json:"visit_layout,omitempty"`
 }
 
 func (m *GetVisitLayoutByVersionResponse) Reset()      { *m = GetVisitLayoutByVersionResponse{} }
 func (*GetVisitLayoutByVersionResponse) ProtoMessage() {}
+func (*GetVisitLayoutByVersionResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptorSvc, []int{12}
+}
 
 func (m *GetVisitLayoutByVersionResponse) GetVisitLayout() *VisitLayout {
 	if m != nil {
@@ -205,24 +226,26 @@ func (m *GetVisitLayoutByVersionResponse) GetVisitLayout() *VisitLayout {
 }
 
 type UpdateVisitLayoutRequest struct {
-	VisitLayoutID  string `protobuf:"bytes,1,opt,name=visit_layout_id,proto3" json:"visit_layout_id,omitempty"`
-	UpdateName     bool   `protobuf:"varint,2,opt,name=update_name,proto3" json:"update_name,omitempty"`
+	VisitLayoutID  string `protobuf:"bytes,1,opt,name=visit_layout_id,json=visitLayoutId,proto3" json:"visit_layout_id,omitempty"`
+	UpdateName     bool   `protobuf:"varint,2,opt,name=update_name,json=updateName,proto3" json:"update_name,omitempty"`
 	Name           string `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
-	UpdateCategory bool   `protobuf:"varint,4,opt,name=update_category,proto3" json:"update_category,omitempty"`
-	CategoryID     string `protobuf:"bytes,5,opt,name=category_id,proto3" json:"category_id,omitempty"`
-	UpdateSAML     bool   `protobuf:"varint,6,opt,name=update_saml,proto3" json:"update_saml,omitempty"`
+	UpdateCategory bool   `protobuf:"varint,4,opt,name=update_category,json=updateCategory,proto3" json:"update_category,omitempty"`
+	CategoryID     string `protobuf:"bytes,5,opt,name=category_id,json=categoryId,proto3" json:"category_id,omitempty"`
+	UpdateSAML     bool   `protobuf:"varint,6,opt,name=update_saml,json=updateSaml,proto3" json:"update_saml,omitempty"`
 	SAML           string `protobuf:"bytes,7,opt,name=saml,proto3" json:"saml,omitempty"`
 }
 
-func (m *UpdateVisitLayoutRequest) Reset()      { *m = UpdateVisitLayoutRequest{} }
-func (*UpdateVisitLayoutRequest) ProtoMessage() {}
+func (m *UpdateVisitLayoutRequest) Reset()                    { *m = UpdateVisitLayoutRequest{} }
+func (*UpdateVisitLayoutRequest) ProtoMessage()               {}
+func (*UpdateVisitLayoutRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{13} }
 
 type UpdateVisitLayoutResponse struct {
-	VisitLayout *VisitLayout `protobuf:"bytes,1,opt,name=visit_layout" json:"visit_layout,omitempty"`
+	VisitLayout *VisitLayout `protobuf:"bytes,1,opt,name=visit_layout,json=visitLayout" json:"visit_layout,omitempty"`
 }
 
-func (m *UpdateVisitLayoutResponse) Reset()      { *m = UpdateVisitLayoutResponse{} }
-func (*UpdateVisitLayoutResponse) ProtoMessage() {}
+func (m *UpdateVisitLayoutResponse) Reset()                    { *m = UpdateVisitLayoutResponse{} }
+func (*UpdateVisitLayoutResponse) ProtoMessage()               {}
+func (*UpdateVisitLayoutResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{14} }
 
 func (m *UpdateVisitLayoutResponse) GetVisitLayout() *VisitLayout {
 	if m != nil {
@@ -232,31 +255,35 @@ func (m *UpdateVisitLayoutResponse) GetVisitLayout() *VisitLayout {
 }
 
 type DeleteVisitLayoutRequest struct {
-	VisitLayoutID string `protobuf:"bytes,1,opt,name=visit_layout_id,proto3" json:"visit_layout_id,omitempty"`
+	VisitLayoutID string `protobuf:"bytes,1,opt,name=visit_layout_id,json=visitLayoutId,proto3" json:"visit_layout_id,omitempty"`
 }
 
-func (m *DeleteVisitLayoutRequest) Reset()      { *m = DeleteVisitLayoutRequest{} }
-func (*DeleteVisitLayoutRequest) ProtoMessage() {}
+func (m *DeleteVisitLayoutRequest) Reset()                    { *m = DeleteVisitLayoutRequest{} }
+func (*DeleteVisitLayoutRequest) ProtoMessage()               {}
+func (*DeleteVisitLayoutRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{15} }
 
 type DeleteVisitLayoutResponse struct {
 }
 
-func (m *DeleteVisitLayoutResponse) Reset()      { *m = DeleteVisitLayoutResponse{} }
-func (*DeleteVisitLayoutResponse) ProtoMessage() {}
+func (m *DeleteVisitLayoutResponse) Reset()                    { *m = DeleteVisitLayoutResponse{} }
+func (*DeleteVisitLayoutResponse) ProtoMessage()               {}
+func (*DeleteVisitLayoutResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{16} }
 
 type CreateVisitCategoryRequest struct {
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 }
 
-func (m *CreateVisitCategoryRequest) Reset()      { *m = CreateVisitCategoryRequest{} }
-func (*CreateVisitCategoryRequest) ProtoMessage() {}
+func (m *CreateVisitCategoryRequest) Reset()                    { *m = CreateVisitCategoryRequest{} }
+func (*CreateVisitCategoryRequest) ProtoMessage()               {}
+func (*CreateVisitCategoryRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{17} }
 
 type CreateVisitCategoryResponse struct {
 	Category *VisitCategory `protobuf:"bytes,1,opt,name=category" json:"category,omitempty"`
 }
 
-func (m *CreateVisitCategoryResponse) Reset()      { *m = CreateVisitCategoryResponse{} }
-func (*CreateVisitCategoryResponse) ProtoMessage() {}
+func (m *CreateVisitCategoryResponse) Reset()                    { *m = CreateVisitCategoryResponse{} }
+func (*CreateVisitCategoryResponse) ProtoMessage()               {}
+func (*CreateVisitCategoryResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{18} }
 
 func (m *CreateVisitCategoryResponse) GetCategory() *VisitCategory {
 	if m != nil {
@@ -266,19 +293,21 @@ func (m *CreateVisitCategoryResponse) GetCategory() *VisitCategory {
 }
 
 type UpdateVisitCategoryRequest struct {
-	VisitCategoryID string `protobuf:"bytes,1,opt,name=visit_category_id,proto3" json:"visit_category_id,omitempty"`
+	VisitCategoryID string `protobuf:"bytes,1,opt,name=visit_category_id,json=visitCategoryId,proto3" json:"visit_category_id,omitempty"`
 	Name            string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 }
 
-func (m *UpdateVisitCategoryRequest) Reset()      { *m = UpdateVisitCategoryRequest{} }
-func (*UpdateVisitCategoryRequest) ProtoMessage() {}
+func (m *UpdateVisitCategoryRequest) Reset()                    { *m = UpdateVisitCategoryRequest{} }
+func (*UpdateVisitCategoryRequest) ProtoMessage()               {}
+func (*UpdateVisitCategoryRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{19} }
 
 type UpdateVisitCategoryResponse struct {
 	Category *VisitCategory `protobuf:"bytes,1,opt,name=category" json:"category,omitempty"`
 }
 
-func (m *UpdateVisitCategoryResponse) Reset()      { *m = UpdateVisitCategoryResponse{} }
-func (*UpdateVisitCategoryResponse) ProtoMessage() {}
+func (m *UpdateVisitCategoryResponse) Reset()                    { *m = UpdateVisitCategoryResponse{} }
+func (*UpdateVisitCategoryResponse) ProtoMessage()               {}
+func (*UpdateVisitCategoryResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{20} }
 
 func (m *UpdateVisitCategoryResponse) GetCategory() *VisitCategory {
 	if m != nil {
@@ -288,32 +317,38 @@ func (m *UpdateVisitCategoryResponse) GetCategory() *VisitCategory {
 }
 
 type DeleteVisitCategoryRequest struct {
-	VisitCategoryID string `protobuf:"bytes,1,opt,name=visit_category_id,proto3" json:"visit_category_id,omitempty"`
+	VisitCategoryID string `protobuf:"bytes,1,opt,name=visit_category_id,json=visitCategoryId,proto3" json:"visit_category_id,omitempty"`
 }
 
-func (m *DeleteVisitCategoryRequest) Reset()      { *m = DeleteVisitCategoryRequest{} }
-func (*DeleteVisitCategoryRequest) ProtoMessage() {}
+func (m *DeleteVisitCategoryRequest) Reset()                    { *m = DeleteVisitCategoryRequest{} }
+func (*DeleteVisitCategoryRequest) ProtoMessage()               {}
+func (*DeleteVisitCategoryRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{21} }
 
 type DeleteVisitCategoryResponse struct {
 }
 
-func (m *DeleteVisitCategoryResponse) Reset()      { *m = DeleteVisitCategoryResponse{} }
-func (*DeleteVisitCategoryResponse) ProtoMessage() {}
+func (m *DeleteVisitCategoryResponse) Reset()                    { *m = DeleteVisitCategoryResponse{} }
+func (*DeleteVisitCategoryResponse) ProtoMessage()               {}
+func (*DeleteVisitCategoryResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{22} }
 
 type GetVisitLayoutVersionRequest struct {
 	ID            string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	VisitLayoutID string `protobuf:"bytes,2,opt,name=visit_layout_id,proto3" json:"visit_layout_id,omitempty"`
+	VisitLayoutID string `protobuf:"bytes,2,opt,name=visit_layout_id,json=visitLayoutId,proto3" json:"visit_layout_id,omitempty"`
 }
 
-func (m *GetVisitLayoutVersionRequest) Reset()      { *m = GetVisitLayoutVersionRequest{} }
-func (*GetVisitLayoutVersionRequest) ProtoMessage() {}
+func (m *GetVisitLayoutVersionRequest) Reset()                    { *m = GetVisitLayoutVersionRequest{} }
+func (*GetVisitLayoutVersionRequest) ProtoMessage()               {}
+func (*GetVisitLayoutVersionRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{23} }
 
 type GetVisitLayoutVersionResponse struct {
-	VisitLayoutVersion *VisitLayoutVersion `protobuf:"bytes,1,opt,name=visit_layout_version" json:"visit_layout_version,omitempty"`
+	VisitLayoutVersion *VisitLayoutVersion `protobuf:"bytes,1,opt,name=visit_layout_version,json=visitLayoutVersion" json:"visit_layout_version,omitempty"`
 }
 
 func (m *GetVisitLayoutVersionResponse) Reset()      { *m = GetVisitLayoutVersionResponse{} }
 func (*GetVisitLayoutVersionResponse) ProtoMessage() {}
+func (*GetVisitLayoutVersionResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptorSvc, []int{24}
+}
 
 func (m *GetVisitLayoutVersionResponse) GetVisitLayoutVersion() *VisitLayoutVersion {
 	if m != nil {
@@ -326,15 +361,17 @@ type GetVisitCategoryRequest struct {
 	ID string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 }
 
-func (m *GetVisitCategoryRequest) Reset()      { *m = GetVisitCategoryRequest{} }
-func (*GetVisitCategoryRequest) ProtoMessage() {}
+func (m *GetVisitCategoryRequest) Reset()                    { *m = GetVisitCategoryRequest{} }
+func (*GetVisitCategoryRequest) ProtoMessage()               {}
+func (*GetVisitCategoryRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{25} }
 
 type GetVisitCategoryResponse struct {
-	VisitCategory *VisitCategory `protobuf:"bytes,1,opt,name=visit_category" json:"visit_category,omitempty"`
+	VisitCategory *VisitCategory `protobuf:"bytes,1,opt,name=visit_category,json=visitCategory" json:"visit_category,omitempty"`
 }
 
-func (m *GetVisitCategoryResponse) Reset()      { *m = GetVisitCategoryResponse{} }
-func (*GetVisitCategoryResponse) ProtoMessage() {}
+func (m *GetVisitCategoryResponse) Reset()                    { *m = GetVisitCategoryResponse{} }
+func (*GetVisitCategoryResponse) ProtoMessage()               {}
+func (*GetVisitCategoryResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{26} }
 
 func (m *GetVisitCategoryResponse) GetVisitCategory() *VisitCategory {
 	if m != nil {
@@ -382,7 +419,12 @@ func (this *VisitLayout) Equal(that interface{}) bool {
 
 	that1, ok := that.(*VisitLayout)
 	if !ok {
-		return false
+		that2, ok := that.(VisitLayout)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -416,7 +458,12 @@ func (this *VisitLayoutVersion) Equal(that interface{}) bool {
 
 	that1, ok := that.(*VisitLayoutVersion)
 	if !ok {
-		return false
+		that2, ok := that.(VisitLayoutVersion)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -450,7 +497,12 @@ func (this *VisitCategory) Equal(that interface{}) bool {
 
 	that1, ok := that.(*VisitCategory)
 	if !ok {
-		return false
+		that2, ok := that.(VisitCategory)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -478,7 +530,12 @@ func (this *ListVisitLayoutsRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*ListVisitLayoutsRequest)
 	if !ok {
-		return false
+		that2, ok := that.(ListVisitLayoutsRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -503,7 +560,12 @@ func (this *ListVisitLayoutsResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*ListVisitLayoutsResponse)
 	if !ok {
-		return false
+		that2, ok := that.(ListVisitLayoutsResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -533,7 +595,12 @@ func (this *ListVisitCategoriesRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*ListVisitCategoriesRequest)
 	if !ok {
-		return false
+		that2, ok := that.(ListVisitCategoriesRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -555,7 +622,12 @@ func (this *ListVisitCategoriesResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*ListVisitCategoriesResponse)
 	if !ok {
-		return false
+		that2, ok := that.(ListVisitCategoriesResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -585,7 +657,12 @@ func (this *CreateVisitLayoutRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CreateVisitLayoutRequest)
 	if !ok {
-		return false
+		that2, ok := that.(CreateVisitLayoutRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -616,7 +693,12 @@ func (this *CreateVisitLayoutResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CreateVisitLayoutResponse)
 	if !ok {
-		return false
+		that2, ok := that.(CreateVisitLayoutResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -641,7 +723,12 @@ func (this *GetVisitLayoutRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*GetVisitLayoutRequest)
 	if !ok {
-		return false
+		that2, ok := that.(GetVisitLayoutRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -669,7 +756,12 @@ func (this *GetVisitLayoutResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*GetVisitLayoutResponse)
 	if !ok {
-		return false
+		that2, ok := that.(GetVisitLayoutResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -694,7 +786,12 @@ func (this *GetVisitLayoutByVersionRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*GetVisitLayoutByVersionRequest)
 	if !ok {
-		return false
+		that2, ok := that.(GetVisitLayoutByVersionRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -719,7 +816,12 @@ func (this *GetVisitLayoutByVersionResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*GetVisitLayoutByVersionResponse)
 	if !ok {
-		return false
+		that2, ok := that.(GetVisitLayoutByVersionResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -744,7 +846,12 @@ func (this *UpdateVisitLayoutRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*UpdateVisitLayoutRequest)
 	if !ok {
-		return false
+		that2, ok := that.(UpdateVisitLayoutRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -787,7 +894,12 @@ func (this *UpdateVisitLayoutResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*UpdateVisitLayoutResponse)
 	if !ok {
-		return false
+		that2, ok := that.(UpdateVisitLayoutResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -812,7 +924,12 @@ func (this *DeleteVisitLayoutRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*DeleteVisitLayoutRequest)
 	if !ok {
-		return false
+		that2, ok := that.(DeleteVisitLayoutRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -837,7 +954,12 @@ func (this *DeleteVisitLayoutResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*DeleteVisitLayoutResponse)
 	if !ok {
-		return false
+		that2, ok := that.(DeleteVisitLayoutResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -859,7 +981,12 @@ func (this *CreateVisitCategoryRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CreateVisitCategoryRequest)
 	if !ok {
-		return false
+		that2, ok := that.(CreateVisitCategoryRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -884,7 +1011,12 @@ func (this *CreateVisitCategoryResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CreateVisitCategoryResponse)
 	if !ok {
-		return false
+		that2, ok := that.(CreateVisitCategoryResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -909,7 +1041,12 @@ func (this *UpdateVisitCategoryRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*UpdateVisitCategoryRequest)
 	if !ok {
-		return false
+		that2, ok := that.(UpdateVisitCategoryRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -937,7 +1074,12 @@ func (this *UpdateVisitCategoryResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*UpdateVisitCategoryResponse)
 	if !ok {
-		return false
+		that2, ok := that.(UpdateVisitCategoryResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -962,7 +1104,12 @@ func (this *DeleteVisitCategoryRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*DeleteVisitCategoryRequest)
 	if !ok {
-		return false
+		that2, ok := that.(DeleteVisitCategoryRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -987,7 +1134,12 @@ func (this *DeleteVisitCategoryResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*DeleteVisitCategoryResponse)
 	if !ok {
-		return false
+		that2, ok := that.(DeleteVisitCategoryResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1009,7 +1161,12 @@ func (this *GetVisitLayoutVersionRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*GetVisitLayoutVersionRequest)
 	if !ok {
-		return false
+		that2, ok := that.(GetVisitLayoutVersionRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1037,7 +1194,12 @@ func (this *GetVisitLayoutVersionResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*GetVisitLayoutVersionResponse)
 	if !ok {
-		return false
+		that2, ok := that.(GetVisitLayoutVersionResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1062,7 +1224,12 @@ func (this *GetVisitCategoryRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*GetVisitCategoryRequest)
 	if !ok {
-		return false
+		that2, ok := that.(GetVisitCategoryRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1087,7 +1254,12 @@ func (this *GetVisitCategoryResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*GetVisitCategoryResponse)
 	if !ok {
-		return false
+		that2, ok := that.(GetVisitCategoryResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1439,6 +1611,10 @@ func extensionToGoStringSvc(e map[int32]github_com_gogo_protobuf_proto.Extension
 var _ context.Context
 var _ grpc.ClientConn
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the grpc package it is being compiled against.
+const _ = grpc.SupportPackageIsVersion2
+
 // Client API for Layout service
 
 type LayoutClient interface {
@@ -1593,148 +1769,220 @@ func RegisterLayoutServer(s *grpc.Server, srv LayoutServer) {
 	s.RegisterService(&_Layout_serviceDesc, srv)
 }
 
-func _Layout_ListVisitLayouts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Layout_ListVisitLayouts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListVisitLayoutsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(LayoutServer).ListVisitLayouts(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(LayoutServer).ListVisitLayouts(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/layout.Layout/ListVisitLayouts",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LayoutServer).ListVisitLayouts(ctx, req.(*ListVisitLayoutsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Layout_ListVisitCategories_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Layout_ListVisitCategories_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListVisitCategoriesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(LayoutServer).ListVisitCategories(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(LayoutServer).ListVisitCategories(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/layout.Layout/ListVisitCategories",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LayoutServer).ListVisitCategories(ctx, req.(*ListVisitCategoriesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Layout_CreateVisitLayout_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Layout_CreateVisitLayout_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateVisitLayoutRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(LayoutServer).CreateVisitLayout(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(LayoutServer).CreateVisitLayout(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/layout.Layout/CreateVisitLayout",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LayoutServer).CreateVisitLayout(ctx, req.(*CreateVisitLayoutRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Layout_GetVisitCategory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Layout_GetVisitCategory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetVisitCategoryRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(LayoutServer).GetVisitCategory(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(LayoutServer).GetVisitCategory(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/layout.Layout/GetVisitCategory",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LayoutServer).GetVisitCategory(ctx, req.(*GetVisitCategoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Layout_GetVisitLayout_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Layout_GetVisitLayout_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetVisitLayoutRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(LayoutServer).GetVisitLayout(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(LayoutServer).GetVisitLayout(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/layout.Layout/GetVisitLayout",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LayoutServer).GetVisitLayout(ctx, req.(*GetVisitLayoutRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Layout_GetVisitLayoutByVersion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Layout_GetVisitLayoutByVersion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetVisitLayoutByVersionRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(LayoutServer).GetVisitLayoutByVersion(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(LayoutServer).GetVisitLayoutByVersion(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/layout.Layout/GetVisitLayoutByVersion",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LayoutServer).GetVisitLayoutByVersion(ctx, req.(*GetVisitLayoutByVersionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Layout_GetVisitLayoutVersion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Layout_GetVisitLayoutVersion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetVisitLayoutVersionRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(LayoutServer).GetVisitLayoutVersion(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(LayoutServer).GetVisitLayoutVersion(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/layout.Layout/GetVisitLayoutVersion",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LayoutServer).GetVisitLayoutVersion(ctx, req.(*GetVisitLayoutVersionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Layout_UpdateVisitLayout_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Layout_UpdateVisitLayout_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateVisitLayoutRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(LayoutServer).UpdateVisitLayout(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(LayoutServer).UpdateVisitLayout(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/layout.Layout/UpdateVisitLayout",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LayoutServer).UpdateVisitLayout(ctx, req.(*UpdateVisitLayoutRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Layout_DeleteVisitLayout_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Layout_DeleteVisitLayout_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteVisitLayoutRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(LayoutServer).DeleteVisitLayout(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(LayoutServer).DeleteVisitLayout(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/layout.Layout/DeleteVisitLayout",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LayoutServer).DeleteVisitLayout(ctx, req.(*DeleteVisitLayoutRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Layout_CreateVisitCategory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Layout_CreateVisitCategory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateVisitCategoryRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(LayoutServer).CreateVisitCategory(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(LayoutServer).CreateVisitCategory(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/layout.Layout/CreateVisitCategory",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LayoutServer).CreateVisitCategory(ctx, req.(*CreateVisitCategoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Layout_UpdateVisitCategory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Layout_UpdateVisitCategory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateVisitCategoryRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(LayoutServer).UpdateVisitCategory(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(LayoutServer).UpdateVisitCategory(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/layout.Layout/UpdateVisitCategory",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LayoutServer).UpdateVisitCategory(ctx, req.(*UpdateVisitCategoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Layout_DeleteVisitCategory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Layout_DeleteVisitCategory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteVisitCategoryRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(LayoutServer).DeleteVisitCategory(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(LayoutServer).DeleteVisitCategory(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/layout.Layout/DeleteVisitCategory",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LayoutServer).DeleteVisitCategory(ctx, req.(*DeleteVisitCategoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 var _Layout_serviceDesc = grpc.ServiceDesc{
@@ -5934,3 +6182,72 @@ var (
 	ErrInvalidLengthSvc = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowSvc   = fmt.Errorf("proto: integer overflow")
 )
+
+var fileDescriptorSvc = []byte{
+	// 1029 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xac, 0x57, 0xcd, 0x6e, 0xeb, 0x44,
+	0x14, 0xbe, 0x49, 0x43, 0x6e, 0xee, 0x49, 0x93, 0xdc, 0xba, 0xb9, 0xad, 0xeb, 0xb4, 0xc9, 0x65,
+	0xf8, 0x29, 0x0b, 0x48, 0x68, 0xa1, 0x20, 0x04, 0x02, 0x91, 0x56, 0x42, 0x95, 0x02, 0x45, 0x2e,
+	0xad, 0x0a, 0x12, 0x44, 0x69, 0xe2, 0x06, 0x43, 0x12, 0xb7, 0xb1, 0x13, 0xd4, 0x05, 0x12, 0x8f,
+	0xc0, 0x23, 0xb0, 0x64, 0xcf, 0x4b, 0xb0, 0xa3, 0x4b, 0x56, 0x88, 0x96, 0x05, 0x2c, 0x79, 0x04,
+	0x8e, 0xc7, 0x63, 0x8f, 0x7f, 0x66, 0x12, 0x20, 0x5d, 0x58, 0xb1, 0x67, 0xce, 0xf9, 0xce, 0xdf,
+	0x37, 0xe7, 0x4c, 0xe0, 0x91, 0x3d, 0xed, 0xd6, 0x2f, 0xc7, 0x96, 0x63, 0x29, 0xd9, 0x41, 0xe7,
+	0xda, 0x9a, 0x38, 0xda, 0x2b, 0x7d, 0xd3, 0xf9, 0x72, 0x72, 0x5e, 0xef, 0x5a, 0xc3, 0x46, 0xdf,
+	0xea, 0x5b, 0x0d, 0xba, 0x7d, 0x3e, 0xb9, 0xa0, 0x5f, 0xf4, 0x83, 0xbe, 0x79, 0x6a, 0xe4, 0x87,
+	0x14, 0xe4, 0x4f, 0x4d, 0xdb, 0x74, 0x5a, 0x54, 0x5d, 0x59, 0x83, 0xb4, 0xd9, 0x53, 0x53, 0x4f,
+	0x53, 0x2f, 0x3d, 0x6a, 0x66, 0xef, 0x7e, 0xab, 0xa5, 0x0f, 0x0f, 0x74, 0x5c, 0x51, 0x14, 0xc8,
+	0x8c, 0x3a, 0x43, 0x43, 0x4d, 0xbb, 0x3b, 0x3a, 0x7d, 0x57, 0x1a, 0x90, 0xef, 0x76, 0x1c, 0xa3,
+	0x6f, 0x8d, 0xaf, 0xdb, 0xa8, 0xb4, 0x44, 0x95, 0x8a, 0xa8, 0x04, 0xfb, 0x6c, 0x19, 0x95, 0xc1,
+	0x17, 0x39, 0xec, 0x29, 0xaf, 0xc3, 0xc3, 0xa9, 0x31, 0xb6, 0x4d, 0x6b, 0xa4, 0x66, 0x50, 0x38,
+	0xbf, 0xab, 0xd5, 0x3d, 0xaf, 0xeb, 0x21, 0x17, 0x4e, 0x3d, 0x09, 0xdd, 0x17, 0x25, 0xbf, 0xa4,
+	0x40, 0x49, 0xee, 0x4b, 0x3d, 0xdd, 0x83, 0x82, 0xdd, 0x19, 0x0e, 0xda, 0x03, 0x0b, 0x2d, 0xbb,
+	0xa6, 0xa8, 0xcb, 0xcd, 0xc7, 0x28, 0xb2, 0x7c, 0xfc, 0xfe, 0x87, 0xad, 0x16, 0x5b, 0xd7, 0x97,
+	0x5d, 0x31, 0xff, 0x0b, 0x7d, 0x5b, 0x33, 0x47, 0x4e, 0xe7, 0x6b, 0xa3, 0xed, 0xb9, 0xc4, 0xf5,
+	0x69, 0x5c, 0x7a, 0xd9, 0xdb, 0xf5, 0x7c, 0x08, 0x6b, 0x8d, 0x8d, 0xa9, 0x69, 0x7c, 0x93, 0xd0,
+	0xca, 0x78, 0x5a, 0xde, 0x6e, 0x54, 0x8b, 0xbc, 0x0d, 0x05, 0x1a, 0x90, 0x9f, 0xa6, 0xff, 0x92,
+	0x75, 0xf2, 0x19, 0xac, 0xb7, 0x4c, 0xdb, 0x09, 0x65, 0xc4, 0xd6, 0x8d, 0xab, 0x89, 0x61, 0x3b,
+	0xca, 0x7b, 0xb0, 0x32, 0x75, 0x97, 0xdb, 0xe1, 0xb2, 0x78, 0xa8, 0xab, 0x88, 0x5a, 0x8a, 0x18,
+	0x45, 0x13, 0xa5, 0x69, 0x64, 0xa1, 0x47, 0x8e, 0x41, 0x4d, 0x62, 0xdb, 0x97, 0xd6, 0xc8, 0x36,
+	0x94, 0x37, 0x61, 0x79, 0x1a, 0x5a, 0x47, 0xdc, 0x25, 0xac, 0xe0, 0xaa, 0xa0, 0x82, 0x7a, 0x44,
+	0x90, 0x6c, 0x82, 0x16, 0x80, 0x32, 0x5b, 0xa6, 0xe1, 0xfb, 0x4c, 0x3e, 0x81, 0x8a, 0x70, 0x97,
+	0x59, 0xdd, 0x03, 0x9f, 0x40, 0xb8, 0xca, 0x6c, 0x3e, 0x89, 0xd8, 0xf4, 0xdd, 0xd7, 0x43, 0x82,
+	0xe4, 0x5b, 0x50, 0xf7, 0xc7, 0x06, 0x7e, 0x87, 0xdd, 0x62, 0x59, 0xf2, 0x93, 0x9a, 0x92, 0x53,
+	0x39, 0x3d, 0x97, 0xca, 0x9b, 0x90, 0x71, 0xe9, 0xc3, 0x48, 0x9f, 0x43, 0xc9, 0x8c, 0x4b, 0x2e,
+	0x9d, 0xae, 0x62, 0x1e, 0x37, 0x04, 0xe6, 0x59, 0x48, 0x6f, 0xb0, 0x44, 0x32, 0xca, 0x50, 0x3f,
+	0x24, 0x89, 0xcc, 0x87, 0x12, 0x49, 0x2c, 0x78, 0xf2, 0x81, 0xe1, 0x08, 0x02, 0x92, 0xb1, 0xe7,
+	0x5d, 0xa8, 0x98, 0xa3, 0xee, 0x60, 0xd2, 0x33, 0xda, 0xec, 0x2c, 0xb5, 0xcd, 0xd1, 0x85, 0x35,
+	0x1e, 0x72, 0x5e, 0xe7, 0xf4, 0x0d, 0x26, 0xc2, 0x8e, 0xd5, 0x21, 0x17, 0x20, 0x1f, 0xc3, 0x5a,
+	0xdc, 0xe0, 0x82, 0x21, 0x5c, 0x41, 0x35, 0x8a, 0xd8, 0xbc, 0xf6, 0x8f, 0x3b, 0x8b, 0xe5, 0x08,
+	0xd6, 0xc3, 0xc8, 0xdc, 0x71, 0x3f, 0x40, 0x15, 0x03, 0x2c, 0x27, 0xdb, 0x01, 0x86, 0x5c, 0x9e,
+	0x26, 0x57, 0x7b, 0xe4, 0x53, 0xa8, 0x49, 0x4d, 0x2e, 0x18, 0xcd, 0x4f, 0x69, 0x50, 0x4f, 0x2e,
+	0x7b, 0x62, 0x96, 0xbd, 0x05, 0xa5, 0x48, 0x20, 0x41, 0x00, 0x2b, 0x18, 0x40, 0x21, 0xa4, 0x80,
+	0x9e, 0x17, 0x42, 0xa8, 0xc8, 0xad, 0x1a, 0xe4, 0x27, 0x14, 0xb6, 0x1d, 0x1c, 0xfe, 0x9c, 0x0e,
+	0xde, 0xd2, 0x47, 0x2e, 0x5b, 0x7d, 0x06, 0x2f, 0x85, 0x18, 0xbc, 0x0d, 0x25, 0xa6, 0xe4, 0xb3,
+	0x94, 0xb6, 0xa0, 0x9c, 0x5e, 0xf4, 0x96, 0x83, 0x5e, 0x13, 0xa3, 0xfa, 0x33, 0x73, 0xa9, 0xde,
+	0x08, 0xdc, 0xa1, 0x8c, 0xcf, 0xba, 0xa8, 0x9e, 0x82, 0x17, 0x3c, 0xe5, 0x3d, 0x73, 0xef, 0x18,
+	0x25, 0x82, 0xb3, 0xf1, 0x50, 0x76, 0x36, 0x04, 0x49, 0x5b, 0xb0, 0x14, 0x27, 0xa0, 0x1e, 0x18,
+	0x03, 0xe3, 0x9e, 0x2b, 0x41, 0x2a, 0xb0, 0x21, 0x80, 0xf5, 0x7c, 0x25, 0xaf, 0x82, 0x16, 0x3a,
+	0xe4, 0x41, 0x1b, 0x92, 0x77, 0x19, 0x3c, 0x50, 0x15, 0xa1, 0x06, 0x0b, 0x7e, 0x07, 0x72, 0x41,
+	0xed, 0xbc, 0xc0, 0x25, 0x9d, 0x2e, 0x10, 0xc3, 0x03, 0xa5, 0x85, 0x92, 0x19, 0xf7, 0x61, 0xd1,
+	0x79, 0x20, 0x9c, 0x3f, 0x18, 0x84, 0xd0, 0xe4, 0xff, 0x0f, 0xe2, 0x73, 0xd0, 0x42, 0x59, 0xbe,
+	0xef, 0x20, 0xc8, 0x16, 0x54, 0x84, 0xf0, 0xac, 0x8c, 0x57, 0xb0, 0x19, 0x6d, 0x10, 0xb1, 0x8e,
+	0x24, 0xeb, 0xae, 0x02, 0x5a, 0xa5, 0xff, 0x25, 0xad, 0x86, 0xb0, 0x25, 0x31, 0xc9, 0x92, 0xd8,
+	0x82, 0xb2, 0xa8, 0x0b, 0xb2, 0x84, 0xce, 0xba, 0x35, 0x29, 0xc9, 0x26, 0x48, 0x76, 0x60, 0xdd,
+	0x37, 0x17, 0x4f, 0xae, 0x24, 0x38, 0x72, 0x06, 0x6a, 0x52, 0x85, 0x39, 0xf7, 0x0e, 0x14, 0xa3,
+	0x05, 0x99, 0x5d, 0xe7, 0x42, 0xa4, 0x1e, 0xbb, 0x7f, 0xe6, 0x20, 0xcb, 0xee, 0x9a, 0x27, 0xf0,
+	0x38, 0x7e, 0xdb, 0x50, 0x6a, 0x3e, 0x88, 0xe4, 0x8e, 0xa3, 0x3d, 0x95, 0x0b, 0x30, 0xff, 0xbe,
+	0x80, 0x55, 0xc1, 0x8d, 0x42, 0x21, 0x09, 0xc5, 0xc4, 0x65, 0x44, 0x7b, 0x6e, 0xa6, 0x0c, 0xc3,
+	0x3f, 0x83, 0x95, 0xc4, 0x70, 0x57, 0x02, 0xb7, 0x64, 0xd7, 0x0e, 0xed, 0xd9, 0x19, 0x12, 0x0c,
+	0x19, 0x13, 0x12, 0xcf, 0x3a, 0x4f, 0x88, 0xa4, 0x84, 0x3c, 0x21, 0xd2, 0x82, 0x1d, 0x41, 0x31,
+	0x4a, 0x37, 0x65, 0x2b, 0xae, 0x13, 0x75, 0xb5, 0x2a, 0xdb, 0x66, 0x80, 0x5f, 0x71, 0x42, 0xc5,
+	0x66, 0xaa, 0xf2, 0xa2, 0x58, 0x35, 0x3e, 0xe7, 0xb5, 0xed, 0xb9, 0x72, 0xcc, 0x56, 0x2f, 0x7e,
+	0xeb, 0xf1, 0x2d, 0x3d, 0x2f, 0x46, 0x88, 0xd9, 0x79, 0x61, 0x8e, 0x14, 0xaf, 0x69, 0x62, 0x28,
+	0xf1, 0x9a, 0xca, 0x86, 0x3c, 0xaf, 0xa9, 0x7c, 0xa2, 0x21, 0x72, 0x62, 0x84, 0x70, 0x64, 0xd9,
+	0xd0, 0xe2, 0xc8, 0xd2, 0xf9, 0xe3, 0xf2, 0x5c, 0x30, 0x4d, 0x38, 0xcf, 0xe5, 0xc3, 0x89, 0xf3,
+	0x7c, 0xd6, 0x38, 0x42, 0x7c, 0x41, 0xa3, 0xe7, 0xf8, 0xf2, 0xc1, 0xc3, 0xf1, 0x67, 0x4d, 0x0a,
+	0xc4, 0x17, 0xf4, 0x65, 0x8e, 0x2f, 0x9f, 0x09, 0x1c, 0x7f, 0x46, 0x63, 0x6f, 0xbe, 0x7c, 0x73,
+	0x5b, 0x4d, 0xfd, 0x7a, 0x5b, 0x7d, 0xf0, 0x37, 0xfe, 0x7e, 0x77, 0x57, 0x4d, 0xfd, 0x88, 0xcf,
+	0xcf, 0xf8, 0xdc, 0xe0, 0xf3, 0x3b, 0x3e, 0x7f, 0xdd, 0xe1, 0x1e, 0xfe, 0x7e, 0xff, 0x47, 0xf5,
+	0xc1, 0x79, 0x96, 0xfe, 0x1f, 0x7e, 0xed, 0x9f, 0x00, 0x00, 0x00, 0xff, 0xff, 0x15, 0x20, 0x44,
+	0x88, 0x53, 0x0f, 0x00, 0x00,
+}

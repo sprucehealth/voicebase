@@ -35,6 +35,10 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+const _ = proto.GoGoProtoPackageIsVersion1
+
 type SentMessage_Type int32
 
 const (
@@ -50,6 +54,8 @@ var SentMessage_Type_value = map[string]int32{
 	"SMS":   0,
 	"EMAIL": 1,
 }
+
+func (SentMessage_Type) EnumDescriptor() ([]byte, []int) { return fileDescriptorModels, []int{0, 0} }
 
 type DeleteResourceRequest_Type int32
 
@@ -79,6 +85,10 @@ var DeleteResourceRequest_Type_value = map[string]int32{
 	"TWILIO_TRANSCRIPTION": 5,
 }
 
+func (DeleteResourceRequest_Type) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptorModels, []int{3, 0}
+}
+
 type SentMessage struct {
 	ID          uint64           `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	UUID        string           `protobuf:"bytes,2,opt,name=uuid,proto3" json:"uuid,omitempty"`
@@ -90,8 +100,9 @@ type SentMessage struct {
 	Message isSentMessage_Message `protobuf_oneof:"message"`
 }
 
-func (m *SentMessage) Reset()      { *m = SentMessage{} }
-func (*SentMessage) ProtoMessage() {}
+func (m *SentMessage) Reset()                    { *m = SentMessage{} }
+func (*SentMessage) ProtoMessage()               {}
+func (*SentMessage) Descriptor() ([]byte, []int) { return fileDescriptorModels, []int{0} }
 
 type isSentMessage_Message interface {
 	isSentMessage_Message()
@@ -101,10 +112,10 @@ type isSentMessage_Message interface {
 }
 
 type SentMessage_EmailMsg struct {
-	EmailMsg *EmailMessage `protobuf:"bytes,5,opt,name=email_msg,oneof"`
+	EmailMsg *EmailMessage `protobuf:"bytes,5,opt,name=email_msg,json=emailMsg,oneof"`
 }
 type SentMessage_SMSMsg struct {
-	SMSMsg *SMSMessage `protobuf:"bytes,6,opt,name=sms_msg,oneof"`
+	SMSMsg *SMSMessage `protobuf:"bytes,6,opt,name=sms_msg,json=smsMsg,oneof"`
 }
 
 func (*SentMessage_EmailMsg) isSentMessage_Message() {}
@@ -132,8 +143,8 @@ func (m *SentMessage) GetSMSMsg() *SMSMessage {
 }
 
 // XXX_OneofFuncs is for the internal use of the proto package.
-func (*SentMessage) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), []interface{}) {
-	return _SentMessage_OneofMarshaler, _SentMessage_OneofUnmarshaler, []interface{}{
+func (*SentMessage) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _SentMessage_OneofMarshaler, _SentMessage_OneofUnmarshaler, _SentMessage_OneofSizer, []interface{}{
 		(*SentMessage_EmailMsg)(nil),
 		(*SentMessage_SMSMsg)(nil),
 	}
@@ -184,40 +195,64 @@ func _SentMessage_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Bu
 	}
 }
 
+func _SentMessage_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*SentMessage)
+	// message
+	switch x := m.Message.(type) {
+	case *SentMessage_EmailMsg:
+		s := proto.Size(x.EmailMsg)
+		n += proto.SizeVarint(5<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *SentMessage_SMSMsg:
+		s := proto.Size(x.SMSMsg)
+		n += proto.SizeVarint(6<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
+}
+
 type EmailMessage struct {
 	ID        string   `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Subject   string   `protobuf:"bytes,2,opt,name=subject,proto3" json:"subject,omitempty"`
 	Body      string   `protobuf:"bytes,3,opt,name=body,proto3" json:"body,omitempty"`
-	FromName  string   `protobuf:"bytes,4,opt,name=from_name,proto3" json:"from_name,omitempty"`
-	FromEmail string   `protobuf:"bytes,5,opt,name=from_email,proto3" json:"from_email,omitempty"`
-	ToName    string   `protobuf:"bytes,6,opt,name=to_name,proto3" json:"to_name,omitempty"`
-	ToEmail   string   `protobuf:"bytes,7,opt,name=to_email,proto3" json:"to_email,omitempty"`
-	MediaURLs []string `protobuf:"bytes,8,rep,name=media_urls" json:"media_urls,omitempty"`
+	FromName  string   `protobuf:"bytes,4,opt,name=from_name,json=fromName,proto3" json:"from_name,omitempty"`
+	FromEmail string   `protobuf:"bytes,5,opt,name=from_email,json=fromEmail,proto3" json:"from_email,omitempty"`
+	ToName    string   `protobuf:"bytes,6,opt,name=to_name,json=toName,proto3" json:"to_name,omitempty"`
+	ToEmail   string   `protobuf:"bytes,7,opt,name=to_email,json=toEmail,proto3" json:"to_email,omitempty"`
+	MediaURLs []string `protobuf:"bytes,8,rep,name=media_urls,json=mediaUrls" json:"media_urls,omitempty"`
 }
 
-func (m *EmailMessage) Reset()      { *m = EmailMessage{} }
-func (*EmailMessage) ProtoMessage() {}
+func (m *EmailMessage) Reset()                    { *m = EmailMessage{} }
+func (*EmailMessage) ProtoMessage()               {}
+func (*EmailMessage) Descriptor() ([]byte, []int) { return fileDescriptorModels, []int{1} }
 
 type SMSMessage struct {
 	ID              string   `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	FromPhoneNumber string   `protobuf:"bytes,2,opt,name=from_phone_number,proto3" json:"from_phone_number,omitempty"`
-	ToPhoneNumber   string   `protobuf:"bytes,3,opt,name=to_phone_number,proto3" json:"to_phone_number,omitempty"`
+	FromPhoneNumber string   `protobuf:"bytes,2,opt,name=from_phone_number,json=fromPhoneNumber,proto3" json:"from_phone_number,omitempty"`
+	ToPhoneNumber   string   `protobuf:"bytes,3,opt,name=to_phone_number,json=toPhoneNumber,proto3" json:"to_phone_number,omitempty"`
 	Text            string   `protobuf:"bytes,4,opt,name=text,proto3" json:"text,omitempty"`
-	DateCreated     uint64   `protobuf:"varint,5,opt,name=date_created,proto3" json:"date_created,omitempty"`
-	DateSent        uint64   `protobuf:"varint,6,opt,name=date_sent,proto3" json:"date_sent,omitempty"`
-	MediaURLs       []string `protobuf:"bytes,7,rep,name=media_urls" json:"media_urls,omitempty"`
+	DateCreated     uint64   `protobuf:"varint,5,opt,name=date_created,json=dateCreated,proto3" json:"date_created,omitempty"`
+	DateSent        uint64   `protobuf:"varint,6,opt,name=date_sent,json=dateSent,proto3" json:"date_sent,omitempty"`
+	MediaURLs       []string `protobuf:"bytes,7,rep,name=media_urls,json=mediaUrls" json:"media_urls,omitempty"`
 }
 
-func (m *SMSMessage) Reset()      { *m = SMSMessage{} }
-func (*SMSMessage) ProtoMessage() {}
+func (m *SMSMessage) Reset()                    { *m = SMSMessage{} }
+func (*SMSMessage) ProtoMessage()               {}
+func (*SMSMessage) Descriptor() ([]byte, []int) { return fileDescriptorModels, []int{2} }
 
 type DeleteResourceRequest struct {
 	Type       DeleteResourceRequest_Type `protobuf:"varint,1,opt,name=type,proto3,enum=models.DeleteResourceRequest_Type" json:"type,omitempty"`
-	ResourceID string                     `protobuf:"bytes,2,opt,name=resource_id,proto3" json:"resource_id,omitempty"`
+	ResourceID string                     `protobuf:"bytes,2,opt,name=resource_id,json=resourceId,proto3" json:"resource_id,omitempty"`
 }
 
-func (m *DeleteResourceRequest) Reset()      { *m = DeleteResourceRequest{} }
-func (*DeleteResourceRequest) ProtoMessage() {}
+func (m *DeleteResourceRequest) Reset()                    { *m = DeleteResourceRequest{} }
+func (*DeleteResourceRequest) ProtoMessage()               {}
+func (*DeleteResourceRequest) Descriptor() ([]byte, []int) { return fileDescriptorModels, []int{3} }
 
 func init() {
 	proto.RegisterType((*SentMessage)(nil), "models.SentMessage")
@@ -251,7 +286,12 @@ func (this *SentMessage) Equal(that interface{}) bool {
 
 	that1, ok := that.(*SentMessage)
 	if !ok {
-		return false
+		that2, ok := that.(SentMessage)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -294,7 +334,12 @@ func (this *SentMessage_EmailMsg) Equal(that interface{}) bool {
 
 	that1, ok := that.(*SentMessage_EmailMsg)
 	if !ok {
-		return false
+		that2, ok := that.(SentMessage_EmailMsg)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -319,7 +364,12 @@ func (this *SentMessage_SMSMsg) Equal(that interface{}) bool {
 
 	that1, ok := that.(*SentMessage_SMSMsg)
 	if !ok {
-		return false
+		that2, ok := that.(SentMessage_SMSMsg)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -344,7 +394,12 @@ func (this *EmailMessage) Equal(that interface{}) bool {
 
 	that1, ok := that.(*EmailMessage)
 	if !ok {
-		return false
+		that2, ok := that.(EmailMessage)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -395,7 +450,12 @@ func (this *SMSMessage) Equal(that interface{}) bool {
 
 	that1, ok := that.(*SMSMessage)
 	if !ok {
-		return false
+		that2, ok := that.(SMSMessage)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -443,7 +503,12 @@ func (this *DeleteResourceRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*DeleteResourceRequest)
 	if !ok {
-		return false
+		that2, ok := that.(DeleteResourceRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1989,3 +2054,50 @@ var (
 	ErrInvalidLengthModels = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowModels   = fmt.Errorf("proto: integer overflow")
 )
+
+var fileDescriptorModels = []byte{
+	// 681 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x84, 0x54, 0x4d, 0x6f, 0xd3, 0x40,
+	0x10, 0x8d, 0x13, 0xd7, 0x8e, 0x27, 0x69, 0x6b, 0x56, 0x05, 0x4c, 0x81, 0x50, 0x72, 0x40, 0x08,
+	0x95, 0x54, 0x6a, 0x25, 0x24, 0x8e, 0xf9, 0x12, 0x58, 0x4a, 0xd2, 0x6a, 0x9b, 0xc0, 0xd1, 0x4a,
+	0xe2, 0xad, 0x1b, 0x14, 0x67, 0x8b, 0xbd, 0x46, 0xf4, 0xc6, 0x4f, 0xe0, 0x67, 0x20, 0x7e, 0x09,
+	0xc7, 0x1e, 0x39, 0x21, 0x1a, 0x2e, 0x1c, 0x11, 0x27, 0xc4, 0x89, 0xf1, 0x7a, 0x53, 0x52, 0x04,
+	0xe2, 0xb0, 0xda, 0x9d, 0xf7, 0xe6, 0x69, 0x67, 0x9f, 0x9e, 0x0d, 0xe5, 0x90, 0xfb, 0x6c, 0x1a,
+	0xd7, 0x4e, 0x22, 0x2e, 0x38, 0x31, 0xb2, 0x6a, 0xf3, 0x61, 0x30, 0x11, 0xc7, 0xc9, 0xa8, 0x36,
+	0xe6, 0xe1, 0x4e, 0xc0, 0x03, 0xbe, 0x23, 0xe9, 0x51, 0x72, 0x24, 0x2b, 0x59, 0xc8, 0x53, 0x26,
+	0xab, 0xbe, 0xcf, 0x43, 0xe9, 0x90, 0xcd, 0x44, 0x97, 0xc5, 0xf1, 0x30, 0x60, 0xe4, 0x1a, 0xe4,
+	0x27, 0xbe, 0xa3, 0x6d, 0x69, 0xf7, 0xf5, 0x86, 0x31, 0xff, 0x74, 0x27, 0xef, 0xb6, 0x28, 0x22,
+	0xe4, 0x16, 0xe8, 0x49, 0x82, 0x4c, 0x1e, 0x19, 0xab, 0x51, 0x44, 0x46, 0x1f, 0x0c, 0x90, 0x93,
+	0x28, 0xd9, 0x82, 0x92, 0xcf, 0x62, 0x31, 0x99, 0x0d, 0xc5, 0x84, 0xcf, 0x9c, 0x42, 0xda, 0x44,
+	0x97, 0x21, 0xb2, 0x0d, 0xba, 0x38, 0x3d, 0x61, 0x8e, 0x8e, 0xd4, 0xda, 0xae, 0x53, 0x53, 0xb3,
+	0x2f, 0x5d, 0x5d, 0xeb, 0x23, 0x4f, 0x65, 0x17, 0xd9, 0x03, 0x8b, 0x85, 0xc3, 0xc9, 0xd4, 0x0b,
+	0xe3, 0xc0, 0x59, 0x41, 0x49, 0x69, 0x77, 0x63, 0x21, 0x69, 0xa7, 0x84, 0xd2, 0x3c, 0xcd, 0xd1,
+	0xa2, 0x6c, 0xec, 0xc6, 0x01, 0x79, 0x0c, 0x66, 0x1c, 0xc6, 0x52, 0x62, 0x48, 0x09, 0xb9, 0xb8,
+	0xa5, 0x7b, 0xa8, 0x04, 0x0d, 0xc0, 0xc9, 0x8d, 0xb4, 0x8e, 0x03, 0x14, 0x1b, 0x28, 0xc0, 0x53,
+	0x75, 0x13, 0xf4, 0xf4, 0x76, 0x62, 0x42, 0x01, 0x39, 0x3b, 0x47, 0x2c, 0x58, 0x69, 0x77, 0xeb,
+	0x6e, 0xc7, 0xd6, 0x1a, 0x16, 0x98, 0x61, 0x26, 0xae, 0x7e, 0xd7, 0xa0, 0xbc, 0x7c, 0xfd, 0x92,
+	0x5b, 0xd6, 0x25, 0xb7, 0x1c, 0x1c, 0x25, 0x19, 0xbd, 0x60, 0x63, 0x91, 0x19, 0x46, 0x17, 0x25,
+	0x21, 0xa0, 0x8f, 0xb8, 0x7f, 0xaa, 0x2c, 0x92, 0x67, 0x72, 0x13, 0xac, 0xa3, 0x88, 0x87, 0xde,
+	0x6c, 0x18, 0x66, 0x06, 0x59, 0xb4, 0x98, 0x02, 0x3d, 0xac, 0xc9, 0x6d, 0x00, 0x49, 0xca, 0x67,
+	0x4a, 0x2f, 0x2c, 0x2a, 0xdb, 0xe5, 0x20, 0xe4, 0x3a, 0x98, 0x82, 0x67, 0x4a, 0x43, 0x72, 0x86,
+	0xe0, 0x52, 0x77, 0x03, 0x8a, 0x48, 0x64, 0x2a, 0x33, 0x9b, 0x41, 0xf0, 0x4c, 0xb3, 0x0d, 0x10,
+	0x32, 0x7f, 0x32, 0xf4, 0x92, 0x68, 0x1a, 0x3b, 0xc5, 0xad, 0x02, 0x4e, 0xbf, 0x8a, 0xd3, 0x5b,
+	0xdd, 0x14, 0x1d, 0xd0, 0x4e, 0x4c, 0x2d, 0xd9, 0x30, 0x40, 0xbe, 0xfa, 0x53, 0x03, 0xf8, 0x6d,
+	0xe0, 0x3f, 0x9f, 0xfc, 0x00, 0xae, 0xc8, 0x39, 0x4f, 0x8e, 0xf9, 0x8c, 0x79, 0xb3, 0x24, 0x1c,
+	0xb1, 0x48, 0x3d, 0x7e, 0x3d, 0x25, 0x0e, 0x52, 0xbc, 0x27, 0x61, 0x72, 0x0f, 0xd6, 0x71, 0xb6,
+	0x4b, 0x9d, 0x99, 0x1f, 0xab, 0x82, 0x2f, 0xf7, 0xa1, 0x59, 0x82, 0xbd, 0x16, 0xca, 0x13, 0x79,
+	0x26, 0x77, 0xa1, 0xec, 0x0f, 0x05, 0xf3, 0xc6, 0x11, 0xc3, 0xcd, 0x97, 0x8e, 0xe8, 0x98, 0x35,
+	0x2c, 0x9a, 0x19, 0x94, 0xfa, 0x29, 0x5b, 0x62, 0x0c, 0x97, 0x74, 0x45, 0xa7, 0xc5, 0x14, 0x48,
+	0xc3, 0xf6, 0xc7, 0xe3, 0xcd, 0xff, 0x3c, 0xfe, 0x87, 0x06, 0x57, 0x5b, 0x6c, 0xca, 0x04, 0xa3,
+	0x2c, 0xe6, 0x49, 0x34, 0xc6, 0xfd, 0x65, 0x82, 0xb9, 0x26, 0x8f, 0x54, 0xa0, 0x35, 0x19, 0xe8,
+	0xea, 0x22, 0x6a, 0x7f, 0x6d, 0x5e, 0x8e, 0xf6, 0x0e, 0x94, 0x22, 0xc5, 0x7a, 0x17, 0xdf, 0xd3,
+	0x1a, 0x0e, 0x00, 0x0b, 0x11, 0x1a, 0x0a, 0x8b, 0x16, 0xd7, 0xaf, 0xbe, 0x52, 0xd9, 0x2c, 0x81,
+	0xe9, 0xf6, 0x9e, 0xd5, 0x3b, 0x6e, 0x0b, 0xf3, 0xb9, 0x0e, 0xa5, 0xfe, 0x73, 0xb7, 0xe3, 0xee,
+	0x7b, 0xcd, 0x7a, 0x07, 0x53, 0x4a, 0xd6, 0x00, 0x14, 0x90, 0x06, 0x38, 0x4f, 0x6c, 0x28, 0xab,
+	0xba, 0xdb, 0x6e, 0xb9, 0x75, 0xbb, 0x40, 0x36, 0xc0, 0x56, 0x08, 0x6d, 0x37, 0xf7, 0x69, 0xcb,
+	0xed, 0x3d, 0xb1, 0x75, 0x4c, 0xea, 0x86, 0x42, 0xfb, 0xb4, 0xde, 0x3b, 0x6c, 0x52, 0xf7, 0xa0,
+	0xef, 0xee, 0xf7, 0xec, 0x95, 0xc6, 0xf6, 0xd9, 0x79, 0x45, 0xfb, 0x78, 0x5e, 0xc9, 0x7d, 0xc3,
+	0xfd, 0xcd, 0xbc, 0xa2, 0xbd, 0xc3, 0xf5, 0x01, 0xd7, 0x19, 0xae, 0xcf, 0xb8, 0xbe, 0xce, 0x91,
+	0xc3, 0xfd, 0xed, 0x97, 0x4a, 0x6e, 0x64, 0xc8, 0xdf, 0xc9, 0xde, 0xaf, 0x00, 0x00, 0x00, 0xff,
+	0xff, 0x02, 0xf5, 0x43, 0xef, 0x95, 0x04, 0x00, 0x00,
+}

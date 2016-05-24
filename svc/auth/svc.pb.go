@@ -66,6 +66,10 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+const _ = proto.GoGoProtoPackageIsVersion1
+
 // VerificationCodeType represents the various types/use cases of verification codes
 type VerificationCodeType int32
 
@@ -89,6 +93,8 @@ var VerificationCodeType_value = map[string]int32{
 	"PASSWORD_RESET": 3,
 }
 
+func (VerificationCodeType) EnumDescriptor() ([]byte, []int) { return fileDescriptorSvc, []int{0} }
+
 // AccountType represents the various types of accounts
 type AccountType int32
 
@@ -109,37 +115,42 @@ var AccountType_value = map[string]int32{
 	"PROVIDER": 2,
 }
 
+func (AccountType) EnumDescriptor() ([]byte, []int) { return fileDescriptorSvc, []int{1} }
+
 // VerificationCode represents the collection of information used to represent the time bound verification code
 type VerificationCode struct {
 	Token           string               `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
 	Code            string               `protobuf:"bytes,2,opt,name=code,proto3" json:"code,omitempty"`
 	Type            VerificationCodeType `protobuf:"varint,4,opt,name=type,proto3,enum=auth.VerificationCodeType" json:"type,omitempty"`
-	ExpirationEpoch uint64               `protobuf:"varint,5,opt,name=expiration_epoch,proto3" json:"expiration_epoch,omitempty"`
+	ExpirationEpoch uint64               `protobuf:"varint,5,opt,name=expiration_epoch,json=expirationEpoch,proto3" json:"expiration_epoch,omitempty"`
 }
 
-func (m *VerificationCode) Reset()      { *m = VerificationCode{} }
-func (*VerificationCode) ProtoMessage() {}
+func (m *VerificationCode) Reset()                    { *m = VerificationCode{} }
+func (*VerificationCode) ProtoMessage()               {}
+func (*VerificationCode) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{0} }
 
 // Account represents the data associated with an account
 type Account struct {
 	ID        string      `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	FirstName string      `protobuf:"bytes,2,opt,name=first_name,proto3" json:"first_name,omitempty"`
-	LastName  string      `protobuf:"bytes,3,opt,name=last_name,proto3" json:"last_name,omitempty"`
+	FirstName string      `protobuf:"bytes,2,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
+	LastName  string      `protobuf:"bytes,3,opt,name=last_name,json=lastName,proto3" json:"last_name,omitempty"`
 	Type      AccountType `protobuf:"varint,4,opt,name=type,proto3,enum=auth.AccountType" json:"type,omitempty"`
 }
 
-func (m *Account) Reset()      { *m = Account{} }
-func (*Account) ProtoMessage() {}
+func (m *Account) Reset()                    { *m = Account{} }
+func (*Account) ProtoMessage()               {}
+func (*Account) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{1} }
 
 // An AuthToken represents the token value and metadata about the token
 type AuthToken struct {
 	Value               string `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
-	ExpirationEpoch     uint64 `protobuf:"varint,2,opt,name=expiration_epoch,proto3" json:"expiration_epoch,omitempty"`
-	ClientEncryptionKey string `protobuf:"bytes,3,opt,name=client_encryption_key,proto3" json:"client_encryption_key,omitempty"`
+	ExpirationEpoch     uint64 `protobuf:"varint,2,opt,name=expiration_epoch,json=expirationEpoch,proto3" json:"expiration_epoch,omitempty"`
+	ClientEncryptionKey string `protobuf:"bytes,3,opt,name=client_encryption_key,json=clientEncryptionKey,proto3" json:"client_encryption_key,omitempty"`
 }
 
-func (m *AuthToken) Reset()      { *m = AuthToken{} }
-func (*AuthToken) ProtoMessage() {}
+func (m *AuthToken) Reset()                    { *m = AuthToken{} }
+func (*AuthToken) ProtoMessage()               {}
+func (*AuthToken) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{2} }
 
 // AuthenticateLoginRequest represents the information that is used to authenticate a users login.
 // The token_attributes map is used when generating the auth token for this login. Future use of this token
@@ -147,12 +158,13 @@ func (*AuthToken) ProtoMessage() {}
 type AuthenticateLoginRequest struct {
 	Email           string            `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
 	Password        string            `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
-	TokenAttributes map[string]string `protobuf:"bytes,3,rep,name=token_attributes" json:"token_attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	DeviceID        string            `protobuf:"bytes,4,opt,name=device_id,proto3" json:"device_id,omitempty"`
+	TokenAttributes map[string]string `protobuf:"bytes,3,rep,name=token_attributes,json=tokenAttributes" json:"token_attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	DeviceID        string            `protobuf:"bytes,4,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
 }
 
-func (m *AuthenticateLoginRequest) Reset()      { *m = AuthenticateLoginRequest{} }
-func (*AuthenticateLoginRequest) ProtoMessage() {}
+func (m *AuthenticateLoginRequest) Reset()                    { *m = AuthenticateLoginRequest{} }
+func (*AuthenticateLoginRequest) ProtoMessage()               {}
+func (*AuthenticateLoginRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{3} }
 
 func (m *AuthenticateLoginRequest) GetTokenAttributes() map[string]string {
 	if m != nil {
@@ -166,12 +178,13 @@ func (m *AuthenticateLoginRequest) GetTokenAttributes() map[string]string {
 type AuthenticateLoginResponse struct {
 	Token                *AuthToken `protobuf:"bytes,1,opt,name=token" json:"token,omitempty"`
 	Account              *Account   `protobuf:"bytes,2,opt,name=account" json:"account,omitempty"`
-	TwoFactorRequired    bool       `protobuf:"varint,4,opt,name=two_factor_required,proto3" json:"two_factor_required,omitempty"`
-	TwoFactorPhoneNumber string     `protobuf:"bytes,5,opt,name=two_factor_phone_number,proto3" json:"two_factor_phone_number,omitempty"`
+	TwoFactorRequired    bool       `protobuf:"varint,4,opt,name=two_factor_required,json=twoFactorRequired,proto3" json:"two_factor_required,omitempty"`
+	TwoFactorPhoneNumber string     `protobuf:"bytes,5,opt,name=two_factor_phone_number,json=twoFactorPhoneNumber,proto3" json:"two_factor_phone_number,omitempty"`
 }
 
-func (m *AuthenticateLoginResponse) Reset()      { *m = AuthenticateLoginResponse{} }
-func (*AuthenticateLoginResponse) ProtoMessage() {}
+func (m *AuthenticateLoginResponse) Reset()                    { *m = AuthenticateLoginResponse{} }
+func (*AuthenticateLoginResponse) ProtoMessage()               {}
+func (*AuthenticateLoginResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{4} }
 
 func (m *AuthenticateLoginResponse) GetToken() *AuthToken {
 	if m != nil {
@@ -193,12 +206,15 @@ func (m *AuthenticateLoginResponse) GetAccount() *Account {
 type AuthenticateLoginWithCodeRequest struct {
 	Token           string            `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
 	Code            string            `protobuf:"bytes,2,opt,name=code,proto3" json:"code,omitempty"`
-	TokenAttributes map[string]string `protobuf:"bytes,3,rep,name=token_attributes" json:"token_attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	DeviceID        string            `protobuf:"bytes,4,opt,name=device_id,proto3" json:"device_id,omitempty"`
+	TokenAttributes map[string]string `protobuf:"bytes,3,rep,name=token_attributes,json=tokenAttributes" json:"token_attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	DeviceID        string            `protobuf:"bytes,4,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
 }
 
 func (m *AuthenticateLoginWithCodeRequest) Reset()      { *m = AuthenticateLoginWithCodeRequest{} }
 func (*AuthenticateLoginWithCodeRequest) ProtoMessage() {}
+func (*AuthenticateLoginWithCodeRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptorSvc, []int{5}
+}
 
 func (m *AuthenticateLoginWithCodeRequest) GetTokenAttributes() map[string]string {
 	if m != nil {
@@ -215,6 +231,9 @@ type AuthenticateLoginWithCodeResponse struct {
 
 func (m *AuthenticateLoginWithCodeResponse) Reset()      { *m = AuthenticateLoginWithCodeResponse{} }
 func (*AuthenticateLoginWithCodeResponse) ProtoMessage() {}
+func (*AuthenticateLoginWithCodeResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptorSvc, []int{6}
+}
 
 func (m *AuthenticateLoginWithCodeResponse) GetToken() *AuthToken {
 	if m != nil {
@@ -234,11 +253,12 @@ func (m *AuthenticateLoginWithCodeResponse) GetAccount() *Account {
 // The refresh parameter indicates if a new token should be created with an extended expiration
 type CheckAuthenticationRequest struct {
 	Token           string            `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
-	TokenAttributes map[string]string `protobuf:"bytes,2,rep,name=token_attributes" json:"token_attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	TokenAttributes map[string]string `protobuf:"bytes,2,rep,name=token_attributes,json=tokenAttributes" json:"token_attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
-func (m *CheckAuthenticationRequest) Reset()      { *m = CheckAuthenticationRequest{} }
-func (*CheckAuthenticationRequest) ProtoMessage() {}
+func (m *CheckAuthenticationRequest) Reset()                    { *m = CheckAuthenticationRequest{} }
+func (*CheckAuthenticationRequest) ProtoMessage()               {}
+func (*CheckAuthenticationRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{7} }
 
 func (m *CheckAuthenticationRequest) GetTokenAttributes() map[string]string {
 	if m != nil {
@@ -250,13 +270,14 @@ func (m *CheckAuthenticationRequest) GetTokenAttributes() map[string]string {
 // CheckAuthenticationResponse represents the information that is returned from IsAuthenticatedRequest
 // If a refresh was requested then a new token will be returned
 type CheckAuthenticationResponse struct {
-	IsAuthenticated bool       `protobuf:"varint,1,opt,name=is_authenticated,proto3" json:"is_authenticated,omitempty"`
+	IsAuthenticated bool       `protobuf:"varint,1,opt,name=is_authenticated,json=isAuthenticated,proto3" json:"is_authenticated,omitempty"`
 	Account         *Account   `protobuf:"bytes,2,opt,name=account" json:"account,omitempty"`
 	Token           *AuthToken `protobuf:"bytes,3,opt,name=token" json:"token,omitempty"`
 }
 
-func (m *CheckAuthenticationResponse) Reset()      { *m = CheckAuthenticationResponse{} }
-func (*CheckAuthenticationResponse) ProtoMessage() {}
+func (m *CheckAuthenticationResponse) Reset()                    { *m = CheckAuthenticationResponse{} }
+func (*CheckAuthenticationResponse) ProtoMessage()               {}
+func (*CheckAuthenticationResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{8} }
 
 func (m *CheckAuthenticationResponse) GetAccount() *Account {
 	if m != nil {
@@ -275,18 +296,19 @@ func (m *CheckAuthenticationResponse) GetToken() *AuthToken {
 // CreateAccountRequest represents the information that is expected in account creation requests
 // The email and optional? phone number are set as the primary for the account
 type CreateAccountRequest struct {
-	FirstName       string            `protobuf:"bytes,1,opt,name=first_name,proto3" json:"first_name,omitempty"`
-	LastName        string            `protobuf:"bytes,2,opt,name=last_name,proto3" json:"last_name,omitempty"`
+	FirstName       string            `protobuf:"bytes,1,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
+	LastName        string            `protobuf:"bytes,2,opt,name=last_name,json=lastName,proto3" json:"last_name,omitempty"`
 	Email           string            `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
-	PhoneNumber     string            `protobuf:"bytes,4,opt,name=phone_number,proto3" json:"phone_number,omitempty"`
+	PhoneNumber     string            `protobuf:"bytes,4,opt,name=phone_number,json=phoneNumber,proto3" json:"phone_number,omitempty"`
 	Password        string            `protobuf:"bytes,5,opt,name=password,proto3" json:"password,omitempty"`
-	TokenAttributes map[string]string `protobuf:"bytes,6,rep,name=token_attributes" json:"token_attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	DeviceID        string            `protobuf:"bytes,7,opt,name=device_id,proto3" json:"device_id,omitempty"`
+	TokenAttributes map[string]string `protobuf:"bytes,6,rep,name=token_attributes,json=tokenAttributes" json:"token_attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	DeviceID        string            `protobuf:"bytes,7,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
 	Type            AccountType       `protobuf:"varint,8,opt,name=type,proto3,enum=auth.AccountType" json:"type,omitempty"`
 }
 
-func (m *CreateAccountRequest) Reset()      { *m = CreateAccountRequest{} }
-func (*CreateAccountRequest) ProtoMessage() {}
+func (m *CreateAccountRequest) Reset()                    { *m = CreateAccountRequest{} }
+func (*CreateAccountRequest) ProtoMessage()               {}
+func (*CreateAccountRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{9} }
 
 func (m *CreateAccountRequest) GetTokenAttributes() map[string]string {
 	if m != nil {
@@ -302,8 +324,9 @@ type CreateAccountResponse struct {
 	Account *Account   `protobuf:"bytes,2,opt,name=account" json:"account,omitempty"`
 }
 
-func (m *CreateAccountResponse) Reset()      { *m = CreateAccountResponse{} }
-func (*CreateAccountResponse) ProtoMessage() {}
+func (m *CreateAccountResponse) Reset()                    { *m = CreateAccountResponse{} }
+func (*CreateAccountResponse) ProtoMessage()               {}
+func (*CreateAccountResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{10} }
 
 func (m *CreateAccountResponse) GetToken() *AuthToken {
 	if m != nil {
@@ -322,20 +345,22 @@ func (m *CreateAccountResponse) GetAccount() *Account {
 // GetAccountRequest represents the information required to request a users account information
 //  AccountEmail is an optional second field. If ID is not provided, then email will be used to lookup the account
 type GetAccountRequest struct {
-	AccountID    string `protobuf:"bytes,1,opt,name=account_id,proto3" json:"account_id,omitempty"`
-	AccountEmail string `protobuf:"bytes,2,opt,name=account_email,proto3" json:"account_email,omitempty"`
+	AccountID    string `protobuf:"bytes,1,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
+	AccountEmail string `protobuf:"bytes,2,opt,name=account_email,json=accountEmail,proto3" json:"account_email,omitempty"`
 }
 
-func (m *GetAccountRequest) Reset()      { *m = GetAccountRequest{} }
-func (*GetAccountRequest) ProtoMessage() {}
+func (m *GetAccountRequest) Reset()                    { *m = GetAccountRequest{} }
+func (*GetAccountRequest) ProtoMessage()               {}
+func (*GetAccountRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{11} }
 
 // GetAccountResponse represents the information returned from a GetAccount request
 type GetAccountResponse struct {
 	Account *Account `protobuf:"bytes,1,opt,name=account" json:"account,omitempty"`
 }
 
-func (m *GetAccountResponse) Reset()      { *m = GetAccountResponse{} }
-func (*GetAccountResponse) ProtoMessage() {}
+func (m *GetAccountResponse) Reset()                    { *m = GetAccountResponse{} }
+func (*GetAccountResponse) ProtoMessage()               {}
+func (*GetAccountResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{12} }
 
 func (m *GetAccountResponse) GetAccount() *Account {
 	if m != nil {
@@ -347,11 +372,12 @@ func (m *GetAccountResponse) GetAccount() *Account {
 // UnauthenticateRequest represents the information required to tombstone a token
 type UnauthenticateRequest struct {
 	Token           string            `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
-	TokenAttributes map[string]string `protobuf:"bytes,2,rep,name=token_attributes" json:"token_attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	TokenAttributes map[string]string `protobuf:"bytes,2,rep,name=token_attributes,json=tokenAttributes" json:"token_attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
-func (m *UnauthenticateRequest) Reset()      { *m = UnauthenticateRequest{} }
-func (*UnauthenticateRequest) ProtoMessage() {}
+func (m *UnauthenticateRequest) Reset()                    { *m = UnauthenticateRequest{} }
+func (*UnauthenticateRequest) ProtoMessage()               {}
+func (*UnauthenticateRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{13} }
 
 func (m *UnauthenticateRequest) GetTokenAttributes() map[string]string {
 	if m != nil {
@@ -364,25 +390,32 @@ func (m *UnauthenticateRequest) GetTokenAttributes() map[string]string {
 type UnauthenticateResponse struct {
 }
 
-func (m *UnauthenticateResponse) Reset()      { *m = UnauthenticateResponse{} }
-func (*UnauthenticateResponse) ProtoMessage() {}
+func (m *UnauthenticateResponse) Reset()                    { *m = UnauthenticateResponse{} }
+func (*UnauthenticateResponse) ProtoMessage()               {}
+func (*UnauthenticateResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{14} }
 
 // CreateVerificationCodeRequest represents the information required to create a verification code
 type CreateVerificationCodeRequest struct {
 	Type          VerificationCodeType `protobuf:"varint,1,opt,name=type,proto3,enum=auth.VerificationCodeType" json:"type,omitempty"`
-	ValueToVerify string               `protobuf:"bytes,2,opt,name=value_to_verify,proto3" json:"value_to_verify,omitempty"`
+	ValueToVerify string               `protobuf:"bytes,2,opt,name=value_to_verify,json=valueToVerify,proto3" json:"value_to_verify,omitempty"`
 }
 
 func (m *CreateVerificationCodeRequest) Reset()      { *m = CreateVerificationCodeRequest{} }
 func (*CreateVerificationCodeRequest) ProtoMessage() {}
+func (*CreateVerificationCodeRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptorSvc, []int{15}
+}
 
 // CreateVerificationCodeResponse represents the information returned from a CreateVerificationCode request
 type CreateVerificationCodeResponse struct {
-	VerificationCode *VerificationCode `protobuf:"bytes,1,opt,name=verification_code" json:"verification_code,omitempty"`
+	VerificationCode *VerificationCode `protobuf:"bytes,1,opt,name=verification_code,json=verificationCode" json:"verification_code,omitempty"`
 }
 
 func (m *CreateVerificationCodeResponse) Reset()      { *m = CreateVerificationCodeResponse{} }
 func (*CreateVerificationCodeResponse) ProtoMessage() {}
+func (*CreateVerificationCodeResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptorSvc, []int{16}
+}
 
 func (m *CreateVerificationCodeResponse) GetVerificationCode() *VerificationCode {
 	if m != nil {
@@ -395,11 +428,12 @@ func (m *CreateVerificationCodeResponse) GetVerificationCode() *VerificationCode
 type CheckVerificationCodeRequest struct {
 	Token           string            `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
 	Code            string            `protobuf:"bytes,2,opt,name=code,proto3" json:"code,omitempty"`
-	TokenAttributes map[string]string `protobuf:"bytes,3,rep,name=token_attributes" json:"token_attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	TokenAttributes map[string]string `protobuf:"bytes,3,rep,name=token_attributes,json=tokenAttributes" json:"token_attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
-func (m *CheckVerificationCodeRequest) Reset()      { *m = CheckVerificationCodeRequest{} }
-func (*CheckVerificationCodeRequest) ProtoMessage() {}
+func (m *CheckVerificationCodeRequest) Reset()                    { *m = CheckVerificationCodeRequest{} }
+func (*CheckVerificationCodeRequest) ProtoMessage()               {}
+func (*CheckVerificationCodeRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{17} }
 
 func (m *CheckVerificationCodeRequest) GetTokenAttributes() map[string]string {
 	if m != nil {
@@ -416,6 +450,9 @@ type CheckVerificationCodeResponse struct {
 
 func (m *CheckVerificationCodeResponse) Reset()      { *m = CheckVerificationCodeResponse{} }
 func (*CheckVerificationCodeResponse) ProtoMessage() {}
+func (*CheckVerificationCodeResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptorSvc, []int{18}
+}
 
 func (m *CheckVerificationCodeResponse) GetAccount() *Account {
 	if m != nil {
@@ -429,16 +466,18 @@ type VerifiedValueRequest struct {
 	Token string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
 }
 
-func (m *VerifiedValueRequest) Reset()      { *m = VerifiedValueRequest{} }
-func (*VerifiedValueRequest) ProtoMessage() {}
+func (m *VerifiedValueRequest) Reset()                    { *m = VerifiedValueRequest{} }
+func (*VerifiedValueRequest) ProtoMessage()               {}
+func (*VerifiedValueRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{19} }
 
 // VerifiedValueResponse represents the information returned from a VerifiedValue request
 type VerifiedValueResponse struct {
 	Value string `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
 }
 
-func (m *VerifiedValueResponse) Reset()      { *m = VerifiedValueResponse{} }
-func (*VerifiedValueResponse) ProtoMessage() {}
+func (m *VerifiedValueResponse) Reset()                    { *m = VerifiedValueResponse{} }
+func (*VerifiedValueResponse) ProtoMessage()               {}
+func (*VerifiedValueResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{20} }
 
 // CreatePasswordResetTokenRequest represents the information required to generate a password reset token
 type CreatePasswordResetTokenRequest struct {
@@ -447,6 +486,9 @@ type CreatePasswordResetTokenRequest struct {
 
 func (m *CreatePasswordResetTokenRequest) Reset()      { *m = CreatePasswordResetTokenRequest{} }
 func (*CreatePasswordResetTokenRequest) ProtoMessage() {}
+func (*CreatePasswordResetTokenRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptorSvc, []int{21}
+}
 
 // CreatePasswordResetTokenResponse represents the information returned from a call to CreatePasswordResetToken
 type CreatePasswordResetTokenResponse struct {
@@ -455,6 +497,9 @@ type CreatePasswordResetTokenResponse struct {
 
 func (m *CreatePasswordResetTokenResponse) Reset()      { *m = CreatePasswordResetTokenResponse{} }
 func (*CreatePasswordResetTokenResponse) ProtoMessage() {}
+func (*CreatePasswordResetTokenResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptorSvc, []int{22}
+}
 
 // CheckPasswordResetTokenRequest represents the information required to generate a password reset token
 type CheckPasswordResetTokenRequest struct {
@@ -463,43 +508,52 @@ type CheckPasswordResetTokenRequest struct {
 
 func (m *CheckPasswordResetTokenRequest) Reset()      { *m = CheckPasswordResetTokenRequest{} }
 func (*CheckPasswordResetTokenRequest) ProtoMessage() {}
+func (*CheckPasswordResetTokenRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptorSvc, []int{23}
+}
 
 // CheckPasswordResetTokenResponse represents the information returned from a call to CheckPasswordResetToken
 type CheckPasswordResetTokenResponse struct {
-	AccountID          string `protobuf:"bytes,1,opt,name=account_id,proto3" json:"account_id,omitempty"`
-	AccountPhoneNumber string `protobuf:"bytes,2,opt,name=account_phone_number,proto3" json:"account_phone_number,omitempty"`
-	AccountEmail       string `protobuf:"bytes,3,opt,name=account_email,proto3" json:"account_email,omitempty"`
+	AccountID          string `protobuf:"bytes,1,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
+	AccountPhoneNumber string `protobuf:"bytes,2,opt,name=account_phone_number,json=accountPhoneNumber,proto3" json:"account_phone_number,omitempty"`
+	AccountEmail       string `protobuf:"bytes,3,opt,name=account_email,json=accountEmail,proto3" json:"account_email,omitempty"`
 }
 
 func (m *CheckPasswordResetTokenResponse) Reset()      { *m = CheckPasswordResetTokenResponse{} }
 func (*CheckPasswordResetTokenResponse) ProtoMessage() {}
+func (*CheckPasswordResetTokenResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptorSvc, []int{24}
+}
 
 // UpdatePasswordRequest represents the information required to reset a password
 type UpdatePasswordRequest struct {
 	Token       string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
 	Code        string `protobuf:"bytes,2,opt,name=code,proto3" json:"code,omitempty"`
-	NewPassword string `protobuf:"bytes,3,opt,name=new_password,proto3" json:"new_password,omitempty"`
+	NewPassword string `protobuf:"bytes,3,opt,name=new_password,json=newPassword,proto3" json:"new_password,omitempty"`
 }
 
-func (m *UpdatePasswordRequest) Reset()      { *m = UpdatePasswordRequest{} }
-func (*UpdatePasswordRequest) ProtoMessage() {}
+func (m *UpdatePasswordRequest) Reset()                    { *m = UpdatePasswordRequest{} }
+func (*UpdatePasswordRequest) ProtoMessage()               {}
+func (*UpdatePasswordRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{25} }
 
 // BlockAccountRequest represents the information required to block a certain account
 // from accessing the Spruce platform
 type BlockAccountRequest struct {
-	AccountID string `protobuf:"bytes,1,opt,name=account_id,proto3" json:"account_id,omitempty"`
+	AccountID string `protobuf:"bytes,1,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
 }
 
-func (m *BlockAccountRequest) Reset()      { *m = BlockAccountRequest{} }
-func (*BlockAccountRequest) ProtoMessage() {}
+func (m *BlockAccountRequest) Reset()                    { *m = BlockAccountRequest{} }
+func (*BlockAccountRequest) ProtoMessage()               {}
+func (*BlockAccountRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{26} }
 
 // BlockAccountResponse represents the information returned from a call to BlockAccount
 type BlockAccountResponse struct {
 	Account *Account `protobuf:"bytes,1,opt,name=account" json:"account,omitempty"`
 }
 
-func (m *BlockAccountResponse) Reset()      { *m = BlockAccountResponse{} }
-func (*BlockAccountResponse) ProtoMessage() {}
+func (m *BlockAccountResponse) Reset()                    { *m = BlockAccountResponse{} }
+func (*BlockAccountResponse) ProtoMessage()               {}
+func (*BlockAccountResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{27} }
 
 func (m *BlockAccountResponse) GetAccount() *Account {
 	if m != nil {
@@ -512,8 +566,9 @@ func (m *BlockAccountResponse) GetAccount() *Account {
 type UpdatePasswordResponse struct {
 }
 
-func (m *UpdatePasswordResponse) Reset()      { *m = UpdatePasswordResponse{} }
-func (*UpdatePasswordResponse) ProtoMessage() {}
+func (m *UpdatePasswordResponse) Reset()                    { *m = UpdatePasswordResponse{} }
+func (*UpdatePasswordResponse) ProtoMessage()               {}
+func (*UpdatePasswordResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{28} }
 
 func init() {
 	proto.RegisterType((*VerificationCode)(nil), "auth.VerificationCode")
@@ -572,7 +627,12 @@ func (this *VerificationCode) Equal(that interface{}) bool {
 
 	that1, ok := that.(*VerificationCode)
 	if !ok {
-		return false
+		that2, ok := that.(VerificationCode)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -606,7 +666,12 @@ func (this *Account) Equal(that interface{}) bool {
 
 	that1, ok := that.(*Account)
 	if !ok {
-		return false
+		that2, ok := that.(Account)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -640,7 +705,12 @@ func (this *AuthToken) Equal(that interface{}) bool {
 
 	that1, ok := that.(*AuthToken)
 	if !ok {
-		return false
+		that2, ok := that.(AuthToken)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -671,7 +741,12 @@ func (this *AuthenticateLoginRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*AuthenticateLoginRequest)
 	if !ok {
-		return false
+		that2, ok := that.(AuthenticateLoginRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -710,7 +785,12 @@ func (this *AuthenticateLoginResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*AuthenticateLoginResponse)
 	if !ok {
-		return false
+		that2, ok := that.(AuthenticateLoginResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -744,7 +824,12 @@ func (this *AuthenticateLoginWithCodeRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*AuthenticateLoginWithCodeRequest)
 	if !ok {
-		return false
+		that2, ok := that.(AuthenticateLoginWithCodeRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -783,7 +868,12 @@ func (this *AuthenticateLoginWithCodeResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*AuthenticateLoginWithCodeResponse)
 	if !ok {
-		return false
+		that2, ok := that.(AuthenticateLoginWithCodeResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -811,7 +901,12 @@ func (this *CheckAuthenticationRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CheckAuthenticationRequest)
 	if !ok {
-		return false
+		that2, ok := that.(CheckAuthenticationRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -844,7 +939,12 @@ func (this *CheckAuthenticationResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CheckAuthenticationResponse)
 	if !ok {
-		return false
+		that2, ok := that.(CheckAuthenticationResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -875,7 +975,12 @@ func (this *CreateAccountRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CreateAccountRequest)
 	if !ok {
-		return false
+		that2, ok := that.(CreateAccountRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -926,7 +1031,12 @@ func (this *CreateAccountResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CreateAccountResponse)
 	if !ok {
-		return false
+		that2, ok := that.(CreateAccountResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -954,7 +1064,12 @@ func (this *GetAccountRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*GetAccountRequest)
 	if !ok {
-		return false
+		that2, ok := that.(GetAccountRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -982,7 +1097,12 @@ func (this *GetAccountResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*GetAccountResponse)
 	if !ok {
-		return false
+		that2, ok := that.(GetAccountResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1007,7 +1127,12 @@ func (this *UnauthenticateRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*UnauthenticateRequest)
 	if !ok {
-		return false
+		that2, ok := that.(UnauthenticateRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1040,7 +1165,12 @@ func (this *UnauthenticateResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*UnauthenticateResponse)
 	if !ok {
-		return false
+		that2, ok := that.(UnauthenticateResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1062,7 +1192,12 @@ func (this *CreateVerificationCodeRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CreateVerificationCodeRequest)
 	if !ok {
-		return false
+		that2, ok := that.(CreateVerificationCodeRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1090,7 +1225,12 @@ func (this *CreateVerificationCodeResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CreateVerificationCodeResponse)
 	if !ok {
-		return false
+		that2, ok := that.(CreateVerificationCodeResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1115,7 +1255,12 @@ func (this *CheckVerificationCodeRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CheckVerificationCodeRequest)
 	if !ok {
-		return false
+		that2, ok := that.(CheckVerificationCodeRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1151,7 +1296,12 @@ func (this *CheckVerificationCodeResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CheckVerificationCodeResponse)
 	if !ok {
-		return false
+		that2, ok := that.(CheckVerificationCodeResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1179,7 +1329,12 @@ func (this *VerifiedValueRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*VerifiedValueRequest)
 	if !ok {
-		return false
+		that2, ok := that.(VerifiedValueRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1204,7 +1359,12 @@ func (this *VerifiedValueResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*VerifiedValueResponse)
 	if !ok {
-		return false
+		that2, ok := that.(VerifiedValueResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1229,7 +1389,12 @@ func (this *CreatePasswordResetTokenRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CreatePasswordResetTokenRequest)
 	if !ok {
-		return false
+		that2, ok := that.(CreatePasswordResetTokenRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1254,7 +1419,12 @@ func (this *CreatePasswordResetTokenResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CreatePasswordResetTokenResponse)
 	if !ok {
-		return false
+		that2, ok := that.(CreatePasswordResetTokenResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1279,7 +1449,12 @@ func (this *CheckPasswordResetTokenRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CheckPasswordResetTokenRequest)
 	if !ok {
-		return false
+		that2, ok := that.(CheckPasswordResetTokenRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1304,7 +1479,12 @@ func (this *CheckPasswordResetTokenResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CheckPasswordResetTokenResponse)
 	if !ok {
-		return false
+		that2, ok := that.(CheckPasswordResetTokenResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1335,7 +1515,12 @@ func (this *UpdatePasswordRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*UpdatePasswordRequest)
 	if !ok {
-		return false
+		that2, ok := that.(UpdatePasswordRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1366,7 +1551,12 @@ func (this *BlockAccountRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*BlockAccountRequest)
 	if !ok {
-		return false
+		that2, ok := that.(BlockAccountRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1391,7 +1581,12 @@ func (this *BlockAccountResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*BlockAccountResponse)
 	if !ok {
-		return false
+		that2, ok := that.(BlockAccountResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1416,7 +1611,12 @@ func (this *UpdatePasswordResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*UpdatePasswordResponse)
 	if !ok {
-		return false
+		that2, ok := that.(UpdatePasswordResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1881,6 +2081,10 @@ func extensionToGoStringSvc(e map[int32]github_com_gogo_protobuf_proto.Extension
 var _ context.Context
 var _ grpc.ClientConn
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the grpc package it is being compiled against.
+const _ = grpc.SupportPackageIsVersion2
+
 // Client API for Auth service
 
 type AuthClient interface {
@@ -2046,160 +2250,238 @@ func RegisterAuthServer(s *grpc.Server, srv AuthServer) {
 	s.RegisterService(&_Auth_serviceDesc, srv)
 }
 
-func _Auth_AuthenticateLogin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Auth_AuthenticateLogin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AuthenticateLoginRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(AuthServer).AuthenticateLogin(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(AuthServer).AuthenticateLogin(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/auth.Auth/AuthenticateLogin",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).AuthenticateLogin(ctx, req.(*AuthenticateLoginRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Auth_AuthenticateLoginWithCode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Auth_AuthenticateLoginWithCode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AuthenticateLoginWithCodeRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(AuthServer).AuthenticateLoginWithCode(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(AuthServer).AuthenticateLoginWithCode(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/auth.Auth/AuthenticateLoginWithCode",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).AuthenticateLoginWithCode(ctx, req.(*AuthenticateLoginWithCodeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Auth_CheckAuthentication_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Auth_CheckAuthentication_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CheckAuthenticationRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(AuthServer).CheckAuthentication(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(AuthServer).CheckAuthentication(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/auth.Auth/CheckAuthentication",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).CheckAuthentication(ctx, req.(*CheckAuthenticationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Auth_CheckPasswordResetToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Auth_CheckPasswordResetToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CheckPasswordResetTokenRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(AuthServer).CheckPasswordResetToken(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(AuthServer).CheckPasswordResetToken(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/auth.Auth/CheckPasswordResetToken",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).CheckPasswordResetToken(ctx, req.(*CheckPasswordResetTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Auth_CheckVerificationCode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Auth_CheckVerificationCode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CheckVerificationCodeRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(AuthServer).CheckVerificationCode(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(AuthServer).CheckVerificationCode(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/auth.Auth/CheckVerificationCode",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).CheckVerificationCode(ctx, req.(*CheckVerificationCodeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Auth_CreateAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Auth_CreateAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateAccountRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(AuthServer).CreateAccount(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(AuthServer).CreateAccount(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/auth.Auth/CreateAccount",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).CreateAccount(ctx, req.(*CreateAccountRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Auth_CreatePasswordResetToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Auth_CreatePasswordResetToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreatePasswordResetTokenRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(AuthServer).CreatePasswordResetToken(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(AuthServer).CreatePasswordResetToken(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/auth.Auth/CreatePasswordResetToken",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).CreatePasswordResetToken(ctx, req.(*CreatePasswordResetTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Auth_CreateVerificationCode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Auth_CreateVerificationCode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateVerificationCodeRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(AuthServer).CreateVerificationCode(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(AuthServer).CreateVerificationCode(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/auth.Auth/CreateVerificationCode",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).CreateVerificationCode(ctx, req.(*CreateVerificationCodeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Auth_GetAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Auth_GetAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetAccountRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(AuthServer).GetAccount(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(AuthServer).GetAccount(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/auth.Auth/GetAccount",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).GetAccount(ctx, req.(*GetAccountRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Auth_Unauthenticate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Auth_Unauthenticate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UnauthenticateRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(AuthServer).Unauthenticate(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(AuthServer).Unauthenticate(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/auth.Auth/Unauthenticate",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).Unauthenticate(ctx, req.(*UnauthenticateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Auth_UpdatePassword_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Auth_UpdatePassword_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdatePasswordRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(AuthServer).UpdatePassword(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(AuthServer).UpdatePassword(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/auth.Auth/UpdatePassword",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).UpdatePassword(ctx, req.(*UpdatePasswordRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Auth_VerifiedValue_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Auth_VerifiedValue_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(VerifiedValueRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(AuthServer).VerifiedValue(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(AuthServer).VerifiedValue(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/auth.Auth/VerifiedValue",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).VerifiedValue(ctx, req.(*VerifiedValueRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Auth_BlockAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Auth_BlockAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(BlockAccountRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(AuthServer).BlockAccount(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(AuthServer).BlockAccount(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/auth.Auth/BlockAccount",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).BlockAccount(ctx, req.(*BlockAccountRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 var _Auth_serviceDesc = grpc.ServiceDesc{
@@ -8115,3 +8397,97 @@ var (
 	ErrInvalidLengthSvc = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowSvc   = fmt.Errorf("proto: integer overflow")
 )
+
+var fileDescriptorSvc = []byte{
+	// 1437 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xcc, 0x58, 0x4f, 0x6f, 0x13, 0x47,
+	0x14, 0x67, 0xd7, 0x0e, 0xb1, 0x9f, 0x13, 0xe2, 0x4c, 0x9c, 0x60, 0x36, 0x10, 0xc2, 0xf2, 0xb7,
+	0x08, 0x02, 0x32, 0xa2, 0xa0, 0x56, 0x15, 0x72, 0x1c, 0x53, 0x22, 0xa8, 0x93, 0x2e, 0x06, 0x24,
+	0x2a, 0xb1, 0xd8, 0xeb, 0x71, 0xb2, 0xc2, 0xd9, 0x75, 0xd7, 0x6b, 0xa7, 0xbe, 0x71, 0xe8, 0x07,
+	0xe8, 0xad, 0xad, 0x7a, 0xac, 0x54, 0xf5, 0xa3, 0xf4, 0x54, 0xa1, 0x9e, 0x38, 0x55, 0x85, 0x5e,
+	0x7a, 0xe4, 0xd4, 0x73, 0x67, 0x67, 0x66, 0xed, 0x5d, 0x67, 0x76, 0xe3, 0xb4, 0x80, 0x7a, 0x58,
+	0x65, 0xf7, 0xbd, 0x37, 0xef, 0xbd, 0xf9, 0xbd, 0x99, 0xdf, 0x7b, 0x0e, 0xa4, 0x3b, 0x3d, 0x63,
+	0xa5, 0xed, 0xd8, 0xae, 0x8d, 0x92, 0xb5, 0xae, 0xbb, 0xad, 0x5c, 0xde, 0x32, 0xdd, 0xed, 0x6e,
+	0x7d, 0xc5, 0xb0, 0x77, 0xae, 0x6c, 0xd9, 0x5b, 0xf6, 0x15, 0xaa, 0xac, 0x77, 0x9b, 0xf4, 0x8b,
+	0x7e, 0xd0, 0x37, 0xb6, 0x48, 0xfd, 0x56, 0x82, 0xec, 0x43, 0xec, 0x98, 0x4d, 0xd3, 0xa8, 0xb9,
+	0xa6, 0x6d, 0x95, 0xec, 0x06, 0x46, 0x39, 0x98, 0x70, 0xed, 0x67, 0xd8, 0xca, 0x4b, 0xcb, 0xd2,
+	0x85, 0xb4, 0xc6, 0x3e, 0x10, 0x82, 0xa4, 0x41, 0xb4, 0x79, 0x99, 0x0a, 0xe9, 0x3b, 0x5a, 0x81,
+	0xa4, 0xdb, 0x6f, 0xe3, 0x7c, 0x92, 0xc8, 0x8e, 0x14, 0x94, 0x15, 0x2f, 0x85, 0x95, 0x51, 0x7f,
+	0x55, 0x62, 0xa1, 0x51, 0x3b, 0xf4, 0x01, 0x64, 0xf1, 0x57, 0x6d, 0xd3, 0xa1, 0x3a, 0x1d, 0xb7,
+	0x6d, 0x63, 0x3b, 0x3f, 0x41, 0xd6, 0x26, 0xb5, 0x99, 0xa1, 0xbc, 0xec, 0x89, 0xd5, 0xaf, 0x25,
+	0x98, 0x2c, 0x1a, 0x86, 0xdd, 0xb5, 0x5c, 0xb4, 0x00, 0xb2, 0xd9, 0x60, 0xd9, 0xac, 0x1e, 0x7e,
+	0xfd, 0xfb, 0x49, 0x79, 0x7d, 0x4d, 0x23, 0x12, 0x74, 0x02, 0xa0, 0x69, 0x3a, 0x1d, 0x57, 0xb7,
+	0x6a, 0x3b, 0x7e, 0x62, 0x69, 0x2a, 0xa9, 0x10, 0x01, 0x5a, 0x84, 0x74, 0xab, 0xe6, 0x6b, 0x13,
+	0x54, 0x9b, 0xf2, 0x04, 0x54, 0x79, 0x36, 0x94, 0xfa, 0x2c, 0x4b, 0x9d, 0x07, 0x1c, 0x66, 0xac,
+	0x3e, 0x97, 0x20, 0x5d, 0x24, 0xaa, 0x2a, 0xc5, 0x80, 0x20, 0xd3, 0xab, 0xb5, 0xba, 0xd8, 0x47,
+	0x86, 0x7e, 0x08, 0x77, 0x25, 0x0b, 0x77, 0x85, 0x0a, 0x30, 0x6f, 0xb4, 0x4c, 0x6c, 0xb9, 0x3a,
+	0xb6, 0x0c, 0xa7, 0xdf, 0xa6, 0x2b, 0x9e, 0xe1, 0x3e, 0x4f, 0x6f, 0x8e, 0x29, 0xcb, 0x03, 0xdd,
+	0x5d, 0xdc, 0x57, 0x7f, 0x90, 0x21, 0xef, 0xa5, 0x40, 0x14, 0x1e, 0xaa, 0xf8, 0x9e, 0xbd, 0x65,
+	0x5a, 0x1a, 0xfe, 0xb2, 0x8b, 0x3b, 0xae, 0x97, 0x11, 0xde, 0xa9, 0x99, 0x2d, 0x3f, 0x23, 0xfa,
+	0x81, 0x14, 0x48, 0xb5, 0x6b, 0x9d, 0xce, 0xae, 0xed, 0x34, 0x38, 0x2c, 0x83, 0x6f, 0xf4, 0x04,
+	0xb2, 0xb4, 0xa0, 0x7a, 0xcd, 0x75, 0x1d, 0xb3, 0xde, 0x75, 0x71, 0x87, 0x44, 0x4f, 0x5c, 0xc8,
+	0x14, 0xae, 0x71, 0x10, 0x22, 0x62, 0xad, 0x50, 0x0c, 0x8a, 0x83, 0x55, 0x65, 0xcb, 0x75, 0xfa,
+	0xda, 0x8c, 0x1b, 0x96, 0x12, 0x34, 0xd2, 0x0d, 0xdc, 0x33, 0x0d, 0xac, 0x93, 0x9a, 0x25, 0x69,
+	0xcd, 0xa6, 0x48, 0xcd, 0x52, 0x6b, 0x54, 0x48, 0x2a, 0x97, 0x62, 0xea, 0xf5, 0x86, 0xb2, 0x0a,
+	0x39, 0x91, 0x4f, 0x94, 0x85, 0x84, 0x87, 0x09, 0xdb, 0x92, 0xf7, 0x3a, 0x04, 0x5e, 0x0e, 0x00,
+	0xff, 0x91, 0x7c, 0x53, 0x52, 0x7f, 0x93, 0xe0, 0x98, 0x20, 0xe3, 0x4e, 0xdb, 0xb6, 0x3a, 0x5e,
+	0x95, 0x03, 0x47, 0x39, 0x53, 0x98, 0x19, 0xee, 0x90, 0x06, 0xf6, 0xcf, 0xf6, 0x79, 0x98, 0xac,
+	0xb1, 0xd2, 0xd3, 0x00, 0x99, 0xc2, 0x74, 0xe8, 0x3c, 0x68, 0xbe, 0x96, 0x1c, 0xf8, 0x39, 0x77,
+	0xd7, 0xd6, 0x9b, 0x35, 0xc3, 0xb5, 0x1d, 0xdd, 0x21, 0xc0, 0x98, 0x0e, 0x66, 0xdb, 0x4c, 0x69,
+	0xb3, 0x44, 0x75, 0x9b, 0x6a, 0x34, 0xae, 0x40, 0xd7, 0xe1, 0x68, 0xc0, 0xbe, 0xbd, 0x6d, 0x5b,
+	0x58, 0xb7, 0xba, 0x3b, 0x75, 0xec, 0xd0, 0x73, 0x9f, 0xd6, 0x72, 0x83, 0x35, 0x9b, 0x9e, 0xb2,
+	0x42, 0x75, 0xea, 0x8f, 0x32, 0x2c, 0xef, 0xd9, 0xd4, 0x23, 0x72, 0xb3, 0xbd, 0xfb, 0x14, 0x28,
+	0xfd, 0x98, 0xd7, 0xb4, 0x19, 0x59, 0xf2, 0x8f, 0x23, 0x4a, 0x3e, 0x12, 0xeb, 0xff, 0x59, 0xfa,
+	0x0e, 0x9c, 0x8a, 0x49, 0xfc, 0xdd, 0x9c, 0x00, 0xf5, 0xa5, 0x04, 0x4a, 0x69, 0x1b, 0x1b, 0xcf,
+	0x02, 0xa1, 0xc9, 0x45, 0x8d, 0x2f, 0xca, 0x53, 0x41, 0x01, 0x64, 0x5a, 0x80, 0xeb, 0x2c, 0x4c,
+	0xb4, 0xc7, 0xf1, 0xa0, 0x7f, 0x2b, 0x78, 0x7e, 0x27, 0xc1, 0xa2, 0x30, 0x11, 0x0e, 0x25, 0xe1,
+	0x39, 0xb3, 0xa3, 0xd7, 0x02, 0x90, 0x33, 0x52, 0x4e, 0x69, 0x33, 0x66, 0x27, 0x58, 0x89, 0xc6,
+	0xf8, 0x17, 0x6a, 0x50, 0x9e, 0x44, 0x5c, 0x79, 0xd4, 0xef, 0x13, 0x90, 0x2b, 0x39, 0x98, 0xf8,
+	0xf6, 0x3d, 0x70, 0xbc, 0xc3, 0x2d, 0x40, 0x8a, 0x6d, 0x01, 0xf2, 0x48, 0x0b, 0x18, 0x70, 0x67,
+	0x22, 0xc8, 0x9d, 0xa7, 0x60, 0x2a, 0x74, 0x4f, 0xe9, 0x39, 0xd6, 0x32, 0xed, 0xe1, 0xf5, 0x0c,
+	0xd1, 0xeb, 0xc4, 0x08, 0xbd, 0x3e, 0x16, 0x94, 0xfa, 0x30, 0x2d, 0xf5, 0x15, 0x5e, 0x6a, 0xc1,
+	0x36, 0xfe, 0xcd, 0xfd, 0x9a, 0x8c, 0xbb, 0x5f, 0x83, 0xf6, 0x96, 0x8a, 0x6d, 0x6f, 0x6f, 0xe5,
+	0xd8, 0x6c, 0xc1, 0xfc, 0xc8, 0x9e, 0xde, 0xd1, 0xd5, 0x6b, 0xc2, 0xec, 0xa7, 0xd8, 0x1d, 0x39,
+	0x00, 0x97, 0x00, 0xb8, 0x5e, 0x1f, 0xcc, 0x08, 0xd3, 0x04, 0x94, 0x34, 0xb7, 0x23, 0xa8, 0xa4,
+	0xb9, 0x01, 0x81, 0xe5, 0x34, 0x4c, 0xfb, 0xd6, 0xac, 0xf4, 0x6c, 0x37, 0x53, 0x5c, 0x58, 0xf6,
+	0x64, 0xea, 0x27, 0x80, 0x82, 0x71, 0xf8, 0x6e, 0x02, 0x69, 0x4a, 0xb1, 0x69, 0xfe, 0x2a, 0xc1,
+	0xfc, 0x03, 0x2b, 0x78, 0x4d, 0xe2, 0xc9, 0xe1, 0x8b, 0x48, 0x72, 0xb8, 0xca, 0x22, 0x08, 0x9d,
+	0xbd, 0x47, 0x5e, 0xc8, 0xc3, 0xc2, 0x68, 0x0a, 0x0c, 0x13, 0x75, 0x17, 0x4e, 0xb0, 0xd2, 0x8f,
+	0xce, 0x7c, 0xfe, 0x8e, 0xfd, 0x01, 0x51, 0x1a, 0x73, 0x40, 0x3c, 0x07, 0x33, 0x34, 0xae, 0xee,
+	0xda, 0x7a, 0xcf, 0x33, 0xeb, 0xf3, 0x74, 0xa6, 0xa9, 0xb8, 0x6a, 0xd3, 0xb5, 0x7d, 0x15, 0xc3,
+	0x52, 0x54, 0x60, 0x5e, 0xae, 0x12, 0xcc, 0xf6, 0x02, 0x3a, 0x9d, 0x36, 0x45, 0x56, 0xb8, 0x05,
+	0x71, 0x1a, 0x5a, 0xb6, 0x37, 0x22, 0x51, 0xdf, 0x48, 0x70, 0x9c, 0x32, 0x62, 0xd4, 0xfe, 0xc6,
+	0xef, 0xc1, 0xf5, 0xc8, 0x1e, 0x7c, 0x23, 0xd0, 0x02, 0x22, 0xe2, 0xbc, 0xc7, 0x62, 0x3f, 0x21,
+	0x25, 0x15, 0x67, 0x72, 0xc0, 0x7b, 0x20, 0x8e, 0xa1, 0x5e, 0x82, 0x1c, 0x73, 0x8d, 0x1b, 0x0f,
+	0x3d, 0x41, 0x2c, 0x92, 0xea, 0x65, 0x98, 0x1f, 0xb1, 0xe6, 0x59, 0x08, 0x27, 0x71, 0xf5, 0x06,
+	0x9c, 0x64, 0xc7, 0x62, 0x93, 0xd3, 0x31, 0xb1, 0xc7, 0x2e, 0x63, 0x9b, 0xb8, 0x81, 0x59, 0xbd,
+	0x09, 0xcb, 0xd1, 0x0b, 0x87, 0x21, 0x05, 0x19, 0x7e, 0x48, 0x4e, 0xa2, 0x87, 0x57, 0x6c, 0x44,
+	0xc1, 0xba, 0x9f, 0x24, 0x92, 0x6b, 0xd4, 0x42, 0x1e, 0xf1, 0x60, 0xdc, 0x76, 0x15, 0x72, 0xbe,
+	0x75, 0xa8, 0x81, 0x31, 0xf8, 0x11, 0xd7, 0x05, 0xc6, 0xcc, 0xbd, 0x6c, 0x98, 0x10, 0xb0, 0x61,
+	0x83, 0xb0, 0x59, 0xbb, 0x11, 0x82, 0xe6, 0xa0, 0x67, 0x9f, 0xb4, 0x54, 0x0b, 0xef, 0xea, 0x83,
+	0x9e, 0xc9, 0xc2, 0x64, 0x88, 0xcc, 0xf7, 0xa9, 0x96, 0x60, 0x6e, 0xb5, 0x65, 0x93, 0xd1, 0xe3,
+	0x3f, 0xb0, 0xbb, 0x7a, 0x0b, 0x72, 0x61, 0x27, 0x07, 0xa5, 0x6e, 0x8f, 0xe9, 0x46, 0xf6, 0xca,
+	0x5c, 0x5c, 0xfc, 0xdc, 0x3f, 0xb6, 0x61, 0xda, 0x42, 0x69, 0x98, 0xd8, 0xbc, 0xb3, 0x51, 0x29,
+	0x67, 0x0f, 0x79, 0xaf, 0xe5, 0xcf, 0x8a, 0xeb, 0xf7, 0xb2, 0x12, 0x9a, 0x81, 0x4c, 0xb1, 0x54,
+	0xda, 0x78, 0x50, 0xa9, 0xea, 0x85, 0xdb, 0xc5, 0xac, 0x4c, 0x50, 0x39, 0xb2, 0x59, 0xbc, 0x7f,
+	0xff, 0xd1, 0x86, 0xb6, 0xa6, 0x6b, 0xe5, 0xfb, 0xe5, 0x6a, 0x36, 0x71, 0xf1, 0x3a, 0x31, 0x1a,
+	0x36, 0x64, 0x94, 0x81, 0xc9, 0x07, 0x95, 0xbb, 0x95, 0x8d, 0x47, 0x15, 0xe2, 0x8b, 0x7c, 0x6c,
+	0x16, 0xab, 0xeb, 0xe5, 0x4a, 0x95, 0x78, 0x9b, 0x82, 0xd4, 0xa6, 0xb6, 0xf1, 0x70, 0x7d, 0xad,
+	0xac, 0x65, 0xe5, 0xc2, 0xdf, 0x29, 0x48, 0x7a, 0x3d, 0x14, 0x55, 0x61, 0x76, 0xcf, 0xf8, 0x8b,
+	0x96, 0xe2, 0x7f, 0xc3, 0x29, 0x27, 0x23, 0xf5, 0x1c, 0xab, 0x96, 0xe0, 0xe7, 0x94, 0x3f, 0x54,
+	0xa3, 0x73, 0xe3, 0xfd, 0x5c, 0x50, 0xce, 0xef, 0x6b, 0xc7, 0xa3, 0x3d, 0x86, 0x39, 0xc1, 0xc4,
+	0x89, 0x96, 0xf7, 0x9b, 0x8a, 0x95, 0x53, 0x31, 0x16, 0xdc, 0x77, 0x13, 0x8e, 0x46, 0x5c, 0x30,
+	0x74, 0x26, 0xb0, 0x3a, 0xf2, 0xe2, 0x2a, 0x67, 0xf7, 0xb1, 0xe2, 0x71, 0x9e, 0x92, 0xf9, 0x47,
+	0xc4, 0x98, 0x48, 0xdd, 0x9f, 0xd8, 0x95, 0xd3, 0xb1, 0x36, 0x3c, 0xc2, 0x1d, 0x98, 0x0e, 0x4d,
+	0x58, 0x48, 0x89, 0x1e, 0x25, 0x95, 0x45, 0xa1, 0x8e, 0x7b, 0x32, 0x21, 0x1f, 0xc5, 0x73, 0xe8,
+	0x6c, 0x70, 0x61, 0x34, 0x2a, 0xe7, 0xf6, 0x33, 0xe3, 0xa1, 0x0c, 0x58, 0x10, 0xb7, 0x68, 0x74,
+	0x3a, 0xe8, 0x21, 0x0a, 0x98, 0x33, 0xf1, 0x46, 0x3c, 0xc8, 0x2d, 0x80, 0xe1, 0xa8, 0x86, 0x8e,
+	0xb2, 0x35, 0x7b, 0x86, 0x44, 0x25, 0xbf, 0x57, 0xc1, 0x1d, 0xdc, 0x85, 0x23, 0xe1, 0xd9, 0x06,
+	0x2d, 0xc6, 0x0c, 0x5d, 0xca, 0x71, 0xb1, 0x32, 0xe0, 0x2c, 0x44, 0x1f, 0x03, 0x67, 0x22, 0x02,
+	0x1d, 0x38, 0x13, 0x32, 0x8e, 0x57, 0xf4, 0x50, 0xeb, 0x43, 0xa1, 0xe9, 0x29, 0xdc, 0x3d, 0xfd,
+	0xa2, 0x8b, 0x7b, 0x65, 0x19, 0xa6, 0x82, 0xb4, 0x88, 0x8e, 0x31, 0x63, 0x01, 0xdf, 0x2a, 0x8a,
+	0x48, 0xc5, 0xdc, 0xac, 0x5e, 0x7a, 0xf1, 0x6a, 0x49, 0x7a, 0xf9, 0x6a, 0xe9, 0xd0, 0x1b, 0xf2,
+	0xf7, 0xf9, 0xeb, 0x25, 0xe9, 0x67, 0xf2, 0xfc, 0x42, 0x9e, 0x17, 0xe4, 0xf9, 0x83, 0x3c, 0x7f,
+	0xbd, 0x26, 0x3a, 0xf2, 0xf7, 0x9b, 0x3f, 0x97, 0x0e, 0xd5, 0x0f, 0xd3, 0x7f, 0x30, 0x5e, 0xfb,
+	0x27, 0x00, 0x00, 0xff, 0xff, 0x7b, 0xa1, 0xbf, 0xba, 0xa2, 0x14, 0x00, 0x00,
+}

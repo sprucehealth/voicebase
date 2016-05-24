@@ -41,7 +41,7 @@ func WrapMethods(methods []grpc.MethodDesc) {
 	for i, m := range methods {
 		methodName := m.MethodName
 		oldHandler := m.Handler
-		m.Handler = func(srv interface{}, ctx context.Context, dec func(interface{}) error) (out interface{}, err error) {
+		m.Handler = func(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (out interface{}, err error) {
 			sm := serviceMetrics[srv]
 			if sm != nil {
 				hm := sm[methodName]
@@ -54,7 +54,7 @@ func WrapMethods(methods []grpc.MethodDesc) {
 					}
 				}()
 			}
-			return oldHandler(srv, ctx, dec)
+			return oldHandler(srv, ctx, dec, interceptor)
 		}
 		methods[i] = m
 	}

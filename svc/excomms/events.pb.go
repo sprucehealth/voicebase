@@ -33,6 +33,10 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+const _ = proto.GoGoProtoPackageIsVersion1
+
 type EndpointType int32
 
 const (
@@ -52,6 +56,8 @@ var EndpointType_value = map[string]int32{
 	"EMAIL":   2,
 }
 
+func (EndpointType) EnumDescriptor() ([]byte, []int) { return fileDescriptorEvents, []int{0} }
+
 type Event_Type int32
 
 const (
@@ -68,6 +74,8 @@ var Event_Type_value = map[string]int32{
 	"PROVISIONED_ENDPOINT": 1,
 }
 
+func (Event_Type) EnumDescriptor() ([]byte, []int) { return fileDescriptorEvents, []int{0, 0} }
+
 type Event struct {
 	Type Event_Type `protobuf:"varint,1,opt,name=type,proto3,enum=excomms.Event_Type" json:"type,omitempty"`
 	// Types that are valid to be assigned to Details:
@@ -75,8 +83,9 @@ type Event struct {
 	Details isEvent_Details `protobuf_oneof:"details"`
 }
 
-func (m *Event) Reset()      { *m = Event{} }
-func (*Event) ProtoMessage() {}
+func (m *Event) Reset()                    { *m = Event{} }
+func (*Event) ProtoMessage()               {}
+func (*Event) Descriptor() ([]byte, []int) { return fileDescriptorEvents, []int{0} }
 
 type isEvent_Details interface {
 	isEvent_Details()
@@ -86,7 +95,7 @@ type isEvent_Details interface {
 }
 
 type Event_ProvisionedEndpoint struct {
-	ProvisionedEndpoint *ProvisionedEndpoint `protobuf:"bytes,10,opt,name=provisioned_endpoint,oneof"`
+	ProvisionedEndpoint *ProvisionedEndpoint `protobuf:"bytes,10,opt,name=provisioned_endpoint,json=provisionedEndpoint,oneof"`
 }
 
 func (*Event_ProvisionedEndpoint) isEvent_Details() {}
@@ -106,8 +115,8 @@ func (m *Event) GetProvisionedEndpoint() *ProvisionedEndpoint {
 }
 
 // XXX_OneofFuncs is for the internal use of the proto package.
-func (*Event) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), []interface{}) {
-	return _Event_OneofMarshaler, _Event_OneofUnmarshaler, []interface{}{
+func (*Event) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _Event_OneofMarshaler, _Event_OneofUnmarshaler, _Event_OneofSizer, []interface{}{
 		(*Event_ProvisionedEndpoint)(nil),
 	}
 }
@@ -144,14 +153,31 @@ func _Event_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) 
 	}
 }
 
+func _Event_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*Event)
+	// details
+	switch x := m.Details.(type) {
+	case *Event_ProvisionedEndpoint:
+		s := proto.Size(x.ProvisionedEndpoint)
+		n += proto.SizeVarint(10<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
+}
+
 type ProvisionedEndpoint struct {
-	ForEntityID  string       `protobuf:"bytes,1,opt,name=for_entity_id,proto3" json:"for_entity_id,omitempty"`
-	EndpointType EndpointType `protobuf:"varint,2,opt,name=endpoint_type,proto3,enum=excomms.EndpointType" json:"endpoint_type,omitempty"`
+	ForEntityID  string       `protobuf:"bytes,1,opt,name=for_entity_id,json=forEntityId,proto3" json:"for_entity_id,omitempty"`
+	EndpointType EndpointType `protobuf:"varint,2,opt,name=endpoint_type,json=endpointType,proto3,enum=excomms.EndpointType" json:"endpoint_type,omitempty"`
 	Endpoint     string       `protobuf:"bytes,3,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
 }
 
-func (m *ProvisionedEndpoint) Reset()      { *m = ProvisionedEndpoint{} }
-func (*ProvisionedEndpoint) ProtoMessage() {}
+func (m *ProvisionedEndpoint) Reset()                    { *m = ProvisionedEndpoint{} }
+func (*ProvisionedEndpoint) ProtoMessage()               {}
+func (*ProvisionedEndpoint) Descriptor() ([]byte, []int) { return fileDescriptorEvents, []int{1} }
 
 func init() {
 	proto.RegisterType((*Event)(nil), "excomms.Event")
@@ -183,7 +209,12 @@ func (this *Event) Equal(that interface{}) bool {
 
 	that1, ok := that.(*Event)
 	if !ok {
-		return false
+		that2, ok := that.(Event)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -217,7 +248,12 @@ func (this *Event_ProvisionedEndpoint) Equal(that interface{}) bool {
 
 	that1, ok := that.(*Event_ProvisionedEndpoint)
 	if !ok {
-		return false
+		that2, ok := that.(Event_ProvisionedEndpoint)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -242,7 +278,12 @@ func (this *ProvisionedEndpoint) Equal(that interface{}) bool {
 
 	that1, ok := that.(*ProvisionedEndpoint)
 	if !ok {
-		return false
+		that2, ok := that.(ProvisionedEndpoint)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -851,3 +892,30 @@ var (
 	ErrInvalidLengthEvents = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowEvents   = fmt.Errorf("proto: integer overflow")
 )
+
+var fileDescriptorEvents = []byte{
+	// 368 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xe2, 0xe2, 0x49, 0x2d, 0x4b, 0xcd,
+	0x2b, 0x29, 0xd6, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x4f, 0xad, 0x48, 0xce, 0xcf, 0xcd,
+	0x2d, 0x96, 0xd2, 0x4d, 0xcf, 0x2c, 0xc9, 0x28, 0x4d, 0xd2, 0x03, 0xf2, 0xf4, 0xd3, 0xf3, 0xd3,
+	0xf3, 0xf5, 0xc1, 0xf2, 0x49, 0xa5, 0x69, 0x60, 0x1e, 0x98, 0x03, 0x66, 0x41, 0xf4, 0x29, 0xed,
+	0x65, 0xe4, 0x62, 0x75, 0x05, 0x19, 0x24, 0xa4, 0xce, 0xc5, 0x52, 0x52, 0x59, 0x90, 0x2a, 0xc1,
+	0xa8, 0xc0, 0xa8, 0xc1, 0x67, 0x24, 0xac, 0x07, 0x35, 0x50, 0x0f, 0x2c, 0xab, 0x17, 0x02, 0x94,
+	0x0a, 0x02, 0x2b, 0x10, 0x0a, 0xe4, 0x12, 0x01, 0xea, 0x2d, 0xcb, 0x2c, 0xce, 0xcc, 0xcf, 0x4b,
+	0x4d, 0x89, 0x4f, 0xcd, 0x4b, 0x29, 0xc8, 0xcf, 0xcc, 0x2b, 0x91, 0xe0, 0x02, 0x6a, 0xe4, 0x36,
+	0x92, 0x81, 0x6b, 0x0c, 0x40, 0x28, 0x72, 0x85, 0xaa, 0xf1, 0x60, 0x08, 0x12, 0x2e, 0xc0, 0x14,
+	0x56, 0xd2, 0xe5, 0x62, 0x01, 0x59, 0x20, 0xc4, 0xcd, 0xc5, 0xee, 0xe9, 0x17, 0xe6, 0xe8, 0xe3,
+	0xe9, 0x22, 0xc0, 0x20, 0x24, 0xc1, 0x25, 0x12, 0x10, 0xe4, 0x1f, 0xe6, 0x19, 0xec, 0xe9, 0xef,
+	0xe7, 0xea, 0x12, 0xef, 0xea, 0xe7, 0x12, 0xe0, 0xef, 0xe9, 0x17, 0x22, 0xc0, 0xe8, 0xc4, 0xc9,
+	0xc5, 0x9e, 0x92, 0x5a, 0x92, 0x98, 0x99, 0x53, 0xac, 0xb4, 0x88, 0x91, 0x4b, 0x18, 0x8b, 0x45,
+	0x42, 0xc6, 0x5c, 0xbc, 0x69, 0xf9, 0x45, 0x40, 0xc7, 0x95, 0x64, 0x96, 0x54, 0xc6, 0x67, 0xa6,
+	0x80, 0xbd, 0xc5, 0xe9, 0xc4, 0xff, 0xe8, 0x9e, 0x3c, 0xb7, 0x5b, 0x7e, 0x91, 0x2b, 0x58, 0xdc,
+	0xd3, 0x25, 0x88, 0x3b, 0x0d, 0xce, 0x49, 0x11, 0xb2, 0xe2, 0xe2, 0x85, 0xf9, 0x26, 0x1e, 0x1c,
+	0x16, 0x4c, 0xe0, 0xb0, 0x10, 0x45, 0x84, 0x05, 0x54, 0x16, 0x1c, 0x1a, 0x3c, 0xa9, 0x48, 0x3c,
+	0x21, 0x29, 0x2e, 0x0e, 0x78, 0x48, 0x30, 0x83, 0xec, 0x0a, 0x82, 0xf3, 0xb5, 0x0c, 0xb9, 0x78,
+	0x90, 0x75, 0xa2, 0x7a, 0x93, 0x93, 0x8b, 0x35, 0xc0, 0x03, 0xe8, 0x43, 0x01, 0x46, 0x10, 0xd3,
+	0xd5, 0xd7, 0xd1, 0xd3, 0x47, 0x80, 0xc9, 0x49, 0xe7, 0xc2, 0x43, 0x39, 0xc6, 0x1b, 0x0f, 0xe5,
+	0x18, 0x3e, 0x00, 0xe9, 0x86, 0x47, 0x72, 0x8c, 0x2b, 0x80, 0xf8, 0x04, 0x10, 0x5f, 0x00, 0xe2,
+	0x07, 0x40, 0xfc, 0xe2, 0x11, 0x50, 0x0e, 0x48, 0x4f, 0x78, 0x2c, 0xc7, 0x90, 0xc4, 0x06, 0x8e,
+	0x4c, 0x63, 0x40, 0x00, 0x00, 0x00, 0xff, 0xff, 0xbb, 0xd2, 0xac, 0xff, 0x14, 0x02, 0x00, 0x00,
+}

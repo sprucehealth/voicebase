@@ -78,6 +78,10 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+const _ = proto.GoGoProtoPackageIsVersion1
+
 type EntityType int32
 
 const (
@@ -103,6 +107,8 @@ var EntityType_value = map[string]int32{
 	"PATIENT":      4,
 }
 
+func (EntityType) EnumDescriptor() ([]byte, []int) { return fileDescriptorSvc, []int{0} }
+
 type EntityInformation int32
 
 const (
@@ -125,6 +131,8 @@ var EntityInformation_value = map[string]int32{
 	"EXTERNAL_IDS": 3,
 }
 
+func (EntityInformation) EnumDescriptor() ([]byte, []int) { return fileDescriptorSvc, []int{1} }
+
 type EntityStatus int32
 
 const (
@@ -144,6 +152,8 @@ var EntityStatus_value = map[string]int32{
 	"DELETED": 2,
 }
 
+func (EntityStatus) EnumDescriptor() ([]byte, []int) { return fileDescriptorSvc, []int{2} }
+
 type Platform int32
 
 const (
@@ -160,6 +170,8 @@ var Platform_value = map[string]int32{
 	"ANDROID": 1,
 }
 
+func (Platform) EnumDescriptor() ([]byte, []int) { return fileDescriptorSvc, []int{3} }
+
 type ContactType int32
 
 const (
@@ -175,6 +187,8 @@ var ContactType_value = map[string]int32{
 	"PHONE": 0,
 	"EMAIL": 1,
 }
+
+func (ContactType) EnumDescriptor() ([]byte, []int) { return fileDescriptorSvc, []int{4} }
 
 type EntityInfo_Gender int32
 
@@ -198,6 +212,8 @@ var EntityInfo_Gender_value = map[string]int32{
 	"OTHER":   3,
 }
 
+func (EntityInfo_Gender) EnumDescriptor() ([]byte, []int) { return fileDescriptorSvc, []int{2, 0} }
+
 type LookupEntitiesRequest_LookupKeyType int32
 
 const (
@@ -217,13 +233,18 @@ var LookupEntitiesRequest_LookupKeyType_value = map[string]int32{
 	"BATCH_ENTITY_ID": 2,
 }
 
-type ExternalID struct {
-	ID       string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	EntityID string `protobuf:"bytes,2,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
+func (LookupEntitiesRequest_LookupKeyType) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptorSvc, []int{9, 0}
 }
 
-func (m *ExternalID) Reset()      { *m = ExternalID{} }
-func (*ExternalID) ProtoMessage() {}
+type ExternalID struct {
+	ID       string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	EntityID string `protobuf:"bytes,2,opt,name=entity_id,json=entityId,proto3" json:"entity_id,omitempty"`
+}
+
+func (m *ExternalID) Reset()                    { *m = ExternalID{} }
+func (*ExternalID) ProtoMessage()               {}
+func (*ExternalID) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{0} }
 
 type Date struct {
 	Month uint32 `protobuf:"varint,1,opt,name=month,proto3" json:"month,omitempty"`
@@ -231,24 +252,26 @@ type Date struct {
 	Year  uint32 `protobuf:"varint,3,opt,name=year,proto3" json:"year,omitempty"`
 }
 
-func (m *Date) Reset()      { *m = Date{} }
-func (*Date) ProtoMessage() {}
+func (m *Date) Reset()                    { *m = Date{} }
+func (*Date) ProtoMessage()               {}
+func (*Date) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{1} }
 
 type EntityInfo struct {
-	FirstName     string            `protobuf:"bytes,1,opt,name=first_name,proto3" json:"first_name,omitempty"`
-	MiddleInitial string            `protobuf:"bytes,2,opt,name=middle_initial,proto3" json:"middle_initial,omitempty"`
-	LastName      string            `protobuf:"bytes,3,opt,name=last_name,proto3" json:"last_name,omitempty"`
-	GroupName     string            `protobuf:"bytes,4,opt,name=group_name,proto3" json:"group_name,omitempty"`
-	DisplayName   string            `protobuf:"bytes,5,opt,name=display_name,proto3" json:"display_name,omitempty"`
+	FirstName     string            `protobuf:"bytes,1,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
+	MiddleInitial string            `protobuf:"bytes,2,opt,name=middle_initial,json=middleInitial,proto3" json:"middle_initial,omitempty"`
+	LastName      string            `protobuf:"bytes,3,opt,name=last_name,json=lastName,proto3" json:"last_name,omitempty"`
+	GroupName     string            `protobuf:"bytes,4,opt,name=group_name,json=groupName,proto3" json:"group_name,omitempty"`
+	DisplayName   string            `protobuf:"bytes,5,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
 	Note          string            `protobuf:"bytes,6,opt,name=note,proto3" json:"note,omitempty"`
-	ShortTitle    string            `protobuf:"bytes,7,opt,name=short_title,proto3" json:"short_title,omitempty"`
-	LongTitle     string            `protobuf:"bytes,8,opt,name=long_title,proto3" json:"long_title,omitempty"`
+	ShortTitle    string            `protobuf:"bytes,7,opt,name=short_title,json=shortTitle,proto3" json:"short_title,omitempty"`
+	LongTitle     string            `protobuf:"bytes,8,opt,name=long_title,json=longTitle,proto3" json:"long_title,omitempty"`
 	Gender        EntityInfo_Gender `protobuf:"varint,10,opt,name=gender,proto3,enum=directory.EntityInfo_Gender" json:"gender,omitempty"`
 	DOB           *Date             `protobuf:"bytes,9,opt,name=dob" json:"dob,omitempty"`
 }
 
-func (m *EntityInfo) Reset()      { *m = EntityInfo{} }
-func (*EntityInfo) ProtoMessage() {}
+func (m *EntityInfo) Reset()                    { *m = EntityInfo{} }
+func (*EntityInfo) ProtoMessage()               {}
+func (*EntityInfo) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{2} }
 
 func (m *EntityInfo) GetDOB() *Date {
 	if m != nil {
@@ -262,18 +285,19 @@ type Entity struct {
 	Type                  EntityType          `protobuf:"varint,3,opt,name=type,proto3,enum=directory.EntityType" json:"type,omitempty"`
 	Memberships           []*Entity           `protobuf:"bytes,4,rep,name=memberships" json:"memberships,omitempty"`
 	Members               []*Entity           `protobuf:"bytes,5,rep,name=members" json:"members,omitempty"`
-	ExternalIDs           []string            `protobuf:"bytes,6,rep,name=external_ids" json:"external_ids,omitempty"`
+	ExternalIDs           []string            `protobuf:"bytes,6,rep,name=external_ids,json=externalIds" json:"external_ids,omitempty"`
 	Contacts              []*Contact          `protobuf:"bytes,7,rep,name=contacts" json:"contacts,omitempty"`
-	IncludedInformation   []EntityInformation `protobuf:"varint,8,rep,name=included_information,enum=directory.EntityInformation" json:"included_information,omitempty"`
+	IncludedInformation   []EntityInformation `protobuf:"varint,8,rep,name=included_information,json=includedInformation,enum=directory.EntityInformation" json:"included_information,omitempty"`
 	Info                  *EntityInfo         `protobuf:"bytes,9,opt,name=info" json:"info,omitempty"`
 	Status                EntityStatus        `protobuf:"varint,10,opt,name=status,proto3,enum=directory.EntityStatus" json:"status,omitempty"`
-	CreatedTimestamp      uint64              `protobuf:"varint,11,opt,name=created_timestamp,proto3" json:"created_timestamp,omitempty"`
-	LastModifiedTimestamp uint64              `protobuf:"varint,12,opt,name=last_modified_timestamp,proto3" json:"last_modified_timestamp,omitempty"`
-	AccountID             string              `protobuf:"bytes,13,opt,name=account_id,proto3" json:"account_id,omitempty"`
+	CreatedTimestamp      uint64              `protobuf:"varint,11,opt,name=created_timestamp,json=createdTimestamp,proto3" json:"created_timestamp,omitempty"`
+	LastModifiedTimestamp uint64              `protobuf:"varint,12,opt,name=last_modified_timestamp,json=lastModifiedTimestamp,proto3" json:"last_modified_timestamp,omitempty"`
+	AccountID             string              `protobuf:"bytes,13,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
 }
 
-func (m *Entity) Reset()      { *m = Entity{} }
-func (*Entity) ProtoMessage() {}
+func (m *Entity) Reset()                    { *m = Entity{} }
+func (*Entity) ProtoMessage()               {}
+func (*Entity) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{3} }
 
 func (m *Entity) GetMemberships() []*Entity {
 	if m != nil {
@@ -304,35 +328,39 @@ func (m *Entity) GetInfo() *EntityInfo {
 }
 
 type SerializedClientEntityContact struct {
-	EntityID                string   `protobuf:"bytes,1,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
+	EntityID                string   `protobuf:"bytes,1,opt,name=entity_id,json=entityId,proto3" json:"entity_id,omitempty"`
 	Platform                Platform `protobuf:"varint,2,opt,name=platform,proto3,enum=directory.Platform" json:"platform,omitempty"`
-	SerializedEntityContact []byte   `protobuf:"bytes,3,opt,name=serialized_entity_contact,proto3" json:"serialized_entity_contact,omitempty"`
+	SerializedEntityContact []byte   `protobuf:"bytes,3,opt,name=serialized_entity_contact,json=serializedEntityContact,proto3" json:"serialized_entity_contact,omitempty"`
 }
 
-func (m *SerializedClientEntityContact) Reset()      { *m = SerializedClientEntityContact{} }
-func (*SerializedClientEntityContact) ProtoMessage() {}
+func (m *SerializedClientEntityContact) Reset()                    { *m = SerializedClientEntityContact{} }
+func (*SerializedClientEntityContact) ProtoMessage()               {}
+func (*SerializedClientEntityContact) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{4} }
 
 type RequestedInformation struct {
 	Depth             int64               `protobuf:"varint,1,opt,name=depth,proto3" json:"depth,omitempty"`
-	EntityInformation []EntityInformation `protobuf:"varint,2,rep,name=entity_information,enum=directory.EntityInformation" json:"entity_information,omitempty"`
+	EntityInformation []EntityInformation `protobuf:"varint,2,rep,name=entity_information,json=entityInformation,enum=directory.EntityInformation" json:"entity_information,omitempty"`
 }
 
-func (m *RequestedInformation) Reset()      { *m = RequestedInformation{} }
-func (*RequestedInformation) ProtoMessage() {}
+func (m *RequestedInformation) Reset()                    { *m = RequestedInformation{} }
+func (*RequestedInformation) ProtoMessage()               {}
+func (*RequestedInformation) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{5} }
 
 type ExternalIDsRequest struct {
-	EntityIDs []string `protobuf:"bytes,1,rep,name=entity_ids" json:"entity_ids,omitempty"`
+	EntityIDs []string `protobuf:"bytes,1,rep,name=entity_ids,json=entityIds" json:"entity_ids,omitempty"`
 }
 
-func (m *ExternalIDsRequest) Reset()      { *m = ExternalIDsRequest{} }
-func (*ExternalIDsRequest) ProtoMessage() {}
+func (m *ExternalIDsRequest) Reset()                    { *m = ExternalIDsRequest{} }
+func (*ExternalIDsRequest) ProtoMessage()               {}
+func (*ExternalIDsRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{6} }
 
 type ExternalIDsResponse struct {
-	ExternalIDs []*ExternalID `protobuf:"bytes,1,rep,name=external_ids" json:"external_ids,omitempty"`
+	ExternalIDs []*ExternalID `protobuf:"bytes,1,rep,name=external_ids,json=externalIds" json:"external_ids,omitempty"`
 }
 
-func (m *ExternalIDsResponse) Reset()      { *m = ExternalIDsResponse{} }
-func (*ExternalIDsResponse) ProtoMessage() {}
+func (m *ExternalIDsResponse) Reset()                    { *m = ExternalIDsResponse{} }
+func (*ExternalIDsResponse) ProtoMessage()               {}
+func (*ExternalIDsResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{7} }
 
 func (m *ExternalIDsResponse) GetExternalIDs() []*ExternalID {
 	if m != nil {
@@ -345,24 +373,26 @@ type IDList struct {
 	IDs []string `protobuf:"bytes,1,rep,name=ids" json:"ids,omitempty"`
 }
 
-func (m *IDList) Reset()      { *m = IDList{} }
-func (*IDList) ProtoMessage() {}
+func (m *IDList) Reset()                    { *m = IDList{} }
+func (*IDList) ProtoMessage()               {}
+func (*IDList) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{8} }
 
 type LookupEntitiesRequest struct {
-	LookupKeyType LookupEntitiesRequest_LookupKeyType `protobuf:"varint,1,opt,name=lookup_key_type,proto3,enum=directory.LookupEntitiesRequest_LookupKeyType" json:"lookup_key_type,omitempty"`
+	LookupKeyType LookupEntitiesRequest_LookupKeyType `protobuf:"varint,1,opt,name=lookup_key_type,json=lookupKeyType,proto3,enum=directory.LookupEntitiesRequest_LookupKeyType" json:"lookup_key_type,omitempty"`
 	// Types that are valid to be assigned to LookupKeyOneof:
 	//	*LookupEntitiesRequest_EntityID
 	//	*LookupEntitiesRequest_ExternalID
 	//	*LookupEntitiesRequest_BatchEntityID
 	LookupKeyOneof       isLookupEntitiesRequest_LookupKeyOneof `protobuf_oneof:"lookup_key_oneof"`
-	RequestedInformation *RequestedInformation                  `protobuf:"bytes,4,opt,name=requested_information" json:"requested_information,omitempty"`
+	RequestedInformation *RequestedInformation                  `protobuf:"bytes,4,opt,name=requested_information,json=requestedInformation" json:"requested_information,omitempty"`
 	Statuses             []EntityStatus                         `protobuf:"varint,5,rep,name=statuses,enum=directory.EntityStatus" json:"statuses,omitempty"`
-	RootTypes            []EntityType                           `protobuf:"varint,7,rep,name=root_types,enum=directory.EntityType" json:"root_types,omitempty"`
-	ChildTypes           []EntityType                           `protobuf:"varint,8,rep,name=child_types,enum=directory.EntityType" json:"child_types,omitempty"`
+	RootTypes            []EntityType                           `protobuf:"varint,7,rep,name=root_types,json=rootTypes,enum=directory.EntityType" json:"root_types,omitempty"`
+	ChildTypes           []EntityType                           `protobuf:"varint,8,rep,name=child_types,json=childTypes,enum=directory.EntityType" json:"child_types,omitempty"`
 }
 
-func (m *LookupEntitiesRequest) Reset()      { *m = LookupEntitiesRequest{} }
-func (*LookupEntitiesRequest) ProtoMessage() {}
+func (m *LookupEntitiesRequest) Reset()                    { *m = LookupEntitiesRequest{} }
+func (*LookupEntitiesRequest) ProtoMessage()               {}
+func (*LookupEntitiesRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{9} }
 
 type isLookupEntitiesRequest_LookupKeyOneof interface {
 	isLookupEntitiesRequest_LookupKeyOneof()
@@ -372,13 +402,13 @@ type isLookupEntitiesRequest_LookupKeyOneof interface {
 }
 
 type LookupEntitiesRequest_EntityID struct {
-	EntityID string `protobuf:"bytes,2,opt,name=entity_id,proto3,oneof"`
+	EntityID string `protobuf:"bytes,2,opt,name=entity_id,json=entityId,proto3,oneof"`
 }
 type LookupEntitiesRequest_ExternalID struct {
-	ExternalID string `protobuf:"bytes,3,opt,name=external_id,proto3,oneof"`
+	ExternalID string `protobuf:"bytes,3,opt,name=external_id,json=externalId,proto3,oneof"`
 }
 type LookupEntitiesRequest_BatchEntityID struct {
-	BatchEntityID *IDList `protobuf:"bytes,6,opt,name=batch_entity_id,oneof"`
+	BatchEntityID *IDList `protobuf:"bytes,6,opt,name=batch_entity_id,json=batchEntityId,oneof"`
 }
 
 func (*LookupEntitiesRequest_EntityID) isLookupEntitiesRequest_LookupKeyOneof()      {}
@@ -421,8 +451,8 @@ func (m *LookupEntitiesRequest) GetRequestedInformation() *RequestedInformation 
 }
 
 // XXX_OneofFuncs is for the internal use of the proto package.
-func (*LookupEntitiesRequest) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), []interface{}) {
-	return _LookupEntitiesRequest_OneofMarshaler, _LookupEntitiesRequest_OneofUnmarshaler, []interface{}{
+func (*LookupEntitiesRequest) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _LookupEntitiesRequest_OneofMarshaler, _LookupEntitiesRequest_OneofUnmarshaler, _LookupEntitiesRequest_OneofSizer, []interface{}{
 		(*LookupEntitiesRequest_EntityID)(nil),
 		(*LookupEntitiesRequest_ExternalID)(nil),
 		(*LookupEntitiesRequest_BatchEntityID)(nil),
@@ -481,12 +511,37 @@ func _LookupEntitiesRequest_OneofUnmarshaler(msg proto.Message, tag, wire int, b
 	}
 }
 
+func _LookupEntitiesRequest_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*LookupEntitiesRequest)
+	// lookup_key_oneof
+	switch x := m.LookupKeyOneof.(type) {
+	case *LookupEntitiesRequest_EntityID:
+		n += proto.SizeVarint(2<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(len(x.EntityID)))
+		n += len(x.EntityID)
+	case *LookupEntitiesRequest_ExternalID:
+		n += proto.SizeVarint(3<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(len(x.ExternalID)))
+		n += len(x.ExternalID)
+	case *LookupEntitiesRequest_BatchEntityID:
+		s := proto.Size(x.BatchEntityID)
+		n += proto.SizeVarint(6<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
+}
+
 type LookupEntitiesResponse struct {
 	Entities []*Entity `protobuf:"bytes,1,rep,name=entities" json:"entities,omitempty"`
 }
 
-func (m *LookupEntitiesResponse) Reset()      { *m = LookupEntitiesResponse{} }
-func (*LookupEntitiesResponse) ProtoMessage() {}
+func (m *LookupEntitiesResponse) Reset()                    { *m = LookupEntitiesResponse{} }
+func (*LookupEntitiesResponse) ProtoMessage()               {}
+func (*LookupEntitiesResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{10} }
 
 func (m *LookupEntitiesResponse) GetEntities() []*Entity {
 	if m != nil {
@@ -497,16 +552,17 @@ func (m *LookupEntitiesResponse) GetEntities() []*Entity {
 
 type CreateEntityRequest struct {
 	Type                      EntityType            `protobuf:"varint,2,opt,name=type,proto3,enum=directory.EntityType" json:"type,omitempty"`
-	ExternalID                string                `protobuf:"bytes,3,opt,name=external_id,proto3" json:"external_id,omitempty"`
-	InitialMembershipEntityID string                `protobuf:"bytes,4,opt,name=initial_membership_entity_id,proto3" json:"initial_membership_entity_id,omitempty"`
+	ExternalID                string                `protobuf:"bytes,3,opt,name=external_id,json=externalId,proto3" json:"external_id,omitempty"`
+	InitialMembershipEntityID string                `protobuf:"bytes,4,opt,name=initial_membership_entity_id,json=initialMembershipEntityId,proto3" json:"initial_membership_entity_id,omitempty"`
 	Contacts                  []*Contact            `protobuf:"bytes,5,rep,name=contacts" json:"contacts,omitempty"`
-	RequestedInformation      *RequestedInformation `protobuf:"bytes,6,opt,name=requested_information" json:"requested_information,omitempty"`
-	EntityInfo                *EntityInfo           `protobuf:"bytes,7,opt,name=entity_info" json:"entity_info,omitempty"`
-	AccountID                 string                `protobuf:"bytes,8,opt,name=account_id,proto3" json:"account_id,omitempty"`
+	RequestedInformation      *RequestedInformation `protobuf:"bytes,6,opt,name=requested_information,json=requestedInformation" json:"requested_information,omitempty"`
+	EntityInfo                *EntityInfo           `protobuf:"bytes,7,opt,name=entity_info,json=entityInfo" json:"entity_info,omitempty"`
+	AccountID                 string                `protobuf:"bytes,8,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
 }
 
-func (m *CreateEntityRequest) Reset()      { *m = CreateEntityRequest{} }
-func (*CreateEntityRequest) ProtoMessage() {}
+func (m *CreateEntityRequest) Reset()                    { *m = CreateEntityRequest{} }
+func (*CreateEntityRequest) ProtoMessage()               {}
+func (*CreateEntityRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{11} }
 
 func (m *CreateEntityRequest) GetContacts() []*Contact {
 	if m != nil {
@@ -533,8 +589,9 @@ type CreateEntityResponse struct {
 	Entity *Entity `protobuf:"bytes,1,opt,name=entity" json:"entity,omitempty"`
 }
 
-func (m *CreateEntityResponse) Reset()      { *m = CreateEntityResponse{} }
-func (*CreateEntityResponse) ProtoMessage() {}
+func (m *CreateEntityResponse) Reset()                    { *m = CreateEntityResponse{} }
+func (*CreateEntityResponse) ProtoMessage()               {}
+func (*CreateEntityResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{12} }
 
 func (m *CreateEntityResponse) GetEntity() *Entity {
 	if m != nil {
@@ -544,13 +601,14 @@ func (m *CreateEntityResponse) GetEntity() *Entity {
 }
 
 type CreateMembershipRequest struct {
-	EntityID             string                `protobuf:"bytes,1,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
-	TargetEntityID       string                `protobuf:"bytes,2,opt,name=target_entity_id,proto3" json:"target_entity_id,omitempty"`
-	RequestedInformation *RequestedInformation `protobuf:"bytes,3,opt,name=requested_information" json:"requested_information,omitempty"`
+	EntityID             string                `protobuf:"bytes,1,opt,name=entity_id,json=entityId,proto3" json:"entity_id,omitempty"`
+	TargetEntityID       string                `protobuf:"bytes,2,opt,name=target_entity_id,json=targetEntityId,proto3" json:"target_entity_id,omitempty"`
+	RequestedInformation *RequestedInformation `protobuf:"bytes,3,opt,name=requested_information,json=requestedInformation" json:"requested_information,omitempty"`
 }
 
-func (m *CreateMembershipRequest) Reset()      { *m = CreateMembershipRequest{} }
-func (*CreateMembershipRequest) ProtoMessage() {}
+func (m *CreateMembershipRequest) Reset()                    { *m = CreateMembershipRequest{} }
+func (*CreateMembershipRequest) ProtoMessage()               {}
+func (*CreateMembershipRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{13} }
 
 func (m *CreateMembershipRequest) GetRequestedInformation() *RequestedInformation {
 	if m != nil {
@@ -563,8 +621,9 @@ type CreateMembershipResponse struct {
 	Entity *Entity `protobuf:"bytes,1,opt,name=entity" json:"entity,omitempty"`
 }
 
-func (m *CreateMembershipResponse) Reset()      { *m = CreateMembershipResponse{} }
-func (*CreateMembershipResponse) ProtoMessage() {}
+func (m *CreateMembershipResponse) Reset()                    { *m = CreateMembershipResponse{} }
+func (*CreateMembershipResponse) ProtoMessage()               {}
+func (*CreateMembershipResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{14} }
 
 func (m *CreateMembershipResponse) GetEntity() *Entity {
 	if m != nil {
@@ -574,26 +633,30 @@ func (m *CreateMembershipResponse) GetEntity() *Entity {
 }
 
 type Contact struct {
-	ContactType ContactType `protobuf:"varint,1,opt,name=contact_type,proto3,enum=directory.ContactType" json:"contact_type,omitempty"`
+	ContactType ContactType `protobuf:"varint,1,opt,name=contact_type,json=contactType,proto3,enum=directory.ContactType" json:"contact_type,omitempty"`
 	Value       string      `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 	Provisioned bool        `protobuf:"varint,3,opt,name=provisioned,proto3" json:"provisioned,omitempty"`
 	ID          string      `protobuf:"bytes,4,opt,name=id,proto3" json:"id,omitempty"`
 	Label       string      `protobuf:"bytes,5,opt,name=label,proto3" json:"label,omitempty"`
 }
 
-func (m *Contact) Reset()      { *m = Contact{} }
-func (*Contact) ProtoMessage() {}
+func (m *Contact) Reset()                    { *m = Contact{} }
+func (*Contact) ProtoMessage()               {}
+func (*Contact) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{15} }
 
 type LookupEntitiesByContactRequest struct {
-	ContactValue         string                `protobuf:"bytes,1,opt,name=contact_value,proto3" json:"contact_value,omitempty"`
-	RequestedInformation *RequestedInformation `protobuf:"bytes,4,opt,name=requested_information" json:"requested_information,omitempty"`
+	ContactValue         string                `protobuf:"bytes,1,opt,name=contact_value,json=contactValue,proto3" json:"contact_value,omitempty"`
+	RequestedInformation *RequestedInformation `protobuf:"bytes,4,opt,name=requested_information,json=requestedInformation" json:"requested_information,omitempty"`
 	Statuses             []EntityStatus        `protobuf:"varint,5,rep,name=statuses,enum=directory.EntityStatus" json:"statuses,omitempty"`
-	RootTypes            []EntityType          `protobuf:"varint,6,rep,name=root_types,enum=directory.EntityType" json:"root_types,omitempty"`
-	ChildTypes           []EntityType          `protobuf:"varint,7,rep,name=child_types,enum=directory.EntityType" json:"child_types,omitempty"`
+	RootTypes            []EntityType          `protobuf:"varint,6,rep,name=root_types,json=rootTypes,enum=directory.EntityType" json:"root_types,omitempty"`
+	ChildTypes           []EntityType          `protobuf:"varint,7,rep,name=child_types,json=childTypes,enum=directory.EntityType" json:"child_types,omitempty"`
 }
 
 func (m *LookupEntitiesByContactRequest) Reset()      { *m = LookupEntitiesByContactRequest{} }
 func (*LookupEntitiesByContactRequest) ProtoMessage() {}
+func (*LookupEntitiesByContactRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptorSvc, []int{16}
+}
 
 func (m *LookupEntitiesByContactRequest) GetRequestedInformation() *RequestedInformation {
 	if m != nil {
@@ -608,6 +671,9 @@ type LookupEntitiesByContactResponse struct {
 
 func (m *LookupEntitiesByContactResponse) Reset()      { *m = LookupEntitiesByContactResponse{} }
 func (*LookupEntitiesByContactResponse) ProtoMessage() {}
+func (*LookupEntitiesByContactResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptorSvc, []int{17}
+}
 
 func (m *LookupEntitiesByContactResponse) GetEntities() []*Entity {
 	if m != nil {
@@ -618,12 +684,13 @@ func (m *LookupEntitiesByContactResponse) GetEntities() []*Entity {
 
 type CreateContactRequest struct {
 	Contact              *Contact              `protobuf:"bytes,1,opt,name=contact" json:"contact,omitempty"`
-	EntityID             string                `protobuf:"bytes,2,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
-	RequestedInformation *RequestedInformation `protobuf:"bytes,3,opt,name=requested_information" json:"requested_information,omitempty"`
+	EntityID             string                `protobuf:"bytes,2,opt,name=entity_id,json=entityId,proto3" json:"entity_id,omitempty"`
+	RequestedInformation *RequestedInformation `protobuf:"bytes,3,opt,name=requested_information,json=requestedInformation" json:"requested_information,omitempty"`
 }
 
-func (m *CreateContactRequest) Reset()      { *m = CreateContactRequest{} }
-func (*CreateContactRequest) ProtoMessage() {}
+func (m *CreateContactRequest) Reset()                    { *m = CreateContactRequest{} }
+func (*CreateContactRequest) ProtoMessage()               {}
+func (*CreateContactRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{18} }
 
 func (m *CreateContactRequest) GetContact() *Contact {
 	if m != nil {
@@ -643,8 +710,9 @@ type CreateContactResponse struct {
 	Entity *Entity `protobuf:"bytes,1,opt,name=entity" json:"entity,omitempty"`
 }
 
-func (m *CreateContactResponse) Reset()      { *m = CreateContactResponse{} }
-func (*CreateContactResponse) ProtoMessage() {}
+func (m *CreateContactResponse) Reset()                    { *m = CreateContactResponse{} }
+func (*CreateContactResponse) ProtoMessage()               {}
+func (*CreateContactResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{19} }
 
 func (m *CreateContactResponse) GetEntity() *Entity {
 	if m != nil {
@@ -654,57 +722,64 @@ func (m *CreateContactResponse) GetEntity() *Entity {
 }
 
 type LookupEntityDomainRequest struct {
-	EntityID string `protobuf:"bytes,1,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
+	EntityID string `protobuf:"bytes,1,opt,name=entity_id,json=entityId,proto3" json:"entity_id,omitempty"`
 	Domain   string `protobuf:"bytes,2,opt,name=domain,proto3" json:"domain,omitempty"`
 }
 
-func (m *LookupEntityDomainRequest) Reset()      { *m = LookupEntityDomainRequest{} }
-func (*LookupEntityDomainRequest) ProtoMessage() {}
+func (m *LookupEntityDomainRequest) Reset()                    { *m = LookupEntityDomainRequest{} }
+func (*LookupEntityDomainRequest) ProtoMessage()               {}
+func (*LookupEntityDomainRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{20} }
 
 type LookupEntityDomainResponse struct {
-	EntityID string `protobuf:"bytes,1,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
+	EntityID string `protobuf:"bytes,1,opt,name=entity_id,json=entityId,proto3" json:"entity_id,omitempty"`
 	Domain   string `protobuf:"bytes,2,opt,name=domain,proto3" json:"domain,omitempty"`
 }
 
-func (m *LookupEntityDomainResponse) Reset()      { *m = LookupEntityDomainResponse{} }
-func (*LookupEntityDomainResponse) ProtoMessage() {}
+func (m *LookupEntityDomainResponse) Reset()                    { *m = LookupEntityDomainResponse{} }
+func (*LookupEntityDomainResponse) ProtoMessage()               {}
+func (*LookupEntityDomainResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{21} }
 
 type CreateEntityDomainRequest struct {
-	EntityID string `protobuf:"bytes,1,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
+	EntityID string `protobuf:"bytes,1,opt,name=entity_id,json=entityId,proto3" json:"entity_id,omitempty"`
 	Domain   string `protobuf:"bytes,2,opt,name=domain,proto3" json:"domain,omitempty"`
 }
 
-func (m *CreateEntityDomainRequest) Reset()      { *m = CreateEntityDomainRequest{} }
-func (*CreateEntityDomainRequest) ProtoMessage() {}
+func (m *CreateEntityDomainRequest) Reset()                    { *m = CreateEntityDomainRequest{} }
+func (*CreateEntityDomainRequest) ProtoMessage()               {}
+func (*CreateEntityDomainRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{22} }
 
 type CreateEntityDomainResponse struct {
 }
 
-func (m *CreateEntityDomainResponse) Reset()      { *m = CreateEntityDomainResponse{} }
-func (*CreateEntityDomainResponse) ProtoMessage() {}
+func (m *CreateEntityDomainResponse) Reset()                    { *m = CreateEntityDomainResponse{} }
+func (*CreateEntityDomainResponse) ProtoMessage()               {}
+func (*CreateEntityDomainResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{23} }
 
 type UpdateEntityDomainRequest struct {
-	EntityID string `protobuf:"bytes,1,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
+	EntityID string `protobuf:"bytes,1,opt,name=entity_id,json=entityId,proto3" json:"entity_id,omitempty"`
 	Domain   string `protobuf:"bytes,2,opt,name=domain,proto3" json:"domain,omitempty"`
 }
 
-func (m *UpdateEntityDomainRequest) Reset()      { *m = UpdateEntityDomainRequest{} }
-func (*UpdateEntityDomainRequest) ProtoMessage() {}
+func (m *UpdateEntityDomainRequest) Reset()                    { *m = UpdateEntityDomainRequest{} }
+func (*UpdateEntityDomainRequest) ProtoMessage()               {}
+func (*UpdateEntityDomainRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{24} }
 
 type UpdateEntityDomainResponse struct {
 }
 
-func (m *UpdateEntityDomainResponse) Reset()      { *m = UpdateEntityDomainResponse{} }
-func (*UpdateEntityDomainResponse) ProtoMessage() {}
+func (m *UpdateEntityDomainResponse) Reset()                    { *m = UpdateEntityDomainResponse{} }
+func (*UpdateEntityDomainResponse) ProtoMessage()               {}
+func (*UpdateEntityDomainResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{25} }
 
 type CreateContactsRequest struct {
-	EntityID             string                `protobuf:"bytes,1,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
+	EntityID             string                `protobuf:"bytes,1,opt,name=entity_id,json=entityId,proto3" json:"entity_id,omitempty"`
 	Contacts             []*Contact            `protobuf:"bytes,2,rep,name=contacts" json:"contacts,omitempty"`
-	RequestedInformation *RequestedInformation `protobuf:"bytes,3,opt,name=requested_information" json:"requested_information,omitempty"`
+	RequestedInformation *RequestedInformation `protobuf:"bytes,3,opt,name=requested_information,json=requestedInformation" json:"requested_information,omitempty"`
 }
 
-func (m *CreateContactsRequest) Reset()      { *m = CreateContactsRequest{} }
-func (*CreateContactsRequest) ProtoMessage() {}
+func (m *CreateContactsRequest) Reset()                    { *m = CreateContactsRequest{} }
+func (*CreateContactsRequest) ProtoMessage()               {}
+func (*CreateContactsRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{26} }
 
 func (m *CreateContactsRequest) GetContacts() []*Contact {
 	if m != nil {
@@ -724,8 +799,9 @@ type CreateContactsResponse struct {
 	Entity *Entity `protobuf:"bytes,1,opt,name=entity" json:"entity,omitempty"`
 }
 
-func (m *CreateContactsResponse) Reset()      { *m = CreateContactsResponse{} }
-func (*CreateContactsResponse) ProtoMessage() {}
+func (m *CreateContactsResponse) Reset()                    { *m = CreateContactsResponse{} }
+func (*CreateContactsResponse) ProtoMessage()               {}
+func (*CreateContactsResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{27} }
 
 func (m *CreateContactsResponse) GetEntity() *Entity {
 	if m != nil {
@@ -735,20 +811,21 @@ func (m *CreateContactsResponse) GetEntity() *Entity {
 }
 
 type UpdateEntityRequest struct {
-	EntityID                       string                           `protobuf:"bytes,1,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
-	RequestedInformation           *RequestedInformation            `protobuf:"bytes,3,opt,name=requested_information" json:"requested_information,omitempty"`
-	UpdateEntityInfo               bool                             `protobuf:"varint,7,opt,name=update_entity_info,proto3" json:"update_entity_info,omitempty"`
-	EntityInfo                     *EntityInfo                      `protobuf:"bytes,2,opt,name=entity_info" json:"entity_info,omitempty"`
-	UpdateContacts                 bool                             `protobuf:"varint,8,opt,name=update_contacts,proto3" json:"update_contacts,omitempty"`
+	EntityID                       string                           `protobuf:"bytes,1,opt,name=entity_id,json=entityId,proto3" json:"entity_id,omitempty"`
+	RequestedInformation           *RequestedInformation            `protobuf:"bytes,3,opt,name=requested_information,json=requestedInformation" json:"requested_information,omitempty"`
+	UpdateEntityInfo               bool                             `protobuf:"varint,7,opt,name=update_entity_info,json=updateEntityInfo,proto3" json:"update_entity_info,omitempty"`
+	EntityInfo                     *EntityInfo                      `protobuf:"bytes,2,opt,name=entity_info,json=entityInfo" json:"entity_info,omitempty"`
+	UpdateContacts                 bool                             `protobuf:"varint,8,opt,name=update_contacts,json=updateContacts,proto3" json:"update_contacts,omitempty"`
 	Contacts                       []*Contact                       `protobuf:"bytes,4,rep,name=contacts" json:"contacts,omitempty"`
-	UpdateSerializedEntityContacts bool                             `protobuf:"varint,9,opt,name=update_serialized_entity_contacts,proto3" json:"update_serialized_entity_contacts,omitempty"`
-	SerializedEntityContacts       []*SerializedClientEntityContact `protobuf:"bytes,5,rep,name=serialized_entity_contacts" json:"serialized_entity_contacts,omitempty"`
-	UpdateAccountID                bool                             `protobuf:"varint,10,opt,name=update_account_id,proto3" json:"update_account_id,omitempty"`
-	AccountID                      string                           `protobuf:"bytes,6,opt,name=account_id,proto3" json:"account_id,omitempty"`
+	UpdateSerializedEntityContacts bool                             `protobuf:"varint,9,opt,name=update_serialized_entity_contacts,json=updateSerializedEntityContacts,proto3" json:"update_serialized_entity_contacts,omitempty"`
+	SerializedEntityContacts       []*SerializedClientEntityContact `protobuf:"bytes,5,rep,name=serialized_entity_contacts,json=serializedEntityContacts" json:"serialized_entity_contacts,omitempty"`
+	UpdateAccountID                bool                             `protobuf:"varint,10,opt,name=update_account_id,json=updateAccountId,proto3" json:"update_account_id,omitempty"`
+	AccountID                      string                           `protobuf:"bytes,6,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
 }
 
-func (m *UpdateEntityRequest) Reset()      { *m = UpdateEntityRequest{} }
-func (*UpdateEntityRequest) ProtoMessage() {}
+func (m *UpdateEntityRequest) Reset()                    { *m = UpdateEntityRequest{} }
+func (*UpdateEntityRequest) ProtoMessage()               {}
+func (*UpdateEntityRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{28} }
 
 func (m *UpdateEntityRequest) GetRequestedInformation() *RequestedInformation {
 	if m != nil {
@@ -782,8 +859,9 @@ type UpdateEntityResponse struct {
 	Entity *Entity `protobuf:"bytes,1,opt,name=entity" json:"entity,omitempty"`
 }
 
-func (m *UpdateEntityResponse) Reset()      { *m = UpdateEntityResponse{} }
-func (*UpdateEntityResponse) ProtoMessage() {}
+func (m *UpdateEntityResponse) Reset()                    { *m = UpdateEntityResponse{} }
+func (*UpdateEntityResponse) ProtoMessage()               {}
+func (*UpdateEntityResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{29} }
 
 func (m *UpdateEntityResponse) GetEntity() *Entity {
 	if m != nil {
@@ -793,13 +871,14 @@ func (m *UpdateEntityResponse) GetEntity() *Entity {
 }
 
 type UpdateContactsRequest struct {
-	EntityID             string                `protobuf:"bytes,1,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
+	EntityID             string                `protobuf:"bytes,1,opt,name=entity_id,json=entityId,proto3" json:"entity_id,omitempty"`
 	Contacts             []*Contact            `protobuf:"bytes,2,rep,name=contacts" json:"contacts,omitempty"`
-	RequestedInformation *RequestedInformation `protobuf:"bytes,3,opt,name=requested_information" json:"requested_information,omitempty"`
+	RequestedInformation *RequestedInformation `protobuf:"bytes,3,opt,name=requested_information,json=requestedInformation" json:"requested_information,omitempty"`
 }
 
-func (m *UpdateContactsRequest) Reset()      { *m = UpdateContactsRequest{} }
-func (*UpdateContactsRequest) ProtoMessage() {}
+func (m *UpdateContactsRequest) Reset()                    { *m = UpdateContactsRequest{} }
+func (*UpdateContactsRequest) ProtoMessage()               {}
+func (*UpdateContactsRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{30} }
 
 func (m *UpdateContactsRequest) GetContacts() []*Contact {
 	if m != nil {
@@ -819,8 +898,9 @@ type UpdateContactsResponse struct {
 	Entity *Entity `protobuf:"bytes,1,opt,name=entity" json:"entity,omitempty"`
 }
 
-func (m *UpdateContactsResponse) Reset()      { *m = UpdateContactsResponse{} }
-func (*UpdateContactsResponse) ProtoMessage() {}
+func (m *UpdateContactsResponse) Reset()                    { *m = UpdateContactsResponse{} }
+func (*UpdateContactsResponse) ProtoMessage()               {}
+func (*UpdateContactsResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{31} }
 
 func (m *UpdateContactsResponse) GetEntity() *Entity {
 	if m != nil {
@@ -830,13 +910,14 @@ func (m *UpdateContactsResponse) GetEntity() *Entity {
 }
 
 type DeleteContactsRequest struct {
-	EntityID             string                `protobuf:"bytes,1,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
-	EntityContactIDs     []string              `protobuf:"bytes,2,rep,name=entity_contact_id" json:"entity_contact_id,omitempty"`
-	RequestedInformation *RequestedInformation `protobuf:"bytes,3,opt,name=requested_information" json:"requested_information,omitempty"`
+	EntityID             string                `protobuf:"bytes,1,opt,name=entity_id,json=entityId,proto3" json:"entity_id,omitempty"`
+	EntityContactIDs     []string              `protobuf:"bytes,2,rep,name=entity_contact_id,json=entityContactId" json:"entity_contact_id,omitempty"`
+	RequestedInformation *RequestedInformation `protobuf:"bytes,3,opt,name=requested_information,json=requestedInformation" json:"requested_information,omitempty"`
 }
 
-func (m *DeleteContactsRequest) Reset()      { *m = DeleteContactsRequest{} }
-func (*DeleteContactsRequest) ProtoMessage() {}
+func (m *DeleteContactsRequest) Reset()                    { *m = DeleteContactsRequest{} }
+func (*DeleteContactsRequest) ProtoMessage()               {}
+func (*DeleteContactsRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{32} }
 
 func (m *DeleteContactsRequest) GetRequestedInformation() *RequestedInformation {
 	if m != nil {
@@ -849,8 +930,9 @@ type DeleteContactsResponse struct {
 	Entity *Entity `protobuf:"bytes,1,opt,name=entity" json:"entity,omitempty"`
 }
 
-func (m *DeleteContactsResponse) Reset()      { *m = DeleteContactsResponse{} }
-func (*DeleteContactsResponse) ProtoMessage() {}
+func (m *DeleteContactsResponse) Reset()                    { *m = DeleteContactsResponse{} }
+func (*DeleteContactsResponse) ProtoMessage()               {}
+func (*DeleteContactsResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{33} }
 
 func (m *DeleteContactsResponse) GetEntity() *Entity {
 	if m != nil {
@@ -860,19 +942,25 @@ func (m *DeleteContactsResponse) GetEntity() *Entity {
 }
 
 type SerializedEntityContactRequest struct {
-	EntityID string   `protobuf:"bytes,1,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
+	EntityID string   `protobuf:"bytes,1,opt,name=entity_id,json=entityId,proto3" json:"entity_id,omitempty"`
 	Platform Platform `protobuf:"varint,2,opt,name=platform,proto3,enum=directory.Platform" json:"platform,omitempty"`
 }
 
 func (m *SerializedEntityContactRequest) Reset()      { *m = SerializedEntityContactRequest{} }
 func (*SerializedEntityContactRequest) ProtoMessage() {}
+func (*SerializedEntityContactRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptorSvc, []int{34}
+}
 
 type SerializedEntityContactResponse struct {
-	SerializedEntityContact *SerializedClientEntityContact `protobuf:"bytes,1,opt,name=serialized_entity_contact" json:"serialized_entity_contact,omitempty"`
+	SerializedEntityContact *SerializedClientEntityContact `protobuf:"bytes,1,opt,name=serialized_entity_contact,json=serializedEntityContact" json:"serialized_entity_contact,omitempty"`
 }
 
 func (m *SerializedEntityContactResponse) Reset()      { *m = SerializedEntityContactResponse{} }
 func (*SerializedEntityContactResponse) ProtoMessage() {}
+func (*SerializedEntityContactResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptorSvc, []int{35}
+}
 
 func (m *SerializedEntityContactResponse) GetSerializedEntityContact() *SerializedClientEntityContact {
 	if m != nil {
@@ -882,31 +970,35 @@ func (m *SerializedEntityContactResponse) GetSerializedEntityContact() *Serializ
 }
 
 type DeleteEntityRequest struct {
-	EntityID string `protobuf:"bytes,1,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
+	EntityID string `protobuf:"bytes,1,opt,name=entity_id,json=entityId,proto3" json:"entity_id,omitempty"`
 }
 
-func (m *DeleteEntityRequest) Reset()      { *m = DeleteEntityRequest{} }
-func (*DeleteEntityRequest) ProtoMessage() {}
+func (m *DeleteEntityRequest) Reset()                    { *m = DeleteEntityRequest{} }
+func (*DeleteEntityRequest) ProtoMessage()               {}
+func (*DeleteEntityRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{36} }
 
 type DeleteEntityResponse struct {
 }
 
-func (m *DeleteEntityResponse) Reset()      { *m = DeleteEntityResponse{} }
-func (*DeleteEntityResponse) ProtoMessage() {}
+func (m *DeleteEntityResponse) Reset()                    { *m = DeleteEntityResponse{} }
+func (*DeleteEntityResponse) ProtoMessage()               {}
+func (*DeleteEntityResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{37} }
 
 type CreateExternalIDsRequest struct {
-	EntityID    string   `protobuf:"bytes,1,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
-	ExternalIDs []string `protobuf:"bytes,2,rep,name=external_ids" json:"external_ids,omitempty"`
+	EntityID    string   `protobuf:"bytes,1,opt,name=entity_id,json=entityId,proto3" json:"entity_id,omitempty"`
+	ExternalIDs []string `protobuf:"bytes,2,rep,name=external_ids,json=externalIds" json:"external_ids,omitempty"`
 }
 
-func (m *CreateExternalIDsRequest) Reset()      { *m = CreateExternalIDsRequest{} }
-func (*CreateExternalIDsRequest) ProtoMessage() {}
+func (m *CreateExternalIDsRequest) Reset()                    { *m = CreateExternalIDsRequest{} }
+func (*CreateExternalIDsRequest) ProtoMessage()               {}
+func (*CreateExternalIDsRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{38} }
 
 type CreateExternalIDsResponse struct {
 }
 
-func (m *CreateExternalIDsResponse) Reset()      { *m = CreateExternalIDsResponse{} }
-func (*CreateExternalIDsResponse) ProtoMessage() {}
+func (m *CreateExternalIDsResponse) Reset()                    { *m = CreateExternalIDsResponse{} }
+func (*CreateExternalIDsResponse) ProtoMessage()               {}
+func (*CreateExternalIDsResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{39} }
 
 func init() {
 	proto.RegisterType((*ExternalID)(nil), "directory.ExternalID")
@@ -1016,7 +1108,12 @@ func (this *ExternalID) Equal(that interface{}) bool {
 
 	that1, ok := that.(*ExternalID)
 	if !ok {
-		return false
+		that2, ok := that.(ExternalID)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1044,7 +1141,12 @@ func (this *Date) Equal(that interface{}) bool {
 
 	that1, ok := that.(*Date)
 	if !ok {
-		return false
+		that2, ok := that.(Date)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1075,7 +1177,12 @@ func (this *EntityInfo) Equal(that interface{}) bool {
 
 	that1, ok := that.(*EntityInfo)
 	if !ok {
-		return false
+		that2, ok := that.(EntityInfo)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1127,7 +1234,12 @@ func (this *Entity) Equal(that interface{}) bool {
 
 	that1, ok := that.(*Entity)
 	if !ok {
-		return false
+		that2, ok := that.(Entity)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1210,7 +1322,12 @@ func (this *SerializedClientEntityContact) Equal(that interface{}) bool {
 
 	that1, ok := that.(*SerializedClientEntityContact)
 	if !ok {
-		return false
+		that2, ok := that.(SerializedClientEntityContact)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1241,7 +1358,12 @@ func (this *RequestedInformation) Equal(that interface{}) bool {
 
 	that1, ok := that.(*RequestedInformation)
 	if !ok {
-		return false
+		that2, ok := that.(RequestedInformation)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1274,7 +1396,12 @@ func (this *ExternalIDsRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*ExternalIDsRequest)
 	if !ok {
-		return false
+		that2, ok := that.(ExternalIDsRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1304,7 +1431,12 @@ func (this *ExternalIDsResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*ExternalIDsResponse)
 	if !ok {
-		return false
+		that2, ok := that.(ExternalIDsResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1334,7 +1466,12 @@ func (this *IDList) Equal(that interface{}) bool {
 
 	that1, ok := that.(*IDList)
 	if !ok {
-		return false
+		that2, ok := that.(IDList)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1364,7 +1501,12 @@ func (this *LookupEntitiesRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*LookupEntitiesRequest)
 	if !ok {
-		return false
+		that2, ok := that.(LookupEntitiesRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1425,7 +1567,12 @@ func (this *LookupEntitiesRequest_EntityID) Equal(that interface{}) bool {
 
 	that1, ok := that.(*LookupEntitiesRequest_EntityID)
 	if !ok {
-		return false
+		that2, ok := that.(LookupEntitiesRequest_EntityID)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1450,7 +1597,12 @@ func (this *LookupEntitiesRequest_ExternalID) Equal(that interface{}) bool {
 
 	that1, ok := that.(*LookupEntitiesRequest_ExternalID)
 	if !ok {
-		return false
+		that2, ok := that.(LookupEntitiesRequest_ExternalID)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1475,7 +1627,12 @@ func (this *LookupEntitiesRequest_BatchEntityID) Equal(that interface{}) bool {
 
 	that1, ok := that.(*LookupEntitiesRequest_BatchEntityID)
 	if !ok {
-		return false
+		that2, ok := that.(LookupEntitiesRequest_BatchEntityID)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1500,7 +1657,12 @@ func (this *LookupEntitiesResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*LookupEntitiesResponse)
 	if !ok {
-		return false
+		that2, ok := that.(LookupEntitiesResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1530,7 +1692,12 @@ func (this *CreateEntityRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CreateEntityRequest)
 	if !ok {
-		return false
+		that2, ok := that.(CreateEntityRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1578,7 +1745,12 @@ func (this *CreateEntityResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CreateEntityResponse)
 	if !ok {
-		return false
+		that2, ok := that.(CreateEntityResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1603,7 +1775,12 @@ func (this *CreateMembershipRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CreateMembershipRequest)
 	if !ok {
-		return false
+		that2, ok := that.(CreateMembershipRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1634,7 +1811,12 @@ func (this *CreateMembershipResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CreateMembershipResponse)
 	if !ok {
-		return false
+		that2, ok := that.(CreateMembershipResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1659,7 +1841,12 @@ func (this *Contact) Equal(that interface{}) bool {
 
 	that1, ok := that.(*Contact)
 	if !ok {
-		return false
+		that2, ok := that.(Contact)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1696,7 +1883,12 @@ func (this *LookupEntitiesByContactRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*LookupEntitiesByContactRequest)
 	if !ok {
-		return false
+		that2, ok := that.(LookupEntitiesByContactRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1748,7 +1940,12 @@ func (this *LookupEntitiesByContactResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*LookupEntitiesByContactResponse)
 	if !ok {
-		return false
+		that2, ok := that.(LookupEntitiesByContactResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1778,7 +1975,12 @@ func (this *CreateContactRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CreateContactRequest)
 	if !ok {
-		return false
+		that2, ok := that.(CreateContactRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1809,7 +2011,12 @@ func (this *CreateContactResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CreateContactResponse)
 	if !ok {
-		return false
+		that2, ok := that.(CreateContactResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1834,7 +2041,12 @@ func (this *LookupEntityDomainRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*LookupEntityDomainRequest)
 	if !ok {
-		return false
+		that2, ok := that.(LookupEntityDomainRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1862,7 +2074,12 @@ func (this *LookupEntityDomainResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*LookupEntityDomainResponse)
 	if !ok {
-		return false
+		that2, ok := that.(LookupEntityDomainResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1890,7 +2107,12 @@ func (this *CreateEntityDomainRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CreateEntityDomainRequest)
 	if !ok {
-		return false
+		that2, ok := that.(CreateEntityDomainRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1918,7 +2140,12 @@ func (this *CreateEntityDomainResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CreateEntityDomainResponse)
 	if !ok {
-		return false
+		that2, ok := that.(CreateEntityDomainResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1940,7 +2167,12 @@ func (this *UpdateEntityDomainRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*UpdateEntityDomainRequest)
 	if !ok {
-		return false
+		that2, ok := that.(UpdateEntityDomainRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1968,7 +2200,12 @@ func (this *UpdateEntityDomainResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*UpdateEntityDomainResponse)
 	if !ok {
-		return false
+		that2, ok := that.(UpdateEntityDomainResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1990,7 +2227,12 @@ func (this *CreateContactsRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CreateContactsRequest)
 	if !ok {
-		return false
+		that2, ok := that.(CreateContactsRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -2026,7 +2268,12 @@ func (this *CreateContactsResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CreateContactsResponse)
 	if !ok {
-		return false
+		that2, ok := that.(CreateContactsResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -2051,7 +2298,12 @@ func (this *UpdateEntityRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*UpdateEntityRequest)
 	if !ok {
-		return false
+		that2, ok := that.(UpdateEntityRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -2113,7 +2365,12 @@ func (this *UpdateEntityResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*UpdateEntityResponse)
 	if !ok {
-		return false
+		that2, ok := that.(UpdateEntityResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -2138,7 +2395,12 @@ func (this *UpdateContactsRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*UpdateContactsRequest)
 	if !ok {
-		return false
+		that2, ok := that.(UpdateContactsRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -2174,7 +2436,12 @@ func (this *UpdateContactsResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*UpdateContactsResponse)
 	if !ok {
-		return false
+		that2, ok := that.(UpdateContactsResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -2199,7 +2466,12 @@ func (this *DeleteContactsRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*DeleteContactsRequest)
 	if !ok {
-		return false
+		that2, ok := that.(DeleteContactsRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -2235,7 +2507,12 @@ func (this *DeleteContactsResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*DeleteContactsResponse)
 	if !ok {
-		return false
+		that2, ok := that.(DeleteContactsResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -2260,7 +2537,12 @@ func (this *SerializedEntityContactRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*SerializedEntityContactRequest)
 	if !ok {
-		return false
+		that2, ok := that.(SerializedEntityContactRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -2288,7 +2570,12 @@ func (this *SerializedEntityContactResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*SerializedEntityContactResponse)
 	if !ok {
-		return false
+		that2, ok := that.(SerializedEntityContactResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -2313,7 +2600,12 @@ func (this *DeleteEntityRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*DeleteEntityRequest)
 	if !ok {
-		return false
+		that2, ok := that.(DeleteEntityRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -2338,7 +2630,12 @@ func (this *DeleteEntityResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*DeleteEntityResponse)
 	if !ok {
-		return false
+		that2, ok := that.(DeleteEntityResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -2360,7 +2657,12 @@ func (this *CreateExternalIDsRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CreateExternalIDsRequest)
 	if !ok {
-		return false
+		that2, ok := that.(CreateExternalIDsRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -2393,7 +2695,12 @@ func (this *CreateExternalIDsResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CreateExternalIDsResponse)
 	if !ok {
-		return false
+		that2, ok := that.(CreateExternalIDsResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -2993,6 +3300,10 @@ func extensionToGoStringSvc(e map[int32]github_com_gogo_protobuf_proto.Extension
 var _ context.Context
 var _ grpc.ClientConn
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the grpc package it is being compiled against.
+const _ = grpc.SupportPackageIsVersion2
+
 // Client API for Directory service
 
 type DirectoryClient interface {
@@ -3193,196 +3504,292 @@ func RegisterDirectoryServer(s *grpc.Server, srv DirectoryServer) {
 	s.RegisterService(&_Directory_serviceDesc, srv)
 }
 
-func _Directory_CreateContact_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Directory_CreateContact_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateContactRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(DirectoryServer).CreateContact(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(DirectoryServer).CreateContact(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/directory.Directory/CreateContact",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DirectoryServer).CreateContact(ctx, req.(*CreateContactRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Directory_CreateContacts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Directory_CreateContacts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateContactsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(DirectoryServer).CreateContacts(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(DirectoryServer).CreateContacts(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/directory.Directory/CreateContacts",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DirectoryServer).CreateContacts(ctx, req.(*CreateContactsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Directory_CreateEntityDomain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Directory_CreateEntityDomain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateEntityDomainRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(DirectoryServer).CreateEntityDomain(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(DirectoryServer).CreateEntityDomain(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/directory.Directory/CreateEntityDomain",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DirectoryServer).CreateEntityDomain(ctx, req.(*CreateEntityDomainRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Directory_UpdateEntityDomain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Directory_UpdateEntityDomain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateEntityDomainRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(DirectoryServer).UpdateEntityDomain(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(DirectoryServer).UpdateEntityDomain(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/directory.Directory/UpdateEntityDomain",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DirectoryServer).UpdateEntityDomain(ctx, req.(*UpdateEntityDomainRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Directory_CreateEntity_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Directory_CreateEntity_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateEntityRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(DirectoryServer).CreateEntity(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(DirectoryServer).CreateEntity(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/directory.Directory/CreateEntity",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DirectoryServer).CreateEntity(ctx, req.(*CreateEntityRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Directory_CreateExternalIDs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Directory_CreateExternalIDs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateExternalIDsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(DirectoryServer).CreateExternalIDs(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(DirectoryServer).CreateExternalIDs(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/directory.Directory/CreateExternalIDs",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DirectoryServer).CreateExternalIDs(ctx, req.(*CreateExternalIDsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Directory_CreateMembership_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Directory_CreateMembership_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateMembershipRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(DirectoryServer).CreateMembership(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(DirectoryServer).CreateMembership(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/directory.Directory/CreateMembership",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DirectoryServer).CreateMembership(ctx, req.(*CreateMembershipRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Directory_DeleteContacts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Directory_DeleteContacts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteContactsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(DirectoryServer).DeleteContacts(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(DirectoryServer).DeleteContacts(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/directory.Directory/DeleteContacts",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DirectoryServer).DeleteContacts(ctx, req.(*DeleteContactsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Directory_DeleteEntity_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Directory_DeleteEntity_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteEntityRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(DirectoryServer).DeleteEntity(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(DirectoryServer).DeleteEntity(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/directory.Directory/DeleteEntity",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DirectoryServer).DeleteEntity(ctx, req.(*DeleteEntityRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Directory_ExternalIDs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Directory_ExternalIDs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ExternalIDsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(DirectoryServer).ExternalIDs(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(DirectoryServer).ExternalIDs(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/directory.Directory/ExternalIDs",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DirectoryServer).ExternalIDs(ctx, req.(*ExternalIDsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Directory_LookupEntities_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Directory_LookupEntities_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(LookupEntitiesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(DirectoryServer).LookupEntities(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(DirectoryServer).LookupEntities(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/directory.Directory/LookupEntities",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DirectoryServer).LookupEntities(ctx, req.(*LookupEntitiesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Directory_LookupEntitiesByContact_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Directory_LookupEntitiesByContact_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(LookupEntitiesByContactRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(DirectoryServer).LookupEntitiesByContact(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(DirectoryServer).LookupEntitiesByContact(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/directory.Directory/LookupEntitiesByContact",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DirectoryServer).LookupEntitiesByContact(ctx, req.(*LookupEntitiesByContactRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Directory_LookupEntityDomain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Directory_LookupEntityDomain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(LookupEntityDomainRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(DirectoryServer).LookupEntityDomain(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(DirectoryServer).LookupEntityDomain(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/directory.Directory/LookupEntityDomain",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DirectoryServer).LookupEntityDomain(ctx, req.(*LookupEntityDomainRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Directory_SerializedEntityContact_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Directory_SerializedEntityContact_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SerializedEntityContactRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(DirectoryServer).SerializedEntityContact(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(DirectoryServer).SerializedEntityContact(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/directory.Directory/SerializedEntityContact",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DirectoryServer).SerializedEntityContact(ctx, req.(*SerializedEntityContactRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Directory_UpdateContacts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Directory_UpdateContacts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateContactsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(DirectoryServer).UpdateContacts(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(DirectoryServer).UpdateContacts(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/directory.Directory/UpdateContacts",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DirectoryServer).UpdateContacts(ctx, req.(*UpdateContactsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Directory_UpdateEntity_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Directory_UpdateEntity_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateEntityRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(DirectoryServer).UpdateEntity(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(DirectoryServer).UpdateEntity(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/directory.Directory/UpdateEntity",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DirectoryServer).UpdateEntity(ctx, req.(*UpdateEntityRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 var _Directory_serviceDesc = grpc.ServiceDesc{
@@ -3745,13 +4152,11 @@ func (m *SerializedClientEntityContact) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Platform))
 	}
-	if m.SerializedEntityContact != nil {
-		if len(m.SerializedEntityContact) > 0 {
-			data[i] = 0x1a
-			i++
-			i = encodeVarintSvc(data, i, uint64(len(m.SerializedEntityContact)))
-			i += copy(data[i:], m.SerializedEntityContact)
-		}
+	if len(m.SerializedEntityContact) > 0 {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.SerializedEntityContact)))
+		i += copy(data[i:], m.SerializedEntityContact)
 	}
 	return i, nil
 }
@@ -5229,11 +5634,9 @@ func (m *SerializedClientEntityContact) Size() (n int) {
 	if m.Platform != 0 {
 		n += 1 + sovSvc(uint64(m.Platform))
 	}
-	if m.SerializedEntityContact != nil {
-		l = len(m.SerializedEntityContact)
-		if l > 0 {
-			n += 1 + l + sovSvc(uint64(l))
-		}
+	l = len(m.SerializedEntityContact)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
 	}
 	return n
 }
@@ -7323,7 +7726,10 @@ func (m *SerializedClientEntityContact) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.SerializedEntityContact = append([]byte{}, data[iNdEx:postIndex]...)
+			m.SerializedEntityContact = append(m.SerializedEntityContact[:0], data[iNdEx:postIndex]...)
+			if m.SerializedEntityContact == nil {
+				m.SerializedEntityContact = []byte{}
+			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -11403,3 +11809,147 @@ var (
 	ErrInvalidLengthSvc = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowSvc   = fmt.Errorf("proto: integer overflow")
 )
+
+var fileDescriptorSvc = []byte{
+	// 2230 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xd4, 0x5a, 0xcd, 0x6f, 0x23, 0x49,
+	0x15, 0x1f, 0x7f, 0x8c, 0x63, 0x3f, 0xc7, 0x89, 0x53, 0xf9, 0xf6, 0xce, 0x24, 0x33, 0x9d, 0x5d,
+	0xb1, 0x13, 0x66, 0x33, 0x22, 0xb3, 0x5a, 0x09, 0x84, 0xc4, 0xda, 0x71, 0x33, 0xb1, 0x26, 0xb1,
+	0x43, 0xdb, 0x33, 0xb0, 0x20, 0x8d, 0xe9, 0xb8, 0x3b, 0x49, 0x6b, 0x6d, 0xb7, 0x71, 0xb7, 0x47,
+	0x18, 0x71, 0xe0, 0xc6, 0x95, 0xff, 0x80, 0x2b, 0xe2, 0x1f, 0xe0, 0x04, 0x37, 0xd0, 0x1e, 0x97,
+	0xdb, 0x8a, 0x03, 0x62, 0x86, 0x0b, 0x47, 0xc4, 0x85, 0x2b, 0xaf, 0xab, 0xaa, 0xdd, 0x55, 0x76,
+	0xb7, 0x63, 0x27, 0x8c, 0x04, 0x87, 0x68, 0xba, 0x5e, 0xbd, 0x57, 0xf5, 0x3e, 0x7e, 0xf5, 0xde,
+	0xab, 0xf2, 0x40, 0xc6, 0x79, 0xdd, 0x3a, 0xe8, 0xf5, 0x6d, 0xd7, 0x26, 0x19, 0xc3, 0xea, 0x9b,
+	0x2d, 0xd7, 0xee, 0x0f, 0x0b, 0x1f, 0x5d, 0x5a, 0xee, 0xd5, 0xe0, 0xfc, 0xa0, 0x65, 0x77, 0x9e,
+	0x5c, 0xda, 0x97, 0xf6, 0x13, 0xca, 0x71, 0x3e, 0xb8, 0xa0, 0x23, 0x3a, 0xa0, 0x5f, 0x4c, 0x52,
+	0xa9, 0x01, 0xa8, 0x3f, 0x75, 0xcd, 0x7e, 0x57, 0x6f, 0x57, 0xca, 0x64, 0x03, 0xe2, 0x96, 0xb1,
+	0x15, 0x7b, 0x10, 0xfb, 0x30, 0x53, 0x4a, 0xbd, 0xfd, 0xeb, 0x6e, 0xbc, 0x52, 0xd6, 0x90, 0x42,
+	0x1e, 0x41, 0xc6, 0xec, 0xba, 0x96, 0x3b, 0x6c, 0xe2, 0x74, 0x9c, 0x4e, 0x2f, 0xe2, 0x74, 0x5a,
+	0xa5, 0x44, 0x64, 0x4a, 0xb3, 0xe9, 0x8a, 0xa1, 0x94, 0x20, 0x59, 0xd6, 0x5d, 0x93, 0xac, 0xc1,
+	0xdd, 0x8e, 0xdd, 0x75, 0xaf, 0xe8, 0x6a, 0x39, 0x8d, 0x0d, 0x48, 0x1e, 0x12, 0x86, 0x3e, 0xa4,
+	0x4b, 0xe4, 0x34, 0xef, 0x93, 0x10, 0x48, 0x0e, 0x4d, 0xbd, 0xbf, 0x95, 0xa0, 0x24, 0xfa, 0xad,
+	0xfc, 0x3a, 0x81, 0x5a, 0xb1, 0x05, 0xbb, 0x17, 0x36, 0xb9, 0x0f, 0x70, 0x61, 0xf5, 0x1d, 0xb7,
+	0xd9, 0xd5, 0x3b, 0x26, 0xd3, 0x4e, 0xcb, 0x50, 0x4a, 0x15, 0x09, 0xe4, 0x03, 0x58, 0xea, 0x58,
+	0x86, 0xd1, 0x36, 0x9b, 0x56, 0xd7, 0x72, 0x2d, 0xbd, 0xcd, 0x34, 0xd4, 0x72, 0x8c, 0x5a, 0x61,
+	0x44, 0xf2, 0x1e, 0x64, 0xda, 0xba, 0xbf, 0x48, 0x82, 0x72, 0xa4, 0x3d, 0x02, 0x5d, 0x03, 0xb7,
+	0xb8, 0xec, 0xdb, 0x83, 0x1e, 0x9b, 0x4d, 0xb2, 0x2d, 0x28, 0x85, 0x4e, 0x3f, 0x84, 0x45, 0xc3,
+	0x72, 0x7a, 0x6d, 0x7d, 0xc8, 0x18, 0xee, 0x52, 0x86, 0x2c, 0xa7, 0x51, 0x16, 0xb4, 0xa3, 0x6b,
+	0xbb, 0xe6, 0x56, 0x8a, 0x4e, 0xd1, 0x6f, 0xb2, 0x0b, 0x59, 0xe7, 0xca, 0xee, 0xbb, 0x4d, 0x34,
+	0xa5, 0x6d, 0x6e, 0x2d, 0xd0, 0x29, 0xa0, 0xa4, 0x86, 0x47, 0xf1, 0xb6, 0x6d, 0xdb, 0xdd, 0x4b,
+	0x3e, 0x9f, 0x66, 0xdb, 0x7a, 0x14, 0x36, 0xbd, 0x8f, 0xde, 0xb2, 0xcf, 0xb7, 0x32, 0x48, 0xcf,
+	0x1e, 0x2e, 0x1f, 0x8c, 0x82, 0x7c, 0xe0, 0x79, 0xb8, 0xb4, 0x80, 0x11, 0x48, 0x94, 0x6b, 0x25,
+	0xcd, 0x63, 0x22, 0x1f, 0x43, 0xea, 0xd2, 0xec, 0x1a, 0x66, 0x7f, 0x0b, 0x90, 0x7d, 0xe9, 0xf0,
+	0x9e, 0xc0, 0x1e, 0xf8, 0xf2, 0xe0, 0x19, 0xe5, 0xd1, 0x38, 0xaf, 0xf2, 0x09, 0xa4, 0x18, 0x85,
+	0x64, 0x61, 0xe1, 0x45, 0xf5, 0x79, 0xb5, 0xf6, 0xfd, 0x6a, 0xfe, 0x0e, 0x49, 0x43, 0xf2, 0xb4,
+	0x78, 0xa2, 0xe6, 0x63, 0x04, 0x20, 0xf5, 0x5d, 0x95, 0x7e, 0xc7, 0x49, 0x06, 0xee, 0xd6, 0x1a,
+	0xc7, 0xaa, 0x96, 0x4f, 0x28, 0x7f, 0x4e, 0x42, 0x8a, 0xad, 0x3a, 0x05, 0x33, 0x49, 0x77, 0xd8,
+	0x63, 0xae, 0x5e, 0x3a, 0x5c, 0x9f, 0x50, 0xa7, 0x81, 0x93, 0x1a, 0x65, 0x21, 0x4f, 0x21, 0xdb,
+	0x31, 0x3b, 0xe7, 0x66, 0xdf, 0xb9, 0xb2, 0x7a, 0x0e, 0xba, 0x3f, 0x81, 0xf6, 0xae, 0x4c, 0x48,
+	0x68, 0x22, 0x17, 0xf9, 0x3a, 0x2c, 0xf0, 0x21, 0x86, 0x23, 0x42, 0xc0, 0xe7, 0x20, 0x87, 0xb0,
+	0x68, 0x72, 0x98, 0x23, 0x84, 0x1d, 0x8c, 0x52, 0x02, 0xd5, 0x5d, 0x46, 0x75, 0xb3, 0x01, 0xfc,
+	0x1d, 0x2d, 0xeb, 0x33, 0x55, 0x0c, 0x87, 0x1c, 0x40, 0xba, 0x85, 0xa0, 0xd5, 0x5b, 0xae, 0x83,
+	0xa1, 0xf3, 0x76, 0x20, 0xc2, 0x0e, 0x47, 0x6c, 0x4a, 0x1b, 0xf1, 0x90, 0x1a, 0xac, 0x59, 0xdd,
+	0x56, 0x7b, 0x60, 0x98, 0x06, 0x22, 0xf1, 0xc2, 0xee, 0x77, 0x74, 0xd7, 0xb2, 0xbb, 0x18, 0xd6,
+	0x44, 0x64, 0x3c, 0x38, 0x8f, 0xb6, 0xea, 0x4b, 0x0a, 0x44, 0xcf, 0x83, 0xde, 0x3a, 0x3c, 0xfe,
+	0xeb, 0xa1, 0x0b, 0x68, 0x94, 0x85, 0x3c, 0x81, 0x94, 0xe3, 0xea, 0xee, 0xc0, 0xe1, 0xd1, 0xdf,
+	0x9c, 0x60, 0xae, 0xd3, 0x69, 0x8d, 0xb3, 0xa1, 0xf7, 0x56, 0x5a, 0x7d, 0x13, 0x61, 0x64, 0x20,
+	0xf8, 0x3a, 0x26, 0x52, 0x3b, 0xbd, 0xad, 0x2c, 0xca, 0x26, 0xb5, 0x3c, 0x9f, 0x68, 0xf8, 0x74,
+	0xf2, 0x09, 0x6c, 0xd2, 0xa3, 0xd3, 0xb1, 0x0d, 0xeb, 0xc2, 0x92, 0x44, 0x16, 0xa9, 0xc8, 0xba,
+	0x37, 0x7d, 0xca, 0x67, 0x03, 0xb9, 0xc7, 0x00, 0x7a, 0xab, 0x65, 0x0f, 0xba, 0xae, 0x97, 0x37,
+	0x72, 0x14, 0x22, 0x39, 0xf4, 0x79, 0xa6, 0xc8, 0xa8, 0x88, 0x94, 0x0c, 0x67, 0xc0, 0xcc, 0xf1,
+	0xbb, 0x18, 0xdc, 0xaf, 0x9b, 0x7d, 0x3c, 0xab, 0xd6, 0xcf, 0x4c, 0xe3, 0xa8, 0x6d, 0x61, 0x4e,
+	0x61, 0xba, 0x73, 0x5f, 0xcb, 0x69, 0x28, 0x36, 0x2d, 0x0d, 0xa1, 0x43, 0xd2, 0x78, 0x34, 0x5d,
+	0xcf, 0x99, 0x34, 0x1d, 0x2c, 0x1d, 0xae, 0x0a, 0x2e, 0x39, 0xe3, 0x53, 0xda, 0x88, 0x89, 0x7c,
+	0x0b, 0xb6, 0x9d, 0xd1, 0xe6, 0x4d, 0xbe, 0x0d, 0x8f, 0x2d, 0xc5, 0xf0, 0xa2, 0xb6, 0x19, 0x30,
+	0x48, 0x7a, 0x29, 0x43, 0x58, 0xd3, 0xcc, 0x9f, 0x0c, 0xd0, 0x6a, 0x39, 0x80, 0x98, 0x03, 0x0d,
+	0xb3, 0xc7, 0x73, 0x60, 0x42, 0x63, 0x03, 0xf2, 0x1c, 0x88, 0x6f, 0x85, 0x80, 0x92, 0xf8, 0x0c,
+	0x28, 0x59, 0x31, 0xc7, 0x49, 0x98, 0x6e, 0x89, 0x08, 0x60, 0xa6, 0x85, 0xe7, 0xf8, 0x91, 0xa3,
+	0x1c, 0xdc, 0x3d, 0xe1, 0x3b, 0xde, 0xf7, 0x94, 0xa3, 0x65, 0x7c, 0x57, 0x39, 0xca, 0x8f, 0x61,
+	0x55, 0x5a, 0xc3, 0xe9, 0xd9, 0x5d, 0xc7, 0x24, 0x95, 0xb1, 0x33, 0x13, 0xa3, 0x67, 0x40, 0x82,
+	0xe1, 0x48, 0x6a, 0xfa, 0x51, 0x52, 0xf6, 0x20, 0x55, 0x29, 0x9f, 0x58, 0xa8, 0xd9, 0x36, 0x24,
+	0x02, 0x95, 0x68, 0x06, 0xf3, 0x98, 0x3d, 0x9a, 0xf2, 0xaf, 0x24, 0xac, 0x9f, 0xd8, 0xf6, 0xe7,
+	0x83, 0x1e, 0xd5, 0xd2, 0x32, 0x47, 0xe6, 0xbc, 0x84, 0xe5, 0x36, 0x9d, 0x68, 0x7e, 0x6e, 0x0e,
+	0x9b, 0x34, 0xab, 0xc4, 0x68, 0x4c, 0x0f, 0x04, 0x65, 0x42, 0x45, 0x39, 0xf5, 0xb9, 0xc9, 0xd2,
+	0x4d, 0xae, 0x2d, 0x0e, 0xf1, 0x10, 0x4c, 0x2f, 0x6b, 0xc7, 0x77, 0x04, 0x44, 0x7d, 0x03, 0xb2,
+	0x82, 0x3b, 0x58, 0x05, 0x29, 0x2d, 0x21, 0xbb, 0x50, 0x40, 0x51, 0x00, 0x02, 0xbb, 0x49, 0x03,
+	0xd6, 0xfb, 0x3e, 0x2e, 0xa4, 0x60, 0x27, 0xe9, 0x89, 0xde, 0x15, 0xb4, 0x0f, 0xc3, 0x8f, 0xb6,
+	0xd6, 0x0f, 0x43, 0xd5, 0x53, 0x48, 0xb3, 0x43, 0x6c, 0xb2, 0xcc, 0x37, 0xe5, 0xb4, 0x8f, 0x18,
+	0x49, 0x15, 0x96, 0xcf, 0x75, 0xb7, 0x75, 0xd5, 0x0c, 0x0c, 0x4e, 0x51, 0x25, 0xc4, 0xac, 0xc9,
+	0x62, 0x54, 0x5a, 0x41, 0xa3, 0x72, 0x25, 0x8f, 0x5b, 0x70, 0x44, 0xee, 0x5c, 0x20, 0x18, 0x58,
+	0x6e, 0xa0, 0x6f, 0xdb, 0x2e, 0x0d, 0x06, 0x4b, 0x8f, 0x91, 0x39, 0x3e, 0xe3, 0x31, 0x7a, 0x5f,
+	0x0e, 0x26, 0x92, 0x6c, 0xeb, 0xca, 0x6a, 0x1b, 0x5c, 0x2c, 0x3d, 0x4d, 0x0c, 0x28, 0x27, 0x95,
+	0x53, 0xca, 0x90, 0x93, 0x02, 0x49, 0x72, 0x90, 0x51, 0xab, 0x8d, 0x4a, 0xe3, 0xb3, 0x66, 0xa5,
+	0x8c, 0xf5, 0x6a, 0x19, 0xb2, 0xea, 0x0f, 0x1a, 0xaa, 0x56, 0x2d, 0x9e, 0x78, 0x84, 0x18, 0x59,
+	0x85, 0xe5, 0x52, 0xb1, 0x71, 0x74, 0xdc, 0x0c, 0xb8, 0xe2, 0x25, 0x02, 0x79, 0x01, 0x46, 0x76,
+	0xd7, 0xb4, 0x2f, 0x94, 0x67, 0xb0, 0x31, 0x0e, 0x1c, 0x0e, 0xff, 0x8f, 0x80, 0xc5, 0x1e, 0x69,
+	0x1c, 0xfa, 0x21, 0x05, 0x66, 0xc4, 0xa2, 0xfc, 0x3e, 0x01, 0xab, 0x47, 0x34, 0x71, 0xf2, 0x29,
+	0x8e, 0x5d, 0xbf, 0x0c, 0xc6, 0xaf, 0x2f, 0x83, 0x4f, 0x66, 0x40, 0x98, 0x84, 0xaf, 0x57, 0x70,
+	0x8f, 0xb7, 0x3c, 0xcd, 0xa0, 0x32, 0x0a, 0x11, 0xa6, 0x7d, 0x4c, 0xe9, 0x3e, 0xae, 0xb0, 0xcd,
+	0xbb, 0xa0, 0xd3, 0x11, 0xdb, 0x28, 0x67, 0x6e, 0x5b, 0x11, 0x53, 0x86, 0x54, 0x01, 0xef, 0xce,
+	0x50, 0x01, 0x23, 0xf1, 0x9e, 0xba, 0x0d, 0xde, 0x11, 0x34, 0x42, 0xbe, 0xa4, 0x5d, 0x54, 0x64,
+	0x35, 0x84, 0x20, 0x43, 0x8e, 0x55, 0x9f, 0xf4, 0x35, 0xd5, 0xa7, 0x08, 0x6b, 0x72, 0xf8, 0x38,
+	0x0c, 0x1e, 0x41, 0x8a, 0xad, 0x49, 0x53, 0x4e, 0x28, 0x08, 0x38, 0x83, 0xf2, 0x55, 0x0c, 0x36,
+	0xd9, 0x1a, 0x81, 0x2f, 0x03, 0x18, 0xcc, 0x5c, 0xba, 0xbe, 0x0d, 0x79, 0x57, 0xef, 0x5f, 0x9a,
+	0x6e, 0x73, 0x3c, 0x39, 0x11, 0x94, 0x58, 0x6a, 0xd0, 0xb9, 0x91, 0xdc, 0x92, 0x2b, 0x8e, 0xa7,
+	0xe4, 0x9c, 0xc4, 0x2d, 0x62, 0xa0, 0xa8, 0xb0, 0x35, 0x69, 0xd9, 0xfc, 0x1e, 0xfa, 0x6d, 0x0c,
+	0x16, 0xfc, 0x62, 0xfe, 0x4d, 0x58, 0xe4, 0xc0, 0x11, 0x33, 0xfa, 0xc6, 0x24, 0xc0, 0xe8, 0x09,
+	0xc9, 0xb6, 0x82, 0x81, 0x57, 0x57, 0x5f, 0xeb, 0xed, 0x81, 0xc9, 0x1b, 0x7d, 0x36, 0x20, 0x0f,
+	0x20, 0x8b, 0x77, 0x9a, 0xd7, 0x96, 0x83, 0x0a, 0x9b, 0xec, 0xf8, 0xa4, 0x35, 0x91, 0xc4, 0x5b,
+	0xd5, 0xe4, 0x44, 0xab, 0x8a, 0xeb, 0xb5, 0xf5, 0x73, 0xb3, 0xcd, 0xfb, 0x7a, 0x36, 0x50, 0xfe,
+	0x10, 0x87, 0x1d, 0x39, 0x37, 0x94, 0xfc, 0x8a, 0xef, 0x47, 0x75, 0x0f, 0x72, 0xbe, 0x0d, 0x4c,
+	0x21, 0x76, 0x39, 0xf1, 0x0d, 0x7b, 0x49, 0xf5, 0xfa, 0x1f, 0xaa, 0x02, 0x72, 0xd6, 0x4e, 0xdd,
+	0x2c, 0x6b, 0x2f, 0xcc, 0x9a, 0xb5, 0xcf, 0x60, 0x37, 0xd2, 0x7f, 0x37, 0x4b, 0xb2, 0x7f, 0x8c,
+	0xf9, 0xa7, 0x74, 0x2c, 0x10, 0x8f, 0x61, 0xc1, 0xef, 0xd5, 0x18, 0x08, 0xc3, 0x12, 0x95, 0xcf,
+	0x32, 0xc7, 0x75, 0xf6, 0x1d, 0x1d, 0xa7, 0x12, 0xac, 0x8f, 0x99, 0x31, 0xff, 0x59, 0x7a, 0x05,
+	0xdb, 0x82, 0x77, 0x87, 0x65, 0xbb, 0xa3, 0x5b, 0xdd, 0x1b, 0xa4, 0x9b, 0x0d, 0x48, 0x19, 0x54,
+	0x96, 0x9f, 0x26, 0x3e, 0x52, 0x9a, 0x50, 0x08, 0x5b, 0x7f, 0xa4, 0xe8, 0xad, 0x37, 0x40, 0x03,
+	0xc4, 0x8c, 0xfb, 0x5f, 0x37, 0xe0, 0x1e, 0x14, 0xc2, 0xd6, 0x67, 0x06, 0x78, 0xbb, 0xbf, 0xe8,
+	0x19, 0xef, 0x74, 0xf7, 0xb0, 0xf5, 0xf9, 0xee, 0x5f, 0xc4, 0xc6, 0x10, 0xe0, 0xdc, 0x60, 0x6b,
+	0xb1, 0x3c, 0xc7, 0x6f, 0x53, 0x9e, 0x6f, 0x85, 0xe5, 0x23, 0xd8, 0x18, 0xb7, 0x64, 0x7e, 0x30,
+	0xff, 0x3b, 0x09, 0xab, 0xa2, 0xbb, 0x6e, 0xe0, 0x8d, 0xb1, 0x36, 0x21, 0x3e, 0x6b, 0x9b, 0xf0,
+	0x4e, 0xbc, 0x22, 0xc5, 0x26, 0x39, 0x43, 0x6c, 0x2e, 0xa0, 0x10, 0x79, 0xfd, 0xf4, 0x9b, 0xaf,
+	0x0f, 0x85, 0x15, 0xa6, 0x5e, 0x94, 0xb5, 0xad, 0x88, 0x9b, 0xaa, 0x33, 0xd6, 0x14, 0xa5, 0xa6,
+	0x37, 0x45, 0xc8, 0x4d, 0x06, 0x34, 0x2a, 0xcd, 0xf1, 0x0e, 0x2c, 0xad, 0xe5, 0x07, 0x42, 0xbc,
+	0xa8, 0x27, 0xbf, 0x06, 0xcb, 0x9c, 0x7b, 0xa4, 0x78, 0x9a, 0xb2, 0x2e, 0x31, 0xf2, 0x48, 0x89,
+	0x0a, 0x3c, 0xe4, 0x8c, 0x53, 0x6c, 0xce, 0x50, 0xd1, 0x1d, 0xc6, 0x58, 0x8f, 0xb2, 0xe7, 0x3b,
+	0xb0, 0xc2, 0x97, 0x12, 0xcc, 0xf2, 0xde, 0x40, 0xd2, 0xa5, 0x55, 0x34, 0x6b, 0x99, 0x81, 0x2a,
+	0x30, 0x8e, 0x6b, 0x58, 0x14, 0xfb, 0x3e, 0x19, 0x78, 0xf3, 0x83, 0xd7, 0x3b, 0xcc, 0x2f, 0x24,
+	0x0b, 0xff, 0x9f, 0x0f, 0xf3, 0xb8, 0x25, 0xf3, 0xfb, 0xe3, 0x2f, 0xe8, 0x8f, 0xb2, 0xd9, 0x36,
+	0x6f, 0xe5, 0x8f, 0x4f, 0x61, 0x45, 0x46, 0x04, 0xab, 0xd5, 0xde, 0xb3, 0xc1, 0x1a, 0x8a, 0xe4,
+	0x25, 0x1c, 0x78, 0x6f, 0x08, 0xcb, 0xa6, 0x44, 0x31, 0xde, 0x9d, 0x87, 0xc6, 0x6d, 0x9b, 0xdf,
+	0x43, 0x3f, 0x87, 0x9d, 0x08, 0x44, 0xdf, 0xc0, 0x53, 0xf3, 0x3e, 0x75, 0x29, 0xbf, 0x8c, 0xc1,
+	0x6e, 0xe4, 0xf6, 0xdc, 0x18, 0x63, 0xda, 0x73, 0x18, 0xb3, 0x6f, 0xf6, 0x74, 0x14, 0xf9, 0x70,
+	0xf6, 0x29, 0xac, 0x32, 0x67, 0xde, 0x34, 0xeb, 0x2b, 0x1b, 0xb0, 0x26, 0xaf, 0xc0, 0x0b, 0xec,
+	0xd0, 0xbf, 0xb0, 0x84, 0xbc, 0x8e, 0xcd, 0xe1, 0xdb, 0xf1, 0x77, 0xe3, 0xf8, 0xf5, 0xef, 0xc6,
+	0xca, 0x7b, 0xa3, 0xbe, 0x66, 0xf2, 0x51, 0x6d, 0xbf, 0xee, 0xff, 0xb2, 0x41, 0x2f, 0x32, 0x79,
+	0x58, 0xac, 0x69, 0xcf, 0x8a, 0xd5, 0xca, 0x0f, 0x8b, 0x8d, 0x4a, 0xcd, 0x7b, 0x79, 0x5f, 0x84,
+	0x74, 0xa5, 0xca, 0x5e, 0x32, 0xf2, 0x31, 0x6f, 0xe4, 0xbf, 0x6b, 0xe4, 0xe3, 0xde, 0x5b, 0x7c,
+	0xfd, 0xb3, 0x7a, 0x43, 0x3d, 0xcd, 0x27, 0xbc, 0xe7, 0xfa, 0x33, 0x94, 0x51, 0xab, 0x8d, 0x7c,
+	0x72, 0xff, 0x7b, 0xb0, 0x32, 0xf1, 0x58, 0xe8, 0xbd, 0x89, 0x9c, 0xaa, 0xa7, 0x25, 0x55, 0xab,
+	0x1f, 0x57, 0xce, 0xea, 0xb8, 0x34, 0x8a, 0x70, 0x02, 0x5b, 0xf9, 0xa8, 0x56, 0x6d, 0x14, 0x8f,
+	0x1a, 0x75, 0x5c, 0x19, 0xf5, 0x10, 0xde, 0x4f, 0xea, 0xf9, 0xc4, 0xfe, 0xc7, 0x48, 0x11, 0xee,
+	0x10, 0xf2, 0xcf, 0x03, 0xa8, 0x08, 0x0a, 0x56, 0x5e, 0x7a, 0x3f, 0x10, 0xe0, 0x44, 0x59, 0x3d,
+	0x51, 0x1b, 0x6a, 0x39, 0x1f, 0xdf, 0x7f, 0x00, 0x69, 0x1f, 0x6f, 0x64, 0x01, 0x12, 0x95, 0x1a,
+	0xdf, 0xb7, 0x58, 0x2d, 0x6b, 0x35, 0xef, 0x61, 0x66, 0x7f, 0x0f, 0xb2, 0xc2, 0xb5, 0xce, 0xfb,
+	0x49, 0xe1, 0xec, 0xb8, 0x56, 0x55, 0x91, 0x0d, 0x3f, 0xd5, 0xd3, 0x62, 0x05, 0xcd, 0x3e, 0xfc,
+	0x53, 0x16, 0x32, 0x65, 0x1f, 0x5b, 0x44, 0x83, 0x9c, 0xd4, 0x60, 0x10, 0xf1, 0xe4, 0x86, 0xdd,
+	0x06, 0x0a, 0x0f, 0xa2, 0x19, 0x38, 0xbc, 0x5f, 0xc0, 0x92, 0xdc, 0xb4, 0x90, 0x48, 0x19, 0x1f,
+	0x36, 0x85, 0x87, 0x53, 0x38, 0xf8, 0xb2, 0x3a, 0x90, 0xc9, 0x96, 0x93, 0xbc, 0x3f, 0x21, 0x18,
+	0xd2, 0x73, 0x16, 0x3e, 0xb8, 0x86, 0x2b, 0xd8, 0x62, 0xb2, 0xaf, 0x94, 0xb6, 0x88, 0x6c, 0x6b,
+	0xa5, 0x2d, 0xa2, 0x9b, 0x53, 0x52, 0x83, 0x45, 0x51, 0x01, 0xb2, 0x13, 0xa1, 0x99, 0xbf, 0xec,
+	0x6e, 0xe4, 0x3c, 0x5f, 0xf0, 0x15, 0xac, 0x4c, 0x9c, 0x08, 0xb2, 0x37, 0x29, 0x35, 0x71, 0x54,
+	0x0b, 0xef, 0x4f, 0x67, 0xe2, 0xeb, 0xff, 0x08, 0xf2, 0xe3, 0xaf, 0x13, 0x44, 0x99, 0x90, 0x9c,
+	0x78, 0x94, 0x29, 0xec, 0x4d, 0xe5, 0x09, 0xa0, 0x22, 0x27, 0x7c, 0x09, 0x2a, 0xa1, 0x75, 0x4e,
+	0x82, 0x4a, 0x44, 0xb5, 0x40, 0x27, 0x8b, 0x89, 0x4b, 0x72, 0x72, 0x48, 0x4e, 0x94, 0x9c, 0x1c,
+	0x96, 0xf1, 0xc8, 0x09, 0x88, 0x29, 0x89, 0xdc, 0x0f, 0x7d, 0xa7, 0x1f, 0x69, 0xb8, 0x13, 0x35,
+	0x1d, 0x58, 0x2d, 0xdf, 0xdd, 0x25, 0xab, 0x43, 0xdf, 0xda, 0x25, 0xab, 0x23, 0x1e, 0x55, 0x7b,
+	0xb0, 0x19, 0xf1, 0x24, 0x40, 0x1e, 0x45, 0x4a, 0x8f, 0x3f, 0xbb, 0x14, 0xf6, 0x67, 0x61, 0x0d,
+	0xce, 0xcb, 0xe4, 0x35, 0x56, 0x3a, 0x2f, 0x91, 0xb7, 0x68, 0xe9, 0xbc, 0x4c, 0xb9, 0x0b, 0xa3,
+	0x51, 0x11, 0xe5, 0x54, 0x32, 0x6a, 0x7a, 0xc5, 0x97, 0x8c, 0xba, 0xae, 0x3a, 0x63, 0x74, 0xe4,
+	0x36, 0x4d, 0x8a, 0x4e, 0x68, 0x2f, 0x2a, 0x45, 0x27, 0xa2, 0xc7, 0x43, 0x4c, 0x8a, 0x69, 0x41,
+	0xc2, 0x64, 0xc8, 0xed, 0x4c, 0xc2, 0x64, 0x58, 0x13, 0x5d, 0x7a, 0xfc, 0xe5, 0x9b, 0x9d, 0xd8,
+	0x57, 0x6f, 0x76, 0xee, 0xfc, 0x13, 0xff, 0xfd, 0xc5, 0xdb, 0x9d, 0xd8, 0x6f, 0xf0, 0xef, 0x0b,
+	0xfc, 0xfb, 0x12, 0xff, 0xfe, 0x86, 0x7f, 0xff, 0x78, 0x8b, 0x73, 0xf8, 0xef, 0xaf, 0xfe, 0xbe,
+	0x73, 0xe7, 0x3c, 0x45, 0xff, 0x4b, 0xc2, 0xd3, 0xff, 0x04, 0x00, 0x00, 0xff, 0xff, 0x55, 0x12,
+	0x3b, 0x1f, 0xd9, 0x20, 0x00, 0x00,
+}

@@ -46,6 +46,10 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+const _ = proto.GoGoProtoPackageIsVersion1
+
 // ConfigType enumerates the possible setting configs for a given key.
 type ConfigType int32
 
@@ -72,6 +76,8 @@ var ConfigType_value = map[string]int32{
 	"INTEGER":       4,
 }
 
+func (ConfigType) EnumDescriptor() ([]byte, []int) { return fileDescriptorModels, []int{0} }
+
 // OwnerType enumerates the possible owners for a particular config
 type OwnerType int32
 
@@ -92,16 +98,18 @@ var OwnerType_value = map[string]int32{
 	"ACCOUNT":         2,
 }
 
+func (OwnerType) EnumDescriptor() ([]byte, []int) { return fileDescriptorModels, []int{1} }
+
 // Config represents a single setting configuration used for validation of
 // a setting value, defaults and description.
 type Config struct {
 	Title          string      `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
 	Description    string      `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
 	Key            string      `protobuf:"bytes,3,opt,name=key,proto3" json:"key,omitempty"`
-	AllowSubkeys   bool        `protobuf:"varint,4,opt,name=allow_subkeys,proto3" json:"allow_subkeys,omitempty"`
+	AllowSubkeys   bool        `protobuf:"varint,4,opt,name=allow_subkeys,json=allowSubkeys,proto3" json:"allow_subkeys,omitempty"`
 	Type           ConfigType  `protobuf:"varint,5,opt,name=type,proto3,enum=models.ConfigType" json:"type,omitempty"`
-	PossibleOwners []OwnerType `protobuf:"varint,6,rep,name=possible_owners,enum=models.OwnerType" json:"possible_owners,omitempty"`
-	OptionalValue  bool        `protobuf:"varint,7,opt,name=optional_value,proto3" json:"optional_value,omitempty"`
+	PossibleOwners []OwnerType `protobuf:"varint,6,rep,name=possible_owners,json=possibleOwners,enum=models.OwnerType" json:"possible_owners,omitempty"`
+	OptionalValue  bool        `protobuf:"varint,7,opt,name=optional_value,json=optionalValue,proto3" json:"optional_value,omitempty"`
 	// Types that are valid to be assigned to Config:
 	//	*Config_Boolean
 	//	*Config_StringList
@@ -111,8 +119,9 @@ type Config struct {
 	Config isConfig_Config `protobuf_oneof:"config"`
 }
 
-func (m *Config) Reset()      { *m = Config{} }
-func (*Config) ProtoMessage() {}
+func (m *Config) Reset()                    { *m = Config{} }
+func (*Config) ProtoMessage()               {}
+func (*Config) Descriptor() ([]byte, []int) { return fileDescriptorModels, []int{0} }
 
 type isConfig_Config interface {
 	isConfig_Config()
@@ -125,13 +134,13 @@ type Config_Boolean struct {
 	Boolean *BooleanConfig `protobuf:"bytes,10,opt,name=boolean,oneof"`
 }
 type Config_StringList struct {
-	StringList *StringListConfig `protobuf:"bytes,11,opt,name=string_list,oneof"`
+	StringList *StringListConfig `protobuf:"bytes,11,opt,name=string_list,json=stringList,oneof"`
 }
 type Config_SingleSelect struct {
-	SingleSelect *SingleSelectConfig `protobuf:"bytes,12,opt,name=single_select,oneof"`
+	SingleSelect *SingleSelectConfig `protobuf:"bytes,12,opt,name=single_select,json=singleSelect,oneof"`
 }
 type Config_MultiSelect struct {
-	MultiSelect *MultiSelectConfig `protobuf:"bytes,13,opt,name=multi_select,oneof"`
+	MultiSelect *MultiSelectConfig `protobuf:"bytes,13,opt,name=multi_select,json=multiSelect,oneof"`
 }
 type Config_Integer struct {
 	Integer *IntegerConfig `protobuf:"bytes,14,opt,name=integer,oneof"`
@@ -186,8 +195,8 @@ func (m *Config) GetInteger() *IntegerConfig {
 }
 
 // XXX_OneofFuncs is for the internal use of the proto package.
-func (*Config) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), []interface{}) {
-	return _Config_OneofMarshaler, _Config_OneofUnmarshaler, []interface{}{
+func (*Config) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _Config_OneofMarshaler, _Config_OneofUnmarshaler, _Config_OneofSizer, []interface{}{
 		(*Config_Boolean)(nil),
 		(*Config_StringList)(nil),
 		(*Config_SingleSelect)(nil),
@@ -280,6 +289,42 @@ func _Config_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer)
 	}
 }
 
+func _Config_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*Config)
+	// config
+	switch x := m.Config.(type) {
+	case *Config_Boolean:
+		s := proto.Size(x.Boolean)
+		n += proto.SizeVarint(10<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Config_StringList:
+		s := proto.Size(x.StringList)
+		n += proto.SizeVarint(11<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Config_SingleSelect:
+		s := proto.Size(x.SingleSelect)
+		n += proto.SizeVarint(12<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Config_MultiSelect:
+		s := proto.Size(x.MultiSelect)
+		n += proto.SizeVarint(13<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Config_Integer:
+		s := proto.Size(x.Integer)
+		n += proto.SizeVarint(14<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
+}
+
 // ConfigKey is a structure used to uniquely identify a setting config/value for a given
 // entity. It is expected that the key,subkey combination is unique if both are specified,
 // and that the key by itself is unique if there is no subkey specified.
@@ -288,8 +333,9 @@ type ConfigKey struct {
 	Subkey string `protobuf:"bytes,2,opt,name=subkey,proto3" json:"subkey,omitempty"`
 }
 
-func (m *ConfigKey) Reset()      { *m = ConfigKey{} }
-func (*ConfigKey) ProtoMessage() {}
+func (m *ConfigKey) Reset()                    { *m = ConfigKey{} }
+func (*ConfigKey) ProtoMessage()               {}
+func (*ConfigKey) Descriptor() ([]byte, []int) { return fileDescriptorModels, []int{1} }
 
 // Value represents a valid value for a particular setting config.
 type Value struct {
@@ -304,8 +350,9 @@ type Value struct {
 	Value isValue_Value `protobuf_oneof:"value"`
 }
 
-func (m *Value) Reset()      { *m = Value{} }
-func (*Value) ProtoMessage() {}
+func (m *Value) Reset()                    { *m = Value{} }
+func (*Value) ProtoMessage()               {}
+func (*Value) Descriptor() ([]byte, []int) { return fileDescriptorModels, []int{2} }
 
 type isValue_Value interface {
 	isValue_Value()
@@ -318,13 +365,13 @@ type Value_Boolean struct {
 	Boolean *BooleanValue `protobuf:"bytes,10,opt,name=boolean,oneof"`
 }
 type Value_StringList struct {
-	StringList *StringListValue `protobuf:"bytes,11,opt,name=string_list,oneof"`
+	StringList *StringListValue `protobuf:"bytes,11,opt,name=string_list,json=stringList,oneof"`
 }
 type Value_SingleSelect struct {
-	SingleSelect *SingleSelectValue `protobuf:"bytes,12,opt,name=single_select,oneof"`
+	SingleSelect *SingleSelectValue `protobuf:"bytes,12,opt,name=single_select,json=singleSelect,oneof"`
 }
 type Value_MultiSelect struct {
-	MultiSelect *MultiSelectValue `protobuf:"bytes,13,opt,name=multi_select,oneof"`
+	MultiSelect *MultiSelectValue `protobuf:"bytes,13,opt,name=multi_select,json=multiSelect,oneof"`
 }
 type Value_Integer struct {
 	Integer *IntegerValue `protobuf:"bytes,14,opt,name=integer,oneof"`
@@ -393,8 +440,8 @@ func (m *Value) GetInteger() *IntegerValue {
 }
 
 // XXX_OneofFuncs is for the internal use of the proto package.
-func (*Value) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), []interface{}) {
-	return _Value_OneofMarshaler, _Value_OneofUnmarshaler, []interface{}{
+func (*Value) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _Value_OneofMarshaler, _Value_OneofUnmarshaler, _Value_OneofSizer, []interface{}{
 		(*Value_Boolean)(nil),
 		(*Value_StringList)(nil),
 		(*Value_SingleSelect)(nil),
@@ -487,12 +534,49 @@ func _Value_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) 
 	}
 }
 
+func _Value_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*Value)
+	// value
+	switch x := m.Value.(type) {
+	case *Value_Boolean:
+		s := proto.Size(x.Boolean)
+		n += proto.SizeVarint(10<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Value_StringList:
+		s := proto.Size(x.StringList)
+		n += proto.SizeVarint(11<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Value_SingleSelect:
+		s := proto.Size(x.SingleSelect)
+		n += proto.SizeVarint(12<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Value_MultiSelect:
+		s := proto.Size(x.MultiSelect)
+		n += proto.SizeVarint(13<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Value_Integer:
+		s := proto.Size(x.Integer)
+		n += proto.SizeVarint(14<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
+}
+
 type BooleanConfig struct {
 	Default *BooleanValue `protobuf:"bytes,1,opt,name=default" json:"default,omitempty"`
 }
 
-func (m *BooleanConfig) Reset()      { *m = BooleanConfig{} }
-func (*BooleanConfig) ProtoMessage() {}
+func (m *BooleanConfig) Reset()                    { *m = BooleanConfig{} }
+func (*BooleanConfig) ProtoMessage()               {}
+func (*BooleanConfig) Descriptor() ([]byte, []int) { return fileDescriptorModels, []int{3} }
 
 func (m *BooleanConfig) GetDefault() *BooleanValue {
 	if m != nil {
@@ -505,15 +589,17 @@ type BooleanValue struct {
 	Value bool `protobuf:"varint,1,opt,name=value,proto3" json:"value,omitempty"`
 }
 
-func (m *BooleanValue) Reset()      { *m = BooleanValue{} }
-func (*BooleanValue) ProtoMessage() {}
+func (m *BooleanValue) Reset()                    { *m = BooleanValue{} }
+func (*BooleanValue) ProtoMessage()               {}
+func (*BooleanValue) Descriptor() ([]byte, []int) { return fileDescriptorModels, []int{4} }
 
 type IntegerConfig struct {
 	Default *IntegerValue `protobuf:"bytes,1,opt,name=default" json:"default,omitempty"`
 }
 
-func (m *IntegerConfig) Reset()      { *m = IntegerConfig{} }
-func (*IntegerConfig) ProtoMessage() {}
+func (m *IntegerConfig) Reset()                    { *m = IntegerConfig{} }
+func (*IntegerConfig) ProtoMessage()               {}
+func (*IntegerConfig) Descriptor() ([]byte, []int) { return fileDescriptorModels, []int{5} }
 
 func (m *IntegerConfig) GetDefault() *IntegerValue {
 	if m != nil {
@@ -526,15 +612,17 @@ type IntegerValue struct {
 	Value int64 `protobuf:"varint,1,opt,name=value,proto3" json:"value,omitempty"`
 }
 
-func (m *IntegerValue) Reset()      { *m = IntegerValue{} }
-func (*IntegerValue) ProtoMessage() {}
+func (m *IntegerValue) Reset()                    { *m = IntegerValue{} }
+func (*IntegerValue) ProtoMessage()               {}
+func (*IntegerValue) Descriptor() ([]byte, []int) { return fileDescriptorModels, []int{6} }
 
 type StringListConfig struct {
 	Default *StringListValue `protobuf:"bytes,1,opt,name=default" json:"default,omitempty"`
 }
 
-func (m *StringListConfig) Reset()      { *m = StringListConfig{} }
-func (*StringListConfig) ProtoMessage() {}
+func (m *StringListConfig) Reset()                    { *m = StringListConfig{} }
+func (*StringListConfig) ProtoMessage()               {}
+func (*StringListConfig) Descriptor() ([]byte, []int) { return fileDescriptorModels, []int{7} }
 
 func (m *StringListConfig) GetDefault() *StringListValue {
 	if m != nil {
@@ -547,26 +635,29 @@ type StringListValue struct {
 	Values []string `protobuf:"bytes,1,rep,name=values" json:"values,omitempty"`
 }
 
-func (m *StringListValue) Reset()      { *m = StringListValue{} }
-func (*StringListValue) ProtoMessage() {}
+func (m *StringListValue) Reset()                    { *m = StringListValue{} }
+func (*StringListValue) ProtoMessage()               {}
+func (*StringListValue) Descriptor() ([]byte, []int) { return fileDescriptorModels, []int{8} }
 
 type Item struct {
 	ID               string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Label            string `protobuf:"bytes,2,opt,name=label,proto3" json:"label,omitempty"`
-	AllowFreeText    bool   `protobuf:"varint,3,opt,name=allow_free_text,proto3" json:"allow_free_text,omitempty"`
-	FreeTextRequired bool   `protobuf:"varint,4,opt,name=free_text_required,proto3" json:"free_text_required,omitempty"`
+	AllowFreeText    bool   `protobuf:"varint,3,opt,name=allow_free_text,json=allowFreeText,proto3" json:"allow_free_text,omitempty"`
+	FreeTextRequired bool   `protobuf:"varint,4,opt,name=free_text_required,json=freeTextRequired,proto3" json:"free_text_required,omitempty"`
 }
 
-func (m *Item) Reset()      { *m = Item{} }
-func (*Item) ProtoMessage() {}
+func (m *Item) Reset()                    { *m = Item{} }
+func (*Item) ProtoMessage()               {}
+func (*Item) Descriptor() ([]byte, []int) { return fileDescriptorModels, []int{9} }
 
 type MultiSelectConfig struct {
 	Items   []*Item           `protobuf:"bytes,1,rep,name=items" json:"items,omitempty"`
 	Default *MultiSelectValue `protobuf:"bytes,2,opt,name=default" json:"default,omitempty"`
 }
 
-func (m *MultiSelectConfig) Reset()      { *m = MultiSelectConfig{} }
-func (*MultiSelectConfig) ProtoMessage() {}
+func (m *MultiSelectConfig) Reset()                    { *m = MultiSelectConfig{} }
+func (*MultiSelectConfig) ProtoMessage()               {}
+func (*MultiSelectConfig) Descriptor() ([]byte, []int) { return fileDescriptorModels, []int{10} }
 
 func (m *MultiSelectConfig) GetItems() []*Item {
 	if m != nil {
@@ -587,8 +678,9 @@ type SingleSelectConfig struct {
 	Default *SingleSelectValue `protobuf:"bytes,2,opt,name=default" json:"default,omitempty"`
 }
 
-func (m *SingleSelectConfig) Reset()      { *m = SingleSelectConfig{} }
-func (*SingleSelectConfig) ProtoMessage() {}
+func (m *SingleSelectConfig) Reset()                    { *m = SingleSelectConfig{} }
+func (*SingleSelectConfig) ProtoMessage()               {}
+func (*SingleSelectConfig) Descriptor() ([]byte, []int) { return fileDescriptorModels, []int{11} }
 
 func (m *SingleSelectConfig) GetItems() []*Item {
 	if m != nil {
@@ -606,18 +698,20 @@ func (m *SingleSelectConfig) GetDefault() *SingleSelectValue {
 
 type ItemValue struct {
 	ID               string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	FreeTextResponse string `protobuf:"bytes,2,opt,name=free_text_response,proto3" json:"free_text_response,omitempty"`
+	FreeTextResponse string `protobuf:"bytes,2,opt,name=free_text_response,json=freeTextResponse,proto3" json:"free_text_response,omitempty"`
 }
 
-func (m *ItemValue) Reset()      { *m = ItemValue{} }
-func (*ItemValue) ProtoMessage() {}
+func (m *ItemValue) Reset()                    { *m = ItemValue{} }
+func (*ItemValue) ProtoMessage()               {}
+func (*ItemValue) Descriptor() ([]byte, []int) { return fileDescriptorModels, []int{12} }
 
 type SingleSelectValue struct {
 	Item *ItemValue `protobuf:"bytes,1,opt,name=item" json:"item,omitempty"`
 }
 
-func (m *SingleSelectValue) Reset()      { *m = SingleSelectValue{} }
-func (*SingleSelectValue) ProtoMessage() {}
+func (m *SingleSelectValue) Reset()                    { *m = SingleSelectValue{} }
+func (*SingleSelectValue) ProtoMessage()               {}
+func (*SingleSelectValue) Descriptor() ([]byte, []int) { return fileDescriptorModels, []int{13} }
 
 func (m *SingleSelectValue) GetItem() *ItemValue {
 	if m != nil {
@@ -630,8 +724,9 @@ type MultiSelectValue struct {
 	Items []*ItemValue `protobuf:"bytes,1,rep,name=items" json:"items,omitempty"`
 }
 
-func (m *MultiSelectValue) Reset()      { *m = MultiSelectValue{} }
-func (*MultiSelectValue) ProtoMessage() {}
+func (m *MultiSelectValue) Reset()                    { *m = MultiSelectValue{} }
+func (*MultiSelectValue) ProtoMessage()               {}
+func (*MultiSelectValue) Descriptor() ([]byte, []int) { return fileDescriptorModels, []int{14} }
 
 func (m *MultiSelectValue) GetItems() []*ItemValue {
 	if m != nil {
@@ -683,7 +778,12 @@ func (this *Config) Equal(that interface{}) bool {
 
 	that1, ok := that.(*Config)
 	if !ok {
-		return false
+		that2, ok := that.(Config)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -740,7 +840,12 @@ func (this *Config_Boolean) Equal(that interface{}) bool {
 
 	that1, ok := that.(*Config_Boolean)
 	if !ok {
-		return false
+		that2, ok := that.(Config_Boolean)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -765,7 +870,12 @@ func (this *Config_StringList) Equal(that interface{}) bool {
 
 	that1, ok := that.(*Config_StringList)
 	if !ok {
-		return false
+		that2, ok := that.(Config_StringList)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -790,7 +900,12 @@ func (this *Config_SingleSelect) Equal(that interface{}) bool {
 
 	that1, ok := that.(*Config_SingleSelect)
 	if !ok {
-		return false
+		that2, ok := that.(Config_SingleSelect)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -815,7 +930,12 @@ func (this *Config_MultiSelect) Equal(that interface{}) bool {
 
 	that1, ok := that.(*Config_MultiSelect)
 	if !ok {
-		return false
+		that2, ok := that.(Config_MultiSelect)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -840,7 +960,12 @@ func (this *Config_Integer) Equal(that interface{}) bool {
 
 	that1, ok := that.(*Config_Integer)
 	if !ok {
-		return false
+		that2, ok := that.(Config_Integer)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -865,7 +990,12 @@ func (this *ConfigKey) Equal(that interface{}) bool {
 
 	that1, ok := that.(*ConfigKey)
 	if !ok {
-		return false
+		that2, ok := that.(ConfigKey)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -893,7 +1023,12 @@ func (this *Value) Equal(that interface{}) bool {
 
 	that1, ok := that.(*Value)
 	if !ok {
-		return false
+		that2, ok := that.(Value)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -930,7 +1065,12 @@ func (this *Value_Boolean) Equal(that interface{}) bool {
 
 	that1, ok := that.(*Value_Boolean)
 	if !ok {
-		return false
+		that2, ok := that.(Value_Boolean)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -955,7 +1095,12 @@ func (this *Value_StringList) Equal(that interface{}) bool {
 
 	that1, ok := that.(*Value_StringList)
 	if !ok {
-		return false
+		that2, ok := that.(Value_StringList)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -980,7 +1125,12 @@ func (this *Value_SingleSelect) Equal(that interface{}) bool {
 
 	that1, ok := that.(*Value_SingleSelect)
 	if !ok {
-		return false
+		that2, ok := that.(Value_SingleSelect)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1005,7 +1155,12 @@ func (this *Value_MultiSelect) Equal(that interface{}) bool {
 
 	that1, ok := that.(*Value_MultiSelect)
 	if !ok {
-		return false
+		that2, ok := that.(Value_MultiSelect)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1030,7 +1185,12 @@ func (this *Value_Integer) Equal(that interface{}) bool {
 
 	that1, ok := that.(*Value_Integer)
 	if !ok {
-		return false
+		that2, ok := that.(Value_Integer)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1055,7 +1215,12 @@ func (this *BooleanConfig) Equal(that interface{}) bool {
 
 	that1, ok := that.(*BooleanConfig)
 	if !ok {
-		return false
+		that2, ok := that.(BooleanConfig)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1080,7 +1245,12 @@ func (this *BooleanValue) Equal(that interface{}) bool {
 
 	that1, ok := that.(*BooleanValue)
 	if !ok {
-		return false
+		that2, ok := that.(BooleanValue)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1105,7 +1275,12 @@ func (this *IntegerConfig) Equal(that interface{}) bool {
 
 	that1, ok := that.(*IntegerConfig)
 	if !ok {
-		return false
+		that2, ok := that.(IntegerConfig)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1130,7 +1305,12 @@ func (this *IntegerValue) Equal(that interface{}) bool {
 
 	that1, ok := that.(*IntegerValue)
 	if !ok {
-		return false
+		that2, ok := that.(IntegerValue)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1155,7 +1335,12 @@ func (this *StringListConfig) Equal(that interface{}) bool {
 
 	that1, ok := that.(*StringListConfig)
 	if !ok {
-		return false
+		that2, ok := that.(StringListConfig)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1180,7 +1365,12 @@ func (this *StringListValue) Equal(that interface{}) bool {
 
 	that1, ok := that.(*StringListValue)
 	if !ok {
-		return false
+		that2, ok := that.(StringListValue)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1210,7 +1400,12 @@ func (this *Item) Equal(that interface{}) bool {
 
 	that1, ok := that.(*Item)
 	if !ok {
-		return false
+		that2, ok := that.(Item)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1244,7 +1439,12 @@ func (this *MultiSelectConfig) Equal(that interface{}) bool {
 
 	that1, ok := that.(*MultiSelectConfig)
 	if !ok {
-		return false
+		that2, ok := that.(MultiSelectConfig)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1277,7 +1477,12 @@ func (this *SingleSelectConfig) Equal(that interface{}) bool {
 
 	that1, ok := that.(*SingleSelectConfig)
 	if !ok {
-		return false
+		that2, ok := that.(SingleSelectConfig)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1310,7 +1515,12 @@ func (this *ItemValue) Equal(that interface{}) bool {
 
 	that1, ok := that.(*ItemValue)
 	if !ok {
-		return false
+		that2, ok := that.(ItemValue)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1338,7 +1548,12 @@ func (this *SingleSelectValue) Equal(that interface{}) bool {
 
 	that1, ok := that.(*SingleSelectValue)
 	if !ok {
-		return false
+		that2, ok := that.(SingleSelectValue)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1363,7 +1578,12 @@ func (this *MultiSelectValue) Equal(that interface{}) bool {
 
 	that1, ok := that.(*MultiSelectValue)
 	if !ok {
-		return false
+		that2, ok := that.(MultiSelectValue)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -4953,3 +5173,65 @@ var (
 	ErrInvalidLengthModels = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowModels   = fmt.Errorf("proto: integer overflow")
 )
+
+var fileDescriptorModels = []byte{
+	// 925 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x8c, 0x56, 0xcd, 0x8f, 0xdb, 0x44,
+	0x14, 0xdf, 0x7c, 0x77, 0x9f, 0xf3, 0x39, 0x2c, 0xe0, 0xf6, 0xb0, 0xac, 0x0c, 0x14, 0xa8, 0xca,
+	0xb6, 0xa4, 0xe2, 0xb2, 0x15, 0x94, 0x64, 0x09, 0x8b, 0x45, 0xea, 0x08, 0xc7, 0x45, 0x02, 0x21,
+	0x59, 0xc9, 0x66, 0x12, 0xac, 0x3a, 0x71, 0xf0, 0x38, 0x94, 0xde, 0x38, 0x73, 0xe2, 0xcf, 0xe0,
+	0xcc, 0x5f, 0xc1, 0xb1, 0x47, 0x4e, 0x88, 0x2e, 0x17, 0x8e, 0xfc, 0x05, 0x88, 0xe7, 0x19, 0x8f,
+	0xbf, 0xd6, 0x5d, 0xf5, 0x60, 0xc5, 0xef, 0xf7, 0x9b, 0xf7, 0x31, 0xef, 0xf7, 0x66, 0x1c, 0x68,
+	0xae, 0xbd, 0x05, 0x75, 0xd9, 0xf1, 0xd6, 0xf7, 0x02, 0x8f, 0xd4, 0x85, 0x75, 0xe3, 0xfd, 0x95,
+	0x13, 0x7c, 0xb7, 0x9b, 0x1f, 0x9f, 0x7b, 0xeb, 0x3b, 0x2b, 0x6f, 0xe5, 0xdd, 0xe1, 0xf4, 0x7c,
+	0xb7, 0xe4, 0x16, 0x37, 0xf8, 0x9b, 0x70, 0xd3, 0x7e, 0xab, 0x42, 0xfd, 0xd4, 0xdb, 0x2c, 0x9d,
+	0x15, 0x39, 0x80, 0x5a, 0xe0, 0x04, 0x2e, 0x55, 0x4b, 0x47, 0xa5, 0x77, 0xf7, 0x4d, 0x61, 0x90,
+	0x23, 0x50, 0x16, 0x94, 0x9d, 0xfb, 0xce, 0x36, 0x70, 0xbc, 0x8d, 0x5a, 0xe6, 0x5c, 0x1a, 0x22,
+	0x5d, 0xa8, 0x3c, 0xa6, 0x4f, 0xd5, 0x0a, 0x67, 0xc2, 0x57, 0xf2, 0x26, 0xb4, 0x66, 0xae, 0xeb,
+	0x3d, 0xb1, 0xd9, 0x6e, 0x8e, 0x36, 0x53, 0xab, 0xc8, 0x5d, 0x33, 0x9b, 0x1c, 0x9c, 0x0a, 0x8c,
+	0xdc, 0x84, 0x6a, 0xf0, 0x74, 0x4b, 0xd5, 0x1a, 0x72, 0xed, 0x3e, 0x39, 0x8e, 0x76, 0x23, 0x8a,
+	0xb1, 0x90, 0x31, 0x39, 0x4f, 0x4e, 0xa0, 0xb3, 0xf5, 0x18, 0x73, 0xe6, 0x2e, 0xb5, 0xbd, 0x27,
+	0x1b, 0xea, 0x33, 0xb5, 0x7e, 0x54, 0x41, 0x97, 0x9e, 0x74, 0x99, 0x84, 0x28, 0xf7, 0x68, 0xcb,
+	0x95, 0x1c, 0x62, 0xe4, 0x6d, 0x68, 0x7b, 0xbc, 0xc8, 0x99, 0x6b, 0xff, 0x30, 0x73, 0x77, 0x54,
+	0x6d, 0xf0, 0x4a, 0x5a, 0x12, 0xfd, 0x2a, 0x04, 0xc9, 0x07, 0xd0, 0x98, 0x7b, 0x9e, 0x4b, 0x67,
+	0x1b, 0x15, 0x90, 0x57, 0xfa, 0xaf, 0xca, 0xd0, 0x43, 0x01, 0x8b, 0xa2, 0x3e, 0xdf, 0x33, 0xe5,
+	0x3a, 0x72, 0x1f, 0x14, 0x16, 0xf8, 0xce, 0x66, 0x65, 0xbb, 0x0e, 0x0b, 0x54, 0x85, 0xbb, 0xa9,
+	0xd2, 0x6d, 0xca, 0xa9, 0x31, 0x32, 0xb1, 0x27, 0xb0, 0x18, 0x23, 0x03, 0x68, 0x31, 0x7c, 0xc7,
+	0x0d, 0x31, 0xea, 0xd2, 0xf3, 0x40, 0x6d, 0x72, 0xf7, 0x1b, 0xb1, 0x3b, 0x27, 0xa7, 0x9c, 0x8b,
+	0x03, 0x34, 0x59, 0x0a, 0x25, 0x1f, 0xa3, 0xfc, 0x3b, 0x37, 0x70, 0x64, 0x84, 0x16, 0x8f, 0x70,
+	0x5d, 0x46, 0x78, 0x18, 0x72, 0xb9, 0x00, 0xca, 0x3a, 0x01, 0xc3, 0x2d, 0x3b, 0x9b, 0x80, 0xae,
+	0xa8, 0xaf, 0xb6, 0xb3, 0x5b, 0xd6, 0x05, 0x9c, 0x6c, 0x39, 0x5a, 0x37, 0xbc, 0x06, 0xf5, 0x73,
+	0x0e, 0x6a, 0x1f, 0xc2, 0xbe, 0xa0, 0xbf, 0x40, 0xb1, 0x23, 0xf9, 0x4b, 0x89, 0xfc, 0xaf, 0x41,
+	0x5d, 0x08, 0x1f, 0x4d, 0x4b, 0x64, 0x69, 0xff, 0x95, 0xa1, 0x26, 0x1a, 0x7e, 0x53, 0x86, 0xe2,
+	0x6e, 0x4a, 0xbf, 0x9d, 0x55, 0xdf, 0x8c, 0x58, 0x1c, 0xa4, 0x8a, 0x0c, 0xa3, 0x24, 0x7a, 0xc7,
+	0xb9, 0x45, 0xba, 0xbb, 0x79, 0xf5, 0x0e, 0x72, 0xea, 0xf1, 0x9c, 0x69, 0xf1, 0x4e, 0x8a, 0xc4,
+	0x7b, 0xfd, 0xb2, 0x78, 0xd2, 0x31, 0xad, 0xdd, 0x27, 0xc5, 0xda, 0x5d, 0x2f, 0xd2, 0x4e, 0xfa,
+	0x67, 0xa5, 0xfb, 0xa8, 0x50, 0x3a, 0xb5, 0x40, 0x3a, 0xe9, 0x9f, 0x51, 0xee, 0x6e, 0x5e, 0xb9,
+	0x83, 0x9c, 0x72, 0xf1, 0x76, 0xa5, 0x70, 0x0d, 0xa8, 0xf1, 0xe1, 0xd7, 0x1e, 0x40, 0x2b, 0x33,
+	0xd0, 0xe4, 0x18, 0x1a, 0x0b, 0xba, 0x9c, 0x61, 0xf4, 0x48, 0x88, 0xc2, 0xd6, 0x99, 0x72, 0x91,
+	0xf6, 0x16, 0x34, 0xd3, 0x44, 0x78, 0x65, 0x88, 0x63, 0x55, 0xe2, 0xc7, 0x2a, 0x49, 0x93, 0x19,
+	0xa2, 0x2b, 0xd2, 0xa4, 0x4b, 0xce, 0xa4, 0x49, 0x13, 0xd9, 0x34, 0x15, 0x99, 0x66, 0x04, 0xdd,
+	0xfc, 0x39, 0x0b, 0xc7, 0x3a, 0x9b, 0xe9, 0x45, 0xaa, 0x26, 0xc9, 0xde, 0x83, 0x4e, 0x8e, 0x0b,
+	0x07, 0x98, 0xa7, 0x60, 0x18, 0xa4, 0x12, 0x0e, 0xb0, 0xb0, 0xb4, 0x9f, 0x4b, 0x50, 0xd5, 0x03,
+	0xba, 0xc6, 0x05, 0x65, 0x67, 0x21, 0x46, 0x7e, 0x58, 0xbf, 0xf8, 0xf3, 0x8d, 0xb2, 0xfe, 0xa9,
+	0x89, 0x48, 0x58, 0xa8, 0x3b, 0x9b, 0x53, 0x37, 0x1a, 0x7c, 0x61, 0xe0, 0xb4, 0x77, 0xc4, 0x75,
+	0xb8, 0xf4, 0x29, 0xb5, 0x03, 0xfa, 0x63, 0xc0, 0x2f, 0x4b, 0xbc, 0x86, 0x38, 0xfc, 0x19, 0xa2,
+	0x16, 0x82, 0xe4, 0x36, 0x90, 0x78, 0x85, 0xed, 0xd3, 0xef, 0x77, 0x8e, 0x4f, 0x17, 0xd1, 0xdd,
+	0xd9, 0x5d, 0x46, 0xab, 0xcc, 0x08, 0xd7, 0x1e, 0x43, 0xef, 0xd2, 0x29, 0x27, 0x1a, 0xd4, 0x1c,
+	0x2c, 0x50, 0x14, 0xae, 0xf4, 0x9b, 0x71, 0x9f, 0x11, 0x34, 0x05, 0x45, 0xfa, 0x49, 0x8f, 0xca,
+	0x57, 0x8f, 0x5e, 0xd2, 0xa4, 0x35, 0x90, 0xcb, 0x97, 0xd2, 0x4b, 0x65, 0xbb, 0x97, 0xcf, 0xf6,
+	0xe2, 0x93, 0x92, 0xa4, 0xfb, 0x12, 0xf6, 0xc3, 0x18, 0x52, 0x8d, 0xe2, 0x66, 0xe7, 0xda, 0xc5,
+	0xb6, 0xde, 0x86, 0xd1, 0xa8, 0xf3, 0xa9, 0x76, 0x09, 0x5c, 0x3b, 0x81, 0xde, 0xa5, 0x84, 0xf8,
+	0x7d, 0xa8, 0x86, 0x55, 0x46, 0xb3, 0xd2, 0x4b, 0xd7, 0x2f, 0x2a, 0xe2, 0xb4, 0x76, 0x1f, 0xba,
+	0xf9, 0xd6, 0x90, 0x77, 0xb2, 0x7b, 0x2f, 0xf0, 0x15, 0xfc, 0xad, 0x6f, 0x01, 0x92, 0x6f, 0x1a,
+	0xe9, 0x41, 0x6b, 0xaa, 0x1b, 0x67, 0xe3, 0x91, 0x3d, 0x1d, 0x8d, 0x47, 0xa7, 0x56, 0x77, 0x0f,
+	0x2f, 0xd0, 0xe6, 0xc3, 0x47, 0x63, 0x4b, 0x97, 0x48, 0x89, 0x74, 0x40, 0x99, 0x5a, 0x26, 0x2e,
+	0xb3, 0xc7, 0xfa, 0xd4, 0xea, 0x96, 0x89, 0x02, 0x8d, 0xe1, 0x64, 0x32, 0x1e, 0x0d, 0x8c, 0x6e,
+	0x25, 0x34, 0x74, 0xc3, 0x1a, 0x9d, 0x8d, 0xcc, 0x6e, 0xf5, 0xd6, 0x03, 0xd8, 0x8f, 0x3f, 0x7f,
+	0xe4, 0x15, 0xe8, 0x84, 0x8c, 0x69, 0x0c, 0xc6, 0xf6, 0xc8, 0xb0, 0x74, 0xeb, 0x6b, 0x11, 0x7e,
+	0x62, 0x9e, 0x0d, 0x0c, 0xfd, 0x9b, 0x81, 0xa5, 0x4f, 0x0c, 0x0c, 0x8f, 0x01, 0x06, 0xa7, 0xa7,
+	0x93, 0x47, 0x06, 0x86, 0x1e, 0xde, 0x7e, 0xf6, 0xfc, 0xb0, 0xf4, 0xc7, 0xf3, 0xc3, 0xbd, 0x7f,
+	0xf1, 0xf7, 0xa7, 0x8b, 0xc3, 0xd2, 0xaf, 0xf8, 0xfc, 0x8e, 0xcf, 0x33, 0x7c, 0xfe, 0xc2, 0xe7,
+	0x9f, 0x0b, 0xe4, 0xf0, 0xf7, 0x97, 0xbf, 0x0f, 0xf7, 0xe6, 0x75, 0xfe, 0xaf, 0xe1, 0xde, 0xff,
+	0x01, 0x00, 0x00, 0xff, 0xff, 0x9c, 0x1d, 0xb0, 0x1d, 0x7c, 0x08, 0x00, 0x00,
+}

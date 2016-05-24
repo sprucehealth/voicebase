@@ -47,12 +47,14 @@ import (
 	"google.golang.org/grpc/transport"
 )
 
-type streamHandler func(srv interface{}, stream ServerStream) error
+// StreamHandler defines the handler called by gRPC server to complete the
+// execution of a streaming RPC.
+type StreamHandler func(srv interface{}, stream ServerStream) error
 
 // StreamDesc represents a streaming RPC service's method specification.
 type StreamDesc struct {
 	StreamName string
-	Handler    streamHandler
+	Handler    StreamHandler
 
 	// At least one of these is true.
 	ServerStreams bool
@@ -67,7 +69,8 @@ type Stream interface {
 	// breaks.
 	// On error, it aborts the stream and returns an RPC status on client
 	// side. On server side, it simply returns the error to the caller.
-	// SendMsg is called by generated code.
+	// SendMsg is called by generated code. Also Users can call SendMsg
+	// directly when it is really needed in their use cases.
 	SendMsg(m interface{}) error
 	// RecvMsg blocks until it receives a message or the stream is
 	// done. On client side, it returns io.EOF when the stream is done. On
@@ -78,7 +81,7 @@ type Stream interface {
 
 // ClientStream defines the interface a client stream has to satify.
 type ClientStream interface {
-	// Header returns the header metedata received from the server if there
+	// Header returns the header metadata received from the server if there
 	// is any. It blocks if the metadata is not ready to read.
 	Header() (metadata.MD, error)
 	// Trailer returns the trailer metadata from the server. It must be called
@@ -257,7 +260,7 @@ func (cs *clientStream) RecvMsg(m interface{}) (err error) {
 				cs.finish(err)
 				return nil
 			}
-			return Errorf(cs.s.StatusCode(), cs.s.StatusDesc())
+			return Errorf(cs.s.StatusCode(), "%s", cs.s.StatusDesc())
 		}
 		return toRPCErr(err)
 	}
@@ -269,7 +272,7 @@ func (cs *clientStream) RecvMsg(m interface{}) (err error) {
 			// Returns io.EOF to indicate the end of the stream.
 			return
 		}
-		return Errorf(cs.s.StatusCode(), cs.s.StatusDesc())
+		return Errorf(cs.s.StatusCode(), "%s", cs.s.StatusDesc())
 	}
 	return toRPCErr(err)
 }

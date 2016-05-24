@@ -77,6 +77,10 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+const _ = proto.GoGoProtoPackageIsVersion1
+
 type CarePlanTreatment_Availability int32
 
 const (
@@ -96,25 +100,30 @@ var CarePlanTreatment_Availability_value = map[string]int32{
 	"RX":      2,
 }
 
+func (CarePlanTreatment_Availability) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptorSvc, []int{22, 0}
+}
+
 // Visit is a unit of information requested from a patient
 // to provide a provider with information to aid in the diagnosis
 // of a patient condition.
 type Visit struct {
 	ID              string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name            string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	LayoutVersionID string `protobuf:"bytes,3,opt,name=layout_version_id,proto3" json:"layout_version_id,omitempty"`
-	EntityID        string `protobuf:"bytes,4,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
+	LayoutVersionID string `protobuf:"bytes,3,opt,name=layout_version_id,json=layoutVersionId,proto3" json:"layout_version_id,omitempty"`
+	EntityID        string `protobuf:"bytes,4,opt,name=entity_id,json=entityId,proto3" json:"entity_id,omitempty"`
 	Submitted       bool   `protobuf:"varint,5,opt,name=submitted,proto3" json:"submitted,omitempty"`
-	OrganizationID  string `protobuf:"bytes,6,opt,name=organization_id,proto3" json:"organization_id,omitempty"`
-	CreatorID       string `protobuf:"bytes,7,opt,name=creator_id,proto3" json:"creator_id,omitempty"`
+	OrganizationID  string `protobuf:"bytes,6,opt,name=organization_id,json=organizationId,proto3" json:"organization_id,omitempty"`
+	CreatorID       string `protobuf:"bytes,7,opt,name=creator_id,json=creatorId,proto3" json:"creator_id,omitempty"`
 }
 
-func (m *Visit) Reset()      { *m = Visit{} }
-func (*Visit) ProtoMessage() {}
+func (m *Visit) Reset()                    { *m = Visit{} }
+func (*Visit) ProtoMessage()               {}
+func (*Visit) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{0} }
 
 // Anwer represents a response to a particular question in the visit.
 type Answer struct {
-	QuestionID string `protobuf:"bytes,1,opt,name=question_id,proto3" json:"question_id,omitempty"`
+	QuestionID string `protobuf:"bytes,1,opt,name=question_id,json=questionId,proto3" json:"question_id,omitempty"`
 	// Types that are valid to be assigned to Answer:
 	//	*Answer_FreeText
 	//	*Answer_MultipleChoice
@@ -126,8 +135,9 @@ type Answer struct {
 	Answer isAnswer_Answer `protobuf_oneof:"answer"`
 }
 
-func (m *Answer) Reset()      { *m = Answer{} }
-func (*Answer) ProtoMessage() {}
+func (m *Answer) Reset()                    { *m = Answer{} }
+func (*Answer) ProtoMessage()               {}
+func (*Answer) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{1} }
 
 type isAnswer_Answer interface {
 	isAnswer_Answer()
@@ -137,25 +147,25 @@ type isAnswer_Answer interface {
 }
 
 type Answer_FreeText struct {
-	FreeText *FreeTextAnswer `protobuf:"bytes,10,opt,name=free_text,oneof"`
+	FreeText *FreeTextAnswer `protobuf:"bytes,10,opt,name=free_text,json=freeText,oneof"`
 }
 type Answer_MultipleChoice struct {
-	MultipleChoice *MultipleChoiceAnswer `protobuf:"bytes,11,opt,name=multiple_choice,oneof"`
+	MultipleChoice *MultipleChoiceAnswer `protobuf:"bytes,11,opt,name=multiple_choice,json=multipleChoice,oneof"`
 }
 type Answer_SingleSelect struct {
-	SingleSelect *SingleSelectAnswer `protobuf:"bytes,12,opt,name=single_select,oneof"`
+	SingleSelect *SingleSelectAnswer `protobuf:"bytes,12,opt,name=single_select,json=singleSelect,oneof"`
 }
 type Answer_Autocomplete struct {
 	Autocomplete *AutocompleteAnswer `protobuf:"bytes,13,opt,name=autocomplete,oneof"`
 }
 type Answer_PhotoSection struct {
-	PhotoSection *PhotoSectionAnswer `protobuf:"bytes,14,opt,name=photo_section,oneof"`
+	PhotoSection *PhotoSectionAnswer `protobuf:"bytes,14,opt,name=photo_section,json=photoSection,oneof"`
 }
 type Answer_SingleEntry struct {
-	SingleEntry *SingleEntryAnswer `protobuf:"bytes,15,opt,name=single_entry,oneof"`
+	SingleEntry *SingleEntryAnswer `protobuf:"bytes,15,opt,name=single_entry,json=singleEntry,oneof"`
 }
 type Answer_SegmentedControl struct {
-	SegmentedControl *SegmentedControlAnswer `protobuf:"bytes,16,opt,name=segmented_control,oneof"`
+	SegmentedControl *SegmentedControlAnswer `protobuf:"bytes,16,opt,name=segmented_control,json=segmentedControl,oneof"`
 }
 
 func (*Answer_FreeText) isAnswer_Answer()         {}
@@ -223,8 +233,8 @@ func (m *Answer) GetSegmentedControl() *SegmentedControlAnswer {
 }
 
 // XXX_OneofFuncs is for the internal use of the proto package.
-func (*Answer) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), []interface{}) {
-	return _Answer_OneofMarshaler, _Answer_OneofUnmarshaler, []interface{}{
+func (*Answer) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _Answer_OneofMarshaler, _Answer_OneofUnmarshaler, _Answer_OneofSizer, []interface{}{
 		(*Answer_FreeText)(nil),
 		(*Answer_MultipleChoice)(nil),
 		(*Answer_SingleSelect)(nil),
@@ -345,22 +355,70 @@ func _Answer_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer)
 	}
 }
 
-// FreeTextAnswer represents a free text response to a question.
-type FreeTextAnswer struct {
-	FreeText string `protobuf:"bytes,1,opt,name=free_text,proto3" json:"free_text,omitempty"`
+func _Answer_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*Answer)
+	// answer
+	switch x := m.Answer.(type) {
+	case *Answer_FreeText:
+		s := proto.Size(x.FreeText)
+		n += proto.SizeVarint(10<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Answer_MultipleChoice:
+		s := proto.Size(x.MultipleChoice)
+		n += proto.SizeVarint(11<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Answer_SingleSelect:
+		s := proto.Size(x.SingleSelect)
+		n += proto.SizeVarint(12<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Answer_Autocomplete:
+		s := proto.Size(x.Autocomplete)
+		n += proto.SizeVarint(13<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Answer_PhotoSection:
+		s := proto.Size(x.PhotoSection)
+		n += proto.SizeVarint(14<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Answer_SingleEntry:
+		s := proto.Size(x.SingleEntry)
+		n += proto.SizeVarint(15<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Answer_SegmentedControl:
+		s := proto.Size(x.SegmentedControl)
+		n += proto.SizeVarint(16<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
 }
 
-func (m *FreeTextAnswer) Reset()      { *m = FreeTextAnswer{} }
-func (*FreeTextAnswer) ProtoMessage() {}
+// FreeTextAnswer represents a free text response to a question.
+type FreeTextAnswer struct {
+	FreeText string `protobuf:"bytes,1,opt,name=free_text,json=freeText,proto3" json:"free_text,omitempty"`
+}
+
+func (m *FreeTextAnswer) Reset()                    { *m = FreeTextAnswer{} }
+func (*FreeTextAnswer) ProtoMessage()               {}
+func (*FreeTextAnswer) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{2} }
 
 // MultipleChoiceAnswer represents a response that contains multiple options
 // selected by the patient from a list of available options in a question.
 type MultipleChoiceAnswer struct {
-	SelectedAnswers []*AnswerOption `protobuf:"bytes,1,rep,name=selected_answers" json:"selected_answers,omitempty"`
+	SelectedAnswers []*AnswerOption `protobuf:"bytes,1,rep,name=selected_answers,json=selectedAnswers" json:"selected_answers,omitempty"`
 }
 
-func (m *MultipleChoiceAnswer) Reset()      { *m = MultipleChoiceAnswer{} }
-func (*MultipleChoiceAnswer) ProtoMessage() {}
+func (m *MultipleChoiceAnswer) Reset()                    { *m = MultipleChoiceAnswer{} }
+func (*MultipleChoiceAnswer) ProtoMessage()               {}
+func (*MultipleChoiceAnswer) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{3} }
 
 func (m *MultipleChoiceAnswer) GetSelectedAnswers() []*AnswerOption {
 	if m != nil {
@@ -372,11 +430,12 @@ func (m *MultipleChoiceAnswer) GetSelectedAnswers() []*AnswerOption {
 // SingleSelectAnswer represents a response that contains a single option
 // selected from a list of available options.
 type SingleSelectAnswer struct {
-	SelectedAnswer *AnswerOption `protobuf:"bytes,1,opt,name=selected_answer" json:"selected_answer,omitempty"`
+	SelectedAnswer *AnswerOption `protobuf:"bytes,1,opt,name=selected_answer,json=selectedAnswer" json:"selected_answer,omitempty"`
 }
 
-func (m *SingleSelectAnswer) Reset()      { *m = SingleSelectAnswer{} }
-func (*SingleSelectAnswer) ProtoMessage() {}
+func (m *SingleSelectAnswer) Reset()                    { *m = SingleSelectAnswer{} }
+func (*SingleSelectAnswer) ProtoMessage()               {}
+func (*SingleSelectAnswer) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{4} }
 
 func (m *SingleSelectAnswer) GetSelectedAnswer() *AnswerOption {
 	if m != nil {
@@ -388,11 +447,12 @@ func (m *SingleSelectAnswer) GetSelectedAnswer() *AnswerOption {
 // SegmentedControlAnswer represents a single option selected from a list of
 // available options.
 type SegmentedControlAnswer struct {
-	SelectedAnswer *AnswerOption `protobuf:"bytes,1,opt,name=selected_answer" json:"selected_answer,omitempty"`
+	SelectedAnswer *AnswerOption `protobuf:"bytes,1,opt,name=selected_answer,json=selectedAnswer" json:"selected_answer,omitempty"`
 }
 
-func (m *SegmentedControlAnswer) Reset()      { *m = SegmentedControlAnswer{} }
-func (*SegmentedControlAnswer) ProtoMessage() {}
+func (m *SegmentedControlAnswer) Reset()                    { *m = SegmentedControlAnswer{} }
+func (*SegmentedControlAnswer) ProtoMessage()               {}
+func (*SegmentedControlAnswer) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{5} }
 
 func (m *SegmentedControlAnswer) GetSelectedAnswer() *AnswerOption {
 	if m != nil {
@@ -403,21 +463,23 @@ func (m *SegmentedControlAnswer) GetSelectedAnswer() *AnswerOption {
 
 // SingleEntryAnswer represents a single free text response to a question.
 type SingleEntryAnswer struct {
-	FreeText string `protobuf:"bytes,1,opt,name=free_text,proto3" json:"free_text,omitempty"`
+	FreeText string `protobuf:"bytes,1,opt,name=free_text,json=freeText,proto3" json:"free_text,omitempty"`
 }
 
-func (m *SingleEntryAnswer) Reset()      { *m = SingleEntryAnswer{} }
-func (*SingleEntryAnswer) ProtoMessage() {}
+func (m *SingleEntryAnswer) Reset()                    { *m = SingleEntryAnswer{} }
+func (*SingleEntryAnswer) ProtoMessage()               {}
+func (*SingleEntryAnswer) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{6} }
 
 // AnswerOption represents a single selection that is part of an answer.
 type AnswerOption struct {
 	ID         string             `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	FreeText   string             `protobuf:"bytes,2,opt,name=free_text,proto3" json:"free_text,omitempty"`
-	SubAnswers map[string]*Answer `protobuf:"bytes,3,rep,name=sub_answers" json:"sub_answers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value"`
+	FreeText   string             `protobuf:"bytes,2,opt,name=free_text,json=freeText,proto3" json:"free_text,omitempty"`
+	SubAnswers map[string]*Answer `protobuf:"bytes,3,rep,name=sub_answers,json=subAnswers" json:"sub_answers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value"`
 }
 
-func (m *AnswerOption) Reset()      { *m = AnswerOption{} }
-func (*AnswerOption) ProtoMessage() {}
+func (m *AnswerOption) Reset()                    { *m = AnswerOption{} }
+func (*AnswerOption) ProtoMessage()               {}
+func (*AnswerOption) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{7} }
 
 func (m *AnswerOption) GetSubAnswers() map[string]*Answer {
 	if m != nil {
@@ -430,11 +492,12 @@ func (m *AnswerOption) GetSubAnswers() map[string]*Answer {
 // autocomplete answer.
 type AutocompleteAnswerItem struct {
 	Answer     string             `protobuf:"bytes,1,opt,name=answer,proto3" json:"answer,omitempty"`
-	SubAnswers map[string]*Answer `protobuf:"bytes,2,rep,name=sub_answers" json:"sub_answers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value"`
+	SubAnswers map[string]*Answer `protobuf:"bytes,2,rep,name=sub_answers,json=subAnswers" json:"sub_answers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value"`
 }
 
-func (m *AutocompleteAnswerItem) Reset()      { *m = AutocompleteAnswerItem{} }
-func (*AutocompleteAnswerItem) ProtoMessage() {}
+func (m *AutocompleteAnswerItem) Reset()                    { *m = AutocompleteAnswerItem{} }
+func (*AutocompleteAnswerItem) ProtoMessage()               {}
+func (*AutocompleteAnswerItem) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{8} }
 
 func (m *AutocompleteAnswerItem) GetSubAnswers() map[string]*Answer {
 	if m != nil {
@@ -449,8 +512,9 @@ type AutocompleteAnswer struct {
 	Items []*AutocompleteAnswerItem `protobuf:"bytes,1,rep,name=items" json:"items,omitempty"`
 }
 
-func (m *AutocompleteAnswer) Reset()      { *m = AutocompleteAnswer{} }
-func (*AutocompleteAnswer) ProtoMessage() {}
+func (m *AutocompleteAnswer) Reset()                    { *m = AutocompleteAnswer{} }
+func (*AutocompleteAnswer) ProtoMessage()               {}
+func (*AutocompleteAnswer) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{9} }
 
 func (m *AutocompleteAnswer) GetItems() []*AutocompleteAnswerItem {
 	if m != nil {
@@ -464,8 +528,9 @@ type PhotoSectionAnswer struct {
 	Sections []*PhotoSectionAnswer_PhotoSectionItem `protobuf:"bytes,1,rep,name=sections" json:"sections,omitempty"`
 }
 
-func (m *PhotoSectionAnswer) Reset()      { *m = PhotoSectionAnswer{} }
-func (*PhotoSectionAnswer) ProtoMessage() {}
+func (m *PhotoSectionAnswer) Reset()                    { *m = PhotoSectionAnswer{} }
+func (*PhotoSectionAnswer) ProtoMessage()               {}
+func (*PhotoSectionAnswer) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{10} }
 
 func (m *PhotoSectionAnswer) GetSections() []*PhotoSectionAnswer_PhotoSectionItem {
 	if m != nil {
@@ -481,6 +546,9 @@ type PhotoSectionAnswer_PhotoSectionItem struct {
 
 func (m *PhotoSectionAnswer_PhotoSectionItem) Reset()      { *m = PhotoSectionAnswer_PhotoSectionItem{} }
 func (*PhotoSectionAnswer_PhotoSectionItem) ProtoMessage() {}
+func (*PhotoSectionAnswer_PhotoSectionItem) Descriptor() ([]byte, []int) {
+	return fileDescriptorSvc, []int{10, 0}
+}
 
 func (m *PhotoSectionAnswer_PhotoSectionItem) GetSlots() []*PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem {
 	if m != nil {
@@ -490,9 +558,9 @@ func (m *PhotoSectionAnswer_PhotoSectionItem) GetSlots() []*PhotoSectionAnswer_P
 }
 
 type PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem struct {
-	SlotID  string `protobuf:"bytes,1,opt,name=slot_id,proto3" json:"slot_id,omitempty"`
+	SlotID  string `protobuf:"bytes,1,opt,name=slot_id,json=slotId,proto3" json:"slot_id,omitempty"`
 	Name    string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	MediaID string `protobuf:"bytes,3,opt,name=media_id,proto3" json:"media_id,omitempty"`
+	MediaID string `protobuf:"bytes,3,opt,name=media_id,json=mediaId,proto3" json:"media_id,omitempty"`
 	URL     string `protobuf:"bytes,4,opt,name=url,proto3" json:"url,omitempty"`
 }
 
@@ -500,24 +568,29 @@ func (m *PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem) Reset() {
 	*m = PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem{}
 }
 func (*PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem) ProtoMessage() {}
-
-type CreateVisitRequest struct {
-	LayoutVersionID string `protobuf:"bytes,1,opt,name=layout_version_id,proto3" json:"layout_version_id,omitempty"`
-	EntityID        string `protobuf:"bytes,2,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
-	Name            string `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
-	OrganizationID  string `protobuf:"bytes,4,opt,name=organization_id,proto3" json:"organization_id,omitempty"`
-	CreatorID       string `protobuf:"bytes,5,opt,name=creator_id,proto3" json:"creator_id,omitempty"`
+func (*PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem) Descriptor() ([]byte, []int) {
+	return fileDescriptorSvc, []int{10, 0, 0}
 }
 
-func (m *CreateVisitRequest) Reset()      { *m = CreateVisitRequest{} }
-func (*CreateVisitRequest) ProtoMessage() {}
+type CreateVisitRequest struct {
+	LayoutVersionID string `protobuf:"bytes,1,opt,name=layout_version_id,json=layoutVersionId,proto3" json:"layout_version_id,omitempty"`
+	EntityID        string `protobuf:"bytes,2,opt,name=entity_id,json=entityId,proto3" json:"entity_id,omitempty"`
+	Name            string `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	OrganizationID  string `protobuf:"bytes,4,opt,name=organization_id,json=organizationId,proto3" json:"organization_id,omitempty"`
+	CreatorID       string `protobuf:"bytes,5,opt,name=creator_id,json=creatorId,proto3" json:"creator_id,omitempty"`
+}
+
+func (m *CreateVisitRequest) Reset()                    { *m = CreateVisitRequest{} }
+func (*CreateVisitRequest) ProtoMessage()               {}
+func (*CreateVisitRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{11} }
 
 type CreateVisitResponse struct {
 	Visit *Visit `protobuf:"bytes,1,opt,name=visit" json:"visit,omitempty"`
 }
 
-func (m *CreateVisitResponse) Reset()      { *m = CreateVisitResponse{} }
-func (*CreateVisitResponse) ProtoMessage() {}
+func (m *CreateVisitResponse) Reset()                    { *m = CreateVisitResponse{} }
+func (*CreateVisitResponse) ProtoMessage()               {}
+func (*CreateVisitResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{12} }
 
 func (m *CreateVisitResponse) GetVisit() *Visit {
 	if m != nil {
@@ -530,15 +603,17 @@ type GetVisitRequest struct {
 	ID string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 }
 
-func (m *GetVisitRequest) Reset()      { *m = GetVisitRequest{} }
-func (*GetVisitRequest) ProtoMessage() {}
+func (m *GetVisitRequest) Reset()                    { *m = GetVisitRequest{} }
+func (*GetVisitRequest) ProtoMessage()               {}
+func (*GetVisitRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{13} }
 
 type GetVisitResponse struct {
 	Visit *Visit `protobuf:"bytes,1,opt,name=visit" json:"visit,omitempty"`
 }
 
-func (m *GetVisitResponse) Reset()      { *m = GetVisitResponse{} }
-func (*GetVisitResponse) ProtoMessage() {}
+func (m *GetVisitResponse) Reset()                    { *m = GetVisitResponse{} }
+func (*GetVisitResponse) ProtoMessage()               {}
+func (*GetVisitResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{14} }
 
 func (m *GetVisitResponse) GetVisit() *Visit {
 	if m != nil {
@@ -548,35 +623,39 @@ func (m *GetVisitResponse) GetVisit() *Visit {
 }
 
 type CreateVisitAnswersRequest struct {
-	VisitID       string `protobuf:"bytes,1,opt,name=visit_id,proto3" json:"visit_id,omitempty"`
-	AnswersJSON   string `protobuf:"bytes,2,opt,name=answers_json,proto3" json:"answers_json,omitempty"`
-	ActorEntityID string `protobuf:"bytes,3,opt,name=actory_entity_id,proto3" json:"actory_entity_id,omitempty"`
+	VisitID       string `protobuf:"bytes,1,opt,name=visit_id,json=visitId,proto3" json:"visit_id,omitempty"`
+	AnswersJSON   string `protobuf:"bytes,2,opt,name=answers_json,json=answersJson,proto3" json:"answers_json,omitempty"`
+	ActorEntityID string `protobuf:"bytes,3,opt,name=actory_entity_id,json=actoryEntityId,proto3" json:"actory_entity_id,omitempty"`
 }
 
-func (m *CreateVisitAnswersRequest) Reset()      { *m = CreateVisitAnswersRequest{} }
-func (*CreateVisitAnswersRequest) ProtoMessage() {}
+func (m *CreateVisitAnswersRequest) Reset()                    { *m = CreateVisitAnswersRequest{} }
+func (*CreateVisitAnswersRequest) ProtoMessage()               {}
+func (*CreateVisitAnswersRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{15} }
 
 type CreateVisitAnswersResponse struct {
 }
 
-func (m *CreateVisitAnswersResponse) Reset()      { *m = CreateVisitAnswersResponse{} }
-func (*CreateVisitAnswersResponse) ProtoMessage() {}
+func (m *CreateVisitAnswersResponse) Reset()                    { *m = CreateVisitAnswersResponse{} }
+func (*CreateVisitAnswersResponse) ProtoMessage()               {}
+func (*CreateVisitAnswersResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{16} }
 
 type GetAnswersForVisitRequest struct {
-	VisitID              string `protobuf:"bytes,1,opt,name=visit_id,proto3" json:"visit_id,omitempty"`
-	SerializedForPatient bool   `protobuf:"varint,2,opt,name=serialized_for_patient,proto3" json:"serialized_for_patient,omitempty"`
+	VisitID              string `protobuf:"bytes,1,opt,name=visit_id,json=visitId,proto3" json:"visit_id,omitempty"`
+	SerializedForPatient bool   `protobuf:"varint,2,opt,name=serialized_for_patient,json=serializedForPatient,proto3" json:"serialized_for_patient,omitempty"`
 }
 
-func (m *GetAnswersForVisitRequest) Reset()      { *m = GetAnswersForVisitRequest{} }
-func (*GetAnswersForVisitRequest) ProtoMessage() {}
+func (m *GetAnswersForVisitRequest) Reset()                    { *m = GetAnswersForVisitRequest{} }
+func (*GetAnswersForVisitRequest) ProtoMessage()               {}
+func (*GetAnswersForVisitRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{17} }
 
 type GetAnswersForVisitResponse struct {
-	PatientAnswersJSON string             `protobuf:"bytes,1,opt,name=patient_answers_json,proto3" json:"patient_answers_json,omitempty"`
+	PatientAnswersJSON string             `protobuf:"bytes,1,opt,name=patient_answers_json,json=patientAnswersJson,proto3" json:"patient_answers_json,omitempty"`
 	Answers            map[string]*Answer `protobuf:"bytes,2,rep,name=answers" json:"answers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value"`
 }
 
-func (m *GetAnswersForVisitResponse) Reset()      { *m = GetAnswersForVisitResponse{} }
-func (*GetAnswersForVisitResponse) ProtoMessage() {}
+func (m *GetAnswersForVisitResponse) Reset()                    { *m = GetAnswersForVisitResponse{} }
+func (*GetAnswersForVisitResponse) ProtoMessage()               {}
+func (*GetAnswersForVisitResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{18} }
 
 func (m *GetAnswersForVisitResponse) GetAnswers() map[string]*Answer {
 	if m != nil {
@@ -586,32 +665,35 @@ func (m *GetAnswersForVisitResponse) GetAnswers() map[string]*Answer {
 }
 
 type SubmitVisitRequest struct {
-	VisitID string `protobuf:"bytes,1,opt,name=visit_id,proto3" json:"visit_id,omitempty"`
+	VisitID string `protobuf:"bytes,1,opt,name=visit_id,json=visitId,proto3" json:"visit_id,omitempty"`
 }
 
-func (m *SubmitVisitRequest) Reset()      { *m = SubmitVisitRequest{} }
-func (*SubmitVisitRequest) ProtoMessage() {}
+func (m *SubmitVisitRequest) Reset()                    { *m = SubmitVisitRequest{} }
+func (*SubmitVisitRequest) ProtoMessage()               {}
+func (*SubmitVisitRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{19} }
 
 type SubmitVisitResponse struct {
 }
 
-func (m *SubmitVisitResponse) Reset()      { *m = SubmitVisitResponse{} }
-func (*SubmitVisitResponse) ProtoMessage() {}
+func (m *SubmitVisitResponse) Reset()                    { *m = SubmitVisitResponse{} }
+func (*SubmitVisitResponse) ProtoMessage()               {}
+func (*SubmitVisitResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{20} }
 
 type CarePlan struct {
 	ID                 string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name               string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	Treatments         []*CarePlanTreatment   `protobuf:"bytes,3,rep,name=treatments" json:"treatments,omitempty"`
 	Instructions       []*CarePlanInstruction `protobuf:"bytes,4,rep,name=instructions" json:"instructions,omitempty"`
-	CreatedTimestamp   uint64                 `protobuf:"varint,5,opt,name=created_timestamp,proto3" json:"created_timestamp,omitempty"`
-	CreatorID          string                 `protobuf:"bytes,6,opt,name=creator_id,proto3" json:"creator_id,omitempty"`
+	CreatedTimestamp   uint64                 `protobuf:"varint,5,opt,name=created_timestamp,json=createdTimestamp,proto3" json:"created_timestamp,omitempty"`
+	CreatorID          string                 `protobuf:"bytes,6,opt,name=creator_id,json=creatorId,proto3" json:"creator_id,omitempty"`
 	Submitted          bool                   `protobuf:"varint,7,opt,name=submitted,proto3" json:"submitted,omitempty"`
-	ParentID           string                 `protobuf:"bytes,8,opt,name=parent_id,proto3" json:"parent_id,omitempty"`
-	SubmittedTimestamp uint64                 `protobuf:"varint,9,opt,name=submitted_timestamp,proto3" json:"submitted_timestamp,omitempty"`
+	ParentID           string                 `protobuf:"bytes,8,opt,name=parent_id,json=parentId,proto3" json:"parent_id,omitempty"`
+	SubmittedTimestamp uint64                 `protobuf:"varint,9,opt,name=submitted_timestamp,json=submittedTimestamp,proto3" json:"submitted_timestamp,omitempty"`
 }
 
-func (m *CarePlan) Reset()      { *m = CarePlan{} }
-func (*CarePlan) ProtoMessage() {}
+func (m *CarePlan) Reset()                    { *m = CarePlan{} }
+func (*CarePlan) ProtoMessage()               {}
+func (*CarePlan) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{21} }
 
 func (m *CarePlan) GetTreatments() []*CarePlanTreatment {
 	if m != nil {
@@ -633,42 +715,46 @@ type CarePlanTreatment struct {
 	Name                 string                         `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
 	Route                string                         `protobuf:"bytes,4,opt,name=route,proto3" json:"route,omitempty"`
 	Form                 string                         `protobuf:"bytes,5,opt,name=form,proto3" json:"form,omitempty"`
-	MedicationID         string                         `protobuf:"bytes,6,opt,name=medication_id,proto3" json:"medication_id,omitempty"`
+	MedicationID         string                         `protobuf:"bytes,6,opt,name=medication_id,json=medicationId,proto3" json:"medication_id,omitempty"`
 	Dosage               string                         `protobuf:"bytes,7,opt,name=dosage,proto3" json:"dosage,omitempty"`
-	DispenseType         string                         `protobuf:"bytes,8,opt,name=dispense_type,proto3" json:"dispense_type,omitempty"`
-	DispenseNumber       uint32                         `protobuf:"varint,9,opt,name=dispense_number,proto3" json:"dispense_number,omitempty"`
+	DispenseType         string                         `protobuf:"bytes,8,opt,name=dispense_type,json=dispenseType,proto3" json:"dispense_type,omitempty"`
+	DispenseNumber       uint32                         `protobuf:"varint,9,opt,name=dispense_number,json=dispenseNumber,proto3" json:"dispense_number,omitempty"`
 	Refills              uint32                         `protobuf:"varint,10,opt,name=refills,proto3" json:"refills,omitempty"`
-	SubstitutionsAllowed bool                           `protobuf:"varint,11,opt,name=substitutions_allowed,proto3" json:"substitutions_allowed,omitempty"`
-	DaysSupply           uint32                         `protobuf:"varint,12,opt,name=days_supply,proto3" json:"days_supply,omitempty"`
+	SubstitutionsAllowed bool                           `protobuf:"varint,11,opt,name=substitutions_allowed,json=substitutionsAllowed,proto3" json:"substitutions_allowed,omitempty"`
+	DaysSupply           uint32                         `protobuf:"varint,12,opt,name=days_supply,json=daysSupply,proto3" json:"days_supply,omitempty"`
 	Sig                  string                         `protobuf:"bytes,13,opt,name=sig,proto3" json:"sig,omitempty"`
-	PharmacyID           string                         `protobuf:"bytes,14,opt,name=pharmacy_id,proto3" json:"pharmacy_id,omitempty"`
-	PharmacyInstructions string                         `protobuf:"bytes,15,opt,name=pharmacy_instructions,proto3" json:"pharmacy_instructions,omitempty"`
+	PharmacyID           string                         `protobuf:"bytes,14,opt,name=pharmacy_id,json=pharmacyId,proto3" json:"pharmacy_id,omitempty"`
+	PharmacyInstructions string                         `protobuf:"bytes,15,opt,name=pharmacy_instructions,json=pharmacyInstructions,proto3" json:"pharmacy_instructions,omitempty"`
 }
 
-func (m *CarePlanTreatment) Reset()      { *m = CarePlanTreatment{} }
-func (*CarePlanTreatment) ProtoMessage() {}
+func (m *CarePlanTreatment) Reset()                    { *m = CarePlanTreatment{} }
+func (*CarePlanTreatment) ProtoMessage()               {}
+func (*CarePlanTreatment) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{22} }
 
 type CarePlanInstruction struct {
 	Title string   `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
 	Steps []string `protobuf:"bytes,2,rep,name=steps" json:"steps,omitempty"`
 }
 
-func (m *CarePlanInstruction) Reset()      { *m = CarePlanInstruction{} }
-func (*CarePlanInstruction) ProtoMessage() {}
+func (m *CarePlanInstruction) Reset()                    { *m = CarePlanInstruction{} }
+func (*CarePlanInstruction) ProtoMessage()               {}
+func (*CarePlanInstruction) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{23} }
 
 type CarePlanRequest struct {
 	ID string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 }
 
-func (m *CarePlanRequest) Reset()      { *m = CarePlanRequest{} }
-func (*CarePlanRequest) ProtoMessage() {}
+func (m *CarePlanRequest) Reset()                    { *m = CarePlanRequest{} }
+func (*CarePlanRequest) ProtoMessage()               {}
+func (*CarePlanRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{24} }
 
 type CarePlanResponse struct {
-	CarePlan *CarePlan `protobuf:"bytes,1,opt,name=care_plan" json:"care_plan,omitempty"`
+	CarePlan *CarePlan `protobuf:"bytes,1,opt,name=care_plan,json=carePlan" json:"care_plan,omitempty"`
 }
 
-func (m *CarePlanResponse) Reset()      { *m = CarePlanResponse{} }
-func (*CarePlanResponse) ProtoMessage() {}
+func (m *CarePlanResponse) Reset()                    { *m = CarePlanResponse{} }
+func (*CarePlanResponse) ProtoMessage()               {}
+func (*CarePlanResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{25} }
 
 func (m *CarePlanResponse) GetCarePlan() *CarePlan {
 	if m != nil {
@@ -681,11 +767,12 @@ type CreateCarePlanRequest struct {
 	Name         string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Treatments   []*CarePlanTreatment   `protobuf:"bytes,2,rep,name=treatments" json:"treatments,omitempty"`
 	Instructions []*CarePlanInstruction `protobuf:"bytes,3,rep,name=instructions" json:"instructions,omitempty"`
-	CreatorID    string                 `protobuf:"bytes,4,opt,name=creator_id,proto3" json:"creator_id,omitempty"`
+	CreatorID    string                 `protobuf:"bytes,4,opt,name=creator_id,json=creatorId,proto3" json:"creator_id,omitempty"`
 }
 
-func (m *CreateCarePlanRequest) Reset()      { *m = CreateCarePlanRequest{} }
-func (*CreateCarePlanRequest) ProtoMessage() {}
+func (m *CreateCarePlanRequest) Reset()                    { *m = CreateCarePlanRequest{} }
+func (*CreateCarePlanRequest) ProtoMessage()               {}
+func (*CreateCarePlanRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{26} }
 
 func (m *CreateCarePlanRequest) GetTreatments() []*CarePlanTreatment {
 	if m != nil {
@@ -702,11 +789,12 @@ func (m *CreateCarePlanRequest) GetInstructions() []*CarePlanInstruction {
 }
 
 type CreateCarePlanResponse struct {
-	CarePlan *CarePlan `protobuf:"bytes,1,opt,name=care_plan" json:"care_plan,omitempty"`
+	CarePlan *CarePlan `protobuf:"bytes,1,opt,name=care_plan,json=carePlan" json:"care_plan,omitempty"`
 }
 
-func (m *CreateCarePlanResponse) Reset()      { *m = CreateCarePlanResponse{} }
-func (*CreateCarePlanResponse) ProtoMessage() {}
+func (m *CreateCarePlanResponse) Reset()                    { *m = CreateCarePlanResponse{} }
+func (*CreateCarePlanResponse) ProtoMessage()               {}
+func (*CreateCarePlanResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{27} }
 
 func (m *CreateCarePlanResponse) GetCarePlan() *CarePlan {
 	if m != nil {
@@ -717,18 +805,20 @@ func (m *CreateCarePlanResponse) GetCarePlan() *CarePlan {
 
 type SubmitCarePlanRequest struct {
 	ID       string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	ParentID string `protobuf:"bytes,2,opt,name=parent_id,proto3" json:"parent_id,omitempty"`
+	ParentID string `protobuf:"bytes,2,opt,name=parent_id,json=parentId,proto3" json:"parent_id,omitempty"`
 }
 
-func (m *SubmitCarePlanRequest) Reset()      { *m = SubmitCarePlanRequest{} }
-func (*SubmitCarePlanRequest) ProtoMessage() {}
+func (m *SubmitCarePlanRequest) Reset()                    { *m = SubmitCarePlanRequest{} }
+func (*SubmitCarePlanRequest) ProtoMessage()               {}
+func (*SubmitCarePlanRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{28} }
 
 type SubmitCarePlanResponse struct {
-	CarePlan *CarePlan `protobuf:"bytes,1,opt,name=care_plan" json:"care_plan,omitempty"`
+	CarePlan *CarePlan `protobuf:"bytes,1,opt,name=care_plan,json=carePlan" json:"care_plan,omitempty"`
 }
 
-func (m *SubmitCarePlanResponse) Reset()      { *m = SubmitCarePlanResponse{} }
-func (*SubmitCarePlanResponse) ProtoMessage() {}
+func (m *SubmitCarePlanResponse) Reset()                    { *m = SubmitCarePlanResponse{} }
+func (*SubmitCarePlanResponse) ProtoMessage()               {}
+func (*SubmitCarePlanResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{29} }
 
 func (m *SubmitCarePlanResponse) GetCarePlan() *CarePlan {
 	if m != nil {
@@ -745,8 +835,9 @@ type Medication struct {
 	Strengths []*MedicationStrength `protobuf:"bytes,5,rep,name=strengths" json:"strengths,omitempty"`
 }
 
-func (m *Medication) Reset()      { *m = Medication{} }
-func (*Medication) ProtoMessage() {}
+func (m *Medication) Reset()                    { *m = Medication{} }
+func (*Medication) ProtoMessage()               {}
+func (*Medication) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{30} }
 
 func (m *Medication) GetStrengths() []*MedicationStrength {
 	if m != nil {
@@ -759,32 +850,35 @@ type MedicationStrength struct {
 	OTC               bool   `protobuf:"varint,1,opt,name=otc,proto3" json:"otc,omitempty"`
 	Schedule          uint32 `protobuf:"varint,2,opt,name=schedule,proto3" json:"schedule,omitempty"`
 	Strength          string `protobuf:"bytes,3,opt,name=strength,proto3" json:"strength,omitempty"`
-	DispenseUnit      string `protobuf:"bytes,4,opt,name=dispense_unit,proto3" json:"dispense_unit,omitempty"`
-	GenericName       string `protobuf:"bytes,5,opt,name=generic_name,proto3" json:"generic_name,omitempty"`
-	LexiGenProductID  uint64 `protobuf:"varint,6,opt,name=lexi_gen_product_id,proto3" json:"lexi_gen_product_id,omitempty"`
-	LexiDrugSynID     uint64 `protobuf:"varint,7,opt,name=lexi_drug_syn_id,proto3" json:"lexi_drug_syn_id,omitempty"`
-	LexiSynonymTypeID uint64 `protobuf:"varint,8,opt,name=lexi_synonym_type_id,proto3" json:"lexi_synonym_type_id,omitempty"`
+	DispenseUnit      string `protobuf:"bytes,4,opt,name=dispense_unit,json=dispenseUnit,proto3" json:"dispense_unit,omitempty"`
+	GenericName       string `protobuf:"bytes,5,opt,name=generic_name,json=genericName,proto3" json:"generic_name,omitempty"`
+	LexiGenProductID  uint64 `protobuf:"varint,6,opt,name=lexi_gen_product_id,json=lexiGenProductId,proto3" json:"lexi_gen_product_id,omitempty"`
+	LexiDrugSynID     uint64 `protobuf:"varint,7,opt,name=lexi_drug_syn_id,json=lexiDrugSynId,proto3" json:"lexi_drug_syn_id,omitempty"`
+	LexiSynonymTypeID uint64 `protobuf:"varint,8,opt,name=lexi_synonym_type_id,json=lexiSynonymTypeId,proto3" json:"lexi_synonym_type_id,omitempty"`
 	NDC               string `protobuf:"bytes,9,opt,name=ndc,proto3" json:"ndc,omitempty"`
 }
 
-func (m *MedicationStrength) Reset()      { *m = MedicationStrength{} }
-func (*MedicationStrength) ProtoMessage() {}
+func (m *MedicationStrength) Reset()                    { *m = MedicationStrength{} }
+func (*MedicationStrength) ProtoMessage()               {}
+func (*MedicationStrength) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{31} }
 
 type SearchMedicationsRequest struct {
-	ClinicID    uint64 `protobuf:"varint,1,opt,name=clinic_id,proto3" json:"clinic_id,omitempty"`
-	ClinicianID uint64 `protobuf:"varint,2,opt,name=clinician_id,proto3" json:"clinician_id,omitempty"`
+	ClinicID    uint64 `protobuf:"varint,1,opt,name=clinic_id,json=clinicId,proto3" json:"clinic_id,omitempty"`
+	ClinicianID uint64 `protobuf:"varint,2,opt,name=clinician_id,json=clinicianId,proto3" json:"clinician_id,omitempty"`
 	Query       string `protobuf:"bytes,3,opt,name=query,proto3" json:"query,omitempty"`
 }
 
-func (m *SearchMedicationsRequest) Reset()      { *m = SearchMedicationsRequest{} }
-func (*SearchMedicationsRequest) ProtoMessage() {}
+func (m *SearchMedicationsRequest) Reset()                    { *m = SearchMedicationsRequest{} }
+func (*SearchMedicationsRequest) ProtoMessage()               {}
+func (*SearchMedicationsRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{32} }
 
 type SearchMedicationsResponse struct {
 	Medications []*Medication `protobuf:"bytes,1,rep,name=medications" json:"medications,omitempty"`
 }
 
-func (m *SearchMedicationsResponse) Reset()      { *m = SearchMedicationsResponse{} }
-func (*SearchMedicationsResponse) ProtoMessage() {}
+func (m *SearchMedicationsResponse) Reset()                    { *m = SearchMedicationsResponse{} }
+func (*SearchMedicationsResponse) ProtoMessage()               {}
+func (*SearchMedicationsResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{33} }
 
 func (m *SearchMedicationsResponse) GetMedications() []*Medication {
 	if m != nil {
@@ -799,6 +893,9 @@ type SearchSelfReportedMedicationsRequest struct {
 
 func (m *SearchSelfReportedMedicationsRequest) Reset()      { *m = SearchSelfReportedMedicationsRequest{} }
 func (*SearchSelfReportedMedicationsRequest) ProtoMessage() {}
+func (*SearchSelfReportedMedicationsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptorSvc, []int{34}
+}
 
 type SearchSelfReportedMedicationsResponse struct {
 	Results []string `protobuf:"bytes,1,rep,name=results" json:"results,omitempty"`
@@ -806,6 +903,9 @@ type SearchSelfReportedMedicationsResponse struct {
 
 func (m *SearchSelfReportedMedicationsResponse) Reset()      { *m = SearchSelfReportedMedicationsResponse{} }
 func (*SearchSelfReportedMedicationsResponse) ProtoMessage() {}
+func (*SearchSelfReportedMedicationsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptorSvc, []int{35}
+}
 
 type SearchAllergyMedicationsRequest struct {
 	Query string `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
@@ -813,6 +913,9 @@ type SearchAllergyMedicationsRequest struct {
 
 func (m *SearchAllergyMedicationsRequest) Reset()      { *m = SearchAllergyMedicationsRequest{} }
 func (*SearchAllergyMedicationsRequest) ProtoMessage() {}
+func (*SearchAllergyMedicationsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptorSvc, []int{36}
+}
 
 type SearchAllergyMedicationsResponse struct {
 	Results []string `protobuf:"bytes,1,rep,name=results" json:"results,omitempty"`
@@ -820,6 +923,9 @@ type SearchAllergyMedicationsResponse struct {
 
 func (m *SearchAllergyMedicationsResponse) Reset()      { *m = SearchAllergyMedicationsResponse{} }
 func (*SearchAllergyMedicationsResponse) ProtoMessage() {}
+func (*SearchAllergyMedicationsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptorSvc, []int{37}
+}
 
 func init() {
 	proto.RegisterType((*Visit)(nil), "care.Visit")
@@ -881,7 +987,12 @@ func (this *Visit) Equal(that interface{}) bool {
 
 	that1, ok := that.(*Visit)
 	if !ok {
-		return false
+		that2, ok := that.(Visit)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -924,7 +1035,12 @@ func (this *Answer) Equal(that interface{}) bool {
 
 	that1, ok := that.(*Answer)
 	if !ok {
-		return false
+		that2, ok := that.(Answer)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -958,7 +1074,12 @@ func (this *Answer_FreeText) Equal(that interface{}) bool {
 
 	that1, ok := that.(*Answer_FreeText)
 	if !ok {
-		return false
+		that2, ok := that.(Answer_FreeText)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -983,7 +1104,12 @@ func (this *Answer_MultipleChoice) Equal(that interface{}) bool {
 
 	that1, ok := that.(*Answer_MultipleChoice)
 	if !ok {
-		return false
+		that2, ok := that.(Answer_MultipleChoice)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1008,7 +1134,12 @@ func (this *Answer_SingleSelect) Equal(that interface{}) bool {
 
 	that1, ok := that.(*Answer_SingleSelect)
 	if !ok {
-		return false
+		that2, ok := that.(Answer_SingleSelect)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1033,7 +1164,12 @@ func (this *Answer_Autocomplete) Equal(that interface{}) bool {
 
 	that1, ok := that.(*Answer_Autocomplete)
 	if !ok {
-		return false
+		that2, ok := that.(Answer_Autocomplete)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1058,7 +1194,12 @@ func (this *Answer_PhotoSection) Equal(that interface{}) bool {
 
 	that1, ok := that.(*Answer_PhotoSection)
 	if !ok {
-		return false
+		that2, ok := that.(Answer_PhotoSection)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1083,7 +1224,12 @@ func (this *Answer_SingleEntry) Equal(that interface{}) bool {
 
 	that1, ok := that.(*Answer_SingleEntry)
 	if !ok {
-		return false
+		that2, ok := that.(Answer_SingleEntry)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1108,7 +1254,12 @@ func (this *Answer_SegmentedControl) Equal(that interface{}) bool {
 
 	that1, ok := that.(*Answer_SegmentedControl)
 	if !ok {
-		return false
+		that2, ok := that.(Answer_SegmentedControl)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1133,7 +1284,12 @@ func (this *FreeTextAnswer) Equal(that interface{}) bool {
 
 	that1, ok := that.(*FreeTextAnswer)
 	if !ok {
-		return false
+		that2, ok := that.(FreeTextAnswer)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1158,7 +1314,12 @@ func (this *MultipleChoiceAnswer) Equal(that interface{}) bool {
 
 	that1, ok := that.(*MultipleChoiceAnswer)
 	if !ok {
-		return false
+		that2, ok := that.(MultipleChoiceAnswer)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1188,7 +1349,12 @@ func (this *SingleSelectAnswer) Equal(that interface{}) bool {
 
 	that1, ok := that.(*SingleSelectAnswer)
 	if !ok {
-		return false
+		that2, ok := that.(SingleSelectAnswer)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1213,7 +1379,12 @@ func (this *SegmentedControlAnswer) Equal(that interface{}) bool {
 
 	that1, ok := that.(*SegmentedControlAnswer)
 	if !ok {
-		return false
+		that2, ok := that.(SegmentedControlAnswer)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1238,7 +1409,12 @@ func (this *SingleEntryAnswer) Equal(that interface{}) bool {
 
 	that1, ok := that.(*SingleEntryAnswer)
 	if !ok {
-		return false
+		that2, ok := that.(SingleEntryAnswer)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1263,7 +1439,12 @@ func (this *AnswerOption) Equal(that interface{}) bool {
 
 	that1, ok := that.(*AnswerOption)
 	if !ok {
-		return false
+		that2, ok := that.(AnswerOption)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1299,7 +1480,12 @@ func (this *AutocompleteAnswerItem) Equal(that interface{}) bool {
 
 	that1, ok := that.(*AutocompleteAnswerItem)
 	if !ok {
-		return false
+		that2, ok := that.(AutocompleteAnswerItem)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1332,7 +1518,12 @@ func (this *AutocompleteAnswer) Equal(that interface{}) bool {
 
 	that1, ok := that.(*AutocompleteAnswer)
 	if !ok {
-		return false
+		that2, ok := that.(AutocompleteAnswer)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1362,7 +1553,12 @@ func (this *PhotoSectionAnswer) Equal(that interface{}) bool {
 
 	that1, ok := that.(*PhotoSectionAnswer)
 	if !ok {
-		return false
+		that2, ok := that.(PhotoSectionAnswer)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1392,7 +1588,12 @@ func (this *PhotoSectionAnswer_PhotoSectionItem) Equal(that interface{}) bool {
 
 	that1, ok := that.(*PhotoSectionAnswer_PhotoSectionItem)
 	if !ok {
-		return false
+		that2, ok := that.(PhotoSectionAnswer_PhotoSectionItem)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1425,7 +1626,12 @@ func (this *PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem) Equal(that interf
 
 	that1, ok := that.(*PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem)
 	if !ok {
-		return false
+		that2, ok := that.(PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1459,7 +1665,12 @@ func (this *CreateVisitRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CreateVisitRequest)
 	if !ok {
-		return false
+		that2, ok := that.(CreateVisitRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1496,7 +1707,12 @@ func (this *CreateVisitResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CreateVisitResponse)
 	if !ok {
-		return false
+		that2, ok := that.(CreateVisitResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1521,7 +1737,12 @@ func (this *GetVisitRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*GetVisitRequest)
 	if !ok {
-		return false
+		that2, ok := that.(GetVisitRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1546,7 +1767,12 @@ func (this *GetVisitResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*GetVisitResponse)
 	if !ok {
-		return false
+		that2, ok := that.(GetVisitResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1571,7 +1797,12 @@ func (this *CreateVisitAnswersRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CreateVisitAnswersRequest)
 	if !ok {
-		return false
+		that2, ok := that.(CreateVisitAnswersRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1602,7 +1833,12 @@ func (this *CreateVisitAnswersResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CreateVisitAnswersResponse)
 	if !ok {
-		return false
+		that2, ok := that.(CreateVisitAnswersResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1624,7 +1860,12 @@ func (this *GetAnswersForVisitRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*GetAnswersForVisitRequest)
 	if !ok {
-		return false
+		that2, ok := that.(GetAnswersForVisitRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1652,7 +1893,12 @@ func (this *GetAnswersForVisitResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*GetAnswersForVisitResponse)
 	if !ok {
-		return false
+		that2, ok := that.(GetAnswersForVisitResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1685,7 +1931,12 @@ func (this *SubmitVisitRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*SubmitVisitRequest)
 	if !ok {
-		return false
+		that2, ok := that.(SubmitVisitRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1710,7 +1961,12 @@ func (this *SubmitVisitResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*SubmitVisitResponse)
 	if !ok {
-		return false
+		that2, ok := that.(SubmitVisitResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1732,7 +1988,12 @@ func (this *CarePlan) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CarePlan)
 	if !ok {
-		return false
+		that2, ok := that.(CarePlan)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1791,7 +2052,12 @@ func (this *CarePlanTreatment) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CarePlanTreatment)
 	if !ok {
-		return false
+		that2, ok := that.(CarePlanTreatment)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1858,7 +2124,12 @@ func (this *CarePlanInstruction) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CarePlanInstruction)
 	if !ok {
-		return false
+		that2, ok := that.(CarePlanInstruction)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1891,7 +2162,12 @@ func (this *CarePlanRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CarePlanRequest)
 	if !ok {
-		return false
+		that2, ok := that.(CarePlanRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1916,7 +2192,12 @@ func (this *CarePlanResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CarePlanResponse)
 	if !ok {
-		return false
+		that2, ok := that.(CarePlanResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1941,7 +2222,12 @@ func (this *CreateCarePlanRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CreateCarePlanRequest)
 	if !ok {
-		return false
+		that2, ok := that.(CreateCarePlanRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1985,7 +2271,12 @@ func (this *CreateCarePlanResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*CreateCarePlanResponse)
 	if !ok {
-		return false
+		that2, ok := that.(CreateCarePlanResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -2010,7 +2301,12 @@ func (this *SubmitCarePlanRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*SubmitCarePlanRequest)
 	if !ok {
-		return false
+		that2, ok := that.(SubmitCarePlanRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -2038,7 +2334,12 @@ func (this *SubmitCarePlanResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*SubmitCarePlanResponse)
 	if !ok {
-		return false
+		that2, ok := that.(SubmitCarePlanResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -2063,7 +2364,12 @@ func (this *Medication) Equal(that interface{}) bool {
 
 	that1, ok := that.(*Medication)
 	if !ok {
-		return false
+		that2, ok := that.(Medication)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -2105,7 +2411,12 @@ func (this *MedicationStrength) Equal(that interface{}) bool {
 
 	that1, ok := that.(*MedicationStrength)
 	if !ok {
-		return false
+		that2, ok := that.(MedicationStrength)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -2154,7 +2465,12 @@ func (this *SearchMedicationsRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*SearchMedicationsRequest)
 	if !ok {
-		return false
+		that2, ok := that.(SearchMedicationsRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -2185,7 +2501,12 @@ func (this *SearchMedicationsResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*SearchMedicationsResponse)
 	if !ok {
-		return false
+		that2, ok := that.(SearchMedicationsResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -2215,7 +2536,12 @@ func (this *SearchSelfReportedMedicationsRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*SearchSelfReportedMedicationsRequest)
 	if !ok {
-		return false
+		that2, ok := that.(SearchSelfReportedMedicationsRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -2240,7 +2566,12 @@ func (this *SearchSelfReportedMedicationsResponse) Equal(that interface{}) bool 
 
 	that1, ok := that.(*SearchSelfReportedMedicationsResponse)
 	if !ok {
-		return false
+		that2, ok := that.(SearchSelfReportedMedicationsResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -2270,7 +2601,12 @@ func (this *SearchAllergyMedicationsRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*SearchAllergyMedicationsRequest)
 	if !ok {
-		return false
+		that2, ok := that.(SearchAllergyMedicationsRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -2295,7 +2631,12 @@ func (this *SearchAllergyMedicationsResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*SearchAllergyMedicationsResponse)
 	if !ok {
-		return false
+		that2, ok := that.(SearchAllergyMedicationsResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -2934,6 +3275,10 @@ func extensionToGoStringSvc(e map[int32]github_com_gogo_protobuf_proto.Extension
 var _ context.Context
 var _ grpc.ClientConn
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the grpc package it is being compiled against.
+const _ = grpc.SupportPackageIsVersion2
+
 // Client API for Care service
 
 type CareClient interface {
@@ -3091,136 +3436,202 @@ func RegisterCareServer(s *grpc.Server, srv CareServer) {
 	s.RegisterService(&_Care_serviceDesc, srv)
 }
 
-func _Care_CreateVisit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Care_CreateVisit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateVisitRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(CareServer).CreateVisit(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(CareServer).CreateVisit(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/care.Care/CreateVisit",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CareServer).CreateVisit(ctx, req.(*CreateVisitRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Care_GetVisit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Care_GetVisit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetVisitRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(CareServer).GetVisit(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(CareServer).GetVisit(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/care.Care/GetVisit",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CareServer).GetVisit(ctx, req.(*GetVisitRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Care_CreateVisitAnswers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Care_CreateVisitAnswers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateVisitAnswersRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(CareServer).CreateVisitAnswers(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(CareServer).CreateVisitAnswers(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/care.Care/CreateVisitAnswers",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CareServer).CreateVisitAnswers(ctx, req.(*CreateVisitAnswersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Care_GetAnswersForVisit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Care_GetAnswersForVisit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetAnswersForVisitRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(CareServer).GetAnswersForVisit(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(CareServer).GetAnswersForVisit(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/care.Care/GetAnswersForVisit",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CareServer).GetAnswersForVisit(ctx, req.(*GetAnswersForVisitRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Care_SubmitVisit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Care_SubmitVisit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SubmitVisitRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(CareServer).SubmitVisit(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(CareServer).SubmitVisit(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/care.Care/SubmitVisit",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CareServer).SubmitVisit(ctx, req.(*SubmitVisitRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Care_CarePlan_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Care_CarePlan_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CarePlanRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(CareServer).CarePlan(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(CareServer).CarePlan(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/care.Care/CarePlan",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CareServer).CarePlan(ctx, req.(*CarePlanRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Care_CreateCarePlan_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Care_CreateCarePlan_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateCarePlanRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(CareServer).CreateCarePlan(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(CareServer).CreateCarePlan(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/care.Care/CreateCarePlan",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CareServer).CreateCarePlan(ctx, req.(*CreateCarePlanRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Care_SubmitCarePlan_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Care_SubmitCarePlan_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SubmitCarePlanRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(CareServer).SubmitCarePlan(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(CareServer).SubmitCarePlan(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/care.Care/SubmitCarePlan",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CareServer).SubmitCarePlan(ctx, req.(*SubmitCarePlanRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Care_SearchMedications_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Care_SearchMedications_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SearchMedicationsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(CareServer).SearchMedications(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(CareServer).SearchMedications(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/care.Care/SearchMedications",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CareServer).SearchMedications(ctx, req.(*SearchMedicationsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Care_SearchSelfReportedMedications_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Care_SearchSelfReportedMedications_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SearchSelfReportedMedicationsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(CareServer).SearchSelfReportedMedications(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(CareServer).SearchSelfReportedMedications(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/care.Care/SearchSelfReportedMedications",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CareServer).SearchSelfReportedMedications(ctx, req.(*SearchSelfReportedMedicationsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Care_SearchAllergyMedications_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Care_SearchAllergyMedications_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SearchAllergyMedicationsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(CareServer).SearchAllergyMedications(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(CareServer).SearchAllergyMedications(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/care.Care/SearchAllergyMedications",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CareServer).SearchAllergyMedications(ctx, req.(*SearchAllergyMedicationsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 var _Care_serviceDesc = grpc.ServiceDesc{
@@ -11596,3 +12007,148 @@ var (
 	ErrInvalidLengthSvc = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowSvc   = fmt.Errorf("proto: integer overflow")
 )
+
+var fileDescriptorSvc = []byte{
+	// 2251 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xbc, 0x59, 0x4b, 0x73, 0x1c, 0x57,
+	0xf5, 0xf7, 0x3c, 0x34, 0x8f, 0x33, 0x4f, 0x5d, 0x3d, 0xfe, 0xa3, 0x89, 0xfe, 0x92, 0x69, 0x92,
+	0x80, 0xb1, 0x2d, 0x53, 0x0a, 0xc1, 0x21, 0x18, 0x52, 0xd2, 0xf8, 0xa5, 0xd8, 0x7a, 0xa4, 0x47,
+	0x4e, 0x28, 0x36, 0x53, 0xad, 0x9e, 0xab, 0x51, 0x43, 0x4f, 0x77, 0xd3, 0xdd, 0xe3, 0x78, 0xb2,
+	0xa2, 0x2a, 0xcb, 0x50, 0x05, 0x55, 0xec, 0xf8, 0x04, 0xf9, 0x00, 0x7c, 0x08, 0x16, 0x2c, 0xc2,
+	0x82, 0x2a, 0x56, 0x14, 0x36, 0x1b, 0x56, 0x14, 0x5b, 0x56, 0x70, 0xee, 0xab, 0x1f, 0xf3, 0x90,
+	0x64, 0xa5, 0x8a, 0xc5, 0x94, 0xfb, 0x9e, 0xd7, 0x3d, 0xf7, 0x9c, 0x7b, 0x7f, 0xe7, 0x1c, 0x19,
+	0xca, 0xc1, 0x73, 0x73, 0xcb, 0xf3, 0xdd, 0xd0, 0x25, 0x79, 0xd3, 0xf0, 0x69, 0xfb, 0xf6, 0xc0,
+	0x0a, 0xcf, 0x46, 0x27, 0x5b, 0xa6, 0x3b, 0xbc, 0x33, 0x70, 0x07, 0xee, 0x1d, 0xce, 0x3c, 0x19,
+	0x9d, 0xf2, 0x15, 0x5f, 0xf0, 0x2f, 0xa1, 0xa4, 0x7d, 0x99, 0x85, 0x85, 0x8f, 0xad, 0xc0, 0x0a,
+	0xc9, 0x2a, 0x64, 0xad, 0x7e, 0x2b, 0x73, 0x3d, 0xf3, 0xed, 0xf2, 0x6e, 0xe1, 0xd5, 0x5f, 0x37,
+	0xb3, 0x7b, 0xf7, 0x75, 0xa4, 0x10, 0x02, 0x79, 0xc7, 0x18, 0xd2, 0x56, 0x96, 0x71, 0x74, 0xfe,
+	0x4d, 0x3e, 0x80, 0x45, 0xdb, 0x18, 0xbb, 0xa3, 0xb0, 0xf7, 0x9c, 0xfa, 0x81, 0xe5, 0x3a, 0x3d,
+	0x54, 0xcd, 0x71, 0xd5, 0x25, 0x54, 0x6d, 0x3c, 0xe5, 0xcc, 0x8f, 0x05, 0x0f, 0xed, 0x34, 0xec,
+	0x14, 0xa1, 0x4f, 0x6e, 0x40, 0x99, 0x3a, 0xa1, 0x15, 0x8e, 0x99, 0x62, 0x9e, 0x2b, 0x56, 0x51,
+	0xb1, 0xf4, 0x80, 0x13, 0x51, 0xa3, 0x24, 0xd8, 0x28, 0xba, 0x8e, 0x67, 0x1c, 0x9d, 0x0c, 0xad,
+	0x30, 0xa4, 0xfd, 0xd6, 0x02, 0x8a, 0x96, 0xf4, 0x98, 0x40, 0x7e, 0x08, 0x0d, 0xd7, 0x1f, 0x18,
+	0x8e, 0xf5, 0x99, 0x11, 0x4a, 0x3f, 0x0a, 0xdc, 0x1c, 0x41, 0x73, 0xf5, 0xc3, 0x04, 0x0b, 0x8d,
+	0xd6, 0x93, 0xa2, 0x68, 0xfa, 0x16, 0x80, 0xe9, 0x53, 0x23, 0x74, 0x7d, 0xa6, 0x57, 0xe4, 0x7a,
+	0x35, 0xd4, 0x2b, 0x77, 0x04, 0x15, 0x55, 0xca, 0x52, 0x60, 0xaf, 0xaf, 0xfd, 0x2a, 0x0f, 0x85,
+	0x1d, 0x27, 0xf8, 0x94, 0xfa, 0xe4, 0x0e, 0x54, 0x7e, 0x31, 0xa2, 0x81, 0xda, 0x51, 0x04, 0xad,
+	0x8e, 0x9a, 0xf0, 0x91, 0x24, 0xa3, 0x2a, 0x28, 0x11, 0xdc, 0xe9, 0x1d, 0x28, 0x9f, 0xfa, 0x94,
+	0xf6, 0x42, 0xfa, 0x22, 0x6c, 0x01, 0x8a, 0x57, 0xb6, 0x97, 0xb7, 0x58, 0xbe, 0xb6, 0x1e, 0x22,
+	0xf9, 0x18, 0xa9, 0xc2, 0xf2, 0xe3, 0x6b, 0x7a, 0xe9, 0x54, 0x52, 0xc8, 0x03, 0x68, 0x0c, 0x47,
+	0x76, 0x68, 0x79, 0x36, 0xed, 0x99, 0x67, 0xae, 0x65, 0xd2, 0x56, 0x85, 0xab, 0xb6, 0x85, 0xea,
+	0xbe, 0x64, 0x76, 0x38, 0x2f, 0x32, 0x50, 0x1f, 0xa6, 0xe8, 0x98, 0xac, 0x5a, 0x60, 0x39, 0x03,
+	0x34, 0x12, 0x50, 0x9b, 0x9a, 0x61, 0xab, 0xca, 0x8d, 0xb4, 0x84, 0x91, 0x2e, 0x67, 0x75, 0x39,
+	0x27, 0x32, 0x51, 0x0d, 0x12, 0x54, 0xf2, 0x63, 0xa8, 0x1a, 0xa3, 0xd0, 0xc5, 0x1b, 0x85, 0x46,
+	0x43, 0xda, 0xaa, 0x25, 0xf5, 0x77, 0x12, 0x9c, 0x58, 0x3f, 0x29, 0xcf, 0x1c, 0xf0, 0xce, 0xf0,
+	0xb2, 0xe1, 0xfe, 0x26, 0x8b, 0x47, 0xab, 0x9e, 0x34, 0x70, 0xc4, 0x58, 0x5d, 0xc1, 0x89, 0x0d,
+	0x78, 0x09, 0x2a, 0xb9, 0x07, 0xd2, 0xa1, 0x1e, 0xde, 0x0a, 0x7f, 0xdc, 0x6a, 0x70, 0xfd, 0xff,
+	0x4b, 0x1e, 0xe0, 0x01, 0x63, 0x44, 0xea, 0x95, 0x20, 0x26, 0x92, 0x27, 0xb0, 0x18, 0xd0, 0xc1,
+	0x10, 0x55, 0x69, 0xbf, 0x67, 0xba, 0x48, 0x73, 0xed, 0x56, 0x93, 0x9b, 0x58, 0x97, 0x26, 0x14,
+	0xbb, 0x23, 0xb8, 0x91, 0x9d, 0x66, 0x30, 0xc1, 0xd9, 0x2d, 0x41, 0xc1, 0xe0, 0x5c, 0xed, 0x36,
+	0xd4, 0xd3, 0xb9, 0x23, 0x6f, 0x24, 0x93, 0xcc, 0xef, 0x44, 0x9c, 0x4c, 0xed, 0x19, 0x2c, 0xcf,
+	0xca, 0x17, 0xf9, 0x11, 0x34, 0x45, 0x5a, 0xd0, 0x39, 0x61, 0x39, 0x40, 0xdd, 0x1c, 0x3a, 0x47,
+	0x64, 0x80, 0x39, 0xf1, 0xd0, 0x63, 0x91, 0xd0, 0x1b, 0x4a, 0x56, 0x50, 0x03, 0xed, 0x23, 0x20,
+	0xd3, 0x19, 0x64, 0xaf, 0x62, 0xc2, 0x28, 0xf7, 0x67, 0xb6, 0xcd, 0x7a, 0xda, 0x26, 0x7a, 0xba,
+	0x3a, 0x3b, 0x20, 0x5f, 0xcf, 0xec, 0x77, 0x61, 0x71, 0x2a, 0x55, 0xe7, 0x87, 0xec, 0xcf, 0x19,
+	0xa8, 0x26, 0x4d, 0xce, 0x85, 0xa8, 0x94, 0x95, 0x6c, 0xda, 0x0a, 0xe9, 0x40, 0x05, 0xe1, 0x22,
+	0x8a, 0x6d, 0x8e, 0xc7, 0x56, 0x9b, 0x76, 0x78, 0xab, 0x3b, 0x3a, 0x91, 0x51, 0xe5, 0x1e, 0xea,
+	0x10, 0x44, 0x84, 0xf6, 0x13, 0x68, 0x4c, 0xb0, 0x49, 0x13, 0x72, 0x3f, 0xa7, 0x63, 0xe9, 0x34,
+	0xfb, 0x24, 0x1a, 0x2c, 0x3c, 0x37, 0xec, 0x91, 0x80, 0xca, 0xca, 0x76, 0x35, 0xb9, 0x87, 0x2e,
+	0x58, 0xef, 0x67, 0xdf, 0xcb, 0x68, 0x7f, 0xcc, 0xc0, 0xea, 0xf4, 0xb3, 0xd9, 0x0b, 0xe9, 0x10,
+	0x4f, 0x58, 0x48, 0x04, 0xb6, 0xac, 0xcb, 0x15, 0xd9, 0x4f, 0x1f, 0x22, 0xcb, 0x0f, 0x71, 0x6b,
+	0xde, 0x0b, 0x64, 0xa6, 0xfe, 0x77, 0xc7, 0x79, 0x0c, 0x64, 0xda, 0x05, 0xb2, 0x0d, 0x0b, 0x16,
+	0xba, 0xa1, 0x2e, 0xf3, 0xfa, 0x79, 0xbe, 0xea, 0x42, 0x54, 0x7b, 0x99, 0x05, 0x32, 0x0d, 0x07,
+	0x88, 0x83, 0x25, 0x89, 0x1c, 0xca, 0xda, 0x8d, 0x79, 0xd0, 0x91, 0x22, 0x71, 0xd3, 0x91, 0x6a,
+	0xfb, 0xf3, 0x2c, 0x34, 0x27, 0xd9, 0x51, 0x75, 0xcb, 0x24, 0xaa, 0xdb, 0x3e, 0x2c, 0x04, 0xb6,
+	0x1b, 0xaa, 0x30, 0xdf, 0xbd, 0xf4, 0x66, 0x92, 0x80, 0xba, 0xe2, 0x54, 0xdc, 0x4a, 0xfb, 0x8b,
+	0x0c, 0xd4, 0x52, 0x0c, 0xf2, 0x4d, 0x28, 0x32, 0x56, 0x5c, 0x3a, 0x00, 0x2f, 0x73, 0x81, 0xb3,
+	0xef, 0xeb, 0x05, 0xc6, 0xda, 0x9b, 0x5d, 0x77, 0xdf, 0x86, 0xd2, 0x90, 0xf6, 0x2d, 0x23, 0x2e,
+	0xb7, 0x15, 0xd4, 0x2c, 0xee, 0x33, 0x1a, 0xaa, 0x16, 0x39, 0x13, 0x75, 0xd7, 0x20, 0x37, 0xf2,
+	0x6d, 0x59, 0x58, 0x8b, 0x28, 0x92, 0x7b, 0xa6, 0x3f, 0xd5, 0x19, 0x4d, 0xfb, 0x4f, 0x06, 0x08,
+	0x2f, 0x6f, 0x94, 0x97, 0x7d, 0x9d, 0xf2, 0x2a, 0x35, 0xbb, 0xa2, 0x67, 0xae, 0x5a, 0xd1, 0xb3,
+	0xe7, 0x56, 0x74, 0x75, 0xb2, 0x5c, 0xe2, 0x64, 0x33, 0xea, 0x78, 0xfe, 0x8a, 0x75, 0x7c, 0xe1,
+	0x82, 0x3a, 0xfe, 0x1e, 0x2c, 0xa5, 0x02, 0x10, 0x78, 0x78, 0x3b, 0x28, 0xf9, 0x06, 0x5e, 0x77,
+	0x46, 0x90, 0x90, 0x56, 0x11, 0x59, 0x17, 0x32, 0x82, 0xa3, 0xdd, 0x80, 0xc6, 0x23, 0x1a, 0xa6,
+	0xe2, 0x36, 0x07, 0x92, 0xb4, 0x77, 0xa1, 0x19, 0x8b, 0x5e, 0x7e, 0x87, 0xdf, 0x67, 0x60, 0x2d,
+	0xe1, 0x9c, 0x7c, 0xa1, 0x6a, 0x33, 0x4c, 0x3f, 0x17, 0x8b, 0x73, 0xc3, 0xd3, 0xcf, 0x45, 0x59,
+	0xfa, 0x39, 0x13, 0xe3, 0xb1, 0x8d, 0x05, 0x5b, 0x68, 0xf6, 0x7e, 0x16, 0x60, 0xbd, 0x15, 0xe9,
+	0x68, 0xa0, 0x6c, 0x45, 0x5a, 0xfc, 0xb0, 0x7b, 0x78, 0xa0, 0x57, 0xa4, 0xd0, 0x87, 0x28, 0x83,
+	0x09, 0x68, 0x1a, 0x26, 0x06, 0x68, 0xdc, 0x8b, 0xd3, 0x28, 0xae, 0xd8, 0x22, 0xea, 0xd5, 0x76,
+	0x18, 0x2f, 0xca, 0x65, 0x5d, 0x88, 0xca, 0x75, 0x5f, 0x5b, 0x87, 0xf6, 0x2c, 0xaf, 0xc5, 0xb9,
+	0xb5, 0x31, 0xac, 0x61, 0x2c, 0x24, 0xf5, 0xa1, 0xeb, 0xa7, 0x02, 0x78, 0xd9, 0x33, 0x7d, 0x0f,
+	0x56, 0x03, 0xea, 0x5b, 0x86, 0x6d, 0x7d, 0x86, 0xd5, 0xe7, 0x14, 0x53, 0xed, 0x61, 0xfa, 0xd1,
+	0x57, 0x7e, 0xba, 0x92, 0xbe, 0x1c, 0x73, 0x71, 0x8b, 0x23, 0xc1, 0xd3, 0xfe, 0x9d, 0x81, 0xf6,
+	0xac, 0xbd, 0x65, 0x46, 0x1e, 0xc3, 0xb2, 0xb4, 0xd2, 0x4b, 0x05, 0x4c, 0x38, 0xb2, 0x8a, 0x8e,
+	0x10, 0x69, 0x29, 0x19, 0x37, 0xe2, 0xa5, 0x69, 0x2c, 0x7c, 0x8f, 0xa0, 0x98, 0x06, 0xe7, 0xdb,
+	0x22, 0xbb, 0xf3, 0x37, 0xdf, 0x4a, 0xa1, 0xb3, 0xd2, 0x6e, 0x3f, 0x56, 0x35, 0xef, 0x6b, 0xe3,
+	0xf2, 0x3d, 0x6c, 0x0d, 0x78, 0x9f, 0x7c, 0x95, 0x78, 0x6b, 0x2b, 0xb0, 0x94, 0xd2, 0x96, 0xb9,
+	0xfc, 0x3c, 0x07, 0xa5, 0x0e, 0xee, 0x77, 0x64, 0x1b, 0xce, 0x6b, 0x8d, 0x0c, 0x77, 0x01, 0x42,
+	0x76, 0x45, 0x58, 0x5f, 0xa1, 0xaa, 0xb0, 0xec, 0xe0, 0x94, 0xbd, 0x63, 0xc5, 0xd7, 0x13, 0xa2,
+	0xd8, 0x20, 0x55, 0x2d, 0x27, 0x08, 0xfd, 0x91, 0xac, 0x00, 0x79, 0xae, 0xba, 0x96, 0x56, 0xdd,
+	0x8b, 0x25, 0xf4, 0x94, 0x38, 0xb9, 0x09, 0x8b, 0xfc, 0xe9, 0xe3, 0xa5, 0x09, 0xad, 0x21, 0x46,
+	0xc0, 0x18, 0x7a, 0x1c, 0x22, 0xf2, 0x7a, 0x53, 0x32, 0x8e, 0x15, 0x7d, 0x02, 0x48, 0x0a, 0xe7,
+	0x03, 0x49, 0x7a, 0x32, 0x29, 0x4e, 0x4e, 0x26, 0x08, 0x88, 0x1e, 0x7a, 0xe7, 0xf0, 0x48, 0x97,
+	0x62, 0x40, 0x3c, 0xe2, 0x44, 0x06, 0x88, 0x82, 0x8d, 0x86, 0xee, 0xc0, 0x52, 0xa4, 0x97, 0xf0,
+	0xb2, 0xcc, 0xbd, 0x24, 0x11, 0x2b, 0xf2, 0x53, 0xfb, 0x67, 0x1e, 0x16, 0xa7, 0xa2, 0x46, 0x36,
+	0x00, 0xe8, 0x91, 0x4f, 0x03, 0xd3, 0xb7, 0x4e, 0x44, 0x45, 0x2b, 0xe9, 0x09, 0x0a, 0xde, 0xf6,
+	0xaa, 0xf1, 0xdc, 0xb0, 0x6c, 0xe3, 0xc4, 0xb2, 0xf1, 0xdd, 0xf2, 0xf4, 0xd4, 0xb7, 0xdf, 0x9c,
+	0x93, 0x84, 0xad, 0x9d, 0x84, 0xac, 0x9e, 0xd2, 0x9c, 0x89, 0xe0, 0xcb, 0xb0, 0xe0, 0x63, 0x45,
+	0xa0, 0x02, 0xb7, 0x75, 0xb1, 0x60, 0x92, 0xf8, 0x56, 0x87, 0x02, 0x94, 0x75, 0xfe, 0x4d, 0xde,
+	0x85, 0x1a, 0x2b, 0x54, 0xe6, 0xc4, 0xc4, 0xd6, 0xc4, 0xe8, 0x54, 0xf7, 0x23, 0x06, 0x46, 0xa8,
+	0x1a, 0x8b, 0x61, 0x94, 0xb0, 0x37, 0xea, 0xbb, 0x81, 0x31, 0xa0, 0x62, 0x52, 0xd3, 0xe5, 0x0a,
+	0xab, 0x69, 0xad, 0x6f, 0x05, 0x1e, 0xc5, 0xeb, 0xd9, 0x0b, 0xc7, 0x1e, 0x15, 0xc1, 0xd6, 0xab,
+	0x8a, 0x78, 0x8c, 0x34, 0xf2, 0x2d, 0x68, 0x44, 0x42, 0xce, 0x68, 0x78, 0x82, 0x1d, 0x16, 0x0b,
+	0x6f, 0x4d, 0xaf, 0x2b, 0xf2, 0x01, 0xa7, 0x92, 0x16, 0x14, 0x7d, 0x7a, 0x6a, 0xd9, 0x76, 0xc0,
+	0xe7, 0xb4, 0x9a, 0xae, 0x96, 0x38, 0xc3, 0xad, 0x60, 0x2a, 0x70, 0xa2, 0x0b, 0x47, 0xfc, 0x6a,
+	0xf5, 0x0c, 0xdb, 0x76, 0x3f, 0xc5, 0xd4, 0x57, 0x24, 0x00, 0x25, 0x99, 0x3b, 0x82, 0x47, 0x36,
+	0xa1, 0xd2, 0x37, 0xc6, 0x41, 0x2f, 0x18, 0x79, 0x9e, 0x3d, 0xe6, 0xa3, 0x57, 0x4d, 0x07, 0x46,
+	0xea, 0x72, 0x0a, 0x7b, 0xdf, 0x81, 0x35, 0xe0, 0x33, 0x15, 0xbe, 0x6f, 0xfc, 0x64, 0xc3, 0xa5,
+	0x77, 0x66, 0xf8, 0x43, 0xc3, 0xe4, 0x20, 0x5c, 0x8f, 0x87, 0xcb, 0x23, 0x49, 0x66, 0xc3, 0xa5,
+	0x12, 0xe1, 0xc3, 0xe5, 0x4a, 0xac, 0x90, 0x7c, 0x2a, 0x0d, 0x6e, 0x74, 0x39, 0x12, 0x4d, 0xf0,
+	0xb4, 0x5b, 0x88, 0x33, 0xc9, 0x94, 0x56, 0xa0, 0xf8, 0xec, 0xe0, 0xc9, 0xc1, 0xe1, 0x27, 0x07,
+	0xcd, 0x6b, 0xa4, 0x08, 0xb9, 0xc3, 0xe3, 0x4e, 0x33, 0x43, 0x0a, 0x90, 0xd5, 0x7f, 0xd2, 0xcc,
+	0x6a, 0x3b, 0x58, 0x33, 0xa7, 0x9f, 0x1a, 0xcb, 0x39, 0x9e, 0xd8, 0x56, 0xed, 0x93, 0x58, 0x30,
+	0x6a, 0x10, 0x52, 0x4f, 0x20, 0x21, 0x52, 0xf9, 0x82, 0x15, 0x4f, 0x65, 0xe2, 0xa2, 0xe2, 0xf9,
+	0x01, 0x34, 0x63, 0x51, 0x09, 0xd5, 0x37, 0xa1, 0xcc, 0xee, 0x69, 0xcf, 0x43, 0xa2, 0x2c, 0xa0,
+	0xf5, 0xf4, 0xcd, 0xd5, 0x4b, 0xa6, 0xfc, 0xd2, 0xfe, 0x94, 0x81, 0x15, 0x51, 0x90, 0x26, 0xb7,
+	0x9c, 0xd5, 0xef, 0xa5, 0xa1, 0x29, 0x7b, 0x75, 0x68, 0xca, 0xbd, 0x1e, 0x34, 0xa5, 0xd1, 0x26,
+	0x7f, 0x41, 0xdb, 0xf2, 0x00, 0x56, 0x27, 0x8f, 0x74, 0x95, 0xd0, 0xfc, 0x14, 0x56, 0x04, 0xae,
+	0x5f, 0x32, 0x19, 0x69, 0x1c, 0xcb, 0x9e, 0x87, 0x63, 0xcc, 0xc5, 0x49, 0xdb, 0x57, 0x71, 0xf1,
+	0x77, 0x19, 0x80, 0x18, 0x07, 0x5e, 0xab, 0xca, 0x44, 0x20, 0x94, 0x9b, 0x05, 0x42, 0xf9, 0x04,
+	0x08, 0x7d, 0x1f, 0xc1, 0x1b, 0x53, 0xe9, 0x0c, 0xc2, 0xb3, 0x00, 0xd1, 0x29, 0x17, 0xff, 0x41,
+	0x22, 0xde, 0xba, 0x2b, 0x05, 0xf4, 0x58, 0x54, 0xfb, 0x6d, 0x0e, 0xc8, 0xb4, 0x04, 0xeb, 0xb8,
+	0xdd, 0xd0, 0x14, 0xa0, 0x2b, 0x3a, 0x6e, 0x7c, 0x40, 0x3a, 0xa3, 0x91, 0x36, 0x8e, 0x2f, 0xe6,
+	0x19, 0xed, 0x8f, 0x6c, 0xe1, 0x6b, 0x4d, 0x8f, 0xd6, 0x9c, 0x27, 0x4d, 0x48, 0x97, 0xa3, 0x75,
+	0x0a, 0xd7, 0x46, 0x0e, 0xb6, 0x8d, 0xf9, 0x34, 0xae, 0x3d, 0x43, 0x1a, 0xf6, 0x94, 0xd5, 0x01,
+	0x75, 0xb0, 0xf5, 0x31, 0x7b, 0x3c, 0x18, 0x02, 0x67, 0x2b, 0x92, 0x76, 0xc0, 0x62, 0xd2, 0x81,
+	0x25, 0x9b, 0xbe, 0xb0, 0x7a, 0x48, 0xeb, 0x79, 0xbe, 0xdb, 0xc7, 0xeb, 0xa7, 0x40, 0x37, 0xbf,
+	0xbb, 0x8c, 0xae, 0x36, 0x9f, 0x22, 0xfb, 0x11, 0x75, 0x8e, 0x04, 0x13, 0xc3, 0xdb, 0xb4, 0xd3,
+	0x94, 0x3e, 0x79, 0x1f, 0x38, 0xad, 0xd7, 0xf7, 0x47, 0x83, 0x5e, 0x30, 0x76, 0xd4, 0x1f, 0xcc,
+	0xf2, 0xa2, 0x3d, 0x64, 0x16, 0xee, 0x23, 0xab, 0x3b, 0x66, 0xb8, 0x5d, 0xb3, 0x13, 0xcb, 0x3e,
+	0x79, 0x08, 0xcb, 0x5c, 0x17, 0xd5, 0x5c, 0x67, 0x3c, 0xe4, 0x20, 0xad, 0x8a, 0x62, 0x7e, 0x77,
+	0x05, 0xf5, 0x17, 0x99, 0x7e, 0x57, 0xb0, 0x19, 0x5c, 0xa3, 0x8d, 0x45, 0x7b, 0x82, 0xc4, 0xa7,
+	0x1a, 0xa7, 0x6f, 0x72, 0xdc, 0x96, 0x53, 0xcd, 0xc1, 0x7d, 0x8c, 0x31, 0xd2, 0xb4, 0x5f, 0x67,
+	0xa0, 0xd5, 0xa5, 0x86, 0x6f, 0x9e, 0xc5, 0xb9, 0x89, 0xda, 0x66, 0xbc, 0xc1, 0xa6, 0x6d, 0x39,
+	0x18, 0x22, 0x79, 0x8f, 0xf2, 0xe2, 0x06, 0x77, 0x38, 0x91, 0xdd, 0x60, 0xc1, 0x16, 0x9d, 0xb3,
+	0xf8, 0xb6, 0x0c, 0x47, 0xdd, 0xf7, 0xbc, 0xe8, 0x9c, 0x3b, 0x8a, 0x8e, 0x0a, 0x95, 0x48, 0x08,
+	0x75, 0xf0, 0xce, 0xe1, 0x3e, 0xfe, 0x58, 0xdd, 0x39, 0xbe, 0xd0, 0x0e, 0x61, 0x6d, 0x86, 0x43,
+	0xf2, 0x39, 0x6c, 0x43, 0x25, 0x2e, 0x6d, 0x6a, 0xa8, 0x6d, 0x4e, 0x5e, 0x3f, 0x3d, 0x29, 0x84,
+	0xed, 0xdc, 0x9b, 0xc2, 0x60, 0x97, 0xda, 0xa7, 0x3a, 0xf5, 0x5c, 0x1f, 0x5b, 0x82, 0x19, 0xa7,
+	0x8d, 0xdc, 0xc9, 0x24, 0xdd, 0xd9, 0x81, 0xb7, 0x2e, 0xd0, 0x96, 0xae, 0xf1, 0xfa, 0x17, 0x8c,
+	0xec, 0x50, 0xb8, 0x55, 0xd6, 0xd5, 0x52, 0xbb, 0x0b, 0x9b, 0xc2, 0x04, 0xd6, 0x36, 0xea, 0x0f,
+	0xc6, 0x97, 0xde, 0xfb, 0x1e, 0x5c, 0x9f, 0xaf, 0x78, 0xd1, 0xb6, 0xdb, 0x5f, 0x14, 0x21, 0xcf,
+	0x40, 0x82, 0xec, 0x42, 0x25, 0x31, 0x64, 0x10, 0xf9, 0x5a, 0xa7, 0x67, 0xd9, 0xf6, 0xda, 0x0c,
+	0x8e, 0xdc, 0xe6, 0x07, 0x50, 0x52, 0x63, 0x19, 0x59, 0x89, 0x3a, 0xf4, 0x94, 0xf6, 0xea, 0x24,
+	0x59, 0xaa, 0x7e, 0x92, 0x9a, 0x9b, 0x65, 0x8f, 0x4e, 0x36, 0xa7, 0xf6, 0x4a, 0xcf, 0x6c, 0xed,
+	0xeb, 0xf3, 0x05, 0x62, 0xc3, 0xd3, 0x53, 0x82, 0x32, 0x3c, 0x77, 0x70, 0x52, 0x86, 0xcf, 0x99,
+	0x6e, 0x30, 0x60, 0x89, 0x16, 0x5e, 0x05, 0x6c, 0x7a, 0x26, 0x50, 0x01, 0x9b, 0xd1, 0xef, 0xb3,
+	0x80, 0x45, 0xed, 0xfe, 0xca, 0x04, 0x62, 0xa7, 0x03, 0x36, 0x85, 0xf9, 0x4f, 0xa0, 0x9e, 0x2e,
+	0x58, 0xe4, 0x8d, 0x64, 0x2c, 0x26, 0xcd, 0xac, 0xcf, 0x66, 0xc6, 0xc6, 0xd2, 0xa5, 0x45, 0x19,
+	0x9b, 0x59, 0xcc, 0x94, 0xb1, 0x39, 0xd5, 0xe8, 0x18, 0x16, 0xa7, 0xde, 0x26, 0xd9, 0x50, 0x7f,
+	0x0b, 0x9e, 0x8d, 0x22, 0xed, 0xcd, 0xb9, 0x7c, 0x69, 0xf5, 0x05, 0xfc, 0xff, 0xb9, 0x4f, 0x8c,
+	0x7c, 0x27, 0x69, 0xe1, 0xfc, 0x57, 0xdc, 0xbe, 0x79, 0x29, 0x59, 0xb9, 0xb3, 0xa5, 0xc0, 0x6f,
+	0xfa, 0x81, 0x91, 0xb7, 0x92, 0x86, 0xe6, 0xbe, 0xdc, 0xf6, 0xdb, 0x17, 0x89, 0x89, 0xad, 0x76,
+	0x6f, 0x7d, 0xf5, 0x72, 0x23, 0xf3, 0x97, 0x97, 0x1b, 0xd7, 0xfe, 0x85, 0xff, 0xfe, 0xf2, 0xd5,
+	0x46, 0xe6, 0x4b, 0xfc, 0xfd, 0x01, 0x7f, 0x5f, 0xe1, 0xef, 0x6f, 0xf8, 0xfb, 0xc7, 0x2b, 0xe4,
+	0xe1, 0xbf, 0xbf, 0xf9, 0xfb, 0xc6, 0xb5, 0x93, 0x02, 0xff, 0x4f, 0xa6, 0x77, 0xfe, 0x1b, 0x00,
+	0x00, 0xff, 0xff, 0x58, 0x8a, 0xa3, 0xab, 0xa6, 0x1a, 0x00, 0x00,
+}

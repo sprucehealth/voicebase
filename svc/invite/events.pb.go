@@ -34,6 +34,10 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+const _ = proto.GoGoProtoPackageIsVersion1
+
 type Event_Type int32
 
 const (
@@ -53,6 +57,8 @@ var Event_Type_value = map[string]int32{
 	"INVITED_PATIENTS":   2,
 }
 
+func (Event_Type) EnumDescriptor() ([]byte, []int) { return fileDescriptorEvents, []int{0, 0} }
+
 type Event struct {
 	Type Event_Type `protobuf:"varint,1,opt,name=type,proto3,enum=invite.Event_Type" json:"type,omitempty"`
 	// Types that are valid to be assigned to Details:
@@ -61,8 +67,9 @@ type Event struct {
 	Details isEvent_Details `protobuf_oneof:"details"`
 }
 
-func (m *Event) Reset()      { *m = Event{} }
-func (*Event) ProtoMessage() {}
+func (m *Event) Reset()                    { *m = Event{} }
+func (*Event) ProtoMessage()               {}
+func (*Event) Descriptor() ([]byte, []int) { return fileDescriptorEvents, []int{0} }
 
 type isEvent_Details interface {
 	isEvent_Details()
@@ -72,10 +79,10 @@ type isEvent_Details interface {
 }
 
 type Event_InvitedColleagues struct {
-	InvitedColleagues *InvitedColleagues `protobuf:"bytes,10,opt,name=invited_colleagues,oneof"`
+	InvitedColleagues *InvitedColleagues `protobuf:"bytes,10,opt,name=invited_colleagues,json=invitedColleagues,oneof"`
 }
 type Event_InvitedPatients struct {
-	InvitedPatients *InvitedPatients `protobuf:"bytes,11,opt,name=invited_patients,oneof"`
+	InvitedPatients *InvitedPatients `protobuf:"bytes,11,opt,name=invited_patients,json=invitedPatients,oneof"`
 }
 
 func (*Event_InvitedColleagues) isEvent_Details() {}
@@ -103,8 +110,8 @@ func (m *Event) GetInvitedPatients() *InvitedPatients {
 }
 
 // XXX_OneofFuncs is for the internal use of the proto package.
-func (*Event) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), []interface{}) {
-	return _Event_OneofMarshaler, _Event_OneofUnmarshaler, []interface{}{
+func (*Event) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _Event_OneofMarshaler, _Event_OneofUnmarshaler, _Event_OneofSizer, []interface{}{
 		(*Event_InvitedColleagues)(nil),
 		(*Event_InvitedPatients)(nil),
 	}
@@ -155,21 +162,44 @@ func _Event_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) 
 	}
 }
 
-type InvitedColleagues struct {
-	OrganizationEntityID string `protobuf:"bytes,1,opt,name=organization_entity_id,proto3" json:"organization_entity_id,omitempty"`
-	InviterEntityID      string `protobuf:"bytes,2,opt,name=inviter_entity_id,proto3" json:"inviter_entity_id,omitempty"`
+func _Event_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*Event)
+	// details
+	switch x := m.Details.(type) {
+	case *Event_InvitedColleagues:
+		s := proto.Size(x.InvitedColleagues)
+		n += proto.SizeVarint(10<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Event_InvitedPatients:
+		s := proto.Size(x.InvitedPatients)
+		n += proto.SizeVarint(11<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
 }
 
-func (m *InvitedColleagues) Reset()      { *m = InvitedColleagues{} }
-func (*InvitedColleagues) ProtoMessage() {}
+type InvitedColleagues struct {
+	OrganizationEntityID string `protobuf:"bytes,1,opt,name=organization_entity_id,json=organizationEntityId,proto3" json:"organization_entity_id,omitempty"`
+	InviterEntityID      string `protobuf:"bytes,2,opt,name=inviter_entity_id,json=inviterEntityId,proto3" json:"inviter_entity_id,omitempty"`
+}
+
+func (m *InvitedColleagues) Reset()                    { *m = InvitedColleagues{} }
+func (*InvitedColleagues) ProtoMessage()               {}
+func (*InvitedColleagues) Descriptor() ([]byte, []int) { return fileDescriptorEvents, []int{1} }
 
 type InvitedPatients struct {
-	OrganizationEntityID string `protobuf:"bytes,1,opt,name=organization_entity_id,proto3" json:"organization_entity_id,omitempty"`
-	InviterEntityID      string `protobuf:"bytes,2,opt,name=inviter_entity_id,proto3" json:"inviter_entity_id,omitempty"`
+	OrganizationEntityID string `protobuf:"bytes,1,opt,name=organization_entity_id,json=organizationEntityId,proto3" json:"organization_entity_id,omitempty"`
+	InviterEntityID      string `protobuf:"bytes,2,opt,name=inviter_entity_id,json=inviterEntityId,proto3" json:"inviter_entity_id,omitempty"`
 }
 
-func (m *InvitedPatients) Reset()      { *m = InvitedPatients{} }
-func (*InvitedPatients) ProtoMessage() {}
+func (m *InvitedPatients) Reset()                    { *m = InvitedPatients{} }
+func (*InvitedPatients) ProtoMessage()               {}
+func (*InvitedPatients) Descriptor() ([]byte, []int) { return fileDescriptorEvents, []int{2} }
 
 func init() {
 	proto.RegisterType((*Event)(nil), "invite.Event")
@@ -194,7 +224,12 @@ func (this *Event) Equal(that interface{}) bool {
 
 	that1, ok := that.(*Event)
 	if !ok {
-		return false
+		that2, ok := that.(Event)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -228,7 +263,12 @@ func (this *Event_InvitedColleagues) Equal(that interface{}) bool {
 
 	that1, ok := that.(*Event_InvitedColleagues)
 	if !ok {
-		return false
+		that2, ok := that.(Event_InvitedColleagues)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -253,7 +293,12 @@ func (this *Event_InvitedPatients) Equal(that interface{}) bool {
 
 	that1, ok := that.(*Event_InvitedPatients)
 	if !ok {
-		return false
+		that2, ok := that.(Event_InvitedPatients)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -278,7 +323,12 @@ func (this *InvitedColleagues) Equal(that interface{}) bool {
 
 	that1, ok := that.(*InvitedColleagues)
 	if !ok {
-		return false
+		that2, ok := that.(InvitedColleagues)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -306,7 +356,12 @@ func (this *InvitedPatients) Equal(that interface{}) bool {
 
 	that1, ok := that.(*InvitedPatients)
 	if !ok {
-		return false
+		that2, ok := that.(InvitedPatients)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1130,3 +1185,32 @@ var (
 	ErrInvalidLengthEvents = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowEvents   = fmt.Errorf("proto: integer overflow")
 )
+
+var fileDescriptorEvents = []byte{
+	// 386 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xe2, 0xe2, 0x49, 0x2d, 0x4b, 0xcd,
+	0x2b, 0x29, 0xd6, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0xcb, 0xcc, 0x2b, 0xcb, 0x2c, 0x49,
+	0x95, 0xd2, 0x4d, 0xcf, 0x2c, 0xc9, 0x28, 0x4d, 0xd2, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0xcf, 0x4f,
+	0xcf, 0xd7, 0x07, 0x4b, 0x27, 0x95, 0xa6, 0x81, 0x79, 0x60, 0x0e, 0x98, 0x05, 0xd1, 0xa6, 0xd4,
+	0xcf, 0xc4, 0xc5, 0xea, 0x0a, 0x32, 0x47, 0x48, 0x8d, 0x8b, 0xa5, 0xa4, 0xb2, 0x20, 0x55, 0x82,
+	0x51, 0x81, 0x51, 0x83, 0xcf, 0x48, 0x48, 0x0f, 0x62, 0x9e, 0x1e, 0x58, 0x52, 0x2f, 0x04, 0x28,
+	0x13, 0x04, 0x96, 0x17, 0xf2, 0xe2, 0x12, 0x82, 0x48, 0xa5, 0xc4, 0x27, 0xe7, 0xe7, 0xe4, 0xa4,
+	0x26, 0xa6, 0x97, 0xa6, 0x16, 0x4b, 0x70, 0x01, 0x75, 0x71, 0x1b, 0x49, 0xc2, 0x74, 0x79, 0x42,
+	0x54, 0x38, 0xc3, 0x15, 0x78, 0x30, 0x04, 0x09, 0x66, 0xa2, 0x0b, 0x0a, 0xb9, 0x70, 0x09, 0xc0,
+	0xcc, 0x2a, 0x48, 0x2c, 0xc9, 0x04, 0x79, 0x47, 0x82, 0x1b, 0x6c, 0x92, 0x38, 0x9a, 0x49, 0x01,
+	0x50, 0x69, 0xa0, 0x39, 0xfc, 0x99, 0xa8, 0x42, 0x4a, 0x8e, 0x5c, 0x2c, 0x20, 0xf7, 0x09, 0x71,
+	0x73, 0xb1, 0x7b, 0xfa, 0x85, 0x39, 0xfa, 0x78, 0xba, 0x08, 0x30, 0x08, 0x89, 0x71, 0x09, 0x01,
+	0x39, 0x9e, 0x21, 0xae, 0x2e, 0xf1, 0xce, 0xfe, 0x3e, 0x3e, 0xae, 0x8e, 0xee, 0xa1, 0xae, 0xc1,
+	0x02, 0x8c, 0x42, 0x22, 0x5c, 0x02, 0x30, 0xf1, 0x00, 0xc7, 0x10, 0x4f, 0x57, 0xbf, 0x90, 0x60,
+	0x01, 0x26, 0x27, 0x4e, 0x2e, 0xf6, 0x94, 0xd4, 0x92, 0xc4, 0xcc, 0x9c, 0x62, 0xa5, 0x25, 0x8c,
+	0x5c, 0x82, 0x18, 0xce, 0x17, 0xf2, 0xe3, 0x12, 0xcb, 0x2f, 0x4a, 0x4f, 0xcc, 0xcb, 0xac, 0x02,
+	0xda, 0x9a, 0x9f, 0x17, 0x0f, 0xb4, 0x38, 0xb3, 0xa4, 0x32, 0x3e, 0x33, 0x05, 0x1c, 0x5e, 0x9c,
+	0x4e, 0x12, 0x8f, 0xee, 0xc9, 0x8b, 0xf8, 0x23, 0xa9, 0x70, 0x05, 0x2b, 0xf0, 0x74, 0x09, 0x12,
+	0xc9, 0xc7, 0x14, 0x4d, 0x11, 0xb2, 0xe7, 0x82, 0x06, 0x47, 0x11, 0x92, 0x51, 0x4c, 0x60, 0xa3,
+	0x84, 0x81, 0x46, 0xf1, 0x43, 0x5c, 0x50, 0x04, 0x37, 0x05, 0xea, 0x69, 0x98, 0x40, 0x8a, 0xd2,
+	0x22, 0x46, 0x2e, 0x7e, 0xb4, 0xb0, 0x19, 0x74, 0x8e, 0x74, 0xd2, 0xb9, 0xf0, 0x50, 0x8e, 0xf1,
+	0xc6, 0x43, 0x39, 0x86, 0x0f, 0x40, 0xba, 0xe1, 0x91, 0x1c, 0xe3, 0x0a, 0x20, 0x3e, 0x01, 0xc4,
+	0x17, 0x80, 0xf8, 0x01, 0x10, 0xbf, 0x78, 0x04, 0x94, 0x03, 0xd2, 0x13, 0x1e, 0xcb, 0x31, 0x24,
+	0xb1, 0x81, 0x93, 0xa4, 0x31, 0x20, 0x00, 0x00, 0xff, 0xff, 0x0a, 0x44, 0x9c, 0x50, 0xd9, 0x02,
+	0x00, 0x00,
+}

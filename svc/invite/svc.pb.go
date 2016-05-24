@@ -53,6 +53,10 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+const _ = proto.GoGoProtoPackageIsVersion1
+
 type LookupInviteResponse_Type int32
 
 const (
@@ -69,22 +73,28 @@ var LookupInviteResponse_Type_value = map[string]int32{
 	"PATIENT":   1,
 }
 
-type Colleague struct {
-	Email       string `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
-	PhoneNumber string `protobuf:"bytes,2,opt,name=phone_number,proto3" json:"phone_number,omitempty"`
+func (LookupInviteResponse_Type) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptorSvc, []int{11, 0}
 }
 
-func (m *Colleague) Reset()      { *m = Colleague{} }
-func (*Colleague) ProtoMessage() {}
+type Colleague struct {
+	Email       string `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	PhoneNumber string `protobuf:"bytes,2,opt,name=phone_number,json=phoneNumber,proto3" json:"phone_number,omitempty"`
+}
+
+func (m *Colleague) Reset()                    { *m = Colleague{} }
+func (*Colleague) ProtoMessage()               {}
+func (*Colleague) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{0} }
 
 type InviteColleaguesRequest struct {
-	OrganizationEntityID string       `protobuf:"bytes,1,opt,name=organization_entity_id,proto3" json:"organization_entity_id,omitempty"`
-	InviterEntityID      string       `protobuf:"bytes,2,opt,name=inviter_entity_id,proto3" json:"inviter_entity_id,omitempty"`
+	OrganizationEntityID string       `protobuf:"bytes,1,opt,name=organization_entity_id,json=organizationEntityId,proto3" json:"organization_entity_id,omitempty"`
+	InviterEntityID      string       `protobuf:"bytes,2,opt,name=inviter_entity_id,json=inviterEntityId,proto3" json:"inviter_entity_id,omitempty"`
 	Colleagues           []*Colleague `protobuf:"bytes,3,rep,name=colleagues" json:"colleagues,omitempty"`
 }
 
-func (m *InviteColleaguesRequest) Reset()      { *m = InviteColleaguesRequest{} }
-func (*InviteColleaguesRequest) ProtoMessage() {}
+func (m *InviteColleaguesRequest) Reset()                    { *m = InviteColleaguesRequest{} }
+func (*InviteColleaguesRequest) ProtoMessage()               {}
+func (*InviteColleaguesRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{1} }
 
 func (m *InviteColleaguesRequest) GetColleagues() []*Colleague {
 	if m != nil {
@@ -96,17 +106,19 @@ func (m *InviteColleaguesRequest) GetColleagues() []*Colleague {
 type InviteColleaguesResponse struct {
 }
 
-func (m *InviteColleaguesResponse) Reset()      { *m = InviteColleaguesResponse{} }
-func (*InviteColleaguesResponse) ProtoMessage() {}
+func (m *InviteColleaguesResponse) Reset()                    { *m = InviteColleaguesResponse{} }
+func (*InviteColleaguesResponse) ProtoMessage()               {}
+func (*InviteColleaguesResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{2} }
 
 type ColleagueInvite struct {
-	OrganizationEntityID string     `protobuf:"bytes,1,opt,name=organization_entity_id,proto3" json:"organization_entity_id,omitempty"`
-	InviterEntityID      string     `protobuf:"bytes,2,opt,name=inviter_entity_id,proto3" json:"inviter_entity_id,omitempty"`
+	OrganizationEntityID string     `protobuf:"bytes,1,opt,name=organization_entity_id,json=organizationEntityId,proto3" json:"organization_entity_id,omitempty"`
+	InviterEntityID      string     `protobuf:"bytes,2,opt,name=inviter_entity_id,json=inviterEntityId,proto3" json:"inviter_entity_id,omitempty"`
 	Colleague            *Colleague `protobuf:"bytes,3,opt,name=colleague" json:"colleague,omitempty"`
 }
 
-func (m *ColleagueInvite) Reset()      { *m = ColleagueInvite{} }
-func (*ColleagueInvite) ProtoMessage() {}
+func (m *ColleagueInvite) Reset()                    { *m = ColleagueInvite{} }
+func (*ColleagueInvite) ProtoMessage()               {}
+func (*ColleagueInvite) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{3} }
 
 func (m *ColleagueInvite) GetColleague() *Colleague {
 	if m != nil {
@@ -117,23 +129,25 @@ func (m *ColleagueInvite) GetColleague() *Colleague {
 
 type Patient struct {
 	// First name is only used when inviting a patient. It is not stored and not returned by LookupInvite
-	FirstName string `protobuf:"bytes,1,opt,name=first_name,proto3" json:"first_name,omitempty"`
+	FirstName string `protobuf:"bytes,1,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
 	// Phone number is only used when inviting a patient. It is not stored and not returned by LookupInvite
-	PhoneNumber    string `protobuf:"bytes,2,opt,name=phone_number,proto3" json:"phone_number,omitempty"`
-	ParkedEntityID string `protobuf:"bytes,3,opt,name=parked_entity_id,proto3" json:"parked_entity_id,omitempty"`
+	PhoneNumber    string `protobuf:"bytes,2,opt,name=phone_number,json=phoneNumber,proto3" json:"phone_number,omitempty"`
+	ParkedEntityID string `protobuf:"bytes,3,opt,name=parked_entity_id,json=parkedEntityId,proto3" json:"parked_entity_id,omitempty"`
 }
 
-func (m *Patient) Reset()      { *m = Patient{} }
-func (*Patient) ProtoMessage() {}
+func (m *Patient) Reset()                    { *m = Patient{} }
+func (*Patient) ProtoMessage()               {}
+func (*Patient) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{4} }
 
 type InvitePatientsRequest struct {
-	OrganizationEntityID string     `protobuf:"bytes,1,opt,name=organization_entity_id,proto3" json:"organization_entity_id,omitempty"`
-	InviterEntityID      string     `protobuf:"bytes,2,opt,name=inviter_entity_id,proto3" json:"inviter_entity_id,omitempty"`
+	OrganizationEntityID string     `protobuf:"bytes,1,opt,name=organization_entity_id,json=organizationEntityId,proto3" json:"organization_entity_id,omitempty"`
+	InviterEntityID      string     `protobuf:"bytes,2,opt,name=inviter_entity_id,json=inviterEntityId,proto3" json:"inviter_entity_id,omitempty"`
 	Patients             []*Patient `protobuf:"bytes,3,rep,name=patients" json:"patients,omitempty"`
 }
 
-func (m *InvitePatientsRequest) Reset()      { *m = InvitePatientsRequest{} }
-func (*InvitePatientsRequest) ProtoMessage() {}
+func (m *InvitePatientsRequest) Reset()                    { *m = InvitePatientsRequest{} }
+func (*InvitePatientsRequest) ProtoMessage()               {}
+func (*InvitePatientsRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{5} }
 
 func (m *InvitePatientsRequest) GetPatients() []*Patient {
 	if m != nil {
@@ -145,17 +159,19 @@ func (m *InvitePatientsRequest) GetPatients() []*Patient {
 type InvitePatientsResponse struct {
 }
 
-func (m *InvitePatientsResponse) Reset()      { *m = InvitePatientsResponse{} }
-func (*InvitePatientsResponse) ProtoMessage() {}
+func (m *InvitePatientsResponse) Reset()                    { *m = InvitePatientsResponse{} }
+func (*InvitePatientsResponse) ProtoMessage()               {}
+func (*InvitePatientsResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{6} }
 
 type PatientInvite struct {
-	OrganizationEntityID string   `protobuf:"bytes,1,opt,name=organization_entity_id,proto3" json:"organization_entity_id,omitempty"`
-	InviterEntityID      string   `protobuf:"bytes,2,opt,name=inviter_entity_id,proto3" json:"inviter_entity_id,omitempty"`
+	OrganizationEntityID string   `protobuf:"bytes,1,opt,name=organization_entity_id,json=organizationEntityId,proto3" json:"organization_entity_id,omitempty"`
+	InviterEntityID      string   `protobuf:"bytes,2,opt,name=inviter_entity_id,json=inviterEntityId,proto3" json:"inviter_entity_id,omitempty"`
 	Patient              *Patient `protobuf:"bytes,3,opt,name=patient" json:"patient,omitempty"`
 }
 
-func (m *PatientInvite) Reset()      { *m = PatientInvite{} }
-func (*PatientInvite) ProtoMessage() {}
+func (m *PatientInvite) Reset()                    { *m = PatientInvite{} }
+func (*PatientInvite) ProtoMessage()               {}
+func (*PatientInvite) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{7} }
 
 func (m *PatientInvite) GetPatient() *Patient {
 	if m != nil {
@@ -168,21 +184,24 @@ type MarkInviteConsumedRequest struct {
 	Token string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
 }
 
-func (m *MarkInviteConsumedRequest) Reset()      { *m = MarkInviteConsumedRequest{} }
-func (*MarkInviteConsumedRequest) ProtoMessage() {}
+func (m *MarkInviteConsumedRequest) Reset()                    { *m = MarkInviteConsumedRequest{} }
+func (*MarkInviteConsumedRequest) ProtoMessage()               {}
+func (*MarkInviteConsumedRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{8} }
 
 type MarkInviteConsumedResponse struct {
 }
 
-func (m *MarkInviteConsumedResponse) Reset()      { *m = MarkInviteConsumedResponse{} }
-func (*MarkInviteConsumedResponse) ProtoMessage() {}
+func (m *MarkInviteConsumedResponse) Reset()                    { *m = MarkInviteConsumedResponse{} }
+func (*MarkInviteConsumedResponse) ProtoMessage()               {}
+func (*MarkInviteConsumedResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{9} }
 
 type LookupInviteRequest struct {
 	Token string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
 }
 
-func (m *LookupInviteRequest) Reset()      { *m = LookupInviteRequest{} }
-func (*LookupInviteRequest) ProtoMessage() {}
+func (m *LookupInviteRequest) Reset()                    { *m = LookupInviteRequest{} }
+func (*LookupInviteRequest) ProtoMessage()               {}
+func (*LookupInviteRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{10} }
 
 type LookupInviteResponse struct {
 	Type LookupInviteResponse_Type `protobuf:"varint,1,opt,name=type,proto3,enum=invite.LookupInviteResponse_Type" json:"type,omitempty"`
@@ -193,8 +212,9 @@ type LookupInviteResponse struct {
 	Values []*AttributionValue           `protobuf:"bytes,2,rep,name=values" json:"values,omitempty"`
 }
 
-func (m *LookupInviteResponse) Reset()      { *m = LookupInviteResponse{} }
-func (*LookupInviteResponse) ProtoMessage() {}
+func (m *LookupInviteResponse) Reset()                    { *m = LookupInviteResponse{} }
+func (*LookupInviteResponse) ProtoMessage()               {}
+func (*LookupInviteResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{11} }
 
 type isLookupInviteResponse_Invite interface {
 	isLookupInviteResponse_Invite()
@@ -242,8 +262,8 @@ func (m *LookupInviteResponse) GetValues() []*AttributionValue {
 }
 
 // XXX_OneofFuncs is for the internal use of the proto package.
-func (*LookupInviteResponse) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), []interface{}) {
-	return _LookupInviteResponse_OneofMarshaler, _LookupInviteResponse_OneofUnmarshaler, []interface{}{
+func (*LookupInviteResponse) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _LookupInviteResponse_OneofMarshaler, _LookupInviteResponse_OneofUnmarshaler, _LookupInviteResponse_OneofSizer, []interface{}{
 		(*LookupInviteResponse_Colleague)(nil),
 		(*LookupInviteResponse_Patient)(nil),
 	}
@@ -294,21 +314,44 @@ func _LookupInviteResponse_OneofUnmarshaler(msg proto.Message, tag, wire int, b 
 	}
 }
 
+func _LookupInviteResponse_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*LookupInviteResponse)
+	// invite
+	switch x := m.Invite.(type) {
+	case *LookupInviteResponse_Colleague:
+		s := proto.Size(x.Colleague)
+		n += proto.SizeVarint(10<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *LookupInviteResponse_Patient:
+		s := proto.Size(x.Patient)
+		n += proto.SizeVarint(11<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
+}
+
 type AttributionValue struct {
 	Key   string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
 	Value string `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 }
 
-func (m *AttributionValue) Reset()      { *m = AttributionValue{} }
-func (*AttributionValue) ProtoMessage() {}
+func (m *AttributionValue) Reset()                    { *m = AttributionValue{} }
+func (*AttributionValue) ProtoMessage()               {}
+func (*AttributionValue) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{12} }
 
 type SetAttributionDataRequest struct {
-	DeviceID string              `protobuf:"bytes,1,opt,name=device_id,proto3" json:"device_id,omitempty"`
+	DeviceID string              `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
 	Values   []*AttributionValue `protobuf:"bytes,2,rep,name=values" json:"values,omitempty"`
 }
 
-func (m *SetAttributionDataRequest) Reset()      { *m = SetAttributionDataRequest{} }
-func (*SetAttributionDataRequest) ProtoMessage() {}
+func (m *SetAttributionDataRequest) Reset()                    { *m = SetAttributionDataRequest{} }
+func (*SetAttributionDataRequest) ProtoMessage()               {}
+func (*SetAttributionDataRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{13} }
 
 func (m *SetAttributionDataRequest) GetValues() []*AttributionValue {
 	if m != nil {
@@ -320,22 +363,25 @@ func (m *SetAttributionDataRequest) GetValues() []*AttributionValue {
 type SetAttributionDataResponse struct {
 }
 
-func (m *SetAttributionDataResponse) Reset()      { *m = SetAttributionDataResponse{} }
-func (*SetAttributionDataResponse) ProtoMessage() {}
+func (m *SetAttributionDataResponse) Reset()                    { *m = SetAttributionDataResponse{} }
+func (*SetAttributionDataResponse) ProtoMessage()               {}
+func (*SetAttributionDataResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{14} }
 
 type AttributionDataRequest struct {
-	DeviceID string `protobuf:"bytes,1,opt,name=device_id,proto3" json:"device_id,omitempty"`
+	DeviceID string `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
 }
 
-func (m *AttributionDataRequest) Reset()      { *m = AttributionDataRequest{} }
-func (*AttributionDataRequest) ProtoMessage() {}
+func (m *AttributionDataRequest) Reset()                    { *m = AttributionDataRequest{} }
+func (*AttributionDataRequest) ProtoMessage()               {}
+func (*AttributionDataRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{15} }
 
 type AttributionDataResponse struct {
 	Values []*AttributionValue `protobuf:"bytes,1,rep,name=values" json:"values,omitempty"`
 }
 
-func (m *AttributionDataResponse) Reset()      { *m = AttributionDataResponse{} }
-func (*AttributionDataResponse) ProtoMessage() {}
+func (m *AttributionDataResponse) Reset()                    { *m = AttributionDataResponse{} }
+func (*AttributionDataResponse) ProtoMessage()               {}
+func (*AttributionDataResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{16} }
 
 func (m *AttributionDataResponse) GetValues() []*AttributionValue {
 	if m != nil {
@@ -381,7 +427,12 @@ func (this *Colleague) Equal(that interface{}) bool {
 
 	that1, ok := that.(*Colleague)
 	if !ok {
-		return false
+		that2, ok := that.(Colleague)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -409,7 +460,12 @@ func (this *InviteColleaguesRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*InviteColleaguesRequest)
 	if !ok {
-		return false
+		that2, ok := that.(InviteColleaguesRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -445,7 +501,12 @@ func (this *InviteColleaguesResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*InviteColleaguesResponse)
 	if !ok {
-		return false
+		that2, ok := that.(InviteColleaguesResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -467,7 +528,12 @@ func (this *ColleagueInvite) Equal(that interface{}) bool {
 
 	that1, ok := that.(*ColleagueInvite)
 	if !ok {
-		return false
+		that2, ok := that.(ColleagueInvite)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -498,7 +564,12 @@ func (this *Patient) Equal(that interface{}) bool {
 
 	that1, ok := that.(*Patient)
 	if !ok {
-		return false
+		that2, ok := that.(Patient)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -529,7 +600,12 @@ func (this *InvitePatientsRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*InvitePatientsRequest)
 	if !ok {
-		return false
+		that2, ok := that.(InvitePatientsRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -565,7 +641,12 @@ func (this *InvitePatientsResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*InvitePatientsResponse)
 	if !ok {
-		return false
+		that2, ok := that.(InvitePatientsResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -587,7 +668,12 @@ func (this *PatientInvite) Equal(that interface{}) bool {
 
 	that1, ok := that.(*PatientInvite)
 	if !ok {
-		return false
+		that2, ok := that.(PatientInvite)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -618,7 +704,12 @@ func (this *MarkInviteConsumedRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*MarkInviteConsumedRequest)
 	if !ok {
-		return false
+		that2, ok := that.(MarkInviteConsumedRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -643,7 +734,12 @@ func (this *MarkInviteConsumedResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*MarkInviteConsumedResponse)
 	if !ok {
-		return false
+		that2, ok := that.(MarkInviteConsumedResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -665,7 +761,12 @@ func (this *LookupInviteRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*LookupInviteRequest)
 	if !ok {
-		return false
+		that2, ok := that.(LookupInviteRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -690,7 +791,12 @@ func (this *LookupInviteResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*LookupInviteResponse)
 	if !ok {
-		return false
+		that2, ok := that.(LookupInviteResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -732,7 +838,12 @@ func (this *LookupInviteResponse_Colleague) Equal(that interface{}) bool {
 
 	that1, ok := that.(*LookupInviteResponse_Colleague)
 	if !ok {
-		return false
+		that2, ok := that.(LookupInviteResponse_Colleague)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -757,7 +868,12 @@ func (this *LookupInviteResponse_Patient) Equal(that interface{}) bool {
 
 	that1, ok := that.(*LookupInviteResponse_Patient)
 	if !ok {
-		return false
+		that2, ok := that.(LookupInviteResponse_Patient)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -782,7 +898,12 @@ func (this *AttributionValue) Equal(that interface{}) bool {
 
 	that1, ok := that.(*AttributionValue)
 	if !ok {
-		return false
+		that2, ok := that.(AttributionValue)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -810,7 +931,12 @@ func (this *SetAttributionDataRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*SetAttributionDataRequest)
 	if !ok {
-		return false
+		that2, ok := that.(SetAttributionDataRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -843,7 +969,12 @@ func (this *SetAttributionDataResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*SetAttributionDataResponse)
 	if !ok {
-		return false
+		that2, ok := that.(SetAttributionDataResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -865,7 +996,12 @@ func (this *AttributionDataRequest) Equal(that interface{}) bool {
 
 	that1, ok := that.(*AttributionDataRequest)
 	if !ok {
-		return false
+		that2, ok := that.(AttributionDataRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -890,7 +1026,12 @@ func (this *AttributionDataResponse) Equal(that interface{}) bool {
 
 	that1, ok := that.(*AttributionDataResponse)
 	if !ok {
-		return false
+		that2, ok := that.(AttributionDataResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
 	}
 	if that1 == nil {
 		if this == nil {
@@ -1153,6 +1294,10 @@ func extensionToGoStringSvc(e map[int32]github_com_gogo_protobuf_proto.Extension
 var _ context.Context
 var _ grpc.ClientConn
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the grpc package it is being compiled against.
+const _ = grpc.SupportPackageIsVersion2
+
 // Client API for Invite service
 
 type InviteClient interface {
@@ -1253,76 +1398,112 @@ func RegisterInviteServer(s *grpc.Server, srv InviteServer) {
 	s.RegisterService(&_Invite_serviceDesc, srv)
 }
 
-func _Invite_AttributionData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Invite_AttributionData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AttributionDataRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(InviteServer).AttributionData(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(InviteServer).AttributionData(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/invite.Invite/AttributionData",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InviteServer).AttributionData(ctx, req.(*AttributionDataRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Invite_InviteColleagues_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Invite_InviteColleagues_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(InviteColleaguesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(InviteServer).InviteColleagues(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(InviteServer).InviteColleagues(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/invite.Invite/InviteColleagues",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InviteServer).InviteColleagues(ctx, req.(*InviteColleaguesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Invite_InvitePatients_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Invite_InvitePatients_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(InvitePatientsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(InviteServer).InvitePatients(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(InviteServer).InvitePatients(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/invite.Invite/InvitePatients",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InviteServer).InvitePatients(ctx, req.(*InvitePatientsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Invite_LookupInvite_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Invite_LookupInvite_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(LookupInviteRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(InviteServer).LookupInvite(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(InviteServer).LookupInvite(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/invite.Invite/LookupInvite",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InviteServer).LookupInvite(ctx, req.(*LookupInviteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Invite_MarkInviteConsumed_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Invite_MarkInviteConsumed_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(MarkInviteConsumedRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(InviteServer).MarkInviteConsumed(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(InviteServer).MarkInviteConsumed(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/invite.Invite/MarkInviteConsumed",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InviteServer).MarkInviteConsumed(ctx, req.(*MarkInviteConsumedRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Invite_SetAttributionData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Invite_SetAttributionData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SetAttributionDataRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(InviteServer).SetAttributionData(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(InviteServer).SetAttributionData(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/invite.Invite/SetAttributionData",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InviteServer).SetAttributionData(ctx, req.(*SetAttributionDataRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 var _Invite_serviceDesc = grpc.ServiceDesc{
@@ -4195,3 +4376,58 @@ var (
 	ErrInvalidLengthSvc = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowSvc   = fmt.Errorf("proto: integer overflow")
 )
+
+var fileDescriptorSvc = []byte{
+	// 813 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xcc, 0x56, 0xcf, 0x4f, 0x13, 0x4f,
+	0x14, 0xef, 0x52, 0xbe, 0xa5, 0x7d, 0x85, 0xb6, 0x0c, 0x05, 0x4a, 0xbf, 0x50, 0x60, 0x4f, 0x10,
+	0xb4, 0x08, 0xc6, 0x98, 0x18, 0x13, 0x43, 0x69, 0xa3, 0x8d, 0x58, 0xc8, 0x0a, 0x5e, 0x3c, 0x34,
+	0xdb, 0x76, 0x28, 0x9b, 0xb6, 0xbb, 0xeb, 0x76, 0xda, 0x88, 0x27, 0xaf, 0xdc, 0xbc, 0xfa, 0x1f,
+	0xf8, 0xa7, 0x98, 0x78, 0x21, 0x31, 0x26, 0x5e, 0x34, 0x82, 0x17, 0x8f, 0xfe, 0x09, 0xce, 0xce,
+	0xcc, 0x6e, 0xb7, 0x3f, 0x96, 0x60, 0xbc, 0x70, 0x98, 0xee, 0xce, 0xfb, 0x35, 0x9f, 0xf7, 0xe6,
+	0xf3, 0xde, 0x16, 0x22, 0xed, 0x6e, 0x35, 0x6b, 0x5a, 0x06, 0x31, 0x50, 0x48, 0xd3, 0xbb, 0x1a,
+	0xc1, 0xe9, 0xdb, 0x75, 0x8d, 0x9c, 0x74, 0x2a, 0xd9, 0xaa, 0xd1, 0xda, 0xac, 0x1b, 0x75, 0x63,
+	0x93, 0xa9, 0x2b, 0x9d, 0x63, 0xb6, 0x63, 0x1b, 0xf6, 0xc6, 0xdd, 0xe4, 0x3c, 0x44, 0x76, 0x8d,
+	0x66, 0x13, 0xab, 0xf5, 0x0e, 0x46, 0x49, 0xf8, 0x0f, 0xb7, 0x54, 0xad, 0x99, 0x92, 0x56, 0xa4,
+	0xb5, 0x88, 0xc2, 0x37, 0x68, 0x15, 0x26, 0xcd, 0x13, 0x43, 0xc7, 0x65, 0xbd, 0xd3, 0xaa, 0x60,
+	0x2b, 0x35, 0xc6, 0x94, 0x51, 0x26, 0x2b, 0x31, 0x91, 0xfc, 0x4d, 0x82, 0xf9, 0x22, 0x3b, 0xdf,
+	0x0d, 0xd6, 0x56, 0xf0, 0x2b, 0xfa, 0x4b, 0x50, 0x09, 0xe6, 0x0c, 0xab, 0xae, 0xea, 0xda, 0x1b,
+	0x95, 0x68, 0x86, 0x5e, 0xc6, 0x3a, 0xd1, 0xc8, 0x69, 0x59, 0xab, 0xf1, 0x53, 0x72, 0xa9, 0xcb,
+	0xef, 0xcb, 0xc9, 0x7d, 0x8f, 0x45, 0x81, 0x19, 0x14, 0xf3, 0x4a, 0xd2, 0x18, 0x96, 0xd6, 0xd0,
+	0x23, 0x98, 0xe6, 0xa9, 0x5a, 0x9e, 0x50, 0x0c, 0x53, 0x6e, 0x86, 0x86, 0x8a, 0x73, 0x1c, 0x96,
+	0x1b, 0x25, 0xae, 0xf5, 0x09, 0x6a, 0x68, 0x0b, 0xa0, 0xea, 0xa2, 0x4c, 0x05, 0x57, 0x82, 0x6b,
+	0xd1, 0xed, 0xe9, 0x2c, 0xb7, 0xca, 0xba, 0xf8, 0x15, 0x8f, 0x91, 0x9c, 0x86, 0xd4, 0x70, 0x7a,
+	0x6d, 0xd3, 0xd0, 0xdb, 0x58, 0xfe, 0x2c, 0x41, 0xdc, 0x15, 0x73, 0xab, 0x9b, 0x97, 0xf3, 0x26,
+	0x44, 0xdc, 0x74, 0x68, 0xca, 0xd2, 0xe8, 0x94, 0x7b, 0x36, 0xf2, 0x99, 0x04, 0x13, 0x07, 0x14,
+	0x04, 0x3d, 0x0e, 0x2d, 0x01, 0x1c, 0x6b, 0x56, 0x9b, 0x94, 0x75, 0xb5, 0x85, 0x05, 0x37, 0x22,
+	0x4c, 0x52, 0xa2, 0x82, 0x6b, 0xf0, 0x03, 0x3d, 0x84, 0x84, 0xa9, 0x5a, 0x0d, 0x5c, 0xf3, 0xc0,
+	0x0f, 0x32, 0xf8, 0x88, 0xc2, 0x8f, 0x1d, 0x30, 0x9d, 0x8b, 0x3e, 0x66, 0x7a, 0xf7, 0x35, 0xf9,
+	0x8b, 0x04, 0xb3, 0x3c, 0x43, 0x81, 0xe8, 0xe6, 0x72, 0x6b, 0x03, 0xc2, 0xa6, 0xc0, 0x28, 0x98,
+	0x15, 0x77, 0xca, 0x2c, 0xb0, 0x2b, 0xae, 0x81, 0x9c, 0x82, 0xb9, 0xc1, 0xb4, 0x04, 0xa7, 0x3e,
+	0x49, 0x30, 0x25, 0x84, 0x37, 0x95, 0x51, 0xeb, 0x30, 0x21, 0x12, 0x11, 0x7c, 0x1a, 0x4a, 0xd4,
+	0xd1, 0xcb, 0x5b, 0xb0, 0xf0, 0x8c, 0xde, 0xa8, 0xd3, 0x41, 0x7a, 0xbb, 0xd3, 0xc2, 0x35, 0xe7,
+	0x0a, 0xe9, 0xcc, 0x21, 0x46, 0x03, 0xeb, 0xce, 0xcc, 0x61, 0x1b, 0x79, 0x11, 0xd2, 0xa3, 0x5c,
+	0x44, 0x79, 0x36, 0x60, 0x66, 0xcf, 0x30, 0x1a, 0x1d, 0x93, 0xeb, 0xaf, 0x0e, 0xf5, 0x7e, 0x0c,
+	0x92, 0xfd, 0xd6, 0x3c, 0x0a, 0xba, 0x07, 0xe3, 0xe4, 0xd4, 0xe4, 0x84, 0x8e, 0x6d, 0xaf, 0x3a,
+	0xf0, 0x47, 0xd9, 0x66, 0x0f, 0xa9, 0xa1, 0xc2, 0xcc, 0xd1, 0x1d, 0x08, 0x75, 0xd5, 0xa6, 0x3d,
+	0x3a, 0xc6, 0xd8, 0x05, 0xa7, 0x1c, 0xc7, 0x1d, 0x42, 0x2c, 0xad, 0xd2, 0xb1, 0xcb, 0xfc, 0xc2,
+	0x36, 0x50, 0x84, 0x1d, 0xba, 0xef, 0x6d, 0x3e, 0x60, 0xc5, 0x9a, 0x1f, 0x6a, 0x3e, 0x7e, 0xe0,
+	0x93, 0x80, 0xa7, 0x09, 0xe9, 0xa4, 0x72, 0x6b, 0x1c, 0x65, 0x6e, 0xb3, 0x03, 0x35, 0x76, 0x9d,
+	0xdc, 0x5a, 0xcb, 0x30, 0x6e, 0x63, 0x45, 0x53, 0x74, 0xae, 0xef, 0xef, 0xed, 0x15, 0x76, 0x1e,
+	0x1f, 0x15, 0x12, 0x01, 0x14, 0xa5, 0xdd, 0xbc, 0x73, 0x58, 0x2c, 0x94, 0x0e, 0x13, 0x52, 0x2e,
+	0x0c, 0xe2, 0x63, 0x21, 0x3f, 0x80, 0xc4, 0x20, 0x6a, 0x94, 0x80, 0x60, 0x03, 0x9f, 0x8a, 0x1a,
+	0xda, 0xaf, 0x76, 0x5d, 0x59, 0x26, 0xa2, 0xb3, 0xf9, 0x46, 0x7e, 0x0d, 0x0b, 0xcf, 0x31, 0xf1,
+	0xb8, 0xe7, 0x55, 0xa2, 0x3a, 0x57, 0xb1, 0x0e, 0x91, 0x1a, 0xee, 0x6a, 0x55, 0xdc, 0x63, 0xe8,
+	0x24, 0xa5, 0x55, 0x38, 0xcf, 0x84, 0x94, 0x4f, 0x61, 0xae, 0xa6, 0x44, 0xfa, 0xeb, 0x7a, 0xda,
+	0xe4, 0x18, 0x75, 0xb2, 0x20, 0xc7, 0x2e, 0xcc, 0xfd, 0x33, 0x28, 0xf9, 0x29, 0xcc, 0xfb, 0xc4,
+	0xf7, 0xe0, 0x95, 0xae, 0x87, 0x77, 0xfb, 0x6c, 0x1c, 0x42, 0xa2, 0x8d, 0x15, 0x88, 0x0f, 0xc4,
+	0x45, 0x99, 0x11, 0xfe, 0x1e, 0xd4, 0xe9, 0x65, 0x5f, 0xbd, 0x00, 0x74, 0x04, 0x89, 0xc1, 0x8f,
+	0x13, 0x72, 0x9d, 0x7c, 0xbe, 0xca, 0xe9, 0x15, 0x7f, 0x03, 0x11, 0x76, 0x1f, 0x62, 0xfd, 0xd3,
+	0x09, 0x2d, 0xf5, 0xfb, 0x0c, 0x0c, 0xe3, 0x74, 0xc6, 0x4f, 0x2d, 0x02, 0x16, 0x61, 0xd2, 0xdb,
+	0x5b, 0xe8, 0xff, 0xd1, 0x1d, 0xc7, 0x83, 0x2d, 0x5e, 0xd5, 0x8e, 0xe8, 0x25, 0xa0, 0xe1, 0xf1,
+	0x80, 0xdc, 0x16, 0xf6, 0x9d, 0x36, 0x69, 0xf9, 0x2a, 0x93, 0x5e, 0xf0, 0x61, 0x7a, 0xf5, 0x82,
+	0xfb, 0x92, 0xbe, 0x17, 0xdc, 0x9f, 0x9d, 0xb9, 0x5b, 0xe7, 0x17, 0x19, 0xe9, 0xeb, 0x45, 0x26,
+	0xf0, 0x9b, 0x3e, 0xdf, 0x5e, 0x66, 0xa4, 0x0f, 0x74, 0x7d, 0xa4, 0xeb, 0x9c, 0xae, 0x1f, 0x74,
+	0xfd, 0xba, 0xa4, 0x3a, 0xfa, 0x7c, 0xf7, 0x33, 0x13, 0xa8, 0x84, 0xd8, 0x9f, 0xb4, 0xbb, 0x7f,
+	0x02, 0x00, 0x00, 0xff, 0xff, 0xc2, 0xa9, 0x88, 0x34, 0xe8, 0x09, 0x00, 0x00,
+}
