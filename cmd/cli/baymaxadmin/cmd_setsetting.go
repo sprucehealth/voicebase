@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/settings"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -16,8 +17,9 @@ import (
 )
 
 type setSettingCmd struct {
-	cnf         *config
-	settingsCli settings.SettingsClient
+	cnf          *config
+	directoryCli directory.DirectoryClient
+	settingsCli  settings.SettingsClient
 }
 
 func newSetSettingCmd(cnf *config) (command, error) {
@@ -25,9 +27,14 @@ func newSetSettingCmd(cnf *config) (command, error) {
 	if err != nil {
 		return nil, err
 	}
+	directoryCli, err := cnf.directoryClient()
+	if err != nil {
+		return nil, err
+	}
 	return &setSettingCmd{
-		cnf:         cnf,
-		settingsCli: settingsCli,
+		cnf:          cnf,
+		directoryCli: directoryCli,
+		settingsCli:  settingsCli,
 	}, nil
 }
 
@@ -51,6 +58,17 @@ func (c *setSettingCmd) run(args []string) error {
 	}
 	if *nodeID == "" {
 		return errors.New("Node ID required")
+	}
+
+	// Sanity check
+	ent, err := lookupAndDisplayEntity(ctx, c.directoryCli, *nodeID, nil)
+	if err != nil {
+		return fmt.Errorf("Failed to lookup entity: %s", err)
+	}
+	switch ent.Type {
+	case directory.EntityType_ORGANIZATION, directory.EntityType_INTERNAL:
+	default:
+		return errors.New("Entity must be of type ORGANIZATION or INTERNAL")
 	}
 
 	if *key == "" {

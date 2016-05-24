@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"github.com/tcolgate/mp3"
 	"os"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	excommsSettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
@@ -13,13 +15,15 @@ import (
 	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/settings"
 	"golang.org/x/net/context"
 )
 
 type setGreetingCmd struct {
-	cnf         *config
-	settingsCli settings.SettingsClient
+	cnf          *config
+	directoryCli directory.DirectoryClient
+	settingsCli  settings.SettingsClient
 }
 
 func newSetGreetingCmd(cnf *config) (command, error) {
@@ -27,10 +31,14 @@ func newSetGreetingCmd(cnf *config) (command, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	directoryCli, err := cnf.directoryClient()
+	if err != nil {
+		return nil, err
+	}
 	return &setGreetingCmd{
-		cnf:         cnf,
-		settingsCli: settingsCli,
+		cnf:          cnf,
+		directoryCli: directoryCli,
+		settingsCli:  settingsCli,
 	}, nil
 }
 
@@ -49,11 +57,21 @@ func (c *setGreetingCmd) run(args []string) error {
 
 	scn := bufio.NewScanner(os.Stdin)
 
+	ctx := context.Background()
+
 	if *orgEntityID == "" {
 		*orgEntityID = prompt(scn, "OrgEntityID: ")
 	}
 	if *orgEntityID == "" {
 		return errors.New("EntityID for org required")
+	}
+
+	ent, err := lookupAndDisplayEntity(ctx, c.directoryCli, *orgEntityID, nil)
+	if err != nil {
+		return fmt.Errorf("Failed to lookup entity: %s", err)
+	}
+	if ent.Type != directory.EntityType_ORGANIZATION {
+		return errors.New("Entity is not an organization")
 	}
 
 	if *key == "" {
@@ -90,6 +108,9 @@ func (c *setGreetingCmd) run(args []string) error {
 	if *fileName == "" {
 		return errors.New("Filename of file containing mp3 required")
 	}
+	if !strings.HasSuffix(*fileName, ".mp3") {
+		return errors.New("File must be an mp3 and end with the extension .mp3")
+	}
 
 	awsConfig, err := awsutil.Config("us-east-1", "", "", "")
 	if err != nil {
@@ -108,6 +129,13 @@ func (c *setGreetingCmd) run(args []string) error {
 	mp3File, err := os.Open(*fileName)
 	if err != nil {
 		return errors.Trace(err)
+	}
+
+	// Make sure we can decode at least one frame
+	dec := mp3.NewDecoder(mp3File)
+	var frame mp3.Frame
+	if err := dec.Decode(&frame); err != nil {
+		return fmt.Errorf("Failed to decode MP3 frame: %s", err)
 	}
 
 	size, err := media.SeekerSize(mp3File)
