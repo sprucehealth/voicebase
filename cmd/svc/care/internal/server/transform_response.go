@@ -15,7 +15,7 @@ var answerModelToResponseTransformers map[string]answerModelToResponseTransforme
 
 func init() {
 	answerModelToResponseTransformers = map[string]answerModelToResponseTransformerFunc{
-		"q_type_photo_section":     transformPhotoSectionToResponse,
+		"q_type_media_section":     transformMediaSectionToResponse,
 		"q_type_free_text":         transformFreeTextAnswerToResponse,
 		"q_type_single_entry":      transformSingleEntryAnswerToResponse,
 		"q_type_single_select":     transformSingleSelectAnswerToResponse,
@@ -34,31 +34,32 @@ func transformAnswerModelToResponse(answer *models.Answer) (client.Answer, error
 	return transformFunc(answer)
 }
 
-func transformPhotoSectionToResponse(answer *models.Answer) (client.Answer, error) {
-	if answer.GetPhotoSection() == nil {
-		return nil, errors.Trace(fmt.Errorf("expected photo section to be populated for answer but it wasnt"))
+func transformMediaSectionToResponse(answer *models.Answer) (client.Answer, error) {
+	if answer.GetMediaSection() == nil {
+		return nil, errors.Trace(fmt.Errorf("expected media section to be populated for answer but it wasnt"))
 	}
-	photoSectionAnswer := &client.PhotoQuestionAnswer{
-		Type:          answer.Type,
-		PhotoSections: make([]*client.PhotoSectionItem, len(answer.GetPhotoSection().Sections)),
+	mediaSectionAnswer := &client.MediaQuestionAnswer{
+		Type:     answer.Type,
+		Sections: make([]*client.MediaSectionItem, len(answer.GetMediaSection().Sections)),
 	}
 
-	for i, photoSection := range answer.GetPhotoSection().Sections {
-		photoSectionAnswer.PhotoSections[i] = &client.PhotoSectionItem{
-			Name:  photoSection.Name,
-			Slots: make([]*client.PhotoSlotItem, len(photoSection.Slots)),
+	for i, mediaSection := range answer.GetMediaSection().Sections {
+		mediaSectionAnswer.Sections[i] = &client.MediaSectionItem{
+			Name:  mediaSection.Name,
+			Slots: make([]*client.MediaSlotItem, len(mediaSection.Slots)),
 		}
 
-		for j, photoSlot := range photoSection.Slots {
-			photoSectionAnswer.PhotoSections[i].Slots[j] = &client.PhotoSlotItem{
-				Name:     photoSlot.Name,
-				SlotID:   photoSlot.SlotID,
-				PhotoID:  photoSlot.MediaID,
-				PhotoURL: "https://placekitten.com/600/800", //TODO
+		for j, mediaSlot := range mediaSection.Slots {
+			mediaSectionAnswer.Sections[i].Slots[j] = &client.MediaSlotItem{
+				Name:    mediaSlot.Name,
+				SlotID:  mediaSlot.SlotID,
+				MediaID: mediaSlot.MediaID,
+				URL:     "https://placekitten.com/600/800", //TODO
+				Type:    "photo",                           //TODO : get from media service
 			}
 		}
 	}
-	return photoSectionAnswer, nil
+	return mediaSectionAnswer, nil
 }
 
 func transformFreeTextAnswerToResponse(answer *models.Answer) (client.Answer, error) {

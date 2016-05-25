@@ -16,6 +16,9 @@ func init() {
 	TypeRegistry.MustRegisterType(&StandardPhotosSectionView{})
 	TypeRegistry.MustRegisterType(&StandardPhotosSubsectionView{})
 	TypeRegistry.MustRegisterType(&StandardPhotosListView{})
+	TypeRegistry.MustRegisterType(&StandardMediaSectionView{})
+	TypeRegistry.MustRegisterType(&StandardMediaSubsectionView{})
+	TypeRegistry.MustRegisterType(&StandardMediaListView{})
 	TypeRegistry.MustRegisterType(&StandardSectionView{})
 	TypeRegistry.MustRegisterType(&StandardSubsectionView{})
 	TypeRegistry.MustRegisterType(&StandardOneColumnRowView{})
@@ -29,6 +32,7 @@ func init() {
 	TypeRegistry.MustRegisterType(&EmptyLabelView{})
 	TypeRegistry.MustRegisterType(&EmptyTitleSubtitleLabelView{})
 	TypeRegistry.MustRegisterType(&TitlePhotosItemsListView{})
+	TypeRegistry.MustRegisterType(&TitleMediaItemsListView{})
 	TypeRegistry.MustRegisterType(&TitleSubItemsLabelContentItemsList{})
 }
 
@@ -237,6 +241,177 @@ func (d *TitlePhotosItemsListView) Render(context *ViewContext) (map[string]inte
 	d.Items, ok = content.([]TitlePhotoListData)
 	if !ok {
 		return nil, NewViewRenderingError(fmt.Sprintf("Expected content in view context to be of type []TitlePhotoListData instead it was type %T", content))
+	}
+
+	renderedView["items"] = d.Items
+	renderedView["type"] = d.TypeName()
+
+	return renderedView, nil
+}
+
+type StandardMediaSectionView struct {
+	Title         string         `json:"title"`
+	Subsections   []View         `json:"subsections"`
+	ContentConfig *ContentConfig `json:"content_config,omitempty"`
+	Type          string         `json:"type"`
+}
+
+func (d *StandardMediaSectionView) TypeName() string {
+	return wrapNamespace("standard_media_section")
+}
+
+func (d *StandardMediaSectionView) Validate() error {
+	d.Type = d.TypeName()
+	for _, subsection := range d.Subsections {
+		if err := subsection.Validate(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (d *StandardMediaSectionView) Render(context *ViewContext) (map[string]interface{}, error) {
+	if d.ContentConfig != nil && d.ContentConfig.ViewCondition.Op != "" {
+		if result, err := EvaluateConditionForView(d, d.ContentConfig.ViewCondition, context); err != nil || !result {
+			return nil, err
+		}
+	}
+
+	renderedView := make(map[string]interface{})
+	var renderedSubSections []interface{}
+	for _, subSection := range d.Subsections {
+		var err error
+		renderedSubSection, err := subSection.Render(context)
+		if err != nil {
+			return nil, err
+		}
+
+		if renderedSubSection != nil {
+			renderedSubSections = append(renderedSubSections, renderedSubSection)
+		}
+	}
+
+	renderedView["title"] = d.Title
+	renderedView["type"] = d.TypeName()
+	renderedView["subsections"] = renderedSubSections
+
+	return renderedView, nil
+}
+
+type StandardMediaSubsectionView struct {
+	SubsectionView View           `json:"view"`
+	ContentConfig  *ContentConfig `json:"content_config"`
+	Type           string         `json:"type"`
+}
+
+func (d *StandardMediaSubsectionView) TypeName() string {
+	return wrapNamespace("standard_media_subsection")
+}
+
+func (d *StandardMediaSubsectionView) Validate() error {
+	d.Type = d.TypeName()
+	if d.SubsectionView != nil {
+		if err := d.SubsectionView.Validate(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (d *StandardMediaSubsectionView) Render(context *ViewContext) (map[string]interface{}, error) {
+	if d.ContentConfig != nil && d.ContentConfig.ViewCondition.Op != "" {
+		if result, err := EvaluateConditionForView(d, d.ContentConfig.ViewCondition, context); err != nil || !result {
+			return nil, err
+		}
+	}
+
+	renderedView := make(map[string]interface{})
+
+	if d.SubsectionView != nil {
+		renderedSubsectionView, err := d.SubsectionView.Render(context)
+		if err != nil {
+			return nil, err
+		}
+		if renderedSubsectionView != nil {
+			renderedView["view"] = renderedSubsectionView
+		}
+	}
+	renderedView["type"] = d.TypeName()
+
+	return renderedView, nil
+}
+
+type StandardMediaListView struct {
+	Media         []MediaData    `json:"media"`
+	ContentConfig *ContentConfig `json:"content_config,omitempty"`
+	Type          string         `json:"type"`
+}
+
+func (d *StandardMediaListView) TypeName() string {
+	return wrapNamespace("standard_media_list")
+}
+
+func (d *StandardMediaListView) Validate() error {
+	d.Type = d.TypeName()
+	return nil
+}
+
+func (d *StandardMediaListView) Render(context *ViewContext) (map[string]interface{}, error) {
+	renderedView := make(map[string]interface{})
+
+	content, err := getContentFromContextForView(d, d.ContentConfig.Key, context)
+	if err != nil {
+		return nil, err
+	} else if content == nil {
+		return nil, nil
+	}
+
+	var ok bool
+	d.Media, ok = content.([]MediaData)
+	if !ok {
+		return nil, NewViewRenderingError(fmt.Sprintf("Expected content in view context to be of type []MediaData instead it was type %T", content))
+	}
+
+	renderedView["media"] = d.Media
+	renderedView["type"] = d.TypeName()
+
+	return renderedView, nil
+}
+
+type TitleMediaItemsListView struct {
+	Items         []TitleMediaListData `json:"items"`
+	ContentConfig *ContentConfig       `json:"content_config"`
+	Type          string               `json:"type"`
+}
+
+func (d *TitleMediaItemsListView) TypeName() string {
+	return wrapNamespace("title_media_items_list")
+}
+
+func (d *TitleMediaItemsListView) Validate() error {
+	d.Type = d.TypeName()
+	return nil
+}
+
+func (d *TitleMediaItemsListView) Render(context *ViewContext) (map[string]interface{}, error) {
+	if d.ContentConfig != nil && d.ContentConfig.ViewCondition.Op != "" {
+		if result, err := EvaluateConditionForView(d, d.ContentConfig.ViewCondition, context); err != nil || !result {
+			return nil, err
+		}
+	}
+
+	renderedView := make(map[string]interface{})
+	content, err := getContentFromContextForView(d, d.ContentConfig.Key, context)
+	if err != nil {
+		return nil, err
+	} else if content == nil {
+		return nil, nil
+	}
+
+	var ok bool
+	d.Items, ok = content.([]TitleMediaListData)
+	if !ok {
+		return nil, NewViewRenderingError(fmt.Sprintf("Expected content in view context to be of type []TitleMediaListData instead it was type %T", content))
 	}
 
 	renderedView["items"] = d.Items

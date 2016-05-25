@@ -3,6 +3,9 @@ package saml
 import (
 	"strings"
 	"testing"
+
+	"github.com/sprucehealth/backend/libs/ptr"
+	"github.com/sprucehealth/backend/test"
 )
 
 // TestQuestionMultiTriage makes sure that different answers can
@@ -127,7 +130,7 @@ func TestPhotoQuestion_Tips(t *testing.T) {
 	}
 
 	// expect inline tip to be specified
-	slots := screens[0].Questions[0].Details.PhotoSlots
+	slots := screens[0].Questions[0].Details.MediaSlots
 	if slots[0].ClientData.Tip != "Center your face in the dotted lines." {
 		t.Fatal("Expected tip to exist but didnt")
 	}
@@ -142,4 +145,112 @@ func TestPhotoQuestion_Tips(t *testing.T) {
 		t.Fatal("Expected tip style for inline to exist but didnt")
 	}
 
+}
+
+func TestMediaQuestion(t *testing.T) {
+	r := strings.NewReader(`
+		[patient section "Section"]
+
+		[MD section "Dr Dr Dr Dr"]
+
+		Main) Face [media]
+		[video slot "Face Front"]
+			[tip "Center your face in the dotted lines."]
+			[media missing error message "A photo of the front of your face is required to continue."]
+			[initial camera direction "front"]
+		[video slot "Side"]
+			[tip (inline) "Turn your face to the side."]
+			[tip subtext (inline) "Just move your face, not your phone."]
+			[tip style (inline) "point_left"]
+		[photo slot "Other Side"]
+			[tip (inline) "Now turn to the other side."]
+			[tip subtext (inline) "Just move your face, not your phone."]
+			[tip style (inline) "point_right"]
+	`)
+
+	intake, err := Parse(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	test.Equals(t, &Intake{
+		Sections: []*Section{
+			{
+				Title: "Section",
+				Subsections: []*Subsection{
+					{
+						Title: "Dr Dr Dr Dr",
+						Screens: []*Screen{
+							{
+								Questions: []*Question{
+									{
+										Details: &QuestionDetails{
+											Tag:      "face",
+											Text:     "Face",
+											Required: ptr.Bool(true),
+											Type:     QuestionTypeMediaSection,
+											MediaSlots: []*MediaSlot{
+												{
+													Name: "Face Front",
+													Type: "video",
+													ClientData: &MediaSlotClientData{
+														InitialCameraDirection:   "front",
+														MediaMissingErrorMessage: "A photo of the front of your face is required to continue.",
+														MediaTip: MediaTip{
+															Tip: "Center your face in the dotted lines.",
+														},
+														Tips: make(map[string]*MediaTip),
+													},
+												},
+												{
+													Name: "Side",
+													Type: "video",
+													ClientData: &MediaSlotClientData{
+														Tips: map[string]*MediaTip{
+															"inline": &MediaTip{
+																Tip:        "Turn your face to the side.",
+																TipSubtext: "Just move your face, not your phone.",
+																TipStyle:   "point_left",
+															},
+														},
+													},
+												},
+												{
+													Name: "Other Side",
+													Type: "photo",
+													ClientData: &MediaSlotClientData{
+														Tips: map[string]*MediaTip{
+															"inline": &MediaTip{
+																Tip:        "Now turn to the other side.",
+																TipSubtext: "Just move your face, not your phone.",
+																TipStyle:   "point_right",
+															},
+														},
+													},
+												},
+											},
+											PhotoSlots: []*MediaSlot{
+												{
+													Name: "Other Side",
+													ClientData: &MediaSlotClientData{
+														Tips: map[string]*MediaTip{
+															"inline": &MediaTip{
+																Tip:        "Now turn to the other side.",
+																TipSubtext: "Just move your face, not your phone.",
+																TipStyle:   "point_right",
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}, intake)
 }

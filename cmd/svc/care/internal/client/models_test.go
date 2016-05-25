@@ -56,14 +56,14 @@ func TestVisitAnswers_NilAnswers(t *testing.T) {
 }
 
 func TestPhotoSectionAnswer(t *testing.T) {
-	p := &PhotoQuestionAnswer{
-		PhotoSections: []*PhotoSectionItem{
+	p := &MediaQuestionAnswer{
+		Sections: []*MediaSectionItem{
 			{
 				Name: "Test",
-				Slots: []*PhotoSlotItem{
+				Slots: []*MediaSlotItem{
 					{
 						SlotID:  "10",
-						PhotoID: "100",
+						MediaID: "100",
 					},
 				},
 			},
@@ -71,8 +71,8 @@ func TestPhotoSectionAnswer(t *testing.T) {
 	}
 
 	err := p.Validate(&layout.Question{
-		Type: "q_type_photo_section",
-		PhotoSlots: []*layout.PhotoSlot{
+		Type: "q_type_media_section",
+		MediaSlots: []*layout.MediaSlot{
 			{
 				ID: "10",
 			},
@@ -82,23 +82,23 @@ func TestPhotoSectionAnswer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	p = &PhotoQuestionAnswer{
-		PhotoSections: []*PhotoSectionItem{
+	p = &MediaQuestionAnswer{
+		Sections: []*MediaSectionItem{
 			{
 				Name: "Test",
-				Slots: []*PhotoSlotItem{
+				Slots: []*MediaSlotItem{
 					{
 						SlotID:  "10",
-						PhotoID: "100",
+						MediaID: "100",
 					},
 				},
 			},
 			{
 				Name: "Test23",
-				Slots: []*PhotoSlotItem{
+				Slots: []*MediaSlotItem{
 					{
 						SlotID:  "10",
-						PhotoID: "101",
+						MediaID: "101",
 					},
 				},
 			},
@@ -106,11 +106,11 @@ func TestPhotoSectionAnswer(t *testing.T) {
 	}
 
 	err = p.Validate(&layout.Question{
-		Type: "q_type_photo_section",
+		Type: "q_type_media_section",
 		AdditionalFields: &layout.QuestionAdditionalFields{
 			AllowsMultipleSections: ptr.Bool(true),
 		},
-		PhotoSlots: []*layout.PhotoSlot{
+		MediaSlots: []*layout.MediaSlot{
 			{
 				ID: "10",
 			},
@@ -125,13 +125,13 @@ func TestPhotoSectionAnswer_Invalid(t *testing.T) {
 
 	// missing photo section name
 
-	p := &PhotoQuestionAnswer{
-		PhotoSections: []*PhotoSectionItem{
+	p := &MediaQuestionAnswer{
+		Sections: []*MediaSectionItem{
 			{
-				Slots: []*PhotoSlotItem{
+				Slots: []*MediaSlotItem{
 					{
 						SlotID:  "10",
-						PhotoID: "100",
+						MediaID: "100",
 					},
 				},
 			},
@@ -139,8 +139,8 @@ func TestPhotoSectionAnswer_Invalid(t *testing.T) {
 	}
 
 	err := p.Validate(&layout.Question{
-		Type: "q_type_photo_section",
-		PhotoSlots: []*layout.PhotoSlot{
+		Type: "q_type_media_section",
+		MediaSlots: []*layout.MediaSlot{
 			{
 				ID: "10",
 			},
@@ -152,14 +152,14 @@ func TestPhotoSectionAnswer_Invalid(t *testing.T) {
 
 	// slot id that does not exist
 
-	p = &PhotoQuestionAnswer{
-		PhotoSections: []*PhotoSectionItem{
+	p = &MediaQuestionAnswer{
+		Sections: []*MediaSectionItem{
 			{
 				Name: "Test",
-				Slots: []*PhotoSlotItem{
+				Slots: []*MediaSlotItem{
 					{
 						SlotID:  "11",
-						PhotoID: "100",
+						MediaID: "100",
 					},
 				},
 			},
@@ -167,8 +167,8 @@ func TestPhotoSectionAnswer_Invalid(t *testing.T) {
 	}
 
 	err = p.Validate(&layout.Question{
-		Type: "q_type_photo_section",
-		PhotoSlots: []*layout.PhotoSlot{
+		Type: "q_type_media_section",
+		MediaSlots: []*layout.MediaSlot{
 			{
 				ID: "10",
 			},
@@ -180,14 +180,14 @@ func TestPhotoSectionAnswer_Invalid(t *testing.T) {
 
 	//	 required slot not filled
 
-	p = &PhotoQuestionAnswer{
-		PhotoSections: []*PhotoSectionItem{
+	p = &MediaQuestionAnswer{
+		Sections: []*MediaSectionItem{
 			{
 				Name: "Test",
-				Slots: []*PhotoSlotItem{
+				Slots: []*MediaSlotItem{
 					{
 						SlotID:  "10",
-						PhotoID: "100",
+						MediaID: "100",
 					},
 				},
 			},
@@ -195,8 +195,8 @@ func TestPhotoSectionAnswer_Invalid(t *testing.T) {
 	}
 
 	err = p.Validate(&layout.Question{
-		Type: "q_type_photo_section",
-		PhotoSlots: []*layout.PhotoSlot{
+		Type: "q_type_media_section",
+		MediaSlots: []*layout.MediaSlot{
 			{
 				ID: "10",
 			},

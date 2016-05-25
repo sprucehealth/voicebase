@@ -31,7 +31,7 @@ var answerToModelTransformers map[string]answerToModelTransformerFunc
 
 func init() {
 	answerToModelTransformers = map[string]answerToModelTransformerFunc{
-		"q_type_photo_section":     transformPhotoSectionAnswerToModel,
+		"q_type_media_section":     transformMediaSectionAnswerToModel,
 		"q_type_free_text":         transformFreeTextAnswerToModel,
 		"q_type_single_entry":      transformSingleEntryAnswerToModel,
 		"q_type_single_select":     transformSingleSelectAnswerToModel,
@@ -49,33 +49,34 @@ func transformAnswerToModel(questionID string, answer client.Answer) (*models.An
 	return transformFunction(questionID, answer)
 }
 
-func transformPhotoSectionAnswerToModel(questionID string, answer client.Answer) (*models.Answer, error) {
-	photoSectionAnswer, ok := answer.(*client.PhotoQuestionAnswer)
+func transformMediaSectionAnswerToModel(questionID string, answer client.Answer) (*models.Answer, error) {
+	mediaSectionAnswer, ok := answer.(*client.MediaQuestionAnswer)
 	if !ok {
-		return nil, errors.Trace(fmt.Errorf("expected type PhotoQuestionAnswer for answer to question %s but got %T", questionID, answer))
+		return nil, errors.Trace(fmt.Errorf("expected type MediaQuestionAnswer for answer to question %s but got %T", questionID, answer))
 	}
 
 	modelAnswer := &models.Answer{
 		QuestionID: questionID,
 		Type:       answer.TypeName(),
-		Answer: &models.Answer_PhotoSection{
-			PhotoSection: &models.PhotoSectionAnswer{
-				Sections: make([]*models.PhotoSectionAnswer_PhotoSectionItem, len(photoSectionAnswer.PhotoSections)),
+		Answer: &models.Answer_MediaSection{
+			MediaSection: &models.MediaSectionAnswer{
+				Sections: make([]*models.MediaSectionAnswer_MediaSectionItem, len(mediaSectionAnswer.Sections)),
 			},
 		},
 	}
 
-	for i, photoSection := range photoSectionAnswer.PhotoSections {
-		modelAnswer.GetPhotoSection().Sections[i] = &models.PhotoSectionAnswer_PhotoSectionItem{
-			Name:  photoSection.Name,
-			Slots: make([]*models.PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem, len(photoSection.Slots)),
+	for i, mediaSection := range mediaSectionAnswer.Sections {
+		modelAnswer.GetMediaSection().Sections[i] = &models.MediaSectionAnswer_MediaSectionItem{
+			Name:  mediaSection.Name,
+			Slots: make([]*models.MediaSectionAnswer_MediaSectionItem_MediaSlotItem, len(mediaSection.Slots)),
 		}
 
-		for j, photoSlot := range photoSection.Slots {
-			modelAnswer.GetPhotoSection().Sections[i].Slots[j] = &models.PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem{
-				Name:    photoSlot.Name,
-				SlotID:  photoSlot.SlotID,
-				MediaID: photoSlot.PhotoID,
+		for j, mediaSlot := range mediaSection.Slots {
+			modelAnswer.GetMediaSection().Sections[i].Slots[j] = &models.MediaSectionAnswer_MediaSectionItem_MediaSlotItem{
+				Name:    mediaSlot.Name,
+				SlotID:  mediaSlot.SlotID,
+				MediaID: mediaSlot.MediaID,
+				Type:    "photo", // TODO: Once media service is up, get type from there.
 			}
 		}
 	}

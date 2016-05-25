@@ -11,6 +11,20 @@ type TitlePhotoListData struct {
 	Title  string      `json:"title"`
 	Photos []PhotoData `json:"photos"`
 }
+
+type MediaData struct {
+	Title          string `json:"title"`
+	MediaID        string `json:"media_id"`
+	URL            string `json:"url"`
+	Type           string `json:"type"`
+	PlaceholderURL string `json:"placeholder_url"`
+}
+
+type TitleMediaListData struct {
+	Title string      `json:"title"`
+	Media []MediaData `json:"media"`
+}
+
 type CheckedUncheckedData struct {
 	Value     string `json:"value"`
 	IsChecked bool   `json:"is_checked"`

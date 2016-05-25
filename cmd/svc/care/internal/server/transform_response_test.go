@@ -9,20 +9,21 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/models"
 )
 
-func TestTransformToResponse_PhotoSection(t *testing.T) {
+func TestTransformToResponse_MediaSection(t *testing.T) {
 	a, err := transformAnswerModelToResponse(&models.Answer{
-		Type:       "q_type_photo_section",
+		Type:       "q_type_media_section",
 		QuestionID: "10",
-		Answer: &models.Answer_PhotoSection{
-			PhotoSection: &models.PhotoSectionAnswer{
-				Sections: []*models.PhotoSectionAnswer_PhotoSectionItem{
+		Answer: &models.Answer_MediaSection{
+			MediaSection: &models.MediaSectionAnswer{
+				Sections: []*models.MediaSectionAnswer_MediaSectionItem{
 					{
 						Name: "SectionName",
-						Slots: []*models.PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem{
+						Slots: []*models.MediaSectionAnswer_MediaSectionItem_MediaSlotItem{
 							{
 								Name:    "SlotName",
 								SlotID:  "SlotID1",
 								MediaID: "PhotoID1",
+								Type:    "photo",
 							},
 						},
 					},
@@ -34,17 +35,18 @@ func TestTransformToResponse_PhotoSection(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	test.Equals(t, &client.PhotoQuestionAnswer{
-		Type: "q_type_photo_section",
-		PhotoSections: []*client.PhotoSectionItem{
+	test.Equals(t, &client.MediaQuestionAnswer{
+		Type: "q_type_media_section",
+		Sections: []*client.MediaSectionItem{
 			{
 				Name: "SectionName",
-				Slots: []*client.PhotoSlotItem{
+				Slots: []*client.MediaSlotItem{
 					{
-						Name:     "SlotName",
-						SlotID:   "SlotID1",
-						PhotoID:  "PhotoID1",
-						PhotoURL: "https://placekitten.com/600/800",
+						Name:    "SlotName",
+						SlotID:  "SlotID1",
+						MediaID: "PhotoID1",
+						URL:     "https://placekitten.com/600/800",
+						Type:    "photo",
 					},
 				},
 			},

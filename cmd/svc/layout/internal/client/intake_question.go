@@ -30,6 +30,11 @@ func transformQuestion(question *saml.Question) (*layout.Question, error) {
 		ToAlert:            question.Details.ToAlert,
 	}
 
+	// map all photo section questions to media section question types
+	if question.Details.Type == saml.QuestionTypePhotoSection {
+		tQuestion.Type = layout.QuestionTypeMediaSection
+	}
+
 	// TODO: Move the autocomplete params specification to the SAML layer.
 	// However doing so currently requires a ton of updates to the SAML given that
 	// allergy and medication questions are in almost every SAML. So for now
@@ -51,7 +56,7 @@ func transformQuestion(question *saml.Question) (*layout.Question, error) {
 	}
 
 	var err error
-	tQuestion.PhotoSlots, err = transformPhotoSlots(question.Details.PhotoSlots)
+	tQuestion.MediaSlots, err = transformMediaSlots(question.Details.MediaSlots)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

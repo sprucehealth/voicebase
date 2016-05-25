@@ -637,8 +637,8 @@ func TestPopulateReview_SingleEntry(t *testing.T) {
 func TestPopulateReview_PhotoSlots(t *testing.T) {
 	question := &layout.Question{
 		ID:   "test",
-		Type: layout.QuestionTypePhotoSection,
-		PhotoSlots: []*layout.PhotoSlot{
+		Type: layout.QuestionTypeMediaSection,
+		MediaSlots: []*layout.MediaSlot{
 			{
 				ID:   "slot1",
 				Name: "slot1Name",
@@ -656,34 +656,37 @@ func TestPopulateReview_PhotoSlots(t *testing.T) {
 
 	answer := &Answer{
 		QuestionID: "test",
-		Answer: &Answer_PhotoSection{
-			PhotoSection: &PhotoSectionAnswer{
-				Sections: []*PhotoSectionAnswer_PhotoSectionItem{
+		Answer: &Answer_MediaSection{
+			MediaSection: &MediaSectionAnswer{
+				Sections: []*MediaSectionAnswer_MediaSectionItem{
 					{
 						Name: "Section1",
-						Slots: []*PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem{
+						Slots: []*MediaSectionAnswer_MediaSectionItem_MediaSlotItem{
 							{
 								SlotID:  "slot1",
 								MediaID: "1",
 								Name:    "slot1Name",
 								URL:     "https://placekitten.com/600/800",
+								Type:    "photo",
 							},
 							{
 								SlotID:  "slot2",
 								MediaID: "2",
 								Name:    "slot2Name",
 								URL:     "https://placekitten.com/600/800",
+								Type:    "photo",
 							},
 						},
 					},
 					{
 						Name: "Section2",
-						Slots: []*PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem{
+						Slots: []*MediaSectionAnswer_MediaSectionItem_MediaSlotItem{
 							{
 								SlotID:  "slot1",
 								MediaID: "3",
 								Name:    "slot1Name",
 								URL:     "https://placekitten.com/600/800",
+								Type:    "photo",
 							},
 						},
 					},
@@ -693,33 +696,36 @@ func TestPopulateReview_PhotoSlots(t *testing.T) {
 	}
 
 	context := visitreview.NewViewContext(nil)
-	test.OK(t, builderQuestionWithPhotoSlots(question, answer, context))
+	test.OK(t, builderQuestionWithMediaSlots(question, answer, context))
 
-	answerInContext, ok := context.Get("test:photos")
+	answerInContext, ok := context.Get("test:media")
 	test.Equals(t, true, ok)
-	test.Equals(t, []visitreview.TitlePhotoListData{
+	test.Equals(t, []visitreview.TitleMediaListData{
 		{
 			Title: "Section1",
-			Photos: []visitreview.PhotoData{
+			Media: []visitreview.MediaData{
 				{
-					Title:    "slot1Name",
-					PhotoID:  "1",
-					PhotoURL: "https://placekitten.com/600/800",
+					Title:   "slot1Name",
+					MediaID: "1",
+					URL:     "https://placekitten.com/600/800",
+					Type:    "photo",
 				},
 				{
-					Title:    "slot2Name",
-					PhotoID:  "2",
-					PhotoURL: "https://placekitten.com/600/800",
+					Title:   "slot2Name",
+					MediaID: "2",
+					URL:     "https://placekitten.com/600/800",
+					Type:    "photo",
 				},
 			},
 		},
 		{
 			Title: "Section2",
-			Photos: []visitreview.PhotoData{
+			Media: []visitreview.MediaData{
 				{
-					Title:    "slot1Name",
-					PhotoID:  "3",
-					PhotoURL: "https://placekitten.com/600/800",
+					Title:   "slot1Name",
+					MediaID: "3",
+					URL:     "https://placekitten.com/600/800",
+					Type:    "photo",
 				},
 			},
 		},

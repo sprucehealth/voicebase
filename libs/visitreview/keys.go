@@ -15,3 +15,7 @@ func EmptyStateTextKey(tag string) string {
 func PhotosKey(tag string) string {
 	return tag + ":photos"
 }
+
+func MediaKey(tag string) string {
+	return tag + ":media"
+}

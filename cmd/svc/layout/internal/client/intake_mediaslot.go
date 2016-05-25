@@ -8,13 +8,13 @@ import (
 	"github.com/sprucehealth/backend/svc/layout"
 )
 
-type photoSlotID struct {
+type mediaSlotID struct {
 	model.ObjectID
 }
 
-func transformPhotoSlots(photoSlots []*saml.PhotoSlot) ([]*layout.PhotoSlot, error) {
-	tPhotoSlots := make([]*layout.PhotoSlot, len(photoSlots))
-	for i, photoSlot := range photoSlots {
+func transformMediaSlots(mediaSlots []*saml.MediaSlot) ([]*layout.MediaSlot, error) {
+	tMediaSlots := make([]*layout.MediaSlot, len(mediaSlots))
+	for i, mediaSlot := range mediaSlots {
 
 		// SAML layer does not generate a tag (unique ID) for
 		// photo slots so generate one here.
@@ -23,30 +23,31 @@ func transformPhotoSlots(photoSlots []*saml.PhotoSlot) ([]*layout.PhotoSlot, err
 			return nil, errors.Trace(err)
 		}
 
-		slotID := &photoSlotID{
+		slotID := &mediaSlotID{
 			model.ObjectID{
-				Prefix:  "photoSlot_",
+				Prefix:  "mediaSlot_",
 				Val:     id,
 				IsValid: true,
 			},
 		}
 
-		tPhotoSlots[i] = &layout.PhotoSlot{
+		tMediaSlots[i] = &layout.MediaSlot{
 			ID:       slotID.String(),
-			Name:     photoSlot.Name,
-			Required: photoSlot.Required,
+			Name:     mediaSlot.Name,
+			Required: mediaSlot.Required,
+			Type:     mediaSlot.Type,
 		}
 
-		tPhotoSlots[i].ClientData, err = transformPhotoSlotClientData(photoSlot.ClientData)
+		tMediaSlots[i].ClientData, err = transformMediaSlotClientData(mediaSlot.ClientData)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
 	}
 
-	return tPhotoSlots, nil
+	return tMediaSlots, nil
 }
 
-func transformPhotoSlotClientData(clientData *saml.PhotoSlotClientData) (*layout.PhotoSlotClientData, error) {
+func transformMediaSlotClientData(clientData *saml.MediaSlotClientData) (*layout.MediaSlotClientData, error) {
 	if clientData == nil {
 		return nil, nil
 	}
@@ -56,25 +57,26 @@ func transformPhotoSlotClientData(clientData *saml.PhotoSlotClientData) (*layout
 		return nil, errors.Trace(err)
 	}
 
-	return &layout.PhotoSlotClientData{
-		PhotoTip: layout.PhotoTip{
+	return &layout.MediaSlotClientData{
+		MediaTip: layout.MediaTip{
 			Tip:        clientData.Tip,
 			TipStyle:   clientData.TipStyle,
 			TipSubtext: clientData.TipSubtext,
 		},
 		OverlayImageURL:          clientData.OverlayImageURL,
 		PhotoMissingErrorMessage: clientData.PhotoMissingErrorMessage,
+		MediaMissingErrorMessage: clientData.MediaMissingErrorMessage,
 		InitialCameraDirection:   clientData.InitialCameraDirection,
 		Flash: fs,
-		Tips:  transformPhotoTips(clientData.Tips),
+		Tips:  transformMediaTips(clientData.Tips),
 	}, nil
 }
 
-func transformPhotoTips(tips map[string]*saml.PhotoTip) map[string]*layout.PhotoTip {
-	tTips := make(map[string]*layout.PhotoTip)
+func transformMediaTips(tips map[string]*saml.MediaTip) map[string]*layout.MediaTip {
+	tTips := make(map[string]*layout.MediaTip)
 
 	for key, tip := range tips {
-		tTips[key] = &layout.PhotoTip{
+		tTips[key] = &layout.MediaTip{
 			Tip:        tip.Tip,
 			TipSubtext: tip.TipSubtext,
 			TipStyle:   tip.TipStyle,

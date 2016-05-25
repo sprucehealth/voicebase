@@ -34,7 +34,7 @@ type Answer interface {
 var typeRegistry *mapstructure.TypeRegistry = mapstructure.NewTypeRegistry()
 
 func init() {
-	typeRegistry.MustRegisterType(&PhotoQuestionAnswer{})
+	typeRegistry.MustRegisterType(&MediaQuestionAnswer{})
 	typeRegistry.MustRegisterType(&MultipleChoiceQuestionAnswer{})
 	typeRegistry.MustRegisterType(&FreeTextQuestionAnswer{})
 	typeRegistry.MustRegisterType(&SingleSelectQuestionAnswer{})
@@ -43,80 +43,84 @@ func init() {
 	typeRegistry.MustRegisterType(&AutocompleteQuestionAnswer{})
 }
 
-// PHOTO SECTION
+// MEDIA SECTION
 
-type PhotoSlotItem struct {
-	Name     string `json:"name"`
-	SlotID   string `json:"slot_id"`
-	PhotoID  string `json:"photo_id"`
-	PhotoURL string `json:"url,omitempty"`
+type MediaSlotItem struct {
+	Name    string `json:"name"`
+	SlotID  string `json:"slot_id"`
+	MediaID string `json:"media_id"`
+	URL     string `json:"url,omitempty"`
+	Type    string `json:"type,omitempty"`
 }
 
-type PhotoSectionItem struct {
+type MediaSectionItem struct {
 	Name  string           `json:"name"`
-	Slots []*PhotoSlotItem `json:"photos"`
+	Slots []*MediaSlotItem `json:"media"`
 }
 
-type PhotoQuestionAnswer struct {
-	Type          string              `json:"type"`
-	PhotoSections []*PhotoSectionItem `json:"photo_sections"`
+type MediaQuestionAnswer struct {
+	Type     string              `json:"type"`
+	Sections []*MediaSectionItem `json:"sections"`
 }
 
-func (p *PhotoQuestionAnswer) TypeName() string {
-	return "q_type_photo_section"
+func (p *MediaQuestionAnswer) TypeName() string {
+	return "q_type_media_section"
 }
 
-func (p *PhotoQuestionAnswer) Validate(question *layout.Question) error {
+func (p *MediaQuestionAnswer) Validate(question *layout.Question) error {
 	if err := validateQuestionType(p, question); err != nil {
 		return errors.Trace(err)
 	}
-	if len(p.PhotoSections) == 0 {
+	if len(p.Sections) == 0 {
 		if isQuestionRequired(question) {
-			return errors.Trace(fmt.Errorf("answer to question %s is required but empty list of photo sections submitted", question.ID))
+			return errors.Trace(fmt.Errorf("answer to question %s is required but empty list of media sections submitted", question.ID))
 		}
 	}
 
 	if question.AdditionalFields == nil || question.AdditionalFields.AllowsMultipleSections == nil || !*question.AdditionalFields.AllowsMultipleSections {
-		if len(p.PhotoSections) > 1 {
-			return errors.Trace(fmt.Errorf("answer to question %s can only have 1 photo section but has %d", question.ID, len(p.PhotoSections)))
+		if len(p.Sections) > 1 {
+			return errors.Trace(fmt.Errorf("answer to question %s can only have 1 media section but has %d", question.ID, len(p.Sections)))
 		}
 	}
 
 	slotsFilled := make(map[string]struct{})
-	for _, photoSection := range p.PhotoSections {
-		if photoSection.Name == "" {
+	for _, section := range p.Sections {
+		if section.Name == "" {
 			return errors.Trace(fmt.Errorf("answer to question %s cannot have empty photo section name", question.ID))
 		}
-		if len(photoSection.Slots) == 0 {
-			return errors.Trace(fmt.Errorf("answer to question %s cannot have a photo section with no photo slots", question.ID))
+		if len(section.Slots) == 0 {
+			return errors.Trace(fmt.Errorf("answer to question %s cannot have a media section with no slots", question.ID))
 		}
-		for _, photoSlot := range photoSection.Slots {
-			if photoSlot.PhotoID == "" {
-				return errors.Trace(fmt.Errorf("answer to question %s has a photo slot with no photo ID", question.ID))
+		for _, slot := range section.Slots {
+			if slot.MediaID == "" {
+				return errors.Trace(fmt.Errorf("answer to question %s has a media slot with no media ID", question.ID))
 			}
-			if photoSlot.SlotID == "" {
+			if slot.SlotID == "" {
 				return errors.Trace(fmt.Errorf("answer to question %s has a photo slot with no slot ID", question.ID))
 			}
-			slotsFilled[photoSlot.SlotID] = struct{}{}
+			slotsFilled[slot.SlotID] = struct{}{}
+
+			// TODO: With the help of the media service verify that the media stored matches the type
+			// of media supported
 
 			// ensure that each slot is present in the question
 			slotFound := false
-			for _, slotInQuestion := range question.PhotoSlots {
-				if slotInQuestion.ID == photoSlot.SlotID {
+			for _, slotInQuestion := range question.MediaSlots {
+				if slotInQuestion.ID == slot.SlotID {
 					slotFound = true
 				}
 			}
 			if !slotFound {
-				return errors.Trace(fmt.Errorf("answer to question %s has a photo slot referenced (%s) that does not exist in the question", question.ID, photoSlot.SlotID))
+				return errors.Trace(fmt.Errorf("answer to question %s has a media slot referenced (%s) that does not exist in the question", question.ID, slot.SlotID))
 			}
 		}
 	}
 
-	// ensure that there are no required photo slots in the question that did
+	// ensure that there are no required media slots in the question that did
 	// not have an answer
-	for _, photoSlot := range question.PhotoSlots {
-		if _, ok := slotsFilled[photoSlot.ID]; !ok && photoSlot.Required != nil && *photoSlot.Required {
-			return errors.Trace(fmt.Errorf("question %s has a required photo slot %s that is not answered", question.ID, photoSlot.ID))
+	for _, slot := range question.MediaSlots {
+		if _, ok := slotsFilled[slot.ID]; !ok && slot.Required != nil && *slot.Required {
+			return errors.Trace(fmt.Errorf("question %s has a required media slot %s that is not answered", question.ID, slot.ID))
 		}
 	}
 

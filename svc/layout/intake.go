@@ -113,7 +113,7 @@ type Question struct {
 	Condition          *Condition                `json:"condition,omitempty"`
 	Required           *bool                     `json:"required,omitempty"`
 	AlertFormattedText string                    `json:"alert_text,omitempty"`
-	PhotoSlots         []*PhotoSlot              `json:"photo_slots,omitempty"`
+	MediaSlots         []*MediaSlot              `json:"media_slots,omitempty"`
 	SubQuestionsConfig *SubQuestionsConfig       `json:"subquestions_config,omitempty"`
 	ToAlert            *bool                     `json:"to_alert,omitempty"`
 }
@@ -172,23 +172,25 @@ type SubQuestionsConfig struct {
 	Screens []*Screen `json:"screens,omitempty"`
 }
 
-type PhotoSlot struct {
+type MediaSlot struct {
 	ID         string               `json:"id"`
 	Name       string               `json:"name"`
+	Type       string               `json:"type,omitempty"`
 	Required   *bool                `json:"required,omitempty"`
-	ClientData *PhotoSlotClientData `json:"client_data"`
+	ClientData *MediaSlotClientData `json:"client_data"`
 }
 
-type PhotoSlotClientData struct {
-	PhotoTip
+type MediaSlotClientData struct {
+	MediaTip
 	OverlayImageURL          string               `json:"overlay_image_url,omitempty"`
 	PhotoMissingErrorMessage string               `json:"photo_missing_error_message,omitempty"`
+	MediaMissingErrorMessage string               `json:"media_missing_error_message,omitempty"`
 	InitialCameraDirection   string               `json:"initial_camera_direction,omitempty"`
 	Flash                    FlashState           `json:"flash,omitempty"`
-	Tips                     map[string]*PhotoTip `json:"tips,omitempty"`
+	Tips                     map[string]*MediaTip `json:"tips,omitempty"`
 }
 
-type PhotoTip struct {
+type MediaTip struct {
 	Tip        string `json:"tip,omitempty"`
 	TipSubtext string `json:"tip_subtext,omitempty"`
 	TipStyle   string `json:"tip_style,omitempty"`

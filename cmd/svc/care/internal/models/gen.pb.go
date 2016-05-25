@@ -18,7 +18,7 @@
 		AnswerOption
 		AutocompleteAnswerItem
 		AutocompleteAnswer
-		PhotoSectionAnswer
+		MediaSectionAnswer
 */
 package models
 
@@ -48,14 +48,14 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion1
 
 type Answer struct {
-	QuestionID string `protobuf:"bytes,1,opt,name=question_id,json=questionId,proto3" json:"question_id,omitempty"`
+	QuestionID string `protobuf:"bytes,1,opt,name=question_id,proto3" json:"question_id,omitempty"`
 	Type       string `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
 	// Types that are valid to be assigned to Answer:
 	//	*Answer_FreeText
 	//	*Answer_MultipleChoice
 	//	*Answer_SingleSelect
 	//	*Answer_Autocomplete
-	//	*Answer_PhotoSection
+	//	*Answer_MediaSection
 	//	*Answer_SingleEntry
 	//	*Answer_SegmentedControl
 	Answer isAnswer_Answer `protobuf_oneof:"answer"`
@@ -73,32 +73,32 @@ type isAnswer_Answer interface {
 }
 
 type Answer_FreeText struct {
-	FreeText *FreeTextAnswer `protobuf:"bytes,10,opt,name=free_text,json=freeText,oneof"`
+	FreeText *FreeTextAnswer `protobuf:"bytes,10,opt,name=free_text,oneof"`
 }
 type Answer_MultipleChoice struct {
-	MultipleChoice *MultipleChoiceAnswer `protobuf:"bytes,11,opt,name=multiple_choice,json=multipleChoice,oneof"`
+	MultipleChoice *MultipleChoiceAnswer `protobuf:"bytes,11,opt,name=multiple_choice,oneof"`
 }
 type Answer_SingleSelect struct {
-	SingleSelect *SingleSelectAnswer `protobuf:"bytes,12,opt,name=single_select,json=singleSelect,oneof"`
+	SingleSelect *SingleSelectAnswer `protobuf:"bytes,12,opt,name=single_select,oneof"`
 }
 type Answer_Autocomplete struct {
 	Autocomplete *AutocompleteAnswer `protobuf:"bytes,13,opt,name=autocomplete,oneof"`
 }
-type Answer_PhotoSection struct {
-	PhotoSection *PhotoSectionAnswer `protobuf:"bytes,14,opt,name=photo_section,json=photoSection,oneof"`
+type Answer_MediaSection struct {
+	MediaSection *MediaSectionAnswer `protobuf:"bytes,14,opt,name=media_section,oneof"`
 }
 type Answer_SingleEntry struct {
-	SingleEntry *SingleEntryAnswer `protobuf:"bytes,15,opt,name=single_entry,json=singleEntry,oneof"`
+	SingleEntry *SingleEntryAnswer `protobuf:"bytes,15,opt,name=single_entry,oneof"`
 }
 type Answer_SegmentedControl struct {
-	SegmentedControl *SegmentedControlAnswer `protobuf:"bytes,16,opt,name=segmented_control,json=segmentedControl,oneof"`
+	SegmentedControl *SegmentedControlAnswer `protobuf:"bytes,16,opt,name=segmented_control,oneof"`
 }
 
 func (*Answer_FreeText) isAnswer_Answer()         {}
 func (*Answer_MultipleChoice) isAnswer_Answer()   {}
 func (*Answer_SingleSelect) isAnswer_Answer()     {}
 func (*Answer_Autocomplete) isAnswer_Answer()     {}
-func (*Answer_PhotoSection) isAnswer_Answer()     {}
+func (*Answer_MediaSection) isAnswer_Answer()     {}
 func (*Answer_SingleEntry) isAnswer_Answer()      {}
 func (*Answer_SegmentedControl) isAnswer_Answer() {}
 
@@ -137,9 +137,9 @@ func (m *Answer) GetAutocomplete() *AutocompleteAnswer {
 	return nil
 }
 
-func (m *Answer) GetPhotoSection() *PhotoSectionAnswer {
-	if x, ok := m.GetAnswer().(*Answer_PhotoSection); ok {
-		return x.PhotoSection
+func (m *Answer) GetMediaSection() *MediaSectionAnswer {
+	if x, ok := m.GetAnswer().(*Answer_MediaSection); ok {
+		return x.MediaSection
 	}
 	return nil
 }
@@ -165,7 +165,7 @@ func (*Answer) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error,
 		(*Answer_MultipleChoice)(nil),
 		(*Answer_SingleSelect)(nil),
 		(*Answer_Autocomplete)(nil),
-		(*Answer_PhotoSection)(nil),
+		(*Answer_MediaSection)(nil),
 		(*Answer_SingleEntry)(nil),
 		(*Answer_SegmentedControl)(nil),
 	}
@@ -195,9 +195,9 @@ func _Answer_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
 		if err := b.EncodeMessage(x.Autocomplete); err != nil {
 			return err
 		}
-	case *Answer_PhotoSection:
+	case *Answer_MediaSection:
 		_ = b.EncodeVarint(14<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.PhotoSection); err != nil {
+		if err := b.EncodeMessage(x.MediaSection); err != nil {
 			return err
 		}
 	case *Answer_SingleEntry:
@@ -252,13 +252,13 @@ func _Answer_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer)
 		err := b.DecodeMessage(msg)
 		m.Answer = &Answer_Autocomplete{msg}
 		return true, err
-	case 14: // answer.photo_section
+	case 14: // answer.media_section
 		if wire != proto.WireBytes {
 			return true, proto.ErrInternalBadWireType
 		}
-		msg := new(PhotoSectionAnswer)
+		msg := new(MediaSectionAnswer)
 		err := b.DecodeMessage(msg)
-		m.Answer = &Answer_PhotoSection{msg}
+		m.Answer = &Answer_MediaSection{msg}
 		return true, err
 	case 15: // answer.single_entry
 		if wire != proto.WireBytes {
@@ -305,8 +305,8 @@ func _Answer_OneofSizer(msg proto.Message) (n int) {
 		n += proto.SizeVarint(13<<3 | proto.WireBytes)
 		n += proto.SizeVarint(uint64(s))
 		n += s
-	case *Answer_PhotoSection:
-		s := proto.Size(x.PhotoSection)
+	case *Answer_MediaSection:
+		s := proto.Size(x.MediaSection)
 		n += proto.SizeVarint(14<<3 | proto.WireBytes)
 		n += proto.SizeVarint(uint64(s))
 		n += s
@@ -328,7 +328,7 @@ func _Answer_OneofSizer(msg proto.Message) (n int) {
 }
 
 type FreeTextAnswer struct {
-	FreeText string `protobuf:"bytes,1,opt,name=free_text,json=freeText,proto3" json:"free_text,omitempty"`
+	FreeText string `protobuf:"bytes,1,opt,name=free_text,proto3" json:"free_text,omitempty"`
 }
 
 func (m *FreeTextAnswer) Reset()                    { *m = FreeTextAnswer{} }
@@ -336,7 +336,7 @@ func (*FreeTextAnswer) ProtoMessage()               {}
 func (*FreeTextAnswer) Descriptor() ([]byte, []int) { return fileDescriptorGen, []int{1} }
 
 type MultipleChoiceAnswer struct {
-	SelectedAnswers []*AnswerOption `protobuf:"bytes,1,rep,name=selected_answers,json=selectedAnswers" json:"selected_answers,omitempty"`
+	SelectedAnswers []*AnswerOption `protobuf:"bytes,1,rep,name=selected_answers" json:"selected_answers,omitempty"`
 }
 
 func (m *MultipleChoiceAnswer) Reset()                    { *m = MultipleChoiceAnswer{} }
@@ -351,7 +351,7 @@ func (m *MultipleChoiceAnswer) GetSelectedAnswers() []*AnswerOption {
 }
 
 type SingleSelectAnswer struct {
-	SelectedAnswer *AnswerOption `protobuf:"bytes,1,opt,name=selected_answer,json=selectedAnswer" json:"selected_answer,omitempty"`
+	SelectedAnswer *AnswerOption `protobuf:"bytes,1,opt,name=selected_answer" json:"selected_answer,omitempty"`
 }
 
 func (m *SingleSelectAnswer) Reset()                    { *m = SingleSelectAnswer{} }
@@ -366,7 +366,7 @@ func (m *SingleSelectAnswer) GetSelectedAnswer() *AnswerOption {
 }
 
 type SegmentedControlAnswer struct {
-	SelectedAnswer *AnswerOption `protobuf:"bytes,1,opt,name=selected_answer,json=selectedAnswer" json:"selected_answer,omitempty"`
+	SelectedAnswer *AnswerOption `protobuf:"bytes,1,opt,name=selected_answer" json:"selected_answer,omitempty"`
 }
 
 func (m *SegmentedControlAnswer) Reset()                    { *m = SegmentedControlAnswer{} }
@@ -381,7 +381,7 @@ func (m *SegmentedControlAnswer) GetSelectedAnswer() *AnswerOption {
 }
 
 type SingleEntryAnswer struct {
-	FreeText string `protobuf:"bytes,1,opt,name=free_text,json=freeText,proto3" json:"free_text,omitempty"`
+	FreeText string `protobuf:"bytes,1,opt,name=free_text,proto3" json:"free_text,omitempty"`
 }
 
 func (m *SingleEntryAnswer) Reset()                    { *m = SingleEntryAnswer{} }
@@ -390,8 +390,8 @@ func (*SingleEntryAnswer) Descriptor() ([]byte, []int) { return fileDescriptorGe
 
 type AnswerOption struct {
 	ID         string             `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	FreeText   string             `protobuf:"bytes,2,opt,name=free_text,json=freeText,proto3" json:"free_text,omitempty"`
-	SubAnswers map[string]*Answer `protobuf:"bytes,3,rep,name=sub_answers,json=subAnswers" json:"sub_answers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value"`
+	FreeText   string             `protobuf:"bytes,2,opt,name=free_text,proto3" json:"free_text,omitempty"`
+	SubAnswers map[string]*Answer `protobuf:"bytes,3,rep,name=sub_answers" json:"sub_answers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value"`
 }
 
 func (m *AnswerOption) Reset()                    { *m = AnswerOption{} }
@@ -407,7 +407,7 @@ func (m *AnswerOption) GetSubAnswers() map[string]*Answer {
 
 type AutocompleteAnswerItem struct {
 	Answer     string             `protobuf:"bytes,1,opt,name=answer,proto3" json:"answer,omitempty"`
-	SubAnswers map[string]*Answer `protobuf:"bytes,2,rep,name=sub_answers,json=subAnswers" json:"sub_answers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value"`
+	SubAnswers map[string]*Answer `protobuf:"bytes,2,rep,name=sub_answers" json:"sub_answers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value"`
 }
 
 func (m *AutocompleteAnswerItem) Reset()                    { *m = AutocompleteAnswerItem{} }
@@ -436,50 +436,51 @@ func (m *AutocompleteAnswer) GetItems() []*AutocompleteAnswerItem {
 	return nil
 }
 
-type PhotoSectionAnswer struct {
-	Sections []*PhotoSectionAnswer_PhotoSectionItem `protobuf:"bytes,1,rep,name=sections" json:"sections,omitempty"`
+type MediaSectionAnswer struct {
+	Sections []*MediaSectionAnswer_MediaSectionItem `protobuf:"bytes,1,rep,name=sections" json:"sections,omitempty"`
 }
 
-func (m *PhotoSectionAnswer) Reset()                    { *m = PhotoSectionAnswer{} }
-func (*PhotoSectionAnswer) ProtoMessage()               {}
-func (*PhotoSectionAnswer) Descriptor() ([]byte, []int) { return fileDescriptorGen, []int{9} }
+func (m *MediaSectionAnswer) Reset()                    { *m = MediaSectionAnswer{} }
+func (*MediaSectionAnswer) ProtoMessage()               {}
+func (*MediaSectionAnswer) Descriptor() ([]byte, []int) { return fileDescriptorGen, []int{9} }
 
-func (m *PhotoSectionAnswer) GetSections() []*PhotoSectionAnswer_PhotoSectionItem {
+func (m *MediaSectionAnswer) GetSections() []*MediaSectionAnswer_MediaSectionItem {
 	if m != nil {
 		return m.Sections
 	}
 	return nil
 }
 
-type PhotoSectionAnswer_PhotoSectionItem struct {
+type MediaSectionAnswer_MediaSectionItem struct {
 	Name  string                                               `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Slots []*PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem `protobuf:"bytes,2,rep,name=slots" json:"slots,omitempty"`
+	Slots []*MediaSectionAnswer_MediaSectionItem_MediaSlotItem `protobuf:"bytes,2,rep,name=slots" json:"slots,omitempty"`
 }
 
-func (m *PhotoSectionAnswer_PhotoSectionItem) Reset()      { *m = PhotoSectionAnswer_PhotoSectionItem{} }
-func (*PhotoSectionAnswer_PhotoSectionItem) ProtoMessage() {}
-func (*PhotoSectionAnswer_PhotoSectionItem) Descriptor() ([]byte, []int) {
+func (m *MediaSectionAnswer_MediaSectionItem) Reset()      { *m = MediaSectionAnswer_MediaSectionItem{} }
+func (*MediaSectionAnswer_MediaSectionItem) ProtoMessage() {}
+func (*MediaSectionAnswer_MediaSectionItem) Descriptor() ([]byte, []int) {
 	return fileDescriptorGen, []int{9, 0}
 }
 
-func (m *PhotoSectionAnswer_PhotoSectionItem) GetSlots() []*PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem {
+func (m *MediaSectionAnswer_MediaSectionItem) GetSlots() []*MediaSectionAnswer_MediaSectionItem_MediaSlotItem {
 	if m != nil {
 		return m.Slots
 	}
 	return nil
 }
 
-type PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem struct {
-	SlotID  string `protobuf:"bytes,1,opt,name=slot_id,json=slotId,proto3" json:"slot_id,omitempty"`
+type MediaSectionAnswer_MediaSectionItem_MediaSlotItem struct {
+	SlotID  string `protobuf:"bytes,1,opt,name=slot_id,proto3" json:"slot_id,omitempty"`
 	Name    string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	MediaID string `protobuf:"bytes,3,opt,name=media_id,json=mediaId,proto3" json:"media_id,omitempty"`
+	MediaID string `protobuf:"bytes,3,opt,name=media_id,proto3" json:"media_id,omitempty"`
+	Type    string `protobuf:"bytes,4,opt,name=type,proto3" json:"type,omitempty"`
 }
 
-func (m *PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem) Reset() {
-	*m = PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem{}
+func (m *MediaSectionAnswer_MediaSectionItem_MediaSlotItem) Reset() {
+	*m = MediaSectionAnswer_MediaSectionItem_MediaSlotItem{}
 }
-func (*PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem) ProtoMessage() {}
-func (*PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem) Descriptor() ([]byte, []int) {
+func (*MediaSectionAnswer_MediaSectionItem_MediaSlotItem) ProtoMessage() {}
+func (*MediaSectionAnswer_MediaSectionItem_MediaSlotItem) Descriptor() ([]byte, []int) {
 	return fileDescriptorGen, []int{9, 0, 0}
 }
 
@@ -493,9 +494,9 @@ func init() {
 	proto.RegisterType((*AnswerOption)(nil), "models.AnswerOption")
 	proto.RegisterType((*AutocompleteAnswerItem)(nil), "models.AutocompleteAnswerItem")
 	proto.RegisterType((*AutocompleteAnswer)(nil), "models.AutocompleteAnswer")
-	proto.RegisterType((*PhotoSectionAnswer)(nil), "models.PhotoSectionAnswer")
-	proto.RegisterType((*PhotoSectionAnswer_PhotoSectionItem)(nil), "models.PhotoSectionAnswer.PhotoSectionItem")
-	proto.RegisterType((*PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem)(nil), "models.PhotoSectionAnswer.PhotoSectionItem.PhotoSlotItem")
+	proto.RegisterType((*MediaSectionAnswer)(nil), "models.MediaSectionAnswer")
+	proto.RegisterType((*MediaSectionAnswer_MediaSectionItem)(nil), "models.MediaSectionAnswer.MediaSectionItem")
+	proto.RegisterType((*MediaSectionAnswer_MediaSectionItem_MediaSlotItem)(nil), "models.MediaSectionAnswer.MediaSectionItem.MediaSlotItem")
 }
 func (this *Answer) Equal(that interface{}) bool {
 	if that == nil {
@@ -659,7 +660,7 @@ func (this *Answer_Autocomplete) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *Answer_PhotoSection) Equal(that interface{}) bool {
+func (this *Answer_MediaSection) Equal(that interface{}) bool {
 	if that == nil {
 		if this == nil {
 			return true
@@ -667,9 +668,9 @@ func (this *Answer_PhotoSection) Equal(that interface{}) bool {
 		return false
 	}
 
-	that1, ok := that.(*Answer_PhotoSection)
+	that1, ok := that.(*Answer_MediaSection)
 	if !ok {
-		that2, ok := that.(Answer_PhotoSection)
+		that2, ok := that.(Answer_MediaSection)
 		if ok {
 			that1 = &that2
 		} else {
@@ -684,7 +685,7 @@ func (this *Answer_PhotoSection) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if !this.PhotoSection.Equal(that1.PhotoSection) {
+	if !this.MediaSection.Equal(that1.MediaSection) {
 		return false
 	}
 	return true
@@ -1018,7 +1019,7 @@ func (this *AutocompleteAnswer) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *PhotoSectionAnswer) Equal(that interface{}) bool {
+func (this *MediaSectionAnswer) Equal(that interface{}) bool {
 	if that == nil {
 		if this == nil {
 			return true
@@ -1026,9 +1027,9 @@ func (this *PhotoSectionAnswer) Equal(that interface{}) bool {
 		return false
 	}
 
-	that1, ok := that.(*PhotoSectionAnswer)
+	that1, ok := that.(*MediaSectionAnswer)
 	if !ok {
-		that2, ok := that.(PhotoSectionAnswer)
+		that2, ok := that.(MediaSectionAnswer)
 		if ok {
 			that1 = &that2
 		} else {
@@ -1053,7 +1054,7 @@ func (this *PhotoSectionAnswer) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *PhotoSectionAnswer_PhotoSectionItem) Equal(that interface{}) bool {
+func (this *MediaSectionAnswer_MediaSectionItem) Equal(that interface{}) bool {
 	if that == nil {
 		if this == nil {
 			return true
@@ -1061,9 +1062,9 @@ func (this *PhotoSectionAnswer_PhotoSectionItem) Equal(that interface{}) bool {
 		return false
 	}
 
-	that1, ok := that.(*PhotoSectionAnswer_PhotoSectionItem)
+	that1, ok := that.(*MediaSectionAnswer_MediaSectionItem)
 	if !ok {
-		that2, ok := that.(PhotoSectionAnswer_PhotoSectionItem)
+		that2, ok := that.(MediaSectionAnswer_MediaSectionItem)
 		if ok {
 			that1 = &that2
 		} else {
@@ -1091,7 +1092,7 @@ func (this *PhotoSectionAnswer_PhotoSectionItem) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem) Equal(that interface{}) bool {
+func (this *MediaSectionAnswer_MediaSectionItem_MediaSlotItem) Equal(that interface{}) bool {
 	if that == nil {
 		if this == nil {
 			return true
@@ -1099,9 +1100,9 @@ func (this *PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem) Equal(that interf
 		return false
 	}
 
-	that1, ok := that.(*PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem)
+	that1, ok := that.(*MediaSectionAnswer_MediaSectionItem_MediaSlotItem)
 	if !ok {
-		that2, ok := that.(PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem)
+		that2, ok := that.(MediaSectionAnswer_MediaSectionItem_MediaSlotItem)
 		if ok {
 			that1 = &that2
 		} else {
@@ -1123,6 +1124,9 @@ func (this *PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem) Equal(that interf
 		return false
 	}
 	if this.MediaID != that1.MediaID {
+		return false
+	}
+	if this.Type != that1.Type {
 		return false
 	}
 	return true
@@ -1173,12 +1177,12 @@ func (this *Answer_Autocomplete) GoString() string {
 		`Autocomplete:` + fmt.Sprintf("%#v", this.Autocomplete) + `}`}, ", ")
 	return s
 }
-func (this *Answer_PhotoSection) GoString() string {
+func (this *Answer_MediaSection) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&models.Answer_PhotoSection{` +
-		`PhotoSection:` + fmt.Sprintf("%#v", this.PhotoSection) + `}`}, ", ")
+	s := strings.Join([]string{`&models.Answer_MediaSection{` +
+		`MediaSection:` + fmt.Sprintf("%#v", this.MediaSection) + `}`}, ", ")
 	return s
 }
 func (this *Answer_SingleEntry) GoString() string {
@@ -1312,24 +1316,24 @@ func (this *AutocompleteAnswer) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
-func (this *PhotoSectionAnswer) GoString() string {
+func (this *MediaSectionAnswer) GoString() string {
 	if this == nil {
 		return "nil"
 	}
 	s := make([]string, 0, 5)
-	s = append(s, "&models.PhotoSectionAnswer{")
+	s = append(s, "&models.MediaSectionAnswer{")
 	if this.Sections != nil {
 		s = append(s, "Sections: "+fmt.Sprintf("%#v", this.Sections)+",\n")
 	}
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
-func (this *PhotoSectionAnswer_PhotoSectionItem) GoString() string {
+func (this *MediaSectionAnswer_MediaSectionItem) GoString() string {
 	if this == nil {
 		return "nil"
 	}
 	s := make([]string, 0, 6)
-	s = append(s, "&models.PhotoSectionAnswer_PhotoSectionItem{")
+	s = append(s, "&models.MediaSectionAnswer_MediaSectionItem{")
 	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
 	if this.Slots != nil {
 		s = append(s, "Slots: "+fmt.Sprintf("%#v", this.Slots)+",\n")
@@ -1337,15 +1341,16 @@ func (this *PhotoSectionAnswer_PhotoSectionItem) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
-func (this *PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem) GoString() string {
+func (this *MediaSectionAnswer_MediaSectionItem_MediaSlotItem) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 7)
-	s = append(s, "&models.PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem{")
+	s := make([]string, 0, 8)
+	s = append(s, "&models.MediaSectionAnswer_MediaSectionItem_MediaSlotItem{")
 	s = append(s, "SlotID: "+fmt.Sprintf("%#v", this.SlotID)+",\n")
 	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
 	s = append(s, "MediaID: "+fmt.Sprintf("%#v", this.MediaID)+",\n")
+	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1467,13 +1472,13 @@ func (m *Answer_Autocomplete) MarshalTo(data []byte) (int, error) {
 	}
 	return i, nil
 }
-func (m *Answer_PhotoSection) MarshalTo(data []byte) (int, error) {
+func (m *Answer_MediaSection) MarshalTo(data []byte) (int, error) {
 	i := 0
-	if m.PhotoSection != nil {
+	if m.MediaSection != nil {
 		data[i] = 0x72
 		i++
-		i = encodeVarintGen(data, i, uint64(m.PhotoSection.Size()))
-		n6, err := m.PhotoSection.MarshalTo(data[i:])
+		i = encodeVarintGen(data, i, uint64(m.MediaSection.Size()))
+		n6, err := m.MediaSection.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -1779,7 +1784,7 @@ func (m *AutocompleteAnswer) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *PhotoSectionAnswer) Marshal() (data []byte, err error) {
+func (m *MediaSectionAnswer) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
 	n, err := m.MarshalTo(data)
@@ -1789,7 +1794,7 @@ func (m *PhotoSectionAnswer) Marshal() (data []byte, err error) {
 	return data[:n], nil
 }
 
-func (m *PhotoSectionAnswer) MarshalTo(data []byte) (int, error) {
+func (m *MediaSectionAnswer) MarshalTo(data []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -1809,7 +1814,7 @@ func (m *PhotoSectionAnswer) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *PhotoSectionAnswer_PhotoSectionItem) Marshal() (data []byte, err error) {
+func (m *MediaSectionAnswer_MediaSectionItem) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
 	n, err := m.MarshalTo(data)
@@ -1819,7 +1824,7 @@ func (m *PhotoSectionAnswer_PhotoSectionItem) Marshal() (data []byte, err error)
 	return data[:n], nil
 }
 
-func (m *PhotoSectionAnswer_PhotoSectionItem) MarshalTo(data []byte) (int, error) {
+func (m *MediaSectionAnswer_MediaSectionItem) MarshalTo(data []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -1845,7 +1850,7 @@ func (m *PhotoSectionAnswer_PhotoSectionItem) MarshalTo(data []byte) (int, error
 	return i, nil
 }
 
-func (m *PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem) Marshal() (data []byte, err error) {
+func (m *MediaSectionAnswer_MediaSectionItem_MediaSlotItem) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
 	n, err := m.MarshalTo(data)
@@ -1855,7 +1860,7 @@ func (m *PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem) Marshal() (data []by
 	return data[:n], nil
 }
 
-func (m *PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem) MarshalTo(data []byte) (int, error) {
+func (m *MediaSectionAnswer_MediaSectionItem_MediaSlotItem) MarshalTo(data []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -1877,6 +1882,12 @@ func (m *PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem) MarshalTo(data []byt
 		i++
 		i = encodeVarintGen(data, i, uint64(len(m.MediaID)))
 		i += copy(data[i:], m.MediaID)
+	}
+	if len(m.Type) > 0 {
+		data[i] = 0x22
+		i++
+		i = encodeVarintGen(data, i, uint64(len(m.Type)))
+		i += copy(data[i:], m.Type)
 	}
 	return i, nil
 }
@@ -1961,11 +1972,11 @@ func (m *Answer_Autocomplete) Size() (n int) {
 	}
 	return n
 }
-func (m *Answer_PhotoSection) Size() (n int) {
+func (m *Answer_MediaSection) Size() (n int) {
 	var l int
 	_ = l
-	if m.PhotoSection != nil {
-		l = m.PhotoSection.Size()
+	if m.MediaSection != nil {
+		l = m.MediaSection.Size()
 		n += 1 + l + sovGen(uint64(l))
 	}
 	return n
@@ -2100,7 +2111,7 @@ func (m *AutocompleteAnswer) Size() (n int) {
 	return n
 }
 
-func (m *PhotoSectionAnswer) Size() (n int) {
+func (m *MediaSectionAnswer) Size() (n int) {
 	var l int
 	_ = l
 	if len(m.Sections) > 0 {
@@ -2112,7 +2123,7 @@ func (m *PhotoSectionAnswer) Size() (n int) {
 	return n
 }
 
-func (m *PhotoSectionAnswer_PhotoSectionItem) Size() (n int) {
+func (m *MediaSectionAnswer_MediaSectionItem) Size() (n int) {
 	var l int
 	_ = l
 	l = len(m.Name)
@@ -2128,7 +2139,7 @@ func (m *PhotoSectionAnswer_PhotoSectionItem) Size() (n int) {
 	return n
 }
 
-func (m *PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem) Size() (n int) {
+func (m *MediaSectionAnswer_MediaSectionItem_MediaSlotItem) Size() (n int) {
 	var l int
 	_ = l
 	l = len(m.SlotID)
@@ -2140,6 +2151,10 @@ func (m *PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem) Size() (n int) {
 		n += 1 + l + sovGen(uint64(l))
 	}
 	l = len(m.MediaID)
+	if l > 0 {
+		n += 1 + l + sovGen(uint64(l))
+	}
+	l = len(m.Type)
 	if l > 0 {
 		n += 1 + l + sovGen(uint64(l))
 	}
@@ -2211,12 +2226,12 @@ func (this *Answer_Autocomplete) String() string {
 	}, "")
 	return s
 }
-func (this *Answer_PhotoSection) String() string {
+func (this *Answer_MediaSection) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&Answer_PhotoSection{`,
-		`PhotoSection:` + strings.Replace(fmt.Sprintf("%v", this.PhotoSection), "PhotoSectionAnswer", "PhotoSectionAnswer", 1) + `,`,
+	s := strings.Join([]string{`&Answer_MediaSection{`,
+		`MediaSection:` + strings.Replace(fmt.Sprintf("%v", this.MediaSection), "MediaSectionAnswer", "MediaSectionAnswer", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2344,35 +2359,36 @@ func (this *AutocompleteAnswer) String() string {
 	}, "")
 	return s
 }
-func (this *PhotoSectionAnswer) String() string {
+func (this *MediaSectionAnswer) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&PhotoSectionAnswer{`,
-		`Sections:` + strings.Replace(fmt.Sprintf("%v", this.Sections), "PhotoSectionAnswer_PhotoSectionItem", "PhotoSectionAnswer_PhotoSectionItem", 1) + `,`,
+	s := strings.Join([]string{`&MediaSectionAnswer{`,
+		`Sections:` + strings.Replace(fmt.Sprintf("%v", this.Sections), "MediaSectionAnswer_MediaSectionItem", "MediaSectionAnswer_MediaSectionItem", 1) + `,`,
 		`}`,
 	}, "")
 	return s
 }
-func (this *PhotoSectionAnswer_PhotoSectionItem) String() string {
+func (this *MediaSectionAnswer_MediaSectionItem) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&PhotoSectionAnswer_PhotoSectionItem{`,
+	s := strings.Join([]string{`&MediaSectionAnswer_MediaSectionItem{`,
 		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
-		`Slots:` + strings.Replace(fmt.Sprintf("%v", this.Slots), "PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem", "PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem", 1) + `,`,
+		`Slots:` + strings.Replace(fmt.Sprintf("%v", this.Slots), "MediaSectionAnswer_MediaSectionItem_MediaSlotItem", "MediaSectionAnswer_MediaSectionItem_MediaSlotItem", 1) + `,`,
 		`}`,
 	}, "")
 	return s
 }
-func (this *PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem) String() string {
+func (this *MediaSectionAnswer_MediaSectionItem_MediaSlotItem) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem{`,
+	s := strings.Join([]string{`&MediaSectionAnswer_MediaSectionItem_MediaSlotItem{`,
 		`SlotID:` + fmt.Sprintf("%v", this.SlotID) + `,`,
 		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
 		`MediaID:` + fmt.Sprintf("%v", this.MediaID) + `,`,
+		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2602,7 +2618,7 @@ func (m *Answer) Unmarshal(data []byte) error {
 			iNdEx = postIndex
 		case 14:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field PhotoSection", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field MediaSection", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -2626,11 +2642,11 @@ func (m *Answer) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			v := &PhotoSectionAnswer{}
+			v := &MediaSectionAnswer{}
 			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			m.Answer = &Answer_PhotoSection{v}
+			m.Answer = &Answer_MediaSection{v}
 			iNdEx = postIndex
 		case 15:
 			if wireType != 2 {
@@ -3622,7 +3638,7 @@ func (m *AutocompleteAnswer) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *PhotoSectionAnswer) Unmarshal(data []byte) error {
+func (m *MediaSectionAnswer) Unmarshal(data []byte) error {
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -3645,10 +3661,10 @@ func (m *PhotoSectionAnswer) Unmarshal(data []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: PhotoSectionAnswer: wiretype end group for non-group")
+			return fmt.Errorf("proto: MediaSectionAnswer: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: PhotoSectionAnswer: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MediaSectionAnswer: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -3677,7 +3693,7 @@ func (m *PhotoSectionAnswer) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Sections = append(m.Sections, &PhotoSectionAnswer_PhotoSectionItem{})
+			m.Sections = append(m.Sections, &MediaSectionAnswer_MediaSectionItem{})
 			if err := m.Sections[len(m.Sections)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -3703,7 +3719,7 @@ func (m *PhotoSectionAnswer) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *PhotoSectionAnswer_PhotoSectionItem) Unmarshal(data []byte) error {
+func (m *MediaSectionAnswer_MediaSectionItem) Unmarshal(data []byte) error {
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -3726,10 +3742,10 @@ func (m *PhotoSectionAnswer_PhotoSectionItem) Unmarshal(data []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: PhotoSectionItem: wiretype end group for non-group")
+			return fmt.Errorf("proto: MediaSectionItem: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: PhotoSectionItem: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MediaSectionItem: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -3787,7 +3803,7 @@ func (m *PhotoSectionAnswer_PhotoSectionItem) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Slots = append(m.Slots, &PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem{})
+			m.Slots = append(m.Slots, &MediaSectionAnswer_MediaSectionItem_MediaSlotItem{})
 			if err := m.Slots[len(m.Slots)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -3813,7 +3829,7 @@ func (m *PhotoSectionAnswer_PhotoSectionItem) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem) Unmarshal(data []byte) error {
+func (m *MediaSectionAnswer_MediaSectionItem_MediaSlotItem) Unmarshal(data []byte) error {
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -3836,10 +3852,10 @@ func (m *PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem) Unmarshal(data []byt
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: PhotoSlotItem: wiretype end group for non-group")
+			return fmt.Errorf("proto: MediaSlotItem: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: PhotoSlotItem: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MediaSlotItem: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -3928,6 +3944,35 @@ func (m *PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem) Unmarshal(data []byt
 				return io.ErrUnexpectedEOF
 			}
 			m.MediaID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGen
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGen
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Type = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -4056,52 +4101,47 @@ var (
 )
 
 var fileDescriptorGen = []byte{
-	// 745 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xbc, 0x55, 0xcb, 0x6e, 0xd3, 0x40,
-	0x14, 0xad, 0x9d, 0xd6, 0x4d, 0xae, 0xd3, 0x24, 0x1d, 0x55, 0x91, 0x09, 0x28, 0xa0, 0x50, 0x21,
-	0x24, 0x68, 0x8a, 0x0a, 0x48, 0x80, 0xc4, 0xa3, 0x2f, 0x20, 0x48, 0x51, 0xc1, 0x41, 0x62, 0x19,
-	0xe5, 0x31, 0x4d, 0x2d, 0xec, 0xd8, 0x64, 0x6c, 0xa0, 0x3b, 0x3e, 0x81, 0xcf, 0x60, 0xc5, 0x77,
-	0xc0, 0xae, 0x4b, 0xd8, 0x20, 0x5a, 0x36, 0xb0, 0xe3, 0x13, 0xb8, 0xbe, 0x7e, 0xc4, 0x4e, 0xda,
-	0x4a, 0x08, 0x89, 0xc5, 0xc8, 0xe3, 0x73, 0xe6, 0x1e, 0x9f, 0x7b, 0xaf, 0x67, 0x06, 0x72, 0x03,
-	0x3e, 0xac, 0x3b, 0x23, 0xdb, 0xb5, 0x99, 0x62, 0xd9, 0x7d, 0x6e, 0x8a, 0xca, 0xca, 0xc0, 0x70,
-	0xf7, 0xbc, 0x6e, 0xbd, 0x67, 0x5b, 0xab, 0x03, 0x7b, 0x60, 0xaf, 0x12, 0xdd, 0xf5, 0x76, 0xe9,
-	0x8d, 0x5e, 0x68, 0x16, 0x84, 0xd5, 0x3e, 0xce, 0x82, 0xb2, 0x3e, 0x14, 0x6f, 0xf8, 0x88, 0xad,
-	0x82, 0xfa, 0xca, 0xe3, 0xc2, 0x35, 0xec, 0x61, 0xdb, 0xe8, 0x6b, 0xd2, 0x05, 0xe9, 0x72, 0x6e,
-	0xa3, 0x70, 0xf4, 0xed, 0x3c, 0x3c, 0x0b, 0xe1, 0xc6, 0x96, 0x0e, 0xd1, 0x92, 0x46, 0x9f, 0x31,
-	0x98, 0x75, 0xf7, 0x1d, 0xae, 0xc9, 0xfe, 0x4a, 0x9d, 0xe6, 0xec, 0x26, 0xe4, 0x76, 0x47, 0x9c,
-	0xb7, 0x5d, 0xfe, 0xd6, 0xd5, 0x00, 0x09, 0x75, 0xad, 0x5c, 0x0f, 0xac, 0xd5, 0x1f, 0x22, 0xf1,
-	0x1c, 0xf1, 0xe0, 0x7b, 0x8f, 0x67, 0xf4, 0xec, 0x6e, 0x88, 0xb0, 0x47, 0x50, 0xb4, 0x3c, 0xd3,
-	0x35, 0x1c, 0x93, 0xb7, 0x7b, 0x7b, 0xb6, 0xd1, 0xe3, 0x9a, 0x4a, 0xc1, 0xe7, 0xa2, 0xe0, 0x66,
-	0x48, 0x6f, 0x12, 0x1b, 0x4b, 0x14, 0xac, 0x14, 0xce, 0xd6, 0x61, 0x41, 0x18, 0xc3, 0x01, 0xca,
-	0x08, 0x6e, 0xf2, 0x9e, 0xab, 0xe5, 0x49, 0xa6, 0x12, 0xc9, 0xb4, 0x88, 0x6c, 0x11, 0x17, 0x8b,
-	0xe4, 0x45, 0x02, 0x65, 0x0f, 0x20, 0xdf, 0xf1, 0x5c, 0x1b, 0x0b, 0x88, 0xb2, 0x2e, 0xd7, 0x16,
-	0xd2, 0x0a, 0xeb, 0x09, 0x6e, 0xac, 0x90, 0x8c, 0xf0, 0x4d, 0x38, 0x7b, 0x58, 0x5d, 0xf4, 0xd0,
-	0xf3, 0x6b, 0xa5, 0x15, 0xd2, 0x12, 0x4f, 0x7d, 0xb2, 0x15, 0x70, 0x63, 0x09, 0x27, 0x81, 0xb2,
-	0x7b, 0x10, 0x9a, 0x6a, 0xf3, 0xa1, 0x3b, 0xda, 0xd7, 0x8a, 0xa4, 0x70, 0x26, 0x9d, 0xc6, 0xb6,
-	0x4f, 0xc5, 0x02, 0xaa, 0x18, 0x83, 0xac, 0x09, 0x8b, 0x82, 0x0f, 0x2c, 0x0c, 0xe6, 0xfd, 0x76,
-	0xcf, 0x46, 0xcc, 0x36, 0xb5, 0x12, 0x89, 0x54, 0x63, 0x91, 0x68, 0xc1, 0x66, 0xc0, 0xc7, 0x4a,
-	0x25, 0x31, 0xc1, 0x6c, 0x64, 0x41, 0xe9, 0x10, 0x5b, 0x5b, 0x81, 0x42, 0xba, 0x8f, 0xec, 0x6c,
-	0xb2, 0xe5, 0xf4, 0xd7, 0x8c, 0x1b, 0x5b, 0x7b, 0x01, 0x4b, 0xc7, 0x75, 0x8e, 0xdd, 0x87, 0x52,
-	0xd0, 0x20, 0xb4, 0x17, 0x28, 0x0b, 0x8c, 0xcd, 0xa0, 0xbd, 0xa5, 0xb8, 0xd0, 0x04, 0xef, 0x38,
-	0x7e, 0x3d, 0xf4, 0x62, 0xb4, 0x3a, 0x40, 0x45, 0xad, 0x05, 0x6c, 0xba, 0x97, 0xec, 0x2e, 0x14,
-	0x27, 0x64, 0xc9, 0xd1, 0x49, 0xaa, 0x85, 0xb4, 0x2a, 0xba, 0x2d, 0x1f, 0x5f, 0x94, 0x7f, 0x15,
-	0xbe, 0x06, 0x8b, 0x53, 0x2d, 0x3b, 0xbd, 0x70, 0x5f, 0x25, 0xc8, 0x27, 0x25, 0x59, 0x19, 0xe4,
-	0x78, 0x57, 0x2a, 0xb8, 0x2b, 0x65, 0xdc, 0x8d, 0x88, 0xa4, 0x55, 0xe4, 0xb4, 0x0a, 0xdb, 0x06,
-	0x55, 0x78, 0xdd, 0xb8, 0xc2, 0x19, 0xaa, 0xf0, 0xf2, 0x71, 0x96, 0xeb, 0x2d, 0xaf, 0x1b, 0xd6,
-	0x96, 0x3c, 0xea, 0x20, 0x62, 0xa0, 0xd2, 0x84, 0xe2, 0x04, 0xcd, 0x4a, 0x90, 0x79, 0xc9, 0xf7,
-	0x43, 0xdb, 0xfe, 0x94, 0x2d, 0xc3, 0xdc, 0xeb, 0x8e, 0xe9, 0x05, 0xe7, 0x81, 0xba, 0x56, 0x48,
-	0x7f, 0x45, 0x0f, 0xc8, 0x3b, 0xf2, 0x2d, 0xa9, 0x76, 0x20, 0x41, 0x79, 0x7a, 0x1b, 0x35, 0x5c,
-	0x6e, 0x61, 0x96, 0x4a, 0xa2, 0xbc, 0x39, 0x3d, 0x7c, 0x63, 0x3b, 0xe9, 0x44, 0x64, 0x4a, 0xa4,
-	0x7e, 0xf2, 0x9e, 0xf4, 0xc5, 0xfe, 0x67, 0x4a, 0x4f, 0x80, 0x4d, 0x9b, 0x60, 0x37, 0x60, 0xce,
-	0x40, 0x23, 0xd1, 0xaf, 0x5d, 0x3d, 0xdd, 0xaf, 0x1e, 0x2c, 0xae, 0x7d, 0x96, 0x81, 0x4d, 0x1f,
-	0x11, 0x78, 0x46, 0x66, 0xc3, 0xf3, 0x24, 0xd2, 0xbb, 0x72, 0xf2, 0x81, 0x92, 0x82, 0x48, 0x3c,
-	0x0e, 0xae, 0xfc, 0x92, 0xa0, 0x34, 0x49, 0xfb, 0x87, 0xf9, 0xb0, 0x63, 0xf1, 0x30, 0x7b, 0x9a,
-	0x63, 0xd1, 0xe7, 0x84, 0x69, 0xbb, 0x51, 0xb9, 0x6f, 0xff, 0xc5, 0xe7, 0x42, 0x00, 0xa3, 0x83,
-	0xcc, 0x48, 0xa7, 0xe2, 0xc0, 0x42, 0x0a, 0x67, 0x17, 0x61, 0xde, 0x67, 0xc6, 0xf7, 0x0d, 0xe0,
-	0x9f, 0xad, 0x10, 0xbd, 0xa5, 0x2b, 0x3e, 0x15, 0xdc, 0x33, 0x64, 0x4d, 0x4e, 0x58, 0xbb, 0x04,
-	0x59, 0x8b, 0xf7, 0x8d, 0x8e, 0x1f, 0x99, 0xa1, 0x48, 0x15, 0x23, 0xe7, 0x9b, 0x3e, 0x86, 0xa1,
-	0xf3, 0x44, 0x36, 0xfa, 0x1b, 0x57, 0x0f, 0x0e, 0xab, 0xd2, 0x97, 0xc3, 0xea, 0xcc, 0x6f, 0x7c,
-	0xbe, 0x3b, 0xaa, 0x4a, 0x1f, 0x70, 0x7c, 0xc2, 0x71, 0x80, 0xe3, 0x3b, 0x8e, 0x9f, 0x47, 0xc8,
-	0xe1, 0xf3, 0xfd, 0x8f, 0xea, 0x4c, 0x57, 0xa1, 0x4b, 0xf1, 0xfa, 0x9f, 0x00, 0x00, 0x00, 0xff,
-	0xff, 0xda, 0x57, 0x78, 0xa4, 0x58, 0x07, 0x00, 0x00,
+	// 663 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xb4, 0x54, 0xc1, 0x6e, 0xd3, 0x4c,
+	0x10, 0xae, 0x9d, 0x36, 0x6d, 0xc7, 0x69, 0xd2, 0xae, 0xaa, 0xca, 0x7f, 0x7e, 0x08, 0xc8, 0x45,
+	0x08, 0xa9, 0xd4, 0x15, 0xed, 0x01, 0x0a, 0xe2, 0xd0, 0xa6, 0x94, 0xf6, 0x50, 0x21, 0x14, 0xee,
+	0x51, 0xe2, 0x6c, 0x5d, 0x0b, 0xdb, 0x1b, 0xe2, 0x35, 0xd0, 0x1b, 0x8f, 0xc0, 0x63, 0xc0, 0x0d,
+	0x89, 0x13, 0x6f, 0xc0, 0xb1, 0x12, 0x17, 0x4e, 0x88, 0x96, 0x0b, 0x47, 0x1e, 0x81, 0xf1, 0xac,
+	0x6d, 0xe2, 0x26, 0x45, 0xea, 0x81, 0xc3, 0xca, 0xde, 0xf9, 0xf6, 0xfb, 0xe6, 0xdb, 0xd9, 0xd9,
+	0x85, 0x59, 0x97, 0x87, 0x76, 0x7f, 0x20, 0xa4, 0x60, 0xe5, 0x40, 0xf4, 0xb8, 0x1f, 0xd5, 0x57,
+	0x5d, 0x4f, 0x1e, 0xc5, 0x5d, 0xdb, 0x11, 0xc1, 0x9a, 0x2b, 0x5c, 0xb1, 0x46, 0x70, 0x37, 0x3e,
+	0xa4, 0x19, 0x4d, 0xe8, 0x4f, 0xd1, 0xac, 0x4f, 0x25, 0x28, 0x6f, 0x85, 0xd1, 0x2b, 0x3e, 0x60,
+	0xcb, 0x60, 0xbc, 0x88, 0x79, 0x24, 0x3d, 0x11, 0xb6, 0xbd, 0x9e, 0xa9, 0x5d, 0xd7, 0x6e, 0xcd,
+	0x6e, 0x57, 0xcf, 0xbe, 0x5d, 0x83, 0xa7, 0x69, 0x78, 0x7f, 0x87, 0x55, 0x60, 0x52, 0x1e, 0xf7,
+	0xb9, 0xa9, 0x27, 0x28, 0x5b, 0x81, 0xd9, 0xc3, 0x01, 0xe7, 0x6d, 0xc9, 0x5f, 0x4b, 0x13, 0x30,
+	0x64, 0xac, 0x2f, 0xd9, 0xca, 0x88, 0xbd, 0x8b, 0xc0, 0x33, 0x8c, 0x2b, 0xf5, 0xbd, 0x09, 0x76,
+	0x17, 0x6a, 0x41, 0xec, 0x4b, 0xaf, 0xef, 0xf3, 0xb6, 0x73, 0x24, 0x3c, 0x87, 0x9b, 0x06, 0x51,
+	0xae, 0x64, 0x94, 0x83, 0x14, 0x6e, 0x12, 0x9a, 0x13, 0x37, 0x60, 0x2e, 0xf2, 0x42, 0x17, 0x69,
+	0x11, 0xf7, 0xb9, 0x23, 0xcd, 0x0a, 0xd1, 0xea, 0x19, 0xad, 0x45, 0x60, 0x8b, 0xb0, 0x9c, 0xb4,
+	0x0e, 0x95, 0x4e, 0x2c, 0x05, 0x96, 0x01, 0x05, 0x25, 0x37, 0xe7, 0x8a, 0x9c, 0xad, 0x21, 0x6c,
+	0x38, 0x51, 0xc0, 0x7b, 0x5e, 0x07, 0xf3, 0x38, 0xc9, 0x7e, 0xcd, 0x6a, 0x91, 0x74, 0x90, 0x80,
+	0x2d, 0x85, 0xe5, 0xa4, 0x3b, 0x50, 0x49, 0xdd, 0xf1, 0x50, 0x0e, 0x8e, 0xcd, 0x1a, 0x71, 0xfe,
+	0x2b, 0x9a, 0x7b, 0x94, 0x40, 0x39, 0xe5, 0x01, 0x2c, 0x44, 0xdc, 0x0d, 0x70, 0x3d, 0xef, 0xb5,
+	0x1d, 0x81, 0x98, 0xf0, 0xcd, 0x79, 0xe2, 0x35, 0x72, 0x5e, 0xb6, 0xa0, 0xa9, 0xf0, 0x8c, 0xbc,
+	0x3d, 0x03, 0xe5, 0x0e, 0xfd, 0x5b, 0xcb, 0x50, 0x2d, 0x16, 0x99, 0x2d, 0x0c, 0x9f, 0x07, 0x1d,
+	0xa0, 0xb5, 0x0b, 0x8b, 0xe3, 0xca, 0xca, 0x6c, 0x98, 0x57, 0xd5, 0x44, 0x0b, 0x4a, 0x2f, 0x42,
+	0x46, 0x09, 0x2d, 0x2c, 0xe6, 0x35, 0xa2, 0xf0, 0x93, 0x7e, 0xb2, 0x5d, 0xab, 0x09, 0x6c, 0xb4,
+	0xce, 0x6c, 0x15, 0x6a, 0xe7, 0x54, 0x28, 0xed, 0x45, 0x22, 0x8f, 0x61, 0x69, 0xfc, 0xbe, 0x2e,
+	0x2b, 0x74, 0x13, 0x16, 0x46, 0x0a, 0x3b, 0x6e, 0xf7, 0x1f, 0x35, 0xa8, 0x0c, 0x13, 0x19, 0x03,
+	0x3d, 0xef, 0xed, 0x32, 0xf6, 0xb6, 0x8e, 0x3d, 0x5d, 0xe0, 0xa9, 0xc6, 0xde, 0x04, 0x23, 0x8a,
+	0xbb, 0x79, 0x61, 0x4a, 0x54, 0x98, 0x1b, 0xe3, 0xac, 0xd8, 0xad, 0xb8, 0xab, 0xe6, 0x11, 0x79,
+	0xa9, 0x6f, 0x41, 0xed, 0x5c, 0x88, 0x19, 0x50, 0x7a, 0xce, 0x8f, 0x55, 0x56, 0x76, 0x15, 0xa6,
+	0x5e, 0x76, 0xfc, 0x58, 0x5d, 0x21, 0x63, 0xbd, 0x5a, 0x14, 0xbd, 0xaf, 0xdf, 0xd3, 0xac, 0x0f,
+	0x1a, 0x2c, 0x8d, 0x36, 0xe8, 0xbe, 0xe4, 0x01, 0xab, 0x66, 0xa7, 0x9f, 0xaa, 0x35, 0x8b, 0x46,
+	0x75, 0x32, 0x6a, 0x5f, 0xdc, 0xe5, 0x89, 0xc8, 0xbf, 0xb0, 0x8c, 0xed, 0x31, 0x9a, 0x0c, 0x4f,
+	0x75, 0xca, 0xc3, 0x84, 0x59, 0x67, 0x35, 0xfe, 0xee, 0xcb, 0x7a, 0xaf, 0x03, 0x1b, 0xbd, 0x63,
+	0xec, 0x21, 0xcc, 0xa4, 0x17, 0x32, 0x13, 0x5a, 0xb9, 0xf8, 0x46, 0x16, 0x42, 0x89, 0x6a, 0xfd,
+	0x8b, 0x06, 0xf3, 0xe7, 0x83, 0xc9, 0x3b, 0x16, 0x76, 0x02, 0x9e, 0x6e, 0x70, 0x0f, 0xa6, 0x22,
+	0x5f, 0xc8, 0xac, 0x7e, 0x9b, 0x97, 0x90, 0x4f, 0x03, 0xc8, 0xa6, 0x64, 0x2e, 0xcc, 0x15, 0x02,
+	0xec, 0x7f, 0x98, 0x4e, 0xa4, 0xff, 0xbc, 0xa8, 0x80, 0x5d, 0x57, 0x26, 0x78, 0x27, 0x77, 0xa1,
+	0xa7, 0x65, 0x9e, 0x51, 0xcf, 0x0f, 0xae, 0x2d, 0xd1, 0x5a, 0x03, 0xd7, 0x4e, 0x93, 0xde, 0xd0,
+	0xd3, 0x3b, 0x49, 0xd0, 0xed, 0x93, 0xd3, 0x86, 0xf6, 0xf5, 0xb4, 0x31, 0xf1, 0x0b, 0xbf, 0x6f,
+	0xce, 0x1a, 0xda, 0x3b, 0x1c, 0x9f, 0x71, 0x9c, 0xe0, 0xf8, 0x8e, 0xe3, 0xe7, 0x19, 0x62, 0xf8,
+	0x7d, 0xfb, 0xa3, 0x31, 0xd1, 0x2d, 0xd3, 0x6b, 0xbf, 0xf1, 0x3b, 0x00, 0x00, 0xff, 0xff, 0x6c,
+	0x69, 0x54, 0xe2, 0x31, 0x06, 0x00, 0x00,
 }

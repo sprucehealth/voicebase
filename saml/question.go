@@ -50,6 +50,11 @@ func questionParser(p *parser, line string) interface{} {
 			if que.Details.Tag == "" {
 				que.Details.Tag = generateTagForQuestion(p, line)
 			}
+		case "media":
+			que.Details.Type = QuestionTypeMediaSection
+			if que.Details.Tag == "" {
+				que.Details.Tag = generateTagForQuestion(p, line)
+			}
 		case "medication picker":
 			que.Details.ToPrefill = boolPtr(true)
 			que.Details.Type = QuestionTypeAutocomplete
@@ -88,66 +93,22 @@ func questionParser(p *parser, line string) interface{} {
 			}
 
 			dir := p.parseSingleDirective(line)
-			if dir.name != "photo slot" && len(que.Details.PhotoSlots) != 0 {
-				ps := que.Details.PhotoSlots[len(que.Details.PhotoSlots)-1]
-				switch dir.name {
-				case "required":
-					ps.Required = boolPtr(true)
+
+			if dir.name != "photo slot" && dir.name != "video slot" {
+				parsed := false
+				// check both PhotoSlots and MediaSlots for backwards compatibility
+				if len(que.Details.PhotoSlots) > 0 {
+					p.parseMediaSlot(dir, line, que.Details.PhotoSlots[len(que.Details.PhotoSlots)-1])
+					parsed = true
+				}
+				if len(que.Details.MediaSlots) > 0 {
+					p.parseMediaSlot(dir, line, que.Details.MediaSlots[len(que.Details.MediaSlots)-1])
+					parsed = true
+				}
+
+				if parsed {
 					continue
-				case "optional":
-					ps.Required = boolPtr(false)
-					continue
 				}
-				if ps.ClientData == nil {
-					ps.ClientData = &PhotoSlotClientData{
-						Tips: make(map[string]*PhotoTip),
-					}
-				}
-				value := dir.value
-				switch dir.name {
-				default:
-					p.err("Unknown photo slot attribute '%s'", line)
-				case "tip":
-					if dir.modifier != "" {
-						if ps.ClientData.Tips[dir.modifier] == nil {
-							ps.ClientData.Tips[dir.modifier] = &PhotoTip{}
-						}
-						ps.ClientData.Tips[dir.modifier].Tip = value
-					} else {
-						ps.ClientData.Tip = value
-					}
-				case "tip subtext":
-					if dir.modifier != "" {
-						if ps.ClientData.Tips[dir.modifier] == nil {
-							ps.ClientData.Tips[dir.modifier] = &PhotoTip{}
-						}
-						ps.ClientData.Tips[dir.modifier].TipSubtext = value
-					} else {
-						ps.ClientData.TipSubtext = value
-					}
-				case "tip style":
-					if dir.modifier != "" {
-						if ps.ClientData.Tips[dir.modifier] == nil {
-							ps.ClientData.Tips[dir.modifier] = &PhotoTip{}
-						}
-						ps.ClientData.Tips[dir.modifier].TipStyle = dir.value
-					} else {
-						ps.ClientData.TipStyle = value
-					}
-				case "overlay image url":
-					ps.ClientData.OverlayImageURL = value
-				case "photo missing error message":
-					ps.ClientData.PhotoMissingErrorMessage = value
-				case "initial camera direction":
-					ps.ClientData.InitialCameraDirection = value
-				case "flash on":
-					ps.ClientData.Flash = FlashOn
-				case "flash auto":
-					ps.ClientData.Flash = FlashAuto
-				case "flash off":
-					ps.ClientData.Flash = FlashOff
-				}
-				continue
 			}
 
 			value := dir.value
@@ -195,8 +156,18 @@ func questionParser(p *parser, line string) interface{} {
 			case "answer group":
 				que.Details.AnswerGroups = append(que.Details.AnswerGroups, &AnswerGroup{Title: value})
 			case "photo slot":
-				que.Details.PhotoSlots = append(que.Details.PhotoSlots, &PhotoSlot{
+				// append to both MediaSlots and PhotoSlots for backwards compatiblity
+				que.Details.PhotoSlots = append(que.Details.PhotoSlots, &MediaSlot{
 					Name: value,
+				})
+				que.Details.MediaSlots = append(que.Details.MediaSlots, &MediaSlot{
+					Name: value,
+					Type: "photo",
+				})
+			case "video slot":
+				que.Details.MediaSlots = append(que.Details.MediaSlots, &MediaSlot{
+					Name: value,
+					Type: "video",
 				})
 			case "alert":
 				que.Details.AlertText = value
@@ -313,7 +284,7 @@ func questionParser(p *parser, line string) interface{} {
 								Operands: []*Condition{
 									triageCond,
 									&Condition{
-										Op:               "answer_contains_any",
+										Op:               ConditionTypeAnswerContainsAny,
 										Question:         que.Details.Tag,
 										PotentialAnswers: []string{ans.Tag},
 									},
@@ -322,7 +293,7 @@ func questionParser(p *parser, line string) interface{} {
 						}
 					} else {
 						triageCond = &Condition{
-							Op:               "answer_contains_any",
+							Op:               ConditionTypeAnswerContainsAny,
 							Question:         que.Details.Tag,
 							PotentialAnswers: []string{ans.Tag},
 						}
@@ -331,18 +302,18 @@ func questionParser(p *parser, line string) interface{} {
 				} else {
 					cond := p.cond[t]
 					if cond != nil {
-						if cond.Op == "answer_contains_any" && cond.Question == que.Details.Tag {
+						if cond.Op == ConditionTypeAnswerContainsAny && cond.Question == que.Details.Tag {
 							cond.PotentialAnswers = append(cond.PotentialAnswers, ans.Tag)
-						} else if cond.Op == "or" && cond.Operands[1].Op == "answer_contains_any" && cond.Operands[1].Question == que.Details.Tag {
+						} else if cond.Op == ConditionTypeOr && cond.Operands[1].Op == ConditionTypeAnswerContainsAny && cond.Operands[1].Question == que.Details.Tag {
 							// Optimize by merging OR cases
 							cond.Operands[1].PotentialAnswers = append(cond.Operands[1].PotentialAnswers, ans.Tag)
 						} else {
 							cond = &Condition{
-								Op: "or",
+								Op: ConditionTypeOr,
 								Operands: []*Condition{
 									cond,
 									&Condition{
-										Op:               "answer_contains_any",
+										Op:               ConditionTypeAnswerContainsAny,
 										Question:         que.Details.Tag,
 										PotentialAnswers: []string{ans.Tag},
 									},
@@ -351,7 +322,7 @@ func questionParser(p *parser, line string) interface{} {
 						}
 					} else {
 						cond = &Condition{
-							Op:               "answer_contains_any",
+							Op:               ConditionTypeAnswerContainsAny,
 							Question:         que.Details.Tag,
 							PotentialAnswers: []string{ans.Tag},
 						}
@@ -387,7 +358,7 @@ func questionParser(p *parser, line string) interface{} {
 						triageCond = cond
 					} else {
 						triageCond = &Condition{
-							Op: "or",
+							Op: ConditionTypeOr,
 							Operands: []*Condition{
 								triageCond,
 								cond,
@@ -408,7 +379,7 @@ func questionParser(p *parser, line string) interface{} {
 		if triageName == "triage out" {
 			qb.s = append(qb.s, &Screen{
 				Condition:          triageCond,
-				Type:               "screen_type_warning_popup",
+				Type:               ScreenTypeWarningPopup,
 				ContentHeaderTitle: "We're going to have to end your visit here.",
 				Body: &ScreenBody{
 					Text: "Your symptoms and medical history suggest that you may need more immediate medical attention than we can currently provide. A local emergency department is an appropriate option, as is your primary care provider.",
@@ -417,7 +388,7 @@ func questionParser(p *parser, line string) interface{} {
 			},
 				&Screen{
 					Condition:          triageCond,
-					Type:               "screen_type_triage",
+					Type:               ScreenTypeTriage,
 					Title:              "Next Steps",
 					ContentHeaderTitle: "You should seek in-person medical evaluation today.",
 					Body: &ScreenBody{
@@ -451,6 +422,69 @@ func questionParser(p *parser, line string) interface{} {
 	return qb
 }
 
+func (p *parser) parseMediaSlot(dir *directive, line string, ms *MediaSlot) {
+	switch dir.name {
+	case "required":
+		ms.Required = boolPtr(true)
+		return
+	case "optional":
+		ms.Required = boolPtr(false)
+		return
+	}
+	if ms.ClientData == nil {
+		ms.ClientData = &MediaSlotClientData{
+			Tips: make(map[string]*MediaTip),
+		}
+	}
+	value := dir.value
+	switch dir.name {
+	default:
+		p.err("Unknown photo slot attribute '%s'", line)
+		return
+	case "tip":
+		if dir.modifier != "" {
+			if ms.ClientData.Tips[dir.modifier] == nil {
+				ms.ClientData.Tips[dir.modifier] = &MediaTip{}
+			}
+			ms.ClientData.Tips[dir.modifier].Tip = value
+		} else {
+			ms.ClientData.Tip = value
+		}
+	case "tip subtext":
+		if dir.modifier != "" {
+			if ms.ClientData.Tips[dir.modifier] == nil {
+				ms.ClientData.Tips[dir.modifier] = &MediaTip{}
+			}
+			ms.ClientData.Tips[dir.modifier].TipSubtext = value
+		} else {
+			ms.ClientData.TipSubtext = value
+		}
+	case "tip style":
+		if dir.modifier != "" {
+			if ms.ClientData.Tips[dir.modifier] == nil {
+				ms.ClientData.Tips[dir.modifier] = &MediaTip{}
+			}
+			ms.ClientData.Tips[dir.modifier].TipStyle = dir.value
+		} else {
+			ms.ClientData.TipStyle = value
+		}
+	case "overlay image url":
+		ms.ClientData.OverlayImageURL = value
+	case "photo missing error message":
+		ms.ClientData.PhotoMissingErrorMessage = value
+	case "media missing error message":
+		ms.ClientData.MediaMissingErrorMessage = value
+	case "initial camera direction":
+		ms.ClientData.InitialCameraDirection = value
+	case "flash on":
+		ms.ClientData.Flash = FlashOn
+	case "flash auto":
+		ms.ClientData.Flash = FlashAuto
+	case "flash off":
+		ms.ClientData.Flash = FlashOff
+	}
+}
+
 func generateTagForQuestion(p *parser, text string) string {
 	tag := tagFromText(text)
 
@@ -466,11 +500,11 @@ func generateTagForQuestion(p *parser, text string) string {
 
 func defaultAnswerTypeForQuestionType(questionType string) string {
 	switch questionType {
-	case "q_type_multiple_choice":
+	case QuestionTypeMultipleChoice:
 		return "a_type_multiple_choice"
-	case "q_type_single_select":
+	case QuestionTypeSingleSelect:
 		return "a_type_single_select"
-	case "q_type_segmented_control":
+	case QuestionTypeSegmentedControl:
 		return "a_type_segmented_control"
 	}
 	return ""

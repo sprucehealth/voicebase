@@ -14,7 +14,7 @@ var answerModelToSVCResponseTransformers map[string]answerModelToSVCResponseTran
 
 func init() {
 	answerModelToSVCResponseTransformers = map[string]answerModelToSVCResponseTransformerFunc{
-		"q_type_photo_section":     transformPhotoSectionToSVCResponse,
+		"q_type_media_section":     transformMediaSectionToSVCResponse,
 		"q_type_free_text":         transformFreeTextAnswerToSVCResponse,
 		"q_type_single_entry":      transformSingleEntryAnswerToSVCResponse,
 		"q_type_single_select":     transformSingleSelectAnswerToSVCResponse,
@@ -33,36 +33,37 @@ func transformAnswerModelToSVCResponse(answer *models.Answer) (*care.Answer, err
 	return transformFunc(answer)
 }
 
-func transformPhotoSectionToSVCResponse(answer *models.Answer) (*care.Answer, error) {
-	if answer.GetPhotoSection() == nil {
-		return nil, errors.Trace(fmt.Errorf("expected photo section to be populated for answer but it wasnt"))
+func transformMediaSectionToSVCResponse(answer *models.Answer) (*care.Answer, error) {
+	if answer.GetMediaSection() == nil {
+		return nil, errors.Trace(fmt.Errorf("expected media section to be populated for answer but it wasnt"))
 	}
 
-	photoSectionAnswer := &care.Answer{
+	mediaSectionAnswer := &care.Answer{
 		QuestionID: answer.QuestionID,
-		Answer: &care.Answer_PhotoSection{
-			PhotoSection: &care.PhotoSectionAnswer{
-				Sections: make([]*care.PhotoSectionAnswer_PhotoSectionItem, len(answer.GetPhotoSection().Sections)),
+		Answer: &care.Answer_MediaSection{
+			MediaSection: &care.MediaSectionAnswer{
+				Sections: make([]*care.MediaSectionAnswer_MediaSectionItem, len(answer.GetMediaSection().Sections)),
 			},
 		},
 	}
 
-	for i, photoSection := range answer.GetPhotoSection().Sections {
-		photoSectionAnswer.GetPhotoSection().Sections[i] = &care.PhotoSectionAnswer_PhotoSectionItem{
-			Name:  photoSection.Name,
-			Slots: make([]*care.PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem, len(photoSection.Slots)),
+	for i, mediaSection := range answer.GetMediaSection().Sections {
+		mediaSectionAnswer.GetMediaSection().Sections[i] = &care.MediaSectionAnswer_MediaSectionItem{
+			Name:  mediaSection.Name,
+			Slots: make([]*care.MediaSectionAnswer_MediaSectionItem_MediaSlotItem, len(mediaSection.Slots)),
 		}
 
-		for j, photoSlot := range photoSection.Slots {
-			photoSectionAnswer.GetPhotoSection().Sections[i].Slots[j] = &care.PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem{
-				Name:    photoSlot.Name,
-				SlotID:  photoSlot.SlotID,
-				MediaID: photoSlot.MediaID,
+		for j, mediaSlot := range mediaSection.Slots {
+			mediaSectionAnswer.GetMediaSection().Sections[i].Slots[j] = &care.MediaSectionAnswer_MediaSectionItem_MediaSlotItem{
+				Name:    mediaSlot.Name,
+				SlotID:  mediaSlot.SlotID,
+				MediaID: mediaSlot.MediaID,
 				URL:     "https://placekitten.com/600/800", //TODO
+				Type:    mediaSlot.Type,
 			}
 		}
 	}
-	return photoSectionAnswer, nil
+	return mediaSectionAnswer, nil
 }
 
 func transformFreeTextAnswerToSVCResponse(answer *models.Answer) (*care.Answer, error) {

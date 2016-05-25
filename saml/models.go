@@ -8,30 +8,34 @@ import (
 type FlashState string
 
 const (
+	ConditionTypeAnd                         string     = "and"
+	ConditionTypeAnswerContainsAll           string     = "answer_contains_all"
+	ConditionTypeAnswerContainsAny           string     = "answer_contains_any"
+	ConditionTypeGenderEquals                string     = "gender_equals"
+	ConditionTypeIntegerEqualTo              string     = "integer_equal_to"
+	ConditionTypeIntegerGreaterThan          string     = "integer_greater_than"
+	ConditionTypeIntegerGreaterThanOrEqualTo string     = "integer_greater_than_or_equal_to"
+	ConditionTypeIntegerLessThan             string     = "integer_less_than"
+	ConditionTypeIntegerLessThanOrEqualTo    string     = "integer_less_than_or_equal_to"
+	ConditionTypeNot                         string     = "not"
+	ConditionTypeOr                          string     = "or"
+	FlashAuto                                FlashState = "auto"
 	FlashOff                                 FlashState = "off"
 	FlashOn                                  FlashState = "on"
-	FlashAuto                                FlashState = "auto"
-	QuestionTypeSingleSelect                 string     = "q_type_single_select"
-	QuestionTypeSingleEntry                  string     = "q_type_single_entry"
-	QuestionTypeMultipleChoice               string     = "q_type_multiple_choice"
-	QuestionTypeSegmentedControl             string     = "q_type_segmented_control"
 	QuestionTypeAutocomplete                 string     = "q_type_autocomplete"
 	QuestionTypeFreeText                     string     = "q_type_free_text"
+	QuestionTypeMediaSection                 string     = "q_type_media_section"
+	QuestionTypeMultipleChoice               string     = "q_type_multiple_choice"
 	QuestionTypePhotoSection                 string     = "q_type_photo_section"
+	QuestionTypeSegmentedControl             string     = "q_type_segmented_control"
+	QuestionTypeSingleEntry                  string     = "q_type_single_entry"
+	QuestionTypeSingleSelect                 string     = "q_type_single_select"
+	ScreenTypeMedia                          string     = "screen_type_media"
+	ScreenTypePharmacy                       string     = "screen_type_pharmacy"
 	ScreenTypePhoto                          string     = "screen_type_photo"
 	ScreenTypeQuestions                      string     = "screen_type_questions"
-	ScreenTypePharmacy                       string     = "screen_type_pharmacy"
-	ConditionTypeAnswerContainsAny           string     = "answer_contains_any"
-	ConditionTypeAnswerContainsAll           string     = "answer_contains_all"
-	ConditionTypeIntegerEqualTo              string     = "integer_equal_to"
-	ConditionTypeIntegerLessThan             string     = "integer_less_than"
-	ConditionTypeIntegerGreaterThanOrEqualTo string     = "integer_greater_than_or_equal_to"
-	ConditionTypeIntegerLessThanOrEqualTo    string     = "integer_less_than_or_equal_to"
-	ConditionTypeIntegerGreaterThan          string     = "integer_greater_than"
-	ConditionTypeAnd                         string     = "and"
-	ConditionTypeOr                          string     = "or"
-	ConditionTypeNot                         string     = "not"
-	ConditionTypeGenderEquals                string     = "gender_equals"
+	ScreenTypeWarningPopup                   string     = "screen_type_warning_popup"
+	ScreenTypeTriage                         string     = "screen_type_triage"
 )
 
 type Intake struct {
@@ -102,8 +106,14 @@ type QuestionDetails struct {
 	ToPrefill        *bool                     `yaml:"to_prefill,omitempty" json:"to_prefill,omitempty"`
 	Answers          []*Answer                 `yaml:"answers,omitempty" json:"answers,omitempty"`
 	AdditionalFields *QuestionAdditionalFields `yaml:"additional_question_fields,omitempty" json:"additional_question_fields,omitempty"`
-	PhotoSlots       []*PhotoSlot              `yaml:"photo_slots,omitempty" json:"photo_slots,omitempty"`
-	AnswerGroups     []*AnswerGroup            `yaml:"answer_groups,omitempty" json:"answer_groups,omitempty"`
+
+	// PhotoSlots are a list of slots to upload photos for a photo section question type.
+	// This has been deprecated in favor of MediaSlots for the media section question type.
+	PhotoSlots []*MediaSlot `yaml:"photo_slots,omitempty" json:"photo_slots,omitempty"`
+
+	// MediaSlots specify a list of media slots for a media section question type.
+	MediaSlots   []*MediaSlot   `yaml:"media_slots,omitempty" json:"media_slots,omitempty"`
+	AnswerGroups []*AnswerGroup `yaml:"answer_groups,omitempty" json:"answer_groups,omitempty"`
 }
 
 type AnswerGroup struct {
@@ -153,22 +163,24 @@ type TriageParams struct {
 	Abandon       *bool  `yaml:"abandon,omitempty" json:"abandon,omitempty"`
 }
 
-type PhotoSlot struct {
+type MediaSlot struct {
 	Name       string               `yaml:"name" json:"name"`
 	Required   *bool                `yaml:"required,omitempty" json:"required,omitempty"`
-	ClientData *PhotoSlotClientData `yaml:"client_data,omitempty" json:"client_data,omitempty"`
+	ClientData *MediaSlotClientData `yaml:"client_data,omitempty" json:"client_data,omitempty"`
+	Type       string               `yaml:"type,omitempty" json:"type,omitempty"`
 }
 
-type PhotoSlotClientData struct {
-	PhotoTip
+type MediaSlotClientData struct {
+	MediaTip
 	OverlayImageURL          string               `yaml:"overlay_image_url,omitempty" json:"overlay_image_url,omitempty"`
 	PhotoMissingErrorMessage string               `yaml:"photo_missing_error_message,omitempty" json:"photo_missing_error_message,omitempty"`
+	MediaMissingErrorMessage string               `yaml:"media_missing_error_message,omitempty" json:"media_missing_error_message,omitempty"`
 	InitialCameraDirection   string               `yaml:"initial_camera_direction,omitempty" json:"initial_camera_direction,omitempty"`
 	Flash                    FlashState           `yaml:"flash,omitempty" json:"flash,omitempty"`
-	Tips                     map[string]*PhotoTip `yaml:"tips,omitempty" json:"tips,omitempty"`
+	Tips                     map[string]*MediaTip `yaml:"tips,omitempty" json:"tips,omitempty"`
 }
 
-type PhotoTip struct {
+type MediaTip struct {
 	Tip        string `yaml:"tip,omitempty" json:"tip,omitempty"`
 	TipSubtext string `yaml:"tip_subtext,omitempty" json:"tip_subtext,omitempty"`
 	TipStyle   string `yaml:"tip_style,omitempty" json:"tip_style,omitempty"`

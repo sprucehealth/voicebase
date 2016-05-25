@@ -45,8 +45,8 @@ func PopulateVisitReview(intake *layout.Intake, review *visitreview.SectionListV
 					if err := builderQuestionWithOptions(question, answer, context); err != nil {
 						return nil, errors.Trace(err)
 					}
-				case layout.QuestionTypePhotoSection:
-					if err := builderQuestionWithPhotoSlots(question, answer, context); err != nil {
+				case layout.QuestionTypeMediaSection:
+					if err := builderQuestionWithMediaSlots(question, answer, context); err != nil {
 						return nil, errors.Trace(err)
 					}
 				case layout.QuestionTypeSegmentedControl, layout.QuestionTypeSingleSelect:
@@ -356,37 +356,38 @@ func contentForSubanswer(question *layout.Question, answer *Answer) (string, err
 
 		return strings.Join(entries, ","), nil
 
-	case layout.QuestionTypePhotoSection:
-		return "", errors.Trace(fmt.Errorf("subquestion %s has photoquestion format which is not supported for review rendering", question.ID))
+	case layout.QuestionTypeMediaSection:
+		return "", errors.Trace(fmt.Errorf("subquestion %s has mediaquestion format which is not supported for review rendering", question.ID))
 	}
 
 	return "", errors.Trace(fmt.Errorf("unsupported subquestion %s of type %s", question.ID, question.Type))
 }
 
-func builderQuestionWithPhotoSlots(question *layout.Question, answer *Answer, context *visitreview.ViewContext) error {
+func builderQuestionWithMediaSlots(question *layout.Question, answer *Answer, context *visitreview.ViewContext) error {
 	if answer == nil {
 		return nil
 	}
 
-	items := make([]visitreview.TitlePhotoListData, 0, len(answer.GetPhotoSection().Sections))
-	for _, section := range answer.GetPhotoSection().Sections {
-		item := visitreview.TitlePhotoListData{
-			Title:  section.Name,
-			Photos: make([]visitreview.PhotoData, len(section.Slots)),
+	items := make([]visitreview.TitleMediaListData, 0, len(answer.GetMediaSection().Sections))
+	for _, section := range answer.GetMediaSection().Sections {
+		item := visitreview.TitleMediaListData{
+			Title: section.Name,
+			Media: make([]visitreview.MediaData, len(section.Slots)),
 		}
 
 		for i, slot := range section.Slots {
-			item.Photos[i] = visitreview.PhotoData{
-				Title:    slot.Name,
-				PhotoID:  slot.MediaID,
-				PhotoURL: slot.URL,
+			item.Media[i] = visitreview.MediaData{
+				Title:   slot.Name,
+				MediaID: slot.MediaID,
+				URL:     slot.URL,
+				Type:    slot.Type,
 				// TODO: populate real URL
 			}
 		}
 		items = append(items, item)
 	}
 
-	context.Set(visitreview.PhotosKey(question.ID), items)
+	context.Set(visitreview.MediaKey(question.ID), items)
 	return nil
 }
 

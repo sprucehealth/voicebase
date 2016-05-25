@@ -17,7 +17,7 @@ message Answer {
     MultipleChoiceAnswer multiple_choice = 11;
     SingleSelectAnswer single_select = 12;
     AutocompleteAnswer autocomplete = 13;
-    PhotoSectionAnswer photo_section = 14;
+    MediaSectionAnswer media_section = 14;
     SingleEntryAnswer single_entry = 15;
     SegmentedControlAnswer segmented_control = 16;
   }
@@ -58,17 +58,18 @@ message AutocompleteAnswer {
   repeated AutocompleteAnswerItem items = 1;
 }
 
-message PhotoSectionAnswer {
-  message PhotoSectionItem {
-    message PhotoSlotItem {
+message MediaSectionAnswer {
+  message MediaSectionItem {
+    message MediaSlotItem {
         string slot_id = 1 [(gogoproto.customname) = "SlotID"];
         string name = 2;
         string media_id = 3 [(gogoproto.customname) = "MediaID"];
+        string type = 4;
     }
 
     string name = 1;
-    repeated PhotoSlotItem slots = 2;
+    repeated MediaSlotItem slots = 2;
   }
 
-  repeated PhotoSectionItem sections = 1;
+  repeated MediaSectionItem sections = 1;
 }

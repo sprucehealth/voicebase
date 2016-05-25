@@ -20,6 +20,7 @@ func TestTriageVisitScreen(t *testing.T) {
 	}
 
 	test.Equals(t, &layout.Condition{
+
 		Operation:  "boolean_equals",
 		BoolValue:  ptr.Bool(false),
 		DataSource: "preference.optional_triage",

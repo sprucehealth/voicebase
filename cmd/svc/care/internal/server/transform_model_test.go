@@ -8,33 +8,13 @@ import (
 	"github.com/sprucehealth/backend/test"
 )
 
-func TestTransformToModel_PhotoSection(t *testing.T) {
-	a, err := transformAnswerToModel("10", &client.PhotoQuestionAnswer{
-		Type: "q_type_photo_section",
-		PhotoSections: []*client.PhotoSectionItem{
+func TestTransformToModel_MediaSection(t *testing.T) {
+	a, err := transformAnswerToModel("10", &client.MediaQuestionAnswer{
+		Type: "q_type_media_section",
+		Sections: []*client.MediaSectionItem{
 			{
 				Name: "SectionName",
-				Slots: []*client.PhotoSlotItem{
-					{
-						Name:    "SlotName",
-						SlotID:  "SlotID1",
-						PhotoID: "PhotoID1",
-					},
-				},
-			},
-		},
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if a.GetPhotoSection() == nil {
-		t.Fatalf("expected photo section to be populated but it wasn't")
-	}
-	test.Equals(t, &models.PhotoSectionAnswer{
-		Sections: []*models.PhotoSectionAnswer_PhotoSectionItem{
-			{
-				Name: "SectionName",
-				Slots: []*models.PhotoSectionAnswer_PhotoSectionItem_PhotoSlotItem{
+				Slots: []*client.MediaSlotItem{
 					{
 						Name:    "SlotName",
 						SlotID:  "SlotID1",
@@ -43,7 +23,28 @@ func TestTransformToModel_PhotoSection(t *testing.T) {
 				},
 			},
 		},
-	}, a.GetPhotoSection())
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if a.GetMediaSection() == nil {
+		t.Fatalf("expected media section to be populated but it wasn't")
+	}
+	test.Equals(t, &models.MediaSectionAnswer{
+		Sections: []*models.MediaSectionAnswer_MediaSectionItem{
+			{
+				Name: "SectionName",
+				Slots: []*models.MediaSectionAnswer_MediaSectionItem_MediaSlotItem{
+					{
+						Name:    "SlotName",
+						SlotID:  "SlotID1",
+						MediaID: "PhotoID1",
+						Type:    "photo",
+					},
+				},
+			},
+		},
+	}, a.GetMediaSection())
 }
 
 func TestTransformModel_FreeText(t *testing.T) {
