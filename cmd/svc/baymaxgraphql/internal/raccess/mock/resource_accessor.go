@@ -20,7 +20,7 @@ type ResourceAccessor struct {
 	*mock.Expector
 }
 
-func New(t *testing.T) *ResourceAccessor {
+func New(t testing.TB) *ResourceAccessor {
 	return &ResourceAccessor{
 		&mock.Expector{T: t},
 	}

@@ -28,7 +28,7 @@ var SpecifiedRules = []ValidationRuleFn{
 	NoUndefinedVariablesRule,
 	NoUnusedFragmentsRule,
 	NoUnusedVariablesRule,
-	OverlappingFieldsCanBeMergedRule,
+	// OverlappingFieldsCanBeMergedRule, TODO(@samuel): disabled for now as it has a very large performance impact
 	PossibleFragmentSpreadsRule,
 	ProvidedNonNullArgumentsRule,
 	ScalarLeafsRule,
@@ -831,41 +831,31 @@ func collectFieldASTsAndDefs(context *ValidationContext, parentType Named, selec
 	return astAndDefs
 }
 
-/**
- * pairSet A way to keep track of pairs of things when the ordering of the pair does
- * not matter. We do this by maintaining a sort of double adjacency sets.
- */
+// pairSet A way to keep track of pairs of things when the ordering of the pair does
+// not matter. We do this by maintaining a sort of double adjacency sets.
 type pairSet struct {
-	data map[ast.Node]*nodeSet
+	data map[nodePair]struct{}
+}
+
+type nodePair struct {
+	a, b ast.Node
 }
 
 func newPairSet() *pairSet {
 	return &pairSet{
-		data: map[ast.Node]*nodeSet{},
+		data: make(map[nodePair]struct{}),
 	}
 }
 func (pair *pairSet) Has(a ast.Node, b ast.Node) bool {
-	first, ok := pair.data[a]
-	if !ok || first == nil {
-		return false
+	if _, ok := pair.data[nodePair{a, b}]; ok {
+		return true
 	}
-	res := first.Has(b)
-	return res
+	_, ok := pair.data[nodePair{b, a}]
+	return ok
 }
 func (pair *pairSet) Add(a ast.Node, b ast.Node) bool {
-	pair.data = pairSetAdd(pair.data, a, b)
-	pair.data = pairSetAdd(pair.data, b, a)
+	pair.data[nodePair{a, b}] = struct{}{}
 	return true
-}
-
-func pairSetAdd(data map[ast.Node]*nodeSet, a, b ast.Node) map[ast.Node]*nodeSet {
-	set, ok := data[a]
-	if !ok || set == nil {
-		set = newNodeSet()
-		data[a] = set
-	}
-	set.Add(b)
-	return data
 }
 
 type conflictReason struct {
@@ -953,19 +943,16 @@ func sameType(type1 Type, type2 Type) bool {
 	return type1.String() == type2.String()
 }
 
-/**
- * OverlappingFieldsCanBeMergedRule
- * Overlapping fields can be merged
- *
- * A selection set is only valid if all fields (including spreading any
- * fragments) either correspond to distinct response names or can be merged
- * without ambiguity.
- */
+// OverlappingFieldsCanBeMergedRule
+// Overlapping fields can be merged
+//
+// A selection set is only valid if all fields (including spreading any
+// fragments) either correspond to distinct response names or can be merged
+// without ambiguity.
 func OverlappingFieldsCanBeMergedRule(context *ValidationContext) *ValidationRuleInstance {
 	comparedSet := newPairSet()
 	var findConflicts func(fieldMap map[string][]*fieldDefPair) (conflicts []*conflict)
 	findConflict := func(responseName string, pair *fieldDefPair, pair2 *fieldDefPair) *conflict {
-
 		ast1 := pair.Field
 		def1 := pair.FieldDef
 

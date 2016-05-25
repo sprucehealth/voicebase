@@ -15,7 +15,7 @@ type Client struct {
 	*mock.Expector
 }
 
-func New(t *testing.T) *Client {
+func New(t testing.TB) *Client {
 	return &Client{&mock.Expector{T: t}}
 }
 

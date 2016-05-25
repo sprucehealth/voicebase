@@ -15,7 +15,7 @@ type mockDAL struct {
 	*mock.Expector
 }
 
-func New(t *testing.T) *mockDAL {
+func New(t testing.TB) *mockDAL {
 	return &mockDAL{
 		&mock.Expector{
 			T: t,

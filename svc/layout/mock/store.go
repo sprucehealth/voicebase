@@ -12,7 +12,7 @@ type Store struct {
 	*mock.Expector
 }
 
-func NewStore(t *testing.T) *Store {
+func NewStore(t testing.TB) *Store {
 	return &Store{
 		Expector: &mock.Expector{T: t},
 	}

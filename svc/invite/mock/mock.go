@@ -18,7 +18,7 @@ type Client struct {
 }
 
 // New returns an initialized Client.
-func New(t *testing.T) *Client {
+func New(t testing.TB) *Client {
 	return &Client{&mock.Expector{T: t}}
 }
 

@@ -81,7 +81,7 @@ type expectationSource struct {
 
 // Expector is to be used in composit mock structs for expectation setting
 type Expector struct {
-	T *testing.T
+	T testing.TB
 
 	// Keep unordered expectations in a map to simplify the deletion process
 	unorderedExpects   map[int]*expectation
