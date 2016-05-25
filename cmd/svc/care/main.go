@@ -4,10 +4,15 @@ import (
 	"flag"
 	"fmt"
 	"net"
+	"time"
+
+	"golang.org/x/net/context"
 
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/server"
+	caresettings "github.com/sprucehealth/backend/cmd/svc/care/settings"
+	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/dosespot"
@@ -15,25 +20,27 @@ import (
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/layout"
+	"github.com/sprucehealth/backend/svc/settings"
 	"google.golang.org/grpc"
 )
 
 var config struct {
+	dbCACert             string
 	dbHost               string
-	dbPort               int
+	dbName               string
 	dbPassword           string
+	dbPort               int
 	dbTLS                string
 	dbUserName           string
-	dbName               string
-	dbCACert             string
+	doseSpotClinicID     int64
+	doseSpotClinicKey    string
+	doseSpotSOAPEndpoint string
+	doseSpotUserID       int64
+	layoutAddr           string
 	listeningPort        int
 	s3Bucket             string
 	s3Prefix             string
-	layoutAddr           string
-	doseSpotClinicKey    string
-	doseSpotClinicID     int64
-	doseSpotUserID       int64
-	doseSpotSOAPEndpoint string
+	settingsAddr         string
 }
 
 func init() {
@@ -52,6 +59,7 @@ func init() {
 	flag.StringVar(&config.doseSpotSOAPEndpoint, "dosespot_soap_endpoint", "", "DoseSpot SOAP endpoint URL")
 	flag.Int64Var(&config.doseSpotClinicID, "dosespot_clinic_id", 0, "DoseSpot clinic ID")
 	flag.Int64Var(&config.doseSpotUserID, "dosespot_user_id", 0, "DoseSpot user ID")
+	flag.StringVar(&config.settingsAddr, "settings_addr", "", "`host:port` of settings service")
 }
 
 func main() {
@@ -74,6 +82,8 @@ func main() {
 		golog.Fatalf("dosespot_clinic_id required")
 	case config.doseSpotUserID == 0:
 		golog.Fatalf("dosespot_user_id required")
+	case config.settingsAddr == "":
+		golog.Fatalf("settings_addr required")
 	}
 
 	db, err := dbutil.ConnectMySQL(&dbutil.DBConfig{
@@ -101,6 +111,20 @@ func main() {
 	}
 	layoutClient := layout.NewLayoutClient(conn)
 
+	conn, err = grpc.Dial(config.settingsAddr, grpc.WithInsecure())
+	if err != nil {
+		golog.Fatalf("Unable to connect to settings service :%s", err)
+	}
+	settingsClient := settings.NewSettingsClient(conn)
+
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	_, err = settings.RegisterConfigs(ctx, settingsClient, []*settings.Config{
+		caresettings.OptionalTriageConfig,
+	})
+	if err != nil {
+		golog.Fatalf("Unable to register configs with settings service: %s", err.Error())
+	}
+
 	doseSpotClient := dosespot.New(config.doseSpotClinicID, config.doseSpotUserID, config.doseSpotClinicKey, config.doseSpotSOAPEndpoint, "http://www.dosespot.com/API/11/", svc.MetricsRegistry.Scope("dosespot"))
 
 	awsSession, err := svc.AWSSession()
@@ -109,7 +133,7 @@ func main() {
 	}
 
 	careServer := grpc.NewServer()
-	careService := server.New(dal.New(db), layoutClient, layout.NewStore(storage.NewS3(awsSession, config.s3Bucket, config.s3Prefix)), doseSpotClient)
+	careService := server.New(dal.New(db), layoutClient, settingsClient, layout.NewStore(storage.NewS3(awsSession, config.s3Bucket, config.s3Prefix)), doseSpotClient, clock.New())
 
 	care.InitMetrics(careServer, svc.MetricsRegistry.Scope("care"))
 	care.RegisterCareServer(careServer, careService)

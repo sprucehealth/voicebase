@@ -12,4 +12,6 @@ type Visit struct {
 	SubmittedTimestamp *time.Time
 	Created            time.Time
 	CreatorID          string
+	Triaged            bool
+	TriagedTimestamp   *time.Time
 }

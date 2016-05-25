@@ -822,6 +822,9 @@ func transformVisitToResponse(ctx context.Context, ram raccess.ResourceAccessor,
 			PatientAnswersJSON: []byte(answersForVisitRes.PatientAnswersJSON),
 			Visit:              visit,
 			OrgEntity:          orgEntity,
+			Preferences: map[string]interface{}{
+				"optional_triage": visit.Preferences.OptionalTriage,
+			},
 		})
 		if err != nil {
 			return nil, errors.Trace(err)
@@ -844,8 +847,10 @@ func transformVisitToResponse(ctx context.Context, ram raccess.ResourceAccessor,
 		ID:                  visit.ID,
 		EntityID:            visit.EntityID,
 		Name:                visit.Name,
-		CanReview:           acc.Type == auth.AccountType_PROVIDER && visit.Submitted,
-		CanModify:           acc.Type == auth.AccountType_PATIENT && !visit.Submitted,
+		CanReview:           visit.Submitted || visit.Triaged,
+		CanPatientModify:    acc.Type == auth.AccountType_PATIENT && !visit.Submitted && !visit.Triaged,
+		Submitted:           visit.Submitted,
+		Triaged:             visit.Triaged,
 		LayoutContainer:     string(containerData),
 		LayoutContainerType: layoutContainerType,
 	}, nil

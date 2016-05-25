@@ -38,12 +38,14 @@ type intakeContainer struct {
 	Intake                 *layout.Intake          `json:"intake"`
 	Answers                json.RawMessage         `json:"answers"`
 	RequireAddress         bool                    `json:"require_address"`
+	Preferences            map[string]interface{}  `json:"preferences,omitempty"`
 }
 
 type VisitData struct {
 	PatientAnswersJSON []byte
 	Visit              *Visit
 	OrgEntity          *directory.Entity
+	Preferences        map[string]interface{}
 }
 
 // PopulateVisitIntake returns a json representation of the visit as understood by the clients to parse and process
@@ -69,8 +71,9 @@ func PopulateVisitIntake(intake *layout.Intake, data *VisitData) ([]byte, error)
 			BottomText:  fmt.Sprintf("%s will review your visit shortly.", orgName),
 			ButtonTitle: "Continue",
 		},
-		Intake:  intake,
-		Answers: json.RawMessage(data.PatientAnswersJSON),
+		Intake:      intake,
+		Answers:     json.RawMessage(data.PatientAnswersJSON),
+		Preferences: data.Preferences,
 	}
 
 	containerData, err := json.Marshal(container)

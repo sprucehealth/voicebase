@@ -124,6 +124,7 @@ type ResourceAccessor interface {
 	ThreadItemViewDetails(ctx context.Context, threadItemID string) ([]*threading.ThreadItemViewDetails, error)
 	ThreadMembers(ctx context.Context, orgID string, req *threading.ThreadMembersRequest) ([]*directory.Entity, error)
 	ThreadsForMember(ctx context.Context, entityID string, primaryOnly bool) ([]*threading.Thread, error)
+	TriageVisit(ctx context.Context, req *care.TriageVisitRequest) (*care.TriageVisitResponse, error)
 	Unauthenticate(ctx context.Context, token string) error
 	UnauthorizedCreateExternalIDs(ctx context.Context, req *directory.CreateExternalIDsRequest) error
 	UpdateContacts(ctx context.Context, req *directory.UpdateContactsRequest) (*directory.Entity, error)
@@ -954,6 +955,22 @@ func (m *resourceAccessor) SubmitVisit(ctx context.Context, req *care.SubmitVisi
 	}
 
 	return m.care.SubmitVisit(ctx, req)
+}
+
+func (m *resourceAccessor) TriageVisit(ctx context.Context, req *care.TriageVisitRequest) (*care.TriageVisitResponse, error) {
+	// helper method does the auth check
+	_, err := m.Visit(ctx, &care.GetVisitRequest{
+		ID: req.VisitID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if !m.isAccountType(ctx, auth.AccountType_PATIENT) {
+		return nil, errors.ErrNotAuthorized(ctx, req.VisitID)
+	}
+
+	return m.care.TriageVisit(ctx, req)
 }
 
 func (m *resourceAccessor) VisitLayoutVersion(ctx context.Context, req *layout.GetVisitLayoutVersionRequest) (*layout.GetVisitLayoutVersionResponse, error) {

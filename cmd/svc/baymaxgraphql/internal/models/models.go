@@ -346,11 +346,12 @@ type Visit struct {
 	ID                  string `json:"id"`
 	Name                string `json:"name"`
 	CanReview           bool   `json:"canReview"`
-	CanModify           bool   `json:"canModify"`
+	CanPatientModify    bool   `json:"canPatientModify"`
+	Submitted           bool   `json:"submitted"`
+	Triaged             bool   `json:"triaged"`
 	LayoutContainer     string `json:"layoutContainer"`
 	LayoutContainerType string `json:"layoutContainerType"`
-
-	EntityID string `json:"-"`
+	EntityID            string `json:"-"`
 }
 
 type CarePlan struct {

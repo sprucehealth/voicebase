@@ -7,16 +7,21 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/models"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/svc/care"
+	"github.com/sprucehealth/backend/svc/settings"
 )
 
-func transformVisitToResponse(v *models.Visit) *care.Visit {
+func transformVisitToResponse(v *models.Visit, optionalTriage *settings.BooleanValue) *care.Visit {
 	return &care.Visit{
 		ID:              v.ID.String(),
 		Name:            v.Name,
 		Submitted:       v.Submitted,
+		Triaged:         v.Triaged,
 		LayoutVersionID: v.LayoutVersionID,
 		EntityID:        v.EntityID,
 		OrganizationID:  v.OrganizationID,
+		Preferences: &care.Visit_Preference{
+			OptionalTriage: optionalTriage.Value,
+		},
 	}
 }
 

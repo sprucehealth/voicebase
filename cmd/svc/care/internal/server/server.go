@@ -10,6 +10,8 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/client"
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/models"
+	caresettings "github.com/sprucehealth/backend/cmd/svc/care/settings"
+	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/dosespot"
 	"github.com/sprucehealth/backend/libs/errors"
@@ -17,6 +19,7 @@ import (
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/layout"
+	"github.com/sprucehealth/backend/svc/settings"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -28,15 +31,19 @@ type server struct {
 	layoutStore layout.Storage
 	dal         dal.DAL
 	layout      layout.LayoutClient
+	settings    settings.SettingsClient
 	doseSpot    dosespot.API
+	clk         clock.Clock
 }
 
-func New(dal dal.DAL, layoutClient layout.LayoutClient, layoutStore layout.Storage, doseSpotClient dosespot.API) care.CareServer {
+func New(dal dal.DAL, layoutClient layout.LayoutClient, settingsClient settings.SettingsClient, layoutStore layout.Storage, doseSpotClient dosespot.API, clk clock.Clock) care.CareServer {
 	return &server{
 		layoutStore: layoutStore,
 		dal:         dal,
 		layout:      layoutClient,
+		settings:    settingsClient,
 		doseSpot:    doseSpotClient,
+		clk:         clk,
 	}
 }
 
@@ -66,8 +73,20 @@ func (s *server) CreateVisit(ctx context.Context, in *care.CreateVisitRequest) (
 		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 
+	optionalTriageValue, err := settings.GetBooleanValue(ctx, s.settings, &settings.GetValuesRequest{
+		NodeID: in.OrganizationID,
+		Keys: []*settings.ConfigKey{
+			{
+				Key: caresettings.ConfigKeyOptionalTriage,
+			},
+		},
+	})
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
 	return &care.CreateVisitResponse{
-		Visit: transformVisitToResponse(visitToCreate),
+		Visit: transformVisitToResponse(visitToCreate, optionalTriageValue),
 	}, nil
 }
 
@@ -89,8 +108,20 @@ func (s *server) GetVisit(ctx context.Context, in *care.GetVisitRequest) (*care.
 		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 
+	optionalTriageValue, err := settings.GetBooleanValue(ctx, s.settings, &settings.GetValuesRequest{
+		NodeID: v.OrganizationID,
+		Keys: []*settings.ConfigKey{
+			{
+				Key: caresettings.ConfigKeyOptionalTriage,
+			},
+		},
+	})
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
 	return &care.GetVisitResponse{
-		Visit: transformVisitToResponse(v),
+		Visit: transformVisitToResponse(v, optionalTriageValue),
 	}, nil
 }
 
@@ -121,6 +152,34 @@ func (s *server) SubmitVisit(ctx context.Context, in *care.SubmitVisitRequest) (
 	}
 
 	return &care.SubmitVisitResponse{}, nil
+}
+
+func (s *server) TriageVisit(ctx context.Context, in *care.TriageVisitRequest) (*care.TriageVisitResponse, error) {
+	if in.VisitID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "visit_id is required")
+	}
+
+	visitID, err := models.ParseVisitID(in.VisitID)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "invalid visit id %s: %s", in.VisitID, err)
+	}
+
+	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
+		rowsUpdated, err := dl.UpdateVisit(ctx, visitID, &dal.VisitUpdate{
+			Triaged:     ptr.Bool(true),
+			TriagedTime: ptr.Time(s.clk.Now()),
+		})
+		if err != nil {
+			return err
+		} else if rowsUpdated > 1 {
+			return fmt.Errorf("expected just 1 row to be updated for visit %s but %d rows were updated.", visitID, rowsUpdated)
+		}
+		return nil
+	}); err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	return &care.TriageVisitResponse{}, nil
 }
 
 func (s *server) CreateVisitAnswers(ctx context.Context, in *care.CreateVisitAnswersRequest) (*care.CreateVisitAnswersResponse, error) {

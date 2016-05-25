@@ -17,6 +17,8 @@ import (
 type VisitUpdate struct {
 	Submitted     *bool
 	SubmittedTime *time.Time
+	Triaged       *bool
+	TriagedTime   *time.Time
 }
 
 type DAL interface {
@@ -120,7 +122,7 @@ func (d *dal) Visit(ctx context.Context, id models.VisitID, opts ...QueryOption)
 	var visit models.Visit
 	visit.ID = models.EmptyVisitID()
 	if err := d.db.QueryRow(`
-		SELECT id, name, layout_version_id, entity_id, creator_id, organization_id, submitted, created, submitted_timestamp
+		SELECT id, name, layout_version_id, entity_id, creator_id, organization_id, submitted, created, submitted_timestamp, triaged, triaged_timestamp
 		FROM visit
 		WHERE id = ?`+forUpdate, id).Scan(
 		&visit.ID,
@@ -131,7 +133,9 @@ func (d *dal) Visit(ctx context.Context, id models.VisitID, opts ...QueryOption)
 		&visit.OrganizationID,
 		&visit.Submitted,
 		&visit.Created,
-		&visit.SubmittedTimestamp); err == sql.ErrNoRows {
+		&visit.SubmittedTimestamp,
+		&visit.Triaged,
+		&visit.TriagedTimestamp); err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrNotFound)
 	} else if err != nil {
 		return nil, errors.Trace(err)
@@ -147,6 +151,12 @@ func (d *dal) UpdateVisit(ctx context.Context, id models.VisitID, update *VisitU
 	}
 	if update.SubmittedTime != nil {
 		args.Append("submitted_timestamp", *update.SubmittedTime)
+	}
+	if update.Triaged != nil {
+		args.Append("triaged", *update.Triaged)
+	}
+	if update.TriagedTime != nil {
+		args.Append("triaged_timestamp", *update.TriagedTime)
 	}
 
 	if args.IsEmpty() {

@@ -77,9 +77,17 @@ var visitType = graphql.NewObject(
 				Type:        graphql.NewNonNull(graphql.Boolean),
 				Description: "Indicates whether or not a provider can review a visit. Returns true only for a provider when the patient has submitted the visit.",
 			},
-			"canModify": &graphql.Field{
+			"canPatientModify": &graphql.Field{
 				Type:        graphql.NewNonNull(graphql.Boolean),
 				Description: "Indicates whether or not a patient can modify the visit. Returns true only for a patient before the visit has been submitted.",
+			},
+			"submitted": &graphql.Field{
+				Type:        graphql.NewNonNull(graphql.Boolean),
+				Description: "True when patient has submitted visit, false otherwise.",
+			},
+			"triaged": &graphql.Field{
+				Type:        graphql.NewNonNull(graphql.Boolean),
+				Description: "True if a patient was triaged out before visit was completed, false otherwise.",
 			},
 			"layoutContainer": &graphql.Field{
 				Type:        graphql.NewNonNull(graphql.String),

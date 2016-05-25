@@ -33,23 +33,23 @@ func PopulateVisitReview(intake *layout.Intake, review *visitreview.SectionListV
 					}
 				}
 				switch question.Type {
-				case QuestionTypeAutoComplete:
+				case layout.QuestionTypeAutoComplete:
 					if err := builderQuestionWithSubanswers(question, answer, context); err != nil {
 						return nil, errors.Trace(err)
 					}
-				case QuestionTypeFreeText, QuestionTypeSingleEntry:
+				case layout.QuestionTypeFreeText, layout.QuestionTypeSingleEntry:
 					if err := builderQuestionFreeText(question, answer, context); err != nil {
 						return nil, errors.Trace(err)
 					}
-				case QuestionTypeMultipleChoice:
+				case layout.QuestionTypeMultipleChoice:
 					if err := builderQuestionWithOptions(question, answer, context); err != nil {
 						return nil, errors.Trace(err)
 					}
-				case QuestionTypePhotoSection:
+				case layout.QuestionTypePhotoSection:
 					if err := builderQuestionWithPhotoSlots(question, answer, context); err != nil {
 						return nil, errors.Trace(err)
 					}
-				case QuestionTypeSegmentedControl, QuestionTypeSingleSelect:
+				case layout.QuestionTypeSegmentedControl, layout.QuestionTypeSingleSelect:
 					if err := builderQuestionWithSingleResponse(question, answer, context); err != nil {
 						return nil, errors.Trace(err)
 					}
@@ -86,7 +86,7 @@ func populateAlerts(answers map[string]*Answer, intake *layout.Intake, context *
 		if question.ToAlert != nil && *question.ToAlert {
 
 			switch question.Type {
-			case QuestionTypeAutoComplete:
+			case layout.QuestionTypeAutoComplete:
 				{
 					// populate the answers to call out in the alert
 					enteredAnswers := make([]string, len(answer.GetAutocomplete().Items))
@@ -95,7 +95,7 @@ func populateAlerts(answers map[string]*Answer, intake *layout.Intake, context *
 					}
 					alerts = append(alerts, strings.Replace(question.AlertFormattedText, textReplacementIdentifier, join(enteredAnswers), -1))
 				}
-			case QuestionTypeMultipleChoice:
+			case layout.QuestionTypeMultipleChoice:
 				{
 					selectedAnswers := make([]string, 0, len(question.PotentialAnswers))
 
@@ -118,7 +118,7 @@ func populateAlerts(answers map[string]*Answer, intake *layout.Intake, context *
 						alerts = append(alerts, strings.Replace(question.AlertFormattedText, textReplacementIdentifier, join(selectedAnswers), -1))
 					}
 				}
-			case QuestionTypeSingleSelect:
+			case layout.QuestionTypeSingleSelect:
 				{
 					for _, potentialAnswer := range question.PotentialAnswers {
 						if potentialAnswer.ID == answer.GetSingleSelect().SelectedAnswer.ID {
@@ -196,7 +196,7 @@ func builderQuestionWithSingleResponse(question *layout.Question, answer *Answer
 
 	var text string
 	switch question.Type {
-	case QuestionTypeSingleSelect:
+	case layout.QuestionTypeSingleSelect:
 		text = answer.GetSingleSelect().SelectedAnswer.FreeText
 		if text == "" {
 			for _, option := range question.PotentialAnswers {
@@ -208,7 +208,7 @@ func builderQuestionWithSingleResponse(question *layout.Question, answer *Answer
 				}
 			}
 		}
-	case QuestionTypeSegmentedControl:
+	case layout.QuestionTypeSegmentedControl:
 		text = answer.GetSegmentedControl().SelectedAnswer.FreeText
 		if text == "" {
 			for _, option := range question.PotentialAnswers {
@@ -234,9 +234,9 @@ func builderQuestionFreeText(question *layout.Question, answer *Answer, context 
 	}
 
 	var text string
-	if question.Type == QuestionTypeFreeText {
+	if question.Type == layout.QuestionTypeFreeText {
 		text = answer.GetFreeText().FreeText
-	} else if question.Type == QuestionTypeSingleEntry {
+	} else if question.Type == layout.QuestionTypeSingleEntry {
 		text = answer.GetSingleEntry().FreeText
 	}
 
@@ -294,11 +294,11 @@ func builderQuestionWithSubanswers(question *layout.Question, answer *Answer, co
 
 func contentForSubanswer(question *layout.Question, answer *Answer) (string, error) {
 	switch question.Type {
-	case QuestionTypeFreeText:
+	case layout.QuestionTypeFreeText:
 		return answer.GetFreeText().FreeText, nil
-	case QuestionTypeSingleEntry:
+	case layout.QuestionTypeSingleEntry:
 		return answer.GetSingleEntry().FreeText, nil
-	case QuestionTypeSegmentedControl:
+	case layout.QuestionTypeSegmentedControl:
 		if freeText := answer.GetSegmentedControl().SelectedAnswer.FreeText; freeText != "" {
 			return freeText, nil
 		}
@@ -310,7 +310,7 @@ func contentForSubanswer(question *layout.Question, answer *Answer) (string, err
 				return option.Answer, nil
 			}
 		}
-	case QuestionTypeSingleSelect:
+	case layout.QuestionTypeSingleSelect:
 		if freeText := answer.GetSingleSelect().SelectedAnswer.FreeText; freeText != "" {
 			return freeText, nil
 		}
@@ -322,7 +322,7 @@ func contentForSubanswer(question *layout.Question, answer *Answer) (string, err
 				return option.Answer, nil
 			}
 		}
-	case QuestionTypeAutoComplete:
+	case layout.QuestionTypeAutoComplete:
 		if question.SubQuestionsConfig != nil {
 			return "", errors.Trace(fmt.Errorf("subquestion %s has subquestions which is not supported for review rendering", question.ID))
 		}
@@ -331,7 +331,7 @@ func contentForSubanswer(question *layout.Question, answer *Answer) (string, err
 			entries = append(entries, item.Answer)
 		}
 		return strings.Join(entries, ","), nil
-	case QuestionTypeMultipleChoice:
+	case layout.QuestionTypeMultipleChoice:
 		if question.SubQuestionsConfig != nil {
 			return "", errors.Trace(fmt.Errorf("subquestion %s has subquestions which is not supported for review rendering", question.ID))
 		}
@@ -356,7 +356,7 @@ func contentForSubanswer(question *layout.Question, answer *Answer) (string, err
 
 		return strings.Join(entries, ","), nil
 
-	case QuestionTypePhotoSection:
+	case layout.QuestionTypePhotoSection:
 		return "", errors.Trace(fmt.Errorf("subquestion %s has photoquestion format which is not supported for review rendering", question.ID))
 	}
 

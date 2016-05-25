@@ -2,10 +2,6 @@ package layout
 
 import "fmt"
 
-const (
-	QuestionTypePhotoSection = "q_type_photo_section"
-)
-
 // Intake is a layout object that the patient app
 // consumes to display the visit to a patient for intake purposes.
 type Intake struct {
@@ -69,6 +65,10 @@ type Condition struct {
 	QuestionID         string       `json:"question_id,omitempty"`
 	PotentialAnswersID []string     `json:"potential_answers_id,omitempty"`
 	Operands           []*Condition `json:"operands,omitempty"`
+	IntValue           *int         `json:"int_value,omitempty"`
+	StringValue        *string      `json:"string_value,omitempty"`
+	BoolValue          *bool        `json:"bool_value,omitempty"`
+	DataSource         string       `json:"data_source,omitempty"`
 }
 
 type Screen struct {

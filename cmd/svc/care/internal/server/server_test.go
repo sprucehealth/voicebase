@@ -6,11 +6,14 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/sprucehealth/backend/cmd/svc/care/internal/dal"
 	dalmock "github.com/sprucehealth/backend/cmd/svc/care/internal/dal/mock"
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/models"
+	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/dosespot"
 	"github.com/sprucehealth/backend/libs/dosespot/dosespotmock"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/test"
@@ -24,7 +27,7 @@ func TestCreateCarePlan(t *testing.T) {
 	t.Parallel()
 	dl := dalmock.New(t)
 	defer dl.Finish()
-	srv := New(dl, nil, nil, nil)
+	srv := New(dl, nil, nil, nil, nil, clock.New())
 
 	cpID, err := models.NewCarePlanID()
 	test.OK(t, err)
@@ -150,7 +153,7 @@ func TestCreateCarePlan(t *testing.T) {
 func TestSearchMedications(t *testing.T) {
 	t.Parallel()
 	dsMock := dosespotmock.New(t)
-	srv := New(nil, nil, nil, dsMock)
+	srv := New(nil, nil, nil, nil, dsMock, clock.New())
 
 	dsMock.Expect(mock.NewExpectation(dsMock.GetDrugNamesForDoctor, int64(123), "tret").WithReturns(
 		[]string{"Tretinoin Topical (topical - cream)", "Tretinoin Topical (topical - gel)"}, nil))
@@ -264,7 +267,7 @@ func TestSearchMedications(t *testing.T) {
 func TestSelfReportedMedicationsSearch(t *testing.T) {
 	t.Parallel()
 	dsMock := dosespotmock.New(t)
-	srv := New(nil, nil, nil, dsMock)
+	srv := New(nil, nil, nil, nil, dsMock, clock.New())
 
 	dsMock.Expect(mock.NewExpectation(dsMock.GetDrugNamesForPatient, "Advil").WithReturns(
 		[]string{
@@ -290,7 +293,7 @@ func TestSelfReportedMedicationsSearch(t *testing.T) {
 func TestAllergyMedicationsSearch(t *testing.T) {
 	t.Parallel()
 	dsMock := dosespotmock.New(t)
-	srv := New(nil, nil, nil, dsMock)
+	srv := New(nil, nil, nil, nil, dsMock, clock.New())
 
 	dsMock.Expect(mock.NewExpectation(dsMock.SearchForAllergyRelatedMedications, "Advil").WithReturns(
 		[]string{
@@ -311,4 +314,27 @@ func TestAllergyMedicationsSearch(t *testing.T) {
 			"Advil 3",
 		},
 	}, res)
+}
+
+func TestTriageVisit(t *testing.T) {
+	t.Parallel()
+	dalMock := dalmock.New(t)
+	defer dalMock.Finish()
+
+	mclk := clock.NewManaged(time.Now())
+
+	visitID, err := models.NewVisitID()
+	test.OK(t, err)
+
+	dalMock.Expect(mock.NewExpectation(dalMock.UpdateVisit, visitID, &dal.VisitUpdate{
+		Triaged:     ptr.Bool(true),
+		TriagedTime: ptr.Time(mclk.Now()),
+	}).WithReturns(int64(1), nil))
+
+	srv := New(dalMock, nil, nil, nil, nil, mclk)
+
+	_, err = srv.TriageVisit(context.Background(), &care.TriageVisitRequest{
+		VisitID: visitID.String(),
+	})
+	test.OK(t, err)
 }

@@ -111,3 +111,11 @@ func (c *Client) SubmitVisit(ctx context.Context, in *care.SubmitVisitRequest, o
 
 	return rets[0].(*care.SubmitVisitResponse), mock.SafeError(rets[1])
 }
+
+func (c *Client) TriageVisit(ctx context.Context, in *care.TriageVisitRequest, opts ...grpc.CallOption) (*care.TriageVisitResponse, error) {
+	rets := c.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*care.TriageVisitResponse), mock.SafeError(rets[1])
+}

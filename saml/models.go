@@ -1,23 +1,37 @@
 package saml
 
-import "strings"
+import (
+	"strconv"
+	"strings"
+)
 
 type FlashState string
 
 const (
-	FlashOff                     FlashState = "off"
-	FlashOn                      FlashState = "on"
-	FlashAuto                    FlashState = "auto"
-	QuestionTypeSingleSelect     string     = "q_type_single_select"
-	QuestionTypeSingleEntry      string     = "q_type_single_entry"
-	QuestionTypeMultipleChoice   string     = "q_type_multiple_choice"
-	QuestionTypeSegmentedControl string     = "q_type_segmented_control"
-	QuestionTypeAutocomplete     string     = "q_type_autocomplete"
-	QuestionTypeFreeText         string     = "q_type_free_text"
-	QuestionTypePhotoSection     string     = "q_type_photo_section"
-	ScreenTypePhoto              string     = "screen_type_photo"
-	ScreenTypeQuestions          string     = "screen_type_questions"
-	ScreenTypePharmacy           string     = "screen_type_pharmacy"
+	FlashOff                                 FlashState = "off"
+	FlashOn                                  FlashState = "on"
+	FlashAuto                                FlashState = "auto"
+	QuestionTypeSingleSelect                 string     = "q_type_single_select"
+	QuestionTypeSingleEntry                  string     = "q_type_single_entry"
+	QuestionTypeMultipleChoice               string     = "q_type_multiple_choice"
+	QuestionTypeSegmentedControl             string     = "q_type_segmented_control"
+	QuestionTypeAutocomplete                 string     = "q_type_autocomplete"
+	QuestionTypeFreeText                     string     = "q_type_free_text"
+	QuestionTypePhotoSection                 string     = "q_type_photo_section"
+	ScreenTypePhoto                          string     = "screen_type_photo"
+	ScreenTypeQuestions                      string     = "screen_type_questions"
+	ScreenTypePharmacy                       string     = "screen_type_pharmacy"
+	ConditionTypeAnswerContainsAny           string     = "answer_contains_any"
+	ConditionTypeAnswerContainsAll           string     = "answer_contains_all"
+	ConditionTypeIntegerEqualTo              string     = "integer_equal_to"
+	ConditionTypeIntegerLessThan             string     = "integer_less_than"
+	ConditionTypeIntegerGreaterThanOrEqualTo string     = "integer_greater_than_or_equal_to"
+	ConditionTypeIntegerLessThanOrEqualTo    string     = "integer_less_than_or_equal_to"
+	ConditionTypeIntegerGreaterThan          string     = "integer_greater_than"
+	ConditionTypeAnd                         string     = "and"
+	ConditionTypeOr                          string     = "or"
+	ConditionTypeNot                         string     = "not"
+	ConditionTypeGenderEquals                string     = "gender_equals"
 )
 
 type Intake struct {
@@ -166,15 +180,19 @@ type Condition struct {
 	PotentialAnswers []string     `yaml:"potential_answers,omitempty" json:"potential_answers,omitempty"`
 	Operands         []*Condition `yaml:"operands,omitempty" json:"operands,omitempty"`
 	Gender           string       `yaml:"gender,omitempty" json:"gender,omitempty"`
+	IntValue         *int         `yaml:"int_value,omitempty" json:"int_value,omitempty"`
+	BoolValue        *bool        `yaml:"bool_value,omitempty" json:"bool_value,omitempty"`
+	StringValue      *string      `yaml:"string_value,omitempty" json:"string_value,omitempty"`
+	DataSource       string       `yaml:"data_source,omitempty" json:"data_source,omitempty"`
 }
 
 func (c *Condition) String() string {
 	switch c.Op {
 	default:
 		return "UNKNOWN-OP-" + c.Op
-	case "not":
+	case ConditionTypeNot:
 		return "(NOT " + c.Operands[0].String() + ")"
-	case "and":
+	case ConditionTypeAnd:
 		s := "("
 		for i, o := range c.Operands {
 			if i != 0 {
@@ -183,7 +201,7 @@ func (c *Condition) String() string {
 			s += o.String()
 		}
 		return s + ")"
-	case "or":
+	case ConditionTypeOr:
 		s := "("
 		for i, o := range c.Operands {
 			if i != 0 {
@@ -192,10 +210,20 @@ func (c *Condition) String() string {
 			s += o.String()
 		}
 		return s + ")"
-	case "answer_contains_any":
+	case ConditionTypeAnswerContainsAny:
 		return "(" + c.Question + " any [" + strings.Join(c.PotentialAnswers, ", ") + "])"
-	case "answer_contains_all":
+	case ConditionTypeAnswerContainsAll:
 		return "(" + c.Question + " all [" + strings.Join(c.PotentialAnswers, ", ") + "])"
+	case ConditionTypeIntegerEqualTo:
+		return "(" + c.DataSource + " == " + strconv.Itoa(*c.IntValue) + ")"
+	case ConditionTypeIntegerLessThan:
+		return "(" + c.DataSource + " < " + strconv.Itoa(*c.IntValue) + ")"
+	case ConditionTypeIntegerLessThanOrEqualTo:
+		return "(" + c.DataSource + " <= " + strconv.Itoa(*c.IntValue) + ")"
+	case ConditionTypeIntegerGreaterThan:
+		return "(" + c.DataSource + " > " + strconv.Itoa(*c.IntValue) + ")"
+	case ConditionTypeIntegerGreaterThanOrEqualTo:
+		return "(" + c.DataSource + " >= " + strconv.Itoa(*c.IntValue) + ")"
 	}
 }
 

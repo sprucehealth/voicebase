@@ -1,6 +1,9 @@
 package saml
 
-import "strings"
+import (
+	"strconv"
+	"strings"
+)
 
 func (p *parser) parseCondition(s string) (*Condition, []string) {
 	var targets []string
@@ -61,7 +64,7 @@ func (p *parser) parseCondTokens(tokens []string) *Condition {
 	for ix < len(tokens) {
 		tok := tokens[ix]
 		switch tok {
-		case "not":
+		case ConditionTypeNot:
 			if leftCond != nil {
 				p.err("Missing op")
 			}
@@ -70,10 +73,10 @@ func (p *parser) parseCondTokens(tokens []string) *Condition {
 				p.err("Missing term after 'not'")
 			}
 			return &Condition{
-				Op:       "not",
+				Op:       ConditionTypeNot,
 				Operands: []*Condition{rightCond},
 			}
-		case "and", "or":
+		case ConditionTypeAnd, ConditionTypeOr:
 			if leftCond == nil {
 				p.err("Missing term before '%s'", tok)
 			}
@@ -90,9 +93,45 @@ func (p *parser) parseCondTokens(tokens []string) *Condition {
 				p.err("Missing op")
 			}
 			leftCond = &Condition{
-				Op:     "gender_equals",
+				Op:     ConditionTypeGenderEquals,
 				Gender: tok,
 			}
+		case "age.years":
+			if ix+1 >= len(tokens) {
+				p.err("incomplete age conditional")
+			}
+
+			var operation string
+			switch tokens[ix+1] {
+			case ">":
+				operation = ConditionTypeIntegerGreaterThan
+			case "<":
+				operation = ConditionTypeIntegerLessThan
+			case ">=":
+				operation = ConditionTypeIntegerGreaterThanOrEqualTo
+			case "<=":
+				operation = ConditionTypeIntegerLessThanOrEqualTo
+			case "=":
+				operation = ConditionTypeIntegerEqualTo
+			default:
+				p.err("unknown operation %s for age conditional", tokens[ix+1])
+			}
+
+			if ix+2 >= len(tokens) {
+				p.err("incomplete age conditional.")
+			}
+
+			ageInYears, err := strconv.Atoi(tokens[ix+2])
+			if err != nil {
+				p.err("invalid age conditional: %s", err)
+			}
+
+			leftCond = &Condition{
+				Op:         operation,
+				IntValue:   &ageInYears,
+				DataSource: "age_in_years",
+			}
+			ix += 2
 		case "(":
 			var closingIndex int
 			depth := 1

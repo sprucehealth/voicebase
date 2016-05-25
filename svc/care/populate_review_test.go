@@ -19,7 +19,7 @@ func TestAlerts(t *testing.T) {
 						Questions: []*layout.Question{
 							{
 								ID:                 "test",
-								Type:               QuestionTypeMultipleChoice,
+								Type:               layout.QuestionTypeMultipleChoice,
 								ToAlert:            ptr.Bool(true),
 								AlertFormattedText: "Patient picked XXX",
 								PotentialAnswers: []*layout.PotentialAnswer{
@@ -51,11 +51,11 @@ func TestAlerts(t *testing.T) {
 							},
 							{
 								ID:   "test10",
-								Type: QuestionTypeFreeText,
+								Type: layout.QuestionTypeFreeText,
 							},
 							{
 								ID:                 "test20",
-								Type:               QuestionTypeAutoComplete,
+								Type:               layout.QuestionTypeAutoComplete,
 								ToAlert:            ptr.Bool(true),
 								AlertFormattedText: "Patient entered XXX",
 							},
@@ -133,11 +133,11 @@ func TestAlerts_NoAlerts(t *testing.T) {
 						Questions: []*layout.Question{
 							{
 								ID:   "test10",
-								Type: QuestionTypeFreeText,
+								Type: layout.QuestionTypeFreeText,
 							},
 							{
 								ID:   "test20",
-								Type: QuestionTypeAutoComplete,
+								Type: layout.QuestionTypeAutoComplete,
 							},
 						},
 					},
@@ -187,7 +187,7 @@ func TestAlerts_NoAlerts(t *testing.T) {
 func TestPopulateReview_MultipleChoiceQuestion(t *testing.T) {
 	question := &layout.Question{
 		ID:   "test",
-		Type: QuestionTypeMultipleChoice,
+		Type: layout.QuestionTypeMultipleChoice,
 		PotentialAnswers: []*layout.PotentialAnswer{
 			{
 				ID:      "test1",
@@ -273,7 +273,7 @@ func TestPopulateReview_MultipleChoiceQuestion(t *testing.T) {
 func TestPopulateReview_MultipleChoice_Subquestions(t *testing.T) {
 	question := &layout.Question{
 		ID:   "test",
-		Type: QuestionTypeMultipleChoice,
+		Type: layout.QuestionTypeMultipleChoice,
 		SubQuestionsConfig: &layout.SubQuestionsConfig{
 			Screens: []*layout.Screen{
 				{
@@ -281,17 +281,17 @@ func TestPopulateReview_MultipleChoice_Subquestions(t *testing.T) {
 						{
 							ID:      "test.a",
 							Summary: "TEST.A",
-							Type:    QuestionTypeFreeText,
+							Type:    layout.QuestionTypeFreeText,
 						},
 						{
 							ID:      "test.b",
 							Summary: "TEST.B",
-							Type:    QuestionTypeSingleEntry,
+							Type:    layout.QuestionTypeSingleEntry,
 						},
 						{
 							ID:      "test.c",
 							Summary: "TEST.C",
-							Type:    QuestionTypeSegmentedControl,
+							Type:    layout.QuestionTypeSegmentedControl,
 							PotentialAnswers: []*layout.PotentialAnswer{
 								{
 									ID:     "test.c.1",
@@ -306,7 +306,7 @@ func TestPopulateReview_MultipleChoice_Subquestions(t *testing.T) {
 						{
 							ID:      "test.d",
 							Summary: "TEST.D",
-							Type:    QuestionTypeSingleSelect,
+							Type:    layout.QuestionTypeSingleSelect,
 							PotentialAnswers: []*layout.PotentialAnswer{
 								{
 									ID:     "test.d.1",
@@ -321,12 +321,12 @@ func TestPopulateReview_MultipleChoice_Subquestions(t *testing.T) {
 						{
 							ID:      "test.e",
 							Summary: "TEST.E",
-							Type:    QuestionTypeAutoComplete,
+							Type:    layout.QuestionTypeAutoComplete,
 						},
 						{
 							ID:      "test.f",
 							Summary: "TEST.F",
-							Type:    QuestionTypeMultipleChoice,
+							Type:    layout.QuestionTypeMultipleChoice,
 							PotentialAnswers: []*layout.PotentialAnswer{
 								{
 									ID:     "test.f.1",
@@ -495,7 +495,7 @@ func TestPopulateReview_MultipleChoice_Subquestions(t *testing.T) {
 func TestPopulateReview_SingleSelect(t *testing.T) {
 	question := &layout.Question{
 		ID:   "test",
-		Type: QuestionTypeSingleSelect,
+		Type: layout.QuestionTypeSingleSelect,
 		PotentialAnswers: []*layout.PotentialAnswer{
 			{
 				ID:     "test1",
@@ -543,7 +543,7 @@ func TestPopulateReview_SingleSelect(t *testing.T) {
 func TestPopulateReview_SegmentedControl(t *testing.T) {
 	question := &layout.Question{
 		ID:   "test",
-		Type: QuestionTypeSegmentedControl,
+		Type: layout.QuestionTypeSegmentedControl,
 		PotentialAnswers: []*layout.PotentialAnswer{
 			{
 				ID:     "test1",
@@ -591,7 +591,7 @@ func TestPopulateReview_SegmentedControl(t *testing.T) {
 func TestPopulateReview_FreeText(t *testing.T) {
 	question := &layout.Question{
 		ID:   "test",
-		Type: QuestionTypeFreeText,
+		Type: layout.QuestionTypeFreeText,
 	}
 
 	answer := &Answer{
@@ -614,7 +614,7 @@ func TestPopulateReview_FreeText(t *testing.T) {
 func TestPopulateReview_SingleEntry(t *testing.T) {
 	question := &layout.Question{
 		ID:   "test",
-		Type: QuestionTypeSingleEntry,
+		Type: layout.QuestionTypeSingleEntry,
 	}
 
 	answer := &Answer{
@@ -637,7 +637,7 @@ func TestPopulateReview_SingleEntry(t *testing.T) {
 func TestPopulateReview_PhotoSlots(t *testing.T) {
 	question := &layout.Question{
 		ID:   "test",
-		Type: QuestionTypePhotoSection,
+		Type: layout.QuestionTypePhotoSection,
 		PhotoSlots: []*layout.PhotoSlot{
 			{
 				ID:   "slot1",

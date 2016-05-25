@@ -19,7 +19,14 @@ message Visit {
 	bool submitted = 5;
 	string organization_id = 6 [(gogoproto.customname)="OrganizationID"];
 	string creator_id = 7 [(gogoproto.customname)="CreatorID"];
+	bool triaged = 8;
+	message Preference {
+		bool optional_triage = 1;
+	}
+	Preference preferences = 9;
 }
+
+
 
 // Anwer represents a response to a particular question in the visit.
 message Answer {
@@ -145,6 +152,12 @@ message SubmitVisitRequest {
 
 message SubmitVisitResponse {}
 
+message TriageVisitRequest {
+	string visit_id = 1 [(gogoproto.customname)="VisitID"];
+}
+
+message TriageVisitResponse {}
+
 message CarePlan {
 	string id = 1 [(gogoproto.customname) = "ID"];
 	string name = 2;
@@ -265,6 +278,7 @@ service Care {
 	rpc CreateVisitAnswers(CreateVisitAnswersRequest) returns (CreateVisitAnswersResponse);
 	rpc GetAnswersForVisit(GetAnswersForVisitRequest) returns (GetAnswersForVisitResponse);
 	rpc SubmitVisit(SubmitVisitRequest) returns (SubmitVisitResponse);
+	rpc TriageVisit(TriageVisitRequest) returns (TriageVisitResponse);
 
 	// Care plans
 

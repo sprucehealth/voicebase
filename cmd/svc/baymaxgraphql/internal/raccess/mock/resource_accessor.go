@@ -517,6 +517,14 @@ func (m *ResourceAccessor) SubmitVisit(ctx context.Context, req *care.SubmitVisi
 	return rets[0].(*care.SubmitVisitResponse), mock.SafeError(rets[1])
 }
 
+func (m *ResourceAccessor) TriageVisit(ctx context.Context, req *care.TriageVisitRequest) (*care.TriageVisitResponse, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*care.TriageVisitResponse), mock.SafeError(rets[1])
+}
+
 func (m *ResourceAccessor) VisitLayoutVersion(ctx context.Context, req *layout.GetVisitLayoutVersionRequest) (*layout.GetVisitLayoutVersionResponse, error) {
 	rets := m.Record(req)
 	if len(rets) == 0 {
