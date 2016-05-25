@@ -72,6 +72,11 @@ func transformScreen(screen *saml.Screen) (*layout.Screen, error) {
 		visitScreen.Condition = condition
 	}
 
+	// map all photo screens to media screens
+	if visitScreen.Type == saml.ScreenTypePhoto {
+		visitScreen.Type = layout.ScreenTypeMedia
+	}
+
 	for i, question := range screen.Questions {
 		visitScreen.Questions[i], err = transformQuestion(question)
 		if err != nil {

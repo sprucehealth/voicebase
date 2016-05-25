@@ -16,4 +16,5 @@ const (
 
 	// ScreenTypes
 	ScreenTypeTriage = "screen_type_triage"
+	ScreenTypeMedia  = "screen_type_media"
 )
