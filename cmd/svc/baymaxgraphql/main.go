@@ -267,7 +267,7 @@ func main() {
 		defer segmentClient.Close()
 	}
 
-	media := media.New(storage.NewS3(awsSession, *flagStorageBucket, "media"), storage.NewS3(awsSession, *flagStorageBucket, "media-cache"), 0, 0)
+	media := media.NewImageService(storage.NewS3(awsSession, *flagStorageBucket, "media"), storage.NewS3(awsSession, *flagStorageBucket, "media-cache"), 0, 0)
 
 	r := mux.NewRouter()
 	gqlHandler := NewGraphQL(

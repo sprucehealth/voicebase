@@ -46,7 +46,7 @@ func newGQL(t *testing.T) *gql {
 		notification: g.notificationC,
 		spruceOrgID:  "spruce_org",
 		segmentio:    &segmentIOWrapper{},
-		media:        media.New(storage.NewTestStore(nil), storage.NewTestStore(nil), 100, 100),
+		media:        media.NewImageService(storage.NewTestStore(nil), storage.NewTestStore(nil), 100, 100),
 		sns:          &awsutil.SNS{},
 		layout:       g.layoutC,
 		layoutStore:  g.layoutStore,

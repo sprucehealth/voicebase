@@ -21,9 +21,6 @@ import (
 	"github.com/sprucehealth/backend/libs/storage"
 )
 
-// ErrNotFound is returned when the requested media was not found
-var ErrNotFound = errors.New("media: media not found")
-
 // ErrInvalidImage is returned when an image cannot be decoded or resized
 type ErrInvalidImage struct {
 	Err error
@@ -33,39 +30,32 @@ func (e ErrInvalidImage) Error() string {
 	return fmt.Sprintf("media: invalid image: %s", e.Err)
 }
 
-const (
-	widthHeader         = "x-amz-meta-width"
-	heightHeader        = "x-amz-meta-height"
-	mimeTypeHeader      = "Content-Type"
-	contentLengthHeader = "Content-Length"
-)
-
-// Size is a requested size for an image.
-type Size struct {
+// ImageSize is a requested size for an image.
+type ImageSize struct {
 	Width        int
 	Height       int
 	AllowScaleUp bool
 	Crop         bool
 }
 
-// Meta is is media metadata
-type Meta struct {
+// ImageMeta is is media metadata
+type ImageMeta struct {
 	MimeType string
 	Width    int
 	Height   int
 	Size     int // in bytes of the encoded image
 }
 
-// Service implements a media storage service.
-type Service struct {
+// ImageService implements a media storage service.
+type ImageService struct {
 	store               storage.DeterministicStore
 	storeCache          storage.DeterministicStore
 	maxWidth, maxHeight int
 }
 
-// New returns a new initialized media service.
-func New(store, storeCache storage.DeterministicStore, maxWidth, maxHeight int) *Service {
-	return &Service{
+// NewImageService returns a new initialized media service.
+func NewImageService(store, storeCache storage.DeterministicStore, maxWidth, maxHeight int) *ImageService {
+	return &ImageService{
 		store:      store,
 		storeCache: storeCache,
 		maxWidth:   maxWidth,
@@ -74,7 +64,7 @@ func New(store, storeCache storage.DeterministicStore, maxWidth, maxHeight int) 
 }
 
 // Put stores an image.
-func (s *Service) Put(id string, img image.Image) (*Meta, error) {
+func (s *ImageService) Put(id string, img image.Image) (*ImageMeta, error) {
 	// If the image is larger than allowed then resize and store
 	if s.isTooLarge(img.Bounds().Dx(), img.Bounds().Dy()) {
 		var err error
@@ -88,7 +78,7 @@ func (s *Service) Put(id string, img image.Image) (*Meta, error) {
 
 // PutReader stores an image and returns the image metadata It's often better than
 // Put as it can avoid re-encoding the image when not necessary.
-func (s *Service) PutReader(id string, r io.ReadSeeker) (*Meta, error) {
+func (s *ImageService) PutReader(id string, r io.ReadSeeker) (*ImageMeta, error) {
 	cnf, imf, _, err := imageutil.DecodeImageConfigAndExif(r)
 	if err != nil {
 		return nil, errors.Trace(ErrInvalidImage{Err: err})
@@ -121,7 +111,7 @@ func (s *Service) PutReader(id string, r io.ReadSeeker) (*Meta, error) {
 		widthHeader:  strconv.Itoa(cnf.Width),
 		heightHeader: strconv.Itoa(cnf.Height),
 	})
-	meta := &Meta{
+	meta := &ImageMeta{
 		MimeType: mimeType, // This works for all stdlib decoders but might fail for others. Probably fine though.
 		Width:    cnf.Width,
 		Height:   cnf.Height,
@@ -130,7 +120,7 @@ func (s *Service) PutReader(id string, r io.ReadSeeker) (*Meta, error) {
 	return meta, errors.Trace(err)
 }
 
-func (s *Service) storeOriginal(id string, img image.Image) (*Meta, error) {
+func (s *ImageService) storeOriginal(id string, img image.Image) (*ImageMeta, error) {
 	buf := &bytes.Buffer{}
 	if err := jpeg.Encode(buf, img, &jpeg.Options{Quality: imageutil.JPEGQuality}); err != nil {
 		return nil, errors.Trace(err)
@@ -139,7 +129,7 @@ func (s *Service) storeOriginal(id string, img image.Image) (*Meta, error) {
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	return &Meta{
+	return &ImageMeta{
 		MimeType: "image/jpeg",
 		Width:    img.Bounds().Dx(),
 		Height:   img.Bounds().Dy(),
@@ -148,7 +138,7 @@ func (s *Service) storeOriginal(id string, img image.Image) (*Meta, error) {
 }
 
 // Get returns the decoded and optionally sized image and related metadata.
-func (s *Service) Get(id string, size *Size) (image.Image, *Meta, error) {
+func (s *ImageService) Get(id string, size *ImageSize) (image.Image, *ImageMeta, error) {
 	rc, meta, err := s.GetReader(id, size)
 	if err != nil {
 		return nil, nil, errors.Trace(err)
@@ -158,7 +148,7 @@ func (s *Service) Get(id string, size *Size) (image.Image, *Meta, error) {
 }
 
 // GetMeta returns the metadata associated with a media entry
-func (s *Service) GetMeta(id string) (*Meta, error) {
+func (s *ImageService) GetMeta(id string) (*ImageMeta, error) {
 	h, err := s.store.GetHeader(s.store.IDFromName(id))
 	if err != nil {
 		return nil, err
@@ -168,7 +158,7 @@ func (s *Service) GetMeta(id string) (*Meta, error) {
 
 // GetReader returns a reader for the requested size of image and the mimetype.
 // If size is nil then the original image is returned.
-func (s *Service) GetReader(id string, size *Size) (io.ReadCloser, *Meta, error) {
+func (s *ImageService) GetReader(id string, size *ImageSize) (io.ReadCloser, *ImageMeta, error) {
 	// If requested original then our job is easy.
 	if size == nil || (size.Width <= 0 && size.Height <= 0) {
 		rc, header, err := s.store.GetReader(s.store.IDFromName(id))
@@ -202,7 +192,7 @@ func (s *Service) GetReader(id string, size *Size) (io.ReadCloser, *Meta, error)
 	if err != nil {
 		return nil, nil, errors.Trace(err)
 	}
-	meta := &Meta{
+	meta := &ImageMeta{
 		MimeType: header.Get(mimeTypeHeader),
 		Width:    img.Bounds().Dx(),
 		Height:   img.Bounds().Dy(),
@@ -235,15 +225,15 @@ func (s *Service) GetReader(id string, size *Size) (io.ReadCloser, *Meta, error)
 }
 
 // URL returns the URL from the underlying deterministic storage system
-func (s *Service) URL(id string) string {
+func (s *ImageService) URL(id string) string {
 	return s.store.IDFromName(id)
 }
 
-func (s *Service) isTooLarge(width, height int) bool {
+func (s *ImageService) isTooLarge(width, height int) bool {
 	return (s.maxWidth > 0 && width > s.maxWidth) || (s.maxHeight > 0 && height > s.maxHeight)
 }
 
-func sizeID(id string, size *Size) string {
+func sizeID(id string, size *ImageSize) string {
 	return fmt.Sprintf("%s-%dx%d-up_%t-crop_%t", id, size.Width, size.Height, size.AllowScaleUp, size.Crop)
 }
 
@@ -254,11 +244,11 @@ func imgHeaders(img image.Image) map[string]string {
 	}
 }
 
-func metaFromHeaders(h http.Header) *Meta {
+func metaFromHeaders(h http.Header) *ImageMeta {
 	width, _ := strconv.Atoi(h.Get(widthHeader))
 	height, _ := strconv.Atoi(h.Get(heightHeader))
 	size, _ := strconv.Atoi(h.Get(contentLengthHeader))
-	return &Meta{
+	return &ImageMeta{
 		MimeType: h.Get(mimeTypeHeader),
 		Width:    width,
 		Height:   height,

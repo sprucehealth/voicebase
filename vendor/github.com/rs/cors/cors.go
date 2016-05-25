@@ -26,6 +26,9 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/sprucehealth/backend/libs/httputil"
+	"golang.org/x/net/context"
 )
 
 // Options is a configuration container to setup the CORS middleware.
@@ -183,6 +186,28 @@ func (c *Cors) Handler(h http.Handler) http.Handler {
 			c.logf("Handler: Actual request")
 			c.handleActualRequest(w, r)
 			h.ServeHTTP(w, r)
+		}
+	})
+}
+
+// ContextHandler apply the CORS specification on the request, and add relevant CORS headers
+// as necessary. Following the ContextHandler pattern
+func (c *Cors) ContextHandler(h httputil.ContextHandler) httputil.ContextHandler {
+	return httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+		if r.Method == "OPTIONS" {
+			c.logf("Handler: Preflight request")
+			c.handlePreflight(w, r)
+			// Preflight requests are standalone and should stop the chain as some other
+			// middleware may not handle OPTIONS requests correctly. One typical example
+			// is authentication middleware ; OPTIONS requests won't carry authentication
+			// headers (see #1)
+			if c.optionPassthrough {
+				h.ServeHTTP(ctx, w, r)
+			}
+		} else {
+			c.logf("Handler: Actual request")
+			c.handleActualRequest(w, r)
+			h.ServeHTTP(ctx, w, r)
 		}
 	})
 }

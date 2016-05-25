@@ -38,7 +38,7 @@ func (e ErrFetchFailed) Error() string {
 
 // Service is a media proxy
 type Service struct {
-	mediaSvc   *media.Service
+	mediaSvc   *media.ImageService
 	dal        DAL
 	httpClient *http.Client
 }
@@ -78,7 +78,7 @@ const (
 
 // New returns a new instance of the media proxy service. If httpClient is nil
 // then http.DefaultClient will be used.
-func New(mediaSvc *media.Service, dal DAL, httpClient *http.Client) *Service {
+func New(mediaSvc *media.ImageService, dal DAL, httpClient *http.Client) *Service {
 	if httpClient == nil {
 		httpClient = http.DefaultClient
 	}
@@ -165,7 +165,7 @@ func (s *Service) LookupByURL(urls []string) (map[string]*Media, error) {
 
 // ImageReader returns a reader and metadata for the requested media image. It either returns
 // a stored image if available or attempts to fetch the remote image if not.
-func (s *Service) ImageReader(id string, size *media.Size) (io.ReadCloser, *Media, error) {
+func (s *Service) ImageReader(id string, size *media.ImageSize) (io.ReadCloser, *Media, error) {
 	// Lookup the media metadata
 	med, err := s.dal.Get([]string{id})
 	if err != nil {

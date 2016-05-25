@@ -43,7 +43,7 @@ func TestService(t *testing.T) {
 	errURL := "http://sprucehealth.com/img-err.jpg"
 
 	store := storage.NewTestStore(nil)
-	msvc := media.New(store, store, 0, 0)
+	msvc := media.NewImageService(store, store, 0, 0)
 	dal := NewMemoryDAL()
 	rt := &roundTripper{
 		urlToRes: func(earl string) *http.Response {

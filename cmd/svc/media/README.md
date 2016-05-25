@@ -25,6 +25,7 @@ $ flyway -url=jdbc:mysql://localhost:3306/media -user=baymax-media -password=bay
 To update the schema you would run the previous command again as new files are added to `dal/mysql`
 
 ### Running the Service
+
 To start the service run
 
 ```

@@ -20,7 +20,7 @@ import (
 func TestPostMessage(t *testing.T) {
 	g := newGQL(t)
 	defer g.finish()
-	g.svc.media = media.New(storage.NewTestStore(map[string]*storage.TestObject{
+	g.svc.media = media.NewImageService(storage.NewTestStore(map[string]*storage.TestObject{
 		"mediaID": &storage.TestObject{
 			Headers: map[string][]string{"Content-Type": []string{"image/jpeg"}},
 		},
@@ -252,7 +252,7 @@ func TestPostMessage(t *testing.T) {
 func TestPostMessage_VisitAttachment(t *testing.T) {
 	g := newGQL(t)
 	defer g.finish()
-	g.svc.media = media.New(storage.NewTestStore(map[string]*storage.TestObject{
+	g.svc.media = media.NewImageService(storage.NewTestStore(map[string]*storage.TestObject{
 		"mediaID": &storage.TestObject{
 			Headers: map[string][]string{"Content-Type": []string{"image/jpeg"}},
 		},
@@ -623,7 +623,7 @@ func TestPostMessageDestinationNotContactOfPrimary(t *testing.T) {
 func TestPostMessagePatientSecureExternal(t *testing.T) {
 	g := newGQL(t)
 	defer g.finish()
-	g.svc.media = media.New(storage.NewTestStore(map[string]*storage.TestObject{
+	g.svc.media = media.NewImageService(storage.NewTestStore(map[string]*storage.TestObject{
 		"mediaID": &storage.TestObject{
 			Headers: map[string][]string{"Content-Type": []string{"image/jpeg"}},
 		},

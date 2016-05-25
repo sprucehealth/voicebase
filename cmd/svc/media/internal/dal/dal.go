@@ -8,12 +8,14 @@ import (
 
 	"database/sql/driver"
 
-	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/transactional/tsql"
 )
+
+// ErrNotFound represents when an object cannot be found at the data layer
+var ErrNotFound = errors.New("media/dal: object not found")
 
 // DAL represents the methods required to provide data access layer functionality
 type DAL interface {
@@ -60,7 +62,7 @@ func (d *dal) Transact(trans func(dal DAL) error) (err error) {
 func NewMediaID() (MediaID, error) {
 	id, err := media.NewID()
 	if err != nil {
-		return MediaID(""), errors.Trace(err)
+		return EmptyMediaID(), errors.Trace(err)
 	}
 	return MediaID(id), nil
 }
@@ -70,8 +72,27 @@ func EmptyMediaID() MediaID {
 	return ""
 }
 
+// Scan implements sql.Scanner and expects src to be nil or of type []byte, or string
+func (m *MediaID) Scan(src interface{}) error {
+	if src == nil {
+		return nil
+	}
+	switch v := src.(type) {
+	case []byte:
+		*m = MediaID(string(v))
+	case string:
+		*m = MediaID(v)
+	default:
+		return errors.Trace(fmt.Errorf("unsupported type for MediaID.Scan: %T", src))
+	}
+	return nil
+}
+
 // ParseMediaID transforms an MediaID from it's string representation into the actual ID value
 func ParseMediaID(s string) (MediaID, error) {
+	if s == "" {
+		return EmptyMediaID(), fmt.Errorf("Cannot parse media id: %q", s)
+	}
 	return MediaID(s), nil
 }
 
@@ -88,6 +109,7 @@ func (m MediaID) Value() (driver.Value, error) {
 	return string(m), nil
 }
 
+// String returns a string representation of the media id
 func (m MediaID) String() string {
 	return string(m)
 }
@@ -173,7 +195,7 @@ func (d *dal) InsertMedia(model *Media) (MediaID, error) {
 func (d *dal) Media(id MediaID) (*Media, error) {
 	row := d.db.QueryRow(
 		selectMedia+` WHERE id = ?`, id)
-	model, err := scanMedia(row, id)
+	model, err := scanMedia(row)
 	return model, errors.Trace(err)
 }
 
@@ -218,13 +240,13 @@ const selectMedia = `
     SELECT media.owner_type, media.owner_id, media.created, media.id, media.mime_type
       FROM media`
 
-func scanMedia(row dbutil.Scanner, context interface{}) (*Media, error) {
+func scanMedia(row dbutil.Scanner) (*Media, error) {
 	var m Media
 	m.ID = EmptyMediaID()
 
 	err := row.Scan(&m.OwnerType, &m.OwnerID, &m.Created, &m.ID, &m.MimeType)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(api.ErrNotFound(fmt.Sprintf("media - Media not found: %+v", context)))
+		return nil, ErrNotFound
 	}
 	return &m, errors.Trace(err)
 }

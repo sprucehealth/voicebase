@@ -36,7 +36,7 @@ type service struct {
 	staticURLPrefix        string
 	spruceOrgID            string
 	segmentio              *segmentIOWrapper
-	media                  *media.Service
+	media                  *media.ImageService
 	sns                    snsiface.SNSAPI
 	supportMessageTopicARN string
 	// TODO: Remove this

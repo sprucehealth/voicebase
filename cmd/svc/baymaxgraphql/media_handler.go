@@ -19,12 +19,12 @@ import (
 
 type mediaHandler struct {
 	auth        auth.AuthClient
-	media       *media.Service
+	media       *media.ImageService
 	mediaSigner *media.Signer
 }
 
 // NewMediaHandler returns an initialized instance of mediaHandler
-func NewMediaHandler(auth auth.AuthClient, media *media.Service, mediaSigner *media.Signer) httputil.ContextHandler {
+func NewMediaHandler(auth auth.AuthClient, media *media.ImageService, mediaSigner *media.Signer) httputil.ContextHandler {
 	return &mediaHandler{
 		auth:        auth,
 		media:       media,
@@ -185,12 +185,13 @@ func (m *mediaHandler) serve(ctx context.Context, w http.ResponseWriter, r *http
 	}
 
 	// server media
-	rc, meta, err := m.media.GetReader(mediaID, &media.Size{
+	rc, meta, err := m.media.GetReader(mediaID, &media.ImageSize{
 		Width:        width,
 		Height:       height,
 		AllowScaleUp: false,
 		Crop:         crop,
 	})
+	defer rc.Close()
 	if err != nil {
 		golog.Errorf("Unable to get media %s: %s", mediaID, err.Error())
 		w.WriteHeader(http.StatusInternalServerError)

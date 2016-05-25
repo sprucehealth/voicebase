@@ -1,5 +1,5 @@
 CREATE TABLE media (
-	id VARCHAR(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+	id VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
 	mime_type VARCHAR(128) NOT NULL,
 	owner_type VARCHAR(32) NOT NULL,
 	owner_id VARCHAR(128) NOT NULL,

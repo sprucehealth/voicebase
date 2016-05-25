@@ -16,7 +16,7 @@ func init() {
 func TestService(t *testing.T) {
 	store := storage.NewTestStore(nil)
 	storeCache := storage.NewTestStore(nil)
-	svc := New(store, storeCache, 128, 128)
+	svc := NewImageService(store, storeCache, 128, 128)
 
 	// Store image smaller than max size
 	var img image.Image
@@ -65,7 +65,7 @@ func TestService(t *testing.T) {
 	test.Equals(t, meta.Height, img.Bounds().Dy())
 
 	// Cropped
-	sc := &Size{Width: 32, Height: 32, Crop: true}
+	sc := &ImageSize{Width: 32, Height: 32, Crop: true}
 	img, meta, err = svc.Get("1", sc)
 	test.OK(t, err)
 	test.Equals(t, "image/jpeg", meta.MimeType)
@@ -83,7 +83,7 @@ func TestService(t *testing.T) {
 	test.Equals(t, "jpeg", imf)
 
 	// Cached version
-	sc = &Size{Width: 32, Height: 32, Crop: true}
+	sc = &ImageSize{Width: 32, Height: 32, Crop: true}
 	img, meta, err = svc.Get("1", sc)
 	test.OK(t, err)
 	test.Equals(t, "image/jpeg", meta.MimeType)
@@ -94,7 +94,7 @@ func TestService(t *testing.T) {
 	test.Equals(t, meta.Height, img.Bounds().Dy())
 
 	// Bounded
-	sc = &Size{Width: 32, Height: 32, Crop: false}
+	sc = &ImageSize{Width: 32, Height: 32, Crop: false}
 	img, meta, err = svc.Get("2", sc)
 	test.OK(t, err)
 	test.Equals(t, "image/jpeg", meta.MimeType)

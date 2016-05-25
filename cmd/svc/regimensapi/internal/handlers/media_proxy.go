@@ -53,7 +53,7 @@ func (h *mediaProxyHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter
 		return
 	}
 
-	sz := &media.Size{Width: rd.Width, Height: rd.Height, Crop: rd.Crop, AllowScaleUp: rd.AllowScaleUp}
+	sz := &media.ImageSize{Width: rd.Width, Height: rd.Height, Crop: rd.Crop, AllowScaleUp: rd.AllowScaleUp}
 	rc, meta, err := h.mpSvc.ImageReader(mediaID, sz)
 	if errors.Cause(err) == media.ErrNotFound {
 		apiservice.WriteResourceNotFoundError(ctx, "Media not found", w, r)

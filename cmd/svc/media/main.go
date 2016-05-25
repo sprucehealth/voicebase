@@ -102,7 +102,9 @@ func main() {
 		authClient,
 		urlutil.NewSigner("https://"+*flagMediaAPIDomain, signer, clock.New()),
 		dal.New(db),
-		*flagWebDomain)
+		*flagWebDomain,
+		*flagMediaStorageBucket,
+		*flagMediaAPIDomain)
 	h := httputil.LoggingHandler(r, "media", *flagBehindProxy, nil)
 
 	fmt.Printf("HTTP Listening on %s\n", *flagHTTPListenAddr)

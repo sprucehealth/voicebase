@@ -23,6 +23,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/sns"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/utils"
+	"github.com/sprucehealth/backend/libs/audioutil"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -376,12 +377,9 @@ func (w *IncomingRawMessageWorker) uploadTwilioMediaToS3(contentType, url string
 		return nil, errors.Trace(fmt.Errorf("Expected status code 2xx when pulling media, got %d: %s", res.StatusCode, dataStr))
 	}
 
-	var duration time.Duration
-	if contentType == "audio/mpeg" {
-		duration, err = mp3Duration(bytes.NewReader(data))
-		if err != nil {
-			golog.Errorf("Failed to calculate duration of mp3: %s", err)
-		}
+	duration, err := audioutil.Duration(bytes.NewReader(data), contentType)
+	if err != nil {
+		golog.Errorf("Failed to calculate duration of audio: %s", err)
 	}
 
 	id, err := media.NewID()

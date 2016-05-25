@@ -26,7 +26,7 @@ const (
 
 type mediaHandler struct {
 	apiDomain       string
-	mediaSvc        *media.Service
+	mediaSvc        *media.ImageService
 	statGetLatency  metrics.Histogram
 	statPostLatency metrics.Histogram
 }
@@ -34,8 +34,7 @@ type mediaHandler struct {
 // NewMedia returns a handler to perform media uploads and fetching
 func NewMedia(
 	apiDomain string,
-	mediaSvc *media.Service,
-	metricsRegistry metrics.Registry,
+	mediaSvc *media.ImageService, metricsRegistry metrics.Registry,
 ) httputil.ContextHandler {
 	h := &mediaHandler{
 		apiDomain:       apiDomain,
@@ -96,7 +95,7 @@ func (h *mediaHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *h
 	}()
 
 	id := fmt.Sprintf(mediaPathFormatString, mediaID)
-	rc, meta, err := h.mediaSvc.GetReader(id, &media.Size{Width: rd.Width, Height: rd.Height, Crop: rd.Crop, AllowScaleUp: rd.AllowScaleUp})
+	rc, meta, err := h.mediaSvc.GetReader(id, &media.ImageSize{Width: rd.Width, Height: rd.Height, Crop: rd.Crop, AllowScaleUp: rd.AllowScaleUp})
 	if errors.Cause(err) == media.ErrNotFound {
 		apiservice.WriteResourceNotFoundError(ctx, "media not found", w, r)
 		return

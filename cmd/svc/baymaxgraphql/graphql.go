@@ -122,7 +122,7 @@ func NewGraphQL(
 	spruceOrgID string,
 	staticURLPrefix string,
 	segmentClient *analytics.Client,
-	media *media.Service,
+	media *media.ImageService,
 	sns snsiface.SNSAPI,
 	supportMessageTopicARN string,
 	metricsRegistry metrics.Registry,

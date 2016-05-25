@@ -312,12 +312,12 @@ func setupRouter(metricsRegistry metrics.Registry) (*mux.Router, httputil.Contex
 
 	mediaStore := getMediaStore(config.media, "")
 	mediaStoreCache := getMediaStore(config.media, "cache")
-	mediaSvc := media.New(mediaStore, mediaStoreCache, config.media.maxWidth, config.media.maxHeight)
+	mediaSvc := media.NewImageService(mediaStore, mediaStoreCache, config.media.maxWidth, config.media.maxHeight)
 	mediaHandler := handlers.NewMedia(config.apiDomain, mediaSvc, metricsRegistry.Scope("media"))
 
 	proxyMediaStore := getMediaStore(config.mediaProxy, "")
 	proxyMediaStoreCache := getMediaStore(config.mediaProxy, "cache")
-	proxyMediaSvc := media.New(proxyMediaStore, proxyMediaStoreCache, config.mediaProxy.maxWidth, config.mediaProxy.maxHeight)
+	proxyMediaSvc := media.NewImageService(proxyMediaStore, proxyMediaStoreCache, config.mediaProxy.maxWidth, config.mediaProxy.maxHeight)
 	var proxyDAL mediaproxy.DAL
 	proxyDAL = mediaproxy.NewMemoryDAL()
 	if dynamoDBClient != nil {
