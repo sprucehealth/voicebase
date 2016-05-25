@@ -170,7 +170,8 @@ func FieldsOnCorrectTypeRule(context *ValidationContext) *ValidationRuleInstance
 func FragmentsOnCompositeTypesRule(context *ValidationContext) *ValidationRuleInstance {
 	return &ValidationRuleInstance{
 		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
-			if node, ok := p.Node.(*ast.InlineFragment); ok {
+			switch node := p.Node.(type) {
+			case *ast.InlineFragment:
 				ttype := context.Type()
 				if ttype != nil && !IsCompositeType(ttype) {
 					return newValidationRuleError(
@@ -178,8 +179,7 @@ func FragmentsOnCompositeTypesRule(context *ValidationContext) *ValidationRuleIn
 						[]ast.Node{node.TypeCondition},
 					)
 				}
-			}
-			if node, ok := p.Node.(*ast.FragmentDefinition); ok {
+			case *ast.FragmentDefinition:
 				ttype := context.Type()
 				if ttype != nil && !IsCompositeType(ttype) {
 					nodeName := ""
@@ -405,15 +405,15 @@ func LoneAnonymousOperationRule(context *ValidationContext) *ValidationRuleInsta
 	var operationCount = 0
 	return &ValidationRuleInstance{
 		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
-			if node, ok := p.Node.(*ast.Document); ok {
+			switch node := p.Node.(type) {
+			case *ast.Document:
 				operationCount = 0
 				for _, definition := range node.Definitions {
 					if definition.GetKind() == kinds.OperationDefinition {
 						operationCount = operationCount + 1
 					}
 				}
-			}
-			if node, ok := p.Node.(*ast.OperationDefinition); ok {
+			case *ast.OperationDefinition:
 				if node.Name == nil && operationCount > 1 {
 					return newValidationRuleError(
 						`This anonymous operation must be the only defined operation.`,
@@ -549,22 +549,25 @@ func NoUndefinedVariablesRule(context *ValidationContext) *ValidationRuleInstanc
 	var definedVariableNames = make(map[string]struct{})
 	return &ValidationRuleInstance{
 		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
-			if node, ok := p.Node.(*ast.OperationDefinition); ok && node != nil {
+			switch node := p.Node.(type) {
+			case *ast.OperationDefinition:
 				operation = node
-				visitedFragmentNames = make(map[string]struct{})
-				definedVariableNames = make(map[string]struct{})
-			}
-			if node, ok := p.Node.(*ast.VariableDefinition); ok && node != nil {
+				if len(visitedFragmentNames) != 0 {
+					visitedFragmentNames = make(map[string]struct{})
+				}
+				if len(definedVariableNames) != 0 {
+					definedVariableNames = make(map[string]struct{})
+				}
+			case *ast.VariableDefinition:
 				variableName := ""
 				if node.Variable != nil && node.Variable.Name != nil {
 					variableName = node.Variable.Name.Value
 				}
 				definedVariableNames[variableName] = struct{}{}
-			}
-			if variable, ok := p.Node.(*ast.Variable); ok && variable != nil {
+			case *ast.Variable:
 				variableName := ""
-				if variable.Name != nil {
-					variableName = variable.Name.Value
+				if node.Name != nil {
+					variableName = node.Name.Value
 				}
 				if _, ok := definedVariableNames[variableName]; !ok {
 					withinFragment := false
@@ -577,16 +580,15 @@ func NoUndefinedVariablesRule(context *ValidationContext) *ValidationRuleInstanc
 					if withinFragment == true && operation != nil && operation.Name != nil {
 						return newValidationRuleError(
 							fmt.Sprintf(`Variable "$%v" is not defined by operation "%v".`, variableName, operation.Name.Value),
-							[]ast.Node{variable, operation},
+							[]ast.Node{node, operation},
 						)
 					}
 					return newValidationRuleError(
 						fmt.Sprintf(`Variable "$%v" is not defined.`, variableName),
-						[]ast.Node{variable},
+						[]ast.Node{node},
 					)
 				}
-			}
-			if node, ok := p.Node.(*ast.FragmentSpread); ok && node != nil {
+			case *ast.FragmentSpread:
 				// Only visit fragments of a particular name once per operation
 				fragmentName := ""
 				if node.Name != nil {
@@ -618,24 +620,23 @@ func NoUnusedFragmentsRule(context *ValidationContext) *ValidationRuleInstance {
 
 	return &ValidationRuleInstance{
 		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
-			if node, ok := p.Node.(*ast.OperationDefinition); ok && node != nil {
+			switch node := p.Node.(type) {
+			case *ast.OperationDefinition:
 				spreadNames = make(map[string]struct{})
 				spreadsWithinOperation = append(spreadsWithinOperation, spreadNames)
-			}
-			if def, ok := p.Node.(*ast.FragmentDefinition); ok && def != nil {
+			case *ast.FragmentDefinition:
 				defName := ""
-				if def.Name != nil {
-					defName = def.Name.Value
+				if node.Name != nil {
+					defName = node.Name.Value
 				}
 
-				fragmentDefs = append(fragmentDefs, def)
+				fragmentDefs = append(fragmentDefs, node)
 				spreadNames = make(map[string]struct{})
 				fragAdjacencies[defName] = spreadNames
-			}
-			if spread, ok := p.Node.(*ast.FragmentSpread); ok && spread != nil {
+			case *ast.FragmentSpread:
 				spreadName := ""
-				if spread.Name != nil {
-					spreadName = spread.Name.Value
+				if node.Name != nil {
+					spreadName = node.Name.Value
 				}
 				spreadNames[spreadName] = struct{}{}
 			}
@@ -701,7 +702,8 @@ func NoUnusedVariablesRule(context *ValidationContext) *ValidationRuleInstance {
 
 	return &ValidationRuleInstance{
 		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
-			if _, ok := p.Node.(*ast.OperationDefinition); ok {
+			switch node := p.Node.(type) {
+			case *ast.OperationDefinition:
 				if len(visitedFragmentNames) != 0 {
 					visitedFragmentNames = make(map[string]struct{})
 				}
@@ -709,25 +711,22 @@ func NoUnusedVariablesRule(context *ValidationContext) *ValidationRuleInstance {
 				if len(variableNameUsed) != 0 {
 					variableNameUsed = make(map[string]struct{})
 				}
-			}
-			if variable, ok := p.Node.(*ast.Variable); ok && variable != nil {
-				if variable.Name != nil {
-					variableNameUsed[variable.Name.Value] = struct{}{}
+			case *ast.Variable:
+				if node.Name != nil {
+					variableNameUsed[node.Name.Value] = struct{}{}
 				}
-			}
-			if spreadAST, ok := p.Node.(*ast.FragmentSpread); ok && spreadAST != nil {
+			case *ast.FragmentSpread:
 				// Only visit fragments of a particular name once per operation
 				spreadName := ""
-				if spreadAST.Name != nil {
-					spreadName = spreadAST.Name.Value
+				if node.Name != nil {
+					spreadName = node.Name.Value
 				}
 				if _, hasVisitedFragmentNames := visitedFragmentNames[spreadName]; hasVisitedFragmentNames {
 					return visitor.ActionSkip, nil
 				}
 				visitedFragmentNames[spreadName] = struct{}{}
-			}
-			if def, ok := p.Node.(*ast.VariableDefinition); ok && def != nil {
-				variableDefs = append(variableDefs, def)
+			case *ast.VariableDefinition:
+				variableDefs = append(variableDefs, node)
 				// Do not visit deeper, or else the defined variable name will be visited.
 				return visitor.ActionSkip, nil
 			}
@@ -1219,7 +1218,8 @@ func doTypesOverlap(t1 Type, t2 Type) bool {
 func PossibleFragmentSpreadsRule(context *ValidationContext) *ValidationRuleInstance {
 	return &ValidationRuleInstance{
 		Enter: func(p visitor.VisitFuncParams) (string, interface{}) {
-			if node, ok := p.Node.(*ast.InlineFragment); ok && node != nil {
+			switch node := p.Node.(type) {
+			case *ast.InlineFragment:
 				fragType := context.Type()
 				parentType, _ := context.ParentType().(Type)
 
@@ -1230,8 +1230,7 @@ func PossibleFragmentSpreadsRule(context *ValidationContext) *ValidationRuleInst
 						[]ast.Node{node},
 					)
 				}
-			}
-			if node, ok := p.Node.(*ast.FragmentSpread); ok && node != nil {
+			case *ast.FragmentSpread:
 				fragName := ""
 				if node.Name != nil {
 					fragName = node.Name.Value
