@@ -7,14 +7,12 @@ import (
 	"os"
 	"strings"
 
-	"google.golang.org/grpc"
-
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
-	"google.golang.org/grpc/codes"
-
 	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 type changeOrgEmailCmd struct {
@@ -64,7 +62,7 @@ func (c *changeOrgEmailCmd) run(args []string) error {
 
 	scn := bufio.NewScanner(os.Stdin)
 	if *orgEntityID == "" {
-		*orgEntityID = prompt(scn, "Entity ID:")
+		*orgEntityID = prompt(scn, "Entity ID: ")
 	}
 	if *orgEntityID == "" {
 		return errors.New("Org Entity ID required")
@@ -99,9 +97,8 @@ func (c *changeOrgEmailCmd) run(args []string) error {
 	} else if entityFound != nil {
 		if entityFound.ID != *orgEntityID {
 			return errors.New("email address already taken")
-		} else {
-			return nil
 		}
+		return nil
 	}
 
 	// only allow updating of email address and entity if the entityID = org and there are no other provisioned
@@ -152,23 +149,27 @@ func (c *changeOrgEmailCmd) run(args []string) error {
 	}
 
 	// check if domain already taken
+	domainUnchanged := false
 	res, err := c.dirCli.LookupEntityDomain(ctx, &directory.LookupEntityDomainRequest{
 		Domain: *domain,
 	})
 	if err != nil && grpc.Code(err) != codes.NotFound {
 		return errors.Trace(err)
 	} else if res != nil {
-		if !strings.HasSuffix(*orgEntityID, res.EntityID) {
+		if *orgEntityID != res.EntityID {
 			return errors.Trace(fmt.Errorf("domain %s already taken by %s", *domain, res.EntityID))
 		}
+		domainUnchanged = true
 	}
 
-	// Update the entity domain
-	if _, err := c.dirCli.UpdateEntityDomain(ctx, &directory.UpdateEntityDomainRequest{
-		EntityID: *orgEntityID,
-		Domain:   *domain,
-	}); err != nil {
-		return errors.Trace(err)
+	if !domainUnchanged {
+		// Update the entity domain
+		if _, err := c.dirCli.UpdateEntityDomain(ctx, &directory.UpdateEntityDomainRequest{
+			EntityID: *orgEntityID,
+			Domain:   *domain,
+		}); err != nil {
+			return errors.Trace(err)
+		}
 	}
 
 	// delete the existing contact for the entity

@@ -632,10 +632,10 @@ func (d *dal) InsertEntity(model *Entity) (EntityID, error) {
 
 	_, err := d.db.Exec(
 		`INSERT INTO entity
-          (display_name, first_name, group_name, type, status, 
-		   id, middle_initial, last_name, note, short_title, 
+          (display_name, first_name, group_name, type, status,
+		   id, middle_initial, last_name, note, short_title,
 		   long_title, gender, dob, account_id)
-          VALUES 
+          VALUES
 		  (?, ?, ?, ?, ?,
 		   ?, ?, ?, ?, ?,
 		   ?, ?, ?, ?)`,
@@ -1120,7 +1120,7 @@ func (d *dal) EntityDomain(id *EntityID, domain *string, opts ...QueryOption) (E
 	}
 
 	var queriedDomain string
-	var queriedEntityID EntityID
+	queriedEntityID := EmptyEntityID()
 	if err := d.db.QueryRow(`
 		SELECT entity_id, domain
 		FROM entity_domain
