@@ -21,8 +21,8 @@ const (
 // Clone created a new Background context and copies all relevent baymax values from the parent into the new context
 func Clone(pCtx context.Context) context.Context {
 	cCtx := context.Background()
-	cCtx = devicectx.WithSpruceHeaders(pCtx, devicectx.SpruceHeaders(pCtx))
-	cCtx = httputil.CtxWithRequestID(pCtx, httputil.RequestID(pCtx))
+	cCtx = devicectx.WithSpruceHeaders(cCtx, devicectx.SpruceHeaders(pCtx))
+	cCtx = httputil.CtxWithRequestID(cCtx, httputil.RequestID(pCtx))
 	cCtx = WithAccount(cCtx, Account(pCtx))
 	cCtx = WithClientEncryptionKey(cCtx, ClientEncryptionKey(pCtx))
 	cCtx = WithAccountEntities(cCtx, AccountEntities(pCtx))
