@@ -9,8 +9,6 @@ import (
 	ramock "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess/mock"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/conc"
-	"github.com/sprucehealth/backend/libs/media"
-	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/directory"
 	invitemock "github.com/sprucehealth/backend/svc/invite/mock"
@@ -49,7 +47,6 @@ func newGQL(t testing.TB) *gql {
 		notification: g.notificationC,
 		spruceOrgID:  "spruce_org",
 		segmentio:    &segmentIOWrapper{},
-		media:        media.NewImageService(storage.NewTestStore(nil), storage.NewTestStore(nil), 100, 100),
 		sns:          &awsutil.SNS{},
 		layout:       g.layoutC,
 		layoutStore:  g.layoutStore,

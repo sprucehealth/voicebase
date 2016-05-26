@@ -49,25 +49,30 @@ var messageInputType = graphql.NewInputObject(
 )
 
 var (
-	attachmentTypeImage    = "IMAGE"
-	attachmentTypeVisit    = "VISIT"
 	attachmentTypeCarePlan = "CARE_PLAN"
+	attachmentTypeImage    = "IMAGE"
+	attachmentTypeVideo    = "VIDEO"
+	attachmentTypeVisit    = "VISIT"
 )
 
 var attachmentInputTypeEnum = graphql.NewEnum(graphql.EnumConfig{
 	Name: "AttachmentInputType",
 	Values: graphql.EnumValueConfigMap{
+		attachmentTypeCarePlan: &graphql.EnumValueConfig{
+			Value:       attachmentTypeCarePlan,
+			Description: "The attachment type representing a care plan",
+		},
 		attachmentTypeImage: &graphql.EnumValueConfig{
 			Value:       attachmentTypeImage,
 			Description: "The attachment type representing an image",
 		},
+		attachmentTypeVideo: &graphql.EnumValueConfig{
+			Value:       attachmentTypeVideo,
+			Description: "The attachment type representing a video",
+		},
 		attachmentTypeVisit: &graphql.EnumValueConfig{
 			Value:       attachmentTypeVisit,
 			Description: "The attachment type representing a visit",
-		},
-		attachmentTypeCarePlan: &graphql.EnumValueConfig{
-			Value:       attachmentTypeCarePlan,
-			Description: "The attachment type representing a care plan",
 		},
 	},
 })
@@ -85,12 +90,14 @@ var attachmentInputType = graphql.NewInputObject(
 
 func attachmentTypeEnumAsThreadingEnum(t string) (threading.Attachment_Type, error) {
 	switch t {
-	case attachmentTypeImage:
-		return threading.Attachment_IMAGE, nil
-	case attachmentTypeVisit:
-		return threading.Attachment_VISIT, nil
 	case attachmentTypeCarePlan:
 		return threading.Attachment_CARE_PLAN, nil
+	case attachmentTypeImage:
+		return threading.Attachment_IMAGE, nil
+	case attachmentTypeVideo:
+		return threading.Attachment_VIDEO, nil
+	case attachmentTypeVisit:
+		return threading.Attachment_VISIT, nil
 
 	}
 	return threading.Attachment_Type(0), fmt.Errorf("Unknown attachment type %s", t)
@@ -345,19 +352,36 @@ var postMessageMutation = &graphql.Field{
 					},
 				}
 			case threading.Attachment_IMAGE:
-				mediaID := svc.media.URL(mAttachment["mediaID"].(string))
-				meta, err := svc.media.GetMeta(mAttachment["mediaID"].(string))
+				info, err := ram.MediaInfo(ctx, mAttachment["mediaID"].(string))
 				if err != nil {
-					return nil, err
+					return nil, fmt.Errorf("Error while locating media info for %s: %s", mAttachment["mediaID"].(string), err)
 				}
 				attachment = &threading.Attachment{
 					Type:  mAttachmentType,
 					Title: title,
-					URL:   mediaID,
+					URL:   info.URL,
 					Data: &threading.Attachment_Image{
 						Image: &threading.ImageAttachment{
-							Mimetype: meta.MimeType,
-							URL:      mediaID,
+							Mimetype: info.MIME.Type + "/" + info.MIME.Subtype,
+							URL:      info.URL,
+						},
+					},
+				}
+			case threading.Attachment_VIDEO:
+				info, err := ram.MediaInfo(ctx, mAttachment["mediaID"].(string))
+				if err != nil {
+					return nil, fmt.Errorf("Error while locating media info for %s: %s", mAttachment["mediaID"].(string), err)
+				}
+				attachment = &threading.Attachment{
+					Type:  mAttachmentType,
+					Title: title,
+					URL:   info.URL,
+					Data: &threading.Attachment_Video{
+						Video: &threading.VideoAttachment{
+							Mimetype:   info.MIME.Type + "/" + info.MIME.Subtype,
+							URL:        info.URL,
+							ThumbURL:   info.ThumbURL,
+							DurationNS: info.DurationNS,
 						},
 					},
 				}
@@ -438,7 +462,7 @@ var postMessageMutation = &graphql.Field{
 			},
 		})
 
-		it, err := transformThreadItemToResponse(pmres.Item, req.UUID, acc.ID, svc.webDomain, svc.mediaSigner)
+		it, err := transformThreadItemToResponse(pmres.Item, req.UUID, acc.ID, svc.webDomain, svc.mediaAPIDomain)
 		if err != nil {
 			return nil, errors.InternalError(ctx, fmt.Errorf("failed to transform thread item: %s", err))
 		}

@@ -10,7 +10,7 @@ import (
 // BinaryMeta is it's media metadata
 type BinaryMeta struct {
 	MimeType string
-	Size     int
+	Size     uint64
 }
 
 // BinaryService implements a media storage service.
@@ -38,7 +38,7 @@ func (s *BinaryService) PutReader(id string, r io.ReadSeeker, contentType string
 	_, err = s.store.PutReader(id, r, size, contentType, nil)
 	meta := &BinaryMeta{
 		MimeType: contentType,
-		Size:     int(size),
+		Size:     uint64(size),
 	}
 	return meta, errors.Trace(err)
 }

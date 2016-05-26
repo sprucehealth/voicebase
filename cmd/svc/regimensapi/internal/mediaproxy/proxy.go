@@ -181,7 +181,7 @@ func (s *Service) ImageReader(id string, size *media.ImageSize) (io.ReadCloser, 
 	if err == nil {
 		m.Width = meta.Width
 		m.Height = meta.Height
-		m.Size = meta.Size
+		m.Size = int(meta.Size)
 		m.MimeType = meta.MimeType
 		return rc, m, nil
 	} else if errors.Cause(err) != media.ErrNotFound {
@@ -247,7 +247,7 @@ func (s *Service) ImageReader(id string, size *media.ImageSize) (io.ReadCloser, 
 
 	m.Status = StatusStored
 	m.FailReason = ""
-	m.Size = meta.Size
+	m.Size = int(meta.Size)
 	m.Width = meta.Width
 	m.Height = meta.Height
 	m.MimeType = meta.MimeType
@@ -260,7 +260,7 @@ func (s *Service) ImageReader(id string, size *media.ImageSize) (io.ReadCloser, 
 	if err != nil {
 		return nil, m, errors.Trace(err)
 	}
-	m.Size = meta.Size
+	m.Size = int(meta.Size)
 	m.Width = meta.Width
 	m.Height = meta.Height
 	m.MimeType = meta.MimeType

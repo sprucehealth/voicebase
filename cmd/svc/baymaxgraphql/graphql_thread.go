@@ -89,6 +89,7 @@ var threadType = graphql.NewObject(
 			"typeIndicator":         &graphql.Field{Type: graphql.NewNonNull(threadTypeIndicatorEnum)},
 			"allowAddMembers":       &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowDelete":           &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"allowVideoAttachments": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowEmailAttachments": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowVisitAttachments": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.Boolean),
@@ -460,7 +461,7 @@ var threadType = graphql.NewObject(
 						}
 
 						for i, e := range res.Edges {
-							it, err := transformThreadItemToResponse(e.Item, "", acc.ID, svc.webDomain, svc.mediaSigner)
+							it, err := transformThreadItemToResponse(e.Item, "", acc.ID, svc.webDomain, svc.mediaAPIDomain)
 							if err != nil {
 								golog.Errorf("Failed to transform thread item %s: %s", e.Item.ID, err)
 								continue

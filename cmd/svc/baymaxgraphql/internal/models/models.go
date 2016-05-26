@@ -156,6 +156,13 @@ type ImageAttachment struct {
 	Image    *Image `json:"image"`
 }
 
+type VideoAttachment struct {
+	Mimetype          string  `json:"mimetype"`
+	URL               string  `json:"url"`
+	ThumbURL          string  `json:"thumbURL"`
+	DurationInSeconds float64 `json:"durationInSeconds"`
+}
+
 type BannerButtonAttachment struct {
 	Title   string `json:"title"`
 	CTAText string `json:"ctaText"`
@@ -211,6 +218,7 @@ type Thread struct {
 	AllowRemoveMembers         bool   `json:"allowRemoveMembers"`
 	AllowSMSAttachments        bool   `json:"allowSMSAttachments"`
 	AllowUpdateTitle           bool   `json:"allowUpdateTitle"`
+	AllowVideoAttachment       bool   `json:"allowVideoAttachments"`
 	AllowVisitAttachment       bool   `json:"allowVisitAttachments"`
 	LastPrimaryEntityEndpoints []*Endpoint
 	EmptyStateTextMarkup       string `json:"emptyStateTextMarkup,omitempty"`

@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/layout"
+	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/threading"
 	"golang.org/x/net/context"
 )
@@ -254,6 +255,15 @@ func (m *ResourceAccessor) MarkThreadAsRead(ctx context.Context, threadID, entit
 	}
 
 	return mock.SafeError(rets[0])
+}
+
+func (m *ResourceAccessor) MediaInfo(ctx context.Context, mediaID string) (*media.MediaInfo, error) {
+	rets := m.Record(mediaID)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].(*media.MediaInfo), mock.SafeError(rets[1])
 }
 
 func (m *ResourceAccessor) OnboardingThreadEvent(ctx context.Context, req *threading.OnboardingThreadEventRequest) (*threading.OnboardingThreadEventResponse, error) {

@@ -25,7 +25,7 @@ func InitRoutes(
 	mediaAPIDomain string) {
 	svc := initService(awsSession, dal, mediaStorageBucket)
 	corsOrigins := []string{"https://" + webDomain}
-	mHandler := &mediaHandler{svc: svc}
+	mHandler := &mediaHandler{svc: svc, mediaAPIDomain: mediaAPIDomain}
 
 	// Register the same handler on both paths
 	r.Handle("/media", cors.New(cors.Options{

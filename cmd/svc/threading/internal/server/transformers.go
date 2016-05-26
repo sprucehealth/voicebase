@@ -221,6 +221,17 @@ func transformThreadItemToResponse(item *models.ThreadItem, orgID string) (*thre
 						VisitName: data.VisitName,
 					},
 				}
+			case models.Attachment_VIDEO:
+				data := a.GetVideo()
+				at.Type = threading.Attachment_VIDEO
+				at.Data = &threading.Attachment_Video{
+					Video: &threading.VideoAttachment{
+						Mimetype:   data.Mimetype,
+						URL:        data.URL,
+						ThumbURL:   data.ThumbURL,
+						DurationNS: data.DurationNS,
+					},
+				}
 			case models.Attachment_CARE_PLAN:
 				data := a.GetCarePlan()
 				at.Type = threading.Attachment_CARE_PLAN
@@ -297,15 +308,13 @@ func transformAttachmentsFromRequest(atts []*threading.Attachment) ([]*models.At
 					DurationNS: data.DurationNS,
 				},
 			}
-		case threading.Attachment_IMAGE:
-			data := a.GetImage()
-			at.Type = models.Attachment_IMAGE
-			at.Data = &models.Attachment_Image{
-				Image: &models.ImageAttachment{
-					Mimetype: data.Mimetype,
-					URL:      data.URL,
-					Width:    data.Width,
-					Height:   data.Height,
+		case threading.Attachment_CARE_PLAN:
+			data := a.GetCarePlan()
+			at.Type = models.Attachment_CARE_PLAN
+			at.Data = &models.Attachment_CarePlan{
+				CarePlan: &models.CarePlanAttachment{
+					CarePlanName: data.CarePlanName,
+					CarePlanID:   data.CarePlanID,
 				},
 			}
 		case threading.Attachment_GENERIC_URL:
@@ -317,6 +326,28 @@ func transformAttachmentsFromRequest(atts []*threading.Attachment) ([]*models.At
 					Mimetype: data.Mimetype,
 				},
 			}
+		case threading.Attachment_IMAGE:
+			data := a.GetImage()
+			at.Type = models.Attachment_IMAGE
+			at.Data = &models.Attachment_Image{
+				Image: &models.ImageAttachment{
+					Mimetype: data.Mimetype,
+					URL:      data.URL,
+					Width:    data.Width,
+					Height:   data.Height,
+				},
+			}
+		case threading.Attachment_VIDEO:
+			data := a.GetVideo()
+			at.Type = models.Attachment_VIDEO
+			at.Data = &models.Attachment_Video{
+				Video: &models.VideoAttachment{
+					Mimetype:   data.Mimetype,
+					URL:        data.URL,
+					ThumbURL:   data.ThumbURL,
+					DurationNS: data.DurationNS,
+				},
+			}
 		case threading.Attachment_VISIT:
 			data := a.GetVisit()
 			at.Type = models.Attachment_VISIT
@@ -324,15 +355,6 @@ func transformAttachmentsFromRequest(atts []*threading.Attachment) ([]*models.At
 				Visit: &models.VisitAttachment{
 					VisitName: data.VisitName,
 					VisitID:   data.VisitID,
-				},
-			}
-		case threading.Attachment_CARE_PLAN:
-			data := a.GetCarePlan()
-			at.Type = models.Attachment_CARE_PLAN
-			at.Data = &models.Attachment_CarePlan{
-				CarePlan: &models.CarePlanAttachment{
-					CarePlanName: data.CarePlanName,
-					CarePlanID:   data.CarePlanID,
 				},
 			}
 		default:

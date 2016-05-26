@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -54,13 +53,13 @@ func (h *thumbnailHandler) serveGET(ctx context.Context, w http.ResponseWriter, 
 		return
 	}
 	defer rc.Close()
-	copyWith(w, rc, meta.Size, meta.MimeType, r)
+	copyWith(w, rc, int64(meta.Size), meta.MimeType, r)
 }
 
-func copyWith(w http.ResponseWriter, r io.Reader, contentLen int, mimeType string, req *http.Request) {
+func copyWith(w http.ResponseWriter, r io.Reader, contentLen int64, mimeType string, req *http.Request) {
 	w.Header().Set(contentTypeHeader, mimeType)
 	if contentLen > 0 {
-		w.Header().Set(contentTypeHeader, strconv.Itoa(contentLen))
+		w.Header().Set(contentTypeHeader, strconv.FormatInt(contentLen, 64))
 	}
 
 	if req.Method != httputil.Head {
@@ -70,19 +69,19 @@ func copyWith(w http.ResponseWriter, r io.Reader, contentLen int, mimeType strin
 }
 
 func parseImageSize(r *http.Request) (*media.ImageSize, error) {
-	width, err := parseFormInt(r, "width")
+	width, err := httputil.ParseFormInt(r, "width")
 	if err != nil {
 		return nil, err
 	}
-	height, err := parseFormInt(r, "height")
+	height, err := httputil.ParseFormInt(r, "height")
 	if err != nil {
 		return nil, err
 	}
-	crop, err := parseFormBool(r, "crop")
+	crop, err := httputil.ParseFormBool(r, "crop")
 	if err != nil {
 		return nil, err
 	}
-	allowScaleUp, err := parseFormBool(r, "allow_scale_up")
+	allowScaleUp, err := httputil.ParseFormBool(r, "allow_scale_up")
 	if err != nil {
 		return nil, err
 	}
@@ -92,29 +91,4 @@ func parseImageSize(r *http.Request) (*media.ImageSize, error) {
 		Crop:         crop,
 		AllowScaleUp: allowScaleUp,
 	}, nil
-}
-
-// TODO: Libify this request arg extraction
-func parseFormInt(r *http.Request, formKey string) (int, error) {
-	var v int
-	var err error
-	if vStr := r.FormValue(formKey); vStr != "" {
-		v, err = strconv.Atoi(vStr)
-		if err != nil {
-			return 0, fmt.Errorf("Unable to parse %s %s: %s", formKey, vStr, err)
-		}
-	}
-	return v, nil
-}
-
-func parseFormBool(r *http.Request, formKey string) (bool, error) {
-	var v bool
-	var err error
-	if vStr := r.FormValue(formKey); vStr != "" {
-		v, err = strconv.ParseBool(vStr)
-		if err != nil {
-			return false, fmt.Errorf("Unable to parse %s %s: %s", formKey, vStr, err)
-		}
-	}
-	return v, nil
 }

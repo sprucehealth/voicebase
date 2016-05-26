@@ -93,7 +93,7 @@ var queryType = graphql.NewObject(
 					case "t":
 						return lookupThreadWithReadStatus(ctx, ram, acc, id)
 					case "ti":
-						return lookupThreadItem(ctx, ram, svc.mediaSigner, id, svc.webDomain)
+						return lookupThreadItem(ctx, ram, id, svc.webDomain, svc.mediaAPIDomain)
 					case "visitLayout":
 						return lookupVisitLayout(ctx, svc, id)
 					case "visitLayoutVersion":

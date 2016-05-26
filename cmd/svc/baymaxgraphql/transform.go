@@ -15,12 +15,13 @@ import (
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/media"
+	lmedia "github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/layout"
+	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
 	"golang.org/x/net/context"
@@ -117,6 +118,7 @@ func transformThreadToResponse(ctx context.Context, ram raccess.ResourceAccessor
 		AllowMentions:              allowMentions(t, viewingAccount),
 		AllowSMSAttachments:        true,
 		AllowEmailAttachment:       true,
+		AllowVideoAttachment:       allowVideoAttachments(t),
 		OrganizationID:             t.OrganizationID,
 		PrimaryEntityID:            t.PrimaryEntityID,
 		Subtitle:                   t.LastMessageSummary,
@@ -184,6 +186,20 @@ func threadTypeIndicator(t *threading.Thread, acc *auth.Account) string {
 		}
 	}
 	return models.ThreadTypeIndicatorNone
+}
+
+func allowVideoAttachments(t *threading.Thread) bool {
+	switch t.Type {
+	case threading.ThreadType_TEAM:
+		return true
+	case threading.ThreadType_SECURE_EXTERNAL:
+		return true
+	case threading.ThreadType_LEGACY_TEAM:
+		return true
+	case threading.ThreadType_SUPPORT:
+		return true
+	}
+	return false
 }
 
 func allowMentions(t *threading.Thread, acc *auth.Account) bool {
@@ -280,7 +296,7 @@ func threadEmptyStateTextMarkup(ctx context.Context, ram raccess.ResourceAccesso
 	return ""
 }
 
-func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, webDomain string, mediaSigner *media.Signer) (*models.ThreadItem, error) {
+func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, webDomain, mediaAPIDomain string) (*models.ThreadItem, error) {
 	it := &models.ThreadItem{
 		ID:             item.ID,
 		UUID:           uuid,
@@ -328,26 +344,23 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 					d.Mimetype = "audio/mp3"
 				}
 
-				mediaID, err := media.ParseMediaID(d.URL)
+				mediaID, err := lmedia.ParseMediaID(d.URL)
 				if err != nil {
 					golog.Errorf("Unable to parse mediaID out of url %s", d.URL)
 				}
 
-				signedURL, err := mediaSigner.SignedURL(mediaID, d.Mimetype, accountID, 0, 0, false)
-				if err != nil {
-					return nil, err
-				}
+				url := media.URL(mediaAPIDomain, mediaID)
 				duration := float64(d.DurationNS) / 1e9
 				data = &models.AudioAttachment{
 					Mimetype:          d.Mimetype,
-					URL:               signedURL,
+					URL:               url,
 					DurationInSeconds: duration,
 				}
 				// TODO
 				if a.Title == "" {
 					a.Title = "Audio"
 				}
-				a.URL = signedURL
+				a.URL = url
 			case threading.Attachment_IMAGE:
 				d := a.GetImage()
 				if d.Mimetype == "" { // TODO
@@ -362,16 +375,11 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 					a.Title = "Photo"
 				}
 
-				mediaID, err := media.ParseMediaID(d.URL)
+				mediaID, err := lmedia.ParseMediaID(d.URL)
 				if err != nil {
 					golog.Errorf("Unable to parse mediaID out of url %s", d.URL)
 				}
-
-				signedURL, err := mediaSigner.SignedURL(mediaID, d.Mimetype, accountID, 0, 0, false)
-				if err != nil {
-					return nil, err
-				}
-				a.URL = signedURL
+				a.URL = media.URL(mediaAPIDomain, mediaID)
 			case threading.Attachment_VISIT:
 				v := a.GetVisit()
 				data = &models.BannerButtonAttachment{
@@ -379,6 +387,15 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 					CTAText: "View Visit",
 					TapURL:  deeplink.VisitURL(webDomain, item.ThreadID, v.VisitID),
 					IconURL: "http://spruce-static.s3.amazonaws.com/caremessenger/icon_visit@2x.png",
+				}
+			case threading.Attachment_VIDEO:
+				v := a.GetVideo()
+				duration := float64(v.DurationNS) / 1e9
+				data = &models.VideoAttachment{
+					Mimetype:          v.Mimetype,
+					URL:               v.URL,
+					ThumbURL:          v.ThumbURL,
+					DurationInSeconds: duration,
 				}
 			case threading.Attachment_CARE_PLAN:
 				cp := a.GetCarePlan()
@@ -393,15 +410,9 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 
 				// append to message
 				if d.Mimetype == "application/pdf" {
-					mediaID, err := media.ParseMediaID(d.URL)
+					mediaID, err := lmedia.ParseMediaID(d.URL)
 					if err != nil {
 						golog.Errorf("Unable to parse mediaID out of url %s", d.URL)
-						continue
-					}
-
-					signedURL, err := mediaSigner.SignedURL(mediaID, d.Mimetype, accountID, 0, 0, false)
-					if err != nil {
-						golog.Errorf("Unable to generate signed url for media %s: %s", mediaID, err.Error())
 						continue
 					}
 
@@ -411,7 +422,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 					}
 
 					pdfAttachment := &bml.Anchor{
-						HREF: signedURL,
+						HREF: media.URL(mediaAPIDomain, mediaID),
 						Text: title,
 					}
 

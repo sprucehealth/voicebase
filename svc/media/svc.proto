@@ -8,5 +8,37 @@ option (gogoproto.marshaler_all) = true;
 option (gogoproto.unmarshaler_all) = true;
 option (gogoproto.goproto_enum_prefix_all) = true;
 
+message MIME {
+	string type = 1;
+	string subtype = 2;
+}
 
-service Media {}
+message MediaInfo {
+	enum OwnerType {
+		OWNER_TYPE_UNKNOWN = 0;
+		ENTITY = 1;
+		ORGANIZATION = 2;
+		THREAD = 3;
+	}
+	
+	string id = 1 [(gogoproto.customname) = "ID"];
+	string url = 2 [(gogoproto.customname) = "URL"];
+	string thumb_url = 3 [(gogoproto.customname) = "ThumbURL"];
+	string owner_id = 4 [(gogoproto.customname) = "OwnerID"];
+	OwnerType owner_type = 5 [(gogoproto.customname) = "OwnerType"];
+	uint64 size_bytes = 6;
+	uint64 duration_ns = 7 [(gogoproto.customname) = "DurationNS"];
+	MIME mime = 8 [(gogoproto.customname) = "MIME"];
+}
+
+message MediaInfosRequest {
+	repeated string media_ids = 1 [(gogoproto.customname) = "MediaIDs"];
+}
+
+message MediaInfosResponse {
+	map<string,MediaInfo> media_infos = 1;
+}
+
+service Media {
+	rpc MediaInfos (MediaInfosRequest) returns (MediaInfosResponse);
+}

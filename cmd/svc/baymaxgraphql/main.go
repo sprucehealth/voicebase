@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"net/http"
 	"os"
 	"path"
@@ -21,10 +20,8 @@ import (
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/phone"
-	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/shttputil"
 	"github.com/sprucehealth/backend/svc/auth"
@@ -33,6 +30,7 @@ import (
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/layout"
+	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
@@ -44,9 +42,9 @@ var (
 	flagListenAddr          = flag.String("listen_addr", "127.0.0.1:8080", "host:port to listen on")
 	flagResourcePath        = flag.String("resource_path", "", "Path to resources (defaults to use GOPATH)")
 	flagAPIDomain           = flag.String("api_domain", "", "API `domain`")
+	flagMediaAPIDomain      = flag.String("media_api_domain", "", "Media API `domain`")
 	flagWebDomain           = flag.String("web_domain", "", "Web `domain`")
 	flagStorageBucket       = flag.String("storage_bucket", "", "storage bucket for media")
-	flagSigKeys             = flag.String("signature_keys_csv", "", "csv signature keys")
 	flagEmailDomain         = flag.String("email_domain", "", "domain to use for email address provisioning")
 	flagServiceNumber       = flag.String("service_phone_number", "", "TODO: This should be managed by the excomms service")
 	flagSpruceOrgID         = flag.String("spruce_org_id", "", "`ID` for the Spruce support organization")
@@ -64,6 +62,7 @@ var (
 	flagThreadingAddr = flag.String("threading_addr", "", "host:port of threading service")
 	flagLayoutAddr    = flag.String("layout_addr", "", "host:port of layout service")
 	flagCareAddr      = flag.String("care_addr", "", "host:port of care service")
+	flagMediaAddr     = flag.String("media_addr", "", "host:port of media service")
 
 	// Messages
 	flagSQSDeviceRegistrationURL   = flag.String("sqs_device_registration_url", "", "the sqs url for device registration messages")
@@ -154,6 +153,15 @@ func main() {
 	}
 	careClient := care.NewCareClient(conn)
 
+	if *flagMediaAddr == "" {
+		golog.Fatalf("Media service not configured")
+	}
+	conn, err = grpc.Dial(*flagMediaAddr, grpc.WithInsecure())
+	if err != nil {
+		golog.Fatalf("Unable to connect to media service: %s", err)
+	}
+	mediaClient := media.NewMediaClient(conn)
+
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 
 	// enable for non-prod
@@ -224,10 +232,6 @@ func main() {
 			SQSNotificationURL:         *flagSQSNotificationURL,
 			SQSDeviceDeregistrationURL: *flagSQSDeviceDeregistrationURL,
 		})
-
-	if *flagSigKeys == "" {
-		golog.Fatalf("Signature keys not specified")
-	}
 	if *flagAPIDomain == "" {
 		golog.Fatalf("API Domain not specified")
 	}
@@ -247,18 +251,6 @@ func main() {
 		golog.Fatalf("S3 Prefix for SAML documents not specified")
 	}
 
-	sigKeys := strings.Split(*flagSigKeys, ",")
-	sigKeysByteSlice := make([][]byte, len(sigKeys))
-	for i, sk := range sigKeys {
-		sigKeysByteSlice[i] = []byte(sk)
-	}
-	signer, err := sig.NewSigner(sigKeysByteSlice, nil)
-	if err != nil {
-		golog.Fatalf("Failed to create signer: %s", err.Error())
-	}
-
-	ms := media.NewSigner("https://"+*flagAPIDomain+"/media", signer)
-
 	corsOrigins := []string{"https://" + *flagWebDomain}
 
 	var segmentClient *analytics.Client
@@ -266,8 +258,9 @@ func main() {
 		segmentClient = analytics.New(*flagSegmentIOKey)
 		defer segmentClient.Close()
 	}
-
-	media := media.NewImageService(storage.NewS3(awsSession, *flagStorageBucket, "media"), storage.NewS3(awsSession, *flagStorageBucket, "media-cache"), 0, 0)
+	if *flagMediaAPIDomain == "" {
+		golog.Fatalf("Media API Domain required")
+	}
 
 	r := mux.NewRouter()
 	gqlHandler := NewGraphQL(
@@ -280,15 +273,15 @@ func main() {
 		inviteClient,
 		layoutClient,
 		careClient,
+		mediaClient,
 		layout.NewStore(storage.NewS3(awsSession, *flagStorageBucket, *flagLayoutStoreS3Prefix)),
-		ms,
 		*flagEmailDomain,
 		*flagWebDomain,
+		*flagMediaAPIDomain,
 		pn,
 		*flagSpruceOrgID,
 		*flagStaticURLPrefix,
 		segmentClient,
-		media,
 		eSNS,
 		*flagSupportMessageTopicARN,
 		svc.MetricsRegistry.Scope("handler"))
@@ -299,8 +292,7 @@ func main() {
 		AllowedHeaders:   []string{"*"},
 	}).Handler(httputil.FromContextHandler(gqlHandler))))
 
-	mediaHandler := NewMediaHandler(authClient, media, ms)
-
+	mediaHandler := NewMediaHandler(*flagMediaAPIDomain)
 	r.Handle("/media", httputil.ToContextHandler(cors.New(cors.Options{
 		AllowedOrigins:   corsOrigins,
 		AllowedMethods:   []string{httputil.Get, httputil.Options, httputil.Post},
@@ -325,7 +317,7 @@ func main() {
 
 	h = httputil.RequestIDHandler(h)
 
-	fmt.Printf("Listening on %s\n", *flagListenAddr)
+	golog.Infof("Listening on %s", *flagListenAddr)
 
 	server := &http.Server{
 		Addr:           *flagListenAddr,

@@ -20,7 +20,6 @@ import (
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/care"
@@ -28,6 +27,7 @@ import (
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/layout"
+	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
@@ -118,15 +118,15 @@ func NewGraphQL(
 	invite invite.InviteClient,
 	layout layout.LayoutClient,
 	care care.CareClient,
+	media media.MediaClient,
 	layoutStore layout.Storage,
-	mediaSigner *media.Signer,
 	emailDomain string,
 	webDomain string,
+	mediaAPIDomain string,
 	serviceNumber phone.Number,
 	spruceOrgID string,
 	staticURLPrefix string,
 	segmentClient *analytics.Client,
-	media *media.ImageService,
 	sns snsiface.SNSAPI,
 	supportMessageTopicARN string,
 	metricsRegistry metrics.Registry,
@@ -143,12 +143,12 @@ func NewGraphQL(
 	metricsRegistry.Add("gql_validate_latency_us", statGQLValidateLatency)
 	return &graphQLHandler{
 		auth: authClient,
-		ram:  raccess.New(authClient, directoryClient, threadingClient, exComms, layout, care),
+		ram:  raccess.New(authClient, directoryClient, threadingClient, exComms, layout, care, media),
 		service: &service{
 			notification:    notificationClient,
-			mediaSigner:     mediaSigner,
 			emailDomain:     emailDomain,
 			webDomain:       webDomain,
+			mediaAPIDomain:  mediaAPIDomain,
 			serviceNumber:   serviceNumber,
 			settings:        settings,
 			invite:          invite,
@@ -157,7 +157,6 @@ func NewGraphQL(
 			spruceOrgID:     spruceOrgID,
 			staticURLPrefix: staticURLPrefix,
 			segmentio:       &segmentIOWrapper{Client: segmentClient},
-			media:           media,
 			sns:             sns,
 			supportMessageTopicARN: supportMessageTopicARN,
 			layoutStore:            layoutStore,

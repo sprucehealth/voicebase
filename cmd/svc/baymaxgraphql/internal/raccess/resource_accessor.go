@@ -13,6 +13,7 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/layout"
+	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 	"golang.org/x/net/context"
@@ -22,6 +23,10 @@ import (
 
 // ParamKey is the name of the parameter index
 const ParamKey = "ram"
+
+// TODO: Proxy this in place of codes.NotFound
+// ErrNotFound is returned if a result is expected. Can proxy codes.NotFound
+var ErrNotFound = errors.New("baymaxgraphql/resource_accessor")
 
 // ResourceAccess returns the RAL from the params
 func ResourceAccess(p graphql.ResolveParams) ResourceAccessor {
@@ -104,6 +109,7 @@ type ResourceAccessor interface {
 	GetAnswersForVisit(ctx context.Context, req *care.GetAnswersForVisitRequest) (*care.GetAnswersForVisitResponse, error)
 	InitiatePhoneCall(ctx context.Context, req *excomms.InitiatePhoneCallRequest) (*excomms.InitiatePhoneCallResponse, error)
 	MarkThreadAsRead(ctx context.Context, threadID, entityID string) error
+	MediaInfo(ctx context.Context, mediaID string) (*media.MediaInfo, error)
 	OnboardingThreadEvent(ctx context.Context, req *threading.OnboardingThreadEventRequest) (*threading.OnboardingThreadEventResponse, error)
 	PostMessage(ctx context.Context, req *threading.PostMessageRequest) (*threading.PostMessageResponse, error)
 	ProvisionEmailAddress(ctx context.Context, req *excomms.ProvisionEmailAddressRequest) (*excomms.ProvisionEmailAddressResponse, error)
@@ -145,6 +151,7 @@ type resourceAccessor struct {
 	excomms   excomms.ExCommsClient
 	layout    layout.LayoutClient
 	care      care.CareClient
+	media     media.MediaClient
 }
 
 // New returns an initialized instance of resourceAccessor
@@ -155,6 +162,7 @@ func New(
 	excomms excomms.ExCommsClient,
 	layout layout.LayoutClient,
 	care care.CareClient,
+	media media.MediaClient,
 ) ResourceAccessor {
 	return &resourceAccessor{
 		rMap:      newResourceMap(),
@@ -164,6 +172,7 @@ func New(
 		excomms:   excomms,
 		layout:    layout,
 		care:      care,
+		media:     media,
 	}
 }
 
@@ -586,6 +595,19 @@ func (m *resourceAccessor) MarkThreadAsRead(ctx context.Context, threadID, entit
 		return err
 	}
 	return nil
+}
+
+func (m *resourceAccessor) MediaInfo(ctx context.Context, mediaID string) (*media.MediaInfo, error) {
+	// TODO: Auth the resource once it comes back and we know who it belongs to
+	infos, err := m.mediaInfos(ctx, []string{mediaID})
+	if err != nil {
+		return nil, err
+	}
+	info := infos[mediaID]
+	if info == nil {
+		return nil, ErrNotFound
+	}
+	return info, nil
 }
 
 func (m *resourceAccessor) OnboardingThreadEvent(ctx context.Context, req *threading.OnboardingThreadEventRequest) (*threading.OnboardingThreadEventResponse, error) {
@@ -1282,6 +1304,16 @@ func (m *resourceAccessor) markThreadAsRead(ctx context.Context, threadID, entit
 		return err
 	}
 	return nil
+}
+
+func (m *resourceAccessor) mediaInfos(ctx context.Context, mediaIDs []string) (map[string]*media.MediaInfo, error) {
+	resp, err := m.media.MediaInfos(ctx, &media.MediaInfosRequest{
+		MediaIDs: mediaIDs,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return resp.MediaInfos, nil
 }
 
 func (m *resourceAccessor) initiatePhoneCall(ctx context.Context, req *excomms.InitiatePhoneCallRequest) (*excomms.InitiatePhoneCallResponse, error) {

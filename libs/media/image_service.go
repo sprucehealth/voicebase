@@ -43,7 +43,7 @@ type ImageMeta struct {
 	MimeType string
 	Width    int
 	Height   int
-	Size     int // in bytes of the encoded image
+	Size     uint64 // in bytes of the encoded image
 }
 
 // ImageService implements a media storage service.
@@ -115,7 +115,7 @@ func (s *ImageService) PutReader(id string, r io.ReadSeeker) (*ImageMeta, error)
 		MimeType: mimeType, // This works for all stdlib decoders but might fail for others. Probably fine though.
 		Width:    cnf.Width,
 		Height:   cnf.Height,
-		Size:     int(size),
+		Size:     uint64(size),
 	}
 	return meta, errors.Trace(err)
 }
@@ -133,7 +133,7 @@ func (s *ImageService) storeOriginal(id string, img image.Image) (*ImageMeta, er
 		MimeType: "image/jpeg",
 		Width:    img.Bounds().Dx(),
 		Height:   img.Bounds().Dy(),
-		Size:     buf.Len(),
+		Size:     uint64(buf.Len()),
 	}, nil
 }
 
@@ -211,7 +211,7 @@ func (s *ImageService) GetReader(id string, size *ImageSize) (io.ReadCloser, *Im
 			return nil, nil, errors.Trace(err)
 		}
 	}
-	meta.Size = buf.Len()
+	meta.Size = uint64(buf.Len())
 
 	// Cache the sized image in the background
 	bytes := buf.Bytes()
@@ -252,6 +252,6 @@ func metaFromHeaders(h http.Header) *ImageMeta {
 		MimeType: h.Get(mimeTypeHeader),
 		Width:    width,
 		Height:   height,
-		Size:     size,
+		Size:     uint64(size),
 	}
 }

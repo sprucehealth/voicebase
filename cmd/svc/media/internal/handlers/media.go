@@ -11,20 +11,24 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/service"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"github.com/sprucehealth/backend/libs/media"
+	lmedia "github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/mux"
+	"github.com/sprucehealth/backend/svc/media"
 
 	"golang.org/x/net/context"
 )
 
 type mediaHandler struct {
-	svc service.Service
+	svc            service.Service
+	mediaAPIDomain string
 }
 
 const contentTypeHeader = "Content-Type"
 
 type mediaPOSTResponse struct {
 	MediaID  string `json:"media_id"`
+	URL      string `json:"url"`
+	ThumbURL string `json:"thumb_url"`
 	MIMEType string `json:"mimetype"`
 }
 
@@ -69,6 +73,8 @@ func (h *mediaHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *
 	httputil.JSONResponse(w, http.StatusOK, &mediaPOSTResponse{
 		MediaID:  meta.MediaID.String(),
 		MIMEType: meta.MIMEType,
+		URL:      media.URL(h.mediaAPIDomain, meta.MediaID.String()),
+		ThumbURL: media.ThumbnailURL(h.mediaAPIDomain, meta.MediaID.String(), 0, 0, false),
 	})
 }
 
@@ -93,7 +99,7 @@ func (h *mediaHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *h
 
 	// For serving GET requests just redirect to the source with an expiring URL
 	eURL, err := h.svc.ExpiringURL(ctx, mediaID, time.Minute*15)
-	if err == dal.ErrNotFound || err == media.ErrNotFound {
+	if err == dal.ErrNotFound || err == lmedia.ErrNotFound {
 		http.NotFound(w, r)
 		return
 	} else if err != nil {

@@ -66,28 +66,36 @@ func (s *service) PutMedia(ctx context.Context, mFile io.ReadSeeker, mediaType *
 		return nil, err
 	}
 	parallel := conc.NewParallel()
+	var size uint64
+	var duration time.Duration
 	parallel.Go(func() error {
 		switch mediaType.Type {
 		case "image":
-			_, err := s.imageService.PutReader(mediaID.String(), mFile)
+			im, err := s.imageService.PutReader(mediaID.String(), mFile)
 			if err != nil {
 				return err
 			}
+			size = im.Size
 		case "audio":
-			_, err := s.audioService.PutReader(mediaID.String(), mFile, mediaType.String())
+			am, err := s.audioService.PutReader(mediaID.String(), mFile, mediaType.String())
 			if err != nil {
 				return err
 			}
+			size = am.Size
+			duration = am.Duration
 		case "video":
-			_, err := s.videoService.PutReader(mediaID.String(), mFile, mediaType.String())
+			vm, err := s.videoService.PutReader(mediaID.String(), mFile, mediaType.String())
 			if err != nil {
 				return err
 			}
+			size = vm.Size
+			duration = vm.Duration
 		default:
-			_, err := s.binaryService.PutReader(mediaID.String(), mFile, mediaType.String())
+			bm, err := s.binaryService.PutReader(mediaID.String(), mFile, mediaType.String())
 			if err != nil {
 				return err
 			}
+			size = bm.Size
 		}
 		return nil
 	})
@@ -104,10 +112,12 @@ func (s *service) PutMedia(ctx context.Context, mFile io.ReadSeeker, mediaType *
 		return nil, err
 	}
 	_, err = s.dal.InsertMedia(&dal.Media{
-		ID:        mediaID,
-		MimeType:  mediaType.String(),
-		OwnerType: dal.MediaOwnerTypeEntity,
-		OwnerID:   "TODO",
+		ID:         mediaID,
+		MimeType:   mediaType.String(),
+		OwnerType:  dal.MediaOwnerTypeEntity,
+		OwnerID:    "TODO",
+		SizeBytes:  size,
+		DurationNS: uint64(duration.Nanoseconds()),
 	})
 	if err != nil {
 		return nil, err
@@ -158,11 +168,17 @@ func (s *service) GetReader(ctx context.Context, mediaID dal.MediaID) (io.ReadCl
 }
 
 func (s *service) GetThumbnailReader(ctx context.Context, mediaID dal.MediaID, size *media.ImageSize) (io.ReadCloser, *media.ImageMeta, error) {
+	var thumbID string
 	m, err := s.dal.Media(mediaID)
-	if err != nil {
+	// If we didn't find it in our data store, assume it's a legacy media segment and that the id is consistent
+	if errors.Cause(err) != dal.ErrNotFound {
+		thumbID = mediaID.String()
+	} else if err != nil {
 		return nil, nil, err
+	} else {
+		thumbID = thumbnailID(m)
 	}
-	rc, meta, err := s.imageService.GetReader(thumbnailID(m), size)
+	rc, meta, err := s.imageService.GetReader(thumbID, size)
 	if errors.Cause(err) == media.ErrNotFound {
 		// Attempt a placholder fallback
 		rc, meta, err = s.imageService.GetReader(placeholderID(m), size)

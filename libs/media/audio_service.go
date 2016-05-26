@@ -15,7 +15,7 @@ import (
 type AudioMeta struct {
 	MimeType string
 	Duration time.Duration
-	Size     int
+	Size     uint64
 }
 
 // AudioService implements a media storage service.
@@ -59,7 +59,7 @@ func (s *AudioService) PutReader(id string, r io.ReadSeeker, contentType string)
 	meta := &AudioMeta{
 		MimeType: contentType,
 		Duration: duration,
-		Size:     int(size),
+		Size:     uint64(size),
 	}
 	return meta, errors.Trace(err)
 }

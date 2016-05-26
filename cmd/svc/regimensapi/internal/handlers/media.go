@@ -103,7 +103,7 @@ func (h *mediaHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *h
 		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
-	copyWithHeaders(w, rc, meta.Size, meta.MimeType)
+	copyWithHeaders(w, rc, int(meta.Size), meta.MimeType)
 }
 
 func (h *mediaHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *http.Request) {

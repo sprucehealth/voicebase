@@ -11,9 +11,10 @@ import (
 	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/libs/caremessenger/deeplink"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/media"
+	lmedia "github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/graphql"
 	"golang.org/x/net/context"
 )
@@ -162,18 +163,14 @@ var imageAttachmentType = graphql.NewObject(
 
 					width := p.Args["width"].(int)
 					height := p.Args["height"].(int)
-					crop := p.Args["crop"].(bool)
+					crop := p.Args["height"].(bool)
 
-					mediaID, err := media.ParseMediaID(attachment.URL)
+					mediaID, err := lmedia.ParseMediaID(attachment.URL)
 					if err != nil {
 						golog.Errorf("Unable to parse mediaID out of url %s.", attachment.URL)
 					}
-					url, err := svc.mediaSigner.SignedURL(mediaID, attachment.Mimetype, account.ID, width, height, crop)
-					if err != nil {
-						return nil, errors.InternalError(ctx, err)
-					}
 					return &models.Image{
-						URL:    url,
+						URL:    media.ThumbnailURL(svc.mediaAPIDomain, mediaID, height, width, crop),
 						Width:  width,
 						Height: height,
 					}, nil
@@ -182,6 +179,22 @@ var imageAttachmentType = graphql.NewObject(
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 			_, ok := value.(*models.ImageAttachment)
+			return ok
+		},
+	},
+)
+
+var videoAttachmentType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "VideoAttachment",
+		Fields: graphql.Fields{
+			"mimetype":          &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"url":               &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"thumbURL":          &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"durationInSeconds": &graphql.Field{Type: graphql.NewNonNull(graphql.Float)},
+		},
+		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+			_, ok := value.(*models.VideoAttachment)
 			return ok
 		},
 	},
@@ -226,6 +239,7 @@ var attachmentDataType = graphql.NewUnion(
 			imageAttachmentType,
 			audioAttachmentType,
 			bannerButtonAttachmentType,
+			videoAttachmentType,
 		},
 	},
 )
@@ -331,7 +345,7 @@ var threadItemType = graphql.NewObject(
 	},
 )
 
-func lookupThreadItem(ctx context.Context, ram raccess.ResourceAccessor, mediaSigner *media.Signer, threadItemID, webdomain string) (interface{}, error) {
+func lookupThreadItem(ctx context.Context, ram raccess.ResourceAccessor, threadItemID, webdomain, mediaAPIDomain string) (interface{}, error) {
 	threadItem, err := ram.ThreadItem(ctx, threadItemID)
 	if err != nil {
 		return nil, err
@@ -341,7 +355,7 @@ func lookupThreadItem(ctx context.Context, ram raccess.ResourceAccessor, mediaSi
 		return nil, errors.ErrNotAuthenticated(ctx)
 	}
 
-	it, err := transformThreadItemToResponse(threadItem, "", account.ID, webdomain, mediaSigner)
+	it, err := transformThreadItemToResponse(threadItem, "", account.ID, webdomain, mediaAPIDomain)
 	if err != nil {
 		return nil, errors.InternalError(ctx, err)
 	}

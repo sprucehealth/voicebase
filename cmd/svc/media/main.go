@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"fmt"
+	"net"
 	"net/http"
 	"strings"
 
@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/handlers"
+	"github.com/sprucehealth/backend/cmd/svc/media/internal/server"
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -20,10 +21,12 @@ import (
 	"github.com/sprucehealth/backend/libs/urlutil"
 	"github.com/sprucehealth/backend/shttputil"
 	"github.com/sprucehealth/backend/svc/auth"
+	"github.com/sprucehealth/backend/svc/media"
 )
 
 var (
 	flagHTTPListenAddr     = flag.String("http_listen_addr", ":8081", "host:port to listen on for http requests")
+	flagRPCListenAddr      = flag.String("rpc_listen_addr", ":50060", "host:port to listen on for rpc requests")
 	flagWebDomain          = flag.String("web_domain", "", "Web `domain`")
 	flagMediaAPIDomain     = flag.String("media_api_domain", "", "Media API `domain`")
 	flagMediaStorageBucket = flag.String("media_storage_bucket", "", "storage bucket for media")
@@ -68,6 +71,14 @@ func main() {
 	}
 	authClient := auth.NewAuthClient(conn)
 
+	if *flagRPCListenAddr == "" {
+		golog.Fatalf("RPC listen addr required")
+	}
+	lis, err := net.Listen("tcp", *flagRPCListenAddr)
+	if err != nil {
+		golog.Fatalf("failed to listen: %v", err)
+	}
+
 	golog.Infof("Initializing database connection on %s:%d, user: %s, db: %s...", *flagDBHost, *flagDBPort, *flagDBUser, *flagDBName)
 	db, err := dbutil.ConnectMySQL(&dbutil.DBConfig{
 		Host:     *flagDBHost,
@@ -107,15 +118,23 @@ func main() {
 		*flagMediaAPIDomain)
 	h := httputil.LoggingHandler(r, "media", *flagBehindProxy, nil)
 
-	fmt.Printf("HTTP Listening on %s\n", *flagHTTPListenAddr)
-	server := &http.Server{
+	golog.Infof("Media HTTP Listening on %s", *flagHTTPListenAddr)
+	httpSrv := &http.Server{
 		Addr:           *flagHTTPListenAddr,
 		Handler:        httputil.FromContextHandler(shttputil.CompressResponse(h, httputil.CompressResponse)),
 		MaxHeaderBytes: 1 << 20,
 	}
 	go func() {
-		server.ListenAndServe()
+		httpSrv.ListenAndServe()
 	}()
+
+	srvMetricsRegistry := svc.MetricsRegistry.Scope("server")
+	srv := server.New(dal.New(db), *flagMediaAPIDomain)
+	media.InitMetrics(srv, srvMetricsRegistry)
+	s := grpc.NewServer()
+	media.RegisterMediaServer(s, srv)
+	golog.Infof("Media RPC listening on %s...", *flagRPCListenAddr)
+	go s.Serve(lis)
 
 	boot.WaitForTermination()
 }

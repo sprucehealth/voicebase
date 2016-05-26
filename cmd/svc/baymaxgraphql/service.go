@@ -10,7 +10,6 @@ import (
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/care"
@@ -30,13 +29,12 @@ type service struct {
 	invite                 invite.InviteClient
 	layout                 layout.LayoutClient
 	care                   care.CareClient
-	mediaSigner            *media.Signer
 	emailDomain            string
 	webDomain              string
+	mediaAPIDomain         string
 	staticURLPrefix        string
 	spruceOrgID            string
 	segmentio              *segmentIOWrapper
-	media                  *media.ImageService
 	sns                    snsiface.SNSAPI
 	supportMessageTopicARN string
 	// TODO: Remove this

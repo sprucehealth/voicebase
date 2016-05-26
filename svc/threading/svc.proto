@@ -146,6 +146,7 @@ message Attachment {
 		GENERIC_URL = 2;
 		VISIT = 3;
 		CARE_PLAN = 4;
+		VIDEO = 5;
 	}
 	Type type = 1;
 	string title = 2;
@@ -156,6 +157,7 @@ message Attachment {
 		GenericURLAttachment generic_url = 12 [(gogoproto.customname) = "GenericURL"];
 		VisitAttachment visit = 13;
 		CarePlanAttachment care_plan = 14;
+		VideoAttachment video = 15;
 	}
 }
 
@@ -164,6 +166,13 @@ message ImageAttachment {
 	string url = 2 [(gogoproto.customname) = "URL"];
 	uint32 width = 3;
 	uint32 height = 4;
+}
+
+message VideoAttachment {
+	string mimetype = 1;
+	string url = 2 [(gogoproto.customname) = "URL"];
+	string thumb_url = 3 [(gogoproto.customname) = "ThumbURL"];
+	uint64 duration_ns = 4 [(gogoproto.customname) = "DurationNS"];
 }
 
 message AudioAttachment {

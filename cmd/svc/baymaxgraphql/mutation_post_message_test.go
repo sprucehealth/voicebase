@@ -5,13 +5,12 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
-	"github.com/sprucehealth/backend/libs/media"
-	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/layout"
+	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/backend/test"
 	"golang.org/x/net/context"
@@ -20,11 +19,6 @@ import (
 func TestPostMessage(t *testing.T) {
 	g := newGQL(t)
 	defer g.finish()
-	g.svc.media = media.NewImageService(storage.NewTestStore(map[string]*storage.TestObject{
-		"mediaID": &storage.TestObject{
-			Headers: map[string][]string{"Content-Type": []string{"image/jpeg"}},
-		},
-	}), storage.NewTestStore(nil), 100, 100)
 
 	ctx := context.Background()
 	acc := &auth.Account{
@@ -47,7 +41,6 @@ func TestPostMessage(t *testing.T) {
 		Type:            threading.ThreadType_EXTERNAL,
 	}, nil))
 	g.ra.Expect(mock.NewExpectation(g.ra.CanPostMessage, threadID))
-
 	expectEntityInOrgForAccountID(g.ra, acc.ID, []*directory.Entity{
 		&directory.Entity{
 			ID:   entID,
@@ -88,6 +81,15 @@ func TestPostMessage(t *testing.T) {
 		},
 	}, nil))
 
+	g.ra.Expect(mock.NewExpectation(g.ra.MediaInfo, "mediaID").WithReturns(&media.MediaInfo{
+		ID:  "mediaID",
+		URL: "URL",
+		MIME: &media.MIME{
+			Type:    "image",
+			Subtype: "png",
+		},
+	}, nil))
+
 	// Posting the message
 	now := uint64(123456789)
 	g.ra.Expect(mock.NewExpectation(g.ra.PostMessage, &threading.PostMessageRequest{
@@ -111,11 +113,11 @@ func TestPostMessage(t *testing.T) {
 			&threading.Attachment{
 				Type:  threading.Attachment_IMAGE,
 				Title: "",
-				URL:   "mediaID",
+				URL:   "URL",
 				Data: &threading.Attachment_Image{
 					Image: &threading.ImageAttachment{
-						Mimetype: "image/jpeg",
-						URL:      "mediaID",
+						Mimetype: "image/png",
+						URL:      "URL",
 					},
 				},
 			},
@@ -160,6 +162,7 @@ func TestPostMessage(t *testing.T) {
 			},
 		},
 	}, nil))
+
 	res := g.query(ctx, `
 		mutation _ ($threadID: ID!) {
 			postMessage(input: {
@@ -252,11 +255,6 @@ func TestPostMessage(t *testing.T) {
 func TestPostMessage_VisitAttachment(t *testing.T) {
 	g := newGQL(t)
 	defer g.finish()
-	g.svc.media = media.NewImageService(storage.NewTestStore(map[string]*storage.TestObject{
-		"mediaID": &storage.TestObject{
-			Headers: map[string][]string{"Content-Type": []string{"image/jpeg"}},
-		},
-	}), storage.NewTestStore(nil), 100, 100)
 	g.svc.webDomain = "test.com"
 
 	ctx := context.Background()
@@ -623,12 +621,6 @@ func TestPostMessageDestinationNotContactOfPrimary(t *testing.T) {
 func TestPostMessagePatientSecureExternal(t *testing.T) {
 	g := newGQL(t)
 	defer g.finish()
-	g.svc.media = media.NewImageService(storage.NewTestStore(map[string]*storage.TestObject{
-		"mediaID": &storage.TestObject{
-			Headers: map[string][]string{"Content-Type": []string{"image/jpeg"}},
-		},
-	}), storage.NewTestStore(nil), 100, 100)
-
 	ctx := context.Background()
 	acc := &auth.Account{
 		ID:   "account_12345",
@@ -691,6 +683,17 @@ func TestPostMessagePatientSecureExternal(t *testing.T) {
 		},
 	}, nil))
 
+	g.ra.Expect(mock.NewExpectation(g.ra.MediaInfo, "mediaID").WithReturns(&media.MediaInfo{
+		ID:         "mediaID",
+		URL:        "URL",
+		ThumbURL:   "ThumbURL",
+		DurationNS: 12345,
+		MIME: &media.MIME{
+			Type:    "video",
+			Subtype: "mp4",
+		},
+	}, nil))
+
 	// Posting the message
 	now := uint64(123456789)
 	g.ra.Expect(mock.NewExpectation(g.ra.PostMessage, &threading.PostMessageRequest{
@@ -706,13 +709,15 @@ func TestPostMessagePatientSecureExternal(t *testing.T) {
 		Summary: `Schmee: foo`,
 		Attachments: []*threading.Attachment{
 			&threading.Attachment{
-				Type:  threading.Attachment_IMAGE,
+				Type:  threading.Attachment_VIDEO,
 				Title: "",
-				URL:   "mediaID",
-				Data: &threading.Attachment_Image{
-					Image: &threading.ImageAttachment{
-						Mimetype: "image/jpeg",
-						URL:      "mediaID",
+				URL:   "URL",
+				Data: &threading.Attachment_Video{
+					Video: &threading.VideoAttachment{
+						Mimetype:   "video/mp4",
+						URL:        "URL",
+						ThumbURL:   "ThumbURL",
+						DurationNS: 12345,
 					},
 				},
 			},
@@ -802,7 +807,7 @@ func TestPostMessagePatientSecureExternal(t *testing.T) {
 					}]
 					internal: false
 					attachments: [{
-         				attachmentType: IMAGE
+         				attachmentType: VIDEO
          				mediaID: "mediaID"
         			}]
 				}

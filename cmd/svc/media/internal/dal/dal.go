@@ -22,6 +22,7 @@ type DAL interface {
 	Transact(trans func(dal DAL) error) (err error)
 	InsertMedia(model *Media) (MediaID, error)
 	Media(id MediaID) (*Media, error)
+	Medias(ids []MediaID) ([]*Media, error)
 	UpdateMedia(id MediaID, update *MediaUpdate) (int64, error)
 	DeleteMedia(id MediaID) (int64, error)
 }
@@ -158,11 +159,13 @@ func (t *MediaOwnerType) Scan(src interface{}) error {
 
 // Media represents a media record
 type Media struct {
-	ID        MediaID
-	MimeType  string
-	OwnerType MediaOwnerType
-	OwnerID   string
-	Created   time.Time
+	ID         MediaID
+	MimeType   string
+	OwnerType  MediaOwnerType
+	OwnerID    string
+	SizeBytes  uint64
+	DurationNS uint64
+	Created    time.Time
 }
 
 // MediaUpdate represents the mutable aspects of a media record
@@ -182,8 +185,8 @@ func (d *dal) InsertMedia(model *Media) (MediaID, error) {
 	}
 	_, err := d.db.Exec(
 		`INSERT INTO media
-          (mime_type, owner_type, owner_id, id)
-          VALUES (?, ?, ?, ?)`, model.MimeType, model.OwnerType, model.OwnerID, model.ID)
+          (mime_type, owner_type, owner_id, id, size_bytes, duration_ns)
+          VALUES (?, ?, ?, ?, ?, ?)`, model.MimeType, model.OwnerType, model.OwnerID, model.ID, model.SizeBytes, model.DurationNS)
 	if err != nil {
 		return EmptyMediaID(), errors.Trace(err)
 	}
@@ -197,6 +200,35 @@ func (d *dal) Media(id MediaID) (*Media, error) {
 		selectMedia+` WHERE id = ?`, id)
 	model, err := scanMedia(row)
 	return model, errors.Trace(err)
+}
+
+// Media retrieves a multiple media records
+// TODO: I know the name 'Medias' is dumb, but want a multi read and want to preserve the
+// NotFound functionality of the single read. Need to establish a pattern to merge this
+func (d *dal) Medias(ids []MediaID) ([]*Media, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	vals := make([]interface{}, len(ids))
+	for i, v := range ids {
+		vals[i] = v
+	}
+	rows, err := d.db.Query(
+		selectMedia+` WHERE id IN (`+dbutil.MySQLArgs(len(ids))+`)`, vals...)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	defer rows.Close()
+
+	var media []*Media
+	for rows.Next() {
+		m, err := scanMedia(rows)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		media = append(media, m)
+	}
+	return media, errors.Trace(rows.Err())
 }
 
 // UpdateMedia updates the mutable aspects of a media record
@@ -237,14 +269,14 @@ func (d *dal) DeleteMedia(id MediaID) (int64, error) {
 }
 
 const selectMedia = `
-    SELECT media.owner_type, media.owner_id, media.created, media.id, media.mime_type
+    SELECT media.owner_type, media.owner_id, media.created, media.id, media.mime_type, media.size_bytes, media.duration_ns
       FROM media`
 
 func scanMedia(row dbutil.Scanner) (*Media, error) {
 	var m Media
 	m.ID = EmptyMediaID()
 
-	err := row.Scan(&m.OwnerType, &m.OwnerID, &m.Created, &m.ID, &m.MimeType)
+	err := row.Scan(&m.OwnerType, &m.OwnerID, &m.Created, &m.ID, &m.MimeType, &m.SizeBytes, &m.DurationNS)
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound
 	}

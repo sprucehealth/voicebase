@@ -58,10 +58,6 @@ func riDepth(ri *directory.RequestedInformation) int64 {
 }
 
 func (s *server) LookupEntities(ctx context.Context, rd *directory.LookupEntitiesRequest) (out *directory.LookupEntitiesResponse, err error) {
-	if golog.Default().L(golog.DEBUG) {
-		golog.Debugf("Entering server.server.LookupEntities: %+v", rd)
-		defer func() { golog.Debugf("Leaving server.server.LookupEntities... %+v", out) }()
-	}
 	var entityIDs []dal.EntityID
 	switch rd.LookupKeyType {
 	case directory.LookupEntitiesRequest_EXTERNAL_ID:
@@ -125,10 +121,6 @@ func (s *server) LookupEntities(ctx context.Context, rd *directory.LookupEntitie
 }
 
 func (s *server) CreateEntity(ctx context.Context, rd *directory.CreateEntityRequest) (out *directory.CreateEntityResponse, err error) {
-	if golog.Default().L(golog.DEBUG) {
-		golog.Debugf("Entering server.server.CreateEntity: %+v", rd)
-		defer func() { golog.Debugf("Leaving server.server.CreateEntity... %+v", out) }()
-	}
 	if err := s.validateCreateEntityRequest(rd); err != nil {
 		return nil, err
 	}
@@ -236,11 +228,6 @@ func (s *server) CreateEntity(ctx context.Context, rd *directory.CreateEntityReq
 }
 
 func (s *server) CreateExternalIDs(ctx context.Context, rd *directory.CreateExternalIDsRequest) (out *directory.CreateExternalIDsResponse, err error) {
-	if golog.Default().L(golog.DEBUG) {
-		golog.Debugf("Entering server.server.CreateExternalIDs: %+v", rd)
-		defer func() { golog.Debugf("Leaving server.server.CreateExternalIDs... %+v", out) }()
-	}
-
 	if rd.EntityID == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "EntityID cannot be empty")
 	}
@@ -317,10 +304,6 @@ func (s *server) validateCreateEntityRequest(rd *directory.CreateEntityRequest) 
 }
 
 func (s *server) UpdateEntity(ctx context.Context, rd *directory.UpdateEntityRequest) (out *directory.UpdateEntityResponse, err error) {
-	if golog.Default().L(golog.DEBUG) {
-		golog.Debugf("Entering server.server.UpdateEntity: %+v", rd)
-		defer func() { golog.Debugf("Leaving server.server.UpdateEntity... %+v", out) }()
-	}
 	oldEnt, err := s.validateUpdateEntityRequest(rd)
 	if err != nil {
 		return nil, err
@@ -450,10 +433,6 @@ func (s *server) UpdateEntity(ctx context.Context, rd *directory.UpdateEntityReq
 }
 
 func (s *server) validateUpdateEntityRequest(rd *directory.UpdateEntityRequest) (*dal.Entity, error) {
-	if golog.Default().L(golog.DEBUG) {
-		golog.Debugf("Entering server.server.validateUpdateEntityRequest: %+v", rd)
-		defer func() { golog.Debugf("Leaving server.server.validateUpdateEntityRequest...") }()
-	}
 	eID, err := dal.ParseEntityID(rd.EntityID)
 	if err != nil {
 		return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse entity ID")
@@ -469,10 +448,6 @@ func (s *server) validateUpdateEntityRequest(rd *directory.UpdateEntityRequest) 
 }
 
 func (s *server) ExternalIDs(ctx context.Context, rd *directory.ExternalIDsRequest) (out *directory.ExternalIDsResponse, err error) {
-	if golog.Default().L(golog.DEBUG) {
-		golog.Debugf("Entering server.server.ExternalIDs: %+v", rd)
-		defer func() { golog.Debugf("Leaving server.server.ExternalIDs... %+v", out) }()
-	}
 	ids := make([]dal.EntityID, len(rd.EntityIDs))
 	for i, id := range rd.EntityIDs {
 		eID, err := dal.ParseEntityID(id)
@@ -503,10 +478,6 @@ func doesEntityExist(dl dal.DAL, entityID dal.EntityID) (bool, error) {
 }
 
 func (s *server) CreateMembership(ctx context.Context, rd *directory.CreateMembershipRequest) (*directory.CreateMembershipResponse, error) {
-	if golog.Default().L(golog.DEBUG) {
-		golog.Debugf("Entering server.server.CreateMembership: %+v", rd)
-		defer func() { golog.Debugf("Leaving server.server.CreateMembership...") }()
-	}
 	entityID, err := dal.ParseEntityID(rd.EntityID)
 	if err != nil {
 		return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse entity id")
@@ -552,10 +523,6 @@ func (s *server) CreateMembership(ctx context.Context, rd *directory.CreateMembe
 }
 
 func (s *server) LookupEntitiesByContact(ctx context.Context, rd *directory.LookupEntitiesByContactRequest) (out *directory.LookupEntitiesByContactResponse, err error) {
-	if golog.Default().L(golog.DEBUG) {
-		golog.Debugf("Entering server.server.LookupEntitiesByContact: %+v", rd)
-		defer func() { golog.Debugf("Leaving server.server.LookupEntitiesByContact... %+v", out) }()
-	}
 	entityContacts, err := s.dl.EntityContactsForValue(strings.TrimSpace(rd.ContactValue))
 	if err != nil {
 		return nil, grpcErrorf(codes.Internal, err.Error())
@@ -597,11 +564,6 @@ func (s *server) LookupEntitiesByContact(ctx context.Context, rd *directory.Look
 }
 
 func (s *server) LookupEntityDomain(ctx context.Context, in *directory.LookupEntityDomainRequest) (*directory.LookupEntityDomainResponse, error) {
-	if golog.Default().L(golog.DEBUG) {
-		golog.Debugf("Entering server.LookupEntityDomain: %+v", in)
-		defer func() { golog.Debugf("Leaving server.LookupEntityDomain...") }()
-	}
-
 	var err error
 	var entityID *dal.EntityID
 	if in.EntityID != "" {
@@ -685,10 +647,6 @@ func (s *server) UpdateEntityDomain(ctx context.Context, in *directory.UpdateEnt
 }
 
 func (s *server) CreateContact(ctx context.Context, rd *directory.CreateContactRequest) (out *directory.CreateContactResponse, err error) {
-	if golog.Default().L(golog.DEBUG) {
-		golog.Debugf("Entering server.server.CreateContact: %+v", rd)
-		defer func() { golog.Debugf("Leaving server.server.CreateContact... %+v", out) }()
-	}
 	entityID, err := dal.ParseEntityID(rd.EntityID)
 	if err != nil {
 		return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse entity id")
@@ -747,10 +705,6 @@ func (s *server) CreateContact(ctx context.Context, rd *directory.CreateContactR
 }
 
 func (s *server) CreateContacts(ctx context.Context, rd *directory.CreateContactsRequest) (out *directory.CreateContactsResponse, err error) {
-	if golog.Default().L(golog.DEBUG) {
-		golog.Debugf("Entering server.server.CreateContacts: %+v", rd)
-		defer func() { golog.Debugf("Leaving server.server.CreateContacts... %+v", out) }()
-	}
 	entityID, err := dal.ParseEntityID(rd.EntityID)
 	if err != nil {
 		return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse entity id")
@@ -826,10 +780,6 @@ func validateContact(contact *directory.Contact) error {
 }
 
 func (s *server) UpdateContacts(ctx context.Context, rd *directory.UpdateContactsRequest) (out *directory.UpdateContactsResponse, err error) {
-	if golog.Default().L(golog.DEBUG) {
-		golog.Debugf("Entering server.server.UpdateContacts: %+v", rd)
-		defer func() { golog.Debugf("Leaving server.server.UpdateContacts... %+v", out) }()
-	}
 	entityID, err := dal.ParseEntityID(rd.EntityID)
 	if err != nil {
 		return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse entity id: %s", rd.EntityID)
@@ -893,10 +843,6 @@ func (s *server) UpdateContacts(ctx context.Context, rd *directory.UpdateContact
 }
 
 func (s *server) DeleteContacts(ctx context.Context, rd *directory.DeleteContactsRequest) (out *directory.DeleteContactsResponse, err error) {
-	if golog.Default().L(golog.DEBUG) {
-		golog.Debugf("Entering server.server.DeleteContacts: %+v", rd)
-		defer func() { golog.Debugf("Leaving server.server.DeleteContacts... %+v", out) }()
-	}
 	entityID, err := dal.ParseEntityID(rd.EntityID)
 	if err != nil {
 		return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse entity id: %s", rd.EntityID)
@@ -948,10 +894,6 @@ func (s *server) DeleteContacts(ctx context.Context, rd *directory.DeleteContact
 }
 
 func (s *server) DeleteEntity(ctx context.Context, rd *directory.DeleteEntityRequest) (out *directory.DeleteEntityResponse, err error) {
-	if golog.Default().L(golog.DEBUG) {
-		golog.Debugf("Entering server.server.DeleteEntityRequest: %+v", rd)
-		defer func() { golog.Debugf("Leaving server.server.DeleteEntityRequest... %+v", out) }()
-	}
 	entityID, err := dal.ParseEntityID(rd.EntityID)
 	if err != nil {
 		return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse entity id: %s", rd.EntityID)
