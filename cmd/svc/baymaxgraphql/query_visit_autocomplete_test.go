@@ -31,7 +31,7 @@ func TestVisitAutocompleteSearchQuery_SelfReported(t *testing.T) {
 
 	res := g.query(ctx, `
 		query _ {
-			visitAutocompleteSearch(query: "Advil", source:PATIENT_DRUG,  visitID: "visit_1", questionID: "question_1") {
+			visitAutocompleteSearch(query: "Advil", source:"PATIENT_DRUG",  visitID: "visit_1", questionID: "question_1") {
         title
         subtitle
 			}
@@ -71,7 +71,7 @@ func TestVisitAutocompleteSearchQuery_AllergyMedications(t *testing.T) {
 
 	res := g.query(ctx, `
 		query _ {
-			visitAutocompleteSearch(query: "Advil", source:PATIENT_ALLERGY,  visitID: "visit_1", questionID: "question_1") {
+			visitAutocompleteSearch(query: "Advil", source:"PATIENT_ALLERGY",  visitID: "visit_1", questionID: "question_1") {
         title
         subtitle
 			}

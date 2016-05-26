@@ -30,25 +30,11 @@ const (
 	visitAutocompleteSearchPatientAllergy = "PATIENT_ALLERGY"
 )
 
-var visitAutocompleteSourceEnum = graphql.NewEnum(graphql.EnumConfig{
-	Name: "VisitAutocompleteSearchSource",
-	Values: graphql.EnumValueConfigMap{
-		visitAutocompleteSearchPatientDrug: &graphql.EnumValueConfig{
-			Value:       visitAutocompleteSearchPatientDrug,
-			Description: "Search against drug names in database from a patient's perspective",
-		},
-		visitAutocompleteSearchPatientAllergy: &graphql.EnumValueConfig{
-			Value:       visitAutocompleteSearchPatientAllergy,
-			Description: "Search against allergy classes in database from a patient's perspective",
-		},
-	},
-})
-
 var visitAutocompleteSearchQuery = &graphql.Field{
 	Type: graphql.NewNonNull(graphql.NewList(visitAutocompleteSearchResultType)),
 	Args: graphql.FieldConfigArgument{
 		"query":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
-		"source":     &graphql.ArgumentConfig{Type: graphql.NewNonNull(visitAutocompleteSourceEnum)},
+		"source":     &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 		"visitID":    &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
 		"questionID": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
 	},
