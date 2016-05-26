@@ -33,6 +33,8 @@ import (
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 	"github.com/sprucehealth/graphql/gqlerrors"
+	"github.com/sprucehealth/graphql/language/parser"
+	"github.com/sprucehealth/graphql/language/source"
 	"golang.org/x/net/context"
 )
 
@@ -95,12 +97,14 @@ func init() {
 }
 
 type graphQLHandler struct {
-	auth               auth.AuthClient
-	ram                raccess.ResourceAccessor
-	service            *service
-	statRequests       *metrics.Counter
-	statResponseErrors *metrics.Counter
-	statLatency        metrics.Histogram
+	auth                   auth.AuthClient
+	ram                    raccess.ResourceAccessor
+	service                *service
+	statRequests           *metrics.Counter
+	statResponseErrors     *metrics.Counter
+	statLatency            metrics.Histogram
+	statGQLParseLatency    metrics.Histogram
+	statGQLValidateLatency metrics.Histogram
 }
 
 // NewGraphQL returns an initialized instance of graphQLHandler
@@ -130,9 +134,13 @@ func NewGraphQL(
 	statRequests := metrics.NewCounter()
 	statResponseErrors := metrics.NewCounter()
 	statLatency := metrics.NewUnbiasedHistogram()
+	statGQLParseLatency := metrics.NewUnbiasedHistogram()
+	statGQLValidateLatency := metrics.NewUnbiasedHistogram()
 	metricsRegistry.Add("requests", statRequests)
 	metricsRegistry.Add("response_errors", statResponseErrors)
 	metricsRegistry.Add("latency_us", statLatency)
+	metricsRegistry.Add("gql_parse_latency_us", statGQLParseLatency)
+	metricsRegistry.Add("gql_validate_latency_us", statGQLValidateLatency)
 	return &graphQLHandler{
 		auth: authClient,
 		ram:  raccess.New(authClient, directoryClient, threadingClient, exComms, layout, care),
@@ -154,9 +162,11 @@ func NewGraphQL(
 			supportMessageTopicARN: supportMessageTopicARN,
 			layoutStore:            layoutStore,
 		},
-		statRequests:       statRequests,
-		statResponseErrors: statResponseErrors,
-		statLatency:        statLatency,
+		statRequests:           statRequests,
+		statResponseErrors:     statResponseErrors,
+		statLatency:            statLatency,
+		statGQLParseLatency:    statGQLParseLatency,
+		statGQLValidateLatency: statGQLValidateLatency,
 	}
 }
 
@@ -283,7 +293,7 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 	ctx = gqlctx.WithQuery(ctx, req.Query)
 
 	result := conc.NewMap()
-	response := graphql.Do(graphql.Params{
+	response := h.graphqlDo(graphql.Params{
 		Schema:         gqlSchema,
 		RequestString:  req.Query,
 		VariableValues: req.Variables,
@@ -363,4 +373,32 @@ func (h *graphQLHandler) orgToEntityMapForAccount(ctx context.Context, acc *auth
 		}
 	}
 	return entMap, nil
+}
+
+func (h *graphQLHandler) graphqlDo(p graphql.Params) *graphql.Result {
+	st := time.Now()
+	source := source.New("GraphQL request", p.RequestString)
+	ast, err := parser.Parse(parser.ParseParams{Source: source})
+	h.statGQLParseLatency.Update(time.Since(st).Nanoseconds() / 1e3)
+	if err != nil {
+		return &graphql.Result{
+			Errors: gqlerrors.FormatErrors(err),
+		}
+	}
+	st = time.Now()
+	validationResult := graphql.ValidateDocument(&p.Schema, ast, nil)
+	h.statGQLValidateLatency.Update(time.Since(st).Nanoseconds() / 1e3)
+	if !validationResult.IsValid {
+		return &graphql.Result{
+			Errors: validationResult.Errors,
+		}
+	}
+	return graphql.Execute(graphql.ExecuteParams{
+		Schema:        p.Schema,
+		Root:          p.RootObject,
+		AST:           ast,
+		OperationName: p.OperationName,
+		Args:          p.VariableValues,
+		Context:       p.Context,
+	})
 }
