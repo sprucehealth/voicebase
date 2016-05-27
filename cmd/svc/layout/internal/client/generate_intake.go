@@ -44,6 +44,8 @@ func transformTransitions(sections []*saml.Section) []*layout.TransitionItem {
 		buttonText := "Continue"
 		if i == 0 {
 			buttonText = "Begin"
+		} else if i == len(sections)-1 {
+			buttonText = "Submit Your Visit"
 		}
 
 		items[i] = &layout.TransitionItem{
