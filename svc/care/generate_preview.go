@@ -40,8 +40,8 @@ func GenerateVisitLayoutPreview(intake *layout.Intake, review *visitreview.Secti
 					case saml.QuestionTypeSingleSelect, saml.QuestionTypeSegmentedControl:
 						builder = buildPreviewQuestionWithSingleResponse
 
-					case saml.QuestionTypePhotoSection:
-						builder = buildPreviewQuestionWithPhotoSlots
+					case saml.QuestionTypePhotoSection, saml.QuestionTypeMediaSection:
+						builder = buildPreviewQuestionWithMediaSlots
 
 					default:
 						return nil, errors.Trace(fmt.Errorf("context builder not found for question of type: %s", question.Type))
@@ -121,14 +121,15 @@ func buildPreviewQuestionWithSubanswers(question *layout.Question, context *visi
 	return nil
 }
 
-func buildPreviewQuestionWithPhotoSlots(question *layout.Question, context *visitreview.ViewContext) error {
+func buildPreviewQuestionWithMediaSlots(question *layout.Question, context *visitreview.ViewContext) error {
 
-	context.Set(visitreview.PhotosKey(question.ID), []visitreview.TitlePhotoListData{
+	context.Set(visitreview.MediaKey(question.ID), []visitreview.TitleMediaListData{
 		{
 			Title: question.Title + ": Photo section",
-			Photos: []visitreview.PhotoData{
+			Media: []visitreview.MediaData{
 				{
 					Title: "Photo name",
+					Type:  "photo",
 				},
 			},
 		},

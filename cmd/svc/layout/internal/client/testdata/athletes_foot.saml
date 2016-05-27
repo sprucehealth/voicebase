@@ -206,7 +206,7 @@ Both top and palms
 
 HPI.feet) Where on your feet is the rash located? [select many]
 	[summary "Feet locations"]
-Top 
+Top
 Bottom
 In between toes
 
@@ -312,7 +312,7 @@ Less than 1 week
 More than 1 year
 I don't know
 
-[MD section "Characteristics"] 
+[MD section "Characteristics"]
 
 HPI) Is the rash itchy?
 [summary "Is the rash itchy"]
@@ -364,10 +364,10 @@ Yes
 Barely → triage:daily_activities
 No → triage:daily_activities
 
-[MD section "Etiologies"] 
+[MD section "Etiologies"]
 
 HPI) Does anybody who lives with you have a similar rash or a fungal infection?
-	[summary "Recent rash contacts"] 
+	[summary "Recent rash contacts"]
 Yes
 No
 I don't know
@@ -402,7 +402,7 @@ Other skin care products [textbox]
 [Answer Group "Hair Care Products"]
 Shampoo [textbox]
 Conditioner [textbox]
-Other hair care products [textbox] 
+Other hair care products [textbox]
 [Answer Group "Laundry Products"]
 Detergent [textbox]
 Other laundry products [textbox]
@@ -415,16 +415,16 @@ Other laundry products [textbox]
 [transition message "Now let's take photos for your doctor to make a diagnosis."]
 
 [screen "Take photos of the areas currently affected by athlete's foot or ringworm."]
-[type "screen_type_photo"]
+[type "screen_type_media"]
 [subtitle "Photo quality matters. Your doctor will use these photos to make a diagnosis."]
 [summary "Areas Affected by Athlete's Foot or Ringworm"]
 
-Photo.face) Face [photo]
+Photo.face) Face [media]
 [photo slot "Face Front"]
 [tip "Center your face in the dotted lines."]
 [tip (inline) "Take a portrait photo."]
 [overlay image URL "spruce:///image/photo_face_outline"]
-[photo missing error message "A photo of the front of your face is required to continue."]
+[media missing error message "A photo of the front of your face is required to continue."]
 [initial camera direction "front"]
 [photo slot "Side"]
 [tip "Turn your face to the side."]
@@ -442,7 +442,7 @@ Photo.face) Face [photo]
 [overlay image URL "spruce:///image/photo_face_outline"]
 [photo missing error message "A second photo of the side of your face is required to continue."]
 [initial camera direction "front"]
-[photo slot "Face"]
+[video slot "Face"]
 [optional]
 
 Photo.lips) Lips [photo]
@@ -453,7 +453,7 @@ Photo.lips) Lips [photo]
 Photo.scalp) Scalp [photo]
 [photo slot "Scalp"]
 [tip "Pull back or part hair so your scalp is visible."]
-[tip subtext "Use a mirror to help take this photo."] 
+[tip subtext "Use a mirror to help take this photo."]
 [photo missing error message "A photo of this area is required to continue."]
 [initial camera direction "back"]
 [flash auto]
@@ -632,9 +632,9 @@ Yes → Treatments.tried
 No
 
 Treatments.tried) What treatments have you tried for athlete's foot or ringworm? [select many]
-[summary "Which treatments"] 
+[summary "Which treatments"]
 Clotrimazole (Lotrimin)
-Miconazole 
+Miconazole
 Terbinafine (Lamisil)
 Tolnaftate (Tinactin)
 Ointments or lotions (e.g., Vaseline or Aveeno)

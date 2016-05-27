@@ -6,24 +6,24 @@ import (
 	"github.com/sprucehealth/backend/saml"
 )
 
-func viewsForPhotoSection(section *saml.Section) ([]visitreview.View, error) {
+func viewsForMediaSection(section *saml.Section) ([]visitreview.View, error) {
 	var views []visitreview.View
 	for _, screen := range section.Screens {
-		if screen.Type == saml.ScreenTypePhoto {
-			views = append(views, viewForPhotoScreen(screen))
+		if screen.Type == saml.ScreenTypePhoto || screen.Type == saml.ScreenTypeMedia {
+			views = append(views, viewForMediaScreen(screen))
 		}
 	}
 
-	// once all the photo screens in the section have been accounted for, go ahead
+	// once all the media screens in the section have been accounted for, go ahead
 	// and add the rest of the questions in this section to the same set of views
-	nonPhotoScreens := make([]*saml.Screen, 0, len(section.Screens))
+	nonMediaScreens := make([]*saml.Screen, 0, len(section.Screens))
 	for _, screen := range section.Screens {
-		if screen.Type != saml.ScreenTypePhoto {
-			nonPhotoScreens = append(nonPhotoScreens, screen)
+		if screen.Type != saml.ScreenTypePhoto && screen.Type != saml.ScreenTypeMedia {
+			nonMediaScreens = append(nonMediaScreens, screen)
 		}
 	}
-	if len(nonPhotoScreens) > 0 {
-		subsectionView, err := subsectionViewForScreens("", nonPhotoScreens)
+	if len(nonMediaScreens) > 0 {
+		subsectionView, err := subsectionViewForScreens("", nonMediaScreens)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
