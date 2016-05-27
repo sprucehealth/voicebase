@@ -3,6 +3,9 @@ package main
 import (
 	"fmt"
 
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
@@ -96,6 +99,7 @@ var threadType = graphql.NewObject(
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					svc := serviceFromParams(p)
 					ctx := p.Context
+					ram := raccess.ResourceAccess(p)
 					th := p.Source.(*models.Thread)
 					acc := gqlctx.Account(p.Context)
 					if acc == nil {
@@ -118,11 +122,45 @@ var threadType = graphql.NewObject(
 							},
 						},
 					})
-
 					if err != nil {
 						return false, errors.InternalError(ctx, err)
 					}
-					return booleanValue.Value, nil
+
+					if !booleanValue.Value {
+						return false, nil
+					}
+					// only allow visit attachments if the patient has created an account and is on iOS
+					primaryEntity, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+						LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+						LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+							EntityID: th.PrimaryEntityID,
+						},
+						Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+						RootTypes: []directory.EntityType{directory.EntityType_PATIENT},
+					})
+					if err != nil {
+						if grpc.Code(err) == codes.NotFound {
+							return false, nil
+						}
+						return nil, errors.InternalError(ctx, err)
+					}
+
+					// if patient has not created account then we cannot send spruce visit just yet
+					if primaryEntity.AccountID == "" {
+						return false, nil
+					}
+
+					loginInfoRes, err := ram.LastLoginForAccount(ctx, &auth.GetLastLoginInfoRequest{
+						AccountID: primaryEntity.AccountID,
+					})
+					if err != nil {
+						if grpc.Code(err) == codes.NotFound {
+							// we dont have login information for the patient yet
+							return false, nil
+						}
+						return false, errors.InternalError(ctx, err)
+					}
+					return loginInfoRes.Platform == auth.Platform_IOS, nil
 				},
 			},
 			"allowCarePlanAttachments": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},

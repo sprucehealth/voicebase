@@ -252,6 +252,7 @@ func TestAuthenticateLogin(t *testing.T) {
 	ctx = gqlctx.WithAccount(ctx, acc)
 	ctx = devicectx.WithSpruceHeaders(ctx, &device.SpruceHeaders{
 		DeviceID: "deviceID",
+		Platform: device.IOS,
 	})
 
 	rat := new(t)
@@ -262,6 +263,7 @@ func TestAuthenticateLogin(t *testing.T) {
 		Email:    email,
 		Password: password,
 		DeviceID: "deviceID",
+		Platform: auth.Platform_IOS,
 	}).WithReturns(&auth.AuthenticateLoginResponse{Account: &auth.Account{ID: accountID}}, nil))
 
 	resp, err := rat.ra.AuthenticateLogin(ctx, email, password)
@@ -278,6 +280,7 @@ func TestAuthenticateLoginWithCode(t *testing.T) {
 	ctx = gqlctx.WithAccount(ctx, acc)
 	ctx = devicectx.WithSpruceHeaders(ctx, &device.SpruceHeaders{
 		DeviceID: "deviceID",
+		Platform: device.IOS,
 	})
 
 	rat := new(t)
@@ -288,6 +291,7 @@ func TestAuthenticateLoginWithCode(t *testing.T) {
 		Token:    token,
 		Code:     code,
 		DeviceID: "deviceID",
+		Platform: auth.Platform_IOS,
 	}).WithReturns(&auth.AuthenticateLoginWithCodeResponse{Account: &auth.Account{ID: accountID}}, nil))
 
 	resp, err := rat.ra.AuthenticateLoginWithCode(ctx, token, code)
@@ -354,6 +358,7 @@ func TestCreateAccount(t *testing.T) {
 	ctx = gqlctx.WithAccount(ctx, acc)
 	ctx = devicectx.WithSpruceHeaders(ctx, &device.SpruceHeaders{
 		DeviceID: "deviceID",
+		Platform: device.Android,
 	})
 
 	rat := new(t)
@@ -361,6 +366,7 @@ func TestCreateAccount(t *testing.T) {
 	rat.aC.Expect(mock.NewExpectation(rat.aC.CreateAccount, &auth.CreateAccountRequest{
 		FirstName: "name",
 		DeviceID:  "deviceID",
+		Platform:  auth.Platform_ANDROID,
 	}).WithReturns(&auth.CreateAccountResponse{Account: &auth.Account{ID: "Hi"}}, nil))
 
 	resp, err := rat.ra.CreateAccount(ctx, &auth.CreateAccountRequest{

@@ -36,6 +36,15 @@ func (m *ResourceAccessor) Account(ctx context.Context, accountID string) (*auth
 	return rets[0].(*auth.Account), mock.SafeError(rets[1])
 }
 
+func (m *ResourceAccessor) LastLoginForAccount(ctx context.Context, req *auth.GetLastLoginInfoRequest) (*auth.GetLastLoginInfoResponse, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].(*auth.GetLastLoginInfoResponse), mock.SafeError(rets[1])
+}
+
 func (m *ResourceAccessor) AuthenticateLogin(ctx context.Context, email, password string) (*auth.AuthenticateLoginResponse, error) {
 	rets := m.Record(email, password)
 	if len(rets) == 0 {

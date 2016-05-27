@@ -10,6 +10,7 @@ type Platform string
 const (
 	Android Platform = "android"
 	IOS     Platform = "iOS"
+	Web     Platform = "web"
 )
 
 func (p Platform) String() string {
@@ -24,6 +25,8 @@ func ParsePlatform(p string) (Platform, error) {
 		return Android, nil
 	case "ios":
 		return IOS, nil
+	case "web":
+		return Web, nil
 	}
 	return "", fmt.Errorf("Unable to determine platform type from %s", p)
 }
