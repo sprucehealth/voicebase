@@ -991,7 +991,7 @@ func (d *dal) UpsertTwoFactorLogin(accountID AccountID, deviceID string, loginTi
 
 func (d *dal) TrackLogin(accountID AccountID, platform device.Platform, deviceID string) error {
 	_, err := d.db.Exec(`
-		REPLACE INTO login_info (account_id, platform, device_id) VALUES (?, ?, ?)`, accountID, platform, deviceID)
+		REPLACE INTO login_info (account_id, platform, device_id) VALUES (?, ?, ?)`, accountID, platform.String(), deviceID)
 	return errors.Trace(err)
 }
 
@@ -1001,6 +1001,7 @@ func (d *dal) LastLogin(accountID AccountID) (*LoginInfo, error) {
 	}
 	if err := d.db.QueryRow(`
 		SELECT platform, device_id, last_login_timestamp
+		FROM login_info
 		WHERE account_id = ?
 		ORDER BY last_login_timestamp DESC
 		LIMIT 1`, accountID).Scan(
