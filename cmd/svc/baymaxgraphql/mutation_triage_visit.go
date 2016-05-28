@@ -59,7 +59,7 @@ var triageVisitOutputType = graphql.NewObject(graphql.ObjectConfig{
 	Fields: graphql.Fields{
 		"clientMutationId": newClientMutationIDOutputField(),
 		"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-		"errorCode":        &graphql.Field{Type: submitVisitErrorCodeEnum},
+		"errorCode":        &graphql.Field{Type: triageVisitErrorCodeEnum},
 		"errorMessage":     &graphql.Field{Type: graphql.String},
 		"thread":           &graphql.Field{Type: threadType},
 	},
@@ -123,7 +123,7 @@ var triageVisitMutation = &graphql.Field{
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		} else if len(threads) == 0 {
-			return &submitVisitOutput{
+			return &triageVisitOutput{
 				ClientMutationID: mutationID,
 				Success:          true,
 			}, nil
