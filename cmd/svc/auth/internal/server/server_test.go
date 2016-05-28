@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/auth/internal/dal"
 	mock_dal "github.com/sprucehealth/backend/cmd/svc/auth/internal/dal/test"
 	authSetting "github.com/sprucehealth/backend/cmd/svc/auth/internal/settings"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/hash"
@@ -175,6 +176,7 @@ func TestAuthenticateLoginDeviceInside2FAWindow(t *testing.T) {
 		// Set their last login inside the refresh window so they don't require 2FA again
 		LastLogin: time.Now().Add(-(default2FALoginWindow - 10000)),
 	}, nil))
+
 	cek, err := svr.clientEncryptionKeySigner.Sign([]byte("genToken"))
 	test.OK(t, err)
 	dl.Expect(mock.NewExpectation(dl.InsertAuthToken, &dal.AuthToken{
@@ -183,6 +185,7 @@ func TestAuthenticateLoginDeviceInside2FAWindow(t *testing.T) {
 		Token:               []byte("genToken:testattribute"),
 		ClientEncryptionKey: cek,
 	}))
+	dl.Expect(mock.NewExpectation(dl.TrackLogin, aID1, device.IOS, deviceID))
 
 	settingsMock.Expect(mock.NewExpectation(settingsMock.GetValues, &settings.GetValuesRequest{
 		NodeID: aID1.String(),
@@ -211,6 +214,7 @@ func TestAuthenticateLoginDeviceInside2FAWindow(t *testing.T) {
 		Password:        password,
 		TokenAttributes: map[string]string{"test": "attribute"},
 		DeviceID:        deviceID,
+		Platform:        auth.Platform_IOS,
 	})
 	test.OK(t, err)
 	test.AssertNotNil(t, resp.Token)
@@ -275,11 +279,14 @@ func TestAuthenticateLogin2FA_Disabled(t *testing.T) {
 			},
 		},
 	}, nil))
+	dl.Expect(mock.NewExpectation(dl.TrackLogin, aID1, device.IOS, "device_12345"))
 
 	resp, err := s.AuthenticateLogin(context.Background(), &auth.AuthenticateLoginRequest{
 		Email:           email,
 		Password:        password,
 		TokenAttributes: map[string]string{"test": "attribute"},
+		Platform:        auth.Platform_IOS,
+		DeviceID:        "device_12345",
 	})
 	test.OK(t, err)
 
@@ -334,10 +341,12 @@ func TestAuthenticateLoginWithCode(t *testing.T) {
 		LastName:  "Wayne",
 	}, nil))
 	dl.Expect(mock.NewExpectation(dl.UpsertTwoFactorLogin, aID1, deviceID, mClock.Now()))
+	dl.Expect(mock.NewExpectation(dl.TrackLogin, aID1, device.IOS, deviceID))
 	resp, err := s.AuthenticateLoginWithCode(context.Background(), &auth.AuthenticateLoginWithCodeRequest{
 		Token:    token,
 		Code:     code,
 		DeviceID: deviceID,
+		Platform: auth.Platform_IOS,
 	})
 	key, err := signer.Sign([]byte(token))
 	test.OK(t, err)
@@ -890,12 +899,15 @@ func TestCreateAccount(t *testing.T) {
 		LastName:  ln,
 	}, nil))
 	dl.Expect(mock.NewExpectation(dl.UpsertTwoFactorLogin, aID1, "deviceID", mClock.Now()))
+	dl.Expect(mock.NewExpectation(dl.TrackLogin, aID1, device.IOS, "deviceID"))
+
 	resp, err := s.CreateAccount(context.Background(), &auth.CreateAccountRequest{
 		FirstName:   fn,
 		LastName:    ln,
 		PhoneNumber: phoneNumber,
 		Email:       email,
 		Password:    password,
+		Platform:    auth.Platform_IOS,
 		DeviceID:    "deviceID",
 		Type:        auth.AccountType_PROVIDER,
 	})
@@ -1459,4 +1471,34 @@ func TestBlockAccount(t *testing.T) {
 	test.Equals(t, "Block", resp.Account.FirstName)
 	test.Equals(t, "Example", resp.Account.LastName)
 
+}
+
+func TestLastLogin(t *testing.T) {
+	aID1, err := dal.NewAccountID()
+	test.OK(t, err)
+
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+
+	loginTime := time.Now()
+	dl.Expect(mock.NewExpectation(dl.LastLogin, aID1).WithReturns(&dal.LoginInfo{
+		AccountID: aID1,
+		DeviceID:  "deviceID",
+		Platform:  device.IOS,
+		Time:      loginTime,
+	}, nil))
+
+	s, err := New(dl, nil, clientEncryptionSecret)
+	test.OK(t, err)
+
+	res, err := s.GetLastLoginInfo(context.Background(), &auth.GetLastLoginInfoRequest{
+		AccountID: aID1.String(),
+	})
+	test.OK(t, err)
+	test.Equals(t, &auth.GetLastLoginInfoResponse{
+		AccountID: aID1.String(),
+		Platform:  auth.Platform_IOS,
+		DeviceID:  "deviceID",
+		LoginTime: uint64(loginTime.Unix()),
+	}, res)
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/auth/internal/dal"
 	authSetting "github.com/sprucehealth/backend/cmd/svc/auth/internal/settings"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
@@ -113,6 +114,14 @@ func (s *server) AuthenticateLogin(ctx context.Context, rd *auth.AuthenticateLog
 		if err != nil {
 			return nil, grpcIErrorf(err.Error())
 		}
+		platform, err := determinePlatform(rd.Platform)
+		if err != nil {
+			golog.Errorf("Unable to determine platform for login attempt for %s: %s", account.ID, err)
+		}
+		if err := s.dal.TrackLogin(account.ID, platform, rd.DeviceID); err != nil {
+			golog.Errorf("Unable to record login for account %s: %s", account.ID, err)
+		}
+
 	}
 
 	return &auth.AuthenticateLoginResponse{
@@ -186,9 +195,24 @@ func (s *server) AuthenticateLoginWithCode(ctx context.Context, rd *auth.Authent
 	}
 
 	// Record the 2FA login attempt
-	if err := s.dal.UpsertTwoFactorLogin(accountID, rd.DeviceID, s.clk.Now()); err != nil {
-		// log the error here but don't block a successful login
-		golog.Errorf("Encountered error while attempting to record successful two factor login for %s with device id %s: %s", accountID, rd.DeviceID, err)
+	platform, err := determinePlatform(rd.Platform)
+	if err != nil {
+		golog.Errorf(err.Error())
+	}
+
+	if err := s.dal.Transact(func(dl dal.DAL) error {
+		if err := dl.UpsertTwoFactorLogin(accountID, rd.DeviceID, s.clk.Now()); err != nil {
+			// log the error here but don't block a successful login
+			return fmt.Errorf("Encountered error while attempting to record successful two factor login for %s with device id %s: %s", accountID, rd.DeviceID, err)
+		}
+
+		if err := dl.TrackLogin(accountID, platform, rd.DeviceID); err != nil {
+			return fmt.Errorf("Encountered error while attempting to record login for %s: %s", accountID, err)
+		}
+
+		return nil
+	}); err != nil {
+		golog.Errorf(err.Error())
 	}
 
 	return &auth.AuthenticateLoginWithCodeResponse{
@@ -488,10 +512,25 @@ func (s *server) CreateAccount(ctx context.Context, rd *auth.CreateAccountReques
 		return nil, grpcIErrorf(err.Error())
 	}
 
+	platform, err := determinePlatform(rd.Platform)
+	if err != nil {
+		golog.Errorf(err.Error())
+	}
+
 	// Record this as a succesful 2FA login attempt since we assume their phone number was validated
-	if err := s.dal.UpsertTwoFactorLogin(account.ID, rd.DeviceID, s.clk.Now()); err != nil {
-		// log the error here but don't block a successful create
-		golog.Errorf("Encountered error while attempting to record successful account creation two factor login for %s with device id %s: %s", account.ID, rd.DeviceID, err)
+	if err := s.dal.Transact(func(dl dal.DAL) error {
+		if err := dl.UpsertTwoFactorLogin(account.ID, rd.DeviceID, s.clk.Now()); err != nil {
+			// log the error here but don't block a successful create
+			return fmt.Errorf("Encountered error while attempting to record successful account creation two factor login for %s with device id %s: %s", account.ID, rd.DeviceID, err)
+		}
+
+		if err := dl.TrackLogin(account.ID, platform, rd.DeviceID); err != nil {
+			return fmt.Errorf("Unable to track login for account %s: %s", account.ID, err)
+		}
+
+		return nil
+	}); err != nil {
+		golog.Errorf(err.Error())
 	}
 
 	return &auth.CreateAccountResponse{
@@ -692,6 +731,55 @@ func (s *server) BlockAccount(ctx context.Context, req *auth.BlockAccountRequest
 	return &auth.BlockAccountResponse{
 		Account: accountAsResponse(account),
 	}, nil
+}
+
+func (s *server) GetLastLoginInfo(ctx context.Context, req *auth.GetLastLoginInfoRequest) (*auth.GetLastLoginInfoResponse, error) {
+	if req.AccountID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "accountID required")
+	}
+
+	accountID, err := dal.ParseAccountID(req.AccountID)
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	loginInfo, err := s.dal.LastLogin(accountID)
+	if err != nil {
+		if errors.Cause(err) == dal.ErrNotFound {
+			return nil, grpcErrorf(codes.NotFound, "login info for %s not found", accountID.String())
+		}
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	var platform auth.Platform
+	switch loginInfo.Platform {
+	case device.IOS:
+		platform = auth.Platform_IOS
+	case device.Android:
+		platform = auth.Platform_ANDROID
+	case device.Web:
+		platform = auth.Platform_WEB
+
+	}
+
+	return &auth.GetLastLoginInfoResponse{
+		AccountID: accountID.String(),
+		Platform:  platform,
+		DeviceID:  loginInfo.DeviceID,
+		LoginTime: uint64(loginInfo.Time.Unix()),
+	}, nil
+}
+
+func determinePlatform(platform auth.Platform) (device.Platform, error) {
+	switch platform {
+	case auth.Platform_ANDROID:
+		return device.Android, nil
+	case auth.Platform_IOS:
+		return device.IOS, nil
+	case auth.Platform_WEB:
+		return device.Web, nil
+	}
+	return device.Platform(""), fmt.Errorf("Unknown platform %s", platform.String())
 }
 
 // generateAndInsertToken generates and inserts an auth token for the provided account and information

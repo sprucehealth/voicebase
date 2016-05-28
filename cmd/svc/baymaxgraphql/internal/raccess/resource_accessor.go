@@ -6,6 +6,7 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/auth"
@@ -80,6 +81,7 @@ func (e entityQueryOptions) has(opt EntityQueryOption) bool {
 // ResourceAccessor defines an interface for the retreival and authorization of resources
 type ResourceAccessor interface {
 	Account(ctx context.Context, accountID string) (*auth.Account, error)
+	LastLoginForAccount(ctx context.Context, req *auth.GetLastLoginInfoRequest) (*auth.GetLastLoginInfoResponse, error)
 	AuthenticateLogin(ctx context.Context, email, password string) (*auth.AuthenticateLoginResponse, error)
 	AuthenticateLoginWithCode(ctx context.Context, token, code string) (*auth.AuthenticateLoginWithCodeResponse, error)
 	CanPostMessage(ctx context.Context, threadID string) error
@@ -204,6 +206,11 @@ func (m *resourceAccessor) Account(ctx context.Context, accountID string) (*auth
 	return resp.Account, nil
 }
 
+func (m *resourceAccessor) LastLoginForAccount(ctx context.Context, req *auth.GetLastLoginInfoRequest) (*auth.GetLastLoginInfoResponse, error) {
+	// TODO: Figure out authorization
+	return m.auth.GetLastLoginInfo(ctx, req)
+}
+
 func (m *resourceAccessor) AuthenticateLogin(ctx context.Context, email, password string) (*auth.AuthenticateLoginResponse, error) {
 	headers := devicectx.SpruceHeaders(ctx)
 	// Note: There is no authorization required for this operation.
@@ -211,6 +218,7 @@ func (m *resourceAccessor) AuthenticateLogin(ctx context.Context, email, passwor
 		Email:    email,
 		Password: password,
 		DeviceID: headers.DeviceID,
+		Platform: determinePlatformForAuth(headers),
 	})
 	if err != nil {
 		return nil, err
@@ -220,16 +228,34 @@ func (m *resourceAccessor) AuthenticateLogin(ctx context.Context, email, passwor
 
 func (m *resourceAccessor) AuthenticateLoginWithCode(ctx context.Context, token, code string) (*auth.AuthenticateLoginWithCodeResponse, error) {
 	headers := devicectx.SpruceHeaders(ctx)
+
 	// Note: There is no authorization required for this operation.
 	resp, err := m.auth.AuthenticateLoginWithCode(ctx, &auth.AuthenticateLoginWithCodeRequest{
 		Token:    token,
 		Code:     code,
 		DeviceID: headers.DeviceID,
+		Platform: determinePlatformForAuth(headers),
 	})
 	if err != nil {
 		return nil, err
 	}
 	return resp, nil
+}
+
+func determinePlatformForAuth(headers *device.SpruceHeaders) auth.Platform {
+	if headers == nil {
+		return auth.Platform_UNKNOWN_PLATFORM
+	}
+
+	switch headers.Platform {
+	case device.IOS:
+		return auth.Platform_IOS
+	case device.Android:
+		return auth.Platform_ANDROID
+	case device.Web:
+		return auth.Platform_WEB
+	}
+	return auth.Platform_WEB
 }
 
 func (m *resourceAccessor) CarePlan(ctx context.Context, id string) (*care.CarePlan, error) {
@@ -272,6 +298,8 @@ func (m *resourceAccessor) CheckVerificationCode(ctx context.Context, token, cod
 func (m *resourceAccessor) CreateAccount(ctx context.Context, req *auth.CreateAccountRequest) (*auth.CreateAccountResponse, error) {
 	headers := devicectx.SpruceHeaders(ctx)
 	req.DeviceID = headers.DeviceID
+	req.Platform = determinePlatformForAuth(headers)
+
 	resp, err := m.auth.CreateAccount(ctx, req)
 	if err != nil {
 		return nil, err

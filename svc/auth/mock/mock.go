@@ -30,6 +30,14 @@ func (c *Client) AuthenticateLogin(ctx context.Context, in *auth.AuthenticateLog
 	return rets[0].(*auth.AuthenticateLoginResponse), mock.SafeError(rets[1])
 }
 
+func (c *Client) GetLastLoginInfo(ctx context.Context, in *auth.GetLastLoginInfoRequest, opts ...grpc.CallOption) (*auth.GetLastLoginInfoResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*auth.GetLastLoginInfoResponse), mock.SafeError(rets[1])
+}
+
 func (c *Client) AuthenticateLoginWithCode(ctx context.Context, in *auth.AuthenticateLoginWithCodeRequest, opts ...grpc.CallOption) (*auth.AuthenticateLoginWithCodeResponse, error) {
 	rets := c.Expector.Record(in)
 	if len(rets) == 0 {

@@ -21,7 +21,7 @@ CREATE TABLE auth.auth_token (
 	CONSTRAINT pk_auth_token PRIMARY KEY (token)
 ) engine=InnoDB;
 
-CREATE TABLE auth.account_event ( 
+CREATE TABLE auth.account_event (
 	id                   bigint UNSIGNED NOT NULL,
 	created              timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	account_id           bigint UNSIGNED NOT NULL,
@@ -32,7 +32,7 @@ CREATE TABLE auth.account_event (
 	CONSTRAINT fk_account_event_account_id FOREIGN KEY (account_id) REFERENCES auth.account(id) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) engine=InnoDB;
 
-CREATE TABLE auth.account_phone ( 
+CREATE TABLE auth.account_phone (
 	id                   bigint UNSIGNED NOT NULL,
 	account_id           bigint UNSIGNED NOT NULL,
 	phone_number         varchar(50) NOT NULL,
@@ -45,7 +45,7 @@ CREATE TABLE auth.account_phone (
 	CONSTRAINT fk_account_phone_account_id FOREIGN KEY (account_id) REFERENCES auth.account(id) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) engine=InnoDB;
 
-CREATE TABLE auth.account_email ( 
+CREATE TABLE auth.account_email (
 	id                   bigint UNSIGNED NOT NULL,
 	account_id           bigint UNSIGNED NOT NULL,
 	email                varchar(100) NOT NULL,
@@ -58,6 +58,6 @@ CREATE TABLE auth.account_email (
 	CONSTRAINT pk_account_email PRIMARY KEY (id),
 	CONSTRAINT fk_account_email_account_id FOREIGN KEY (account_id) REFERENCES auth.account(id) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) engine=InnoDB;
- 
+
  ALTER TABLE auth.account ADD CONSTRAINT fk_account_primary_account_email_id_account_email_id FOREIGN KEY (primary_account_email_id) REFERENCES auth.account_email(id) ON DELETE NO ACTION ON UPDATE NO ACTION;
  ALTER TABLE auth.account ADD CONSTRAINT fk_account_primary_account_phone_id_account_phone_id FOREIGN KEY (primary_account_phone_id) REFERENCES auth.account_phone(id) ON DELETE NO ACTION ON UPDATE NO ACTION;

@@ -12,32 +12,32 @@ import (
 // Visit
 
 type header struct {
-	Title    string `json:"title"`
-	Subtitle string `json:"subtitle"`
-	IconURL  string `json:"icon_url"`
+	Title    string `json:"title,omitempy"`
+	Subtitle string `json:"subtitle,omitempty"`
+	IconURL  string `json:"icon_url,omitempty"`
 }
 
 type checkout struct {
-	HeaderImageURL string `json:"header_image_url"`
-	HeaderText     string `json:"header_text"`
-	FooterText     string `json:"footer_text"`
+	HeaderImageURL string `json:"header_image_url,omitempty"`
+	HeaderText     string `json:"header_text,omitempty"`
+	FooterText     string `json:"footer_text,omitempty"`
 }
 
 type submissionConfirmation struct {
-	Title       string `json:"title"`
-	TopText     string `json:"top_text"`
-	BottomText  string `json:"bottom_text"`
-	ButtonTitle string `json:"button_title"`
+	Title       string `json:"title,omitempty"`
+	TopText     string `json:"top_text,omitempty"`
+	BottomText  string `json:"bottom_text,omitempty"`
+	ButtonTitle string `json:"button_title,omitempty"`
 }
 
 type intakeContainer struct {
 	ID                     string                  `json:"id"`
-	Header                 *header                 `json:"header"`
-	Checkout               *checkout               `json:"checkout"`
-	SubmissionConfirmation *submissionConfirmation `json:"submission_confirmation"`
-	Intake                 *layout.Intake          `json:"intake"`
-	Answers                json.RawMessage         `json:"answers"`
-	RequireAddress         bool                    `json:"require_address"`
+	Header                 *header                 `json:"header,omitempty"`
+	Checkout               *checkout               `json:"checkout,omitempty"`
+	SubmissionConfirmation *submissionConfirmation `json:"submission_confirmation,omitempty"`
+	Intake                 *layout.Intake          `json:"intake,omitempty"`
+	Answers                json.RawMessage         `json:"answers,omitempty"`
+	RequireAddress         bool                    `json:"require_address,omitempty"`
 	Preferences            map[string]interface{}  `json:"preferences,omitempty"`
 }
 

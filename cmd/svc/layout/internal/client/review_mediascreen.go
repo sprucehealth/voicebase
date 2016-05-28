@@ -5,16 +5,16 @@ import (
 	"github.com/sprucehealth/backend/saml"
 )
 
-func viewForPhotoScreen(screen *saml.Screen) visitreview.View {
-	sectionView := &visitreview.StandardPhotosSectionView{
+func viewForMediaScreen(screen *saml.Screen) visitreview.View {
+	sectionView := &visitreview.StandardMediaSectionView{
 		Title:       screen.HeaderSummary,
 		Subsections: make([]visitreview.View, len(screen.Questions)),
 	}
 
 	keys := make([]string, len(screen.Questions))
 	for i, question := range screen.Questions {
-		keys[i] = visitreview.PhotosKey(question.Details.Tag)
-		sectionView.Subsections[i] = viewForPhotoQuestion(question)
+		keys[i] = visitreview.MediaKey(question.Details.Tag)
+		sectionView.Subsections[i] = viewForMediaQuestion(question)
 	}
 
 	sectionView.ContentConfig = &visitreview.ContentConfig{
@@ -27,18 +27,18 @@ func viewForPhotoScreen(screen *saml.Screen) visitreview.View {
 	return sectionView
 }
 
-func viewForPhotoQuestion(question *saml.Question) visitreview.View {
+func viewForMediaQuestion(question *saml.Question) visitreview.View {
 	tag := question.Details.Tag
-	return &visitreview.StandardPhotosSubsectionView{
+	return &visitreview.StandardMediaSubsectionView{
 		ContentConfig: &visitreview.ContentConfig{
 			ViewCondition: visitreview.ViewCondition{
 				Op:  visitreview.ConditionKeyExists,
-				Key: visitreview.PhotosKey(tag),
+				Key: visitreview.MediaKey(tag),
 			},
 		},
 		SubsectionView: &visitreview.TitlePhotosItemsListView{
 			ContentConfig: &visitreview.ContentConfig{
-				Key: visitreview.PhotosKey(tag),
+				Key: visitreview.MediaKey(tag),
 			},
 		},
 	}

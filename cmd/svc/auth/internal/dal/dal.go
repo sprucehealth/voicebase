@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -48,6 +49,8 @@ type DAL interface {
 	VerificationCode(token string) (*VerificationCode, error)
 	DeleteVerificationCode(token string) (int64, error)
 	TwoFactorLogin(accountID AccountID, deviceID string) (*TwoFactorLogin, error)
+	TrackLogin(accountID AccountID, platform device.Platform, deviceID string) error
+	LastLogin(accountID AccountID) (*LoginInfo, error)
 	UpsertTwoFactorLogin(accountID AccountID, deviceID string, loginTime time.Time) error
 	Transact(trans func(dal DAL) error) (err error)
 }
@@ -553,6 +556,14 @@ type TwoFactorLogin struct {
 	LastLogin time.Time
 }
 
+// LoginInfo represents a login event for an account
+type LoginInfo struct {
+	AccountID AccountID
+	Platform  device.Platform
+	DeviceID  string
+	Time      time.Time
+}
+
 // InsertAccount inserts a account record
 func (d *dal) InsertAccount(model *Account) (AccountID, error) {
 	if !model.ID.IsValid {
@@ -976,6 +987,33 @@ func (d *dal) UpsertTwoFactorLogin(accountID AccountID, deviceID string, loginTi
           VALUES (?, ?, ?)
 		  ON DUPLICATE KEY UPDATE last_login=VALUES(last_login)`, accountID, deviceID, loginTime)
 	return errors.Trace(err)
+}
+
+func (d *dal) TrackLogin(accountID AccountID, platform device.Platform, deviceID string) error {
+	_, err := d.db.Exec(`
+		REPLACE INTO login_info (account_id, platform, device_id) VALUES (?, ?, ?)`, accountID, platform, deviceID)
+	return errors.Trace(err)
+}
+
+func (d *dal) LastLogin(accountID AccountID) (*LoginInfo, error) {
+	loginInfo := LoginInfo{
+		AccountID: accountID,
+	}
+	if err := d.db.QueryRow(`
+		SELECT platform, device_id, last_login_timestamp
+		WHERE account_id = ?
+		ORDER BY last_login_timestamp DESC
+		LIMIT 1`, accountID).Scan(
+		&loginInfo.Platform,
+		&loginInfo.DeviceID,
+		&loginInfo.Time); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.Trace(ErrNotFound)
+		}
+		return nil, errors.Trace(err)
+	}
+
+	return &loginInfo, nil
 }
 
 const selectAccount = `

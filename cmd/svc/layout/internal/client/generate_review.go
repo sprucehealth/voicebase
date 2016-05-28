@@ -11,17 +11,17 @@ func GenerateReviewLayout(intake *saml.Intake) (*visitreview.SectionListView, er
 		Sections: []visitreview.View{alertSection()},
 	}
 
-	// add photo section first
-	photoSectionIdx := -1
+	// add media section first
+	mediaSectionIDx := -1
 	for i, section := range intake.Sections {
 		for _, screen := range section.Screens {
-			if screen.Type == saml.ScreenTypePhoto {
-				views, err := viewsForPhotoSection(section)
+			if screen.Type == saml.ScreenTypePhoto || screen.Type == saml.ScreenTypeMedia {
+				views, err := viewsForMediaSection(section)
 				if err != nil {
 					return nil, errors.Trace(err)
 				}
 				sectionList.Sections = append(sectionList.Sections, views...)
-				photoSectionIdx = i
+				mediaSectionIDx = i
 				break
 			}
 		}
@@ -29,7 +29,7 @@ func GenerateReviewLayout(intake *saml.Intake) (*visitreview.SectionListView, er
 
 	// now add rest of sections
 	for i, section := range intake.Sections {
-		if photoSectionIdx == i {
+		if mediaSectionIDx == i {
 			continue
 		}
 

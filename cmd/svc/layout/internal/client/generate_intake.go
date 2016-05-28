@@ -61,7 +61,7 @@ func transformTransitions(sections []*saml.Section) []*layout.TransitionItem {
 		Message: "That's all the information your doctor will need!",
 		Buttons: []*layout.Button{
 			{
-				Text:   "Continue",
+				Text:   "Submit Your Visit",
 				Style:  "filled",
 				TapURL: "spruce:///action/view_next_visit_section",
 			},

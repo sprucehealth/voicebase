@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/cmd/svc/auth/internal/dal"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 )
@@ -253,6 +254,24 @@ func (dl *mockDAL) UpsertTwoFactorLogin(accountID dal.AccountID, deviceID string
 		return nil
 	}
 	return mock.SafeError(rets[0])
+}
+
+func (dl *mockDAL) TrackLogin(accountID dal.AccountID, platform device.Platform, deviceID string) error {
+	rets := dl.Record(accountID, platform, deviceID)
+	if len(rets) == 0 {
+		return nil
+	}
+
+	return mock.SafeError(rets[0])
+}
+
+func (dl *mockDAL) LastLogin(accountID dal.AccountID) (*dal.LoginInfo, error) {
+	rets := dl.Record(accountID)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].(*dal.LoginInfo), mock.SafeError(rets[1])
 }
 
 func (dl *mockDAL) Transact(trans func(dal dal.DAL) error) (err error) {

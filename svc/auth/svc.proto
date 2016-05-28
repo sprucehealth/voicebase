@@ -46,6 +46,13 @@ message AuthToken {
     string client_encryption_key = 3;
 }
 
+enum Platform {
+	UNKNOWN_PLATFORM = 0;
+	IOS = 1;
+	ANDROID = 2;
+	WEB = 3;
+}
+
 // AuthenticateLoginRequest represents the information that is used to authenticate a users login.
 // The token_attributes map is used when generating the auth token for this login. Future use of this token
 //  must provide the same information.
@@ -54,6 +61,7 @@ message AuthenticateLoginRequest {
 	string password = 2;
 	map<string, string> token_attributes = 3;
 	string device_id = 4 [(gogoproto.customname) = "DeviceID"];
+	Platform platform = 5;
 }
 
 // AuthenticateLoginResponse represents the information that is returned from AuthenticateLoginRequest
@@ -61,8 +69,8 @@ message AuthenticateLoginRequest {
 message AuthenticateLoginResponse {
 	AuthToken token = 1;
 	Account account = 2;
-    bool two_factor_required = 4;
-    string two_factor_phone_number = 5;
+	bool two_factor_required = 4;
+	string two_factor_phone_number = 5;
 }
 
 // AuthenticateLoginWithCodeRequest represents the information that is used to authenticate a use via token/code pair.
@@ -73,6 +81,7 @@ message AuthenticateLoginWithCodeRequest {
 	string code = 2;
 	map<string, string> token_attributes = 3;
 	string device_id = 4 [(gogoproto.customname) = "DeviceID"];
+	Platform platform = 5;
 }
 
 // AuthenticateLoginWithCodeResponse represents the information that is returned from AuthenticateLoginWithCode
@@ -107,6 +116,7 @@ message CreateAccountRequest {
 	map<string, string> token_attributes = 6;
 	string device_id = 7 [(gogoproto.customname) = "DeviceID"];
 	AccountType type = 8;
+	Platform platform = 9;
 }
 
 // CreateAccountResponse represents the information that is returned from CreateAccountRequest
@@ -171,7 +181,7 @@ message VerifiedValueResponse {
     string value = 1;
 }
 
-// CreatePasswordResetTokenRequest represents the information required to generate a password reset token 
+// CreatePasswordResetTokenRequest represents the information required to generate a password reset token
 message CreatePasswordResetTokenRequest {
     string email = 1;
 }
@@ -181,7 +191,7 @@ message CreatePasswordResetTokenResponse {
     string token = 1;
 }
 
-// CheckPasswordResetTokenRequest represents the information required to generate a password reset token 
+// CheckPasswordResetTokenRequest represents the information required to generate a password reset token
 message CheckPasswordResetTokenRequest {
     string token = 1;
 }
@@ -215,19 +225,36 @@ message BlockAccountResponse {
 // UpdatePasswordResponse represents the information returned from UpdatePassword
 message UpdatePasswordResponse {}
 
+
+// GetLastLoginInfoRequest represents the information required
+// to make a request for the last login info for an account.
+message GetLastLoginInfoRequest {
+	string account_id = 1 [(gogoproto.customname) = "AccountID"];
+}
+
+// GetLastLoginInfoResponse represents the login info from the last
+// login of the account.
+message GetLastLoginInfoResponse {
+	Platform platform = 1;
+	uint64 login_time = 2;
+	string device_id = 3 [(gogoproto.customname) = "DeviceID"];
+	string account_id = 4 [(gogoproto.customname) = "AccountID"];
+}
+
 // Auth provides mechanisms for other services to perform authentication of external entities interacting with them
 service Auth {
 	rpc AuthenticateLogin (AuthenticateLoginRequest) returns (AuthenticateLoginResponse);
-    rpc AuthenticateLoginWithCode (AuthenticateLoginWithCodeRequest) returns (AuthenticateLoginWithCodeResponse);
+	rpc AuthenticateLoginWithCode (AuthenticateLoginWithCodeRequest) returns (AuthenticateLoginWithCodeResponse);
 	rpc CheckAuthentication (CheckAuthenticationRequest) returns (CheckAuthenticationResponse);
-    rpc CheckPasswordResetToken (CheckPasswordResetTokenRequest) returns (CheckPasswordResetTokenResponse);
-    rpc CheckVerificationCode (CheckVerificationCodeRequest) returns (CheckVerificationCodeResponse);
+	rpc CheckPasswordResetToken (CheckPasswordResetTokenRequest) returns (CheckPasswordResetTokenResponse);
+	rpc CheckVerificationCode (CheckVerificationCodeRequest) returns (CheckVerificationCodeResponse);
 	rpc CreateAccount (CreateAccountRequest) returns (CreateAccountResponse);
-    rpc CreatePasswordResetToken (CreatePasswordResetTokenRequest) returns (CreatePasswordResetTokenResponse);
-    rpc CreateVerificationCode (CreateVerificationCodeRequest) returns (CreateVerificationCodeResponse);
+	rpc CreatePasswordResetToken (CreatePasswordResetTokenRequest) returns (CreatePasswordResetTokenResponse);
+	rpc CreateVerificationCode (CreateVerificationCodeRequest) returns (CreateVerificationCodeResponse);
 	rpc GetAccount (GetAccountRequest) returns (GetAccountResponse);
 	rpc Unauthenticate (UnauthenticateRequest) returns (UnauthenticateResponse);
-    rpc UpdatePassword (UpdatePasswordRequest) returns (UpdatePasswordResponse);
-    rpc VerifiedValue (VerifiedValueRequest) returns (VerifiedValueResponse);
-    rpc BlockAccount(BlockAccountRequest) returns (BlockAccountResponse);
+	rpc UpdatePassword (UpdatePasswordRequest) returns (UpdatePasswordResponse);
+	rpc VerifiedValue (VerifiedValueRequest) returns (VerifiedValueResponse);
+	rpc BlockAccount(BlockAccountRequest) returns (BlockAccountResponse);
+	rpc GetLastLoginInfo(GetLastLoginInfoRequest) returns (GetLastLoginInfoResponse);
 }
