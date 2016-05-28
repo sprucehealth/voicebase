@@ -36,7 +36,7 @@ func viewForMediaQuestion(question *saml.Question) visitreview.View {
 				Key: visitreview.MediaKey(tag),
 			},
 		},
-		SubsectionView: &visitreview.TitlePhotosItemsListView{
+		SubsectionView: &visitreview.TitleMediaItemsListView{
 			ContentConfig: &visitreview.ContentConfig{
 				Key: visitreview.MediaKey(tag),
 			},
