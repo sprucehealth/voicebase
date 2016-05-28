@@ -991,7 +991,7 @@ func (d *dal) UpsertTwoFactorLogin(accountID AccountID, deviceID string, loginTi
 
 func (d *dal) TrackLogin(accountID AccountID, platform device.Platform, deviceID string) error {
 	_, err := d.db.Exec(`
-		REPLACE INTO login_info (account_id, platform, device_id) VALUES (?, ?, ?)`, accountID, platform, deviceID)
+		REPLACE INTO login_info (account_id, platform, device_id) VALUES (?, ?, ?)`, accountID, platform.String(), deviceID)
 	return errors.Trace(err)
 }
 
