@@ -163,7 +163,7 @@ var imageAttachmentType = graphql.NewObject(
 
 					width := p.Args["width"].(int)
 					height := p.Args["height"].(int)
-					crop := p.Args["height"].(bool)
+					crop := p.Args["crop"].(bool)
 
 					mediaID, err := lmedia.ParseMediaID(attachment.URL)
 					if err != nil {
