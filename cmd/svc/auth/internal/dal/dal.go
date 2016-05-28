@@ -1001,6 +1001,7 @@ func (d *dal) LastLogin(accountID AccountID) (*LoginInfo, error) {
 	}
 	if err := d.db.QueryRow(`
 		SELECT platform, device_id, last_login_timestamp
+		FROM login_info
 		WHERE account_id = ?
 		ORDER BY last_login_timestamp DESC
 		LIMIT 1`, accountID).Scan(
