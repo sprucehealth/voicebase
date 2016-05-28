@@ -83,13 +83,17 @@ if [[ "$DEPLOY_TO_S3" != "" ]]; then
 			sleep $(( NEXT_WAIT_TIME++ ))
 		done
 		IFS=':' read -a STAG <<< "$TAG"
-		if [[ ${devDeployableMap[${STAG[0]}]} != "" ]]; then
-			IFS=',' read -a DEPLOYABLES <<< "${devDeployableMap[${STAG[0]}]}"
-			for DEPLOYABLE in ${DEPLOYABLES[@]}; do
-				echo "Notifying Deploy Service of successful build $DEPLOYABLE - $TAG"
-				aws sqs send-message --queue-url=https://sqs.us-east-1.amazonaws.com/137987605457/corp-deploy-events --message-body="{\"deployable_id\":\"$DEPLOYABLE\",\"build_number\":\"$BUILD_ID\",\"image\":\"$REMOTETAG\",\"git_hash\":\"$GIT_REV\"}" --region=us-east-1
-			done
+
+		if [[ "$MANUAL_DEPLOY" == "" ]]; then
+			if [[ ${devDeployableMap[${STAG[0]}]} != "" ]]; then
+				IFS=',' read -a DEPLOYABLES <<< "${devDeployableMap[${STAG[0]}]}"
+				for DEPLOYABLE in ${DEPLOYABLES[@]}; do
+					echo "Notifying Deploy Service of successful build $DEPLOYABLE - $TAG"
+					aws sqs send-message --queue-url=https://sqs.us-east-1.amazonaws.com/137987605457/corp-deploy-events --message-body="{\"deployable_id\":\"$DEPLOYABLE\",\"build_number\":\"$BUILD_ID\",\"image\":\"$REMOTETAG\",\"git_hash\":\"$GIT_REV\"}" --region=us-east-1
+				done
+			fi
 		fi
+
 		docker rmi $REMOTETAG
 		docker rmi $TAG
 	done
