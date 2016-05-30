@@ -192,10 +192,6 @@ func (s *service) GetThumbnailReader(ctx context.Context, mediaID dal.MediaID, s
 }
 
 func (s *service) ExpiringURL(ctx context.Context, mediaID dal.MediaID, exp time.Duration) (string, error) {
-	_, err := s.dal.Media(mediaID)
-	if err != nil {
-		return "", err
-	}
 	return s.binaryService.ExpiringURL(mediaID.String(), exp)
 }
 

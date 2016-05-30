@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/mime"
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/service"
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	lmedia "github.com/sprucehealth/backend/libs/media"
@@ -99,7 +100,7 @@ func (h *mediaHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *h
 
 	// For serving GET requests just redirect to the source with an expiring URL
 	eURL, err := h.svc.ExpiringURL(ctx, mediaID, time.Minute*15)
-	if err == dal.ErrNotFound || err == lmedia.ErrNotFound {
+	if errors.Cause(err) == dal.ErrNotFound || errors.Cause(err) == lmedia.ErrNotFound {
 		http.NotFound(w, r)
 		return
 	} else if err != nil {
@@ -110,6 +111,6 @@ func (h *mediaHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *h
 }
 
 func internalError(w http.ResponseWriter, err error) {
-	golog.Errorf("Media: Internal Error: %s", err)
+	golog.LogDepthf(1, golog.ERR, "Media: Internal Error: %s", err)
 	http.Error(w, "Internal Error", http.StatusInternalServerError)
 }
