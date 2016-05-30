@@ -27,14 +27,10 @@ func PopulateVisitReview(intake *layout.Intake, review *visitreview.SectionListV
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
 				answer := answers[question.ID]
-				if question.SubQuestionsConfig != nil {
-					if err := builderQuestionWithSubanswers(question, answer, context); err != nil {
-						return nil, errors.Trace(err)
-					}
-				}
+
 				switch question.Type {
 				case layout.QuestionTypeAutoComplete:
-					if err := builderQuestionWithSubanswers(question, answer, context); err != nil {
+					if err := builderQuestionAutocomplete(question, answer, context); err != nil {
 						return nil, errors.Trace(err)
 					}
 				case layout.QuestionTypeFreeText, layout.QuestionTypeSingleEntry:
@@ -42,6 +38,12 @@ func PopulateVisitReview(intake *layout.Intake, review *visitreview.SectionListV
 						return nil, errors.Trace(err)
 					}
 				case layout.QuestionTypeMultipleChoice:
+					if question.SubQuestionsConfig != nil {
+						if err := builderQuestionWithSubanswers(question, answer, context); err != nil {
+							return nil, errors.Trace(err)
+						}
+						continue
+					}
 					if err := builderQuestionWithOptions(question, answer, context); err != nil {
 						return nil, errors.Trace(err)
 					}
@@ -242,6 +244,42 @@ func builderQuestionFreeText(question *layout.Question, answer *Answer, context 
 
 	context.Set(visitreview.QuestionSummaryKey(question.ID), question.Summary)
 	context.Set(visitreview.AnswersKey(question.ID), text)
+	return nil
+}
+
+func builderQuestionAutocomplete(question *layout.Question, answer *Answer, context *visitreview.ViewContext) error {
+	if answer == nil {
+		populateEmptyStateTextIfPresent(question, context)
+		return nil
+	}
+
+	subquestions := question.SubQuestions()
+	data := make([]visitreview.TitleSubItemsDescriptionContentData, len(answer.GetAutocomplete().Items))
+	for i, item := range answer.GetAutocomplete().Items {
+		items := make([]*visitreview.DescriptionContentData, 0, len(item.SubAnswers))
+		for _, subquestion := range subquestions {
+			subanswer, ok := item.SubAnswers[subquestion.ID]
+			if !ok {
+				continue
+			}
+			content, err := contentForSubanswer(subquestion, subanswer)
+			if err != nil {
+				return errors.Trace(err)
+			}
+			items = append(items, &visitreview.DescriptionContentData{
+				Description: subquestion.Summary,
+				Content:     content,
+			})
+		}
+
+		data[i] = visitreview.TitleSubItemsDescriptionContentData{
+			Title:    item.Answer,
+			SubItems: items,
+		}
+	}
+
+	context.Set(visitreview.QuestionSummaryKey(question.ID), question.Summary)
+	context.Set(visitreview.AnswersKey(question.ID), data)
 	return nil
 }
 
