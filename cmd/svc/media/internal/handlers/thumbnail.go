@@ -59,7 +59,7 @@ func (h *thumbnailHandler) serveGET(ctx context.Context, w http.ResponseWriter, 
 func copyWith(w http.ResponseWriter, r io.Reader, contentLen int64, mimeType string, req *http.Request) {
 	w.Header().Set(contentTypeHeader, mimeType)
 	if contentLen > 0 {
-		w.Header().Set(contentTypeHeader, strconv.FormatInt(contentLen, 64))
+		w.Header().Set(contentTypeHeader, strconv.FormatInt(contentLen, 10))
 	}
 
 	if req.Method != httputil.Head {
