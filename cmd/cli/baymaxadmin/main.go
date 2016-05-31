@@ -161,19 +161,20 @@ type commandNew func(*config) (command, error)
 
 var commands = map[string]commandNew{
 	"account":             newAccountCmd,
+	"addcontact":          newAddContactCmd,
+	"blockaccount":        newBlockAccountCmd,
+	"changeorgemail":      newChangeOrgEmailCmd,
 	"decodeid":            newDecodeIDCmd,
 	"deletecontact":       newDeleteContactCmd,
 	"encodeid":            newEncodeIDCmd,
 	"entity":              newEntityCmd,
-	"moveentity":          newMoveEntityCmd,
 	"getsetting":          newGetSettingCmd,
+	"migratesetupthreads": newMigrateSetupThreadsCmd,
+	"moveentity":          newMoveEntityCmd,
+	"setgreeting":         newSetGreetingCmd,
 	"setsetting":          newSetSettingCmd,
 	"thread":              newThreadCmd,
-	"changeorgemail":      newChangeOrgEmailCmd,
-	"blockaccount":        newBlockAccountCmd,
 	"updateentity":        newUpdateEntityCmd,
-	"setgreeting":         newSetGreetingCmd,
-	"migratesetupthreads": newMigrateSetupThreadsCmd,
 	"uploadlayout":        newUploadLayoutCmd,
 }
 
