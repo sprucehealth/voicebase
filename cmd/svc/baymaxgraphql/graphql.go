@@ -180,7 +180,12 @@ const (
 )
 
 func setAuthCookie(w http.ResponseWriter, domain, token string, expires time.Time) {
-	idx := strings.IndexByte(domain, ':')
+	// set the auth cookie for the root domain rather than the specific endpoint.
+	idx := strings.IndexByte(domain, '.')
+	if idx != -1 {
+		domain = domain[idx:]
+	}
+	idx = strings.IndexByte(domain, ':')
 	if idx != -1 {
 		domain = domain[:idx]
 	}
@@ -244,14 +249,15 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 		if err != nil {
 			golog.Errorf("Failed to check auth token: %s", err)
 		} else if res.IsAuthenticated {
-			// If token changed then update the cookie
-			if res.Token.Value != c.Value {
-				var expires time.Time
-				if res.Token.ExpirationEpoch > 0 {
-					expires = time.Unix(int64(res.Token.ExpirationEpoch), 0)
-				}
-				setAuthCookie(w, r.Host, res.Token.Value, expires)
+			// TODO : For now set the cookie on every request so that we are setting the cookie
+			// for the root domain rather than the specific endpoint. This will enable clients
+			// to seamlessly reuse the cookie for the media endpoint and other subdomains we come up with. After about 2 weeks, we should switch this
+			// to only setting the cookie when the auth token changes or the user logs in.
+			var expires time.Time
+			if res.Token.ExpirationEpoch > 0 {
+				expires = time.Unix(int64(res.Token.ExpirationEpoch), 0)
 			}
+			setAuthCookie(w, r.Host, res.Token.Value, expires)
 			acc = res.Account
 			ctx = gqlctx.WithClientEncryptionKey(ctx, res.Token.ClientEncryptionKey)
 			ctx = gqlctx.WithAuthToken(ctx, c.Value)
