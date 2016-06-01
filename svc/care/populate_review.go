@@ -199,14 +199,15 @@ func builderQuestionWithSingleResponse(question *layout.Question, answer *Answer
 	var text string
 	switch question.Type {
 	case layout.QuestionTypeSingleSelect:
-		text = answer.GetSingleSelect().SelectedAnswer.FreeText
-		if text == "" {
-			for _, option := range question.PotentialAnswers {
-				if option.ID == answer.GetSingleSelect().SelectedAnswer.ID {
+		for _, option := range question.PotentialAnswers {
+			if option.ID == answer.GetSingleSelect().SelectedAnswer.ID {
+				if option.Summary != "" {
 					text = option.Summary
-					if text == "" {
-						text = option.Answer
-					}
+				} else {
+					text = option.Answer
+				}
+				if answer.GetSingleSelect().SelectedAnswer.FreeText != "" {
+					text = text + " - " + answer.GetSingleSelect().SelectedAnswer.FreeText
 				}
 			}
 		}

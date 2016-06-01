@@ -540,6 +540,56 @@ func TestPopulateReview_SingleSelect(t *testing.T) {
 	test.Equals(t, "HelloSummary", answerInContext)
 }
 
+func TestPopulateReview_SingleSelect_OtherSelected(t *testing.T) {
+	question := &layout.Question{
+		ID:   "test",
+		Type: layout.QuestionTypeSingleSelect,
+		PotentialAnswers: []*layout.PotentialAnswer{
+			{
+				ID:     "test1",
+				Answer: "Hi",
+				Type:   "a_type_multiple_choice_other_free_text",
+			},
+			{
+				ID:      "test2",
+				Answer:  "Hello",
+				Summary: "HelloSummary",
+			},
+			{
+				ID:     "test3",
+				Answer: "How",
+			},
+			{
+				ID:     "test4",
+				Answer: "are",
+			},
+			{
+				ID:     "test5",
+				Answer: "you",
+			},
+		},
+	}
+
+	answer := &Answer{
+		QuestionID: "test",
+		Answer: &Answer_SingleSelect{
+			SingleSelect: &SingleSelectAnswer{
+				SelectedAnswer: &AnswerOption{
+					ID:       "test1",
+					FreeText: "SUP",
+				},
+			},
+		},
+	}
+
+	context := visitreview.NewViewContext(nil)
+	test.OK(t, builderQuestionWithSingleResponse(question, answer, context))
+
+	answerInContext, ok := context.Get("test:answers")
+	test.Equals(t, true, ok)
+	test.Equals(t, "Hi - SUP", answerInContext)
+}
+
 func TestPopulateReview_SegmentedControl(t *testing.T) {
 	question := &layout.Question{
 		ID:   "test",
