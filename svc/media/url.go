@@ -10,7 +10,7 @@ func URL(mediaAPIDomain, mediaID string) string {
 }
 
 func ThumbnailURL(mediaAPIDomain, mediaID string, height, width int, crop bool) string {
-	var params url.Values
+	params := url.Values{}
 	if height != 0 {
 		params.Set("height", strconv.Itoa(height))
 	}
