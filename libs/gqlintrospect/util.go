@@ -10,7 +10,7 @@ import (
 
 func printUnion(w io.Writer, t *Type) error {
 	if t.Description != nil && *t.Description != "" {
-		if _, err := fmt.Fprintf(w, "// %s\n", *t.Description); err != nil {
+		if _, err := fmt.Fprintf(w, "# %s\n", *t.Description); err != nil {
 			return err
 		}
 	}
@@ -41,7 +41,7 @@ func printUnion(w io.Writer, t *Type) error {
 func printEnum(w io.Writer, t *Type) error {
 	sort.Sort(enumsName(t.EnumValues))
 	if t.Description != nil && *t.Description != "" {
-		if _, err := fmt.Fprintf(w, "// %s\n", *t.Description); err != nil {
+		if _, err := fmt.Fprintf(w, "# %s\n", *t.Description); err != nil {
 			return err
 		}
 	}
@@ -58,7 +58,7 @@ func printEnum(w io.Writer, t *Type) error {
 			return err
 		}
 		if e.Description != nil && *e.Description != "" {
-			if _, err := fmt.Fprintf(w, "\t// %s\n", *e.Description); err != nil {
+			if _, err := fmt.Fprintf(w, "\t# %s\n", *e.Description); err != nil {
 				return err
 			}
 		} else {
@@ -75,7 +75,7 @@ func printEnum(w io.Writer, t *Type) error {
 
 func printObject(w io.Writer, t *Type) error {
 	if t.Description != nil && *t.Description != "" {
-		if _, err := fmt.Fprintf(w, "// %s\n", *t.Description); err != nil {
+		if _, err := fmt.Fprintf(w, "# %s\n", *t.Description); err != nil {
 			return err
 		}
 	}
@@ -123,7 +123,7 @@ func printObject(w io.Writer, t *Type) error {
 
 func printInputObject(w io.Writer, t *Type) error {
 	if t.Description != nil && *t.Description != "" {
-		if _, err := fmt.Fprintf(w, "// %s\n", *t.Description); err != nil {
+		if _, err := fmt.Fprintf(w, "# %s\n", *t.Description); err != nil {
 			return err
 		}
 	}
@@ -145,7 +145,7 @@ func printInputObject(w io.Writer, t *Type) error {
 			}
 		}
 		if f.Description != nil && *f.Description != "" {
-			if _, err := fmt.Fprintf(w, "\t// %s", *f.Description); err != nil {
+			if _, err := fmt.Fprintf(w, "\t# %s", *f.Description); err != nil {
 				return err
 			}
 		}
@@ -161,12 +161,12 @@ func printInputObject(w io.Writer, t *Type) error {
 
 func printInterface(w io.Writer, t *Type) error {
 	if t.Description != nil && *t.Description != "" {
-		if _, err := fmt.Fprintf(w, "// %s\n", *t.Description); err != nil {
+		if _, err := fmt.Fprintf(w, "# %s\n", *t.Description); err != nil {
 			return err
 		}
 	}
 	if len(t.PossibleTypes) != 0 {
-		if _, err := fmt.Fprintf(w, "// Implemented by types:"); err != nil {
+		if _, err := fmt.Fprintf(w, "# Implemented by types:"); err != nil {
 			return err
 		}
 		for _, pt := range t.PossibleTypes {
@@ -214,9 +214,9 @@ func printInterface(w io.Writer, t *Type) error {
 func printDeprecation(w io.Writer, reason *string) error {
 	var err error
 	if reason != nil && *reason != "" {
-		_, err = fmt.Fprintf(w, "\t// DEPRECATED: %s\n", *reason)
+		_, err = fmt.Fprintf(w, "\t# DEPRECATED: %s\n", *reason)
 	} else {
-		_, err = fmt.Fprintln(w, "\t// DEPRECATED")
+		_, err = fmt.Fprintln(w, "\t# DEPRECATED")
 	}
 	return err
 }

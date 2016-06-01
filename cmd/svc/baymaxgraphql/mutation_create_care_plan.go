@@ -1,14 +1,17 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/libs/gqldecode"
 	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/graphql"
-	"unicode/utf8"
+	"github.com/sprucehealth/graphql/gqlerrors"
 )
 
 var createCarePlanInputType = graphql.NewInputObject(graphql.InputObjectConfig{
@@ -17,12 +20,12 @@ var createCarePlanInputType = graphql.NewInputObject(graphql.InputObjectConfig{
 		"clientMutationId": newClientMutationIDInputField(),
 		"uuid":             newUUIDInputField(),
 		"name":             &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-		"treatments":       &graphql.InputObjectFieldConfig{Type: graphql.NewList(carePlanTreatmentInput)},
-		"instructions":     &graphql.InputObjectFieldConfig{Type: graphql.NewList(carePlanInstructionInput)},
+		"treatments":       &graphql.InputObjectFieldConfig{Type: graphql.NewList(carePlanTreatmentInputType)},
+		"instructions":     &graphql.InputObjectFieldConfig{Type: graphql.NewList(carePlanInstructionInputType)},
 	},
 })
 
-var carePlanTreatmentInput = graphql.NewInputObject(graphql.InputObjectConfig{
+var carePlanTreatmentInputType = graphql.NewInputObject(graphql.InputObjectConfig{
 	Name: "CarePlanTreatmentInput",
 	Fields: graphql.InputObjectConfigFieldMap{
 		"ePrescribe":           &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.Boolean)},
@@ -40,13 +43,41 @@ var carePlanTreatmentInput = graphql.NewInputObject(graphql.InputObjectConfig{
 	},
 })
 
-var carePlanInstructionInput = graphql.NewInputObject(graphql.InputObjectConfig{
+var carePlanInstructionInputType = graphql.NewInputObject(graphql.InputObjectConfig{
 	Name: "CarePlanInstructionInput",
 	Fields: graphql.InputObjectConfigFieldMap{
 		"title": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 		"steps": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(graphql.String)))},
 	},
 })
+
+type createCarePlanInput struct {
+	ClientMutationID string                      `gql:"clientMutationId"`
+	UUID             string                      `gql:"uuid"`
+	Name             string                      `gql:"name"`
+	Treatments       []*carePlanTreatmentInput   `gql:"treatments"`
+	Instructions     []*carePlanInstructionInput `gql:"instructions"`
+}
+
+type carePlanTreatmentInput struct {
+	EPrescribe           bool   `gql:"ePrescribe"`
+	Name                 string `gql:"name"`
+	MedicationID         string `gql:"medicationID"`
+	Dosage               string `gql:"dosage"`
+	DispenseType         string `gql:"dispenseType"`
+	DispenseNumber       int    `gql:"dispenseNumber"`
+	Refills              int    `gql:"refills"`
+	SubstitutionsAllowed bool   `gql:"substitutionsAllowed"`
+	DaysSupply           int    `gql:"daysSupply"`
+	Sig                  string `gql:"sig"`
+	PharmacyID           string `gql:"pharmacyID"`
+	PharmacyInstructions string `gql:"pharmacyInstructions"`
+}
+
+type carePlanInstructionInput struct {
+	Title string   `gql:"title"`
+	Steps []string `gql:"steps"`
+}
 
 const (
 	createCarePlanErrorCodeInvalidField = "INVALID_FIELD"
@@ -97,66 +128,51 @@ var createCarePlanMutation = &graphql.Field{
 		acc := gqlctx.Account(ctx)
 
 		input := p.Args["input"].(map[string]interface{})
-		mutationID, _ := input["clientMutationId"].(string)
+		var in createCarePlanInput
+		if err := gqldecode.Decode(input, &in); err != nil {
+			switch err := err.(type) {
+			case gqldecode.ErrValidationFailed:
+				return nil, gqlerrors.FormatError(fmt.Errorf("%s is invalid: %s", err.Field, err.Reason))
+			}
+			return nil, errors.InternalError(ctx, err)
+		}
 
-		name := input["name"].(string)
-		treatmentsIn, _ := input["treatments"].([]interface{})
-		instructionsIn, _ := input["instructions"].([]interface{})
-
-		if name == "" {
+		if in.Name == "" {
 			return &createCarePlanOutput{
-				ClientMutationID: mutationID,
+				ClientMutationID: in.ClientMutationID,
 				Success:          false,
 				ErrorCode:        createCarePlanErrorCodeInvalidField,
 				ErrorMessage:     "Please enter a name for the care plan.",
 			}, nil
 		}
-		if !utf8.ValidString(name) {
-			return &createCarePlanOutput{
-				ClientMutationID: mutationID,
-				Success:          false,
-				ErrorCode:        createCarePlanErrorCodeInvalidField,
-				ErrorMessage:     "The entered name is not valid.",
-			}, nil
-		}
 
 		req := &care.CreateCarePlanRequest{
-			Name:         name,
+			Name:         in.Name,
 			CreatorID:    acc.ID,
-			Instructions: make([]*care.CarePlanInstruction, len(instructionsIn)),
-			Treatments:   make([]*care.CarePlanTreatment, len(treatmentsIn)),
+			Instructions: make([]*care.CarePlanInstruction, len(in.Instructions)),
+			Treatments:   make([]*care.CarePlanTreatment, len(in.Treatments)),
 		}
-		for i, in := range instructionsIn {
-			inMap := in.(map[string]interface{})
-			steps, _ := inMap["steps"].([]interface{})
-			cin := &care.CarePlanInstruction{
-				Title: inMap["title"].(string),
-				Steps: make([]string, len(steps)),
+		for i, ins := range in.Instructions {
+			req.Instructions[i] = &care.CarePlanInstruction{
+				Title: ins.Title,
+				Steps: ins.Steps,
 			}
-			for j, s := range steps {
-				cin.Steps[j] = s.(string)
-			}
-			req.Instructions[i] = cin
 		}
-		for i, in := range treatmentsIn {
-			inMap := in.(map[string]interface{})
+		for i, tr := range in.Treatments {
 			ct := &care.CarePlanTreatment{
-				EPrescribe: inMap["ePrescribe"].(bool),
+				EPrescribe:           tr.EPrescribe,
+				MedicationID:         tr.MedicationID,
+				Name:                 tr.Name,
+				Dosage:               tr.Dosage,
+				DispenseType:         tr.DispenseType,
+				DispenseNumber:       uint32(tr.DispenseNumber),
+				Refills:              uint32(tr.Refills),
+				SubstitutionsAllowed: tr.SubstitutionsAllowed,
+				DaysSupply:           uint32(tr.DaysSupply),
+				Sig:                  tr.Sig,
+				PharmacyID:           tr.PharmacyID,
+				PharmacyInstructions: tr.PharmacyInstructions,
 			}
-			ct.MedicationID, _ = inMap["medicationID"].(string)
-			ct.Name, _ = inMap["name"].(string)
-			ct.Dosage, _ = inMap["dosage"].(string)
-			ct.DispenseType, _ = inMap["dispenseType"].(string)
-			dispenseNumber, _ := inMap["dispenseNumber"].(int)
-			ct.DispenseNumber = uint32(dispenseNumber)
-			refills, _ := inMap["refills"].(int)
-			ct.Refills = uint32(refills)
-			ct.SubstitutionsAllowed, _ = inMap["substitutionsAllowed"].(bool)
-			daysSupply, _ := inMap["daysSupply"].(int)
-			ct.DaysSupply = uint32(daysSupply)
-			ct.Sig, _ = inMap["sig"].(string)
-			ct.PharmacyID, _ = inMap["pharmacyID"].(string)
-			ct.PharmacyInstructions, _ = inMap["pharmacyInstructions"].(string)
 			// TODO: validate pharmacy ID
 			// TODO: lookup medication by ID if provided to fill in form, route, name, etc..
 			req.Treatments[i] = ct
@@ -172,7 +188,7 @@ var createCarePlanMutation = &graphql.Field{
 		}
 
 		return &createCarePlanOutput{
-			ClientMutationID: mutationID,
+			ClientMutationID: in.ClientMutationID,
 			Success:          true,
 			CarePlan:         cp,
 		}, nil
