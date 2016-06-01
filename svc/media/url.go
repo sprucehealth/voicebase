@@ -6,7 +6,7 @@ import (
 )
 
 func URL(mediaAPIDomain, mediaID string) string {
-	return mediaAPIDomain + "/" + mediaID
+	return mediaAPIDomain + "/media/" + mediaID
 }
 
 func ThumbnailURL(mediaAPIDomain, mediaID string, height, width int, crop bool) string {
@@ -20,7 +20,7 @@ func ThumbnailURL(mediaAPIDomain, mediaID string, height, width int, crop bool) 
 	if crop {
 		params.Set("crop", "true")
 	}
-	tURL := mediaAPIDomain + "/" + mediaID + "/" + "thumbnail"
+	tURL := mediaAPIDomain + "/media/" + mediaID + "/" + "thumbnail"
 	if len(params) != 0 {
 		tURL = tURL + "?" + params.Encode()
 	}
