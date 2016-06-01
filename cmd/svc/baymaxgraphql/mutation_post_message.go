@@ -359,11 +359,11 @@ var postMessageMutation = &graphql.Field{
 				attachment = &threading.Attachment{
 					Type:  mAttachmentType,
 					Title: title,
-					URL:   info.URL,
+					URL:   info.ID,
 					Data: &threading.Attachment_Image{
 						Image: &threading.ImageAttachment{
 							Mimetype: info.MIME.Type + "/" + info.MIME.Subtype,
-							URL:      info.URL,
+							URL:      info.ID,
 						},
 					},
 				}
@@ -375,12 +375,12 @@ var postMessageMutation = &graphql.Field{
 				attachment = &threading.Attachment{
 					Type:  mAttachmentType,
 					Title: title,
-					URL:   info.URL,
+					URL:   info.ID,
 					Data: &threading.Attachment_Video{
 						Video: &threading.VideoAttachment{
 							Mimetype:   info.MIME.Type + "/" + info.MIME.Subtype,
-							URL:        info.URL,
-							ThumbURL:   info.ThumbURL,
+							URL:        info.ID,
+							ThumbURL:   info.ID,
 							DurationNS: info.DurationNS,
 						},
 					},
