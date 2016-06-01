@@ -177,13 +177,14 @@ func (s *service) GetThumbnailReader(ctx context.Context, mediaID dal.MediaID, s
 	var thumbID string
 	m, err := s.dal.Media(mediaID)
 	// If we didn't find it in our data store, assume it's a legacy media segment and that the id is consistent
-	if errors.Cause(err) != dal.ErrNotFound {
+	if errors.Cause(err) == dal.ErrNotFound {
 		thumbID = mediaID.String()
 	} else if err != nil {
 		return nil, nil, err
 	} else {
 		thumbID = thumbnailID(m)
 	}
+
 	rc, meta, err := s.imageService.GetReader(thumbID, size)
 	if errors.Cause(err) == media.ErrNotFound {
 		// Attempt a placholder fallback
