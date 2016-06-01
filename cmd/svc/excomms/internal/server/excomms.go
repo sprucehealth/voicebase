@@ -321,17 +321,17 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 	}
 
 	// Get our internal media information and size and externalize it
-	var mediaURLs []string
+	var mediaIDs []string
 	switch in.Channel {
 	case excomms.ChannelType_SMS:
-		mediaURLs = in.GetSMS().MediaURLs
+		mediaIDs = in.GetSMS().MediaIDs
 	case excomms.ChannelType_EMAIL:
-		mediaURLs = in.GetEmail().MediaURLs
+		mediaIDs = in.GetEmail().MediaIDs
 	}
-	resizedURLs := make([]string, len(mediaURLs))
-	for i, mURL := range mediaURLs {
+	resizedURLs := make([]string, len(mediaIDs))
+	for i, mID := range mediaIDs {
 		// default everything to a max size of 3264x3264
-		mediaID, err := media.ParseMediaID(mURL)
+		mediaID, err := media.ParseMediaID(mID)
 		if err != nil {
 			grpcErrorf(codes.Internal, err.Error())
 		}

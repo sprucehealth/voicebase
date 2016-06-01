@@ -117,7 +117,7 @@ func TestPostMessage(t *testing.T) {
 				Data: &threading.Attachment_Image{
 					Image: &threading.ImageAttachment{
 						Mimetype: "image/png",
-						URL:      "mediaID",
+						MediaID:  "mediaID",
 					},
 				},
 			},
@@ -715,8 +715,7 @@ func TestPostMessagePatientSecureExternal(t *testing.T) {
 				Data: &threading.Attachment_Video{
 					Video: &threading.VideoAttachment{
 						Mimetype:   "video/mp4",
-						URL:        "mediaID",
-						ThumbURL:   "mediaID",
+						MediaID:    "mediaID",
 						DurationNS: 12345,
 					},
 				},

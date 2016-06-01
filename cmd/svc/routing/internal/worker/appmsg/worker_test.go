@@ -102,7 +102,7 @@ func testSendMessageSMS(t *testing.T, revealSender bool) {
 				FromPhoneNumber: "+17348465522",
 				ToPhoneNumber:   "+12068773590",
 				Text:            text,
-				MediaURLs:       []string{"image/attachment/url"},
+				MediaIDs:        []string{"s3://image/attachment/url"},
 			},
 		},
 	}))
@@ -204,7 +204,15 @@ func testSendMessageSMS(t *testing.T, revealSender bool) {
 						},
 					},
 					Attachments: []*threading.Attachment{
-						{Type: threading.Attachment_IMAGE, URL: "image/attachment/url"},
+						{
+							Type: threading.Attachment_IMAGE,
+							URL:  "image/attachment/url",
+							Data: &threading.Attachment_Image{
+								Image: &threading.ImageAttachment{
+									MediaID: "s3://image/attachment/url",
+								},
+							},
+						},
 						{Type: threading.Attachment_GENERIC_URL, URL: "generic/url"},
 					},
 				},
@@ -296,7 +304,7 @@ func testSendingEmail(t *testing.T, revealSender bool) {
 				FromName:         fromName,
 				FromEmailAddress: "doctor@practice.baymax.com",
 				ToEmailAddress:   "patient@test.com",
-				MediaURLs:        []string{"image/attachment/url"},
+				MediaIDs:         []string{"s3://image/attachment/url"},
 			},
 		},
 	}))
@@ -398,7 +406,15 @@ func testSendingEmail(t *testing.T, revealSender bool) {
 						},
 					},
 					Attachments: []*threading.Attachment{
-						{Type: threading.Attachment_IMAGE, URL: "image/attachment/url"},
+						{
+							Type: threading.Attachment_IMAGE,
+							URL:  "image/attachment/url",
+							Data: &threading.Attachment_Image{
+								Image: &threading.ImageAttachment{
+									MediaID: "s3://image/attachment/url",
+								},
+							},
+						},
 						{Type: threading.Attachment_GENERIC_URL, URL: "generic/url"},
 					},
 				},

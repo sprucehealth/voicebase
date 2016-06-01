@@ -98,6 +98,10 @@ func (h *mediaHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *h
 		return
 	}
 
+	// TODO: Once we introduce access control, we will have to ensure to handle media objects
+	// that we don't have information for (all the media objects uploaded before the book-keeping
+	// was introduced)
+
 	// For serving GET requests just redirect to the source with an expiring URL
 	eURL, err := h.svc.ExpiringURL(ctx, mediaID, time.Minute*15)
 	if errors.Cause(err) == dal.ErrNotFound || errors.Cause(err) == lmedia.ErrNotFound {

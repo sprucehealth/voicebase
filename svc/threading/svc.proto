@@ -150,7 +150,7 @@ message Attachment {
 	}
 	Type type = 1;
 	string title = 2;
-	string url = 3 [(gogoproto.customname) = "URL"];
+	string mediaID = 3 [(gogoproto.customname) = "URL"];
 	oneof data {
 		ImageAttachment image = 10;
 		AudioAttachment audio = 11;
@@ -163,21 +163,20 @@ message Attachment {
 
 message ImageAttachment {
 	string mimetype = 1;
-	string url = 2 [(gogoproto.customname) = "URL"];
+	string media_id = 2 [(gogoproto.customname) = "MediaID"];
 	uint32 width = 3;
 	uint32 height = 4;
 }
 
 message VideoAttachment {
 	string mimetype = 1;
-	string url = 2 [(gogoproto.customname) = "URL"];
-	string thumb_url = 3 [(gogoproto.customname) = "ThumbURL"];
+	string mediaID = 2 [(gogoproto.customname) = "MediaID"];
 	uint64 duration_ns = 4 [(gogoproto.customname) = "DurationNS"];
 }
 
 message AudioAttachment {
 	string mimetype = 1;
-	string url = 2 [(gogoproto.customname) = "URL"];
+	string media_id = 2 [(gogoproto.customname) = "MediaID"];
 	uint64 duration_ns = 4 [(gogoproto.customname) = "DurationNS"];
 }
 
@@ -257,7 +256,7 @@ message QueryThreadsRequest {
 	enum Type {
 		ADHOC = 0;
 		SAVED = 1;
-		ALL_FOR_VIEWER = 2; 
+		ALL_FOR_VIEWER = 2;
 	}
 	Type type = 3;
 	oneof query_type {

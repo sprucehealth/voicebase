@@ -75,17 +75,17 @@ func ParamsFromRequest(r *http.Request, store storage.Store) (*rawmsg.SendGridIn
 			if err != nil {
 				return nil, nil, errors.Trace(err)
 			}
-			url, err := store.PutReader(id, fileHandle, size, sgi.Attachments[i].Type, map[string]string{
+			s3Location, err := store.PutReader(id, fileHandle, size, sgi.Attachments[i].Type, map[string]string{
 				"X-Amz-Meta-Original-Name": sgi.Attachments[i].Filename,
 			})
 			if err != nil {
 				return nil, nil, errors.Trace(fmt.Errorf("Unable to store file to S3. ID: %s, size: %d, type: %s: %s", id, size, sgi.Attachments[i].Type, err.Error()))
 			}
 			medias[id] = &models.Media{
-				ID:   id,
-				Type: sgi.Attachments[i].Type,
-				URL:  url,
-				Name: ptr.String(sgi.Attachments[i].Filename),
+				ID:       id,
+				Type:     sgi.Attachments[i].Type,
+				Location: s3Location,
+				Name:     ptr.String(sgi.Attachments[i].Filename),
 			}
 			sgi.Attachments[i].ID = id
 		}

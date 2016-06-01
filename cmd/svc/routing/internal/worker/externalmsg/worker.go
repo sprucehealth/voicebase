@@ -369,7 +369,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 					Data: &threading.Attachment_Image{
 						Image: &threading.ImageAttachment{
 							Mimetype: a.ContentType,
-							URL:      a.URL,
+							MediaID:  a.MediaID,
 						},
 					},
 				}
@@ -406,7 +406,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 						Type: threading.Attachment_AUDIO,
 						Data: &threading.Attachment_Audio{
 							Audio: &threading.AudioAttachment{
-								URL:        pem.GetIncoming().VoicemailURL,
+								MediaID:    pem.GetIncoming().VoicemailMediaID,
 								DurationNS: pem.GetIncoming().VoicemailDurationNS,
 							},
 						},
@@ -450,7 +450,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 						Data: &threading.Attachment_Image{
 							Image: &threading.ImageAttachment{
 								Mimetype: attachmentItem.ContentType,
-								URL:      attachmentItem.URL,
+								MediaID:  attachmentItem.MediaID,
 							},
 						},
 					})
@@ -461,7 +461,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 						Data: &threading.Attachment_GenericURL{
 							GenericURL: &threading.GenericURLAttachment{
 								Mimetype: attachmentItem.ContentType,
-								URL:      attachmentItem.URL,
+								URL:      attachmentItem.MediaID,
 							},
 						},
 					})

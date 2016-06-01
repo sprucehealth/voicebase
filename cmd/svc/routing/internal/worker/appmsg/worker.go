@@ -234,11 +234,11 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 		revealSender = res.Values[0].GetBoolean().Value
 	}
 
-	var mediaURLs []string
+	var mediaIDs []string
 	for _, at := range pti.GetItem().GetMessage().Attachments {
 		// TODO: Add async video support?
 		if at.Type == threading.Attachment_IMAGE {
-			mediaURLs = append(mediaURLs, at.URL)
+			mediaIDs = append(mediaIDs, at.GetImage().MediaID)
 		}
 	}
 
@@ -275,7 +275,7 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 							FromPhoneNumber: orgContact.Value,
 							ToPhoneNumber:   d.ID,
 							Text:            plainText,
-							MediaURLs:       mediaURLs,
+							MediaIDs:        mediaIDs,
 						},
 					},
 				},
@@ -323,7 +323,7 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 							FromName:         fromName,
 							FromEmailAddress: orgContact.Value,
 							ToEmailAddress:   d.ID,
-							MediaURLs:        mediaURLs,
+							MediaIDs:         mediaIDs,
 						},
 					},
 				},

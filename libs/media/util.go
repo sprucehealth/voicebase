@@ -42,7 +42,9 @@ func ParseMediaID(uri string) (string, error) {
 	}
 
 	parts := strings.Split(u.Path, "/")
-	if len(parts) != 4 {
+	if len(parts) == 1 {
+		return parts[0], nil
+	} else if len(parts) != 4 {
 		return "", fmt.Errorf("Expected uri of form s3://region/bucket/prefix/name but got %s", uri)
 	} else if parts[2] != "media" {
 		return "", fmt.Errorf("Expected uri of form s3://<region>/<bucket>/media/<id> but got %s", uri)

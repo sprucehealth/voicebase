@@ -483,7 +483,7 @@ func TestSendMessage_SMS(t *testing.T) {
 				FromPhoneNumber: "+17348465522",
 				ToPhoneNumber:   "+14152222222",
 				Text:            "hello",
-				MediaURLs:       []string{"s3://region/bucket/media/mediaid1", "s3://region/bucket/media/mediaid2"},
+				MediaIDs:        []string{"s3://region/bucket/media/mediaid1", "s3://region/bucket/media/mediaid2"},
 			},
 		},
 	})
@@ -602,7 +602,7 @@ func TestSendMessage_Email(t *testing.T) {
 				FromName:         "Joe Schmoe",
 				FromEmailAddress: "joe@schmoe.com",
 				ToEmailAddress:   "patient@example.com",
-				MediaURLs:        []string{"s3://region/bucket/media/mediaid1", "s3://region/bucket/media/mediaid2"},
+				MediaIDs:         []string{"s3://region/bucket/media/mediaid1", "s3://region/bucket/media/mediaid2"},
 			},
 		},
 	})

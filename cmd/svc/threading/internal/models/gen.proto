@@ -82,21 +82,20 @@ message Attachment {
 
 message ImageAttachment {
 	string mimetype = 1;
-	string url = 2 [(gogoproto.customname) = "URL"];
+	string media_id = 2 [(gogoproto.customname) = "MediaID"];
 	uint32 width = 3;
 	uint32 height = 4;
 }
 
 message VideoAttachment {
 	string mimetype = 1;
-	string url = 2 [(gogoproto.customname) = "URL"];
-	string thumbURL = 3 [(gogoproto.customname) = "ThumbURL"];
+	string media_id = 2 [(gogoproto.customname) = "MediaID"];
 	uint64 duration_ns = 4 [(gogoproto.customname) = "DurationNS"];
 }
 
 message AudioAttachment {
 	string mimetype = 1;
-	string url = 2 [(gogoproto.customname) = "URL"];
+	string media_id = 2 [(gogoproto.customname) = "MediaID"];
 	uint32 deprecated_duration_in_seconds = 3; // Deprecated
 	uint64 duration_ns = 4 [(gogoproto.customname) = "DurationNS"];
 }

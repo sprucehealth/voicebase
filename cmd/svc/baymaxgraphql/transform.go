@@ -344,9 +344,9 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 					d.Mimetype = "audio/mp3"
 				}
 
-				mediaID, err := lmedia.ParseMediaID(d.URL)
+				mediaID, err := lmedia.ParseMediaID(d.MediaID)
 				if err != nil {
-					golog.Errorf("Unable to parse mediaID out of url %s", d.URL)
+					golog.Errorf("Unable to parse mediaID out of url %s", d.MediaID)
 				}
 
 				url := media.URL(mediaAPIDomain, mediaID)
@@ -368,16 +368,16 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 				}
 				data = &models.ImageAttachment{
 					Mimetype: d.Mimetype,
-					URL:      d.URL,
+					URL:      d.MediaID,
 				}
 				// TODO
 				if a.Title == "" {
 					a.Title = "Photo"
 				}
 
-				mediaID, err := lmedia.ParseMediaID(d.URL)
+				mediaID, err := lmedia.ParseMediaID(d.MediaID)
 				if err != nil {
-					golog.Errorf("Unable to parse mediaID out of url %s", d.URL)
+					golog.Errorf("Unable to parse mediaID out of url %s", d.MediaID)
 				}
 				a.URL = media.URL(mediaAPIDomain, mediaID)
 			case threading.Attachment_VISIT:
@@ -393,8 +393,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 				duration := float64(v.DurationNS) / 1e9
 				data = &models.VideoAttachment{
 					Mimetype:          v.Mimetype,
-					URL:               v.URL,
-					ThumbURL:          v.ThumbURL,
+					URL:               v.MediaID,
 					DurationInSeconds: duration,
 				}
 			case threading.Attachment_CARE_PLAN:

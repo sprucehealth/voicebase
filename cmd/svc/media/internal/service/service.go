@@ -68,6 +68,7 @@ func (s *service) PutMedia(ctx context.Context, mFile io.ReadSeeker, mediaType *
 	parallel := conc.NewParallel()
 	var size uint64
 	var duration time.Duration
+	var url string
 	parallel.Go(func() error {
 		switch mediaType.Type {
 		case "image":
@@ -76,6 +77,7 @@ func (s *service) PutMedia(ctx context.Context, mFile io.ReadSeeker, mediaType *
 				return err
 			}
 			size = im.Size
+			url = im.URL
 		case "audio":
 			am, err := s.audioService.PutReader(mediaID.String(), mFile, mediaType.String())
 			if err != nil {
@@ -83,6 +85,7 @@ func (s *service) PutMedia(ctx context.Context, mFile io.ReadSeeker, mediaType *
 			}
 			size = am.Size
 			duration = am.Duration
+			url = am.URL
 		case "video":
 			vm, err := s.videoService.PutReader(mediaID.String(), mFile, mediaType.String())
 			if err != nil {
@@ -90,12 +93,14 @@ func (s *service) PutMedia(ctx context.Context, mFile io.ReadSeeker, mediaType *
 			}
 			size = vm.Size
 			duration = vm.Duration
+			url = vm.URL
 		default:
 			bm, err := s.binaryService.PutReader(mediaID.String(), mFile, mediaType.String())
 			if err != nil {
 				return err
 			}
 			size = bm.Size
+			url = bm.URL
 		}
 		return nil
 	})
@@ -113,6 +118,7 @@ func (s *service) PutMedia(ctx context.Context, mFile io.ReadSeeker, mediaType *
 	}
 	_, err = s.dal.InsertMedia(&dal.Media{
 		ID:         mediaID,
+		URL:        url,
 		MimeType:   mediaType.String(),
 		OwnerType:  dal.MediaOwnerTypeEntity,
 		OwnerID:    "TODO",

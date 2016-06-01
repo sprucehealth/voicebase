@@ -363,7 +363,7 @@ var postMessageMutation = &graphql.Field{
 					Data: &threading.Attachment_Image{
 						Image: &threading.ImageAttachment{
 							Mimetype: info.MIME.Type + "/" + info.MIME.Subtype,
-							URL:      info.ID,
+							MediaID:  info.ID,
 						},
 					},
 				}
@@ -379,8 +379,7 @@ var postMessageMutation = &graphql.Field{
 					Data: &threading.Attachment_Video{
 						Video: &threading.VideoAttachment{
 							Mimetype:   info.MIME.Type + "/" + info.MIME.Subtype,
-							URL:        info.ID,
-							ThumbURL:   info.ID,
+							MediaID:    info.ID,
 							DurationNS: info.DurationNS,
 						},
 					},

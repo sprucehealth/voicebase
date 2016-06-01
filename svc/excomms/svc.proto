@@ -55,7 +55,7 @@ message IncomingCallEventItem {
 	}
 	Type type = 1;
 	uint32 duration_in_seconds = 2;
-	string voicemail_url = 3 [(gogoproto.customname) = "VoicemailURL"];
+	string voicemail_media_id = 3 [(gogoproto.customname) = "VoicemailMediaID"];
 	uint64 voicemail_duration_ns = 4 [(gogoproto.customname) = "VoicemailDurationNS"];
 	string transcription_text  = 5;
 }
@@ -79,7 +79,7 @@ message EmailItem {
 }
 
 message MediaAttachment {
-	string url = 1 [(gogoproto.customname) = "URL"];
+	string media_id = 1 [(gogoproto.customname) = "MediaID"];
 	string content_type = 2;
 	string name = 3;
 }
@@ -106,14 +106,14 @@ message EmailMessage {
 	string from_email_address = 4;
 	string to_name = 5;
 	string to_email_address = 6;
-	repeated string media_urls = 7 [(gogoproto.customname) = "MediaURLs"];
+	repeated string MediaIDs = 7 [(gogoproto.customname) = "MediaIDs"];
 }
 
 message SMSMessage {
 	string text = 1;
 	string from_phone_number = 2;
 	string to_phone_number = 3;
-	repeated string media_urls = 4 [(gogoproto.customname) = "MediaURLs"];
+	repeated string MediaIDs = 4 [(gogoproto.customname) = "MediaIDs"];
 }
 
 message SendMessageResponse {

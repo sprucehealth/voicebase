@@ -141,7 +141,7 @@ func (d *dal) LookupProvisionedEndpoint(provisionedFor string, endpointType mode
 	var ppn models.ProvisionedEndpoint
 
 	err := d.db.QueryRow(`
-		SELECT endpoint, endpoint_type, provisioned_for, created, deprovisioned, deprovisioned_timestamp, deprovisioned_reason 
+		SELECT endpoint, endpoint_type, provisioned_for, created, deprovisioned, deprovisioned_timestamp, deprovisioned_reason
 		FROM provisioned_endpoint
 		WHERE provisioned_for = ?
 		AND endpoint_type = ?
@@ -279,7 +279,7 @@ func (d *dal) LookupCallRequest(callSID string) (*models.CallRequest, error) {
 	var cr models.CallRequest
 
 	err := d.db.QueryRow(`
-		SELECT source, destination, proxy, organization_id, requested, call_sid, caller_entity_id, callee_entity_id 
+		SELECT source, destination, proxy, organization_id, requested, call_sid, caller_entity_id, callee_entity_id
 		FROM outgoing_call_request
 		WHERE call_sid = ?`, callSID).Scan(
 		&cr.Source,
@@ -473,8 +473,8 @@ func (d *dal) SetCurrentOriginatingNumber(phoneNumber phone.Number, entityID, de
 func (d *dal) CurrentOriginatingNumber(entityID, deviceID string) (phone.Number, error) {
 	var phoneNumber phone.Number
 	err := d.db.QueryRow(`
-		SELECT phone_number 
-		FROM originating_phone_number 
+		SELECT phone_number
+		FROM originating_phone_number
 		WHERE entity_id = ? AND device_id = ?`, entityID, deviceID).Scan(&phoneNumber)
 	if err == sql.ErrNoRows {
 		return phone.Number(""), errors.Trace(ErrOriginatingNumberNotFound)
@@ -536,7 +536,7 @@ func (d *dal) StoreIncomingRawMessage(rm *rawmsg.Incoming) (uint64, error) {
 func (d *dal) IncomingRawMessage(id uint64) (*rawmsg.Incoming, error) {
 	var data []byte
 	if err := d.db.QueryRow(`
-		SELECT data 
+		SELECT data
 		FROM incoming_raw_message
 		WHERE id = ?`, id).Scan(&data); err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrIncomingRawMessageNotFound)
@@ -562,7 +562,7 @@ func (d *dal) StoreMedia(media []*models.Media) error {
 			return errors.Trace(fmt.Errorf("id required for media object"))
 		}
 
-		multiInsert.Append(m.ID, m.Type, m.URL, m.Name)
+		multiInsert.Append(m.ID, m.Type, m.Location, m.Name)
 		golog.Debugf("Inserting media %+v", m)
 	}
 
@@ -582,7 +582,7 @@ func (d *dal) LookupMedia(ids []string) (map[string]*models.Media, error) {
 
 	rows, err := d.db.Query(`
 		SELECT id, type, url, name
-		FROM media 
+		FROM media
 		WHERE id in (`+dbutil.MySQLArgs(len(ids))+`)`, dbutil.AppendStringsToInterfaceSlice(nil, ids)...)
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -595,7 +595,7 @@ func (d *dal) LookupMedia(ids []string) (map[string]*models.Media, error) {
 		if err := rows.Scan(
 			&m.ID,
 			&m.Type,
-			&m.URL,
+			&m.Location,
 			&m.Name); err != nil {
 			return nil, errors.Trace(err)
 		}

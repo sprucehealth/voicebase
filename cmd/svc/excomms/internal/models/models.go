@@ -127,7 +127,7 @@ type ProxyPhoneNumberReservation struct {
 type Media struct {
 	ID       string
 	Type     string
-	URL      string
+	Location string
 	Name     *string
 	Duration time.Duration
 }

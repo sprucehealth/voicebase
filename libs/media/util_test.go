@@ -18,3 +18,13 @@ func TestIDRegexPattern(t *testing.T) {
 		}
 	}
 }
+
+func TestParseMediaID(t *testing.T) {
+	mediaID, err := ParseMediaID("s3://us-east-1/test-baymax-storage/media/12345")
+	test.OK(t, err)
+	test.Equals(t, "12345", mediaID)
+
+	mediaID, err = ParseMediaID("12345")
+	test.OK(t, err)
+	test.Equals(t, "12345", mediaID)
+}

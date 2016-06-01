@@ -188,7 +188,7 @@ func transformThreadItemToResponse(item *models.ThreadItem, orgID string) (*thre
 				at.Data = &threading.Attachment_Audio{
 					Audio: &threading.AudioAttachment{
 						Mimetype:   data.Mimetype,
-						URL:        data.URL,
+						MediaID:    data.MediaID,
 						DurationNS: durationNS,
 					},
 				}
@@ -198,7 +198,7 @@ func transformThreadItemToResponse(item *models.ThreadItem, orgID string) (*thre
 				at.Data = &threading.Attachment_Image{
 					Image: &threading.ImageAttachment{
 						Mimetype: data.Mimetype,
-						URL:      data.URL,
+						MediaID:  data.MediaID,
 						Width:    data.Width,
 						Height:   data.Height,
 					},
@@ -227,8 +227,7 @@ func transformThreadItemToResponse(item *models.ThreadItem, orgID string) (*thre
 				at.Data = &threading.Attachment_Video{
 					Video: &threading.VideoAttachment{
 						Mimetype:   data.Mimetype,
-						URL:        data.URL,
-						ThumbURL:   data.ThumbURL,
+						MediaID:    data.MediaID,
 						DurationNS: data.DurationNS,
 					},
 				}
@@ -304,7 +303,7 @@ func transformAttachmentsFromRequest(atts []*threading.Attachment) ([]*models.At
 			at.Data = &models.Attachment_Audio{
 				Audio: &models.AudioAttachment{
 					Mimetype:   data.Mimetype,
-					URL:        data.URL,
+					MediaID:    data.MediaID,
 					DurationNS: data.DurationNS,
 				},
 			}
@@ -332,7 +331,7 @@ func transformAttachmentsFromRequest(atts []*threading.Attachment) ([]*models.At
 			at.Data = &models.Attachment_Image{
 				Image: &models.ImageAttachment{
 					Mimetype: data.Mimetype,
-					URL:      data.URL,
+					MediaID:  data.MediaID,
 					Width:    data.Width,
 					Height:   data.Height,
 				},
@@ -343,8 +342,7 @@ func transformAttachmentsFromRequest(atts []*threading.Attachment) ([]*models.At
 			at.Data = &models.Attachment_Video{
 				Video: &models.VideoAttachment{
 					Mimetype:   data.Mimetype,
-					URL:        data.URL,
-					ThumbURL:   data.ThumbURL,
+					MediaID:    data.MediaID,
 					DurationNS: data.DurationNS,
 				},
 			}

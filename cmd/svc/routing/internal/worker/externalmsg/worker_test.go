@@ -142,7 +142,7 @@ func TestIncomingSMS_NewUser_SMS(t *testing.T) {
 				Text: "Hello",
 				Attachments: []*excomms.MediaAttachment{
 					{
-						URL:         "http://google.com",
+						MediaID:     "http://google.com",
 						ContentType: "image/jpeg",
 					},
 				},
@@ -238,7 +238,7 @@ func TestIncomingSMS_NewUser_Email(t *testing.T) {
 				Body:    "body",
 				Attachments: []*excomms.MediaAttachment{
 					{
-						URL:         "s3://test/1234",
+						MediaID:     "s3://test/1234",
 						ContentType: "image/jpeg",
 						Name:        "Testing",
 					},
@@ -260,7 +260,7 @@ func TestIncomingSMS_NewUser_Email(t *testing.T) {
 	test.Equals(t, threadRequested.OrganizationID, organizationEntity.ID)
 	test.Equals(t, threadRequested.MessageTitle, "Email")
 	test.Equals(t, threadRequested.Text, "Subject: Hello\n\n"+pem.GetEmailItem().Body)
-	test.Equals(t, pem.GetEmailItem().Attachments[0].URL, threadRequested.Attachments[0].GetImage().URL)
+	test.Equals(t, pem.GetEmailItem().Attachments[0].MediaID, threadRequested.Attachments[0].GetImage().MediaID)
 	test.Equals(t, pem.GetEmailItem().Attachments[0].Name, threadRequested.Attachments[0].Title)
 	test.Equals(t, pem.GetEmailItem().Attachments[0].ContentType, threadRequested.Attachments[0].GetImage().Mimetype)
 
@@ -331,7 +331,7 @@ func TestIncomingEmail_ProviderOrOrgNotFound(t *testing.T) {
 				Body:    "body",
 				Attachments: []*excomms.MediaAttachment{
 					{
-						URL:         "s3://test/1234",
+						MediaID:     "s3://test/1234",
 						ContentType: "image/jpeg",
 						Name:        "Testing",
 					},
@@ -414,7 +414,7 @@ func TestIncomingSMS_ExistingUser_SMS(t *testing.T) {
 				Text: "Hello",
 				Attachments: []*excomms.MediaAttachment{
 					{
-						URL:         "http://google.com",
+						MediaID:     "s3:///us-east-1/image/aofkh",
 						ContentType: "image/jpeg",
 					},
 				},
@@ -719,7 +719,7 @@ func TestIncomingVoicemail_NewUser(t *testing.T) {
 			Incoming: &excomms.IncomingCallEventItem{
 				Type:                excomms.IncomingCallEventItem_LEFT_VOICEMAIL,
 				DurationInSeconds:   100,
-				VoicemailURL:        "http://voicemail.com",
+				VoicemailMediaID:    "s3:///us-east-1/audio/alkgh",
 				VoicemailDurationNS: 100 * 1e9,
 			},
 		},
@@ -739,7 +739,7 @@ func TestIncomingVoicemail_NewUser(t *testing.T) {
 	test.Equals(t, "", threadRequested.Text)
 	test.Equals(t, "Voicemail", threadRequested.MessageTitle)
 	test.Equals(t, pem.GetIncoming().VoicemailDurationNS, threadRequested.GetAttachments()[0].GetAudio().DurationNS)
-	test.Equals(t, pem.GetIncoming().VoicemailURL, threadRequested.GetAttachments()[0].GetAudio().URL)
+	test.Equals(t, pem.GetIncoming().VoicemailMediaID, threadRequested.GetAttachments()[0].GetAudio().MediaID)
 
 	// ensure no call to post message to thread
 	if len(mt.postMessageRequests) != 0 {

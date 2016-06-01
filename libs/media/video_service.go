@@ -16,6 +16,7 @@ type VideoMeta struct {
 	MimeType string
 	Duration time.Duration
 	Size     uint64
+	URL      string
 }
 
 // VideoService implements a media storage service.
@@ -53,13 +54,14 @@ func (s *VideoService) PutReader(id string, r io.ReadSeeker, contentType string)
 		return nil, errors.Trace(err)
 	}
 
-	_, err = s.store.PutReader(id, r, size, contentType, map[string]string{
+	url, err := s.store.PutReader(id, r, size, contentType, map[string]string{
 		durationHeader: strconv.FormatInt(duration.Nanoseconds(), 10),
 	})
 	meta := &VideoMeta{
 		MimeType: contentType,
 		Duration: duration,
 		Size:     uint64(size),
+		URL:      url,
 	}
 	return meta, errors.Trace(err)
 }
