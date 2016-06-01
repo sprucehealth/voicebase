@@ -169,8 +169,16 @@ var imageAttachmentType = graphql.NewObject(
 					if err != nil {
 						golog.Errorf("Unable to parse mediaID out of url %s.", attachment.URL)
 					}
+
+					var url string
+					if width == 0 && height == 0 {
+						url = media.URL(svc.mediaAPIDomain, mediaID)
+					} else {
+						url = media.ThumbnailURL(svc.mediaAPIDomain, mediaID, height, width, crop)
+					}
+
 					return &models.Image{
-						URL:    media.ThumbnailURL(svc.mediaAPIDomain, mediaID, height, width, crop),
+						URL:    url,
 						Width:  width,
 						Height: height,
 					}, nil
