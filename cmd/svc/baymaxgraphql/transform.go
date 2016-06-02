@@ -349,30 +349,22 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 					golog.Errorf("Unable to parse mediaID out of url %s", d.MediaID)
 				}
 
-				url := media.URL(mediaAPIDomain, mediaID)
+				a.URL = media.URL(mediaAPIDomain, mediaID)
 				duration := float64(d.DurationNS) / 1e9
 				data = &models.AudioAttachment{
 					Mimetype:          d.Mimetype,
-					URL:               url,
+					URL:               a.URL,
 					DurationInSeconds: duration,
 				}
 				// TODO
 				if a.Title == "" {
 					a.Title = "Audio"
 				}
-				a.URL = url
+
 			case threading.Attachment_IMAGE:
 				d := a.GetImage()
 				if d.Mimetype == "" { // TODO
 					d.Mimetype = "image/jpeg"
-				}
-				data = &models.ImageAttachment{
-					Mimetype: d.Mimetype,
-					URL:      d.MediaID,
-				}
-				// TODO
-				if a.Title == "" {
-					a.Title = "Photo"
 				}
 
 				mediaID, err := lmedia.ParseMediaID(d.MediaID)
@@ -380,6 +372,15 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 					golog.Errorf("Unable to parse mediaID out of url %s", d.MediaID)
 				}
 				a.URL = media.URL(mediaAPIDomain, mediaID)
+				data = &models.ImageAttachment{
+					Mimetype: d.Mimetype,
+					URL:      a.URL,
+				}
+				// TODO
+				if a.Title == "" {
+					a.Title = "Photo"
+				}
+
 			case threading.Attachment_VISIT:
 				v := a.GetVisit()
 				data = &models.BannerButtonAttachment{
@@ -390,19 +391,22 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 				}
 			case threading.Attachment_VIDEO:
 				v := a.GetVideo()
+				a.URL = media.URL(mediaAPIDomain, v.MediaID)
 				data = &models.VideoAttachment{
 					Mimetype:     v.Mimetype,
-					URL:          media.URL(mediaAPIDomain, v.MediaID),
+					URL:          a.URL,
 					ThumbnailURL: media.ThumbnailURL(mediaAPIDomain, v.MediaID, 0, 0, false),
 				}
 			case threading.Attachment_CARE_PLAN:
 				cp := a.GetCarePlan()
+				a.URL = deeplink.CarePlanURL(webDomain, item.ThreadID, cp.CarePlanID)
 				data = &models.BannerButtonAttachment{
 					Title:   cp.CarePlanName,
 					CTAText: "View Care Plan",
-					TapURL:  deeplink.CarePlanURL(webDomain, item.ThreadID, cp.CarePlanID),
+					TapURL:  a.URL,
 					IconURL: "http://spruce-static.s3.amazonaws.com/caremessenger/icon_cp@2x.png",
 				}
+
 			case threading.Attachment_GENERIC_URL:
 				d := a.GetGenericURL()
 
@@ -419,8 +423,9 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 						title = "PDF Attachment"
 					}
 
+					a.URL = media.URL(mediaAPIDomain, mediaID)
 					pdfAttachment := &bml.Anchor{
-						HREF: media.URL(mediaAPIDomain, mediaID),
+						HREF: a.URL,
 						Text: title,
 					}
 
