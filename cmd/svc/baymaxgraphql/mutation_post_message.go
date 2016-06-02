@@ -14,12 +14,14 @@ import (
 	"github.com/sprucehealth/backend/libs/bml"
 	"github.com/sprucehealth/backend/libs/caremessenger/deeplink"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/gqldecode"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/layout"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
+	"github.com/sprucehealth/graphql/gqlerrors"
 )
 
 // message
@@ -126,6 +128,31 @@ var postMessageInputType = graphql.NewInputObject(
 	},
 )
 
+type endpointInput struct {
+	Channel string `gql:"channel"`
+	ID      string `gql:"id"`
+}
+
+type attachmentInput struct {
+	Title   string `gql:"title"`
+	MediaID string `gql:"mediaID"`
+	Type    string `gql:"attachmentType,nonempty"`
+}
+
+type messageInput struct {
+	UUID         string            `gql:"uuid"`
+	Text         string            `gql:"text"`
+	Internal     bool              `gql:"internal"`
+	Destinations []endpointInput   `gql:"destinations"`
+	Attachments  []attachmentInput `gql:"attachments"`
+}
+
+type postMessageInput struct {
+	ClientMutationID string       `gql:"clientMutationId"`
+	ThreadID         string       `gql:"threadID,nonempty"`
+	Msg              messageInput `gql:"msg,nonempty"`
+}
+
 const (
 	postMessageErrorCodeThreadDoesNotExist = "THREAD_DOES_NOT_EXIST"
 	postMessageErrorCodeInternalNotAllowed = "INTERNAL_MESSAGE_NOT_ALLOWED"
@@ -181,11 +208,17 @@ var postMessageMutation = &graphql.Field{
 		acc := gqlctx.Account(ctx)
 
 		input := p.Args["input"].(map[string]interface{})
-		mutationID, _ := input["clientMutationId"].(string)
-		threadID := input["threadID"].(string)
-		msg := input["msg"].(map[string]interface{})
 
-		thr, err := ram.Thread(ctx, threadID, "")
+		var in postMessageInput
+		if err := gqldecode.Decode(input, &in); err != nil {
+			switch err := err.(type) {
+			case gqldecode.ErrValidationFailed:
+				return nil, gqlerrors.FormatError(fmt.Errorf("%s is invalid: %s", err.Field, err.Reason))
+			}
+			return nil, errors.InternalError(ctx, err)
+		}
+
+		thr, err := ram.Thread(ctx, in.ThreadID, "")
 		if err != nil {
 			switch errors.Type(err) {
 			case errors.ErrTypeNotFound:
@@ -198,8 +231,7 @@ var postMessageMutation = &graphql.Field{
 			return nil, err
 		}
 
-		isInternalMsg := msg["internal"].(bool)
-		if isInternalMsg && !allowInternalMessages(thr, acc) {
+		if in.Msg.Internal && !allowInternalMessages(thr, acc) {
 			return &postMessageOutput{
 				Success:      false,
 				ErrorCode:    postMessageErrorCodeInternalNotAllowed,
@@ -234,10 +266,8 @@ var postMessageMutation = &graphql.Field{
 			}
 		}
 
-		text := msg["text"].(string)
-
 		// Parse text and render as plain text so we can build a summary.
-		textBML, err := bml.Parse(text)
+		textBML, err := bml.Parse(in.Msg.Text)
 		if e, ok := err.(bml.ErrParseFailure); ok {
 			return nil, fmt.Errorf("failed to parse text at pos %d: %s", e.Offset, e.Reason)
 		} else if err != nil {
@@ -265,22 +295,13 @@ var postMessageMutation = &graphql.Field{
 		// Need to track the care plans so we can flag them as submitted after posting
 		var carePlans []*care.CarePlan
 
-		var msgAttachments []interface{}
-		if mas, ok := msg["attachments"]; ok {
-			msgAttachments = mas.([]interface{})
-		}
-		attachments := make([]*threading.Attachment, len(msgAttachments))
-		for i, ma := range msgAttachments {
-			mAttachment, _ := ma.(map[string]interface{})
-			mAttachmentType, err := attachmentTypeEnumAsThreadingEnum(mAttachment["attachmentType"].(string))
+		attachments := make([]*threading.Attachment, len(in.Msg.Attachments))
+		for i, mAttachment := range in.Msg.Attachments {
+			mAttachmentType, err := attachmentTypeEnumAsThreadingEnum(mAttachment.Type)
 			if err != nil {
 				return nil, err
 			}
 			// TODO: Verify that the media at the ID exists
-			var title string
-			if _, ok := mAttachment["title"]; ok {
-				title = mAttachment["title"].(string)
-			}
 			var attachment *threading.Attachment
 			switch mAttachmentType {
 			case threading.Attachment_VISIT:
@@ -291,7 +312,7 @@ var postMessageMutation = &graphql.Field{
 
 				// ensure that the visit layout exists from which to create a visit
 				visitLayoutRes, err := ram.VisitLayout(ctx, &layout.GetVisitLayoutRequest{
-					ID: mAttachment["mediaID"].(string),
+					ID: mAttachment.MediaID,
 				})
 				if err != nil {
 					return nil, err
@@ -327,7 +348,7 @@ var postMessageMutation = &graphql.Field{
 				}
 
 				// Make sure the care plan exists, the poster has access to it, and it hasn't yet been submitted
-				cp, err := ram.CarePlan(ctx, mAttachment["mediaID"].(string))
+				cp, err := ram.CarePlan(ctx, mAttachment.MediaID)
 				if err != nil {
 					return nil, err
 				}
@@ -352,13 +373,13 @@ var postMessageMutation = &graphql.Field{
 					},
 				}
 			case threading.Attachment_IMAGE:
-				info, err := ram.MediaInfo(ctx, mAttachment["mediaID"].(string))
+				info, err := ram.MediaInfo(ctx, mAttachment.MediaID)
 				if err != nil {
-					return nil, fmt.Errorf("Error while locating media info for %s: %s", mAttachment["mediaID"].(string), err)
+					return nil, fmt.Errorf("Error while locating media info for %s: %s", mAttachment.MediaID, err)
 				}
 				attachment = &threading.Attachment{
 					Type:  mAttachmentType,
-					Title: title,
+					Title: mAttachment.Title,
 					URL:   info.ID,
 					Data: &threading.Attachment_Image{
 						Image: &threading.ImageAttachment{
@@ -368,13 +389,13 @@ var postMessageMutation = &graphql.Field{
 					},
 				}
 			case threading.Attachment_VIDEO:
-				info, err := ram.MediaInfo(ctx, mAttachment["mediaID"].(string))
+				info, err := ram.MediaInfo(ctx, mAttachment.MediaID)
 				if err != nil {
-					return nil, fmt.Errorf("Error while locating media info for %s: %s", mAttachment["mediaID"].(string), err)
+					return nil, fmt.Errorf("Error while locating media info for %s: %s", mAttachment.MediaID, err)
 				}
 				attachment = &threading.Attachment{
 					Type:  mAttachmentType,
-					Title: title,
+					Title: mAttachment.Title,
 					URL:   info.ID,
 					Data: &threading.Attachment_Video{
 						Video: &threading.VideoAttachment{
@@ -391,9 +412,9 @@ var postMessageMutation = &graphql.Field{
 		}
 
 		req := &threading.PostMessageRequest{
-			ThreadID:     threadID,
-			Text:         text,
-			Internal:     isInternalMsg,
+			ThreadID:     in.ThreadID,
+			Text:         in.Msg.Text,
+			Internal:     in.Msg.Internal,
 			FromEntityID: ent.ID,
 			Source: &threading.Endpoint{
 				Channel: threading.Endpoint_APP,
@@ -401,15 +422,14 @@ var postMessageMutation = &graphql.Field{
 			},
 			Summary:     summary,
 			Attachments: attachments,
+			UUID:        in.Msg.UUID,
 		}
 
 		if primaryEntity == nil || primaryEntity.Type == directory.EntityType_ORGANIZATION {
 			req.Internal = false
 		}
 
-		dests, _ := msg["destinations"].([]interface{})
-
-		title, err := buildMessageTitleBasedOnDestinations(req, dests, thr, ent, primaryEntity)
+		title, err := buildMessageTitleBasedOnDestinations(req, in.Msg.Destinations, thr, ent, primaryEntity)
 		if err != nil {
 			return nil, err
 		}
@@ -425,11 +445,6 @@ var postMessageMutation = &graphql.Field{
 					break
 				}
 			}
-		}
-
-		uuid, ok := msg["uuid"].(string)
-		if ok {
-			req.UUID = uuid
 		}
 
 		titleStr, err := title.Format()
@@ -474,7 +489,7 @@ var postMessageMutation = &graphql.Field{
 			return nil, errors.InternalError(ctx, err)
 		}
 		return &postMessageOutput{
-			ClientMutationID: mutationID,
+			ClientMutationID: in.ClientMutationID,
 			Success:          true,
 			ItemEdge:         &Edge{Node: it, Cursor: ConnectionCursor(pmres.Item.ID)},
 			Thread:           th,
@@ -484,7 +499,7 @@ var postMessageMutation = &graphql.Field{
 
 func buildMessageTitleBasedOnDestinations(
 	req *threading.PostMessageRequest,
-	dests []interface{},
+	dests []endpointInput,
 	thr *threading.Thread,
 	fromEntity, primaryEntity *directory.Entity,
 ) (bml.BML, error) {
@@ -495,12 +510,9 @@ func buildMessageTitleBasedOnDestinations(
 	if isExternal && len(dests) != 0 {
 		destSet := make(map[string]struct{}, len(dests))
 		for _, d := range dests {
-			endpoint, _ := d.(map[string]interface{})
-			endpointChannel, _ := endpoint["channel"].(string)
-			endpointID, _ := endpoint["id"].(string)
 			var ct directory.ContactType
 			var ec threading.Endpoint_Channel
-			switch endpointChannel {
+			switch d.Channel {
 			case models.EndpointChannelEmail:
 				ct = directory.ContactType_EMAIL
 				ec = threading.Endpoint_EMAIL
@@ -508,12 +520,12 @@ func buildMessageTitleBasedOnDestinations(
 				ct = directory.ContactType_PHONE
 				ec = threading.Endpoint_SMS
 			default:
-				return nil, fmt.Errorf("unsupported destination endpoint channel %q", endpointChannel)
+				return nil, fmt.Errorf("unsupported destination endpoint channel %q", d.Channel)
 			}
 			var e *threading.Endpoint
 			// Assert that the provided destination matches one of the contacts for the primary entity on the thread
 			for _, c := range primaryEntity.Contacts {
-				if c.ContactType == ct && c.Value == endpointID {
+				if c.ContactType == ct && c.Value == d.ID {
 					e = &threading.Endpoint{
 						Channel: ec,
 						ID:      c.Value,
@@ -522,7 +534,7 @@ func buildMessageTitleBasedOnDestinations(
 				}
 			}
 			if e == nil {
-				return nil, fmt.Errorf("The provided destination contact info does not belong to the primary entity for this thread: %q, %q", endpointChannel, endpointID)
+				return nil, fmt.Errorf("The provided destination contact info does not belong to the primary entity for this thread: %q, %q", d.Channel, d.ID)
 			}
 			req.Destinations = append(req.Destinations, e)
 			switch e.Channel {

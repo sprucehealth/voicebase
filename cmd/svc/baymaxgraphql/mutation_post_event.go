@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/sprucehealth/backend/libs/gqldecode"
 	"strings"
 
 	"github.com/segmentio/analytics-go"
@@ -51,6 +52,18 @@ var postEventOutputType = graphql.NewObject(graphql.ObjectConfig{
 	},
 })
 
+type postEventInput struct {
+	ClientMutationID string                    `gql:"clientMutationId"`
+	UUID             string                    `gql:"uuid"`
+	EventName        string                    `gql:"eventName"`
+	Attributes       []postEventAttributeInput `gql:"attributes"`
+}
+
+type postEventAttributeInput struct {
+	Key   string `gql:"key"`
+	Value string `gql:"value"`
+}
+
 type postEventOutput struct {
 	ClientMutationID string `json:"clientMutationId,omitempty"`
 	Success          bool   `json:"success"`
@@ -69,26 +82,23 @@ var postEventMutation = &graphql.Field{
 		ctx := p.Context
 
 		input := p.Args["input"].(map[string]interface{})
-		mutationID, _ := input["clientMutationId"].(string)
-		eventName := input["eventName"].(string)
-		attrsIn, _ := input["attributes"].([]interface{})
-		attrs := make(map[string]string, len(attrsIn))
-		for _, aIn := range attrsIn {
-			att, _ := aIn.(map[string]interface{})
-			key, _ := att["key"].(string)
-			value, _ := att["value"].(string)
-			if key != "" && value != "" {
-				attrs[strings.ToLower(key)] = value
-			}
+		var in postEventInput
+		if err := gqldecode.Decode(input, &in); err != nil {
+			return nil, errors.InternalError(ctx, err)
 		}
 
-		if strings.HasPrefix(eventName, "setup_") {
+		if strings.HasPrefix(in.EventName, "setup_") {
 			acc := gqlctx.Account(ctx)
 			if acc == nil || acc.Type != auth.AccountType_PROVIDER {
 				return nil, errors.ErrNotAuthenticated(ctx)
 			}
 
-			orgID := attrs["org_id"]
+			var orgID string
+			for _, at := range in.Attributes {
+				if at.Key == "org_id" {
+					orgID = at.Value
+				}
+			}
 			var ent *directory.Entity
 			if orgID == "" {
 				// TODO: for now support the event not including the orgID, eventually this shouldn't be necessary
@@ -120,7 +130,6 @@ var postEventMutation = &graphql.Field{
 					}
 				}
 			} else {
-
 				e, err := entityInOrgForAccountID(ctx, ram, orgID, acc)
 				if err != nil {
 					return nil, errors.InternalError(ctx, err)
@@ -131,18 +140,21 @@ var postEventMutation = &graphql.Field{
 				golog.Warningf("No entity found for account %s", acc.ID)
 				// Nothing to do but no real reason to return an error
 				return &postEventOutput{
-					ClientMutationID: mutationID,
+					ClientMutationID: in.ClientMutationID,
 					Success:          true,
 				}, nil
 			}
 
-			segmentProps := make(map[string]interface{}, len(attrsIn)+1)
-			eventAttr := make([]*threading.KeyValue, 0, len(attrsIn))
-			for k, v := range attrs {
-				eventAttr = append(eventAttr, &threading.KeyValue{Key: k, Value: v})
-				segmentProps[k] = v
+			segmentProps := make(map[string]interface{}, len(in.Attributes)+1)
+			eventAttr := make([]*threading.KeyValue, 0, len(in.Attributes))
+			for _, at := range in.Attributes {
+				at.Key = strings.ToLower(strings.TrimSpace(at.Key))
+				if at.Key != "" && at.Value != "" {
+					eventAttr = append(eventAttr, &threading.KeyValue{Key: at.Key, Value: at.Value})
+					segmentProps[at.Key] = at.Value
+				}
 			}
-			segmentProps["name"] = eventName
+			segmentProps["name"] = in.EventName
 			conc.Go(func() {
 				svc.segmentio.Track(&analytics.Track{
 					Event:      "generic_event",
@@ -158,7 +170,7 @@ var postEventMutation = &graphql.Field{
 				EventType: threading.OnboardingThreadEventRequest_GENERIC_SETUP,
 				Event: &threading.OnboardingThreadEventRequest_GenericSetup{
 					GenericSetup: &threading.GenericSetupEvent{
-						Name:       eventName,
+						Name:       in.EventName,
 						Attributes: eventAttr,
 					},
 				},
@@ -169,7 +181,7 @@ var postEventMutation = &graphql.Field{
 		}
 
 		return &postEventOutput{
-			ClientMutationID: mutationID,
+			ClientMutationID: in.ClientMutationID,
 			Success:          true,
 		}, nil
 	},
