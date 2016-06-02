@@ -390,11 +390,10 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 				}
 			case threading.Attachment_VIDEO:
 				v := a.GetVideo()
-				duration := float64(v.DurationNS) / 1e9
 				data = &models.VideoAttachment{
-					Mimetype:          v.Mimetype,
-					URL:               v.MediaID,
-					DurationInSeconds: duration,
+					Mimetype:     v.Mimetype,
+					URL:          media.URL(mediaAPIDomain, v.MediaID),
+					ThumbnailURL: media.ThumbnailURL(mediaAPIDomain, v.MediaID, 0, 0, false),
 				}
 			case threading.Attachment_CARE_PLAN:
 				cp := a.GetCarePlan()

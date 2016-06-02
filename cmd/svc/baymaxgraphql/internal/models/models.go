@@ -157,10 +157,9 @@ type ImageAttachment struct {
 }
 
 type VideoAttachment struct {
-	Mimetype          string  `json:"mimetype"`
-	URL               string  `json:"url"`
-	ThumbURL          string  `json:"thumbURL"`
-	DurationInSeconds float64 `json:"durationInSeconds"`
+	Mimetype     string `json:"mimetype"`
+	URL          string `json:"url"`
+	ThumbnailURL string `json:"thumbnailURL"`
 }
 
 type BannerButtonAttachment struct {

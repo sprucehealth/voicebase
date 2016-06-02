@@ -196,10 +196,9 @@ var videoAttachmentType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "VideoAttachment",
 		Fields: graphql.Fields{
-			"mimetype":          &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-			"url":               &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-			"thumbURL":          &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-			"durationInSeconds": &graphql.Field{Type: graphql.NewNonNull(graphql.Float)},
+			"mimetype":     &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"url":          &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"thumbnailURL": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 			_, ok := value.(*models.VideoAttachment)
