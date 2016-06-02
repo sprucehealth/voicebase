@@ -27,7 +27,7 @@ func TestCreateCarePlan(t *testing.T) {
 	t.Parallel()
 	dl := dalmock.New(t)
 	defer dl.Finish()
-	srv := New(dl, nil, nil, nil, nil, clock.New())
+	srv := New(dl, nil, nil, nil, nil, nil, clock.New())
 
 	cpID, err := models.NewCarePlanID()
 	test.OK(t, err)
@@ -153,7 +153,7 @@ func TestCreateCarePlan(t *testing.T) {
 func TestSearchMedications(t *testing.T) {
 	t.Parallel()
 	dsMock := dosespotmock.New(t)
-	srv := New(nil, nil, nil, nil, dsMock, clock.New())
+	srv := New(nil, nil, nil, nil, nil, dsMock, clock.New())
 
 	dsMock.Expect(mock.NewExpectation(dsMock.GetDrugNamesForDoctor, int64(123), "tret").WithReturns(
 		[]string{"Tretinoin Topical (topical - cream)", "Tretinoin Topical (topical - gel)"}, nil))
@@ -267,7 +267,7 @@ func TestSearchMedications(t *testing.T) {
 func TestSelfReportedMedicationsSearch(t *testing.T) {
 	t.Parallel()
 	dsMock := dosespotmock.New(t)
-	srv := New(nil, nil, nil, nil, dsMock, clock.New())
+	srv := New(nil, nil, nil, nil, nil, dsMock, clock.New())
 
 	dsMock.Expect(mock.NewExpectation(dsMock.GetDrugNamesForPatient, "Advil").WithReturns(
 		[]string{
@@ -293,7 +293,7 @@ func TestSelfReportedMedicationsSearch(t *testing.T) {
 func TestAllergyMedicationsSearch(t *testing.T) {
 	t.Parallel()
 	dsMock := dosespotmock.New(t)
-	srv := New(nil, nil, nil, nil, dsMock, clock.New())
+	srv := New(nil, nil, nil, nil, nil, dsMock, clock.New())
 
 	dsMock.Expect(mock.NewExpectation(dsMock.SearchForAllergyRelatedMedications, "Advil").WithReturns(
 		[]string{
@@ -331,7 +331,7 @@ func TestTriageVisit(t *testing.T) {
 		TriagedTime: ptr.Time(mclk.Now()),
 	}).WithReturns(int64(1), nil))
 
-	srv := New(dalMock, nil, nil, nil, nil, mclk)
+	srv := New(dalMock, nil, nil, nil, nil, nil, mclk)
 
 	_, err = srv.TriageVisit(context.Background(), &care.TriageVisitRequest{
 		VisitID: visitID.String(),

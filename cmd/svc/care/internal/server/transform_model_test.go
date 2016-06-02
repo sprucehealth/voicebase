@@ -5,10 +5,32 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/client"
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/models"
+	"github.com/sprucehealth/backend/libs/testhelpers/mock"
+	"github.com/sprucehealth/backend/svc/media"
+	mediamock "github.com/sprucehealth/backend/svc/media/mock"
 	"github.com/sprucehealth/backend/test"
 )
 
 func TestTransformToModel_MediaSection(t *testing.T) {
+
+	mmock := mediamock.New(t)
+	defer mmock.Finish()
+
+	mmock.Expect(mock.NewExpectation(mmock.MediaInfos, &media.MediaInfosRequest{
+		MediaIDs: []string{"PhotoID1"},
+	}).WithReturns(&media.MediaInfosResponse{
+		MediaInfos: map[string]*media.MediaInfo{
+			"PhotoID1": &media.MediaInfo{
+				ID:       "PhotoID1",
+				URL:      "photo1.url",
+				ThumbURL: "thumbnail1.url",
+				MIME: &media.MIME{
+					Type: "image",
+				},
+			},
+		},
+	}, nil))
+
 	a, err := transformAnswerToModel("10", &client.MediaQuestionAnswer{
 		Type: "q_type_media_section",
 		Sections: []*client.MediaSectionItem{
@@ -23,7 +45,7 @@ func TestTransformToModel_MediaSection(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, mmock)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -39,7 +61,7 @@ func TestTransformToModel_MediaSection(t *testing.T) {
 						Name:    "SlotName",
 						SlotID:  "SlotID1",
 						MediaID: "PhotoID1",
-						Type:    "photo",
+						Type:    models.MediaType_IMAGE,
 					},
 				},
 			},
@@ -48,10 +70,13 @@ func TestTransformToModel_MediaSection(t *testing.T) {
 }
 
 func TestTransformModel_FreeText(t *testing.T) {
+	mmock := mediamock.New(t)
+	defer mmock.Finish()
+
 	a, err := transformAnswerToModel("10", &client.FreeTextQuestionAnswer{
 		Type: "q_type_free_text",
 		Text: "hello",
-	})
+	}, mmock)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,10 +86,13 @@ func TestTransformModel_FreeText(t *testing.T) {
 }
 
 func TestTransformModel_SingleEntry(t *testing.T) {
+	mmock := mediamock.New(t)
+	defer mmock.Finish()
+
 	a, err := transformAnswerToModel("10", &client.SingleEntryQuestionAnswer{
 		Type: "q_type_single_entry",
 		Text: "hello",
-	})
+	}, mmock)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -75,13 +103,16 @@ func TestTransformModel_SingleEntry(t *testing.T) {
 }
 
 func TestTransformModel_SingleSelect(t *testing.T) {
+	mmock := mediamock.New(t)
+	defer mmock.Finish()
+
 	a, err := transformAnswerToModel("10", &client.SingleSelectQuestionAnswer{
 		Type: "q_type_single_select",
 		PotentialAnswer: &client.PotentialAnswerItem{
 			ID:   "100",
 			Text: "hello",
 		},
-	})
+	}, mmock)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -94,6 +125,9 @@ func TestTransformModel_SingleSelect(t *testing.T) {
 }
 
 func TestTransformModel_MultipleChoice(t *testing.T) {
+	mmock := mediamock.New(t)
+	defer mmock.Finish()
+
 	a, err := transformAnswerToModel("10", &client.MultipleChoiceQuestionAnswer{
 		Type: "q_type_multiple_choice",
 		PotentialAnswers: []*client.PotentialAnswerItem{
@@ -119,7 +153,7 @@ func TestTransformModel_MultipleChoice(t *testing.T) {
 				Text: "hello2",
 			},
 		},
-	})
+	}, mmock)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -162,6 +196,9 @@ func TestTransformModel_MultipleChoice(t *testing.T) {
 }
 
 func TestTransformModel_Autocomplete(t *testing.T) {
+	mmock := mediamock.New(t)
+	defer mmock.Finish()
+
 	a, err := transformAnswerToModel("10", &client.AutocompleteQuestionAnswer{
 		Type: "q_type_multiple_choice",
 		Answers: []*client.AutocompleteItem{
@@ -185,7 +222,7 @@ func TestTransformModel_Autocomplete(t *testing.T) {
 				Text: "hello2",
 			},
 		},
-	})
+	}, mmock)
 	if err != nil {
 		t.Fatal(err)
 	}

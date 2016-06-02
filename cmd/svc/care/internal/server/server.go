@@ -19,6 +19,7 @@ import (
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/layout"
+	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/settings"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -32,16 +33,18 @@ type server struct {
 	dal         dal.DAL
 	layout      layout.LayoutClient
 	settings    settings.SettingsClient
+	media       media.MediaClient
 	doseSpot    dosespot.API
 	clk         clock.Clock
 }
 
-func New(dal dal.DAL, layoutClient layout.LayoutClient, settingsClient settings.SettingsClient, layoutStore layout.Storage, doseSpotClient dosespot.API, clk clock.Clock) care.CareServer {
+func New(dal dal.DAL, layoutClient layout.LayoutClient, settingsClient settings.SettingsClient, mediaClient media.MediaClient, layoutStore layout.Storage, doseSpotClient dosespot.API, clk clock.Clock) care.CareServer {
 	return &server{
 		layoutStore: layoutStore,
 		dal:         dal,
 		layout:      layoutClient,
 		settings:    settingsClient,
+		media:       mediaClient,
 		doseSpot:    doseSpotClient,
 		clk:         clk,
 	}
@@ -252,7 +255,7 @@ func (s *server) CreateVisitAnswers(ctx context.Context, in *care.CreateVisitAns
 	transformedAnswers := make([]*models.Answer, 0, len(visitAnswers.Answers))
 	for questionID, answer := range visitAnswers.Answers {
 
-		transformedAnswer, err := transformAnswerToModel(questionID, answer)
+		transformedAnswer, err := transformAnswerToModel(questionID, answer, s.media)
 		if err != nil {
 			return nil, grpcErrorf(codes.Internal, err.Error())
 		}
@@ -327,7 +330,7 @@ func (s *server) GetAnswersForVisit(ctx context.Context, in *care.GetAnswersForV
 	if in.SerializedForPatient {
 		transformedAnswerMap := make(map[string]client.Answer, len(answerMap))
 		for questionID, answer := range answerMap {
-			transformedAnswerMap[questionID], err = transformAnswerModelToResponse(answer)
+			transformedAnswerMap[questionID], err = transformAnswerModelToResponse(answer, s.media)
 			if err != nil {
 				return nil, grpcErrorf(codes.Internal, err.Error())
 			}
@@ -345,7 +348,7 @@ func (s *server) GetAnswersForVisit(ctx context.Context, in *care.GetAnswersForV
 
 	transformedAnswerMap := make(map[string]*care.Answer, len(answerMap))
 	for questionID, answer := range answerMap {
-		transformedAnswerMap[questionID], err = transformAnswerModelToSVCResponse(answer)
+		transformedAnswerMap[questionID], err = transformAnswerModelToSVCResponse(answer, s.media)
 		if err != nil {
 			return nil, grpcErrorf(codes.Internal, err.Error())
 		}

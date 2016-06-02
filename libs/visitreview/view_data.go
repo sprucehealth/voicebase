@@ -16,6 +16,7 @@ type MediaData struct {
 	Title          string `json:"title"`
 	MediaID        string `json:"media_id"`
 	URL            string `json:"url"`
+	ThumbnailURL   string `json:"thumbnail_url,omitempty"`
 	Type           string `json:"type"`
 	PlaceholderURL string `json:"placeholder_url"`
 }

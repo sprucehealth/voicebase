@@ -3,13 +3,33 @@ package server
 import (
 	"testing"
 
-	"github.com/sprucehealth/backend/test"
-
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/client"
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/models"
+	"github.com/sprucehealth/backend/libs/testhelpers/mock"
+	"github.com/sprucehealth/backend/svc/media"
+	mediamock "github.com/sprucehealth/backend/svc/media/mock"
+	"github.com/sprucehealth/backend/test"
 )
 
 func TestTransformToResponse_MediaSection(t *testing.T) {
+	mmock := mediamock.New(t)
+	defer mmock.Finish()
+
+	mmock.Expect(mock.NewExpectation(mmock.MediaInfos, &media.MediaInfosRequest{
+		MediaIDs: []string{"PhotoID1"},
+	}).WithReturns(&media.MediaInfosResponse{
+		MediaInfos: map[string]*media.MediaInfo{
+			"PhotoID1": &media.MediaInfo{
+				ID:       "PhotoID1",
+				URL:      "photo1.url",
+				ThumbURL: "thumbnail1.url",
+				MIME: &media.MIME{
+					Type: "image",
+				},
+			},
+		},
+	}, nil))
+
 	a, err := transformAnswerModelToResponse(&models.Answer{
 		Type:       "q_type_media_section",
 		QuestionID: "10",
@@ -23,14 +43,14 @@ func TestTransformToResponse_MediaSection(t *testing.T) {
 								Name:    "SlotName",
 								SlotID:  "SlotID1",
 								MediaID: "PhotoID1",
-								Type:    "photo",
+								Type:    models.MediaType_IMAGE,
 							},
 						},
 					},
 				},
 			},
 		},
-	})
+	}, mmock)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,11 +62,12 @@ func TestTransformToResponse_MediaSection(t *testing.T) {
 				Name: "SectionName",
 				Slots: []*client.MediaSlotItem{
 					{
-						Name:    "SlotName",
-						SlotID:  "SlotID1",
-						MediaID: "PhotoID1",
-						URL:     "https://placekitten.com/600/800",
-						Type:    "photo",
+						Name:         "SlotName",
+						SlotID:       "SlotID1",
+						MediaID:      "PhotoID1",
+						URL:          "photo1.url",
+						ThumbnailURL: "thumbnail1.url",
+						Type:         "image",
 					},
 				},
 			},
@@ -55,6 +76,9 @@ func TestTransformToResponse_MediaSection(t *testing.T) {
 }
 
 func TestTransformToResponse_FreeText(t *testing.T) {
+	mmock := mediamock.New(t)
+	defer mmock.Finish()
+
 	a, err := transformAnswerModelToResponse(&models.Answer{
 		Type:       "q_type_free_text",
 		QuestionID: "10",
@@ -63,7 +87,7 @@ func TestTransformToResponse_FreeText(t *testing.T) {
 				FreeText: "hello",
 			},
 		},
-	})
+	}, mmock)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -75,6 +99,9 @@ func TestTransformToResponse_FreeText(t *testing.T) {
 }
 
 func TestTransformToResponse_SingleEntry(t *testing.T) {
+	mmock := mediamock.New(t)
+	defer mmock.Finish()
+
 	a, err := transformAnswerModelToResponse(&models.Answer{
 		Type:       "q_type_single_entry",
 		QuestionID: "10",
@@ -83,7 +110,7 @@ func TestTransformToResponse_SingleEntry(t *testing.T) {
 				FreeText: "hello",
 			},
 		},
-	})
+	}, mmock)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -95,6 +122,9 @@ func TestTransformToResponse_SingleEntry(t *testing.T) {
 }
 
 func TestTransformToResponse_SingleSelect(t *testing.T) {
+	mmock := mediamock.New(t)
+	defer mmock.Finish()
+
 	a, err := transformAnswerModelToResponse(&models.Answer{
 		Type:       "q_type_single_select",
 		QuestionID: "10",
@@ -106,7 +136,7 @@ func TestTransformToResponse_SingleSelect(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, mmock)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -121,6 +151,9 @@ func TestTransformToResponse_SingleSelect(t *testing.T) {
 }
 
 func TestTransformToResponse_MultipleChoice(t *testing.T) {
+	mmock := mediamock.New(t)
+	defer mmock.Finish()
+
 	a, err := transformAnswerModelToResponse(&models.Answer{
 		Type:       "q_type_multiple_choice",
 		QuestionID: "10",
@@ -162,7 +195,7 @@ func TestTransformToResponse_MultipleChoice(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, mmock)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -197,6 +230,9 @@ func TestTransformToResponse_MultipleChoice(t *testing.T) {
 }
 
 func TestTransformToResponse_AutoComplete(t *testing.T) {
+	mmock := mediamock.New(t)
+	defer mmock.Finish()
+
 	a, err := transformAnswerModelToResponse(&models.Answer{
 		Type:       "q_type_autocomplete",
 		QuestionID: "10",
@@ -236,7 +272,7 @@ func TestTransformToResponse_AutoComplete(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, mmock)
 	if err != nil {
 		t.Fatal(err)
 	}

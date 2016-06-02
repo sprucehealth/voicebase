@@ -90,6 +90,13 @@ message AutocompleteAnswer {
   repeated AutocompleteAnswerItem items = 1;
 }
 
+// MediaType represents the type of media for an object.
+enum MediaType {
+	MEDIA_TYPE_UNKNOWN = 0;
+	IMAGE = 1;
+	VIDEO = 2;
+}
+
 // MediaSectionAnswer represents a series of media items pertaining to a question.
 message MediaSectionAnswer {
   message MediaSectionItem {
@@ -98,7 +105,8 @@ message MediaSectionAnswer {
         string name = 2;
         string media_id = 3 [(gogoproto.customname) = "MediaID"];
 				string url = 4 [(gogoproto.customname) = "URL"];
-				string type = 5;
+				MediaType type = 5;
+				string thumbnail_url = 6 [(gogoproto.customname) = "ThumbnailURL"];
     }
 
     string name = 1;

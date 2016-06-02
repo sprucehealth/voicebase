@@ -3,37 +3,55 @@ package server
 import (
 	"fmt"
 
+	"golang.org/x/net/context"
+
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/models"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/svc/care"
+	"github.com/sprucehealth/backend/svc/layout"
+	"github.com/sprucehealth/backend/svc/media"
 )
 
-type answerModelToSVCResponseTransformerFunc func(answer *models.Answer) (*care.Answer, error)
-
-var answerModelToSVCResponseTransformers map[string]answerModelToSVCResponseTransformerFunc
-
-func init() {
-	answerModelToSVCResponseTransformers = map[string]answerModelToSVCResponseTransformerFunc{
-		"q_type_media_section":     transformMediaSectionToSVCResponse,
-		"q_type_free_text":         transformFreeTextAnswerToSVCResponse,
-		"q_type_single_entry":      transformSingleEntryAnswerToSVCResponse,
-		"q_type_single_select":     transformSingleSelectAnswerToSVCResponse,
-		"q_type_segmented_control": transformSegmentedControlAnswerToSVCResponse,
-		"q_type_multiple_choice":   transformMultipleChoiceAnswerToSVCResponse,
-		"q_type_autocomplete":      transformAutocompleteAnswerToSVCResponse,
-	}
+type answerModelToSVCResponseTransformer interface {
+	transform(answer *models.Answer) (*care.Answer, error)
 }
 
-func transformAnswerModelToSVCResponse(answer *models.Answer) (*care.Answer, error) {
-	transformFunc, ok := answerModelToSVCResponseTransformers[answer.Type]
-	if !ok {
-		return nil, errors.Trace(fmt.Errorf("unable to find a response transformer for answer type %s", answer.Type))
+func transformAnswerModelToSVCResponse(answer *models.Answer, mediaClient media.MediaClient) (*care.Answer, error) {
+	var t answerModelToSVCResponseTransformer
+
+	switch answer.Type {
+	case layout.QuestionTypeMediaSection:
+		t = &mediaSectionToSVCResponseTransformer{
+			mediaClient: mediaClient,
+		}
+	case layout.QuestionTypeFreeText:
+		t = &freeTextAnswerToSVCResponseTransformer{}
+	case layout.QuestionTypeSingleEntry:
+		t = &singleEntryToSVCResponseTransfomer{}
+	case layout.QuestionTypeSingleSelect:
+		t = &singleSelectToSVCResponseTransformer{}
+	case layout.QuestionTypeMultipleChoice:
+		t = &multipleChoiceToSVCResponseTransformer{
+			mediaClient: mediaClient,
+		}
+	case layout.QuestionTypeSegmentedControl:
+		t = &segmentedControlToSVCResponseTransformer{}
+	case layout.QuestionTypeAutoComplete:
+		t = &autocompleteAnswerTOSVCResponseTransformer{
+			mediaClient: mediaClient,
+		}
+	default:
+		return nil, errors.Trace(fmt.Errorf("cannot find transformer for answer of type %s for question %s", answer.Type, answer.QuestionID))
 	}
 
-	return transformFunc(answer)
+	return t.transform(answer)
 }
 
-func transformMediaSectionToSVCResponse(answer *models.Answer) (*care.Answer, error) {
+type mediaSectionToSVCResponseTransformer struct {
+	mediaClient media.MediaClient
+}
+
+func (m *mediaSectionToSVCResponseTransformer) transform(answer *models.Answer) (*care.Answer, error) {
 	if answer.GetMediaSection() == nil {
 		return nil, errors.Trace(fmt.Errorf("expected media section to be populated for answer but it wasnt"))
 	}
@@ -47,6 +65,8 @@ func transformMediaSectionToSVCResponse(answer *models.Answer) (*care.Answer, er
 		},
 	}
 
+	mediaIDs := make([]string, len(answer.GetMediaSection().Sections)*3)
+	slotMap := make(map[string]*care.MediaSectionAnswer_MediaSectionItem_MediaSlotItem)
 	for i, mediaSection := range answer.GetMediaSection().Sections {
 		mediaSectionAnswer.GetMediaSection().Sections[i] = &care.MediaSectionAnswer_MediaSectionItem{
 			Name:  mediaSection.Name,
@@ -58,15 +78,50 @@ func transformMediaSectionToSVCResponse(answer *models.Answer) (*care.Answer, er
 				Name:    mediaSlot.Name,
 				SlotID:  mediaSlot.SlotID,
 				MediaID: mediaSlot.MediaID,
-				URL:     "https://placekitten.com/600/800", //TODO
-				Type:    mediaSlot.Type,
 			}
+			mediaIDs = append(mediaIDs, mediaSlot.MediaID)
+			slotMap[mediaSlot.MediaID] = mediaSectionAnswer.GetMediaSection().Sections[i].Slots[j]
 		}
 	}
+
+	res, err := m.mediaClient.MediaInfos(context.Background(), &media.MediaInfosRequest{
+		MediaIDs: mediaIDs,
+	})
+	if err != nil {
+		return nil, errors.Trace(fmt.Errorf("Unable to get media info for answer to question %s: %s", answer.QuestionID, err))
+	}
+
+	for _, mediaInfo := range res.MediaInfos {
+		mediaSlot, ok := slotMap[mediaInfo.ID]
+		if !ok {
+			return nil, errors.Trace(fmt.Errorf("Unable to find slot that media %s maps to for answer to question %s", mediaInfo.ID, answer.QuestionID))
+		}
+		mediaSlot.URL = mediaInfo.URL
+		mediaSlot.ThumbnailURL = mediaInfo.ThumbURL
+		var mediaType care.MediaType
+		switch mediaInfo.MIME.Type {
+		case "image":
+			mediaType = care.MediaType_IMAGE
+		case "video":
+			mediaType = care.MediaType_VIDEO
+		default:
+			return nil, errors.Trace(fmt.Errorf("Unknown media type for %s", mediaInfo.ID))
+		}
+		mediaSlot.Type = mediaType
+		delete(slotMap, mediaInfo.ID)
+	}
+
+	// there should be no slot left for which we were unable to find the media object
+	if len(slotMap) > 0 {
+		return nil, errors.Trace(fmt.Errorf("mediaIDs not found for %+v for question %s", slotMap, answer.QuestionID))
+	}
+
 	return mediaSectionAnswer, nil
 }
 
-func transformFreeTextAnswerToSVCResponse(answer *models.Answer) (*care.Answer, error) {
+type freeTextAnswerToSVCResponseTransformer struct{}
+
+func (f *freeTextAnswerToSVCResponseTransformer) transform(answer *models.Answer) (*care.Answer, error) {
 	if answer.GetFreeText() == nil {
 		return nil, errors.Trace(fmt.Errorf("expected free text answer to be populated for answer but it wasnt"))
 	}
@@ -81,7 +136,9 @@ func transformFreeTextAnswerToSVCResponse(answer *models.Answer) (*care.Answer, 
 	}, nil
 }
 
-func transformSingleEntryAnswerToSVCResponse(answer *models.Answer) (*care.Answer, error) {
+type singleEntryToSVCResponseTransfomer struct{}
+
+func (s *singleEntryToSVCResponseTransfomer) transform(answer *models.Answer) (*care.Answer, error) {
 	if answer.GetSingleEntry() == nil {
 		return nil, errors.Trace(fmt.Errorf("expected single entry answer to be populated for answer but it wasnt"))
 	}
@@ -96,7 +153,9 @@ func transformSingleEntryAnswerToSVCResponse(answer *models.Answer) (*care.Answe
 	}, nil
 }
 
-func transformSingleSelectAnswerToSVCResponse(answer *models.Answer) (*care.Answer, error) {
+type singleSelectToSVCResponseTransformer struct{}
+
+func (s *singleSelectToSVCResponseTransformer) transform(answer *models.Answer) (*care.Answer, error) {
 	if answer.GetSingleSelect() == nil {
 		return nil, errors.Trace(fmt.Errorf("expected single select answer to be populated for answer but it wasnt"))
 	}
@@ -114,7 +173,9 @@ func transformSingleSelectAnswerToSVCResponse(answer *models.Answer) (*care.Answ
 	}, nil
 }
 
-func transformSegmentedControlAnswerToSVCResponse(answer *models.Answer) (*care.Answer, error) {
+type segmentedControlToSVCResponseTransformer struct{}
+
+func (s *segmentedControlToSVCResponseTransformer) transform(answer *models.Answer) (*care.Answer, error) {
 	if answer.GetSegmentedControl() == nil {
 		return nil, errors.Trace(fmt.Errorf("expected segmented control answer to be populated for answer but it wasnt"))
 	}
@@ -132,7 +193,11 @@ func transformSegmentedControlAnswerToSVCResponse(answer *models.Answer) (*care.
 	}, nil
 }
 
-func transformMultipleChoiceAnswerToSVCResponse(answer *models.Answer) (*care.Answer, error) {
+type multipleChoiceToSVCResponseTransformer struct {
+	mediaClient media.MediaClient
+}
+
+func (m *multipleChoiceToSVCResponseTransformer) transform(answer *models.Answer) (*care.Answer, error) {
 	if answer.GetMultipleChoice() == nil {
 		return nil, errors.Trace(fmt.Errorf("expected multiple choice answer to be populated for answer but it wasnt"))
 	}
@@ -155,7 +220,7 @@ func transformMultipleChoiceAnswerToSVCResponse(answer *models.Answer) (*care.An
 
 		for subquestionID, subanswer := range selectedAnswer.SubAnswers {
 			var err error
-			multipleChoiceAnswer.GetMultipleChoice().SelectedAnswers[i].SubAnswers[subquestionID], err = transformAnswerModelToSVCResponse(subanswer)
+			multipleChoiceAnswer.GetMultipleChoice().SelectedAnswers[i].SubAnswers[subquestionID], err = transformAnswerModelToSVCResponse(subanswer, m.mediaClient)
 			if err != nil {
 				return nil, errors.Trace(err)
 			}
@@ -165,7 +230,11 @@ func transformMultipleChoiceAnswerToSVCResponse(answer *models.Answer) (*care.An
 	return multipleChoiceAnswer, nil
 }
 
-func transformAutocompleteAnswerToSVCResponse(answer *models.Answer) (*care.Answer, error) {
+type autocompleteAnswerTOSVCResponseTransformer struct {
+	mediaClient media.MediaClient
+}
+
+func (a *autocompleteAnswerTOSVCResponseTransformer) transform(answer *models.Answer) (*care.Answer, error) {
 	if answer.GetAutocomplete() == nil {
 		return nil, errors.Trace(fmt.Errorf("expected autocomplete answer to be populated for answer but it wasnt"))
 	}
@@ -186,7 +255,7 @@ func transformAutocompleteAnswerToSVCResponse(answer *models.Answer) (*care.Answ
 
 		for subquestionID, subanswer := range item.SubAnswers {
 			var err error
-			autocompleteAnswer.GetAutocomplete().Items[i].SubAnswers[subquestionID], err = transformAnswerModelToSVCResponse(subanswer)
+			autocompleteAnswer.GetAutocomplete().Items[i].SubAnswers[subquestionID], err = transformAnswerModelToSVCResponse(subanswer, a.mediaClient)
 			if err != nil {
 				return nil, errors.Trace(err)
 			}

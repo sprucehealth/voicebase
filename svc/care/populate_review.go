@@ -415,12 +415,22 @@ func builderQuestionWithMediaSlots(question *layout.Question, answer *Answer, co
 		}
 
 		for i, slot := range section.Slots {
+
+			var mediaType string
+			switch slot.Type {
+			case MediaType_IMAGE:
+				mediaType = "image"
+			case MediaType_VIDEO:
+				mediaType = "video"
+			default:
+				return errors.Trace(fmt.Errorf("Unsupported media type for media %s for question %s", slot.MediaID, question.ID))
+			}
 			item.Media[i] = visitreview.MediaData{
-				Title:   slot.Name,
-				MediaID: slot.MediaID,
-				URL:     slot.URL,
-				Type:    slot.Type,
-				// TODO: populate real URL
+				Title:        slot.Name,
+				MediaID:      slot.MediaID,
+				URL:          slot.URL,
+				ThumbnailURL: slot.ThumbnailURL,
+				Type:         mediaType,
 			}
 		}
 		items = append(items, item)

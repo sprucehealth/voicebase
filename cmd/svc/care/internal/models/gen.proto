@@ -58,13 +58,20 @@ message AutocompleteAnswer {
   repeated AutocompleteAnswerItem items = 1;
 }
 
+// MediaType represents the type of media for an object.
+enum MediaType {
+	MEDIA_TYPE_UNKNOWN = 0;
+	IMAGE = 1;
+	VIDEO = 2;
+}
+
 message MediaSectionAnswer {
   message MediaSectionItem {
     message MediaSlotItem {
-        string slot_id = 1 [(gogoproto.customname) = "SlotID"];
-        string name = 2;
-        string media_id = 3 [(gogoproto.customname) = "MediaID"];
-        string type = 4;
+      string slot_id = 1 [(gogoproto.customname) = "SlotID"];
+      string name = 2;
+      string media_id = 3 [(gogoproto.customname) = "MediaID"];
+      MediaType type = 4;
     }
 
     string name = 1;

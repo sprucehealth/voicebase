@@ -20,6 +20,7 @@ import (
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/layout"
+	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/settings"
 	"google.golang.org/grpc"
 )
@@ -41,6 +42,7 @@ var config struct {
 	s3Bucket             string
 	s3Prefix             string
 	settingsAddr         string
+	mediaAddr            string
 }
 
 func init() {
@@ -60,6 +62,7 @@ func init() {
 	flag.Int64Var(&config.doseSpotClinicID, "dosespot_clinic_id", 0, "DoseSpot clinic ID")
 	flag.Int64Var(&config.doseSpotUserID, "dosespot_user_id", 0, "DoseSpot user ID")
 	flag.StringVar(&config.settingsAddr, "settings_addr", "", "`host:port` of settings service")
+	flag.StringVar(&config.mediaAddr, "media_addr", "", "`host:port of media service`")
 }
 
 func main() {
@@ -117,6 +120,12 @@ func main() {
 	}
 	settingsClient := settings.NewSettingsClient(conn)
 
+	conn, err = grpc.Dial(config.mediaAddr, grpc.WithInsecure())
+	if err != nil {
+		golog.Fatalf("Unable to connect to media service :%s", err)
+	}
+	mediaClient := media.NewMediaClient(conn)
+
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	_, err = settings.RegisterConfigs(ctx, settingsClient, []*settings.Config{
 		caresettings.OptionalTriageConfig,
@@ -133,7 +142,7 @@ func main() {
 	}
 
 	careServer := grpc.NewServer()
-	careService := server.New(dal.New(db), layoutClient, settingsClient, layout.NewStore(storage.NewS3(awsSession, config.s3Bucket, config.s3Prefix)), doseSpotClient, clock.New())
+	careService := server.New(dal.New(db), layoutClient, settingsClient, mediaClient, layout.NewStore(storage.NewS3(awsSession, config.s3Bucket, config.s3Prefix)), doseSpotClient, clock.New())
 
 	care.InitMetrics(careServer, svc.MetricsRegistry.Scope("care"))
 	care.RegisterCareServer(careServer, careService)

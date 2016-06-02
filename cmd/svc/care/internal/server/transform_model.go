@@ -3,10 +3,14 @@ package server
 import (
 	"fmt"
 
+	"golang.org/x/net/context"
+
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/client"
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/models"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/svc/care"
+	"github.com/sprucehealth/backend/svc/layout"
+	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/settings"
 )
 
@@ -25,31 +29,47 @@ func transformVisitToResponse(v *models.Visit, optionalTriage *settings.BooleanV
 	}
 }
 
-type answerToModelTransformerFunc func(questionID string, answer client.Answer) (*models.Answer, error)
-
-var answerToModelTransformers map[string]answerToModelTransformerFunc
-
-func init() {
-	answerToModelTransformers = map[string]answerToModelTransformerFunc{
-		"q_type_media_section":     transformMediaSectionAnswerToModel,
-		"q_type_free_text":         transformFreeTextAnswerToModel,
-		"q_type_single_entry":      transformSingleEntryAnswerToModel,
-		"q_type_single_select":     transformSingleSelectAnswerToModel,
-		"q_type_multiple_choice":   transformMultipleChoiceAnswerToModel,
-		"q_type_segmented_control": transformSegmentedControlAnswerToModel,
-		"q_type_autocomplete":      transformAutocompleteAnswerToModel,
-	}
+type answerToModelTransformer interface {
+	transform(questionID string, answer client.Answer) (*models.Answer, error)
 }
 
-func transformAnswerToModel(questionID string, answer client.Answer) (*models.Answer, error) {
-	transformFunction, ok := answerToModelTransformers[answer.TypeName()]
-	if !ok {
+func transformAnswerToModel(questionID string, answer client.Answer, mediaClient media.MediaClient) (*models.Answer, error) {
+
+	var t answerToModelTransformer
+
+	switch answer.TypeName() {
+	case layout.QuestionTypeMediaSection:
+		t = &mediaSectionTransformer{
+			mediaClient: mediaClient,
+		}
+	case layout.QuestionTypeFreeText:
+		t = &freeTextTransformer{}
+	case layout.QuestionTypeSingleEntry:
+		t = &singleEntryTransformer{}
+	case layout.QuestionTypeSingleSelect:
+		t = &singleSelectTransformer{}
+	case layout.QuestionTypeMultipleChoice:
+		t = &multipleChoiceAnswerTransformer{
+			mediaClient: mediaClient,
+		}
+	case layout.QuestionTypeSegmentedControl:
+		t = &segmentedControlTransformer{}
+	case layout.QuestionTypeAutoComplete:
+		t = &autocompleteAnswerTransformer{
+			mediaClient: mediaClient,
+		}
+	default:
 		return nil, errors.Trace(fmt.Errorf("cannot find transformer for answer of type %s for question %s", answer.TypeName(), questionID))
 	}
-	return transformFunction(questionID, answer)
+
+	return t.transform(questionID, answer)
 }
 
-func transformMediaSectionAnswerToModel(questionID string, answer client.Answer) (*models.Answer, error) {
+type mediaSectionTransformer struct {
+	mediaClient media.MediaClient
+}
+
+func (m *mediaSectionTransformer) transform(questionID string, answer client.Answer) (*models.Answer, error) {
 	mediaSectionAnswer, ok := answer.(*client.MediaQuestionAnswer)
 	if !ok {
 		return nil, errors.Trace(fmt.Errorf("expected type MediaQuestionAnswer for answer to question %s but got %T", questionID, answer))
@@ -65,6 +85,8 @@ func transformMediaSectionAnswerToModel(questionID string, answer client.Answer)
 		},
 	}
 
+	slotMap := make(map[string]*models.MediaSectionAnswer_MediaSectionItem_MediaSlotItem)
+	mediaIDs := make([]string, 0, len(mediaSectionAnswer.Sections)*3)
 	for i, mediaSection := range mediaSectionAnswer.Sections {
 		modelAnswer.GetMediaSection().Sections[i] = &models.MediaSectionAnswer_MediaSectionItem{
 			Name:  mediaSection.Name,
@@ -76,15 +98,48 @@ func transformMediaSectionAnswerToModel(questionID string, answer client.Answer)
 				Name:    mediaSlot.Name,
 				SlotID:  mediaSlot.SlotID,
 				MediaID: mediaSlot.MediaID,
-				Type:    "photo", // TODO: Once media service is up, get type from there.
 			}
+			slotMap[mediaSlot.MediaID] = modelAnswer.GetMediaSection().Sections[i].Slots[j]
+			mediaIDs = append(mediaIDs, mediaSlot.MediaID)
 		}
+	}
+
+	res, err := m.mediaClient.MediaInfos(context.Background(), &media.MediaInfosRequest{
+		MediaIDs: mediaIDs,
+	})
+	if err != nil {
+		return nil, errors.Trace(fmt.Errorf("Unable to transform answer for %s: %s", questionID, err))
+	}
+
+	for _, mediaInfo := range res.MediaInfos {
+		slot, ok := slotMap[mediaInfo.ID]
+		if !ok {
+			return nil, errors.Trace(fmt.Errorf("media returned for slot that doesn't exist for question %s:%s", questionID, err))
+		}
+		var mediaType models.MediaType
+		switch mediaInfo.MIME.Type {
+		case "image":
+			mediaType = models.MediaType_IMAGE
+		case "video":
+			mediaType = models.MediaType_VIDEO
+		default:
+			return nil, errors.Trace(fmt.Errorf("Unknown media type for %s", mediaInfo.ID))
+		}
+		slot.Type = mediaType
+		delete(slotMap, mediaInfo.ID)
+	}
+
+	// there should be no slot left for which we were unable to find the media object
+	if len(slotMap) > 0 {
+		return nil, errors.Trace(fmt.Errorf("mediaIDs not found for %+v for question %s", slotMap, questionID))
 	}
 
 	return modelAnswer, nil
 }
 
-func transformFreeTextAnswerToModel(questionID string, answer client.Answer) (*models.Answer, error) {
+type freeTextTransformer struct{}
+
+func (f *freeTextTransformer) transform(questionID string, answer client.Answer) (*models.Answer, error) {
 	freeTextAnswer, ok := answer.(*client.FreeTextQuestionAnswer)
 	if !ok {
 		return nil, errors.Trace(fmt.Errorf("expected type freeTextAnswer for answer to question %s but got %T", questionID, answer))
@@ -103,7 +158,9 @@ func transformFreeTextAnswerToModel(questionID string, answer client.Answer) (*m
 	return modelAnswer, nil
 }
 
-func transformSingleEntryAnswerToModel(questionID string, answer client.Answer) (*models.Answer, error) {
+type singleEntryTransformer struct{}
+
+func (s *singleEntryTransformer) transform(questionID string, answer client.Answer) (*models.Answer, error) {
 	singleEntryAnswer, ok := answer.(*client.SingleEntryQuestionAnswer)
 	if !ok {
 		return nil, errors.Trace(fmt.Errorf("expected type singleEntryAnswer for answer to question %s but got %T", questionID, answer))
@@ -121,7 +178,9 @@ func transformSingleEntryAnswerToModel(questionID string, answer client.Answer) 
 	return modelAnswer, nil
 }
 
-func transformSingleSelectAnswerToModel(questionID string, answer client.Answer) (*models.Answer, error) {
+type singleSelectTransformer struct{}
+
+func (s *singleSelectTransformer) transform(questionID string, answer client.Answer) (*models.Answer, error) {
 	singleSelectAnswer, ok := answer.(*client.SingleSelectQuestionAnswer)
 	if !ok {
 		return nil, errors.Trace(fmt.Errorf("expected type singleSelectAnswer for answer to question %s but got %T", questionID, answer))
@@ -143,7 +202,9 @@ func transformSingleSelectAnswerToModel(questionID string, answer client.Answer)
 	return modelAnswer, nil
 }
 
-func transformSegmentedControlAnswerToModel(questionID string, answer client.Answer) (*models.Answer, error) {
+type segmentedControlTransformer struct{}
+
+func (s *segmentedControlTransformer) transform(questionID string, answer client.Answer) (*models.Answer, error) {
 	segmentedControlAnswer, ok := answer.(*client.SegmentedControlQuestionAnswer)
 	if !ok {
 		return nil, errors.Trace(fmt.Errorf("expected type segmentedControlAnswer for answer to question %s but got %T", questionID, answer))
@@ -165,7 +226,11 @@ func transformSegmentedControlAnswerToModel(questionID string, answer client.Ans
 	return modelAnswer, nil
 }
 
-func transformMultipleChoiceAnswerToModel(questionID string, answer client.Answer) (*models.Answer, error) {
+type multipleChoiceAnswerTransformer struct {
+	mediaClient media.MediaClient
+}
+
+func (m *multipleChoiceAnswerTransformer) transform(questionID string, answer client.Answer) (*models.Answer, error) {
 	multipleChoiceAnswer, ok := answer.(*client.MultipleChoiceQuestionAnswer)
 	if !ok {
 		return nil, errors.Trace(fmt.Errorf("expected type multipleChoiceAnswer for answer to question %s but got %T", questionID, answer))
@@ -190,7 +255,7 @@ func transformMultipleChoiceAnswerToModel(questionID string, answer client.Answe
 
 		var err error
 		for subquestionID, subanswer := range potentialAnswer.Subanswers {
-			modelAnswer.GetMultipleChoice().SelectedAnswers[i].SubAnswers[subquestionID], err = transformAnswerToModel(subquestionID, subanswer)
+			modelAnswer.GetMultipleChoice().SelectedAnswers[i].SubAnswers[subquestionID], err = transformAnswerToModel(subquestionID, subanswer, m.mediaClient)
 			if err != nil {
 				return nil, errors.Trace(fmt.Errorf("unable to transform subanswer %s for answer %s to question %s: %s", subanswer.TypeName(), potentialAnswer.ID, questionID, err))
 			}
@@ -200,7 +265,11 @@ func transformMultipleChoiceAnswerToModel(questionID string, answer client.Answe
 	return modelAnswer, nil
 }
 
-func transformAutocompleteAnswerToModel(questionID string, answer client.Answer) (*models.Answer, error) {
+type autocompleteAnswerTransformer struct {
+	mediaClient media.MediaClient
+}
+
+func (a *autocompleteAnswerTransformer) transform(questionID string, answer client.Answer) (*models.Answer, error) {
 	autocompleteAnswer, ok := answer.(*client.AutocompleteQuestionAnswer)
 	if !ok {
 		return nil, errors.Trace(fmt.Errorf("expected type autocompleteAnswer for answer to question %s but got %T", questionID, answer))
@@ -224,7 +293,7 @@ func transformAutocompleteAnswerToModel(questionID string, answer client.Answer)
 
 		var err error
 		for subquestionID, subanswer := range item.Subanswers {
-			modelAnswer.GetAutocomplete().Items[i].SubAnswers[subquestionID], err = transformAnswerToModel(subquestionID, subanswer)
+			modelAnswer.GetAutocomplete().Items[i].SubAnswers[subquestionID], err = transformAnswerToModel(subquestionID, subanswer, a.mediaClient)
 			if err != nil {
 				return nil, errors.Trace(fmt.Errorf("unable to transform subanswer %s to question %s: %s", subanswer.TypeName(), questionID, err))
 			}

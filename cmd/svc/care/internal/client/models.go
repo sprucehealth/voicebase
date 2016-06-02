@@ -46,11 +46,12 @@ func init() {
 // MEDIA SECTION
 
 type MediaSlotItem struct {
-	Name    string `json:"name"`
-	SlotID  string `json:"slot_id"`
-	MediaID string `json:"media_id"`
-	URL     string `json:"url,omitempty"`
-	Type    string `json:"type,omitempty"`
+	Name         string `json:"name"`
+	SlotID       string `json:"slot_id"`
+	MediaID      string `json:"media_id"`
+	URL          string `json:"url,omitempty"`
+	ThumbnailURL string `json:"thumbnail_url,omitempty"`
+	Type         string `json:"type,omitempty"`
 }
 
 type MediaSectionItem struct {
