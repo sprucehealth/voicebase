@@ -165,7 +165,7 @@ var imageAttachmentType = graphql.NewObject(
 					height := p.Args["height"].(int)
 					crop := p.Args["crop"].(bool)
 
-					mediaID, err := lmedia.ParseMediaID(attachment.URL)
+					mediaID, err := lmedia.ParseMediaID(attachment.MediaID)
 					if err != nil {
 						golog.Errorf("Unable to parse mediaID out of url %s.", attachment.URL)
 					}

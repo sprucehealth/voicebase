@@ -154,6 +154,7 @@ type ImageAttachment struct {
 	Mimetype string `json:"mimetype"`
 	URL      string `json:"url"`
 	Image    *Image `json:"image"`
+	MediaID  string `json:"-"`
 }
 
 type VideoAttachment struct {

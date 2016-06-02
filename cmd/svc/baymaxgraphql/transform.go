@@ -375,6 +375,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 				data = &models.ImageAttachment{
 					Mimetype: d.Mimetype,
 					URL:      a.URL,
+					MediaID:  mediaID,
 				}
 				// TODO
 				if a.Title == "" {
