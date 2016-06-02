@@ -373,9 +373,10 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 				}
 				a.URL = media.URL(mediaAPIDomain, mediaID)
 				data = &models.ImageAttachment{
-					Mimetype: d.Mimetype,
-					URL:      a.URL,
-					MediaID:  mediaID,
+					Mimetype:     d.Mimetype,
+					URL:          a.URL,
+					ThumbnailURL: media.ThumbnailURL(mediaAPIDomain, mediaID, 0, 0, false),
+					MediaID:      mediaID,
 				}
 				// TODO
 				if a.Title == "" {

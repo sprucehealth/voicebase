@@ -131,7 +131,9 @@ var imageAttachmentType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "ImageAttachment",
 		Fields: graphql.Fields{
-			"mimetype": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"mimetype":     &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"url":          &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"thumbnailURL": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"image": &graphql.Field{
 				Type: graphql.NewNonNull(imageType),
 				Args: graphql.FieldConfigArgument{
