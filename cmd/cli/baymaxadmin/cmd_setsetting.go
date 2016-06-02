@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/settings"
 	"golang.org/x/net/context"
@@ -20,6 +21,7 @@ type setSettingCmd struct {
 	cnf          *config
 	directoryCli directory.DirectoryClient
 	settingsCli  settings.SettingsClient
+	authCli      auth.AuthClient
 }
 
 func newSetSettingCmd(cnf *config) (command, error) {
@@ -31,10 +33,15 @@ func newSetSettingCmd(cnf *config) (command, error) {
 	if err != nil {
 		return nil, err
 	}
+	authCli, err := cnf.authClient()
+	if err != nil {
+		return nil, err
+	}
 	return &setSettingCmd{
 		cnf:          cnf,
 		directoryCli: directoryCli,
 		settingsCli:  settingsCli,
+		authCli:      authCli,
 	}, nil
 }
 
@@ -60,15 +67,25 @@ func (c *setSettingCmd) run(args []string) error {
 		return errors.New("Node ID required")
 	}
 
-	// Sanity check
-	ent, err := lookupAndDisplayEntity(ctx, c.directoryCli, *nodeID, nil)
-	if err != nil {
-		return fmt.Errorf("Failed to lookup entity: %s", err)
-	}
-	switch ent.Type {
-	case directory.EntityType_ORGANIZATION, directory.EntityType_INTERNAL:
-	default:
-		return errors.New("Entity must be of type ORGANIZATION or INTERNAL")
+	if strings.Contains(*nodeID, auth.AccountIDPrefix) {
+		_, err := c.authCli.GetAccount(ctx, &auth.GetAccountRequest{
+			AccountID: *nodeID,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to lookup account: %s", err)
+		}
+	} else if strings.Contains(*nodeID, directory.EntityIDPrefix) {
+		// Sanity check
+		ent, err := lookupAndDisplayEntity(ctx, c.directoryCli, *nodeID, nil)
+		if err != nil {
+			return fmt.Errorf("Failed to lookup entity: %s", err)
+		}
+		switch ent.Type {
+		case directory.EntityType_ORGANIZATION, directory.EntityType_INTERNAL:
+		default:
+			return errors.New("Entity must be of type ORGANIZATION or INTERNAL")
+		}
+
 	}
 
 	if *key == "" {
