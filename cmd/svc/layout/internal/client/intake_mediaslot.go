@@ -1,6 +1,8 @@
 package client
 
 import (
+	"fmt"
+
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/idgen"
 	"github.com/sprucehealth/backend/libs/model"
@@ -31,11 +33,21 @@ func transformMediaSlots(mediaSlots []*saml.MediaSlot) ([]*layout.MediaSlot, err
 			},
 		}
 
+		var mediaType string
+		switch mediaSlot.Type {
+		case "photo":
+			mediaType = "image"
+		case "video":
+			mediaType = "video"
+		default:
+			return nil, errors.Trace(fmt.Errorf("Uknown media type %s", mediaSlot.Type))
+		}
+
 		tMediaSlots[i] = &layout.MediaSlot{
 			ID:       slotID.String(),
 			Name:     mediaSlot.Name,
 			Required: mediaSlot.Required,
-			Type:     mediaSlot.Type,
+			Type:     mediaType,
 		}
 
 		tMediaSlots[i].ClientData, err = transformMediaSlotClientData(mediaSlot.ClientData)
