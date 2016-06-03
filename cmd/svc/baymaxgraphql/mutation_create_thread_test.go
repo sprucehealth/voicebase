@@ -124,6 +124,7 @@ func TestCreateThreadMutation_NoExistingThreads(t *testing.T) {
 				success
 				thread {
 					id
+					type
 					allowInternalMessages
 					isDeletable
 				}
@@ -139,7 +140,8 @@ func TestCreateThreadMutation_NoExistingThreads(t *testing.T) {
 			"thread": {
 				"allowInternalMessages": true,
 				"id": "t_1",
-				"isDeletable": true
+				"isDeletable": true,
+				"type": "EXTERNAL"
 			}
 		}
 	}
