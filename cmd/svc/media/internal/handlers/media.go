@@ -22,6 +22,7 @@ import (
 type mediaHandler struct {
 	svc            service.Service
 	mediaAPIDomain string
+	maxMemory      int64
 }
 
 const contentTypeHeader = "Content-Type"
@@ -45,6 +46,11 @@ func (h *mediaHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *
 }
 
 func (h *mediaHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseMultipartForm(h.maxMemory); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	file, mimeType, err := parseMultiPartMedia("media", r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)

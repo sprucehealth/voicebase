@@ -30,10 +30,16 @@ func InitRoutes(
 	dal dal.DAL,
 	webDomain string,
 	mediaStorageBucket string,
-	mediaAPIDomain string) {
+	mediaAPIDomain string,
+	maxMemory int64,
+) {
 	svc := initService(awsSession, dal, mediaStorageBucket)
 	corsOrigins := []string{"https://" + webDomain}
-	mHandler := newAuthHandler(&mediaHandler{svc: svc, mediaAPIDomain: mediaAPIDomain}, authClient)
+	mHandler := newAuthHandler(&mediaHandler{
+		svc:            svc,
+		mediaAPIDomain: mediaAPIDomain,
+		maxMemory:      maxMemory,
+	}, authClient)
 
 	// Register the same handler on both paths
 	r.Handle("/media", cors.New(cors.Options{

@@ -32,6 +32,7 @@ var (
 	flagMediaStorageBucket = flag.String("media_storage_bucket", "", "storage bucket for media")
 	flagSigKeys            = flag.String("signature_keys_csv", "", "csv signature keys")
 	flagBehindProxy        = flag.Bool("behind_proxy", false, "Flag to indicate when the service is behind a proxy")
+	flagMaxMemory          = flag.Int64("max_memory", 8<<20, "Maximum memory to use when decoding POST bodies")
 
 	// Services
 	flagAuthAddr = flag.String("auth_addr", "", "host:port of auth service")
@@ -115,7 +116,8 @@ func main() {
 		dal.New(db),
 		*flagWebDomain,
 		*flagMediaStorageBucket,
-		*flagMediaAPIDomain)
+		*flagMediaAPIDomain,
+		*flagMaxMemory)
 	h := httputil.LoggingHandler(r, "media", *flagBehindProxy, nil)
 
 	golog.Infof("Media HTTP Listening on %s", *flagHTTPListenAddr)
