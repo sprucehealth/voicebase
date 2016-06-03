@@ -173,6 +173,7 @@ func main() {
 			baymaxgraphqlsettings.TeamConversationsConfig,
 			baymaxgraphqlsettings.SecureThreadsConfig,
 			baymaxgraphqlsettings.VisitAttachmentsConfig,
+			baymaxgraphqlsettings.ShakeToMarkThreadsAsReadConfig,
 		})
 	if err != nil {
 		golog.Fatalf("Unable to register configs with the settings service: %s", err.Error())

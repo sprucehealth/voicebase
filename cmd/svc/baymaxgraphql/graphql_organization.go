@@ -50,6 +50,36 @@ var organizationType = graphql.NewObject(
 					return booleanValue.Value, nil
 				},
 			},
+			"allowShakeToMarkThreadsAsRead": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.Boolean),
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					org := p.Source.(*models.Organization)
+					if org.Entity == nil {
+						return false, nil
+					}
+
+					svc := serviceFromParams(p)
+					ctx := p.Context
+					acc := gqlctx.Account(ctx)
+					if acc == nil {
+						return nil, errors.ErrNotAuthenticated(ctx)
+					}
+
+					boolValue, err := settings.GetBooleanValue(ctx, svc.settings, &settings.GetValuesRequest{
+						NodeID: org.ID,
+						Keys: []*settings.ConfigKey{
+							{
+								Key: baymaxgraphqlsettings.ConfigKeyShakeToMarkThreadsAsRead,
+							},
+						},
+					})
+					if err != nil {
+						return nil, errors.InternalError(ctx, err)
+					}
+
+					return boolValue.Value, nil
+				},
+			},
 			"allowCreateSecureThread": &graphql.Field{
 				Type:    graphql.NewNonNull(graphql.Boolean),
 				Resolve: isSecureThreadsEnabled(),

@@ -100,45 +100,6 @@ var registerDeviceForPushOutputType = graphql.NewObject(
 	},
 )
 
-/// markThreadAsRead
-
-type markThreadAsReadOutput struct {
-	ClientMutationID string `json:"clientMutationId,omitempty"`
-	Success          bool   `json:"success"`
-	ErrorCode        string `json:"errorCode,omitempty"`
-	ErrorMessage     string `json:"errorMessage,omitempty"`
-}
-
-var markThreadAsReadInputType = graphql.NewInputObject(
-	graphql.InputObjectConfig{
-		Name: "MarkThreadAsReadInput",
-		Fields: graphql.InputObjectConfigFieldMap{
-			"clientMutationId": newClientMutationIDInputField(),
-			"threadID":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-			"organizationID":   &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-		},
-	},
-)
-
-// JANK: can't have an empty enum and we want this field to always exist so make it a string until it's needed
-var markThreadAsReadErrorCodeEnum = graphql.String
-
-var markThreadAsReadOutputType = graphql.NewObject(
-	graphql.ObjectConfig{
-		Name: "MarkThreadAsReadPayload",
-		Fields: graphql.Fields{
-			"clientMutationId": newClientMutationIDOutputField(),
-			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-			"errorCode":        &graphql.Field{Type: markThreadAsReadErrorCodeEnum},
-			"errorMessage":     &graphql.Field{Type: graphql.String},
-		},
-		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*markThreadAsReadOutput)
-			return ok
-		},
-	},
-)
-
 var mutationType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Mutation",
 	Fields: graphql.Fields{
@@ -162,6 +123,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 		"invitePatients":                      invitePatientsMutation,
 		"leaveThread":                         leaveThreadMutation,
 		"markThreadAsRead":                    markThreadAsReadMutation,
+		"markThreadsAsRead":                   markThreadsAsReadMutation,
 		"modifySetting":                       modifySettingMutation,
 		"passwordReset":                       passwordResetMutation,
 		"postEvent":                           postEventMutation,

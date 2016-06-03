@@ -3,9 +3,10 @@ package settings
 import "github.com/sprucehealth/backend/svc/settings"
 
 const (
-	ConfigKeyTeamConversations  = "team_conversations_enabled"
-	ConfigKeyCreateSecureThread = "secure_threads_enabled"
-	ConfigKeyVisitAttachments   = "visit_attachments_enabled"
+	ConfigKeyTeamConversations        = "team_conversations_enabled"
+	ConfigKeyCreateSecureThread       = "secure_threads_enabled"
+	ConfigKeyVisitAttachments         = "visit_attachments_enabled"
+	ConfigKeyShakeToMarkThreadsAsRead = "shake_to_mark_threads_read"
 )
 
 // TeamConversationsConfig represents the config controlling whether or not team conversations is enabled at the org level
@@ -35,6 +36,23 @@ var SecureThreadsConfig = &settings.Config{
 		Boolean: &settings.BooleanConfig{
 			Default: &settings.BooleanValue{
 				Value: true,
+			},
+		},
+	},
+}
+
+// ShakeToMarkThreadsAsReadConfig represents the config for controlling whether or not an Organization
+// allows its members to shake their devices to mark all threads as read
+var ShakeToMarkThreadsAsReadConfig = &settings.Config{
+	Title:          "Enable/disable shake to mark threads as read",
+	AllowSubkeys:   false,
+	Key:            ConfigKeyShakeToMarkThreadsAsRead,
+	Type:           settings.ConfigType_BOOLEAN,
+	PossibleOwners: []settings.OwnerType{settings.OwnerType_ORGANIZATION},
+	Config: &settings.Config_Boolean{
+		Boolean: &settings.BooleanConfig{
+			Default: &settings.BooleanValue{
+				Value: false,
 			},
 		},
 	},
