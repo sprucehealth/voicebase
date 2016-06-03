@@ -189,6 +189,8 @@ LABEL version=$TAG
 LABEL svc=$SVC
 LABEL revision=$REV
 
+RUN mkdir /tmp && chmod 0777 /tmp
+ENV TMPDIR /tmp
 WORKDIR /workspace
 ADD . /workspace
 COPY ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
