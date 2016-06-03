@@ -180,6 +180,7 @@ func TestNodeQuery(t *testing.T) {
 		AllowEmailAttachment:  true,
 		AllowExternalDelivery: true,
 		AllowMentions:         true,
+		IsPatientThread:       true,
 		OrganizationID:        "entity_1",
 		PrimaryEntityID:       "entity_2",
 		Title:                 "Someone",

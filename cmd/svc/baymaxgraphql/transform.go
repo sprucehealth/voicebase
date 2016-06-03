@@ -142,13 +142,16 @@ func transformThreadToResponse(ctx context.Context, ram raccess.ResourceAccessor
 		th.AllowLeave = true
 		th.AllowRemoveMembers = true
 		th.AllowUpdateTitle = true
+		th.IsTeamThread = true
 		th.Type = models.ThreadTypeTeam
 	case threading.ThreadType_EXTERNAL:
 		th.AllowDelete = true
 		th.AllowExternalDelivery = true
+		th.IsPatientThread = true
 		th.Type = models.ThreadTypeExternal
 	case threading.ThreadType_SECURE_EXTERNAL:
 		th.Type = models.ThreadTypeSecureExternal
+		th.IsPatientThread = true
 		th.AllowCarePlanAttachments = true
 	case threading.ThreadType_SETUP:
 		if th.Title == "" {
@@ -162,6 +165,7 @@ func transformThreadToResponse(ctx context.Context, ram raccess.ResourceAccessor
 		th.Type = models.ThreadTypeSupport
 	case threading.ThreadType_LEGACY_TEAM:
 		th.Type = models.ThreadTypeLegacyTeam
+		th.IsTeamThread = true
 	case threading.ThreadType_UNKNOWN: // TODO: remove this once old threads are migrated
 		th.Type = models.ThreadTypeUnknown
 	default:

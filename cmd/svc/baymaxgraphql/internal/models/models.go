@@ -208,6 +208,8 @@ type Thread struct {
 	LastMessageTimestamp       uint64 `json:"lastMessageTimestamp"`
 	Unread                     bool   `json:"unread"`
 	UnreadReference            bool   `json:"unreadReference"`
+	IsPatientThread            bool   `json:"isPatientThread"`
+	IsTeamThread               bool   `json:"isTeamThread"`
 	AllowAddMembers            bool   `json:"allowAddMembers"`
 	AllowCarePlanAttachments   bool   `json:"allowCarePlanAttachments"`
 	AllowDelete                bool   `json:"allowDelete"`
