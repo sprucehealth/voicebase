@@ -65,7 +65,7 @@ func (m *mediaSectionToSVCResponseTransformer) transform(answer *models.Answer) 
 		},
 	}
 
-	mediaIDs := make([]string, len(answer.GetMediaSection().Sections)*3)
+	mediaIDs := make([]string, 0, len(answer.GetMediaSection().Sections)*3)
 	slotMap := make(map[string]*care.MediaSectionAnswer_MediaSectionItem_MediaSlotItem)
 	for i, mediaSection := range answer.GetMediaSection().Sections {
 		mediaSectionAnswer.GetMediaSection().Sections[i] = &care.MediaSectionAnswer_MediaSectionItem{
