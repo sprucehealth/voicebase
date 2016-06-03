@@ -84,8 +84,7 @@ func newAuthHandler(h httputil.ContextHandler, auth auth.AuthClient) httputil.Co
 func (a *authHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	c, err := r.Cookie(authTokenCookieName)
 	if err != nil {
-		golog.Errorf("Unable to get cookie from request: %s", err)
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 	if c.Value == "" {
