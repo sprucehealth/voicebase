@@ -83,8 +83,11 @@ func newAuthHandler(h httputil.ContextHandler, auth auth.AuthClient) httputil.Co
 
 func (a *authHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	c, err := r.Cookie(authTokenCookieName)
-	if err != nil {
+	if err == http.ErrNoCookie {
 		w.WriteHeader(http.StatusForbidden)
+	} else if err != nil {
+		golog.Warningf("Error getting cookie: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	if c.Value == "" {
