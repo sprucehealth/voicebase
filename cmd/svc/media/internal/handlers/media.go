@@ -15,7 +15,6 @@ import (
 	lmedia "github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/svc/media"
-
 	"golang.org/x/net/context"
 )
 
@@ -53,20 +52,22 @@ func (h *mediaHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *
 
 	file, mimeType, err := parseMultiPartMedia("media", r)
 	if err != nil {
+		if file != nil {
+			file.Close()
+		}
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	defer file.Close()
-	// Attempt to read out a thumbnail for the media, but if anything happens drop it
+
 	thumbFile, tType, err := parseMultiPartMedia("thumbnail", r)
-	if err != nil {
-		thumbFile = nil
-		tType = nil
-	} else if tType.Type != "image" {
+	if thumbFile != nil {
+		defer thumbFile.Close()
+	}
+	// If we're provided with a mimetype then make sure it's an image, otherwise assume it is
+	if err == nil && tType != nil && tType.Type != "image" {
 		http.Error(w, fmt.Sprintf("Media type %s is not valid for thumbnails", tType.String()), http.StatusBadRequest)
 		return
-	} else {
-		defer thumbFile.Close()
 	}
 
 	meta, err := h.svc.PutMedia(ctx, file, mimeType, thumbFile)
@@ -92,7 +93,7 @@ func parseMultiPartMedia(formKey string, r *http.Request) (multipart.File, *mime
 	}
 	mimeType, err := mime.ParseType(fHeaders.Header.Get(contentTypeHeader))
 	if err != nil {
-		return nil, nil, fmt.Errorf("Unable to parse Content-Type for %s", formKey)
+		return file, nil, fmt.Errorf("Unable to parse Content-Type for %s", formKey)
 	}
 	return file, mimeType, nil
 }
