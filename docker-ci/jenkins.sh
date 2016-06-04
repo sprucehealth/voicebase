@@ -34,6 +34,7 @@ if [ "$GIT_REV" = "" ]; then
 fi
 MEMPATH="/mnt/mem/jenkins/$BUILD_TAG"
 mkdir -p $MEMPATH
+docker pull 137987605457.dkr.ecr.us-east-1.amazonaws.com/scratch:latest
 docker run --rm=true --name=$NAME \
 	-e "BUILD_NUMBER=$BUILD_NUMBER" \
 	-e "BUILD_ID=$BUILD_ID" \

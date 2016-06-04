@@ -183,13 +183,12 @@ if [[ "$DEPLOY_TO_S3" != "" ]]; then
         cp -r /usr/share/zoneinfo build/zoneinfo
         cp /etc/ssl/certs/ca-certificates.crt build/
         cat > build/Dockerfile <<EOF
-FROM scratch
+FROM 137987605457.dkr.ecr.us-east-1.amazonaws.com/scratch:latest
 
 LABEL version=$TAG
 LABEL svc=$SVC
 LABEL revision=$REV
 
-RUN mkdir /tmp && chmod 0777 /tmp
 ENV TMPDIR /tmp
 WORKDIR /workspace
 ADD . /workspace
