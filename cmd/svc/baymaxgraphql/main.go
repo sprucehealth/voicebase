@@ -166,6 +166,8 @@ func main() {
 
 	// enable for non-prod
 	baymaxgraphqlsettings.VisitAttachmentsConfig.GetBoolean().Default.Value = !environment.IsProd()
+	baymaxgraphqlsettings.ShakeToMarkThreadsAsReadConfig.GetBoolean().Default.Value = !environment.IsProd()
+
 	_, err = settings.RegisterConfigs(
 		ctx,
 		settingsClient,
