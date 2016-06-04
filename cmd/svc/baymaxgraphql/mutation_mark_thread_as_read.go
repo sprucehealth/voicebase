@@ -123,14 +123,15 @@ var markThreadsAsReadInputType = graphql.NewInputObject(
 		Name: "MarkThreadsAsReadInput",
 		Fields: graphql.InputObjectConfigFieldMap{
 			"clientMutationId": newClientMutationIDInputField(),
-			"threadID":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"threadIDs":        &graphql.InputObjectFieldConfig{Type: graphql.NewList(graphql.ID)},
 			"organizationID":   &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"all":              &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.Boolean)},
 		},
 	},
 )
 
 var markThreadsAsReadMutation = &graphql.Field{
-	Type: graphql.NewNonNull(markThreadAsReadOutputType),
+	Type: graphql.NewNonNull(markThreadsAsReadOutputType),
 	Args: graphql.FieldConfigArgument{
 		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(markThreadsAsReadInputType)},
 	},
