@@ -118,11 +118,21 @@ type markThreadsAsReadInput struct {
 	AllThreads       bool     `gql:"all"`
 }
 
+var markThreadsAsReadInputType = graphql.NewInputObject(
+	graphql.InputObjectConfig{
+		Name: "MarkThreadsAsReadInput",
+		Fields: graphql.InputObjectConfigFieldMap{
+			"clientMutationId": newClientMutationIDInputField(),
+			"threadID":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"organizationID":   &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+		},
+	},
+)
+
 var markThreadsAsReadMutation = &graphql.Field{
-	Type:              graphql.NewNonNull(markThreadAsReadOutputType),
-	DeprecationReason: "Deprecated in favor of markThreadsAsRead mutation",
+	Type: graphql.NewNonNull(markThreadAsReadOutputType),
 	Args: graphql.FieldConfigArgument{
-		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(markThreadAsReadInputType)},
+		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(markThreadsAsReadInputType)},
 	},
 	Resolve: apiaccess.Authenticated(func(p graphql.ResolveParams) (interface{}, error) {
 		ctx := p.Context
