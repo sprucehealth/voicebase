@@ -105,7 +105,7 @@ var markThreadsAsReadOutputType = graphql.NewObject(
 			"errorMessage":     &graphql.Field{Type: graphql.String},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*markThreadAsReadOutput)
+			_, ok := value.(*markThreadsAsReadOutput)
 			return ok
 		},
 	},
