@@ -202,22 +202,17 @@ func (s *service) PutMedia(ctx context.Context, mFile io.ReadSeeker, mediaType *
 		return nil
 	})
 	// If thumbnail information for the media was provided, upload and map it
-	golog.Debugf("Optional thumbnail upload: %+v", mThumb)
 	if mThumb != nil {
 		parallel.Go(func() error {
-			golog.Debugf("Performing thumbnail upload")
 			if _, err := s.imageService.PutReader(mediaID.String()+thumbnailSuffix, mThumb); err != nil {
-				golog.Errorf("Error while uploading thumbnail: " + err.Error())
 				return err
 			}
 			return nil
 		})
 	}
 	if err := parallel.Wait(); err != nil {
-		golog.Errorf("Error in one of the two uploads: " + err.Error())
 		return nil, err
 	}
-	golog.Debugf("All uploads complete ")
 	_, err = s.dal.InsertMedia(&dal.Media{
 		ID:         mediaID,
 		URL:        url,
