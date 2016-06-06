@@ -393,7 +393,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 					Title:   v.VisitName,
 					CTAText: "View Visit",
 					TapURL:  deeplink.VisitURL(webDomain, item.ThreadID, v.VisitID),
-					IconURL: "http://spruce-static.s3.amazonaws.com/caremessenger/icon_visit.png",
+					IconURL: "https://dlzz6qy5jmbag.cloudfront.net/caremessenger/icon_visit.png",
 				}
 			case threading.Attachment_VIDEO:
 				v := a.GetVideo()
@@ -410,7 +410,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 					Title:   cp.CarePlanName,
 					CTAText: "View Care Plan",
 					TapURL:  a.URL,
-					IconURL: "http://spruce-static.s3.amazonaws.com/caremessenger/icon_careplan.png",
+					IconURL: "https://dlzz6qy5jmbag.cloudfront.net/caremessenger/icon_careplan.png",
 				}
 
 			case threading.Attachment_GENERIC_URL:
