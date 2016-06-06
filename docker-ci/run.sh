@@ -180,8 +180,6 @@ if [[ "$DEPLOY_TO_S3" != "" ]]; then
         if [[ -e resources ]]; then
             cp -r resources build/
         fi
-        cp -r /usr/share/zoneinfo build/zoneinfo
-        cp /etc/ssl/certs/ca-certificates.crt build/
         cat > build/Dockerfile <<EOF
 FROM 137987605457.dkr.ecr.us-east-1.amazonaws.com/scratch:latest
 
@@ -191,8 +189,6 @@ LABEL revision=$REV
 
 WORKDIR /workspace
 ADD . /workspace
-COPY ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
-COPY zoneinfo /usr/share/zoneinfo
 USER 65534
 CMD ["/workspace/$SVC"]
 EOF
