@@ -19,6 +19,7 @@ import (
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
@@ -43,6 +44,7 @@ var (
 	flagWebDomain          = flag.String("web_domain", "", "Domain of the website")
 	flagKMSKeyARN          = flag.String("kms_key_arn", "", "the arn of the master key that should be used to encrypt outbound and decrypt inbound data")
 	flagSettingsAddr       = flag.String("settings_addr", "", "host:port of settings service")
+	flagMediaAddr          = flag.String("media_addr", "", "host:port of media service")
 )
 
 func init() {
@@ -116,6 +118,15 @@ func main() {
 	}
 	directoryClient := directory.NewDirectoryClient(conn)
 
+	if *flagMediaAddr == "" {
+		golog.Fatalf("Media service not configured")
+	}
+	conn, err = grpc.Dial(*flagMediaAddr, grpc.WithInsecure())
+	if err != nil {
+		golog.Fatalf("Unable to connect to media service: %s", err)
+	}
+	mediaClient := media.NewMediaClient(conn)
+
 	dl := dal.New(db)
 
 	// register the settings with the service
@@ -131,7 +142,7 @@ func main() {
 		golog.Fatalf("Unable to register configs with the settings service: %s", err.Error())
 	}
 
-	srv := server.NewThreadsServer(clock.New(), dl, eSNS, *flagSNSTopicARN, notificationClient, directoryClient, settingsClient, *flagWebDomain)
+	srv := server.NewThreadsServer(clock.New(), dl, eSNS, *flagSNSTopicARN, notificationClient, directoryClient, settingsClient, mediaClient, *flagWebDomain)
 	threading.InitMetrics(srv, bootSvc.MetricsRegistry.Scope("server"))
 
 	w := setupthread.NewWorker(eSQS, workerClient{srv: srv}, *flagSQSEventsURL)

@@ -21,7 +21,9 @@ import (
 	"github.com/sprucehealth/backend/libs/urlutil"
 	"github.com/sprucehealth/backend/shttputil"
 	"github.com/sprucehealth/backend/svc/auth"
+	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/media"
+	"github.com/sprucehealth/backend/svc/threading"
 )
 
 var (
@@ -35,7 +37,9 @@ var (
 	flagMaxMemory          = flag.Int64("max_memory", 8<<20, "Maximum memory to use when decoding POST bodies")
 
 	// Services
-	flagAuthAddr = flag.String("auth_addr", "", "host:port of auth service")
+	flagAuthAddr      = flag.String("auth_addr", "", "host:port of auth service")
+	flagDirectoryAddr = flag.String("directory_addr", "", "host:port of directory service")
+	flagThreadingAddr = flag.String("threading_addr", "", "host:port of threading service")
 
 	// DB
 	flagDBHost     = flag.String("db_host", "localhost", "the host at which we should attempt to connect to the database")
@@ -71,6 +75,24 @@ func main() {
 		golog.Fatalf("Unable to connect to auth service: %s", err)
 	}
 	authClient := auth.NewAuthClient(conn)
+
+	if *flagDirectoryAddr == "" {
+		golog.Fatalf("Directory service addr not configured")
+	}
+	conn, err = grpc.Dial(*flagDirectoryAddr, grpc.WithInsecure())
+	if err != nil {
+		golog.Fatalf("Unable to connect to directory service: %s", err)
+	}
+	directoryClient := directory.NewDirectoryClient(conn)
+
+	if *flagThreadingAddr == "" {
+		golog.Fatalf("Threading service addr not configured")
+	}
+	conn, err = grpc.Dial(*flagThreadingAddr, grpc.WithInsecure())
+	if err != nil {
+		golog.Fatalf("Unable to connect to threading service: %s", err)
+	}
+	threadingClient := threading.NewThreadsClient(conn)
 
 	if *flagRPCListenAddr == "" {
 		golog.Fatalf("RPC listen addr required")
@@ -112,6 +134,8 @@ func main() {
 	handlers.InitRoutes(r,
 		awsSession,
 		authClient,
+		directoryClient,
+		threadingClient,
 		urlutil.NewSigner("https://"+*flagMediaAPIDomain, signer, clock.New()),
 		dal.New(db),
 		*flagWebDomain,

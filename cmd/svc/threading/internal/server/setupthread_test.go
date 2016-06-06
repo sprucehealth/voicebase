@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
+	mock_media "github.com/sprucehealth/backend/svc/media/mock"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/backend/test"
 )
@@ -17,8 +18,10 @@ func TestCreateOnboardingThread(t *testing.T) {
 	t.Parallel()
 	dl := dalmock.New(t)
 	defer dl.Finish()
+	mm := mock_media.New(t)
+	defer mm.Finish()
 	clk := clock.New()
-	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, nil, "WEBDOMAIN")
+	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, nil, mm, "WEBDOMAIN")
 
 	now := clk.Now()
 
@@ -72,8 +75,10 @@ func TestOnboardingThreadEvent_PROVISIONED_PHONE(t *testing.T) {
 	t.Parallel()
 	dl := dalmock.New(t)
 	defer dl.Finish()
+	mm := mock_media.New(t)
+	defer mm.Finish()
 	clk := clock.New()
-	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, nil, "WEBDOMAIN")
+	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, nil, mm, "WEBDOMAIN")
 
 	setupTID, err := models.NewThreadID()
 	test.OK(t, err)
@@ -140,8 +145,10 @@ func TestOnboardingThreadEvent_GENERIC_SETUP_eventSetupAnsweringService(t *testi
 	t.Parallel()
 	dl := dalmock.New(t)
 	defer dl.Finish()
+	mm := mock_media.New(t)
+	defer mm.Finish()
 	clk := clock.New()
-	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, nil, "WEBDOMAIN")
+	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, nil, mm, "WEBDOMAIN")
 
 	setupTID, err := models.NewThreadID()
 	test.OK(t, err)
@@ -183,8 +190,10 @@ func TestOnboardingThreadEvent_GENERIC_SETUP_eventSetupTeamMessaging(t *testing.
 	t.Parallel()
 	dl := dalmock.New(t)
 	defer dl.Finish()
+	mm := mock_media.New(t)
+	defer mm.Finish()
 	clk := clock.New()
-	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, nil, "WEBDOMAIN")
+	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, nil, mm, "WEBDOMAIN")
 
 	setupTID, err := models.NewThreadID()
 	test.OK(t, err)
@@ -226,8 +235,10 @@ func TestOnboardingThreadEvent_GENERIC_SETUP_eventSetupTelemedicine(t *testing.T
 	t.Parallel()
 	dl := dalmock.New(t)
 	defer dl.Finish()
+	mm := mock_media.New(t)
+	defer mm.Finish()
 	clk := clock.New()
-	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, nil, "WEBDOMAIN")
+	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, nil, mm, "WEBDOMAIN")
 
 	setupTID, err := models.NewThreadID()
 	test.OK(t, err)

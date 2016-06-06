@@ -10,7 +10,6 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/mime"
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/service"
 	"github.com/sprucehealth/backend/libs/errors"
-	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	lmedia "github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/mux"
@@ -119,9 +118,4 @@ func (h *mediaHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *h
 		return
 	}
 	http.Redirect(w, r, eURL, http.StatusSeeOther)
-}
-
-func internalError(w http.ResponseWriter, err error) {
-	golog.LogDepthf(1, golog.ERR, "Media: Internal Error: %s", err)
-	http.Error(w, "Internal Error", http.StatusInternalServerError)
 }

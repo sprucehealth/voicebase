@@ -125,6 +125,8 @@ const (
 	MediaOwnerTypeThread MediaOwnerType = "THREAD"
 	// MediaOwnerTypeEntity represents the ENTITY state of the owner_type field on a media record
 	MediaOwnerTypeEntity MediaOwnerType = "ENTITY"
+	// MediaOwnerTypeAccount represents the ACCOUNT state of the owner_type field on a media record
+	MediaOwnerTypeAccount MediaOwnerType = "ACCOUNT"
 )
 
 // ParseMediaOwnerType converts a string into the correcponding enum value
