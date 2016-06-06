@@ -132,7 +132,7 @@ const (
 // ParseMediaOwnerType converts a string into the correcponding enum value
 func ParseMediaOwnerType(s string) (MediaOwnerType, error) {
 	switch t := MediaOwnerType(strings.ToUpper(s)); t {
-	case MediaOwnerTypeOrganization, MediaOwnerTypeThread, MediaOwnerTypeEntity:
+	case MediaOwnerTypeOrganization, MediaOwnerTypeThread, MediaOwnerTypeEntity, MediaOwnerTypeAccount:
 		return t, nil
 	}
 	return MediaOwnerType(""), errors.Trace(fmt.Errorf("Unknown owner_type:%s", s))
