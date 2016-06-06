@@ -111,21 +111,44 @@ var markThreadsAsReadOutputType = graphql.NewObject(
 	},
 )
 
-type markThreadsAsReadInput struct {
-	ThreadIDs        []string `gql:"threadIDs"`
-	OrganizationID   string   `gql:"organizationID,nonempty"`
-	ClientMutationID string   `gql:"clientMutationId"`
-	AllThreads       bool     `gql:"all"`
+type threadWatermark struct {
+	ThreadID             string `gql:"threadID"`
+	LastMessageTimestamp int    `gql:"lastMessageTimestamp"`
 }
+
+type markThreadsAsReadInput struct {
+	ThreadWatermarks []*threadWatermark `gql:"threadWatermarks"`
+	OrganizationID   string             `gql:"organizationID,nonempty"`
+	Seen             bool               `gql:"seen"`
+	ClientMutationID string             `gql:"clientMutationId"`
+	AllThreads       bool               `gql:"all"`
+}
+
+var threadWatermarkType = graphql.NewInputObject(
+	graphql.InputObjectConfig{
+		Name: "ThreadWatermark",
+		Fields: graphql.InputObjectConfigFieldMap{
+			"threadID":             &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
+			"lastMessageTimestamp": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.Int)},
+		},
+	},
+)
 
 var markThreadsAsReadInputType = graphql.NewInputObject(
 	graphql.InputObjectConfig{
 		Name: "MarkThreadsAsReadInput",
 		Fields: graphql.InputObjectConfigFieldMap{
 			"clientMutationId": newClientMutationIDInputField(),
-			"threadIDs":        &graphql.InputObjectFieldConfig{Type: graphql.NewList(graphql.ID)},
-			"organizationID":   &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-			"all":              &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.Boolean)},
+			"threadWatermarks": &graphql.InputObjectFieldConfig{Type: graphql.NewList(threadWatermarkType)},
+			"seen": &graphql.InputObjectFieldConfig{
+				Type:        graphql.NewNonNull(graphql.Boolean),
+				Description: "True indicates that the user has read the messages in the thread up to the watermark for each thread in the list.",
+			},
+			"organizationID": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"all": &graphql.InputObjectFieldConfig{
+				Type:        graphql.NewNonNull(graphql.Boolean),
+				Description: "True indicates that all threads need to be marked as read. If there is a list of threadWatermarkItems provided they will be ignored.",
+			},
 		},
 	},
 )
