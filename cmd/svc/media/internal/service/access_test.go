@@ -28,6 +28,26 @@ func TestCanAccess(t *testing.T) {
 		expected  error
 		finishers []mock.Finisher
 	}{
+		"LegacyMedia-CanAccess": {
+			tservice: func() *tservice {
+				md := mock_directory.New(t)
+				mt := mock_threads.New(t)
+				mdl := mock_dl.New(t)
+				mdl.Expect(mock.NewExpectation(mdl.Media, dal.MediaID("mediaID")).WithReturns(
+					(*dal.Media)(nil), dal.ErrNotFound))
+				return &tservice{
+					service: &service{
+						directory: md,
+						threads:   mt,
+						dal:       mdl,
+					},
+					finish: []mock.Finisher{md, mt, mdl},
+				}
+			}(),
+			mediaID:   "mediaID",
+			accountID: "accountID",
+			expected:  nil,
+		},
 		"OwnerAccountID-AccountIDMatches": {
 			tservice: func() *tservice {
 				md := mock_directory.New(t)

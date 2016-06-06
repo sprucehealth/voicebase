@@ -4,7 +4,9 @@ import (
 	"fmt"
 
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/dal"
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/conc"
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
 	"golang.org/x/net/context"
@@ -12,8 +14,16 @@ import (
 
 func (s *service) CanAccess(ctx context.Context, mediaID dal.MediaID, accountID string) error {
 	media, err := s.dal.Media(mediaID)
-	if err != nil {
+	if errors.Cause(err) == dal.ErrNotFound {
+		// For legacy media we don't have info for, allow access, rely just on auth for now
+		return nil
+	} else if err != nil {
 		return err
+	}
+	// Non prod hack for allowing old media
+	// TODO: Remove all this crud by cleaning up preprod eventually
+	if !environment.IsProd() && media.OwnerID == "TODO" {
+		return nil
 	}
 	switch media.OwnerType {
 	case dal.MediaOwnerTypeAccount:
