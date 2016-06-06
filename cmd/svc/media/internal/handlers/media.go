@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/mime"
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/service"
 	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	lmedia "github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/mux"
@@ -59,10 +60,12 @@ func (h *mediaHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *
 	}
 	defer file.Close()
 
+	golog.Debugf("Getting thumbnail")
 	thumbFile, tType, err := parseMultiPartMedia("thumbnail", r)
 	if thumbFile != nil {
 		defer thumbFile.Close()
 	}
+	golog.Debugf("Parsed Thumbnail data: %+v %+v %+v", thumbFile, tType, err)
 	// If we're provided with a mimetype then make sure it's an image, otherwise assume it is
 	if err == nil && tType != nil && tType.Type != "image" {
 		http.Error(w, fmt.Sprintf("Media type %s is not valid for thumbnails", tType.String()), http.StatusBadRequest)
@@ -86,12 +89,16 @@ func (h *mediaHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *
 }
 
 func parseMultiPartMedia(formKey string, r *http.Request) (multipart.File, *mime.Type, error) {
+	golog.Debugf("Parsing thumbnail data for %q", formKey)
 	file, fHeaders, err := r.FormFile(formKey)
 	if err != nil {
+		golog.Errorf(fmt.Sprintf("Missing or invalid value for %s in parameters: %s", formKey, err))
 		return nil, nil, fmt.Errorf("Missing or invalid value for %s in parameters: %s", formKey, err)
 	}
+	golog.Debugf("Parsing data for %q: %+v %+v %+v", formKey, file, fHeaders, err)
 	mimeType, err := mime.ParseType(fHeaders.Header.Get(contentTypeHeader))
 	if err != nil {
+		golog.Errorf(fmt.Sprintf("Unable to parse Content-Type for %s", formKey))
 		return file, nil, fmt.Errorf("Unable to parse Content-Type for %s", formKey)
 	}
 	return file, mimeType, nil
