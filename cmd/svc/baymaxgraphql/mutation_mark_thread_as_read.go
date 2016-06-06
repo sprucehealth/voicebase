@@ -121,7 +121,6 @@ type markThreadsAsReadInput struct {
 	OrganizationID   string             `gql:"organizationID,nonempty"`
 	Seen             bool               `gql:"seen"`
 	ClientMutationID string             `gql:"clientMutationId"`
-	AllThreads       bool               `gql:"all"`
 }
 
 var threadWatermarkType = graphql.NewInputObject(
@@ -145,10 +144,6 @@ var markThreadsAsReadInputType = graphql.NewInputObject(
 				Description: "True indicates that the user has read the messages in the thread up to the watermark for each thread in the list.",
 			},
 			"organizationID": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-			"all": &graphql.InputObjectFieldConfig{
-				Type:        graphql.NewNonNull(graphql.Boolean),
-				Description: "True indicates that all threads need to be marked as read. If there is a list of threadWatermarkItems provided they will be ignored.",
-			},
 		},
 	},
 )
