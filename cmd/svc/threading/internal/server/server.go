@@ -18,6 +18,7 @@ import (
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/textutil"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
@@ -44,6 +45,7 @@ type threadsServer struct {
 	notificationClient notification.Client
 	directoryClient    directory.DirectoryClient
 	settingsClient     settings.SettingsClient
+	mediaClient        media.MediaClient
 	webDomain          string
 }
 
@@ -56,6 +58,7 @@ func NewThreadsServer(
 	notificationClient notification.Client,
 	directoryClient directory.DirectoryClient,
 	settingsClient settings.SettingsClient,
+	mediaClient media.MediaClient,
 	webDomain string,
 ) threading.ThreadsServer {
 	if clk == nil {
@@ -69,6 +72,7 @@ func NewThreadsServer(
 		notificationClient: notificationClient,
 		directoryClient:    directoryClient,
 		settingsClient:     settingsClient,
+		mediaClient:        mediaClient,
 		webDomain:          webDomain,
 	}
 }
@@ -620,12 +624,28 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 
 	var item *models.ThreadItem
 	var linkedItem *models.ThreadItem
-	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
-		// TODO: validate any attachments
-		attachments, err := transformAttachmentsFromRequest(in.Attachments)
+
+	// TODO: validate any attachments
+	attachments, err := transformAttachmentsFromRequest(in.Attachments)
+	if err != nil {
+		return nil, internalError(err)
+	}
+	mediaIDs := mediaIDsFromAttachments(attachments)
+	if len(mediaIDs) > 0 {
+		// Before posting the acutal message, map all the attached media to the thread
+		// Failure scenarios:
+		// 1. This call succeeds and the post fails. The media is now mapped to the thread which should still allow a repost.
+		// 2. This call fails. The media is still mapped to the caller
+		_, err = s.mediaClient.ClaimMedia(ctx, &media.ClaimMediaRequest{
+			MediaIDs:  mediaIDs,
+			OwnerType: media.ClaimMediaRequest_THREAD,
+			OwnerID:   threadID.String(),
+		})
 		if err != nil {
-			return internalError(err)
+			return nil, internalError(err)
 		}
+	}
+	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
 		req := &dal.PostMessageRequest{
 			ThreadID:     threadID,
 			FromEntityID: in.FromEntityID,
@@ -770,6 +790,21 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 		Item:   it,
 		Thread: th,
 	}, nil
+}
+
+func mediaIDsFromAttachments(as []*models.Attachment) []string {
+	mediaIDs := make([]string, 0, len(as))
+	for _, a := range as {
+		switch a.Type {
+		case models.Attachment_AUDIO:
+			mediaIDs = append(mediaIDs, a.GetAudio().MediaID)
+		case models.Attachment_IMAGE:
+			mediaIDs = append(mediaIDs, a.GetImage().MediaID)
+		case models.Attachment_VIDEO:
+			mediaIDs = append(mediaIDs, a.GetVideo().MediaID)
+		}
+	}
+	return mediaIDs
 }
 
 // QueryThreads queries the list of threads

@@ -108,6 +108,7 @@ message LookupEntitiesRequest {
 		ENTITY_ID = 0;
 		EXTERNAL_ID = 1;
 		BATCH_ENTITY_ID = 2;
+		ACCOUNT_ID = 3;
 	}
 
 	LookupKeyType lookup_key_type = 1;
@@ -116,6 +117,7 @@ message LookupEntitiesRequest {
 		string external_id = 3 [(gogoproto.customname) = "ExternalID"];
 		// Can't use repeated inside oneof
 		IDList batch_entity_id = 6 [(gogoproto.customname) = "BatchEntityID"];
+		string account_id = 9 [(gogoproto.customname) = "AccountID"];
 	}
 
 	RequestedInformation requested_information = 4;
@@ -287,7 +289,6 @@ service Directory {
 	rpc CreateContact (CreateContactRequest) returns (CreateContactResponse);
 	rpc CreateContacts (CreateContactsRequest) returns (CreateContactsResponse);
 	rpc CreateEntityDomain (CreateEntityDomainRequest) returns (CreateEntityDomainResponse);
-	rpc UpdateEntityDomain (UpdateEntityDomainRequest) returns (UpdateEntityDomainResponse);
 	rpc CreateEntity (CreateEntityRequest) returns (CreateEntityResponse);
 	rpc CreateExternalIDs (CreateExternalIDsRequest) returns (CreateExternalIDsResponse);
 	rpc CreateMembership (CreateMembershipRequest) returns (CreateMembershipResponse);
@@ -300,4 +301,5 @@ service Directory {
 	rpc SerializedEntityContact (SerializedEntityContactRequest) returns (SerializedEntityContactResponse);
 	rpc UpdateContacts (UpdateContactsRequest) returns (UpdateContactsResponse);
 	rpc UpdateEntity (UpdateEntityRequest) returns (UpdateEntityResponse);
+	rpc UpdateEntityDomain (UpdateEntityDomainRequest) returns (UpdateEntityDomainResponse);
 }

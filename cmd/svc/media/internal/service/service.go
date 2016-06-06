@@ -7,24 +7,30 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/dal"
+	"github.com/sprucehealth/backend/cmd/svc/media/internal/mediactx"
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/mime"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/media"
+	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/threading"
 )
 
 // Service implements a multi media storage service.
 type Service interface {
-	PutMedia(ctx context.Context, mFile io.ReadSeeker, mediaType *mime.Type, mThumb io.ReadSeeker) (*MediaMeta, error)
+	CanAccess(ctx context.Context, mediaID dal.MediaID, accountID string) error
+	ExpiringURL(ctx context.Context, mediaID dal.MediaID, exp time.Duration) (string, error)
 	GetReader(ctx context.Context, mediaID dal.MediaID) (io.ReadCloser, *MediaMeta, error)
 	GetThumbnailReader(ctx context.Context, mediaID dal.MediaID, size *media.ImageSize) (io.ReadCloser, *media.ImageMeta, error)
-	ExpiringURL(ctx context.Context, mediaID dal.MediaID, exp time.Duration) (string, error)
+	PutMedia(ctx context.Context, mFile io.ReadSeeker, mediaType *mime.Type, mThumb io.ReadSeeker) (*MediaMeta, error)
 }
 
 // New returns a new initialized multi media service.
 func New(
 	dal dal.DAL,
+	directory directory.DirectoryClient,
+	threads threading.ThreadsClient,
 	imageService *media.ImageService,
 	audioService *media.AudioService,
 	videoService *media.VideoService,
@@ -32,6 +38,8 @@ func New(
 ) Service {
 	return &service{
 		dal:           dal,
+		directory:     directory,
+		threads:       threads,
 		imageService:  imageService,
 		audioService:  audioService,
 		videoService:  videoService,
@@ -42,6 +50,8 @@ func New(
 // Service implements a multi media storage service.
 type service struct {
 	dal           dal.DAL
+	directory     directory.DirectoryClient
+	threads       threading.ThreadsClient
 	imageService  *media.ImageService
 	audioService  *media.AudioService
 	videoService  *media.VideoService
@@ -51,6 +61,9 @@ type service struct {
 // ErrUnsupportedContentType represents an attempt to put unsupported media into the service
 var ErrUnsupportedContentType = errors.New("Unsupported content-type")
 
+// ErrAccessDenied represents a request for access to a resource the caller cannot access
+var ErrAccessDenied = errors.New("Access denied")
+
 // MediaMeta represents the metadata being tracked by the system common to all media types
 type MediaMeta struct {
 	MediaID  dal.MediaID
@@ -58,81 +71,6 @@ type MediaMeta struct {
 }
 
 const thumbnailSuffix = "-thumbnail"
-
-// PutReader sends the provided reader to the storage layers. Optionally, if a thumbnail is provided, that is mapped to the media
-func (s *service) PutMedia(ctx context.Context, mFile io.ReadSeeker, mediaType *mime.Type, mThumb io.ReadSeeker) (*MediaMeta, error) {
-	mediaID, err := dal.NewMediaID()
-	if err != nil {
-		return nil, err
-	}
-	parallel := conc.NewParallel()
-	var size uint64
-	var duration time.Duration
-	var url string
-	parallel.Go(func() error {
-		switch mediaType.Type {
-		case "image":
-			im, err := s.imageService.PutReader(mediaID.String(), mFile)
-			if err != nil {
-				return err
-			}
-			size = im.Size
-			url = im.URL
-		case "audio":
-			am, err := s.audioService.PutReader(mediaID.String(), mFile, mediaType.String())
-			if err != nil {
-				return err
-			}
-			size = am.Size
-			duration = am.Duration
-			url = am.URL
-		case "video":
-			vm, err := s.videoService.PutReader(mediaID.String(), mFile, mediaType.String())
-			if err != nil {
-				return err
-			}
-			size = vm.Size
-			duration = vm.Duration
-			url = vm.URL
-		default:
-			bm, err := s.binaryService.PutReader(mediaID.String(), mFile, mediaType.String())
-			if err != nil {
-				return err
-			}
-			size = bm.Size
-			url = bm.URL
-		}
-		return nil
-	})
-	// If thumbnail information for the media was provided, upload and map it
-	if mThumb != nil {
-		parallel.Go(func() error {
-			if _, err := s.imageService.PutReader(mediaID.String()+thumbnailSuffix, mThumb); err != nil {
-				return err
-			}
-			return nil
-		})
-	}
-	if err := parallel.Wait(); err != nil {
-		return nil, err
-	}
-	_, err = s.dal.InsertMedia(&dal.Media{
-		ID:         mediaID,
-		URL:        url,
-		MimeType:   mediaType.String(),
-		OwnerType:  dal.MediaOwnerTypeEntity,
-		OwnerID:    "TODO",
-		SizeBytes:  size,
-		DurationNS: uint64(duration.Nanoseconds()),
-	})
-	if err != nil {
-		return nil, err
-	}
-	return &MediaMeta{
-		MediaID:  mediaID,
-		MIMEType: mediaType.String(),
-	}, nil
-}
 
 func (s *service) GetReader(ctx context.Context, mediaID dal.MediaID) (io.ReadCloser, *MediaMeta, error) {
 	media, err := s.dal.Media(mediaID)
@@ -198,10 +136,6 @@ func (s *service) GetThumbnailReader(ctx context.Context, mediaID dal.MediaID, s
 	return rc, meta, err
 }
 
-func (s *service) ExpiringURL(ctx context.Context, mediaID dal.MediaID, exp time.Duration) (string, error) {
-	return s.binaryService.ExpiringURL(mediaID.String(), exp)
-}
-
 func thumbnailID(m *dal.Media) string {
 	t, err := mime.ParseType(m.MimeType)
 	if err != nil {
@@ -212,6 +146,89 @@ func thumbnailID(m *dal.Media) string {
 		return m.ID.String()
 	}
 	return m.ID.String() + thumbnailSuffix
+}
+
+func (s *service) ExpiringURL(ctx context.Context, mediaID dal.MediaID, exp time.Duration) (string, error) {
+	return s.binaryService.ExpiringURL(mediaID.String(), exp)
+}
+
+// PutReader sends the provided reader to the storage layers. Optionally, if a thumbnail is provided, that is mapped to the media
+func (s *service) PutMedia(ctx context.Context, mFile io.ReadSeeker, mediaType *mime.Type, mThumb io.ReadSeeker) (*MediaMeta, error) {
+	acc, err := mediactx.Account(ctx)
+	if err != nil {
+		return nil, err
+	}
+	mediaID, err := dal.NewMediaID()
+	if err != nil {
+		return nil, err
+	}
+	parallel := conc.NewParallel()
+	var size uint64
+	var duration time.Duration
+	var url string
+	parallel.Go(func() error {
+		switch mediaType.Type {
+		case "image":
+			im, err := s.imageService.PutReader(mediaID.String(), mFile)
+			if err != nil {
+				return err
+			}
+			size = im.Size
+			url = im.URL
+		case "audio":
+			am, err := s.audioService.PutReader(mediaID.String(), mFile, mediaType.String())
+			if err != nil {
+				return err
+			}
+			size = am.Size
+			duration = am.Duration
+			url = am.URL
+		case "video":
+			vm, err := s.videoService.PutReader(mediaID.String(), mFile, mediaType.String())
+			if err != nil {
+				return err
+			}
+			size = vm.Size
+			duration = vm.Duration
+			url = vm.URL
+		default:
+			bm, err := s.binaryService.PutReader(mediaID.String(), mFile, mediaType.String())
+			if err != nil {
+				return err
+			}
+			size = bm.Size
+			url = bm.URL
+		}
+		return nil
+	})
+	// If thumbnail information for the media was provided, upload and map it
+	if mThumb != nil {
+		parallel.Go(func() error {
+			if _, err := s.imageService.PutReader(mediaID.String()+thumbnailSuffix, mThumb); err != nil {
+				return err
+			}
+			return nil
+		})
+	}
+	if err := parallel.Wait(); err != nil {
+		return nil, err
+	}
+	_, err = s.dal.InsertMedia(&dal.Media{
+		ID:         mediaID,
+		URL:        url,
+		MimeType:   mediaType.String(),
+		OwnerType:  dal.MediaOwnerTypeAccount,
+		OwnerID:    acc.ID,
+		SizeBytes:  size,
+		DurationNS: uint64(duration.Nanoseconds()),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &MediaMeta{
+		MediaID:  mediaID,
+		MIMEType: mediaType.String(),
+	}, nil
 }
 
 const (

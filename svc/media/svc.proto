@@ -19,6 +19,7 @@ message MediaInfo {
 		ENTITY = 1;
 		ORGANIZATION = 2;
 		THREAD = 3;
+		ACCOUNT = 4;
 	}
 	
 	string id = 1 [(gogoproto.customname) = "ID"];
@@ -39,6 +40,22 @@ message MediaInfosResponse {
 	map<string,MediaInfo> media_infos = 1;
 }
 
+message ClaimMediaRequest {
+	enum OwnerType {
+		OWNER_TYPE_UNKNOWN = 0;
+		ENTITY = 1;
+		ORGANIZATION = 2;
+		THREAD = 3;
+		ACCOUNT = 4;
+	}
+	repeated string media_ids = 1 [(gogoproto.customname) = "MediaIDs"];
+	OwnerType owner_type = 2;
+	string owner_id = 3 [(gogoproto.customname) = "OwnerID"];
+}
+
+message ClaimMediaResponse {}
+
 service Media {
+	rpc ClaimMedia (ClaimMediaRequest) returns (ClaimMediaResponse);
 	rpc MediaInfos (MediaInfosRequest) returns (MediaInfosResponse);
 }

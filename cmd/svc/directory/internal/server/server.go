@@ -60,8 +60,16 @@ func riDepth(ri *directory.RequestedInformation) int64 {
 func (s *server) LookupEntities(ctx context.Context, rd *directory.LookupEntitiesRequest) (out *directory.LookupEntitiesResponse, err error) {
 	var entityIDs []dal.EntityID
 	switch rd.LookupKeyType {
-	case directory.LookupEntitiesRequest_EXTERNAL_ID:
-		externalEntityIDs, err := s.dl.ExternalEntityIDs(rd.GetExternalID())
+	case directory.LookupEntitiesRequest_EXTERNAL_ID, directory.LookupEntitiesRequest_ACCOUNT_ID:
+		var extID string
+		switch rd.LookupKeyType {
+		case directory.LookupEntitiesRequest_EXTERNAL_ID:
+			extID = rd.GetExternalID()
+		// TODO: Actually use the account_id field on the table and don't do this double lookup
+		case directory.LookupEntitiesRequest_ACCOUNT_ID:
+			extID = rd.GetAccountID()
+		}
+		externalEntityIDs, err := s.dl.ExternalEntityIDs(extID)
 		if err != nil {
 			return nil, grpcErrorf(codes.Internal, err.Error())
 		}
