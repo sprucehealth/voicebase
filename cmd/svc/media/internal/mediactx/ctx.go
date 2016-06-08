@@ -60,7 +60,7 @@ func WithRequiresAuthorization(ctx context.Context, requiresAuthorization bool) 
 
 // RequiresAuthorization returns the auth token which may be empty
 func RequiresAuthorization(ctx context.Context) bool {
-	requiresAuthorization, ok := ctx.Value(ctxAuthToken).(bool)
+	requiresAuthorization, ok := ctx.Value(ctxRequiresAuthorization).(bool)
 	if ok {
 		return requiresAuthorization
 	}
