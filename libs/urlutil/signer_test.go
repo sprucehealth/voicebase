@@ -3,10 +3,12 @@ package urlutil
 import (
 	"net/url"
 	"path"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/sprucehealth/backend/libs/clock"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/test"
@@ -179,5 +181,33 @@ func TestSignerRoundTrip(t *testing.T) {
 			c.ValidateParams.Set(expiresParamName, ps.Get(expiresParamName))
 		}
 		test.EqualsCase(t, cn, c.Expected, c.Signer.ValidateSignature(c.ValidatePath, c.ValidateParams))
+	}
+}
+
+func TestSigner(t *testing.T) {
+
+	sigKeys := strings.Split("test", ",")
+	sigKeysByteSlice := make([][]byte, len(sigKeys))
+	for i, sk := range sigKeys {
+		sigKeysByteSlice[i] = []byte(sk)
+	}
+	signer, err := sig.NewSigner(sigKeysByteSlice, nil)
+	if err != nil {
+		golog.Fatalf("Failed to create signer: %s", err.Error())
+	}
+
+	clk := clock.New()
+	baseURL := "https://test.com"
+	ms := NewSigner(baseURL, signer, clk)
+
+	signedURL, err := ms.SignedURL("/media/12345/thumbnail", url.Values{
+		"width":  []string{"3264"},
+		"height": []string{"3264"}}, ptr.Time(clk.Now().Add(time.Minute*15)))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !strings.HasPrefix(signedURL, baseURL) {
+		t.Fatalf("Expected '%s' tp prefix %s but it did not.", signedURL, baseURL)
 	}
 }

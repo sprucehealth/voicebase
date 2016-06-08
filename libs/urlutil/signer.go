@@ -42,8 +42,10 @@ func (s *Signer) SignedURL(uPath string, params url.Values, expires *time.Time) 
 	if err != nil {
 		return "", err
 	}
+	fmt.Println(base64.URLEncoding.EncodeToString(sig))
 	params.Set(SigParamName, base64.URLEncoding.EncodeToString(sig))
-	return path.Join(s.baseURL, uPath) + "?" + params.Encode(), nil
+	// doing a path.join helps take care of any leading forward slashes in the path
+	return s.baseURL + path.Join("/", uPath) + "?" + params.Encode(), nil
 }
 
 // ErrExpiredURL is returned when the provided signature has expired
