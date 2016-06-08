@@ -160,6 +160,8 @@ func makeVerifyPhoneNumberResolve(forAccountCreation bool) func(p graphql.Resolv
 							ErrorMessage:     "The phone number must match the one that was in your invite.",
 						}, nil
 					}
+				case invite.LookupInviteResponse_PATIENT:
+					// do nothing
 				default:
 					golog.Errorf("Unknown invite type %s", inv.Type.String())
 				}
