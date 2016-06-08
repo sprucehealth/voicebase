@@ -47,20 +47,20 @@ func InitRoutes(
 		AllowedMethods:   []string{httputil.Options, httputil.Post},
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"*"},
-	}).ContextHandler(authenticationRequired(mHandler, authClient)))
+	}).ContextHandler(authenticationRequired(mHandler, authClient, urlSigner)))
 	r.Handle("/media/{id:"+media.IDRegexPattern+"}", cors.New(cors.Options{
 		AllowedOrigins:   corsOrigins,
 		AllowedMethods:   []string{httputil.Get, httputil.Options},
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"*"},
-	}).ContextHandler(authenticationRequired(authorizationRequired(mHandler, svc, "id"), authClient)))
+	}).ContextHandler(authenticationRequired(authorizationRequired(mHandler, svc, "id"), authClient, urlSigner)))
 
 	r.Handle("/media/{id:"+media.IDRegexPattern+"}/thumbnail", cors.New(cors.Options{
 		AllowedOrigins:   corsOrigins,
 		AllowedMethods:   []string{httputil.Get, httputil.Options},
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"*"},
-	}).ContextHandler(authenticationRequired(authorizationRequired(&thumbnailHandler{svc: svc}, svc, "id"), authClient)))
+	}).ContextHandler(authenticationRequired(authorizationRequired(&thumbnailHandler{svc: svc}, svc, "id"), authClient, urlSigner)))
 }
 
 func initService(

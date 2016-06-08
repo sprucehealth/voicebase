@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
@@ -16,13 +17,13 @@ import (
 
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/conc"
-	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/libs/twilio"
 	twiliomock "github.com/sprucehealth/backend/libs/twilio/mock"
+	"github.com/sprucehealth/backend/libs/urlutil"
 	"github.com/sprucehealth/backend/svc/directory"
 	dirmock "github.com/sprucehealth/backend/svc/directory/mock"
 	"github.com/sprucehealth/backend/svc/events"
@@ -424,11 +425,15 @@ func TestSendMessage_SMS(t *testing.T) {
 	clk := clock.NewManaged(time.Now())
 	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
 	test.OK(t, err)
-	signer := media.NewSigner("apiDomain", sig)
-	resizedURL1, err := signer.ExpiringSignedURL("mediaid1", "", "", 3264, 3264, false, clk.Now().Add(time.Minute*15))
-	test.OK(t, err)
-	resizedURL2, err := signer.ExpiringSignedURL("mediaid2", "", "", 3264, 3264, false, clk.Now().Add(time.Minute*15))
-	test.OK(t, err)
+	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
+	resizedURL1, err := signer.SignedURL("/media/mediaid1/thumbnail", url.Values{
+		"width":  []string{"3264"},
+		"height": []string{"3264"},
+	}, ptr.Time(clk.Now().Add(time.Minute*15)))
+	resizedURL2, err := signer.SignedURL("/media/mediaid2/thumbnail", url.Values{
+		"width":  []string{"3264"},
+		"height": []string{"3264"},
+	}, ptr.Time(clk.Now().Add(time.Minute*15)))
 	mHTTPClient := mock.NewHttpClient(t)
 	mHTTPClient.Expect(mock.NewExpectation(mHTTPClient.Head, resizedURL1).WithReturns(&http.Response{
 		Body: ioutil.NopCloser(nil),
@@ -543,10 +548,16 @@ func TestSendMessage_Email(t *testing.T) {
 	clk := clock.NewManaged(time.Now())
 	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
 	test.OK(t, err)
-	signer := media.NewSigner("apiDomain", sig)
-	resizedURL1, err := signer.ExpiringSignedURL("mediaid1", "", "", 3264, 3264, false, clk.Now().Add(time.Minute*15))
+	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
+	resizedURL1, err := signer.SignedURL("/media/mediaid1/thumbnail", url.Values{
+		"width":  []string{"3264"},
+		"height": []string{"3264"},
+	}, ptr.Time(clk.Now().Add(time.Minute*15)))
 	test.OK(t, err)
-	resizedURL2, err := signer.ExpiringSignedURL("mediaid2", "", "", 3264, 3264, false, clk.Now().Add(time.Minute*15))
+	resizedURL2, err := signer.SignedURL("/media/mediaid2/thumbnail", url.Values{
+		"width":  []string{"3264"},
+		"height": []string{"3264"},
+	}, ptr.Time(clk.Now().Add(time.Minute*15)))
 	test.OK(t, err)
 	mHTTPClient := mock.NewHttpClient(t)
 	mHTTPClient.Expect(mock.NewExpectation(mHTTPClient.Head, resizedURL1).WithReturns(&http.Response{

@@ -174,7 +174,7 @@ func TestSignerRoundTrip(t *testing.T) {
 		ps, err := url.ParseQuery(ru.RawQuery)
 		test.OKCase(t, cn, err)
 		// Copy the sig into the validation set
-		c.ValidateParams.Set(sigParamName, ps.Get(sigParamName))
+		c.ValidateParams.Set(SigParamName, ps.Get(SigParamName))
 		if ps.Get(expiresParamName) != "" {
 			c.ValidateParams.Set(expiresParamName, ps.Get(expiresParamName))
 		}

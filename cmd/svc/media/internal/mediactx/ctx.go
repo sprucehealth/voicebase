@@ -13,6 +13,7 @@ type ctxKey int
 
 const (
 	ctxAccount ctxKey = iota
+	ctxRequiresAuthorization
 	ctxAuthToken
 )
 
@@ -50,4 +51,18 @@ func Account(ctx context.Context) (*auth.Account, error) {
 		return nil, errors.New("no account in context")
 	}
 	return acc, nil
+}
+
+// WithRequiresAuthorization attaches a flag to the context that determines if the call requires authorization
+func WithRequiresAuthorization(ctx context.Context, requiresAuthorization bool) context.Context {
+	return context.WithValue(ctx, ctxRequiresAuthorization, requiresAuthorization)
+}
+
+// RequiresAuthorization returns the auth token which may be empty
+func RequiresAuthorization(ctx context.Context) bool {
+	requiresAuthorization, ok := ctx.Value(ctxAuthToken).(bool)
+	if ok {
+		return requiresAuthorization
+	}
+	return true
 }

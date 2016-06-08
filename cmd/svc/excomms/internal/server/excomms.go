@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -19,6 +20,7 @@ import (
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/twilio"
+	"github.com/sprucehealth/backend/libs/urlutil"
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/events"
@@ -51,7 +53,7 @@ type excommsService struct {
 	emailClient          EmailClient
 	idgen                idGenerator
 	proxyNumberManager   proxynumber.Manager
-	signer               *media.Signer
+	signer               *urlutil.Signer
 	httpClient           httputil.Client
 }
 
@@ -67,7 +69,7 @@ func NewService(
 	emailClient EmailClient,
 	idgen idGenerator,
 	proxyNumberManager proxynumber.Manager,
-	signer *media.Signer) excomms.ExCommsServer {
+	signer *urlutil.Signer) excomms.ExCommsServer {
 
 	es := &excommsService{
 		apiURL:               apiURL,
@@ -336,7 +338,9 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 			grpcErrorf(codes.Internal, err.Error())
 		}
 
-		signedURL, err := e.signer.ExpiringSignedURL(mediaID, "", "", 3264, 3264, false, e.clock.Now().Add(time.Minute*15))
+		signedURL, err := e.signer.SignedURL(fmt.Sprintf("/media/%s/thumbnail", mediaID), url.Values{
+			"width":  []string{"3264"},
+			"height": []string{"3264"}}, ptr.Time(e.clock.Now().Add(time.Minute*15)))
 		if err != nil {
 			grpcErrorf(codes.Internal, err.Error())
 		}

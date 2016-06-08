@@ -28,22 +28,24 @@ func authorizationRequired(h httputil.ContextHandler, svc service.Service, idPar
 }
 
 func (h *authorizationHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	acc, err := mediactx.Account(ctx)
-	if err != nil {
-		internalError(w, err)
-		return
-	}
-	mediaID, err := dal.ParseMediaID(mux.Vars(ctx)[h.idParamName])
-	if err != nil {
-		badRequest(w, errors.New("Cannot parse media id"), http.StatusBadRequest)
-		return
-	}
-	if err := h.svc.CanAccess(ctx, mediaID, acc.ID); err == service.ErrAccessDenied {
-		forbidden(w, err, golog.WARN)
-		return
-	} else if err != nil {
-		forbidden(w, err, golog.ERR)
-		return
+	if mediactx.RequiresAuthorization(ctx) {
+		acc, err := mediactx.Account(ctx)
+		if err != nil {
+			internalError(w, err)
+			return
+		}
+		mediaID, err := dal.ParseMediaID(mux.Vars(ctx)[h.idParamName])
+		if err != nil {
+			badRequest(w, errors.New("Cannot parse media id"), http.StatusBadRequest)
+			return
+		}
+		if err := h.svc.CanAccess(ctx, mediaID, acc.ID); err == service.ErrAccessDenied {
+			forbidden(w, err, golog.WARN)
+			return
+		} else if err != nil {
+			forbidden(w, err, golog.ERR)
+			return
+		}
 	}
 
 	h.h.ServeHTTP(ctx, w, r)

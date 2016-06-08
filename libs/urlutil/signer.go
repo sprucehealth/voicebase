@@ -29,7 +29,7 @@ func NewSigner(baseURL string, signer *sig.Signer, clk clock.Clock) *Signer {
 	}
 }
 
-const sigParamName = "sig"
+const SigParamName = "sig"
 const expiresParamName = "expires"
 
 // SignedURL generates the signed url for the provided params and expires at the provided time. If nil or a zero value time is provided, the url will never expire.
@@ -42,7 +42,7 @@ func (s *Signer) SignedURL(uPath string, params url.Values, expires *time.Time) 
 	if err != nil {
 		return "", err
 	}
-	params.Set(sigParamName, base64.URLEncoding.EncodeToString(sig))
+	params.Set(SigParamName, base64.URLEncoding.EncodeToString(sig))
 	return path.Join(s.baseURL, uPath) + "?" + params.Encode(), nil
 }
 
@@ -54,11 +54,11 @@ var ErrSignatureMismatch = errors.New("the signature does not match")
 
 // ValidateSignature validates that the provided signature matches the params and path
 func (s *Signer) ValidateSignature(uPath string, params url.Values) error {
-	sig := params.Get(sigParamName)
+	sig := params.Get(SigParamName)
 	if sig == "" {
 		return fmt.Errorf("no signature in param set %v for path %s", params, uPath)
 	}
-	params.Del(sigParamName)
+	params.Del(SigParamName)
 	expires := params.Get(expiresParamName)
 	if expires != "" {
 		expiresEpoch, err := strconv.ParseInt(expires, 10, 64)

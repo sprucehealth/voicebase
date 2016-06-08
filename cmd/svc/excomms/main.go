@@ -37,6 +37,7 @@ var config struct {
 	resourceCleanerTopic    string
 	segmentIOKey            string
 	apiDomain               string
+	mediaAPIDomain          string
 	sigKeys                 string
 	behindProxy             bool
 }
@@ -71,6 +72,7 @@ func init() {
 	flag.StringVar(&config.resourceCleanerQueueURL, "resource_cleaner_queue_url", "", "sqs queue that contains requests to delete resources")
 	flag.StringVar(&config.segmentIOKey, "segmentio_key", "", "Segment IO API `key`")
 	flag.StringVar(&config.apiDomain, "api_domain", "", "The baymax api domain")
+	flag.StringVar(&config.mediaAPIDomain, "media_api_domain", "", "The baymax meida api domain")
 	flag.StringVar(&config.sigKeys, "signature_keys_csv", "", "csv signature keys")
 	flag.BoolVar(&config.behindProxy, "behind_proxy", false, "Set to true if behind a proxy")
 }

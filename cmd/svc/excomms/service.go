@@ -20,11 +20,11 @@ import (
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/libs/twilio"
+	"github.com/sprucehealth/backend/libs/urlutil"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/settings"
@@ -142,7 +142,7 @@ func runService(bootSvc *boot.Service) {
 	if err != nil {
 		golog.Fatalf("Failed to create signer: %s", err.Error())
 	}
-	ms := media.NewSigner("https://"+config.apiDomain+"/media", signer)
+	ms := urlutil.NewSigner("https://"+config.mediaAPIDomain, signer, clock.New())
 
 	excommsService := server.NewService(
 		config.twilioAccountSID,
