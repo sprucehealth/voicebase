@@ -43,6 +43,9 @@ _testmain.go
 *.coverage.html
 *.revision
 
+# DAL Generator schema files
+schema.json
+
 cmd/cli/awslogidx/awslogidx
 cmd/cli/dashboard/dashboard
 cmd/cli/doctorchangemsg/doctorchangemsg

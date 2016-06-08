@@ -23,7 +23,10 @@ type mediaHandler struct {
 	maxMemory      int64
 }
 
-const contentTypeHeader = "Content-Type"
+const (
+	contentTypeHeader   = "Content-Type"
+	contentLengthHeader = "Content-Length"
+)
 
 type mediaPOSTResponse struct {
 	MediaID  string `json:"media_id"`
@@ -34,8 +37,10 @@ type mediaPOSTResponse struct {
 
 func (h *mediaHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
+	case httputil.Head:
+		h.redirectToSource(ctx, w, r)
 	case httputil.Get:
-		h.serveGET(ctx, w, r)
+		h.redirectToSource(ctx, w, r)
 	case httputil.Post:
 		h.servePOST(ctx, w, r)
 	default:
@@ -97,16 +102,12 @@ func parseMultiPartMedia(formKey string, r *http.Request) (multipart.File, *mime
 	return file, mimeType, nil
 }
 
-func (h *mediaHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *mediaHandler) redirectToSource(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	mediaID, err := dal.ParseMediaID(mux.Vars(ctx)["id"])
 	if err != nil {
 		http.Error(w, "Cannot parse media id", http.StatusBadRequest)
 		return
 	}
-
-	// TODO: Once we introduce access control, we will have to ensure to handle media objects
-	// that we don't have information for (all the media objects uploaded before the book-keeping
-	// was introduced)
 
 	// For serving GET requests just redirect to the source with an expiring URL
 	eURL, err := h.svc.ExpiringURL(ctx, mediaID, time.Minute*15)
