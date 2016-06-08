@@ -168,6 +168,7 @@ func main() {
 	baymaxgraphqlsettings.VisitAttachmentsConfig.GetBoolean().Default.Value = !environment.IsProd()
 	baymaxgraphqlsettings.ShakeToMarkThreadsAsReadConfig.GetBoolean().Default.Value = !environment.IsProd()
 	baymaxgraphqlsettings.CarePlansConfig.GetBoolean().Default.Value = !environment.IsProd()
+	baymaxgraphqlsettings.FilteredTabsInInboxConfig.GetBoolean().Default.Value = !environment.IsProd()
 
 	_, err = settings.RegisterConfigs(
 		ctx,
@@ -178,6 +179,7 @@ func main() {
 			baymaxgraphqlsettings.VisitAttachmentsConfig,
 			baymaxgraphqlsettings.ShakeToMarkThreadsAsReadConfig,
 			baymaxgraphqlsettings.CarePlansConfig,
+			baymaxgraphqlsettings.FilteredTabsInInboxConfig,
 		})
 	if err != nil {
 		golog.Fatalf("Unable to register configs with the settings service: %s", err.Error())

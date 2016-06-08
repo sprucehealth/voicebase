@@ -50,6 +50,30 @@ var organizationType = graphql.NewObject(
 					return booleanValue.Value, nil
 				},
 			},
+			"allowFilteredTabsInInbox": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.Boolean),
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					svc := serviceFromParams(p)
+					ctx := p.Context
+					org := p.Source.(*models.Organization)
+					if org == nil {
+						return false, nil
+					}
+
+					booleanValue, err := settings.GetBooleanValue(ctx, svc.settings, &settings.GetValuesRequest{
+						NodeID: org.ID,
+						Keys: []*settings.ConfigKey{
+							{
+								Key: baymaxgraphqlsettings.ConfigKeyFilteredTabsInInbox,
+							},
+						},
+					})
+					if err != nil {
+						return nil, errors.InternalError(ctx, err)
+					}
+					return booleanValue.Value, nil
+				},
+			},
 			"allowShakeToMarkThreadsAsRead": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.Boolean),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {

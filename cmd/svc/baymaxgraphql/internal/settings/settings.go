@@ -8,6 +8,7 @@ const (
 	ConfigKeyVisitAttachments         = "visit_attachments_enabled"
 	ConfigKeyShakeToMarkThreadsAsRead = "shake_to_mark_threads_read"
 	ConfigKeyCarePlans                = "care_plans_enabled"
+	ConfigKeyFilteredTabsInInbox      = "filtered_tabs_in_inbox"
 )
 
 // TeamConversationsConfig represents the config controlling whether or not team conversations is enabled at the org level
@@ -82,6 +83,23 @@ var CarePlansConfig = &settings.Config{
 	Title:          "Enable/Disable care plans at thread level",
 	AllowSubkeys:   false,
 	Key:            ConfigKeyCarePlans,
+	Type:           settings.ConfigType_BOOLEAN,
+	PossibleOwners: []settings.OwnerType{settings.OwnerType_ORGANIZATION},
+	Config: &settings.Config_Boolean{
+		Boolean: &settings.BooleanConfig{
+			Default: &settings.BooleanValue{
+				Value: false,
+			},
+		},
+	},
+}
+
+// FilteredTabsInInboxConfig represents the config for configuring whether filtered
+// tabs are enabled or not at an org level for the inbox.
+var FilteredTabsInInboxConfig = &settings.Config{
+	Title:          "Enable/Disable care plans at thread level",
+	AllowSubkeys:   false,
+	Key:            ConfigKeyFilteredTabsInInbox,
 	Type:           settings.ConfigType_BOOLEAN,
 	PossibleOwners: []settings.OwnerType{settings.OwnerType_ORGANIZATION},
 	Config: &settings.Config_Boolean{
