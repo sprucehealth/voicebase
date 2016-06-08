@@ -152,7 +152,6 @@ func transformThreadToResponse(ctx context.Context, ram raccess.ResourceAccessor
 	case threading.ThreadType_SECURE_EXTERNAL:
 		th.Type = models.ThreadTypeSecureExternal
 		th.IsPatientThread = true
-		th.AllowCarePlanAttachments = true
 	case threading.ThreadType_SETUP:
 		if th.Title == "" {
 			th.Title = onboardingThreadTitle

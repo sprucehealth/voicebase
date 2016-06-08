@@ -165,14 +165,46 @@ var threadType = graphql.NewObject(
 					return loginInfoRes.Platform == auth.Platform_IOS, nil
 				},
 			},
-			"allowCarePlanAttachments": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-			"allowExternalDelivery":    &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-			"allowInternalMessages":    &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-			"allowLeave":               &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-			"allowMentions":            &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-			"allowRemoveMembers":       &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-			"allowSMSAttachments":      &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-			"allowUpdateTitle":         &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"allowCarePlanAttachments": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.Boolean),
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					svc := serviceFromParams(p)
+					ctx := p.Context
+					th := p.Source.(*models.Thread)
+					acc := gqlctx.Account(p.Context)
+					if acc == nil {
+						return false, errors.ErrNotAuthenticated(ctx)
+					}
+
+					if th.Type != models.ThreadTypeSecureExternal {
+						return false, nil
+					}
+
+					if acc.Type != auth.AccountType_PROVIDER {
+						return false, nil
+					}
+
+					booleanValue, err := settings.GetBooleanValue(ctx, svc.settings, &settings.GetValuesRequest{
+						NodeID: th.OrganizationID,
+						Keys: []*settings.ConfigKey{
+							{
+								Key: baymaxgraphqlsettings.ConfigKeyCarePlans,
+							},
+						},
+					})
+					if err != nil {
+						return false, errors.InternalError(ctx, err)
+					}
+					return booleanValue.Value, nil
+				},
+			},
+			"allowExternalDelivery": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"allowInternalMessages": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"allowLeave":            &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"allowMentions":         &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"allowRemoveMembers":    &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"allowSMSAttachments":   &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"allowUpdateTitle":      &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowInvitePatientToSecureThread": &graphql.Field{
 				Type:    graphql.NewNonNull(graphql.Boolean),
 				Resolve: isSecureThreadsEnabled(),

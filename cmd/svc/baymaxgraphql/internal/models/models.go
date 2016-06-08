@@ -211,7 +211,6 @@ type Thread struct {
 	IsPatientThread            bool   `json:"isPatientThread"`
 	IsTeamThread               bool   `json:"isTeamThread"`
 	AllowAddMembers            bool   `json:"allowAddMembers"`
-	AllowCarePlanAttachments   bool   `json:"allowCarePlanAttachments"`
 	AllowDelete                bool   `json:"allowDelete"`
 	AllowEmailAttachment       bool   `json:"allowEmailAttachments"`
 	AllowExternalDelivery      bool   `json:"allowExternalDelivery"`
@@ -222,7 +221,6 @@ type Thread struct {
 	AllowSMSAttachments        bool   `json:"allowSMSAttachments"`
 	AllowUpdateTitle           bool   `json:"allowUpdateTitle"`
 	AllowVideoAttachment       bool   `json:"allowVideoAttachments"`
-	AllowVisitAttachment       bool   `json:"allowVisitAttachments"`
 	LastPrimaryEntityEndpoints []*Endpoint
 	EmptyStateTextMarkup       string `json:"emptyStateTextMarkup,omitempty"`
 	MessageCount               int    `json:"messageCount"`

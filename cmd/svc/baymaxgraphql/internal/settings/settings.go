@@ -7,6 +7,7 @@ const (
 	ConfigKeyCreateSecureThread       = "secure_threads_enabled"
 	ConfigKeyVisitAttachments         = "visit_attachments_enabled"
 	ConfigKeyShakeToMarkThreadsAsRead = "shake_to_mark_threads_read"
+	ConfigKeyCarePlans                = "care_plans_enabled"
 )
 
 // TeamConversationsConfig represents the config controlling whether or not team conversations is enabled at the org level
@@ -58,10 +59,29 @@ var ShakeToMarkThreadsAsReadConfig = &settings.Config{
 	},
 }
 
+// VisitAttachmentsConfig represents the config for controlling visit attachments to be
+// enabled on secure conversations at an org level.
 var VisitAttachmentsConfig = &settings.Config{
 	Title:          "Enable/Disable visit attachments at thread level",
 	AllowSubkeys:   false,
 	Key:            ConfigKeyVisitAttachments,
+	Type:           settings.ConfigType_BOOLEAN,
+	PossibleOwners: []settings.OwnerType{settings.OwnerType_ORGANIZATION},
+	Config: &settings.Config_Boolean{
+		Boolean: &settings.BooleanConfig{
+			Default: &settings.BooleanValue{
+				Value: false,
+			},
+		},
+	},
+}
+
+// CarePlansConfig represents the config for configuring care plans to be enabled
+// at an org level.
+var CarePlansConfig = &settings.Config{
+	Title:          "Enable/Disable care plans at thread level",
+	AllowSubkeys:   false,
+	Key:            ConfigKeyCarePlans,
 	Type:           settings.ConfigType_BOOLEAN,
 	PossibleOwners: []settings.OwnerType{settings.OwnerType_ORGANIZATION},
 	Config: &settings.Config_Boolean{
