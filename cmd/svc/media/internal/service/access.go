@@ -101,8 +101,32 @@ func (s *service) canAccessThreadMedia(ctx context.Context, threadID, accountID 
 	}
 	// If this is a non team thread then just do an org check
 	if tResp.Thread.Type != threading.ThreadType_TEAM {
-		return s.canAccessOrganizationMedia(ctx, tResp.Thread.OrganizationID, accountID)
+
+		if err := s.canAccessOrganizationMedia(ctx, tResp.Thread.OrganizationID, accountID); err != nil {
+			if err != ErrAccessDenied {
+				return err
+			}
+
+			// only support threads have linked threads
+			// so for efficiency sake ignore the check for linked threads
+			// note though its possible for this assumption to no longer hold true in the future.
+			if tResp.Thread.Type != threading.ThreadType_SUPPORT {
+				return err
+			}
+
+			// check linked thread in case of the support thread as the media object may have been posted on the linked thread
+			linkedThreadRes, err := s.threads.LinkedThread(ctx, &threading.LinkedThreadRequest{
+				ThreadID: threadID,
+			})
+			if err != nil {
+				return err
+			}
+			return s.canAccessOrganizationMedia(ctx, linkedThreadRes.Thread.OrganizationID, accountID)
+		}
+
+		return nil
 	}
+
 	parallel.Go(func() error {
 		resp, err := s.threads.ThreadMembers(ctx, &threading.ThreadMembersRequest{
 			ThreadID: threadID,

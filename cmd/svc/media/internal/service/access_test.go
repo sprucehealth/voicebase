@@ -466,6 +466,87 @@ func TestCanAccess(t *testing.T) {
 			accountID: "accountID",
 			expected:  ErrAccessDenied,
 		},
+		"OwnerSupportThread-LinkedThreadAccess": {
+			tservice: func() *tservice {
+				md := mock_directory.New(t)
+				mt := mock_threads.New(t)
+				mdl := mock_dl.New(t)
+				mdl.Expect(mock.NewExpectation(mdl.Media, dal.MediaID("mediaID")).WithReturns(
+					&dal.Media{
+						OwnerType: dal.MediaOwnerTypeThread,
+						OwnerID:   "threadID",
+					}, nil))
+
+				// thread
+				mt.Expect(mock.NewExpectation(mt.Thread, &threading.ThreadRequest{
+					ThreadID: "threadID",
+				}).WithReturns(&threading.ThreadResponse{
+					Thread: &threading.Thread{
+						Type:           threading.ThreadType_SUPPORT,
+						OrganizationID: "orgID2",
+					},
+				}, nil))
+
+				// ent memberships
+				md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
+					LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
+					LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+						AccountID: "accountID",
+					},
+					RequestedInformation: &directory.RequestedInformation{
+						EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
+					},
+					Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+					RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL, directory.EntityType_PATIENT},
+					ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+				}).WithReturns(
+					&directory.LookupEntitiesResponse{
+						Entities: []*directory.Entity{
+							{Memberships: []*directory.Entity{{ID: "orgID"}}},
+						},
+					}, nil))
+
+				// linked thread
+				mt.Expect(mock.NewExpectation(mt.LinkedThread, &threading.LinkedThreadRequest{
+					ThreadID: "threadID",
+				}).WithReturns(&threading.LinkedThreadResponse{
+					Thread: &threading.Thread{
+						Type:           threading.ThreadType_SUPPORT,
+						OrganizationID: "orgID",
+					},
+				}, nil))
+
+				md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
+					LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
+					LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+						AccountID: "accountID",
+					},
+					RequestedInformation: &directory.RequestedInformation{
+						EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
+					},
+					Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+					RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL, directory.EntityType_PATIENT},
+					ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+				}).WithReturns(
+					&directory.LookupEntitiesResponse{
+						Entities: []*directory.Entity{
+							{Memberships: []*directory.Entity{{ID: "orgID"}}},
+						},
+					}, nil))
+
+				return &tservice{
+					service: &service{
+						directory: md,
+						threads:   mt,
+						dal:       mdl,
+					},
+					finish: []mock.Finisher{md, mt, mdl},
+				}
+			}(),
+			mediaID:   "mediaID",
+			accountID: "accountID",
+			expected:  nil,
+		},
 	}
 
 	for cn, c := range cases {
