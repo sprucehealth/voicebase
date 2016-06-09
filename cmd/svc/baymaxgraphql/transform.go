@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/bml"
 	"github.com/sprucehealth/backend/libs/caremessenger/deeplink"
 	"github.com/sprucehealth/backend/libs/conc"
@@ -193,14 +194,11 @@ func threadTypeIndicator(t *threading.Thread, acc *auth.Account) string {
 
 func allowVideoAttachments(t *threading.Thread) bool {
 	switch t.Type {
-	case threading.ThreadType_TEAM:
-		return true
-	case threading.ThreadType_SECURE_EXTERNAL:
-		return true
-	case threading.ThreadType_LEGACY_TEAM:
-		return true
-	case threading.ThreadType_SUPPORT:
-		return true
+	case threading.ThreadType_TEAM,
+		threading.ThreadType_SECURE_EXTERNAL,
+		threading.ThreadType_SUPPORT,
+		threading.ThreadType_LEGACY_TEAM:
+		return !environment.IsProd()
 	}
 	return false
 }
