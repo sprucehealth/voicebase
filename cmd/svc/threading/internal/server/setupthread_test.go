@@ -44,13 +44,15 @@ func TestCreateOnboardingThread(t *testing.T) {
 
 	dl.Expect(mock.NewExpectation(dl.CreateOnboardingState, thid, "o1").WithReturns(nil))
 
-	dl.Expect(mock.NewExpectation(dl.Thread, thid).WithReturns(&models.Thread{
-		ID:                   thid,
-		OrganizationID:       "o1",
-		PrimaryEntityID:      "e2",
-		LastMessageSummary:   "Setup: Welcome to Spruce! Let’s get you set up with your own Spruce phone number so you can start receiving calls, voicemails, and texts from patients without disclosing your personal number.\n\nGet your Spruce number\nor type \"Skip\" to get it later",
-		LastMessageTimestamp: now,
-		Created:              now,
+	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{thid}).WithReturns([]*models.Thread{
+		{
+			ID:                   thid,
+			OrganizationID:       "o1",
+			PrimaryEntityID:      "e2",
+			LastMessageSummary:   "Setup: Welcome to Spruce! Let’s get you set up with your own Spruce phone number so you can start receiving calls, voicemails, and texts from patients without disclosing your personal number.\n\nGet your Spruce number\nor type \"Skip\" to get it later",
+			LastMessageTimestamp: now,
+			Created:              now,
+		},
 	}, nil))
 
 	res, err := srv.CreateOnboardingThread(nil, &threading.CreateOnboardingThreadRequest{
@@ -86,7 +88,7 @@ func TestOnboardingThreadEvent_PROVISIONED_PHONE(t *testing.T) {
 	test.OK(t, err)
 
 	dl.Expect(mock.NewExpectation(dl.SetupThreadStateForEntity, "org").WithReturns(&models.SetupThreadState{ThreadID: setupTID, Step: 0}, nil))
-	dl.Expect(mock.NewExpectation(dl.Thread, setupTID).WithReturns(&models.Thread{ID: setupTID, OrganizationID: "org"}, nil))
+	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{setupTID}).WithReturns([]*models.Thread{{ID: setupTID, OrganizationID: "org"}}, nil))
 	dl.Expect(mock.NewExpectation(dl.ThreadsForOrg, "org", models.ThreadTypeSupport, 1).WithReturns(
 		[]*models.Thread{
 			{ID: supportTID, Type: models.ThreadTypeSupport},
@@ -98,7 +100,7 @@ func TestOnboardingThreadEvent_PROVISIONED_PHONE(t *testing.T) {
 		Summary:  "Setup: You can now use your Spruce number (415) 555-1212 for calls, texts, and voicemails with patients. Just message us in Spruce Support if you have any questions or problems.",
 		ThreadID: setupTID,
 	}).WithReturns(&models.ThreadItem{}, nil))
-	dl.Expect(mock.NewExpectation(dl.Thread, setupTID).WithReturns(&models.Thread{ID: setupTID, OrganizationID: "org"}, nil))
+	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{setupTID}).WithReturns([]*models.Thread{{ID: setupTID, OrganizationID: "org"}}, nil))
 
 	res, err := srv.OnboardingThreadEvent(nil, &threading.OnboardingThreadEventRequest{
 		LookupByType: threading.OnboardingThreadEventRequest_ENTITY_ID,
@@ -118,12 +120,12 @@ func TestOnboardingThreadEvent_PROVISIONED_PHONE(t *testing.T) {
 	// Case where setup thread isn't at step 0
 
 	dl.Expect(mock.NewExpectation(dl.SetupThreadStateForEntity, "org").WithReturns(&models.SetupThreadState{ThreadID: setupTID, Step: 1}, nil))
-	dl.Expect(mock.NewExpectation(dl.Thread, setupTID).WithReturns(&models.Thread{ID: setupTID, OrganizationID: "org"}, nil))
+	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{setupTID}).WithReturns([]*models.Thread{{ID: setupTID, OrganizationID: "org"}}, nil))
 	dl.Expect(mock.NewExpectation(dl.ThreadsForOrg, "org", models.ThreadTypeSupport, 1).WithReturns(
 		[]*models.Thread{
 			{ID: supportTID, Type: models.ThreadTypeSupport},
 		}, nil))
-	dl.Expect(mock.NewExpectation(dl.Thread, setupTID).WithReturns(&models.Thread{ID: setupTID, OrganizationID: "org"}, nil))
+	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{setupTID}).WithReturns([]*models.Thread{{ID: setupTID, OrganizationID: "org"}}, nil))
 
 	res, err = srv.OnboardingThreadEvent(nil, &threading.OnboardingThreadEventRequest{
 		LookupByType: threading.OnboardingThreadEventRequest_ENTITY_ID,
@@ -156,7 +158,8 @@ func TestOnboardingThreadEvent_GENERIC_SETUP_eventSetupAnsweringService(t *testi
 	test.OK(t, err)
 
 	dl.Expect(mock.NewExpectation(dl.SetupThreadStateForEntity, "org").WithReturns(&models.SetupThreadState{ThreadID: setupTID, Step: 0}, nil))
-	dl.Expect(mock.NewExpectation(dl.Thread, setupTID).WithReturns(&models.Thread{ID: setupTID, OrganizationID: "org"}, nil))
+	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{setupTID}).WithReturns([]*models.Thread{{ID: setupTID, OrganizationID: "org"}}, nil))
+
 	dl.Expect(mock.NewExpectation(dl.ThreadsForOrg, "org", models.ThreadTypeSupport, 1).WithReturns(
 		[]*models.Thread{
 			{ID: supportTID, Type: models.ThreadTypeSupport},
@@ -168,7 +171,7 @@ func TestOnboardingThreadEvent_GENERIC_SETUP_eventSetupAnsweringService(t *testi
 		Summary:  "Setup: As a paid feature your Spruce line can triage and transcribe patient voicemails, notifying you via text when an urgent voicemail is received. You can also add teammates to create an on-call rotation. To do this, first set up your Spruce number if you haven’t already. Then tell us in Spruce Support that you would like to enable the answering service feature.",
 		ThreadID: setupTID,
 	}).WithReturns(&models.ThreadItem{}, nil))
-	dl.Expect(mock.NewExpectation(dl.Thread, setupTID).WithReturns(&models.Thread{ID: setupTID, OrganizationID: "org"}, nil))
+	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{setupTID}).WithReturns([]*models.Thread{{ID: setupTID, OrganizationID: "org"}}, nil))
 
 	res, err := srv.OnboardingThreadEvent(nil, &threading.OnboardingThreadEventRequest{
 		LookupByType: threading.OnboardingThreadEventRequest_ENTITY_ID,
@@ -201,7 +204,8 @@ func TestOnboardingThreadEvent_GENERIC_SETUP_eventSetupTeamMessaging(t *testing.
 	test.OK(t, err)
 
 	dl.Expect(mock.NewExpectation(dl.SetupThreadStateForEntity, "org").WithReturns(&models.SetupThreadState{ThreadID: setupTID, Step: 0}, nil))
-	dl.Expect(mock.NewExpectation(dl.Thread, setupTID).WithReturns(&models.Thread{ID: setupTID, OrganizationID: "org"}, nil))
+	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{setupTID}).WithReturns([]*models.Thread{{ID: setupTID, OrganizationID: "org"}}, nil))
+
 	dl.Expect(mock.NewExpectation(dl.ThreadsForOrg, "org", models.ThreadTypeSupport, 1).WithReturns(
 		[]*models.Thread{
 			{ID: supportTID, Type: models.ThreadTypeSupport},
@@ -213,7 +217,7 @@ func TestOnboardingThreadEvent_GENERIC_SETUP_eventSetupTeamMessaging(t *testing.
 		Summary:  "Setup: After adding teammates, you can start a new team conversation from the home screen and message 1:1 or in group chats. You can also collaborate and make notes within patient conversations (patients won’t see this activity, but your teammates will).",
 		ThreadID: setupTID,
 	}).WithReturns(&models.ThreadItem{}, nil))
-	dl.Expect(mock.NewExpectation(dl.Thread, setupTID).WithReturns(&models.Thread{ID: setupTID, OrganizationID: "org"}, nil))
+	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{setupTID}).WithReturns([]*models.Thread{{ID: setupTID, OrganizationID: "org"}}, nil))
 
 	res, err := srv.OnboardingThreadEvent(nil, &threading.OnboardingThreadEventRequest{
 		LookupByType: threading.OnboardingThreadEventRequest_ENTITY_ID,
@@ -246,7 +250,7 @@ func TestOnboardingThreadEvent_GENERIC_SETUP_eventSetupTelemedicine(t *testing.T
 	test.OK(t, err)
 
 	dl.Expect(mock.NewExpectation(dl.SetupThreadStateForEntity, "org").WithReturns(&models.SetupThreadState{ThreadID: setupTID, Step: 0}, nil))
-	dl.Expect(mock.NewExpectation(dl.Thread, setupTID).WithReturns(&models.Thread{ID: setupTID, OrganizationID: "org"}, nil))
+	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{setupTID}).WithReturns([]*models.Thread{{ID: setupTID, OrganizationID: "org"}}, nil))
 	dl.Expect(mock.NewExpectation(dl.ThreadsForOrg, "org", models.ThreadTypeSupport, 1).WithReturns(
 		[]*models.Thread{
 			{ID: supportTID, Type: models.ThreadTypeSupport},
@@ -258,7 +262,7 @@ func TestOnboardingThreadEvent_GENERIC_SETUP_eventSetupTelemedicine(t *testing.T
 		Summary:  "Setup: Interested in engaging patients digitally with virtual visits, video calls, care plans (including e-prescribing), mobile payment, appointment reminders, and satisfaction surveys? Digital care on Spruce enables you to offer a standout patient experience and streamline your practice efficiency. The Digital Practice offering on Spruce is coming soon: message us in Spruce Support if you would like to be a part of the private beta.",
 		ThreadID: setupTID,
 	}).WithReturns(&models.ThreadItem{}, nil))
-	dl.Expect(mock.NewExpectation(dl.Thread, setupTID).WithReturns(&models.Thread{ID: setupTID, OrganizationID: "org"}, nil))
+	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{setupTID}).WithReturns([]*models.Thread{{ID: setupTID, OrganizationID: "org"}}, nil))
 
 	res, err := srv.OnboardingThreadEvent(nil, &threading.OnboardingThreadEventRequest{
 		LookupByType: threading.OnboardingThreadEventRequest_ENTITY_ID,

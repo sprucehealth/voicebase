@@ -110,7 +110,7 @@ type ResourceAccessor interface {
 	EntityDomain(ctx context.Context, entityID, domain string) (*directory.LookupEntityDomainResponse, error)
 	GetAnswersForVisit(ctx context.Context, req *care.GetAnswersForVisitRequest) (*care.GetAnswersForVisitResponse, error)
 	InitiatePhoneCall(ctx context.Context, req *excomms.InitiatePhoneCallRequest) (*excomms.InitiatePhoneCallResponse, error)
-	MarkThreadAsRead(ctx context.Context, threadID, entityID string) error
+	MarkThreadsAsRead(ctx context.Context, req *threading.MarkThreadsAsReadRequest) (*threading.MarkThreadsAsReadResponse, error)
 	MediaInfo(ctx context.Context, mediaID string) (*media.MediaInfo, error)
 	OnboardingThreadEvent(ctx context.Context, req *threading.OnboardingThreadEventRequest) (*threading.OnboardingThreadEventResponse, error)
 	PostMessage(ctx context.Context, req *threading.PostMessageRequest) (*threading.PostMessageResponse, error)
@@ -610,19 +610,75 @@ func (m *resourceAccessor) InitiatePhoneCall(ctx context.Context, req *excomms.I
 	return resp, nil
 }
 
-func (m *resourceAccessor) MarkThreadAsRead(ctx context.Context, threadID, entityID string) error {
-	// TODO: This auth pattern isn't quite right. This asserts that the caller is in the same org as the thread and the entity
-	// It does not assert that the caller is the entity
-	if err := m.canAccessResource(ctx, threadID, m.orgsForThread); err != nil {
-		return err
+func (m *resourceAccessor) MarkThreadsAsRead(ctx context.Context, req *threading.MarkThreadsAsReadRequest) (*threading.MarkThreadsAsReadResponse, error) {
+	if len(req.ThreadWatermarks) == 0 {
+		return &threading.MarkThreadsAsReadResponse{}, nil
 	}
-	if err := m.canAccessResource(ctx, entityID, m.orgsForEntity); err != nil {
-		return err
+
+	acc := gqlctx.Account(ctx)
+	if acc == nil {
+		return nil, errors.ErrNotAuthenticated(ctx)
 	}
-	if err := m.markThreadAsRead(ctx, threadID, entityID); err != nil {
-		return err
+
+	entities, err := m.Entities(ctx, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+			AccountID: acc.ID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
+		},
+		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	})
+	if err != nil {
+		return nil, err
 	}
-	return nil
+
+	// ensure that one of the entities that maps to the account is indeed the entityID
+	entityFound := false
+	for _, entity := range entities {
+		if entity.ID == req.EntityID {
+			entityFound = true
+			break
+		}
+	}
+
+	if !entityFound {
+		return nil, errors.ErrNotAuthorized(ctx, req.EntityID)
+	}
+
+	// ensure that each thread in the list belongs to the same org as that of the caller
+	threadIDs := make([]string, len(req.ThreadWatermarks))
+	for i, watermark := range req.ThreadWatermarks {
+		threadIDs[i] = watermark.ThreadID
+	}
+
+	threadsRes, err := m.threading.Threads(ctx, &threading.ThreadsRequest{
+		ThreadIDs: threadIDs,
+	})
+	if err != nil {
+		return nil, err
+	}
+	threads := threadsRes.Threads
+
+	// ensure that all threads belong to one of the orgs the caller is in
+	for _, thread := range threads {
+		orgFound := false
+		for _, entity := range entities {
+			for _, membership := range entity.Memberships {
+				if membership.ID == thread.OrganizationID {
+					orgFound = true
+					break
+				}
+			}
+		}
+		if !orgFound {
+			return nil, errors.ErrNotAuthorized(ctx, thread.ID)
+		}
+	}
+
+	return m.threading.MarkThreadsAsRead(ctx, req)
 }
 
 func (m *resourceAccessor) MediaInfo(ctx context.Context, mediaID string) (*media.MediaInfo, error) {
@@ -1321,17 +1377,6 @@ func (m *resourceAccessor) entityDomain(ctx context.Context, entityID, domain st
 		return nil, err
 	}
 	return resp, nil
-}
-
-func (m *resourceAccessor) markThreadAsRead(ctx context.Context, threadID, entityID string) error {
-	_, err := m.threading.MarkThreadAsRead(ctx, &threading.MarkThreadAsReadRequest{
-		ThreadID: threadID,
-		EntityID: entityID,
-	})
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (m *resourceAccessor) mediaInfos(ctx context.Context, mediaIDs []string) (map[string]*media.MediaInfo, error) {

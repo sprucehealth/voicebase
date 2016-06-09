@@ -128,14 +128,18 @@ func TestThread(t *testing.T) {
 	})
 	test.OK(t, err)
 
-	th, err := dal.Thread(ctx, tid)
+	ths, err := dal.Threads(ctx, []models.ThreadID{tid})
 	test.OK(t, err)
+	test.Equals(t, 1, len(ths))
+	th := ths[0]
 	test.Equals(t, "systemTitle", th.SystemTitle)
 	test.Equals(t, "userTitle", th.UserTitle)
 
 	// for update
-	th, err = dal.Thread(ctx, tid, ForUpdate)
+	ths, err = dal.Threads(ctx, []models.ThreadID{tid}, ForUpdate)
 	test.OK(t, err)
+	test.Equals(t, 1, len(ths))
+	th = ths[0]
 	test.Equals(t, "systemTitle", th.SystemTitle)
 	test.Equals(t, "userTitle", th.UserTitle)
 }
@@ -158,14 +162,19 @@ func TestUpdateThread(t *testing.T) {
 	})
 	test.OK(t, err)
 
-	th, err := dal.Thread(ctx, tid)
+	ths, err := dal.Threads(ctx, []models.ThreadID{tid})
 	test.OK(t, err)
+	test.Equals(t, 1, len(ths))
+	th := ths[0]
 	test.Equals(t, "systemTitle", th.SystemTitle)
 	test.Equals(t, "userTitle", th.UserTitle)
 
 	test.OK(t, dal.UpdateThread(ctx, tid, &ThreadUpdate{SystemTitle: ptr.String("foo"), UserTitle: ptr.String("bar")}))
 
-	th, err = dal.Thread(ctx, tid)
+	ths, err = dal.Threads(ctx, []models.ThreadID{tid})
+	test.OK(t, err)
+	test.Equals(t, 1, len(ths))
+	th = ths[0]
 	test.OK(t, err)
 	test.Equals(t, "foo", th.SystemTitle)
 	test.Equals(t, "bar", th.UserTitle)

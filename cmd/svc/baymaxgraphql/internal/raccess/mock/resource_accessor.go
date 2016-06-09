@@ -257,13 +257,13 @@ func (m *ResourceAccessor) InitiatePhoneCall(ctx context.Context, req *excomms.I
 	return rets[0].(*excomms.InitiatePhoneCallResponse), mock.SafeError(rets[1])
 }
 
-func (m *ResourceAccessor) MarkThreadAsRead(ctx context.Context, threadID, entityID string) error {
-	rets := m.Record(threadID, entityID)
+func (m *ResourceAccessor) MarkThreadsAsRead(ctx context.Context, req *threading.MarkThreadsAsReadRequest) (*threading.MarkThreadsAsReadResponse, error) {
+	rets := m.Record(req)
 	if len(rets) == 0 {
-		return nil
+		return nil, nil
 	}
 
-	return mock.SafeError(rets[0])
+	return rets[0].(*threading.MarkThreadsAsReadResponse), mock.SafeError(rets[0])
 }
 
 func (m *ResourceAccessor) MediaInfo(ctx context.Context, mediaID string) (*media.MediaInfo, error) {

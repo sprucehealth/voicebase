@@ -137,7 +137,7 @@ type DAL interface {
 	SavedQueries(ctx context.Context, entityID string) ([]*models.SavedQuery, error)
 	SetupThreadState(ctx context.Context, threadID models.ThreadID, opts ...QueryOption) (*models.SetupThreadState, error)
 	SetupThreadStateForEntity(ctx context.Context, entityID string, opts ...QueryOption) (*models.SetupThreadState, error)
-	Thread(ctx context.Context, id models.ThreadID, opts ...QueryOption) (*models.Thread, error)
+	Threads(ctx context.Context, ids []models.ThreadID, opts ...QueryOption) ([]*models.Thread, error)
 	ThreadItem(ctx context.Context, id models.ThreadItemID) (*models.ThreadItem, error)
 	ThreadItemIDsCreatedAfter(ctx context.Context, threadID models.ThreadID, after time.Time) ([]models.ThreadItemID, error)
 	ThreadItemViewDetails(ctx context.Context, id models.ThreadItemID) ([]*models.ThreadItemViewDetails, error)
@@ -317,7 +317,7 @@ func (d *dal) IterateThreads(ctx context.Context, orgEntityID, viewerEntityID st
 			t.last_external_message_summary, t.last_primary_entity_endpoints, t.created, t.message_count, t.type, COALESCE(t.system_title, ''), COALESCE(t.user_title, ''),
 			te.thread_id, te.entity_id, te.member, te.joined, te.last_viewed, te.last_unread_notify, te.last_referenced
 		FROM threads t
-		`+joinType+` thread_entities te ON te.entity_id = ? AND te.thread_id = t.id 
+		`+joinType+` thread_entities te ON te.entity_id = ? AND te.thread_id = t.id
 		WHERE `+where+order+limit, vals...)
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -650,17 +650,34 @@ func (d *dal) SavedQueries(ctx context.Context, entityID string) ([]*models.Save
 	return sqs, errors.Trace(rows.Err())
 }
 
-func (d *dal) Thread(ctx context.Context, id models.ThreadID, opts ...QueryOption) (*models.Thread, error) {
+func (d *dal) Threads(ctx context.Context, ids []models.ThreadID, opts ...QueryOption) ([]*models.Thread, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+
 	var forUpdateQuery string
 	if queryOptions(opts).Has(ForUpdate) {
 		forUpdateQuery = " FOR UPDATE"
 	}
-	row := d.db.QueryRow(`
+	rows, err := d.db.Query(`
 		SELECT `+threadColumns+`
 		FROM threads t
-		WHERE id = ? AND deleted = false`+forUpdateQuery, id)
-	t, err := scanThread(row)
-	return t, errors.Trace(err)
+		WHERE id in (`+dbutil.MySQLArgs(len(ids))+`) AND deleted = false`+forUpdateQuery, models.ThreadIDsToInterfaces(ids)...)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	defer rows.Close()
+
+	threads := make([]*models.Thread, 0, len(ids))
+	for rows.Next() {
+		t, err := scanThread(rows)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		threads = append(threads, t)
+	}
+
+	return threads, errors.Trace(rows.Err())
 }
 
 func (d *dal) ThreadItem(ctx context.Context, id models.ThreadItemID) (*models.ThreadItem, error) {

@@ -94,13 +94,13 @@ func (c *Client) LinkedThread(ctx context.Context, in *threading.LinkedThreadReq
 	return rets[0].(*threading.LinkedThreadResponse), mock.SafeError(rets[1])
 }
 
-// MarkThreadAsRead marks all posts in a thread as read by an entity
-func (c *Client) MarkThreadAsRead(ctx context.Context, in *threading.MarkThreadAsReadRequest, opts ...grpc.CallOption) (*threading.MarkThreadAsReadResponse, error) {
+// MarkThreadsAsRead marks all posts in a thread as read by an entity
+func (c *Client) MarkThreadsAsRead(ctx context.Context, in *threading.MarkThreadsAsReadRequest, opts ...grpc.CallOption) (*threading.MarkThreadsAsReadResponse, error) {
 	rets := c.Expector.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
 	}
-	return rets[0].(*threading.MarkThreadAsReadResponse), mock.SafeError(rets[1])
+	return rets[0].(*threading.MarkThreadsAsReadResponse), mock.SafeError(rets[1])
 }
 
 // OnboardingThreadEvent updated the setup thread due to an event
@@ -155,6 +155,14 @@ func (c *Client) Thread(ctx context.Context, in *threading.ThreadRequest, opts .
 		return nil, nil
 	}
 	return rets[0].(*threading.ThreadResponse), mock.SafeError(rets[1])
+}
+
+func (c *Client) Threads(ctx context.Context, in *threading.ThreadsRequest, opts ...grpc.CallOption) (*threading.ThreadsResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*threading.ThreadsResponse), mock.SafeError(rets[1])
 }
 
 // ThreadsForMember looks up a list of threads by entity membership

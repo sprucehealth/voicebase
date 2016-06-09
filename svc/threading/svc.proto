@@ -225,13 +225,19 @@ message PostMessageResponse {
 	Thread thread = 2;
 }
 
-message MarkThreadAsReadRequest {
-	string thread_id = 1 [(gogoproto.customname) = "ThreadID"];
+message MarkThreadsAsReadRequest {
+	message ThreadWatermark {
+		string thread_id = 1 [(gogoproto.customname) = "ThreadID"];
+		uint64 last_message_timestamp = 2; // the timestamp of the last message that the client has for the thread. If not provided, then current timestamp is used.
+	}
+
+	repeated ThreadWatermark thread_watermarks = 1;
 	string entity_id = 2 [(gogoproto.customname) = "EntityID"];
 	uint64 timestamp = 3; // optional, if not provided then defaults to current timestamp
+	bool seen = 4; // indicates whether or not the user actually saw the threads being marked as read
 }
 
-message MarkThreadAsReadResponse {
+message MarkThreadsAsReadResponse {
 }
 
 message ThreadItemsRequest {
@@ -292,6 +298,15 @@ message ThreadRequest {
 
 message ThreadResponse {
 	Thread thread = 1;
+}
+
+message ThreadsRequest {
+	repeated string thread_ids = 1 [(gogoproto.customname) = "ThreadIDs"];
+	string viewer_entity_id = 2 [(gogoproto.customname) = "ViewerEntityID"];
+}
+
+message ThreadsResponse {
+	repeated Thread threads = 1;
 }
 
 message CreateSavedQueryRequest {
@@ -520,8 +535,8 @@ service Threads {
 	rpc DeleteThread(DeleteThreadRequest) returns (DeleteThreadResponse);
 	// LinkedThread returns the linked thread of one exists
 	rpc LinkedThread(LinkedThreadRequest) returns (LinkedThreadResponse);
-	// MarThreadAsRead marks all posts in a thread as read by an entity
-	rpc MarkThreadAsRead(MarkThreadAsReadRequest) returns (MarkThreadAsReadResponse);
+	// MarkThreadsAsRead marks all threads in the list as read.
+	rpc MarkThreadsAsRead(MarkThreadsAsReadRequest) returns (MarkThreadsAsReadResponse);
 	// OnboardThreadEvent processes an event in an onboarding thread
 	rpc OnboardingThreadEvent(OnboardingThreadEventRequest) returns (OnboardingThreadEventResponse);
 	// PostMessage posts a message into a specified thread
@@ -532,8 +547,10 @@ service Threads {
 	rpc SavedQuery(SavedQueryRequest) returns (SavedQueryResponse);
 	// SavedQueries returns the list of saved queries for an org / entity pair
 	rpc SavedQueries(SavedQueriesRequest) returns (SavedQueriesResponse);
-	// Thread lookups and returns a single thread by ID
+	// DEPRECATED: Thread lookups and returns a single thread by ID
 	rpc Thread(ThreadRequest) returns (ThreadResponse);
+	// Theads looks up list of threads.
+	rpc Threads(ThreadsRequest) returns (ThreadsResponse);
 	// ThreadsForMember looks up a list of threads by entity membership
 	rpc ThreadsForMember(ThreadsForMemberRequest) returns (ThreadsForMemberResponse);
 	// ThreadItem returns a single thread item

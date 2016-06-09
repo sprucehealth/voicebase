@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/gqldecode"
+	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 	"github.com/sprucehealth/graphql/gqlerrors"
 )
@@ -72,7 +73,16 @@ var markThreadAsReadMutation = &graphql.Field{
 			return nil, errors.InternalError(ctx, err)
 		}
 
-		if err = ram.MarkThreadAsRead(ctx, threadID, ent.ID); err != nil {
+		_, err = ram.MarkThreadsAsRead(ctx, &threading.MarkThreadsAsReadRequest{
+			ThreadWatermarks: []*threading.MarkThreadsAsReadRequest_ThreadWatermark{
+				{
+					ThreadID: threadID,
+				},
+			},
+			EntityID: ent.ID,
+			Seen:     true,
+		})
+		if err != nil {
 			return nil, err
 		}
 
@@ -155,6 +165,8 @@ var markThreadsAsReadMutation = &graphql.Field{
 	},
 	Resolve: apiaccess.Authenticated(func(p graphql.ResolveParams) (interface{}, error) {
 		ctx := p.Context
+		ram := raccess.ResourceAccess(p)
+		acc := gqlctx.Account(ctx)
 
 		input := p.Args["input"].(map[string]interface{})
 		var in markThreadsAsReadInput
@@ -166,7 +178,34 @@ var markThreadsAsReadMutation = &graphql.Field{
 			return nil, errors.InternalError(ctx, err)
 		}
 
-		// TODO: All the work
+		ent, err := entityInOrgForAccountID(ctx, ram, in.OrganizationID, acc)
+		if err != nil {
+			return nil, errors.InternalError(ctx, err)
+		}
+
+		// nothing to do if no threads to mark as read
+		if len(in.ThreadWatermarks) == 0 {
+			return &markThreadsAsReadOutput{
+				Success:          true,
+				ClientMutationID: in.ClientMutationID,
+			}, nil
+		}
+
+		threadWatermarks := make([]*threading.MarkThreadsAsReadRequest_ThreadWatermark, len(in.ThreadWatermarks))
+		for i, watermark := range in.ThreadWatermarks {
+			threadWatermarks[i] = &threading.MarkThreadsAsReadRequest_ThreadWatermark{
+				ThreadID:             watermark.ThreadID,
+				LastMessageTimestamp: uint64(watermark.LastMessageTimestamp),
+			}
+		}
+		_, err = ram.MarkThreadsAsRead(ctx, &threading.MarkThreadsAsReadRequest{
+			ThreadWatermarks: threadWatermarks,
+			EntityID:         ent.ID,
+			Seen:             in.Seen,
+		})
+		if err != nil {
+			return nil, err
+		}
 
 		return &markThreadsAsReadOutput{
 			ClientMutationID: in.ClientMutationID,

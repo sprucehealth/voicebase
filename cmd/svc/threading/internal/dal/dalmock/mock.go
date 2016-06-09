@@ -153,12 +153,12 @@ func (dl *DAL) SetupThreadStateForEntity(ctx context.Context, entityID string, o
 	return rets[0].(*models.SetupThreadState), mock.SafeError(rets[1])
 }
 
-func (dl *DAL) Thread(ctx context.Context, id models.ThreadID, opts ...dal.QueryOption) (*models.Thread, error) {
-	rets := dl.Expector.Record(append([]interface{}{id}, optsToInterfaces(opts)...)...)
+func (dl *DAL) Threads(ctx context.Context, ids []models.ThreadID, opts ...dal.QueryOption) ([]*models.Thread, error) {
+	rets := dl.Expector.Record(append([]interface{}{ids}, optsToInterfaces(opts)...)...)
 	if len(rets) == 0 {
 		return nil, nil
 	}
-	return rets[0].(*models.Thread), mock.SafeError(rets[1])
+	return rets[0].([]*models.Thread), mock.SafeError(rets[1])
 }
 
 func (dl *DAL) ThreadItem(ctx context.Context, id models.ThreadItemID) (*models.ThreadItem, error) {

@@ -968,3 +968,147 @@ func TestEntityNotAuthorized(t *testing.T) {
 	test.AssertNil(t, resp)
 	test.Equals(t, errors.ErrTypeNotAuthorized, errors.Type(err))
 }
+
+func TestMarkThreadAsRead(t *testing.T) {
+	accountID := "account_12345"
+	orgID := "org_12345"
+	orgID2 := "org_67890"
+	entityID := "entity_12345"
+	threadID1 := "t_1"
+	threadID2 := "t_2"
+	ctx := context.Background()
+	acc := &auth.Account{
+		ID: accountID,
+	}
+	ctx = gqlctx.WithAccount(ctx, acc)
+
+	rat := new(t)
+	defer rat.finish()
+
+	rat.dC.Expect(mock.NewExpectation(rat.dC.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+			AccountID: accountID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
+		},
+		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	}).WithReturns(&directory.LookupEntitiesResponse{Entities: []*directory.Entity{
+		{
+			ID: entityID,
+			Memberships: []*directory.Entity{
+				{
+					ID: orgID,
+				},
+				{
+					ID: orgID2,
+				},
+			},
+		},
+	}}, nil))
+
+	rat.tC.Expect(mock.NewExpectation(rat.tC.Threads, &threading.ThreadsRequest{
+		ThreadIDs:      []string{threadID1, threadID2},
+		ViewerEntityID: "",
+	}).WithReturns(&threading.ThreadsResponse{
+		Threads: []*threading.Thread{
+			{
+				OrganizationID: orgID,
+				ID:             threadID1,
+			},
+			{
+				OrganizationID: orgID2,
+				ID:             threadID2,
+			},
+		},
+	}, nil))
+
+	req := &threading.MarkThreadsAsReadRequest{
+		ThreadWatermarks: []*threading.MarkThreadsAsReadRequest_ThreadWatermark{
+			{
+				ThreadID: threadID1,
+			},
+			{
+				ThreadID: threadID2,
+			},
+		},
+		EntityID: entityID,
+	}
+
+	rat.tC.Expect(mock.NewExpectation(rat.tC.MarkThreadsAsRead, req))
+
+	_, err := rat.ra.MarkThreadsAsRead(ctx, req)
+	test.OK(t, err)
+}
+
+func TestMarkThreadAsRead_NotAuthorized(t *testing.T) {
+	accountID := "account_12345"
+	orgID := "org_12345"
+	orgID2 := "org_67890"
+	entityID := "entity_12345"
+	threadID1 := "t_1"
+	threadID2 := "t_2"
+	ctx := context.Background()
+	acc := &auth.Account{
+		ID: accountID,
+	}
+	ctx = gqlctx.WithAccount(ctx, acc)
+
+	rat := new(t)
+	defer rat.finish()
+
+	rat.dC.Expect(mock.NewExpectation(rat.dC.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+			AccountID: accountID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
+		},
+		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	}).WithReturns(&directory.LookupEntitiesResponse{Entities: []*directory.Entity{
+		{
+			ID: entityID,
+			Memberships: []*directory.Entity{
+				{
+					ID: orgID,
+				},
+			},
+		},
+	}}, nil))
+
+	// second thread part of a different organization
+	rat.tC.Expect(mock.NewExpectation(rat.tC.Threads, &threading.ThreadsRequest{
+		ThreadIDs:      []string{threadID1, threadID2},
+		ViewerEntityID: "",
+	}).WithReturns(&threading.ThreadsResponse{
+		Threads: []*threading.Thread{
+			{
+				OrganizationID: orgID,
+				ID:             threadID1,
+			},
+			{
+				OrganizationID: orgID2,
+				ID:             threadID2,
+			},
+		},
+	}, nil))
+
+	req := &threading.MarkThreadsAsReadRequest{
+		ThreadWatermarks: []*threading.MarkThreadsAsReadRequest_ThreadWatermark{
+			{
+				ThreadID: threadID1,
+			},
+			{
+				ThreadID: threadID2,
+			},
+		},
+		EntityID: entityID,
+	}
+
+	_, err := rat.ra.MarkThreadsAsRead(ctx, req)
+	test.Equals(t, errors.ErrTypeNotAuthorized, errors.Type(err))
+}

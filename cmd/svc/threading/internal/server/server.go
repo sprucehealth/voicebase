@@ -175,11 +175,14 @@ func (s *threadsServer) CreateEmptyThread(ctx context.Context, in *threading.Cre
 	}); err != nil {
 		return nil, grpcErrorf(codes.Internal, errors.Trace(err).Error())
 	}
-	thread, err := s.dal.Thread(ctx, threadID)
+	threads, err := s.dal.Threads(ctx, []models.ThreadID{threadID})
 	if err != nil {
-		return nil, errors.Trace(err)
+		return nil, internalError(err)
 	}
-	th, err := transformThreadToResponse(thread, false)
+	if len(threads) == 0 {
+		return nil, errors.Trace(fmt.Errorf("thread with id %s just created not found", threadID))
+	}
+	th, err := transformThreadToResponse(threads[0], false)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -305,10 +308,13 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 	}); err != nil {
 		return nil, internalError(err)
 	}
-	thread, err := s.dal.Thread(ctx, threadID)
+	threads, err := s.dal.Threads(ctx, []models.ThreadID{threadID})
 	if err != nil {
-		return nil, errors.Trace(err)
+		return nil, internalError(err)
+	} else if len(threads) == 0 {
+		return nil, internalError(fmt.Errorf("thread %s just created not found", threadID))
 	}
+	thread := threads[0]
 	th, err := transformThreadToResponse(thread, !in.Internal)
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -424,19 +430,19 @@ func (s *threadsServer) CreateLinkedThreads(ctx context.Context, in *threading.C
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	thread1, err := s.dal.Thread(ctx, thread1ID)
+
+	threads, err := s.dal.Threads(ctx, []models.ThreadID{thread1ID, thread2ID})
+	if err != nil {
+		return nil, internalError(err)
+	} else if len(threads) != 2 {
+		return nil, internalError(fmt.Errorf("expected 2 threads but got %d", len(threads)))
+	}
+
+	th1, err := transformThreadToResponse(threads[0], false)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	th1, err := transformThreadToResponse(thread1, false)
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
-	thread2, err := s.dal.Thread(ctx, thread2ID)
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
-	th2, err := transformThreadToResponse(thread2, false)
+	th2, err := transformThreadToResponse(threads[1], false)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -465,13 +471,17 @@ func (s *threadsServer) DeleteThread(ctx context.Context, in *threading.DeleteTh
 	}
 
 	// If we can't find the thread then just return success
-	thread, err := s.dal.Thread(ctx, threadID)
-	if errors.Cause(err) == dal.ErrNotFound {
+	threads, err := s.dal.Threads(ctx, []models.ThreadID{threadID})
+	if err != nil {
+		return nil, internalError(err)
+	}
+	if len(threads) == 0 {
 		return &threading.DeleteThreadResponse{}, nil
 	} else if err != nil {
 		return nil, internalError(err)
 	}
 
+	thread := threads[0]
 	if thread.PrimaryEntityID != "" {
 		// Get the primary entity on the thread first and determine if we need to delete it if it's external
 		resp, err := s.directoryClient.LookupEntities(ctx, &directory.LookupEntitiesRequest{
@@ -530,57 +540,76 @@ func (s *threadsServer) LinkedThread(ctx context.Context, in *threading.LinkedTh
 	}, nil
 }
 
-// MarkThreadAsRead marks all posts in a thread as read by an entity
-func (s *threadsServer) MarkThreadAsRead(ctx context.Context, in *threading.MarkThreadAsReadRequest) (*threading.MarkThreadAsReadResponse, error) {
-	if in.ThreadID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "ThreadID is required")
+// MarkThreadsAsRead marks all posts in a thread as read by an entity
+func (s *threadsServer) MarkThreadsAsRead(ctx context.Context, in *threading.MarkThreadsAsReadRequest) (*threading.MarkThreadsAsReadResponse, error) {
+	if len(in.ThreadWatermarks) == 0 {
+		return nil, grpcErrorf(codes.InvalidArgument, "ThreadWatermarks required")
 	}
-	threadID, err := models.ParseThreadID(in.ThreadID)
-	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadID")
-	}
+
 	if in.EntityID == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "EntityID is required")
 	}
-	readTime := s.clk.Now()
-	if in.Timestamp != 0 {
-		readTime = time.Unix(int64(in.Timestamp), 0)
-	}
 
+	currentTime := s.clk.Now()
 	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
-		threadEntities, err := dl.ThreadEntities(ctx, []models.ThreadID{threadID}, in.EntityID, dal.ForUpdate)
-		if err != nil {
-			return errors.Trace(err)
-		}
-		tid := threadID.String()
-		lastViewed := time.Unix(0, 0)
-		if len(threadEntities) == 1 && threadEntities[tid].LastViewed != nil {
-			lastViewed = *threadEntities[tid].LastViewed
-		}
 
-		// Update our timestamp or create one if it isn't already there
-		if err := dl.UpdateThreadEntity(ctx, threadID, in.EntityID, &dal.ThreadEntityUpdate{LastViewed: &readTime}); err != nil {
-			return errors.Trace(err)
-		}
+		for _, watermark := range in.ThreadWatermarks {
+			threadID, err := models.ParseThreadID(watermark.ThreadID)
+			if err != nil {
+				return grpcErrorf(codes.InvalidArgument, "Invalid ThreadID")
+			}
 
-		threadItemIDs, err := dl.ThreadItemIDsCreatedAfter(ctx, threadID, lastViewed)
-		if err != nil {
-			return errors.Trace(err)
-		}
+			readTime := currentTime
+			if watermark.LastMessageTimestamp != 0 && watermark.LastMessageTimestamp < uint64(readTime.Unix()) {
+				readTime = time.Unix(int64(watermark.LastMessageTimestamp), 0)
+			}
 
-		tivds := make([]*models.ThreadItemViewDetails, len(threadItemIDs))
-		for i, tiid := range threadItemIDs {
-			tivds[i] = &models.ThreadItemViewDetails{
-				ThreadItemID:  tiid,
-				ActorEntityID: in.EntityID,
-				ViewTime:      &readTime,
+			threadEntities, err := dl.ThreadEntities(ctx, []models.ThreadID{threadID}, in.EntityID, dal.ForUpdate)
+			if err != nil {
+				return errors.Trace(err)
+			}
+			tid := threadID.String()
+			lastViewed := time.Unix(0, 0)
+			if len(threadEntities) == 1 && threadEntities[tid].LastViewed != nil {
+				lastViewed = *threadEntities[tid].LastViewed
+			}
+
+			// Update our timestamp or create one if it isn't already there
+			if err := dl.UpdateThreadEntity(ctx, threadID, in.EntityID, &dal.ThreadEntityUpdate{LastViewed: &readTime}); err != nil {
+				return errors.Trace(err)
+			}
+
+			// only generate read receipts if seen is true
+			if !in.Seen {
+				continue
+			}
+
+			threadItemIDs, err := dl.ThreadItemIDsCreatedAfter(ctx, threadID, lastViewed)
+			if err != nil {
+				return errors.Trace(err)
+			}
+
+			tivds := make([]*models.ThreadItemViewDetails, len(threadItemIDs))
+			for i, tiid := range threadItemIDs {
+				tivds[i] = &models.ThreadItemViewDetails{
+					ThreadItemID:  tiid,
+					ActorEntityID: in.EntityID,
+					ViewTime:      &readTime,
+				}
+			}
+			if err := dl.CreateThreadItemViewDetails(ctx, tivds); err != nil {
+				return errors.Trace(err)
 			}
 		}
-		return errors.Trace(dl.CreateThreadItemViewDetails(ctx, tivds))
+		return nil
 	}); err != nil {
+		if grpc.Code(err) == codes.InvalidArgument {
+			return nil, err
+		}
 		return nil, internalError(err)
 	}
-	return &threading.MarkThreadAsReadResponse{}, nil
+
+	return &threading.MarkThreadsAsReadResponse{}, nil
 }
 
 // PostMessage posts a message into a specified thread
@@ -611,10 +640,13 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 		return nil, grpcErrorf(codes.InvalidArgument, fmt.Sprintf("Text is invalid format: %s", errors.Cause(err).Error()))
 	}
 
-	thread, err := s.dal.Thread(ctx, threadID)
-	if errors.Cause(err) == dal.ErrNotFound {
+	threads, err := s.dal.Threads(ctx, []models.ThreadID{threadID})
+	if err != nil {
+		return nil, internalError(err)
+	} else if len(threads) == 0 {
 		return nil, grpcErrorf(codes.NotFound, "Thread not found")
 	}
+	thread := threads[0]
 	prePostLastMessageTimestamp := thread.LastMessageTimestamp
 
 	linkedThread, prependSender, err := s.dal.LinkedThread(ctx, threadID)
@@ -764,10 +796,15 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 	}); err != nil {
 		return nil, internalError(err)
 	}
-	thread, err = s.dal.Thread(ctx, threadID)
+
+	threads, err = s.dal.Threads(ctx, []models.ThreadID{threadID})
 	if err != nil {
-		return nil, errors.Trace(err)
+		return nil, internalError(err)
+	} else if len(threads) == 0 {
+		return nil, grpcErrorf(codes.NotFound, "thread not found")
 	}
+	thread = threads[0]
+
 	th, err := transformThreadToResponse(thread, !in.Internal)
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -918,12 +955,14 @@ func (s *threadsServer) Thread(ctx context.Context, in *threading.ThreadRequest)
 		return nil, err
 	}
 
-	thread, err := s.dal.Thread(ctx, tid)
-	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, "Thread not found")
-	} else if err != nil {
+	threads, err := s.dal.Threads(ctx, []models.ThreadID{tid})
+	if err != nil {
 		return nil, internalError(err)
+	} else if len(threads) == 0 {
+		return nil, grpcErrorf(codes.NotFound, "Thread not found")
 	}
+	thread := threads[0]
+
 	th, err := transformThreadToResponse(thread, forExternal)
 	if err != nil {
 		return nil, internalError(err)
@@ -949,6 +988,50 @@ func (s *threadsServer) Thread(ctx context.Context, in *threading.ThreadRequest)
 	}, nil
 }
 
+func (s *threadsServer) Threads(ctx context.Context, in *threading.ThreadsRequest) (*threading.ThreadsResponse, error) {
+	forExternal, err := s.forExternalViewer(ctx, in.ViewerEntityID)
+	if err != nil {
+		return nil, err
+	}
+
+	threadIDs := make([]models.ThreadID, len(in.ThreadIDs))
+	for i, threadID := range in.ThreadIDs {
+		threadIDs[i], err = models.ParseThreadID(threadID)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+	}
+
+	threads, err := s.dal.Threads(ctx, threadIDs)
+	if err != nil {
+		return nil, internalError(err)
+	}
+
+	threadsInResponse := make([]*threading.Thread, len(threadIDs))
+	for i, thread := range threads {
+		th, err := transformThreadToResponse(thread, forExternal)
+		if err != nil {
+			return nil, internalError(err)
+		}
+		threadsInResponse[i] = th
+	}
+
+	if in.ViewerEntityID != "" {
+		ts, err := s.hydrateThreadForViewer(ctx, threadsInResponse, in.ViewerEntityID)
+		if err != nil {
+			return nil, internalError(err)
+		}
+		if len(ts) == 0 {
+			return nil, grpcErrorf(codes.NotFound, "Thread not found")
+		}
+		threadsInResponse = ts
+	}
+
+	return &threading.ThreadsResponse{
+		Threads: threadsInResponse,
+	}, nil
+}
+
 // ThreadItem looks up and returns a single thread item by ID
 func (s *threadsServer) ThreadItem(ctx context.Context, in *threading.ThreadItemRequest) (*threading.ThreadItemResponse, error) {
 	tid, err := models.ParseThreadItemID(in.ItemID)
@@ -963,12 +1046,13 @@ func (s *threadsServer) ThreadItem(ctx context.Context, in *threading.ThreadItem
 		return nil, internalError(err)
 	}
 
-	th, err := s.dal.Thread(ctx, item.ThreadID)
-	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, "Thread %s not found", tid)
-	} else if err != nil {
+	threads, err := s.dal.Threads(ctx, []models.ThreadID{item.ThreadID})
+	if err != nil {
 		return nil, internalError(err)
+	} else if len(threads) == 0 {
+		return nil, grpcErrorf(codes.NotFound, "Thread %s not found", tid)
 	}
+	th := threads[0]
 
 	ti, err := transformThreadItemToResponse(item, th.OrganizationID)
 	if err != nil {
@@ -1015,12 +1099,13 @@ func (s *threadsServer) ThreadItems(ctx context.Context, in *threading.ThreadIte
 		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadID")
 	}
 
-	th, err := s.dal.Thread(ctx, tid)
-	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, "Thread %s not found", tid)
-	} else if err != nil {
+	threads, err := s.dal.Threads(ctx, []models.ThreadID{tid})
+	if err != nil {
 		return nil, internalError(err)
+	} else if len(threads) == 0 {
+		return nil, grpcErrorf(codes.NotFound, "Thread %s not found", tid)
 	}
+	th := threads[0]
 
 	forExternal, err := s.forExternalViewer(ctx, in.ViewerEntityID)
 	if err != nil {
@@ -1120,12 +1205,13 @@ func (s *threadsServer) UpdateThread(ctx context.Context, in *threading.UpdateTh
 		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadItemID")
 	}
 
-	thread, err := s.dal.Thread(ctx, tid)
-	if errors.Cause(err) == dal.ErrNotFound {
+	threads, err := s.dal.Threads(ctx, []models.ThreadID{tid})
+	if err != nil {
+		return nil, internalError(err)
+	} else if len(threads) == 0 {
 		return nil, grpcErrorf(codes.NotFound, "Thread not found")
-	} else if err != nil {
-		return nil, errors.Trace(err)
 	}
+	thread := threads[0]
 
 	// can only update system title for an external thread
 	switch thread.Type {
@@ -1188,10 +1274,13 @@ func (s *threadsServer) UpdateThread(ctx context.Context, in *threading.UpdateTh
 	}); err != nil {
 		return nil, internalError(err)
 	}
-	thread, err = s.dal.Thread(ctx, tid)
+
+	threads, err = s.dal.Threads(ctx, []models.ThreadID{tid})
 	if err != nil {
 		return nil, internalError(err)
 	}
+	thread = threads[0]
+
 	th, err := transformThreadToResponse(thread, false)
 	if err != nil {
 		return nil, internalError(err)

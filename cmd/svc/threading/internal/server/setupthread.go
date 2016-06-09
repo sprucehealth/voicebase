@@ -1,6 +1,8 @@
 package server
 
 import (
+	"fmt"
+
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/models"
 	"github.com/sprucehealth/backend/libs/bml"
@@ -85,11 +87,15 @@ func (s *threadsServer) CreateOnboardingThread(ctx context.Context, in *threadin
 	}); err != nil {
 		return nil, grpcErrorf(codes.Internal, errors.Trace(err).Error())
 	}
-	thread, err := s.dal.Thread(ctx, threadID)
+
+	threads, err := s.dal.Threads(ctx, []models.ThreadID{threadID})
 	if err != nil {
 		return nil, errors.Trace(err)
+	} else if len(threads) == 0 {
+		return nil, internalError(fmt.Errorf("thread %s not found", threadID))
 	}
-	th, err := transformThreadToResponse(thread, false)
+
+	th, err := transformThreadToResponse(threads[0], false)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -121,10 +127,14 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 
-	setupThread, err := s.dal.Thread(ctx, state.ThreadID)
+	threads, err := s.dal.Threads(ctx, []models.ThreadID{state.ThreadID})
 	if err != nil {
 		return nil, grpcErrorf(codes.Internal, err.Error())
+	} else if len(threads) == 0 {
+		return nil, internalError(fmt.Errorf("thread %s not found", state.ThreadID))
 	}
+	setupThread := threads[0]
+
 	supportThreads, err := s.dal.ThreadsForOrg(ctx, setupThread.OrganizationID, models.ThreadTypeSupport, 1)
 	if err != nil {
 		return nil, grpcErrorf(codes.Internal, err.Error())
@@ -240,10 +250,14 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 		}
 	}
 
-	thread, err := s.dal.Thread(ctx, state.ThreadID)
+	threads, err = s.dal.Threads(ctx, []models.ThreadID{state.ThreadID})
 	if err != nil {
-		return nil, errors.Trace(err)
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	} else if len(threads) == 0 {
+		return nil, grpcErrorf(codes.NotFound, "thread not found")
 	}
+	thread := threads[0]
+
 	th, err := transformThreadToResponse(thread, false)
 	if err != nil {
 		return nil, errors.Trace(err)

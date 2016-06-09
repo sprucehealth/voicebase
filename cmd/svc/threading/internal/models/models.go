@@ -32,6 +32,14 @@ func NewThreadID() (ThreadID, error) {
 	}, nil
 }
 
+func ThreadIDsToInterfaces(ids []ThreadID) []interface{} {
+	ifs := make([]interface{}, len(ids))
+	for i, id := range ids {
+		ifs[i] = id
+	}
+	return ifs
+}
+
 func ParseThreadID(s string) (ThreadID, error) {
 	t := EmptyThreadID()
 	err := t.UnmarshalText([]byte(s))
