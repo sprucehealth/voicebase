@@ -37,6 +37,13 @@ var grpcErrorf = grpc.Errorf
 // is updated as well (e.g. db schema).
 const maxSummaryLength = 1024
 
+var (
+	// baymaxLaunchDate represents the approximate day when the service was launched
+	// so that we can use the timestamp as a reference point for when we started
+	// receiving messages on the service.
+	baymaxLaunchDate = time.Date(2015, 02, 25, 00, 00, 00, 00, nil)
+)
+
 type threadsServer struct {
 	clk                clock.Clock
 	dal                dal.DAL
@@ -560,7 +567,8 @@ func (s *threadsServer) MarkThreadsAsRead(ctx context.Context, in *threading.Mar
 			}
 
 			readTime := currentTime
-			if watermark.LastMessageTimestamp != 0 && watermark.LastMessageTimestamp < uint64(readTime.Unix()) {
+			// only use the last message timestamp if one is provided by the client or it is in the past but after the reference date of the product launch
+			if watermark.LastMessageTimestamp != 0 && watermark.LastMessageTimestamp < uint64(readTime.Unix()) && watermark.LastMessageTimestamp > uint64(baymaxLaunchDate.Unix()) {
 				readTime = time.Unix(int64(watermark.LastMessageTimestamp), 0)
 			}
 
@@ -594,7 +602,7 @@ func (s *threadsServer) MarkThreadsAsRead(ctx context.Context, in *threading.Mar
 				tivds[i] = &models.ThreadItemViewDetails{
 					ThreadItemID:  tiid,
 					ActorEntityID: in.EntityID,
-					ViewTime:      &readTime,
+					ViewTime:      &currentTime,
 				}
 			}
 			if err := dl.CreateThreadItemViewDetails(ctx, tivds); err != nil {
