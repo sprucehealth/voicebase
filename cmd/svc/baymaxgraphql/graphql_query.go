@@ -78,8 +78,7 @@ var queryType = graphql.NewObject(
 						return nil, errors.ErrNotAuthenticated(ctx)
 					}
 					id := p.Args["id"].(string)
-					prefix := nodePrefix(id)
-					switch prefix {
+					switch nodeIDPrefix(id) {
 					case "entity":
 						// TOOD: this is a stubbed entity currently used in the primaryEntity for a thread. see comment there for more information
 						if id == "entity_stub" {
@@ -105,7 +104,7 @@ var queryType = graphql.NewObject(
 					case "cp":
 						return lookupCarePlan(ctx, ram, id)
 					}
-					return nil, errors.New("unknown node type")
+					return nil, fmt.Errorf("unknown ID '%s' in node query", id)
 				},
 			},
 			"organization": &graphql.Field{
