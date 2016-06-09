@@ -500,10 +500,8 @@ func generateTagForQuestion(p *parser, text string) string {
 
 func defaultAnswerTypeForQuestionType(questionType string) string {
 	switch questionType {
-	case QuestionTypeMultipleChoice:
+	case QuestionTypeMultipleChoice, QuestionTypeSingleSelect:
 		return "a_type_multiple_choice"
-	case QuestionTypeSingleSelect:
-		return "a_type_single_select"
 	case QuestionTypeSegmentedControl:
 		return "a_type_segmented_control"
 	}
