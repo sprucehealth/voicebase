@@ -41,7 +41,7 @@ var (
 	// baymaxLaunchDate represents the approximate day when the service was launched
 	// so that we can use the timestamp as a reference point for when we started
 	// receiving messages on the service.
-	baymaxLaunchDate = time.Date(2015, 02, 25, 00, 00, 00, 00, nil)
+	baymaxLaunchDate = time.Date(2016, 02, 25, 00, 00, 00, 00, time.UTC)
 )
 
 type threadsServer struct {
