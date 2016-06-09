@@ -147,7 +147,7 @@ func TestInviteColleagues(t *testing.T) {
 		To:      []string{"someone@example.com"},
 		Subject: fmt.Sprintf("Invite to join %s on Spruce", "Orgo"),
 		Text: fmt.Sprintf(
-			"Spruce is a communication and digital care app. By joining %s on Spruce, you'll be able to collaborate with colleagues around your patients' care, securely and efficiently.\n\nClick this link to get started:%s\n\nOnce you've created your account, you're all set to start catching up on the latest conversation.\n\nIf you have any troubles, we're here to help - simply reply to this email!\n\nThanks,\nThe Team at Spruce\n\nP.S.: Learn more about Spruce here: https://www.sprucehealth.com",
+			"Spruce is a communication and digital care app. By joining %s on Spruce, you'll be able to collaborate with colleagues around your patients' care, securely and efficiently.\n\nClick this link to get started:\n%s\n\nOnce you've created your account, you're all set to start catching up on the latest conversation.\n\nIf you have any troubles, we're here to help - simply reply to this email!\n\nThanks,\nThe Team at Spruce\n\nP.S.: Learn more about Spruce here: https://www.sprucehealth.com",
 			"Orgo", "https://example.com/invite"),
 		From:     "from@example.com",
 		FromName: "Inviter",
