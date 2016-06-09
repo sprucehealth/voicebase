@@ -68,11 +68,12 @@ func selectingOnlyID(p graphql.ResolveParams) bool {
 	return false
 }
 
-func nodePrefix(nodeID string) string {
+func nodeIDPrefix(nodeID string) string {
 	i := strings.IndexByte(nodeID, '_')
-	prefix := nodeID[:i]
-
-	return prefix
+	if i < 0 {
+		return ""
+	}
+	return nodeID[:i]
 }
 
 func contactFromInput(input interface{}) (*directory.Contact, error) {

@@ -174,14 +174,16 @@ var modifySettingMutation = &graphql.Field{
 		config = res.Configs[0]
 
 		var node interface{}
-		prefix := nodePrefix(nodeID)
-		switch prefix {
+		switch nodeIDPrefix(nodeID) {
 		case "account":
 			node, err = lookupAccount(ctx, ram, nodeID)
 		case "entity":
 			node, err = lookupEntity(ctx, svc, ram, nodeID)
 		default:
-			return nil, fmt.Errorf("nodeID type %s not supported", prefix)
+			return nil, fmt.Errorf("type of node ID '%s' unknown", nodeID)
+		}
+		if err != nil {
+			return nil, errors.InternalError(ctx, err)
 		}
 
 		// enforce that the node is of a type that is one of the possible
