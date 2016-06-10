@@ -39,7 +39,7 @@ func transformSection(section *saml.Section) (*layout.Section, error) {
 		ID:      sectionID.String(),
 	}
 
-	for i, screen := range section.Screens {
+	for _, screen := range section.Screens {
 		tScreen, err := transformScreen(screen)
 		if err != nil {
 			return nil, errors.Trace(err)
@@ -51,8 +51,8 @@ func transformSection(section *saml.Section) (*layout.Section, error) {
 		if tScreen.Type == layout.ScreenTypeTriage {
 			addOptionalTriagePreferenceToScreen(tScreen)
 
-			if i-1 >= 0 && section.Screens[i-1].Type == layout.ScreenTypeWarningPopup {
-				addOptionalTriagePreferenceToScreen(visitSection.Screens[i-1])
+			if len(visitSection.Screens) > 0 && visitSection.Screens[len(visitSection.Screens)-1].Type == layout.ScreenTypeWarningPopup {
+				addOptionalTriagePreferenceToScreen(visitSection.Screens[len(visitSection.Screens)-1])
 			}
 		}
 
@@ -65,6 +65,17 @@ func transformSection(section *saml.Section) (*layout.Section, error) {
 			if err != nil {
 				return nil, errors.Trace(err)
 			}
+			// If the screen type is triage or warning popup screen before a triage screen,
+			// then add a condition to ensure that
+			// an optional triage user preference is respected.
+			if tScreen.Type == layout.ScreenTypeTriage {
+				addOptionalTriagePreferenceToScreen(tScreen)
+
+				if len(visitSection.Screens) > 0 && visitSection.Screens[len(visitSection.Screens)-1].Type == layout.ScreenTypeWarningPopup {
+					addOptionalTriagePreferenceToScreen(visitSection.Screens[len(visitSection.Screens)-1])
+				}
+			}
+
 			visitSection.Screens = append(visitSection.Screens, tScreen)
 		}
 	}
