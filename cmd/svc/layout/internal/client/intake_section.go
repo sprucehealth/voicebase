@@ -50,9 +50,10 @@ func transformSection(section *saml.Section) (*layout.Section, error) {
 		// an optional triage user preference is respected.
 		if tScreen.Type == layout.ScreenTypeTriage {
 			addOptionalTriagePreferenceToScreen(tScreen)
-		}
-		if i-1 >= 0 && section.Screens[i-1].Type == layout.ScreenTypeWarningPopup {
-			addOptionalTriagePreferenceToScreen(visitSection.Screens[i-1])
+
+			if i-1 >= 0 && section.Screens[i-1].Type == layout.ScreenTypeWarningPopup {
+				addOptionalTriagePreferenceToScreen(visitSection.Screens[i-1])
+			}
 		}
 
 		visitSection.Screens = append(visitSection.Screens, tScreen)
