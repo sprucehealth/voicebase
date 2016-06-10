@@ -4,7 +4,6 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/idgen"
 	"github.com/sprucehealth/backend/libs/model"
-	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/saml"
 	"github.com/sprucehealth/backend/svc/layout"
 )
@@ -42,34 +41,6 @@ func transformScreen(screen *saml.Screen) (*layout.Screen, error) {
 		ContentTitle:         screen.ContentHeaderTitle,
 		Title:                screen.Title,
 		ClientData:           transformClientData(screen.ClientData),
-	}
-
-	// If the screen type is triage, then add a condition to ensure that
-	// an optional triage user preference is respected.
-	//
-	// TODO: Move this to the SAML layer. Setting here for now given that the
-	// condition is specific to baymax and avoid the complexity of having to manage
-	// how to only set the condition for baymax.
-	if visitScreen.Type == layout.ScreenTypeTriage {
-		var condition *layout.Condition
-		preferenceCondition := &layout.Condition{
-			Operation:  "boolean_equals",
-			BoolValue:  ptr.Bool(false),
-			DataSource: "preference.optional_triage",
-		}
-
-		if screen.Condition != nil {
-			condition = &layout.Condition{
-				Operation: "and",
-				Operands: []*layout.Condition{
-					visitScreen.Condition,
-					preferenceCondition,
-				},
-			}
-		} else {
-			condition = preferenceCondition
-		}
-		visitScreen.Condition = condition
 	}
 
 	// map all photo screens to media screens

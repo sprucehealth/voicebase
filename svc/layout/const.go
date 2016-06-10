@@ -15,6 +15,7 @@ const (
 	QuestionTypeMediaSection     = "q_type_media_section"
 
 	// ScreenTypes
-	ScreenTypeTriage = "screen_type_triage"
-	ScreenTypeMedia  = "screen_type_media"
+	ScreenTypeTriage       = "screen_type_triage"
+	ScreenTypeMedia        = "screen_type_media"
+	ScreenTypeWarningPopup = "screen_type_warning_popup"
 )

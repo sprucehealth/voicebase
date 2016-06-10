@@ -4,6 +4,7 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/idgen"
 	"github.com/sprucehealth/backend/libs/model"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/saml"
 	"github.com/sprucehealth/backend/svc/layout"
 )
@@ -38,11 +39,22 @@ func transformSection(section *saml.Section) (*layout.Section, error) {
 		ID:      sectionID.String(),
 	}
 
-	for _, screen := range section.Screens {
+	for i, screen := range section.Screens {
 		tScreen, err := transformScreen(screen)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
+
+		// If the screen type is triage or warning popup screen before a triage screen,
+		// then add a condition to ensure that
+		// an optional triage user preference is respected.
+		if tScreen.Type == layout.ScreenTypeTriage {
+			addOptionalTriagePreferenceToScreen(tScreen)
+		}
+		if i-1 >= 0 && section.Screens[i-1].Type == layout.ScreenTypeWarningPopup {
+			addOptionalTriagePreferenceToScreen(visitSection.Screens[i-1])
+		}
+
 		visitSection.Screens = append(visitSection.Screens, tScreen)
 	}
 
@@ -57,4 +69,26 @@ func transformSection(section *saml.Section) (*layout.Section, error) {
 	}
 
 	return visitSection, nil
+}
+
+func addOptionalTriagePreferenceToScreen(screen *layout.Screen) {
+	var condition *layout.Condition
+	preferenceCondition := &layout.Condition{
+		Operation:  "boolean_equals",
+		BoolValue:  ptr.Bool(false),
+		DataSource: "preference.optional_triage",
+	}
+
+	if screen.Condition != nil {
+		condition = &layout.Condition{
+			Operation: "and",
+			Operands: []*layout.Condition{
+				screen.Condition,
+				preferenceCondition,
+			},
+		}
+	} else {
+		condition = preferenceCondition
+	}
+	screen.Condition = condition
 }
