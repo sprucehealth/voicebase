@@ -993,7 +993,7 @@ func TestMarkThreadAsRead(t *testing.T) {
 		RequestedInformation: &directory.RequestedInformation{
 			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
 		},
-		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL, directory.EntityType_PATIENT},
 		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
 	}).WithReturns(&directory.LookupEntitiesResponse{Entities: []*directory.Entity{
 		{
@@ -1067,7 +1067,7 @@ func TestMarkThreadAsRead_NotAuthorized(t *testing.T) {
 		RequestedInformation: &directory.RequestedInformation{
 			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
 		},
-		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL, directory.EntityType_PATIENT},
 		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
 	}).WithReturns(&directory.LookupEntitiesResponse{Entities: []*directory.Entity{
 		{

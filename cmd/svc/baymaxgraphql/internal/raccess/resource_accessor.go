@@ -631,7 +631,7 @@ func (m *resourceAccessor) MarkThreadsAsRead(ctx context.Context, req *threading
 		RequestedInformation: &directory.RequestedInformation{
 			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
 		},
-		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL, directory.EntityType_PATIENT},
 		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
 	})
 	if err != nil {
