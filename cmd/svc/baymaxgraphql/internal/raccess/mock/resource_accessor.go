@@ -248,6 +248,14 @@ func (m *ResourceAccessor) Entities(ctx context.Context, req *directory.LookupEn
 	return rets[0].([]*directory.Entity), mock.SafeError(rets[1])
 }
 
+func (m *ResourceAccessor) InitiateIPCall(ctx context.Context, req *excomms.InitiateIPCallRequest) (*excomms.InitiateIPCallResponse, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*excomms.InitiateIPCallResponse), mock.SafeError(rets[1])
+}
+
 func (m *ResourceAccessor) InitiatePhoneCall(ctx context.Context, req *excomms.InitiatePhoneCallRequest) (*excomms.InitiatePhoneCallResponse, error) {
 	rets := m.Record(req)
 	if len(rets) == 0 {
@@ -290,6 +298,15 @@ func (m *ResourceAccessor) CanPostMessage(ctx context.Context, threadID string) 
 	}
 
 	return mock.SafeError(rets[1])
+}
+
+func (m *ResourceAccessor) PendingIPCalls(ctx context.Context) (*excomms.PendingIPCallsResponse, error) {
+	rets := m.Record()
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].(*excomms.PendingIPCallsResponse), mock.SafeError(rets[1])
 }
 
 func (m *ResourceAccessor) PostMessage(ctx context.Context, req *threading.PostMessageRequest) (*threading.PostMessageResponse, error) {
@@ -542,6 +559,14 @@ func (m *ResourceAccessor) TriageVisit(ctx context.Context, req *care.TriageVisi
 		return nil, nil
 	}
 	return rets[0].(*care.TriageVisitResponse), mock.SafeError(rets[1])
+}
+
+func (m *ResourceAccessor) UpdateIPCall(ctx context.Context, req *excomms.UpdateIPCallRequest) (*excomms.UpdateIPCallResponse, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*excomms.UpdateIPCallResponse), mock.SafeError(rets[1])
 }
 
 func (m *ResourceAccessor) VisitLayoutVersion(ctx context.Context, req *layout.GetVisitLayoutVersionRequest) (*layout.GetVisitLayoutVersionResponse, error) {

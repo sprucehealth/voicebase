@@ -9,12 +9,14 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
+	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/idgen"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/transactional/tsql"
+	"golang.org/x/net/context"
 )
 
 type ProvisionedEndpointLookup struct {
@@ -116,15 +118,33 @@ type DAL interface {
 
 	// CreateDeletedResource creates an entry for a deleted resource
 	CreateDeletedResource(resource, resourceID string) error
+
+	// CreateIPCall creates an IP call along with the list of participants
+	CreateIPCall(ctx context.Context, call *models.IPCall) error
+
+	// IPCall returns an IPCall by ID
+	IPCall(ctx context.Context, id models.IPCallID, opts ...QueryOption) (*models.IPCall, error)
+
+	// PendingIPCallsForAccount returns the pending IP calls for an account
+	PendingIPCallsForAccount(ctx context.Context, accountID string) ([]*models.IPCall, error)
+
+	// UpdatePendingCall updates an IP call
+	UpdateIPCall(ctx context.Context, callID models.IPCallID, pending bool) error
+
+	// UpdateIPCallParticipant updates a participant of an IP call
+	UpdateIPCallParticipant(ctx context.Context, callID models.IPCallID, accountID string, state models.IPCallState) error
 }
 
 type dal struct {
-	db tsql.DB
+	db  tsql.DB
+	clk clock.Clock
 }
 
-func NewDAL(db *sql.DB) DAL {
+// New returns a new initialized DAL that uses an SQL database
+func New(db *sql.DB, clk clock.Clock) DAL {
 	return &dal{
-		db: tsql.AsDB(db),
+		db:  tsql.AsDB(db),
+		clk: clk,
 	}
 }
 
@@ -135,6 +155,8 @@ var (
 	ErrIncomingRawMessageNotFound          = errors.New("incoming raw message not found")
 	ErrOriginatingNumberNotFound           = errors.New("originating number not found")
 	ErrIncomingCallNotFound                = errors.New("incoming_call not found")
+	ErrCallRequestNotFound                 = errors.New("call request not found")
+	ErrIPCallNotFound                      = errors.New("ipcall not found")
 )
 
 func (d *dal) LookupProvisionedEndpoint(provisionedFor string, endpointType models.EndpointType) (*models.ProvisionedEndpoint, error) {
@@ -273,8 +295,6 @@ func (d *dal) CreateCallRequest(cr *models.CallRequest) error {
 	return errors.Trace(err)
 }
 
-var ErrCallRequestNotFound = errors.New("call request not found")
-
 func (d *dal) LookupCallRequest(callSID string) (*models.CallRequest, error) {
 	var cr models.CallRequest
 
@@ -356,7 +376,6 @@ func (d *dal) AvailableProxyPhoneNumbers(originatingPhoneNumber phone.Number) ([
 		// delete any proxy phone number from the map after it has been considered
 		delete(proxyPhoneNumbersMap, ppn.PhoneNumber.String())
 	}
-	defer rows2.Close()
 
 	// whatever remains in the map are numbers that have never been reserved and can now be considered
 	for _, pn := range proxyPhoneNumbersMap {
@@ -660,11 +679,9 @@ func (d *dal) UpdateIncomingCall(sid string, update *IncomingCallUpdate) (int64,
 }
 
 func (d *dal) CreateDeletedResource(resource, resourceID string) error {
-
 	_, err := d.db.Exec(`INSERT INTO deleted_resource (resource, resource_id) VALUES (?,?)`, resource, resourceID)
 	if err != nil {
 		return errors.Trace(err)
 	}
-
 	return nil
 }

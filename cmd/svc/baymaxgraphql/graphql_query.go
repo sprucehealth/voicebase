@@ -200,6 +200,7 @@ var queryType = graphql.NewObject(
 			"carePlan":                carePlanQuery,
 			"forceUpgradeStatus":      forceUpgradeQuery,
 			"medicationSearch":        medicationSearchQuery,
+			"pendingCalls":            pendingCallsQuery,
 			"visitAutocompleteSearch": visitAutocompleteSearchQuery,
 			"setting":                 settingsQuery,
 		},

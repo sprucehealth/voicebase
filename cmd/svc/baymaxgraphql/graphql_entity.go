@@ -120,6 +120,7 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 				return sc, nil
 			},
 		},
+		"allowEdit": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		"avatar": &graphql.Field{
 			Type: imageType,
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
@@ -128,11 +129,11 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 				return entity.Avatar, nil
 			},
 		},
+		"callableEndpoints":     &graphql.Field{Type: graphql.NewList(callEndpointType)},
+		"hasAccount":            &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+		"hasPendingInvite":      &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		"isInternal":            &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		"lastModifiedTimestamp": &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
-		"hasAccount":            &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-		"allowEdit":             &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-		"hasPendingInvite":      &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 	},
 })
 

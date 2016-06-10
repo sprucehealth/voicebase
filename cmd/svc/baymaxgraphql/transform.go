@@ -513,6 +513,11 @@ func transformEntityToResponse(staticURLPrefix string, e *directory.Entity, sh *
 		HasPendingInvite:      entityHasPendingInvite(e),
 	}
 
+	ent.CallableEndpoints, err = callableEndpointsForEntity(e)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
 	switch e.Type {
 	case directory.EntityType_ORGANIZATION:
 		ent.Avatar = &models.Image{
@@ -565,6 +570,7 @@ func transformEntityToResponse(staticURLPrefix string, e *directory.Entity, sh *
 			}
 		}
 	}
+
 	return ent, nil
 }
 

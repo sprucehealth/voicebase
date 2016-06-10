@@ -45,3 +45,15 @@ func (e *excommsClient) InitiatePhoneCall(ctx context.Context, in *excomms.Initi
 func (e *excommsClient) DeprovisionEmail(ctx context.Context, in *excomms.DeprovisionEmailRequest, opts ...grpc.CallOption) (*excomms.DeprovisionEmailResponse, error) {
 	return &excomms.DeprovisionEmailResponse{}, nil
 }
+
+func (e *excommsClient) InitiateIPCall(ctx context.Context, in *excomms.InitiateIPCallRequest, opts ...grpc.CallOption) (*excomms.InitiateIPCallResponse, error) {
+	return &excomms.InitiateIPCallResponse{}, nil
+}
+
+func (e *excommsClient) PendingIPCalls(ctx context.Context, in *excomms.PendingIPCallsRequest, opts ...grpc.CallOption) (*excomms.PendingIPCallsResponse, error) {
+	return &excomms.PendingIPCallsResponse{}, nil
+}
+
+func (e *excommsClient) UpdateIPCall(ctx context.Context, in *excomms.UpdateIPCallRequest, opts ...grpc.CallOption) (*excomms.UpdateIPCallResponse, error) {
+	return &excomms.UpdateIPCallResponse{}, nil
+}

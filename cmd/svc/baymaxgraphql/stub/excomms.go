@@ -54,3 +54,15 @@ func (sc *stubExCommsClient) InitiatePhoneCall(ctx context.Context, in *excomms.
 func (sc *stubExCommsClient) DeprovisionEmail(ctx context.Context, in *excomms.DeprovisionEmailRequest, opts ...grpc.CallOption) (*excomms.DeprovisionEmailResponse, error) {
 	return &excomms.DeprovisionEmailResponse{}, nil
 }
+
+func (sc *stubExCommsClient) InitiateIPCall(ctx context.Context, in *excomms.InitiateIPCallRequest, opts ...grpc.CallOption) (*excomms.InitiateIPCallResponse, error) {
+	return &excomms.InitiateIPCallResponse{}, nil
+}
+
+func (sc *stubExCommsClient) PendingIPCalls(ctx context.Context, in *excomms.PendingIPCallsRequest, opts ...grpc.CallOption) (*excomms.PendingIPCallsResponse, error) {
+	return &excomms.PendingIPCallsResponse{}, nil
+}
+
+func (sc *stubExCommsClient) UpdateIPCall(ctx context.Context, in *excomms.UpdateIPCallRequest, opts ...grpc.CallOption) (*excomms.UpdateIPCallResponse, error) {
+	return &excomms.UpdateIPCallResponse{}, nil
+}

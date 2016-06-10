@@ -80,25 +80,26 @@ type DOB struct {
 }
 
 type Entity struct {
-	ID                    string         `json:"id"`
-	IsEditable            bool           `json:"isEditable"`
-	FirstName             string         `json:"firstName"`
-	MiddleInitial         string         `json:"middleInitial"`
-	LastName              string         `json:"lastName"`
-	GroupName             string         `json:"groupName"`
-	DisplayName           string         `json:"displayName"`
-	ShortTitle            string         `json:"shortTitle"`
-	LongTitle             string         `json:"longTitle"`
-	Gender                string         `json:"gender"`
-	DOB                   *DOB           `json:"dob"`
-	Note                  string         `json:"note"`
-	Contacts              []*ContactInfo `json:"contacts"`
-	IsInternal            bool           `json:"isInternal"`
-	LastModifiedTimestamp uint64         `json:"lastModifiedTimestamp"`
-	HasAccount            bool           `json:"hasAccount"`
-	AllowEdit             bool           `json:"allowEdit"`
-	HasPendingInvite      bool           `json:"hasPendingInvite"`
-	Avatar                *Image
+	ID                    string          `json:"id"`
+	IsEditable            bool            `json:"isEditable"`
+	FirstName             string          `json:"firstName"`
+	MiddleInitial         string          `json:"middleInitial"`
+	LastName              string          `json:"lastName"`
+	GroupName             string          `json:"groupName"`
+	DisplayName           string          `json:"displayName"`
+	ShortTitle            string          `json:"shortTitle"`
+	LongTitle             string          `json:"longTitle"`
+	Gender                string          `json:"gender"`
+	DOB                   *DOB            `json:"dob"`
+	Note                  string          `json:"note"`
+	Contacts              []*ContactInfo  `json:"contacts"`
+	IsInternal            bool            `json:"isInternal"`
+	LastModifiedTimestamp uint64          `json:"lastModifiedTimestamp"`
+	HasAccount            bool            `json:"hasAccount"`
+	AllowEdit             bool            `json:"allowEdit"`
+	HasPendingInvite      bool            `json:"hasPendingInvite"`
+	Avatar                *Image          `json:"-"`
+	CallableEndpoints     []*CallEndpoint `json:"callableEndpoints"`
 }
 
 type ContactInfo struct {
@@ -183,6 +184,7 @@ type AudioAttachment struct {
 	DurationInSeconds float64 `json:"durationInSeconds"`
 }
 
+// Thread type enum
 const (
 	ThreadTypeUnknown        = "UNKNOWN" // TODO: remove this once old threads are migrated
 	ThreadTypeExternal       = "EXTERNAL"

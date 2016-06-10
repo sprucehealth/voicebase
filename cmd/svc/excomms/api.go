@@ -52,7 +52,7 @@ func runAPI(bootSvc *boot.Service) {
 		golog.Fatalf(err.Error())
 	}
 
-	dl := dal.NewDAL(db)
+	dl := dal.New(db, clock.New())
 
 	store := storage.NewS3(awsSession, config.attachmentBucket, config.attachmentPrefix)
 	proxyNumberManager := proxynumber.NewManager(dl, clock.New())

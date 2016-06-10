@@ -107,7 +107,7 @@ func runService(bootSvc *boot.Service) {
 	}
 
 	store := storage.NewS3(awsSession, config.attachmentBucket, config.attachmentPrefix)
-	dl := dal.NewDAL(db)
+	dl := dal.New(db, clock.New())
 	w, err := worker.NewWorker(
 		config.incomingRawMessageQueue,
 		eSNS,
@@ -148,6 +148,9 @@ func runService(bootSvc *boot.Service) {
 		config.twilioAccountSID,
 		config.twilioAuthToken,
 		config.twilioApplicationSID,
+		config.twilioSigningKeySID,
+		config.twilioSigningKey,
+		config.twilioVideoConfigSID,
 		dl,
 		config.excommsAPIURL,
 		directory.NewDirectoryClient(directoryConn),

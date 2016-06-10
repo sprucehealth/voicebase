@@ -10,8 +10,8 @@ import (
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/twilio"
 	"github.com/sprucehealth/backend/surescripts/pharmacy"
-	"github.com/subosito/twilio"
 )
 
 type twilioConfig struct {
@@ -50,7 +50,7 @@ type smartyStreetsConfig struct {
 }
 
 func (s *smartyStreetsConfig) IsSpecified() bool {
-	return (s.AuthID != "" && s.AuthToken != "")
+	return s.AuthID != "" && s.AuthToken != ""
 }
 
 type analyticsConfig struct {

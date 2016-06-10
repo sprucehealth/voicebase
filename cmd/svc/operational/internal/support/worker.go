@@ -7,11 +7,10 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/sprucehealth/backend/libs/clock"
-
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/bml"
+	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -22,17 +21,17 @@ import (
 
 var (
 	doctorTitles = map[string]struct{}{
-		"DDS":    struct{}{},
-		"DMD":    struct{}{},
-		"DO":     struct{}{},
-		"DPM":    struct{}{},
-		"DVM":    struct{}{},
-		"MBBS":   struct{}{},
-		"MD":     struct{}{},
-		"OD":     struct{}{},
-		"PharmD": struct{}{},
-		"PhD":    struct{}{},
-		"PsyD":   struct{}{},
+		"DDS":    {},
+		"DMD":    {},
+		"DO":     {},
+		"DPM":    {},
+		"DVM":    {},
+		"MBBS":   {},
+		"MD":     {},
+		"OD":     {},
+		"PharmD": {},
+		"PhD":    {},
+		"PsyD":   {},
 	}
 	californiaLocation     *time.Location
 	supportMessageTemplate *template.Template

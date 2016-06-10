@@ -3,9 +3,6 @@ package main
 import (
 	"fmt"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
@@ -21,6 +18,8 @@ import (
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 var threadConnectionType = ConnectionDefinitions(ConnectionConfig{
@@ -208,6 +207,61 @@ var threadType = graphql.NewObject(
 			"allowInvitePatientToSecureThread": &graphql.Field{
 				Type:    graphql.NewNonNull(graphql.Boolean),
 				Resolve: isSecureThreadsEnabled(),
+			},
+			"callableIdentities": &graphql.Field{
+				Type: graphql.NewList(graphql.NewNonNull(callableIdentityType)),
+				Resolve: apiaccess.Provider(func(p graphql.ResolveParams) (interface{}, error) {
+					ctx := p.Context
+					ram := raccess.ResourceAccess(p)
+					svc := serviceFromParams(p)
+					acc := gqlctx.Account(p.Context)
+					th := p.Source.(*models.Thread)
+					switch th.Type {
+					case models.ThreadTypeSecureExternal, models.ThreadTypeExternal:
+					default:
+						return nil, nil
+					}
+					if th.PrimaryEntityID == "" {
+						return nil, nil
+					}
+					if acc.Type != auth.AccountType_PROVIDER {
+						return nil, nil
+					}
+					ent, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+						LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+						LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+							EntityID: th.PrimaryEntityID,
+						},
+						RequestedInformation: &directory.RequestedInformation{
+							Depth:             0,
+							EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+						},
+						Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+						RootTypes: []directory.EntityType{
+							directory.EntityType_EXTERNAL,
+							directory.EntityType_PATIENT,
+						},
+					})
+					if err != nil {
+						return nil, errors.InternalError(ctx, err)
+					}
+					if ent == nil {
+						return nil, nil
+					}
+					endpoints, err := callableEndpointsForEntity(ent)
+					if err != nil {
+						return nil, errors.InternalError(ctx, err)
+					}
+					ment, err := transformEntityToResponse(svc.staticURLPrefix, ent, devicectx.SpruceHeaders(ctx), acc)
+					if err != nil {
+						return nil, errors.InternalError(ctx, err)
+					}
+					return []*models.CallableIdentity{{
+						Name:      ent.Info.DisplayName,
+						Endpoints: endpoints,
+						Entity:    ment,
+					}}, nil
+				}),
 			},
 			"emptyStateTextMarkup": &graphql.Field{Type: graphql.String},
 			"lastMessageTimestamp": &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},

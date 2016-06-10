@@ -77,3 +77,27 @@ func (c *Client) DeprovisionEmail(ctx context.Context, in *excomms.DeprovisionEm
 	}
 	return rets[0].(*excomms.DeprovisionEmailResponse), mock.SafeError(rets[1])
 }
+
+func (c *Client) InitiateIPCall(ctx context.Context, in *excomms.InitiateIPCallRequest, opts ...grpc.CallOption) (*excomms.InitiateIPCallResponse, error) {
+	rets := c.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*excomms.InitiateIPCallResponse), mock.SafeError(rets[1])
+}
+
+func (c *Client) PendingIPCalls(ctx context.Context, in *excomms.PendingIPCallsRequest, opts ...grpc.CallOption) (*excomms.PendingIPCallsResponse, error) {
+	rets := c.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*excomms.PendingIPCallsResponse), mock.SafeError(rets[1])
+}
+
+func (c *Client) UpdateIPCall(ctx context.Context, in *excomms.UpdateIPCallRequest, opts ...grpc.CallOption) (*excomms.UpdateIPCallResponse, error) {
+	rets := c.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*excomms.UpdateIPCallResponse), mock.SafeError(rets[1])
+}

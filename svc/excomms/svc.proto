@@ -210,6 +210,72 @@ message ProvisionEmailAddressResponse {
 	string email_address = 1;
 }
 
+enum IPCallParticipantRole {
+	INVALID_IPCALL_PARTICIPANT_ROLE = 0;
+	CALLER = 1;
+	RECIPIENT = 2;
+};
+
+enum IPCallType {
+	INVALID_IPCALL_TYPE = 0;
+	VIDEO = 1;
+	AUDIO = 2;
+}
+
+enum IPCallState {
+	INVALID_IPCALL_STATE = 0;
+	PENDING = 1;
+	ACCEPTED = 2;
+	DECLINED = 3;
+	CONNECTED = 4;
+	FAILED = 5;
+	COMPLETED = 6;
+}
+
+message IPCall {
+	string id = 1 [(gogoproto.customname) = "ID"];
+	IPCallType type = 2;
+	bool pending = 3;
+	repeated IPCallParticipant participants = 4;
+	string token = 5;
+}
+
+message IPCallParticipant {
+	string account_id = 1 [(gogoproto.customname) = "AccountID"];
+	string entity_id = 2 [(gogoproto.customname) = "EntityID"];
+	IPCallParticipantRole role = 3;
+	IPCallState state = 4;
+	string identity = 5;
+}
+
+message InitiateIPCallRequest {
+	IPCallType type = 1;
+	string caller_entity_id = 2 [(gogoproto.customname) = "CallerEntityID"];
+	repeated string recipient_entity_ids = 3 [(gogoproto.customname) = "RecipientEntityIDs"];
+}
+
+message InitiateIPCallResponse {
+	IPCall call = 1;
+}
+
+message PendingIPCallsRequest {
+	string account_id = 1 [(gogoproto.customname) = "AccountID"];
+}
+
+message PendingIPCallsResponse {
+	repeated IPCall calls = 1;
+}
+
+message UpdateIPCallRequest {
+	string ipcall_id = 1 [(gogoproto.customname) = "IPCallID"];
+	string account_id = 2 [(gogoproto.customname) = "AccountID"];
+	IPCallState state = 3;
+}
+
+message UpdateIPCallResponse {
+	IPCall call = 1;
+}
+
 service ExComms {
 
 	// SearchAvailablephoneNumbers returns a list of available phone numbers based on the search criteria.
@@ -232,4 +298,13 @@ service ExComms {
 
 	// InitiatePhoneCall initiates a phone call as defined in the InitiatePhoneCallRequest.
 	rpc InitiatePhoneCall (InitiatePhoneCallRequest) returns (InitiatePhoneCallResponse);
+
+	// InitiateIPCall starts a new voip or video call.
+	rpc InitiateIPCall (InitiateIPCallRequest) returns (InitiateIPCallResponse);
+
+	// IPCalls returns all IPCalls for an account that are still pending (not yet completed).
+	rpc PendingIPCalls (PendingIPCallsRequest) returns (PendingIPCallsResponse);
+
+	// UpdateIPCall updates the state of a voip or video call.
+	rpc UpdateIPCall (UpdateIPCallRequest) returns (UpdateIPCallResponse);
 }

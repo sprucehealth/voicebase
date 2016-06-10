@@ -9,6 +9,10 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
+var (
+	ErrEntityNotFound = errors.New("entity not found")
+)
+
 // EntityIDs is a convenience method for retrieving ID's from a list
 // Note: This could be made more gneeric using reflection but don't want the performance cost
 func EntityIDs(es []*Entity) []string {
@@ -18,10 +22,6 @@ func EntityIDs(es []*Entity) []string {
 	}
 	return ids
 }
-
-var (
-	ErrEntityNotFound = errors.New("entity not found")
-)
 
 // SingleEntity returns a single entity for the given lookup request. If just 1 entity is not found an error is returned.
 func SingleEntity(ctx context.Context, client DirectoryClient, req *LookupEntitiesRequest) (*Entity, error) {

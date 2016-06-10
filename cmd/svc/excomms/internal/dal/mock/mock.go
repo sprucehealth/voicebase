@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
+	"golang.org/x/net/context"
 )
 
 var _ dal.DAL = &mockDAL{}
@@ -226,6 +227,46 @@ func (m *mockDAL) UpdateIncomingCall(sid string, update *dal.IncomingCallUpdate)
 
 func (m *mockDAL) CreateDeletedResource(resource, resourceID string) error {
 	rets := m.Record(resource, resourceID)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[0])
+}
+
+func (m *mockDAL) CreateIPCall(ctx context.Context, call *models.IPCall) error {
+	rets := m.Record(call)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[0])
+}
+
+func (m *mockDAL) IPCall(ctx context.Context, id models.IPCallID, opts ...dal.QueryOption) (*models.IPCall, error) {
+	rets := m.Record(id)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*models.IPCall), mock.SafeError(rets[1])
+}
+
+func (m *mockDAL) PendingIPCallsForAccount(ctx context.Context, accountID string) ([]*models.IPCall, error) {
+	rets := m.Record(accountID)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].([]*models.IPCall), mock.SafeError(rets[1])
+}
+
+func (m *mockDAL) UpdateIPCall(ctx context.Context, callID models.IPCallID, pending bool) error {
+	rets := m.Record(callID, pending)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[0])
+}
+
+func (m *mockDAL) UpdateIPCallParticipant(ctx context.Context, callID models.IPCallID, accountID string, state models.IPCallState) error {
+	rets := m.Record(callID, accountID, state)
 	if len(rets) == 0 {
 		return nil
 	}

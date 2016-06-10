@@ -19,7 +19,7 @@ var errInvalidID = errors.New("invalid ID")
 // ObjectID is used for the (un)marshalling of data models 64-bit IDs
 type ObjectID struct {
 	Prefix  string
-	Val     uint64 // Cannot expose Val since we need that name for the Val() driver method
+	Val     uint64
 	IsValid bool
 }
 
@@ -92,12 +92,12 @@ func (id *ObjectID) Scan(src interface{}) error {
 	return nil
 }
 
-// Val implements sql/driver.Valr to allow an ObjectID to be used in an sql query
+// Value implements sql/driver.Valuer to allow an ObjectID to be used in an sql query
 func (id ObjectID) Value() (driver.Value, error) {
 	if !id.IsValid {
 		return nil, nil
 	}
-	// int64 because uint64 isn't supported by the sql/driver.Valr interface
+	// int64 because uint64 isn't supported by the sql/driver.Valuer interface
 	return int64(id.Val), nil
 }
 

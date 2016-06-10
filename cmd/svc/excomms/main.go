@@ -15,6 +15,9 @@ var config struct {
 	twilioAuthToken         string
 	twilioAccountSID        string
 	twilioApplicationSID    string
+	twilioSigningKeySID     string
+	twilioSigningKey        string
+	twilioVideoConfigSID    string
 	sendgridAPIKey          string
 	attachmentBucket        string
 	attachmentPrefix        string
@@ -48,6 +51,9 @@ func init() {
 	flag.StringVar(&config.twilioAccountSID, "twilio_account_sid", "", "account sid for twilio account")
 	flag.StringVar(&config.twilioApplicationSID, "twilio_application_sid", "", "application sid for twilio")
 	flag.StringVar(&config.twilioAuthToken, "twilio_auth_token", "", "auth token for twilio account")
+	flag.StringVar(&config.twilioSigningKeySID, "twilio_signing_key_sid", "", "SID of API key used to sign tokens")
+	flag.StringVar(&config.twilioSigningKey, "twilio_signing_key", "", "API key secret used to sign tokens")
+	flag.StringVar(&config.twilioVideoConfigSID, "twilio_video_config_sid", "", "Video call configuration SID")
 	flag.StringVar(&config.directoryServiceURL, "directory_endpoint", "", "url to connect with directory service")
 	flag.StringVar(&config.settingsServiceURL, "settings_endpoint", "", "url to connect with settings service")
 	flag.StringVar(&config.sendgridAPIKey, "sendgrid_api_key", "", "sendgrid api key")
