@@ -21,6 +21,7 @@ import (
 	"github.com/sprucehealth/backend/libs/urlutil"
 	"github.com/sprucehealth/backend/shttputil"
 	"github.com/sprucehealth/backend/svc/auth"
+	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/threading"
@@ -40,6 +41,7 @@ var (
 	flagAuthAddr      = flag.String("auth_addr", "", "host:port of auth service")
 	flagDirectoryAddr = flag.String("directory_addr", "", "host:port of directory service")
 	flagThreadingAddr = flag.String("threading_addr", "", "host:port of threading service")
+	flagCareAddr      = flag.String("care_addr", "", "host:port of the care service")
 
 	// DB
 	flagDBHost     = flag.String("db_host", "localhost", "the host at which we should attempt to connect to the database")
@@ -94,6 +96,15 @@ func main() {
 	}
 	threadingClient := threading.NewThreadsClient(conn)
 
+	if *flagCareAddr == "" {
+		golog.Fatalf("Care service addr not configured")
+	}
+	conn, err = grpc.Dial(*flagCareAddr, grpc.WithInsecure())
+	if err != nil {
+		golog.Fatalf("Unable to connect to care service :%s", err)
+	}
+	careClient := care.NewCareClient(conn)
+
 	if *flagRPCListenAddr == "" {
 		golog.Fatalf("RPC listen addr required")
 	}
@@ -136,6 +147,7 @@ func main() {
 		authClient,
 		directoryClient,
 		threadingClient,
+		careClient,
 		urlutil.NewSigner("https://"+*flagMediaAPIDomain, signer, clock.New()),
 		dal.New(db),
 		*flagWebDomain,

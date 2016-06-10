@@ -240,6 +240,7 @@ func (s *server) CreateVisitAnswers(ctx context.Context, in *care.CreateVisitAns
 	}
 
 	// validate each incoming answer against the question in the intake
+	var mediaIDs []string
 	for questionID, answer := range visitAnswers.Answers {
 		question, ok := questionInIntakeMap[questionID]
 		if !ok {
@@ -249,6 +250,27 @@ func (s *server) CreateVisitAnswers(ctx context.Context, in *care.CreateVisitAns
 		if err := answer.Validate(question); err != nil {
 			return nil, grpcErrorf(care.ErrorInvalidAnswer, "invalid answer to question in visit %s : %s", visit.ID, err)
 		}
+
+		// collect all the mediaIDs to claim it by the visit
+		if answer.TypeName() == layout.QuestionTypeMediaSection {
+			mediaAnswer := answer.(*client.MediaQuestionAnswer)
+			for _, section := range mediaAnswer.Sections {
+				for _, slot := range section.Slots {
+					mediaIDs = append(mediaIDs, slot.MediaID)
+				}
+			}
+			if err != nil {
+				return nil, grpcErrorf(codes.Internal, "unable to claim media for question %s: %s", questionID, err)
+			}
+		}
+	}
+
+	if len(mediaIDs) > 0 {
+		_, err = s.media.ClaimMedia(ctx, &media.ClaimMediaRequest{
+			MediaIDs:  mediaIDs,
+			OwnerType: media.MediaOwnerType_VISIT,
+			OwnerID:   visit.ID.String(),
+		})
 	}
 
 	// transform the incoming answers to the internal models and store
@@ -269,13 +291,14 @@ func (s *server) CreateVisitAnswers(ctx context.Context, in *care.CreateVisitAns
 				return errors.Trace(err)
 			}
 
-			rowsDeleted, err := dl.DeleteVisitAnswers(ctx, visitID, visitAnswers.ClearAnswers)
-			if err != nil {
-				return errors.Trace(err)
-			} else if rowsDeleted > int64(len(visitAnswers.ClearAnswers)) {
-				return errors.Trace(fmt.Errorf("more rows attempted to be deleted (%d) than anticpated (%d)", rowsDeleted, len(visitAnswers.ClearAnswers)))
+			if len(visitAnswers.ClearAnswers) > 0 {
+				rowsDeleted, err := dl.DeleteVisitAnswers(ctx, visitID, visitAnswers.ClearAnswers)
+				if err != nil {
+					return errors.Trace(err)
+				} else if rowsDeleted > int64(len(visitAnswers.ClearAnswers)) {
+					return errors.Trace(fmt.Errorf("more rows attempted to be deleted (%d) than anticpated (%d)", rowsDeleted, len(visitAnswers.ClearAnswers)))
+				}
 			}
-
 		}
 		return nil
 	}); err != nil {

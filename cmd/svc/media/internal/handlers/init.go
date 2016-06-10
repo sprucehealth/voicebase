@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/libs/urlutil"
 	"github.com/sprucehealth/backend/svc/auth"
+	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
 )
@@ -26,6 +27,7 @@ func InitRoutes(
 	authClient auth.AuthClient,
 	directoryClient directory.DirectoryClient,
 	threadingClient threading.ThreadsClient,
+	careClient care.CareClient,
 	urlSigner *urlutil.Signer,
 	dal dal.DAL,
 	webDomain string,
@@ -33,7 +35,7 @@ func InitRoutes(
 	mediaAPIDomain string,
 	maxMemory int64,
 ) {
-	svc := initService(awsSession, dal, directoryClient, threadingClient, mediaStorageBucket)
+	svc := initService(awsSession, dal, directoryClient, threadingClient, careClient, mediaStorageBucket)
 	corsOrigins := []string{"https://" + webDomain}
 	mHandler := &mediaHandler{
 		svc:            svc,
@@ -68,6 +70,7 @@ func initService(
 	dal dal.DAL,
 	directoryClient directory.DirectoryClient,
 	threadingClient threading.ThreadsClient,
+	careClient care.CareClient,
 	mediaStorageBucket string) service.Service {
 	s3Store := storage.NewS3(awsSession, mediaStorageBucket, "media")
 	s3CacheStore := storage.NewS3(awsSession, mediaStorageBucket, "media-cache")
@@ -75,6 +78,7 @@ func initService(
 		dal,
 		directoryClient,
 		threadingClient,
+		careClient,
 		media.NewImageService(s3Store, s3CacheStore, 0, 0),
 		media.NewAudioService(s3Store, s3CacheStore, 0),
 		media.NewVideoService(s3Store, s3CacheStore, 0),

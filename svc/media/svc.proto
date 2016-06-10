@@ -13,20 +13,22 @@ message MIME {
 	string subtype = 2;
 }
 
+// MediaOwnerType represents the list of possible owners for media objects.
+enum MediaOwnerType {
+	OWNER_TYPE_UNKNOWN = 0;
+	ENTITY = 1;
+	ORGANIZATION = 2;
+	THREAD = 3;
+	ACCOUNT = 4;
+	VISIT = 5;
+}
+
 message MediaInfo {
-	enum OwnerType {
-		OWNER_TYPE_UNKNOWN = 0;
-		ENTITY = 1;
-		ORGANIZATION = 2;
-		THREAD = 3;
-		ACCOUNT = 4;
-	}
-	
 	string id = 1 [(gogoproto.customname) = "ID"];
 	string url = 2 [(gogoproto.customname) = "URL"];
 	string thumb_url = 3 [(gogoproto.customname) = "ThumbURL"];
 	string owner_id = 4 [(gogoproto.customname) = "OwnerID"];
-	OwnerType owner_type = 5 [(gogoproto.customname) = "OwnerType"];
+	MediaOwnerType owner_type = 5 [(gogoproto.customname) = "OwnerType"];
 	uint64 size_bytes = 6;
 	uint64 duration_ns = 7 [(gogoproto.customname) = "DurationNS"];
 	MIME mime = 8 [(gogoproto.customname) = "MIME"];
@@ -41,15 +43,8 @@ message MediaInfosResponse {
 }
 
 message ClaimMediaRequest {
-	enum OwnerType {
-		OWNER_TYPE_UNKNOWN = 0;
-		ENTITY = 1;
-		ORGANIZATION = 2;
-		THREAD = 3;
-		ACCOUNT = 4;
-	}
 	repeated string media_ids = 1 [(gogoproto.customname) = "MediaIDs"];
-	OwnerType owner_type = 2;
+	MediaOwnerType owner_type = 2;
 	string owner_id = 3 [(gogoproto.customname) = "OwnerID"];
 }
 

@@ -16,6 +16,10 @@ import (
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/care"
+	"github.com/sprucehealth/backend/svc/layout"
+	layoutmock "github.com/sprucehealth/backend/svc/layout/mock"
+	"github.com/sprucehealth/backend/svc/media"
+	mediamock "github.com/sprucehealth/backend/svc/media/mock"
 	"github.com/sprucehealth/backend/test"
 )
 
@@ -335,6 +339,150 @@ func TestTriageVisit(t *testing.T) {
 
 	_, err = srv.TriageVisit(context.Background(), &care.TriageVisitRequest{
 		VisitID: visitID.String(),
+	})
+	test.OK(t, err)
+}
+
+func TestCreateVisitAnswers_MediaSection(t *testing.T) {
+	t.Parallel()
+	dalMock := dalmock.New(t)
+	layoutMock := layoutmock.New(t)
+	layoutStorageMock := layoutmock.NewStore(t)
+	mediaMock := mediamock.New(t)
+	defer dalMock.Finish()
+	defer layoutMock.Finish()
+	defer layoutStorageMock.Finish()
+	defer mediaMock.Finish()
+
+	mclk := clock.NewManaged(time.Now())
+
+	visitID, err := models.NewVisitID()
+	test.OK(t, err)
+
+	clientAnswersJSON := `{
+	  "answers": {
+	    "1:q_photo_face_question_id": {
+	      "type": "q_type_media_section",
+	      "sections": [
+	        {
+	          "name": "Testing",
+	          "media": [
+	            {
+	              "name": "Other Location",
+	              "slot_id": "7901",
+	              "media_id": "7966"
+	            },
+	            {
+	              "name": "Other Location",
+	              "slot_id": "7902",
+	              "media_id": "7967"
+	            }
+	          ]
+	        }
+	      ]
+	    }
+		}
+}`
+
+	dalMock.Expect(mock.NewExpectation(dalMock.Visit, visitID).WithReturns(&models.Visit{
+		LayoutVersionID: "layoutVersionID",
+		ID:              visitID,
+	}, nil))
+
+	layoutMock.Expect(mock.NewExpectation(layoutMock.GetVisitLayoutVersion, &layout.GetVisitLayoutVersionRequest{
+		ID: "layoutVersionID",
+	}).WithReturns(&layout.GetVisitLayoutVersionResponse{
+		VisitLayoutVersion: &layout.VisitLayoutVersion{
+			IntakeLayoutLocation: "layoutLocation",
+		},
+	}, nil))
+
+	layoutStorageMock.Expect(mock.NewExpectation(layoutStorageMock.GetIntake, "layoutLocation").WithReturns(&layout.Intake{
+		Sections: []*layout.Section{
+			{
+				Screens: []*layout.Screen{
+					{
+						Questions: []*layout.Question{
+							{
+								ID:   "1:q_photo_face_question_id",
+								Type: layout.QuestionTypeMediaSection,
+								MediaSlots: []*layout.MediaSlot{
+									{
+										Type: "video",
+										ID:   "7901",
+									},
+									{
+										Type: "video",
+										ID:   "7902",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}, nil))
+
+	mediaMock.Expect(mock.NewExpectation(mediaMock.ClaimMedia, &media.ClaimMediaRequest{
+		MediaIDs:  []string{"7966", "7967"},
+		OwnerType: media.MediaOwnerType_VISIT,
+		OwnerID:   visitID.String(),
+	}))
+
+	mediaMock.Expect(mock.NewExpectation(mediaMock.MediaInfos, &media.MediaInfosRequest{
+		MediaIDs: []string{"7966", "7967"},
+	}).WithReturns(&media.MediaInfosResponse{
+		MediaInfos: map[string]*media.MediaInfo{
+			"7966": {
+				ID: "7966",
+				MIME: &media.MIME{
+					Type: "video",
+				},
+			},
+			"7967": {
+				ID: "7967",
+				MIME: &media.MIME{
+					Type: "video",
+				},
+			},
+		},
+	}, nil))
+
+	dalMock.Expect(mock.NewExpectation(dalMock.CreateVisitAnswer, visitID, "entityID", &models.Answer{
+		QuestionID: "1:q_photo_face_question_id",
+		Type:       layout.QuestionTypeMediaSection,
+		Answer: &models.Answer_MediaSection{
+			MediaSection: &models.MediaSectionAnswer{
+				Sections: []*models.MediaSectionAnswer_MediaSectionItem{
+					{
+						Name: "Testing",
+						Slots: []*models.MediaSectionAnswer_MediaSectionItem_MediaSlotItem{
+							{
+								Name:    "Other Location",
+								SlotID:  "7901",
+								MediaID: "7966",
+								Type:    models.MediaType_VIDEO,
+							},
+							{
+								Name:    "Other Location",
+								SlotID:  "7902",
+								MediaID: "7967",
+								Type:    models.MediaType_VIDEO,
+							},
+						},
+					},
+				},
+			},
+		},
+	}))
+
+	srv := New(dalMock, layoutMock, nil, mediaMock, layoutStorageMock, nil, mclk)
+
+	_, err = srv.CreateVisitAnswers(context.Background(), &care.CreateVisitAnswersRequest{
+		VisitID:       visitID.String(),
+		AnswersJSON:   clientAnswersJSON,
+		ActorEntityID: "entityID",
 	})
 	test.OK(t, err)
 }

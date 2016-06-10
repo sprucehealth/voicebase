@@ -13,6 +13,7 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/media"
+	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
 )
@@ -31,6 +32,7 @@ func New(
 	dal dal.DAL,
 	directory directory.DirectoryClient,
 	threads threading.ThreadsClient,
+	care care.CareClient,
 	imageService *media.ImageService,
 	audioService *media.AudioService,
 	videoService *media.VideoService,
@@ -40,6 +42,7 @@ func New(
 		dal:           dal,
 		directory:     directory,
 		threads:       threads,
+		care:          care,
 		imageService:  imageService,
 		audioService:  audioService,
 		videoService:  videoService,
@@ -52,6 +55,7 @@ type service struct {
 	dal           dal.DAL
 	directory     directory.DirectoryClient
 	threads       threading.ThreadsClient
+	care          care.CareClient
 	imageService  *media.ImageService
 	audioService  *media.AudioService
 	videoService  *media.VideoService

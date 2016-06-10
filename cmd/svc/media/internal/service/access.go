@@ -6,6 +6,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/dal"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
 	"golang.org/x/net/context"
@@ -31,6 +32,8 @@ func (s *service) CanAccess(ctx context.Context, mediaID dal.MediaID, accountID 
 		return s.canAccessOrganizationMedia(ctx, media.OwnerID, accountID)
 	case dal.MediaOwnerTypeThread:
 		return s.canAccessThreadMedia(ctx, media.OwnerID, accountID)
+	case dal.MediaOwnerTypeVisit:
+		return s.canAccessVisitMedia(ctx, media.OwnerID, accountID)
 	}
 	return fmt.Errorf("Unsupported Media Owner Type: %s", media.OwnerType)
 }
@@ -61,6 +64,17 @@ func (s *service) canAccessEntityMedia(ctx context.Context, entityID, accountID 
 		}
 	}
 	return ErrAccessDenied
+}
+
+func (s *service) canAccessVisitMedia(ctx context.Context, visitID, accountID string) error {
+	visitRes, err := s.care.GetVisit(ctx, &care.GetVisitRequest{
+		ID: visitID,
+	})
+	if err != nil {
+		return err
+	}
+
+	return s.canAccessOrganizationMedia(ctx, visitRes.Visit.OrganizationID, accountID)
 }
 
 func (s *service) canAccessOrganizationMedia(ctx context.Context, organizationID, accountID string) error {

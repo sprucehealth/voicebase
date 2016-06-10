@@ -8,6 +8,8 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/dal"
 	mock_dl "github.com/sprucehealth/backend/cmd/svc/media/internal/dal/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
+	"github.com/sprucehealth/backend/svc/care"
+	mock_care "github.com/sprucehealth/backend/svc/care/mock"
 	"github.com/sprucehealth/backend/svc/directory"
 	mock_directory "github.com/sprucehealth/backend/svc/directory/mock"
 	"github.com/sprucehealth/backend/svc/threading"
@@ -538,6 +540,60 @@ func TestCanAccess(t *testing.T) {
 					service: &service{
 						directory: md,
 						threads:   mt,
+						dal:       mdl,
+					},
+					finish: []mock.Finisher{md, mt, mdl},
+				}
+			}(),
+			mediaID:   "mediaID",
+			accountID: "accountID",
+			expected:  nil,
+		},
+		"OwnerVisit-OrgMember": {
+			tservice: func() *tservice {
+				md := mock_directory.New(t)
+				mt := mock_threads.New(t)
+				mv := mock_care.New(t)
+				mdl := mock_dl.New(t)
+
+				mdl.Expect(mock.NewExpectation(mdl.Media, dal.MediaID("mediaID")).WithReturns(
+					&dal.Media{
+						OwnerType: dal.MediaOwnerTypeVisit,
+						OwnerID:   "visitID",
+					}, nil))
+
+				mv.Expect(mock.NewExpectation(mv.GetVisit, &care.GetVisitRequest{
+					ID: "visitID",
+				}).WithReturns(&care.GetVisitResponse{
+					Visit: &care.Visit{
+						OrganizationID: "orgID",
+					},
+				}, nil))
+
+				// ent memberships
+				md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
+					LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
+					LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+						AccountID: "accountID",
+					},
+					RequestedInformation: &directory.RequestedInformation{
+						EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
+					},
+					Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+					RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL, directory.EntityType_PATIENT},
+					ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+				}).WithReturns(
+					&directory.LookupEntitiesResponse{
+						Entities: []*directory.Entity{
+							{Memberships: []*directory.Entity{{ID: "orgID"}}},
+						},
+					}, nil))
+
+				return &tservice{
+					service: &service{
+						directory: md,
+						threads:   mt,
+						care:      mv,
 						dal:       mdl,
 					},
 					finish: []mock.Finisher{md, mt, mdl},

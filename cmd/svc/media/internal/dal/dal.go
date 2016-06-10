@@ -127,12 +127,14 @@ const (
 	MediaOwnerTypeEntity MediaOwnerType = "ENTITY"
 	// MediaOwnerTypeAccount represents the ACCOUNT state of the owner_type field on a media record
 	MediaOwnerTypeAccount MediaOwnerType = "ACCOUNT"
+	// MediaOwnerTypeVisit represents the VISIT state of the owner_type field on a media record
+	MediaOwnerTypeVisit MediaOwnerType = "VISIT"
 )
 
 // ParseMediaOwnerType converts a string into the correcponding enum value
 func ParseMediaOwnerType(s string) (MediaOwnerType, error) {
 	switch t := MediaOwnerType(strings.ToUpper(s)); t {
-	case MediaOwnerTypeOrganization, MediaOwnerTypeThread, MediaOwnerTypeEntity, MediaOwnerTypeAccount:
+	case MediaOwnerTypeOrganization, MediaOwnerTypeThread, MediaOwnerTypeEntity, MediaOwnerTypeAccount, MediaOwnerTypeVisit:
 		return t, nil
 	}
 	return MediaOwnerType(""), errors.Trace(fmt.Errorf("Unknown owner_type:%s", s))

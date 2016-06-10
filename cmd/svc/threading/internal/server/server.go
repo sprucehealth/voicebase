@@ -678,7 +678,7 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 		// 2. This call fails. The media is still mapped to the caller
 		_, err = s.mediaClient.ClaimMedia(ctx, &media.ClaimMediaRequest{
 			MediaIDs:  mediaIDs,
-			OwnerType: media.ClaimMediaRequest_THREAD,
+			OwnerType: media.MediaOwnerType_THREAD,
 			OwnerID:   threadID.String(),
 		})
 		if err != nil {
