@@ -82,7 +82,7 @@ func (d *dal) CreateVisitLayout(ctx context.Context, visitLayout *models.VisitLa
 	if err != nil {
 		return models.EmptyVisitLayoutID(), errors.Trace(err)
 	}
-	_, err = d.db.Exec(`INSERT INTO visit_layout (id, name, visit_category_id) VALUES (?,?,?)`, visitLayout.ID, visitLayout.Name, visitLayout.CategoryID)
+	_, err = d.db.Exec(`INSERT INTO visit_layout (id, name, internal_name, visit_category_id) VALUES (?,?,?)`, visitLayout.ID, visitLayout.Name, visitLayout.InternalName, visitLayout.CategoryID)
 
 	return visitLayout.ID, errors.Trace(err)
 }
@@ -157,12 +157,13 @@ func (d *dal) VisitLayout(ctx context.Context, id models.VisitLayoutID) (*models
 	var layout models.VisitLayout
 	layout.ID = models.EmptyVisitLayoutID()
 	if err := d.db.QueryRow(`
-		SELECT id, name, visit_category_id, deleted
-		FROM visit_layout 
+		SELECT id, name, internal_name, visit_category_id, deleted
+		FROM visit_layout
 		WHERE id = ?
 		AND deleted = 0`, id).Scan(
 		&layout.ID,
 		&layout.Name,
+		&layout.InternalName,
 		&layout.CategoryID,
 		&layout.Deleted); err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrNotFound)
@@ -178,7 +179,7 @@ func (d *dal) VisitCategory(ctx context.Context, id models.VisitCategoryID) (*mo
 	category.ID = models.EmptyVisitCategoryID()
 	if err := d.db.QueryRow(`
 		SELECT id, name, deleted
-		FROM visit_category 
+		FROM visit_category
 		WHERE id = ?
 		AND deleted = 0`, id).Scan(
 		&category.ID,
@@ -299,7 +300,7 @@ func (d *dal) ActiveVisitLayoutVersion(ctx context.Context, visitLayoutID models
 func (d *dal) VisitCategories() ([]*models.VisitCategory, error) {
 	rows, err := d.db.Query(`
 		SELECT id, name, deleted
-		FROM visit_category 
+		FROM visit_category
 		WHERE deleted = false`)
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -322,7 +323,7 @@ func (d *dal) VisitCategories() ([]*models.VisitCategory, error) {
 
 func (d *dal) VisitLayouts(visitCategoryID models.VisitCategoryID) ([]*models.VisitLayout, error) {
 	rows, err := d.db.Query(`
-		SELECT id, name, visit_category_id, deleted
+		SELECT id, name, internal_name, visit_category_id, deleted
 		FROM visit_layout
 		WHERE deleted = false
 		AND visit_category_id = ?`, visitCategoryID)
@@ -338,6 +339,7 @@ func (d *dal) VisitLayouts(visitCategoryID models.VisitCategoryID) ([]*models.Vi
 		if err := rows.Scan(
 			&layout.ID,
 			&layout.Name,
+			&layout.InternalName,
 			&layout.CategoryID,
 			&layout.Deleted); err != nil {
 			return nil, errors.Trace(err)

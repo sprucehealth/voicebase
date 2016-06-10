@@ -1,10 +1,11 @@
 package models
 
 type VisitLayout struct {
-	ID         VisitLayoutID
-	Name       string
-	CategoryID VisitCategoryID
-	Deleted    bool
+	ID           VisitLayoutID
+	Name         string
+	InternalName string
+	CategoryID   VisitCategoryID
+	Deleted      bool
 }
 
 type VisitLayoutVersion struct {

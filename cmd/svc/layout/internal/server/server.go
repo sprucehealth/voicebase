@@ -82,6 +82,8 @@ func (s *server) CreateVisitLayout(ctx context.Context, in *layout.CreateVisitLa
 		return nil, grpcErrorf(codes.InvalidArgument, "visit_layout category_id required")
 	} else if in.SAML == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "visit_layout saml required")
+	} else if in.InternalName == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "visit_layout internal name required")
 	}
 
 	categoryID, err := models.ParseVisitCategoryID(in.CategoryID)
@@ -97,8 +99,9 @@ func (s *server) CreateVisitLayout(ctx context.Context, in *layout.CreateVisitLa
 	var visitLayout *models.VisitLayout
 	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
 		visitLayout = &models.VisitLayout{
-			Name:       in.Name,
-			CategoryID: categoryID,
+			Name:         in.Name,
+			InternalName: in.InternalName,
+			CategoryID:   categoryID,
 		}
 
 		visitLayoutID, err := dl.CreateVisitLayout(ctx, visitLayout)

@@ -13,6 +13,7 @@ message VisitLayout {
 	string name = 2;
 	string category_id = 3 [(gogoproto.customname) = "CategoryID"];
 	VisitLayoutVersion version = 4;
+	string internal_name = 5;
 }
 
 message VisitLayoutVersion {
@@ -28,7 +29,7 @@ message VisitCategory {
 }
 
 message ListVisitLayoutsRequest {
-	string visit_category_id = 1 [(gogoproto.customname) = "VisitCategoryID"];	
+	string visit_category_id = 1 [(gogoproto.customname) = "VisitCategoryID"];
 }
 
 message ListVisitLayoutsResponse {
@@ -45,6 +46,7 @@ message CreateVisitLayoutRequest {
 	string name = 1;
 	string category_id = 2 [(gogoproto.customname) = "CategoryID"];
 	string saml = 3 [(gogoproto.customname) = "SAML"];
+	string internal_name = 4;
 }
 
 message CreateVisitLayoutResponse {
@@ -71,13 +73,13 @@ message GetVisitLayoutByVersionResponse {
 
 message UpdateVisitLayoutRequest {
 	string visit_layout_id = 1 [(gogoproto.customname) = "VisitLayoutID"];
-	
+
 	bool update_name = 2;
 	string name = 3;
-	
+
 	bool update_category = 4;
 	string category_id = 5 [(gogoproto.customname) = "CategoryID"];
-	
+
 	bool update_saml = 6 [(gogoproto.customname) = "UpdateSAML"];
 	string saml = 7 [(gogoproto.customname) = "SAML"];
 
@@ -95,7 +97,7 @@ message DeleteVisitLayoutResponse {
 }
 
 message CreateVisitCategoryRequest {
-	string name = 1;	
+	string name = 1;
 }
 
 message CreateVisitCategoryResponse {
@@ -155,7 +157,7 @@ service Layout {
 
 	rpc DeleteVisitLayout (DeleteVisitLayoutRequest) returns (DeleteVisitLayoutResponse);
 
-	rpc CreateVisitCategory (CreateVisitCategoryRequest) returns (CreateVisitCategoryResponse);	
+	rpc CreateVisitCategory (CreateVisitCategoryRequest) returns (CreateVisitCategoryResponse);
 
 	rpc UpdateVisitCategory (UpdateVisitCategoryRequest) returns (UpdateVisitCategoryResponse);
 

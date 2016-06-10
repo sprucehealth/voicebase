@@ -14,9 +14,10 @@ func transformCategoryToResponse(category *models.VisitCategory) *layout.VisitCa
 
 func transformVisitLayoutToResponse(visitLayout *models.VisitLayout, layoutVersion *models.VisitLayoutVersion) *layout.VisitLayout {
 	tVisitLayout := &layout.VisitLayout{
-		ID:         visitLayout.ID.String(),
-		Name:       visitLayout.Name,
-		CategoryID: visitLayout.CategoryID.String(),
+		ID:           visitLayout.ID.String(),
+		Name:         visitLayout.Name,
+		InternalName: visitLayout.InternalName,
+		CategoryID:   visitLayout.CategoryID.String(),
 	}
 
 	if layoutVersion != nil {

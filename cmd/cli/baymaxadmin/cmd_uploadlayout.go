@@ -184,9 +184,10 @@ func (c *uploadLayoutCmd) run(args []string) error {
 				}
 
 				createVisitLayoutRes, err := c.layoutCli.CreateVisitLayout(context.Background(), &layout.CreateVisitLayoutRequest{
-					CategoryID: categoryInfo.categoryInSystem.ID,
-					Name:       visitInfo.name,
-					SAML:       saml,
+					CategoryID:   categoryInfo.categoryInSystem.ID,
+					Name:         parseVisitName(visitInfo.name),
+					InternalName: visitInfo.name,
+					SAML:         saml,
 				})
 				if err != nil {
 					golog.Errorf("Unable to create visit layout for '%s'. Skipping...: %s", visitInfo.name, err)
@@ -263,6 +264,11 @@ func isSAMLFile(fn string) (string, bool) {
 	return replacer.Replace(fn), true
 }
 
+func parseVisitName(s string) string {
+	replacer := strings.NewReplacer(" (brief)", "")
+	return replacer.Replace(s)
+}
+
 type categoryInfo struct {
 	name             string
 	categoryInSystem *layout.VisitCategory
@@ -333,7 +339,7 @@ func (c *uploadLayoutCmd) existingCategoriesAndVisitLayouts() ([]*layout.VisitCa
 		}
 
 		for _, visitLayout := range visitLayoutsRes.VisitLayouts {
-			visitMap[visitLayout.Name] = visitLayout
+			visitMap[visitLayout.InternalName] = visitLayout
 		}
 	}
 
