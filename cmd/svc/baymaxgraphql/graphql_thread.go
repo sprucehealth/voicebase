@@ -210,7 +210,7 @@ var threadType = graphql.NewObject(
 			},
 			"callableIdentities": &graphql.Field{
 				Type: graphql.NewList(graphql.NewNonNull(callableIdentityType)),
-				Resolve: apiaccess.Provider(func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: apiaccess.Authenticated(func(p graphql.ResolveParams) (interface{}, error) {
 					ctx := p.Context
 					ram := raccess.ResourceAccess(p)
 					svc := serviceFromParams(p)
@@ -219,13 +219,13 @@ var threadType = graphql.NewObject(
 					switch th.Type {
 					case models.ThreadTypeSecureExternal, models.ThreadTypeExternal:
 					default:
-						return nil, nil
+						return []*models.CallableIdentity{}, nil
 					}
 					if th.PrimaryEntityID == "" {
-						return nil, nil
+						return []*models.CallableIdentity{}, nil
 					}
 					if acc.Type != auth.AccountType_PROVIDER {
-						return nil, nil
+						return []*models.CallableIdentity{}, nil
 					}
 					ent, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
 						LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
@@ -246,7 +246,7 @@ var threadType = graphql.NewObject(
 						return nil, errors.InternalError(ctx, err)
 					}
 					if ent == nil {
-						return nil, nil
+						return []*models.CallableIdentity{}, nil
 					}
 					endpoints, err := callableEndpointsForEntity(ent)
 					if err != nil {

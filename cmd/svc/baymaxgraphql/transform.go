@@ -513,9 +513,11 @@ func transformEntityToResponse(staticURLPrefix string, e *directory.Entity, sh *
 		HasPendingInvite:      entityHasPendingInvite(e),
 	}
 
-	ent.CallableEndpoints, err = callableEndpointsForEntity(e)
-	if err != nil {
-		return nil, errors.Trace(err)
+	if viewingAccount.Type == auth.AccountType_PROVIDER {
+		ent.CallableEndpoints, err = callableEndpointsForEntity(e)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
 	}
 
 	switch e.Type {
