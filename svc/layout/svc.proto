@@ -83,6 +83,9 @@ message UpdateVisitLayoutRequest {
 	bool update_saml = 6 [(gogoproto.customname) = "UpdateSAML"];
 	string saml = 7 [(gogoproto.customname) = "SAML"];
 
+	bool update_internal_name = 8;
+	string internal_name = 9;
+
 }
 
 message UpdateVisitLayoutResponse {

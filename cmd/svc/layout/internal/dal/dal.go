@@ -15,9 +15,10 @@ import (
 var ErrNotFound = errors.New("not found")
 
 type VisitLayoutUpdate struct {
-	Deleted    *bool
-	Name       *string
-	CategoryID *models.VisitCategoryID
+	Deleted      *bool
+	Name         *string
+	InternalName *string
+	CategoryID   *models.VisitCategoryID
 }
 
 type VisitCategoryUpdate struct {
@@ -232,6 +233,9 @@ func (d *dal) UpdateVisitLayout(ctx context.Context, id models.VisitLayoutID, up
 	}
 	if update.CategoryID != nil {
 		args.Append("visit_category_id", *update.CategoryID)
+	}
+	if update.InternalName != nil {
+		args.Append("internal_name", *update.InternalName)
 	}
 
 	if args == nil || args.IsEmpty() {

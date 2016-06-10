@@ -163,6 +163,7 @@ func (c *uploadLayoutCmd) run(args []string) error {
 
 				_, err = c.layoutCli.UpdateVisitLayout(context.Background(), &layout.UpdateVisitLayoutRequest{
 					SAML:           saml,
+					InternalName:   parseVisitName(visitInfo.name),
 					UpdateSAML:     true,
 					VisitLayoutID:  existingVisitLayout.ID,
 					UpdateCategory: true,

@@ -140,7 +140,13 @@ func (s *server) UpdateVisitLayout(ctx context.Context, in *layout.UpdateVisitLa
 		if in.Name == "" {
 			return nil, grpcErrorf(codes.InvalidArgument, "name required for visit layout")
 		}
-		update.Name = ptr.String(in.Name)
+		update.Name = &in.Name
+	}
+	if in.UpdateInternalName {
+		if in.InternalName == "" {
+			return nil, grpcErrorf(codes.InvalidArgument, "internal_name required for visit layout")
+		}
+		update.InternalName = &in.InternalName
 	}
 	if in.UpdateCategory {
 		if in.CategoryID == "" {
