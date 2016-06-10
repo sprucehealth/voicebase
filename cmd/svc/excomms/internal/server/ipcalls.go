@@ -45,6 +45,9 @@ func (e *excommsService) InitiateIPCall(ctx context.Context, req *excomms.Initia
 		LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
 			BatchEntityID: &directory.IDList{IDs: entityIDs},
 		},
+		RequestedInformation: &directory.RequestedInformation{},
+		RootTypes:            []directory.EntityType{directory.EntityType_INTERNAL, directory.EntityType_PATIENT},
+		Statuses:             []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 	})
 	if err != nil {
 		return nil, grpcErrorf(codes.Internal, err.Error())
