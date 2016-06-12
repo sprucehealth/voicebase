@@ -3,6 +3,7 @@ package boot
 import (
 	"flag"
 	"fmt"
+	"net"
 	"net/http"
 	_ "net/http/pprof" // imported for side-effect of registering HTTP handlers
 	"os"
@@ -22,6 +23,7 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/mcutil"
 	"github.com/sprucehealth/backend/libs/ratelimit"
+	"golang.org/x/net/trace"
 	"google.golang.org/grpc"
 )
 
@@ -73,6 +75,19 @@ func NewService(name string) *Service {
 	// Use the built-in tracing for now, we'll want our own eventually to be able
 	// to track cross-service traces, but this might help for now.
 	grpc.EnableTracing = true
+	// Have to override the default AuthRequest because due to docker we'll never
+	// actually see localhost.
+	trace.AuthRequest = func(req *http.Request) (any, sensitive bool) {
+		host, _, err := net.SplitHostPort(req.RemoteAddr)
+		if err != nil {
+			host = req.RemoteAddr
+		}
+		switch host {
+		case "localhost", "127.0.0.1", "::1":
+			return true, true
+		}
+		return true, true
+	}
 
 	if svc.flags.env == "" {
 		golog.Fatalf("-env flag required")
