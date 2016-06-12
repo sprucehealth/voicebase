@@ -75,21 +75,23 @@ echo $PKGS | xargs go vet | tee -a $PHABRICATOR_COMMENT
 echo "LINT"
 #echo $PKGS | xargs -n 1 golint | grep -v "_test.go" | grep -v ".pb.go"
 
+# Find packages with tests.
+PKGS=$(find . -name '*_test.go' | grep -v vendor/ | xargs -n 1 dirname | sort | uniq)
+
 echo "BUILDING TESTS"
 echo $PKGS | xargs go test -i
 
-PKGSLIST=""
-for P in $PKGS; do
-    if [[ ! "$P" == *"/cmd/"* ]] && [[ ! "$P" == *"/test/"* ]]; then
-        P="github.com/sprucehealth/backend$(echo $P | cut -c2-)"
-        PKGSLIST+=",$P"
-    fi
-done
-PKGSLIST=$(echo $PKGSLIST | cut -c2-)
-
-
 echo "TESTING"
 if [[ ! -z "$FULLCOVERAGE" ]]; then
+    PKGSLIST=""
+    for P in $PKGS; do
+        if [[ ! "$P" == *"/cmd/"* ]] && [[ ! "$P" == *"/test/"* ]]; then
+            P="github.com/sprucehealth/backend$(echo $P | cut -c2-)"
+            PKGSLIST+=",$P"
+        fi
+    done
+    PKGSLIST=$(echo $PKGSLIST | cut -c2-)
+
     for PKG in $PKGS; do
         # For integration tests tell it to check coverage in all packages,
         # but for other packages just check coverage against themselves.
