@@ -70,8 +70,9 @@ func NewService(name string) *Service {
 
 	ParseFlags(strings.ToUpper(name) + "_")
 
-	// Disable the built in grpc tracing and use our own
-	grpc.EnableTracing = false
+	// Use the built-in tracing for now, we'll want our own eventually to be able
+	// to track cross-service traces, but this might help for now.
+	grpc.EnableTracing = true
 
 	if svc.flags.env == "" {
 		golog.Fatalf("-env flag required")
