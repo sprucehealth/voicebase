@@ -54,7 +54,7 @@ func TestEntityCaching(t *testing.T) {
 	rat := new(t)
 	defer rat.finish()
 	ctx := context.Background()
-	ctx = gqlctx.WithEntities(ctx, gqlctx.NewEntityCache(nil))
+	ctx = gqlctx.WithEntities(ctx, gqlctx.NewEntityGroupCache(nil))
 	var depth int64
 	accountID := "accountID"
 	orgID := "orgID"

@@ -78,6 +78,23 @@ message Entity {
 	uint64 created_timestamp = 11;
 	uint64 last_modified_timestamp = 12;
 	string account_id = 13 [(gogoproto.customname) = "AccountID"];
+	string image_media_id = 14 [(gogoproto.customname) = "ImageMediaID"];
+}
+
+message Profile {
+	string id = 1 [(gogoproto.customname) = "ID"];
+	string entity_id = 2 [(gogoproto.customname) = "EntityID"];
+	repeated ProfileSection sections = 3;
+	uint64 last_modified_timestamp = 5;
+}
+
+message ProfileSection {
+	string title = 1;
+	string body = 2;
+}
+
+message ProfileSections {
+	repeated ProfileSection sections = 1;
 }
 
 message SerializedClientEntityContact {
@@ -236,6 +253,8 @@ message UpdateEntityRequest {
 	repeated   SerializedClientEntityContact serialized_entity_contacts = 5;
 	bool       update_account_id = 10 [(gogoproto.customname) = "UpdateAccountID"];
 	string     account_id = 6 [(gogoproto.customname) = "AccountID"];
+	bool       update_image_media_id = 11 [(gogoproto.customname) = "UpdateImageMediaID"];
+	string     image_media_id = 12 [(gogoproto.customname) = "ImageMediaID"];
 }
 
 message UpdateEntityResponse {
@@ -284,6 +303,33 @@ message CreateExternalIDsRequest {
 
 message CreateExternalIDsResponse {}
 
+message ProfileRequest {
+	enum LookupKeyType {
+		LOOKUP_KEY_TYPE_UNKNOWN = 0;
+		PROFILE_ID = 1;
+		ENTITY_ID = 2;
+	}
+
+	LookupKeyType lookup_key_type = 1;
+	oneof lookup_key_oneof {
+		string entity_id = 2 [(gogoproto.customname) = "EntityID"];
+		string profile_id = 3 [(gogoproto.customname) = "ProfileID"];
+	}
+}
+
+message ProfileResponse {
+	Profile profile = 1;
+}
+
+message UpdateProfileRequest {
+	string profile_id = 1 [(gogoproto.customname) = "ProfileID"]; 
+	Profile profile = 2;
+}
+
+message UpdateProfileResponse {
+	Profile profile = 1;
+}
+
 service Directory {
 	// TODO: 1/22/16 - Remove the single version of this call once this code has been deployed and all callers have been changed and deployed
 	rpc CreateContact (CreateContactRequest) returns (CreateContactResponse);
@@ -298,8 +344,10 @@ service Directory {
 	rpc LookupEntities (LookupEntitiesRequest) returns (LookupEntitiesResponse);
 	rpc LookupEntitiesByContact (LookupEntitiesByContactRequest) returns (LookupEntitiesByContactResponse);
 	rpc LookupEntityDomain (LookupEntityDomainRequest) returns (LookupEntityDomainResponse);
+	rpc Profile (ProfileRequest) returns (ProfileResponse);
 	rpc SerializedEntityContact (SerializedEntityContactRequest) returns (SerializedEntityContactResponse);
 	rpc UpdateContacts (UpdateContactsRequest) returns (UpdateContactsResponse);
 	rpc UpdateEntity (UpdateEntityRequest) returns (UpdateEntityResponse);
 	rpc UpdateEntityDomain (UpdateEntityDomainRequest) returns (UpdateEntityDomainResponse);
+	rpc UpdateProfile (UpdateProfileRequest) returns (UpdateProfileResponse);
 }

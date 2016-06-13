@@ -57,7 +57,7 @@ func (m *resourceMap) Set(resourceID string, orgIDs map[string]struct{}) {
 	m.rMap[resourceID] = orgIDs
 }
 
-// EntityQueryOptions allows specifying of options when attempting to query
+// EntityQueryOption allows specifying of options when attempting to query
 // for entities via the resource accessor
 type EntityQueryOption int
 
@@ -116,6 +116,7 @@ type ResourceAccessor interface {
 	OnboardingThreadEvent(ctx context.Context, req *threading.OnboardingThreadEventRequest) (*threading.OnboardingThreadEventResponse, error)
 	PendingIPCalls(ctx context.Context) (*excomms.PendingIPCallsResponse, error)
 	PostMessage(ctx context.Context, req *threading.PostMessageRequest) (*threading.PostMessageResponse, error)
+	Profile(ctx context.Context, req *directory.ProfileRequest) (*directory.Profile, error)
 	ProvisionEmailAddress(ctx context.Context, req *excomms.ProvisionEmailAddressRequest) (*excomms.ProvisionEmailAddressResponse, error)
 	ProvisionPhoneNumber(ctx context.Context, req *excomms.ProvisionPhoneNumberRequest) (*excomms.ProvisionPhoneNumberResponse, error)
 	QueryThreads(ctx context.Context, req *threading.QueryThreadsRequest) (*threading.QueryThreadsResponse, error)
@@ -141,6 +142,7 @@ type ResourceAccessor interface {
 	UpdateEntity(ctx context.Context, req *directory.UpdateEntityRequest) (*directory.Entity, error)
 	UpdateIPCall(ctx context.Context, req *excomms.UpdateIPCallRequest) (*excomms.UpdateIPCallResponse, error)
 	UpdatePassword(ctx context.Context, token, code, newPassword string) error
+	UpdateProfile(ctx context.Context, req *directory.UpdateProfileRequest) (*directory.Profile, error)
 	UpdateThread(ctx context.Context, req *threading.UpdateThreadRequest) (*threading.UpdateThreadResponse, error)
 	VerifiedValue(ctx context.Context, token string) (string, error)
 	Visit(ctx context.Context, req *care.GetVisitRequest) (*care.GetVisitResponse, error)
@@ -444,7 +446,7 @@ func (m *resourceAccessor) DeleteThread(ctx context.Context, threadID, entityID 
 	return nil
 }
 
-func cachedEntities(ctx context.Context, entityIDs []string, wantedInfo []directory.EntityInformation, depth int64) ([]*directory.Entity, []string) {
+func cachedEntities(ctx context.Context, entityIDs []string, wantedInfo []directory.EntityInformation, wantedRootTypes map[directory.EntityType]struct{}, wantedChildTypes map[directory.EntityType]struct{}, depth int64) ([]*directory.Entity, []string) {
 	// Currently we can only cache entities with a search depth of 0
 	if depth != 0 {
 		return nil, entityIDs
@@ -452,7 +454,7 @@ func cachedEntities(ctx context.Context, entityIDs []string, wantedInfo []direct
 	notFoundEntIDs := make([]string, 0, len(entityIDs))
 	cachedEnts := make([]*directory.Entity, 0, len(entityIDs))
 	for _, eID := range entityIDs {
-		cE := cachedEntity(ctx, eID, wantedInfo, depth)
+		cE := cachedEntity(ctx, eID, wantedInfo, wantedRootTypes, wantedChildTypes, depth)
 		if cE != nil {
 			cachedEnts = append(cachedEnts, cE)
 		} else {
@@ -462,7 +464,7 @@ func cachedEntities(ctx context.Context, entityIDs []string, wantedInfo []direct
 	return cachedEnts, notFoundEntIDs
 }
 
-func cachedEntity(ctx context.Context, entityID string, wantedInfo []directory.EntityInformation, depth int64) *directory.Entity {
+func cachedEntity(ctx context.Context, entityID string, wantedInfo []directory.EntityInformation, wantedRootTypes map[directory.EntityType]struct{}, wantedChildTypes map[directory.EntityType]struct{}, depth int64) *directory.Entity {
 	if depth != 0 {
 		return nil
 	}
@@ -471,23 +473,14 @@ func cachedEntity(ctx context.Context, entityID string, wantedInfo []directory.E
 	if ec == nil {
 		return nil
 	}
-	ent := ec.Get(entityID)
+	ent := ec.GetOnly(entityID)
 	if ent == nil {
 		return nil
 	}
-	// Determine if our cached value has enough information to meet the request
-	// TODO: We could hash what we have to make the lookups faster, but that would require an alloc for every cache check. For now just iterate till something else is figured
-	for _, wei := range wantedInfo {
-		var found bool
-		for _, ei := range ent.IncludedInformation {
-			if ei == wei {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return nil
-		}
+
+	fEnt := filterCachedRootEntities([]*directory.Entity{ent}, wantedInfo, wantedRootTypes, wantedChildTypes)
+	if len(fEnt) == 0 {
+		return nil
 	}
 	return ent
 }
@@ -504,6 +497,89 @@ func cacheEntities(ctx context.Context, ents []*directory.Entity) {
 			ec.Set(mem.ID, mem)
 		}
 	}
+}
+
+func cachedEntityGroup(ctx context.Context, groupID string, wantedInfo []directory.EntityInformation, wantedRootTypes map[directory.EntityType]struct{}, wantedChildTypes map[directory.EntityType]struct{}, depth int64) []*directory.Entity {
+	// Currently we can only cache entities with a search depth of 0
+	if depth != 0 {
+		return nil
+	}
+	ec := gqlctx.Entities(ctx)
+	if ec == nil {
+		return nil
+	}
+	return filterCachedRootEntities(ec.Get(groupID), wantedInfo, wantedRootTypes, wantedChildTypes)
+}
+
+func cacheEntityGroup(ctx context.Context, groupID string, ents []*directory.Entity) {
+	ec := gqlctx.Entities(ctx)
+	if ec == nil {
+		return
+	}
+	ec.SetGroup(groupID, ents)
+	cacheEntities(ctx, ents)
+}
+
+// Utility for converting slices to maps to improve matching speed/lookups
+func entityTypeSliceToMap(ets []directory.EntityType) map[directory.EntityType]struct{} {
+	m := make(map[directory.EntityType]struct{}, len(ets))
+	for _, et := range ets {
+		m[et] = struct{}{}
+	}
+	return m
+}
+
+// TODO: This shouldn't be exposed package wide, the cache mechanisms need to be moved into a type or subpackage
+func filterCachedRootEntities(es []*directory.Entity, wantedInfo []directory.EntityInformation, wantedRootTypes map[directory.EntityType]struct{}, wantedChildTypes map[directory.EntityType]struct{}) []*directory.Entity {
+	if len(es) == 0 {
+		return nil
+	}
+
+	filteredEnts := make([]*directory.Entity, 0, len(es))
+	for _, e := range es {
+		// Determine if our cached value has enough information to meet the request
+		infoMatched := true
+		for _, wei := range wantedInfo {
+			var found bool
+			for _, ei := range e.IncludedInformation {
+				if ei == wei {
+					found = true
+					break
+				}
+			}
+			if !found {
+				infoMatched = false
+				break
+			}
+		}
+		// If this entity doesn't pass the required info check, ignore it
+		if !infoMatched {
+			continue
+		}
+		// Filter any incorrect types or if we have no filters allow it
+		if _, ok := wantedRootTypes[e.Type]; ok || len(wantedRootTypes) == 0 {
+			e.Members = filterCachedChildEntities(e.Members, wantedChildTypes)
+			e.Memberships = filterCachedChildEntities(e.Memberships, wantedChildTypes)
+			filteredEnts = append(filteredEnts, e)
+		}
+	}
+	return filteredEnts
+}
+
+// TODO: This shouldn't be exposed package wide, the cache mechanisms need to be moved into a type or subpackage
+func filterCachedChildEntities(es []*directory.Entity, wantedChildTypes map[directory.EntityType]struct{}) []*directory.Entity {
+	if len(es) == 0 {
+		return nil
+	}
+
+	filteredEnts := make([]*directory.Entity, 0, len(es))
+	for _, e := range es {
+		// Filter any incorrect types or if we have no filters allow it
+		if _, ok := wantedChildTypes[e.Type]; ok || len(wantedChildTypes) == 0 {
+			filteredEnts = append(filteredEnts, e)
+		}
+	}
+	return filteredEnts
 }
 
 func (m *resourceAccessor) EntityDomain(ctx context.Context, entityID, domain string) (*directory.LookupEntityDomainResponse, error) {
@@ -535,29 +611,15 @@ func (m *resourceAccessor) EntitiesByContact(ctx context.Context, req *directory
 }
 
 func (m *resourceAccessor) Entities(ctx context.Context, req *directory.LookupEntitiesRequest, opts ...EntityQueryOption) ([]*directory.Entity, error) {
+	acc := gqlctx.Account(ctx)
+	if acc == nil {
+		return nil, errors.ErrNotAuthenticated(ctx)
+	}
 
 	// auth check
 	if !entityQueryOptions(opts).has(EntityQueryOptionUnathorized) {
-
-		// TODO: externalID at the moment at least is always an account. this should change if that ever changes
-		acc := gqlctx.Account(ctx)
-		if acc == nil {
-			return nil, errors.ErrNotAuthenticated(ctx)
-		}
-
 		switch req.LookupKeyType {
 		case directory.LookupEntitiesRequest_ENTITY_ID:
-
-			var entityInformation []directory.EntityInformation
-			var depth int64
-			if req.RequestedInformation != nil {
-				entityInformation = req.RequestedInformation.EntityInformation
-				depth = req.RequestedInformation.Depth
-			}
-			ent := cachedEntity(ctx, req.GetEntityID(), entityInformation, depth)
-			if ent != nil {
-				return []*directory.Entity{ent}, nil
-			}
 			if err := m.canAccessResource(ctx, req.GetEntityID(), m.orgsForEntity); err != nil {
 				return nil, err
 			}
@@ -565,8 +627,11 @@ func (m *resourceAccessor) Entities(ctx context.Context, req *directory.LookupEn
 			if req.GetExternalID() != acc.ID {
 				return nil, errors.ErrNotAuthenticated(ctx)
 			}
+		case directory.LookupEntitiesRequest_ACCOUNT_ID:
+			if req.GetAccountID() != acc.ID {
+				return nil, errors.ErrNotAuthenticated(ctx)
+			}
 		case directory.LookupEntitiesRequest_BATCH_ENTITY_ID:
-
 			// ensure that individual requesting can access each of the entities in the request
 			for _, entityID := range req.GetBatchEntityID().IDs {
 				if err := m.canAccessResource(ctx, entityID, m.orgsForEntity); err != nil {
@@ -577,10 +642,32 @@ func (m *resourceAccessor) Entities(ctx context.Context, req *directory.LookupEn
 		}
 	}
 
-	if req.LookupKeyType == directory.LookupEntitiesRequest_BATCH_ENTITY_ID {
-		// Check our cache for the entities and filter anything we already have
+	var entityInformation []directory.EntityInformation
+	var depth int64
+	if req.RequestedInformation != nil {
+		entityInformation = req.RequestedInformation.EntityInformation
+		depth = req.RequestedInformation.Depth
+	}
+	// Check our cached info
+	switch req.LookupKeyType {
+	case directory.LookupEntitiesRequest_ENTITY_ID:
+		ent := cachedEntity(ctx, req.GetEntityID(), entityInformation, entityTypeSliceToMap(req.RootTypes), entityTypeSliceToMap(req.ChildTypes), depth)
+		if ent != nil {
+			return []*directory.Entity{ent}, nil
+		}
+	case directory.LookupEntitiesRequest_EXTERNAL_ID:
+		ents := cachedEntityGroup(ctx, req.GetExternalID(), entityInformation, entityTypeSliceToMap(req.RootTypes), entityTypeSliceToMap(req.ChildTypes), depth)
+		if ents != nil {
+			return ents, nil
+		}
+	case directory.LookupEntitiesRequest_ACCOUNT_ID:
+		ents := cachedEntityGroup(ctx, req.GetAccountID(), entityInformation, entityTypeSliceToMap(req.RootTypes), entityTypeSliceToMap(req.ChildTypes), depth)
+		if ents != nil {
+			return ents, nil
+		}
+	case directory.LookupEntitiesRequest_BATCH_ENTITY_ID:
 		// A depth of 0 will return everything but members of members
-		cachedEnts, notFoundEntIDs := cachedEntities(ctx, req.GetBatchEntityID().IDs, req.RequestedInformation.EntityInformation, req.RequestedInformation.Depth)
+		cachedEnts, notFoundEntIDs := cachedEntities(ctx, req.GetBatchEntityID().IDs, req.RequestedInformation.EntityInformation, entityTypeSliceToMap(req.RootTypes), entityTypeSliceToMap(req.ChildTypes), req.RequestedInformation.Depth)
 		if len(notFoundEntIDs) == 0 {
 			return cachedEnts, nil
 		}
@@ -593,7 +680,16 @@ func (m *resourceAccessor) Entities(ctx context.Context, req *directory.LookupEn
 		}
 		return nil, err
 	}
-	cacheEntities(ctx, res.Entities)
+
+	// Cache our entity or entity group
+	switch req.LookupKeyType {
+	case directory.LookupEntitiesRequest_ENTITY_ID, directory.LookupEntitiesRequest_BATCH_ENTITY_ID:
+		cacheEntities(ctx, res.Entities)
+	case directory.LookupEntitiesRequest_ACCOUNT_ID:
+		cacheEntityGroup(ctx, req.GetAccountID(), res.Entities)
+	case directory.LookupEntitiesRequest_EXTERNAL_ID:
+		cacheEntityGroup(ctx, req.GetExternalID(), res.Entities)
+	}
 	return res.Entities, nil
 }
 
@@ -718,6 +814,39 @@ func (m *resourceAccessor) PostMessage(ctx context.Context, req *threading.PostM
 		return nil, err
 	}
 	return res, nil
+}
+
+func (m *resourceAccessor) Profile(ctx context.Context, req *directory.ProfileRequest) (*directory.Profile, error) {
+	res, err := m.profile(ctx, req)
+	if grpc.Code(err) == codes.NotFound {
+		return nil, ErrNotFound
+	} else if err != nil {
+		return nil, err
+	}
+
+	// Leverage the Entity call for cache management
+	owningEnt, err := Entity(ctx, m, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: res.Profile.EntityID,
+		},
+	})
+	if grpc.Code(err) == codes.NotFound {
+		return nil, fmt.Errorf("Unable to locate entity %s mapped to profile", res.Profile.EntityID)
+	} else if err != nil {
+		return nil, err
+	}
+
+	if owningEnt.Type == directory.EntityType_ORGANIZATION {
+		if err := m.canAccessResource(ctx, owningEnt.ID, m.orgsForOrganization); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := m.canAccessResource(ctx, owningEnt.ID, m.orgsForEntity); err != nil {
+			return nil, err
+		}
+	}
+	return res.Profile, nil
 }
 
 func (m *resourceAccessor) ProvisionEmailAddress(ctx context.Context, req *excomms.ProvisionEmailAddressRequest) (*excomms.ProvisionEmailAddressResponse, error) {
@@ -896,7 +1025,7 @@ func (m *resourceAccessor) ThreadMembers(ctx context.Context, orgID string, req 
 	// Check our cache for the entities and filter anything we already have
 	var depth int64
 	entInfo := []directory.EntityInformation{directory.EntityInformation_CONTACTS}
-	cachedEnts, notFoundEntIDs := cachedEntities(ctx, entIDs, entInfo, depth)
+	cachedEnts, notFoundEntIDs := cachedEntities(ctx, entIDs, entInfo, nil, nil, depth)
 	if len(notFoundEntIDs) == 0 {
 		return cachedEnts, nil
 	}
@@ -973,6 +1102,7 @@ func (m *resourceAccessor) UpdateContacts(ctx context.Context, req *directory.Up
 	if err != nil {
 		return nil, err
 	}
+	cacheEntities(ctx, []*directory.Entity{res.Entity})
 	return res.Entity, nil
 }
 
@@ -984,6 +1114,7 @@ func (m *resourceAccessor) UpdateEntity(ctx context.Context, req *directory.Upda
 	if err != nil {
 		return nil, err
 	}
+	cacheEntities(ctx, []*directory.Entity{res.Entity})
 	return res.Entity, nil
 }
 
@@ -993,6 +1124,95 @@ func (m *resourceAccessor) UpdatePassword(ctx context.Context, token, code, newP
 		return err
 	}
 	return nil
+}
+
+// ProfileAllowEdit returns if the caller is allowed to edit a profiled owned by the provided ID
+func ProfileAllowEdit(ctx context.Context, ram ResourceAccessor, profileEntityID string) bool {
+	acc := gqlctx.Account(ctx)
+	if acc == nil {
+		golog.Errorf("Encountered error while determining editibility of Profile %s: No account set in context", profileEntityID)
+		return false
+	}
+	// Only providers can edit profiles
+	if acc.Type != auth.AccountType_PROVIDER {
+		return false
+	}
+	callerEnts, err := ram.Entities(ctx, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+			AccountID: acc.ID,
+		},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{directory.EntityType_INTERNAL},
+	})
+	// Any error means no edit
+	if err != nil {
+		golog.Errorf("Encountered error while determining editibility of Profile %s by account %s: %s", profileEntityID, acc.ID, err)
+		return false
+	}
+	// If we own the profile we can edit it
+	for _, cEnt := range callerEnts {
+		if profileEntityID == cEnt.ID {
+			return true
+		}
+	}
+
+	// If we aren't the owner we need to see if the entity is an org and then check membership
+	maybeOrgEnt, err := Entity(ctx, ram, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: profileEntityID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERS},
+		},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	})
+	// Any error means no edit
+	if err != nil {
+		golog.Warningf("Encountered error while determining editibility of Profile %s by account %s: %s", profileEntityID, acc.ID, err)
+		return false
+	}
+	// This filter check is redudent with the call filter, but let's be safe
+	if maybeOrgEnt.Type == directory.EntityType_ORGANIZATION {
+		for _, m := range maybeOrgEnt.Members {
+			for _, cEnt := range callerEnts {
+				if m.ID == cEnt.ID {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+// UpdateProfile handles create and update requests
+func (m *resourceAccessor) UpdateProfile(ctx context.Context, req *directory.UpdateProfileRequest) (*directory.Profile, error) {
+	owningEntityID := req.Profile.EntityID
+	// If no entity ID is provided then lookup the profile so we can authorize the edit
+	if owningEntityID == "" {
+		res, err := m.Profile(ctx, &directory.ProfileRequest{
+			LookupKeyType: directory.ProfileRequest_PROFILE_ID,
+			LookupKeyOneof: &directory.ProfileRequest_ProfileID{
+				ProfileID: req.ProfileID,
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+		owningEntityID = res.EntityID
+	}
+	if !ProfileAllowEdit(ctx, m, owningEntityID) {
+		return nil, errors.ErrNotAuthorized(ctx, fmt.Sprintf("Profile for %s", req.Profile.EntityID))
+	}
+	res, err := m.directory.UpdateProfile(ctx, req)
+	if grpc.Code(err) == codes.NotFound {
+		return nil, ErrNotFound
+	} else if err != nil {
+		return nil, err
+	}
+	return res.Profile, nil
 }
 
 func (m *resourceAccessor) UpdateThread(ctx context.Context, req *threading.UpdateThreadRequest) (*threading.UpdateThreadResponse, error) {
@@ -1402,6 +1622,14 @@ func (m *resourceAccessor) initiatePhoneCall(ctx context.Context, req *excomms.I
 
 func (m *resourceAccessor) postMessage(ctx context.Context, req *threading.PostMessageRequest) (*threading.PostMessageResponse, error) {
 	res, err := m.threading.PostMessage(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (m *resourceAccessor) profile(ctx context.Context, req *directory.ProfileRequest) (*directory.ProfileResponse, error) {
+	res, err := m.directory.Profile(ctx, req)
 	if err != nil {
 		return nil, err
 	}

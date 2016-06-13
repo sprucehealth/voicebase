@@ -22,7 +22,7 @@ func EntityInOrgForAccountID(ctx context.Context, ram ResourceAccessor, req *dir
 	if acc != nil && acc.ID == req.GetExternalID() {
 		ents := gqlctx.AccountEntities(ctx)
 		if ents != nil {
-			ent := ents.Get(orgID)
+			ent := ents.GetOnly(orgID)
 			if ent != nil {
 				return ent, nil
 			}
@@ -55,6 +55,8 @@ func Entity(ctx context.Context, ram ResourceAccessor, req *directory.LookupEnti
 	entities, err := ram.Entities(ctx, req)
 	if err != nil {
 		return nil, err
+	} else if len(entities) == 0 {
+		return nil, ErrNotFound
 	} else if len(entities) != 1 {
 		id := req.GetEntityID()
 		if id == "" {

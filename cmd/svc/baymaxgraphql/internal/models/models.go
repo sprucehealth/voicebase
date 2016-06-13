@@ -99,7 +99,23 @@ type Entity struct {
 	AllowEdit             bool            `json:"allowEdit"`
 	HasPendingInvite      bool            `json:"hasPendingInvite"`
 	Avatar                *Image          `json:"-"`
+	ImageMediaID          string          `json:"-"`
 	CallableEndpoints     []*CallEndpoint `json:"callableEndpoints"`
+}
+
+type Profile struct {
+	ID                    string            `json:"id"`
+	EntityID              string            `json:"entityID"`
+	Title                 string            `json:"title"`
+	Sections              []*ProfileSection `json:"sections"`
+	ImageMediaID          string            `json:"-"`
+	AllowEdit             bool              `json:"allowEdit"`
+	LastModifiedTimestamp uint64            `json:"lastModifiedTimestamp"`
+}
+
+type ProfileSection struct {
+	Title string `json:"title"`
+	Body  string `json:"body"`
 }
 
 type ContactInfo struct {

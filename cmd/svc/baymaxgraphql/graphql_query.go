@@ -79,30 +79,32 @@ var queryType = graphql.NewObject(
 					}
 					id := p.Args["id"].(string)
 					switch nodeIDPrefix(id) {
+					case "account":
+						return lookupAccount(ctx, ram, id)
+					case "cp":
+						return lookupCarePlan(ctx, ram, id)
 					case "entity":
 						// TOOD: this is a stubbed entity currently used in the primaryEntity for a thread. see comment there for more information
 						if id == "entity_stub" {
 							return stubEntity, nil
 						}
 						return lookupEntity(ctx, svc, ram, id)
-					case "account":
-						return lookupAccount(ctx, ram, id)
+					case "entityProfile":
+						return lookupProfile(ctx, ram, id)
 					case "sq":
 						return lookupSavedQuery(ctx, ram, id)
 					case "t":
 						return lookupThreadWithReadStatus(ctx, ram, acc, id)
 					case "ti":
 						return lookupThreadItem(ctx, ram, id, svc.webDomain, svc.mediaAPIDomain)
+					case "visit":
+						return lookupVisit(ctx, svc, ram, id)
+					case "visitCategory":
+						return lookupVisitCategory(ctx, svc, id)
 					case "visitLayout":
 						return lookupVisitLayout(ctx, svc, id)
 					case "visitLayoutVersion":
 						return lookupVisitLayoutVersion(ctx, svc, id)
-					case "visitCategory":
-						return lookupVisitCategory(ctx, svc, id)
-					case "visit":
-						return lookupVisit(ctx, svc, ram, id)
-					case "cp":
-						return lookupCarePlan(ctx, ram, id)
 					}
 					return nil, fmt.Errorf("unknown ID '%s' in node query", id)
 				},

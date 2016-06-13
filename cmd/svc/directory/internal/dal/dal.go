@@ -20,6 +20,9 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 )
 
+// Compile time interface check
+var _ DAL = &dal{}
+
 // ErrNotFound is returned when an item is not found
 var ErrNotFound = errors.New("directory/dal: item not found")
 
@@ -73,6 +76,10 @@ type DAL interface {
 	DeleteEvent(id EventID) (int64, error)
 	EntityDomain(id *EntityID, domain *string, opts ...QueryOption) (EntityID, string, error)
 	UpsertEntityDomain(id EntityID, domain string) error
+	EntityProfile(id EntityProfileID) (*EntityProfile, error)
+	EntityProfileForEntity(id EntityID) (*EntityProfile, error)
+	UpsertEntityProfile(model *EntityProfile) (EntityProfileID, error)
+	DeleteEntityProfile(id EntityProfileID) (int64, error)
 }
 
 type dal struct {
@@ -226,6 +233,86 @@ type EntityContactID struct {
 	modellib.ObjectID
 }
 
+// EntityProfileIDPrefix represents the string that is attached to the beginning of these identifiers
+const EntityProfileIDPrefix = directory.EntityProfileIDPrefix
+
+// NewEntityProfileID returns a new EntityProfileID.
+func NewEntityProfileID() (EntityProfileID, error) {
+	id, err := idgen.NewID()
+	if err != nil {
+		return EntityProfileID{}, errors.Trace(err)
+	}
+	return EntityProfileID{
+		modellib.ObjectID{
+			Prefix:  EntityProfileIDPrefix,
+			Val:     id,
+			IsValid: true,
+		},
+	}, nil
+}
+
+// EmptyEntityProfileID returns an empty initialized ID
+func EmptyEntityProfileID() EntityProfileID {
+	return EntityProfileID{
+		modellib.ObjectID{
+			Prefix:  EntityProfileIDPrefix,
+			IsValid: false,
+		},
+	}
+}
+
+// ParseEntityProfileID transforms an EntityProfileID from it's string representation into the actual ID value
+func ParseEntityProfileID(s string) (EntityProfileID, error) {
+	id := EmptyEntityProfileID()
+	err := id.UnmarshalText([]byte(s))
+	return id, errors.Trace(err)
+}
+
+// EntityProfileID is the ID for a EntityProfileID object
+type EntityProfileID struct {
+	modellib.ObjectID
+}
+
+// EntityProfileSectionIDPrefix represents the string that is attached to the beginning of these identifiers
+const EntityProfileSectionIDPrefix = "entityProfileSection_"
+
+// NewEntityProfileSectionID returns a new EntityProfileSectionID.
+func NewEntityProfileSectionID() (EntityProfileSectionID, error) {
+	id, err := idgen.NewID()
+	if err != nil {
+		return EntityProfileSectionID{}, errors.Trace(err)
+	}
+	return EntityProfileSectionID{
+		modellib.ObjectID{
+			Prefix:  EntityProfileSectionIDPrefix,
+			Val:     id,
+			IsValid: true,
+		},
+	}, nil
+}
+
+// EmptyEntityProfileSectionID returns an empty initialized ID
+func EmptyEntityProfileSectionID() EntityProfileSectionID {
+	return EntityProfileSectionID{
+		modellib.ObjectID{
+			Prefix:  EntityProfileSectionIDPrefix,
+			IsValid: false,
+		},
+	}
+}
+
+// ParseEntityProfileSectionID transforms an EntityProfileSectionID from it's string representation into the actual ID value
+func ParseEntityProfileSectionID(s string) (EntityProfileSectionID, error) {
+	id := EmptyEntityProfileSectionID()
+	err := id.UnmarshalText([]byte(s))
+	return id, errors.Trace(err)
+}
+
+// EntityProfileSectionID is the ID for a EntityProfileSectionID object
+type EntityProfileSectionID struct {
+	modellib.ObjectID
+}
+
 // EntityType represents the type associated with the type column of the entity table
 type EntityType string
 
@@ -255,6 +342,7 @@ func (t EntityType) String() string {
 	return string(t)
 }
 
+// Value implements sql/driver.Valr to allow it to be used in an sql query
 func (t EntityType) Value() (driver.Value, error) {
 	return string(t), nil
 }
@@ -296,6 +384,7 @@ func (t EntityStatus) String() string {
 	return string(t)
 }
 
+// Value implements sql/driver.Valr to allow it to be used in an sql query
 func (t EntityStatus) Value() (driver.Value, error) {
 	return string(t), nil
 }
@@ -339,6 +428,7 @@ func (t EntityGender) String() string {
 	return string(t)
 }
 
+// Value implements sql/driver.Valr to allow it to be used in an sql query
 func (t EntityGender) Value() (driver.Value, error) {
 	return string(t), nil
 }
@@ -382,6 +472,7 @@ func (t EntityMembershipStatus) String() string {
 	return string(t)
 }
 
+// Value implements sql/driver.Valr to allow it to be used in an sql query
 func (t EntityMembershipStatus) Value() (driver.Value, error) {
 	return string(t), nil
 }
@@ -423,6 +514,7 @@ func (t EntityContactType) String() string {
 	return string(t)
 }
 
+// Value implements sql/driver.Valr to allow it to be used in an sql query
 func (t EntityContactType) Value() (driver.Value, error) {
 	return string(t), nil
 }
@@ -464,6 +556,7 @@ func (t SerializedClientEntityContactPlatform) String() string {
 	return string(t)
 }
 
+// Value implements sql/driver.Valr to allow it to be used in an sql query
 func (t SerializedClientEntityContactPlatform) Value() (driver.Value, error) {
 	return string(t), nil
 }
@@ -478,6 +571,46 @@ func (t *SerializedClientEntityContactPlatform) Scan(src interface{}) error {
 		*t, err = ParseSerializedClientEntityContactPlatform(string(ts))
 	default:
 		return errors.Trace(fmt.Errorf("Unsupported type %T with value %+v in enumeration scan", src, src))
+	}
+	return errors.Trace(err)
+}
+
+// EntityProfileSectionStatus represents the type associated with the status column of the entity_profile_section table
+type EntityProfileSectionStatus string
+
+const (
+	// EntityProfileSectionStatusActive represents the ACTIVE state of the status field on a entity_profile_section record
+	EntityProfileSectionStatusActive EntityProfileSectionStatus = "ACTIVE"
+	// EntityProfileSectionStatusDeprecated represents the DEPRECATED state of the status field on a entity_profile_section record
+	EntityProfileSectionStatusDeprecated EntityProfileSectionStatus = "DEPRECATED"
+)
+
+// ParseEntityProfileSectionStatus converts a string into the correcponding enum value
+func ParseEntityProfileSectionStatus(s string) (EntityProfileSectionStatus, error) {
+	switch t := EntityProfileSectionStatus(strings.ToUpper(s)); t {
+	case EntityProfileSectionStatusActive, EntityProfileSectionStatusDeprecated:
+		return t, nil
+	}
+	return EntityProfileSectionStatus(""), errors.Trace(fmt.Errorf("Unknown status:%s", s))
+}
+
+func (t EntityProfileSectionStatus) String() string {
+	return string(t)
+}
+
+// Value implements sql/driver.Valr to allow it to be used in an sql query
+func (t EntityProfileSectionStatus) Value() (driver.Value, error) {
+	return string(t), nil
+}
+
+// Scan allows for scanning of EntityProfileSectionStatus from a database conforming to the sql.Scanner interface
+func (t *EntityProfileSectionStatus) Scan(src interface{}) error {
+	var err error
+	switch ts := src.(type) {
+	case string:
+		*t, err = ParseEntityProfileSectionStatus(ts)
+	case []byte:
+		*t, err = ParseEntityProfileSectionStatus(string(ts))
 	}
 	return errors.Trace(err)
 }
@@ -575,6 +708,7 @@ type Entity struct {
 	Gender        *EntityGender
 	DOB           *encoding.Date
 	AccountID     string
+	ImageMediaID  string
 	Created       time.Time
 	Modified      time.Time
 }
@@ -599,6 +733,7 @@ type EntityUpdate struct {
 	Gender        *EntityGender
 	DOB           *encoding.Date
 	AccountID     *string
+	ImageMediaID  *string
 }
 
 // SerializedClientEntityContact represents a serialized_client_entity_contact record
@@ -613,6 +748,15 @@ type SerializedClientEntityContact struct {
 // SerializedClientEntityContactUpdate represents the mutable aspects of a serialized_client_entity_contact record
 type SerializedClientEntityContactUpdate struct {
 	SerializedEntityContact []byte
+}
+
+// EntityProfile represents a entity_profile record
+type EntityProfile struct {
+	ID       EntityProfileID
+	EntityID EntityID
+	Sections *directory.ProfileSections
+	Created  time.Time
+	Modified time.Time
 }
 
 // InsertEntity inserts a entity record
@@ -638,10 +782,10 @@ func (d *dal) InsertEntity(model *Entity) (EntityID, error) {
           VALUES
 		  (?, ?, ?, ?, ?,
 		   ?, ?, ?, ?, ?,
-		   ?, ?, ?, ?)`,
+		   ?, ?, ?, ?, ?)`,
 		model.DisplayName, model.FirstName, model.GroupName, model.Type, model.Status,
 		model.ID, model.MiddleInitial, model.LastName, model.Note, model.ShortTitle,
-		model.LongTitle, gender, model.DOB, model.AccountID)
+		model.LongTitle, gender, model.DOB, model.AccountID, model.ImageMediaID)
 	if err != nil {
 		return EmptyEntityID(), errors.Trace(err)
 	}
@@ -726,6 +870,9 @@ func (d *dal) UpdateEntity(id EntityID, update *EntityUpdate) (int64, error) {
 	}
 	if update.Note != nil {
 		args.Append("note", *update.Note)
+	}
+	if update.ImageMediaID != nil {
+		args.Append("image_media_id", *update.ImageMediaID)
 	}
 	if args.IsEmpty() {
 		return 0, nil
@@ -1190,6 +1337,60 @@ func (d *dal) DeleteSerializedClientEntityContact(entityID EntityID, platform Se
 	return aff, errors.Trace(err)
 }
 
+// UpsertEntityProfile inserts or updates an entity_profile record
+func (d *dal) UpsertEntityProfile(model *EntityProfile) (EntityProfileID, error) {
+	if !model.ID.IsValid {
+		id, err := NewEntityProfileID()
+		if err != nil {
+			return EmptyEntityProfileID(), errors.Trace(err)
+		}
+		model.ID = id
+	}
+	sectionsBlob, err := model.Sections.Marshal()
+	if err != nil {
+		return EmptyEntityProfileID(), errors.Trace(err)
+	}
+	_, err = d.db.Exec(
+		`INSERT INTO entity_profile
+          (id, entity_id, sections)
+          VALUES (?, ?, ?)
+		  ON DUPLICATE KEY UPDATE entity_id=VALUES(entity_id), sections=VALUES(sections)`, model.ID, model.EntityID, sectionsBlob)
+	if err != nil {
+		return EmptyEntityProfileID(), errors.Trace(err)
+	}
+
+	return model.ID, nil
+}
+
+// EntityProfile retrieves a entity_profile record
+func (d *dal) EntityProfile(id EntityProfileID) (*EntityProfile, error) {
+	row := d.db.QueryRow(
+		selectEntityProfile+` WHERE id = ?`, id.Val)
+	model, err := scanEntityProfile(row)
+	return model, errors.Trace(err)
+}
+
+// EntityProfile retrieves a entity_profile record
+func (d *dal) EntityProfileForEntity(id EntityID) (*EntityProfile, error) {
+	row := d.db.QueryRow(
+		selectEntityProfile+` WHERE entity_id = ?`, id.Val)
+	model, err := scanEntityProfile(row)
+	return model, errors.Trace(err)
+}
+
+// DeleteEntityProfile deletes a entity_profile record
+func (d *dal) DeleteEntityProfile(id EntityProfileID) (int64, error) {
+	res, err := d.db.Exec(
+		`DELETE FROM entity_profile
+          WHERE id = ?`, id)
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+
+	aff, err := res.RowsAffected()
+	return aff, errors.Trace(err)
+}
+
 const selectExternalEntityID = `
     SELECT external_entity_id.created, external_entity_id.modified, external_entity_id.entity_id, external_entity_id.external_id
       FROM external_entity_id`
@@ -1254,7 +1455,7 @@ func scanEvent(row dbutil.Scanner) (*Event, error) {
 }
 
 const selectEntity = `
-    SELECT entity.id, entity.middle_initial, entity.last_name, entity.note, entity.created, entity.modified, entity.display_name, entity.first_name, entity.group_name, entity.type, entity.status, entity.short_title, entity.long_title, entity.gender, entity.dob, entity.account_id
+    SELECT entity.id, entity.middle_initial, entity.last_name, entity.note, entity.created, entity.modified, entity.display_name, entity.first_name, entity.group_name, entity.type, entity.status, entity.short_title, entity.long_title, entity.gender, entity.dob, entity.account_id, entity.image_media_id
       FROM entity`
 
 func andEntityStatusIn(ss []EntityStatus) string {
@@ -1285,7 +1486,7 @@ func scanEntity(row dbutil.Scanner) (*Entity, error) {
 	m := entityPool.Get().(*Entity)
 	m.ID = EmptyEntityID()
 
-	err := row.Scan(&m.ID, &m.MiddleInitial, &m.LastName, &m.Note, &m.Created, &m.Modified, &m.DisplayName, &m.FirstName, &m.GroupName, &m.Type, &m.Status, &m.ShortTitle, &m.LongTitle, &m.Gender, &m.DOB, &m.AccountID)
+	err := row.Scan(&m.ID, &m.MiddleInitial, &m.LastName, &m.Note, &m.Created, &m.Modified, &m.DisplayName, &m.FirstName, &m.GroupName, &m.Type, &m.Status, &m.ShortTitle, &m.LongTitle, &m.Gender, &m.DOB, &m.AccountID, &m.ImageMediaID)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrNotFound)
 	}
@@ -1303,5 +1504,27 @@ func scanSerializedClientEntityContact(row dbutil.Scanner) (*SerializedClientEnt
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrNotFound)
 	}
+	return &m, errors.Trace(err)
+}
+
+const selectEntityProfile = `
+    SELECT entity_profile.modified, entity_profile.id, entity_profile.entity_id, entity_profile.sections, entity_profile.created
+      FROM entity_profile`
+
+func scanEntityProfile(row dbutil.Scanner) (*EntityProfile, error) {
+	var m EntityProfile
+	m.ID = EmptyEntityProfileID()
+	m.EntityID = EmptyEntityID()
+
+	var sectionsBlob []byte
+	err := row.Scan(&m.Modified, &m.ID, &m.EntityID, &sectionsBlob, &m.Created)
+	if err == sql.ErrNoRows {
+		return nil, errors.Trace(ErrNotFound)
+	}
+	profileSections := &directory.ProfileSections{}
+	if err := profileSections.Unmarshal(sectionsBlob); err != nil {
+		return nil, errors.Trace(err)
+	}
+	m.Sections = profileSections
 	return &m, errors.Trace(err)
 }

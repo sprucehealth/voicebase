@@ -59,3 +59,11 @@ func SingleEntityByContact(ctx context.Context, client DirectoryClient, req *Loo
 
 	return res.Entities[0], nil
 }
+
+// OnlyEntity returns the only entity in the list and any other state represents an error
+func OnlyEntity(es []*Entity) (*Entity, error) {
+	if len(es) != 1 {
+		return nil, fmt.Errorf("Expected only 1 entity to be present in list, but found %v", es)
+	}
+	return es[0], nil
+}

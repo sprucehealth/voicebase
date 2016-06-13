@@ -25,6 +25,7 @@ func Clone(pCtx context.Context) context.Context {
 	acc, _ := Account(pCtx)
 	cCtx = WithAccount(cCtx, acc)
 	cCtx = WithAuthToken(cCtx, AuthToken(pCtx))
+	cCtx = WithRequiresAuthorization(cCtx, RequiresAuthorization(pCtx))
 	return cCtx
 }
 

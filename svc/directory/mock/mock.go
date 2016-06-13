@@ -164,3 +164,21 @@ func (c *Client) SerializedEntityContact(ctx context.Context, in *directory.Seri
 	}
 	return rets[0].(*directory.SerializedEntityContactResponse), mock.SafeError(rets[1])
 }
+
+// Profile implements directory.DirectoryClient
+func (c *Client) Profile(ctx context.Context, in *directory.ProfileRequest, opts ...grpc.CallOption) (*directory.ProfileResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*directory.ProfileResponse), mock.SafeError(rets[1])
+}
+
+// UpdateProfile implements directory.DirectoryClient
+func (c *Client) UpdateProfile(ctx context.Context, in *directory.UpdateProfileRequest, opts ...grpc.CallOption) (*directory.UpdateProfileResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*directory.UpdateProfileResponse), mock.SafeError(rets[1])
+}

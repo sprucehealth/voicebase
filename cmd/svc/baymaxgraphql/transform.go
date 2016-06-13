@@ -511,6 +511,7 @@ func transformEntityToResponse(staticURLPrefix string, e *directory.Entity, sh *
 		HasAccount:            e.AccountID != "",
 		AllowEdit:             canEditEntity(e, viewingAccount, sh),
 		HasPendingInvite:      entityHasPendingInvite(e),
+		ImageMediaID:          e.ImageMediaID,
 	}
 
 	if viewingAccount.Type == auth.AccountType_PROVIDER {
@@ -878,4 +879,55 @@ func transformVisitToResponse(ctx context.Context, ram raccess.ResourceAccessor,
 		LayoutContainer:     string(containerData),
 		LayoutContainerType: layoutContainerType,
 	}, nil
+}
+
+func transformProfileToResponse(ctx context.Context, ram raccess.ResourceAccessor, p *directory.Profile) *models.Profile {
+	var title string
+	var allowEdit bool
+	parallel := conc.NewParallel()
+	parallel.Go(func() error {
+		title = profileTitle(ctx, ram, p)
+		return nil
+	})
+	parallel.Go(func() error {
+		allowEdit = raccess.ProfileAllowEdit(ctx, ram, p.EntityID)
+		return nil
+	})
+	// don't concern ourselves with errors here, just default
+	parallel.Wait()
+	return &models.Profile{
+		ID:                    p.ID,
+		EntityID:              p.EntityID,
+		Title:                 title,
+		Sections:              transformProfileSectionsResponses(p.Sections),
+		AllowEdit:             allowEdit,
+		LastModifiedTimestamp: p.LastModifiedTimestamp,
+	}
+}
+
+func transformProfileSectionsResponses(pss []*directory.ProfileSection) []*models.ProfileSection {
+	rPSs := make([]*models.ProfileSection, len(pss))
+	for i, ps := range pss {
+		rPSs[i] = &models.ProfileSection{
+			Title: ps.Title,
+			Body:  ps.Body,
+		}
+	}
+	return rPSs
+}
+
+func profileTitle(ctx context.Context, ram raccess.ResourceAccessor, p *directory.Profile) string {
+	// We need the owning entity to get the display title
+	ent, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: p.EntityID,
+		},
+	})
+	// Any error means empty title
+	if err != nil {
+		golog.Errorf("Encountered error while generating title for Profile %s: %s", p.ID, err)
+		return ""
+	}
+	return ent.Info.DisplayName
 }

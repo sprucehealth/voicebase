@@ -217,6 +217,15 @@ var organizationType = graphql.NewObject(
 					return deeplink.OrgURL(svc.webDomain, org.ID), nil
 				},
 			},
+			"profile": &graphql.Field{
+				Type: profileType,
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					org := p.Source.(*models.Organization)
+					ctx := p.Context
+					ram := raccess.ResourceAccess(p)
+					return lookupEntityProfile(ctx, ram, org.ID)
+				},
+			},
 		},
 	},
 )

@@ -69,14 +69,16 @@ func init() {
 		switch value.(type) {
 		case *models.CarePlan:
 			return carePlanType
-		case *models.ProviderAccount:
-			return providerAccountType
-		case *models.PatientAccount:
-			return patientAccountType
 		case *models.Entity:
 			return entityType
 		case *models.Organization:
 			return organizationType
+		case *models.Profile:
+			return profileType
+		case *models.ProviderAccount:
+			return providerAccountType
+		case *models.PatientAccount:
+			return patientAccountType
 		case *models.SavedThreadQuery:
 			return savedThreadQueryType
 		case *models.Thread:
@@ -284,12 +286,14 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 		// Don't hard fail here since we want functionality not involving this context to still work
 		golog.Errorf("Failed to collect org to entity map for account %s: %s", acc.ID, err)
 	}
-	ctx = gqlctx.WithAccountEntities(ctx, gqlctx.NewEntityCache(eMap))
+	ctx = gqlctx.WithAccountEntities(ctx, gqlctx.NewEntityGroupCache(eMap))
 	// Bootstrap the entity cache with our account entity information
-	ctx = gqlctx.WithEntities(ctx, gqlctx.NewEntityCache(func(ini map[string]*directory.Entity) map[string]*directory.Entity {
-		eCache := make(map[string]*directory.Entity, len(eMap))
-		for _, e := range eMap {
-			eCache[e.ID] = e
+	ctx = gqlctx.WithEntities(ctx, gqlctx.NewEntityGroupCache(func(ini map[string][]*directory.Entity) map[string][]*directory.Entity {
+		eCache := make(map[string][]*directory.Entity, len(eMap))
+		for _, es := range eMap {
+			for _, e := range es {
+				eCache[e.ID] = []*directory.Entity{e}
+			}
 		}
 		return eCache
 	}(eMap)))
@@ -348,9 +352,9 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 	httputil.JSONResponse(w, http.StatusOK, response)
 }
 
-func (h *graphQLHandler) orgToEntityMapForAccount(ctx context.Context, acc *auth.Account) (map[string]*directory.Entity, error) {
+func (h *graphQLHandler) orgToEntityMapForAccount(ctx context.Context, acc *auth.Account) (map[string][]*directory.Entity, error) {
 	if acc == nil {
-		return make(map[string]*directory.Entity), nil
+		return make(map[string][]*directory.Entity), nil
 	}
 
 	entities, err := h.ram.Entities(ctx, &directory.LookupEntitiesRequest{
@@ -369,11 +373,11 @@ func (h *graphQLHandler) orgToEntityMapForAccount(ctx context.Context, acc *auth
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	entMap := make(map[string]*directory.Entity, len(entities))
+	entMap := make(map[string][]*directory.Entity, len(entities))
 	for _, ent := range entities {
 		for _, membership := range ent.Memberships {
 			if membership.Type == directory.EntityType_ORGANIZATION {
-				entMap[membership.ID] = ent
+				entMap[membership.ID] = []*directory.Entity{ent}
 			}
 		}
 	}

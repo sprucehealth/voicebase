@@ -82,13 +82,13 @@ func Account(ctx context.Context) *auth.Account {
 }
 
 // WithAccountEntities attaches a map of orgID (intent) to entity for all of the account's entities onto the provided context
-func WithAccountEntities(ctx context.Context, entitiesByOrg *EntityCache) context.Context {
+func WithAccountEntities(ctx context.Context, entitiesByOrg *EntityGroupCache) context.Context {
 	return context.WithValue(ctx, ctxAccountEntities, entitiesByOrg)
 }
 
 // AccountEntities returns the mapping of between orgs and account entities from the provided context
-func AccountEntities(ctx context.Context) *EntityCache {
-	ec, _ := ctx.Value(ctxAccountEntities).(*EntityCache)
+func AccountEntities(ctx context.Context) *EntityGroupCache {
+	ec, _ := ctx.Value(ctxAccountEntities).(*EntityGroupCache)
 	if ec == nil {
 		return nil
 	}
@@ -108,13 +108,13 @@ func ClientEncryptionKey(ctx context.Context) string {
 }
 
 // WithEntities attaches an entity cache to the provided context to be used for the life of the request
-func WithEntities(ctx context.Context, entitiesByID *EntityCache) context.Context {
-	return context.WithValue(ctx, ctxEntities, entitiesByID)
+func WithEntities(ctx context.Context, entities *EntityGroupCache) context.Context {
+	return context.WithValue(ctx, ctxEntities, entities)
 }
 
-// Entities returns the mapping of between entity id and entities from the provided context
-func Entities(ctx context.Context) *EntityCache {
-	ec, _ := ctx.Value(ctxEntities).(*EntityCache)
+// Entities returns the mapping of between key and entities from the provided context
+func Entities(ctx context.Context) *EntityGroupCache {
+	ec, _ := ctx.Value(ctxEntities).(*EntityGroupCache)
 	if ec == nil {
 		return nil
 	}

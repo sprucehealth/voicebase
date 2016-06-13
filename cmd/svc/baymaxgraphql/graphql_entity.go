@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/graphql"
 	"golang.org/x/net/context"
 )
@@ -123,10 +124,24 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 		"allowEdit": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		"avatar": &graphql.Field{
 			Type: imageType,
+			Args: NewImageArguments(nil),
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				entity := p.Source.(*models.Entity)
-				// TODO: should have arugments for width, height, crop, etc..
-				return entity.Avatar, nil
+				svc := serviceFromParams(p)
+				imgArgs := ParseImageArguments(p.Args)
+				ent := p.Source.(*models.Entity)
+				if ent.ImageMediaID == "" {
+					return ent.Avatar, nil
+				}
+				// If no args were provided then default to the current avatar standard
+				if imgArgs.Width == 0 && imgArgs.Height == 0 {
+					imgArgs.Width = 108
+					imgArgs.Height = 108
+				}
+				return &models.Image{
+					URL:    media.ThumbnailURL(svc.mediaAPIDomain, ent.ImageMediaID, imgArgs.Height, imgArgs.Width, imgArgs.Crop),
+					Width:  imgArgs.Width,
+					Height: imgArgs.Height,
+				}, nil
 			},
 		},
 		"callableEndpoints":     &graphql.Field{Type: graphql.NewList(callEndpointType)},
@@ -134,6 +149,15 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 		"hasPendingInvite":      &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		"isInternal":            &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		"lastModifiedTimestamp": &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+		"profile": &graphql.Field{
+			Type: profileType,
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				ent := p.Source.(*models.Entity)
+				ctx := p.Context
+				ram := raccess.ResourceAccess(p)
+				return lookupEntityProfile(ctx, ram, ent.ID)
+			},
+		},
 	},
 })
 

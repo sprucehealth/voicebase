@@ -274,6 +274,38 @@ func (dl *mockDAL) DeleteSerializedClientEntityContact(entityID dal.EntityID, pl
 	return rets[0].(int64), mock.SafeError(rets[1])
 }
 
+func (dl *mockDAL) EntityProfile(id dal.EntityProfileID) (*dal.EntityProfile, error) {
+	rets := dl.Expector.Record(id)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*dal.EntityProfile), mock.SafeError(rets[1])
+}
+
+func (dl *mockDAL) EntityProfileForEntity(id dal.EntityID) (*dal.EntityProfile, error) {
+	rets := dl.Expector.Record(id)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*dal.EntityProfile), mock.SafeError(rets[1])
+}
+
+func (dl *mockDAL) UpsertEntityProfile(model *dal.EntityProfile) (dal.EntityProfileID, error) {
+	rets := dl.Expector.Record(model)
+	if len(rets) == 0 {
+		return dal.EmptyEntityProfileID(), nil
+	}
+	return rets[0].(dal.EntityProfileID), mock.SafeError(rets[1])
+}
+
+func (dl *mockDAL) DeleteEntityProfile(id dal.EntityProfileID) (int64, error) {
+	rets := dl.Expector.Record(id)
+	if len(rets) == 0 {
+		return 0, nil
+	}
+	return rets[0].(int64), mock.SafeError(rets[1])
+}
+
 func (dl *mockDAL) Transact(trans func(dal dal.DAL) error) (err error) {
 	if err := trans(dl); err != nil {
 		return errors.Trace(err)

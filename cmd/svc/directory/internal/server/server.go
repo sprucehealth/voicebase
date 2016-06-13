@@ -19,7 +19,21 @@ import (
 )
 
 // go vet doesn't like that the first argument to grpcErrorf is not a string so alias the function with a different name :(
-var grpcErrorf = grpc.Errorf
+var grpcErrf = grpc.Errorf
+
+func grpcErrorf(c codes.Code, format string, a ...interface{}) error {
+	if c == codes.Internal {
+		golog.LogDepthf(1, golog.ERR, "Directory - Internal GRPC Error: %s", fmt.Sprintf(format, a...))
+	}
+	return grpcErrf(c, format, a...)
+}
+
+func grpcError(err error) error {
+	if grpc.Code(err) == codes.Unknown {
+		return grpcErrorf(codes.Internal, err.Error())
+	}
+	return err
+}
 
 var (
 	// ErrNotImplemented is returned from RPC calls that have yet to be implemented
@@ -94,7 +108,7 @@ func (s *server) LookupEntities(ctx context.Context, rd *directory.LookupEntitie
 			entityIDs[i] = eid
 		}
 	default:
-		return nil, grpcErrorf(codes.Internal, "Unknown lookup key type %d", rd.LookupKeyType)
+		return nil, grpcErrorf(codes.Internal, "Unknown lookup key type %s", rd.LookupKeyType.String())
 	}
 	statuses, err := transformEntityStatuses(rd.Statuses)
 	if err != nil {
@@ -279,7 +293,7 @@ func (s *server) SerializedEntityContact(ctx context.Context, rd *directory.Seri
 		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 	return &directory.SerializedEntityContactResponse{
-		SerializedEntityContact: dalSerializedClientEntityContactAsPBSerializedClientEntityContact(sec),
+		SerializedEntityContact: transformSerializedClientEntityContactToResponse(sec),
 	}, nil
 }
 
@@ -327,7 +341,7 @@ func (s *server) UpdateEntity(ctx context.Context, rd *directory.UpdateEntityReq
 	if err := s.dl.Transact(func(dl dal.DAL) error {
 		entityUpdate := &dal.EntityUpdate{}
 
-		entityInfo := dalEntityAsPBEntityInfo(oldEnt)
+		entityInfo := transformEntityToEntityInfoResponse(oldEnt)
 		if rd.UpdateEntityInfo {
 			entityInfo = rd.EntityInfo
 			entityUpdate.FirstName = &rd.EntityInfo.FirstName
@@ -351,6 +365,10 @@ func (s *server) UpdateEntity(ctx context.Context, rd *directory.UpdateEntityReq
 					Year:  int(rd.EntityInfo.DOB.Year),
 				}
 			}
+		}
+
+		if rd.UpdateImageMediaID {
+			entityUpdate.ImageMediaID = &rd.ImageMediaID
 		}
 
 		if rd.UpdateAccountID {
@@ -395,7 +413,7 @@ func (s *server) UpdateEntity(ctx context.Context, rd *directory.UpdateEntityReq
 				}
 				contacts = make([]*directory.Contact, len(cs))
 				for i, c := range cs {
-					contacts[i] = dalEntityContactAsPBContact(c)
+					contacts[i] = transformEntityContactToResponse(c)
 				}
 			}
 		}
@@ -916,43 +934,112 @@ func (s *server) DeleteEntity(ctx context.Context, rd *directory.DeleteEntityReq
 	return &directory.DeleteEntityResponse{}, nil
 }
 
-func transformEntityStatuses(ss []directory.EntityStatus) ([]dal.EntityStatus, error) {
-	if len(ss) == 0 {
-		return nil, nil
-	}
-	dss := make([]dal.EntityStatus, len(ss))
-	for i, s := range ss {
-		ds, err := dal.ParseEntityStatus(s.String())
+func (s *server) Profile(ctx context.Context, rd *directory.ProfileRequest) (*directory.ProfileResponse, error) {
+	var profile *dal.EntityProfile
+	switch rd.LookupKeyType {
+	case directory.ProfileRequest_ENTITY_ID:
+		entID, err := dal.ParseEntityID(rd.GetEntityID())
 		if err != nil {
-			return nil, errors.Trace(err)
+			return nil, grpcError(err)
 		}
-		dss[i] = ds
+		profile, err = s.dl.EntityProfileForEntity(entID)
+		if errors.Cause(err) == dal.ErrNotFound {
+			return nil, grpcErrorf(codes.NotFound, "Profile for entity id %s not found", entID)
+		} else if err != nil {
+			return nil, grpcError(err)
+		}
+	case directory.ProfileRequest_PROFILE_ID:
+		profileID, err := dal.ParseEntityProfileID(rd.GetProfileID())
+		if err != nil {
+			return nil, grpcError(err)
+		}
+		profile, err = s.dl.EntityProfile(profileID)
+		if errors.Cause(err) == dal.ErrNotFound {
+			return nil, grpcErrorf(codes.NotFound, "Profile for profile id %s not found", profileID)
+		} else if err != nil {
+			return nil, grpcError(err)
+		}
+	default:
+		return nil, grpcErrorf(codes.Internal, "Unknown lookup key type %s", rd.LookupKeyType.String())
 	}
-	return dss, nil
+	if profile == nil {
+		return nil, grpcError(fmt.Errorf("No profile set after lookup for key type %s", rd.LookupKeyType.String()))
+	}
+	return &directory.ProfileResponse{
+		Profile: transformEntityProfileToResponse(profile),
+	}, nil
 }
 
-func transformEntityTypes(types []directory.EntityType) ([]dal.EntityType, error) {
-	transformedTypes := make([]dal.EntityType, len(types))
-	for i, t := range types {
-		parsedType, err := dal.ParseEntityType(t.String())
+// UpdateProfile creates the profile if one does not exist
+func (s *server) UpdateProfile(ctx context.Context, rd *directory.UpdateProfileRequest) (*directory.UpdateProfileResponse, error) {
+	var err error
+	pID := dal.EmptyEntityProfileID()
+	if rd.ProfileID != "" {
+		pID, err = dal.ParseEntityProfileID(rd.ProfileID)
 		if err != nil {
-			return nil, errors.Trace(err)
+			return nil, grpcErrorf(codes.InvalidArgument, err.Error())
 		}
-		transformedTypes[i] = parsedType
+	} else {
+		if rd.Profile.EntityID == "" {
+			return nil, grpcErrorf(codes.InvalidArgument, "Profile Entity ID cannot be empty and could not be infered")
+		}
+		eID, err := dal.ParseEntityID(rd.Profile.EntityID)
+		if err != nil {
+			return nil, grpcErrorf(codes.InvalidArgument, err.Error())
+		}
+		entP, err := s.dl.EntityProfileForEntity(eID)
+		if err != nil && errors.Cause(err) != dal.ErrNotFound {
+			return nil, grpcError(err)
+		}
+		// If a profile already exists for this entity ID map it to the profile ID even if one wasn't supplied
+		if entP != nil {
+			pID = entP.ID
+		}
 	}
 
-	return transformedTypes, nil
-}
-
-func transformExternalIDs(dExternalEntityIDs []*dal.ExternalEntityID) []*directory.ExternalID {
-	pExternalID := make([]*directory.ExternalID, len(dExternalEntityIDs))
-	for i, eID := range dExternalEntityIDs {
-		pExternalID[i] = &directory.ExternalID{
-			ID:       eID.ExternalID,
-			EntityID: eID.EntityID.String(),
+	// Assert the profile exists if one was supplied and map the entity
+	if pID.IsValid {
+		oldProfile, err := s.dl.EntityProfile(pID)
+		if errors.Cause(err) == dal.ErrNotFound {
+			return nil, grpcErrorf(codes.NotFound, "Profile id %s not found", pID)
+		} else if err != nil {
+			return nil, grpcError(err)
 		}
+
+		// Do not allow profiles to be remapped to different entities
+		if rd.Profile.EntityID != "" && rd.Profile.EntityID != oldProfile.EntityID.String() {
+			return nil, grpcErrorf(codes.PermissionDenied, "The owning entity of a profile cannot be changed - Is: %s, Request Provided: %s", oldProfile.EntityID, rd.Profile.EntityID)
+		}
+		rd.Profile.EntityID = oldProfile.EntityID.String()
 	}
-	return pExternalID
+
+	entID, err := dal.ParseEntityID(rd.Profile.EntityID)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
+	}
+	pID, err = s.dl.UpsertEntityProfile(&dal.EntityProfile{
+		ID:       pID,
+		EntityID: entID,
+		Sections: &directory.ProfileSections{Sections: rd.Profile.Sections},
+	})
+	if err != nil {
+		return nil, grpcError(err)
+	}
+
+	// Reread our profile to get any triggered modified times
+	profileResp, err := s.Profile(ctx, &directory.ProfileRequest{
+		LookupKeyType: directory.ProfileRequest_PROFILE_ID,
+		LookupKeyOneof: &directory.ProfileRequest_ProfileID{
+			ProfileID: pID.String(),
+		},
+	})
+	if err != nil {
+		// Trust the grpc error of the server call
+		return nil, err
+	}
+	return &directory.UpdateProfileResponse{
+		Profile: profileResp.Profile,
+	}, nil
 }
 
 func getPBEntities(dl dal.DAL, dEntities []*dal.Entity, entityInformation []directory.EntityInformation, depth int64, statuses []dal.EntityStatus, types []dal.EntityType) ([]*directory.Entity, error) {
@@ -970,7 +1057,7 @@ func getPBEntities(dl dal.DAL, dEntities []*dal.Entity, entityInformation []dire
 // Note: How we optimize this deep crawl is very likely to change
 func getPBEntity(dl dal.DAL, dEntity *dal.Entity, entityInformation []directory.EntityInformation, depth int64, statuses []dal.EntityStatus, types []dal.EntityType) (*directory.Entity, error) {
 	id := dEntity.ID
-	entity, err := dalEntityAsPBEntity(dEntity)
+	entity, err := transformEntityToResponse(dEntity)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -1054,93 +1141,9 @@ func getPBEntityContacts(dl dal.DAL, entityID dal.EntityID) ([]*directory.Contac
 	}
 	pbEntityContacts := make([]*directory.Contact, len(entityContacts))
 	for i, ec := range entityContacts {
-		pbEntityContacts[i] = dalEntityContactAsPBContact(ec)
+		pbEntityContacts[i] = transformEntityContactToResponse(ec)
 	}
 	return pbEntityContacts, nil
-}
-
-// dalEntityAsPBEntity transforms a dal entity contact to a svc entity contact.
-// the dal entity contact must not be used after this call.
-func dalEntityContactAsPBContact(dEntityContact *dal.EntityContact) *directory.Contact {
-	contact := &directory.Contact{
-		Provisioned: dEntityContact.Provisioned,
-		Value:       dEntityContact.Value,
-		ID:          dEntityContact.ID.String(),
-		Label:       dEntityContact.Label,
-	}
-	contactType, ok := directory.ContactType_value[dEntityContact.Type.String()]
-	if !ok {
-		golog.Errorf("Unknown contact type %s when converting to PB format", dEntityContact.Type)
-	}
-	contact.ContactType = directory.ContactType(contactType)
-	dEntityContact.Recycle()
-	return contact
-}
-
-// dalEntityAsPBEntity transforms a dal entity to a svc entity.
-// the dal entity must not be used after this call.
-func dalEntityAsPBEntity(dEntity *dal.Entity) (*directory.Entity, error) {
-	entity := &directory.Entity{
-		ID:                    dEntity.ID.String(),
-		CreatedTimestamp:      uint64(dEntity.Created.Unix()),
-		LastModifiedTimestamp: uint64(dEntity.Modified.Unix()),
-		AccountID:             dEntity.AccountID,
-	}
-	entityType, ok := directory.EntityType_value[dEntity.Type.String()]
-	if !ok {
-		return nil, fmt.Errorf("unknown entity type %s when converting to PB format", dEntity.Type)
-	}
-	entity.Type = directory.EntityType(entityType)
-	entityStatus, ok := directory.EntityStatus_value[dEntity.Status.String()]
-	if !ok {
-		return nil, fmt.Errorf("unknown entity status %s when converting to PB format", dEntity.Status)
-	}
-
-	entity.Status = directory.EntityStatus(entityStatus)
-	entity.Info = dalEntityAsPBEntityInfo(dEntity)
-	dEntity.Recycle()
-	return entity, nil
-}
-
-func dalEntityAsPBEntityInfo(de *dal.Entity) *directory.EntityInfo {
-	var entityGender directory.EntityInfo_Gender
-	if de.Gender != nil {
-		entityGender = directory.EntityInfo_Gender(directory.EntityInfo_Gender_value[de.Gender.String()])
-	}
-	var dob *directory.Date
-	if de.DOB != nil {
-		dob = &directory.Date{
-			Month: uint32(de.DOB.Month),
-			Day:   uint32(de.DOB.Day),
-			Year:  uint32(de.DOB.Year),
-		}
-	}
-	return &directory.EntityInfo{
-		FirstName:     de.FirstName,
-		MiddleInitial: de.MiddleInitial,
-		LastName:      de.LastName,
-		GroupName:     de.GroupName,
-		DisplayName:   de.DisplayName,
-		ShortTitle:    de.ShortTitle,
-		LongTitle:     de.LongTitle,
-		Gender:        entityGender,
-		DOB:           dob,
-		Note:          de.Note,
-	}
-}
-
-// Note: Much letters. Many length. So convention.
-func dalSerializedClientEntityContactAsPBSerializedClientEntityContact(dSerializedClientEntityContact *dal.SerializedClientEntityContact) *directory.SerializedClientEntityContact {
-	serializedClientEntityContact := &directory.SerializedClientEntityContact{
-		EntityID:                dSerializedClientEntityContact.EntityID.String(),
-		SerializedEntityContact: dSerializedClientEntityContact.SerializedEntityContact,
-	}
-	platform, ok := directory.Platform_value[dSerializedClientEntityContact.Platform.String()]
-	if !ok {
-		golog.Errorf("Unknown platform %s when converting to PB format", dSerializedClientEntityContact.Platform)
-	}
-	serializedClientEntityContact.Platform = directory.Platform(platform)
-	return serializedClientEntityContact
 }
 
 // Note: Assuming this is small it's not a big deal but might want to be more efficient if it grows

@@ -336,6 +336,15 @@ func (m *ResourceAccessor) ProvisionEmailAddress(ctx context.Context, req *excom
 	return rets[0].(*excomms.ProvisionEmailAddressResponse), mock.SafeError(rets[1])
 }
 
+func (m *ResourceAccessor) Profile(ctx context.Context, req *directory.ProfileRequest) (*directory.Profile, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].(*directory.Profile), mock.SafeError(rets[1])
+}
+
 func (m *ResourceAccessor) QueryThreads(ctx context.Context, req *threading.QueryThreadsRequest) (*threading.QueryThreadsResponse, error) {
 	rets := m.Record(req)
 	if len(rets) == 0 {
@@ -602,4 +611,13 @@ func (m *ResourceAccessor) GetAnswersForVisit(ctx context.Context, req *care.Get
 	}
 
 	return rets[0].(*care.GetAnswersForVisitResponse), mock.SafeError(rets[1])
+}
+
+func (m *ResourceAccessor) UpdateProfile(ctx context.Context, req *directory.UpdateProfileRequest) (*directory.Profile, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].(*directory.Profile), mock.SafeError(rets[1])
 }
