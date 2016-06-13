@@ -72,9 +72,22 @@ func NewService(name string) *Service {
 
 	ParseFlags(strings.ToUpper(name) + "_")
 
+	if svc.flags.env == "" {
+		golog.Fatalf("-env flag required")
+	}
+	environment.SetCurrent(svc.flags.env)
+
+	if svc.flags.jsonLogs {
+		golog.Default().SetHandler(golog.WriterHandler(os.Stderr, golog.JSONFormatter(true)))
+	}
+
+	if svc.flags.debug {
+		golog.Default().SetLevel(golog.DEBUG)
+	}
+
 	// Use the built-in tracing for now, we'll want our own eventually to be able
 	// to track cross-service traces, but this might help for now.
-	grpc.EnableTracing = true
+	grpc.EnableTracing = !environment.IsProd()
 	// Have to override the default AuthRequest because due to docker we'll never
 	// actually see localhost.
 	trace.AuthRequest = func(req *http.Request) (any, sensitive bool) {
@@ -87,19 +100,6 @@ func NewService(name string) *Service {
 			return true, true
 		}
 		return true, true
-	}
-
-	if svc.flags.env == "" {
-		golog.Fatalf("-env flag required")
-	}
-	environment.SetCurrent(svc.flags.env)
-
-	if svc.flags.jsonLogs {
-		golog.Default().SetHandler(golog.WriterHandler(os.Stderr, golog.JSONFormatter(true)))
-	}
-
-	if svc.flags.debug {
-		golog.Default().SetLevel(golog.DEBUG)
 	}
 
 	// TODO: this can be expanded in the future to support registering custom health checks (e.g. checking connection to DB)

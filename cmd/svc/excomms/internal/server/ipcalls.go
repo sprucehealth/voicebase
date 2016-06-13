@@ -68,7 +68,7 @@ func (e *excommsService) InitiateIPCall(ctx context.Context, req *excomms.Initia
 
 	call.Participants = make([]*models.IPCallParticipant, 0, len(leres.Entities))
 	var callerPar *models.IPCallParticipant
-	for i, e := range leres.Entities {
+	for _, e := range leres.Entities {
 		if e.AccountID == "" {
 			return nil, grpcErrorf(codes.InvalidArgument, "Participant %s missing account ID", e.ID)
 		}
@@ -88,7 +88,7 @@ func (e *excommsService) InitiateIPCall(ctx context.Context, req *excomms.Initia
 			p.Role = models.IPCallParticipantRoleRecipient
 			p.State = models.IPCallStatePending
 		}
-		call.Participants[i] = p
+		call.Participants = append(call.Participants, p)
 	}
 
 	if err := e.dal.CreateIPCall(ctx, call); err != nil {
