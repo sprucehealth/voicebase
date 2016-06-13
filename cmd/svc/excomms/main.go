@@ -43,6 +43,7 @@ var config struct {
 	mediaAPIDomain          string
 	sigKeys                 string
 	behindProxy             bool
+	notificationSQSURL      string
 }
 
 func init() {
@@ -81,6 +82,7 @@ func init() {
 	flag.StringVar(&config.mediaAPIDomain, "media_api_domain", "", "The baymax meida api domain")
 	flag.StringVar(&config.sigKeys, "signature_keys_csv", "", "csv signature keys")
 	flag.BoolVar(&config.behindProxy, "behind_proxy", false, "Set to true if behind a proxy")
+	flag.StringVar(&config.notificationSQSURL, "notification_sqs_url", "", "URL of the notification SQS queue")
 }
 
 func main() {

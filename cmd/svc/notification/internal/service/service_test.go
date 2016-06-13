@@ -22,6 +22,7 @@ import (
 	"github.com/sprucehealth/backend/svc/settings"
 	smock "github.com/sprucehealth/backend/svc/settings/mock"
 	"github.com/sprucehealth/backend/test"
+	"golang.org/x/net/context"
 )
 
 func init() {
@@ -54,15 +55,11 @@ const (
 
 func TestProcessNewDeviceRegistrationIOS(t *testing.T) {
 	dl := testdal.NewMockDAL(t)
-	defer dl.Finish()
 	dc := dmock.New(t)
-	defer dc.Finish()
 	snsAPI := mock.NewSNSAPI(t)
-	defer snsAPI.Finish()
 	sqsAPI := mock.NewSQSAPI(t)
-	defer sqsAPI.Finish()
 	sc := smock.New(t)
-	defer sc.Finish()
+	defer mock.FinishAll(dl, dc, snsAPI, sqsAPI, sc)
 	svc := New(dl, dc, sc, &Config{
 		DeviceRegistrationSQSURL:        deviceRegistrationSQSURL,
 		AppleDeviceRegistrationSNSARN:   appleDeviceRegistrationSNSARN,
@@ -108,20 +105,16 @@ func TestProcessNewDeviceRegistrationIOS(t *testing.T) {
 		DeviceModel:     "DeviceModel",
 	}))
 
-	cSvc.processDeviceRegistration(string(driData))
+	cSvc.processDeviceRegistration(context.Background(), string(driData))
 }
 
 func TestProcessNewDeviceRegistrationAndroid(t *testing.T) {
 	dl := testdal.NewMockDAL(t)
-	defer dl.Finish()
 	dc := dmock.New(t)
-	defer dc.Finish()
 	snsAPI := mock.NewSNSAPI(t)
-	defer snsAPI.Finish()
 	sqsAPI := mock.NewSQSAPI(t)
-	defer sqsAPI.Finish()
 	sc := smock.New(t)
-	defer sc.Finish()
+	defer mock.FinishAll(dl, dc, snsAPI, sqsAPI, sc)
 	svc := New(dl, dc, sc, &Config{
 		DeviceRegistrationSQSURL:        deviceRegistrationSQSURL,
 		AppleDeviceRegistrationSNSARN:   appleDeviceRegistrationSNSARN,
@@ -167,20 +160,16 @@ func TestProcessNewDeviceRegistrationAndroid(t *testing.T) {
 		DeviceModel:     "DeviceModel",
 	}))
 
-	cSvc.processDeviceRegistration(string(driData))
+	cSvc.processDeviceRegistration(context.Background(), string(driData))
 }
 
 func TestProcessExistingDeviceRegistrationAndroid(t *testing.T) {
 	dl := testdal.NewMockDAL(t)
-	defer dl.Finish()
 	dc := dmock.New(t)
-	defer dc.Finish()
 	snsAPI := mock.NewSNSAPI(t)
-	defer snsAPI.Finish()
 	sqsAPI := mock.NewSQSAPI(t)
-	defer sqsAPI.Finish()
 	sc := smock.New(t)
-	defer sc.Finish()
+	defer mock.FinishAll(dl, dc, snsAPI, sqsAPI, sc)
 	svc := New(dl, dc, sc, &Config{
 		DeviceRegistrationSQSURL:        deviceRegistrationSQSURL,
 		AppleDeviceRegistrationSNSARN:   appleDeviceRegistrationSNSARN,
@@ -230,20 +219,16 @@ func TestProcessExistingDeviceRegistrationAndroid(t *testing.T) {
 		DeviceToken:     []byte("DeviceToken"),
 	}))
 
-	cSvc.processDeviceRegistration(string(driData))
+	cSvc.processDeviceRegistration(context.Background(), string(driData))
 }
 
 func TestProcessExistingDeviceDeregistration(t *testing.T) {
 	dl := testdal.NewMockDAL(t)
-	defer dl.Finish()
 	dc := dmock.New(t)
-	defer dc.Finish()
 	snsAPI := mock.NewSNSAPI(t)
-	defer snsAPI.Finish()
 	sqsAPI := mock.NewSQSAPI(t)
-	defer sqsAPI.Finish()
 	sc := smock.New(t)
-	defer sc.Finish()
+	defer mock.FinishAll(dl, dc, snsAPI, sqsAPI, sc)
 	svc := New(dl, dc, sc, &Config{
 		DeviceRegistrationSQSURL:        deviceRegistrationSQSURL,
 		AppleDeviceRegistrationSNSARN:   appleDeviceRegistrationSNSARN,
@@ -261,7 +246,7 @@ func TestProcessExistingDeviceDeregistration(t *testing.T) {
 	// Lookup the device and find it
 	dl.Expect(mock.NewExpectation(dl.DeletePushConfigForDeviceID, "DeviceID"))
 
-	cSvc.processDeviceDeregistration(string(ddriData))
+	cSvc.processDeviceDeregistration(context.Background(), string(ddriData))
 }
 
 func expectFilterNodesWithNotificationsDisabled(t *testing.T, sc *smock.Client, nodes []string, values []bool) {
@@ -300,15 +285,11 @@ func expectFilterNodesForThreadActivityPreferences(t *testing.T, sc *smock.Clien
 
 func TestProcessNotification(t *testing.T) {
 	dl := testdal.NewMockDAL(t)
-	defer dl.Finish()
 	dc := dmock.New(t)
-	defer dc.Finish()
 	snsAPI := mock.NewSNSAPI(t)
-	defer snsAPI.Finish()
 	sqsAPI := mock.NewSQSAPI(t)
-	defer sqsAPI.Finish()
 	sc := smock.New(t)
-	defer sc.Finish()
+	defer mock.FinishAll(dl, dc, snsAPI, sqsAPI, sc)
 	svc := New(dl, dc, sc, &Config{
 		NotificationSQSURL:              notificationSQSURL,
 		AppleDeviceRegistrationSNSARN:   appleDeviceRegistrationSNSARN,
@@ -513,22 +494,18 @@ func TestProcessNotification(t *testing.T) {
 		TargetArn:        ptr.String("account4:pushEndpoint1"),
 	}))
 
-	cSvc.processNotification(string(notificationData))
+	cSvc.processNotification(context.Background(), string(notificationData))
 }
 
 func TestProcessNotificationDisabledEndpoint(t *testing.T) {
 	dl := testdal.NewMockDAL(t)
-	defer dl.Finish()
 	dc := dmock.New(t)
-	defer dc.Finish()
 	snsAPI := mock.NewSNSAPI(t)
-	defer snsAPI.Finish()
 	sqsAPI := mock.NewSQSAPI(t)
-	defer sqsAPI.Finish()
 	pcID, err := dal.NewPushConfigID()
 	test.OK(t, err)
 	sc := smock.New(t)
-	defer sc.Finish()
+	defer mock.FinishAll(dl, dc, snsAPI, sqsAPI, sc)
 	svc := New(dl, dc, sc, &Config{
 		NotificationSQSURL:              notificationSQSURL,
 		AppleDeviceRegistrationSNSARN:   appleDeviceRegistrationSNSARN,
@@ -624,20 +601,16 @@ func TestProcessNotificationDisabledEndpoint(t *testing.T) {
 		TargetArn:        ptr.String("account1:pushEndpoint2"),
 	}))
 
-	cSvc.processNotification(string(notificationData))
+	cSvc.processNotification(context.Background(), string(notificationData))
 }
 
 func TestProcessNotificationInternalMessage(t *testing.T) {
 	dl := testdal.NewMockDAL(t)
-	defer dl.Finish()
 	dc := dmock.New(t)
-	defer dc.Finish()
 	snsAPI := mock.NewSNSAPI(t)
-	defer snsAPI.Finish()
 	sqsAPI := mock.NewSQSAPI(t)
-	defer sqsAPI.Finish()
 	sc := smock.New(t)
-	defer sc.Finish()
+	defer mock.FinishAll(dl, dc, snsAPI, sqsAPI, sc)
 	svc := New(dl, dc, sc, &Config{
 		NotificationSQSURL:              notificationSQSURL,
 		AppleDeviceRegistrationSNSARN:   appleDeviceRegistrationSNSARN,
@@ -704,6 +677,7 @@ func TestProcessNotificationInternalMessage(t *testing.T) {
 		PushData: &iOSPushData{
 			ContentAvailable: 1,
 		},
+		Type:           string(notification.NewMessageOnInternalThread),
 		URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
 		ThreadID:       "ThreadID",
 		OrganizationID: "OrganizationID",
@@ -716,6 +690,7 @@ func TestProcessNotificationInternalMessage(t *testing.T) {
 		PushData: &androidPushData{
 			Message:        "",
 			Background:     true,
+			Type:           string(notification.NewMessageOnInternalThread),
 			URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
 			ThreadID:       "ThreadID",
 			OrganizationID: "OrganizationID",
@@ -759,6 +734,7 @@ func TestProcessNotificationInternalMessage(t *testing.T) {
 			Sound:            "default",
 			ContentAvailable: 1,
 		},
+		Type:           string(notification.NewMessageOnInternalThread),
 		URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
 		ThreadID:       "ThreadID",
 		OrganizationID: "OrganizationID",
@@ -769,6 +745,7 @@ func TestProcessNotificationInternalMessage(t *testing.T) {
 	aData, err = json.Marshal(&androidPushNotification{
 		CollapseKey: "collapse",
 		PushData: &androidPushData{
+			Type:           string(notification.NewMessageOnInternalThread),
 			Message:        "ShortMessage2",
 			Background:     false,
 			URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
@@ -801,20 +778,16 @@ func TestProcessNotificationInternalMessage(t *testing.T) {
 		TargetArn:        ptr.String("account2:pushEndpoint2"),
 	}))
 
-	cSvc.processNotification(string(notificationData))
+	cSvc.processNotification(context.Background(), string(notificationData))
 }
 
 func TestProcessNotificationExternalMessage(t *testing.T) {
 	dl := testdal.NewMockDAL(t)
-	defer dl.Finish()
 	dc := dmock.New(t)
-	defer dc.Finish()
 	snsAPI := mock.NewSNSAPI(t)
-	defer snsAPI.Finish()
 	sqsAPI := mock.NewSQSAPI(t)
-	defer sqsAPI.Finish()
 	sc := smock.New(t)
-	defer sc.Finish()
+	defer mock.FinishAll(dl, dc, snsAPI, sqsAPI, sc)
 	svc := New(dl, dc, sc, &Config{
 		NotificationSQSURL:              notificationSQSURL,
 		AppleDeviceRegistrationSNSARN:   appleDeviceRegistrationSNSARN,
@@ -881,6 +854,7 @@ func TestProcessNotificationExternalMessage(t *testing.T) {
 		PushData: &iOSPushData{
 			ContentAvailable: 1,
 		},
+		Type:           string(notification.NewMessageOnExternalThread),
 		URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
 		ThreadID:       "ThreadID",
 		OrganizationID: "OrganizationID",
@@ -891,6 +865,7 @@ func TestProcessNotificationExternalMessage(t *testing.T) {
 	aData, err := json.Marshal(&androidPushNotification{
 		CollapseKey: "collapse",
 		PushData: &androidPushData{
+			Type:           string(notification.NewMessageOnExternalThread),
 			Message:        "",
 			Background:     true,
 			URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
@@ -936,6 +911,7 @@ func TestProcessNotificationExternalMessage(t *testing.T) {
 			Sound:            "default",
 			ContentAvailable: 1,
 		},
+		Type:           string(notification.NewMessageOnExternalThread),
 		URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
 		ThreadID:       "ThreadID",
 		OrganizationID: "OrganizationID",
@@ -946,6 +922,7 @@ func TestProcessNotificationExternalMessage(t *testing.T) {
 	aData, err = json.Marshal(&androidPushNotification{
 		CollapseKey: "collapse",
 		PushData: &androidPushData{
+			Type:           string(notification.NewMessageOnExternalThread),
 			Message:        "ShortMessage2",
 			Background:     false,
 			URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
@@ -978,5 +955,5 @@ func TestProcessNotificationExternalMessage(t *testing.T) {
 		TargetArn:        ptr.String("account2:pushEndpoint2"),
 	}))
 
-	cSvc.processNotification(string(notificationData))
+	cSvc.processNotification(context.Background(), string(notificationData))
 }

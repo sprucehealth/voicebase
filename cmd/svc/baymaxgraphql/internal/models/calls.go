@@ -29,9 +29,7 @@ type Call struct {
 	AccessToken           string             `json:"accessToken"`
 	Role                  string             `json:"role"` // CallRoleEnum
 	Caller                *CallParticipant   `json:"caller"`
-	CallerState           string             `json:"callerState"` // CallStateEnum
 	Recipients            []*CallParticipant `json:"recipients"`
-	RecipientsStates      []string           `json:"recipientsStates"` // CallStateEnum
 	AllowVideo            bool               `json:"allowVideo"`
 	VideoEnabledByDefault bool               `json:"videoEnabledByDefault"`
 }
@@ -40,6 +38,7 @@ type Call struct {
 type CallParticipant struct {
 	EntityID       string `json:"-"`
 	TwilioIdentity string `json:"twilioIdentity"`
+	State          string `json:"state"` // CallStateEnum
 }
 
 type CallableIdentity struct {

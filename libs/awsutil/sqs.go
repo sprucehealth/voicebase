@@ -14,7 +14,10 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
+	"golang.org/x/net/context"
 )
+
+const sqsWorkerVisibilityTimeoutSeconds = 60 * 5
 
 // SNSSQSMessage is the format of the message on an SQS queue
 // when it subscribres to an SNS topic.
@@ -36,7 +39,7 @@ type SQSWorker struct {
 	started  uint32
 	sqsAPI   sqsiface.SQSAPI
 	sqsURL   string
-	processF func(string) error
+	processF func(context.Context, string) error
 	stopCh   chan chan struct{}
 }
 
@@ -66,7 +69,7 @@ func ErrRetryAfter(duration time.Duration) error {
 func NewSQSWorker(
 	sqsAPI sqsiface.SQSAPI,
 	sqsURL string,
-	processF func(string) error,
+	processF func(context.Context, string) error,
 ) *SQSWorker {
 	return &SQSWorker{
 		sqsAPI:   sqsAPI,
@@ -111,7 +114,7 @@ func (w *SQSWorker) Start() {
 			sqsRes, err := w.sqsAPI.ReceiveMessage(&sqs.ReceiveMessageInput{
 				QueueUrl:            ptr.String(w.sqsURL),
 				MaxNumberOfMessages: ptr.Int64(1),
-				VisibilityTimeout:   ptr.Int64(60 * 5),
+				VisibilityTimeout:   ptr.Int64(sqsWorkerVisibilityTimeoutSeconds),
 				WaitTimeSeconds:     ptr.Int64(20),
 			})
 			if err != nil {
@@ -120,37 +123,44 @@ func (w *SQSWorker) Start() {
 			}
 
 			for _, item := range sqsRes.Messages {
-				if err := w.processF(*item.Body); err != nil {
-
-					if errors.Cause(err) == ErrMsgNotProcessedYet {
-						continue
-					} else if edr, ok := errors.Cause(err).(*ErrDelayedRetry); ok {
-						if _, err := w.sqsAPI.ChangeMessageVisibility(&sqs.ChangeMessageVisibilityInput{
-							QueueUrl:          ptr.String(w.sqsURL),
-							ReceiptHandle:     item.ReceiptHandle,
-							VisibilityTimeout: ptr.Int64(int64(edr.Duration.Seconds())),
-						}); err != nil {
-							golog.Errorf("Failed to change message visibility: %s", err.Error())
-						}
-						continue
-					}
-					golog.Errorf(err.Error())
-					continue
-				}
-
-				// delete the message we just handled
-				_, err = w.sqsAPI.DeleteMessage(
-					&sqs.DeleteMessageInput{
-						QueueUrl:      ptr.String(w.sqsURL),
-						ReceiptHandle: item.ReceiptHandle,
-					},
-				)
-				if err != nil {
-					golog.Errorf("Failed to delete message: %s", err.Error())
-				}
+				w.process(item)
 			}
 		}
 	}()
+}
+
+func (w *SQSWorker) process(msg *sqs.Message) {
+	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(ctx, sqsWorkerVisibilityTimeoutSeconds*time.Second)
+	defer cancel()
+
+	if err := w.processF(ctx, *msg.Body); err != nil {
+		if errors.Cause(err) == ErrMsgNotProcessedYet {
+			return
+		} else if edr, ok := errors.Cause(err).(*ErrDelayedRetry); ok {
+			if _, err := w.sqsAPI.ChangeMessageVisibility(&sqs.ChangeMessageVisibilityInput{
+				QueueUrl:          ptr.String(w.sqsURL),
+				ReceiptHandle:     msg.ReceiptHandle,
+				VisibilityTimeout: ptr.Int64(int64(edr.Duration.Seconds())),
+			}); err != nil {
+				golog.Errorf("Failed to change message visibility: %s", err.Error())
+			}
+			return
+		}
+		golog.Errorf(err.Error())
+		return
+	}
+
+	// delete the message we just handled
+	_, err := w.sqsAPI.DeleteMessage(
+		&sqs.DeleteMessageInput{
+			QueueUrl:      ptr.String(w.sqsURL),
+			ReceiptHandle: msg.ReceiptHandle,
+		},
+	)
+	if err != nil {
+		golog.Errorf("Failed to delete message: %s", err.Error())
+	}
 }
 
 type encryptedSQS struct {

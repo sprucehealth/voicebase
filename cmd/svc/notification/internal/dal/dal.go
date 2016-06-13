@@ -2,7 +2,6 @@ package dal
 
 import (
 	"database/sql"
-	"fmt"
 	"time"
 
 	"github.com/sprucehealth/backend/libs/dbutil"
@@ -51,7 +50,7 @@ func (d *dal) Transact(trans func(dal DAL) error) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback()
-			err = errors.Trace(fmt.Errorf("Encountered panic during transaction execution: %v", r))
+			err = errors.Errorf("Encountered panic during transaction execution: %v", r)
 		}
 	}()
 	if err := trans(tdal); err != nil {

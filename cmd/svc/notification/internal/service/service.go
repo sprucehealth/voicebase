@@ -2,7 +2,6 @@ package service
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
 	"time"
 
@@ -61,7 +60,8 @@ func New(
 	dl dal.DAL,
 	directoryClient directory.DirectoryClient,
 	settingsClient settings.SettingsClient,
-	config *Config) Service {
+	config *Config,
+) Service {
 	golog.Debugf("Initializing Notification Service with Config: %+v", config)
 	s := &service{
 		config:          config,
@@ -94,7 +94,7 @@ func (s *service) Shutdown() error {
 	return nil
 }
 
-func (s *service) processDeviceRegistration(data string) error {
+func (s *service) processDeviceRegistration(ctx context.Context, data string) error {
 	registrationInfo := &notification.DeviceRegistrationInfo{}
 	if err := json.Unmarshal([]byte(data), registrationInfo); err != nil {
 		return errors.Trace(err)
@@ -125,7 +125,7 @@ func (s *service) processDeviceRegistration(data string) error {
 			Device:          registrationInfo.Device,
 			DeviceModel:     registrationInfo.DeviceModel,
 		})
-		return nil
+		return errors.Trace(err)
 	} else if err != nil {
 		return errors.Trace(err)
 	}
@@ -133,17 +133,13 @@ func (s *service) processDeviceRegistration(data string) error {
 	// Perform the update here to support shared devices. We don't want to send push for an account that is no longer on a device
 	golog.Debugf("Updating existing push config with externalID %s for device registration.", registrationInfo.ExternalGroupID)
 	_, err = s.dl.UpdatePushConfig(pushConfig.ID, &dal.PushConfigUpdate{
-		ExternalGroupID: ptr.String(registrationInfo.ExternalGroupID),
-		Platform:        ptr.String(registrationInfo.Platform),
-		PlatformVersion: ptr.String(registrationInfo.PlatformVersion),
-		DeviceID:        ptr.String(registrationInfo.DeviceID),
-		AppVersion:      ptr.String(registrationInfo.AppVersion),
+		ExternalGroupID: &registrationInfo.ExternalGroupID,
+		Platform:        &registrationInfo.Platform,
+		PlatformVersion: &registrationInfo.PlatformVersion,
+		DeviceID:        &registrationInfo.DeviceID,
+		AppVersion:      &registrationInfo.AppVersion,
 		DeviceToken:     []byte(registrationInfo.DeviceToken),
 	})
-	if err != nil {
-		return errors.Trace(err)
-	}
-
 	return errors.Trace(err)
 }
 
@@ -163,8 +159,8 @@ func (s *service) generateEndpointARN(info *notification.DeviceRegistrationInfo)
 		return "", nil
 	}
 	createEndpointResponse, err := s.snsAPI.CreatePlatformEndpoint(&sns.CreatePlatformEndpointInput{
-		PlatformApplicationArn: ptr.String(arn),
-		Token: ptr.String(info.DeviceToken),
+		PlatformApplicationArn: &arn,
+		Token: &info.DeviceToken,
 	})
 	if err != nil {
 		return "", errors.Trace(err)
@@ -172,7 +168,7 @@ func (s *service) generateEndpointARN(info *notification.DeviceRegistrationInfo)
 	return *createEndpointResponse.EndpointArn, nil
 }
 
-func (s *service) processDeviceDeregistration(data string) error {
+func (s *service) processDeviceDeregistration(ctx context.Context, data string) error {
 	deregistrationInfo := &notification.DeviceDeregistrationInfo{}
 	if err := json.Unmarshal([]byte(data), deregistrationInfo); err != nil {
 		return errors.Trace(err)
@@ -188,19 +184,19 @@ var jsonStructure = ptr.String("json")
 
 // TODO: Set and examine communication preferences for caller
 // NOTE: This is an initial version of what PUSH notifications can look like. Will discuss with the client team about what we want the formal mature version to be. This is mainly a POC and validation regarding PUSH with Baymax
-func (s *service) processNotification(data string) error {
+func (s *service) processNotification(ctx context.Context, data string) error {
 	n := &notification.Notification{}
 	if err := json.Unmarshal([]byte(data), n); err != nil {
 		return errors.Trace(err)
 	}
-	return errors.Trace(s.processPushNotification(n))
+	return errors.Trace(s.processPushNotification(ctx, n))
 }
 
 // TODO: mraines: This section of code has become incredibly push and new_message specific. It needs a desperate refactor before any other
 //   notification work is done.
-func (s *service) processPushNotification(n *notification.Notification) error {
+func (s *service) processPushNotification(ctx context.Context, n *notification.Notification) error {
 	// Filter the entity list for org specific settings since the entity is scoped to the org
-	entitiesToNotify, err := s.filterNodesWithNotificationsDisabled(n.EntitiesToNotify)
+	entitiesToNotify, err := s.filterNodesWithNotificationsDisabled(ctx, n.EntitiesToNotify)
 	if err != nil {
 		return errors.Trace(err)
 	}
@@ -208,9 +204,10 @@ func (s *service) processPushNotification(n *notification.Notification) error {
 	case notification.DeprecatedNewMessageOnThread:
 		// do nothing in this case since we don't have the information to filter properly
 	case notification.NewMessageOnInternalThread:
-		entitiesToNotify, err = s.filterNodesForThreadActivityPreferences(entitiesToNotify, n.EntitiesAtReferenced, notification.TeamNotificationPreferencesSettingsKey)
+		entitiesToNotify, err = s.filterNodesForThreadActivityPreferences(ctx, entitiesToNotify, n.EntitiesAtReferenced, notification.TeamNotificationPreferencesSettingsKey)
 	case notification.NewMessageOnExternalThread:
-		entitiesToNotify, err = s.filterNodesForThreadActivityPreferences(entitiesToNotify, n.EntitiesAtReferenced, notification.PatientNotificationPreferencesSettingsKey)
+		entitiesToNotify, err = s.filterNodesForThreadActivityPreferences(ctx, entitiesToNotify, n.EntitiesAtReferenced, notification.PatientNotificationPreferencesSettingsKey)
+	case notification.IncomingIPCall:
 	default:
 		golog.Errorf("Unable to handle unknown notification type %s", n.Type)
 		return nil
@@ -220,7 +217,7 @@ func (s *service) processPushNotification(n *notification.Notification) error {
 	}
 
 	// Fetch the external ids for these entities and attempt to resolve them to accounts for groups
-	externalIDsResp, err := s.directoryClient.ExternalIDs(context.Background(), &directory.ExternalIDsRequest{
+	externalIDsResp, err := s.directoryClient.ExternalIDs(ctx, &directory.ExternalIDsRequest{
 		EntityIDs: entitiesToNotify,
 	})
 	if err != nil {
@@ -245,13 +242,13 @@ func (s *service) processPushNotification(n *notification.Notification) error {
 	return nil
 }
 
-func (s *service) filterNodesWithNotificationsDisabled(nodes []string) ([]string, error) {
+func (s *service) filterNodesWithNotificationsDisabled(ctx context.Context, nodes []string) ([]string, error) {
 	// Filter any nodes who explicitly have notifications disabled from the list
 	filteredNodes := make([]string, 0, len(nodes))
 	for _, nID := range nodes {
 		// TODO: Perhaps we should have a bulk version of this call
 		// TODO: It would be great to live in a world where the settings service pushed changed settings to hosts that are interested in them
-		resp, err := s.settingsClient.GetValues(context.TODO(), &settings.GetValuesRequest{
+		resp, err := s.settingsClient.GetValues(ctx, &settings.GetValuesRequest{
 			Keys:   []*settings.ConfigKey{{Key: notification.ReceiveNotificationsSettingsKey}},
 			NodeID: nID,
 		})
@@ -274,13 +271,13 @@ func (s *service) filterNodesWithNotificationsDisabled(nodes []string) ([]string
 	return filteredNodes, nil
 }
 
-func (s *service) filterNodesForThreadActivityPreferences(entityIDs []string, atReferencedEntityIDs map[string]struct{}, activityPreferenceSettingsKey string) ([]string, error) {
+func (s *service) filterNodesForThreadActivityPreferences(ctx context.Context, entityIDs []string, atReferencedEntityIDs map[string]struct{}, activityPreferenceSettingsKey string) ([]string, error) {
 	// Filter any nodes who explicitly have notifications disabled from the list
 	filteredNodes := make([]string, 0, len(entityIDs))
 	for _, eID := range entityIDs {
 		// TODO: Perhaps we should have a bulk version of this call
 		// TODO: It would be great to live in a world where the settings service pushed changed settings to hosts that are interested in them
-		singleSelect, err := settings.GetSingleSelectValue(context.Background(), s.settingsClient, &settings.GetValuesRequest{
+		singleSelect, err := settings.GetSingleSelectValue(ctx, s.settingsClient, &settings.GetValuesRequest{
 			Keys:   []*settings.ConfigKey{{Key: activityPreferenceSettingsKey}},
 			NodeID: eID,
 		})
@@ -315,7 +312,7 @@ func (s *service) sendPushNotificationToExternalGroupID(externalGroupID string, 
 		case "iOS", "android":
 			snsNote = generateNotification(s.config.WebDomain, n, externalGroupID)
 		default:
-			return errors.Trace(fmt.Errorf("Cannot send push notification to unhandled platform %q", pushConfig.Platform))
+			return errors.Errorf("Cannot send push notification to unhandled platform %q", pushConfig.Platform)
 		}
 
 		msg, err := json.Marshal(snsNote)
@@ -326,7 +323,7 @@ func (s *service) sendPushNotificationToExternalGroupID(externalGroupID string, 
 		if _, err := s.snsAPI.Publish(&sns.PublishInput{
 			Message:          ptr.String(string(msg)),
 			MessageStructure: jsonStructure,
-			TargetArn:        ptr.String(pushConfig.PushEndpoint),
+			TargetArn:        &pushConfig.PushEndpoint,
 		}); err != nil {
 			aerr, ok := err.(awserr.Error)
 			if ok && aerr.Code() == endpointDisabledAWSErrCode {
@@ -372,10 +369,12 @@ type snsNotification struct {
 
 type iOSPushNotification struct {
 	PushData       *iOSPushData `json:"aps"`
+	Type           string       `json:"type"`
 	OrganizationID string       `json:"organization_id"`
-	SavedQueryID   string       `json:"saved_query_id"`
-	ThreadID       string       `json:"thread_id"`
-	MessageID      string       `json:"message_id"`
+	SavedQueryID   string       `json:"saved_query_id,omitempty"`
+	ThreadID       string       `json:"thread_id,omitempty"`
+	MessageID      string       `json:"message_id,omitempty"`
+	CallID         string       `json:"call_id,omitempty"`
 	URL            string       `json:"url"`
 }
 
@@ -393,20 +392,30 @@ type androidPushNotification struct {
 }
 
 type androidPushData struct {
+	Type           string `json:"type"`
 	Background     bool   `json:"background"`
 	Message        string `json:"message"`
 	URL            string `json:"url"`
 	UnreadCount    int    `json:"unread_count"`
 	OrganizationID string `json:"organization_id"`
-	SavedQueryID   string `json:"saved_query_id"`
-	ThreadID       string `json:"thread_id"`
-	MessageID      string `json:"message_id"`
+	SavedQueryID   string `json:"saved_query_id,omitempty"`
+	ThreadID       string `json:"thread_id,omitempty"`
+	MessageID      string `json:"message_id,omitempty"`
+	CallID         string `json:"call_id,omitempty"`
 	PushID         string `json:"push_id"`
 }
 
 func generateNotification(webDomain string, n *notification.Notification, targetID string) *snsNotification {
 	msg := n.ShortMessages[targetID]
-	url := deeplink.ThreadMessageURLShareable(webDomain, n.OrganizationID, n.ThreadID, n.MessageID)
+
+	var url string
+	switch n.Type {
+	case notification.DeprecatedNewMessageOnThread,
+		notification.NewMessageOnInternalThread,
+		notification.NewMessageOnExternalThread:
+
+		url = deeplink.ThreadMessageURLShareable(webDomain, n.OrganizationID, n.ThreadID, n.MessageID)
+	}
 
 	iOSData := &iOSPushData{
 		Alert:            msg,
@@ -417,10 +426,12 @@ func generateNotification(webDomain string, n *notification.Notification, target
 	}
 	isNotifData, err := json.Marshal(&iOSPushNotification{
 		PushData:       iOSData,
+		Type:           string(n.Type),
 		OrganizationID: n.OrganizationID,
 		SavedQueryID:   n.SavedQueryID,
 		ThreadID:       n.ThreadID,
 		MessageID:      n.MessageID,
+		CallID:         n.CallID,
 		URL:            url,
 	})
 	if err != nil {
@@ -429,6 +440,7 @@ func generateNotification(webDomain string, n *notification.Notification, target
 	androidNotifData, err := json.Marshal(&androidPushNotification{
 		CollapseKey: n.CollapseKey,
 		PushData: &androidPushData{
+			Type:           string(n.Type),
 			Background:     msg == "",
 			Message:        msg,
 			URL:            url,
@@ -436,6 +448,7 @@ func generateNotification(webDomain string, n *notification.Notification, target
 			SavedQueryID:   n.SavedQueryID,
 			ThreadID:       n.ThreadID,
 			MessageID:      n.MessageID,
+			CallID:         n.CallID,
 			PushID:         n.DedupeKey,
 		},
 	})

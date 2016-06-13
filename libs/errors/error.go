@@ -5,7 +5,10 @@
 // rather than packages.
 package errors
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 type aerr struct {
 	err         error // actual error
@@ -38,4 +41,9 @@ func Cause(e error) error {
 		return e.err
 	}
 	return e
+}
+
+// Errorf formats according to a format specifier and returns the string as a value that satisfies error.
+func Errorf(format string, args ...interface{}) error {
+	return Trace(fmt.Errorf(format, args...))
 }

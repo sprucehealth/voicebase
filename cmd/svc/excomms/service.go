@@ -27,6 +27,7 @@ import (
 	"github.com/sprucehealth/backend/libs/urlutil"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
+	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/settings"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -85,6 +86,11 @@ func runService(bootSvc *boot.Service) {
 		return
 	}
 	defer settingsConn.Close()
+
+	if config.notificationSQSURL == "" {
+		golog.Fatalf("notification_sqs_url flag required")
+	}
+	notificationClient := notification.NewClient(eSQS, &notification.ClientConfig{SQSNotificationURL: config.notificationSQSURL})
 
 	// register the settings with the service
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
@@ -161,7 +167,8 @@ func runService(bootSvc *boot.Service) {
 		server.NewSendgridClient(config.sendgridAPIKey),
 		server.NewIDGenerator(),
 		proxyNumberManager,
-		ms)
+		ms,
+		notificationClient)
 	excomms.InitMetrics(excommsService, bootSvc.MetricsRegistry.Scope("server"))
 
 	excommsServer := grpc.NewServer()

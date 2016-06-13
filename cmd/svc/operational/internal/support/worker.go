@@ -112,7 +112,7 @@ func (w *Worker) Stop(wait time.Duration) {
 	w.worker.Stop(wait)
 }
 
-func (w *Worker) processSNSEvent(msg string) error {
+func (w *Worker) processSNSEvent(ctx context.Context, msg string) error {
 	var snsMsg snsMessage
 	if err := json.Unmarshal([]byte(msg), &snsMsg); err != nil {
 		golog.Errorf("Failed to unmarshal sns message: %s", err.Error())
@@ -124,25 +124,23 @@ func (w *Worker) processSNSEvent(msg string) error {
 		golog.Errorf("Failed to unmarshal event: %s", err)
 	}
 
-	return w.processEvent(&event)
+	return w.processEvent(ctx, &event)
 }
 
-func (w *Worker) processEvent(event *operational.NewOrgCreatedEvent) error {
+func (w *Worker) processEvent(ctx context.Context, event *operational.NewOrgCreatedEvent) error {
 	orgCreationTime := time.Unix(event.OrgCreated, 0)
 	currentTimePST := w.clock.Now().In(californiaLocation)
 
 	if withinSupportHours(currentTimePST) {
 		if w.clock.Now().Sub(orgCreationTime) >= postMessageThreshold {
-			return w.postMessage(event)
+			return w.postMessage(ctx, event)
 		}
 	}
 
 	return awsutil.ErrRetryAfter(15 * time.Minute)
 }
 
-func (w *Worker) postMessage(event *operational.NewOrgCreatedEvent) error {
-	ctx := context.Background()
-
+func (w *Worker) postMessage(ctx context.Context, event *operational.NewOrgCreatedEvent) error {
 	// don't post message if thread's message count > 1
 	res, err := w.threading.Thread(ctx, &threading.ThreadRequest{
 		ThreadID: event.SpruceSupportThreadID,

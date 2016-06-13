@@ -25,6 +25,7 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/events"
 	"github.com/sprucehealth/backend/svc/excomms"
+	"github.com/sprucehealth/backend/svc/notification"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -59,6 +60,7 @@ type excommsService struct {
 	proxyNumberManager   proxynumber.Manager
 	signer               *urlutil.Signer
 	httpClient           httputil.Client
+	notificationClient   notification.Client
 }
 
 func NewService(
@@ -74,7 +76,9 @@ func NewService(
 	emailClient EmailClient,
 	idgen idGenerator,
 	proxyNumberManager proxynumber.Manager,
-	signer *urlutil.Signer) excomms.ExCommsServer {
+	signer *urlutil.Signer,
+	notificationClient notification.Client,
+) excomms.ExCommsServer {
 
 	es := &excommsService{
 		apiURL:               apiURL,
@@ -95,6 +99,7 @@ func NewService(
 		proxyNumberManager:   proxyNumberManager,
 		signer:               signer,
 		httpClient:           &httputil.DefaultClient{},
+		notificationClient:   notificationClient,
 	}
 	return es
 }

@@ -5,9 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 	"github.com/sprucehealth/backend/cmd/svc/operational/internal/dal"
 	"github.com/sprucehealth/backend/libs/awsutil"
@@ -19,6 +16,8 @@ import (
 	"github.com/sprucehealth/backend/svc/operational"
 	"github.com/sprucehealth/backend/svc/threading"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 // BlockAccountWorker is responsible for doing the work associated
@@ -68,7 +67,7 @@ func (w *BlockAccountWorker) Stop(wait time.Duration) {
 	w.worker.Stop(wait)
 }
 
-func (w *BlockAccountWorker) processSNSEvent(msg string) error {
+func (w *BlockAccountWorker) processSNSEvent(ctx context.Context, msg string) error {
 	var snsMsg snsMessage
 	if err := json.Unmarshal([]byte(msg), &snsMsg); err != nil {
 		golog.Errorf("Failed to unmarshal sns message: %s", err.Error())
@@ -81,13 +80,10 @@ func (w *BlockAccountWorker) processSNSEvent(msg string) error {
 		return nil
 	}
 
-	return errors.Trace(w.processEvent(&bar))
+	return errors.Trace(w.processEvent(ctx, &bar))
 }
 
-func (w *BlockAccountWorker) processEvent(bar *operational.BlockAccountRequest) error {
-
-	ctx := context.Background()
-
+func (w *BlockAccountWorker) processEvent(ctx context.Context, bar *operational.BlockAccountRequest) error {
 	// block account via the auth service
 	res, err := w.auth.BlockAccount(ctx, &auth.BlockAccountRequest{
 		AccountID: bar.AccountID,

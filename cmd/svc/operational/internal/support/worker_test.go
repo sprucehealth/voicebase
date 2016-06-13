@@ -14,6 +14,7 @@ import (
 	"github.com/sprucehealth/backend/svc/threading"
 	threadingmock "github.com/sprucehealth/backend/svc/threading/mock"
 	"github.com/sprucehealth/backend/test"
+	"golang.org/x/net/context"
 )
 
 const (
@@ -109,7 +110,7 @@ func TestPostSupportMessage_AlreadyPosted(t *testing.T) {
 		},
 	}, nil))
 
-	err = w.processEvent(&operational.NewOrgCreatedEvent{
+	err = w.processEvent(context.Background(), &operational.NewOrgCreatedEvent{
 		SpruceSupportThreadID:   spruceSupportThreadID,
 		OrgSupportThreadID:      orgSupportThreadID,
 		InitialProviderEntityID: providerEntityID,
@@ -135,7 +136,7 @@ func testWaitToPost(t *testing.T, mclock clock.Clock, orgCreationTime int64) {
 		clock:     mclock,
 	}
 
-	err := w.processEvent(&operational.NewOrgCreatedEvent{
+	err := w.processEvent(context.Background(), &operational.NewOrgCreatedEvent{
 		SpruceSupportThreadID:   spruceSupportThreadID,
 		OrgSupportThreadID:      orgSupportThreadID,
 		InitialProviderEntityID: providerEntityID,
@@ -199,7 +200,7 @@ BTW, we put together a brief tutorial, which you can access here: bit.ly/22VjkkX
 		ThreadID:     spruceSupportThreadID,
 	}))
 
-	err := w.processEvent(&operational.NewOrgCreatedEvent{
+	err := w.processEvent(context.Background(), &operational.NewOrgCreatedEvent{
 		SpruceSupportThreadID:   spruceSupportThreadID,
 		OrgSupportThreadID:      orgSupportThreadID,
 		InitialProviderEntityID: providerEntityID,

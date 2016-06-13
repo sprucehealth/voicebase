@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/twilio"
+	"golang.org/x/net/context"
 )
 
 type Worker struct {
@@ -42,7 +43,7 @@ func (w *Worker) Stop(wait time.Duration) {
 	w.Stop(wait)
 }
 
-func (w *Worker) processSNSEvent(msg string) error {
+func (w *Worker) processSNSEvent(ctx context.Context, msg string) error {
 	var snsMsg snsMessage
 	if err := json.Unmarshal([]byte(msg), &snsMsg); err != nil {
 		golog.Errorf("Failed to unmarshal sns message: %s", err.Error())

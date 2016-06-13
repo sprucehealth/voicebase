@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/deploy"
+	"golang.org/x/net/context"
 )
 
 type notificationWorker struct {
@@ -39,17 +40,17 @@ func (w *notificationWorker) Started() bool {
 }
 
 // TODO: Don't make this so Build complete specific
-func (w *notificationWorker) processSQSEvent(msg string) error {
+func (w *notificationWorker) processSQSEvent(ctx context.Context, msg string) error {
 	golog.Debugf("Recieved SQS Message: %s", msg)
 	ev := &deploy.BuildCompleteEvent{}
 	if err := json.Unmarshal([]byte(msg), ev); err != nil {
 		golog.Errorf("Failed to unmarshal event: %s", err)
 		return nil
 	}
-	return w.processEvent(ev)
+	return w.processEvent(ctx, ev)
 }
 
-func (w *notificationWorker) processEvent(ev *deploy.BuildCompleteEvent) error {
+func (w *notificationWorker) processEvent(ctx context.Context, ev *deploy.BuildCompleteEvent) error {
 	deploymentIDs, err := w.manager.ProcessBuildCompleteEvent(ev)
 	if err != nil {
 		golog.Errorf("Error while processing build complete event, discarding event: %s", err)

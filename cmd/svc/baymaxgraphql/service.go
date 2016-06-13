@@ -50,7 +50,7 @@ func hydrateThreads(ctx context.Context, ram raccess.ResourceAccessor, threads [
 	orgID := threads[0].OrganizationID
 	for _, t := range threads[1:] {
 		if t.OrganizationID != orgID {
-			return errors.Trace(fmt.Errorf("org %s doesn't match %s", t.OrganizationID, orgID))
+			return errors.Errorf("org %s doesn't match %s", t.OrganizationID, orgID)
 		}
 	}
 	return nil

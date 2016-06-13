@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/svc/threading"
 	tmock "github.com/sprucehealth/backend/svc/threading/mock"
 	"github.com/sprucehealth/backend/test"
+	"golang.org/x/net/context"
 )
 
 func TestWorker(t *testing.T) {
@@ -30,7 +31,7 @@ func TestWorker(t *testing.T) {
 		},
 	}))
 
-	test.OK(t, w.processEvent(&events.Envelope{
+	test.OK(t, w.processEvent(context.Background(), &events.Envelope{
 		Service: events.Service_EXCOMMS,
 		Event: serializeEvent(t, &excomms.Event{
 			Type: excomms.Event_PROVISIONED_ENDPOINT,

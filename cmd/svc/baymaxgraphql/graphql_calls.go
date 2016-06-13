@@ -115,9 +115,7 @@ var callType = graphql.NewObject(graphql.ObjectConfig{
 		"accessToken":           &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"role":                  &graphql.Field{Type: graphql.NewNonNull(callRoleEnum)},
 		"caller":                &graphql.Field{Type: graphql.NewNonNull(callParticipantType)},
-		"callerState":           &graphql.Field{Type: graphql.NewNonNull(callStateEnum)},
 		"recipients":            &graphql.Field{Type: graphql.NewNonNull(graphql.NewList(callParticipantType))},
-		"recipientsStates":      &graphql.Field{Type: graphql.NewNonNull(graphql.NewList(callStateEnum))},
 		"allowVideo":            &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		"videoEnabledByDefault": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 	},
@@ -154,6 +152,7 @@ var callParticipantType = graphql.NewObject(graphql.ObjectConfig{
 				return transformEntityToResponse(svc.staticURLPrefix, ent, devicectx.SpruceHeaders(ctx), acc)
 			}),
 		},
+		"state":          &graphql.Field{Type: graphql.NewNonNull(callStateEnum)},
 		"twilioIdentity": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 	},
 	IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
@@ -203,21 +202,18 @@ func transformCallToResponse(call *excomms.IPCall, accountID string) (*models.Ca
 		AllowVideo:            true,
 		VideoEnabledByDefault: true,
 		Recipients:            make([]*models.CallParticipant, 0, len(call.Participants)-1),
-		RecipientsStates:      make([]string, 0, len(call.Participants)-1),
 	}
 	for _, p := range call.Participants {
 		par := &models.CallParticipant{
 			EntityID:       p.EntityID,
 			TwilioIdentity: p.Identity,
+			State:          p.State.String(),
 		}
-		state := p.State.String()
 		switch p.Role {
 		case excomms.IPCallParticipantRole_CALLER:
 			c.Caller = par
-			c.CallerState = state
 		case excomms.IPCallParticipantRole_RECIPIENT:
 			c.Recipients = append(c.Recipients, par)
-			c.RecipientsStates = append(c.RecipientsStates, state)
 		default:
 			return nil, fmt.Errorf("Unknown ipcall participant role '%s'", p.Role)
 		}

@@ -9,9 +9,11 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
 	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/twilio"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
+	"github.com/sprucehealth/backend/svc/notification"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 )
@@ -28,6 +30,7 @@ var validIPCallParicipantStateTransitions = map[ipCallStateTransition]struct{}{
 	{from: models.IPCallStateAccepted, to: models.IPCallStateConnected}:  {},
 	{from: models.IPCallStateAccepted, to: models.IPCallStateFailed}:     {},
 	{from: models.IPCallStateAccepted, to: models.IPCallStateCompleted}:  {}, // hanging up after accepting but before connecting
+	{from: models.IPCallStateConnected, to: models.IPCallStateFailed}:    {},
 	{from: models.IPCallStateConnected, to: models.IPCallStateCompleted}: {},
 }
 
@@ -46,9 +49,11 @@ func (e *excommsService) InitiateIPCall(ctx context.Context, req *excomms.Initia
 		LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
 			BatchEntityID: &directory.IDList{IDs: entityIDs},
 		},
-		RequestedInformation: &directory.RequestedInformation{},
-		RootTypes:            []directory.EntityType{directory.EntityType_INTERNAL, directory.EntityType_PATIENT},
-		Statuses:             []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RequestedInformation: &directory.RequestedInformation{
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
+		},
+		RootTypes: []directory.EntityType{directory.EntityType_INTERNAL, directory.EntityType_PATIENT},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 	})
 	if err != nil {
 		return nil, grpcErrorf(codes.Internal, err.Error())
@@ -69,7 +74,24 @@ func (e *excommsService) InitiateIPCall(ctx context.Context, req *excomms.Initia
 
 	call.Participants = make([]*models.IPCallParticipant, 0, len(leres.Entities))
 	var callerPar *models.IPCallParticipant
+	var org *directory.Entity
 	for _, e := range leres.Entities {
+		var o *directory.Entity
+		for _, m := range e.Memberships {
+			if m.Type == directory.EntityType_ORGANIZATION {
+				o = m
+				break
+			}
+		}
+		if o == nil {
+			return nil, grpcErrorf(codes.InvalidArgument, "Participant %s does not belong to any organizations", e.ID)
+		}
+		if org == nil {
+			org = o
+		} else if org.ID != o.ID {
+			// As a sanity check make sure everyone involved belongs to the same org.
+			return nil, grpcErrorf(codes.InvalidArgument, "All participants must belong to the same organization")
+		}
 		if e.AccountID == "" {
 			return nil, grpcErrorf(codes.InvalidArgument, "Participant %s missing account ID", e.ID)
 		}
@@ -94,6 +116,22 @@ func (e *excommsService) InitiateIPCall(ctx context.Context, req *excomms.Initia
 
 	if err := e.dal.CreateIPCall(ctx, call); err != nil {
 		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	notificationMsgs := make(map[string]string, len(req.RecipientEntityIDs))
+	for _, eid := range req.RecipientEntityIDs {
+		notificationMsgs[eid] = "☎️ Video call from your healthcare provider"
+	}
+	if err := e.notificationClient.SendNotification(&notification.Notification{
+		Type:             notification.IncomingIPCall,
+		CallID:           call.ID.String(),
+		OrganizationID:   org.ID,
+		EntitiesToNotify: req.RecipientEntityIDs,
+		DedupeKey:        call.ID.String(),
+		CollapseKey:      string(notification.IncomingIPCall),
+		ShortMessages:    notificationMsgs,
+	}); err != nil {
+		golog.Errorf("Failed to send notification about new IP call: %s", err)
 	}
 
 	rcall, err := e.transformIPCallToResponse(call, callerPar)

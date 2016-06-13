@@ -49,7 +49,7 @@ func (w *Worker) Stop(wait time.Duration) {
 	w.eventWorker.Stop(wait)
 }
 
-func (w *Worker) processSNSEvent(msg string) error {
+func (w *Worker) processSNSEvent(ctx context.Context, msg string) error {
 	var snsMsg snsMessage
 	if err := json.Unmarshal([]byte(msg), &snsMsg); err != nil {
 		golog.Errorf("Failed to unmarshal sns message: %s", err.Error())
@@ -60,12 +60,10 @@ func (w *Worker) processSNSEvent(msg string) error {
 		golog.Errorf("Failed to unmarshal event envelope: %s", err)
 		return nil
 	}
-	return w.processEvent(env)
+	return w.processEvent(ctx, env)
 }
 
-func (w *Worker) processEvent(env *events.Envelope) error {
-	ctx := context.Background()
-
+func (w *Worker) processEvent(ctx context.Context, env *events.Envelope) error {
 	switch env.Service {
 	case events.Service_EXCOMMS:
 		var ev excomms.Event

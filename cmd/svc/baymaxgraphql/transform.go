@@ -104,7 +104,7 @@ func transformContactsToResponse(contacts []*directory.Contact) ([]*models.Conta
 				ci.DisplayValue = pn
 			}
 		default:
-			return nil, errors.Trace(fmt.Errorf("unsupported contact type %s", c.ContactType.String()))
+			return nil, errors.Errorf("unsupported contact type %s", c.ContactType.String())
 		}
 		cs[i] = ci
 	}
@@ -449,7 +449,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 				}
 				continue
 			default:
-				return nil, errors.Trace(fmt.Errorf("unknown attachment type %s", a.Type.String()))
+				return nil, errors.Errorf("unknown attachment type %s", a.Type.String())
 			}
 			m2.Attachments = append(m2.Attachments, &models.Attachment{
 				Title: a.Title,
@@ -465,7 +465,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 		}
 		it.Data = m2
 	default:
-		return nil, errors.Trace(fmt.Errorf("unknown thread item type %s", item.Type.String()))
+		return nil, errors.Errorf("unknown thread item type %s", item.Type.String())
 	}
 	return it, nil
 }
@@ -480,7 +480,7 @@ func transformSavedQueryToResponse(sq *threading.SavedQuery) (*models.SavedThrea
 func transformEntityToResponse(staticURLPrefix string, e *directory.Entity, sh *device.SpruceHeaders, viewingAccount *auth.Account) (*models.Entity, error) {
 	oc, err := transformContactsToResponse(e.Contacts)
 	if err != nil {
-		return nil, errors.Trace(fmt.Errorf("failed to transform contacts for entity %s: %s", e.ID, err))
+		return nil, errors.Errorf("failed to transform contacts for entity %s: %s", e.ID, err)
 	}
 
 	var dob *models.DOB
@@ -822,7 +822,7 @@ func transformVisitToResponse(ctx context.Context, ram raccess.ResourceAccessor,
 
 	acc := gqlctx.Account(ctx)
 	if acc == nil {
-		return nil, errors.Trace(fmt.Errorf("expected acccount to not be nil but it was"))
+		return nil, errors.Errorf("expected acccount to not be nil but it was")
 	}
 
 	intake, err := layoutStore.GetIntake(layoutVersion.IntakeLayoutLocation)

@@ -13,6 +13,7 @@ import (
 	"github.com/sprucehealth/backend/svc/operational"
 	threadingmock "github.com/sprucehealth/backend/svc/threading/mock"
 	"github.com/sprucehealth/backend/test"
+	"golang.org/x/net/context"
 )
 
 func TestBlockAccountWorker(t *testing.T) {
@@ -106,7 +107,7 @@ func TestBlockAccountWorker(t *testing.T) {
 	md.Expect(mock.NewExpectation(md.MarkAccountAsBlocked, accountID))
 
 	w := NewBlockAccountWorker(ma, mdir, me, mt, nil, md, "sqs_url", spruceOrgID)
-	test.OK(t, w.processEvent(&operational.BlockAccountRequest{
+	test.OK(t, w.processEvent(context.Background(), &operational.BlockAccountRequest{
 		AccountID: accountID,
 	}))
 }
@@ -197,7 +198,7 @@ func TestBlockAccountWorker_NoProvisionedPhoneNumber(t *testing.T) {
 	md.Expect(mock.NewExpectation(md.MarkAccountAsBlocked, accountID))
 
 	w := NewBlockAccountWorker(ma, mdir, me, mt, nil, md, "sqs_url", spruceOrgID)
-	test.OK(t, w.processEvent(&operational.BlockAccountRequest{
+	test.OK(t, w.processEvent(context.Background(), &operational.BlockAccountRequest{
 		AccountID: accountID,
 	}))
 }
