@@ -42,6 +42,7 @@ var grpcErrf = grpc.Errorf
 
 type excommsService struct {
 	twilio               *twilio.Client
+	twilioAccountSID     string
 	twilioApplicationSID string
 	twilioSigningKeySID  string
 	twilioSigningKey     string
@@ -78,6 +79,7 @@ func NewService(
 	es := &excommsService{
 		apiURL:               apiURL,
 		twilio:               twilio.NewClient(twilioAccountSID, twilioAuthToken, nil),
+		twilioAccountSID:     twilioAccountSID,
 		twilioApplicationSID: twilioApplicationSID,
 		twilioSigningKeySID:  twilioSigningKeySID,
 		twilioSigningKey:     twilioSigningKey,

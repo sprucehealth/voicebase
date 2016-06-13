@@ -211,7 +211,7 @@ func (e *excommsService) transformIPCallToResponse(call *models.IPCall, par *mod
 	var token string
 	var err error
 	if par != nil {
-		token, err = generateIPCallToken(par.Identity, e.twilioVideoConfigSID).ToJWT(e.twilioApplicationSID, e.twilioSigningKeySID, e.twilioSigningKey)
+		token, err = generateIPCallToken(par.Identity, e.twilioVideoConfigSID).ToJWT(e.twilioAccountSID, e.twilioSigningKeySID, e.twilioSigningKey)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
