@@ -16,7 +16,7 @@ const (
 	CallStateCompleted = "COMPLETED"
 )
 
-// Call cahnnel enum
+// Call channel enum
 const (
 	CallChannelTypePhone = "PHONE"
 	CallChannelTypeVOIP  = "VOIP"

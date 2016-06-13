@@ -558,14 +558,12 @@ func (s *threadsServer) MarkThreadsAsRead(ctx context.Context, in *threading.Mar
 	}
 
 	currentTime := s.clk.Now()
-	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
-
-		for _, watermark := range in.ThreadWatermarks {
-			threadID, err := models.ParseThreadID(watermark.ThreadID)
-			if err != nil {
-				return grpcErrorf(codes.InvalidArgument, "Invalid ThreadID")
-			}
-
+	for _, watermark := range in.ThreadWatermarks {
+		threadID, err := models.ParseThreadID(watermark.ThreadID)
+		if err != nil {
+			return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadID")
+		}
+		if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
 			readTime := currentTime
 			// only use the last message timestamp if one is provided by the client or it is in the past but after the reference date of the product launch
 			if watermark.LastMessageTimestamp != 0 && watermark.LastMessageTimestamp < uint64(readTime.Unix()) && watermark.LastMessageTimestamp > uint64(baymaxLaunchDate.Unix()) {
@@ -589,7 +587,7 @@ func (s *threadsServer) MarkThreadsAsRead(ctx context.Context, in *threading.Mar
 
 			// only generate read receipts if seen is true
 			if !in.Seen {
-				continue
+				return nil
 			}
 
 			threadItemIDs, err := dl.ThreadItemIDsCreatedAfter(ctx, threadID, lastViewed)
@@ -605,16 +603,10 @@ func (s *threadsServer) MarkThreadsAsRead(ctx context.Context, in *threading.Mar
 					ViewTime:      &currentTime,
 				}
 			}
-			if err := dl.CreateThreadItemViewDetails(ctx, tivds); err != nil {
-				return errors.Trace(err)
-			}
+			return errors.Trace(dl.CreateThreadItemViewDetails(ctx, tivds))
+		}); err != nil {
+			return nil, internalError(err)
 		}
-		return nil
-	}); err != nil {
-		if grpc.Code(err) == codes.InvalidArgument {
-			return nil, err
-		}
-		return nil, internalError(err)
 	}
 
 	return &threading.MarkThreadsAsReadResponse{}, nil
