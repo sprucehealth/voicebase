@@ -61,7 +61,7 @@ var createCallInputType = graphql.NewInputObject(graphql.InputObjectConfig{
 type createCallInput struct {
 	ClientMutationID         string   `gql:"clientMutationId"`
 	UUID                     string   `gql:"uuid"`
-	OrganizationID           string   `gql:"organizationID"`
+	OrganizationID           string   `gql:"organizationID,nonempty"`
 	RecipientCallEndpointIDs []string `gql:"recipientCallEndpointIDs"`
 }
 
@@ -78,7 +78,7 @@ var createVideoCallMutation = &graphql.Field{
 	Args: graphql.FieldConfigArgument{
 		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(createCallInputType)},
 	},
-	Resolve: apiaccess.Provider(func(p graphql.ResolveParams) (interface{}, error) {
+	Resolve: apiaccess.Authenticated(func(p graphql.ResolveParams) (interface{}, error) {
 		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
 		acc := gqlctx.Account(ctx)

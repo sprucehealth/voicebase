@@ -3,7 +3,12 @@ package main
 import (
 	"fmt"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -123,9 +128,27 @@ var callParticipantType = graphql.NewObject(graphql.ObjectConfig{
 	Fields: graphql.Fields{
 		"entity": &graphql.Field{
 			Type: graphql.NewNonNull(entityType),
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				return nil, nil
-			},
+			Resolve: apiaccess.Authenticated(func(p graphql.ResolveParams) (interface{}, error) {
+				ctx := p.Context
+				ram := raccess.ResourceAccess(p)
+				svc := serviceFromParams(p)
+				acc := gqlctx.Account(p.Context)
+				par := p.Source.(*models.CallParticipant)
+				ent, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+					LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+						EntityID: par.EntityID,
+					},
+					RequestedInformation: &directory.RequestedInformation{
+						EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+					},
+					Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+				})
+				if err != nil {
+					return nil, errors.InternalError(ctx, err)
+				}
+				return transformEntityToResponse(svc.staticURLPrefix, ent, devicectx.SpruceHeaders(ctx), acc)
+			}),
 		},
 		"twilioIdentity": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 	},

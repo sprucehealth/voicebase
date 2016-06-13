@@ -54,8 +54,8 @@ var updateCallInputType = graphql.NewInputObject(graphql.InputObjectConfig{
 type updateCallInput struct {
 	ClientMutationID string `gql:"clientMutationId"`
 	UUID             string `gql:"uuid"`
-	CallID           string `gql:"callID"`
-	CallState        string `gql:"callState"`
+	CallID           string `gql:"callID,nonempty"`
+	CallState        string `gql:"callState,nonempty"`
 }
 
 type updateCallPayload struct {
