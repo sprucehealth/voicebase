@@ -27,6 +27,7 @@ var validIPCallParicipantStateTransitions = map[ipCallStateTransition]struct{}{
 	{from: models.IPCallStatePending, to: models.IPCallStateDeclined}:    {},
 	{from: models.IPCallStateAccepted, to: models.IPCallStateConnected}:  {},
 	{from: models.IPCallStateAccepted, to: models.IPCallStateFailed}:     {},
+	{from: models.IPCallStateAccepted, to: models.IPCallStateCompleted}:  {}, // hanging up after accepting but before connecting
 	{from: models.IPCallStateConnected, to: models.IPCallStateCompleted}: {},
 }
 
