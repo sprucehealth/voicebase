@@ -91,7 +91,9 @@ func lookupAndDisplayEntity(ctx context.Context, dirCli directory.DirectoryClien
 		},
 	}
 	res, err := dirCli.LookupEntities(ctx, req)
-	if err != nil && grpc.Code(err) != codes.NotFound {
+	if grpc.Code(err) == codes.NotFound {
+		return nil, errors.New("Entity not found")
+	} else if err != nil {
 		return nil, err
 	}
 
