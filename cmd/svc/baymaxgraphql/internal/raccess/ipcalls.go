@@ -5,6 +5,8 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 func (m *resourceAccessor) InitiateIPCall(ctx context.Context, req *excomms.InitiateIPCallRequest) (*excomms.InitiateIPCallResponse, error) {
@@ -12,6 +14,34 @@ func (m *resourceAccessor) InitiateIPCall(ctx context.Context, req *excomms.Init
 	//       We might want to do it here for completeness and safety, but for now leaving it out. Ideally restructuring auth
 	//       would remove the need.
 	return m.excomms.InitiateIPCall(ctx, req)
+}
+
+func (m *resourceAccessor) IPCall(ctx context.Context, id string) (*excomms.IPCall, error) {
+	acc := gqlctx.Account(ctx)
+	if acc == nil {
+		return nil, errors.ErrNotAuthenticated(ctx)
+	}
+	res, err := m.excomms.IPCall(ctx, &excomms.IPCallRequest{
+		IPCallID:  id,
+		AccountID: acc.ID,
+	})
+	if grpc.Code(err) == codes.NotFound {
+		return nil, errors.Trace(ErrNotFound)
+	} else if err != nil {
+		return nil, errors.Trace(err)
+	}
+	// Make sure account is a participant
+	authorized := false
+	for _, p := range res.Call.Participants {
+		if p.AccountID == acc.ID {
+			authorized = true
+			break
+		}
+	}
+	if !authorized {
+		return nil, errors.ErrNotAuthorized(ctx, id)
+	}
+	return res.Call, nil
 }
 
 func (m *resourceAccessor) PendingIPCalls(ctx context.Context) (*excomms.PendingIPCallsResponse, error) {

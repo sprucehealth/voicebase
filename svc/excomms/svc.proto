@@ -258,6 +258,15 @@ message InitiateIPCallResponse {
 	IPCall call = 1;
 }
 
+message IPCallRequest {
+	string ipcall_id = 1 [(gogoproto.customname) = "IPCallID"];
+	string account_id = 2 [(gogoproto.customname) = "AccountID"];
+}
+
+message IPCallResponse {
+	IPCall call = 1;
+}
+
 message PendingIPCallsRequest {
 	string account_id = 1 [(gogoproto.customname) = "AccountID"];
 }
@@ -302,7 +311,10 @@ service ExComms {
 	// InitiateIPCall starts a new voip or video call.
 	rpc InitiateIPCall (InitiateIPCallRequest) returns (InitiateIPCallResponse);
 
-	// IPCalls returns all IPCalls for an account that are still pending (not yet completed).
+	// IPCall returns an IPCall given its ID
+	rpc IPCall (IPCallRequest) returns (IPCallResponse);
+
+	// PendingIPCalls returns all IPCalls for an account that are still pending (not yet completed).
 	rpc PendingIPCalls (PendingIPCallsRequest) returns (PendingIPCallsResponse);
 
 	// UpdateIPCall updates the state of a voip or video call.

@@ -265,6 +265,14 @@ func (m *ResourceAccessor) InitiatePhoneCall(ctx context.Context, req *excomms.I
 	return rets[0].(*excomms.InitiatePhoneCallResponse), mock.SafeError(rets[1])
 }
 
+func (m *ResourceAccessor) IPCall(ctx context.Context, id string) (*excomms.IPCall, error) {
+	rets := m.Record(id)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*excomms.IPCall), mock.SafeError(rets[1])
+}
+
 func (m *ResourceAccessor) MarkThreadsAsRead(ctx context.Context, req *threading.MarkThreadsAsReadRequest) (*threading.MarkThreadsAsReadResponse, error) {
 	rets := m.Record(req)
 	if len(rets) == 0 {

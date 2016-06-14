@@ -91,6 +91,8 @@ var queryType = graphql.NewObject(
 						return lookupEntity(ctx, svc, ram, id)
 					case "entityProfile":
 						return lookupProfile(ctx, ram, id)
+					case "ipc":
+						return lookupCall(ctx, ram, id)
 					case "sq":
 						return lookupSavedQuery(ctx, ram, id)
 					case "t":
@@ -199,6 +201,7 @@ var queryType = graphql.NewObject(
 					}, nil
 				},
 			},
+			"call":                    callQuery,
 			"carePlan":                carePlanQuery,
 			"forceUpgradeStatus":      forceUpgradeQuery,
 			"medicationSearch":        medicationSearchQuery,

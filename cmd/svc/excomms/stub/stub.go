@@ -50,6 +50,10 @@ func (e *excommsClient) InitiateIPCall(ctx context.Context, in *excomms.Initiate
 	return &excomms.InitiateIPCallResponse{}, nil
 }
 
+func (e *excommsClient) IPCall(ctx context.Context, in *excomms.IPCallRequest, opts ...grpc.CallOption) (*excomms.IPCallResponse, error) {
+	return &excomms.IPCallResponse{}, nil
+}
+
 func (e *excommsClient) PendingIPCalls(ctx context.Context, in *excomms.PendingIPCallsRequest, opts ...grpc.CallOption) (*excomms.PendingIPCallsResponse, error) {
 	return &excomms.PendingIPCallsResponse{}, nil
 }

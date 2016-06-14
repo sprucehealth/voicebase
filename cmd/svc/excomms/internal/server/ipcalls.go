@@ -104,6 +104,38 @@ func (e *excommsService) InitiateIPCall(ctx context.Context, req *excomms.Initia
 	return &excomms.InitiateIPCallResponse{Call: rcall}, nil
 }
 
+func (e *excommsService) IPCall(ctx context.Context, req *excomms.IPCallRequest) (*excomms.IPCallResponse, error) {
+	if req.IPCallID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "IPCallID required")
+	}
+	id, err := models.ParseIPCallID(req.IPCallID)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid IPCallID")
+	}
+	call, err := e.dal.IPCall(ctx, id)
+	if errors.Cause(err) == dal.ErrIPCallNotFound {
+		return nil, grpcErrorf(codes.NotFound, "IPCall %s not found", id)
+	} else if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+	// Find the participating account to be able to generate a proper token
+	var par *models.IPCallParticipant
+	for _, p := range call.Participants {
+		if p.AccountID == req.AccountID {
+			par = p
+			break
+		}
+	}
+	if par == nil {
+		return nil, grpcErrorf(codes.PermissionDenied, "Account %s is not a participant in call %s", req.AccountID, call.ID)
+	}
+	rcall, err := e.transformIPCallToResponse(call, par)
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+	return &excomms.IPCallResponse{Call: rcall}, nil
+}
+
 func (e *excommsService) PendingIPCalls(ctx context.Context, req *excomms.PendingIPCallsRequest) (*excomms.PendingIPCallsResponse, error) {
 	if req.AccountID == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "AccountID required")
@@ -211,7 +243,7 @@ func (e *excommsService) UpdateIPCall(ctx context.Context, req *excomms.UpdateIP
 func (e *excommsService) transformIPCallToResponse(call *models.IPCall, par *models.IPCallParticipant) (*excomms.IPCall, error) {
 	var token string
 	var err error
-	if par != nil {
+	if par != nil && call.Pending {
 		token, err = generateIPCallToken(par.Identity, e.twilioVideoConfigSID).ToJWT(e.twilioAccountSID, e.twilioSigningKeySID, e.twilioSigningKey)
 		if err != nil {
 			return nil, errors.Trace(err)

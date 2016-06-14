@@ -67,6 +67,8 @@ func init() {
 		}
 
 		switch value.(type) {
+		case *models.Call:
+			return callType
 		case *models.CarePlan:
 			return carePlanType
 		case *models.Entity:

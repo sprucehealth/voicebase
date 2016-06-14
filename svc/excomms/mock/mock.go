@@ -86,6 +86,14 @@ func (c *Client) InitiateIPCall(ctx context.Context, in *excomms.InitiateIPCallR
 	return rets[0].(*excomms.InitiateIPCallResponse), mock.SafeError(rets[1])
 }
 
+func (c *Client) IPCall(ctx context.Context, in *excomms.IPCallRequest, opts ...grpc.CallOption) (*excomms.IPCallResponse, error) {
+	rets := c.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*excomms.IPCallResponse), mock.SafeError(rets[1])
+}
+
 func (c *Client) PendingIPCalls(ctx context.Context, in *excomms.PendingIPCallsRequest, opts ...grpc.CallOption) (*excomms.PendingIPCallsResponse, error) {
 	rets := c.Record(in)
 	if len(rets) == 0 {

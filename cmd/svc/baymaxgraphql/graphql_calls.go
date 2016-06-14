@@ -14,6 +14,7 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/graphql"
+	"golang.org/x/net/context"
 )
 
 var callRoleEnum = graphql.NewEnum(graphql.EnumConfig{
@@ -106,6 +107,9 @@ var callEndpointType = graphql.NewObject(graphql.ObjectConfig{
 
 var callType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Call",
+	Interfaces: []*graphql.Interface{
+		nodeInterfaceType,
+	},
 	Fields: graphql.Fields{
 		"id":                    &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
 		"accessToken":           &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
@@ -157,6 +161,15 @@ var callParticipantType = graphql.NewObject(graphql.ObjectConfig{
 		return ok
 	},
 })
+
+func lookupCall(ctx context.Context, ram raccess.ResourceAccessor, id string) (*models.Call, error) {
+	call, err := ram.IPCall(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	acc := gqlctx.Account(ctx)
+	return transformCallToResponse(call, acc.ID)
+}
 
 func callableEndpointsForEntity(ent *directory.Entity) ([]*models.CallEndpoint, error) {
 	var endpoints []*models.CallEndpoint
