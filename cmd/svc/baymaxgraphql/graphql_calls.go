@@ -180,7 +180,7 @@ func callableEndpointsForEntity(ent *directory.Entity) ([]*models.CallEndpoint, 
 	return endpoints, nil
 }
 
-func transformCallToResponse(call *excomms.IPCall, accountID string) (*models.Call, error) {
+func transformCallToResponse(call *excomms.IPCall) (*models.Call, error) {
 	if len(call.Participants) != 2 {
 		return nil, fmt.Errorf("Expected 2 participants for call %s, got %d", call.ID, len(call.Participants))
 	}
@@ -198,13 +198,16 @@ func transformCallToResponse(call *excomms.IPCall, accountID string) (*models.Ca
 			TwilioIdentity: p.Identity,
 		}
 		state := p.State.String()
-		if p.AccountID == accountID {
+		switch p.Role {
+		case excomms.IPCallParticipantRole_CALLER:
 			c.Caller = par
 			c.CallerState = state
 			c.Role = p.Role.String()
-		} else {
+		case excomms.IPCallParticipantRole_RECIPIENT:
 			c.Recipients = append(c.Recipients, par)
 			c.RecipientsStates = append(c.RecipientsStates, state)
+		default:
+			return nil, fmt.Errorf("Unknown ipcall participant role '%s'", p.Role)
 		}
 	}
 	return c, nil

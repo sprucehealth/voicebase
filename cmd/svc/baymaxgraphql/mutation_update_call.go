@@ -110,7 +110,7 @@ var updateCallMutation = &graphql.Field{
 			return nil, errors.InternalError(ctx, err)
 		}
 
-		call, err := transformCallToResponse(res.Call, acc.ID)
+		call, err := transformCallToResponse(res.Call)
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}
