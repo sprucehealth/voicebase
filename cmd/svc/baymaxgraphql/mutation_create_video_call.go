@@ -153,7 +153,7 @@ var createVideoCallMutation = &graphql.Field{
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}
-		call, err := transformCallToResponse(res.Call)
+		call, err := transformCallToResponse(res.Call, acc.ID)
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}
