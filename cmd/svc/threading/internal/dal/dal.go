@@ -657,6 +657,7 @@ func (d *dal) Threads(ctx context.Context, ids []models.ThreadID, opts ...QueryO
 
 	var forUpdateQuery string
 	if queryOptions(opts).Has(ForUpdate) {
+		models.SortThreadID(ids)
 		forUpdateQuery = " FOR UPDATE"
 	}
 	rows, err := d.db.Query(`
@@ -740,6 +741,7 @@ func (d *dal) ThreadEntities(ctx context.Context, threadIDs []models.ThreadID, e
 
 	var sfu string
 	if queryOptions(opts).Has(ForUpdate) {
+		models.SortThreadID(threadIDs)
 		sfu = "ORDER BY thread_id FOR UPDATE"
 	}
 	values := make([]interface{}, len(threadIDs)+1)
