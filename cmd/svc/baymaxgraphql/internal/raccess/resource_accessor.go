@@ -612,13 +612,14 @@ func (m *resourceAccessor) EntitiesByContact(ctx context.Context, req *directory
 }
 
 func (m *resourceAccessor) Entities(ctx context.Context, req *directory.LookupEntitiesRequest, opts ...EntityQueryOption) ([]*directory.Entity, error) {
-	acc := gqlctx.Account(ctx)
-	if acc == nil {
-		return nil, errors.ErrNotAuthenticated(ctx)
-	}
 
 	// auth check
 	if !entityQueryOptions(opts).has(EntityQueryOptionUnathorized) {
+		acc := gqlctx.Account(ctx)
+		if acc == nil {
+			return nil, errors.ErrNotAuthenticated(ctx)
+		}
+
 		switch req.LookupKeyType {
 		case directory.LookupEntitiesRequest_ENTITY_ID:
 			if err := m.canAccessResource(ctx, req.GetEntityID(), m.orgsForEntity); err != nil {
