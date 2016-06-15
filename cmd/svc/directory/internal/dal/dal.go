@@ -778,7 +778,7 @@ func (d *dal) InsertEntity(model *Entity) (EntityID, error) {
 		`INSERT INTO entity
           (display_name, first_name, group_name, type, status,
 		   id, middle_initial, last_name, note, short_title,
-		   long_title, gender, dob, account_id)
+		   long_title, gender, dob, account_id, image_media_id)
           VALUES
 		  (?, ?, ?, ?, ?,
 		   ?, ?, ?, ?, ?,
