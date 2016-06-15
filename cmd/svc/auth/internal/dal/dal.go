@@ -960,7 +960,7 @@ func (d *dal) VerificationCode(token string) (*VerificationCode, error) {
 }
 
 func (d *dal) VerificationCodesByValue(codeType VerificationCodeType, verifiedValue string) ([]*VerificationCode, error) {
-	rows, err := d.db.Query(selectVerificationCode+` WHERE verification_type = ? AND verified_value = ?`, codeType, verifiedValue)
+	rows, err := d.db.Query(selectVerificationCode+` WHERE verification_type = ? AND verified_value = ?`, codeType.String(), verifiedValue)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
