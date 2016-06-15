@@ -52,6 +52,8 @@ cd $MONOREPO_PATH
 
 go version
 go get github.com/golang/lint/golint
+go get github.com/axw/gocov/...
+go get github.com/AlekSi/gocov-xml
 
 # Find all directories that contain Go files (all packages). This lets us
 # exclude everything under the vendoring directory.
@@ -101,12 +103,7 @@ if [[ ! -z "$FULLCOVERAGE" ]]; then
             go test -cover -covermode=set -coverprofile="$PKG/cover.out" -test.parallel 4 "$PKG"
         fi
     done
-elif [[ ! -z "$NO_INTEGRATION_TESTS" ]]; then
-    # for PKG in $PKGS; do
-    #     if [[ ! "$PKG" == *"/test/"* ]]; then
-    #         go test -cover -covermode=set -coverprofile="$PKG/cover.out" -test.parallel 4 "$PKG"
-    #     fi
-    # done
+elif [[ ! -z "$NO_COVERAGE" ]]; then
     TESTPKGS=""
     for PKG in $PKGS; do
         if [[ ! "$PKG" == *"/test/"* ]]; then
@@ -117,9 +114,12 @@ elif [[ ! -z "$NO_INTEGRATION_TESTS" ]]; then
 else
     for PKG in $PKGS; do
         if [[ "$PKG" == *"/test/"* ]]; then
-            go test -test.parallel 4 "$PKG"
+            if [[ -z "$NO_INTEGRATION_TESTS" ]]; then
+                go test -test.parallel 4 "$PKG"
+            fi
         else
-            go test -cover -covermode=set -coverprofile="$PKG/cover.out" -test.parallel 4 "$PKG"
+            go test -coverprofile="$PKG/cover.out" -test.parallel 4 "$PKG"
+            gocov convert "$PKG/cover.out" | gocov-xml | sed 's=workspace/go/src/github.com/sprucehealth/backend/==g' > "$PKG/coverage.xml"
         fi
     done
 fi

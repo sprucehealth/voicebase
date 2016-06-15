@@ -10,8 +10,9 @@ export GIT_SSH="./ssh"
 
 # Remove ignored files
 git clean -X -f
-# Remove cover.out files (not always deleted by git clean if a directory is removed)
+# Remove code coverage files (not always deleted by git clean if a directory is removed)
 find . -name 'cover.out' -exec rm '{}' \;
+find . -name 'coverage.xml' -exec rm '{}' \;
 
 docker build --rm --force-rm -t $NAME docker-ci
 
