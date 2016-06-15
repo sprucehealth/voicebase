@@ -14,7 +14,6 @@ import (
 	dalmock "github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal/mock"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
 	proxynumber "github.com/sprucehealth/backend/cmd/svc/excomms/internal/proxynumber/mock"
-
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/phone"

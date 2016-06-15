@@ -36,7 +36,7 @@ func SyslogHandler(tag string, fmtr Formatter) (Handler, error) {
 	return &syslogHandler{w: w, fmtr: fmtr}, nil
 }
 
-// SplitHandler sends all entries with level above lvl to
+// SplitHandler sends all entries with level priority above lvl to
 // the high handler, and all other entries to the low handler.
 func SplitHandler(lvl Level, low, high Handler) Handler {
 	return &splitHandler{lvl: lvl, low: low, high: high}
@@ -55,13 +55,21 @@ type writerHandler struct {
 
 func (h *writerHandler) Log(e *Entry) error {
 	h.mu.Lock()
+	defer h.mu.Unlock()
 	_, err := h.w.Write(h.fmtr.Format(e))
-	h.mu.Unlock()
 	return err
 }
 
+type syslogWriter interface {
+	Crit(m string) (err error)
+	Debug(m string) (err error)
+	Err(m string) (err error)
+	Info(m string) (err error)
+	Warning(m string) (err error)
+}
+
 type syslogHandler struct {
-	w    *syslog.Writer
+	w    syslogWriter
 	fmtr Formatter
 	mu   sync.Mutex
 }
@@ -91,7 +99,7 @@ type splitHandler struct {
 }
 
 func (h *splitHandler) Log(e *Entry) error {
-	if e.Lvl <= h.lvl {
+	if e.Lvl > h.lvl {
 		return h.low.Log(e)
 	}
 	return h.high.Log(e)

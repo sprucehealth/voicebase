@@ -192,8 +192,11 @@ func initialsForEntity(e *models.Entity) string {
 
 func remoteAddrFromRequest(r *http.Request, behindProxy bool) string {
 	if behindProxy {
-		addrs := strings.Split(r.Header.Get("X-Forwarded-For"), ",")
-		return addrs[0]
+		h := r.Header.Get("X-Forwarded-For")
+		if ix := strings.IndexByte(h, ','); ix > 0 {
+			return h[:ix]
+		}
+		return h
 	}
 	return r.RemoteAddr
 }

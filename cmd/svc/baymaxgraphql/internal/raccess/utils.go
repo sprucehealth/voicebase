@@ -42,7 +42,7 @@ func EntityInOrgForAccountID(ctx context.Context, ram ResourceAccessor, req *dir
 		}
 	}
 
-	return nil, fmt.Errorf("(entity for account %s and org %s)", req.GetExternalID(), orgID)
+	return nil, errors.Trace(fmt.Errorf("Did not find entity for account %s and org %s", req.GetExternalID(), orgID))
 }
 
 // Entity returns a single expected entity for the directory request.
