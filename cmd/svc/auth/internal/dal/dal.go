@@ -47,6 +47,7 @@ type DAL interface {
 	InsertVerificationCode(model *VerificationCode) error
 	UpdateVerificationCode(token string, update *VerificationCodeUpdate) (int64, error)
 	VerificationCode(token string) (*VerificationCode, error)
+	VerificationCodesByValue(codeType VerificationCodeType, verifiedValue string) ([]*VerificationCode, error)
 	DeleteVerificationCode(token string) (int64, error)
 	TwoFactorLogin(accountID AccountID, deviceID string) (*TwoFactorLogin, error)
 	TrackLogin(accountID AccountID, platform device.Platform, deviceID string) error
@@ -956,6 +957,25 @@ func (d *dal) VerificationCode(token string) (*VerificationCode, error) {
 		selectVerificationCode+` WHERE token = ?`, token)
 	model, err := scanVerificationCode(row)
 	return model, errors.Trace(err)
+}
+
+func (d *dal) VerificationCodesByValue(codeType VerificationCodeType, verifiedValue string) ([]*VerificationCode, error) {
+	rows, err := d.db.Query(selectVerificationCode+` WHERE verification_type = ? AND verified_value = ?`, codeType, verifiedValue)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	defer rows.Close()
+
+	var verificationCodes []*VerificationCode
+	for rows.Next() {
+		verificationCode, err := scanVerificationCode(rows)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		verificationCodes = append(verificationCodes, verificationCode)
+	}
+
+	return verificationCodes, errors.Trace(rows.Err())
 }
 
 // DeleteVerificationCode deletes a verification_code record

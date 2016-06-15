@@ -1054,6 +1054,91 @@ func TestCreateVerificationCode(t *testing.T) {
 	var token string
 	var expires uint64
 
+	dl.Expect(mock.NewExpectation(dl.VerificationCodesByValue, dal.VerificationCodeTypePhone, value))
+
+	dl.Expect(mock.NewExpectationFn(dl.InsertVerificationCode, func(p ...interface{}) {
+		test.Assert(t, len(p) == 1, "Expected only 1 argument")
+		vc, ok := p[0].(*dal.VerificationCode)
+		test.Assert(t, ok, "Expected *dal.VerificationCode")
+		test.Assert(t, vc.Token != "", "Expected a non empty token")
+		test.Assert(t, vc.Code != "", "Expected a non empty code")
+		test.Assert(t, vc.Expires.Unix() > time.Now().Unix(), "Expected a code that expires in the future")
+		test.Equals(t, dal.VerificationCodeTypePhone, vc.VerificationType)
+		test.Equals(t, value, vc.VerifiedValue)
+		code = vc.Code
+		token = vc.Token
+		expires = uint64(vc.Expires.Unix())
+	}))
+
+	resp, err := s.CreateVerificationCode(context.Background(), &auth.CreateVerificationCodeRequest{
+		Type:          auth.VerificationCodeType_PHONE,
+		ValueToVerify: value,
+	})
+	test.OK(t, err)
+	test.AssertNotNil(t, resp.VerificationCode)
+	test.Equals(t, token, resp.VerificationCode.Token)
+	test.Equals(t, code, resp.VerificationCode.Code)
+	test.Equals(t, expires, resp.VerificationCode.ExpirationEpoch)
+	test.Equals(t, auth.VerificationCodeType_PHONE, resp.VerificationCode.Type)
+}
+
+func TestCreateVerificationCode_ReturnUnexpiredCode(t *testing.T) {
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
+	value := "myValue"
+	expires := time.Now().Add(time.Hour)
+
+	dl.Expect(mock.NewExpectation(dl.VerificationCodesByValue, dal.VerificationCodeTypePhone, value).WithReturns([]*dal.VerificationCode{
+		{
+			Token:            "123456",
+			Code:             "12345",
+			VerifiedValue:    value,
+			VerificationType: dal.VerificationCodeTypePhone,
+			Expires:          expires,
+		},
+	}, nil))
+
+	resp, err := s.CreateVerificationCode(context.Background(), &auth.CreateVerificationCodeRequest{
+		Type:          auth.VerificationCodeType_PHONE,
+		ValueToVerify: value,
+	})
+	test.OK(t, err)
+	test.AssertNotNil(t, resp.VerificationCode)
+	test.Equals(t, "123456", resp.VerificationCode.Token)
+	test.Equals(t, "12345", resp.VerificationCode.Code)
+	test.Equals(t, uint64(expires.Unix()), resp.VerificationCode.ExpirationEpoch)
+	test.Equals(t, auth.VerificationCodeType_PHONE, resp.VerificationCode.Type)
+}
+
+func TestCreateVerificationCode_SkipExpiredCode(t *testing.T) {
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
+	value := "myValue"
+	var code string
+	var token string
+	var expires uint64
+
+	dl.Expect(mock.NewExpectation(dl.VerificationCodesByValue, dal.VerificationCodeTypePhone, value).WithReturns([]*dal.VerificationCode{
+		{
+			Token:            "123456",
+			Code:             "12345",
+			VerifiedValue:    value,
+			VerificationType: dal.VerificationCodeTypePhone,
+			Expires:          time.Now().Add(-time.Hour),
+		},
+	}, nil))
 	dl.Expect(mock.NewExpectationFn(dl.InsertVerificationCode, func(p ...interface{}) {
 		test.Assert(t, len(p) == 1, "Expected only 1 argument")
 		vc, ok := p[0].(*dal.VerificationCode)
@@ -1273,6 +1358,8 @@ func TestCreatePasswordResetToken(t *testing.T) {
 	dl.Expect(mock.NewExpectation(dl.AccountForEmail, email).WithReturns(&dal.Account{
 		ID: aID1,
 	}, nil))
+
+	dl.Expect(mock.NewExpectation(dl.VerificationCodesByValue, dal.VerificationCodeTypePasswordReset, aID1.String()))
 
 	dl.Expect(mock.NewExpectationFn(dl.InsertVerificationCode, func(p ...interface{}) {
 		test.Assert(t, len(p) == 1, "Expected only 1 argument")

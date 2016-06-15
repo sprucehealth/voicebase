@@ -898,6 +898,29 @@ const (
 )
 
 func generateAndInsertVerificationCode(dl dal.DAL, valueToVerify string, codeType auth.VerificationCodeType, clk clock.Clock) (*auth.VerificationCode, error) {
+
+	vType, err := dal.ParseVerificationCodeType(auth.VerificationCodeType_name[int32(codeType)])
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	// check if there are any unexpired tokens for the codeType and value
+	existingCodes, err := dl.VerificationCodesByValue(vType, valueToVerify)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	for _, code := range existingCodes {
+		// if there are then return the existing code rather than generating a new one.
+		if code.Expires.After(time.Now()) && code.Expires.Sub(time.Now()) > time.Minute {
+			return &auth.VerificationCode{
+				Token:           code.Token,
+				Type:            codeType,
+				Code:            code.Code,
+				ExpirationEpoch: uint64(code.Expires.Unix()),
+			}, nil
+		}
+	}
+
 	token, err := common.GenerateToken()
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -907,11 +930,6 @@ func generateAndInsertVerificationCode(dl dal.DAL, valueToVerify string, codeTyp
 		return nil, errors.Trace(err)
 	}
 	tokenExpiration := clk.Now().Add(defaultVerificationCodeExpiration)
-
-	vType, err := dal.ParseVerificationCodeType(auth.VerificationCodeType_name[int32(codeType)])
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
 
 	// TODO: Remove logging of the code perhaps?
 	golog.Debugf("Inserting verification code %s - with token %s - for value %s - expires %+v.", token, valueToVerify, tokenExpiration)

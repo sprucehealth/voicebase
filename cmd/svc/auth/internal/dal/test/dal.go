@@ -232,6 +232,15 @@ func (dl *mockDAL) VerificationCode(token string) (*dal.VerificationCode, error)
 	return rets[0].(*dal.VerificationCode), mock.SafeError(rets[1])
 }
 
+func (dl *mockDAL) VerificationCodesByValue(codeType dal.VerificationCodeType, value string) ([]*dal.VerificationCode, error) {
+	rets := dl.Record(codeType, value)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].([]*dal.VerificationCode), mock.SafeError(rets[1])
+}
+
 func (dl *mockDAL) DeleteVerificationCode(token string) (int64, error) {
 	rets := dl.Record(token)
 	if len(rets) == 0 {
