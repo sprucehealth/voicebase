@@ -118,9 +118,9 @@ func (c *CachedClient) checkCache(ctx context.Context, key string) []*directory.
 		return nil
 	}
 	es := cache.Get(key)
-	if es != nil {
+	if es != nil && c.statCacheHit != nil {
 		c.statCacheHit.Inc(1)
-	} else {
+	} else if c.statCacheMiss != nil {
 		c.statCacheMiss.Inc(1)
 	}
 	return cache.Get(key)
@@ -177,7 +177,9 @@ func (c *CachedClient) bustCache(ctx context.Context) {
 		golog.Warningf("CachedClient: No entity cache present in context")
 		return
 	}
-	c.statCacheBust.Inc(1)
+	if c.statCacheBust != nil {
+		c.statCacheBust.Inc(1)
+	}
 	cache.Clear()
 }
 

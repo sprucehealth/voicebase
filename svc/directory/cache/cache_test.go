@@ -250,7 +250,8 @@ func TestCachedClientLookupEntities(t *testing.T) {
 
 func TestBustCache(t *testing.T) {
 	ctx := InitEntityCache(context.Background())
-	cache(ctx, "Hello", []*directory.Entity{&directory.Entity{ID: "entity1"}})
-	bustCache(ctx)
-	test.AssertNil(t, checkCache(ctx, "Hello"))
+	cc := &CachedClient{}
+	cc.cache(ctx, "Hello", []*directory.Entity{&directory.Entity{ID: "entity1"}})
+	cc.bustCache(ctx)
+	test.AssertNil(t, cc.checkCache(ctx, "Hello"))
 }
