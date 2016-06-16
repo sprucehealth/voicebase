@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/dbutil"

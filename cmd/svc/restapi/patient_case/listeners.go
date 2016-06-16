@@ -3,18 +3,18 @@ package patient_case
 import (
 	"fmt"
 
-	"github.com/sprucehealth/backend/appevent"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/appevent"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/doctor_treatment_plan"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/messages"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/notify"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/patient"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/patient_visit"
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/doctor_treatment_plan"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/schedmsg"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/mandrill"
-	"github.com/sprucehealth/backend/messages"
-	"github.com/sprucehealth/backend/notify"
-	"github.com/sprucehealth/backend/schedmsg"
 )
 
 const (

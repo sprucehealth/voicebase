@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/backend/libs/test"
 )
 
 func TestIDRegexPattern(t *testing.T) {

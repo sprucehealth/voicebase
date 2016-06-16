@@ -12,8 +12,8 @@ import (
 
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/common/config"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common/config"
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/golog"
 )

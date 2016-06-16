@@ -7,10 +7,10 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/info_intake"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/app_url"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/info_intake"
 )
 
 type doctorInfo struct {

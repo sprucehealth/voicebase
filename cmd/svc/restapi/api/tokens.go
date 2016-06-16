@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/libs/errors"
 )
 

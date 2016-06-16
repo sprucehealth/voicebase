@@ -14,8 +14,8 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/responses"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
+	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
-	"github.com/sprucehealth/backend/test"
 	"golang.org/x/net/context"
 )
 

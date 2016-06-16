@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/libs/model"
+	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/svc/threading"
-	"github.com/sprucehealth/backend/test"
 )
 
 func TestThreadID(t *testing.T) {

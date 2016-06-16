@@ -15,7 +15,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/invite/internal/models"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/ptr"
-	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/backend/libs/test"
 	"golang.org/x/net/context"
 )
 

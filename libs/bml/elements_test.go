@@ -5,7 +5,7 @@ import (
 	"encoding/xml"
 	"testing"
 
-	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/backend/libs/test"
 )
 
 func TestRef(t *testing.T) {

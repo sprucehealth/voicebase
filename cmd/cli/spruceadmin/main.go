@@ -13,8 +13,8 @@ import (
 
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common/config"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/patientcase"
-	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/errors"

@@ -6,12 +6,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/boot"
-	"github.com/sprucehealth/backend/common/config"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/address"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common/config"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/surescripts/pharmacy"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/twilio"
-	"github.com/sprucehealth/backend/surescripts/pharmacy"
 )
 
 type twilioConfig struct {

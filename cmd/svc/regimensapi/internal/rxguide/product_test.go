@@ -6,10 +6,10 @@ import (
 	media "github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/mediautils"
 	rxtest "github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/rxguide/test"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/responses"
+	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/libs/testhelpers/slice"
 	"github.com/sprucehealth/backend/svc/products"
-	"github.com/sprucehealth/backend/test"
 )
 
 func TestProductQueryProducts(t *testing.T) {

@@ -9,17 +9,17 @@ import (
 	"time"
 
 	"github.com/samuel/go-metrics/metrics"
-	"github.com/sprucehealth/backend/attribution/model"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
-	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/attribution/model"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/info_intake"
+	taggingTest "github.com/sprucehealth/backend/cmd/svc/restapi/tagging/test"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/ratelimit"
-	taggingTest "github.com/sprucehealth/backend/tagging/test"
-	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/backend/libs/test"
 	"golang.org/x/net/context"
 )
 

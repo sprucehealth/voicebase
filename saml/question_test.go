@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/libs/ptr"
-	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/backend/libs/test"
 )
 
 // TestQuestionMultiTriage makes sure that different answers can

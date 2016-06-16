@@ -1,10 +1,10 @@
 package response
 
 import (
-	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/app_url"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/patient_case/model"
-	"github.com/sprucehealth/backend/common"
 )
 
 type PatientCaseNote struct {

@@ -5,10 +5,10 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/directory"
 	dmock "github.com/sprucehealth/backend/svc/directory/mock"
-	"github.com/sprucehealth/backend/test"
 )
 
 type tCachedClient struct {

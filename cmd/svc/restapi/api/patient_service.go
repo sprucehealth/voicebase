@@ -8,13 +8,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/pharmacy"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/idgen"
 	"github.com/sprucehealth/backend/libs/transactional/tsql"
-	"github.com/sprucehealth/backend/pharmacy"
 )
 
 func (d *dataService) RegisterPatient(patient *common.Patient) error {

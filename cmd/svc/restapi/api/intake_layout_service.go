@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/info_intake"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/errors"
 )

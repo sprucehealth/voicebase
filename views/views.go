@@ -3,7 +3,7 @@ package views
 import (
 	"fmt"
 
-	"github.com/sprucehealth/backend/app_url"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/app_url"
 )
 
 type TextStyle string

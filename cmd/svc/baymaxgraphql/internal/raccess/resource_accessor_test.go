@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/device/devicectx"
+	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
 	amock "github.com/sprucehealth/backend/svc/auth/mock"
@@ -18,7 +19,6 @@ import (
 	mmock "github.com/sprucehealth/backend/svc/media/mock"
 	"github.com/sprucehealth/backend/svc/threading"
 	tmock "github.com/sprucehealth/backend/svc/threading/mock"
-	"github.com/sprucehealth/backend/test"
 	"golang.org/x/net/context"
 )
 

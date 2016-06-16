@@ -4,12 +4,12 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/libs/awsutil"
+	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/directory"
 	dirmock "github.com/sprucehealth/backend/svc/directory/mock"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/threading"
-	"github.com/sprucehealth/backend/test"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

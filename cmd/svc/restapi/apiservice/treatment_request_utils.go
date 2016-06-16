@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/erx"
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/surescripts"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/surescripts"
 )
 
 func ValidateTreatment(treatment *common.Treatment) error {

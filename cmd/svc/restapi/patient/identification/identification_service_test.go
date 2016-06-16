@@ -3,11 +3,11 @@ package identification
 import (
 	"testing"
 
-	"github.com/sprucehealth/backend/analytics"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/analytics"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
-	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/backend/libs/test"
 )
 
 type mockIdentificationServiceDataAPI struct {

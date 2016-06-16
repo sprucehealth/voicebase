@@ -7,12 +7,12 @@ import (
 	"time"
 
 	"github.com/go-sql-driver/mysql"
-	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
+	pharmacyService "github.com/sprucehealth/backend/cmd/svc/restapi/pharmacy"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/transactional/tsql"
-	pharmacyService "github.com/sprucehealth/backend/pharmacy"
 )
 
 var treatmentQuery = `

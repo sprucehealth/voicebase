@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/backend/libs/test"
 )
 
 func TestHRW(t *testing.T) {

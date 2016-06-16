@@ -14,6 +14,7 @@ import (
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/ptr"
+	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/directory"
 	dirmock "github.com/sprucehealth/backend/svc/directory/mock"
@@ -21,7 +22,6 @@ import (
 	"github.com/sprucehealth/backend/svc/excomms"
 	excommsmock "github.com/sprucehealth/backend/svc/excomms/mock"
 	"github.com/sprucehealth/backend/svc/invite"
-	"github.com/sprucehealth/backend/test"
 )
 
 type sTokenGenerator struct{}

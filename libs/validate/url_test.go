@@ -3,7 +3,7 @@ package validate
 import (
 	"testing"
 
-	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/backend/libs/test"
 )
 
 func TestRemoteHost(t *testing.T) {

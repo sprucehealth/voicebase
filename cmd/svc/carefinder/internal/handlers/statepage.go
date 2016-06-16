@@ -8,11 +8,11 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/response"
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/service"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
-	"github.com/sprucehealth/backend/www"
 	"golang.org/x/net/context"
 )
 

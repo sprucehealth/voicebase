@@ -7,7 +7,7 @@ import (
 
 	"github.com/sprucehealth/backend/libs/dbutil"
 
-	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 )
 
 func (d *dataService) GetItemCost(id int64) (*common.ItemCost, error) {

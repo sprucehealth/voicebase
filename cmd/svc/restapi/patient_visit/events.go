@@ -3,8 +3,8 @@ package patient_visit
 import (
 	"time"
 
-	"github.com/sprucehealth/backend/analytics"
-	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/analytics"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 )
 
 type DiagnosisModifiedEvent struct {

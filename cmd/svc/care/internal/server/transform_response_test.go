@@ -5,10 +5,10 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/client"
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/models"
+	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/media"
 	mediamock "github.com/sprucehealth/backend/svc/media/mock"
-	"github.com/sprucehealth/backend/test"
 )
 
 func TestTransformToResponse_MediaSection(t *testing.T) {

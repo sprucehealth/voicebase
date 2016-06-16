@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/info_intake"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/info_intake"
 )
 
 // db can be used when a function can accept either a *Tx or *DB.

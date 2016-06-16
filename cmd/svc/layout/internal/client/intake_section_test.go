@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/libs/ptr"
+	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/saml"
 	"github.com/sprucehealth/backend/svc/layout"
-	"github.com/sprucehealth/backend/test"
 )
 
 func TestSectionWithTriageScreens(t *testing.T) {

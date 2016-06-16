@@ -11,7 +11,7 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/storage"
-	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/backend/libs/test"
 )
 
 type roundTripper struct {

@@ -10,12 +10,12 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
-	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/test/config"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/ptr"
-	"github.com/sprucehealth/backend/test"
-	"github.com/sprucehealth/backend/test/config"
+	"github.com/sprucehealth/backend/libs/test"
 	"golang.org/x/net/context"
 )
 

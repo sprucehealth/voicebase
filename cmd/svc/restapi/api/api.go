@@ -5,14 +5,14 @@ import (
 	"reflect"
 	"time"
 
-	attributionModel "github.com/sprucehealth/backend/attribution/model"
+	attributionModel "github.com/sprucehealth/backend/cmd/svc/restapi/attribution/model"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/info_intake"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/patient_case/model"
-	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/pharmacy"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/errors"
-	"github.com/sprucehealth/backend/pharmacy"
 )
 
 // Account role types

@@ -3,7 +3,7 @@ package api
 import (
 	"strings"
 
-	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 )
 
 func (d *dataService) SearchDoctors(query string) ([]*common.DoctorSearchResult, error) {

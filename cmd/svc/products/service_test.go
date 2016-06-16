@@ -3,8 +3,8 @@ package products
 import (
 	"testing"
 
+	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/svc/products"
-	"github.com/sprucehealth/backend/test"
 )
 
 type testDAL struct {

@@ -6,8 +6,8 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/sprucehealth/backend/libs/ptr"
+	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
-	"github.com/sprucehealth/backend/test"
 )
 
 var clientConfig = &ClientConfig{

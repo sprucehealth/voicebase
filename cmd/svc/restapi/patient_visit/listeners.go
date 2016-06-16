@@ -4,20 +4,20 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sprucehealth/backend/cmd/svc/restapi/tagging"
 	"github.com/sprucehealth/backend/environment"
-	"github.com/sprucehealth/backend/tagging"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/cost"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/doctor_treatment_plan"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/info_intake"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/patient"
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/cost"
-	"github.com/sprucehealth/backend/doctor_treatment_plan"
-	"github.com/sprucehealth/backend/info_intake"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/schedmsg"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
-	"github.com/sprucehealth/backend/schedmsg"
 )
 
 const (

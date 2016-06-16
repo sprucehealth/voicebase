@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/device"
-	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/backend/libs/test"
 	"golang.org/x/net/context"
 )
 

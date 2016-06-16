@@ -3,7 +3,7 @@ package bml
 import (
 	"testing"
 
-	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/backend/libs/test"
 )
 
 func TestFormat(t *testing.T) {

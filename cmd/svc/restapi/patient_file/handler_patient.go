@@ -3,14 +3,14 @@ package patient_file
 import (
 	"net/http"
 
-	"github.com/sprucehealth/backend/address"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/address"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
-	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/responses"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/surescripts"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"github.com/sprucehealth/backend/responses"
-	"github.com/sprucehealth/backend/surescripts"
 	"golang.org/x/net/context"
 )
 

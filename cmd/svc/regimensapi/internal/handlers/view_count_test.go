@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/libs/mux"
-	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/backend/libs/test"
 	"golang.org/x/net/context"
 )
 

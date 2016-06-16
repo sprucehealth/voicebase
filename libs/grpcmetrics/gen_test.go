@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/samuel/go-metrics/metrics"
-	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/backend/libs/test"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )

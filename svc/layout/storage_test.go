@@ -2,8 +2,8 @@ package layout
 
 import (
 	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/visitreview"
-	"github.com/sprucehealth/backend/test"
 
 	"testing"
 )

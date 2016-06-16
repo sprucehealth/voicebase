@@ -1,6 +1,6 @@
 package api
 
-import "github.com/sprucehealth/backend/common"
+import "github.com/sprucehealth/backend/cmd/svc/restapi/common"
 
 type PatientIntake struct {
 	PatientID      common.PatientID

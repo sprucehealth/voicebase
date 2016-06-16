@@ -7,13 +7,13 @@ import (
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/directory"
 	directorymock "github.com/sprucehealth/backend/svc/directory/mock"
 	"github.com/sprucehealth/backend/svc/operational"
 	"github.com/sprucehealth/backend/svc/threading"
 	threadingmock "github.com/sprucehealth/backend/svc/threading/mock"
-	"github.com/sprucehealth/backend/test"
 	"golang.org/x/net/context"
 )
 

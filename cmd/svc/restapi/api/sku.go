@@ -3,7 +3,7 @@ package api
 import (
 	"database/sql"
 
-	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 )
 
 func (d *dataService) SKUForPathway(pathwayTag string, category common.SKUCategoryType) (*common.SKU, error) {

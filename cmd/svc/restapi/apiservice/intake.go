@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 )
 
 type AnswerItem struct {

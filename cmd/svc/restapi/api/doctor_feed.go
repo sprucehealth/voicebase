@@ -4,8 +4,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/sprucehealth/backend/app_url"
-	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/app_url"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 )
 
 // Doctor queue event types

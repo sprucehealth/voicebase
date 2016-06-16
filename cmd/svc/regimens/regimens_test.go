@@ -11,9 +11,9 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/ptr"
+	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	rsvc "github.com/sprucehealth/backend/svc/regimens"
-	"github.com/sprucehealth/backend/test"
 )
 
 const (

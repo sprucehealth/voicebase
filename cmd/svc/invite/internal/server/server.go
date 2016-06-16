@@ -15,7 +15,7 @@ import (
 	"github.com/sendgrid/smtpapi-go"
 	"github.com/sprucehealth/backend/cmd/svc/invite/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/invite/internal/models"
-	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/libs/branch"
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/conc"

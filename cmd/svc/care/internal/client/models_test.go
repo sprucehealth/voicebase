@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/libs/ptr"
+	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/svc/layout"
-	"github.com/sprucehealth/backend/test"
 )
 
 func TestParsing(t *testing.T) {

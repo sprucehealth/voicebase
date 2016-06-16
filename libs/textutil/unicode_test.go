@@ -3,7 +3,7 @@ package textutil
 import (
 	"testing"
 
-	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/backend/libs/test"
 )
 
 func TestTruncateUTF8(t *testing.T) {

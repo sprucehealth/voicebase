@@ -8,7 +8,7 @@ import (
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/transactional/tsql"
 
-	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 )
 
 func (o ResourceGuideListOption) Has(opt ResourceGuideListOption) bool {

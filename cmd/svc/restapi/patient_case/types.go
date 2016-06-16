@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/app_url"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/patient"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/errors"
 )
 

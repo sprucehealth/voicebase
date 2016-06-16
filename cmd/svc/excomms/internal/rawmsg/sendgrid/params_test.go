@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/libs/storage"
-	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/backend/libs/test"
 )
 
 func TestAttachmentUpload(t *testing.T) {

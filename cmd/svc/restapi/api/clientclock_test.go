@@ -3,7 +3,7 @@ package api
 import (
 	"testing"
 
-	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/backend/libs/test"
 )
 
 func TestClientClock(t *testing.T) {

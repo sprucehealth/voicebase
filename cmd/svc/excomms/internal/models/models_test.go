@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/libs/phone"
-	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/backend/libs/test"
 )
 
 func TestProxyPhoneNumber_Sort(t *testing.T) {

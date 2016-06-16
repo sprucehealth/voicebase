@@ -11,8 +11,8 @@ import (
 	"github.com/cookieo9/resources-go"
 	"github.com/julienschmidt/httprouter"
 	"github.com/sprucehealth/backend/boot"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/www"
 )
 
 type appConfig struct {

@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/pharmacy"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dosespot"
-	"github.com/sprucehealth/backend/pharmacy"
 )
 
 type StubErxService struct {

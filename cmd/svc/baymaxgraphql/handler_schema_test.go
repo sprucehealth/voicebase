@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/backend/libs/test"
 )
 
 func TestSchemaHandler(t *testing.T) {

@@ -3,12 +3,12 @@ package setupthread
 import (
 	"testing"
 
+	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/events"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/threading"
 	tmock "github.com/sprucehealth/backend/svc/threading/mock"
-	"github.com/sprucehealth/backend/test"
 	"golang.org/x/net/context"
 )
 

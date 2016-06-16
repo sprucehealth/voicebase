@@ -8,11 +8,11 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/handlers"
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/service"
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/yelp"
-	configlib "github.com/sprucehealth/backend/common/config"
+	configlib "github.com/sprucehealth/backend/cmd/svc/restapi/common/config"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
-	"github.com/sprucehealth/backend/www"
 )
 
 func buildCareFinder(c *config) httputil.ContextHandler {

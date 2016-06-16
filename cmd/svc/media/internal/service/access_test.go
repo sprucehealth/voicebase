@@ -7,6 +7,7 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/dal"
 	mock_dl "github.com/sprucehealth/backend/cmd/svc/media/internal/dal/test"
+	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/care"
 	mock_care "github.com/sprucehealth/backend/svc/care/mock"
@@ -14,7 +15,6 @@ import (
 	mock_directory "github.com/sprucehealth/backend/svc/directory/mock"
 	"github.com/sprucehealth/backend/svc/threading"
 	mock_threads "github.com/sprucehealth/backend/svc/threading/mock"
-	"github.com/sprucehealth/backend/test"
 )
 
 type tservice struct {

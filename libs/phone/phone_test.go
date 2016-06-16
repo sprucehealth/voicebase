@@ -3,7 +3,7 @@ package phone
 import (
 	"testing"
 
-	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/backend/libs/test"
 )
 
 func TestNumber_Valid(t *testing.T) {

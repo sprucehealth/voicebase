@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/sprucehealth/backend/attribution/model"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/attribution/model"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/ptr"
 )

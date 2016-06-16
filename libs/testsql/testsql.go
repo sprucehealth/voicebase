@@ -14,7 +14,7 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/libs/dbutil"
-	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/backend/libs/test"
 )
 
 type DB struct {

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	dalmock "github.com/sprucehealth/backend/cmd/svc/operational/internal/dal/mock"
+	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
 	authmock "github.com/sprucehealth/backend/svc/auth/mock"
@@ -12,7 +13,6 @@ import (
 	excommsmock "github.com/sprucehealth/backend/svc/excomms/mock"
 	"github.com/sprucehealth/backend/svc/operational"
 	threadingmock "github.com/sprucehealth/backend/svc/threading/mock"
-	"github.com/sprucehealth/backend/test"
 	"golang.org/x/net/context"
 )
 

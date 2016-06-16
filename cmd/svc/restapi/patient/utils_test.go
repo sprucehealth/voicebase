@@ -6,11 +6,11 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
-	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/info_intake"
 	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/ptr"
-	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/backend/libs/test"
 )
 
 type mockDataAPI_prefillQuestions struct {

@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/sprucehealth/backend/analytics"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/analytics"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/conc"

@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/sprucehealth/backend/app_url"
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/cost/promotions"
-	"github.com/sprucehealth/backend/responses"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/app_url"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/cost/promotions"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/responses"
 )
 
 const (

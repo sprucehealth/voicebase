@@ -5,8 +5,8 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/pharmacy"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"github.com/sprucehealth/backend/pharmacy"
 	"golang.org/x/net/context"
 )
 

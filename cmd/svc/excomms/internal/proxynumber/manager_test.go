@@ -10,8 +10,8 @@ import (
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/ptr"
+	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
-	"github.com/sprucehealth/backend/test"
 )
 
 func TestReserveNumber_NewReservation(t *testing.T) {

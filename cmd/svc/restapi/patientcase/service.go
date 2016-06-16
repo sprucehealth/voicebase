@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/patient_case/model"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"

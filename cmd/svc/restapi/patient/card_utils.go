@@ -4,13 +4,13 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/sprucehealth/backend/address"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/address"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
-	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/surescripts"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/stripe"
-	"github.com/sprucehealth/backend/surescripts"
 )
 
 func deleteCard(

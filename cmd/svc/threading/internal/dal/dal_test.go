@@ -7,8 +7,8 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/models"
 	"github.com/sprucehealth/backend/libs/ptr"
+	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testsql"
-	"github.com/sprucehealth/backend/test"
 	"golang.org/x/net/context"
 )
 

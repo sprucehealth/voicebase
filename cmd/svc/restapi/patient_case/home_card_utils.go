@@ -5,16 +5,16 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/sprucehealth/backend/address"
-	"github.com/sprucehealth/backend/app_url"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/address"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/cost/promotions"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/app_url"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/cost/promotions"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/features"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/feedback"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/responses"
 	"github.com/sprucehealth/backend/device"
-	"github.com/sprucehealth/backend/features"
-	"github.com/sprucehealth/backend/feedback"
 	"github.com/sprucehealth/backend/libs/errors"
-	"github.com/sprucehealth/backend/responses"
 	"golang.org/x/net/context"
 )
 

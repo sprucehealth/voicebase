@@ -7,9 +7,9 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/device/devicectx"
+	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
-	"github.com/sprucehealth/backend/test"
 	"golang.org/x/net/context"
 )
 

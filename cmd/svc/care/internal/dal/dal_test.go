@@ -5,8 +5,8 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/models"
 	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testsql"
-	"github.com/sprucehealth/backend/test"
 )
 
 const schemaGlob = "schema/v*.sql"

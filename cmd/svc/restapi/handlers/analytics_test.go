@@ -12,7 +12,7 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/samuel/go-metrics/metrics"
-	"github.com/sprucehealth/backend/analytics"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/analytics"
 )
 
 type testPublisher struct {

@@ -8,11 +8,11 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/patient_case/model"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/patient_case/response"
-	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"github.com/sprucehealth/backend/www"
 	"github.com/sprucehealth/schema"
 	"golang.org/x/net/context"
 )

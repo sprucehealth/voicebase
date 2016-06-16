@@ -7,7 +7,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/libs/dbutil"
 )
 

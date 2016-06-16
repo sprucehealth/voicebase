@@ -10,15 +10,15 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
-	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/feedback"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/tagging"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/tagging/model"
 	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/feedback"
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/ptr"
-	"github.com/sprucehealth/backend/tagging"
-	"github.com/sprucehealth/backend/tagging/model"
-	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/backend/libs/test"
 	"golang.org/x/net/context"
 )
 

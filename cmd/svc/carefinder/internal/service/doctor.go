@@ -11,7 +11,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/response"
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/yelp"
-	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"

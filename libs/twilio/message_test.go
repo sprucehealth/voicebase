@@ -2,7 +2,7 @@ package twilio
 
 import (
 	"fmt"
-	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/backend/libs/test"
 	"net/http"
 	"net/url"
 	"reflect"

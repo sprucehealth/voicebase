@@ -11,11 +11,11 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/response"
 
+	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"github.com/sprucehealth/backend/www"
 	"golang.org/x/net/context"
 )
 

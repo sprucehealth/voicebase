@@ -1,7 +1,7 @@
 package worker
 
 import (
-	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/backend/libs/test"
 
 	"testing"
 )

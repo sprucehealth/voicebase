@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/samuel/go-metrics/metrics"
-	"github.com/sprucehealth/backend/analytics"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/analytics"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/dispatch"

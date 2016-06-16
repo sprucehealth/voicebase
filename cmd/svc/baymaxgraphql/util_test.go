@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
-	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/backend/libs/test"
 )
 
 func TestInitialsForEntity(t *testing.T) {

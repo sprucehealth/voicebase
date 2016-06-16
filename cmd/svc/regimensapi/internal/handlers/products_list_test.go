@@ -5,8 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/svc/products"
-	"github.com/sprucehealth/backend/test"
 	"golang.org/x/net/context"
 )
 

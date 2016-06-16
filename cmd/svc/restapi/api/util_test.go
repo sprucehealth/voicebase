@@ -3,8 +3,8 @@ package api
 import (
 	"testing"
 
-	"github.com/sprucehealth/backend/info_intake"
-	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/info_intake"
+	"github.com/sprucehealth/backend/libs/test"
 )
 
 type mockDataAPI_SectionTest struct {

@@ -6,8 +6,8 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
 	"github.com/sprucehealth/backend/libs/clock"
+	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testsql"
-	"github.com/sprucehealth/backend/test"
 	"golang.org/x/net/context"
 )
 

@@ -5,12 +5,12 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/info_intake"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/patient"
-	"github.com/sprucehealth/backend/common"
+	taggingTest "github.com/sprucehealth/backend/cmd/svc/restapi/tagging/test"
 	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/info_intake"
-	taggingTest "github.com/sprucehealth/backend/tagging/test"
-	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/backend/libs/test"
 )
 
 type mockDataAPI_processPatientAnswers struct {

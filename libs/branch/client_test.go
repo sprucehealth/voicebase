@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/rainycape/memcache"
-	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/backend/libs/test"
 )
 
 type recordingTransport struct {

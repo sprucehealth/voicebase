@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/info_intake"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/visitreview"
