@@ -59,6 +59,7 @@ func TestCreateVideoCallMutation(t *testing.T) {
 			Type:               excomms.IPCallType_VIDEO,
 			CallerEntityID:     "entity_1",
 			RecipientEntityIDs: []string{"entity_2"},
+			NetworkType:        excomms.NetworkType_CELLULAR,
 		}).WithReturns(
 		&excomms.InitiateIPCallResponse{
 			Call: &excomms.IPCall{
@@ -66,18 +67,20 @@ func TestCreateVideoCallMutation(t *testing.T) {
 				Token: "token",
 				Participants: []*excomms.IPCallParticipant{
 					{
-						EntityID:  "entity_1",
-						AccountID: "account_1",
-						Identity:  "identity_1",
-						State:     excomms.IPCallState_ACCEPTED,
-						Role:      excomms.IPCallParticipantRole_CALLER,
+						EntityID:    "entity_1",
+						AccountID:   "account_1",
+						Identity:    "identity_1",
+						State:       excomms.IPCallState_ACCEPTED,
+						Role:        excomms.IPCallParticipantRole_CALLER,
+						NetworkType: excomms.NetworkType_CELLULAR,
 					},
 					{
-						EntityID:  "entity_2",
-						AccountID: "account_2",
-						Identity:  "identity_2",
-						State:     excomms.IPCallState_PENDING,
-						Role:      excomms.IPCallParticipantRole_RECIPIENT,
+						EntityID:    "entity_2",
+						AccountID:   "account_2",
+						Identity:    "identity_2",
+						State:       excomms.IPCallState_PENDING,
+						Role:        excomms.IPCallParticipantRole_RECIPIENT,
+						NetworkType: excomms.NetworkType_UNKNOWN,
 					},
 				},
 			},
@@ -95,6 +98,7 @@ func TestCreateVideoCallMutation(t *testing.T) {
 			createVideoCall(input: {
 				organizationID: "org",
 				recipientCallEndpointIDs: ["entity_2"],
+				networkType: CELLULAR,
 			}) {
 				success
 				call {
@@ -104,10 +108,12 @@ func TestCreateVideoCallMutation(t *testing.T) {
 					caller {
 						state
 						twilioIdentity
+						networkType
 					}
 					recipients {
 						state
 						twilioIdentity
+						networkType
 					}
 					allowVideo
 					videoEnabledByDefault
@@ -121,11 +127,13 @@ func TestCreateVideoCallMutation(t *testing.T) {
 				"accessToken": "token",
 				"allowVideo": true,
 				"caller": {
+					"networkType": "CELLULAR",
 					"state": "ACCEPTED",
 					"twilioIdentity": "identity_1"
 				},
 				"id": "ipc_123",
 				"recipients": [{
+					"networkType": "UNKNOWN",
 					"state": "PENDING",
 					"twilioIdentity": "identity_2"
 				}],

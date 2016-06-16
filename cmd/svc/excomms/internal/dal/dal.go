@@ -132,7 +132,7 @@ type DAL interface {
 	UpdateIPCall(ctx context.Context, callID models.IPCallID, pending bool) error
 
 	// UpdateIPCallParticipant updates a participant of an IP call
-	UpdateIPCallParticipant(ctx context.Context, callID models.IPCallID, accountID string, state models.IPCallState) error
+	UpdateIPCallParticipant(ctx context.Context, callID models.IPCallID, accountID string, state models.IPCallState, networkType models.NetworkType) error
 }
 
 type dal struct {

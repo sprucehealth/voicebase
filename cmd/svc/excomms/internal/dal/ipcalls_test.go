@@ -26,18 +26,20 @@ func TestIPCalls(t *testing.T) {
 		Type: models.IPCallTypeVideo,
 		Participants: []*models.IPCallParticipant{
 			{
-				AccountID: "account_1",
-				EntityID:  "entity_1",
-				Identity:  "identity1",
-				Role:      models.IPCallParticipantRoleCaller,
-				State:     models.IPCallStateAccepted,
+				AccountID:   "account_1",
+				EntityID:    "entity_1",
+				Identity:    "identity1",
+				Role:        models.IPCallParticipantRoleCaller,
+				State:       models.IPCallStateAccepted,
+				NetworkType: models.NetworkTypeCellular,
 			},
 			{
-				AccountID: "account_2",
-				EntityID:  "entity_2",
-				Identity:  "identity2",
-				Role:      models.IPCallParticipantRoleRecipient,
-				State:     models.IPCallStatePending,
+				AccountID:   "account_2",
+				EntityID:    "entity_2",
+				Identity:    "identity2",
+				Role:        models.IPCallParticipantRoleRecipient,
+				State:       models.IPCallStatePending,
+				NetworkType: models.NetworkTypeUnknown,
 			},
 		},
 	}
@@ -57,8 +59,9 @@ func TestIPCalls(t *testing.T) {
 	test.Equals(t, 1, len(calls))
 	test.Equals(t, call, calls[0])
 
-	test.OK(t, dal.UpdateIPCallParticipant(ctx, call.ID, "account_2", models.IPCallStateConnected))
+	test.OK(t, dal.UpdateIPCallParticipant(ctx, call.ID, "account_2", models.IPCallStateConnected, models.NetworkTypeWiFi))
 	call.Participants[1].State = models.IPCallStateConnected
+	call.Participants[1].NetworkType = models.NetworkTypeWiFi
 
 	calls, err = dal.PendingIPCallsForAccount(ctx, "account_2")
 	test.OK(t, err)

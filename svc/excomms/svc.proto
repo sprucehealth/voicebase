@@ -232,6 +232,12 @@ enum IPCallState {
 	COMPLETED = 6;
 }
 
+enum NetworkType {
+	UNKNOWN = 0;
+	CELLULAR = 1;
+	WIFI = 2;
+}
+
 message IPCall {
 	string id = 1 [(gogoproto.customname) = "ID"];
 	IPCallType type = 2;
@@ -246,12 +252,14 @@ message IPCallParticipant {
 	IPCallParticipantRole role = 3;
 	IPCallState state = 4;
 	string identity = 5;
+	NetworkType network_type = 6;
 }
 
 message InitiateIPCallRequest {
 	IPCallType type = 1;
 	string caller_entity_id = 2 [(gogoproto.customname) = "CallerEntityID"];
 	repeated string recipient_entity_ids = 3 [(gogoproto.customname) = "RecipientEntityIDs"];
+	NetworkType network_type = 4;
 }
 
 message InitiateIPCallResponse {
@@ -279,6 +287,7 @@ message UpdateIPCallRequest {
 	string ipcall_id = 1 [(gogoproto.customname) = "IPCallID"];
 	string account_id = 2 [(gogoproto.customname) = "AccountID"];
 	IPCallState state = 3;
+	NetworkType network_type = 4;
 }
 
 message UpdateIPCallResponse {

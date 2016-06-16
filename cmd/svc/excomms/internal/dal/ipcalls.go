@@ -71,10 +71,13 @@ func (d *dal) CreateIPCall(ctx context.Context, call *models.IPCall) error {
 		if p.State == "" {
 			return errors.Trace(errors.New("IPCallParticipant state required"))
 		}
+		if p.NetworkType == "" {
+			return errors.Trace(errors.New("IPCallParticipant network type required"))
+		}
 		_, err := tx.Exec(`
 			INSERT INTO ipcall_participant
-				(ipcall_id, account_id, entity_id, identity, role, state)
-			VALUES (?, ?, ?, ?, ?, ?)`, call.ID, p.AccountID, p.EntityID, p.Identity, p.Role, p.State)
+				(ipcall_id, account_id, entity_id, identity, role, state, network_type)
+			VALUES (?, ?, ?, ?, ?, ?, ?)`, call.ID, p.AccountID, p.EntityID, p.Identity, p.Role, p.State, p.NetworkType)
 		if err != nil {
 			tx.Rollback()
 			return errors.Trace(err)
@@ -99,7 +102,7 @@ func (d *dal) IPCall(ctx context.Context, id models.IPCallID, opts ...QueryOptio
 	}
 
 	rows, err := d.db.Query(`
-		SELECT account_id, entity_id, identity, role, state
+		SELECT account_id, entity_id, identity, role, state, network_type
 		FROM ipcall_participant
 		WHERE ipcall_id = ?`+forUpdate, call.ID)
 	if err != nil {
@@ -108,7 +111,7 @@ func (d *dal) IPCall(ctx context.Context, id models.IPCallID, opts ...QueryOptio
 	defer rows.Close()
 	for rows.Next() {
 		cp := &models.IPCallParticipant{}
-		if err := rows.Scan(&cp.AccountID, &cp.EntityID, &cp.Identity, &cp.Role, &cp.State); err != nil {
+		if err := rows.Scan(&cp.AccountID, &cp.EntityID, &cp.Identity, &cp.Role, &cp.State, &cp.NetworkType); err != nil {
 			return nil, errors.Trace(err)
 		}
 		call.Participants = append(call.Participants, cp)
@@ -149,7 +152,7 @@ func (d *dal) PendingIPCallsForAccount(ctx context.Context, accountID string) ([
 		callIDs[i] = c.ID
 	}
 	rows, err = d.db.Query(`
-		SELECT ipcall_id, account_id, entity_id, identity, role, state
+		SELECT ipcall_id, account_id, entity_id, identity, role, state, network_type
 		FROM ipcall_participant
 		WHERE ipcall_id IN (`+dbutil.MySQLArgs(len(callIDs))+`)`,
 		callIDs...)
@@ -160,7 +163,7 @@ func (d *dal) PendingIPCallsForAccount(ctx context.Context, accountID string) ([
 	cID := models.EmptyIPCallID()
 	for rows.Next() {
 		cp := &models.IPCallParticipant{}
-		if err := rows.Scan(&cID, &cp.AccountID, &cp.EntityID, &cp.Identity, &cp.Role, &cp.State); err != nil {
+		if err := rows.Scan(&cID, &cp.AccountID, &cp.EntityID, &cp.Identity, &cp.Role, &cp.State, &cp.NetworkType); err != nil {
 			return nil, errors.Trace(err)
 		}
 		// The list of calls should generally only have 1 item so this should be plenty efficient
@@ -179,7 +182,10 @@ func (d *dal) UpdateIPCall(ctx context.Context, callID models.IPCallID, pending 
 	return errors.Trace(err)
 }
 
-func (d *dal) UpdateIPCallParticipant(ctx context.Context, callID models.IPCallID, accountID string, state models.IPCallState) error {
-	_, err := d.db.Exec(`UPDATE ipcall_participant SET state = ? WHERE ipcall_id = ? AND account_id = ?`, state, callID, accountID)
+func (d *dal) UpdateIPCallParticipant(ctx context.Context, callID models.IPCallID, accountID string, state models.IPCallState, networkType models.NetworkType) error {
+	_, err := d.db.Exec(`
+		UPDATE ipcall_participant
+		SET state = ?, network_type = ?
+		WHERE ipcall_id = ? AND account_id = ?`, state, networkType, callID, accountID)
 	return errors.Trace(err)
 }

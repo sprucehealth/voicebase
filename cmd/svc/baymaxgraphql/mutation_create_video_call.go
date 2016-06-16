@@ -55,6 +55,7 @@ var createCallInputType = graphql.NewInputObject(graphql.InputObjectConfig{
 		"uuid":                     newUUIDInputField(),
 		"organizationID":           &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
 		"recipientCallEndpointIDs": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(graphql.ID)))},
+		"networkType":              &graphql.InputObjectFieldConfig{Type: networkTypeEnum},
 	},
 })
 
@@ -63,6 +64,7 @@ type createCallInput struct {
 	UUID                     string   `gql:"uuid"`
 	OrganizationID           string   `gql:"organizationID,nonempty"`
 	RecipientCallEndpointIDs []string `gql:"recipientCallEndpointIDs"`
+	NetworkType              string   `gql:"networkType"`
 }
 
 type createCallPayload struct {
@@ -145,10 +147,18 @@ var createVideoCallMutation = &graphql.Field{
 			}, nil
 		}
 
+		networkType := excomms.NetworkType_UNKNOWN
+		if in.NetworkType != "" {
+			networkType, err = parseNetworkTypeInput(in.NetworkType)
+			if err != nil {
+				return nil, errors.InternalError(ctx, err)
+			}
+		}
 		res, err := ram.InitiateIPCall(ctx, &excomms.InitiateIPCallRequest{
 			Type:               excomms.IPCallType_VIDEO,
 			CallerEntityID:     caller.ID,
 			RecipientEntityIDs: []string{recipient.ID},
+			NetworkType:        networkType,
 		})
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)

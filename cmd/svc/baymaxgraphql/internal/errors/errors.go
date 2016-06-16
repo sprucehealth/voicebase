@@ -13,13 +13,12 @@ import (
 	"golang.org/x/net/context"
 )
 
-// New returns an error that formats as the given text.
-// Copying this over since this package has the same name
-// as the stdlib package.
-var New = errors.New
-
-// Also expose the commonly used trace functionality from the errors lib package
-var Trace = errors.Trace
+// Expose functionality from the errors pkg for convenience
+var (
+	New    = errors.New
+	Trace  = errors.Trace
+	Errorf = errors.Errorf
+)
 
 type ErrorType string
 

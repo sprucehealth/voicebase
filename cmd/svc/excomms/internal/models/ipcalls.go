@@ -159,6 +159,54 @@ func (s IPCallState) Valid() bool {
 	return false
 }
 
+// NetworkType signifies a type of network connection
+type NetworkType string
+
+const (
+	// NetworkTypeUnknown is an unknown network connection type
+	NetworkTypeUnknown NetworkType = "UNKNOWN"
+	// NetworkTypeCellular is a cellular network
+	NetworkTypeCellular NetworkType = "CELLULAR"
+	// NetworkTypeWiFi is a wi-fi network
+	NetworkTypeWiFi NetworkType = "WIFI"
+)
+
+// Scan implements sql.Scanner and expects src to be nil or of type string or []byte
+func (s *NetworkType) Scan(src interface{}) error {
+	if src == nil {
+		return nil
+	}
+	switch src := src.(type) {
+	case []byte:
+		*s = NetworkType(string(src))
+	case string:
+		*s = NetworkType(src)
+	default:
+		return errors.Trace(fmt.Errorf("unsupported type for NetworkType.Scan: %T", src))
+	}
+	if !s.Valid() {
+		return errors.Trace(fmt.Errorf("'%s' is not a valid NetworkType", string(*s)))
+	}
+	return nil
+}
+
+// Value implements sql/driver.Valuer to allow an ObjectID to be used in an sql query
+func (s NetworkType) Value() (driver.Value, error) {
+	if !s.Valid() {
+		return nil, errors.Trace(fmt.Errorf("'%s' is not a valid NetworkType", string(s)))
+	}
+	return string(s), nil
+}
+
+// Valid returns true iff the value if the value is valid
+func (s NetworkType) Valid() bool {
+	switch s {
+	case NetworkTypeUnknown, NetworkTypeCellular, NetworkTypeWiFi:
+		return true
+	}
+	return false
+}
+
 // IPCallID is the ID for an IPCall
 type IPCallID struct{ model.ObjectID }
 
@@ -205,9 +253,10 @@ type IPCall struct {
 
 // IPCallParticipant is a participant in an IP call
 type IPCallParticipant struct {
-	AccountID string
-	EntityID  string
-	Identity  string
-	Role      IPCallParticipantRole
-	State     IPCallState
+	AccountID   string
+	EntityID    string
+	Identity    string
+	Role        IPCallParticipantRole
+	State       IPCallState
+	NetworkType NetworkType
 }

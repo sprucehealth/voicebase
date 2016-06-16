@@ -265,8 +265,8 @@ func (m *mockDAL) UpdateIPCall(ctx context.Context, callID models.IPCallID, pend
 	return mock.SafeError(rets[0])
 }
 
-func (m *mockDAL) UpdateIPCallParticipant(ctx context.Context, callID models.IPCallID, accountID string, state models.IPCallState) error {
-	rets := m.Record(callID, accountID, state)
+func (m *mockDAL) UpdateIPCallParticipant(ctx context.Context, callID models.IPCallID, accountID string, state models.IPCallState, networkType models.NetworkType) error {
+	rets := m.Record(callID, accountID, state, networkType)
 	if len(rets) == 0 {
 		return nil
 	}

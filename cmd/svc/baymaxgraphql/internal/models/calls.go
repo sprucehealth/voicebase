@@ -23,6 +23,13 @@ const (
 	CallChannelTypeVideo = "VIDEO"
 )
 
+// Network type enum
+const (
+	NetworkTypeUnknown  = "UNKNOWN"
+	NetworkTypeCellular = "CELLULAR"
+	NetworkTypeWiFi     = "WIFI"
+)
+
 // Call represents a video or audio call
 type Call struct {
 	ID                    string             `json:"id"`
@@ -38,17 +45,21 @@ type Call struct {
 type CallParticipant struct {
 	EntityID       string `json:"-"`
 	TwilioIdentity string `json:"twilioIdentity"`
-	State          string `json:"state"` // CallStateEnum
+	State          string `json:"state"`       // CallStateEnum
+	NetworkType    string `json:"networkType"` // NetworkTypeEnum
 }
 
+// CallableIdentity is a person or entity that can be called (voip, video, or POTS)
 type CallableIdentity struct {
 	Name      string          `json:"name"`
 	Endpoints []*CallEndpoint `json:"endpoints"`
 	Entity    *Entity         `json:"entity"`
 }
 
+// CallEndpoint describes a callable endpoint such as video or voice
 type CallEndpoint struct {
-	Channel      string `json:"channel"` // CallChannelType enum
-	DisplayValue string `json:"displayValue"`
-	ValueOrID    string `json:"valueOrID"`
+	Channel                 string `json:"channel"` // CallChannelType enum
+	DisplayValue            string `json:"displayValue"`
+	ValueOrID               string `json:"valueOrID"`
+	LANConnectivityRequired bool   `json:"lanConnectivityRequired"`
 }

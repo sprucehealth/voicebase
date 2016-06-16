@@ -56,6 +56,7 @@ type updateCallInput struct {
 	UUID             string `gql:"uuid"`
 	CallID           string `gql:"callID,nonempty"`
 	CallState        string `gql:"callState,nonempty"`
+	NetworkType      string `gql:"networkType"`
 }
 
 type updateCallPayload struct {
@@ -82,28 +83,22 @@ var updateCallMutation = &graphql.Field{
 			return nil, errors.InternalError(ctx, err)
 		}
 
-		var state excomms.IPCallState
-		switch in.CallState {
-		default:
-			return nil, errors.InternalError(ctx, errors.New("Unknown state "+in.CallState))
-		case models.CallStatePending:
-			state = excomms.IPCallState_PENDING
-		case models.CallStateAccepted:
-			state = excomms.IPCallState_ACCEPTED
-		case models.CallStateDeclined:
-			state = excomms.IPCallState_DECLINED
-		case models.CallStateConnected:
-			state = excomms.IPCallState_CONNECTED
-		case models.CallStateFailed:
-			state = excomms.IPCallState_FAILED
-		case models.CallStateCompleted:
-			state = excomms.IPCallState_COMPLETED
+		state, err := parseCallStateInput(in.CallState)
+		if err != nil {
+			return nil, errors.InternalError(ctx, err)
 		}
-
+		networkType := excomms.NetworkType_UNKNOWN
+		if in.NetworkType != "" {
+			networkType, err = parseNetworkTypeInput(in.NetworkType)
+			if err != nil {
+				return nil, errors.InternalError(ctx, err)
+			}
+		}
 		res, err := ram.UpdateIPCall(ctx, &excomms.UpdateIPCallRequest{
-			IPCallID:  in.CallID,
-			AccountID: acc.ID,
-			State:     state,
+			IPCallID:    in.CallID,
+			AccountID:   acc.ID,
+			State:       state,
+			NetworkType: networkType,
 		})
 		// TODO: handle invalid state transition errors specifically
 		if err != nil {

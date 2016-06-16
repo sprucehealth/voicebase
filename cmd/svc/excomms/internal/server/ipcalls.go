@@ -3,7 +3,6 @@ package server
 import (
 	"crypto/rand"
 	"encoding/base64"
-	"fmt"
 	"io"
 
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
@@ -107,9 +106,14 @@ func (e *excommsService) InitiateIPCall(ctx context.Context, req *excomms.Initia
 			p.Role = models.IPCallParticipantRoleCaller
 			p.State = models.IPCallStateAccepted
 			callerPar = p
+			p.NetworkType, err = transformNetworkTypeToModel(req.NetworkType)
+			if err != nil {
+				return nil, grpcErrorf(codes.InvalidArgument, err.Error())
+			}
 		} else {
 			p.Role = models.IPCallParticipantRoleRecipient
 			p.State = models.IPCallStatePending
+			p.NetworkType = models.NetworkTypeUnknown
 		}
 		call.Participants = append(call.Participants, p)
 	}
@@ -224,6 +228,10 @@ func (e *excommsService) UpdateIPCall(ctx context.Context, req *excomms.UpdateIP
 	if newState == models.IPCallStatePending {
 		return nil, grpcErrorf(codes.InvalidArgument, "Cannot transition to the PENDING State")
 	}
+	networkType, err := transformNetworkTypeToModel(req.NetworkType)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
+	}
 	var call *models.IPCall
 	var par *models.IPCallParticipant
 	err = e.dal.Transact(func(dl dal.DAL) error {
@@ -252,7 +260,7 @@ func (e *excommsService) UpdateIPCall(ctx context.Context, req *excomms.UpdateIP
 		}
 		// Update the participant so we don't have to refetch when returning the response
 		par.State = newState
-		if err := e.dal.UpdateIPCallParticipant(ctx, callID, req.AccountID, newState); err != nil {
+		if err := e.dal.UpdateIPCallParticipant(ctx, callID, req.AccountID, newState, networkType); err != nil {
 			return errors.Trace(err)
 		}
 		if call.Pending {
@@ -299,7 +307,7 @@ func (e *excommsService) transformIPCallToResponse(call *models.IPCall, par *mod
 	case models.IPCallTypeAudio:
 		c.Type = excomms.IPCallType_AUDIO
 	default:
-		return nil, errors.Trace(fmt.Errorf("unknown call type %s for call %s", call.Type, call.ID))
+		return nil, errors.Errorf("unknown call type %s for call %s", call.Type, call.ID)
 	}
 	for _, p := range call.Participants {
 		cp := &excomms.IPCallParticipant{
@@ -313,7 +321,7 @@ func (e *excommsService) transformIPCallToResponse(call *models.IPCall, par *mod
 		case models.IPCallParticipantRoleRecipient:
 			cp.Role = excomms.IPCallParticipantRole_RECIPIENT
 		default:
-			return nil, errors.Trace(fmt.Errorf("unknown role %s for ipcall %s participant account %s", p.Role, call.ID, p.AccountID))
+			return nil, errors.Errorf("unknown role %s for ipcall %s participant account %s", p.Role, call.ID, p.AccountID)
 		}
 		switch p.State {
 		case models.IPCallStateAccepted:
@@ -329,7 +337,17 @@ func (e *excommsService) transformIPCallToResponse(call *models.IPCall, par *mod
 		case models.IPCallStatePending:
 			cp.State = excomms.IPCallState_PENDING
 		default:
-			return nil, errors.Trace(fmt.Errorf("unknown state %s for ipcall %s participant account %s", p.State, call.ID, p.AccountID))
+			return nil, errors.Errorf("unknown state %s for ipcall %s participant account %s", p.State, call.ID, p.AccountID)
+		}
+		switch p.NetworkType {
+		case models.NetworkTypeUnknown:
+			cp.NetworkType = excomms.NetworkType_UNKNOWN
+		case models.NetworkTypeCellular:
+			cp.NetworkType = excomms.NetworkType_CELLULAR
+		case models.NetworkTypeWiFi:
+			cp.NetworkType = excomms.NetworkType_WIFI
+		default:
+			return nil, errors.Errorf("unknown network type %s for ipcall %s participant account %s", p.NetworkType, call.ID, p.AccountID)
 		}
 		c.Participants = append(c.Participants, cp)
 	}
@@ -351,7 +369,19 @@ func transformIPCallStateToModel(state excomms.IPCallState) (models.IPCallState,
 	case excomms.IPCallState_PENDING:
 		return models.IPCallStatePending, nil
 	}
-	return "", errors.Trace(fmt.Errorf("unknown ipcall state %s", state))
+	return "", errors.Errorf("unknown ipcall state %s", state)
+}
+
+func transformNetworkTypeToModel(nt excomms.NetworkType) (models.NetworkType, error) {
+	switch nt {
+	case excomms.NetworkType_UNKNOWN:
+		return models.NetworkTypeUnknown, nil
+	case excomms.NetworkType_CELLULAR:
+		return models.NetworkTypeCellular, nil
+	case excomms.NetworkType_WIFI:
+		return models.NetworkTypeWiFi, nil
+	}
+	return "", errors.Errorf("unknown network type %s", nt)
 }
 
 func generateIPCallToken(identity, configProfileSID string) *twilio.AccessToken {

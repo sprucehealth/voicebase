@@ -18,6 +18,24 @@ import (
 	"golang.org/x/net/context"
 )
 
+var networkTypeEnum = graphql.NewEnum(graphql.EnumConfig{
+	Name: "NetworkType",
+	Values: graphql.EnumValueConfigMap{
+		models.NetworkTypeUnknown: &graphql.EnumValueConfig{
+			Value:       models.NetworkTypeUnknown,
+			Description: "Unknown network connection",
+		},
+		models.NetworkTypeCellular: &graphql.EnumValueConfig{
+			Value:       models.NetworkTypeCellular,
+			Description: "Cellular network connection",
+		},
+		models.NetworkTypeWiFi: &graphql.EnumValueConfig{
+			Value:       models.NetworkTypeWiFi,
+			Description: "Wi-Fi network connection",
+		},
+	},
+})
+
 var callRoleEnum = graphql.NewEnum(graphql.EnumConfig{
 	Name: "CallRole",
 	Values: graphql.EnumValueConfigMap{
@@ -96,9 +114,10 @@ var callableIdentityType = graphql.NewObject(graphql.ObjectConfig{
 var callEndpointType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "CallEndpoint",
 	Fields: graphql.Fields{
-		"channel":      &graphql.Field{Type: graphql.NewNonNull(callChannelTypeEnum)},
-		"displayValue": &graphql.Field{Type: graphql.String},
-		"valueOrID":    &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"channel":                 &graphql.Field{Type: graphql.NewNonNull(callChannelTypeEnum)},
+		"displayValue":            &graphql.Field{Type: graphql.String},
+		"valueOrID":               &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"lanConnectivityRequired": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 	},
 	IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 		_, ok := value.(*models.CallEndpoint)
@@ -155,6 +174,7 @@ var callParticipantType = graphql.NewObject(graphql.ObjectConfig{
 		},
 		"state":          &graphql.Field{Type: graphql.NewNonNull(callStateEnum)},
 		"twilioIdentity": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"networkType":    &graphql.Field{Type: graphql.NewNonNull(networkTypeEnum)},
 	},
 	IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 		_, ok := value.(*models.CallParticipant)
@@ -174,7 +194,11 @@ func lookupCall(ctx context.Context, ram raccess.ResourceAccessor, id string) (*
 func callableEndpointsForEntity(ent *directory.Entity) ([]*models.CallEndpoint, error) {
 	var endpoints []*models.CallEndpoint
 	if ent.Type == directory.EntityType_PATIENT || (ent.Type == directory.EntityType_INTERNAL && !environment.IsProd() && !environment.IsTest()) {
-		endpoints = append(endpoints, &models.CallEndpoint{Channel: models.CallChannelTypeVideo, ValueOrID: ent.ID})
+		endpoints = append(endpoints, &models.CallEndpoint{
+			Channel:                 models.CallChannelTypeVideo,
+			ValueOrID:               ent.ID,
+			LANConnectivityRequired: true,
+		})
 	}
 	for _, c := range ent.Contacts {
 		if c.ContactType == directory.ContactType_PHONE {
@@ -209,6 +233,7 @@ func transformCallToResponse(call *excomms.IPCall, accountID string) (*models.Ca
 			EntityID:       p.EntityID,
 			TwilioIdentity: p.Identity,
 			State:          p.State.String(),
+			NetworkType:    p.NetworkType.String(),
 		}
 		switch p.Role {
 		case excomms.IPCallParticipantRole_CALLER:
@@ -223,4 +248,34 @@ func transformCallToResponse(call *excomms.IPCall, accountID string) (*models.Ca
 		}
 	}
 	return c, nil
+}
+
+func parseNetworkTypeInput(nt string) (excomms.NetworkType, error) {
+	switch nt {
+	case models.NetworkTypeUnknown:
+		return excomms.NetworkType_UNKNOWN, nil
+	case models.NetworkTypeCellular:
+		return excomms.NetworkType_CELLULAR, nil
+	case models.NetworkTypeWiFi:
+		return excomms.NetworkType_WIFI, nil
+	}
+	return excomms.NetworkType_UNKNOWN, errors.Errorf("unknown network type %s", nt)
+}
+
+func parseCallStateInput(cs string) (excomms.IPCallState, error) {
+	switch cs {
+	case models.CallStatePending:
+		return excomms.IPCallState_PENDING, nil
+	case models.CallStateAccepted:
+		return excomms.IPCallState_ACCEPTED, nil
+	case models.CallStateDeclined:
+		return excomms.IPCallState_DECLINED, nil
+	case models.CallStateConnected:
+		return excomms.IPCallState_CONNECTED, nil
+	case models.CallStateFailed:
+		return excomms.IPCallState_FAILED, nil
+	case models.CallStateCompleted:
+		return excomms.IPCallState_COMPLETED, nil
+	}
+	return excomms.IPCallState_INVALID_IPCALL_STATE, errors.Errorf("unknown call state %s", cs)
 }
