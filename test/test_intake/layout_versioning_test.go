@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/encoding"

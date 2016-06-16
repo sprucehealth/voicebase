@@ -7,8 +7,8 @@ import (
 	"net/url"
 
 	"github.com/samuel/go-metrics/metrics"
-	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/auth"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/libs/errors"

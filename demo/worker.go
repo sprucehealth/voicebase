@@ -8,15 +8,15 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiclient"
-	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
+	patientAPIService "github.com/sprucehealth/backend/cmd/svc/restapi/patient"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/patient_visit"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/golog"
-	patientAPIService "github.com/sprucehealth/backend/patient"
-	"github.com/sprucehealth/backend/patient_visit"
 )
 
 type Worker struct {

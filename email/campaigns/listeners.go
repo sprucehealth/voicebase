@@ -3,7 +3,9 @@ package campaigns
 import (
 	"fmt"
 
-	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/patient"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/patient_visit"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/email"
@@ -12,8 +14,6 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/mandrill"
-	"github.com/sprucehealth/backend/patient"
-	"github.com/sprucehealth/backend/patient_visit"
 )
 
 var welcomeEmailEnabledDef = &cfg.ValueDef{

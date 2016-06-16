@@ -39,7 +39,6 @@ var (
 	flagSNSTopicARN        = flag.String("sns_topic_arn", "", "SNS topic ARN to publish new messages to")
 	flagSQSNotificationURL = flag.String("sqs_notification_url", "", "the sqs url for notification messages")
 	flagSQSEventsURL       = flag.String("sqs_events_url", "", "SQS URL for events queue")
-	flagSQSThreadingURL    = flag.String("sqs_threading_url", "", "SQS URL for threading queue")
 	flagDirectoryAddr      = flag.String("directory_addr", "", "host:port of directory service")
 	flagWebDomain          = flag.String("web_domain", "", "Domain of the website")
 	flagKMSKeyARN          = flag.String("kms_key_arn", "", "the arn of the master key that should be used to encrypt outbound and decrypt inbound data")

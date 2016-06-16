@@ -3,8 +3,8 @@ package test_ma
 import (
 	"testing"
 
-	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/doctor_queue"
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/test"

@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice/apipaths"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/diagnosis/handlers"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"

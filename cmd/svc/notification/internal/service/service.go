@@ -2,7 +2,6 @@ package service
 
 import (
 	"encoding/json"
-	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -18,7 +17,6 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/worker"
-	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/settings"
@@ -342,21 +340,6 @@ func (s *service) sendPushNotificationToExternalGroupID(externalGroupID string, 
 		}
 	}
 	return nil
-}
-
-func accountIDsFromExternalIDs(eIDs []*directory.ExternalID) []string {
-	var accountIDs []string
-	for _, eID := range eIDs {
-		i := strings.IndexByte(eID.ID, '_')
-		if i != -1 {
-			prefix := eID.ID[:(i + 1)]
-			switch prefix {
-			case auth.AccountIDPrefix:
-				accountIDs = append(accountIDs, eID.ID)
-			}
-		}
-	}
-	return accountIDs
 }
 
 // http://docs.aws.amazon.com/sns/latest/dg/mobile-push-send-custommessage.html

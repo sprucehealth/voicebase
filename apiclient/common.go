@@ -9,9 +9,9 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/appevent"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice/apipaths"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/handlers"
 	"github.com/sprucehealth/backend/passreset"
 )

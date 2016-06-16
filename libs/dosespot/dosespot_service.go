@@ -63,7 +63,6 @@ var doseSpotAPIActions = map[doseSpotAPIID]string{
 
 const (
 	resultOk = "OK"
-	prn      = "PRN"
 )
 
 func New(clinicID, userID int64, clinicKey, soapEndpoint, apiEndpoint string, statsRegistry metrics.Registry) *Service {

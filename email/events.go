@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/analytics"
-	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 )
 
 type SendEvent struct {

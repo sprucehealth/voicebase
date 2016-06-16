@@ -37,6 +37,16 @@ func init() {
 	conc.Testing = true
 }
 
+type mockIDGen struct{}
+
+func newMockIDGen() idGenerator {
+	return &mockIDGen{}
+}
+
+func (*mockIDGen) NewID() (uint64, error) {
+	return uint64(1), nil
+}
+
 type mockAvailablePhoneNumberService_Excomms struct {
 	twilio.AvailablephoneNumbersIFace
 	*mock.Expector

@@ -3,8 +3,8 @@ package promotions
 import (
 	"time"
 
-	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/app_url"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/common"
 )
 

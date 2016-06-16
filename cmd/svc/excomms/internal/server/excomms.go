@@ -61,6 +61,7 @@ type excommsService struct {
 	signer               *urlutil.Signer
 	httpClient           httputil.Client
 	notificationClient   notification.Client
+	genIPCallIdentity    func() (string, error)
 }
 
 func NewService(
@@ -100,6 +101,7 @@ func NewService(
 		signer:               signer,
 		httpClient:           &httputil.DefaultClient{},
 		notificationClient:   notificationClient,
+		genIPCallIdentity:    generateIPCallIdentity,
 	}
 	return es
 }
@@ -270,7 +272,7 @@ func (e *excommsService) DeprovisionPhoneNumber(ctx context.Context, in *excomms
 	rowsUpdated, err := e.dal.UpdateProvisionedEndpoint(in.PhoneNumber, models.EndpointTypePhone, &dal.ProvisionedEndpointUpdate{
 		Deprovisioned:          ptr.Bool(true),
 		DeprovisionedTimestamp: ptr.Time(e.clock.Now()),
-		DeprovisionedReason:    ptr.String(in.Reason),
+		DeprovisionedReason:    &in.Reason,
 	})
 	if err != nil {
 		return nil, grpcErrorf(codes.Internal, err.Error())
@@ -290,7 +292,7 @@ func (e *excommsService) DeprovisionEmail(ctx context.Context, in *excomms.Depro
 		rowsUpdated, err := dl.UpdateProvisionedEndpoint(in.Email, models.EndpointTypeEmail, &dal.ProvisionedEndpointUpdate{
 			Deprovisioned:          ptr.Bool(true),
 			DeprovisionedTimestamp: ptr.Time(e.clock.Now()),
-			DeprovisionedReason:    ptr.String(in.Reason),
+			DeprovisionedReason:    &in.Reason,
 		})
 		if err != nil {
 			return err

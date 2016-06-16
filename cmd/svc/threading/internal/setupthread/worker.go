@@ -16,8 +16,6 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
-const lastStep = 3
-
 type SetupThreadClient interface {
 	OnboardingThreadEvent(context.Context, *threading.OnboardingThreadEventRequest, ...grpc.CallOption) (*threading.OnboardingThreadEventResponse, error)
 }

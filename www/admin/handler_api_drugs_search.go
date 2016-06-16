@@ -5,8 +5,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/audit"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/erx"
 	"github.com/sprucehealth/backend/libs/dosespot"
 	"github.com/sprucehealth/backend/libs/golog"

@@ -3,7 +3,7 @@ package test_treatment_plan
 import (
 	"testing"
 
-	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/test"

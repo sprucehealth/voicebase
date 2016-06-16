@@ -3,7 +3,7 @@ package doctor_queue
 import (
 	"testing"
 
-	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 )
 
 func TestIDCreation(t *testing.T) {

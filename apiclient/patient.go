@@ -5,11 +5,11 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/sprucehealth/backend/apiservice/apipaths"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice/apipaths"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/patient"
 	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/medrecord"
 	"github.com/sprucehealth/backend/messages"
-	"github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/pharmacy"
 )
 

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sprucehealth/backend/patient_case/model"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/patient_case/model"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )

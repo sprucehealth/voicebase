@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 
 	"github.com/aws/aws-sdk-go/service/sns"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/patient"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/patient"
 )
 
 type snsNotification struct {

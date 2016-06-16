@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/sprucehealth/backend/apiservice/apipaths"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice/apipaths"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/patient_file"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/patient_file"
 	"github.com/sprucehealth/backend/pharmacy"
 	"github.com/sprucehealth/backend/test"
 )

@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/sprucehealth/backend/apiservice/apipaths"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice/apipaths"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/handlers"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor"

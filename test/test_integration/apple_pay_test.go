@@ -9,13 +9,13 @@ import (
 	"time"
 
 	"github.com/samuel/go-metrics/metrics"
-	"github.com/sprucehealth/backend/apiservice/apipaths"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice/apipaths"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/patient"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/stripe"
-	"github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/config"
 )

@@ -4,8 +4,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"math"
-	"math/big"
 	"sort"
 	"strconv"
 	"strings"
@@ -13,7 +11,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/sprucehealth/backend/analytics"
-	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/dispatch"
@@ -38,8 +36,6 @@ const (
 )
 
 var (
-	up = big.NewInt(math.MaxInt64)
-
 	// Preallocate strings and pointers to common objects used in the dynamo tables
 	// tag_view_count is the GSI used to sort tag results by view count
 	regimenTagTableTagViewIndexName = ptr.String("tag_view_count")

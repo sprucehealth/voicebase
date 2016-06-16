@@ -3,8 +3,8 @@ package careprovider
 import (
 	"math/rand"
 
-	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/app_url"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 )
 
 func RandomDoctorURLs(n int, dataAPI api.DataAPI, apiDomain string, unpreferredDoctorIDs []int64) ([]string, error) {

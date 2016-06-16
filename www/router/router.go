@@ -11,7 +11,7 @@ import (
 	"github.com/samuel/go-librato/librato"
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/analytics"
-	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/erx"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/diagnosis"

@@ -18,7 +18,11 @@ import (
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/graphql"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 )
+
+// go vet doesn't like that the first argument to grpcErrorf is not a string so alias the function with a different name :(
+var grpcErrorf = grpc.Errorf
 
 type gql struct {
 	inviteC       *invitemock.Client

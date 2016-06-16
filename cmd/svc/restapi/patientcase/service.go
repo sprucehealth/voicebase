@@ -4,12 +4,12 @@ package patientcase
 import (
 	"fmt"
 
-	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/patient_case/model"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
-	"github.com/sprucehealth/backend/patient_case/model"
 )
 
 // Service describes the methods required to proprly expose the case service functionality

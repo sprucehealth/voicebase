@@ -4,8 +4,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiclient"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/patient_file"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost"
 	"github.com/sprucehealth/backend/doctor"
@@ -13,7 +14,6 @@ import (
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/patient_file"
 	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/www/dronboard"
 )

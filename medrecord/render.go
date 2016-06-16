@@ -9,15 +9,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/patient_file"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/visitreview"
-	"github.com/sprucehealth/backend/patient_file"
 	"github.com/sprucehealth/backend/treatment_plan"
 	"github.com/sprucehealth/mapstructure"
 )

@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/address"
-	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice/apipaths"
-	patientpkg "github.com/sprucehealth/backend/patient"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice/apipaths"
+	patientpkg "github.com/sprucehealth/backend/cmd/svc/restapi/patient"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )

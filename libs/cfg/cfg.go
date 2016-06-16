@@ -156,7 +156,7 @@ func (v *jsonValue) UnmarshalJSON(b []byte) error {
 		return nil
 	}
 	// Use the standard decoder for all non-numbers
-	c := byte(b[0])
+	c := b[0]
 	if (c < '0' || c > '9') && c != '-' && c != '+' {
 		return json.Unmarshal(b, &v.v)
 	}

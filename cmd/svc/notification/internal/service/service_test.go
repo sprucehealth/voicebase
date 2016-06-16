@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -956,4 +957,19 @@ func TestProcessNotificationExternalMessage(t *testing.T) {
 	}))
 
 	cSvc.processNotification(context.Background(), string(notificationData))
+}
+
+func accountIDsFromExternalIDs(eIDs []*directory.ExternalID) []string {
+	var accountIDs []string
+	for _, eID := range eIDs {
+		i := strings.IndexByte(eID.ID, '_')
+		if i != -1 {
+			prefix := eID.ID[:(i + 1)]
+			switch prefix {
+			case auth.AccountIDPrefix:
+				accountIDs = append(accountIDs, eID.ID)
+			}
+		}
+	}
+	return accountIDs
 }

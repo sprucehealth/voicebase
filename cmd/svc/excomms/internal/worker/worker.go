@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"net/mail"
@@ -31,7 +30,6 @@ import (
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/svc/excomms"
-	"github.com/tcolgate/mp3"
 )
 
 type IncomingRawMessageWorker struct {
@@ -398,21 +396,6 @@ func (w *IncomingRawMessageWorker) uploadTwilioMediaToS3(contentType, url string
 		Location: s3Location,
 		Duration: duration,
 	}, nil
-}
-
-func mp3Duration(r io.Reader) (time.Duration, error) {
-	dec := mp3.NewDecoder(r)
-	var frame mp3.Frame
-	var duration time.Duration
-	for {
-		if err := dec.Decode(&frame); err != nil {
-			if err == io.EOF {
-				return duration, nil
-			}
-			return 0, errors.Trace(err)
-		}
-		duration += frame.Duration()
-	}
 }
 
 func parseAddress(addr string) (*mail.Address, error) {

@@ -5,9 +5,10 @@ import (
 
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/analytics"
-	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/app_worker"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/patient_visit"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost"
 	"github.com/sprucehealth/backend/doctor"
@@ -19,7 +20,6 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/notify"
-	"github.com/sprucehealth/backend/patient_visit"
 	"github.com/sprucehealth/backend/tagging"
 )
 

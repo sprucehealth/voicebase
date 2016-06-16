@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/samuel/go-metrics/metrics"
-	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/appevent"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/schedmsg"
 	"github.com/sprucehealth/backend/test"

@@ -75,16 +75,16 @@ func (e *excommsService) InitiateIPCall(ctx context.Context, req *excomms.Initia
 	call.Participants = make([]*models.IPCallParticipant, 0, len(leres.Entities))
 	var callerPar *models.IPCallParticipant
 	var org *directory.Entity
-	for _, e := range leres.Entities {
+	for _, ent := range leres.Entities {
 		var o *directory.Entity
-		for _, m := range e.Memberships {
+		for _, m := range ent.Memberships {
 			if m.Type == directory.EntityType_ORGANIZATION {
 				o = m
 				break
 			}
 		}
 		if o == nil {
-			return nil, grpcErrorf(codes.InvalidArgument, "Participant %s does not belong to any organizations", e.ID)
+			return nil, grpcErrorf(codes.InvalidArgument, "Participant %s does not belong to any organizations", ent.ID)
 		}
 		if org == nil {
 			org = o
@@ -92,18 +92,18 @@ func (e *excommsService) InitiateIPCall(ctx context.Context, req *excomms.Initia
 			// As a sanity check make sure everyone involved belongs to the same org.
 			return nil, grpcErrorf(codes.InvalidArgument, "All participants must belong to the same organization")
 		}
-		if e.AccountID == "" {
-			return nil, grpcErrorf(codes.InvalidArgument, "Participant %s missing account ID", e.ID)
+		if ent.AccountID == "" {
+			return nil, grpcErrorf(codes.InvalidArgument, "Participant %s missing account ID", ent.ID)
 		}
 		p := &models.IPCallParticipant{
-			EntityID:  e.ID,
-			AccountID: e.AccountID,
+			EntityID:  ent.ID,
+			AccountID: ent.AccountID,
 		}
-		p.Identity, err = generateIPCallIdentity()
+		p.Identity, err = e.genIPCallIdentity()
 		if err != nil {
 			return nil, grpcErrorf(codes.Internal, "Failed to generate identity: %s", err)
 		}
-		if e.ID == req.CallerEntityID {
+		if ent.ID == req.CallerEntityID {
 			p.Role = models.IPCallParticipantRoleCaller
 			p.State = models.IPCallStateAccepted
 			callerPar = p

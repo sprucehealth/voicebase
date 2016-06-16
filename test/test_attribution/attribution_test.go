@@ -3,8 +3,8 @@ package test_attribution
 import (
 	"testing"
 
-	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/attribution/model"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"

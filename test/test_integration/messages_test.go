@@ -5,7 +5,7 @@ import (
 
 	"github.com/sprucehealth/backend/appevent"
 
-	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/test"

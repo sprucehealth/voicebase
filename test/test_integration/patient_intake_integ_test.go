@@ -4,10 +4,10 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/patient"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/test"
 )
 

@@ -3,7 +3,7 @@ package settings
 import (
 	"net/http"
 
-	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/httputil"

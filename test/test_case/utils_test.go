@@ -3,7 +3,7 @@ package test_case
 import (
 	"reflect"
 
-	"github.com/sprucehealth/backend/patient_case"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/patient_case"
 )
 
 type testTreatmentPlanData struct {

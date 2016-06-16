@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -9,11 +10,120 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
+	"github.com/sprucehealth/backend/svc/directory"
+	dirmock "github.com/sprucehealth/backend/svc/directory/mock"
 	"github.com/sprucehealth/backend/svc/excomms"
+	"github.com/sprucehealth/backend/svc/notification"
+	notimock "github.com/sprucehealth/backend/svc/notification/mock"
 	"github.com/sprucehealth/backend/test"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
+
+func TestInitiateIPCall(t *testing.T) {
+	dl := dalmock.New(t)
+	dir := dirmock.New(t)
+	noti := notimock.New(t)
+	defer mock.FinishAll(dl, dir, noti)
+
+	clk := clock.NewManaged(time.Unix(1e9, 0))
+	svc := NewService("accountSID", "authToken", "appSID", "sigSID", "sig", "vidSID", dl,
+		"apiURL", dir, nil, "extTopic", "evTopic", clk, nil, nil, nil, nil, noti)
+
+	identCounter := 0
+	svc.(*excommsService).genIPCallIdentity = func() (string, error) {
+		identCounter++
+		return fmt.Sprintf("identity_%d", identCounter), nil
+	}
+
+	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
+			BatchEntityID: &directory.IDList{IDs: []string{"entity_2", "entity_1"}},
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
+		},
+		RootTypes: []directory.EntityType{directory.EntityType_INTERNAL, directory.EntityType_PATIENT},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{
+				ID:          "entity_2",
+				AccountID:   "account_2",
+				Memberships: []*directory.Entity{{ID: "org", Type: directory.EntityType_ORGANIZATION}},
+			},
+			{
+				ID:          "entity_1",
+				AccountID:   "account_1",
+				Memberships: []*directory.Entity{{ID: "org", Type: directory.EntityType_ORGANIZATION}},
+			},
+		},
+	}, nil))
+
+	dl.Expect(mock.NewExpectation(dl.CreateIPCall, &models.IPCall{
+		Type:    models.IPCallTypeVideo,
+		Pending: true,
+		Participants: []*models.IPCallParticipant{
+			{
+				AccountID: "account_2",
+				EntityID:  "entity_2",
+				Identity:  "identity_1",
+				Role:      models.IPCallParticipantRoleRecipient,
+				State:     models.IPCallStatePending,
+			},
+			{
+				AccountID: "account_1",
+				EntityID:  "entity_1",
+				Identity:  "identity_2",
+				Role:      models.IPCallParticipantRoleCaller,
+				State:     models.IPCallStateAccepted,
+			},
+		},
+	}).WithReturns(nil))
+
+	noti.Expect(mock.NewExpectation(noti.SendNotification, &notification.Notification{
+		Type:             notification.IncomingIPCall,
+		CallID:           "",
+		OrganizationID:   "org",
+		EntitiesToNotify: []string{"entity_2"},
+		DedupeKey:        "",
+		CollapseKey:      string(notification.IncomingIPCall),
+		ShortMessages: map[string]string{
+			"entity_2": "☎️ Video call from your healthcare provider",
+		},
+	}).WithReturns(nil))
+
+	res, err := svc.InitiateIPCall(nil, &excomms.InitiateIPCallRequest{
+		Type:               excomms.IPCallType_VIDEO,
+		CallerEntityID:     "entity_1",
+		RecipientEntityIDs: []string{"entity_2"},
+	})
+	test.OK(t, err)
+	test.Equals(t, &excomms.InitiateIPCallResponse{
+		Call: &excomms.IPCall{
+			Type:    excomms.IPCallType_VIDEO,
+			Pending: true,
+			Token:   res.Call.Token, // Not deterministic so can't test the exact value, but doesn't matter too much anyway as the token generation is tested elsewhere
+			Participants: []*excomms.IPCallParticipant{
+				{
+					AccountID: "account_2",
+					EntityID:  "entity_2",
+					Identity:  "identity_1",
+					Role:      excomms.IPCallParticipantRole_RECIPIENT,
+					State:     excomms.IPCallState_PENDING,
+				},
+				{
+					AccountID: "account_1",
+					EntityID:  "entity_1",
+					Identity:  "identity_2",
+					Role:      excomms.IPCallParticipantRole_CALLER,
+					State:     excomms.IPCallState_ACCEPTED,
+				},
+			},
+		},
+	}, res)
+}
 
 func TestIPCall(t *testing.T) {
 	dl := dalmock.New(t)

@@ -4,7 +4,8 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/sprucehealth/backend/apiservice/apipaths"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice/apipaths"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/patient_file"
 	"github.com/sprucehealth/backend/common"
 	diaghandlers "github.com/sprucehealth/backend/diagnosis/handlers"
 	"github.com/sprucehealth/backend/doctor"
@@ -12,7 +13,6 @@ import (
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/messages"
-	"github.com/sprucehealth/backend/patient_file"
 	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/tagging"
 )

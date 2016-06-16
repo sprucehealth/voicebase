@@ -1,7 +1,7 @@
 package treatment_plan
 
 import (
-	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/errors"
 )

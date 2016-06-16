@@ -120,14 +120,6 @@ type associateInviteOutput struct {
 	Values           []inviteValue `json:"values,omitempty"`
 }
 
-var associateInviteValueType = graphql.NewInputObject(graphql.InputObjectConfig{
-	Name: "AssociateInviteValue",
-	Fields: graphql.InputObjectConfigFieldMap{
-		"key":   &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-		"value": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-	},
-})
-
 var associateInviteInputType = graphql.NewInputObject(
 	graphql.InputObjectConfig{
 		Name: "AssociateInviteInput",

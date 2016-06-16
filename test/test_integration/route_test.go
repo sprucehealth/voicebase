@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/test"
 )

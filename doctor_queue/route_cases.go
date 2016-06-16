@@ -3,8 +3,8 @@ package doctor_queue
 import (
 	"fmt"
 
-	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/app_url"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cost"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/notify"

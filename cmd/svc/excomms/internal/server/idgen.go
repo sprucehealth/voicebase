@@ -17,13 +17,3 @@ func NewIDGenerator() idGenerator {
 func (*idg) NewID() (uint64, error) {
 	return idgen.NewID()
 }
-
-type mockIDGen struct{}
-
-func newMockIDGen() idGenerator {
-	return &mockIDGen{}
-}
-
-func (*mockIDGen) NewID() (uint64, error) {
-	return uint64(1), nil
-}

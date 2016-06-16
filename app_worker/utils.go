@@ -3,7 +3,7 @@ package app_worker
 import (
 	"math/rand"
 
-	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/errors"
 )
