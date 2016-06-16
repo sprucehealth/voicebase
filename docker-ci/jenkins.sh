@@ -51,6 +51,7 @@ docker run --rm=true --name=$NAME \
 	-e "PARENT_UID=$PARENT_UID" \
 	-e "PARENT_GID=$PARENT_GID" \
 	-e "NO_INTEGRATION_TESTS=$NO_INTEGRATION_TESTS" \
+	-e "NO_COVERAGE=$NO_COVERAGE" \
 	-v $MEMPATH:/mem \
 	-v `pwd`:/workspace/go/src/github.com/sprucehealth/backend \
 	-v /var/run/docker.sock:/var/run/docker.sock \
