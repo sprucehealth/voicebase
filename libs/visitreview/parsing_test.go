@@ -10,11 +10,11 @@ import (
 
 func TestParsingTemplateForDoctorVisitReview(t *testing.T) {
 
-	parseTemplateFromFile("../../test/data/major-review-test.json", t)
+	parseTemplateFromFile("../../cmd/svc/restapi/test/data/major-review-test.json", t)
 }
 
 func TestParsingLayoutForDoctorVisitReview(t *testing.T) {
-	parseTemplateFromFile("../../test/data/review.json", t)
+	parseTemplateFromFile("../../cmd/svc/restapi/test/data/review.json", t)
 }
 
 func parseTemplateFromFile(fileLocation string, t *testing.T) SectionListView {
@@ -53,7 +53,7 @@ func TestRenderingLayoutForDoctorVisitReview(t *testing.T) {
 	viewContext := NewViewContext(map[string]interface{}{})
 	populateCompleteViewContext(viewContext)
 
-	sectionList := parseTemplateFromFile("../../test/data/major-review-test.json", t)
+	sectionList := parseTemplateFromFile("../../cmd/svc/restapi/test/data/major-review-test.json", t)
 	_, err := sectionList.Render(viewContext)
 	if err != nil {
 		t.Fatalf("Error rendering layout:%s", err)
@@ -67,25 +67,25 @@ func TestRenderingLayoutForDoctorVisitReview_ContentLabels(t *testing.T) {
 	// change one of the content labels list content to populate CheckedUncheckedData items
 	viewContext.Set("q_skin_description:question_summary", "testing5")
 	viewContext.Set("q_skin_description:answers", []CheckedUncheckedData{
-		CheckedUncheckedData{
+		{
 			Value:     "val1",
 			IsChecked: true,
 		},
-		CheckedUncheckedData{
+		{
 			Value:     "val2",
 			IsChecked: false,
 		},
-		CheckedUncheckedData{
+		{
 			Value:     "val3",
 			IsChecked: false,
 		},
-		CheckedUncheckedData{
+		{
 			Value:     "val4",
 			IsChecked: true,
 		},
 	})
 
-	sectionList := parseTemplateFromFile("../../test/data/major-review-test.json", t)
+	sectionList := parseTemplateFromFile("../../cmd/svc/restapi/test/data/major-review-test.json", t)
 	_, err := sectionList.Render(viewContext)
 	if err != nil {
 		t.Fatalf("Error rendering layout:%s", err)
@@ -94,10 +94,10 @@ func TestRenderingLayoutForDoctorVisitReview_ContentLabels(t *testing.T) {
 	// now change it to titlesubtitlesubtiems type with just the title set
 	viewContext.Set("q_skin_description:question_summary", "testing3")
 	viewContext.Set("q_skin_description:answers", []TitleSubItemsDescriptionContentData{
-		TitleSubItemsDescriptionContentData{
+		{
 			Title: "testing3",
 		},
-		TitleSubItemsDescriptionContentData{
+		{
 			Title: "testing3",
 		},
 	})
@@ -115,7 +115,7 @@ func TestRenderingLayoutForDoctorVisitReview_EmptyStateViews(t *testing.T) {
 	viewContext.Delete("patient_visit_alerts")
 	viewContext.Set("patient_visit_alerts:empty_state_text", "No alerts specified")
 
-	sectionList := parseTemplateFromFile("../../test/data/major-review-test.json", t)
+	sectionList := parseTemplateFromFile("../../cmd/svc/restapi/test/data/major-review-test.json", t)
 	_, err := sectionList.Render(viewContext)
 	if err != nil {
 		t.Fatalf("Error rendering layout:%s", err)
@@ -133,11 +133,11 @@ func TestRenderingLayoutForDoctorVisitReview_EmptyStateViews(t *testing.T) {
 
 func populateCompleteViewContext(viewContext *ViewContext) {
 	viewContext.Set("patient_visit_photos", []PhotoData{
-		PhotoData{
+		{
 			Title:          "Left Photo",
 			PlaceholderURL: "testing",
 		},
-		PhotoData{
+		{
 			Title:          "Right Photo",
 			PlaceholderURL: "testing",
 		},
@@ -158,39 +158,39 @@ func populateCompleteViewContext(viewContext *ViewContext) {
 
 	viewContext.Set("q_current_medications_entry:question_summary", "testing3")
 	viewContext.Set("q_current_medications_entry:answers", []TitleSubItemsDescriptionContentData{
-		TitleSubItemsDescriptionContentData{
+		{
 			Title: "testing3",
 			SubItems: []*DescriptionContentData{
-				&DescriptionContentData{
+				{
 					Description: "testing",
 					Content:     "testing",
 				},
-				&DescriptionContentData{
+				{
 					Description: "testing",
 					Content:     "testing",
 				},
-				&DescriptionContentData{
+				{
 					Description: "testing",
 					Content:     "testing",
 				},
-				&DescriptionContentData{
+				{
 					Description: "testing",
 					Content:     "testing",
 				},
 			},
 		},
-		TitleSubItemsDescriptionContentData{
+		{
 			Title: "testing3",
 			SubItems: []*DescriptionContentData{
-				&DescriptionContentData{
+				{
 					Description: "testing",
 					Content:     "testing",
 				},
-				&DescriptionContentData{
+				{
 					Description: "testing",
 					Content:     "testing",
 				},
-				&DescriptionContentData{
+				{
 					Description: "testing",
 					Content:     "testing",
 				},
@@ -207,19 +207,19 @@ func populateCompleteViewContext(viewContext *ViewContext) {
 
 	viewContext.Set("q_other_conditions_acne:question_summary", "testing5")
 	viewContext.Set("q_other_conditions_acne:answers", []CheckedUncheckedData{
-		CheckedUncheckedData{
+		{
 			Value:     "val1",
 			IsChecked: true,
 		},
-		CheckedUncheckedData{
+		{
 			Value:     "val2",
 			IsChecked: false,
 		},
-		CheckedUncheckedData{
+		{
 			Value:     "val3",
 			IsChecked: false,
 		},
-		CheckedUncheckedData{
+		{
 			Value:     "val4",
 			IsChecked: false,
 		},
@@ -233,19 +233,19 @@ func populateCompleteViewContext(viewContext *ViewContext) {
 
 	viewContext.Set("q_acne_location:question_summary", "testing5")
 	viewContext.Set("q_acne_location:answers", []CheckedUncheckedData{
-		CheckedUncheckedData{
+		{
 			Value:     "val1",
 			IsChecked: true,
 		},
-		CheckedUncheckedData{
+		{
 			Value:     "val2",
 			IsChecked: false,
 		},
-		CheckedUncheckedData{
+		{
 			Value:     "val3",
 			IsChecked: true,
 		},
-		CheckedUncheckedData{
+		{
 			Value:     "val4",
 			IsChecked: false,
 		},
@@ -253,19 +253,19 @@ func populateCompleteViewContext(viewContext *ViewContext) {
 
 	viewContext.Set("q_acne_symptoms:question_summary", "testing5")
 	viewContext.Set("q_acne_symptoms:answers", []CheckedUncheckedData{
-		CheckedUncheckedData{
+		{
 			Value:     "val1",
 			IsChecked: true,
 		},
-		CheckedUncheckedData{
+		{
 			Value:     "val2",
 			IsChecked: false,
 		},
-		CheckedUncheckedData{
+		{
 			Value:     "val3",
 			IsChecked: true,
 		},
-		CheckedUncheckedData{
+		{
 			Value:     "val4",
 			IsChecked: true,
 		},
@@ -273,43 +273,43 @@ func populateCompleteViewContext(viewContext *ViewContext) {
 
 	viewContext.Set("q_acne_prev_prescriptions_select:question_summary", "testing3")
 	viewContext.Set("q_acne_prev_prescriptions_select:answers", []TitleSubItemsDescriptionContentData{
-		TitleSubItemsDescriptionContentData{
+		{
 			Title: "testing3",
 			SubItems: []*DescriptionContentData{
-				&DescriptionContentData{
+				{
 					Description: "testing3",
 					Content:     "testing3",
 				},
-				&DescriptionContentData{
+				{
 					Description: "testing3",
 					Content:     "testing3",
 				},
-				&DescriptionContentData{
+				{
 					Description: "testing3",
 					Content:     "testing3",
 				},
-				&DescriptionContentData{
+				{
 					Description: "testing3",
 					Content:     "testing3",
 				},
 			},
 		},
-		TitleSubItemsDescriptionContentData{
+		{
 			Title: "testing3",
 			SubItems: []*DescriptionContentData{
-				&DescriptionContentData{
+				{
 					Description: "testing3",
 					Content:     "testing3",
 				},
-				&DescriptionContentData{
+				{
 					Description: "testing3",
 					Content:     "testing3",
 				},
-				&DescriptionContentData{
+				{
 					Description: "testing3",
 					Content:     "testing3",
 				},
-				&DescriptionContentData{
+				{
 					Description: "testing3",
 					Content:     "testing3",
 				},
@@ -319,35 +319,35 @@ func populateCompleteViewContext(viewContext *ViewContext) {
 
 	viewContext.Set("q_acne_prev_otc_treatment_list:question_summary", "testing3")
 	viewContext.Set("q_acne_prev_otc_treatment_list:answers", []TitleSubItemsDescriptionContentData{
-		TitleSubItemsDescriptionContentData{
+		{
 			Title: "testing3",
 			SubItems: []*DescriptionContentData{
-				&DescriptionContentData{
+				{
 					Description: "testing3",
 					Content:     "testing3",
 				},
-				&DescriptionContentData{
+				{
 					Description: "testing3",
 					Content:     "testing3",
 				},
-				&DescriptionContentData{
+				{
 					Description: "testing3",
 					Content:     "testing3",
 				},
 			},
 		},
-		TitleSubItemsDescriptionContentData{
+		{
 			Title: "testing3",
 			SubItems: []*DescriptionContentData{
-				&DescriptionContentData{
+				{
 					Description: "testing3",
 					Content:     "testing3",
 				},
-				&DescriptionContentData{
+				{
 					Description: "testing3",
 					Content:     "testing3",
 				},
-				&DescriptionContentData{
+				{
 					Description: "testing3",
 					Content:     "testing3",
 				},
