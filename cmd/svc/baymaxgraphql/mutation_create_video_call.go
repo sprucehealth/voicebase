@@ -131,7 +131,7 @@ var createVideoCallMutation = &graphql.Field{
 				EntityID: in.RecipientCallEndpointIDs[0],
 			},
 			Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
-			RootTypes: []directory.EntityType{directory.EntityType_PATIENT},
+			RootTypes: []directory.EntityType{directory.EntityType_PATIENT, directory.EntityType_INTERNAL},
 		})
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)

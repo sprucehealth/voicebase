@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/device/devicectx"
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -172,7 +173,7 @@ func lookupCall(ctx context.Context, ram raccess.ResourceAccessor, id string) (*
 
 func callableEndpointsForEntity(ent *directory.Entity) ([]*models.CallEndpoint, error) {
 	var endpoints []*models.CallEndpoint
-	if ent.Type == directory.EntityType_PATIENT {
+	if ent.Type == directory.EntityType_PATIENT || (ent.Type == directory.EntityType_INTERNAL && !environment.IsProd() && !environment.IsTest()) {
 		endpoints = append(endpoints, &models.CallEndpoint{Channel: models.CallChannelTypeVideo, ValueOrID: ent.ID})
 	}
 	for _, c := range ent.Contacts {

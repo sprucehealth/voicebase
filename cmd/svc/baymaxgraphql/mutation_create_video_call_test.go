@@ -45,7 +45,7 @@ func TestCreateVideoCallMutation(t *testing.T) {
 				EntityID: "entity_2",
 			},
 			Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
-			RootTypes: []directory.EntityType{directory.EntityType_PATIENT},
+			RootTypes: []directory.EntityType{directory.EntityType_PATIENT, directory.EntityType_INTERNAL},
 		}).WithReturns(
 		[]*directory.Entity{{
 			ID:        "entity_2",
