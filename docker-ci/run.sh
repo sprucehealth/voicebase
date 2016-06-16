@@ -122,7 +122,7 @@ else
             fi
         else
             go test -covermode=count -coverprofile="$PKG/cover.out" -test.parallel 4 "$PKG"
-            grep -v .pb.go "$PKG/cover.out" | grep -v "cmd/svc/restapi" > "$PKG/cover.out.2"
+            grep -v .pb.go "$PKG/cover.out" | grep -v "cmd/svc/restapi" | grep -v "cmd/svc/regimens" | grep -v "cmd/svc/carefinder" | grep -v "cmd/svc/products" > "$PKG/cover.out.2"
             mv "$PKG/cover.out.2" "$PKG/cover.out"
             gocov convert "$PKG/cover.out" | gocov-xml | sed 's=workspace/go/src/github.com/sprucehealth/backend/==g' > "$PKG/coverage.xml"
         fi
