@@ -24,6 +24,7 @@ import (
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/directory/cache"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/layout"
@@ -281,24 +282,8 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 			m["AccountID"] = acc.ID
 		}
 	})
-
-	// Since we are authenticated, cache a collection of entity information for the account orgs
-	eMap, err := h.orgToEntityMapForAccount(ctx, acc)
-	if err != nil {
-		// Don't hard fail here since we want functionality not involving this context to still work
-		golog.Errorf("Failed to collect org to entity map for account %s: %s", acc.ID, err)
-	}
-	ctx = gqlctx.WithAccountEntities(ctx, gqlctx.NewEntityGroupCache(eMap))
-	// Bootstrap the entity cache with our account entity information
-	ctx = gqlctx.WithEntities(ctx, gqlctx.NewEntityGroupCache(func(ini map[string][]*directory.Entity) map[string][]*directory.Entity {
-		eCache := make(map[string][]*directory.Entity, len(eMap))
-		for _, es := range eMap {
-			for _, e := range es {
-				eCache[e.ID] = []*directory.Entity{e}
-			}
-		}
-		return eCache
-	}(eMap)))
+	// Bootstrap the entity cache
+	ctx = cache.InitEntityCache(ctx)
 
 	ctx = devicectx.WithSpruceHeaders(ctx, sHeaders)
 	ctx = gqlctx.WithQuery(ctx, req.Query)

@@ -55,6 +55,13 @@ func (c *Map) Transact(fn func(map[string]interface{})) {
 	fn(c.cmap)
 }
 
+// Clear locks the map and deletes all entries
+func (c *Map) Clear() {
+	c.mux.Lock()
+	defer c.mux.Unlock()
+	c.cmap = make(map[string]interface{})
+}
+
 // Snapshot returns a copy of the underlying values
 func (c *Map) Snapshot() map[string]interface{} {
 	if c == nil {

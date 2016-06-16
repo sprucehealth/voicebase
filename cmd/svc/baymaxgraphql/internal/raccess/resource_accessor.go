@@ -447,142 +447,6 @@ func (m *resourceAccessor) DeleteThread(ctx context.Context, threadID, entityID 
 	return nil
 }
 
-func cachedEntities(ctx context.Context, entityIDs []string, wantedInfo []directory.EntityInformation, wantedRootTypes map[directory.EntityType]struct{}, wantedChildTypes map[directory.EntityType]struct{}, depth int64) ([]*directory.Entity, []string) {
-	// Currently we can only cache entities with a search depth of 0
-	if depth != 0 {
-		return nil, entityIDs
-	}
-	notFoundEntIDs := make([]string, 0, len(entityIDs))
-	cachedEnts := make([]*directory.Entity, 0, len(entityIDs))
-	for _, eID := range entityIDs {
-		cE := cachedEntity(ctx, eID, wantedInfo, wantedRootTypes, wantedChildTypes, depth)
-		if cE != nil {
-			cachedEnts = append(cachedEnts, cE)
-		} else {
-			notFoundEntIDs = append(notFoundEntIDs, eID)
-		}
-	}
-	return cachedEnts, notFoundEntIDs
-}
-
-func cachedEntity(ctx context.Context, entityID string, wantedInfo []directory.EntityInformation, wantedRootTypes map[directory.EntityType]struct{}, wantedChildTypes map[directory.EntityType]struct{}, depth int64) *directory.Entity {
-	if depth != 0 {
-		return nil
-	}
-
-	ec := gqlctx.Entities(ctx)
-	if ec == nil {
-		return nil
-	}
-	ent := ec.GetOnly(entityID)
-	if ent == nil {
-		return nil
-	}
-
-	fEnt := filterCachedRootEntities([]*directory.Entity{ent}, wantedInfo, wantedRootTypes, wantedChildTypes)
-	if len(fEnt) == 0 {
-		return nil
-	}
-	return ent
-}
-
-func cacheEntities(ctx context.Context, ents []*directory.Entity) {
-	ec := gqlctx.Entities(ctx)
-	if ec == nil {
-		return
-	}
-	for _, ent := range ents {
-		// Note: Perhaps read then write? Depends on if we only call this after a remote call
-		ec.Set(ent.ID, ent)
-		for _, mem := range append(ent.Members, ent.Memberships...) {
-			ec.Set(mem.ID, mem)
-		}
-	}
-}
-
-func cachedEntityGroup(ctx context.Context, groupID string, wantedInfo []directory.EntityInformation, wantedRootTypes map[directory.EntityType]struct{}, wantedChildTypes map[directory.EntityType]struct{}, depth int64) []*directory.Entity {
-	// Currently we can only cache entities with a search depth of 0
-	if depth != 0 {
-		return nil
-	}
-	ec := gqlctx.Entities(ctx)
-	if ec == nil {
-		return nil
-	}
-	return filterCachedRootEntities(ec.Get(groupID), wantedInfo, wantedRootTypes, wantedChildTypes)
-}
-
-func cacheEntityGroup(ctx context.Context, groupID string, ents []*directory.Entity) {
-	ec := gqlctx.Entities(ctx)
-	if ec == nil {
-		return
-	}
-	ec.SetGroup(groupID, ents)
-	cacheEntities(ctx, ents)
-}
-
-// Utility for converting slices to maps to improve matching speed/lookups
-func entityTypeSliceToMap(ets []directory.EntityType) map[directory.EntityType]struct{} {
-	m := make(map[directory.EntityType]struct{}, len(ets))
-	for _, et := range ets {
-		m[et] = struct{}{}
-	}
-	return m
-}
-
-// TODO: This shouldn't be exposed package wide, the cache mechanisms need to be moved into a type or subpackage
-func filterCachedRootEntities(es []*directory.Entity, wantedInfo []directory.EntityInformation, wantedRootTypes map[directory.EntityType]struct{}, wantedChildTypes map[directory.EntityType]struct{}) []*directory.Entity {
-	if len(es) == 0 {
-		return nil
-	}
-
-	filteredEnts := make([]*directory.Entity, 0, len(es))
-	for _, e := range es {
-		// Determine if our cached value has enough information to meet the request
-		infoMatched := true
-		for _, wei := range wantedInfo {
-			var found bool
-			for _, ei := range e.IncludedInformation {
-				if ei == wei {
-					found = true
-					break
-				}
-			}
-			if !found {
-				infoMatched = false
-				break
-			}
-		}
-		// If this entity doesn't pass the required info check, ignore it
-		if !infoMatched {
-			continue
-		}
-		// Filter any incorrect types or if we have no filters allow it
-		if _, ok := wantedRootTypes[e.Type]; ok || len(wantedRootTypes) == 0 {
-			e.Members = filterCachedChildEntities(e.Members, wantedChildTypes)
-			e.Memberships = filterCachedChildEntities(e.Memberships, wantedChildTypes)
-			filteredEnts = append(filteredEnts, e)
-		}
-	}
-	return filteredEnts
-}
-
-// TODO: This shouldn't be exposed package wide, the cache mechanisms need to be moved into a type or subpackage
-func filterCachedChildEntities(es []*directory.Entity, wantedChildTypes map[directory.EntityType]struct{}) []*directory.Entity {
-	if len(es) == 0 {
-		return nil
-	}
-
-	filteredEnts := make([]*directory.Entity, 0, len(es))
-	for _, e := range es {
-		// Filter any incorrect types or if we have no filters allow it
-		if _, ok := wantedChildTypes[e.Type]; ok || len(wantedChildTypes) == 0 {
-			filteredEnts = append(filteredEnts, e)
-		}
-	}
-	return filteredEnts
-}
-
 func (m *resourceAccessor) EntityDomain(ctx context.Context, entityID, domain string) (*directory.LookupEntityDomainResponse, error) {
 	// Only do an authorization check if they are specifying an entity id
 	if entityID != "" {
@@ -606,8 +470,6 @@ func (m *resourceAccessor) EntitiesByContact(ctx context.Context, req *directory
 		}
 		return nil, err
 	}
-
-	cacheEntities(ctx, res.Entities)
 	return res.Entities, nil
 }
 
@@ -644,53 +506,12 @@ func (m *resourceAccessor) Entities(ctx context.Context, req *directory.LookupEn
 		}
 	}
 
-	var entityInformation []directory.EntityInformation
-	var depth int64
-	if req.RequestedInformation != nil {
-		entityInformation = req.RequestedInformation.EntityInformation
-		depth = req.RequestedInformation.Depth
-	}
-	// Check our cached info
-	switch req.LookupKeyType {
-	case directory.LookupEntitiesRequest_ENTITY_ID:
-		ent := cachedEntity(ctx, req.GetEntityID(), entityInformation, entityTypeSliceToMap(req.RootTypes), entityTypeSliceToMap(req.ChildTypes), depth)
-		if ent != nil {
-			return []*directory.Entity{ent}, nil
-		}
-	case directory.LookupEntitiesRequest_EXTERNAL_ID:
-		ents := cachedEntityGroup(ctx, req.GetExternalID(), entityInformation, entityTypeSliceToMap(req.RootTypes), entityTypeSliceToMap(req.ChildTypes), depth)
-		if ents != nil {
-			return ents, nil
-		}
-	case directory.LookupEntitiesRequest_ACCOUNT_ID:
-		ents := cachedEntityGroup(ctx, req.GetAccountID(), entityInformation, entityTypeSliceToMap(req.RootTypes), entityTypeSliceToMap(req.ChildTypes), depth)
-		if ents != nil {
-			return ents, nil
-		}
-	case directory.LookupEntitiesRequest_BATCH_ENTITY_ID:
-		// A depth of 0 will return everything but members of members
-		cachedEnts, notFoundEntIDs := cachedEntities(ctx, req.GetBatchEntityID().IDs, req.RequestedInformation.EntityInformation, entityTypeSliceToMap(req.RootTypes), entityTypeSliceToMap(req.ChildTypes), req.RequestedInformation.Depth)
-		if len(notFoundEntIDs) == 0 {
-			return cachedEnts, nil
-		}
-	}
-
 	res, err := m.directory.LookupEntities(ctx, req)
 	if err != nil {
 		if grpc.Code(err) == codes.NotFound {
 			return nil, nil
 		}
 		return nil, err
-	}
-
-	// Cache our entity or entity group
-	switch req.LookupKeyType {
-	case directory.LookupEntitiesRequest_ENTITY_ID, directory.LookupEntitiesRequest_BATCH_ENTITY_ID:
-		cacheEntities(ctx, res.Entities)
-	case directory.LookupEntitiesRequest_ACCOUNT_ID:
-		cacheEntityGroup(ctx, req.GetAccountID(), res.Entities)
-	case directory.LookupEntitiesRequest_EXTERNAL_ID:
-		cacheEntityGroup(ctx, req.GetExternalID(), res.Entities)
 	}
 	return res.Entities, nil
 }
@@ -1024,30 +845,23 @@ func (m *resourceAccessor) ThreadMembers(ctx context.Context, orgID string, req 
 		entIDs[i] = m.EntityID
 	}
 
-	// Check our cache for the entities and filter anything we already have
-	var depth int64
-	entInfo := []directory.EntityInformation{directory.EntityInformation_CONTACTS}
-	cachedEnts, notFoundEntIDs := cachedEntities(ctx, entIDs, entInfo, nil, nil, depth)
-	if len(notFoundEntIDs) == 0 {
-		return cachedEnts, nil
-	}
 	leres, err := m.directory.LookupEntities(ctx, &directory.LookupEntitiesRequest{
 		LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
 		LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
 			BatchEntityID: &directory.IDList{
-				IDs: notFoundEntIDs,
+				IDs: entIDs,
 			},
 		},
 		RequestedInformation: &directory.RequestedInformation{
-			Depth:             depth,
-			EntityInformation: entInfo,
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
 		},
 		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 	})
 	if err != nil {
 		return nil, errors.InternalError(ctx, err)
 	}
-	return append(leres.Entities, cachedEnts...), nil
+	return leres.Entities, nil
 }
 
 func (m *resourceAccessor) ThreadsForMember(ctx context.Context, entityID string, primaryOnly bool) ([]*threading.Thread, error) {
@@ -1104,7 +918,6 @@ func (m *resourceAccessor) UpdateContacts(ctx context.Context, req *directory.Up
 	if err != nil {
 		return nil, err
 	}
-	cacheEntities(ctx, []*directory.Entity{res.Entity})
 	return res.Entity, nil
 }
 
@@ -1116,7 +929,6 @@ func (m *resourceAccessor) UpdateEntity(ctx context.Context, req *directory.Upda
 	if err != nil {
 		return nil, err
 	}
-	cacheEntities(ctx, []*directory.Entity{res.Entity})
 	return res.Entity, nil
 }
 

@@ -4,6 +4,7 @@ import (
 	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/svc/auth"
+	"github.com/sprucehealth/backend/svc/directory/cache"
 	"golang.org/x/net/context"
 )
 
@@ -25,8 +26,7 @@ func Clone(pCtx context.Context) context.Context {
 	cCtx = httputil.CtxWithRequestID(cCtx, httputil.RequestID(pCtx))
 	cCtx = WithAccount(cCtx, Account(pCtx))
 	cCtx = WithClientEncryptionKey(cCtx, ClientEncryptionKey(pCtx))
-	cCtx = WithAccountEntities(cCtx, AccountEntities(pCtx))
-	cCtx = WithEntities(cCtx, Entities(pCtx))
+	cCtx = cache.WithEntities(cCtx, cache.Entities(pCtx))
 	return cCtx
 }
 
@@ -81,20 +81,6 @@ func Account(ctx context.Context) *auth.Account {
 	return acc
 }
 
-// WithAccountEntities attaches a map of orgID (intent) to entity for all of the account's entities onto the provided context
-func WithAccountEntities(ctx context.Context, entitiesByOrg *EntityGroupCache) context.Context {
-	return context.WithValue(ctx, ctxAccountEntities, entitiesByOrg)
-}
-
-// AccountEntities returns the mapping of between orgs and account entities from the provided context
-func AccountEntities(ctx context.Context) *EntityGroupCache {
-	ec, _ := ctx.Value(ctxAccountEntities).(*EntityGroupCache)
-	if ec == nil {
-		return nil
-	}
-	return ec
-}
-
 // WithClientEncryptionKey attaches the provided account onto a copy of the provided context
 func WithClientEncryptionKey(ctx context.Context, clientEncryptionKey string) context.Context {
 	// The client encryption key is generated at token validation check time, so we store it here to make it available to concerned parties
@@ -105,18 +91,4 @@ func WithClientEncryptionKey(ctx context.Context, clientEncryptionKey string) co
 func ClientEncryptionKey(ctx context.Context) string {
 	cek, _ := ctx.Value(ctxClientEncryptionKey).(string)
 	return cek
-}
-
-// WithEntities attaches an entity cache to the provided context to be used for the life of the request
-func WithEntities(ctx context.Context, entities *EntityGroupCache) context.Context {
-	return context.WithValue(ctx, ctxEntities, entities)
-}
-
-// Entities returns the mapping of between key and entities from the provided context
-func Entities(ctx context.Context) *EntityGroupCache {
-	ec, _ := ctx.Value(ctxEntities).(*EntityGroupCache)
-	if ec == nil {
-		return nil
-	}
-	return ec
 }

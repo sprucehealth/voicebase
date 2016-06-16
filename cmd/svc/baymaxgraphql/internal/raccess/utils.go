@@ -3,7 +3,6 @@ package raccess
 import (
 	"fmt"
 
-	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/svc/directory"
 	"golang.org/x/net/context"
@@ -15,18 +14,6 @@ func EntityInOrgForAccountID(ctx context.Context, ram ResourceAccessor, req *dir
 	// via externalID
 	if req.LookupKeyType != directory.LookupEntitiesRequest_EXTERNAL_ID {
 		return nil, errors.Trace(fmt.Errorf("Expected lookup of type %s but got %s", directory.LookupEntitiesRequest_EXTERNAL_ID, req.LookupKeyType))
-	}
-
-	// Check our cached account entities first
-	acc := gqlctx.Account(ctx)
-	if acc != nil && acc.ID == req.GetExternalID() {
-		ents := gqlctx.AccountEntities(ctx)
-		if ents != nil {
-			ent := ents.GetOnly(orgID)
-			if ent != nil {
-				return ent, nil
-			}
-		}
 	}
 
 	entities, err := ram.Entities(ctx, req)

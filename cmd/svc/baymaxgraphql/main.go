@@ -27,6 +27,7 @@ import (
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/directory/cache"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/layout"
@@ -115,7 +116,7 @@ func main() {
 	if err != nil {
 		golog.Fatalf("Unable to connect to directory service: %s", err)
 	}
-	directoryClient := directory.NewDirectoryClient(conn)
+	directoryClient := cache.NewCachedClient(directory.NewDirectoryClient(conn), svc.MetricsRegistry.Scope("CachedDirectoryClient"))
 
 	if *flagThreadingAddr == "" {
 		golog.Fatalf("Threading service not configured")
