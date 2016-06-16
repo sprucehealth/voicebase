@@ -43,6 +43,9 @@ export CF_LOCAL_DB_PASSWORD=
 export DOSESPOT_USER_ID=407
 export USER=`whoami`
 export TEST_CONSUL_ADDRESS=127.0.0.1:8500
+export TEST_DB_HOST=127.0.0.1
+export TEST_DB_USER=root
+export TEST_DB_PASSWORD=
 
 export GO15VENDOREXPERIMENT=1
 export GOPATH=/workspace/go
