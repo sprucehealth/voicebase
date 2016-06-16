@@ -119,6 +119,8 @@ else
             fi
         else
             go test -coverprofile="$PKG/cover.out" -test.parallel 4 "$PKG"
+            grep -v .pb.go "$PKG/cover.out" > "$PKG/cover.out.2"
+            mv "$PKG/cover.out.2" "$PKG/cover.out"
             gocov convert "$PKG/cover.out" | gocov-xml | sed 's=workspace/go/src/github.com/sprucehealth/backend/==g' > "$PKG/coverage.xml"
         fi
     done
