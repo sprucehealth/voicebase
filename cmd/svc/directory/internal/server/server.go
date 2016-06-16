@@ -974,15 +974,15 @@ func (s *server) Profile(ctx context.Context, rd *directory.ProfileRequest) (*di
 func (s *server) UpdateProfile(ctx context.Context, rd *directory.UpdateProfileRequest) (*directory.UpdateProfileResponse, error) {
 	var err error
 	pID := dal.EmptyEntityProfileID()
+	if rd.Profile == nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "Profile required")
+	}
 	if rd.ProfileID != "" {
 		pID, err = dal.ParseEntityProfileID(rd.ProfileID)
 		if err != nil {
 			return nil, grpcErrorf(codes.InvalidArgument, err.Error())
 		}
 	} else {
-		if rd.Profile.EntityID == "" {
-			return nil, grpcErrorf(codes.InvalidArgument, "Profile Entity ID cannot be empty and could not be infered")
-		}
 		eID, err := dal.ParseEntityID(rd.Profile.EntityID)
 		if err != nil {
 			return nil, grpcErrorf(codes.InvalidArgument, err.Error())

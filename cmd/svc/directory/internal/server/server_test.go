@@ -3,11 +3,13 @@ package server
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/cmd/svc/directory/internal/dal"
 	mock_dal "github.com/sprucehealth/backend/cmd/svc/directory/internal/dal/test"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/test"
@@ -1230,4 +1232,344 @@ func TestDeleteEntity(t *testing.T) {
 	})
 	test.OK(t, err)
 	test.AssertNotNil(t, resp)
+}
+
+func TestProfile(t *testing.T) {
+	entityID, err := dal.NewEntityID()
+	test.OK(t, err)
+	profileID, err := dal.NewEntityProfileID()
+	test.OK(t, err)
+	clk := clock.NewManaged(time.Now())
+	cases := map[string]struct {
+		request          *directory.ProfileRequest
+		dal              *mock_dal.MockDAL
+		expectedResponse *directory.ProfileResponse
+		expectedError    error
+	}{
+		"BadLookupKeyType": {
+			request: &directory.ProfileRequest{
+				LookupKeyType: directory.ProfileRequest_LookupKeyType(-1),
+			},
+			dal:              nil,
+			expectedResponse: nil,
+			expectedError:    grpcErrorf(codes.Internal, "Unknown lookup key type %s", directory.ProfileRequest_LookupKeyType(-1).String()),
+		},
+		"LookupEntityID-BadID": {
+			request: &directory.ProfileRequest{
+				LookupKeyType: directory.ProfileRequest_ENTITY_ID,
+				LookupKeyOneof: &directory.ProfileRequest_EntityID{
+					EntityID: "notAnEntityID",
+				},
+			},
+			dal:              nil,
+			expectedResponse: nil,
+			expectedError: func() error {
+				_, err := dal.ParseEntityID("notAnEntityID")
+				return grpcError(err)
+			}(),
+		},
+		"LookupEntityID-NotFound": {
+			request: &directory.ProfileRequest{
+				LookupKeyType: directory.ProfileRequest_ENTITY_ID,
+				LookupKeyOneof: &directory.ProfileRequest_EntityID{
+					EntityID: entityID.String(),
+				},
+			},
+			dal: func() *mock_dal.MockDAL {
+				mDAL := mock_dal.NewMockDAL(t)
+				mDAL.Expect(mock.NewExpectation(mDAL.EntityProfileForEntity, entityID).WithReturns((*dal.EntityProfile)(nil), dal.ErrNotFound))
+				return mDAL
+			}(),
+			expectedResponse: nil,
+			expectedError:    grpcErrorf(codes.NotFound, "Profile for entity id %s not found", entityID),
+		},
+		"LookupEntityID-Found": {
+			request: &directory.ProfileRequest{
+				LookupKeyType: directory.ProfileRequest_ENTITY_ID,
+				LookupKeyOneof: &directory.ProfileRequest_EntityID{
+					EntityID: entityID.String(),
+				},
+			},
+			dal: func() *mock_dal.MockDAL {
+				mDAL := mock_dal.NewMockDAL(t)
+				mDAL.Expect(mock.NewExpectation(mDAL.EntityProfileForEntity, entityID).WithReturns(&dal.EntityProfile{
+					ID:       profileID,
+					EntityID: entityID,
+					Sections: &directory.ProfileSections{},
+					Modified: clk.Now(),
+				}, nil))
+				return mDAL
+			}(),
+			expectedResponse: &directory.ProfileResponse{
+				Profile: transformEntityProfileToResponse(&dal.EntityProfile{
+					ID:       profileID,
+					EntityID: entityID,
+					Sections: &directory.ProfileSections{},
+					Modified: clk.Now(),
+				}),
+			},
+			expectedError: nil,
+		},
+		"LookupProfileID-BadID": {
+			request: &directory.ProfileRequest{
+				LookupKeyType: directory.ProfileRequest_PROFILE_ID,
+				LookupKeyOneof: &directory.ProfileRequest_ProfileID{
+					ProfileID: "notAProfileID",
+				},
+			},
+			dal:              nil,
+			expectedResponse: nil,
+			expectedError: func() error {
+				_, err := dal.ParseEntityProfileID("notAProfileID")
+				return grpcError(err)
+			}(),
+		},
+		"LookupProfileID-NotFound": {
+			request: &directory.ProfileRequest{
+				LookupKeyType: directory.ProfileRequest_PROFILE_ID,
+				LookupKeyOneof: &directory.ProfileRequest_ProfileID{
+					ProfileID: profileID.String(),
+				},
+			},
+			dal: func() *mock_dal.MockDAL {
+				mDAL := mock_dal.NewMockDAL(t)
+				mDAL.Expect(mock.NewExpectation(mDAL.EntityProfileForEntity, profileID).WithReturns((*dal.EntityProfile)(nil), dal.ErrNotFound))
+				return mDAL
+			}(),
+			expectedResponse: nil,
+			expectedError:    grpcErrorf(codes.NotFound, "Profile for profile id %s not found", profileID),
+		},
+		"LookupProfileID-Found": {
+			request: &directory.ProfileRequest{
+				LookupKeyType: directory.ProfileRequest_PROFILE_ID,
+				LookupKeyOneof: &directory.ProfileRequest_ProfileID{
+					ProfileID: profileID.String(),
+				},
+			},
+			dal: func() *mock_dal.MockDAL {
+				mDAL := mock_dal.NewMockDAL(t)
+				mDAL.Expect(mock.NewExpectation(mDAL.EntityProfile, profileID).WithReturns(&dal.EntityProfile{
+					ID:       profileID,
+					EntityID: entityID,
+					Sections: &directory.ProfileSections{},
+					Modified: clk.Now(),
+				}, nil))
+				return mDAL
+			}(),
+			expectedResponse: &directory.ProfileResponse{
+				Profile: transformEntityProfileToResponse(&dal.EntityProfile{
+					ID:       profileID,
+					EntityID: entityID,
+					Sections: &directory.ProfileSections{},
+					Modified: clk.Now(),
+				}),
+			},
+			expectedError: nil,
+		},
+	}
+
+	for cn, c := range cases {
+		svr := New(c.dal, metrics.NewRegistry())
+		resp, err := svr.Profile(context.Background(), c.request)
+		test.EqualsCase(t, cn, c.expectedResponse, resp)
+		test.EqualsCase(t, cn, c.expectedError, err)
+		if c.dal != nil {
+			c.dal.Finish()
+		}
+	}
+}
+
+func TestUpdateProfile(t *testing.T) {
+	entityID, err := dal.NewEntityID()
+	test.OK(t, err)
+	newEntityID, err := dal.NewEntityID()
+	test.OK(t, err)
+	profileID, err := dal.NewEntityProfileID()
+	test.OK(t, err)
+	clk := clock.NewManaged(time.Now())
+	cases := map[string]struct {
+		request          *directory.UpdateProfileRequest
+		dal              *mock_dal.MockDAL
+		expectedResponse *directory.UpdateProfileResponse
+		expectedError    error
+	}{
+		"ProfileID-NoProfile": {
+			request:          &directory.UpdateProfileRequest{},
+			dal:              nil,
+			expectedResponse: nil,
+			expectedError:    grpcErrorf(codes.InvalidArgument, "Profile required"),
+		},
+		"ProfileID-BadID": {
+			request: &directory.UpdateProfileRequest{
+				ProfileID: "notAProfileID",
+				Profile:   &directory.Profile{},
+			},
+			dal:              nil,
+			expectedResponse: nil,
+			expectedError: func() error {
+				_, err := dal.ParseEntityProfileID("notAProfileID")
+				return grpcErrorf(codes.InvalidArgument, err.Error())
+			}(),
+		},
+		"EntityID-BadID": {
+			request: &directory.UpdateProfileRequest{
+				Profile: &directory.Profile{
+					EntityID: "notAnEntityID",
+				},
+			},
+			dal:              nil,
+			expectedResponse: nil,
+			expectedError: func() error {
+				_, err := dal.ParseEntityID("notAnEntityID")
+				return grpcErrorf(codes.InvalidArgument, err.Error())
+			}(),
+		},
+		"ProfileID-NotFound": {
+			request: &directory.UpdateProfileRequest{
+				ProfileID: profileID.String(),
+				Profile:   &directory.Profile{},
+			},
+			dal: func() *mock_dal.MockDAL {
+				mDAL := mock_dal.NewMockDAL(t)
+				mDAL.Expect(mock.NewExpectation(mDAL.EntityProfile, profileID).WithReturns((*dal.EntityProfile)(nil), dal.ErrNotFound))
+				return mDAL
+			}(),
+			expectedResponse: nil,
+			expectedError:    grpcErrorf(codes.NotFound, "Profile id %s not found", profileID),
+		},
+		"ProfileID-ChangeOwningEntity": {
+			request: &directory.UpdateProfileRequest{
+				ProfileID: profileID.String(),
+				Profile: &directory.Profile{
+					EntityID: newEntityID.String(),
+				},
+			},
+			dal: func() *mock_dal.MockDAL {
+				mDAL := mock_dal.NewMockDAL(t)
+				mDAL.Expect(mock.NewExpectation(mDAL.EntityProfile, profileID).WithReturns(&dal.EntityProfile{
+					EntityID: entityID,
+				}, nil))
+				return mDAL
+			}(),
+			expectedResponse: nil,
+			expectedError:    grpcErrorf(codes.PermissionDenied, "The owning entity of a profile cannot be changed - Is: %s, Request Provided: %s", entityID, newEntityID),
+		},
+		"ProfileID-Success": {
+			request: &directory.UpdateProfileRequest{
+				ProfileID: profileID.String(),
+				Profile: &directory.Profile{
+					Sections: []*directory.ProfileSection{},
+				},
+			},
+			dal: func() *mock_dal.MockDAL {
+				mDAL := mock_dal.NewMockDAL(t)
+				mDAL.Expect(mock.NewExpectation(mDAL.EntityProfile, profileID).WithReturns(&dal.EntityProfile{
+					EntityID: entityID,
+				}, nil))
+				mDAL.Expect(mock.NewExpectation(mDAL.UpsertEntityProfile, &dal.EntityProfile{
+					ID:       profileID,
+					EntityID: entityID,
+					Sections: &directory.ProfileSections{Sections: []*directory.ProfileSection{}},
+				}).WithReturns(profileID, nil))
+				mDAL.Expect(mock.NewExpectation(mDAL.EntityProfile, profileID).WithReturns(&dal.EntityProfile{
+					ID:       profileID,
+					EntityID: entityID,
+					Sections: &directory.ProfileSections{},
+					Modified: clk.Now(),
+				}, nil))
+				return mDAL
+			}(),
+			expectedResponse: &directory.UpdateProfileResponse{
+				Profile: transformEntityProfileToResponse(&dal.EntityProfile{
+					ID:       profileID,
+					EntityID: entityID,
+					Sections: &directory.ProfileSections{},
+					Modified: clk.Now(),
+				}),
+			},
+			expectedError: nil,
+		},
+		"EntityID-NewSuccess": {
+			request: &directory.UpdateProfileRequest{
+				Profile: &directory.Profile{
+					EntityID: entityID.String(),
+					Sections: []*directory.ProfileSection{},
+				},
+			},
+			dal: func() *mock_dal.MockDAL {
+				mDAL := mock_dal.NewMockDAL(t)
+				mDAL.Expect(mock.NewExpectation(mDAL.EntityProfileForEntity, entityID).WithReturns((*dal.EntityProfile)(nil), dal.ErrNotFound))
+				mDAL.Expect(mock.NewExpectation(mDAL.UpsertEntityProfile, &dal.EntityProfile{
+					ID:       dal.EmptyEntityProfileID(),
+					EntityID: entityID,
+					Sections: &directory.ProfileSections{Sections: []*directory.ProfileSection{}},
+				}).WithReturns(profileID, nil))
+				mDAL.Expect(mock.NewExpectation(mDAL.EntityProfile, profileID).WithReturns(&dal.EntityProfile{
+					ID:       profileID,
+					EntityID: entityID,
+					Sections: &directory.ProfileSections{},
+					Modified: clk.Now(),
+				}, nil))
+				return mDAL
+			}(),
+			expectedResponse: &directory.UpdateProfileResponse{
+				Profile: transformEntityProfileToResponse(&dal.EntityProfile{
+					ID:       profileID,
+					EntityID: entityID,
+					Sections: &directory.ProfileSections{},
+					Modified: clk.Now(),
+				}),
+			},
+			expectedError: nil,
+		},
+		"EntityID-ExistingSuccess": {
+			request: &directory.UpdateProfileRequest{
+				Profile: &directory.Profile{
+					EntityID: entityID.String(),
+					Sections: []*directory.ProfileSection{},
+				},
+			},
+			dal: func() *mock_dal.MockDAL {
+				mDAL := mock_dal.NewMockDAL(t)
+				mDAL.Expect(mock.NewExpectation(mDAL.EntityProfileForEntity, entityID).WithReturns(&dal.EntityProfile{
+					ID:       profileID,
+					EntityID: entityID,
+				}, nil))
+				mDAL.Expect(mock.NewExpectation(mDAL.EntityProfile, profileID).WithReturns(&dal.EntityProfile{
+					EntityID: entityID,
+				}, nil))
+				mDAL.Expect(mock.NewExpectation(mDAL.UpsertEntityProfile, &dal.EntityProfile{
+					ID:       profileID,
+					EntityID: entityID,
+					Sections: &directory.ProfileSections{Sections: []*directory.ProfileSection{}},
+				}).WithReturns(profileID, nil))
+				mDAL.Expect(mock.NewExpectation(mDAL.EntityProfile, profileID).WithReturns(&dal.EntityProfile{
+					ID:       profileID,
+					EntityID: entityID,
+					Sections: &directory.ProfileSections{},
+					Modified: clk.Now(),
+				}, nil))
+				return mDAL
+			}(),
+			expectedResponse: &directory.UpdateProfileResponse{
+				Profile: transformEntityProfileToResponse(&dal.EntityProfile{
+					ID:       profileID,
+					EntityID: entityID,
+					Sections: &directory.ProfileSections{},
+					Modified: clk.Now(),
+				}),
+			},
+			expectedError: nil,
+		},
+	}
+
+	for cn, c := range cases {
+		svr := New(c.dal, metrics.NewRegistry())
+		resp, err := svr.UpdateProfile(context.Background(), c.request)
+		test.EqualsCase(t, cn, c.expectedResponse, resp)
+		test.EqualsCase(t, cn, c.expectedError, err)
+		if c.dal != nil {
+			c.dal.Finish()
+		}
+	}
 }

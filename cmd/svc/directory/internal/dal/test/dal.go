@@ -8,18 +8,18 @@ import (
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 )
 
-var _ dal.DAL = &mockDAL{}
+var _ dal.DAL = &MockDAL{}
 
-type mockDAL struct {
+type MockDAL struct {
 	*mock.Expector
 }
 
 // NewMockDAL returns an initialized instance of mockDAL
-func NewMockDAL(t *testing.T) *mockDAL {
-	return &mockDAL{&mock.Expector{T: t}}
+func NewMockDAL(t *testing.T) *MockDAL {
+	return &MockDAL{&mock.Expector{T: t}}
 }
 
-func (dl *mockDAL) InsertEntity(model *dal.Entity) (dal.EntityID, error) {
+func (dl *MockDAL) InsertEntity(model *dal.Entity) (dal.EntityID, error) {
 	rets := dl.Expector.Record(model)
 	if len(rets) == 0 {
 		return dal.EntityID{}, nil
@@ -27,7 +27,7 @@ func (dl *mockDAL) InsertEntity(model *dal.Entity) (dal.EntityID, error) {
 	return rets[0].(dal.EntityID), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) InsertEntityContacts(models []*dal.EntityContact) error {
+func (dl *MockDAL) InsertEntityContacts(models []*dal.EntityContact) error {
 	rets := dl.Expector.Record(models)
 	if len(rets) == 0 {
 		return nil
@@ -35,7 +35,7 @@ func (dl *mockDAL) InsertEntityContacts(models []*dal.EntityContact) error {
 	return mock.SafeError(rets[0])
 }
 
-func (dl *mockDAL) Entity(id dal.EntityID) (*dal.Entity, error) {
+func (dl *MockDAL) Entity(id dal.EntityID) (*dal.Entity, error) {
 	rets := dl.Expector.Record(id)
 	if len(rets) == 0 {
 		return nil, nil
@@ -43,7 +43,7 @@ func (dl *mockDAL) Entity(id dal.EntityID) (*dal.Entity, error) {
 	return rets[0].(*dal.Entity), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) Entities(ids []dal.EntityID, statuses []dal.EntityStatus, types []dal.EntityType) ([]*dal.Entity, error) {
+func (dl *MockDAL) Entities(ids []dal.EntityID, statuses []dal.EntityStatus, types []dal.EntityType) ([]*dal.Entity, error) {
 	rets := dl.Expector.Record(ids, statuses, types)
 	if len(rets) == 0 {
 		return nil, nil
@@ -51,7 +51,7 @@ func (dl *mockDAL) Entities(ids []dal.EntityID, statuses []dal.EntityStatus, typ
 	return rets[0].([]*dal.Entity), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) UpdateEntity(id dal.EntityID, update *dal.EntityUpdate) (int64, error) {
+func (dl *MockDAL) UpdateEntity(id dal.EntityID, update *dal.EntityUpdate) (int64, error) {
 	rets := dl.Expector.Record(id, update)
 	if len(rets) == 0 {
 		return 0, nil
@@ -59,7 +59,7 @@ func (dl *mockDAL) UpdateEntity(id dal.EntityID, update *dal.EntityUpdate) (int6
 	return rets[0].(int64), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) DeleteEntity(id dal.EntityID) (int64, error) {
+func (dl *MockDAL) DeleteEntity(id dal.EntityID) (int64, error) {
 	rets := dl.Expector.Record(id)
 	if len(rets) == 0 {
 		return 0, nil
@@ -67,7 +67,7 @@ func (dl *mockDAL) DeleteEntity(id dal.EntityID) (int64, error) {
 	return rets[0].(int64), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) InsertExternalEntityID(model *dal.ExternalEntityID) error {
+func (dl *MockDAL) InsertExternalEntityID(model *dal.ExternalEntityID) error {
 	rets := dl.Expector.Record(model)
 	if len(rets) == 0 {
 		return nil
@@ -75,7 +75,7 @@ func (dl *mockDAL) InsertExternalEntityID(model *dal.ExternalEntityID) error {
 	return mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) InsertExternalEntityIDs(models []*dal.ExternalEntityID) error {
+func (dl *MockDAL) InsertExternalEntityIDs(models []*dal.ExternalEntityID) error {
 	rets := dl.Expector.Record(models)
 	if len(rets) == 0 {
 		return nil
@@ -83,7 +83,7 @@ func (dl *mockDAL) InsertExternalEntityIDs(models []*dal.ExternalEntityID) error
 	return mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) ExternalEntityIDs(externalID string) ([]*dal.ExternalEntityID, error) {
+func (dl *MockDAL) ExternalEntityIDs(externalID string) ([]*dal.ExternalEntityID, error) {
 	rets := dl.Expector.Record(externalID)
 	if len(rets) == 0 {
 		return nil, nil
@@ -91,7 +91,7 @@ func (dl *mockDAL) ExternalEntityIDs(externalID string) ([]*dal.ExternalEntityID
 	return rets[0].([]*dal.ExternalEntityID), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) ExternalEntityIDsForEntity(entityID dal.EntityID) ([]*dal.ExternalEntityID, error) {
+func (dl *MockDAL) ExternalEntityIDsForEntity(entityID dal.EntityID) ([]*dal.ExternalEntityID, error) {
 	rets := dl.Expector.Record(entityID)
 	if len(rets) == 0 {
 		return nil, nil
@@ -99,7 +99,7 @@ func (dl *mockDAL) ExternalEntityIDsForEntity(entityID dal.EntityID) ([]*dal.Ext
 	return rets[0].([]*dal.ExternalEntityID), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) InsertEntityMembership(model *dal.EntityMembership) error {
+func (dl *MockDAL) InsertEntityMembership(model *dal.EntityMembership) error {
 	rets := dl.Expector.Record(model)
 	if len(rets) == 0 {
 		return nil
@@ -107,7 +107,7 @@ func (dl *mockDAL) InsertEntityMembership(model *dal.EntityMembership) error {
 	return mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) EntityMemberships(id dal.EntityID) ([]*dal.EntityMembership, error) {
+func (dl *MockDAL) EntityMemberships(id dal.EntityID) ([]*dal.EntityMembership, error) {
 	rets := dl.Expector.Record(id)
 	if len(rets) == 0 {
 		return nil, nil
@@ -115,7 +115,7 @@ func (dl *mockDAL) EntityMemberships(id dal.EntityID) ([]*dal.EntityMembership, 
 	return rets[0].([]*dal.EntityMembership), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) EntityMembers(id dal.EntityID, statuses []dal.EntityStatus, types []dal.EntityType) ([]*dal.Entity, error) {
+func (dl *MockDAL) EntityMembers(id dal.EntityID, statuses []dal.EntityStatus, types []dal.EntityType) ([]*dal.Entity, error) {
 	rets := dl.Expector.Record(id, statuses, types)
 	if len(rets) == 0 {
 		return nil, nil
@@ -123,7 +123,7 @@ func (dl *mockDAL) EntityMembers(id dal.EntityID, statuses []dal.EntityStatus, t
 	return rets[0].([]*dal.Entity), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) InsertEntityContact(model *dal.EntityContact) (dal.EntityContactID, error) {
+func (dl *MockDAL) InsertEntityContact(model *dal.EntityContact) (dal.EntityContactID, error) {
 	rets := dl.Expector.Record(model)
 	if len(rets) == 0 {
 		return dal.EntityContactID{}, nil
@@ -131,7 +131,7 @@ func (dl *mockDAL) InsertEntityContact(model *dal.EntityContact) (dal.EntityCont
 	return rets[0].(dal.EntityContactID), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) EntityContact(id dal.EntityContactID) (*dal.EntityContact, error) {
+func (dl *MockDAL) EntityContact(id dal.EntityContactID) (*dal.EntityContact, error) {
 	rets := dl.Expector.Record(id)
 	if len(rets) == 0 {
 		return nil, nil
@@ -139,7 +139,7 @@ func (dl *mockDAL) EntityContact(id dal.EntityContactID) (*dal.EntityContact, er
 	return rets[0].(*dal.EntityContact), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) EntityContacts(id dal.EntityID) ([]*dal.EntityContact, error) {
+func (dl *MockDAL) EntityContacts(id dal.EntityID) ([]*dal.EntityContact, error) {
 	rets := dl.Expector.Record(id)
 	if len(rets) == 0 {
 		return nil, nil
@@ -147,7 +147,7 @@ func (dl *mockDAL) EntityContacts(id dal.EntityID) ([]*dal.EntityContact, error)
 	return rets[0].([]*dal.EntityContact), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) EntityContactsForValue(value string) ([]*dal.EntityContact, error) {
+func (dl *MockDAL) EntityContactsForValue(value string) ([]*dal.EntityContact, error) {
 	rets := dl.Expector.Record(value)
 	if len(rets) == 0 {
 		return nil, nil
@@ -155,7 +155,7 @@ func (dl *mockDAL) EntityContactsForValue(value string) ([]*dal.EntityContact, e
 	return rets[0].([]*dal.EntityContact), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) ExternalEntityIDsForEntities(entityID []dal.EntityID) ([]*dal.ExternalEntityID, error) {
+func (dl *MockDAL) ExternalEntityIDsForEntities(entityID []dal.EntityID) ([]*dal.ExternalEntityID, error) {
 	rets := dl.Expector.Record(entityID)
 	if len(rets) == 0 {
 		return nil, nil
@@ -163,7 +163,7 @@ func (dl *mockDAL) ExternalEntityIDsForEntities(entityID []dal.EntityID) ([]*dal
 	return rets[0].([]*dal.ExternalEntityID), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) UpdateEntityContact(id dal.EntityContactID, update *dal.EntityContactUpdate) (int64, error) {
+func (dl *MockDAL) UpdateEntityContact(id dal.EntityContactID, update *dal.EntityContactUpdate) (int64, error) {
 	rets := dl.Expector.Record(id, update)
 	if len(rets) == 0 {
 		return 0, nil
@@ -171,7 +171,7 @@ func (dl *mockDAL) UpdateEntityContact(id dal.EntityContactID, update *dal.Entit
 	return rets[0].(int64), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) DeleteEntityContact(id dal.EntityContactID) (int64, error) {
+func (dl *MockDAL) DeleteEntityContact(id dal.EntityContactID) (int64, error) {
 	rets := dl.Expector.Record(id)
 	if len(rets) == 0 {
 		return 0, nil
@@ -179,7 +179,7 @@ func (dl *mockDAL) DeleteEntityContact(id dal.EntityContactID) (int64, error) {
 	return rets[0].(int64), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) DeleteEntityContactsForEntityID(id dal.EntityID) (int64, error) {
+func (dl *MockDAL) DeleteEntityContactsForEntityID(id dal.EntityID) (int64, error) {
 	rets := dl.Expector.Record(id)
 	if len(rets) == 0 {
 		return 0, nil
@@ -187,7 +187,7 @@ func (dl *mockDAL) DeleteEntityContactsForEntityID(id dal.EntityID) (int64, erro
 	return rets[0].(int64), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) InsertEvent(model *dal.Event) (dal.EventID, error) {
+func (dl *MockDAL) InsertEvent(model *dal.Event) (dal.EventID, error) {
 	rets := dl.Expector.Record(model)
 	if len(rets) == 0 {
 		return dal.EventID{}, nil
@@ -195,7 +195,7 @@ func (dl *mockDAL) InsertEvent(model *dal.Event) (dal.EventID, error) {
 	return rets[0].(dal.EventID), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) Event(id dal.EventID) (*dal.Event, error) {
+func (dl *MockDAL) Event(id dal.EventID) (*dal.Event, error) {
 	rets := dl.Expector.Record(id)
 	if len(rets) == 0 {
 		return nil, nil
@@ -203,7 +203,7 @@ func (dl *mockDAL) Event(id dal.EventID) (*dal.Event, error) {
 	return rets[0].(*dal.Event), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) UpdateEvent(id dal.EventID, update *dal.EventUpdate) (int64, error) {
+func (dl *MockDAL) UpdateEvent(id dal.EventID, update *dal.EventUpdate) (int64, error) {
 	rets := dl.Expector.Record(id, update)
 	if len(rets) == 0 {
 		return 0, nil
@@ -211,7 +211,7 @@ func (dl *mockDAL) UpdateEvent(id dal.EventID, update *dal.EventUpdate) (int64, 
 	return rets[0].(int64), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) DeleteEvent(id dal.EventID) (int64, error) {
+func (dl *MockDAL) DeleteEvent(id dal.EventID) (int64, error) {
 	rets := dl.Expector.Record(id)
 	if len(rets) == 0 {
 		return 0, nil
@@ -219,7 +219,7 @@ func (dl *mockDAL) DeleteEvent(id dal.EventID) (int64, error) {
 	return rets[0].(int64), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) EntityDomain(id *dal.EntityID, domain *string, opts ...dal.QueryOption) (dal.EntityID, string, error) {
+func (dl *MockDAL) EntityDomain(id *dal.EntityID, domain *string, opts ...dal.QueryOption) (dal.EntityID, string, error) {
 	var rets []interface{}
 	if len(opts) == 0 {
 		rets = dl.Expector.Record(id, domain)
@@ -233,7 +233,7 @@ func (dl *mockDAL) EntityDomain(id *dal.EntityID, domain *string, opts ...dal.Qu
 	return rets[0].(dal.EntityID), rets[1].(string), mock.SafeError(rets[2])
 }
 
-func (dl *mockDAL) UpsertEntityDomain(id dal.EntityID, domain string) error {
+func (dl *MockDAL) UpsertEntityDomain(id dal.EntityID, domain string) error {
 	rets := dl.Expector.Record(id, domain)
 	if len(rets) == 0 {
 		return nil
@@ -242,7 +242,7 @@ func (dl *mockDAL) UpsertEntityDomain(id dal.EntityID, domain string) error {
 	return mock.SafeError(rets[0])
 }
 
-func (dl *mockDAL) UpsertSerializedClientEntityContact(model *dal.SerializedClientEntityContact) error {
+func (dl *MockDAL) UpsertSerializedClientEntityContact(model *dal.SerializedClientEntityContact) error {
 	rets := dl.Expector.Record(model)
 	if len(rets) == 0 {
 		return nil
@@ -250,7 +250,7 @@ func (dl *mockDAL) UpsertSerializedClientEntityContact(model *dal.SerializedClie
 	return mock.SafeError(rets[0])
 }
 
-func (dl *mockDAL) SerializedClientEntityContact(entityID dal.EntityID, platform dal.SerializedClientEntityContactPlatform) (*dal.SerializedClientEntityContact, error) {
+func (dl *MockDAL) SerializedClientEntityContact(entityID dal.EntityID, platform dal.SerializedClientEntityContactPlatform) (*dal.SerializedClientEntityContact, error) {
 	rets := dl.Expector.Record(entityID, platform)
 	if len(rets) == 0 {
 		return nil, nil
@@ -258,7 +258,7 @@ func (dl *mockDAL) SerializedClientEntityContact(entityID dal.EntityID, platform
 	return rets[0].(*dal.SerializedClientEntityContact), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) UpdateSerializedClientEntityContact(entityID dal.EntityID, platform dal.SerializedClientEntityContactPlatform, update *dal.SerializedClientEntityContactUpdate) (int64, error) {
+func (dl *MockDAL) UpdateSerializedClientEntityContact(entityID dal.EntityID, platform dal.SerializedClientEntityContactPlatform, update *dal.SerializedClientEntityContactUpdate) (int64, error) {
 	rets := dl.Expector.Record(entityID, platform, update)
 	if len(rets) == 0 {
 		return 0, nil
@@ -266,7 +266,7 @@ func (dl *mockDAL) UpdateSerializedClientEntityContact(entityID dal.EntityID, pl
 	return rets[0].(int64), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) DeleteSerializedClientEntityContact(entityID dal.EntityID, platform dal.SerializedClientEntityContactPlatform) (int64, error) {
+func (dl *MockDAL) DeleteSerializedClientEntityContact(entityID dal.EntityID, platform dal.SerializedClientEntityContactPlatform) (int64, error) {
 	rets := dl.Expector.Record(entityID, platform)
 	if len(rets) == 0 {
 		return 0, nil
@@ -274,7 +274,7 @@ func (dl *mockDAL) DeleteSerializedClientEntityContact(entityID dal.EntityID, pl
 	return rets[0].(int64), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) EntityProfile(id dal.EntityProfileID) (*dal.EntityProfile, error) {
+func (dl *MockDAL) EntityProfile(id dal.EntityProfileID) (*dal.EntityProfile, error) {
 	rets := dl.Expector.Record(id)
 	if len(rets) == 0 {
 		return nil, nil
@@ -282,7 +282,7 @@ func (dl *mockDAL) EntityProfile(id dal.EntityProfileID) (*dal.EntityProfile, er
 	return rets[0].(*dal.EntityProfile), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) EntityProfileForEntity(id dal.EntityID) (*dal.EntityProfile, error) {
+func (dl *MockDAL) EntityProfileForEntity(id dal.EntityID) (*dal.EntityProfile, error) {
 	rets := dl.Expector.Record(id)
 	if len(rets) == 0 {
 		return nil, nil
@@ -290,7 +290,7 @@ func (dl *mockDAL) EntityProfileForEntity(id dal.EntityID) (*dal.EntityProfile, 
 	return rets[0].(*dal.EntityProfile), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) UpsertEntityProfile(model *dal.EntityProfile) (dal.EntityProfileID, error) {
+func (dl *MockDAL) UpsertEntityProfile(model *dal.EntityProfile) (dal.EntityProfileID, error) {
 	rets := dl.Expector.Record(model)
 	if len(rets) == 0 {
 		return dal.EmptyEntityProfileID(), nil
@@ -298,7 +298,7 @@ func (dl *mockDAL) UpsertEntityProfile(model *dal.EntityProfile) (dal.EntityProf
 	return rets[0].(dal.EntityProfileID), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) DeleteEntityProfile(id dal.EntityProfileID) (int64, error) {
+func (dl *MockDAL) DeleteEntityProfile(id dal.EntityProfileID) (int64, error) {
 	rets := dl.Expector.Record(id)
 	if len(rets) == 0 {
 		return 0, nil
@@ -306,7 +306,7 @@ func (dl *mockDAL) DeleteEntityProfile(id dal.EntityProfileID) (int64, error) {
 	return rets[0].(int64), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) Transact(trans func(dal dal.DAL) error) (err error) {
+func (dl *MockDAL) Transact(trans func(dal dal.DAL) error) (err error) {
 	if err := trans(dl); err != nil {
 		return errors.Trace(err)
 	}
