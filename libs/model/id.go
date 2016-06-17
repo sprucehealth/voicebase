@@ -4,7 +4,6 @@ import (
 	"database/sql/driver"
 	"encoding/base32"
 	"encoding/binary"
-	"fmt"
 	"strconv"
 
 	"github.com/sprucehealth/backend/libs/errors"
@@ -77,16 +76,16 @@ func (id *ObjectID) Scan(src interface{}) error {
 		var err error
 		id.Val, err = strconv.ParseUint(string(v), 10, 64)
 		if err != nil {
-			return errors.Trace(fmt.Errorf("failed to scan ObjectID string '%s': %s", v, err))
+			return errors.Errorf("failed to scan ObjectID string '%s'", v)
 		}
 	case string:
 		var err error
 		id.Val, err = strconv.ParseUint(v, 10, 64)
 		if err != nil {
-			return errors.Trace(fmt.Errorf("failed to scan ObjectID string '%s': %s", v, err))
+			return errors.Errorf("failed to scan ObjectID string '%s'", v)
 		}
 	default:
-		return errors.Trace(fmt.Errorf("unsupported type for ObjectID.Scan: %T", src))
+		return errors.Errorf("unsupported type for ObjectID.Scan: %T", src)
 	}
 	id.IsValid = true
 	return nil
