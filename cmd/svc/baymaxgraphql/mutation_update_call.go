@@ -48,6 +48,7 @@ var updateCallInputType = graphql.NewInputObject(graphql.InputObjectConfig{
 		"uuid":             newUUIDInputField(),
 		"callID":           &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 		"callState":        &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(callStateEnum)},
+		"networkType":      &graphql.InputObjectFieldConfig{Type: networkTypeEnum},
 	},
 })
 
