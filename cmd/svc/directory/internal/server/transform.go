@@ -36,6 +36,7 @@ func transformEntityToResponse(dEntity *dal.Entity) (*directory.Entity, error) {
 		LastModifiedTimestamp: uint64(dEntity.Modified.Unix()),
 		AccountID:             dEntity.AccountID,
 		ImageMediaID:          dEntity.ImageMediaID,
+		HasProfile:            dEntity.HasProfile,
 	}
 	entityType, ok := directory.EntityType_value[dEntity.Type.String()]
 	if !ok {

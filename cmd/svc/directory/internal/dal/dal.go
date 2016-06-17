@@ -709,6 +709,7 @@ type Entity struct {
 	DOB           *encoding.Date
 	AccountID     string
 	ImageMediaID  string
+	HasProfile    bool
 	Created       time.Time
 	Modified      time.Time
 }
@@ -734,6 +735,7 @@ type EntityUpdate struct {
 	DOB           *encoding.Date
 	AccountID     *string
 	ImageMediaID  *string
+	HasProfile    *bool
 }
 
 // SerializedClientEntityContact represents a serialized_client_entity_contact record
@@ -873,6 +875,9 @@ func (d *dal) UpdateEntity(id EntityID, update *EntityUpdate) (int64, error) {
 	}
 	if update.ImageMediaID != nil {
 		args.Append("image_media_id", *update.ImageMediaID)
+	}
+	if update.HasProfile != nil {
+		args.Append("has_profile", *update.HasProfile)
 	}
 	if args.IsEmpty() {
 		return 0, nil
@@ -1455,7 +1460,7 @@ func scanEvent(row dbutil.Scanner) (*Event, error) {
 }
 
 const selectEntity = `
-    SELECT entity.id, entity.middle_initial, entity.last_name, entity.note, entity.created, entity.modified, entity.display_name, entity.first_name, entity.group_name, entity.type, entity.status, entity.short_title, entity.long_title, entity.gender, entity.dob, entity.account_id, entity.image_media_id
+    SELECT entity.id, entity.middle_initial, entity.last_name, entity.note, entity.created, entity.modified, entity.display_name, entity.first_name, entity.group_name, entity.type, entity.status, entity.short_title, entity.long_title, entity.gender, entity.dob, entity.account_id, entity.image_media_id, entity.has_profile
       FROM entity`
 
 func andEntityStatusIn(ss []EntityStatus) string {
@@ -1486,7 +1491,7 @@ func scanEntity(row dbutil.Scanner) (*Entity, error) {
 	m := entityPool.Get().(*Entity)
 	m.ID = EmptyEntityID()
 
-	err := row.Scan(&m.ID, &m.MiddleInitial, &m.LastName, &m.Note, &m.Created, &m.Modified, &m.DisplayName, &m.FirstName, &m.GroupName, &m.Type, &m.Status, &m.ShortTitle, &m.LongTitle, &m.Gender, &m.DOB, &m.AccountID, &m.ImageMediaID)
+	err := row.Scan(&m.ID, &m.MiddleInitial, &m.LastName, &m.Note, &m.Created, &m.Modified, &m.DisplayName, &m.FirstName, &m.GroupName, &m.Type, &m.Status, &m.ShortTitle, &m.LongTitle, &m.Gender, &m.DOB, &m.AccountID, &m.ImageMediaID, &m.HasProfile)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrNotFound)
 	}

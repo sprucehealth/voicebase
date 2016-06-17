@@ -79,6 +79,7 @@ message Entity {
 	uint64 last_modified_timestamp = 12;
 	string account_id = 13 [(gogoproto.customname) = "AccountID"];
 	string image_media_id = 14 [(gogoproto.customname) = "ImageMediaID"];
+	bool has_profile = 15;
 }
 
 message Profile {

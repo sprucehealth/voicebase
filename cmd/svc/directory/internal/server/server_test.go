@@ -1471,6 +1471,9 @@ func TestUpdateProfile(t *testing.T) {
 					EntityID: entityID,
 					Sections: &directory.ProfileSections{Sections: []*directory.ProfileSection{}},
 				}).WithReturns(profileID, nil))
+				mDAL.Expect(mock.NewExpectation(mDAL.UpdateEntity, entityID, &dal.EntityUpdate{
+					HasProfile: ptr.Bool(true),
+				}))
 				mDAL.Expect(mock.NewExpectation(mDAL.EntityProfile, profileID).WithReturns(&dal.EntityProfile{
 					ID:       profileID,
 					EntityID: entityID,
@@ -1504,6 +1507,9 @@ func TestUpdateProfile(t *testing.T) {
 					EntityID: entityID,
 					Sections: &directory.ProfileSections{Sections: []*directory.ProfileSection{}},
 				}).WithReturns(profileID, nil))
+				mDAL.Expect(mock.NewExpectation(mDAL.UpdateEntity, entityID, &dal.EntityUpdate{
+					HasProfile: ptr.Bool(true),
+				}))
 				mDAL.Expect(mock.NewExpectation(mDAL.EntityProfile, profileID).WithReturns(&dal.EntityProfile{
 					ID:       profileID,
 					EntityID: entityID,
@@ -1543,6 +1549,9 @@ func TestUpdateProfile(t *testing.T) {
 					EntityID: entityID,
 					Sections: &directory.ProfileSections{Sections: []*directory.ProfileSection{}},
 				}).WithReturns(profileID, nil))
+				mDAL.Expect(mock.NewExpectation(mDAL.UpdateEntity, entityID, &dal.EntityUpdate{
+					HasProfile: ptr.Bool(true),
+				}))
 				mDAL.Expect(mock.NewExpectation(mDAL.EntityProfile, profileID).WithReturns(&dal.EntityProfile{
 					ID:       profileID,
 					EntityID: entityID,
