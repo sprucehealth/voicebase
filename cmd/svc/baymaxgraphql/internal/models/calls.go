@@ -32,13 +32,14 @@ const (
 
 // Call represents a video or audio call
 type Call struct {
-	ID                    string             `json:"id"`
-	AccessToken           string             `json:"accessToken"`
-	Role                  string             `json:"role"` // CallRoleEnum
-	Caller                *CallParticipant   `json:"caller"`
-	Recipients            []*CallParticipant `json:"recipients"`
-	AllowVideo            bool               `json:"allowVideo"`
-	VideoEnabledByDefault bool               `json:"videoEnabledByDefault"`
+	ID                      string             `json:"id"`
+	AccessToken             string             `json:"accessToken"`
+	Role                    string             `json:"role"` // CallRoleEnum
+	Caller                  *CallParticipant   `json:"caller"`
+	Recipients              []*CallParticipant `json:"recipients"`
+	AllowVideo              bool               `json:"allowVideo"`
+	VideoEnabledByDefault   bool               `json:"videoEnabledByDefault"`
+	LANConnectivityRequired bool               `json:"lanConnectivityRequired"`
 }
 
 // CallParticipant represents a person participating in a vidoe or audio call

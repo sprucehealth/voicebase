@@ -131,13 +131,14 @@ var callType = graphql.NewObject(graphql.ObjectConfig{
 		nodeInterfaceType,
 	},
 	Fields: graphql.Fields{
-		"id":                    &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
-		"accessToken":           &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-		"role":                  &graphql.Field{Type: graphql.NewNonNull(callRoleEnum)},
-		"caller":                &graphql.Field{Type: graphql.NewNonNull(callParticipantType)},
-		"recipients":            &graphql.Field{Type: graphql.NewNonNull(graphql.NewList(callParticipantType))},
-		"allowVideo":            &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-		"videoEnabledByDefault": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+		"id":                      &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+		"accessToken":             &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"role":                    &graphql.Field{Type: graphql.NewNonNull(callRoleEnum)},
+		"caller":                  &graphql.Field{Type: graphql.NewNonNull(callParticipantType)},
+		"recipients":              &graphql.Field{Type: graphql.NewNonNull(graphql.NewList(callParticipantType))},
+		"allowVideo":              &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+		"videoEnabledByDefault":   &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+		"lanConnectivityRequired": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 	},
 	IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 		_, ok := value.(*models.Call)
@@ -222,11 +223,12 @@ func transformCallToResponse(call *excomms.IPCall, accountID string) (*models.Ca
 		return nil, fmt.Errorf("Expected 2 participants for call %s, got %d", call.ID, len(call.Participants))
 	}
 	c := &models.Call{
-		ID:                    call.ID,
-		AccessToken:           call.Token,
-		AllowVideo:            true,
-		VideoEnabledByDefault: true,
-		Recipients:            make([]*models.CallParticipant, 0, len(call.Participants)-1),
+		ID:                      call.ID,
+		AccessToken:             call.Token,
+		AllowVideo:              true,
+		VideoEnabledByDefault:   true,
+		Recipients:              make([]*models.CallParticipant, 0, len(call.Participants)-1),
+		LANConnectivityRequired: true,
 	}
 	for _, p := range call.Participants {
 		par := &models.CallParticipant{
