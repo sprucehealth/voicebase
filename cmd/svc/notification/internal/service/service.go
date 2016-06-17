@@ -369,8 +369,10 @@ type iOSPushData struct {
 	Sound            string `json:"sound"`
 }
 
+// https://developers.google.com/cloud-messaging/concept-options
 type androidPushNotification struct {
 	CollapseKey string           `json:"collapse_key"`
+	Priority    string           `json:"priority"`
 	PushData    *androidPushData `json:"data"`
 }
 
@@ -420,8 +422,15 @@ func generateNotification(webDomain string, n *notification.Notification, target
 	if err != nil {
 		golog.Errorf("Error while serializing ios notification data: %s", err)
 	}
+
+	// TODO: Perhaps move this into an option for the notification creator
+	priority := "normal"
+	if n.Type == notification.IncomingIPCall {
+		priority = "high"
+	}
 	androidNotifData, err := json.Marshal(&androidPushNotification{
 		CollapseKey: n.CollapseKey,
+		Priority:    priority,
 		PushData: &androidPushData{
 			Type:           string(n.Type),
 			Background:     msg == "",

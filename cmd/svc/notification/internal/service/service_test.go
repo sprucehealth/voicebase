@@ -357,6 +357,7 @@ func TestProcessNotification(t *testing.T) {
 	test.OK(t, err)
 	aData, err := json.Marshal(&androidPushNotification{
 		CollapseKey: "collapse",
+		Priority:    "normal",
 		PushData: &androidPushData{
 			Message:        "",
 			Background:     true,
@@ -413,6 +414,7 @@ func TestProcessNotification(t *testing.T) {
 	test.OK(t, err)
 	aData, err = json.Marshal(&androidPushNotification{
 		CollapseKey: "collapse",
+		Priority:    "normal",
 		PushData: &androidPushData{
 			Message:        "ShortMessage2",
 			Background:     false,
@@ -467,6 +469,7 @@ func TestProcessNotification(t *testing.T) {
 	test.OK(t, err)
 	aData, err = json.Marshal(&androidPushNotification{
 		CollapseKey: "collapse",
+		Priority:    "normal",
 		PushData: &androidPushData{
 			Message:        "ShortMessage4",
 			Background:     false,
@@ -567,6 +570,7 @@ func TestProcessNotificationDisabledEndpoint(t *testing.T) {
 	test.OK(t, err)
 	aData, err := json.Marshal(&androidPushNotification{
 		CollapseKey: "collapse",
+		Priority:    "normal",
 		PushData: &androidPushData{
 			Message:        "ShortMessage",
 			URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
@@ -688,6 +692,7 @@ func TestProcessNotificationInternalMessage(t *testing.T) {
 	test.OK(t, err)
 	aData, err := json.Marshal(&androidPushNotification{
 		CollapseKey: "collapse",
+		Priority:    "normal",
 		PushData: &androidPushData{
 			Message:        "",
 			Background:     true,
@@ -745,6 +750,7 @@ func TestProcessNotificationInternalMessage(t *testing.T) {
 	test.OK(t, err)
 	aData, err = json.Marshal(&androidPushNotification{
 		CollapseKey: "collapse",
+		Priority:    "normal",
 		PushData: &androidPushData{
 			Type:           string(notification.NewMessageOnInternalThread),
 			Message:        "ShortMessage2",
@@ -865,6 +871,7 @@ func TestProcessNotificationExternalMessage(t *testing.T) {
 	test.OK(t, err)
 	aData, err := json.Marshal(&androidPushNotification{
 		CollapseKey: "collapse",
+		Priority:    "normal",
 		PushData: &androidPushData{
 			Type:           string(notification.NewMessageOnExternalThread),
 			Message:        "",
@@ -922,6 +929,7 @@ func TestProcessNotificationExternalMessage(t *testing.T) {
 	test.OK(t, err)
 	aData, err = json.Marshal(&androidPushNotification{
 		CollapseKey: "collapse",
+		Priority:    "normal",
 		PushData: &androidPushData{
 			Type:           string(notification.NewMessageOnExternalThread),
 			Message:        "ShortMessage2",
