@@ -26,6 +26,7 @@ type ipCallStateTransition struct {
 var validIPCallParicipantStateTransitions = map[ipCallStateTransition]struct{}{
 	{from: models.IPCallStatePending, to: models.IPCallStateAccepted}:    {},
 	{from: models.IPCallStatePending, to: models.IPCallStateDeclined}:    {},
+	{from: models.IPCallStatePending, to: models.IPCallStateFailed}:      {}, // gives client the ability to automatically fail a call in the event of wifi being disabled on the recipient side.
 	{from: models.IPCallStateAccepted, to: models.IPCallStateConnected}:  {},
 	{from: models.IPCallStateAccepted, to: models.IPCallStateFailed}:     {},
 	{from: models.IPCallStateAccepted, to: models.IPCallStateCompleted}:  {}, // hanging up after accepting but before connecting
