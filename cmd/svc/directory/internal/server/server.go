@@ -1017,12 +1017,20 @@ func (s *server) UpdateProfile(ctx context.Context, rd *directory.UpdateProfileR
 	if err != nil {
 		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
 	}
-	pID, err = s.dl.UpsertEntityProfile(&dal.EntityProfile{
-		ID:       pID,
-		EntityID: entID,
-		Sections: &directory.ProfileSections{Sections: rd.Profile.Sections},
-	})
-	if err != nil {
+	if err := s.dl.Transact(func(dl dal.DAL) error {
+		pID, err = dl.UpsertEntityProfile(&dal.EntityProfile{
+			ID:       pID,
+			EntityID: entID,
+			Sections: &directory.ProfileSections{Sections: rd.Profile.Sections},
+		})
+		if err != nil {
+			return err
+		}
+		_, err := dl.UpdateEntity(entID, &dal.EntityUpdate{
+			HasProfile: ptr.Bool(true),
+		})
+		return err
+	}); err != nil {
 		return nil, grpcError(err)
 	}
 

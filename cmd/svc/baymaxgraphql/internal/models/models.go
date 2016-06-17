@@ -100,6 +100,7 @@ type Entity struct {
 	HasPendingInvite      bool            `json:"hasPendingInvite"`
 	Avatar                *Image          `json:"-"`
 	ImageMediaID          string          `json:"-"`
+	HasProfile            bool            `json:"hasProfile"`
 	CallableEndpoints     []*CallEndpoint `json:"callableEndpoints"`
 }
 

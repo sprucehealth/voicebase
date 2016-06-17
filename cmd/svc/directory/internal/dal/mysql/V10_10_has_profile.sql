@@ -1,0 +1,1 @@
+ALTER TABLE entity ADD COLUMN has_profile BOOL NOT NULL DEFAULT false;

@@ -512,6 +512,7 @@ func transformEntityToResponse(staticURLPrefix string, e *directory.Entity, sh *
 		AllowEdit:             canEditEntity(e, viewingAccount, sh),
 		HasPendingInvite:      entityHasPendingInvite(e),
 		ImageMediaID:          e.ImageMediaID,
+		HasProfile:            e.HasProfile,
 	}
 
 	if viewingAccount.Type == auth.AccountType_PROVIDER {

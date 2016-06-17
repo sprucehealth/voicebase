@@ -149,6 +149,7 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 		"hasPendingInvite":      &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		"isInternal":            &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		"lastModifiedTimestamp": &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+		"hasProfile":            &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		"profile": &graphql.Field{
 			Type: profileType,
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
