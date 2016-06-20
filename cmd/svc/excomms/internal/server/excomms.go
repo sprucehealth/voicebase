@@ -26,6 +26,7 @@ import (
 	"github.com/sprucehealth/backend/svc/events"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/notification"
+	"github.com/sprucehealth/backend/svc/threading"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -51,6 +52,7 @@ type excommsService struct {
 	dal                  dal.DAL
 	apiURL               string
 	directory            directory.DirectoryClient
+	threading            threading.ThreadsClient
 	sns                  snsiface.SNSAPI
 	externalMessageTopic string
 	eventTopic           string
@@ -70,6 +72,7 @@ func NewService(
 	dal dal.DAL,
 	apiURL string,
 	directory directory.DirectoryClient,
+	threading threading.ThreadsClient,
 	sns snsiface.SNSAPI,
 	externalMessageTopic string,
 	eventTopic string,
@@ -91,6 +94,7 @@ func NewService(
 		twilioVideoConfigSID: twilioVideoConfigSID,
 		dal:                  dal,
 		directory:            directory,
+		threading:            threading,
 		sns:                  sns,
 		externalMessageTopic: externalMessageTopic,
 		eventTopic:           eventTopic,

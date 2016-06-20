@@ -3,16 +3,19 @@ package server
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"fmt"
 	"io"
 
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
+	"github.com/sprucehealth/backend/libs/bml"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/twilio"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/notification"
+	"github.com/sprucehealth/backend/svc/threading"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 )
@@ -235,6 +238,8 @@ func (e *excommsService) UpdateIPCall(ctx context.Context, req *excomms.UpdateIP
 	}
 	var call *models.IPCall
 	var par *models.IPCallParticipant
+	var oldState models.IPCallState
+	endOfCall := false
 	err = e.dal.Transact(func(dl dal.DAL) error {
 		call, err = e.dal.IPCall(ctx, callID, dal.ForUpdate)
 		if errors.Cause(err) == dal.ErrIPCallNotFound {
@@ -260,7 +265,9 @@ func (e *excommsService) UpdateIPCall(ctx context.Context, req *excomms.UpdateIP
 			return grpcErrorf(codes.InvalidArgument, "Cannot transition from state %s to %s", par.State, newState)
 		}
 		// Update the participant so we don't have to refetch when returning the response
+		oldState = par.State
 		par.State = newState
+		par.NetworkType = networkType
 		if err := e.dal.UpdateIPCallParticipant(ctx, callID, req.AccountID, newState, networkType); err != nil {
 			return errors.Trace(err)
 		}
@@ -273,6 +280,7 @@ func (e *excommsService) UpdateIPCall(ctx context.Context, req *excomms.UpdateIP
 				if err := e.dal.UpdateIPCall(ctx, callID, false); err != nil {
 					return errors.Trace(err)
 				}
+				endOfCall = true
 			}
 		}
 		return nil
@@ -280,11 +288,88 @@ func (e *excommsService) UpdateIPCall(ctx context.Context, req *excomms.UpdateIP
 	if err != nil {
 		return nil, err
 	}
+	if endOfCall {
+		// Post message into thread if the receiving entity is a primary on a thread
+		if err := e.postIPCallMessage(ctx, call, oldState, newState); err != nil {
+			// Too late to revert here so just log there and go on
+			golog.Errorf("Error creating post for IPCall: %s", err)
+		}
+	}
 	rcall, err := e.transformIPCallToResponse(call, par)
 	if err != nil {
 		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 	return &excomms.UpdateIPCallResponse{Call: rcall}, nil
+}
+
+func (e *excommsService) postIPCallMessage(ctx context.Context, call *models.IPCall, oldState, newState models.IPCallState) error {
+	// Only know how to handle calls with 2 participants (caller and callee)
+	if len(call.Participants) != 2 {
+		return nil
+	}
+
+	var caller *models.IPCallParticipant
+	var recipient *models.IPCallParticipant
+	for _, p := range call.Participants {
+		switch p.Role {
+		case models.IPCallParticipantRoleRecipient:
+			recipient = p
+		case models.IPCallParticipantRoleCaller:
+			caller = p
+		}
+	}
+
+	res, err := e.threading.ThreadsForMember(ctx, &threading.ThreadsForMemberRequest{
+		EntityID:    recipient.EntityID,
+		PrimaryOnly: true,
+	})
+	if err != nil {
+		return errors.Trace(err)
+	}
+	switch len(res.Threads) {
+	default:
+		return errors.Errorf("Expected 0 or 1 threads for primary entity %s, found %d", recipient.EntityID, len(res.Threads))
+	case 0:
+		return nil
+	case 1:
+	}
+	thread := res.Threads[0]
+
+	answered := false
+	switch newState {
+	case models.IPCallStateDeclined:
+	case models.IPCallStateFailed:
+		answered = oldState == models.IPCallStateConnected
+	case models.IPCallStateCompleted:
+		answered = true
+	default:
+		return errors.Errorf("Unexpected terminal IPCall state %s", newState)
+	}
+
+	var title bml.BML
+	if answered {
+		dt := e.clock.Now().Sub(call.Initiated).Nanoseconds() / 1e9
+		title = append(title, fmt.Sprintf("Video call, %d:%02ds", dt/60, dt%60))
+	} else {
+		title = append(title, "Video call, no answer")
+	}
+
+	titleText, err := title.Format()
+	if err != nil {
+		return errors.Trace(err)
+	}
+	summary, err := title.PlainText()
+	if err != nil {
+		return errors.Trace(err)
+	}
+	_, err = e.threading.PostMessage(ctx, &threading.PostMessageRequest{
+		UUID:         call.ID.String(),
+		ThreadID:     thread.ID,
+		FromEntityID: caller.EntityID,
+		Title:        titleText,
+		Summary:      summary,
+	})
+	return errors.Trace(err)
 }
 
 func (e *excommsService) transformIPCallToResponse(call *models.IPCall, par *models.IPCallParticipant) (*excomms.IPCall, error) {

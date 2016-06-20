@@ -16,6 +16,8 @@ import (
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/notification"
 	notimock "github.com/sprucehealth/backend/svc/notification/mock"
+	"github.com/sprucehealth/backend/svc/threading"
+	threadmock "github.com/sprucehealth/backend/svc/threading/mock"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
@@ -28,7 +30,7 @@ func TestInitiateIPCall(t *testing.T) {
 
 	clk := clock.NewManaged(time.Unix(1e9, 0))
 	svc := NewService("accountSID", "authToken", "appSID", "sigSID", "sig", "vidSID", dl,
-		"apiURL", dir, nil, "extTopic", "evTopic", clk, nil, nil, nil, nil, noti)
+		"apiURL", dir, nil, nil, "extTopic", "evTopic", clk, nil, nil, nil, nil, noti)
 
 	identCounter := 0
 	svc.(*excommsService).genIPCallIdentity = func() (string, error) {
@@ -136,7 +138,7 @@ func TestIPCall(t *testing.T) {
 
 	clk := clock.NewManaged(time.Unix(1e9, 0))
 	svc := NewService("accountSID", "authToken", "appSID", "sigSID", "sig", "vidSID", dl,
-		"apiURL", nil, nil, "extTopic", "evTopic", clk, nil, nil, nil, nil, nil)
+		"apiURL", nil, nil, nil, "extTopic", "evTopic", clk, nil, nil, nil, nil, nil)
 
 	ipcID, err := models.NewIPCallID()
 	test.OK(t, err)
@@ -206,7 +208,7 @@ func TestPendingIPCalls(t *testing.T) {
 
 	clk := clock.NewManaged(time.Unix(1e9, 0))
 	svc := NewService("accountSID", "authToken", "appSID", "sigSID", "sig", "vidSID", dl,
-		"apiURL", nil, nil, "extTopic", "evTopic", clk, nil, nil, nil, nil, nil)
+		"apiURL", nil, nil, nil, "extTopic", "evTopic", clk, nil, nil, nil, nil, nil)
 
 	dl.Expect(mock.NewExpectation(dl.PendingIPCallsForAccount, "account_1").WithReturns([]*models.IPCall{}, nil))
 	res, err := svc.PendingIPCalls(nil, &excomms.PendingIPCallsRequest{AccountID: "account_1"})
@@ -269,6 +271,107 @@ func TestPendingIPCalls(t *testing.T) {
 						State:       excomms.IPCallState_PENDING,
 						NetworkType: excomms.NetworkType_UNKNOWN,
 					},
+				},
+			},
+		},
+	}, res)
+}
+
+func TestUpdateIPCall(t *testing.T) {
+	dl := dalmock.New(t)
+	thr := threadmock.New(t)
+	defer mock.FinishAll(dl, thr)
+
+	clk := clock.NewManaged(time.Unix(1e9, 0))
+	svc := NewService("accountSID", "authToken", "appSID", "sigSID", "sig", "vidSID", dl,
+		"apiURL", nil, thr, nil, "extTopic", "evTopic", clk, nil, nil, nil, nil, nil)
+
+	ipcid, err := models.NewIPCallID()
+	test.OK(t, err)
+
+	dl.Expect(mock.NewExpectation(dl.IPCall, ipcid).WithReturns((*models.IPCall)(nil), dal.ErrIPCallNotFound))
+	_, err = svc.UpdateIPCall(nil, &excomms.UpdateIPCallRequest{
+		IPCallID:  ipcid.String(),
+		AccountID: "account_caller",
+		State:     excomms.IPCallState_CONNECTED,
+	})
+	test.Equals(t, codes.NotFound, grpc.Code(err))
+
+	dl.Expect(mock.NewExpectation(dl.IPCall, ipcid).WithReturns(
+		&models.IPCall{
+			ID:        ipcid,
+			Type:      models.IPCallTypeVideo,
+			Pending:   true,
+			Initiated: clk.Now().Add(-110e9),
+			Participants: []*models.IPCallParticipant{
+				{
+					EntityID:    "entity_caller",
+					AccountID:   "account_caller",
+					Identity:    "identity_caller",
+					Role:        models.IPCallParticipantRoleCaller,
+					State:       models.IPCallStateConnected,
+					NetworkType: models.NetworkTypeUnknown,
+				},
+				{
+					EntityID:    "entity_recipient",
+					AccountID:   "account_recipient",
+					Identity:    "identity_recipient",
+					Role:        models.IPCallParticipantRoleRecipient,
+					State:       models.IPCallStateAccepted,
+					NetworkType: models.NetworkTypeUnknown,
+				},
+			},
+		}, nil))
+
+	dl.Expect(mock.NewExpectation(dl.UpdateIPCallParticipant, ipcid, "account_caller", models.IPCallStateCompleted, models.NetworkTypeWiFi))
+	dl.Expect(mock.NewExpectation(dl.UpdateIPCall, ipcid, false))
+
+	thr.Expect(mock.NewExpectation(thr.ThreadsForMember, &threading.ThreadsForMemberRequest{
+		EntityID:    "entity_recipient",
+		PrimaryOnly: true,
+	}).WithReturns(&threading.ThreadsForMemberResponse{
+		Threads: []*threading.Thread{
+			{ID: "thread"},
+		},
+	}, nil))
+
+	thr.Expect(mock.NewExpectation(thr.PostMessage, &threading.PostMessageRequest{
+		UUID:         ipcid.String(),
+		ThreadID:     "thread",
+		FromEntityID: "entity_caller",
+		Title:        "Video call, 1:50s",
+		Summary:      "Video call, 1:50s",
+	}))
+
+	res, err := svc.UpdateIPCall(nil, &excomms.UpdateIPCallRequest{
+		IPCallID:    ipcid.String(),
+		AccountID:   "account_caller",
+		State:       excomms.IPCallState_COMPLETED,
+		NetworkType: excomms.NetworkType_WIFI,
+	})
+	test.OK(t, err)
+	test.Equals(t, &excomms.UpdateIPCallResponse{
+		Call: &excomms.IPCall{
+			ID:      ipcid.String(),
+			Type:    excomms.IPCallType_VIDEO,
+			Pending: false,
+			Token:   res.Call.Token, // Not deterministic so can't test the exact value, but doesn't matter too much anyway as the token generation is tested elsewhere
+			Participants: []*excomms.IPCallParticipant{
+				{
+					AccountID:   "account_caller",
+					EntityID:    "entity_caller",
+					Identity:    "identity_caller",
+					Role:        excomms.IPCallParticipantRole_CALLER,
+					State:       excomms.IPCallState_COMPLETED,
+					NetworkType: excomms.NetworkType_WIFI,
+				},
+				{
+					AccountID:   "account_recipient",
+					EntityID:    "entity_recipient",
+					Identity:    "identity_recipient",
+					Role:        excomms.IPCallParticipantRole_RECIPIENT,
+					State:       excomms.IPCallState_ACCEPTED,
+					NetworkType: excomms.NetworkType_UNKNOWN,
 				},
 			},
 		},

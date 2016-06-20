@@ -11,6 +11,7 @@ var config struct {
 	excommsServicePort      int
 	excommsAPIURL           string
 	directoryServiceURL     string
+	threadingServiceAddress string
 	settingsServiceURL      string
 	twilioAuthToken         string
 	twilioAccountSID        string
@@ -56,6 +57,7 @@ func init() {
 	flag.StringVar(&config.twilioSigningKey, "twilio_signing_key", "", "API key secret used to sign tokens")
 	flag.StringVar(&config.twilioVideoConfigSID, "twilio_video_config_sid", "", "Video call configuration SID")
 	flag.StringVar(&config.directoryServiceURL, "directory_endpoint", "", "url to connect with directory service")
+	flag.StringVar(&config.threadingServiceAddress, "threading_endpoint", "", "address to connect with threading service")
 	flag.StringVar(&config.settingsServiceURL, "settings_endpoint", "", "url to connect with settings service")
 	flag.StringVar(&config.sendgridAPIKey, "sendgrid_api_key", "", "sendgrid api key")
 	flag.StringVar(&config.externalMessageTopic, "sns_external_message_topic", "", "sns topic on which to post external message events")

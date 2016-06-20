@@ -29,6 +29,7 @@ import (
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/settings"
+	"github.com/sprucehealth/backend/svc/threading"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
@@ -77,6 +78,15 @@ func runService(bootSvc *boot.Service) {
 		return
 	}
 	defer directoryConn.Close()
+
+	threadingConn, err := grpc.Dial(
+		config.threadingServiceAddress,
+		grpc.WithInsecure())
+	if err != nil {
+		golog.Fatalf("Unable to communicate with threading service: %s", err.Error())
+		return
+	}
+	defer threadingConn.Close()
 
 	settingsConn, err := grpc.Dial(
 		config.settingsServiceURL,
@@ -160,6 +170,7 @@ func runService(bootSvc *boot.Service) {
 		dl,
 		config.excommsAPIURL,
 		directory.NewDirectoryClient(directoryConn),
+		threading.NewThreadsClient(threadingConn),
 		eSNS,
 		config.externalMessageTopic,
 		config.eventTopic,
