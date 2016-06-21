@@ -143,7 +143,7 @@ type ResourceAccessor interface {
 	UpdateEntity(ctx context.Context, req *directory.UpdateEntityRequest) (*directory.Entity, error)
 	UpdateIPCall(ctx context.Context, req *excomms.UpdateIPCallRequest) (*excomms.UpdateIPCallResponse, error)
 	UpdatePassword(ctx context.Context, token, code, newPassword string) error
-	UpdateProfile(ctx context.Context, req *directory.UpdateProfileRequest) (*directory.Profile, error)
+	UpdateProfile(ctx context.Context, req *directory.UpdateProfileRequest) (*directory.UpdateProfileResponse, error)
 	UpdateThread(ctx context.Context, req *threading.UpdateThreadRequest) (*threading.UpdateThreadResponse, error)
 	VerifiedValue(ctx context.Context, token string) (string, error)
 	Visit(ctx context.Context, req *care.GetVisitRequest) (*care.GetVisitResponse, error)
@@ -1002,7 +1002,7 @@ func ProfileAllowEdit(ctx context.Context, ram ResourceAccessor, profileEntityID
 }
 
 // UpdateProfile handles create and update requests
-func (m *resourceAccessor) UpdateProfile(ctx context.Context, req *directory.UpdateProfileRequest) (*directory.Profile, error) {
+func (m *resourceAccessor) UpdateProfile(ctx context.Context, req *directory.UpdateProfileRequest) (*directory.UpdateProfileResponse, error) {
 	owningEntityID := req.Profile.EntityID
 	// If no entity ID is provided then lookup the profile so we can authorize the edit
 	if owningEntityID == "" {
@@ -1026,7 +1026,7 @@ func (m *resourceAccessor) UpdateProfile(ctx context.Context, req *directory.Upd
 	} else if err != nil {
 		return nil, err
 	}
-	return res.Profile, nil
+	return res, nil
 }
 
 func (m *resourceAccessor) UpdateThread(ctx context.Context, req *threading.UpdateThreadRequest) (*threading.UpdateThreadResponse, error) {

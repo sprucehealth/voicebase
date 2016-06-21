@@ -1387,6 +1387,14 @@ func TestUpdateProfile(t *testing.T) {
 	profileID, err := dal.NewEntityProfileID()
 	test.OK(t, err)
 	clk := clock.NewManaged(time.Now())
+	entR, err := transformEntityToResponse(&dal.Entity{
+		ID:       entityID,
+		Created:  clk.Now(),
+		Modified: clk.Now(),
+		Type:     dal.EntityTypeInternal,
+		Status:   dal.EntityStatusActive,
+	})
+	test.OK(t, err)
 	cases := map[string]struct {
 		request          *directory.UpdateProfileRequest
 		dal              *mock_dal.MockDAL
@@ -1458,7 +1466,8 @@ func TestUpdateProfile(t *testing.T) {
 			request: &directory.UpdateProfileRequest{
 				ProfileID: profileID.String(),
 				Profile: &directory.Profile{
-					Sections: []*directory.ProfileSection{},
+					DisplayName: "New display name",
+					Sections:    []*directory.ProfileSection{},
 				},
 			},
 			dal: func() *mock_dal.MockDAL {
@@ -1472,13 +1481,21 @@ func TestUpdateProfile(t *testing.T) {
 					Sections: &directory.ProfileSections{Sections: []*directory.ProfileSection{}},
 				}).WithReturns(profileID, nil))
 				mDAL.Expect(mock.NewExpectation(mDAL.UpdateEntity, entityID, &dal.EntityUpdate{
-					HasProfile: ptr.Bool(true),
+					CustomDisplayName: ptr.String("New display name"),
+					HasProfile:        ptr.Bool(true),
 				}))
 				mDAL.Expect(mock.NewExpectation(mDAL.EntityProfile, profileID).WithReturns(&dal.EntityProfile{
 					ID:       profileID,
 					EntityID: entityID,
 					Sections: &directory.ProfileSections{},
 					Modified: clk.Now(),
+				}, nil))
+				mDAL.Expect(mock.NewExpectation(mDAL.Entity, entityID).WithReturns(&dal.Entity{
+					ID:       entityID,
+					Created:  clk.Now(),
+					Modified: clk.Now(),
+					Type:     dal.EntityTypeInternal,
+					Status:   dal.EntityStatusActive,
 				}, nil))
 				return mDAL
 			}(),
@@ -1489,14 +1506,16 @@ func TestUpdateProfile(t *testing.T) {
 					Sections: &directory.ProfileSections{},
 					Modified: clk.Now(),
 				}),
+				Entity: entR,
 			},
 			expectedError: nil,
 		},
 		"EntityID-NewSuccess": {
 			request: &directory.UpdateProfileRequest{
 				Profile: &directory.Profile{
-					EntityID: entityID.String(),
-					Sections: []*directory.ProfileSection{},
+					DisplayName: "New display name",
+					EntityID:    entityID.String(),
+					Sections:    []*directory.ProfileSection{},
 				},
 			},
 			dal: func() *mock_dal.MockDAL {
@@ -1508,13 +1527,21 @@ func TestUpdateProfile(t *testing.T) {
 					Sections: &directory.ProfileSections{Sections: []*directory.ProfileSection{}},
 				}).WithReturns(profileID, nil))
 				mDAL.Expect(mock.NewExpectation(mDAL.UpdateEntity, entityID, &dal.EntityUpdate{
-					HasProfile: ptr.Bool(true),
+					CustomDisplayName: ptr.String("New display name"),
+					HasProfile:        ptr.Bool(true),
 				}))
 				mDAL.Expect(mock.NewExpectation(mDAL.EntityProfile, profileID).WithReturns(&dal.EntityProfile{
 					ID:       profileID,
 					EntityID: entityID,
 					Sections: &directory.ProfileSections{},
 					Modified: clk.Now(),
+				}, nil))
+				mDAL.Expect(mock.NewExpectation(mDAL.Entity, entityID).WithReturns(&dal.Entity{
+					ID:       entityID,
+					Created:  clk.Now(),
+					Modified: clk.Now(),
+					Type:     dal.EntityTypeInternal,
+					Status:   dal.EntityStatusActive,
 				}, nil))
 				return mDAL
 			}(),
@@ -1525,14 +1552,16 @@ func TestUpdateProfile(t *testing.T) {
 					Sections: &directory.ProfileSections{},
 					Modified: clk.Now(),
 				}),
+				Entity: entR,
 			},
 			expectedError: nil,
 		},
 		"EntityID-ExistingSuccess": {
 			request: &directory.UpdateProfileRequest{
 				Profile: &directory.Profile{
-					EntityID: entityID.String(),
-					Sections: []*directory.ProfileSection{},
+					DisplayName: "New display name",
+					EntityID:    entityID.String(),
+					Sections:    []*directory.ProfileSection{},
 				},
 			},
 			dal: func() *mock_dal.MockDAL {
@@ -1550,13 +1579,21 @@ func TestUpdateProfile(t *testing.T) {
 					Sections: &directory.ProfileSections{Sections: []*directory.ProfileSection{}},
 				}).WithReturns(profileID, nil))
 				mDAL.Expect(mock.NewExpectation(mDAL.UpdateEntity, entityID, &dal.EntityUpdate{
-					HasProfile: ptr.Bool(true),
+					CustomDisplayName: ptr.String("New display name"),
+					HasProfile:        ptr.Bool(true),
 				}))
 				mDAL.Expect(mock.NewExpectation(mDAL.EntityProfile, profileID).WithReturns(&dal.EntityProfile{
 					ID:       profileID,
 					EntityID: entityID,
 					Sections: &directory.ProfileSections{},
 					Modified: clk.Now(),
+				}, nil))
+				mDAL.Expect(mock.NewExpectation(mDAL.Entity, entityID).WithReturns(&dal.Entity{
+					ID:       entityID,
+					Created:  clk.Now(),
+					Modified: clk.Now(),
+					Type:     dal.EntityTypeInternal,
+					Status:   dal.EntityStatusActive,
 				}, nil))
 				return mDAL
 			}(),
@@ -1567,6 +1604,7 @@ func TestUpdateProfile(t *testing.T) {
 					Sections: &directory.ProfileSections{},
 					Modified: clk.Now(),
 				}),
+				Entity: entR,
 			},
 			expectedError: nil,
 		},

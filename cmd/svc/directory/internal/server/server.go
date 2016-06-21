@@ -351,6 +351,7 @@ func (s *server) UpdateEntity(ctx context.Context, rd *directory.UpdateEntityReq
 			entityUpdate.ShortTitle = &rd.EntityInfo.ShortTitle
 			entityUpdate.LongTitle = &rd.EntityInfo.LongTitle
 			entityUpdate.Note = &rd.EntityInfo.Note
+
 			if rd.EntityInfo.Gender != directory.EntityInfo_UNKNOWN {
 				g, err := dal.ParseEntityGender(rd.EntityInfo.Gender.String())
 				if err != nil {
@@ -1027,7 +1028,8 @@ func (s *server) UpdateProfile(ctx context.Context, rd *directory.UpdateProfileR
 			return err
 		}
 		_, err := dl.UpdateEntity(entID, &dal.EntityUpdate{
-			HasProfile: ptr.Bool(true),
+			CustomDisplayName: ptr.String(rd.Profile.DisplayName),
+			HasProfile:        ptr.Bool(true),
 		})
 		return err
 	}); err != nil {
@@ -1045,8 +1047,19 @@ func (s *server) UpdateProfile(ctx context.Context, rd *directory.UpdateProfileR
 		// Trust the grpc error of the server call
 		return nil, err
 	}
+
+	// Reread out entity to get any triggered modified times
+	ent, err := s.dl.Entity(entID)
+	if err != nil {
+		return nil, grpcError(err)
+	}
+	entResp, err := transformEntityToResponse(ent)
+	if err != nil {
+		return nil, grpcError(err)
+	}
 	return &directory.UpdateProfileResponse{
 		Profile: profileResp.Profile,
+		Entity:  entResp,
 	}, nil
 }
 

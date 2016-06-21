@@ -694,24 +694,25 @@ var entityPool = &sync.Pool{
 
 // Entity represents a entity record
 type Entity struct {
-	ID            EntityID
-	Type          EntityType
-	Status        EntityStatus
-	DisplayName   string
-	FirstName     string
-	GroupName     string
-	Note          string
-	MiddleInitial string
-	LastName      string
-	ShortTitle    string
-	LongTitle     string
-	Gender        *EntityGender
-	DOB           *encoding.Date
-	AccountID     string
-	ImageMediaID  string
-	HasProfile    bool
-	Created       time.Time
-	Modified      time.Time
+	ID                EntityID
+	Type              EntityType
+	Status            EntityStatus
+	DisplayName       string
+	CustomDisplayName string
+	FirstName         string
+	GroupName         string
+	Note              string
+	MiddleInitial     string
+	LastName          string
+	ShortTitle        string
+	LongTitle         string
+	Gender            *EntityGender
+	DOB               *encoding.Date
+	AccountID         string
+	ImageMediaID      string
+	HasProfile        bool
+	Created           time.Time
+	Modified          time.Time
 }
 
 // Recycle puts the value back in the pool after which it must not be used.
@@ -721,21 +722,22 @@ func (e *Entity) Recycle() {
 
 // EntityUpdate represents the mutable aspects of a entity record
 type EntityUpdate struct {
-	DisplayName   *string
-	FirstName     *string
-	GroupName     *string
-	Type          *EntityType
-	Status        *EntityStatus
-	MiddleInitial *string
-	LastName      *string
-	ShortTitle    *string
-	LongTitle     *string
-	Note          *string
-	Gender        *EntityGender
-	DOB           *encoding.Date
-	AccountID     *string
-	ImageMediaID  *string
-	HasProfile    *bool
+	DisplayName       *string
+	CustomDisplayName *string
+	FirstName         *string
+	GroupName         *string
+	Type              *EntityType
+	Status            *EntityStatus
+	MiddleInitial     *string
+	LastName          *string
+	ShortTitle        *string
+	LongTitle         *string
+	Note              *string
+	Gender            *EntityGender
+	DOB               *encoding.Date
+	AccountID         *string
+	ImageMediaID      *string
+	HasProfile        *bool
 }
 
 // SerializedClientEntityContact represents a serialized_client_entity_contact record
@@ -836,6 +838,9 @@ func (d *dal) UpdateEntity(id EntityID, update *EntityUpdate) (int64, error) {
 	args := dbutil.MySQLVarArgs()
 	if update.DisplayName != nil {
 		args.Append("display_name", *update.DisplayName)
+	}
+	if update.CustomDisplayName != nil {
+		args.Append("custom_display_name", *update.CustomDisplayName)
 	}
 	if update.FirstName != nil {
 		args.Append("first_name", *update.FirstName)
@@ -1460,7 +1465,7 @@ func scanEvent(row dbutil.Scanner) (*Event, error) {
 }
 
 const selectEntity = `
-    SELECT entity.id, entity.middle_initial, entity.last_name, entity.note, entity.created, entity.modified, entity.display_name, entity.first_name, entity.group_name, entity.type, entity.status, entity.short_title, entity.long_title, entity.gender, entity.dob, entity.account_id, entity.image_media_id, entity.has_profile
+    SELECT entity.id, entity.middle_initial, entity.last_name, entity.note, entity.created, entity.modified, entity.display_name, entity.first_name, entity.group_name, entity.type, entity.status, entity.short_title, entity.long_title, entity.gender, entity.dob, entity.account_id, entity.image_media_id, entity.has_profile, entity.custom_display_name
       FROM entity`
 
 func andEntityStatusIn(ss []EntityStatus) string {
@@ -1491,7 +1496,7 @@ func scanEntity(row dbutil.Scanner) (*Entity, error) {
 	m := entityPool.Get().(*Entity)
 	m.ID = EmptyEntityID()
 
-	err := row.Scan(&m.ID, &m.MiddleInitial, &m.LastName, &m.Note, &m.Created, &m.Modified, &m.DisplayName, &m.FirstName, &m.GroupName, &m.Type, &m.Status, &m.ShortTitle, &m.LongTitle, &m.Gender, &m.DOB, &m.AccountID, &m.ImageMediaID, &m.HasProfile)
+	err := row.Scan(&m.ID, &m.MiddleInitial, &m.LastName, &m.Note, &m.Created, &m.Modified, &m.DisplayName, &m.FirstName, &m.GroupName, &m.Type, &m.Status, &m.ShortTitle, &m.LongTitle, &m.Gender, &m.DOB, &m.AccountID, &m.ImageMediaID, &m.HasProfile, &m.CustomDisplayName)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrNotFound)
 	}

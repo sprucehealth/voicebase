@@ -9,7 +9,7 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 )
 
-// dalEntityAsPBEntity transforms a dal entity contact to a svc entity contact.
+// transformEntityContactToResponse transforms a dal entity contact to a svc entity contact.
 // the dal entity contact must not be used after this call.
 func transformEntityContactToResponse(dEntityContact *dal.EntityContact) *directory.Contact {
 	contact := &directory.Contact{
@@ -27,7 +27,7 @@ func transformEntityContactToResponse(dEntityContact *dal.EntityContact) *direct
 	return contact
 }
 
-// dalEntityAsPBEntity transforms a dal entity to a svc entity.
+// transformEntityToResponse transforms a dal entity to a svc entity.
 // the dal entity must not be used after this call.
 func transformEntityToResponse(dEntity *dal.Entity) (*directory.Entity, error) {
 	entity := &directory.Entity{
@@ -67,17 +67,22 @@ func transformEntityToEntityInfoResponse(de *dal.Entity) *directory.EntityInfo {
 			Year:  uint32(de.DOB.Year),
 		}
 	}
+	displayName := de.DisplayName
+	if de.CustomDisplayName != "" {
+		displayName = de.CustomDisplayName
+	}
 	return &directory.EntityInfo{
-		FirstName:     de.FirstName,
-		MiddleInitial: de.MiddleInitial,
-		LastName:      de.LastName,
-		GroupName:     de.GroupName,
-		DisplayName:   de.DisplayName,
-		ShortTitle:    de.ShortTitle,
-		LongTitle:     de.LongTitle,
-		Gender:        entityGender,
-		DOB:           dob,
-		Note:          de.Note,
+		FirstName:         de.FirstName,
+		MiddleInitial:     de.MiddleInitial,
+		LastName:          de.LastName,
+		GroupName:         de.GroupName,
+		DisplayName:       displayName,
+		CustomDisplayName: de.CustomDisplayName,
+		ShortTitle:        de.ShortTitle,
+		LongTitle:         de.LongTitle,
+		Gender:            entityGender,
+		DOB:               dob,
+		Note:              de.Note,
 	}
 }
 

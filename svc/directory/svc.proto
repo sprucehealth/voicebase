@@ -85,7 +85,8 @@ message Entity {
 message Profile {
 	string id = 1 [(gogoproto.customname) = "ID"];
 	string entity_id = 2 [(gogoproto.customname) = "EntityID"];
-	repeated ProfileSection sections = 3;
+	string display_name = 3;
+	repeated ProfileSection sections = 4;
 	uint64 last_modified_timestamp = 5;
 }
 
@@ -328,7 +329,8 @@ message UpdateProfileRequest {
 }
 
 message UpdateProfileResponse {
-	Profile profile = 1;
+	Entity entity = 1;
+	Profile profile = 2;
 }
 
 service Directory {

@@ -621,11 +621,11 @@ func (m *ResourceAccessor) GetAnswersForVisit(ctx context.Context, req *care.Get
 	return rets[0].(*care.GetAnswersForVisitResponse), mock.SafeError(rets[1])
 }
 
-func (m *ResourceAccessor) UpdateProfile(ctx context.Context, req *directory.UpdateProfileRequest) (*directory.Profile, error) {
+func (m *ResourceAccessor) UpdateProfile(ctx context.Context, req *directory.UpdateProfileRequest) (*directory.UpdateProfileResponse, error) {
 	rets := m.Record(req)
 	if len(rets) == 0 {
 		return nil, nil
 	}
 
-	return rets[0].(*directory.Profile), mock.SafeError(rets[1])
+	return rets[0].(*directory.UpdateProfileResponse), mock.SafeError(rets[1])
 }

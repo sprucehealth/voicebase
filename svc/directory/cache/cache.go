@@ -276,5 +276,6 @@ func (c *CachedClient) UpdateEntityDomain(ctx context.Context, in *directory.Upd
 }
 
 func (c *CachedClient) UpdateProfile(ctx context.Context, in *directory.UpdateProfileRequest, opts ...grpc.CallOption) (*directory.UpdateProfileResponse, error) {
+	c.bustCache(ctx)
 	return c.dc.UpdateProfile(ctx, in, opts...)
 }

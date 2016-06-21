@@ -1,0 +1,1 @@
+ALTER TABLE entity ADD COLUMN custom_display_name VARCHAR(250) NOT NULL;

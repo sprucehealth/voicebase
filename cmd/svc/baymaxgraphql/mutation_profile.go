@@ -39,10 +39,7 @@ var profileSectionInputType = graphql.NewInputObject(
 type createProfileInput struct {
 	ClientMutationID string                 `gql:"clientMutationId"`
 	EntityID         string                 `gql:"entityID,nonempty"`
-	PracticeName     string                 `gql:"practiceName"`
-	FirstName        string                 `gql:"firstName"`
-	LastName         string                 `gql:"lastName"`
-	Title            string                 `gql:"title"`
+	DisplayName      string                 `gql:"displayName,nonempty"`
 	ImageMediaID     string                 `gql:"imageMediaID,nonempty"`
 	Sections         []*profileSectionInput `gql:"sections,nonempty"`
 }
@@ -53,10 +50,7 @@ var createProfileInputType = graphql.NewInputObject(
 		Fields: graphql.InputObjectConfigFieldMap{
 			"clientMutationId": newClientMutationIDInputField(),
 			"entityID":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
-			"practiceName":     &graphql.InputObjectFieldConfig{Type: graphql.String},
-			"firstName":        &graphql.InputObjectFieldConfig{Type: graphql.String},
-			"lastName":         &graphql.InputObjectFieldConfig{Type: graphql.String},
-			"title":            &graphql.InputObjectFieldConfig{Type: graphql.String},
+			"displayName":      &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 			"imageMediaID":     &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 			"sections":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.NewList(profileSectionInputType))},
 		},
@@ -80,10 +74,6 @@ const (
 var createProfileErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
 	Name: "CreateProfileErrorCode",
 	Values: graphql.EnumValueConfigMap{
-		createProfileErrorCodePracticeNameOrFirstAndLastRequired: &graphql.EnumValueConfig{
-			Value:       createProfileErrorCodePracticeNameOrFirstAndLastRequired,
-			Description: "Practice name or first name, last name, and title required.",
-		},
 		createProfileErrorCodeInvalidMediaID: &graphql.EnumValueConfig{
 			Value:       createProfileErrorCodeInvalidMediaID,
 			Description: "The provided media id is not valid.",
@@ -131,18 +121,6 @@ var createProfileMutation = &graphql.Field{
 				return nil, errors.InternalError(ctx, err)
 			}
 
-			// TODO: Could do these remote checks in parallel, need to think about a pattern for managing well formed error
-			// returns from parallel execution
-			// Assert that we have enough info
-			if in.PracticeName == "" && (in.FirstName == "" || in.LastName == "" || in.Title == "") {
-				return &createProfileOutput{
-					ClientMutationID: in.ClientMutationID,
-					Success:          false,
-					ErrorCode:        createProfileErrorCodePracticeNameOrFirstAndLastRequired,
-					ErrorMessage:     "Practice name or first name, last name, and title required.",
-				}, nil
-			}
-
 			// Check that our media ID is valid
 			if _, err := ram.MediaInfo(ctx, in.ImageMediaID); lerrors.Cause(err) == raccess.ErrNotFound {
 				return &createProfileOutput{
@@ -155,13 +133,7 @@ var createProfileMutation = &graphql.Field{
 				return nil, errors.InternalError(ctx, err)
 			}
 
-			ent, err := updateEntityProfile(ctx, ram, "", in.EntityID, in.ImageMediaID, &directory.EntityInfo{
-				FirstName:  in.FirstName,
-				LastName:   in.LastName,
-				GroupName:  in.PracticeName,
-				ShortTitle: in.Title,
-				LongTitle:  in.Title,
-			}, in.Sections, svc.staticURLPrefix)
+			ent, err := updateEntityProfile(ctx, ram, "", in.EntityID, in.ImageMediaID, in.DisplayName, in.Sections, svc.staticURLPrefix)
 			if lerrors.Cause(err) == raccess.ErrNotFound {
 				return nil, errors.ErrNotFound(ctx, fmt.Sprintf("Resource for profile creation for %s", in.EntityID))
 			} else if err != nil {
@@ -180,10 +152,7 @@ var createProfileMutation = &graphql.Field{
 type updateProfileInput struct {
 	ClientMutationID string                 `gql:"clientMutationId"`
 	ProfileID        string                 `gql:"profileID,nonempty"`
-	PracticeName     string                 `gql:"practiceName"`
-	FirstName        string                 `gql:"firstName"`
-	LastName         string                 `gql:"lastName"`
-	Title            string                 `gql:"title"`
+	DisplayName      string                 `gql:"displayName,nonempty"`
 	ImageMediaID     string                 `gql:"imageMediaID,nonempty"`
 	Sections         []*profileSectionInput `gql:"sections,nonempty"`
 }
@@ -194,10 +163,7 @@ var updateProfileInputType = graphql.NewInputObject(
 		Fields: graphql.InputObjectConfigFieldMap{
 			"clientMutationId": newClientMutationIDInputField(),
 			"profileID":        &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
-			"practiceName":     &graphql.InputObjectFieldConfig{Type: graphql.String},
-			"firstName":        &graphql.InputObjectFieldConfig{Type: graphql.String},
-			"lastName":         &graphql.InputObjectFieldConfig{Type: graphql.String},
-			"title":            &graphql.InputObjectFieldConfig{Type: graphql.String},
+			"displayName":      &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 			"imageMediaID":     &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 			"sections":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.NewList(profileSectionInputType))},
 		},
@@ -214,17 +180,12 @@ type updateProfileOutput struct {
 }
 
 const (
-	updateProfileErrorCodePracticeNameOrFirstAndLastRequired = "PRACTICE_NAME_OR_FIRST_LAST_TITLE_REQUIRED"
-	updateProfileErrorCodeInvalidMediaID                     = "INVALID_MEDIA_ID"
+	updateProfileErrorCodeInvalidMediaID = "INVALID_MEDIA_ID"
 )
 
 var updateProfileErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
 	Name: "UpdateProfileErrorCode",
 	Values: graphql.EnumValueConfigMap{
-		updateProfileErrorCodePracticeNameOrFirstAndLastRequired: &graphql.EnumValueConfig{
-			Value:       updateProfileErrorCodePracticeNameOrFirstAndLastRequired,
-			Description: "Practice name or first name, last name, and title required.",
-		},
 		updateProfileErrorCodeInvalidMediaID: &graphql.EnumValueConfig{
 			Value:       updateProfileErrorCodeInvalidMediaID,
 			Description: "The provided media id is not valid.",
@@ -270,18 +231,6 @@ var updateProfileMutation = &graphql.Field{
 				return nil, errors.InternalError(ctx, err)
 			}
 
-			// TODO: Could do these remote checks in parallel, need to think about a pattern for managing well formed error
-			// returns from parallel execution
-			// Assert that we have enough info
-			if in.PracticeName == "" && (in.FirstName == "" || in.LastName == "" || in.Title == "") {
-				return &updateProfileOutput{
-					ClientMutationID: in.ClientMutationID,
-					Success:          false,
-					ErrorCode:        updateProfileErrorCodePracticeNameOrFirstAndLastRequired,
-					ErrorMessage:     "Practice name or first name, last name, and title required.",
-				}, nil
-			}
-
 			// Check that our media ID is valid
 			if _, err := ram.MediaInfo(ctx, in.ImageMediaID); lerrors.Cause(err) == raccess.ErrNotFound {
 				return &updateProfileOutput{
@@ -294,13 +243,7 @@ var updateProfileMutation = &graphql.Field{
 				return nil, errors.InternalError(ctx, err)
 			}
 
-			ent, err := updateEntityProfile(ctx, ram, in.ProfileID, "", in.ImageMediaID, &directory.EntityInfo{
-				FirstName:  in.FirstName,
-				LastName:   in.LastName,
-				GroupName:  in.PracticeName,
-				ShortTitle: in.Title,
-				LongTitle:  in.Title,
-			}, in.Sections, svc.staticURLPrefix)
+			ent, err := updateEntityProfile(ctx, ram, in.ProfileID, "", in.ImageMediaID, in.DisplayName, in.Sections, svc.staticURLPrefix)
 			if lerrors.Cause(err) == raccess.ErrNotFound {
 				return nil, errors.ErrNotFound(ctx, fmt.Sprintf("Resource for profile update %s", in.ProfileID))
 			} else if err != nil {
@@ -315,7 +258,7 @@ var updateProfileMutation = &graphql.Field{
 		})),
 }
 
-func updateEntityProfile(ctx context.Context, ram raccess.ResourceAccessor, profileID, entityID, imageMediaID string, entityInfo *directory.EntityInfo, psis []*profileSectionInput, staticURLPrefix string) (*models.Entity, error) {
+func updateEntityProfile(ctx context.Context, ram raccess.ResourceAccessor, profileID, entityID, imageMediaID, customDisplayName string, psis []*profileSectionInput, staticURLPrefix string) (*models.Entity, error) {
 	sections := make([]*directory.ProfileSection, len(psis))
 	for i, s := range psis {
 		sections[i] = &directory.ProfileSection{
@@ -328,25 +271,14 @@ func updateEntityProfile(ctx context.Context, ram raccess.ResourceAccessor, prof
 	profile, err := ram.UpdateProfile(ctx, &directory.UpdateProfileRequest{
 		ProfileID: profileID,
 		Profile: &directory.Profile{
-			EntityID: entityID,
-			Sections: sections,
+			EntityID:    entityID,
+			DisplayName: customDisplayName,
+			Sections:    sections,
 		},
 	})
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 
-	// Update the entity info with the profile info
-	ent, err := ram.UpdateEntity(ctx, &directory.UpdateEntityRequest{
-		EntityID:           profile.EntityID,
-		UpdateEntityInfo:   true,
-		EntityInfo:         entityInfo,
-		ImageMediaID:       imageMediaID,
-		UpdateImageMediaID: true,
-	})
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
-
-	return transformEntityToResponse(staticURLPrefix, ent, devicectx.SpruceHeaders(ctx), gqlctx.Account(ctx))
+	return transformEntityToResponse(staticURLPrefix, profile.Entity, devicectx.SpruceHeaders(ctx), gqlctx.Account(ctx))
 }
