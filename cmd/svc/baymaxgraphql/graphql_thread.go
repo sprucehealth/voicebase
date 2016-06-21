@@ -96,7 +96,8 @@ var threadType = graphql.NewObject(
 					if !booleanValue.Value {
 						return false, nil
 					}
-					// only allow visit attachments if the patient has created an account and is on iOS
+
+					// allow visit attachments if patient has not created account yet or if patient is on iOS
 					primaryEntity, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
 						LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
 						LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
@@ -112,9 +113,10 @@ var threadType = graphql.NewObject(
 						return nil, errors.InternalError(ctx, err)
 					}
 
-					// if patient has not created account then we cannot send spruce visit just yet
+					// if patient has not created account then we optimistically
+					// assume that patient is on iOS and allow attachments
 					if primaryEntity.AccountID == "" {
-						return false, nil
+						return true, nil
 					}
 
 					loginInfoRes, err := ram.LastLoginForAccount(ctx, &auth.GetLastLoginInfoRequest{
@@ -123,10 +125,14 @@ var threadType = graphql.NewObject(
 					if err != nil {
 						if grpc.Code(err) == codes.NotFound {
 							// we dont have login information for the patient yet
-							return false, nil
+							// in which case optimistically allow provider to attach spruce visits
+							return true, nil
 						}
 						return false, errors.InternalError(ctx, err)
 					}
+
+					// if we do have login info, then ensure that user is on iOS before
+					// allowing attachment of spruce visits
 					return loginInfoRes.Platform == auth.Platform_IOS, nil
 				},
 			},
