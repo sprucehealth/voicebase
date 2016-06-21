@@ -216,25 +216,28 @@ func (s *server) InviteColleagues(ctx context.Context, in *invite.InviteColleagu
 		return nil, err
 	}
 
-	inviteClientDataJSON, err := json.Marshal(colleagueInviteClientData{
-		OrganizationInvite: organizationInvite{
-			Popover: popover{
-				Title:      "Welcome to Spruce!",
-				Message:    inviter.Info.DisplayName + " has invited you to join them on Spruce.",
-				ButtonText: "Okay",
-			},
-			OrgID:   org.ID,
-			OrgName: org.Info.DisplayName,
-		},
-	})
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
-
 	for _, c := range in.Colleagues {
+		welcomeText := "Welcome to Spruce!"
+		if c.FirstName != "" {
+			welcomeText = fmt.Sprintf("Welcome %s!", c.FirstName)
+		}
+		inviteClientDataJSON, err := json.Marshal(colleagueInviteClientData{
+			OrganizationInvite: organizationInvite{
+				Popover: popover{
+					Title:      welcomeText,
+					Message:    inviter.Info.DisplayName + " has invited you to join them on Spruce.",
+					ButtonText: "Okay",
+				},
+				OrgID:   org.ID,
+				OrgName: org.Info.DisplayName,
+			},
+		})
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
 		s.proccessInvite(
 			ctx,
-			complexTokenGenerator,
+			simpleTokenGenerator,
 			org, inviter,
 			"", "", c.Email, c.PhoneNumber, string(inviteClientDataJSON),
 			models.ColleagueInvite, nil)
@@ -261,16 +264,16 @@ func (s *server) InvitePatients(ctx context.Context, in *invite.InvitePatientsRe
 	if in.InviterEntityID == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "InviterEntityID is required")
 	}
-	// Validate all colleague information
-	for _, c := range in.Patients {
-		if c.PhoneNumber == "" {
+	// Validate all patient information
+	for _, p := range in.Patients {
+		if p.PhoneNumber == "" {
 			return nil, grpcErrorf(codes.InvalidArgument, "Phone number is required")
 		}
-		pn, err := phone.ParseNumber(c.PhoneNumber)
+		pn, err := phone.ParseNumber(p.PhoneNumber)
 		if err != nil {
-			return nil, grpcErrorf(codes.InvalidArgument, fmt.Sprintf("Phone number '%s' is invalid", c.PhoneNumber))
+			return nil, grpcErrorf(codes.InvalidArgument, fmt.Sprintf("Phone number '%s' is invalid", p.PhoneNumber))
 		}
-		c.PhoneNumber = pn.String()
+		p.PhoneNumber = pn.String()
 	}
 
 	// Lookup org to get name
@@ -400,7 +403,7 @@ func (s *server) proccessInvite(
 		}
 	case models.PatientInvite:
 		if err := s.sendPatientOutbound(ctx, firstName, phoneNumber, inviteURL, token, org, inviter); err != nil {
-			golog.Errorf("Failed to send colleague invite outbound comms: %s", err)
+			golog.Errorf("Failed to send patient invite outbound comms: %s", err)
 		}
 	default:
 		golog.Errorf("Unknown invite type %s. No outbound message sent.", inviteType)
@@ -414,6 +417,7 @@ func (s *server) sendColleagueOutbound(ctx context.Context, email, inviteURL, to
 	err := s.sg.Send(&sendgrid.SGMail{
 		To:      []string{email},
 		Subject: fmt.Sprintf("Invite to join %s on Spruce", org.Info.DisplayName),
+		// NOTE: Before we support entering the invite code from the client, it's presence in the email can be used for support debugging
 		Text: fmt.Sprintf(
 			"Spruce is a communication and digital care app. By joining %s on Spruce, you'll be able to collaborate with colleagues around your patients' care, securely and efficiently.\n\nClick this link to get started:\n%s\n\nOnce you've created your account, you're all set to start catching up on the latest conversation.\n\nIf you have any troubles, we're here to help - simply reply to this email!\n\nThanks,\nThe Team at Spruce\n\nP.S.: Learn more about Spruce here: https://www.sprucehealth.com",
 			org.Info.DisplayName, inviteURL),

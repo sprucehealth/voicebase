@@ -119,9 +119,9 @@ func TestInviteColleagues(t *testing.T) {
 
 	// Generate branch URL
 	values := map[string]string{
-		"invite_token": "complexToken",
+		"invite_token": "simpleToken",
 		"client_data":  `{"organization_invite":{"popover":{"title":"Welcome to Spruce!","message":"Inviter has invited you to join them on Spruce.","button_text":"Okay"},"org_id":"org","org_name":"Orgo"}}`,
-		"$desktop_url": "https://app.sprucehealth.com/signup?invite=complexToken&some=other",
+		"$desktop_url": "https://app.sprucehealth.com/signup?invite=simpleToken&some=other",
 	}
 	clientData := make(map[string]interface{}, len(values))
 	for k, v := range values {
@@ -131,7 +131,7 @@ func TestInviteColleagues(t *testing.T) {
 
 	// Insert invite
 	dl.Expect(mock.NewExpectation(dl.InsertInvite, &models.Invite{
-		Token:                "complexToken",
+		Token:                "simpleToken",
 		OrganizationEntityID: "org",
 		InviterEntityID:      "ent",
 		Type:                 models.ColleagueInvite,
@@ -153,7 +153,7 @@ func TestInviteColleagues(t *testing.T) {
 		FromName: "Inviter",
 		SMTPAPIHeader: smtpapi.SMTPAPIHeader{
 			UniqueArgs: map[string]string{
-				"invite_token": "complexToken",
+				"invite_token": "simpleToken",
 			},
 		},
 	}).WithReturns(nil))

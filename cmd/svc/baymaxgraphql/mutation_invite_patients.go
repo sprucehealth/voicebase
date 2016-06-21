@@ -190,7 +190,6 @@ var invitePatientsMutation = &graphql.Field{
 					}
 
 					// Create a parked entity for the account
-
 					email := m["email"].(string)
 					// Can only ignore this err because we checked it above
 					fpn, _ := phone.Format(m["phoneNumber"].(string), phone.E164)

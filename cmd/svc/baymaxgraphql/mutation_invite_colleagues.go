@@ -8,10 +8,12 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/libs/gqldecode"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/graphql"
+	"github.com/sprucehealth/graphql/gqlerrors"
 )
 
 type inviteColleaguesOutput struct {
@@ -21,13 +23,29 @@ type inviteColleaguesOutput struct {
 	ErrorMessage     string `json:"errorMessage,omitempty"`
 }
 
+type inviteColleaguesInfoInput struct {
+	FirstName   string `gql:"firstName"`
+	LastName    string `gql:"lastName"`
+	Email       string `gql:"email,nonempty"`
+	PhoneNumber string `gql:"phoneNumber,nonempty"`
+}
+
 var inviteColleaguesInfoType = graphql.NewInputObject(graphql.InputObjectConfig{
 	Name: "InviteColleaguesInfo",
 	Fields: graphql.InputObjectConfigFieldMap{
+		// TODO: For now existing clients won't use these fields
+		"firstName":   &graphql.InputObjectFieldConfig{Type: graphql.String},
+		"lastName":    &graphql.InputObjectFieldConfig{Type: graphql.String},
 		"email":       &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 		"phoneNumber": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 	},
 })
+
+type inviteColleaguesInput struct {
+	ClientMutationID string                       `gql:"clientMutationId"`
+	OrganizationID   string                       `gql:"organizationID,nonempty"`
+	Colleagues       []*inviteColleaguesInfoInput `gql:"colleagues,nonempty"`
+}
 
 var inviteColleaguesInputType = graphql.NewInputObject(graphql.InputObjectConfig{
 	Name: "InviteColleaguesInput",
@@ -85,20 +103,26 @@ var inviteColleaguesMutation = &graphql.Field{
 				ctx := p.Context
 				acc := gqlctx.Account(ctx)
 
-				input := p.Args["input"].(map[string]interface{})
-				mutationID, _ := input["clientMutationId"].(string)
-				orgID := input["organizationID"].(string)
-				colleaguesInput := input["colleagues"].([]interface{})
-				colleagues := make([]*invite.Colleague, len(colleaguesInput))
-				for i, c := range colleaguesInput {
-					m := c.(map[string]interface{})
+				var in inviteColleaguesInput
+				if err := gqldecode.Decode(p.Args["input"].(map[string]interface{}), &in); err != nil {
+					switch err := err.(type) {
+					case gqldecode.ErrValidationFailed:
+						return nil, gqlerrors.FormatError(fmt.Errorf("%s is invalid: %s", err.Field, err.Reason))
+					}
+					return nil, errors.InternalError(ctx, err)
+				}
+
+				// Independently validate all the inputs before performing network actions
+				colleagues := make([]*invite.Colleague, len(in.Colleagues))
+				for i, c := range in.Colleagues {
 					col := &invite.Colleague{
-						Email:       m["email"].(string),
-						PhoneNumber: m["phoneNumber"].(string),
+						Email:       c.Email,
+						PhoneNumber: c.PhoneNumber,
+						FirstName:   c.FirstName,
 					}
 					if !validate.Email(col.Email) {
 						return &inviteColleaguesOutput{
-							ClientMutationID: mutationID,
+							ClientMutationID: in.ClientMutationID,
 							Success:          false,
 							ErrorCode:        inviteColleaguesErrorCodeInvalidEmail,
 							ErrorMessage:     fmt.Sprintf("The email address '%s' not valid.", col.Email),
@@ -108,7 +132,7 @@ var inviteColleaguesMutation = &graphql.Field{
 					col.PhoneNumber, err = phone.Format(col.PhoneNumber, phone.E164)
 					if err != nil {
 						return &inviteColleaguesOutput{
-							ClientMutationID: mutationID,
+							ClientMutationID: in.ClientMutationID,
 							Success:          false,
 							ErrorCode:        inviteColleaguesErrorCodeInvalidEmail,
 							ErrorMessage:     fmt.Sprintf("The phone number '%s' not valid.", col.PhoneNumber),
@@ -117,7 +141,8 @@ var inviteColleaguesMutation = &graphql.Field{
 					colleagues[i] = col
 				}
 
-				ent, err := entityInOrgForAccountID(ctx, ram, orgID, acc)
+				// Validate that our caller can do this
+				ent, err := entityInOrgForAccountID(ctx, ram, in.OrganizationID, acc)
 				if err != nil {
 					return nil, errors.InternalError(ctx, err)
 				}
@@ -126,7 +151,7 @@ var inviteColleaguesMutation = &graphql.Field{
 				}
 
 				if _, err := svc.invite.InviteColleagues(ctx, &invite.InviteColleaguesRequest{
-					OrganizationEntityID: orgID,
+					OrganizationEntityID: in.OrganizationID,
 					InviterEntityID:      ent.ID,
 					Colleagues:           colleagues,
 				}); err != nil {
@@ -145,7 +170,7 @@ var inviteColleaguesMutation = &graphql.Field{
 				}
 
 				return &inviteColleaguesOutput{
-					ClientMutationID: mutationID,
+					ClientMutationID: in.ClientMutationID,
 					Success:          true,
 				}, nil
 			})),

@@ -15,6 +15,7 @@ import (
 	"github.com/sprucehealth/backend/libs/caremessenger/deeplink"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/gqldecode"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/textutil"
 	"github.com/sprucehealth/backend/libs/validate"
@@ -24,6 +25,7 @@ import (
 	"github.com/sprucehealth/backend/svc/operational"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
+	"github.com/sprucehealth/graphql/gqlerrors"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
@@ -44,6 +46,20 @@ type createProviderAccountOutput struct {
 	Token               string         `json:"token,omitempty"`
 	Account             models.Account `json:"account,omitempty"`
 	ClientEncryptionKey string         `json:"clientEncryptionKey,omitempty"`
+}
+
+type createProviderAccountInput struct {
+	ClientMutationID       string `gql:"clientMutationId"`
+	UUID                   string `gql:"uuid"`
+	Email                  string `gql:"email,nonempty"`
+	Password               string `gql:"password,nonempty"`
+	PhoneNumber            string `gql:"phoneNumber,nonempty"`
+	FirstName              string `gql:"firstName,nonempty"`
+	LastName               string `gql:"lastName,nonempty"`
+	ShortTitle             string `gql:"shortTitle"`
+	LongTitle              string `gql:"longTitle"`
+	OrganizationName       string `gql:"organizationName"`
+	PhoneVerificationToken string `gql:"phoneVerificationToken,nonempty"`
 }
 
 var createProviderAccountInputType = graphql.NewInputObject(graphql.InputObjectConfig{
@@ -94,14 +110,24 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 	svc := serviceFromParams(p)
 	ram := raccess.ResourceAccess(p)
 	ctx := p.Context
+
+	// TODO: We shoudln't need to keep this map around, but need it for entityInfoFromInput currently
 	input := p.Args["input"].(map[string]interface{})
 
-	mutationID, _ := input["clientMutationId"].(string)
+	var in createProviderAccountInput
+	if err := gqldecode.Decode(p.Args["input"].(map[string]interface{}), &in); err != nil {
+		switch err := err.(type) {
+		case gqldecode.ErrValidationFailed:
+			return nil, gqlerrors.FormatError(fmt.Errorf("%s is invalid: %s", err.Field, err.Reason))
+		}
+		return nil, errors.InternalError(ctx, err)
+	}
 
 	inv, attribValues, err := svc.inviteAndAttributionInfo(ctx)
 	if err != nil {
 		return nil, errors.InternalError(ctx, err)
 	}
+
 	// Sanity check to make sure we fail early in case we forgot to handle all new invite types
 	if inv != nil && inv.Type != invite.LookupInviteResponse_COLLEAGUE {
 		golog.Warningf("Device mapped to a %s invite attempting to create a Provider account. Ignoring invite.", inv.Type.String())
@@ -109,14 +135,14 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 	}
 
 	req := &auth.CreateAccountRequest{
-		Email:    input["email"].(string),
-		Password: input["password"].(string),
+		Email:    in.Email,
+		Password: in.Password,
 		Type:     auth.AccountType_PROVIDER,
 	}
 	req.Email = strings.TrimSpace(req.Email)
 	if !validate.Email(req.Email) {
 		return &createProviderAccountOutput{
-			ClientMutationID: mutationID,
+			ClientMutationID: in.ClientMutationID,
 			Success:          false,
 			ErrorCode:        createAccountErrorCodeInvalidEmail,
 			ErrorMessage:     "Please enter a valid email address.",
@@ -131,7 +157,7 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 	req.LastName = strings.TrimSpace(entityInfo.LastName)
 	if req.FirstName == "" || !textutil.IsValidPlane0Unicode(req.FirstName) {
 		return &createProviderAccountOutput{
-			ClientMutationID: mutationID,
+			ClientMutationID: in.ClientMutationID,
 			Success:          false,
 			ErrorCode:        createAccountErrorCodeInvalidFirstName,
 			ErrorMessage:     "Please enter a valid first name.",
@@ -139,7 +165,7 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 	}
 	if req.LastName == "" || !textutil.IsValidPlane0Unicode(req.LastName) {
 		return &createProviderAccountOutput{
-			ClientMutationID: mutationID,
+			ClientMutationID: in.ClientMutationID,
 			Success:          false,
 			ErrorCode:        createAccountErrorCodeInvalidLastName,
 			ErrorMessage:     "Please enter a valid last name.",
@@ -148,18 +174,17 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 
 	var organizationName string
 	if inv == nil {
-		organizationName, _ = input["organizationName"].(string)
-		organizationName = strings.TrimSpace(organizationName)
+		organizationName = strings.TrimSpace(in.OrganizationName)
 		if organizationName == "" || !textutil.IsValidPlane0Unicode(organizationName) {
 			return &createProviderAccountOutput{
-				ClientMutationID: mutationID,
+				ClientMutationID: in.ClientMutationID,
 				Success:          false,
 				ErrorCode:        createAccountErrorCodeInvalidOrganizationName,
 				ErrorMessage:     "Please enter a valid organization name.",
 			}, nil
 		}
 	}
-	verifiedValue, err := ram.VerifiedValue(ctx, input["phoneVerificationToken"].(string))
+	verifiedValue, err := ram.VerifiedValue(ctx, in.PhoneVerificationToken)
 	if grpc.Code(err) == auth.ValueNotYetVerified {
 		return nil, errors.New("The phone number for the provided token has not yet been verified.")
 	} else if err != nil {
@@ -169,10 +194,10 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 	if err != nil {
 		return nil, errors.InternalError(ctx, err)
 	}
-	pn, err := phone.ParseNumber(input["phoneNumber"].(string))
+	pn, err := phone.ParseNumber(in.PhoneNumber)
 	if err != nil {
 		return &createProviderAccountOutput{
-			ClientMutationID: mutationID,
+			ClientMutationID: in.ClientMutationID,
 			Success:          false,
 			ErrorCode:        createAccountErrorCodeInvalidPhoneNumber,
 			ErrorMessage:     "Please enter a valid phone number.",
@@ -188,21 +213,21 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 		switch grpc.Code(err) {
 		case auth.DuplicateEmail:
 			return &createProviderAccountOutput{
-				ClientMutationID: mutationID,
+				ClientMutationID: in.ClientMutationID,
 				Success:          false,
 				ErrorCode:        createAccountErrorCodeAccountExists,
 				ErrorMessage:     "An account already exists with the entered email address.",
 			}, nil
 		case auth.InvalidEmail:
 			return &createProviderAccountOutput{
-				ClientMutationID: mutationID,
+				ClientMutationID: in.ClientMutationID,
 				Success:          false,
 				ErrorCode:        createAccountErrorCodeInvalidEmail,
 				ErrorMessage:     "Please enter a valid email address.",
 			}, nil
 		case auth.InvalidPhoneNumber:
 			return &createProviderAccountOutput{
-				ClientMutationID: mutationID,
+				ClientMutationID: in.ClientMutationID,
 				Success:          false,
 				ErrorCode:        createAccountErrorCodeInvalidPhoneNumber,
 				ErrorMessage:     "Please enter a valid phone number.",
@@ -457,7 +482,7 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 	result.Set("auth_expiration", time.Unix(int64(res.Token.ExpirationEpoch), 0))
 
 	return &createProviderAccountOutput{
-		ClientMutationID:    mutationID,
+		ClientMutationID:    in.ClientMutationID,
 		Success:             true,
 		Token:               res.Token.Value,
 		Account:             transformAccountToResponse(res.Account),
