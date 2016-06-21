@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/sprucehealth/backend/libs/gqldecode"
 	"strings"
 
 	"github.com/segmentio/analytics-go"
+	"github.com/sprucehealth/backend/libs/gqldecode"
+
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
@@ -154,10 +155,9 @@ var postEventMutation = &graphql.Field{
 					segmentProps[at.Key] = at.Value
 				}
 			}
-			segmentProps["name"] = in.EventName
 			conc.Go(func() {
 				svc.segmentio.Track(&analytics.Track{
-					Event:      "generic_event",
+					Event:      in.EventName,
 					UserId:     acc.ID,
 					Properties: segmentProps,
 				})
