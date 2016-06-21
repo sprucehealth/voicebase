@@ -85,7 +85,6 @@ func TestCreateTeamThreadMutation(t *testing.T) {
 				success
 				thread {
 					id
-					type
 					allowInternalMessages
 					allowDelete
 					allowAddMembers
@@ -109,8 +108,7 @@ func TestCreateTeamThreadMutation(t *testing.T) {
 					"allowRemoveMembers": true,
 					"allowUpdateTitle": true,
 					"id": "t_1",
-					"title": "thetitle",
-					"type": "TEAM"
+					"title": "thetitle"
 				}
 			}
 		}}`, res)

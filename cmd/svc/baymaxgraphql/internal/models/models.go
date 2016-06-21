@@ -243,7 +243,7 @@ type Thread struct {
 	LastPrimaryEntityEndpoints []*Endpoint
 	EmptyStateTextMarkup       string `json:"emptyStateTextMarkup,omitempty"`
 	MessageCount               int    `json:"messageCount"`
-	Type                       string `json:"type"`
+	Type                       string `json:"-"`
 	TypeIndicator              string `json:"typeIndicator"`
 }
 

@@ -28,40 +28,6 @@ var threadConnectionType = ConnectionDefinitions(ConnectionConfig{
 	NodeType: threadType,
 })
 
-var threadTypeEnum = graphql.NewEnum(graphql.EnumConfig{
-	Name: "ThreadType",
-	Values: graphql.EnumValueConfigMap{
-		models.ThreadTypeUnknown: &graphql.EnumValueConfig{
-			Value:       models.ThreadTypeUnknown,
-			Description: "An unknown thread type. This should only exist in error",
-		},
-		models.ThreadTypeExternal: &graphql.EnumValueConfig{
-			Value:       models.ThreadTypeExternal,
-			Description: "A thread that allows external communication via multiple channels",
-		},
-		models.ThreadTypeTeam: &graphql.EnumValueConfig{
-			Value:       models.ThreadTypeTeam,
-			Description: "A thread internal to an organization and the thread's members",
-		},
-		models.ThreadTypeSetup: &graphql.EnumValueConfig{
-			Value:       models.ThreadTypeSetup,
-			Description: "The directed NUX thread for new user setup",
-		},
-		models.ThreadTypeSupport: &graphql.EnumValueConfig{
-			Value:       models.ThreadTypeSupport,
-			Description: "The support channel to the Spruce team",
-		},
-		models.ThreadTypeLegacyTeam: &graphql.EnumValueConfig{
-			Value:       models.ThreadTypeLegacyTeam,
-			Description: "The thread type representing team threads in their legacy form",
-		},
-		models.ThreadTypeSecureExternal: &graphql.EnumValueConfig{
-			Value:       models.ThreadTypeSecureExternal,
-			Description: "An external thread that only supports communication over secure channels",
-		},
-	},
-})
-
 var threadTypeIndicatorEnum = graphql.NewEnum(graphql.EnumConfig{
 	Name: "ThreadTypeIndicator",
 	Values: graphql.EnumValueConfigMap{
@@ -88,7 +54,6 @@ var threadType = graphql.NewObject(
 		},
 		Fields: graphql.Fields{
 			"id":                    &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
-			"type":                  &graphql.Field{Type: graphql.NewNonNull(threadTypeEnum)},
 			"typeIndicator":         &graphql.Field{Type: graphql.NewNonNull(threadTypeIndicatorEnum)},
 			"allowAddMembers":       &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowDelete":           &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
