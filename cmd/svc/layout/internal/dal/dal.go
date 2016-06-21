@@ -83,7 +83,7 @@ func (d *dal) CreateVisitLayout(ctx context.Context, visitLayout *models.VisitLa
 	if err != nil {
 		return models.EmptyVisitLayoutID(), errors.Trace(err)
 	}
-	_, err = d.db.Exec(`INSERT INTO visit_layout (id, name, internal_name, visit_category_id) VALUES (?,?,?)`, visitLayout.ID, visitLayout.Name, visitLayout.InternalName, visitLayout.CategoryID)
+	_, err = d.db.Exec(`INSERT INTO visit_layout (id, name, internal_name, visit_category_id) VALUES (?,?,?,?)`, visitLayout.ID, visitLayout.Name, visitLayout.InternalName, visitLayout.CategoryID)
 
 	return visitLayout.ID, errors.Trace(err)
 }
