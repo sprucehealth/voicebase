@@ -157,11 +157,13 @@ func transformThreadToResponse(ctx context.Context, ram raccess.ResourceAccessor
 			th.Title = onboardingThreadTitle
 		}
 		th.Type = models.ThreadTypeSetup
+		th.AlwaysShowNotifications = true
 	case threading.ThreadType_SUPPORT:
 		if th.Title == "" {
 			th.Title = supportThreadTitle
 		}
 		th.Type = models.ThreadTypeSupport
+		th.AlwaysShowNotifications = true
 	case threading.ThreadType_LEGACY_TEAM:
 		th.Type = models.ThreadTypeLegacyTeam
 		th.IsTeamThread = true

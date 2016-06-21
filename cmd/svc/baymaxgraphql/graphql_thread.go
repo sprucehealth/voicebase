@@ -53,14 +53,15 @@ var threadType = graphql.NewObject(
 			nodeInterfaceType,
 		},
 		Fields: graphql.Fields{
-			"id":                    &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
-			"typeIndicator":         &graphql.Field{Type: graphql.NewNonNull(threadTypeIndicatorEnum)},
-			"allowAddMembers":       &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-			"allowDelete":           &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-			"allowVideoAttachments": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-			"allowEmailAttachments": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-			"isPatientThread":       &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-			"isTeamThread":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"id":                      &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+			"typeIndicator":           &graphql.Field{Type: graphql.NewNonNull(threadTypeIndicatorEnum)},
+			"allowAddMembers":         &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"allowDelete":             &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"allowVideoAttachments":   &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"allowEmailAttachments":   &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"isPatientThread":         &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"isTeamThread":            &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"alwaysShowNotifications": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowVisitAttachments": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.Boolean),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {

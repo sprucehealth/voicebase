@@ -229,6 +229,7 @@ type Thread struct {
 	UnreadReference            bool   `json:"unreadReference"`
 	IsPatientThread            bool   `json:"isPatientThread"`
 	IsTeamThread               bool   `json:"isTeamThread"`
+	AlwaysShowNotifications    bool   `json:"alwaysShowNotifications"`
 	AllowAddMembers            bool   `json:"allowAddMembers"`
 	AllowDelete                bool   `json:"allowDelete"`
 	AllowEmailAttachment       bool   `json:"allowEmailAttachments"`
