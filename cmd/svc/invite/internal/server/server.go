@@ -16,6 +16,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/invite/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/invite/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/branch"
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/conc"
@@ -413,8 +414,7 @@ func (s *server) proccessInvite(
 }
 
 func (s *server) sendColleagueOutbound(ctx context.Context, email, inviteURL, token string, org, inviter *directory.Entity) error {
-	// TODO: use a template
-	err := s.sg.Send(&sendgrid.SGMail{
+	mail := &sendgrid.SGMail{
 		To:      []string{email},
 		Subject: fmt.Sprintf("Invite to join %s on Spruce", org.Info.DisplayName),
 		// NOTE: Before we support entering the invite code from the client, it's presence in the email can be used for support debugging
@@ -428,7 +428,14 @@ func (s *server) sendColleagueOutbound(ctx context.Context, email, inviteURL, to
 				"invite_token": token,
 			},
 		},
-	})
+	}
+
+	if !environment.IsProd() {
+		mail.Text += fmt.Sprintf(" [%s]", token)
+	}
+
+	// TODO: use a template
+	err := s.sg.Send(mail)
 	if err != nil {
 		golog.Errorf("Failed to send invite %s email to %s: %s", token, email, err)
 	}
