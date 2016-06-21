@@ -479,7 +479,7 @@ func transformSavedQueryToResponse(sq *threading.SavedQuery) (*models.SavedThrea
 	}, nil
 }
 
-func transformEntityToResponse(staticURLPrefix string, e *directory.Entity, sh *device.SpruceHeaders, viewingAccount *auth.Account) (*models.Entity, error) {
+func transformEntityToResponse(ctx context.Context, staticURLPrefix string, e *directory.Entity, sh *device.SpruceHeaders, viewingAccount *auth.Account) (*models.Entity, error) {
 	oc, err := transformContactsToResponse(e.Contacts)
 	if err != nil {
 		return nil, errors.Errorf("failed to transform contacts for entity %s: %s", e.ID, err)
@@ -518,7 +518,7 @@ func transformEntityToResponse(staticURLPrefix string, e *directory.Entity, sh *
 	}
 
 	if viewingAccount.Type == auth.AccountType_PROVIDER {
-		ent.CallableEndpoints, err = callableEndpointsForEntity(e)
+		ent.CallableEndpoints, err = callableEndpointsForEntity(ctx, e)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
@@ -610,7 +610,7 @@ func canEditEntity(e *directory.Entity, viewingAccount *auth.Account, sh *device
 	return false
 }
 
-func transformOrganizationToResponse(staticURLPrefix string, org *directory.Entity, provider *directory.Entity, sh *device.SpruceHeaders, viewingAccount *auth.Account) (*models.Organization, error) {
+func transformOrganizationToResponse(ctx context.Context, staticURLPrefix string, org *directory.Entity, provider *directory.Entity, sh *device.SpruceHeaders, viewingAccount *auth.Account) (*models.Organization, error) {
 	o := &models.Organization{
 		ID:   org.ID,
 		Name: org.Info.DisplayName,
@@ -623,7 +623,7 @@ func transformOrganizationToResponse(staticURLPrefix string, org *directory.Enti
 
 	o.Contacts = oc
 
-	e, err := transformEntityToResponse(staticURLPrefix, provider, sh, viewingAccount)
+	e, err := transformEntityToResponse(ctx, staticURLPrefix, provider, sh, viewingAccount)
 	if err != nil {
 		return nil, err
 	}

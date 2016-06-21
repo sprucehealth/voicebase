@@ -3,12 +3,13 @@ package settings
 import "github.com/sprucehealth/backend/svc/settings"
 
 const (
-	ConfigKeyTeamConversations        = "team_conversations_enabled"
-	ConfigKeyCreateSecureThread       = "secure_threads_enabled"
-	ConfigKeyVisitAttachments         = "visit_attachments_enabled"
-	ConfigKeyShakeToMarkThreadsAsRead = "shake_to_mark_threads_read"
 	ConfigKeyCarePlans                = "care_plans_enabled"
+	ConfigKeyCreateSecureThread       = "secure_threads_enabled"
 	ConfigKeyFilteredTabsInInbox      = "filtered_tabs_in_inbox"
+	ConfigKeyShakeToMarkThreadsAsRead = "shake_to_mark_threads_read"
+	ConfigKeyTeamConversations        = "team_conversations_enabled"
+	ConfigKeyVideoCalling             = "video_calling_enabled"
+	ConfigKeyVisitAttachments         = "visit_attachments_enabled"
 )
 
 // TeamConversationsConfig represents the config controlling whether or not team conversations is enabled at the org level
@@ -100,6 +101,23 @@ var FilteredTabsInInboxConfig = &settings.Config{
 	Title:          "Enable/Disable care plans at thread level",
 	AllowSubkeys:   false,
 	Key:            ConfigKeyFilteredTabsInInbox,
+	Type:           settings.ConfigType_BOOLEAN,
+	PossibleOwners: []settings.OwnerType{settings.OwnerType_ORGANIZATION},
+	Config: &settings.Config_Boolean{
+		Boolean: &settings.BooleanConfig{
+			Default: &settings.BooleanValue{
+				Value: false,
+			},
+		},
+	},
+}
+
+// VideoCallingConfig represents the config for configuring whether video
+// calling is enabled for an organization.
+var VideoCallingConfig = &settings.Config{
+	Title:          "Enable/Disable video calling at org level",
+	AllowSubkeys:   false,
+	Key:            ConfigKeyVideoCalling,
 	Type:           settings.ConfigType_BOOLEAN,
 	PossibleOwners: []settings.OwnerType{settings.OwnerType_ORGANIZATION},
 	Config: &settings.Config_Boolean{

@@ -147,5 +147,5 @@ func patientEntity(p graphql.ResolveParams, a *models.PatientAccount) (*models.E
 	} else if len(entities) != 1 {
 		return nil, fmt.Errorf("expected 1 entity for %s but got %d back", a.GetID(), len(entities))
 	}
-	return transformEntityToResponse(svc.staticURLPrefix, entities[0], devicectx.SpruceHeaders(ctx), gqlctx.Account(ctx))
+	return transformEntityToResponse(ctx, svc.staticURLPrefix, entities[0], devicectx.SpruceHeaders(ctx), gqlctx.Account(ctx))
 }

@@ -134,7 +134,7 @@ func main() {
 	if err != nil {
 		golog.Fatalf("Unable to connect to settings service: %s", err)
 	}
-	settingsClient := settings.NewSettingsClient(conn)
+	settingsClient := settings.NewContextCacheClient(settings.NewSettingsClient(conn))
 
 	if *flagLayoutAddr == "" {
 		golog.Fatalf("Layout service not configured")
@@ -163,14 +163,14 @@ func main() {
 	}
 	mediaClient := media.NewMediaClient(conn)
 
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-
 	// enable for non-prod
 	baymaxgraphqlsettings.VisitAttachmentsConfig.GetBoolean().Default.Value = !environment.IsProd()
 	baymaxgraphqlsettings.ShakeToMarkThreadsAsReadConfig.GetBoolean().Default.Value = !environment.IsProd()
 	baymaxgraphqlsettings.CarePlansConfig.GetBoolean().Default.Value = !environment.IsProd()
 	baymaxgraphqlsettings.FilteredTabsInInboxConfig.GetBoolean().Default.Value = !environment.IsProd()
+	baymaxgraphqlsettings.VideoCallingConfig.GetBoolean().Default.Value = !environment.IsProd()
 
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	_, err = settings.RegisterConfigs(
 		ctx,
 		settingsClient,
@@ -181,6 +181,7 @@ func main() {
 			baymaxgraphqlsettings.ShakeToMarkThreadsAsReadConfig,
 			baymaxgraphqlsettings.CarePlansConfig,
 			baymaxgraphqlsettings.FilteredTabsInInboxConfig,
+			baymaxgraphqlsettings.VideoCallingConfig,
 		})
 	if err != nil {
 		golog.Fatalf("Unable to register configs with the settings service: %s", err.Error())
@@ -322,7 +323,6 @@ func main() {
 
 	h := shttputil.CompressResponse(r, httputil.CompressResponse)
 	h = httputil.LoggingHandler(h, "baymaxgraphql", *flagBehindProxy, nil)
-
 	h = httputil.RequestIDHandler(h)
 
 	golog.Infof("Listening on %s", *flagListenAddr)

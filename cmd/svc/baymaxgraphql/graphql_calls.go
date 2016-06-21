@@ -170,7 +170,7 @@ var callParticipantType = graphql.NewObject(graphql.ObjectConfig{
 				if err != nil {
 					return nil, errors.InternalError(ctx, err)
 				}
-				return transformEntityToResponse(svc.staticURLPrefix, ent, devicectx.SpruceHeaders(ctx), acc)
+				return transformEntityToResponse(ctx, svc.staticURLPrefix, ent, devicectx.SpruceHeaders(ctx), acc)
 			}),
 		},
 		"state":          &graphql.Field{Type: graphql.NewNonNull(callStateEnum)},
@@ -192,14 +192,16 @@ func lookupCall(ctx context.Context, ram raccess.ResourceAccessor, id string) (*
 	return transformCallToResponse(call, acc.ID)
 }
 
-func callableEndpointsForEntity(ent *directory.Entity) ([]*models.CallEndpoint, error) {
+func callableEndpointsForEntity(ctx context.Context, ent *directory.Entity) ([]*models.CallEndpoint, error) {
 	var endpoints []*models.CallEndpoint
 	if ent.Type == directory.EntityType_PATIENT || (ent.Type == directory.EntityType_INTERNAL && !environment.IsProd() && !environment.IsTest()) {
-		endpoints = append(endpoints, &models.CallEndpoint{
-			Channel:                 models.CallChannelTypeVideo,
-			ValueOrID:               ent.ID,
-			LANConnectivityRequired: true,
-		})
+		if gqlctx.FeatureEnabled(ctx, gqlctx.VideoCalling) {
+			endpoints = append(endpoints, &models.CallEndpoint{
+				Channel:                 models.CallChannelTypeVideo,
+				ValueOrID:               ent.ID,
+				LANConnectivityRequired: true,
+			})
+		}
 	}
 	for _, c := range ent.Contacts {
 		if c.ContactType == directory.ContactType_PHONE {

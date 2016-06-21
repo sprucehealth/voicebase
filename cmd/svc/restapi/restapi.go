@@ -353,7 +353,7 @@ func buildRESTAPI(
 			"StatusCode", av.StatusCode,
 		}
 
-		httputil.CtxLogMap(ctx).Transact(func(m map[string]interface{}) {
+		httputil.CtxLogMap(ctx).Transact(func(m map[interface{}]interface{}) {
 			for k, v := range m {
 				contextVals = append(contextVals, k, v)
 			}

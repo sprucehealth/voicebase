@@ -83,7 +83,7 @@ var deleteContactInfosMutation = &graphql.Field{
 		}
 
 		sh := devicectx.SpruceHeaders(ctx)
-		e, err := transformEntityToResponse(svc.staticURLPrefix, ent, sh, acc)
+		e, err := transformEntityToResponse(ctx, svc.staticURLPrefix, ent, sh, acc)
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}

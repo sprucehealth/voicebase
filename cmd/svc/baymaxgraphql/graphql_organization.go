@@ -132,7 +132,7 @@ var organizationType = graphql.NewObject(
 						return nil, errors.New("entity not found for organization")
 					}
 					sh := devicectx.SpruceHeaders(ctx)
-					rE, err := transformEntityToResponse(svc.staticURLPrefix, e, sh, gqlctx.Account(ctx))
+					rE, err := transformEntityToResponse(ctx, svc.staticURLPrefix, e, sh, gqlctx.Account(ctx))
 					if err != nil {
 						return nil, errors.InternalError(ctx, err)
 					}
@@ -172,7 +172,7 @@ var organizationType = graphql.NewObject(
 					entities := make([]*models.Entity, 0, len(orgEntity.Members))
 					for _, em := range orgEntity.Members {
 						if em.Type == directory.EntityType_INTERNAL {
-							ent, err := transformEntityToResponse(svc.staticURLPrefix, em, sh, gqlctx.Account(ctx))
+							ent, err := transformEntityToResponse(ctx, svc.staticURLPrefix, em, sh, gqlctx.Account(ctx))
 							if err != nil {
 								return nil, errors.InternalError(ctx, err)
 							}

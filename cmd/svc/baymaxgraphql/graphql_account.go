@@ -103,7 +103,7 @@ func accountOrganizations(p graphql.ResolveParams, a models.Account) ([]*models.
 
 	var orgs []*models.Organization
 	for _, e := range entities {
-		entity, err := transformEntityToResponse(svc.staticURLPrefix, e, sh, gqlctx.Account(ctx))
+		entity, err := transformEntityToResponse(ctx, svc.staticURLPrefix, e, sh, gqlctx.Account(ctx))
 		if err != nil {
 			return nil, errors.InternalError(ctx, fmt.Errorf("failed to transform entity: %+v", err))
 		}

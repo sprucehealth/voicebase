@@ -197,7 +197,7 @@ func (h *loggingHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 			h.alog(ctx, ev)
 		} else {
 			var contextVals []interface{}
-			CtxLogMap(ctx).Transact(func(m map[string]interface{}) {
+			CtxLogMap(ctx).Transact(func(m map[interface{}]interface{}) {
 				contextVals = make([]interface{}, 0, 2*(len(m)+7))
 				for k, v := range m {
 					contextVals = append(contextVals, k, v)

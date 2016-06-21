@@ -1,6 +1,8 @@
 package conc
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestMapAccess(t *testing.T) {
 	c := NewMap()
@@ -48,7 +50,7 @@ func TestMapAccess(t *testing.T) {
 
 	c.Delete("TESTING2")
 
-	c.Transact(func(m map[string]interface{}) {
+	c.Transact(func(m map[interface{}]interface{}) {
 		if len(m) != 2 {
 			t.Fatalf("Expected 2 values, got %d", len(m))
 		} else if m["TESTING"] == nil {
@@ -72,10 +74,29 @@ func TestNilMap(t *testing.T) {
 		t.Fatalf("Expected nil, got %#v", v)
 	}
 	called := false
-	m.Transact(func(m map[string]interface{}) {
+	m.Transact(func(m map[interface{}]interface{}) {
 		called = true
 	})
 	if called {
 		t.Fatal("Transact should not call function on nil map")
+	}
+}
+
+func BenchmarkMapGet(b *testing.B) {
+	m := NewMap()
+	m.Set("foo", "bar")
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = m.Get("foo")
+	}
+}
+
+func BenchmarkMapSet(b *testing.B) {
+	m := NewMap()
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		m.Set("foo", "bar")
 	}
 }

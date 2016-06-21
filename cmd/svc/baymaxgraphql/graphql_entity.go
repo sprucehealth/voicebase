@@ -198,7 +198,7 @@ func lookupEntity(ctx context.Context, svc *service, ram raccess.ResourceAccesso
 				return nil, errors.InternalError(ctx, err)
 			}
 			if e != nil {
-				org.Entity, err = transformEntityToResponse(svc.staticURLPrefix, e, sh, gqlctx.Account(ctx))
+				org.Entity, err = transformEntityToResponse(ctx, svc.staticURLPrefix, e, sh, gqlctx.Account(ctx))
 				if err != nil {
 					return nil, errors.InternalError(ctx, err)
 				}
@@ -206,7 +206,7 @@ func lookupEntity(ctx context.Context, svc *service, ram raccess.ResourceAccesso
 		}
 		return org, nil
 	case directory.EntityType_INTERNAL, directory.EntityType_EXTERNAL, directory.EntityType_SYSTEM, directory.EntityType_PATIENT:
-		e, err := transformEntityToResponse(svc.staticURLPrefix, em, sh, gqlctx.Account(ctx))
+		e, err := transformEntityToResponse(ctx, svc.staticURLPrefix, em, sh, gqlctx.Account(ctx))
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}

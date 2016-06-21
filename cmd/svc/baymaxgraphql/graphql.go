@@ -14,6 +14,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	gqlsettings "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/settings"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/environment"
@@ -276,17 +277,73 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 	// then the account can be updated in the context.
 	ctx = gqlctx.WithAccount(ctx, acc)
 
-	httputil.CtxLogMap(ctx).Transact(func(m map[string]interface{}) {
+	httputil.CtxLogMap(ctx).Transact(func(m map[interface{}]interface{}) {
 		m["Query"] = req.Query
 		if acc != nil {
 			m["AccountID"] = acc.ID
 		}
+		m["AppType"] = sHeaders.AppType
+		m["AppVersion"] = sHeaders.AppVersion.String()
+		m["Platform"] = sHeaders.Platform
 	})
 	// Bootstrap the entity cache
 	ctx = cache.InitEntityCache(ctx)
-
+	ctx = settings.InitContextCache(ctx)
 	ctx = devicectx.WithSpruceHeaders(ctx, sHeaders)
 	ctx = gqlctx.WithQuery(ctx, req.Query)
+	// TODO: the video calling feature flags rely on the provider only being part of one organization. This
+	//       may not be true in the future. The problem however, is that there's no context of what the org
+	//       is when this flag is needed so this is the simplest place to have this without major modifications
+	//       to the structure of this service.
+	ctx = gqlctx.WithLazyFeature(ctx, gqlctx.VideoCalling, func(ctx context.Context) bool {
+		acc := gqlctx.Account(ctx)
+		if acc == nil || acc.Type != auth.AccountType_PROVIDER {
+			return false
+		}
+
+		eres, err := h.ram.Entities(ctx, &directory.LookupEntitiesRequest{
+			LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+			LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+				ExternalID: acc.ID,
+			},
+			RequestedInformation: &directory.RequestedInformation{
+				Depth:             0,
+				EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
+			},
+			RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+			ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+		}, raccess.EntityQueryOptionUnathorized)
+		if err != nil {
+			golog.Errorf("Failed to lookup entities for account %s: %s", acc.ID, err)
+			return false
+		}
+		if len(eres) != 1 {
+			golog.Errorf("No entities found for account %s", acc.ID)
+			return false
+		}
+
+		var org *directory.Entity
+		for _, em := range eres[0].Memberships {
+			if em.Type == directory.EntityType_ORGANIZATION {
+				org = em
+				break
+			}
+		}
+		if org == nil {
+			golog.Errorf("No org found for account %s entity %s", acc.ID, eres[0].ID)
+			return false
+		}
+
+		res, err := h.service.settings.GetValues(ctx, &settings.GetValuesRequest{
+			NodeID: org.ID,
+			Keys:   []*settings.ConfigKey{{Key: gqlsettings.ConfigKeyVideoCalling}},
+		})
+		if err != nil {
+			golog.Errorf("Failed to lookup setting %s for org %s: %s", gqlsettings.ConfigKeyVideoCalling, org.ID, err)
+			return false
+		}
+		return res.Values[0].GetBoolean().Value
+	})
 
 	result := conc.NewMap()
 	response := h.graphqlDo(graphql.Params{

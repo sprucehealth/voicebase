@@ -87,7 +87,7 @@ var addContactInfosMutation = &graphql.Field{
 		}
 
 		sh := devicectx.SpruceHeaders(ctx)
-		e, err := transformEntityToResponse(svc.staticURLPrefix, resp.Entity, sh, acc)
+		e, err := transformEntityToResponse(ctx, svc.staticURLPrefix, resp.Entity, sh, acc)
 		if err != nil {
 			return nil, err
 		}

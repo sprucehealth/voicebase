@@ -284,13 +284,13 @@ var provisionEmailMutation = &graphql.Field{
 		var e *models.Entity
 		var o *models.Organization
 		if organizationID != "" {
-			o, err = transformOrganizationToResponse(svc.staticURLPrefix, createContactRes.Entity, ent, sh, acc)
+			o, err = transformOrganizationToResponse(ctx, svc.staticURLPrefix, createContactRes.Entity, ent, sh, acc)
 			if err != nil {
 				return nil, errors.InternalError(ctx, err)
 			}
 		} else {
 			sh := devicectx.SpruceHeaders(ctx)
-			e, err = transformEntityToResponse(svc.staticURLPrefix, createContactRes.Entity, sh, acc)
+			e, err = transformEntityToResponse(ctx, svc.staticURLPrefix, createContactRes.Entity, sh, acc)
 			if err != nil {
 				return nil, errors.InternalError(ctx, err)
 			}

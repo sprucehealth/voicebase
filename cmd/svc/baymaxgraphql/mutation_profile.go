@@ -280,5 +280,5 @@ func updateEntityProfile(ctx context.Context, ram raccess.ResourceAccessor, prof
 		return nil, errors.Trace(err)
 	}
 
-	return transformEntityToResponse(staticURLPrefix, profile.Entity, devicectx.SpruceHeaders(ctx), gqlctx.Account(ctx))
+	return transformEntityToResponse(ctx, staticURLPrefix, profile.Entity, devicectx.SpruceHeaders(ctx), gqlctx.Account(ctx))
 }

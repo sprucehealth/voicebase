@@ -64,7 +64,7 @@ var visitType = graphql.NewObject(
 							return nil, errors.InternalError(ctx, err)
 						}
 
-						entity, err := transformEntityToResponse(svc.staticURLPrefix, e, devicectx.SpruceHeaders(ctx), gqlctx.Account(ctx))
+						entity, err := transformEntityToResponse(ctx, svc.staticURLPrefix, e, devicectx.SpruceHeaders(ctx), gqlctx.Account(ctx))
 						if err != nil {
 							return nil, errors.InternalError(ctx, err)
 						}

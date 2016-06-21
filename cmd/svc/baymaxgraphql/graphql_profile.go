@@ -54,7 +54,7 @@ var profileType = graphql.NewObject(graphql.ObjectConfig{
 				}
 				// Fallback to the avatar
 				if ent.ImageMediaID == "" {
-					rEnt, err := transformEntityToResponse(svc.staticURLPrefix, ent, devicectx.SpruceHeaders(ctx), gqlctx.Account(ctx))
+					rEnt, err := transformEntityToResponse(ctx, svc.staticURLPrefix, ent, devicectx.SpruceHeaders(ctx), gqlctx.Account(ctx))
 					if err != nil {
 						golog.Errorf("Error while transforming entity to response for profile image creation: %s", err)
 						return nil, nil

@@ -45,7 +45,7 @@ var threadItemViewDetailsType = graphql.NewObject(
 					}
 
 					sh := devicectx.SpruceHeaders(ctx)
-					ent, err := transformEntityToResponse(svc.staticURLPrefix, e, sh, gqlctx.Account(ctx))
+					ent, err := transformEntityToResponse(ctx, svc.staticURLPrefix, e, sh, gqlctx.Account(ctx))
 					if err != nil {
 						return nil, errors.InternalError(ctx, fmt.Errorf("failed to transform entity: %s", err))
 					}
