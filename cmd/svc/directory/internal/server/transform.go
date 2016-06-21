@@ -72,17 +72,16 @@ func transformEntityToEntityInfoResponse(de *dal.Entity) *directory.EntityInfo {
 		displayName = de.CustomDisplayName
 	}
 	return &directory.EntityInfo{
-		FirstName:         de.FirstName,
-		MiddleInitial:     de.MiddleInitial,
-		LastName:          de.LastName,
-		GroupName:         de.GroupName,
-		DisplayName:       displayName,
-		CustomDisplayName: de.CustomDisplayName,
-		ShortTitle:        de.ShortTitle,
-		LongTitle:         de.LongTitle,
-		Gender:            entityGender,
-		DOB:               dob,
-		Note:              de.Note,
+		FirstName:     de.FirstName,
+		MiddleInitial: de.MiddleInitial,
+		LastName:      de.LastName,
+		GroupName:     de.GroupName,
+		DisplayName:   displayName,
+		ShortTitle:    de.ShortTitle,
+		LongTitle:     de.LongTitle,
+		Gender:        entityGender,
+		DOB:           dob,
+		Note:          de.Note,
 	}
 }
 
