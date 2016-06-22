@@ -407,7 +407,11 @@ func generateNotification(webDomain string, n *notification.Notification, target
 		ContentAvailable: 1,
 	}
 	if msg != "" {
-		iOSData.Sound = "default"
+		if n.Type == notification.IncomingIPCall {
+			iOSData.Sound = "ReceivingCall_Looped.caf"
+		} else {
+			iOSData.Sound = "default"
+		}
 	}
 	isNotifData, err := json.Marshal(&iOSPushNotification{
 		PushData:       iOSData,
