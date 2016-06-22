@@ -10,7 +10,6 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	baymaxgraphqlsettings "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/settings"
 	"github.com/sprucehealth/backend/device/devicectx"
-	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/caremessenger/deeplink"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/auth"
@@ -191,34 +190,6 @@ var threadType = graphql.NewObject(
 					th := p.Source.(*models.Thread)
 					switch th.Type {
 					case models.ThreadTypeSecureExternal, models.ThreadTypeExternal:
-					case models.ThreadTypeTeam:
-						if environment.IsProd() {
-							return []*models.CallableIdentity{}, nil
-						}
-						memberEntities, err := ram.ThreadMembers(ctx, th.OrganizationID, &threading.ThreadMembersRequest{
-							ThreadID: th.ID,
-						})
-						if err != nil {
-							return nil, err
-						}
-						dh := devicectx.SpruceHeaders(ctx)
-						idents := make([]*models.CallableIdentity, len(memberEntities))
-						for i, e := range memberEntities {
-							endpoints, err := callableEndpointsForEntity(e)
-							if err != nil {
-								return nil, errors.InternalError(ctx, err)
-							}
-							ent, err := transformEntityToResponse(svc.staticURLPrefix, e, dh, acc)
-							if err != nil {
-								return nil, errors.InternalError(ctx, err)
-							}
-							idents[i] = &models.CallableIdentity{
-								Name:      e.Info.DisplayName,
-								Endpoints: endpoints,
-								Entity:    ent,
-							}
-						}
-						return idents, nil
 					default:
 						return []*models.CallableIdentity{}, nil
 					}
