@@ -421,6 +421,7 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 			"name":              res.Account.FirstName + " " + res.Account.LastName,
 			"first_name":        res.Account.FirstName,
 			"last_name":         res.Account.LastName,
+			"phone":             req.PhoneNumber,
 			"email":             req.Email,
 			"title":             entityInfo.ShortTitle,
 			"organization_name": orgName,
