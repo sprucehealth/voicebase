@@ -622,12 +622,13 @@ func transformOrganizationToResponse(ctx context.Context, staticURLPrefix string
 	}
 
 	o.Contacts = oc
-
-	e, err := transformEntityToResponse(ctx, staticURLPrefix, provider, sh, viewingAccount)
-	if err != nil {
-		return nil, err
+	if provider != nil {
+		e, err := transformEntityToResponse(ctx, staticURLPrefix, provider, sh, viewingAccount)
+		if err != nil {
+			return nil, err
+		}
+		o.Entity = e
 	}
-	o.Entity = e
 
 	return o, nil
 }

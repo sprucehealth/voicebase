@@ -324,8 +324,9 @@ message ProfileResponse {
 }
 
 message UpdateProfileRequest {
-	string profile_id = 1 [(gogoproto.customname) = "ProfileID"]; 
-	Profile profile = 2;
+	string profile_id = 1 [(gogoproto.customname) = "ProfileID"];
+	string image_media_id = 2 [(gogoproto.customname) = "ImageMediaID"];
+	Profile profile = 3;
 }
 
 message UpdateProfileResponse {

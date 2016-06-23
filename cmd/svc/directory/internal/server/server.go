@@ -1027,9 +1027,14 @@ func (s *server) UpdateProfile(ctx context.Context, rd *directory.UpdateProfileR
 		if err != nil {
 			return err
 		}
+		var imageMediaID *string
+		if rd.ImageMediaID != "" {
+			imageMediaID = &rd.ImageMediaID
+		}
 		_, err := dl.UpdateEntity(entID, &dal.EntityUpdate{
 			CustomDisplayName: ptr.String(rd.Profile.DisplayName),
 			HasProfile:        ptr.Bool(true),
+			ImageMediaID:      imageMediaID,
 		})
 		return err
 	}); err != nil {

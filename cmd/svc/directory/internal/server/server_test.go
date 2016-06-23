@@ -1608,6 +1608,60 @@ func TestUpdateProfile(t *testing.T) {
 			},
 			expectedError: nil,
 		},
+		"EntityID-ImageMediaID": {
+			request: &directory.UpdateProfileRequest{
+				ImageMediaID: "imageMediaID",
+				Profile: &directory.Profile{
+					DisplayName: "New display name",
+					EntityID:    entityID.String(),
+					Sections:    []*directory.ProfileSection{},
+				},
+			},
+			dal: func() *mock_dal.MockDAL {
+				mDAL := mock_dal.NewMockDAL(t)
+				mDAL.Expect(mock.NewExpectation(mDAL.EntityProfileForEntity, entityID).WithReturns(&dal.EntityProfile{
+					ID:       profileID,
+					EntityID: entityID,
+				}, nil))
+				mDAL.Expect(mock.NewExpectation(mDAL.EntityProfile, profileID).WithReturns(&dal.EntityProfile{
+					EntityID: entityID,
+				}, nil))
+				mDAL.Expect(mock.NewExpectation(mDAL.UpsertEntityProfile, &dal.EntityProfile{
+					ID:       profileID,
+					EntityID: entityID,
+					Sections: &directory.ProfileSections{Sections: []*directory.ProfileSection{}},
+				}).WithReturns(profileID, nil))
+				mDAL.Expect(mock.NewExpectation(mDAL.UpdateEntity, entityID, &dal.EntityUpdate{
+					CustomDisplayName: ptr.String("New display name"),
+					HasProfile:        ptr.Bool(true),
+					ImageMediaID:      ptr.String("imageMediaID"),
+				}))
+				mDAL.Expect(mock.NewExpectation(mDAL.EntityProfile, profileID).WithReturns(&dal.EntityProfile{
+					ID:       profileID,
+					EntityID: entityID,
+					Sections: &directory.ProfileSections{},
+					Modified: clk.Now(),
+				}, nil))
+				mDAL.Expect(mock.NewExpectation(mDAL.Entity, entityID).WithReturns(&dal.Entity{
+					ID:       entityID,
+					Created:  clk.Now(),
+					Modified: clk.Now(),
+					Type:     dal.EntityTypeInternal,
+					Status:   dal.EntityStatusActive,
+				}, nil))
+				return mDAL
+			}(),
+			expectedResponse: &directory.UpdateProfileResponse{
+				Profile: transformEntityProfileToResponse(&dal.EntityProfile{
+					ID:       profileID,
+					EntityID: entityID,
+					Sections: &directory.ProfileSections{},
+					Modified: clk.Now(),
+				}),
+				Entity: entR,
+			},
+			expectedError: nil,
+		},
 	}
 
 	for cn, c := range cases {

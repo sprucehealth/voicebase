@@ -35,29 +35,29 @@ var profileSectionInputType = graphql.NewInputObject(
 	},
 )
 
-// createProfile
-type createProfileInput struct {
+// createEntityProfile
+type createEntityProfileInput struct {
 	ClientMutationID string                 `gql:"clientMutationId"`
 	EntityID         string                 `gql:"entityID,nonempty"`
 	DisplayName      string                 `gql:"displayName,nonempty"`
-	ImageMediaID     string                 `gql:"imageMediaID,nonempty"`
+	ImageMediaID     string                 `gql:"imageMediaID"`
 	Sections         []*profileSectionInput `gql:"sections,nonempty"`
 }
 
-var createProfileInputType = graphql.NewInputObject(
+var createEntityProfileInputType = graphql.NewInputObject(
 	graphql.InputObjectConfig{
-		Name: "CreateProfileInput",
+		Name: "CreateEntityProfileInput",
 		Fields: graphql.InputObjectConfigFieldMap{
 			"clientMutationId": newClientMutationIDInputField(),
 			"entityID":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
 			"displayName":      &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-			"imageMediaID":     &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"imageMediaID":     &graphql.InputObjectFieldConfig{Type: graphql.String},
 			"sections":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.NewList(profileSectionInputType))},
 		},
 	},
 )
 
-type createProfileOutput struct {
+type createEntityProfileOutput struct {
 	ClientMutationID string         `json:"clientMutationId,omitempty"`
 	UUID             string         `json:"uuid,omitempty"`
 	Success          bool           `json:"success"`
@@ -67,33 +67,32 @@ type createProfileOutput struct {
 }
 
 const (
-	createProfileErrorCodePracticeNameOrFirstAndLastRequired = "PRACTICE_NAME_OR_FIRST_LAST_TITLE_REQUIRED"
-	createProfileErrorCodeInvalidMediaID                     = "INVALID_MEDIA_ID"
+	profileErrorCodeInvalidMediaID = "INVALID_MEDIA_ID"
 )
 
-var createProfileErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
-	Name: "CreateProfileErrorCode",
+var createEntityProfileErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
+	Name: "CreateEntityProfileErrorCode",
 	Values: graphql.EnumValueConfigMap{
-		createProfileErrorCodeInvalidMediaID: &graphql.EnumValueConfig{
-			Value:       createProfileErrorCodeInvalidMediaID,
+		profileErrorCodeInvalidMediaID: &graphql.EnumValueConfig{
+			Value:       profileErrorCodeInvalidMediaID,
 			Description: "The provided media id is not valid.",
 		},
 	},
 })
 
-var createProfileOutputType = graphql.NewObject(
+var createEntityProfileOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
-		Name: "CreateProfilePayload",
+		Name: "CreateEntityProfilePayload",
 		Fields: graphql.Fields{
 			"clientMutationId": newClientMutationIDOutputField(),
 			"uuid":             &graphql.Field{Type: graphql.String},
 			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-			"errorCode":        &graphql.Field{Type: createProfileErrorCodeEnum},
+			"errorCode":        &graphql.Field{Type: createEntityProfileErrorCodeEnum},
 			"errorMessage":     &graphql.Field{Type: graphql.String},
 			"entity":           &graphql.Field{Type: entityType},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*createProfileOutput)
+			_, ok := value.(*createEntityProfileOutput)
 			return ok
 		},
 	},
@@ -101,10 +100,10 @@ var createProfileOutputType = graphql.NewObject(
 
 // Note/TODO: Create and Update profile share a lot of the same check logic but cannot be resused due to differing return error types
 //  Should think about a pattern to allow more reuse
-var createProfileMutation = &graphql.Field{
-	Type: graphql.NewNonNull(createProfileOutputType),
+var createEntityProfileMutation = &graphql.Field{
+	Type: graphql.NewNonNull(createEntityProfileOutputType),
 	Args: graphql.FieldConfigArgument{
-		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(createProfileInputType)},
+		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(createEntityProfileInputType)},
 	},
 	Resolve: apiaccess.Authenticated(
 		apiaccess.Provider(func(p graphql.ResolveParams) (interface{}, error) {
@@ -112,7 +111,7 @@ var createProfileMutation = &graphql.Field{
 			ram := raccess.ResourceAccess(p)
 			ctx := p.Context
 
-			var in createProfileInput
+			var in createEntityProfileInput
 			if err := gqldecode.Decode(p.Args["input"].(map[string]interface{}), &in); err != nil {
 				switch err := err.(type) {
 				case gqldecode.ErrValidationFailed:
@@ -122,15 +121,17 @@ var createProfileMutation = &graphql.Field{
 			}
 
 			// Check that our media ID is valid
-			if _, err := ram.MediaInfo(ctx, in.ImageMediaID); lerrors.Cause(err) == raccess.ErrNotFound {
-				return &createProfileOutput{
-					ClientMutationID: in.ClientMutationID,
-					Success:          false,
-					ErrorCode:        createProfileErrorCodeInvalidMediaID,
-					ErrorMessage:     "The provided media id is not valid.",
-				}, nil
-			} else if err != nil {
-				return nil, errors.InternalError(ctx, err)
+			if in.ImageMediaID != "" {
+				if _, err := ram.MediaInfo(ctx, in.ImageMediaID); lerrors.Cause(err) == raccess.ErrNotFound {
+					return &createEntityProfileOutput{
+						ClientMutationID: in.ClientMutationID,
+						Success:          false,
+						ErrorCode:        profileErrorCodeInvalidMediaID,
+						ErrorMessage:     "The provided media id is not valid.",
+					}, nil
+				} else if err != nil {
+					return nil, errors.InternalError(ctx, err)
+				}
 			}
 
 			ent, err := updateEntityProfile(ctx, ram, "", in.EntityID, in.ImageMediaID, in.DisplayName, in.Sections, svc.staticURLPrefix)
@@ -140,7 +141,7 @@ var createProfileMutation = &graphql.Field{
 				return nil, err
 			}
 
-			return &createProfileOutput{
+			return &createEntityProfileOutput{
 				ClientMutationID: in.ClientMutationID,
 				Success:          true,
 				Entity:           ent,
@@ -148,73 +149,71 @@ var createProfileMutation = &graphql.Field{
 		})),
 }
 
-// updateProfile
-type updateProfileInput struct {
+// createOrganizationProfile
+type createOrganizationProfileInput struct {
 	ClientMutationID string                 `gql:"clientMutationId"`
-	ProfileID        string                 `gql:"profileID,nonempty"`
+	OrganizationID   string                 `gql:"organizationID,nonempty"`
 	DisplayName      string                 `gql:"displayName,nonempty"`
-	ImageMediaID     string                 `gql:"imageMediaID,nonempty"`
+	ImageMediaID     string                 `gql:"imageMediaID"`
 	Sections         []*profileSectionInput `gql:"sections,nonempty"`
 }
 
-var updateProfileInputType = graphql.NewInputObject(
+var createOrganizationProfileInputType = graphql.NewInputObject(
 	graphql.InputObjectConfig{
-		Name: "UpdateProfileInput",
+		Name: "CreateOrganizationProfileInput",
 		Fields: graphql.InputObjectConfigFieldMap{
 			"clientMutationId": newClientMutationIDInputField(),
-			"profileID":        &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
+			"organizationID":   &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
 			"displayName":      &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-			"imageMediaID":     &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"imageMediaID":     &graphql.InputObjectFieldConfig{Type: graphql.String},
 			"sections":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.NewList(profileSectionInputType))},
 		},
 	},
 )
 
-type updateProfileOutput struct {
-	ClientMutationID string         `json:"clientMutationId,omitempty"`
-	UUID             string         `json:"uuid,omitempty"`
-	Success          bool           `json:"success"`
-	ErrorCode        string         `json:"errorCode,omitempty"`
-	ErrorMessage     string         `json:"errorMessage,omitempty"`
-	Entity           *models.Entity `json:"entity"`
+type createOrganizationProfileOutput struct {
+	ClientMutationID string               `json:"clientMutationId,omitempty"`
+	UUID             string               `json:"uuid,omitempty"`
+	Success          bool                 `json:"success"`
+	ErrorCode        string               `json:"errorCode,omitempty"`
+	ErrorMessage     string               `json:"errorMessage,omitempty"`
+	Organization     *models.Organization `json:"organization"`
 }
 
-const (
-	updateProfileErrorCodeInvalidMediaID = "INVALID_MEDIA_ID"
-)
-
-var updateProfileErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
-	Name: "UpdateProfileErrorCode",
+var createOrganizationProfileErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
+	Name: "CreateOrganizationProfileErrorCode",
 	Values: graphql.EnumValueConfigMap{
-		updateProfileErrorCodeInvalidMediaID: &graphql.EnumValueConfig{
-			Value:       updateProfileErrorCodeInvalidMediaID,
+		profileErrorCodeInvalidMediaID: &graphql.EnumValueConfig{
+			Value:       profileErrorCodeInvalidMediaID,
 			Description: "The provided media id is not valid.",
 		},
 	},
 })
 
-var updateProfileOutputType = graphql.NewObject(
+var createOrganizationProfileOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
-		Name: "UpdateProfilePayload",
+		Name: "CreateOrganizationProfilePayload",
 		Fields: graphql.Fields{
 			"clientMutationId": newClientMutationIDOutputField(),
 			"uuid":             &graphql.Field{Type: graphql.String},
 			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-			"errorCode":        &graphql.Field{Type: updateProfileErrorCodeEnum},
+			"errorCode":        &graphql.Field{Type: createOrganizationProfileErrorCodeEnum},
 			"errorMessage":     &graphql.Field{Type: graphql.String},
-			"entity":           &graphql.Field{Type: entityType},
+			"organization":     &graphql.Field{Type: organizationType},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*updateProfileOutput)
+			_, ok := value.(*createOrganizationProfileOutput)
 			return ok
 		},
 	},
 )
 
-var updateProfileMutation = &graphql.Field{
-	Type: graphql.NewNonNull(updateProfileOutputType),
+// Note/TODO: Create and Update profile share a lot of the same check logic but cannot be resused due to differing return error types
+//  Should think about a pattern to allow more reuse
+var createOrganizationProfileMutation = &graphql.Field{
+	Type: graphql.NewNonNull(createOrganizationProfileOutputType),
 	Args: graphql.FieldConfigArgument{
-		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(updateProfileInputType)},
+		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(createOrganizationProfileInputType)},
 	},
 	Resolve: apiaccess.Authenticated(
 		apiaccess.Provider(func(p graphql.ResolveParams) (interface{}, error) {
@@ -222,7 +221,7 @@ var updateProfileMutation = &graphql.Field{
 			ram := raccess.ResourceAccess(p)
 			ctx := p.Context
 
-			var in updateProfileInput
+			var in createOrganizationProfileInput
 			if err := gqldecode.Decode(p.Args["input"].(map[string]interface{}), &in); err != nil {
 				switch err := err.(type) {
 				case gqldecode.ErrValidationFailed:
@@ -232,15 +231,125 @@ var updateProfileMutation = &graphql.Field{
 			}
 
 			// Check that our media ID is valid
-			if _, err := ram.MediaInfo(ctx, in.ImageMediaID); lerrors.Cause(err) == raccess.ErrNotFound {
-				return &updateProfileOutput{
-					ClientMutationID: in.ClientMutationID,
-					Success:          false,
-					ErrorCode:        updateProfileErrorCodeInvalidMediaID,
-					ErrorMessage:     "The provided media id is not valid.",
-				}, nil
+			if in.ImageMediaID != "" {
+				if _, err := ram.MediaInfo(ctx, in.ImageMediaID); lerrors.Cause(err) == raccess.ErrNotFound {
+					return &createEntityProfileOutput{
+						ClientMutationID: in.ClientMutationID,
+						Success:          false,
+						ErrorCode:        profileErrorCodeInvalidMediaID,
+						ErrorMessage:     "The provided media id is not valid.",
+					}, nil
+				} else if err != nil {
+					return nil, errors.InternalError(ctx, err)
+				}
+			}
+
+			org, err := updateOrganizationProfile(ctx, ram, "", in.OrganizationID, in.ImageMediaID, in.DisplayName, in.Sections, svc.staticURLPrefix)
+			if lerrors.Cause(err) == raccess.ErrNotFound {
+				return nil, errors.ErrNotFound(ctx, fmt.Sprintf("Resource for profile creation for %s", in.OrganizationID))
 			} else if err != nil {
+				return nil, err
+			}
+
+			return &createOrganizationProfileOutput{
+				ClientMutationID: in.ClientMutationID,
+				Success:          true,
+				Organization:     org,
+			}, nil
+		})),
+}
+
+// updateEntityProfile
+type updateEntityProfileInput struct {
+	ClientMutationID string                 `gql:"clientMutationId"`
+	ProfileID        string                 `gql:"profileID,nonempty"`
+	DisplayName      string                 `gql:"displayName,nonempty"`
+	ImageMediaID     string                 `gql:"imageMediaID"`
+	Sections         []*profileSectionInput `gql:"sections,nonempty"`
+}
+
+var updateEntityProfileInputType = graphql.NewInputObject(
+	graphql.InputObjectConfig{
+		Name: "UpdateEntityProfileInput",
+		Fields: graphql.InputObjectConfigFieldMap{
+			"clientMutationId": newClientMutationIDInputField(),
+			"profileID":        &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
+			"displayName":      &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"imageMediaID":     &graphql.InputObjectFieldConfig{Type: graphql.String},
+			"sections":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.NewList(profileSectionInputType))},
+		},
+	},
+)
+
+type updateEntityProfileOutput struct {
+	ClientMutationID string         `json:"clientMutationId,omitempty"`
+	UUID             string         `json:"uuid,omitempty"`
+	Success          bool           `json:"success"`
+	ErrorCode        string         `json:"errorCode,omitempty"`
+	ErrorMessage     string         `json:"errorMessage,omitempty"`
+	Entity           *models.Entity `json:"entity"`
+}
+
+var updateEntityProfileErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
+	Name: "UpdateEntityProfileErrorCode",
+	Values: graphql.EnumValueConfigMap{
+		profileErrorCodeInvalidMediaID: &graphql.EnumValueConfig{
+			Value:       profileErrorCodeInvalidMediaID,
+			Description: "The provided media id is not valid.",
+		},
+	},
+})
+
+var updateEntityProfileOutputType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "UpdateEntityProfilePayload",
+		Fields: graphql.Fields{
+			"clientMutationId": newClientMutationIDOutputField(),
+			"uuid":             &graphql.Field{Type: graphql.String},
+			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"errorCode":        &graphql.Field{Type: updateEntityProfileErrorCodeEnum},
+			"errorMessage":     &graphql.Field{Type: graphql.String},
+			"entity":           &graphql.Field{Type: entityType},
+		},
+		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+			_, ok := value.(*updateEntityProfileOutput)
+			return ok
+		},
+	},
+)
+
+var updateEntityProfileMutation = &graphql.Field{
+	Type: graphql.NewNonNull(updateEntityProfileOutputType),
+	Args: graphql.FieldConfigArgument{
+		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(updateEntityProfileInputType)},
+	},
+	Resolve: apiaccess.Authenticated(
+		apiaccess.Provider(func(p graphql.ResolveParams) (interface{}, error) {
+			svc := serviceFromParams(p)
+			ram := raccess.ResourceAccess(p)
+			ctx := p.Context
+
+			var in updateEntityProfileInput
+			if err := gqldecode.Decode(p.Args["input"].(map[string]interface{}), &in); err != nil {
+				switch err := err.(type) {
+				case gqldecode.ErrValidationFailed:
+					return nil, gqlerrors.FormatError(fmt.Errorf("%s is invalid: %s", err.Field, err.Reason))
+				}
 				return nil, errors.InternalError(ctx, err)
+			}
+
+			// Check that our media ID is valid
+			if in.ImageMediaID != "" {
+				if _, err := ram.MediaInfo(ctx, in.ImageMediaID); lerrors.Cause(err) == raccess.ErrNotFound {
+					return &updateEntityProfileOutput{
+						ClientMutationID: in.ClientMutationID,
+						Success:          false,
+						ErrorCode:        profileErrorCodeInvalidMediaID,
+						ErrorMessage:     "The provided media id is not valid.",
+					}, nil
+				} else if err != nil {
+					return nil, errors.InternalError(ctx, err)
+				}
 			}
 
 			ent, err := updateEntityProfile(ctx, ram, in.ProfileID, "", in.ImageMediaID, in.DisplayName, in.Sections, svc.staticURLPrefix)
@@ -250,10 +359,118 @@ var updateProfileMutation = &graphql.Field{
 				return nil, err
 			}
 
-			return &updateProfileOutput{
+			return &updateEntityProfileOutput{
 				ClientMutationID: in.ClientMutationID,
 				Success:          true,
 				Entity:           ent,
+			}, nil
+		})),
+}
+
+// updateOrganizationProfile
+type updateOrganizationProfileInput struct {
+	ClientMutationID string                 `gql:"clientMutationId"`
+	ProfileID        string                 `gql:"profileID,nonempty"`
+	DisplayName      string                 `gql:"displayName,nonempty"`
+	ImageMediaID     string                 `gql:"imageMediaID"`
+	Sections         []*profileSectionInput `gql:"sections,nonempty"`
+}
+
+var updateOrganizationProfileInputType = graphql.NewInputObject(
+	graphql.InputObjectConfig{
+		Name: "UpdateOrganizationProfileInput",
+		Fields: graphql.InputObjectConfigFieldMap{
+			"clientMutationId": newClientMutationIDInputField(),
+			"profileID":        &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
+			"displayName":      &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"imageMediaID":     &graphql.InputObjectFieldConfig{Type: graphql.String},
+			"sections":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.NewList(profileSectionInputType))},
+		},
+	},
+)
+
+type updateOrganizationProfileOutput struct {
+	ClientMutationID string               `json:"clientMutationId,omitempty"`
+	UUID             string               `json:"uuid,omitempty"`
+	Success          bool                 `json:"success"`
+	ErrorCode        string               `json:"errorCode,omitempty"`
+	ErrorMessage     string               `json:"errorMessage,omitempty"`
+	Organization     *models.Organization `json:"organization"`
+}
+
+var updateOrganizationProfileErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
+	Name: "UpdateOrganizationProfileErrorCode",
+	Values: graphql.EnumValueConfigMap{
+		profileErrorCodeInvalidMediaID: &graphql.EnumValueConfig{
+			Value:       profileErrorCodeInvalidMediaID,
+			Description: "The provided media id is not valid.",
+		},
+	},
+})
+
+var updateOrganizationProfileOutputType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "UpdateOrganizationProfilePayload",
+		Fields: graphql.Fields{
+			"clientMutationId": newClientMutationIDOutputField(),
+			"uuid":             &graphql.Field{Type: graphql.String},
+			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"errorCode":        &graphql.Field{Type: updateOrganizationProfileErrorCodeEnum},
+			"errorMessage":     &graphql.Field{Type: graphql.String},
+			"organization":     &graphql.Field{Type: organizationType},
+		},
+		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+			_, ok := value.(*updateOrganizationProfileOutput)
+			return ok
+		},
+	},
+)
+
+var updateOrganizationProfileMutation = &graphql.Field{
+	Type: graphql.NewNonNull(updateOrganizationProfileOutputType),
+	Args: graphql.FieldConfigArgument{
+		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(updateOrganizationProfileInputType)},
+	},
+	Resolve: apiaccess.Authenticated(
+		apiaccess.Provider(func(p graphql.ResolveParams) (interface{}, error) {
+			svc := serviceFromParams(p)
+			ram := raccess.ResourceAccess(p)
+			ctx := p.Context
+
+			var in updateOrganizationProfileInput
+			if err := gqldecode.Decode(p.Args["input"].(map[string]interface{}), &in); err != nil {
+				switch err := err.(type) {
+				case gqldecode.ErrValidationFailed:
+					return nil, gqlerrors.FormatError(fmt.Errorf("%s is invalid: %s", err.Field, err.Reason))
+				}
+				return nil, errors.InternalError(ctx, err)
+			}
+
+			if in.ImageMediaID != "" {
+				// Check that our media ID is valid
+				if _, err := ram.MediaInfo(ctx, in.ImageMediaID); lerrors.Cause(err) == raccess.ErrNotFound {
+					return &updateOrganizationProfileOutput{
+						ClientMutationID: in.ClientMutationID,
+						Success:          false,
+						ErrorCode:        profileErrorCodeInvalidMediaID,
+						ErrorMessage:     "The provided media id is not valid.",
+					}, nil
+				} else if err != nil {
+					return nil, errors.InternalError(ctx, err)
+				}
+			}
+
+			org, err := updateOrganizationProfile(ctx, ram, in.ProfileID, "", in.ImageMediaID, in.DisplayName, in.Sections, svc.staticURLPrefix)
+			if lerrors.Cause(err) == raccess.ErrNotFound {
+				return nil, errors.ErrNotFound(ctx, fmt.Sprintf("Resource for profile update %s", in.ProfileID))
+			} else if err != nil {
+				return nil, err
+			}
+
+			return &updateOrganizationProfileOutput{
+				ClientMutationID: in.ClientMutationID,
+				Success:          true,
+				Organization:     org,
 			}, nil
 		})),
 }
@@ -267,9 +484,9 @@ func updateEntityProfile(ctx context.Context, ram raccess.ResourceAccessor, prof
 		}
 	}
 
-	// Perform the profile create and entity update serially so that we can leverage the authorization of the update call
 	profile, err := ram.UpdateProfile(ctx, &directory.UpdateProfileRequest{
-		ProfileID: profileID,
+		ProfileID:    profileID,
+		ImageMediaID: imageMediaID,
 		Profile: &directory.Profile{
 			EntityID:    entityID,
 			DisplayName: customDisplayName,
@@ -281,4 +498,29 @@ func updateEntityProfile(ctx context.Context, ram raccess.ResourceAccessor, prof
 	}
 
 	return transformEntityToResponse(ctx, staticURLPrefix, profile.Entity, devicectx.SpruceHeaders(ctx), gqlctx.Account(ctx))
+}
+
+func updateOrganizationProfile(ctx context.Context, ram raccess.ResourceAccessor, profileID, organizationID, imageMediaID, customDisplayName string, psis []*profileSectionInput, staticURLPrefix string) (*models.Organization, error) {
+	sections := make([]*directory.ProfileSection, len(psis))
+	for i, s := range psis {
+		sections[i] = &directory.ProfileSection{
+			Title: s.Title,
+			Body:  s.Body,
+		}
+	}
+
+	profile, err := ram.UpdateProfile(ctx, &directory.UpdateProfileRequest{
+		ProfileID:    profileID,
+		ImageMediaID: imageMediaID,
+		Profile: &directory.Profile{
+			EntityID:    organizationID,
+			DisplayName: customDisplayName,
+			Sections:    sections,
+		},
+	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	return transformOrganizationToResponse(ctx, staticURLPrefix, profile.Entity, nil, devicectx.SpruceHeaders(ctx), gqlctx.Account(ctx))
 }
