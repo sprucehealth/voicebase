@@ -27,6 +27,11 @@ func (qos queryOptions) Has(opt QueryOption) bool {
 	return false
 }
 
+type IPCallParticipantUpdate struct {
+	State       *models.IPCallState
+	NetworkType *models.NetworkType
+}
+
 func (d *dal) CreateIPCall(ctx context.Context, call *models.IPCall) error {
 	if len(call.Participants) < 2 {
 		return errors.Trace(errors.New("IPCall requires at least 2 participants"))
@@ -182,10 +187,20 @@ func (d *dal) UpdateIPCall(ctx context.Context, callID models.IPCallID, pending 
 	return errors.Trace(err)
 }
 
-func (d *dal) UpdateIPCallParticipant(ctx context.Context, callID models.IPCallID, accountID string, state models.IPCallState, networkType models.NetworkType) error {
+func (d *dal) UpdateIPCallParticipant(ctx context.Context, callID models.IPCallID, accountID string, update *IPCallParticipantUpdate) error {
+	set := dbutil.MySQLVarArgs()
+	if update.State != nil {
+		set.Append("state", *update.State)
+	}
+	if update.NetworkType != nil {
+		set.Append("network_type", *update.NetworkType)
+	}
+	if set.IsEmpty() {
+		return nil
+	}
 	_, err := d.db.Exec(`
 		UPDATE ipcall_participant
-		SET state = ?, network_type = ?
-		WHERE ipcall_id = ? AND account_id = ?`, state, networkType, callID, accountID)
+		SET `+set.ColumnsForUpdate()+`
+		WHERE ipcall_id = ? AND account_id = ?`, append(set.Values(), callID, accountID)...)
 	return errors.Trace(err)
 }

@@ -78,10 +78,10 @@ func (r *IPCallParticipantRole) Scan(src interface{}) error {
 	case string:
 		*r = IPCallParticipantRole(src)
 	default:
-		return errors.Trace(fmt.Errorf("unsupported type for IPCallParticipantRole.Scan: %T", src))
+		return errors.Errorf("unsupported type for IPCallParticipantRole.Scan: %T", src)
 	}
 	if !r.Valid() {
-		return errors.Trace(fmt.Errorf("'%s' is not a valid IPCallParticipantRole", string(*r)))
+		return errors.Errorf("'%s' is not a valid IPCallParticipantRole", string(*r))
 	}
 	return nil
 }
@@ -89,7 +89,7 @@ func (r *IPCallParticipantRole) Scan(src interface{}) error {
 // Value implements sql/driver.Valuer to allow an ObjectID to be used in an sql query
 func (r IPCallParticipantRole) Value() (driver.Value, error) {
 	if !r.Valid() {
-		return nil, errors.Trace(fmt.Errorf("'%s' is not a valid IPCallParticipantRole", string(r)))
+		return nil, errors.Errorf("'%s' is not a valid IPCallParticipantRole", string(r))
 	}
 	return string(r), nil
 }
@@ -121,6 +121,11 @@ const (
 	IPCallStateCompleted IPCallState = "COMPLETED"
 )
 
+// Ptr returns a pointer to the call state (for use in dal updates)
+func (s IPCallState) Ptr() *IPCallState {
+	return &s
+}
+
 // Scan implements sql.Scanner and expects src to be nil or of type string or []byte
 func (s *IPCallState) Scan(src interface{}) error {
 	if src == nil {
@@ -132,10 +137,10 @@ func (s *IPCallState) Scan(src interface{}) error {
 	case string:
 		*s = IPCallState(src)
 	default:
-		return errors.Trace(fmt.Errorf("unsupported type for IPCallState.Scan: %T", src))
+		return errors.Errorf("unsupported type for IPCallState.Scan: %T", src)
 	}
 	if !s.Valid() {
-		return errors.Trace(fmt.Errorf("'%s' is not a valid IPCallState", string(*s)))
+		return errors.Errorf("'%s' is not a valid IPCallState", string(*s))
 	}
 	return nil
 }
@@ -143,7 +148,7 @@ func (s *IPCallState) Scan(src interface{}) error {
 // Value implements sql/driver.Valuer to allow an ObjectID to be used in an sql query
 func (s IPCallState) Value() (driver.Value, error) {
 	if !s.Valid() {
-		return nil, errors.Trace(fmt.Errorf("'%s' is not a valid IPCallState", string(s)))
+		return nil, errors.Errorf("'%s' is not a valid IPCallState", string(s))
 	}
 	return string(s), nil
 }
@@ -154,6 +159,24 @@ func (s IPCallState) Valid() bool {
 	case IPCallStatePending, IPCallStateAccepted,
 		IPCallStateDeclined, IPCallStateConnected,
 		IPCallStateFailed, IPCallStateCompleted:
+		return true
+	}
+	return false
+}
+
+// Pending returns true for any state that represents a non-connected and non-terminal call
+func (s IPCallState) Pending() bool {
+	switch s {
+	case IPCallStateCompleted, IPCallStateDeclined, IPCallStateFailed, IPCallStateConnected:
+		return false
+	}
+	return true
+}
+
+// Terminal returns true for any state that represents the end of a call
+func (s IPCallState) Terminal() bool {
+	switch s {
+	case IPCallStateCompleted, IPCallStateDeclined, IPCallStateFailed:
 		return true
 	}
 	return false
@@ -170,6 +193,11 @@ const (
 	// NetworkTypeWiFi is a wi-fi network
 	NetworkTypeWiFi NetworkType = "WIFI"
 )
+
+// Ptr returns a pointer to the network type (for use in dal updates)
+func (s NetworkType) Ptr() *NetworkType {
+	return &s
+}
 
 // Scan implements sql.Scanner and expects src to be nil or of type string or []byte
 func (s *NetworkType) Scan(src interface{}) error {
@@ -249,6 +277,26 @@ type IPCall struct {
 	Pending      bool
 	Initiated    time.Time
 	Participants []*IPCallParticipant
+}
+
+// Active returns true iff no participant is in a terminal state
+func (c *IPCall) Active() bool {
+	for _, p := range c.Participants {
+		if p.State.Terminal() {
+			return false
+		}
+	}
+	return true
+}
+
+// Connected returns true iff all participants are in the connected state
+func (c *IPCall) Connected() bool {
+	for _, p := range c.Participants {
+		if p.State != IPCallStateConnected {
+			return false
+		}
+	}
+	return true
 }
 
 // IPCallParticipant is a participant in an IP call

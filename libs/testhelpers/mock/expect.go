@@ -153,7 +153,7 @@ func (e *Expector) Record(params ...interface{}) []interface{} {
 
 	if len(e.expects) == 0 {
 		e.T.Fatalf(
-			"Recieved call to %s without any remaining ordered expectiations: params %+v\n"+
+			"Received call to %s without any remaining ordered expectations: params %+v\n"+
 				"Source: %s:%d\n", caller.Name(), params, file, line)
 	}
 

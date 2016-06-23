@@ -214,12 +214,15 @@ var threadType = graphql.NewObject(
 					if err != nil {
 						return nil, errors.InternalError(ctx, err)
 					}
-					if ent == nil {
+					if ent == nil || ent.AccountID == "" {
 						return []*models.CallableIdentity{}, nil
 					}
 					endpoints, err := callableEndpointsForEntity(ctx, ent)
 					if err != nil {
 						return nil, errors.InternalError(ctx, err)
+					}
+					if len(endpoints) == 0 {
+						return []*models.CallableIdentity{}, nil
 					}
 					ment, err := transformEntityToResponse(ctx, svc.staticURLPrefix, ent, devicectx.SpruceHeaders(ctx), acc)
 					if err != nil {

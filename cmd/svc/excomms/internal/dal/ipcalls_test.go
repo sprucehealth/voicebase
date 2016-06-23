@@ -59,7 +59,9 @@ func TestIPCalls(t *testing.T) {
 	test.Equals(t, 1, len(calls))
 	test.Equals(t, call, calls[0])
 
-	test.OK(t, dal.UpdateIPCallParticipant(ctx, call.ID, "account_2", models.IPCallStateConnected, models.NetworkTypeWiFi))
+	newState := models.IPCallStateConnected
+	newNetworkType := models.NetworkTypeWiFi
+	test.OK(t, dal.UpdateIPCallParticipant(ctx, call.ID, "account_2", &IPCallParticipantUpdate{State: &newState, NetworkType: &newNetworkType}))
 	call.Participants[1].State = models.IPCallStateConnected
 	call.Participants[1].NetworkType = models.NetworkTypeWiFi
 
