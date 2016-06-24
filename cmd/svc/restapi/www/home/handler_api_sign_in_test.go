@@ -42,11 +42,11 @@ func (a *mockAuthAPI_signIn) CreateToken(accountID int64, platform api.Platform,
 func TestAPISignInHandler(t *testing.T) {
 	authAPI := &mockAuthAPI_signIn{
 		accounts: map[string]*mockAccount{
-			"patient@example.com": &mockAccount{
+			"patient@example.com": {
 				password: "patient",
 				account:  &common.Account{Role: api.RolePatient},
 			},
-			"doctor@example.com": &mockAccount{
+			"doctor@example.com": {
 				password: "doctor",
 				account:  &common.Account{Role: api.RoleDoctor},
 			},
@@ -67,7 +67,7 @@ func TestAPISignInHandler(t *testing.T) {
 	h.ServeHTTP(context.Background(), w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 	test.Equals(t, "{}\n", w.Body.String())
-	test.Equals(t, "at=token; Path=/; HttpOnly; Secure", w.Header().Get("Set-Cookie"))
+	test.Equals(t, "d_at=token; Path=/; HttpOnly; Secure", w.Header().Get("Set-Cookie"))
 
 	// Test invalid email
 

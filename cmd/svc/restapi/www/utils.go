@@ -15,9 +15,9 @@ import (
 )
 
 const (
-	authCookieName     = "at"
-	deviceIDCookieName = "did"
-	passCookieName     = "hp"
+	authCookieName     = "d_at"
+	deviceIDCookieName = "d_did"
+	passCookieName     = "d_hp"
 )
 
 // validateRedirectURL makes sure that a user provided URL that will be
