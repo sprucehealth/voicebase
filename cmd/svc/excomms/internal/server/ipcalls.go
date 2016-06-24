@@ -282,7 +282,7 @@ func (e *excommsService) UpdateIPCall(ctx context.Context, req *excomms.UpdateIP
 		callWasActive := call.Active()
 		// Validate that the new state is a valid transition from the current state
 		if _, ok := validIPCallParicipantStateTransitions[ipCallStateTransition{from: par.State, to: newState}]; !ok {
-			return grpcErrorf(codes.InvalidArgument, "Cannot transition from state %s to %s", par.State, newState)
+			return grpcErrorf(codes.InvalidArgument, "Cannot transition from state %s to %s for %s", par.State, newState, par.EntityID)
 		}
 		// Update the participant so we don't have to refetch when returning the response
 		oldState = par.State
