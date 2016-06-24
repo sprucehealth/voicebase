@@ -8,30 +8,6 @@ import (
 	"golang.org/x/net/context"
 )
 
-// QueryOption is an optional that can be provided to a DAL function
-type QueryOption int
-
-const (
-	// ForUpdate locks the queried rows for update
-	ForUpdate QueryOption = iota + 1
-)
-
-type queryOptions []QueryOption
-
-func (qos queryOptions) Has(opt QueryOption) bool {
-	for _, o := range qos {
-		if o == opt {
-			return true
-		}
-	}
-	return false
-}
-
-type IPCallParticipantUpdate struct {
-	State       *models.IPCallState
-	NetworkType *models.NetworkType
-}
-
 func (d *dal) CreateIPCall(ctx context.Context, call *models.IPCall) error {
 	if len(call.Participants) < 2 {
 		return errors.Trace(errors.New("IPCall requires at least 2 participants"))
@@ -45,7 +21,7 @@ func (d *dal) CreateIPCall(ctx context.Context, call *models.IPCall) error {
 	if err != nil {
 		return errors.Trace(err)
 	}
-	call.Initiated = d.clk.Now()
+	call.InitiatedTime = d.clk.Now()
 	call.Pending = true
 
 	tx, err := d.db.Begin()
@@ -53,8 +29,8 @@ func (d *dal) CreateIPCall(ctx context.Context, call *models.IPCall) error {
 		return errors.Trace(err)
 	}
 
-	_, err = tx.Exec(`INSERT INTO ipcall (id, type, pending, initiated) VALUES (?, ?, ?, ?)`,
-		call.ID, call.Type, call.Pending, call.Initiated)
+	_, err = tx.Exec(`INSERT INTO ipcall (id, type, pending, initiated, connected) VALUES (?, ?, ?, ?, ?)`,
+		call.ID, call.Type, call.Pending, call.InitiatedTime, call.ConnectedTime)
 	if err != nil {
 		tx.Rollback()
 		return errors.Trace(err)
@@ -99,8 +75,8 @@ func (d *dal) IPCall(ctx context.Context, id models.IPCallID, opts ...QueryOptio
 	}
 
 	call := &models.IPCall{ID: models.EmptyIPCallID()}
-	row := d.db.QueryRow(`SELECT id, type, pending, initiated FROM ipcall WHERE id = ?`+forUpdate, id)
-	if err := row.Scan(&call.ID, &call.Type, &call.Pending, &call.Initiated); err == sql.ErrNoRows {
+	row := d.db.QueryRow(`SELECT id, type, pending, initiated, connected FROM ipcall WHERE id = ?`+forUpdate, id)
+	if err := row.Scan(&call.ID, &call.Type, &call.Pending, &call.InitiatedTime, &call.ConnectedTime); err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrIPCallNotFound)
 	} else if err != nil {
 		return nil, errors.Trace(err)
@@ -126,7 +102,7 @@ func (d *dal) IPCall(ctx context.Context, id models.IPCallID, opts ...QueryOptio
 
 func (d *dal) PendingIPCallsForAccount(ctx context.Context, accountID string) ([]*models.IPCall, error) {
 	rows, err := d.db.Query(`
-		SELECT c.id, c.type, c.pending, c.initiated
+		SELECT c.id, c.type, c.pending, c.initiated, c.connected
 		FROM ipcall_participant cp
 		INNER JOIN ipcall c ON c.id = cp.ipcall_id
 		WHERE cp.account_id = ? AND pending = ?`, accountID, true)
@@ -137,7 +113,7 @@ func (d *dal) PendingIPCallsForAccount(ctx context.Context, accountID string) ([
 	var calls []*models.IPCall
 	for rows.Next() {
 		c := &models.IPCall{ID: models.EmptyIPCallID()}
-		if err := rows.Scan(&c.ID, &c.Type, &c.Pending, &c.Initiated); err != nil {
+		if err := rows.Scan(&c.ID, &c.Type, &c.Pending, &c.InitiatedTime, &c.ConnectedTime); err != nil {
 			return nil, errors.Trace(err)
 		}
 		calls = append(calls, c)
@@ -182,8 +158,18 @@ func (d *dal) PendingIPCallsForAccount(ctx context.Context, accountID string) ([
 	return calls, errors.Trace(rows.Err())
 }
 
-func (d *dal) UpdateIPCall(ctx context.Context, callID models.IPCallID, pending bool) error {
-	_, err := d.db.Exec(`UPDATE ipcall SET pending = ? WHERE id = ?`, pending, callID)
+func (d *dal) UpdateIPCall(ctx context.Context, callID models.IPCallID, update *IPCallUpdate) error {
+	set := dbutil.MySQLVarArgs()
+	if update.Pending != nil {
+		set.Append("pending", *update.Pending)
+	}
+	if update.ConnectedTime != nil {
+		set.Append("connected", *update.ConnectedTime)
+	}
+	if set.IsEmpty() {
+		return nil
+	}
+	_, err := d.db.Exec(`UPDATE ipcall SET `+set.ColumnsForUpdate()+` WHERE id = ?`, append(set.Values(), callID)...)
 	return errors.Trace(err)
 }
 

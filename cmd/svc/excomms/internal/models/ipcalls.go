@@ -272,11 +272,12 @@ func EmptyIPCallID() IPCallID {
 
 // IPCall is a video or audio call placed over the network (non-POTS call)
 type IPCall struct {
-	ID           IPCallID
-	Type         IPCallType
-	Pending      bool
-	Initiated    time.Time
-	Participants []*IPCallParticipant
+	ID            IPCallID
+	Type          IPCallType
+	Pending       bool
+	InitiatedTime time.Time
+	ConnectedTime *time.Time
+	Participants  []*IPCallParticipant
 }
 
 // Active returns true iff no participant is in a terminal state
@@ -289,14 +290,9 @@ func (c *IPCall) Active() bool {
 	return true
 }
 
-// Connected returns true iff all participants are in the connected state
+// Connected returns true if the call is currently connected
 func (c *IPCall) Connected() bool {
-	for _, p := range c.Participants {
-		if p.State != IPCallStateConnected {
-			return false
-		}
-	}
-	return true
+	return c.ConnectedTime != nil && c.Active()
 }
 
 // IPCallParticipant is a participant in an IP call

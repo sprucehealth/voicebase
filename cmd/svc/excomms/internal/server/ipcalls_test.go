@@ -9,6 +9,7 @@ import (
 	dalmock "github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal/mock"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
 	"github.com/sprucehealth/backend/libs/clock"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -149,10 +150,10 @@ func TestIPCall(t *testing.T) {
 	test.Equals(t, codes.NotFound, grpc.Code(err))
 
 	dl.Expect(mock.NewExpectation(dl.IPCall, ipcID).WithReturns(&models.IPCall{
-		ID:        ipcID,
-		Type:      models.IPCallTypeVideo,
-		Pending:   true,
-		Initiated: clk.Now(),
+		ID:            ipcID,
+		Type:          models.IPCallTypeVideo,
+		Pending:       true,
+		InitiatedTime: clk.Now(),
 		Participants: []*models.IPCallParticipant{
 			{
 				AccountID:   "account_1",
@@ -214,10 +215,10 @@ func TestIPCall_Timeout(t *testing.T) {
 	ipcID, err := models.NewIPCallID()
 	test.OK(t, err)
 	call := &models.IPCall{
-		ID:        ipcID,
-		Type:      models.IPCallTypeVideo,
-		Pending:   true,
-		Initiated: clk.Now().Add(-ipCallTimeout - 1e6),
+		ID:            ipcID,
+		Type:          models.IPCallTypeVideo,
+		Pending:       true,
+		InitiatedTime: clk.Now().Add(-ipCallTimeout - 1e6),
 		Participants: []*models.IPCallParticipant{
 			{
 				AccountID:   "account_1",
@@ -242,7 +243,7 @@ func TestIPCall_Timeout(t *testing.T) {
 	dl.Expect(mock.NewExpectation(dl.IPCall, ipcID).WithReturns(call, nil)) // second fetch is with a lock
 	dl.Expect(mock.NewExpectation(dl.UpdateIPCallParticipant, call.ID, "account_1", &dal.IPCallParticipantUpdate{State: models.IPCallStateDeclined.Ptr()}))
 	dl.Expect(mock.NewExpectation(dl.UpdateIPCallParticipant, call.ID, "account_2", &dal.IPCallParticipantUpdate{State: models.IPCallStateDeclined.Ptr()}))
-	dl.Expect(mock.NewExpectation(dl.UpdateIPCall, call.ID, false))
+	dl.Expect(mock.NewExpectation(dl.UpdateIPCall, call.ID, &dal.IPCallUpdate{Pending: ptr.Bool(false)}))
 	thr.Expect(mock.NewExpectation(thr.ThreadsForMember, &threading.ThreadsForMemberRequest{
 		EntityID:    "entity_recipient",
 		PrimaryOnly: true,
@@ -307,10 +308,10 @@ func TestPendingIPCalls(t *testing.T) {
 	dl.Expect(mock.NewExpectation(dl.PendingIPCallsForAccount, "account_1").WithReturns(
 		[]*models.IPCall{
 			{
-				ID:        ipcID,
-				Type:      models.IPCallTypeVideo,
-				Pending:   true,
-				Initiated: clk.Now(),
+				ID:            ipcID,
+				Type:          models.IPCallTypeVideo,
+				Pending:       true,
+				InitiatedTime: clk.Now(),
 				Participants: []*models.IPCallParticipant{
 					{
 						AccountID:   "account_1",
@@ -381,10 +382,10 @@ func TestPendingIPCalls_Timeout(t *testing.T) {
 	ipcID, err := models.NewIPCallID()
 	test.OK(t, err)
 	call := &models.IPCall{
-		ID:        ipcID,
-		Type:      models.IPCallTypeVideo,
-		Pending:   true,
-		Initiated: clk.Now().Add(-ipCallTimeout - 1e6),
+		ID:            ipcID,
+		Type:          models.IPCallTypeVideo,
+		Pending:       true,
+		InitiatedTime: clk.Now().Add(-ipCallTimeout - 1e6),
 		Participants: []*models.IPCallParticipant{
 			{
 				AccountID:   "account_1",
@@ -409,7 +410,7 @@ func TestPendingIPCalls_Timeout(t *testing.T) {
 	dl.Expect(mock.NewExpectation(dl.IPCall, ipcID).WithReturns(call, nil))
 	dl.Expect(mock.NewExpectation(dl.UpdateIPCallParticipant, call.ID, "account_1", &dal.IPCallParticipantUpdate{State: models.IPCallStateDeclined.Ptr()}))
 	dl.Expect(mock.NewExpectation(dl.UpdateIPCallParticipant, call.ID, "account_2", &dal.IPCallParticipantUpdate{State: models.IPCallStateDeclined.Ptr()}))
-	dl.Expect(mock.NewExpectation(dl.UpdateIPCall, call.ID, false))
+	dl.Expect(mock.NewExpectation(dl.UpdateIPCall, call.ID, &dal.IPCallUpdate{Pending: ptr.Bool(false)}))
 	thr.Expect(mock.NewExpectation(thr.ThreadsForMember, &threading.ThreadsForMemberRequest{
 		EntityID:    "entity_recipient",
 		PrimaryOnly: true,
@@ -451,12 +452,79 @@ func TestUpdateIPCall(t *testing.T) {
 	})
 	test.Equals(t, codes.NotFound, grpc.Code(err))
 
+	// Make sure connected state causes update to connected time
+
 	dl.Expect(mock.NewExpectation(dl.IPCall, ipcid).WithReturns(
 		&models.IPCall{
-			ID:        ipcid,
-			Type:      models.IPCallTypeVideo,
-			Pending:   true,
-			Initiated: clk.Now().Add(-110e9),
+			ID:            ipcid,
+			Type:          models.IPCallTypeVideo,
+			Pending:       true,
+			InitiatedTime: clk.Now().Add(-110e9),
+			Participants: []*models.IPCallParticipant{
+				{
+					EntityID:    "entity_caller",
+					AccountID:   "account_caller",
+					Identity:    "identity_caller",
+					Role:        models.IPCallParticipantRoleCaller,
+					State:       models.IPCallStateAccepted,
+					NetworkType: models.NetworkTypeUnknown,
+				},
+				{
+					EntityID:    "entity_recipient",
+					AccountID:   "account_recipient",
+					Identity:    "identity_recipient",
+					Role:        models.IPCallParticipantRoleRecipient,
+					State:       models.IPCallStateAccepted,
+					NetworkType: models.NetworkTypeUnknown,
+				},
+			},
+		}, nil))
+	dl.Expect(mock.NewExpectation(dl.UpdateIPCallParticipant, ipcid, "account_caller", &dal.IPCallParticipantUpdate{State: models.IPCallStateConnected.Ptr(), NetworkType: models.NetworkTypeWiFi.Ptr()}))
+	dl.Expect(mock.NewExpectation(dl.UpdateIPCall, ipcid, &dal.IPCallUpdate{Pending: ptr.Bool(false), ConnectedTime: ptr.Time(clk.Now())}))
+
+	res, err := svc.UpdateIPCall(nil, &excomms.UpdateIPCallRequest{
+		IPCallID:    ipcid.String(),
+		AccountID:   "account_caller",
+		State:       excomms.IPCallState_CONNECTED,
+		NetworkType: excomms.NetworkType_WIFI,
+	})
+	test.OK(t, err)
+	test.Equals(t, &excomms.UpdateIPCallResponse{
+		Call: &excomms.IPCall{
+			ID:      ipcid.String(),
+			Type:    excomms.IPCallType_VIDEO,
+			Pending: false,
+			Token:   res.Call.Token, // Not deterministic so can't test the exact value, but doesn't matter too much anyway as the token generation is tested elsewhere
+			Participants: []*excomms.IPCallParticipant{
+				{
+					AccountID:   "account_caller",
+					EntityID:    "entity_caller",
+					Identity:    "identity_caller",
+					Role:        excomms.IPCallParticipantRole_CALLER,
+					State:       excomms.IPCallState_CONNECTED,
+					NetworkType: excomms.NetworkType_WIFI,
+				},
+				{
+					AccountID:   "account_recipient",
+					EntityID:    "entity_recipient",
+					Identity:    "identity_recipient",
+					Role:        excomms.IPCallParticipantRole_RECIPIENT,
+					State:       excomms.IPCallState_ACCEPTED,
+					NetworkType: excomms.NetworkType_UNKNOWN,
+				},
+			},
+		},
+	}, res)
+
+	// Make sure end of call (terminal state) posts message
+
+	dl.Expect(mock.NewExpectation(dl.IPCall, ipcid).WithReturns(
+		&models.IPCall{
+			ID:            ipcid,
+			Type:          models.IPCallTypeVideo,
+			Pending:       true,
+			InitiatedTime: clk.Now().Add(-110e9),
+			ConnectedTime: ptr.Time(clk.Now().Add(-90e9)),
 			Participants: []*models.IPCallParticipant{
 				{
 					EntityID:    "entity_caller",
@@ -476,10 +544,8 @@ func TestUpdateIPCall(t *testing.T) {
 				},
 			},
 		}, nil))
-
 	dl.Expect(mock.NewExpectation(dl.UpdateIPCallParticipant, ipcid, "account_caller", &dal.IPCallParticipantUpdate{State: models.IPCallStateCompleted.Ptr(), NetworkType: models.NetworkTypeWiFi.Ptr()}))
-	dl.Expect(mock.NewExpectation(dl.UpdateIPCall, ipcid, false))
-
+	dl.Expect(mock.NewExpectation(dl.UpdateIPCall, ipcid, &dal.IPCallUpdate{Pending: ptr.Bool(false)}))
 	thr.Expect(mock.NewExpectation(thr.ThreadsForMember, &threading.ThreadsForMemberRequest{
 		EntityID:    "entity_recipient",
 		PrimaryOnly: true,
@@ -488,16 +554,15 @@ func TestUpdateIPCall(t *testing.T) {
 			{ID: "thread"},
 		},
 	}, nil))
-
 	thr.Expect(mock.NewExpectation(thr.PostMessage, &threading.PostMessageRequest{
 		UUID:         ipcid.String(),
 		ThreadID:     "thread",
 		FromEntityID: "entity_caller",
-		Title:        "Video call, 1:50s",
-		Summary:      "Video call, 1:50s",
+		Title:        "Video call, 1:30s",
+		Summary:      "Video call, 1:30s",
 	}))
 
-	res, err := svc.UpdateIPCall(nil, &excomms.UpdateIPCallRequest{
+	res, err = svc.UpdateIPCall(nil, &excomms.UpdateIPCallRequest{
 		IPCallID:    ipcid.String(),
 		AccountID:   "account_caller",
 		State:       excomms.IPCallState_COMPLETED,

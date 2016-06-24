@@ -19,6 +19,35 @@ import (
 	"golang.org/x/net/context"
 )
 
+// QueryOption is an optional that can be provided to a DAL function
+type QueryOption int
+
+const (
+	// ForUpdate locks the queried rows for update
+	ForUpdate QueryOption = iota + 1
+)
+
+type queryOptions []QueryOption
+
+func (qos queryOptions) Has(opt QueryOption) bool {
+	for _, o := range qos {
+		if o == opt {
+			return true
+		}
+	}
+	return false
+}
+
+type IPCallUpdate struct {
+	Pending       *bool
+	ConnectedTime *time.Time
+}
+
+type IPCallParticipantUpdate struct {
+	State       *models.IPCallState
+	NetworkType *models.NetworkType
+}
+
 type ProvisionedEndpointLookup struct {
 	PhoneNumber    *string
 	ProvisionedFor *string
@@ -129,7 +158,7 @@ type DAL interface {
 	PendingIPCallsForAccount(ctx context.Context, accountID string) ([]*models.IPCall, error)
 
 	// UpdatePendingCall updates an IP call
-	UpdateIPCall(ctx context.Context, callID models.IPCallID, pending bool) error
+	UpdateIPCall(ctx context.Context, callID models.IPCallID, update *IPCallUpdate) error
 
 	// UpdateIPCallParticipant updates a participant of an IP call
 	UpdateIPCallParticipant(ctx context.Context, callID models.IPCallID, accountID string, update *IPCallParticipantUpdate) error

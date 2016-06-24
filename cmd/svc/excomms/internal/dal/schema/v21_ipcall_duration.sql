@@ -1,0 +1,1 @@
+ALTER TABLE ipcall ADD COLUMN connected TIMESTAMP;

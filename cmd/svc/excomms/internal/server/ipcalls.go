@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/libs/bml"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/twilio"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
@@ -23,7 +24,7 @@ import (
 
 const (
 	ipCallTokenTTL = 6 * 60 * 60
-	ipCallTimeout  = time.Second * 30
+	ipCallTimeout  = 2 * time.Minute
 )
 
 type ipCallStateTransition struct {
@@ -168,7 +169,7 @@ func (e *excommsService) IPCall(ctx context.Context, req *excomms.IPCallRequest)
 	} else if err != nil {
 		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
-	if call.Pending && e.clock.Now().Sub(call.Initiated) > ipCallTimeout {
+	if call.Pending && e.clock.Now().Sub(call.InitiatedTime) > ipCallTimeout {
 		if err := e.timeoutIPCall(ctx, call); err != nil {
 			return nil, grpcErrorf(codes.Internal, err.Error())
 		}
@@ -204,7 +205,7 @@ func (e *excommsService) PendingIPCalls(ctx context.Context, req *excomms.Pendin
 	}
 	for _, c := range calls {
 		// Lazily timeout pending calls
-		if e.clock.Now().Sub(c.Initiated) > ipCallTimeout {
+		if e.clock.Now().Sub(c.InitiatedTime) > ipCallTimeout {
 			if err := e.timeoutIPCall(ctx, c); err != nil {
 				return nil, grpcErrorf(codes.Internal, err.Error())
 			}
@@ -257,7 +258,6 @@ func (e *excommsService) UpdateIPCall(ctx context.Context, req *excomms.UpdateIP
 	var par *models.IPCallParticipant
 	var oldState models.IPCallState
 	endOfCall := false
-	callWasConnected := false
 	err = e.dal.Transact(func(dl dal.DAL) error {
 		call, err = dl.IPCall(ctx, callID, dal.ForUpdate)
 		if errors.Cause(err) == dal.ErrIPCallNotFound {
@@ -278,7 +278,6 @@ func (e *excommsService) UpdateIPCall(ctx context.Context, req *excomms.UpdateIP
 			// Nothing to do
 			return nil
 		}
-		callWasConnected = call.Connected()
 		callWasActive := call.Active()
 		// Validate that the new state is a valid transition from the current state
 		if _, ok := validIPCallParicipantStateTransitions[ipCallStateTransition{from: par.State, to: newState}]; !ok {
@@ -292,9 +291,15 @@ func (e *excommsService) UpdateIPCall(ctx context.Context, req *excomms.UpdateIP
 			return errors.Trace(err)
 		}
 		if call.Pending && !newState.Pending() {
-			// Update the call so we don't have to refetch when returning the response
+			update := &dal.IPCallUpdate{
+				Pending: ptr.Bool(false),
+			}
 			call.Pending = false
-			if err := dl.UpdateIPCall(ctx, callID, false); err != nil {
+			if newState == models.IPCallStateConnected {
+				call.ConnectedTime = ptr.Time(e.clock.Now())
+				update.ConnectedTime = call.ConnectedTime
+			}
+			if err := dl.UpdateIPCall(ctx, callID, update); err != nil {
 				return errors.Trace(err)
 			}
 		}
@@ -309,7 +314,7 @@ func (e *excommsService) UpdateIPCall(ctx context.Context, req *excomms.UpdateIP
 	}
 	if endOfCall {
 		// Post message into thread if the receiving entity is a primary on a thread
-		if err := e.postIPCallMessage(ctx, call, callWasConnected); err != nil {
+		if err := e.postIPCallMessage(ctx, call); err != nil {
 			// Too late to revert here so just log and move on
 			golog.Errorf("Error creating post for IPCall: %s", err)
 		}
@@ -339,7 +344,7 @@ func (e *excommsService) timeoutIPCall(ctx context.Context, call *models.IPCall)
 		}
 		if c.Pending {
 			call.Pending = false // Update the original call to match new value
-			if err := dl.UpdateIPCall(ctx, c.ID, false); err != nil {
+			if err := dl.UpdateIPCall(ctx, c.ID, &dal.IPCallUpdate{Pending: ptr.Bool(false)}); err != nil {
 				return errors.Trace(err)
 			}
 		}
@@ -349,14 +354,14 @@ func (e *excommsService) timeoutIPCall(ctx context.Context, call *models.IPCall)
 		return errors.Trace(err)
 	}
 	// Post message into thread if the receiving entity is a primary on a thread
-	if err := e.postIPCallMessage(ctx, call, false); err != nil {
+	if err := e.postIPCallMessage(ctx, call); err != nil {
 		// Too late to revert here so just log and move on
 		golog.Errorf("Error creating post for IPCall: %s", err)
 	}
 	return nil
 }
 
-func (e *excommsService) postIPCallMessage(ctx context.Context, call *models.IPCall, connected bool) error {
+func (e *excommsService) postIPCallMessage(ctx context.Context, call *models.IPCall) error {
 	// Only know how to handle calls with 2 participants (caller and callee)
 	if len(call.Participants) != 2 {
 		return nil
@@ -390,8 +395,8 @@ func (e *excommsService) postIPCallMessage(ctx context.Context, call *models.IPC
 	thread := res.Threads[0]
 
 	var title bml.BML
-	if connected {
-		dt := e.clock.Now().Sub(call.Initiated).Nanoseconds() / 1e9
+	if call.ConnectedTime != nil {
+		dt := e.clock.Now().Sub(*call.ConnectedTime).Nanoseconds() / 1e9
 		title = append(title, fmt.Sprintf("Video call, %d:%02ds", dt/60, dt%60))
 	} else {
 		title = append(title, "Video call, no answer")

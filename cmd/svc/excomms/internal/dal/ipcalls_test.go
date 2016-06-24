@@ -6,6 +6,7 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
 	"github.com/sprucehealth/backend/libs/clock"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testsql"
 	"golang.org/x/net/context"
@@ -44,7 +45,7 @@ func TestIPCalls(t *testing.T) {
 		},
 	}
 	test.OK(t, dal.CreateIPCall(ctx, call))
-	test.Equals(t, clk.Now(), call.Initiated)
+	test.Equals(t, clk.Now(), call.InitiatedTime)
 
 	calls, err := dal.PendingIPCallsForAccount(ctx, "account_nonexistant")
 	test.OK(t, err)
@@ -70,8 +71,9 @@ func TestIPCalls(t *testing.T) {
 	test.Equals(t, 1, len(calls))
 	test.Equals(t, call, calls[0])
 
-	test.OK(t, dal.UpdateIPCall(ctx, call.ID, false))
+	test.OK(t, dal.UpdateIPCall(ctx, call.ID, &IPCallUpdate{Pending: ptr.Bool(false), ConnectedTime: ptr.Time(clk.Now())}))
 	call.Pending = false
+	call.ConnectedTime = ptr.Time(clk.Now())
 
 	calls, err = dal.PendingIPCallsForAccount(ctx, "account_1")
 	test.OK(t, err)

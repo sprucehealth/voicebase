@@ -257,8 +257,8 @@ func (m *mockDAL) PendingIPCallsForAccount(ctx context.Context, accountID string
 	return rets[0].([]*models.IPCall), mock.SafeError(rets[1])
 }
 
-func (m *mockDAL) UpdateIPCall(ctx context.Context, callID models.IPCallID, pending bool) error {
-	rets := m.Record(callID, pending)
+func (m *mockDAL) UpdateIPCall(ctx context.Context, callID models.IPCallID, update *dal.IPCallUpdate) error {
+	rets := m.Record(callID, update)
 	if len(rets) == 0 {
 		return nil
 	}
