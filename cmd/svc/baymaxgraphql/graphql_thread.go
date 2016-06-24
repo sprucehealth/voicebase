@@ -214,7 +214,7 @@ var threadType = graphql.NewObject(
 					if err != nil {
 						return nil, errors.InternalError(ctx, err)
 					}
-					if ent == nil || ent.AccountID == "" {
+					if ent == nil || (ent.Type == directory.EntityType_PATIENT && ent.AccountID == "") {
 						return []*models.CallableIdentity{}, nil
 					}
 					endpoints, err := callableEndpointsForEntity(ctx, ent)
