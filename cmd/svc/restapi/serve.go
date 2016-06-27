@@ -5,10 +5,13 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
+	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/go-proxy-protocol/proxyproto"
 	"golang.org/x/net/context"
 )
@@ -72,7 +75,7 @@ CsWf+q7o+U7I3SBxLChc9G4Vy/AgZQJQES9CVAb6GOTY0jOIH7ZS7A==
 -----END RSA PRIVATE KEY-----`)
 )
 
-func serve(conf *mainConfig, chand httputil.ContextHandler) {
+func serve(conf *mainConfig, stores storage.StoreMap, chand httputil.ContextHandler) {
 	hand := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		chand.ServeHTTP(context.Background(), w, r)
 	})
@@ -92,27 +95,7 @@ func serve(conf *mainConfig, chand httputil.ContextHandler) {
 		// Make a copy of the server to avoid sharing internal state
 		// (currently there is none but it's safer not to assume that)
 		tlsServer := *server
-		tlsServer.TLSConfig = &tls.Config{
-			MinVersion:               tls.VersionTLS10,
-			PreferServerCipherSuites: true,
-			CipherSuites: []uint16{
-				// Do not include RC4 or 3DES
-				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-				tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-				tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-				tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-				tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
-				tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
-				tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-				tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
-				tls.TLS_RSA_WITH_AES_128_CBC_SHA,
-				tls.TLS_RSA_WITH_AES_256_CBC_SHA,
-			},
-		}
-		if tlsServer.TLSConfig.NextProtos == nil {
-			tlsServer.TLSConfig.NextProtos = []string{"http/1.1"}
-		}
-
+		tlsServer.TLSConfig = boot.TLSConfig()
 		tlsServer.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			r.Header.Set("X-Forwarded-Proto", "https")
 			hand.ServeHTTP(w, r)
@@ -133,6 +116,7 @@ func serve(conf *mainConfig, chand httputil.ContextHandler) {
 			if err != nil {
 				log.Fatal(err)
 			}
+			tlsServer.TLSConfig.Certificates = []tls.Certificate{certs}
 		} else if conf.Debug {
 			golog.Warningf("Using local TLS keys")
 			var err error
@@ -140,11 +124,15 @@ func serve(conf *mainConfig, chand httputil.ContextHandler) {
 			if err != nil {
 				log.Fatal(err)
 			}
+			tlsServer.TLSConfig.Certificates = []tls.Certificate{certs}
 		} else {
-			log.Fatal("No TLS keys provided and Debug not true")
+			domains := []string{conf.WebDomain, conf.APIDomain}
+			// Include apex domain
+			if ix := strings.IndexByte(conf.WebDomain, '.'); ix > 0 {
+				domains = append(domains, conf.WebDomain[ix+1:])
+			}
+			tlsServer.TLSConfig.GetCertificate = boot.LetsEncryptCertManager(stores.MustGet("certs").(storage.DeterministicStore), domains)
 		}
-
-		tlsServer.TLSConfig.Certificates = []tls.Certificate{certs}
 
 		conn, err := net.Listen("tcp", conf.TLSListenAddr)
 		if err != nil {

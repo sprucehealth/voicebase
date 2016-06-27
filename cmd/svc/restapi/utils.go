@@ -228,14 +228,6 @@ func (c *mainConfig) Validate() {
 		errors = append(errors, "No ProxySiteURL provided")
 	}
 
-	if !c.Debug {
-		if c.TLSCert == "" {
-			errors = append(errors, "TLSCert not set")
-		}
-		if c.TLSKey == "" {
-			errors = append(errors, "TLSKey not set")
-		}
-	}
 	if c.StaticResourceURL == "" {
 		if os.Getenv("GOPATH") == "" {
 			errors = append(errors, "StaticResourceURL not set")

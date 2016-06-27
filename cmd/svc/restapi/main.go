@@ -377,5 +377,5 @@ func main() {
 
 	conf.SetupLogging()
 
-	serve(&conf, router)
+	serve(&conf, stores, router)
 }

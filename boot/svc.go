@@ -1,6 +1,7 @@
 package boot
 
 import (
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"net"
@@ -8,6 +9,7 @@ import (
 	_ "net/http/pprof" // imported for side-effect of registering HTTP handlers
 	"os"
 	"os/signal"
+	"sort"
 	"strings"
 	"sync"
 	"syscall"
@@ -20,11 +22,14 @@ import (
 	"github.com/samuel/go-metrics/reporter"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/awsutil"
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/mcutil"
 	"github.com/sprucehealth/backend/libs/ratelimit"
+	"github.com/sprucehealth/backend/libs/storage"
 	"golang.org/x/net/trace"
 	"google.golang.org/grpc"
+	"rsc.io/letsencrypt"
 )
 
 type Service struct {
@@ -45,6 +50,7 @@ type Service struct {
 		memcachedHosts         string
 		jsonLogs               bool
 	}
+	name           string
 	awsSessionOnce sync.Once
 	awsSession     *session.Session
 	awsSessionErr  error
@@ -55,7 +61,7 @@ type Service struct {
 
 // NewService should be called at the start of a service. It parses flags and sets up a mangement server.
 func NewService(name string) *Service {
-	svc := &Service{}
+	svc := &Service{name: name}
 	flag.BoolVar(&svc.flags.debug, "debug", false, "Enable debug logging")
 	flag.StringVar(&svc.flags.env, "env", "", "Execution environment")
 	flag.StringVar(&svc.flags.errorSNSTopic, "error_sns_topic", "", "SNS `topic` which to send errors")
@@ -202,4 +208,59 @@ func WaitForTermination() {
 	case sig := <-ch:
 		golog.Infof("Quitting due to signal %s", sig.String())
 	}
+}
+
+// TLSConfig returns a instance of tls.Config configured with strict defaults.
+func TLSConfig() *tls.Config {
+	return &tls.Config{
+		MinVersion:               tls.VersionTLS10,
+		PreferServerCipherSuites: true,
+		CipherSuites: []uint16{
+			// Do not include RC4 or 3DES
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+		},
+	}
+}
+
+// LetsEncryptCertManager returns functions that can be set for tls.Config.GetCertificate
+// that uses Let's Encrypt to auto-register and refresh certs.
+func LetsEncryptCertManager(cache storage.DeterministicStore, domains []string) func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
+	var m letsencrypt.Manager
+	m.SetHosts(domains)
+
+	sort.Strings(domains)
+	cacheFilename := strings.Join(domains, ",") + ".cert-cache"
+	b, _, err := cache.Get(cache.IDFromName(cacheFilename))
+	if err != nil {
+		if errors.Cause(err) != storage.ErrNoObject {
+			golog.Errorf("Failed to load cert cache '%s': %s", cacheFilename, err)
+		}
+	} else {
+		if err := m.Unmarshal(string(b)); err != nil {
+			golog.Errorf("Failed to unmarshal cert cache: %s", err)
+		}
+	}
+
+	go func() {
+		for range m.Watch() {
+			golog.Infof("Saving cert state")
+			state := m.Marshal()
+			if _, err := cache.Put(cacheFilename, []byte(state), "application/binary", nil); err != nil {
+				golog.Errorf("Failed to write cert cache: %s", err)
+			}
+		}
+	}()
+
+	return m.GetCertificate
 }
