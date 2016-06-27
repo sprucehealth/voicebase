@@ -3,7 +3,6 @@ package main
 import (
 	"crypto/tls"
 	"log"
-	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -12,7 +11,6 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/storage"
-	"github.com/sprucehealth/go-proxy-protocol/proxyproto"
 	"golang.org/x/net/context"
 )
 
@@ -95,6 +93,7 @@ func serve(conf *mainConfig, stores storage.StoreMap, chand httputil.ContextHand
 		// Make a copy of the server to avoid sharing internal state
 		// (currently there is none but it's safer not to assume that)
 		tlsServer := *server
+		tlsServer.Addr = conf.TLSListenAddr
 		tlsServer.TLSConfig = boot.TLSConfig()
 		tlsServer.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			r.Header.Set("X-Forwarded-Proto", "https")
@@ -134,41 +133,10 @@ func serve(conf *mainConfig, stores storage.StoreMap, chand httputil.ContextHand
 			tlsServer.TLSConfig.GetCertificate = boot.LetsEncryptCertManager(stores.MustGet("certs").(storage.DeterministicStore), domains)
 		}
 
-		conn, err := net.Listen("tcp", conf.TLSListenAddr)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		conn = tcpKeepAliveListener{conn.(*net.TCPListener)}
-
-		if conf.ProxyProtocol {
-			conn = &proxyproto.Listener{Listener: conn}
-		}
-
-		ln := tls.NewListener(conn, tlsServer.TLSConfig)
-
-		golog.Infof("Starting SSL server on %s...", conf.TLSListenAddr)
-		log.Fatal(tlsServer.Serve(ln))
+		golog.Infof("Starting SSL server on %s...", tlsServer.Addr)
+		log.Fatal(boot.HTTPSListenAndServe(&tlsServer, conf.ProxyProtocol))
 	}()
 
 	golog.Infof("Starting server on %s...", conf.ListenAddr)
 	log.Fatal(server.ListenAndServe())
-}
-
-// tcpKeepAliveListener sets TCP keep-alive timeouts on accepted
-// connections. It's used by ListenAndServe and ListenAndServeTLS so
-// dead TCP connections (e.g. closing laptop mid-download) eventually
-// go away. (borrowed from net/http)
-type tcpKeepAliveListener struct {
-	*net.TCPListener
-}
-
-func (ln tcpKeepAliveListener) Accept() (net.Conn, error) {
-	tc, err := ln.AcceptTCP()
-	if err != nil {
-		return nil, err
-	}
-	tc.SetKeepAlive(true)
-	tc.SetKeepAlivePeriod(3 * time.Minute)
-	return tc, nil
 }

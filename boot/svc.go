@@ -27,6 +27,7 @@ import (
 	"github.com/sprucehealth/backend/libs/mcutil"
 	"github.com/sprucehealth/backend/libs/ratelimit"
 	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/go-proxy-protocol/proxyproto"
 	"golang.org/x/net/trace"
 	"google.golang.org/grpc"
 	"rsc.io/letsencrypt"
@@ -217,19 +218,18 @@ func TLSConfig() *tls.Config {
 		PreferServerCipherSuites: true,
 		CipherSuites: []uint16{
 			// Do not include RC4 or 3DES
-			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
 			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
 			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
 			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
 			tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
 			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
 			tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
-			tls.TLS_RSA_WITH_AES_128_GCM_SHA256,
-			tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
 			tls.TLS_RSA_WITH_AES_128_CBC_SHA,
 			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
 		},
+		NextProtos: []string{"h2", "h2-14", "http/1.1"},
 	}
 }
 
@@ -263,4 +263,36 @@ func LetsEncryptCertManager(cache storage.DeterministicStore, domains []string) 
 	}()
 
 	return m.GetCertificate
+}
+
+// HTTPSListenAndServe is a replacement for srv.ListenAndServe that
+// includes optional proxy protocol support.
+func HTTPSListenAndServe(srv *http.Server, proxyProtocol bool) error {
+	conn, err := net.Listen("tcp", srv.Addr)
+	if err != nil {
+		return errors.Trace(err)
+	}
+	conn = tcpKeepAliveListener{conn.(*net.TCPListener)}
+	if proxyProtocol {
+		conn = &proxyproto.Listener{Listener: conn}
+	}
+	return srv.Serve(tls.NewListener(conn, srv.TLSConfig))
+}
+
+// tcpKeepAliveListener sets TCP keep-alive timeouts on accepted
+// connections. It's used by ListenAndServe and ListenAndServeTLS so
+// dead TCP connections (e.g. closing laptop mid-download) eventually
+// go away. (borrowed from net/http)
+type tcpKeepAliveListener struct {
+	*net.TCPListener
+}
+
+func (ln tcpKeepAliveListener) Accept() (net.Conn, error) {
+	tc, err := ln.AcceptTCP()
+	if err != nil {
+		return nil, err
+	}
+	tc.SetKeepAlive(true)
+	tc.SetKeepAlivePeriod(3 * time.Minute)
+	return tc, nil
 }
