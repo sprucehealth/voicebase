@@ -624,35 +624,19 @@ func (e *externalMessageWorker) notifyOfUrgentVoicemail(ctx context.Context, org
 
 	for _, item := range forwardingListValue.Values {
 
+		toPhoneNumber := item
 		if _, err := e.excomms.SendMessage(ctx, &excomms.SendMessageRequest{
 			Channel: excomms.ChannelType_SMS,
 			Message: &excomms.SendMessageRequest_SMS{
 				SMS: &excomms.SMSMessage{
-					Text:            "You have received an urgent voicemail on Spruce.",
+					Text:            fmt.Sprintf("Urgent Spruce voicemail: %s", deeplink.ThreadURLShareable(e.webDomain, orgEntity.ID, thread.ID)),
 					FromPhoneNumber: sprucePhoneNumber,
-					ToPhoneNumber:   item,
+					ToPhoneNumber:   toPhoneNumber,
 				},
 			},
 		}); err != nil {
 			golog.Warningf("Unable to send sms from %s to %s for urgent voicemail", sprucePhoneNumber, item)
 		}
-
-		// 1 second later send a second text with the deeplink in there
-		toPhoneNumber := item
-		time.AfterFunc(time.Second, func() {
-			if _, err := e.excomms.SendMessage(ctx, &excomms.SendMessageRequest{
-				Channel: excomms.ChannelType_SMS,
-				Message: &excomms.SendMessageRequest_SMS{
-					SMS: &excomms.SMSMessage{
-						Text:            fmt.Sprintf("Urgent voicemail here: %s", deeplink.ThreadURLShareable(e.webDomain, orgEntity.ID, thread.ID)),
-						FromPhoneNumber: sprucePhoneNumber,
-						ToPhoneNumber:   toPhoneNumber,
-					},
-				},
-			}); err != nil {
-				golog.Warningf("Unable to send sms from %s to %s for urgent voicemail", sprucePhoneNumber, item)
-			}
-		})
 	}
 
 	return nil
