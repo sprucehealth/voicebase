@@ -230,7 +230,7 @@ var organizationType = graphql.NewObject(
 					return lookupEntityProfile(ctx, ram, org.ID)
 				},
 			},
-			"patientInviteLink": &graphql.Field{
+			"patientInviteURL": &graphql.Field{
 				Type:    graphql.String,
 				Resolve: patientInviteLink(),
 			},
