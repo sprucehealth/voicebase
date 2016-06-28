@@ -41,6 +41,9 @@ import (
 
 var (
 	flagListenAddr          = flag.String("listen_addr", "127.0.0.1:8080", "host:port to listen on")
+	flagLetsEncrypt         = flag.Bool("letsencrypt", false, "Enable Let's Encrypt certificates")
+	flagCertCacheURL        = flag.String("cert_cache_url", "", "URL path where to store cert cache (e.g. s3://bucket/path/)")
+	flagProxyProtocol       = flag.Bool("proxy_protocol", false, "If behind a TCP proxy and proxy protocol wrapping is enabled")
 	flagResourcePath        = flag.String("resource_path", "", "Path to resources (defaults to use GOPATH)")
 	flagAPIDomain           = flag.String("api_domain", "", "API `domain`")
 	flagMediaAPIDomain      = flag.String("media_api_domain", "", "Media API `domain`")
@@ -333,14 +336,36 @@ func main() {
 
 	golog.Infof("Listening on %s", *flagListenAddr)
 
-	server := &http.Server{
-		Addr:           *flagListenAddr,
-		Handler:        httputil.FromContextHandler(h),
-		MaxHeaderBytes: 1 << 20,
+	if !*flagLetsEncrypt {
+		go func() {
+			server := &http.Server{
+				Addr:           *flagListenAddr,
+				Handler:        httputil.FromContextHandler(h),
+				MaxHeaderBytes: 1 << 20,
+			}
+			server.ListenAndServe()
+		}()
+	} else {
+		server := &http.Server{
+			Addr:      *flagListenAddr,
+			TLSConfig: boot.TLSConfig(),
+			Handler: httputil.FromContextHandler(httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+				r.Header.Set("X-Forwarded-Proto", "https")
+				h.ServeHTTP(ctx, w, r)
+			})),
+			MaxHeaderBytes: 1 << 20,
+		}
+		certStore, err := svc.StoreFromURL(*flagCertCacheURL)
+		if err != nil {
+			golog.Fatalf("Failed to generate cert cache store from url '%s': %s", *flagCertCacheURL, err)
+		}
+		server.TLSConfig.GetCertificate = boot.LetsEncryptCertManager(certStore.(storage.DeterministicStore), []string{*flagAPIDomain})
+		go func() {
+			if err := boot.HTTPSListenAndServe(server, *flagProxyProtocol); err != nil {
+				golog.Fatalf(err.Error())
+			}
+		}()
 	}
-	go func() {
-		server.ListenAndServe()
-	}()
 
 	boot.WaitForTermination()
 }
