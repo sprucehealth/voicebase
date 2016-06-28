@@ -12,6 +12,8 @@ const (
 	ColleagueInvite InviteType = "COLLEAGUE"
 	// PatientInvite represents invites for patients
 	PatientInvite InviteType = "PATIENT"
+	// OrganizationCodeInvite represents invites for organizations
+	OrganizationCodeInvite InviteType = "ORGANIZATION_CODE"
 )
 
 type Invite struct {

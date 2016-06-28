@@ -22,7 +22,7 @@ var once sync.Once
 func SetCurrent(env string) {
 	once.Do(func() {
 		switch env {
-		case Dev, Test, Staging, Prod, Demo:
+		case Dev, Test, Staging, Prod, Demo, Corp:
 			current = env
 		default:
 			panic("unexpected environment: " + env)

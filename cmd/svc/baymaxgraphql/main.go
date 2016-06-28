@@ -44,6 +44,7 @@ var (
 	flagResourcePath        = flag.String("resource_path", "", "Path to resources (defaults to use GOPATH)")
 	flagAPIDomain           = flag.String("api_domain", "", "API `domain`")
 	flagMediaAPIDomain      = flag.String("media_api_domain", "", "Media API `domain`")
+	flagInviteAPIDomain     = flag.String("invite_api_domain", "", "Invite API `domain`")
 	flagWebDomain           = flag.String("web_domain", "", "Web `domain`")
 	flagStorageBucket       = flag.String("storage_bucket", "", "storage bucket for media")
 	flagEmailDomain         = flag.String("email_domain", "", "domain to use for email address provisioning")
@@ -182,6 +183,7 @@ func main() {
 			baymaxgraphqlsettings.CarePlansConfig,
 			baymaxgraphqlsettings.FilteredTabsInInboxConfig,
 			baymaxgraphqlsettings.VideoCallingConfig,
+			invite.OrganizationCodeConfig,
 		})
 	if err != nil {
 		golog.Fatalf("Unable to register configs with the settings service: %s", err.Error())
@@ -270,6 +272,9 @@ func main() {
 	if *flagMediaAPIDomain == "" {
 		golog.Fatalf("Media API Domain required")
 	}
+	if *flagInviteAPIDomain == "" {
+		golog.Fatalf("Invite API Domain required")
+	}
 
 	r := mux.NewRouter()
 	gqlHandler := NewGraphQL(
@@ -287,6 +292,7 @@ func main() {
 		*flagEmailDomain,
 		*flagWebDomain,
 		*flagMediaAPIDomain,
+		*flagInviteAPIDomain,
 		pn,
 		*flagSpruceOrgID,
 		*flagStaticURLPrefix,

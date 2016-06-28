@@ -17,6 +17,10 @@
 		InvitePatientsRequest
 		InvitePatientsResponse
 		PatientInvite
+		Organization
+		CreateOrganizationInviteRequest
+		CreateOrganizationInviteResponse
+		OrganizationInvite
 		MarkInviteConsumedRequest
 		MarkInviteConsumedResponse
 		LookupInviteRequest
@@ -57,24 +61,50 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 const _ = proto.GoGoProtoPackageIsVersion1
 
+type LookupInviteRequest_LookupKeyType int32
+
+const (
+	LookupInviteRequest_UNKNOWN                LookupInviteRequest_LookupKeyType = 0
+	LookupInviteRequest_TOKEN                  LookupInviteRequest_LookupKeyType = 1
+	LookupInviteRequest_ORGANIZATION_ENTITY_ID LookupInviteRequest_LookupKeyType = 2
+)
+
+var LookupInviteRequest_LookupKeyType_name = map[int32]string{
+	0: "UNKNOWN",
+	1: "TOKEN",
+	2: "ORGANIZATION_ENTITY_ID",
+}
+var LookupInviteRequest_LookupKeyType_value = map[string]int32{
+	"UNKNOWN":                0,
+	"TOKEN":                  1,
+	"ORGANIZATION_ENTITY_ID": 2,
+}
+
+func (LookupInviteRequest_LookupKeyType) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptorSvc, []int{14, 0}
+}
+
 type LookupInviteResponse_Type int32
 
 const (
-	LookupInviteResponse_COLLEAGUE LookupInviteResponse_Type = 0
-	LookupInviteResponse_PATIENT   LookupInviteResponse_Type = 1
+	LookupInviteResponse_COLLEAGUE         LookupInviteResponse_Type = 0
+	LookupInviteResponse_PATIENT           LookupInviteResponse_Type = 1
+	LookupInviteResponse_ORGANIZATION_CODE LookupInviteResponse_Type = 2
 )
 
 var LookupInviteResponse_Type_name = map[int32]string{
 	0: "COLLEAGUE",
 	1: "PATIENT",
+	2: "ORGANIZATION_CODE",
 }
 var LookupInviteResponse_Type_value = map[string]int32{
-	"COLLEAGUE": 0,
-	"PATIENT":   1,
+	"COLLEAGUE":         0,
+	"PATIENT":           1,
+	"ORGANIZATION_CODE": 2,
 }
 
 func (LookupInviteResponse_Type) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptorSvc, []int{11, 0}
+	return fileDescriptorSvc, []int{15, 0}
 }
 
 type Colleague struct {
@@ -181,41 +211,194 @@ func (m *PatientInvite) GetPatient() *Patient {
 	return nil
 }
 
+type Organization struct {
+	OrganizationEntityID string `protobuf:"bytes,1,opt,name=organization_entity_id,proto3" json:"organization_entity_id,omitempty"`
+}
+
+func (m *Organization) Reset()                    { *m = Organization{} }
+func (*Organization) ProtoMessage()               {}
+func (*Organization) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{8} }
+
+type CreateOrganizationInviteRequest struct {
+	OrganizationEntityID string `protobuf:"bytes,1,opt,name=organization_entity_id,proto3" json:"organization_entity_id,omitempty"`
+}
+
+func (m *CreateOrganizationInviteRequest) Reset()      { *m = CreateOrganizationInviteRequest{} }
+func (*CreateOrganizationInviteRequest) ProtoMessage() {}
+func (*CreateOrganizationInviteRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptorSvc, []int{9}
+}
+
+type CreateOrganizationInviteResponse struct {
+	Organization *OrganizationInvite `protobuf:"bytes,1,opt,name=organization" json:"organization,omitempty"`
+}
+
+func (m *CreateOrganizationInviteResponse) Reset()      { *m = CreateOrganizationInviteResponse{} }
+func (*CreateOrganizationInviteResponse) ProtoMessage() {}
+func (*CreateOrganizationInviteResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptorSvc, []int{10}
+}
+
+func (m *CreateOrganizationInviteResponse) GetOrganization() *OrganizationInvite {
+	if m != nil {
+		return m.Organization
+	}
+	return nil
+}
+
+type OrganizationInvite struct {
+	OrganizationEntityID string `protobuf:"bytes,1,opt,name=organization_entity_id,proto3" json:"organization_entity_id,omitempty"`
+	Token                string `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty"`
+}
+
+func (m *OrganizationInvite) Reset()                    { *m = OrganizationInvite{} }
+func (*OrganizationInvite) ProtoMessage()               {}
+func (*OrganizationInvite) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{11} }
+
 type MarkInviteConsumedRequest struct {
 	Token string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
 }
 
 func (m *MarkInviteConsumedRequest) Reset()                    { *m = MarkInviteConsumedRequest{} }
 func (*MarkInviteConsumedRequest) ProtoMessage()               {}
-func (*MarkInviteConsumedRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{8} }
+func (*MarkInviteConsumedRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{12} }
 
 type MarkInviteConsumedResponse struct {
 }
 
 func (m *MarkInviteConsumedResponse) Reset()                    { *m = MarkInviteConsumedResponse{} }
 func (*MarkInviteConsumedResponse) ProtoMessage()               {}
-func (*MarkInviteConsumedResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{9} }
+func (*MarkInviteConsumedResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{13} }
 
 type LookupInviteRequest struct {
-	Token string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	LookupKeyType LookupInviteRequest_LookupKeyType `protobuf:"varint,1,opt,name=lookup_key_type,proto3,enum=invite.LookupInviteRequest_LookupKeyType" json:"lookup_key_type,omitempty"`
+	// Types that are valid to be assigned to LookupKeyOneof:
+	//	*LookupInviteRequest_Token
+	//	*LookupInviteRequest_OrganizationEntityID
+	LookupKeyOneof isLookupInviteRequest_LookupKeyOneof `protobuf_oneof:"lookup_key_oneof"`
 }
 
 func (m *LookupInviteRequest) Reset()                    { *m = LookupInviteRequest{} }
 func (*LookupInviteRequest) ProtoMessage()               {}
-func (*LookupInviteRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{10} }
+func (*LookupInviteRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{14} }
+
+type isLookupInviteRequest_LookupKeyOneof interface {
+	isLookupInviteRequest_LookupKeyOneof()
+	Equal(interface{}) bool
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+
+type LookupInviteRequest_Token struct {
+	Token string `protobuf:"bytes,2,opt,name=token,proto3,oneof"`
+}
+type LookupInviteRequest_OrganizationEntityID struct {
+	OrganizationEntityID string `protobuf:"bytes,3,opt,name=organization_entity_id,proto3,oneof"`
+}
+
+func (*LookupInviteRequest_Token) isLookupInviteRequest_LookupKeyOneof()                {}
+func (*LookupInviteRequest_OrganizationEntityID) isLookupInviteRequest_LookupKeyOneof() {}
+
+func (m *LookupInviteRequest) GetLookupKeyOneof() isLookupInviteRequest_LookupKeyOneof {
+	if m != nil {
+		return m.LookupKeyOneof
+	}
+	return nil
+}
+
+func (m *LookupInviteRequest) GetToken() string {
+	if x, ok := m.GetLookupKeyOneof().(*LookupInviteRequest_Token); ok {
+		return x.Token
+	}
+	return ""
+}
+
+func (m *LookupInviteRequest) GetOrganizationEntityID() string {
+	if x, ok := m.GetLookupKeyOneof().(*LookupInviteRequest_OrganizationEntityID); ok {
+		return x.OrganizationEntityID
+	}
+	return ""
+}
+
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*LookupInviteRequest) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _LookupInviteRequest_OneofMarshaler, _LookupInviteRequest_OneofUnmarshaler, _LookupInviteRequest_OneofSizer, []interface{}{
+		(*LookupInviteRequest_Token)(nil),
+		(*LookupInviteRequest_OrganizationEntityID)(nil),
+	}
+}
+
+func _LookupInviteRequest_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*LookupInviteRequest)
+	// lookup_key_oneof
+	switch x := m.LookupKeyOneof.(type) {
+	case *LookupInviteRequest_Token:
+		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
+		_ = b.EncodeStringBytes(x.Token)
+	case *LookupInviteRequest_OrganizationEntityID:
+		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
+		_ = b.EncodeStringBytes(x.OrganizationEntityID)
+	case nil:
+	default:
+		return fmt.Errorf("LookupInviteRequest.LookupKeyOneof has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _LookupInviteRequest_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*LookupInviteRequest)
+	switch tag {
+	case 2: // lookup_key_oneof.token
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		x, err := b.DecodeStringBytes()
+		m.LookupKeyOneof = &LookupInviteRequest_Token{x}
+		return true, err
+	case 3: // lookup_key_oneof.organization_entity_id
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		x, err := b.DecodeStringBytes()
+		m.LookupKeyOneof = &LookupInviteRequest_OrganizationEntityID{x}
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+func _LookupInviteRequest_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*LookupInviteRequest)
+	// lookup_key_oneof
+	switch x := m.LookupKeyOneof.(type) {
+	case *LookupInviteRequest_Token:
+		n += proto.SizeVarint(2<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(len(x.Token)))
+		n += len(x.Token)
+	case *LookupInviteRequest_OrganizationEntityID:
+		n += proto.SizeVarint(3<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(len(x.OrganizationEntityID)))
+		n += len(x.OrganizationEntityID)
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
+}
 
 type LookupInviteResponse struct {
 	Type LookupInviteResponse_Type `protobuf:"varint,1,opt,name=type,proto3,enum=invite.LookupInviteResponse_Type" json:"type,omitempty"`
 	// Types that are valid to be assigned to Invite:
 	//	*LookupInviteResponse_Colleague
 	//	*LookupInviteResponse_Patient
+	//	*LookupInviteResponse_Organization
 	Invite isLookupInviteResponse_Invite `protobuf_oneof:"invite"`
 	Values []*AttributionValue           `protobuf:"bytes,2,rep,name=values" json:"values,omitempty"`
 }
 
 func (m *LookupInviteResponse) Reset()                    { *m = LookupInviteResponse{} }
 func (*LookupInviteResponse) ProtoMessage()               {}
-func (*LookupInviteResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{11} }
+func (*LookupInviteResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{15} }
 
 type isLookupInviteResponse_Invite interface {
 	isLookupInviteResponse_Invite()
@@ -230,9 +413,13 @@ type LookupInviteResponse_Colleague struct {
 type LookupInviteResponse_Patient struct {
 	Patient *PatientInvite `protobuf:"bytes,11,opt,name=patient,oneof"`
 }
+type LookupInviteResponse_Organization struct {
+	Organization *OrganizationInvite `protobuf:"bytes,12,opt,name=organization,oneof"`
+}
 
-func (*LookupInviteResponse_Colleague) isLookupInviteResponse_Invite() {}
-func (*LookupInviteResponse_Patient) isLookupInviteResponse_Invite()   {}
+func (*LookupInviteResponse_Colleague) isLookupInviteResponse_Invite()    {}
+func (*LookupInviteResponse_Patient) isLookupInviteResponse_Invite()      {}
+func (*LookupInviteResponse_Organization) isLookupInviteResponse_Invite() {}
 
 func (m *LookupInviteResponse) GetInvite() isLookupInviteResponse_Invite {
 	if m != nil {
@@ -255,6 +442,13 @@ func (m *LookupInviteResponse) GetPatient() *PatientInvite {
 	return nil
 }
 
+func (m *LookupInviteResponse) GetOrganization() *OrganizationInvite {
+	if x, ok := m.GetInvite().(*LookupInviteResponse_Organization); ok {
+		return x.Organization
+	}
+	return nil
+}
+
 func (m *LookupInviteResponse) GetValues() []*AttributionValue {
 	if m != nil {
 		return m.Values
@@ -267,6 +461,7 @@ func (*LookupInviteResponse) XXX_OneofFuncs() (func(msg proto.Message, b *proto.
 	return _LookupInviteResponse_OneofMarshaler, _LookupInviteResponse_OneofUnmarshaler, _LookupInviteResponse_OneofSizer, []interface{}{
 		(*LookupInviteResponse_Colleague)(nil),
 		(*LookupInviteResponse_Patient)(nil),
+		(*LookupInviteResponse_Organization)(nil),
 	}
 }
 
@@ -282,6 +477,11 @@ func _LookupInviteResponse_OneofMarshaler(msg proto.Message, b *proto.Buffer) er
 	case *LookupInviteResponse_Patient:
 		_ = b.EncodeVarint(11<<3 | proto.WireBytes)
 		if err := b.EncodeMessage(x.Patient); err != nil {
+			return err
+		}
+	case *LookupInviteResponse_Organization:
+		_ = b.EncodeVarint(12<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.Organization); err != nil {
 			return err
 		}
 	case nil:
@@ -310,6 +510,14 @@ func _LookupInviteResponse_OneofUnmarshaler(msg proto.Message, tag, wire int, b 
 		err := b.DecodeMessage(msg)
 		m.Invite = &LookupInviteResponse_Patient{msg}
 		return true, err
+	case 12: // invite.organization
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(OrganizationInvite)
+		err := b.DecodeMessage(msg)
+		m.Invite = &LookupInviteResponse_Organization{msg}
+		return true, err
 	default:
 		return false, nil
 	}
@@ -329,6 +537,11 @@ func _LookupInviteResponse_OneofSizer(msg proto.Message) (n int) {
 		n += proto.SizeVarint(11<<3 | proto.WireBytes)
 		n += proto.SizeVarint(uint64(s))
 		n += s
+	case *LookupInviteResponse_Organization:
+		s := proto.Size(x.Organization)
+		n += proto.SizeVarint(12<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
 	case nil:
 	default:
 		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
@@ -343,7 +556,7 @@ type AttributionValue struct {
 
 func (m *AttributionValue) Reset()                    { *m = AttributionValue{} }
 func (*AttributionValue) ProtoMessage()               {}
-func (*AttributionValue) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{12} }
+func (*AttributionValue) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{16} }
 
 type SetAttributionDataRequest struct {
 	DeviceID string              `protobuf:"bytes,1,opt,name=device_id,proto3" json:"device_id,omitempty"`
@@ -352,7 +565,7 @@ type SetAttributionDataRequest struct {
 
 func (m *SetAttributionDataRequest) Reset()                    { *m = SetAttributionDataRequest{} }
 func (*SetAttributionDataRequest) ProtoMessage()               {}
-func (*SetAttributionDataRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{13} }
+func (*SetAttributionDataRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{17} }
 
 func (m *SetAttributionDataRequest) GetValues() []*AttributionValue {
 	if m != nil {
@@ -366,7 +579,7 @@ type SetAttributionDataResponse struct {
 
 func (m *SetAttributionDataResponse) Reset()                    { *m = SetAttributionDataResponse{} }
 func (*SetAttributionDataResponse) ProtoMessage()               {}
-func (*SetAttributionDataResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{14} }
+func (*SetAttributionDataResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{18} }
 
 type AttributionDataRequest struct {
 	DeviceID string `protobuf:"bytes,1,opt,name=device_id,proto3" json:"device_id,omitempty"`
@@ -374,7 +587,7 @@ type AttributionDataRequest struct {
 
 func (m *AttributionDataRequest) Reset()                    { *m = AttributionDataRequest{} }
 func (*AttributionDataRequest) ProtoMessage()               {}
-func (*AttributionDataRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{15} }
+func (*AttributionDataRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{19} }
 
 type AttributionDataResponse struct {
 	Values []*AttributionValue `protobuf:"bytes,1,rep,name=values" json:"values,omitempty"`
@@ -382,7 +595,7 @@ type AttributionDataResponse struct {
 
 func (m *AttributionDataResponse) Reset()                    { *m = AttributionDataResponse{} }
 func (*AttributionDataResponse) ProtoMessage()               {}
-func (*AttributionDataResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{16} }
+func (*AttributionDataResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{20} }
 
 func (m *AttributionDataResponse) GetValues() []*AttributionValue {
 	if m != nil {
@@ -400,6 +613,10 @@ func init() {
 	proto.RegisterType((*InvitePatientsRequest)(nil), "invite.InvitePatientsRequest")
 	proto.RegisterType((*InvitePatientsResponse)(nil), "invite.InvitePatientsResponse")
 	proto.RegisterType((*PatientInvite)(nil), "invite.PatientInvite")
+	proto.RegisterType((*Organization)(nil), "invite.Organization")
+	proto.RegisterType((*CreateOrganizationInviteRequest)(nil), "invite.CreateOrganizationInviteRequest")
+	proto.RegisterType((*CreateOrganizationInviteResponse)(nil), "invite.CreateOrganizationInviteResponse")
+	proto.RegisterType((*OrganizationInvite)(nil), "invite.OrganizationInvite")
 	proto.RegisterType((*MarkInviteConsumedRequest)(nil), "invite.MarkInviteConsumedRequest")
 	proto.RegisterType((*MarkInviteConsumedResponse)(nil), "invite.MarkInviteConsumedResponse")
 	proto.RegisterType((*LookupInviteRequest)(nil), "invite.LookupInviteRequest")
@@ -409,7 +626,15 @@ func init() {
 	proto.RegisterType((*SetAttributionDataResponse)(nil), "invite.SetAttributionDataResponse")
 	proto.RegisterType((*AttributionDataRequest)(nil), "invite.AttributionDataRequest")
 	proto.RegisterType((*AttributionDataResponse)(nil), "invite.AttributionDataResponse")
+	proto.RegisterEnum("invite.LookupInviteRequest_LookupKeyType", LookupInviteRequest_LookupKeyType_name, LookupInviteRequest_LookupKeyType_value)
 	proto.RegisterEnum("invite.LookupInviteResponse_Type", LookupInviteResponse_Type_name, LookupInviteResponse_Type_value)
+}
+func (x LookupInviteRequest_LookupKeyType) String() string {
+	s, ok := LookupInviteRequest_LookupKeyType_name[int32(x)]
+	if ok {
+		return s
+	}
+	return strconv.Itoa(int(x))
 }
 func (x LookupInviteResponse_Type) String() string {
 	s, ok := LookupInviteResponse_Type_name[int32(x)]
@@ -698,6 +923,129 @@ func (this *PatientInvite) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *Organization) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*Organization)
+	if !ok {
+		that2, ok := that.(Organization)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.OrganizationEntityID != that1.OrganizationEntityID {
+		return false
+	}
+	return true
+}
+func (this *CreateOrganizationInviteRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*CreateOrganizationInviteRequest)
+	if !ok {
+		that2, ok := that.(CreateOrganizationInviteRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.OrganizationEntityID != that1.OrganizationEntityID {
+		return false
+	}
+	return true
+}
+func (this *CreateOrganizationInviteResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*CreateOrganizationInviteResponse)
+	if !ok {
+		that2, ok := that.(CreateOrganizationInviteResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.Organization.Equal(that1.Organization) {
+		return false
+	}
+	return true
+}
+func (this *OrganizationInvite) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*OrganizationInvite)
+	if !ok {
+		that2, ok := that.(OrganizationInvite)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.OrganizationEntityID != that1.OrganizationEntityID {
+		return false
+	}
+	if this.Token != that1.Token {
+		return false
+	}
+	return true
+}
 func (this *MarkInviteConsumedRequest) Equal(that interface{}) bool {
 	if that == nil {
 		if this == nil {
@@ -780,7 +1128,76 @@ func (this *LookupInviteRequest) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
+	if this.LookupKeyType != that1.LookupKeyType {
+		return false
+	}
+	if that1.LookupKeyOneof == nil {
+		if this.LookupKeyOneof != nil {
+			return false
+		}
+	} else if this.LookupKeyOneof == nil {
+		return false
+	} else if !this.LookupKeyOneof.Equal(that1.LookupKeyOneof) {
+		return false
+	}
+	return true
+}
+func (this *LookupInviteRequest_Token) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*LookupInviteRequest_Token)
+	if !ok {
+		that2, ok := that.(LookupInviteRequest_Token)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
 	if this.Token != that1.Token {
+		return false
+	}
+	return true
+}
+func (this *LookupInviteRequest_OrganizationEntityID) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*LookupInviteRequest_OrganizationEntityID)
+	if !ok {
+		that2, ok := that.(LookupInviteRequest_OrganizationEntityID)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.OrganizationEntityID != that1.OrganizationEntityID {
 		return false
 	}
 	return true
@@ -888,6 +1305,36 @@ func (this *LookupInviteResponse_Patient) Equal(that interface{}) bool {
 		return false
 	}
 	if !this.Patient.Equal(that1.Patient) {
+		return false
+	}
+	return true
+}
+func (this *LookupInviteResponse_Organization) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*LookupInviteResponse_Organization)
+	if !ok {
+		that2, ok := that.(LookupInviteResponse_Organization)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.Organization.Equal(that1.Organization) {
 		return false
 	}
 	return true
@@ -1153,6 +1600,49 @@ func (this *PatientInvite) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *Organization) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&invite.Organization{")
+	s = append(s, "OrganizationEntityID: "+fmt.Sprintf("%#v", this.OrganizationEntityID)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *CreateOrganizationInviteRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&invite.CreateOrganizationInviteRequest{")
+	s = append(s, "OrganizationEntityID: "+fmt.Sprintf("%#v", this.OrganizationEntityID)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *CreateOrganizationInviteResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&invite.CreateOrganizationInviteResponse{")
+	if this.Organization != nil {
+		s = append(s, "Organization: "+fmt.Sprintf("%#v", this.Organization)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *OrganizationInvite) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&invite.OrganizationInvite{")
+	s = append(s, "OrganizationEntityID: "+fmt.Sprintf("%#v", this.OrganizationEntityID)+",\n")
+	s = append(s, "Token: "+fmt.Sprintf("%#v", this.Token)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func (this *MarkInviteConsumedRequest) GoString() string {
 	if this == nil {
 		return "nil"
@@ -1176,17 +1666,36 @@ func (this *LookupInviteRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 5)
+	s := make([]string, 0, 7)
 	s = append(s, "&invite.LookupInviteRequest{")
-	s = append(s, "Token: "+fmt.Sprintf("%#v", this.Token)+",\n")
+	s = append(s, "LookupKeyType: "+fmt.Sprintf("%#v", this.LookupKeyType)+",\n")
+	if this.LookupKeyOneof != nil {
+		s = append(s, "LookupKeyOneof: "+fmt.Sprintf("%#v", this.LookupKeyOneof)+",\n")
+	}
 	s = append(s, "}")
 	return strings.Join(s, "")
+}
+func (this *LookupInviteRequest_Token) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&invite.LookupInviteRequest_Token{` +
+		`Token:` + fmt.Sprintf("%#v", this.Token) + `}`}, ", ")
+	return s
+}
+func (this *LookupInviteRequest_OrganizationEntityID) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&invite.LookupInviteRequest_OrganizationEntityID{` +
+		`OrganizationEntityID:` + fmt.Sprintf("%#v", this.OrganizationEntityID) + `}`}, ", ")
+	return s
 }
 func (this *LookupInviteResponse) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 8)
+	s := make([]string, 0, 9)
 	s = append(s, "&invite.LookupInviteResponse{")
 	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
 	if this.Invite != nil {
@@ -1212,6 +1721,14 @@ func (this *LookupInviteResponse_Patient) GoString() string {
 	}
 	s := strings.Join([]string{`&invite.LookupInviteResponse_Patient{` +
 		`Patient:` + fmt.Sprintf("%#v", this.Patient) + `}`}, ", ")
+	return s
+}
+func (this *LookupInviteResponse_Organization) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&invite.LookupInviteResponse_Organization{` +
+		`Organization:` + fmt.Sprintf("%#v", this.Organization) + `}`}, ", ")
 	return s
 }
 func (this *AttributionValue) GoString() string {
@@ -1308,6 +1825,8 @@ const _ = grpc.SupportPackageIsVersion2
 type InviteClient interface {
 	// AttributionData returns the attribution data for a device
 	AttributionData(ctx context.Context, in *AttributionDataRequest, opts ...grpc.CallOption) (*AttributionDataResponse, error)
+	// CreateOrganizationInvite creates and returns an invite code for the organization
+	CreateOrganizationInvite(ctx context.Context, in *CreateOrganizationInviteRequest, opts ...grpc.CallOption) (*CreateOrganizationInviteResponse, error)
 	// InviteColleagues sends invites to people to join an organization
 	InviteColleagues(ctx context.Context, in *InviteColleaguesRequest, opts ...grpc.CallOption) (*InviteColleaguesResponse, error)
 	// InvitePatients sends invites to people to join an organization
@@ -1331,6 +1850,15 @@ func NewInviteClient(cc *grpc.ClientConn) InviteClient {
 func (c *inviteClient) AttributionData(ctx context.Context, in *AttributionDataRequest, opts ...grpc.CallOption) (*AttributionDataResponse, error) {
 	out := new(AttributionDataResponse)
 	err := grpc.Invoke(ctx, "/invite.Invite/AttributionData", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *inviteClient) CreateOrganizationInvite(ctx context.Context, in *CreateOrganizationInviteRequest, opts ...grpc.CallOption) (*CreateOrganizationInviteResponse, error) {
+	out := new(CreateOrganizationInviteResponse)
+	err := grpc.Invoke(ctx, "/invite.Invite/CreateOrganizationInvite", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1387,6 +1915,8 @@ func (c *inviteClient) SetAttributionData(ctx context.Context, in *SetAttributio
 type InviteServer interface {
 	// AttributionData returns the attribution data for a device
 	AttributionData(context.Context, *AttributionDataRequest) (*AttributionDataResponse, error)
+	// CreateOrganizationInvite creates and returns an invite code for the organization
+	CreateOrganizationInvite(context.Context, *CreateOrganizationInviteRequest) (*CreateOrganizationInviteResponse, error)
 	// InviteColleagues sends invites to people to join an organization
 	InviteColleagues(context.Context, *InviteColleaguesRequest) (*InviteColleaguesResponse, error)
 	// InvitePatients sends invites to people to join an organization
@@ -1417,6 +1947,24 @@ func _Invite_AttributionData_Handler(srv interface{}, ctx context.Context, dec f
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(InviteServer).AttributionData(ctx, req.(*AttributionDataRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Invite_CreateOrganizationInvite_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateOrganizationInviteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InviteServer).CreateOrganizationInvite(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/invite.Invite/CreateOrganizationInvite",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InviteServer).CreateOrganizationInvite(ctx, req.(*CreateOrganizationInviteRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1518,6 +2066,10 @@ var _Invite_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AttributionData",
 			Handler:    _Invite_AttributionData_Handler,
+		},
+		{
+			MethodName: "CreateOrganizationInvite",
+			Handler:    _Invite_CreateOrganizationInvite_Handler,
 		},
 		{
 			MethodName: "InviteColleagues",
@@ -1815,6 +2367,112 @@ func (m *PatientInvite) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *Organization) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Organization) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.OrganizationEntityID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.OrganizationEntityID)))
+		i += copy(data[i:], m.OrganizationEntityID)
+	}
+	return i, nil
+}
+
+func (m *CreateOrganizationInviteRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CreateOrganizationInviteRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.OrganizationEntityID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.OrganizationEntityID)))
+		i += copy(data[i:], m.OrganizationEntityID)
+	}
+	return i, nil
+}
+
+func (m *CreateOrganizationInviteResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CreateOrganizationInviteResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Organization != nil {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Organization.Size()))
+		n3, err := m.Organization.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n3
+	}
+	return i, nil
+}
+
+func (m *OrganizationInvite) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *OrganizationInvite) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.OrganizationEntityID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.OrganizationEntityID)))
+		i += copy(data[i:], m.OrganizationEntityID)
+	}
+	if len(m.Token) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Token)))
+		i += copy(data[i:], m.Token)
+	}
+	return i, nil
+}
+
 func (m *MarkInviteConsumedRequest) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -1872,15 +2530,37 @@ func (m *LookupInviteRequest) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if len(m.Token) > 0 {
-		data[i] = 0xa
+	if m.LookupKeyType != 0 {
+		data[i] = 0x8
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.Token)))
-		i += copy(data[i:], m.Token)
+		i = encodeVarintSvc(data, i, uint64(m.LookupKeyType))
+	}
+	if m.LookupKeyOneof != nil {
+		nn4, err := m.LookupKeyOneof.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += nn4
 	}
 	return i, nil
 }
 
+func (m *LookupInviteRequest_Token) MarshalTo(data []byte) (int, error) {
+	i := 0
+	data[i] = 0x12
+	i++
+	i = encodeVarintSvc(data, i, uint64(len(m.Token)))
+	i += copy(data[i:], m.Token)
+	return i, nil
+}
+func (m *LookupInviteRequest_OrganizationEntityID) MarshalTo(data []byte) (int, error) {
+	i := 0
+	data[i] = 0x1a
+	i++
+	i = encodeVarintSvc(data, i, uint64(len(m.OrganizationEntityID)))
+	i += copy(data[i:], m.OrganizationEntityID)
+	return i, nil
+}
 func (m *LookupInviteResponse) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -1914,11 +2594,11 @@ func (m *LookupInviteResponse) MarshalTo(data []byte) (int, error) {
 		}
 	}
 	if m.Invite != nil {
-		nn3, err := m.Invite.MarshalTo(data[i:])
+		nn5, err := m.Invite.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += nn3
+		i += nn5
 	}
 	return i, nil
 }
@@ -1929,11 +2609,11 @@ func (m *LookupInviteResponse_Colleague) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x52
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Colleague.Size()))
-		n4, err := m.Colleague.MarshalTo(data[i:])
+		n6, err := m.Colleague.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n4
+		i += n6
 	}
 	return i, nil
 }
@@ -1943,11 +2623,25 @@ func (m *LookupInviteResponse_Patient) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x5a
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Patient.Size()))
-		n5, err := m.Patient.MarshalTo(data[i:])
+		n7, err := m.Patient.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n5
+		i += n7
+	}
+	return i, nil
+}
+func (m *LookupInviteResponse_Organization) MarshalTo(data []byte) (int, error) {
+	i := 0
+	if m.Organization != nil {
+		data[i] = 0x62
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Organization.Size()))
+		n8, err := m.Organization.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n8
 	}
 	return i, nil
 }
@@ -2240,6 +2934,50 @@ func (m *PatientInvite) Size() (n int) {
 	return n
 }
 
+func (m *Organization) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.OrganizationEntityID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *CreateOrganizationInviteRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.OrganizationEntityID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *CreateOrganizationInviteResponse) Size() (n int) {
+	var l int
+	_ = l
+	if m.Organization != nil {
+		l = m.Organization.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *OrganizationInvite) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.OrganizationEntityID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.Token)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
 func (m *MarkInviteConsumedRequest) Size() (n int) {
 	var l int
 	_ = l
@@ -2259,13 +2997,29 @@ func (m *MarkInviteConsumedResponse) Size() (n int) {
 func (m *LookupInviteRequest) Size() (n int) {
 	var l int
 	_ = l
-	l = len(m.Token)
-	if l > 0 {
-		n += 1 + l + sovSvc(uint64(l))
+	if m.LookupKeyType != 0 {
+		n += 1 + sovSvc(uint64(m.LookupKeyType))
+	}
+	if m.LookupKeyOneof != nil {
+		n += m.LookupKeyOneof.Size()
 	}
 	return n
 }
 
+func (m *LookupInviteRequest_Token) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Token)
+	n += 1 + l + sovSvc(uint64(l))
+	return n
+}
+func (m *LookupInviteRequest_OrganizationEntityID) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.OrganizationEntityID)
+	n += 1 + l + sovSvc(uint64(l))
+	return n
+}
 func (m *LookupInviteResponse) Size() (n int) {
 	var l int
 	_ = l
@@ -2298,6 +3052,15 @@ func (m *LookupInviteResponse_Patient) Size() (n int) {
 	_ = l
 	if m.Patient != nil {
 		l = m.Patient.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+func (m *LookupInviteResponse_Organization) Size() (n int) {
+	var l int
+	_ = l
+	if m.Organization != nil {
+		l = m.Organization.Size()
 		n += 1 + l + sovSvc(uint64(l))
 	}
 	return n
@@ -2463,6 +3226,47 @@ func (this *PatientInvite) String() string {
 	}, "")
 	return s
 }
+func (this *Organization) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Organization{`,
+		`OrganizationEntityID:` + fmt.Sprintf("%v", this.OrganizationEntityID) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CreateOrganizationInviteRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CreateOrganizationInviteRequest{`,
+		`OrganizationEntityID:` + fmt.Sprintf("%v", this.OrganizationEntityID) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CreateOrganizationInviteResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CreateOrganizationInviteResponse{`,
+		`Organization:` + strings.Replace(fmt.Sprintf("%v", this.Organization), "OrganizationInvite", "OrganizationInvite", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *OrganizationInvite) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&OrganizationInvite{`,
+		`OrganizationEntityID:` + fmt.Sprintf("%v", this.OrganizationEntityID) + `,`,
+		`Token:` + fmt.Sprintf("%v", this.Token) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func (this *MarkInviteConsumedRequest) String() string {
 	if this == nil {
 		return "nil"
@@ -2487,7 +3291,28 @@ func (this *LookupInviteRequest) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&LookupInviteRequest{`,
+		`LookupKeyType:` + fmt.Sprintf("%v", this.LookupKeyType) + `,`,
+		`LookupKeyOneof:` + fmt.Sprintf("%v", this.LookupKeyOneof) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *LookupInviteRequest_Token) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&LookupInviteRequest_Token{`,
 		`Token:` + fmt.Sprintf("%v", this.Token) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *LookupInviteRequest_OrganizationEntityID) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&LookupInviteRequest_OrganizationEntityID{`,
+		`OrganizationEntityID:` + fmt.Sprintf("%v", this.OrganizationEntityID) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2520,6 +3345,16 @@ func (this *LookupInviteResponse_Patient) String() string {
 	}
 	s := strings.Join([]string{`&LookupInviteResponse_Patient{`,
 		`Patient:` + strings.Replace(fmt.Sprintf("%v", this.Patient), "PatientInvite", "PatientInvite", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *LookupInviteResponse_Organization) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&LookupInviteResponse_Organization{`,
+		`Organization:` + strings.Replace(fmt.Sprintf("%v", this.Organization), "OrganizationInvite", "OrganizationInvite", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3517,6 +4352,355 @@ func (m *PatientInvite) Unmarshal(data []byte) error {
 	}
 	return nil
 }
+func (m *Organization) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Organization: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Organization: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OrganizationEntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.OrganizationEntityID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CreateOrganizationInviteRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CreateOrganizationInviteRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CreateOrganizationInviteRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OrganizationEntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.OrganizationEntityID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CreateOrganizationInviteResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CreateOrganizationInviteResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CreateOrganizationInviteResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Organization", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Organization == nil {
+				m.Organization = &OrganizationInvite{}
+			}
+			if err := m.Organization.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *OrganizationInvite) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: OrganizationInvite: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: OrganizationInvite: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OrganizationEntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.OrganizationEntityID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Token", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Token = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func (m *MarkInviteConsumedRequest) Unmarshal(data []byte) error {
 	l := len(data)
 	iNdEx := 0
@@ -3676,6 +4860,25 @@ func (m *LookupInviteRequest) Unmarshal(data []byte) error {
 		}
 		switch fieldNum {
 		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LookupKeyType", wireType)
+			}
+			m.LookupKeyType = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.LookupKeyType |= (LookupInviteRequest_LookupKeyType(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Token", wireType)
 			}
@@ -3702,7 +4905,36 @@ func (m *LookupInviteRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Token = string(data[iNdEx:postIndex])
+			m.LookupKeyOneof = &LookupInviteRequest_Token{string(data[iNdEx:postIndex])}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OrganizationEntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.LookupKeyOneof = &LookupInviteRequest_OrganizationEntityID{string(data[iNdEx:postIndex])}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -3867,6 +5099,38 @@ func (m *LookupInviteResponse) Unmarshal(data []byte) error {
 				return err
 			}
 			m.Invite = &LookupInviteResponse_Patient{v}
+			iNdEx = postIndex
+		case 12:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Organization", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &OrganizationInvite{}
+			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Invite = &LookupInviteResponse_Organization{v}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -4423,52 +5687,64 @@ var (
 )
 
 var fileDescriptorSvc = []byte{
-	// 749 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xc4, 0x56, 0xbf, 0x4f, 0x1b, 0x4b,
-	0x10, 0xf6, 0x01, 0xcf, 0xe0, 0x31, 0x60, 0xb3, 0xfc, 0x3a, 0xee, 0xf1, 0x0c, 0xac, 0x78, 0x12,
-	0x8a, 0xc8, 0x21, 0x91, 0x26, 0x29, 0x31, 0xb6, 0x12, 0x4b, 0x24, 0x20, 0x02, 0x69, 0x52, 0x58,
-	0x67, 0x7b, 0x31, 0x27, 0xdb, 0xb7, 0x97, 0xf3, 0x9e, 0x25, 0x52, 0xa5, 0x4d, 0x97, 0x3e, 0x55,
-	0xa4, 0x14, 0x51, 0xfe, 0x92, 0x94, 0x94, 0xa9, 0xa2, 0x40, 0x9a, 0x94, 0xe9, 0xd2, 0x66, 0xbd,
-	0xbb, 0x77, 0x3e, 0x6c, 0x9f, 0x15, 0xa5, 0x20, 0xc5, 0xfa, 0x7c, 0xbb, 0x33, 0xdf, 0x7c, 0x3b,
-	0xdf, 0xcc, 0xd8, 0x90, 0x6a, 0x77, 0xaa, 0xa6, 0xeb, 0x51, 0x46, 0x51, 0xd2, 0x76, 0x3a, 0x36,
-	0x23, 0xc6, 0xdd, 0xba, 0xcd, 0xce, 0xfd, 0x8a, 0x59, 0xa5, 0xad, 0x9d, 0x3a, 0xad, 0xd3, 0x1d,
-	0x71, 0x5c, 0xf1, 0xcf, 0xc4, 0x9b, 0x78, 0x11, 0xdf, 0xa4, 0x1b, 0x2e, 0x40, 0x6a, 0x9f, 0x36,
-	0x9b, 0xc4, 0xaa, 0xfb, 0x04, 0xcd, 0xc0, 0x3f, 0xa4, 0x65, 0xd9, 0x4d, 0x5d, 0x5b, 0xd7, 0xb6,
-	0x52, 0x68, 0x01, 0xa6, 0xdd, 0x73, 0xea, 0x90, 0xb2, 0xe3, 0xb7, 0x2a, 0xc4, 0xd3, 0xc7, 0xc4,
-	0x2e, 0x02, 0x38, 0xb3, 0xbd, 0x36, 0x2b, 0x3b, 0x56, 0x8b, 0xe8, 0xe3, 0xdd, 0x3d, 0xfc, 0x51,
-	0x83, 0xe5, 0x92, 0x88, 0x1f, 0x82, 0xb5, 0x8f, 0xc9, 0x0b, 0xfe, 0xc9, 0xd0, 0x7d, 0x58, 0xa2,
-	0x5e, 0xdd, 0x72, 0xec, 0x97, 0x16, 0xb3, 0xa9, 0x53, 0x26, 0x0e, 0xb3, 0xd9, 0x45, 0xd9, 0xae,
-	0xc9, 0x28, 0x79, 0xfd, 0xfa, 0xcb, 0xda, 0xc2, 0x61, 0xc4, 0xa2, 0x28, 0x0c, 0x4a, 0x05, 0x64,
-	0xc2, 0x9c, 0xbc, 0x94, 0x17, 0x71, 0x12, 0x24, 0xf2, 0xf3, 0xdc, 0x29, 0x23, 0x23, 0x7a, 0xa1,
-	0xfd, 0xff, 0x00, 0xd5, 0x30, 0x3c, 0x67, 0x36, 0xbe, 0x95, 0xde, 0x9d, 0x33, 0x25, 0x84, 0x19,
-	0x12, 0xc3, 0x06, 0xe8, 0x83, 0x5c, 0xdb, 0x2e, 0x75, 0xda, 0x04, 0xbf, 0xd3, 0x20, 0x13, 0x6e,
-	0x4b, 0xab, 0x5b, 0xbc, 0xc0, 0x26, 0xa4, 0xc2, 0x0b, 0x88, 0xcc, 0x0e, 0xe5, 0x6f, 0xc1, 0xe4,
-	0x11, 0x8f, 0xc3, 0x11, 0xfb, 0xb4, 0x18, 0xa5, 0xda, 0x36, 0x64, 0x5d, 0xcb, 0x6b, 0x90, 0x5a,
-	0x84, 0x89, 0xd0, 0x2e, 0x8f, 0x38, 0x93, 0xd9, 0x23, 0x71, 0x16, 0x10, 0xc1, 0xef, 0x35, 0x58,
-	0x94, 0xe4, 0x54, 0xa4, 0xbf, 0xa0, 0xe6, 0x06, 0x4c, 0xb9, 0x2a, 0xb8, 0xd2, 0x32, 0x13, 0xe4,
-	0x42, 0x91, 0xc2, 0x3a, 0x2c, 0xf5, 0xb3, 0x54, 0x3a, 0xbe, 0xd5, 0x60, 0x46, 0x6d, 0xde, 0xba,
-	0x8a, 0xeb, 0x30, 0xa9, 0x88, 0x2b, 0x0d, 0x07, 0x78, 0xdf, 0x81, 0x95, 0xc7, 0x3c, 0xe1, 0x41,
-	0x15, 0x3a, 0x6d, 0xbf, 0x45, 0x6a, 0x41, 0x86, 0x79, 0x13, 0x32, 0xda, 0x20, 0x8e, 0xe4, 0x85,
-	0x57, 0xc1, 0x18, 0x66, 0xab, 0xee, 0xb9, 0x09, 0xf3, 0x07, 0x94, 0x36, 0x7c, 0x57, 0x9e, 0xc7,
-	0x60, 0xfc, 0xd4, 0x60, 0xe1, 0xa6, 0x99, 0x74, 0x47, 0x3b, 0x30, 0xc1, 0x2e, 0x5c, 0x59, 0x39,
-	0xb3, 0xbb, 0x1b, 0x01, 0xcf, 0x61, 0xb6, 0xe6, 0x09, 0x37, 0x44, 0x5b, 0x90, 0xec, 0x58, 0xcd,
-	0x6e, 0x7b, 0x8d, 0x09, 0x49, 0xf4, 0xc0, 0x65, 0x8f, 0x31, 0xcf, 0xae, 0xf8, 0xdd, 0xc4, 0x3d,
-	0xeb, 0x1a, 0xf0, 0x82, 0x8b, 0xd4, 0x32, 0x88, 0x3c, 0x2c, 0x0f, 0xd4, 0xb2, 0x0c, 0xf1, 0x28,
-	0xc1, 0x71, 0xc3, 0x9c, 0xa5, 0x85, 0xed, 0x62, 0x5f, 0xce, 0x02, 0x4b, 0x8c, 0x61, 0x42, 0x30,
-	0x99, 0xe1, 0x83, 0xeb, 0xf0, 0xe0, 0xa0, 0xb8, 0xf7, 0xf0, 0xb4, 0x98, 0x4d, 0xa0, 0x34, 0x6f,
-	0x8a, 0xbd, 0x93, 0x52, 0xf1, 0xc9, 0x49, 0x56, 0xcb, 0x4f, 0x81, 0x9a, 0x86, 0xd8, 0x84, 0xec,
-	0x00, 0xb3, 0x34, 0x8c, 0x37, 0xc8, 0x85, 0xea, 0x16, 0x9e, 0x29, 0x71, 0x21, 0x29, 0x28, 0x3e,
-	0x83, 0x95, 0xa7, 0x84, 0x45, 0x5c, 0x0a, 0x16, 0xb3, 0x82, 0xac, 0xae, 0x41, 0xaa, 0x46, 0x3a,
-	0x76, 0x95, 0xf4, 0xaa, 0x66, 0x9a, 0x17, 0xc0, 0x54, 0x41, 0x6c, 0x72, 0xe5, 0x7f, 0x3b, 0x3b,
-	0x5d, 0x55, 0x87, 0xc5, 0x51, 0xaa, 0x3e, 0x80, 0xa5, 0x3f, 0xa4, 0x80, 0xf7, 0x61, 0x39, 0x06,
-	0x35, 0xc2, 0x4e, 0x1b, 0xcd, 0x6e, 0xf7, 0xf5, 0x04, 0x24, 0x55, 0xdb, 0x1c, 0x43, 0xa6, 0x0f,
-	0x0f, 0xe5, 0x86, 0xf8, 0x45, 0x38, 0x1a, 0x6b, 0xb1, 0xe7, 0x8a, 0xc8, 0x29, 0x64, 0xfb, 0x07,
-	0x30, 0x0a, 0x9d, 0x62, 0x7e, 0x46, 0x8c, 0xf5, 0x78, 0x03, 0x05, 0x7b, 0x08, 0xb3, 0x37, 0xa7,
-	0x01, 0xfa, 0xef, 0xa6, 0x4f, 0xdf, 0x2c, 0x33, 0x72, 0x71, 0xc7, 0x0a, 0xb0, 0x04, 0xd3, 0xd1,
-	0x4e, 0x40, 0xff, 0x0e, 0xef, 0x0f, 0x09, 0xb6, 0x3a, 0xaa, 0x79, 0xd0, 0x73, 0x40, 0x83, 0x5d,
-	0x8c, 0xc2, 0x86, 0x8b, 0x9d, 0x06, 0x06, 0x1e, 0x65, 0xd2, 0x03, 0x1f, 0x2c, 0xa6, 0x1e, 0x78,
-	0x6c, 0x41, 0xf7, 0xc0, 0xe3, 0x6b, 0x31, 0xbf, 0x7d, 0x79, 0x95, 0xd3, 0x3e, 0x5f, 0xe5, 0x12,
-	0x3f, 0xf8, 0xf3, 0xd5, 0x75, 0x4e, 0xfb, 0xc0, 0xd7, 0x27, 0xbe, 0x2e, 0xf9, 0xfa, 0xca, 0xd7,
-	0xf7, 0x6b, 0x7e, 0xc6, 0x9f, 0x6f, 0xbe, 0xe5, 0x12, 0x95, 0xa4, 0xf8, 0x57, 0x71, 0xef, 0x57,
-	0x00, 0x00, 0x00, 0xff, 0xff, 0xd5, 0x94, 0xa8, 0xa4, 0x99, 0x08, 0x00, 0x00,
+	// 940 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xc4, 0x56, 0x4b, 0x6f, 0xe3, 0x54,
+	0x14, 0x8e, 0xdb, 0x4e, 0xdb, 0x9c, 0x24, 0x4d, 0x7a, 0xa7, 0x4d, 0x3d, 0x66, 0x48, 0x32, 0x16,
+	0x88, 0x80, 0x86, 0x14, 0x85, 0x0d, 0xc3, 0x2e, 0x2f, 0x4d, 0xa3, 0x96, 0xb8, 0x2a, 0x29, 0x08,
+	0x46, 0xc8, 0x72, 0x92, 0x9b, 0x8c, 0x95, 0xc4, 0x0e, 0x8e, 0x13, 0x29, 0xac, 0xf8, 0x09, 0xec,
+	0x59, 0x21, 0xb1, 0x40, 0xfc, 0x0c, 0x56, 0x2c, 0x67, 0xc9, 0x0a, 0x31, 0x65, 0xc3, 0x92, 0x25,
+	0x3b, 0x38, 0xb9, 0xbe, 0x76, 0x9c, 0x38, 0xce, 0xa0, 0x19, 0xa9, 0xb3, 0x70, 0x53, 0x9f, 0x7b,
+	0x1e, 0xdf, 0xf9, 0xce, 0xe3, 0x1a, 0xa2, 0xe3, 0x69, 0xbb, 0x30, 0xb2, 0x4c, 0xdb, 0x24, 0xbb,
+	0xba, 0x31, 0xd5, 0x6d, 0x2a, 0xbd, 0xdf, 0xd3, 0xed, 0xa7, 0x93, 0x56, 0xa1, 0x6d, 0x0e, 0x4f,
+	0x7b, 0x66, 0xcf, 0x3c, 0x65, 0xc7, 0xad, 0x49, 0x97, 0xbd, 0xb1, 0x17, 0xf6, 0x9f, 0x63, 0x26,
+	0x57, 0x21, 0x5a, 0x31, 0x07, 0x03, 0xaa, 0xf5, 0x26, 0x94, 0x24, 0xe0, 0x0e, 0x1d, 0x6a, 0xfa,
+	0x40, 0x14, 0x72, 0x42, 0x3e, 0x4a, 0x8e, 0x20, 0x3e, 0x7a, 0x6a, 0x1a, 0x54, 0x35, 0x26, 0xc3,
+	0x16, 0xb5, 0xc4, 0x2d, 0x26, 0x25, 0x00, 0x5d, 0xdd, 0x1a, 0xdb, 0xaa, 0xa1, 0x0d, 0xa9, 0xb8,
+	0x3d, 0x97, 0xc9, 0x3f, 0x0b, 0x70, 0x52, 0x67, 0xf1, 0x3d, 0x67, 0xe3, 0x2b, 0xfa, 0x35, 0xfe,
+	0xb5, 0xc9, 0x47, 0x90, 0x36, 0xad, 0x9e, 0x66, 0xe8, 0xdf, 0x68, 0xb6, 0x6e, 0x1a, 0x2a, 0x35,
+	0x6c, 0xdd, 0x9e, 0xa9, 0x7a, 0xc7, 0x89, 0x52, 0x16, 0x6f, 0x7e, 0xcf, 0x1e, 0x29, 0x3e, 0x8d,
+	0x1a, 0x53, 0xa8, 0x57, 0x49, 0x01, 0x0e, 0x9d, 0xa4, 0x2c, 0x9f, 0x11, 0x03, 0x51, 0xbe, 0x8b,
+	0x46, 0x49, 0x27, 0xa2, 0xe5, 0xe9, 0xbf, 0x0d, 0xd0, 0xf6, 0xc2, 0x23, 0xb2, 0xed, 0x7c, 0xac,
+	0x78, 0x58, 0x70, 0x5c, 0x14, 0x3c, 0x60, 0xb2, 0x04, 0x62, 0x10, 0xeb, 0x78, 0x64, 0x1a, 0x63,
+	0x2a, 0xff, 0x20, 0x40, 0xd2, 0x13, 0x3b, 0x5a, 0xb7, 0x98, 0xc0, 0x5b, 0x10, 0xf5, 0x12, 0x60,
+	0xcc, 0xae, 0xc5, 0xaf, 0xc1, 0xde, 0x25, 0xc6, 0x41, 0x8f, 0x2b, 0xb5, 0xd8, 0x54, 0xb5, 0x87,
+	0x90, 0x1a, 0x69, 0x56, 0x9f, 0x76, 0x7c, 0x48, 0x58, 0xed, 0xca, 0x04, 0x91, 0x1c, 0x5c, 0xb2,
+	0x33, 0x17, 0x88, 0xfc, 0xa3, 0x00, 0xc7, 0x0e, 0x38, 0x1e, 0xe9, 0x35, 0x54, 0xf3, 0x01, 0xec,
+	0x8f, 0x78, 0x70, 0x5e, 0xcb, 0xa4, 0xcb, 0x05, 0x07, 0x25, 0x8b, 0x90, 0x5e, 0x45, 0xc9, 0xeb,
+	0xf8, 0xbd, 0x00, 0x09, 0x2e, 0xbc, 0xf5, 0x2a, 0xe6, 0x60, 0x8f, 0x03, 0xe7, 0x35, 0x0c, 0xe0,
+	0x3e, 0x83, 0xb8, 0x3f, 0xd2, 0xcb, 0x63, 0x93, 0x9f, 0x40, 0xb6, 0x62, 0x51, 0xcd, 0xa6, 0xfe,
+	0x53, 0x07, 0xd0, 0x2b, 0x57, 0x4c, 0x6e, 0x42, 0x2e, 0xdc, 0xb9, 0x43, 0x34, 0xf9, 0x00, 0xe2,
+	0x7e, 0xef, 0xcc, 0x67, 0xac, 0x28, 0xb9, 0x19, 0x07, 0x2d, 0xe5, 0xaf, 0x80, 0x04, 0xa5, 0xaf,
+	0x50, 0x1e, 0x5c, 0x5a, 0xb6, 0xd9, 0xa7, 0x86, 0x53, 0x12, 0xf9, 0x3d, 0xb8, 0xf7, 0x09, 0x36,
+	0xb3, 0x3b, 0xe1, 0xc6, 0x78, 0x32, 0xa4, 0x1d, 0x97, 0x0b, 0x4f, 0x97, 0x39, 0x95, 0xef, 0x83,
+	0xb4, 0x4e, 0x97, 0xf7, 0xd0, 0xbf, 0x02, 0xdc, 0xbd, 0x30, 0xcd, 0xfe, 0x64, 0xb4, 0x4c, 0x68,
+	0x19, 0x92, 0x03, 0x26, 0x56, 0xfb, 0x74, 0xa6, 0xda, 0xb3, 0x91, 0x33, 0x79, 0x07, 0xc5, 0x77,
+	0xdd, 0xac, 0xd7, 0x58, 0x71, 0xd9, 0x39, 0x9d, 0x35, 0xd1, 0x80, 0x24, 0x97, 0x40, 0x9f, 0x45,
+	0xc8, 0xc7, 0xa1, 0xf9, 0x6f, 0x6f, 0xce, 0xff, 0x2c, 0x22, 0x57, 0x20, 0xb1, 0xec, 0x3d, 0x06,
+	0x7b, 0xd7, 0x8d, 0xf3, 0x86, 0xf2, 0x79, 0x23, 0x15, 0x21, 0x51, 0xb8, 0xd3, 0x54, 0xce, 0x6b,
+	0x8d, 0x94, 0x40, 0x24, 0x48, 0x2b, 0x57, 0x8f, 0x4b, 0x8d, 0xfa, 0x97, 0xa5, 0x66, 0x5d, 0x69,
+	0xa8, 0xb5, 0x46, 0xb3, 0xde, 0xfc, 0x42, 0xad, 0x57, 0x53, 0x5b, 0x65, 0x02, 0x29, 0x5f, 0x56,
+	0xb8, 0x3f, 0xcc, 0xae, 0xfc, 0xcb, 0x16, 0x1c, 0x2d, 0xe7, 0xc2, 0xab, 0x7e, 0x0a, 0x3b, 0xbe,
+	0xbc, 0x1f, 0xac, 0xcf, 0xdb, 0xd1, 0x2d, 0x30, 0x44, 0x79, 0xd8, 0x9d, 0x6a, 0x83, 0xf9, 0x5a,
+	0xde, 0x62, 0xa3, 0x2c, 0xba, 0x26, 0x25, 0xdb, 0xb6, 0xf4, 0xd6, 0x64, 0x9e, 0xd1, 0x67, 0x73,
+	0x05, 0x5c, 0x54, 0xbe, 0x1d, 0x08, 0xac, 0x9b, 0x4e, 0x02, 0x3b, 0xd0, 0x09, 0x81, 0xb4, 0xe5,
+	0x17, 0xb3, 0x16, 0x63, 0xba, 0xc7, 0x2b, 0xb3, 0xe6, 0x69, 0x16, 0x57, 0x1a, 0x35, 0xfe, 0xa2,
+	0x46, 0x45, 0x62, 0x1f, 0xc1, 0x0e, 0x43, 0x9f, 0xc0, 0x4b, 0x52, 0xb9, 0xb8, 0xa8, 0x95, 0x1e,
+	0x5f, 0xd7, 0x90, 0x51, 0xa4, 0xf7, 0x12, 0x09, 0x44, 0xf6, 0x90, 0xd3, 0x63, 0x38, 0x5c, 0xe2,
+	0xb4, 0xa2, 0x54, 0x6b, 0x48, 0xe7, 0x3e, 0xf0, 0x0b, 0x59, 0x2e, 0x40, 0x2a, 0x90, 0x64, 0x0c,
+	0xb6, 0x91, 0x65, 0xbe, 0xb0, 0xb1, 0x29, 0x19, 0x37, 0xbc, 0x81, 0xbb, 0x70, 0xef, 0x53, 0x6a,
+	0xfb, 0x4c, 0xaa, 0x9a, 0xad, 0xb9, 0xbd, 0x97, 0x85, 0x68, 0x87, 0x4e, 0xf5, 0x36, 0x5d, 0x4c,
+	0x46, 0x1c, 0x3b, 0x63, 0xbf, 0xca, 0x84, 0x38, 0x0d, 0xff, 0x9b, 0xe8, 0x79, 0xf3, 0xaf, 0x8b,
+	0xc3, 0x9b, 0xff, 0x11, 0xa4, 0x5f, 0x12, 0x02, 0xb6, 0xe3, 0x49, 0x88, 0x57, 0x1f, 0x3a, 0x61,
+	0x33, 0xba, 0xe2, 0x3f, 0x3b, 0xb0, 0xcb, 0x57, 0xc3, 0x15, 0x24, 0x57, 0xfc, 0x91, 0xcc, 0x1a,
+	0x3b, 0x1f, 0x46, 0x29, 0x1b, 0x7a, 0xce, 0x81, 0x0c, 0x41, 0x0c, 0x5b, 0x6d, 0xe4, 0x1d, 0xaf,
+	0xdd, 0x36, 0x6f, 0x56, 0x29, 0xff, 0x62, 0x45, 0x1e, 0xee, 0x1a, 0x52, 0xab, 0x9f, 0x1c, 0xc4,
+	0xc3, 0x18, 0xf2, 0xe1, 0x24, 0xe5, 0xc2, 0x15, 0xb8, 0x5b, 0x05, 0x0e, 0x96, 0xef, 0x3f, 0xf2,
+	0xe6, 0xb2, 0xcd, 0xca, 0xed, 0x2d, 0x65, 0xc2, 0x8e, 0xb9, 0xc3, 0x3a, 0xc4, 0xfd, 0x33, 0x4c,
+	0xde, 0xd8, 0xb0, 0xd1, 0xa4, 0xfb, 0x9b, 0xc6, 0x9e, 0x3c, 0x01, 0x12, 0xdc, 0xad, 0xc4, 0x5b,
+	0x15, 0xa1, 0x3b, 0x5a, 0x92, 0x37, 0xa9, 0x2c, 0x9c, 0x07, 0x7b, 0x77, 0xe1, 0x3c, 0x74, 0x7e,
+	0x16, 0xce, 0xc3, 0x5b, 0xbf, 0xfc, 0xf0, 0xd9, 0xf3, 0x8c, 0xf0, 0xdb, 0xf3, 0x4c, 0xe4, 0x6f,
+	0xfc, 0xfd, 0xf6, 0x26, 0x23, 0xfc, 0x84, 0xcf, 0xaf, 0xf8, 0x3c, 0xc3, 0xe7, 0x0f, 0x7c, 0xfe,
+	0xba, 0xc1, 0x33, 0xfc, 0xfd, 0xee, 0xcf, 0x4c, 0xa4, 0xb5, 0xcb, 0xbe, 0xa3, 0x3f, 0xfc, 0x2f,
+	0x00, 0x00, 0xff, 0xff, 0xc1, 0x46, 0x69, 0x07, 0x8b, 0x0b, 0x00, 0x00,
 }

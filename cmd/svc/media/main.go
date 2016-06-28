@@ -156,7 +156,7 @@ func main() {
 		*flagMaxMemory)
 	h := httputil.LoggingHandler(r, "media", *flagBehindProxy, nil)
 
-	golog.Infof("Media HTTP Listening on %s", *flagHTTPListenAddr)
+	golog.Infof("Media HTTP Listening on %s...", *flagHTTPListenAddr)
 	httpSrv := &http.Server{
 		Addr:           *flagHTTPListenAddr,
 		Handler:        httputil.FromContextHandler(shttputil.CompressResponse(h, httputil.CompressResponse)),

@@ -44,3 +44,13 @@ func (dl *mockDAL) DeleteInvite(ctx context.Context, token string) error {
 	r := dl.Expector.Record(token)
 	return mock.SafeError(r[0])
 }
+
+func (dl *mockDAL) InsertEntityToken(ctx context.Context, entityID, token string) error {
+	r := dl.Expector.Record(entityID, token)
+	return mock.SafeError(r[0])
+}
+
+func (dl *mockDAL) TokenForEntity(ctx context.Context, entityID string) (string, error) {
+	r := dl.Expector.Record(entityID)
+	return r[0].(string), mock.SafeError(r[1])
+}

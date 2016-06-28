@@ -32,6 +32,7 @@ type service struct {
 	emailDomain            string
 	webDomain              string
 	mediaAPIDomain         string
+	inviteAPIDomain        string
 	staticURLPrefix        string
 	spruceOrgID            string
 	segmentio              *segmentIOWrapper
@@ -116,7 +117,10 @@ func (s *service) inviteAndAttributionInfo(ctx context.Context) (*invite.LookupI
 	}
 
 	ires, err := s.invite.LookupInvite(ctx, &invite.LookupInviteRequest{
-		Token: inviteToken,
+		LookupKeyType: invite.LookupInviteRequest_TOKEN,
+		LookupKeyOneof: &invite.LookupInviteRequest_Token{
+			Token: inviteToken,
+		},
 	})
 	if grpc.Code(err) == codes.NotFound {
 		return nil, attribValues, nil

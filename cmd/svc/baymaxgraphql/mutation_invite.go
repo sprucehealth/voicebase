@@ -1,10 +1,15 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/invite"
+	"github.com/sprucehealth/backend/svc/invite/clientdata"
 	"github.com/sprucehealth/graphql"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -164,9 +169,10 @@ var associateInviteOutputType = graphql.NewObject(
 )
 
 const (
-	inviteTypeUnknown   = "UNKNOWN"
-	inviteTypePatient   = "PATIENT"
-	inviteTypeColleague = "COLLEAGUE"
+	inviteTypeUnknown          = "UNKNOWN"
+	inviteTypePatient          = "PATIENT"
+	inviteTypeColleague        = "COLLEAGUE"
+	inviteTypeOrganizationCode = "ORGANIZATION_CODE"
 )
 
 var inviteTypeEnum = graphql.NewEnum(graphql.EnumConfig{
@@ -184,6 +190,10 @@ var inviteTypeEnum = graphql.NewEnum(graphql.EnumConfig{
 			Value:       inviteTypeColleague,
 			Description: "Indicates that the provided invite code was for a provider invite",
 		},
+		inviteTypeOrganizationCode: &graphql.EnumValueConfig{
+			Value:       inviteTypeOrganizationCode,
+			Description: "Indicates that the provided invite code was for an organization code",
+		},
 	},
 })
 
@@ -196,6 +206,7 @@ var associateInviteMutation = &graphql.Field{
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 		svc := serviceFromParams(p)
 		ctx := p.Context
+		ram := raccess.ResourceAccess(p)
 		sh := devicectx.SpruceHeaders(ctx)
 		if sh.DeviceID == "" {
 			return nil, errors.New("missing device ID")
@@ -205,7 +216,10 @@ var associateInviteMutation = &graphql.Field{
 		mutationID, _ := input["clientMutationId"].(string)
 		token := input["token"].(string)
 		res, err := svc.invite.LookupInvite(ctx, &invite.LookupInviteRequest{
-			Token: token,
+			LookupKeyType: invite.LookupInviteRequest_TOKEN,
+			LookupKeyOneof: &invite.LookupInviteRequest_Token{
+				Token: token,
+			},
 		})
 		if grpc.Code(err) == codes.NotFound {
 			return &associateInviteOutput{
@@ -216,6 +230,68 @@ var associateInviteMutation = &graphql.Field{
 			}, nil
 		} else if err != nil {
 			return nil, errors.InternalError(ctx, err)
+		}
+
+		var orgID string
+		switch res.Type {
+		case invite.LookupInviteResponse_PATIENT:
+			orgID = res.GetPatient().OrganizationEntityID
+		case invite.LookupInviteResponse_COLLEAGUE:
+			orgID = res.GetColleague().OrganizationEntityID
+		case invite.LookupInviteResponse_ORGANIZATION_CODE:
+			orgID = res.GetOrganization().OrganizationEntityID
+		default:
+			return nil, errors.InternalError(ctx, fmt.Errorf("Unknown invite type %s", res.Type))
+		}
+
+		org, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+				EntityID: orgID,
+			},
+		})
+		if err != nil {
+			return nil, errors.InternalError(ctx, fmt.Errorf("Error while looking up org for device association: %s", err))
+		}
+
+		var clientData string
+		switch res.Type {
+		case invite.LookupInviteResponse_PATIENT:
+			clientData, err = clientdata.PatientInviteClientJSON(org, res.GetPatient().Patient.FirstName, svc.mediaAPIDomain)
+			if err != nil {
+				golog.Errorf("Error while generating client data for invite to org %s: %s", org.ID, err)
+			}
+		case invite.LookupInviteResponse_ORGANIZATION_CODE:
+			clientData, err = clientdata.PatientInviteClientJSON(org, "", svc.mediaAPIDomain)
+			if err != nil {
+				golog.Errorf("Error while generating client data for invite to org %s: %s", org.ID, err)
+			}
+		case invite.LookupInviteResponse_COLLEAGUE:
+			inviter, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+				LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+				LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+					EntityID: res.GetColleague().InviterEntityID,
+				},
+			})
+			if err != nil {
+				return nil, errors.InternalError(ctx, fmt.Errorf("Error while looking up inviter %s for device association: %s", res.GetColleague().InviterEntityID, err))
+			}
+			clientData, err = clientdata.ColleagueInviteClientJSON(org, inviter, res.GetColleague().Colleague.FirstName, svc.mediaAPIDomain)
+			if err != nil {
+				golog.Errorf("Error while generating client data for invite to org %s: %s", org.ID, err)
+			}
+		default:
+			return nil, errors.InternalError(ctx, fmt.Errorf("Unknown invite type %s", res.Type))
+		}
+		var found bool
+		for _, v := range res.Values {
+			if v.Key == "client_data" {
+				found = true
+				v.Value = clientData
+			}
+		}
+		if !found {
+			res.Values = append(res.Values, &invite.AttributionValue{Key: "client_data", Value: clientData})
 		}
 
 		if _, err := svc.invite.SetAttributionData(ctx, &invite.SetAttributionDataRequest{
@@ -245,6 +321,8 @@ func inviteTypeToEnum(t invite.LookupInviteResponse_Type) string {
 		return inviteTypePatient
 	case invite.LookupInviteResponse_COLLEAGUE:
 		return inviteTypeColleague
+	case invite.LookupInviteResponse_ORGANIZATION_CODE:
+		return inviteTypeOrganizationCode
 	default:
 		golog.Errorf("Unknown invite type %s, returning unknown", t.String())
 	}

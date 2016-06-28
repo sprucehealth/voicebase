@@ -54,6 +54,24 @@ message PatientInvite {
 	Patient patient = 3;
 }
 
+message Organization {
+	string organization_entity_id = 1 [(gogoproto.customname) = "OrganizationEntityID"];
+}
+
+message CreateOrganizationInviteRequest {
+	string organization_entity_id = 1 [(gogoproto.customname) = "OrganizationEntityID"];
+}
+
+message CreateOrganizationInviteResponse {
+	OrganizationInvite organization = 1;
+}
+
+
+message OrganizationInvite {
+	string organization_entity_id = 1 [(gogoproto.customname) = "OrganizationEntityID"];
+	string token = 2;
+}
+
 message MarkInviteConsumedRequest {
 	string token = 1;
 }
@@ -61,18 +79,30 @@ message MarkInviteConsumedRequest {
 message MarkInviteConsumedResponse {}
 
 message LookupInviteRequest {
-	string token = 1;
+	enum LookupKeyType {
+		UNKNOWN = 0;
+		TOKEN = 1;
+		ORGANIZATION_ENTITY_ID = 2;
+	}
+
+	LookupKeyType lookup_key_type = 1;
+	oneof lookup_key_oneof {
+		string token = 2;
+		string organization_entity_id = 3 [(gogoproto.customname) = "OrganizationEntityID"];
+	}
 }
 
 message LookupInviteResponse {
 	enum Type {
 		COLLEAGUE = 0;
 		PATIENT = 1;
+		ORGANIZATION_CODE = 2;
 	}
 	Type type = 1;
 	oneof invite {
 		ColleagueInvite colleague = 10;
 		PatientInvite patient = 11;
+		OrganizationInvite organization = 12;
 	}
 	repeated AttributionValue values = 2;
 }
@@ -101,6 +131,8 @@ message AttributionDataResponse {
 service Invite {
 	// AttributionData returns the attribution data for a device
 	rpc AttributionData(AttributionDataRequest) returns (AttributionDataResponse);
+	// CreateOrganizationInvite creates and returns an invite code for the organization
+	rpc CreateOrganizationInvite(CreateOrganizationInviteRequest) returns (CreateOrganizationInviteResponse);
 	// InviteColleagues sends invites to people to join an organization
 	rpc InviteColleagues(InviteColleaguesRequest) returns (InviteColleaguesResponse);
 	// InvitePatients sends invites to people to join an organization

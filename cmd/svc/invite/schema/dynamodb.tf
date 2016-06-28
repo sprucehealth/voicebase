@@ -20,3 +20,14 @@ resource "aws_dynamodb_table" "invite-attribution-table" {
       type = "S"
     }
 }
+
+resource "aws_dynamodb_table" "entity-token-table" {
+    name = "${var.env}-entity-token"
+    read_capacity = 1
+    write_capacity = 1
+    hash_key = "EntityID"
+    attribute {
+      name = "EntityID"
+      type = "S"
+    }
+}

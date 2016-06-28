@@ -69,7 +69,10 @@ func TestVerifyEmailForAccountCreationMutation_Invite(t *testing.T) {
 	}, nil))
 
 	g.inviteC.Expect(mock.NewExpectation(g.inviteC.LookupInvite, &invite.LookupInviteRequest{
-		Token: "InviteToken",
+		LookupKeyType: invite.LookupInviteRequest_TOKEN,
+		LookupKeyOneof: &invite.LookupInviteRequest_Token{
+			Token: "InviteToken",
+		},
 	}).WithReturns(&invite.LookupInviteResponse{
 		Type: invite.LookupInviteResponse_PATIENT,
 		Invite: &invite.LookupInviteResponse_Patient{

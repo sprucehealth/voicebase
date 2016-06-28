@@ -18,6 +18,7 @@ import (
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
+	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/layout"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
@@ -37,6 +38,7 @@ type config struct {
 	SettingsAddr  string
 	ThreadingAddr string
 	LayoutAddr    string
+	InviteAddr    string
 	Env           string
 }
 
@@ -107,6 +109,18 @@ func (c *config) layoutClient() (layout.LayoutClient, error) {
 	return layout.NewLayoutClient(conn), nil
 }
 
+func (c *config) inviteClient() (invite.InviteClient, error) {
+	if c.InviteAddr == "" {
+		return nil, errors.New("Layout service address required")
+	}
+
+	conn, err := grpc.Dial(c.InviteAddr, grpc.WithInsecure())
+	if err != nil {
+		return nil, fmt.Errorf("Unable to connect to invite service: %s", err)
+	}
+	return invite.NewInviteClient(conn), nil
+}
+
 func (c *config) directoryDB() (*sql.DB, error) {
 	return c.db("directory")
 }
@@ -167,6 +181,7 @@ var commands = map[string]commandNew{
 	"decodeid":            newDecodeIDCmd,
 	"deletecontact":       newDeleteContactCmd,
 	"encodeid":            newEncodeIDCmd,
+	"enableorgcode":       newEnableOrgCodeCmd,
 	"entity":              newEntityCmd,
 	"getsetting":          newGetSettingCmd,
 	"migratesetupthreads": newMigrateSetupThreadsCmd,
@@ -190,6 +205,8 @@ func main() {
 	flag.StringVar(&cnf.DirectoryAddr, "directory_addr", cnf.DirectoryAddr, "`host:port` of directory service")
 	flag.StringVar(&cnf.ThreadingAddr, "threading_addr", cnf.ThreadingAddr, "`host:port` of treading service")
 	flag.StringVar(&cnf.LayoutAddr, "layout_addr", cnf.LayoutAddr, "`host:port` of layout service")
+	flag.StringVar(&cnf.InviteAddr, "invite_addr", cnf.InviteAddr, "`host:port` of invite service")
+	flag.StringVar(&cnf.SettingsAddr, "settings_addr", cnf.SettingsAddr, "`host:port` of invite service")
 	flag.StringVar(&cnf.Env, "env", cnf.Env, "environment that baymaxadmin is running against")
 
 	flag.Parse()

@@ -28,6 +28,7 @@ const (
 	urlKey                  = "URL"
 	parkedEntityIDKey       = "ParkedEntityID"
 	valuesKey               = "Values"
+	entityIDKey             = "EntityID"
 )
 
 // ErrNotFound is the error when an object is missing
@@ -40,15 +41,18 @@ var ErrDuplicateInviteToken = errors.New("invite/dal: an invite with the provide
 type DAL interface {
 	AttributionData(ctx context.Context, deviceID string) (map[string]string, error)
 	DeleteInvite(ctx context.Context, token string) error
+	InsertEntityToken(ctx context.Context, entityID, token string) error
 	InsertInvite(ctx context.Context, invite *models.Invite) error
 	InviteForToken(ctx context.Context, token string) (*models.Invite, error)
 	SetAttributionData(ctx context.Context, deviceID string, values map[string]string) error
+	TokenForEntity(ctx context.Context, entityID string) (string, error)
 }
 
 type dal struct {
 	db               dynamodbiface.DynamoDBAPI
 	attributionTable string
 	inviteTable      string
+	entityTokenTable string
 }
 
 // New returns a new DAL using DynamoDB for storage
@@ -57,6 +61,7 @@ func New(db dynamodbiface.DynamoDBAPI, env string) DAL {
 		db:               db,
 		attributionTable: env + "-invite-attribution",
 		inviteTable:      env + "-invite",
+		entityTokenTable: env + "-entity-token",
 	}
 }
 
@@ -74,7 +79,7 @@ func (d *dal) AttributionData(ctx context.Context, deviceID string) (map[string]
 	}
 	itemVals := res.Item[attribValuesKey]
 	if itemVals == nil {
-		return nil, errors.Trace(ErrNotFound)
+		return nil, ErrNotFound
 	}
 	attrVals := make(map[string]string, len(itemVals.M))
 	for name, val := range itemVals.M {
@@ -85,7 +90,7 @@ func (d *dal) AttributionData(ctx context.Context, deviceID string) (map[string]
 
 func (d *dal) SetAttributionData(ctx context.Context, deviceID string, values map[string]string) error {
 	if deviceID == "" {
-		return errors.Trace(errors.New("deviceID required"))
+		return errors.Errorf("deviceID required")
 	}
 	itemVals := make(map[string]*dynamodb.AttributeValue, len(values))
 	for name, val := range values {
@@ -124,48 +129,54 @@ func (d *dal) SetAttributionData(ctx context.Context, deviceID string, values ma
 }
 
 func (d *dal) InsertInvite(ctx context.Context, invite *models.Invite) error {
+	item := make(map[string]*dynamodb.AttributeValue)
 	if invite.Token == "" {
-		return errors.Trace(errors.New("Token required"))
+		return errors.Errorf("Token required")
 	}
+	item[inviteTokenKey] = &dynamodb.AttributeValue{S: &invite.Token}
 	if invite.Type == "" {
-		return errors.Trace(errors.New("Type required"))
+		return errors.Errorf("Type required")
 	}
-	if invite.InviterEntityID == "" {
-		return errors.Trace(errors.New("InviterEntityID required"))
-	}
-	if invite.OrganizationEntityID == "" {
-		return errors.Trace(errors.New("OrganizationEntityID required"))
-	}
-	if invite.Email == "" {
-		return errors.Trace(errors.New("Email required"))
-	}
-	if invite.PhoneNumber == "" {
-		return errors.Trace(errors.New("PhoneNumber required"))
+	item[typeKey] = &dynamodb.AttributeValue{S: ptr.String(string(invite.Type))}
+	switch invite.Type {
+	case models.ColleagueInvite, models.PatientInvite:
+		if invite.Type == models.PatientInvite {
+			if invite.ParkedEntityID == "" {
+				return errors.Errorf("ParkedEntityID required")
+			}
+			item[parkedEntityIDKey] = &dynamodb.AttributeValue{S: &invite.ParkedEntityID}
+		}
+		if invite.InviterEntityID == "" {
+			return errors.Errorf("InviterEntityID required")
+		}
+		item[inviterEntityIDKey] = &dynamodb.AttributeValue{S: &invite.InviterEntityID}
+		if invite.Email == "" {
+			return errors.Errorf("Email required")
+		}
+		item[emailKey] = &dynamodb.AttributeValue{S: &invite.Email}
+		if invite.PhoneNumber == "" {
+			return errors.Errorf("PhoneNumber required")
+		}
+		item[phoneNumberKey] = &dynamodb.AttributeValue{S: &invite.PhoneNumber}
+	case models.OrganizationCodeInvite:
+		if invite.OrganizationEntityID == "" {
+			return errors.Errorf("OrganizationEntityID required")
+		}
+		item[organizationEntityIDKey] = &dynamodb.AttributeValue{S: &invite.OrganizationEntityID}
 	}
 	if invite.URL == "" {
-		return errors.Trace(errors.New("URL required"))
+		return errors.Errorf("URL required")
 	}
+	item[urlKey] = &dynamodb.AttributeValue{S: &invite.URL}
 	if invite.Created.IsZero() {
-		return errors.Trace(errors.New("Created required"))
+		return errors.Errorf("Created required")
 	}
+	item[createdTimestampKey] = &dynamodb.AttributeValue{N: ptr.String(strconv.FormatInt(invite.Created.UnixNano(), 10))}
 	valuesAttr := make(map[string]*dynamodb.AttributeValue, len(invite.Values))
 	for k, v := range invite.Values {
 		valuesAttr[k] = &dynamodb.AttributeValue{S: ptr.String(v)}
 	}
-	item := map[string]*dynamodb.AttributeValue{
-		inviteTokenKey:          {S: &invite.Token},
-		typeKey:                 {S: ptr.String(string(invite.Type))},
-		organizationEntityIDKey: {S: &invite.OrganizationEntityID},
-		inviterEntityIDKey:      {S: &invite.InviterEntityID},
-		emailKey:                {S: &invite.Email},
-		phoneNumberKey:          {S: &invite.PhoneNumber},
-		urlKey:                  {S: &invite.URL},
-		createdTimestampKey:     {N: ptr.String(strconv.FormatInt(invite.Created.UnixNano(), 10))},
-		valuesKey:               {M: valuesAttr},
-	}
-	if invite.ParkedEntityID != "" {
-		item[parkedEntityIDKey] = &dynamodb.AttributeValue{S: &invite.ParkedEntityID}
-	}
+	item[valuesKey] = &dynamodb.AttributeValue{M: valuesAttr}
 	_, err := d.db.PutItem(&dynamodb.PutItemInput{
 		TableName:           &d.inviteTable,
 		ConditionExpression: ptr.String("attribute_not_exists(" + inviteTokenKey + ")"),
@@ -173,7 +184,7 @@ func (d *dal) InsertInvite(ctx context.Context, invite *models.Invite) error {
 	})
 	if err != nil {
 		if e, ok := err.(awserr.RequestFailure); ok && e.Code() == "ConditionalCheckFailedException" {
-			return errors.Trace(ErrDuplicateInviteToken)
+			return ErrDuplicateInviteToken
 		}
 		return errors.Trace(err)
 	}
@@ -192,7 +203,7 @@ func (d *dal) InviteForToken(ctx context.Context, token string) (*models.Invite,
 		return nil, errors.Trace(err)
 	}
 	if len(res.Item) == 0 {
-		return nil, errors.Trace(ErrNotFound)
+		return nil, ErrNotFound
 	}
 	ct, err := strconv.ParseInt(*res.Item[createdTimestampKey].N, 10, 64)
 	if err != nil {
@@ -203,13 +214,25 @@ func (d *dal) InviteForToken(ctx context.Context, token string) (*models.Invite,
 	if peID, ok := res.Item[parkedEntityIDKey]; ok {
 		parkedEntityID = *peID.S
 	}
+	var inviterEntityID string
+	if ieID, ok := res.Item[inviterEntityIDKey]; ok {
+		inviterEntityID = *ieID.S
+	}
+	var email string
+	if em, ok := res.Item[emailKey]; ok {
+		email = *em.S
+	}
+	var phoneNumber string
+	if pn, ok := res.Item[phoneNumberKey]; ok {
+		phoneNumber = *pn.S
+	}
 	inv := &models.Invite{
 		Token:                token,
 		Type:                 models.InviteType(*res.Item[typeKey].S),
 		OrganizationEntityID: *res.Item[organizationEntityIDKey].S,
-		InviterEntityID:      *res.Item[inviterEntityIDKey].S,
-		Email:                *res.Item[emailKey].S,
-		PhoneNumber:          *res.Item[phoneNumberKey].S,
+		InviterEntityID:      inviterEntityID,
+		Email:                email,
+		PhoneNumber:          phoneNumber,
 		URL:                  *res.Item[urlKey].S,
 		ParkedEntityID:       parkedEntityID,
 		Created:              time.Unix(ct/1e9, ct%1e9),
@@ -230,4 +253,51 @@ func (d *dal) DeleteInvite(ctx context.Context, token string) error {
 		TableName: &d.inviteTable,
 	})
 	return errors.Trace(err)
+}
+
+func (d *dal) InsertEntityToken(ctx context.Context, entityID, token string) error {
+	if entityID == "" {
+		return errors.Errorf("Entity ID required")
+	}
+	if token == "" {
+		return errors.Errorf("Token required")
+	}
+	item := map[string]*dynamodb.AttributeValue{
+		entityIDKey:         {S: &entityID},
+		inviteTokenKey:      {S: &token},
+		createdTimestampKey: {N: ptr.String(strconv.FormatInt(time.Now().UnixNano(), 10))},
+	}
+	_, err := d.db.PutItem(&dynamodb.PutItemInput{
+		TableName:           &d.entityTokenTable,
+		ConditionExpression: ptr.String("attribute_not_exists(" + entityIDKey + ")"),
+		Item:                item,
+	})
+	if err != nil {
+		if e, ok := err.(awserr.RequestFailure); ok && e.Code() == "ConditionalCheckFailedException" {
+			return ErrDuplicateInviteToken
+		}
+		return errors.Trace(err)
+	}
+	return nil
+}
+
+func (d *dal) TokenForEntity(ctx context.Context, entityID string) (string, error) {
+	res, err := d.db.GetItem(&dynamodb.GetItemInput{
+		ConsistentRead: ptr.Bool(true),
+		Key: map[string]*dynamodb.AttributeValue{
+			entityIDKey: {S: &entityID},
+		},
+		TableName: &d.entityTokenTable,
+	})
+	if err != nil {
+		return "", errors.Trace(err)
+	}
+	if len(res.Item) == 0 {
+		return "", ErrNotFound
+	}
+	token, ok := res.Item[inviteTokenKey]
+	if !ok {
+		return "", ErrNotFound
+	}
+	return *token.S, nil
 }

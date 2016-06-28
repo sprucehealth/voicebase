@@ -28,6 +28,12 @@ func (c *Client) AttributionData(ctx context.Context, in *invite.AttributionData
 	return ret[0].(*invite.AttributionDataResponse), mock.SafeError(ret[1])
 }
 
+// CreateOrganizationInvite sends invites to people to join an organization
+func (c *Client) CreateOrganizationInvite(ctx context.Context, in *invite.CreateOrganizationInviteRequest, opts ...grpc.CallOption) (*invite.CreateOrganizationInviteResponse, error) {
+	ret := c.Expector.Record(in)
+	return ret[0].(*invite.CreateOrganizationInviteResponse), mock.SafeError(ret[1])
+}
+
 // InviteColleagues sends invites to people to join an organization
 func (c *Client) InviteColleagues(ctx context.Context, in *invite.InviteColleaguesRequest, opts ...grpc.CallOption) (*invite.InviteColleaguesResponse, error) {
 	ret := c.Expector.Record(in)
