@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	baymaxgraphqlsettings "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/settings"
 	"github.com/sprucehealth/backend/device/devicectx"
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/caremessenger/deeplink"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/auth"
@@ -242,17 +243,19 @@ func patientInviteLink() func(p graphql.ResolveParams) (interface{}, error) {
 		org := p.Source.(*models.Organization)
 		ctx := p.Context
 		svc := serviceFromParams(p)
-		enabled, err := settings.GetBooleanValue(ctx, svc.settings, &settings.GetValuesRequest{
-			Keys: []*settings.ConfigKey{&settings.ConfigKey{
-				Key: invite.ConfigKeyOrganizationCode,
-			}},
-			NodeID: org.ID,
-		})
-		if err != nil {
-			golog.Errorf("Error while getting org code setting: %s", err)
-			return nil, nil
-		} else if !enabled.Value {
-			return nil, nil
+		if environment.IsProd() {
+			enabled, err := settings.GetBooleanValue(ctx, svc.settings, &settings.GetValuesRequest{
+				Keys: []*settings.ConfigKey{&settings.ConfigKey{
+					Key: invite.ConfigKeyOrganizationCode,
+				}},
+				NodeID: org.ID,
+			})
+			if err != nil {
+				golog.Errorf("Error while getting org code setting: %s", err)
+				return nil, nil
+			} else if !enabled.Value {
+				return nil, nil
+			}
 		}
 		inv, err := svc.invite.LookupInvite(ctx, &invite.LookupInviteRequest{
 			LookupKeyType: invite.LookupInviteRequest_ORGANIZATION_ENTITY_ID,
