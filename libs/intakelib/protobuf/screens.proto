@@ -1,0 +1,199 @@
+syntax = "proto2";
+
+import "questions.proto";
+import "popup.proto";
+import "common.proto";
+
+package intake;
+
+// ScreenIDData is a typed representation of the screenID
+// so as to determine the type of the screen and its ID.
+message ScreenIDData {
+	required ScreenData.Type type = 1;
+	required string id = 2;
+}
+
+// ScreenData is a typed representation of the data contained
+// in serialized form, where the type is used to lookup the model to use
+// to deserialize the information into.
+message ScreenData {
+ 	enum Type {
+	   QUESTION = 0;
+	   TRIAGE = 1;
+	   IMAGE_POPUP = 2;
+	   PHOTO = 3;
+	   PHARMACY = 4;
+	   GENERIC_POPUP = 5;
+	   VISIT_OVERVIEW = 6;
+	   REVIEW = 7;
+    }
+
+    required Type type = 1;
+    optional bytes data = 2;
+
+    // progress represents the progress the user has made
+	// on a scale of 0 - 1.0.
+    optional float progress =3;
+ }
+
+
+// CommonScreenInfo represents a the common screen info across
+// all screens that is communicated to the client.
+message CommonScreenInfo {
+
+	// id represents the unique identifier for this particular screen.
+	required string id = 1;
+
+	// title represents the screen title to display.
+	optional string title = 2;
+
+	// is_triage_screen indicates whether the client is expected to triage
+	// the user out of the visit on this screen.
+	optional bool is_triage_screen = 3;
+
+	// triage_pathway_id indicates the pathway the user is to be triaged to.
+	// Note that this field is expected to be set alongside the is_triage_screen being true.
+	optional string triage_pathway_id = 4;
+
+	// triage_parameters represents data that is intended to be passed back to the server
+	// on the triage visit call. It is data represented in json form.
+	optional bytes triage_parameters_json = 5;
+}
+
+// QuestionScreen represents a screen which contains a list of questions.
+ message QuestionScreen {
+ 	repeated QuestionData questions = 1;
+ 	required CommonScreenInfo screen_info = 2;
+
+ 	optional string content_header_title = 3;
+ 	optional string content_header_subtitle = 4;
+
+ 	// info_popup represents the information to show in a popup if present.
+	optional InfoPopup content_header_info_popup = 5;
+ }
+
+// PhotoScreen represents a screen containing photo section questions.
+ message PhotoScreen {
+ 	required CommonScreenInfo screen_info = 1;
+ 	repeated PhotoSectionQuestion photo_questions = 2;
+
+ 	optional string content_header_title = 3;
+ 	optional string content_header_subtitle = 4;
+
+ 	// info_popup represents the information to show in a popup if present.
+	optional InfoPopup content_header_info_popup = 5;
+
+ 	message ImageTextBox {
+ 		optional string image_link = 1;
+ 		optional string text = 2;
+ 	}
+
+ 	// bottom_container represents the content to be displayed below the photo
+ 	// section questions on the screen.
+ 	optional ImageTextBox bottom_container = 6;
+ }
+
+// PharmacyScreen represents a screen on which the patient is to enter their pharmacy information.
+ message PharmacyScreen {
+	required CommonScreenInfo screen_info = 1;
+ }
+
+// TriageScreen represnets a screen shown to the user
+// before triaging them out of the visit.
+ message TriageScreen {
+ 	required CommonScreenInfo screen_info = 1;
+ 	optional string content_header_title = 2;
+ 	optional string bottom_button_title = 3;
+ 	optional Body body = 4;
+ }
+
+// ImagePopupScreen represents a popup that contains an image along with text.
+ message ImagePopupScreen {
+ 	required CommonScreenInfo screen_info = 1;
+ 	optional Body body = 2;
+ 	optional float image_width = 3;
+ 	optional float image_height = 4;
+ 	optional string image_link = 5;
+	optional string bottom_button_title = 6;
+	optional string content_header_title = 7;
+
+ }
+
+// GenericPopupScreen represents a screen that is a container
+// of generic views implemented in other context of the app.
+ message GenericPopupScreen {
+ 	required CommonScreenInfo screen_info = 1;
+
+ 	// view_data_json represents an object containing
+ 	// a "views" field which is an array of view types supported and understood
+ 	// by the client. The data is represented in json form.
+ 	required bytes view_data_json = 2;
+ }
+
+// VisitOverviewScreen represents the content for the screen shown
+// to capture progress between sections.
+ message VisitOverviewScreen {
+ 	// Header represents the content shown in the top section of the
+ 	// visit overview.
+ 	message Header {
+ 		required string title = 1;
+ 		optional string subtitle = 2;
+ 		optional string image_link = 3;
+ 	}
+
+ 	// Section represents the content and metadata about sections
+ 	// contained within the layout.
+ 	message Section {
+
+ 		enum FilledState {
+ 			FILLED_STATE_UNDEFINED = 0;
+ 			FILLED = 1;
+ 			UNFILLED = 2;
+ 		}
+
+ 		enum EnabledState {
+ 			ENABLED_STATE_UNDEFINED = 0;
+ 			ENABLED = 1;
+ 			DISABLED = 2;
+ 		}
+
+ 		// tap_link is used to navigate the user to the first screen within the section when the user taps on the section.
+ 		required string tap_link = 1;
+
+ 		// name of the section.
+ 		required string name = 2;
+
+ 		// current_filled_state represents whether the section is filled or not at the time of showing the visit overview screen.
+ 		required FilledState current_filled_state = 3;
+
+ 		// prev_filled_state is used to animate the filled state from prev->current if prev is present.
+ 		optional FilledState prev_filled_state = 4 [default = FILLED_STATE_UNDEFINED];
+
+ 		// current_enabled_state represents whether the section is enabled at the time of showing the visit overview screen.
+ 		required EnabledState current_enabled_state = 5;
+
+ 		// prev_enabled_state is used to animate the enabled state from prev->current if prev is present.
+ 		optional EnabledState prev_enabled_state = 6 [default = ENABLED_STATE_UNDEFINED];
+ 	}
+
+ 	// id represents the unique identifier for the screen. In this case it will be the same
+ 	// across various states of the overview screen.
+ 	required string id = 1;
+
+ 	// header represents the content to show in the header section of the visit overview.
+ 	required Header header = 2;
+
+ 	// text represents the text to show below the header.
+ 	required string text = 3;
+
+ 	// bottom_button represents the title and action to take when the bottom button on the visit overview
+ 	// is tapped given that the action can be different pertaining to the state of the visit.
+	required Button bottom_button = 4;
+
+	// sections represent the variable number of sections to display on the visit overview.
+	repeated Section sections = 5;
+}
+
+// TODO: for when we get to this screen.
+// message ReviewScreen {
+// }

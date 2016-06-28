@@ -1,0 +1,5 @@
+app/generatedintakelib/*.go binary
+app/*.java binary
+manager/testfiles/* binary
+protobuf/intake/*.json binary
+protobuf/intake/*.go binary

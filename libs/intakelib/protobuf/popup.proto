@@ -1,0 +1,17 @@
+syntax = "proto2";
+
+package intake;
+
+// InfoPopup contains information to be displayed in a popup. It can be invoked
+// from a question, answer or screen.
+message InfoPopup {
+
+	message InfoPopupImage {
+		required string image_link = 1;
+		optional float aspect_ratio = 2;
+		optional string caption = 3;
+	}
+
+	repeated InfoPopupImage images = 1;
+	optional string text = 2;
+}

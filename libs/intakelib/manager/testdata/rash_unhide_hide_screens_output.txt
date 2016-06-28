@@ -1,0 +1,688 @@
+  se:0|sc:0: screen_type_questions | visible
+    se:0|sc:0|qu:0: q_type_multiple_choice | visible
+    Q: Let's make sure Spruce is right for you. Are you experiencing any of the following?
+    A: None of the above
+
+  se:0|sc:1:  | hidden
+
+  se:0|sc:2: Next Steps | hidden
+
+  se:0|sc:3: screen_type_questions | hidden
+    se:0|sc:3|qu:0: q_type_single_select | hidden
+    Q: Are you still able to complete basic daily activities, such as walking, eating, and caring for yourself?
+
+  se:0|sc:4:  | hidden
+
+  se:0|sc:5: Next Steps | hidden
+
+  se:0|sc:6: screen_type_questions | visible
+    se:0|sc:6|qu:0: q_type_single_select | visible
+    Q: Have you experienced fevers or chills while you've had this rash?
+    A: Both
+
+  se:0|sc:7: screen_type_questions | visible
+    se:0|sc:7|qu:0: q_type_single_select | visible
+    Q: Were the chills so bad that you shook uncontrollably?
+    A: No
+
+  se:0|sc:8:  | hidden
+
+  se:0|sc:9: Next Steps | hidden
+
+  se:0|sc:10: screen_type_questions | visible
+    se:0|sc:10|qu:0: q_type_single_select | visible
+    Q: Have you taken your temperature with a thermometer?
+    A: No
+
+  se:0|sc:11: screen_type_questions | hidden
+    se:0|sc:11|qu:0: q_type_single_select | hidden
+    Q: What type of thermometer did you use?
+
+  se:0|sc:12: screen_type_questions | hidden
+    se:0|sc:12|qu:0: q_type_single_select | hidden
+    Q: What was your highest temperature?
+
+  se:0|sc:13:  | hidden
+
+  se:0|sc:14: Next Steps | hidden
+
+  se:0|sc:15: screen_type_questions | visible
+    se:0|sc:15|qu:0: q_type_single_select | visible
+    Q: Do you have a thermometer nearby?
+    A: Yes
+
+  se:0|sc:16:  | hidden
+
+  se:0|sc:17: Next Steps | hidden
+
+  se:0|sc:18: screen_type_questions | visible
+    se:0|sc:18|qu:0: q_type_single_select | visible
+    Q: What type of thermometer do you have?
+    A: Ear
+
+  se:0|sc:19: screen_type_questions | visible
+    se:0|sc:19|qu:0: q_type_single_select | visible
+    Q: What is your current temperature?
+    Use the thermometer as directed.
+    A: 96.8 to 100.3F
+
+  se:0|sc:20:  | hidden
+
+  se:0|sc:21: Next Steps | hidden
+
+  se:0|sc:22: screen_type_questions | hidden
+    se:0|sc:22|qu:0: q_type_single_select | hidden
+    Q: That temperature seems a bit low. Try taking your temperature once more:
+
+  se:0|sc:23:  | hidden
+
+  se:0|sc:24: Next Steps | hidden
+
+  se:0|sc:25:  | hidden
+
+  se:0|sc:26: Next Steps | hidden
+
+  se:0|sc:27: screen_type_questions | visible
+    se:0|sc:27|qu:0: q_type_single_select | visible
+    Q: Have you had any recent illnesses?
+    A: No
+
+  se:0|sc:28: screen_type_questions | hidden
+    se:0|sc:28|qu:0: q_type_single_select | hidden
+    Q: When was your recent illness?
+
+  se:0|sc:29:  | hidden
+
+  se:0|sc:30: Next Steps | hidden
+
+  se:0|sc:31: screen_type_questions | hidden
+    se:0|sc:31|qu:0: q_type_multiple_choice | hidden
+    Q: What symptoms did you have with your recent illness?
+
+  se:0|sc:32: screen_type_questions | visible
+    se:0|sc:32|qu:0: q_type_single_select | visible
+    Q: How long have you had this rash?
+    A: 1 to 4 weeks
+
+  se:0|sc:33: screen_type_questions | visible
+    se:0|sc:33|qu:0: q_type_single_select | visible
+    Q: Have you ever experienced a rash like this before?
+    A: No
+
+  se:0|sc:34: screen_type_questions | hidden
+    se:0|sc:34|qu:0: q_type_single_select | hidden
+    Q: How many times have you experienced a rash similar to this one?
+
+  se:0|sc:35: screen_type_questions | hidden
+    se:0|sc:35|qu:0: q_type_single_select | hidden
+    Q: When did you first start experiencing this type of rash?
+
+  se:0|sc:36: screen_type_questions | hidden
+    se:0|sc:36|qu:0: q_type_single_select | hidden
+    Q: How often do you experience this type of rash?
+
+  se:0|sc:37: screen_type_questions | visible
+    se:0|sc:37|qu:0: q_type_multiple_choice | visible
+    Q: Where on your body is the rash currently?
+    A: Mouth
+
+  se:0|sc:38:  | hidden
+
+  se:0|sc:39: Next Steps | hidden
+
+  se:0|sc:40: screen_type_questions | hidden
+    se:0|sc:40|qu:0: q_type_multiple_choice | hidden
+    Q: Where on your hands is the rash located?
+
+  se:0|sc:41: screen_type_questions | hidden
+    se:0|sc:41|qu:0: q_type_multiple_choice | hidden
+    Q: Where on your feet is the rash located?
+
+  se:0|sc:42: screen_type_questions | visible
+    se:0|sc:42|qu:0: q_type_multiple_choice | visible
+    Q: Where in or on your mouth is the rash?
+    A: Lips
+
+  se:0|sc:43: screen_type_questions | hidden
+    se:0|sc:43|qu:0: q_type_multiple_choice | hidden
+    Q: Does the rash affect any of the following areas?
+
+  se:0|sc:44:  | hidden
+
+  se:0|sc:45: Next Steps | hidden
+
+  se:0|sc:46: screen_type_questions | hidden
+    se:0|sc:46|qu:0: q_type_multiple_choice | hidden
+    Q: Does the rash affect any of the following areas?
+
+  se:0|sc:47:  | hidden
+
+  se:0|sc:48: Next Steps | hidden
+
+  se:0|sc:49: screen_type_questions | visible
+    se:0|sc:49|qu:0: q_type_single_select | visible
+    Q: Has the location of the rash changed since it started?
+    A: No change in location
+
+  se:0|sc:50: screen_type_questions | hidden
+    se:0|sc:50|qu:0: q_type_multiple_choice | hidden
+    Q: Select the locations where the rash began:
+
+  se:0|sc:51: screen_type_questions | visible
+    se:0|sc:51|qu:0: q_type_single_select | visible
+    Q: Have you noticed any changes in your fingernails or toenails?
+    A: No
+
+  se:0|sc:52: screen_type_questions | hidden
+    se:0|sc:52|qu:0: q_type_single_select | hidden
+    Q: How many fingernails are affected?
+
+  se:0|sc:53: screen_type_questions | hidden
+    se:0|sc:53|qu:0: q_type_single_select | hidden
+    Q: How many toenails are affected?
+
+  se:0|sc:54: screen_type_questions | hidden
+    se:0|sc:54|qu:0: q_type_multiple_choice | hidden
+    Q: What nail changes have you noticed?
+
+  se:0|sc:55: screen_type_questions | hidden
+    se:0|sc:55|qu:0: q_type_single_select | hidden
+    Q: Do these nail changes occur with the rash?
+
+  se:0|sc:56: screen_type_questions | hidden
+    se:0|sc:56|qu:0: q_type_single_select | hidden
+    Q: How long have you been experiencing nail changes?
+
+  se:0|sc:57: screen_type_questions | visible
+    se:0|sc:57|qu:0: q_type_single_select | visible
+    Q: Before the rash began, did you experience burning, tingling, warmth, or pain where the rash would eventually form?
+    A: No
+
+  se:0|sc:58: screen_type_questions | visible
+    se:0|sc:58|qu:0: q_type_single_select | visible
+    Q: Is the rash itchy?
+    A: No
+
+  se:0|sc:59: screen_type_questions | hidden
+    se:0|sc:59|qu:0: q_type_single_select | hidden
+    Q: How bad is the itch?
+
+  se:0|sc:60: screen_type_questions | hidden
+    se:0|sc:60|qu:0: q_type_single_select | hidden
+    Q: When did the itchiness begin?
+
+  se:0|sc:61: screen_type_questions | hidden
+    se:0|sc:61|qu:0: q_type_single_select | hidden
+    Q: Is the itchiness worse at night?
+
+  se:0|sc:62: screen_type_questions | hidden
+    se:0|sc:62|qu:0: q_type_single_select | hidden
+    Q: Does the itchiness make it hard for you to sleep?
+
+  se:0|sc:63: screen_type_questions | visible
+    se:0|sc:63|qu:0: q_type_single_select | visible
+    Q: Are you scratching or picking at the rash?
+    A: No
+
+  se:0|sc:64: screen_type_questions | visible
+    se:0|sc:64|qu:0: q_type_multiple_choice | visible
+    Q: Describe the rash:
+    A: Painful or tender
+
+  se:0|sc:65: screen_type_questions | hidden
+    se:0|sc:65|qu:0: q_type_single_select | hidden
+    Q: When you press down firmly on the skin and then release, does it leave a visible dent for a few seconds?
+
+  se:0|sc:66: screen_type_questions | visible
+    se:0|sc:66|qu:0: q_type_single_select | visible
+    Q: Is the rash made of numerous spots or bumps?
+    A: No
+
+  se:0|sc:67: screen_type_questions | hidden
+    se:0|sc:67|qu:0: q_type_single_select | hidden
+    Q: Are the spots or bumps solid or filled with fluid?
+
+  se:0|sc:68: screen_type_questions | hidden
+    se:0|sc:68|qu:0: q_type_single_select | hidden
+    Q: Are some of the spots or bumps breaking open and leaking fluid?
+
+  se:0|sc:69: screen_type_questions | hidden
+    se:0|sc:69|qu:0: q_type_single_select | hidden
+    Q: How big is the average spot or bump?
+
+  se:0|sc:70: screen_type_questions | hidden
+    se:0|sc:70|qu:0: q_type_single_select | hidden
+    Q: How long is each individual spot or bump present?
+
+  se:0|sc:71: screen_type_questions | visible
+    se:0|sc:71|qu:0: q_type_single_select | visible
+    Q: When you touch the rash, can you easily feel its edges and other features?
+    A: I can't tell
+
+  se:0|sc:72: screen_type_questions | visible
+    se:0|sc:72|qu:0: q_type_single_select | visible
+    Q: Does pushing on the rash cause large pieces of skin to separate from your body?
+    A: No
+
+  se:0|sc:73:  | hidden
+
+  se:0|sc:74: Next Steps | hidden
+
+  se:0|sc:75: screen_type_questions | visible
+    se:0|sc:75|qu:0: q_type_single_select | visible
+    Q: Does discomfort from the rash make your daily activities difficult?
+    A: No
+
+  se:0|sc:76: screen_type_questions | hidden
+    se:0|sc:76|qu:0: q_type_single_select | hidden
+    Q: Are you still able to complete basic daily activities, such as walking, eating, and caring for yourself?
+
+  se:0|sc:77:  | hidden
+
+  se:0|sc:78: Next Steps | hidden
+
+  se:0|sc:79: screen_type_questions | visible
+    se:0|sc:79|qu:0: q_type_multiple_choice | visible
+    Q: Have you experienced any recent injury in the area of your rash?
+    A: No recent injury
+
+  se:0|sc:80:  | hidden
+
+  se:0|sc:81: Next Steps | hidden
+
+  se:0|sc:82: screen_type_questions | hidden
+    se:0|sc:82|qu:0: q_type_free_text | hidden
+    Q: Describe your recent injury:
+
+  se:0|sc:83: screen_type_questions | hidden
+    se:0|sc:83|qu:0: q_type_single_select | hidden
+    Q: Have you been vaccinated with the standard 3-dose vaccination series against tetanus?
+
+  se:0|sc:84:  | hidden
+
+  se:0|sc:85: Next Steps | hidden
+
+  se:0|sc:86: screen_type_questions | hidden
+    se:0|sc:86|qu:0: q_type_single_select | hidden
+    Q: Did you grow up in the United States?
+
+  se:0|sc:87: screen_type_questions | hidden
+    se:0|sc:87|qu:0: q_type_single_select | hidden
+    Q: Did you receive your standard vaccinations upon coming to the US?
+
+  se:0|sc:88:  | hidden
+
+  se:0|sc:89: Next Steps | hidden
+
+  se:0|sc:90: screen_type_questions | hidden
+    se:0|sc:90|qu:0: q_type_single_select | hidden
+    Q: Did you receive all of your childhood vaccines?
+    These vaccinations are typically required for school attendance.
+
+  se:0|sc:91:  | hidden
+
+  se:0|sc:92: Next Steps | hidden
+
+  se:0|sc:93: screen_type_questions | hidden
+    se:0|sc:93|qu:0: q_type_single_select | hidden
+    Q: When was your last tetanus vaccine update?
+
+  se:0|sc:94:  | hidden
+
+  se:0|sc:95: Next Steps | hidden
+
+  se:0|sc:96: screen_type_questions | visible
+    se:0|sc:96|qu:0: q_type_single_select | visible
+    Q: Has anybody around you been sick or had a rash similar to yours recently?
+    A: No
+
+  se:0|sc:97: screen_type_questions | hidden
+    se:0|sc:97|qu:0: q_type_free_text | hidden
+    Q: Describe their rash or illness:
+
+  se:0|sc:98: screen_type_questions | visible
+    se:0|sc:98|qu:0: q_type_multiple_choice | visible
+    Q: A variety of factors can influence rashes. Do you regularly do any of the following?
+    A: Bathe or shower more than once daily
+
+  se:0|sc:99: screen_type_questions | hidden
+    se:0|sc:99|qu:0: q_type_multiple_choice | hidden
+    Q: Which animals are you regularly exposed to?
+
+  se:0|sc:100: screen_type_questions | hidden
+    se:0|sc:100|qu:0: q_type_single_select | hidden
+    Q: Have you ever used any drugs through a needle?
+
+  se:0|sc:101: screen_type_questions | hidden
+    se:0|sc:101|qu:0: q_type_free_text | hidden
+    Q: Describe your occupation or hobby and the potential irritants you're exposed to:
+
+  se:0|sc:102: screen_type_questions | visible
+    se:0|sc:102|qu:0: q_type_single_select | visible
+    Q: Is the rash in an area where you recently wore jewelry?
+    A: No
+
+  se:0|sc:103: screen_type_questions | hidden
+    se:0|sc:103|qu:0: q_type_free_text | hidden
+    Q: What jewelry were you wearing and when did you wear it?
+
+  se:0|sc:104: screen_type_questions | visible
+    se:0|sc:104|qu:0: q_type_multiple_choice | visible
+    Q: Tell us about any cosmetic or bath products that may have come into contact with the areas affected by rash:
+    Include brand names.
+    A: efqeg
+
+  se:0|sc:105: screen_type_questions | visible
+    se:0|sc:105|qu:0: q_type_multiple_choice | visible
+    Q: Have you done any outdoor activities, such as hiking or camping, within the past month?
+    A: egg
+
+  se:0|sc:106: screen_type_questions | visible
+    se:0|sc:106|qu:0: q_type_single_select | visible
+    Q: Did you travel anywhere during the two months prior to the start of the rash?
+    A: No
+
+  se:0|sc:107: screen_type_questions | hidden
+    se:0|sc:107|qu:0: q_type_single_select | hidden
+    Q: Did you travel outside of the U.S.?
+
+  se:0|sc:108: screen_type_questions | hidden
+    se:0|sc:108|qu:0: q_type_free_text | hidden
+    Q: Which countries did you visit?
+
+  se:0|sc:109: screen_type_questions | hidden
+    se:0|sc:109|qu:0: q_type_multiple_choice | hidden
+    Q: What type of lodging did you stay in?
+
+  se:0|sc:110: screen_type_questions | visible
+    se:0|sc:110|qu:0: q_type_multiple_choice | visible
+    Q: Have you been swimming within the past few weeks?
+    A: Ocean
+
+  se:0|sc:111: screen_type_questions | visible
+    se:0|sc:111|qu:0: q_type_single_select | visible
+    Q: Have you had any period of transitory or unstable housing in the past few months?
+    A: No
+
+  se:0|sc:112: screen_type_questions | hidden
+    se:0|sc:112|qu:0: q_type_multiple_choice | hidden
+    Q: Where have you been living in the past few months?
+
+  se:1|sc:0: screen_type_photo | visible
+    se:1|sc:0|qu:0: q_type_photo_section | hidden
+    Q: Face
+    se:1|sc:0|qu:1: q_type_photo_section | hidden
+    Q: Mouth
+    se:1|sc:0|qu:2: q_type_photo_section | visible
+    Q: Lips    
+    A: Lips
+      Photo: Lips
+    se:1|sc:0|qu:3: q_type_photo_section | hidden
+    Q: Inside of Mouth
+    se:1|sc:0|qu:4: q_type_photo_section | hidden
+    Q: Throat
+    se:1|sc:0|qu:5: q_type_photo_section | hidden
+    Q: Scalp
+    se:1|sc:0|qu:6: q_type_photo_section | hidden
+    Q: Neck
+    se:1|sc:0|qu:7: q_type_photo_section | hidden
+    Q: Chest
+    se:1|sc:0|qu:8: q_type_photo_section | hidden
+    Q: Back
+    se:1|sc:0|qu:9: q_type_photo_section | hidden
+    Q: Abdomen
+    se:1|sc:0|qu:10: q_type_photo_section | hidden
+    Q: Waist
+    se:1|sc:0|qu:11: q_type_photo_section | hidden
+    Q: Groin
+    se:1|sc:0|qu:12: q_type_photo_section | hidden
+    Q: Buttocks
+    se:1|sc:0|qu:13: q_type_photo_section | hidden
+    Q: Arms
+    se:1|sc:0|qu:14: q_type_photo_section | hidden
+    Q: Wrists
+    se:1|sc:0|qu:15: q_type_photo_section | hidden
+    Q: Legs
+    se:1|sc:0|qu:16: q_type_photo_section | hidden
+    Q: Feet
+    se:1|sc:0|qu:17: q_type_photo_section | hidden
+    Q: Between Toes
+    se:1|sc:0|qu:18: q_type_photo_section | hidden
+    Q: Hands
+    se:1|sc:0|qu:19: q_type_photo_section | hidden
+    Q: Between Fingers
+    se:1|sc:0|qu:20: q_type_photo_section | visible
+    Q: Other Location
+
+  se:1|sc:1: screen_type_photo | hidden
+    se:1|sc:1|qu:0: q_type_photo_section | hidden
+    Q: Fingernails
+    se:1|sc:1|qu:1: q_type_photo_section | hidden
+    Q: Toenails
+
+  se:2|sc:0: screen_type_questions | visible
+    se:2|sc:0|qu:0: q_type_single_select | visible
+    Q: Have you already seen a doctor or other healthcare professional for this rash?
+    A: No
+
+  se:2|sc:1: screen_type_questions | hidden
+    se:2|sc:1|qu:0: q_type_multiple_choice | hidden
+    Q: What type of healthcare provider did you see for this rash?
+
+  se:2|sc:2:  | hidden
+
+  se:2|sc:3: Next Steps | hidden
+
+  se:2|sc:4: screen_type_questions | hidden
+    se:2|sc:4|qu:0: q_type_multiple_choice | hidden
+    Q: What diagnosis were you given for the rash?
+
+  se:2|sc:5: screen_type_questions | hidden
+    se:2|sc:5|qu:0: q_type_single_select | hidden
+    Q: What type of infection did your healthcare provider think it was?
+
+  se:2|sc:6: screen_type_questions | hidden
+    se:2|sc:6|qu:0: q_type_multiple_choice | hidden
+    Q: Did your healthcare provider do any testing?
+
+  se:2|sc:7: screen_type_questions | hidden
+    se:2|sc:7|qu:0: q_type_free_text | hidden
+    Q: Share any other relevant information about your previous visit:
+
+  se:2|sc:8: screen_type_questions | visible
+    se:2|sc:8|qu:0: q_type_single_select | visible
+    Q: Have you tried any topical steroids for this rash?
+    (e.g., hydrocortisone, Cortizone-10, triamcinolone, etc.)
+    A: No
+
+  se:2|sc:9: screen_type_questions | hidden
+    se:2|sc:9|qu:0: q_type_multiple_choice | hidden
+    Q: What topical steroids have you tried?
+
+  se:2|sc:10: screen_type_questions | visible
+    se:2|sc:10|qu:0: q_type_single_select | visible
+    Q: Have you tried any other topical treatments for this rash?
+    A: No
+
+  se:2|sc:11: screen_type_questions | hidden
+    se:2|sc:11|qu:0: q_type_multiple_choice | hidden
+    Q: What other topical treatments have you tried?
+
+  se:2|sc:12: screen_type_questions | visible
+    se:2|sc:12|qu:0: q_type_single_select | visible
+    Q: Have you tried any oral medications for this rash?
+    A: No
+
+  se:2|sc:13: screen_type_questions | hidden
+    se:2|sc:13|qu:0: q_type_multiple_choice | hidden
+    Q: Which oral medications have you tried?
+
+  se:2|sc:14: screen_type_questions | visible
+    se:2|sc:14|qu:0: q_type_single_select | visible
+    Q: Have you tried any other types of treatments for this rash?
+    A: No
+
+  se:2|sc:15: screen_type_questions | hidden
+    se:2|sc:15|qu:0: q_type_free_text | hidden
+    Q: Describe any other treatments you have tried:
+
+  se:2|sc:16: screen_type_questions | visible
+    se:2|sc:16|qu:0: q_type_multiple_choice | visible
+    Q: Do you have any of the following medical conditions?
+    You'll have a chance to tell your doctor about other medical conditions later.
+    A: Asthma
+
+  se:2|sc:17: screen_type_questions | hidden
+    se:2|sc:17|qu:0: q_type_single_select | hidden
+    Q: Have you had a hemoglobin A1c level checked in the past year?
+
+  se:2|sc:18: screen_type_questions | hidden
+    se:2|sc:18|qu:0: q_type_single_select | hidden
+    Q: What was your most recent hemoglobin A1c level?
+
+  se:2|sc:19:  | hidden
+
+  se:2|sc:20: Next Steps | hidden
+
+  se:2|sc:21: screen_type_questions | hidden
+    se:2|sc:21|qu:0: q_type_single_select | hidden
+    Q: Do you regularly check your fingerstick blood glucose measurements?
+
+  se:2|sc:22:  | hidden
+
+  se:2|sc:23: Next Steps | hidden
+
+  se:2|sc:24: screen_type_questions | hidden
+    se:2|sc:24|qu:0: q_type_single_select | hidden
+    Q: What range is your blood glucose typically in?
+
+  se:2|sc:25:  | hidden
+
+  se:2|sc:26: Next Steps | hidden
+
+  se:2|sc:27: screen_type_questions | hidden
+    se:2|sc:27|qu:0: q_type_single_select | hidden
+    Q: Do you currently have AIDS?
+    CD4 count <200
+
+  se:2|sc:28:  | hidden
+
+  se:2|sc:29: Next Steps | hidden
+
+  se:2|sc:30: screen_type_questions | hidden
+    se:2|sc:30|qu:0: q_type_single_select | hidden
+    Q: Do you have a clinic that you follow up with regularly to manage your HIV?
+
+  se:2|sc:31: screen_type_questions | hidden
+    se:2|sc:31|qu:0: q_type_free_text | hidden
+    Q: Tell us about your organ transplant(s):
+
+  se:2|sc:32: screen_type_questions | visible
+    se:2|sc:32|qu:0: q_type_single_select | visible
+    Q: Have you ever had cancer?
+    A: No
+
+  se:2|sc:33: screen_type_questions | hidden
+    se:2|sc:33|qu:0: q_type_multiple_choice | hidden
+    Q: What type(s) of cancer have you had?
+
+  se:2|sc:34: screen_type_questions | hidden
+    se:2|sc:34|qu:0: q_type_multiple_choice | hidden
+    Q: What type(s) of cancer have you had?
+
+  se:2|sc:35: screen_type_questions | hidden
+    se:2|sc:35|qu:0: q_type_single_select | hidden
+    Q: Do you have any active cancer?
+
+  se:2|sc:36: screen_type_questions | hidden
+    se:2|sc:36|qu:0: q_type_free_text | hidden
+    Q: Describe any surgeries, chemotherapy, and radiation treatments you have had:
+
+  se:2|sc:37: screen_type_questions | visible
+    se:2|sc:37|qu:0: q_type_single_select | visible
+    Q: Have you ever had any surgeries?
+    A: No
+
+  se:2|sc:38: screen_type_questions | hidden
+    se:2|sc:38|qu:0: q_type_free_text | hidden
+    Q: What surgeries have you had?
+
+  se:2|sc:39: screen_type_questions | hidden
+    se:2|sc:39|qu:0: q_type_single_select | hidden
+    Q: Have any of your surgeries been in the past month?
+
+  se:2|sc:40: screen_type_questions | hidden
+    se:2|sc:40|qu:0: q_type_free_text | hidden
+    Q: Which of your surgeries have you had in the past month?
+
+  se:2|sc:41: screen_type_questions | visible
+    se:2|sc:41|qu:0: q_type_single_select | visible
+    Q: Are you currently pregnant or planning to become pregnant?
+    A: No
+
+  se:2|sc:42: screen_type_questions | hidden
+    se:2|sc:42|qu:0: q_type_single_select | hidden
+    Q: Which trimester are you currently in?
+
+  se:2|sc:43: screen_type_questions | hidden
+    se:2|sc:43|qu:0: q_type_single_select | hidden
+    Q: Is this your first pregnancy?
+
+  se:2|sc:44: screen_type_questions | visible
+    se:2|sc:44|qu:0: q_type_single_select | visible
+    Q: Are you currently breastfeeding?
+    A: No
+
+  se:2|sc:45: screen_type_questions | visible
+    se:2|sc:45|qu:0: q_type_free_text | visible
+    Q: Do you have any other current medical conditions or important past medical history?
+    Anything for which you see a doctor or take medication is useful to know.
+
+  se:2|sc:46: screen_type_questions | visible
+    se:2|sc:46|qu:0: q_type_single_select | visible
+    Q: Are there any medications that you take or use regularly?
+    A: Yes
+
+  se:2|sc:47: screen_type_questions | visible
+    se:2|sc:47|qu:0: q_type_single_select | visible
+    Q: Do any of your medications suppress your immune system?
+    A: No
+
+  se:2|sc:48:  | hidden
+
+  se:2|sc:49: Next Steps | hidden
+
+  se:2|sc:50: screen_type_questions | visible
+  se:2|sc:50|qu:0: q_type_autocomplete | visible
+  Q: Which medications do you take or use regularly?:  
+    A: Advil
+    A: Penicillin
+
+  se:2|sc:51: screen_type_questions | visible
+    se:2|sc:51|qu:0: q_type_single_select | visible
+    Q: Are there any supplements that you take regularly?
+    (e.g., vitamins or herbs)
+    A: Yes
+
+  se:2|sc:52: screen_type_questions | visible
+    se:2|sc:52|qu:0: q_type_free_text | visible
+    Q: Which supplements do you take regularly?
+    A: supplements galore.,
+
+  se:2|sc:53: screen_type_questions | visible
+    se:2|sc:53|qu:0: q_type_single_select | visible
+    Q: Are you allergic to any medications?
+    A: Yes
+
+  se:2|sc:54: screen_type_questions | visible
+  se:2|sc:54|qu:0: q_type_autocomplete | visible
+  Q: Which medications are you allergic to?  
+    A: Sulfa Drugs
+
+  se:2|sc:55: screen_type_questions | visible
+    se:2|sc:55|qu:0: q_type_single_select | visible
+    Q: What type of prescription coverage do you have?
+    A: Medicaid
+
+  se:2|sc:56: screen_type_pharmacy | visible
+

@@ -1,0 +1,42 @@
+syntax = "proto2";
+
+package intake;
+
+// VisitData represents the data with which to initialize the
+// visit manager to provide it with all that it needs to initialize
+// itself.
+message VisitData {
+	required int64 patient_visit_id = 1;
+	required bytes layout = 2;
+	// status represents the server provided status of the visit.
+	required bool is_submitted = 3;
+	repeated KeyValuePair pairs = 4;
+
+	enum Platform  {
+		ANDROID = 1;
+		IOS = 2;
+	}
+	required Platform platform = 5;
+}
+
+// KeyValuePair is used for the client to communicate
+// specific type of information in key/value to the intakelib that is
+// used to inform the business logic. This pertains to information
+// outside of the question/answer flow (such as user's gender, whether or not
+// patient has pharmacy set, etc.)
+message KeyValuePair {
+	required string key = 1;
+	required bytes value = 2;
+}
+
+
+// ValidateRequirementsResult is used to convey the result
+// of a requirements validation call.
+ message ValidateRequirementsResult {
+ 	enum Status {
+ 		OK = 0;
+ 		ERROR = 1;
+ 	}
+ 	required Status status = 1;
+ 	optional string message = 2;
+ }

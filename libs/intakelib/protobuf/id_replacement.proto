@@ -1,0 +1,19 @@
+syntax = "proto2";
+
+package intake;
+
+// IDReplacementData is a typed, serialized version of an id replacement object.
+// The type is used to infer the serialized data in the byte array.
+message IDReplacementData {
+	enum Type {
+		PHOTO_ID = 0;
+	}
+
+	required Type type = 1;
+	required bytes data = 2;
+}
+
+message PhotoIDReplacement {
+	required string id = 1;
+	optional string url = 2;
+}

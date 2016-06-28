@@ -1,0 +1,27 @@
+syntax = "proto2";
+
+package intake;
+
+// Body represents content to be used in the body of a layout unit.
+message Body {
+	optional string text = 1;
+	optional Button button = 2;
+}
+
+
+// Button represents content to be used within a button of the layout unit.
+message Button {
+	optional string text = 1;
+	optional string tap_link = 2;
+}
+
+// ID represents a unique identifier with an indicator of whether it is a local id
+// as specified by the client or a server provided id.
+message ID {
+	enum Type {
+		LOCAL = 0;
+		SERVER = 1;
+	}
+	required string id = 1;
+	optional Type type = 2 [default = SERVER];
+}

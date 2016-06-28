@@ -1,0 +1,67 @@
+syntax = "proto2";
+
+package intake;
+
+import "common.proto";
+
+
+// PatientAnswerData represents a typed, serialized version of a patient answer.
+// This type is used by the client to set an answer to a question.
+message PatientAnswerData {
+	enum Type {
+		MULTIPLE_CHOICE = 0;
+		FREE_TEXT = 1;
+		AUTOCOMPLETE = 2;
+		PHOTO_SECTION = 3;
+	}
+
+	required Type type = 1;
+	required bytes data = 2;
+}
+
+// MultipleChoicePatientAnswer represents a patient's answer for a
+// multiple choice question, a segmented control question, a single select
+// question and a sectioned multiple choice question.
+message MultipleChoicePatientAnswer {
+
+	message Selection {
+		required string potential_answer_id = 1;
+		optional string text = 2;
+	}
+
+	repeated Selection answer_selections = 1;
+}
+
+// FreeTextPatientAnswer represents a patient answer for a free text question.
+message FreeTextPatientAnswer {
+	optional string text = 1;
+}
+
+
+// AutocompletePatientAnswer represents a patient answer for an autocomplete question.
+message AutocompletePatientAnswer {
+	repeated string answers = 1;
+}
+
+
+// PhotoSectionPatientAnswer represents a patient answer to a photo section. There can be a variable
+// number of photo sections entered for a question.
+message PhotoSectionPatientAnswer {
+
+	// PhotoSectionEntry represents a single fully-populated photo section
+	// answer by the patient.
+	message PhotoSectionEntry {
+
+		message PhotoSlotAnswer {
+			optional string link = 1;
+			required string slot_id = 2;
+			required string name = 3;
+			required ID id = 4;
+		}
+
+		required string name = 1;
+		repeated PhotoSlotAnswer photos = 2;
+	}
+
+	repeated PhotoSectionEntry entries = 1;
+}

@@ -1,0 +1,234 @@
+syntax = "proto2";
+
+import "popup.proto";
+import "patient_answers.proto";
+
+package intake;
+
+// QuestionData represents a typed, serialized version of a question. The
+// type is used to infer the serialized data in the byte array. This makes it lookup
+// the right model to use to deserialize the data into.
+ message QuestionData {
+ 	enum Type {
+ 		MULTIPLE_CHOICE = 0;
+ 		FREE_TEXT = 1;
+ 		AUTOCOMPLETE = 2;
+ 		PHOTO_SECTION = 3;
+ 	}
+
+ 	required Type type = 1;
+ 	required bytes data = 2;
+ }
+
+
+// ClientAnswerData represents a typed, serialized version of the
+// answer payload for the client to upload. The goal is for the client
+// to treat the payloud as an opaque object that can directly be uploaded
+// to the appropriate endpoint.
+message ClientAnswerData {
+
+	required QuestionData.Type type = 1;
+
+	required bytes client_answer_json = 2;
+
+	required string question_id = 3;
+}
+
+
+// CommonQuestionInfo represents the common data used across all questions.
+message CommonQuestionInfo {
+
+	// title represents the text pertaining to the question itself.
+	optional string title = 1;
+
+	// subtitle is the question subtitle that compliments the title.
+	optional string subtitle = 2;
+
+	// id represents the unique identifier for the question.
+	required string id = 3;
+
+	// info_popup represents the information to show in a popup if present.
+	optional InfoPopup info_popup = 4;
+
+	// is_required indicates whether or not question is required to have an answer.
+	optional bool is_required = 5;
+ }
+
+// MultipleChoiceQuestion represents the contents of a specific question type
+// that contains multiple answer choices from which a patient can select multiple options.
+ message MultipleChoiceQuestion {
+
+ 	message PotentialAnswer {
+ 		enum Type {
+ 			OPTION  = 0;
+ 			NONE_OF_THE_ABOVE = 1;
+ 			OTHER_FREE_TEXT = 2;
+ 		}
+
+ 		// text represents the text associated with an answer option.
+ 		required string text = 1;
+
+ 		// type represents the answer type
+ 		required Type type = 2;
+
+ 		// id represents the unique identifier for the answer selection.
+ 		required string id = 3;
+
+		// info_popup represents the information to show in a popup if present.
+ 		optional InfoPopup info_popup = 4;
+
+ 		// placeholder_text represents the text to show for other free text type.
+ 		optional string placeholder_text = 5;
+ 	}
+
+ 	// TitleCount represents a metadata entry to
+ 	// gives a multipled choice question enough information to
+ 	// section answer choices together.
+	message TitleCount {
+		required string title = 1;
+		required int32 count = 2;
+	}
+
+	// Config indicates the behavior of the multiple choice question
+	// to either function as a single select, a segmented control or a
+	// regular multiple choice question.
+	enum Config {
+ 		SINGLE_SELECT = 1;
+ 		SEGMENTED_CONTROL = 2;
+ 		MULTIPLE_CHOICE = 3;
+ 	}
+
+ 	// potential_answers represents the list of potential answers for the multiple choice question.
+	repeated PotentialAnswer potential_answers = 1;
+	required CommonQuestionInfo question_info = 2;
+
+	// config is used to indicate whether we are working with a regular multiple choice,
+	// a segmented control or single select question.
+	required Config config = 3;
+
+	// groups is used to convey groupings for a sectioned multiple choice question.
+	repeated TitleCount groups = 4;
+
+	optional MultipleChoicePatientAnswer patient_answer = 5;
+ }
+
+// FreeTextQuestion represents the contents of a specific question type
+// that allows a patient to enter a free text response to the question.
+ message FreeTextQuestion {
+
+ 	// placeholder represents the text to show when the free text box is empty.
+ 	optional string placeholder = 1 [default = "Type in some text..."];
+ 	required CommonQuestionInfo question_info = 2;
+ 	optional FreeTextPatientAnswer patient_answer = 3;
+ }
+
+// AutocompleteQuestion represents a question where the user can
+// add answer choices based on results from an autocomplete API.
+ message AutocompleteQuestion {
+ 	required CommonQuestionInfo question_info = 1;
+
+ 	// add_text represents the text to display to prompt the user
+ 	// to add an answer option from the autocomplete API.
+ 	optional string add_text = 2;
+
+ 	// remove_button_text represents the text to display to indicate removing of
+ 	// an answer that was added.
+ 	optional string remove_button_text = 3;
+
+	// add_button_text represents the text to display when there are subquestions
+	// for an autocomplete question and the user is attempting to add
+	// an answer option with subanswers.
+ 	optional string add_button_text = 4;
+
+ 	// save_button_text represents the text to display when editing the
+ 	// subquestions pertaining to an autocomplete question.
+ 	optional string save_button_text = 5;
+
+ 	// placeholder_text represents the text to display when the searchbox
+ 	// is empty.
+ 	optional string placeholder_text = 6;
+
+ 	optional AutocompletePatientAnswer patient_answer = 7;
+ }
+
+// PhotoSectionQuestion represents a question for the user
+// to enter a variable number of groupings of photos
+// into photo slot definitions.
+ message PhotoSectionQuestion {
+
+ 	// PhotoSlot represents the information pertaining to a photo
+ 	// slot that the user is intended to fill.
+ 	message PhotoSlot {
+		enum FlashState {
+ 			OFF = 0;
+ 			ON =  1;
+ 			AUTO = 2;
+ 		}
+ 		enum TipStyle {
+ 			DEFAULT = 0;
+ 			POINT_LEFT = 1;
+ 			POINT_RIGHT = 2;
+ 		}
+ 		enum CameraDirection {
+ 			FRONT = 0;
+ 			BACK = 1;
+ 			FRONT_OR_PREVIOUS = 2;
+ 			BACK_OR_PREVIOUS = 3;
+ 		}
+
+		// name of the photo slot to be displayed to the user.
+		required string name = 1;
+
+		// is_required indicates whether or not photo_slot is required
+		// to be filled by user during photo intake for this question.
+ 		optional bool is_required = 2;
+
+ 		// tip is the information to display to the user while or prior to taking
+ 		// a picture for this photo slot.
+ 		optional string tip = 3;
+
+ 		// tip_subtext represents the secondary level of information to display to the user
+ 		// while or prior to taking a picture for this photo slot.
+ 		optional string tip_subtext = 4;
+
+ 		// tip_style represents the styling information for the tip.
+ 		optional TipStyle tip_style = 5 [default = DEFAULT];
+
+ 		// overlay_image_link represents the image to overlay on the camera view
+ 		// while the user is taking a picture to fill this photo slot.
+ 		optional string overlay_image_link = 6;
+
+ 		// photo_missing_error_msg represents the error to display to the user
+ 		// if the photo is missing for this specific slot.
+ 		optional string photo_missing_error_msg = 7;
+
+ 		// initial_camera_direction represents the direction in which to invoke
+ 		// the camera when the camera view is opened for intake pertaining to this slot.
+ 		optional CameraDirection initial_camera_direction = 8 [default = FRONT];
+
+ 		// flash_state represents the initial state of the flash when the
+ 		// camera view is opened for intake pertaining to this slot.
+ 		optional FlashState flash_state = 9 [default = AUTO];
+
+ 		// id represents the unique identifier for the photo slot.
+ 		required string id = 10;
+ 	}
+
+ 	required CommonQuestionInfo question_info = 1;
+ 	repeated PhotoSlot photo_slots = 2;
+
+ 	// allows_multiple_sections indicates whether or not the user is allowed to
+ 	// enter a variable number of sections of photos during intake for this photo
+ 	// section question.
+ 	optional bool allows_multiple_sections = 3;
+
+ 	// user_defined_section_title indicates whether or not the user is allowed
+ 	// to define the title of the section during photo intake.
+ 	optional bool user_defined_section_title = 4;
+
+ 	// disable_last_slot_duplication is a flag that indicates whether to disable or keep enabled
+ 	// duplication of the last photo slot in the photo section question.
+ 	optional bool disable_last_slot_duplication = 5;
+
+ 	optional PhotoSectionPatientAnswer patient_answer = 6;
+}
