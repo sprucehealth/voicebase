@@ -232,13 +232,13 @@ var organizationType = graphql.NewObject(
 			},
 			"patientInviteURL": &graphql.Field{
 				Type:    graphql.String,
-				Resolve: patientInviteLink(),
+				Resolve: patientInviteURL(),
 			},
 		},
 	},
 )
 
-func patientInviteLink() func(p graphql.ResolveParams) (interface{}, error) {
+func patientInviteURL() func(p graphql.ResolveParams) (interface{}, error) {
 	return func(p graphql.ResolveParams) (interface{}, error) {
 		org := p.Source.(*models.Organization)
 		ctx := p.Context

@@ -334,6 +334,7 @@ func (s *server) proccessInvite(
 		values := map[string]string{
 			"invite_token": token,
 			"client_data":  inviteClientDataStr,
+			"invite_type":  string(inviteType),
 		}
 		for k, v := range additionalValues {
 			values[k] = v
@@ -661,6 +662,7 @@ func (s *server) CreateOrganizationInvite(ctx context.Context, in *invite.Create
 		values := map[string]string{
 			"invite_token": token,
 			"client_data":  string(inviteClientDataJSON),
+			"invite_type":  string(models.OrganizationCodeInvite),
 		}
 		if s.webInviteURL != nil {
 			// Close the URL to avoid modifying the template
