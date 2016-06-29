@@ -67,7 +67,7 @@ func TestAssociateInviteMutation(t *testing.T) {
 	test.OK(t, err)
 	g.inviteC.Expect(mock.NewExpectation(g.inviteC.SetAttributionData, &invite.SetAttributionDataRequest{
 		DeviceID: "deviceID",
-		Values:   []*invite.AttributionValue{{Key: "foo", Value: "bar"}, {Key: "client_data", Value: cData}},
+		Values:   []*invite.AttributionValue{{Key: "foo", Value: "bar"}, {Key: "client_data", Value: cData}, {Key: "invite_type", Value: "COLLEAGUE"}},
 	}).WithReturns(&invite.SetAttributionDataResponse{}, nil))
 
 	res := g.query(ctx, `
@@ -103,6 +103,10 @@ func TestAssociateInviteMutation(t *testing.T) {
 				{
 					"key": "client_data",
 					"value": `+string(bCData)+`
+				},
+				{
+					"key": "invite_type",
+					"value": "COLLEAGUE"
 				}
 			]
 		}
