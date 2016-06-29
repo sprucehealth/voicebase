@@ -34,12 +34,22 @@ func EntityInOrgForAccountID(ctx context.Context, ram ResourceAccessor, req *dir
 
 // Entity returns a single expected entity for the directory request.
 func Entity(ctx context.Context, ram ResourceAccessor, req *directory.LookupEntitiesRequest) (*directory.Entity, error) {
+	return entity(ctx, ram, req)
+}
+
+// UnauthenticatedEntity returns a single expected entity for the directory request.
+func UnauthenticatedEntity(ctx context.Context, ram ResourceAccessor, req *directory.LookupEntitiesRequest) (*directory.Entity, error) {
+	return entity(ctx, ram, req, EntityQueryOptionUnathorized)
+}
+
+// Entity returns a single expected entity for the directory request.
+func entity(ctx context.Context, ram ResourceAccessor, req *directory.LookupEntitiesRequest, opts ...EntityQueryOption) (*directory.Entity, error) {
 
 	if req.LookupKeyType != directory.LookupEntitiesRequest_ENTITY_ID && req.LookupKeyType != directory.LookupEntitiesRequest_EXTERNAL_ID {
 		return nil, fmt.Errorf("Expected lookup of type %s but got %s", directory.LookupEntitiesRequest_ENTITY_ID, req.LookupKeyType)
 	}
 
-	entities, err := ram.Entities(ctx, req)
+	entities, err := ram.Entities(ctx, req, opts...)
 	if err != nil {
 		return nil, err
 	} else if len(entities) == 0 {
