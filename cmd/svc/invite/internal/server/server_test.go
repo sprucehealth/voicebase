@@ -6,13 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"google.golang.org/grpc/codes"
-
-	"golang.org/x/net/context"
-
 	"github.com/aws/aws-sdk-go/service/sns"
-	"github.com/sendgrid/sendgrid-go"
-	"github.com/sendgrid/smtpapi-go"
+	"github.com/sendgrid/sendgrid-go/helpers/mail"
 	"github.com/sprucehealth/backend/cmd/svc/invite/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/invite/internal/models"
 	branchmock "github.com/sprucehealth/backend/libs/branch/mock"
@@ -28,6 +23,8 @@ import (
 	excommsmock "github.com/sprucehealth/backend/svc/excomms/mock"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/invite/clientdata"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc/codes"
 )
 
 type sTokenGenerator struct{}
@@ -50,11 +47,9 @@ func init() {
 
 func TestAttribution(t *testing.T) {
 	dl := newMockDAL(t)
-	defer dl.Finish()
-
 	snsC := mock.NewSNSAPI(t)
-	defer snsC.Finish()
-	srv := New(dl, nil, nil, nil, snsC, nil, nil, "", "", "", "")
+	defer mock.FinishAll(dl, snsC)
+	srv := New(dl, nil, nil, nil, snsC, nil, nil, "", "", "", "", "")
 
 	values := []*invite.AttributionValue{
 		{Key: "abc", Value: "123"},
@@ -79,19 +74,18 @@ func TestAttribution(t *testing.T) {
 
 func TestInviteColleagues(t *testing.T) {
 	dl := newMockDAL(t)
-	defer dl.Finish()
 	dir := dirmock.New(t)
-	defer dir.Finish()
 	branch := branchmock.New(t)
-	defer branch.Finish()
-	sg := newSGMock(t)
-	defer sg.Finish()
-	clk := clock.NewManaged(time.Unix(10000000, 0))
 	snsC := mock.NewSNSAPI(t)
-	defer snsC.Finish()
 	excommsC := excommsmock.New(t)
-	defer excommsC.Finish()
-	srv := New(dl, clk, dir, excommsC, snsC, branch, sg, "from@example.com", "+1234567890", "eventsTopic", "https://app.sprucehealth.com/signup?some=other")
+	defer mock.FinishAll(dl, dir, branch, snsC, excommsC)
+	clk := clock.NewManaged(time.Unix(10000000, 0))
+	var sentMail *mail.SGMailV3
+	sg := func(m *mail.SGMailV3) error {
+		sentMail = m
+		return nil
+	}
+	srv := New(dl, clk, dir, excommsC, snsC, branch, sg, "from@example.com", "+1234567890", "eventsTopic", "https://app.sprucehealth.com/signup?some=other", "templateID")
 
 	// Lookup organization
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
@@ -149,22 +143,6 @@ func TestInviteColleagues(t *testing.T) {
 		Values:               values,
 	}).WithReturns(nil))
 
-	// Send invite email
-	sg.Expect(mock.NewExpectation(sg.Send, &sendgrid.SGMail{
-		To:      []string{"someone@example.com"},
-		Subject: fmt.Sprintf("Invite to join %s on Spruce", "Orgo"),
-		Text: fmt.Sprintf(
-			"Spruce is a communication and digital care app. By joining %s on Spruce, you'll be able to collaborate with colleagues around your patients' care, securely and efficiently.\n\nClick this link to get started:\n%s\n\nOnce you've created your account, you're all set to start catching up on the latest conversation.\n\nIf you have any troubles, we're here to help - simply reply to this email!\n\nThanks,\nThe Team at Spruce\n\nP.S.: Learn more about Spruce here: https://www.sprucehealth.com [%s]",
-			"Orgo", "https://example.com/invite", "simpleToken"),
-		From:     "from@example.com",
-		FromName: "Inviter",
-		SMTPAPIHeader: smtpapi.SMTPAPIHeader{
-			UniqueArgs: map[string]string{
-				"invite_token": "simpleToken",
-			},
-		},
-	}).WithReturns(nil))
-
 	eventData, err := events.MarshalEnvelope(events.Service_INVITE, &invite.Event{
 		Type: invite.Event_INVITED_COLLEAGUES,
 		Details: &invite.Event_InvitedColleagues{
@@ -189,23 +167,18 @@ func TestInviteColleagues(t *testing.T) {
 	})
 	test.OK(t, err)
 	test.Equals(t, &invite.InviteColleaguesResponse{}, ires)
+	test.AssertNotNil(t, sentMail)
 }
 
 func TestInvitePatients(t *testing.T) {
 	dl := newMockDAL(t)
-	defer dl.Finish()
 	dir := dirmock.New(t)
-	defer dir.Finish()
 	branch := branchmock.New(t)
-	defer branch.Finish()
-	sg := newSGMock(t)
-	defer sg.Finish()
-	clk := clock.NewManaged(time.Unix(10000000, 0))
 	snsC := mock.NewSNSAPI(t)
-	defer snsC.Finish()
 	excommsC := excommsmock.New(t)
-	defer excommsC.Finish()
-	srv := New(dl, clk, dir, excommsC, snsC, branch, sg, "from@example.com", "+1234567890", "eventsTopic", "https://app.sprucehealth.com/signup?some=other")
+	defer mock.FinishAll(dl, dir, branch, snsC, excommsC)
+	clk := clock.NewManaged(time.Unix(10000000, 0))
+	srv := New(dl, clk, dir, excommsC, snsC, branch, nil, "from@example.com", "+1234567890", "eventsTopic", "https://app.sprucehealth.com/signup?some=other", "")
 
 	// Lookup organization
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
@@ -315,19 +288,13 @@ func TestInvitePatients(t *testing.T) {
 
 func TestInvitePatientsNoFirstName(t *testing.T) {
 	dl := newMockDAL(t)
-	defer dl.Finish()
 	dir := dirmock.New(t)
-	defer dir.Finish()
 	branch := branchmock.New(t)
-	defer branch.Finish()
-	sg := newSGMock(t)
-	defer sg.Finish()
-	clk := clock.NewManaged(time.Unix(10000000, 0))
 	snsC := mock.NewSNSAPI(t)
-	defer snsC.Finish()
 	excommsC := excommsmock.New(t)
-	defer excommsC.Finish()
-	srv := New(dl, clk, dir, excommsC, snsC, branch, sg, "from@example.com", "+1234567890", "eventsTopic", "https://app.sprucehealth.com/signup?some=other")
+	defer mock.FinishAll(dl, dir, branch, snsC, excommsC)
+	clk := clock.NewManaged(time.Unix(10000000, 0))
+	srv := New(dl, clk, dir, excommsC, snsC, branch, nil, "from@example.com", "+1234567890", "eventsTopic", "https://app.sprucehealth.com/signup?some=other", "")
 
 	// Lookup organization
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
@@ -437,10 +404,9 @@ func TestInvitePatientsNoFirstName(t *testing.T) {
 
 func TestLookupInvite(t *testing.T) {
 	dl := newMockDAL(t)
-	defer dl.Finish()
 	snsC := mock.NewSNSAPI(t)
-	defer snsC.Finish()
-	srv := New(dl, nil, nil, nil, snsC, nil, nil, "", "", "", "")
+	defer mock.FinishAll(dl, snsC)
+	srv := New(dl, nil, nil, nil, snsC, nil, nil, "", "", "", "", "")
 
 	dl.Expect(mock.NewExpectation(dl.InviteForToken, "testtoken").WithReturns(
 		&models.Invite{
@@ -480,10 +446,9 @@ func TestLookupInvite(t *testing.T) {
 
 func TestMarkInviteConsumed(t *testing.T) {
 	dl := newMockDAL(t)
-	defer dl.Finish()
 	snsC := mock.NewSNSAPI(t)
-	defer snsC.Finish()
-	srv := New(dl, nil, nil, nil, snsC, nil, nil, "", "", "", "")
+	defer mock.FinishAll(dl, snsC)
+	srv := New(dl, nil, nil, nil, snsC, nil, nil, "", "", "", "", "")
 
 	dl.Expect(mock.NewExpectation(dl.DeleteInvite, "testtoken").WithReturns(nil))
 	res, err := srv.MarkInviteConsumed(nil, &invite.MarkInviteConsumedRequest{Token: "testtoken"})
@@ -549,7 +514,7 @@ func TestCreateOrganizationInvite(t *testing.T) {
 					},
 				}).WithReturns(&directory.LookupEntitiesResponse{
 					Entities: []*directory.Entity{
-						&directory.Entity{
+						{
 							Type: directory.EntityType_ORGANIZATION,
 							Info: &directory.EntityInfo{
 								DisplayName: "DisplayName",
@@ -591,7 +556,7 @@ func TestCreateOrganizationInvite(t *testing.T) {
 					},
 				}).WithReturns(&directory.LookupEntitiesResponse{
 					Entities: []*directory.Entity{
-						&directory.Entity{
+						{
 							Type: directory.EntityType_ORGANIZATION,
 							Info: &directory.EntityInfo{
 								DisplayName: "DisplayName",
@@ -628,7 +593,7 @@ func TestCreateOrganizationInvite(t *testing.T) {
 					},
 				}).WithReturns(&directory.LookupEntitiesResponse{
 					Entities: []*directory.Entity{
-						&directory.Entity{
+						{
 							Type: directory.EntityType_ORGANIZATION,
 							Info: &directory.EntityInfo{
 								DisplayName: "DisplayName",
@@ -700,7 +665,7 @@ func TestCreateOrganizationInvite(t *testing.T) {
 					},
 				}).WithReturns(&directory.LookupEntitiesResponse{
 					Entities: []*directory.Entity{
-						&directory.Entity{
+						{
 							Type: directory.EntityType_ORGANIZATION,
 							Info: &directory.EntityInfo{
 								DisplayName: "DisplayName",

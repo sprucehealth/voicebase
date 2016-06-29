@@ -6,16 +6,13 @@ import (
 	"fmt"
 	"io"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
-	"github.com/sendgrid/sendgrid-go"
-	"github.com/sendgrid/smtpapi-go"
+	"github.com/sendgrid/sendgrid-go/helpers/mail"
 	"github.com/sprucehealth/backend/cmd/svc/invite/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/invite/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
-	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/branch"
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/conc"
@@ -58,12 +55,12 @@ type complexTokenGen struct{}
 
 const phiAttributeText = "PROTECTED_PHI"
 
-func (t *complexTokenGen) GenerateToken() (string, error) {
+func (complexTokenGen) GenerateToken() (string, error) {
 	b := make([]byte, complexTokenLength)
 	if _, err := io.ReadFull(rand.Reader, b); err != nil {
 		return "", errors.Trace(err)
 	}
-	return strings.TrimRight(base64.URLEncoding.EncodeToString(b), "="), nil
+	return base64.RawURLEncoding.EncodeToString(b), nil
 }
 
 var simpleTokenGenerator common.TokenGenerator
@@ -73,7 +70,7 @@ const simpleTokenMaxValue = 999999
 
 type simpleTokenGen struct{}
 
-func (t *simpleTokenGen) GenerateToken() (string, error) {
+func (simpleTokenGen) GenerateToken() (string, error) {
 	code, err := common.GenerateRandomNumber(simpleTokenMaxValue, simpleTokenLength)
 	if err != nil {
 		return "", errors.Trace(err)
@@ -82,22 +79,26 @@ func (t *simpleTokenGen) GenerateToken() (string, error) {
 }
 
 func init() {
-	simpleTokenGenerator = &simpleTokenGen{}
-	complexTokenGenerator = &complexTokenGen{}
+	simpleTokenGenerator = simpleTokenGen{}
+	complexTokenGenerator = complexTokenGen{}
 }
 
+// SendMailFn is a function that knows how to send email
+type SendMailFn func(*mail.SGMailV3) error
+
 type server struct {
-	dal             dal.DAL
-	clk             clock.Clock
-	directoryClient directory.DirectoryClient
-	excommsClient   excomms.ExCommsClient
-	branch          branch.Client
-	sg              SendGridClient
-	fromEmail       string
-	fromNumber      string
-	eventsTopic     string
-	sns             snsiface.SNSAPI
-	webInviteURL    *url.URL
+	dal                       dal.DAL
+	clk                       clock.Clock
+	directoryClient           directory.DirectoryClient
+	excommsClient             excomms.ExCommsClient
+	branch                    branch.Client
+	sg                        SendMailFn
+	fromEmail                 string
+	fromNumber                string
+	eventsTopic               string
+	sns                       snsiface.SNSAPI
+	webInviteURL              *url.URL
+	colleagueInviteTemplateID string
 }
 
 type popover struct {
@@ -132,11 +133,6 @@ type patientInviteClientData struct {
 	PatientInvite patientInvite `json:"patient_invite"`
 }
 
-// SendGridClient is the interface implemented by SendGrid clients
-type SendGridClient interface {
-	Send(*sendgrid.SGMail) error
-}
-
 // New returns an initialized instance of the invite server
 func New(
 	dal dal.DAL,
@@ -145,8 +141,10 @@ func New(
 	excommsClient excomms.ExCommsClient,
 	snsC snsiface.SNSAPI,
 	branch branch.Client,
-	sg SendGridClient,
-	fromEmail, fromNumber, eventsTopic, webInviteURL string) invite.InviteServer {
+	sg SendMailFn,
+	fromEmail, fromNumber, eventsTopic, webInviteURL string,
+	colleagueInviteTemplateID string,
+) invite.InviteServer {
 	if clk == nil {
 		clk = clock.New()
 	}
@@ -159,17 +157,18 @@ func New(
 		}
 	}
 	return &server{
-		dal:             dal,
-		clk:             clk,
-		directoryClient: directoryClient,
-		excommsClient:   excommsClient,
-		sns:             snsC,
-		branch:          branch,
-		sg:              sg,
-		fromEmail:       fromEmail,
-		fromNumber:      fromNumber,
-		eventsTopic:     eventsTopic,
-		webInviteURL:    webURL,
+		dal:                       dal,
+		clk:                       clk,
+		directoryClient:           directoryClient,
+		excommsClient:             excommsClient,
+		sns:                       snsC,
+		branch:                    branch,
+		sg:                        sg,
+		fromEmail:                 fromEmail,
+		fromNumber:                fromNumber,
+		eventsTopic:               eventsTopic,
+		webInviteURL:              webURL,
+		colleagueInviteTemplateID: colleagueInviteTemplateID,
 	}
 }
 
@@ -401,32 +400,20 @@ func (s *server) proccessInvite(
 }
 
 func (s *server) sendColleagueOutbound(ctx context.Context, email, inviteURL, token string, org, inviter *directory.Entity) error {
-	mail := &sendgrid.SGMail{
-		To:      []string{email},
-		Subject: fmt.Sprintf("Invite to join %s on Spruce", org.Info.DisplayName),
-		// NOTE: Before we support entering the invite code from the client, it's presence in the email can be used for support debugging
-		Text: fmt.Sprintf(
-			"Spruce is a communication and digital care app. By joining %s on Spruce, you'll be able to collaborate with colleagues around your patients' care, securely and efficiently.\n\nClick this link to get started:\n%s\n\nOnce you've created your account, you're all set to start catching up on the latest conversation.\n\nIf you have any troubles, we're here to help - simply reply to this email!\n\nThanks,\nThe Team at Spruce\n\nP.S.: Learn more about Spruce here: https://www.sprucehealth.com",
-			org.Info.DisplayName, inviteURL),
-		From:     s.fromEmail,
-		FromName: inviter.Info.DisplayName,
-		SMTPAPIHeader: smtpapi.SMTPAPIHeader{
-			UniqueArgs: map[string]string{
-				"invite_token": token,
-			},
-		},
+	m := mail.NewV3MailInit(
+		mail.NewEmail("Spruce", s.fromEmail), " ",
+		mail.NewEmail("", email),
+		mail.NewContent("text/plain", " ")) // single character body and subject as they're required even though unused in the template
+	m.Content = append(m.Content, mail.NewContent("text/html", " "))
+	m.Personalizations[0].Substitutions = map[string]string{
+		"{orgname}":     org.Info.DisplayName,
+		"{inviteurl}":   inviteURL,
+		"{invitername}": inviter.Info.DisplayName,
+		"{invitecode}":  token,
 	}
-
-	if !environment.IsProd() {
-		mail.Text += fmt.Sprintf(" [%s]", token)
-	}
-
-	// TODO: use a template
-	err := s.sg.Send(mail)
-	if err != nil {
-		golog.Errorf("Failed to send invite %s email to %s: %s", token, email, err)
-	}
-	return errors.Trace(err)
+	m.SetTemplateID(s.colleagueInviteTemplateID)
+	m.Headers = map[string]string{"X-Invite-Token": token}
+	return errors.Trace(s.sg(m))
 }
 
 func (s *server) sendPatientOutbound(ctx context.Context, firstName, phoneNumber, inviteURL, token string, org, inviter *directory.Entity) error {

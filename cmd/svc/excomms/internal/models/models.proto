@@ -33,6 +33,12 @@ message EmailMessage {
 	string to_name = 6;
 	string to_email = 7;
 	repeated string media_urls = 8 [(gogoproto.customname) = "MediaURLs"];
+	string template_id = 9 [(gogoproto.customname) = "TemplateID"];
+	message Substitution {
+		string key = 1;
+		string value = 2;
+	}
+	repeated Substitution template_substitutions = 10;
 }
 
 message SMSMessage {

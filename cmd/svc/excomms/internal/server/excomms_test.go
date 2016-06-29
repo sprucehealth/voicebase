@@ -576,13 +576,14 @@ func TestSendMessage_Email(t *testing.T) {
 		Body: ioutil.NopCloser(nil),
 	}, nil))
 	em := &models.EmailMessage{
-		ID:        "1",
-		Subject:   "Hi",
-		Body:      "Hello",
-		FromName:  "Joe Schmoe",
-		FromEmail: "joe@schmoe.com",
-		ToEmail:   "patient@example.com",
-		MediaURLs: []string{resizedURL1, resizedURL2},
+		ID:                    "1",
+		Subject:               "Hi",
+		Body:                  "Hello",
+		FromName:              "Joe Schmoe",
+		FromEmail:             "joe@schmoe.com",
+		ToEmail:               "patient@example.com",
+		MediaURLs:             []string{resizedURL1, resizedURL2},
+		TemplateSubstitutions: []*models.EmailMessage_Substitution{},
 	}
 	me.Expect(mock.NewExpectation(me.SendMessage, em))
 

@@ -58,6 +58,10 @@ var (
 	flagBehindProxy         = flag.Bool("behind_proxy", false, "Flag to indicate when the service is behind a proxy")
 	flagLayoutStoreS3Prefix = flag.String("s3_prefix_saml", "", "S3 Prefix for layouts")
 
+	// Email tempaltes
+	flagPasswordResetTemplateID     = flag.String("password_reset_template_id", "", "ID of password reset template")
+	flagEmailVerificationTemplateID = flag.String("email_verification_template_id", "", "ID of email verification template")
+
 	// Services
 	flagAuthAddr      = flag.String("auth_addr", "", "host:port of auth service")
 	flagDirectoryAddr = flag.String("directory_addr", "", "host:port of directory service")
@@ -302,6 +306,10 @@ func main() {
 		segmentClient,
 		eSNS,
 		*flagSupportMessageTopicARN,
+		emailTemplateIDs{
+			passwordReset:     *flagPasswordResetTemplateID,
+			emailVerification: *flagEmailVerificationTemplateID,
+		},
 		svc.MetricsRegistry.Scope("handler"))
 	r.Handle("/graphql", httputil.ToContextHandler(cors.New(cors.Options{
 		AllowedOrigins:   corsOrigins,

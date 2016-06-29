@@ -136,6 +136,7 @@ func NewGraphQL(
 	segmentClient *analytics.Client,
 	sns snsiface.SNSAPI,
 	supportMessageTopicARN string,
+	emailTemplateIDs emailTemplateIDs,
 	metricsRegistry metrics.Registry,
 ) httputil.ContextHandler {
 	statRequests := metrics.NewCounter()
@@ -168,6 +169,7 @@ func NewGraphQL(
 			sns:             sns,
 			supportMessageTopicARN: supportMessageTopicARN,
 			layoutStore:            layoutStore,
+			emailTemplateIDs:       emailTemplateIDs,
 		},
 		statRequests:           statRequests,
 		statResponseErrors:     statResponseErrors,
