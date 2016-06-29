@@ -251,7 +251,7 @@ var associateInviteMutation = &graphql.Field{
 			},
 		})
 		if err != nil {
-			return nil, errors.InternalError(ctx, fmt.Errorf("Error while looking up org for device association: %s", err))
+			return nil, errors.InternalError(ctx, fmt.Errorf("Error while looking up org %q for device association: %s", orgID, err))
 		}
 
 		var clientData string
