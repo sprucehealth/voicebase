@@ -631,9 +631,7 @@ func (s *server) CreateOrganizationInvite(ctx context.Context, in *invite.Create
 
 	// Lookup org to get name
 	org, err := s.getOrg(ctx, in.OrganizationEntityID)
-	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, "Org %s Not Found", in.OrganizationEntityID)
-	} else if err != nil {
+	if err != nil {
 		return nil, grpcError(err)
 	}
 
@@ -661,7 +659,7 @@ func (s *server) CreateOrganizationInvite(ctx context.Context, in *invite.Create
 		}
 		values := map[string]string{
 			"invite_token": token,
-			"client_data":  string(inviteClientDataJSON),
+			"client_data":  inviteClientDataJSON,
 			"invite_type":  string(models.OrganizationCodeInvite),
 		}
 		if s.webInviteURL != nil {

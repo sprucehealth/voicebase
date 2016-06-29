@@ -61,13 +61,12 @@ func (c *enableOrgCodeCmd) run(args []string) error {
 		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: *entityID,
 		},
+		RootTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
 	})
 	if err != nil {
 		return err
 	} else if len(resp.Entities) != 1 {
 		return fmt.Errorf("Expected 1 entity but for %v", resp.Entities)
-	} else if resp.Entities[0].Type != directory.EntityType_ORGANIZATION {
-		return fmt.Errorf("Expected organization entity but got  %v", resp.Entities[0])
 	}
 
 	if _, err := c.settingsCli.SetValue(ctx, &settings.SetValueRequest{
@@ -94,6 +93,6 @@ func (c *enableOrgCodeCmd) run(args []string) error {
 		return err
 	}
 
-	fmt.Println("Organization Code: ", cResp.Organization.Token)
+	fmt.Printf("Organization Link: https://invite.sprucehealth.com/%s\n", cResp.Organization.Token)
 	return nil
 }

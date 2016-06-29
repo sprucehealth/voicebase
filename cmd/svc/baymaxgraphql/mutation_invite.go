@@ -244,7 +244,7 @@ var associateInviteMutation = &graphql.Field{
 			return nil, errors.InternalError(ctx, fmt.Errorf("Unknown invite type %s", res.Type))
 		}
 
-		org, err := raccess.UnauthenticatedEntity(ctx, ram, &directory.LookupEntitiesRequest{
+		org, err := raccess.UnauthorizedEntity(ctx, ram, &directory.LookupEntitiesRequest{
 			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
 			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
 				EntityID: orgID,

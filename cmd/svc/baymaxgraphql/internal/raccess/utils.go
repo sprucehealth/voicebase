@@ -37,8 +37,8 @@ func Entity(ctx context.Context, ram ResourceAccessor, req *directory.LookupEnti
 	return entity(ctx, ram, req)
 }
 
-// UnauthenticatedEntity returns a single expected entity for the directory request.
-func UnauthenticatedEntity(ctx context.Context, ram ResourceAccessor, req *directory.LookupEntitiesRequest) (*directory.Entity, error) {
+// UnauthorizedEntity returns a single expected entity for the directory request.
+func UnauthorizedEntity(ctx context.Context, ram ResourceAccessor, req *directory.LookupEntitiesRequest) (*directory.Entity, error) {
 	return entity(ctx, ram, req, EntityQueryOptionUnathorized)
 }
 
