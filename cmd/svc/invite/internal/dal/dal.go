@@ -138,6 +138,10 @@ func (d *dal) InsertInvite(ctx context.Context, invite *models.Invite) error {
 		return errors.Errorf("Type required")
 	}
 	item[typeKey] = &dynamodb.AttributeValue{S: ptr.String(string(invite.Type))}
+	if invite.OrganizationEntityID == "" {
+		return errors.Errorf("OrganizationEntityID required")
+	}
+	item[organizationEntityIDKey] = &dynamodb.AttributeValue{S: &invite.OrganizationEntityID}
 	switch invite.Type {
 	case models.ColleagueInvite, models.PatientInvite:
 		if invite.Type == models.PatientInvite {
@@ -158,11 +162,6 @@ func (d *dal) InsertInvite(ctx context.Context, invite *models.Invite) error {
 			return errors.Errorf("PhoneNumber required")
 		}
 		item[phoneNumberKey] = &dynamodb.AttributeValue{S: &invite.PhoneNumber}
-	case models.OrganizationCodeInvite:
-		if invite.OrganizationEntityID == "" {
-			return errors.Errorf("OrganizationEntityID required")
-		}
-		item[organizationEntityIDKey] = &dynamodb.AttributeValue{S: &invite.OrganizationEntityID}
 	}
 	if invite.URL == "" {
 		return errors.Errorf("URL required")
