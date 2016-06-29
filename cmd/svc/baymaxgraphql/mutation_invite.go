@@ -283,15 +283,24 @@ var associateInviteMutation = &graphql.Field{
 		default:
 			return nil, errors.InternalError(ctx, fmt.Errorf("Unknown invite type %s", res.Type))
 		}
-		var found bool
+		// Be backwards compatible with client data and type population
+		var foundClientData bool
+		var foundType bool
 		for _, v := range res.Values {
-			if v.Key == "client_data" {
-				found = true
+			switch v.Key {
+			case "client_data":
+				foundClientData = true
 				v.Value = clientData
+			case "invite_type":
+				foundType = true
+				v.Value = res.Type.String()
 			}
 		}
-		if !found {
+		if !foundClientData {
 			res.Values = append(res.Values, &invite.AttributionValue{Key: "client_data", Value: clientData})
+		}
+		if !foundType {
+			res.Values = append(res.Values, &invite.AttributionValue{Key: "invite_type", Value: res.Type.String()})
 		}
 
 		if _, err := svc.invite.SetAttributionData(ctx, &invite.SetAttributionDataRequest{
