@@ -107,6 +107,12 @@ message EmailMessage {
 	string to_name = 5;
 	string to_email_address = 6;
 	repeated string MediaIDs = 7 [(gogoproto.customname) = "MediaIDs"];
+	string template_id = 8 [(gogoproto.customname) = "TemplateID"];
+	message Substitution {
+		string key = 1;
+		string value = 2;
+	}
+	repeated Substitution template_substitutions = 9;
 }
 
 message SMSMessage {

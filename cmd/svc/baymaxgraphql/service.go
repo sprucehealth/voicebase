@@ -38,9 +38,15 @@ type service struct {
 	segmentio              *segmentIOWrapper
 	sns                    snsiface.SNSAPI
 	supportMessageTopicARN string
+	emailTemplateIDs       emailTemplateIDs
 	// TODO: Remove this
 	serviceNumber phone.Number
 	layoutStore   layout.Storage
+}
+
+type emailTemplateIDs struct {
+	passwordReset     string
+	emailVerification string
 }
 
 func hydrateThreads(ctx context.Context, ram raccess.ResourceAccessor, threads []*models.Thread) error {
