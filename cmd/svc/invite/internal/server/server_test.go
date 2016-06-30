@@ -213,7 +213,7 @@ func TestInvitePatients(t *testing.T) {
 	// Generate branch URL
 	values := map[string]string{
 		"invite_token": "simpleToken",
-		"client_data":  `{"patient_invite":{"greeting":{"title":"Welcome Alfred!","message":"Let's create your account so you can start securely messaging with Batman Inc.","photo_url":"","button_text":"Get Started"},"org_id":"org","org_name":"Batman Inc"}}`,
+		"client_data":  `{"patient_invite":{"greeting":{"title":"Welcome, Alfred!","message":"Let's create your account so you can start securely messaging with Batman Inc.","photo_url":"","button_text":"Get Started"},"org_id":"org","org_name":"Batman Inc"}}`,
 		"$desktop_url": "https://app.sprucehealth.com/signup?invite=simpleToken&some=other",
 		"invite_type":  "PATIENT",
 	}
@@ -609,7 +609,7 @@ func TestCreateOrganizationInvite(t *testing.T) {
 					Info: &directory.EntityInfo{
 						DisplayName: "DisplayName",
 					},
-				}, "", "")
+				}, "", "", invite.LookupInviteResponse_ORGANIZATION_CODE)
 				test.OK(t, err)
 				// Retry 5 times
 				mb.Expect(mock.NewExpectation(mb.URL, map[string]interface{}{
@@ -681,7 +681,7 @@ func TestCreateOrganizationInvite(t *testing.T) {
 					Info: &directory.EntityInfo{
 						DisplayName: "DisplayName",
 					},
-				}, "", "")
+				}, "", "", invite.LookupInviteResponse_ORGANIZATION_CODE)
 				test.OK(t, err)
 				// Retry 5 times
 				mb.Expect(mock.NewExpectation(mb.URL, map[string]interface{}{

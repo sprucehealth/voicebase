@@ -6,6 +6,7 @@ import (
 
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/media"
 )
 
@@ -44,10 +45,13 @@ type PatientInviteClientData struct {
 }
 
 // PatientInviteClientJSON creates the invite client JSON required for patient invites
-func PatientInviteClientJSON(org *directory.Entity, firstName, mediaAPIDomain string) (string, error) {
+func PatientInviteClientJSON(org *directory.Entity, firstName, mediaAPIDomain string, inviteType invite.LookupInviteResponse_Type) (string, error) {
 	welcomeText := "Welcome!"
 	if firstName != "" {
-		welcomeText = fmt.Sprintf("Welcome %s!", firstName)
+		welcomeText = fmt.Sprintf("Welcome, %s!", firstName)
+	}
+	if inviteType == invite.LookupInviteResponse_ORGANIZATION_CODE {
+		welcomeText = fmt.Sprintf("You're Joining %s", org.Info.DisplayName)
 	}
 	pcd := PatientInviteClientData{
 		PatientInvite: PatientInvite{

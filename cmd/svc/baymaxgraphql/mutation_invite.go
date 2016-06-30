@@ -257,12 +257,12 @@ var associateInviteMutation = &graphql.Field{
 		var clientData string
 		switch res.Type {
 		case invite.LookupInviteResponse_PATIENT:
-			clientData, err = clientdata.PatientInviteClientJSON(org, res.GetPatient().Patient.FirstName, svc.mediaAPIDomain)
+			clientData, err = clientdata.PatientInviteClientJSON(org, res.GetPatient().Patient.FirstName, svc.mediaAPIDomain, res.Type)
 			if err != nil {
 				golog.Errorf("Error while generating client data for invite to org %s: %s", org.ID, err)
 			}
 		case invite.LookupInviteResponse_ORGANIZATION_CODE:
-			clientData, err = clientdata.PatientInviteClientJSON(org, "", svc.mediaAPIDomain)
+			clientData, err = clientdata.PatientInviteClientJSON(org, "", svc.mediaAPIDomain, res.Type)
 			if err != nil {
 				golog.Errorf("Error while generating client data for invite to org %s: %s", org.ID, err)
 			}
