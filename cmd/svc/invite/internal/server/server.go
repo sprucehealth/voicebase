@@ -395,7 +395,7 @@ func (s *server) proccessInvite(
 	default:
 		golog.Errorf("Unknown invite type %s. No outbound message sent.", inviteType)
 	}
-
+	golog.Debugf("Invite of type %s created for token %s", inviteType, token)
 	return nil
 }
 

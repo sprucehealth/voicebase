@@ -272,7 +272,7 @@ var associateInviteMutation = &graphql.Field{
 				golog.Errorf("Error while generating client data for invite to org %s: %s", org.ID, err)
 			}
 		case invite.LookupInviteResponse_COLLEAGUE:
-			inviter, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+			inviter, err := raccess.UnauthorizedEntity(ctx, ram, &directory.LookupEntitiesRequest{
 				LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
 				LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
 					EntityID: res.GetColleague().InviterEntityID,
