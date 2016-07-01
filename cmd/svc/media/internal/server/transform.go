@@ -35,5 +35,6 @@ func (s *server) transformMediaToResponse(m *dal.Media) (*media.MediaInfo, error
 			Type:    t.Type,
 			Subtype: t.Subtype,
 		},
+		Public: m.Public,
 	}, nil
 }

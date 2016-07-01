@@ -55,6 +55,8 @@ func (s *server) MediaInfos(ctx context.Context, rd *media.MediaInfosRequest) (*
 	m, err := s.dl.Medias(ids)
 	if err != nil {
 		return nil, grpcErrorf(codes.Internal, err.Error())
+	} else if len(m) == 0 {
+		return nil, grpcErrorf(codes.NotFound, "No matches found for provided media ids %v", rd.MediaIDs)
 	}
 	rms, err := s.transformMediasToResponse(m)
 	if err != nil {
@@ -93,4 +95,28 @@ func (s *server) ClaimMedia(ctx context.Context, rd *media.ClaimMediaRequest) (*
 		return nil, grpcError(err)
 	}
 	return &media.ClaimMediaResponse{}, nil
+}
+
+func (s *server) UpdateMedia(ctx context.Context, rd *media.UpdateMediaRequest) (*media.UpdateMediaResponse, error) {
+	mediaID, err := dal.ParseMediaID(rd.MediaID)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
+	}
+	if _, err := s.dl.UpdateMedia(mediaID, &dal.MediaUpdate{
+		Public: ptr.Bool(rd.Public),
+	}); err != nil {
+		return nil, grpcError(err)
+	}
+	resp, err := s.MediaInfos(ctx, &media.MediaInfosRequest{
+		MediaIDs: []string{rd.MediaID},
+	})
+	if err != nil {
+		return nil, grpcError(err)
+	}
+	if _, ok := resp.MediaInfos[rd.MediaID]; !ok {
+		return nil, grpcErrorf(codes.NotFound, "Expected media info to be returned for media id %s but got %+v", rd.MediaID, resp.MediaInfos)
+	}
+	return &media.UpdateMediaResponse{
+		MediaInfo: resp.MediaInfos[rd.MediaID],
+	}, nil
 }

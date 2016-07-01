@@ -19,11 +19,10 @@ type authorizationHandler struct {
 	h           httputil.ContextHandler
 }
 
-func authorizationRequired(h httputil.ContextHandler, svc service.Service, idParamName string) httputil.ContextHandler {
+func authorizationRequired(h httputil.ContextHandler, svc service.Service) httputil.ContextHandler {
 	return &authorizationHandler{
-		idParamName: idParamName,
-		svc:         svc,
-		h:           h,
+		svc: svc,
+		h:   h,
 	}
 }
 
@@ -34,7 +33,7 @@ func (h *authorizationHandler) ServeHTTP(ctx context.Context, w http.ResponseWri
 			internalError(w, err)
 			return
 		}
-		mediaID, err := dal.ParseMediaID(mux.Vars(ctx)[h.idParamName])
+		mediaID, err := dal.ParseMediaID(mux.Vars(ctx)[idParamName])
 		if err != nil {
 			badRequest(w, errors.New("Cannot parse media id"), http.StatusBadRequest)
 			return

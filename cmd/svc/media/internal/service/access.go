@@ -20,6 +20,10 @@ func (s *service) CanAccess(ctx context.Context, mediaID dal.MediaID, accountID 
 	} else if err != nil {
 		return err
 	}
+	// If it's public media then allow
+	if media.Public {
+		return nil
+	}
 	switch media.OwnerType {
 	case dal.MediaOwnerTypeAccount:
 		if media.OwnerID != accountID {
@@ -36,6 +40,17 @@ func (s *service) CanAccess(ctx context.Context, mediaID dal.MediaID, accountID 
 		return s.canAccessVisitMedia(ctx, media.OwnerID, accountID)
 	}
 	return fmt.Errorf("Unsupported Media Owner Type: %s", media.OwnerType)
+}
+
+func (s *service) IsPublic(ctx context.Context, mediaID dal.MediaID) (bool, error) {
+	media, err := s.dal.Media(mediaID)
+	if errors.Cause(err) == dal.ErrNotFound {
+		// For legacy media we don't have info for, allow access, rely just on auth for now
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+	return media.Public, nil
 }
 
 func (s *service) entitiesForAccountID(ctx context.Context, accountID string) ([]*directory.Entity, error) {

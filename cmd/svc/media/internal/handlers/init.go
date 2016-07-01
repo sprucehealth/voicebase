@@ -18,6 +18,7 @@ import (
 
 const (
 	authTokenCookieName = "at"
+	idParamName         = "id"
 )
 
 // InitRoutes registers the media service handlers on the provided mux
@@ -49,20 +50,20 @@ func InitRoutes(
 		AllowedMethods:   []string{httputil.Options, httputil.Post},
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"*"},
-	}).ContextHandler(authenticationRequired(mHandler, authClient, urlSigner)))
+	}).ContextHandler(authenticationRequired(mHandler, authClient, urlSigner, svc)))
 	r.Handle("/media/{id:"+media.IDRegexPattern+"}", cors.New(cors.Options{
 		AllowedOrigins:   corsOrigins,
 		AllowedMethods:   []string{httputil.Get, httputil.Options},
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"*"},
-	}).ContextHandler(authenticationRequired(authorizationRequired(mHandler, svc, "id"), authClient, urlSigner)))
+	}).ContextHandler(authenticationRequired(authorizationRequired(mHandler, svc), authClient, urlSigner, svc)))
 
 	r.Handle("/media/{id:"+media.IDRegexPattern+"}/thumbnail", cors.New(cors.Options{
 		AllowedOrigins:   corsOrigins,
 		AllowedMethods:   []string{httputil.Get, httputil.Options},
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"*"},
-	}).ContextHandler(authenticationRequired(authorizationRequired(&thumbnailHandler{svc: svc}, svc, "id"), authClient, urlSigner)))
+	}).ContextHandler(authenticationRequired(authorizationRequired(&thumbnailHandler{svc: svc}, svc), authClient, urlSigner, svc)))
 }
 
 func initService(

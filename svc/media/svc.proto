@@ -32,6 +32,7 @@ message MediaInfo {
 	uint64 size_bytes = 6;
 	uint64 duration_ns = 7 [(gogoproto.customname) = "DurationNS"];
 	MIME mime = 8 [(gogoproto.customname) = "MIME"];
+	bool public = 9;
 }
 
 message MediaInfosRequest {
@@ -50,7 +51,17 @@ message ClaimMediaRequest {
 
 message ClaimMediaResponse {}
 
+message UpdateMediaRequest {
+	string media_id = 1 [(gogoproto.customname) = "MediaID"];
+	bool public = 2;
+}
+
+message UpdateMediaResponse {
+	MediaInfo media_info = 1;
+}
+
 service Media {
 	rpc ClaimMedia (ClaimMediaRequest) returns (ClaimMediaResponse);
 	rpc MediaInfos (MediaInfosRequest) returns (MediaInfosResponse);
+	rpc UpdateMedia (UpdateMediaRequest) returns (UpdateMediaResponse);
 }

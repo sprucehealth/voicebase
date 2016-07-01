@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/sprucehealth/backend/cmd/svc/media/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/mediactx"
+	"github.com/sprucehealth/backend/cmd/svc/media/internal/service"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/urlutil"
 	"github.com/sprucehealth/backend/svc/auth"
 	"golang.org/x/net/context"
@@ -16,18 +19,38 @@ import (
 type authHandler struct {
 	auth   auth.AuthClient
 	signer *urlutil.Signer
+	svc    service.Service
 	h      httputil.ContextHandler
 }
 
-func authenticationRequired(h httputil.ContextHandler, auth auth.AuthClient, signer *urlutil.Signer) httputil.ContextHandler {
+func authenticationRequired(h httputil.ContextHandler, auth auth.AuthClient, signer *urlutil.Signer, svc service.Service) httputil.ContextHandler {
 	return &authHandler{
 		auth:   auth,
 		signer: signer,
+		svc:    svc,
 		h:      h,
 	}
 }
 
 func (h *authHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	// Check to see if this is public media. If so se tthe appropriate flags and pass through
+	mediaID, err := dal.ParseMediaID(mux.Vars(ctx)[idParamName])
+	if err != nil {
+		badRequest(w, errors.New("Cannot parse media id"), http.StatusBadRequest)
+		return
+	}
+	public, err := h.svc.IsPublic(ctx, mediaID)
+	if errors.Cause(err) == dal.ErrNotFound {
+		http.Error(w, "Not Found", http.StatusNotFound)
+	} else if err != nil {
+		internalError(w, err)
+	}
+	if public {
+		ctx = mediactx.WithRequiresAuthorization(ctx, false)
+		h.h.ServeHTTP(ctx, w, r)
+		return
+	}
+
 	// Check to see if the url is signed. If it is use that as auth and flag it as not requiring authorization, else follow the normal flow
 	sig := r.URL.Query().Get(urlutil.SigParamName)
 	if sig != "" && (r.Method == httputil.Get || r.Method == httputil.Head) {

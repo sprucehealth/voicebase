@@ -142,6 +142,7 @@ type ResourceAccessor interface {
 	UpdateContacts(ctx context.Context, req *directory.UpdateContactsRequest) (*directory.Entity, error)
 	UpdateEntity(ctx context.Context, req *directory.UpdateEntityRequest) (*directory.Entity, error)
 	UpdateIPCall(ctx context.Context, req *excomms.UpdateIPCallRequest) (*excomms.UpdateIPCallResponse, error)
+	UpdateMedia(ctx context.Context, req *media.UpdateMediaRequest) (*media.MediaInfo, error)
 	UpdatePassword(ctx context.Context, token, code, newPassword string) error
 	UpdateProfile(ctx context.Context, req *directory.UpdateProfileRequest) (*directory.UpdateProfileResponse, error)
 	UpdateThread(ctx context.Context, req *threading.UpdateThreadRequest) (*threading.UpdateThreadResponse, error)
@@ -614,6 +615,14 @@ func (m *resourceAccessor) MediaInfo(ctx context.Context, mediaID string) (*medi
 		return nil, ErrNotFound
 	}
 	return info, nil
+}
+
+func (m *resourceAccessor) UpdateMedia(ctx context.Context, req *media.UpdateMediaRequest) (*media.MediaInfo, error) {
+	resp, err := m.media.UpdateMedia(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return resp.MediaInfo, nil
 }
 
 func (m *resourceAccessor) OnboardingThreadEvent(ctx context.Context, req *threading.OnboardingThreadEventRequest) (*threading.OnboardingThreadEventResponse, error) {

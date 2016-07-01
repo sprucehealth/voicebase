@@ -603,6 +603,34 @@ func TestCanAccess(t *testing.T) {
 			accountID: "accountID",
 			expected:  nil,
 		},
+		"Success-PublicMedia": {
+			tservice: func() *tservice {
+				md := mock_directory.New(t)
+				mt := mock_threads.New(t)
+				mv := mock_care.New(t)
+				mdl := mock_dl.New(t)
+
+				mdl.Expect(mock.NewExpectation(mdl.Media, dal.MediaID("mediaID")).WithReturns(
+					&dal.Media{
+						OwnerType: dal.MediaOwnerTypeVisit,
+						OwnerID:   "visitID",
+						Public:    true,
+					}, nil))
+
+				return &tservice{
+					service: &service{
+						directory: md,
+						threads:   mt,
+						care:      mv,
+						dal:       mdl,
+					},
+					finish: []mock.Finisher{md, mt, mdl},
+				}
+			}(),
+			mediaID:   "mediaID",
+			accountID: "accountID",
+			expected:  nil,
+		},
 	}
 
 	for cn, c := range cases {

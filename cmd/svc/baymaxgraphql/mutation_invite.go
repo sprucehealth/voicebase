@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/invite/clientdata"
+	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/graphql"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -233,10 +234,13 @@ var associateInviteMutation = &graphql.Field{
 		}
 
 		var orgID string
+		var firstName string
 		switch res.Type {
 		case invite.LookupInviteResponse_PATIENT:
+			firstName = res.GetPatient().Patient.FirstName
 			orgID = res.GetPatient().OrganizationEntityID
 		case invite.LookupInviteResponse_COLLEAGUE:
+			firstName = res.GetColleague().Colleague.FirstName
 			orgID = res.GetColleague().OrganizationEntityID
 		case invite.LookupInviteResponse_ORGANIZATION_CODE:
 			orgID = res.GetOrganization().OrganizationEntityID
@@ -256,13 +260,14 @@ var associateInviteMutation = &graphql.Field{
 
 		var clientData string
 		switch res.Type {
-		case invite.LookupInviteResponse_PATIENT:
-			clientData, err = clientdata.PatientInviteClientJSON(org, res.GetPatient().Patient.FirstName, svc.mediaAPIDomain, res.Type)
-			if err != nil {
-				golog.Errorf("Error while generating client data for invite to org %s: %s", org.ID, err)
+		case invite.LookupInviteResponse_PATIENT, invite.LookupInviteResponse_ORGANIZATION_CODE:
+			if org.ImageMediaID != "" {
+				ram.UpdateMedia(ctx, &media.UpdateMediaRequest{
+					MediaID: org.ImageMediaID,
+					Public:  true,
+				})
 			}
-		case invite.LookupInviteResponse_ORGANIZATION_CODE:
-			clientData, err = clientdata.PatientInviteClientJSON(org, "", svc.mediaAPIDomain, res.Type)
+			clientData, err = clientdata.PatientInviteClientJSON(org, firstName, svc.mediaAPIDomain, res.Type)
 			if err != nil {
 				golog.Errorf("Error while generating client data for invite to org %s: %s", org.ID, err)
 			}
@@ -276,7 +281,7 @@ var associateInviteMutation = &graphql.Field{
 			if err != nil {
 				return nil, errors.InternalError(ctx, fmt.Errorf("Error while looking up inviter %s for device association: %s", res.GetColleague().InviterEntityID, err))
 			}
-			clientData, err = clientdata.ColleagueInviteClientJSON(org, inviter, res.GetColleague().Colleague.FirstName, svc.mediaAPIDomain)
+			clientData, err = clientdata.ColleagueInviteClientJSON(org, inviter, firstName, svc.mediaAPIDomain)
 			if err != nil {
 				golog.Errorf("Error while generating client data for invite to org %s: %s", org.ID, err)
 			}

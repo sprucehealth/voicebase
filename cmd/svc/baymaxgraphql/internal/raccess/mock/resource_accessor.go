@@ -291,6 +291,15 @@ func (m *ResourceAccessor) MediaInfo(ctx context.Context, mediaID string) (*medi
 	return rets[0].(*media.MediaInfo), mock.SafeError(rets[1])
 }
 
+func (m *ResourceAccessor) UpdateMedia(ctx context.Context, req *media.UpdateMediaRequest) (*media.MediaInfo, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].(*media.MediaInfo), mock.SafeError(rets[1])
+}
+
 func (m *ResourceAccessor) OnboardingThreadEvent(ctx context.Context, req *threading.OnboardingThreadEventRequest) (*threading.OnboardingThreadEventResponse, error) {
 	rets := m.Record(req)
 	if len(rets) == 0 {

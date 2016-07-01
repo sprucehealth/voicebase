@@ -24,6 +24,7 @@ type Service interface {
 	ExpiringURL(ctx context.Context, mediaID dal.MediaID, exp time.Duration) (string, error)
 	GetReader(ctx context.Context, mediaID dal.MediaID) (io.ReadCloser, *MediaMeta, error)
 	GetThumbnailReader(ctx context.Context, mediaID dal.MediaID, size *media.ImageSize) (io.ReadCloser, *media.ImageMeta, error)
+	IsPublic(ctx context.Context, mediaID dal.MediaID) (bool, error)
 	PutMedia(ctx context.Context, mFile io.ReadSeeker, mediaType *mime.Type, mThumb io.ReadSeeker) (*MediaMeta, error)
 }
 

@@ -39,3 +39,12 @@ func (c *Client) ClaimMedia(ctx context.Context, in *media.ClaimMediaRequest, op
 	}
 	return rets[0].(*media.ClaimMediaResponse), mock.SafeError(rets[1])
 }
+
+// UpdateMedia implements media.MediaClient
+func (c *Client) UpdateMedia(ctx context.Context, in *media.UpdateMediaRequest, opts ...grpc.CallOption) (*media.UpdateMediaResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*media.UpdateMediaResponse), mock.SafeError(rets[1])
+}
