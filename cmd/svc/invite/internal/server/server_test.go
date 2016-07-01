@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/sns"
-	"github.com/sendgrid/sendgrid-go"
-	"github.com/sendgrid/smtpapi-go"
+	"github.com/sendgrid/sendgrid-go/helpers/mail"
+	"github.com/sprucehealth/backend/cmd/svc/invite/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/invite/internal/models"
 	branchmock "github.com/sprucehealth/backend/libs/branch/mock"
 	"github.com/sprucehealth/backend/libs/clock"
@@ -22,6 +22,9 @@ import (
 	"github.com/sprucehealth/backend/svc/excomms"
 	excommsmock "github.com/sprucehealth/backend/svc/excomms/mock"
 	"github.com/sprucehealth/backend/svc/invite"
+	"github.com/sprucehealth/backend/svc/invite/clientdata"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc/codes"
 )
 
 type sTokenGenerator struct{}
@@ -44,11 +47,9 @@ func init() {
 
 func TestAttribution(t *testing.T) {
 	dl := newMockDAL(t)
-	defer dl.Finish()
-
 	snsC := mock.NewSNSAPI(t)
-	defer snsC.Finish()
-	srv := New(dl, nil, nil, nil, snsC, nil, nil, "", "", "", "")
+	defer mock.FinishAll(dl, snsC)
+	srv := New(dl, nil, nil, nil, snsC, nil, nil, "", "", "", "", "")
 
 	values := []*invite.AttributionValue{
 		{Key: "abc", Value: "123"},
@@ -73,19 +74,18 @@ func TestAttribution(t *testing.T) {
 
 func TestInviteColleagues(t *testing.T) {
 	dl := newMockDAL(t)
-	defer dl.Finish()
 	dir := dirmock.New(t)
-	defer dir.Finish()
 	branch := branchmock.New(t)
-	defer branch.Finish()
-	sg := newSGMock(t)
-	defer sg.Finish()
-	clk := clock.NewManaged(time.Unix(10000000, 0))
 	snsC := mock.NewSNSAPI(t)
-	defer snsC.Finish()
 	excommsC := excommsmock.New(t)
-	defer excommsC.Finish()
-	srv := New(dl, clk, dir, excommsC, snsC, branch, sg, "from@example.com", "+1234567890", "eventsTopic", "https://app.sprucehealth.com/signup?some=other")
+	defer mock.FinishAll(dl, dir, branch, snsC, excommsC)
+	clk := clock.NewManaged(time.Unix(10000000, 0))
+	var sentMail *mail.SGMailV3
+	sg := func(m *mail.SGMailV3) error {
+		sentMail = m
+		return nil
+	}
+	srv := New(dl, clk, dir, excommsC, snsC, branch, sg, "from@example.com", "+1234567890", "eventsTopic", "https://app.sprucehealth.com/signup?some=other", "templateID")
 
 	// Lookup organization
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
@@ -143,22 +143,6 @@ func TestInviteColleagues(t *testing.T) {
 		Values:               values,
 	}).WithReturns(nil))
 
-	// Send invite email
-	sg.Expect(mock.NewExpectation(sg.Send, &sendgrid.SGMail{
-		To:      []string{"someone@example.com"},
-		Subject: fmt.Sprintf("Invite to join %s on Spruce", "Orgo"),
-		Text: fmt.Sprintf(
-			"Spruce is a communication and digital care app. By joining %s on Spruce, you'll be able to collaborate with colleagues around your patients' care, securely and efficiently.\n\nClick this link to get started:\n%s\n\nOnce you've created your account, you're all set to start catching up on the latest conversation.\n\nIf you have any troubles, we're here to help - simply reply to this email!\n\nThanks,\nThe Team at Spruce\n\nP.S.: Learn more about Spruce here: https://www.sprucehealth.com [%s]",
-			"Orgo", "https://example.com/invite", "simpleToken"),
-		From:     "from@example.com",
-		FromName: "Inviter",
-		SMTPAPIHeader: smtpapi.SMTPAPIHeader{
-			UniqueArgs: map[string]string{
-				"invite_token": "simpleToken",
-			},
-		},
-	}).WithReturns(nil))
-
 	eventData, err := events.MarshalEnvelope(events.Service_INVITE, &invite.Event{
 		Type: invite.Event_INVITED_COLLEAGUES,
 		Details: &invite.Event_InvitedColleagues{
@@ -183,23 +167,18 @@ func TestInviteColleagues(t *testing.T) {
 	})
 	test.OK(t, err)
 	test.Equals(t, &invite.InviteColleaguesResponse{}, ires)
+	test.AssertNotNil(t, sentMail)
 }
 
 func TestInvitePatients(t *testing.T) {
 	dl := newMockDAL(t)
-	defer dl.Finish()
 	dir := dirmock.New(t)
-	defer dir.Finish()
 	branch := branchmock.New(t)
-	defer branch.Finish()
-	sg := newSGMock(t)
-	defer sg.Finish()
-	clk := clock.NewManaged(time.Unix(10000000, 0))
 	snsC := mock.NewSNSAPI(t)
-	defer snsC.Finish()
 	excommsC := excommsmock.New(t)
-	defer excommsC.Finish()
-	srv := New(dl, clk, dir, excommsC, snsC, branch, sg, "from@example.com", "+1234567890", "eventsTopic", "https://app.sprucehealth.com/signup?some=other")
+	defer mock.FinishAll(dl, dir, branch, snsC, excommsC)
+	clk := clock.NewManaged(time.Unix(10000000, 0))
+	srv := New(dl, clk, dir, excommsC, snsC, branch, nil, "from@example.com", "+1234567890", "eventsTopic", "https://app.sprucehealth.com/signup?some=other", "")
 
 	// Lookup organization
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
@@ -234,7 +213,7 @@ func TestInvitePatients(t *testing.T) {
 	// Generate branch URL
 	values := map[string]string{
 		"invite_token": "simpleToken",
-		"client_data":  `{"patient_invite":{"greeting":{"title":"Welcome Alfred!","message":"Let's create your account so you can start securely messaging with Batman Inc.","photo_url":"","button_text":"Get Started"},"org_id":"org","org_name":"Batman Inc"}}`,
+		"client_data":  `{"patient_invite":{"greeting":{"title":"Welcome, Alfred!","message":"Let's create your account so you can start securely messaging with Batman Inc.","photo_url":"","button_text":"Get Started"},"org_id":"org","org_name":"Batman Inc"}}`,
 		"$desktop_url": "https://app.sprucehealth.com/signup?invite=simpleToken&some=other",
 		"invite_type":  "PATIENT",
 	}
@@ -309,19 +288,13 @@ func TestInvitePatients(t *testing.T) {
 
 func TestInvitePatientsNoFirstName(t *testing.T) {
 	dl := newMockDAL(t)
-	defer dl.Finish()
 	dir := dirmock.New(t)
-	defer dir.Finish()
 	branch := branchmock.New(t)
-	defer branch.Finish()
-	sg := newSGMock(t)
-	defer sg.Finish()
-	clk := clock.NewManaged(time.Unix(10000000, 0))
 	snsC := mock.NewSNSAPI(t)
-	defer snsC.Finish()
 	excommsC := excommsmock.New(t)
-	defer excommsC.Finish()
-	srv := New(dl, clk, dir, excommsC, snsC, branch, sg, "from@example.com", "+1234567890", "eventsTopic", "https://app.sprucehealth.com/signup?some=other")
+	defer mock.FinishAll(dl, dir, branch, snsC, excommsC)
+	clk := clock.NewManaged(time.Unix(10000000, 0))
+	srv := New(dl, clk, dir, excommsC, snsC, branch, nil, "from@example.com", "+1234567890", "eventsTopic", "https://app.sprucehealth.com/signup?some=other", "")
 
 	// Lookup organization
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
@@ -431,10 +404,9 @@ func TestInvitePatientsNoFirstName(t *testing.T) {
 
 func TestLookupInvite(t *testing.T) {
 	dl := newMockDAL(t)
-	defer dl.Finish()
 	snsC := mock.NewSNSAPI(t)
-	defer snsC.Finish()
-	srv := New(dl, nil, nil, nil, snsC, nil, nil, "", "", "", "")
+	defer mock.FinishAll(dl, snsC)
+	srv := New(dl, nil, nil, nil, snsC, nil, nil, "", "", "", "", "")
 
 	dl.Expect(mock.NewExpectation(dl.InviteForToken, "testtoken").WithReturns(
 		&models.Invite{
@@ -474,13 +446,291 @@ func TestLookupInvite(t *testing.T) {
 
 func TestMarkInviteConsumed(t *testing.T) {
 	dl := newMockDAL(t)
-	defer dl.Finish()
 	snsC := mock.NewSNSAPI(t)
-	defer snsC.Finish()
-	srv := New(dl, nil, nil, nil, snsC, nil, nil, "", "", "", "")
+	defer mock.FinishAll(dl, snsC)
+	srv := New(dl, nil, nil, nil, snsC, nil, nil, "", "", "", "", "")
 
 	dl.Expect(mock.NewExpectation(dl.DeleteInvite, "testtoken").WithReturns(nil))
 	res, err := srv.MarkInviteConsumed(nil, &invite.MarkInviteConsumedRequest{Token: "testtoken"})
 	test.OK(t, err)
 	test.Equals(t, &invite.MarkInviteConsumedResponse{}, res)
+}
+
+type tserver struct {
+	server    *server
+	finishers []mock.Finisher
+}
+
+func TestCreateOrganizationInvite(t *testing.T) {
+	orgID := "orgID"
+	token := "token"
+	cases := map[string]struct {
+		tserver     *tserver
+		in          *invite.CreateOrganizationInviteRequest
+		expectedOut *invite.CreateOrganizationInviteResponse
+		expectedErr error
+	}{
+		"Err-OrganizationEntityIDRequired": {
+			tserver:     &tserver{server: &server{}},
+			in:          &invite.CreateOrganizationInviteRequest{},
+			expectedOut: nil,
+			expectedErr: grpcErrorf(codes.InvalidArgument, "Organization Entity ID is required"),
+		},
+		"Err-OrgNotFound": {
+			tserver: func() *tserver {
+				dc := dirmock.New(t)
+				dc.Expect(mock.NewExpectation(dc.LookupEntities, &directory.LookupEntitiesRequest{
+					LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+						EntityID: orgID,
+					},
+					RequestedInformation: &directory.RequestedInformation{
+						Depth: 0,
+					},
+				}).WithReturns(&directory.LookupEntitiesResponse{}, nil))
+				return &tserver{
+					server: &server{
+						directoryClient: dc,
+					},
+					finishers: []mock.Finisher{dc},
+				}
+			}(),
+			in: &invite.CreateOrganizationInviteRequest{
+				OrganizationEntityID: orgID,
+			},
+			expectedOut: nil,
+			expectedErr: grpcErrorf(codes.Internal, "Expected 1 entity got 0"),
+		},
+		"Success-Idempotency": {
+			tserver: func() *tserver {
+				dc := dirmock.New(t)
+				dc.Expect(mock.NewExpectation(dc.LookupEntities, &directory.LookupEntitiesRequest{
+					LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+						EntityID: orgID,
+					},
+					RequestedInformation: &directory.RequestedInformation{
+						Depth: 0,
+					},
+				}).WithReturns(&directory.LookupEntitiesResponse{
+					Entities: []*directory.Entity{
+						{
+							Type: directory.EntityType_ORGANIZATION,
+							Info: &directory.EntityInfo{
+								DisplayName: "DisplayName",
+							},
+						},
+					},
+				}, nil))
+				md := newMockDAL(t)
+				md.Expect(mock.NewExpectation(md.TokenForEntity, orgID).WithReturns(token, nil))
+				return &tserver{
+					server: &server{
+						dal:             md,
+						directoryClient: dc,
+					},
+					finishers: []mock.Finisher{dc, md},
+				}
+			}(),
+			in: &invite.CreateOrganizationInviteRequest{
+				OrganizationEntityID: orgID,
+			},
+			expectedOut: &invite.CreateOrganizationInviteResponse{
+				Organization: &invite.OrganizationInvite{
+					OrganizationEntityID: orgID,
+					Token:                token,
+				},
+			},
+			expectedErr: nil,
+		},
+		"Err-IdempotencyLookupFail": {
+			tserver: func() *tserver {
+				dc := dirmock.New(t)
+				dc.Expect(mock.NewExpectation(dc.LookupEntities, &directory.LookupEntitiesRequest{
+					LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+						EntityID: orgID,
+					},
+					RequestedInformation: &directory.RequestedInformation{
+						Depth: 0,
+					},
+				}).WithReturns(&directory.LookupEntitiesResponse{
+					Entities: []*directory.Entity{
+						{
+							Type: directory.EntityType_ORGANIZATION,
+							Info: &directory.EntityInfo{
+								DisplayName: "DisplayName",
+							},
+						},
+					},
+				}, nil))
+				md := newMockDAL(t)
+				md.Expect(mock.NewExpectation(md.TokenForEntity, orgID).WithReturns("", fmt.Errorf("err")))
+				return &tserver{
+					server: &server{
+						dal:             md,
+						directoryClient: dc,
+					},
+					finishers: []mock.Finisher{dc, md},
+				}
+			}(),
+			in: &invite.CreateOrganizationInviteRequest{
+				OrganizationEntityID: orgID,
+			},
+			expectedOut: nil,
+			expectedErr: grpcError(fmt.Errorf("err")),
+		},
+		"Err-BranchGenerationFailure": {
+			tserver: func() *tserver {
+				dc := dirmock.New(t)
+				dc.Expect(mock.NewExpectation(dc.LookupEntities, &directory.LookupEntitiesRequest{
+					LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+						EntityID: orgID,
+					},
+					RequestedInformation: &directory.RequestedInformation{
+						Depth: 0,
+					},
+				}).WithReturns(&directory.LookupEntitiesResponse{
+					Entities: []*directory.Entity{
+						{
+							Type: directory.EntityType_ORGANIZATION,
+							Info: &directory.EntityInfo{
+								DisplayName: "DisplayName",
+							},
+						},
+					},
+				}, nil))
+				md := newMockDAL(t)
+				md.Expect(mock.NewExpectation(md.TokenForEntity, orgID).WithReturns("", dal.ErrNotFound))
+				mb := branchmock.New(t)
+				clientData, err := clientdata.PatientInviteClientJSON(&directory.Entity{
+					Type: directory.EntityType_ORGANIZATION,
+					Info: &directory.EntityInfo{
+						DisplayName: "DisplayName",
+					},
+				}, "", "", invite.LookupInviteResponse_ORGANIZATION_CODE)
+				test.OK(t, err)
+				// Retry 5 times
+				mb.Expect(mock.NewExpectation(mb.URL, map[string]interface{}{
+					"invite_token": "simpleToken",
+					"client_data":  clientData,
+					"invite_type":  string(models.OrganizationCodeInvite),
+				}).WithReturns("", fmt.Errorf("Foo")))
+				mb.Expect(mock.NewExpectation(mb.URL, map[string]interface{}{
+					"invite_token": "simpleToken",
+					"client_data":  clientData,
+					"invite_type":  string(models.OrganizationCodeInvite),
+				}).WithReturns("", fmt.Errorf("Foo")))
+				mb.Expect(mock.NewExpectation(mb.URL, map[string]interface{}{
+					"invite_token": "simpleToken",
+					"client_data":  clientData,
+					"invite_type":  string(models.OrganizationCodeInvite),
+				}).WithReturns("", fmt.Errorf("Foo")))
+				mb.Expect(mock.NewExpectation(mb.URL, map[string]interface{}{
+					"invite_token": "simpleToken",
+					"client_data":  clientData,
+					"invite_type":  string(models.OrganizationCodeInvite),
+				}).WithReturns("", fmt.Errorf("Foo")))
+				mb.Expect(mock.NewExpectation(mb.URL, map[string]interface{}{
+					"invite_token": "simpleToken",
+					"client_data":  clientData,
+					"invite_type":  string(models.OrganizationCodeInvite),
+				}).WithReturns("", fmt.Errorf("Foo")))
+				return &tserver{
+					server: &server{
+						dal:             md,
+						directoryClient: dc,
+						branch:          mb,
+					},
+					finishers: []mock.Finisher{dc, md, mb},
+				}
+			}(),
+			in: &invite.CreateOrganizationInviteRequest{
+				OrganizationEntityID: orgID,
+			},
+			expectedOut: nil,
+			expectedErr: grpcErrorf(codes.Internal, "Failed to generate branch link and code"),
+		},
+		"Success": {
+			tserver: func() *tserver {
+				dc := dirmock.New(t)
+				dc.Expect(mock.NewExpectation(dc.LookupEntities, &directory.LookupEntitiesRequest{
+					LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+						EntityID: orgID,
+					},
+					RequestedInformation: &directory.RequestedInformation{
+						Depth: 0,
+					},
+				}).WithReturns(&directory.LookupEntitiesResponse{
+					Entities: []*directory.Entity{
+						{
+							Type: directory.EntityType_ORGANIZATION,
+							Info: &directory.EntityInfo{
+								DisplayName: "DisplayName",
+							},
+						},
+					},
+				}, nil))
+				md := newMockDAL(t)
+				md.Expect(mock.NewExpectation(md.TokenForEntity, orgID).WithReturns("", dal.ErrNotFound))
+				mb := branchmock.New(t)
+				clientData, err := clientdata.PatientInviteClientJSON(&directory.Entity{
+					Type: directory.EntityType_ORGANIZATION,
+					Info: &directory.EntityInfo{
+						DisplayName: "DisplayName",
+					},
+				}, "", "", invite.LookupInviteResponse_ORGANIZATION_CODE)
+				test.OK(t, err)
+				// Retry 5 times
+				mb.Expect(mock.NewExpectation(mb.URL, map[string]interface{}{
+					"invite_token": "simpleToken",
+					"client_data":  clientData,
+					"invite_type":  string(models.OrganizationCodeInvite),
+				}).WithReturns("branckLink", nil))
+
+				clk := clock.NewManaged(time.Now())
+				md.Expect(mock.NewExpectation(md.InsertEntityToken, orgID, "simpleToken").WithReturns(nil))
+				md.Expect(mock.NewExpectation(md.InsertInvite, &models.Invite{
+					Token:                "simpleToken",
+					Type:                 models.OrganizationCodeInvite,
+					OrganizationEntityID: orgID,
+					Created:              clk.Now(),
+					URL:                  "branckLink",
+					Values: map[string]string{
+						"invite_token": "simpleToken",
+						"client_data":  clientData,
+						"invite_type":  string(models.OrganizationCodeInvite),
+					},
+				}).WithReturns(nil))
+				return &tserver{
+					server: &server{
+						dal:             md,
+						directoryClient: dc,
+						branch:          mb,
+						clk:             clk,
+					},
+					finishers: []mock.Finisher{dc, md, mb},
+				}
+			}(),
+			in: &invite.CreateOrganizationInviteRequest{
+				OrganizationEntityID: orgID,
+			},
+			expectedOut: &invite.CreateOrganizationInviteResponse{
+				Organization: &invite.OrganizationInvite{
+					OrganizationEntityID: orgID,
+					Token:                "simpleToken",
+				},
+			},
+			expectedErr: nil,
+		},
+	}
+
+	for cn, c := range cases {
+		out, err := c.tserver.server.CreateOrganizationInvite(context.Background(), c.in)
+		test.EqualsCase(t, cn, c.expectedErr, err)
+		test.EqualsCase(t, cn, c.expectedOut, out)
+		mock.FinishAll(c.tserver.finishers...)
+	}
 }

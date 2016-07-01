@@ -344,42 +344,6 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 		accountEntityID = inv.GetPatient().Patient.ParkedEntityID
 		orgID = inv.GetPatient().OrganizationEntityID
 	case invite.LookupInviteResponse_ORGANIZATION_CODE:
-		// If this is an org code then there is no parked entity and we need to create the entity and thread
-		patientEntity, err := ram.CreateEntity(ctx, &directory.CreateEntityRequest{
-			Type: directory.EntityType_PATIENT,
-			InitialMembershipEntityID: inv.GetOrganization().OrganizationEntityID,
-			Contacts: []*directory.Contact{
-				{
-					ContactType: directory.ContactType_EMAIL,
-					Value:       req.Email,
-				},
-				{
-					ContactType: directory.ContactType_PHONE,
-					Value:       req.PhoneNumber,
-				},
-			},
-			EntityInfo: &directory.EntityInfo{
-				FirstName: entityInfo.FirstName,
-				LastName:  entityInfo.LastName,
-			},
-		})
-		if err != nil {
-			return nil, errors.InternalError(ctx, err)
-		}
-		accountEntityID = patientEntity.ID
-		orgID = inv.GetOrganization().OrganizationEntityID
-
-		// Create a thread with the parked patient in the org
-		if _, err := ram.CreateEmptyThread(ctx, &threading.CreateEmptyThreadRequest{
-			OrganizationID:  inv.GetOrganization().OrganizationEntityID,
-			PrimaryEntityID: patientEntity.ID,
-			MemberEntityIDs: []string{accountEntityID},
-			Type:            threading.ThreadType_SECURE_EXTERNAL,
-			Summary:         patientEntity.Info.DisplayName,
-			SystemTitle:     patientEntity.Info.DisplayName,
-		}); err != nil {
-			return nil, errors.InternalError(ctx, err)
-		}
 	default:
 		return nil, errors.InternalError(ctx, fmt.Errorf("Unsupported invite type %s", inv.Type))
 	}
@@ -413,6 +377,34 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 	}
 	gqlctx.InPlaceWithAccount(ctx, res.Account)
 
+	var patientEntity *directory.Entity
+	if inv.Type == invite.LookupInviteResponse_ORGANIZATION_CODE {
+		// If this is an org code then there is no parked entity and we need to create the entity and thread
+		patientEntity, err = ram.CreateEntity(ctx, &directory.CreateEntityRequest{
+			Type: directory.EntityType_PATIENT,
+			InitialMembershipEntityID: inv.GetOrganization().OrganizationEntityID,
+			Contacts: []*directory.Contact{
+				{
+					ContactType: directory.ContactType_EMAIL,
+					Value:       req.Email,
+				},
+				{
+					ContactType: directory.ContactType_PHONE,
+					Value:       req.PhoneNumber,
+				},
+			},
+			EntityInfo: &directory.EntityInfo{
+				FirstName: entityInfo.FirstName,
+				LastName:  entityInfo.LastName,
+			},
+		})
+		if err != nil {
+			return nil, errors.InternalError(ctx, err)
+		}
+		accountEntityID = patientEntity.ID
+		orgID = inv.GetOrganization().OrganizationEntityID
+	}
+
 	// Associate the parked entity with the account
 	if err = ram.UnauthorizedCreateExternalIDs(ctx, &directory.CreateExternalIDsRequest{
 		EntityID:    accountEntityID,
@@ -421,8 +413,22 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 		return nil, errors.InternalError(ctx, err)
 	}
 
+	if inv.Type == invite.LookupInviteResponse_ORGANIZATION_CODE {
+		// Create a thread with the parked patient in the org
+		if _, err := ram.CreateEmptyThread(ctx, &threading.CreateEmptyThreadRequest{
+			OrganizationID:  inv.GetOrganization().OrganizationEntityID,
+			PrimaryEntityID: patientEntity.ID,
+			MemberEntityIDs: []string{accountEntityID},
+			Type:            threading.ThreadType_SECURE_EXTERNAL,
+			Summary:         patientEntity.Info.DisplayName,
+			SystemTitle:     patientEntity.Info.DisplayName,
+		}); err != nil {
+			return nil, errors.InternalError(ctx, err)
+		}
+	}
+
 	// Update our parked entity
-	patientEntity, err := ram.UpdateEntity(ctx, &directory.UpdateEntityRequest{
+	patientEntity, err = ram.UpdateEntity(ctx, &directory.UpdateEntityRequest{
 		EntityID:         accountEntityID,
 		UpdateEntityInfo: true,
 		EntityInfo:       entityInfo,

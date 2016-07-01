@@ -93,7 +93,7 @@ var requestPasswordResetMutation = &graphql.Field{
 		}
 
 		conc.Go(func() {
-			if err := createAndSendPasswordResetEmail(context.TODO(), ram, svc.webDomain, email); err != nil {
+			if err := createAndSendPasswordResetEmail(context.TODO(), ram, svc.emailTemplateIDs.passwordReset, svc.webDomain, email); err != nil {
 				golog.Errorf("Error while sending password reset email: %s", err)
 			}
 		})
@@ -203,7 +203,7 @@ var checkPasswordResetTokenMutation = &graphql.Field{
 }
 
 // createAndSendPasswordResetEmail creates a token for the password reset link and embeds it in a link and sends it to the account's provided email
-func createAndSendPasswordResetEmail(ctx context.Context, ram raccess.ResourceAccessor, webDomain string, email string) error {
+func createAndSendPasswordResetEmail(ctx context.Context, ram raccess.ResourceAccessor, templateID, webDomain string, email string) error {
 	resp, err := ram.CreatePasswordResetToken(ctx, email)
 	if grpc.Code(err) == codes.NotFound {
 		golog.Warningf("PasswordReset: Unable to find account for email %s", email)
@@ -212,7 +212,8 @@ func createAndSendPasswordResetEmail(ctx context.Context, ram raccess.ResourceAc
 		return errors.Trace(err)
 	}
 
-	body := fmt.Sprintf("Your password reset link is: %s", passwordResetURL(webDomain, resp.Token))
+	resetURL := passwordResetURL(webDomain, resp.Token)
+	body := "Your password reset link is: " + resetURL
 	golog.Debugf("Sending password reset email %q to %s", body, email)
 	if err := ram.SendMessage(ctx, &excomms.SendMessageRequest{
 		Channel: excomms.ChannelType_EMAIL,
@@ -223,6 +224,10 @@ func createAndSendPasswordResetEmail(ctx context.Context, ram raccess.ResourceAc
 				FromEmailAddress: "support@sprucehealth.com",
 				Body:             body,
 				ToEmailAddress:   email,
+				TemplateID:       templateID,
+				TemplateSubstitutions: []*excomms.EmailMessage_Substitution{
+					{Key: "{reset_url}", Value: resetURL},
+				},
 			},
 		},
 	}); err != nil {

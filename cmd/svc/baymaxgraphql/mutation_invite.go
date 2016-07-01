@@ -244,7 +244,7 @@ var associateInviteMutation = &graphql.Field{
 			return nil, errors.InternalError(ctx, fmt.Errorf("Unknown invite type %s", res.Type))
 		}
 
-		org, err := raccess.UnauthenticatedEntity(ctx, ram, &directory.LookupEntitiesRequest{
+		org, err := raccess.UnauthorizedEntity(ctx, ram, &directory.LookupEntitiesRequest{
 			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
 			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
 				EntityID: orgID,
@@ -257,12 +257,12 @@ var associateInviteMutation = &graphql.Field{
 		var clientData string
 		switch res.Type {
 		case invite.LookupInviteResponse_PATIENT:
-			clientData, err = clientdata.PatientInviteClientJSON(org, res.GetPatient().Patient.FirstName, svc.mediaAPIDomain)
+			clientData, err = clientdata.PatientInviteClientJSON(org, res.GetPatient().Patient.FirstName, svc.mediaAPIDomain, res.Type)
 			if err != nil {
 				golog.Errorf("Error while generating client data for invite to org %s: %s", org.ID, err)
 			}
 		case invite.LookupInviteResponse_ORGANIZATION_CODE:
-			clientData, err = clientdata.PatientInviteClientJSON(org, "", svc.mediaAPIDomain)
+			clientData, err = clientdata.PatientInviteClientJSON(org, "", svc.mediaAPIDomain, res.Type)
 			if err != nil {
 				golog.Errorf("Error while generating client data for invite to org %s: %s", org.ID, err)
 			}
@@ -283,15 +283,24 @@ var associateInviteMutation = &graphql.Field{
 		default:
 			return nil, errors.InternalError(ctx, fmt.Errorf("Unknown invite type %s", res.Type))
 		}
-		var found bool
+		// Be backwards compatible with client data and type population
+		var foundClientData bool
+		var foundType bool
 		for _, v := range res.Values {
-			if v.Key == "client_data" {
-				found = true
+			switch v.Key {
+			case "client_data":
+				foundClientData = true
 				v.Value = clientData
+			case "invite_type":
+				foundType = true
+				v.Value = res.Type.String()
 			}
 		}
-		if !found {
+		if !foundClientData {
 			res.Values = append(res.Values, &invite.AttributionValue{Key: "client_data", Value: clientData})
+		}
+		if !foundType {
+			res.Values = append(res.Values, &invite.AttributionValue{Key: "invite_type", Value: res.Type.String()})
 		}
 
 		if _, err := svc.invite.SetAttributionData(ctx, &invite.SetAttributionDataRequest{

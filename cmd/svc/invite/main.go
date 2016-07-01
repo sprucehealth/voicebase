@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/sendgrid/sendgrid-go"
+	"github.com/sendgrid/sendgrid-go/helpers/mail"
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/stub"
 	"github.com/sprucehealth/backend/cmd/svc/invite/internal/dal"
@@ -20,6 +21,7 @@ import (
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/branch"
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
@@ -32,16 +34,17 @@ import (
 )
 
 var (
-	flagBranchKey     = flag.String("branch_key", "", "Branch API key")
-	flagDirectoryAddr = flag.String("directory_addr", "", "`host:port` of directory service")
-	flagExcommsAddr   = flag.String("excomms_addr", "", "`host:port` of excomms service")
-	flagFromEmail     = flag.String("from_email", "", "Email address from which to send invites")
-	flagServiceNumber = flag.String("service_phone_number", "", "TODO: This should be managed by the excomms service")
-	flagListen        = flag.String("listen_addr", ":5001", "`host:port` for grpc server")
-	flagSendGridKey   = flag.String("sendgrid_key", "", "SendGrid API `key`")
-	flagEventsTopic   = flag.String("events_topic", "", "SNS topic ARN for publishing events")
-	flagKMSKeyARN     = flag.String("kms_key_arn", "", "the arn of the master key that should be used to encrypt outbound and decrypt inbound data")
-	flagWebInviteURL  = flag.String("web_invite_url", "", "URL for the webapp invite page")
+	flagBranchKey                 = flag.String("branch_key", "", "Branch API key")
+	flagDirectoryAddr             = flag.String("directory_addr", "", "`host:port` of directory service")
+	flagExcommsAddr               = flag.String("excomms_addr", "", "`host:port` of excomms service")
+	flagFromEmail                 = flag.String("from_email", "", "Email address from which to send invites")
+	flagServiceNumber             = flag.String("service_phone_number", "", "TODO: This should be managed by the excomms service")
+	flagListen                    = flag.String("listen_addr", ":5001", "`host:port` for grpc server")
+	flagSendGridKey               = flag.String("sendgrid_key", "", "SendGrid API `key`")
+	flagEventsTopic               = flag.String("events_topic", "", "SNS topic `ARN` for publishing events")
+	flagKMSKeyARN                 = flag.String("kms_key_arn", "", "the `ARN` of the master key that should be used to encrypt outbound and decrypt inbound data")
+	flagWebInviteURL              = flag.String("web_invite_url", "", "`URL` for the webapp invite page")
+	flagColleagueInviteTemplateID = flag.String("colleague_invite_template_id", "", "`ID` of the colleague invite email template")
 
 	// REST API
 	flagHTTPListenAddr  = flag.String("http_listen_addr", ":8082", "host:port to listen on for http requests")
@@ -102,7 +105,14 @@ func main() {
 		exCommsClient = excomms.NewExCommsClient(conn)
 	}
 
-	sg := sendgrid.NewSendGridClientWithApiKey(*flagSendGridKey)
+	sendMail := func(m *mail.SGMailV3) error {
+		req := sendgrid.GetRequest(*flagSendGridKey, "/v3/mail/send", "https://api.sendgrid.com")
+		req.Method = "POST"
+		req.Body = mail.GetRequestBody(m)
+		_, err := sendgrid.API(req)
+		return errors.Trace(err)
+	}
+
 	branchCli := branch.NewClient(*flagBranchKey)
 
 	eSNS, err := awsutil.NewEncryptedSNS(*flagKMSKeyARN, kms.New(awsSession), sns.New(awsSession))
@@ -112,7 +122,7 @@ func main() {
 	}
 
 	dl := dal.New(db, environment.GetCurrent())
-	srv := server.New(dl, nil, directoryClient, exCommsClient, eSNS, branchCli, sg, *flagFromEmail, *flagServiceNumber, *flagEventsTopic, *flagWebInviteURL)
+	srv := server.New(dl, nil, directoryClient, exCommsClient, eSNS, branchCli, sendMail, *flagFromEmail, *flagServiceNumber, *flagEventsTopic, *flagWebInviteURL, *flagColleagueInviteTemplateID)
 	invite.InitMetrics(srv, svc.MetricsRegistry.Scope("server"))
 	s := grpc.NewServer()
 	defer s.Stop()

@@ -313,7 +313,6 @@ func (e *excommsService) DeprovisionEmail(ctx context.Context, in *excomms.Depro
 
 // SendMessage sends the message over an external channel as specified in the SendMessageRequest.
 func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessageRequest) (*excomms.SendMessageResponse, error) {
-
 	var msgType models.SentMessage_Type
 	var destination string
 	switch in.Channel {
@@ -433,16 +432,22 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 			return nil, grpcErrorf(codes.Internal, err.Error())
 		}
 
+		subs := make([]*models.EmailMessage_Substitution, len(in.GetEmail().TemplateSubstitutions))
+		for i, s := range in.GetEmail().TemplateSubstitutions {
+			subs[i] = &models.EmailMessage_Substitution{Key: s.Key, Value: s.Value}
+		}
 		sentMessage.Message = &models.SentMessage_EmailMsg{
 			EmailMsg: &models.EmailMessage{
-				ID:        strconv.FormatInt(int64(id), 10),
-				Subject:   in.GetEmail().Subject,
-				Body:      in.GetEmail().Body,
-				FromName:  in.GetEmail().FromName,
-				FromEmail: in.GetEmail().FromEmailAddress,
-				ToName:    in.GetEmail().ToName,
-				ToEmail:   in.GetEmail().ToEmailAddress,
-				MediaURLs: resizedURLs,
+				ID:                    strconv.FormatInt(int64(id), 10),
+				Subject:               in.GetEmail().Subject,
+				Body:                  in.GetEmail().Body,
+				FromName:              in.GetEmail().FromName,
+				FromEmail:             in.GetEmail().FromEmailAddress,
+				ToName:                in.GetEmail().ToName,
+				ToEmail:               in.GetEmail().ToEmailAddress,
+				MediaURLs:             resizedURLs,
+				TemplateID:            in.GetEmail().TemplateID,
+				TemplateSubstitutions: subs,
 			},
 		}
 		sentMessage.ID = id
