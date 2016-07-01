@@ -325,7 +325,7 @@ func (s *service) sendPushNotificationToExternalGroupID(externalGroupID string, 
 		}); err != nil {
 			aerr, ok := err.(awserr.Error)
 			if ok && aerr.Code() == endpointDisabledAWSErrCode {
-				golog.Debugf("Encountered disabled endpoint %s", pushConfig.ID)
+				golog.Infof("Encountered disabled endpoint %s", pushConfig.ID)
 				// If an endpoint has been disabled then make an attempt to delete it since it is no longer valid
 				conc.Go(func() {
 					if _, err := s.dl.DeletePushConfig(pushConfig.ID); err != nil {
@@ -338,6 +338,7 @@ func (s *service) sendPushNotificationToExternalGroupID(externalGroupID string, 
 				continue
 			}
 		}
+		golog.Infof("Sent push '%s' to  %s", string(msg), pushConfig.PushEndpoint)
 	}
 	return nil
 }
