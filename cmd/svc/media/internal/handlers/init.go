@@ -1,19 +1,13 @@
 package handlers
 
 import (
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/rs/cors"
-	"github.com/sprucehealth/backend/cmd/svc/media/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/service"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/mux"
-	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/libs/urlutil"
 	"github.com/sprucehealth/backend/svc/auth"
-	"github.com/sprucehealth/backend/svc/care"
-	"github.com/sprucehealth/backend/svc/directory"
-	"github.com/sprucehealth/backend/svc/threading"
 )
 
 const (
@@ -24,19 +18,13 @@ const (
 // InitRoutes registers the media service handlers on the provided mux
 func InitRoutes(
 	r *mux.Router,
-	awsSession *session.Session,
+	svc service.Service,
 	authClient auth.AuthClient,
-	directoryClient directory.DirectoryClient,
-	threadingClient threading.ThreadsClient,
-	careClient care.CareClient,
 	urlSigner *urlutil.Signer,
-	dal dal.DAL,
 	webDomain string,
-	mediaStorageBucket string,
 	mediaAPIDomain string,
 	maxMemory int64,
 ) {
-	svc := initService(awsSession, dal, directoryClient, threadingClient, careClient, mediaStorageBucket)
 	corsOrigins := []string{"https://" + webDomain}
 	mHandler := &mediaHandler{
 		svc:            svc,
@@ -64,25 +52,4 @@ func InitRoutes(
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"*"},
 	}).ContextHandler(authenticationRequired(authorizationRequired(&thumbnailHandler{svc: svc}, svc), authClient, urlSigner, svc)))
-}
-
-func initService(
-	awsSession *session.Session,
-	dal dal.DAL,
-	directoryClient directory.DirectoryClient,
-	threadingClient threading.ThreadsClient,
-	careClient care.CareClient,
-	mediaStorageBucket string) service.Service {
-	s3Store := storage.NewS3(awsSession, mediaStorageBucket, "media")
-	s3CacheStore := storage.NewS3(awsSession, mediaStorageBucket, "media-cache")
-	return service.New(
-		dal,
-		directoryClient,
-		threadingClient,
-		careClient,
-		media.NewImageService(s3Store, s3CacheStore, 0, 0),
-		media.NewAudioService(s3Store, s3CacheStore, 0),
-		media.NewVideoService(s3Store, s3CacheStore, 0),
-		media.NewBinaryService(s3Store, s3CacheStore, 0),
-	)
 }

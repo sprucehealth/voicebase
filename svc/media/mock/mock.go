@@ -48,3 +48,12 @@ func (c *Client) UpdateMedia(ctx context.Context, in *media.UpdateMediaRequest, 
 	}
 	return rets[0].(*media.UpdateMediaResponse), mock.SafeError(rets[1])
 }
+
+// CanAccess implements media.MediaClient
+func (c *Client) CanAccess(ctx context.Context, in *media.CanAccessRequest, opts ...grpc.CallOption) (*media.CanAccessResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*media.CanAccessResponse), mock.SafeError(rets[1])
+}

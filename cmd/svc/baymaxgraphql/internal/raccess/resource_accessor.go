@@ -2,6 +2,7 @@ package raccess
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
@@ -88,6 +89,7 @@ type ResourceAccessor interface {
 	CarePlan(ctx context.Context, id string) (*care.CarePlan, error)
 	CheckPasswordResetToken(ctx context.Context, token string) (*auth.CheckPasswordResetTokenResponse, error)
 	CheckVerificationCode(ctx context.Context, token, code string) (*auth.CheckVerificationCodeResponse, error)
+	ClaimMedia(ctx context.Context, req *media.ClaimMediaRequest) error
 	CreateAccount(ctx context.Context, req *auth.CreateAccountRequest) (*auth.CreateAccountResponse, error)
 	CreateCarePlan(ctx context.Context, req *care.CreateCarePlanRequest) (*care.CreateCarePlanResponse, error)
 	CreateContact(ctx context.Context, req *directory.CreateContactRequest) (*directory.CreateContactResponse, error)
@@ -300,6 +302,24 @@ func (m *resourceAccessor) CheckVerificationCode(ctx context.Context, token, cod
 		return nil, err
 	}
 	return resp, nil
+}
+
+func (m *resourceAccessor) ClaimMedia(ctx context.Context, req *media.ClaimMediaRequest) error {
+	account := gqlctx.Account(ctx)
+	if account == nil {
+		return errors.ErrNotAuthenticated(ctx)
+	}
+	canAccess, err := m.media.CanAccess(ctx, &media.CanAccessRequest{
+		MediaIDs:  req.MediaIDs,
+		AccountID: account.ID,
+	})
+	if err != nil {
+		return err
+	} else if !canAccess.CanAccess {
+		return errors.ErrNotAuthorized(ctx, strings.Join(req.MediaIDs, ", "))
+	}
+	_, err = m.media.ClaimMedia(ctx, req)
+	return err
 }
 
 func (m *resourceAccessor) CreateAccount(ctx context.Context, req *auth.CreateAccountRequest) (*auth.CreateAccountResponse, error) {

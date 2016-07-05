@@ -60,7 +60,17 @@ message UpdateMediaResponse {
 	MediaInfo media_info = 1;
 }
 
+message CanAccessRequest {
+	repeated string media_id = 1 [(gogoproto.customname) = "MediaIDs"];
+	string account_id = 2 [(gogoproto.customname) = "AccountID"];
+}
+
+message CanAccessResponse {
+	bool can_access = 1;
+}
+
 service Media {
+	rpc CanAccess (CanAccessRequest) returns (CanAccessResponse);
 	rpc ClaimMedia (ClaimMediaRequest) returns (ClaimMediaResponse);
 	rpc MediaInfos (MediaInfosRequest) returns (MediaInfosResponse);
 	rpc UpdateMedia (UpdateMediaRequest) returns (UpdateMediaResponse);

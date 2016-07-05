@@ -8,16 +8,20 @@ import (
 
 	"google.golang.org/grpc"
 
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/handlers"
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/server"
+	"github.com/sprucehealth/backend/cmd/svc/media/internal/service"
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
+	lmedia "github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/sig"
+	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/libs/urlutil"
 	"github.com/sprucehealth/backend/shttputil"
 	"github.com/sprucehealth/backend/svc/auth"
@@ -141,17 +145,16 @@ func main() {
 		golog.Fatalf("Failed to create signer: %s", err.Error())
 	}
 
+	dl := dal.New(db)
+	msvc := initService(awsSession, dl, directoryClient, threadingClient, careClient, *flagMediaStorageBucket)
+
 	r := mux.NewRouter()
-	handlers.InitRoutes(r,
-		awsSession,
+	handlers.InitRoutes(
+		r,
+		msvc,
 		authClient,
-		directoryClient,
-		threadingClient,
-		careClient,
 		urlutil.NewSigner("https://"+*flagMediaAPIDomain, signer, clock.New()),
-		dal.New(db),
 		*flagWebDomain,
-		*flagMediaStorageBucket,
 		*flagMediaAPIDomain,
 		*flagMaxMemory)
 	h := httputil.LoggingHandler(r, "media", *flagBehindProxy, nil)
@@ -167,7 +170,7 @@ func main() {
 	}()
 
 	srvMetricsRegistry := svc.MetricsRegistry.Scope("server")
-	srv := server.New(dal.New(db), *flagMediaAPIDomain)
+	srv := server.New(dl, msvc, *flagMediaAPIDomain)
 	media.InitMetrics(srv, srvMetricsRegistry)
 	s := grpc.NewServer()
 	media.RegisterMediaServer(s, srv)
@@ -175,4 +178,25 @@ func main() {
 	go s.Serve(lis)
 
 	boot.WaitForTermination()
+}
+
+func initService(
+	awsSession *session.Session,
+	dal dal.DAL,
+	directoryClient directory.DirectoryClient,
+	threadingClient threading.ThreadsClient,
+	careClient care.CareClient,
+	mediaStorageBucket string) service.Service {
+	s3Store := storage.NewS3(awsSession, mediaStorageBucket, "media")
+	s3CacheStore := storage.NewS3(awsSession, mediaStorageBucket, "media-cache")
+	return service.New(
+		dal,
+		directoryClient,
+		threadingClient,
+		careClient,
+		lmedia.NewImageService(s3Store, s3CacheStore, 0, 0),
+		lmedia.NewAudioService(s3Store, s3CacheStore, 0),
+		lmedia.NewVideoService(s3Store, s3CacheStore, 0),
+		lmedia.NewBinaryService(s3Store, s3CacheStore, 0),
+	)
 }

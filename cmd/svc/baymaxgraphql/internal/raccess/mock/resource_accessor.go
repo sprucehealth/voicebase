@@ -638,3 +638,12 @@ func (m *ResourceAccessor) UpdateProfile(ctx context.Context, req *directory.Upd
 
 	return rets[0].(*directory.UpdateProfileResponse), mock.SafeError(rets[1])
 }
+
+func (m *ResourceAccessor) ClaimMedia(ctx context.Context, req *media.ClaimMediaRequest) error {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil
+	}
+
+	return mock.SafeError(rets[0])
+}

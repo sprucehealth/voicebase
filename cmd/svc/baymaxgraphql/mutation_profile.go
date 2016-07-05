@@ -14,6 +14,7 @@ import (
 	lerrors "github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/gqldecode"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/graphql"
 	"github.com/sprucehealth/graphql/gqlerrors"
 )
@@ -134,10 +135,14 @@ var createEntityProfileMutation = &graphql.Field{
 				}
 			}
 
-			ent, err := updateEntityProfile(ctx, ram, "", in.EntityID, in.ImageMediaID, in.DisplayName, in.Sections, svc.staticURLPrefix)
+			dent, err := updateProfile(ctx, ram, "", in.EntityID, in.ImageMediaID, in.DisplayName, in.Sections)
 			if lerrors.Cause(err) == raccess.ErrNotFound {
 				return nil, errors.ErrNotFound(ctx, fmt.Sprintf("Resource for profile creation for %s", in.EntityID))
 			} else if err != nil {
+				return nil, err
+			}
+			ent, err := transformEntityToResponse(ctx, svc.staticURLPrefix, dent, devicectx.SpruceHeaders(ctx), gqlctx.Account(ctx))
+			if err != nil {
 				return nil, err
 			}
 
@@ -244,10 +249,14 @@ var createOrganizationProfileMutation = &graphql.Field{
 				}
 			}
 
-			org, err := updateOrganizationProfile(ctx, ram, "", in.OrganizationID, in.ImageMediaID, in.DisplayName, in.Sections, svc.staticURLPrefix)
+			dorg, err := updateProfile(ctx, ram, "", in.OrganizationID, in.ImageMediaID, in.DisplayName, in.Sections)
 			if lerrors.Cause(err) == raccess.ErrNotFound {
 				return nil, errors.ErrNotFound(ctx, fmt.Sprintf("Resource for profile creation for %s", in.OrganizationID))
 			} else if err != nil {
+				return nil, err
+			}
+			org, err := transformOrganizationToResponse(ctx, svc.staticURLPrefix, dorg, nil, devicectx.SpruceHeaders(ctx), gqlctx.Account(ctx))
+			if err != nil {
 				return nil, err
 			}
 
@@ -352,10 +361,14 @@ var updateEntityProfileMutation = &graphql.Field{
 				}
 			}
 
-			ent, err := updateEntityProfile(ctx, ram, in.ProfileID, "", in.ImageMediaID, in.DisplayName, in.Sections, svc.staticURLPrefix)
+			dent, err := updateProfile(ctx, ram, in.ProfileID, "", in.ImageMediaID, in.DisplayName, in.Sections)
 			if lerrors.Cause(err) == raccess.ErrNotFound {
 				return nil, errors.ErrNotFound(ctx, fmt.Sprintf("Resource for profile update %s", in.ProfileID))
 			} else if err != nil {
+				return nil, err
+			}
+			ent, err := transformEntityToResponse(ctx, svc.staticURLPrefix, dent, devicectx.SpruceHeaders(ctx), gqlctx.Account(ctx))
+			if err != nil {
 				return nil, err
 			}
 
@@ -460,10 +473,14 @@ var updateOrganizationProfileMutation = &graphql.Field{
 				}
 			}
 
-			org, err := updateOrganizationProfile(ctx, ram, in.ProfileID, "", in.ImageMediaID, in.DisplayName, in.Sections, svc.staticURLPrefix)
+			dorg, err := updateProfile(ctx, ram, in.ProfileID, "", in.ImageMediaID, in.DisplayName, in.Sections)
 			if lerrors.Cause(err) == raccess.ErrNotFound {
 				return nil, errors.ErrNotFound(ctx, fmt.Sprintf("Resource for profile update %s", in.ProfileID))
 			} else if err != nil {
+				return nil, err
+			}
+			org, err := transformOrganizationToResponse(ctx, svc.staticURLPrefix, dorg, nil, devicectx.SpruceHeaders(ctx), gqlctx.Account(ctx))
+			if err != nil {
 				return nil, err
 			}
 
@@ -475,12 +492,60 @@ var updateOrganizationProfileMutation = &graphql.Field{
 		})),
 }
 
-func updateEntityProfile(ctx context.Context, ram raccess.ResourceAccessor, profileID, entityID, imageMediaID, customDisplayName string, psis []*profileSectionInput, staticURLPrefix string) (*models.Entity, error) {
+func updateProfile(ctx context.Context, ram raccess.ResourceAccessor, profileID, entityID, imageMediaID, customDisplayName string, psis []*profileSectionInput) (*directory.Entity, error) {
 	sections := make([]*directory.ProfileSection, len(psis))
 	for i, s := range psis {
 		sections[i] = &directory.ProfileSection{
 			Title: s.Title,
 			Body:  s.Body,
+		}
+	}
+
+	if imageMediaID != "" {
+		if entityID == "" {
+			profile, err := ram.Profile(ctx, &directory.ProfileRequest{
+				LookupKeyType: directory.ProfileRequest_PROFILE_ID,
+				LookupKeyOneof: &directory.ProfileRequest_ProfileID{
+					ProfileID: profileID,
+				},
+			})
+			if err != nil {
+				return nil, err
+			}
+			entityID = profile.EntityID
+		}
+		entity, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+				EntityID: entityID,
+			},
+			RequestedInformation: &directory.RequestedInformation{
+				EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+		organizationID := entityID
+		if entity.Type != directory.EntityType_ORGANIZATION {
+			organizationID = ""
+			// for now assume we only belong to 1 org
+			for _, m := range entity.Memberships {
+				if m.Type == directory.EntityType_ORGANIZATION {
+					organizationID = m.ID
+					break
+				}
+			}
+		}
+		if organizationID == "" {
+			return nil, fmt.Errorf("Unable to determine org for entity %s", entity.ID)
+		}
+		if err := ram.ClaimMedia(ctx, &media.ClaimMediaRequest{
+			MediaIDs:  []string{imageMediaID},
+			OwnerType: media.MediaOwnerType_ORGANIZATION,
+			OwnerID:   organizationID,
+		}); err != nil {
+			return nil, err
 		}
 	}
 
@@ -496,31 +561,5 @@ func updateEntityProfile(ctx context.Context, ram raccess.ResourceAccessor, prof
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-
-	return transformEntityToResponse(ctx, staticURLPrefix, profile.Entity, devicectx.SpruceHeaders(ctx), gqlctx.Account(ctx))
-}
-
-func updateOrganizationProfile(ctx context.Context, ram raccess.ResourceAccessor, profileID, organizationID, imageMediaID, customDisplayName string, psis []*profileSectionInput, staticURLPrefix string) (*models.Organization, error) {
-	sections := make([]*directory.ProfileSection, len(psis))
-	for i, s := range psis {
-		sections[i] = &directory.ProfileSection{
-			Title: s.Title,
-			Body:  s.Body,
-		}
-	}
-
-	profile, err := ram.UpdateProfile(ctx, &directory.UpdateProfileRequest{
-		ProfileID:    profileID,
-		ImageMediaID: imageMediaID,
-		Profile: &directory.Profile{
-			EntityID:    organizationID,
-			DisplayName: customDisplayName,
-			Sections:    sections,
-		},
-	})
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
-
-	return transformOrganizationToResponse(ctx, staticURLPrefix, profile.Entity, nil, devicectx.SpruceHeaders(ctx), gqlctx.Account(ctx))
+	return profile.Entity, nil
 }

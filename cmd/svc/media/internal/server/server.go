@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/dal"
+	"github.com/sprucehealth/backend/cmd/svc/media/internal/service"
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/svc/media"
@@ -31,16 +33,63 @@ func grpcError(err error) error {
 
 type server struct {
 	dl             dal.DAL
+	svc            service.Service
 	mediaAPIDomain string
 }
 
 // New returns an initialized instance of server
-func New(dl dal.DAL, mediaAPIDomain string) media.MediaServer {
+func New(dl dal.DAL, svc service.Service, mediaAPIDomain string) media.MediaServer {
 	srv := &server{
 		dl:             dl,
+		svc:            svc,
 		mediaAPIDomain: mediaAPIDomain,
 	}
 	return srv
+}
+
+func (s *server) CanAccess(ctx context.Context, rd *media.CanAccessRequest) (*media.CanAccessResponse, error) {
+	for _, mID := range rd.MediaIDs {
+		mediaID, err := dal.ParseMediaID(mID)
+		if err != nil {
+			return nil, grpcErrorf(codes.InvalidArgument, err.Error())
+		}
+		if err := s.svc.CanAccess(ctx, mediaID, rd.AccountID); errors.Cause(err) == service.ErrAccessDenied {
+			return &media.CanAccessResponse{
+				CanAccess: false,
+			}, nil
+		} else if err != nil {
+			return nil, grpcError(err)
+		}
+	}
+	return &media.CanAccessResponse{
+		CanAccess: true,
+	}, nil
+}
+
+func (s *server) ClaimMedia(ctx context.Context, rd *media.ClaimMediaRequest) (*media.ClaimMediaResponse, error) {
+	ownerType, err := dal.ParseMediaOwnerType(rd.OwnerType.String())
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "Unknown owner type: %s", rd.OwnerType)
+	}
+	if err := s.dl.Transact(func(dl dal.DAL) error {
+		for _, id := range rd.MediaIDs {
+			mID, err := dal.ParseMediaID(id)
+			if err != nil {
+				return fmt.Errorf("Unable to parse media ID %s", id)
+			}
+			_, err = dl.UpdateMedia(mID, &dal.MediaUpdate{
+				OwnerType: &ownerType,
+				OwnerID:   ptr.String(rd.OwnerID),
+			})
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		return nil, grpcError(err)
+	}
+	return &media.ClaimMediaResponse{}, nil
 }
 
 func (s *server) MediaInfos(ctx context.Context, rd *media.MediaInfosRequest) (*media.MediaInfosResponse, error) {
@@ -69,32 +118,6 @@ func (s *server) MediaInfos(ctx context.Context, rd *media.MediaInfosRequest) (*
 	return &media.MediaInfosResponse{
 		MediaInfos: mMap,
 	}, nil
-}
-
-func (s *server) ClaimMedia(ctx context.Context, rd *media.ClaimMediaRequest) (*media.ClaimMediaResponse, error) {
-	ownerType, err := dal.ParseMediaOwnerType(rd.OwnerType.String())
-	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Unknown owner type: %s", rd.OwnerType)
-	}
-	if err := s.dl.Transact(func(dl dal.DAL) error {
-		for _, id := range rd.MediaIDs {
-			mID, err := dal.ParseMediaID(id)
-			if err != nil {
-				return fmt.Errorf("Unable to parse media ID %s", id)
-			}
-			_, err = dl.UpdateMedia(mID, &dal.MediaUpdate{
-				OwnerType: &ownerType,
-				OwnerID:   ptr.String(rd.OwnerID),
-			})
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	}); err != nil {
-		return nil, grpcError(err)
-	}
-	return &media.ClaimMediaResponse{}, nil
 }
 
 func (s *server) UpdateMedia(ctx context.Context, rd *media.UpdateMediaRequest) (*media.UpdateMediaResponse, error) {
