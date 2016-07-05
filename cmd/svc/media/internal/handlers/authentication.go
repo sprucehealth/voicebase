@@ -33,22 +33,22 @@ func authenticationRequired(h httputil.ContextHandler, auth auth.AuthClient, sig
 }
 
 func (h *authHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	// Check to see if this is public media. If so se tthe appropriate flags and pass through
-	mediaID, err := dal.ParseMediaID(mux.Vars(ctx)[idParamName])
-	if err != nil {
-		badRequest(w, errors.New("Cannot parse media id"), http.StatusBadRequest)
-		return
-	}
-	public, err := h.svc.IsPublic(ctx, mediaID)
-	if errors.Cause(err) == dal.ErrNotFound {
-		http.Error(w, "Not Found", http.StatusNotFound)
-	} else if err != nil {
-		internalError(w, err)
-	}
-	if public {
-		ctx = mediactx.WithRequiresAuthorization(ctx, false)
-		h.h.ServeHTTP(ctx, w, r)
-		return
+	if r.Method == httputil.Get || r.Method == httputil.Head {
+		// Check to see if this is public media. If so set the appropriate flags and pass through
+		mediaID, err := dal.ParseMediaID(mux.Vars(ctx)[idParamName])
+		if err != nil {
+			badRequest(w, errors.New("Cannot parse media id"), http.StatusBadRequest)
+			return
+		}
+		if public, err := h.svc.IsPublic(ctx, mediaID); errors.Cause(err) == dal.ErrNotFound {
+			http.Error(w, "Not Found", http.StatusNotFound)
+		} else if err != nil {
+			internalError(w, err)
+		} else if public {
+			ctx = mediactx.WithRequiresAuthorization(ctx, false)
+			h.h.ServeHTTP(ctx, w, r)
+			return
+		}
 	}
 
 	// Check to see if the url is signed. If it is use that as auth and flag it as not requiring authorization, else follow the normal flow
