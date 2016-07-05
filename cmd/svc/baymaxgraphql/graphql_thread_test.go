@@ -5,6 +5,7 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	baymaxgraphqlsettings "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/settings"
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -140,6 +141,8 @@ func TestAllowVisitAttachmentsQuery_Android(t *testing.T) {
 	threadID := "threadID"
 	primaryEntityID := "primaryEntityID"
 	orgID := "organizationID"
+	// just to test to ensure that it is disabled in prod
+	environment.SetCurrent("prod")
 
 	g := newGQL(t)
 	defer g.finish()

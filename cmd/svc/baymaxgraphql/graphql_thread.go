@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	baymaxgraphqlsettings "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/settings"
 	"github.com/sprucehealth/backend/device/devicectx"
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/caremessenger/deeplink"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/auth"
@@ -132,8 +133,9 @@ var threadType = graphql.NewObject(
 					}
 
 					// if we do have login info, then ensure that user is on iOS before
-					// allowing attachment of spruce visits
-					return loginInfoRes.Platform == auth.Platform_IOS, nil
+					// allowing attachment of spruce visits or always allow it in non-prod
+					// environments to make it easy to test visits on android.
+					return loginInfoRes.Platform == auth.Platform_IOS || !environment.IsProd(), nil
 				},
 			},
 			"allowCarePlanAttachments": &graphql.Field{
