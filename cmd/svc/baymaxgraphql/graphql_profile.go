@@ -2,12 +2,9 @@ package main
 
 import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
-	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
-	"github.com/sprucehealth/backend/device/devicectx"
 	lerrors "github.com/sprucehealth/backend/libs/errors"
-	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/graphql"
@@ -52,14 +49,9 @@ var profileType = graphql.NewObject(graphql.ObjectConfig{
 				} else if err != nil {
 					return nil, errors.InternalError(ctx, err)
 				}
-				// Fallback to the avatar
+				// If no image exists then move on
 				if ent.ImageMediaID == "" {
-					rEnt, err := transformEntityToResponse(ctx, svc.staticURLPrefix, ent, devicectx.SpruceHeaders(ctx), gqlctx.Account(ctx))
-					if err != nil {
-						golog.Errorf("Error while transforming entity to response for profile image creation: %s", err)
-						return nil, nil
-					}
-					return rEnt.Avatar, nil
+					return nil, nil
 				}
 				return &models.Image{
 					URL:    media.ThumbnailURL(svc.mediaAPIDomain, ent.ImageMediaID, imgArgs.Height, imgArgs.Width, imgArgs.Crop),
