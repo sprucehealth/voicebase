@@ -14,7 +14,7 @@ type Popover struct {
 	Title      string `json:"title"`
 	Message    string `json:"message"`
 	ButtonText string `json:"button_text"`
-	PhotoURL   string `json:"photo_url"`
+	PhotoURL   string `json:"photo_url,omitempty"`
 }
 
 type OrganizationInvite struct {
@@ -30,7 +30,7 @@ type ColleagueInviteClientData struct {
 type Greeting struct {
 	Title      string `json:"title"`
 	Message    string `json:"message"`
-	PhotoURL   string `json:"photo_url"`
+	PhotoURL   string `json:"photo_url,omitempty"`
 	ButtonText string `json:"button_text"`
 }
 
