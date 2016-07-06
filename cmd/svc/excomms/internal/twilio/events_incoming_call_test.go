@@ -2,7 +2,10 @@ package twilio
 
 import (
 	"fmt"
+	"html"
+	"net/url"
 	"testing"
+	"time"
 
 	dalmock "github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal/mock"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
@@ -11,8 +14,11 @@ import (
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/phone"
-	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/libs/ptr"
+	"github.com/sprucehealth/backend/libs/sig"
+	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
+	"github.com/sprucehealth/backend/libs/urlutil"
 	"github.com/sprucehealth/backend/svc/directory"
 	directorymock "github.com/sprucehealth/backend/svc/directory/mock"
 	"github.com/sprucehealth/backend/svc/excomms"
@@ -130,7 +136,11 @@ func TestIncoming_Organization(t *testing.T) {
 		},
 	}, nil))
 
-	es := NewEventHandler(md, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, storage.NewTestStore(nil))
+	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
+	test.OK(t, err)
+	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
+
+	es := NewEventHandler(md, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, signer)
 	params := &rawmsg.TwilioParams{
 		From:    patientPhone,
 		To:      practicePhoneNumber,
@@ -260,7 +270,11 @@ func TestIncoming_Organization_MultipleContacts(t *testing.T) {
 		},
 	}, nil))
 
-	es := NewEventHandler(md, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, storage.NewTestStore(nil))
+	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
+	test.OK(t, err)
+	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
+
+	es := NewEventHandler(md, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, signer)
 	params := &rawmsg.TwilioParams{
 		From:    patientPhone,
 		To:      practicePhoneNumber,
@@ -439,7 +453,11 @@ func TestIncoming_Organization_MultipleContacts_SendCallsToVoicemail(t *testing.
 		},
 	}, nil))
 
-	es := NewEventHandler(md, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, storage.NewTestStore(nil))
+	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
+	test.OK(t, err)
+	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
+
+	es := NewEventHandler(md, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, signer)
 	params := &rawmsg.TwilioParams{
 		From:    patientPhone,
 		To:      practicePhoneNumber,
@@ -515,7 +533,11 @@ func TestProviderCallConnected(t *testing.T) {
 		},
 	}, nil))
 
-	es := NewEventHandler(mdirectory, nil, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, storage.NewTestStore(nil))
+	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
+	test.OK(t, err)
+	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
+
+	es := NewEventHandler(mdirectory, nil, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, signer)
 
 	twiml, err := providerCallConnected(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
@@ -582,7 +604,11 @@ func TestProviderCallConnected_NoName(t *testing.T) {
 		},
 	}, nil))
 
-	es := NewEventHandler(mdirectory, nil, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, storage.NewTestStore(nil))
+	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
+	test.OK(t, err)
+	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
+
+	es := NewEventHandler(mdirectory, nil, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, signer)
 
 	twiml, err := providerCallConnected(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
@@ -673,7 +699,11 @@ func TestProviderEnteredDigits_EnteredOtherDigit(t *testing.T) {
 		},
 	}, nil))
 
-	es := NewEventHandler(mdirectory, nil, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, storage.NewTestStore(nil))
+	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
+	test.OK(t, err)
+	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
+
+	es := NewEventHandler(mdirectory, nil, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, signer)
 	twiml, err := providerEnteredDigits(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
 		t.Fatal(err)
@@ -779,7 +809,11 @@ func TestVoicemailTwiML(t *testing.T) {
 		},
 	}, nil))
 
-	es := NewEventHandler(md, msettings, nil, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, storage.NewTestStore(nil))
+	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
+	test.OK(t, err)
+	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
+
+	es := NewEventHandler(md, msettings, nil, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, signer)
 
 	twiml, err := voicemailTWIML(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
@@ -836,6 +870,8 @@ func TestVoicemailTwiML_Custom(t *testing.T) {
 	msettings := settingsmock.New(t)
 	defer msettings.Finish()
 
+	customVoicemailMediaID := "123456789"
+
 	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
 		Keys: []*settings.ConfigKey{
 			{
@@ -855,7 +891,7 @@ func TestVoicemailTwiML_Custom(t *testing.T) {
 					SingleSelect: &settings.SingleSelectValue{
 						Item: &settings.ItemValue{
 							ID:               excommsSettings.VoicemailOptionCustom,
-							FreeTextResponse: "https://custom.voicemail",
+							FreeTextResponse: customVoicemailMediaID,
 						},
 					},
 				},
@@ -886,14 +922,22 @@ func TestVoicemailTwiML_Custom(t *testing.T) {
 		},
 	}, nil))
 
-	es := NewEventHandler(md, msettings, nil, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, storage.NewTestStore(nil))
+	mc := clock.NewManaged(time.Now())
+	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
+	test.OK(t, err)
+	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
+
+	expectedURL, err := signer.SignedURL(fmt.Sprintf("/media/%s", customVoicemailMediaID), url.Values{}, ptr.Time(mc.Now().Add(time.Hour)))
+	test.OK(t, err)
+
+	es := NewEventHandler(md, msettings, nil, &mockSNS_Twilio{}, mc, nil, "https://test.com", "", "", "", nil, signer)
 
 	twiml, err := voicemailTWIML(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
 		t.Fatal(err)
 	}
-	expected := `<?xml version="1.0" encoding="UTF-8"?>
-<Response><Play>https://custom.voicemail</Play><Record action="/twilio/call/no_op" timeout="60" maxLength="3600" transcribeCallback="/twilio/call/process_voicemail" playBeep="true"></Record></Response>`
+	expected := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
+<Response><Play>%s</Play><Record action="/twilio/call/no_op" timeout="60" maxLength="3600" transcribeCallback="/twilio/call/process_voicemail" playBeep="true"></Record></Response>`, html.EscapeString(expectedURL))
 
 	if expected != twiml {
 		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
@@ -992,7 +1036,11 @@ func TestVoicemailTwiML_NoTranscription(t *testing.T) {
 		},
 	}, nil))
 
-	es := NewEventHandler(md, msettings, nil, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, storage.NewTestStore(nil))
+	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
+	test.OK(t, err)
+	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
+
+	es := NewEventHandler(md, msettings, nil, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, signer)
 
 	twiml, err := voicemailTWIML(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
@@ -1200,7 +1248,11 @@ func testIncomingCallStatus_Other(t *testing.T, incomingStatus rawmsg.TwilioPara
 		},
 	}, nil))
 
-	es := NewEventHandler(md, msettings, mdal, ms, clock.New(), nil, "https://test.com", "", "", "", nil, storage.NewTestStore(nil))
+	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
+	test.OK(t, err)
+	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
+
+	es := NewEventHandler(md, msettings, mdal, ms, clock.New(), nil, "https://test.com", "", "", "", nil, signer)
 
 	twiml, err := processIncomingCallStatus(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
@@ -1270,7 +1322,11 @@ func testIncomingCallStatus(t *testing.T, incomingStatus rawmsg.TwilioParams_Cal
 		},
 	}, nil))
 
-	es := NewEventHandler(mdir, nil, md, ms, clock.New(), nil, "", "", "", "", nil, storage.NewTestStore(nil))
+	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
+	test.OK(t, err)
+	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
+
+	es := NewEventHandler(mdir, nil, md, ms, clock.New(), nil, "", "", "", "", nil, signer)
 
 	twiml, err := processIncomingCallStatus(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
@@ -1356,7 +1412,11 @@ func TestProcessVoicemail(t *testing.T) {
 		},
 	}, nil))
 
-	es := NewEventHandler(mdir, nil, md, ms, clock.New(), nil, "", "", "", "", nil, storage.NewTestStore(nil))
+	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
+	test.OK(t, err)
+	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
+
+	es := NewEventHandler(mdir, nil, md, ms, clock.New(), nil, "", "", "", "", nil, signer)
 
 	twiml, err := processVoicemail(context.Background(), params, es.(*eventsHandler))
 	if err != nil {

@@ -14,7 +14,7 @@ import (
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/libs/urlutil"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/settings"
 	"golang.org/x/net/context"
@@ -52,7 +52,7 @@ type eventsHandler struct {
 	directory            directory.DirectoryClient
 	settings             settings.SettingsClient
 	dal                  dal.DAL
-	store                storage.DeterministicStore
+	signer               *urlutil.Signer
 	sns                  snsiface.SNSAPI
 	clock                clock.Clock
 	proxyNumberManager   proxynumber.Manager
@@ -72,7 +72,7 @@ func NewEventHandler(
 	proxyNumberManager proxynumber.Manager,
 	apiURL, externalMessageTopic, incomingRawMsgTopic, resourceCleanerTopic string,
 	segmentClient *analytics.Client,
-	store storage.DeterministicStore) EventHandler {
+	signer *urlutil.Signer) EventHandler {
 	return &eventsHandler{
 		directory:            directory,
 		settings:             settingsClient,
@@ -85,7 +85,7 @@ func NewEventHandler(
 		proxyNumberManager:   proxyNumberManager,
 		resourceCleanerTopic: resourceCleanerTopic,
 		segmentClient:        segmentClient,
-		store:                store,
+		signer:               signer,
 	}
 }
 

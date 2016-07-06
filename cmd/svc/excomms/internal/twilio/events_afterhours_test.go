@@ -2,7 +2,10 @@ package twilio
 
 import (
 	"fmt"
+	"html"
+	"net/url"
 	"testing"
+	"time"
 
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	dalmock "github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal/mock"
@@ -12,8 +15,10 @@ import (
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/ptr"
-	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/libs/sig"
+	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
+	"github.com/sprucehealth/backend/libs/urlutil"
 	"github.com/sprucehealth/backend/svc/directory"
 	dirmock "github.com/sprucehealth/backend/svc/directory/mock"
 	"github.com/sprucehealth/backend/svc/settings"
@@ -141,7 +146,7 @@ func TestAfterHours_IncomingCall_SendAllCallsToVM_DefaultGreeting(t *testing.T) 
 		NodeID: orgID,
 		Keys: []*settings.ConfigKey{
 			{
-				Key:    excommsSettings.ConfigKeyAfterHoursGreetingOption,
+				Key:    excommsSettings.ConfigKeyVoicemailOption,
 				Subkey: practicePhoneNumber,
 			},
 		},
@@ -152,7 +157,7 @@ func TestAfterHours_IncomingCall_SendAllCallsToVM_DefaultGreeting(t *testing.T) 
 				Value: &settings.Value_SingleSelect{
 					SingleSelect: &settings.SingleSelectValue{
 						Item: &settings.ItemValue{
-							ID: excommsSettings.AfterHoursGreetingOptionDefault,
+							ID: excommsSettings.VoicemailOptionDefault,
 						},
 					},
 				},
@@ -164,7 +169,11 @@ func TestAfterHours_IncomingCall_SendAllCallsToVM_DefaultGreeting(t *testing.T) 
 		Afterhours: ptr.Bool(true),
 	}).WithReturns(int64(1), nil))
 
-	es := NewEventHandler(mdir, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, storage.NewTestStore(nil))
+	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
+	test.OK(t, err)
+	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
+
+	es := NewEventHandler(mdir, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, signer)
 	params := &rawmsg.TwilioParams{
 		From:    patientPhone,
 		To:      practicePhoneNumber,
@@ -257,7 +266,7 @@ func TestAfterHours_IncomingCallStatus(t *testing.T) {
 		NodeID: orgID,
 		Keys: []*settings.ConfigKey{
 			{
-				Key:    excommsSettings.ConfigKeyAfterHoursGreetingOption,
+				Key:    excommsSettings.ConfigKeyVoicemailOption,
 				Subkey: practicePhoneNumber,
 			},
 		},
@@ -268,7 +277,7 @@ func TestAfterHours_IncomingCallStatus(t *testing.T) {
 				Value: &settings.Value_SingleSelect{
 					SingleSelect: &settings.SingleSelectValue{
 						Item: &settings.ItemValue{
-							ID: excommsSettings.AfterHoursGreetingOptionDefault,
+							ID: excommsSettings.VoicemailOptionDefault,
 						},
 					},
 				},
@@ -276,7 +285,11 @@ func TestAfterHours_IncomingCallStatus(t *testing.T) {
 		},
 	}, nil))
 
-	es := NewEventHandler(mdir, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, storage.NewTestStore(nil))
+	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
+	test.OK(t, err)
+	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
+
+	es := NewEventHandler(mdir, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, signer)
 	params := &rawmsg.TwilioParams{
 		From:           patientPhone,
 		To:             practicePhoneNumber,
@@ -419,7 +432,7 @@ func TestAfterHours_IncomingCall_SendAllCallsToVM_CustomGreeting(t *testing.T) {
 	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
 		Keys: []*settings.ConfigKey{
 			{
-				Key:    excommsSettings.ConfigKeyAfterHoursGreetingOption,
+				Key:    excommsSettings.ConfigKeyVoicemailOption,
 				Subkey: practicePhoneNumber,
 			},
 		},
@@ -431,8 +444,8 @@ func TestAfterHours_IncomingCall_SendAllCallsToVM_CustomGreeting(t *testing.T) {
 				Value: &settings.Value_SingleSelect{
 					SingleSelect: &settings.SingleSelectValue{
 						Item: &settings.ItemValue{
-							ID:               excommsSettings.AfterHoursGreetingOptionCustom,
-							FreeTextResponse: "https://custom.voicemail",
+							ID:               excommsSettings.VoicemailOptionCustom,
+							FreeTextResponse: "123456789",
 						},
 					},
 				},
@@ -440,7 +453,15 @@ func TestAfterHours_IncomingCall_SendAllCallsToVM_CustomGreeting(t *testing.T) {
 		},
 	}, nil))
 
-	es := NewEventHandler(mdir, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, storage.NewTestStore(nil))
+	mc := clock.NewManaged(time.Now())
+	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
+	test.OK(t, err)
+	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
+
+	expectedURL, err := signer.SignedURL(fmt.Sprintf("/media/%s", "123456789"), url.Values{}, ptr.Time(mc.Now().Add(time.Hour)))
+	test.OK(t, err)
+
+	es := NewEventHandler(mdir, msettings, mdal, &mockSNS_Twilio{}, mc, nil, "https://test.com", "", "", "", nil, signer)
 	params := &rawmsg.TwilioParams{
 		From:    patientPhone,
 		To:      practicePhoneNumber,
@@ -452,7 +473,7 @@ func TestAfterHours_IncomingCall_SendAllCallsToVM_CustomGreeting(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 	expected := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
-<Response><Gather action="/twilio/call/afterhours_patient_entered_digits" method="POST" timeout="5" numDigits="1"><Play>https://custom.voicemail</Play></Gather><Redirect>/twilio/call/afterhours_greeting</Redirect></Response>`)
+<Response><Gather action="/twilio/call/afterhours_patient_entered_digits" method="POST" timeout="5" numDigits="1"><Play>%s</Play></Gather><Redirect>/twilio/call/afterhours_greeting</Redirect></Response>`, html.EscapeString(expectedURL))
 
 	if twiml != expected {
 		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
@@ -477,7 +498,11 @@ func TestAfterHours_PatientEnteredDigits_Urgent(t *testing.T) {
 		Urgent: ptr.Bool(true),
 	}).WithReturns(int64(1), nil))
 
-	es := NewEventHandler(mdir, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, storage.NewTestStore(nil))
+	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
+	test.OK(t, err)
+	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
+
+	es := NewEventHandler(mdir, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, signer)
 	params := &rawmsg.TwilioParams{
 		From:    patientPhone,
 		To:      practicePhoneNumber,
@@ -515,7 +540,11 @@ func TestAfterHours_PatientEnteredDigits_NonUrgent(t *testing.T) {
 		Urgent: ptr.Bool(false),
 	}).WithReturns(int64(1), nil))
 
-	es := NewEventHandler(mdir, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, storage.NewTestStore(nil))
+	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
+	test.OK(t, err)
+	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
+
+	es := NewEventHandler(mdir, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, signer)
 	params := &rawmsg.TwilioParams{
 		From:    patientPhone,
 		To:      practicePhoneNumber,
@@ -589,7 +618,11 @@ func TestAfterHours_Voicemail(t *testing.T) {
 		},
 	}, nil))
 
-	es := NewEventHandler(mdir, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, storage.NewTestStore(nil))
+	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
+	test.OK(t, err)
+	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
+
+	es := NewEventHandler(mdir, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, signer)
 	params := &rawmsg.TwilioParams{
 		From:    patientPhone,
 		To:      practicePhoneNumber,
@@ -662,7 +695,11 @@ func TestAfterHours_Voicemail_Transcription(t *testing.T) {
 		},
 	}, nil))
 
-	es := NewEventHandler(mdir, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, storage.NewTestStore(nil))
+	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
+	test.OK(t, err)
+	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
+
+	es := NewEventHandler(mdir, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, signer)
 	params := &rawmsg.TwilioParams{
 		From:    patientPhone,
 		To:      practicePhoneNumber,

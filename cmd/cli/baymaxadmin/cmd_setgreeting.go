@@ -4,9 +4,10 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"github.com/tcolgate/mp3"
 	"os"
 	"strings"
+
+	"github.com/tcolgate/mp3"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	excommsSettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
@@ -153,15 +154,7 @@ func (c *setGreetingCmd) run(args []string) error {
 		return errors.Trace(err)
 	}
 
-	var selectionID string
-	switch *key {
-	case excommsSettings.ConfigKeyVoicemailOption:
-		selectionID = excommsSettings.VoicemailOptionCustom
-	case excommsSettings.ConfigKeyAfterHoursGreetingOption:
-		selectionID = excommsSettings.AfterHoursGreetingOptionCustom
-	default:
-		return errors.Trace(fmt.Errorf("Unknown key for setting greeting: %s", *key))
-	}
+	selectionID := excommsSettings.VoicemailOptionCustom
 
 	_, err = c.settingsCli.SetValue(context.Background(), &settings.SetValueRequest{
 		NodeID: *orgEntityID,

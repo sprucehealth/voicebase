@@ -10,7 +10,6 @@ const (
 	ConfigKeyVoicemailOption            = "voicemail_option"
 	ConfigKeyTranscribeVoicemail        = "transcribe_voicemail"
 	ConfigKeyAfterHoursVociemailEnabled = "afterhours_voicemail_enabled"
-	ConfigKeyAfterHoursGreetingOption   = "afterhours_greeting_option"
 	ConfigKeyForwardingListTimeout      = "forwarding_list_timeout"
 	ConfigKeyPauseBeforeCallConnect     = "pause_before_call_connect"
 )
@@ -129,40 +128,6 @@ var AfterHoursVoicemailEnabledConfig = &settings.Config{
 		Boolean: &settings.BooleanConfig{
 			Default: &settings.BooleanValue{
 				Value: false,
-			},
-		},
-	},
-}
-
-const (
-	AfterHoursGreetingOptionDefault = "afterhours_greeting_option_default"
-	AfterHoursGreetingOptionCustom  = "afterhours_greeting_option_custom"
-)
-
-var AfterHoursGreetingOptionConfig = &settings.Config{
-	Title:          "After hours greeting: Custom or voicemail?",
-	Key:            ConfigKeyAfterHoursGreetingOption,
-	AllowSubkeys:   true,
-	Type:           settings.ConfigType_SINGLE_SELECT,
-	PossibleOwners: []settings.OwnerType{settings.OwnerType_ORGANIZATION},
-	Config: &settings.Config_SingleSelect{
-		SingleSelect: &settings.SingleSelectConfig{
-			Items: []*settings.Item{
-				{
-					ID:    AfterHoursGreetingOptionDefault,
-					Label: "Default",
-				},
-				{
-					ID:               AfterHoursGreetingOptionCustom,
-					Label:            "Custom",
-					AllowFreeText:    true,
-					FreeTextRequired: true,
-				},
-			},
-			Default: &settings.SingleSelectValue{
-				Item: &settings.ItemValue{
-					ID: AfterHoursGreetingOptionDefault,
-				},
 			},
 		},
 	},

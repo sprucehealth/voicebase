@@ -3,6 +3,7 @@ package twilio
 import (
 	"fmt"
 	"html"
+	"net/url"
 	"time"
 
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
@@ -38,7 +39,7 @@ func afterHoursCallTriage(ctx context.Context, orgEntity *directory.Entity, para
 		NodeID: orgEntity.ID,
 		Keys: []*settings.ConfigKey{
 			{
-				Key:    excommsSettings.ConfigKeyAfterHoursGreetingOption,
+				Key:    excommsSettings.ConfigKeyVoicemailOption,
 				Subkey: params.To,
 			},
 		},
@@ -47,12 +48,12 @@ func afterHoursCallTriage(ctx context.Context, orgEntity *directory.Entity, para
 		golog.Errorf("Unable to read setting for afterhours greeting option for orgID %s phone number %s: %s", orgEntity.ID, params.To, err.Error())
 	}
 
-	if singleSelectValue.GetItem().ID == excommsSettings.AfterHoursGreetingOptionCustom {
+	if singleSelectValue.GetItem().ID == excommsSettings.VoicemailOptionCustom {
 		if url := singleSelectValue.GetItem().FreeTextResponse; url == "" {
 			golog.Errorf("URL for custom afterhours greeting not specified for orgID %s when custom voicemail selected", orgEntity.ID)
 		}
 		afterHoursGreetingMediaID := singleSelectValue.GetItem().FreeTextResponse
-		afterHoursGreetingURL, err = eh.store.ExpiringURL(afterHoursGreetingMediaID, time.Hour)
+		afterHoursGreetingURL, err = eh.signer.SignedURL(fmt.Sprintf("/media/%s", afterHoursGreetingMediaID), url.Values{}, ptr.Time(eh.clock.Now().Add(time.Hour)))
 		if err != nil {
 			golog.Errorf("Unable to generate expiring url for %s:%s", afterHoursGreetingMediaID, afterHoursGreetingURL)
 		}

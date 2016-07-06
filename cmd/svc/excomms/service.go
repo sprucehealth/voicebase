@@ -113,7 +113,6 @@ func runService(bootSvc *boot.Service) {
 			excommsSettings.VoicemailOptionConfig,
 			excommsSettings.SendCallsToVoicemailConfig,
 			excommsSettings.TranscribeVoicemailConfig,
-			excommsSettings.AfterHoursGreetingOptionConfig,
 			excommsSettings.AfterHoursVoicemailEnabledConfig,
 			excommsSettings.ForwardingListTimeoutConfig,
 			excommsSettings.PauseBeforeCallConnectConfig,

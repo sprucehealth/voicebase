@@ -13,8 +13,10 @@ import (
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/phone"
-	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/libs/sig"
+	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
+	"github.com/sprucehealth/backend/libs/urlutil"
 	"github.com/sprucehealth/backend/svc/directory"
 	directorymock "github.com/sprucehealth/backend/svc/directory/mock"
 	"github.com/sprucehealth/backend/svc/excomms"
@@ -47,7 +49,11 @@ func TestOutgoing_BlockedCallerID(t *testing.T) {
 
 	mclock := clock.NewManaged(time.Now())
 
-	es := NewEventHandler(nil, nil, mdal, &mockSNS_Twilio{}, mclock, nil, "https://test.com", "", "", "", nil, storage.NewTestStore(nil))
+	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
+	test.OK(t, err)
+	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
+
+	es := NewEventHandler(nil, nil, mdal, &mockSNS_Twilio{}, mclock, nil, "https://test.com", "", "", "", nil, signer)
 
 	params := &rawmsg.TwilioParams{
 		From:    providerPersonalPhoneNumber.String(),
@@ -156,7 +162,11 @@ func testOutgoing(t *testing.T, testExpired bool, patientName string) {
 		mproxynumberManager.Expect(mock.NewExpectation(mproxynumberManager.CallStarted, providerPersonalPhoneNumber, proxyPhoneNumber))
 	}
 
-	es := NewEventHandler(md, nil, mdal, &mockSNS_Twilio{}, mclock, mproxynumberManager, "https://test.com", "", "", "", nil, storage.NewTestStore(nil))
+	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
+	test.OK(t, err)
+	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
+
+	es := NewEventHandler(md, nil, mdal, &mockSNS_Twilio{}, mclock, mproxynumberManager, "https://test.com", "", "", "", nil, signer)
 
 	params := &rawmsg.TwilioParams{
 		From:    providerPersonalPhoneNumber.String(),
@@ -244,7 +254,11 @@ func TestOutgoingCallStatus(t *testing.T) {
 
 	mproxynumberManager.Expect(mock.NewExpectation(mproxynumberManager.CallEnded, phone.Number(params.From), phone.Number(params.To)))
 
-	es := NewEventHandler(mdir, nil, md, ms, clock.New(), mproxynumberManager, "", "", "", "", nil, storage.NewTestStore(nil))
+	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
+	test.OK(t, err)
+	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
+
+	es := NewEventHandler(mdir, nil, md, ms, clock.New(), mproxynumberManager, "", "", "", "", nil, signer)
 
 	twiml, err := processOutgoingCallStatus(context.Background(), params, es.(*eventsHandler))
 	if err != nil {

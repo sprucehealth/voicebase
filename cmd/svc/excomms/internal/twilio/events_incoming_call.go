@@ -3,6 +3,7 @@ package twilio
 import (
 	"fmt"
 	"html"
+	"net/url"
 	"time"
 
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/cleaner"
@@ -14,6 +15,7 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/twilio/twiml"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
@@ -298,7 +300,7 @@ func voicemailTWIML(ctx context.Context, params *rawmsg.TwilioParams, eh *events
 			golog.Errorf("URL for custom voicemail not specified for orgID %s when custom voicemail selected", orgID)
 		}
 		customVoicemailMediaID := singleSelectValue.GetItem().FreeTextResponse
-		customVoicemailURL, err = eh.store.ExpiringURL(customVoicemailMediaID, time.Hour)
+		customVoicemailURL, err = eh.signer.SignedURL(fmt.Sprintf("/media/%s", customVoicemailMediaID), url.Values{}, ptr.Time(eh.clock.Now().Add(time.Hour)))
 		if err != nil {
 			golog.Errorf("Unable to generate expiring url for %s:%s", customVoicemailMediaID, customVoicemailURL)
 		}

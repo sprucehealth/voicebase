@@ -3,6 +3,7 @@ package main
 import (
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/kms"
@@ -19,7 +20,9 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
+	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/libs/urlutil"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/go-proxy-protocol/proxyproto"
@@ -78,6 +81,17 @@ func runAPI(bootSvc *boot.Service) {
 		defer segmentClient.Close()
 	}
 
+	sigKeys := strings.Split(config.sigKeys, ",")
+	sigKeysByteSlice := make([][]byte, len(sigKeys))
+	for i, sk := range sigKeys {
+		sigKeysByteSlice[i] = []byte(sk)
+	}
+	signer, err := sig.NewSigner(sigKeysByteSlice, nil)
+	if err != nil {
+		golog.Fatalf("Failed to create signer: %s", err.Error())
+	}
+	ms := urlutil.NewSigner("https://"+config.mediaAPIDomain, signer, clock.New())
+
 	eh := twilio.NewEventHandler(
 		directory.NewDirectoryClient(conn),
 		settings.NewSettingsClient(settingsConn),
@@ -90,7 +104,7 @@ func runAPI(bootSvc *boot.Service) {
 		config.incomingRawMessageTopic,
 		config.resourceCleanerTopic,
 		segmentClient,
-		storage.NewS3(awsSession, config.attachmentBucket, "media"))
+		ms)
 
 	router := mux.NewRouter().StrictSlash(true)
 	router.Handle("/twilio/sms", handlers.NewTwilioSMSHandler(dl, config.incomingRawMessageTopic, eSNS))
