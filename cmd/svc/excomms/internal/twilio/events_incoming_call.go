@@ -295,7 +295,7 @@ func voicemailTWIML(ctx context.Context, params *rawmsg.TwilioParams, eh *events
 		golog.Errorf("Unable to read setting for voicemail option for orgID %s phone number %s: %s", orgID, params.To, err.Error())
 	}
 
-	if singleSelectValue.GetItem().ID == excommsSettings.VoicemailOptionCustom {
+	if singleSelectValue != nil && singleSelectValue.GetItem().ID == excommsSettings.VoicemailOptionCustom {
 		if url := singleSelectValue.GetItem().FreeTextResponse; url == "" {
 			golog.Errorf("URL for custom voicemail not specified for orgID %s when custom voicemail selected", orgID)
 		}

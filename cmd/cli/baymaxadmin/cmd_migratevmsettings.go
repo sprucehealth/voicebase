@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/sprucehealth/backend/libs/awsutil"
@@ -169,7 +170,14 @@ func (c *migrateVMSettingCmd) run(args []string) error {
 	// now for each of the orgs, go ahead and reupload the voicemail into the generic
 	// s3 location and update the settings
 	for _, orgID := range orgIDs {
-		mp3Data, _, err := store.Get(voicemailLocations[orgID])
+
+		voicemailLocation := voicemailLocations[orgID]
+		if parts := strings.Split(voicemailLocation, "/"); len(parts) == 1 {
+			golog.Warningf("Skipping migrating voicemail for %s since it is already in the right format %s", orgID, voicemailLocation)
+			continue
+		}
+
+		mp3Data, _, err := store.Get(voicemailLocation)
 		if err != nil {
 			return errors.Trace(fmt.Errorf("unable to read voicemail at location %s for %s: %s", voicemailLocations[orgID], orgID, err))
 		}
@@ -178,7 +186,7 @@ func (c *migrateVMSettingCmd) run(args []string) error {
 
 		size, err := media.SeekerSize(mp3Buffer)
 		if err != nil {
-			return errors.Trace(fmt.Errorf("Unable to determine size for media %s for %s: %s", voicemailLocations[orgID], orgID, err))
+			return errors.Trace(fmt.Errorf("Unable to determine size for media %s for %s: %s", voicemailLocation, orgID, err))
 		}
 
 		id, err := media.NewID()
@@ -189,7 +197,7 @@ func (c *migrateVMSettingCmd) run(args []string) error {
 		// store the media object at the location it is intended to be stored at
 		_, err = store.PutReader(id, mp3Buffer, size, "audio/mpeg", nil)
 		if err != nil {
-			return errors.Trace(fmt.Errorf("Unable to upload media %s to new location %s for %s: %s ", voicemailLocations[orgID], id, orgID, err))
+			return errors.Trace(fmt.Errorf("Unable to upload media %s to new location %s for %s: %s ", voicemailLocation, id, orgID, err))
 		}
 
 		// now re-set the settings for the org with the new mediaID
@@ -214,7 +222,7 @@ func (c *migrateVMSettingCmd) run(args []string) error {
 		if err != nil {
 			return errors.Trace(fmt.Errorf("Unable to set setting for %s: %s", orgID, err))
 		}
-
+		golog.Infof("Migrated setting for %s", orgID)
 	}
 
 	return nil
