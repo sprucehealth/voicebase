@@ -120,7 +120,7 @@ func TestInviteColleagues(t *testing.T) {
 	// Generate branch URL
 	values := map[string]string{
 		"invite_token": "simpleToken",
-		"client_data":  `{"organization_invite":{"popover":{"title":"Welcome to Spruce!","message":"Inviter has invited you to join them on Spruce.","button_text":"Okay","photo_url":""},"org_id":"org","org_name":"Orgo"}}`,
+		"client_data":  `{"organization_invite":{"popover":{"title":"Welcome to Spruce!","message":"Inviter has invited you to join them on Spruce.","button_text":"Okay"},"org_id":"org","org_name":"Orgo"}}`,
 		"$desktop_url": "https://app.sprucehealth.com/signup?invite=simpleToken&some=other",
 		"invite_type":  "COLLEAGUE",
 	}
@@ -213,7 +213,7 @@ func TestInvitePatients(t *testing.T) {
 	// Generate branch URL
 	values := map[string]string{
 		"invite_token": "simpleToken",
-		"client_data":  `{"patient_invite":{"greeting":{"title":"Welcome, Alfred!","message":"Let's create your account so you can start securely messaging with Batman Inc.","photo_url":"","button_text":"Get Started"},"org_id":"org","org_name":"Batman Inc"}}`,
+		"client_data":  `{"patient_invite":{"greeting":{"title":"Welcome, Alfred!","message":"Let's create your account so you can start securely messaging with Batman Inc.","button_text":"Get Started"},"org_id":"org","org_name":"Batman Inc"}}`,
 		"$desktop_url": "https://app.sprucehealth.com/signup?invite=simpleToken&some=other",
 		"invite_type":  "PATIENT",
 	}
@@ -329,7 +329,7 @@ func TestInvitePatientsNoFirstName(t *testing.T) {
 	// Generate branch URL
 	values := map[string]string{
 		"invite_token": "simpleToken",
-		"client_data":  `{"patient_invite":{"greeting":{"title":"Welcome!","message":"Let's create your account so you can start securely messaging with Batman Inc.","photo_url":"","button_text":"Get Started"},"org_id":"org","org_name":"Batman Inc"}}`,
+		"client_data":  `{"patient_invite":{"greeting":{"title":"Welcome!","message":"Let's create your account so you can start securely messaging with Batman Inc.","button_text":"Get Started"},"org_id":"org","org_name":"Batman Inc"}}`,
 		"$desktop_url": "https://app.sprucehealth.com/signup?invite=simpleToken&some=other",
 		"invite_type":  "PATIENT",
 	}
