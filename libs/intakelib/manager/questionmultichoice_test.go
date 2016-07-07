@@ -12,7 +12,7 @@ import (
 const multipleChoiceJSON = `
 			{
               "question": "q_derm_eczema_type_of_healthcare_provider_previously_seen",
-              "question_id": "40501",
+              "id": "40501",
               "question_title": "What type of healthcare provider have you previously seen for eczema?",
               "question_title_has_tokens": false,
               "question_type": "q_type_multiple_choice",
@@ -20,7 +20,7 @@ const multipleChoiceJSON = `
               "question_summary": "Type of healthcare provider previously seen",
               "potential_answers": [
                 {
-                  "potential_answer_id": "126135",
+                  "id": "126135",
                   "potential_answer": "Internal medicine, family practice, or general practitioner",
                   "potential_answer_summary": "Internal medicine, family practice, or general practitioner",
                   "answer_type": "a_type_multiple_choice",
@@ -30,7 +30,7 @@ const multipleChoiceJSON = `
                   "answer_tag": "a_derm_eczema_type_of_healthcare_provider_previously_seen_internal_medicine_family_practice_or_general_practitioner"
                 },
                 {
-                  "potential_answer_id": "126139",
+                  "id": "126139",
                   "potential_answer": "Other",
                   "potential_answer_summary": "Other",
                   "answer_type": "a_type_multiple_choice_other_free_text",
@@ -43,7 +43,7 @@ const multipleChoiceJSON = `
                   }
                 },
                 {
-                  "potential_answer_id": "126140",
+                  "id": "126140",
                   "potential_answer": "None of the above",
                   "potential_answer_summary": "None of the above",
                   "answer_type": "a_type_multiple_choice_none",
@@ -69,25 +69,13 @@ const multipleChoiceJSON = `
               "prefilled_with_previous_answers": true,
               "required": true,
               "to_alert": false,
-              "alert_text": "",
-              "answers": [{
-					"answer_id": "64319",
-					"question_id": "40501",
-					"potential_answer_id": "126135",
-					"type": "q_type_multiple_choice"
-				}, {
-					"answer_id": "64320",
-					"question_id": "40501",
-					"potential_answer_id": "126139",
-					"answer_text" : "geoahg",
-					"type": "q_type_multiple_choice"
-				}]
+              "alert_text": ""
             }`
 
 const multipleChoiceWithoutClientDataJSON = `
 {
   "question": "q_derm_eczema_type_of_healthcare_provider_previously_seen",
-  "question_id": "40501",
+  "id": "40501",
   "question_title": "What type of healthcare provider have you previously seen for eczema?",
   "question_title_has_tokens": false,
   "question_type": "q_type_multiple_choice",
@@ -95,7 +83,7 @@ const multipleChoiceWithoutClientDataJSON = `
   "question_summary": "Type of healthcare provider previously seen",
   "potential_answers": [
     {
-      "potential_answer_id": "126135",
+      "id": "126135",
       "potential_answer": "Internal medicine, family practice, or general practitioner",
       "potential_answer_summary": "Internal medicine, family practice, or general practitioner",
       "answer_type": "a_type_multiple_choice",
@@ -105,7 +93,7 @@ const multipleChoiceWithoutClientDataJSON = `
       "answer_tag": "a_derm_eczema_type_of_healthcare_provider_previously_seen_internal_medicine_family_practice_or_general_practitioner"
     },
     {
-      "potential_answer_id": "126139",
+      "id": "126139",
       "potential_answer": "Other",
       "potential_answer_summary": "Other",
       "answer_type": "a_type_multiple_choice_other_free_text",
@@ -118,7 +106,7 @@ const multipleChoiceWithoutClientDataJSON = `
       }
     },
     {
-      "potential_answer_id": "126140",
+      "id": "126140",
       "potential_answer": "None of the above",
       "potential_answer_summary": "None of the above",
       "answer_type": "a_type_multiple_choice_none",
@@ -132,19 +120,7 @@ const multipleChoiceWithoutClientDataJSON = `
   "prefilled_with_previous_answers": false,
   "required": true,
   "to_alert": false,
-  "alert_text": "",
-  "answers": [{
-		"answer_id": "64319",
-		"question_id": "40501",
-		"potential_answer_id": "126135",
-		"type": "q_type_multiple_choice"
-	}, {
-		"answer_id": "64320",
-		"question_id": "40501",
-		"potential_answer_id": "126139",
-		"answer_text" : "geoahg",
-		"type": "q_type_multiple_choice"
-	}]
+  "alert_text": ""
 }`
 
 func TestMultipleChoiceQuestion_Parsing(t *testing.T) {
@@ -174,8 +150,6 @@ func TestMultipleChoiceQuestion_Parsing(t *testing.T) {
 	test.Equals(t, 4, mcq.AnswerGroups[0].Count)
 	test.Equals(t, "Torso", mcq.AnswerGroups[1].Title)
 	test.Equals(t, 5, mcq.AnswerGroups[1].Count)
-	test.Equals(t, true, mcq.answer != nil)
-	test.Equals(t, 2, len(mcq.answer.Answers))
 }
 
 func TestMultipleChoice_staticInfoCopy(t *testing.T) {
@@ -216,8 +190,6 @@ func TestMultipleChoiceQuestion_ParsingNoClientData(t *testing.T) {
 	test.Equals(t, "Other", mcq.PotentialAnswers[1].Text)
 	test.Equals(t, "Type another", mcq.PotentialAnswers[1].PlaceholderText)
 	test.Equals(t, "Other", mcq.PotentialAnswers[1].Summary)
-	test.Equals(t, true, mcq.answer != nil)
-	test.Equals(t, 2, len(mcq.answer.Answers))
 }
 
 func TestMultipleChoiceQuestion_Answer(t *testing.T) {
@@ -536,6 +508,7 @@ func TestMultipleChoiceQuestion_answerMerge(t *testing.T) {
 	s := &multipleChoiceQuestion{
 		questionInfo: &questionInfo{
 			Required: true,
+			Type:     questionTypeMultipleChoice.String(),
 		},
 		PotentialAnswers: []*potentialAnswer{
 			{
@@ -618,17 +591,17 @@ func TestMultipleChoiceQuestion_answerMerge(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// there should now be 3 top level answers set
-	test.Equals(t, 3, len(s.answer.Answers))
-
-	// subscreens should match for answer 1 (before and after being set)
-	test.Equals(t, subscreens1, s.answer.Answers[0].subscreens())
-
-	// same for answer2
-	test.Equals(t, subscreens2, s.answer.Answers[1].subscreens())
-
-	// answer 3 should not have any subscreens
-	test.Equals(t, 0, len(s.answer.Answers[2].subscreens()))
+	// // there should now be 3 top level answers set
+	// test.Equals(t, 3, len(s.answer.Answers))
+	//
+	// // subscreens should match for answer 1 (before and after being set)
+	// test.Equals(t, subscreens1, s.answer.Answers[0].subscreens())
+	//
+	// // same for answer2
+	// test.Equals(t, subscreens2, s.answer.Answers[1].subscreens())
+	//
+	// // answer 3 should not have any subscreens
+	// test.Equals(t, 0, len(s.answer.Answers[2].subscreens()))
 
 	// top level screen should contain 4 subscreens in order
 	subscreens := s.layoutParent().(*questionScreen).subscreens()

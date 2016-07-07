@@ -10,7 +10,7 @@ import (
 type topLevelAnswerItem interface {
 	text() string
 	potentialAnswerID() string
-	subAnswers() []patientAnswer
+	subAnswers() map[string]patientAnswer
 	setSubscreens([]screen)
 	subscreens() []screen
 }

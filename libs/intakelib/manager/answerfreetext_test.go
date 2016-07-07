@@ -10,27 +10,30 @@ import (
 )
 
 func TestFreeText_JSONMarshaling(t *testing.T) {
-	expected := `{"question_id":"43309","potential_answers":[{"answer_text":"No not really..."}]}`
+	expected := `{"type":"q_type_free_text","text":"No not really..."}`
 
 	f := &freeTextAnswer{
-		QuestionID: "43309",
-		Text:       "No not really...",
+		Text: "No not really...",
 	}
 
-	data, err := f.marshalJSONForClient()
+	data, err := f.transformForClient()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if res := bytes.Compare(data, []byte(expected)); res != 0 {
-		t.Fatalf("Expected `%s`, but got `%s`", expected, string(data))
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if res := bytes.Compare(jsonData, []byte(expected)); res != 0 {
+		t.Fatalf("Expected `%s`, but got `%s`", expected, string(jsonData))
 	}
 }
 
 func TestFreeText_ProtobufTransform(t *testing.T) {
 	f := &freeTextAnswer{
-		QuestionID: "12345",
-		Text:       "hello",
+		Text: "hello",
 	}
 
 	pb, err := f.transformToProtobuf()
@@ -69,12 +72,8 @@ func TestFreeText_ProtobufUnmarshal(t *testing.T) {
 func TestFreeText_DataMapUnmarshal(t *testing.T) {
 	clientJSON := `
 	{
-		"answers": [{
-			"answer_id": "64406",
-			"question_id": "43309",
-			"potential_answer_id": null,
-			"answer_text": "Testing free text."
-		}]
+		"type": "q_type_free_text",
+			"text": "Testing free text."
 	}`
 
 	var data map[string]interface{}
@@ -88,32 +87,11 @@ func TestFreeText_DataMapUnmarshal(t *testing.T) {
 	} else if f.Text != "Testing free text." {
 		t.Fatal("Data unmarshalled from client doesn't match client representation")
 	}
-
-	// alternate representation
-	clientJSON = `
-	{
-		"answer_id": "64406",
-		"question_id": "43309",
-		"potential_answer_id": null,
-		"answer_text": "Testing free text."
-	}`
-
-	if err := json.Unmarshal([]byte(clientJSON), &data); err != nil {
-		t.Fatal(err)
-	}
-
-	f = freeTextAnswer{}
-	if err := f.unmarshalMapFromClient(data); err != nil {
-		t.Fatal(err)
-	} else if f.Text != "Testing free text." {
-		t.Fatal("Data unmarshalled from client doesn't match client representation")
-	}
 }
 
 func TestFreeText_equals(t *testing.T) {
 	f := &freeTextAnswer{
-		QuestionID: "12345",
-		Text:       "hello",
+		Text: "hello",
 	}
 
 	if !f.equals(f) {
@@ -122,8 +100,7 @@ func TestFreeText_equals(t *testing.T) {
 
 	// answer with different text shouldn't match
 	other := &freeTextAnswer{
-		QuestionID: "12345",
-		Text:       "dg",
+		Text: "dg",
 	}
 
 	if f.equals(other) {

@@ -1,6 +1,6 @@
   se:0|sc:0: screen_type_questions | visible
     se:0|sc:0|qu:0: q_type_multiple_choice | visible
-    Q: Let’s make sure Spruce is right for you. Are you experiencing any of the following?
+    Q: Let's make sure Spruce is right for you. Are you experiencing any of the following?
     A: None of the above
 
   se:0|sc:1:  | hidden
@@ -18,7 +18,7 @@
   se:0|sc:6: screen_type_questions | visible
     se:0|sc:6|qu:0: q_type_single_select | visible
     Q: Have you had this type of rash before?
-    A: A few times
+    A: Once
 
   se:0|sc:7:  | hidden
 
@@ -46,7 +46,7 @@
   se:0|sc:14: screen_type_questions | visible
     se:0|sc:14|qu:0: q_type_single_select | visible
     Q: Eczema can be frustrating. How has your mood been?
-    A: Fine
+    A: Frustrated, but okay
 
   se:0|sc:15:  | hidden
 
@@ -58,9 +58,6 @@
     A: Face
     A: Mouth
     A: Scalp
-    A: Neck
-    A: Legs
-    A: Eyes.
 
   se:0|sc:18:  | hidden
 
@@ -107,8 +104,8 @@
   se:0|sc:32: screen_type_questions | visible
     se:0|sc:32|qu:0: q_type_multiple_choice | visible
     Q: Select the locations where the rash began:
-    A: Groin
-    A: Hands
+    A: Face
+    A: Mouth
 
   se:0|sc:33: screen_type_questions | visible
     se:0|sc:33|qu:0: q_type_single_select | visible
@@ -119,61 +116,48 @@
   se:0|sc:34: screen_type_questions | visible
     se:0|sc:34|qu:0: q_type_single_select | visible
     Q: Have you noticed any changes in your fingernails or toenails?
-    A: Yes
+    A: No
 
-  se:0|sc:35: screen_type_questions | visible
-    se:0|sc:35|qu:0: q_type_single_select | visible
+  se:0|sc:35: screen_type_questions | hidden
+    se:0|sc:35|qu:0: q_type_single_select | hidden
     Q: How many fingernails are affected?
-    A: 1
 
-  se:0|sc:36: screen_type_questions | visible
-    se:0|sc:36|qu:0: q_type_single_select | visible
+  se:0|sc:36: screen_type_questions | hidden
+    se:0|sc:36|qu:0: q_type_single_select | hidden
     Q: How many toenails are affected?
-    A: 2 to 9
 
-  se:0|sc:37: screen_type_questions | visible
-    se:0|sc:37|qu:0: q_type_multiple_choice | visible
+  se:0|sc:37: screen_type_questions | hidden
+    se:0|sc:37|qu:0: q_type_multiple_choice | hidden
     Q: What nail changes have you noticed?
-    A: Pitting
-    A: Waving or denting
-    A: Discoloration
-    A: Breaking or splitting
-    A: Thinning
 
-  se:0|sc:38: screen_type_questions | visible
-    se:0|sc:38|qu:0: q_type_single_select | visible
+  se:0|sc:38: screen_type_questions | hidden
+    se:0|sc:38|qu:0: q_type_single_select | hidden
     Q: Do these nail changes occur with the rash?
-    A: No, they seem unrelated to the rash
 
-  se:0|sc:39: screen_type_questions | visible
-    se:0|sc:39|qu:0: q_type_single_select | visible
+  se:0|sc:39: screen_type_questions | hidden
+    se:0|sc:39|qu:0: q_type_single_select | hidden
     Q: How long have you been experiencing nail changes?
-    A: 1 to 4 weeks
 
   se:0|sc:40: screen_type_questions | visible
     se:0|sc:40|qu:0: q_type_single_select | visible
     Q: Is the rash itchy?
-    A: Yes
+    A: No
 
-  se:0|sc:41: screen_type_questions | visible
-    se:0|sc:41|qu:0: q_type_single_select | visible
+  se:0|sc:41: screen_type_questions | hidden
+    se:0|sc:41|qu:0: q_type_single_select | hidden
     Q: How bad is the itch?
-    A: 9
 
-  se:0|sc:42: screen_type_questions | visible
-    se:0|sc:42|qu:0: q_type_single_select | visible
+  se:0|sc:42: screen_type_questions | hidden
+    se:0|sc:42|qu:0: q_type_single_select | hidden
     Q: When did the itchiness begin?
-    A: Same time as the rash
 
-  se:0|sc:43: screen_type_questions | visible
-    se:0|sc:43|qu:0: q_type_single_select | visible
+  se:0|sc:43: screen_type_questions | hidden
+    se:0|sc:43|qu:0: q_type_single_select | hidden
     Q: Is the itchiness worse at night?
-    A: Yes
 
-  se:0|sc:44: screen_type_questions | visible
-    se:0|sc:44|qu:0: q_type_single_select | visible
+  se:0|sc:44: screen_type_questions | hidden
+    se:0|sc:44|qu:0: q_type_single_select | hidden
     Q: Does the itchiness make it hard for you to sleep?
-    A: Yes
 
   se:0|sc:45: screen_type_questions | visible
     se:0|sc:45|qu:0: q_type_single_select | visible
@@ -185,9 +169,6 @@
     Q: Describe the rash:
     A: Dry
     A: Scaly or flaky
-    A: Swollen
-    A: Flat
-    A: Bumpy
 
   se:0|sc:47: screen_type_questions | visible
     se:0|sc:47|qu:0: q_type_single_select | visible
@@ -205,29 +186,28 @@
   se:0|sc:51: screen_type_questions | visible
     se:0|sc:51|qu:0: q_type_single_select | visible
     Q: Has anybody around you had a rash similar to yours recently?
-    A: Yes
+    A: No
 
   se:0|sc:52: screen_type_questions | visible
     se:0|sc:52|qu:0: q_type_multiple_choice | visible
     Q: Have you noticed anything that causes you to have a rash or that makes the rash worse?
+    A: Certain locations
     A: Certain seasons
-    A: Dry air
-    A: Humid air
-    A: Hot temperatures
 
-  se:0|sc:53: screen_type_questions | hidden
-    se:0|sc:53|qu:0: q_type_free_text | hidden
+  se:0|sc:53: screen_type_questions | visible
+    se:0|sc:53|qu:0: q_type_free_text | visible
     Q: What locations make it worse?
+    A: Dry weather
 
   se:0|sc:54: screen_type_questions | visible
     se:0|sc:54|qu:0: q_type_free_text | visible
     Q: What seasons make it worse?
-    A: Spring, Autumn.
+    A: Fall and winter
 
   se:0|sc:55: screen_type_questions | visible
     se:0|sc:55|qu:0: q_type_free_text | visible
     Q: Apart from medications or other treatments, have you noticed anything that prevents you from getting a rash or that makes the rash better?
-    A: No nothing really.
+    A: Nope
 
   se:0|sc:56: screen_type_questions | visible
     se:0|sc:56|qu:0: q_type_single_select | visible
@@ -238,87 +218,72 @@
     se:0|sc:57|qu:0: q_type_multiple_choice | visible
     Q: Tell us about any cosmetic or bath products that may have come into contact with the affected areas:
     Include brand names.
-    A: Cetaphil Face lotion.
-    A: Paul Mitchell tea tree.
-    A: Paul Mitchell.
+    A: Shampoo
 
   se:0|sc:58: screen_type_questions | visible
     se:0|sc:58|qu:0: q_type_multiple_choice | visible
     Q: A variety of factors can influence eczema. Do you regularly do any of the following?
+    A: Get a large amount of sun
     A: Use tanning beds
-    A: Own any pets or spend time with animals
-    A: Do a job or hobby that exposes you to irritants
 
-  se:0|sc:59: screen_type_questions | visible
-    se:0|sc:59|qu:0: q_type_multiple_choice | visible
+  se:0|sc:59: screen_type_questions | hidden
+    se:0|sc:59|qu:0: q_type_multiple_choice | hidden
     Q: Which animals are you regularly exposed to?
-    A: Cats
 
-  se:0|sc:60: screen_type_questions | visible
-    se:0|sc:60|qu:0: q_type_free_text | visible
-    Q: Describe your occupation or hobby and the potential irritants you’re exposed to:
-    A: Computers.
+  se:0|sc:60: screen_type_questions | hidden
+    se:0|sc:60|qu:0: q_type_free_text | hidden
+    Q: Describe your occupation or hobby and the potential irritants you're exposed to:
 
-  se:1|sc:0: screen_type_photo | visible
-    se:1|sc:0|qu:0: q_type_photo_section | visible
-    Q: Face    
+  se:1|sc:0: screen_type_media | visible
+    se:1|sc:0|qu:0: q_type_media_section | visible
+    Q: Face
     A: Face
-      Photo: Face Front
-      Photo: Side
-      Photo: Other Side
-    se:1|sc:0|qu:1: q_type_photo_section | visible
-    Q: Lips    
+      Media: Face Front
+      Media: Side
+      Media: Other Side
+    se:1|sc:0|qu:1: q_type_media_section | visible
+    Q: Lips
     A: Lips
-      Photo: Lips
-      Photo: Lips
-      Photo: Lips
-    se:1|sc:0|qu:2: q_type_photo_section | visible
-    Q: Scalp    
+      Media: Lips
+    se:1|sc:0|qu:2: q_type_media_section | visible
+    Q: Scalp
     A: Scalp
-      Photo: Scalp
-    se:1|sc:0|qu:3: q_type_photo_section | visible
-    Q: Neck    
-    A: Neck
-      Photo: Neck
-    se:1|sc:0|qu:4: q_type_photo_section | hidden
+      Media: Scalp
+    se:1|sc:0|qu:3: q_type_media_section | hidden
+    Q: Neck
+    se:1|sc:0|qu:4: q_type_media_section | hidden
     Q: Chest
-    se:1|sc:0|qu:5: q_type_photo_section | hidden
+    se:1|sc:0|qu:5: q_type_media_section | hidden
     Q: Back
-    se:1|sc:0|qu:6: q_type_photo_section | hidden
+    se:1|sc:0|qu:6: q_type_media_section | hidden
     Q: Abdomen
-    se:1|sc:0|qu:7: q_type_photo_section | hidden
+    se:1|sc:0|qu:7: q_type_media_section | hidden
     Q: Groin
-    se:1|sc:0|qu:8: q_type_photo_section | hidden
+    se:1|sc:0|qu:8: q_type_media_section | hidden
     Q: Buttocks
-    se:1|sc:0|qu:9: q_type_photo_section | hidden
+    se:1|sc:0|qu:9: q_type_media_section | hidden
     Q: Arms
-    se:1|sc:0|qu:10: q_type_photo_section | visible
-    Q: Legs    
-    A: Legs
-      Photo: Legs
-    se:1|sc:0|qu:11: q_type_photo_section | hidden
+    se:1|sc:0|qu:10: q_type_media_section | hidden
+    Q: Legs
+    se:1|sc:0|qu:11: q_type_media_section | hidden
     Q: Feet
-    se:1|sc:0|qu:12: q_type_photo_section | hidden
+    se:1|sc:0|qu:12: q_type_media_section | hidden
     Q: Hands
-    se:1|sc:0|qu:13: q_type_photo_section | visible
-    Q: Other Location    
-    A: Eyes.
-      Photo: Other Location
+    se:1|sc:0|qu:13: q_type_media_section | visible
+    Q: Other Location
+    A: Hello Kitten
+      Media: Other Location
 
-  se:1|sc:1: screen_type_photo | visible
-    se:1|sc:1|qu:0: q_type_photo_section | visible
-    Q: Fingernails    
-    A: Fingernails
-      Photo: Fingernails
-    se:1|sc:1|qu:1: q_type_photo_section | visible
-    Q: Toenails    
-    A: Toenails
-      Photo: Toenails
+  se:1|sc:1: screen_type_media | hidden
+    se:1|sc:1|qu:0: q_type_media_section | hidden
+    Q: Fingernails
+    se:1|sc:1|qu:1: q_type_media_section | hidden
+    Q: Toenails
 
   se:2|sc:0: screen_type_questions | visible
     se:2|sc:0|qu:0: q_type_multiple_choice | visible
     Q: What type of healthcare provider have you previously seen for eczema?
-    A: Nurse practitioner or physician assistant
+    A: Dermatologist
 
   se:2|sc:1:  | hidden
 
@@ -327,31 +292,21 @@
   se:2|sc:3: screen_type_questions | visible
     se:2|sc:3|qu:0: q_type_multiple_choice | visible
     Q: Did your healthcare provider do any testing?
-    A: Lab tests
-      se:2|sc:3|qu:0|te:3262222296|sc:0: screen_type_questions | visible
-        se:2|sc:3|qu:0|te:3262222296|sc:0|qu:0: q_type_free_text | visible
-        Q: Tell us about the Lab tests your healthcare provider performed:
-        A: Lab tests... sure why not.
     A: Skin scraping
-      se:2|sc:3|qu:0|te:362263891|sc:0: screen_type_questions | visible
-        se:2|sc:3|qu:0|te:362263891|sc:0|qu:0: q_type_free_text | visible
+      se:2|sc:3|qu:0|te:2086695427|sc:0: screen_type_questions | visible
+        se:2|sc:3|qu:0|te:2086695427|sc:0|qu:0: q_type_free_text | visible
         Q: Tell us about the Skin scraping your healthcare provider performed:
-        A: Skin scraping...sure why not..
+        A: Dunno you tell me
     A: Skin biopsy
-      se:2|sc:3|qu:0|te:2052059849|sc:0: screen_type_questions | visible
-        se:2|sc:3|qu:0|te:2052059849|sc:0|qu:0: q_type_free_text | visible
+      se:2|sc:3|qu:0|te:1234053399|sc:0: screen_type_questions | visible
+        se:2|sc:3|qu:0|te:1234053399|sc:0|qu:0: q_type_free_text | visible
         Q: Tell us about the Skin biopsy your healthcare provider performed:
-        A: Skin biopsy....sure why not..
-    A: Rabies
-      se:2|sc:3|qu:0|te:96069503|sc:0: screen_type_questions | visible
-        se:2|sc:3|qu:0|te:96069503|sc:0|qu:0: q_type_free_text | visible
-        Q: Tell us about the Rabies your healthcare provider performed:
-        A: Rabies...what?!
+        A: Sup sup sup
 
   se:2|sc:4: screen_type_questions | visible
     se:2|sc:4|qu:0: q_type_free_text | visible
     Q: Share any other relevant information about your previous visit:
-    A: No other relevant information sorry.
+    A: No other relevant information to share.
 
   se:2|sc:5: screen_type_questions | visible
     se:2|sc:5|qu:0: q_type_single_select | visible
@@ -362,109 +317,44 @@
   se:2|sc:6: screen_type_questions | visible
     se:2|sc:6|qu:0: q_type_multiple_choice | visible
     Q: What topical steroids have you tried for eczema?
-    A: Alclometasone (Aclovate)
-      se:2|sc:6|qu:0|te:1332824353|sc:0: screen_type_questions | visible
-      Tell us more about Alclometasone (Aclovate):
-        se:2|sc:6|qu:0|te:1332824353|sc:0|qu:0: q_type_segmented_control | visible
+    A: Amcinonide (Cyclocort, Amcort)
+      se:2|sc:6|qu:0|te:2504407700|sc:0: screen_type_questions | visible
+      Tell us more about Amcinonide (Cyclocort, Amcort):
+        se:2|sc:6|qu:0|te:2504407700|sc:0|qu:0: q_type_segmented_control | visible
         Q: What form was it in?
-        A: Other
-        se:2|sc:6|qu:0|te:1332824353|sc:0|qu:1: q_type_single_entry | visible
+        A: Ointment
+        se:2|sc:6|qu:0|te:2504407700|sc:0|qu:1: q_type_single_entry | visible
         Q: What percentage strength was it?
-        A: 5%
-        se:2|sc:6|qu:0|te:1332824353|sc:0|qu:2: q_type_segmented_control | visible
+        se:2|sc:6|qu:0|te:2504407700|sc:0|qu:2: q_type_segmented_control | visible
         Q: How many weeks did you use it for?
         A: 1 to 2
-        se:2|sc:6|qu:0|te:1332824353|sc:0|qu:3: q_type_segmented_control | visible
+        se:2|sc:6|qu:0|te:2504407700|sc:0|qu:3: q_type_segmented_control | visible
         Q: Did you use it as instructed by its packaging or by a healthcare provider?
         A: Mostly
-        se:2|sc:6|qu:0|te:1332824353|sc:0|qu:4: q_type_segmented_control | visible
+        se:2|sc:6|qu:0|te:2504407700|sc:0|qu:4: q_type_segmented_control | visible
         Q: Was it helpful?
         A: No
-        se:2|sc:6|qu:0|te:1332824353|sc:0|qu:5: q_type_segmented_control | visible
-        Q: Do you need a new prescription for it?
-        A: Yes
-    A: Amcinonide (Cyclocort, Amcort)
-      se:2|sc:6|qu:0|te:1368761241|sc:0: screen_type_questions | visible
-      Tell us more about Amcinonide (Cyclocort, Amcort):
-        se:2|sc:6|qu:0|te:1368761241|sc:0|qu:0: q_type_segmented_control | visible
-        Q: What form was it in?
-        A: Cream
-        se:2|sc:6|qu:0|te:1368761241|sc:0|qu:1: q_type_single_entry | visible
-        Q: What percentage strength was it?
-        A: 10%
-        se:2|sc:6|qu:0|te:1368761241|sc:0|qu:2: q_type_segmented_control | visible
-        Q: How many weeks did you use it for?
-        A: More than 2
-        se:2|sc:6|qu:0|te:1368761241|sc:0|qu:3: q_type_segmented_control | visible
-        Q: Did you use it as instructed by its packaging or by a healthcare provider?
-        A: Mostly
-        se:2|sc:6|qu:0|te:1368761241|sc:0|qu:4: q_type_segmented_control | visible
-        Q: Was it helpful?
-        A: No
-        se:2|sc:6|qu:0|te:1368761241|sc:0|qu:5: q_type_segmented_control | visible
+        se:2|sc:6|qu:0|te:2504407700|sc:0|qu:5: q_type_segmented_control | visible
         Q: Do you need a new prescription for it?
         A: No
     A: Betamethasone dipropionate (Diprolene, Diprosone)
-      se:2|sc:6|qu:0|te:3886792670|sc:0: screen_type_questions | visible
+      se:2|sc:6|qu:0|te:1919303763|sc:0: screen_type_questions | visible
       Tell us more about Betamethasone dipropionate (Diprolene, Diprosone):
-        se:2|sc:6|qu:0|te:3886792670|sc:0|qu:0: q_type_segmented_control | visible
+        se:2|sc:6|qu:0|te:1919303763|sc:0|qu:0: q_type_segmented_control | visible
         Q: What form was it in?
         A: Ointment
-        se:2|sc:6|qu:0|te:3886792670|sc:0|qu:1: q_type_single_entry | visible
+        se:2|sc:6|qu:0|te:1919303763|sc:0|qu:1: q_type_single_entry | visible
         Q: What percentage strength was it?
-        A: 15%
-        se:2|sc:6|qu:0|te:3886792670|sc:0|qu:2: q_type_segmented_control | visible
+        se:2|sc:6|qu:0|te:1919303763|sc:0|qu:2: q_type_segmented_control | visible
         Q: How many weeks did you use it for?
         A: 1 to 2
-        se:2|sc:6|qu:0|te:3886792670|sc:0|qu:3: q_type_segmented_control | visible
+        se:2|sc:6|qu:0|te:1919303763|sc:0|qu:3: q_type_segmented_control | visible
         Q: Did you use it as instructed by its packaging or by a healthcare provider?
         A: Mostly
-        se:2|sc:6|qu:0|te:3886792670|sc:0|qu:4: q_type_segmented_control | visible
+        se:2|sc:6|qu:0|te:1919303763|sc:0|qu:4: q_type_segmented_control | visible
         Q: Was it helpful?
         A: No
-        se:2|sc:6|qu:0|te:3886792670|sc:0|qu:5: q_type_segmented_control | visible
-        Q: Do you need a new prescription for it?
-        A: Yes
-    A: Betamethasone valerate (Luxiq)
-      se:2|sc:6|qu:0|te:1312767383|sc:0: screen_type_questions | visible
-      Tell us more about Betamethasone valerate (Luxiq):
-        se:2|sc:6|qu:0|te:1312767383|sc:0|qu:0: q_type_segmented_control | visible
-        Q: What form was it in?
-        A: Ointment
-        se:2|sc:6|qu:0|te:1312767383|sc:0|qu:1: q_type_single_entry | visible
-        Q: What percentage strength was it?
-        A: 25%
-        se:2|sc:6|qu:0|te:1312767383|sc:0|qu:2: q_type_segmented_control | visible
-        Q: How many weeks did you use it for?
-        A: 1 to 2
-        se:2|sc:6|qu:0|te:1312767383|sc:0|qu:3: q_type_segmented_control | visible
-        Q: Did you use it as instructed by its packaging or by a healthcare provider?
-        A: No
-        se:2|sc:6|qu:0|te:1312767383|sc:0|qu:4: q_type_segmented_control | visible
-        Q: Was it helpful?
-        A: No
-        se:2|sc:6|qu:0|te:1312767383|sc:0|qu:5: q_type_segmented_control | visible
-        Q: Do you need a new prescription for it?
-        A: No
-    A: Clobetasol (Temovate, Clobex)
-      se:2|sc:6|qu:0|te:3910186217|sc:0: screen_type_questions | visible
-      Tell us more about Clobetasol (Temovate, Clobex):
-        se:2|sc:6|qu:0|te:3910186217|sc:0|qu:0: q_type_segmented_control | visible
-        Q: What form was it in?
-        A: Cream
-        se:2|sc:6|qu:0|te:3910186217|sc:0|qu:1: q_type_single_entry | visible
-        Q: What percentage strength was it?
-        A: 100%
-        se:2|sc:6|qu:0|te:3910186217|sc:0|qu:2: q_type_segmented_control | visible
-        Q: How many weeks did you use it for?
-        A: 1 to 2
-        se:2|sc:6|qu:0|te:3910186217|sc:0|qu:3: q_type_segmented_control | visible
-        Q: Did you use it as instructed by its packaging or by a healthcare provider?
-        A: Mostly
-        se:2|sc:6|qu:0|te:3910186217|sc:0|qu:4: q_type_segmented_control | visible
-        Q: Was it helpful?
-        A: No
-        se:2|sc:6|qu:0|te:3910186217|sc:0|qu:5: q_type_segmented_control | visible
+        se:2|sc:6|qu:0|te:1919303763|sc:0|qu:5: q_type_segmented_control | visible
         Q: Do you need a new prescription for it?
         A: No
 
@@ -476,95 +366,92 @@
   se:2|sc:8: screen_type_questions | visible
     se:2|sc:8|qu:0: q_type_multiple_choice | visible
     Q: What other medications have you tried for eczema?
-    A: Vaseline (petrolatum)
-      se:2|sc:8|qu:0|te:266205880|sc:0: screen_type_questions | visible
-      Tell us more about Vaseline (petrolatum):
-        se:2|sc:8|qu:0|te:266205880|sc:0|qu:0: q_type_segmented_control | visible
-        Q: How long did you use it for?
-        A: Weeks
-        se:2|sc:8|qu:0|te:266205880|sc:0|qu:1: q_type_segmented_control | visible
-        Q: Did you use it as instructed by its packaging or by a healthcare provider?
-        A: No
-        se:2|sc:8|qu:0|te:266205880|sc:0|qu:2: q_type_segmented_control | visible
-        Q: Was it helpful?
-        A: No
-        se:2|sc:8|qu:0|te:266205880|sc:0|qu:3: q_type_segmented_control | visible
-        Q: Do you need a new prescription for it?
-        A: Yes
     A: Eucerin
-      se:2|sc:8|qu:0|te:499497103|sc:0: screen_type_questions | visible
+      se:2|sc:8|qu:0|te:998427339|sc:0: screen_type_questions | visible
       Tell us more about Eucerin:
-        se:2|sc:8|qu:0|te:499497103|sc:0|qu:0: q_type_segmented_control | visible
+        se:2|sc:8|qu:0|te:998427339|sc:0|qu:0: q_type_segmented_control | visible
         Q: How long did you use it for?
-        A: Weeks
-        se:2|sc:8|qu:0|te:499497103|sc:0|qu:1: q_type_segmented_control | visible
+        A: Months
+        se:2|sc:8|qu:0|te:998427339|sc:0|qu:1: q_type_segmented_control | visible
         Q: Did you use it as instructed by its packaging or by a healthcare provider?
         A: Mostly
-        se:2|sc:8|qu:0|te:499497103|sc:0|qu:2: q_type_segmented_control | visible
+        se:2|sc:8|qu:0|te:998427339|sc:0|qu:2: q_type_segmented_control | visible
         Q: Was it helpful?
         A: No
-        se:2|sc:8|qu:0|te:499497103|sc:0|qu:3: q_type_segmented_control | visible
+        se:2|sc:8|qu:0|te:998427339|sc:0|qu:3: q_type_segmented_control | visible
         Q: Do you need a new prescription for it?
         A: No
     A: Lotion (e.g., Aveeno)
-      se:2|sc:8|qu:0|te:2254100649|sc:0: screen_type_questions | visible
+      se:2|sc:8|qu:0|te:779305780|sc:0: screen_type_questions | visible
       Tell us more about Lotion (e.g., Aveeno):
-        se:2|sc:8|qu:0|te:2254100649|sc:0|qu:0: q_type_segmented_control | visible
+        se:2|sc:8|qu:0|te:779305780|sc:0|qu:0: q_type_segmented_control | visible
         Q: How long did you use it for?
         A: Weeks
-        se:2|sc:8|qu:0|te:2254100649|sc:0|qu:1: q_type_segmented_control | visible
+        se:2|sc:8|qu:0|te:779305780|sc:0|qu:1: q_type_segmented_control | visible
         Q: Did you use it as instructed by its packaging or by a healthcare provider?
         A: Mostly
-        se:2|sc:8|qu:0|te:2254100649|sc:0|qu:2: q_type_segmented_control | visible
+        se:2|sc:8|qu:0|te:779305780|sc:0|qu:2: q_type_segmented_control | visible
         Q: Was it helpful?
         A: No
-        se:2|sc:8|qu:0|te:2254100649|sc:0|qu:3: q_type_segmented_control | visible
+        se:2|sc:8|qu:0|te:779305780|sc:0|qu:3: q_type_segmented_control | visible
         Q: Do you need a new prescription for it?
         A: No
-    A: Azathioprine (Imuran)
-      se:2|sc:8|qu:0|te:1409374315|sc:0: screen_type_questions | visible
-      Tell us more about Azathioprine (Imuran):
-        se:2|sc:8|qu:0|te:1409374315|sc:0|qu:0: q_type_segmented_control | visible
+    A: Coal tar
+      se:2|sc:8|qu:0|te:2471304970|sc:0: screen_type_questions | visible
+      Tell us more about Coal tar:
+        se:2|sc:8|qu:0|te:2471304970|sc:0|qu:0: q_type_segmented_control | visible
         Q: How long did you use it for?
         A: Weeks
-        se:2|sc:8|qu:0|te:1409374315|sc:0|qu:1: q_type_segmented_control | visible
+        se:2|sc:8|qu:0|te:2471304970|sc:0|qu:1: q_type_segmented_control | visible
         Q: Did you use it as instructed by its packaging or by a healthcare provider?
         A: Mostly
-        se:2|sc:8|qu:0|te:1409374315|sc:0|qu:2: q_type_segmented_control | visible
+        se:2|sc:8|qu:0|te:2471304970|sc:0|qu:2: q_type_segmented_control | visible
         Q: Was it helpful?
         A: No
-        se:2|sc:8|qu:0|te:1409374315|sc:0|qu:3: q_type_segmented_control | visible
+        se:2|sc:8|qu:0|te:2471304970|sc:0|qu:3: q_type_segmented_control | visible
         Q: Do you need a new prescription for it?
         A: No
 
   se:2|sc:9: screen_type_questions | visible
     se:2|sc:9|qu:0: q_type_multiple_choice | visible
     Q: Have you tried any other treatments for eczema?
-    A: UV light therapy
-      se:2|sc:9|qu:0|te:1584526845|sc:0: screen_type_questions | visible
-      Tell us more about UV light therapy:
-        se:2|sc:9|qu:0|te:1584526845|sc:0|qu:0: q_type_segmented_control | visible
+    A: Humidified air
+      se:2|sc:9|qu:0|te:1307233746|sc:0: screen_type_questions | visible
+      Tell us more about Humidified air:
+        se:2|sc:9|qu:0|te:1307233746|sc:0|qu:0: q_type_segmented_control | visible
         Q: How long did you use it for?
         A: Weeks
-        se:2|sc:9|qu:0|te:1584526845|sc:0|qu:1: q_type_segmented_control | visible
+        se:2|sc:9|qu:0|te:1307233746|sc:0|qu:1: q_type_segmented_control | visible
         Q: Did you use it as instructed by its packaging or by a healthcare provider?
         A: Mostly
-        se:2|sc:9|qu:0|te:1584526845|sc:0|qu:2: q_type_segmented_control | visible
+        se:2|sc:9|qu:0|te:1307233746|sc:0|qu:2: q_type_segmented_control | visible
+        Q: Was it helpful?
+        A: No
+    A: UV light therapy
+      se:2|sc:9|qu:0|te:2345590351|sc:0: screen_type_questions | visible
+      Tell us more about UV light therapy:
+        se:2|sc:9|qu:0|te:2345590351|sc:0|qu:0: q_type_segmented_control | visible
+        Q: How long did you use it for?
+        A: Weeks
+        se:2|sc:9|qu:0|te:2345590351|sc:0|qu:1: q_type_segmented_control | visible
+        Q: Did you use it as instructed by its packaging or by a healthcare provider?
+        A: Mostly
+        se:2|sc:9|qu:0|te:2345590351|sc:0|qu:2: q_type_segmented_control | visible
         Q: Was it helpful?
         A: No
 
   se:2|sc:10: screen_type_questions | visible
     se:2|sc:10|qu:0: q_type_free_text | visible
-    Q: Is there anything else you’d like to tell your doctor about eczema treatments you’ve tried?
-    A: nope.
+    Q: Is there anything else you'd like to tell your doctor about eczema treatments you've tried?
+    A: Nope nothing at all
 
   se:2|sc:11: screen_type_questions | visible
     se:2|sc:11|qu:0: q_type_multiple_choice | visible
     Q: Do you have any of the following medical conditions?
     You'll have a chance to tell your doctor about other medical conditions later.
-    A: Acne
     A: ADHD
     A: Asthma
+    A: Crohn's disease
 
   se:2|sc:12: screen_type_questions | hidden
     se:2|sc:12|qu:0: q_type_single_select | hidden
@@ -606,58 +493,59 @@
 
   se:2|sc:21: screen_type_questions | visible
     se:2|sc:21|qu:0: q_type_single_select | visible
-    Q: Are you currently breastfeeding?
-    A: Yes
+    Q: When will you begin trying to get pregnant?
+    This influences which medications are safe for you to use.
+    A: Within the next few months
 
   se:2|sc:22: screen_type_questions | visible
-    se:2|sc:22|qu:0: q_type_free_text | visible
-    Q: Do you have any other current medical conditions or important past medical history?
-    Anything for which you see a doctor or take medication is useful to know.
-    A: Nothing.
+    se:2|sc:22|qu:0: q_type_single_select | visible
+    Q: Are you currently breastfeeding?
+    A: No
 
   se:2|sc:23: screen_type_questions | visible
-    se:2|sc:23|qu:0: q_type_multiple_choice | visible
+    se:2|sc:23|qu:0: q_type_free_text | visible
+    Q: Do you have any other current medical conditions or important past medical history?
+    Anything for which you see a doctor or take medication is useful to know.
+    A: Dgadga
+
+  se:2|sc:24: screen_type_questions | visible
+    se:2|sc:24|qu:0: q_type_multiple_choice | visible
     Q: Do any of your first-degree relatives have one or more of the following conditions?
     A: Food allergies
     A: Eczema (atopic dermatitis)
-    A: Seasonal allergies
 
-  se:2|sc:24: screen_type_questions | visible
-    se:2|sc:24|qu:0: q_type_single_select | visible
+  se:2|sc:25: screen_type_questions | visible
+    se:2|sc:25|qu:0: q_type_single_select | visible
     Q: Are there any medications that you take or use regularly?
     A: Yes
 
-  se:2|sc:25: screen_type_questions | visible
-  se:2|sc:25|qu:0: q_type_autocomplete | visible
-  Q: Which medications do you take or use regularly?  
-    A: Advil
-    A: Penicillin
-
   se:2|sc:26: screen_type_questions | visible
-    se:2|sc:26|qu:0: q_type_single_select | visible
+  se:2|sc:26|qu:0: q_type_autocomplete | visible
+  Q: Which medications do you take or use regularly?
+    A: Advil
+
+  se:2|sc:27: screen_type_questions | visible
+    se:2|sc:27|qu:0: q_type_single_select | visible
     Q: Are there any supplements that you take regularly?
     (e.g., vitamins or herbs)
     A: Yes
 
-  se:2|sc:27: screen_type_questions | visible
-    se:2|sc:27|qu:0: q_type_free_text | visible
-    Q: Which supplements do you take regularly?
-    A: supplements galore.,
-
   se:2|sc:28: screen_type_questions | visible
-    se:2|sc:28|qu:0: q_type_single_select | visible
+    se:2|sc:28|qu:0: q_type_free_text | visible
+    Q: Which supplements do you take regularly?
+    A: Fadegfag
+
+  se:2|sc:29: screen_type_questions | visible
+    se:2|sc:29|qu:0: q_type_single_select | visible
     Q: Are you allergic to any medications?
     A: Yes
 
-  se:2|sc:29: screen_type_questions | visible
-  se:2|sc:29|qu:0: q_type_autocomplete | visible
-  Q: Which medications are you allergic to?  
+  se:2|sc:30: screen_type_questions | visible
+  se:2|sc:30|qu:0: q_type_autocomplete | visible
+  Q: Which medications are you allergic to?
     A: Sulfa Drugs
 
-  se:2|sc:30: screen_type_questions | visible
-    se:2|sc:30|qu:0: q_type_single_select | visible
+  se:2|sc:31: screen_type_questions | visible
+    se:2|sc:31|qu:0: q_type_single_select | visible
     Q: What type of prescription coverage do you have?
-    A: Medicaid
-
-  se:2|sc:31: screen_type_pharmacy | visible
-
+    A: Generic only

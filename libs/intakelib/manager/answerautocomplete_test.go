@@ -12,24 +12,17 @@ import (
 func TestAutocomplete_AnswerUnmarshalFromMap(t *testing.T) {
 	var clientJSON = `
 {
-	"answers": [{
-		"answer_id": "64457",
-		"question_id": "43332",
-		"potential_answer_id": null,
-		"answer_text": "penicillAMINE",
-		"type": "q_type_autocomplete",
-		"answers" :[{
-			"answer_id": "64440",
-			"answer_text": "5 times",
-			"question_id": "43295",
+	"type": "q_type_autocomplete",
+	"items": [{
+		"text": "penicillAMINE",
+		"answers" :{
+			"43295": {
+			"text": "5 times",
 			"type" :"q_type_free_text"
-		}]
+			}
+		}
 	}, {
-		"answer_id": "64458",
-		"question_id": "43332",
-		"potential_answer_id": null,
-		"answer_text": "Penicillin Benzath-Penicillin Proc",
-		"type": "q_type_autocomplete"
+		"text": "Penicillin Benzath-Penicillin Proc"
 	}]
 }`
 
@@ -46,9 +39,8 @@ func TestAutocomplete_AnswerUnmarshalFromMap(t *testing.T) {
 	test.Equals(t, 2, len(ac.Answers))
 	test.Equals(t, "penicillAMINE", ac.Answers[0].text())
 	test.Equals(t, 1, len(ac.Answers[0].subAnswers()))
-	test.Equals(t, "5 times", ac.Answers[0].subAnswers()[0].(*freeTextAnswer).Text)
+	test.Equals(t, "5 times", ac.Answers[0].subAnswers()["43295"].(*freeTextAnswer).Text)
 	test.Equals(t, "Penicillin Benzath-Penicillin Proc", ac.Answers[1].text())
-	test.Equals(t, "43332", ac.QuestionID)
 }
 
 func TestAutocomplete_UnmarshalProtobuf(t *testing.T) {
@@ -78,7 +70,6 @@ func TestAutocomplete_UnmarshalProtobuf(t *testing.T) {
 
 func TestAutocomplete_transformToProtobuf(t *testing.T) {
 	acq := autocompleteAnswer{
-		QuestionID: "10",
 		Answers: []topLevelAnswerItem{
 			&answerItem{
 				Text: "Answer1",
@@ -104,11 +95,11 @@ func TestAutocomplete_transformToProtobuf(t *testing.T) {
 	test.Equals(t, "Answer2", acPb.Answers[1])
 }
 
-func TestAutocomplete_MarshalJSONForClient(t *testing.T) {
-	expectedJSON := `{"question_id":"10","potential_answers":[{"answer_text":"Hi","answers":[{"question_id":"11","potential_answers":[{"answer_text":"SubAnswerHello"}]}]}]}`
+func TestAutocomplete_transformForClient(t *testing.T) {
+	expectedJSON := `{"type":"q_type_autocomplete","items":[{"text":"Hi","answers":{"11":{"type":"q_type_autocomplete","items":[{"text":"SubAnswerHello"}]}}}]}`
 
 	acq := autocompleteAnswer{
-		QuestionID: "10",
+
 		Answers: []topLevelAnswerItem{
 			&answerItem{
 				Text: "Hi",
@@ -116,9 +107,10 @@ func TestAutocomplete_MarshalJSONForClient(t *testing.T) {
 					&questionScreen{
 						Questions: []question{
 							&autocompleteQuestion{
-								questionInfo: &questionInfo{},
+								questionInfo: &questionInfo{
+									ID: "11",
+								},
 								answer: &autocompleteAnswer{
-									QuestionID: "11",
 									Answers: []topLevelAnswerItem{
 										&answerItem{
 											Text: "SubAnswerHello",
@@ -133,25 +125,26 @@ func TestAutocomplete_MarshalJSONForClient(t *testing.T) {
 		},
 	}
 
-	data, err := acq.marshalJSONForClient()
+	data, err := acq.transformForClient()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if expectedJSON != string(data) {
-		t.Fatalf("Expected `%s`, got `%s`", expectedJSON, string(data))
+	jsonData, err := json.Marshal(data)
+	test.OK(t, err)
+
+	if expectedJSON != string(jsonData) {
+		t.Fatalf("Expected `%s`, got `%s`", expectedJSON, string(jsonData))
 	}
 }
 
 func TestAutocomplete_equals(t *testing.T) {
 	acq := &autocompleteAnswer{
-		QuestionID: "10",
 		Answers: []topLevelAnswerItem{
 			&answerItem{
 				Text: "Hi",
-				SubAnswers: []patientAnswer{
-					&autocompleteAnswer{
-						QuestionID: "11",
+				SubAnswers: map[string]patientAnswer{
+					"11": &autocompleteAnswer{
 						Answers: []topLevelAnswerItem{
 							&answerItem{
 								Text: "SubAnswerHello",
@@ -171,7 +164,6 @@ func TestAutocomplete_equals(t *testing.T) {
 	// subanswers shouldn't play a role in equality given how client is setting the
 	// answers (one question at a time)
 	other := &autocompleteAnswer{
-		QuestionID: "10",
 		Answers: []topLevelAnswerItem{
 			&answerItem{
 				Text: "Hi",
@@ -185,7 +177,6 @@ func TestAutocomplete_equals(t *testing.T) {
 
 	// answer with different items should not match
 	acq = &autocompleteAnswer{
-		QuestionID: "10",
 		Answers: []topLevelAnswerItem{
 			&answerItem{
 				Text: "dagag",

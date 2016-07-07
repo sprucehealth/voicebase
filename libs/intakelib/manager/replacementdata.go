@@ -18,8 +18,8 @@ func (i *idReplacementData) unmarshalProtobuf(data []byte) error {
 	}
 
 	switch *id.Type {
-	case intake.IDReplacementData_PHOTO_ID:
-		i.replacementData = &photoIDReplacement{}
+	case intake.IDReplacementData_MEDIA_ID:
+		i.replacementData = &mediaIDReplacement{}
 	default:
 		return fmt.Errorf("Unable to determine type: %s", *id.Type)
 	}

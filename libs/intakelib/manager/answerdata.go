@@ -28,8 +28,14 @@ func (a *answerData) unmarshalProtobuf(data []byte) error {
 		a.answer = &freeTextAnswer{}
 	case intake.PatientAnswerData_AUTOCOMPLETE:
 		a.answer = &autocompleteAnswer{}
-	case intake.PatientAnswerData_PHOTO_SECTION:
-		a.answer = &photoSectionAnswer{}
+	case intake.PatientAnswerData_MEDIA_SECTION:
+		a.answer = &mediaSectionAnswer{}
+	case intake.PatientAnswerData_SINGLE_SELECT:
+		a.answer = &singleSelectAnswer{}
+	case intake.PatientAnswerData_SEGMENTED_CONTROL:
+		a.answer = &segmentedControlAnswer{}
+	case intake.PatientAnswerData_SINGLE_ENTRY:
+		a.answer = &singleEntryAnswer{}
 	default:
 		return fmt.Errorf("Unable to determine answer for type %s", pd.Type)
 	}

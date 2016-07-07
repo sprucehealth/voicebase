@@ -9,7 +9,7 @@ import (
 
 const photoQuestionJSON = `{
               "question": "q_derm_eczema_fingernails",
-              "question_id": "40499",
+              "id": "40499",
               "question_title": "Fingernails",
               "question_title_has_tokens": true,
               "question_type": "q_type_photo_section",
@@ -36,7 +36,7 @@ const photoQuestionJSON = `{
               "required": true,
               "to_alert": false,
               "alert_text": "",
-              "photo_slots": [
+              "media_slots": [
                 {
                   "id": "8705",
                   "name": "Fingernails",
@@ -45,7 +45,7 @@ const photoQuestionJSON = `{
                   "client_data": {
                     "flash": "auto",
                     "initial_camera_direction": "back",
-                    "photo_missing_error_message": "Add a photo of your fingernails to continue.",
+                    "media_missing_error_message": "Add a photo of your fingernails to continue.",
                     "tip": "Make sure your doctor can clearly see your natural nails.",
                     "tips" : {
                     	"inline" : {
@@ -55,48 +55,7 @@ const photoQuestionJSON = `{
                     }
                   }
                 }
-              ],
-              "answers": [{
-					"name": "Location 1",
-					"type": "q_type_photo_section",
-					"photos": [{
-						"creation_date": "2015-06-05T20:51:27.895527Z",
-						"photo_url": "https://dev-2-api.carefront.net/v1/media?expires=1433710304\u0026media_id=6761\u0026sig=9jsrnEFuXO5QSEj6ld7qz9ACIUE%3D",
-						"photo_id": "6761",
-						"slot_id": "8705",
-						"name": "Other Location"
-					}, {
-						"creation_date": "2015-06-05T20:51:27.896965Z",
-						"photo_url": "https://dev-2-api.carefront.net/v1/media?expires=1433710304\u0026media_id=6763\u0026sig=n7jI7qb7Lgnj1Q9ZATCLvv-NvdU%3D",
-						"photo_id": "8705",
-						"slot_id": "7452",
-						"name": "Other Location"
-					}],
-					"creation_date": "2015-06-05T20:51:27.893734Z"
-				}, {
-					"name": "Location 2",
-					"type": "q_type_photo_section",
-					"photos": [{
-						"creation_date": "2015-06-05T20:51:27.899108Z",
-						"photo_url": "https://dev-2-api.carefront.net/v1/media?expires=1433710304\u0026media_id=6762\u0026sig=HlShtvCWzE0wr_dbXR9RJwIlJ5A%3D",
-						"photo_id": "6762",
-						"slot_id": "8705",
-						"name": "Other Location"
-					}, {
-						"creation_date": "2015-06-05T20:51:27.900414Z",
-						"photo_url": "https://dev-2-api.carefront.net/v1/media?expires=1433710304\u0026media_id=6764\u0026sig=nPS6iofAdwIJp5zggwCbiOpw4PU%3D",
-						"photo_id": "6764",
-						"slot_id": "8705",
-						"name": "Other Location"
-					}, {
-						"creation_date": "2015-06-05T20:51:27.901645Z",
-						"photo_url": "https://dev-2-api.carefront.net/v1/media?expires=1433710304\u0026media_id=6765\u0026sig=H1aPkWEIJGdHzcKh34bjHRrrPG8%3D",
-						"photo_id": "6765",
-						"slot_id": "8705",
-						"name": "Other Location"
-					}],
-					"creation_date": "2015-06-05T20:51:27.897743Z"
-				}]
+              ]
             }`
 
 func TestPhotoQuestion_Parsing(t *testing.T) {
@@ -105,7 +64,7 @@ func TestPhotoQuestion_Parsing(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	pq := &photoQuestion{}
+	pq := &mediaQuestion{}
 	if err := pq.unmarshalMapFromClient(data, nil, &visitManager{}); err != nil {
 		t.Fatal(err)
 	}
@@ -130,14 +89,10 @@ func TestPhotoQuestion_Parsing(t *testing.T) {
 		t.Fatal("photo slot flash state not parsed correctly")
 	} else if pq.Slots[0].InitialCameraDirection != "back" {
 		t.Fatal("photo slot camera direction not parsed")
-	} else if pq.Slots[0].PhotoMissingErrorMessage != "Add a photo of your fingernails to continue." {
+	} else if pq.Slots[0].MediaMissingErrorMessage != "Add a photo of your fingernails to continue." {
 		t.Fatal("photo missing error message not parsed correctly")
 	} else if pq.Slots[0].Tip != "Make sure your doctor can clearly see your natural nails." {
 		t.Fatal("photo slot tip not parsed correctly")
-	} else if pq.answer == nil {
-		t.Fatal("Expected answer to exist")
-	} else if len(pq.answer.Sections) != 2 {
-		t.Fatalf("Expected 2 entered photo sections in answers but got %d", len(pq.answer.Sections))
 	} else if len(pq.Slots[0].Tips) != 1 {
 		t.Fatalf("Expected inline tips but got none")
 	} else if pq.Slots[0].Tips["inline"].Tip != "inline tip" {
@@ -153,7 +108,7 @@ func TestPhotoQuestion_staticInfoCopy(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	pq := &photoQuestion{}
+	pq := &mediaQuestion{}
 	if err := pq.unmarshalMapFromClient(data, nil, &visitManager{}); err != nil {
 		t.Fatal(err)
 	}
@@ -161,7 +116,7 @@ func TestPhotoQuestion_staticInfoCopy(t *testing.T) {
 	// nullify answers since that is not part of map
 	pq.answer = nil
 
-	pq2 := pq.staticInfoCopy(nil).(*photoQuestion)
+	pq2 := pq.staticInfoCopy(nil).(*mediaQuestion)
 
 	// compare photo slots
 	// test.Equals(t, pq.Slots[0].Tips, pq2.Slots[0].Tips)
@@ -174,20 +129,20 @@ func TestPhotoQuestion_Answer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	pq := &photoQuestion{}
+	pq := &mediaQuestion{}
 	if err := pq.unmarshalMapFromClient(data, nil, &visitManager{}); err != nil {
 		t.Fatal(err)
 	}
 
 	// set single complete photo section
-	if err := pq.setPatientAnswer(&photoSectionAnswer{
-		Sections: []*photoSectionAnswerItem{
+	if err := pq.setPatientAnswer(&mediaSectionAnswer{
+		Sections: []*mediaSectionAnswerItem{
 			{
 				Name: "sectionName",
-				Photos: []*photoSlotAnswerItem{
+				Media: []*mediaSlotAnswerItem{
 					{
 						Name:          "slot",
-						ServerPhotoID: "213a",
+						ServerMediaID: "213a",
 						SlotID:        "10",
 					},
 				},
@@ -199,24 +154,24 @@ func TestPhotoQuestion_Answer(t *testing.T) {
 
 	// set multiple photo sections
 	pq.AllowsMultipleSections = true
-	if err := pq.setPatientAnswer(&photoSectionAnswer{
-		Sections: []*photoSectionAnswerItem{
+	if err := pq.setPatientAnswer(&mediaSectionAnswer{
+		Sections: []*mediaSectionAnswerItem{
 			{
 				Name: "sectionName",
-				Photos: []*photoSlotAnswerItem{
+				Media: []*mediaSlotAnswerItem{
 					{
 						Name:          "slot",
-						ServerPhotoID: "213a",
+						ServerMediaID: "213a",
 						SlotID:        "10",
 					},
 				},
 			},
 			{
 				Name: "sectionName",
-				Photos: []*photoSlotAnswerItem{
+				Media: []*mediaSlotAnswerItem{
 					{
 						Name:          "slot",
-						ServerPhotoID: "213a",
+						ServerMediaID: "213a",
 						SlotID:        "10",
 					},
 				},
@@ -227,32 +182,32 @@ func TestPhotoQuestion_Answer(t *testing.T) {
 	}
 
 	// ensure can set 0 photo sections
-	if err := pq.setPatientAnswer(&photoSectionAnswer{
-		Sections: []*photoSectionAnswerItem{},
+	if err := pq.setPatientAnswer(&mediaSectionAnswer{
+		Sections: []*mediaSectionAnswerItem{},
 	}); err != nil {
 		t.Fatal(err)
 	}
 
 	// ensure cannot set multiple sections for photo question if not allowed
 	pq.AllowsMultipleSections = false
-	if err := pq.setPatientAnswer(&photoSectionAnswer{
-		Sections: []*photoSectionAnswerItem{
+	if err := pq.setPatientAnswer(&mediaSectionAnswer{
+		Sections: []*mediaSectionAnswerItem{
 			{
 				Name: "sectionName",
-				Photos: []*photoSlotAnswerItem{
+				Media: []*mediaSlotAnswerItem{
 					{
 						Name:          "slot",
-						ServerPhotoID: "213a",
+						ServerMediaID: "213a",
 						SlotID:        "10",
 					},
 				},
 			},
 			{
 				Name: "sectionName",
-				Photos: []*photoSlotAnswerItem{
+				Media: []*mediaSlotAnswerItem{
 					{
 						Name:          "slot",
-						ServerPhotoID: "213a",
+						ServerMediaID: "213a",
 						SlotID:        "10",
 					},
 				},
@@ -263,13 +218,13 @@ func TestPhotoQuestion_Answer(t *testing.T) {
 	}
 
 	// ensure cannot set photo section without name
-	if err := pq.setPatientAnswer(&photoSectionAnswer{
-		Sections: []*photoSectionAnswerItem{
+	if err := pq.setPatientAnswer(&mediaSectionAnswer{
+		Sections: []*mediaSectionAnswerItem{
 			{
-				Photos: []*photoSlotAnswerItem{
+				Media: []*mediaSlotAnswerItem{
 					{
 						Name:          "slot",
-						ServerPhotoID: "213a",
+						ServerMediaID: "213a",
 						SlotID:        "10",
 					},
 				},
@@ -280,12 +235,12 @@ func TestPhotoQuestion_Answer(t *testing.T) {
 	}
 
 	// ensure cannot set photo section with one of the slots not having a name
-	if err := pq.setPatientAnswer(&photoSectionAnswer{
-		Sections: []*photoSectionAnswerItem{
+	if err := pq.setPatientAnswer(&mediaSectionAnswer{
+		Sections: []*mediaSectionAnswerItem{
 			{
-				Photos: []*photoSlotAnswerItem{
+				Media: []*mediaSlotAnswerItem{
 					{
-						ServerPhotoID: "213a",
+						ServerMediaID: "213a",
 						SlotID:        "10",
 					},
 				},
@@ -296,8 +251,8 @@ func TestPhotoQuestion_Answer(t *testing.T) {
 	}
 
 	// ensure cannot set a photo section with no photos
-	if err := pq.setPatientAnswer(&photoSectionAnswer{
-		Sections: []*photoSectionAnswerItem{
+	if err := pq.setPatientAnswer(&mediaSectionAnswer{
+		Sections: []*mediaSectionAnswerItem{
 			{},
 		},
 	}); err == nil {
@@ -312,17 +267,46 @@ func TestPhotoQuestion_canPersistAnswer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	pq := &photoQuestion{}
+	pq := &mediaQuestion{}
 	if err := pq.unmarshalMapFromClient(data, nil, &visitManager{}); err != nil {
 		t.Fatal(err)
 	}
 
-	// answer should be considered complete as represented in the JSON
+	// set multiple photo sections
+	pq.AllowsMultipleSections = true
+	if err := pq.setPatientAnswer(&mediaSectionAnswer{
+		Sections: []*mediaSectionAnswerItem{
+			{
+				Name: "sectionName",
+				Media: []*mediaSlotAnswerItem{
+					{
+						Name:          "slot",
+						ServerMediaID: "213a",
+						SlotID:        "10",
+					},
+				},
+			},
+			{
+				Name: "sectionName",
+				Media: []*mediaSlotAnswerItem{
+					{
+						Name:          "slot",
+						ServerMediaID: "213a",
+						SlotID:        "10",
+					},
+				},
+			},
+		},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	// answer should be considered complete
 	test.Equals(t, true, pq.canPersistAnswer())
 
 	// lets change one of the photos to be in the process of being uploaded
-	pq.answer.Sections[0].Photos[0].ServerPhotoID = ""
-	pq.answer.Sections[1].Photos[0].LocalPhotoID = "adgkhag"
+	pq.answer.Sections[0].Media[0].ServerMediaID = ""
+	pq.answer.Sections[1].Media[0].LocalMediaID = "adgkhag"
 
 	// answer should no longer be considered complete
 	test.Equals(t, false, pq.canPersistAnswer())

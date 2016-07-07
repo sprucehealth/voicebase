@@ -18,7 +18,7 @@
   se:0|sc:6: screen_type_questions | visible
     se:0|sc:6|qu:0: q_type_single_select | visible
     Q: Have you experienced fevers or chills while you've had this rash?
-    A: Both
+    A: Yes, chills
 
   se:0|sc:7: screen_type_questions | visible
     se:0|sc:7|qu:0: q_type_single_select | visible
@@ -32,48 +32,46 @@
   se:0|sc:10: screen_type_questions | visible
     se:0|sc:10|qu:0: q_type_single_select | visible
     Q: Have you taken your temperature with a thermometer?
-    A: No
+    A: Yes
 
-  se:0|sc:11: screen_type_questions | hidden
-    se:0|sc:11|qu:0: q_type_single_select | hidden
+  se:0|sc:11: screen_type_questions | visible
+    se:0|sc:11|qu:0: q_type_single_select | visible
     Q: What type of thermometer did you use?
+    A: Forehead
 
-  se:0|sc:12: screen_type_questions | hidden
-    se:0|sc:12|qu:0: q_type_single_select | hidden
+  se:0|sc:12: screen_type_questions | visible
+    se:0|sc:12|qu:0: q_type_single_select | visible
     Q: What was your highest temperature?
+    A: 96.8 to 100.3F
 
   se:0|sc:13:  | hidden
 
   se:0|sc:14: Next Steps | hidden
 
-  se:0|sc:15: screen_type_questions | visible
-    se:0|sc:15|qu:0: q_type_single_select | visible
+  se:0|sc:15: screen_type_questions | hidden
+    se:0|sc:15|qu:0: q_type_single_select | hidden
     Q: Do you have a thermometer nearby?
-    A: Yes
 
   se:0|sc:16:  | hidden
 
   se:0|sc:17: Next Steps | hidden
 
-  se:0|sc:18: screen_type_questions | visible
-    se:0|sc:18|qu:0: q_type_single_select | visible
+  se:0|sc:18: screen_type_questions | hidden
+    se:0|sc:18|qu:0: q_type_single_select | hidden
     Q: What type of thermometer do you have?
-    A: Forehead
 
-  se:0|sc:19: screen_type_questions | visible
-    se:0|sc:19|qu:0: q_type_single_select | visible
+  se:0|sc:19: screen_type_questions | hidden
+    se:0|sc:19|qu:0: q_type_single_select | hidden
     Q: What is your current temperature?
     Use the thermometer as directed.
-    A: Below 96.8F
 
   se:0|sc:20:  | hidden
 
   se:0|sc:21: Next Steps | hidden
 
-  se:0|sc:22: screen_type_questions | visible
-    se:0|sc:22|qu:0: q_type_single_select | visible
+  se:0|sc:22: screen_type_questions | hidden
+    se:0|sc:22|qu:0: q_type_single_select | hidden
     Q: That temperature seems a bit low. Try taking your temperature once more:
-    A: 96.8 to 100.3F
 
   se:0|sc:23:  | hidden
 
@@ -100,14 +98,14 @@
   se:0|sc:31: screen_type_questions | visible
     se:0|sc:31|qu:0: q_type_multiple_choice | visible
     Q: What symptoms did you have with your recent illness?
-    A: Vomiting
-    A: Diarrhea
+    A: Fever
     A: Sore throat
+    A: Runny or stuffy nose
 
   se:0|sc:32: screen_type_questions | visible
     se:0|sc:32|qu:0: q_type_single_select | visible
     Q: How long have you had this rash?
-    A: 1 to 4 weeks
+    A: 1 to 7 days
 
   se:0|sc:33: screen_type_questions | visible
     se:0|sc:33|qu:0: q_type_single_select | visible
@@ -116,13 +114,13 @@
 
   se:0|sc:34: screen_type_questions | visible
     se:0|sc:34|qu:0: q_type_single_select | visible
-    Q: How many times have you experienced a rash similar to this one?
+    Q: How many times have you experienced a similar rash?
     A: A few times
 
   se:0|sc:35: screen_type_questions | visible
     se:0|sc:35|qu:0: q_type_single_select | visible
-    Q: When did you first start experiencing this type of rash?
-    A: 4 to 5 years ago
+    Q: How many years ago did you first experience this type of rash?
+    A: 4 to 5
 
   se:0|sc:36: screen_type_questions | visible
     se:0|sc:36|qu:0: q_type_single_select | visible
@@ -133,7 +131,9 @@
     se:0|sc:37|qu:0: q_type_multiple_choice | visible
     Q: Where on your body is the rash currently?
     A: Face
-    A: Buttocks
+    A: Mouth
+    A: Chest
+    A: Back
 
   se:0|sc:38:  | hidden
 
@@ -147,9 +147,11 @@
     se:0|sc:41|qu:0: q_type_multiple_choice | hidden
     Q: Where on your feet is the rash located?
 
-  se:0|sc:42: screen_type_questions | hidden
-    se:0|sc:42|qu:0: q_type_multiple_choice | hidden
+  se:0|sc:42: screen_type_questions | visible
+    se:0|sc:42|qu:0: q_type_multiple_choice | visible
     Q: Where in or on your mouth is the rash?
+    A: Inside mouth
+    A: Throat
 
   se:0|sc:43: screen_type_questions | hidden
     se:0|sc:43|qu:0: q_type_multiple_choice | hidden
@@ -159,12 +161,9 @@
 
   se:0|sc:45: Next Steps | hidden
 
-  se:0|sc:46: screen_type_questions | visible
-    se:0|sc:46|qu:0: q_type_multiple_choice | visible
+  se:0|sc:46: screen_type_questions | hidden
+    se:0|sc:46|qu:0: q_type_multiple_choice | hidden
     Q: Does the rash affect any of the following areas?
-    A: Base of penis
-    A: Scrotum
-    A: Anus
 
   se:0|sc:47:  | hidden
 
@@ -173,13 +172,14 @@
   se:0|sc:49: screen_type_questions | visible
     se:0|sc:49|qu:0: q_type_single_select | visible
     Q: Has the location of the rash changed since it started?
-    A: Yes, it affects more parts of my body now
+    A: Yes, it affects fewer parts of my body now
 
   se:0|sc:50: screen_type_questions | visible
     se:0|sc:50|qu:0: q_type_multiple_choice | visible
     Q: Select the locations where the rash began:
     A: Mouth
     A: Scalp
+    A: Neck
 
   se:0|sc:51: screen_type_questions | visible
     se:0|sc:51|qu:0: q_type_single_select | visible
@@ -194,7 +194,7 @@
   se:0|sc:53: screen_type_questions | visible
     se:0|sc:53|qu:0: q_type_single_select | visible
     Q: How many toenails are affected?
-    A: 2 to 9
+    A: All of them
 
   se:0|sc:54: screen_type_questions | visible
     se:0|sc:54|qu:0: q_type_multiple_choice | visible
@@ -211,12 +211,12 @@
   se:0|sc:56: screen_type_questions | visible
     se:0|sc:56|qu:0: q_type_single_select | visible
     Q: How long have you been experiencing nail changes?
-    A: 1 to 12 months
+    A: 1 to 4 weeks
 
   se:0|sc:57: screen_type_questions | visible
     se:0|sc:57|qu:0: q_type_single_select | visible
-    Q: Before the rash began, did you experience burning, tingling, warmth, or pain where the rash would eventually form?
-    A: Yes
+    Q: Before the rash began, did you experience burning, tingling, warmth, or pain where the rash eventually formed?
+    A: No
 
   se:0|sc:58: screen_type_questions | visible
     se:0|sc:58|qu:0: q_type_single_select | visible
@@ -248,8 +248,7 @@
     se:0|sc:64|qu:0: q_type_multiple_choice | visible
     Q: Describe the rash:
     A: Scaly or flaky
-    A: Painful or tender
-    A: Leaking fluid
+    A: Warm or hot
 
   se:0|sc:65: screen_type_questions | hidden
     se:0|sc:65|qu:0: q_type_single_select | hidden
@@ -268,7 +267,7 @@
   se:0|sc:68: screen_type_questions | visible
     se:0|sc:68|qu:0: q_type_single_select | visible
     Q: Are some of the spots or bumps breaking open and leaking fluid?
-    A: Yes
+    A: No
 
   se:0|sc:69: screen_type_questions | visible
     se:0|sc:69|qu:0: q_type_single_select | visible
@@ -277,8 +276,8 @@
 
   se:0|sc:70: screen_type_questions | visible
     se:0|sc:70|qu:0: q_type_single_select | visible
-    Q: How long is each individual spot or bump present?
-    A: More than 24 hours
+    Q: How long does each individual spot or bump last?
+    A: I'm not sure
 
   se:0|sc:71: screen_type_questions | visible
     se:0|sc:71|qu:0: q_type_single_select | visible
@@ -310,7 +309,7 @@
   se:0|sc:79: screen_type_questions | visible
     se:0|sc:79|qu:0: q_type_multiple_choice | visible
     Q: Have you experienced any recent injury in the area of your rash?
-    A: Cuts or scrapes
+    A: Other
 
   se:0|sc:80:  | hidden
 
@@ -319,7 +318,7 @@
   se:0|sc:82: screen_type_questions | visible
     se:0|sc:82|qu:0: q_type_free_text | visible
     Q: Describe your recent injury:
-    A: Sure I'll describe!
+    A: Just scratchy
 
   se:0|sc:83: screen_type_questions | visible
     se:0|sc:83|qu:0: q_type_single_select | visible
@@ -362,26 +361,25 @@
 
   se:0|sc:96: screen_type_questions | visible
     se:0|sc:96|qu:0: q_type_single_select | visible
-    Q: Has anybody around you been sick or had a rash similar to yours recently?
+    Q: Has anybody around you recently been sick or had a similar rash?
     A: Yes
 
   se:0|sc:97: screen_type_questions | visible
     se:0|sc:97|qu:0: q_type_free_text | visible
     Q: Describe their rash or illness:
-    A: Sure why not.
+    A: Also just scratchy
 
   se:0|sc:98: screen_type_questions | visible
     se:0|sc:98|qu:0: q_type_multiple_choice | visible
     Q: A variety of factors can influence rashes. Do you regularly do any of the following?
     A: Have exposure to animals
-    A: Bathe or shower more than once daily
-    A: Bathe or shower in hot or very hot water
+    A: Smoke cigarettes or another form of tobacco
 
   se:0|sc:99: screen_type_questions | visible
     se:0|sc:99|qu:0: q_type_multiple_choice | visible
     Q: Which animals are you regularly exposed to?
+    A: Cats
     A: Birds
-    A: Farm animals
 
   se:0|sc:100: screen_type_questions | hidden
     se:0|sc:100|qu:0: q_type_single_select | hidden
@@ -392,122 +390,114 @@
     Q: Describe your occupation or hobby and the potential irritants you're exposed to:
 
   se:0|sc:102: screen_type_questions | visible
-    se:0|sc:102|qu:0: q_type_single_select | visible
-    Q: Is the rash in an area where you recently wore jewelry?
-    A: Yes
+    se:0|sc:102|qu:0: q_type_multiple_choice | visible
+    Q: Have you done any of the following recently?
+    A: Engaged in outdoor activities, such as hiking or camping, within the past month
+    A: Handled lemons or limes
 
   se:0|sc:103: screen_type_questions | visible
-    se:0|sc:103|qu:0: q_type_free_text | visible
-    Q: What jewelry were you wearing and when did you wear it?
-    A: Gold bracelet.
-
-  se:0|sc:104: screen_type_questions | visible
-    se:0|sc:104|qu:0: q_type_multiple_choice | visible
-    Q: Tell us about any cosmetic or bath products that may have come into contact with the areas affected by rash:
-    Include brand names.
-    A: Method
-    A: Paul Mitchell
-    A: Tea tree oil shampoo
-
-  se:0|sc:105: screen_type_questions | visible
-    se:0|sc:105|qu:0: q_type_multiple_choice | visible
-    Q: Have you done any outdoor activities, such as hiking or camping, within the past month?
+    se:0|sc:103|qu:0: q_type_multiple_choice | visible
+    Q: Which outdoor activities have you done within the past month?
     A: Hiking
 
-  se:0|sc:106: screen_type_questions | visible
-    se:0|sc:106|qu:0: q_type_single_select | visible
-    Q: Did you travel anywhere during the two months prior to the start of the rash?
-    A: Yes
+  se:0|sc:104: screen_type_questions | hidden
+    se:0|sc:104|qu:0: q_type_single_select | hidden
+    Q: Did you travel outside of the U.S. in the past two months?
 
-  se:0|sc:107: screen_type_questions | visible
-    se:0|sc:107|qu:0: q_type_single_select | visible
-    Q: Did you travel outside of the U.S.?
-    A: Yes
-
-  se:0|sc:108: screen_type_questions | visible
-    se:0|sc:108|qu:0: q_type_free_text | visible
+  se:0|sc:105: screen_type_questions | hidden
+    se:0|sc:105|qu:0: q_type_free_text | hidden
     Q: Which countries did you visit?
-    A: UAE, India
 
-  se:0|sc:109: screen_type_questions | visible
-    se:0|sc:109|qu:0: q_type_multiple_choice | visible
-    Q: What type of lodging did you stay in?
-    A: Dorm or barracks
+  se:0|sc:106: screen_type_questions | hidden
+    se:0|sc:106|qu:0: q_type_multiple_choice | hidden
+    Q: What type of lodging did you stay in while you traveled?
+
+  se:0|sc:107: screen_type_questions | hidden
+    se:0|sc:107|qu:0: q_type_multiple_choice | hidden
+    Q: Where have you been swimming within the past few weeks?
+
+  se:0|sc:108: screen_type_questions | hidden
+    se:0|sc:108|qu:0: q_type_multiple_choice | hidden
+    Q: Where have you been living the past few months?
+
+  se:0|sc:109: screen_type_questions | hidden
+    se:0|sc:109|qu:0: q_type_free_text | hidden
+    Q: What jewelry did you wear in the area of the rash and when did you wear it?
 
   se:0|sc:110: screen_type_questions | visible
     se:0|sc:110|qu:0: q_type_multiple_choice | visible
-    Q: Have you been swimming within the past few weeks?
-    A: Lake
+    Q: Tell us about any cosmetic or bath products that may have come into contact with the areas affected by rash:
+    Include brand names.
+    A: Shampooooooo
+    A: Shaving cream
 
-  se:0|sc:111: screen_type_questions | visible
-    se:0|sc:111|qu:0: q_type_single_select | visible
-    Q: Have you had any period of transitory or unstable housing in the past few months?
-    A: Yes
-
-  se:0|sc:112: screen_type_questions | visible
-    se:0|sc:112|qu:0: q_type_multiple_choice | visible
-    Q: Where have you been living in the past few months?
-    A: Tent or camping
-
-  se:1|sc:0: screen_type_photo | visible
-    se:1|sc:0|qu:0: q_type_photo_section | visible
-    Q: Face    
+  se:1|sc:0: screen_type_media | visible
+    se:1|sc:0|qu:0: q_type_media_section | visible
+    Q: Face
     A: Face
-      Photo: Face Front
-      Photo: Side
-      Photo: Other Side
-    se:1|sc:0|qu:1: q_type_photo_section | hidden
+      Media: Face Front
+      Media: Side
+      Media: Other Side
+    se:1|sc:0|qu:1: q_type_media_section | hidden
     Q: Mouth
-    se:1|sc:0|qu:2: q_type_photo_section | hidden
+    se:1|sc:0|qu:2: q_type_media_section | hidden
     Q: Lips
-    se:1|sc:0|qu:3: q_type_photo_section | hidden
+    se:1|sc:0|qu:3: q_type_media_section | visible
     Q: Inside of Mouth
-    se:1|sc:0|qu:4: q_type_photo_section | hidden
+    A: Inside of Mouth
+      Media: Inside of Mouth
+    se:1|sc:0|qu:4: q_type_media_section | visible
     Q: Throat
-    se:1|sc:0|qu:5: q_type_photo_section | hidden
+    A: Throat
+      Media: Throat
+    se:1|sc:0|qu:5: q_type_media_section | hidden
     Q: Scalp
-    se:1|sc:0|qu:6: q_type_photo_section | hidden
+    se:1|sc:0|qu:6: q_type_media_section | hidden
     Q: Neck
-    se:1|sc:0|qu:7: q_type_photo_section | hidden
+    se:1|sc:0|qu:7: q_type_media_section | visible
     Q: Chest
-    se:1|sc:0|qu:8: q_type_photo_section | hidden
+    A: Chest
+      Media: Chest
+    se:1|sc:0|qu:8: q_type_media_section | visible
     Q: Back
-    se:1|sc:0|qu:9: q_type_photo_section | hidden
+    A: Back
+      Media: Back
+    se:1|sc:0|qu:9: q_type_media_section | hidden
     Q: Abdomen
-    se:1|sc:0|qu:10: q_type_photo_section | hidden
+    se:1|sc:0|qu:10: q_type_media_section | hidden
     Q: Waist
-    se:1|sc:0|qu:11: q_type_photo_section | hidden
+    se:1|sc:0|qu:11: q_type_media_section | hidden
     Q: Groin
-    se:1|sc:0|qu:12: q_type_photo_section | visible
-    Q: Buttocks    
-    A: Buttocks
-      Photo: Buttocks
-    se:1|sc:0|qu:13: q_type_photo_section | hidden
+    se:1|sc:0|qu:12: q_type_media_section | hidden
+    Q: Buttocks
+    se:1|sc:0|qu:13: q_type_media_section | hidden
     Q: Arms
-    se:1|sc:0|qu:14: q_type_photo_section | hidden
+    se:1|sc:0|qu:14: q_type_media_section | hidden
     Q: Wrists
-    se:1|sc:0|qu:15: q_type_photo_section | hidden
+    se:1|sc:0|qu:15: q_type_media_section | hidden
     Q: Legs
-    se:1|sc:0|qu:16: q_type_photo_section | hidden
+    se:1|sc:0|qu:16: q_type_media_section | hidden
     Q: Feet
-    se:1|sc:0|qu:17: q_type_photo_section | hidden
+    se:1|sc:0|qu:17: q_type_media_section | hidden
     Q: Between Toes
-    se:1|sc:0|qu:18: q_type_photo_section | hidden
+    se:1|sc:0|qu:18: q_type_media_section | hidden
     Q: Hands
-    se:1|sc:0|qu:19: q_type_photo_section | hidden
+    se:1|sc:0|qu:19: q_type_media_section | hidden
     Q: Between Fingers
-    se:1|sc:0|qu:20: q_type_photo_section | visible
+    se:1|sc:0|qu:20: q_type_media_section | visible
     Q: Other Location
+    A: Lower back
+      Media: Other Location
 
-  se:1|sc:1: screen_type_photo | visible
-    se:1|sc:1|qu:0: q_type_photo_section | visible
-    Q: Fingernails    
+  se:1|sc:1: screen_type_media | visible
+    se:1|sc:1|qu:0: q_type_media_section | visible
+    Q: Fingernails
     A: Fingernails
-      Photo: Fingernails
-    se:1|sc:1|qu:1: q_type_photo_section | visible
-    Q: Toenails    
+      Media: Fingernails
+    se:1|sc:1|qu:1: q_type_media_section | visible
+    Q: Toenails
     A: Toenails
-      Photo: Toenails
+      Media: Toenails
 
   se:2|sc:0: screen_type_questions | visible
     se:2|sc:0|qu:0: q_type_single_select | visible
@@ -517,7 +507,7 @@
   se:2|sc:1: screen_type_questions | visible
     se:2|sc:1|qu:0: q_type_multiple_choice | visible
     Q: What type of healthcare provider did you see for this rash?
-    A: Dermatologist
+    A: Nurse practitioner or physician assistant
 
   se:2|sc:2:  | hidden
 
@@ -526,27 +516,26 @@
   se:2|sc:4: screen_type_questions | visible
     se:2|sc:4|qu:0: q_type_multiple_choice | visible
     Q: What diagnosis were you given for the rash?
-    A: A drug reaction
-    A: An infection
+    A: Atopic dermatitis
+    A: Psoriasis
 
-  se:2|sc:5: screen_type_questions | visible
-    se:2|sc:5|qu:0: q_type_single_select | visible
+  se:2|sc:5: screen_type_questions | hidden
+    se:2|sc:5|qu:0: q_type_single_select | hidden
     Q: What type of infection did your healthcare provider think it was?
-    A: Wart
 
   se:2|sc:6: screen_type_questions | visible
     se:2|sc:6|qu:0: q_type_multiple_choice | visible
     Q: Did your healthcare provider do any testing?
     A: Skin biopsy
-      se:2|sc:6|qu:0|te:624232362|sc:0: screen_type_questions | visible
-        se:2|sc:6|qu:0|te:624232362|sc:0|qu:0: q_type_free_text | visible
+      se:2|sc:6|qu:0|te:1234053399|sc:0: screen_type_questions | visible
+        se:2|sc:6|qu:0|te:1234053399|sc:0|qu:0: q_type_free_text | visible
         Q: Tell us about the Skin biopsy your healthcare provider performed:
-        A: Skin biopsy
+        A: It was great
 
   se:2|sc:7: screen_type_questions | visible
     se:2|sc:7|qu:0: q_type_free_text | visible
     Q: Share any other relevant information about your previous visit:
-    A: sure why not.
+    A: Nothing other than what I'm already sharing in this really long visit.
 
   se:2|sc:8: screen_type_questions | visible
     se:2|sc:8|qu:0: q_type_single_select | visible
@@ -557,159 +546,102 @@
   se:2|sc:9: screen_type_questions | visible
     se:2|sc:9|qu:0: q_type_multiple_choice | visible
     Q: What topical steroids have you tried?
-    A: Amcinonide (Cyclocort, Amcort)
-      se:2|sc:9|qu:0|te:671090162|sc:0: screen_type_questions | visible
-      Tell us more about Amcinonide (Cyclocort, Amcort):
-        se:2|sc:9|qu:0|te:671090162|sc:0|qu:0: q_type_segmented_control | visible
+    A: Alclometasone (Aclovate)
+      se:2|sc:9|qu:0|te:2160706195|sc:0: screen_type_questions | visible
+      Tell us more about Alclometasone (Aclovate):
+        se:2|sc:9|qu:0|te:2160706195|sc:0|qu:0: q_type_segmented_control | visible
         Q: What form was it in?
         A: Ointment
-        se:2|sc:9|qu:0|te:671090162|sc:0|qu:1: q_type_single_entry | visible
+        se:2|sc:9|qu:0|te:2160706195|sc:0|qu:1: q_type_single_entry | visible
         Q: What percentage strength was it?
-        A: 10%
-        se:2|sc:9|qu:0|te:671090162|sc:0|qu:2: q_type_segmented_control | visible
-        Q: How many weeks did you use it for?
+        A: 100%
+        se:2|sc:9|qu:0|te:2160706195|sc:0|qu:2: q_type_segmented_control | visible
+        Q: How many weeks did you use it?
         A: 1 to 2
-        se:2|sc:9|qu:0|te:671090162|sc:0|qu:3: q_type_segmented_control | visible
+        se:2|sc:9|qu:0|te:2160706195|sc:0|qu:3: q_type_segmented_control | visible
         Q: Did you use it as instructed by its packaging or by a healthcare provider?
         A: Mostly
-        se:2|sc:9|qu:0|te:671090162|sc:0|qu:4: q_type_segmented_control | visible
+        se:2|sc:9|qu:0|te:2160706195|sc:0|qu:4: q_type_segmented_control | visible
         Q: Was it helpful?
         A: No
-        se:2|sc:9|qu:0|te:671090162|sc:0|qu:5: q_type_segmented_control | visible
+        se:2|sc:9|qu:0|te:2160706195|sc:0|qu:5: q_type_segmented_control | visible
+        Q: Do you need a new prescription for it?
+        A: Yes
+    A: Amcinonide (Cyclocort, Amcort)
+      se:2|sc:9|qu:0|te:2504407700|sc:0: screen_type_questions | visible
+      Tell us more about Amcinonide (Cyclocort, Amcort):
+        se:2|sc:9|qu:0|te:2504407700|sc:0|qu:0: q_type_segmented_control | visible
+        Q: What form was it in?
+        A: Ointment
+        se:2|sc:9|qu:0|te:2504407700|sc:0|qu:1: q_type_single_entry | visible
+        Q: What percentage strength was it?
+        A: IDK
+        se:2|sc:9|qu:0|te:2504407700|sc:0|qu:2: q_type_segmented_control | visible
+        Q: How many weeks did you use it?
+        A: More than 2
+        se:2|sc:9|qu:0|te:2504407700|sc:0|qu:3: q_type_segmented_control | visible
+        Q: Did you use it as instructed by its packaging or by a healthcare provider?
+        A: Mostly
+        se:2|sc:9|qu:0|te:2504407700|sc:0|qu:4: q_type_segmented_control | visible
+        Q: Was it helpful?
+        A: No
+        se:2|sc:9|qu:0|te:2504407700|sc:0|qu:5: q_type_segmented_control | visible
         Q: Do you need a new prescription for it?
         A: No
     A: Betamethasone dipropionate (Diprolene, Diprosone)
-      se:2|sc:9|qu:0|te:559850677|sc:0: screen_type_questions | visible
+      se:2|sc:9|qu:0|te:1919303763|sc:0: screen_type_questions | visible
       Tell us more about Betamethasone dipropionate (Diprolene, Diprosone):
-        se:2|sc:9|qu:0|te:559850677|sc:0|qu:0: q_type_segmented_control | visible
+        se:2|sc:9|qu:0|te:1919303763|sc:0|qu:0: q_type_segmented_control | visible
         Q: What form was it in?
         A: Ointment
-        se:2|sc:9|qu:0|te:559850677|sc:0|qu:1: q_type_single_entry | visible
+        se:2|sc:9|qu:0|te:1919303763|sc:0|qu:1: q_type_single_entry | visible
         Q: What percentage strength was it?
-        A: 20%
-        se:2|sc:9|qu:0|te:559850677|sc:0|qu:2: q_type_segmented_control | visible
-        Q: How many weeks did you use it for?
+        A: 50%
+        se:2|sc:9|qu:0|te:1919303763|sc:0|qu:2: q_type_segmented_control | visible
+        Q: How many weeks did you use it?
         A: 1 to 2
-        se:2|sc:9|qu:0|te:559850677|sc:0|qu:3: q_type_segmented_control | visible
+        se:2|sc:9|qu:0|te:1919303763|sc:0|qu:3: q_type_segmented_control | visible
         Q: Did you use it as instructed by its packaging or by a healthcare provider?
         A: Mostly
-        se:2|sc:9|qu:0|te:559850677|sc:0|qu:4: q_type_segmented_control | visible
+        se:2|sc:9|qu:0|te:1919303763|sc:0|qu:4: q_type_segmented_control | visible
         Q: Was it helpful?
         A: No
-        se:2|sc:9|qu:0|te:559850677|sc:0|qu:5: q_type_segmented_control | visible
+        se:2|sc:9|qu:0|te:1919303763|sc:0|qu:5: q_type_segmented_control | visible
         Q: Do you need a new prescription for it?
-        A: Yes
+        A: No
 
   se:2|sc:10: screen_type_questions | visible
     se:2|sc:10|qu:0: q_type_single_select | visible
     Q: Have you tried any other topical treatments for this rash?
-    A: Yes
+    A: No
 
-  se:2|sc:11: screen_type_questions | visible
-    se:2|sc:11|qu:0: q_type_multiple_choice | visible
+  se:2|sc:11: screen_type_questions | hidden
+    se:2|sc:11|qu:0: q_type_multiple_choice | hidden
     Q: What other topical treatments have you tried?
-    A: Miconazole
-      se:2|sc:11|qu:0|te:2058201662|sc:0: screen_type_questions | visible
-      Tell us more about Miconazole:
-        se:2|sc:11|qu:0|te:2058201662|sc:0|qu:0: q_type_segmented_control | visible
-        Q: How long did you use it for?
-        A: Months
-        se:2|sc:11|qu:0|te:2058201662|sc:0|qu:1: q_type_segmented_control | visible
-        Q: Did you use Miconazole as instructed by its packaging or a healthcare provider?
-        A: Mostly
-        se:2|sc:11|qu:0|te:2058201662|sc:0|qu:2: q_type_segmented_control | visible
-        Q: Was Miconazole helpful?
-        A: No
-        se:2|sc:11|qu:0|te:2058201662|sc:0|qu:3: q_type_segmented_control | visible
-        Q: Do you need a new prescription for Miconazole?
-        A: No
-    A: Terbinafine (Lamisil)
-      se:2|sc:11|qu:0|te:1242082617|sc:0: screen_type_questions | visible
-      Tell us more about Terbinafine (Lamisil):
-        se:2|sc:11|qu:0|te:1242082617|sc:0|qu:0: q_type_segmented_control | visible
-        Q: How long did you use it for?
-        A: Months
-        se:2|sc:11|qu:0|te:1242082617|sc:0|qu:1: q_type_segmented_control | visible
-        Q: Did you use Terbinafine (Lamisil) as instructed by its packaging or a healthcare provider?
-        A: Mostly
-        se:2|sc:11|qu:0|te:1242082617|sc:0|qu:2: q_type_segmented_control | visible
-        Q: Was Terbinafine (Lamisil) helpful?
-        A: No
-        se:2|sc:11|qu:0|te:1242082617|sc:0|qu:3: q_type_segmented_control | visible
-        Q: Do you need a new prescription for Terbinafine (Lamisil)?
-        A: No
-    A: Tolnaftate (Tinactin)
-      se:2|sc:11|qu:0|te:1023358518|sc:0: screen_type_questions | visible
-      Tell us more about Tolnaftate (Tinactin):
-        se:2|sc:11|qu:0|te:1023358518|sc:0|qu:0: q_type_segmented_control | visible
-        Q: How long did you use it for?
-        A: Months
-        se:2|sc:11|qu:0|te:1023358518|sc:0|qu:1: q_type_segmented_control | visible
-        Q: Did you use Tolnaftate (Tinactin) as instructed by its packaging or a healthcare provider?
-        A: Mostly
-        se:2|sc:11|qu:0|te:1023358518|sc:0|qu:2: q_type_segmented_control | visible
-        Q: Was Tolnaftate (Tinactin) helpful?
-        A: No
-        se:2|sc:11|qu:0|te:1023358518|sc:0|qu:3: q_type_segmented_control | visible
-        Q: Do you need a new prescription for Tolnaftate (Tinactin)?
-        A: Yes
 
   se:2|sc:12: screen_type_questions | visible
     se:2|sc:12|qu:0: q_type_single_select | visible
     Q: Have you tried any oral medications for this rash?
-    A: Yes
+    A: No
 
-  se:2|sc:13: screen_type_questions | visible
-    se:2|sc:13|qu:0: q_type_multiple_choice | visible
+  se:2|sc:13: screen_type_questions | hidden
+    se:2|sc:13|qu:0: q_type_multiple_choice | hidden
     Q: Which oral medications have you tried?
-    A: Cephalexin (Keflex)
-      se:2|sc:13|qu:0|te:2801998747|sc:0: screen_type_questions | visible
-      More about Cephalexin (Keflex):
-        se:2|sc:13|qu:0|te:2801998747|sc:0|qu:0: q_type_segmented_control | visible
-        Q: How long did you use it for?
-        A: Months
-        se:2|sc:13|qu:0|te:2801998747|sc:0|qu:1: q_type_segmented_control | visible
-        Q: Did you take it as instructed by its packaging or a healthcare provider?
-        A: Mostly
-        se:2|sc:13|qu:0|te:2801998747|sc:0|qu:2: q_type_segmented_control | visible
-        Q: Was it helpful?
-        A: No
-        se:2|sc:13|qu:0|te:2801998747|sc:0|qu:3: q_type_segmented_control | visible
-        Q: Do you need a new prescription for it?
-        A: Yes
-    A: Penicillin or amoxicillin
-      se:2|sc:13|qu:0|te:163409234|sc:0: screen_type_questions | visible
-      More about Penicillin or amoxicillin:
-        se:2|sc:13|qu:0|te:163409234|sc:0|qu:0: q_type_segmented_control | visible
-        Q: How long did you use it for?
-        A: Weeks
-        se:2|sc:13|qu:0|te:163409234|sc:0|qu:1: q_type_segmented_control | visible
-        Q: Did you take it as instructed by its packaging or a healthcare provider?
-        A: Mostly
-        se:2|sc:13|qu:0|te:163409234|sc:0|qu:2: q_type_segmented_control | visible
-        Q: Was it helpful?
-        A: No
-        se:2|sc:13|qu:0|te:163409234|sc:0|qu:3: q_type_segmented_control | visible
-        Q: Do you need a new prescription for it?
-        A: Yes
 
   se:2|sc:14: screen_type_questions | visible
     se:2|sc:14|qu:0: q_type_single_select | visible
     Q: Have you tried any other types of treatments for this rash?
-    A: Yes
+    A: No
 
-  se:2|sc:15: screen_type_questions | visible
-    se:2|sc:15|qu:0: q_type_free_text | visible
+  se:2|sc:15: screen_type_questions | hidden
+    se:2|sc:15|qu:0: q_type_free_text | hidden
     Q: Describe any other treatments you have tried:
-    A: Not really.
 
   se:2|sc:16: screen_type_questions | visible
     se:2|sc:16|qu:0: q_type_multiple_choice | visible
     Q: Do you have any of the following medical conditions?
     You'll have a chance to tell your doctor about other medical conditions later.
-    A: Absent or nonfunctional spleen
-    A: Asthma
-    A: Crohn's disease
+    A: None of the above
 
   se:2|sc:17: screen_type_questions | hidden
     se:2|sc:17|qu:0: q_type_single_select | hidden
@@ -759,47 +691,40 @@
   se:2|sc:32: screen_type_questions | visible
     se:2|sc:32|qu:0: q_type_single_select | visible
     Q: Have you ever had cancer?
-    A: Yes
+    A: No
 
-  se:2|sc:33: screen_type_questions | visible
-    se:2|sc:33|qu:0: q_type_multiple_choice | visible
+  se:2|sc:33: screen_type_questions | hidden
+    se:2|sc:33|qu:0: q_type_multiple_choice | hidden
     Q: What type(s) of cancer have you had?
-    A: Brain
-    A: Breast
 
   se:2|sc:34: screen_type_questions | hidden
     se:2|sc:34|qu:0: q_type_multiple_choice | hidden
     Q: What type(s) of cancer have you had?
 
-  se:2|sc:35: screen_type_questions | visible
-    se:2|sc:35|qu:0: q_type_single_select | visible
+  se:2|sc:35: screen_type_questions | hidden
+    se:2|sc:35|qu:0: q_type_single_select | hidden
     Q: Do you have any active cancer?
-    A: No, in remission for less than 5 years
 
-  se:2|sc:36: screen_type_questions | visible
-    se:2|sc:36|qu:0: q_type_free_text | visible
-    Q: Describe any surgeries, chemotherapy, and radiation treatments you have had:
-    A: dont rememger.
+  se:2|sc:36: screen_type_questions | hidden
+    se:2|sc:36|qu:0: q_type_free_text | hidden
+    Q: Describe any surgeries, chemotherapy, or radiation treatments you have had:
 
   se:2|sc:37: screen_type_questions | visible
     se:2|sc:37|qu:0: q_type_single_select | visible
     Q: Have you ever had any surgeries?
-    A: Yes
+    A: No
 
-  se:2|sc:38: screen_type_questions | visible
-    se:2|sc:38|qu:0: q_type_free_text | visible
+  se:2|sc:38: screen_type_questions | hidden
+    se:2|sc:38|qu:0: q_type_free_text | hidden
     Q: What surgeries have you had?
-    A: dunno
 
-  se:2|sc:39: screen_type_questions | visible
-    se:2|sc:39|qu:0: q_type_single_select | visible
+  se:2|sc:39: screen_type_questions | hidden
+    se:2|sc:39|qu:0: q_type_single_select | hidden
     Q: Have any of your surgeries been in the past month?
-    A: Yes
 
-  se:2|sc:40: screen_type_questions | visible
-    se:2|sc:40|qu:0: q_type_free_text | visible
+  se:2|sc:40: screen_type_questions | hidden
+    se:2|sc:40|qu:0: q_type_free_text | hidden
     Q: Which of your surgeries have you had in the past month?
-    A: dunno either.
 
   se:2|sc:41: screen_type_questions | hidden
     se:2|sc:41|qu:0: q_type_single_select | hidden
@@ -815,59 +740,59 @@
 
   se:2|sc:44: screen_type_questions | hidden
     se:2|sc:44|qu:0: q_type_single_select | hidden
+    Q: When will you begin trying to get pregnant?
+    This influences which medications are safe for you to use.
+
+  se:2|sc:45: screen_type_questions | hidden
+    se:2|sc:45|qu:0: q_type_single_select | hidden
     Q: Are you currently breastfeeding?
 
-  se:2|sc:45: screen_type_questions | visible
-    se:2|sc:45|qu:0: q_type_free_text | visible
+  se:2|sc:46: screen_type_questions | visible
+    se:2|sc:46|qu:0: q_type_free_text | visible
     Q: Do you have any other current medical conditions or important past medical history?
     Anything for which you see a doctor or take medication is useful to know.
-    A: no
-
-  se:2|sc:46: screen_type_questions | visible
-    se:2|sc:46|qu:0: q_type_single_select | visible
-    Q: Are there any medications that you take or use regularly?
-    A: Yes
+    A: Nope
 
   se:2|sc:47: screen_type_questions | visible
     se:2|sc:47|qu:0: q_type_single_select | visible
-    Q: Do any of your medications suppress your immune system?
-    A: No
-
-  se:2|sc:48:  | hidden
-
-  se:2|sc:49: Next Steps | hidden
-
-  se:2|sc:50: screen_type_questions | visible
-  se:2|sc:50|qu:0: q_type_autocomplete | visible
-  Q: Which medications do you take or use regularly?:  
-    A: Penicillin
-    A: Benza
-
-  se:2|sc:51: screen_type_questions | visible
-    se:2|sc:51|qu:0: q_type_single_select | visible
-    Q: Are there any supplements that you take regularly?
-    (e.g., vitamins or herbs)
+    Q: Are there any medications that you take or use regularly?
     A: Yes
 
-  se:2|sc:52: screen_type_questions | visible
-    se:2|sc:52|qu:0: q_type_free_text | visible
-    Q: Which supplements do you take regularly?
-    A: whey protein.
+  se:2|sc:48: screen_type_questions | visible
+    se:2|sc:48|qu:0: q_type_single_select | visible
+    Q: Do any of your medications suppress your immune system?
+    A: I'm not sure
 
-  se:2|sc:53: screen_type_questions | visible
-    se:2|sc:53|qu:0: q_type_single_select | visible
+  se:2|sc:49:  | hidden
+
+  se:2|sc:50: Next Steps | hidden
+
+  se:2|sc:51: screen_type_questions | visible
+  se:2|sc:51|qu:0: q_type_autocomplete | visible
+  Q: Which medications do you take or use regularly?:
+    A: Benzoyl Peroxide/Clindamycin/Hyaluron Topical
+
+  se:2|sc:52: screen_type_questions | visible
+    se:2|sc:52|qu:0: q_type_single_select | visible
+    Q: Are there any supplements that you take regularly?
+    (e.g., vitamins or herbs)
+    A: No
+
+  se:2|sc:53: screen_type_questions | hidden
+    se:2|sc:53|qu:0: q_type_free_text | hidden
+    Q: Which supplements do you take regularly?
+
+  se:2|sc:54: screen_type_questions | visible
+    se:2|sc:54|qu:0: q_type_single_select | visible
     Q: Are you allergic to any medications?
     A: Yes
 
-  se:2|sc:54: screen_type_questions | visible
-  se:2|sc:54|qu:0: q_type_autocomplete | visible
-  Q: Which medications are you allergic to?  
-    A: sulfa drugs.
-
   se:2|sc:55: screen_type_questions | visible
-    se:2|sc:55|qu:0: q_type_single_select | visible
+  se:2|sc:55|qu:0: q_type_autocomplete | visible
+  Q: Which medications are you allergic to?
+    A: Peanuts
+
+  se:2|sc:56: screen_type_questions | visible
+    se:2|sc:56|qu:0: q_type_single_select | visible
     Q: What type of prescription coverage do you have?
-    A: Generic only
-
-  se:2|sc:56: screen_type_pharmacy | visible
-
+    A: Medicaid

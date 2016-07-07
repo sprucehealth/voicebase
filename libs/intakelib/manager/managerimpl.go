@@ -5,29 +5,13 @@ package manager
 
 import (
 	"container/list"
-	"errors"
 	"fmt"
 	"sync"
 
 	"github.com/gogo/protobuf/proto"
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/intakelib/protobuf/intake"
 )
-
-// clientClock is used to communicate the local point in
-// time at which a question was answered by a patient so as to ensure
-// that the latest answer is stored server-side.
-type clientClock struct {
-
-	// sessionID is a UUID generated at the initialization of the
-	// visit manager and represents the session within which the
-	// client is interacting with the visit.
-	sessionID string
-
-	// sessionCounter is a monotonically increasing
-	// counter used to represent a point in time at
-	// which a question was answered by the patient.
-	sessionCounter uint
-}
 
 // questionData holds a reference to the question along
 // with any additional book-keeping for question answer management.
@@ -62,6 +46,11 @@ type visitManager struct {
 	// questionMap is a mapping of the question id  to questionData
 	questionMap map[string]*questionData
 
+	// questionIDToAnswerMap is mapping of the question id to the patient answer
+	// NOTE: The questions are the source of authority for the answer they own. This
+	// map is only used to seed the questions with answers on initial load.
+	questionIDToAnswerMap map[string]patientAnswer
+
 	// layoutUnitMap is a mapping of layoutUnitID to a layoutUnitNode
 	// in the vist object.
 	layoutUnitMap map[string]layoutUnit
@@ -83,9 +72,6 @@ type visitManager struct {
 	// has finished being setup.
 	setupCompleteListeners []func() error
 
-	// clienClock is the manager's state of the client clock.
-	clientClock
-
 	// sectionScreensMap is a mapping of section's layoutUnitID to the linear list
 	// of real-time potential screens to display. "Real-time" because included in the
 	// list is the subscreens based on answers to questions that are to be shown.
@@ -97,13 +83,13 @@ func (v *visitManager) Init(data []byte, cli Client) error {
 	var vd visitData
 
 	if err := vd.unmarshal(protobuf, data); err != nil {
-		return err
+		return errors.Trace(err)
 	}
 	v.cli = cli
 
 	v.serializer, err = serializerForType(protobuf)
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	v.platform = vd.platform
@@ -112,16 +98,34 @@ func (v *visitManager) Init(data []byte, cli Client) error {
 		ID:          vd.patientVisitID,
 		IsSubmitted: vd.isSubmitted,
 	}
+
+	// unmarshal any answers that exist into the appropriate types
+	answers := vd.layoutData.get("answers")
+	if answers != nil {
+		answersMap, err := getDataMap(answers)
+		if err != nil {
+			return errors.Trace(err)
+		}
+
+		v.questionIDToAnswerMap = make(map[string]patientAnswer)
+		for questionID, answer := range answersMap {
+			answerMap, err := getDataMap(answer)
+			if err != nil {
+				return errors.Trace(err)
+			}
+
+			v.questionIDToAnswerMap[questionID], err = getPatientAnswer(answerMap)
+			if err != nil {
+				return errors.Trace(err)
+			}
+		}
+	}
+
 	if err := v.visit.unmarshalMapFromClient(vd.layoutData, nil, v); err != nil {
 		return err
 	}
 
 	v.userFields = vd.userFields
-
-	v.sessionID, err = generateUUID()
-	if err != nil {
-		return err
-	}
 
 	// initialize the questionMap
 	v.questionMap = make(map[string]*questionData)
@@ -146,17 +150,17 @@ func (v *visitManager) Init(data []byte, cli Client) error {
 	v.itemsToBeUploaded = make(map[string]uploadableItem)
 
 	if err := v.notifyListenersOfSetupComplete(); err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	// now that listeners have been processed, compute overall visit status.
 	v.computeCurrentVisibilityState(v.visit)
 	v.visitStatus, err = newVisitCompletionStatus(v)
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 	if err := v.visitStatus.update(); err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	v.setupComplete = true
@@ -169,11 +173,11 @@ func (v *visitManager) Set(data []byte) error {
 
 	var pair intake.KeyValuePair
 	if err := proto.Unmarshal(data, &pair); err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
-	if err := v.userFields.set(*pair.Key, pair.Value); err != nil {
-		return err
+	if err := v.userFields.set(*pair.Key, *pair.Value); err != nil {
+		return errors.Trace(err)
 	}
 
 	// update the overall visit status based on the answer set
@@ -193,23 +197,23 @@ func (v *visitManager) ComputeNextScreen(currentScreenID string) ([]byte, error)
 	// only move to the next screen if the current screen has its requirements met
 	s, err := v.screen(currentScreenID)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
 	res, err := s.requirementsMet(v)
 	switch {
-	case err == errSubQuestionRequirements:
+	case errors.Cause(err) == errSubQuestionRequirements:
 		// this is okay since the only way subquestions will have their requirements
 		// met is if we allow that to be the case by moving to the next screen :)
 	case err != nil:
-		return nil, err
+		return nil, errors.Trace(err)
 	case !res:
 		return nil, errors.New("Cannot move to next screen until current screen has its requirements met.")
 	}
 
 	se, err := parentSectionForScreen(s)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
 	nextScreen, err := v.computeNextScreenInSection(se, s)
@@ -228,7 +232,7 @@ func (v *visitManager) ValidateScreen(screenID string) ([]byte, error) {
 
 	s, err := v.screen(screenID)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
 	return validateScreen(s, v, v.serializer)
@@ -244,15 +248,15 @@ func (v *visitManager) Screen(screenID string) ([]byte, error) {
 
 	s, err := v.screen(screenID)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
 	if s.visibility() == hidden {
-		return nil, fmt.Errorf("Cannot request for a hidden screen (id = %s)", screenID)
+		return nil, errors.Trace(fmt.Errorf("Cannot request for a hidden screen (id = %s)", screenID))
 	}
 	progress, err := v.computeProgress(s)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
 	return wrapScreen(s, progress, v.serializer)
@@ -263,23 +267,23 @@ func (v *visitManager) SetAnswerForQuestion(questionID string, data []byte) erro
 	defer v.rwMutex.Unlock()
 
 	if v.visit.IsSubmitted {
-		return errVisitReadOnlyMode
+		return errors.Trace(errVisitReadOnlyMode)
 	}
 
 	var ad answerData
 	if err := ad.unmarshalProtobuf(data); err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	// check if there already exists an answer for the question
 	qd := v.questionMap[questionID]
 	if qd == nil {
-		return fmt.Errorf("question %s doesn't exist in layout", questionID)
+		return errors.Trace(fmt.Errorf("question %s doesn't exist in layout", questionID))
 	}
 
 	existingPatientAnswer, err := qd.questionRef.patientAnswer()
 	if err != errNoAnswerExists && err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	// nothing to do if the answers are equal
@@ -288,10 +292,6 @@ func (v *visitManager) SetAnswerForQuestion(questionID string, data []byte) erro
 		existingPatientAnswer.equals(ad.answer) {
 		return nil
 	}
-
-	// set the questionID for the answer so that the answer is able
-	// to marshal itself into a complete object for the client to persist
-	ad.answer.setQuestionID(questionID)
 
 	if err := qd.questionRef.setPatientAnswer(ad.answer); err != nil {
 		return err
@@ -315,7 +315,7 @@ func (v *visitManager) SetAnswerForQuestion(questionID string, data []byte) erro
 
 	// update the overall visit status based on the answer set
 	if err := v.visitStatus.update(); err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	return nil
@@ -326,21 +326,21 @@ func (v *visitManager) ReplaceID(currentID string, data []byte) error {
 	defer v.rwMutex.Unlock()
 
 	if v.visit.IsSubmitted {
-		return errVisitReadOnlyMode
+		return errors.Trace(errVisitReadOnlyMode)
 	}
 
 	item, ok := v.itemsToBeUploaded[currentID]
 	if !ok {
-		return fmt.Errorf("Item with currentID %s does not exist", currentID)
+		return errors.Trace(fmt.Errorf("Item with currentID %s does not exist", currentID))
 	}
 
 	var id idReplacementData
 	if err := id.unmarshalProtobuf(data); err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	if err := item.replaceID(id.replacementData); err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	delete(v.itemsToBeUploaded, currentID)
@@ -355,7 +355,7 @@ func (v *visitManager) ComputeLayoutStatus() ([]byte, error) {
 
 	pb, err := v.visitStatus.transformToProtobuf()
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
 	return v.serializer.marshal(pb)
@@ -373,7 +373,7 @@ func (v *visitManager) StartEditModeWithQuestion(questionID string) ([]byte, err
 	defer v.rwMutex.Unlock()
 
 	if v.visit.IsSubmitted {
-		return nil, errVisitReadOnlyMode
+		return nil, errors.Trace(errVisitReadOnlyMode)
 	}
 	return nil, nil
 }
@@ -383,7 +383,7 @@ func (v *visitManager) EndEditMode(discard int) error {
 	defer v.rwMutex.Unlock()
 
 	if v.visit.IsSubmitted {
-		return errVisitReadOnlyMode
+		return errors.Trace(errVisitReadOnlyMode)
 	}
 
 	return nil

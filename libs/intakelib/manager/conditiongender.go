@@ -26,10 +26,11 @@ func (g *genderCondition) questionIDs() []string {
 
 func (g *genderCondition) evaluate(dataSource questionAnswerDataSource) bool {
 	data := dataSource.valueForKey(keyTypePatientGender.String())
-	if len(data) == 0 {
+	gender, ok := data.(string)
+	if !ok {
 		return false
 	}
-	return strings.ToLower(g.Gender) == strings.ToLower(string(data))
+	return strings.ToLower(g.Gender) == strings.ToLower(gender)
 }
 
 func (g *genderCondition) layoutUnitDependencies(dataSource questionAnswerDataSource) []layoutUnit {

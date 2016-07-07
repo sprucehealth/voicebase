@@ -10,7 +10,8 @@ import (
 // of authority for current information about questions and answers.
 type questionAnswerDataSource interface {
 	question(questionID string) question
-	valueForKey(key string) []byte
+	answerForQuestion(questionID string) patientAnswer
+	valueForKey(key string) interface{}
 	registerNode(node layoutUnit, dependencies []layoutUnit)
 	deregisterNode(node layoutUnit)
 	registerSubscreensForQuestion(q question, subscreens []screen) error
@@ -105,11 +106,10 @@ type mapClientUnmarshaller interface {
 	unmarshalMapFromClient(data dataMap) error
 }
 
-// clientJSONMarshaller is the interface implemented by objects that can marshal
+// clientTransformer is the interface implemented by objects that can transform
 // themselves into a very specific JSON representation for the client.
-type clientJSONMarshaller interface {
-	marshalJSONForClient() ([]byte, error)
-	marshalEmptyJSONForClient() ([]byte, error)
+type clientTransformer interface {
+	transformForClient() (interface{}, error)
 }
 
 // condition is an interface to be conformed to by any type
@@ -152,7 +152,7 @@ type question interface {
 	prefilled() bool
 	patientAnswer() (patientAnswer, error)
 	setPatientAnswer(pa patientAnswer) error
-	marshalAnswerForClient() ([]byte, error)
+	answerForClient() (interface{}, error)
 
 	setParentQuestion(q question)
 
@@ -202,11 +202,9 @@ type questionsContainer interface {
 type patientAnswer interface {
 	mapClientUnmarshaller
 	protobufUnmarshaller
-	clientJSONMarshaller
+	clientTransformer
 	protobufTransformer
 	stringIndenter
-	setQuestionID(questionID string)
-	questionID() string
 	equals(pa patientAnswer) bool
 	isEmpty() bool
 }

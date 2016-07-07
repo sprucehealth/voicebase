@@ -59,7 +59,7 @@ func (m *mockDataSource_question) question(questionID string) question {
 	return m.q
 }
 
-func (m *mockDataSource_question) valueForKey(key string) []byte {
+func (m *mockDataSource_question) valueForKey(key string) interface{} {
 	return nil
 }
 
@@ -77,7 +77,7 @@ func TestQuestion_requirementsMet(t *testing.T) {
 	}
 
 	// now lets make the answer non-empty
-	s.answer.Answers = []topLevelAnswerItem{&multipleChoiceAnswerSelection{}, &multipleChoiceAnswerSelection{}}
+	// s.answer.Answers = []topLevelAnswerItem{&multipleChoiceAnswerSelection{}, &multipleChoiceAnswerSelection{}}
 
 	// optional question with  answer should have its requirements met
 	s.Required = false

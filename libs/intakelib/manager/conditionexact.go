@@ -19,18 +19,18 @@ func (a *answerEqualsExactCondition) evaluate(dataSource questionAnswerDataSourc
 		return false
 	}
 
-	mcqa, ok := pa.(*multipleChoiceAnswer)
+	answerContainer, ok := pa.(topLevelAnswerWithSubScreensContainer)
 	if !ok {
 		return false
 	}
 
 	// patient answer must contain exactly the same answers specified in the condition
-	if len(mcqa.Answers) != len(a.PotentialAnswersID) {
+	if len(answerContainer.topLevelAnswers()) != len(a.PotentialAnswersID) {
 		return false
 	}
 
 	answerIDsFoundOnce := make(map[string]bool, len(a.PotentialAnswersID))
-	for _, aItem := range mcqa.Answers {
+	for _, aItem := range answerContainer.topLevelAnswers() {
 		answerIDsFoundOnce[aItem.potentialAnswerID()] = !answerIDsFoundOnce[aItem.potentialAnswerID()]
 	}
 

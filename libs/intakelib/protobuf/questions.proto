@@ -13,7 +13,8 @@ package intake;
  		MULTIPLE_CHOICE = 0;
  		FREE_TEXT = 1;
  		AUTOCOMPLETE = 2;
- 		PHOTO_SECTION = 3;
+ 		MEDIA_SECTION = 3;
+    SINGLE_ENTRY = 4;
  	}
 
  	required Type type = 1;
@@ -109,7 +110,9 @@ message CommonQuestionInfo {
 	// groups is used to convey groupings for a sectioned multiple choice question.
 	repeated TitleCount groups = 4;
 
-	optional MultipleChoicePatientAnswer patient_answer = 5;
+  // patient_answer represents the answer by the patient. Given that it can be of type
+  // singleSelect, segmentedControl or multipleChoice, sending a typed data representation for the answer
+	optional PatientAnswerData patient_answer = 5;
  }
 
 // FreeTextQuestion represents the contents of a specific question type
@@ -121,6 +124,17 @@ message CommonQuestionInfo {
  	required CommonQuestionInfo question_info = 2;
  	optional FreeTextPatientAnswer patient_answer = 3;
  }
+
+
+ // SingleEntryQuestion represents the contents of a specific question type
+ // that allows a patient to enter a free text response to the question.
+  message SingleEntryQuestion {
+
+  	// placeholder represents the text to show when the free text box is empty.
+  	optional string placeholder = 1 [default = "Type in some text..."];
+  	required CommonQuestionInfo question_info = 2;
+  	optional SingleEntryPatientAnswer patient_answer = 3;
+  }
 
 // AutocompleteQuestion represents a question where the user can
 // add answer choices based on results from an autocomplete API.
@@ -151,14 +165,14 @@ message CommonQuestionInfo {
  	optional AutocompletePatientAnswer patient_answer = 7;
  }
 
-// PhotoSectionQuestion represents a question for the user
+// MediaSectionQuestion represents a question for the user
 // to enter a variable number of groupings of photos
 // into photo slot definitions.
- message PhotoSectionQuestion {
+ message MediaSectionQuestion {
 
- 	// PhotoSlot represents the information pertaining to a photo
+ 	// MediaSlot represents the information pertaining to a photo
  	// slot that the user is intended to fill.
- 	message PhotoSlot {
+ 	message MediaSlot {
 		enum FlashState {
  			OFF = 0;
  			ON =  1;
@@ -198,9 +212,9 @@ message CommonQuestionInfo {
  		// while the user is taking a picture to fill this photo slot.
  		optional string overlay_image_link = 6;
 
- 		// photo_missing_error_msg represents the error to display to the user
+ 		// media_missing_error_msg represents the error to display to the user
  		// if the photo is missing for this specific slot.
- 		optional string photo_missing_error_msg = 7;
+ 		optional string media_missing_error_msg = 7;
 
  		// initial_camera_direction represents the direction in which to invoke
  		// the camera when the camera view is opened for intake pertaining to this slot.
@@ -212,10 +226,20 @@ message CommonQuestionInfo {
 
  		// id represents the unique identifier for the photo slot.
  		required string id = 10;
+
+    enum Type {
+      UNKNOWN = 0;
+      IMAGE = 1;
+      VIDEO = 2;
+    }
+
+    // type indicates whether the slot holds an image or a video
+    required Type type = 11;
+
  	}
 
  	required CommonQuestionInfo question_info = 1;
- 	repeated PhotoSlot photo_slots = 2;
+ 	repeated MediaSlot media_slots = 2;
 
  	// allows_multiple_sections indicates whether or not the user is allowed to
  	// enter a variable number of sections of photos during intake for this photo
@@ -230,5 +254,5 @@ message CommonQuestionInfo {
  	// duplication of the last photo slot in the photo section question.
  	optional bool disable_last_slot_duplication = 5;
 
- 	optional PhotoSectionPatientAnswer patient_answer = 6;
+ 	optional MediaSectionPatientAnswer patient_answer = 6;
 }

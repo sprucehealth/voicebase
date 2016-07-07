@@ -132,8 +132,8 @@ func TestVisit_visibility(t *testing.T) {
 				for _, qItem := range s.Questions {
 					test.Equals(t, visible, qItem.visibility())
 				}
-			case *photoScreen:
-				for _, qItem := range s.PhotoQuestions {
+			case *mediaScreen:
+				for _, qItem := range s.MediaQuestions {
 					test.Equals(t, visible, qItem.visibility())
 				}
 			}
@@ -164,7 +164,7 @@ func TestVisit_screenTitle(t *testing.T) {
 		for _, sc := range section.Screens {
 			test.Equals(t, true, section.Title != "")
 			switch s := sc.(type) {
-			case *photoScreen:
+			case *mediaScreen:
 				test.Equals(t, section.Title, s.Title)
 			case *pharmacyScreen:
 				test.Equals(t, section.Title, s.Title)

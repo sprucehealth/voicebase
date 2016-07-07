@@ -19,7 +19,7 @@ func (a *answerContainsAllCondition) evaluate(dataSource questionAnswerDataSourc
 		return false
 	}
 
-	mcqa, ok := pa.(*multipleChoiceAnswer)
+	answerContainer, ok := pa.(topLevelAnswerWithSubScreensContainer)
 	if !ok {
 		return false
 	}
@@ -28,7 +28,7 @@ func (a *answerContainsAllCondition) evaluate(dataSource questionAnswerDataSourc
 	for _, pID := range a.PotentialAnswersID {
 
 		var found bool
-		for _, a := range mcqa.Answers {
+		for _, a := range answerContainer.topLevelAnswers() {
 			if a.potentialAnswerID() == pID {
 				found = true
 				break

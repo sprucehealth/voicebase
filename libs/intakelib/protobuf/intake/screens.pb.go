@@ -19,7 +19,7 @@ const (
 	ScreenData_QUESTION       ScreenData_Type = 0
 	ScreenData_TRIAGE         ScreenData_Type = 1
 	ScreenData_IMAGE_POPUP    ScreenData_Type = 2
-	ScreenData_PHOTO          ScreenData_Type = 3
+	ScreenData_MEDIA          ScreenData_Type = 3
 	ScreenData_PHARMACY       ScreenData_Type = 4
 	ScreenData_GENERIC_POPUP  ScreenData_Type = 5
 	ScreenData_VISIT_OVERVIEW ScreenData_Type = 6
@@ -30,7 +30,7 @@ var ScreenData_Type_name = map[int32]string{
 	0: "QUESTION",
 	1: "TRIAGE",
 	2: "IMAGE_POPUP",
-	3: "PHOTO",
+	3: "MEDIA",
 	4: "PHARMACY",
 	5: "GENERIC_POPUP",
 	6: "VISIT_OVERVIEW",
@@ -40,7 +40,7 @@ var ScreenData_Type_value = map[string]int32{
 	"QUESTION":       0,
 	"TRIAGE":         1,
 	"IMAGE_POPUP":    2,
-	"PHOTO":          3,
+	"MEDIA":          3,
 	"PHARMACY":       4,
 	"GENERIC_POPUP":  5,
 	"VISIT_OVERVIEW": 6,
@@ -308,83 +308,83 @@ func (m *QuestionScreen) GetContentHeaderInfoPopup() *InfoPopup {
 }
 
 // PhotoScreen represents a screen containing photo section questions.
-type PhotoScreen struct {
+type MediaScreen struct {
 	ScreenInfo            *CommonScreenInfo       `protobuf:"bytes,1,req,name=screen_info" json:"screen_info,omitempty"`
-	PhotoQuestions        []*PhotoSectionQuestion `protobuf:"bytes,2,rep,name=photo_questions" json:"photo_questions,omitempty"`
+	MediaQuestions        []*MediaSectionQuestion `protobuf:"bytes,2,rep,name=media_questions" json:"media_questions,omitempty"`
 	ContentHeaderTitle    *string                 `protobuf:"bytes,3,opt,name=content_header_title" json:"content_header_title,omitempty"`
 	ContentHeaderSubtitle *string                 `protobuf:"bytes,4,opt,name=content_header_subtitle" json:"content_header_subtitle,omitempty"`
 	// info_popup represents the information to show in a popup if present.
 	ContentHeaderInfoPopup *InfoPopup `protobuf:"bytes,5,opt,name=content_header_info_popup" json:"content_header_info_popup,omitempty"`
 	// bottom_container represents the content to be displayed below the photo
 	// section questions on the screen.
-	BottomContainer  *PhotoScreen_ImageTextBox `protobuf:"bytes,6,opt,name=bottom_container" json:"bottom_container,omitempty"`
+	BottomContainer  *MediaScreen_ImageTextBox `protobuf:"bytes,6,opt,name=bottom_container" json:"bottom_container,omitempty"`
 	XXX_unrecognized []byte                    `json:"-"`
 }
 
-func (m *PhotoScreen) Reset()         { *m = PhotoScreen{} }
-func (m *PhotoScreen) String() string { return proto.CompactTextString(m) }
-func (*PhotoScreen) ProtoMessage()    {}
+func (m *MediaScreen) Reset()         { *m = MediaScreen{} }
+func (m *MediaScreen) String() string { return proto.CompactTextString(m) }
+func (*MediaScreen) ProtoMessage()    {}
 
-func (m *PhotoScreen) GetScreenInfo() *CommonScreenInfo {
+func (m *MediaScreen) GetScreenInfo() *CommonScreenInfo {
 	if m != nil {
 		return m.ScreenInfo
 	}
 	return nil
 }
 
-func (m *PhotoScreen) GetPhotoQuestions() []*PhotoSectionQuestion {
+func (m *MediaScreen) GetMediaQuestions() []*MediaSectionQuestion {
 	if m != nil {
-		return m.PhotoQuestions
+		return m.MediaQuestions
 	}
 	return nil
 }
 
-func (m *PhotoScreen) GetContentHeaderTitle() string {
+func (m *MediaScreen) GetContentHeaderTitle() string {
 	if m != nil && m.ContentHeaderTitle != nil {
 		return *m.ContentHeaderTitle
 	}
 	return ""
 }
 
-func (m *PhotoScreen) GetContentHeaderSubtitle() string {
+func (m *MediaScreen) GetContentHeaderSubtitle() string {
 	if m != nil && m.ContentHeaderSubtitle != nil {
 		return *m.ContentHeaderSubtitle
 	}
 	return ""
 }
 
-func (m *PhotoScreen) GetContentHeaderInfoPopup() *InfoPopup {
+func (m *MediaScreen) GetContentHeaderInfoPopup() *InfoPopup {
 	if m != nil {
 		return m.ContentHeaderInfoPopup
 	}
 	return nil
 }
 
-func (m *PhotoScreen) GetBottomContainer() *PhotoScreen_ImageTextBox {
+func (m *MediaScreen) GetBottomContainer() *MediaScreen_ImageTextBox {
 	if m != nil {
 		return m.BottomContainer
 	}
 	return nil
 }
 
-type PhotoScreen_ImageTextBox struct {
+type MediaScreen_ImageTextBox struct {
 	ImageLink        *string `protobuf:"bytes,1,opt,name=image_link" json:"image_link,omitempty"`
 	Text             *string `protobuf:"bytes,2,opt,name=text" json:"text,omitempty"`
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *PhotoScreen_ImageTextBox) Reset()         { *m = PhotoScreen_ImageTextBox{} }
-func (m *PhotoScreen_ImageTextBox) String() string { return proto.CompactTextString(m) }
-func (*PhotoScreen_ImageTextBox) ProtoMessage()    {}
+func (m *MediaScreen_ImageTextBox) Reset()         { *m = MediaScreen_ImageTextBox{} }
+func (m *MediaScreen_ImageTextBox) String() string { return proto.CompactTextString(m) }
+func (*MediaScreen_ImageTextBox) ProtoMessage()    {}
 
-func (m *PhotoScreen_ImageTextBox) GetImageLink() string {
+func (m *MediaScreen_ImageTextBox) GetImageLink() string {
 	if m != nil && m.ImageLink != nil {
 		return *m.ImageLink
 	}
 	return ""
 }
 
-func (m *PhotoScreen_ImageTextBox) GetText() string {
+func (m *MediaScreen_ImageTextBox) GetText() string {
 	if m != nil && m.Text != nil {
 		return *m.Text
 	}
@@ -707,8 +707,8 @@ func init() {
 	proto.RegisterType((*ScreenData)(nil), "intake.ScreenData")
 	proto.RegisterType((*CommonScreenInfo)(nil), "intake.CommonScreenInfo")
 	proto.RegisterType((*QuestionScreen)(nil), "intake.QuestionScreen")
-	proto.RegisterType((*PhotoScreen)(nil), "intake.PhotoScreen")
-	proto.RegisterType((*PhotoScreen_ImageTextBox)(nil), "intake.PhotoScreen.ImageTextBox")
+	proto.RegisterType((*MediaScreen)(nil), "intake.MediaScreen")
+	proto.RegisterType((*MediaScreen_ImageTextBox)(nil), "intake.MediaScreen.ImageTextBox")
 	proto.RegisterType((*PharmacyScreen)(nil), "intake.PharmacyScreen")
 	proto.RegisterType((*TriageScreen)(nil), "intake.TriageScreen")
 	proto.RegisterType((*ImagePopupScreen)(nil), "intake.ImagePopupScreen")

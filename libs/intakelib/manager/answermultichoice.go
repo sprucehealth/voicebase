@@ -2,42 +2,45 @@ package manager
 
 import (
 	"bytes"
-	"encoding/json"
-	"fmt"
 
 	"github.com/gogo/protobuf/proto"
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/intakelib/protobuf/intake"
 )
 
 type multipleChoiceAnswerSelection struct {
-	Text                string          `json:"text,omitempty"`
-	PotentialAnswerText string          `json:"-"`
-	PotentialAnswerID   string          `json:"potential_answer_id,omitempty"`
-	SubAnswers          []patientAnswer `json:"sub_answers"`
+	Text                string                   `json:"text,omitempty"`
+	PotentialAnswerText string                   `json:"-"`
+	PotentialAnswerID   string                   `json:"id,omitempty"`
+	SubAnswers          map[string]patientAnswer `json:"answers"`
 
 	subScreens []screen
 }
 
 func (m *multipleChoiceAnswerSelection) unmarshalMapFromClient(data dataMap) error {
-	m.PotentialAnswerID = data.mustGetString("potential_answer_id")
-	m.Text = data.mustGetString("answer_text")
-	m.PotentialAnswerText = data.mustGetString("potential_answer")
+	m.PotentialAnswerID = data.mustGetString("id")
+	m.Text = data.mustGetString("text")
 
-	subanswers, err := data.getInterfaceSlice("answers")
-	if err != nil {
-		return err
+	subanswers := data.get("answers")
+	if subanswers == nil {
+		return nil
 	}
 
-	m.SubAnswers = make([]patientAnswer, len(subanswers))
-	for i, subanswer := range subanswers {
+	subanswersMap, err := getDataMap(data.get("answers"))
+	if err != nil {
+		return errors.Trace(err)
+	}
+
+	m.SubAnswers = make(map[string]patientAnswer, len(subanswersMap))
+	for questionID, subanswer := range subanswersMap {
 		subAnswerMap, err := getDataMap(subanswer)
 		if err != nil {
-			return err
+			return errors.Trace(err)
 		}
 
-		m.SubAnswers[i], err = getPatientAnswer(subAnswerMap)
+		m.SubAnswers[questionID], err = getPatientAnswer(subAnswerMap)
 		if err != nil {
-			return err
+			return errors.Trace(err)
 		}
 	}
 
@@ -55,7 +58,7 @@ func (m *multipleChoiceAnswerSelection) potentialAnswerID() string {
 	return m.PotentialAnswerID
 }
 
-func (m *multipleChoiceAnswerSelection) subAnswers() []patientAnswer {
+func (m *multipleChoiceAnswerSelection) subAnswers() map[string]patientAnswer {
 	return m.SubAnswers
 }
 
@@ -68,15 +71,18 @@ func (m *multipleChoiceAnswerSelection) subscreens() []screen {
 }
 
 type multipleChoiceAnswer struct {
-	Answers    []topLevelAnswerItem `json:"answers"`
-	QuestionID string               `json:"question_id"`
+	Answers []topLevelAnswerItem `json:"potential_answers"`
 }
 
 func (a *multipleChoiceAnswer) stringIndent(indent string, depth int) string {
 	var b bytes.Buffer
 	for _, aItem := range a.Answers {
 		b.WriteString("\n")
-		b.WriteString(indentAtDepth(indent, depth) + "A: " + aItem.text())
+		text := aItem.text()
+		if text == "" {
+			text = aItem.potentialAnswerID()
+		}
+		b.WriteString(indentAtDepth(indent, depth) + "A: " + text)
 
 		for _, ssItem := range aItem.subscreens() {
 			b.WriteString("\n")
@@ -87,32 +93,19 @@ func (a *multipleChoiceAnswer) stringIndent(indent string, depth int) string {
 	return b.String()
 }
 
-func (m *multipleChoiceAnswer) setQuestionID(questionID string) {
-	m.QuestionID = questionID
-}
-
-func (m *multipleChoiceAnswer) questionID() string {
-	return m.QuestionID
-}
-
 func (m *multipleChoiceAnswer) topLevelAnswers() []topLevelAnswerItem {
 	return m.Answers
 }
 
 func (m *multipleChoiceAnswer) unmarshalMapFromClient(data dataMap) error {
 
-	// top level multiple choice answers are represented as an array of answer
-	// selections/entries, while multiple choice answers for subquestions are represented
-	// as a single object (with the current limitation being that multiple selections
-	// for a single subquestion is not supported due to the current structure).
-	answers, err := data.getInterfaceSlice("answers")
+	answers, err := data.getInterfaceSlice("potential_answers")
 	if err != nil {
 		return err
 	} else if len(answers) == 0 {
 		answers = []interface{}{data}
 	}
 
-	var questionID string
 	m.Answers = make([]topLevelAnswerItem, len(answers))
 	for i, selectionItem := range answers {
 
@@ -121,20 +114,12 @@ func (m *multipleChoiceAnswer) unmarshalMapFromClient(data dataMap) error {
 			return err
 		}
 
-		questionIDFromItem := answerMap.mustGetString("question_id")
-		if questionID == "" {
-			questionID = questionIDFromItem
-		} else if questionID != questionIDFromItem {
-			return fmt.Errorf("question_id mismatch between answer items")
-		}
-
 		selection := &multipleChoiceAnswerSelection{}
 		m.Answers[i] = selection
 		if err := selection.unmarshalMapFromClient(answerMap); err != nil {
 			return err
 		}
 	}
-	m.QuestionID = questionID
 	return nil
 }
 
@@ -177,21 +162,29 @@ func (m *multipleChoiceAnswer) transformToProtobuf() (proto.Message, error) {
 	return &pb, nil
 }
 
-func (m *multipleChoiceAnswer) marshalEmptyJSONForClient() ([]byte, error) {
-	return emptyTextAnswer(sanitizeQuestionID(m.QuestionID))
+type multipleChoiceAnswerItemClientJSON struct {
+	ID         string                 `json:"id"`
+	Text       string                 `json:"text"`
+	Subanswers map[string]interface{} `json:"answers,omitempty"`
 }
 
-func (m *multipleChoiceAnswer) marshalJSONForClient() ([]byte, error) {
-	clientJSON := &textAnswerClientJSON{
-		QuestionID: sanitizeQuestionID(m.QuestionID),
-		Items:      make([]*textAnswerClientJSONItem, len(m.Answers)),
+type multipleChoiceAnswerClientJSON struct {
+	Type             string                                `json:"type"`
+	PotentialAnswers []*multipleChoiceAnswerItemClientJSON `json:"potential_answers"`
+}
+
+func (m *multipleChoiceAnswer) transformForClient() (interface{}, error) {
+	clientJSON := &multipleChoiceAnswerClientJSON{
+		Type:             questionTypeMultipleChoice.String(),
+		PotentialAnswers: make([]*multipleChoiceAnswerItemClientJSON, len(m.Answers)),
 	}
 
 	for i, aItem := range m.Answers {
 		selection := aItem.(*multipleChoiceAnswerSelection)
-		clientJSON.Items[i] = &textAnswerClientJSONItem{
-			Text:              selection.Text,
-			PotentialAnswerID: selection.PotentialAnswerID,
+		clientJSON.PotentialAnswers[i] = &multipleChoiceAnswerItemClientJSON{
+			Text:       selection.Text,
+			ID:         selection.PotentialAnswerID,
+			Subanswers: make(map[string]interface{}),
 		}
 
 		// add answers for all visible questions within subscreens
@@ -206,18 +199,18 @@ func (m *multipleChoiceAnswer) marshalJSONForClient() ([]byte, error) {
 						continue
 					}
 
-					subanswerData, err := sqItem.marshalAnswerForClient()
+					subanswerData, err := sqItem.answerForClient()
 					if err != nil {
 						return nil, err
 					}
 
-					clientJSON.Items[i].Items = append(clientJSON.Items[i].Items, json.RawMessage(subanswerData))
+					clientJSON.PotentialAnswers[i].Subanswers[sqItem.id()] = subanswerData
 				}
 			}
 		}
 	}
 
-	return json.Marshal(clientJSON)
+	return clientJSON, nil
 }
 
 func (m *multipleChoiceAnswer) equals(other patientAnswer) bool {

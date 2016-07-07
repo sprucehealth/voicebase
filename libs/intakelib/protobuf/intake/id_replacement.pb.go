@@ -16,14 +16,14 @@ var _ = math.Inf
 type IDReplacementData_Type int32
 
 const (
-	IDReplacementData_PHOTO_ID IDReplacementData_Type = 0
+	IDReplacementData_MEDIA_ID IDReplacementData_Type = 0
 )
 
 var IDReplacementData_Type_name = map[int32]string{
-	0: "PHOTO_ID",
+	0: "MEDIA_ID",
 }
 var IDReplacementData_Type_value = map[string]int32{
-	"PHOTO_ID": 0,
+	"MEDIA_ID": 0,
 }
 
 func (x IDReplacementData_Type) Enum() *IDReplacementData_Type {
@@ -59,7 +59,7 @@ func (m *IDReplacementData) GetType() IDReplacementData_Type {
 	if m != nil && m.Type != nil {
 		return *m.Type
 	}
-	return IDReplacementData_PHOTO_ID
+	return IDReplacementData_MEDIA_ID
 }
 
 func (m *IDReplacementData) GetData() []byte {
@@ -69,32 +69,40 @@ func (m *IDReplacementData) GetData() []byte {
 	return nil
 }
 
-type PhotoIDReplacement struct {
+type MediaIDReplacement struct {
 	Id               *string `protobuf:"bytes,1,req,name=id" json:"id,omitempty"`
 	Url              *string `protobuf:"bytes,2,opt,name=url" json:"url,omitempty"`
+	ThumbnailUrl     *string `protobuf:"bytes,3,opt,name=thumbnail_url" json:"thumbnail_url,omitempty"`
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *PhotoIDReplacement) Reset()         { *m = PhotoIDReplacement{} }
-func (m *PhotoIDReplacement) String() string { return proto.CompactTextString(m) }
-func (*PhotoIDReplacement) ProtoMessage()    {}
+func (m *MediaIDReplacement) Reset()         { *m = MediaIDReplacement{} }
+func (m *MediaIDReplacement) String() string { return proto.CompactTextString(m) }
+func (*MediaIDReplacement) ProtoMessage()    {}
 
-func (m *PhotoIDReplacement) GetId() string {
+func (m *MediaIDReplacement) GetId() string {
 	if m != nil && m.Id != nil {
 		return *m.Id
 	}
 	return ""
 }
 
-func (m *PhotoIDReplacement) GetUrl() string {
+func (m *MediaIDReplacement) GetUrl() string {
 	if m != nil && m.Url != nil {
 		return *m.Url
 	}
 	return ""
 }
 
+func (m *MediaIDReplacement) GetThumbnailUrl() string {
+	if m != nil && m.ThumbnailUrl != nil {
+		return *m.ThumbnailUrl
+	}
+	return ""
+}
+
 func init() {
 	proto.RegisterType((*IDReplacementData)(nil), "intake.IDReplacementData")
-	proto.RegisterType((*PhotoIDReplacement)(nil), "intake.PhotoIDReplacement")
+	proto.RegisterType((*MediaIDReplacement)(nil), "intake.MediaIDReplacement")
 	proto.RegisterEnum("intake.IDReplacementData_Type", IDReplacementData_Type_name, IDReplacementData_Type_value)
 }

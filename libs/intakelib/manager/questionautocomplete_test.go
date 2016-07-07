@@ -10,7 +10,7 @@ import (
 var autocompleteJSON = `
 {
 	"question": "q_current_medications_entry",
-	"question_id": "40638",
+	"id": "40638",
 	"question_title": "Which medications do you take or use regularly?",
 	"question_title_has_tokens": false,
 	"question_type": "q_type_autocomplete",
@@ -36,18 +36,7 @@ var autocompleteJSON = `
 	"prefilled_with_previous_answers": false,
 	"required": true,
 	"to_alert": false,
-	"alert_text": "",
-	"answers": [{
-		"answer_id": "64457",
-		"type": "q_type_autocomplete",
-		"question_id": "40638",
-		"answer_text": "penicillAMINE"
-	}, {
-		"answer_id": "64458",
-		"type": "q_type_autocomplete",
-		"question_id": "40638",
-		"answer_text": "Penicillin Benzath-Penicillin Proc"
-	}]
+	"alert_text": ""
 }
 `
 
@@ -69,10 +58,6 @@ func TestAutocomplete_Parsing(t *testing.T) {
 	test.Equals(t, "Type to add a medication", acq.PlaceholderText)
 	test.Equals(t, "Remove Medication", acq.RemoveButtonText)
 	test.Equals(t, "Save", acq.SaveButtonText)
-	test.Equals(t, true, acq.answer != nil)
-	test.Equals(t, 2, len(acq.answer.Answers))
-	test.Equals(t, "penicillAMINE", acq.answer.Answers[0].text())
-	test.Equals(t, "Penicillin Benzath-Penicillin Proc", acq.answer.Answers[1].text())
 }
 
 func TestAutocomplete_staticInfoCopy(t *testing.T) {

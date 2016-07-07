@@ -3,6 +3,8 @@ package manager
 import (
 	"fmt"
 	"reflect"
+
+	"github.com/sprucehealth/backend/libs/errors"
 )
 
 // typeRegistries stores the mapping of type name -> type of object
@@ -127,21 +129,21 @@ func getQuestion(d map[string]interface{}, parent layoutUnit, dataSource questio
 func getPatientAnswer(d dataMap) (patientAnswer, error) {
 	answerType := d.get("type")
 	if answerType == nil {
-		return nil, fmt.Errorf("Unable to determine type for patient_answer: %v", d)
+		return nil, errors.Trace(fmt.Errorf("Unable to determine type for patient_answer: %v", d))
 	}
 
 	pa, err := patientAnswerForType(answerType.(string))
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
-	return pa, pa.unmarshalMapFromClient(d)
+	return pa, errors.Trace(pa.unmarshalMapFromClient(d))
 }
 
 // getCondition returns a condition object of a concrete type with information populated
 // from the map, based on the type assumed to exist in the map.
 func getCondition(d map[string]interface{}) (condition, error) {
-	conditionType, ok := d["type"]
+	conditionType, ok := d["op"]
 	if !ok {
 		return nil, fmt.Errorf("Unable to determine type for condition: %v", d)
 	}
@@ -159,7 +161,9 @@ func getCondition(d map[string]interface{}) (condition, error) {
 func getScreen(d map[string]interface{}, parent layoutUnit, dataSource questionAnswerDataSource) (screen, error) {
 	screenType, ok := d["type"]
 	if !ok {
-		return nil, fmt.Errorf("Unable to determine type for screen: %v", d)
+		// for now assume lack of screen type to mean questions screen
+		// TODO: Fix this to fail
+		screenType = "screen_type_questions"
 	}
 
 	s, err := screenForType(screenType.(string))

@@ -29,25 +29,29 @@ It has these top-level messages:
 	CommonQuestionInfo
 	MultipleChoiceQuestion
 	FreeTextQuestion
+	SingleEntryQuestion
 	AutocompleteQuestion
-	PhotoSectionQuestion
+	MediaSectionQuestion
 	PatientAnswerData
+	SingleSelectPatientAnswer
+	SegmentedControlPatientAnswer
 	MultipleChoicePatientAnswer
 	FreeTextPatientAnswer
+	SingleEntryPatientAnswer
 	AutocompletePatientAnswer
-	PhotoSectionPatientAnswer
+	MediaSectionPatientAnswer
 	ScreenIDData
 	ScreenData
 	CommonScreenInfo
 	QuestionScreen
-	PhotoScreen
+	MediaScreen
 	PharmacyScreen
 	TriageScreen
 	ImagePopupScreen
 	GenericPopupScreen
 	VisitOverviewScreen
 	IDReplacementData
-	PhotoIDReplacement
+	MediaIDReplacement
 */
 package intake
 
@@ -130,8 +134,8 @@ func (x *ValidateRequirementsResult_Status) UnmarshalJSON(data []byte) error {
 // visit manager to provide it with all that it needs to initialize
 // itself.
 type VisitData struct {
-	PatientVisitId *int64 `protobuf:"varint,1,req,name=patient_visit_id" json:"patient_visit_id,omitempty"`
-	Layout         []byte `protobuf:"bytes,2,req,name=layout" json:"layout,omitempty"`
+	PatientVisitId *string `protobuf:"bytes,1,req,name=patient_visit_id" json:"patient_visit_id,omitempty"`
+	Layout         []byte  `protobuf:"bytes,2,req,name=layout" json:"layout,omitempty"`
 	// status represents the server provided status of the visit.
 	IsSubmitted      *bool               `protobuf:"varint,3,req,name=is_submitted" json:"is_submitted,omitempty"`
 	Pairs            []*KeyValuePair     `protobuf:"bytes,4,rep,name=pairs" json:"pairs,omitempty"`
@@ -143,11 +147,11 @@ func (m *VisitData) Reset()         { *m = VisitData{} }
 func (m *VisitData) String() string { return proto.CompactTextString(m) }
 func (*VisitData) ProtoMessage()    {}
 
-func (m *VisitData) GetPatientVisitId() int64 {
+func (m *VisitData) GetPatientVisitId() string {
 	if m != nil && m.PatientVisitId != nil {
 		return *m.PatientVisitId
 	}
-	return 0
+	return ""
 }
 
 func (m *VisitData) GetLayout() []byte {
@@ -185,7 +189,7 @@ func (m *VisitData) GetPlatform() VisitData_Platform {
 // patient has pharmacy set, etc.)
 type KeyValuePair struct {
 	Key              *string `protobuf:"bytes,1,req,name=key" json:"key,omitempty"`
-	Value            []byte  `protobuf:"bytes,2,req,name=value" json:"value,omitempty"`
+	Value            *string `protobuf:"bytes,2,req,name=value" json:"value,omitempty"`
 	XXX_unrecognized []byte  `json:"-"`
 }
 
@@ -200,11 +204,11 @@ func (m *KeyValuePair) GetKey() string {
 	return ""
 }
 
-func (m *KeyValuePair) GetValue() []byte {
-	if m != nil {
-		return m.Value
+func (m *KeyValuePair) GetValue() string {
+	if m != nil && m.Value != nil {
+		return *m.Value
 	}
-	return nil
+	return ""
 }
 
 // ValidateRequirementsResult is used to convey the result

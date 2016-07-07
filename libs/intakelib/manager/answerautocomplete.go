@@ -2,40 +2,46 @@ package manager
 
 import (
 	"bytes"
-	"encoding/json"
-	"errors"
 
 	"github.com/gogo/protobuf/proto"
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/intakelib/protobuf/intake"
 )
 
 type answerItem struct {
-	Text       string          `json:"text"`
-	SubAnswers []patientAnswer `json:"sub_answers,omitempty"`
+	Text       string                   `json:"text"`
+	SubAnswers map[string]patientAnswer `json:"answers,omitempty"`
+
 	subScreens []screen
 }
 
 func (a *answerItem) unmarshalMapFromClient(data dataMap) error {
-	if err := data.requiredKeys("autocomplete_answer_item", "answer_text", "type"); err != nil {
-		return err
+	if err := data.requiredKeys("autocomplete_answer_item", "text"); err != nil {
+		return errors.Trace(err)
 	}
 
-	a.Text = data.mustGetString("answer_text")
-	subanswers, err := data.getInterfaceSlice("answers")
+	a.Text = data.mustGetString("text")
+
+	subanswers := data.get("answers")
+	if subanswers == nil {
+		return nil
+	}
+
+	subanswersMap, err := getDataMap(subanswers)
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
-	a.SubAnswers = make([]patientAnswer, len(subanswers))
-	for i, subanswer := range subanswers {
+	a.SubAnswers = make(map[string]patientAnswer, len(subanswersMap))
+	for questionID, subanswer := range subanswersMap {
 		subAnswerMap, err := getDataMap(subanswer)
 		if err != nil {
-			return err
+			return errors.Trace(err)
 		}
 
-		a.SubAnswers[i], err = getPatientAnswer(subAnswerMap)
+		a.SubAnswers[questionID], err = getPatientAnswer(subAnswerMap)
 		if err != nil {
-			return err
+			return errors.Trace(err)
 		}
 	}
 
@@ -50,7 +56,7 @@ func (a *answerItem) potentialAnswerID() string {
 	return ""
 }
 
-func (a *answerItem) subAnswers() []patientAnswer {
+func (a *answerItem) subAnswers() map[string]patientAnswer {
 	return a.SubAnswers
 }
 
@@ -63,8 +69,7 @@ func (a *answerItem) subscreens() []screen {
 }
 
 type autocompleteAnswer struct {
-	QuestionID string               `json:"question_id"`
-	Answers    []topLevelAnswerItem `json:"answers"`
+	Answers []topLevelAnswerItem `json:"items"`
 }
 
 func (a *autocompleteAnswer) stringIndent(indent string, depth int) string {
@@ -80,40 +85,25 @@ func (a *autocompleteAnswer) stringIndent(indent string, depth int) string {
 	return b.String()
 }
 
-func (a *autocompleteAnswer) setQuestionID(questionID string) {
-	a.QuestionID = questionID
-}
-
-func (a *autocompleteAnswer) questionID() string {
-	return a.QuestionID
-}
-
 func (a *autocompleteAnswer) topLevelAnswers() []topLevelAnswerItem {
 	return a.Answers
 }
 
 func (a *autocompleteAnswer) unmarshalMapFromClient(data dataMap) error {
-	if err := data.requiredKeys("autocomplete_answer", "answers"); err != nil {
+	if err := data.requiredKeys("autocomplete_answer", "items"); err != nil {
 		return err
 	}
 
-	answers, err := data.getInterfaceSlice("answers")
+	answers, err := data.getInterfaceSlice("items")
 	if err != nil {
 		return err
 	}
 
-	var questionID string
 	a.Answers = make([]topLevelAnswerItem, len(answers))
 	for i, aItem := range answers {
 		answerData, err := getDataMap(aItem)
 		if err != nil {
 			return err
-		}
-		questionIDForItem := answerData.mustGetString("question_id")
-		if questionID == "" {
-			questionID = questionIDForItem
-		} else if questionID != questionIDForItem {
-			return errors.New("question_id in each answer item doesn't match")
 		}
 
 		item := &answerItem{}
@@ -122,7 +112,6 @@ func (a *autocompleteAnswer) unmarshalMapFromClient(data dataMap) error {
 			return err
 		}
 	}
-	a.QuestionID = questionID
 	return nil
 }
 
@@ -152,22 +141,28 @@ func (a *autocompleteAnswer) transformToProtobuf() (proto.Message, error) {
 	return &pb, nil
 }
 
-func (a *autocompleteAnswer) marshalEmptyJSONForClient() ([]byte, error) {
-	return emptyTextAnswer(sanitizeQuestionID(a.QuestionID))
+type autocompleteAnswerClientJSON struct {
+	Type  string                              `json:"type"`
+	Items []*autocompleteAnswerItemClientJSON `json:"items"`
 }
 
-func (a *autocompleteAnswer) marshalJSONForClient() ([]byte, error) {
-	clientJSON := textAnswerClientJSON{
-		QuestionID: sanitizeQuestionID(a.QuestionID),
-		Items:      make([]*textAnswerClientJSONItem, len(a.Answers)),
+type autocompleteAnswerItemClientJSON struct {
+	Text       string                 `json:"text"`
+	Subanswers map[string]interface{} `json:"answers,omitempty"`
+}
+
+func (a *autocompleteAnswer) transformForClient() (interface{}, error) {
+	clientJSON := &autocompleteAnswerClientJSON{
+		Type:  questionTypeAutocomplete.String(),
+		Items: make([]*autocompleteAnswerItemClientJSON, len(a.Answers)),
 	}
 
 	for i, item := range a.Answers {
 		aItem := item.(*answerItem)
 
-		clientJSON.Items[i] = &textAnswerClientJSONItem{
-			Text:  aItem.text(),
-			Items: make([]json.RawMessage, len(aItem.SubAnswers)),
+		clientJSON.Items[i] = &autocompleteAnswerItemClientJSON{
+			Text:       aItem.text(),
+			Subanswers: make(map[string]interface{}, len(aItem.SubAnswers)),
 		}
 
 		// add answers for all visible questions within subscreens
@@ -182,18 +177,18 @@ func (a *autocompleteAnswer) marshalJSONForClient() ([]byte, error) {
 						continue
 					}
 
-					subanswerData, err := sqItem.marshalAnswerForClient()
+					subanswerData, err := sqItem.answerForClient()
 					if err != nil {
 						return nil, err
 					}
 
-					clientJSON.Items[i].Items = append(clientJSON.Items[i].Items, json.RawMessage(subanswerData))
+					clientJSON.Items[i].Subanswers[sqItem.id()] = subanswerData
 				}
 			}
 		}
 	}
 
-	return json.Marshal(clientJSON)
+	return clientJSON, nil
 }
 
 func (a *autocompleteAnswer) equals(other patientAnswer) bool {

@@ -1,6 +1,6 @@
   se:0|sc:0: screen_type_questions | visible
     se:0|sc:0|qu:0: q_type_multiple_choice | visible
-    Q: Let’s make sure Spruce is right for you. Are you experiencing any of the following?
+    Q: Let's make sure Spruce is right for you. Are you experiencing any of the following?
     A: None of the above
 
   se:0|sc:1:  | hidden
@@ -40,7 +40,7 @@
   se:0|sc:14: screen_type_questions | visible
     se:0|sc:14|qu:0: q_type_single_select | visible
     Q: How long have you had psoriasis?
-    A: 1 to 3 years
+    A: More than 10 years
 
   se:0|sc:15: screen_type_questions | visible
     se:0|sc:15|qu:0: q_type_single_select | visible
@@ -50,7 +50,7 @@
   se:0|sc:16: screen_type_questions | visible
     se:0|sc:16|qu:0: q_type_multiple_choice | visible
     Q: Which areas of your body are currently affected by rash?
-    A: Face
+    A: Mouth
 
   se:0|sc:17:  | hidden
 
@@ -64,9 +64,10 @@
     se:0|sc:20|qu:0: q_type_single_select | hidden
     Q: Where is the rash located on your feet?
 
-  se:0|sc:21: screen_type_questions | hidden
-    se:0|sc:21|qu:0: q_type_multiple_choice | hidden
+  se:0|sc:21: screen_type_questions | visible
+    se:0|sc:21|qu:0: q_type_multiple_choice | visible
     Q: Where in or on your mouth is the rash?
+    A: Lips
 
   se:0|sc:22:  | hidden
 
@@ -91,12 +92,11 @@
   se:0|sc:30: screen_type_questions | visible
     se:0|sc:30|qu:0: q_type_single_select | visible
     Q: Has the location of the rash changed since it started?
-    A: Yes, it affects fewer parts of my body now
+    A: No change in location
 
-  se:0|sc:31: screen_type_questions | visible
-    se:0|sc:31|qu:0: q_type_multiple_choice | visible
+  se:0|sc:31: screen_type_questions | hidden
+    se:0|sc:31|qu:0: q_type_multiple_choice | hidden
     Q: Select the locations where the rash began:
-    A: Mouth
 
   se:0|sc:32: screen_type_questions | visible
     se:0|sc:32|qu:0: q_type_single_select | visible
@@ -242,12 +242,11 @@
   se:0|sc:66: screen_type_questions | visible
     se:0|sc:66|qu:0: q_type_single_select | visible
     Q: Does discomfort from the rash make your daily activities difficult?
-    A: Yes, a lot
+    A: Yes, a little
 
-  se:0|sc:67: screen_type_questions | visible
-    se:0|sc:67|qu:0: q_type_single_select | visible
+  se:0|sc:67: screen_type_questions | hidden
+    se:0|sc:67|qu:0: q_type_single_select | hidden
     Q: Are you still able to complete basic daily activities, such as walking, eating, and caring for yourself?
-    A: Yes
 
   se:0|sc:68:  | hidden
 
@@ -261,7 +260,7 @@
   se:0|sc:71: screen_type_questions | visible
     se:0|sc:71|qu:0: q_type_single_select | visible
     Q: Over the past month, how much has your psoriasis impacted your overall emotional well-being?
-    A: Very much
+    A: A little
 
   se:0|sc:72: screen_type_questions | visible
     se:0|sc:72|qu:0: q_type_single_select | visible
@@ -280,28 +279,27 @@
   se:0|sc:75: screen_type_questions | visible
     se:0|sc:75|qu:0: q_type_free_text | visible
     Q: What seasons make it worse?
-    A: bshs
+    A: Dgadgag
 
   se:0|sc:76: screen_type_questions | visible
     se:0|sc:76|qu:0: q_type_free_text | visible
     Q: Apart from medications or other treatments, have you noticed anything that prevents you from getting a rash or that makes the rash better?
-    A: bshs
+    A: Gfagag
 
   se:0|sc:77: screen_type_questions | visible
     se:0|sc:77|qu:0: q_type_multiple_choice | visible
     Q: Tell us about any cosmetic or bath products that may have come into contact with the affected areas:
     Include brand names.
-    A: xgshdh
+    A: Fgageag
 
   se:0|sc:78: screen_type_questions | visible
     se:0|sc:78|qu:0: q_type_multiple_choice | visible
     Q: A variety of factors can influence psoriasis. Do you regularly do any of the following?
-    A: Drink alcohol
+    A: Get a large amount of sun or use tanning beds
 
-  se:0|sc:79: screen_type_questions | visible
-    se:0|sc:79|qu:0: q_type_single_select | visible
+  se:0|sc:79: screen_type_questions | hidden
+    se:0|sc:79|qu:0: q_type_single_select | hidden
     Q: How much alcohol do you regularly drink?
-    A: 1 to 2 drinks per day
 
   se:0|sc:80: screen_type_questions | hidden
     se:0|sc:80|qu:0: q_type_multiple_choice | hidden
@@ -309,64 +307,62 @@
 
   se:0|sc:81: screen_type_questions | hidden
     se:0|sc:81|qu:0: q_type_free_text | hidden
-    Q: Describe your occupation or hobby and the potential irritants you’re exposed to:
+    Q: Describe your occupation or hobby and the potential irritants you're exposed to:
 
-  se:1|sc:0: screen_type_photo | visible
-    se:1|sc:0|qu:0: q_type_photo_section | visible
-    Q: Face    
-    A: Face
-      Photo: Face Front
-      Photo: Side
-      Photo: Other Side
-    se:1|sc:0|qu:1: q_type_photo_section | hidden
+  se:1|sc:0: screen_type_media | visible
+    se:1|sc:0|qu:0: q_type_media_section | hidden
+    Q: Face
+    se:1|sc:0|qu:1: q_type_media_section | visible
     Q: Lips
-    se:1|sc:0|qu:2: q_type_photo_section | hidden
+    A: Lips
+      Media: Lips
+    se:1|sc:0|qu:2: q_type_media_section | hidden
     Q: Scalp
-    se:1|sc:0|qu:3: q_type_photo_section | hidden
+    se:1|sc:0|qu:3: q_type_media_section | hidden
     Q: Neck
-    se:1|sc:0|qu:4: q_type_photo_section | hidden
+    se:1|sc:0|qu:4: q_type_media_section | hidden
     Q: Chest
-    se:1|sc:0|qu:5: q_type_photo_section | hidden
+    se:1|sc:0|qu:5: q_type_media_section | hidden
     Q: Back
-    se:1|sc:0|qu:6: q_type_photo_section | hidden
+    se:1|sc:0|qu:6: q_type_media_section | hidden
     Q: Abdomen
-    se:1|sc:0|qu:7: q_type_photo_section | hidden
+    se:1|sc:0|qu:7: q_type_media_section | hidden
     Q: Groin
-    se:1|sc:0|qu:8: q_type_photo_section | hidden
+    se:1|sc:0|qu:8: q_type_media_section | hidden
     Q: Buttocks
-    se:1|sc:0|qu:9: q_type_photo_section | hidden
+    se:1|sc:0|qu:9: q_type_media_section | hidden
     Q: Arms
-    se:1|sc:0|qu:10: q_type_photo_section | hidden
+    se:1|sc:0|qu:10: q_type_media_section | hidden
     Q: Legs
-    se:1|sc:0|qu:11: q_type_photo_section | hidden
+    se:1|sc:0|qu:11: q_type_media_section | hidden
     Q: Feet
-    se:1|sc:0|qu:12: q_type_photo_section | hidden
+    se:1|sc:0|qu:12: q_type_media_section | hidden
     Q: Hands
-    se:1|sc:0|qu:13: q_type_photo_section | visible
+    se:1|sc:0|qu:13: q_type_media_section | visible
     Q: Other Location
 
-  se:1|sc:1: screen_type_photo | hidden
-    se:1|sc:1|qu:0: q_type_photo_section | hidden
+  se:1|sc:1: screen_type_media | hidden
+    se:1|sc:1|qu:0: q_type_media_section | hidden
     Q: Fingernails
-    se:1|sc:1|qu:1: q_type_photo_section | hidden
+    se:1|sc:1|qu:1: q_type_media_section | hidden
     Q: Toenails
 
-  se:1|sc:2: screen_type_photo | hidden
-    se:1|sc:2|qu:0: q_type_photo_section | hidden
+  se:1|sc:2: screen_type_media | hidden
+    se:1|sc:2|qu:0: q_type_media_section | hidden
     Q: Fingers
-    se:1|sc:2|qu:1: q_type_photo_section | hidden
+    se:1|sc:2|qu:1: q_type_media_section | hidden
     Q: Wrists
-    se:1|sc:2|qu:2: q_type_photo_section | hidden
+    se:1|sc:2|qu:2: q_type_media_section | hidden
     Q: Shoulders
-    se:1|sc:2|qu:3: q_type_photo_section | hidden
+    se:1|sc:2|qu:3: q_type_media_section | hidden
     Q: Elbows
-    se:1|sc:2|qu:4: q_type_photo_section | hidden
+    se:1|sc:2|qu:4: q_type_media_section | hidden
     Q: Toes
-    se:1|sc:2|qu:5: q_type_photo_section | hidden
+    se:1|sc:2|qu:5: q_type_media_section | hidden
     Q: Ankles
-    se:1|sc:2|qu:6: q_type_photo_section | hidden
+    se:1|sc:2|qu:6: q_type_media_section | hidden
     Q: Knees
-    se:1|sc:2|qu:7: q_type_photo_section | hidden
+    se:1|sc:2|qu:7: q_type_media_section | hidden
     Q: Hips
 
   se:2|sc:0: screen_type_questions | visible
@@ -381,26 +377,16 @@
   se:2|sc:3: screen_type_questions | visible
     se:2|sc:3|qu:0: q_type_multiple_choice | visible
     Q: Did your healthcare provider do any testing?
-    A: Lab tests
-      se:2|sc:3|qu:0|te:2075841616|sc:0: screen_type_questions | visible
-        se:2|sc:3|qu:0|te:2075841616|sc:0|qu:0: q_type_free_text | visible
-        Q: Tell us about the Lab tests your healthcare provider performed:
-        A: vshs
-    A: Skin scraping
-      se:2|sc:3|qu:0|te:3098237574|sc:0: screen_type_questions | visible
-        se:2|sc:3|qu:0|te:3098237574|sc:0|qu:0: q_type_free_text | visible
-        Q: Tell us about the Skin scraping your healthcare provider performed:
-        A: bshs
     A: Skin biopsy
-      se:2|sc:3|qu:0|te:2658466904|sc:0: screen_type_questions | visible
-        se:2|sc:3|qu:0|te:2658466904|sc:0|qu:0: q_type_free_text | visible
+      se:2|sc:3|qu:0|te:1234053399|sc:0: screen_type_questions | visible
+        se:2|sc:3|qu:0|te:1234053399|sc:0|qu:0: q_type_free_text | visible
         Q: Tell us about the Skin biopsy your healthcare provider performed:
-        A: gsh
+        A: Dgfagag
 
   se:2|sc:4: screen_type_questions | visible
     se:2|sc:4|qu:0: q_type_free_text | visible
     Q: Share any other relevant information about your previous visit:
-    A: bdhd
+    A: Agfagag
 
   se:2|sc:5: screen_type_questions | visible
     se:2|sc:5|qu:0: q_type_single_select | visible
@@ -411,72 +397,41 @@
   se:2|sc:6: screen_type_questions | hidden
     se:2|sc:6|qu:0: q_type_multiple_choice | hidden
     Q: What topical steroids have you tried?
-    A: Amcinonide (Cyclocort, Amcort)
-      se:2|sc:6|qu:0|te:274563970|sc:0: screen_type_questions | hidden
-      Tell us more about Amcinonide (Cyclocort, Amcort):
-        se:2|sc:6|qu:0|te:274563970|sc:0|qu:0: q_type_segmented_control | hidden
+    A: Alclometasone (Aclovate)
+      se:2|sc:6|qu:0|te:2160706195|sc:0: screen_type_questions | hidden
+      Tell us more about Alclometasone (Aclovate):
+        se:2|sc:6|qu:0|te:2160706195|sc:0|qu:0: q_type_segmented_control | hidden
         Q: What form was it in?
         A: Ointment
-        se:2|sc:6|qu:0|te:274563970|sc:0|qu:1: q_type_single_entry | hidden
+        se:2|sc:6|qu:0|te:2160706195|sc:0|qu:1: q_type_single_entry | hidden
         Q: What percentage strength was it?
-        A: 
-        se:2|sc:6|qu:0|te:274563970|sc:0|qu:2: q_type_segmented_control | hidden
+        A: A dgag
+        se:2|sc:6|qu:0|te:2160706195|sc:0|qu:2: q_type_segmented_control | hidden
         Q: How many weeks did you use it for?
         A: 1 to 2
-        se:2|sc:6|qu:0|te:274563970|sc:0|qu:3: q_type_segmented_control | hidden
+        se:2|sc:6|qu:0|te:2160706195|sc:0|qu:3: q_type_segmented_control | hidden
         Q: Did you use it as instructed by its packaging or by a healthcare provider?
-        A: Mostly
-        se:2|sc:6|qu:0|te:274563970|sc:0|qu:4: q_type_segmented_control | hidden
+        A: No
+        se:2|sc:6|qu:0|te:2160706195|sc:0|qu:4: q_type_segmented_control | hidden
         Q: Was it helpful?
-        A: Yes
-        se:2|sc:6|qu:0|te:274563970|sc:0|qu:5: q_type_segmented_control | hidden
+        A: No
+        se:2|sc:6|qu:0|te:2160706195|sc:0|qu:5: q_type_segmented_control | hidden
         Q: Do you need a new prescription for it?
-        A: Yes
-    A: Betamethasone dipropionate (Diprolene, Diprosone)
-      se:2|sc:6|qu:0|te:2194685767|sc:0: screen_type_questions | hidden
-      Tell us more about Betamethasone dipropionate (Diprolene, Diprosone):
-        se:2|sc:6|qu:0|te:2194685767|sc:0|qu:0: q_type_segmented_control | hidden
-        Q: What form was it in?
-        A: Cream
-        se:2|sc:6|qu:0|te:2194685767|sc:0|qu:1: q_type_single_entry | hidden
-        Q: What percentage strength was it?
-        A: 
-        se:2|sc:6|qu:0|te:2194685767|sc:0|qu:2: q_type_segmented_control | hidden
-        Q: How many weeks did you use it for?
-        A: Less than 1
-        se:2|sc:6|qu:0|te:2194685767|sc:0|qu:3: q_type_segmented_control | hidden
-        Q: Did you use it as instructed by its packaging or by a healthcare provider?
-        A: Yes
-        se:2|sc:6|qu:0|te:2194685767|sc:0|qu:4: q_type_segmented_control | hidden
-        Q: Was it helpful?
-        A: Yes
-        se:2|sc:6|qu:0|te:2194685767|sc:0|qu:5: q_type_segmented_control | hidden
-        Q: Do you need a new prescription for it?
-        A: Yes
+        A: No
 
   se:2|sc:7: screen_type_questions | visible
     se:2|sc:7|qu:0: q_type_single_select | visible
     Q: Have you tried any other topical treatments, such as creams, for psoriasis?
-    A: Yes
+    A: No
 
-  se:2|sc:8: screen_type_questions | visible
-    se:2|sc:8|qu:0: q_type_multiple_choice | visible
+  se:2|sc:8: screen_type_questions | hidden
+    se:2|sc:8|qu:0: q_type_multiple_choice | hidden
     Q: What topical treatments have you tried?
-    A: Tacrolimus or pimecrolimus
-      se:2|sc:8|qu:0|te:830086411|sc:0: screen_type_questions | visible
-      Tell us more about Tacrolimus or pimecrolimus:
-        se:2|sc:8|qu:0|te:830086411|sc:0|qu:0: q_type_segmented_control | visible
-        Q: How long did you use it for?
-        se:2|sc:8|qu:0|te:830086411|sc:0|qu:1: q_type_segmented_control | visible
-        Q: Did you use it as instructed by its packaging or by a healthcare provider?
-        se:2|sc:8|qu:0|te:830086411|sc:0|qu:2: q_type_segmented_control | visible
-        Q: Was it helpful?
-        se:2|sc:8|qu:0|te:830086411|sc:0|qu:3: q_type_segmented_control | visible
-        Q: Do you need a new prescription for it?
 
   se:2|sc:9: screen_type_questions | visible
     se:2|sc:9|qu:0: q_type_single_select | visible
     Q: Have you tried any oral medications for psoriasis?
+    A: No
 
   se:2|sc:10: screen_type_questions | hidden
     se:2|sc:10|qu:0: q_type_multiple_choice | hidden
@@ -485,15 +440,26 @@
   se:2|sc:11: screen_type_questions | visible
     se:2|sc:11|qu:0: q_type_multiple_choice | visible
     Q: Have you tried any other treatments for psoriasis?
+    A: Feag
+      se:2|sc:11|qu:0|te:1227808430|sc:0: screen_type_questions | visible
+      Tell us more about Feag:
+        se:2|sc:11|qu:0|te:1227808430|sc:0|qu:0: q_type_segmented_control | visible
+        Q: How long did you use it for?
+        A: Months
+        se:2|sc:11|qu:0|te:1227808430|sc:0|qu:1: q_type_segmented_control | visible
+        Q: Was it helpful?
+        A: No
 
   se:2|sc:12: screen_type_questions | visible
     se:2|sc:12|qu:0: q_type_single_select | visible
     Q: Have you ever been diagnosed with psoriatic arthritis?
+    A: No
 
   se:2|sc:13: screen_type_questions | visible
     se:2|sc:13|qu:0: q_type_multiple_choice | visible
     Q: Do you have, or have you ever had, any of the following medical conditions?
     You'll have a chance to tell your doctor about other medical conditions later.
+    A: Asthma
 
   se:2|sc:14: screen_type_questions | hidden
     se:2|sc:14|qu:0: q_type_single_select | hidden
@@ -508,8 +474,8 @@
     se:2|sc:16|qu:0: q_type_free_text | hidden
     Q: What type of liver disease do you have?
 
-  se:2|sc:17: screen_type_questions | visible
-    se:2|sc:17|qu:0: q_type_single_select | visible
+  se:2|sc:17: screen_type_questions | hidden
+    se:2|sc:17|qu:0: q_type_single_select | hidden
     Q: Are you currently pregnant or planning to become pregnant?
 
   se:2|sc:18: screen_type_questions | hidden
@@ -518,53 +484,58 @@
 
   se:2|sc:19: screen_type_questions | hidden
     se:2|sc:19|qu:0: q_type_single_select | hidden
+    Q: When will you begin trying to get pregnant?
+    This influences which medications are safe for you to use.
+
+  se:2|sc:20: screen_type_questions | hidden
+    se:2|sc:20|qu:0: q_type_single_select | hidden
     Q: Are you currently breastfeeding?
 
-  se:2|sc:20: screen_type_questions | visible
-    se:2|sc:20|qu:0: q_type_free_text | visible
+  se:2|sc:21: screen_type_questions | visible
+    se:2|sc:21|qu:0: q_type_free_text | visible
     Q: Do you have any other current medical conditions or important past medical history?
     Anything for which you see a doctor or take medication is useful to know.
-
-  se:2|sc:21: screen_type_questions | visible
-    se:2|sc:21|qu:0: q_type_multiple_choice | visible
-    Q: Do any of your first-degree relatives have psoriasis or multiple sclerosis?
+    A: Agaga
 
   se:2|sc:22: screen_type_questions | visible
     se:2|sc:22|qu:0: q_type_multiple_choice | visible
-    Q: Do you take any of the following medications?
+    Q: Do any of your first-degree relatives have psoriasis or multiple sclerosis?
+    A: Neither of these
 
   se:2|sc:23: screen_type_questions | visible
-    se:2|sc:23|qu:0: q_type_single_select | visible
+    se:2|sc:23|qu:0: q_type_multiple_choice | visible
+    Q: Do you take any of the following medications?
+    A: Ibuprofen (Advil, Motrin)
+
+  se:2|sc:24: screen_type_questions | visible
+    se:2|sc:24|qu:0: q_type_single_select | visible
     Q: Are there any medications that you take or use regularly?
     A: No
 
-  se:2|sc:24: screen_type_questions | hidden
-  se:2|sc:24|qu:0: q_type_autocomplete | hidden
+  se:2|sc:25: screen_type_questions | hidden
+  se:2|sc:25|qu:0: q_type_autocomplete | hidden
   Q: Which medications do you take or use regularly?
 
-  se:2|sc:25: screen_type_questions | visible
-    se:2|sc:25|qu:0: q_type_single_select | visible
+  se:2|sc:26: screen_type_questions | visible
+    se:2|sc:26|qu:0: q_type_single_select | visible
     Q: Are there any supplements that you take regularly?
     (e.g., vitamins or herbs)
     A: No
 
-  se:2|sc:26: screen_type_questions | hidden
-    se:2|sc:26|qu:0: q_type_free_text | hidden
+  se:2|sc:27: screen_type_questions | hidden
+    se:2|sc:27|qu:0: q_type_free_text | hidden
     Q: Which supplements do you take regularly?
 
-  se:2|sc:27: screen_type_questions | visible
-    se:2|sc:27|qu:0: q_type_single_select | visible
+  se:2|sc:28: screen_type_questions | visible
+    se:2|sc:28|qu:0: q_type_single_select | visible
     Q: Are you allergic to any medications?
     A: No
 
-  se:2|sc:28: screen_type_questions | hidden
-  se:2|sc:28|qu:0: q_type_autocomplete | hidden
+  se:2|sc:29: screen_type_questions | hidden
+  se:2|sc:29|qu:0: q_type_autocomplete | hidden
   Q: Which medications are you allergic to?
 
-  se:2|sc:29: screen_type_questions | visible
-    se:2|sc:29|qu:0: q_type_single_select | visible
+  se:2|sc:30: screen_type_questions | visible
+    se:2|sc:30|qu:0: q_type_single_select | visible
     Q: What type of prescription coverage do you have?
     A: Medicaid
-
-  se:2|sc:30: screen_type_pharmacy | visible
-

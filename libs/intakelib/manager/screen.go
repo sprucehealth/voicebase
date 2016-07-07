@@ -18,7 +18,7 @@ const (
 	screenTypePharmacy      screenType = "screen_type_pharmacy"
 	screenTypeTriage        screenType = "screen_type_triage"
 	screenTypeWarningPopup  screenType = "screen_type_warning_popup"
-	screenTypePhoto         screenType = "screen_type_photo"
+	screenTypeMedia         screenType = "screen_type_media"
 	screenTypeGenericPopup  screenType = "screen_type_generic_popup"
 	screenTypeVisitOverview screenType = "visit_overview"
 )
@@ -28,7 +28,7 @@ const (
 // objects into.
 var screenTypeToProtoBufType = map[string]*intake.ScreenData_Type{
 	screenTypePharmacy.String():      intake.ScreenData_PHARMACY.Enum(),
-	screenTypePhoto.String():         intake.ScreenData_PHOTO.Enum(),
+	screenTypeMedia.String():         intake.ScreenData_MEDIA.Enum(),
 	screenTypeTriage.String():        intake.ScreenData_TRIAGE.Enum(),
 	screenTypeQuestion.String():      intake.ScreenData_QUESTION.Enum(),
 	screenTypeGenericPopup.String():  intake.ScreenData_GENERIC_POPUP.Enum(),
@@ -38,7 +38,7 @@ var screenTypeToProtoBufType = map[string]*intake.ScreenData_Type{
 
 func init() {
 	mustRegisterScreen(screenTypeQuestion.String(), &questionScreen{})
-	mustRegisterScreen(screenTypePhoto.String(), &photoScreen{})
+	mustRegisterScreen(screenTypeMedia.String(), &mediaScreen{})
 	mustRegisterScreen(screenTypeTriage.String(), &triageScreen{})
 	mustRegisterScreen(screenTypePharmacy.String(), &pharmacyScreen{})
 	mustRegisterScreen(screenTypeWarningPopup.String(), &warningPopupScreen{})
@@ -122,7 +122,7 @@ func (s *screenInfo) visibility() visibility {
 type screenClientData struct {
 	IsTriageScreen       bool   `json:"is_triage_screen"`
 	TriagePathwayID      string `json:"pathway_id"`
-	TriageParametersJSON []byte `json:"triage_parameters"`
+	TriageParametersJSON []byte `json:"triage_params"`
 }
 
 func (s *screenClientData) staticInfoCopy(context map[string]string) interface{} {
@@ -284,7 +284,7 @@ func popuplateClientData(data dataMap) (*screenClientData, error) {
 		return &screenClientData{}, nil
 	}
 
-	triageParametersJSON, err := clientData.getJSONData("triage_parameters")
+	triageParametersJSON, err := clientData.getJSONData("triage_params")
 	if err != nil {
 		return nil, err
 	}

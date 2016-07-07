@@ -21,7 +21,7 @@ message ScreenData {
 	   QUESTION = 0;
 	   TRIAGE = 1;
 	   IMAGE_POPUP = 2;
-	   PHOTO = 3;
+	   MEDIA = 3;
 	   PHARMACY = 4;
 	   GENERIC_POPUP = 5;
 	   VISIT_OVERVIEW = 6;
@@ -73,9 +73,9 @@ message CommonScreenInfo {
  }
 
 // PhotoScreen represents a screen containing photo section questions.
- message PhotoScreen {
+ message MediaScreen {
  	required CommonScreenInfo screen_info = 1;
- 	repeated PhotoSectionQuestion photo_questions = 2;
+ 	repeated MediaSectionQuestion media_questions = 2;
 
  	optional string content_header_title = 3;
  	optional string content_header_subtitle = 4;

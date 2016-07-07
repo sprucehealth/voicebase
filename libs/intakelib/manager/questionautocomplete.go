@@ -56,11 +56,13 @@ func (a *autocompleteQuestion) unmarshalMapFromClient(data dataMap, parent layou
 		a.PlaceholderText = clientData.mustGetString("placeholder_text")
 	}
 
-	if data.exists("answers") {
-		a.answer = &autocompleteAnswer{}
-		if err := a.answer.unmarshalMapFromClient(data); err != nil {
-			return err
+	answer := dataSource.answerForQuestion(a.id())
+	if answer != nil {
+		aa, ok := answer.(*autocompleteAnswer)
+		if !ok {
+			return fmt.Errorf("expected autocompleteAnswer but got %T", answer)
 		}
+		a.answer = aa
 	}
 
 	if data.exists("subquestions_config") {
@@ -154,16 +156,12 @@ func (a *autocompleteQuestion) requirementsMet(dataSource questionAnswerDataSour
 	return true, nil
 }
 
-func (a *autocompleteQuestion) marshalAnswerForClient() ([]byte, error) {
+func (a *autocompleteQuestion) answerForClient() (interface{}, error) {
 	if a.answer == nil {
 		return nil, errNoAnswerExists
 	}
 
-	if a.visibility() == hidden {
-		return a.answer.marshalEmptyJSONForClient()
-	}
-
-	return a.answer.marshalJSONForClient()
+	return a.answer.transformForClient()
 }
 
 func (a *autocompleteQuestion) transformToProtobuf() (proto.Message, error) {

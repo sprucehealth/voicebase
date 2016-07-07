@@ -3,7 +3,6 @@ package manager
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/sprucehealth/backend/libs/intakelib/protobuf/intake"
@@ -56,12 +55,11 @@ func (q *pharmacyScreen) transformToProtobuf() (proto.Message, error) {
 
 func (s *pharmacyScreen) requirementsMet(dataSource questionAnswerDataSource) (bool, error) {
 	pharmacySet := dataSource.valueForKey(keyTypeIsPatientPharmacySet.String())
-	if len(pharmacySet) == 0 {
+	pharmacySetBool, ok := pharmacySet.(bool)
+	if !ok {
 		return false, errPharmacyNotSet
 	}
-
-	switch strings.ToLower(string(pharmacySet)) {
-	case "true":
+	if pharmacySetBool {
 		return true, nil
 	}
 

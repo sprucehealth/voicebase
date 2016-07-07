@@ -34,13 +34,13 @@ type Answer interface {
 var typeRegistry *mapstructure.TypeRegistry = mapstructure.NewTypeRegistry()
 
 func init() {
+	typeRegistry.MustRegisterType(&AutocompleteQuestionAnswer{})
+	typeRegistry.MustRegisterType(&FreeTextQuestionAnswer{})
 	typeRegistry.MustRegisterType(&MediaQuestionAnswer{})
 	typeRegistry.MustRegisterType(&MultipleChoiceQuestionAnswer{})
-	typeRegistry.MustRegisterType(&FreeTextQuestionAnswer{})
-	typeRegistry.MustRegisterType(&SingleSelectQuestionAnswer{})
 	typeRegistry.MustRegisterType(&SegmentedControlQuestionAnswer{})
 	typeRegistry.MustRegisterType(&SingleEntryQuestionAnswer{})
-	typeRegistry.MustRegisterType(&AutocompleteQuestionAnswer{})
+	typeRegistry.MustRegisterType(&SingleSelectQuestionAnswer{})
 }
 
 // MEDIA SECTION

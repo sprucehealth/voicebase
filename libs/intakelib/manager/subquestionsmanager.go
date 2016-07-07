@@ -163,16 +163,10 @@ func (s *subquestionsManager) inflateSubscreensForPatientAnswer() error {
 
 // createSubscreenForAnswer manages the inflation and populating of subscreens for each of the individual answers
 // and maps any provided subanswers to the appropriate questions on the subscreens.
-func (s *subquestionsManager) createSubscreenConfigForAnswer(item topLevelAnswerItem, layoutUnitIDPrefix string, subanswers []patientAnswer) (*subscreenConfig, error) {
+func (s *subquestionsManager) createSubscreenConfigForAnswer(item topLevelAnswerItem, layoutUnitIDPrefix string, subanswers map[string]patientAnswer) (*subscreenConfig, error) {
 	sConfig := &subscreenConfig{
 		text:    item.text(),
 		screens: make([]screen, len(s.screenConfigs)),
-	}
-
-	// create a map of questionID -> answer so that we can easily map answers to subquestions
-	answerMap := make(map[string]patientAnswer, len(subanswers))
-	for _, pa := range subanswers {
-		answerMap[pa.questionID()] = pa
 	}
 
 	for i, sItem := range s.screenConfigs {
@@ -216,7 +210,7 @@ func (s *subquestionsManager) createSubscreenConfigForAnswer(item topLevelAnswer
 
 				// populate the answer for the question
 				// if it so exists
-				pa, ok := answerMap[qItem.id()]
+				pa, ok := subanswers[qItem.id()]
 				if ok {
 					if err := qItem.setPatientAnswer(pa); err != nil {
 						return nil, err

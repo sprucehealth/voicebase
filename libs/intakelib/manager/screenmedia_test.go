@@ -16,25 +16,23 @@ const screenPhotoJSON = `
 				"condition": {
 						"op": "answer_contains_any",
 						"type": "answer_contains_any",
-						"question": "q_derm_rash_affected_areas",
 						"question_id": "40551",
-						"potential_answers_id": ["126307"],
-						"potential_answers": ["a_derm_rash_affected_areas_face"]
+						"potential_answers_id": ["126307"]
 					},
 				"questions": [{
 					"question": "q_derm_rash_face",
-					"question_id": "40585",
+					"id": "40585",
 					"question_title": "Face",
 					"question_title_has_tokens": false,
 					"question_type": "q_type_photo_section",
-					"type": "q_type_photo_section",
+					"type": "q_type_media_section",
 					"question_summary": "Face",
 					"to_prefill": false,
 					"prefilled_with_previous_answers": false,
 					"required": true,
 					"to_alert": false,
 					"alert_text": "",
-					"photo_slots": [{
+					"media_slots": [{
 						"id": "8707",
 						"name": "Face Front",
 						"type": "",
@@ -42,7 +40,7 @@ const screenPhotoJSON = `
 						"client_data": {
 							"initial_camera_direction": "front",
 							"overlay_image_url": "spruce:///image/photo_face_outline",
-							"photo_missing_error_message": "A photo of the front of your face is required to continue.",
+							"media_missing_error_message": "A photo of the front of your face is required to continue.",
 							"tip": "Center your face in the dotted lines."
 						}
 					}, {
@@ -53,7 +51,7 @@ const screenPhotoJSON = `
 						"client_data": {
 							"initial_camera_direction": "front",
 							"overlay_image_url": "spruce:///image/photo_face_outline",
-							"photo_missing_error_message": "A photo of the side of your face is required to continue.",
+							"media_missing_error_message": "A photo of the side of your face is required to continue.",
 							"tip": "Turn your face to the side.",
 							"tip_style": "point_left",
 							"tip_subtext": "Just move your face, not your phone."
@@ -66,7 +64,7 @@ const screenPhotoJSON = `
 						"client_data": {
 							"initial_camera_direction": "front",
 							"overlay_image_url": "spruce:///image/photo_face_outline",
-							"photo_missing_error_message": "A second photo of the side of your face is required to continue.",
+							"media_missing_error_message": "A second photo of the side of your face is required to continue.",
 							"tip": "Now turn to the other side.",
 							"tip_style": "point_right",
 							"tip_subtext": "Just move your face, not your phone."
@@ -79,8 +77,8 @@ const screenPhotoJSON = `
 						"client_data": {}
 					}]
 				}],
-				"screen_type": "screen_type_photo",
-				"type": "screen_type_photo"
+				"screen_type": "screen_type_media",
+				"type": "screen_type_media"
 }`
 
 func TestScreenPhoto_Parsing(t *testing.T) {
@@ -89,13 +87,13 @@ func TestScreenPhoto_Parsing(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ps := &photoScreen{}
+	ps := &mediaScreen{}
 	if err := ps.unmarshalMapFromClient(data, nil, &visitManager{}); err != nil {
 		t.Fatal(err)
 	}
 
 	test.Equals(t, "Take photos of the areas where you are currently experiencing a rash.", ps.ContentHeaderTitle)
-	test.Equals(t, 1, len(ps.PhotoQuestions))
+	test.Equals(t, 1, len(ps.MediaQuestions))
 }
 
 func TestScreenPhoto_staticInfoCopy(t *testing.T) {
@@ -104,23 +102,23 @@ func TestScreenPhoto_staticInfoCopy(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ps := &photoScreen{}
+	ps := &mediaScreen{}
 	if err := ps.unmarshalMapFromClient(data, nil, &visitManager{}); err != nil {
 		t.Fatal(err)
 	}
 
-	ps2 := ps.staticInfoCopy(nil).(*photoScreen)
-	test.Equals(t, len(ps.PhotoQuestions), len(ps2.PhotoQuestions))
-	for i, pqItem := range ps.PhotoQuestions {
-		test.Equals(t, true, pqItem != ps2.PhotoQuestions[i])
-		test.Equals(t, pqItem, ps2.PhotoQuestions[i])
+	ps2 := ps.staticInfoCopy(nil).(*mediaScreen)
+	test.Equals(t, len(ps.MediaQuestions), len(ps2.MediaQuestions))
+	for i, pqItem := range ps.MediaQuestions {
+		test.Equals(t, true, pqItem != ps2.MediaQuestions[i])
+		test.Equals(t, pqItem, ps2.MediaQuestions[i])
 	}
 
 	// lets also make sure that title parsing works
 	ps.ContentHeaderTitle = "Hi <parent_answer_text>"
 	ps.ContentHeaderTitleHasTokens = true
 
-	ps3 := ps.staticInfoCopy(map[string]string{"answer": "spruce"}).(*photoScreen)
+	ps3 := ps.staticInfoCopy(map[string]string{"answer": "spruce"}).(*mediaScreen)
 	test.Equals(t, "Hi spruce", ps3.ContentHeaderTitle)
 }
 
@@ -134,13 +132,13 @@ func (m *mockDataSource_screenphoto) question(questionID string) question {
 }
 
 func TestScreenPhoto_requirementsMet(t *testing.T) {
-	s := &photoScreen{
+	s := &mediaScreen{
 		screenInfo: &screenInfo{},
-		PhotoQuestions: []question{
-			&photoQuestion{
+		MediaQuestions: []question{
+			&mediaQuestion{
 				questionInfo: &questionInfo{},
 			},
-			&photoQuestion{
+			&mediaQuestion{
 				questionInfo: &questionInfo{},
 			},
 		},
@@ -154,8 +152,8 @@ func TestScreenPhoto_requirementsMet(t *testing.T) {
 	}
 
 	// lets answer one question and ensure requirements are met
-	s.PhotoQuestions[0].(*photoQuestion).answer = &photoSectionAnswer{
-		Sections: []*photoSectionAnswerItem{&photoSectionAnswerItem{}},
+	s.MediaQuestions[0].(*mediaQuestion).answer = &mediaSectionAnswer{
+		Sections: []*mediaSectionAnswerItem{&mediaSectionAnswerItem{}},
 	}
 	if res, err := s.requirementsMet(&mockDataSource_screenphoto{}); err != nil {
 		t.Fatal(err)
@@ -166,8 +164,8 @@ func TestScreenPhoto_requirementsMet(t *testing.T) {
 
 	// when screen is hidden even if questions are required, requirements should be met
 	s.setVisibility(hidden)
-	s.PhotoQuestions[0].(*photoQuestion).Required = true
-	s.PhotoQuestions[1].(*photoQuestion).Required = true
+	s.MediaQuestions[0].(*mediaQuestion).Required = true
+	s.MediaQuestions[1].(*mediaQuestion).Required = true
 	if res, err := s.requirementsMet(&mockDataSource_screenphoto{}); err != nil {
 		t.Fatal(err)
 	} else if !res {
@@ -177,8 +175,8 @@ func TestScreenPhoto_requirementsMet(t *testing.T) {
 
 	// if the requirements for the questions are not met, the requirements for the screen should not be met
 	s.setVisibility(visible)
-	s.PhotoQuestions[0].setVisibility(visible)
-	s.PhotoQuestions[1].setVisibility(visible)
+	s.MediaQuestions[0].setVisibility(visible)
+	s.MediaQuestions[1].setVisibility(visible)
 	if res, err := s.requirementsMet(&mockDataSource_screenphoto{}); err == nil || res {
 		t.Fatal("Requirements for screen should not be met if the requirements for its questions are not met")
 	}

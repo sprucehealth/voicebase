@@ -13,14 +13,14 @@ var screenQuestionJSON = `
 {
 	"questions": [{
 		"question": "q_derm_rash_hand_locations",
-		"question_id": "40552",
+		"id": "40552",
 		"question_title": "Where is the rash located on your hands?",
 		"question_title_has_tokens": false,
 		"question_type": "q_type_single_select",
 		"type": "q_type_single_select",
 		"question_summary": "Hand locations",
 		"potential_answers": [{
-			"potential_answer_id": "126321",
+			"id": "126321",
 			"potential_answer": "Top",
 			"potential_answer_summary": "Top",
 			"answer_type": "a_type_multiple_choice",
@@ -29,7 +29,7 @@ var screenQuestionJSON = `
 			"to_alert": false,
 			"answer_tag": "a_derm_rash_hand_locations_top"
 		}, {
-			"potential_answer_id": "126322",
+			"id": "126322",
 			"potential_answer": "Palms",
 			"potential_answer_summary": "Palms",
 			"answer_type": "a_type_multiple_choice",
@@ -38,7 +38,7 @@ var screenQuestionJSON = `
 			"to_alert": false,
 			"answer_tag": "a_derm_rash_hand_locations_palms"
 		}, {
-			"potential_answer_id": "126323",
+			"id": "126323",
 			"potential_answer": "Both top and palms",
 			"potential_answer_summary": "Both top and palms",
 			"answer_type": "a_type_multiple_choice",
@@ -75,7 +75,7 @@ var screenQuestionJSON = `
 	},
 	{
 		"question": "q_derm_rash_locations_that_make_rash_worse",
-		"question_id": "40577",
+		"id": "40577",
 		"question_title": "What locations make it worse?",
 		"question_title_has_tokens": false,
 		"question_type": "q_type_free_text",

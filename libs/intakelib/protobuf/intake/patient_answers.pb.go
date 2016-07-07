@@ -16,23 +16,32 @@ var _ = math.Inf
 type PatientAnswerData_Type int32
 
 const (
-	PatientAnswerData_MULTIPLE_CHOICE PatientAnswerData_Type = 0
-	PatientAnswerData_FREE_TEXT       PatientAnswerData_Type = 1
-	PatientAnswerData_AUTOCOMPLETE    PatientAnswerData_Type = 2
-	PatientAnswerData_PHOTO_SECTION   PatientAnswerData_Type = 3
+	PatientAnswerData_MULTIPLE_CHOICE   PatientAnswerData_Type = 0
+	PatientAnswerData_FREE_TEXT         PatientAnswerData_Type = 1
+	PatientAnswerData_AUTOCOMPLETE      PatientAnswerData_Type = 2
+	PatientAnswerData_MEDIA_SECTION     PatientAnswerData_Type = 3
+	PatientAnswerData_SINGLE_SELECT     PatientAnswerData_Type = 4
+	PatientAnswerData_SINGLE_ENTRY      PatientAnswerData_Type = 5
+	PatientAnswerData_SEGMENTED_CONTROL PatientAnswerData_Type = 6
 )
 
 var PatientAnswerData_Type_name = map[int32]string{
 	0: "MULTIPLE_CHOICE",
 	1: "FREE_TEXT",
 	2: "AUTOCOMPLETE",
-	3: "PHOTO_SECTION",
+	3: "MEDIA_SECTION",
+	4: "SINGLE_SELECT",
+	5: "SINGLE_ENTRY",
+	6: "SEGMENTED_CONTROL",
 }
 var PatientAnswerData_Type_value = map[string]int32{
-	"MULTIPLE_CHOICE": 0,
-	"FREE_TEXT":       1,
-	"AUTOCOMPLETE":    2,
-	"PHOTO_SECTION":   3,
+	"MULTIPLE_CHOICE":   0,
+	"FREE_TEXT":         1,
+	"AUTOCOMPLETE":      2,
+	"MEDIA_SECTION":     3,
+	"SINGLE_SELECT":     4,
+	"SINGLE_ENTRY":      5,
+	"SEGMENTED_CONTROL": 6,
 }
 
 func (x PatientAnswerData_Type) Enum() *PatientAnswerData_Type {
@@ -78,9 +87,60 @@ func (m *PatientAnswerData) GetData() []byte {
 	return nil
 }
 
+// SingleSelectPatientAnswer represents a patient's answer for a
+// single select question
+type SingleSelectPatientAnswer struct {
+	PotentialAnswerId *string `protobuf:"bytes,1,req,name=potential_answer_id" json:"potential_answer_id,omitempty"`
+	Text              *string `protobuf:"bytes,2,opt,name=text" json:"text,omitempty"`
+	XXX_unrecognized  []byte  `json:"-"`
+}
+
+func (m *SingleSelectPatientAnswer) Reset()         { *m = SingleSelectPatientAnswer{} }
+func (m *SingleSelectPatientAnswer) String() string { return proto.CompactTextString(m) }
+func (*SingleSelectPatientAnswer) ProtoMessage()    {}
+
+func (m *SingleSelectPatientAnswer) GetPotentialAnswerId() string {
+	if m != nil && m.PotentialAnswerId != nil {
+		return *m.PotentialAnswerId
+	}
+	return ""
+}
+
+func (m *SingleSelectPatientAnswer) GetText() string {
+	if m != nil && m.Text != nil {
+		return *m.Text
+	}
+	return ""
+}
+
+// SegmentedControlPatientAnswer represent's a patient's answer
+// for a segmented control question
+type SegmentedControlPatientAnswer struct {
+	PotentialAnswerId *string `protobuf:"bytes,1,req,name=potential_answer_id" json:"potential_answer_id,omitempty"`
+	Text              *string `protobuf:"bytes,2,opt,name=text" json:"text,omitempty"`
+	XXX_unrecognized  []byte  `json:"-"`
+}
+
+func (m *SegmentedControlPatientAnswer) Reset()         { *m = SegmentedControlPatientAnswer{} }
+func (m *SegmentedControlPatientAnswer) String() string { return proto.CompactTextString(m) }
+func (*SegmentedControlPatientAnswer) ProtoMessage()    {}
+
+func (m *SegmentedControlPatientAnswer) GetPotentialAnswerId() string {
+	if m != nil && m.PotentialAnswerId != nil {
+		return *m.PotentialAnswerId
+	}
+	return ""
+}
+
+func (m *SegmentedControlPatientAnswer) GetText() string {
+	if m != nil && m.Text != nil {
+		return *m.Text
+	}
+	return ""
+}
+
 // MultipleChoicePatientAnswer represents a patient's answer for a
-// multiple choice question, a segmented control question, a single select
-// question and a sectioned multiple choice question.
+// multiple choice question
 type MultipleChoicePatientAnswer struct {
 	AnswerSelections []*MultipleChoicePatientAnswer_Selection `protobuf:"bytes,1,rep,name=answer_selections" json:"answer_selections,omitempty"`
 	XXX_unrecognized []byte                                   `json:"-"`
@@ -138,6 +198,23 @@ func (m *FreeTextPatientAnswer) GetText() string {
 	return ""
 }
 
+// SingleEntryPatientAnswer represents a patient answer for a single entry question.
+type SingleEntryPatientAnswer struct {
+	Text             *string `protobuf:"bytes,1,opt,name=text" json:"text,omitempty"`
+	XXX_unrecognized []byte  `json:"-"`
+}
+
+func (m *SingleEntryPatientAnswer) Reset()         { *m = SingleEntryPatientAnswer{} }
+func (m *SingleEntryPatientAnswer) String() string { return proto.CompactTextString(m) }
+func (*SingleEntryPatientAnswer) ProtoMessage()    {}
+
+func (m *SingleEntryPatientAnswer) GetText() string {
+	if m != nil && m.Text != nil {
+		return *m.Text
+	}
+	return ""
+}
+
 // AutocompletePatientAnswer represents a patient answer for an autocomplete question.
 type AutocompletePatientAnswer struct {
 	Answers          []string `protobuf:"bytes,1,rep,name=answers" json:"answers,omitempty"`
@@ -155,106 +232,117 @@ func (m *AutocompletePatientAnswer) GetAnswers() []string {
 	return nil
 }
 
-// PhotoSectionPatientAnswer represents a patient answer to a photo section. There can be a variable
+// MediaSectionPatientAnswer represents a patient answer to a photo section. There can be a variable
 // number of photo sections entered for a question.
-type PhotoSectionPatientAnswer struct {
-	Entries          []*PhotoSectionPatientAnswer_PhotoSectionEntry `protobuf:"bytes,1,rep,name=entries" json:"entries,omitempty"`
+type MediaSectionPatientAnswer struct {
+	Entries          []*MediaSectionPatientAnswer_MediaSectionEntry `protobuf:"bytes,1,rep,name=entries" json:"entries,omitempty"`
 	XXX_unrecognized []byte                                         `json:"-"`
 }
 
-func (m *PhotoSectionPatientAnswer) Reset()         { *m = PhotoSectionPatientAnswer{} }
-func (m *PhotoSectionPatientAnswer) String() string { return proto.CompactTextString(m) }
-func (*PhotoSectionPatientAnswer) ProtoMessage()    {}
+func (m *MediaSectionPatientAnswer) Reset()         { *m = MediaSectionPatientAnswer{} }
+func (m *MediaSectionPatientAnswer) String() string { return proto.CompactTextString(m) }
+func (*MediaSectionPatientAnswer) ProtoMessage()    {}
 
-func (m *PhotoSectionPatientAnswer) GetEntries() []*PhotoSectionPatientAnswer_PhotoSectionEntry {
+func (m *MediaSectionPatientAnswer) GetEntries() []*MediaSectionPatientAnswer_MediaSectionEntry {
 	if m != nil {
 		return m.Entries
 	}
 	return nil
 }
 
-// PhotoSectionEntry represents a single fully-populated photo section
+// MediaSectionEntry represents a single fully-populated photo section
 // answer by the patient.
-type PhotoSectionPatientAnswer_PhotoSectionEntry struct {
+type MediaSectionPatientAnswer_MediaSectionEntry struct {
 	Name             *string                                                        `protobuf:"bytes,1,req,name=name" json:"name,omitempty"`
-	Photos           []*PhotoSectionPatientAnswer_PhotoSectionEntry_PhotoSlotAnswer `protobuf:"bytes,2,rep,name=photos" json:"photos,omitempty"`
+	Media            []*MediaSectionPatientAnswer_MediaSectionEntry_MediaSlotAnswer `protobuf:"bytes,2,rep,name=media" json:"media,omitempty"`
 	XXX_unrecognized []byte                                                         `json:"-"`
 }
 
-func (m *PhotoSectionPatientAnswer_PhotoSectionEntry) Reset() {
-	*m = PhotoSectionPatientAnswer_PhotoSectionEntry{}
+func (m *MediaSectionPatientAnswer_MediaSectionEntry) Reset() {
+	*m = MediaSectionPatientAnswer_MediaSectionEntry{}
 }
-func (m *PhotoSectionPatientAnswer_PhotoSectionEntry) String() string {
+func (m *MediaSectionPatientAnswer_MediaSectionEntry) String() string {
 	return proto.CompactTextString(m)
 }
-func (*PhotoSectionPatientAnswer_PhotoSectionEntry) ProtoMessage() {}
+func (*MediaSectionPatientAnswer_MediaSectionEntry) ProtoMessage() {}
 
-func (m *PhotoSectionPatientAnswer_PhotoSectionEntry) GetName() string {
+func (m *MediaSectionPatientAnswer_MediaSectionEntry) GetName() string {
 	if m != nil && m.Name != nil {
 		return *m.Name
 	}
 	return ""
 }
 
-func (m *PhotoSectionPatientAnswer_PhotoSectionEntry) GetPhotos() []*PhotoSectionPatientAnswer_PhotoSectionEntry_PhotoSlotAnswer {
+func (m *MediaSectionPatientAnswer_MediaSectionEntry) GetMedia() []*MediaSectionPatientAnswer_MediaSectionEntry_MediaSlotAnswer {
 	if m != nil {
-		return m.Photos
+		return m.Media
 	}
 	return nil
 }
 
-type PhotoSectionPatientAnswer_PhotoSectionEntry_PhotoSlotAnswer struct {
+type MediaSectionPatientAnswer_MediaSectionEntry_MediaSlotAnswer struct {
 	Link             *string `protobuf:"bytes,1,opt,name=link" json:"link,omitempty"`
 	SlotId           *string `protobuf:"bytes,2,req,name=slot_id" json:"slot_id,omitempty"`
 	Name             *string `protobuf:"bytes,3,req,name=name" json:"name,omitempty"`
 	Id               *ID     `protobuf:"bytes,4,req,name=id" json:"id,omitempty"`
+	ThumbnailLink    *string `protobuf:"bytes,5,opt,name=thumbnail_link" json:"thumbnail_link,omitempty"`
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *PhotoSectionPatientAnswer_PhotoSectionEntry_PhotoSlotAnswer) Reset() {
-	*m = PhotoSectionPatientAnswer_PhotoSectionEntry_PhotoSlotAnswer{}
+func (m *MediaSectionPatientAnswer_MediaSectionEntry_MediaSlotAnswer) Reset() {
+	*m = MediaSectionPatientAnswer_MediaSectionEntry_MediaSlotAnswer{}
 }
-func (m *PhotoSectionPatientAnswer_PhotoSectionEntry_PhotoSlotAnswer) String() string {
+func (m *MediaSectionPatientAnswer_MediaSectionEntry_MediaSlotAnswer) String() string {
 	return proto.CompactTextString(m)
 }
-func (*PhotoSectionPatientAnswer_PhotoSectionEntry_PhotoSlotAnswer) ProtoMessage() {}
+func (*MediaSectionPatientAnswer_MediaSectionEntry_MediaSlotAnswer) ProtoMessage() {}
 
-func (m *PhotoSectionPatientAnswer_PhotoSectionEntry_PhotoSlotAnswer) GetLink() string {
+func (m *MediaSectionPatientAnswer_MediaSectionEntry_MediaSlotAnswer) GetLink() string {
 	if m != nil && m.Link != nil {
 		return *m.Link
 	}
 	return ""
 }
 
-func (m *PhotoSectionPatientAnswer_PhotoSectionEntry_PhotoSlotAnswer) GetSlotId() string {
+func (m *MediaSectionPatientAnswer_MediaSectionEntry_MediaSlotAnswer) GetSlotId() string {
 	if m != nil && m.SlotId != nil {
 		return *m.SlotId
 	}
 	return ""
 }
 
-func (m *PhotoSectionPatientAnswer_PhotoSectionEntry_PhotoSlotAnswer) GetName() string {
+func (m *MediaSectionPatientAnswer_MediaSectionEntry_MediaSlotAnswer) GetName() string {
 	if m != nil && m.Name != nil {
 		return *m.Name
 	}
 	return ""
 }
 
-func (m *PhotoSectionPatientAnswer_PhotoSectionEntry_PhotoSlotAnswer) GetId() *ID {
+func (m *MediaSectionPatientAnswer_MediaSectionEntry_MediaSlotAnswer) GetId() *ID {
 	if m != nil {
 		return m.Id
 	}
 	return nil
 }
 
+func (m *MediaSectionPatientAnswer_MediaSectionEntry_MediaSlotAnswer) GetThumbnailLink() string {
+	if m != nil && m.ThumbnailLink != nil {
+		return *m.ThumbnailLink
+	}
+	return ""
+}
+
 func init() {
 	proto.RegisterType((*PatientAnswerData)(nil), "intake.PatientAnswerData")
+	proto.RegisterType((*SingleSelectPatientAnswer)(nil), "intake.SingleSelectPatientAnswer")
+	proto.RegisterType((*SegmentedControlPatientAnswer)(nil), "intake.SegmentedControlPatientAnswer")
 	proto.RegisterType((*MultipleChoicePatientAnswer)(nil), "intake.MultipleChoicePatientAnswer")
 	proto.RegisterType((*MultipleChoicePatientAnswer_Selection)(nil), "intake.MultipleChoicePatientAnswer.Selection")
 	proto.RegisterType((*FreeTextPatientAnswer)(nil), "intake.FreeTextPatientAnswer")
+	proto.RegisterType((*SingleEntryPatientAnswer)(nil), "intake.SingleEntryPatientAnswer")
 	proto.RegisterType((*AutocompletePatientAnswer)(nil), "intake.AutocompletePatientAnswer")
-	proto.RegisterType((*PhotoSectionPatientAnswer)(nil), "intake.PhotoSectionPatientAnswer")
-	proto.RegisterType((*PhotoSectionPatientAnswer_PhotoSectionEntry)(nil), "intake.PhotoSectionPatientAnswer.PhotoSectionEntry")
-	proto.RegisterType((*PhotoSectionPatientAnswer_PhotoSectionEntry_PhotoSlotAnswer)(nil), "intake.PhotoSectionPatientAnswer.PhotoSectionEntry.PhotoSlotAnswer")
+	proto.RegisterType((*MediaSectionPatientAnswer)(nil), "intake.MediaSectionPatientAnswer")
+	proto.RegisterType((*MediaSectionPatientAnswer_MediaSectionEntry)(nil), "intake.MediaSectionPatientAnswer.MediaSectionEntry")
+	proto.RegisterType((*MediaSectionPatientAnswer_MediaSectionEntry_MediaSlotAnswer)(nil), "intake.MediaSectionPatientAnswer.MediaSectionEntry.MediaSlotAnswer")
 	proto.RegisterEnum("intake.PatientAnswerData_Type", PatientAnswerData_Type_name, PatientAnswerData_Type_value)
 }

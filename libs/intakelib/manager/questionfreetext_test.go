@@ -10,7 +10,7 @@ import (
 const freeTextJSON = `
 {
               "question": "q_derm_eczema_locations_that_make_rash_worse",
-              "question_id": "40477",
+              "id": "40477",
               "question_title": "What locations make it worse?",
               "question_title_has_tokens": false,
               "question_type": "q_type_free_text",
@@ -23,13 +23,7 @@ const freeTextJSON = `
               "prefilled_with_previous_answers": false,
               "required": true,
               "to_alert": false,
-              "alert_text": "",
-              "answers": [{
-					"answer_id": "64406",
-					"type" : "q_type_free_text",
-					"question_id": "40477",
-					"answer_text": "Testing free text."
-				}]
+              "alert_text": ""
 }`
 
 func TestFreeText_Parsing(t *testing.T) {
@@ -46,8 +40,6 @@ func TestFreeText_Parsing(t *testing.T) {
 	test.Equals(t, "What locations make it worse?", ftq.questionInfo.Title)
 	test.Equals(t, "40477", ftq.questionInfo.ID)
 	test.Equals(t, "Describe what locations make your rash worse…", ftq.PlaceholderText)
-	test.Equals(t, true, ftq.answer != nil)
-	test.Equals(t, "Testing free text.", ftq.answer.Text)
 }
 
 func TestFreeText_staticInfoCopy(t *testing.T) {
@@ -73,7 +65,7 @@ func TestFreeText_Answer(t *testing.T) {
 	freeTextWithoutAdditionalFieldsJSON := `
 	{
 	"question": "q_derm_eczema_locations_that_make_rash_worse",
-	"question_id": "40477",
+	"id": "40477",
 	"question_title": "What locations make it worse?",
 	"question_title_has_tokens": false,
 	"question_type": "q_type_free_text",

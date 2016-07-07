@@ -17,7 +17,16 @@ func (v *visitManager) question(questionID string) question {
 	return nil
 }
 
-func (v *visitManager) valueForKey(key string) []byte {
+func (v *visitManager) answerForQuestion(questionID string) patientAnswer {
+
+	if pa, ok := v.questionIDToAnswerMap[questionID]; ok {
+		return pa
+	}
+
+	return nil
+}
+
+func (v *visitManager) valueForKey(key string) interface{} {
 	return v.userFields.get(key)
 }
 

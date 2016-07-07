@@ -6,6 +6,7 @@ import (
 	"sort"
 
 	"github.com/gogo/protobuf/proto"
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/intakelib/protobuf/intake"
 )
 
@@ -35,10 +36,10 @@ func (a *byPotentialAnswerOrder) Less(i, j int) bool {
 }
 
 type potentialAnswer struct {
-	ID              string     `json:"potential_answer_id"`
+	ID              string     `json:"id"`
 	Text            string     `json:"potential_answer"`
 	Summary         string     `json:"potential_answer_summary"`
-	Type            string     `json:"answer_type"`
+	Type            string     `json:"type"`
 	Popup           *infoPopup `json:"popup"`
 	PlaceholderText string     `json:"placeholder_text"`
 
@@ -59,14 +60,14 @@ func (p *potentialAnswer) staticInfoCopy(context map[string]string) interface{} 
 
 func (p *potentialAnswer) unmarshalMapFromClient(data dataMap) error {
 	if err := data.requiredKeys("potential_answer",
-		"potential_answer_id", "potential_answer", "answer_type"); err != nil {
+		"id", "potential_answer", "type"); err != nil {
 		return err
 	}
 
-	p.ID = data.mustGetString("potential_answer_id")
+	p.ID = data.mustGetString("id")
 	p.Text = data.mustGetString("potential_answer")
 	p.Summary = data.mustGetString("potential_answer_summary")
-	p.Type = data.mustGetString("answer_type")
+	p.Type = data.mustGetString("type")
 
 	clientData, err := data.dataMapForKey("client_data")
 	if err != nil {
@@ -117,7 +118,7 @@ type multipleChoiceQuestion struct {
 	subquestionsManager *subquestionsManager
 
 	potentialAnswerMap map[string]*potentialAnswer
-	answer             *multipleChoiceAnswer
+	answer             topLevelAnswerWithSubScreensContainer
 }
 
 func (m *multipleChoiceQuestion) staticInfoCopy(context map[string]string) interface{} {
@@ -182,11 +183,35 @@ func (m *multipleChoiceQuestion) unmarshalMapFromClient(data dataMap, parent lay
 		m.potentialAnswerMap[pa.ID] = pa
 	}
 
-	if data.exists("answers") {
-		m.answer = &multipleChoiceAnswer{}
-		if err := m.answer.unmarshalMapFromClient(data); err != nil {
-			return err
+	answer := dataSource.answerForQuestion(m.id())
+	if answer != nil {
+		topLevelAnswer := answer.(topLevelAnswerWithSubScreensContainer)
+		switch m.Type {
+		case questionTypeMultipleChoice.String():
+			mca, ok := answer.(*multipleChoiceAnswer)
+			if !ok {
+				return fmt.Errorf("expected multipleChoiceAnswer but got %T", answer)
+			}
+			for _, sItem := range mca.Answers {
+				selection := sItem.(*multipleChoiceAnswerSelection)
+				selection.PotentialAnswerText = m.potentialAnswerMap[selection.potentialAnswerID()].Text
+			}
+		case questionTypeSingleSelect.String():
+			ssa, ok := answer.(*singleSelectAnswer)
+			if !ok {
+				return fmt.Errorf("expected singleSelectAnswer but got %T", answer)
+			}
+			selection := ssa.Answer.(*multipleChoiceAnswerSelection)
+			selection.PotentialAnswerText = m.potentialAnswerMap[selection.potentialAnswerID()].Text
+		case questionTypeSegmentedControl.String():
+			sca, ok := answer.(*segmentedControlAnswer)
+			if !ok {
+				return fmt.Errorf("expected segmentedControlAnswer but got %T", answer)
+			}
+			selection := sca.Answer.(*multipleChoiceAnswerSelection)
+			selection.PotentialAnswerText = m.potentialAnswerMap[selection.potentialAnswerID()].Text
 		}
+		m.answer = topLevelAnswer
 	}
 
 	clientData, err := data.dataMapForKey("additional_fields")
@@ -241,34 +266,44 @@ func (q *multipleChoiceQuestion) validateAnswer(pa patientAnswer) error {
 
 func (q *multipleChoiceQuestion) setPatientAnswer(answer patientAnswer) error {
 
-	mcqAnswer, ok := answer.(*multipleChoiceAnswer)
-	if !ok {
-		return fmt.Errorf("Expected multiple choice answer instead got %T for question %s", answer, q.LayoutUnitID)
-	}
-
+	var topLevelAnswer topLevelAnswerWithSubScreensContainer
 	switch q.Type {
-	case questionTypeSingleSelect.String(), questionTypeSegmentedControl.String():
-		if len(mcqAnswer.Answers) > 1 {
-			return fmt.Errorf("Cannot have more than one answer selection for single select question %s", q.LayoutUnitID)
+	case questionTypeMultipleChoice.String():
+		mcqAnswer, ok := answer.(*multipleChoiceAnswer)
+		if !ok {
+			return errors.Trace(fmt.Errorf("Expected multiple choice answer instead got %T for question %s", answer, q.LayoutUnitID))
 		}
-	}
 
-	// first validate to ensure that each answer selection actually exists in the
-	// potential answer set
-	for _, aItem := range mcqAnswer.Answers {
-		if _, ok := q.potentialAnswerMap[aItem.potentialAnswerID()]; !ok {
-			return fmt.Errorf("potential_answer_id %s is not a valid selection for question %s", aItem.potentialAnswerID(), q.LayoutUnitID)
+		// first validate to ensure that each answer selection actually exists in the
+		// potential answer set
+		for _, aItem := range mcqAnswer.Answers {
+			if _, ok := q.potentialAnswerMap[aItem.potentialAnswerID()]; !ok {
+				return fmt.Errorf("potential_answer_id %s is not a valid selection for question %s", aItem.potentialAnswerID(), q.LayoutUnitID)
+			}
 		}
+	case questionTypeSegmentedControl.String():
+		_, ok := answer.(*segmentedControlAnswer)
+		if !ok {
+			return errors.Trace(fmt.Errorf("Expected multiple choice answer instead got %T for question %s", answer, q.LayoutUnitID))
+		}
+	case questionTypeSingleSelect.String():
+		_, ok := answer.(*singleSelectAnswer)
+		if !ok {
+			return errors.Trace(fmt.Errorf("Expected multiple choice answer instead got %T for question %s", answer, q.LayoutUnitID))
+		}
+	default:
+		return errors.Trace(fmt.Errorf("Unknown question type %s", q.Type))
 	}
+	topLevelAnswer = answer.(topLevelAnswerWithSubScreensContainer)
 
 	// order the answer selection from the client based on the ordering of the
 	// potential answers to ensure consistent order of subscreens (if there are subquestions)
 	sort.Sort(&byPotentialAnswerOrder{
-		answers:            mcqAnswer.Answers,
+		answers:            topLevelAnswer.topLevelAnswers(),
 		potentialAnswerMap: q.potentialAnswerMap,
 	})
 
-	for _, aItem := range mcqAnswer.Answers {
+	for _, aItem := range topLevelAnswer.topLevelAnswers() {
 		selection := aItem.(*multipleChoiceAnswerSelection)
 		potentialAnswerItem := q.potentialAnswerMap[aItem.potentialAnswerID()]
 		selection.PotentialAnswerText = potentialAnswerItem.Text
@@ -279,7 +314,7 @@ func (q *multipleChoiceQuestion) setPatientAnswer(answer patientAnswer) error {
 				return fmt.Errorf("cannot select regular option and specify custom text for question %s", q.LayoutUnitID)
 			}
 		case answerTypeNone:
-			if len(mcqAnswer.Answers) > 1 {
+			if len(topLevelAnswer.topLevelAnswers()) > 1 {
 				return fmt.Errorf("cannot select more than 1 option if none of the above is selected for question %s", q.LayoutUnitID)
 			}
 		case answerTypeOther:
@@ -296,7 +331,7 @@ func (q *multipleChoiceQuestion) setPatientAnswer(answer patientAnswer) error {
 
 	}
 
-	q.answer = mcqAnswer
+	q.answer = topLevelAnswer
 
 	if q.subquestionsManager != nil {
 		if err := q.subquestionsManager.inflateSubscreensForPatientAnswer(); err != nil {
@@ -333,7 +368,7 @@ func (q *multipleChoiceQuestion) requirementsMet(dataSource questionAnswerDataSo
 	// check to ensure that the requirements of each of the subscreens
 	// for each answer selection are also met
 	if answerExists {
-		for _, selectionItem := range q.answer.Answers {
+		for _, selectionItem := range q.answer.topLevelAnswers() {
 			for _, sItem := range selectionItem.subscreens() {
 				if res, err := sItem.requirementsMet(dataSource); err != nil || !res {
 					return false, errSubQuestionRequirements
@@ -345,16 +380,12 @@ func (q *multipleChoiceQuestion) requirementsMet(dataSource questionAnswerDataSo
 	return true, nil
 }
 
-func (q *multipleChoiceQuestion) marshalAnswerForClient() ([]byte, error) {
+func (q *multipleChoiceQuestion) answerForClient() (interface{}, error) {
 	if q.answer == nil {
 		return nil, errNoAnswerExists
 	}
 
-	if q.visibility() == hidden {
-		return q.answer.marshalEmptyJSONForClient()
-	}
-
-	return q.answer.marshalJSONForClient()
+	return q.answer.transformForClient()
 }
 
 func (q *multipleChoiceQuestion) transformToProtobuf() (proto.Message, error) {
@@ -423,7 +454,26 @@ func (q *multipleChoiceQuestion) transformToProtobuf() (proto.Message, error) {
 		if err != nil {
 			return nil, err
 		}
-		multipleChoiceProtoBuf.PatientAnswer = pb.(*intake.MultipleChoicePatientAnswer)
+
+		var answerType intake.PatientAnswerData_Type
+		answerData, err := proto.Marshal(pb)
+		if err != nil {
+			return nil, err
+		}
+		switch q.Type {
+		case questionTypeSingleSelect.String():
+			answerType = intake.PatientAnswerData_SINGLE_SELECT
+		case questionTypeSegmentedControl.String():
+			answerType = intake.PatientAnswerData_SEGMENTED_CONTROL
+		case questionTypeMultipleChoice.String():
+			answerType = intake.PatientAnswerData_MULTIPLE_CHOICE
+
+		}
+
+		multipleChoiceProtoBuf.PatientAnswer = &intake.PatientAnswerData{
+			Type: answerType.Enum(),
+			Data: answerData,
+		}
 	}
 
 	return multipleChoiceProtoBuf, nil

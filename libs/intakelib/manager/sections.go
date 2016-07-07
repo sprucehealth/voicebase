@@ -4,7 +4,7 @@ type section struct {
 	ID           string     `json:"-"`
 	LayoutUnitID string     `json:"-"`
 	Parent       layoutUnit `json:"-"`
-	Title        string     `json:"section_title"`
+	Title        string     `json:"title"`
 	Screens      []screen   `json:"screens"`
 
 	v visibility
@@ -15,12 +15,12 @@ const (
 )
 
 func (s *section) unmarshalMapFromClient(data dataMap, parent layoutUnit, dataSource questionAnswerDataSource) error {
-	if err := data.requiredKeys(sectionTypeScreenContainer, "section_title", "screens"); err != nil {
+	if err := data.requiredKeys(sectionTypeScreenContainer, "title", "screens"); err != nil {
 		return err
 	}
 
 	s.Parent = parent
-	s.Title = data.mustGetString("section_title")
+	s.Title = data.mustGetString("title")
 
 	screens, err := data.getInterfaceSlice("screens")
 	if err != nil {

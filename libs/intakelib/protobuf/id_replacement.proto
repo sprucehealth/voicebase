@@ -6,14 +6,15 @@ package intake;
 // The type is used to infer the serialized data in the byte array.
 message IDReplacementData {
 	enum Type {
-		PHOTO_ID = 0;
+		MEDIA_ID = 0;
 	}
 
 	required Type type = 1;
 	required bytes data = 2;
 }
 
-message PhotoIDReplacement {
+message MediaIDReplacement {
 	required string id = 1;
 	optional string url = 2;
+	optional string thumbnail_url = 3;
 }

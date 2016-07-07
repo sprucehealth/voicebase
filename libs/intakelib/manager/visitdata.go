@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/gogo/protobuf/proto"
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/intakelib/protobuf/intake"
 )
 
@@ -15,7 +16,7 @@ const (
 )
 
 type visitData struct {
-	patientVisitID int64
+	patientVisitID string
 	isSubmitted    bool
 	layoutData     dataMap
 	userFields     *userFields
@@ -27,21 +28,33 @@ type visitData struct {
 func (v *visitData) unmarshal(dataType string, data []byte) error {
 	var vd intake.VisitData
 	if err := proto.Unmarshal(data, &vd); err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	var jsonMap map[string]interface{}
 	if err := json.Unmarshal(vd.Layout, &jsonMap); err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	v.patientVisitID = *vd.PatientVisitId
 	v.layoutData = jsonMap
 	v.isSubmitted = *vd.IsSubmitted
-	v.userFields = &userFields{}
+	v.userFields = &userFields{
+		fields: make(map[string]interface{}),
+	}
 	for _, pair := range vd.Pairs {
-		if err := v.userFields.set(*pair.Key, pair.Value); err != nil {
+		if err := v.userFields.set(*pair.Key, *pair.Value); err != nil {
 			return err
+		}
+	}
+
+	// if there are any preferences included in the layout data then lets go ahead and add those
+	// to the user fields
+	preferences, ok := jsonMap["preferences"]
+	if ok {
+		preferenceMap := preferences.(map[string]interface{})
+		for preferenceKey, preferenceValue := range preferenceMap {
+			v.userFields.fields["preference."+preferenceKey] = preferenceValue
 		}
 	}
 

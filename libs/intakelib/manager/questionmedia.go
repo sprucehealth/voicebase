@@ -8,48 +8,48 @@ import (
 	"github.com/sprucehealth/backend/libs/intakelib/protobuf/intake"
 )
 
-type photoTip struct {
+type mediaTip struct {
 	Tip        string `json:"tip"`
 	TipSubtext string `json:"tip_subtext"`
 	TipStyle   string `json:"tip_style"`
 }
 
-type photoSlot struct {
+type mediaSlot struct {
 	Name                     string `json:"name"`
 	ID                       string `json:"id"`
 	Required                 bool   `json:"required"`
 	Type                     string `json:"type"`
 	OverlayImageLink         string `json:"overlay_image_url"`
-	PhotoMissingErrorMessage string `json:"photo_missing_error_message"`
+	MediaMissingErrorMessage string `json:"media_missing_error_message"`
 	InitialCameraDirection   string `json:"initial_camera_direction"`
 	FlashState               string `json:"flash"`
 
 	clientPlatform platform
-	photoTip
-	Tips map[string]*photoTip `json:"tips"`
+	mediaTip
+	Tips map[string]*mediaTip `json:"tips"`
 }
 
-func (p *photoSlot) staticInfoCopy(context map[string]string) interface{} {
-	ps := &photoSlot{
+func (p *mediaSlot) staticInfoCopy(context map[string]string) interface{} {
+	ps := &mediaSlot{
 		Name:     p.Name,
 		ID:       p.ID,
 		Required: p.Required,
 		Type:     p.Type,
-		photoTip: photoTip{
+		mediaTip: mediaTip{
 			Tip:        p.Tip,
 			TipSubtext: p.TipSubtext,
 			TipStyle:   p.TipStyle,
 		},
 		OverlayImageLink:         p.OverlayImageLink,
-		PhotoMissingErrorMessage: p.PhotoMissingErrorMessage,
+		MediaMissingErrorMessage: p.MediaMissingErrorMessage,
 		InitialCameraDirection:   p.InitialCameraDirection,
 		FlashState:               p.FlashState,
 	}
 
 	if p.Tips != nil {
-		ps.Tips = make(map[string]*photoTip, len(p.Tips))
+		ps.Tips = make(map[string]*mediaTip, len(p.Tips))
 		for name, tip := range p.Tips {
-			ps.Tips[name] = &photoTip{
+			ps.Tips[name] = &mediaTip{
 				Tip:        tip.Tip,
 				TipSubtext: tip.TipSubtext,
 				TipStyle:   tip.TipStyle,
@@ -60,9 +60,9 @@ func (p *photoSlot) staticInfoCopy(context map[string]string) interface{} {
 	return ps
 }
 
-func (p *photoSlot) unmarshalMapFromClient(data dataMap, dataSource questionAnswerDataSource) error {
-	if err := data.requiredKeys("photo_slot",
-		"name", "id"); err != nil {
+func (p *mediaSlot) unmarshalMapFromClient(data dataMap, dataSource questionAnswerDataSource) error {
+	if err := data.requiredKeys("media_slot",
+		"name", "id", "type"); err != nil {
 		return err
 	}
 
@@ -70,7 +70,7 @@ func (p *photoSlot) unmarshalMapFromClient(data dataMap, dataSource questionAnsw
 	p.ID = data.mustGetString("id")
 	p.Required = data.mustGetBool("required")
 	p.clientPlatform = dataSource.clientPlatform()
-
+	p.Type = data.mustGetString("type")
 	clientData, err := data.dataMapForKey("client_data")
 	if err != nil {
 		return err
@@ -78,20 +78,19 @@ func (p *photoSlot) unmarshalMapFromClient(data dataMap, dataSource questionAnsw
 		return nil
 	}
 
-	p.Type = clientData.mustGetString("type")
 	p.Tip = clientData.mustGetString("tip")
 	p.TipSubtext = clientData.mustGetString("tip_subtext")
 	p.TipStyle = clientData.mustGetString("tip_style")
 	p.OverlayImageLink = clientData.mustGetString("overlay_image_url")
-	p.PhotoMissingErrorMessage = clientData.mustGetString("photo_missing_error_message")
-	if p.PhotoMissingErrorMessage == "" {
-		p.PhotoMissingErrorMessage = "Please take all required photos to continue."
+	p.MediaMissingErrorMessage = clientData.mustGetString("media_missing_error_message")
+	if p.MediaMissingErrorMessage == "" {
+		p.MediaMissingErrorMessage = "Please take all required photos to continue."
 	}
 	p.InitialCameraDirection = clientData.mustGetString("initial_camera_direction")
 	p.FlashState = clientData.mustGetString("flash")
 
 	if clientData.exists("tips") {
-		p.Tips = make(map[string]*photoTip, 1)
+		p.Tips = make(map[string]*mediaTip, 1)
 		tips, err := clientData.dataMapForKey("tips")
 		if err != nil {
 			return err
@@ -103,7 +102,7 @@ func (p *photoSlot) unmarshalMapFromClient(data dataMap, dataSource questionAnsw
 		}
 
 		if inlineTips != nil {
-			p.Tips["inline"] = &photoTip{
+			p.Tips["inline"] = &mediaTip{
 				Tip:        inlineTips.mustGetString("tip"),
 				TipStyle:   inlineTips.mustGetString("tip_style"),
 				TipSubtext: inlineTips.mustGetString("tip_subtext"),
@@ -115,39 +114,39 @@ func (p *photoSlot) unmarshalMapFromClient(data dataMap, dataSource questionAnsw
 	return nil
 }
 
-type photoQuestion struct {
+type mediaQuestion struct {
 	*questionInfo
 	AllowsMultipleSections        bool         `json:"allows_multiple_sections"`
 	AllowsUserDefinedSectionTitle bool         `json:"allows_user_defined_section_title"`
 	DisableLastSlotDuplication    bool         `json:"disable_last_slot_duplication"`
-	Slots                         []*photoSlot `json:"photo_slots"`
+	Slots                         []*mediaSlot `json:"media_slots"`
 
-	answer *photoSectionAnswer
+	answer *mediaSectionAnswer
 }
 
-func (p *photoQuestion) staticInfoCopy(context map[string]string) interface{} {
-	pCopy := &photoQuestion{
+func (p *mediaQuestion) staticInfoCopy(context map[string]string) interface{} {
+	pCopy := &mediaQuestion{
 		questionInfo:                  p.questionInfo.staticInfoCopy(context).(*questionInfo),
 		AllowsMultipleSections:        p.AllowsMultipleSections,
 		AllowsUserDefinedSectionTitle: p.AllowsUserDefinedSectionTitle,
 		DisableLastSlotDuplication:    p.DisableLastSlotDuplication,
-		Slots: make([]*photoSlot, len(p.Slots)),
+		Slots: make([]*mediaSlot, len(p.Slots)),
 	}
 
 	for i, slot := range p.Slots {
-		pCopy.Slots[i] = slot.staticInfoCopy(context).(*photoSlot)
+		pCopy.Slots[i] = slot.staticInfoCopy(context).(*mediaSlot)
 	}
 
 	return pCopy
 }
 
-func (q *photoQuestion) unmarshalMapFromClient(data dataMap, parent layoutUnit, dataSource questionAnswerDataSource) error {
-	if err := data.requiredKeys(questionTypePhoto.String(), "photo_slots"); err != nil {
+func (q *mediaQuestion) unmarshalMapFromClient(data dataMap, parent layoutUnit, dataSource questionAnswerDataSource) error {
+	if err := data.requiredKeys(questionTypeMedia.String(), "media_slots"); err != nil {
 		return err
 	}
 
 	var err error
-	q.questionInfo, err = populateQuestionInfo(data, parent, questionTypePhoto.String())
+	q.questionInfo, err = populateQuestionInfo(data, parent, questionTypeMedia.String())
 	if err != nil {
 		return err
 	}
@@ -161,45 +160,47 @@ func (q *photoQuestion) unmarshalMapFromClient(data dataMap, parent layoutUnit, 
 		q.DisableLastSlotDuplication = clientData.mustGetBool("disable_last_slot_duplication")
 	}
 
-	photoSlots, err := data.getInterfaceSlice("photo_slots")
+	mediaSlots, err := data.getInterfaceSlice("media_slots")
 	if err != nil {
 		return err
 	}
 
-	q.Slots = make([]*photoSlot, len(photoSlots))
-	for i, slot := range photoSlots {
+	q.Slots = make([]*mediaSlot, len(mediaSlots))
+	for i, slot := range mediaSlots {
 		slotMap, err := getDataMap(slot)
 		if err != nil {
 			return err
 		}
 
-		q.Slots[i] = &photoSlot{}
+		q.Slots[i] = &mediaSlot{}
 		if err := q.Slots[i].unmarshalMapFromClient(slotMap, dataSource); err != nil {
 			return err
 		}
 	}
 
-	if data.exists("answers") {
-		q.answer = &photoSectionAnswer{}
-		if err := q.answer.unmarshalMapFromClient(data); err != nil {
-			return err
+	answer := dataSource.answerForQuestion(q.id())
+	if answer != nil {
+		msa, ok := answer.(*mediaSectionAnswer)
+		if !ok {
+			return fmt.Errorf("expected mediaSectionAnswer but got %T", answer)
 		}
+		q.answer = msa
 	}
 
 	return nil
 }
 
-func (q *photoQuestion) TypeName() string {
-	return questionTypePhoto.String()
+func (q *mediaQuestion) TypeName() string {
+	return questionTypeMedia.String()
 }
 
 // TODO
-func (q *photoQuestion) validateAnswer(pa patientAnswer) error {
+func (q *mediaQuestion) validateAnswer(pa patientAnswer) error {
 	return nil
 }
 
-func (q *photoQuestion) setPatientAnswer(answer patientAnswer) error {
-	pqAnswer, ok := answer.(*photoSectionAnswer)
+func (q *mediaQuestion) setPatientAnswer(answer patientAnswer) error {
+	pqAnswer, ok := answer.(*mediaSectionAnswer)
 	if !ok {
 		return fmt.Errorf("Expected photo section answer but got %T for question %s", answer, q.LayoutUnitID)
 	}
@@ -214,25 +215,25 @@ func (q *photoQuestion) setPatientAnswer(answer patientAnswer) error {
 			return fmt.Errorf("Name of section cannot be empty for answer to question %s", q.LayoutUnitID)
 		}
 
-		if len(section.Photos) == 0 {
+		if len(section.Media) == 0 {
 			return fmt.Errorf("Cannot have empty section defined for question %s", q.LayoutUnitID)
 		}
 
-		for _, photo := range section.Photos {
-			if photo.Name == "" {
-				return fmt.Errorf("Name of photo cannot be empty for answer to question: %s", q.LayoutUnitID)
+		for _, media := range section.Media {
+			if media.Name == "" {
+				return fmt.Errorf("Name of media cannot be empty for answer to question: %s", q.LayoutUnitID)
 			}
 
-			if photo.ServerPhotoID == "" && photo.LocalPhotoID == "" {
-				return fmt.Errorf("Local or server PhotoID required for all photos in question %s", q.LayoutUnitID)
+			if media.ServerMediaID == "" && media.LocalMediaID == "" {
+				return fmt.Errorf("Local or server MediaID required for all photos in question %s", q.LayoutUnitID)
 			}
 
-			if photo.SlotID == "" {
-				return fmt.Errorf("SlotID required for all photos in question: %s", q.LayoutUnitID)
+			if media.SlotID == "" {
+				return fmt.Errorf("SlotID required for all media in question: %s", q.LayoutUnitID)
 			}
 
-			if photo.SlotID == "" {
-				return fmt.Errorf("SlotID required for all photos in question: %s", q.LayoutUnitID)
+			if media.SlotID == "" {
+				return fmt.Errorf("SlotID required for all media in question: %s", q.LayoutUnitID)
 			}
 
 		}
@@ -242,14 +243,14 @@ func (q *photoQuestion) setPatientAnswer(answer patientAnswer) error {
 	return nil
 }
 
-func (q *photoQuestion) patientAnswer() (patientAnswer, error) {
+func (q *mediaQuestion) patientAnswer() (patientAnswer, error) {
 	if q.answer == nil {
 		return nil, errNoAnswerExists
 	}
 	return q.answer, nil
 }
 
-func (q *photoQuestion) canPersistAnswer() bool {
+func (q *mediaQuestion) canPersistAnswer() bool {
 	if q.answer == nil {
 		return false
 	}
@@ -257,8 +258,8 @@ func (q *photoQuestion) canPersistAnswer() bool {
 	// go through all photos and ensure that none of the photos
 	// are still in the process of being uploaded
 	for _, section := range q.answer.Sections {
-		for _, photo := range section.Photos {
-			if !photo.itemUploaded() {
+		for _, media := range section.Media {
+			if !media.itemUploaded() {
 				return false
 			}
 		}
@@ -267,50 +268,53 @@ func (q *photoQuestion) canPersistAnswer() bool {
 	return true
 }
 
-func (q *photoQuestion) requirementsMet(dataSource questionAnswerDataSource) (bool, error) {
+func (q *mediaQuestion) requirementsMet(dataSource questionAnswerDataSource) (bool, error) {
 	return q.checkQuestionRequirements(q, q.answer)
 }
 
-func (q *photoQuestion) marshalAnswerForClient() ([]byte, error) {
+func (q *mediaQuestion) answerForClient() (interface{}, error) {
 	if q.answer == nil {
 		return nil, errNoAnswerExists
 	}
 
-	if q.visibility() == hidden {
-		return q.answer.marshalEmptyJSONForClient()
-	}
-
-	return q.answer.marshalJSONForClient()
+	return q.answer.transformForClient()
 }
 
-func (q *photoQuestion) transformToProtobuf() (proto.Message, error) {
+func (q *mediaQuestion) transformToProtobuf() (proto.Message, error) {
 	qInfo, err := transformQuestionInfoToProtobuf(q.questionInfo)
 	if err != nil {
 		return nil, err
 	}
 
-	photoQuestionProtoBuf := &intake.PhotoSectionQuestion{
+	mediaQuestionProtoBuf := &intake.MediaSectionQuestion{
 		QuestionInfo:               qInfo.(*intake.CommonQuestionInfo),
-		PhotoSlots:                 make([]*intake.PhotoSectionQuestion_PhotoSlot, len(q.Slots)),
+		MediaSlots:                 make([]*intake.MediaSectionQuestion_MediaSlot, len(q.Slots)),
 		AllowsMultipleSections:     proto.Bool(q.AllowsMultipleSections),
 		UserDefinedSectionTitle:    proto.Bool(q.AllowsUserDefinedSectionTitle),
 		DisableLastSlotDuplication: proto.Bool(q.DisableLastSlotDuplication),
 	}
 
 	for i, ps := range q.Slots {
-		photoQuestionProtoBuf.PhotoSlots[i] = &intake.PhotoSectionQuestion_PhotoSlot{
+		mediaQuestionProtoBuf.MediaSlots[i] = &intake.MediaSectionQuestion_MediaSlot{
 			Id:                   proto.String(ps.ID),
 			Name:                 proto.String(ps.Name),
 			IsRequired:           proto.Bool(ps.Required),
-			PhotoMissingErrorMsg: proto.String(ps.PhotoMissingErrorMessage),
+			MediaMissingErrorMsg: proto.String(ps.MediaMissingErrorMessage),
+		}
+
+		switch ps.Type {
+		case "image":
+			mediaQuestionProtoBuf.MediaSlots[i].Type = intake.MediaSectionQuestion_MediaSlot_IMAGE.Enum()
+		case "video":
+			mediaQuestionProtoBuf.MediaSlots[i].Type = intake.MediaSectionQuestion_MediaSlot_VIDEO.Enum()
 		}
 
 		if ps.clientPlatform == android && ps.Tips["inline"] != nil {
-			photoQuestionProtoBuf.PhotoSlots[i].Tip = proto.String(ps.Tips["inline"].Tip)
-			photoQuestionProtoBuf.PhotoSlots[i].TipSubtext = proto.String(ps.Tips["inline"].TipSubtext)
+			mediaQuestionProtoBuf.MediaSlots[i].Tip = proto.String(ps.Tips["inline"].Tip)
+			mediaQuestionProtoBuf.MediaSlots[i].TipSubtext = proto.String(ps.Tips["inline"].TipSubtext)
 		} else {
-			photoQuestionProtoBuf.PhotoSlots[i].Tip = proto.String(ps.Tip)
-			photoQuestionProtoBuf.PhotoSlots[i].TipSubtext = proto.String(ps.TipSubtext)
+			mediaQuestionProtoBuf.MediaSlots[i].Tip = proto.String(ps.Tip)
+			mediaQuestionProtoBuf.MediaSlots[i].TipSubtext = proto.String(ps.TipSubtext)
 		}
 	}
 
@@ -320,13 +324,13 @@ func (q *photoQuestion) transformToProtobuf() (proto.Message, error) {
 			return nil, err
 		}
 
-		photoQuestionProtoBuf.PatientAnswer = pb.(*intake.PhotoSectionPatientAnswer)
+		mediaQuestionProtoBuf.PatientAnswer = pb.(*intake.MediaSectionPatientAnswer)
 	}
 
-	return photoQuestionProtoBuf, nil
+	return mediaQuestionProtoBuf, nil
 }
 
-func (q *photoQuestion) stringIndent(indent string, depth int) string {
+func (q *mediaQuestion) stringIndent(indent string, depth int) string {
 	var b bytes.Buffer
 	b.WriteString(indentAtDepth(indent, depth) + q.layoutUnitID() + ": " + q.Type + " | " + q.v.String() + "\n")
 	b.WriteString(indentAtDepth(indent, depth) + "Q: " + q.Title)

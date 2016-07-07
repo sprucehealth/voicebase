@@ -1,643 +1,376 @@
 {
-  "question": "q_derm_rash_which_steroids",
-  "question_id": "44587",
-  "question_title": "What topical steroids have you tried?",
-  "question_title_has_tokens": false,
-  "question_type": "q_type_multiple_choice",
-  "type": "q_type_multiple_choice",
-  "question_summary": "Which steroids",
-  "potential_answers": [
-    {
-      "potential_answer_id": "147660",
-      "potential_answer": "Alclometasone (Aclovate)",
-      "potential_answer_summary": "Alclometasone (Aclovate)",
-      "answer_type": "a_type_multiple_choice",
-      "type": "a_type_multiple_choice",
-      "ordering": "0",
-      "to_alert": false,
-      "answer_tag": "a_derm_rash_which_steroids_alclometasone_aclovate"
-    },
-    {
-      "potential_answer_id": "147661",
-      "potential_answer": "Amcinonide (Cyclocort, Amcort)",
-      "potential_answer_summary": "Amcinonide (Cyclocort, Amcort)",
-      "answer_type": "a_type_multiple_choice",
-      "type": "a_type_multiple_choice",
-      "ordering": "1",
-      "to_alert": false,
-      "answer_tag": "a_derm_rash_which_steroids_amcinonide_cyclocort_amcort"
-    },
-    {
-      "potential_answer_id": "147662",
-      "potential_answer": "Betamethasone dipropionate (Diprolene, Diprosone)",
-      "potential_answer_summary": "Betamethasone dipropionate (Diprolene, Diprosone)",
-      "answer_type": "a_type_multiple_choice",
-      "type": "a_type_multiple_choice",
-      "ordering": "2",
-      "to_alert": false,
-      "answer_tag": "a_derm_rash_which_steroids_betamethasone_dipropionate_diprolene_diprosone"
-    },
-    {
-      "potential_answer_id": "147663",
-      "potential_answer": "Betamethasone valerate (Luxiq)",
-      "potential_answer_summary": "Betamethasone valerate (Luxiq)",
-      "answer_type": "a_type_multiple_choice",
-      "type": "a_type_multiple_choice",
-      "ordering": "3",
-      "to_alert": false,
-      "answer_tag": "a_derm_rash_which_steroids_betamethasone_valerate_luxiq"
-    },
-    {
-      "potential_answer_id": "147664",
-      "potential_answer": "Clobetasol (Temovate, Clobex)",
-      "potential_answer_summary": "Clobetasol (Temovate, Clobex)",
-      "answer_type": "a_type_multiple_choice",
-      "type": "a_type_multiple_choice",
-      "ordering": "4",
-      "to_alert": false,
-      "answer_tag": "a_derm_rash_which_steroids_clobetasol_temovate_clobex"
-    },
-    {
-      "potential_answer_id": "147665",
-      "potential_answer": "Clocortolone (Cloderm)",
-      "potential_answer_summary": "Clocortolone (Cloderm)",
-      "answer_type": "a_type_multiple_choice",
-      "type": "a_type_multiple_choice",
-      "ordering": "5",
-      "to_alert": false,
-      "answer_tag": "a_derm_rash_which_steroids_clocortolone_cloderm"
-    },
-    {
-      "potential_answer_id": "147666",
-      "potential_answer": "Desonide (DesOwen)",
-      "potential_answer_summary": "Desonide (DesOwen)",
-      "answer_type": "a_type_multiple_choice",
-      "type": "a_type_multiple_choice",
-      "ordering": "6",
-      "to_alert": false,
-      "answer_tag": "a_derm_rash_which_steroids_desonide_desowen"
-    },
-    {
-      "potential_answer_id": "147667",
-      "potential_answer": "Desoximetasone (Topicort)",
-      "potential_answer_summary": "Desoximetasone (Topicort)",
-      "answer_type": "a_type_multiple_choice",
-      "type": "a_type_multiple_choice",
-      "ordering": "7",
-      "to_alert": false,
-      "answer_tag": "a_derm_rash_which_steroids_desoximetasone_topicort"
-    },
-    {
-      "potential_answer_id": "147668",
-      "potential_answer": "Diflorasone (ApexiCon, Psorcon)",
-      "potential_answer_summary": "Diflorasone (ApexiCon, Psorcon)",
-      "answer_type": "a_type_multiple_choice",
-      "type": "a_type_multiple_choice",
-      "ordering": "8",
-      "to_alert": false,
-      "answer_tag": "a_derm_rash_which_steroids_diflorasone_apexicon_psorcon"
-    },
-    {
-      "potential_answer_id": "147669",
-      "potential_answer": "Fluocinolone (Synalar, Capex)",
-      "potential_answer_summary": "Fluocinolone (Synalar, Capex)",
-      "answer_type": "a_type_multiple_choice",
-      "type": "a_type_multiple_choice",
-      "ordering": "9",
-      "to_alert": false,
-      "answer_tag": "a_derm_rash_which_steroids_fluocinolone_synalar_capex"
-    },
-    {
-      "potential_answer_id": "147670",
-      "potential_answer": "Fluocinonide (Vanos, Lidex)",
-      "potential_answer_summary": "Fluocinonide (Vanos, Lidex)",
-      "answer_type": "a_type_multiple_choice",
-      "type": "a_type_multiple_choice",
-      "ordering": "10",
-      "to_alert": false,
-      "answer_tag": "a_derm_rash_which_steroids_fluocinonide_vanos_lidex"
-    },
-    {
-      "potential_answer_id": "147671",
-      "potential_answer": "Flurandrenolide (Cordran)",
-      "potential_answer_summary": "Flurandrenolide (Cordran)",
-      "answer_type": "a_type_multiple_choice",
-      "type": "a_type_multiple_choice",
-      "ordering": "11",
-      "to_alert": false,
-      "answer_tag": "a_derm_rash_which_steroids_flurandrenolide_cordran"
-    },
-    {
-      "potential_answer_id": "147672",
-      "potential_answer": "Fluticasone (Cutivate)",
-      "potential_answer_summary": "Fluticasone (Cutivate)",
-      "answer_type": "a_type_multiple_choice",
-      "type": "a_type_multiple_choice",
-      "ordering": "12",
-      "to_alert": false,
-      "answer_tag": "a_derm_rash_which_steroids_fluticasone_cutivate"
-    },
-    {
-      "potential_answer_id": "147673",
-      "potential_answer": "Halobetasol (Ultravate)",
-      "potential_answer_summary": "Halobetasol (Ultravate)",
-      "answer_type": "a_type_multiple_choice",
-      "type": "a_type_multiple_choice",
-      "ordering": "13",
-      "to_alert": false,
-      "answer_tag": "a_derm_rash_which_steroids_halobetasol_ultravate"
-    },
-    {
-      "potential_answer_id": "147674",
-      "potential_answer": "Hydrocortisone (Cortizone-10)",
-      "potential_answer_summary": "Hydrocortisone (Cortizone-10)",
-      "answer_type": "a_type_multiple_choice",
-      "type": "a_type_multiple_choice",
-      "ordering": "14",
-      "to_alert": false,
-      "answer_tag": "a_derm_rash_which_steroids_hydrocortisone_cortizone_10"
-    },
-    {
-      "potential_answer_id": "147675",
-      "potential_answer": "Mometasone (Elocon)",
-      "potential_answer_summary": "Mometasone (Elocon)",
-      "answer_type": "a_type_multiple_choice",
-      "type": "a_type_multiple_choice",
-      "ordering": "15",
-      "to_alert": false,
-      "answer_tag": "a_derm_rash_which_steroids_mometasone_elocon"
-    },
-    {
-      "potential_answer_id": "147676",
-      "potential_answer": "Prednicarbate (Dermatop)",
-      "potential_answer_summary": "Prednicarbate (Dermatop)",
-      "answer_type": "a_type_multiple_choice",
-      "type": "a_type_multiple_choice",
-      "ordering": "16",
-      "to_alert": false,
-      "answer_tag": "a_derm_rash_which_steroids_prednicarbate_dermatop"
-    },
-    {
-      "potential_answer_id": "147677",
-      "potential_answer": "Triamcinolone (Kenalog, Triderm, Trianex)",
-      "potential_answer_summary": "Triamcinolone (Kenalog, Triderm, Trianex)",
-      "answer_type": "a_type_multiple_choice",
-      "type": "a_type_multiple_choice",
-      "ordering": "17",
-      "to_alert": false,
-      "answer_tag": "a_derm_rash_which_steroids_triamcinolone_kenalog_triderm_trianex"
-    },
-    {
-      "potential_answer_id": "147678",
-      "potential_answer": "Other",
-      "potential_answer_summary": "Other",
-      "answer_type": "a_type_multiple_choice_other_free_text",
-      "type": "a_type_multiple_choice_other_free_text",
-      "ordering": "18",
-      "to_alert": false,
-      "answer_tag": "a_derm_rash_which_steroids_other"
-    }
-  ],
-  "answers": [
-    {
-      "answer_id": "67190",
-      "question_id": "44587",
+  "answers": {
+    "which_steroids": {
       "type": "q_type_multiple_choice",
-      "potential_answer_id": "147662",
-      "potential_answer": "Betamethasone dipropionate (Diprolene, Diprosone)",
-      "potential_answer_summary": "Betamethasone dipropionate (Diprolene, Diprosone)",
-      "answers": [
+      "potential_answers": [
         {
-          "answer_id": "67192",
-          "question_id": "44581",
-          "type": "q_type_segmented_control",
-          "potential_answer_id": "147648",
-          "potential_answer": "Ointment",
-          "potential_answer_summary": "Ointment"
-        },
-        {
-          "answer_id": "67193",
-          "question_id": "44582",
-          "type": "q_type_single_entry",
-          "potential_answer_id": null,
-          "answer_text": "ag"
-        },
-        {
-          "answer_id": "67194",
-          "question_id": "44583",
-          "type": "q_type_segmented_control",
-          "potential_answer_id": "147651",
-          "potential_answer": "1 to 2",
-          "potential_answer_summary": "1 to 2"
-        },
-        {
-          "answer_id": "67195",
-          "question_id": "44584",
-          "type": "q_type_segmented_control",
-          "potential_answer_id": "147654",
-          "potential_answer": "Mostly",
-          "potential_answer_summary": "Mostly"
-        },
-        {
-          "answer_id": "67196",
-          "question_id": "44585",
-          "type": "q_type_segmented_control",
-          "potential_answer_id": "147656",
-          "potential_answer": "Yes",
-          "potential_answer_summary": "Yes"
-        },
-        {
-          "answer_id": "67197",
-          "question_id": "44586",
-          "type": "q_type_segmented_control",
-          "potential_answer_id": "147659",
-          "potential_answer": "No",
-          "potential_answer_summary": "No"
-        }
-      ]
-    },
-    {
-      "answer_id": "67191",
-      "question_id": "44587",
-      "type": "q_type_multiple_choice",
-      "potential_answer_id": "147663",
-      "potential_answer": "Betamethasone valerate (Luxiq)",
-      "potential_answer_summary": "Betamethasone valerate (Luxiq)",
-      "answers": [
-        {
-          "answer_id": "67198",
-          "question_id": "44581",
-          "type": "q_type_segmented_control",
-          "potential_answer_id": "147648",
-          "potential_answer": "Ointment",
-          "potential_answer_summary": "Ointment"
-        },
-        {
-          "answer_id": "67199",
-          "question_id": "44582",
-          "type": "q_type_single_entry",
-          "potential_answer_id": null,
-          "answer_text": "gag"
-        },
-        {
-          "answer_id": "67200",
-          "question_id": "44583",
-          "type": "q_type_segmented_control",
-          "potential_answer_id": "147651",
-          "potential_answer": "1 to 2",
-          "potential_answer_summary": "1 to 2"
-        },
-        {
-          "answer_id": "67201",
-          "question_id": "44584",
-          "type": "q_type_segmented_control",
-          "potential_answer_id": "147654",
-          "potential_answer": "Mostly",
-          "potential_answer_summary": "Mostly"
-        },
-        {
-          "answer_id": "67202",
-          "question_id": "44585",
-          "type": "q_type_segmented_control",
-          "potential_answer_id": "147657",
-          "potential_answer": "No",
-          "potential_answer_summary": "No"
-        },
-        {
-          "answer_id": "67203",
-          "question_id": "44586",
-          "type": "q_type_segmented_control",
-          "potential_answer_id": "147658",
-          "potential_answer": "Yes",
-          "potential_answer_summary": "Yes"
+          "id": "which_steroids_alclometasone_aclovate",
+          "answers": {
+            "form": {
+              "type": "q_type_segmented_control",
+              "potential_answer": {
+                "id": "form_ointment"
+              }
+            },
+            "helpful": {
+              "type": "q_type_segmented_control",
+              "potential_answer": {
+                "id": "helpful_no"
+              }
+            },
+            "new_prescription_needed": {
+              "type": "q_type_segmented_control",
+              "potential_answer": {
+                "id": "new_prescription_needed_yes"
+              }
+            },
+            "strength": {
+              "type": "q_type_single_entry",
+              "text": "100%"
+            },
+            "used_as_instructed": {
+              "type": "q_type_segmented_control",
+              "potential_answer": {
+                "id": "used_as_instructed_mostly"
+              }
+            },
+            "weeks_used": {
+              "type": "q_type_segmented_control",
+              "potential_answer": {
+                "id": "weeks_used_1_to_2"
+              }
+            }
+          }
         }
       ]
     }
-  ],
-  "condition": {
-    "op": "answer_contains_any",
-    "type": "answer_contains_any",
-    "question": "q_derm_rash_tried_topical_steroids_before",
-    "question_id": "44580",
-    "potential_answers_id": [
-      "147645"
-    ],
-    "potential_answers": [
-      "a_derm_rash_tried_topical_steroids_before_yes"
-    ]
   },
-  "to_prefill": false,
-  "prefilled_with_previous_answers": false,
-  "required": true,
-  "to_alert": false,
-  "alert_text": "",
-  "subquestions_config": {
-    "screens": [
+  "screen_with_multiplechoice_question": {
+    "id": "screen_0EUH6RG701O9K",
+    "header_title_has_tokens": false,
+    "questions": [
       {
-        "header_title": "Tell us more about <parent_answer_text>:",
-        "header_title_has_tokens": true,
-        "questions": [
+        "id": "which_steroids",
+        "question_title": "What topical steroids have you tried?",
+        "question_title_has_tokens": false,
+        "type": "q_type_multiple_choice",
+        "question_summary": "Which steroids",
+        "potential_answers": [
           {
-            "question": "q_derm_rash_form",
-            "question_id": "44581",
-            "question_title": "What form was it in?",
-            "question_title_has_tokens": false,
-            "question_type": "q_type_segmented_control",
-            "type": "q_type_segmented_control",
-            "question_summary": "Form",
-            "potential_answers": [
-              {
-                "potential_answer_id": "147647",
-                "potential_answer": "Cream",
-                "potential_answer_summary": "Cream",
-                "answer_type": "a_type_segmented_control",
-                "type": "a_type_segmented_control",
-                "ordering": "0",
-                "to_alert": false,
-                "answer_tag": "a_derm_rash_form_cream"
-              },
-              {
-                "potential_answer_id": "147648",
-                "potential_answer": "Ointment",
-                "potential_answer_summary": "Ointment",
-                "answer_type": "a_type_segmented_control",
-                "type": "a_type_segmented_control",
-                "ordering": "1",
-                "to_alert": false,
-                "answer_tag": "a_derm_rash_form_ointment"
-              },
-              {
-                "potential_answer_id": "147649",
-                "potential_answer": "Other",
-                "potential_answer_summary": "Other",
-                "answer_type": "a_type_segmented_control",
-                "type": "a_type_segmented_control",
-                "ordering": "2",
-                "to_alert": false,
-                "answer_tag": "a_derm_rash_form_other"
-              }
-            ],
-            "condition": {
-              "op": "answer_contains_any",
-              "type": "answer_contains_any",
-              "question": "q_derm_rash_tried_topical_steroids_before",
-              "question_id": "44580",
-              "potential_answers_id": [
-                "147645"
-              ],
-              "potential_answers": [
-                "a_derm_rash_tried_topical_steroids_before_yes"
-              ]
-            },
-            "to_prefill": false,
-            "prefilled_with_previous_answers": false,
-            "required": true,
-            "to_alert": false,
-            "alert_text": ""
+            "id": "which_steroids_alclometasone_aclovate",
+            "potential_answer": "Alclometasone (Aclovate)",
+            "potential_answer_summary": "Alclometasone (Aclovate)",
+            "type": "a_type_multiple_choice"
           },
           {
-            "question": "q_derm_rash_strength",
-            "question_id": "44582",
-            "question_title": "What percentage strength was it?",
-            "question_title_has_tokens": false,
-            "question_type": "q_type_single_entry",
-            "type": "q_type_single_entry",
-            "question_summary": "Strength",
-            "additional_fields": {
-              "placeholder_text": "Optional…"
-            },
-            "condition": {
-              "op": "answer_contains_any",
-              "type": "answer_contains_any",
-              "question": "q_derm_rash_tried_topical_steroids_before",
-              "question_id": "44580",
-              "potential_answers_id": [
-                "147645"
-              ],
-              "potential_answers": [
-                "a_derm_rash_tried_topical_steroids_before_yes"
-              ]
-            },
-            "to_prefill": false,
-            "prefilled_with_previous_answers": false,
-            "required": false,
-            "to_alert": false,
-            "alert_text": ""
+            "id": "which_steroids_amcinonide_cyclocort_amcort",
+            "potential_answer": "Amcinonide (Cyclocort, Amcort)",
+            "potential_answer_summary": "Amcinonide (Cyclocort, Amcort)",
+            "type": "a_type_multiple_choice"
           },
           {
-            "question": "q_derm_rash_weeks_used",
-            "question_id": "44583",
-            "question_title": "How many weeks did you use it for?",
-            "question_title_has_tokens": false,
-            "question_type": "q_type_segmented_control",
-            "type": "q_type_segmented_control",
-            "question_summary": "Weeks used",
-            "potential_answers": [
-              {
-                "potential_answer_id": "147650",
-                "potential_answer": "Less than 1",
-                "potential_answer_summary": "Less than 1",
-                "answer_type": "a_type_segmented_control",
-                "type": "a_type_segmented_control",
-                "ordering": "0",
-                "to_alert": false,
-                "answer_tag": "a_derm_rash_weeks_used_less_than_1"
-              },
-              {
-                "potential_answer_id": "147651",
-                "potential_answer": "1 to 2",
-                "potential_answer_summary": "1 to 2",
-                "answer_type": "a_type_segmented_control",
-                "type": "a_type_segmented_control",
-                "ordering": "1",
-                "to_alert": false,
-                "answer_tag": "a_derm_rash_weeks_used_1_to_2"
-              },
-              {
-                "potential_answer_id": "147652",
-                "potential_answer": "More than 2",
-                "potential_answer_summary": "More than 2",
-                "answer_type": "a_type_segmented_control",
-                "type": "a_type_segmented_control",
-                "ordering": "2",
-                "to_alert": false,
-                "answer_tag": "a_derm_rash_weeks_used_more_than_2"
-              }
-            ],
-            "condition": {
-              "op": "answer_contains_any",
-              "type": "answer_contains_any",
-              "question": "q_derm_rash_tried_topical_steroids_before",
-              "question_id": "44580",
-              "potential_answers_id": [
-                "147645"
-              ],
-              "potential_answers": [
-                "a_derm_rash_tried_topical_steroids_before_yes"
-              ]
-            },
-            "to_prefill": false,
-            "prefilled_with_previous_answers": false,
-            "required": true,
-            "to_alert": false,
-            "alert_text": ""
+            "id": "which_steroids_betamethasone_dipropionate_diprolene_diprosone",
+            "potential_answer": "Betamethasone dipropionate (Diprolene, Diprosone)",
+            "potential_answer_summary": "Betamethasone dipropionate (Diprolene, Diprosone)",
+            "type": "a_type_multiple_choice"
           },
           {
-            "question": "q_derm_rash_used_as_instructed",
-            "question_id": "44584",
-            "question_title": "Did you use it as instructed by its packaging or by a healthcare provider?",
-            "question_title_has_tokens": false,
-            "question_type": "q_type_segmented_control",
-            "type": "q_type_segmented_control",
-            "question_summary": "Used as instructed",
-            "potential_answers": [
-              {
-                "potential_answer_id": "147653",
-                "potential_answer": "Yes",
-                "potential_answer_summary": "Yes",
-                "answer_type": "a_type_segmented_control",
-                "type": "a_type_segmented_control",
-                "ordering": "0",
-                "to_alert": false,
-                "answer_tag": "a_derm_rash_used_as_instructed_yes"
-              },
-              {
-                "potential_answer_id": "147654",
-                "potential_answer": "Mostly",
-                "potential_answer_summary": "Mostly",
-                "answer_type": "a_type_segmented_control",
-                "type": "a_type_segmented_control",
-                "ordering": "1",
-                "to_alert": false,
-                "answer_tag": "a_derm_rash_used_as_instructed_mostly"
-              },
-              {
-                "potential_answer_id": "147655",
-                "potential_answer": "No",
-                "potential_answer_summary": "No",
-                "answer_type": "a_type_segmented_control",
-                "type": "a_type_segmented_control",
-                "ordering": "2",
-                "to_alert": false,
-                "answer_tag": "a_derm_rash_used_as_instructed_no"
-              }
-            ],
-            "condition": {
-              "op": "answer_contains_any",
-              "type": "answer_contains_any",
-              "question": "q_derm_rash_tried_topical_steroids_before",
-              "question_id": "44580",
-              "potential_answers_id": [
-                "147645"
-              ],
-              "potential_answers": [
-                "a_derm_rash_tried_topical_steroids_before_yes"
-              ]
-            },
-            "to_prefill": false,
-            "prefilled_with_previous_answers": false,
-            "required": true,
-            "to_alert": false,
-            "alert_text": ""
+            "id": "which_steroids_betamethasone_valerate_luxiq",
+            "potential_answer": "Betamethasone valerate (Luxiq)",
+            "potential_answer_summary": "Betamethasone valerate (Luxiq)",
+            "type": "a_type_multiple_choice"
           },
           {
-            "question": "q_derm_rash_helpful",
-            "question_id": "44585",
-            "question_title": "Was it helpful?",
-            "question_title_has_tokens": false,
-            "question_type": "q_type_segmented_control",
-            "type": "q_type_segmented_control",
-            "question_summary": "Helpful",
-            "potential_answers": [
-              {
-                "potential_answer_id": "147656",
-                "potential_answer": "Yes",
-                "potential_answer_summary": "Yes",
-                "answer_type": "a_type_segmented_control",
-                "type": "a_type_segmented_control",
-                "ordering": "0",
-                "to_alert": false,
-                "answer_tag": "a_derm_rash_helpful_yes"
-              },
-              {
-                "potential_answer_id": "147657",
-                "potential_answer": "No",
-                "potential_answer_summary": "No",
-                "answer_type": "a_type_segmented_control",
-                "type": "a_type_segmented_control",
-                "ordering": "1",
-                "to_alert": false,
-                "answer_tag": "a_derm_rash_helpful_no"
-              }
-            ],
-            "condition": {
-              "op": "answer_contains_any",
-              "type": "answer_contains_any",
-              "question": "q_derm_rash_tried_topical_steroids_before",
-              "question_id": "44580",
-              "potential_answers_id": [
-                "147645"
-              ],
-              "potential_answers": [
-                "a_derm_rash_tried_topical_steroids_before_yes"
-              ]
-            },
-            "to_prefill": false,
-            "prefilled_with_previous_answers": false,
-            "required": true,
-            "to_alert": false,
-            "alert_text": ""
+            "id": "which_steroids_clobetasol_temovate_clobex",
+            "potential_answer": "Clobetasol (Temovate, Clobex)",
+            "potential_answer_summary": "Clobetasol (Temovate, Clobex)",
+            "type": "a_type_multiple_choice"
           },
           {
-            "question": "q_derm_rash_new_prescription_needed",
-            "question_id": "44586",
-            "question_title": "Do you need a new prescription for it?",
-            "question_title_has_tokens": false,
-            "question_type": "q_type_segmented_control",
-            "type": "q_type_segmented_control",
-            "question_summary": "New prescription needed",
-            "potential_answers": [
-              {
-                "potential_answer_id": "147658",
-                "potential_answer": "Yes",
-                "potential_answer_summary": "Yes",
-                "answer_type": "a_type_segmented_control",
-                "type": "a_type_segmented_control",
-                "ordering": "0",
-                "to_alert": false,
-                "answer_tag": "a_derm_rash_new_prescription_needed_yes"
-              },
-              {
-                "potential_answer_id": "147659",
-                "potential_answer": "No",
-                "potential_answer_summary": "No",
-                "answer_type": "a_type_segmented_control",
-                "type": "a_type_segmented_control",
-                "ordering": "1",
-                "to_alert": false,
-                "answer_tag": "a_derm_rash_new_prescription_needed_no"
-              }
-            ],
-            "condition": {
-              "op": "answer_contains_any",
-              "type": "answer_contains_any",
-              "question": "q_derm_rash_tried_topical_steroids_before",
-              "question_id": "44580",
-              "potential_answers_id": [
-                "147645"
-              ],
-              "potential_answers": [
-                "a_derm_rash_tried_topical_steroids_before_yes"
-              ]
-            },
-            "to_prefill": false,
-            "prefilled_with_previous_answers": false,
-            "required": true,
-            "to_alert": false,
-            "alert_text": ""
+            "id": "which_steroids_clocortolone_cloderm",
+            "potential_answer": "Clocortolone (Cloderm)",
+            "potential_answer_summary": "Clocortolone (Cloderm)",
+            "type": "a_type_multiple_choice"
+          },
+          {
+            "id": "which_steroids_desonide_desowen",
+            "potential_answer": "Desonide (DesOwen)",
+            "potential_answer_summary": "Desonide (DesOwen)",
+            "type": "a_type_multiple_choice"
+          },
+          {
+            "id": "which_steroids_desoximetasone_topicort",
+            "potential_answer": "Desoximetasone (Topicort)",
+            "potential_answer_summary": "Desoximetasone (Topicort)",
+            "type": "a_type_multiple_choice"
+          },
+          {
+            "id": "which_steroids_diflorasone_apexicon_psorcon",
+            "potential_answer": "Diflorasone (ApexiCon, Psorcon)",
+            "potential_answer_summary": "Diflorasone (ApexiCon, Psorcon)",
+            "type": "a_type_multiple_choice"
+          },
+          {
+            "id": "which_steroids_fluocinolone_synalar_capex",
+            "potential_answer": "Fluocinolone (Synalar, Capex)",
+            "potential_answer_summary": "Fluocinolone (Synalar, Capex)",
+            "type": "a_type_multiple_choice"
+          },
+          {
+            "id": "which_steroids_fluocinonide_vanos_lidex",
+            "potential_answer": "Fluocinonide (Vanos, Lidex)",
+            "potential_answer_summary": "Fluocinonide (Vanos, Lidex)",
+            "type": "a_type_multiple_choice"
+          },
+          {
+            "id": "which_steroids_flurandrenolide_cordran",
+            "potential_answer": "Flurandrenolide (Cordran)",
+            "potential_answer_summary": "Flurandrenolide (Cordran)",
+            "type": "a_type_multiple_choice"
+          },
+          {
+            "id": "which_steroids_fluticasone_cutivate",
+            "potential_answer": "Fluticasone (Cutivate)",
+            "potential_answer_summary": "Fluticasone (Cutivate)",
+            "type": "a_type_multiple_choice"
+          },
+          {
+            "id": "which_steroids_halobetasol_ultravate",
+            "potential_answer": "Halobetasol (Ultravate)",
+            "potential_answer_summary": "Halobetasol (Ultravate)",
+            "type": "a_type_multiple_choice"
+          },
+          {
+            "id": "which_steroids_hydrocortisone_cortizone_10",
+            "potential_answer": "Hydrocortisone (Cortizone-10)",
+            "potential_answer_summary": "Hydrocortisone (Cortizone-10)",
+            "type": "a_type_multiple_choice"
+          },
+          {
+            "id": "which_steroids_mometasone_elocon",
+            "potential_answer": "Mometasone (Elocon)",
+            "potential_answer_summary": "Mometasone (Elocon)",
+            "type": "a_type_multiple_choice"
+          },
+          {
+            "id": "which_steroids_prednicarbate_dermatop",
+            "potential_answer": "Prednicarbate (Dermatop)",
+            "potential_answer_summary": "Prednicarbate (Dermatop)",
+            "type": "a_type_multiple_choice"
+          },
+          {
+            "id": "which_steroids_triamcinolone_kenalog_triderm_trianex",
+            "potential_answer": "Triamcinolone (Kenalog, Triderm, Trianex)",
+            "potential_answer_summary": "Triamcinolone (Kenalog, Triderm, Trianex)",
+            "type": "a_type_multiple_choice"
+          },
+          {
+            "id": "which_steroids_other",
+            "potential_answer": "Other",
+            "potential_answer_summary": "Other",
+            "type": "a_type_multiple_choice_other_free_text"
           }
         ],
-        "type": "screen_type_questions"
+        "condition": {
+          "op": "answer_contains_any",
+          "question_id": "tried_topical_steroids_before",
+          "potential_answers_id": [
+            "tried_topical_steroids_before_yes"
+          ]
+        },
+        "required": true,
+        "subquestions_config": {
+          "screens": [
+            {
+              "id": "screen_0EUH6RG701O9M",
+              "header_title": "Tell us more about <parent_answer_text>:",
+              "header_title_has_tokens": true,
+              "questions": [
+                {
+                  "id": "form",
+                  "question_title": "What form was it in?",
+                  "question_title_has_tokens": false,
+                  "type": "q_type_segmented_control",
+                  "question_summary": "Form",
+                  "potential_answers": [
+                    {
+                      "id": "form_cream",
+                      "potential_answer": "Cream",
+                      "potential_answer_summary": "Cream",
+                      "type": "a_type_segmented_control"
+                    },
+                    {
+                      "id": "form_ointment",
+                      "potential_answer": "Ointment",
+                      "potential_answer_summary": "Ointment",
+                      "type": "a_type_segmented_control"
+                    },
+                    {
+                      "id": "form_other",
+                      "potential_answer": "Other",
+                      "potential_answer_summary": "Other",
+                      "type": "a_type_segmented_control"
+                    }
+                  ],
+                  "condition": {
+                    "op": "answer_contains_any",
+                    "question_id": "tried_topical_steroids_before",
+                    "potential_answers_id": [
+                      "tried_topical_steroids_before_yes"
+                    ]
+                  },
+                  "required": true
+                },
+                {
+                  "id": "strength",
+                  "question_title": "What percentage strength was it?",
+                  "question_title_has_tokens": false,
+                  "type": "q_type_single_entry",
+                  "question_summary": "Strength",
+                  "additional_fields": {
+                    "placeholder_text": "Optional…"
+                  },
+                  "condition": {
+                    "op": "answer_contains_any",
+                    "question_id": "tried_topical_steroids_before",
+                    "potential_answers_id": [
+                      "tried_topical_steroids_before_yes"
+                    ]
+                  },
+                  "required": false
+                },
+                {
+                  "id": "weeks_used",
+                  "question_title": "How many weeks did you use it?",
+                  "question_title_has_tokens": false,
+                  "type": "q_type_segmented_control",
+                  "question_summary": "Weeks used",
+                  "potential_answers": [
+                    {
+                      "id": "weeks_used_less_than_1",
+                      "potential_answer": "Less than 1",
+                      "potential_answer_summary": "Less than 1",
+                      "type": "a_type_segmented_control"
+                    },
+                    {
+                      "id": "weeks_used_1_to_2",
+                      "potential_answer": "1 to 2",
+                      "potential_answer_summary": "1 to 2",
+                      "type": "a_type_segmented_control"
+                    },
+                    {
+                      "id": "weeks_used_more_than_2",
+                      "potential_answer": "More than 2",
+                      "potential_answer_summary": "More than 2",
+                      "type": "a_type_segmented_control"
+                    }
+                  ],
+                  "condition": {
+                    "op": "answer_contains_any",
+                    "question_id": "tried_topical_steroids_before",
+                    "potential_answers_id": [
+                      "tried_topical_steroids_before_yes"
+                    ]
+                  },
+                  "required": true
+                },
+                {
+                  "id": "used_as_instructed",
+                  "question_title": "Did you use it as instructed by its packaging or by a healthcare provider?",
+                  "question_title_has_tokens": false,
+                  "type": "q_type_segmented_control",
+                  "question_summary": "Used as instructed",
+                  "potential_answers": [
+                    {
+                      "id": "used_as_instructed_yes",
+                      "potential_answer": "Yes",
+                      "potential_answer_summary": "Yes",
+                      "type": "a_type_segmented_control"
+                    },
+                    {
+                      "id": "used_as_instructed_mostly",
+                      "potential_answer": "Mostly",
+                      "potential_answer_summary": "Mostly",
+                      "type": "a_type_segmented_control"
+                    },
+                    {
+                      "id": "used_as_instructed_no",
+                      "potential_answer": "No",
+                      "potential_answer_summary": "No",
+                      "type": "a_type_segmented_control"
+                    }
+                  ],
+                  "condition": {
+                    "op": "answer_contains_any",
+                    "question_id": "tried_topical_steroids_before",
+                    "potential_answers_id": [
+                      "tried_topical_steroids_before_yes"
+                    ]
+                  },
+                  "required": true
+                },
+                {
+                  "id": "helpful",
+                  "question_title": "Was it helpful?",
+                  "question_title_has_tokens": false,
+                  "type": "q_type_segmented_control",
+                  "question_summary": "Helpful",
+                  "potential_answers": [
+                    {
+                      "id": "helpful_yes",
+                      "potential_answer": "Yes",
+                      "potential_answer_summary": "Yes",
+                      "type": "a_type_segmented_control"
+                    },
+                    {
+                      "id": "helpful_no",
+                      "potential_answer": "No",
+                      "potential_answer_summary": "No",
+                      "type": "a_type_segmented_control"
+                    }
+                  ],
+                  "condition": {
+                    "op": "answer_contains_any",
+                    "question_id": "tried_topical_steroids_before",
+                    "potential_answers_id": [
+                      "tried_topical_steroids_before_yes"
+                    ]
+                  },
+                  "required": true
+                },
+                {
+                  "id": "new_prescription_needed",
+                  "question_title": "Do you need a new prescription for it?",
+                  "question_title_has_tokens": false,
+                  "type": "q_type_segmented_control",
+                  "question_summary": "New prescription needed",
+                  "potential_answers": [
+                    {
+                      "id": "new_prescription_needed_yes",
+                      "potential_answer": "Yes",
+                      "potential_answer_summary": "Yes",
+                      "type": "a_type_segmented_control"
+                    },
+                    {
+                      "id": "new_prescription_needed_no",
+                      "potential_answer": "No",
+                      "potential_answer_summary": "No",
+                      "type": "a_type_segmented_control"
+                    }
+                  ],
+                  "condition": {
+                    "op": "answer_contains_any",
+                    "question_id": "tried_topical_steroids_before",
+                    "potential_answers_id": [
+                      "tried_topical_steroids_before_yes"
+                    ]
+                  },
+                  "required": true
+                }
+              ]
+            }
+          ]
+        }
       }
     ]
   }

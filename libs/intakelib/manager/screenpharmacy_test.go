@@ -3,11 +3,11 @@ package manager
 import "testing"
 
 type mockDataSource_pharmacyScreen struct {
-	value []byte
+	value bool
 	questionAnswerDataSource
 }
 
-func (m *mockDataSource_pharmacyScreen) valueForKey(key string) []byte {
+func (m *mockDataSource_pharmacyScreen) valueForKey(key string) interface{} {
 	return m.value
 }
 
@@ -21,12 +21,12 @@ func TestPharmacyScreen_requirementsMet(t *testing.T) {
 	}
 
 	// requirements not met if value for pharmacy being set is false
-	m.value = []byte("false")
+	m.value = false
 	if res, err := s.requirementsMet(m); err == nil || res {
 		t.Fatal("Expected requirements to not be met when pharmacy is not set")
 	}
 
-	m.value = []byte("true")
+	m.value = true
 	if res, err := s.requirementsMet(m); err != nil {
 		t.Fatal(err)
 	} else if !res {

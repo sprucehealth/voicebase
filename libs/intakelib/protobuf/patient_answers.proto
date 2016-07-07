@@ -12,16 +12,32 @@ message PatientAnswerData {
 		MULTIPLE_CHOICE = 0;
 		FREE_TEXT = 1;
 		AUTOCOMPLETE = 2;
-		PHOTO_SECTION = 3;
+		MEDIA_SECTION = 3;
+		SINGLE_SELECT = 4;
+		SINGLE_ENTRY = 5;
+		SEGMENTED_CONTROL = 6;
 	}
 
 	required Type type = 1;
 	required bytes data = 2;
 }
 
+// SingleSelectPatientAnswer represents a patient's answer for a
+// single select question
+message SingleSelectPatientAnswer {
+	required string potential_answer_id = 1;
+	optional string text = 2;
+}
+
+// SegmentedControlPatientAnswer represent's a patient's answer
+// for a segmented control question
+message SegmentedControlPatientAnswer {
+	required string potential_answer_id = 1;
+	optional string text = 2;
+}
+
 // MultipleChoicePatientAnswer represents a patient's answer for a
-// multiple choice question, a segmented control question, a single select
-// question and a sectioned multiple choice question.
+// multiple choice question
 message MultipleChoicePatientAnswer {
 
 	message Selection {
@@ -37,6 +53,11 @@ message FreeTextPatientAnswer {
 	optional string text = 1;
 }
 
+// SingleEntryPatientAnswer represents a patient answer for a single entry question.
+message SingleEntryPatientAnswer {
+	optional string text = 1;
+}
+
 
 // AutocompletePatientAnswer represents a patient answer for an autocomplete question.
 message AutocompletePatientAnswer {
@@ -44,24 +65,25 @@ message AutocompletePatientAnswer {
 }
 
 
-// PhotoSectionPatientAnswer represents a patient answer to a photo section. There can be a variable
+// MediaSectionPatientAnswer represents a patient answer to a photo section. There can be a variable
 // number of photo sections entered for a question.
-message PhotoSectionPatientAnswer {
+message MediaSectionPatientAnswer {
 
-	// PhotoSectionEntry represents a single fully-populated photo section
+	// MediaSectionEntry represents a single fully-populated photo section
 	// answer by the patient.
-	message PhotoSectionEntry {
+	message MediaSectionEntry {
 
-		message PhotoSlotAnswer {
+		message MediaSlotAnswer {
 			optional string link = 1;
 			required string slot_id = 2;
 			required string name = 3;
 			required ID id = 4;
+			optional string thumbnail_link = 5;
 		}
 
 		required string name = 1;
-		repeated PhotoSlotAnswer photos = 2;
+		repeated MediaSlotAnswer media = 2;
 	}
 
-	repeated PhotoSectionEntry entries = 1;
+	repeated MediaSectionEntry entries = 1;
 }

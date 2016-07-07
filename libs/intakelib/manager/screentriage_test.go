@@ -14,10 +14,8 @@ const screenTriageJSON = `
 	"condition": {
 		"op": "answer_contains_any",
 		"type": "answer_contains_any",
-		"question": "q_derm_rash_type_of_healthcare_provider_previously_seen",
-		"question_id": "40601",
-		"potential_answers_id": ["126469"],
-		"potential_answers": ["a_derm_rash_type_of_healthcare_provider_previously_seen_i_was_hospitalized_for_it"]
+		"question_id": "q_derm_rash_type_of_healthcare_provider_previously_seen",
+		"potential_answers_id": ["126469"]
 	},
 	"body": {
 		"text": "If you have health insurance,..."
@@ -27,7 +25,7 @@ const screenTriageJSON = `
 	"screen_title": "Next Steps",
 	"client_data": {
 					"pathway_id": "derm_rash",
-					"triage_parameters": {
+					"triage_params": {
 						"abandon": true
 					},
 					"views": null

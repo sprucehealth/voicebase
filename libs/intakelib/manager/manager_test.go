@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
+	"strings"
 	"testing"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/sprucehealth/backend/libs/intakelib/protobuf/intake"
-	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/test"
 )
 
@@ -39,7 +39,6 @@ func testWrapScreen(s screen, progress *float32, t *testing.T) []byte {
 func TestManager_ComputeNextScreen(t *testing.T) {
 
 	vm := initializeManagerWithVisit(t, "testdata/eczema_female_complete.json", nil)
-
 	// iterate through the screens and compute a slice of expected byte buffers,
 	// skipping screens that are hidden as well as the overview screen.
 	var byteBuffers [][]byte
@@ -147,11 +146,11 @@ func TestManager_VisitOverviewScreen(t *testing.T) {
 	vm := initializeManagerWithVisit(t, "testdata/eczema_female_complete.json", []*intake.KeyValuePair{
 		{
 			Key:   proto.String("gender"),
-			Value: []byte("female"),
+			Value: proto.String("female"),
 		},
 		{
 			Key:   proto.String("is_pharmacy_set"),
-			Value: []byte("true"),
+			Value: proto.String("true"),
 		},
 	})
 
@@ -201,12 +200,12 @@ func TestManager_VisitOverviewScreen(t *testing.T) {
 	test.Equals(t, intake.VisitOverviewScreen_Section_ENABLED, *vos.Sections[2].CurrentEnabledState)
 
 	// lets unset the answers to the photo question to ensure that the visit overview drops the user back into the photos section
-	pScreen, ok := vm.visit.Sections[1].Screens[0].(*photoScreen)
+	pScreen, ok := vm.visit.Sections[1].Screens[0].(*mediaScreen)
 	if !ok {
 		t.Fatal("Expected photo screen")
 	}
-	for _, pq := range pScreen.PhotoQuestions {
-		pqi, ok := pq.(*photoQuestion)
+	for _, pq := range pScreen.MediaQuestions {
+		pqi, ok := pq.(*mediaQuestion)
 		if !ok {
 			t.Fatal("Expected photo question")
 		}
@@ -328,7 +327,7 @@ func TestManager_PersistAnswers(t *testing.T) {
 	aData, err := proto.Marshal(&intake.MultipleChoicePatientAnswer{
 		AnswerSelections: []*intake.MultipleChoicePatientAnswer_Selection{
 			{
-				PotentialAnswerId: proto.String("125953"),
+				PotentialAnswerId: proto.String("systemic_or_dangerous_symptoms_none_of_the_above"),
 			},
 		},
 	})
@@ -344,7 +343,7 @@ func TestManager_PersistAnswers(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := vm.SetAnswerForQuestion("40444", submittableData); err != nil {
+	if err := vm.SetAnswerForQuestion("systemic_or_dangerous_symptoms", submittableData); err != nil {
 		t.Fatal(err)
 	}
 
@@ -352,13 +351,13 @@ func TestManager_PersistAnswers(t *testing.T) {
 	cli := vm.cli.(*mockClientImpl)
 	if len(cli.answersSet) != 1 {
 		t.Fatalf("Expected 1 answer to be persisted on the client side but got %d", len(cli.answersSet))
-	} else if cli.answersSet["40444"] == nil {
+	} else if cli.answersSet["systemic_or_dangerous_symptoms"] == nil {
 		t.Fatalf("Expected answer to be persisted for the question just answered")
 	}
 
 	// clear out the answer set to ensure that the answer for the multiple choice is not set again
 	// for when we set another answer.
-	delete(cli.answersSet, "40444")
+	delete(cli.answersSet, "systemic_or_dangerous_symptoms")
 
 	// lets try persisting a free text question
 	aData, err = proto.Marshal(&intake.FreeTextPatientAnswer{
@@ -376,58 +375,58 @@ func TestManager_PersistAnswers(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := vm.SetAnswerForQuestion("40477", submittableData); err != nil {
+	questionID := "anything_that_prevents_getting_a_rash_or_makes_it_better"
+
+	if err := vm.SetAnswerForQuestion(questionID, submittableData); err != nil {
 		t.Fatal(err)
 	}
 
 	if len(cli.answersSet) != 1 {
 		t.Fatalf("Expected 1 answer to be persisted on the client side but got %d", len(cli.answersSet))
-	} else if cli.answersSet["40477"] == nil {
+	} else if cli.answersSet[questionID] == nil {
 		t.Fatalf("Expected answer to be persisted for the question just answered")
 	}
 
-	// now lets make the question hidden just answered hidden and call persist answer again (should submit an empty answer)
-	vm.questionMap["40477"].questionRef.setVisibility(hidden)
+	// now lets make the question just answered hidden and call persist answer again (should submit an empty answer)
+	vm.questionMap[questionID].questionRef.setVisibility(hidden)
+	vm.questionMap[questionID].isAnswerDirty = true
+	delete(cli.answersSet, questionID)
 
 	vm.persistAllDirtyQuestions()
 
 	// at this point the answer for the question should be reset to an empty answer
 	if len(cli.answersSet) != 1 {
 		t.Fatalf("Expected 1 answer to be persisted on the client side but got %d", len(cli.answersSet))
-	} else if cli.answersSet["40477"] == nil {
+	} else if cli.answersSet[questionID] == nil {
 		t.Fatalf("Expected answer to be persisted for the question just answered")
 	}
 
-	answerData := cli.answersSet["40477"].Data
+	answerData := cli.answersSet[questionID].Data
 
 	var aJSON clientJSONStructure
 	if err := json.Unmarshal(answerData, &aJSON); err != nil {
 		t.Fatal(err)
-	} else if len(aJSON.Answers) != 1 {
-		t.Fatalf("Expected one answer to be set instead got %d", len(aJSON.Answers))
 	}
 
-	var textJSON textAnswerClientJSON
-	if err := json.Unmarshal(aJSON.Answers[0], &textJSON); err != nil {
-		t.Fatal(err)
-	} else if textJSON.QuestionID != "40477" {
-		t.Fatalf("Expected %s but got %s", "40477", textJSON.QuestionID)
-	} else if len(textJSON.Items) != 0 {
-		t.Fatalf("Expected %d items but got %d items", 0, len(textJSON.Items))
+	if len(aJSON.Answers) == 1 {
+		t.Fatalf("Expected NO answer to be set instead got %d", len(aJSON.Answers))
+	} else if len(aJSON.ClearAnswers) != 1 {
+		t.Fatalf("Expected 1 answer to be cleared but none were")
+	} else if aJSON.ClearAnswers[0] != questionID {
+		t.Fatalf("Expected the free text answer to be marked for clearing but it was %s", aJSON.ClearAnswers[0])
 	}
-
 }
 
 func TestManager_PhotoAnswers_ToBeUploaded(t *testing.T) {
 	vm := initializeManagerWithVisit(t, "testdata/eczema.json", nil)
 
-	aData, err := proto.Marshal(&intake.PhotoSectionPatientAnswer{
-		Entries: []*intake.PhotoSectionPatientAnswer_PhotoSectionEntry{
+	aData, err := proto.Marshal(&intake.MediaSectionPatientAnswer{
+		Entries: []*intake.MediaSectionPatientAnswer_MediaSectionEntry{
 			{
 				Name: proto.String("Face"),
-				Photos: []*intake.PhotoSectionPatientAnswer_PhotoSectionEntry_PhotoSlotAnswer{
+				Media: []*intake.MediaSectionPatientAnswer_MediaSectionEntry_MediaSlotAnswer{
 					{
-						SlotId: proto.String("8686"),
+						SlotId: proto.String("mediaSlot_0EUH6QGFO1O40"),
 						Name:   proto.String("Face Front"),
 						Id: &intake.ID{
 							Type: intake.ID_LOCAL.Enum(),
@@ -435,7 +434,7 @@ func TestManager_PhotoAnswers_ToBeUploaded(t *testing.T) {
 						},
 					},
 					{
-						SlotId: proto.String("8687"),
+						SlotId: proto.String("mediaSlot_0EUH6QGFO1O42"),
 						Name:   proto.String("Slide"),
 						Id: &intake.ID{
 							Type: intake.ID_SERVER.Enum(),
@@ -451,14 +450,14 @@ func TestManager_PhotoAnswers_ToBeUploaded(t *testing.T) {
 	}
 
 	submittableData, err := proto.Marshal(&intake.PatientAnswerData{
-		Type: intake.PatientAnswerData_PHOTO_SECTION.Enum(),
+		Type: intake.PatientAnswerData_MEDIA_SECTION.Enum(),
 		Data: aData,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if err := vm.SetAnswerForQuestion("40485", submittableData); err != nil {
+	if err := vm.SetAnswerForQuestion("face", submittableData); err != nil {
 		t.Fatal(err)
 	}
 
@@ -473,7 +472,7 @@ func TestManager_PhotoAnswers_ToBeUploaded(t *testing.T) {
 		t.Fatalf("Expected no answers to be persisted but had %d answers persisted", len(cli.answersSet))
 	}
 
-	photoIDReplacementData, err := proto.Marshal(&intake.PhotoIDReplacement{
+	mediaIDReplacementData, err := proto.Marshal(&intake.MediaIDReplacement{
 		Id:  proto.String("104"),
 		Url: proto.String("www.google.com"),
 	})
@@ -482,8 +481,8 @@ func TestManager_PhotoAnswers_ToBeUploaded(t *testing.T) {
 	}
 
 	idData, err := proto.Marshal(&intake.IDReplacementData{
-		Type: intake.IDReplacementData_PHOTO_ID.Enum(),
-		Data: photoIDReplacementData,
+		Type: intake.IDReplacementData_MEDIA_ID.Enum(),
+		Data: mediaIDReplacementData,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -497,7 +496,7 @@ func TestManager_PhotoAnswers_ToBeUploaded(t *testing.T) {
 	// now there should be an answer persisted
 	if len(cli.answersSet) != 1 {
 		t.Fatalf("Expected only the photo answer to be persisted instead got %d answers persisted", len(cli.answersSet))
-	} else if cli.answersSet["40485"] == nil {
+	} else if cli.answersSet["face"] == nil {
 		t.Fatalf("Expcected answer to photo answer to be persisted")
 	}
 
@@ -507,8 +506,8 @@ func TestManager_PhotoAnswers_ToBeUploaded(t *testing.T) {
 	}
 
 	// the photo URL should also be set for the slot
-	photoQ := vm.questionMap["40485"].questionRef.(*photoQuestion)
-	url := photoQ.answer.Sections[0].Photos[0].URL
+	photoQ := vm.questionMap["face"].questionRef.(*mediaQuestion)
+	url := photoQ.answer.Sections[0].Media[0].URL
 	if url != "www.google.com" {
 		t.Fatal("Expected the url to be updated along with server side id but it wasnt")
 	}
@@ -517,13 +516,13 @@ func TestManager_PhotoAnswers_ToBeUploaded(t *testing.T) {
 func TestManager_PhotoAnswers(t *testing.T) {
 	vm := initializeManagerWithVisit(t, "testdata/eczema.json", nil)
 
-	aData, err := proto.Marshal(&intake.PhotoSectionPatientAnswer{
-		Entries: []*intake.PhotoSectionPatientAnswer_PhotoSectionEntry{
+	aData, err := proto.Marshal(&intake.MediaSectionPatientAnswer{
+		Entries: []*intake.MediaSectionPatientAnswer_MediaSectionEntry{
 			{
 				Name: proto.String("Face"),
-				Photos: []*intake.PhotoSectionPatientAnswer_PhotoSectionEntry_PhotoSlotAnswer{
+				Media: []*intake.MediaSectionPatientAnswer_MediaSectionEntry_MediaSlotAnswer{
 					{
-						SlotId: proto.String("8687"),
+						SlotId: proto.String("mediaSlot_0EUH6QGFO1O42"),
 						Name:   proto.String("Slide"),
 						Id: &intake.ID{
 							Type: intake.ID_SERVER.Enum(),
@@ -539,14 +538,14 @@ func TestManager_PhotoAnswers(t *testing.T) {
 	}
 
 	submittableData, err := proto.Marshal(&intake.PatientAnswerData{
-		Type: intake.PatientAnswerData_PHOTO_SECTION.Enum(),
+		Type: intake.PatientAnswerData_MEDIA_SECTION.Enum(),
 		Data: aData,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if err := vm.SetAnswerForQuestion("40485", submittableData); err != nil {
+	if err := vm.SetAnswerForQuestion("face", submittableData); err != nil {
 		t.Fatal(err)
 	}
 
@@ -559,12 +558,12 @@ func TestManager_PhotoAnswers(t *testing.T) {
 	cli := vm.cli.(*mockClientImpl)
 	if len(cli.answersSet) != 1 {
 		t.Fatalf("Expected only the photo answer to be persisted instead got %d answers persisted", len(cli.answersSet))
-	} else if cli.answersSet["40485"] == nil {
+	} else if cli.answersSet["face"] == nil {
 		t.Fatalf("Expcected answer to photo answer to be persisted")
 	}
 
 	// lets now indicate that the photo was uploaded
-	photoIDReplacementData, err := proto.Marshal(&intake.PhotoIDReplacement{
+	mediaIDReplacementData, err := proto.Marshal(&intake.MediaIDReplacement{
 		Id: proto.String("104"),
 	})
 	if err != nil {
@@ -572,8 +571,8 @@ func TestManager_PhotoAnswers(t *testing.T) {
 	}
 
 	idData, err := proto.Marshal(&intake.IDReplacementData{
-		Type: intake.IDReplacementData_PHOTO_ID.Enum(),
-		Data: photoIDReplacementData,
+		Type: intake.IDReplacementData_MEDIA_ID.Enum(),
+		Data: mediaIDReplacementData,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -674,7 +673,9 @@ func TestManager_evaluateDependants(t *testing.T) {
 	//		3. triage popup comes up (pertaining to aids)
 	//		4. go back and deselect HIV
 	//		5. move forward and triage popup (pertaining to aids) should not be shown (was previously because visibility of question was not taken into consideration)
-	testManager_evaluateDependencies(t, "testdata/rash_unhide_hide_screens.json", "testdata/rash_unhide_hide_screens_output.txt", "female")
+	// Note that the answers were modified in the file to include the answer from step #2 even though the visit object in reality would not contain that answer
+	// once the answer was updated in step 4 (the visit manager would clear out the answer for that particular question)
+	testManager_evaluateDependencies(t, "testdata/rash_unhide_hide_screens.json", "testdata/rash_unhide_hide_screens_output.txt", "male")
 
 	// this test is to ensure that we correctly hide screens with questions that can result in subscreens and the subscreens themselves, when the screen that contains a question
 	// with potential subquestions is hidden. It simulates the following scenario:
@@ -684,7 +685,8 @@ func TestManager_evaluateDependants(t *testing.T) {
 	//		4. Answer the subquestions
 	//		5. Go back to two screens and change answer to "No" for "Have you tried any topical steroids for psoriasis?"
 	//		6. Press next, and the next screen should be "What topical steroids have you tried?".
-	testManager_evaluateDependencies(t, "testdata/psoriasis_female_subquestions_unhide_hide.json", "testdata/psoriasis_female_subquestions_unhide_hide_output.txt", "female")
+	// Note that the answers in psoriasis_male_subquestions_unhide_hide.json have been manually modified to simulate Step 5 to ensure that the subquestions get hidden.
+	testManager_evaluateDependencies(t, "testdata/psoriasis_male_subquestions_unhide_hide.json", "testdata/psoriasis_male_subquestions_unhide_hide_output.txt", "male")
 }
 
 // TestManager_computeCurrentVisibilityState works with the given input files that contain a complete visit object with patient answers,
@@ -693,8 +695,8 @@ func TestManager_evaluateDependants(t *testing.T) {
 func TestManager_computeCurrentVisibilityState(t *testing.T) {
 	testManager_initialState(t, "testdata/eczema_female_complete.json", "testdata/eczema_female_complete_output.txt", "female")
 	testManager_initialState(t, "testdata/rash_male_complete.json", "testdata/rash_male_complete_output.txt", "male")
-	testManager_initialState(t, "testdata/rash_unhide_hide_screens.json", "testdata/rash_unhide_hide_screens_output.txt", "female")
-	testManager_initialState(t, "testdata/psoriasis_female_subquestions_unhide_hide.json", "testdata/psoriasis_female_subquestions_unhide_hide_output.txt", "female")
+	testManager_initialState(t, "testdata/rash_unhide_hide_screens.json", "testdata/rash_unhide_hide_screens_output.txt", "male")
+	testManager_initialState(t, "testdata/psoriasis_male_subquestions_unhide_hide.json", "testdata/psoriasis_male_subquestions_unhide_hide_output.txt", "male")
 }
 
 // TestManager_validateRequirements ensures that a completed visit (but not submitted) is considered to have all its requirements met.
@@ -703,11 +705,11 @@ func TestManager_validateRequirements(t *testing.T) {
 	vm := initializeManagerWithVisit(t, "testdata/eczema_female_complete.json", []*intake.KeyValuePair{
 		{
 			Key:   proto.String("gender"),
-			Value: []byte("female"),
+			Value: proto.String("female"),
 		},
 		{
 			Key:   proto.String("is_pharmacy_set"),
-			Value: []byte("true"),
+			Value: proto.String("true"),
 		},
 	})
 
@@ -801,61 +803,11 @@ func TestManager_listeners(t *testing.T) {
 	test.Equals(t, 0, len(v.setupCompleteListeners))
 }
 
-func TestManager_setPharmacy(t *testing.T) {
-	vm := initializeManagerWithVisit(t, "testdata/eczema_female_complete.json", []*intake.KeyValuePair{
-		{
-			Key:   proto.String("gender"),
-			Value: []byte("female"),
-		},
-	})
-
-	// requirements should not be met at this point
-	resData, err := vm.ValidateRequirementsInLayout()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	var res intake.ValidateRequirementsResult
-	if err := proto.Unmarshal(resData, &res); err != nil {
-		t.Fatal(err)
-	} else if *res.Status != intake.ValidateRequirementsResult_ERROR {
-		t.Fatal("Expected validation result to indicate that the visit did not have all its requirements met")
-	}
-
-	pair := &intake.KeyValuePair{
-		Key:   ptr.String("is_pharmacy_set"),
-		Value: []byte("true"),
-	}
-
-	data, err := proto.Marshal(pair)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// lets set the pharmacy now
-	if err := vm.Set(data); err != nil {
-		t.Fatal(err)
-	}
-
-	// requirements should now be met.
-	resData, err = vm.ValidateRequirementsInLayout()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	res = intake.ValidateRequirementsResult{}
-	if err := proto.Unmarshal(resData, &res); err != nil {
-		t.Fatal(err)
-	} else if *res.Status != intake.ValidateRequirementsResult_OK {
-		t.Fatal("Expected requirements to be met but they werent")
-	}
-}
-
 func TestManager_markDirty_visibilityChange(t *testing.T) {
 	vm := initializeManagerWithVisit(t, "testdata/eczema_female_complete.json", []*intake.KeyValuePair{
 		{
 			Key:   proto.String("gender"),
-			Value: []byte("female"),
+			Value: proto.String("female"),
 		},
 	})
 
@@ -864,9 +816,9 @@ func TestManager_markDirty_visibilityChange(t *testing.T) {
 	// this should cause at least the next question to become hidden
 	// and therefore be marked as dirty, and an empty answer
 	// to be submitted for the question.
-	data := prepareMultipleChoiceAnswer(t, "43787", "145081")
+	data := prepareSingleSelectAnswer(t, "tried_other_medications_before", "tried_other_medications_before_no")
 
-	if err := vm.SetAnswerForQuestion("43787", data); err != nil {
+	if err := vm.SetAnswerForQuestion("tried_other_medications_before", data); err != nil {
 		t.Fatal(err)
 	}
 
@@ -874,82 +826,49 @@ func TestManager_markDirty_visibilityChange(t *testing.T) {
 	test.Equals(t, 2, len(mCli.answersSet))
 
 	// question just answered should be persisted
-	test.Equals(t, true, mCli.answersSet["43787"] != nil)
+	test.Equals(t, true, mCli.answersSet["tried_other_medications_before"] != nil)
 
 	// question following that depends on answer to question just set
 	// should become hidden and therefore be required to persist an empty answer.
-	test.Equals(t, true, mCli.answersSet["43792"] != nil)
+	test.Equals(t, true, mCli.answersSet["which_other_medications"] != nil)
 
 	// ensure that answer to question following just answered question has empty answer.
-	aData := mCli.answersSet["43792"].Data
+	aData := mCli.answersSet["which_other_medications"].Data
 	var aJSON clientJSONStructure
 	test.OK(t, json.Unmarshal(aData, &aJSON))
-	test.Equals(t, 1, len(aJSON.Answers))
+	test.Equals(t, 0, len(aJSON.Answers))
+	test.Equals(t, 1, len(aJSON.ClearAnswers))
 
-	var textJSON textAnswerClientJSON
-	test.OK(t, json.Unmarshal(aJSON.Answers[0], &textJSON))
-	test.Equals(t, "43792", textJSON.QuestionID)
-	test.Equals(t, 0, len(textJSON.Items))
+	aData = mCli.answersSet["tried_other_medications_before"].Data
+	aJSON = clientJSONStructure{}
+	test.OK(t, json.Unmarshal(aData, &aJSON))
+	test.Equals(t, 1, len(aJSON.Answers))
+	test.Equals(t, 0, len(aJSON.ClearAnswers))
 
 	// now lets go ahead and make the answer to the medications question "Yes"
 	// again such that the following question transitions from being hidden to visible
 	// causing the question to get marked as being dirty and the complete answer being set.
-	data = prepareMultipleChoiceAnswer(t, "43787", "145080")
-	if err := vm.SetAnswerForQuestion("43787", data); err != nil {
+	data = prepareSingleSelectAnswer(t, "tried_other_medications_before", "tried_other_medications_before_yes")
+	if err := vm.SetAnswerForQuestion("tried_other_medications_before", data); err != nil {
 		t.Fatal(err)
 	}
 
-	test.Equals(t, true, mCli.answersSet["43792"] != nil)
-	aData = mCli.answersSet["43792"].Data
+	test.Equals(t, true, mCli.answersSet["which_other_medications"] != nil)
+	aData = mCli.answersSet["which_other_medications"].Data
+	aJSON = clientJSONStructure{}
 	test.OK(t, json.Unmarshal(aData, &aJSON))
 	test.Equals(t, 1, len(aJSON.Answers))
-	test.OK(t, json.Unmarshal(aJSON.Answers[0], &textJSON))
-	test.Equals(t, "43792", textJSON.QuestionID)
-	test.Equals(t, true, len(textJSON.Items) > 0)
-}
 
-func TestManager_prefilledQuestion(t *testing.T) {
-	vm := initializeManagerWithVisit(t, "testdata/psoriasis_female_subquestions_unhide_hide.json", []*intake.KeyValuePair{
-		{
-			Key:   proto.String("gender"),
-			Value: []byte("female"),
-		},
-	})
+	var mcaClientJSON multipleChoiceAnswerClientJSON
+	jsonData, err := json.Marshal(aJSON.Answers["which_other_medications"])
+	test.OK(t, err)
 
-	// lets check to ensure that question identified from the file is indicated to have prefilled question
-	qData := vm.questionMap["44468"]
-	test.Equals(t, true, qData.questionRef.prefilled())
-
-	// now lets attempt to set the answer to the question, and even though its prefilled and we are setting the
-	// exact same answer, it should persist the answer to the client
-	data := prepareMultipleChoiceAnswer(t, "44468", "147307")
-	if err := vm.SetAnswerForQuestion("44468", data); err != nil {
-		t.Fatal(err)
-	}
-
-	// ensure that the answer is set for this question
-	mCLI := vm.cli.(*mockClientImpl)
-	test.Equals(t, true, mCLI.answersSet["44468"] != nil)
-
-	// ensure that the question with a prefilled answer
-	// gets marked as having its answer persisted
-	test.Equals(t, true, vm.questionMap["44468"].prefilledAnswerPersisted)
-
-	// now lets go and and delete the client answer and then attempt to reset the answer
-	delete(mCLI.answersSet, "44468")
-
-	if err := vm.SetAnswerForQuestion("44468", data); err != nil {
-		t.Fatal(err)
-	}
-
-	// at this point, given that the answer was the exact same and has already been persisted, it shouldn't be persisted
-	// to the client.
-	test.Equals(t, true, mCLI.answersSet["44468"] == nil)
+	test.OK(t, json.Unmarshal(jsonData, &mcaClientJSON))
+	test.Equals(t, true, len(mcaClientJSON.PotentialAnswers) > 0)
 }
 
 func prepareMultipleChoiceAnswer(t *testing.T, questionID, potentialAnswerID string) []byte {
 	mca := &multipleChoiceAnswer{
-		QuestionID: questionID,
 		Answers: []topLevelAnswerItem{
 			&multipleChoiceAnswerSelection{
 				PotentialAnswerID: potentialAnswerID,
@@ -980,12 +899,42 @@ func prepareMultipleChoiceAnswer(t *testing.T, questionID, potentialAnswerID str
 	return data
 }
 
+func prepareSingleSelectAnswer(t *testing.T, questionID, potentialAnswerID string) []byte {
+	mca := &singleSelectAnswer{
+		Answer: &multipleChoiceAnswerSelection{
+			PotentialAnswerID: potentialAnswerID,
+		},
+	}
+
+	pb, err := mca.transformToProtobuf()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	data, err := proto.Marshal(pb)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cad := &intake.PatientAnswerData{
+		Type: intake.PatientAnswerData_SINGLE_SELECT.Enum(),
+		Data: data,
+	}
+
+	data, err = proto.Marshal(cad)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return data
+}
+
 func testManager_evaluateDependencies(t *testing.T, inputFileName, outputFileName, gender string) {
 
 	vm := initializeManagerWithVisit(t, inputFileName, []*intake.KeyValuePair{
 		{
 			Key:   proto.String("gender"),
-			Value: []byte(gender),
+			Value: proto.String(gender),
 		},
 	})
 
@@ -1012,12 +961,14 @@ func testManager_evaluateDependencies(t *testing.T, inputFileName, outputFileNam
 			s.answer = nil
 		case *autocompleteQuestion:
 			s.answer = nil
-		case *photoQuestion:
+		case *mediaQuestion:
 			s.answer = nil
 		case *multipleChoiceQuestion:
 			s.answer = nil
+		case *singleEntryQuestion:
+			s.answer = nil
 		default:
-			t.Fatal("missed question")
+			t.Fatalf("missed question %T", s)
 		}
 	}
 
@@ -1028,23 +979,29 @@ func testManager_evaluateDependencies(t *testing.T, inputFileName, outputFileNam
 	// randomly set the answer to each question as the client would via the manager.
 	for _, qa := range questionMap {
 
-		var paType *intake.PatientAnswerData_Type
-		switch qa.q.TypeName() {
-		case questionTypePhoto.String():
-			paType = intake.PatientAnswerData_PHOTO_SECTION.Enum()
-		case questionTypeMultipleChoice.String(), questionTypeSingleSelect.String(), questionTypeSingleEntry.String(), questionTypeSegmentedControl.String():
-			paType = intake.PatientAnswerData_MULTIPLE_CHOICE.Enum()
-		case questionTypeAutocomplete.String():
-			paType = intake.PatientAnswerData_AUTOCOMPLETE.Enum()
-		case questionTypeFreeText.String():
-			paType = intake.PatientAnswerData_FREE_TEXT.Enum()
-		default:
-			t.Fatal("missed answer")
-		}
-
 		pb, err := qa.a.transformToProtobuf()
 		if err != nil {
 			t.Fatal(err)
+		}
+
+		var paType *intake.PatientAnswerData_Type
+		switch pb.(type) {
+		case *intake.MediaSectionPatientAnswer:
+			paType = intake.PatientAnswerData_MEDIA_SECTION.Enum()
+		case *intake.MultipleChoicePatientAnswer:
+			paType = intake.PatientAnswerData_MULTIPLE_CHOICE.Enum()
+		case *intake.SingleSelectPatientAnswer:
+			paType = intake.PatientAnswerData_SINGLE_SELECT.Enum()
+		case *intake.SingleEntryPatientAnswer:
+			paType = intake.PatientAnswerData_SINGLE_ENTRY.Enum()
+		case *intake.SegmentedControlPatientAnswer:
+			paType = intake.PatientAnswerData_SEGMENTED_CONTROL.Enum()
+		case *intake.AutocompletePatientAnswer:
+			paType = intake.PatientAnswerData_AUTOCOMPLETE.Enum()
+		case *intake.FreeTextPatientAnswer:
+			paType = intake.PatientAnswerData_FREE_TEXT.Enum()
+		default:
+			t.Fatal("missed answer")
 		}
 
 		data, err := proto.Marshal(pb)
@@ -1073,7 +1030,9 @@ func testManager_evaluateDependencies(t *testing.T, inputFileName, outputFileNam
 	if err != nil {
 		t.Fatal(err)
 	}
-	if bytes.Compare(outputData, []byte(b)) != 0 {
+
+	replacer := strings.NewReplacer(" ", "", "\n", "")
+	if bytes.Compare([]byte(replacer.Replace(string(outputData))), []byte(replacer.Replace(b))) != 0 {
 		t.Fatalf("End result doesn't match expected output for %s", inputFileName)
 	}
 }
@@ -1083,7 +1042,7 @@ func testManager_initialState(t *testing.T, inputFileName, outputFileName, gende
 	vm := initializeManagerWithVisit(t, inputFileName, []*intake.KeyValuePair{
 		{
 			Key:   proto.String("gender"),
-			Value: []byte(gender),
+			Value: proto.String(gender),
 		},
 	})
 
@@ -1111,9 +1070,11 @@ func testManager_initialState(t *testing.T, inputFileName, outputFileName, gende
 			s.answer = nil
 		case *autocompleteQuestion:
 			s.answer = nil
-		case *photoQuestion:
+		case *mediaQuestion:
 			s.answer = nil
 		case *multipleChoiceQuestion:
+			s.answer = nil
+		case *singleEntryQuestion:
 			s.answer = nil
 		default:
 			t.Fatal("missed question")
@@ -1142,7 +1103,8 @@ func testManager_initialState(t *testing.T, inputFileName, outputFileName, gende
 		t.Fatal(err)
 	}
 
-	if bytes.Compare(outputData, []byte(b)) != 0 {
+	replacer := strings.NewReplacer(" ", "", "\n", "")
+	if bytes.Compare([]byte(replacer.Replace(string(outputData))), []byte(replacer.Replace(b))) != 0 {
 		t.Fatalf("End result doesn't match expected output for %s", inputFileName)
 	}
 }
@@ -1154,7 +1116,7 @@ func initializeManagerWithVisit(t *testing.T, fileName string, pairs []*intake.K
 	}
 
 	vd := &intake.VisitData{
-		PatientVisitId: proto.Int64(10),
+		PatientVisitId: proto.String("10"),
 		Layout:         data,
 		Pairs:          pairs,
 		IsSubmitted:    proto.Bool(false),

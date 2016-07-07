@@ -9,7 +9,7 @@ import (
 	"github.com/sprucehealth/backend/libs/intakelib/protobuf/intake"
 )
 
-type photoScreen struct {
+type mediaScreen struct {
 	*screenInfo
 
 	ContentHeaderTitle          string     `json:"header_title"`
@@ -17,17 +17,17 @@ type photoScreen struct {
 	ContentHeaderTitleHasTokens bool       `json:"header_title_has_tokens"`
 	Popup                       *infoPopup `json:"popup"`
 
-	PhotoQuestions                     []question `json:"questions"`
+	MediaQuestions                     []question `json:"questions"`
 	RequiresAtleastOneQuestionAnswered bool       `json:"requires_at_least_one_question_answered"`
 }
 
-func (p *photoScreen) staticInfoCopy(context map[string]string) interface{} {
-	pCopy := &photoScreen{
+func (p *mediaScreen) staticInfoCopy(context map[string]string) interface{} {
+	pCopy := &mediaScreen{
 		screenInfo:                  p.screenInfo.staticInfoCopy(context).(*screenInfo),
 		ContentHeaderTitle:          p.ContentHeaderTitle,
 		ContentHeaderSubtitle:       p.ContentHeaderSubtitle,
 		ContentHeaderTitleHasTokens: p.ContentHeaderTitleHasTokens,
-		PhotoQuestions:              make([]question, len(p.PhotoQuestions)),
+		MediaQuestions:              make([]question, len(p.MediaQuestions)),
 	}
 
 	if pCopy.ContentHeaderTitleHasTokens {
@@ -40,15 +40,15 @@ func (p *photoScreen) staticInfoCopy(context map[string]string) interface{} {
 		pCopy.Popup = p.Popup.staticInfoCopy(context).(*infoPopup)
 	}
 
-	for i, pq := range p.PhotoQuestions {
-		pCopy.PhotoQuestions[i] = pq.staticInfoCopy(context).(question)
+	for i, pq := range p.MediaQuestions {
+		pCopy.MediaQuestions[i] = pq.staticInfoCopy(context).(question)
 	}
 
 	return pCopy
 }
 
-func (q *photoScreen) unmarshalMapFromClient(data dataMap, parent layoutUnit, dataSource questionAnswerDataSource) error {
-	if err := data.requiredKeys(screenTypePhoto.String(), "questions", "header_title"); err != nil {
+func (q *mediaScreen) unmarshalMapFromClient(data dataMap, parent layoutUnit, dataSource questionAnswerDataSource) error {
+	if err := data.requiredKeys(screenTypeMedia.String(), "questions", "header_title"); err != nil {
 		return err
 	}
 
@@ -94,57 +94,57 @@ func (q *photoScreen) unmarshalMapFromClient(data dataMap, parent layoutUnit, da
 		return err
 	}
 
-	q.PhotoQuestions = make([]question, len(questions))
+	q.MediaQuestions = make([]question, len(questions))
 	for i, questionVal := range questions {
 		questionMap, err := getDataMap(questionVal)
 		if err != nil {
 			return err
 		}
 
-		q.PhotoQuestions[i], err = getQuestion(questionMap, q, dataSource)
+		q.MediaQuestions[i], err = getQuestion(questionMap, q, dataSource)
 		if err != nil {
 			return err
 		}
 
-		_, ok := q.PhotoQuestions[i].(*photoQuestion)
+		_, ok := q.MediaQuestions[i].(*mediaQuestion)
 		if !ok {
-			return fmt.Errorf("A photo question screen can only have photo questions. Got %s question type.", q.PhotoQuestions[i].TypeName())
+			return fmt.Errorf("A photo question screen can only have photo questions. Got %s question type.", q.MediaQuestions[i].TypeName())
 		}
 	}
 
 	return nil
 }
 
-func (q *photoScreen) TypeName() string {
-	return screenTypePhoto.String()
+func (q *mediaScreen) TypeName() string {
+	return screenTypeMedia.String()
 }
 
-func (q *photoScreen) children() []layoutUnit {
-	children := make([]layoutUnit, len(q.PhotoQuestions))
-	for i, qs := range q.PhotoQuestions {
+func (q *mediaScreen) children() []layoutUnit {
+	children := make([]layoutUnit, len(q.MediaQuestions))
+	for i, qs := range q.MediaQuestions {
 		children[i] = qs
 	}
 
 	return children
 }
 
-func (q *photoScreen) questions() []question {
-	return q.PhotoQuestions
+func (q *mediaScreen) questions() []question {
+	return q.MediaQuestions
 }
 
 // set the questions' hidden state to hidden if the screen is hidden.
-func (s *photoScreen) setVisibility(v visibility) {
+func (s *mediaScreen) setVisibility(v visibility) {
 	s.v = v
 }
 
-func (s *photoScreen) requirementsMet(dataSource questionAnswerDataSource) (bool, error) {
+func (s *mediaScreen) requirementsMet(dataSource questionAnswerDataSource) (bool, error) {
 	if s.visibility() == hidden {
 		return true, nil
 	}
 
 	var atLeastOneQAnswered bool
 	// ensure that the requirements for all questions have been met
-	for _, pq := range s.PhotoQuestions {
+	for _, pq := range s.MediaQuestions {
 		if res, err := pq.requirementsMet(dataSource); err != nil {
 			return res, err
 		} else if !res {
@@ -166,17 +166,17 @@ func (s *photoScreen) requirementsMet(dataSource questionAnswerDataSource) (bool
 	return true, nil
 }
 
-func (q *photoScreen) stringIndent(indent string, depth int) string {
+func (q *mediaScreen) stringIndent(indent string, depth int) string {
 	var b bytes.Buffer
 	b.WriteString(fmt.Sprintf("%s%s: %s | %s", indentAtDepth(indent, depth), q.layoutUnitID(), q.TypeName(), q.v))
-	for _, qItem := range q.PhotoQuestions {
+	for _, qItem := range q.MediaQuestions {
 		b.WriteString("\n")
 		b.WriteString(qItem.stringIndent(indent, depth+1))
 	}
 	return b.String()
 }
 
-func (q *photoScreen) transformToProtobuf() (proto.Message, error) {
+func (q *mediaScreen) transformToProtobuf() (proto.Message, error) {
 	sInfo, err := transformScreenInfoToProtobuf(q.screenInfo)
 	if err != nil {
 		return nil, err
@@ -191,30 +191,30 @@ func (q *photoScreen) transformToProtobuf() (proto.Message, error) {
 		pInfo = pData.(*intake.InfoPopup)
 	}
 
-	photoQuestions := make([]*intake.PhotoSectionQuestion, 0, len(q.PhotoQuestions))
-	for _, pq := range q.PhotoQuestions {
+	mediaQuestions := make([]*intake.MediaSectionQuestion, 0, len(q.MediaQuestions))
+	for _, pq := range q.MediaQuestions {
 
 		if pq.visibility() == hidden {
 			// skip hidden questions as they should not be sent to the client
 			continue
 		}
-		transformedPhotoQuestion, err := pq.transformToProtobuf()
+		transformedMediaQuestion, err := pq.transformToProtobuf()
 		if err != nil {
 			return nil, err
 		}
 
-		photoQuestions = append(photoQuestions, transformedPhotoQuestion.(*intake.PhotoSectionQuestion))
+		mediaQuestions = append(mediaQuestions, transformedMediaQuestion.(*intake.MediaSectionQuestion))
 	}
 
-	return &intake.PhotoScreen{
+	return &intake.MediaScreen{
 		ScreenInfo:             sInfo.(*intake.CommonScreenInfo),
 		ContentHeaderTitle:     proto.String(q.ContentHeaderTitle),
 		ContentHeaderSubtitle:  proto.String(q.ContentHeaderSubtitle),
-		PhotoQuestions:         photoQuestions,
+		MediaQuestions:         mediaQuestions,
 		ContentHeaderInfoPopup: pInfo,
-		BottomContainer: &intake.PhotoScreen_ImageTextBox{
+		BottomContainer: &intake.MediaScreen_ImageTextBox{
 			ImageLink: proto.String("spruce:///icon/lock"),
-			Text:      proto.String("Your photos are only accessible to you and your care providers. Photos are not saved to your phone's camera roll."),
+			Text:      proto.String("Your photos and videos are only accessible to you and your care providers. They are not saved to your phone's camera roll."),
 		},
 	}, nil
 }

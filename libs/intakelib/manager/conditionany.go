@@ -19,16 +19,15 @@ func (a *answerContainsAnyCondition) evaluate(dataSource questionAnswerDataSourc
 		return false
 	}
 
-	mcqa, ok := pa.(*multipleChoiceAnswer)
+	answerContainer, ok := pa.(topLevelAnswerWithSubScreensContainer)
 	if !ok {
 		return false
 	}
 
 	// patient answer must contain any of the potential answers specified in the condition
 	for _, pID := range a.PotentialAnswersID {
-
-		for _, an := range mcqa.Answers {
-			if an.potentialAnswerID() == pID {
+		for _, answerItem := range answerContainer.topLevelAnswers() {
+			if answerItem.potentialAnswerID() == pID {
 				return true
 			}
 		}

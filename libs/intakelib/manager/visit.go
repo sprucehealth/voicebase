@@ -2,11 +2,11 @@ package manager
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"runtime"
 
 	"github.com/gogo/protobuf/proto"
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/intakelib/protobuf/intake"
 )
 
@@ -21,25 +21,25 @@ type transitionItem struct {
 
 func (v *transitionItem) unmarshalMapFromClient(data dataMap) error {
 	if err := data.requiredKeys("transition", "message", "buttons"); err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	v.Message = data.mustGetString("message")
 	buttons, err := data.getInterfaceSlice("buttons")
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	v.Buttons = make([]*button, len(buttons))
 	for i, bItem := range buttons {
 		buttonMap, err := getDataMap(bItem)
 		if err != nil {
-			return err
+			return errors.Trace(err)
 		}
 
 		v.Buttons[i], err = populateButton(buttonMap)
 		if err != nil {
-			return err
+			return errors.Trace(err)
 		}
 	}
 
@@ -53,7 +53,7 @@ type visitOverviewHeader struct {
 }
 
 func (v *visitOverviewHeader) unmarshalMapFromClient(data dataMap) error {
-	if err := data.requiredKeys("visit_overview_header", "title", "subtitle"); err != nil {
+	if err := data.requiredKeys("header", "title"); err != nil {
 		return err
 	}
 
@@ -71,9 +71,9 @@ type visit struct {
 	LayoutUnitID   string               `json:"-"`
 	Sections       []*section           `json:"sections"`
 	Transitions    []*transitionItem    `json:"transitions"`
-	OverviewHeader *visitOverviewHeader `json:"overview_header"`
+	OverviewHeader *visitOverviewHeader `json:"header"`
 	IsSubmitted    bool                 `json:"is_submitted"`
-	ID             int64                `json:"id,string"`
+	ID             string               `json:"id"`
 
 	v      visibility
 	parent layoutUnit
@@ -93,13 +93,22 @@ func (v *visit) unmarshalMapFromClient(data dataMap, parent layoutUnit, dataSour
 		}
 	}()
 
-	if err := data.requiredKeys("visit", "sections", "transitions", "visit_overview_header"); err != nil {
-		return err
+	if err := data.requiredKeys("intake_container", "header", "intake"); err != nil {
+		return errors.Trace(err)
 	}
 
-	sections, err := data.getInterfaceSlice("sections")
+	intake, err := getDataMap(data.get("intake"))
 	if err != nil {
-		return err
+		return errors.Trace(err)
+	}
+
+	if err := intake.requiredKeys("intake", "sections", "transitions"); err != nil {
+		return errors.Trace(err)
+	}
+
+	sections, err := intake.getInterfaceSlice("sections")
+	if err != nil {
+		return errors.Trace(err)
 	}
 
 	v.Sections = make([]*section, len(sections))
@@ -111,13 +120,13 @@ func (v *visit) unmarshalMapFromClient(data dataMap, parent layoutUnit, dataSour
 
 		sItem := &section{}
 		if err := sItem.unmarshalMapFromClient(sectionMap, v, dataSource); err != nil {
-			return err
+			return errors.Trace(err)
 		}
 
 		v.Sections[i] = sItem
 	}
 
-	transitions, err := data.getInterfaceSlice("transitions")
+	transitions, err := intake.getInterfaceSlice("transitions")
 	if err != nil {
 		return err
 	}
@@ -126,12 +135,12 @@ func (v *visit) unmarshalMapFromClient(data dataMap, parent layoutUnit, dataSour
 	for i, tItem := range transitions {
 		transitionMap, err := getDataMap(tItem)
 		if err != nil {
-			return err
+			return errors.Trace(err)
 		}
 
 		v.Transitions[i] = &transitionItem{}
 		if err := v.Transitions[i].unmarshalMapFromClient(transitionMap); err != nil {
-			return err
+			return errors.Trace(err)
 		}
 	}
 
@@ -141,14 +150,14 @@ func (v *visit) unmarshalMapFromClient(data dataMap, parent layoutUnit, dataSour
 			len(v.Sections)+1, len(v.Sections), len(v.Transitions))
 	}
 
-	overviewMap, err := data.dataMapForKey("visit_overview_header")
+	overviewMap, err := data.dataMapForKey("header")
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	v.OverviewHeader = &visitOverviewHeader{}
 	if err := v.OverviewHeader.unmarshalMapFromClient(overviewMap); err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	return nil

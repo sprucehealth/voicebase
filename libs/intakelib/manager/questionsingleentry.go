@@ -8,32 +8,32 @@ import (
 	"github.com/sprucehealth/backend/libs/intakelib/protobuf/intake"
 )
 
-type freeTextQuestion struct {
+type singleEntryQuestion struct {
 	*questionInfo
 	PlaceholderText string `json:"placeholder_text"`
 
-	answer *freeTextAnswer
+	answer *singleEntryAnswer
 }
 
-func (f *freeTextQuestion) staticInfoCopy(context map[string]string) interface{} {
-	return &freeTextQuestion{
+func (f *singleEntryQuestion) staticInfoCopy(context map[string]string) interface{} {
+	return &singleEntryQuestion{
 		questionInfo:    f.questionInfo.staticInfoCopy(context).(*questionInfo),
 		PlaceholderText: f.PlaceholderText,
 	}
 }
 
-func (f *freeTextQuestion) unmarshalMapFromClient(data dataMap, parent layoutUnit, dataSource questionAnswerDataSource) error {
+func (f *singleEntryQuestion) unmarshalMapFromClient(data dataMap, parent layoutUnit, dataSource questionAnswerDataSource) error {
 	var err error
-	f.questionInfo, err = populateQuestionInfo(data, parent, questionTypeFreeText.String())
+	f.questionInfo, err = populateQuestionInfo(data, parent, questionTypeSingleEntry.String())
 	if err != nil {
 		return err
 	}
 
 	answer := dataSource.answerForQuestion(f.id())
 	if answer != nil {
-		fa, ok := answer.(*freeTextAnswer)
+		fa, ok := answer.(*singleEntryAnswer)
 		if !ok {
-			return fmt.Errorf("expected freeTextAnswer but got %T", answer)
+			return fmt.Errorf("expected singleEntryAnswer but got %T", answer)
 		}
 		f.answer = fa
 	}
@@ -50,70 +50,71 @@ func (f *freeTextQuestion) unmarshalMapFromClient(data dataMap, parent layoutUni
 	return nil
 }
 
-func (f *freeTextQuestion) TypeName() string {
-	return questionTypeFreeText.String()
+func (f *singleEntryQuestion) TypeName() string {
+	return questionTypeSingleEntry.String()
 }
 
 // TODO
-func (f *freeTextQuestion) validateAnswer(pa patientAnswer) error {
+func (f *singleEntryQuestion) validateAnswer(pa patientAnswer) error {
 	return nil
 }
 
-func (f *freeTextQuestion) setPatientAnswer(answer patientAnswer) error {
-	ftAnswer, ok := answer.(*freeTextAnswer)
+func (f *singleEntryQuestion) setPatientAnswer(answer patientAnswer) error {
+	ftAnswer, ok := answer.(*singleEntryAnswer)
 	if !ok {
-		return fmt.Errorf("Expected free text answer instead got %T", answer)
+		return fmt.Errorf("Expected singleEntryAnswer instead got %T", answer)
 	}
 
 	f.answer = ftAnswer
 	return nil
 }
 
-func (f *freeTextQuestion) patientAnswer() (patientAnswer, error) {
+func (f *singleEntryQuestion) patientAnswer() (patientAnswer, error) {
 	if f.answer == nil {
 		return nil, errNoAnswerExists
 	}
 	return f.answer, nil
 }
 
-func (f *freeTextQuestion) canPersistAnswer() bool {
+func (f *singleEntryQuestion) canPersistAnswer() bool {
 	return (f.answer != nil)
 }
 
-func (f *freeTextQuestion) requirementsMet(dataSource questionAnswerDataSource) (bool, error) {
+func (f *singleEntryQuestion) requirementsMet(dataSource questionAnswerDataSource) (bool, error) {
 	return f.checkQuestionRequirements(f, f.answer)
 }
 
-func (f *freeTextQuestion) answerForClient() (interface{}, error) {
+func (f *singleEntryQuestion) answerForClient() (interface{}, error) {
 	if f.answer == nil {
 		return nil, errNoAnswerExists
 	}
+
 	return f.answer.transformForClient()
 }
 
-func (f *freeTextQuestion) transformToProtobuf() (proto.Message, error) {
+func (f *singleEntryQuestion) transformToProtobuf() (proto.Message, error) {
 	qInfo, err := transformQuestionInfoToProtobuf(f.questionInfo)
 	if err != nil {
 		return nil, err
 	}
 
-	var freeTextPatientAnswer *intake.FreeTextPatientAnswer
+	var singleEntryPatientAnswer *intake.SingleEntryPatientAnswer
 	if f.answer != nil {
 		pb, err := f.answer.transformToProtobuf()
 		if err != nil {
 			return nil, err
 		}
-		freeTextPatientAnswer = pb.(*intake.FreeTextPatientAnswer)
+		singleEntryPatientAnswer = pb.(*intake.SingleEntryPatientAnswer)
 	}
 
-	return &intake.FreeTextQuestion{
+	return &intake.SingleEntryQuestion{
 		QuestionInfo:  qInfo.(*intake.CommonQuestionInfo),
 		Placeholder:   proto.String(f.PlaceholderText),
-		PatientAnswer: freeTextPatientAnswer,
+		PatientAnswer: singleEntryPatientAnswer,
 	}, nil
 }
 
-func (q *freeTextQuestion) stringIndent(indent string, depth int) string {
+func (q *singleEntryQuestion) stringIndent(indent string, depth int) string {
 	var b bytes.Buffer
 	b.WriteString(indentAtDepth(indent, depth) + q.layoutUnitID() + ": " + q.Type + " | " + q.v.String() + "\n")
 	b.WriteString(indentAtDepth(indent, depth) + "Q: " + q.Title)

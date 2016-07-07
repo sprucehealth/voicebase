@@ -19,7 +19,7 @@ func TestSubquestionsManager_parse(t *testing.T) {
 		    "questions": [
 		      {
 		        "question": "q_derm_rash_form",
-		        "question_id": "40606",
+		        "id": "40606",
 		        "question_title": "What form was it in?",
 		        "question_title_has_tokens": false,
 		        "question_type": "q_type_segmented_control",
@@ -27,7 +27,7 @@ func TestSubquestionsManager_parse(t *testing.T) {
 		        "question_summary": "Form",
 		        "potential_answers": [
 		          {
-		            "potential_answer_id": "126478",
+		            "id": "126478",
 		            "potential_answer": "Cream",
 		            "potential_answer_summary": "Cream",
 		            "answer_type": "a_type_segmented_control",
@@ -37,7 +37,7 @@ func TestSubquestionsManager_parse(t *testing.T) {
 		            "answer_tag": "a_derm_rash_form_cream"
 		          },
 		          {
-		            "potential_answer_id": "126479",
+		            "id": "126479",
 		            "potential_answer": "Ointment",
 		            "potential_answer_summary": "Ointment",
 		            "answer_type": "a_type_segmented_control",
@@ -47,7 +47,7 @@ func TestSubquestionsManager_parse(t *testing.T) {
 		            "answer_tag": "a_derm_rash_form_ointment"
 		          },
 		          {
-		            "potential_answer_id": "126480",
+		            "id": "126480",
 		            "potential_answer": "Other",
 		            "potential_answer_summary": "Other",
 		            "answer_type": "a_type_segmented_control",
@@ -142,10 +142,17 @@ func TestSubquestionsManager_inflateSubScreens(t *testing.T) {
 		sectionScreensMap: map[string]*list.List{
 			"se1": l,
 		},
+		questionIDToAnswerMap: make(map[string]patientAnswer),
 	}
 
+	// unmarshal existing answer
+	answer := dataMap["answers"].(map[string]interface{})["which_steroids"].(map[string]interface{})
+	dataSource.questionIDToAnswerMap["which_steroids"], err = getPatientAnswer(answer)
+	test.OK(t, err)
+
 	// unmarshal the json into the multiple choice question.
-	if err := mcq.unmarshalMapFromClient(dataMap, qs, dataSource); err != nil {
+	questionMap := dataMap["screen_with_multiplechoice_question"].(map[string]interface{})["questions"].([]interface{})[0].(map[string]interface{})
+	if err := mcq.unmarshalMapFromClient(questionMap, qs, dataSource); err != nil {
 		t.Fatal(err)
 	}
 
@@ -162,7 +169,7 @@ func TestSubquestionsManager_inflateSubScreens(t *testing.T) {
 
 	// at this point there should be an answer to the question with subscreens populated for each
 	// answer
-	test.Equals(t, 2, len(mcq.answer.Answers))
+	test.Equals(t, 1, len(mcq.answer.topLevelAnswers()))
 
 	// single screen in the config
 	test.Equals(t, 1, len(mcq.subquestionsManager.screenConfigs))
@@ -170,11 +177,11 @@ func TestSubquestionsManager_inflateSubScreens(t *testing.T) {
 	// confirm questions on the subquestions config
 	test.Equals(t, 6, len(mcq.subquestionsManager.screenConfigs[0].(*questionScreen).questions()))
 
-	// there should be two entries in the subscreens map one for each top level answer
-	test.Equals(t, 2, len(mcq.subquestionsManager.subScreensMap))
+	// there should be 1 entry in the subscreens map one for the top level answer
+	test.Equals(t, 1, len(mcq.subquestionsManager.subScreensMap))
 
 	// confirm the number of screens for each top level answer
-	for _, aItem := range mcq.answer.Answers {
+	for _, aItem := range mcq.answer.topLevelAnswers() {
 		test.Equals(t, 1, len(aItem.subscreens()))
 
 		// confirm the number of questions on each screen
@@ -206,7 +213,7 @@ func TestSubquestionsManager_inflateSubScreens(t *testing.T) {
 			}
 		}
 
-		// there should be [(6 questions  + 1 screen) * 2 top level answers] unique layoutUnits listed as dependancies in the dependantsMap
+		// there should be [(6 questions  + 1 screen) * 1 top level answer] unique layoutUnits listed as dependancies in the dependantsMap
 		uniqueDependancies := make(map[string]bool)
 		for _, dependencies := range dataSource.dependantsMap {
 			for _, dependency := range dependencies {
@@ -214,7 +221,7 @@ func TestSubquestionsManager_inflateSubScreens(t *testing.T) {
 			}
 		}
 
-		test.Equals(t, 14, len(uniqueDependancies))
+		test.Equals(t, 7, len(uniqueDependancies))
 
 	}
 

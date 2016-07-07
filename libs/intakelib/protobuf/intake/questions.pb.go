@@ -19,20 +19,23 @@ const (
 	QuestionData_MULTIPLE_CHOICE QuestionData_Type = 0
 	QuestionData_FREE_TEXT       QuestionData_Type = 1
 	QuestionData_AUTOCOMPLETE    QuestionData_Type = 2
-	QuestionData_PHOTO_SECTION   QuestionData_Type = 3
+	QuestionData_MEDIA_SECTION   QuestionData_Type = 3
+	QuestionData_SINGLE_ENTRY    QuestionData_Type = 4
 )
 
 var QuestionData_Type_name = map[int32]string{
 	0: "MULTIPLE_CHOICE",
 	1: "FREE_TEXT",
 	2: "AUTOCOMPLETE",
-	3: "PHOTO_SECTION",
+	3: "MEDIA_SECTION",
+	4: "SINGLE_ENTRY",
 }
 var QuestionData_Type_value = map[string]int32{
 	"MULTIPLE_CHOICE": 0,
 	"FREE_TEXT":       1,
 	"AUTOCOMPLETE":    2,
-	"PHOTO_SECTION":   3,
+	"MEDIA_SECTION":   3,
+	"SINGLE_ENTRY":    4,
 }
 
 func (x QuestionData_Type) Enum() *QuestionData_Type {
@@ -127,114 +130,150 @@ func (x *MultipleChoiceQuestion_PotentialAnswer_Type) UnmarshalJSON(data []byte)
 	return nil
 }
 
-type PhotoSectionQuestion_PhotoSlot_FlashState int32
+type MediaSectionQuestion_MediaSlot_FlashState int32
 
 const (
-	PhotoSectionQuestion_PhotoSlot_OFF  PhotoSectionQuestion_PhotoSlot_FlashState = 0
-	PhotoSectionQuestion_PhotoSlot_ON   PhotoSectionQuestion_PhotoSlot_FlashState = 1
-	PhotoSectionQuestion_PhotoSlot_AUTO PhotoSectionQuestion_PhotoSlot_FlashState = 2
+	MediaSectionQuestion_MediaSlot_OFF  MediaSectionQuestion_MediaSlot_FlashState = 0
+	MediaSectionQuestion_MediaSlot_ON   MediaSectionQuestion_MediaSlot_FlashState = 1
+	MediaSectionQuestion_MediaSlot_AUTO MediaSectionQuestion_MediaSlot_FlashState = 2
 )
 
-var PhotoSectionQuestion_PhotoSlot_FlashState_name = map[int32]string{
+var MediaSectionQuestion_MediaSlot_FlashState_name = map[int32]string{
 	0: "OFF",
 	1: "ON",
 	2: "AUTO",
 }
-var PhotoSectionQuestion_PhotoSlot_FlashState_value = map[string]int32{
+var MediaSectionQuestion_MediaSlot_FlashState_value = map[string]int32{
 	"OFF":  0,
 	"ON":   1,
 	"AUTO": 2,
 }
 
-func (x PhotoSectionQuestion_PhotoSlot_FlashState) Enum() *PhotoSectionQuestion_PhotoSlot_FlashState {
-	p := new(PhotoSectionQuestion_PhotoSlot_FlashState)
+func (x MediaSectionQuestion_MediaSlot_FlashState) Enum() *MediaSectionQuestion_MediaSlot_FlashState {
+	p := new(MediaSectionQuestion_MediaSlot_FlashState)
 	*p = x
 	return p
 }
-func (x PhotoSectionQuestion_PhotoSlot_FlashState) String() string {
-	return proto.EnumName(PhotoSectionQuestion_PhotoSlot_FlashState_name, int32(x))
+func (x MediaSectionQuestion_MediaSlot_FlashState) String() string {
+	return proto.EnumName(MediaSectionQuestion_MediaSlot_FlashState_name, int32(x))
 }
-func (x *PhotoSectionQuestion_PhotoSlot_FlashState) UnmarshalJSON(data []byte) error {
-	value, err := proto.UnmarshalJSONEnum(PhotoSectionQuestion_PhotoSlot_FlashState_value, data, "PhotoSectionQuestion_PhotoSlot_FlashState")
+func (x *MediaSectionQuestion_MediaSlot_FlashState) UnmarshalJSON(data []byte) error {
+	value, err := proto.UnmarshalJSONEnum(MediaSectionQuestion_MediaSlot_FlashState_value, data, "MediaSectionQuestion_MediaSlot_FlashState")
 	if err != nil {
 		return err
 	}
-	*x = PhotoSectionQuestion_PhotoSlot_FlashState(value)
+	*x = MediaSectionQuestion_MediaSlot_FlashState(value)
 	return nil
 }
 
-type PhotoSectionQuestion_PhotoSlot_TipStyle int32
+type MediaSectionQuestion_MediaSlot_TipStyle int32
 
 const (
-	PhotoSectionQuestion_PhotoSlot_DEFAULT     PhotoSectionQuestion_PhotoSlot_TipStyle = 0
-	PhotoSectionQuestion_PhotoSlot_POINT_LEFT  PhotoSectionQuestion_PhotoSlot_TipStyle = 1
-	PhotoSectionQuestion_PhotoSlot_POINT_RIGHT PhotoSectionQuestion_PhotoSlot_TipStyle = 2
+	MediaSectionQuestion_MediaSlot_DEFAULT     MediaSectionQuestion_MediaSlot_TipStyle = 0
+	MediaSectionQuestion_MediaSlot_POINT_LEFT  MediaSectionQuestion_MediaSlot_TipStyle = 1
+	MediaSectionQuestion_MediaSlot_POINT_RIGHT MediaSectionQuestion_MediaSlot_TipStyle = 2
 )
 
-var PhotoSectionQuestion_PhotoSlot_TipStyle_name = map[int32]string{
+var MediaSectionQuestion_MediaSlot_TipStyle_name = map[int32]string{
 	0: "DEFAULT",
 	1: "POINT_LEFT",
 	2: "POINT_RIGHT",
 }
-var PhotoSectionQuestion_PhotoSlot_TipStyle_value = map[string]int32{
+var MediaSectionQuestion_MediaSlot_TipStyle_value = map[string]int32{
 	"DEFAULT":     0,
 	"POINT_LEFT":  1,
 	"POINT_RIGHT": 2,
 }
 
-func (x PhotoSectionQuestion_PhotoSlot_TipStyle) Enum() *PhotoSectionQuestion_PhotoSlot_TipStyle {
-	p := new(PhotoSectionQuestion_PhotoSlot_TipStyle)
+func (x MediaSectionQuestion_MediaSlot_TipStyle) Enum() *MediaSectionQuestion_MediaSlot_TipStyle {
+	p := new(MediaSectionQuestion_MediaSlot_TipStyle)
 	*p = x
 	return p
 }
-func (x PhotoSectionQuestion_PhotoSlot_TipStyle) String() string {
-	return proto.EnumName(PhotoSectionQuestion_PhotoSlot_TipStyle_name, int32(x))
+func (x MediaSectionQuestion_MediaSlot_TipStyle) String() string {
+	return proto.EnumName(MediaSectionQuestion_MediaSlot_TipStyle_name, int32(x))
 }
-func (x *PhotoSectionQuestion_PhotoSlot_TipStyle) UnmarshalJSON(data []byte) error {
-	value, err := proto.UnmarshalJSONEnum(PhotoSectionQuestion_PhotoSlot_TipStyle_value, data, "PhotoSectionQuestion_PhotoSlot_TipStyle")
+func (x *MediaSectionQuestion_MediaSlot_TipStyle) UnmarshalJSON(data []byte) error {
+	value, err := proto.UnmarshalJSONEnum(MediaSectionQuestion_MediaSlot_TipStyle_value, data, "MediaSectionQuestion_MediaSlot_TipStyle")
 	if err != nil {
 		return err
 	}
-	*x = PhotoSectionQuestion_PhotoSlot_TipStyle(value)
+	*x = MediaSectionQuestion_MediaSlot_TipStyle(value)
 	return nil
 }
 
-type PhotoSectionQuestion_PhotoSlot_CameraDirection int32
+type MediaSectionQuestion_MediaSlot_CameraDirection int32
 
 const (
-	PhotoSectionQuestion_PhotoSlot_FRONT             PhotoSectionQuestion_PhotoSlot_CameraDirection = 0
-	PhotoSectionQuestion_PhotoSlot_BACK              PhotoSectionQuestion_PhotoSlot_CameraDirection = 1
-	PhotoSectionQuestion_PhotoSlot_FRONT_OR_PREVIOUS PhotoSectionQuestion_PhotoSlot_CameraDirection = 2
-	PhotoSectionQuestion_PhotoSlot_BACK_OR_PREVIOUS  PhotoSectionQuestion_PhotoSlot_CameraDirection = 3
+	MediaSectionQuestion_MediaSlot_FRONT             MediaSectionQuestion_MediaSlot_CameraDirection = 0
+	MediaSectionQuestion_MediaSlot_BACK              MediaSectionQuestion_MediaSlot_CameraDirection = 1
+	MediaSectionQuestion_MediaSlot_FRONT_OR_PREVIOUS MediaSectionQuestion_MediaSlot_CameraDirection = 2
+	MediaSectionQuestion_MediaSlot_BACK_OR_PREVIOUS  MediaSectionQuestion_MediaSlot_CameraDirection = 3
 )
 
-var PhotoSectionQuestion_PhotoSlot_CameraDirection_name = map[int32]string{
+var MediaSectionQuestion_MediaSlot_CameraDirection_name = map[int32]string{
 	0: "FRONT",
 	1: "BACK",
 	2: "FRONT_OR_PREVIOUS",
 	3: "BACK_OR_PREVIOUS",
 }
-var PhotoSectionQuestion_PhotoSlot_CameraDirection_value = map[string]int32{
+var MediaSectionQuestion_MediaSlot_CameraDirection_value = map[string]int32{
 	"FRONT":             0,
 	"BACK":              1,
 	"FRONT_OR_PREVIOUS": 2,
 	"BACK_OR_PREVIOUS":  3,
 }
 
-func (x PhotoSectionQuestion_PhotoSlot_CameraDirection) Enum() *PhotoSectionQuestion_PhotoSlot_CameraDirection {
-	p := new(PhotoSectionQuestion_PhotoSlot_CameraDirection)
+func (x MediaSectionQuestion_MediaSlot_CameraDirection) Enum() *MediaSectionQuestion_MediaSlot_CameraDirection {
+	p := new(MediaSectionQuestion_MediaSlot_CameraDirection)
 	*p = x
 	return p
 }
-func (x PhotoSectionQuestion_PhotoSlot_CameraDirection) String() string {
-	return proto.EnumName(PhotoSectionQuestion_PhotoSlot_CameraDirection_name, int32(x))
+func (x MediaSectionQuestion_MediaSlot_CameraDirection) String() string {
+	return proto.EnumName(MediaSectionQuestion_MediaSlot_CameraDirection_name, int32(x))
 }
-func (x *PhotoSectionQuestion_PhotoSlot_CameraDirection) UnmarshalJSON(data []byte) error {
-	value, err := proto.UnmarshalJSONEnum(PhotoSectionQuestion_PhotoSlot_CameraDirection_value, data, "PhotoSectionQuestion_PhotoSlot_CameraDirection")
+func (x *MediaSectionQuestion_MediaSlot_CameraDirection) UnmarshalJSON(data []byte) error {
+	value, err := proto.UnmarshalJSONEnum(MediaSectionQuestion_MediaSlot_CameraDirection_value, data, "MediaSectionQuestion_MediaSlot_CameraDirection")
 	if err != nil {
 		return err
 	}
-	*x = PhotoSectionQuestion_PhotoSlot_CameraDirection(value)
+	*x = MediaSectionQuestion_MediaSlot_CameraDirection(value)
+	return nil
+}
+
+type MediaSectionQuestion_MediaSlot_Type int32
+
+const (
+	MediaSectionQuestion_MediaSlot_UNKNOWN MediaSectionQuestion_MediaSlot_Type = 0
+	MediaSectionQuestion_MediaSlot_IMAGE   MediaSectionQuestion_MediaSlot_Type = 1
+	MediaSectionQuestion_MediaSlot_VIDEO   MediaSectionQuestion_MediaSlot_Type = 2
+)
+
+var MediaSectionQuestion_MediaSlot_Type_name = map[int32]string{
+	0: "UNKNOWN",
+	1: "IMAGE",
+	2: "VIDEO",
+}
+var MediaSectionQuestion_MediaSlot_Type_value = map[string]int32{
+	"UNKNOWN": 0,
+	"IMAGE":   1,
+	"VIDEO":   2,
+}
+
+func (x MediaSectionQuestion_MediaSlot_Type) Enum() *MediaSectionQuestion_MediaSlot_Type {
+	p := new(MediaSectionQuestion_MediaSlot_Type)
+	*p = x
+	return p
+}
+func (x MediaSectionQuestion_MediaSlot_Type) String() string {
+	return proto.EnumName(MediaSectionQuestion_MediaSlot_Type_name, int32(x))
+}
+func (x *MediaSectionQuestion_MediaSlot_Type) UnmarshalJSON(data []byte) error {
+	value, err := proto.UnmarshalJSONEnum(MediaSectionQuestion_MediaSlot_Type_value, data, "MediaSectionQuestion_MediaSlot_Type")
+	if err != nil {
+		return err
+	}
+	*x = MediaSectionQuestion_MediaSlot_Type(value)
 	return nil
 }
 
@@ -365,9 +404,11 @@ type MultipleChoiceQuestion struct {
 	// a segmented control or single select question.
 	Config *MultipleChoiceQuestion_Config `protobuf:"varint,3,req,name=config,enum=intake.MultipleChoiceQuestion_Config" json:"config,omitempty"`
 	// groups is used to convey groupings for a sectioned multiple choice question.
-	Groups           []*MultipleChoiceQuestion_TitleCount `protobuf:"bytes,4,rep,name=groups" json:"groups,omitempty"`
-	PatientAnswer    *MultipleChoicePatientAnswer         `protobuf:"bytes,5,opt,name=patient_answer" json:"patient_answer,omitempty"`
-	XXX_unrecognized []byte                               `json:"-"`
+	Groups []*MultipleChoiceQuestion_TitleCount `protobuf:"bytes,4,rep,name=groups" json:"groups,omitempty"`
+	// patient_answer represents the answer by the patient. Given that it can be of type
+	// singleSelect, segmentedControl or multipleChoice, sending a typed data representation for the answer
+	PatientAnswer    *PatientAnswerData `protobuf:"bytes,5,opt,name=patient_answer" json:"patient_answer,omitempty"`
+	XXX_unrecognized []byte             `json:"-"`
 }
 
 func (m *MultipleChoiceQuestion) Reset()         { *m = MultipleChoiceQuestion{} }
@@ -402,7 +443,7 @@ func (m *MultipleChoiceQuestion) GetGroups() []*MultipleChoiceQuestion_TitleCoun
 	return nil
 }
 
-func (m *MultipleChoiceQuestion) GetPatientAnswer() *MultipleChoicePatientAnswer {
+func (m *MultipleChoiceQuestion) GetPatientAnswer() *PatientAnswerData {
 	if m != nil {
 		return m.PatientAnswer
 	}
@@ -528,6 +569,43 @@ func (m *FreeTextQuestion) GetPatientAnswer() *FreeTextPatientAnswer {
 	return nil
 }
 
+// SingleEntryQuestion represents the contents of a specific question type
+// that allows a patient to enter a free text response to the question.
+type SingleEntryQuestion struct {
+	// placeholder represents the text to show when the free text box is empty.
+	Placeholder      *string                   `protobuf:"bytes,1,opt,name=placeholder,def=Type in some text..." json:"placeholder,omitempty"`
+	QuestionInfo     *CommonQuestionInfo       `protobuf:"bytes,2,req,name=question_info" json:"question_info,omitempty"`
+	PatientAnswer    *SingleEntryPatientAnswer `protobuf:"bytes,3,opt,name=patient_answer" json:"patient_answer,omitempty"`
+	XXX_unrecognized []byte                    `json:"-"`
+}
+
+func (m *SingleEntryQuestion) Reset()         { *m = SingleEntryQuestion{} }
+func (m *SingleEntryQuestion) String() string { return proto.CompactTextString(m) }
+func (*SingleEntryQuestion) ProtoMessage()    {}
+
+const Default_SingleEntryQuestion_Placeholder string = "Type in some text..."
+
+func (m *SingleEntryQuestion) GetPlaceholder() string {
+	if m != nil && m.Placeholder != nil {
+		return *m.Placeholder
+	}
+	return Default_SingleEntryQuestion_Placeholder
+}
+
+func (m *SingleEntryQuestion) GetQuestionInfo() *CommonQuestionInfo {
+	if m != nil {
+		return m.QuestionInfo
+	}
+	return nil
+}
+
+func (m *SingleEntryQuestion) GetPatientAnswer() *SingleEntryPatientAnswer {
+	if m != nil {
+		return m.PatientAnswer
+	}
+	return nil
+}
+
 // AutocompleteQuestion represents a question where the user can
 // add answer choices based on results from an autocomplete API.
 type AutocompleteQuestion struct {
@@ -605,12 +683,12 @@ func (m *AutocompleteQuestion) GetPatientAnswer() *AutocompletePatientAnswer {
 	return nil
 }
 
-// PhotoSectionQuestion represents a question for the user
+// MediaSectionQuestion represents a question for the user
 // to enter a variable number of groupings of photos
 // into photo slot definitions.
-type PhotoSectionQuestion struct {
+type MediaSectionQuestion struct {
 	QuestionInfo *CommonQuestionInfo               `protobuf:"bytes,1,req,name=question_info" json:"question_info,omitempty"`
-	PhotoSlots   []*PhotoSectionQuestion_PhotoSlot `protobuf:"bytes,2,rep,name=photo_slots" json:"photo_slots,omitempty"`
+	MediaSlots   []*MediaSectionQuestion_MediaSlot `protobuf:"bytes,2,rep,name=media_slots" json:"media_slots,omitempty"`
 	// allows_multiple_sections indicates whether or not the user is allowed to
 	// enter a variable number of sections of photos during intake for this photo
 	// section question.
@@ -621,59 +699,59 @@ type PhotoSectionQuestion struct {
 	// disable_last_slot_duplication is a flag that indicates whether to disable or keep enabled
 	// duplication of the last photo slot in the photo section question.
 	DisableLastSlotDuplication *bool                      `protobuf:"varint,5,opt,name=disable_last_slot_duplication" json:"disable_last_slot_duplication,omitempty"`
-	PatientAnswer              *PhotoSectionPatientAnswer `protobuf:"bytes,6,opt,name=patient_answer" json:"patient_answer,omitempty"`
+	PatientAnswer              *MediaSectionPatientAnswer `protobuf:"bytes,6,opt,name=patient_answer" json:"patient_answer,omitempty"`
 	XXX_unrecognized           []byte                     `json:"-"`
 }
 
-func (m *PhotoSectionQuestion) Reset()         { *m = PhotoSectionQuestion{} }
-func (m *PhotoSectionQuestion) String() string { return proto.CompactTextString(m) }
-func (*PhotoSectionQuestion) ProtoMessage()    {}
+func (m *MediaSectionQuestion) Reset()         { *m = MediaSectionQuestion{} }
+func (m *MediaSectionQuestion) String() string { return proto.CompactTextString(m) }
+func (*MediaSectionQuestion) ProtoMessage()    {}
 
-func (m *PhotoSectionQuestion) GetQuestionInfo() *CommonQuestionInfo {
+func (m *MediaSectionQuestion) GetQuestionInfo() *CommonQuestionInfo {
 	if m != nil {
 		return m.QuestionInfo
 	}
 	return nil
 }
 
-func (m *PhotoSectionQuestion) GetPhotoSlots() []*PhotoSectionQuestion_PhotoSlot {
+func (m *MediaSectionQuestion) GetMediaSlots() []*MediaSectionQuestion_MediaSlot {
 	if m != nil {
-		return m.PhotoSlots
+		return m.MediaSlots
 	}
 	return nil
 }
 
-func (m *PhotoSectionQuestion) GetAllowsMultipleSections() bool {
+func (m *MediaSectionQuestion) GetAllowsMultipleSections() bool {
 	if m != nil && m.AllowsMultipleSections != nil {
 		return *m.AllowsMultipleSections
 	}
 	return false
 }
 
-func (m *PhotoSectionQuestion) GetUserDefinedSectionTitle() bool {
+func (m *MediaSectionQuestion) GetUserDefinedSectionTitle() bool {
 	if m != nil && m.UserDefinedSectionTitle != nil {
 		return *m.UserDefinedSectionTitle
 	}
 	return false
 }
 
-func (m *PhotoSectionQuestion) GetDisableLastSlotDuplication() bool {
+func (m *MediaSectionQuestion) GetDisableLastSlotDuplication() bool {
 	if m != nil && m.DisableLastSlotDuplication != nil {
 		return *m.DisableLastSlotDuplication
 	}
 	return false
 }
 
-func (m *PhotoSectionQuestion) GetPatientAnswer() *PhotoSectionPatientAnswer {
+func (m *MediaSectionQuestion) GetPatientAnswer() *MediaSectionPatientAnswer {
 	if m != nil {
 		return m.PatientAnswer
 	}
 	return nil
 }
 
-// PhotoSlot represents the information pertaining to a photo
+// MediaSlot represents the information pertaining to a photo
 // slot that the user is intended to fill.
-type PhotoSectionQuestion_PhotoSlot struct {
+type MediaSectionQuestion_MediaSlot struct {
 	// name of the photo slot to be displayed to the user.
 	Name *string `protobuf:"bytes,1,req,name=name" json:"name,omitempty"`
 	// is_required indicates whether or not photo_slot is required
@@ -686,100 +764,109 @@ type PhotoSectionQuestion_PhotoSlot struct {
 	// while or prior to taking a picture for this photo slot.
 	TipSubtext *string `protobuf:"bytes,4,opt,name=tip_subtext" json:"tip_subtext,omitempty"`
 	// tip_style represents the styling information for the tip.
-	TipStyle *PhotoSectionQuestion_PhotoSlot_TipStyle `protobuf:"varint,5,opt,name=tip_style,enum=intake.PhotoSectionQuestion_PhotoSlot_TipStyle,def=0" json:"tip_style,omitempty"`
+	TipStyle *MediaSectionQuestion_MediaSlot_TipStyle `protobuf:"varint,5,opt,name=tip_style,enum=intake.MediaSectionQuestion_MediaSlot_TipStyle,def=0" json:"tip_style,omitempty"`
 	// overlay_image_link represents the image to overlay on the camera view
 	// while the user is taking a picture to fill this photo slot.
 	OverlayImageLink *string `protobuf:"bytes,6,opt,name=overlay_image_link" json:"overlay_image_link,omitempty"`
-	// photo_missing_error_msg represents the error to display to the user
+	// media_missing_error_msg represents the error to display to the user
 	// if the photo is missing for this specific slot.
-	PhotoMissingErrorMsg *string `protobuf:"bytes,7,opt,name=photo_missing_error_msg" json:"photo_missing_error_msg,omitempty"`
+	MediaMissingErrorMsg *string `protobuf:"bytes,7,opt,name=media_missing_error_msg" json:"media_missing_error_msg,omitempty"`
 	// initial_camera_direction represents the direction in which to invoke
 	// the camera when the camera view is opened for intake pertaining to this slot.
-	InitialCameraDirection *PhotoSectionQuestion_PhotoSlot_CameraDirection `protobuf:"varint,8,opt,name=initial_camera_direction,enum=intake.PhotoSectionQuestion_PhotoSlot_CameraDirection,def=0" json:"initial_camera_direction,omitempty"`
+	InitialCameraDirection *MediaSectionQuestion_MediaSlot_CameraDirection `protobuf:"varint,8,opt,name=initial_camera_direction,enum=intake.MediaSectionQuestion_MediaSlot_CameraDirection,def=0" json:"initial_camera_direction,omitempty"`
 	// flash_state represents the initial state of the flash when the
 	// camera view is opened for intake pertaining to this slot.
-	FlashState *PhotoSectionQuestion_PhotoSlot_FlashState `protobuf:"varint,9,opt,name=flash_state,enum=intake.PhotoSectionQuestion_PhotoSlot_FlashState,def=2" json:"flash_state,omitempty"`
+	FlashState *MediaSectionQuestion_MediaSlot_FlashState `protobuf:"varint,9,opt,name=flash_state,enum=intake.MediaSectionQuestion_MediaSlot_FlashState,def=2" json:"flash_state,omitempty"`
 	// id represents the unique identifier for the photo slot.
-	Id               *string `protobuf:"bytes,10,req,name=id" json:"id,omitempty"`
-	XXX_unrecognized []byte  `json:"-"`
+	Id *string `protobuf:"bytes,10,req,name=id" json:"id,omitempty"`
+	// type indicates whether the slot holds an image or a video
+	Type             *MediaSectionQuestion_MediaSlot_Type `protobuf:"varint,11,req,name=type,enum=intake.MediaSectionQuestion_MediaSlot_Type" json:"type,omitempty"`
+	XXX_unrecognized []byte                               `json:"-"`
 }
 
-func (m *PhotoSectionQuestion_PhotoSlot) Reset()         { *m = PhotoSectionQuestion_PhotoSlot{} }
-func (m *PhotoSectionQuestion_PhotoSlot) String() string { return proto.CompactTextString(m) }
-func (*PhotoSectionQuestion_PhotoSlot) ProtoMessage()    {}
+func (m *MediaSectionQuestion_MediaSlot) Reset()         { *m = MediaSectionQuestion_MediaSlot{} }
+func (m *MediaSectionQuestion_MediaSlot) String() string { return proto.CompactTextString(m) }
+func (*MediaSectionQuestion_MediaSlot) ProtoMessage()    {}
 
-const Default_PhotoSectionQuestion_PhotoSlot_TipStyle PhotoSectionQuestion_PhotoSlot_TipStyle = PhotoSectionQuestion_PhotoSlot_DEFAULT
-const Default_PhotoSectionQuestion_PhotoSlot_InitialCameraDirection PhotoSectionQuestion_PhotoSlot_CameraDirection = PhotoSectionQuestion_PhotoSlot_FRONT
-const Default_PhotoSectionQuestion_PhotoSlot_FlashState PhotoSectionQuestion_PhotoSlot_FlashState = PhotoSectionQuestion_PhotoSlot_AUTO
+const Default_MediaSectionQuestion_MediaSlot_TipStyle MediaSectionQuestion_MediaSlot_TipStyle = MediaSectionQuestion_MediaSlot_DEFAULT
+const Default_MediaSectionQuestion_MediaSlot_InitialCameraDirection MediaSectionQuestion_MediaSlot_CameraDirection = MediaSectionQuestion_MediaSlot_FRONT
+const Default_MediaSectionQuestion_MediaSlot_FlashState MediaSectionQuestion_MediaSlot_FlashState = MediaSectionQuestion_MediaSlot_AUTO
 
-func (m *PhotoSectionQuestion_PhotoSlot) GetName() string {
+func (m *MediaSectionQuestion_MediaSlot) GetName() string {
 	if m != nil && m.Name != nil {
 		return *m.Name
 	}
 	return ""
 }
 
-func (m *PhotoSectionQuestion_PhotoSlot) GetIsRequired() bool {
+func (m *MediaSectionQuestion_MediaSlot) GetIsRequired() bool {
 	if m != nil && m.IsRequired != nil {
 		return *m.IsRequired
 	}
 	return false
 }
 
-func (m *PhotoSectionQuestion_PhotoSlot) GetTip() string {
+func (m *MediaSectionQuestion_MediaSlot) GetTip() string {
 	if m != nil && m.Tip != nil {
 		return *m.Tip
 	}
 	return ""
 }
 
-func (m *PhotoSectionQuestion_PhotoSlot) GetTipSubtext() string {
+func (m *MediaSectionQuestion_MediaSlot) GetTipSubtext() string {
 	if m != nil && m.TipSubtext != nil {
 		return *m.TipSubtext
 	}
 	return ""
 }
 
-func (m *PhotoSectionQuestion_PhotoSlot) GetTipStyle() PhotoSectionQuestion_PhotoSlot_TipStyle {
+func (m *MediaSectionQuestion_MediaSlot) GetTipStyle() MediaSectionQuestion_MediaSlot_TipStyle {
 	if m != nil && m.TipStyle != nil {
 		return *m.TipStyle
 	}
-	return Default_PhotoSectionQuestion_PhotoSlot_TipStyle
+	return Default_MediaSectionQuestion_MediaSlot_TipStyle
 }
 
-func (m *PhotoSectionQuestion_PhotoSlot) GetOverlayImageLink() string {
+func (m *MediaSectionQuestion_MediaSlot) GetOverlayImageLink() string {
 	if m != nil && m.OverlayImageLink != nil {
 		return *m.OverlayImageLink
 	}
 	return ""
 }
 
-func (m *PhotoSectionQuestion_PhotoSlot) GetPhotoMissingErrorMsg() string {
-	if m != nil && m.PhotoMissingErrorMsg != nil {
-		return *m.PhotoMissingErrorMsg
+func (m *MediaSectionQuestion_MediaSlot) GetMediaMissingErrorMsg() string {
+	if m != nil && m.MediaMissingErrorMsg != nil {
+		return *m.MediaMissingErrorMsg
 	}
 	return ""
 }
 
-func (m *PhotoSectionQuestion_PhotoSlot) GetInitialCameraDirection() PhotoSectionQuestion_PhotoSlot_CameraDirection {
+func (m *MediaSectionQuestion_MediaSlot) GetInitialCameraDirection() MediaSectionQuestion_MediaSlot_CameraDirection {
 	if m != nil && m.InitialCameraDirection != nil {
 		return *m.InitialCameraDirection
 	}
-	return Default_PhotoSectionQuestion_PhotoSlot_InitialCameraDirection
+	return Default_MediaSectionQuestion_MediaSlot_InitialCameraDirection
 }
 
-func (m *PhotoSectionQuestion_PhotoSlot) GetFlashState() PhotoSectionQuestion_PhotoSlot_FlashState {
+func (m *MediaSectionQuestion_MediaSlot) GetFlashState() MediaSectionQuestion_MediaSlot_FlashState {
 	if m != nil && m.FlashState != nil {
 		return *m.FlashState
 	}
-	return Default_PhotoSectionQuestion_PhotoSlot_FlashState
+	return Default_MediaSectionQuestion_MediaSlot_FlashState
 }
 
-func (m *PhotoSectionQuestion_PhotoSlot) GetId() string {
+func (m *MediaSectionQuestion_MediaSlot) GetId() string {
 	if m != nil && m.Id != nil {
 		return *m.Id
 	}
 	return ""
+}
+
+func (m *MediaSectionQuestion_MediaSlot) GetType() MediaSectionQuestion_MediaSlot_Type {
+	if m != nil && m.Type != nil {
+		return *m.Type
+	}
+	return MediaSectionQuestion_MediaSlot_UNKNOWN
 }
 
 func init() {
@@ -790,13 +877,15 @@ func init() {
 	proto.RegisterType((*MultipleChoiceQuestion_PotentialAnswer)(nil), "intake.MultipleChoiceQuestion.PotentialAnswer")
 	proto.RegisterType((*MultipleChoiceQuestion_TitleCount)(nil), "intake.MultipleChoiceQuestion.TitleCount")
 	proto.RegisterType((*FreeTextQuestion)(nil), "intake.FreeTextQuestion")
+	proto.RegisterType((*SingleEntryQuestion)(nil), "intake.SingleEntryQuestion")
 	proto.RegisterType((*AutocompleteQuestion)(nil), "intake.AutocompleteQuestion")
-	proto.RegisterType((*PhotoSectionQuestion)(nil), "intake.PhotoSectionQuestion")
-	proto.RegisterType((*PhotoSectionQuestion_PhotoSlot)(nil), "intake.PhotoSectionQuestion.PhotoSlot")
+	proto.RegisterType((*MediaSectionQuestion)(nil), "intake.MediaSectionQuestion")
+	proto.RegisterType((*MediaSectionQuestion_MediaSlot)(nil), "intake.MediaSectionQuestion.MediaSlot")
 	proto.RegisterEnum("intake.QuestionData_Type", QuestionData_Type_name, QuestionData_Type_value)
 	proto.RegisterEnum("intake.MultipleChoiceQuestion_Config", MultipleChoiceQuestion_Config_name, MultipleChoiceQuestion_Config_value)
 	proto.RegisterEnum("intake.MultipleChoiceQuestion_PotentialAnswer_Type", MultipleChoiceQuestion_PotentialAnswer_Type_name, MultipleChoiceQuestion_PotentialAnswer_Type_value)
-	proto.RegisterEnum("intake.PhotoSectionQuestion_PhotoSlot_FlashState", PhotoSectionQuestion_PhotoSlot_FlashState_name, PhotoSectionQuestion_PhotoSlot_FlashState_value)
-	proto.RegisterEnum("intake.PhotoSectionQuestion_PhotoSlot_TipStyle", PhotoSectionQuestion_PhotoSlot_TipStyle_name, PhotoSectionQuestion_PhotoSlot_TipStyle_value)
-	proto.RegisterEnum("intake.PhotoSectionQuestion_PhotoSlot_CameraDirection", PhotoSectionQuestion_PhotoSlot_CameraDirection_name, PhotoSectionQuestion_PhotoSlot_CameraDirection_value)
+	proto.RegisterEnum("intake.MediaSectionQuestion_MediaSlot_FlashState", MediaSectionQuestion_MediaSlot_FlashState_name, MediaSectionQuestion_MediaSlot_FlashState_value)
+	proto.RegisterEnum("intake.MediaSectionQuestion_MediaSlot_TipStyle", MediaSectionQuestion_MediaSlot_TipStyle_name, MediaSectionQuestion_MediaSlot_TipStyle_value)
+	proto.RegisterEnum("intake.MediaSectionQuestion_MediaSlot_CameraDirection", MediaSectionQuestion_MediaSlot_CameraDirection_name, MediaSectionQuestion_MediaSlot_CameraDirection_value)
+	proto.RegisterEnum("intake.MediaSectionQuestion_MediaSlot_Type", MediaSectionQuestion_MediaSlot_Type_name, MediaSectionQuestion_MediaSlot_Type_value)
 }

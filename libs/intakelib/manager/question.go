@@ -16,7 +16,7 @@ const (
 	questionTypeSegmentedControl questionType = "q_type_segmented_control"
 	questionTypeFreeText         questionType = "q_type_free_text"
 	questionTypeAutocomplete     questionType = "q_type_autocomplete"
-	questionTypePhoto            questionType = "q_type_photo_section"
+	questionTypeMedia            questionType = "q_type_media_section"
 	questionTypeSingleEntry      questionType = "q_type_single_entry"
 )
 
@@ -37,9 +37,9 @@ var questionTypeToProtoBufType = map[string]*intake.QuestionData_Type{
 	questionTypeSingleSelect.String():     intake.QuestionData_MULTIPLE_CHOICE.Enum(),
 	questionTypeSegmentedControl.String(): intake.QuestionData_MULTIPLE_CHOICE.Enum(),
 	questionTypeFreeText.String():         intake.QuestionData_FREE_TEXT.Enum(),
-	questionTypeSingleEntry.String():      intake.QuestionData_FREE_TEXT.Enum(),
+	questionTypeSingleEntry.String():      intake.QuestionData_SINGLE_ENTRY.Enum(),
 	questionTypeAutocomplete.String():     intake.QuestionData_AUTOCOMPLETE.Enum(),
-	questionTypePhoto.String():            intake.QuestionData_PHOTO_SECTION.Enum(),
+	questionTypeMedia.String():            intake.QuestionData_MEDIA_SECTION.Enum(),
 }
 
 func init() {
@@ -47,15 +47,15 @@ func init() {
 	mustRegisterQuestion(questionTypeSingleSelect.String(), &multipleChoiceQuestion{})
 	mustRegisterQuestion(questionTypeSegmentedControl.String(), &multipleChoiceQuestion{})
 	mustRegisterQuestion(questionTypeFreeText.String(), &freeTextQuestion{})
-	mustRegisterQuestion(questionTypeSingleEntry.String(), &freeTextQuestion{})
+	mustRegisterQuestion(questionTypeSingleEntry.String(), &singleEntryQuestion{})
 	mustRegisterQuestion(questionTypeAutocomplete.String(), &autocompleteQuestion{})
-	mustRegisterQuestion(questionTypePhoto.String(), &photoQuestion{})
+	mustRegisterQuestion(questionTypeMedia.String(), &mediaQuestion{})
 }
 
 // questionInfo represents the common properties included in objects of
 // all question types.
 type questionInfo struct {
-	ID             string     `json:"question_id"`
+	ID             string     `json:"id"`
 	LayoutUnitID   string     `json:"-"`
 	Type           string     `json:"type"`
 	Title          string     `json:"question_title"`
@@ -190,12 +190,12 @@ func transformQuestionInfoToProtobuf(q *questionInfo) (proto.Message, error) {
 
 func populateQuestionInfo(data dataMap, parent layoutUnit, typeName string) (*questionInfo, error) {
 	if err := data.requiredKeys(typeName,
-		"question_id", "type", "question_title"); err != nil {
+		"id", "type", "question_title"); err != nil {
 		return nil, err
 	}
 
 	q := &questionInfo{
-		ID:             data.mustGetString("question_id"),
+		ID:             data.mustGetString("id"),
 		Type:           data.mustGetString("type"),
 		Title:          data.mustGetString("question_title"),
 		TitleHasTokens: data.mustGetBool("question_title_has_tokens"),

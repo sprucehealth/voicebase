@@ -23,11 +23,8 @@ func (v *visitManager) screen(layoutUnitID string) (screen, error) {
 }
 
 type clientJSONStructure struct {
-	VisitID        int64             `json:"patient_visit_id,string"`
-	Answers        []json.RawMessage `json:"questions,omitempty"`
-	PhotoAnswers   []json.RawMessage `json:"photo_questions,omitempty"`
-	SessionID      string            `json:"session_id"`
-	SessionCounter uint              `json:"counter"`
+	Answers      map[string]interface{} `json:"answers,omitempty"`
+	ClearAnswers []string               `json:"clear_answers,omitempty"`
 }
 
 // persistAllDirtyQuestions goes through the questionMap and
@@ -52,31 +49,17 @@ func (v *visitManager) persistAllDirtyQuestions() error {
 			q = q.parentQuestion()
 		}
 
-		answerJSON, err := q.marshalAnswerForClient()
-		if err != nil {
-			return err
-		}
+		clientJSON := &clientJSONStructure{}
 
-		counter := v.sessionCounter + 1
-
-		// preemptively update the counter so that the value increments in the event of a failure on the client's
-		// part to persist the answer to the question
-		v.sessionCounter++
-
-		clientJSON := clientJSONStructure{
-			VisitID:        v.visit.ID,
-			SessionID:      v.sessionID,
-			SessionCounter: counter,
-		}
-
-		switch q.TypeName() {
-		case questionTypePhoto.String():
-			clientJSON.PhotoAnswers = []json.RawMessage{
-				json.RawMessage(answerJSON),
+		if q.visibility() == hidden {
+			clientJSON.ClearAnswers = []string{q.id()}
+		} else {
+			answerJSON, err := q.answerForClient()
+			if err != nil {
+				return err
 			}
-		default:
-			clientJSON.Answers = []json.RawMessage{
-				json.RawMessage(answerJSON),
+			clientJSON.Answers = map[string]interface{}{
+				q.id(): answerJSON,
 			}
 		}
 
