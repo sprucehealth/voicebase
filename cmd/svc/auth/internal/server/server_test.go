@@ -181,9 +181,10 @@ func TestAuthenticateLoginDeviceInside2FAWindow(t *testing.T) {
 	test.OK(t, err)
 	dl.Expect(mock.NewExpectation(dl.InsertAuthToken, &dal.AuthToken{
 		AccountID:           aID1,
-		Expires:             mClock.Now().Add(defaultTokenExpiration),
+		Expires:             mClock.Now().Add(tokenDurationExpiration[auth.TokenDuration_LONG]),
 		Token:               []byte("genToken:testattribute"),
 		ClientEncryptionKey: cek,
+		DurationType:        dal.AuthTokenDurationTypeLong,
 	}))
 	dl.Expect(mock.NewExpectation(dl.TrackLogin, aID1, device.IOS, deviceID))
 
@@ -215,6 +216,7 @@ func TestAuthenticateLoginDeviceInside2FAWindow(t *testing.T) {
 		TokenAttributes: map[string]string{"test": "attribute"},
 		DeviceID:        deviceID,
 		Platform:        auth.Platform_IOS,
+		Duration:        auth.TokenDuration_LONG,
 	})
 	test.OK(t, err)
 	test.AssertNotNil(t, resp.Token)
@@ -495,11 +497,12 @@ func TestCheckAuthentication(t *testing.T) {
 	tokenAttributes := map[string]string{"token": "attribute"}
 	aID1, err := dal.NewAccountID()
 	test.OK(t, err)
-	expires := mClock.Now().Add(defaultTokenExpiration)
+	expires := mClock.Now().Add(tokenDurationExpiration[auth.TokenDuration_SHORT])
 	dl.Expect(mock.NewExpectation(dl.AuthToken, token+":tokenattribute", mClock.Now(), true).WithReturns(&dal.AuthToken{
 		Token:               []byte(token + ":tokenattribute"),
 		AccountID:           aID1,
 		Expires:             expires,
+		Created:             expires.Add(time.Minute * -10),
 		ClientEncryptionKey: []byte(clientEncryptionSecret),
 	}, nil))
 	dl.Expect(mock.NewExpectation(dl.Account, aID1).WithReturns(&dal.Account{
@@ -547,7 +550,7 @@ func TestCheckAuthenticationShadowed(t *testing.T) {
 	tokenAttributes := map[string]string{"token": "attribute"}
 	aID1, err := dal.NewAccountID()
 	test.OK(t, err)
-	expires := mClock.Now().Add(defaultTokenExpiration)
+	expires := mClock.Now().Add(tokenDurationExpiration[auth.TokenDuration_SHORT])
 	dl.Expect(mock.NewExpectation(dl.AuthToken, token+":tokenattribute", mClock.Now(), true).WithReturns(&dal.AuthToken{
 		Token:               []byte(token + ":tokenattribute"),
 		AccountID:           aID1,
@@ -606,21 +609,22 @@ func TestCheckAuthenticationRefresh(t *testing.T) {
 	tokenAttributes := map[string]string{"token": "attribute"}
 	aID1, err := dal.NewAccountID()
 	test.OK(t, err)
-	expires := mClock.Now().Add(defaultTokenExpiration)
+	expires := mClock.Now().Add(tokenDurationExpiration[auth.TokenDuration_LONG])
 	created := mClock.Now()
 	svr.tokenGenerator = &tokenGenerator{token: "genToken"}
 	// Advance time into the refresh window
 	mClock.WarpForward(defaultTokenRefreshWindow + 10)
-	returnExpires := mClock.Now().Add(defaultTokenExpiration)
+	returnExpires := mClock.Now().Add(tokenDurationExpiration[auth.TokenDuration_LONG])
 	dl.Expect(mock.NewExpectation(dl.AuthToken, token+":tokenattribute", mClock.Now(), true).WithReturns(&dal.AuthToken{
 		Token:               []byte(token + ":tokenattribute"),
 		AccountID:           aID1,
 		Expires:             expires,
 		ClientEncryptionKey: []byte(clientEncryptionSecret),
 		Created:             created,
+		DurationType:        dal.AuthTokenDurationTypeLong,
 	}, nil))
 	dl.Expect(mock.NewExpectation(dl.UpdateAuthToken, token+":tokenattribute", &dal.AuthTokenUpdate{
-		Expires: ptr.Time(mClock.Now().Add(defaultTokenExpiration)),
+		Expires: ptr.Time(mClock.Now().Add(tokenDurationExpiration[auth.TokenDuration_LONG])),
 		Token:   []byte("genToken:tokenattribute"),
 	}))
 	dl.Expect(mock.NewExpectation(dl.InsertAuthToken, &dal.AuthToken{
@@ -629,6 +633,7 @@ func TestCheckAuthenticationRefresh(t *testing.T) {
 		Token:               []byte(token + ":tokenattribute"),
 		ClientEncryptionKey: []byte(clientEncryptionSecret),
 		Shadow:              true,
+		DurationType:        dal.AuthTokenDurationTypeLong,
 	}))
 	dl.Expect(mock.NewExpectation(dl.Account, aID1).WithReturns(&dal.Account{
 		ID:        aID1,

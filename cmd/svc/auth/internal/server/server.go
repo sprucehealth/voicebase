@@ -29,7 +29,21 @@ import (
 )
 
 // go vet doesn't like that the first argument to grpcErrorf is not a string so alias the function with a different name :(
-var grpcErrorf = grpc.Errorf
+var grpcErrf = grpc.Errorf
+
+func grpcErrorf(c codes.Code, format string, a ...interface{}) error {
+	if c == codes.Internal {
+		golog.LogDepthf(1, golog.ERR, "Auth - Internal GRPC Error: %s", fmt.Sprintf(format, a...))
+	}
+	return grpcErrf(c, format, a...)
+}
+
+func grpcError(err error) error {
+	if grpc.Code(err) == codes.Unknown {
+		return grpcErrorf(codes.Internal, err.Error())
+	}
+	return err
+}
 
 func grpcIErrorf(fmt string, args ...interface{}) error {
 	golog.LogDepthf(1, golog.ERR, fmt, args...)
@@ -110,7 +124,7 @@ func (s *server) AuthenticateLogin(ctx context.Context, rd *auth.AuthenticateLog
 		}
 		twoFactorPhone = accountPhone.PhoneNumber
 	} else {
-		authToken, err = s.generateAndInsertToken(s.dal, account.ID, rd.TokenAttributes)
+		authToken, err = s.generateAndInsertToken(s.dal, account.ID, rd.TokenAttributes, rd.Duration)
 		if err != nil {
 			return nil, grpcIErrorf(err.Error())
 		}
@@ -184,7 +198,7 @@ func (s *server) AuthenticateLoginWithCode(ctx context.Context, rd *auth.Authent
 		return nil, grpcIErrorf("ACCOUNT_2FA verification code value %q failed to parse into account id, unable to generate auth token: %s", verificationCode.VerifiedValue, err)
 	}
 
-	authToken, err := s.generateAndInsertToken(s.dal, accountID, rd.TokenAttributes)
+	authToken, err := s.generateAndInsertToken(s.dal, accountID, rd.TokenAttributes, rd.Duration)
 	if err != nil {
 		return nil, grpcIErrorf("Failed to generate and insert new auth token for ACCOUNT_2FA: %s", err)
 	}
@@ -224,8 +238,13 @@ func (s *server) AuthenticateLoginWithCode(ctx context.Context, rd *auth.Authent
 var (
 	// A token is rotated and refreshed if auth is checked a day or more after it was last refreshed
 	defaultTokenRefreshWindow = time.Second * 60 * 60 * 24
-	// A token lasts for a maximum of 30 days.
-	defaultTokenLifecycle = time.Second * 60 * 60 * 24 * 30
+
+	tokenDurationLifecycle = map[auth.TokenDuration]time.Duration{
+		auth.TokenDuration_UNKNOWN_TOKEN_DURATION: time.Second * 60 * 60 * 24 * 30, // A default token lasts for a maximum of 30 days.
+		auth.TokenDuration_SHORT:                  time.Second * 60 * 60 * 24 * 30,
+		auth.TokenDuration_MEDIUM:                 time.Second * 60 * 60 * 24 * 90,      // A medium token lasts for a maximum of 90 days.
+		auth.TokenDuration_LONG:                   time.Second * 60 * 60 * 24 * 365 * 2, // A long token lasts for a maximum of 2 years.
+	}
 )
 
 func (s *server) CheckAuthentication(ctx context.Context, rd *auth.CheckAuthenticationRequest) (*auth.CheckAuthenticationResponse, error) {
@@ -259,8 +278,8 @@ func (s *server) CheckAuthentication(ctx context.Context, rd *auth.CheckAuthenti
 		// 2. Not outside the token lifecycle.
 		// 3. Inside the token expiration refresh window.
 		if !aToken.Shadow &&
-			!s.clk.Now().After(aToken.Created.Add(defaultTokenLifecycle)) &&
-			s.clk.Now().After(aToken.Expires.Add(-defaultTokenExpiration).Add(defaultTokenRefreshWindow)) {
+			!s.clk.Now().After(aToken.Expires) &&
+			s.clk.Now().After(aToken.Created.Add(defaultTokenRefreshWindow)) {
 			authToken, err = s.rotateAndExtendToken(dl, aToken, rd.TokenAttributes)
 			if err != nil {
 				return errors.Trace(err)
@@ -501,7 +520,7 @@ func (s *server) CreateAccount(ctx context.Context, rd *auth.CreateAccountReques
 			return errors.Trace(fmt.Errorf("Expected 1 row to be affected but got %d", aff))
 		}
 
-		authToken, err = s.generateAndInsertToken(dl, accountID, rd.TokenAttributes)
+		authToken, err = s.generateAndInsertToken(dl, accountID, rd.TokenAttributes, rd.Duration)
 		if err != nil {
 			return errors.Trace(err)
 		}
@@ -770,6 +789,46 @@ func (s *server) GetLastLoginInfo(ctx context.Context, req *auth.GetLastLoginInf
 	}, nil
 }
 
+func (s *server) UpdateAuthToken(ctx context.Context, req *auth.UpdateAuthTokenRequest) (*auth.UpdateAuthTokenResponse, error) {
+	if req.Token == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "token required")
+	}
+	if req.Duration == auth.TokenDuration_UNKNOWN_TOKEN_DURATION {
+		req.Duration = auth.TokenDuration_SHORT
+	}
+	durationType, err := dal.ParseAuthTokenDurationType(req.Duration.String())
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
+	}
+
+	var rAuthToken *auth.AuthToken
+	if err := s.dal.Transact(func(dl dal.DAL) error {
+		forUpdate := true
+		authToken, err := dl.AuthToken(req.Token, s.clk.Now(), forUpdate)
+		if errors.Cause(err) == dal.ErrNotFound {
+			return grpcErrorf(codes.NotFound, "Token %s not found", req.Token)
+		} else if err != nil {
+			return grpcError(err)
+		}
+		if _, err := dl.UpdateAuthToken(req.Token, &dal.AuthTokenUpdate{
+			DurationType: &durationType,
+		}); err != nil {
+			return grpcError(err)
+		}
+		rAuthToken, err = s.rotateAndExtendToken(dl, authToken, req.TokenAttributes)
+		if err != nil {
+			return grpcError(err)
+		}
+		return nil
+	}); err != nil {
+		return nil, grpcError(err)
+	}
+
+	return &auth.UpdateAuthTokenResponse{
+		Token: rAuthToken,
+	}, nil
+}
+
 func determinePlatform(platform auth.Platform) (device.Platform, error) {
 	switch platform {
 	case auth.Platform_ANDROID:
@@ -783,7 +842,7 @@ func determinePlatform(platform auth.Platform) (device.Platform, error) {
 }
 
 // generateAndInsertToken generates and inserts an auth token for the provided account and information
-func (s *server) generateAndInsertToken(dl dal.DAL, accountID dal.AccountID, tokenAttributes map[string]string) (*auth.AuthToken, error) {
+func (s *server) generateAndInsertToken(dl dal.DAL, accountID dal.AccountID, tokenAttributes map[string]string, duration auth.TokenDuration) (*auth.AuthToken, error) {
 	token, err := s.tokenGenerator.GenerateToken()
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -792,10 +851,19 @@ func (s *server) generateAndInsertToken(dl dal.DAL, accountID dal.AccountID, tok
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	tokenExpiration := s.clk.Now().Add(defaultTokenExpiration)
+	tokenExpiration := s.clk.Now().Add(tokenDurationExpiration[duration])
 
 	// Utilize the auth token to generate a client encryption key
 	key, err := s.clientEncryptionKeySigner.Sign([]byte(token))
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	sDurationType := duration.String()
+	if duration == auth.TokenDuration_UNKNOWN_TOKEN_DURATION {
+		sDurationType = auth.TokenDuration_SHORT.String()
+	}
+	durationType, err := dal.ParseAuthTokenDurationType(sDurationType)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -805,6 +873,7 @@ func (s *server) generateAndInsertToken(dl dal.DAL, accountID dal.AccountID, tok
 		Expires:             tokenExpiration,
 		Token:               []byte(tokenWithAttributes),
 		ClientEncryptionKey: key,
+		DurationType:        durationType,
 	}); err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -828,12 +897,13 @@ func (s *server) rotateAndExtendToken(dl dal.DAL, authToken *dal.AuthToken, toke
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	tokenExpiration := s.clk.Now().Add(defaultTokenExpiration)
+	tokenDuration := tokenDurationExpiration[auth.TokenDuration(auth.TokenDuration_value[authToken.DurationType.String()])]
+	tokenExpiration := s.clk.Now().Add(tokenDuration)
 
 	if err := dl.Transact(func(dl dal.DAL) error {
 		// Update our existing token to preserve the Created information that we rely on in other parts of the system
 		if _, err := dl.UpdateAuthToken(string(authToken.Token), &dal.AuthTokenUpdate{
-			Expires: ptr.Time(s.clk.Now().Add(defaultTokenExpiration)),
+			Expires: ptr.Time(tokenExpiration),
 			Token:   []byte(tokenWithAttributes),
 		}); err != nil {
 			return errors.Trace(err)
@@ -846,6 +916,7 @@ func (s *server) rotateAndExtendToken(dl dal.DAL, authToken *dal.AuthToken, toke
 			Token:               authToken.Token,
 			ClientEncryptionKey: authToken.ClientEncryptionKey,
 			Shadow:              true,
+			DurationType:        authToken.DurationType,
 		}))
 	}); err != nil {
 		return nil, errors.Trace(err)
@@ -858,8 +929,16 @@ func (s *server) rotateAndExtendToken(dl dal.DAL, authToken *dal.AuthToken, toke
 }
 
 const (
-	maxTokenSize           = 250
-	defaultTokenExpiration = time.Second * 60 * 60 * 24 * 4 // A token by default expires in 4 days
+	maxTokenSize = 250
+)
+
+var (
+	tokenDurationExpiration = map[auth.TokenDuration]time.Duration{
+		auth.TokenDuration_UNKNOWN_TOKEN_DURATION: time.Second * 60 * 60 * 24 * 4, // A token by default expires in 4 days
+		auth.TokenDuration_SHORT:                  time.Second * 60 * 60 * 24 * 4,
+		auth.TokenDuration_MEDIUM:                 time.Second * 60 * 60 * 24 * 30,  // A medium token expires in 30 days.
+		auth.TokenDuration_LONG:                   time.Second * 60 * 60 * 24 * 365, // A long token expires in 1 year.
+	}
 )
 
 func appendAttributes(token string, tokenAttributes map[string]string) (string, error) {
@@ -932,7 +1011,7 @@ func generateAndInsertVerificationCode(dl dal.DAL, valueToVerify string, codeTyp
 	tokenExpiration := clk.Now().Add(defaultVerificationCodeExpiration)
 
 	// TODO: Remove logging of the code perhaps?
-	golog.Debugf("Inserting verification code %s - with token %s - for value %s - expires %+v.", token, valueToVerify, tokenExpiration)
+	golog.Debugf("Inserting verification code %s - with token %s - for value %s - expires %+v.", code, token, valueToVerify, tokenExpiration)
 	if err := dl.InsertVerificationCode(&dal.VerificationCode{
 		Token:            token,
 		Code:             code,

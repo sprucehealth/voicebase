@@ -45,8 +45,8 @@ func (m *ResourceAccessor) LastLoginForAccount(ctx context.Context, req *auth.Ge
 	return rets[0].(*auth.GetLastLoginInfoResponse), mock.SafeError(rets[1])
 }
 
-func (m *ResourceAccessor) AuthenticateLogin(ctx context.Context, email, password string) (*auth.AuthenticateLoginResponse, error) {
-	rets := m.Record(email, password)
+func (m *ResourceAccessor) AuthenticateLogin(ctx context.Context, email, password string, duration auth.TokenDuration) (*auth.AuthenticateLoginResponse, error) {
+	rets := m.Record(email, password, duration)
 	if len(rets) == 0 {
 		return nil, nil
 	}
@@ -54,8 +54,8 @@ func (m *ResourceAccessor) AuthenticateLogin(ctx context.Context, email, passwor
 	return rets[0].(*auth.AuthenticateLoginResponse), mock.SafeError(rets[1])
 }
 
-func (m *ResourceAccessor) AuthenticateLoginWithCode(ctx context.Context, token, code string) (*auth.AuthenticateLoginWithCodeResponse, error) {
-	rets := m.Record(token, code)
+func (m *ResourceAccessor) AuthenticateLoginWithCode(ctx context.Context, token, code string, duration auth.TokenDuration) (*auth.AuthenticateLoginWithCodeResponse, error) {
+	rets := m.Record(token, code, duration)
 	if len(rets) == 0 {
 		return nil, nil
 	}
@@ -646,4 +646,13 @@ func (m *ResourceAccessor) ClaimMedia(ctx context.Context, req *media.ClaimMedia
 	}
 
 	return mock.SafeError(rets[0])
+}
+
+func (m *ResourceAccessor) UpdateAuthToken(ctx context.Context, req *auth.UpdateAuthTokenRequest) (*auth.AuthToken, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].(*auth.AuthToken), mock.SafeError(rets[1])
 }

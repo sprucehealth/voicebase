@@ -60,6 +60,7 @@ type createProviderAccountInput struct {
 	LongTitle              string `gql:"longTitle"`
 	OrganizationName       string `gql:"organizationName"`
 	PhoneVerificationToken string `gql:"phoneVerificationToken,nonempty"`
+	Duration               string `gql:"duration"`
 }
 
 var createProviderAccountInputType = graphql.NewInputObject(graphql.InputObjectConfig{
@@ -76,6 +77,7 @@ var createProviderAccountInputType = graphql.NewInputObject(graphql.InputObjectC
 		"longTitle":              &graphql.InputObjectFieldConfig{Type: graphql.String},
 		"organizationName":       &graphql.InputObjectFieldConfig{Type: graphql.String},
 		"phoneVerificationToken": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+		"duration":               &graphql.InputObjectFieldConfig{Type: tokenDurationEnum},
 	},
 })
 
@@ -208,6 +210,10 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 		golog.Debugf("The provided phone number %q does not match the number validated by the provided token %s", pn.String(), vpn.String())
 		return nil, fmt.Errorf("The provided phone number %q does not match the number validated by the provided token", req.PhoneNumber)
 	}
+	if in.Duration == "" {
+		in.Duration = auth.TokenDuration_SHORT.String()
+	}
+	req.Duration = auth.TokenDuration(auth.TokenDuration_value[in.Duration])
 	res, err := ram.CreateAccount(ctx, req)
 	if err != nil {
 		switch grpc.Code(err) {

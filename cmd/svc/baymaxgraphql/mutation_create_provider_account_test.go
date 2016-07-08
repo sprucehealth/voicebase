@@ -35,6 +35,7 @@ func TestCreateProviderAccountMutation(t *testing.T) {
 		PhoneNumber: "+14155551212",
 		Password:    "password",
 		Type:        auth.AccountType_PROVIDER,
+		Duration:    auth.TokenDuration_SHORT,
 	}).WithReturns(&auth.CreateAccountResponse{
 		Account: &auth.Account{
 			ID:   "a_1",
@@ -272,6 +273,7 @@ func TestCreateProviderAccountMutation_InviteColleague(t *testing.T) {
 		PhoneNumber: "+14155551212",
 		Password:    "password",
 		Type:        auth.AccountType_PROVIDER,
+		Duration:    auth.TokenDuration_SHORT,
 	}).WithReturns(&auth.CreateAccountResponse{
 		Account: &auth.Account{
 			ID:   "a_1",

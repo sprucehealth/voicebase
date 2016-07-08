@@ -83,8 +83,8 @@ func (e entityQueryOptions) has(opt EntityQueryOption) bool {
 type ResourceAccessor interface {
 	Account(ctx context.Context, accountID string) (*auth.Account, error)
 	LastLoginForAccount(ctx context.Context, req *auth.GetLastLoginInfoRequest) (*auth.GetLastLoginInfoResponse, error)
-	AuthenticateLogin(ctx context.Context, email, password string) (*auth.AuthenticateLoginResponse, error)
-	AuthenticateLoginWithCode(ctx context.Context, token, code string) (*auth.AuthenticateLoginWithCodeResponse, error)
+	AuthenticateLogin(ctx context.Context, email, password string, duration auth.TokenDuration) (*auth.AuthenticateLoginResponse, error)
+	AuthenticateLoginWithCode(ctx context.Context, token, code string, duration auth.TokenDuration) (*auth.AuthenticateLoginWithCodeResponse, error)
 	CanPostMessage(ctx context.Context, threadID string) error
 	CarePlan(ctx context.Context, id string) (*care.CarePlan, error)
 	CheckPasswordResetToken(ctx context.Context, token string) (*auth.CheckPasswordResetTokenResponse, error)
@@ -141,6 +141,7 @@ type ResourceAccessor interface {
 	TriageVisit(ctx context.Context, req *care.TriageVisitRequest) (*care.TriageVisitResponse, error)
 	Unauthenticate(ctx context.Context, token string) error
 	UnauthorizedCreateExternalIDs(ctx context.Context, req *directory.CreateExternalIDsRequest) error
+	UpdateAuthToken(ctx context.Context, req *auth.UpdateAuthTokenRequest) (*auth.AuthToken, error)
 	UpdateContacts(ctx context.Context, req *directory.UpdateContactsRequest) (*directory.Entity, error)
 	UpdateEntity(ctx context.Context, req *directory.UpdateEntityRequest) (*directory.Entity, error)
 	UpdateIPCall(ctx context.Context, req *excomms.UpdateIPCallRequest) (*excomms.UpdateIPCallResponse, error)
@@ -220,7 +221,7 @@ func (m *resourceAccessor) LastLoginForAccount(ctx context.Context, req *auth.Ge
 	return m.auth.GetLastLoginInfo(ctx, req)
 }
 
-func (m *resourceAccessor) AuthenticateLogin(ctx context.Context, email, password string) (*auth.AuthenticateLoginResponse, error) {
+func (m *resourceAccessor) AuthenticateLogin(ctx context.Context, email, password string, duration auth.TokenDuration) (*auth.AuthenticateLoginResponse, error) {
 	headers := devicectx.SpruceHeaders(ctx)
 	// Note: There is no authorization required for this operation.
 	resp, err := m.auth.AuthenticateLogin(ctx, &auth.AuthenticateLoginRequest{
@@ -228,6 +229,7 @@ func (m *resourceAccessor) AuthenticateLogin(ctx context.Context, email, passwor
 		Password: password,
 		DeviceID: headers.DeviceID,
 		Platform: determinePlatformForAuth(headers),
+		Duration: duration,
 	})
 	if err != nil {
 		return nil, err
@@ -235,7 +237,7 @@ func (m *resourceAccessor) AuthenticateLogin(ctx context.Context, email, passwor
 	return resp, nil
 }
 
-func (m *resourceAccessor) AuthenticateLoginWithCode(ctx context.Context, token, code string) (*auth.AuthenticateLoginWithCodeResponse, error) {
+func (m *resourceAccessor) AuthenticateLoginWithCode(ctx context.Context, token, code string, duration auth.TokenDuration) (*auth.AuthenticateLoginWithCodeResponse, error) {
 	headers := devicectx.SpruceHeaders(ctx)
 
 	// Note: There is no authorization required for this operation.
@@ -244,6 +246,7 @@ func (m *resourceAccessor) AuthenticateLoginWithCode(ctx context.Context, token,
 		Code:     code,
 		DeviceID: headers.DeviceID,
 		Platform: determinePlatformForAuth(headers),
+		Duration: duration,
 	})
 	if err != nil {
 		return nil, err
@@ -937,6 +940,14 @@ func (m *resourceAccessor) Unauthenticate(ctx context.Context, token string) err
 
 func (m *resourceAccessor) UnauthorizedCreateExternalIDs(ctx context.Context, req *directory.CreateExternalIDsRequest) error {
 	return m.createExternalIDs(ctx, req)
+}
+
+func (m *resourceAccessor) UpdateAuthToken(ctx context.Context, req *auth.UpdateAuthTokenRequest) (*auth.AuthToken, error) {
+	res, err := m.auth.UpdateAuthToken(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return res.Token, nil
 }
 
 func (m *resourceAccessor) UpdateContacts(ctx context.Context, req *directory.UpdateContactsRequest) (*directory.Entity, error) {

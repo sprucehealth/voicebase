@@ -27,7 +27,7 @@ func TestAuthenticateMutation(t *testing.T) {
 	email := "someone@example.com"
 	password := "toomanysecrets"
 
-	g.ra.Expect(mock.NewExpectation(g.ra.AuthenticateLogin, email, password).WithReturns(&auth.AuthenticateLoginResponse{
+	g.ra.Expect(mock.NewExpectation(g.ra.AuthenticateLogin, email, password, auth.TokenDuration_LONG).WithReturns(&auth.AuthenticateLoginResponse{
 		Token: &auth.AuthToken{
 			Value: "token",
 		},
@@ -42,6 +42,7 @@ func TestAuthenticateMutation(t *testing.T) {
 				clientMutationId: "a1b2c3",
 				email: $email,
 				password: $password,
+				duration: LONG,
 			}) {
 				clientMutationId
 				success

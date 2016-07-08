@@ -1,0 +1,1 @@
+ALTER TABLE auth_token ADD COLUMN duration_type VARCHAR(10) NOT NULL DEFAULT 'SHORT';

@@ -46,11 +46,20 @@ message AuthToken {
     string client_encryption_key = 3;
 }
 
+// Various platforms that interact with the auth service
 enum Platform {
 	UNKNOWN_PLATFORM = 0;
 	IOS = 1;
 	ANDROID = 2;
 	WEB = 3;
+}
+
+// TokenDuration represents the duration ranges available to tokens
+enum TokenDuration {
+	UNKNOWN_TOKEN_DURATION = 0;
+	SHORT = 1;
+	MEDIUM = 2;
+	LONG = 3;
 }
 
 // AuthenticateLoginRequest represents the information that is used to authenticate a users login.
@@ -62,6 +71,7 @@ message AuthenticateLoginRequest {
 	map<string, string> token_attributes = 3;
 	string device_id = 4 [(gogoproto.customname) = "DeviceID"];
 	Platform platform = 5;
+	TokenDuration duration = 6;
 }
 
 // AuthenticateLoginResponse represents the information that is returned from AuthenticateLoginRequest
@@ -82,6 +92,7 @@ message AuthenticateLoginWithCodeRequest {
 	map<string, string> token_attributes = 3;
 	string device_id = 4 [(gogoproto.customname) = "DeviceID"];
 	Platform platform = 5;
+	TokenDuration duration = 6;
 }
 
 // AuthenticateLoginWithCodeResponse represents the information that is returned from AuthenticateLoginWithCode
@@ -117,6 +128,7 @@ message CreateAccountRequest {
 	string device_id = 7 [(gogoproto.customname) = "DeviceID"];
 	AccountType type = 8;
 	Platform platform = 9;
+	TokenDuration duration = 10;
 }
 
 // CreateAccountResponse represents the information that is returned from CreateAccountRequest
@@ -241,6 +253,18 @@ message GetLastLoginInfoResponse {
 	string account_id = 4 [(gogoproto.customname) = "AccountID"];
 }
 
+// UpdateAuthTokenRequest represents the mutable aspects of an auth token
+message UpdateAuthTokenRequest {
+	string token = 1; 
+	map<string, string> token_attributes = 2;
+	TokenDuration duration = 3;
+}
+
+// UpdateAuthTokenResponse represents the response from an UpdateAuthToken request
+message UpdateAuthTokenResponse {
+	AuthToken token = 1;
+}
+
 // Auth provides mechanisms for other services to perform authentication of external entities interacting with them
 service Auth {
 	rpc AuthenticateLogin (AuthenticateLoginRequest) returns (AuthenticateLoginResponse);
@@ -254,6 +278,7 @@ service Auth {
 	rpc GetAccount (GetAccountRequest) returns (GetAccountResponse);
 	rpc Unauthenticate (UnauthenticateRequest) returns (UnauthenticateResponse);
 	rpc UpdatePassword (UpdatePasswordRequest) returns (UpdatePasswordResponse);
+	rpc UpdateAuthToken (UpdateAuthTokenRequest) returns (UpdateAuthTokenResponse);
 	rpc VerifiedValue (VerifiedValueRequest) returns (VerifiedValueResponse);
 	rpc BlockAccount(BlockAccountRequest) returns (BlockAccountResponse);
 	rpc GetLastLoginInfo(GetLastLoginInfoRequest) returns (GetLastLoginInfoResponse);

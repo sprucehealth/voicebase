@@ -128,6 +128,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 		"markThreadAsRead":                    markThreadAsReadMutation,
 		"markThreadsAsRead":                   markThreadsAsReadMutation,
 		"modifySetting":                       modifySettingMutation,
+		"modifyTokenDuration":                 modifyTokenDurationMutation,
 		"passwordReset":                       passwordResetMutation,
 		"postEvent":                           postEventMutation,
 		"postMessage":                         postMessageMutation,

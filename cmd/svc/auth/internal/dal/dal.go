@@ -447,6 +447,45 @@ func (t *VerificationCodeType) Scan(src interface{}) error {
 	return errors.Trace(err)
 }
 
+// AuthTokenDurationType represents the duration type of an auth token
+type AuthTokenDurationType string
+
+const (
+	// AuthTokenDurationTypeShort represents the SHORT state of the duration_type field on a auth_token record
+	AuthTokenDurationTypeShort AuthTokenDurationType = "SHORT"
+	// AuthTokenDurationTypeMedium represents the MEDIUM state of the type duration_type on a auth_token record
+	AuthTokenDurationTypeMedium AuthTokenDurationType = "MEDIUM"
+	// AuthTokenDurationTypeLong represents the LONG state of the type duration_type on a auth_token record
+	AuthTokenDurationTypeLong AuthTokenDurationType = "LONG"
+)
+
+// ParseAuthTokenDurationType converts a string into the correcponding enum value
+func ParseAuthTokenDurationType(s string) (AuthTokenDurationType, error) {
+	switch t := AuthTokenDurationType(strings.ToUpper(s)); t {
+	case AuthTokenDurationTypeShort, AuthTokenDurationTypeMedium, AuthTokenDurationTypeLong:
+		return t, nil
+	}
+	return AuthTokenDurationType(""), errors.Trace(fmt.Errorf("Unknown type:%s", s))
+}
+
+func (t AuthTokenDurationType) String() string {
+	return string(t)
+}
+
+// Scan allows for scanning of AuthTokenDurationType from a database conforming to the sql.Scanner interface
+func (t *AuthTokenDurationType) Scan(src interface{}) error {
+	var err error
+	switch ts := src.(type) {
+	case string:
+		*t, err = ParseAuthTokenDurationType(ts)
+	case []byte:
+		*t, err = ParseAuthTokenDurationType(string(ts))
+	default:
+		return errors.Trace(fmt.Errorf("Unsupported type %T with value %+v in enumeration scan", src, src))
+	}
+	return errors.Trace(err)
+}
+
 // VerificationCode represents a verification_code record
 type VerificationCode struct {
 	Created          time.Time
@@ -541,13 +580,15 @@ type AuthToken struct {
 	Expires             time.Time
 	// A shadow token is a token that exists solely for the purposes
 	//  of supporting in flight calls while the master token is rotating
-	Shadow bool
+	Shadow       bool
+	DurationType AuthTokenDurationType
 }
 
 // AuthTokenUpdate represents the mutable aspects of a auth_token record
 type AuthTokenUpdate struct {
-	Token   []byte
-	Expires *time.Time
+	Token        []byte
+	Expires      *time.Time
+	DurationType *AuthTokenDurationType
 }
 
 // TwoFactorLogin represents a two_factor_login record
@@ -681,8 +722,8 @@ func (d *dal) ActiveAuthTokenForAccount(accountID AccountID) (*AuthToken, error)
 func (d *dal) InsertAuthToken(model *AuthToken) error {
 	_, err := d.db.Exec(
 		`INSERT INTO auth_token
-          (token, client_encryption_key, account_id, expires, shadow)
-          VALUES (?, ?, ?, ?, ?)`, model.Token, model.ClientEncryptionKey, model.AccountID, model.Expires, model.Shadow)
+          (token, client_encryption_key, account_id, expires, shadow, duration_type)
+          VALUES (?, ?, ?, ?, ?, ?)`, model.Token, model.ClientEncryptionKey, model.AccountID, model.Expires, model.Shadow, model.DurationType.String())
 	if err != nil {
 		return errors.Trace(err)
 	}
@@ -724,6 +765,9 @@ func (d *dal) UpdateAuthToken(token string, update *AuthTokenUpdate) (int64, err
 	}
 	if update.Expires != nil {
 		args.Append("expires", *update.Expires)
+	}
+	if update.DurationType != nil {
+		args.Append("duration_type", (*update.DurationType).String())
 	}
 	if args.IsEmpty() {
 		return 0, nil
@@ -1055,14 +1099,14 @@ func scanAccount(row dbutil.Scanner) (*Account, error) {
 }
 
 const selectAuthToken = `
-    SELECT auth_token.token, auth_token.client_encryption_key, auth_token.account_id, auth_token.created, auth_token.expires, auth_token.shadow
+    SELECT auth_token.token, auth_token.client_encryption_key, auth_token.account_id, auth_token.created, auth_token.expires, auth_token.shadow, auth_token.duration_type
       FROM auth_token`
 
 func scanAuthToken(row dbutil.Scanner) (*AuthToken, error) {
 	var m AuthToken
 	m.AccountID = EmptyAccountID()
 
-	err := row.Scan(&m.Token, &m.ClientEncryptionKey, &m.AccountID, &m.Created, &m.Expires, &m.Shadow)
+	err := row.Scan(&m.Token, &m.ClientEncryptionKey, &m.AccountID, &m.Created, &m.Expires, &m.Shadow, &m.DurationType)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrNotFound)
 	}

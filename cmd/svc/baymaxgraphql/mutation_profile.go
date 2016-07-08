@@ -29,9 +29,8 @@ var profileSectionInputType = graphql.NewInputObject(
 	graphql.InputObjectConfig{
 		Name: "ProfileSectionInput",
 		Fields: graphql.InputObjectConfigFieldMap{
-			"clientMutationId": newClientMutationIDInputField(),
-			"title":            &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-			"body":             &graphql.InputObjectFieldConfig{Type: graphql.String},
+			"title": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"body":  &graphql.InputObjectFieldConfig{Type: graphql.String},
 		},
 	},
 )

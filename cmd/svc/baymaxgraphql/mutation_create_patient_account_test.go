@@ -87,6 +87,7 @@ func TestCreatePatientAccountMutation(t *testing.T) {
 		PhoneNumber: "+14155551212",
 		Password:    "password",
 		Type:        auth.AccountType_PATIENT,
+		Duration:    auth.TokenDuration_LONG,
 	}).WithReturns(&auth.CreateAccountResponse{
 		Account: &auth.Account{
 			ID:   "a_1",
@@ -199,6 +200,7 @@ func TestCreatePatientAccountMutation(t *testing.T) {
 					year: 1986,
 				},
 				emailVerificationToken: "emailToken",
+				duration: LONG,
 			}) {
 				clientMutationId
 				token

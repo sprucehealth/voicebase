@@ -13,6 +13,7 @@ import (
 	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/gqldecode"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/textutil"
 	"github.com/sprucehealth/backend/libs/validate"
@@ -21,6 +22,7 @@ import (
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
+	"github.com/sprucehealth/graphql/gqlerrors"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
@@ -145,6 +147,12 @@ var genderEnumType = graphql.NewEnum(graphql.EnumConfig{
 	},
 })
 
+type dateInput struct {
+	Month int `gql:"month"`
+	Day   int `gql:"day"`
+	Year  int `gql:"year"`
+}
+
 // dateInputType represents a Date of Birth input pattern
 var dateInputType = graphql.NewInputObject(graphql.InputObjectConfig{
 	Name: "DateInput",
@@ -154,6 +162,21 @@ var dateInputType = graphql.NewInputObject(graphql.InputObjectConfig{
 		"year":  &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.Int)},
 	},
 })
+
+type createPatientAccountInput struct {
+	ClientMutationID       string     `gql:"clientMutationId"`
+	UUID                   string     `gql:"uuid"`
+	Email                  string     `gql:"email,nonempty"`
+	PhoneNumber            string     `gql:"phoneNumber"`
+	Password               string     `gql:"password,nonempty"`
+	FirstName              string     `gql:"firstName,nonempty"`
+	LastName               string     `gql:"lastName,nonempty"`
+	DOB                    *dateInput `gql:"dob,nonempty"`
+	Gender                 string     `gql:"gender,nonempty"`
+	EmailVerificationToken string     `gql:"emailVerificationToken"`
+	PhoneVerificationToken string     `gql:"phoneVerificationToken"`
+	Duration               string     `gql:"duration"`
+}
 
 var createPatientAccountInputType = graphql.NewInputObject(graphql.InputObjectConfig{
 	Name: "CreatePatientAccountInput",
@@ -169,6 +192,7 @@ var createPatientAccountInputType = graphql.NewInputObject(graphql.InputObjectCo
 		"gender":                 &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(genderEnumType)},
 		"emailVerificationToken": &graphql.InputObjectFieldConfig{Type: graphql.String},
 		"phoneVerificationToken": &graphql.InputObjectFieldConfig{Type: graphql.String},
+		"duration":               &graphql.InputObjectFieldConfig{Type: tokenDurationEnum},
 	},
 })
 
@@ -204,7 +228,15 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 	ram := raccess.ResourceAccess(p)
 	ctx := p.Context
 	input := p.Args["input"].(map[string]interface{})
-	mutationID, _ := input["clientMutationId"].(string)
+
+	var in createPatientAccountInput
+	if err := gqldecode.Decode(p.Args["input"].(map[string]interface{}), &in); err != nil {
+		switch err := err.(type) {
+		case gqldecode.ErrValidationFailed:
+			return nil, gqlerrors.FormatError(fmt.Errorf("%s is invalid: %s", err.Field, err.Reason))
+		}
+		return nil, errors.InternalError(ctx, err)
+	}
 
 	inv, atts, err := svc.inviteAndAttributionInfo(ctx)
 	if err != nil {
@@ -213,7 +245,7 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 
 	if inv == nil || (inv.Type != invite.LookupInviteResponse_PATIENT && inv.Type != invite.LookupInviteResponse_ORGANIZATION_CODE) {
 		return &createPatientAccountOutput{
-			ClientMutationID: mutationID,
+			ClientMutationID: in.ClientMutationID,
 			Success:          false,
 			ErrorCode:        createPatientAccountErrorCodeInviteRequired,
 			ErrorMessage:     "An invite from a provider is required to create an account with this device.",
@@ -221,13 +253,17 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 	}
 
 	req := &auth.CreateAccountRequest{
-		Email:    input["email"].(string),
-		Password: input["password"].(string),
+		Email:    in.Email,
+		Password: in.Password,
 		Type:     auth.AccountType_PATIENT,
 	}
+	if in.Duration == "" {
+		in.Duration = auth.TokenDuration_SHORT.String()
+	}
+	req.Duration = auth.TokenDuration(auth.TokenDuration_value[in.Duration])
 	if req.Password == "" {
 		return &createPatientAccountOutput{
-			ClientMutationID: mutationID,
+			ClientMutationID: in.ClientMutationID,
 			Success:          false,
 			ErrorCode:        createPatientAccountErrorCodeInvalidPassword,
 			ErrorMessage:     "Password cannot be empty",
@@ -240,15 +276,12 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 			return nil, errors.InternalError(ctx, fmt.Errorf("Encountered error whil getting parked phone number for account creation: %s", err))
 		}
 	} else {
-		iPhoneNumber, ok := input["phoneNumber"]
-		if ok {
-			phoneNumber = iPhoneNumber.(string)
-		}
+		phoneNumber = in.PhoneNumber
 	}
 	pn, err := phone.ParseNumber(phoneNumber)
 	if err != nil {
 		return &createPatientAccountOutput{
-			ClientMutationID: mutationID,
+			ClientMutationID: in.ClientMutationID,
 			Success:          false,
 			ErrorCode:        createPatientAccountErrorCodeInvalidPhoneNumber,
 			ErrorMessage:     "Please enter a valid phone number.",
@@ -257,19 +290,18 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 	req.PhoneNumber = pn.String()
 	if inv.Type == invite.LookupInviteResponse_ORGANIZATION_CODE {
 		// Assert that the phone number was verified
-		phoneVerificationToken, ok := input["phoneVerificationToken"]
-		if !ok {
+		if in.PhoneVerificationToken == "" {
 			return &createPatientAccountOutput{
-				ClientMutationID: mutationID,
+				ClientMutationID: in.ClientMutationID,
 				Success:          false,
 				ErrorCode:        createPatientAccountErrorCodePhoneNumberVerificationTokenRequired,
 				ErrorMessage:     "Phone number verification token required.",
 			}, nil
 		}
-		if _, err := ram.VerifiedValue(ctx, phoneVerificationToken.(string)); err != nil {
+		if _, err := ram.VerifiedValue(ctx, in.PhoneVerificationToken); err != nil {
 			if grpc.Code(err) == auth.ValueNotYetVerified {
 				return &createPatientAccountOutput{
-					ClientMutationID: mutationID,
+					ClientMutationID: in.ClientMutationID,
 					Success:          false,
 					ErrorCode:        createPatientAccountErrorCodePhoneNumberNotVerified,
 					ErrorMessage:     "The phone number associated with this account creation has not been verified.",
@@ -282,7 +314,7 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 	req.Email = strings.TrimSpace(req.Email)
 	if !validate.Email(req.Email) {
 		return &createPatientAccountOutput{
-			ClientMutationID: mutationID,
+			ClientMutationID: in.ClientMutationID,
 			Success:          false,
 			ErrorCode:        createPatientAccountErrorCodeInvalidEmail,
 			ErrorMessage:     "Please enter a valid email address.",
@@ -297,7 +329,7 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 	req.LastName = strings.TrimSpace(entityInfo.LastName)
 	if req.FirstName == "" || !textutil.IsValidPlane0Unicode(req.FirstName) {
 		return &createPatientAccountOutput{
-			ClientMutationID: mutationID,
+			ClientMutationID: in.ClientMutationID,
 			Success:          false,
 			ErrorCode:        createPatientAccountErrorCodeInvalidFirstName,
 			ErrorMessage:     "Please enter a valid first name.",
@@ -305,7 +337,7 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 	}
 	if req.LastName == "" || !textutil.IsValidPlane0Unicode(req.LastName) {
 		return &createPatientAccountOutput{
-			ClientMutationID: mutationID,
+			ClientMutationID: in.ClientMutationID,
 			Success:          false,
 			ErrorCode:        createPatientAccountErrorCodeInvalidLastName,
 			ErrorMessage:     "Please enter a valid last name.",
@@ -318,19 +350,18 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 	switch inv.Type {
 	case invite.LookupInviteResponse_PATIENT:
 		// Assert that the email was verified
-		emailVerificationToken, ok := input["emailVerificationToken"]
-		if !ok {
+		if in.EmailVerificationToken == "" {
 			return &createPatientAccountOutput{
-				ClientMutationID: mutationID,
+				ClientMutationID: in.ClientMutationID,
 				Success:          false,
 				ErrorCode:        createPatientAccountErrorCodeEmailVerificationTokenRequired,
 				ErrorMessage:     "Email verification token required.",
 			}, nil
 		}
-		if _, err := ram.VerifiedValue(ctx, emailVerificationToken.(string)); err != nil {
+		if _, err := ram.VerifiedValue(ctx, in.EmailVerificationToken); err != nil {
 			if grpc.Code(err) == auth.ValueNotYetVerified {
 				return &createPatientAccountOutput{
-					ClientMutationID: mutationID,
+					ClientMutationID: in.ClientMutationID,
 					Success:          false,
 					ErrorCode:        createPatientAccountErrorCodeEmailNotVerified,
 					ErrorMessage:     "The email associated with this account creation has not been verified.",
@@ -353,21 +384,21 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 		switch grpc.Code(err) {
 		case auth.DuplicateEmail:
 			return &createPatientAccountOutput{
-				ClientMutationID: mutationID,
+				ClientMutationID: in.ClientMutationID,
 				Success:          false,
 				ErrorCode:        createPatientAccountErrorCodeAccountExists,
 				ErrorMessage:     "An account already exists with the entered email address.",
 			}, nil
 		case auth.InvalidEmail:
 			return &createPatientAccountOutput{
-				ClientMutationID: mutationID,
+				ClientMutationID: in.ClientMutationID,
 				Success:          false,
 				ErrorCode:        createPatientAccountErrorCodeInvalidEmail,
 				ErrorMessage:     "Please enter a valid email address.",
 			}, nil
 		case auth.InvalidPhoneNumber:
 			return &createPatientAccountOutput{
-				ClientMutationID: mutationID,
+				ClientMutationID: in.ClientMutationID,
 				Success:          false,
 				ErrorCode:        createPatientAccountErrorCodeInvalidPhoneNumber,
 				ErrorMessage:     "Please enter a valid phone number.",
@@ -479,7 +510,7 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 	result.Set("auth_expiration", time.Unix(int64(res.Token.ExpirationEpoch), 0))
 
 	return &createPatientAccountOutput{
-		ClientMutationID:    mutationID,
+		ClientMutationID:    in.ClientMutationID,
 		Success:             true,
 		Token:               res.Token.Value,
 		Account:             transformAccountToResponse(res.Account),

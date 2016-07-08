@@ -1,9 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/segmentio/analytics-go"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
@@ -12,13 +14,42 @@ import (
 	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/gqldecode"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/graphql"
+	"github.com/sprucehealth/graphql/gqlerrors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
+
+// Token duration
+
+const (
+	tokenDurationShort  = "SHORT"
+	tokenDurationMedium = "MEDIUM"
+	tokenDurationLong   = "LONG"
+)
+
+var tokenDurationEnum = graphql.NewEnum(graphql.EnumConfig{
+	Name:        "TokenDurationEnum",
+	Description: "Represents the durations of an authentication token",
+	Values: graphql.EnumValueConfigMap{
+		tokenDurationShort: &graphql.EnumValueConfig{
+			Value:       tokenDurationShort,
+			Description: "Short token duration",
+		},
+		tokenDurationMedium: &graphql.EnumValueConfig{
+			Value:       tokenDurationMedium,
+			Description: "Medium token duration",
+		},
+		tokenDurationLong: &graphql.EnumValueConfig{
+			Value:       tokenDurationLong,
+			Description: "Long token duration",
+		},
+	},
+})
 
 // authenticate
 
@@ -29,17 +60,6 @@ const (
 	authenticateErrorCodeInvalidCode               = "INVALID_CODE"
 	authenticateErrorCodePatientPlatformNotAllowed = "PATIENT_PLATFORM_NOT_ALLOWED"
 )
-
-type authenticateOutput struct {
-	ClientMutationID      string         `json:"clientMutationId,omitempty"`
-	Success               bool           `json:"success"`
-	ErrorCode             string         `json:"errorCode,omitempty"`
-	ErrorMessage          string         `json:"errorMessage,omitempty"`
-	Token                 string         `json:"token,omitempty"`
-	Account               models.Account `json:"account,omitempty"`
-	PhoneNumberLastDigits string         `json:"phoneNumberLastDigits,omitempty"`
-	ClientEncryptionKey   string         `json:"clientEncryptionKey,omitempty"`
-}
 
 var authenticateErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
 	Name:        "AuthenticateErrorCode",
@@ -68,16 +88,16 @@ var authenticateErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
 	},
 })
 
-var authenticateInputType = graphql.NewInputObject(
-	graphql.InputObjectConfig{
-		Name: "AuthenticateInput",
-		Fields: graphql.InputObjectConfigFieldMap{
-			"clientMutationId": newClientMutationIDInputField(),
-			"email":            &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-			"password":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-		},
-	},
-)
+type authenticateOutput struct {
+	ClientMutationID      string         `json:"clientMutationId,omitempty"`
+	Success               bool           `json:"success"`
+	ErrorCode             string         `json:"errorCode,omitempty"`
+	ErrorMessage          string         `json:"errorMessage,omitempty"`
+	Token                 string         `json:"token,omitempty"`
+	Account               models.Account `json:"account,omitempty"`
+	PhoneNumberLastDigits string         `json:"phoneNumberLastDigits,omitempty"`
+	ClientEncryptionKey   string         `json:"clientEncryptionKey,omitempty"`
+}
 
 var authenticateOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
@@ -102,6 +122,25 @@ var authenticateOutputType = graphql.NewObject(
 	},
 )
 
+type authenticateInput struct {
+	ClientMutationID string `gql:"clientMutationId"`
+	Email            string `gql:"email,nonempty"`
+	Password         string `gql:"password,nonempty"`
+	Duration         string `gql:"duration"`
+}
+
+var authenticateInputType = graphql.NewInputObject(
+	graphql.InputObjectConfig{
+		Name: "AuthenticateInput",
+		Fields: graphql.InputObjectConfigFieldMap{
+			"clientMutationId": newClientMutationIDInputField(),
+			"email":            &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"password":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"duration":         &graphql.InputObjectFieldConfig{Type: tokenDurationEnum},
+		},
+	},
+)
+
 var authenticateMutation = &graphql.Field{
 	Type: graphql.NewNonNull(authenticateOutputType),
 	Args: graphql.FieldConfigArgument{
@@ -111,45 +150,53 @@ var authenticateMutation = &graphql.Field{
 		svc := serviceFromParams(p)
 		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
-		input := p.Args["input"].(map[string]interface{})
-		mutationID, _ := input["clientMutationId"].(string)
-		email := input["email"].(string)
-		if !validate.Email(email) {
+
+		var in authenticateInput
+		if err := gqldecode.Decode(p.Args["input"].(map[string]interface{}), &in); err != nil {
+			switch err := err.(type) {
+			case gqldecode.ErrValidationFailed:
+				return nil, gqlerrors.FormatError(fmt.Errorf("%s is invalid: %s", err.Field, err.Reason))
+			}
+			return nil, errors.InternalError(ctx, err)
+		}
+		if !validate.Email(in.Email) {
 			return &authenticateOutput{
-				ClientMutationID: mutationID,
+				ClientMutationID: in.ClientMutationID,
 				Success:          false,
 				ErrorCode:        authenticateErrorCodeAccountNotFound,
 				ErrorMessage:     "No account exists with the provided email.",
 			}, nil
 		}
-		password := input["password"].(string)
-		res, err := ram.AuthenticateLogin(ctx, email, password)
+		if in.Duration == "" {
+			in.Duration = auth.TokenDuration_SHORT.String()
+		}
+		res, err := ram.AuthenticateLogin(ctx, in.Email, in.Password, auth.TokenDuration(auth.TokenDuration_value[in.Duration]))
 		if err != nil {
 			switch grpc.Code(err) {
 			case auth.EmailNotFound:
 				return &authenticateOutput{
-					ClientMutationID: mutationID,
+					ClientMutationID: in.ClientMutationID,
 					Success:          false,
 					ErrorCode:        authenticateErrorCodeAccountNotFound,
 					ErrorMessage:     "No account exists with the provided email.",
 				}, nil
 			case auth.BadPassword:
 				return &authenticateOutput{
-					ClientMutationID: mutationID,
+					ClientMutationID: in.ClientMutationID,
 					Success:          false,
 					ErrorCode:        authenticateErrorCodePasswordMismatch,
 					ErrorMessage:     "The password does not match. Please try typing it again.",
 				}, nil
 			case auth.AccountBlocked:
 				return &authenticateOutput{
-					ClientMutationID: mutationID,
+					ClientMutationID: in.ClientMutationID,
 					Success:          false,
 					ErrorCode:        authenticateErrorCodeAccountNotFound,
 					ErrorMessage:     "Your account has been blocked. Please contact help@sprucehealth.com.",
 				}, nil
 			case auth.AccountSuspended:
 				return &authenticateOutput{
-					ClientMutationID: mutationID,
+					ClientMutationID: in.ClientMutationID,
 					Success:          false,
 					ErrorCode:        authenticateErrorCodeAccountNotFound,
 					ErrorMessage:     "Your account has been suspended. Please contact help@sprucehealth.com.",
@@ -161,7 +208,7 @@ var authenticateMutation = &graphql.Field{
 		headers := devicectx.SpruceHeaders(ctx)
 		if res.Account.Type == auth.AccountType_PATIENT && (headers.Platform != device.Android && headers.Platform != device.IOS) {
 			return &authenticateOutput{
-				ClientMutationID: mutationID,
+				ClientMutationID: in.ClientMutationID,
 				Success:          false,
 				ErrorCode:        authenticateErrorCodePatientPlatformNotAllowed,
 				ErrorMessage:     "Patient accounts may only log in on Android and iOS.",
@@ -182,7 +229,7 @@ var authenticateMutation = &graphql.Field{
 				phoneNumberLastDigits = phoneNumberLastDigits[len(phoneNumberLastDigits)-2:]
 			}
 			return &authenticateOutput{
-				ClientMutationID: mutationID,
+				ClientMutationID: in.ClientMutationID,
 				Success:          false,
 				ErrorCode:        authenticateErrorCodeTwoFactorRequired,
 				ErrorMessage:     "A verification code has been sent to your primary phone number. You must enter the received code to complete authentication.",
@@ -194,28 +241,8 @@ var authenticateMutation = &graphql.Field{
 		token := res.Token.Value
 		expires := time.Unix(int64(res.Token.ExpirationEpoch), 0)
 
-		eh := devicectx.SpruceHeaders(ctx)
-
-		conc.Go(func() {
-			svc.segmentio.Track(&analytics.Track{
-				UserId: res.Account.ID,
-				Event:  "signedin",
-				Properties: map[string]interface{}{
-					"platform": eh.Platform.String(),
-				},
-			})
-			svc.segmentio.Identify(&analytics.Identify{
-				UserId: res.Account.ID,
-				Traits: map[string]interface{}{
-					"platform": eh.Platform.String(),
-				},
-				Context: map[string]interface{}{
-					"ip":        remoteAddrFromParams(p),
-					"userAgent": userAgentFromParams(p),
-				},
-			})
-
-		})
+		// Track the authentication
+		conc.Go(func() { trackAuthentication(p, res.Account.ID, devicectx.SpruceHeaders(ctx)) })
 
 		// TODO: updating the context this is safe for now because the GraphQL pkg serializes mutations.
 		// that likely won't change, but this still isn't a great way to update the context.
@@ -225,7 +252,7 @@ var authenticateMutation = &graphql.Field{
 		result.Set("auth_expiration", expires)
 
 		return &authenticateOutput{
-			ClientMutationID:    mutationID,
+			ClientMutationID:    in.ClientMutationID,
 			Success:             true,
 			Token:               token,
 			Account:             transformAccountToResponse(res.Account),
@@ -234,7 +261,35 @@ var authenticateMutation = &graphql.Field{
 	},
 }
 
+func trackAuthentication(p graphql.ResolveParams, accountID string, eh *device.SpruceHeaders) {
+	svc := serviceFromParams(p)
+	svc.segmentio.Track(&analytics.Track{
+		UserId: accountID,
+		Event:  "signedin",
+		Properties: map[string]interface{}{
+			"platform": eh.Platform.String(),
+		},
+	})
+	svc.segmentio.Identify(&analytics.Identify{
+		UserId: accountID,
+		Traits: map[string]interface{}{
+			"platform": eh.Platform.String(),
+		},
+		Context: map[string]interface{}{
+			"ip":        remoteAddrFromParams(p),
+			"userAgent": userAgentFromParams(p),
+		},
+	})
+}
+
 // authenticateWithCode
+
+type authenticateWithCodeInput struct {
+	ClientMutationID string `gql:"clientMutationId"`
+	Token            string `gql:"token,nonempty"`
+	Code             string `gql:"code,nonempty"`
+	Duration         string `gql:"duration"`
+}
 
 var authenticateWithCodeInputType = graphql.NewInputObject(
 	graphql.InputObjectConfig{
@@ -243,6 +298,7 @@ var authenticateWithCodeInputType = graphql.NewInputObject(
 			"clientMutationId": newClientMutationIDInputField(),
 			"token":            &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 			"code":             &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"duration":         &graphql.InputObjectFieldConfig{Type: tokenDurationEnum},
 		},
 	},
 )
@@ -253,19 +309,26 @@ var authenticateWithCodeMutation = &graphql.Field{
 		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(authenticateWithCodeInputType)},
 	},
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-		svc := serviceFromParams(p)
 		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
-		input := p.Args["input"].(map[string]interface{})
-		mutationID, _ := input["clientMutationId"].(string)
-		token := input["token"].(string)
-		code := input["code"].(string)
-		res, err := ram.AuthenticateLoginWithCode(ctx, token, code)
+
+		var in authenticateWithCodeInput
+		if err := gqldecode.Decode(p.Args["input"].(map[string]interface{}), &in); err != nil {
+			switch err := err.(type) {
+			case gqldecode.ErrValidationFailed:
+				return nil, gqlerrors.FormatError(fmt.Errorf("%s is invalid: %s", err.Field, err.Reason))
+			}
+			return nil, errors.InternalError(ctx, err)
+		}
+		if in.Duration == "" {
+			in.Duration = auth.TokenDuration_SHORT.String()
+		}
+		res, err := ram.AuthenticateLoginWithCode(ctx, in.Token, in.Code, auth.TokenDuration(auth.TokenDuration_value[in.Duration]))
 		if err != nil {
 			switch grpc.Code(err) {
 			case auth.BadVerificationCode, codes.NotFound:
 				return &authenticateOutput{
-					ClientMutationID: mutationID,
+					ClientMutationID: in.ClientMutationID,
 					Success:          false,
 					ErrorCode:        authenticateErrorCodeInvalidCode,
 					ErrorMessage:     "The verification code you provided is incorrect.",
@@ -278,40 +341,98 @@ var authenticateWithCodeMutation = &graphql.Field{
 		result.Set("auth_token", res.Token.Value)
 		result.Set("auth_expiration", time.Unix(int64(res.Token.ExpirationEpoch), 0))
 
-		eh := devicectx.SpruceHeaders(ctx)
-
-		conc.Go(func() {
-			svc.segmentio.Track(&analytics.Track{
-				UserId: res.Account.ID,
-				Event:  "signedin",
-				Properties: map[string]interface{}{
-					"platform": eh.Platform.String(),
-				},
-			})
-
-			svc.segmentio.Identify(&analytics.Identify{
-				UserId: res.Account.ID,
-				Traits: map[string]interface{}{
-					"platform": eh.Platform.String(),
-				},
-				Context: map[string]interface{}{
-					"ip":        remoteAddrFromParams(p),
-					"userAgent": userAgentFromParams(p),
-				},
-			})
-		})
+		// Track the authentication
+		conc.Go(func() { trackAuthentication(p, res.Account.ID, devicectx.SpruceHeaders(ctx)) })
 
 		// TODO: updating the context this is safe for now because the GraphQL pkg serializes mutations.
 		// that likely won't change, but this still isn't a great way to update the context.
 		gqlctx.InPlaceWithAccount(ctx, res.Account)
 		return &authenticateOutput{
-			ClientMutationID:    mutationID,
+			ClientMutationID:    in.ClientMutationID,
 			Success:             true,
 			Token:               res.Token.Value,
 			ClientEncryptionKey: res.Token.ClientEncryptionKey,
 			Account:             transformAccountToResponse(res.Account),
 		}, nil
 	},
+}
+
+// modifyTokenDuration
+
+var modifyTokenDurationErrorCodeEnum = graphql.String
+
+type modifyTokenDurationOutput struct {
+	ClientMutationID string `json:"clientMutationId,omitempty"`
+	Success          bool   `json:"success"`
+	ErrorCode        string `json:"errorCode,omitempty"`
+	ErrorMessage     string `json:"errorMessage,omitempty"`
+	Token            string `json:"token,omitempty"`
+}
+
+var modifyTokenDurationOutputType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "ModifyTokenDurationPayload",
+		Fields: graphql.Fields{
+			"clientMutationId": newClientMutationIDOutputField(),
+			"token":            &graphql.Field{Type: graphql.String},
+		},
+		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+			_, ok := value.(*modifyTokenDurationOutput)
+			return ok
+		},
+	},
+)
+
+type modifyTokenDurationInput struct {
+	ClientMutationID string `gql:"clientMutationId"`
+	Duration         string `gql:"duration,nonempty"`
+}
+
+var modifyTokenDurationInputType = graphql.NewInputObject(
+	graphql.InputObjectConfig{
+		Name: "ModifyTokenDurationInput",
+		Fields: graphql.InputObjectConfigFieldMap{
+			"clientMutationId": newClientMutationIDInputField(),
+			"duration":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(tokenDurationEnum)},
+		},
+	},
+)
+
+var modifyTokenDurationMutation = &graphql.Field{
+	Type: graphql.NewNonNull(modifyTokenDurationOutputType),
+	Args: graphql.FieldConfigArgument{
+		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(modifyTokenDurationInputType)},
+	},
+	Resolve: apiaccess.Authenticated(func(p graphql.ResolveParams) (interface{}, error) {
+		ram := raccess.ResourceAccess(p)
+		ctx := p.Context
+
+		var in modifyTokenDurationInput
+		if err := gqldecode.Decode(p.Args["input"].(map[string]interface{}), &in); err != nil {
+			switch err := err.(type) {
+			case gqldecode.ErrValidationFailed:
+				return nil, gqlerrors.FormatError(fmt.Errorf("%s is invalid: %s", err.Field, err.Reason))
+			}
+			return nil, errors.InternalError(ctx, err)
+		}
+
+		token, err := ram.UpdateAuthToken(ctx, &auth.UpdateAuthTokenRequest{
+			Token:    gqlctx.AuthToken(ctx),
+			Duration: auth.TokenDuration(auth.TokenDuration_value[in.Duration]),
+		})
+		if err != nil {
+			return nil, errors.InternalError(ctx, err)
+		}
+		result := p.Info.RootValue.(map[string]interface{})["result"].(*conc.Map)
+		result.Set("auth_token", token.Value)
+		result.Set("auth_expiration", time.Unix(int64(token.ExpirationEpoch), 0))
+
+		return &modifyTokenDurationOutput{
+			ClientMutationID: in.ClientMutationID,
+			Success:          true,
+			Token:            token.Value,
+		}, nil
+	}),
 }
 
 /// unauthenticate
@@ -321,6 +442,10 @@ type unauthenticateOutput struct {
 	Success          bool   `json:"success"`
 	ErrorCode        string `json:"errorCode,omitempty"`
 	ErrorMessage     string `json:"errorMessage,omitempty"`
+}
+
+type unauthenticateInput struct {
+	ClientMutationID string `gql:"clientMutationId"`
 }
 
 var unauthenticateInputType = graphql.NewInputObject(graphql.InputObjectConfig{
@@ -358,10 +483,14 @@ var unauthenticateMutation = &graphql.Field{
 		svc := serviceFromParams(p)
 		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
-		input, _ := p.Args["input"].(map[string]interface{})
-		var mutationID string
-		if input != nil {
-			mutationID, _ = input["clientMutationId"].(string)
+
+		var in unauthenticateInput
+		if err := gqldecode.Decode(p.Args["input"].(map[string]interface{}), &in); err != nil {
+			switch err := err.(type) {
+			case gqldecode.ErrValidationFailed:
+				return nil, gqlerrors.FormatError(fmt.Errorf("%s is invalid: %s", err.Field, err.Reason))
+			}
+			return nil, errors.InternalError(ctx, err)
 		}
 
 		token := gqlctx.AuthToken(ctx)
@@ -385,7 +514,7 @@ var unauthenticateMutation = &graphql.Field{
 		golog.Infof(msg)
 
 		return &unauthenticateOutput{
-			ClientMutationID: mutationID,
+			ClientMutationID: in.ClientMutationID,
 			Success:          true,
 		}, nil
 	},

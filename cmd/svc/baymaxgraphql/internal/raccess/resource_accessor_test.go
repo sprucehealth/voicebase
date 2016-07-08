@@ -105,9 +105,10 @@ func TestAuthenticateLogin(t *testing.T) {
 		Password: password,
 		DeviceID: "deviceID",
 		Platform: auth.Platform_IOS,
+		Duration: auth.TokenDuration_LONG,
 	}).WithReturns(&auth.AuthenticateLoginResponse{Account: &auth.Account{ID: accountID}}, nil))
 
-	resp, err := rat.ra.AuthenticateLogin(ctx, email, password)
+	resp, err := rat.ra.AuthenticateLogin(ctx, email, password, auth.TokenDuration_LONG)
 	test.OK(t, err)
 	test.Equals(t, &auth.AuthenticateLoginResponse{Account: &auth.Account{ID: accountID}}, resp)
 }
@@ -133,9 +134,10 @@ func TestAuthenticateLoginWithCode(t *testing.T) {
 		Code:     code,
 		DeviceID: "deviceID",
 		Platform: auth.Platform_IOS,
+		Duration: auth.TokenDuration_SHORT,
 	}).WithReturns(&auth.AuthenticateLoginWithCodeResponse{Account: &auth.Account{ID: accountID}}, nil))
 
-	resp, err := rat.ra.AuthenticateLoginWithCode(ctx, token, code)
+	resp, err := rat.ra.AuthenticateLoginWithCode(ctx, token, code, auth.TokenDuration_SHORT)
 	test.OK(t, err)
 	test.Equals(t, &auth.AuthenticateLoginWithCodeResponse{Account: &auth.Account{ID: accountID}}, resp)
 }

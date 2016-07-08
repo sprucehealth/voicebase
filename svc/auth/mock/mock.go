@@ -134,3 +134,12 @@ func (c *Client) BlockAccount(ctx context.Context, in *auth.BlockAccountRequest,
 
 	return rets[0].(*auth.BlockAccountResponse), mock.SafeError(rets[1])
 }
+
+func (c *Client) UpdateAuthToken(ctx context.Context, in *auth.UpdateAuthTokenRequest, opts ...grpc.CallOption) (*auth.UpdateAuthTokenResponse, error) {
+	rets := c.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].(*auth.UpdateAuthTokenResponse), mock.SafeError(rets[1])
+}

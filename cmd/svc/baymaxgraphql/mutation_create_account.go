@@ -93,6 +93,7 @@ var createAccountInputType = graphql.NewInputObject(graphql.InputObjectConfig{
 		"longTitle":              &graphql.InputObjectFieldConfig{Type: graphql.String},
 		"organizationName":       &graphql.InputObjectFieldConfig{Type: graphql.String},
 		"phoneVerificationToken": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+		"duration":               &graphql.InputObjectFieldConfig{Type: tokenDurationEnum},
 	},
 })
 
