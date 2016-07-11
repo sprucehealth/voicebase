@@ -49,7 +49,7 @@ func (c *setGreetingCmd) run(args []string) error {
 	key := fs.String("key", "", "Setting key")
 	phoneNumber := fs.String("phone_number", "", "Phone number for which to configure greeting")
 	bucket := fs.String("s3_bucket", "", "S3 bucket for where the greeting should be stored")
-	prefix := fs.String("s3_prefix", "", "prefix for the file on s3")
+	prefix := "media"
 	fileName := fs.String("file_name", "", "name of file containing the greeting")
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -96,13 +96,6 @@ func (c *setGreetingCmd) run(args []string) error {
 		return errors.New("S3 Bucket required")
 	}
 
-	if *prefix == "" {
-		*prefix = prompt(scn, "Prefix: ")
-	}
-	if *prefix == "" {
-		return errors.New("S3 Prefix for bucket required")
-	}
-
 	if *fileName == "" {
 		*fileName = prompt(scn, "Filename for mp3: ")
 	}
@@ -120,7 +113,7 @@ func (c *setGreetingCmd) run(args []string) error {
 
 	awsSession := session.New(awsConfig)
 
-	store := storage.NewS3(awsSession, *bucket, *prefix)
+	store := storage.NewS3(awsSession, *bucket, prefix)
 
 	id, err := media.NewID()
 	if err != nil {
