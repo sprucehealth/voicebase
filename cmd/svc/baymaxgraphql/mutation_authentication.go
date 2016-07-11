@@ -404,6 +404,7 @@ var modifyTokenDurationMutation = &graphql.Field{
 		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(modifyTokenDurationInputType)},
 	},
 	Resolve: apiaccess.Authenticated(func(p graphql.ResolveParams) (interface{}, error) {
+		svc := serviceFromParams(p)
 		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
 
@@ -426,6 +427,17 @@ var modifyTokenDurationMutation = &graphql.Field{
 		result := p.Info.RootValue.(map[string]interface{})["result"].(*conc.Map)
 		result.Set("auth_token", token.Value)
 		result.Set("auth_expiration", time.Unix(int64(token.ExpirationEpoch), 0))
+
+		conc.Go(func() {
+			svc.segmentio.Track(&analytics.Track{
+				UserId: gqlctx.Account(ctx).ID,
+				Event:  "modifytokenduration",
+				Properties: map[string]interface{}{
+					"platform": devicectx.SpruceHeaders(ctx).Platform.String(),
+					"duration": in.Duration,
+				},
+			})
+		})
 
 		return &modifyTokenDurationOutput{
 			ClientMutationID: in.ClientMutationID,
@@ -479,7 +491,7 @@ var unauthenticateMutation = &graphql.Field{
 	Args: graphql.FieldConfigArgument{
 		"input": &graphql.ArgumentConfig{Type: unauthenticateInputType},
 	},
-	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+	Resolve: apiaccess.Authenticated(func(p graphql.ResolveParams) (interface{}, error) {
 		svc := serviceFromParams(p)
 		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
@@ -511,11 +523,21 @@ var unauthenticateMutation = &graphql.Field{
 			msg += " Device ID: " + headers.DeviceID
 		}
 
+		conc.Go(func() {
+			svc.segmentio.Track(&analytics.Track{
+				UserId: gqlctx.Account(ctx).ID,
+				Event:  "signedout",
+				Properties: map[string]interface{}{
+					"platform": devicectx.SpruceHeaders(ctx).Platform.String(),
+				},
+			})
+		})
+
 		golog.Infof(msg)
 
 		return &unauthenticateOutput{
 			ClientMutationID: in.ClientMutationID,
 			Success:          true,
 		}, nil
-	},
+	}),
 }
