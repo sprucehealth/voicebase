@@ -144,7 +144,7 @@ func (c *setGreetingCmd) run(args []string) error {
 		return errors.Trace(err)
 	}
 
-	mediaLocation, err := store.PutReader(id, mp3File, size, "audio/mpeg", nil)
+	_, err = store.PutReader(id, mp3File, size, "audio/mpeg", nil)
 	if err != nil {
 		return errors.Trace(err)
 	}
@@ -168,7 +168,7 @@ func (c *setGreetingCmd) run(args []string) error {
 				SingleSelect: &settings.SingleSelectValue{
 					Item: &settings.ItemValue{
 						ID:               selectionID,
-						FreeTextResponse: mediaLocation,
+						FreeTextResponse: id,
 					},
 				},
 			},
