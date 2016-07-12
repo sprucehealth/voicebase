@@ -13,7 +13,7 @@ import (
 func TestSchemaHandler(t *testing.T) {
 	h := newSchemaHandler()
 	w := httptest.NewRecorder()
-	h.ServeHTTP(nil, w, nil)
+	h.ServeHTTP(w, nil)
 	test.HTTPResponseCode(t, http.StatusOK, w)
 	if os.Getenv("GRAPHQL_SCHEMA") != "" {
 		fmt.Print(w.Body.String())

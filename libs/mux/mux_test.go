@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
-
-	"context"
 )
 
 type routeTest struct {
@@ -1078,8 +1076,8 @@ func (ho TestA301ResponseWriter) WriteHeader(code int) {
 func Test301Redirect(t *testing.T) {
 	m := make(http.Header)
 
-	func1 := func(ctx context.Context, w http.ResponseWriter, r *http.Request) {}
-	func2 := func(ctx context.Context, w http.ResponseWriter, r *http.Request) {}
+	func1 := func(w http.ResponseWriter, r *http.Request) {}
+	func2 := func(w http.ResponseWriter, r *http.Request) {}
 
 	r := NewRouter()
 	r.HandleFunc("/api/", func2).Name("func2")
@@ -1091,7 +1089,7 @@ func Test301Redirect(t *testing.T) {
 		hh:     m,
 		status: 0,
 	}
-	r.ServeHTTP(context.Background(), &res, req)
+	r.ServeHTTP(&res, req)
 
 	if "http://localhost/api/?abc=def" != res.hh["Location"][0] {
 		t.Errorf("Should have complete URL with query string")
@@ -1101,10 +1099,10 @@ func Test301Redirect(t *testing.T) {
 // https://plus.google.com/101022900381697718949/posts/eWy6DjFJ6uW
 func TestSubrouterHeader(t *testing.T) {
 	expected := "func1 response"
-	func1 := func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	func1 := func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, expected)
 	}
-	func2 := func(context.Context, http.ResponseWriter, *http.Request) {}
+	func2 := func(http.ResponseWriter, *http.Request) {}
 
 	r := NewRouter()
 	s := r.Headers("SomeSpecialHeader", "").Subrouter()
@@ -1122,7 +1120,7 @@ func TestSubrouterHeader(t *testing.T) {
 		t.Errorf("Expecting func1 handler, got %s", match.Route.GetName())
 	}
 	resp := NewRecorder()
-	match.Handler.ServeHTTP(context.Background(), resp, req)
+	match.Handler.ServeHTTP(resp, req)
 	if resp.Body.String() != expected {
 		t.Errorf("Expecting %q", expected)
 	}

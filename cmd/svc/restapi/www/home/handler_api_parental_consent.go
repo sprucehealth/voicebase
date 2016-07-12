@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/patient"
@@ -52,7 +50,7 @@ func (r *parentalConsentAPIPOSTRequest) Validate() (bool, string) {
 	return true, ""
 }
 
-func newParentalConsentAPIHAndler(dataAPI api.DataAPI, dispatcher dispatch.Publisher) httputil.ContextHandler {
+func newParentalConsentAPIHAndler(dataAPI api.DataAPI, dispatcher dispatch.Publisher) http.Handler {
 	return httputil.SupportedMethods(
 		www.APIRoleRequiredHandler(&parentalConsentAPIHandler{
 			dataAPI:    dataAPI,
@@ -60,16 +58,16 @@ func newParentalConsentAPIHAndler(dataAPI api.DataAPI, dispatcher dispatch.Publi
 		}, api.RolePatient), httputil.Post, httputil.Get)
 }
 
-func (h *parentalConsentAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *parentalConsentAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case httputil.Post:
-		h.post(ctx, w, r)
+		h.post(w, r)
 	case httputil.Get:
-		h.get(ctx, w, r)
+		h.get(w, r)
 	}
 }
 
-func (h *parentalConsentAPIHandler) post(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *parentalConsentAPIHandler) post(w http.ResponseWriter, r *http.Request) {
 	var req parentalConsentAPIPOSTRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		www.APIBadRequestError(w, r, err.Error())
@@ -89,7 +87,7 @@ func (h *parentalConsentAPIHandler) post(ctx context.Context, w http.ResponseWri
 		return
 	}
 
-	account := www.MustCtxAccount(ctx)
+	account := www.MustCtxAccount(r.Context())
 	parent, err := h.dataAPI.GetPatientFromAccountID(account.ID)
 	if err != nil {
 		www.APIInternalError(w, r, err)
@@ -123,7 +121,7 @@ func (h *parentalConsentAPIHandler) post(ctx context.Context, w http.ResponseWri
 	httputil.JSONResponse(w, http.StatusOK, parentalConsentAPIPOSTResponse{})
 }
 
-func (h *parentalConsentAPIHandler) get(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *parentalConsentAPIHandler) get(w http.ResponseWriter, r *http.Request) {
 	var req parentalconsentAPIGETRequest
 	if err := r.ParseForm(); err != nil {
 		www.APIBadRequestError(w, r, "Bad request")
@@ -134,7 +132,7 @@ func (h *parentalConsentAPIHandler) get(ctx context.Context, w http.ResponseWrit
 		return
 	}
 
-	account := www.MustCtxAccount(ctx)
+	account := www.MustCtxAccount(r.Context())
 	parentPatientID, err := h.dataAPI.GetPatientIDFromAccountID(account.ID)
 	if err != nil {
 		www.APIInternalError(w, r, err)

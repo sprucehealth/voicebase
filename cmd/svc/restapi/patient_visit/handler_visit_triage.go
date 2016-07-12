@@ -6,8 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -34,7 +32,7 @@ type presubmissionTriageRequest struct {
 	Abandon        bool   `json:"abandon"`
 }
 
-func NewPreSubmissionTriageHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) httputil.ContextHandler {
+func NewPreSubmissionTriageHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(
@@ -44,20 +42,20 @@ func NewPreSubmissionTriageHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dis
 				}), api.RolePatient), httputil.Put)
 }
 
-func (p *presubmissionTriageHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (p *presubmissionTriageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var rd presubmissionTriageRequest
 	if err := apiservice.DecodeRequestData(&rd, r); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	// ensure that the visit is either in an open state or a pre-submission triaged state
 	visit, err := p.dataAPI.GetPatientVisitFromID(rd.PatientVisitID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	} else if !(visit.Status == common.PVStatusPreSubmissionTriage || visit.Status == common.PVStatusOpen) {
-		apiservice.WriteValidationError(ctx, "only an open visit can under pre-submission triage", w, r)
+		apiservice.WriteValidationError("only an open visit can under pre-submission triage", w, r)
 		return
 	}
 
@@ -131,7 +129,7 @@ func (p *presubmissionTriageHandler) ServeHTTP(ctx context.Context, w http.Respo
 		return nil
 	})
 	if err := par.Wait(); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"time"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/mediaproxy"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/responses"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -24,7 +22,7 @@ type productsHandler struct {
 }
 
 // NewProducts returns a new single product handler
-func NewProducts(svc products.Service, proxyRoot string, proxySvc *mediaproxy.Service) httputil.ContextHandler {
+func NewProducts(svc products.Service, proxyRoot string, proxySvc *mediaproxy.Service) http.Handler {
 	return httputil.SupportedMethods(&productsHandler{
 		svc:       svc,
 		proxyRoot: proxyRoot,
@@ -32,8 +30,8 @@ func NewProducts(svc products.Service, proxyRoot string, proxySvc *mediaproxy.Se
 	}, httputil.Get)
 }
 
-func (h *productsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	productID := mux.Vars(ctx)["id"]
+func (h *productsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	productID := mux.Vars(r.Context())["id"]
 
 	if httputil.CheckAndSetETag(w, r, httputil.GenETag(time.Now().Format("2006-01-02")+":"+productID)) {
 		w.WriteHeader(http.StatusNotModified)
@@ -42,7 +40,7 @@ func (h *productsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, 
 
 	p, err := h.svc.Lookup(productID)
 	if err == products.ErrNotFound {
-		apiservice.WriteResourceNotFoundError(ctx, "Product not found", w, r)
+		apiservice.WriteResourceNotFoundError("Product not found", w, r)
 		return
 	}
 

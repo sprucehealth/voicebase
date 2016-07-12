@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
@@ -17,20 +15,20 @@ type adminsPermissionsAPIHandler struct {
 	authAPI api.AuthAPI
 }
 
-func newAdminsPermissionsAPIHandler(authAPI api.AuthAPI) httputil.ContextHandler {
+func newAdminsPermissionsAPIHandler(authAPI api.AuthAPI) http.Handler {
 	return httputil.SupportedMethods(&adminsPermissionsAPIHandler{
 		authAPI: authAPI,
 	}, httputil.Get)
 }
 
-func (h *adminsPermissionsAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	accountID, err := strconv.ParseInt(mux.Vars(ctx)["id"], 10, 64)
+func (h *adminsPermissionsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	accountID, err := strconv.ParseInt(mux.Vars(r.Context())["id"], 10, 64)
 	if err != nil {
 		www.APINotFound(w, r)
 		return
 	}
 
-	account := www.MustCtxAccount(ctx)
+	account := www.MustCtxAccount(r.Context())
 	audit.LogAction(account.ID, "AdminAPI", "GetAdminPermissions", map[string]interface{}{"param_account_id": accountID})
 
 	// Verify account exists and is the correct role

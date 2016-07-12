@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"time"
 
-	"context"
-
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
@@ -14,7 +12,6 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/utils"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/storage"
 )
 
@@ -25,7 +22,7 @@ type sendgridHandler struct {
 	store    storage.Store
 }
 
-func NewSendGridHandler(snsTopic string, snsCLI snsiface.SNSAPI, dal dal.DAL, store storage.Store) httputil.ContextHandler {
+func NewSendGridHandler(snsTopic string, snsCLI snsiface.SNSAPI, dal dal.DAL, store storage.Store) http.Handler {
 	return &sendgridHandler{
 		snsTopic: snsTopic,
 		snsCLI:   snsCLI,
@@ -34,7 +31,7 @@ func NewSendGridHandler(snsTopic string, snsCLI snsiface.SNSAPI, dal dal.DAL, st
 	}
 }
 
-func (e *sendgridHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (e *sendgridHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	sgi, media, err := sendgrid.ParamsFromRequest(r, e.store)
 	if err != nil {
 		golog.Errorf(err.Error())

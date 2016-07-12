@@ -2,22 +2,11 @@ package httputil
 
 import "net/http"
 
-// RedirectHandler is a context aware version of http.RedirectHandler
-func RedirectHandler(url string, code int) ContextHandler {
-	return ToContextHandler(http.RedirectHandler(url, code))
-}
-
-// NotFoundHandler is a context aware version of http.NotFoundHandler
-func NotFoundHandler() ContextHandler {
-	return ToContextHandler(http.NotFoundHandler())
-}
-
-// StripPrefix is a context aware version of http.StripPrefix
-func StripPrefix(prefix string, h ContextHandler) ContextHandler {
-	return ToContextHandler(http.StripPrefix(prefix, FromContextHandler(h)))
-}
-
-// FileServer is a context aware version of http.FileServer
-func FileServer(root http.FileSystem) ContextHandler {
-	return ToContextHandler(http.FileServer(root))
-}
+// Since the name of this pkg overlaps with the stdlib provide access to some useful handlers.
+// TODO: now that there's no separate context handler type should really not have these here
+var (
+	FileServer      = http.FileServer
+	NotFoundHandler = http.NotFoundHandler
+	RedirectHandler = http.RedirectHandler
+	StripPrefix     = http.StripPrefix
+)

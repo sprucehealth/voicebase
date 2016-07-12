@@ -8,8 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -43,7 +41,7 @@ func TestSTPHandlerGETRequiresParams(t *testing.T) {
 	handler := newSampleTreatmentPlanHandler(mockedDataAPI_stpHandler{})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	www.APIBadRequestError(expectedWriter, r, fmt.Errorf("Unable to parse input parameters: The following parameters are missing: pathway_tag").Error())
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }
 
@@ -58,7 +56,7 @@ func TestSTPHandlerGETSuccess(t *testing.T) {
 	test.OK(t, err)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, response)
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }
 
@@ -70,7 +68,7 @@ func TestSTPHandlerGETSuccessNoRecord(t *testing.T) {
 	var response interface{}
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, response)
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }
 
@@ -80,7 +78,7 @@ func TestSTPHandlerPUTRequiresPathwayTagParam(t *testing.T) {
 	handler := newSampleTreatmentPlanHandler(mockedDataAPI_stpHandler{})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	www.APIBadRequestError(expectedWriter, r, fmt.Errorf("Incomplete request body - pathway_tag required").Error())
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }
 
@@ -90,7 +88,7 @@ func TestSTPHandlerPUTRequiresSampleTreatmentPlanParam(t *testing.T) {
 	handler := newSampleTreatmentPlanHandler(mockedDataAPI_stpHandler{})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	www.APIBadRequestError(expectedWriter, r, fmt.Errorf("Incomplete request body - sample_treatment_plan required").Error())
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }
 
@@ -101,6 +99,6 @@ func TestSTPHandlerPUTSuccess(t *testing.T) {
 	var response interface{}
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, response)
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }

@@ -2,6 +2,7 @@ package admin
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,8 +10,6 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -56,7 +55,7 @@ func TestHandlerProviderSearchAPI(t *testing.T) {
 	body.Reset()
 	test.OK(t, json.NewEncoder(body).Encode(&createProviderRequest{}))
 	w := httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusBadRequest, w.Code)
 	test.Equals(t, "{\"error\":{\"type\":\"bad_request\",\"message\":\"Phone number has to be atleast 10 digits long\"}}\n", w.Body.String())
 
@@ -64,7 +63,7 @@ func TestHandlerProviderSearchAPI(t *testing.T) {
 	body.Reset()
 	test.OK(t, json.NewEncoder(body).Encode(&createProviderRequest{Role: "blah", CellPhone: "415-555-5555"}))
 	w = httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusBadRequest, w.Code)
 	test.Equals(t, "{\"error\":{\"type\":\"bad_request\",\"message\":\"role must be MA or DOCTOR\"}}\n", w.Body.String())
 
@@ -79,7 +78,7 @@ func TestHandlerProviderSearchAPI(t *testing.T) {
 		Gender:    "female",
 	}))
 	w = httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 	test.Equals(t, "{\"account_id\":\"1\",\"provider_id\":\"2\"}\n", w.Body.String())
 }

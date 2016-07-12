@@ -3,8 +3,6 @@ package promotions
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -44,7 +42,7 @@ type ReferralDisplayInfo struct {
 }
 
 // NewReferralProgramHandler returns a new instance of the referralProgramHandler
-func NewReferralProgramHandler(dataAPI api.DataAPI, domain string) httputil.ContextHandler {
+func NewReferralProgramHandler(dataAPI api.DataAPI, domain string) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(&referralProgramHandler{
@@ -55,11 +53,11 @@ func NewReferralProgramHandler(dataAPI api.DataAPI, domain string) httputil.Cont
 		httputil.Get)
 }
 
-func (p *referralProgramHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	account := apiservice.MustCtxAccount(ctx)
+func (p *referralProgramHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	account := apiservice.MustCtxAccount(r.Context())
 	referralDisplayInfo, err := CreateReferralDisplayInfo(p.dataAPI, p.domain, account.ID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

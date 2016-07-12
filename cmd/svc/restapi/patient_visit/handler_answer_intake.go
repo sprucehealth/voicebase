@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -16,7 +14,7 @@ type answerIntakeHandler struct {
 	dataAPI api.DataAPI
 }
 
-func NewAnswerIntakeHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func NewAnswerIntakeHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.AuthorizationRequired(
 			&answerIntakeHandler{
@@ -24,41 +22,41 @@ func NewAnswerIntakeHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 			}), httputil.Post)
 }
 
-func (a *answerIntakeHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
-	account := apiservice.MustCtxAccount(ctx)
+func (a *answerIntakeHandler) IsAuthorized(r *http.Request) (bool, error) {
+	account := apiservice.MustCtxAccount(r.Context())
 	if account.Role != api.RolePatient {
 		return false, apiservice.NewAccessForbiddenError()
 	}
 	return true, nil
 }
 
-func (a *answerIntakeHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (a *answerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var rd apiservice.IntakeData
 	if err := json.NewDecoder(r.Body).Decode(&rd); err != nil {
-		apiservice.WriteValidationError(ctx, err.Error(), w, r)
+		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
 
 	if err := rd.Validate(w); err != nil {
-		apiservice.WriteValidationError(ctx, err.Error(), w, r)
+		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
 
-	account := apiservice.MustCtxAccount(ctx)
+	account := apiservice.MustCtxAccount(r.Context())
 	patientID, err := a.dataAPI.GetPatientIDFromAccountID(account.ID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	patientVisit, err := a.dataAPI.GetPatientVisitFromID(rd.PatientVisitID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	if patientVisit.PatientID != patientID {
-		apiservice.WriteAccessNotAllowedError(ctx, w, r)
+		apiservice.WriteAccessNotAllowedError(w, r)
 		return
 	}
 
@@ -83,7 +81,7 @@ func (a *answerIntakeHandler) ServeHTTP(ctx context.Context, w http.ResponseWrit
 	}
 
 	if err := a.dataAPI.StoreAnswersForIntakes([]api.IntakeInfo{patientIntake}); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"io"
+	"net/http"
 
 	resources "github.com/cookieo9/resources-go"
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/dal"
@@ -15,7 +16,7 @@ import (
 	"github.com/sprucehealth/backend/libs/mux"
 )
 
-func buildCareFinder(c *config) httputil.ContextHandler {
+func buildCareFinder(c *config) http.Handler {
 	// connect to database
 	configDB := &configlib.DB{
 		User:     c.DBUserName,

@@ -5,8 +5,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"context"
-
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/svc/products"
 )
@@ -51,7 +49,7 @@ func TestProductsList(t *testing.T) {
 	w := httptest.NewRecorder()
 	r, err := http.NewRequest("GET", "/?q=foo", nil)
 	test.OK(t, err)
-	h.ServeHTTP(context.Background(), w, r)
+	h.ServeHTTP(w, r)
 	test.HTTPResponseCode(t, http.StatusOK, w)
 	test.Equals(t, "{\"products\":[]}\n", w.Body.String())
 
@@ -59,7 +57,7 @@ func TestProductsList(t *testing.T) {
 	w = httptest.NewRecorder()
 	r, err = http.NewRequest("GET", "/?q=bar", nil)
 	test.OK(t, err)
-	h.ServeHTTP(context.Background(), w, r)
+	h.ServeHTTP(w, r)
 	test.HTTPResponseCode(t, http.StatusOK, w)
 	test.Equals(t, "{\"products\":[{\"id\":\"111\",\"name\":\"blue\",\"image_urls\":[\"abc\"],\"product_url\":\"xxx\",\"prefetched\":true}]}\n", w.Body.String())
 }

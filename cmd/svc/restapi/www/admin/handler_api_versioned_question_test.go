@@ -9,8 +9,6 @@ import (
 	"strconv"
 	"testing"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/responses"
@@ -63,7 +61,7 @@ func TestQuestionHandlerRequiresParams(t *testing.T) {
 	handler := newVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	www.APIBadRequestError(expectedWriter, r, fmt.Errorf("insufficent parameters supplied to form complete query").Error())
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }
 
@@ -73,7 +71,7 @@ func TestQuestionHandlerRequiresCompleteTagQuery(t *testing.T) {
 	handler := newVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	www.APIBadRequestError(expectedWriter, r, fmt.Errorf("insufficent parameters supplied to form complete query").Error())
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }
 
@@ -91,7 +89,7 @@ func TestQuestionHandlerCanQueryByID(t *testing.T) {
 
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, response)
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 	test.Equals(t, http.StatusOK, responseWriter.Code)
 }
@@ -116,7 +114,7 @@ func TestQuestionHandlerCanQueryByTagSet(t *testing.T) {
 
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, response)
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }
 
@@ -144,7 +142,7 @@ func TestQuestionHandlerCanQueryByTagSetNoVersion(t *testing.T) {
 
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, response)
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }
 

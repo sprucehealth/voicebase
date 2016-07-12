@@ -6,8 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"context"
-
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/rainycape/memcache"
 	"github.com/samuel/go-metrics/metrics"
@@ -57,7 +55,6 @@ import (
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/dispatch"
-	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/ratelimit"
 	"github.com/sprucehealth/backend/libs/sig"
@@ -116,7 +113,7 @@ type Config struct {
 }
 
 // New returns an initialized instance of the apiservice router conforming to the http.Handler interface
-func New(conf *Config) (*mux.Router, httputil.ContextHandler) {
+func New(conf *Config) (*mux.Router, http.Handler) {
 	taggingClient := tagging.NewTaggingClient(conf.ApplicationDB)
 
 	// Initialize listneners
@@ -368,12 +365,12 @@ func New(conf *Config) (*mux.Router, httputil.ContextHandler) {
 	}
 
 	// Lazily include the feature set for the requesting app to the context
-	handler := httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-		ctx = features.CtxWithSet(ctx, features.LazySet(func() features.Set {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := features.CtxWithSet(r.Context(), features.LazySet(func() features.Set {
 			appInfo := device.ExtractSpruceHeaders(w, r)
 			return appFeatures.Set(strings.ToLower(appInfo.Platform.String()+"-"+appInfo.AppType), appInfo.AppVersion)
 		}))
-		conf.mux.ServeHTTP(ctx, w, r)
+		conf.mux.ServeHTTP(w, r.WithContext(ctx))
 	})
 
 	return conf.mux, handler
@@ -381,16 +378,16 @@ func New(conf *Config) (*mux.Router, httputil.ContextHandler) {
 
 // TODO: Possibly move this down into `authenticationRequired` but for now keep it isolated
 // Add an authenticated, account role handler to the mux
-func callerRoleRequired(conf *Config, path string, h httputil.ContextHandler, methods ...string) {
+func callerRoleRequired(conf *Config, path string, h http.Handler, methods ...string) {
 	conf.mux.Handle(path, apiservice.AuthenticationRequiredHandler(apiservice.NewAccountRoleContextHandler(h, conf.DataAPI, methods...), conf.AuthAPI))
 }
 
 // Add an authenticated to the mux
-func authenticationRequired(conf *Config, path string, h httputil.ContextHandler) {
+func authenticationRequired(conf *Config, path string, h http.Handler) {
 	conf.mux.Handle(path, apiservice.AuthenticationRequiredHandler(h, conf.AuthAPI))
 }
 
 // Add an unauthenticated handler to the mux
-func noAuthenticationRequired(conf *Config, path string, h httputil.ContextHandler) {
+func noAuthenticationRequired(conf *Config, path string, h http.Handler) {
 	conf.mux.Handle(path, apiservice.NoAuthenticationRequiredHandler(h, conf.AuthAPI))
 }

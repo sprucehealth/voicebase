@@ -3,8 +3,6 @@ package auth
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -30,7 +28,7 @@ type emailCheckResponse struct {
 	Available bool `json:"available"`
 }
 
-func NewCheckEmailHandler(emailChecker EmailChecker, rateLimiter ratelimit.KeyedRateLimiter, metricsRegistry metrics.Registry) httputil.ContextHandler {
+func NewCheckEmailHandler(emailChecker EmailChecker, rateLimiter ratelimit.KeyedRateLimiter, metricsRegistry metrics.Registry) http.Handler {
 	h := &checkEmailHandler{
 		emailChecker:    emailChecker,
 		metricsRegistry: metricsRegistry,
@@ -46,7 +44,7 @@ func NewCheckEmailHandler(emailChecker EmailChecker, rateLimiter ratelimit.Keyed
 		httputil.Get))
 }
 
-func (h *checkEmailHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *checkEmailHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	em := r.FormValue("email")
 	if em == "" {
 		// Don't record this in the stats since it's basically a noop
@@ -66,7 +64,7 @@ func (h *checkEmailHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter
 		h.statAvailable.Inc(1)
 		httputil.JSONResponse(w, http.StatusOK, emailCheckResponse{Available: true})
 	} else if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 	} else {
 		h.statUnavailable.Inc(1)
 		httputil.JSONResponse(w, http.StatusOK, emailCheckResponse{Available: false})

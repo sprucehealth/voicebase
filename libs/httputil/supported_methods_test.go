@@ -5,32 +5,29 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"context"
-
 	"github.com/sprucehealth/backend/libs/test"
 )
 
 func TestSupportedMethods(t *testing.T) {
-	h := SupportedMethods(ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {}), Get, Put)
-	ctx := context.Background()
+	h := SupportedMethods(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}), Get, Put)
 
 	r, err := http.NewRequest(Get, "/", nil)
 	test.OK(t, err)
 	w := httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r)
 	test.HTTPResponseCode(t, http.StatusOK, w)
 
 	r, err = http.NewRequest(Post, "/", nil)
 	test.OK(t, err)
 	w = httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r)
 	test.HTTPResponseCode(t, http.StatusMethodNotAllowed, w)
 	test.Equals(t, "GET, PUT", w.Header().Get("Allow"))
 
 	r, err = http.NewRequest(Options, "/", nil)
 	test.OK(t, err)
 	w = httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r)
 	test.HTTPResponseCode(t, http.StatusOK, w)
 	test.Equals(t, "GET, PUT", w.Header().Get("Allow"))
 }

@@ -5,8 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -55,7 +53,7 @@ func NewPatientParentHandler(
 	dataAPI api.DataAPI,
 	mediaStore *mediastore.Store,
 	expirationDuration time.Duration,
-) httputil.ContextHandler {
+) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.RequestCacheHandler(
@@ -69,7 +67,8 @@ func NewPatientParentHandler(
 		httputil.Get)
 }
 
-func (p *patientParentHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+func (p *patientParentHandler) IsAuthorized(r *http.Request) (bool, error) {
+	ctx := r.Context()
 	requestCache := apiservice.MustCtxCache(ctx)
 	account := apiservice.MustCtxAccount(ctx)
 
@@ -117,13 +116,13 @@ func (p *patientParentHandler) IsAuthorized(ctx context.Context, r *http.Request
 	return true, nil
 }
 
-func (p *patientParentHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	requestCache := apiservice.MustCtxCache(ctx)
+func (p *patientParentHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(r.Context())
 	patient := requestCache[apiservice.CKPatient].(*common.Patient)
 
 	consents, err := p.dataAPI.ParentalConsent(patient.ID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -131,7 +130,7 @@ func (p *patientParentHandler) ServeHTTP(ctx context.Context, w http.ResponseWri
 	for _, consent := range consents {
 		parent, err := p.dataAPI.GetPatientFromID(consent.ParentPatientID)
 		if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 
@@ -141,7 +140,7 @@ func (p *patientParentHandler) ServeHTTP(ctx context.Context, w http.ResponseWri
 		if api.IsErrNotFound(err) {
 			continue
 		} else if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 
@@ -164,7 +163,7 @@ func (p *patientParentHandler) ServeHTTP(ctx context.Context, w http.ResponseWri
 		if proof.SelfiePhotoID != nil {
 			signedURL, err := p.mediaStore.SignedURL(*proof.SelfiePhotoID, p.expirationDuration)
 			if err != nil {
-				apiservice.WriteError(ctx, err, w, r)
+				apiservice.WriteError(err, w, r)
 				return
 			}
 
@@ -174,7 +173,7 @@ func (p *patientParentHandler) ServeHTTP(ctx context.Context, w http.ResponseWri
 		if proof.GovernmentIDPhotoID != nil {
 			signedURL, err := p.mediaStore.SignedURL(*proof.GovernmentIDPhotoID, p.expirationDuration)
 			if err != nil {
-				apiservice.WriteError(ctx, err, w, r)
+				apiservice.WriteError(err, w, r)
 				return
 			}
 

@@ -5,8 +5,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -31,6 +29,6 @@ func TestLayoutTemplateHandlerSuccessGET(t *testing.T) {
 	handler := newLayoutTemplateHandler(mockedDataAPI_handlerLayoutTemplate{template: template})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, resp)
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }

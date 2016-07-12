@@ -3,8 +3,6 @@ package patient_file
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -27,7 +25,7 @@ type patientCapabilitiesResponse struct {
 }
 
 // NewPatientCapabilitiesHandler returns a new handler that returns patient compatiblity flags.
-func NewPatientCapabilitiesHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, features compat.Features) httputil.ContextHandler {
+func NewPatientCapabilitiesHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, features compat.Features) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(&patientCapabilitiesHandler{
@@ -39,26 +37,26 @@ func NewPatientCapabilitiesHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, fea
 		httputil.Get)
 }
 
-func (h *patientCapabilitiesHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *patientCapabilitiesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var req patientCapabilitiesRequest
 	if err := apiservice.DecodeRequestData(&req, r); err != nil {
-		apiservice.WriteBadRequestError(ctx, err, w, r)
+		apiservice.WriteBadRequestError(err, w, r)
 		return
 	}
 	p, err := h.dataAPI.Patient(req.PatientID, true)
 	if api.IsErrNotFound(err) {
-		apiservice.WriteResourceNotFoundError(ctx, "patient not found", w, r)
+		apiservice.WriteResourceNotFoundError("patient not found", w, r)
 		return
 	} else if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 	appInfo, err := h.authAPI.LatestAppInfo(p.AccountID.Int64())
 	if api.IsErrNotFound(err) {
-		apiservice.WriteResourceNotFoundError(ctx, "app info not found", w, r)
+		apiservice.WriteResourceNotFoundError("app info not found", w, r)
 		return
 	} else if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 	httputil.JSONResponse(w, http.StatusOK, &patientCapabilitiesResponse{

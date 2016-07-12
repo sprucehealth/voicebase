@@ -3,8 +3,6 @@ package appevent
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/libs/dispatch"
@@ -28,7 +26,7 @@ type EventRequestData struct {
 // generic way for the client to send events of what the user is doing
 // ("viewing", "updating", "deleting", etc. a resource) for the server to
 // appropriately act on the event
-func NewHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) httputil.ContextHandler {
+func NewHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(&eventHandler{
@@ -39,14 +37,14 @@ func NewHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) httputil.C
 		httputil.Post)
 }
 
-func (h *eventHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *eventHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	req := &EventRequestData{}
 	if err := apiservice.DecodeRequestData(req, r); err != nil {
-		apiservice.WriteValidationError(ctx, err.Error(), w, r)
+		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
 
-	account := apiservice.MustCtxAccount(ctx)
+	account := apiservice.MustCtxAccount(r.Context())
 
 	// Make sure the requesting account has access to the resource
 
@@ -64,17 +62,17 @@ func (h *eventHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *
 				if api.IsErrNotFound(err) {
 					golog.Warningf("appevent action %s from account %d for resource %s:%d: treatment plan not found",
 						req.Action, account.ID, req.Resource, req.ResourceID)
-					apiservice.WriteResourceNotFoundError(ctx, "Treatment plan not found", w, r)
+					apiservice.WriteResourceNotFoundError("Treatment plan not found", w, r)
 					return
 				} else if err != nil {
-					apiservice.WriteError(ctx, err, w, r)
+					apiservice.WriteError(err, w, r)
 					return
 				}
 				allowed = p.AccountID.Int64() == account.ID
 			} else {
 				caseID, err = h.dataAPI.CaseIDForTreatmentPlan(req.ResourceID)
 				if err != nil {
-					apiservice.WriteError(ctx, err, w, r)
+					apiservice.WriteError(err, w, r)
 					return
 				}
 			}
@@ -84,10 +82,10 @@ func (h *eventHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *
 			if api.IsErrNotFound(err) {
 				golog.Warningf("appevent action %s from account %d for resource %s:%d: message not found",
 					req.Action, account.ID, req.Resource, req.ResourceID)
-				apiservice.WriteResourceNotFoundError(ctx, "Message not found", w, r)
+				apiservice.WriteResourceNotFoundError("Message not found", w, r)
 				return
 			} else if err != nil {
-				apiservice.WriteError(ctx, err, w, r)
+				apiservice.WriteError(err, w, r)
 				return
 			}
 		case "all_case_messages":
@@ -102,28 +100,28 @@ func (h *eventHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *
 				if api.IsErrNotFound(err) {
 					golog.Warningf("appevent action %s from account %d for resource %s:%d: case not found",
 						req.Action, account.ID, req.Resource, req.ResourceID)
-					apiservice.WriteResourceNotFoundError(ctx, "Case not found", w, r)
+					apiservice.WriteResourceNotFoundError("Case not found", w, r)
 					return
 				} else if err != nil {
-					apiservice.WriteError(ctx, err, w, r)
+					apiservice.WriteError(err, w, r)
 					return
 				}
 				p, err := h.dataAPI.Patient(c.PatientID, true)
 				if err != nil {
-					apiservice.WriteError(ctx, err, w, r)
+					apiservice.WriteError(err, w, r)
 					return
 				}
 				allowed = p.AccountID.Int64() == account.ID
 			case api.RoleCC, api.RoleDoctor:
 				doctorID, err := h.dataAPI.GetDoctorIDFromAccountID(account.ID)
 				if err != nil {
-					apiservice.WriteError(ctx, err, w, r)
+					apiservice.WriteError(err, w, r)
 					return
 				}
 				// Only checking read access since we don't know what the event will be used for at this point.
-				allowed, err = apiservice.DoctorHasAccessToCase(ctx, doctorID, caseID, account.Role, apiservice.ReadAccessRequired, h.dataAPI)
+				allowed, err = apiservice.DoctorHasAccessToCase(r.Context(), doctorID, caseID, account.Role, apiservice.ReadAccessRequired, h.dataAPI)
 				if err != nil {
-					apiservice.WriteError(ctx, err, w, r)
+					apiservice.WriteError(err, w, r)
 					return
 				}
 			}
@@ -131,7 +129,7 @@ func (h *eventHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *
 
 		if !allowed {
 			golog.Warningf("app_event action %s from account %d for resource %s:%d not allowed", req.Action, account.ID, req.Resource, req.ResourceID)
-			apiservice.WriteAccessNotAllowedError(ctx, w, r)
+			apiservice.WriteAccessNotAllowedError(w, r)
 			return
 		}
 	}

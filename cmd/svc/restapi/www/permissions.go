@@ -3,10 +3,7 @@ package www
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type PermissionsAPI interface {
@@ -42,7 +39,7 @@ func (p Permissions) HasAll(perms []string) bool {
 	return true
 }
 
-var permissionDeniedHandler = httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+var permissionDeniedHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusForbidden)
 	return
 })
@@ -50,11 +47,11 @@ var permissionDeniedHandler = httputil.ContextHandlerFunc(func(ctx context.Conte
 type permsRequiredHandler struct {
 	api           PermissionsAPI
 	perms         map[string][]string
-	okHandler     httputil.ContextHandler
-	failedHandler httputil.ContextHandler
+	okHandler     http.Handler
+	failedHandler http.Handler
 }
 
-func PermissionsRequiredHandler(api PermissionsAPI, perms map[string][]string, ok, failed httputil.ContextHandler) httputil.ContextHandler {
+func PermissionsRequiredHandler(api PermissionsAPI, perms map[string][]string, ok, failed http.Handler) http.Handler {
 	if failed == nil {
 		failed = permissionDeniedHandler
 	}
@@ -66,7 +63,8 @@ func PermissionsRequiredHandler(api PermissionsAPI, perms map[string][]string, o
 	}
 }
 
-func (h *permsRequiredHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *permsRequiredHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	account := MustCtxAccount(ctx)
 
 	var permsMap Permissions
@@ -88,20 +86,20 @@ func (h *permsRequiredHandler) ServeHTTP(ctx context.Context, w http.ResponseWri
 	}
 
 	if permsMap.HasAny(h.perms[r.Method]) {
-		h.okHandler.ServeHTTP(ctx, w, r)
+		h.okHandler.ServeHTTP(w, r.WithContext(ctx))
 		return
 	}
 
-	h.failedHandler.ServeHTTP(ctx, w, r)
+	h.failedHandler.ServeHTTP(w, r.WithContext(ctx))
 }
 
 type noPermsRequiredHandler struct {
 	authAPI api.AuthAPI
-	h       httputil.ContextHandler
+	h       http.Handler
 }
 
-func NoPermissionsRequiredFilter(authAPI api.AuthAPI) func(httputil.ContextHandler) httputil.ContextHandler {
-	return func(h httputil.ContextHandler) httputil.ContextHandler {
+func NoPermissionsRequiredFilter(authAPI api.AuthAPI) func(http.Handler) http.Handler {
+	return func(h http.Handler) http.Handler {
 		return NoPermissionsRequiredHandler(authAPI, h)
 	}
 }
@@ -109,14 +107,15 @@ func NoPermissionsRequiredFilter(authAPI api.AuthAPI) func(httputil.ContextHandl
 // NoPermissionsRequiredHandler pulls down and caches permissions but
 // doesn't check them. The use is when a handler itself will validate
 // the permissions.
-func NoPermissionsRequiredHandler(authAPI api.AuthAPI, h httputil.ContextHandler) httputil.ContextHandler {
+func NoPermissionsRequiredHandler(authAPI api.AuthAPI, h http.Handler) http.Handler {
 	return &noPermsRequiredHandler{
 		authAPI: authAPI,
 		h:       h,
 	}
 }
 
-func (h *noPermsRequiredHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *noPermsRequiredHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	account := MustCtxAccount(ctx)
 
 	perms, err := h.authAPI.PermissionsForAccount(account.ID)
@@ -130,5 +129,5 @@ func (h *noPermsRequiredHandler) ServeHTTP(ctx context.Context, w http.ResponseW
 	}
 	ctx = CtxWithPermissions(ctx, permsMap)
 
-	h.h.ServeHTTP(ctx, w, r)
+	h.h.ServeHTTP(w, r.WithContext(ctx))
 }

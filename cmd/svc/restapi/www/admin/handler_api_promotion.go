@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
@@ -27,19 +25,19 @@ type PromotionPUTRequest struct {
 }
 
 // NewPromotionHandler returns an initialized instance of promotionHandler
-func newPromotionHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func newPromotionHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&promotionHandler{dataAPI: dataAPI}, httputil.Put)
 }
 
-func (h *promotionHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.ParseInt(mux.Vars(ctx)["id"], 10, 64)
+func (h *promotionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(mux.Vars(r.Context())["id"], 10, 64)
 	if err != nil {
 		www.APINotFound(w, r)
 		return
 	}
 	switch r.Method {
 	case httputil.Put:
-		req, err := h.parsePUTRequest(ctx, r)
+		req, err := h.parsePUTRequest(r)
 		if err != nil {
 			www.APIBadRequestError(w, r, err.Error())
 			return
@@ -48,7 +46,7 @@ func (h *promotionHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter,
 	}
 }
 
-func (h *promotionHandler) parsePUTRequest(ctx context.Context, r *http.Request) (*PromotionPUTRequest, error) {
+func (h *promotionHandler) parsePUTRequest(r *http.Request) (*PromotionPUTRequest, error) {
 	rd := &PromotionPUTRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&rd); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)

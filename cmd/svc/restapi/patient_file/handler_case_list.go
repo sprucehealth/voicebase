@@ -3,8 +3,6 @@ package patient_file
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -24,7 +22,7 @@ type caseListRequest struct {
 	PatientID common.PatientID `schema:"patient_id,required"`
 }
 
-func NewPatientCaseListHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func NewPatientCaseListHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.RequestCacheHandler(
@@ -36,7 +34,8 @@ func NewPatientCaseListHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 		httputil.Get)
 }
 
-func (c *caseListHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+func (c *caseListHandler) IsAuthorized(r *http.Request) (bool, error) {
+	ctx := r.Context()
 	account := apiservice.MustCtxAccount(ctx)
 	requestCache := apiservice.MustCtxCache(ctx)
 
@@ -62,15 +61,15 @@ func (c *caseListHandler) IsAuthorized(ctx context.Context, r *http.Request) (bo
 	return true, nil
 }
 
-func (c *caseListHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	requestCache := apiservice.MustCtxCache(ctx)
+func (c *caseListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(r.Context())
 	rd := requestCache[apiservice.CKRequestData].(*caseListRequest)
 	doctorID := requestCache[apiservice.CKDoctorID].(int64)
 
 	// get a list of cases for the patient
 	cases, err := c.dataAPI.GetCasesForPatient(rd.PatientID, []string{common.PCStatusActive.String(), common.PCStatusInactive.String()})
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -84,7 +83,7 @@ func (c *caseListHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, 
 		// get the visits for the case
 		visits, err := c.dataAPI.GetVisitsForCase(pc.ID.Int64(), common.NonOpenPatientVisitStates())
 		if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 
@@ -102,21 +101,21 @@ func (c *caseListHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, 
 
 		activeTPs, err := c.dataAPI.GetAbridgedTreatmentPlanList(doctorID, pc.ID.Int64(), common.ActiveTreatmentPlanStates())
 		if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 		item.ActiveTPs = populateTPList(activeTPs)
 
 		inactiveTPs, err := c.dataAPI.GetAbridgedTreatmentPlanList(doctorID, pc.ID.Int64(), common.InactiveTreatmentPlanStates())
 		if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 		item.InactiveTPs = populateTPList(inactiveTPs)
 
 		draftTreatmentPlans, err := c.dataAPI.GetAbridgedTreatmentPlanListInDraftForDoctor(doctorID, pc.ID.Int64())
 		if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 		item.DraftTPs = populateTPList(draftTreatmentPlans)

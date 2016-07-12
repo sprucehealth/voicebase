@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"io"
 	"log"
+	"net/http"
 
 	"github.com/cookieo9/resources-go"
 	"github.com/rainycape/memcache"
@@ -23,7 +24,6 @@ import (
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/ratelimit"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
@@ -50,7 +50,7 @@ func buildWWW(
 	cfgStore cfg.Store,
 	memcacheClient *memcache.Client,
 	proxiedSiteURL string,
-) httputil.ContextHandler {
+) http.Handler {
 	stripeCli := &stripe.Client{
 		SecretKey:      conf.Stripe.SecretKey,
 		PublishableKey: conf.Stripe.PublishableKey,

@@ -9,12 +9,10 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-
-	"context"
 )
 
 func TestDecompressRequest(t *testing.T) {
-	h := DecompressRequest(ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	h := DecompressRequest(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if _, err := io.Copy(w, r.Body); err != nil {
 			t.Fatal(err)
 		}
@@ -25,7 +23,7 @@ func TestDecompressRequest(t *testing.T) {
 		t.Fatal(err)
 	}
 	rec := httptest.NewRecorder()
-	h.ServeHTTP(context.Background(), rec, req)
+	h.ServeHTTP(rec, req)
 	if body := rec.Body.String(); body != "hello" {
 		t.Errorf("Expected echo of '%s'. Got '%s'", "hello", body)
 	}
@@ -44,7 +42,7 @@ func TestDecompressRequest(t *testing.T) {
 	}
 	req.Header.Set("Content-Encoding", "gzip")
 	rec = httptest.NewRecorder()
-	h.ServeHTTP(context.Background(), rec, req)
+	h.ServeHTTP(rec, req)
 	if body := rec.Body.String(); body != "hello" {
 		t.Errorf("Expected echo of compressed '%s'. Got '%s'", "hello", body)
 	}
@@ -54,7 +52,7 @@ func TestCompressResponse(t *testing.T) {
 	// Compressable mimetype
 
 	responseContentType := "text/plain"
-	h := CompressResponse(ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	h := CompressResponse(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", responseContentType)
 		w.Write([]byte("hello"))
 	}))
@@ -64,14 +62,14 @@ func TestCompressResponse(t *testing.T) {
 		t.Fatal(err)
 	}
 	rec := httptest.NewRecorder()
-	h.ServeHTTP(context.Background(), rec, req)
+	h.ServeHTTP(rec, req)
 	if body := rec.Body.String(); body != "hello" {
 		t.Errorf("Expected uncompressed body of '%s'. Got '%s'", "hello", body)
 	}
 
 	rec = httptest.NewRecorder()
 	req.Header.Set("Accept-Encoding", "gzip,deflate")
-	h.ServeHTTP(context.Background(), rec, req)
+	h.ServeHTTP(rec, req)
 	if ct := rec.Header().Get("Content-Type"); ct != responseContentType {
 		t.Errorf("Expected content-type of '%s'. Got '%s'", responseContentType, ct)
 	}
@@ -103,7 +101,7 @@ func TestCompressResponse(t *testing.T) {
 	}
 	req.Header.Set("Accept-Encoding", "gzip,deflate")
 	rec = httptest.NewRecorder()
-	h.ServeHTTP(context.Background(), rec, req)
+	h.ServeHTTP(rec, req)
 	if ct := rec.Header().Get("Content-Type"); ct != responseContentType {
 		t.Errorf("Expected content-type of '%s'. Got '%s'", responseContentType, ct)
 	}
@@ -116,7 +114,7 @@ func TestCompressResponse(t *testing.T) {
 }
 
 func TestUncompressableResponse(t *testing.T) {
-	h := CompressResponse(ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	h := CompressResponse(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "image/jpeg")
 		w.Write([]byte("hello"))
 	}))
@@ -127,14 +125,14 @@ func TestUncompressableResponse(t *testing.T) {
 	}
 	req.Header.Set("Accept-Encoding", "gzip,deflate")
 	rec := httptest.NewRecorder()
-	h.ServeHTTP(context.Background(), rec, req)
+	h.ServeHTTP(rec, req)
 	if body := rec.Body.String(); body != "hello" {
 		t.Errorf("Expected uncompressed body of '%s'. Got '%s'", "hello", body)
 	}
 }
 
 func TestResponseAlreadyCompressed(t *testing.T) {
-	h := CompressResponse(ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	h := CompressResponse(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "image/jpeg")
 		w.Header().Set("Content-Encoding", "gzip")
 		w.Write([]byte("hello"))
@@ -146,7 +144,7 @@ func TestResponseAlreadyCompressed(t *testing.T) {
 	}
 	req.Header.Set("Accept-Encoding", "gzip,deflate")
 	rec := httptest.NewRecorder()
-	h.ServeHTTP(context.Background(), rec, req)
+	h.ServeHTTP(rec, req)
 	if body := rec.Body.String(); body != "hello" {
 		t.Errorf("Expected uncompressed body of '%s'. Got '%s'", "hello", body)
 	}
@@ -166,11 +164,10 @@ func BenchmarkCompressResponse(b *testing.B) {
 		res[i] = 'a'
 	}
 	resContentType := []string{"text/plain"}
-	h := CompressResponse(ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	h := CompressResponse(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header()["Content-Type"] = resContentType
 		w.Write(res)
 	}))
-	ctx := context.Background()
 	r, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
 		b.Fatal(err)
@@ -180,15 +177,14 @@ func BenchmarkCompressResponse(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		h.ServeHTTP(ctx, w, r)
+		h.ServeHTTP(w, r)
 	}
 }
 
 func BenchmarkDecompressRequest(b *testing.B) {
-	h := DecompressRequest(ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	h := DecompressRequest(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		io.Copy(ioutil.Discard, r.Body)
 	}))
-	ctx := context.Background()
 	rawBody := make([]byte, 256)
 	for i := range rawBody {
 		rawBody[i] = 'a'
@@ -214,6 +210,6 @@ func BenchmarkDecompressRequest(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		body.Seek(0, 0)
 		r.Body = ioutil.NopCloser(body)
-		h.ServeHTTP(ctx, w, r)
+		h.ServeHTTP(w, r)
 	}
 }

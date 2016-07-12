@@ -5,10 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"context"
-
 	"github.com/samuel/go-metrics/metrics"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type stubKeyedRateLimiter struct{}
@@ -21,21 +18,21 @@ func (stubKeyedRateLimiter) Check(key string, cost int) (bool, error) {
 }
 
 func TestRemoteAddrHandler(t *testing.T) {
-	h := RemoteAddrHandler(httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	h := RemoteAddrHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}), stubKeyedRateLimiter{}, "", metrics.NewRegistry())
 
 	req, _ := http.NewRequest("GET", "/", nil)
 	rec := httptest.NewRecorder()
 	req.RemoteAddr = "not-limited"
-	h.ServeHTTP(context.Background(), rec, req)
+	h.ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("Expected %d, got %d", http.StatusOK, rec.Code)
 	}
 
 	rec = httptest.NewRecorder()
 	req.RemoteAddr = "limited"
-	h.ServeHTTP(context.Background(), rec, req)
+	h.ServeHTTP(rec, req)
 	if rec.Code != http.StatusForbidden {
 		t.Fatalf("Expected %d, got %d", http.StatusForbidden, rec.Code)
 	}

@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -55,15 +53,15 @@ func (r *PhotoAnswerIntakeRequestData) Validate() (bool, string) {
 	return true, ""
 }
 
-func NewPhotoAnswerIntakeHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func NewPhotoAnswerIntakeHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(apiservice.AuthorizationRequired(
 		&photoAnswerIntakeHandler{
 			dataAPI: dataAPI,
 		}), httputil.Post)
 }
 
-func (p *photoAnswerIntakeHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
-	account := apiservice.MustCtxAccount(ctx)
+func (p *photoAnswerIntakeHandler) IsAuthorized(r *http.Request) (bool, error) {
+	account := apiservice.MustCtxAccount(r.Context())
 	if account.Role != api.RolePatient {
 		return false, apiservice.NewAccessForbiddenError()
 	}
@@ -71,10 +69,10 @@ func (p *photoAnswerIntakeHandler) IsAuthorized(ctx context.Context, r *http.Req
 	return true, nil
 }
 
-func (p *photoAnswerIntakeHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (p *photoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var requestData PhotoAnswerIntakeRequestData
 	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
-		apiservice.WriteBadRequestError(ctx, err, w, r)
+		apiservice.WriteBadRequestError(err, w, r)
 		return
 	}
 
@@ -82,22 +80,22 @@ func (p *photoAnswerIntakeHandler) ServeHTTP(ctx context.Context, w http.Respons
 		// FIXME: logging this for now as we've been seeing likely bad requests recently. can remove
 		//        after no longer needed for debug.
 		golog.Warningf("invalid request to photo answer intake: %s", reason)
-		apiservice.WriteValidationError(ctx, reason, w, r)
+		apiservice.WriteValidationError(reason, w, r)
 		return
 	}
 
-	patientID, err := p.dataAPI.GetPatientIDFromAccountID(apiservice.MustCtxAccount(ctx).ID)
+	patientID, err := p.dataAPI.GetPatientIDFromAccountID(apiservice.MustCtxAccount(r.Context()).ID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	patientIDFromPatientVisitID, err := p.dataAPI.GetPatientIDFromPatientVisitID(requestData.PatientVisitID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	} else if patientIDFromPatientVisitID != patientID {
-		apiservice.WriteValidationError(ctx, "patient id retrieved from the patient_visit_id does not match patient id retrieved from auth token", w, r)
+		apiservice.WriteValidationError("patient id retrieved from the patient_visit_id does not match patient id retrieved from auth token", w, r)
 		return
 	}
 
@@ -105,10 +103,10 @@ func (p *photoAnswerIntakeHandler) ServeHTTP(ctx context.Context, w http.Respons
 		// ensure that intake is for the right question type
 		questionType, err := p.dataAPI.GetQuestionType(photoIntake.QuestionID)
 		if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		} else if questionType != info_intake.QuestionTypePhotoSection {
-			apiservice.WriteValidationError(ctx, "only photo section question types acceptable for intake via this endpoint", w, r)
+			apiservice.WriteValidationError("only photo section question types acceptable for intake via this endpoint", w, r)
 			return
 		}
 
@@ -116,7 +114,7 @@ func (p *photoAnswerIntakeHandler) ServeHTTP(ctx context.Context, w http.Respons
 		// belong to this question
 		photoSlots, err := p.dataAPI.GetPhotoSlotsInfo(photoIntake.QuestionID, api.LanguageIDEnglish)
 		if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 
@@ -140,7 +138,7 @@ func (p *photoAnswerIntakeHandler) ServeHTTP(ctx context.Context, w http.Respons
 			requestData.SessionCounter,
 			photoIntake.PhotoSections,
 		); err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 	}

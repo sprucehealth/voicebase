@@ -2,28 +2,24 @@ package apiservice
 
 import (
 	"net/http"
-
-	"context"
-
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type supportedRolesHandler struct {
 	roles []string
-	h     httputil.ContextHandler
+	h     http.Handler
 }
 
 // SupportedRoles wraps an HTTP handler with a filter that checks that the
 // incoming request is made by one of the required roles.
-func SupportedRoles(h httputil.ContextHandler, roles ...string) httputil.ContextHandler {
+func SupportedRoles(h http.Handler, roles ...string) http.Handler {
 	return &supportedRolesHandler{
 		h:     h,
 		roles: roles,
 	}
 }
 
-func (s *supportedRolesHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	account, ok := CtxAccount(ctx)
+func (s *supportedRolesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	account, ok := CtxAccount(r.Context())
 	if ok {
 		var roleFound bool
 		for _, role := range s.roles {
@@ -34,9 +30,9 @@ func (s *supportedRolesHandler) ServeHTTP(ctx context.Context, w http.ResponseWr
 		}
 
 		if !roleFound {
-			WriteAccessNotAllowedError(ctx, w, r)
+			WriteAccessNotAllowedError(w, r)
 			return
 		}
 	}
-	s.h.ServeHTTP(ctx, w, r)
+	s.h.ServeHTTP(w, r)
 }

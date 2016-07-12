@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -26,7 +24,7 @@ type doctorPatientVisitReviewHandler struct {
 	webDomain          string
 }
 
-func NewDoctorPatientVisitReviewHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, mediaStore *mediastore.Store, expirationDuration time.Duration, webDomain string) httputil.ContextHandler {
+func NewDoctorPatientVisitReviewHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, mediaStore *mediastore.Store, expirationDuration time.Duration, webDomain string) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.RequestCacheHandler(
 			apiservice.AuthorizationRequired(
@@ -50,7 +48,8 @@ type VisitReviewResponse struct {
 	PatientVisitReview map[string]interface{} `json:"visit_review"`
 }
 
-func (p *doctorPatientVisitReviewHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+func (p *doctorPatientVisitReviewHandler) IsAuthorized(r *http.Request) (bool, error) {
+	ctx := r.Context()
 	requestCache := apiservice.MustCtxCache(ctx)
 	account := apiservice.MustCtxAccount(ctx)
 
@@ -103,26 +102,27 @@ func (p *doctorPatientVisitReviewHandler) IsAuthorized(ctx context.Context, r *h
 	return true, nil
 }
 
-func (p *doctorPatientVisitReviewHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	requestCache := apiservice.MustCtxCache(ctx)
 	account := apiservice.MustCtxAccount(ctx)
 	patientVisit := requestCache[apiservice.CKPatientVisit].(*common.PatientVisit)
 
 	patient, err := p.dataAPI.GetPatientFromID(patientVisit.PatientID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	doctor, err := p.dataAPI.GetDoctorFromAccountID(account.ID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	renderedLayout, err := VisitReviewLayout(p.dataAPI, patient, doctor, p.mediaStore, p.expirationDuration, patientVisit, r.Host, p.webDomain)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

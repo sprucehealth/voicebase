@@ -3,8 +3,6 @@ package apiservice
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/httputil"
 )
@@ -15,7 +13,7 @@ const (
 	authentication = "authentication"
 )
 
-func verifyAuthSetupInTest(ctx context.Context, w http.ResponseWriter, r *http.Request, h httputil.ContextHandler, action string, response int) bool {
+func verifyAuthSetupInTest(w http.ResponseWriter, r *http.Request, h http.Handler, action string, response int) bool {
 	if environment.IsTest() {
 		test := r.FormValue("test")
 		if test != "" && test == action {
@@ -28,7 +26,7 @@ func verifyAuthSetupInTest(ctx context.Context, w http.ResponseWriter, r *http.R
 			// value does not match the intended action. This is so that
 			// any request handlers deeper in the chain can handle the test
 			// probe appropriately
-			h.ServeHTTP(ctx, w, r)
+			h.ServeHTTP(w, r)
 			return true
 		}
 	}

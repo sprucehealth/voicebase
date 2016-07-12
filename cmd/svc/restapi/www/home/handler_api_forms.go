@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"reflect"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
@@ -20,14 +18,14 @@ type formsAPIHandler struct {
 	dataAPI api.DataAPI
 }
 
-func newFormsAPIHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func newFormsAPIHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&formsAPIHandler{
 		dataAPI: dataAPI,
 	}, httputil.Post)
 }
 
-func (h *formsAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	formName := mux.Vars(ctx)["form"]
+func (h *formsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	formName := mux.Vars(r.Context())["form"]
 	formType := common.Forms[formName]
 	if formType == nil {
 		golog.Warningf("Form %s not found", formName)
@@ -44,7 +42,7 @@ func (h *formsAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, 
 		www.APIInternalError(w, r, err)
 		return
 	}
-	requestID := httputil.RequestID(ctx)
+	requestID := httputil.RequestID(r.Context())
 	if err := h.dataAPI.RecordForm(form, "home", requestID); err != nil {
 		www.APIInternalError(w, r, err)
 		return

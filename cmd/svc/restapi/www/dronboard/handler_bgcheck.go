@@ -5,8 +5,6 @@ import (
 	"html/template"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -51,7 +49,7 @@ func (r *bgCheckForm) Validate() map[string]string {
 	return errors
 }
 
-func newBackgroundCheckHandler(router *mux.Router, dataAPI api.DataAPI, templateLoader *www.TemplateLoader) httputil.ContextHandler {
+func newBackgroundCheckHandler(router *mux.Router, dataAPI api.DataAPI, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&bgCheckHandler{
 		router:   router,
 		dataAPI:  dataAPI,
@@ -60,8 +58,8 @@ func newBackgroundCheckHandler(router *mux.Router, dataAPI api.DataAPI, template
 	}, httputil.Get, httputil.Post)
 }
 
-func (h *bgCheckHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	account := www.MustCtxAccount(ctx)
+func (h *bgCheckHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(r.Context())
 	doctorID, err := h.dataAPI.GetDoctorIDFromAccountID(account.ID)
 	if err != nil {
 		www.InternalServerError(w, r, err)

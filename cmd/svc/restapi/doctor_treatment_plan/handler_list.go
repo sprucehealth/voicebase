@@ -3,8 +3,6 @@ package doctor_treatment_plan
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -25,7 +23,7 @@ type TreatmentPlansResponse struct {
 	InactiveTreatmentPlans []*common.TreatmentPlan `json:"inactive_treatment_plans,omitempty"`
 }
 
-func NewDeprecatedListHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func NewDeprecatedListHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.RequestCacheHandler(
 			apiservice.AuthorizationRequired(&listHandler{
@@ -34,7 +32,8 @@ func NewDeprecatedListHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 		httputil.Get)
 }
 
-func (l *listHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+func (l *listHandler) IsAuthorized(r *http.Request) (bool, error) {
+	ctx := r.Context()
 	requestCache := apiservice.MustCtxCache(ctx)
 	account := apiservice.MustCtxAccount(ctx)
 
@@ -61,8 +60,8 @@ func (l *listHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, 
 	return true, nil
 }
 
-func (l *listHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	requestCache := apiservice.MustCtxCache(ctx)
+func (l *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(r.Context())
 	doctorID := requestCache[apiservice.CKDoctorID].(int64)
 	requestData := requestCache[apiservice.CKRequestData].(*listHandlerRequestData)
 
@@ -70,28 +69,28 @@ func (l *listHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *h
 	// We assume here that the patient has just a single case
 	cases, err := l.dataAPI.GetCasesForPatient(requestData.PatientID, []string{common.PCStatusInactive.String(), common.PCStatusActive.String()})
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	} else if len(cases) == 0 {
-		apiservice.WriteResourceNotFoundError(ctx, "no cases exist for patient", w, r)
+		apiservice.WriteResourceNotFoundError("no cases exist for patient", w, r)
 		return
 	}
 
 	activeTreatmentPlans, err := l.dataAPI.GetAbridgedTreatmentPlanList(doctorID, cases[0].ID.Int64(), common.ActiveTreatmentPlanStates())
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	inactiveTreatmentPlans, err := l.dataAPI.GetAbridgedTreatmentPlanList(doctorID, cases[0].ID.Int64(), []common.TreatmentPlanStatus{common.TPStatusInactive})
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	draftTreatmentPlans, err := l.dataAPI.GetAbridgedTreatmentPlanListInDraftForDoctor(doctorID, cases[0].ID.Int64())
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

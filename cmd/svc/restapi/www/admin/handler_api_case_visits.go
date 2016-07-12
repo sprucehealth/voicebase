@@ -6,8 +6,6 @@ import (
 	"sort"
 	"time"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/responses"
@@ -36,11 +34,11 @@ type caseVisitsGETResponse struct {
 	VisitSummaries []*responses.PHISafeVisitSummary `json:"visit_summaries"`
 }
 
-func newCaseVisitsHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func newCaseVisitsHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&caseVisitsHandler{dataAPI: dataAPI}, httputil.Get)
 }
 
-func (h *caseVisitsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *caseVisitsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
 		rd, err := h.parseGETRequest(w, r)

@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
@@ -36,7 +34,7 @@ type textDownloadLinkAPIResponse struct {
 	Error   string `json:"error"`
 }
 
-func newTextDownloadLinkAPIHandler(dataAPI api.DataAPI, smsAPI api.SMSAPI, fromNumber string, branchClient branch.Client, rateLimiter ratelimit.KeyedRateLimiter) httputil.ContextHandler {
+func newTextDownloadLinkAPIHandler(dataAPI api.DataAPI, smsAPI api.SMSAPI, fromNumber string, branchClient branch.Client, rateLimiter ratelimit.KeyedRateLimiter) http.Handler {
 	return httputil.SupportedMethods(&textDownloadLinkAPIHandler{
 		smsAPI:       smsAPI,
 		fromNumber:   fromNumber,
@@ -46,7 +44,7 @@ func newTextDownloadLinkAPIHandler(dataAPI api.DataAPI, smsAPI api.SMSAPI, fromN
 	}, httputil.Post)
 }
 
-func (h *textDownloadLinkAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *textDownloadLinkAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Rate limit by remote IP address
 	if ok, err := h.rateLimiter.Check("ref:"+r.RemoteAddr, 1); err != nil {
 		golog.Errorf("Rate limit check failed: %s", err.Error())

@@ -5,13 +5,10 @@ import (
 	"html/template"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/response"
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/service"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/environment"
-	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
 )
 
@@ -20,17 +17,16 @@ type cityPageHandler struct {
 	cityService service.PageContentBuilder
 }
 
-func NewCityPageHandler(templateLoader *www.TemplateLoader, cityService service.PageContentBuilder) httputil.ContextHandler {
+func NewCityPageHandler(templateLoader *www.TemplateLoader, cityService service.PageContentBuilder) http.Handler {
 	return &cityPageHandler{
 		refTemplate: templateLoader.MustLoadTemplate("citypage.html", "base.html", nil),
 		cityService: cityService,
 	}
 }
 
-func (c *cityPageHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-
-	cityID := mux.Vars(ctx)["city"]
-	stateKey := mux.Vars(ctx)["state"]
+func (c *cityPageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	cityID := mux.Vars(r.Context())["city"]
+	stateKey := mux.Vars(r.Context())["state"]
 	cp, err := c.cityService.PageContentForID(&service.CityPageContext{
 		CityID:   cityID,
 		StateKey: stateKey,

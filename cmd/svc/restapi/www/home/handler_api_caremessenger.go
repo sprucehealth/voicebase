@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"strings"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common/config"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/libs/cfg"
@@ -70,15 +68,15 @@ func init() {
 	config.MustRegisterCfgDef(messengerWhitepaperRequestSlackWebhookURLDef)
 }
 
-func newCareMessengerBetaRequestAPIHandler(cfg cfg.Store) httputil.ContextHandler {
+func newCareMessengerBetaRequestAPIHandler(cfg cfg.Store) http.Handler {
 	return httputil.SupportedMethods(&messengerBetaRequestAPIHandler{cfg: cfg}, httputil.Post)
 }
 
-func newCareMessengerWhitePaperRequestAPIHandler(cfg cfg.Store) httputil.ContextHandler {
+func newCareMessengerWhitePaperRequestAPIHandler(cfg cfg.Store) http.Handler {
 	return httputil.SupportedMethods(&messengerWhitePaperRequestAPIHandler{cfg: cfg}, httputil.Post)
 }
 
-func (h *messengerBetaRequestAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *messengerBetaRequestAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var d betaWhitePaperPostRequest
 	var err error
 	if err = json.NewDecoder(r.Body).Decode(&d); err != nil {
@@ -111,7 +109,7 @@ func (h *messengerBetaRequestAPIHandler) ServeHTTP(ctx context.Context, w http.R
 	httputil.JSONResponse(w, http.StatusOK, struct{}{})
 }
 
-func (h *messengerWhitePaperRequestAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *messengerWhitePaperRequestAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var d betaWhitePaperPostRequest
 	var err error
 	if err = json.NewDecoder(r.Body).Decode(&d); err != nil {

@@ -3,8 +3,6 @@ package doctor_treatment_plan
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/libs/dispatch"
@@ -21,7 +19,7 @@ type DoctorSavedNoteRequestData struct {
 	Message         string `json:"message"`
 }
 
-func NewSavedNoteHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) httputil.ContextHandler {
+func NewSavedNoteHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(
 			apiservice.SupportedRoles(
@@ -32,32 +30,32 @@ func NewSavedNoteHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) h
 		httputil.Put)
 }
 
-func (h *savedNoteHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *savedNoteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case httputil.Put:
-		h.put(ctx, w, r)
+		h.put(w, r)
 	default:
 		httputil.SupportedMethodsResponse(w, r, []string{"PUT"})
 	}
 }
 
-func (h *savedNoteHandler) put(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	account := apiservice.MustCtxAccount(ctx)
+func (h *savedNoteHandler) put(w http.ResponseWriter, r *http.Request) {
+	account := apiservice.MustCtxAccount(r.Context())
 	doctorID, err := h.dataAPI.GetDoctorIDFromAccountID(account.ID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	var req DoctorSavedNoteRequestData
 	if err := apiservice.DecodeRequestData(&req, r); err != nil {
-		apiservice.WriteValidationError(ctx, err.Error(), w, r)
+		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
 
 	// Update message for a treatment plan
 	if err := h.dataAPI.SetTreatmentPlanNote(doctorID, req.TreatmentPlanID, req.Message); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

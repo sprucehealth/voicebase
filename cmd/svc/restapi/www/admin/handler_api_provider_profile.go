@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -38,14 +36,14 @@ type providerProfileAPIHandler struct {
 	dataAPI api.DataAPI
 }
 
-func newProviderProfileAPIHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func newProviderProfileAPIHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&providerProfileAPIHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get, httputil.Put)
 }
 
-func (h *providerProfileAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	doctorID, err := strconv.ParseInt(mux.Vars(ctx)["id"], 10, 64)
+func (h *providerProfileAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	doctorID, err := strconv.ParseInt(mux.Vars(r.Context())["id"], 10, 64)
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return
@@ -60,7 +58,7 @@ func (h *providerProfileAPIHandler) ServeHTTP(ctx context.Context, w http.Respon
 		return
 	}
 
-	account := www.MustCtxAccount(ctx)
+	account := www.MustCtxAccount(r.Context())
 
 	switch r.Method {
 	case httputil.Get:

@@ -11,8 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/responses"
@@ -62,7 +60,7 @@ func TestPromotionHandlerGETQueriesDataLayer(t *testing.T) {
 	})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, &PromotionsGETResponse{Promotions: []*responses.Promotion{responses.TransformPromotion(promotion)}})
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
 }
@@ -75,7 +73,7 @@ func TestPromotionHandlerGETNoPromotions(t *testing.T) {
 	})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, &PromotionsGETResponse{[]*responses.Promotion{}})
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
 }
@@ -88,7 +86,7 @@ func TestPromotionHandlerGETQueryErr(t *testing.T) {
 	})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusInternalServerError, struct{}{})
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 }
 
@@ -98,7 +96,7 @@ func TestPromotionHandlerGETBadParams(t *testing.T) {
 	handler := newPromotionsHandler(&mockedDataAPI_promotionsHandler{})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusBadRequest, struct{}{})
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 }
 
@@ -114,7 +112,7 @@ func TestPromotionHandlerPOSTWritesDataLayerNoExpiration(t *testing.T) {
 	handler := newPromotionsHandler(&mockedDataAPI_promotionsHandler{lookupPromoCodeErr: api.ErrNotFound(`promotion_code`)})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, &PromotionsPOSTResponse{PromoCodeID: 1})
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
 }
@@ -133,7 +131,7 @@ func TestPromotionHandlerPOSTWritesDataLayerExpiration(t *testing.T) {
 	handler := newPromotionsHandler(&mockedDataAPI_promotionsHandler{lookupPromoCodeErr: api.ErrNotFound(`promotion_code`)})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, &PromotionsPOSTResponse{PromoCodeID: 1})
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
 }
@@ -152,7 +150,7 @@ func TestPromotionHandlerPOSTBadPromoType(t *testing.T) {
 	handler := newPromotionsHandler(&mockedDataAPI_promotionsHandler{lookupPromoCodeErr: api.ErrNotFound(`promotion_code`)})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusBadRequest, struct{}{})
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 }
 
@@ -171,7 +169,7 @@ func TestPromotionHandlerPOSTDataLayerErr(t *testing.T) {
 	})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusInternalServerError, struct{}{})
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 }
 
@@ -181,7 +179,7 @@ func TestPromotionHandlerPOSTRequiredParams(t *testing.T) {
 	handler := newPromotionsHandler(&mockedDataAPI_promotionsHandler{})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusBadRequest, struct{}{})
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 }
 
@@ -198,7 +196,7 @@ func TestPromotionHandlerPOSTCodeAlreadyExists(t *testing.T) {
 	handler := newPromotionsHandler(mh)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusBadRequest, struct{}{})
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 	test.Equals(t, "Foo", mh.lookupPromoCodeParam)
 }

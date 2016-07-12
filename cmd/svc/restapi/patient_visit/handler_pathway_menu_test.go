@@ -1,12 +1,11 @@
 package patient_visit
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -100,7 +99,7 @@ func TestPathwayMenuHandler(t *testing.T) {
 		t.Fatal(err)
 	}
 	wr := httptest.NewRecorder()
-	h.ServeHTTP(ctx, wr, r)
+	h.ServeHTTP(wr, r.WithContext(ctx))
 	if wr.Code != http.StatusOK {
 		t.Fatalf("Expected 200, got %d: %s", wr.Code, wr.Body.String())
 	}
@@ -152,7 +151,7 @@ func TestPathwayMenuHandler(t *testing.T) {
 	}
 	ctx = apiservice.CtxWithAccount(ctx, &common.Account{ID: 1, Role: api.RolePatient})
 	wr = httptest.NewRecorder()
-	h.ServeHTTP(ctx, wr, r)
+	h.ServeHTTP(wr, r.WithContext(ctx))
 	if wr.Code != http.StatusOK {
 		t.Fatalf("Expected 200, got %d: %s", wr.Code, wr.Body.String())
 	}

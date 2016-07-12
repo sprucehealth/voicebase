@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -19,20 +17,20 @@ type adminsGroupsAPIHandler struct {
 	authAPI api.AuthAPI
 }
 
-func newAdminsGroupsAPIHandler(authAPI api.AuthAPI) httputil.ContextHandler {
+func newAdminsGroupsAPIHandler(authAPI api.AuthAPI) http.Handler {
 	return httputil.SupportedMethods(&adminsGroupsAPIHandler{
 		authAPI: authAPI,
 	}, httputil.Get, httputil.Post)
 }
 
-func (h *adminsGroupsAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	accountID, err := strconv.ParseInt(mux.Vars(ctx)["id"], 10, 64)
+func (h *adminsGroupsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	accountID, err := strconv.ParseInt(mux.Vars(r.Context())["id"], 10, 64)
 	if err != nil {
 		www.APINotFound(w, r)
 		return
 	}
 
-	account := www.MustCtxAccount(ctx)
+	account := www.MustCtxAccount(r.Context())
 
 	if r.Method == httputil.Post {
 		// Use a string key because JSON

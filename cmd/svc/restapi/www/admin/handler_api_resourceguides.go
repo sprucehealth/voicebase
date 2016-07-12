@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
@@ -18,20 +16,20 @@ type resourceGuidesAPIHandler struct {
 	dataAPI api.DataAPI
 }
 
-func newResourceGuidesAPIHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func newResourceGuidesAPIHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&resourceGuidesAPIHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get, httputil.Patch)
 }
 
-func (h *resourceGuidesAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.ParseInt(mux.Vars(ctx)["id"], 10, 64)
+func (h *resourceGuidesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(mux.Vars(r.Context())["id"], 10, 64)
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return
 	}
 
-	account := www.MustCtxAccount(ctx)
+	account := www.MustCtxAccount(r.Context())
 	if r.Method == "PATCH" {
 		audit.LogAction(account.ID, "AdminAPI", "UpdateResourceGuide", map[string]interface{}{"guide_id": id})
 

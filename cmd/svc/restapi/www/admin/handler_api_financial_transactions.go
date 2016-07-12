@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/financial"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
@@ -43,13 +41,13 @@ var (
 	dateSeperators = []rune{'-', '/'}
 )
 
-func newIncomingFinancialItemsHandler(financialAccess financial.Financial) httputil.ContextHandler {
+func newIncomingFinancialItemsHandler(financialAccess financial.Financial) http.Handler {
 	return httputil.SupportedMethods(&incomingFinancialItemsAPIHandler{
 		financialAccess: financialAccess,
 	}, httputil.Get)
 }
 
-func newOutgoingFinancialItemsHandler(financialAccess financial.Financial) httputil.ContextHandler {
+func newOutgoingFinancialItemsHandler(financialAccess financial.Financial) http.Handler {
 	return httputil.SupportedMethods(&outgoingFinancialItemsAPIHandler{
 		financialAccess: financialAccess,
 	}, httputil.Get)
@@ -95,14 +93,14 @@ func parseRequest(r *http.Request) (*financialTransactionsRequest, error) {
 	}, nil
 }
 
-func (f *incomingFinancialItemsAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (f *incomingFinancialItemsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	rd, err := parseRequest(r)
 	if err != nil {
 		www.APIBadRequestError(w, r, err.Error())
 		return
 	}
 
-	account := www.MustCtxAccount(ctx)
+	account := www.MustCtxAccount(r.Context())
 	audit.LogAction(account.ID, "AdminAPI", "IncomingFinancialItems", map[string]interface{}{
 		"from": rd.From,
 		"to":   rd.To,
@@ -119,14 +117,14 @@ func (f *incomingFinancialItemsAPIHandler) ServeHTTP(ctx context.Context, w http
 	})
 }
 
-func (f *outgoingFinancialItemsAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (f *outgoingFinancialItemsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	rd, err := parseRequest(r)
 	if err != nil {
 		www.APIBadRequestError(w, r, err.Error())
 		return
 	}
 
-	account := www.MustCtxAccount(ctx)
+	account := www.MustCtxAccount(r.Context())
 	audit.LogAction(account.ID, "AdminAPI", "OutgoingFinancialItems", map[string]interface{}{
 		"from": rd.From,
 		"to":   rd.To,

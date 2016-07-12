@@ -1,13 +1,12 @@
 package patient_file
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -109,7 +108,7 @@ func TestPatientParentHandler(t *testing.T) {
 	test.OK(t, err)
 
 	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RoleDoctor})
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 
 	var res patientParentResponse
 	test.OK(t, json.NewDecoder(w.Body).Decode(&res))

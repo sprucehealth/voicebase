@@ -3,8 +3,6 @@ package tagging
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/tagging/response"
@@ -19,7 +17,7 @@ type tagSavedSearchGETResponse struct {
 	SavedSearches []*response.TagSavedSearch `json:"saved_searches"`
 }
 
-func NewTagSavedSearchHandler(taggingClient Client) httputil.ContextHandler {
+func NewTagSavedSearchHandler(taggingClient Client) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(&tagSavedSearchHandler{taggingClient: taggingClient}),
@@ -27,17 +25,17 @@ func NewTagSavedSearchHandler(taggingClient Client) httputil.ContextHandler {
 		httputil.Get)
 }
 
-func (h *tagSavedSearchHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *tagSavedSearchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		h.serveGET(ctx, w, r)
+		h.serveGET(w, r)
 	}
 }
 
-func (h *tagSavedSearchHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *tagSavedSearchHandler) serveGET(w http.ResponseWriter, r *http.Request) {
 	savedSearches, err := h.taggingClient.TagSavedSearchs()
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

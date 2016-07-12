@@ -6,14 +6,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"context"
-
 	"github.com/samuel/go-metrics/metrics"
 )
 
 func TestMetricsHandler(t *testing.T) {
 	reg := metrics.NewRegistry()
-	h := MetricsHandler(ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	h := MetricsHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte("foo"))
 	}), reg)
@@ -22,7 +20,7 @@ func TestMetricsHandler(t *testing.T) {
 		t.Fatal(err)
 	}
 	w := httptest.NewRecorder()
-	h.ServeHTTP(context.Background(), w, r)
+	h.ServeHTTP(w, r)
 	if w.Code != http.StatusForbidden {
 		t.Fatalf("Expected %d got %d", http.StatusForbidden, w.Code)
 	}

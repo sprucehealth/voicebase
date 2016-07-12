@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/binary"
 	"image"
@@ -11,8 +12,6 @@ import (
 	"net/url"
 	"testing"
 	"time"
-
-	"context"
 
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
@@ -82,7 +81,7 @@ func TestMediaHandlerGet(t *testing.T) {
 		t.Fatal(err)
 	}
 	w := httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("Expected status %d for empty request, got %d", http.StatusBadRequest, w.Code)
 	}
@@ -94,7 +93,7 @@ func TestMediaHandlerGet(t *testing.T) {
 		t.Fatal(err)
 	}
 	w = httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	if w.Code != http.StatusForbidden {
 		t.Fatalf("Expected status %d for bad signature, got %d", http.StatusForbidden, w.Code)
 	}
@@ -115,7 +114,7 @@ func TestMediaHandlerGet(t *testing.T) {
 		t.Fatal(err)
 	}
 	w = httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	if w.Code != http.StatusForbidden {
 		t.Fatalf("Expected status %d for bad signature, got %d", http.StatusForbidden, w.Code)
 	}
@@ -131,7 +130,7 @@ func TestMediaHandlerGet(t *testing.T) {
 		t.Fatal(err)
 	}
 	w = httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected status %d for valid request, got %d", http.StatusOK, w.Code)
 	}
@@ -146,7 +145,7 @@ func TestMediaHandlerGet(t *testing.T) {
 		t.Fatal(err)
 	}
 	w = httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected status %d for valid request, got %d", http.StatusOK, w.Code)
 	}
@@ -163,7 +162,7 @@ func TestMediaHandlerGet(t *testing.T) {
 		t.Fatal(err)
 	}
 	w = httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected status %d for valid request, got %d", http.StatusOK, w.Code)
 	}
@@ -180,7 +179,7 @@ func TestMediaHandlerGet(t *testing.T) {
 		t.Fatal(err)
 	}
 	w = httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected status %d for valid request, got %d", http.StatusOK, w.Code)
 	}

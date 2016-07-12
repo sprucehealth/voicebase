@@ -7,8 +7,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
@@ -87,7 +85,7 @@ func TestAPISignUpHandler(t *testing.T) {
 	r, err := http.NewRequest("POST", "/", bytes.NewReader(body))
 	test.OK(t, err)
 	w := httptest.NewRecorder()
-	h.ServeHTTP(context.Background(), w, r)
+	h.ServeHTTP(w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 	test.Equals(t, "{}\n", w.Body.String())
 	test.Equals(t, "d_at=token; Path=/; HttpOnly; Secure", w.Header().Get("Set-Cookie"))
@@ -108,7 +106,7 @@ func TestAPISignUpHandler(t *testing.T) {
 	r, err = http.NewRequest("POST", "/", bytes.NewReader(body))
 	test.OK(t, err)
 	w = httptest.NewRecorder()
-	h.ServeHTTP(context.Background(), w, r)
+	h.ServeHTTP(w, r)
 	test.Equals(t, www.HTTPStatusAPIError, w.Code)
 	test.Equals(t, "{\"error\":{\"type\":\"invalid_request\",\"message\":\"A valid US state is required\"}}\n", w.Body.String())
 	test.Equals(t, "", w.Header().Get("Set-Cookie"))
@@ -129,7 +127,7 @@ func TestAPISignUpHandler(t *testing.T) {
 	r, err = http.NewRequest("POST", "/", bytes.NewReader(body))
 	test.OK(t, err)
 	w = httptest.NewRecorder()
-	h.ServeHTTP(context.Background(), w, r)
+	h.ServeHTTP(w, r)
 	test.Equals(t, www.HTTPStatusAPIError, w.Code)
 	test.Equals(t, "{\"error\":{\"type\":\"account_exists\",\"message\":\"An account already exists with the provided email address\"}}\n", w.Body.String())
 	test.Equals(t, "", w.Header().Get("Set-Cookie"))
@@ -150,7 +148,7 @@ func TestAPISignUpHandler(t *testing.T) {
 	r, err = http.NewRequest("POST", "/", bytes.NewReader(body))
 	test.OK(t, err)
 	w = httptest.NewRecorder()
-	h.ServeHTTP(context.Background(), w, r)
+	h.ServeHTTP(w, r)
 	test.Equals(t, www.HTTPStatusAPIError, w.Code)
 	test.Equals(t, "{\"error\":{\"type\":\"invalid_request\",\"message\":\"The email provided is invalid\"}}\n", w.Body.String())
 	test.Equals(t, "", w.Header().Get("Set-Cookie"))
@@ -171,7 +169,7 @@ func TestAPISignUpHandler(t *testing.T) {
 	r, err = http.NewRequest("POST", "/", bytes.NewReader(body))
 	test.OK(t, err)
 	w = httptest.NewRecorder()
-	h.ServeHTTP(context.Background(), w, r)
+	h.ServeHTTP(w, r)
 	test.Equals(t, http.StatusBadRequest, w.Code)
 	test.Equals(t, "{\"error\":{\"type\":\"bad_request\",\"message\":\"Phone number has to be atleast 10 digits long\"}}\n", w.Body.String())
 	test.Equals(t, "", w.Header().Get("Set-Cookie"))
@@ -192,7 +190,7 @@ func TestAPISignUpHandler(t *testing.T) {
 	r, err = http.NewRequest("POST", "/", bytes.NewReader(body))
 	test.OK(t, err)
 	w = httptest.NewRecorder()
-	h.ServeHTTP(context.Background(), w, r)
+	h.ServeHTTP(w, r)
 	test.Equals(t, www.HTTPStatusAPIError, w.Code)
 	test.Equals(t, "{\"error\":{\"type\":\"invalid_request\",\"message\":\"Must be over 18 or over\"}}\n", w.Body.String())
 	test.Equals(t, "", w.Header().Get("Set-Cookie"))

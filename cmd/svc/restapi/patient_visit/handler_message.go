@@ -3,8 +3,6 @@ package patient_visit
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -19,7 +17,7 @@ type messageRequestData struct {
 	Message        string `schema:"message" json:"message"`
 }
 
-func NewMessageHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func NewMessageHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.RequestCacheHandler(
 			apiservice.AuthorizationRequired(&messageHandler{
@@ -28,9 +26,9 @@ func NewMessageHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 		httputil.Get, httputil.Put)
 }
 
-func (m *messageHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
-	account := apiservice.MustCtxAccount(ctx)
-	requestCache := apiservice.MustCtxCache(ctx)
+func (m *messageHandler) IsAuthorized(r *http.Request) (bool, error) {
+	account := apiservice.MustCtxAccount(r.Context())
+	requestCache := apiservice.MustCtxCache(r.Context())
 	if account.Role != api.RolePatient {
 		return false, nil
 	}
@@ -58,18 +56,18 @@ func (m *messageHandler) IsAuthorized(ctx context.Context, r *http.Request) (boo
 	return true, nil
 }
 
-func (m *messageHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	requestCache := apiservice.MustCtxCache(ctx)
+func (m *messageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(r.Context())
 	requestData := requestCache[apiservice.CKRequestData].(*messageRequestData)
 
 	switch r.Method {
 	case httputil.Get:
 		message, err := m.dataAPI.GetMessageForPatientVisit(requestData.PatientVisitID)
 		if api.IsErrNotFound(err) {
-			apiservice.WriteResourceNotFoundError(ctx, "message not found", w, r)
+			apiservice.WriteResourceNotFoundError("message not found", w, r)
 			return
 		} else if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 		httputil.JSONResponse(w, http.StatusOK, struct {
@@ -79,7 +77,7 @@ func (m *messageHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 		})
 	case httputil.Put:
 		if err := m.dataAPI.SetMessageForPatientVisit(requestData.PatientVisitID, requestData.Message); err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 		apiservice.WriteJSONSuccess(w)

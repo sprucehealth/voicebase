@@ -1,10 +1,7 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -15,7 +12,7 @@ type staticJSONHandler struct {
 	imageTag      string
 }
 
-func NewFeaturedDoctorsHandler(staticBaseURL string) httputil.ContextHandler {
+func NewFeaturedDoctorsHandler(staticBaseURL string) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(
 			&staticJSONHandler{
@@ -24,7 +21,7 @@ func NewFeaturedDoctorsHandler(staticBaseURL string) httputil.ContextHandler {
 			}), httputil.Get)
 }
 
-func NewPatientFAQHandler(staticBaseURL string) httputil.ContextHandler {
+func NewPatientFAQHandler(staticBaseURL string) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(
 			&staticJSONHandler{
@@ -33,7 +30,7 @@ func NewPatientFAQHandler(staticBaseURL string) httputil.ContextHandler {
 			}), httputil.Get)
 }
 
-func NewPricingFAQHandler(staticBaseURL string) httputil.ContextHandler {
+func NewPricingFAQHandler(staticBaseURL string) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(
 			&staticJSONHandler{
@@ -42,6 +39,6 @@ func NewPricingFAQHandler(staticBaseURL string) httputil.ContextHandler {
 			}), httputil.Get)
 }
 
-func (f *staticJSONHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, fmt.Sprintf("%s%s", f.staticBaseURL, f.imageTag), http.StatusSeeOther)
+func (f *staticJSONHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, f.staticBaseURL+f.imageTag, http.StatusSeeOther)
 }

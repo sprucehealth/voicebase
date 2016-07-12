@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"strings"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
@@ -73,14 +71,14 @@ func (r *signUpAPIRequest) Validate(states []*common.State) (bool, string) {
 	return true, ""
 }
 
-func newSignUpAPIHandler(dataAPI api.DataAPI, authAPI api.AuthAPI) httputil.ContextHandler {
+func newSignUpAPIHandler(dataAPI api.DataAPI, authAPI api.AuthAPI) http.Handler {
 	return httputil.SupportedMethods(&signUpAPIHAndler{
 		dataAPI: dataAPI,
 		authAPI: authAPI,
 	}, httputil.Post)
 }
 
-func (h *signUpAPIHAndler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *signUpAPIHAndler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var req signUpAPIRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		www.APIBadRequestError(w, r, err.Error())

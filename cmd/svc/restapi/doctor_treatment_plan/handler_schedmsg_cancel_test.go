@@ -2,13 +2,12 @@ package doctor_treatment_plan
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -103,7 +102,7 @@ func testCancelSchedMsg_fail(t *testing.T, tpStatus common.TreatmentPlanStatus) 
 	h := NewCancelScheduledMessageHandler(m, dp)
 	w := httptest.NewRecorder()
 
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("Expected bad request but instead got %d", w.Code)
@@ -163,7 +162,7 @@ func TestCancelSchedMsg_alreadySent(t *testing.T) {
 	h := NewCancelScheduledMessageHandler(m, dp)
 	w := httptest.NewRecorder()
 
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("Expected bad request but instead got %d", w.Code)
@@ -235,7 +234,7 @@ func TestCancelSchedmsg_TPActive(t *testing.T) {
 	h := NewCancelScheduledMessageHandler(m, dp)
 	w := httptest.NewRecorder()
 
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected success but instead got %d", w.Code)
@@ -308,7 +307,7 @@ func TestCancelSchedmsg_Undo_TPActive(t *testing.T) {
 	h := NewCancelScheduledMessageHandler(m, dp)
 	w := httptest.NewRecorder()
 
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected success but instead got %d", w.Code)

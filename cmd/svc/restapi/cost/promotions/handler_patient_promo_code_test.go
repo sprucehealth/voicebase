@@ -132,7 +132,7 @@ func TestPatientPromotionsHandlerGETPendingPromotionsErr(t *testing.T) {
 	handler := NewPatientPromotionsHandler(dataAPI, &mockAuthAPIPatientPromotionsHandler{}, &analytics.NullLogger{})
 	responseWriter := httptest.NewRecorder()
 	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{Role: api.RolePatient, ID: 1})
-	handler.ServeHTTP(ctx, responseWriter, r)
+	handler.ServeHTTP(responseWriter, r.WithContext(ctx))
 	test.Equals(t, http.StatusInternalServerError, responseWriter.Code)
 }
 
@@ -149,7 +149,7 @@ func TestPatientPromotionsHandlerGETNoPromotions(t *testing.T) {
 		ExpiredPromotions: []*responses.ClientPromotion{},
 	})
 	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{Role: api.RolePatient, ID: 1})
-	handler.ServeHTTP(ctx, responseWriter, r)
+	handler.ServeHTTP(responseWriter, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, responseWriter.Code)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
 }
@@ -196,7 +196,7 @@ func TestPatientPromotionsHandlerGETActiveAndExpiredPromosNonPatientVisible(t *t
 		},
 	})
 	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{Role: api.RolePatient, ID: 1})
-	handler.ServeHTTP(ctx, responseWriter, r)
+	handler.ServeHTTP(responseWriter, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, responseWriter.Code)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
 }
@@ -210,7 +210,7 @@ func TestPatientPromotionsHandlerPOSTPromoCodeRequired(t *testing.T) {
 	handler := NewPatientPromotionsHandler(dataAPI, &mockAuthAPIPatientPromotionsHandler{}, &analytics.NullLogger{})
 	responseWriter := httptest.NewRecorder()
 	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{Role: api.RolePatient, ID: 1})
-	handler.ServeHTTP(ctx, responseWriter, r)
+	handler.ServeHTTP(responseWriter, r.WithContext(ctx))
 	test.Equals(t, http.StatusBadRequest, responseWriter.Code)
 }
 
@@ -225,7 +225,7 @@ func TestPatientPromotionsHandlerPOSTLookupPromoCodeErr(t *testing.T) {
 	handler := NewPatientPromotionsHandler(dataAPI, &mockAuthAPIPatientPromotionsHandler{}, &analytics.NullLogger{})
 	responseWriter := httptest.NewRecorder()
 	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{Role: api.RolePatient, ID: 1})
-	handler.ServeHTTP(ctx, responseWriter, r)
+	handler.ServeHTTP(responseWriter, r.WithContext(ctx))
 	test.Equals(t, "Foo", dataAPI.lookupPromoCodeParam)
 	test.Equals(t, http.StatusInternalServerError, responseWriter.Code)
 }
@@ -241,7 +241,7 @@ func TestPatientPromotionsHandlerPOSTLookupPromoCodeNotFound(t *testing.T) {
 	handler := NewPatientPromotionsHandler(dataAPI, &mockAuthAPIPatientPromotionsHandler{}, &analytics.NullLogger{})
 	responseWriter := httptest.NewRecorder()
 	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{Role: api.RolePatient, ID: 1})
-	handler.ServeHTTP(ctx, responseWriter, r)
+	handler.ServeHTTP(responseWriter, r.WithContext(ctx))
 	test.Equals(t, http.StatusNotFound, responseWriter.Code)
 }
 
@@ -257,7 +257,7 @@ func TestPatientPromotionsHandlerPOSTPromotionErr(t *testing.T) {
 	handler := NewPatientPromotionsHandler(dataAPI, &mockAuthAPIPatientPromotionsHandler{}, &analytics.NullLogger{})
 	responseWriter := httptest.NewRecorder()
 	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{Role: api.RolePatient, ID: 1})
-	handler.ServeHTTP(ctx, responseWriter, r)
+	handler.ServeHTTP(responseWriter, r.WithContext(ctx))
 	test.Equals(t, int64(1), dataAPI.promotionParam)
 	test.Equals(t, http.StatusInternalServerError, responseWriter.Code)
 }
@@ -274,7 +274,7 @@ func TestPatientPromotionsHandlerPOSTPromotionExpired(t *testing.T) {
 	handler := NewPatientPromotionsHandler(dataAPI, &mockAuthAPIPatientPromotionsHandler{}, &analytics.NullLogger{})
 	responseWriter := httptest.NewRecorder()
 	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{Role: api.RolePatient, ID: 1})
-	handler.ServeHTTP(ctx, responseWriter, r)
+	handler.ServeHTTP(responseWriter, r.WithContext(ctx))
 	test.Equals(t, http.StatusNotFound, responseWriter.Code)
 }
 
@@ -290,7 +290,7 @@ func TestPatientPromotionsHandlerPOSTActiveReferralProgramErr(t *testing.T) {
 	}
 	handler := NewPatientPromotionsHandler(dataAPI, &mockAuthAPIPatientPromotionsHandler{}, &analytics.NullLogger{})
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(ctx, responseWriter, r)
+	handler.ServeHTTP(responseWriter, r.WithContext(ctx))
 	test.Equals(t, int64(12345), dataAPI.activeReferralProgramForAccountParam)
 	test.Equals(t, http.StatusInternalServerError, responseWriter.Code)
 }
@@ -309,7 +309,7 @@ func TestPatientPromotionsHandlerPOSTClaimOwnReferralCode(t *testing.T) {
 	}
 	handler := NewPatientPromotionsHandler(dataAPI, &mockAuthAPIPatientPromotionsHandler{}, &analytics.NullLogger{})
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(ctx, responseWriter, r)
+	handler.ServeHTTP(responseWriter, r.WithContext(ctx))
 	test.Equals(t, http.StatusNotFound, responseWriter.Code)
 }
 
@@ -328,7 +328,7 @@ func TestPatientPromotionsHandlerPOSTClaimReferralNoActiveReferralProgramReferra
 	}
 	handler := NewPatientPromotionsHandler(dataAPI, &mockAuthAPIPatientPromotionsHandler{}, &analytics.NullLogger{})
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(ctx, responseWriter, r)
+	handler.ServeHTTP(responseWriter, r.WithContext(ctx))
 	test.Equals(t, http.StatusInternalServerError, responseWriter.Code)
 	test.Equals(t, dataAPI.referralProgramParamCallCount, 1)
 }
@@ -346,7 +346,7 @@ func TestPatientPromotionsHandlerPOSTReferralProgramErr(t *testing.T) {
 	}
 	handler := NewPatientPromotionsHandler(dataAPI, &mockAuthAPIPatientPromotionsHandler{}, &analytics.NullLogger{})
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(ctx, responseWriter, r)
+	handler.ServeHTTP(responseWriter, r.WithContext(ctx))
 	test.Equals(t, int64(12345), dataAPI.referralProgramParam)
 	test.Equals(t, http.StatusInternalServerError, responseWriter.Code)
 }
@@ -364,7 +364,7 @@ func TestPatientPromotionsHandlerPOSTGetPatientFromAccountIDErr(t *testing.T) {
 	}
 	handler := NewPatientPromotionsHandler(dataAPI, &mockAuthAPIPatientPromotionsHandler{}, &analytics.NullLogger{})
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(ctx, responseWriter, r)
+	handler.ServeHTTP(responseWriter, r.WithContext(ctx))
 	test.Equals(t, int64(12345), dataAPI.getPatientFromAccountIDParam)
 	test.Equals(t, http.StatusInternalServerError, responseWriter.Code)
 }
@@ -383,7 +383,7 @@ func TestPatientPromotionsHandlerPOSTPatientLocationErr(t *testing.T) {
 	}
 	handler := NewPatientPromotionsHandler(dataAPI, &mockAuthAPIPatientPromotionsHandler{}, &analytics.NullLogger{})
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(ctx, responseWriter, r)
+	handler.ServeHTTP(responseWriter, r.WithContext(ctx))
 	test.Equals(t, common.NewPatientID(54321), dataAPI.patientLocationParam)
 	test.Equals(t, http.StatusInternalServerError, responseWriter.Code)
 }
@@ -403,7 +403,7 @@ func TestPatientPromotionsHandlerPOSTPromotionGroupErr(t *testing.T) {
 	}
 	handler := NewPatientPromotionsHandler(dataAPI, &mockAuthAPIPatientPromotionsHandler{}, &analytics.NullLogger{})
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(ctx, responseWriter, r)
+	handler.ServeHTTP(responseWriter, r.WithContext(ctx))
 	test.Equals(t, "test_group", dataAPI.promotionGroupParam)
 	test.Equals(t, http.StatusInternalServerError, responseWriter.Code)
 }
@@ -424,7 +424,7 @@ func TestPatientPromotionsHandlerPOSTPromotionCountInGroupForAccountErr(t *testi
 	}
 	handler := NewPatientPromotionsHandler(dataAPI, &mockAuthAPIPatientPromotionsHandler{}, &analytics.NullLogger{})
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(ctx, responseWriter, r)
+	handler.ServeHTTP(responseWriter, r.WithContext(ctx))
 	test.Equals(t, int64(12345), dataAPI.promotionCountInGroupForAccountAccountParam)
 	test.Equals(t, "test_group", dataAPI.promotionCountInGroupForAccountGroupParam)
 	test.Equals(t, http.StatusInternalServerError, responseWriter.Code)

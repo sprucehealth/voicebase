@@ -6,8 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/responses"
@@ -29,7 +27,7 @@ func TestHandlerCaseVisitNoStatusRequired(t *testing.T) {
 	test.OK(t, err)
 	handler := newCaseVisitsHandler(mockedDataAPI_handlerCaseVisit{})
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, http.StatusOK, responseWriter.Code)
 }
 
@@ -81,7 +79,7 @@ func TestHandlerCaseVisitSuccessfulGET(t *testing.T) {
 	}
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, resp)
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
 }
 
@@ -133,7 +131,7 @@ func TestHandlerCaseVisitSuccessfulGETMultiStatus(t *testing.T) {
 	}
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, resp)
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
 }
 
@@ -185,6 +183,6 @@ func TestHandlerCaseVisitSuccessfulGETDateRange(t *testing.T) {
 	}
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, resp)
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
 }

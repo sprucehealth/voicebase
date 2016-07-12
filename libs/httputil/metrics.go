@@ -6,8 +6,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"context"
-
 	"github.com/samuel/go-metrics/metrics"
 )
 
@@ -39,7 +37,7 @@ func (w *metricsResponseWriter) Write(bytes []byte) (int, error) {
 }
 
 type metricsHandler struct {
-	h                    ContextHandler
+	h                    http.Handler
 	statLatency          metrics.Histogram
 	statFirstByteLatency metrics.Histogram
 	statRequests         *metrics.Counter
@@ -47,7 +45,7 @@ type metricsHandler struct {
 }
 
 // MetricsHandler wraps a handler to provides stats counters on response codes.
-func MetricsHandler(h ContextHandler, metricsRegistry metrics.Registry) ContextHandler {
+func MetricsHandler(h http.Handler, metricsRegistry metrics.Registry) http.Handler {
 	m := &metricsHandler{
 		h:                    h,
 		statLatency:          metrics.NewBiasedHistogram(),
@@ -73,7 +71,7 @@ func MetricsHandler(h ContextHandler, metricsRegistry metrics.Registry) ContextH
 	return m
 }
 
-func (m *metricsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (m *metricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	m.statRequests.Inc(1)
 
 	metricsrw := &metricsResponseWriter{
@@ -104,5 +102,5 @@ func (m *metricsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 		}
 	}()
 
-	m.h.ServeHTTP(ctx, metricsrw, r)
+	m.h.ServeHTTP(metricsrw, r)
 }

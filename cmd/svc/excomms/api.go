@@ -118,7 +118,7 @@ func runAPI(bootSvc *boot.Service) {
 	serve(h)
 }
 
-func serve(handler httputil.ContextHandler) {
+func serve(handler http.Handler) {
 	listener, err := net.Listen("tcp", config.httpAddr)
 	if err != nil {
 		golog.Fatalf(err.Error())
@@ -127,7 +127,7 @@ func serve(handler httputil.ContextHandler) {
 		listener = &proxyproto.Listener{Listener: listener}
 	}
 	s := &http.Server{
-		Handler:        httputil.FromContextHandler(handler),
+		Handler:        handler,
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 20,

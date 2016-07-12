@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
@@ -18,17 +16,17 @@ type syncGlobalFTPHandler struct {
 }
 
 func newSyncGlobalFTPHandler(
-	dataAPI api.DataAPI) httputil.ContextHandler {
+	dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		&syncGlobalFTPHandler{
 			dataAPI: dataAPI,
 		}, httputil.Post)
 }
 
-func (h *syncGlobalFTPHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	account := www.MustCtxAccount(ctx)
+func (h *syncGlobalFTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(r.Context())
 
-	doctorID, err := strconv.ParseInt(mux.Vars(ctx)["id"], 10, 64)
+	doctorID, err := strconv.ParseInt(mux.Vars(r.Context())["id"], 10, 64)
 	if err != nil {
 		www.APINotFound(w, r)
 		return

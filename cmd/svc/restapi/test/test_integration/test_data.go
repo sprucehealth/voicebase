@@ -44,7 +44,6 @@ import (
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/dosespot"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/ratelimit"
 	"github.com/sprucehealth/backend/libs/sig"
@@ -115,7 +114,7 @@ type TestData struct {
 	AdminConfig    *www_router.Config
 	DB             *sql.DB
 	APIMux         *mux.Router
-	APIRouter      httputil.ContextHandler
+	APIRouter      http.Handler
 	APIServer      *httptest.Server
 	AdminAPIServer *httptest.Server
 	AdminUser      *AdminCredentials
@@ -260,8 +259,8 @@ func (d *TestData) StartAPIServer(t *testing.T) {
 
 	// setup the restapi and adminapi servers
 	d.APIMux, d.APIRouter = router.New(d.Config)
-	d.APIServer = httptest.NewServer(httputil.FromContextHandler(d.APIRouter))
-	d.AdminAPIServer = httptest.NewServer(httputil.FromContextHandler(www_router.New(d.AdminConfig)))
+	d.APIServer = httptest.NewServer(d.APIRouter)
+	d.AdminAPIServer = httptest.NewServer(www_router.New(d.AdminConfig))
 
 	d.bootstrapData(t)
 }

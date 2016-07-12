@@ -6,8 +6,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/responses"
@@ -32,7 +30,7 @@ func TestPromotionGroupsHandlerGETPromotionGroupsErr(t *testing.T) {
 		promotionGroupsErr: errors.New("Foo"),
 	})
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, http.StatusInternalServerError, responseWriter.Code)
 }
 
@@ -41,12 +39,12 @@ func TestPromotionGroupsHandlerGETPromotionGroups(t *testing.T) {
 	test.OK(t, err)
 	handler := newPromotionGroupsHandler(&mockedDataAPIPromotionGroupsHandler{
 		promotionGroups: []*common.PromotionGroup{
-			&common.PromotionGroup{
+			{
 				ID:               1,
 				Name:             "Foo",
 				MaxAllowedPromos: 5,
 			},
-			&common.PromotionGroup{
+			{
 				ID:               2,
 				Name:             "Bar",
 				MaxAllowedPromos: 1,
@@ -55,18 +53,18 @@ func TestPromotionGroupsHandlerGETPromotionGroups(t *testing.T) {
 	})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, &PromotionGroupsGETResponse{PromotionGroups: []*responses.PromotionGroup{
-		&responses.PromotionGroup{
+		{
 			ID:               1,
 			Name:             "Foo",
 			MaxAllowedPromos: 5,
 		},
-		&responses.PromotionGroup{
+		{
 			ID:               2,
 			Name:             "Bar",
 			MaxAllowedPromos: 1,
 		},
 	}})
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, http.StatusOK, responseWriter.Code)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
 }

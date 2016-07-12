@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/mime"
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/service"
@@ -36,20 +34,20 @@ type mediaPOSTResponse struct {
 	MIMEType string `json:"mimetype"`
 }
 
-func (h *mediaHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *mediaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case httputil.Head:
-		h.redirectToSource(ctx, w, r)
+		h.redirectToSource(w, r)
 	case httputil.Get:
-		h.redirectToSource(ctx, w, r)
+		h.redirectToSource(w, r)
 	case httputil.Post:
-		h.servePOST(ctx, w, r)
+		h.servePOST(w, r)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
 }
 
-func (h *mediaHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *mediaHandler) servePOST(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseMultipartForm(h.maxMemory); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -75,7 +73,7 @@ func (h *mediaHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *
 		return
 	}
 
-	meta, err := h.svc.PutMedia(ctx, file, mimeType, thumbFile)
+	meta, err := h.svc.PutMedia(r.Context(), file, mimeType, thumbFile)
 	if err == service.ErrUnsupportedContentType {
 		http.Error(w, err.Error()+" - "+mimeType.String(), http.StatusBadRequest)
 		return
@@ -103,15 +101,15 @@ func parseMultiPartMedia(formKey string, r *http.Request) (multipart.File, *mime
 	return file, mimeType, nil
 }
 
-func (h *mediaHandler) redirectToSource(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	mediaID, err := dal.ParseMediaID(mux.Vars(ctx)["id"])
+func (h *mediaHandler) redirectToSource(w http.ResponseWriter, r *http.Request) {
+	mediaID, err := dal.ParseMediaID(mux.Vars(r.Context())["id"])
 	if err != nil {
 		http.Error(w, "Cannot parse media id", http.StatusBadRequest)
 		return
 	}
 
 	// For serving GET requests just redirect to the source with an expiring URL
-	eURL, err := h.svc.ExpiringURL(ctx, mediaID, time.Minute*15)
+	eURL, err := h.svc.ExpiringURL(r.Context(), mediaID, time.Minute*15)
 	if errors.Cause(err) == dal.ErrNotFound || errors.Cause(err) == lmedia.ErrNotFound {
 		http.NotFound(w, r)
 		return

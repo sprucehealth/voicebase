@@ -1,12 +1,11 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/responses"
 	"github.com/sprucehealth/backend/libs/mux"
@@ -46,7 +45,7 @@ func TestFoundationGET(t *testing.T) {
 	r, err := http.NewRequest("GET", "/foundation?max_results=5", nil)
 	test.OK(t, err)
 	ctx := mux.SetVars(context.Background(), map[string]string{"id": "foo"})
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	expectedResp := &responses.FoundationGETResponse{FoundationOf: regRefs}
 	data, err := json.Marshal(expectedResp)
 	test.OK(t, err)

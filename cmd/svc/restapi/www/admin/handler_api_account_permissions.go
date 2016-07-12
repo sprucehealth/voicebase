@@ -3,8 +3,6 @@ package admin
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
@@ -15,14 +13,14 @@ type accountAvailablePermissionsAPIHandler struct {
 	authAPI api.AuthAPI
 }
 
-func newAccountAvailablePermissionsAPIHandler(authAPI api.AuthAPI) httputil.ContextHandler {
+func newAccountAvailablePermissionsAPIHandler(authAPI api.AuthAPI) http.Handler {
 	return httputil.SupportedMethods(&accountAvailablePermissionsAPIHandler{
 		authAPI: authAPI,
 	}, httputil.Get)
 }
 
-func (h *accountAvailablePermissionsAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	account := www.MustCtxAccount(ctx)
+func (h *accountAvailablePermissionsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(r.Context())
 	audit.LogAction(account.ID, "AdminAPI", "ListAvailableAccountPermissions", nil)
 
 	perms, err := h.authAPI.AvailableAccountPermissions()

@@ -147,7 +147,7 @@ func main() {
 	golog.Infof("Invite HTTP Listening on %s...", *flagHTTPListenAddr)
 	httpSrv := &http.Server{
 		Addr:           *flagHTTPListenAddr,
-		Handler:        httputil.FromContextHandler(shttputil.CompressResponse(h, httputil.CompressResponse)),
+		Handler:        shttputil.CompressResponse(h, httputil.CompressResponse),
 		MaxHeaderBytes: 1 << 20,
 	}
 	go func() {

@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -16,13 +14,13 @@ type tokenValidator interface {
 }
 
 type authenticatedHandler struct {
-	h        httputil.ContextHandler
+	h        http.Handler
 	authAPI  api.AuthAPI
 	optional bool
 }
 
 // NoAuthenticationRequiredHandler wraps the provided handler is a layer that performs no authentication
-func NoAuthenticationRequiredHandler(h httputil.ContextHandler, authAPI api.AuthAPI) httputil.ContextHandler {
+func NoAuthenticationRequiredHandler(h http.Handler, authAPI api.AuthAPI) http.Handler {
 	return &authenticatedHandler{
 		h:        h,
 		authAPI:  authAPI,
@@ -31,7 +29,7 @@ func NoAuthenticationRequiredHandler(h httputil.ContextHandler, authAPI api.Auth
 }
 
 // AuthenticationRequiredHandler wraps the provided handler is a layer that performs authentication
-func AuthenticationRequiredHandler(h httputil.ContextHandler, authAPI api.AuthAPI) httputil.ContextHandler {
+func AuthenticationRequiredHandler(h http.Handler, authAPI api.AuthAPI) http.Handler {
 	return &authenticatedHandler{
 		h:        h,
 		authAPI:  authAPI,
@@ -39,8 +37,10 @@ func AuthenticationRequiredHandler(h httputil.ContextHandler, authAPI api.AuthAP
 	}
 }
 
-func (a *authenticatedHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	if verifyAuthSetupInTest(ctx, w, r, a.h, authentication, VerifyAuthCode) {
+func (a *authenticatedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	if verifyAuthSetupInTest(w, r, a.h, authentication, VerifyAuthCode) {
 		return
 	}
 
@@ -48,7 +48,7 @@ func (a *authenticatedHandler) ServeHTTP(ctx context.Context, w http.ResponseWri
 	if err == nil {
 		ctx = CtxWithAccount(ctx, account)
 	} else if !a.optional {
-		HandleAuthError(ctx, err, w, r)
+		HandleAuthError(err, w, r)
 		return
 	}
 
@@ -56,7 +56,7 @@ func (a *authenticatedHandler) ServeHTTP(ctx context.Context, w http.ResponseWri
 		httputil.CtxLogMap(ctx).Set("AccountID", account.ID)
 	}
 
-	a.h.ServeHTTP(ctx, w, r)
+	a.h.ServeHTTP(w, r.WithContext(ctx))
 }
 
 // checkAuth parses the "Authorization: token xxx" header and check the token for validity

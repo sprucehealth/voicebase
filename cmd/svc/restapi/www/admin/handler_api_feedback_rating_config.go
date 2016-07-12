@@ -6,13 +6,10 @@ import (
 	"strconv"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/feedback"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/httputil"
-
-	"context"
 )
 
 type ratingLevelFeedbackConfigHandler struct {
@@ -23,23 +20,23 @@ type ratingLevelFeedbackConfigData struct {
 	Configs map[string]string `json:"configs"`
 }
 
-func newRatingLevelFeedbackConfigHandler(feedbackClient feedback.DAL) httputil.ContextHandler {
+func newRatingLevelFeedbackConfigHandler(feedbackClient feedback.DAL) http.Handler {
 	return httputil.SupportedMethods(&ratingLevelFeedbackConfigHandler{
 		feedbackClient: feedbackClient,
 	}, httputil.Get, httputil.Put)
 }
 
-func (f *ratingLevelFeedbackConfigHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (f *ratingLevelFeedbackConfigHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case httputil.Get:
-		f.get(ctx, w, r)
+		f.get(w, r)
 	case httputil.Put:
-		f.put(ctx, w, r)
+		f.put(w, r)
 	}
 }
 
-func (f *ratingLevelFeedbackConfigHandler) get(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	account := www.MustCtxAccount(ctx)
+func (f *ratingLevelFeedbackConfigHandler) get(w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(r.Context())
 	audit.LogAction(account.ID, "AdminAPI", "GetRatingConfigs", nil)
 
 	configs, err := f.feedbackClient.RatingConfigs()
@@ -58,8 +55,8 @@ func (f *ratingLevelFeedbackConfigHandler) get(ctx context.Context, w http.Respo
 	})
 }
 
-func (f *ratingLevelFeedbackConfigHandler) put(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	account := www.MustCtxAccount(ctx)
+func (f *ratingLevelFeedbackConfigHandler) put(w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(r.Context())
 	audit.LogAction(account.ID, "AdminAPI", "PutRatingConfigs", nil)
 
 	var rd ratingLevelFeedbackConfigData

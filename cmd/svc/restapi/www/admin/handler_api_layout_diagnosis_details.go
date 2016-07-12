@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"strings"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/diagnosis"
@@ -32,11 +30,11 @@ type diagnosisLayoutItem struct {
 	Questions     json.RawMessage   `json:"questions"`
 }
 
-func newDiagnosisDetailsIntakeUploadHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API) httputil.ContextHandler {
+func newDiagnosisDetailsIntakeUploadHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API) http.Handler {
 	return httputil.SupportedMethods(&diagDetailsLayoutUploadHandler{dataAPI, diagnosisAPI}, httputil.Post)
 }
 
-func (d *diagDetailsLayoutUploadHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (d *diagDetailsLayoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	rd := &diagnosisLayoutItems{}
 	if err := r.ParseForm(); err != nil {
 		www.BadRequestError(w, r, err)

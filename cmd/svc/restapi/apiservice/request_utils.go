@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"context"
-
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -70,11 +68,11 @@ func GetDeviceIDFromHeader(r *http.Request) (string, error) {
 	return deviceID, nil
 }
 
-func HandleAuthError(ctx context.Context, err error, w http.ResponseWriter, r *http.Request) {
+func HandleAuthError(err error, w http.ResponseWriter, r *http.Request) {
 	switch err {
 	case ErrBadAuthHeader, ErrNoAuthHeader, api.ErrTokenExpired, api.ErrTokenDoesNotExist:
 		golog.Context("AuthEvent", AuthEventInvalidToken).Infof(err.Error())
-		WriteError(ctx, NewAuthTimeoutError(), w, r)
+		WriteError(NewAuthTimeoutError(), w, r)
 	default:
 		w.WriteHeader(http.StatusInternalServerError)
 	}

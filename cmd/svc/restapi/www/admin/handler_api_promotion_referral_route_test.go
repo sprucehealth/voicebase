@@ -8,8 +8,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -41,7 +39,7 @@ func TestPromotionReferralRouteHandlerPUTQueriesDataLayer(t *testing.T) {
 	m.Handle(`/admin/api/promotion/referral_route/{id:[0-9]+}`, promoReferralRouteHandler)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, struct{}{})
-	m.ServeHTTP(context.Background(), responseWriter, r)
+	m.ServeHTTP(responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
 	test.Equals(t, int64(1), mh.updatePromotionReferralRouteParam.ID)
@@ -61,7 +59,7 @@ func TestPromotionReferralRouteHandlerPUTIDRequired(t *testing.T) {
 	m.Handle(`/admin/api/promotion/referral_route`, promoReferralRouteHandler)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusNotFound, struct{}{})
-	m.ServeHTTP(context.Background(), responseWriter, r)
+	m.ServeHTTP(responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 }
 
@@ -76,7 +74,7 @@ func TestPromotionReferralRouteHandlerPUTLifecycleRequired(t *testing.T) {
 	m.Handle(`/admin/api/promotion/referral_route/{id:[0-9]+}`, promoReferralRouteHandler)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusBadRequest, struct{}{})
-	m.ServeHTTP(context.Background(), responseWriter, r)
+	m.ServeHTTP(responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 }
 
@@ -95,6 +93,6 @@ func TestPromotionReferralRouteHandlerPUTDataLayerErr(t *testing.T) {
 	m.Handle(`/admin/api/promotion/referral_route/{id:[0-9]+}`, promoReferralRouteHandler)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusInternalServerError, struct{}{})
-	m.ServeHTTP(context.Background(), responseWriter, r)
+	m.ServeHTTP(responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 }

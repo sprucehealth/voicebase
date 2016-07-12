@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -17,14 +15,14 @@ type schedMessageTemplatesListAPIHandler struct {
 	dataAPI api.DataAPI
 }
 
-func newSchedMessageTemplatesListAPIHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func newSchedMessageTemplatesListAPIHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&schedMessageTemplatesListAPIHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get, httputil.Post)
 }
 
-func (h *schedMessageTemplatesListAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	account := www.MustCtxAccount(ctx)
+func (h *schedMessageTemplatesListAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(r.Context())
 
 	if r.Method == "POST" {
 		audit.LogAction(account.ID, "AdminAPI", "CreateScheduledMessageTemplate", nil)

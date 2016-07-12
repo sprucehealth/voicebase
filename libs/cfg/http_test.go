@@ -3,10 +3,6 @@ package cfg
 import (
 	"net/http"
 	"testing"
-
-	"context"
-
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 func TestGorillaHTTPHandler(t *testing.T) {
@@ -21,8 +17,8 @@ func TestGorillaHTTPHandler(t *testing.T) {
 		t.Fatal(err)
 	}
 	var snap Snapshot
-	h := HTTPHandler(httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-		snap = Context(ctx)
+	h := HTTPHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		snap = Context(r.Context())
 	}), store)
 
 	req, err := http.NewRequest("GET", "/", nil)
@@ -32,7 +28,7 @@ func TestGorillaHTTPHandler(t *testing.T) {
 
 	// Should return default
 
-	h.ServeHTTP(context.Background(), nil, req)
+	h.ServeHTTP(nil, req)
 	if v := snap.Int("int"); v != 123 {
 		t.Fatalf("Expected 123, got %d", v)
 	}
@@ -45,7 +41,7 @@ func TestGorillaHTTPHandler(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	h.ServeHTTP(context.Background(), nil, req)
+	h.ServeHTTP(nil, req)
 	if v := snap.Int("int"); v != 777 {
 		t.Fatalf("Expected 777, got %d", v)
 	}

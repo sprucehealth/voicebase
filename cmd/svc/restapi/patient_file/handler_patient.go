@@ -3,8 +3,6 @@ package patient_file
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/address"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -22,7 +20,7 @@ type doctorPatientHandler struct {
 
 func NewDoctorPatientHandler(
 	dataAPI api.DataAPI,
-	addressValidationAPI address.Validator) httputil.ContextHandler {
+	addressValidationAPI address.Validator) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.RequestCacheHandler(
@@ -34,20 +32,20 @@ func NewDoctorPatientHandler(
 		httputil.Get, httputil.Put)
 }
 
-func (d *doctorPatientHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	requestCache := apiservice.MustCtxCache(ctx)
+func (d *doctorPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(r.Context())
 	req := requestCache[apiservice.CKRequestData].(*requestResponstData)
 
 	if err := req.PatientUpdate.Validate(); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	switch r.Method {
 	case httputil.Get:
-		d.getPatientInformation(ctx, w, r)
+		d.getPatientInformation(w, r)
 	case httputil.Put:
-		d.updatePatientInformation(ctx, w, r)
+		d.updatePatientInformation(w, r)
 	default:
 		w.WriteHeader(http.StatusNotFound)
 	}
@@ -75,7 +73,8 @@ type patientResponse struct {
 	Patient *responses.Patient `json:"patient"`
 }
 
-func (d *doctorPatientHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+func (d *doctorPatientHandler) IsAuthorized(r *http.Request) (bool, error) {
+	ctx := r.Context()
 	account := apiservice.MustCtxAccount(ctx)
 	requestCache := apiservice.MustCtxCache(ctx)
 
@@ -117,8 +116,8 @@ func (d *doctorPatientHandler) IsAuthorized(ctx context.Context, r *http.Request
 	return true, nil
 }
 
-func (d *doctorPatientHandler) getPatientInformation(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	requestCache := apiservice.MustCtxCache(ctx)
+func (d *doctorPatientHandler) getPatientInformation(w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(r.Context())
 	patient := requestCache[apiservice.CKPatient].(*common.Patient)
 
 	httputil.JSONResponse(w, http.StatusOK, &patientResponse{
@@ -126,8 +125,8 @@ func (d *doctorPatientHandler) getPatientInformation(ctx context.Context, w http
 	})
 }
 
-func (d *doctorPatientHandler) updatePatientInformation(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	requestCache := apiservice.MustCtxCache(ctx)
+func (d *doctorPatientHandler) updatePatientInformation(w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(r.Context())
 	req := requestCache[apiservice.CKRequestData].(*requestResponstData)
 	patient := requestCache[apiservice.CKPatient].(*common.Patient)
 
@@ -142,7 +141,7 @@ func (d *doctorPatientHandler) updatePatientInformation(ctx context.Context, w h
 	patient.PhoneNumbers = req.PatientUpdate.PhoneNumbers
 
 	if err := surescripts.ValidatePatientInformation(patient, d.addressValidationAPI, d.dataAPI); err != nil {
-		apiservice.WriteValidationError(ctx, err.Error(), w, r)
+		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
 
@@ -159,7 +158,7 @@ func (d *doctorPatientHandler) updatePatientInformation(ctx context.Context, w h
 		Address:      req.PatientUpdate.Address,
 	}
 	if err := d.dataAPI.UpdatePatient(patient.ID, update, true); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

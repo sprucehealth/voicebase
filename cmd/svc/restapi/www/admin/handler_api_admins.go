@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -18,20 +16,20 @@ type adminsAPIHandler struct {
 	authAPI api.AuthAPI
 }
 
-func newAdminsAPIHandler(authAPI api.AuthAPI) httputil.ContextHandler {
+func newAdminsAPIHandler(authAPI api.AuthAPI) http.Handler {
 	return httputil.SupportedMethods(&adminsAPIHandler{
 		authAPI: authAPI,
 	}, httputil.Get)
 }
 
-func (h *adminsAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	accountID, err := strconv.ParseInt(mux.Vars(ctx)["id"], 10, 64)
+func (h *adminsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	accountID, err := strconv.ParseInt(mux.Vars(r.Context())["id"], 10, 64)
 	if err != nil {
 		www.APINotFound(w, r)
 		return
 	}
 
-	account := www.MustCtxAccount(ctx)
+	account := www.MustCtxAccount(r.Context())
 	audit.LogAction(account.ID, "AdminAPI", "GetAdmin", map[string]interface{}{"param_account_id": accountID})
 
 	acc, err := h.authAPI.GetAccount(accountID)

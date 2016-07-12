@@ -7,8 +7,6 @@ import (
 	"html/template"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/auth"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -37,7 +35,7 @@ type cellVerifyRequest struct {
 	Code   string `json:"code"`
 }
 
-func newCellVerifyHandler(router *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, smsAPI api.SMSAPI, fromNumber string, templateLoader *www.TemplateLoader) httputil.ContextHandler {
+func newCellVerifyHandler(router *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, smsAPI api.SMSAPI, fromNumber string, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&cellVerifyHandler{
 		router:     router,
 		dataAPI:    dataAPI,
@@ -49,8 +47,8 @@ func newCellVerifyHandler(router *mux.Router, dataAPI api.DataAPI, authAPI api.A
 	}, httputil.Get, httputil.Post)
 }
 
-func (h *cellVerifyHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	account := www.MustCtxAccount(ctx)
+func (h *cellVerifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(r.Context())
 
 	numbers, err := h.authAPI.GetPhoneNumbersForAccount(account.ID)
 	if err != nil {
@@ -101,7 +99,7 @@ func (h *cellVerifyHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter
 			}
 
 			if err := h.authAPI.ReplacePhoneNumbersForAccount(account.ID, []*common.PhoneNumber{
-				&common.PhoneNumber{
+				{
 					Phone:    cell,
 					Type:     common.PNTCell,
 					Status:   api.StatusActive,
@@ -131,7 +129,7 @@ func (h *cellVerifyHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter
 		}
 
 		if err := h.authAPI.ReplacePhoneNumbersForAccount(account.ID, []*common.PhoneNumber{
-			&common.PhoneNumber{
+			{
 				Phone:    phone,
 				Type:     common.PNTCell,
 				Status:   api.StatusActive,

@@ -46,7 +46,7 @@ var SetupRoutes = func(r *mux.Router, config *Config) {
 		www.RoleRequiredHandler(savedMessageRedirect, h, api.RoleDoctor), h, config.AuthAPI)
 	r.Handle("/doctor-register/account", registerHandler).Name("doctor-register-account")
 
-	authFilter := func(h httputil.ContextHandler) httputil.ContextHandler {
+	authFilter := func(h http.Handler) http.Handler {
 		return www.AuthRequiredHandler(www.RoleRequiredHandler(h, nil, api.RoleDoctor), nil, config.AuthAPI)
 	}
 

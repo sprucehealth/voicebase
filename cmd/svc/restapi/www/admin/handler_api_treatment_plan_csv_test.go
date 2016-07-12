@@ -7,8 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/erx"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
@@ -30,7 +28,7 @@ func TestHandlerTreatmentPlanCSVRequiresParams(t *testing.T) {
 	handler := newTreatmentPlanCSVHandler(mockedDataAPI_handlerTreatmentPlanCSV{}, mockedERXAPI_handlerTreatmentPlanCSV{})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	www.APIBadRequestError(expectedWriter, r, fmt.Errorf("multipart: NextPart: EOF").Error())
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }
 
@@ -46,5 +44,5 @@ func TestHandlerFileDataRead(t *testing.T) {
 	file := CloseableStringReader{Reader: strings.NewReader(`framework_name,Anti-aging,Anti-aging,Skin discoloration`)}
 	data, err := csvDataFromFile(file)
 	test.OK(t, err)
-	test.Equals(t, [][]string{[]string{`framework_name`, `Anti-aging`, `Anti-aging`, `Skin discoloration`}}, data)
+	test.Equals(t, [][]string{{`framework_name`, `Anti-aging`, `Anti-aging`, `Skin discoloration`}}, data)
 }

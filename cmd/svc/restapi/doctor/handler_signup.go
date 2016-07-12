@@ -5,8 +5,6 @@ import (
 	"strconv"
 	"strings"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -21,7 +19,7 @@ type signupDoctorHandler struct {
 	authAPI api.AuthAPI
 }
 
-func NewSignupDoctorHandler(dataAPI api.DataAPI, authAPI api.AuthAPI) httputil.ContextHandler {
+func NewSignupDoctorHandler(dataAPI api.DataAPI, authAPI api.AuthAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(&signupDoctorHandler{
 			dataAPI: dataAPI,
@@ -58,10 +56,10 @@ type SignupDoctorRequestData struct {
 	Phone            string `schema:"phone,required"`
 }
 
-func (d *signupDoctorHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (d *signupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var requestData SignupDoctorRequestData
 	if err := apiservice.DecodeRequestData(&requestData, r); err != nil {
-		apiservice.WriteValidationError(ctx, err.Error(), w, r)
+		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 
 	}
@@ -69,7 +67,7 @@ func (d *signupDoctorHandler) ServeHTTP(ctx context.Context, w http.ResponseWrit
 	requestData.Email = strings.TrimSpace(strings.ToLower(requestData.Email))
 
 	if !validate.Email(requestData.Email) {
-		apiservice.WriteValidationError(ctx, "Please enter a valid email address", w, r)
+		apiservice.WriteValidationError("Please enter a valid email address", w, r)
 		return
 	}
 
@@ -77,7 +75,7 @@ func (d *signupDoctorHandler) ServeHTTP(ctx context.Context, w http.ResponseWrit
 	// Note that the date will be returned as MM/DD/YYYY
 	dobParts := strings.Split(requestData.DOB, encoding.DateSeparator)
 	if len(dobParts) != 3 {
-		apiservice.WriteValidationError(ctx, "DOB not valid. Required format "+encoding.DateFormat, w, r)
+		apiservice.WriteValidationError("DOB not valid. Required format "+encoding.DateFormat, w, r)
 		return
 	}
 
@@ -102,10 +100,10 @@ func (d *signupDoctorHandler) ServeHTTP(ctx context.Context, w http.ResponseWrit
 	// first, create an account for the user
 	accountID, err := d.authAPI.CreateAccount(requestData.Email, requestData.Password, api.RoleDoctor)
 	if err == api.ErrLoginAlreadyExists {
-		apiservice.WriteValidationError(ctx, "An account with the specified email address already exists.", w, r)
+		apiservice.WriteValidationError("An account with the specified email address already exists.", w, r)
 		return
 	} else if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -135,14 +133,14 @@ func (d *signupDoctorHandler) ServeHTTP(ctx context.Context, w http.ResponseWrit
 
 	doctorToRegister.CellPhone, err = common.ParsePhone(requestData.Phone)
 	if err != nil {
-		apiservice.WriteValidationError(ctx, err.Error(), w, r)
+		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
 
 	// then, register the signed up user as a doctor
 	doctorID, err := d.dataAPI.RegisterProvider(doctorToRegister, api.RoleDoctor)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -151,19 +149,19 @@ func (d *signupDoctorHandler) ServeHTTP(ctx context.Context, w http.ResponseWrit
 		// TODO: don't assume acne
 		careProvidingStateID, err := d.dataAPI.GetCareProvidingStateID("CA", api.AcnePathwayTag)
 		if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 
 		if err := d.dataAPI.MakeDoctorElligibleinCareProvidingState(careProvidingStateID, doctorID); err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 	}
 
 	token, err := d.authAPI.CreateToken(accountID, api.Mobile, 0)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

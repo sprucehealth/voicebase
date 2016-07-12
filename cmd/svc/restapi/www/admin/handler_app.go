@@ -4,8 +4,6 @@ import (
 	"html/template"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
@@ -17,15 +15,15 @@ type appHandler struct {
 	template *template.Template
 }
 
-func newAppHandler(templateLoader *www.TemplateLoader) httputil.ContextHandler {
+func newAppHandler(templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&appHandler{
 		template: templateLoader.MustLoadTemplate("admin/app.html", "admin/base.html", nil),
 	}, httputil.Get)
 }
 
-func (h *appHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	account := www.MustCtxAccount(ctx)
-	perms := www.MustCtxPermissions(ctx)
+func (h *appHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(r.Context())
+	perms := www.MustCtxPermissions(r.Context())
 
 	audit.LogAction(account.ID, "Admin", "LoadAdminApp", nil)
 

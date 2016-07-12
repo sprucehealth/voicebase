@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"net/url"
 
-	"context"
-
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/auth"
@@ -104,7 +102,7 @@ func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, smsAPI
 	r.Handle("/reset-password/password", rh).Name("reset-password")
 }
 
-func (h *promptHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *promptHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// TODO: rate-limit this endpoint
 
 	var errMsg string
@@ -159,7 +157,7 @@ func (h *promptHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r 
 		}})
 }
 
-func (h *verifyHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *verifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	account, token, emailAddress, rsent := validateToken(w, r, h.r, h.authAPI, api.LostPassword, h.statInvalidToken, h.statExpiredToken)
 	if rsent {
 		return
@@ -284,7 +282,7 @@ func (h *verifyHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r 
 			}})
 }
 
-func (h *resetHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *resetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	account, token, emailAddress, rsent := validateToken(w, r, h.r, h.authAPI, api.PasswordReset, h.statInvalidToken, h.statExpiredToken)
 	if rsent {
 		return

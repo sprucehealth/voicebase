@@ -3,8 +3,6 @@ package handlers
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/httputil"
 )
@@ -25,8 +23,7 @@ type appLinksContainer struct {
 	AppLinks appLinks `json:"appLinks"`
 }
 
-func (*appleDeeplinkHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-
+func (*appleDeeplinkHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch environment.GetCurrent() {
 	case environment.Prod:
 		httputil.JSONResponse(w, http.StatusOK, appLinksContainer{

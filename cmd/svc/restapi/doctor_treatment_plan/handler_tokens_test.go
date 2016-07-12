@@ -1,12 +1,11 @@
 package doctor_treatment_plan
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -68,7 +67,7 @@ func TestDoctorTokensHandler(t *testing.T) {
 
 	h := NewDoctorTokensHandler(m)
 	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RoleDoctor})
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected code %d but got %d", http.StatusOK, w.Code)

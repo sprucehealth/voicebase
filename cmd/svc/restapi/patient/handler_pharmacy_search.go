@@ -3,8 +3,6 @@ package patient
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/pharmacy"
@@ -21,7 +19,7 @@ type pharmacySearchHandler struct {
 	dataAPI           api.DataAPI
 }
 
-func NewPharmacySearchHandler(dataAPI api.DataAPI, pharmacySearchAPI pharmacy.PharmacySearchAPI) httputil.ContextHandler {
+func NewPharmacySearchHandler(dataAPI api.DataAPI, pharmacySearchAPI pharmacy.PharmacySearchAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(&pharmacySearchHandler{
 			dataAPI:           dataAPI,
@@ -40,10 +38,10 @@ type PharmacyTextSearchResponse struct {
 	Pharmacies []*pharmacy.PharmacyData `json:"pharmacy_results"`
 }
 
-func (p *pharmacySearchHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (p *pharmacySearchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var requestData PharmacyTextSearchRequestData
 	if err := apiservice.DecodeRequestData(&requestData, r); err != nil {
-		apiservice.WriteValidationError(ctx, err.Error(), w, r)
+		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
 
@@ -54,7 +52,7 @@ func (p *pharmacySearchHandler) ServeHTTP(ctx context.Context, w http.ResponseWr
 
 	pharmacies, err := p.pharmacySearchAPI.GetPharmaciesAroundSearchLocation(requestData.Latitude, requestData.Longitude, searchRadius, numResults)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

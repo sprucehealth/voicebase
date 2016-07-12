@@ -10,8 +10,6 @@ import (
 	"bytes"
 	"net/http"
 	"testing"
-
-	"context"
 )
 
 // ----------------------------------------------------------------------------
@@ -529,8 +527,7 @@ func TestUrlBuilding(t *testing.T) {
 		}
 	}
 
-	ArticleHandler := func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	}
+	ArticleHandler := func(w http.ResponseWriter, r *http.Request) {}
 
 	router := NewRouter()
 	router.HandleFunc("/articles/{category}/{id:[0-9]+}", ArticleHandler).Name("article")
@@ -623,7 +620,7 @@ func TestRedirectSlash(t *testing.T) {
 		t.Errorf("Expected 123.")
 	}
 	rsp := NewRecorder()
-	routeMatch.Handler.ServeHTTP(context.Background(), rsp, request)
+	routeMatch.Handler.ServeHTTP(rsp, request)
 	if rsp.HeaderMap.Get("Location") != "http://localhost/foo/123/" {
 		t.Errorf("Expected redirect header.")
 	}
@@ -642,7 +639,7 @@ func TestRedirectSlash(t *testing.T) {
 		t.Errorf("Expected 123.")
 	}
 	rsp = NewRecorder()
-	routeMatch.Handler.ServeHTTP(context.Background(), rsp, request)
+	routeMatch.Handler.ServeHTTP(rsp, request)
 	if rsp.HeaderMap.Get("Location") != "http://localhost/foo/123" {
 		t.Errorf("Expected redirect header.")
 	}

@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
@@ -49,7 +47,7 @@ func (r *financialsVerifyForm) Validate() map[string]string {
 	return errors
 }
 
-func newFinancialVerifyHandler(router *mux.Router, dataAPI api.DataAPI, supportEmail string, stripeCli *stripe.Client, templateLoader *www.TemplateLoader) httputil.ContextHandler {
+func newFinancialVerifyHandler(router *mux.Router, dataAPI api.DataAPI, supportEmail string, stripeCli *stripe.Client, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&financialsVerifyHandler{
 		router:       router,
 		dataAPI:      dataAPI,
@@ -59,8 +57,8 @@ func newFinancialVerifyHandler(router *mux.Router, dataAPI api.DataAPI, supportE
 	}, httputil.Get, httputil.Post)
 }
 
-func (h *financialsVerifyHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	account := www.MustCtxAccount(ctx)
+func (h *financialsVerifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(r.Context())
 	bankAccounts, err := h.dataAPI.ListBankAccounts(account.ID)
 	if err != nil {
 		www.InternalServerError(w, r, err)

@@ -3,8 +3,6 @@ package admin
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
@@ -19,14 +17,14 @@ type providerMappingsSummaryResponse struct {
 	Summary []*api.CareProviderStatePathwayMappingSummary `json:"summary"`
 }
 
-func newProviderMappingsSummaryHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func newProviderMappingsSummaryHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&providerMappingsSummaryHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get)
 }
 
-func (h *providerMappingsSummaryHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	account := www.MustCtxAccount(ctx)
+func (h *providerMappingsSummaryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(r.Context())
 
 	audit.LogAction(account.ID, "AdminAPI", "CareProviderStatePathwayMappingsSummary", nil)
 

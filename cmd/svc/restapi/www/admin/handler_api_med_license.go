@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -31,20 +29,20 @@ type licenseReqRes struct {
 	Licenses []*license `json:"licenses"`
 }
 
-func newMedicalLicenseAPIHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func newMedicalLicenseAPIHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&medicalLicenseAPIHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get, httputil.Put)
 }
 
-func (h *medicalLicenseAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	doctorID, err := strconv.ParseInt(mux.Vars(ctx)["id"], 10, 64)
+func (h *medicalLicenseAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	doctorID, err := strconv.ParseInt(mux.Vars(r.Context())["id"], 10, 64)
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return
 	}
 
-	account := www.MustCtxAccount(ctx)
+	account := www.MustCtxAccount(r.Context())
 
 	if r.Method == "GET" {
 		audit.LogAction(account.ID, "AdminAPI", "GetDoctorMedicalLicenses", map[string]interface{}{"doctor_id": doctorID})

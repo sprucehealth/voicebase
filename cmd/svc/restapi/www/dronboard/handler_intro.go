@@ -4,8 +4,6 @@ import (
 	"html/template"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
@@ -19,7 +17,7 @@ type introHandler struct {
 	template *template.Template
 }
 
-func newIntroHandler(router *mux.Router, signer *sig.Signer, templateLoader *www.TemplateLoader) httputil.ContextHandler {
+func newIntroHandler(router *mux.Router, signer *sig.Signer, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&introHandler{
 		router:   router,
 		nextStep: "doctor-register-account",
@@ -28,7 +26,7 @@ func newIntroHandler(router *mux.Router, signer *sig.Signer, templateLoader *www
 	}, httputil.Get)
 }
 
-func (h *introHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *introHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if !validateRequestSignature(h.signer, r) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return

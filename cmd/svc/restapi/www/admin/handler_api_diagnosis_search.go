@@ -3,8 +3,6 @@ package admin
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/diagnosis"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
@@ -30,19 +28,19 @@ const (
 	maxResults = 100
 )
 
-func newDiagnosisSearchHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API) httputil.ContextHandler {
+func newDiagnosisSearchHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API) http.Handler {
 	return httputil.SupportedMethods(&diagnosisSearchHandler{
 		dataAPI:      dataAPI,
 		diagnosisAPI: diagnosisAPI,
 	}, httputil.Get)
 }
 
-func (d *diagnosisSearchHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (d *diagnosisSearchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var response diagnosisSearchResult
 
 	query := r.FormValue("q")
 
-	// account := www.MustCtxAccount(ctx)
+	// account := www.MustCtxAccount(r.Context())
 	// audit.LogAction(account.ID, "AdminAPI", "DiagnosisSearch", map[string]interface{}{"query": query})
 
 	if query == "" {

@@ -1,10 +1,9 @@
 package treatment_plan
 
 import (
+	"context"
 	"fmt"
 	"net/http"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -18,7 +17,7 @@ type treatmentPlanHandler struct {
 	dataAPI api.DataAPI
 }
 
-func NewTreatmentPlanHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func NewTreatmentPlanHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.RequestCacheHandler(
@@ -42,12 +41,13 @@ type TreatmentPlanViewsResponse struct {
 	ContentViews     []views.View `json:"content_views,omitempty"`
 }
 
-func (p *treatmentPlanHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+func (p *treatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
 	requestData := &TreatmentPlanRequest{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		return false, apiservice.NewValidationError(err.Error())
 	}
 
+	ctx := r.Context()
 	requestCache := apiservice.MustCtxCache(ctx)
 	requestCache[apiservice.CKRequestData] = requestData
 
@@ -126,7 +126,8 @@ func (p *treatmentPlanHandler) IsAuthorized(ctx context.Context, r *http.Request
 	return true, nil
 }
 
-func (p *treatmentPlanHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (p *treatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	requestCache := apiservice.MustCtxCache(ctx)
 	doctor := requestCache[apiservice.CKDoctor].(*common.Doctor)
 	patient := requestCache[apiservice.CKPatient].(*common.Patient)
@@ -134,13 +135,13 @@ func (p *treatmentPlanHandler) ServeHTTP(ctx context.Context, w http.ResponseWri
 
 	err := populateTreatmentPlan(p.dataAPI, treatmentPlan)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	res, err := treatmentPlanResponse(ctx, p.dataAPI, treatmentPlan, doctor, patient)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 	httputil.JSONResponse(w, http.StatusOK, res)

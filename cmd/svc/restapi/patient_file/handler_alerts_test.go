@@ -1,13 +1,12 @@
 package patient_file
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -78,7 +77,7 @@ func TestAlerts_NoParams(t *testing.T) {
 	test.OK(t, err)
 
 	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RoleDoctor})
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusBadRequest, w.Code)
 }
 
@@ -119,7 +118,7 @@ func TestAlerts_ByVisitID(t *testing.T) {
 	test.OK(t, err)
 
 	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RoleDoctor})
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 
 	var res alertsResponse
@@ -177,7 +176,7 @@ func TestAlerts_ByCaseID(t *testing.T) {
 	test.OK(t, err)
 
 	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RoleDoctor})
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 
 	var res alertsResponse
@@ -245,7 +244,7 @@ func TestAlerts_ByPatientID(t *testing.T) {
 	test.OK(t, err)
 
 	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RoleDoctor})
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 
 	var res alertsResponse
@@ -282,6 +281,6 @@ func TestAlerts_ByPatientID_NotRegistered(t *testing.T) {
 	test.OK(t, err)
 
 	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RoleDoctor})
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusNotFound, w.Code)
 }

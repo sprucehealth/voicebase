@@ -9,8 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
@@ -120,7 +118,7 @@ func (r *registerForm) Validate() map[string]string {
 	return errors
 }
 
-func newRegisterHandler(router *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, dispatcher *dispatch.Dispatcher, signer *sig.Signer, templateLoader *www.TemplateLoader) httputil.ContextHandler {
+func newRegisterHandler(router *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, dispatcher *dispatch.Dispatcher, signer *sig.Signer, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&registerHandler{
 		router:     router,
 		dataAPI:    dataAPI,
@@ -132,7 +130,7 @@ func newRegisterHandler(router *mux.Router, dataAPI api.DataAPI, authAPI api.Aut
 	}, httputil.Get, httputil.Post)
 }
 
-func (h *registerHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *registerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if !validateRequestSignature(h.signer, r) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return

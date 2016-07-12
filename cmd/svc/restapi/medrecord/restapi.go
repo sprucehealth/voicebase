@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"context"
-
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -22,7 +20,7 @@ type RequestResponse struct {
 	MedicalRecordID int64 `json:"medical_record_id"`
 }
 
-func NewRequestAPIHandler(dataAPI api.DataAPI, queue *common.SQSQueue) httputil.ContextHandler {
+func NewRequestAPIHandler(dataAPI api.DataAPI, queue *common.SQSQueue) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(&apiHandler{
@@ -31,17 +29,17 @@ func NewRequestAPIHandler(dataAPI api.DataAPI, queue *common.SQSQueue) httputil.
 			}), api.RolePatient), httputil.Post)
 }
 
-func (h *apiHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	account := apiservice.MustCtxAccount(ctx)
+func (h *apiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	account := apiservice.MustCtxAccount(r.Context())
 	patientID, err := h.dataAPI.GetPatientIDFromAccountID(account.ID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	mrID, err := h.dataAPI.CreateMedicalRecord(patientID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -50,7 +48,7 @@ func (h *apiHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *ht
 		PatientID:       patientID,
 	})
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 	jsStr := string(js)
@@ -58,7 +56,7 @@ func (h *apiHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *ht
 		QueueUrl:    &h.queue.QueueURL,
 		MessageBody: &jsStr,
 	}); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

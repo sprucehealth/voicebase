@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"time"
 
-	"context"
-
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
@@ -13,7 +11,6 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/twilio"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/twilio/twiml"
 )
 
@@ -23,7 +20,7 @@ type twilioSMSHandler struct {
 	snsCLI   snsiface.SNSAPI
 }
 
-func NewTwilioSMSHandler(dal dal.DAL, snsTopic string, snsCLI snsiface.SNSAPI) httputil.ContextHandler {
+func NewTwilioSMSHandler(dal dal.DAL, snsTopic string, snsCLI snsiface.SNSAPI) http.Handler {
 	return &twilioSMSHandler{
 		dal:      dal,
 		snsTopic: snsTopic,
@@ -31,7 +28,7 @@ func NewTwilioSMSHandler(dal dal.DAL, snsTopic string, snsCLI snsiface.SNSAPI) h
 	}
 }
 
-func (t *twilioSMSHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (t *twilioSMSHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	tw, err := twilio.ParamsFromRequest(r)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)

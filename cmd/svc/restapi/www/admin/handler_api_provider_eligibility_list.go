@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
@@ -38,20 +36,20 @@ type providerEligibilityUpdateRequest struct {
 	Update []*statePathwayMappingUpdate `json:"update,omitempty"`
 }
 
-func newProviderEligibilityListAPIHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func newProviderEligibilityListAPIHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&providerEligibilityListAPIHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get, httputil.Patch)
 }
 
-func (h *providerEligibilityListAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	doctorID, err := strconv.ParseInt(mux.Vars(ctx)["id"], 10, 64)
+func (h *providerEligibilityListAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	doctorID, err := strconv.ParseInt(mux.Vars(r.Context())["id"], 10, 64)
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return
 	}
 
-	account := www.MustCtxAccount(ctx)
+	account := www.MustCtxAccount(r.Context())
 
 	switch r.Method {
 	case httputil.Get:

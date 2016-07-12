@@ -10,8 +10,6 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
-
-	"context"
 )
 
 type feedbackTemplateHandler struct {
@@ -28,29 +26,29 @@ type feedbackTemplatePutRequest struct {
 	TemplateJSON string `json:"template_json"`
 }
 
-func newFeedbackTemplateHandler(feedbackClient feedback.DAL) httputil.ContextHandler {
+func newFeedbackTemplateHandler(feedbackClient feedback.DAL) http.Handler {
 	return httputil.SupportedMethods(&feedbackTemplateHandler{
 		feedbackClient: feedbackClient,
 	}, httputil.Get, httputil.Put)
 }
 
-func (f *feedbackTemplateHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (f *feedbackTemplateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case httputil.Get:
-		f.get(ctx, w, r)
+		f.get(w, r)
 	case httputil.Put:
-		f.put(ctx, w, r)
+		f.put(w, r)
 	}
 }
 
-func (f *feedbackTemplateHandler) get(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.ParseInt(mux.Vars(ctx)["id"], 10, 64)
+func (f *feedbackTemplateHandler) get(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(mux.Vars(r.Context())["id"], 10, 64)
 	if err != nil {
 		www.APINotFound(w, r)
 		return
 	}
 
-	account := www.MustCtxAccount(ctx)
+	account := www.MustCtxAccount(r.Context())
 	audit.LogAction(account.ID, "AdminAPI", "GetFeedbackTemplate", map[string]interface{}{
 		"id": id,
 	})
@@ -66,8 +64,8 @@ func (f *feedbackTemplateHandler) get(ctx context.Context, w http.ResponseWriter
 	})
 }
 
-func (f *feedbackTemplateHandler) put(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	account := www.MustCtxAccount(ctx)
+func (f *feedbackTemplateHandler) put(w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(r.Context())
 	audit.LogAction(account.ID, "AdminAPI", "PutFeedbackTemplate", nil)
 
 	var rd feedbackTemplatePutRequest

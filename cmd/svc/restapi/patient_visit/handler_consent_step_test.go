@@ -2,13 +2,12 @@ package patient_visit
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -50,7 +49,7 @@ func TestReachedConsentStepHandler(t *testing.T) {
 	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
 	test.OK(t, err)
 	w := httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusForbidden, w.Code)
 
 	// Should succeed
@@ -60,7 +59,7 @@ func TestReachedConsentStepHandler(t *testing.T) {
 	r, err = http.NewRequest("POST", "/", bytes.NewReader(b))
 	test.OK(t, err)
 	w = httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 	test.Equals(t, common.PVStatusPendingParentalConsent, dataAPI.visit.Status)
 
@@ -71,7 +70,7 @@ func TestReachedConsentStepHandler(t *testing.T) {
 	r, err = http.NewRequest("POST", "/", bytes.NewReader(b))
 	test.OK(t, err)
 	w = httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 	test.Equals(t, common.PVStatusPendingParentalConsent, dataAPI.visit.Status)
 }

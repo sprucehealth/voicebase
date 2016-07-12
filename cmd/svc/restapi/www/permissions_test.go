@@ -1,14 +1,12 @@
 package www
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type mockAPI struct {
@@ -44,26 +42,26 @@ func TestPermissions(t *testing.T) {
 func TestPermissionsHandler(t *testing.T) {
 	api := &mockAPI{
 		perms: map[int64][]string{
-			1: []string{"aaa", "bbb"},
-			2: []string{"123"},
+			1: {"aaa", "bbb"},
+			2: {"123"},
 		},
 	}
 
-	okHandler := httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	okHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
-	failedHandler := httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	failedHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 	})
 
-	h := PermissionsRequiredHandler(api, map[string][]string{"GET": []string{"aaa"}, "POST": []string{"aaa", "123"}}, okHandler, failedHandler)
+	h := PermissionsRequiredHandler(api, map[string][]string{"GET": {"aaa"}, "POST": {"aaa", "123"}}, okHandler, failedHandler)
 
 	// Allowed matching 1 of 1 required premissions
 
 	r, _ := http.NewRequest("GET", "/", nil)
 	account := &common.Account{ID: 1}
 	w := httptest.NewRecorder()
-	h.ServeHTTP(CtxWithAccount(context.Background(), account), w, r)
+	h.ServeHTTP(w, r.WithContext(CtxWithAccount(context.Background(), account)))
 	if w.Code != http.StatusOK {
 		t.Fatalf("GET request failed")
 	}
@@ -73,7 +71,7 @@ func TestPermissionsHandler(t *testing.T) {
 	r, _ = http.NewRequest("GET", "/", nil)
 	account = &common.Account{ID: 2}
 	w = httptest.NewRecorder()
-	h.ServeHTTP(CtxWithAccount(context.Background(), account), w, r)
+	h.ServeHTTP(w, r.WithContext(CtxWithAccount(context.Background(), account)))
 	if w.Code == http.StatusOK {
 		t.Fatalf("GET request should have failed")
 	}
@@ -83,7 +81,7 @@ func TestPermissionsHandler(t *testing.T) {
 	r, _ = http.NewRequest("POST", "/", nil)
 	account = &common.Account{ID: 1}
 	w = httptest.NewRecorder()
-	h.ServeHTTP(CtxWithAccount(context.Background(), account), w, r)
+	h.ServeHTTP(w, r.WithContext(CtxWithAccount(context.Background(), account)))
 	if w.Code == http.StatusForbidden {
 		t.Fatalf("POST request should have been allowed")
 	}

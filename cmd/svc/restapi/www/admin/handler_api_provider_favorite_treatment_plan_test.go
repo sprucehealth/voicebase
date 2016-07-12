@@ -5,8 +5,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/responses"
@@ -69,13 +67,13 @@ func TestHandlerProviderFTPGETSuccess(t *testing.T) {
 	providerFTPHandler := newProviderFTPHandler(dataAPI, nil)
 	resp := providerFTPGETResponse{
 		FavoriteTreatmentPlans: map[string][]*responses.FavoriteTreatmentPlan{
-			"Pathway": []*responses.FavoriteTreatmentPlan{tresp, tresp},
+			"Pathway": {tresp, tresp},
 		},
 	}
 	m := mux.NewRouter()
 	m.Handle(`/admin/api/providers/{id:[0-9]+}/treatment_plan/favorite`, providerFTPHandler)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, resp)
-	m.ServeHTTP(context.Background(), responseWriter, r)
+	m.ServeHTTP(responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }

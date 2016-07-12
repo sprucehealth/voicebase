@@ -3,8 +3,6 @@ package admin
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/schedmsg"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
@@ -13,13 +11,13 @@ import (
 
 type schedMessageEventsListAPIHandler struct{}
 
-func newSchedMessageEventsListAPIHandler() httputil.ContextHandler {
+func newSchedMessageEventsListAPIHandler() http.Handler {
 	return httputil.SupportedMethods(&schedMessageEventsListAPIHandler{},
 		httputil.Get)
 }
 
-func (h *schedMessageEventsListAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	account := www.MustCtxAccount(ctx)
+func (h *schedMessageEventsListAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(r.Context())
 	audit.LogAction(account.ID, "AdminAPI", "ListSchedMessageEvents", nil)
 	httputil.JSONResponse(w, http.StatusOK, schedmsg.Events)
 }

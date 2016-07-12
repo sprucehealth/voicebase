@@ -6,8 +6,6 @@ import (
 	"text/template"
 	"time"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -28,7 +26,7 @@ type followupRequestData struct {
 	CaseID int64 `json:"case_id,string"`
 }
 
-func NewFollowupHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, expirationDuration time.Duration, dispatcher *dispatch.Dispatcher) httputil.ContextHandler {
+func NewFollowupHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, expirationDuration time.Duration, dispatcher *dispatch.Dispatcher) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.RequestCacheHandler(
 			apiservice.AuthorizationRequired(&followupHandler{
@@ -40,7 +38,8 @@ func NewFollowupHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, expirationDura
 		httputil.Post)
 }
 
-func (f *followupHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+func (f *followupHandler) IsAuthorized(r *http.Request) (bool, error) {
+	ctx := r.Context()
 	account := apiservice.MustCtxAccount(ctx)
 	requestCache := apiservice.MustCtxCache(ctx)
 	if account.Role != api.RoleDoctor && account.Role != api.RoleCC {
@@ -75,7 +74,8 @@ func (f *followupHandler) IsAuthorized(ctx context.Context, r *http.Request) (bo
 	return true, nil
 }
 
-func (f *followupHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (f *followupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	requestCache := apiservice.MustCtxCache(ctx)
 	patientCase := requestCache[apiservice.CKPatientCase].(*common.PatientCase)
 	doctorID := requestCache[apiservice.CKDoctorID].(int64)
@@ -83,26 +83,26 @@ func (f *followupHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, 
 
 	patient, err := f.dataAPI.GetPatientFromID(patientCase.PatientID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	// first create the followup visit
 	followupVisit, err := patientpkg.CreatePendingFollowup(patient, patientCase, f.dataAPI, f.authAPI, f.dispatcher)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	personID, err := f.dataAPI.GetPersonIDByRole(account.Role, doctorID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	body, err := bodyOfCaseMessageForFollowup(patientCase.ID.Int64(), patient, f.dataAPI)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -123,13 +123,13 @@ func (f *followupHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, 
 		personID, doctorID, account.Role, f.dataAPI)
 
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	people, err := f.dataAPI.GetPeople([]int64{personID})
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 	person := people[personID]

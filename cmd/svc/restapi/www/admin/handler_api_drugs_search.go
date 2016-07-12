@@ -5,8 +5,6 @@ import (
 	"strings"
 	"sync"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/erx"
@@ -37,19 +35,19 @@ type drugSearchResult struct {
 	Strengths []*drugStrength `json:"strengths"`
 }
 
-func newDrugSearchAPIHandler(dataAPI api.DataAPI, eRxAPI erx.ERxAPI) httputil.ContextHandler {
+func newDrugSearchAPIHandler(dataAPI api.DataAPI, eRxAPI erx.ERxAPI) http.Handler {
 	return httputil.SupportedMethods(&drugSearchAPIHandler{
 		dataAPI: dataAPI,
 		eRxAPI:  eRxAPI,
 	}, httputil.Get)
 }
 
-func (h *drugSearchAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *drugSearchAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var results []*drugSearchResult
 
 	query := r.FormValue("q")
 
-	account := www.MustCtxAccount(ctx)
+	account := www.MustCtxAccount(r.Context())
 	audit.LogAction(account.ID, "AdminAPI", "SearchDrugs", map[string]interface{}{"query": query})
 
 	if query != "" {

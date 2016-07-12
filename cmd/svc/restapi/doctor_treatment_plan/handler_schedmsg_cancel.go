@@ -3,8 +3,6 @@ package doctor_treatment_plan
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -22,7 +20,7 @@ type CancelScheduledMessageRequest struct {
 	Undo      bool  `json:"undo"`
 }
 
-func NewCancelScheduledMessageHandler(dataAPI api.DataAPI, dispatcher dispatch.Publisher) httputil.ContextHandler {
+func NewCancelScheduledMessageHandler(dataAPI api.DataAPI, dispatcher dispatch.Publisher) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.RequestCacheHandler(
@@ -34,47 +32,47 @@ func NewCancelScheduledMessageHandler(dataAPI api.DataAPI, dispatcher dispatch.P
 			api.RoleCC), httputil.Put)
 }
 
-func (c *cancelScheduledMessageHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	account := apiservice.MustCtxAccount(ctx)
+func (c *cancelScheduledMessageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	account := apiservice.MustCtxAccount(r.Context())
 
 	var req CancelScheduledMessageRequest
 	if err := apiservice.DecodeRequestData(&req, r); err != nil {
-		apiservice.WriteValidationError(ctx, err.Error(), w, r)
+		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	} else if req.MessageID == 0 {
-		apiservice.WriteValidationError(ctx, "message_id cannot be 0", w, r)
+		apiservice.WriteValidationError("message_id cannot be 0", w, r)
 		return
 	}
 
 	tpSchedMsg, err := c.dataAPI.TreatmentPlanScheduledMessage(req.MessageID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	if tpSchedMsg.SentTime != nil {
-		apiservice.WriteValidationError(ctx, "Message has already been sent so cannot be cancelled or undone.", w, r)
+		apiservice.WriteValidationError("Message has already been sent so cannot be cancelled or undone.", w, r)
 		return
 	}
 
 	doctorID, err := c.dataAPI.GetDoctorIDFromAccountID(account.ID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	tp, err := c.dataAPI.GetAbridgedTreatmentPlan(tpSchedMsg.TreatmentPlanID, 0)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	} else if tp.Status != common.TPStatusActive {
-		apiservice.WriteValidationError(ctx, "Treatment plan is not active so message cannot be cancelled.", w, r)
+		apiservice.WriteValidationError("Treatment plan is not active so message cannot be cancelled.", w, r)
 		return
 	}
 
 	cancelled, err := c.dataAPI.CancelTreatmentPlanScheduledMessage(req.MessageID, req.Undo)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

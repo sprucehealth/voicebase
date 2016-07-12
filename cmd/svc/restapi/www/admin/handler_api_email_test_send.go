@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/email"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/email/campaigns"
@@ -30,7 +28,7 @@ type emailTestSendResponse struct {
 	Error   string `json:"error"`
 }
 
-func newEmailTestSendHandler(emailService email.Service, signer *sig.Signer, webDomain string) httputil.ContextHandler {
+func newEmailTestSendHandler(emailService email.Service, signer *sig.Signer, webDomain string) http.Handler {
 	return httputil.SupportedMethods(&emailTestSendHandler{
 		emailService: emailService,
 		signer:       signer,
@@ -38,14 +36,14 @@ func newEmailTestSendHandler(emailService email.Service, signer *sig.Signer, web
 	}, httputil.Post)
 }
 
-func (h *emailTestSendHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *emailTestSendHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var req emailTestSendRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		www.APIBadRequestError(w, r, "Failed to parse request body")
 		return
 	}
 
-	account := www.MustCtxAccount(ctx)
+	account := www.MustCtxAccount(r.Context())
 	audit.LogAction(account.ID, "AdminAPI", "SendTestEmail", map[string]interface{}{"type": req.Type})
 
 	vars := campaigns.VarsForAccount(account.ID, req.Type, h.signer, h.webDomain)

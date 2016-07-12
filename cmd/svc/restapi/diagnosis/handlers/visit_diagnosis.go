@@ -5,8 +5,6 @@ import (
 	"sort"
 	"time"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -63,7 +61,7 @@ type DiagnosisOutputItem struct {
 	Answers             []*apiservice.QuestionAnswerItem `json:"answers,omitempty"`
 }
 
-func NewDiagnosisListHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API, dispatcher *dispatch.Dispatcher) httputil.ContextHandler {
+func NewDiagnosisListHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API, dispatcher *dispatch.Dispatcher) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.RequestCacheHandler(
@@ -77,9 +75,9 @@ func NewDiagnosisListHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API, di
 		httputil.Get, httputil.Put)
 }
 
-func (d *diagnosisListHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
-	requestCache := apiservice.MustCtxCache(ctx)
-	account := apiservice.MustCtxAccount(ctx)
+func (d *diagnosisListHandler) IsAuthorized(r *http.Request) (bool, error) {
+	requestCache := apiservice.MustCtxCache(r.Context())
+	account := apiservice.MustCtxAccount(r.Context())
 
 	rd := &DiagnosisListRequestData{}
 	if err := apiservice.DecodeRequestData(rd, r); err != nil {
@@ -114,17 +112,17 @@ func (d *diagnosisListHandler) IsAuthorized(ctx context.Context, r *http.Request
 	return true, nil
 }
 
-func (d *diagnosisListHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (d *diagnosisListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		d.getDiagnosisList(ctx, w, r)
+		d.getDiagnosisList(w, r)
 	case "PUT":
-		d.putDiagnosisList(ctx, w, r)
+		d.putDiagnosisList(w, r)
 	}
 }
 
-func (d *diagnosisListHandler) putDiagnosisList(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	requestCache := apiservice.MustCtxCache(ctx)
+func (d *diagnosisListHandler) putDiagnosisList(w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(r.Context())
 	visit := requestCache[apiservice.CKPatientVisit].(*common.PatientVisit)
 	doctorID := requestCache[apiservice.CKDoctorID].(int64)
 	rd := requestCache[apiservice.CKRequestData].(*DiagnosisListRequestData)
@@ -147,7 +145,7 @@ func (d *diagnosisListHandler) putDiagnosisList(ctx context.Context, w http.Resp
 
 	layoutVersionIDs, err := d.dataAPI.LayoutVersionIDsForDiagnosisCodes(codes)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -168,7 +166,7 @@ func (d *diagnosisListHandler) putDiagnosisList(ctx context.Context, w http.Resp
 	}
 
 	if err := d.dataAPI.CreateDiagnosisSet(set); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -203,7 +201,7 @@ func (d *diagnosisListHandler) putDiagnosisList(ctx context.Context, w http.Resp
 	}
 
 	if err := d.dataAPI.StoreAnswersForIntakes(intakes); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -213,7 +211,7 @@ func (d *diagnosisListHandler) putDiagnosisList(ctx context.Context, w http.Resp
 			ClosedDate: ptr.Time(time.Now()),
 		})
 		if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 
@@ -232,7 +230,7 @@ func (d *diagnosisListHandler) putDiagnosisList(ctx context.Context, w http.Resp
 				Status: ptr.String(common.PVStatusReviewing),
 			})
 			if err != nil {
-				apiservice.WriteError(ctx, err, w, r)
+				apiservice.WriteError(err, w, r)
 				return
 			}
 		}
@@ -248,8 +246,8 @@ func (d *diagnosisListHandler) putDiagnosisList(ctx context.Context, w http.Resp
 	apiservice.WriteJSONSuccess(w)
 }
 
-func (d *diagnosisListHandler) getDiagnosisList(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	requestCache := apiservice.MustCtxCache(ctx)
+func (d *diagnosisListHandler) getDiagnosisList(w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(r.Context())
 	doctorID := requestCache[apiservice.CKDoctorID].(int64)
 	visit := requestCache[apiservice.CKPatientVisit].(*common.PatientVisit)
 
@@ -264,7 +262,7 @@ func (d *diagnosisListHandler) getDiagnosisList(ctx context.Context, w http.Resp
 			visit.PatientCaseID.Int64(),
 			common.TreatedPatientVisitStates())
 		if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 
@@ -276,7 +274,7 @@ func (d *diagnosisListHandler) getDiagnosisList(ctx context.Context, w http.Resp
 			httputil.JSONResponse(w, http.StatusOK, DiagnosisListResponse{})
 			return
 		} else if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 
@@ -284,7 +282,7 @@ func (d *diagnosisListHandler) getDiagnosisList(ctx context.Context, w http.Resp
 		httputil.JSONResponse(w, http.StatusOK, DiagnosisListResponse{})
 		return
 	} else if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -299,19 +297,19 @@ func (d *diagnosisListHandler) getDiagnosisList(ctx context.Context, w http.Resp
 
 	diagnosisMap, err := d.diagnosisAPI.DiagnosisForCodeIDs(codeIDs)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	diagnosisDetailsIntakes, err := d.dataAPI.DiagnosisDetailsIntake(layoutVersionIDs, diagnosis.DetailTypes)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	activeLayoutVersions, err := d.dataAPI.DetailsIntakeVersionForDiagnoses(codeIDs)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -328,7 +326,7 @@ func (d *diagnosisListHandler) getDiagnosisList(ctx context.Context, w http.Resp
 					LVersionID:           *item.LayoutVersionID,
 				})
 			if err != nil {
-				apiservice.WriteError(ctx, err, w, r)
+				apiservice.WriteError(err, w, r)
 				return
 			}
 		}

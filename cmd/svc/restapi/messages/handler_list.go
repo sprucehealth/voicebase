@@ -6,8 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/app_url"
@@ -59,7 +57,7 @@ func NewListHandler(
 	dataAPI api.DataAPI,
 	apiDomain string,
 	mediaStore *mediastore.Store,
-	expirationDuration time.Duration) httputil.ContextHandler {
+	expirationDuration time.Duration) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.RequestCacheHandler(
 			apiservice.AuthorizationRequired(
@@ -72,7 +70,8 @@ func NewListHandler(
 		httputil.Get)
 }
 
-func (h *listHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+func (h *listHandler) IsAuthorized(r *http.Request) (bool, error) {
+	ctx := r.Context()
 	requestCache := apiservice.MustCtxCache(ctx)
 
 	caseID, err := strconv.ParseInt(r.FormValue("case_id"), 10, 64)
@@ -97,7 +96,8 @@ func (h *listHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, 
 	return true, nil
 }
 
-func (h *listHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	account := apiservice.MustCtxAccount(ctx)
 	requestCache := apiservice.MustCtxCache(ctx)
 	cas := requestCache[apiservice.CKPatientCase].(*common.PatientCase)
@@ -145,7 +145,7 @@ func (h *listHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *h
 	})
 
 	if err := p.Wait(); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -162,7 +162,7 @@ func (h *listHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *h
 		if len(peopleIDs) != 0 {
 			rrPeople, err := h.dataAPI.GetPeople(peopleIDs)
 			if err != nil {
-				apiservice.WriteError(ctx, err, w, r)
+				apiservice.WriteError(err, w, r)
 				return
 			}
 			if participants == nil {
@@ -239,7 +239,7 @@ func (h *listHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *h
 				a.URL = app_url.ContinueVisitAction(att.ItemID, isSubmitted).String()
 			case common.AttachmentTypePhoto, common.AttachmentTypeAudio:
 				if ok, err := h.dataAPI.MediaHasClaim(att.ItemID, common.ClaimerTypeConversationMessage, msg.ID); err != nil {
-					apiservice.WriteError(ctx, err, w, r)
+					apiservice.WriteError(err, w, r)
 					return
 				} else if !ok {
 					// This should never happen but best to make sure
@@ -251,7 +251,7 @@ func (h *listHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *h
 				var err error
 				a.URL, err = h.mediaStore.SignedURL(att.ItemID, h.expirationDuration)
 				if err != nil {
-					apiservice.WriteError(ctx, err, w, r)
+					apiservice.WriteError(err, w, r)
 					return
 				}
 			default:

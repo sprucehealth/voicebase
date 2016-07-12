@@ -3,8 +3,6 @@ package patient_file
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -31,7 +29,7 @@ type response struct {
 	PatientVisits []*patientVisitItem `json:"patient_visits"`
 }
 
-func NewPatientVisitsHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func NewPatientVisitsHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.RequestCacheHandler(
 			apiservice.AuthorizationRequired(&patientVisitsHandler{
@@ -40,7 +38,8 @@ func NewPatientVisitsHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 		httputil.Get)
 }
 
-func (p *patientVisitsHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+func (p *patientVisitsHandler) IsAuthorized(r *http.Request) (bool, error) {
+	ctx := r.Context()
 	requestCache := apiservice.MustCtxCache(ctx)
 	account := apiservice.MustCtxAccount(ctx)
 
@@ -69,20 +68,20 @@ func (p *patientVisitsHandler) IsAuthorized(ctx context.Context, r *http.Request
 	return true, nil
 }
 
-func (p *patientVisitsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	requestCache := apiservice.MustCtxCache(ctx)
+func (p *patientVisitsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(r.Context())
 	patient := requestCache[apiservice.CKPatient].(*common.Patient)
 	requestData := requestCache[apiservice.CKRequestData].(*request)
 	var patientCase *common.PatientCase
 	if requestData.CaseID == 0 {
 		cases, err := p.DataAPI.GetCasesForPatient(patient.ID, []string{common.PCStatusActive.String(), common.PCStatusInactive.String()})
 		if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 
 		if len(cases) == 0 {
-			apiservice.WriteValidationError(ctx, "no cases exist for patient", w, r)
+			apiservice.WriteValidationError("no cases exist for patient", w, r)
 			return
 		}
 
@@ -92,7 +91,7 @@ func (p *patientVisitsHandler) ServeHTTP(ctx context.Context, w http.ResponseWri
 		var err error
 		patientCase, err = p.DataAPI.GetPatientCaseFromID(requestData.CaseID)
 		if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 	}
@@ -101,7 +100,7 @@ func (p *patientVisitsHandler) ServeHTTP(ctx context.Context, w http.ResponseWri
 	states = append(states, common.SubmittedPatientVisitStates()...)
 	patientVisits, err := p.DataAPI.GetVisitsForCase(patientCase.ID.Int64(), states)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

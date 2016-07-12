@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -67,28 +65,28 @@ func (r *createProviderRequest) validate() (string, bool) {
 	return "", true
 }
 
-func newProviderSearchAPIHandler(dataAPI api.DataAPI, authAPI api.AuthAPI) httputil.ContextHandler {
+func newProviderSearchAPIHandler(dataAPI api.DataAPI, authAPI api.AuthAPI) http.Handler {
 	return httputil.SupportedMethods(&providerSearchAPIHandler{
 		dataAPI: dataAPI,
 		authAPI: authAPI,
 	}, httputil.Get, httputil.Post)
 }
 
-func (h *providerSearchAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *providerSearchAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case httputil.Get:
-		h.get(ctx, w, r)
+		h.get(w, r)
 	case httputil.Post:
-		h.post(ctx, w, r)
+		h.post(w, r)
 	}
 }
 
-func (h *providerSearchAPIHandler) get(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *providerSearchAPIHandler) get(w http.ResponseWriter, r *http.Request) {
 	var results []*common.DoctorSearchResult
 
 	query := r.FormValue("q")
 
-	account := www.MustCtxAccount(ctx)
+	account := www.MustCtxAccount(r.Context())
 	audit.LogAction(account.ID, "AdminAPI", "SearchProviders", map[string]interface{}{"query": query})
 
 	if query != "" {
@@ -107,8 +105,8 @@ func (h *providerSearchAPIHandler) get(ctx context.Context, w http.ResponseWrite
 	})
 }
 
-func (h *providerSearchAPIHandler) post(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	account := www.MustCtxAccount(ctx)
+func (h *providerSearchAPIHandler) post(w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(r.Context())
 	audit.LogAction(account.ID, "AdminAPI", "CreateProvider", nil)
 
 	var req createProviderRequest

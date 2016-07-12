@@ -5,8 +5,6 @@ import (
 	"html/template"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -31,7 +29,7 @@ type uploadHandler struct {
 	required bool
 }
 
-func newUploadCVHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store, templateLoader *www.TemplateLoader) httputil.ContextHandler {
+func newUploadCVHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&uploadHandler{
 		router:   router,
 		dataAPI:  dataAPI,
@@ -45,7 +43,7 @@ func newUploadCVHandler(router *mux.Router, dataAPI api.DataAPI, store storage.S
 	}, httputil.Get, httputil.Post)
 }
 
-func newUploadLicenseHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store, templateLoader *www.TemplateLoader) httputil.ContextHandler {
+func newUploadLicenseHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&uploadHandler{
 		router:   router,
 		dataAPI:  dataAPI,
@@ -60,7 +58,7 @@ func newUploadLicenseHandler(router *mux.Router, dataAPI api.DataAPI, store stor
 	}, httputil.Get, httputil.Post)
 }
 
-func newUploadClaimsHistoryHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store, templateLoader *www.TemplateLoader) httputil.ContextHandler {
+func newUploadClaimsHistoryHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&uploadHandler{
 		router:   router,
 		dataAPI:  dataAPI,
@@ -75,7 +73,7 @@ func newUploadClaimsHistoryHandler(router *mux.Router, dataAPI api.DataAPI, stor
 	}, httputil.Get, httputil.Post)
 }
 
-func (h *uploadHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *uploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	u, err := h.router.Get(h.nextURL).URLPath()
 	if err != nil {
 		www.InternalServerError(w, r, err)
@@ -83,7 +81,7 @@ func (h *uploadHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r 
 	}
 	nextURL := u.String()
 
-	account := www.MustCtxAccount(ctx)
+	account := www.MustCtxAccount(r.Context())
 	doctorID, err := h.dataAPI.GetDoctorIDFromAccountID(account.ID)
 	if err != nil {
 		www.InternalServerError(w, r, err)

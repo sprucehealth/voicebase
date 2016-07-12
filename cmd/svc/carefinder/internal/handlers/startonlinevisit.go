@@ -7,12 +7,8 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/response"
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/service"
-
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/environment"
-	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
 )
 
@@ -21,16 +17,15 @@ type startOnlineVisitHandler struct {
 	startOnlineVisitService service.PageContentBuilder
 }
 
-func NewStartOnlineVisitHandler(templateLoader *www.TemplateLoader, startOnlineVisitService service.PageContentBuilder) httputil.ContextHandler {
+func NewStartOnlineVisitHandler(templateLoader *www.TemplateLoader, startOnlineVisitService service.PageContentBuilder) http.Handler {
 	return &startOnlineVisitHandler{
 		refTemplate:             templateLoader.MustLoadTemplate("startonlinevisit.html", "base.html", nil),
 		startOnlineVisitService: startOnlineVisitService,
 	}
 }
 
-func (d *startOnlineVisitHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-
-	doctorID := "md-" + mux.Vars(ctx)["doctor"]
+func (d *startOnlineVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	doctorID := "md-" + mux.Vars(r.Context())["doctor"]
 	sp, err := d.startOnlineVisitService.PageContentForID(&service.StartOnlineVisitPageContext{
 		DoctorID: doctorID,
 	}, r)

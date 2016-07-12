@@ -5,15 +5,14 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/invite/internal/dal"
 	"github.com/sprucehealth/backend/libs/mux"
-
-	"context"
 )
 
 type orgCodeHandler struct {
 	dal dal.DAL
 }
 
-func (h *orgCodeHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *orgCodeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	token, ok := mux.Vars(ctx)["token"]
 	if !ok {
 		http.Error(w, "Invalid invite token", http.StatusBadRequest)

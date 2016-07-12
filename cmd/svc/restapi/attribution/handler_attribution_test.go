@@ -2,12 +2,11 @@ package attribution
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/attribution/model"
@@ -33,7 +32,7 @@ func TestAttributionHandlerPOSTDataRequired(t *testing.T) {
 	dal := &mockAttributionDAL{}
 	handler := NewAttributionHandler(dal)
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, http.StatusBadRequest, responseWriter.Code)
 }
 
@@ -43,7 +42,7 @@ func TestAttributionHandlerPOSTDeviceIDHeaderRequired(t *testing.T) {
 	dal := &mockAttributionDAL{}
 	handler := NewAttributionHandler(dal)
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, http.StatusBadRequest, responseWriter.Code)
 }
 
@@ -54,7 +53,7 @@ func TestAttributionHandlerPOSTInsertAttributionRecordError(t *testing.T) {
 	dal := &mockAttributionDAL{insertAttributionDataErr: errors.New("Foo")}
 	handler := NewAttributionHandler(dal)
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, http.StatusInternalServerError, responseWriter.Code)
 }
 
@@ -65,7 +64,7 @@ func TestAttributionHandlerPOSTDeviceIDHappyCase(t *testing.T) {
 	dal := &mockAttributionDAL{}
 	handler := NewAttributionHandler(dal)
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, http.StatusOK, responseWriter.Code)
 	test.Assert(t, dal.insertAttributionDataParam.DeviceID != nil, "Expected non nil")
 	test.Assert(t, dal.insertAttributionDataParam.AccountID == nil, "Expected nil")
@@ -79,7 +78,7 @@ func TestAttributionHandlerPOSTAccountIDHappyCase(t *testing.T) {
 	dal := &mockAttributionDAL{}
 	handler := NewAttributionHandler(dal)
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 100}), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r.WithContext(apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 100})))
 	test.Equals(t, http.StatusOK, responseWriter.Code)
 	test.Assert(t, dal.insertAttributionDataParam.AccountID != nil, "Expected non nil")
 	test.Assert(t, dal.insertAttributionDataParam.DeviceID == nil, "Expected nil")

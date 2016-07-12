@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"strings"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/app_url"
@@ -110,7 +108,7 @@ func (c *careProviderSelection) Validate(namespace string) error {
 }
 
 // NewSelectionHandler returns an initialized instance of selectionHandler
-func NewSelectionHandler(dataAPI api.DataAPI, apiDomain string, selectionCount int) httputil.ContextHandler {
+func NewSelectionHandler(dataAPI api.DataAPI, apiDomain string, selectionCount int) http.Handler {
 	if selectionCount == 0 {
 		selectionCount = defaultSelectionCount
 	}
@@ -124,10 +122,10 @@ func NewSelectionHandler(dataAPI api.DataAPI, apiDomain string, selectionCount i
 			}), httputil.Get)
 }
 
-func (c *selectionHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (c *selectionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var rd selectionRequest
 	if err := apiservice.DecodeRequestData(&rd, r); err != nil {
-		apiservice.WriteValidationError(ctx, err.Error(), w, r)
+		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
 
@@ -137,7 +135,7 @@ func (c *selectionHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter,
 	}
 
 	if err := rd.Validate(); err != nil {
-		apiservice.WriteValidationError(ctx, err.Error(), w, r)
+		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
 
@@ -188,7 +186,7 @@ func (c *selectionHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter,
 			// validate all views
 			for _, selectionView := range response.Options {
 				if err := selectionView.Validate(selectionNamespace); err != nil {
-					apiservice.WriteError(ctx, err, w, r)
+					apiservice.WriteError(err, w, r)
 					return
 				}
 			}
@@ -198,10 +196,10 @@ func (c *selectionHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter,
 		}
 	}
 
-	account, _ := apiservice.CtxAccount(ctx)
+	account, _ := apiservice.CtxAccount(r.Context())
 	doctorIDs, err := c.pickNDoctors(c.selectionCount, &rd, account)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -224,7 +222,7 @@ func (c *selectionHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter,
 	})
 
 	if err := p.Wait(); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -253,7 +251,7 @@ func (c *selectionHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter,
 	// validate all views
 	for _, selectionView := range response.Options {
 		if err := selectionView.Validate(selectionNamespace); err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 	}

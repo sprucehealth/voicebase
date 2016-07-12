@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/medrecord"
@@ -26,7 +24,7 @@ type medicalRecordRenderer interface {
 func newParentalMedicalRecordHandler(
 	dataAPI api.DataAPI,
 	renderer medicalRecordRenderer,
-) httputil.ContextHandler {
+) http.Handler {
 	return httputil.SupportedMethods(
 		www.RoleRequiredHandler(
 			&parentalMedicalRecordHandler{
@@ -36,13 +34,13 @@ func newParentalMedicalRecordHandler(
 		httputil.Get)
 }
 
-func (h *parentalMedicalRecordHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	childPatientID, err := common.ParsePatientID(mux.Vars(ctx)["childid"])
+func (h *parentalMedicalRecordHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	childPatientID, err := common.ParsePatientID(mux.Vars(r.Context())["childid"])
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
-	account := www.MustCtxAccount(ctx)
+	account := www.MustCtxAccount(r.Context())
 	parentPatientID, err := h.dataAPI.GetPatientIDFromAccountID(account.ID)
 	if err != nil {
 		www.InternalServerError(w, r, err)

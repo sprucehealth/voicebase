@@ -86,7 +86,7 @@ func testPatientUpdate(method string, t *testing.T) {
 	w := httptest.NewRecorder()
 
 	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{Role: api.RolePatient})
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected 200 but got %d", w.Code)
 	} else if len(m.updateAttempted.PhoneNumbers) != 1 {

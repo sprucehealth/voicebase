@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -37,48 +35,48 @@ type changeProviderPOSTRequest struct {
 }
 
 // NewChangeProviderHandler returns an initialized instance of changeProviderHandler
-func NewChangeProviderHandler(svc changeProviderService) httputil.ContextHandler {
+func NewChangeProviderHandler(svc changeProviderService) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(
 			apiservice.SupportedRoles(
 				&changeProviderHandler{svc: svc}, api.RoleCC)), httputil.Post, httputil.Get)
 }
 
-func (h *changeProviderHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *changeProviderHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case httputil.Get:
-		rd, err := h.parseGETRequest(ctx, r)
+		rd, err := h.parseGETRequest(r)
 		if err != nil {
-			apiservice.WriteBadRequestError(ctx, err, w, r)
+			apiservice.WriteBadRequestError(err, w, r)
 			return
 		}
 		doctors, err := h.svc.ElligibleCareProvidersForCase(rd.CaseID)
 		if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 		httputil.JSONResponse(w, http.StatusOK, &changeProviderGETResponse{ElligibleDoctors: doctors})
 	case httputil.Post:
-		rd, err := h.parsePOSTRequest(ctx, r)
+		rd, err := h.parsePOSTRequest(r)
 		if err != nil {
-			apiservice.WriteBadRequestError(ctx, err, w, r)
+			apiservice.WriteBadRequestError(err, w, r)
 			return
 		}
 
-		caller, ok := apiservice.CtxCC(ctx)
+		caller, ok := apiservice.CtxCC(r.Context())
 		if !ok {
-			apiservice.WriteBadRequestError(ctx, errors.New("No care coordinator found in context"), w, r)
+			apiservice.WriteBadRequestError(errors.New("No care coordinator found in context"), w, r)
 			return
 		}
 		if err := h.svc.ChangeCareProvider(rd.CaseID, rd.DoctorID, caller.ID.Int64()); err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 		apiservice.WriteJSONSuccess(w)
 	}
 }
 
-func (h *changeProviderHandler) parseGETRequest(ctx context.Context, r *http.Request) (*changeProviderGETRequest, error) {
+func (h *changeProviderHandler) parseGETRequest(r *http.Request) (*changeProviderGETRequest, error) {
 	rd := &changeProviderGETRequest{}
 	if err := apiservice.DecodeRequestData(rd, r); err != nil {
 		return nil, err
@@ -86,7 +84,7 @@ func (h *changeProviderHandler) parseGETRequest(ctx context.Context, r *http.Req
 	return rd, nil
 }
 
-func (h *changeProviderHandler) parsePOSTRequest(ctx context.Context, r *http.Request) (*changeProviderPOSTRequest, error) {
+func (h *changeProviderHandler) parsePOSTRequest(r *http.Request) (*changeProviderPOSTRequest, error) {
 	rd := &changeProviderPOSTRequest{}
 	if err := json.NewDecoder(r.Body).Decode(rd); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)

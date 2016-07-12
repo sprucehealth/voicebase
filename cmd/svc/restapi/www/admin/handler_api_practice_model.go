@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/responses"
@@ -45,12 +43,12 @@ type practiceModelPUTRequest struct {
 }
 
 // newPracticeModelHandler returns an initialized instance of practiceModelHandler
-func newPracticeModelHandler(practiceModelDAL practiceModelDAL) httputil.ContextHandler {
+func newPracticeModelHandler(practiceModelDAL practiceModelDAL) http.Handler {
 	return httputil.SupportedMethods(&practiceModelHandler{practiceModelDAL: practiceModelDAL}, httputil.Get, httputil.Put)
 }
 
-func (h *practiceModelHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	providerID, err := strconv.ParseInt(mux.Vars(ctx)["id"], 10, 64)
+func (h *practiceModelHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	providerID, err := strconv.ParseInt(mux.Vars(r.Context())["id"], 10, 64)
 	if err != nil {
 		www.APINotFound(w, r)
 		return
@@ -58,18 +56,18 @@ func (h *practiceModelHandler) ServeHTTP(ctx context.Context, w http.ResponseWri
 
 	switch r.Method {
 	case httputil.Get:
-		h.serveGET(ctx, w, r, providerID)
+		h.serveGET(w, r, providerID)
 	case httputil.Put:
-		rd, err := h.parsePUTRequest(ctx, r)
+		rd, err := h.parsePUTRequest(r)
 		if err != nil {
 			www.APIBadRequestError(w, r, err.Error())
 			return
 		}
-		h.servePUT(ctx, w, r, rd, providerID)
+		h.servePUT(w, r, rd, providerID)
 	}
 }
 
-func (h *practiceModelHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request, doctorID int64) {
+func (h *practiceModelHandler) serveGET(w http.ResponseWriter, r *http.Request, doctorID int64) {
 	// Bootstrap any missing records
 	if err := h.practiceModelDAL.InitializePracticeModelInAllStates(doctorID); err != nil {
 		www.APIInternalError(w, r, err)
@@ -91,7 +89,7 @@ func (h *practiceModelHandler) serveGET(ctx context.Context, w http.ResponseWrit
 	httputil.JSONResponse(w, http.StatusOK, &practiceModelGETResponse{PracticeModels: respPMs})
 }
 
-func (h *practiceModelHandler) parsePUTRequest(ctx context.Context, r *http.Request) (*practiceModelPUTRequest, error) {
+func (h *practiceModelHandler) parsePUTRequest(r *http.Request) (*practiceModelPUTRequest, error) {
 	rd := &practiceModelPUTRequest{}
 	if err := json.NewDecoder(r.Body).Decode(rd); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -102,7 +100,7 @@ func (h *practiceModelHandler) parsePUTRequest(ctx context.Context, r *http.Requ
 	return rd, nil
 }
 
-func (h *practiceModelHandler) servePUT(ctx context.Context, w http.ResponseWriter, r *http.Request, rd *practiceModelPUTRequest, doctorID int64) {
+func (h *practiceModelHandler) servePUT(w http.ResponseWriter, r *http.Request, rd *practiceModelPUTRequest, doctorID int64) {
 	if !rd.AllStates {
 		if _, err := h.practiceModelDAL.UpdatePracticeModel(doctorID, rd.StateID, &common.PracticeModelUpdate{
 			IsSprucePC:           rd.IsSprucePC,

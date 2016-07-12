@@ -20,7 +20,7 @@ or other conditions. The main features are:
 	  parent route matches. This is useful to define groups of routes that
 	  share common conditions like a host, a path prefix or other repeated
 	  attributes. As a bonus, this optimizes request matching.
-	* It implements the httputil.ContextHandler interface so it is compatible with the
+	* It implements the http.Handler interface so it is compatible with the
 	  standard http.ServeMux.
 
 Let's start registering a couple of URL paths and handlers:

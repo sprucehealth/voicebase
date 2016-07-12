@@ -2,6 +2,7 @@ package admin
 
 import (
 	"database/sql"
+	"net/http"
 
 	"github.com/samuel/go-librato/librato"
 	"github.com/samuel/go-metrics/metrics"
@@ -103,21 +104,21 @@ func SetupRoutes(r *mux.Router, config *Config) {
 	// Initialize business logic services
 	identificationService := identification.NewPatientIdentificationService(config.DataAPI, config.AuthAPI, config.AnalyticsLogger)
 
-	authFilter := func(h httputil.ContextHandler) httputil.ContextHandler {
+	authFilter := func(h http.Handler) http.Handler {
 		return www.AuthRequiredHandler(www.RoleRequiredHandler(h, nil, api.RoleAdmin), nil, config.AuthAPI)
 	}
 	r.Handle(`/admin/providers/{id:[0-9]+}/dl/{attr:[A-Za-z0-9_\-]+}`, authFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI, map[string][]string{
-			httputil.Get: []string{PermDoctorsView},
+			httputil.Get: {PermDoctorsView},
 		}, newProviderAttrDownloadHandler(r, config.DataAPI, config.Stores.MustGet("onboarding")), nil))).Name("admin-doctor-attr-download")
 	r.Handle(`/admin/analytics/reports/{id:[0-9]+}/presentation/iframe`, authFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Get: []string{PermAnalyticsReportView},
+				httputil.Get: {PermAnalyticsReportView},
 			},
 			newAnalyticsPresentationIframeHandler(config.DataAPI, config.TemplateLoader), nil)))
 
-	apiAuthFilter := func(h httputil.ContextHandler) httputil.ContextHandler {
+	apiAuthFilter := func(h http.Handler) http.Handler {
 		return www.APIAuthRequiredHandler(www.APIRoleRequiredHandler(h, api.RoleAdmin), config.AuthAPI)
 	}
 
@@ -127,87 +128,87 @@ func SetupRoutes(r *mux.Router, config *Config) {
 	r.Handle(`/admin/api/cfg`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Get:   []string{PermCFGView},
-				httputil.Patch: []string{PermCFGEdit},
+				httputil.Get:   {PermCFGView},
+				httputil.Patch: {PermCFGEdit},
 			},
 			newCFGHandler(config.Cfg), nil)))
 	r.Handle(`/admin/api/providers/state_pathway_mappings`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Get: []string{PermDoctorsView},
+				httputil.Get: {PermDoctorsView},
 			},
 			newProviderMappingsHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/providers/state_pathway_mappings/summary`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Get: []string{PermDoctorsView},
+				httputil.Get: {PermDoctorsView},
 			},
 			newProviderMappingsSummaryHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/providers`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Get:  []string{PermDoctorsView},
-				httputil.Post: []string{PermDoctorsEdit},
+				httputil.Get:  {PermDoctorsView},
+				httputil.Post: {PermDoctorsEdit},
 			},
 			newProviderSearchAPIHandler(config.DataAPI, config.AuthAPI), nil)))
 	r.Handle(`/admin/api/providers/{id:[0-9]+}`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Get:   []string{PermDoctorsView},
-				httputil.Patch: []string{PermDoctorsEdit},
+				httputil.Get:   {PermDoctorsView},
+				httputil.Patch: {PermDoctorsEdit},
 			},
 			newProviderAPIHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/providers/{id:[0-9]+}/attributes`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Get: []string{PermDoctorsView},
+				httputil.Get: {PermDoctorsView},
 			},
 			newProviderAttributesAPIHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/providers/{id:[0-9]+}/licenses`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Get: []string{PermDoctorsView},
-				httputil.Put: []string{PermDoctorsEdit},
+				httputil.Get: {PermDoctorsView},
+				httputil.Put: {PermDoctorsEdit},
 			},
 			newMedicalLicenseAPIHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/providers/{id:[0-9]+}/practice_model`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Get: []string{PermDoctorsView},
-				httputil.Put: []string{PermDoctorsEdit},
+				httputil.Get: {PermDoctorsView},
+				httputil.Put: {PermDoctorsEdit},
 			},
 			newPracticeModelHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/providers/{id:[0-9]+}/profile`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Get: []string{PermDoctorsView},
-				httputil.Put: []string{PermDoctorsEdit},
+				httputil.Get: {PermDoctorsView},
+				httputil.Put: {PermDoctorsEdit},
 			},
 			newProviderProfileAPIHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/providers/{id:[0-9]+}/profile_image/{type:[a-z]+}`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Get: []string{PermDoctorsView},
-				httputil.Put: []string{PermDoctorsEdit},
+				httputil.Get: {PermDoctorsView},
+				httputil.Put: {PermDoctorsEdit},
 			},
 			newProviderProfileImageAPIHandler(config.DataAPI, config.Stores.MustGet("thumbnails"), config.APIDomain), nil)))
 	r.Handle(`/admin/api/providers/{id:[0-9]+}/eligibility`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Get:   []string{PermDoctorsView},
-				httputil.Patch: []string{PermDoctorsEdit},
+				httputil.Get:   {PermDoctorsView},
+				httputil.Patch: {PermDoctorsEdit},
 			},
 			newProviderEligibilityListAPIHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/providers/{id:[0-9]+}/treatment_plan/favorite`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Get: []string{PermFTPView},
+				httputil.Get: {PermFTPView},
 			},
 			newProviderFTPHandler(config.DataAPI, config.MediaStore), nil)))
 	r.Handle(`/admin/api/providers/{id:[0-9]+}/treatment_plan/sync_sftps`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Post: []string{PermDoctorsEdit},
+				httputil.Post: {PermDoctorsEdit},
 			},
 			newSyncGlobalFTPHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/dronboarding`, apiAuthFilter(
@@ -215,29 +216,29 @@ func SetupRoutes(r *mux.Router, config *Config) {
 	r.Handle(`/admin/api/guides/resources`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Get:  []string{PermResourceGuidesView},
-				httputil.Put:  []string{PermResourceGuidesEdit},
-				httputil.Post: []string{PermResourceGuidesEdit},
+				httputil.Get:  {PermResourceGuidesView},
+				httputil.Put:  {PermResourceGuidesEdit},
+				httputil.Post: {PermResourceGuidesEdit},
 			},
 			newResourceGuidesListAPIHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/guides/resources/{id:[0-9]+}`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Get:   []string{PermResourceGuidesView},
-				httputil.Patch: []string{PermResourceGuidesEdit},
+				httputil.Get:   {PermResourceGuidesView},
+				httputil.Patch: {PermResourceGuidesEdit},
 			},
 			newResourceGuidesAPIHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/guides/rx`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Get: []string{PermRXGuidesView},
-				httputil.Put: []string{PermRXGuidesEdit},
+				httputil.Get: {PermRXGuidesView},
+				httputil.Put: {PermRXGuidesEdit},
 			},
 			newRXGuideListAPIHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/guides/rx/{id:[0-9]+}`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Get: []string{PermRXGuidesView},
+				httputil.Get: {PermRXGuidesView},
 			},
 			newRXGuideAPIHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/accounts/permissions`, apiAuthFilter(noPermsRequired(newAccountAvailablePermissionsAPIHandler(config.AuthAPI))))
@@ -245,179 +246,179 @@ func SetupRoutes(r *mux.Router, config *Config) {
 	r.Handle(`/admin/api/accounts/{id:[0-9]+}`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Get:   []string{PermDoctorsView, PermAdminAccountsView},
-				httputil.Patch: []string{PermDoctorsEdit, PermAdminAccountsEdit},
+				httputil.Get:   {PermDoctorsView, PermAdminAccountsView},
+				httputil.Patch: {PermDoctorsEdit, PermAdminAccountsEdit},
 			},
 			newAccountHandler(config.AuthAPI), nil)))
 	r.Handle(`/admin/api/accounts/{id:[0-9]+}/phones`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Get: []string{PermDoctorsView, PermAdminAccountsView},
+				httputil.Get: {PermDoctorsView, PermAdminAccountsView},
 			},
 			newAccountPhonesListHandler(config.AuthAPI), nil)))
 	r.Handle(`/admin/api/admins`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Get: []string{PermAdminAccountsView},
+				httputil.Get: {PermAdminAccountsView},
 			},
 			newAdminsListAPIHandler(config.AuthAPI), nil)))
 	r.Handle(`/admin/api/admins/{id:[0-9]+}`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Get:  []string{PermAdminAccountsView},
-				httputil.Post: []string{PermAdminAccountsEdit},
+				httputil.Get:  {PermAdminAccountsView},
+				httputil.Post: {PermAdminAccountsEdit},
 			},
 			newAdminsAPIHandler(config.AuthAPI), nil)))
 	r.Handle(`/admin/api/admins/{id:[0-9]+}/groups`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Get:  []string{PermAdminAccountsView},
-				httputil.Post: []string{PermAdminAccountsEdit},
+				httputil.Get:  {PermAdminAccountsView},
+				httputil.Post: {PermAdminAccountsEdit},
 			},
 			newAdminsGroupsAPIHandler(config.AuthAPI), nil)))
 	r.Handle(`/admin/api/admins/{id:[0-9]+}/permissions`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Get:  []string{PermAdminAccountsView},
-				httputil.Post: []string{PermAdminAccountsEdit},
+				httputil.Get:  {PermAdminAccountsView},
+				httputil.Post: {PermAdminAccountsEdit},
 			},
 			newAdminsPermissionsAPIHandler(config.AuthAPI), nil)))
 	r.Handle(`/admin/api/analytics/query`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Post: []string{PermAnalyticsReportEdit},
+				httputil.Post: {PermAnalyticsReportEdit},
 			},
 			newAnalyticsQueryAPIHandler(config.AnalyticsDB), nil)))
 	r.Handle(`/admin/api/analytics/reports`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Get:  []string{PermAnalyticsReportView},
-				httputil.Post: []string{PermAnalyticsReportEdit},
+				httputil.Get:  {PermAnalyticsReportView},
+				httputil.Post: {PermAnalyticsReportEdit},
 			},
 			newAnalyticsReportsListAPIHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/analytics/reports/{id:[0-9]+}`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Get:  []string{PermAnalyticsReportView},
-				httputil.Post: []string{PermAnalyticsReportEdit},
+				httputil.Get:  {PermAnalyticsReportView},
+				httputil.Post: {PermAnalyticsReportEdit},
 			},
 			newAnalyticsReportsAPIHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/analytics/reports/{id:[0-9]+}/run`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Post: []string{PermAnalyticsReportView},
+				httputil.Post: {PermAnalyticsReportView},
 			},
 			newAnalyticsReportsRunAPIHandler(config.DataAPI, config.AnalyticsDB), nil)))
 	r.Handle(`/admin/api/schedmsgs/templates`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Get:  []string{PermAppMessageTemplatesView},
-				httputil.Post: []string{PermAppMessageTemplatesEdit},
+				httputil.Get:  {PermAppMessageTemplatesView},
+				httputil.Post: {PermAppMessageTemplatesEdit},
 			},
 			newSchedMessageTemplatesListAPIHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/schedmsgs/events`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Get: []string{PermAppMessageTemplatesView},
+				httputil.Get: {PermAppMessageTemplatesView},
 			},
 			newSchedMessageEventsListAPIHandler(), nil)))
 	r.Handle(`/admin/api/schedmsgs/templates/{id:[0-9]+}`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Get:    []string{PermAppMessageTemplatesView},
-				httputil.Put:    []string{PermAppMessageTemplatesEdit},
-				httputil.Delete: []string{PermAppMessageTemplatesEdit},
+				httputil.Get:    {PermAppMessageTemplatesView},
+				httputil.Put:    {PermAppMessageTemplatesEdit},
+				httputil.Delete: {PermAppMessageTemplatesEdit},
 			},
 			newSchedMessageTemplatesAPIHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/pathways`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Get:  []string{PermPathwaysView},
-				httputil.Post: []string{PermPathwaysEdit},
+				httputil.Get:  {PermPathwaysView},
+				httputil.Post: {PermPathwaysEdit},
 			},
 			newPathwaysListHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/pathways/menu`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Get: []string{PermPathwaysView},
-				httputil.Put: []string{PermPathwaysEdit},
+				httputil.Get: {PermPathwaysView},
+				httputil.Put: {PermPathwaysEdit},
 			},
 			newPathwayMenuHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/pathways/{id:[0-9]+}`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Get:   []string{PermPathwaysView},
-				httputil.Patch: []string{PermPathwaysEdit},
+				httputil.Get:   {PermPathwaysView},
+				httputil.Patch: {PermPathwaysEdit},
 			},
 			newPathwayHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/pathways/diagnosis_sets`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Get:   []string{PermPathwaysView},
-				httputil.Patch: []string{PermPathwaysEdit},
+				httputil.Get:   {PermPathwaysView},
+				httputil.Patch: {PermPathwaysEdit},
 			},
 			newDiagnosisSetsHandler(config.DataAPI, config.DiagnosisAPI), nil)))
 	r.Handle(`/admin/api/email/test`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Post: []string{PermEmailEdit},
+				httputil.Post: {PermEmailEdit},
 			},
 			newEmailTestSendHandler(config.EmailService, config.Signer, config.WebDomain), nil)))
 
 	// Layout CMS APIS
 	r.Handle(`/admin/api/layouts/versioned_question`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			httputil.Get:  []string{PermLayoutView},
-			httputil.Post: []string{PermLayoutEdit},
+			httputil.Get:  {PermLayoutView},
+			httputil.Post: {PermLayoutEdit},
 		}, newVersionedQuestionHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/layouts/version`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			httputil.Get: []string{PermLayoutView},
+			httputil.Get: {PermLayoutView},
 		}, newLayoutVersionHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/layouts/template`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			httputil.Get: []string{PermLayoutView},
+			httputil.Get: {PermLayoutView},
 		}, newLayoutTemplateHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/layout`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			httputil.Get:  []string{PermLayoutView},
-			httputil.Post: []string{PermLayoutEdit},
+			httputil.Get:  {PermLayoutView},
+			httputil.Post: {PermLayoutEdit},
 		}, newLayoutUploadHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/layout/diagnosis`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			httputil.Get:  []string{PermLayoutView},
-			httputil.Post: []string{PermLayoutEdit},
+			httputil.Get:  {PermLayoutView},
+			httputil.Post: {PermLayoutEdit},
 		}, newDiagnosisDetailsIntakeUploadHandler(config.DataAPI, config.DiagnosisAPI), nil)))
 	r.Handle(`/admin/api/layout/saml`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			httputil.Post: []string{PermLayoutEdit},
+			httputil.Post: {PermLayoutEdit},
 		}, newSAMLAPIHandler(), nil)))
 
 	// STP Interaction
 	r.Handle(`/admin/api/sample_treatment_plan`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			httputil.Get: []string{PermSTPView},
-			httputil.Put: []string{PermSTPEdit},
+			httputil.Get: {PermSTPView},
+			httputil.Put: {PermSTPEdit},
 		}, newSampleTreatmentPlanHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/treatment_plan/csv`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			httputil.Put: []string{PermSTPEdit},
+			httputil.Put: {PermSTPEdit},
 		}, newTreatmentPlanCSVHandler(config.DataAPI, config.ERxAPI), nil)))
 
 	// FTP Interaction
 	r.Handle(`/admin/api/treatment_plan/favorite/{id:[0-9]+}/membership`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			httputil.Get:    []string{PermFTPView},
-			httputil.Post:   []string{PermFTPEdit},
-			httputil.Delete: []string{PermFTPEdit},
+			httputil.Get:    {PermFTPView},
+			httputil.Post:   {PermFTPEdit},
+			httputil.Delete: {PermFTPEdit},
 		}, newFTPMembershipHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/treatment_plan/favorite/{id:[0-9]+}`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			httputil.Get: []string{PermFTPView},
+			httputil.Get: {PermFTPView},
 		}, newFTPHandler(config.DataAPI, config.MediaStore), nil)))
 	r.Handle(`/admin/api/treatment_plan/favorite/global`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			httputil.Get: []string{PermFTPView},
+			httputil.Get: {PermFTPView},
 		}, newGlobalFTPHandler(config.DataAPI, config.MediaStore), nil)))
 
 	// Financial APIs
@@ -425,111 +426,111 @@ func SetupRoutes(r *mux.Router, config *Config) {
 
 	r.Handle("/admin/api/financial/incoming", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			httputil.Get: []string{PermFinancialView},
+			httputil.Get: {PermFinancialView},
 		}, newIncomingFinancialItemsHandler(financialAccess), nil)))
 	r.Handle("/admin/api/financial/outgoing", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			httputil.Get: []string{PermFinancialView},
+			httputil.Get: {PermFinancialView},
 		}, newOutgoingFinancialItemsHandler(financialAccess), nil)))
 
 	r.Handle("/admin/api/financial/skus/visit", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			httputil.Get: []string{PermFinancialView, PermLayoutView},
+			httputil.Get: {PermFinancialView, PermLayoutView},
 		}, newVisitSKUListHandler(config.DataAPI), nil)))
 
 	// Case/Visit Interations
 	r.Handle("/admin/api/case/{caseID:[0-9]+}/visit/{visitID:[0-9]+}", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			httputil.Get: []string{PermCaseView},
+			httputil.Get: {PermCaseView},
 		}, newCaseVisitHandler(config.DataAPI), nil)))
 	r.Handle("/admin/api/case/visit", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			httputil.Get: []string{PermCaseView},
+			httputil.Get: {PermCaseView},
 		}, newCaseVisitsHandler(config.DataAPI), nil)))
 
 	// Event interaction
 	r.Handle("/admin/api/event/server", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			httputil.Get: []string{PermCaseView},
+			httputil.Get: {PermCaseView},
 		}, newServerEventsHandler(config.EventsClient), nil)))
 
 	// Tagging interaction
 	r.Handle("/admin/api/tag", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			httputil.Delete: []string{PermCareCoordinatorEdit},
-			httputil.Get:    []string{PermCareCoordinatorView},
-			httputil.Post:   []string{PermCareCoordinatorEdit},
-			httputil.Put:    []string{PermCareCoordinatorEdit},
+			httputil.Delete: {PermCareCoordinatorEdit},
+			httputil.Get:    {PermCareCoordinatorView},
+			httputil.Post:   {PermCareCoordinatorEdit},
+			httputil.Put:    {PermCareCoordinatorEdit},
 		}, newTagHandler(taggingClient), nil)))
 	r.Handle("/admin/api/tag/saved_search/{id:[0-9]+}", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			httputil.Delete: []string{PermCareCoordinatorEdit},
+			httputil.Delete: {PermCareCoordinatorEdit},
 		}, newTagSavedSearchHandler(taggingClient), nil)))
 	r.Handle("/admin/api/tag/saved_search", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			httputil.Get:  []string{PermCareCoordinatorView},
-			httputil.Post: []string{PermCareCoordinatorEdit},
+			httputil.Get:  {PermCareCoordinatorView},
+			httputil.Post: {PermCareCoordinatorEdit},
 		}, newTagSavedSearchesHandler(taggingClient), nil)))
 
 	// Promotion Interaction
 	r.Handle("/admin/api/promotion", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			httputil.Get:  []string{PermMarketingView},
-			httputil.Post: []string{PermMarketingEdit},
+			httputil.Get:  {PermMarketingView},
+			httputil.Post: {PermMarketingEdit},
 		}, newPromotionsHandler(config.DataAPI), nil)))
 	r.Handle("/admin/api/promotion/{id:[0-9]+}", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			httputil.Put: []string{PermMarketingEdit},
+			httputil.Put: {PermMarketingEdit},
 		}, newPromotionHandler(config.DataAPI), nil)))
 	r.Handle("/admin/api/promotion/group", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			httputil.Get: []string{PermMarketingView},
+			httputil.Get: {PermMarketingView},
 		}, newPromotionGroupsHandler(config.DataAPI), nil)))
 	r.Handle("/admin/api/promotion/referral_route", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			httputil.Get:  []string{PermMarketingView},
-			httputil.Post: []string{PermMarketingEdit},
+			httputil.Get:  {PermMarketingView},
+			httputil.Post: {PermMarketingEdit},
 		}, newPromotionReferralRoutesHandler(config.DataAPI), nil)))
 	r.Handle("/admin/api/promotion/referral_route/{id:[0-9]+}", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			httputil.Put: []string{PermMarketingEdit},
+			httputil.Put: {PermMarketingEdit},
 		}, newPromotionReferralRouteHandler(config.DataAPI), nil)))
 	r.Handle("/admin/api/promotion/referral_template", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			httputil.Get:  []string{PermMarketingView},
-			httputil.Post: []string{PermMarketingEdit},
-			httputil.Put:  []string{PermMarketingEdit},
+			httputil.Get:  {PermMarketingView},
+			httputil.Post: {PermMarketingEdit},
+			httputil.Put:  {PermMarketingEdit},
 		}, newReferralProgramTemplateHandler(config.DataAPI), nil)))
 
 	// Feedback templates
 	r.Handle("/admin/api/feedback/template_types", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			httputil.Get: []string{PermMarketingView},
+			httputil.Get: {PermMarketingView},
 		}, newFeedbackTemplateTypesHandler(), nil)))
 
 	feedbackClient := feedback.NewDAL(config.ApplicationDB)
 	r.Handle("/admin/api/feedback/template/{id:[0-9]+}", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			httputil.Get: []string{PermMarketingView},
+			httputil.Get: {PermMarketingView},
 		}, newFeedbackTemplateHandler(feedbackClient), nil)))
 	r.Handle("/admin/api/feedback/template", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			httputil.Put: []string{PermMarketingEdit},
+			httputil.Put: {PermMarketingEdit},
 		}, newFeedbackTemplateHandler(feedbackClient), nil)))
 	r.Handle("/admin/api/feedback/template/list", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			httputil.Get: []string{PermMarketingView},
+			httputil.Get: {PermMarketingView},
 		}, newFeedbackTemplateListHandler(feedbackClient), nil)))
 	r.Handle("/admin/api/feedback/rating_config", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			httputil.Get: []string{PermMarketingView},
-			httputil.Put: []string{PermMarketingEdit},
+			httputil.Get: {PermMarketingView},
+			httputil.Put: {PermMarketingEdit},
 		}, newRatingLevelFeedbackConfigHandler(feedbackClient), nil)))
 
 	// Patient Interaction
 	r.Handle("/admin/api/patient/{id:[0-9]+}/account/needs_id_verification", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			httputil.Post: []string{PermAccountEdit},
+			httputil.Post: {PermAccountEdit},
 		}, newPatientAccountNeedsVerifyIDHandler(identificationService), nil)))
 
 	if !environment.IsProd() {

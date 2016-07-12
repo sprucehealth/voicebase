@@ -6,8 +6,6 @@ import (
 	"strconv"
 	"strings"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/environment"
@@ -23,7 +21,7 @@ type emailOptoutHandler struct {
 	template *template.Template
 }
 
-func newEmailOptoutHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, signer *sig.Signer, templateLoader *www.TemplateLoader) httputil.ContextHandler {
+func newEmailOptoutHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, signer *sig.Signer, templateLoader *www.TemplateLoader) http.Handler {
 	t := templateLoader.MustLoadTemplate("home/email-optout.html", "home/base.html", nil)
 	return httputil.SupportedMethods(&emailOptoutHandler{
 		dataAPI:  dataAPI,
@@ -33,7 +31,7 @@ func newEmailOptoutHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, signer *sig
 	}, httputil.Get, httputil.Post)
 }
 
-func (h *emailOptoutHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *emailOptoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	tmplCtx := &struct {
 		Unsubscribed bool
 		Email        string

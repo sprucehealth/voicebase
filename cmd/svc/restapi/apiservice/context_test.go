@@ -1,9 +1,8 @@
 package apiservice
 
 import (
-	"testing"
-
 	"context"
+	"testing"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"

@@ -4,13 +4,10 @@ import (
 	"net/http"
 	"time"
 
-	"context"
-
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/twilio"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
 )
 
@@ -42,7 +39,7 @@ type twilioRequestHandler struct {
 }
 
 func NewTwilioRequestHandler(eventsHandler twilio.EventHandler,
-	metricsRegistry metrics.Registry) httputil.ContextHandler {
+	metricsRegistry metrics.Registry) http.Handler {
 
 	statRequests := metrics.NewCounter()
 	statResponseErrors := metrics.NewCounter()
@@ -81,7 +78,7 @@ func NewTwilioRequestHandler(eventsHandler twilio.EventHandler,
 	}
 }
 
-func (t *twilioRequestHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (t *twilioRequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	t.statRequests.Inc(1)
 	st := time.Now()
 	defer func() {
@@ -96,6 +93,7 @@ func (t *twilioRequestHandler) ServeHTTP(ctx context.Context, w http.ResponseWri
 		return
 	}
 
+	ctx := r.Context()
 	event := mux.Vars(ctx)["event"]
 	twilioEvent, ok := twilioEventMapper[event]
 	if !ok {

@@ -7,8 +7,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/libs/test"
@@ -64,7 +62,7 @@ func testNotifyMeHandler(httpVerb string, t *testing.T) {
 	r.Header.Set("Content-Type", "application/json")
 
 	res := httptest.NewRecorder()
-	h.ServeHTTP(context.Background(), res, r)
+	h.ServeHTTP(res, r)
 	test.OK(t, err)
 	test.HTTPResponseCode(t, http.StatusOK, res)
 

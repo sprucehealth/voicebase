@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
@@ -19,21 +17,21 @@ type analyticsReportsRunAPIHandler struct {
 	db      *sql.DB
 }
 
-func newAnalyticsReportsRunAPIHandler(dataAPI api.DataAPI, db *sql.DB) httputil.ContextHandler {
+func newAnalyticsReportsRunAPIHandler(dataAPI api.DataAPI, db *sql.DB) http.Handler {
 	return httputil.SupportedMethods(&analyticsReportsRunAPIHandler{
 		dataAPI: dataAPI,
 		db:      db,
 	}, httputil.Post)
 }
 
-func (h *analyticsReportsRunAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	reportID, err := strconv.ParseInt(mux.Vars(ctx)["id"], 10, 64)
+func (h *analyticsReportsRunAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	reportID, err := strconv.ParseInt(mux.Vars(r.Context())["id"], 10, 64)
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return
 	}
 
-	account := www.MustCtxAccount(ctx)
+	account := www.MustCtxAccount(r.Context())
 	audit.LogAction(account.ID, "AdminAPI", "AnalyticsRunReport", map[string]interface{}{
 		"report_id": reportID,
 	})

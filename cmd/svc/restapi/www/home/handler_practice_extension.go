@@ -5,8 +5,6 @@ import (
 	"html/template"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -18,7 +16,7 @@ type practiceExtensionHandler struct {
 	ctx      interface{}
 }
 
-func newPracticeExtensionStaticHandler(templateLoader *www.TemplateLoader, template string, title string, ctxFun func() interface{}) httputil.ContextHandler {
+func newPracticeExtensionStaticHandler(templateLoader *www.TemplateLoader, template string, title string, ctxFun func() interface{}) http.Handler {
 	var ctx interface{}
 	if ctxFun != nil {
 		ctx = ctxFun()
@@ -30,7 +28,7 @@ func newPracticeExtensionStaticHandler(templateLoader *www.TemplateLoader, templ
 	}, httputil.Get)
 }
 
-func (h *practiceExtensionHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *practiceExtensionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	www.TemplateResponse(w, http.StatusOK, h.template, &struct {
 		Environment string
 		Title       template.HTML

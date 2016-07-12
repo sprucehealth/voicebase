@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -24,7 +22,7 @@ type reachedConsentStepPostRequest struct {
 // NewReachedConsentStep returns a new handler that is called by the app when
 // a patient younger than 18 reaches the end of their visit and needs parental
 // consent to continue further.
-func NewReachedConsentStep(dataAPI api.DataAPI) httputil.ContextHandler {
+func NewReachedConsentStep(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(
@@ -34,27 +32,27 @@ func NewReachedConsentStep(dataAPI api.DataAPI) httputil.ContextHandler {
 			api.RolePatient), httputil.Post)
 }
 
-func (h *reachedConsentStepHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *reachedConsentStepHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var req reachedConsentStepPostRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		apiservice.WriteBadRequestError(ctx, err, w, r)
+		apiservice.WriteBadRequestError(err, w, r)
 		return
 	}
 
-	patientID, err := h.dataAPI.GetPatientIDFromAccountID(apiservice.MustCtxAccount(ctx).ID)
+	patientID, err := h.dataAPI.GetPatientIDFromAccountID(apiservice.MustCtxAccount(r.Context()).ID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 	visit, err := h.dataAPI.GetPatientVisitFromID(req.VisitID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	// Verify the visit is owned by the patient making the request
 	if patientID != visit.PatientID {
-		apiservice.WriteAccessNotAllowedError(ctx, w, r)
+		apiservice.WriteAccessNotAllowedError(w, r)
 		return
 	}
 
@@ -65,7 +63,7 @@ func (h *reachedConsentStepHandler) ServeHTTP(ctx context.Context, w http.Respon
 		apiservice.WriteJSONSuccess(w)
 		return
 	default:
-		apiservice.WriteValidationError(ctx, "The visit is not open", w, r)
+		apiservice.WriteValidationError("The visit is not open", w, r)
 		return
 	}
 	_, err = h.dataAPI.UpdatePatientVisit(visit.ID.Int64(), &api.PatientVisitUpdate{
@@ -73,7 +71,7 @@ func (h *reachedConsentStepHandler) ServeHTTP(ctx context.Context, w http.Respon
 		RequiredStatus: ptr.String(common.PVStatusOpen),
 	})
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 	apiservice.WriteJSONSuccess(w)

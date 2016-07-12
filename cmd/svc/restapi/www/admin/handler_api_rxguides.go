@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -20,20 +18,20 @@ type rxGuidesAPIHandler struct {
 	dataAPI api.DataAPI
 }
 
-func newRXGuideAPIHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func newRXGuideAPIHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&rxGuidesAPIHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get)
 }
 
-func (h *rxGuidesAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.ParseInt(mux.Vars(ctx)["id"], 10, 64)
+func (h *rxGuidesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(mux.Vars(r.Context())["id"], 10, 64)
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
 
-	account := www.MustCtxAccount(ctx)
+	account := www.MustCtxAccount(r.Context())
 	audit.LogAction(account.ID, "AdminAPI", "GetRXGuide", map[string]interface{}{"id": id})
 
 	details, err := h.dataAPI.DrugDetails(id)

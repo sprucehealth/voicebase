@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"strings"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -54,7 +52,7 @@ func (f *claimsHistoryForm) Validate() map[string]string {
 	return errors
 }
 
-func newClaimsHistoryHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store, templateLoader *www.TemplateLoader) httputil.ContextHandler {
+func newClaimsHistoryHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&claimsHistoryHandler{
 		router:   router,
 		dataAPI:  dataAPI,
@@ -66,8 +64,8 @@ func newClaimsHistoryHandler(router *mux.Router, dataAPI api.DataAPI, store stor
 	}, httputil.Get, httputil.Post)
 }
 
-func (h *claimsHistoryHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	account := www.MustCtxAccount(ctx)
+func (h *claimsHistoryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(r.Context())
 	doctor, err := h.dataAPI.GetDoctorFromAccountID(account.ID)
 	if err != nil {
 		www.InternalServerError(w, r, err)
@@ -130,7 +128,7 @@ func (h *claimsHistoryHandler) ServeHTTP(ctx context.Context, w http.ResponseWri
 			return
 		}
 		policies := []insurancePolicy{
-			insurancePolicy{Company: attr[api.AttrCurrentLiabilityInsurer]},
+			{Company: attr[api.AttrCurrentLiabilityInsurer]},
 		}
 		if in := attr[api.AttrPreviousLiabilityInsurers]; in != "" {
 			for _, company := range strings.Split(in, "\n") {

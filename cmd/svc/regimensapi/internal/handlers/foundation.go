@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/responses"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -23,29 +21,29 @@ type foundationHandler struct {
 }
 
 // NewFoundation returns an initialized instance of foundationHandler
-func NewFoundation(svc foundationProvider) httputil.ContextHandler {
+func NewFoundation(svc foundationProvider) http.Handler {
 	return httputil.SupportedMethods(&foundationHandler{svc: svc}, httputil.Get)
 }
 
-func (h *foundationHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	id, ok := mux.Vars(ctx)["id"]
+func (h *foundationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	id, ok := mux.Vars(r.Context())["id"]
 	if !ok {
-		apiservice.WriteResourceNotFoundError(ctx, "an id must be provided", w, r)
+		apiservice.WriteResourceNotFoundError("an id must be provided", w, r)
 		return
 	}
 
 	switch r.Method {
 	case httputil.Get:
-		rd, err := h.parseGETRequest(ctx, r)
+		rd, err := h.parseGETRequest(r)
 		if err != nil {
-			apiservice.WriteBadRequestError(ctx, err, w, r)
+			apiservice.WriteBadRequestError(err, w, r)
 			return
 		}
-		h.serveGET(ctx, w, r, rd, id)
+		h.serveGET(w, r, rd, id)
 	}
 }
 
-func (h *foundationHandler) parseGETRequest(ctx context.Context, r *http.Request) (*responses.FoundationGETRequest, error) {
+func (h *foundationHandler) parseGETRequest(r *http.Request) (*responses.FoundationGETRequest, error) {
 	rd := &responses.FoundationGETRequest{}
 	if err := r.ParseForm(); err != nil {
 		return nil, err
@@ -58,10 +56,10 @@ func (h *foundationHandler) parseGETRequest(ctx context.Context, r *http.Request
 	return rd, nil
 }
 
-func (h *foundationHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request, rd *responses.FoundationGETRequest, id string) {
+func (h *foundationHandler) serveGET(w http.ResponseWriter, r *http.Request, rd *responses.FoundationGETRequest, id string) {
 	foundations, err := h.svc.FoundationOf(id, rd.MaxResults)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 	httputil.JSONResponse(w, http.StatusOK, &responses.FoundationGETResponse{FoundationOf: foundations})

@@ -1,11 +1,10 @@
 package patient_file
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -62,7 +61,7 @@ func TestPatientCapabilitiesHandler(t *testing.T) {
 
 	// Missing app info
 	w := httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.HTTPResponseCode(t, http.StatusNotFound, w)
 
 	// Missing app info
@@ -71,7 +70,7 @@ func TestPatientCapabilitiesHandler(t *testing.T) {
 		Version:  &encoding.Version{Major: 1, Minor: 0, Patch: 0},
 	}
 	w = httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.HTTPResponseCode(t, http.StatusOK, w)
 	test.Equals(t, "{\"features\":[\"feature1\"]}\n", w.Body.String())
 }

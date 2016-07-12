@@ -3,8 +3,6 @@ package promotions
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -20,7 +18,7 @@ type creditsRequestData struct {
 }
 
 // NewPatientCreditsHandler returns a new initialzed instance of the creditsHandler
-func NewPatientCreditsHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func NewPatientCreditsHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(&creditsHandler{dataAPI: dataAPI}),
@@ -28,16 +26,16 @@ func NewPatientCreditsHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 		httputil.Put)
 }
 
-func (c *creditsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (c *creditsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var rd creditsRequestData
 
 	if err := apiservice.DecodeRequestData(&rd, r); err != nil {
-		apiservice.WriteValidationError(ctx, err.Error(), w, r)
+		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
 
 	if err := c.dataAPI.UpdateCredit(rd.AccountID, rd.Credit, USDUnit.String()); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

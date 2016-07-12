@@ -12,28 +12,26 @@ import (
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/mux"
-
-	"context"
 )
 
 type thumbnailHandler struct {
 	svc service.Service
 }
 
-func (h *thumbnailHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *thumbnailHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	// TODO: Remove this HEAD/GET hack once we have consistent resize typing
 	case httputil.Head:
-		h.serveGET(ctx, w, r)
+		h.serveGET(w, r)
 	case httputil.Get:
-		h.serveGET(ctx, w, r)
+		h.serveGET(w, r)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
 }
 
-func (h *thumbnailHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	mediaID, err := dal.ParseMediaID(mux.Vars(ctx)["id"])
+func (h *thumbnailHandler) serveGET(w http.ResponseWriter, r *http.Request) {
+	mediaID, err := dal.ParseMediaID(mux.Vars(r.Context())["id"])
 	if err != nil {
 		http.Error(w, "Cannot parse media id", http.StatusBadRequest)
 		return
@@ -44,7 +42,7 @@ func (h *thumbnailHandler) serveGET(ctx context.Context, w http.ResponseWriter, 
 		return
 	}
 
-	rc, meta, err := h.svc.GetThumbnailReader(ctx, mediaID, imageSize)
+	rc, meta, err := h.svc.GetThumbnailReader(r.Context(), mediaID, imageSize)
 	if errors.Cause(err) == dal.ErrNotFound || errors.Cause(err) == media.ErrNotFound {
 		http.NotFound(w, r)
 		return

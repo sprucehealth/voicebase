@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/mediactx"
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/service"
@@ -21,10 +19,10 @@ type authHandler struct {
 	auth   auth.AuthClient
 	signer *urlutil.Signer
 	svc    service.Service
-	h      httputil.ContextHandler
+	h      http.Handler
 }
 
-func authenticationRequired(h httputil.ContextHandler, auth auth.AuthClient, signer *urlutil.Signer, svc service.Service) httputil.ContextHandler {
+func authenticationRequired(h http.Handler, auth auth.AuthClient, signer *urlutil.Signer, svc service.Service) http.Handler {
 	return &authHandler{
 		auth:   auth,
 		signer: signer,
@@ -33,7 +31,9 @@ func authenticationRequired(h httputil.ContextHandler, auth auth.AuthClient, sig
 	}
 }
 
-func (h *authHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *authHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	if r.Method == httputil.Get || r.Method == httputil.Head {
 		// Check to see if this is public media. If so set the appropriate flags and pass through
 		mediaID, err := dal.ParseMediaID(mux.Vars(ctx)[idParamName])
@@ -47,7 +47,7 @@ func (h *authHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *h
 			internalError(w, err)
 		} else if public {
 			ctx = mediactx.WithRequiresAuthorization(ctx, false)
-			h.h.ServeHTTP(ctx, w, r)
+			h.h.ServeHTTP(w, r.WithContext(ctx))
 			return
 		}
 	}
@@ -98,5 +98,5 @@ func (h *authHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *h
 		ctx = mediactx.WithAuthToken(ctx, c.Value)
 		ctx = mediactx.WithAccount(ctx, res.Account)
 	}
-	h.h.ServeHTTP(ctx, w, r)
+	h.h.ServeHTTP(w, r.WithContext(ctx))
 }

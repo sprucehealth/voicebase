@@ -9,8 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/responses"
@@ -51,7 +49,7 @@ func TestPromotionReferralRoutesHandlerGETQueriesDataLayer(t *testing.T) {
 	})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, &promotionReferralRoutesGETResponse{PromotionReferralRoutes: []*responses.PromotionReferralRoute{responses.TransformPromotionReferralRoute(route)}})
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
 }
@@ -62,7 +60,7 @@ func TestPromotionReferralRoutesHandlerGETRequiredLifecycle(t *testing.T) {
 	handler := newPromotionReferralRoutesHandler(&mockedDataAPI_promotionReferralRoutesHandler{})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusBadRequest, struct{}{})
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 }
 
@@ -74,7 +72,7 @@ func TestPromotionReferralRoutesHandlerGETNoRecords(t *testing.T) {
 	})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, &promotionReferralRoutesGETResponse{PromotionReferralRoutes: []*responses.PromotionReferralRoute{}})
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
 }
@@ -87,7 +85,7 @@ func TestPromotionReferralRoutesHandlerGETQueryErr(t *testing.T) {
 	})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusInternalServerError, struct{}{})
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 }
 
@@ -104,7 +102,7 @@ func TestPromotionReferralRoutesHandlerPOSTQueriesDataLayer(t *testing.T) {
 	handler := newPromotionReferralRoutesHandler(mh)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, struct{}{})
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
 	test.Equals(t, int64(1), mh.insertPromotionReferralRoutesParam.PromotionCodeID)
@@ -120,7 +118,7 @@ func TestPromotionReferralRoutesHandlerPOSTRequiredParams(t *testing.T) {
 	handler := newPromotionReferralRoutesHandler(&mockedDataAPI_promotionReferralRoutesHandler{})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	www.APIBadRequestError(expectedWriter, r, errors.New("promotion_code_id, priority, lifecycle required").Error())
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
 }
@@ -140,7 +138,7 @@ func TestPromotionReferralRoutesHandlerPOSTDataLayerErr(t *testing.T) {
 	handler := newPromotionReferralRoutesHandler(mh)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	www.APIInternalError(expectedWriter, r, errors.New("Foo"))
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
 }

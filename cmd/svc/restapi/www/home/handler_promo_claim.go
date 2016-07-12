@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/analytics"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -47,7 +45,7 @@ type promoClaimHandler struct {
 	refTemplate     *template.Template
 }
 
-func newPromoClaimHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, branchClient branch.Client, analyticsLogger analytics.Logger, templateLoader *www.TemplateLoader) httputil.ContextHandler {
+func newPromoClaimHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, branchClient branch.Client, analyticsLogger analytics.Logger, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&promoClaimHandler{
 		dataAPI:         dataAPI,
 		authAPI:         authAPI,
@@ -57,8 +55,8 @@ func newPromoClaimHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, branchClient
 	}, httputil.Get, httputil.Post)
 }
 
-func (h *promoClaimHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	code, err := h.dataAPI.LookupPromoCode(mux.Vars(ctx)["code"])
+func (h *promoClaimHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	code, err := h.dataAPI.LookupPromoCode(mux.Vars(r.Context())["code"])
 	if api.IsErrNotFound(err) {
 		tmplCtx := &refContext{
 			Message: "Sorry, the promotion or referral code is no longer active.",

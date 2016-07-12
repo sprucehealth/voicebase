@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -26,23 +24,23 @@ type createPathwayRequest struct {
 	Pathway *common.Pathway `json:"pathway"`
 }
 
-func newPathwaysListHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func newPathwaysListHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&pathwaysListHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get, httputil.Post)
 }
 
-func (h *pathwaysListHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *pathwaysListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		h.get(ctx, w, r)
+		h.get(w, r)
 	case "POST":
-		h.post(ctx, w, r)
+		h.post(w, r)
 	}
 }
 
-func (h *pathwaysListHandler) get(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	account := www.MustCtxAccount(ctx)
+func (h *pathwaysListHandler) get(w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(r.Context())
 	audit.LogAction(account.ID, "AdminAPI", "GetPathwayList", nil)
 
 	var activeOnly bool
@@ -69,8 +67,8 @@ func (h *pathwaysListHandler) get(ctx context.Context, w http.ResponseWriter, r 
 	httputil.JSONResponse(w, http.StatusOK, &pathwaysListResponse{Pathways: pathways})
 }
 
-func (h *pathwaysListHandler) post(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	account := www.MustCtxAccount(ctx)
+func (h *pathwaysListHandler) post(w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(r.Context())
 	audit.LogAction(account.ID, "AdminAPI", "CreatePathway", nil)
 
 	var req createPathwayRequest

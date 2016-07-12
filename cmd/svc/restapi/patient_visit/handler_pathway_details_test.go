@@ -1,14 +1,13 @@
 package patient_visit
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -202,7 +201,7 @@ func TestPathwayDetailsHandler(t *testing.T) {
 		t.Fatal(err)
 	}
 	w := httptest.NewRecorder()
-	h.ServeHTTP(context.Background(), w, r)
+	h.ServeHTTP(w, r)
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected status 200 got %d", w.Code)
 	}
@@ -255,7 +254,7 @@ func TestPathwayDetailsHandler(t *testing.T) {
 		t.Fatal(err)
 	}
 	w = httptest.NewRecorder()
-	h.ServeHTTP(context.Background(), w, r)
+	h.ServeHTTP(w, r)
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected status 200 got %d", w.Code)
 	}
@@ -293,7 +292,7 @@ func TestPathwayDetailsHandler(t *testing.T) {
 	}
 	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
 	w = httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected status 200 got %d", w.Code)
 	}
@@ -343,7 +342,7 @@ func TestPathwayDetailsHandler(t *testing.T) {
 		t.Fatal(err)
 	}
 	w = httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected status 200 got %d", w.Code)
 	}
@@ -379,7 +378,7 @@ func TestPathwayDetailsHandler(t *testing.T) {
 		t.Fatal(err)
 	}
 	w = httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected status 200 got %d", w.Code)
 	}

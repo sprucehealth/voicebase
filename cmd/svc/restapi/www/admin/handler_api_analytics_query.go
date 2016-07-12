@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -29,20 +27,20 @@ type analyticsQueryAPIHandler struct {
 	db *sql.DB
 }
 
-func newAnalyticsQueryAPIHandler(db *sql.DB) httputil.ContextHandler {
+func newAnalyticsQueryAPIHandler(db *sql.DB) http.Handler {
 	return httputil.SupportedMethods(&analyticsQueryAPIHandler{
 		db: db,
 	}, httputil.Post)
 }
 
-func (h *analyticsQueryAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *analyticsQueryAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var req analyticsRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		www.APIInternalError(w, r, err)
 		return
 	}
 
-	account := www.MustCtxAccount(ctx)
+	account := www.MustCtxAccount(r.Context())
 	audit.LogAction(account.ID, "AdminAPI", "AnalyticsQuery", map[string]interface{}{
 		"query":  req.Query,
 		"params": req.Params,

@@ -8,8 +8,6 @@ import (
 	"net/http"
 	"strings"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/info_intake"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
@@ -31,7 +29,7 @@ type layoutUploadHandler struct {
 	dataAPI api.DataAPI
 }
 
-func newLayoutUploadHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func newLayoutUploadHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&layoutUploadHandler{dataAPI: dataAPI}, httputil.Post)
 }
 
@@ -42,7 +40,7 @@ type layoutInfo struct {
 	UpgradeType encoding.VersionComponent
 }
 
-func (h *layoutUploadHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseMultipartForm(maxMemoryUsage); err != nil {
 		www.APIBadRequestError(w, r, "Failed to parse form.")
 		return

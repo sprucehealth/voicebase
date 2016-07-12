@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
@@ -117,7 +115,7 @@ func (r *credentialsForm) Validate() map[string]string {
 	return errors
 }
 
-func newCredentialsHandler(router *mux.Router, dataAPI api.DataAPI, templateLoader *www.TemplateLoader) httputil.ContextHandler {
+func newCredentialsHandler(router *mux.Router, dataAPI api.DataAPI, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&credentialsHandler{
 		router:   router,
 		dataAPI:  dataAPI,
@@ -126,8 +124,8 @@ func newCredentialsHandler(router *mux.Router, dataAPI api.DataAPI, templateLoad
 	}, httputil.Get, httputil.Post)
 }
 
-func (h *credentialsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	account := www.MustCtxAccount(ctx)
+func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(r.Context())
 
 	form := &credentialsForm{}
 	var errors map[string]string
@@ -262,7 +260,7 @@ func (h *credentialsHandler) ServeHTTP(ctx context.Context, w http.ResponseWrite
 		www.InternalServerError(w, r, err)
 	}
 	states = append([]*common.State{
-		&common.State{
+		{
 			Name:         "Select state",
 			Abbreviation: "",
 		}}, states...)

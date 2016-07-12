@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"strings"
 
-	"context"
-
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -57,7 +55,7 @@ func NewAuthenticationHandler(
 	twoFactorExpiration int,
 	rateLimiter ratelimit.KeyedRateLimiter,
 	metricsRegistry metrics.Registry,
-) httputil.ContextHandler {
+) http.Handler {
 	h := &authenticationHandler{
 		dataAPI:              dataAPI,
 		authAPI:              authAPI,
@@ -79,7 +77,7 @@ func NewAuthenticationHandler(
 	return httputil.SupportedMethods(apiservice.NoAuthorizationRequired(h), httputil.Post)
 }
 
-func (h *authenticationHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *authenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.statLoginAttempted.Inc(1)
 
 	// rate limit on IP address (prevent scanning accounts)
@@ -87,13 +85,13 @@ func (h *authenticationHandler) ServeHTTP(ctx context.Context, w http.ResponseWr
 		golog.Errorf("Rate limit check failed: %s", err.Error())
 	} else if !ok {
 		h.statLoginRateLimited.Inc(1)
-		apiservice.WriteAccessNotAllowedError(ctx, w, r)
+		apiservice.WriteAccessNotAllowedError(w, r)
 		return
 	}
 
 	var requestData AuthenticationRequestData
 	if err := apiservice.DecodeRequestData(&requestData, r); err != nil {
-		apiservice.WriteValidationError(ctx, err.Error(), w, r)
+		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
 
@@ -104,7 +102,7 @@ func (h *authenticationHandler) ServeHTTP(ctx context.Context, w http.ResponseWr
 		golog.Errorf("Rate limit check failed: %s", err.Error())
 	} else if !ok {
 		h.statLoginRateLimited.Inc(1)
-		apiservice.WriteAccessNotAllowedError(ctx, w, r)
+		apiservice.WriteAccessNotAllowedError(w, r)
 		return
 	}
 
@@ -115,7 +113,7 @@ func (h *authenticationHandler) ServeHTTP(ctx context.Context, w http.ResponseWr
 			apiservice.WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
 			return
 		}
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -129,20 +127,20 @@ func (h *authenticationHandler) ServeHTTP(ctx context.Context, w http.ResponseWr
 		appHeaders := device.ExtractSpruceHeaders(w, r)
 		device, err := h.authAPI.GetAccountDevice(account.ID, appHeaders.DeviceID)
 		if err != nil && !api.IsErrNotFound(err) {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 		if device == nil || !device.Verified {
 			// Create a temporary token to the client can use to authenticate the code submission request
 			token, err := h.authAPI.CreateTempToken(account.ID, h.twoFactorExpiration, api.TwoFactorAuthToken, "")
 			if err != nil {
-				apiservice.WriteError(ctx, err, w, r)
+				apiservice.WriteError(err, w, r)
 				return
 			}
 
 			phone, err := auth.SendTwoFactorCode(h.authAPI, h.smsAPI, h.fromNumber, account.ID, appHeaders.DeviceID, h.twoFactorExpiration)
 			if err != nil {
-				apiservice.WriteError(ctx, err, w, r)
+				apiservice.WriteError(err, w, r)
 				return
 			}
 
@@ -164,13 +162,13 @@ func (h *authenticationHandler) ServeHTTP(ctx context.Context, w http.ResponseWr
 	}
 	token, err := h.authAPI.CreateToken(account.ID, api.Mobile, ctOpt)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	doctor, err := h.dataAPI.GetDoctorFromAccountID(account.ID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

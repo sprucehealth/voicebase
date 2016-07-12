@@ -3,8 +3,6 @@ package patient_case
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/address"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -27,7 +25,7 @@ type homeResponse struct {
 	Items            []common.ClientView `json:"items"`
 }
 
-func NewHomeHandler(dataAPI api.DataAPI, feedbackClient feedback.DAL, apiCDNDomain, webDomain string, addressValidationAPI address.Validator) httputil.ContextHandler {
+func NewHomeHandler(dataAPI api.DataAPI, feedbackClient feedback.DAL, apiCDNDomain, webDomain string, addressValidationAPI address.Validator) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(&homeHandler{
 			dataAPI:              dataAPI,
@@ -38,29 +36,29 @@ func NewHomeHandler(dataAPI api.DataAPI, feedbackClient feedback.DAL, apiCDNDoma
 		}), httputil.Get, httputil.Delete)
 }
 
-func (h *homeHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case httputil.Get:
-		h.get(ctx, w, r)
+		h.get(w, r)
 	case httputil.Delete:
-		h.delete(ctx, w, r)
+		h.delete(w, r)
 	}
 }
 
-func (h *homeHandler) delete(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *homeHandler) delete(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
 
 	if err := h.feedbackClient.UpdatePatientFeedback(id, &feedback.PatientFeedbackUpdate{
 		Dismissed: ptr.Bool(true),
 	}); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	apiservice.WriteJSONSuccess(w)
 }
 
-func (h *homeHandler) get(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *homeHandler) get(w http.ResponseWriter, r *http.Request) {
 	// use stateCode or resolve zipcode to city/state information
 	zipcode := r.FormValue("zip_code")
 	stateCode := r.FormValue("state_code")
@@ -68,22 +66,22 @@ func (h *homeHandler) get(ctx context.Context, w http.ResponseWriter, r *http.Re
 	var err error
 	if stateCode == "" {
 		if zipcode == "" {
-			apiservice.WriteValidationError(ctx, "Enter a valid zipcode or state", w, r)
+			apiservice.WriteValidationError("Enter a valid zipcode or state", w, r)
 			return
 		}
 		cityStateInfo, err = h.addressValidationAPI.ZipcodeLookup(zipcode)
 		if err != nil {
 			if err == address.ErrInvalidZipcode {
-				apiservice.WriteValidationError(ctx, "Enter a valid zipcode", w, r)
+				apiservice.WriteValidationError("Enter a valid zipcode", w, r)
 				return
 			}
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 	} else {
 		state, err := h.dataAPI.State(stateCode)
 		if err != nil {
-			apiservice.WriteValidationError(ctx, "Enter valid state code", w, r)
+			apiservice.WriteValidationError("Enter valid state code", w, r)
 			return
 		}
 		cityStateInfo = &address.CityState{
@@ -94,17 +92,17 @@ func (h *homeHandler) get(ctx context.Context, w http.ResponseWriter, r *http.Re
 
 	isSpruceAvailable, err := h.dataAPI.SpruceAvailableInState(cityStateInfo.State)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	account, ok := apiservice.CtxAccount(ctx)
+	account, ok := apiservice.CtxAccount(r.Context())
 	if !ok {
 		// Not authenticated
 
-		items, err := getHomeCards(ctx, nil, nil, cityStateInfo, isSpruceAvailable, h.dataAPI, h.feedbackClient, h.apiCDNDomain, h.webDomain, r)
+		items, err := getHomeCards(r.Context(), nil, nil, cityStateInfo, isSpruceAvailable, h.dataAPI, h.feedbackClient, h.apiCDNDomain, h.webDomain, r)
 		if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 
@@ -117,13 +115,13 @@ func (h *homeHandler) get(ctx context.Context, w http.ResponseWriter, r *http.Re
 	// Authenticated
 
 	if account.Role != api.RolePatient {
-		apiservice.WriteAccessNotAllowedError(ctx, w, r)
+		apiservice.WriteAccessNotAllowedError(w, r)
 		return
 	}
 
 	patient, err := h.dataAPI.GetPatientFromAccountID(account.ID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -133,13 +131,13 @@ func (h *homeHandler) get(ctx context.Context, w http.ResponseWriter, r *http.Re
 		common.PCStatusInactive.String(),
 		common.PCStatusPreSubmissionTriage.String()})
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	items, err := getHomeCards(ctx, patient, patientCases, cityStateInfo, isSpruceAvailable, h.dataAPI, h.feedbackClient, h.apiCDNDomain, h.webDomain, r)
+	items, err := getHomeCards(r.Context(), patient, patientCases, cityStateInfo, isSpruceAvailable, h.dataAPI, h.feedbackClient, h.apiCDNDomain, h.webDomain, r)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

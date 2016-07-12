@@ -1,10 +1,9 @@
 package apiservice
 
 import (
+	"context"
 	"fmt"
 	"time"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"

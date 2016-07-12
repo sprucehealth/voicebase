@@ -3,8 +3,6 @@ package patient
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/address"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -58,7 +56,7 @@ func (r *UpdateRequest) transformRequestToUpdate(dataAPI api.DataAPI, validator 
 }
 
 // NewUpdateHandler returns an initialized instance of UpdateHandler
-func NewUpdateHandler(dataAPI api.DataAPI, addressValidator address.Validator) httputil.ContextHandler {
+func NewUpdateHandler(dataAPI api.DataAPI, addressValidator address.Validator) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(&UpdateHandler{
@@ -69,21 +67,21 @@ func NewUpdateHandler(dataAPI api.DataAPI, addressValidator address.Validator) h
 		), httputil.Post, httputil.Put)
 }
 
-func (h *UpdateHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *UpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
-		apiservice.WriteBadRequestError(ctx, err, w, r)
+		apiservice.WriteBadRequestError(err, w, r)
 		return
 	}
 
 	req := &UpdateRequest{}
 	if err := apiservice.DecodeRequestData(req, r); err != nil {
-		apiservice.WriteValidationError(ctx, err.Error(), w, r)
+		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
 
-	patientID, err := h.dataAPI.GetPatientIDFromAccountID(apiservice.MustCtxAccount(ctx).ID)
+	patientID, err := h.dataAPI.GetPatientIDFromAccountID(apiservice.MustCtxAccount(r.Context()).ID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -92,11 +90,11 @@ func (h *UpdateHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r 
 	case "POST", "PUT":
 		// For now treat these the same because we don't support more than one phone number
 		// for the patient which is the only this this endpoint currently supports.
-		h.postOrPUT(ctx, w, r, patientID, req)
+		h.postOrPUT(w, r, patientID, req)
 	}
 }
 
-func (h *UpdateHandler) postOrPUT(ctx context.Context, w http.ResponseWriter, r *http.Request, patientID common.PatientID, req *UpdateRequest) {
+func (h *UpdateHandler) postOrPUT(w http.ResponseWriter, r *http.Request, patientID common.PatientID, req *UpdateRequest) {
 	if req.isZero() {
 		apiservice.WriteJSONSuccess(w)
 		return
@@ -104,12 +102,12 @@ func (h *UpdateHandler) postOrPUT(ctx context.Context, w http.ResponseWriter, r 
 
 	update, err := req.transformRequestToUpdate(h.dataAPI, h.addressValidator)
 	if err != nil {
-		apiservice.WriteValidationError(ctx, err.Error(), w, r)
+		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
 
 	if err := h.dataAPI.UpdatePatient(patientID, update, false); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

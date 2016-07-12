@@ -3,24 +3,21 @@ package handlers
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/twilio"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type twilioSMSStatusHandler struct {
 	eventsHandler twilio.EventHandler
 }
 
-func NewTwilioSMSStatusHandler(eventsHandler twilio.EventHandler) httputil.ContextHandler {
+func NewTwilioSMSStatusHandler(eventsHandler twilio.EventHandler) http.Handler {
 	return &twilioSMSStatusHandler{
 		eventsHandler: eventsHandler,
 	}
 }
 
-func (t *twilioSMSStatusHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (t *twilioSMSStatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	p, err := twilio.ParamsFromRequest(r)
 	if err != nil {
 		golog.Errorf("Unable to parse twilio parameters from request: %s", err.Error())
@@ -35,7 +32,7 @@ func (t *twilioSMSStatusHandler) ServeHTTP(ctx context.Context, w http.ResponseW
 		return
 	}
 
-	twiml, err := t.eventsHandler.Process(ctx, twilioEvent, p)
+	twiml, err := t.eventsHandler.Process(r.Context(), twilioEvent, p)
 	if err != nil {
 		golog.Errorf(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)

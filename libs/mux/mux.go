@@ -5,13 +5,12 @@
 package mux
 
 import (
+	"context" // NewRouter returns a new router instance.
 	"errors"
 	"fmt"
 	"net/http"
 	"path"
 	"regexp"
-
-	"context" // NewRouter returns a new router instance.
 
 	"github.com/sprucehealth/backend/libs/httputil"
 )
@@ -22,7 +21,7 @@ func NewRouter() *Router {
 
 // Router registers routes to be matched and dispatches a handler.
 //
-// It implements the httputil.ContextHandler interface, so it can be registered to serve
+// It implements the http.Handler interface, so it can be registered to serve
 // requests:
 //
 //     var router = mux.NewRouter()
@@ -40,7 +39,7 @@ func NewRouter() *Router {
 // This will send all incoming requests to the router.
 type Router struct {
 	// Configurable Handler to be used when no route matches.
-	NotFoundHandler httputil.ContextHandler
+	NotFoundHandler http.Handler
 	// Parent route, if this is a subrouter.
 	parent parentRoute
 	// Routes to be matched, in order.
@@ -65,7 +64,7 @@ func (r *Router) Match(req *http.Request, match *RouteMatch) bool {
 //
 // When there is a match, the route variables can be retrieved calling
 // mux.Vars(request).
-func (r *Router) ServeHTTP(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// Clean path to canonical form and redirect.
 	if p := cleanPath(req.URL.Path); p != req.URL.Path {
 
@@ -80,8 +79,9 @@ func (r *Router) ServeHTTP(ctx context.Context, w http.ResponseWriter, req *http
 		w.WriteHeader(http.StatusMovedPermanently)
 		return
 	}
+	ctx := req.Context()
 	var match RouteMatch
-	var handler httputil.ContextHandler
+	var handler http.Handler
 	if r.Match(req, &match) {
 		handler = match.Handler
 		ctx = SetVars(ctx, match.Vars)
@@ -93,7 +93,7 @@ func (r *Router) ServeHTTP(ctx context.Context, w http.ResponseWriter, req *http
 			handler = httputil.NotFoundHandler()
 		}
 	}
-	handler.ServeHTTP(ctx, w, req)
+	handler.ServeHTTP(w, req.WithContext(ctx))
 }
 
 // Get returns a route registered with the given name.
@@ -170,13 +170,13 @@ func (r *Router) NewRoute() *Route {
 
 // Handle registers a new route with a matcher for the URL path.
 // See Route.Path() and Route.Handler().
-func (r *Router) Handle(path string, handler httputil.ContextHandler) *Route {
+func (r *Router) Handle(path string, handler http.Handler) *Route {
 	return r.NewRoute().Path(path).Handler(handler)
 }
 
 // HandleFunc registers a new route with a matcher for the URL path.
 // See Route.Path() and Route.HandlerFunc().
-func (r *Router) HandleFunc(path string, f func(context.Context, http.ResponseWriter, *http.Request)) *Route {
+func (r *Router) HandleFunc(path string, f func(http.ResponseWriter, *http.Request)) *Route {
 	return r.NewRoute().Path(path).HandlerFunc(f)
 }
 
@@ -287,7 +287,7 @@ func (r *Router) walk(walkFn WalkFunc, ancestors []*Route) error {
 // RouteMatch stores information about a matched route.
 type RouteMatch struct {
 	Route   *Route
-	Handler httputil.ContextHandler
+	Handler http.Handler
 	Vars    map[string]string
 }
 

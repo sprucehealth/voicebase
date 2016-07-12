@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"strings"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/app_url"
@@ -28,7 +26,7 @@ type treatmentGuideHandler struct {
 	dataAPI api.DataAPI
 }
 
-func NewTreatmentGuideHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func NewTreatmentGuideHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.RequestCacheHandler(
@@ -40,7 +38,9 @@ func NewTreatmentGuideHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 		httputil.Get)
 }
 
-func (h *treatmentGuideHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+func (h *treatmentGuideHandler) IsAuthorized(r *http.Request) (bool, error) {
+	ctx := r.Context()
+
 	requestData := new(TreatmentGuideRequestData)
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		return false, apiservice.NewValidationError(err.Error())
@@ -96,15 +96,17 @@ func (h *treatmentGuideHandler) IsAuthorized(ctx context.Context, r *http.Reques
 	return true, nil
 }
 
-func (h *treatmentGuideHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *treatmentGuideHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	requestCache := apiservice.MustCtxCache(ctx)
 	treatment := requestCache[apiservice.CKTreatment].(*common.Treatment)
 	treatmentPlan := requestCache[apiservice.CKTreatmentPlan].(*common.TreatmentPlan)
 
-	treatmentGuideResponse(ctx, h.dataAPI, treatment.GenericDrugName, treatment.DrugRoute, treatment.DrugForm, treatment.DosageStrength, treatment.DrugDBIDs[erx.NDC], treatment, treatmentPlan, w, r)
+	treatmentGuideResponse(h.dataAPI, treatment.GenericDrugName, treatment.DrugRoute, treatment.DrugForm, treatment.DosageStrength, treatment.DrugDBIDs[erx.NDC], treatment, treatmentPlan, w, r)
 }
 
-func treatmentGuideResponse(ctx context.Context, dataAPI api.DataAPI, genericName, route, form, dosage, ndc string, treatment *common.Treatment, treatmentPlan *common.TreatmentPlan, w http.ResponseWriter, r *http.Request) {
+func treatmentGuideResponse(dataAPI api.DataAPI, genericName, route, form, dosage, ndc string, treatment *common.Treatment, treatmentPlan *common.TreatmentPlan, w http.ResponseWriter, r *http.Request) {
 	details, err := dataAPI.QueryDrugDetails(&api.DrugDetailsQuery{
 		NDC:         ndc,
 		GenericName: genericName,
@@ -112,16 +114,16 @@ func treatmentGuideResponse(ctx context.Context, dataAPI api.DataAPI, genericNam
 		Form:        form,
 	})
 	if api.IsErrNotFound(err) {
-		apiservice.WriteResourceNotFoundError(ctx, "No details available", w, r)
+		apiservice.WriteResourceNotFoundError("No details available", w, r)
 		return
 	} else if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	tgViews, err := treatmentGuideViews(details, dosage, treatment, treatmentPlan)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 	httputil.JSONResponse(w, http.StatusOK, map[string][]views.View{"views": tgViews})

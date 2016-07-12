@@ -3,8 +3,6 @@ package doctor
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -15,7 +13,7 @@ type prescriptionErrorHandler struct {
 	dataAPI api.DataAPI
 }
 
-func NewPrescriptionErrorHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func NewPrescriptionErrorHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.RequestCacheHandler(
 			apiservice.AuthorizationRequired(&prescriptionErrorHandler{
@@ -34,9 +32,9 @@ type DoctorPrescriptionErrorResponse struct {
 	UnlinkedDNTFTreatment *common.Treatment `json:"unlinked_dntf_treatment,omitempty"`
 }
 
-func (d *prescriptionErrorHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
-	requestCache := apiservice.MustCtxCache(ctx)
-	account := apiservice.MustCtxAccount(ctx)
+func (d *prescriptionErrorHandler) IsAuthorized(r *http.Request) (bool, error) {
+	requestCache := apiservice.MustCtxCache(r.Context())
+	account := apiservice.MustCtxAccount(r.Context())
 
 	requestData := &DoctorPrescriptionErrorRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
@@ -69,10 +67,10 @@ func (d *prescriptionErrorHandler) IsAuthorized(ctx context.Context, r *http.Req
 	return true, nil
 }
 
-func (d *prescriptionErrorHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	treatment := apiservice.MustCtxCache(ctx)[apiservice.CKTreatment]
+func (d *prescriptionErrorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	treatment := apiservice.MustCtxCache(r.Context())[apiservice.CKTreatment]
 	if treatment == nil {
-		apiservice.WriteResourceNotFoundError(ctx, "no treatment found", w, r)
+		apiservice.WriteResourceNotFoundError("no treatment found", w, r)
 		return
 	}
 

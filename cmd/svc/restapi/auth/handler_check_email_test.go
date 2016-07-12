@@ -5,8 +5,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"context"
-
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -36,7 +34,7 @@ func TestCheckEmailHandler(t *testing.T) {
 	// Test missing email argument
 	rec := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/", nil)
-	h.ServeHTTP(context.Background(), rec, req)
+	h.ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
 		t.Errorf("Expected code %d got %d", http.StatusOK, rec.Code)
 	}
@@ -47,7 +45,7 @@ func TestCheckEmailHandler(t *testing.T) {
 	// Test available email
 	rec = httptest.NewRecorder()
 	req, _ = http.NewRequest("GET", "/?email=unused@somewhere.com", nil)
-	h.ServeHTTP(context.Background(), rec, req)
+	h.ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
 		t.Errorf("Expected code %d got %d", http.StatusOK, rec.Code)
 	}
@@ -58,7 +56,7 @@ func TestCheckEmailHandler(t *testing.T) {
 	// Test unavailable email
 	rec = httptest.NewRecorder()
 	req, _ = http.NewRequest("GET", "/?email=used@somewhere.com", nil)
-	h.ServeHTTP(context.Background(), rec, req)
+	h.ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
 		t.Errorf("Expected code %d got %d", http.StatusOK, rec.Code)
 	}

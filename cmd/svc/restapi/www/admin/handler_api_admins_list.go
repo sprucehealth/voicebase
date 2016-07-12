@@ -3,8 +3,6 @@ package admin
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -16,16 +14,16 @@ type adminsListAPIHandler struct {
 	authAPI api.AuthAPI
 }
 
-func newAdminsListAPIHandler(authAPI api.AuthAPI) httputil.ContextHandler {
+func newAdminsListAPIHandler(authAPI api.AuthAPI) http.Handler {
 	return httputil.SupportedMethods(&adminsListAPIHandler{
 		authAPI: authAPI,
 	}, httputil.Get)
 }
 
-func (h *adminsListAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *adminsListAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	query := r.FormValue("q")
 
-	account := www.MustCtxAccount(ctx)
+	account := www.MustCtxAccount(r.Context())
 	audit.LogAction(account.ID, "AdminAPI", "ListAdmins", map[string]interface{}{"query": query})
 
 	var accounts []*common.Account

@@ -3,8 +3,6 @@ package patient_case
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -19,7 +17,7 @@ type careTeamRequestData struct {
 	CaseID int64 `schema:"case_id"`
 }
 
-func NewCareTeamHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func NewCareTeamHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.RequestCacheHandler(
 			apiservice.AuthorizationRequired(&careTeamHandler{
@@ -28,9 +26,9 @@ func NewCareTeamHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 		httputil.Get)
 }
 
-func (c *careTeamHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
-	requestCache := apiservice.MustCtxCache(ctx)
-	account := apiservice.MustCtxAccount(ctx)
+func (c *careTeamHandler) IsAuthorized(r *http.Request) (bool, error) {
+	requestCache := apiservice.MustCtxCache(r.Context())
+	account := apiservice.MustCtxAccount(r.Context())
 
 	requestData := &careTeamRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
@@ -57,13 +55,13 @@ func (c *careTeamHandler) IsAuthorized(ctx context.Context, r *http.Request) (bo
 	return true, nil
 }
 
-func (c *careTeamHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	requestCache := apiservice.MustCtxCache(ctx)
+func (c *careTeamHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(r.Context())
 	patientCase := requestCache[apiservice.CKPatientCase].(*common.PatientCase)
 
 	assignments, err := c.dataAPI.GetActiveMembersOfCareTeamForCase(patientCase.ID.Int64(), false)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -74,7 +72,7 @@ func (c *careTeamHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, 
 			case api.RoleDoctor, api.RoleCC:
 				doctor, err := c.dataAPI.GetDoctorFromID(assignment.ProviderID)
 				if err != nil {
-					apiservice.WriteError(ctx, err, w, r)
+					apiservice.WriteError(err, w, r)
 					return
 				}
 				doctors = append(doctors, doctor)

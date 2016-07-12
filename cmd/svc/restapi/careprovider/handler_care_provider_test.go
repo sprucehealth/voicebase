@@ -6,8 +6,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -35,8 +33,8 @@ func TestHandlerCareProviderGETRequiresProviderID(t *testing.T) {
 	test.OK(t, err)
 	handler := NewCareProviderHandler(mockedDataAPI_careProvider{DataAPI: &mockedDataAPI_careProvider{}, doctor: nil, doctorError: nil}, "api.spruce.local")
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	apiservice.WriteError(context.Background(), apiservice.NewValidationError("RequestID: 0, Error: Unable to parse input parameters: The following parameters are missing: provider_id, StatusCode: 400"), expectedWriter, r)
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	apiservice.WriteError(apiservice.NewValidationError("RequestID: 0, Error: Unable to parse input parameters: The following parameters are missing: provider_id, StatusCode: 400"), expectedWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }
 
@@ -48,7 +46,7 @@ func TestHandlerCareProviderGETSuccess(t *testing.T) {
 	response := responses.NewCareProviderFromDoctorDBModel(doctor, "api.spruce.local")
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, response)
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }
 
@@ -57,8 +55,8 @@ func TestHandlerCareProviderGETNoRecord(t *testing.T) {
 	test.OK(t, err)
 	handler := NewCareProviderHandler(mockedDataAPI_careProvider{DataAPI: &mockedDataAPI_careProvider{}, doctor: nil, doctorError: api.ErrNotFound("Foo")}, "api.spruce.local")
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	apiservice.WriteResourceNotFoundError(context.Background(), fmt.Sprintf("No care provider exists for ID %d", 9), expectedWriter, r)
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	apiservice.WriteResourceNotFoundError(fmt.Sprintf("No care provider exists for ID %d", 9), expectedWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }
 

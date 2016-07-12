@@ -4,8 +4,6 @@ import (
 	"errors"
 	"net/http"
 
-	"context"
-
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
@@ -26,7 +24,7 @@ type requestData struct {
 	DeviceToken string `schema:"device_token,required" json:"device_token"`
 }
 
-func NewNotificationHandler(dataAPI api.DataAPI, configs *config.NotificationConfigs, snsClient snsiface.SNSAPI) httputil.ContextHandler {
+func NewNotificationHandler(dataAPI api.DataAPI, configs *config.NotificationConfigs, snsClient snsiface.SNSAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(
 			&notificationHandler{
@@ -36,15 +34,15 @@ func NewNotificationHandler(dataAPI api.DataAPI, configs *config.NotificationCon
 			}), httputil.Post)
 }
 
-func (n *notificationHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (n *notificationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	rData := &requestData{}
 	if err := apiservice.DecodeRequestData(rData, r); err != nil {
-		apiservice.WriteBadRequestError(ctx, err, w, r)
+		apiservice.WriteBadRequestError(err, w, r)
 		return
 	}
 
 	if rData.DeviceToken == "" {
-		apiservice.WriteValidationError(ctx, "Device token required", w, r)
+		apiservice.WriteValidationError("Device token required", w, r)
 		return
 	}
 
@@ -52,7 +50,7 @@ func (n *notificationHandler) ServeHTTP(ctx context.Context, w http.ResponseWrit
 
 	// we need the minimum headers set to be able to accept the token
 	if sHeaders.Platform == "" || sHeaders.AppEnvironment == "" || sHeaders.AppType == "" {
-		apiservice.WriteValidationError(ctx, "Unable to determine which endpoint to use for push notifications: need platform, app-environment and app-type to be set in request header", w, r)
+		apiservice.WriteValidationError("Unable to determine which endpoint to use for push notifications: need platform, app-environment and app-type to be set in request header", w, r)
 		return
 	}
 
@@ -60,14 +58,14 @@ func (n *notificationHandler) ServeHTTP(ctx context.Context, w http.ResponseWrit
 	configName := config.DetermineNotificationConfigName(sHeaders.Platform, sHeaders.AppType, sHeaders.AppEnvironment)
 	notificationConfig, err := n.notificationConfigs.Get(configName)
 	if err != nil {
-		apiservice.WriteError(ctx, errors.New("Unable to find right notification config for "+configName), w, r)
+		apiservice.WriteError(errors.New("Unable to find right notification config for "+configName), w, r)
 		return
 	}
 
 	// lookup any existing push config associated with this device token
 	existingPushConfigData, err := n.dataAPI.GetPushConfigData(rData.DeviceToken)
 	if err != nil && !api.IsErrNotFound(err) {
-		apiservice.WriteError(ctx, errors.New("Unable to get push config data for device token: "+err.Error()), w, r)
+		apiservice.WriteError(errors.New("Unable to get push config data for device token: "+err.Error()), w, r)
 		return
 	}
 
@@ -83,14 +81,14 @@ func (n *notificationHandler) ServeHTTP(ctx context.Context, w http.ResponseWrit
 			Token: &rData.DeviceToken,
 		})
 		if err != nil {
-			apiservice.WriteError(ctx, errors.New("Unable to register token for push notifications: "+err.Error()), w, r)
+			apiservice.WriteError(errors.New("Unable to register token for push notifications: "+err.Error()), w, r)
 			return
 		}
 		pushEndpoint = *res.EndpointArn
 	}
 
 	newPushConfigData := &common.PushConfigData{
-		AccountID:       apiservice.MustCtxAccount(ctx).ID,
+		AccountID:       apiservice.MustCtxAccount(r.Context()).ID,
 		DeviceToken:     rData.DeviceToken,
 		PushEndpoint:    pushEndpoint,
 		Platform:        sHeaders.Platform,
@@ -105,7 +103,7 @@ func (n *notificationHandler) ServeHTTP(ctx context.Context, w http.ResponseWrit
 
 	// update the device token for the user
 	if err := n.dataAPI.SetOrReplacePushConfigData(newPushConfigData); err != nil {
-		apiservice.WriteError(ctx, errors.New("Unable to update push config data: "+err.Error()), w, r)
+		apiservice.WriteError(errors.New("Unable to update push config data: "+err.Error()), w, r)
 		return
 	}
 

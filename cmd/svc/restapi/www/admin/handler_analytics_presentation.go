@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -18,15 +16,15 @@ type analyticsPresentationIframeHandler struct {
 	template *template.Template
 }
 
-func newAnalyticsPresentationIframeHandler(dataAPI api.DataAPI, templateLoader *www.TemplateLoader) httputil.ContextHandler {
+func newAnalyticsPresentationIframeHandler(dataAPI api.DataAPI, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&analyticsPresentationIframeHandler{
 		dataAPI:  dataAPI,
 		template: templateLoader.MustLoadTemplate("admin/analytics_presentation_iframe.html", "base.html", nil),
 	}, httputil.Get)
 }
 
-func (h *analyticsPresentationIframeHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.ParseInt(mux.Vars(ctx)["id"], 10, 64)
+func (h *analyticsPresentationIframeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(mux.Vars(r.Context())["id"], 10, 64)
 	if err != nil {
 		http.NotFound(w, r)
 		return

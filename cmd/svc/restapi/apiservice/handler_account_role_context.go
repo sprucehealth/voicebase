@@ -4,11 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type accountRoleDAL interface {
@@ -17,7 +14,7 @@ type accountRoleDAL interface {
 }
 
 type accountRoleContextHandler struct {
-	h              httputil.ContextHandler
+	h              http.Handler
 	methods        map[string]bool
 	accountRoleDAL accountRoleDAL
 }
@@ -25,7 +22,7 @@ type accountRoleContextHandler struct {
 // NewAccountRoleContextHandler wraps the provided handler in a layer that adds the caller role information to the context. This is currently either a patient or a doctor object
 // The lookup will only be done for methods provided, or for all calls if no methods are provided
 // Note: This asserts that the account ID is already present in the context for panics
-func NewAccountRoleContextHandler(h httputil.ContextHandler, accountRoleDAL accountRoleDAL, methods ...string) httputil.ContextHandler {
+func NewAccountRoleContextHandler(h http.Handler, accountRoleDAL accountRoleDAL, methods ...string) http.Handler {
 	ms := make(map[string]bool, len(methods))
 	for _, m := range methods {
 		ms[m] = true
@@ -37,11 +34,12 @@ func NewAccountRoleContextHandler(h httputil.ContextHandler, accountRoleDAL acco
 	}
 }
 
-func (h *accountRoleContextHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *accountRoleContextHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	// Bypass this setup if this is a test reuqest
 	// TODO: We should think of a possible better way for these assertions
 	if isTestRequest(r) {
-		h.h.ServeHTTP(ctx, w, r)
+		h.h.ServeHTTP(w, r)
 		return
 	} else if _, ok := h.methods[r.Method]; ok || len(h.methods) == 0 {
 		a := MustCtxAccount(ctx)
@@ -49,14 +47,14 @@ func (h *accountRoleContextHandler) ServeHTTP(ctx context.Context, w http.Respon
 		case api.RolePatient:
 			patient, err := h.accountRoleDAL.GetPatientFromAccountID(a.ID)
 			if err != nil {
-				WriteError(ctx, err, w, r)
+				WriteError(err, w, r)
 				return
 			}
 			ctx = CtxWithPatient(ctx, patient)
 		case api.RoleDoctor, api.RoleCC:
 			doctor, err := h.accountRoleDAL.GetDoctorFromAccountID(a.ID)
 			if err != nil {
-				WriteError(ctx, err, w, r)
+				WriteError(err, w, r)
 				return
 			}
 			switch a.Role {
@@ -66,10 +64,10 @@ func (h *accountRoleContextHandler) ServeHTTP(ctx context.Context, w http.Respon
 				ctx = CtxWithCC(ctx, doctor)
 			}
 		default:
-			WriteError(ctx, fmt.Errorf("Unknown account role %s - Unable to locate account role sub object", a.Role), w, r)
+			WriteError(fmt.Errorf("Unknown account role %s - Unable to locate account role sub object", a.Role), w, r)
 			return
 		}
 	}
 
-	h.h.ServeHTTP(ctx, w, r)
+	h.h.ServeHTTP(w, r.WithContext(ctx))
 }

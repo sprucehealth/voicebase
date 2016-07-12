@@ -3,8 +3,6 @@ package handlers
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -16,15 +14,15 @@ type isAuthenticatedHandler struct {
 }
 
 // NewIsAuthenticatedHandler returns an initialized instance of isAuthenticatedHandler
-func NewIsAuthenticatedHandler(authAPI api.AuthAPI) httputil.ContextHandler {
+func NewIsAuthenticatedHandler(authAPI api.AuthAPI) http.Handler {
 	return httputil.SupportedMethods(apiservice.NoAuthorizationRequired(
 		&isAuthenticatedHandler{
 			authAPI: authAPI,
 		}), httputil.Get)
 }
 
-func (i *isAuthenticatedHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	account := apiservice.MustCtxAccount(ctx)
+func (i *isAuthenticatedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	account := apiservice.MustCtxAccount(r.Context())
 	go func() {
 		// asyncrhonously update the last opened date for this account
 		if err := i.authAPI.UpdateLastOpenedDate(account.ID); err != nil {

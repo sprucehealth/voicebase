@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/mediaproxy"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/responses"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -24,7 +22,7 @@ type productsScrapeHandler struct {
 }
 
 // NewProductsScrape returns a new product scrape handler.
-func NewProductsScrape(svc products.Service, proxyRoot string, proxySvc *mediaproxy.Service) httputil.ContextHandler {
+func NewProductsScrape(svc products.Service, proxyRoot string, proxySvc *mediaproxy.Service) http.Handler {
 	return httputil.SupportedMethods(&productsScrapeHandler{
 		svc:       svc,
 		proxyRoot: proxyRoot,
@@ -32,7 +30,7 @@ func NewProductsScrape(svc products.Service, proxyRoot string, proxySvc *mediapr
 	}, httputil.Get)
 }
 
-func (h *productsScrapeHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *productsScrapeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	earl := r.FormValue("url")
 
 	if httputil.CheckAndSetETag(w, r, httputil.GenETag(time.Now().Format("2006-01-02")+":"+earl)) {
@@ -46,7 +44,7 @@ func (h *productsScrapeHandler) ServeHTTP(ctx context.Context, w http.ResponseWr
 			apiservice.WriteUserError(w, http.StatusBadRequest, fmt.Sprintf("Invalid URL"))
 			return
 		}
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

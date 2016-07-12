@@ -5,11 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/gqlintrospect"
-	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/graphql"
 )
 
@@ -20,13 +17,13 @@ type schemaHandler struct {
 }
 
 // New returns an iniitalized instance of schemaHandler
-func New(schema graphql.Schema) httputil.ContextHandler {
+func New(schema graphql.Schema) http.Handler {
 	return &schemaHandler{
 		schema: schema,
 	}
 }
 
-func (h *schemaHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *schemaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	res := graphql.Do(graphql.Params{
 		Schema:        h.schema,
 		RequestString: gqlintrospect.Query,

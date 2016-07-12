@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"strings"
 
-	"google.golang.org/grpc"
-
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/dal"
@@ -29,6 +27,7 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/threading"
+	"google.golang.org/grpc"
 )
 
 var (
@@ -162,7 +161,7 @@ func main() {
 	golog.Infof("Media HTTP Listening on %s...", *flagHTTPListenAddr)
 	httpSrv := &http.Server{
 		Addr:           *flagHTTPListenAddr,
-		Handler:        httputil.FromContextHandler(shttputil.CompressResponse(h, httputil.CompressResponse)),
+		Handler:        shttputil.CompressResponse(h, httputil.CompressResponse),
 		MaxHeaderBytes: 1 << 20,
 	}
 	go func() {

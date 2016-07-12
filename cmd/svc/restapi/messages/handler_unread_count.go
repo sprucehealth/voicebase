@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -20,7 +18,7 @@ type unreadCountHandler struct {
 	dataAPI api.DataAPI
 }
 
-func NewUnreadCountHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func NewUnreadCountHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.RequestCacheHandler(
 			apiservice.AuthorizationRequired(
@@ -30,7 +28,8 @@ func NewUnreadCountHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 		httputil.Get)
 }
 
-func (h *unreadCountHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+func (h *unreadCountHandler) IsAuthorized(r *http.Request) (bool, error) {
+	ctx := r.Context()
 	requestCache := apiservice.MustCtxCache(ctx)
 
 	caseID, err := strconv.ParseInt(r.FormValue("case_id"), 10, 64)
@@ -55,13 +54,14 @@ func (h *unreadCountHandler) IsAuthorized(ctx context.Context, r *http.Request) 
 	return true, nil
 }
 
-func (h *unreadCountHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *unreadCountHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	requestCache := apiservice.MustCtxCache(ctx)
 	cas := requestCache[apiservice.CKPatientCase].(*common.PatientCase)
 	personID := requestCache[apiservice.CKPersonID].(int64)
 	count, err := h.dataAPI.UnreadMessageCount(cas.ID.Int64(), personID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 	httputil.JSONResponse(w, http.StatusOK, unreadCountResponse{UnreadCount: count})

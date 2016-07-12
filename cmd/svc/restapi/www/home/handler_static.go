@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"strings"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -27,7 +25,7 @@ type homeContext struct {
 	SubContext   interface{}
 }
 
-func newStaticHandler(router *mux.Router, templateLoader *www.TemplateLoader, tmpl, title string, ctxFun func() interface{}) httputil.ContextHandler {
+func newStaticHandler(router *mux.Router, templateLoader *www.TemplateLoader, tmpl, title string, ctxFun func() interface{}) http.Handler {
 	var ctx interface{}
 	if ctxFun != nil {
 		ctx = ctxFun()
@@ -49,7 +47,7 @@ func newStaticHandler(router *mux.Router, templateLoader *www.TemplateLoader, tm
 	}, httputil.Get)
 }
 
-func (h *staticHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *staticHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	www.TemplateResponse(w, http.StatusOK, h.template, &www.BaseTemplateContext{
 		Environment: environment.GetCurrent(),
 		Title:       template.HTML(html.EscapeString(h.title)),

@@ -5,15 +5,12 @@ import (
 	"html/template"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/response"
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/service"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/errors"
-	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
 )
 
@@ -24,7 +21,7 @@ type statePageHandler struct {
 	webURL       string
 }
 
-func NewStatePageHandler(templateLoader *www.TemplateLoader, stateService service.PageContentBuilder, cityDAL dal.CityDAL, webURL string) httputil.ContextHandler {
+func NewStatePageHandler(templateLoader *www.TemplateLoader, stateService service.PageContentBuilder, cityDAL dal.CityDAL, webURL string) http.Handler {
 	return &statePageHandler{
 		refTemplate:  templateLoader.MustLoadTemplate("statepage.html", "base.html", nil),
 		stateService: stateService,
@@ -33,8 +30,8 @@ func NewStatePageHandler(templateLoader *www.TemplateLoader, stateService servic
 	}
 }
 
-func (s *statePageHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	stateKey := mux.Vars(ctx)["state"]
+func (s *statePageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	stateKey := mux.Vars(r.Context())["state"]
 
 	// check if we are dealing with a city page and redirect to city page URL.
 	// doing this because the URL structures changed from carefinder/city to carefinder/state/city

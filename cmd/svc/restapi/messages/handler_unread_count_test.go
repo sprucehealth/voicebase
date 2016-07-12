@@ -1,12 +1,11 @@
 package messages
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -57,7 +56,7 @@ func TestUnreadCountHandler(t *testing.T) {
 		context.Background(),
 		&common.Account{Role: api.RolePatient, ID: 1})
 	w := httptest.NewRecorder()
-	hand.ServeHTTP(ctx, w, r)
+	hand.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, w.Code, http.StatusOK)
 	test.Equals(t, "{\"unread_count\":4}\n", w.Body.String())
 }

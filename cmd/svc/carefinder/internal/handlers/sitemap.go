@@ -10,9 +10,6 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/response"
-
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
@@ -45,7 +42,7 @@ type siteMapHandler struct {
 	cachedSitemap atomic.Value
 }
 
-func NewSiteMapHandler(webURL string, doctorDAL dal.DoctorDAL, cityDAL dal.CityDAL, stateDAL dal.StateDAL) httputil.ContextHandler {
+func NewSiteMapHandler(webURL string, doctorDAL dal.DoctorDAL, cityDAL dal.CityDAL, stateDAL dal.StateDAL) http.Handler {
 	return &siteMapHandler{
 		doctorDAL: doctorDAL,
 		cityDAL:   cityDAL,
@@ -54,8 +51,7 @@ func NewSiteMapHandler(webURL string, doctorDAL dal.DoctorDAL, cityDAL dal.CityD
 	}
 }
 
-func (s *siteMapHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-
+func (s *siteMapHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if httputil.CheckAndSetETag(w, r, httputil.GenETag(time.Now().Format("2006-01-02")+":cfsitemap")) {
 		w.WriteHeader(http.StatusNotModified)
 		return

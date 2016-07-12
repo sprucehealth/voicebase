@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -108,7 +106,7 @@ type ScheduledMessageIDResponse struct {
 	MessageID int64 `json:"message_id,string"`
 }
 
-func NewScheduledMessageHandler(dataAPI api.DataAPI, mediaStore *mediastore.Store, dispatcher *dispatch.Dispatcher) httputil.ContextHandler {
+func NewScheduledMessageHandler(dataAPI api.DataAPI, mediaStore *mediastore.Store, dispatcher *dispatch.Dispatcher) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.RequestCacheHandler(
@@ -122,7 +120,8 @@ func NewScheduledMessageHandler(dataAPI api.DataAPI, mediaStore *mediastore.Stor
 		httputil.Get, httputil.Post, httputil.Put, httputil.Delete)
 }
 
-func (h *scheduledMessageHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+func (h *scheduledMessageHandler) IsAuthorized(r *http.Request) (bool, error) {
+	ctx := r.Context()
 	requestCache := apiservice.MustCtxCache(ctx)
 	account := apiservice.MustCtxAccount(ctx)
 
@@ -170,20 +169,21 @@ func (h *scheduledMessageHandler) IsAuthorized(ctx context.Context, r *http.Requ
 	return true, nil
 }
 
-func (h *scheduledMessageHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *scheduledMessageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		h.getMessages(ctx, w, r)
+		h.getMessages(w, r)
 	case "POST":
-		h.createMessage(ctx, w, r)
+		h.createMessage(w, r)
 	case "PUT":
-		h.updateMessage(ctx, w, r)
+		h.updateMessage(w, r)
 	case "DELETE":
-		h.deleteMessage(ctx, w, r)
+		h.deleteMessage(w, r)
 	}
 }
 
-func (h *scheduledMessageHandler) getMessages(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *scheduledMessageHandler) getMessages(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	requestCache := apiservice.MustCtxCache(ctx)
 	req := requestCache[apiservice.CKRequestData].(*scheduledMessageIDRequest)
 	tp := requestCache[apiservice.CKTreatmentPlan].(*common.TreatmentPlan)
@@ -191,7 +191,7 @@ func (h *scheduledMessageHandler) getMessages(ctx context.Context, w http.Respon
 
 	msgs, err := h.dataAPI.ListTreatmentPlanScheduledMessages(req.TreatmentPlanID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -216,7 +216,7 @@ func (h *scheduledMessageHandler) getMessages(ctx context.Context, w http.Respon
 			scheduledMessageMediaExpirationDuration,
 		)
 		if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 	}
@@ -224,7 +224,8 @@ func (h *scheduledMessageHandler) getMessages(ctx context.Context, w http.Respon
 	httputil.JSONResponse(w, http.StatusOK, res)
 }
 
-func (h *scheduledMessageHandler) createMessage(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *scheduledMessageHandler) createMessage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	requestCache := apiservice.MustCtxCache(ctx)
 	req := requestCache[apiservice.CKRequestData].(*ScheduledMessageRequest)
 	account := apiservice.MustCtxAccount(ctx)
@@ -238,14 +239,14 @@ func (h *scheduledMessageHandler) createMessage(ctx context.Context, w http.Resp
 		doctorID,
 		account.Role)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	// For an existing messages that matches exactly (makes POST idempotent)
 	msgs, err := h.dataAPI.ListTreatmentPlanScheduledMessages(req.TreatmentPlanID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 	for _, m := range msgs {
@@ -256,13 +257,13 @@ func (h *scheduledMessageHandler) createMessage(ctx context.Context, w http.Resp
 	}
 
 	if err := validateTokensInMessage(h.dataAPI, msg, tp.PatientID, doctorID); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	msgID, err := h.dataAPI.CreateTreatmentPlanScheduledMessage(msg)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -274,14 +275,15 @@ func (h *scheduledMessageHandler) createMessage(ctx context.Context, w http.Resp
 	httputil.JSONResponse(w, http.StatusOK, &ScheduledMessageIDResponse{MessageID: msgID})
 }
 
-func (h *scheduledMessageHandler) updateMessage(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *scheduledMessageHandler) updateMessage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	account := apiservice.MustCtxAccount(ctx)
 	requestCache := apiservice.MustCtxCache(ctx)
 	req := requestCache[apiservice.CKRequestData].(*ScheduledMessageRequest)
 	tp := requestCache[apiservice.CKTreatmentPlan].(*common.TreatmentPlan)
 
 	if req.Message.ID <= 0 {
-		apiservice.WriteBadRequestError(ctx, errors.New("id is required"), w, r)
+		apiservice.WriteBadRequestError(errors.New("id is required"), w, r)
 		return
 	}
 	doctorID := requestCache[apiservice.CKDoctorID].(int64)
@@ -292,17 +294,17 @@ func (h *scheduledMessageHandler) updateMessage(ctx context.Context, w http.Resp
 		doctorID,
 		account.Role)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	if err := validateTokensInMessage(h.dataAPI, msg, tp.PatientID, doctorID); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	if err := h.dataAPI.ReplaceTreatmentPlanScheduledMessage(req.Message.ID, msg); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -342,17 +344,18 @@ func validateTokensInMessage(dataAPI api.DataAPI, msg *common.TreatmentPlanSched
 	return t.validate(msg.Message)
 }
 
-func (h *scheduledMessageHandler) deleteMessage(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *scheduledMessageHandler) deleteMessage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	requestCache := apiservice.MustCtxCache(ctx)
 	req := requestCache[apiservice.CKRequestData].(*scheduledMessageIDRequest)
 
 	if req.MessageID == 0 {
-		apiservice.WriteBadRequestError(ctx, errors.New("message_id is required"), w, r)
+		apiservice.WriteBadRequestError(errors.New("message_id is required"), w, r)
 		return
 	}
 
 	if err := h.dataAPI.DeleteTreatmentPlanScheduledMessage(req.TreatmentPlanID, req.MessageID); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

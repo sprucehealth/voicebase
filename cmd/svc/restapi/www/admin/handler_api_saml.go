@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"strings"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -20,12 +18,12 @@ type samlRequest struct {
 	SAML string `json:"saml"`
 }
 
-func newSAMLAPIHandler() httputil.ContextHandler {
+func newSAMLAPIHandler() http.Handler {
 	return httputil.SupportedMethods(&samlAPIHandler{}, httputil.Post)
 }
 
-func (h *samlAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	account := www.MustCtxAccount(ctx)
+func (h *samlAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(r.Context())
 	audit.LogAction(account.ID, "AdminAPI", "SAMLTransform", nil)
 
 	var req samlRequest

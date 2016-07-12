@@ -1,26 +1,24 @@
 package httputil
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
-
-	"context"
 )
 
 func TestRequestID(t *testing.T) {
-	h := RequestIDHandler(ContextHandlerFunc(
-		func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte(strconv.FormatUint(RequestID(ctx), 10)))
+	h := RequestIDHandler(http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(strconv.FormatUint(RequestID(r.Context()), 10)))
 		}))
-	ctx := context.Background()
 	r, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	w := httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r)
 	if _, err := strconv.ParseUint(w.Body.String(), 10, 64); err != nil {
 		t.Fatal(err)
 	}
@@ -29,8 +27,8 @@ func TestRequestID(t *testing.T) {
 func TestLoggingHandler(t *testing.T) {
 	var lastEvent RequestEvent
 	var events int
-	h := RequestIDHandler(LoggingHandler(ContextHandlerFunc(
-		func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	h := RequestIDHandler(LoggingHandler(http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/panic" {
 				panic("OH NOES")
 			}
@@ -42,13 +40,12 @@ func TestLoggingHandler(t *testing.T) {
 			lastEvent = *ev
 			events++
 		}))
-	ctx := context.Background()
 	r, err := http.NewRequest("GET", "/patho?a=b", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	w := httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r)
 	if w.Code != http.StatusNotImplemented {
 		t.Fatal("Expected StatusNotImplemented")
 	}
@@ -72,7 +69,7 @@ func TestLoggingHandler(t *testing.T) {
 		t.Fatal(err)
 	}
 	w = httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r)
 	if w.Code != http.StatusInternalServerError {
 		t.Fatal("Expected StatusInternalServerError")
 	}
@@ -103,12 +100,11 @@ func (nullResponseWriter) Write(b []byte) (int, error) { return len(b), nil }
 func (nullResponseWriter) WriteHeader(int)             {}
 
 func BenchmarkLoggingHandler(b *testing.B) {
-	h := LoggingHandler(ContextHandlerFunc(
-		func(context.Context, http.ResponseWriter, *http.Request) {}),
+	h := LoggingHandler(http.HandlerFunc(
+		func(http.ResponseWriter, *http.Request) {}),
 		"test",
 		false,
 		func(context.Context, *RequestEvent) {})
-	ctx := context.Background()
 	r, err := http.NewRequest("GET", "/patho?a=b", nil)
 	if err != nil {
 		b.Fatal(err)
@@ -117,6 +113,6 @@ func BenchmarkLoggingHandler(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		h.ServeHTTP(ctx, w, r)
+		h.ServeHTTP(w, r)
 	}
 }

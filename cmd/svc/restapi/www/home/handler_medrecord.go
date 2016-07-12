@@ -5,8 +5,6 @@ import (
 	"log"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
@@ -19,7 +17,7 @@ type medRecordDownloadHandler struct {
 	store   storage.Store
 }
 
-func newMedRecordWebDownloadHandler(dataAPI api.DataAPI, store storage.Store) httputil.ContextHandler {
+func newMedRecordWebDownloadHandler(dataAPI api.DataAPI, store storage.Store) http.Handler {
 	if store == nil {
 		log.Fatalf("Medical record handler storage is nil")
 	}
@@ -31,8 +29,8 @@ func newMedRecordWebDownloadHandler(dataAPI api.DataAPI, store storage.Store) ht
 			}, nil, api.RolePatient), httputil.Get)
 }
 
-func (h *medRecordDownloadHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	account := www.MustCtxAccount(ctx)
+func (h *medRecordDownloadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(r.Context())
 	patientID, err := h.dataAPI.GetPatientIDFromAccountID(account.ID)
 	if err != nil {
 		www.InternalServerError(w, r, err)

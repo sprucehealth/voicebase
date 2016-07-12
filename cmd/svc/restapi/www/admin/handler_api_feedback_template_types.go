@@ -7,8 +7,6 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/restapi/feedback"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/libs/httputil"
-
-	"context"
 )
 
 type feedbackTemplateTypesHandler struct{}
@@ -22,13 +20,13 @@ type feedbackTemplateTypesResponse struct {
 	Types []typeItem `json:"types"`
 }
 
-func newFeedbackTemplateTypesHandler() httputil.ContextHandler {
+func newFeedbackTemplateTypesHandler() http.Handler {
 	return httputil.SupportedMethods(
 		&feedbackTemplateTypesHandler{}, httputil.Get)
 }
 
-func (h *feedbackTemplateTypesHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	account := www.MustCtxAccount(ctx)
+func (h *feedbackTemplateTypesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(r.Context())
 	audit.LogAction(account.ID, "AdminAPI", "ListFeedbackTemplateTypes", nil)
 
 	httputil.JSONResponse(w, http.StatusOK, feedbackTemplateTypesResponse{

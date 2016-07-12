@@ -2,13 +2,12 @@ package patient
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -115,7 +114,7 @@ func TestFeedbackIntake(t *testing.T) {
 	ctx := context.Background()
 	ctx = apiservice.CtxWithAccount(ctx, &common.Account{ID: 1, Role: api.RolePatient})
 
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// ensure that feedback was recorded

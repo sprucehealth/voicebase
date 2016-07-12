@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
@@ -17,20 +15,20 @@ type providerAttributesAPIHandler struct {
 	dataAPI api.DataAPI
 }
 
-func newProviderAttributesAPIHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func newProviderAttributesAPIHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&providerAttributesAPIHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get)
 }
 
-func (h *providerAttributesAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	doctorID, err := strconv.ParseInt(mux.Vars(ctx)["id"], 10, 64)
+func (h *providerAttributesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	doctorID, err := strconv.ParseInt(mux.Vars(r.Context())["id"], 10, 64)
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return
 	}
 
-	account := www.MustCtxAccount(ctx)
+	account := www.MustCtxAccount(r.Context())
 	audit.LogAction(account.ID, "AdminAPI", "GetDoctorAttributes", map[string]interface{}{"doctor_id": doctorID})
 
 	attributes, err := h.dataAPI.DoctorAttributes(doctorID, nil)

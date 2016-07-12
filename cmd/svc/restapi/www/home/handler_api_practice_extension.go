@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"strings"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common/config"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/libs/cfg"
@@ -88,15 +86,15 @@ func (d *whitepaperPOSTRequest) Validate() error {
 	return nil
 }
 
-func newPracticeExtensionDemoAPIHandler(cfg cfg.Store) httputil.ContextHandler {
+func newPracticeExtensionDemoAPIHandler(cfg cfg.Store) http.Handler {
 	return httputil.SupportedMethods(&demoRequestAPIHandler{cfg: cfg}, httputil.Post)
 }
 
-func newPracticeExtensionWhitepaperAPIHandler(cfg cfg.Store) httputil.ContextHandler {
+func newPracticeExtensionWhitepaperAPIHandler(cfg cfg.Store) http.Handler {
 	return httputil.SupportedMethods(&whitepaperRequestAPIHandler{cfg: cfg}, httputil.Post)
 }
 
-func (h *demoRequestAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *demoRequestAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var d demoPOSTRequest
 	var err error
 	if err = json.NewDecoder(r.Body).Decode(&d); err != nil {
@@ -128,7 +126,7 @@ func (h *demoRequestAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWr
 	httputil.JSONResponse(w, http.StatusOK, struct{}{})
 }
 
-func (h *whitepaperRequestAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *whitepaperRequestAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var d whitepaperPOSTRequest
 	var err error
 	if err = json.NewDecoder(r.Body).Decode(&d); err != nil {

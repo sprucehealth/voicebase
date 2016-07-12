@@ -96,7 +96,7 @@ func TestRxReminderHandlerDELETETreatmentIDRequired(t *testing.T) {
 	test.OK(t, err)
 	handler := NewRXReminderHandlerHandler(&rxReminderHandlerReminderService{}, &rxReminderHandlerTreatmentPlanService{}, &rxReminderHandlerDrugService{})
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, http.StatusBadRequest, responseWriter.Code)
 }
 
@@ -107,7 +107,7 @@ func TestRxReminderHandlerDELETETreatmentIDAccessRequired(t *testing.T) {
 		patientCanAccessTreatment: false,
 	}, &rxReminderHandlerDrugService{})
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(apiservice.CtxWithPatient(context.Background(), &common.Patient{}), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r.WithContext(apiservice.CtxWithPatient(context.Background(), &common.Patient{})))
 	test.Equals(t, http.StatusForbidden, responseWriter.Code)
 }
 
@@ -118,7 +118,7 @@ func TestRxReminderHandlerDELETETreatmentIDAccessValidationError(t *testing.T) {
 		patientCanAccessTreatmentErr: errors.New("Foo"),
 	}, &rxReminderHandlerDrugService{})
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(apiservice.CtxWithPatient(context.Background(), &common.Patient{}), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r.WithContext(apiservice.CtxWithPatient(context.Background(), &common.Patient{})))
 	test.Equals(t, http.StatusInternalServerError, responseWriter.Code)
 }
 
@@ -137,9 +137,7 @@ func TestRxReminderHandlerDELETEDALDeleteError(t *testing.T) {
 	handler := NewRXReminderHandlerHandler(reminderSvc, treatmentSvc, drugSvc)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	apiservice.WriteJSONSuccess(expectedWriter)
-	handler.ServeHTTP(
-		apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: common.NewPatientID(patientID)}),
-		responseWriter, r)
+	handler.ServeHTTP(responseWriter, r.WithContext(apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: common.NewPatientID(patientID)})))
 	test.Equals(t, http.StatusOK, responseWriter.Code)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
 	test.Equals(t, treatmentID, reminderSvc.deleteRXReminderParam)
@@ -152,7 +150,7 @@ func TestRxReminderHandlerGETRemindersForPatientError(t *testing.T) {
 		remindersForPatientErr: errors.New("Foo"),
 	}, &rxReminderHandlerTreatmentPlanService{}, &rxReminderHandlerDrugService{})
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(apiservice.CtxWithPatient(context.Background(), &common.Patient{}), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r.WithContext(apiservice.CtxWithPatient(context.Background(), &common.Patient{})))
 	test.Equals(t, http.StatusInternalServerError, responseWriter.Code)
 }
 
@@ -165,7 +163,7 @@ func TestRxReminderHandlerGETTreatmentsForPatientError(t *testing.T) {
 		treatmentsForPatientErr: errors.New("Foo"),
 	}, &rxReminderHandlerDrugService{})
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(apiservice.CtxWithPatient(context.Background(), &common.Patient{}), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r.WithContext(apiservice.CtxWithPatient(context.Background(), &common.Patient{})))
 	test.Equals(t, http.StatusInternalServerError, responseWriter.Code)
 }
 
@@ -192,10 +190,7 @@ func TestRxReminderHandlerGETRxRemindersNoView(t *testing.T) {
 			},
 		},
 	)
-	handler.ServeHTTP(
-		apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: patientID}),
-		responseWriter, r,
-	)
+	handler.ServeHTTP(responseWriter, r.WithContext(apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: patientID})))
 	test.Equals(t, http.StatusOK, responseWriter.Code)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
 	test.Equals(t, patientID, reminderSvc.remindersForPatientParam)
@@ -247,10 +242,7 @@ func TestRxReminderHandlerGETRxRemindersWithView(t *testing.T) {
 			},
 		},
 	)
-	handler.ServeHTTP(
-		apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: patientID}),
-		responseWriter, r,
-	)
+	handler.ServeHTTP(responseWriter, r.WithContext(apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: patientID})))
 	test.Equals(t, http.StatusOK, responseWriter.Code)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
 }
@@ -270,10 +262,7 @@ func TestRxReminderHandlerPOSTRxReminderTreatmentIDRequired(t *testing.T) {
 	drugSvc := &rxReminderHandlerDrugService{}
 	handler := NewRXReminderHandlerHandler(reminderSvc, treatmentSvc, drugSvc)
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(
-		apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: patientID}),
-		responseWriter, r,
-	)
+	handler.ServeHTTP(responseWriter, r.WithContext(apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: patientID})))
 	test.Equals(t, http.StatusBadRequest, responseWriter.Code)
 }
 
@@ -293,10 +282,7 @@ func TestRxReminderHandlerPOSTRxReminderReminderTextRequired(t *testing.T) {
 	drugSvc := &rxReminderHandlerDrugService{}
 	handler := NewRXReminderHandlerHandler(reminderSvc, treatmentSvc, drugSvc)
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(
-		apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: patientID}),
-		responseWriter, r,
-	)
+	handler.ServeHTTP(responseWriter, r.WithContext(apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: patientID})))
 	test.Equals(t, http.StatusBadRequest, responseWriter.Code)
 }
 
@@ -317,10 +303,7 @@ func TestRxReminderHandlerPOSTRxReminderTimesRequired(t *testing.T) {
 	drugSvc := &rxReminderHandlerDrugService{}
 	handler := NewRXReminderHandlerHandler(reminderSvc, treatmentSvc, drugSvc)
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(
-		apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: patientID}),
-		responseWriter, r,
-	)
+	handler.ServeHTTP(responseWriter, r.WithContext(apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: patientID})))
 	test.Equals(t, http.StatusBadRequest, responseWriter.Code)
 }
 
@@ -340,10 +323,7 @@ func TestRxReminderHandlerPOSTRxIntervalRequired(t *testing.T) {
 	drugSvc := &rxReminderHandlerDrugService{}
 	handler := NewRXReminderHandlerHandler(reminderSvc, treatmentSvc, drugSvc)
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(
-		apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: patientID}),
-		responseWriter, r,
-	)
+	handler.ServeHTTP(responseWriter, r.WithContext(apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: patientID})))
 	test.Equals(t, http.StatusBadRequest, responseWriter.Code)
 }
 
@@ -364,10 +344,7 @@ func TestRxReminderHandlerPOSTRxDaysWithCUSTOMRequired(t *testing.T) {
 	drugSvc := &rxReminderHandlerDrugService{}
 	handler := NewRXReminderHandlerHandler(reminderSvc, treatmentSvc, drugSvc)
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(
-		apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: patientID}),
-		responseWriter, r,
-	)
+	handler.ServeHTTP(responseWriter, r.WithContext(apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: patientID})))
 	test.Equals(t, http.StatusBadRequest, responseWriter.Code)
 }
 
@@ -390,10 +367,7 @@ func TestRxReminderHandlerPOSTAccessRequired(t *testing.T) {
 	drugSvc := &rxReminderHandlerDrugService{}
 	handler := NewRXReminderHandlerHandler(reminderSvc, treatmentSvc, drugSvc)
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(
-		apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: patientID}),
-		responseWriter, r,
-	)
+	handler.ServeHTTP(responseWriter, r.WithContext(apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: patientID})))
 	test.Equals(t, http.StatusForbidden, responseWriter.Code)
 	test.Equals(t, treatmentSvc.patientCanAccessTreatmentPatientIDParam, patientID)
 	test.Equals(t, treatmentSvc.patientCanAccessTreatmentTreatmentIDParam, treatmentID)
@@ -421,10 +395,7 @@ func TestRxReminderHandlerPOSTCreateRXReminderErr(t *testing.T) {
 	drugSvc := &rxReminderHandlerDrugService{}
 	handler := NewRXReminderHandlerHandler(reminderSvc, treatmentSvc, drugSvc)
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(
-		apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: patientID}),
-		responseWriter, r,
-	)
+	handler.ServeHTTP(responseWriter, r.WithContext(apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: patientID})))
 	test.Equals(t, http.StatusInternalServerError, responseWriter.Code)
 }
 
@@ -462,10 +433,7 @@ func TestRxReminderHandlerPOSTRxReminder(t *testing.T) {
 			},
 		},
 	)
-	handler.ServeHTTP(
-		apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: patientID}),
-		responseWriter, r,
-	)
+	handler.ServeHTTP(responseWriter, r.WithContext(apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: patientID})))
 	test.Equals(t, http.StatusOK, responseWriter.Code)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
 	test.Equals(t, patientID, reminderSvc.remindersForPatientParam)
@@ -486,10 +454,7 @@ func TestRxReminderHandlerPUTRxReminderTreatmentIDRequired(t *testing.T) {
 	drugSvc := &rxReminderHandlerDrugService{}
 	handler := NewRXReminderHandlerHandler(reminderSvc, treatmentSvc, drugSvc)
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(
-		apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: patientID}),
-		responseWriter, r,
-	)
+	handler.ServeHTTP(responseWriter, r.WithContext(apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: patientID})))
 	test.Equals(t, http.StatusBadRequest, responseWriter.Code)
 }
 
@@ -509,10 +474,7 @@ func TestRxReminderHandlerPUTRxReminderReminderTextRequired(t *testing.T) {
 	drugSvc := &rxReminderHandlerDrugService{}
 	handler := NewRXReminderHandlerHandler(reminderSvc, treatmentSvc, drugSvc)
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(
-		apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: patientID}),
-		responseWriter, r,
-	)
+	handler.ServeHTTP(responseWriter, r.WithContext(apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: patientID})))
 	test.Equals(t, http.StatusBadRequest, responseWriter.Code)
 }
 
@@ -533,10 +495,7 @@ func TestRxReminderHandlerPUTRxReminderTimesRequired(t *testing.T) {
 	drugSvc := &rxReminderHandlerDrugService{}
 	handler := NewRXReminderHandlerHandler(reminderSvc, treatmentSvc, drugSvc)
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(
-		apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: patientID}),
-		responseWriter, r,
-	)
+	handler.ServeHTTP(responseWriter, r.WithContext(apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: patientID})))
 	test.Equals(t, http.StatusBadRequest, responseWriter.Code)
 }
 
@@ -556,10 +515,7 @@ func TestRxReminderHandlerPUTRxIntervalRequired(t *testing.T) {
 	drugSvc := &rxReminderHandlerDrugService{}
 	handler := NewRXReminderHandlerHandler(reminderSvc, treatmentSvc, drugSvc)
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(
-		apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: patientID}),
-		responseWriter, r,
-	)
+	handler.ServeHTTP(responseWriter, r.WithContext(apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: patientID})))
 	test.Equals(t, http.StatusBadRequest, responseWriter.Code)
 }
 
@@ -580,10 +536,7 @@ func TestRxReminderHandlerPUTRxDaysWithCUSTOMRequired(t *testing.T) {
 	drugSvc := &rxReminderHandlerDrugService{}
 	handler := NewRXReminderHandlerHandler(reminderSvc, treatmentSvc, drugSvc)
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(
-		apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: patientID}),
-		responseWriter, r,
-	)
+	handler.ServeHTTP(responseWriter, r.WithContext(apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: patientID})))
 	test.Equals(t, http.StatusBadRequest, responseWriter.Code)
 }
 
@@ -606,10 +559,7 @@ func TestRxReminderHandlerPUTAccessRequired(t *testing.T) {
 	drugSvc := &rxReminderHandlerDrugService{}
 	handler := NewRXReminderHandlerHandler(reminderSvc, treatmentSvc, drugSvc)
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(
-		apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: patientID}),
-		responseWriter, r,
-	)
+	handler.ServeHTTP(responseWriter, r.WithContext(apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: patientID})))
 	test.Equals(t, http.StatusForbidden, responseWriter.Code)
 	test.Equals(t, treatmentSvc.patientCanAccessTreatmentPatientIDParam, patientID)
 	test.Equals(t, treatmentSvc.patientCanAccessTreatmentTreatmentIDParam, treatmentID)
@@ -637,10 +587,7 @@ func TestRxReminderHandlerPUTCreateRXReminderErr(t *testing.T) {
 	drugSvc := &rxReminderHandlerDrugService{}
 	handler := NewRXReminderHandlerHandler(reminderSvc, treatmentSvc, drugSvc)
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(
-		apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: patientID}),
-		responseWriter, r,
-	)
+	handler.ServeHTTP(responseWriter, r.WithContext(apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: patientID})))
 	test.Equals(t, http.StatusInternalServerError, responseWriter.Code)
 }
 
@@ -678,10 +625,7 @@ func TestRxReminderHandlerPUTRxReminder(t *testing.T) {
 			},
 		},
 	)
-	handler.ServeHTTP(
-		apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: patientID}),
-		responseWriter, r,
-	)
+	handler.ServeHTTP(responseWriter, r.WithContext(apiservice.CtxWithPatient(context.Background(), &common.Patient{ID: patientID})))
 	test.Equals(t, http.StatusOK, responseWriter.Code)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
 	test.Equals(t, treatmentID, reminderSvc.updateRXReminderTreatmentIDParam)

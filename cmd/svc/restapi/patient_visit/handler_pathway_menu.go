@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"strings"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/app_url"
@@ -44,7 +42,7 @@ func (p *pathwayMenuPathway) TypeName() string {
 	return "pathway"
 }
 
-func NewPathwayMenuHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func NewPathwayMenuHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(&pathwayMenuHandler{
 			dataAPI: dataAPI,
@@ -52,10 +50,10 @@ func NewPathwayMenuHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 		httputil.Get)
 }
 
-func (h *pathwayMenuHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *pathwayMenuHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	menu, err := h.dataAPI.PathwayMenu()
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -67,11 +65,11 @@ func (h *pathwayMenuHandler) ServeHTTP(ctx context.Context, w http.ResponseWrite
 	}
 
 	var patient *common.Patient
-	account, ok := apiservice.CtxAccount(ctx)
+	account, ok := apiservice.CtxAccount(r.Context())
 	if ok && account.Role == api.RolePatient {
 		patient, err = h.dataAPI.GetPatientFromAccountID(account.ID)
 		if err != nil && !api.IsErrNotFound(err) {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 	}
@@ -83,7 +81,7 @@ func (h *pathwayMenuHandler) ServeHTTP(ctx context.Context, w http.ResponseWrite
 
 	container, err := transformMenu(menuCtx, menu)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

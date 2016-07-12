@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"context"
-
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/mediautils"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/responses"
@@ -36,7 +34,7 @@ type mediaHandler struct {
 func NewMedia(
 	apiDomain string,
 	mediaSvc *media.ImageService, metricsRegistry metrics.Registry,
-) httputil.ContextHandler {
+) http.Handler {
 	h := &mediaHandler{
 		apiDomain:       apiDomain,
 		mediaSvc:        mediaSvc,
@@ -48,10 +46,10 @@ func NewMedia(
 	return httputil.SupportedMethods(h, httputil.Get, httputil.Post)
 }
 
-func (h *mediaHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *mediaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case httputil.Get:
-		vars := mux.Vars(ctx)
+		vars := mux.Vars(r.Context())
 		mediaID := vars["id"]
 		if mediaID == "" {
 			http.NotFound(w, r)
@@ -59,11 +57,11 @@ func (h *mediaHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *
 		}
 		rd, err := h.parseGETRequest(r)
 		if err != nil {
-			apiservice.WriteBadRequestError(ctx, err, w, r)
+			apiservice.WriteBadRequestError(err, w, r)
 		}
-		h.serveGET(ctx, w, r, rd, mediaID)
+		h.serveGET(w, r, rd, mediaID)
 	case httputil.Post:
-		h.servePOST(ctx, w, r)
+		h.servePOST(w, r)
 	}
 }
 
@@ -89,7 +87,7 @@ func (h *mediaHandler) parseGETRequest(r *http.Request) (*responses.MediaGETRequ
 	return rd, nil
 }
 
-func (h *mediaHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request, rd *responses.MediaGETRequest, mediaID string) {
+func (h *mediaHandler) serveGET(w http.ResponseWriter, r *http.Request, rd *responses.MediaGETRequest, mediaID string) {
 	startTime := time.Now()
 	defer func() {
 		h.statGetLatency.Update(time.Since(startTime).Nanoseconds() / 1e3)
@@ -98,16 +96,16 @@ func (h *mediaHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *h
 	id := fmt.Sprintf(mediaPathFormatString, mediaID)
 	rc, meta, err := h.mediaSvc.GetReader(id, &media.ImageSize{Width: rd.Width, Height: rd.Height, Crop: rd.Crop, AllowScaleUp: rd.AllowScaleUp})
 	if errors.Cause(err) == media.ErrNotFound {
-		apiservice.WriteResourceNotFoundError(ctx, "media not found", w, r)
+		apiservice.WriteResourceNotFoundError("media not found", w, r)
 		return
 	} else if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 	copyWithHeaders(w, rc, int(meta.Size), meta.MimeType)
 }
 
-func (h *mediaHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *mediaHandler) servePOST(w http.ResponseWriter, r *http.Request) {
 	startTime := time.Now()
 	defer func() {
 		h.statPostLatency.Update(time.Since(startTime).Nanoseconds() / 1e3)
@@ -122,14 +120,14 @@ func (h *mediaHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *
 
 	mediaID, err := idgen.NewID()
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	id := fmt.Sprintf(mediaPathFormatString, mediaID)
 	meta, err := h.mediaSvc.PutReader(id, file)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

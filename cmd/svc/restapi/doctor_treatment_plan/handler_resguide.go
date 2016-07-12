@@ -3,8 +3,6 @@ package doctor_treatment_plan
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -29,7 +27,7 @@ type ResourceGuideResponse struct {
 	Guides []*responses.ResourceGuide `json:"resource_guides"`
 }
 
-func NewResourceGuideHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) httputil.ContextHandler {
+func NewResourceGuideHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.RequestCacheHandler(
@@ -42,7 +40,8 @@ func NewResourceGuideHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatche
 		httputil.Get, httputil.Put, httputil.Delete)
 }
 
-func (h *resourceGuideHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+func (h *resourceGuideHandler) IsAuthorized(r *http.Request) (bool, error) {
+	ctx := r.Context()
 	requestCache := apiservice.MustCtxCache(ctx)
 	account := apiservice.MustCtxAccount(ctx)
 
@@ -79,32 +78,32 @@ func (h *resourceGuideHandler) IsAuthorized(ctx context.Context, r *http.Request
 	return true, nil
 }
 
-func (h *resourceGuideHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	requestCache := apiservice.MustCtxCache(ctx)
+func (h *resourceGuideHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(r.Context())
 	tp := requestCache[apiservice.CKTreatmentPlan].(*common.TreatmentPlan)
 
 	if !tp.InDraftMode() {
-		apiservice.WriteValidationError(ctx, "treatment plan must be in draft mode", w, r)
+		apiservice.WriteValidationError("treatment plan must be in draft mode", w, r)
 		return
 	}
 
 	switch r.Method {
 	case "GET":
-		h.listResourceGuides(ctx, w, r)
+		h.listResourceGuides(w, r)
 	case "PUT":
-		h.addResourceGuides(ctx, w, r)
+		h.addResourceGuides(w, r)
 	case "DELETE":
-		h.removeResourceGuide(ctx, w, r)
+		h.removeResourceGuide(w, r)
 	}
 }
 
-func (h *resourceGuideHandler) listResourceGuides(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	requestCache := apiservice.MustCtxCache(ctx)
+func (h *resourceGuideHandler) listResourceGuides(w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(r.Context())
 	req := requestCache[apiservice.CKRequestData].(*ResourceGuideRequest)
 
 	guides, err := h.dataAPI.ListTreatmentPlanResourceGuides(req.TreatmentPlanID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -122,8 +121,8 @@ func (h *resourceGuideHandler) listResourceGuides(ctx context.Context, w http.Re
 	httputil.JSONResponse(w, http.StatusOK, res)
 }
 
-func (h *resourceGuideHandler) addResourceGuides(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	requestCache := apiservice.MustCtxCache(ctx)
+func (h *resourceGuideHandler) addResourceGuides(w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(r.Context())
 	req := requestCache[apiservice.CKRequestData].(*ResourceGuideRequest)
 	doctorID := requestCache[apiservice.CKDoctorID].(int64)
 	ids := make([]int64, len(req.GuideIDs))
@@ -131,7 +130,7 @@ func (h *resourceGuideHandler) addResourceGuides(ctx context.Context, w http.Res
 		ids[i] = id.Int64()
 	}
 	if err := h.dataAPI.AddResourceGuidesToTreatmentPlan(req.TreatmentPlanID, ids); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -144,13 +143,13 @@ func (h *resourceGuideHandler) addResourceGuides(ctx context.Context, w http.Res
 	apiservice.WriteJSONSuccess(w)
 }
 
-func (h *resourceGuideHandler) removeResourceGuide(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	requestCache := apiservice.MustCtxCache(ctx)
+func (h *resourceGuideHandler) removeResourceGuide(w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(r.Context())
 	req := requestCache[apiservice.CKRequestData].(*ResourceGuideRequest)
 	doctorID := requestCache[apiservice.CKDoctorID].(int64)
 
 	if err := h.dataAPI.RemoveResourceGuidesFromTreatmentPlan(req.TreatmentPlanID, []int64{req.GuideID}); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

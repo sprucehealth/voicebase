@@ -1,13 +1,12 @@
 package router
 
 import (
+	"context"
 	"database/sql"
 	"io"
 	"net/http"
 	stdhttputil "net/http/httputil"
 	"net/url"
-
-	"context"
 
 	resources "github.com/cookieo9/resources-go"
 	"github.com/samuel/go-librato/librato"
@@ -125,7 +124,7 @@ type Config struct {
 }
 
 // New returns the root handler for the www web app
-func New(c *Config) httputil.ContextHandler {
+func New(c *Config) http.Handler {
 	if c.StaticResourceURL == "" {
 		c.StaticResourceURL = "/static"
 	}
@@ -217,10 +216,9 @@ func New(c *Config) httputil.ContextHandler {
 	if err != nil {
 		golog.Fatalf(err.Error())
 	}
-	rp := stdhttputil.NewSingleHostReverseProxy(proxyURL)
-	router.NotFoundHandler = httputil.ToContextHandler(rp)
+	router.NotFoundHandler = stdhttputil.NewSingleHostReverseProxy(proxyURL)
 
-	secureRedirectHandler := httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	secureRedirectHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !environment.IsTest() && r.Header.Get("X-Forwarded-Proto") != "https" {
 			u := r.URL
 			u.Scheme = "https"
@@ -228,7 +226,7 @@ func New(c *Config) httputil.ContextHandler {
 			http.Redirect(w, r, r.URL.String(), http.StatusMovedPermanently)
 			return
 		}
-		router.ServeHTTP(ctx, w, r)
+		router.ServeHTTP(w, r)
 	})
 
 	webRequestLogger := func(ctx context.Context, ev *httputil.RequestEvent) {
@@ -284,8 +282,8 @@ func New(c *Config) httputil.ContextHandler {
 }
 
 // StaticHTMLHandler serves the named file from templates/static/<name> on GET
-func StaticHTMLHandler(name string) httputil.ContextHandler {
-	return httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func StaticHTMLHandler(name string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		f, err := resources.Open("templates/static/" + name)
 		if err != nil {
 			www.InternalServerError(w, r, err)
@@ -298,8 +296,8 @@ func StaticHTMLHandler(name string) httputil.ContextHandler {
 }
 
 // RobotsTXTHandler returns a static robots.txt
-func RobotsTXTHandler() httputil.ContextHandler {
-	return httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func RobotsTXTHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		// TODO: set cache headers
 		if _, err := w.Write(robotsTXT); err != nil {
@@ -310,8 +308,8 @@ func RobotsTXTHandler() httputil.ContextHandler {
 
 // TopLevelSitemapXMLHandler returns a static sitemap.xml which contains a sitemap index pointing to the
 // different sitemaps
-func TopLevelSitemapXMLHandler() httputil.ContextHandler {
-	return httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func TopLevelSitemapXMLHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/xml")
 		// TODO: set cache headers
 		if _, err := w.Write(topLevelSiteMapXML); err != nil {
@@ -321,8 +319,8 @@ func TopLevelSitemapXMLHandler() httputil.ContextHandler {
 }
 
 // MainSitemapXMLHandler returns a static sitemap.xml for the main website.
-func MainSitemapXMLHandler() httputil.ContextHandler {
-	return httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func MainSitemapXMLHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/xml")
 		// TODO: set cache headers
 		if _, err := w.Write(sitemapXML); err != nil {

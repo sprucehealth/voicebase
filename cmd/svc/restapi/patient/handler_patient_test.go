@@ -165,7 +165,7 @@ func TestAbandonVisit_Successful(t *testing.T) {
 	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{Role: api.RolePatient})
 
 	h := NewPatientVisitHandler(m, nil, nil, nil, "", "", nil, nil, time.Duration(0), &taggingTest.TestTaggingClient{})
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 
 	test.Equals(t, true, m.caseUpdate != nil)
@@ -188,7 +188,7 @@ func TestAbandonVisit_Idempotent(t *testing.T) {
 	test.OK(t, err)
 
 	h := NewPatientVisitHandler(m, nil, nil, nil, "", "", nil, nil, time.Duration(0), &taggingTest.TestTaggingClient{})
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 }
 
@@ -231,7 +231,7 @@ func TestCreateVisit_FirstAvailable(t *testing.T) {
 	r, err := http.NewRequest("POST", "api.spruce.local", bytes.NewBuffer(jsonData))
 	test.OK(t, err)
 
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 
 	test.Equals(t, http.StatusOK, w.Code)
 
@@ -282,7 +282,7 @@ func TestCreateVisit_DoctorPicked(t *testing.T) {
 	r, err := http.NewRequest("POST", "api.spruce.local", bytes.NewBuffer(jsonData))
 	test.OK(t, err)
 
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 
 	test.Equals(t, http.StatusOK, w.Code)
 
@@ -356,7 +356,7 @@ func TestCreatePatient_DoctorPicked(t *testing.T) {
 	test.OK(t, err)
 	r.Header.Set("Content-Type", "application/json")
 
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 
 	test.Equals(t, http.StatusOK, w.Code)
 
@@ -425,7 +425,7 @@ func TestCreatePatient_FirstAvailable(t *testing.T) {
 	test.OK(t, err)
 	r.Header.Set("Content-Type", "application/json")
 
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 
 	test.Equals(t, http.StatusOK, w.Code)
 
@@ -458,6 +458,6 @@ func testForbiddenDelete(t *testing.T, status string) {
 	test.OK(t, err)
 
 	h := NewPatientVisitHandler(m, nil, nil, nil, "", "", nil, nil, time.Duration(0), &taggingTest.TestTaggingClient{})
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusForbidden, w.Code)
 }

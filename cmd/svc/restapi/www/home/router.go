@@ -2,6 +2,7 @@ package home
 
 import (
 	"html/template"
+	"net/http"
 	"sort"
 	"strings"
 	"time"
@@ -17,7 +18,6 @@ import (
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/ratelimit"
 	"github.com/sprucehealth/backend/libs/sig"
@@ -102,10 +102,10 @@ func SetupRoutes(r *mux.Router, config *Config) {
 	// CareFinder
 	r.PathPrefix("/dermatologist-near-me").Handler(NewCareFinderHandler(config.Cfg))
 
-	authFilter := func(h httputil.ContextHandler) httputil.ContextHandler {
+	authFilter := func(h http.Handler) http.Handler {
 		return www.AuthRequiredHandler(h, nil, config.AuthAPI)
 	}
-	authOptionalFilter := func(h httputil.ContextHandler) httputil.ContextHandler {
+	authOptionalFilter := func(h http.Handler) http.Handler {
 		return www.AuthRequiredHandler(h, h, config.AuthAPI)
 	}
 	r.Handle("/patient/medical-record", authFilter(newMedRecordWebDownloadHandler(config.DataAPI, config.Stores["medicalrecords"])))
@@ -143,7 +143,7 @@ func SetupRoutes(r *mux.Router, config *Config) {
 	r.Handle("/e/optout", newEmailOptoutHandler(config.DataAPI, config.AuthAPI, config.Signer, config.TemplateLoader))
 
 	// API
-	apiAuthFilter := func(h httputil.ContextHandler) httputil.ContextHandler {
+	apiAuthFilter := func(h http.Handler) http.Handler {
 		return www.APIAuthRequiredHandler(h, config.AuthAPI)
 	}
 	r.Handle("/api/auth/sign-in", newSignInAPIHandler(config.AuthAPI))

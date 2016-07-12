@@ -1,18 +1,14 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
 
-	"bytes"
-
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/dal"
-
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/libs/httputil"
 )
@@ -31,7 +27,7 @@ type textLinkResponseData struct {
 	Success bool `json:"success"`
 }
 
-func NewTextLinkHandler(doctorDAL dal.DoctorDAL, webURL string) httputil.ContextHandler {
+func NewTextLinkHandler(doctorDAL dal.DoctorDAL, webURL string) http.Handler {
 	u, err := url.Parse(webURL)
 	if err != nil {
 		panic(err)
@@ -43,7 +39,7 @@ func NewTextLinkHandler(doctorDAL dal.DoctorDAL, webURL string) httputil.Context
 	}, httputil.Post)
 }
 
-func (t *textLinkHandler) ServeHTTP(context context.Context, w http.ResponseWriter, r *http.Request) {
+func (t *textLinkHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var req textLinkRequestData
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		www.APIBadRequestError(w, r, "could not decode request body")

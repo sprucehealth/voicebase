@@ -7,8 +7,6 @@ import (
 	"io"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/attribution/model"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -28,25 +26,25 @@ type attributionPOSTRequest struct {
 }
 
 // NewAttributionHandler returns an initialized instance of attributionHandler
-func NewAttributionHandler(attributionDAL attributionDAL) httputil.ContextHandler {
+func NewAttributionHandler(attributionDAL attributionDAL) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(
 			&attributionHandler{attributionDAL: attributionDAL}), httputil.Post)
 }
 
-func (h *attributionHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *attributionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case httputil.Post:
-		rd, err := h.parsePOSTRequest(ctx, r)
+		rd, err := h.parsePOSTRequest(r)
 		if err != nil {
-			apiservice.WriteBadRequestError(ctx, err, w, r)
+			apiservice.WriteBadRequestError(err, w, r)
 			return
 		}
-		h.servePOST(ctx, w, r, rd)
+		h.servePOST(w, r, rd)
 	}
 }
 
-func (h *attributionHandler) parsePOSTRequest(ctx context.Context, r *http.Request) (*attributionPOSTRequest, error) {
+func (h *attributionHandler) parsePOSTRequest(r *http.Request) (*attributionPOSTRequest, error) {
 	rd := &attributionPOSTRequest{}
 	if err := json.NewDecoder(r.Body).Decode(rd); err != nil && err != io.EOF {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -57,26 +55,26 @@ func (h *attributionHandler) parsePOSTRequest(ctx context.Context, r *http.Reque
 	return rd, nil
 }
 
-func (h *attributionHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *http.Request, rd *attributionPOSTRequest) {
+func (h *attributionHandler) servePOST(w http.ResponseWriter, r *http.Request, rd *attributionPOSTRequest) {
 	ad := &model.AttributionData{Data: rd.Data}
-	if account, ok := apiservice.CtxAccount(ctx); ok {
+	if account, ok := apiservice.CtxAccount(r.Context()); ok {
 		ad.AccountID = ptr.Int64(account.ID)
 	}
 
 	if ad.AccountID == nil {
 		deviceID, err := apiservice.GetDeviceIDFromHeader(r)
 		if err == apiservice.ErrNoDeviceIDHeader {
-			apiservice.WriteBadRequestError(ctx, err, w, r)
+			apiservice.WriteBadRequestError(err, w, r)
 			return
 		} else if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 		ad.DeviceID = ptr.String(deviceID)
 	}
 	_, err := h.attributionDAL.InsertAttributionData(ad)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 	apiservice.WriteJSONSuccess(w)

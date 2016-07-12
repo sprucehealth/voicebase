@@ -7,12 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 const (
@@ -87,26 +84,26 @@ func ValidateAuth(authAPI api.AuthAPI, r *http.Request) (*common.Account, error)
 
 type authRequiredHandler struct {
 	authAPI       api.AuthAPI
-	okHandler     httputil.ContextHandler
-	failedHandler httputil.ContextHandler
+	okHandler     http.Handler
+	failedHandler http.Handler
 }
 
 type roleRequiredHandler struct {
 	roles         []string
-	okHandler     httputil.ContextHandler
-	failedHandler httputil.ContextHandler
+	okHandler     http.Handler
+	failedHandler http.Handler
 }
 
 type apiAuthRequiredFilter struct {
 	authAPI api.AuthAPI
-	h       httputil.ContextHandler
+	h       http.Handler
 }
 
 // APIRoleRequiredHandler returns a handler that can be used to restrict access to
 // an API handler to only requests from a user matching a set of roles. The request must
 // already have passed through the authentication handler.
-func APIRoleRequiredHandler(h httputil.ContextHandler, roles ...string) httputil.ContextHandler {
-	return RoleRequiredHandler(h, httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func APIRoleRequiredHandler(h http.Handler, roles ...string) http.Handler {
+	return RoleRequiredHandler(h, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		APIForbidden(w, r)
 	}), roles...)
 }
@@ -114,7 +111,7 @@ func APIRoleRequiredHandler(h httputil.ContextHandler, roles ...string) httputil
 // RoleRequiredHandler returns a handler that can be used to restrict access to
 // a handler to only requests from a user matching a set of roles. The request must
 // already have passed through the authentication handler.
-func RoleRequiredHandler(ok, failed httputil.ContextHandler, roles ...string) httputil.ContextHandler {
+func RoleRequiredHandler(ok, failed http.Handler, roles ...string) http.Handler {
 	if failed == nil {
 		failed = loginRedirectHandler
 	}
@@ -127,15 +124,15 @@ func RoleRequiredHandler(ok, failed httputil.ContextHandler, roles ...string) ht
 
 // APIAuthRequiredHandler returns a filter that can be used to restrict access to
 // an API handler only requests that are authenticated.
-func APIAuthRequiredHandler(h httputil.ContextHandler, authAPI api.AuthAPI) httputil.ContextHandler {
-	return AuthRequiredHandler(h, httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func APIAuthRequiredHandler(h http.Handler, authAPI api.AuthAPI) http.Handler {
+	return AuthRequiredHandler(h, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		APIForbidden(w, r)
 	}), authAPI)
 }
 
 // AuthRequiredHandler returns a filter that can be used to restrict access to
 // a handler only requests that are authenticated.
-func AuthRequiredHandler(ok, failed httputil.ContextHandler, authAPI api.AuthAPI) httputil.ContextHandler {
+func AuthRequiredHandler(ok, failed http.Handler, authAPI api.AuthAPI) http.Handler {
 	if failed == nil {
 		failed = loginRedirectHandler
 	}
@@ -146,40 +143,40 @@ func AuthRequiredHandler(ok, failed httputil.ContextHandler, authAPI api.AuthAPI
 	}
 }
 
-func (h roleRequiredHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	account := MustCtxAccount(ctx)
+func (h roleRequiredHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	account := MustCtxAccount(r.Context())
 	for _, role := range h.roles {
 		if account.Role == role {
-			h.okHandler.ServeHTTP(ctx, w, r)
+			h.okHandler.ServeHTTP(w, r)
 			return
 		}
 	}
-	h.failedHandler.ServeHTTP(ctx, w, r)
+	h.failedHandler.ServeHTTP(w, r)
 }
 
-func (h *authRequiredHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *authRequiredHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	account, err := ValidateAuth(h.authAPI, r)
 	switch err {
 	case nil:
-		h.okHandler.ServeHTTP(CtxWithAccount(ctx, account), w, r)
+		h.okHandler.ServeHTTP(w, r.WithContext(CtxWithAccount(r.Context(), account)))
 		return
 	case http.ErrNoCookie, api.ErrTokenDoesNotExist, api.ErrTokenExpired:
 	default:
 		// Log any other error
 		golog.Errorf("Failed to validate auth: %s", err.Error())
 	}
-	h.failedHandler.ServeHTTP(ctx, w, r)
+	h.failedHandler.ServeHTTP(w, r)
 }
 
-var loginRedirectHandler = httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+var loginRedirectHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	RedirectToSignIn(w, r)
 })
 
 // PasswordProtectFilter returns a function wrapper for an http handler to check if a specified
 // password is set before proceeding to the page requested.
-func PasswordProtectFilter(pass string, templateLoader *TemplateLoader) func(h httputil.ContextHandler) httputil.ContextHandler {
+func PasswordProtectFilter(pass string, templateLoader *TemplateLoader) func(h http.Handler) http.Handler {
 	tmpl := templateLoader.MustLoadTemplate("home/pass.html", "base.html", nil)
-	return func(h httputil.ContextHandler) httputil.ContextHandler {
+	return func(h http.Handler) http.Handler {
 		if pass == "" {
 			return h
 		}
@@ -192,16 +189,16 @@ func PasswordProtectFilter(pass string, templateLoader *TemplateLoader) func(h h
 }
 
 type passwordProtectHandler struct {
-	h    httputil.ContextHandler
+	h    http.Handler
 	pass string
 	tmpl *template.Template
 }
 
-func (h *passwordProtectHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *passwordProtectHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	c, err := r.Cookie(passCookieName)
 	if err == nil {
 		if c.Value == h.pass {
-			h.h.ServeHTTP(ctx, w, r)
+			h.h.ServeHTTP(w, r)
 			return
 		}
 	}

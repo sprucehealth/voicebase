@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/analytics"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -41,7 +39,7 @@ type PromotionConfirmationGETResponse struct {
 }
 
 // NewPromotionConfirmationHandler returns a new instance of the promotionConfirmationHandler
-func NewPromotionConfirmationHandler(dataAPI api.DataAPI, analyticsLogger analytics.Logger) httputil.ContextHandler {
+func NewPromotionConfirmationHandler(dataAPI api.DataAPI, analyticsLogger analytics.Logger) http.Handler {
 	return apiservice.NoAuthorizationRequired(
 		httputil.SupportedMethods(&promotionConfirmationHandler{
 			dataAPI:         dataAPI,
@@ -49,19 +47,19 @@ func NewPromotionConfirmationHandler(dataAPI api.DataAPI, analyticsLogger analyt
 		}, httputil.Get))
 }
 
-func (h *promotionConfirmationHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *promotionConfirmationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case httputil.Get:
-		req, err := h.parseGETRequest(ctx, r)
+		req, err := h.parseGETRequest(r)
 		if err != nil {
-			apiservice.WriteBadRequestError(ctx, err, w, r)
+			apiservice.WriteBadRequestError(err, w, r)
 			return
 		}
-		h.serveGET(ctx, w, r, req)
+		h.serveGET(w, r, req)
 	}
 }
 
-func (h *promotionConfirmationHandler) parseGETRequest(ctx context.Context, r *http.Request) (*PromotionConfirmationGETRequest, error) {
+func (h *promotionConfirmationHandler) parseGETRequest(r *http.Request) (*PromotionConfirmationGETRequest, error) {
 	rd := &PromotionConfirmationGETRequest{}
 	if err := r.ParseForm(); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -72,14 +70,14 @@ func (h *promotionConfirmationHandler) parseGETRequest(ctx context.Context, r *h
 	return rd, nil
 }
 
-func (h *promotionConfirmationHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request, req *PromotionConfirmationGETRequest) {
+func (h *promotionConfirmationHandler) serveGET(w http.ResponseWriter, r *http.Request, req *PromotionConfirmationGETRequest) {
 	// Check if the code provided is an account_code. If so we need to get the active referral program for that account
 	promoCode, err := h.dataAPI.LookupPromoCode(req.Code)
 	if api.IsErrNotFound(err) {
-		apiservice.WriteResourceNotFoundError(ctx, fmt.Sprintf("Unable to find promotion for code %s", req.Code), w, r)
+		apiservice.WriteResourceNotFoundError(fmt.Sprintf("Unable to find promotion for code %s", req.Code), w, r)
 		return
 	} else if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -90,7 +88,7 @@ func (h *promotionConfirmationHandler) serveGET(ctx context.Context, w http.Resp
 	if promoCode.IsReferral {
 		rp, err := h.dataAPI.ReferralProgram(promoCode.ID, common.PromotionTypes)
 		if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 		referralProgram := rp.Data.(ReferralProgram)
@@ -102,7 +100,7 @@ func (h *promotionConfirmationHandler) serveGET(ctx context.Context, w http.Resp
 		if err != nil && api.IsErrNotFound(err) {
 			dr, err := h.dataAPI.GetDoctorFromAccountID(rp.AccountID)
 			if err != nil {
-				apiservice.WriteError(ctx, fmt.Errorf("Unable to locate referral program owner for Account ID %d. Checked both patient and doctor records.", rp.AccountID), w, r)
+				apiservice.WriteError(fmt.Errorf("Unable to locate referral program owner for Account ID %d. Checked both patient and doctor records.", rp.AccountID), w, r)
 				return
 			}
 			title = "Welcome to Spruce"
@@ -125,7 +123,7 @@ func (h *promotionConfirmationHandler) serveGET(ctx context.Context, w http.Resp
 				}
 			})
 		} else if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		} else {
 			title = fmt.Sprintf("Your friend %s has given you a free visit.", patient.FirstName)
@@ -134,13 +132,13 @@ func (h *promotionConfirmationHandler) serveGET(ctx context.Context, w http.Resp
 		if rp.TemplateID != nil {
 			rpt, err := h.dataAPI.ReferralProgramTemplate(*rp.TemplateID, common.PromotionTypes)
 			if err != nil {
-				apiservice.WriteError(ctx, err, w, r)
+				apiservice.WriteError(err, w, r)
 				return
 			}
 			if rpt.PromotionCodeID != nil {
 				promotion, err := h.dataAPI.Promotion(*rpt.PromotionCodeID, common.PromotionTypes)
 				if err != nil {
-					apiservice.WriteError(ctx, err, w, r)
+					apiservice.WriteError(err, w, r)
 					return
 				}
 				code = promotion.Code
@@ -165,7 +163,7 @@ func (h *promotionConfirmationHandler) serveGET(ctx context.Context, w http.Resp
 	} else {
 		p, err = h.dataAPI.Promotion(promoCode.ID, common.PromotionTypes)
 		if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 	}
@@ -186,7 +184,7 @@ func (h *promotionConfirmationHandler) serveGET(ctx context.Context, w http.Resp
 
 	promotion, ok := p.Data.(Promotion)
 	if !ok {
-		apiservice.WriteError(ctx, errors.New("Unable to cast promotion data into Promotion type"), w, r)
+		apiservice.WriteError(errors.New("Unable to cast promotion data into Promotion type"), w, r)
 		return
 	}
 

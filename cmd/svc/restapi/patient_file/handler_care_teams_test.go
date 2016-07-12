@@ -1,12 +1,11 @@
 package patient_file
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -60,8 +59,8 @@ func TestDoctorRequiresPatientID(t *testing.T) {
 	handler := NewPatientCareTeamsHandler(mockedDataAPI_handlerCareTeams{nil, 1, 2, false}, "api.spruce.local")
 	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RoleDoctor})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	apiservice.WriteError(ctx, apiservice.NewValidationError("patient_id required"), expectedWriter, r)
-	handler.ServeHTTP(ctx, responseWriter, r)
+	apiservice.WriteError(apiservice.NewValidationError("patient_id required"), expectedWriter, r)
+	handler.ServeHTTP(responseWriter, r.WithContext(ctx))
 	test.Equals(t, expectedWriter.Body, responseWriter.Body)
 }
 
@@ -72,8 +71,8 @@ func TestDoctorCannotAccessUnownedPatient(t *testing.T) {
 	verifyDoctorAccessToPatientFileFn = cannotAccess
 	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RoleDoctor})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	apiservice.WriteError(ctx, apiservice.NewAccessForbiddenError(), expectedWriter, r)
-	handler.ServeHTTP(ctx, responseWriter, r)
+	apiservice.WriteError(apiservice.NewAccessForbiddenError(), expectedWriter, r)
+	handler.ServeHTTP(responseWriter, r.WithContext(ctx))
 	test.Equals(t, expectedWriter.Body, responseWriter.Body)
 }
 
@@ -83,8 +82,8 @@ func TestPatientCannotAccessUnownedCase(t *testing.T) {
 	handler := NewPatientCareTeamsHandler(mockedDataAPI_handlerCareTeams{nil, 1, 2, false}, "api.spruce.local")
 	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	apiservice.WriteAccessNotAllowedError(ctx, expectedWriter, r)
-	handler.ServeHTTP(ctx, responseWriter, r)
+	apiservice.WriteAccessNotAllowedError(expectedWriter, r)
+	handler.ServeHTTP(responseWriter, r.WithContext(ctx))
 	test.Equals(t, expectedWriter.Body, responseWriter.Body)
 }
 
@@ -97,7 +96,7 @@ func TestDoctorCanFetchAllCareTeams(t *testing.T) {
 	getCareTeamsForPatientByCaseResponse = buildDummyGetCareTeamsForPatientByCaseResponse(2)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 0, "api.spruce.local"))
-	handler.ServeHTTP(ctx, responseWriter, r)
+	handler.ServeHTTP(responseWriter, r.WithContext(ctx))
 	// TODO: We can't verify the JSON output here as maps do not serialize determinisitically
 	// test.Equals(t, expectedWriter.Body, responseWriter.Body)
 	test.Equals(t, 2, len(createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 0, "api.spruce.local").CareTeams))
@@ -113,7 +112,7 @@ func TestPatientCanFetchAllCareTeams(t *testing.T) {
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 0, "api.spruce.local"))
 
-	handler.ServeHTTP(ctx, responseWriter, r)
+	handler.ServeHTTP(responseWriter, r.WithContext(ctx))
 	// TODO: We can't verify the JSON output here as maps do not serialize determinisitically
 	// test.Equals(t, expectedWriter.Body, responseWriter.Body)
 	test.Equals(t, 2, len(createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 0, "api.spruce.local").CareTeams))
@@ -128,7 +127,7 @@ func TestMACanFetchAllCareTeams(t *testing.T) {
 	getCareTeamsForPatientByCaseResponse = buildDummyGetCareTeamsForPatientByCaseResponse(2)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 0, "api.spruce.local"))
-	handler.ServeHTTP(ctx, responseWriter, r)
+	handler.ServeHTTP(responseWriter, r.WithContext(ctx))
 	// TODO: We can't verify the JSON output here as maps do not serialize determinisitically
 	// test.Equals(t, expectedWriter.Body, responseWriter.Body)
 	test.Equals(t, 2, len(createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 0, "api.spruce.local").CareTeams))
@@ -143,7 +142,7 @@ func TestDoctorCanFilterCareTeamsByCase(t *testing.T) {
 	getCareTeamsForPatientByCaseResponse = buildDummyGetCareTeamsForPatientByCaseResponse(2)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 1, "api.spruce.local"))
-	handler.ServeHTTP(ctx, responseWriter, r)
+	handler.ServeHTTP(responseWriter, r.WithContext(ctx))
 	test.Equals(t, expectedWriter.Body, responseWriter.Body)
 	test.Equals(t, 1, len(createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 1, "api.spruce.local").CareTeams))
 }
@@ -157,7 +156,7 @@ func TestPatientCanFilterCareTeamsByCase(t *testing.T) {
 	getCareTeamsForPatientByCaseResponse = buildDummyGetCareTeamsForPatientByCaseResponse(2)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 1, "api.spruce.local"))
-	handler.ServeHTTP(ctx, responseWriter, r)
+	handler.ServeHTTP(responseWriter, r.WithContext(ctx))
 	test.Equals(t, expectedWriter.Body, responseWriter.Body)
 	test.Equals(t, 1, len(createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 1, "api.spruce.local").CareTeams))
 }

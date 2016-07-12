@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -110,18 +108,18 @@ func wrapInternalError(err error, code int, r *http.Request) error {
 	}
 }
 
-func WriteError(ctx context.Context, err error, w http.ResponseWriter, r *http.Request) {
+func WriteError(err error, w http.ResponseWriter, r *http.Request) {
 	switch err := err.(type) {
 	case *SpruceError:
-		writeSpruceError(ctx, err, w, r)
+		writeSpruceError(err, w, r)
 	case SError:
-		writeSpruceError(ctx, &SpruceError{
+		writeSpruceError(&SpruceError{
 			UserError:      err.UserError(),
 			DeveloperError: err.Error(),
 			HTTPStatusCode: err.HTTPStatusCode(),
 		}, w, r)
 	default:
-		writeSpruceError(ctx, wrapInternalError(err, http.StatusInternalServerError, r).(*SpruceError), w, r)
+		writeSpruceError(wrapInternalError(err, http.StatusInternalServerError, r).(*SpruceError), w, r)
 	}
 }
 
@@ -147,34 +145,34 @@ func WriteUserError(w http.ResponseWriter, httpStatusCode int, errorString strin
 	httputil.JSONResponse(w, httpStatusCode, userError)
 }
 
-func WriteValidationError(ctx context.Context, msg string, w http.ResponseWriter, r *http.Request) {
-	writeSpruceError(ctx, NewValidationError(msg).(*SpruceError), w, r)
+func WriteValidationError(msg string, w http.ResponseWriter, r *http.Request) {
+	writeSpruceError(NewValidationError(msg).(*SpruceError), w, r)
 }
 
 // WriteBadRequestError is used for errors that occur during parsing of the HTTP request.
-func WriteBadRequestError(ctx context.Context, err error, w http.ResponseWriter, r *http.Request) {
-	writeSpruceError(ctx, wrapInternalError(err, http.StatusBadRequest, r).(*SpruceError), w, r)
+func WriteBadRequestError(err error, w http.ResponseWriter, r *http.Request) {
+	writeSpruceError(wrapInternalError(err, http.StatusBadRequest, r).(*SpruceError), w, r)
 }
 
 // WriteAccessNotAllowedError is used when the user is authenticated but not
 // authorized to access a given resource. Hopefully the user will never see
 // this since the client shouldn't present the option to begin with.
-func WriteAccessNotAllowedError(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	writeSpruceError(ctx, &SpruceError{
+func WriteAccessNotAllowedError(w http.ResponseWriter, r *http.Request) {
+	writeSpruceError(&SpruceError{
 		UserError:      "Access not permitted",
 		HTTPStatusCode: http.StatusForbidden,
 	}, w, r)
 }
 
-func WriteResourceNotFoundError(ctx context.Context, msg string, w http.ResponseWriter, r *http.Request) {
-	writeSpruceError(ctx, &SpruceError{
+func WriteResourceNotFoundError(msg string, w http.ResponseWriter, r *http.Request) {
+	writeSpruceError(&SpruceError{
 		UserError:      msg,
 		HTTPStatusCode: http.StatusNotFound,
 	}, w, r)
 }
 
-func writeSpruceError(ctx context.Context, err *SpruceError, w http.ResponseWriter, r *http.Request) {
-	err.RequestID = httputil.RequestID(ctx)
+func writeSpruceError(err *SpruceError, w http.ResponseWriter, r *http.Request) {
+	err.RequestID = httputil.RequestID(r.Context())
 	var msg = err.DeveloperError
 	if msg == "" {
 		msg = err.UserError

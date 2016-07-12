@@ -1,6 +1,7 @@
 package httputil
 
 import (
+	"context"
 	"net/http"
 	"net/url"
 	"os"
@@ -8,8 +9,6 @@ import (
 	"strconv"
 	"sync"
 	"time"
-
-	"context"
 
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -106,23 +105,23 @@ func CtxWithRequestID(ctx context.Context, id uint64) context.Context {
 }
 
 type requestIDHandler struct {
-	h ContextHandler
+	h http.Handler
 }
 
 // RequestIDHandler wraps a handler to provide generation of a unique
 // request ID per request. The ID is available by calling RequestID(request).
-func RequestIDHandler(h ContextHandler) ContextHandler {
+func RequestIDHandler(h http.Handler) http.Handler {
 	return &requestIDHandler{h: h}
 }
 
-func (h *requestIDHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *requestIDHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	requestID, err := idgen.NewID()
 	if err != nil {
 		requestID = 0
 		golog.Errorf("Failed to generate request ID: %s", err.Error())
 	}
 	w.Header().Set("S-Request-ID", strconv.FormatUint(requestID, 10))
-	h.h.ServeHTTP(CtxWithRequestID(ctx, requestID), w, r)
+	h.h.ServeHTTP(w, r.WithContext(CtxWithRequestID(r.Context(), requestID)))
 }
 
 // LogFunc is a function that logs http request events. The RequestEvent object is only
@@ -130,7 +129,7 @@ func (h *requestIDHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter,
 type LogFunc func(context.Context, *RequestEvent)
 
 type loggingHandler struct {
-	h           ContextHandler
+	h           http.Handler
 	appName     string
 	behindProxy bool
 	alog        LogFunc
@@ -138,7 +137,7 @@ type loggingHandler struct {
 
 // LoggingHandler wraps a handler to provide request logging. alog is optional, but
 // if provided it overrides the default logging to golog.
-func LoggingHandler(h ContextHandler, appName string, behindProxy bool, alog LogFunc) ContextHandler {
+func LoggingHandler(h http.Handler, appName string, behindProxy bool, alog LogFunc) http.Handler {
 	return &loggingHandler{
 		h:           h,
 		behindProxy: behindProxy,
@@ -147,7 +146,7 @@ func LoggingHandler(h ContextHandler, appName string, behindProxy bool, alog Log
 	}
 }
 
-func (h *loggingHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *loggingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	logrw := loggingResponseWriterPool.Get().(*loggingResponseWriter)
 	*logrw = loggingResponseWriter{
 		ResponseWriter: w,
@@ -156,6 +155,7 @@ func (h *loggingHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 
 	startTime := time.Now()
 
+	ctx := r.Context()
 	ctx = context.WithValue(ctx, logMapContextKey{}, conc.NewMap())
 
 	// Save the URL here incase it gets mangled by the time
@@ -225,5 +225,5 @@ func (h *loggingHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 		loggingResponseWriterPool.Put(logrw)
 	}()
 
-	h.h.ServeHTTP(ctx, logrw, r)
+	h.h.ServeHTTP(logrw, r.WithContext(ctx))
 }

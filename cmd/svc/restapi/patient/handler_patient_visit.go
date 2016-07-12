@@ -8,8 +8,6 @@ import (
 	"strconv"
 	"time"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/address"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -123,7 +121,7 @@ func NewPatientVisitHandler(
 	mediaStore *mediastore.Store,
 	expirationDuration time.Duration,
 	taggingClient tagging.Client,
-) httputil.ContextHandler {
+) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(
@@ -142,55 +140,55 @@ func NewPatientVisitHandler(
 		httputil.Get, httputil.Post, httputil.Put, httputil.Delete)
 }
 
-func (s *patientVisitHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (s *patientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case httputil.Get:
-		s.getPatientVisit(ctx, w, r)
+		s.getPatientVisit(w, r)
 	case httputil.Post:
-		s.createNewPatientVisitHandler(ctx, w, r)
+		s.createNewPatientVisitHandler(w, r)
 	case httputil.Put:
-		s.submitPatientVisit(ctx, w, r)
+		s.submitPatientVisit(w, r)
 	case httputil.Delete:
-		s.deletePatientVisit(ctx, w, r)
+		s.deletePatientVisit(w, r)
 	default:
 		http.NotFound(w, r)
 	}
 }
 
-func (s *patientVisitHandler) deletePatientVisit(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (s *patientVisitHandler) deletePatientVisit(w http.ResponseWriter, r *http.Request) {
 	requestData := &PatientVisitRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
-		apiservice.WriteValidationError(ctx, err.Error(), w, r)
+		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	} else if requestData.PatientVisitID == 0 {
-		apiservice.WriteValidationError(ctx, "patient_visit_id required", w, r)
+		apiservice.WriteValidationError("patient_visit_id required", w, r)
 		return
 	}
 
-	patientID, err := s.dataAPI.GetPatientIDFromAccountID(apiservice.MustCtxAccount(ctx).ID)
+	patientID, err := s.dataAPI.GetPatientIDFromAccountID(apiservice.MustCtxAccount(r.Context()).ID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 	visit, err := s.dataAPI.GetPatientVisitFromID(requestData.PatientVisitID)
 	if err != nil {
-		apiservice.WriteValidationError(ctx, err.Error(), w, r)
+		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
 
 	// make sure the patient making the request owns the visit
 	if visit.PatientID != patientID {
-		apiservice.WriteAccessNotAllowedError(ctx, w, r)
+		apiservice.WriteAccessNotAllowedError(w, r)
 		return
 	}
 
 	// only allowed to abandon the initial visit to a case for now
 	if visit.IsFollowup {
-		apiservice.WriteAccessNotAllowedError(ctx, w, r)
+		apiservice.WriteAccessNotAllowedError(w, r)
 		return
 	} else if visit.Status != common.PVStatusOpen && visit.Status != common.PVStatusDeleted {
 		// can only delete an open visit
-		apiservice.WriteAccessNotAllowedError(ctx, w, r)
+		apiservice.WriteAccessNotAllowedError(w, r)
 		return
 	}
 
@@ -199,7 +197,7 @@ func (s *patientVisitHandler) deletePatientVisit(ctx context.Context, w http.Res
 	if _, err := s.dataAPI.UpdatePatientVisit(visit.ID.Int64(), &api.PatientVisitUpdate{
 		Status: &visitStatus,
 	}); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -208,26 +206,26 @@ func (s *patientVisitHandler) deletePatientVisit(ctx context.Context, w http.Res
 	if err := s.dataAPI.UpdatePatientCase(visit.PatientCaseID.Int64(), &api.PatientCaseUpdate{
 		Status: &caseStatus,
 	}); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	apiservice.WriteJSONSuccess(w)
 }
 
-func (s *patientVisitHandler) submitPatientVisit(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.Request) {
 	requestData := &PatientVisitRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
-		apiservice.WriteBadRequestError(ctx, err, w, r)
+		apiservice.WriteBadRequestError(err, w, r)
 		return
 	} else if requestData.PatientVisitID == 0 {
-		apiservice.WriteValidationError(ctx, "missing patient_visit_id", w, r)
+		apiservice.WriteValidationError("missing patient_visit_id", w, r)
 		return
 	}
 
-	patient, err := s.dataAPI.GetPatientFromAccountID(apiservice.MustCtxAccount(ctx).ID)
+	patient, err := s.dataAPI.GetPatientFromAccountID(apiservice.MustCtxAccount(r.Context()).ID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -243,13 +241,13 @@ func (s *patientVisitHandler) submitPatientVisit(ctx context.Context, w http.Res
 			requestData.Card,
 			patient,
 			enforceAddressRequirement); err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 		// Refetch the patient object to get latest address
 		patient, err = s.dataAPI.GetPatientFromID(patient.ID)
 		if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 
@@ -258,7 +256,7 @@ func (s *patientVisitHandler) submitPatientVisit(ctx context.Context, w http.Res
 
 	visit, err := submitVisit(s.dataAPI, s.dispatcher, patient, requestData.PatientVisitID, cardID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -383,10 +381,10 @@ func (s *patientVisitHandler) applyCaseTag(tag string, caseID int64, hidden bool
 	return nil
 }
 
-func (s *patientVisitHandler) getPatientVisit(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	patient, err := s.dataAPI.GetPatientFromAccountID(apiservice.MustCtxAccount(ctx).ID)
+func (s *patientVisitHandler) getPatientVisit(w http.ResponseWriter, r *http.Request) {
+	patient, err := s.dataAPI.GetPatientFromAccountID(apiservice.MustCtxAccount(r.Context()).ID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -397,15 +395,15 @@ func (s *patientVisitHandler) getPatientVisit(ctx context.Context, w http.Respon
 	if visitIDStr != "" {
 		visitID, err := strconv.ParseInt(visitIDStr, 10, 64)
 		if err != nil {
-			apiservice.WriteValidationError(ctx, err.Error(), w, r)
+			apiservice.WriteValidationError(err.Error(), w, r)
 			return
 		}
 		patientVisit, err = s.dataAPI.GetPatientVisitFromID(visitID)
 		if api.IsErrNotFound(err) {
-			apiservice.WriteResourceNotFoundError(ctx, "visit not found", w, r)
+			apiservice.WriteResourceNotFoundError("visit not found", w, r)
 			return
 		} else if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 	} else {
@@ -416,23 +414,23 @@ func (s *patientVisitHandler) getPatientVisit(ctx context.Context, w http.Respon
 		// and so did not pass in a patient_visit_id parameter
 		patientCases, err := s.dataAPI.CasesForPathway(patient.ID, api.AcnePathwayTag, []string{common.PCStatusActive.String(), common.PCStatusOpen.String()})
 		if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 		if len(patientCases) > 1 {
-			apiservice.WriteError(ctx, fmt.Errorf("Expected single active case for pathway %s but got %d", api.AcnePathwayTag, len(patientCases)), w, r)
+			apiservice.WriteError(fmt.Errorf("Expected single active case for pathway %s but got %d", api.AcnePathwayTag, len(patientCases)), w, r)
 			return
 		} else if len(patientCases) == 0 {
-			apiservice.WriteResourceNotFoundError(ctx, fmt.Sprintf("no active case exists for pathway %s", api.AcnePathwayTag), w, r)
+			apiservice.WriteResourceNotFoundError(fmt.Sprintf("no active case exists for pathway %s", api.AcnePathwayTag), w, r)
 			return
 		}
 
 		patientVisits, err := s.dataAPI.GetVisitsForCase(patientCases[0].ID.Int64(), common.OpenPatientVisitStates())
 		if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		} else if len(patientVisits) == 0 {
-			apiservice.WriteResourceNotFoundError(ctx, "no patient visit exists", w, r)
+			apiservice.WriteResourceNotFoundError("no patient visit exists", w, r)
 			return
 		}
 
@@ -443,14 +441,14 @@ func (s *patientVisitHandler) getPatientVisit(ctx context.Context, w http.Respon
 
 	if patientVisit.Status == common.PVStatusPending {
 		if err := checkLayoutVersionForFollowup(s.dataAPI, s.dispatcher, patientVisit, r); err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 	}
 
 	intakeInfo, err := IntakeLayoutForVisit(s.dataAPI, s.apiDomain, s.webDomain, s.mediaStore, s.expirationDuration, patientVisit, patient, api.RolePatient)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -469,16 +467,16 @@ func (s *patientVisitHandler) getPatientVisit(ctx context.Context, w http.Respon
 	httputil.JSONResponse(w, http.StatusOK, response)
 }
 
-func (s *patientVisitHandler) createNewPatientVisitHandler(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (s *patientVisitHandler) createNewPatientVisitHandler(w http.ResponseWriter, r *http.Request) {
 	var rq PatientVisitRequestData
 	if err := apiservice.DecodeRequestData(&rq, r); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	patient, err := s.dataAPI.GetPatientFromAccountID(apiservice.MustCtxAccount(ctx).ID)
+	patient, err := s.dataAPI.GetPatientFromAccountID(apiservice.MustCtxAccount(r.Context()).ID)
 	if err != nil {
-		apiservice.WriteError(ctx, errors.New("Unable to get patientID from the accountID retreived from the auth token: "+err.Error()), w, r)
+		apiservice.WriteError(errors.New("Unable to get patientID from the accountID retreived from the auth token: "+err.Error()), w, r)
 		return
 	}
 	if rq.PathwayTag == "" {
@@ -501,7 +499,7 @@ func (s *patientVisitHandler) createNewPatientVisitHandler(ctx context.Context, 
 		nil,
 		practiceExtension)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

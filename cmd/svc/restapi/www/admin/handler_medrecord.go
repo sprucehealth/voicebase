@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"time"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/diagnosis"
@@ -27,7 +25,7 @@ func newMedicalRecordHandler(
 	apiDomain string,
 	webDomain string,
 	signer *sig.Signer,
-) httputil.ContextHandler {
+) http.Handler {
 	return httputil.SupportedMethods(
 		&medicalRecordHandler{
 			dataAPI: dataAPI,
@@ -43,7 +41,7 @@ func newMedicalRecordHandler(
 		}, httputil.Get)
 }
 
-func (h *medicalRecordHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *medicalRecordHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	patientID, err := common.ParsePatientID(r.FormValue("patient_id"))
 	if err != nil {
 		http.NotFound(w, r)

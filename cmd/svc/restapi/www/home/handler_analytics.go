@@ -9,8 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"context"
-
 	"github.com/cookieo9/resources-go"
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/boot"
@@ -99,7 +97,7 @@ type analyticsAPIRequest struct {
 	Events      []event `json:"events"`
 }
 
-func newAnalyticsHandler(logger analytics.Logger, statsRegistry metrics.Registry) httputil.ContextHandler {
+func newAnalyticsHandler(logger analytics.Logger, statsRegistry metrics.Registry) http.Handler {
 	once.Do(func() {
 		logoContentType = "image/png"
 		fi, err := resources.DefaultBundle.Open("static/img/logo-small.png")
@@ -124,7 +122,7 @@ func newAnalyticsHandler(logger analytics.Logger, statsRegistry metrics.Registry
 	return h
 }
 
-func (h *analyticsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *analyticsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	now := time.Now().UTC()
 	nowUnix := float64(now.UnixNano()) / 1e9
 
@@ -161,7 +159,7 @@ func (h *analyticsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter,
 
 	h.statEventsReceived.Inc(uint64(len(events)))
 
-	account, _ := www.CtxAccount(ctx)
+	account, _ := www.CtxAccount(r.Context())
 
 	var eventsOut []analytics.Event
 	for _, ev := range events {

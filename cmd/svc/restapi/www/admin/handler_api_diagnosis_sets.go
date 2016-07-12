@@ -5,8 +5,6 @@ import (
 	"errors"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/diagnosis"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
@@ -18,7 +16,7 @@ type diagnosisSetsHandler struct {
 	diagnosisAPI diagnosis.API
 }
 
-func newDiagnosisSetsHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API) httputil.ContextHandler {
+func newDiagnosisSetsHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API) http.Handler {
 	return httputil.SupportedMethods(&diagnosisSetsHandler{
 		dataAPI:      dataAPI,
 		diagnosisAPI: diagnosisAPI,
@@ -43,8 +41,8 @@ type diagnosisSetUpdateRequest struct {
 	Create     []string `json:"create,omitempty"`
 }
 
-func (d *diagnosisSetsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	// account := www.MustCtxAccount(ctx)
+func (d *diagnosisSetsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// account := www.MustCtxAccount(r.Context())
 	// audit.LogAction(account.ID, "AdminAPI", "ListDiagnosisSets", nil)
 
 	switch r.Method {

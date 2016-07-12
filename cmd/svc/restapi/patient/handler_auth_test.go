@@ -172,9 +172,9 @@ func newJSONTestRequest(method, path string, body interface{}) *http.Request {
 	return rq
 }
 
-func testJSONHandler(handler httputil.ContextHandler, ctx context.Context, req *http.Request, res interface{}) error {
+func testJSONHandler(handler http.Handler, ctx context.Context, req *http.Request, res interface{}) error {
 	rw := httptest.NewRecorder()
-	handler.ServeHTTP(ctx, rw, req)
+	handler.ServeHTTP(rw, req.WithContext(ctx))
 	if rw.Code != http.StatusOK {
 		return fmt.Errorf("Expected status %d, got %d", http.StatusOK, rw.Code)
 	}

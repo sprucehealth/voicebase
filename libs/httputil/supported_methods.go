@@ -3,13 +3,11 @@ package httputil
 import (
 	"net/http"
 	"strings"
-
-	"context"
 )
 
 type supportedMethods struct {
 	methods []string
-	handler ContextHandler
+	handler http.Handler
 }
 
 // SupportedMethods wraps an HTTP handler, and before a request is
@@ -17,17 +15,17 @@ type supportedMethods struct {
 // If it does not match one of the expected methods then StatusMethodNotAllowed
 // status is returned along with a list of allowed methods in the "Allow"
 // HTTP header.
-func SupportedMethods(h ContextHandler, methods ...string) ContextHandler {
+func SupportedMethods(h http.Handler, methods ...string) http.Handler {
 	return &supportedMethods{
 		methods: methods,
 		handler: h,
 	}
 }
 
-func (sm *supportedMethods) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (sm *supportedMethods) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for _, m := range sm.methods {
 		if r.Method == m {
-			sm.handler.ServeHTTP(ctx, w, r)
+			sm.handler.ServeHTTP(w, r)
 			return
 		}
 	}

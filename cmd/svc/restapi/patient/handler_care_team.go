@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"sort"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -18,7 +16,7 @@ type careTeamHandler struct {
 	apiDomain string
 }
 
-func NewCareTeamHandler(dataAPI api.DataAPI, apiDomain string) httputil.ContextHandler {
+func NewCareTeamHandler(dataAPI api.DataAPI, apiDomain string) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(&careTeamHandler{
@@ -33,16 +31,16 @@ type careTeamResponse struct {
 	CareTeam []*responses.PatientCareTeamMember `json:"care_team"`
 }
 
-func (c *careTeamHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	patientID, err := c.dataAPI.GetPatientIDFromAccountID(apiservice.MustCtxAccount(ctx).ID)
+func (c *careTeamHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	patientID, err := c.dataAPI.GetPatientIDFromAccountID(apiservice.MustCtxAccount(r.Context()).ID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	cases, err := c.dataAPI.GetCasesForPatient(patientID, append(common.SubmittedPatientCaseStates(), common.PCStatusOpen.String()))
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -53,7 +51,7 @@ func (c *careTeamHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, 
 
 	careTeams, err := c.dataAPI.CaseCareTeams(caseIDs)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

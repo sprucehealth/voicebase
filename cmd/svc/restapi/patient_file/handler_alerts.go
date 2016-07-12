@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"sort"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -17,7 +15,7 @@ type alertsHandler struct {
 	dataAPI api.DataAPI
 }
 
-func NewAlertsHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func NewAlertsHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.RequestCacheHandler(
@@ -40,7 +38,8 @@ type alertsResponse struct {
 	Alerts []*responses.Alert `json:"alerts"`
 }
 
-func (a *alertsHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+func (a *alertsHandler) IsAuthorized(r *http.Request) (bool, error) {
+	ctx := r.Context()
 	requestCache := apiservice.MustCtxCache(ctx)
 	account := apiservice.MustCtxAccount(ctx)
 
@@ -106,7 +105,8 @@ func (a *alertsHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool
 	return true, nil
 }
 
-func (a *alertsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (a *alertsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	requestCache := apiservice.MustCtxCache(ctx)
 	account := apiservice.MustCtxAccount(ctx)
 	rd := requestCache[apiservice.CKRequestData].(*alertsRequestData)
@@ -117,13 +117,13 @@ func (a *alertsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r 
 
 	patient, err = a.dataAPI.Patient(rd.PatientID, true)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	// If the patient isn't a registered patient then we have no visits or alerts for them currently
 	if patient.Status != api.PatientRegistered {
-		apiservice.WriteResourceNotFoundError(ctx, "no alerts available for non registered patients", w, r)
+		apiservice.WriteResourceNotFoundError("no alerts available for non registered patients", w, r)
 		return
 	}
 
@@ -135,7 +135,7 @@ func (a *alertsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r 
 
 		visitID, err = a.getVisitIDFromCaseID(rd.CaseID)
 		if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 
@@ -144,7 +144,7 @@ func (a *alertsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r 
 
 		cases, err := a.dataAPI.GetCasesForPatient(rd.PatientID, common.SubmittedPatientCaseStates())
 		if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 
@@ -154,7 +154,7 @@ func (a *alertsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r 
 
 			visitID, err = a.getVisitIDFromCaseID(caseID)
 			if err != nil {
-				apiservice.WriteError(ctx, err, w, r)
+				apiservice.WriteError(err, w, r)
 				return
 			}
 		}
@@ -162,39 +162,39 @@ func (a *alertsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r 
 
 	alerts, err := a.dataAPI.AlertsForVisit(visitID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	visit, err := a.dataAPI.GetPatientVisitFromID(visitID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	patientCase, err := a.dataAPI.GetPatientCaseFromID(visit.PatientCaseID.Int64())
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	doctor, err := a.dataAPI.GetDoctorFromAccountID(account.ID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	if patient == nil {
 		patient, err = a.dataAPI.GetPatientFromPatientVisitID(visitID)
 		if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 	}
 
 	dAlerts, err := DynamicAlerts(patientCase, doctor, patient, a.dataAPI)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 	alerts = append(alerts, dAlerts...)

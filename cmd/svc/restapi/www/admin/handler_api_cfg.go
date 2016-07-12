@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -24,13 +22,13 @@ type cfgUpdate struct {
 	Snapshot cfg.Snapshot `json:"values"`
 }
 
-func newCFGHandler(cfg cfg.Store) httputil.ContextHandler {
+func newCFGHandler(cfg cfg.Store) http.Handler {
 	return httputil.SupportedMethods(&cfgHandler{
 		cfg: cfg,
 	}, httputil.Get, httputil.Patch)
 }
 
-func (h *cfgHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *cfgHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case httputil.Get:
 		httputil.JSONResponse(w, http.StatusOK, &cfgResponse{

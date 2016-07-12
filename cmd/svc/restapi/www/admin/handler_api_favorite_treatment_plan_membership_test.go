@@ -6,8 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/responses"
@@ -61,26 +59,26 @@ func TestHandlerFTPMembershipGETSuccess(t *testing.T) {
 		Name: "Foo",
 	}
 	memberships := []*common.FTPMembership{
-		&common.FTPMembership{
+		{
 			DoctorID:          1,
 			ClinicalPathwayID: 1,
 		},
-		&common.FTPMembership{
+		{
 			DoctorID:          1,
 			ClinicalPathwayID: 2,
 		},
-		&common.FTPMembership{
+		{
 			DoctorID:          2,
 			ClinicalPathwayID: 1,
 		},
 	}
 	doctors := []*common.Doctor{
-		&common.Doctor{
+		{
 			ID:        encoding.NewObjectID(1),
 			FirstName: "DFN1",
 			LastName:  "DLN1",
 		},
-		&common.Doctor{
+		{
 			ID:        encoding.NewObjectID(2),
 			FirstName: "DFN2",
 			LastName:  "DLN2",
@@ -90,19 +88,19 @@ func TestHandlerFTPMembershipGETSuccess(t *testing.T) {
 	resp := ftpMembershipGETResponse{
 		Name: "Foo",
 		Memberships: []*responses.FavoriteTreatmentPlanMembership{
-			&responses.FavoriteTreatmentPlanMembership{
+			{
 				DoctorID:  1,
 				FirstName: "DFN1",
 				LastName:  "DLN1",
 				PathwayID: 1,
 			},
-			&responses.FavoriteTreatmentPlanMembership{
+			{
 				DoctorID:  1,
 				FirstName: "DFN1",
 				LastName:  "DLN1",
 				PathwayID: 2,
 			},
-			&responses.FavoriteTreatmentPlanMembership{
+			{
 				DoctorID:  2,
 				FirstName: "DFN2",
 				LastName:  "DLN2",
@@ -114,7 +112,7 @@ func TestHandlerFTPMembershipGETSuccess(t *testing.T) {
 	m.Handle(`/admin/api/treatment_plan/favorite/{id:[0-9]+}/membership`, ftpMembershipHandler)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, resp)
-	m.ServeHTTP(context.Background(), responseWriter, r)
+	m.ServeHTTP(responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }
 
@@ -125,7 +123,7 @@ func TestHandlerFTPMembershipPOST(t *testing.T) {
 	m := mux.NewRouter()
 	m.Handle(`/admin/api/treatment_plan/favorite/{id:[0-9]+}/membership`, ftpMembershipHandler)
 	responseWriter := httptest.NewRecorder()
-	m.ServeHTTP(context.Background(), responseWriter, r)
+	m.ServeHTTP(responseWriter, r)
 	test.Equals(t, "true\n", responseWriter.Body.String())
 	test.Equals(t, http.StatusOK, responseWriter.Code)
 }
@@ -137,7 +135,7 @@ func TestHandlerFTPMembershipDELETE(t *testing.T) {
 	m := mux.NewRouter()
 	m.Handle(`/admin/api/treatment_plan/favorite/{id:[0-9]+}/membership`, ftpMembershipHandler)
 	responseWriter := httptest.NewRecorder()
-	m.ServeHTTP(context.Background(), responseWriter, r)
+	m.ServeHTTP(responseWriter, r)
 	test.Equals(t, "true\n", responseWriter.Body.String())
 	test.Equals(t, http.StatusOK, responseWriter.Code)
 }

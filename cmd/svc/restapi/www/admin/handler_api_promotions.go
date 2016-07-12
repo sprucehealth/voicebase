@@ -8,8 +8,6 @@ import (
 	"reflect"
 	"time"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/responses"
@@ -47,30 +45,30 @@ type PromotionsPOSTResponse struct {
 }
 
 // NewPromotionsHandler returns an initialized instance of promotionHandler
-func newPromotionsHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func newPromotionsHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&promotionsHandler{dataAPI: dataAPI}, httputil.Get, httputil.Post)
 }
 
-func (h *promotionsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *promotionsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case httputil.Get:
-		req, err := h.parseGETRequest(ctx, r)
+		req, err := h.parseGETRequest(r)
 		if err != nil {
 			www.APIBadRequestError(w, r, err.Error())
 			return
 		}
-		h.serveGET(ctx, w, r, req)
+		h.serveGET(w, r, req)
 	case httputil.Post:
-		req, err := h.parsePOSTRequest(ctx, r)
+		req, err := h.parsePOSTRequest(r)
 		if err != nil {
 			www.APIBadRequestError(w, r, err.Error())
 			return
 		}
-		h.servePOST(ctx, w, r, req)
+		h.servePOST(w, r, req)
 	}
 }
 
-func (h *promotionsHandler) parseGETRequest(ctx context.Context, r *http.Request) (*PromotionsGETRequest, error) {
+func (h *promotionsHandler) parseGETRequest(r *http.Request) (*PromotionsGETRequest, error) {
 	rd := &PromotionsGETRequest{}
 	if err := r.ParseForm(); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -81,7 +79,7 @@ func (h *promotionsHandler) parseGETRequest(ctx context.Context, r *http.Request
 	return rd, nil
 }
 
-func (h *promotionsHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request, req *PromotionsGETRequest) {
+func (h *promotionsHandler) serveGET(w http.ResponseWriter, r *http.Request, req *PromotionsGETRequest) {
 	promotions, err := h.dataAPI.Promotions(nil, req.Types, common.PromotionTypes)
 	if api.IsErrNotFound(err) {
 		httputil.JSONResponse(w, http.StatusOK, &PromotionsGETResponse{Promotions: []*responses.Promotion{}})
@@ -98,7 +96,7 @@ func (h *promotionsHandler) serveGET(ctx context.Context, w http.ResponseWriter,
 	httputil.JSONResponse(w, http.StatusOK, &PromotionsGETResponse{Promotions: resps})
 }
 
-func (h *promotionsHandler) parsePOSTRequest(ctx context.Context, r *http.Request) (*PromotionsPOSTRequest, error) {
+func (h *promotionsHandler) parsePOSTRequest(r *http.Request) (*PromotionsPOSTRequest, error) {
 	rd := &PromotionsPOSTRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&rd); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -110,7 +108,7 @@ func (h *promotionsHandler) parsePOSTRequest(ctx context.Context, r *http.Reques
 	return rd, nil
 }
 
-func (h *promotionsHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *http.Request, req *PromotionsPOSTRequest) {
+func (h *promotionsHandler) servePOST(w http.ResponseWriter, r *http.Request, req *PromotionsPOSTRequest) {
 	// Check if the code already exists
 	if _, err := h.dataAPI.LookupPromoCode(req.Code); !api.IsErrNotFound(err) {
 		www.APIBadRequestError(w, r, fmt.Sprintf("PromoCode %q is already in use by another promotion.", req.Code))

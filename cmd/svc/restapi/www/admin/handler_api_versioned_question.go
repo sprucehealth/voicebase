@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"context" // The base handler struct to handle requests for interacting with versioned questions
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/responses"
@@ -77,24 +75,24 @@ type versionedAdditionalQuestionFieldsPOSTRequest map[string]interface{}
 // Authorization Required: true
 // Supported Roles: ADMIN_ROLE
 // Supported Method: GET, POST
-func newVersionedQuestionHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func newVersionedQuestionHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		&versionedQuestionHandler{
 			dataAPI: dataAPI,
 		}, httputil.Get, httputil.Post)
 }
 
-func (h *versionedQuestionHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *versionedQuestionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		requestData, err := h.parseGETRequest(ctx, r)
+		requestData, err := h.parseGETRequest(r)
 		if err != nil {
 			www.APIBadRequestError(w, r, err.Error())
 			return
 		}
 		h.serveGET(w, r, requestData)
 	case "POST":
-		requestData, err := h.parsePOSTRequest(ctx, r)
+		requestData, err := h.parsePOSTRequest(r)
 		if err != nil {
 			www.APIBadRequestError(w, r, err.Error())
 			return
@@ -107,7 +105,7 @@ func (h *versionedQuestionHandler) ServeHTTP(ctx context.Context, w http.Respons
 // Valid combinations inclde
 //	ID - Returns a question that maps to a specific ID
 //	Tag & Version - Returns a question that maps to a specific tag and version
-func (h *versionedQuestionHandler) parseGETRequest(ctx context.Context, r *http.Request) (*versionedQuestionGETRequest, error) {
+func (h *versionedQuestionHandler) parseGETRequest(r *http.Request) (*versionedQuestionGETRequest, error) {
 	rd := &versionedQuestionGETRequest{}
 	if err := r.ParseForm(); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -153,7 +151,7 @@ func (h *versionedQuestionHandler) serveQuestionIDGET(w http.ResponseWriter, r *
 }
 
 func (h *versionedQuestionHandler) serveQuestionTagGET(w http.ResponseWriter, r *http.Request, tag string, version, languageID int64) {
-	vqs, err := h.dataAPI.VersionedQuestions([]*api.QuestionQueryParams{&api.QuestionQueryParams{LanguageID: languageID, Version: version, QuestionTag: tag}})
+	vqs, err := h.dataAPI.VersionedQuestions([]*api.QuestionQueryParams{{LanguageID: languageID, Version: version, QuestionTag: tag}})
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return
@@ -201,7 +199,7 @@ func (h *versionedQuestionHandler) serveGETPOSTPostFetch(w http.ResponseWriter, 
 	httputil.JSONResponse(w, http.StatusOK, response)
 }
 
-func (h *versionedQuestionHandler) parsePOSTRequest(ctx context.Context, r *http.Request) (*versionedQuestionPOSTRequest, error) {
+func (h *versionedQuestionHandler) parsePOSTRequest(r *http.Request) (*versionedQuestionPOSTRequest, error) {
 	rd := &versionedQuestionPOSTRequest{}
 	if err := r.ParseForm(); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -324,7 +322,7 @@ func (h *versionedQuestionHandler) servePOST(w http.ResponseWriter, r *http.Requ
 }
 
 func answerResponsesForQuestion(dataAPI api.DataAPI, questionID, languageID int64) ([]*responses.VersionedAnswer, error) {
-	vas, err := dataAPI.VersionedAnswers([]*api.AnswerQueryParams{&api.AnswerQueryParams{LanguageID: languageID, QuestionID: questionID}})
+	vas, err := dataAPI.VersionedAnswers([]*api.AnswerQueryParams{{LanguageID: languageID, QuestionID: questionID}})
 	if err != nil {
 		return nil, err
 	}

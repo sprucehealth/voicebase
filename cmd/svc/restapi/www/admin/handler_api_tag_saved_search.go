@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/tagging"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -16,12 +14,12 @@ type tagSavedSearchHandler struct {
 	taggingClient tagging.Client
 }
 
-func newTagSavedSearchHandler(taggingClient tagging.Client) httputil.ContextHandler {
+func newTagSavedSearchHandler(taggingClient tagging.Client) http.Handler {
 	return httputil.SupportedMethods(&tagSavedSearchHandler{taggingClient: taggingClient}, httputil.Delete)
 }
 
-func (h *tagSavedSearchHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.ParseInt(mux.Vars(ctx)["id"], 10, 64)
+func (h *tagSavedSearchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(mux.Vars(r.Context())["id"], 10, 64)
 	if err != nil {
 		www.APINotFound(w, r)
 		return

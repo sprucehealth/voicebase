@@ -5,11 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
-	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/test"
 )
 
@@ -30,15 +27,15 @@ func (a *authAPIStub) ValidateToken(token string, platform api.Platform) (*commo
 func TestNoAuthenticationRequiredHandler(t *testing.T) {
 	var account *common.Account
 	apiStub := &authAPIStub{}
-	h := NoAuthenticationRequiredHandler(httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-		account, _ = CtxAccount(ctx)
+	h := NoAuthenticationRequiredHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		account, _ = CtxAccount(r.Context())
 		w.WriteHeader(http.StatusAccepted)
 	}), apiStub)
 
 	r, err := http.NewRequest("GET", "/", nil)
 	test.OK(t, err)
 	w := httptest.NewRecorder()
-	h.ServeHTTP(context.Background(), w, r)
+	h.ServeHTTP(w, r)
 	test.HTTPResponseCode(t, http.StatusAccepted, w)
 	test.Equals(t, (*common.Account)(nil), account)
 
@@ -47,7 +44,7 @@ func TestNoAuthenticationRequiredHandler(t *testing.T) {
 	test.OK(t, err)
 	r.Header.Set("Authorization", "token abc")
 	w = httptest.NewRecorder()
-	h.ServeHTTP(context.Background(), w, r)
+	h.ServeHTTP(w, r)
 	test.HTTPResponseCode(t, http.StatusAccepted, w)
 	test.Assert(t, account != nil, "Account not set")
 	test.Equals(t, api.RolePatient, account.Role)
@@ -58,8 +55,8 @@ func TestAuthenticationRequiredHandler(t *testing.T) {
 	var account *common.Account
 	var called bool
 	apiStub := &authAPIStub{}
-	h := AuthenticationRequiredHandler(httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-		account, _ = CtxAccount(ctx)
+	h := AuthenticationRequiredHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		account, _ = CtxAccount(r.Context())
 		called = true
 		w.WriteHeader(http.StatusAccepted)
 	}), apiStub)
@@ -67,7 +64,7 @@ func TestAuthenticationRequiredHandler(t *testing.T) {
 	r, err := http.NewRequest("GET", "/", nil)
 	test.OK(t, err)
 	w := httptest.NewRecorder()
-	h.ServeHTTP(context.Background(), w, r)
+	h.ServeHTTP(w, r)
 	test.HTTPResponseCode(t, http.StatusForbidden, w)
 	// Make sure handler isn't called
 	test.Equals(t, false, called)
@@ -77,7 +74,7 @@ func TestAuthenticationRequiredHandler(t *testing.T) {
 	test.OK(t, err)
 	r.Header.Set("Authorization", "token abc")
 	w = httptest.NewRecorder()
-	h.ServeHTTP(context.Background(), w, r)
+	h.ServeHTTP(w, r)
 	test.HTTPResponseCode(t, http.StatusAccepted, w)
 	test.Assert(t, account != nil, "Account not set")
 	test.Equals(t, api.RolePatient, account.Role)

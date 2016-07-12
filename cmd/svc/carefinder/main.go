@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"context"
-
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/libs/golog"
 )
@@ -67,10 +65,8 @@ func main() {
 
 	// setup the router to serve pages for carefinder
 	server := &http.Server{
-		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			hand.ServeHTTP(context.Background(), w, r)
-		}),
-		Addr: ":" + strconv.Itoa(c.ListenPort),
+		Handler: hand,
+		Addr:    ":" + strconv.Itoa(c.ListenPort),
 	}
 
 	// start server in non SSL mode assuming that SSL

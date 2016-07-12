@@ -3,8 +3,6 @@ package handlers
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -22,23 +20,23 @@ type notifyMeRequest struct {
 }
 
 // NewNotifyMeHandler returns an instance of notifyMeRequest
-func NewNotifyMeHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func NewNotifyMeHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(&notifyMeHandler{
 			dataAPI: dataAPI,
 		}), httputil.Post, httputil.Put)
 }
 
-func (n *notifyMeHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (n *notifyMeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var rd notifyMeRequest
 	if err := apiservice.DecodeRequestData(&rd, r); err != nil {
-		apiservice.WriteBadRequestError(ctx, err, w, r)
+		apiservice.WriteBadRequestError(err, w, r)
 		return
 	}
 
 	state, err := n.dataAPI.State(rd.State)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -48,8 +46,8 @@ func (n *notifyMeHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, 
 		State:     state.Abbreviation,
 		Platform:  spruceHeaders.Platform.String(),
 		UniqueKey: spruceHeaders.DeviceID,
-	}, "mobile", httputil.RequestID(ctx)); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+	}, "mobile", httputil.RequestID(r.Context())); err != nil {
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

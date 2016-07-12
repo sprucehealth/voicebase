@@ -1,6 +1,7 @@
 package patient_case
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -10,8 +11,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/address"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
@@ -214,7 +213,7 @@ func TestHome_UnAuthenticated_Eligible(t *testing.T) {
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	test.OK(t, err)
 	w := httptest.NewRecorder()
-	h.ServeHTTP(context.Background(), w, r)
+	h.ServeHTTP(w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 	testUnauthenticatedExperience(t, w)
 
@@ -222,7 +221,7 @@ func TestHome_UnAuthenticated_Eligible(t *testing.T) {
 	r, err = http.NewRequest("GET", "/?state_code=CA", nil)
 	test.OK(t, err)
 	w = httptest.NewRecorder()
-	h.ServeHTTP(context.Background(), w, r)
+	h.ServeHTTP(w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 	testUnauthenticatedExperience(t, w)
 }
@@ -249,7 +248,7 @@ func TestHome_UnAuthenticated_Ineligible(t *testing.T) {
 
 	test.OK(t, err)
 	w := httptest.NewRecorder()
-	h.ServeHTTP(context.Background(), w, r)
+	h.ServeHTTP(w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 	var jsonMap map[string]interface{}
 	test.OK(t, json.NewDecoder(w.Body).Decode(&jsonMap))
@@ -289,7 +288,7 @@ func TestHome_UnAuthenticated_Ineligible_NotifyConfirmation(t *testing.T) {
 	setRequestHeaders(r)
 
 	w := httptest.NewRecorder()
-	h.ServeHTTP(context.Background(), w, r)
+	h.ServeHTTP(w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 	var jsonMap map[string]interface{}
 	test.OK(t, json.NewDecoder(w.Body).Decode(&jsonMap))
@@ -372,7 +371,7 @@ func TestHome_Authenticated_IncompleteCase_NoDoctor(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 
 	var jsonMap map[string]interface{}
@@ -472,7 +471,7 @@ func TestHome_Authenticated_IncompleteCase_DoctorAssigned(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 
 	var jsonMap map[string]interface{}
@@ -562,7 +561,7 @@ func TestHome_Authenticated_CaseTriaged(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 
 	var jsonMap map[string]interface{}
 	test.OK(t, json.NewDecoder(w.Body).Decode(&jsonMap))
@@ -648,7 +647,7 @@ func TestHome_Authenticated_CompletedVisit_NoDoctor(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// there should be two items (the case card and the referral card)
@@ -746,7 +745,7 @@ func TestHome_Authenticated_CompletedVisit_DoctorAssigned(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// there should be two items (the case card and the referral card)
@@ -839,7 +838,7 @@ func TestHome_Authenticated_Messages_NoDoctor(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// there should be two items (the case card and the referral card)
@@ -944,7 +943,7 @@ func TestHome_Authenticated_MultipleMessages_NoDoctor(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// there should be two items (the case card and the referral card)
@@ -1048,7 +1047,7 @@ func TestHome_Authenticated_Message_DoctorAssigned(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// there should be two items (the case card and the referral card)
@@ -1161,7 +1160,7 @@ func TestHome_Authenticated_Message_VisitTreated(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// there should be three items (the case card, meet the care team and the referral card)
@@ -1282,7 +1281,7 @@ func TestHome_Authenticated_VisitTreated_TPNotViewed(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 
 	var jsonMap map[string]interface{}
@@ -1369,7 +1368,7 @@ func TestHome_Authenticated_NoUpdates(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 
 	var jsonMap map[string]interface{}
@@ -1467,7 +1466,7 @@ func TestHome_Authenticated_VisitTreated_TPViewed(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// there should be two items (the case card and the referral card)
@@ -1589,7 +1588,7 @@ func TestHome_Authenticated_MultipleTPs(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// there should be two items (the case card and the referral card)
@@ -1712,7 +1711,7 @@ func TestHome_Authenticated_CompletedCase_ReferAFriend_2_0_2(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// there should be two items (the case card and the referral card)
@@ -1844,7 +1843,7 @@ func TestHome_MultipleCases_Incomplete(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 
 	var jsonMap map[string]interface{}
@@ -1991,7 +1990,7 @@ func TestHome_MultipleCases_TPPending(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 
 	var jsonMap map[string]interface{}
@@ -2013,7 +2012,7 @@ func TestHome_CardDismiss(t *testing.T) {
 	w := httptest.NewRecorder()
 	ctx := testContext(api.RolePatient, 1, []string{features.OldRAFHomeCard})
 
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 	test.Equals(t, "case:12345", m.deleteFeedackFor)
 }

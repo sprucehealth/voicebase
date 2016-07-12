@@ -1,12 +1,10 @@
 package apiservice
 
 import (
+	"context"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type contextKey int
@@ -145,12 +143,13 @@ func CtxWithCache(ctx context.Context, c map[CacheKey]interface{}) context.Conte
 }
 
 // RequestCacheHandler wraps a handler to provide a cache in the request cache
-func RequestCacheHandler(h httputil.ContextHandler) httputil.ContextHandler {
-	return httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func RequestCacheHandler(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
 		_, ok := CtxCache(ctx)
 		if !ok {
 			ctx = CtxWithCache(ctx, nil)
 		}
-		h.ServeHTTP(ctx, w, r)
+		h.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

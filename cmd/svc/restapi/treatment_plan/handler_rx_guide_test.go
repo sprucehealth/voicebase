@@ -5,8 +5,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/libs/test"
@@ -38,7 +36,7 @@ func TestHandlerRXGuideRequiresParams(t *testing.T) {
 	test.OK(t, err)
 	handler := NewRXGuideHandler(mockedDataAPIHandlerRXGuide{})
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(context.Background(), responseWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, http.StatusBadRequest, responseWriter.Code)
 }
 
@@ -48,8 +46,7 @@ func TestHandlerRXGuideSuccess(t *testing.T) {
 	dataAPI := mockedDataAPIHandlerRXGuide{}
 	handler := NewRXGuideHandler(dataAPI)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	ctx := context.Background()
-	treatmentGuideResponse(ctx, dataAPI, "generic_name", "route", "", "dosage", "", nil, nil, expectedWriter, r)
-	handler.ServeHTTP(ctx, responseWriter, r)
+	treatmentGuideResponse(dataAPI, "generic_name", "route", "", "dosage", "", nil, nil, expectedWriter, r)
+	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }

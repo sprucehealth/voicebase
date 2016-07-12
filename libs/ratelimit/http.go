@@ -3,19 +3,16 @@ package ratelimit
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
-func Handler(h httputil.ContextHandler, rl RateLimiter, statsRegistry metrics.Registry) httputil.ContextHandler {
+func Handler(h http.Handler, rl RateLimiter, statsRegistry metrics.Registry) http.Handler {
 	statRateLimited := metrics.NewCounter()
 	statNotRateLimited := metrics.NewCounter()
 	statsRegistry.Add("ratelimited", statRateLimited)
 	statsRegistry.Add("successful", statNotRateLimited)
-	return httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if ok, err := rl.Check(1); err != nil {
 			golog.Errorf("Rate limit check failed: %s", err.Error())
 		} else if !ok {
@@ -23,14 +20,14 @@ func Handler(h httputil.ContextHandler, rl RateLimiter, statsRegistry metrics.Re
 			w.WriteHeader(http.StatusForbidden)
 			return
 		}
-		h.ServeHTTP(ctx, w, r)
+		h.ServeHTTP(w, r)
 	})
 }
 
-func RemoteAddrHandler(h httputil.ContextHandler, rl KeyedRateLimiter, prefix string, statsRegistry metrics.Registry) httputil.ContextHandler {
+func RemoteAddrHandler(h http.Handler, rl KeyedRateLimiter, prefix string, statsRegistry metrics.Registry) http.Handler {
 	statRateLimited := metrics.NewCounter()
 	statsRegistry.Add("ratelimited", statRateLimited)
-	return httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if ok, err := rl.Check(prefix+r.RemoteAddr, 1); err != nil {
 			golog.Errorf("Rate limit check failed: %s", err.Error())
 		} else if !ok {
@@ -38,6 +35,6 @@ func RemoteAddrHandler(h httputil.ContextHandler, rl KeyedRateLimiter, prefix st
 			w.WriteHeader(http.StatusForbidden)
 			return
 		}
-		h.ServeHTTP(ctx, w, r)
+		h.ServeHTTP(w, r)
 	})
 }

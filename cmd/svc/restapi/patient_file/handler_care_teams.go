@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -41,7 +39,7 @@ var verifyDoctorAccessToPatientFileFn = apiservice.ValidateDoctorAccessToPatient
 // NewPatientCareTeamsHandler returns a new handler to access the care teams associated with a given patient.
 // Authorization Required: true
 // Supported Roles: DOCTOR_ROLE, MA_ROLE, PATIENT_ROLE
-func NewPatientCareTeamsHandler(dataAPI api.DataAPI, apiDomain string) httputil.ContextHandler {
+func NewPatientCareTeamsHandler(dataAPI api.DataAPI, apiDomain string) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.RequestCacheHandler(
@@ -61,7 +59,8 @@ func NewPatientCareTeamsHandler(dataAPI api.DataAPI, apiDomain string) httputil.
 //			DoesCaseExistForPatient
 //		Patient:
 //			DoesCaseExistForPatient
-func (h *patientCareTeamHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+func (h *patientCareTeamHandler) IsAuthorized(r *http.Request) (bool, error) {
+	ctx := r.Context()
 	account := apiservice.MustCtxAccount(ctx)
 	requestCache := apiservice.MustCtxCache(ctx)
 
@@ -113,14 +112,14 @@ func (h *patientCareTeamHandler) IsAuthorized(ctx context.Context, r *http.Reque
 // Utilizes dataAPI.GetCareTeamsForPatient to fetch care teams
 // TODO:OPTIMIZATION: This method could be optimized in the way it manages array sizing
 // TODO:PAGINATE: This API returns an unbounded list of data and should be paginated in the future
-func (h *patientCareTeamHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	requestCache := apiservice.MustCtxCache(ctx)
+func (h *patientCareTeamHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(r.Context())
 	rd := requestCache[apiservice.CKRequestData].(*patientCareTeamRequest)
 
 	// get a list of cases for the patient
 	cases, err := h.dataAPI.GetCasesForPatient(rd.PatientID, append(common.SubmittedPatientCaseStates(), common.PCStatusOpen.String()))
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -131,7 +130,7 @@ func (h *patientCareTeamHandler) ServeHTTP(ctx context.Context, w http.ResponseW
 
 	careTeams, err := h.dataAPI.CaseCareTeams(caseIDs)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

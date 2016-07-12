@@ -5,13 +5,10 @@ import (
 	"html/template"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/response"
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/service"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/environment"
-	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
 )
 
@@ -20,16 +17,15 @@ type doctorPageHandler struct {
 	doctorService service.PageContentBuilder
 }
 
-func NewDoctorPageHandler(templateLoader *www.TemplateLoader, doctorService service.PageContentBuilder) httputil.ContextHandler {
+func NewDoctorPageHandler(templateLoader *www.TemplateLoader, doctorService service.PageContentBuilder) http.Handler {
 	return &doctorPageHandler{
 		refTemplate:   templateLoader.MustLoadTemplate("doctorpage.html", "base.html", nil),
 		doctorService: doctorService,
 	}
 }
 
-func (d *doctorPageHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-
-	vars := mux.Vars(ctx)
+func (d *doctorPageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r.Context())
 	doctorID := fmt.Sprintf("md-%s", vars["doctor"])
 	cityID := r.FormValue("city_id")
 

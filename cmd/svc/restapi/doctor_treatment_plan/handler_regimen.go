@@ -3,8 +3,6 @@ package doctor_treatment_plan
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -24,7 +22,7 @@ type DoctorRegimenRequestResponse struct {
 	DrugInternalName string                          `json:"drug_internal_name,omitempty"`
 }
 
-func NewRegimenHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) httputil.ContextHandler {
+func NewRegimenHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.RequestCacheHandler(
 			apiservice.AuthorizationRequired(&regimenHandler{
@@ -34,7 +32,8 @@ func NewRegimenHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) htt
 		httputil.Post)
 }
 
-func (d *regimenHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+func (d *regimenHandler) IsAuthorized(r *http.Request) (bool, error) {
+	ctx := r.Context()
 	requestCache := apiservice.MustCtxCache(ctx)
 	account := apiservice.MustCtxAccount(ctx)
 
@@ -72,14 +71,14 @@ func (d *regimenHandler) IsAuthorized(ctx context.Context, r *http.Request) (boo
 	return true, nil
 }
 
-func (d *regimenHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	requestCache := apiservice.MustCtxCache(ctx)
+func (d *regimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(r.Context())
 	treatmentPlan := requestCache[apiservice.CKTreatmentPlan].(*common.TreatmentPlan)
 	doctorID := requestCache[apiservice.CKDoctorID].(int64)
 	requestData := requestCache[apiservice.CKRequestData].(*common.RegimenPlan)
 
 	if !treatmentPlan.InDraftMode() {
-		apiservice.WriteValidationError(ctx, "treatment plan must be in draft mode", w, r)
+		apiservice.WriteValidationError("treatment plan must be in draft mode", w, r)
 		return
 	}
 
@@ -87,7 +86,7 @@ func (d *regimenHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 	for _, regimenSection := range requestData.Sections {
 		for _, regimenStep := range regimenSection.Steps {
 			if err := d.ensureLinkedRegimenStepExistsInMasterList(regimenStep, requestData, doctorID); err != nil {
-				apiservice.WriteError(ctx, err, w, r)
+				apiservice.WriteError(err, w, r)
 				return
 			}
 		}
@@ -97,7 +96,7 @@ func (d *regimenHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 	// that we have stored on the server
 	currentActiveRegimenSteps, err := d.dataAPI.GetRegimenStepsForDoctor(doctorID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 	regimenStepsToDelete := make([]*common.DoctorInstructionItem, 0, len(currentActiveRegimenSteps))
@@ -115,7 +114,7 @@ func (d *regimenHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 	}
 	err = d.dataAPI.MarkRegimenStepsToBeDeleted(regimenStepsToDelete, doctorID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -129,7 +128,7 @@ func (d *regimenHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 		case common.StateAdded:
 			err = d.dataAPI.AddRegimenStepForDoctor(regimenStep, doctorID)
 			if err != nil {
-				apiservice.WriteError(ctx, errors.New("Unable to add reigmen step to doctor. Application may be left in inconsistent state: "+err.Error()), w, r)
+				apiservice.WriteError(errors.New("Unable to add reigmen step to doctor. Application may be left in inconsistent state: "+err.Error()), w, r)
 				return
 			}
 			newStepToIDMapping[regimenStep.Text] = append(newStepToIDMapping[regimenStep.Text], regimenStep.ID.Int64())
@@ -137,7 +136,7 @@ func (d *regimenHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 			previousRegimenStepID := regimenStep.ID.Int64()
 			err = d.dataAPI.UpdateRegimenStepForDoctor(regimenStep, doctorID)
 			if err != nil {
-				apiservice.WriteError(ctx, errors.New("Unable to update regimen step for doctor: "+err.Error()), w, r)
+				apiservice.WriteError(errors.New("Unable to update regimen step for doctor: "+err.Error()), w, r)
 				return
 			}
 			// keep track of the new id for updated regimen steps so that we can update the regimen step in the
@@ -166,7 +165,7 @@ func (d *regimenHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 
 	err = d.dataAPI.CreateRegimenPlanForTreatmentPlan(requestData)
 	if err != nil {
-		apiservice.WriteError(ctx, errors.New("Unable to create regimen plan for patient visit: "+err.Error()), w, r)
+		apiservice.WriteError(errors.New("Unable to create regimen plan for patient visit: "+err.Error()), w, r)
 		return
 	}
 
@@ -174,13 +173,13 @@ func (d *regimenHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 	// return an updated view of the world to the client
 	regimenPlan, err := d.dataAPI.GetRegimenPlanForTreatmentPlan(requestData.TreatmentPlanID.Int64())
 	if err != nil {
-		apiservice.WriteError(ctx, errors.New("Unable to get the regimen plan for treatment plan: "+err.Error()), w, r)
+		apiservice.WriteError(errors.New("Unable to get the regimen plan for treatment plan: "+err.Error()), w, r)
 		return
 	}
 
 	allRegimenSteps, err := d.dataAPI.GetRegimenStepsForDoctor(doctorID)
 	if err != nil {
-		apiservice.WriteError(ctx, errors.New("Unable to get the list of regimen steps for doctor: "+err.Error()), w, r)
+		apiservice.WriteError(errors.New("Unable to get the list of regimen steps for doctor: "+err.Error()), w, r)
 		return
 	}
 

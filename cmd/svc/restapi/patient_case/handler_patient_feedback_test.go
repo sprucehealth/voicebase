@@ -1,13 +1,12 @@
 package patient_case
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -60,12 +59,12 @@ func TestPatientFeedbackHandler(t *testing.T) {
 	test.OK(t, err)
 	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
 	w := httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusForbidden, w.Code)
 
 	ctx = apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 2, Role: api.RoleCC})
 	w = httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 	test.Equals(t, "{\"feedback\":[{\"rating\":4,\"comment\":\"RULEZ!\",\"created_timestamp\":12341234}]}\n", w.Body.String())
 }

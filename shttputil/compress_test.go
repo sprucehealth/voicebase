@@ -1,15 +1,13 @@
 package shttputil
 
 import (
+	"context"
 	"net/http"
 	"testing"
-
-	"context"
 
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/test"
 )
 
@@ -26,17 +24,17 @@ var testCompressResponseResult = testCompressResponseStarting
 
 type uncompressedHandler struct{}
 
-func (uc *uncompressedHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (uc *uncompressedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	testCompressResponseResult = testCompressResponseUncompressed
 }
 
 type compressedHandler struct{}
 
-func (uc *compressedHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (uc *compressedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	testCompressResponseResult = testCompressResponseCompressed
 }
 
-func cWrapper(httputil.ContextHandler) httputil.ContextHandler {
+func cWrapper(http.Handler) http.Handler {
 	return &compressedHandler{}
 }
 
@@ -69,8 +67,10 @@ func TestCompressResponse(t *testing.T) {
 		},
 	}
 
+	r, err := http.NewRequest("GET", "/", nil)
+	test.OK(t, err)
 	for cn, c := range cases {
-		CompressResponse(uc, cWrapper).ServeHTTP(c.Context, nil, nil)
+		CompressResponse(uc, cWrapper).ServeHTTP(nil, r.WithContext(c.Context))
 		test.EqualsCase(t, cn, c.Expected, testCompressResponseResult)
 		testCompressResponseResult = testCompressResponseStarting
 	}

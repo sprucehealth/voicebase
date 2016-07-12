@@ -7,8 +7,6 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/restapi/feedback"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/libs/httputil"
-
-	"context"
 )
 
 type feedbackTemplateListHandler struct {
@@ -19,14 +17,14 @@ type feedbackTemplateListResponse struct {
 	Templates []*feedback.FeedbackTemplateData `json:"templates"`
 }
 
-func newFeedbackTemplateListHandler(feedbackClient feedback.DAL) httputil.ContextHandler {
+func newFeedbackTemplateListHandler(feedbackClient feedback.DAL) http.Handler {
 	return httputil.SupportedMethods(&feedbackTemplateListHandler{
 		feedbackClient: feedbackClient,
 	}, httputil.Get)
 }
 
-func (f *feedbackTemplateListHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	account := www.MustCtxAccount(ctx)
+func (f *feedbackTemplateListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(r.Context())
 	audit.LogAction(account.ID, "AdminAPI", "ListActiveFeedbackTemplates", nil)
 
 	templates, err := f.feedbackClient.ListActiveTemplates()

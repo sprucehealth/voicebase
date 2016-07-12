@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -28,14 +26,14 @@ type accountResponse struct {
 	Account *common.Account `json:"account"`
 }
 
-func newAccountHandler(authAPI api.AuthAPI) httputil.ContextHandler {
+func newAccountHandler(authAPI api.AuthAPI) http.Handler {
 	return httputil.SupportedMethods(&accountHandler{
 		authAPI: authAPI,
 	}, httputil.Get, httputil.Patch)
 }
 
-func (h *accountHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	reqAccountID, err := strconv.ParseInt(mux.Vars(ctx)["id"], 10, 64)
+func (h *accountHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	reqAccountID, err := strconv.ParseInt(mux.Vars(r.Context())["id"], 10, 64)
 	if err != nil {
 		www.APINotFound(w, r)
 		return
@@ -49,8 +47,8 @@ func (h *accountHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 		return
 	}
 
-	account := www.MustCtxAccount(ctx)
-	perms := www.MustCtxPermissions(ctx)
+	account := www.MustCtxAccount(r.Context())
+	perms := www.MustCtxPermissions(r.Context())
 
 	if r.Method == httputil.Patch {
 		if !accountWriteAccess(reqAccount, perms) {

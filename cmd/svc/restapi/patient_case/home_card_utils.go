@@ -1,11 +1,10 @@
 package patient_case
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"sort"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/address"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"

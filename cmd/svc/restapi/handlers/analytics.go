@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"context"
-
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/analytics"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -105,16 +103,16 @@ func newAnalyticsHandler(publisher dispatch.Publisher, statsRegistry metrics.Reg
 	return h
 }
 
-func NewAnalyticsHandler(publisher dispatch.Publisher, statsRegistry metrics.Registry) httputil.ContextHandler {
+func NewAnalyticsHandler(publisher dispatch.Publisher, statsRegistry metrics.Registry) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(newAnalyticsHandler(publisher, statsRegistry)),
 		httputil.Post)
 }
 
-func (h *analyticsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *analyticsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var req eventRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		apiservice.WriteBadRequestError(ctx, err, w, r)
+		apiservice.WriteBadRequestError(err, w, r)
 		return
 	}
 

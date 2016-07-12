@@ -312,20 +312,20 @@ func main() {
 			emailVerification: *flagEmailVerificationTemplateID,
 		},
 		svc.MetricsRegistry.Scope("handler"))
-	r.Handle("/graphql", httputil.ToContextHandler(cors.New(cors.Options{
+	r.Handle("/graphql", cors.New(cors.Options{
 		AllowedOrigins:   corsOrigins,
 		AllowedMethods:   []string{httputil.Get, httputil.Options, httputil.Post},
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"*"},
-	}).Handler(httputil.FromContextHandler(gqlHandler))))
+	}).Handler(gqlHandler))
 
 	mediaHandler := NewMediaHandler(*flagMediaAPIDomain)
-	r.Handle("/media", httputil.ToContextHandler(cors.New(cors.Options{
+	r.Handle("/media", cors.New(cors.Options{
 		AllowedOrigins:   corsOrigins,
 		AllowedMethods:   []string{httputil.Get, httputil.Options, httputil.Post},
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"*"},
-	}).Handler(httputil.FromContextHandler(mediaHandler))))
+	}).Handler(mediaHandler))
 
 	if *flagResourcePath == "" {
 		if p := os.Getenv("GOPATH"); p != "" {
@@ -349,7 +349,7 @@ func main() {
 		go func() {
 			server := &http.Server{
 				Addr:           *flagListenAddr,
-				Handler:        httputil.FromContextHandler(h),
+				Handler:        h,
 				MaxHeaderBytes: 1 << 20,
 			}
 			server.ListenAndServe()
@@ -358,10 +358,10 @@ func main() {
 		server := &http.Server{
 			Addr:      *flagListenAddr,
 			TLSConfig: boot.TLSConfig(),
-			Handler: httputil.FromContextHandler(httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				r.Header.Set("X-Forwarded-Proto", "https")
-				h.ServeHTTP(ctx, w, r)
-			})),
+				h.ServeHTTP(w, r)
+			}),
 			MaxHeaderBytes: 1 << 20,
 		}
 		certStore, err := svc.StoreFromURL(*flagCertCacheURL)

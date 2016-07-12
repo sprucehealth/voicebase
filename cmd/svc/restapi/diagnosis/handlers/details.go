@@ -3,8 +3,6 @@ package handlers
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/diagnosis"
@@ -16,7 +14,7 @@ type diagnosisHandler struct {
 	diagnosisAPI diagnosis.API
 }
 
-func NewDiagnosisHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API) httputil.ContextHandler {
+func NewDiagnosisHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(
@@ -27,18 +25,18 @@ func NewDiagnosisHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API) httput
 			), api.RoleDoctor), httputil.Get)
 }
 
-func (d *diagnosisHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (d *diagnosisHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	codeID := r.FormValue("code_id")
 
 	diagnosisMap, err := d.diagnosisAPI.DiagnosisForCodeIDs([]string{codeID})
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	diag := diagnosisMap[codeID]
 	if diag == nil {
-		apiservice.WriteResourceNotFoundError(ctx, "diagnosis not found", w, r)
+		apiservice.WriteResourceNotFoundError("diagnosis not found", w, r)
 		return
 	}
 
@@ -48,7 +46,7 @@ func (d *diagnosisHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter,
 	// for the diagnosis details intake based on the app version
 	detailsIntake, err := d.dataAPI.ActiveDiagnosisDetailsIntake(codeID, diagnosis.DetailTypes)
 	if !api.IsErrNotFound(err) && err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

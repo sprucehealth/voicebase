@@ -5,8 +5,6 @@ import (
 	"sync"
 	"time"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/mediaproxy"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/responses"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -24,7 +22,7 @@ type productsListHandler struct {
 }
 
 // NewProductsList returns a new product search handler.
-func NewProductsList(svc products.Service, proxyRoot string, proxySvc *mediaproxy.Service) httputil.ContextHandler {
+func NewProductsList(svc products.Service, proxyRoot string, proxySvc *mediaproxy.Service) http.Handler {
 	return httputil.SupportedMethods(&productsListHandler{
 		svc:       svc,
 		proxyRoot: proxyRoot,
@@ -32,7 +30,7 @@ func NewProductsList(svc products.Service, proxyRoot string, proxySvc *mediaprox
 	}, httputil.Get)
 }
 
-func (h *productsListHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *productsListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	query := r.FormValue("q")
 
 	if httputil.CheckAndSetETag(w, r, httputil.GenETag(time.Now().Format("2006-01-02")+":"+query)) {
@@ -42,7 +40,7 @@ func (h *productsListHandler) ServeHTTP(ctx context.Context, w http.ResponseWrit
 
 	prods, err := h.svc.Search(query)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 	res := &responses.ProductList{

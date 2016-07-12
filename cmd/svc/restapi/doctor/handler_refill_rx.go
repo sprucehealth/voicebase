@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -44,7 +42,7 @@ type refillRxHandler struct {
 	erxStatusQueue *common.SQSQueue
 }
 
-func NewRefillRxHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI, dispatcher *dispatch.Dispatcher, erxStatusQueue *common.SQSQueue) httputil.ContextHandler {
+func NewRefillRxHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI, dispatcher *dispatch.Dispatcher, erxStatusQueue *common.SQSQueue) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.RequestCacheHandler(
 			apiservice.AuthorizationRequired(&refillRxHandler{
@@ -69,20 +67,20 @@ type DoctorRefillRequestRequestData struct {
 	Treatment            *common.Treatment `json:"new_treatment,omitempty"`
 }
 
-func (d *refillRxHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (d *refillRxHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case httputil.Get:
-		d.getRefillRequest(ctx, w, r)
+		d.getRefillRequest(w, r)
 	case httputil.Put:
-		d.resolveRefillRequest(ctx, w, r)
+		d.resolveRefillRequest(w, r)
 	default:
 		w.WriteHeader(http.StatusNotFound)
 	}
 }
 
-func (d *refillRxHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
-	requestCache := apiservice.MustCtxCache(ctx)
-	account := apiservice.MustCtxAccount(ctx)
+func (d *refillRxHandler) IsAuthorized(r *http.Request) (bool, error) {
+	requestCache := apiservice.MustCtxCache(r.Context())
+	account := apiservice.MustCtxAccount(r.Context())
 
 	requestData := &DoctorRefillRequestRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
@@ -109,19 +107,19 @@ func (d *refillRxHandler) IsAuthorized(ctx context.Context, r *http.Request) (bo
 	return true, nil
 }
 
-func (d *refillRxHandler) resolveRefillRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	requestCache := apiservice.MustCtxCache(ctx)
+func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(r.Context())
 	requestData := requestCache[apiservice.CKRequestData].(*DoctorRefillRequestRequestData)
 	doctor := requestCache[apiservice.CKDoctor].(*common.Doctor)
 	refillRequest := requestCache[apiservice.CKRefillRequest].(*common.RefillRequestItem)
 
 	if len(requestData.Comments) > surescripts.MaxRefillRequestCommentLength {
-		apiservice.WriteValidationError(ctx, "Comments for refill request cannot be greater than 70 characters", w, r)
+		apiservice.WriteValidationError("Comments for refill request cannot be greater than 70 characters", w, r)
 		return
 	}
 
 	if doctor.ID.Int64() != refillRequest.Doctor.ID.Int64() {
-		apiservice.WriteValidationError(ctx, "The doctor in the refill request is not the same doctor as the one trying to resolve the request.", w, r)
+		apiservice.WriteValidationError("The doctor in the refill request is not the same doctor as the one trying to resolve the request.", w, r)
 		return
 	}
 
@@ -138,7 +136,7 @@ func (d *refillRxHandler) resolveRefillRequest(ctx context.Context, w http.Respo
 	}
 
 	if refillRequest.RxHistory[0].Status != api.RXRefillStatusRequested {
-		apiservice.WriteValidationError(ctx, "Cannot approve the refill request for one that is not in the requested state. Current state: "+refillRequest.RxHistory[0].Status, w, r)
+		apiservice.WriteValidationError("Cannot approve the refill request for one that is not in the requested state. Current state: "+refillRequest.RxHistory[0].Status, w, r)
 		return
 	}
 
@@ -147,7 +145,7 @@ func (d *refillRxHandler) resolveRefillRequest(ctx context.Context, w http.Respo
 		// Ensure that the number of refills is non-zero. If its not,
 		// report it to the user as a user error
 		if requestData.ApprovedRefillAmount == 0 {
-			apiservice.WriteValidationError(ctx, "Number of refills to approve has to be greater than 0", w, r)
+			apiservice.WriteValidationError("Number of refills to approve has to be greater than 0", w, r)
 			return
 		}
 
@@ -156,7 +154,7 @@ func (d *refillRxHandler) resolveRefillRequest(ctx context.Context, w http.Respo
 		// get the refill request to check if it is a controlled substance
 		refillRequest, err := d.dataAPI.GetRefillRequestFromID(requestData.RefillRequestID)
 		if err != nil {
-			apiservice.WriteError(ctx, fmt.Errorf("Unable to get refill request from ID %d: %s", requestData.RefillRequestID, err), w, r)
+			apiservice.WriteError(fmt.Errorf("Unable to get refill request from ID %d: %s", requestData.RefillRequestID, err), w, r)
 			return
 		}
 
@@ -170,13 +168,13 @@ func (d *refillRxHandler) resolveRefillRequest(ctx context.Context, w http.Respo
 		// Send the approve refill request to dosespot
 		prescriptionID, err := d.erxAPI.ApproveRefillRequest(doctor.DoseSpotClinicianID, refillRequest.RxRequestQueueItemID, requestData.ApprovedRefillAmount, requestData.Comments)
 		if err != nil {
-			apiservice.WriteValidationError(ctx, "Unable to approve refill request: "+err.Error(), w, r)
+			apiservice.WriteValidationError("Unable to approve refill request: "+err.Error(), w, r)
 			return
 		}
 
 		// Update the refill request entry with the approved refill amount and the returned prescription id
 		if err := d.dataAPI.MarkRefillRequestAsApproved(prescriptionID, requestData.ApprovedRefillAmount, refillRequest.ID, requestData.Comments); err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 
@@ -186,7 +184,7 @@ func (d *refillRxHandler) resolveRefillRequest(ctx context.Context, w http.Respo
 		// Ensure that the denial reason is one of the possible denial reasons that the user could have
 		denialReasons, err := d.dataAPI.GetRefillRequestDenialReasons()
 		if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 
@@ -199,7 +197,7 @@ func (d *refillRxHandler) resolveRefillRequest(ctx context.Context, w http.Respo
 		}
 
 		if denialReasonCode == "" {
-			apiservice.WriteValidationError(ctx, "Denial reason code not found based on id specified", w, r)
+			apiservice.WriteValidationError("Denial reason code not found based on id specified", w, r)
 			return
 		}
 
@@ -212,7 +210,7 @@ func (d *refillRxHandler) resolveRefillRequest(ctx context.Context, w http.Respo
 
 			// validate the treatment
 			if err := apiservice.ValidateTreatment(requestData.Treatment); err != nil {
-				apiservice.WriteValidationError(ctx, err.Error(), w, r)
+				apiservice.WriteValidationError(err.Error(), w, r)
 				return
 			}
 
@@ -223,13 +221,13 @@ func (d *refillRxHandler) resolveRefillRequest(ctx context.Context, w http.Respo
 
 			if requestData.Treatment.DoctorTreatmentTemplateID.Int64() != 0 {
 				if err := apiservice.IsDrugOutOfMarket(requestData.Treatment, doctor, d.erxAPI); err != nil {
-					apiservice.WriteError(ctx, err, w, r)
+					apiservice.WriteError(err, w, r)
 					return
 				}
 			}
 
 			if refillRequest.ReferenceNumber == "" {
-				apiservice.WriteValidationError(ctx, "Cannot proceed with refill request denial as reference number for refill request is missing which is required to deny with new request to follow", w, r)
+				apiservice.WriteValidationError("Cannot proceed with refill request denial as reference number for refill request is missing which is required to deny with new request to follow", w, r)
 				return
 			}
 
@@ -244,7 +242,7 @@ func (d *refillRxHandler) resolveRefillRequest(ctx context.Context, w http.Respo
 			if originatingTreatmentFound {
 				originatingTreatment, err := d.dataAPI.GetTreatmentFromID(refillRequest.RequestedPrescription.OriginatingTreatmentID)
 				if err != nil {
-					apiservice.WriteError(ctx, err, w, r)
+					apiservice.WriteError(err, w, r)
 					return
 				}
 				requestData.Treatment.TreatmentPlanID = originatingTreatment.TreatmentPlanID
@@ -253,35 +251,35 @@ func (d *refillRxHandler) resolveRefillRequest(ctx context.Context, w http.Respo
 			//  Deny the refill request
 			prescriptionID, err := d.erxAPI.DenyRefillRequest(doctor.DoseSpotClinicianID, refillRequest.RxRequestQueueItemID, denialReasonCode, requestData.Comments)
 			if err != nil {
-				apiservice.WriteError(ctx, err, w, r)
+				apiservice.WriteError(err, w, r)
 				return
 			} else if err := d.dataAPI.MarkRefillRequestAsDenied(prescriptionID, requestData.DenialReasonID, refillRequest.ID, requestData.Comments); err != nil {
 				//  Update the refill request with the reason for denial and the erxid returned
-				apiservice.WriteError(ctx, err, w, r)
+				apiservice.WriteError(err, w, r)
 				return
 			}
 
 			if err := d.addTreatmentInEventOfDNTF(originatingTreatmentFound, requestData.Treatment, refillRequest.Doctor.ID.Int64(), refillRequest.Patient.ID, refillRequest.ID); err != nil {
-				apiservice.WriteError(ctx, err, w, r)
+				apiservice.WriteError(err, w, r)
 				return
 			}
 
 			//  start prescribing
 			if err := d.erxAPI.StartPrescribingPatient(doctor.DoseSpotClinicianID, refillRequest.Patient, []*common.Treatment{requestData.Treatment}, refillRequest.RequestedPrescription.ERx.Pharmacy.SourceID); err != nil {
-				apiservice.WriteError(ctx, err, w, r)
+				apiservice.WriteError(err, w, r)
 				return
 			}
 
 			// update pharmacy and erx id for treatment
 			if err := d.updateTreatmentWithPharmacyAndERxID(originatingTreatmentFound, requestData.Treatment, refillRequest.RequestedPrescription.ERx.Pharmacy, doctor.ID.Int64()); err != nil {
-				apiservice.WriteError(ctx, err, w, r)
+				apiservice.WriteError(err, w, r)
 				return
 			}
 
 			//  send prescription to pharmacy
 			unSuccesfulTreatments, err := d.erxAPI.SendMultiplePrescriptions(doctor.DoseSpotClinicianID, refillRequest.Patient, []*common.Treatment{requestData.Treatment})
 			if err != nil {
-				apiservice.WriteError(ctx, err, w, r)
+				apiservice.WriteError(err, w, r)
 				return
 			}
 
@@ -289,16 +287,16 @@ func (d *refillRxHandler) resolveRefillRequest(ctx context.Context, w http.Respo
 			for _, unSuccessfulTreatment := range unSuccesfulTreatments {
 				if unSuccessfulTreatment.ID.Int64() == requestData.Treatment.ID.Int64() {
 					if err := d.addStatusEvent(originatingTreatmentFound, requestData.Treatment, common.StatusEvent{Status: api.ERXStatusSendError}); err != nil {
-						apiservice.WriteError(ctx, err, w, r)
+						apiservice.WriteError(err, w, r)
 						return
 					}
-					apiservice.WriteError(ctx, err, w, r)
+					apiservice.WriteError(err, w, r)
 					return
 				}
 			}
 
 			if err := d.addStatusEvent(originatingTreatmentFound, requestData.Treatment, common.StatusEvent{ItemID: requestData.Treatment.ID.Int64(), Status: api.ERXStatusSending}); err != nil {
-				apiservice.WriteError(ctx, err, w, r)
+				apiservice.WriteError(err, w, r)
 				return
 			}
 
@@ -319,17 +317,17 @@ func (d *refillRxHandler) resolveRefillRequest(ctx context.Context, w http.Respo
 			//  Deny the refill request
 			prescriptionID, err := d.erxAPI.DenyRefillRequest(doctor.DoseSpotClinicianID, refillRequest.RxRequestQueueItemID, denialReasonCode, requestData.Comments)
 			if err != nil {
-				apiservice.WriteError(ctx, err, w, r)
+				apiservice.WriteError(err, w, r)
 				return
 			} else if err := d.dataAPI.MarkRefillRequestAsDenied(prescriptionID, requestData.DenialReasonID, refillRequest.ID, requestData.Comments); err != nil {
 				//  Update the refill request with the reason for denial and the erxid returned
-				apiservice.WriteError(ctx, err, w, r)
+				apiservice.WriteError(err, w, r)
 				return
 			}
 		}
 
 	default:
-		apiservice.WriteValidationError(ctx, "Expected an action of approve or deny for refill request, instead got "+requestData.Action, w, r)
+		apiservice.WriteValidationError("Expected an action of approve or deny for refill request, instead got "+requestData.Action, w, r)
 		return
 	}
 
@@ -376,14 +374,14 @@ func (d *refillRxHandler) addTreatmentInEventOfDNTF(originatingTreatmentFound bo
 	return d.dataAPI.AddUnlinkedTreatmentInEventOfDNTF(treatment, refillRequestID)
 }
 
-func (d *refillRxHandler) getRefillRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	requestCache := apiservice.MustCtxCache(ctx)
+func (d *refillRxHandler) getRefillRequest(w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(r.Context())
 	refillRequest := requestCache[apiservice.CKRefillRequest].(*common.RefillRequestItem)
 
 	if refillRequest.RequestedPrescription.OriginatingTreatmentID != 0 {
 		rxHistoryOfOriginatingTreatment, err := d.dataAPI.GetPrescriptionStatusEventsForTreatment(refillRequest.RequestedPrescription.OriginatingTreatmentID)
 		if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 

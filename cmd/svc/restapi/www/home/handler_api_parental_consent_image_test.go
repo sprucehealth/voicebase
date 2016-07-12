@@ -2,13 +2,12 @@ package home
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -106,7 +105,7 @@ func TestParentalConsentImageAPIHandler_POST(t *testing.T) {
 	test.OK(t, err)
 	r.Header.Set("Content-Type", contentType)
 	w := httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.HTTPResponseCode(t, http.StatusOK, w)
 	test.Equals(t, false, dataAPI.updated)
 
@@ -118,7 +117,7 @@ func TestParentalConsentImageAPIHandler_POST(t *testing.T) {
 			GovernmentIDPhotoID: ptr.Int64(2),
 		},
 		consent: map[common.PatientID]*common.ParentalConsent{
-			common.NewPatientID(2): &common.ParentalConsent{
+			common.NewPatientID(2): {
 				Consented: true,
 			},
 		},
@@ -129,7 +128,7 @@ func TestParentalConsentImageAPIHandler_POST(t *testing.T) {
 	test.OK(t, err)
 	r.Header.Set("Content-Type", contentType)
 	w = httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.HTTPResponseCode(t, http.StatusOK, w)
 	test.Equals(t, true, dataAPI.updated)
 	test.Equals(t, "image/jpeg", dataAPI.mimeType)
@@ -142,7 +141,7 @@ func TestParentalConsentImageAPIHandler_POST(t *testing.T) {
 			GovernmentIDPhotoID: ptr.Int64(2),
 		},
 		consent: map[common.PatientID]*common.ParentalConsent{
-			common.NewPatientID(2): &common.ParentalConsent{
+			common.NewPatientID(2): {
 				Consented: true,
 			},
 		},
@@ -153,7 +152,7 @@ func TestParentalConsentImageAPIHandler_POST(t *testing.T) {
 	test.OK(t, err)
 	r.Header.Set("Content-Type", contentType)
 	w = httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.HTTPResponseCode(t, www.HTTPStatusAPIError, w)
 	test.Equals(t, "{\"error\":{\"type\":\"invalid_image\",\"message\":\"Corrupt or unsupported image format\"}}\n", w.Body.String())
 }
@@ -178,7 +177,7 @@ func TestParentalConsentImageAPIHandler_GET(t *testing.T) {
 	r, err := http.NewRequest("GET", "/", nil)
 	test.OK(t, err)
 	w := httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.HTTPResponseCode(t, http.StatusOK, w)
 	var res parentalConsentImageAPIGETResponse
 	test.OK(t, json.NewDecoder(w.Body).Decode(&res))

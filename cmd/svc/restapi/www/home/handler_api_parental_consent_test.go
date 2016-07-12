@@ -2,14 +2,13 @@ package home
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
 	"time"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -127,7 +126,7 @@ func TestParentalConsentAPIHandler_POST(t *testing.T) {
 	test.OK(t, err)
 	r.AddCookie(newParentalConsentCookie(common.NewPatientID(2), "abc", r))
 	w := httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.HTTPResponseCode(t, http.StatusForbidden, w)
 
 	// Success
@@ -144,7 +143,7 @@ func TestParentalConsentAPIHandler_POST(t *testing.T) {
 	test.OK(t, err)
 	r.AddCookie(newParentalConsentCookie(common.NewPatientID(2), token, r))
 	w = httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.HTTPResponseCode(t, http.StatusOK, w)
 	test.Equals(t, "handler", dataAPI.relationship)
 	test.Equals(t, false, dataAPI.updated)
@@ -169,7 +168,7 @@ func TestParentalConsentAPIHandler_POST(t *testing.T) {
 	test.OK(t, err)
 	r.AddCookie(newParentalConsentCookie(common.NewPatientID(2), token, r))
 	w = httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.HTTPResponseCode(t, http.StatusOK, w)
 	test.Equals(t, "handler", dataAPI.relationship)
 	test.Equals(t, true, dataAPI.updated)
@@ -189,7 +188,7 @@ func TestParentalConsentAPIHandler_POST(t *testing.T) {
 	test.OK(t, err)
 	r.AddCookie(newParentalConsentCookie(common.NewPatientID(2), token, r))
 	w = httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, www.HTTPStatusAPIError, w.Code)
 	test.Equals(t, "{\"error\":{\"type\":\"under_age\",\"message\":\"A parent or guardian must be 18 or older\"}}\n", w.Body.String())
 }
@@ -224,7 +223,7 @@ func TestParentalConsentAPIHandler_GET(t *testing.T) {
 	r, err := http.NewRequest("GET", "/?"+params.Encode(), nil)
 	test.OK(t, err)
 	w := httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusForbidden, w.Code)
 
 	// Access by token (not consented)
@@ -234,7 +233,7 @@ func TestParentalConsentAPIHandler_GET(t *testing.T) {
 	test.OK(t, err)
 	r.AddCookie(newParentalConsentCookie(common.NewPatientID(2), token, r))
 	w = httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 	test.Equals(t, "{\"children\":[{\"child_patient_id\":\"2\",\"child_first_name\":\"Timmy\",\"child_gender\":\"male\",\"consented\":false}]}\n", w.Body.String())
 
@@ -248,7 +247,7 @@ func TestParentalConsentAPIHandler_GET(t *testing.T) {
 	r, err = http.NewRequest("GET", "/?"+params.Encode(), nil)
 	test.OK(t, err)
 	w = httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 	test.Equals(t, "{\"children\":[{\"child_patient_id\":\"2\",\"child_first_name\":\"Timmy\",\"child_gender\":\"male\",\"consented\":true,\"relationship\":\"someone\"}]}\n", w.Body.String())
 }

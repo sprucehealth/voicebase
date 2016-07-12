@@ -1,24 +1,22 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/gqlintrospect"
-	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/graphql"
 )
 
 type schemaHandler struct{}
 
-func newSchemaHandler() httputil.ContextHandler {
+func newSchemaHandler() http.Handler {
 	return schemaHandler{}
 }
 
-func (schemaHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (schemaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	res := graphql.Do(graphql.Params{
 		Schema:        gqlSchema,
 		RequestString: gqlintrospect.Query,

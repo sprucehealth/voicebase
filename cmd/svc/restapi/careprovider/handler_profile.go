@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/app_url"
@@ -17,7 +15,7 @@ type careProviderProfileHandler struct {
 	apiDomain string
 }
 
-func NewProfileHandler(dataAPI api.DataAPI, apiDomain string) httputil.ContextHandler {
+func NewProfileHandler(dataAPI api.DataAPI, apiDomain string) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(
 			&careProviderProfileHandler{
@@ -26,7 +24,7 @@ func NewProfileHandler(dataAPI api.DataAPI, apiDomain string) httputil.ContextHa
 			}), httputil.Get)
 }
 
-func (h *careProviderProfileHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *careProviderProfileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// We only have doctors for providers so provider_id is actually the doctor ID, but
 	// to future compatibility have the param be provider_id.
 	doctorID, err := strconv.ParseInt(r.FormValue("provider_id"), 10, 64)
@@ -39,12 +37,12 @@ func (h *careProviderProfileHandler) ServeHTTP(ctx context.Context, w http.Respo
 		http.NotFound(w, r)
 		return
 	} else if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 	profile, err := h.dataAPI.CareProviderProfile(doctor.AccountID.Int64())
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -151,7 +149,7 @@ func (h *careProviderProfileHandler) ServeHTTP(ctx context.Context, w http.Respo
 
 	for _, v := range views {
 		if err := v.Validate(); err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 	}

@@ -1,12 +1,11 @@
 package apiservice
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -21,8 +20,8 @@ type accoutRoleContextHandlerAccountRoleSubHandler struct {
 	assert                                 func(*testing.T, context.Context, *accoutRoleContextHandlerAccountRoleDAL)
 }
 
-func (h *accoutRoleContextHandlerAccountRoleSubHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	h.assert(h.t, ctx, h.accoutRoleContextHandlerAccountRoleDAL)
+func (h *accoutRoleContextHandlerAccountRoleSubHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	h.assert(h.t, r.Context(), h.accoutRoleContextHandlerAccountRoleDAL)
 }
 
 type accoutRoleContextHandlerAccountRoleDAL struct {
@@ -173,7 +172,7 @@ func TestAccountRoleContextHandler(t *testing.T) {
 		NewAccountRoleContextHandler(
 			&accoutRoleContextHandlerAccountRoleSubHandler{t, td.accoutRoleContextHandlerAccountRoleDAL, td.assert},
 			td.accoutRoleContextHandlerAccountRoleDAL,
-			td.methods...).ServeHTTP(CtxWithAccount(context.Background(), &common.Account{ID: accountID, Role: td.accountRole}), w, r)
+			td.methods...).ServeHTTP(w, r.WithContext(CtxWithAccount(context.Background(), &common.Account{ID: accountID, Role: td.accountRole})))
 		test.Equals(t, td.code, w.Code)
 	}
 }

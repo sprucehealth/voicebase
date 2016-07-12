@@ -3,8 +3,6 @@ package patient
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/auth"
@@ -29,7 +27,7 @@ type meResponse struct {
 }
 
 // NewMeHandler exposes a handler to get patient information for provided token.
-func NewMeHandler(dataAPI api.DataAPI, feedbackClient feedback.DAL, dispatcher *dispatch.Dispatcher) httputil.ContextHandler {
+func NewMeHandler(dataAPI api.DataAPI, feedbackClient feedback.DAL, dispatcher *dispatch.Dispatcher) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(
@@ -42,10 +40,10 @@ func NewMeHandler(dataAPI api.DataAPI, feedbackClient feedback.DAL, dispatcher *
 		httputil.Get)
 }
 
-func (m *meHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	patient, err := m.dataAPI.GetPatientFromAccountID(apiservice.MustCtxAccount(ctx).ID)
+func (m *meHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	patient, err := m.dataAPI.GetPatientFromAccountID(apiservice.MustCtxAccount(r.Context()).ID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

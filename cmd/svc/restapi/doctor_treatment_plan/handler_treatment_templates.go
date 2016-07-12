@@ -4,8 +4,6 @@ import (
 	"errors"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -18,7 +16,7 @@ type treatmentTemplatesHandler struct {
 	dataAPI api.DataAPI
 }
 
-func NewTreatmentTemplatesHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func NewTreatmentTemplatesHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.RequestCacheHandler(
 			apiservice.AuthorizationRequired(&treatmentTemplatesHandler{
@@ -37,7 +35,8 @@ type DoctorTreatmentTemplatesResponse struct {
 	Treatments         []*common.Treatment               `json:"treatments,omitempty"`
 }
 
-func (t *treatmentTemplatesHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+func (t *treatmentTemplatesHandler) IsAuthorized(r *http.Request) (bool, error) {
+	ctx := r.Context()
 	requestCache := apiservice.MustCtxCache(ctx)
 	account := apiservice.MustCtxAccount(ctx)
 	if account.Role != api.RoleDoctor {
@@ -75,62 +74,62 @@ func (t *treatmentTemplatesHandler) IsAuthorized(ctx context.Context, r *http.Re
 	return true, nil
 }
 
-func (t *treatmentTemplatesHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (t *treatmentTemplatesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case httputil.Get:
-		t.getTreatmentTemplates(ctx, w, r)
+		t.getTreatmentTemplates(w, r)
 	case httputil.Post:
-		t.addTreatmentTemplates(ctx, w, r)
+		t.addTreatmentTemplates(w, r)
 	case httputil.Delete:
-		t.deleteTreatmentTemplates(ctx, w, r)
+		t.deleteTreatmentTemplates(w, r)
 	default:
 		w.WriteHeader(http.StatusNotFound)
 	}
 }
 
-func (t *treatmentTemplatesHandler) getTreatmentTemplates(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	doctorID, err := t.dataAPI.GetDoctorIDFromAccountID(apiservice.MustCtxAccount(ctx).ID)
+func (t *treatmentTemplatesHandler) getTreatmentTemplates(w http.ResponseWriter, r *http.Request) {
+	doctorID, err := t.dataAPI.GetDoctorIDFromAccountID(apiservice.MustCtxAccount(r.Context()).ID)
 	if err != nil {
-		apiservice.WriteError(ctx, errors.New("Unable to get doctor from account id: "+err.Error()), w, r)
+		apiservice.WriteError(errors.New("Unable to get doctor from account id: "+err.Error()), w, r)
 		return
 	}
 
 	doctorTreatmentTemplates, err := t.dataAPI.GetTreatmentTemplates(doctorID)
 	if err != nil {
-		apiservice.WriteError(ctx, errors.New("Unable to get favorite treatments for doctor: "+err.Error()), w, r)
+		apiservice.WriteError(errors.New("Unable to get favorite treatments for doctor: "+err.Error()), w, r)
 		return
 	}
 
 	httputil.JSONResponse(w, http.StatusOK, &DoctorTreatmentTemplatesResponse{TreatmentTemplates: doctorTreatmentTemplates})
 }
 
-func (t *treatmentTemplatesHandler) deleteTreatmentTemplates(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	requestCache := apiservice.MustCtxCache(ctx)
+func (t *treatmentTemplatesHandler) deleteTreatmentTemplates(w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(r.Context())
 	doctorID := requestCache[apiservice.CKDoctorID].(int64)
 	requestData := requestCache[apiservice.CKRequestData].(*DoctorTreatmentTemplatesRequest)
 
 	for _, favoriteTreatment := range requestData.TreatmentTemplates {
 		if favoriteTreatment.ID.Int64() == 0 {
-			apiservice.WriteValidationError(ctx, "Unable to delete a treatment that does not have an id associated with it", w, r)
+			apiservice.WriteValidationError("Unable to delete a treatment that does not have an id associated with it", w, r)
 			return
 		}
 	}
 
 	err := t.dataAPI.DeleteTreatmentTemplates(requestData.TreatmentTemplates, doctorID)
 	if err != nil {
-		apiservice.WriteError(ctx, errors.New("Unable to delete favorited treatment: "+err.Error()), w, r)
+		apiservice.WriteError(errors.New("Unable to delete favorited treatment: "+err.Error()), w, r)
 		return
 	}
 
 	treatmentTemplates, err := t.dataAPI.GetTreatmentTemplates(doctorID)
 	if err != nil {
-		apiservice.WriteError(ctx, errors.New("Unable to get favorite treatments for doctor: "+err.Error()), w, r)
+		apiservice.WriteError(errors.New("Unable to get favorite treatments for doctor: "+err.Error()), w, r)
 		return
 	}
 
 	treatmentsInTreatmentPlan, err := t.dataAPI.GetTreatmentsBasedOnTreatmentPlanID(requestData.TreatmentPlanID.Int64())
 	if err != nil {
-		apiservice.WriteError(ctx, errors.New("Unable to get treatments based on treatment plan id: "+err.Error()), w, r)
+		apiservice.WriteError(errors.New("Unable to get treatments based on treatment plan id: "+err.Error()), w, r)
 		return
 	}
 
@@ -140,15 +139,15 @@ func (t *treatmentTemplatesHandler) deleteTreatmentTemplates(ctx context.Context
 	})
 }
 
-func (t *treatmentTemplatesHandler) addTreatmentTemplates(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	requestCache := apiservice.MustCtxCache(ctx)
+func (t *treatmentTemplatesHandler) addTreatmentTemplates(w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(r.Context())
 	doctorID := requestCache[apiservice.CKDoctorID].(int64)
 	requestData := requestCache[apiservice.CKRequestData].(*DoctorTreatmentTemplatesRequest)
 
 	for _, treatmentTemplate := range requestData.TreatmentTemplates {
 		err := apiservice.ValidateTreatment(treatmentTemplate.Treatment)
 		if err != nil {
-			apiservice.WriteValidationError(ctx, err.Error(), w, r)
+			apiservice.WriteValidationError(err.Error(), w, r)
 			return
 		}
 
@@ -158,19 +157,19 @@ func (t *treatmentTemplatesHandler) addTreatmentTemplates(ctx context.Context, w
 
 	err := t.dataAPI.AddTreatmentTemplates(requestData.TreatmentTemplates, doctorID, requestData.TreatmentPlanID.Int64())
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	treatmentTemplates, err := t.dataAPI.GetTreatmentTemplates(doctorID)
 	if err != nil {
-		apiservice.WriteError(ctx, errors.New("Unable to get favorited treatments for doctor: "+err.Error()), w, r)
+		apiservice.WriteError(errors.New("Unable to get favorited treatments for doctor: "+err.Error()), w, r)
 		return
 	}
 
 	treatmentsInTreatmentPlan, err := t.dataAPI.GetTreatmentsBasedOnTreatmentPlanID(requestData.TreatmentPlanID.Int64())
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

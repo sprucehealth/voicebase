@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/responses"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
@@ -21,12 +19,12 @@ type caseVisitGETResponse struct {
 	VisitSummary *responses.PHISafeVisitSummary `json:"visit_summary"`
 }
 
-func newCaseVisitHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func newCaseVisitHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&caseVisitHandler{dataAPI: dataAPI}, httputil.Get)
 }
 
-func (h *caseVisitHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	visitID, err := strconv.ParseInt(mux.Vars(ctx)["visitID"], 10, 64)
+func (h *caseVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	visitID, err := strconv.ParseInt(mux.Vars(r.Context())["visitID"], 10, 64)
 	if err != nil {
 		www.APINotFound(w, r)
 		return

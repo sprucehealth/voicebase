@@ -2,13 +2,12 @@ package doctor_queue
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -78,7 +77,7 @@ func testQueueUpdate(t *testing.T, expStatus, expCount int, id string) {
 	r.Header.Set("Content-Type", "application/json")
 
 	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{Role: api.RoleCC, ID: 1})
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	if w.Code != expStatus {
 		t.Fatalf("Expected %d but got %d [%s]", expStatus, w.Code, golog.Caller(1))
 	} else if len(m.updatesRequested) != expCount {

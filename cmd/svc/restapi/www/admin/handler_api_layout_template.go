@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/encoding"
@@ -29,14 +27,14 @@ type layoutTemplateGETRequest struct {
 
 type layoutTemplateGETResponse map[string]interface{}
 
-func newLayoutTemplateHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func newLayoutTemplateHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&layoutTemplateHandler{dataAPI: dataAPI}, httputil.Get)
 }
 
-func (h *layoutTemplateHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *layoutTemplateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case httputil.Get:
-		requestData, err := h.parseGETRequest(ctx, r)
+		requestData, err := h.parseGETRequest(r)
 		if err != nil {
 			www.APIBadRequestError(w, r, err.Error())
 			return
@@ -45,7 +43,7 @@ func (h *layoutTemplateHandler) ServeHTTP(ctx context.Context, w http.ResponseWr
 	}
 }
 
-func (h *layoutTemplateHandler) parseGETRequest(ctx context.Context, r *http.Request) (*layoutTemplateGETRequest, error) {
+func (h *layoutTemplateHandler) parseGETRequest(r *http.Request) (*layoutTemplateGETRequest, error) {
 	rd := &layoutTemplateGETRequest{}
 	if err := r.ParseForm(); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)

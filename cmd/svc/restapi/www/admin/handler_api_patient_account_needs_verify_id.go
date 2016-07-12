@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
@@ -29,12 +27,12 @@ type patientAccountNeedsVerifyIDPOSTRequest struct {
 	PromoCode string `json:"promo_code"`
 }
 
-func newPatientAccountNeedsVerifyIDHandler(needsIDMarker needsIDMarker) httputil.ContextHandler {
+func newPatientAccountNeedsVerifyIDHandler(needsIDMarker needsIDMarker) http.Handler {
 	return httputil.SupportedMethods(&patientAccountNeedsVerifyIDHandler{needsIDMarker: needsIDMarker}, httputil.Post)
 }
 
-func (h *patientAccountNeedsVerifyIDHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	id, err := common.ParsePatientID(mux.Vars(ctx)["id"])
+func (h *patientAccountNeedsVerifyIDHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	id, err := common.ParsePatientID(mux.Vars(r.Context())["id"])
 	if err != nil {
 		www.APINotFound(w, r)
 		return
@@ -42,7 +40,7 @@ func (h *patientAccountNeedsVerifyIDHandler) ServeHTTP(ctx context.Context, w ht
 
 	switch r.Method {
 	case httputil.Post:
-		rd, err := h.parsePOSTRequest(ctx, r)
+		rd, err := h.parsePOSTRequest(r)
 		if err != nil {
 			www.APIBadRequestError(w, r, err.Error())
 			return
@@ -51,7 +49,7 @@ func (h *patientAccountNeedsVerifyIDHandler) ServeHTTP(ctx context.Context, w ht
 	}
 }
 
-func (h *patientAccountNeedsVerifyIDHandler) parsePOSTRequest(ctx context.Context, r *http.Request) (*patientAccountNeedsVerifyIDPOSTRequest, error) {
+func (h *patientAccountNeedsVerifyIDHandler) parsePOSTRequest(r *http.Request) (*patientAccountNeedsVerifyIDPOSTRequest, error) {
 	rd := &patientAccountNeedsVerifyIDPOSTRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&rd); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)

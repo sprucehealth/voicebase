@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -18,14 +16,14 @@ type accountPhonesListHandler struct {
 	authAPI api.AuthAPI
 }
 
-func newAccountPhonesListHandler(authAPI api.AuthAPI) httputil.ContextHandler {
+func newAccountPhonesListHandler(authAPI api.AuthAPI) http.Handler {
 	return httputil.SupportedMethods(&accountPhonesListHandler{
 		authAPI: authAPI,
 	}, httputil.Get)
 }
 
-func (h *accountPhonesListHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	reqAccountID, err := strconv.ParseInt(mux.Vars(ctx)["id"], 10, 64)
+func (h *accountPhonesListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	reqAccountID, err := strconv.ParseInt(mux.Vars(r.Context())["id"], 10, 64)
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return
@@ -39,9 +37,8 @@ func (h *accountPhonesListHandler) ServeHTTP(ctx context.Context, w http.Respons
 		return
 	}
 
-	account := www.MustCtxAccount(ctx)
-
-	perms := www.MustCtxPermissions(ctx)
+	account := www.MustCtxAccount(r.Context())
+	perms := www.MustCtxPermissions(r.Context())
 	if !accountReadAccess(reqAccount, perms) {
 		audit.LogAction(account.ID, "AdminAPI", "ListAccountPhoneNumbers", map[string]interface{}{"denied": true, "req_account_id": reqAccountID})
 		www.APIForbidden(w, r)

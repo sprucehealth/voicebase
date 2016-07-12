@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/analytics"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/events"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/events/model"
@@ -38,23 +36,23 @@ type serverEventsGETResponse struct {
 	Events []*analytics.ServerEvent `json:"events"`
 }
 
-func newServerEventsHandler(eventsClient events.Client) httputil.ContextHandler {
+func newServerEventsHandler(eventsClient events.Client) http.Handler {
 	return httputil.SupportedMethods(&serverEventsHandler{eventsClient: eventsClient}, httputil.Get)
 }
 
-func (h *serverEventsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *serverEventsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		req, err := h.parseGETRequest(ctx, r)
+		req, err := h.parseGETRequest(r)
 		if err != nil {
 			www.APIBadRequestError(w, r, err.Error())
 			return
 		}
-		h.serveGET(ctx, w, r, req)
+		h.serveGET(w, r, req)
 	}
 }
 
-func (h *serverEventsHandler) parseGETRequest(ctx context.Context, r *http.Request) (*serverEventsGETRequest, error) {
+func (h *serverEventsHandler) parseGETRequest(r *http.Request) (*serverEventsGETRequest, error) {
 	rd := &serverEventsGETRequest{}
 	if err := r.ParseForm(); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -66,7 +64,7 @@ func (h *serverEventsHandler) parseGETRequest(ctx context.Context, r *http.Reque
 	return rd, nil
 }
 
-func (h *serverEventsHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request, req *serverEventsGETRequest) {
+func (h *serverEventsHandler) serveGET(w http.ResponseWriter, r *http.Request, req *serverEventsGETRequest) {
 	events, err := h.eventsClient.ServerEvents(&query.ServerEventQuery{
 		TimestampQuery:  query.TimestampQuery{Begin: req.Begin, End: req.End},
 		Event:           req.Event,

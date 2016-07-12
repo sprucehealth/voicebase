@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -20,23 +18,23 @@ type pathwayMenuHandler struct {
 	dataAPI api.DataAPI
 }
 
-func newPathwayMenuHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func newPathwayMenuHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&pathwayMenuHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get, httputil.Put)
 }
 
-func (h *pathwayMenuHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *pathwayMenuHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		h.get(ctx, w, r)
+		h.get(w, r)
 	case "PUT":
-		h.put(ctx, w, r)
+		h.put(w, r)
 	}
 }
 
-func (h *pathwayMenuHandler) get(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	account := www.MustCtxAccount(ctx)
+func (h *pathwayMenuHandler) get(w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(r.Context())
 	audit.LogAction(account.ID, "AdminAPI", "GetPathwayMenu", nil)
 	menu, err := h.dataAPI.PathwayMenu()
 	if err != nil {
@@ -46,8 +44,8 @@ func (h *pathwayMenuHandler) get(ctx context.Context, w http.ResponseWriter, r *
 	httputil.JSONResponse(w, http.StatusOK, menu)
 }
 
-func (h *pathwayMenuHandler) put(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	account := www.MustCtxAccount(ctx)
+func (h *pathwayMenuHandler) put(w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(r.Context())
 	audit.LogAction(account.ID, "AdminAPI", "UpdatePathwayMenu", nil)
 	menu := &common.PathwayMenu{}
 	if err := json.NewDecoder(r.Body).Decode(menu); err != nil {

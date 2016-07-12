@@ -1,11 +1,10 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"context"
 
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/test"
@@ -28,6 +27,6 @@ func TestViewCount(t *testing.T) {
 	r, err := http.NewRequest("POST", "/", nil)
 	test.OK(t, err)
 	ctx := mux.SetVars(context.Background(), map[string]string{"id": "foo"})
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.HTTPResponseCode(t, http.StatusOK, w)
 }

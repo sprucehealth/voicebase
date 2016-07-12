@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -32,13 +30,13 @@ func (r *signInAPIRequest) Validate() (bool, string) {
 	return true, ""
 }
 
-func newSignInAPIHandler(authAPI api.AuthAPI) httputil.ContextHandler {
+func newSignInAPIHandler(authAPI api.AuthAPI) http.Handler {
 	return httputil.SupportedMethods(&signInAPIHandler{
 		authAPI: authAPI,
 	}, httputil.Post)
 }
 
-func (h *signInAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *signInAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var req signInAPIRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		www.APIBadRequestError(w, r, err.Error())

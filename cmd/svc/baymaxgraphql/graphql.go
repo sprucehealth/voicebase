@@ -138,7 +138,7 @@ func NewGraphQL(
 	supportMessageTopicARN string,
 	emailTemplateIDs emailTemplateIDs,
 	metricsRegistry metrics.Registry,
-) httputil.ContextHandler {
+) http.Handler {
 	statRequests := metrics.NewCounter()
 	statResponseErrors := metrics.NewCounter()
 	statLatency := metrics.NewUnbiasedHistogram()
@@ -225,7 +225,9 @@ func removeAuthCookie(w http.ResponseWriter, domain string) {
 	})
 }
 
-func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *graphQLHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	h.statRequests.Inc(1)
 	st := time.Now()
 	defer func() {

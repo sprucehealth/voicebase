@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"context"
 	"encoding/csv"
 	"encoding/json"
 	"errors"
@@ -12,8 +13,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -159,23 +158,23 @@ func newFTP() *ftp {
 	}
 }
 
-func newTreatmentPlanCSVHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) httputil.ContextHandler {
+func newTreatmentPlanCSVHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Handler {
 	return httputil.SupportedMethods(&treatmentPlanCSVHandler{dataAPI: dataAPI, erxAPI: erxAPI}, httputil.Put)
 }
 
-func (h *treatmentPlanCSVHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *treatmentPlanCSVHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "PUT":
-		requestData, err := h.parsePUTRequest(ctx, r)
+		requestData, err := h.parsePUTRequest(r)
 		if err != nil {
 			www.APIBadRequestError(w, r, err.Error())
 			return
 		}
-		h.servePUT(ctx, w, r, requestData)
+		h.servePUT(w, r, requestData)
 	}
 }
 
-func (h *treatmentPlanCSVHandler) parsePUTRequest(ctx context.Context, r *http.Request) (*treatmentPlanCSVPUTRequest, error) {
+func (h *treatmentPlanCSVHandler) parsePUTRequest(r *http.Request) (*treatmentPlanCSVPUTRequest, error) {
 	var err error
 	rd := &treatmentPlanCSVPUTRequest{}
 	if err := r.ParseMultipartForm(maxMemory); err != nil {
@@ -195,7 +194,7 @@ func (h *treatmentPlanCSVHandler) parsePUTRequest(ctx context.Context, r *http.R
 	return rd, nil
 }
 
-func (h *treatmentPlanCSVHandler) servePUT(ctx context.Context, w http.ResponseWriter, r *http.Request, req *treatmentPlanCSVPUTRequest) {
+func (h *treatmentPlanCSVHandler) servePUT(w http.ResponseWriter, r *http.Request, req *treatmentPlanCSVPUTRequest) {
 	threads := len(req.ColData)
 	ftps, err := parseFTPs(req.ColData, threads)
 	if err != nil {
@@ -216,7 +215,7 @@ func (h *treatmentPlanCSVHandler) servePUT(ctx context.Context, w http.ResponseW
 		return
 	}
 
-	_, err = h.transformFTPsToSTPs(ctx, ftps, threads)
+	_, err = h.transformFTPsToSTPs(r.Context(), ftps, threads)
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return

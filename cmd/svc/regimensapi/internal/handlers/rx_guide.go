@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/rxguide"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/responses"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -29,37 +27,37 @@ type rxGuideHandlerGETResponse struct {
 }
 
 // NewRXGuide returns an initialized instance of rxGuideHandler
-func NewRXGuide(dal rxGuideDAL) httputil.ContextHandler {
+func NewRXGuide(dal rxGuideDAL) http.Handler {
 	return httputil.SupportedMethods(&rxGuideHandler{dal: dal}, httputil.Post, httputil.Get)
 }
 
-func (h *rxGuideHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *rxGuideHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case httputil.Get:
-		drugName, ok := mux.Vars(ctx)["drug_name"]
+		drugName, ok := mux.Vars(r.Context())["drug_name"]
 		if !ok {
-			apiservice.WriteResourceNotFoundError(ctx, "a drug name must be provided", w, r)
+			apiservice.WriteResourceNotFoundError("a drug name must be provided", w, r)
 			return
 		}
-		h.serveGET(ctx, w, r, drugName)
+		h.serveGET(w, r, drugName)
 	// TODO: Figure out a clever way to protect this endpoint from non internal use
 	case httputil.Post:
-		rxGuide, err := h.parsePOSTRequest(ctx, r)
+		rxGuide, err := h.parsePOSTRequest(r)
 		if err != nil {
-			apiservice.WriteBadRequestError(ctx, err, w, r)
+			apiservice.WriteBadRequestError(err, w, r)
 			return
 		}
-		h.servePOST(ctx, w, r, rxGuide)
+		h.servePOST(w, r, rxGuide)
 	}
 }
 
-func (h *rxGuideHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request, drugName string) {
+func (h *rxGuideHandler) serveGET(w http.ResponseWriter, r *http.Request, drugName string) {
 	guide, err := h.dal.RXGuide(drugName)
 	if err == rxguide.ErrNoGuidesFound {
-		apiservice.WriteResourceNotFoundError(ctx, err.Error(), w, r)
+		apiservice.WriteResourceNotFoundError(err.Error(), w, r)
 		return
 	} else if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 	// Cache RX guides forever since they should be static
@@ -67,7 +65,7 @@ func (h *rxGuideHandler) serveGET(ctx context.Context, w http.ResponseWriter, r 
 	httputil.JSONResponse(w, http.StatusOK, &rxGuideHandlerGETResponse{RXGuide: guide})
 }
 
-func (h *rxGuideHandler) parsePOSTRequest(ctx context.Context, r *http.Request) (*responses.RXGuidePOSTRequest, error) {
+func (h *rxGuideHandler) parsePOSTRequest(r *http.Request) (*responses.RXGuidePOSTRequest, error) {
 	rd := &responses.RXGuidePOSTRequest{}
 	if err := json.NewDecoder(r.Body).Decode(rd); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -79,9 +77,9 @@ func (h *rxGuideHandler) parsePOSTRequest(ctx context.Context, r *http.Request) 
 	return rd, nil
 }
 
-func (h *rxGuideHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *http.Request, rd *responses.RXGuidePOSTRequest) {
+func (h *rxGuideHandler) servePOST(w http.ResponseWriter, r *http.Request, rd *responses.RXGuidePOSTRequest) {
 	if err := h.dal.PutRXGuide(rd.RXGuide); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 	apiservice.WriteJSONSuccess(w)

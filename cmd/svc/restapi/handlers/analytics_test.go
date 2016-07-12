@@ -9,8 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"context"
-
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/analytics"
 )
@@ -67,7 +65,7 @@ func TestHandler(t *testing.T) {
 	req.Header.Set("S-Device", "Phone;iPhone6,1;640;1136;2.0")
 	req.Header.Set("S-Device-ID", "12345678-1234-1234-1234-123456789abc")
 	res := httptest.NewRecorder()
-	h.ServeHTTP(context.Background(), res, req)
+	h.ServeHTTP(res, req)
 	if res.Code != 200 {
 		t.Fatalf("Expected 200 got %d", res.Code)
 	}

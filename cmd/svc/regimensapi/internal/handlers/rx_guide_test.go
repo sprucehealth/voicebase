@@ -2,14 +2,13 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/rxguide"
 	rxtest "github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/rxguide/test"
@@ -35,7 +34,7 @@ func TestRXGuideGET(t *testing.T) {
 	r, err := http.NewRequest(httputil.Get, "/", nil)
 	test.OK(t, err)
 	ctx := mux.SetVars(context.Background(), map[string]string{"drug_name": drugName})
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.HTTPResponseCode(t, http.StatusOK, w)
 	test.Equals(t, strings.TrimSpace(string(data)), strings.TrimSpace(w.Body.String()))
 	svc.Finish()
@@ -53,7 +52,7 @@ func TestRXGuideGETNoGuide(t *testing.T) {
 	r, err := http.NewRequest(httputil.Get, "/", nil)
 	test.OK(t, err)
 	ctx := mux.SetVars(context.Background(), map[string]string{"drug_name": drugName})
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.HTTPResponseCode(t, http.StatusNotFound, w)
 	svc.Finish()
 }
@@ -70,7 +69,7 @@ func TestRXGuideGETInternalError(t *testing.T) {
 	r, err := http.NewRequest(httputil.Get, "/", nil)
 	test.OK(t, err)
 	ctx := mux.SetVars(context.Background(), map[string]string{"drug_name": drugName})
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.HTTPResponseCode(t, http.StatusInternalServerError, w)
 	svc.Finish()
 }
@@ -87,7 +86,7 @@ func TestRXGuidePOST(t *testing.T) {
 	w := httptest.NewRecorder()
 	r, err := http.NewRequest(httputil.Post, "/", bytes.NewReader(data))
 	test.OK(t, err)
-	h.ServeHTTP(context.Background(), w, r)
+	h.ServeHTTP(w, r)
 	test.HTTPResponseCode(t, http.StatusOK, w)
 	svc.Finish()
 }
@@ -102,7 +101,7 @@ func TestRXGuidePOSTGuideRequired(t *testing.T) {
 	w := httptest.NewRecorder()
 	r, err := http.NewRequest(httputil.Post, "/", bytes.NewReader(data))
 	test.OK(t, err)
-	h.ServeHTTP(context.Background(), w, r)
+	h.ServeHTTP(w, r)
 	test.HTTPResponseCode(t, http.StatusBadRequest, w)
 	svc.Finish()
 }
@@ -120,7 +119,7 @@ func TestRXGuidePOSTInternalError(t *testing.T) {
 	w := httptest.NewRecorder()
 	r, err := http.NewRequest(httputil.Post, "/", bytes.NewReader(data))
 	test.OK(t, err)
-	h.ServeHTTP(context.Background(), w, r)
+	h.ServeHTTP(w, r)
 	test.HTTPResponseCode(t, http.StatusInternalServerError, w)
 	svc.Finish()
 }

@@ -11,8 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"context"
-
 	"github.com/aws/aws-sdk-go/service/firehose"
 	"github.com/aws/aws-sdk-go/service/sns"
 	consulapi "github.com/hashicorp/consul/api"
@@ -33,7 +31,6 @@ import (
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mandrill"
 	"github.com/sprucehealth/backend/libs/mcutil"
 	"github.com/sprucehealth/backend/libs/mux"
@@ -359,7 +356,7 @@ func main() {
 
 	// Redirect any unknown domains to the website. This will most likely be a
 	// apex domain (e.g. sprucehealth.com -> www.sprucehealth.com).
-	router.NotFoundHandler = httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Host != apiDomain && r.Host != webDomain {
 			// If apex domain (e.g. sprucehealth.com) then just rewrite host
 			if idx := strings.IndexByte(r.Host, '.'); idx == strings.LastIndex(r.Host, ".") {

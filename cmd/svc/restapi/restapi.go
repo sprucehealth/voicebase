@@ -1,11 +1,11 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"log"
+	"net/http"
 	"time"
-
-	"context"
 
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/rainycape/memcache"
@@ -68,7 +68,7 @@ func buildRESTAPI(
 	metricsRegistry metrics.Registry,
 	applicationDB *sql.DB,
 	errorNotifyHandler golog.Handler,
-) httputil.ContextHandler {
+) http.Handler {
 	// Register the configs that will be used in different parts of the system
 	registerCfgs(cfgStore)
 	awsSession := conf.AWSSession()

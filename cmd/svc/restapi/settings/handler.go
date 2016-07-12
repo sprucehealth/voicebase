@@ -3,8 +3,6 @@ package settings
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common/config"
 	"github.com/sprucehealth/backend/device"
@@ -24,14 +22,14 @@ type upgradeInfo struct {
 	Required   bool   `json:"required"`
 }
 
-func NewHandler(minimumAppVersionConfigs *config.MinimumAppVersionConfigs) httputil.ContextHandler {
+func NewHandler(minimumAppVersionConfigs *config.MinimumAppVersionConfigs) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(&handler{
 			minimumAppVersionConfigs: minimumAppVersionConfigs,
 		}), httputil.Get)
 }
 
-func (h *handler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	sHeaders := device.ExtractSpruceHeaders(w, r)
 
 	if h.minimumAppVersionConfigs != nil {

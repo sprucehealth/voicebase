@@ -8,8 +8,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -39,7 +37,7 @@ func TestPatientAccountNeedsVerifyIDHandlerPOSTBadURL(t *testing.T) {
 	handler := newPatientAccountNeedsVerifyIDHandler(&mockedNeedsIDMarker{})
 	m.Handle(`/foo/{id:[0-9]+}`, handler)
 	responseWriter := httptest.NewRecorder()
-	m.ServeHTTP(context.Background(), responseWriter, r)
+	m.ServeHTTP(responseWriter, r)
 	test.Equals(t, http.StatusNotFound, responseWriter.Code)
 }
 
@@ -51,7 +49,7 @@ func TestPatientAccountNeedsVerifyIDHandlerPOSTRequiresPromoCode(t *testing.T) {
 	handler := newPatientAccountNeedsVerifyIDHandler(&mockedNeedsIDMarker{})
 	m.Handle(`/foo/{id:[0-9]+}`, handler)
 	responseWriter := httptest.NewRecorder()
-	m.ServeHTTP(context.Background(), responseWriter, r)
+	m.ServeHTTP(responseWriter, r)
 	test.Equals(t, http.StatusBadRequest, responseWriter.Code)
 }
 
@@ -66,7 +64,7 @@ func TestPatientAccountNeedsVerifyIDHandlerPOSTSuccess(t *testing.T) {
 	m.Handle(`/foo/{id:[0-9]+}`, handler)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, struct{}{})
-	m.ServeHTTP(context.Background(), responseWriter, r)
+	m.ServeHTTP(responseWriter, r)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
 	test.Equals(t, http.StatusOK, responseWriter.Code)
 	test.Equals(t, promoCode, ms.markForNeedsIDVerificationPromoCodeParam)
@@ -81,7 +79,7 @@ func TestPatientAccountNeedsVerifyIDHandlerPOSTNotFoundResource(t *testing.T) {
 	handler := newPatientAccountNeedsVerifyIDHandler(&mockedNeedsIDMarker{markForNeedsIDVerificationErr: api.ErrNotFound(`anything`)})
 	m.Handle(`/foo/{id:[0-9]+}`, handler)
 	responseWriter := httptest.NewRecorder()
-	m.ServeHTTP(context.Background(), responseWriter, r)
+	m.ServeHTTP(responseWriter, r)
 	test.Equals(t, http.StatusBadRequest, responseWriter.Code)
 }
 
@@ -93,6 +91,6 @@ func TestPatientAccountNeedsVerifyIDHandlerPOSTInternalErr(t *testing.T) {
 	handler := newPatientAccountNeedsVerifyIDHandler(&mockedNeedsIDMarker{markForNeedsIDVerificationErr: errors.New("Foo")})
 	m.Handle(`/foo/{id:[0-9]+}`, handler)
 	responseWriter := httptest.NewRecorder()
-	m.ServeHTTP(context.Background(), responseWriter, r)
+	m.ServeHTTP(responseWriter, r)
 	test.Equals(t, http.StatusInternalServerError, responseWriter.Code)
 }

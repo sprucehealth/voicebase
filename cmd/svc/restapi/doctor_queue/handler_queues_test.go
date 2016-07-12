@@ -1,12 +1,11 @@
 package doctor_queue
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -77,7 +76,7 @@ func TestQueuesHandlerInbox_CC(t *testing.T) {
 	test.OK(t, err)
 
 	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{Role: api.RoleCC})
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 
 	var res struct {
@@ -113,7 +112,7 @@ func TestQueuesHandlerInbox_Tags(t *testing.T) {
 	test.OK(t, err)
 
 	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{Role: api.RoleDoctor})
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 
 	var res struct {
@@ -149,7 +148,7 @@ func TestQueuesHandlerUnassigned_Tags(t *testing.T) {
 	test.OK(t, err)
 
 	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{Role: api.RoleCC})
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 
 	var res struct {
@@ -185,7 +184,7 @@ func TestQueuesHandlerCompleted_Tags(t *testing.T) {
 	test.OK(t, err)
 
 	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{Role: api.RoleCC})
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 
 	var res struct {

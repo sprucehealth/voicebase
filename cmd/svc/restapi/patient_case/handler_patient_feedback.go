@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/feedback"
@@ -29,7 +27,7 @@ type patientFeedback struct {
 
 // NewPatientFeedbackHandler returns a handler that exposes
 // patient feedback for the care coordinator
-func NewPatientFeedbackHandler(feedbackClient feedback.DAL) httputil.ContextHandler {
+func NewPatientFeedbackHandler(feedbackClient feedback.DAL) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(&patientFeedbackHandler{
@@ -37,15 +35,15 @@ func NewPatientFeedbackHandler(feedbackClient feedback.DAL) httputil.ContextHand
 			}), api.RoleCC), httputil.Get)
 }
 
-func (h *patientFeedbackHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *patientFeedbackHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	caseID, err := strconv.ParseInt(r.FormValue("case_id"), 10, 64)
 	if err != nil {
-		apiservice.WriteBadRequestError(ctx, errors.New("case_id required"), w, r)
+		apiservice.WriteBadRequestError(errors.New("case_id required"), w, r)
 		return
 	}
 	pf, err := h.feedbackClient.PatientFeedback(feedback.ForCase(caseID))
 	if errors.Cause(err) != feedback.ErrNoPatientFeedback && err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	} else if pf == nil {
 		// no feedback exists.
@@ -55,7 +53,7 @@ func (h *patientFeedbackHandler) ServeHTTP(ctx context.Context, w http.ResponseW
 
 	feedbackTemplate, responseJSON, err := h.feedbackClient.AdditionalFeedback(pf.ID)
 	if errors.Cause(err) != feedback.ErrNoAdditionalFeedback && err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -65,7 +63,7 @@ func (h *patientFeedbackHandler) ServeHTTP(ctx context.Context, w http.ResponseW
 	} else if feedbackTemplate != nil && responseJSON != nil {
 		comment, err = feedbackTemplate.Template.ResponseString(feedbackTemplate.ID, responseJSON)
 		if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 	}

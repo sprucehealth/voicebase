@@ -8,8 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"context"
-
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/analytics"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
@@ -27,7 +25,7 @@ func TestAnalyticsHandler(t *testing.T) {
 	r, err := http.NewRequest("GET", "/?event=abc&foo=bar", nil)
 	test.OK(t, err)
 	w := httptest.NewRecorder()
-	h.ServeHTTP(context.Background(), w, r)
+	h.ServeHTTP(w, r)
 	test.HTTPResponseCode(t, http.StatusOK, w)
 
 	test.Assert(t, bytes.Equal(w.Body.Bytes(), logoImage), "Body did not match logo image")
@@ -58,7 +56,7 @@ func TestAnalyticsHandler(t *testing.T) {
 	r, err = http.NewRequest("POST", "/", bytes.NewReader(body))
 	test.OK(t, err)
 	w = httptest.NewRecorder()
-	h.ServeHTTP(context.Background(), w, r)
+	h.ServeHTTP(w, r)
 	test.HTTPResponseCode(t, http.StatusOK, w)
 
 	reg.Do(func(name string, metric interface{}) error {

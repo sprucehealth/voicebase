@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
@@ -20,14 +18,14 @@ type providerMappingsResponse struct {
 	Mappings []*api.CareProviderStatePathway `json:"mappings"`
 }
 
-func newProviderMappingsHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func newProviderMappingsHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&providerMappingsHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get)
 }
 
-func (h *providerMappingsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	account := www.MustCtxAccount(ctx)
+func (h *providerMappingsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(r.Context())
 
 	audit.LogAction(account.ID, "AdminAPI", "ListCareProviderStatePathwayMappings", nil)
 

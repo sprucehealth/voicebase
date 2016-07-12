@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/tagging"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/tagging/model"
@@ -48,44 +46,44 @@ type tagDELETERequest struct {
 	ID int64 `schema:"id,required"`
 }
 
-func newTagHandler(taggingClient tagging.Client) httputil.ContextHandler {
+func newTagHandler(taggingClient tagging.Client) http.Handler {
 	return httputil.SupportedMethods(&tagHandler{taggingClient: taggingClient}, httputil.Get, httputil.Put, httputil.Post, httputil.Delete)
 }
 
-func (h *tagHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *tagHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "DELETE":
-		req, err := h.parseDELETERequest(ctx, r)
+		req, err := h.parseDELETERequest(r)
 		if err != nil {
 			www.APIBadRequestError(w, r, err.Error())
 			return
 		}
-		h.serveDELETE(ctx, w, r, req)
+		h.serveDELETE(w, r, req)
 	case "POST":
-		req, err := h.parsePOSTRequest(ctx, r)
+		req, err := h.parsePOSTRequest(r)
 		if err != nil {
 			www.APIBadRequestError(w, r, err.Error())
 			return
 		}
-		h.servePOST(ctx, w, r, req)
+		h.servePOST(w, r, req)
 	case "PUT":
-		req, err := h.parsePUTRequest(ctx, r)
+		req, err := h.parsePUTRequest(r)
 		if err != nil {
 			www.APIBadRequestError(w, r, err.Error())
 			return
 		}
-		h.servePUT(ctx, w, r, req)
+		h.servePUT(w, r, req)
 	case "GET":
-		req, err := h.parseGETRequest(ctx, r)
+		req, err := h.parseGETRequest(r)
 		if err != nil {
 			www.APIBadRequestError(w, r, err.Error())
 			return
 		}
-		h.serveGET(ctx, w, r, req)
+		h.serveGET(w, r, req)
 	}
 }
 
-func (h *tagHandler) parseGETRequest(ctx context.Context, r *http.Request) (*tagGETRequest, error) {
+func (h *tagHandler) parseGETRequest(r *http.Request) (*tagGETRequest, error) {
 	rd := &tagGETRequest{}
 	if err := r.ParseForm(); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -100,7 +98,7 @@ func (h *tagHandler) parseGETRequest(ctx context.Context, r *http.Request) (*tag
 	return rd, nil
 }
 
-func (h *tagHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request, req *tagGETRequest) {
+func (h *tagHandler) serveGET(w http.ResponseWriter, r *http.Request, req *tagGETRequest) {
 	tags := make([]*response.Tag, 0, 1)
 	var err error
 	if !req.Common {
@@ -127,7 +125,7 @@ func (h *tagHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *htt
 	})
 }
 
-func (h *tagHandler) parsePOSTRequest(ctx context.Context, r *http.Request) (*tagPOSTRequest, error) {
+func (h *tagHandler) parsePOSTRequest(r *http.Request) (*tagPOSTRequest, error) {
 	rd := &tagPOSTRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&rd); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -139,7 +137,7 @@ func (h *tagHandler) parsePOSTRequest(ctx context.Context, r *http.Request) (*ta
 	return rd, nil
 }
 
-func (h *tagHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *http.Request, req *tagPOSTRequest) {
+func (h *tagHandler) servePOST(w http.ResponseWriter, r *http.Request, req *tagPOSTRequest) {
 	id, err := h.taggingClient.InsertTag(&model.Tag{
 		Text:   req.Text,
 		Common: req.Common,
@@ -153,7 +151,7 @@ func (h *tagHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *ht
 	})
 }
 
-func (h *tagHandler) parsePUTRequest(ctx context.Context, r *http.Request) (*tagPUTRequest, error) {
+func (h *tagHandler) parsePUTRequest(r *http.Request) (*tagPUTRequest, error) {
 	rd := &tagPUTRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&rd); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -165,7 +163,7 @@ func (h *tagHandler) parsePUTRequest(ctx context.Context, r *http.Request) (*tag
 	return rd, nil
 }
 
-func (h *tagHandler) servePUT(ctx context.Context, w http.ResponseWriter, r *http.Request, req *tagPUTRequest) {
+func (h *tagHandler) servePUT(w http.ResponseWriter, r *http.Request, req *tagPUTRequest) {
 	if err := h.taggingClient.UpdateTag(&model.TagUpdate{
 		ID:     req.ID,
 		Common: req.Common,
@@ -176,7 +174,7 @@ func (h *tagHandler) servePUT(ctx context.Context, w http.ResponseWriter, r *htt
 	httputil.JSONResponse(w, http.StatusOK, struct{}{})
 }
 
-func (h *tagHandler) parseDELETERequest(ctx context.Context, r *http.Request) (*tagDELETERequest, error) {
+func (h *tagHandler) parseDELETERequest(r *http.Request) (*tagDELETERequest, error) {
 	rd := &tagDELETERequest{}
 	if err := r.ParseForm(); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -187,7 +185,7 @@ func (h *tagHandler) parseDELETERequest(ctx context.Context, r *http.Request) (*
 	return rd, nil
 }
 
-func (h *tagHandler) serveDELETE(ctx context.Context, w http.ResponseWriter, r *http.Request, req *tagDELETERequest) {
+func (h *tagHandler) serveDELETE(w http.ResponseWriter, r *http.Request, req *tagDELETERequest) {
 	if _, err := h.taggingClient.DeleteTag(req.ID); err != nil {
 		www.APIInternalError(w, r, err)
 		return

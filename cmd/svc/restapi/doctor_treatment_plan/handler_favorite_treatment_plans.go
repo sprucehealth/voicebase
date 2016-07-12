@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"sort"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -25,7 +23,7 @@ func NewDoctorFavoriteTreatmentPlansHandler(
 	dataAPI api.DataAPI,
 	erxAPI erx.ERxAPI,
 	mediaStore *mediastore.Store,
-) httputil.ContextHandler {
+) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.RequestCacheHandler(
 			apiservice.AuthorizationRequired(&doctorFavoriteTreatmentPlansHandler{
@@ -49,7 +47,8 @@ type DoctorFavoriteTreatmentPlansResponseData struct {
 	FavoriteTreatmentPlan           *responses.FavoriteTreatmentPlan   `json:"favorite_treatment_plan,omitempty"`
 }
 
-func (d *doctorFavoriteTreatmentPlansHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+func (d *doctorFavoriteTreatmentPlansHandler) IsAuthorized(r *http.Request) (bool, error) {
+	ctx := r.Context()
 	requestCache := apiservice.MustCtxCache(ctx)
 	account := apiservice.MustCtxAccount(ctx)
 
@@ -95,25 +94,24 @@ func (d *doctorFavoriteTreatmentPlansHandler) IsAuthorized(ctx context.Context, 
 	return true, nil
 }
 
-func (d *doctorFavoriteTreatmentPlansHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	requestCache := apiservice.MustCtxCache(ctx)
+func (d *doctorFavoriteTreatmentPlansHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(r.Context())
 	doctor := requestCache[apiservice.CKDoctor].(*common.Doctor)
 	requestData := requestCache[apiservice.CKRequestData].(*DoctorFavoriteTreatmentPlansRequestData)
 
 	switch r.Method {
 	case httputil.Get:
-		d.getFavoriteTreatmentPlans(ctx, w, r, doctor, requestData)
+		d.getFavoriteTreatmentPlans(w, r, doctor, requestData)
 	case httputil.Post, httputil.Put:
-		d.addOrUpdateFavoriteTreatmentPlan(ctx, w, r, doctor, requestData)
+		d.addOrUpdateFavoriteTreatmentPlan(w, r, doctor, requestData)
 	case httputil.Delete:
-		d.deleteFavoriteTreatmentPlan(ctx, w, r, doctor, requestData)
+		d.deleteFavoriteTreatmentPlan(w, r, doctor, requestData)
 	default:
 		http.NotFound(w, r)
 	}
 }
 
 func (d *doctorFavoriteTreatmentPlansHandler) getFavoriteTreatmentPlans(
-	ctx context.Context,
 	w http.ResponseWriter,
 	r *http.Request,
 	doctor *common.Doctor,
@@ -122,7 +120,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) getFavoriteTreatmentPlans(
 	if requestData.PathwayTag != "" {
 		_, err := d.dataAPI.PathwayForTag(requestData.PathwayTag, api.PONone)
 		if api.IsErrNotFound(err) {
-			apiservice.WriteBadRequestError(ctx, err, w, r)
+			apiservice.WriteBadRequestError(err, w, r)
 		}
 	}
 
@@ -130,7 +128,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) getFavoriteTreatmentPlans(
 	if requestData.FavoriteTreatmentPlanID == 0 {
 		pathwayFTPGroups, err := d.pathwayFTPGroupsForDoctor(doctor.ID.Int64(), requestData.PathwayTag)
 		if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 
@@ -143,35 +141,34 @@ func (d *doctorFavoriteTreatmentPlansHandler) getFavoriteTreatmentPlans(
 		return
 	}
 
-	requestCache := apiservice.MustCtxCache(ctx)
+	requestCache := apiservice.MustCtxCache(r.Context())
 	ftp := requestCache[apiservice.CKFavoriteTreatmentPlan].(*common.FavoriteTreatmentPlan)
 	ftpRes, err := responses.TransformFTPToResponse(d.dataAPI, d.mediaStore, scheduledMessageMediaExpirationDuration, ftp, requestData.PathwayTag)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 	httputil.JSONResponse(w, http.StatusOK, &DoctorFavoriteTreatmentPlansResponseData{FavoriteTreatmentPlan: ftpRes})
 }
 
 func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(
-	ctx context.Context,
 	w http.ResponseWriter,
 	r *http.Request,
 	doctor *common.Doctor,
 	req *DoctorFavoriteTreatmentPlansRequestData,
 ) {
-	account := apiservice.MustCtxAccount(ctx)
+	account := apiservice.MustCtxAccount(r.Context())
 
 	ftp, err := responses.TransformFTPFromResponse(d.dataAPI, req.FavoriteTreatmentPlan, doctor.ID.Int64(), account.Role)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	// validate treatments being added
 	if ftp.TreatmentList != nil {
 		if err := validateTreatments(ftp.TreatmentList.Treatments, d.dataAPI, d.erxAPI, doctor.DoseSpotClinicianID); err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 	}
@@ -180,7 +177,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(
 	// in the context of a treatment plan so compare the two
 	// to ensure they are equal
 	if req.TreatmentPlanID != 0 {
-		requestCache := apiservice.MustCtxCache(ctx)
+		requestCache := apiservice.MustCtxCache(r.Context())
 		tp := requestCache[apiservice.CKTreatmentPlan].(*common.TreatmentPlan)
 
 		// if the pathway_tag is not specified, pick it up from the treatment_plan_id
@@ -188,7 +185,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(
 		if req.PathwayTag == "" {
 			patientCase, err := d.dataAPI.GetPatientCaseFromID(tp.PatientCaseID.Int64())
 			if err != nil {
-				apiservice.WriteError(ctx, err, w, r)
+				apiservice.WriteError(err, w, r)
 				return
 			}
 
@@ -196,7 +193,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(
 		}
 
 		if !ftp.EqualsTreatmentPlan(tp) {
-			apiservice.WriteValidationError(ctx, "Cannot associate a favorite treatment plan with a treatment plan when the contents of the two don't match", w, r)
+			apiservice.WriteValidationError("Cannot associate a favorite treatment plan with a treatment plan when the contents of the two don't match", w, r)
 			return
 		}
 	} else {
@@ -208,14 +205,14 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(
 
 	// ensure that favorite treatment plan has a name
 	if err := ftp.Validate(); err != nil {
-		apiservice.WriteValidationError(ctx, err.Error(), w, r)
+		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
 
 	// ensure that any tokens in the note are valid
 	t := newTokenizerForValidation('{', '}')
 	if err := t.validate(ftp.Note); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -224,18 +221,18 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(
 	ftp.CreatorID = &id
 
 	if _, err := d.dataAPI.InsertFavoriteTreatmentPlan(ftp, req.PathwayTag, req.TreatmentPlanID); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	if err := d.dataAPI.SetFavoriteTreatmentPlanScheduledMessages(ftp.ID.Int64(), ftp.ScheduledMessages); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	ftpRes, err := responses.TransformFTPToResponse(d.dataAPI, d.mediaStore, scheduledMessageMediaExpirationDuration, ftp, req.PathwayTag)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -243,14 +240,13 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(
 }
 
 func (d *doctorFavoriteTreatmentPlansHandler) deleteFavoriteTreatmentPlan(
-	ctx context.Context,
 	w http.ResponseWriter,
 	r *http.Request,
 	doctor *common.Doctor,
 	req *DoctorFavoriteTreatmentPlansRequestData,
 ) {
 	if req.FavoriteTreatmentPlanID == 0 {
-		apiservice.WriteValidationError(ctx, "favorite_treatment_plan_id must be specifeid", w, r)
+		apiservice.WriteValidationError("favorite_treatment_plan_id must be specifeid", w, r)
 		return
 	}
 
@@ -260,18 +256,18 @@ func (d *doctorFavoriteTreatmentPlansHandler) deleteFavoriteTreatmentPlan(
 	}
 
 	if err := d.dataAPI.DeleteFavoriteTreatmentPlanScheduledMessages(req.FavoriteTreatmentPlanID); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 	if err := d.dataAPI.DeleteFavoriteTreatmentPlan(req.FavoriteTreatmentPlanID, doctor.ID.Int64(), req.PathwayTag); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	// echo back updated list of favorite treatment plans
 	pathwayFTPGroups, err := d.pathwayFTPGroupsForDoctor(doctor.ID.Int64(), req.PathwayTag)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -317,7 +313,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) pathwayFTPGroupsForDoctor(id int64
 			return nil, err
 		}
 		pathwayFTPGroups = []*responses.PathwayFTPGroup{
-			&responses.PathwayFTPGroup{
+			{
 				PathwayName: pathway.Name,
 				PathwayTag:  pathway.Tag,
 			},

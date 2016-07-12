@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"time"
 
-	"context"
-
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/mediaproxy"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/responses"
@@ -27,7 +25,7 @@ type mediaProxyHandler struct {
 func NewMediaProxy(
 	mpSvc *mediaproxy.Service,
 	metricsRegistry metrics.Registry,
-) httputil.ContextHandler {
+) http.Handler {
 	h := &mediaProxyHandler{
 		mpSvc:          mpSvc,
 		statGetLatency: metrics.NewUnbiasedHistogram(),
@@ -36,35 +34,35 @@ func NewMediaProxy(
 	return httputil.SupportedMethods(h, httputil.Get)
 }
 
-func (h *mediaProxyHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *mediaProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	startTime := time.Now()
 	defer func() {
 		h.statGetLatency.Update(time.Since(startTime).Nanoseconds() / 1e3)
 	}()
 
-	mediaID := mux.Vars(ctx)["id"]
+	mediaID := mux.Vars(r.Context())["id"]
 
 	var rd responses.MediaGETRequest
 	if err := r.ParseForm(); err != nil {
-		apiservice.WriteBadRequestError(ctx, err, w, r)
+		apiservice.WriteBadRequestError(err, w, r)
 		return
 	}
 	if err := schema.NewDecoder().Decode(&rd, r.Form); err != nil {
-		apiservice.WriteBadRequestError(ctx, err, w, r)
+		apiservice.WriteBadRequestError(err, w, r)
 		return
 	}
 
 	sz := &media.ImageSize{Width: rd.Width, Height: rd.Height, Crop: rd.Crop, AllowScaleUp: rd.AllowScaleUp}
 	rc, meta, err := h.mpSvc.ImageReader(mediaID, sz)
 	if errors.Cause(err) == media.ErrNotFound {
-		apiservice.WriteResourceNotFoundError(ctx, "Media not found", w, r)
+		apiservice.WriteResourceNotFoundError("Media not found", w, r)
 		return
 	} else if _, ok := errors.Cause(err).(mediaproxy.ErrFetchFailed); ok {
 		golog.Infof("Media proxy fetch failed: %s", err)
-		apiservice.WriteResourceNotFoundError(ctx, "Fetch failed", w, r)
+		apiservice.WriteResourceNotFoundError("Fetch failed", w, r)
 		return
 	} else if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 	copyWithHeaders(w, rc, meta.Size, meta.MimeType)

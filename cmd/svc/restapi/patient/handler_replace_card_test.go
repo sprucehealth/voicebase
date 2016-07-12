@@ -125,7 +125,7 @@ func TestReplaceCard_NoCardExists(t *testing.T) {
 	}
 
 	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{Role: api.RolePatient})
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 
 	// ensure that customerID was set
 	if m.patient.PaymentCustomerID != "12345" {
@@ -198,7 +198,7 @@ func TestReplaceCard_CardExists(t *testing.T) {
 	}
 
 	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{Role: api.RolePatient})
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 
 	// ensure that card was added
 	if m.cardAdded == nil {

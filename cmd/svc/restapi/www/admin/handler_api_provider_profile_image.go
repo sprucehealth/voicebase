@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/app_url"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
@@ -23,7 +21,7 @@ type providerProfileImageAPIHandler struct {
 	apiDomain  string
 }
 
-func newProviderProfileImageAPIHandler(dataAPI api.DataAPI, imageStore storage.Store, apiDomain string) httputil.ContextHandler {
+func newProviderProfileImageAPIHandler(dataAPI api.DataAPI, imageStore storage.Store, apiDomain string) http.Handler {
 	return httputil.SupportedMethods(&providerProfileImageAPIHandler{
 		dataAPI:    dataAPI,
 		imageStore: imageStore,
@@ -31,15 +29,15 @@ func newProviderProfileImageAPIHandler(dataAPI api.DataAPI, imageStore storage.S
 	}, httputil.Get, httputil.Put)
 }
 
-func (h *providerProfileImageAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	doctorID, err := strconv.ParseInt(mux.Vars(ctx)["id"], 10, 64)
+func (h *providerProfileImageAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	doctorID, err := strconv.ParseInt(mux.Vars(r.Context())["id"], 10, 64)
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return
 	}
 
 	var imageSuffix string
-	profileImageType := mux.Vars(ctx)["type"]
+	profileImageType := mux.Vars(r.Context())["type"]
 	switch profileImageType {
 	case "thumbnail":
 		// Note: for legacy reasons (when we used to have small and large thumbnails), continuing to upload
@@ -61,7 +59,7 @@ func (h *providerProfileImageAPIHandler) ServeHTTP(ctx context.Context, w http.R
 		return
 	}
 
-	account := www.MustCtxAccount(ctx)
+	account := www.MustCtxAccount(r.Context())
 
 	if r.Method == httputil.Put {
 		audit.LogAction(account.ID, "AdminAPI", "UpdateProviderThumbnail", map[string]interface{}{"doctor_id": doctorID, "type": profileImageType})

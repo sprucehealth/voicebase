@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"strings"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -89,7 +87,7 @@ func (f *insuranceForm) Validate() map[string]string {
 	return errors
 }
 
-func newInsuranceHandler(router *mux.Router, dataAPI api.DataAPI, templateLoader *www.TemplateLoader) httputil.ContextHandler {
+func newInsuranceHandler(router *mux.Router, dataAPI api.DataAPI, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&insuranceHandler{
 		router:   router,
 		dataAPI:  dataAPI,
@@ -98,7 +96,7 @@ func newInsuranceHandler(router *mux.Router, dataAPI api.DataAPI, templateLoader
 	}, httputil.Get, httputil.Post)
 }
 
-func (h *insuranceHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *insuranceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	form := &insuranceForm{}
 	var errors map[string]string
 
@@ -115,7 +113,7 @@ func (h *insuranceHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter,
 
 		errors = form.Validate()
 		if len(errors) == 0 {
-			account := www.MustCtxAccount(ctx)
+			account := www.MustCtxAccount(r.Context())
 			doctorID, err := h.dataAPI.GetDoctorIDFromAccountID(account.ID)
 			if err != nil {
 				www.InternalServerError(w, r, err)
@@ -155,7 +153,7 @@ func (h *insuranceHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter,
 		}
 	} else {
 		// Pull up old information if available
-		account := www.MustCtxAccount(ctx)
+		account := www.MustCtxAccount(r.Context())
 		doctorID, err := h.dataAPI.GetDoctorIDFromAccountID(account.ID)
 		if err != nil {
 			www.InternalServerError(w, r, err)

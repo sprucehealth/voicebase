@@ -9,8 +9,6 @@ import (
 	"strconv"
 	"time"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
@@ -33,7 +31,7 @@ type providerOnboardingURLAPIHandler struct {
 	signer  *sig.Signer
 }
 
-func newProviderOnboardingURLAPIHandler(r *mux.Router, dataAPI api.DataAPI, signer *sig.Signer, cfgStore cfg.Store) httputil.ContextHandler {
+func newProviderOnboardingURLAPIHandler(r *mux.Router, dataAPI api.DataAPI, signer *sig.Signer, cfgStore cfg.Store) http.Handler {
 	cfgStore.Register(onboardTimeExpirationDef)
 	return httputil.SupportedMethods(&providerOnboardingURLAPIHandler{
 		router:  r,
@@ -42,11 +40,11 @@ func newProviderOnboardingURLAPIHandler(r *mux.Router, dataAPI api.DataAPI, sign
 	}, httputil.Get)
 }
 
-func (h *providerOnboardingURLAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	account := www.MustCtxAccount(ctx)
+func (h *providerOnboardingURLAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(r.Context())
 	audit.LogAction(account.ID, "AdminAPI", "GenerateProviderOnboardingURL", nil)
 
-	cfgSnap := cfg.Context(ctx)
+	cfgSnap := cfg.Context(r.Context())
 
 	nonceBytes := make([]byte, 8)
 	if _, err := rand.Read(nonceBytes); err != nil {

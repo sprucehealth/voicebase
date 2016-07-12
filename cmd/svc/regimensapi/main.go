@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -11,8 +12,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"context"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -212,7 +211,7 @@ func main() {
 	serve(handler)
 }
 
-func setupRouter(metricsRegistry metrics.Registry) (*mux.Router, httputil.ContextHandler) {
+func setupRouter(metricsRegistry metrics.Registry) (*mux.Router, http.Handler) {
 	var memcacheCli *memcache.Client
 	if config.mcDiscoveryHost != "" {
 		d, err := awsutil.NewElastiCacheDiscoverer(config.mcDiscoveryHost, config.mcDiscoveryInterval)
@@ -352,17 +351,17 @@ func setupRouter(metricsRegistry metrics.Registry) (*mux.Router, httputil.Contex
 	h = httputil.CompressResponse(httputil.DecompressRequest(h))
 
 	if config.corsAllowAll {
-		h = httputil.ToContextHandler(cors.New(cors.Options{
+		h = cors.New(cors.Options{
 			AllowedOrigins:   []string{"*"},
 			AllowedMethods:   []string{httputil.Delete, httputil.Get, httputil.Options, httputil.Patch, httputil.Post, httputil.Put},
 			AllowCredentials: true,
 			AllowedHeaders:   []string{"*"},
-		}).Handler(httputil.FromContextHandler(h)))
+		}).Handler(h)
 	}
 	return router, h
 }
 
-func serve(handler httputil.ContextHandler) {
+func serve(handler http.Handler) {
 	listener, err := net.Listen("tcp", config.httpAddr)
 	if err != nil {
 		golog.Fatalf(err.Error())
@@ -371,7 +370,7 @@ func serve(handler httputil.ContextHandler) {
 		listener = &proxyproto.Listener{Listener: listener}
 	}
 	s := &http.Server{
-		Handler:        httputil.FromContextHandler(handler),
+		Handler:        handler,
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 20,

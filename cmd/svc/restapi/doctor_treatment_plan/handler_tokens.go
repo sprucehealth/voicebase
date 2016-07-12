@@ -3,8 +3,6 @@ package doctor_treatment_plan
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -29,7 +27,7 @@ type doctorTokensResponse struct {
 	Tokens []*tokenItem `json:"tokens"`
 }
 
-func NewDoctorTokensHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func NewDoctorTokensHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.RequestCacheHandler(
@@ -41,7 +39,8 @@ func NewDoctorTokensHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 		httputil.Get)
 }
 
-func (d *doctorTokensHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+func (d *doctorTokensHandler) IsAuthorized(r *http.Request) (bool, error) {
+	ctx := r.Context()
 	account := apiservice.MustCtxAccount(ctx)
 	requestCache := apiservice.MustCtxCache(ctx)
 
@@ -76,8 +75,8 @@ func (d *doctorTokensHandler) IsAuthorized(ctx context.Context, r *http.Request)
 	return true, nil
 }
 
-func (d *doctorTokensHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	requestCache := apiservice.MustCtxCache(ctx)
+func (d *doctorTokensHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(r.Context())
 	patient := requestCache[apiservice.CKPatient].(*common.Patient)
 	doctor := requestCache[apiservice.CKDoctor].(*common.Doctor)
 

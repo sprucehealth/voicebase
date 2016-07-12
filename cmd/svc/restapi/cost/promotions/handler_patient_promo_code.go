@@ -8,8 +8,6 @@ import (
 	"sort"
 	"time"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/analytics"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -42,7 +40,7 @@ type PatientPromotionPOSTErrorResponse struct {
 }
 
 // NewPatientPromotionsHandler rreturns a new initialized instance of the patientPromotionsHandler
-func NewPatientPromotionsHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, analyticsLogger analytics.Logger) httputil.ContextHandler {
+func NewPatientPromotionsHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, analyticsLogger analytics.Logger) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.AuthorizationRequired(&patientPromotionsHandler{
@@ -54,29 +52,29 @@ func NewPatientPromotionsHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, analy
 		httputil.Get, httputil.Post)
 }
 
-func (*patientPromotionsHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+func (*patientPromotionsHandler) IsAuthorized(r *http.Request) (bool, error) {
 	return true, nil
 }
 
-func (h *patientPromotionsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *patientPromotionsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case httputil.Get:
-		h.serveGET(ctx, w, r)
+		h.serveGET(w, r)
 	case httputil.Post:
-		rd, err := h.parsePOSTRequest(ctx, r)
+		rd, err := h.parsePOSTRequest(r)
 		if err != nil {
-			apiservice.WriteBadRequestError(ctx, err, w, r)
+			apiservice.WriteBadRequestError(err, w, r)
 			return
 		}
-		h.servePOST(ctx, w, r, rd)
+		h.servePOST(w, r, rd)
 	}
 }
 
-func (h *patientPromotionsHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	account := apiservice.MustCtxAccount(ctx)
+func (h *patientPromotionsHandler) serveGET(w http.ResponseWriter, r *http.Request) {
+	account := apiservice.MustCtxAccount(r.Context())
 	pendingPromotions, err := h.dataAPI.PendingPromotionsForAccount(account.ID, common.PromotionTypes)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 	sort.Sort(sort.Reverse(common.AccountPromotionByCreation(pendingPromotions)))
@@ -89,7 +87,7 @@ func (h *patientPromotionsHandler) serveGET(ctx context.Context, w http.Response
 	for _, p := range pendingPromotions {
 		promotion, ok := p.Data.(Promotion)
 		if !ok {
-			apiservice.WriteError(ctx, errors.New("Unable to cast promotion data into Promotion type"), w, r)
+			apiservice.WriteError(errors.New("Unable to cast promotion data into Promotion type"), w, r)
 			return
 		}
 
@@ -130,7 +128,7 @@ func (h *patientPromotionsHandler) serveGET(ctx context.Context, w http.Response
 	})
 }
 
-func (h *patientPromotionsHandler) parsePOSTRequest(ctx context.Context, r *http.Request) (*PatientPromotionPOSTRequest, error) {
+func (h *patientPromotionsHandler) parsePOSTRequest(r *http.Request) (*PatientPromotionPOSTRequest, error) {
 	rd := &PatientPromotionPOSTRequest{}
 	if err := json.NewDecoder(r.Body).Decode(rd); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -143,7 +141,9 @@ func (h *patientPromotionsHandler) parsePOSTRequest(ctx context.Context, r *http
 	return rd, nil
 }
 
-func (h *patientPromotionsHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *http.Request, rd *PatientPromotionPOSTRequest) {
+func (h *patientPromotionsHandler) servePOST(w http.ResponseWriter, r *http.Request, rd *PatientPromotionPOSTRequest) {
+	ctx := r.Context()
+
 	promoCode, err := h.dataAPI.LookupPromoCode(rd.PromoCode)
 	if api.IsErrNotFound(err) {
 		httputil.JSONResponse(w, http.StatusNotFound, &PatientPromotionPOSTErrorResponse{
@@ -152,7 +152,7 @@ func (h *patientPromotionsHandler) servePOST(ctx context.Context, w http.Respons
 		})
 		return
 	} else if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -163,7 +163,7 @@ func (h *patientPromotionsHandler) servePOST(ctx context.Context, w http.Respons
 	if !promoCode.IsReferral {
 		p, err = h.dataAPI.Promotion(promoCode.ID, common.PromotionTypes)
 		if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 
@@ -177,7 +177,7 @@ func (h *patientPromotionsHandler) servePOST(ctx context.Context, w http.Respons
 	} else {
 		arp, err := h.dataAPI.ActiveReferralProgramForAccount(account.ID, common.PromotionTypes)
 		if err != nil && !api.IsErrNotFound(err) {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 
@@ -191,7 +191,7 @@ func (h *patientPromotionsHandler) servePOST(ctx context.Context, w http.Respons
 
 		rp, err := h.dataAPI.ReferralProgram(promoCode.ID, common.PromotionTypes)
 		if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 		referralProgram := rp.Data.(ReferralProgram)
@@ -200,25 +200,25 @@ func (h *patientPromotionsHandler) servePOST(ctx context.Context, w http.Respons
 
 	patient, err := h.dataAPI.GetPatientFromAccountID(account.ID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	_, state, err := h.dataAPI.PatientLocation(patient.ID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	promotionGroup, err := h.dataAPI.PromotionGroup(p.Group)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	count, err := h.dataAPI.PromotionCountInGroupForAccount(account.ID, p.Group)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -227,14 +227,14 @@ func (h *patientPromotionsHandler) servePOST(ctx context.Context, w http.Respons
 	if promotionGroup.MaxAllowedPromos == count {
 		accountPromotions, err := h.dataAPI.PendingPromotionsForAccount(account.ID, common.PromotionTypes)
 		if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 		for _, ap := range accountPromotions {
 			if ap.GroupID == promotionGroup.ID {
 				_, err := h.dataAPI.DeleteAccountPromotion(ap.AccountID, ap.CodeID)
 				if err != nil {
-					apiservice.WriteError(ctx, err, w, r)
+					apiservice.WriteError(err, w, r)
 					return
 				}
 				break
@@ -245,7 +245,7 @@ func (h *patientPromotionsHandler) servePOST(ctx context.Context, w http.Respons
 	// Associate the promo code then return it as if it was a get request. We know we are operating on the logged in account so perform this action synchronously
 	async := false
 	if _, err := AssociatePromoCode(patient.Email, state, rd.PromoCode, h.dataAPI, h.authAPI, h.analyticsLogger, async); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -259,5 +259,5 @@ func (h *patientPromotionsHandler) servePOST(ctx context.Context, w http.Respons
 		return
 	}
 
-	h.serveGET(ctx, w, r)
+	h.serveGET(w, r)
 }

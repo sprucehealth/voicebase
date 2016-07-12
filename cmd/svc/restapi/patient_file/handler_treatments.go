@@ -4,8 +4,6 @@ import (
 	"errors"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -16,7 +14,7 @@ type doctorPatientTreatmentsHandler struct {
 	DataAPI api.DataAPI
 }
 
-func NewDoctorPatientTreatmentsHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func NewDoctorPatientTreatmentsHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.RequestCacheHandler(
 			apiservice.AuthorizationRequired(
@@ -36,7 +34,8 @@ type doctorPatientTreatmentsResponse struct {
 	RefillRequests         []*common.RefillRequestItem `json:"refill_requests,omitempty"`
 }
 
-func (d *doctorPatientTreatmentsHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+func (d *doctorPatientTreatmentsHandler) IsAuthorized(r *http.Request) (bool, error) {
+	ctx := r.Context()
 	requestCache := apiservice.MustCtxCache(ctx)
 	account := apiservice.MustCtxAccount(ctx)
 	if account.Role != api.RoleDoctor {
@@ -68,25 +67,25 @@ func (d *doctorPatientTreatmentsHandler) IsAuthorized(ctx context.Context, r *ht
 	return true, nil
 }
 
-func (d *doctorPatientTreatmentsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	requestCache := apiservice.MustCtxCache(ctx)
+func (d *doctorPatientTreatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(r.Context())
 	requestData := requestCache[apiservice.CKRequestData].(*requestData)
 
 	treatments, err := d.DataAPI.GetTreatmentsForPatient(requestData.PatientID)
 	if err != nil {
-		apiservice.WriteError(ctx, errors.New("Unable to get treatments for patient: "+err.Error()), w, r)
+		apiservice.WriteError(errors.New("Unable to get treatments for patient: "+err.Error()), w, r)
 		return
 	}
 
 	refillRequests, err := d.DataAPI.GetRefillRequestsForPatient(requestData.PatientID)
 	if err != nil {
-		apiservice.WriteError(ctx, errors.New("Unable to get refill requests for patient: "+err.Error()), w, r)
+		apiservice.WriteError(errors.New("Unable to get refill requests for patient: "+err.Error()), w, r)
 		return
 	}
 
 	unlinkedDNTFTreatments, err := d.DataAPI.GetUnlinkedDNTFTreatmentsForPatient(requestData.PatientID)
 	if err != nil {
-		apiservice.WriteError(ctx, errors.New("Unable to get unlinked dntf treatments for patient: "+err.Error()), w, r)
+		apiservice.WriteError(errors.New("Unable to get unlinked dntf treatments for patient: "+err.Error()), w, r)
 		return
 	}
 

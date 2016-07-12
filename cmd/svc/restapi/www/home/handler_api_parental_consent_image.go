@@ -8,8 +8,6 @@ import (
 	"net/http"
 	"time"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
@@ -41,7 +39,7 @@ type imageTypeResponse struct {
 	URL string `json:"url"`
 }
 
-func newParentalConsentImageAPIHAndler(dataAPI api.DataAPI, dispatcher dispatch.Publisher, mediaStore *mediastore.Store) httputil.ContextHandler {
+func newParentalConsentImageAPIHAndler(dataAPI api.DataAPI, dispatcher dispatch.Publisher, mediaStore *mediastore.Store) http.Handler {
 	return httputil.SupportedMethods(
 		www.APIRoleRequiredHandler(&parentalConsentImageAPIHandler{
 			dataAPI:    dataAPI,
@@ -50,8 +48,8 @@ func newParentalConsentImageAPIHAndler(dataAPI api.DataAPI, dispatcher dispatch.
 		}, api.RolePatient), httputil.Post, httputil.Get)
 }
 
-func (h *parentalConsentImageAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	account := www.MustCtxAccount(ctx)
+func (h *parentalConsentImageAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(r.Context())
 	parentPatientID, err := h.dataAPI.GetPatientIDFromAccountID(account.ID)
 	if err != nil {
 		www.APIInternalError(w, r, err)
@@ -60,13 +58,13 @@ func (h *parentalConsentImageAPIHandler) ServeHTTP(ctx context.Context, w http.R
 
 	switch r.Method {
 	case httputil.Post:
-		h.post(ctx, w, r, account, parentPatientID)
+		h.post(w, r, account, parentPatientID)
 	case httputil.Get:
-		h.get(ctx, w, r, parentPatientID)
+		h.get(w, r, parentPatientID)
 	}
 }
 
-func (h *parentalConsentImageAPIHandler) post(ctx context.Context, w http.ResponseWriter, r *http.Request, account *common.Account, parentPatientID common.PatientID) {
+func (h *parentalConsentImageAPIHandler) post(w http.ResponseWriter, r *http.Request, account *common.Account, parentPatientID common.PatientID) {
 	if err := r.ParseMultipartForm(maxConsentImageRequestMemory); err != nil {
 		www.APIBadRequestError(w, r, "Failed to parse request")
 		return
@@ -185,7 +183,7 @@ func (h *parentalConsentImageAPIHandler) post(ctx context.Context, w http.Respon
 	httputil.JSONResponse(w, http.StatusOK, res)
 }
 
-func (h *parentalConsentImageAPIHandler) get(ctx context.Context, w http.ResponseWriter, r *http.Request, parentPatientID common.PatientID) {
+func (h *parentalConsentImageAPIHandler) get(w http.ResponseWriter, r *http.Request, parentPatientID common.PatientID) {
 	proof, err := h.dataAPI.ParentConsentProof(parentPatientID)
 	if err != nil && !api.IsErrNotFound(err) {
 		www.APIInternalError(w, r, err)

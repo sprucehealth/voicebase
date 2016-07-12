@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"strings"
 
-	"context"
-
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -56,7 +54,7 @@ func NewAuthenticationHandler(
 	dispatcher *dispatch.Dispatcher,
 	staticContentBaseURL string, rateLimiter ratelimit.KeyedRateLimiter,
 	metricsRegistry metrics.Registry,
-) httputil.ContextHandler {
+) http.Handler {
 	h := &AuthenticationHandler{
 		authAPI:              authAPI,
 		dataAPI:              dataAPI,
@@ -76,9 +74,9 @@ func NewAuthenticationHandler(
 		httputil.Post)
 }
 
-func (h *AuthenticationHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
-		apiservice.WriteBadRequestError(ctx, err, w, r)
+		apiservice.WriteBadRequestError(err, w, r)
 		return
 	}
 	action := strings.Split(r.URL.Path, "/")[2]
@@ -86,11 +84,11 @@ func (h *AuthenticationHandler) ServeHTTP(ctx context.Context, w http.ResponseWr
 	// call to service
 	switch action {
 	case "authenticate":
-		h.authenticate(ctx, w, r)
+		h.authenticate(w, r)
 	case "logout":
 		token, err := apiservice.GetAuthTokenFromHeader(r)
 		if err != nil {
-			apiservice.WriteValidationError(ctx, "authorization token not correctly specified in header", w, r)
+			apiservice.WriteValidationError("authorization token not correctly specified in header", w, r)
 			return
 		}
 
@@ -100,7 +98,7 @@ func (h *AuthenticationHandler) ServeHTTP(ctx context.Context, w http.ResponseWr
 		}
 
 		if err := h.authAPI.DeleteToken(token); err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 
@@ -115,7 +113,7 @@ func (h *AuthenticationHandler) ServeHTTP(ctx context.Context, w http.ResponseWr
 	}
 }
 
-func (h *AuthenticationHandler) authenticate(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *AuthenticationHandler) authenticate(w http.ResponseWriter, r *http.Request) {
 	h.statLoginAttempted.Inc(1)
 
 	// rate limit on IP address (prevent scanning accounts)
@@ -123,13 +121,13 @@ func (h *AuthenticationHandler) authenticate(ctx context.Context, w http.Respons
 		golog.Errorf("Rate limit check failed: %s", err.Error())
 	} else if !ok {
 		h.statLoginRateLimited.Inc(1)
-		apiservice.WriteAccessNotAllowedError(ctx, w, r)
+		apiservice.WriteAccessNotAllowedError(w, r)
 		return
 	}
 
 	var requestData AuthRequestData
 	if err := apiservice.DecodeRequestData(&requestData, r); err != nil {
-		apiservice.WriteBadRequestError(ctx, err, w, r)
+		apiservice.WriteBadRequestError(err, w, r)
 		return
 	}
 
@@ -140,7 +138,7 @@ func (h *AuthenticationHandler) authenticate(ctx context.Context, w http.Respons
 		golog.Errorf("Rate limit check failed: %s", err.Error())
 	} else if !ok {
 		h.statLoginRateLimited.Inc(1)
-		apiservice.WriteAccessNotAllowedError(ctx, w, r)
+		apiservice.WriteAccessNotAllowedError(w, r)
 		return
 	}
 
@@ -156,7 +154,7 @@ func (h *AuthenticationHandler) authenticate(ctx context.Context, w http.Respons
 			apiservice.WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
 			return
 		default:
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 	}
@@ -166,7 +164,7 @@ func (h *AuthenticationHandler) authenticate(ctx context.Context, w http.Respons
 	}
 	token, err := h.authAPI.CreateToken(account.ID, api.Mobile, ctOpt)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 	patient, err := h.dataAPI.GetPatientFromAccountID(account.ID)
@@ -175,7 +173,7 @@ func (h *AuthenticationHandler) authenticate(ctx context.Context, w http.Respons
 		apiservice.WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
 		return
 	} else if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

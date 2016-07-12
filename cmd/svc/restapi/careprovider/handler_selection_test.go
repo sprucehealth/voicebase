@@ -1,14 +1,13 @@
 package careprovider
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -93,7 +92,7 @@ func TestSelection_RandomPhotoSelection(t *testing.T) {
 	r, err := http.NewRequest("GET", "api.spruce.local?state_code=CA&pathway_id=acne", nil)
 	test.OK(t, err)
 
-	h.ServeHTTP(context.Background(), w, r)
+	h.ServeHTTP(w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// unmarshal the response to check the output
@@ -158,7 +157,7 @@ func TestSelection_Unauthenticated_NoDoctors(t *testing.T) {
 	r, err := http.NewRequest("GET", "api.spruce.local?state_code=CA&pathway_id=acne", nil)
 	test.OK(t, err)
 
-	h.ServeHTTP(context.Background(), w, r)
+	h.ServeHTTP(w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// unmarshal the response to check the output
@@ -198,7 +197,7 @@ func TestSelection_Unauthenticated_NotEnoughDoctors(t *testing.T) {
 	r, err := http.NewRequest("GET", "api.spruce.local?state_code=CA&pathway_id=acne", nil)
 	test.OK(t, err)
 
-	h.ServeHTTP(context.Background(), w, r)
+	h.ServeHTTP(w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// unmarshal the response to check the output
@@ -259,7 +258,7 @@ func TestSelection_Unauthenticated_SufficientDoctors(t *testing.T) {
 	r, err := http.NewRequest("GET", "api.spruce.local?state_code=CA&pathway_id=acne", nil)
 	test.OK(t, err)
 
-	h.ServeHTTP(context.Background(), w, r)
+	h.ServeHTTP(w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// unmarshal the response to check the output
@@ -320,7 +319,7 @@ func TestSelection_CareProviderSpecified_NotEligible(t *testing.T) {
 	r, err := http.NewRequest("GET", "api.spruce.local?state_code=CA&pathway_id=acne&care_provider_id=4", nil)
 	test.OK(t, err)
 
-	h.ServeHTTP(context.Background(), w, r)
+	h.ServeHTTP(w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// unmarshal the response to check the output
@@ -382,7 +381,7 @@ func TestSelection_CareProviderSpecified_Eligible(t *testing.T) {
 	r, err := http.NewRequest("GET", "api.spruce.local?state_code=CA&pathway_id=acne&care_provider_id=4", nil)
 	test.OK(t, err)
 
-	h.ServeHTTP(context.Background(), w, r)
+	h.ServeHTTP(w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// unmarshal the response to check the output
@@ -426,7 +425,7 @@ func TestSelection_Authenticated_SingleCase(t *testing.T) {
 		availableDoctorIDs:            availableDoctorIDs,
 		doctorMap:                     doctorMap,
 		careTeamsByCase: map[int64]*common.PatientCareTeam{
-			1: &common.PatientCareTeam{
+			1: {
 				Assignments: []*common.CareProviderAssignment{
 					{
 						ProviderID:   doctors[0].ID.Int64(),
@@ -448,7 +447,7 @@ func TestSelection_Authenticated_SingleCase(t *testing.T) {
 		ID:   1,
 		Role: api.RolePatient,
 	})
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// unmarshal the response to check the output
@@ -497,7 +496,7 @@ func TestSelection_Authenticated_SingleCase_DoctorEligible(t *testing.T) {
 		doctorMap:                     doctorMap,
 		eligibleDoctorIDs:             []int64{doctors[0].ID.Int64()},
 		careTeamsByCase: map[int64]*common.PatientCareTeam{
-			1: &common.PatientCareTeam{
+			1: {
 				Assignments: []*common.CareProviderAssignment{
 					{
 						ProviderID:   doctors[0].ID.Int64(),
@@ -519,7 +518,7 @@ func TestSelection_Authenticated_SingleCase_DoctorEligible(t *testing.T) {
 		ID:   1,
 		Role: api.RolePatient,
 	})
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// unmarshal the response to check the output
@@ -573,7 +572,7 @@ func TestSelection_Authenticated_DoctorEligible_NotSufficientDoctors(t *testing.
 		doctorMap:                     doctorMap,
 		eligibleDoctorIDs:             []int64{doctors[0].ID.Int64()},
 		careTeamsByCase: map[int64]*common.PatientCareTeam{
-			1: &common.PatientCareTeam{
+			1: {
 				Assignments: []*common.CareProviderAssignment{
 					{
 						ProviderID:   doctors[0].ID.Int64(),
@@ -595,7 +594,7 @@ func TestSelection_Authenticated_DoctorEligible_NotSufficientDoctors(t *testing.
 		ID:   1,
 		Role: api.RolePatient,
 	})
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// unmarshal the response to check the output
@@ -633,7 +632,7 @@ func TestSelection_Authenticated_DoctorEligible_NoOtherDoctors(t *testing.T) {
 		doctorMap:                     doctorMap,
 		eligibleDoctorIDs:             []int64{doctors[0].ID.Int64()},
 		careTeamsByCase: map[int64]*common.PatientCareTeam{
-			1: &common.PatientCareTeam{
+			1: {
 				Assignments: []*common.CareProviderAssignment{
 					{
 						ProviderID:   doctors[0].ID.Int64(),
@@ -655,7 +654,7 @@ func TestSelection_Authenticated_DoctorEligible_NoOtherDoctors(t *testing.T) {
 		ID:   1,
 		Role: api.RolePatient,
 	})
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// unmarshal the response to check the output
@@ -725,7 +724,7 @@ func TestSelection_Authenticated_MultipleCases_AllDoctorsEligible(t *testing.T) 
 		ID:   1,
 		Role: api.RolePatient,
 	})
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// unmarshal the response to check the output
@@ -812,7 +811,7 @@ func TestSelection_Authenticated_MultipleCases_SomeDoctorsEligible(t *testing.T)
 		ID:   1,
 		Role: api.RolePatient,
 	})
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// unmarshal the response to check the output

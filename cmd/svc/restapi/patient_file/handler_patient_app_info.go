@@ -5,8 +5,6 @@ import (
 	"strconv"
 	"time"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -30,7 +28,7 @@ type appInfo struct {
 	LastSeen        time.Time         `json:"last_seen"`
 }
 
-func NewPatientAppInfoHandler(dataAPI api.DataAPI, authAPI api.AuthAPI) httputil.ContextHandler {
+func NewPatientAppInfoHandler(dataAPI api.DataAPI, authAPI api.AuthAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.RequestCacheHandler(
@@ -43,7 +41,8 @@ func NewPatientAppInfoHandler(dataAPI api.DataAPI, authAPI api.AuthAPI) httputil
 		httputil.Get)
 }
 
-func (p *patientAppInfoHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+func (p *patientAppInfoHandler) IsAuthorized(r *http.Request) (bool, error) {
+	ctx := r.Context()
 	requestCache := apiservice.MustCtxCache(ctx)
 	account := apiservice.MustCtxAccount(ctx)
 
@@ -79,22 +78,22 @@ func (p *patientAppInfoHandler) IsAuthorized(ctx context.Context, r *http.Reques
 	return true, nil
 }
 
-func (p *patientAppInfoHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	requestCache := apiservice.MustCtxCache(ctx)
+func (p *patientAppInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(r.Context())
 	patientID := requestCache[apiservice.CKPatientID].(common.PatientID)
 
 	patient, err := p.dataAPI.Patient(patientID, true)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	aInfo, err := p.authAPI.LatestAppInfo(patient.AccountID.Int64())
 	if api.IsErrNotFound(err) {
-		apiservice.WriteResourceNotFoundError(ctx, "app info not found for patient", w, r)
+		apiservice.WriteResourceNotFoundError("app info not found for patient", w, r)
 		return
 	} else if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

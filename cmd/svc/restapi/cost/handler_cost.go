@@ -3,8 +3,6 @@ package cost
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/analytics"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -32,7 +30,7 @@ type costResponse struct {
 }
 
 // NewCostHandler returns an initialized instance of costHandler
-func NewCostHandler(dataAPI api.DataAPI, analyticsLogger analytics.Logger, cfgStore cfg.Store) httputil.ContextHandler {
+func NewCostHandler(dataAPI api.DataAPI, analyticsLogger analytics.Logger, cfgStore cfg.Store) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(&costHandler{
@@ -42,21 +40,21 @@ func NewCostHandler(dataAPI api.DataAPI, analyticsLogger analytics.Logger, cfgSt
 			}), api.RolePatient), httputil.Get)
 }
 
-func (c *costHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	accountID := apiservice.MustCtxAccount(ctx).ID
+func (c *costHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	accountID := apiservice.MustCtxAccount(r.Context()).ID
 
 	skuType := r.FormValue("item_type")
 	if skuType == "" {
-		apiservice.WriteValidationError(ctx, "item_type required", w, r)
+		apiservice.WriteValidationError("item_type required", w, r)
 		return
 	}
 
 	costBreakdown, err := totalCostForItems([]string{skuType}, accountID, false, c.dataAPI, c.analyticsLogger, c.cfgStore)
 	if api.IsErrNotFound(err) {
-		apiservice.WriteResourceNotFoundError(ctx, "cost not found", w, r)
+		apiservice.WriteResourceNotFoundError("cost not found", w, r)
 		return
 	} else if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

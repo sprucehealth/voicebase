@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"net/http"
 	"path"
 
@@ -13,13 +12,13 @@ type mediaHandler struct {
 }
 
 // NewMediaHandler returns an initialized instance of mediaHandler
-func NewMediaHandler(mediaAPIDomain string) httputil.ContextHandler {
+func NewMediaHandler(mediaAPIDomain string) http.Handler {
 	return &mediaHandler{
 		mediaAPIDomain: mediaAPIDomain,
 	}
 }
 
-func (m *mediaHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (m *mediaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Utilize code 307 to preserve the data and method
 	http.Redirect(w, r, m.constructRedirect(r), http.StatusTemporaryRedirect)
 }

@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -19,20 +17,20 @@ type schedMessageTemplatesAPIHandler struct {
 	dataAPI api.DataAPI
 }
 
-func newSchedMessageTemplatesAPIHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func newSchedMessageTemplatesAPIHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&schedMessageTemplatesAPIHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get, httputil.Put, httputil.Delete)
 }
 
-func (h *schedMessageTemplatesAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.ParseInt(mux.Vars(ctx)["id"], 10, 64)
+func (h *schedMessageTemplatesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(mux.Vars(r.Context())["id"], 10, 64)
 	if err != nil {
 		www.APINotFound(w, r)
 		return
 	}
 
-	account := www.MustCtxAccount(ctx)
+	account := www.MustCtxAccount(r.Context())
 
 	if r.Method == "PUT" {
 		audit.LogAction(account.ID, "AdminAPI", "UpdateScheduledMessageTemplate", map[string]interface{}{"template_id": id})

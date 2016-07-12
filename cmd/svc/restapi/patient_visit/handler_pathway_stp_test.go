@@ -6,8 +6,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/libs/test"
 )
@@ -36,7 +34,7 @@ func TestPathwaySTPHandler(t *testing.T) {
 	w := httptest.NewRecorder()
 	r, err := http.NewRequest("GET", "api.spruce.local/pathwaystp", nil)
 	test.OK(t, err)
-	h.ServeHTTP(context.Background(), w, r)
+	h.ServeHTTP(w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	var sampleData struct {

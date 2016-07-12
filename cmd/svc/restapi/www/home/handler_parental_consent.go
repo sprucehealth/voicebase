@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"time"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
@@ -74,7 +72,7 @@ func checkParentalConsentAccessToken(w http.ResponseWriter, r *http.Request, dat
 	return hasAccess
 }
 
-func newParentalConsentHandler(dataAPI api.DataAPI, mediaStore *mediastore.Store, templateLoader *www.TemplateLoader) httputil.ContextHandler {
+func newParentalConsentHandler(dataAPI api.DataAPI, mediaStore *mediastore.Store, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(
 		&parentalConsentHandler{
 			dataAPI:         dataAPI,
@@ -84,11 +82,11 @@ func newParentalConsentHandler(dataAPI api.DataAPI, mediaStore *mediastore.Store
 		}, httputil.Get)
 }
 
-func (h *parentalConsentHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *parentalConsentHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// The person may not be signed in which is fine. Account will be nil then.
-	account, _ := www.CtxAccount(ctx)
+	account, _ := www.CtxAccount(r.Context())
 
-	childPatientID, err := common.ParsePatientID(mux.Vars(ctx)["childid"])
+	childPatientID, err := common.ParsePatientID(mux.Vars(r.Context())["childid"])
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -173,7 +171,7 @@ func (h *parentalConsentHandler) ServeHTTP(ctx context.Context, w http.ResponseW
 		return
 	}
 
-	if page := mux.Vars(ctx)["page"]; page == "" {
+	if page := mux.Vars(r.Context())["page"]; page == "" {
 		pronoun := "they"
 		possessivePronoun := "their"
 		switch child.Gender {
@@ -233,7 +231,7 @@ type parentalLandingHandler struct {
 	ctx      interface{}
 }
 
-func newParentalLandingHandler(dataAPI api.DataAPI, templateLoader *www.TemplateLoader, tmpl, title string, ctxFun func() interface{}) httputil.ContextHandler {
+func newParentalLandingHandler(dataAPI api.DataAPI, templateLoader *www.TemplateLoader, tmpl, title string, ctxFun func() interface{}) http.Handler {
 	var ctx interface{}
 	if ctxFun != nil {
 		ctx = ctxFun()
@@ -246,7 +244,7 @@ func newParentalLandingHandler(dataAPI api.DataAPI, templateLoader *www.Template
 	}, httputil.Get)
 }
 
-func (h *parentalLandingHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *parentalLandingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	www.TemplateResponse(w, http.StatusOK, h.template, &struct {
 		Account     *common.Account
 		Environment string

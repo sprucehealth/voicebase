@@ -7,11 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"context"
-
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/storage"
 )
 
@@ -74,11 +71,7 @@ CsWf+q7o+U7I3SBxLChc9G4Vy/AgZQJQES9CVAb6GOTY0jOIH7ZS7A==
 -----END RSA PRIVATE KEY-----`)
 )
 
-func serve(conf *mainConfig, stores storage.StoreMap, chand httputil.ContextHandler) {
-	hand := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		chand.ServeHTTP(context.Background(), w, r)
-	})
-
+func serve(conf *mainConfig, stores storage.StoreMap, hand http.Handler) {
 	server := &http.Server{
 		Addr:    conf.ListenAddr,
 		Handler: hand,

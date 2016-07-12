@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -36,41 +34,41 @@ type ListResponse struct {
 	Sections []*Section `json:"sections"`
 }
 
-func NewResourceGuideHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func NewResourceGuideHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(&resourceGuideHandler{
 			dataAPI: dataAPI,
 		}), httputil.Get)
 }
 
-func NewResourceGuideListHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func NewResourceGuideListHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(&resourceGuideListHandler{
 			dataAPI: dataAPI,
 		}), httputil.Get)
 }
 
-func (h *resourceGuideHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *resourceGuideHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.FormValue("resource_id"), 10, 64)
 	if err != nil {
-		apiservice.WriteValidationError(ctx, "resource_id required and must be an integer", w, r)
+		apiservice.WriteValidationError("resource_id required and must be an integer", w, r)
 		return
 	}
 	guide, err := h.dataAPI.GetResourceGuide(id)
 	if api.IsErrNotFound(err) {
-		apiservice.WriteResourceNotFoundError(ctx, "Guide not found", w, r)
+		apiservice.WriteResourceNotFoundError("Guide not found", w, r)
 		return
 	} else if err != nil {
-		apiservice.WriteError(ctx, errors.New("Failed to fetch resource guide: "+err.Error()), w, r)
+		apiservice.WriteError(errors.New("Failed to fetch resource guide: "+err.Error()), w, r)
 		return
 	}
 	httputil.JSONResponse(w, http.StatusOK, guide.Layout)
 }
 
-func (h *resourceGuideListHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *resourceGuideListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	sections, guides, err := h.dataAPI.ListResourceGuides(api.RGActiveOnly)
 	if err != nil {
-		apiservice.WriteError(ctx, errors.New("Failed to fetch resources: "+err.Error()), w, r)
+		apiservice.WriteError(errors.New("Failed to fetch resources: "+err.Error()), w, r)
 		return
 	}
 	res := ListResponse{

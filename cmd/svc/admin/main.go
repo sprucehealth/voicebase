@@ -30,12 +30,12 @@ func main() {
 	boot.NewService("admin")
 	r := mux.NewRouter()
 	gqlHandler, gqlSchema := gql.New(*flagBehindProxy)
-	r.Handle("/graphql", httputil.ToContextHandler(cors.New(cors.Options{
+	r.Handle("/graphql", cors.New(cors.Options{
 		AllowedOrigins:   []string{"https://" + *flagWebDomain},
 		AllowedMethods:   []string{httputil.Get, httputil.Options, httputil.Post},
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"*"},
-	}).Handler(httputil.FromContextHandler(gqlHandler))))
+	}).Handler(gqlHandler))
 
 	golog.Debugf("Resource path %s", *flagResourcePath)
 	if !environment.IsProd() {
@@ -52,7 +52,7 @@ func main() {
 	go func() {
 		server := &http.Server{
 			Addr:           *flagListenAddr,
-			Handler:        httputil.FromContextHandler(h),
+			Handler:        h,
 			MaxHeaderBytes: 1 << 20,
 		}
 		golog.Infof("GraphQL server listening at %s...", *flagListenAddr)

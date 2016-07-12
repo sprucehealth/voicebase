@@ -1,13 +1,12 @@
 package patient
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -77,7 +76,7 @@ type rxRemindersPOSTRequest struct {
 }
 
 // NewRXReminderHandlerHandler returns an initialized instance of rxRemindersHandler
-func NewRXReminderHandlerHandler(rxReminderSvc rxReminderService, treatmentSvc treatmentService, drugSvc drugService) httputil.ContextHandler {
+func NewRXReminderHandlerHandler(rxReminderSvc rxReminderService, treatmentSvc treatmentService, drugSvc drugService) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.RequestCacheHandler(
@@ -89,15 +88,15 @@ func NewRXReminderHandlerHandler(rxReminderSvc rxReminderService, treatmentSvc t
 		httputil.Delete, httputil.Get, httputil.Post, httputil.Put)
 }
 
-func (h *rxRemindersHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
-	requestCache := apiservice.MustCtxCache(ctx)
+func (h *rxRemindersHandler) IsAuthorized(r *http.Request) (bool, error) {
+	requestCache := apiservice.MustCtxCache(r.Context())
 	switch r.Method {
 	case httputil.Delete:
-		rd, err := h.parseDELETERequest(ctx, r)
+		rd, err := h.parseDELETERequest(r)
 		if err != nil {
 			return false, apiservice.NewValidationError(err.Error())
 		}
-		access, err := h.validateDELETEAccess(ctx, rd)
+		access, err := h.validateDELETEAccess(r.Context(), rd)
 		if err != nil {
 			return false, err
 		} else if !access {
@@ -106,11 +105,11 @@ func (h *rxRemindersHandler) IsAuthorized(ctx context.Context, r *http.Request) 
 		requestCache[apiservice.CKRequestData] = rd
 		return access, nil
 	case httputil.Post:
-		rd, err := h.parsePUTPOSTRequest(ctx, r)
+		rd, err := h.parsePUTPOSTRequest(r)
 		if err != nil {
 			return false, apiservice.NewValidationError(err.Error())
 		}
-		access, err := h.validatePOSTAccess(ctx, rd)
+		access, err := h.validatePOSTAccess(r.Context(), rd)
 		if err != nil {
 			return false, err
 		} else if !access {
@@ -121,11 +120,11 @@ func (h *rxRemindersHandler) IsAuthorized(ctx context.Context, r *http.Request) 
 	case httputil.Get:
 		return true, nil
 	case httputil.Put:
-		rd, err := h.parsePUTPOSTRequest(ctx, r)
+		rd, err := h.parsePUTPOSTRequest(r)
 		if err != nil {
 			return false, apiservice.NewValidationError(err.Error())
 		}
-		access, err := h.validatePUTAccess(ctx, rd)
+		access, err := h.validatePUTAccess(r.Context(), rd)
 		if err != nil {
 			return false, err
 		} else if !access {
@@ -137,25 +136,25 @@ func (h *rxRemindersHandler) IsAuthorized(ctx context.Context, r *http.Request) 
 	return true, nil
 }
 
-func (h *rxRemindersHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *rxRemindersHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case httputil.Delete:
-		h.serveDELETE(ctx, w, r, apiservice.MustCtxCache(ctx)[apiservice.CKRequestData].(*rxRemindersDELETERequest))
+		h.serveDELETE(w, r, apiservice.MustCtxCache(r.Context())[apiservice.CKRequestData].(*rxRemindersDELETERequest))
 	case httputil.Get:
-		rd, err := h.parseGETRequest(ctx, r)
+		rd, err := h.parseGETRequest(r)
 		if err != nil {
-			apiservice.WriteValidationError(ctx, err.Error(), w, r)
+			apiservice.WriteValidationError(err.Error(), w, r)
 			return
 		}
-		h.serveGET(ctx, w, r, rd)
+		h.serveGET(w, r, rd)
 	case httputil.Post:
-		h.servePOST(ctx, w, r, apiservice.MustCtxCache(ctx)[apiservice.CKRequestData].(*rxRemindersPOSTRequest))
+		h.servePOST(w, r, apiservice.MustCtxCache(r.Context())[apiservice.CKRequestData].(*rxRemindersPOSTRequest))
 	case httputil.Put:
-		h.servePUT(ctx, w, r, apiservice.MustCtxCache(ctx)[apiservice.CKRequestData].(*rxRemindersPOSTRequest))
+		h.servePUT(w, r, apiservice.MustCtxCache(r.Context())[apiservice.CKRequestData].(*rxRemindersPOSTRequest))
 	}
 }
 
-func (h *rxRemindersHandler) parseDELETERequest(ctx context.Context, r *http.Request) (*rxRemindersDELETERequest, error) {
+func (h *rxRemindersHandler) parseDELETERequest(r *http.Request) (*rxRemindersDELETERequest, error) {
 	rd := &rxRemindersDELETERequest{}
 	if err := r.ParseForm(); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -172,15 +171,15 @@ func (h *rxRemindersHandler) validateDELETEAccess(ctx context.Context, rd *rxRem
 	return access, errors.Trace(err)
 }
 
-func (h *rxRemindersHandler) serveDELETE(ctx context.Context, w http.ResponseWriter, r *http.Request, rd *rxRemindersDELETERequest) {
+func (h *rxRemindersHandler) serveDELETE(w http.ResponseWriter, r *http.Request, rd *rxRemindersDELETERequest) {
 	if err := h.rxReminderSvc.DeleteRXReminder(rd.TreatmentID); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 	apiservice.WriteJSONSuccess(w)
 }
 
-func (h *rxRemindersHandler) parseGETRequest(ctx context.Context, r *http.Request) (*rxRemindersGETRequest, error) {
+func (h *rxRemindersHandler) parseGETRequest(r *http.Request) (*rxRemindersGETRequest, error) {
 	rd := &rxRemindersGETRequest{}
 	if err := r.ParseForm(); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -191,11 +190,11 @@ func (h *rxRemindersHandler) parseGETRequest(ctx context.Context, r *http.Reques
 	return rd, nil
 }
 
-func (h *rxRemindersHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request, rd *rxRemindersGETRequest) {
+func (h *rxRemindersHandler) serveGET(w http.ResponseWriter, r *http.Request, rd *rxRemindersGETRequest) {
 	var resp rxRemindersGETResponse
 	parallel := conc.NewParallel()
 	parallel.Go(func() error {
-		reminders, err := h.rxReminderSvc.RemindersForPatient(apiservice.MustCtxPatient(ctx).ID)
+		reminders, err := h.rxReminderSvc.RemindersForPatient(apiservice.MustCtxPatient(r.Context()).ID)
 		if err != nil {
 			return err
 		}
@@ -211,7 +210,7 @@ func (h *rxRemindersHandler) serveGET(ctx context.Context, w http.ResponseWriter
 	if rd.IncludeViews {
 		parallel.Go(func() error {
 			var err error
-			treatments, err := h.treatmentSvc.TreatmentsForPatient(apiservice.MustCtxPatient(ctx).ID)
+			treatments, err := h.treatmentSvc.TreatmentsForPatient(apiservice.MustCtxPatient(r.Context()).ID)
 			if err != nil {
 				return err
 			}
@@ -223,13 +222,13 @@ func (h *rxRemindersHandler) serveGET(ctx context.Context, w http.ResponseWriter
 		})
 	}
 	if err := parallel.Wait(); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 	httputil.JSONResponse(w, http.StatusOK, resp)
 }
 
-func (h *rxRemindersHandler) parsePUTPOSTRequest(ctx context.Context, r *http.Request) (*rxRemindersPOSTRequest, error) {
+func (h *rxRemindersHandler) parsePUTPOSTRequest(r *http.Request) (*rxRemindersPOSTRequest, error) {
 	var err error
 	rd := &rxRemindersPOSTRequest{}
 	if err = json.NewDecoder(r.Body).Decode(rd); err != nil {
@@ -270,7 +269,7 @@ func (h *rxRemindersHandler) validatePOSTAccess(ctx context.Context, rd *rxRemin
 	return access, errors.Trace(err)
 }
 
-func (h *rxRemindersHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *http.Request, rd *rxRemindersPOSTRequest) {
+func (h *rxRemindersHandler) servePOST(w http.ResponseWriter, r *http.Request, rd *rxRemindersPOSTRequest) {
 	rxReminder := &common.RXReminder{
 		TreatmentID:  rd.TreatmentID,
 		ReminderText: rd.ReminderText,
@@ -279,11 +278,11 @@ func (h *rxRemindersHandler) servePOST(ctx context.Context, w http.ResponseWrite
 		Times:        strings.Join(rd.Times, `,`),
 	}
 	if err := h.rxReminderSvc.CreateRXReminder(rxReminder); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 	// A successful post should refresh the reminder list
-	h.serveGET(ctx, w, r, &rxRemindersGETRequest{IncludeViews: false})
+	h.serveGET(w, r, &rxRemindersGETRequest{IncludeViews: false})
 }
 
 func (h *rxRemindersHandler) validatePUTAccess(ctx context.Context, rd *rxRemindersPOSTRequest) (bool, error) {
@@ -291,7 +290,7 @@ func (h *rxRemindersHandler) validatePUTAccess(ctx context.Context, rd *rxRemind
 	return access, errors.Trace(err)
 }
 
-func (h *rxRemindersHandler) servePUT(ctx context.Context, w http.ResponseWriter, r *http.Request, rd *rxRemindersPOSTRequest) {
+func (h *rxRemindersHandler) servePUT(w http.ResponseWriter, r *http.Request, rd *rxRemindersPOSTRequest) {
 	rxReminder := &common.RXReminder{
 		TreatmentID:  rd.TreatmentID,
 		ReminderText: rd.ReminderText,
@@ -300,11 +299,11 @@ func (h *rxRemindersHandler) servePUT(ctx context.Context, w http.ResponseWriter
 		Times:        strings.Join(rd.Times, `,`),
 	}
 	if err := h.rxReminderSvc.UpdateRXReminder(rd.TreatmentID, rxReminder); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 	// A successful put should refresh the reminder list
-	h.serveGET(ctx, w, r, &rxRemindersGETRequest{IncludeViews: false})
+	h.serveGET(w, r, &rxRemindersGETRequest{IncludeViews: false})
 }
 
 func (h *rxRemindersHandler) validateTreatmentAccess(ctx context.Context, treatmentID int64) (bool, error) {

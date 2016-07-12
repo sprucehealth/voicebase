@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
@@ -26,12 +24,12 @@ type PromotionReferralRoutePUTRequest struct {
 }
 
 // NewPromotionReferralRouteHandler returns an initialized instance of thpromotionReferralRouteHandlere
-func newPromotionReferralRouteHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func newPromotionReferralRouteHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&promotionReferralRouteHandler{dataAPI: dataAPI}, httputil.Put)
 }
 
-func (h *promotionReferralRouteHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.ParseInt(mux.Vars(ctx)["id"], 10, 64)
+func (h *promotionReferralRouteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(mux.Vars(r.Context())["id"], 10, 64)
 	if err != nil {
 		www.APINotFound(w, r)
 		return
@@ -39,7 +37,7 @@ func (h *promotionReferralRouteHandler) ServeHTTP(ctx context.Context, w http.Re
 
 	switch r.Method {
 	case httputil.Put:
-		req, err := h.parsePUTRequest(ctx, r)
+		req, err := h.parsePUTRequest(r)
 		if err != nil {
 			www.APIBadRequestError(w, r, err.Error())
 			return
@@ -48,7 +46,7 @@ func (h *promotionReferralRouteHandler) ServeHTTP(ctx context.Context, w http.Re
 	}
 }
 
-func (h *promotionReferralRouteHandler) parsePUTRequest(ctx context.Context, r *http.Request) (*PromotionReferralRoutePUTRequest, error) {
+func (h *promotionReferralRouteHandler) parsePUTRequest(r *http.Request) (*PromotionReferralRoutePUTRequest, error) {
 	rd := &PromotionReferralRoutePUTRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&rd); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)

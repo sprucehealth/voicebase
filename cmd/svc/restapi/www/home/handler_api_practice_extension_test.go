@@ -7,15 +7,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common/config"
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/test"
 )
 
 func TestPracticeExtensionDemoRequestAPIHandler_POST(t *testing.T) {
-
 	cfgStore, err := cfg.NewLocalStore(config.CfgDefs())
 	test.OK(t, err)
 	cfgStore.Update(map[string]interface{}{
@@ -37,7 +34,7 @@ func TestPracticeExtensionDemoRequestAPIHandler_POST(t *testing.T) {
 	r, err := http.NewRequest("POST", "/", bytes.NewReader(body))
 	test.OK(t, err)
 	w := httptest.NewRecorder()
-	h.ServeHTTP(context.Background(), w, r)
+	h.ServeHTTP(w, r)
 	test.HTTPResponseCode(t, http.StatusOK, w)
 
 	// Failure
@@ -47,12 +44,11 @@ func TestPracticeExtensionDemoRequestAPIHandler_POST(t *testing.T) {
 	r, err = http.NewRequest("POST", "/", bytes.NewReader(body))
 	test.OK(t, err)
 	w = httptest.NewRecorder()
-	h.ServeHTTP(context.Background(), w, r)
+	h.ServeHTTP(w, r)
 	test.HTTPResponseCode(t, http.StatusBadRequest, w)
 }
 
 func TestPracticeExtensionWhitepaperRequestAPIHandler_POST(t *testing.T) {
-
 	cfgStore, err := cfg.NewLocalStore(config.CfgDefs())
 	test.OK(t, err)
 	cfgStore.Update(map[string]interface{}{
@@ -72,7 +68,7 @@ func TestPracticeExtensionWhitepaperRequestAPIHandler_POST(t *testing.T) {
 	r, err := http.NewRequest("POST", "/", bytes.NewReader(body))
 	test.OK(t, err)
 	w := httptest.NewRecorder()
-	h.ServeHTTP(context.Background(), w, r)
+	h.ServeHTTP(w, r)
 	test.HTTPResponseCode(t, http.StatusOK, w)
 
 	// Failure
@@ -82,6 +78,6 @@ func TestPracticeExtensionWhitepaperRequestAPIHandler_POST(t *testing.T) {
 	r, err = http.NewRequest("POST", "/", bytes.NewReader(body))
 	test.OK(t, err)
 	w = httptest.NewRecorder()
-	h.ServeHTTP(context.Background(), w, r)
+	h.ServeHTTP(w, r)
 	test.HTTPResponseCode(t, http.StatusBadRequest, w)
 }

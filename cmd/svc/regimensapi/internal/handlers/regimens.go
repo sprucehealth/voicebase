@@ -13,8 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/mediautils"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/rxguide"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/responses"
@@ -44,7 +42,7 @@ type regimensHandler struct {
 }
 
 // NewRegimens returns a new regimens search and manipulation handler.
-func NewRegimens(svc regimens.Service, deterministicStore storage.DeterministicStore, webDomain, apiDomain string) httputil.ContextHandler {
+func NewRegimens(svc regimens.Service, deterministicStore storage.DeterministicStore, webDomain, apiDomain string) http.Handler {
 	return httputil.SupportedMethods(&regimensHandler{
 		svc:                svc,
 		deterministicStore: deterministicStore,
@@ -53,26 +51,26 @@ func NewRegimens(svc regimens.Service, deterministicStore storage.DeterministicS
 	}, httputil.Get, httputil.Post)
 }
 
-func (h *regimensHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *regimensHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case httputil.Get:
-		rd, err := h.parseGETRequest(ctx, r)
+		rd, err := h.parseGETRequest(r)
 		if err != nil {
-			apiservice.WriteBadRequestError(ctx, err, w, r)
+			apiservice.WriteBadRequestError(err, w, r)
 			return
 		}
-		h.serveGET(ctx, w, r, rd)
+		h.serveGET(w, r, rd)
 	case httputil.Post:
-		rd, err := h.parsePOSTRequest(ctx, r)
+		rd, err := h.parsePOSTRequest(r)
 		if err != nil {
-			apiservice.WriteBadRequestError(ctx, err, w, r)
+			apiservice.WriteBadRequestError(err, w, r)
 			return
 		}
-		h.servePOST(ctx, w, r, rd)
+		h.servePOST(w, r, rd)
 	}
 }
 
-func (h *regimensHandler) parseGETRequest(ctx context.Context, r *http.Request) (*responses.RegimensGETRequest, error) {
+func (h *regimensHandler) parseGETRequest(r *http.Request) (*responses.RegimensGETRequest, error) {
 	rd := &responses.RegimensGETRequest{}
 	if err := r.ParseForm(); err != nil {
 		return nil, err
@@ -85,7 +83,7 @@ func (h *regimensHandler) parseGETRequest(ctx context.Context, r *http.Request) 
 	return rd, nil
 }
 
-func (h *regimensHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request, rd *responses.RegimensGETRequest) {
+func (h *regimensHandler) serveGET(w http.ResponseWriter, r *http.Request, rd *responses.RegimensGETRequest) {
 	tags := strings.Fields(rd.Query)
 	for i, t := range tags {
 		tags[i] = strings.ToLower(strings.TrimLeft(t, "#"))
@@ -99,13 +97,13 @@ func (h *regimensHandler) serveGET(ctx context.Context, w http.ResponseWriter, r
 
 	// Arbitrarily limit this till we understand the implications of tag filtering
 	if len(tags) > 5 {
-		apiservice.WriteBadRequestError(ctx, fmt.Errorf("A maximum number of 5 tags can be used in a single query. %d provided", len(tags)), w, r)
+		apiservice.WriteBadRequestError(fmt.Errorf("A maximum number of 5 tags can be used in a single query. %d provided", len(tags)), w, r)
 		return
 	}
 
 	regimens, err := h.svc.TagQuery(tags)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 	fillMissingProductMedia(h.apiDomain, regimens)
@@ -115,7 +113,7 @@ func (h *regimensHandler) serveGET(ctx context.Context, w http.ResponseWriter, r
 	httputil.JSONResponse(w, http.StatusOK, &responses.RegimensGETResponse{Regimens: regimens})
 }
 
-func (h *regimensHandler) parsePOSTRequest(ctx context.Context, r *http.Request) (*responses.RegimenPOSTRequest, error) {
+func (h *regimensHandler) parsePOSTRequest(r *http.Request) (*responses.RegimenPOSTRequest, error) {
 	rd := &responses.RegimenPOSTRequest{}
 	// An empty body for a POST here is acceptable
 	if err := json.NewDecoder(r.Body).Decode(rd); err != nil && err != io.EOF {
@@ -125,9 +123,9 @@ func (h *regimensHandler) parsePOSTRequest(ctx context.Context, r *http.Request)
 	return rd, nil
 }
 
-func (h *regimensHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *http.Request, rd *responses.RegimenPOSTRequest) {
+func (h *regimensHandler) servePOST(w http.ResponseWriter, r *http.Request, rd *responses.RegimenPOSTRequest) {
 	if err := validateRegimenContents(rd.Regimen); err != nil && !rd.AllowRestricted {
-		apiservice.WriteBadRequestError(ctx, err, w, r)
+		apiservice.WriteBadRequestError(err, w, r)
 		return
 	}
 
@@ -137,13 +135,13 @@ func (h *regimensHandler) servePOST(ctx context.Context, w http.ResponseWriter, 
 		var err error
 		resourceID, err = newShortID()
 		if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 
 		authToken, err = h.svc.AuthorizeResource(resourceID)
 		if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 
@@ -161,39 +159,39 @@ func (h *regimensHandler) servePOST(ctx context.Context, w http.ResponseWriter, 
 		resourceID = rd.Regimen.ID
 		authToken = r.Header.Get("token")
 		if authToken == "" {
-			apiservice.WriteAccessNotAllowedError(ctx, w, r)
+			apiservice.WriteAccessNotAllowedError(w, r)
 			return
 		}
 		access, err := h.svc.CanAccessResource(rd.Regimen.ID, authToken)
 		if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		} else if !access {
-			apiservice.WriteAccessNotAllowedError(ctx, w, r)
+			apiservice.WriteAccessNotAllowedError(w, r)
 			return
 		}
 
 		_, published, err := h.svc.Regimen(resourceID)
 		if api.IsErrNotFound(err) {
-			apiservice.WriteResourceNotFoundError(ctx, err.Error(), w, r)
+			apiservice.WriteResourceNotFoundError(err.Error(), w, r)
 			return
 		} else if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		} else if published {
-			apiservice.WriteAccessNotAllowedError(ctx, w, r)
+			apiservice.WriteAccessNotAllowedError(w, r)
 			return
 		}
 	}
 
 	if regimen == nil || regimen.ID == "" {
-		apiservice.WriteError(ctx, errors.New("The regimen preparing to be written is null or lacks an identifier"), w, r)
+		apiservice.WriteError(errors.New("The regimen preparing to be written is null or lacks an identifier"), w, r)
 		return
 	}
 
 	// We can't associate a regimen with more than 24 tags
 	if len(regimen.Tags) > 24 {
-		apiservice.WriteBadRequestError(ctx, errors.New("A regimen can only be associated with a maximum of 24 tags"), w, r)
+		apiservice.WriteBadRequestError(errors.New("A regimen can only be associated with a maximum of 24 tags"), w, r)
 		return
 	}
 
@@ -206,7 +204,7 @@ func (h *regimensHandler) servePOST(ctx context.Context, w http.ResponseWriter, 
 	if regimen.CoverPhotoURL == "" || strings.HasSuffix(regimen.CoverPhotoURL, collageSuffix) {
 		collageURL, width, height, err := generateCollage(resourceID, rd.Regimen, h.deterministicStore, h.apiDomain)
 		if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 		rd.Regimen.CoverPhotoURL = collageURL
@@ -217,7 +215,7 @@ func (h *regimensHandler) servePOST(ctx context.Context, w http.ResponseWriter, 
 	}
 
 	if err := h.svc.PutRegimen(regimen.ID, regimen, rd.Publish); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -236,7 +234,7 @@ type regimenHandler struct {
 }
 
 // NewRegimen returns a new regimen search and manipulation handler.
-func NewRegimen(svc regimens.Service, deterministicStore storage.DeterministicStore, webDomain, apiDomain string) httputil.ContextHandler {
+func NewRegimen(svc regimens.Service, deterministicStore storage.DeterministicStore, webDomain, apiDomain string) http.Handler {
 	return httputil.SupportedMethods(&regimenHandler{
 		svc:                svc,
 		deterministicStore: deterministicStore,
@@ -245,18 +243,18 @@ func NewRegimen(svc regimens.Service, deterministicStore storage.DeterministicSt
 	}, httputil.Get, httputil.Put)
 }
 
-func (h *regimenHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	id, ok := mux.Vars(ctx)["id"]
+func (h *regimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	id, ok := mux.Vars(r.Context())["id"]
 	if !ok {
-		apiservice.WriteResourceNotFoundError(ctx, "an id must be provided", w, r)
+		apiservice.WriteResourceNotFoundError("an id must be provided", w, r)
 		return
 	}
 	regimen, published, err := h.svc.Regimen(id)
 	if api.IsErrNotFound(err) {
-		apiservice.WriteResourceNotFoundError(ctx, err.Error(), w, r)
+		apiservice.WriteResourceNotFoundError(err.Error(), w, r)
 		return
 	} else if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -264,9 +262,9 @@ func (h *regimenHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 	// If there is no token in the header check the params
 	authToken := r.Header.Get("token")
 	if authToken == "" && r.Method == httputil.Get {
-		rd, err := h.parseGETRequest(ctx, r)
+		rd, err := h.parseGETRequest(r)
 		if err != nil {
-			apiservice.WriteBadRequestError(ctx, err, w, r)
+			apiservice.WriteBadRequestError(err, w, r)
 			return
 		}
 		authToken = rd.AuthToken
@@ -274,33 +272,33 @@ func (h *regimenHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 	if r.Method == httputil.Put || (r.Method == httputil.Get && !published) {
 		access, err := h.svc.CanAccessResource(id, authToken)
 		if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		} else if !access {
-			apiservice.WriteAccessNotAllowedError(ctx, w, r)
+			apiservice.WriteAccessNotAllowedError(w, r)
 			return
 		}
 	}
 
 	switch r.Method {
 	case httputil.Get:
-		h.serveGET(ctx, w, r, regimen, published)
+		h.serveGET(w, r, regimen, published)
 	case httputil.Put:
 		// Do not allow published regimens to be mutated
 		if published {
-			apiservice.WriteAccessNotAllowedError(ctx, w, r)
+			apiservice.WriteAccessNotAllowedError(w, r)
 			return
 		}
-		rd, err := h.parsePUTRequest(ctx, r)
+		rd, err := h.parsePUTRequest(r)
 		if err != nil {
-			apiservice.WriteBadRequestError(ctx, err, w, r)
+			apiservice.WriteBadRequestError(err, w, r)
 			return
 		}
-		h.servePUT(ctx, w, r, rd, id)
+		h.servePUT(w, r, rd, id)
 	}
 }
 
-func (h *regimenHandler) parseGETRequest(ctx context.Context, r *http.Request) (*responses.RegimenGETRequest, error) {
+func (h *regimenHandler) parseGETRequest(r *http.Request) (*responses.RegimenGETRequest, error) {
 	rd := &responses.RegimenGETRequest{}
 	if err := r.ParseForm(); err != nil {
 		return nil, err
@@ -313,7 +311,7 @@ func (h *regimenHandler) parseGETRequest(ctx context.Context, r *http.Request) (
 	return rd, nil
 }
 
-func (h *regimenHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request, regimen *regimens.Regimen, published bool) {
+func (h *regimenHandler) serveGET(w http.ResponseWriter, r *http.Request, regimen *regimens.Regimen, published bool) {
 	if published {
 		// Cache published regimen queries for 5 minutes
 		httputil.CacheHeaders(w.Header(), time.Time{}, 5*time.Minute)
@@ -325,7 +323,7 @@ func (h *regimenHandler) serveGET(ctx context.Context, w http.ResponseWriter, r 
 	httputil.JSONResponse(w, http.StatusOK, regimen)
 }
 
-func (h *regimenHandler) parsePUTRequest(ctx context.Context, r *http.Request) (*responses.RegimenPUTRequest, error) {
+func (h *regimenHandler) parsePUTRequest(r *http.Request) (*responses.RegimenPUTRequest, error) {
 	rd := &responses.RegimenPUTRequest{}
 	if err := json.NewDecoder(r.Body).Decode(rd); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -337,9 +335,9 @@ func (h *regimenHandler) parsePUTRequest(ctx context.Context, r *http.Request) (
 	return rd, nil
 }
 
-func (h *regimenHandler) servePUT(ctx context.Context, w http.ResponseWriter, r *http.Request, rd *responses.RegimenPUTRequest, resourceID string) {
+func (h *regimenHandler) servePUT(w http.ResponseWriter, r *http.Request, rd *responses.RegimenPUTRequest, resourceID string) {
 	if err := validateRegimenContents(rd.Regimen); err != nil && !rd.AllowRestricted {
-		apiservice.WriteBadRequestError(ctx, err, w, r)
+		apiservice.WriteBadRequestError(err, w, r)
 		return
 	}
 
@@ -352,7 +350,7 @@ func (h *regimenHandler) servePUT(ctx context.Context, w http.ResponseWriter, r 
 
 	// We can't associate a regimen with more than 24 tags
 	if len(rd.Regimen.Tags) > 24 {
-		apiservice.WriteBadRequestError(ctx, errors.New("A regimen can only be associated with a maximum of 24 tags"), w, r)
+		apiservice.WriteBadRequestError(errors.New("A regimen can only be associated with a maximum of 24 tags"), w, r)
 		return
 	}
 
@@ -360,7 +358,7 @@ func (h *regimenHandler) servePUT(ctx context.Context, w http.ResponseWriter, r 
 	if rd.Regimen.CoverPhotoURL == "" || strings.HasSuffix(rd.Regimen.CoverPhotoURL, collageSuffix) || strings.HasSuffix(rd.Regimen.CoverPhotoURL, productPlaceholderMediaID) {
 		collageURL, width, height, err := generateCollage(resourceID, rd.Regimen, h.deterministicStore, h.apiDomain)
 		if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 		rd.Regimen.CoverPhotoURL = collageURL
@@ -371,7 +369,7 @@ func (h *regimenHandler) servePUT(ctx context.Context, w http.ResponseWriter, r 
 	}
 
 	if err := h.svc.PutRegimen(resourceID, rd.Regimen, rd.Publish); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

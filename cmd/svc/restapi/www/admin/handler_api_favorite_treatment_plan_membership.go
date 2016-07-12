@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/responses"
@@ -41,13 +39,13 @@ type ftpMembershipDELETERequest struct {
 	PathwayID  int64
 }
 
-func newFTPMembershipHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func newFTPMembershipHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&ftpMembershipHandler{dataAPI: dataAPI},
 		httputil.Get, httputil.Post, httputil.Delete)
 }
 
-func (h *ftpMembershipHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	ftpID, err := strconv.ParseInt(mux.Vars(ctx)["id"], 10, 64)
+func (h *ftpMembershipHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ftpID, err := strconv.ParseInt(mux.Vars(r.Context())["id"], 10, 64)
 	if err != nil {
 		www.APINotFound(w, r)
 		return
@@ -57,14 +55,14 @@ func (h *ftpMembershipHandler) ServeHTTP(ctx context.Context, w http.ResponseWri
 	case "GET":
 		h.serveGET(w, r, ftpID)
 	case "POST":
-		request, err := h.parsePOSTRequest(ctx, r)
+		request, err := h.parsePOSTRequest(r)
 		if err != nil {
 			www.APIBadRequestError(w, r, err.Error())
 			return
 		}
 		h.servePOST(w, r, ftpID, request)
 	case "DELETE":
-		request, err := h.parseDELETERequest(ctx, r)
+		request, err := h.parseDELETERequest(r)
 		if err != nil {
 			www.APIBadRequestError(w, r, err.Error())
 			return
@@ -73,7 +71,7 @@ func (h *ftpMembershipHandler) ServeHTTP(ctx context.Context, w http.ResponseWri
 	}
 }
 
-func (h *ftpMembershipHandler) parsePOSTRequest(ctx context.Context, r *http.Request) (*batchFTPMembershipPOSTRequest, error) {
+func (h *ftpMembershipHandler) parsePOSTRequest(r *http.Request) (*batchFTPMembershipPOSTRequest, error) {
 	var err error
 	rd := &batchFTPMembershipPOSTRequest{}
 	if err := r.ParseForm(); err != nil {
@@ -102,7 +100,7 @@ func (h *ftpMembershipHandler) parsePOSTRequest(ctx context.Context, r *http.Req
 	return rd, nil
 }
 
-func (h *ftpMembershipHandler) parseDELETERequest(ctx context.Context, r *http.Request) (*ftpMembershipDELETERequest, error) {
+func (h *ftpMembershipHandler) parseDELETERequest(r *http.Request) (*ftpMembershipDELETERequest, error) {
 	rd := &ftpMembershipDELETERequest{}
 	if err := json.NewDecoder(r.Body).Decode(&rd); err != nil {
 		return nil, fmt.Errorf("Unable to parse body: %s", err)

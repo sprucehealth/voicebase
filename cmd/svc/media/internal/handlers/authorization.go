@@ -4,30 +4,28 @@ import (
 	"errors"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/mediactx"
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/service"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
 )
 
 type authorizationHandler struct {
 	idParamName string
 	svc         service.Service
-	h           httputil.ContextHandler
+	h           http.Handler
 }
 
-func authorizationRequired(h httputil.ContextHandler, svc service.Service) httputil.ContextHandler {
+func authorizationRequired(h http.Handler, svc service.Service) http.Handler {
 	return &authorizationHandler{
 		svc: svc,
 		h:   h,
 	}
 }
 
-func (h *authorizationHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *authorizationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	if mediactx.RequiresAuthorization(ctx) {
 		acc, err := mediactx.Account(ctx)
 		if err != nil {
@@ -47,6 +45,5 @@ func (h *authorizationHandler) ServeHTTP(ctx context.Context, w http.ResponseWri
 			return
 		}
 	}
-
-	h.h.ServeHTTP(ctx, w, r)
+	h.h.ServeHTTP(w, r)
 }

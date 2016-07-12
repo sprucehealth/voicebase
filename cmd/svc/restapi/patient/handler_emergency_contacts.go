@@ -3,8 +3,6 @@ package patient
 import (
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -19,7 +17,7 @@ type emergencyContactsData struct {
 	EmergencyContacts []*common.EmergencyContact `json:"emergency_contacts,omitempty"`
 }
 
-func NewEmergencyContactsHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func NewEmergencyContactsHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(
@@ -30,59 +28,59 @@ func NewEmergencyContactsHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 		httputil.Get, httputil.Put)
 }
 
-func (e *emergencyContactsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (e *emergencyContactsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case httputil.Get:
-		e.getEmergencyContacts(ctx, w, r)
+		e.getEmergencyContacts(w, r)
 	case httputil.Put:
-		e.addEmergencyContacts(ctx, w, r)
+		e.addEmergencyContacts(w, r)
 	default:
 		http.NotFound(w, r)
 	}
 }
 
-func (e *emergencyContactsHandler) getEmergencyContacts(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	patientID, err := e.dataAPI.GetPatientIDFromAccountID(apiservice.MustCtxAccount(ctx).ID)
+func (e *emergencyContactsHandler) getEmergencyContacts(w http.ResponseWriter, r *http.Request) {
+	patientID, err := e.dataAPI.GetPatientIDFromAccountID(apiservice.MustCtxAccount(r.Context()).ID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	emergencyContacts, err := e.dataAPI.GetPatientEmergencyContacts(patientID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	httputil.JSONResponse(w, http.StatusOK, &emergencyContactsData{EmergencyContacts: emergencyContacts})
 }
 
-func (e *emergencyContactsHandler) addEmergencyContacts(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (e *emergencyContactsHandler) addEmergencyContacts(w http.ResponseWriter, r *http.Request) {
 	requestData := &emergencyContactsData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
-		apiservice.WriteValidationError(ctx, err.Error(), w, r)
+		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
 
 	// validate
 	for _, eContact := range requestData.EmergencyContacts {
 		if eContact.FullName == "" {
-			apiservice.WriteValidationError(ctx, "Please enter emergency contact's name", w, r)
+			apiservice.WriteValidationError("Please enter emergency contact's name", w, r)
 			return
 		} else if eContact.PhoneNumber == "" {
-			apiservice.WriteValidationError(ctx, "Please enter emergency contact's phone number", w, r)
+			apiservice.WriteValidationError("Please enter emergency contact's phone number", w, r)
 			return
 		}
 	}
 
-	patientID, err := e.dataAPI.GetPatientIDFromAccountID(apiservice.MustCtxAccount(ctx).ID)
+	patientID, err := e.dataAPI.GetPatientIDFromAccountID(apiservice.MustCtxAccount(r.Context()).ID)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	if err := e.dataAPI.UpdatePatientEmergencyContacts(patientID, requestData.EmergencyContacts); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

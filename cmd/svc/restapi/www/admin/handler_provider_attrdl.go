@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
@@ -22,7 +20,7 @@ type providerAttrDownloadHandler struct {
 	store   storage.Store
 }
 
-func newProviderAttrDownloadHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store) httputil.ContextHandler {
+func newProviderAttrDownloadHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store) http.Handler {
 	return httputil.SupportedMethods(&providerAttrDownloadHandler{
 		router:  router,
 		dataAPI: dataAPI,
@@ -30,8 +28,8 @@ func newProviderAttrDownloadHandler(router *mux.Router, dataAPI api.DataAPI, sto
 	}, httputil.Get)
 }
 
-func (h *providerAttrDownloadHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(ctx)
+func (h *providerAttrDownloadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r.Context())
 
 	providerID, err := strconv.ParseInt(vars["id"], 10, 64)
 	if err != nil {
@@ -41,7 +39,7 @@ func (h *providerAttrDownloadHandler) ServeHTTP(ctx context.Context, w http.Resp
 
 	attrName := vars["attr"]
 
-	account := www.MustCtxAccount(ctx)
+	account := www.MustCtxAccount(r.Context())
 	audit.LogAction(account.ID, "Admin", "DownloadProviderAttributeFile", map[string]interface{}{"provider_id": providerID, "attribute": attrName})
 
 	attr, err := h.dataAPI.DoctorAttributes(providerID, []string{attrName})

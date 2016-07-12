@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/responses"
@@ -23,12 +21,12 @@ type ftpGETResponse struct {
 	FavoriteTreatmentPlan *responses.FavoriteTreatmentPlan `json:"favorite_treatment_plan"`
 }
 
-func newFTPHandler(dataAPI api.DataAPI, mediaStore *mediastore.Store) httputil.ContextHandler {
+func newFTPHandler(dataAPI api.DataAPI, mediaStore *mediastore.Store) http.Handler {
 	return httputil.SupportedMethods(&ftpHandler{dataAPI: dataAPI, mediaStore: mediaStore}, httputil.Get)
 }
 
-func (h *ftpHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	ftpID, err := strconv.ParseInt(mux.Vars(ctx)["id"], 10, 64)
+func (h *ftpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ftpID, err := strconv.ParseInt(mux.Vars(r.Context())["id"], 10, 64)
 	if err != nil {
 		www.APINotFound(w, r)
 		return

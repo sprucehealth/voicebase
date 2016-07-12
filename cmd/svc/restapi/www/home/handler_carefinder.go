@@ -6,11 +6,8 @@ import (
 	"net/url"
 	"sync/atomic"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/libs/cfg"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 var carefinderURLDef = &cfg.ValueDef{
@@ -33,7 +30,7 @@ type reverseProxyInfo struct {
 
 // NewCareFinderHandler returns a handler that reverse proxies to the carefinder
 // service if configured else redirects to the sprucehealth.com main website.
-func NewCareFinderHandler(cfg cfg.Store) httputil.ContextHandler {
+func NewCareFinderHandler(cfg cfg.Store) http.Handler {
 	cfg.Register(carefinderURLDef)
 
 	return &careFinderHandler{
@@ -41,7 +38,7 @@ func NewCareFinderHandler(cfg cfg.Store) httputil.ContextHandler {
 	}
 }
 
-func (c *careFinderHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (c *careFinderHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	carefinderURL := c.cfg.Snapshot().String(carefinderURLDef.Name)
 	if carefinderURL == "" {
 		http.Redirect(w, r, "/", http.StatusSeeOther)

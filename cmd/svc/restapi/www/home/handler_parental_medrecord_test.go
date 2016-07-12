@@ -1,11 +1,10 @@
 package home
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -59,7 +58,7 @@ func TestParentalMedicalRecordHandler(t *testing.T) {
 	r, err := http.NewRequest("GET", "/", nil)
 	test.OK(t, err)
 	w := httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.HTTPResponseCode(t, http.StatusNotFound, w)
 
 	// Parent does have access
@@ -68,7 +67,7 @@ func TestParentalMedicalRecordHandler(t *testing.T) {
 	r, err = http.NewRequest("GET", "/", nil)
 	test.OK(t, err)
 	w = httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.HTTPResponseCode(t, http.StatusOK, w)
 
 	// Parent has not yet completed flow
@@ -78,6 +77,6 @@ func TestParentalMedicalRecordHandler(t *testing.T) {
 	r, err = http.NewRequest("GET", "/", nil)
 	test.OK(t, err)
 	w = httptest.NewRecorder()
-	h.ServeHTTP(ctx, w, r)
+	h.ServeHTTP(w, r.WithContext(ctx))
 	test.HTTPResponseCode(t, http.StatusSeeOther, w)
 }

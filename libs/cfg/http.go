@@ -1,11 +1,8 @@
 package cfg
 
 import (
-	"net/http"
-
 	"context"
-
-	"github.com/sprucehealth/backend/libs/httputil"
+	"net/http"
 )
 
 // contextKeyType creates a unique type to be used in the request context
@@ -15,9 +12,9 @@ var contextKey contextKeyType
 
 // HTTPHandler returns a wrapped handler that sets a snapshot of
 // the cfg store in the request context.
-func HTTPHandler(h httputil.ContextHandler, store Store) httputil.ContextHandler {
-	return httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-		h.ServeHTTP(context.WithValue(ctx, contextKey, store.Snapshot()), w, r)
+func HTTPHandler(h http.Handler, store Store) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), contextKey, store.Snapshot())))
 	})
 }
 

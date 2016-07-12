@@ -1,12 +1,11 @@
 package patient_case
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -61,14 +60,14 @@ type patientCaseNoteHandler struct {
 	dataAPI   api.DataAPI
 }
 
-func NewPatientCaseNoteHandler(dataAPI api.DataAPI, apiDomain string) httputil.ContextHandler {
+func NewPatientCaseNoteHandler(dataAPI api.DataAPI, apiDomain string) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.RequestCacheHandler(
 			apiservice.MethodGranularAuthorizationRequired(&patientCaseNoteHandler{dataAPI: dataAPI, apiDomain: apiDomain})),
 		httputil.Get, httputil.Put, httputil.Post, httputil.Delete)
 }
 
-func (h *patientCaseNoteHandler) parseDELETERequest(ctx context.Context, r *http.Request) (*PatientCaseNoteDELETERequest, error) {
+func (h *patientCaseNoteHandler) parseDELETERequest(r *http.Request) (*PatientCaseNoteDELETERequest, error) {
 	rd := &PatientCaseNoteDELETERequest{}
 	if err := r.ParseForm(); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -79,7 +78,7 @@ func (h *patientCaseNoteHandler) parseDELETERequest(ctx context.Context, r *http
 	return rd, nil
 }
 
-func (h *patientCaseNoteHandler) parseGETRequest(ctx context.Context, r *http.Request) (*PatientCaseNoteGETRequest, error) {
+func (h *patientCaseNoteHandler) parseGETRequest(r *http.Request) (*PatientCaseNoteGETRequest, error) {
 	rd := &PatientCaseNoteGETRequest{}
 	if err := r.ParseForm(); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -91,7 +90,7 @@ func (h *patientCaseNoteHandler) parseGETRequest(ctx context.Context, r *http.Re
 	return rd, nil
 }
 
-func (h *patientCaseNoteHandler) parsePOSTRequest(ctx context.Context, r *http.Request) (*PatientCaseNotePOSTRequest, error) {
+func (h *patientCaseNoteHandler) parsePOSTRequest(r *http.Request) (*PatientCaseNotePOSTRequest, error) {
 	rd := &PatientCaseNotePOSTRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&rd); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -104,7 +103,7 @@ func (h *patientCaseNoteHandler) parsePOSTRequest(ctx context.Context, r *http.R
 	return rd, nil
 }
 
-func (h *patientCaseNoteHandler) parsePUTRequest(ctx context.Context, r *http.Request) (*PatientCaseNotePUTRequest, error) {
+func (h *patientCaseNoteHandler) parsePUTRequest(r *http.Request) (*PatientCaseNotePUTRequest, error) {
 	rd := &PatientCaseNotePUTRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&rd); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -117,51 +116,51 @@ func (h *patientCaseNoteHandler) parsePUTRequest(ctx context.Context, r *http.Re
 }
 
 // Assert that the person deleting the note is the owner and has access to the specified case
-func (h *patientCaseNoteHandler) IsDELETEAuthorized(ctx context.Context, r *http.Request) (bool, error) {
-	account := apiservice.MustCtxAccount(ctx)
-	req, err := h.parseDELETERequest(ctx, r)
+func (h *patientCaseNoteHandler) IsDELETEAuthorized(r *http.Request) (bool, error) {
+	account := apiservice.MustCtxAccount(r.Context())
+	req, err := h.parseDELETERequest(r)
 	if err != nil {
 		return false, apiservice.NewBadRequestError(err)
 	}
-	requestCache := apiservice.MustCtxCache(ctx)
+	requestCache := apiservice.MustCtxCache(r.Context())
 	requestCache[apiservice.CKRequestData] = req
-	return h.isAccountAuthorized(ctx, account.ID, req.ID, 0, account.Role, PCNHNoteOwner|PCNHCaseRead)
+	return h.isAccountAuthorized(r.Context(), account.ID, req.ID, 0, account.Role, PCNHNoteOwner|PCNHCaseRead)
 }
 
 // Assert that the person has access to the specified case
-func (h *patientCaseNoteHandler) IsGETAuthorized(ctx context.Context, r *http.Request) (bool, error) {
-	account := apiservice.MustCtxAccount(ctx)
-	req, err := h.parseGETRequest(ctx, r)
+func (h *patientCaseNoteHandler) IsGETAuthorized(r *http.Request) (bool, error) {
+	account := apiservice.MustCtxAccount(r.Context())
+	req, err := h.parseGETRequest(r)
 	if err != nil {
 		return false, apiservice.NewBadRequestError(err)
 	}
-	requestCache := apiservice.MustCtxCache(ctx)
+	requestCache := apiservice.MustCtxCache(r.Context())
 	requestCache[apiservice.CKRequestData] = req
-	return h.isAccountAuthorized(ctx, account.ID, 0, req.CaseID, account.Role, PCNHCaseRead)
+	return h.isAccountAuthorized(r.Context(), account.ID, 0, req.CaseID, account.Role, PCNHCaseRead)
 }
 
 // Assert that the person has access to the specified case
-func (h *patientCaseNoteHandler) IsPOSTAuthorized(ctx context.Context, r *http.Request) (bool, error) {
-	account := apiservice.MustCtxAccount(ctx)
-	req, err := h.parsePOSTRequest(ctx, r)
+func (h *patientCaseNoteHandler) IsPOSTAuthorized(r *http.Request) (bool, error) {
+	account := apiservice.MustCtxAccount(r.Context())
+	req, err := h.parsePOSTRequest(r)
 	if err != nil {
 		return false, apiservice.NewBadRequestError(err)
 	}
-	requestCache := apiservice.MustCtxCache(ctx)
+	requestCache := apiservice.MustCtxCache(r.Context())
 	requestCache[apiservice.CKRequestData] = req
-	return h.isAccountAuthorized(ctx, account.ID, 0, req.CaseID, account.Role, PCNHCaseRead)
+	return h.isAccountAuthorized(r.Context(), account.ID, 0, req.CaseID, account.Role, PCNHCaseRead)
 }
 
 // Assert that the person modifying the note is the owner and has access to the specified case
-func (h *patientCaseNoteHandler) IsPUTAuthorized(ctx context.Context, r *http.Request) (bool, error) {
-	account := apiservice.MustCtxAccount(ctx)
-	req, err := h.parsePUTRequest(ctx, r)
+func (h *patientCaseNoteHandler) IsPUTAuthorized(r *http.Request) (bool, error) {
+	account := apiservice.MustCtxAccount(r.Context())
+	req, err := h.parsePUTRequest(r)
 	if err != nil {
 		return false, apiservice.NewBadRequestError(err)
 	}
-	requestCache := apiservice.MustCtxCache(ctx)
+	requestCache := apiservice.MustCtxCache(r.Context())
 	requestCache[apiservice.CKRequestData] = req
-	return h.isAccountAuthorized(ctx, account.ID, req.ID, 0, account.Role, PCNHNoteOwner|PCNHCaseRead)
+	return h.isAccountAuthorized(r.Context(), account.ID, req.ID, 0, account.Role, PCNHNoteOwner|PCNHCaseRead)
 }
 
 func (h *patientCaseNoteHandler) isAccountAuthorized(ctx context.Context, accountID, noteID, caseID int64, role string, requiredAccess PCNHRequiredAccess) (bool, error) {
@@ -203,27 +202,27 @@ func (h *patientCaseNoteHandler) isAccountAuthorized(ctx context.Context, accoun
 	return requiredAccess == 0, nil
 }
 
-func (h *patientCaseNoteHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	requestCache := apiservice.MustCtxCache(ctx)
+func (h *patientCaseNoteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(r.Context())
 	switch r.Method {
 	case httputil.Delete:
-		h.serveDELETE(ctx, w, r, requestCache[apiservice.CKRequestData].(*PatientCaseNoteDELETERequest))
+		h.serveDELETE(w, r, requestCache[apiservice.CKRequestData].(*PatientCaseNoteDELETERequest))
 	case httputil.Get:
-		h.serveGET(ctx, w, r, requestCache[apiservice.CKRequestData].(*PatientCaseNoteGETRequest))
+		h.serveGET(w, r, requestCache[apiservice.CKRequestData].(*PatientCaseNoteGETRequest))
 	case httputil.Post:
-		h.servePOST(ctx, w, r, requestCache[apiservice.CKRequestData].(*PatientCaseNotePOSTRequest))
+		h.servePOST(w, r, requestCache[apiservice.CKRequestData].(*PatientCaseNotePOSTRequest))
 	case httputil.Put:
-		h.servePUT(ctx, w, r, requestCache[apiservice.CKRequestData].(*PatientCaseNotePUTRequest))
+		h.servePUT(w, r, requestCache[apiservice.CKRequestData].(*PatientCaseNotePUTRequest))
 	}
 }
 
-func (h *patientCaseNoteHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request, req *PatientCaseNoteGETRequest) {
+func (h *patientCaseNoteHandler) serveGET(w http.ResponseWriter, r *http.Request, req *PatientCaseNoteGETRequest) {
 	caseNotes, err := h.dataAPI.PatientCaseNotes([]int64{req.CaseID})
 	if api.IsErrNotFound(err) {
 		httputil.JSONResponse(w, http.StatusOK, &PatientCaseNoteGETResponse{})
 		return
 	} else if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -242,7 +241,7 @@ func (h *patientCaseNoteHandler) serveGET(ctx context.Context, w http.ResponseWr
 	// Query our involved doctors by and map them to IDs so we can build out the optional info
 	doctors, err := h.dataAPI.Doctors(doctorIDs)
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -254,7 +253,7 @@ func (h *patientCaseNoteHandler) serveGET(ctx context.Context, w http.ResponseWr
 	for i := range respNotes {
 		d, ok := doctorsByID[respNotes[i].AuthorDoctorID]
 		if !ok {
-			apiservice.WriteError(ctx, fmt.Errorf("Couldn't map case note author doctor ID %d to a doctor record", respNotes[i].AuthorDoctorID), w, r)
+			apiservice.WriteError(fmt.Errorf("Couldn't map case note author doctor ID %d to a doctor record", respNotes[i].AuthorDoctorID), w, r)
 			return
 		}
 		response.AddPatientCaseNoteOptionalData(respNotes[i], response.NewPatientCaseNoteOptionalData(d, h.apiDomain))
@@ -265,15 +264,15 @@ func (h *patientCaseNoteHandler) serveGET(ctx context.Context, w http.ResponseWr
 	})
 }
 
-func (h *patientCaseNoteHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *http.Request, req *PatientCaseNotePOSTRequest) {
-	requestCache := apiservice.MustCtxCache(ctx)
+func (h *patientCaseNoteHandler) servePOST(w http.ResponseWriter, r *http.Request, req *PatientCaseNotePOSTRequest) {
+	requestCache := apiservice.MustCtxCache(r.Context())
 	id, err := h.dataAPI.InsertPatientCaseNote(&model.PatientCaseNote{
 		CaseID:         req.CaseID,
 		AuthorDoctorID: requestCache[apiservice.CKDoctorID].(int64),
 		NoteText:       req.NoteText,
 	})
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 	httputil.JSONResponse(w, http.StatusOK, &PatientCaseNotePOSTResponse{
@@ -281,18 +280,18 @@ func (h *patientCaseNoteHandler) servePOST(ctx context.Context, w http.ResponseW
 	})
 }
 
-func (h *patientCaseNoteHandler) servePUT(ctx context.Context, w http.ResponseWriter, r *http.Request, req *PatientCaseNotePUTRequest) {
+func (h *patientCaseNoteHandler) servePUT(w http.ResponseWriter, r *http.Request, req *PatientCaseNotePUTRequest) {
 	if _, err := h.dataAPI.UpdatePatientCaseNote(&model.PatientCaseNoteUpdate{
 		ID:       req.ID,
 		NoteText: req.NoteText,
 	}); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 	httputil.JSONResponse(w, http.StatusOK, struct{}{})
 }
 
-func (h *patientCaseNoteHandler) serveDELETE(ctx context.Context, w http.ResponseWriter, r *http.Request, req *PatientCaseNoteDELETERequest) {
+func (h *patientCaseNoteHandler) serveDELETE(w http.ResponseWriter, r *http.Request, req *PatientCaseNoteDELETERequest) {
 	if _, err := h.dataAPI.DeletePatientCaseNote(req.ID); err != nil {
 		www.APIInternalError(w, r, err)
 		return

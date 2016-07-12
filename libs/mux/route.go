@@ -11,10 +11,6 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
-
-	"context"
-
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 // Route stores information to match a request and build URLs.
@@ -22,7 +18,7 @@ type Route struct {
 	// Parent where the route was registered (a Router).
 	parent parentRoute
 	// Request handler for the route.
-	handler httputil.ContextHandler
+	handler http.Handler
 	// List of matchers.
 	matchers []matcher
 	// Manager for the variables from host and path.
@@ -86,7 +82,7 @@ func (r *Route) BuildOnly() *Route {
 // Handler --------------------------------------------------------------------
 
 // Handler sets a handler for the route.
-func (r *Route) Handler(handler httputil.ContextHandler) *Route {
+func (r *Route) Handler(handler http.Handler) *Route {
 	if r.err == nil {
 		r.handler = handler
 	}
@@ -94,12 +90,12 @@ func (r *Route) Handler(handler httputil.ContextHandler) *Route {
 }
 
 // HandlerFunc sets a handler function for the route.
-func (r *Route) HandlerFunc(f func(context.Context, http.ResponseWriter, *http.Request)) *Route {
-	return r.Handler(httputil.ContextHandlerFunc(f))
+func (r *Route) HandlerFunc(f func(http.ResponseWriter, *http.Request)) *Route {
+	return r.Handler(http.HandlerFunc(f))
 }
 
 // GetHandler returns the handler for the route, if any.
-func (r *Route) GetHandler() httputil.ContextHandler {
+func (r *Route) GetHandler() http.Handler {
 	return r.handler
 }
 

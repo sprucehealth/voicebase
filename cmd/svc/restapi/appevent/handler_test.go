@@ -129,7 +129,7 @@ func TestHandler(t *testing.T) {
 		test.OK(t, err)
 		r.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
-		h.ServeHTTP(ctx, w, r)
+		h.ServeHTTP(w, r.WithContext(ctx))
 		test.HTTPResponseCode(t, c.expectedStatus, w)
 	}
 }

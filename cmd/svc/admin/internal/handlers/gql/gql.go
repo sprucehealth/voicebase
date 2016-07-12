@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"strings"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/gql/query"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -29,7 +27,7 @@ type gqlHandler struct {
 }
 
 // New returns an initialized instance of *gqlHandler
-func New(behindProxy bool) (httputil.ContextHandler, graphql.Schema) {
+func New(behindProxy bool) (http.Handler, graphql.Schema) {
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: query.NewRoot(),
 	})
@@ -42,7 +40,7 @@ func New(behindProxy bool) (httputil.ContextHandler, graphql.Schema) {
 	}, schema
 }
 
-func (h *gqlHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *gqlHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// TODO: Libify this aspect of the GQL stuff
 	var req gqlReq
 	if r.Method == "GET" {
@@ -59,7 +57,7 @@ func (h *gqlHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *ht
 		Schema:         h.schema,
 		RequestString:  req.Query,
 		VariableValues: req.Variables,
-		Context:        ctx,
+		Context:        r.Context(),
 		RootObject: map[string]interface{}{
 			"remoteAddr": httputil.RemoteAddrFromRequest(r, h.behindProxy),
 			"userAgent":  r.UserAgent(),
@@ -81,10 +79,10 @@ func (h *gqlHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *ht
 			// TODO: Libify common aspects of errors baymaxgraphql internal package
 			// Wrap any non well formed gql errors as internal
 			// if errors.Type(e) == errors.ErrTypeUnknown {
-			//	response.Errors[i] = errors.InternalError(ctx, e).(gqlerrors.FormattedError)
+			//	response.Errors[i] = errors.InternalError(r.Context(), e).(gqlerrors.FormattedError)
 			// }
 		}
-		httputil.CtxLogMap(ctx).Set("GraphQLErrors", strings.Join(errorTypes, " "))
+		httputil.CtxLogMap(r.Context()).Set("GraphQLErrors", strings.Join(errorTypes, " "))
 	}
 	httputil.JSONResponse(w, http.StatusOK, response)
 }

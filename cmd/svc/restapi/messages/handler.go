@@ -4,8 +4,6 @@ import (
 	"errors"
 	"net/http"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -46,7 +44,7 @@ type Attachment struct {
 	URL      string `json:"url,omitempty"`
 }
 
-func NewHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) httputil.ContextHandler {
+func NewHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.RequestCacheHandler(
 			apiservice.AuthorizationRequired(
@@ -56,7 +54,8 @@ func NewHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) httputil.C
 		httputil.Post)
 }
 
-func (h *handler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+func (h *handler) IsAuthorized(r *http.Request) (bool, error) {
+	ctx := r.Context()
 	requestCache := apiservice.MustCtxCache(ctx)
 
 	var req PostMessageRequest
@@ -85,7 +84,8 @@ func (h *handler) IsAuthorized(ctx context.Context, r *http.Request) (bool, erro
 	return true, nil
 }
 
-func (h *handler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	requestCache := apiservice.MustCtxCache(ctx)
 	req := requestCache[apiservice.CKRequestData].(*PostMessageRequest)
 	personID := requestCache[apiservice.CKPersonID].(int64)
@@ -94,7 +94,7 @@ func (h *handler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.
 
 	people, err := h.dataAPI.GetPeople([]int64{personID})
 	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 	person := people[personID]
@@ -107,7 +107,7 @@ func (h *handler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.
 
 	account := apiservice.MustCtxAccount(ctx)
 	if err := CreateMessageAndAttachments(msg, req.Attachments, personID, doctorID, account.Role, h.dataAPI); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
