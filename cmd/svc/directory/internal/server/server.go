@@ -1031,8 +1031,11 @@ func (s *server) UpdateProfile(ctx context.Context, rd *directory.UpdateProfileR
 		if rd.ImageMediaID != "" {
 			imageMediaID = &rd.ImageMediaID
 		}
+
 		_, err := dl.UpdateEntity(entID, &dal.EntityUpdate{
-			CustomDisplayName: ptr.String(rd.Profile.DisplayName),
+			CustomDisplayName: &rd.Profile.DisplayName,
+			FirstName:         &rd.Profile.FirstName,
+			LastName:          &rd.Profile.LastName,
 			HasProfile:        ptr.Bool(true),
 			ImageMediaID:      imageMediaID,
 		})

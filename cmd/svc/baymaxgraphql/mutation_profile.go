@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"golang.org/x/net/context"
 
@@ -40,6 +41,8 @@ type createEntityProfileInput struct {
 	ClientMutationID string                 `gql:"clientMutationId"`
 	EntityID         string                 `gql:"entityID,nonempty"`
 	DisplayName      string                 `gql:"displayName,nonempty"`
+	FirstName        string                 `gql:"firstName,nonempty"`
+	LastName         string                 `gql:"lastName,nonempty"`
 	ImageMediaID     string                 `gql:"imageMediaID"`
 	Sections         []*profileSectionInput `gql:"sections,nonempty"`
 }
@@ -51,6 +54,8 @@ var createEntityProfileInputType = graphql.NewInputObject(
 			"clientMutationId": newClientMutationIDInputField(),
 			"entityID":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
 			"displayName":      &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"firstName":        &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"lastName":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 			"imageMediaID":     &graphql.InputObjectFieldConfig{Type: graphql.String},
 			"sections":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.NewList(profileSectionInputType))},
 		},
@@ -67,7 +72,10 @@ type createEntityProfileOutput struct {
 }
 
 const (
-	profileErrorCodeInvalidMediaID = "INVALID_MEDIA_ID"
+	profileErrorCodeInvalidMediaID     = "INVALID_MEDIA_ID"
+	profileErrorCodeInvalidFirstName   = "INVALID_FIRST_NAME"
+	profileErrorCodeInvalidLastName    = "INVALID_LAST_NAME"
+	profileErrorCodeInvalidDisplayName = "INVALID_DISPLAY_NAME"
 )
 
 var createEntityProfileErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
@@ -76,6 +84,18 @@ var createEntityProfileErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
 		profileErrorCodeInvalidMediaID: &graphql.EnumValueConfig{
 			Value:       profileErrorCodeInvalidMediaID,
 			Description: "The provided media id is not valid.",
+		},
+		profileErrorCodeInvalidFirstName: &graphql.EnumValueConfig{
+			Value:       profileErrorCodeInvalidFirstName,
+			Description: "The provided first name is not valid.",
+		},
+		profileErrorCodeInvalidLastName: &graphql.EnumValueConfig{
+			Value:       profileErrorCodeInvalidLastName,
+			Description: "The provided last name is not valid.",
+		},
+		profileErrorCodeInvalidDisplayName: &graphql.EnumValueConfig{
+			Value:       profileErrorCodeInvalidDisplayName,
+			Description: "The provided display name is not valid.",
 		},
 	},
 })
@@ -134,7 +154,48 @@ var createEntityProfileMutation = &graphql.Field{
 				}
 			}
 
-			dent, err := updateProfile(ctx, ram, "", in.EntityID, in.ImageMediaID, in.DisplayName, in.Sections)
+			if strings.TrimSpace(in.FirstName) == "" {
+				return &createEntityProfileOutput{
+					Success:          false,
+					ClientMutationID: in.ClientMutationID,
+					ErrorCode:        profileErrorCodeInvalidFirstName,
+					ErrorMessage:     "Please specify a first name.",
+				}, nil
+			}
+
+			if strings.TrimSpace(in.LastName) == "" {
+				return &createEntityProfileOutput{
+					Success:          false,
+					ClientMutationID: in.ClientMutationID,
+					ErrorCode:        profileErrorCodeInvalidLastName,
+					ErrorMessage:     "Please specify a last name.",
+				}, nil
+			}
+
+			if strings.TrimSpace(in.DisplayName) == "" {
+				return &createEntityProfileOutput{
+					Success:          false,
+					ClientMutationID: in.ClientMutationID,
+					ErrorCode:        profileErrorCodeInvalidDisplayName,
+					ErrorMessage:     "Please specify a display name.",
+				}, nil
+			}
+
+			sections := make([]*directory.ProfileSection, len(in.Sections))
+			for i, s := range in.Sections {
+				sections[i] = &directory.ProfileSection{
+					Title: s.Title,
+					Body:  s.Body,
+				}
+			}
+
+			dent, err := updateProfile(ctx, ram, "", in.ImageMediaID, &directory.Profile{
+				EntityID:    in.EntityID,
+				DisplayName: in.DisplayName,
+				FirstName:   in.FirstName,
+				LastName:    in.LastName,
+				Sections:    sections,
+			})
 			if lerrors.Cause(err) == raccess.ErrNotFound {
 				return nil, errors.ErrNotFound(ctx, fmt.Sprintf("Resource for profile creation for %s", in.EntityID))
 			} else if err != nil {
@@ -191,6 +252,18 @@ var createOrganizationProfileErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
 			Value:       profileErrorCodeInvalidMediaID,
 			Description: "The provided media id is not valid.",
 		},
+		profileErrorCodeInvalidFirstName: &graphql.EnumValueConfig{
+			Value:       profileErrorCodeInvalidFirstName,
+			Description: "The provided first name is not valid.",
+		},
+		profileErrorCodeInvalidLastName: &graphql.EnumValueConfig{
+			Value:       profileErrorCodeInvalidLastName,
+			Description: "The provided last name is not valid.",
+		},
+		profileErrorCodeInvalidDisplayName: &graphql.EnumValueConfig{
+			Value:       profileErrorCodeInvalidDisplayName,
+			Description: "The provided display name is not valid.",
+		},
 	},
 })
 
@@ -234,6 +307,15 @@ var createOrganizationProfileMutation = &graphql.Field{
 				return nil, errors.InternalError(ctx, err)
 			}
 
+			if strings.TrimSpace(in.DisplayName) == "" {
+				return &createOrganizationProfileOutput{
+					Success:          false,
+					ClientMutationID: in.ClientMutationID,
+					ErrorCode:        profileErrorCodeInvalidDisplayName,
+					ErrorMessage:     "Please specify a display name.",
+				}, nil
+			}
+
 			// Check that our media ID is valid
 			if in.ImageMediaID != "" {
 				if _, err := ram.MediaInfo(ctx, in.ImageMediaID); lerrors.Cause(err) == raccess.ErrNotFound {
@@ -247,8 +329,18 @@ var createOrganizationProfileMutation = &graphql.Field{
 					return nil, errors.InternalError(ctx, err)
 				}
 			}
-
-			dorg, err := updateProfile(ctx, ram, "", in.OrganizationID, in.ImageMediaID, in.DisplayName, in.Sections)
+			sections := make([]*directory.ProfileSection, len(in.Sections))
+			for i, s := range in.Sections {
+				sections[i] = &directory.ProfileSection{
+					Title: s.Title,
+					Body:  s.Body,
+				}
+			}
+			dorg, err := updateProfile(ctx, ram, "", in.ImageMediaID, &directory.Profile{
+				EntityID:    in.OrganizationID,
+				DisplayName: in.DisplayName,
+				Sections:    sections,
+			})
 			if lerrors.Cause(err) == raccess.ErrNotFound {
 				return nil, errors.ErrNotFound(ctx, fmt.Sprintf("Resource for profile creation for %s", in.OrganizationID))
 			} else if err != nil {
@@ -272,6 +364,8 @@ type updateEntityProfileInput struct {
 	ClientMutationID string                 `gql:"clientMutationId"`
 	ProfileID        string                 `gql:"profileID,nonempty"`
 	DisplayName      string                 `gql:"displayName,nonempty"`
+	FirstName        string                 `gql:"firstName,nonempty"`
+	LastName         string                 `gql:"lastName,nonempty"`
 	ImageMediaID     string                 `gql:"imageMediaID"`
 	Sections         []*profileSectionInput `gql:"sections,nonempty"`
 }
@@ -304,6 +398,18 @@ var updateEntityProfileErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
 		profileErrorCodeInvalidMediaID: &graphql.EnumValueConfig{
 			Value:       profileErrorCodeInvalidMediaID,
 			Description: "The provided media id is not valid.",
+		},
+		profileErrorCodeInvalidFirstName: &graphql.EnumValueConfig{
+			Value:       profileErrorCodeInvalidFirstName,
+			Description: "The provided first name is not valid.",
+		},
+		profileErrorCodeInvalidLastName: &graphql.EnumValueConfig{
+			Value:       profileErrorCodeInvalidLastName,
+			Description: "The provided last name is not valid.",
+		},
+		profileErrorCodeInvalidDisplayName: &graphql.EnumValueConfig{
+			Value:       profileErrorCodeInvalidDisplayName,
+			Description: "The provided display name is not valid.",
 		},
 	},
 })
@@ -346,6 +452,33 @@ var updateEntityProfileMutation = &graphql.Field{
 				return nil, errors.InternalError(ctx, err)
 			}
 
+			if strings.TrimSpace(in.FirstName) == "" {
+				return &updateEntityProfileOutput{
+					Success:          false,
+					ClientMutationID: in.ClientMutationID,
+					ErrorCode:        profileErrorCodeInvalidFirstName,
+					ErrorMessage:     "Please specify a first name.",
+				}, nil
+			}
+
+			if strings.TrimSpace(in.LastName) == "" {
+				return &updateEntityProfileOutput{
+					Success:          false,
+					ClientMutationID: in.ClientMutationID,
+					ErrorCode:        profileErrorCodeInvalidLastName,
+					ErrorMessage:     "Please specify a last name.",
+				}, nil
+			}
+
+			if strings.TrimSpace(in.DisplayName) == "" {
+				return &updateEntityProfileOutput{
+					Success:          false,
+					ClientMutationID: in.ClientMutationID,
+					ErrorCode:        profileErrorCodeInvalidDisplayName,
+					ErrorMessage:     "Please specify a display name.",
+				}, nil
+			}
+
 			// Check that our media ID is valid
 			if in.ImageMediaID != "" {
 				if _, err := ram.MediaInfo(ctx, in.ImageMediaID); lerrors.Cause(err) == raccess.ErrNotFound {
@@ -360,7 +493,19 @@ var updateEntityProfileMutation = &graphql.Field{
 				}
 			}
 
-			dent, err := updateProfile(ctx, ram, in.ProfileID, "", in.ImageMediaID, in.DisplayName, in.Sections)
+			sections := make([]*directory.ProfileSection, len(in.Sections))
+			for i, s := range in.Sections {
+				sections[i] = &directory.ProfileSection{
+					Title: s.Title,
+					Body:  s.Body,
+				}
+			}
+			dent, err := updateProfile(ctx, ram, in.ProfileID, in.ImageMediaID, &directory.Profile{
+				DisplayName: in.DisplayName,
+				FirstName:   in.FirstName,
+				LastName:    in.LastName,
+				Sections:    sections,
+			})
 			if lerrors.Cause(err) == raccess.ErrNotFound {
 				return nil, errors.ErrNotFound(ctx, fmt.Sprintf("Resource for profile update %s", in.ProfileID))
 			} else if err != nil {
@@ -417,6 +562,18 @@ var updateOrganizationProfileErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
 			Value:       profileErrorCodeInvalidMediaID,
 			Description: "The provided media id is not valid.",
 		},
+		profileErrorCodeInvalidFirstName: &graphql.EnumValueConfig{
+			Value:       profileErrorCodeInvalidFirstName,
+			Description: "The provided first name is not valid.",
+		},
+		profileErrorCodeInvalidLastName: &graphql.EnumValueConfig{
+			Value:       profileErrorCodeInvalidLastName,
+			Description: "The provided last name is not valid.",
+		},
+		profileErrorCodeInvalidDisplayName: &graphql.EnumValueConfig{
+			Value:       profileErrorCodeInvalidDisplayName,
+			Description: "The provided display name is not valid.",
+		},
 	},
 })
 
@@ -458,6 +615,15 @@ var updateOrganizationProfileMutation = &graphql.Field{
 				return nil, errors.InternalError(ctx, err)
 			}
 
+			if strings.TrimSpace(in.DisplayName) == "" {
+				return &updateOrganizationProfileOutput{
+					Success:          false,
+					ClientMutationID: in.ClientMutationID,
+					ErrorCode:        profileErrorCodeInvalidDisplayName,
+					ErrorMessage:     "Please specify a display name.",
+				}, nil
+			}
+
 			if in.ImageMediaID != "" {
 				// Check that our media ID is valid
 				if _, err := ram.MediaInfo(ctx, in.ImageMediaID); lerrors.Cause(err) == raccess.ErrNotFound {
@@ -472,7 +638,17 @@ var updateOrganizationProfileMutation = &graphql.Field{
 				}
 			}
 
-			dorg, err := updateProfile(ctx, ram, in.ProfileID, "", in.ImageMediaID, in.DisplayName, in.Sections)
+			sections := make([]*directory.ProfileSection, len(in.Sections))
+			for i, s := range in.Sections {
+				sections[i] = &directory.ProfileSection{
+					Title: s.Title,
+					Body:  s.Body,
+				}
+			}
+			dorg, err := updateProfile(ctx, ram, in.ProfileID, in.ImageMediaID, &directory.Profile{
+				DisplayName: in.DisplayName,
+				Sections:    sections,
+			})
 			if lerrors.Cause(err) == raccess.ErrNotFound {
 				return nil, errors.ErrNotFound(ctx, fmt.Sprintf("Resource for profile update %s", in.ProfileID))
 			} else if err != nil {
@@ -491,17 +667,14 @@ var updateOrganizationProfileMutation = &graphql.Field{
 		})),
 }
 
-func updateProfile(ctx context.Context, ram raccess.ResourceAccessor, profileID, entityID, imageMediaID, customDisplayName string, psis []*profileSectionInput) (*directory.Entity, error) {
-	sections := make([]*directory.ProfileSection, len(psis))
-	for i, s := range psis {
-		sections[i] = &directory.ProfileSection{
-			Title: s.Title,
-			Body:  s.Body,
-		}
-	}
+func updateProfile(
+	ctx context.Context,
+	ram raccess.ResourceAccessor,
+	profileID, imageMediaID string,
+	profileUpdate *directory.Profile) (*directory.Entity, error) {
 
 	if imageMediaID != "" {
-		if entityID == "" {
+		if profileUpdate.EntityID == "" {
 			profile, err := ram.Profile(ctx, &directory.ProfileRequest{
 				LookupKeyType: directory.ProfileRequest_PROFILE_ID,
 				LookupKeyOneof: &directory.ProfileRequest_ProfileID{
@@ -511,12 +684,12 @@ func updateProfile(ctx context.Context, ram raccess.ResourceAccessor, profileID,
 			if err != nil {
 				return nil, err
 			}
-			entityID = profile.EntityID
+			profileUpdate.EntityID = profile.EntityID
 		}
 		entity, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
 			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
 			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-				EntityID: entityID,
+				EntityID: profileUpdate.EntityID,
 			},
 			RequestedInformation: &directory.RequestedInformation{
 				EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
@@ -525,7 +698,7 @@ func updateProfile(ctx context.Context, ram raccess.ResourceAccessor, profileID,
 		if err != nil {
 			return nil, err
 		}
-		organizationID := entityID
+		organizationID := profileUpdate.EntityID
 		if entity.Type != directory.EntityType_ORGANIZATION {
 			organizationID = ""
 			// for now assume we only belong to 1 org
@@ -548,17 +721,13 @@ func updateProfile(ctx context.Context, ram raccess.ResourceAccessor, profileID,
 		}
 	}
 
-	profile, err := ram.UpdateProfile(ctx, &directory.UpdateProfileRequest{
+	updatedProfile, err := ram.UpdateProfile(ctx, &directory.UpdateProfileRequest{
 		ProfileID:    profileID,
 		ImageMediaID: imageMediaID,
-		Profile: &directory.Profile{
-			EntityID:    entityID,
-			DisplayName: customDisplayName,
-			Sections:    sections,
-		},
+		Profile:      profileUpdate,
 	})
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	return profile.Entity, nil
+	return updatedProfile.Entity, nil
 }

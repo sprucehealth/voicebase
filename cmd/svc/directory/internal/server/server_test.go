@@ -1482,6 +1482,8 @@ func TestUpdateProfile(t *testing.T) {
 				}).WithReturns(profileID, nil))
 				mDAL.Expect(mock.NewExpectation(mDAL.UpdateEntity, entityID, &dal.EntityUpdate{
 					CustomDisplayName: ptr.String("New display name"),
+					FirstName:         ptr.String(""),
+					LastName:          ptr.String(""),
 					HasProfile:        ptr.Bool(true),
 				}))
 				mDAL.Expect(mock.NewExpectation(mDAL.EntityProfile, profileID).WithReturns(&dal.EntityProfile{
@@ -1514,6 +1516,8 @@ func TestUpdateProfile(t *testing.T) {
 			request: &directory.UpdateProfileRequest{
 				Profile: &directory.Profile{
 					DisplayName: "New display name",
+					FirstName:   "FirstName",
+					LastName:    "LastName",
 					EntityID:    entityID.String(),
 					Sections:    []*directory.ProfileSection{},
 				},
@@ -1528,6 +1532,8 @@ func TestUpdateProfile(t *testing.T) {
 				}).WithReturns(profileID, nil))
 				mDAL.Expect(mock.NewExpectation(mDAL.UpdateEntity, entityID, &dal.EntityUpdate{
 					CustomDisplayName: ptr.String("New display name"),
+					FirstName:         ptr.String("FirstName"),
+					LastName:          ptr.String("LastName"),
 					HasProfile:        ptr.Bool(true),
 				}))
 				mDAL.Expect(mock.NewExpectation(mDAL.EntityProfile, profileID).WithReturns(&dal.EntityProfile{
@@ -1581,6 +1587,8 @@ func TestUpdateProfile(t *testing.T) {
 				mDAL.Expect(mock.NewExpectation(mDAL.UpdateEntity, entityID, &dal.EntityUpdate{
 					CustomDisplayName: ptr.String("New display name"),
 					HasProfile:        ptr.Bool(true),
+					FirstName:         ptr.String(""),
+					LastName:          ptr.String(""),
 				}))
 				mDAL.Expect(mock.NewExpectation(mDAL.EntityProfile, profileID).WithReturns(&dal.EntityProfile{
 					ID:       profileID,
@@ -1634,6 +1642,8 @@ func TestUpdateProfile(t *testing.T) {
 				mDAL.Expect(mock.NewExpectation(mDAL.UpdateEntity, entityID, &dal.EntityUpdate{
 					CustomDisplayName: ptr.String("New display name"),
 					HasProfile:        ptr.Bool(true),
+					FirstName:         ptr.String(""),
+					LastName:          ptr.String(""),
 					ImageMediaID:      ptr.String("imageMediaID"),
 				}))
 				mDAL.Expect(mock.NewExpectation(mDAL.EntityProfile, profileID).WithReturns(&dal.EntityProfile{

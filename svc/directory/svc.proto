@@ -88,6 +88,8 @@ message Profile {
 	string display_name = 3;
 	repeated ProfileSection sections = 4;
 	uint64 last_modified_timestamp = 5;
+	string first_name = 6;
+	string last_name = 7;
 }
 
 message ProfileSection {
