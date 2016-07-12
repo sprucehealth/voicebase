@@ -47,7 +47,7 @@ var textInviteLinkInputType = graphql.NewInputObject(
 		Fields: graphql.InputObjectConfigFieldMap{
 			"clientMutationId": newClientMutationIDInputField(),
 			"token":            &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-			"phoneNumber":      &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"phoneNumber":      &graphql.InputObjectFieldConfig{Type: graphql.String},
 		},
 	},
 )
