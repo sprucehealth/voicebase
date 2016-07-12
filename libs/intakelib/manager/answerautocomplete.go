@@ -182,7 +182,7 @@ func (a *autocompleteAnswer) transformForClient() (interface{}, error) {
 						return nil, err
 					}
 
-					clientJSON.Items[i].Subanswers[sqItem.id()] = subanswerData
+					clientJSON.Items[i].Subanswers[sanitizeQuestionID(sqItem.id())] = subanswerData
 				}
 			}
 		}

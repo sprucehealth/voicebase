@@ -304,7 +304,7 @@ func (m *QuestionData) GetData() []byte {
 	return nil
 }
 
-// ClientAnswerData represents a typed, serialized version of the
+// ClientAnswerData represents a t  yped, serialized version of the
 // answer payload for the client to upload. The goal is for the client
 // to treat the payloud as an opaque object that can directly be uploaded
 // to the appropriate endpoint.
@@ -625,9 +625,12 @@ type AutocompleteQuestion struct {
 	SaveButtonText *string `protobuf:"bytes,5,opt,name=save_button_text" json:"save_button_text,omitempty"`
 	// placeholder_text represents the text to display when the searchbox
 	// is empty.
-	PlaceholderText  *string                    `protobuf:"bytes,6,opt,name=placeholder_text" json:"placeholder_text,omitempty"`
-	PatientAnswer    *AutocompletePatientAnswer `protobuf:"bytes,7,opt,name=patient_answer" json:"patient_answer,omitempty"`
-	XXX_unrecognized []byte                     `json:"-"`
+	PlaceholderText *string                    `protobuf:"bytes,6,opt,name=placeholder_text" json:"placeholder_text,omitempty"`
+	PatientAnswer   *AutocompletePatientAnswer `protobuf:"bytes,7,opt,name=patient_answer" json:"patient_answer,omitempty"`
+	// params are used by client to query autocomplete
+	// data from the server
+	Params           map[string]string `protobuf:"bytes,8,rep,name=params" json:"params,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	XXX_unrecognized []byte            `json:"-"`
 }
 
 func (m *AutocompleteQuestion) Reset()         { *m = AutocompleteQuestion{} }
@@ -679,6 +682,13 @@ func (m *AutocompleteQuestion) GetPlaceholderText() string {
 func (m *AutocompleteQuestion) GetPatientAnswer() *AutocompletePatientAnswer {
 	if m != nil {
 		return m.PatientAnswer
+	}
+	return nil
+}
+
+func (m *AutocompleteQuestion) GetParams() map[string]string {
+	if m != nil {
+		return m.Params
 	}
 	return nil
 }

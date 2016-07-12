@@ -204,7 +204,7 @@ func (m *multipleChoiceAnswer) transformForClient() (interface{}, error) {
 						return nil, err
 					}
 
-					clientJSON.PotentialAnswers[i].Subanswers[sqItem.id()] = subanswerData
+					clientJSON.PotentialAnswers[i].Subanswers[sanitizeQuestionID(sqItem.id())] = subanswerData
 				}
 			}
 		}

@@ -2,20 +2,21 @@ package manager
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 
 	"github.com/gogo/protobuf/proto"
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/intakelib/protobuf/intake"
 )
 
 type autocompleteQuestion struct {
 	*questionInfo
-	AddText             string `json:"add_text"`
-	RemoveButtonText    string `json:"remove_button_text"`
-	SaveButtonText      string `json:"save_button_text"`
-	AddButtonText       string `json:"add_button_text"`
-	PlaceholderText     string `json:"placeholder_text"`
+	AddText             string            `json:"add_text"`
+	RemoveButtonText    string            `json:"remove_button_text"`
+	SaveButtonText      string            `json:"save_button_text"`
+	AddButtonText       string            `json:"add_button_text"`
+	PlaceholderText     string            `json:"placeholder_text"`
+	AutocompleteParams  map[string]string `json:"autocomplete_params"`
 	subquestionsManager *subquestionsManager
 
 	answer *autocompleteAnswer
@@ -29,6 +30,14 @@ func (a *autocompleteQuestion) staticInfoCopy(context map[string]string) interfa
 		SaveButtonText:   a.SaveButtonText,
 		AddButtonText:    a.AddButtonText,
 		PlaceholderText:  a.PlaceholderText,
+	}
+
+	if len(a.AutocompleteParams) > 0 {
+		aCopy.AutocompleteParams = make(map[string]string, len(a.AutocompleteParams))
+	}
+
+	for key, value := range a.AutocompleteParams {
+		aCopy.AutocompleteParams[key] = value
 	}
 
 	if a.subquestionsManager != nil {
@@ -54,6 +63,16 @@ func (a *autocompleteQuestion) unmarshalMapFromClient(data dataMap, parent layou
 		a.SaveButtonText = clientData.mustGetString("save_button_text")
 		a.AddButtonText = clientData.mustGetString("add_button_text")
 		a.PlaceholderText = clientData.mustGetString("placeholder_text")
+		if clientData.exists("autocomplete_params") {
+			autocompleteParamsMap, err := getDataMap(clientData.get("autocomplete_params"))
+			if err != nil {
+				return errors.Trace(fmt.Errorf("Unable to get autocomplete_params map for %s", a.questionInfo.ID))
+			}
+			a.AutocompleteParams = make(map[string]string, len(autocompleteParamsMap))
+			for key, value := range autocompleteParamsMap {
+				a.AutocompleteParams[key] = value.(string)
+			}
+		}
 	}
 
 	answer := dataSource.answerForQuestion(a.id())
@@ -186,6 +205,7 @@ func (a *autocompleteQuestion) transformToProtobuf() (proto.Message, error) {
 		AddButtonText:    proto.String(a.AddButtonText),
 		AddText:          proto.String(a.AddText),
 		RemoveButtonText: proto.String(a.RemoveButtonText),
+		Params:           a.AutocompleteParams,
 		PatientAnswer:    autocompletePatientAnswer,
 	}, nil
 }

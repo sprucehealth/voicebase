@@ -22,7 +22,7 @@ package intake;
  }
 
 
-// ClientAnswerData represents a typed, serialized version of the
+// ClientAnswerData represents a t  yped, serialized version of the
 // answer payload for the client to upload. The goal is for the client
 // to treat the payloud as an opaque object that can directly be uploaded
 // to the appropriate endpoint.
@@ -163,6 +163,10 @@ message CommonQuestionInfo {
  	optional string placeholder_text = 6;
 
  	optional AutocompletePatientAnswer patient_answer = 7;
+
+  // params are used by client to query autocomplete
+  // data from the server
+  map<string,string> params = 8;
  }
 
 // MediaSectionQuestion represents a question for the user
