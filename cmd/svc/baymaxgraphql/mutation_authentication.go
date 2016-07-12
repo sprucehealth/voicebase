@@ -497,12 +497,14 @@ var unauthenticateMutation = &graphql.Field{
 		ctx := p.Context
 
 		var in unauthenticateInput
-		if err := gqldecode.Decode(p.Args["input"].(map[string]interface{}), &in); err != nil {
-			switch err := err.(type) {
-			case gqldecode.ErrValidationFailed:
-				return nil, gqlerrors.FormatError(fmt.Errorf("%s is invalid: %s", err.Field, err.Reason))
+		if p.Args["input"] != nil {
+			if err := gqldecode.Decode(p.Args["input"].(map[string]interface{}), &in); err != nil {
+				switch err := err.(type) {
+				case gqldecode.ErrValidationFailed:
+					return nil, gqlerrors.FormatError(fmt.Errorf("%s is invalid: %s", err.Field, err.Reason))
+				}
+				return nil, errors.InternalError(ctx, err)
 			}
-			return nil, errors.InternalError(ctx, err)
 		}
 
 		token := gqlctx.AuthToken(ctx)
