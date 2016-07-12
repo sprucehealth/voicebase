@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"net/http"
 
+	"context"
+
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/gqlintrospect"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/graphql"
-	"golang.org/x/net/context"
 )
 
 // TODO: Libify this with the schema handler in baymaxgraphql

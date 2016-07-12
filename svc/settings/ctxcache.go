@@ -1,8 +1,9 @@
 package settings
 
 import (
+	"context"
+
 	"github.com/sprucehealth/backend/libs/conc"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 

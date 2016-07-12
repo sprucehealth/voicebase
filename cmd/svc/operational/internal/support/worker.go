@@ -7,6 +7,8 @@ import (
 	"text/template"
 	"time"
 
+	"context"
+
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/bml"
@@ -16,7 +18,6 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/operational"
 	"github.com/sprucehealth/backend/svc/threading"
-	"golang.org/x/net/context"
 )
 
 var (

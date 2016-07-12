@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"time"
 
+	"context"
+
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
@@ -13,7 +15,6 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/twilio/twiml"
-	"golang.org/x/net/context"
 )
 
 type twilioSMSHandler struct {

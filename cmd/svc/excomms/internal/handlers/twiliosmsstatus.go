@@ -3,10 +3,11 @@ package handlers
 import (
 	"net/http"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/twilio"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"golang.org/x/net/context"
 )
 
 type twilioSMSStatusHandler struct {

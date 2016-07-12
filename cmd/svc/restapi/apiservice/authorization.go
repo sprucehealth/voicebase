@@ -3,8 +3,9 @@ package apiservice
 import (
 	"net/http"
 
+	"context"
+
 	"github.com/sprucehealth/backend/libs/httputil"
-	"golang.org/x/net/context"
 )
 
 // Authorized interface helps ensure that caller of every handler is authorized

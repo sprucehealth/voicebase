@@ -10,6 +10,8 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/proxynumber"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
 
+	"context"
+
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
@@ -17,7 +19,6 @@ import (
 	"github.com/sprucehealth/backend/libs/urlutil"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/settings"
-	"golang.org/x/net/context"
 )
 
 var (

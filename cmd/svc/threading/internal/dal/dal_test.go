@@ -5,11 +5,12 @@ import (
 	"testing"
 	"time"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/models"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testsql"
-	"golang.org/x/net/context"
 )
 
 const schemaGlob = "../../schema/*.sql"

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
@@ -9,7 +10,6 @@ import (
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/care"
-	"golang.org/x/net/context"
 )
 
 func TestSubmitVisitAnswers(t *testing.T) {

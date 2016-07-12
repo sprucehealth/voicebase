@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"context"
+
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/errors"
@@ -14,7 +16,6 @@ import (
 	"github.com/sprucehealth/backend/svc/operational"
 	"github.com/sprucehealth/backend/svc/threading"
 	threadingmock "github.com/sprucehealth/backend/svc/threading/mock"
-	"golang.org/x/net/context"
 )
 
 const (

@@ -6,12 +6,13 @@ import (
 	"net/http"
 	"strings"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common/config"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"golang.org/x/net/context"
 )
 
 type demoRequestAPIHandler struct {

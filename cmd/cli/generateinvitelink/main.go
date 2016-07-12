@@ -6,9 +6,10 @@ package main
 import (
 	"flag"
 
+	"context"
+
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/invite"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 

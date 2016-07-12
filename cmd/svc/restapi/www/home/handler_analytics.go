@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"context"
+
 	"github.com/cookieo9/resources-go"
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/boot"
@@ -16,7 +18,6 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"golang.org/x/net/context"
 )
 
 const (

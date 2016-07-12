@@ -5,9 +5,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"context"
+
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"golang.org/x/net/context"
 )
 
 type stubKeyedRateLimiter struct{}

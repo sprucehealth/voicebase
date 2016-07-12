@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"time"
 
+	"context"
+
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/deploy"
-	"golang.org/x/net/context"
 )
 
 type notificationWorker struct {

@@ -3,7 +3,7 @@ package service
 import (
 	"testing"
 
-	"golang.org/x/net/context"
+	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/dal"
 	mock_dl "github.com/sprucehealth/backend/cmd/svc/media/internal/dal/test"

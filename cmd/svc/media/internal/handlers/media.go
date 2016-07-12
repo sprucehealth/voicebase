@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/mime"
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/service"
@@ -14,7 +16,6 @@ import (
 	lmedia "github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/svc/media"
-	"golang.org/x/net/context"
 )
 
 type mediaHandler struct {

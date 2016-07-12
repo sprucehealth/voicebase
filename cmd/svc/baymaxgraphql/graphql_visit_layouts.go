@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"sort"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
@@ -10,7 +11,6 @@ import (
 	"github.com/sprucehealth/backend/svc/layout"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/graphql"
-	"golang.org/x/net/context"
 )
 
 var visitCategoryConnectionType = ConnectionDefinitions(ConnectionConfig{

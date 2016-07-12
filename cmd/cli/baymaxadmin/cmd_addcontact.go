@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"os"
 
+	"context"
+
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/directory"
-	"golang.org/x/net/context"
 )
 
 type addContactCmd struct {

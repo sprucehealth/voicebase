@@ -6,7 +6,7 @@ import (
 	"os"
 	"strconv"
 
-	"golang.org/x/net/context"
+	"context"
 
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/model"

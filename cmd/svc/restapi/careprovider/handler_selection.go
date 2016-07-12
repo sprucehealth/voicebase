@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"golang.org/x/net/context"
+	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"

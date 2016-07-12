@@ -3,12 +3,13 @@ package mock
 import (
 	"testing"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
-	"golang.org/x/net/context"
 )
 
 var _ dal.DAL = &mockDAL{}

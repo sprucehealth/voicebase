@@ -9,9 +9,10 @@ import (
 	"text/tabwriter"
 	"time"
 
+	"context"
+
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/threading"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )

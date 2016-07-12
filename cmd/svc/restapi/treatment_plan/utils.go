@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/app_url"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -14,7 +16,6 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/views"
-	"golang.org/x/net/context"
 )
 
 func populateTreatmentPlan(dataAPI api.DataAPI, treatmentPlan *common.TreatmentPlan) error {

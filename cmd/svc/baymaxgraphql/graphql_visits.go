@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
@@ -11,7 +13,6 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/layout"
 	"github.com/sprucehealth/graphql"
-	"golang.org/x/net/context"
 )
 
 const (

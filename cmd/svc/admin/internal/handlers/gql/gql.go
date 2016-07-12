@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strings"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/gql/query"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -13,7 +15,6 @@ import (
 	"github.com/sprucehealth/graphql/gqlerrors"
 	"github.com/sprucehealth/graphql/language/parser"
 	"github.com/sprucehealth/graphql/language/source"
-	"golang.org/x/net/context"
 )
 
 // TODO: Libify this aspect of the GQL stuff

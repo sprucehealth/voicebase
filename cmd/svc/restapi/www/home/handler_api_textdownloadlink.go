@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
@@ -11,7 +13,6 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/ratelimit"
-	"golang.org/x/net/context"
 )
 
 const referralBranchSource = "website"

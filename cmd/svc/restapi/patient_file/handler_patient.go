@@ -3,6 +3,8 @@ package patient_file
 import (
 	"net/http"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/restapi/address"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -11,7 +13,6 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/restapi/surescripts"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"golang.org/x/net/context"
 )
 
 type doctorPatientHandler struct {

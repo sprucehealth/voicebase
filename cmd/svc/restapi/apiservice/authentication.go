@@ -4,10 +4,11 @@ import (
 	"net/http"
 	"strconv"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"golang.org/x/net/context"
 )
 
 type tokenValidator interface {

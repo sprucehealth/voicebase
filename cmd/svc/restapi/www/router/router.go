@@ -7,6 +7,8 @@ import (
 	stdhttputil "net/http/httputil"
 	"net/url"
 
+	"context"
+
 	resources "github.com/cookieo9/resources-go"
 	"github.com/samuel/go-librato/librato"
 	"github.com/samuel/go-metrics/metrics"
@@ -33,7 +35,6 @@ import (
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/libs/stripe"
-	"golang.org/x/net/context"
 )
 
 var robotsTXT = []byte(`Sitemap: https://www.sprucehealth.com/sitemap.xml

@@ -1,13 +1,13 @@
 package main
 
 import (
+	"context"
 	"testing"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/care"
-	"golang.org/x/net/context"
 )
 
 func TestMedicationSearchQuery(t *testing.T) {

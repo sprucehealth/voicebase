@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
@@ -17,7 +18,6 @@ import (
 	notificationmock "github.com/sprucehealth/backend/svc/notification/mock"
 	settingsmock "github.com/sprucehealth/backend/svc/settings/mock"
 	"github.com/sprucehealth/graphql"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 

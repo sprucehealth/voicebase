@@ -3,7 +3,7 @@ package cache
 import (
 	"testing"
 
-	"golang.org/x/net/context"
+	"context"
 
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"

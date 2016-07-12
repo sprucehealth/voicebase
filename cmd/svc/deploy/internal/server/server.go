@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"strconv"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/deploy/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/deploy/internal/deployment"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/svc/deploy"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )

@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strings"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/app_url"
@@ -12,7 +14,6 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/restapi/erx"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/views"
-	"golang.org/x/net/context"
 )
 
 var footerText = `This prescription guide covers only common use and is not meant to be a complete listing of drug information. If you are experiencing concerning symptoms, seek medical attention immediately.

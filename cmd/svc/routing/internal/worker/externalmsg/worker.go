@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"context"
+
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/aws/aws-sdk-go/service/sqs"
@@ -26,7 +28,6 @@ import (
 	"github.com/sprucehealth/backend/svc/operational"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )

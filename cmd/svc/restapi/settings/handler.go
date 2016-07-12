@@ -3,11 +3,12 @@ package settings
 import (
 	"net/http"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common/config"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"golang.org/x/net/context"
 )
 
 type handler struct {

@@ -6,9 +6,10 @@ import (
 	"sort"
 	"testing"
 
+	"context"
+
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/libs/test"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 

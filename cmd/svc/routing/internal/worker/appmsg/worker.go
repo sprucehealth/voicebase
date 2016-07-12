@@ -8,6 +8,8 @@ import (
 
 	"google.golang.org/grpc"
 
+	"context"
+
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 	rsettings "github.com/sprucehealth/backend/cmd/svc/routing/internal/settings"
@@ -21,7 +23,6 @@ import (
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
-	"golang.org/x/net/context"
 )
 
 type appMessageWorker struct {

@@ -4,7 +4,7 @@ package conc
 import (
 	"time"
 
-	"golang.org/x/net/context"
+	"context"
 )
 
 // Testing should be set to true when running tests for code that use this package.

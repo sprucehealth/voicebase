@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	dalmock "github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal/mock"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
@@ -20,7 +22,6 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	directorymock "github.com/sprucehealth/backend/svc/directory/mock"
 	"github.com/sprucehealth/backend/svc/excomms"
-	"golang.org/x/net/context"
 )
 
 func TestOutgoing_Process(t *testing.T) {

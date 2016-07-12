@@ -3,12 +3,13 @@ package treatment_plan
 import (
 	"net/http"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/views"
-	"golang.org/x/net/context"
 )
 
 type treatmentsHandler struct {

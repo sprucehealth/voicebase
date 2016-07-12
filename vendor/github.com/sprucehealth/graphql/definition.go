@@ -9,7 +9,7 @@ import (
 
 	"github.com/sprucehealth/graphql/gqlerrors"
 	"github.com/sprucehealth/graphql/language/ast"
-	"golang.org/x/net/context"
+	"context"
 )
 
 // These are all of the possible kinds of

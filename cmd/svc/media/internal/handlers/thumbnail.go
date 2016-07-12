@@ -13,7 +13,7 @@ import (
 	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/mux"
 
-	"golang.org/x/net/context"
+	"context"
 )
 
 type thumbnailHandler struct {

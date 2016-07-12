@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
@@ -21,7 +23,6 @@ import (
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/schema"
-	"golang.org/x/net/context"
 )
 
 var (

@@ -4,13 +4,14 @@ import (
 	"errors"
 	"net/http"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/mediactx"
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/service"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
-	"golang.org/x/net/context"
 )
 
 type authorizationHandler struct {

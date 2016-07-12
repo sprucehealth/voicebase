@@ -8,11 +8,12 @@ import (
 	"testing"
 	"time"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/test"
-	"golang.org/x/net/context"
 )
 
 type mockDataAPI_PreSubmissionTriageHandler struct {

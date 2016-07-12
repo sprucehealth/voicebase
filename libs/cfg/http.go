@@ -3,8 +3,9 @@ package cfg
 import (
 	"net/http"
 
+	"context"
+
 	"github.com/sprucehealth/backend/libs/httputil"
-	"golang.org/x/net/context"
 )
 
 // contextKeyType creates a unique type to be used in the request context

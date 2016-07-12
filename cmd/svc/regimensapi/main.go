@@ -12,6 +12,8 @@ import (
 	"sync"
 	"time"
 
+	"context"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
@@ -43,7 +45,6 @@ import (
 	"github.com/sprucehealth/backend/libs/storage"
 	iproducts "github.com/sprucehealth/backend/svc/products"
 	"github.com/sprucehealth/go-proxy-protocol/proxyproto"
-	"golang.org/x/net/context"
 )
 
 const (

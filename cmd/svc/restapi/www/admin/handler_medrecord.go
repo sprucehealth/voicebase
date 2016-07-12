@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"time"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/diagnosis"
@@ -11,7 +13,6 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/restapi/medrecord"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/sig"
-	"golang.org/x/net/context"
 )
 
 type medicalRecordHandler struct {

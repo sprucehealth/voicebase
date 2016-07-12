@@ -3,7 +3,7 @@ package httputil
 import (
 	"net/http"
 
-	"golang.org/x/net/context"
+	"context"
 )
 
 // ContextHandler is a version of http.Handler that also takes a net/context.Context

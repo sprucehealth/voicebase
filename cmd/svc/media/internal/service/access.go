@@ -3,13 +3,14 @@ package service
 import (
 	"fmt"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/dal"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
-	"golang.org/x/net/context"
 )
 
 func (s *service) CanAccess(ctx context.Context, mediaID dal.MediaID, accountID string) error {

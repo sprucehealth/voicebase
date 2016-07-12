@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/app_url"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
@@ -13,7 +15,6 @@ import (
 	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/storage"
-	"golang.org/x/net/context"
 )
 
 type providerProfileImageAPIHandler struct {

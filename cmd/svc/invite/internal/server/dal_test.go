@@ -3,10 +3,11 @@ package server
 import (
 	"testing"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/invite/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/invite/internal/models"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
-	"golang.org/x/net/context"
 )
 
 // Build time check for matching against the interface

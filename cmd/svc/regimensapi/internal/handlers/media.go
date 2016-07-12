@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"time"
 
+	"context"
+
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/mediautils"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/responses"
@@ -17,7 +19,6 @@ import (
 	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/schema"
-	"golang.org/x/net/context"
 )
 
 const (

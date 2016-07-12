@@ -7,8 +7,9 @@ import (
 	"fmt"
 	"os"
 
+	"context"
+
 	"github.com/sprucehealth/backend/svc/settings"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )

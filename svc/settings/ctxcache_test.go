@@ -3,8 +3,9 @@ package settings
 import (
 	"testing"
 
+	"context"
+
 	"github.com/sprucehealth/backend/libs/test"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 

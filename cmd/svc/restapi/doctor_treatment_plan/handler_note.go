@@ -3,7 +3,7 @@ package doctor_treatment_plan
 import (
 	"net/http"
 
-	"golang.org/x/net/context"
+	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"

@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"golang.org/x/net/context"
+	"context"
 )
 
 func TestFromToContextHandler(t *testing.T) {

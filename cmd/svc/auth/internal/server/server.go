@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/auth/internal/dal"
 	authSetting "github.com/sprucehealth/backend/cmd/svc/auth/internal/settings"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -23,7 +25,6 @@ import (
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/settings"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )

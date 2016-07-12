@@ -1,11 +1,11 @@
 package gqlctx
 
 import (
+	"context"
 	"testing"
 
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/svc/auth"
-	"golang.org/x/net/context"
 )
 
 func TestQuery(t *testing.T) {

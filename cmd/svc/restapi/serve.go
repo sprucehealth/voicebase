@@ -7,11 +7,12 @@ import (
 	"strings"
 	"time"
 
+	"context"
+
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/storage"
-	"golang.org/x/net/context"
 )
 
 // The local cert and key are only used when the Debug config
@@ -90,15 +91,20 @@ func serve(conf *mainConfig, stores storage.StoreMap, chand httputil.ContextHand
 	}
 
 	go func() {
-		// Make a copy of the server to avoid sharing internal state
-		// (currently there is none but it's safer not to assume that)
-		tlsServer := *server
-		tlsServer.Addr = conf.TLSListenAddr
-		tlsServer.TLSConfig = boot.TLSConfig()
-		tlsServer.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			r.Header.Set("X-Forwarded-Proto", "https")
-			hand.ServeHTTP(w, r)
-		})
+		tlsServer := &http.Server{
+			Addr: conf.TLSListenAddr,
+			// FIXME: 5 minute timeout is to allow for media uploads/downloads
+			// These long running requests should be handled separately instead of requiring
+			// the entire API to have such long timeouts.
+			ReadTimeout:    5 * time.Minute,
+			WriteTimeout:   5 * time.Minute,
+			MaxHeaderBytes: 1 << 20,
+			TLSConfig:      boot.TLSConfig(),
+			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				r.Header.Set("X-Forwarded-Proto", "https")
+				hand.ServeHTTP(w, r)
+			}),
+		}
 
 		var certs tls.Certificate
 
@@ -134,7 +140,7 @@ func serve(conf *mainConfig, stores storage.StoreMap, chand httputil.ContextHand
 		}
 
 		golog.Infof("Starting SSL server on %s...", tlsServer.Addr)
-		log.Fatal(boot.HTTPSListenAndServe(&tlsServer, conf.ProxyProtocol))
+		log.Fatal(boot.HTTPSListenAndServe(tlsServer, conf.ProxyProtocol))
 	}()
 
 	golog.Infof("Starting server on %s...", conf.ListenAddr)

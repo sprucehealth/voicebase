@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -24,7 +25,6 @@ import (
 	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
-	"golang.org/x/net/context"
 )
 
 func transformAccountToResponse(a *auth.Account) models.Account {

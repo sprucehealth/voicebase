@@ -1,6 +1,7 @@
 package errors
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -8,7 +9,6 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/test"
-	"golang.org/x/net/context"
 )
 
 func TestInternalError(t *testing.T) {

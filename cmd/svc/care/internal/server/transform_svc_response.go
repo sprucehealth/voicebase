@@ -3,7 +3,7 @@ package server
 import (
 	"fmt"
 
-	"golang.org/x/net/context"
+	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/models"
 	"github.com/sprucehealth/backend/libs/errors"

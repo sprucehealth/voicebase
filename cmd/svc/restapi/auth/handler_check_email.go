@@ -3,6 +3,8 @@ package auth
 import (
 	"net/http"
 
+	"context"
+
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -10,7 +12,6 @@ import (
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/ratelimit"
 	"github.com/sprucehealth/backend/libs/validate"
-	"golang.org/x/net/context"
 )
 
 type EmailChecker interface {

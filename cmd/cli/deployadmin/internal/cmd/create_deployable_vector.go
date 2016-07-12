@@ -9,9 +9,10 @@ import (
 	"strings"
 	"time"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/cli/deployadmin/internal/config"
 	"github.com/sprucehealth/backend/svc/deploy"
-	"golang.org/x/net/context"
 )
 
 type createDeployableVectorCmd struct {

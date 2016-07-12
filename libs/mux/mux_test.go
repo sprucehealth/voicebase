@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"testing"
 
-	"golang.org/x/net/context"
+	"context"
 )
 
 type routeTest struct {

@@ -7,6 +7,8 @@ import (
 	"io"
 	"time"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
 	"github.com/sprucehealth/backend/libs/bml"
@@ -18,7 +20,6 @@ import (
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/threading"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 )
 

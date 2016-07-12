@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"testing"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
@@ -9,7 +10,6 @@ import (
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/graphql"
-	"golang.org/x/net/context"
 )
 
 func TestForceUpgradeStatus(t *testing.T) {

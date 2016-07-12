@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"sort"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/restapi/address"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/app_url"
@@ -15,7 +17,6 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/restapi/responses"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/errors"
-	"golang.org/x/net/context"
 )
 
 type auxillaryHomeCard int

@@ -3,9 +3,10 @@ package devicectx
 import (
 	"testing"
 
+	"context"
+
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/test"
-	"golang.org/x/net/context"
 )
 
 func TestSpruceHeadersRoundTrip(t *testing.T) {

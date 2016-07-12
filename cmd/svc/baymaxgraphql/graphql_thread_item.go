@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
@@ -16,7 +17,6 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/graphql"
-	"golang.org/x/net/context"
 )
 
 var channelEnumType = graphql.NewEnum(

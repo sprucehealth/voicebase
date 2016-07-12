@@ -11,7 +11,7 @@ import (
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
 
-	"golang.org/x/net/context"
+	"context"
 )
 
 type feedbackTemplateHandler struct {

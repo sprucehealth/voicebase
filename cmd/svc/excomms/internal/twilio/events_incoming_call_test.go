@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"context"
+
 	dalmock "github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal/mock"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
@@ -24,7 +26,6 @@ import (
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/settings"
 	settingsmock "github.com/sprucehealth/backend/svc/settings/mock"
-	"golang.org/x/net/context"
 )
 
 func TestIncoming_Organization(t *testing.T) {

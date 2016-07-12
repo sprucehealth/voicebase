@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/segmentio/analytics-go"
@@ -17,7 +18,6 @@ import (
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
-	"golang.org/x/net/context"
 )
 
 type invitePatientsOutput struct {

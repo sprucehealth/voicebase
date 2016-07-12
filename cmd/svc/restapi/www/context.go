@@ -1,8 +1,9 @@
 package www
 
 import (
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
-	"golang.org/x/net/context"
 )
 
 type contextKey int

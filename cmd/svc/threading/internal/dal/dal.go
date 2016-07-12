@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"context"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/models"
 	"github.com/sprucehealth/backend/libs/dbutil"
@@ -14,7 +16,6 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/idgen"
 	"github.com/sprucehealth/backend/libs/transactional/tsql"
-	"golang.org/x/net/context"
 )
 
 const threadColumns = `t.id, t.organization_id, COALESCE(t.primary_entity_id, ''), t.last_message_timestamp, t.last_external_message_timestamp, t.last_message_summary, t.last_external_message_summary, t.last_primary_entity_endpoints, t.created, t.message_count, t.type, COALESCE(t.system_title, ''), COALESCE(t.user_title, '')`

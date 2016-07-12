@@ -3,9 +3,10 @@ package mock
 import (
 	"testing"
 
+	"context"
+
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/invite"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 

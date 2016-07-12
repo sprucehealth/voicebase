@@ -6,7 +6,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/invite/internal/dal"
 	"github.com/sprucehealth/backend/libs/mux"
 
-	"golang.org/x/net/context"
+	"context"
 )
 
 type orgCodeHandler struct {

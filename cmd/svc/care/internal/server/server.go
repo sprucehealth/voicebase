@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/client"
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/models"
@@ -21,7 +23,6 @@ import (
 	"github.com/sprucehealth/backend/svc/layout"
 	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/settings"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )

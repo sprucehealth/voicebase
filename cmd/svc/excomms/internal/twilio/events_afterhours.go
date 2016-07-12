@@ -6,6 +6,8 @@ import (
 	"net/url"
 	"time"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/sns"
@@ -17,7 +19,6 @@ import (
 	"github.com/sprucehealth/backend/libs/twilio/twiml"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/settings"
-	"golang.org/x/net/context"
 )
 
 // STEP: If after hours call triage, then prompt the patient with the binary phone tree

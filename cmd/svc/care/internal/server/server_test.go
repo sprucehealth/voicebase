@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"golang.org/x/net/context"
+	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/dal"
 	dalmock "github.com/sprucehealth/backend/cmd/svc/care/internal/dal/mock"

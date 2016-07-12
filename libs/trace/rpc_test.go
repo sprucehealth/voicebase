@@ -3,7 +3,7 @@ package trace
 import (
 	"testing"
 
-	"golang.org/x/net/context"
+	"context"
 )
 
 func TestRPC(t *testing.T) {

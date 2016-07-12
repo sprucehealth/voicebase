@@ -1,19 +1,18 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	excommssettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
+	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/settings"
-
-	"github.com/sprucehealth/backend/libs/test"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 )
 
@@ -31,7 +30,7 @@ func TestProvisionPhone(t *testing.T) {
 	areaCode := "203"
 
 	expectEntityInOrgForAccountID(g.ra, acc.ID, []*directory.Entity{
-		&directory.Entity{
+		{
 			ID:   "aodhigh",
 			Type: directory.EntityType_INTERNAL,
 			Info: &directory.EntityInfo{
@@ -164,7 +163,7 @@ func TestProvisionPhone_Unavailable(t *testing.T) {
 	areaCode := "203"
 
 	expectEntityInOrgForAccountID(g.ra, acc.ID, []*directory.Entity{
-		&directory.Entity{
+		{
 			ID:   "aodhigh",
 			Type: directory.EntityType_INTERNAL,
 			Info: &directory.EntityInfo{

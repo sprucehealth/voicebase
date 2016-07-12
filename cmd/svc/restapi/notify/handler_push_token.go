@@ -4,6 +4,8 @@ import (
 	"errors"
 	"net/http"
 
+	"context"
+
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
@@ -12,7 +14,6 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common/config"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"golang.org/x/net/context"
 )
 
 type notificationHandler struct {

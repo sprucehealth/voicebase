@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
@@ -13,7 +14,6 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/invite"
-	"golang.org/x/net/context"
 )
 
 func TestVerifyPhoneNumberForAccountCreationMutation_Invite(t *testing.T) {
@@ -272,7 +272,7 @@ func TestVerifyEmailCodeEntityInfo_Invite(t *testing.T) {
 		},
 		RootTypes: []directory.EntityType{directory.EntityType_PATIENT},
 	}).WithReturns([]*directory.Entity{
-		&directory.Entity{
+		{
 			Info: &directory.EntityInfo{
 				FirstName: "bat",
 				LastName:  "man",

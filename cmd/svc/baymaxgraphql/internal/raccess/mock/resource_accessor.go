@@ -1,6 +1,7 @@
 package mock
 
 import (
+	"context"
 	"testing"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
@@ -12,7 +13,6 @@ import (
 	"github.com/sprucehealth/backend/svc/layout"
 	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/threading"
-	"golang.org/x/net/context"
 )
 
 var _ raccess.ResourceAccessor = &ResourceAccessor{}

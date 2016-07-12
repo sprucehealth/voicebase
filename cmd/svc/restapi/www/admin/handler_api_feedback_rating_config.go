@@ -12,7 +12,7 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/httputil"
 
-	"golang.org/x/net/context"
+	"context"
 )
 
 type ratingLevelFeedbackConfigHandler struct {

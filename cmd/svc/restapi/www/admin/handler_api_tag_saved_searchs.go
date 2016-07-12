@@ -6,13 +6,14 @@ import (
 	"fmt"
 	"net/http"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/restapi/tagging"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/tagging/model"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/tagging/query"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/tagging/response"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"golang.org/x/net/context"
 )
 
 type tagSavedSearchsHandler struct {

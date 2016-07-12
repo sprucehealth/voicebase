@@ -1,10 +1,11 @@
 package mock
 
 import (
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/layout/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/layout/internal/models"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
-	"golang.org/x/net/context"
 
 	"testing"
 )

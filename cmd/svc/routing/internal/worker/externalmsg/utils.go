@@ -3,11 +3,12 @@ package externalmsg
 import (
 	"strings"
 
+	"context"
+
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
-	"golang.org/x/net/context"
 )
 
 func determineAccountIDFromEntityExternalID(ent *directory.Entity) string {

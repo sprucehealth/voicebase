@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"net/http"
 	"os"
@@ -35,7 +36,6 @@ import (
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
@@ -178,7 +178,7 @@ func main() {
 	baymaxgraphqlsettings.FilteredTabsInInboxConfig.GetBoolean().Default.Value = !environment.IsProd()
 	baymaxgraphqlsettings.VideoCallingConfig.GetBoolean().Default.Value = !environment.IsProd()
 
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	_, err = settings.RegisterConfigs(
 		ctx,
 		settingsClient,
@@ -195,6 +195,7 @@ func main() {
 	if err != nil {
 		golog.Fatalf("Unable to register configs with the settings service: %s", err.Error())
 	}
+	cancel()
 
 	if *flagExCommsAddr == "" {
 		golog.Fatalf("ExComm service not configured")

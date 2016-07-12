@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"context"
+
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/cmd/svc/directory/internal/dal"
 	"github.com/sprucehealth/backend/encoding"
@@ -13,7 +15,6 @@ import (
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/directory"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )

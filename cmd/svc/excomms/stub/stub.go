@@ -1,8 +1,9 @@
 package stub
 
 import (
+	"context"
+
 	"github.com/sprucehealth/backend/svc/excomms"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 

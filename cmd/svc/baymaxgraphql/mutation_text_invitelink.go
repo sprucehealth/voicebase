@@ -3,9 +3,6 @@ package main
 import (
 	"fmt"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -16,6 +13,8 @@ import (
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/graphql"
 	"github.com/sprucehealth/graphql/gqlerrors"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 type textInviteLinkInput struct {

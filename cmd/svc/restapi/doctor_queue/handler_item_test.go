@@ -8,12 +8,13 @@ import (
 	"strings"
 	"testing"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/golog"
-	"golang.org/x/net/context"
 )
 
 type mockDataAPI_itemHandler struct {

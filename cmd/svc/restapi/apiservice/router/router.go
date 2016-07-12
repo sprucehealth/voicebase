@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"context"
+
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/rainycape/memcache"
 	"github.com/samuel/go-metrics/metrics"
@@ -60,7 +62,6 @@ import (
 	"github.com/sprucehealth/backend/libs/ratelimit"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
-	"golang.org/x/net/context"
 )
 
 // Config is all services and configuration values used by the app api handlers.

@@ -9,6 +9,8 @@ import (
 
 	"github.com/tcolgate/mp3"
 
+	"context"
+
 	"github.com/aws/aws-sdk-go/aws/session"
 	excommsSettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
 	"github.com/sprucehealth/backend/libs/awsutil"
@@ -18,7 +20,6 @@ import (
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/settings"
-	"golang.org/x/net/context"
 )
 
 type setGreetingCmd struct {

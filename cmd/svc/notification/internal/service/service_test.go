@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"context"
+
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/sprucehealth/backend/cmd/svc/notification/internal/dal"
@@ -23,7 +25,6 @@ import (
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/settings"
 	smock "github.com/sprucehealth/backend/svc/settings/mock"
-	"golang.org/x/net/context"
 )
 
 func init() {

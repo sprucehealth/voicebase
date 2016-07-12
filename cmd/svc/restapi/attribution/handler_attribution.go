@@ -7,11 +7,12 @@ import (
 	"io"
 	"net/http"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/attribution/model"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/ptr"
-	"golang.org/x/net/context"
 )
 
 type attributionDAL interface {

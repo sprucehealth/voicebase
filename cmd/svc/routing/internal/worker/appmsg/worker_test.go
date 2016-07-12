@@ -3,6 +3,8 @@ package appmsg
 import (
 	"testing"
 
+	"context"
+
 	rsettings "github.com/sprucehealth/backend/cmd/svc/routing/internal/settings"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -10,7 +12,6 @@ import (
 	"github.com/sprucehealth/backend/svc/settings"
 	settingsmock "github.com/sprucehealth/backend/svc/settings/mock"
 	"github.com/sprucehealth/backend/svc/threading"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 

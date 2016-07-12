@@ -3,7 +3,7 @@ package httputil
 import (
 	"net/http"
 
-	"golang.org/x/net/context"
+	"context"
 )
 
 type securityHandler struct {

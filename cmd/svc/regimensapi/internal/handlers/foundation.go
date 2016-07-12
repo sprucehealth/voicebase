@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"net/http"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/responses"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/svc/regimens"
 	"github.com/sprucehealth/schema"
-	"golang.org/x/net/context"
 )
 
 type foundationProvider interface {

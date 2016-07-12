@@ -3,6 +3,8 @@ package patient_case
 import (
 	"net/http"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/restapi/address"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -10,7 +12,6 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/restapi/feedback"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/ptr"
-	"golang.org/x/net/context"
 )
 
 type homeHandler struct {

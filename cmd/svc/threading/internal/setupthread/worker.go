@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"time"
 
+	"context"
+
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/errors"
@@ -11,7 +13,6 @@ import (
 	"github.com/sprucehealth/backend/svc/events"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/threading"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )

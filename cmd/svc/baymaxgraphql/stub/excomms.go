@@ -3,9 +3,10 @@ package stub
 import (
 	"errors"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/blackbox/harness"
 	"github.com/sprucehealth/backend/svc/excomms"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 

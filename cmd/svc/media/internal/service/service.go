@@ -4,7 +4,7 @@ import (
 	"io"
 	"time"
 
-	"golang.org/x/net/context"
+	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/mediactx"

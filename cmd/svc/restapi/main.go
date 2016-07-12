@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"context"
+
 	"github.com/aws/aws-sdk-go/service/firehose"
 	"github.com/aws/aws-sdk-go/service/sns"
 	consulapi "github.com/hashicorp/consul/api"
@@ -38,7 +40,6 @@ import (
 	"github.com/sprucehealth/backend/libs/ratelimit"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
-	"golang.org/x/net/context"
 )
 
 func init() {

@@ -11,6 +11,8 @@ import (
 	"net/http"
 	"time"
 
+	"context"
+
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -20,7 +22,6 @@ import (
 	"github.com/sprucehealth/backend/libs/imageutil"
 	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/storage"
-	"golang.org/x/net/context"
 )
 
 type mediaHandler struct {

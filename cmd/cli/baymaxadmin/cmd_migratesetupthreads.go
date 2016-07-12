@@ -5,10 +5,11 @@ import (
 	"flag"
 	"fmt"
 
+	"context"
+
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
-	"golang.org/x/net/context"
 )
 
 type migrateSetupThreadsCmd struct {

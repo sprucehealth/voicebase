@@ -5,11 +5,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"context"
+
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/libs/ratelimit"
-	"golang.org/x/net/context"
 )
 
 type stubEmailChecker struct {

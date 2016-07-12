@@ -6,6 +6,8 @@ import (
 	"text/template"
 	"time"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -13,7 +15,6 @@ import (
 	patientpkg "github.com/sprucehealth/backend/cmd/svc/restapi/patient"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"golang.org/x/net/context"
 )
 
 type followupHandler struct {

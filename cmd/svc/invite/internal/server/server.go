@@ -8,6 +8,8 @@ import (
 	"net/url"
 	"time"
 
+	"context"
+
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
 	"github.com/sprucehealth/backend/cmd/svc/invite/internal/dal"
@@ -25,7 +27,6 @@ import (
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/invite/clientdata"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )

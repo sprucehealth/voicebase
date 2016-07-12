@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"time"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/mediaproxy"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/responses"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -11,7 +13,6 @@ import (
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/svc/products"
-	"golang.org/x/net/context"
 )
 
 const productHTTPCacheDuration = 24 * time.Hour

@@ -4,6 +4,8 @@ import (
 	"flag"
 	"time"
 
+	"context"
+
 	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/sprucehealth/backend/boot"
@@ -17,7 +19,6 @@ import (
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
@@ -101,7 +102,7 @@ func main() {
 	settingsClient := settings.NewSettingsClient(settingsConn)
 
 	// register the settings with the service
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	_, err = settings.RegisterConfigs(
 		ctx,
 		settingsClient,
@@ -111,6 +112,7 @@ func main() {
 	if err != nil {
 		golog.Fatalf("Unable to register configs with the settings service: %s", err.Error())
 	}
+	cancel()
 
 	awsSession, err := bootSvc.AWSSession()
 	if err != nil {

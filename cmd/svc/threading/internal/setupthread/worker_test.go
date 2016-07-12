@@ -3,13 +3,14 @@ package setupthread
 import (
 	"testing"
 
+	"context"
+
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/events"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/threading"
 	tmock "github.com/sprucehealth/backend/svc/threading/mock"
-	"golang.org/x/net/context"
 )
 
 func TestWorker(t *testing.T) {

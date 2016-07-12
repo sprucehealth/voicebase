@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"strings"
 
+	"context"
+
 	analytics "github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
-	"golang.org/x/net/context"
 )
 
 func trackInboundCall(eh *eventsHandler, callSID, eventSuffix string) {

@@ -8,8 +8,9 @@ import (
 	"os"
 	"strings"
 
+	"context"
+
 	"github.com/sprucehealth/backend/svc/directory"
-	"golang.org/x/net/context"
 )
 
 type updateEntityCmd struct {

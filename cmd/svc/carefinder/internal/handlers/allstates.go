@@ -4,12 +4,13 @@ import (
 	"html/template"
 	"net/http"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/response"
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/service"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"golang.org/x/net/context"
 )
 
 type allStatesPageHandler struct {

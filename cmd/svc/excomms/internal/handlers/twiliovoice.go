@@ -4,13 +4,14 @@ import (
 	"net/http"
 	"time"
 
+	"context"
+
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/twilio"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
-	"golang.org/x/net/context"
 )
 
 var twilioEventMapper = map[string]rawmsg.TwilioEvent{

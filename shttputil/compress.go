@@ -3,11 +3,12 @@ package shttputil
 import (
 	"net/http"
 
+	"context"
+
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"golang.org/x/net/context"
 )
 
 // CompressResponse adds compression to an http response for clients currently supporting it in the Spruce app collection

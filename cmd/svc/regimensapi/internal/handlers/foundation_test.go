@@ -6,11 +6,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/responses"
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/svc/regimens"
-	"golang.org/x/net/context"
 )
 
 type foundationSvc struct {

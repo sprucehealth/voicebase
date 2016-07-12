@@ -9,9 +9,10 @@ import (
 	"os"
 	"strings"
 
+	"context"
+
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
-	"golang.org/x/net/context"
 )
 
 type moveEntityCmd struct {

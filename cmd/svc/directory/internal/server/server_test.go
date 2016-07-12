@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"context"
+
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/cmd/svc/directory/internal/dal"
 	mock_dal "github.com/sprucehealth/backend/cmd/svc/directory/internal/dal/test"
@@ -15,7 +17,6 @@ import (
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/directory"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )

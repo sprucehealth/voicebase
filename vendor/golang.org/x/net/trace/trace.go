@@ -77,7 +77,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"golang.org/x/net/context"
+	"context"
 	"golang.org/x/net/internal/timeseries"
 )
 

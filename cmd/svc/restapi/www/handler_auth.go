@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/url"
 
+	"context"
+
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/auth"
@@ -12,7 +14,6 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/ratelimit"
-	"golang.org/x/net/context"
 )
 
 type loginHandler struct {

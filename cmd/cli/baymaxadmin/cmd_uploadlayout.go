@@ -9,11 +9,12 @@ import (
 	"path"
 	"strings"
 
+	"context"
+
 	"github.com/sajari/docconv"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/layout"
-	"golang.org/x/net/context"
 )
 
 const (

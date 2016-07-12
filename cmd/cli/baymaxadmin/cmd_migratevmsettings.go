@@ -10,6 +10,8 @@ import (
 	"os"
 	"strings"
 
+	"context"
+
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/errors"
@@ -18,7 +20,6 @@ import (
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/settings"
-	"golang.org/x/net/context"
 )
 
 // migrateVMSettingCmd provides a script to migrate the custom

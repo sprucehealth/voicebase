@@ -6,8 +6,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"context"
+
 	"github.com/samuel/go-metrics/metrics"
-	"golang.org/x/net/context"
 )
 
 func TestMetricsHandler(t *testing.T) {

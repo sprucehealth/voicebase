@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"context"
+
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
 	"github.com/sprucehealth/backend/cmd/svc/invite/internal/dal"
@@ -23,7 +25,6 @@ import (
 	excommsmock "github.com/sprucehealth/backend/svc/excomms/mock"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/invite/clientdata"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 )
 

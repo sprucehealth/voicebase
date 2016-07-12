@@ -7,6 +7,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"context"
+
 	"github.com/aws/aws-sdk-go/service/kms/kmsiface"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
@@ -14,7 +16,6 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
-	"golang.org/x/net/context"
 )
 
 const sqsWorkerVisibilityTimeoutSeconds = 60 * 5

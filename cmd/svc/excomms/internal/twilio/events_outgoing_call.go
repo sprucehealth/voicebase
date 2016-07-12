@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/cleaner"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
@@ -16,7 +18,6 @@ import (
 	"github.com/sprucehealth/backend/libs/twilio/twiml"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
-	"golang.org/x/net/context"
 )
 
 // STEP: Process outgoing call that is being made. Search to ensure that an active reservation

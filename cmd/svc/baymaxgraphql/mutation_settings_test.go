@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -12,7 +13,6 @@ import (
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/settings"
-	"golang.org/x/net/context"
 )
 
 func TestModifySetting_Boolean(t *testing.T) {
@@ -60,7 +60,7 @@ func TestModifySetting_Boolean(t *testing.T) {
 		},
 		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 	}).WithReturns([]*directory.Entity{
-		&directory.Entity{
+		{
 			Type: directory.EntityType_INTERNAL,
 			ID:   nodeID,
 			Info: &directory.EntityInfo{
@@ -176,7 +176,7 @@ func TestModifySetting_StringList(t *testing.T) {
 		},
 		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 	}).WithReturns([]*directory.Entity{
-		&directory.Entity{
+		{
 			Type: directory.EntityType_INTERNAL,
 			ID:   nodeID,
 			Info: &directory.EntityInfo{
@@ -299,7 +299,7 @@ func TestModifySetting_StringList_InvalidInput(t *testing.T) {
 		},
 		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 	}).WithReturns([]*directory.Entity{
-		&directory.Entity{
+		{
 			Type: directory.EntityType_INTERNAL,
 			ID:   nodeID,
 			Info: &directory.EntityInfo{
@@ -412,7 +412,7 @@ func TestModifySetting_MultiSelect(t *testing.T) {
 		},
 		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 	}).WithReturns([]*directory.Entity{
-		&directory.Entity{
+		{
 			Type: directory.EntityType_INTERNAL,
 			ID:   nodeID,
 			Info: &directory.EntityInfo{
@@ -568,7 +568,7 @@ func TestModifySetting_SingleSelect(t *testing.T) {
 		},
 		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 	}).WithReturns([]*directory.Entity{
-		&directory.Entity{
+		{
 			Type: directory.EntityType_INTERNAL,
 			ID:   nodeID,
 			Info: &directory.EntityInfo{
@@ -703,7 +703,7 @@ func TestModifySetting_InvalidOwner(t *testing.T) {
 		},
 		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 	}).WithReturns([]*directory.Entity{
-		&directory.Entity{
+		{
 			Type: directory.EntityType_INTERNAL,
 			ID:   nodeID,
 			Info: &directory.EntityInfo{

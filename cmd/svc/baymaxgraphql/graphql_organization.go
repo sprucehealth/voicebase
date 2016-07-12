@@ -15,10 +15,9 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/settings"
+	"github.com/sprucehealth/graphql"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-
-	"github.com/sprucehealth/graphql"
 )
 
 var organizationType = graphql.NewObject(
@@ -245,7 +244,7 @@ func patientInviteURL() func(p graphql.ResolveParams) (interface{}, error) {
 		svc := serviceFromParams(p)
 		if environment.IsProd() {
 			enabled, err := settings.GetBooleanValue(ctx, svc.settings, &settings.GetValuesRequest{
-				Keys: []*settings.ConfigKey{&settings.ConfigKey{
+				Keys: []*settings.ConfigKey{{
 					Key: invite.ConfigKeyOrganizationCode,
 				}},
 				NodeID: org.ID,

@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/rxguide"
 	rxtest "github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/rxguide/test"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/responses"
@@ -16,7 +18,6 @@ import (
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
-	"golang.org/x/net/context"
 )
 
 func TestRXGuideGET(t *testing.T) {

@@ -5,11 +5,12 @@ import (
 	"net/http"
 	"strings"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/saml"
-	"golang.org/x/net/context"
 )
 
 type samlAPIHandler struct {

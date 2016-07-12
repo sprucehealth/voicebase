@@ -3,8 +3,9 @@ package features
 import (
 	"testing"
 
+	"context"
+
 	"github.com/sprucehealth/backend/libs/test"
-	"golang.org/x/net/context"
 )
 
 func TestContext(t *testing.T) {

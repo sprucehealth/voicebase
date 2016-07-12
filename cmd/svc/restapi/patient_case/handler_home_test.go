@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/restapi/address"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -21,7 +23,6 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/restapi/feedback"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/test"
-	"golang.org/x/net/context"
 )
 
 type mockHomeHandlerDataAPI struct {

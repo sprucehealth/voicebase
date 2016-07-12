@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"golang.org/x/net/context"
+	"context"
 
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/sts/stsiface"

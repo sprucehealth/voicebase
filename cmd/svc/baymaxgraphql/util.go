@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strings"
@@ -16,7 +17,6 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/graphql"
 	"github.com/sprucehealth/graphql/language/ast"
-	"golang.org/x/net/context"
 )
 
 type errInvalidContactFormat string

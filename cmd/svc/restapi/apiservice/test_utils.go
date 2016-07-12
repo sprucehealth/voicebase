@@ -3,9 +3,10 @@ package apiservice
 import (
 	"net/http"
 
+	"context"
+
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"golang.org/x/net/context"
 )
 
 const (

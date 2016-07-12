@@ -6,10 +6,11 @@ import (
 	"net/url"
 	"sync/atomic"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"golang.org/x/net/context"
 )
 
 var carefinderURLDef = &cfg.ValueDef{

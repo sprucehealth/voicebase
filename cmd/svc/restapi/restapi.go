@@ -5,6 +5,8 @@ import (
 	"log"
 	"time"
 
+	"context"
+
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/rainycape/memcache"
 	"github.com/samuel/go-metrics/metrics"
@@ -43,7 +45,6 @@ import (
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/libs/stripe"
-	"golang.org/x/net/context"
 )
 
 func buildRESTAPI(

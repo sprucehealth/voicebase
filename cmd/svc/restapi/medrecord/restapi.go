@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"context"
+
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"golang.org/x/net/context"
 )
 
 type apiHandler struct {

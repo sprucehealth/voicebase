@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"testing"
 
-	"golang.org/x/net/context"
+	"context"
 )
 
 func TestRequestID(t *testing.T) {

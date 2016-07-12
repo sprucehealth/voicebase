@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"time"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/restapi/address"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/analytics"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
@@ -12,7 +14,6 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/restapi/attribution"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"golang.org/x/net/context"
 )
 
 type checkCareProvidingElligibilityHandler struct {

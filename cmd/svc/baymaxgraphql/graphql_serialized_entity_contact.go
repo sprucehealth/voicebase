@@ -1,10 +1,11 @@
 package main
 
 import (
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/graphql"
-	"golang.org/x/net/context"
 )
 
 var platformEnumType = graphql.NewEnum(

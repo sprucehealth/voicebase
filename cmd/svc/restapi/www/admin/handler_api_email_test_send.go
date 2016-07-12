@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/email"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/email/campaigns"
@@ -11,7 +13,6 @@ import (
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mandrill"
 	"github.com/sprucehealth/backend/libs/sig"
-	"golang.org/x/net/context"
 )
 
 type emailTestSendHandler struct {

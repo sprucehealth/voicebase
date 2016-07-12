@@ -1,11 +1,11 @@
 package raccess
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/svc/directory"
-	"golang.org/x/net/context"
 )
 
 // EntityInOrgForAccountID returns the entity in the org specified from the account in the context.

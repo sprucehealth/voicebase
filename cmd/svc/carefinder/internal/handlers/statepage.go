@@ -5,6 +5,8 @@ import (
 	"html/template"
 	"net/http"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/response"
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/service"
@@ -13,7 +15,6 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
-	"golang.org/x/net/context"
 )
 
 type statePageHandler struct {

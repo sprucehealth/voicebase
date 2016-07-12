@@ -12,8 +12,9 @@ import (
 	"regexp"
 	"strings"
 
+	"context"
+
 	"github.com/sprucehealth/backend/libs/httputil"
-	"golang.org/x/net/context"
 )
 
 // Route stores information to match a request and build URLs.

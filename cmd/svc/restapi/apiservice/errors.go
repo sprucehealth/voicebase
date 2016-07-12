@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"net/http"
 
+	"context"
+
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"golang.org/x/net/context"
 )
 
 // SError interface makes it possible for any package to describe an error

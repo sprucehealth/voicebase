@@ -3,10 +3,11 @@ package server
 import (
 	"fmt"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/settings/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/settings/internal/models"
 	"github.com/sprucehealth/backend/svc/settings"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )

@@ -5,6 +5,8 @@ import (
 	"strings"
 	"sync"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/erx"
@@ -12,7 +14,6 @@ import (
 	"github.com/sprucehealth/backend/libs/dosespot"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"golang.org/x/net/context"
 )
 
 const maxDrugSearchResults = 10

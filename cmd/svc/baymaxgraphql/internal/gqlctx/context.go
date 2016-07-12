@@ -1,11 +1,12 @@
 package gqlctx
 
 import (
+	"context"
+
 	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory/cache"
-	"golang.org/x/net/context"
 )
 
 type ctxKey int

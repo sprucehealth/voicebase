@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -9,7 +10,6 @@ import (
 	"github.com/sprucehealth/backend/libs/gqlintrospect"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/graphql"
-	"golang.org/x/net/context"
 )
 
 type schemaHandler struct{}

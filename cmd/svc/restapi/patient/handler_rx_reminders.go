@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/app_url"
@@ -20,7 +22,6 @@ import (
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/views"
 	"github.com/sprucehealth/schema"
-	"golang.org/x/net/context"
 )
 
 // rxReminderService defines the methods used by this handler

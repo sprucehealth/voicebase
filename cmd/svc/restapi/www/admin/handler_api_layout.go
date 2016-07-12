@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"strings"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/info_intake"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
@@ -16,7 +18,6 @@ import (
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/visitreview"
 	"github.com/sprucehealth/mapstructure"
-	"golang.org/x/net/context"
 )
 
 const (

@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	dalmock "github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal/mock"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
@@ -23,7 +25,6 @@ import (
 	dirmock "github.com/sprucehealth/backend/svc/directory/mock"
 	"github.com/sprucehealth/backend/svc/settings"
 	settingsmock "github.com/sprucehealth/backend/svc/settings/mock"
-	"golang.org/x/net/context"
 )
 
 func TestAfterHours_IncomingCall_SendAllCallsToVM_DefaultGreeting(t *testing.T) {

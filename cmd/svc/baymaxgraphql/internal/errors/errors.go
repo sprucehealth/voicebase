@@ -1,6 +1,7 @@
 package errors
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
@@ -10,7 +11,6 @@ import (
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/graphql/gqlerrors"
-	"golang.org/x/net/context"
 )
 
 // Expose functionality from the errors pkg for convenience

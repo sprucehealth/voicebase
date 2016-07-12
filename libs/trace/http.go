@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"golang.org/x/net/context"
+	"context"
 )
 
 const (

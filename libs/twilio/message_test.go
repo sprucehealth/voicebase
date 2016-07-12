@@ -2,11 +2,12 @@ package twilio
 
 import (
 	"fmt"
-	"github.com/sprucehealth/backend/libs/test"
 	"net/http"
 	"net/url"
 	"reflect"
 	"testing"
+
+	"github.com/sprucehealth/backend/libs/test"
 )
 
 func TestMessage_IsSent(t *testing.T) {

@@ -4,12 +4,13 @@ import (
 	"net/http"
 	"testing"
 
+	"context"
+
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/test"
-	"golang.org/x/net/context"
 )
 
 // TODO: Figure out how to compatmentalize this within the test fn

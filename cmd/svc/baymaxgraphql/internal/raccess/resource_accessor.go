@@ -1,6 +1,7 @@
 package raccess
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"sync"
@@ -18,7 +19,6 @@ import (
 	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )

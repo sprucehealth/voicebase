@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"context"
+
 	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sqs"
@@ -23,7 +25,6 @@ import (
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
@@ -129,7 +130,7 @@ func main() {
 	dl := dal.New(db)
 
 	// register the settings with the service
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	_, err = settings.RegisterConfigs(
 		ctx,
 		settingsClient,
@@ -140,6 +141,7 @@ func main() {
 	if err != nil {
 		golog.Fatalf("Unable to register configs with the settings service: %s", err.Error())
 	}
+	cancel()
 
 	srv := server.NewThreadsServer(clock.New(), dl, eSNS, *flagSNSTopicARN, notificationClient, directoryClient, settingsClient, mediaClient, *flagWebDomain)
 	threading.InitMetrics(srv, bootSvc.MetricsRegistry.Scope("server"))

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/mediactx"
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/service"
@@ -13,7 +15,6 @@ import (
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/urlutil"
 	"github.com/sprucehealth/backend/svc/auth"
-	"golang.org/x/net/context"
 )
 
 type authHandler struct {

@@ -3,14 +3,13 @@ package main
 import (
 	"fmt"
 
-	"google.golang.org/grpc"
-
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/graphql"
+	"google.golang.org/grpc"
 )
 
 type submitVisitAnswersOutput struct {

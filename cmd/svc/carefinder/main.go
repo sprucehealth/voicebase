@@ -7,9 +7,10 @@ import (
 	"strconv"
 	"strings"
 
+	"context"
+
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/libs/golog"
-	"golang.org/x/net/context"
 )
 
 type config struct {

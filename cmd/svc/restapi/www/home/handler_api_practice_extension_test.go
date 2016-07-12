@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"golang.org/x/net/context"
+	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common/config"
 	"github.com/sprucehealth/backend/libs/cfg"

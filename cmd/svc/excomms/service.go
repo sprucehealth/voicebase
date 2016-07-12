@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"context"
+
 	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sqs"
@@ -30,7 +32,6 @@ import (
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
@@ -103,7 +104,7 @@ func runService(bootSvc *boot.Service) {
 	notificationClient := notification.NewClient(eSQS, &notification.ClientConfig{SQSNotificationURL: config.notificationSQSURL})
 
 	// register the settings with the service
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	settingsClient := settings.NewSettingsClient(settingsConn)
 	_, err = settings.RegisterConfigs(
 		ctx,
@@ -120,6 +121,7 @@ func runService(bootSvc *boot.Service) {
 	if err != nil {
 		golog.Fatalf("Unable to register configs with the settings service: %s", err.Error())
 	}
+	cancel()
 
 	store := storage.NewS3(awsSession, config.attachmentBucket, config.attachmentPrefix)
 	dl := dal.New(db, clock.New())

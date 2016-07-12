@@ -3,6 +3,8 @@ package twilio
 import (
 	"encoding/base64"
 
+	"context"
+
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
@@ -11,7 +13,6 @@ import (
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 

@@ -1,9 +1,8 @@
 package gqlctx
 
 import (
+	"context"
 	"sync"
-
-	"golang.org/x/net/context"
 )
 
 // FeatureKey represents an available feature of an organization or account

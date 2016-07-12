@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"time"
 
+	"context"
+
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
-	"golang.org/x/net/context"
 )
 
 // RegisterConfig attempts to register the provided config within the dealine of the context (by retrying every second),

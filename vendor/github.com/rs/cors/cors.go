@@ -28,7 +28,7 @@ import (
 	"strings"
 
 	"github.com/sprucehealth/backend/libs/httputil"
-	"golang.org/x/net/context"
+	"context"
 )
 
 // Options is a configuration container to setup the CORS middleware.

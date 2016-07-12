@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"os"
 
+	"context"
+
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/settings"
-	"golang.org/x/net/context"
 )
 
 type enableOrgCodeCmd struct {

@@ -1,10 +1,10 @@
 package gqlctx
 
 import (
+	"context"
 	"testing"
 
 	"github.com/sprucehealth/backend/libs/test"
-	"golang.org/x/net/context"
 )
 
 func TestFeatures_Unset(t *testing.T) {

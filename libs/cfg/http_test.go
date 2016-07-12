@@ -4,8 +4,9 @@ import (
 	"net/http"
 	"testing"
 
+	"context"
+
 	"github.com/sprucehealth/backend/libs/httputil"
-	"golang.org/x/net/context"
 )
 
 func TestGorillaHTTPHandler(t *testing.T) {

@@ -1,8 +1,9 @@
 package devicectx
 
 import (
+	"context"
+
 	"github.com/sprucehealth/backend/device"
-	"golang.org/x/net/context"
 )
 
 type ctxKey string

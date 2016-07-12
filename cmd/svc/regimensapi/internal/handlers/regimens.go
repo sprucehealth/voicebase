@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/mediautils"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/rxguide"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/responses"
@@ -28,7 +30,6 @@ import (
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/svc/regimens"
 	"github.com/sprucehealth/schema"
-	"golang.org/x/net/context"
 )
 
 const (

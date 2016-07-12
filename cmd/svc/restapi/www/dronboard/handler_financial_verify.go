@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"time"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
@@ -13,7 +15,6 @@ import (
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/stripe"
 	"github.com/sprucehealth/schema"
-	"golang.org/x/net/context"
 )
 
 type financialsVerifyHandler struct {

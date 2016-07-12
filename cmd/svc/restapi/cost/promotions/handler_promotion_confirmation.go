@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"time"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/restapi/analytics"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -18,7 +20,6 @@ import (
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/schema"
-	"golang.org/x/net/context"
 )
 
 type promotionConfirmationHandler struct {

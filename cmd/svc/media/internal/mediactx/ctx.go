@@ -3,10 +3,11 @@ package mediactx
 import (
 	"errors"
 
+	"context"
+
 	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/svc/auth"
-	"golang.org/x/net/context"
 )
 
 type ctxKey int

@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"time"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/restapi/analytics"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/events"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/events/model"
@@ -12,7 +14,6 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/schema"
-	"golang.org/x/net/context"
 )
 
 type serverEventsHandler struct {

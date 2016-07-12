@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
@@ -13,7 +14,6 @@ import (
 	"github.com/sprucehealth/backend/svc/layout"
 	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/threading"
-	"golang.org/x/net/context"
 )
 
 func TestPostMessage(t *testing.T) {
@@ -42,7 +42,7 @@ func TestPostMessage(t *testing.T) {
 	}, nil))
 	g.ra.Expect(mock.NewExpectation(g.ra.CanPostMessage, threadID))
 	expectEntityInOrgForAccountID(g.ra, acc.ID, []*directory.Entity{
-		&directory.Entity{
+		{
 			ID:   entID,
 			Type: directory.EntityType_INTERNAL,
 			Info: &directory.EntityInfo{
@@ -66,7 +66,7 @@ func TestPostMessage(t *testing.T) {
 		},
 		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 	}).WithReturns([]*directory.Entity{
-		&directory.Entity{
+		{
 			ID:   extEntID,
 			Type: directory.EntityType_EXTERNAL,
 			Info: &directory.EntityInfo{
@@ -110,7 +110,7 @@ func TestPostMessage(t *testing.T) {
 		Title:   `SMS`,
 		Summary: `Schmee: foo`,
 		Attachments: []*threading.Attachment{
-			&threading.Attachment{
+			{
 				Type:  threading.Attachment_IMAGE,
 				Title: "",
 				URL:   "mediaID",
@@ -279,7 +279,7 @@ func TestPostMessage_VisitAttachment(t *testing.T) {
 	}, nil))
 	g.ra.Expect(mock.NewExpectation(g.ra.CanPostMessage, threadID))
 	expectEntityInOrgForAccountID(g.ra, acc.ID, []*directory.Entity{
-		&directory.Entity{
+		{
 			ID:   entID,
 			Type: directory.EntityType_INTERNAL,
 			Info: &directory.EntityInfo{
@@ -303,7 +303,7 @@ func TestPostMessage_VisitAttachment(t *testing.T) {
 		},
 		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 	}).WithReturns([]*directory.Entity{
-		&directory.Entity{
+		{
 			ID:   extEntID,
 			Type: directory.EntityType_EXTERNAL,
 			Info: &directory.EntityInfo{
@@ -357,7 +357,7 @@ func TestPostMessage_VisitAttachment(t *testing.T) {
 		Title:   "Shared a visit:",
 		Summary: `Schmee: foo`,
 		Attachments: []*threading.Attachment{
-			&threading.Attachment{
+			{
 				Type:  threading.Attachment_VISIT,
 				Title: "Sinus Infection",
 				URL:   "https://test.com/thread/t1/visit/visit_12345",
@@ -521,7 +521,7 @@ func TestPostMessageDestinationNotContactOfPrimary(t *testing.T) {
 	g.ra.Expect(mock.NewExpectation(g.ra.CanPostMessage, threadID))
 	// Looking up the account's entity for the org
 	expectEntityInOrgForAccountID(g.ra, acc.ID, []*directory.Entity{
-		&directory.Entity{
+		{
 			ID:   entID,
 			Type: directory.EntityType_INTERNAL,
 			Info: &directory.EntityInfo{
@@ -545,7 +545,7 @@ func TestPostMessageDestinationNotContactOfPrimary(t *testing.T) {
 		},
 		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 	}).WithReturns([]*directory.Entity{
-		&directory.Entity{
+		{
 			ID:   extEntID,
 			Type: directory.EntityType_EXTERNAL,
 			Info: &directory.EntityInfo{
@@ -644,7 +644,7 @@ func TestPostMessagePatientSecureExternal(t *testing.T) {
 	g.ra.Expect(mock.NewExpectation(g.ra.CanPostMessage, threadID))
 	// Looking up the account's entity for the org
 	expectEntityInOrgForAccountID(g.ra, acc.ID, []*directory.Entity{
-		&directory.Entity{
+		{
 			ID:   entID,
 			Type: directory.EntityType_PATIENT,
 			Info: &directory.EntityInfo{
@@ -668,7 +668,7 @@ func TestPostMessagePatientSecureExternal(t *testing.T) {
 		},
 		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 	}).WithReturns([]*directory.Entity{
-		&directory.Entity{
+		{
 			ID:   extEntID,
 			Type: directory.EntityType_EXTERNAL,
 			Info: &directory.EntityInfo{
@@ -708,7 +708,7 @@ func TestPostMessagePatientSecureExternal(t *testing.T) {
 		Title:   ``,
 		Summary: `Schmee: foo`,
 		Attachments: []*threading.Attachment{
-			&threading.Attachment{
+			{
 				Type:  threading.Attachment_VIDEO,
 				Title: "",
 				URL:   "mediaID",
@@ -766,7 +766,7 @@ func TestPostMessagePatientSecureExternal(t *testing.T) {
 		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 		RootTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
 	}).WithReturns([]*directory.Entity{
-		&directory.Entity{
+		{
 			ID:   extEntID,
 			Type: directory.EntityType_ORGANIZATION,
 			Info: &directory.EntityInfo{
@@ -783,7 +783,7 @@ func TestPostMessagePatientSecureExternal(t *testing.T) {
 		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 		RootTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
 	}).WithReturns([]*directory.Entity{
-		&directory.Entity{
+		{
 			ID:   extEntID,
 			Type: directory.EntityType_ORGANIZATION,
 			Info: &directory.EntityInfo{

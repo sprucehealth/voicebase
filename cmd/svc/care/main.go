@@ -6,7 +6,7 @@ import (
 	"net"
 	"time"
 
-	"golang.org/x/net/context"
+	"context"
 
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/dal"
@@ -126,13 +126,14 @@ func main() {
 	}
 	mediaClient := media.NewMediaClient(conn)
 
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	_, err = settings.RegisterConfigs(ctx, settingsClient, []*settings.Config{
 		caresettings.OptionalTriageConfig,
 	})
 	if err != nil {
 		golog.Fatalf("Unable to register configs with settings service: %s", err.Error())
 	}
+	cancel()
 
 	doseSpotClient := dosespot.New(config.doseSpotClinicID, config.doseSpotUserID, config.doseSpotClinicKey, config.doseSpotSOAPEndpoint, "http://www.dosespot.com/API/11/", svc.MetricsRegistry.Scope("dosespot"))
 

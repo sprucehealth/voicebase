@@ -1,11 +1,11 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"path"
 
 	"github.com/sprucehealth/backend/libs/httputil"
-	"golang.org/x/net/context"
 )
 
 type mediaHandler struct {

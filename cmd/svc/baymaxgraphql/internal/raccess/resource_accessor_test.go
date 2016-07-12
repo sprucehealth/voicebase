@@ -1,6 +1,7 @@
 package raccess
 
 import (
+	"context"
 	"testing"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
@@ -19,7 +20,6 @@ import (
 	mmock "github.com/sprucehealth/backend/svc/media/mock"
 	"github.com/sprucehealth/backend/svc/threading"
 	tmock "github.com/sprucehealth/backend/svc/threading/mock"
-	"golang.org/x/net/context"
 )
 
 type ratest struct {

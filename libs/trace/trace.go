@@ -3,9 +3,10 @@ package trace
 import (
 	"sync"
 
+	"context"
+
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/idgen"
-	"golang.org/x/net/context"
 )
 
 var tracePool = sync.Pool{New: func() interface{} { return &Trace{} }}

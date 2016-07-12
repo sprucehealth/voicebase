@@ -11,8 +11,9 @@ import (
 	"path"
 	"regexp"
 
+	"context" // NewRouter returns a new router instance.
+
 	"github.com/sprucehealth/backend/libs/httputil"
-	"golang.org/x/net/context" // NewRouter returns a new router instance.
 )
 
 func NewRouter() *Router {

@@ -3,6 +3,8 @@ package worker
 import (
 	"testing"
 
+	"context"
+
 	dalmock "github.com/sprucehealth/backend/cmd/svc/operational/internal/dal/mock"
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
@@ -13,7 +15,6 @@ import (
 	excommsmock "github.com/sprucehealth/backend/svc/excomms/mock"
 	"github.com/sprucehealth/backend/svc/operational"
 	threadingmock "github.com/sprucehealth/backend/svc/threading/mock"
-	"golang.org/x/net/context"
 )
 
 func TestBlockAccountWorker(t *testing.T) {

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/layout/internal/client"
 	"github.com/sprucehealth/backend/cmd/svc/layout/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/layout/internal/models"
@@ -12,7 +14,6 @@ import (
 	"github.com/sprucehealth/backend/libs/ptr"
 	samlparser "github.com/sprucehealth/backend/saml"
 	"github.com/sprucehealth/backend/svc/layout"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )

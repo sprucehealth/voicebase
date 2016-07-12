@@ -3,8 +3,9 @@ package grpcmetrics
 import (
 	"time"
 
+	"context"
+
 	"github.com/samuel/go-metrics/metrics"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )

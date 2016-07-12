@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"context"
+
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 	"github.com/sprucehealth/backend/cmd/svc/operational/internal/dal"
 	"github.com/sprucehealth/backend/libs/awsutil"
@@ -15,7 +17,6 @@ import (
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/operational"
 	"github.com/sprucehealth/backend/svc/threading"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )

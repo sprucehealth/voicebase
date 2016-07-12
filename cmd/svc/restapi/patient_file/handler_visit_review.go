@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"time"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -14,7 +16,6 @@ import (
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/visitreview"
 	"github.com/sprucehealth/mapstructure"
-	"golang.org/x/net/context"
 )
 
 type doctorPatientVisitReviewHandler struct {

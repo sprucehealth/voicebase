@@ -5,10 +5,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"context"
+
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/svc/products"
-	"golang.org/x/net/context"
 )
 
 func TestProducts(t *testing.T) {

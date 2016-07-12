@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"time"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/models"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/transactional/tsql"
-	"golang.org/x/net/context"
 )
 
 type VisitUpdate struct {

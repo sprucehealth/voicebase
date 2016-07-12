@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"testing"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/app_url"
@@ -21,7 +23,6 @@ import (
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/views"
-	"golang.org/x/net/context"
 )
 
 type rxReminderHandlerReminderService struct {

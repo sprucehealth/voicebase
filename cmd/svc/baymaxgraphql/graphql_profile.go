@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
@@ -8,7 +10,6 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/graphql"
-	"golang.org/x/net/context"
 )
 
 var profileSectionType = graphql.NewObject(graphql.ObjectConfig{

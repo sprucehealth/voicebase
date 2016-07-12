@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/tagging/model"
@@ -14,7 +16,6 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/restapi/tagging/response"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/schema"
-	"golang.org/x/net/context"
 )
 
 type tagCaseAssociationHandler struct {

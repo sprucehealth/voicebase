@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"time"
 
+	"context"
+
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/auth/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/auth/internal/server"
@@ -14,7 +16,6 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	pb "github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/settings"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
@@ -80,7 +81,7 @@ func main() {
 	settingsClient := settings.NewSettingsClient(settingsConn)
 
 	// register the settings with the service
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	_, err = settings.RegisterConfigs(
 		ctx,
 		settingsClient,
@@ -90,6 +91,8 @@ func main() {
 	if err != nil {
 		golog.Fatalf("Unable to register configs with the settings service: %s", err.Error())
 	}
+	cancel()
+
 	aSrv, err := server.New(dal.New(db), settingsClient, config.clientEncryptionKeySecret)
 	if err != nil {
 		golog.Fatalf("Error while initializing auth server: %s", err)

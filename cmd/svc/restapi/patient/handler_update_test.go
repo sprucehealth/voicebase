@@ -7,11 +7,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/restapi/address"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
-	"golang.org/x/net/context"
 )
 
 type mockDataAPI_UpdateHandler struct {

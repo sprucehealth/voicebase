@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/auth/internal/dal"
 	mock_dal "github.com/sprucehealth/backend/cmd/svc/auth/internal/dal/test"
 	authSetting "github.com/sprucehealth/backend/cmd/svc/auth/internal/settings"
@@ -20,7 +22,6 @@ import (
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/settings"
 	mock_settings "github.com/sprucehealth/backend/svc/settings/mock"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )

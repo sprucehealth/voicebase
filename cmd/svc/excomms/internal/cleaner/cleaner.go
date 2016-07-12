@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"time"
 
+	"context"
+
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
@@ -11,7 +13,6 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/twilio"
-	"golang.org/x/net/context"
 )
 
 type Worker struct {

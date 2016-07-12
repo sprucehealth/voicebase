@@ -5,8 +5,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"context"
+
 	"github.com/sprucehealth/backend/libs/test"
-	"golang.org/x/net/context"
 )
 
 func TestSupportedMethods(t *testing.T) {

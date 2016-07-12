@@ -285,10 +285,6 @@
 			"Rev": "5dc8cb4b8a8eb076cbb5a06bc3b8682c15bdbbd3"
 		},
 		{
-			"ImportPath": "golang.org/x/net/context",
-			"Rev": "3e5cd1ed149001198e582f9d3f5bfd564cde2896"
-		},
-		{
 			"ImportPath": "golang.org/x/net/html",
 			"Rev": "3e5cd1ed149001198e582f9d3f5bfd564cde2896"
 		},
