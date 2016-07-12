@@ -192,6 +192,7 @@ var commands = map[string]commandNew{
 	"thread":              newThreadCmd,
 	"updateentity":        newUpdateEntityCmd,
 	"uploadlayout":        newUploadLayoutCmd,
+	"enablepackage":       newEnablePackageCmd,
 }
 
 func main() {
