@@ -43,6 +43,9 @@ func (c *Client) InviteColleagues(ctx context.Context, in *invite.InviteColleagu
 // InvitePatients sends invites to people to join an organization
 func (c *Client) InvitePatients(ctx context.Context, in *invite.InvitePatientsRequest, opts ...grpc.CallOption) (*invite.InvitePatientsResponse, error) {
 	ret := c.Expector.Record(in)
+	if len(ret) == 0 {
+		return nil, nil
+	}
 	return ret[0].(*invite.InvitePatientsResponse), mock.SafeError(ret[1])
 }
 
