@@ -377,6 +377,8 @@ var updateEntityProfileInputType = graphql.NewInputObject(
 			"clientMutationId": newClientMutationIDInputField(),
 			"profileID":        &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
 			"displayName":      &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"firstName":        &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"lastName":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 			"imageMediaID":     &graphql.InputObjectFieldConfig{Type: graphql.String},
 			"sections":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.NewList(profileSectionInputType))},
 		},
