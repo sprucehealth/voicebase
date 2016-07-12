@@ -549,6 +549,7 @@ func (s *server) LookupInvite(ctx context.Context, in *invite.LookupInviteReques
 				InviterEntityID:      inv.InviterEntityID,
 				Patient: &invite.Patient{
 					ParkedEntityID: inv.ParkedEntityID,
+					PhoneNumber:    inv.PhoneNumber,
 				},
 			},
 		}
