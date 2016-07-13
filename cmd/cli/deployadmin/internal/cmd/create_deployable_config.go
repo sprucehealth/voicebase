@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"flag"
+	"fmt"
 	"os"
 	"time"
 
@@ -54,7 +55,26 @@ func (c *createDeployableConfigCmd) Run(args []string) error {
 		}
 	}
 	if *sourceConfigID == "" {
-		*sourceConfigID = prompt(scn, "Source Config ID: ")
+		// If there's one then assume it's th eone
+		ctx := context.Background()
+		res, err := c.deployCli.DeployableConfigs(ctx, &deploy.DeployableConfigsRequest{
+			DeployableID:  *depID,
+			EnvironmentID: *envID,
+			Status:        "ACTIVE",
+		})
+		if err != nil {
+			return err
+		}
+		if len(res.Configs) == 1 {
+			printDeployableConfigs(res.Configs)
+			configID := prompt(scn, fmt.Sprintf("Source Config ID [%s]: ", res.Configs[0].ID))
+			if configID == "" {
+				configID = res.Configs[0].ID
+			}
+			*sourceConfigID = configID
+		} else {
+			*sourceConfigID = prompt(scn, "Source Config ID: ")
+		}
 	}
 
 	// TODO: Add the ability to import this via config
