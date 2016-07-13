@@ -258,6 +258,8 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 		)
 		if err != nil {
 			golog.Errorf("Failed to check auth token: %s", err)
+			http.Error(w, "Internal error", http.StatusInternalServerError)
+			return
 		} else if res.IsAuthenticated {
 			// TODO : For now set the cookie on every request so that we are setting the cookie
 			// for the root domain rather than the specific endpoint. This will enable clients
