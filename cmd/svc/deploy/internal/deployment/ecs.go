@@ -79,19 +79,36 @@ func (m *Manager) taskDefinitionInputForDeployment(d *dal.Deployment) (*ecs.Regi
 	if err != nil {
 		return nil, err
 	}
+
 	var portMappings []*ecs.PortMapping
+	var dnsServers []*string
+	var dnsSearchDomains []*string
 	cMap := make(map[string]string, len(dConfigs))
 	for _, c := range dConfigs {
-		if strings.HasPrefix(c.Name, ecsConfigName("PORT_MAPPING")) {
+		switch {
+		case strings.HasPrefix(c.Name, ecsConfigName("PORT_MAPPING")):
 			pm, err := parsePortMapping(c.Value)
 			if err != nil {
 				return nil, err
 			}
 			portMappings = append(portMappings, pm)
-		} else {
+		case strings.HasPrefix(c.Name, ecsConfigName("DNS_SERVERS")):
+			vals := strings.Split(c.Value, ",")
+			dnsServers = make([]*string, len(vals))
+			for i, v := range vals {
+				dnsServers[i] = ptr.String(strings.TrimSpace(v))
+			}
+		case strings.HasPrefix(c.Name, ecsConfigName("DNS_SEARCH_DOMAINS")):
+			vals := strings.Split(c.Value, ",")
+			dnsSearchDomains = make([]*string, len(vals))
+			for i, v := range vals {
+				dnsSearchDomains[i] = ptr.String(strings.TrimSpace(v))
+			}
+		default:
 			cMap[c.Name] = c.Value
 		}
 	}
+
 	cpu, err := fecthAndDeleteRequiredECSConfigInt64(cMap, ecsConfigName("cpu"))
 	if err != nil {
 		return nil, err
@@ -119,9 +136,11 @@ func (m *Manager) taskDefinitionInputForDeployment(d *dal.Deployment) (*ecs.Regi
 				Memory:      &memory,
 				Environment: envVariables,
 				// TODO: Figure out how to manage this with multiple containers in task
-				Essential:    ptr.Bool(true),
-				Name:         ptr.String(dep.Name),
-				PortMappings: portMappings,
+				Essential:        ptr.Bool(true),
+				Name:             ptr.String(dep.Name),
+				PortMappings:     portMappings,
+				DnsServers:       dnsServers,
+				DnsSearchDomains: dnsSearchDomains,
 				LogConfiguration: &ecs.LogConfiguration{
 					LogDriver: ptr.String("awslogs"),
 					Options: map[string]*string{
