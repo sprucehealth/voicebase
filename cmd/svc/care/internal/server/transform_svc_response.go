@@ -84,31 +84,33 @@ func (m *mediaSectionToSVCResponseTransformer) transform(answer *models.Answer) 
 		}
 	}
 
-	res, err := m.mediaClient.MediaInfos(context.Background(), &media.MediaInfosRequest{
-		MediaIDs: mediaIDs,
-	})
-	if err != nil {
-		return nil, errors.Trace(fmt.Errorf("Unable to get media info for answer to question %s: %s", answer.QuestionID, err))
-	}
+	if len(mediaIDs) > 0 {
+		res, err := m.mediaClient.MediaInfos(context.Background(), &media.MediaInfosRequest{
+			MediaIDs: mediaIDs,
+		})
+		if err != nil {
+			return nil, errors.Trace(fmt.Errorf("Unable to get media info for answer to question %s: %s", answer.QuestionID, err))
+		}
 
-	for _, mediaInfo := range res.MediaInfos {
-		mediaSlot, ok := slotMap[mediaInfo.ID]
-		if !ok {
-			return nil, errors.Trace(fmt.Errorf("Unable to find slot that media %s maps to for answer to question %s", mediaInfo.ID, answer.QuestionID))
+		for _, mediaInfo := range res.MediaInfos {
+			mediaSlot, ok := slotMap[mediaInfo.ID]
+			if !ok {
+				return nil, errors.Trace(fmt.Errorf("Unable to find slot that media %s maps to for answer to question %s", mediaInfo.ID, answer.QuestionID))
+			}
+			mediaSlot.URL = mediaInfo.URL
+			mediaSlot.ThumbnailURL = mediaInfo.ThumbURL
+			var mediaType care.MediaType
+			switch mediaInfo.MIME.Type {
+			case "image":
+				mediaType = care.MediaType_IMAGE
+			case "video":
+				mediaType = care.MediaType_VIDEO
+			default:
+				return nil, errors.Trace(fmt.Errorf("Unknown media type for %s", mediaInfo.ID))
+			}
+			mediaSlot.Type = mediaType
+			delete(slotMap, mediaInfo.ID)
 		}
-		mediaSlot.URL = mediaInfo.URL
-		mediaSlot.ThumbnailURL = mediaInfo.ThumbURL
-		var mediaType care.MediaType
-		switch mediaInfo.MIME.Type {
-		case "image":
-			mediaType = care.MediaType_IMAGE
-		case "video":
-			mediaType = care.MediaType_VIDEO
-		default:
-			return nil, errors.Trace(fmt.Errorf("Unknown media type for %s", mediaInfo.ID))
-		}
-		mediaSlot.Type = mediaType
-		delete(slotMap, mediaInfo.ID)
 	}
 
 	// there should be no slot left for which we were unable to find the media object
