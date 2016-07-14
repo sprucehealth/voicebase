@@ -291,8 +291,10 @@ func (h *graphQLHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			m["AccountID"] = acc.ID
 		}
 		m["AppType"] = sHeaders.AppType
-		m["AppVersion"] = sHeaders.AppVersion.String()
 		m["Platform"] = sHeaders.Platform
+		if sHeaders.AppVersion != nil {
+			m["AppVersion"] = sHeaders.AppVersion.String()
+		}
 	})
 	// Bootstrap the entity cache
 	ctx = cache.InitEntityCache(ctx)
