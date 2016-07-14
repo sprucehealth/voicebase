@@ -36,6 +36,12 @@ enum ThreadType {
 	SECURE_EXTERNAL = 6;
 }
 
+enum ThreadOrigin {
+	THREAD_ORIGIN_UNKNOWN = 0;
+	THREAD_ORIGIN_PATIENT_INVITE = 1;
+	THREAD_ORIGIN_ORGANIZATION_CODE = 2;
+}
+
 message Thread {
 	string id = 1 [(gogoproto.customname) = "ID"];
 	string organization_id = 2 [(gogoproto.customname) = "OrganizationID"];
@@ -51,6 +57,7 @@ message Thread {
 	string system_title = 12;
 	string user_title = 13;
 	bool unread_reference = 14;
+	ThreadOrigin origin = 15;
 }
 
 message Member {
@@ -371,6 +378,7 @@ message CreateThreadRequest {
 	ThreadType type = 13;
 	repeated string member_entity_ids = 14 [(gogoproto.customname) = "MemberEntityIDs"];
 	string system_title = 15;
+	ThreadOrigin origin = 16;
 }
 
 message CreateThreadResponse {
@@ -389,6 +397,7 @@ message CreateEmptyThreadRequest {
 	ThreadType type = 9;
 	repeated string member_entity_ids = 10 [(gogoproto.customname) = "MemberEntityIDs"];
 	string system_title = 11;
+	ThreadOrigin origin = 12;
 }
 
 message CreateEmptyThreadResponse {

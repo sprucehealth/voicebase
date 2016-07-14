@@ -142,6 +142,11 @@ func (s *threadsServer) CreateEmptyThread(ctx context.Context, in *threading.Cre
 		return nil, grpcErrorf(codes.InvalidArgument, "Invalid thread type")
 	}
 
+	to, err := transformThreadOriginFromRequest(in.Origin)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid thread origin")
+	}
+
 	var systemTitle string
 	switch in.Type {
 	case threading.ThreadType_TEAM:
@@ -164,6 +169,7 @@ func (s *threadsServer) CreateEmptyThread(ctx context.Context, in *threading.Cre
 			Type:               tt,
 			SystemTitle:        systemTitle,
 			UserTitle:          in.UserTitle,
+			Origin:             to,
 		})
 		if err != nil {
 			return errors.Trace(err)
@@ -221,6 +227,10 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 	if err != nil {
 		return nil, grpcErrorf(codes.InvalidArgument, "Invalid thread type")
 	}
+	to, err := transformThreadOriginFromRequest(in.Origin)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid thread origin")
+	}
 	if in.Summary == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "Summary is required")
 	}
@@ -260,6 +270,7 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 			Type:            tt,
 			SystemTitle:     systemTitle,
 			UserTitle:       in.UserTitle,
+			Origin:          to,
 		})
 		if err != nil {
 			return errors.Trace(err)

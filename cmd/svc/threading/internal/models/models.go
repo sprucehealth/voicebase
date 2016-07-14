@@ -216,6 +216,55 @@ func (tt ThreadType) String() string {
 	return string(tt)
 }
 
+// ThreadOrigin is an enum of possible thread origins
+type ThreadOrigin string
+
+const (
+	// ThreadOriginUnknown is an unknown thread origin
+	ThreadOriginUnknown ThreadOrigin = ""
+	// ThreadOriginPatientInvite is a thread created from a patient invite
+	ThreadOriginPatientInvite ThreadOrigin = "PATIENT_INVITE"
+	// ThreadOriginOrganizationCode is a thread created from an organization code
+	ThreadOriginOrganizationCode ThreadOrigin = "ORGANIZATION_CODE"
+)
+
+// Scan implements sql.Scanner and expects src to be nil or of type string or []byte
+func (to *ThreadOrigin) Scan(src interface{}) error {
+	if src == nil {
+		*to = ThreadOriginUnknown
+		return nil
+	}
+	var typ string
+	switch v := src.(type) {
+	case []byte:
+		typ = string(v)
+	case string:
+		typ = v
+	default:
+		return errors.Trace(fmt.Errorf("unsupported type for ThreadType: %T", src))
+	}
+	*to = ThreadOrigin(strings.ToUpper(typ))
+	return errors.Trace(to.Validate())
+}
+
+// Value implements sql/driver.Valuer
+func (to ThreadOrigin) Value() (driver.Value, error) {
+	return strings.ToUpper(string(to)), errors.Trace(to.Validate())
+}
+
+// Validate returns nil iff the value of the type is valid
+func (to ThreadOrigin) Validate() error {
+	switch to {
+	case ThreadOriginUnknown, ThreadOriginPatientInvite, ThreadOriginOrganizationCode:
+		return nil
+	}
+	return errors.Trace(fmt.Errorf("unknown thread origin '%s'", string(to)))
+}
+
+func (to ThreadOrigin) String() string {
+	return string(to)
+}
+
 // Thread is a thread of conversation and the parent of thread items.
 type Thread struct {
 	ID                           ThreadID
@@ -231,6 +280,7 @@ type Thread struct {
 	SystemTitle                  string
 	UserTitle                    string
 	Type                         ThreadType
+	Origin                       ThreadOrigin
 }
 
 // ThreadIDs is a convenience method for retrieving ID's from a list

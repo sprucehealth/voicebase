@@ -18,7 +18,7 @@ import (
 	"github.com/sprucehealth/backend/libs/transactional/tsql"
 )
 
-const threadColumns = `t.id, t.organization_id, COALESCE(t.primary_entity_id, ''), t.last_message_timestamp, t.last_external_message_timestamp, t.last_message_summary, t.last_external_message_summary, t.last_primary_entity_endpoints, t.created, t.message_count, t.type, COALESCE(t.system_title, ''), COALESCE(t.user_title, '')`
+const threadColumns = `t.id, t.organization_id, COALESCE(t.primary_entity_id, ''), t.last_message_timestamp, t.last_external_message_timestamp, t.last_message_summary, t.last_external_message_summary, t.last_primary_entity_endpoints, t.created, t.message_count, t.type, COALESCE(t.system_title, ''), COALESCE(t.user_title, ''), t.origin`
 
 type QueryOption int
 
@@ -224,9 +224,9 @@ func (d *dal) CreateThread(ctx context.Context, thread *models.Thread) (models.T
 	}
 	now := time.Now()
 	if _, err := d.db.Exec(`
-		INSERT INTO threads (id, organization_id, primary_entity_id, last_message_timestamp, last_external_message_timestamp, last_message_summary, last_external_message_summary, last_primary_entity_endpoints, type, system_title, user_title)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, id, thread.OrganizationID, thread.PrimaryEntityID, now, now, thread.LastMessageSummary, thread.LastExternalMessageSummary, lastPrimaryEntityEndpointsData, thread.Type, thread.SystemTitle, thread.UserTitle); err != nil {
+		INSERT INTO threads (id, organization_id, primary_entity_id, last_message_timestamp, last_external_message_timestamp, last_message_summary, last_external_message_summary, last_primary_entity_endpoints, type, system_title, user_title, origin)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, id, thread.OrganizationID, thread.PrimaryEntityID, now, now, thread.LastMessageSummary, thread.LastExternalMessageSummary, lastPrimaryEntityEndpointsData, thread.Type, thread.SystemTitle, thread.UserTitle, thread.Origin); err != nil {
 		return models.ThreadID{}, errors.Trace(err)
 	}
 	thread.ID = id
@@ -315,7 +315,7 @@ func (d *dal) IterateThreads(ctx context.Context, orgEntityID, viewerEntityID st
 	limit := fmt.Sprintf(" LIMIT %d", it.Count*2) // *2 since we don't filter on team thread membership yet
 	rows, err := d.db.Query(`
 		SELECT t.id, t.organization_id, COALESCE(t.primary_entity_id, ''), t.last_message_timestamp, t.last_external_message_timestamp, t.last_message_summary,
-			t.last_external_message_summary, t.last_primary_entity_endpoints, t.created, t.message_count, t.type, COALESCE(t.system_title, ''), COALESCE(t.user_title, ''),
+			t.last_external_message_summary, t.last_primary_entity_endpoints, t.created, t.message_count, t.type, COALESCE(t.system_title, ''), COALESCE(t.user_title, ''), t.origin,
 			te.thread_id, te.entity_id, te.member, te.joined, te.last_viewed, te.last_unread_notify, te.last_referenced
 		FROM threads t
 		`+joinType+` thread_entities te ON te.entity_id = ? AND te.thread_id = t.id
@@ -1020,7 +1020,7 @@ func scanThread(row dbutil.Scanner) (*models.Thread, error) {
 	var lastPrimaryEntityEndpointsData []byte
 	err := row.Scan(&t.ID, &t.OrganizationID, &t.PrimaryEntityID, &t.LastMessageTimestamp, &t.LastExternalMessageTimestamp,
 		&t.LastMessageSummary, &t.LastExternalMessageSummary, &lastPrimaryEntityEndpointsData, &t.Created, &t.MessageCount,
-		&t.Type, &t.SystemTitle, &t.UserTitle)
+		&t.Type, &t.SystemTitle, &t.UserTitle, &t.Origin)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrNotFound)
 	} else if err != nil {
@@ -1056,7 +1056,7 @@ func scanThreadAndEntity(row dbutil.Scanner) (*models.Thread, *models.ThreadEnti
 	var lastPrimaryEntityEndpointsData []byte
 	err := row.Scan(&t.ID, &t.OrganizationID, &t.PrimaryEntityID, &t.LastMessageTimestamp, &t.LastExternalMessageTimestamp,
 		&t.LastMessageSummary, &t.LastExternalMessageSummary, &lastPrimaryEntityEndpointsData, &t.Created, &t.MessageCount, &t.Type,
-		&t.SystemTitle, &t.UserTitle, &te.ThreadID, &teEntityID, &teMember, &teJoined, &te.LastViewed, &te.LastUnreadNotify, &te.LastReferenced)
+		&t.SystemTitle, &t.UserTitle, &t.Origin, &te.ThreadID, &teEntityID, &teMember, &teJoined, &te.LastViewed, &te.LastUnreadNotify, &te.LastReferenced)
 	if err == sql.ErrNoRows {
 		return nil, nil, errors.Trace(ErrNotFound)
 	} else if err != nil {

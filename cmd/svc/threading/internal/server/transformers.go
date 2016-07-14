@@ -99,6 +99,18 @@ func transformThreadTypeFromRequest(tt threading.ThreadType) (models.ThreadType,
 	return models.ThreadTypeUnknown, errors.Trace(fmt.Errorf("unknown thread type '%s'", tt))
 }
 
+func transformThreadOriginFromRequest(to threading.ThreadOrigin) (models.ThreadOrigin, error) {
+	switch to {
+	case threading.ThreadOrigin_THREAD_ORIGIN_UNKNOWN:
+		return models.ThreadOriginUnknown, nil
+	case threading.ThreadOrigin_THREAD_ORIGIN_ORGANIZATION_CODE:
+		return models.ThreadOriginOrganizationCode, nil
+	case threading.ThreadOrigin_THREAD_ORIGIN_PATIENT_INVITE:
+		return models.ThreadOriginPatientInvite, nil
+	}
+	return models.ThreadOriginUnknown, errors.Trace(fmt.Errorf("unknown thread origin '%s'", to))
+}
+
 func transformRequestEndpointChannelToDAL(c threading.Endpoint_Channel) (models.Endpoint_Channel, error) {
 	var dc models.Endpoint_Channel
 	switch c {

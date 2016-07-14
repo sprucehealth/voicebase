@@ -1,0 +1,1 @@
+ALTER TABLE threads ADD COLUMN origin VARCHAR(35) DEFAULT '';
