@@ -104,29 +104,31 @@ func (m *mediaSectionTransformer) transform(questionID string, answer client.Ans
 		}
 	}
 
-	res, err := m.mediaClient.MediaInfos(context.Background(), &media.MediaInfosRequest{
-		MediaIDs: mediaIDs,
-	})
-	if err != nil {
-		return nil, errors.Trace(fmt.Errorf("Unable to transform answer for %s: %s", questionID, err))
-	}
+	if len(mediaIDs) > 0 {
+		res, err := m.mediaClient.MediaInfos(context.Background(), &media.MediaInfosRequest{
+			MediaIDs: mediaIDs,
+		})
+		if err != nil {
+			return nil, errors.Trace(fmt.Errorf("Unable to transform answer for %s: %s", questionID, err))
+		}
 
-	for _, mediaInfo := range res.MediaInfos {
-		slot, ok := slotMap[mediaInfo.ID]
-		if !ok {
-			return nil, errors.Trace(fmt.Errorf("media returned for slot that doesn't exist for question %s:%s", questionID, err))
+		for _, mediaInfo := range res.MediaInfos {
+			slot, ok := slotMap[mediaInfo.ID]
+			if !ok {
+				return nil, errors.Trace(fmt.Errorf("media returned for slot that doesn't exist for question %s:%s", questionID, err))
+			}
+			var mediaType models.MediaType
+			switch mediaInfo.MIME.Type {
+			case "image":
+				mediaType = models.MediaType_IMAGE
+			case "video":
+				mediaType = models.MediaType_VIDEO
+			default:
+				return nil, errors.Trace(fmt.Errorf("Unknown media type for %s", mediaInfo.ID))
+			}
+			slot.Type = mediaType
+			delete(slotMap, mediaInfo.ID)
 		}
-		var mediaType models.MediaType
-		switch mediaInfo.MIME.Type {
-		case "image":
-			mediaType = models.MediaType_IMAGE
-		case "video":
-			mediaType = models.MediaType_VIDEO
-		default:
-			return nil, errors.Trace(fmt.Errorf("Unknown media type for %s", mediaInfo.ID))
-		}
-		slot.Type = mediaType
-		delete(slotMap, mediaInfo.ID)
 	}
 
 	// there should be no slot left for which we were unable to find the media object
