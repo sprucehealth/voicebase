@@ -53,10 +53,7 @@ const (
 	// post delayed message after 9:00 am PST
 	spruceSupportDelayedMessageHour = 9
 
-	supportMessage = `Hi {{.ProviderName}} - great to see you on here! My name is {{.SupportPersonName}}. We only recently launched Spruce, so I’m checking in with everyone that signs up to make sure the product makes sense. Any questions so far?
-
-BTW, we put together a brief tutorial, which you can access here: bit.ly/22VjkkX.`
-	supportPersonName = "Caitrin"
+	supportMessage = `Hi {{.ProviderName}} - you will have received an email from someone on the team, but I thought I’d check in here too. Do you have any questions about Spruce?`
 )
 
 type Worker struct {
@@ -72,8 +69,7 @@ type snsMessage struct {
 }
 
 type messageContext struct {
-	ProviderName      string
-	SupportPersonName string
+	ProviderName string
 }
 
 func init() {
@@ -174,8 +170,7 @@ func (w *Worker) postMessage(ctx context.Context, event *operational.NewOrgCreat
 	providerName := determineProviderName(entity.Info.ShortTitle, entity.Info.FirstName, entity.Info.LastName)
 
 	if err := supportMessageTemplate.Execute(&buffer, &messageContext{
-		SupportPersonName: supportPersonName,
-		ProviderName:      providerName,
+		ProviderName: providerName,
 	}); err != nil {
 		return errors.Trace(err)
 	}

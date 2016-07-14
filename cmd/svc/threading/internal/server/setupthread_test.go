@@ -30,7 +30,7 @@ func TestCreateOnboardingThread(t *testing.T) {
 	dl.Expect(mock.NewExpectation(dl.CreateThread, &models.Thread{
 		OrganizationID:     "o1",
 		PrimaryEntityID:    "e2",
-		LastMessageSummary: "Setup: Welcome! How would you like to use Spruce? (You can tap on multiple options) Second phone line for calls and texts with patients, without disclosing your personal number. Automated answering service that transcribes urgent voicemails and notifies you. Secure team chat and care coordination. Digital care and telemedicine.",
+		LastMessageSummary: "Setup: Welcome! You can access our setup guide here, at any time. In the meantime, how would you like to use Spruce? (You can tap on multiple options) Second phone line for calls and texts with patients, without disclosing your personal number. Automated answering service that transcribes urgent voicemails and notifies you. Secure team chat and care coordination. Digital care and telemedicine.",
 		Type:               models.ThreadTypeSetup,
 	}).WithReturns(thid, nil))
 
@@ -38,8 +38,8 @@ func TestCreateOnboardingThread(t *testing.T) {
 		ThreadID:     thid,
 		FromEntityID: "e2",
 		Internal:     false,
-		Text:         "Welcome! How would you like to use Spruce? (You can tap on multiple options)\n\n<a href=\"https://WEBDOMAIN/org/o1/settings/phone\">Second phone line</a> for calls and texts with patients, without disclosing your personal number.\n\n<a href=\"https://WEBDOMAIN/post_event?name=setup_answering_service&amp;org_id=o1&amp;refresh_thread=1\">Automated answering service</a> that transcribes urgent voicemails and notifies you.\n\n<a href=\"https://WEBDOMAIN/post_event?name=setup_team_messaging&amp;org_id=o1&amp;refresh_thread=1\">Secure team chat and care coordination</a>.\n\n<a href=\"https://WEBDOMAIN/post_event?name=setup_telemedicine&amp;org_id=o1&amp;refresh_thread=1\">Digital care and telemedicine</a>.",
-		Summary:      "Setup: Welcome! How would you like to use Spruce? (You can tap on multiple options) Second phone line for calls and texts with patients, without disclosing your personal number. Automated answering service that transcribes urgent voicemails and notifies you. Secure team chat and care coordination. Digital care and telemedicine.",
+		Text:         "Welcome! You can access our <a href=\"http://bit.ly/22VjkkX\">setup guide here</a>, at any time. In the meantime, how would you like to use Spruce? (You can tap on multiple options)\n\n<a href=\"https://WEBDOMAIN/org/o1/settings/phone\">Second phone line</a> for calls and texts with patients, without disclosing your personal number.\n\n<a href=\"https://WEBDOMAIN/post_event?name=setup_answering_service&amp;org_id=o1&amp;refresh_thread=1\">Automated answering service</a> that transcribes urgent voicemails and notifies you.\n\n<a href=\"https://WEBDOMAIN/post_event?name=setup_team_messaging&amp;org_id=o1&amp;refresh_thread=1\">Secure team chat and care coordination</a>.\n\n<a href=\"https://WEBDOMAIN/post_event?name=setup_telemedicine&amp;org_id=o1&amp;refresh_thread=1\">Digital care and telemedicine</a>.",
+		Summary:      "Setup: Welcome! You can access our setup guide here, at any time. In the meantime, how would you like to use Spruce? (You can tap on multiple options) Second phone line for calls and texts with patients, without disclosing your personal number. Automated answering service that transcribes urgent voicemails and notifies you. Secure team chat and care coordination. Digital care and telemedicine.",
 	}).WithReturns(&models.ThreadItem{}, nil))
 
 	dl.Expect(mock.NewExpectation(dl.CreateOnboardingState, thid, "o1").WithReturns(nil))
