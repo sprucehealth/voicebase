@@ -3,6 +3,8 @@ package saml
 import (
 	"fmt"
 	"strings"
+
+	"github.com/sprucehealth/backend/libs/ptr"
 )
 
 type questionBlock struct {
@@ -158,16 +160,19 @@ func questionParser(p *parser, line string) interface{} {
 			case "photo slot":
 				// append to both MediaSlots and PhotoSlots for backwards compatiblity
 				que.Details.PhotoSlots = append(que.Details.PhotoSlots, &MediaSlot{
-					Name: value,
+					Name:     value,
+					Required: ptr.Bool(true),
 				})
 				que.Details.MediaSlots = append(que.Details.MediaSlots, &MediaSlot{
-					Name: value,
-					Type: "photo",
+					Name:     value,
+					Type:     "photo",
+					Required: ptr.Bool(true),
 				})
 			case "video slot":
 				que.Details.MediaSlots = append(que.Details.MediaSlots, &MediaSlot{
-					Name: value,
-					Type: "video",
+					Name:     value,
+					Type:     "video",
+					Required: ptr.Bool(true),
 				})
 			case "alert":
 				que.Details.AlertText = value

@@ -163,6 +163,7 @@ func TestMediaQuestion(t *testing.T) {
 			[tip subtext (inline) "Just move your face, not your phone."]
 			[tip style (inline) "point_left"]
 		[photo slot "Other Side"]
+			[optional]
 			[tip (inline) "Now turn to the other side."]
 			[tip subtext (inline) "Just move your face, not your phone."]
 			[tip style (inline) "point_right"]
@@ -191,8 +192,9 @@ func TestMediaQuestion(t *testing.T) {
 											Type:     QuestionTypeMediaSection,
 											MediaSlots: []*MediaSlot{
 												{
-													Name: "Face Front",
-													Type: "video",
+													Name:     "Face Front",
+													Type:     "video",
+													Required: ptr.Bool(true),
 													ClientData: &MediaSlotClientData{
 														InitialCameraDirection:   "front",
 														MediaMissingErrorMessage: "A photo of the front of your face is required to continue.",
@@ -203,8 +205,9 @@ func TestMediaQuestion(t *testing.T) {
 													},
 												},
 												{
-													Name: "Side",
-													Type: "video",
+													Name:     "Side",
+													Type:     "video",
+													Required: ptr.Bool(true),
 													ClientData: &MediaSlotClientData{
 														Tips: map[string]*MediaTip{
 															"inline": &MediaTip{
@@ -216,8 +219,9 @@ func TestMediaQuestion(t *testing.T) {
 													},
 												},
 												{
-													Name: "Other Side",
-													Type: "photo",
+													Name:     "Other Side",
+													Type:     "photo",
+													Required: ptr.Bool(false),
 													ClientData: &MediaSlotClientData{
 														Tips: map[string]*MediaTip{
 															"inline": &MediaTip{
@@ -231,7 +235,8 @@ func TestMediaQuestion(t *testing.T) {
 											},
 											PhotoSlots: []*MediaSlot{
 												{
-													Name: "Other Side",
+													Name:     "Other Side",
+													Required: ptr.Bool(false),
 													ClientData: &MediaSlotClientData{
 														Tips: map[string]*MediaTip{
 															"inline": &MediaTip{
