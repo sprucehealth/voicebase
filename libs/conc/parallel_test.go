@@ -2,6 +2,7 @@ package conc
 
 import (
 	"errors"
+	"strings"
 	"testing"
 )
 
@@ -69,7 +70,7 @@ func TestParallel(t *testing.T) {
 		t.Fatalf("Expected 3 errors, got %d", len(e))
 	} else {
 		for _, e := range e {
-			if e.Error() != "runtime error: BOOM" && e.Error() != "POW" && e.Error() != "SURPRISE" {
+			if !strings.HasPrefix(e.Error(), "runtime error: BOOM") && e.Error() != "POW" && e.Error() != "SURPRISE" {
 				t.Fatalf("Unexpected error %s", e)
 			}
 		}

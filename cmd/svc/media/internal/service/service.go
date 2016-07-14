@@ -80,11 +80,11 @@ const thumbnailSuffix = "-thumbnail"
 func (s *service) GetReader(ctx context.Context, mediaID dal.MediaID) (io.ReadCloser, *MediaMeta, error) {
 	media, err := s.dal.Media(mediaID)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, errors.Trace(err)
 	}
 	mt, err := mime.ParseType(media.MimeType)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, errors.Trace(err)
 	}
 
 	var rc io.ReadCloser
@@ -92,22 +92,22 @@ func (s *service) GetReader(ctx context.Context, mediaID dal.MediaID) (io.ReadCl
 	case "image":
 		rc, _, err = s.imageService.GetReader(mediaID.String(), nil)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, errors.Trace(err)
 		}
 	case "audio":
 		rc, err = s.audioService.GetReader(mediaID.String())
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, errors.Trace(err)
 		}
 	case "video":
 		rc, err = s.videoService.GetReader(mediaID.String())
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, errors.Trace(err)
 		}
 	default:
 		rc, err = s.binaryService.GetReader(mediaID.String())
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, errors.Trace(err)
 		}
 	}
 	return rc, &MediaMeta{
@@ -123,7 +123,7 @@ func (s *service) GetThumbnailReader(ctx context.Context, mediaID dal.MediaID, s
 	if errors.Cause(err) == dal.ErrNotFound {
 		thumbID = mediaID.String()
 	} else if err != nil {
-		return nil, nil, err
+		return nil, nil, errors.Trace(err)
 	} else {
 		thumbID = thumbnailID(m)
 	}
@@ -133,12 +133,12 @@ func (s *service) GetThumbnailReader(ctx context.Context, mediaID dal.MediaID, s
 		// Attempt a placholder fallback
 		rc, meta, err = s.imageService.GetReader(placeholderID(m), size)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, errors.Trace(err)
 		}
 	} else if err != nil {
-		return nil, nil, err
+		return nil, nil, errors.Trace(err)
 	}
-	return rc, meta, err
+	return rc, meta, errors.Trace(err)
 }
 
 func thumbnailID(m *dal.Media) string {
@@ -161,11 +161,11 @@ func (s *service) ExpiringURL(ctx context.Context, mediaID dal.MediaID, exp time
 func (s *service) PutMedia(ctx context.Context, mFile io.ReadSeeker, mediaType *mime.Type, mThumb io.ReadSeeker) (*MediaMeta, error) {
 	acc, err := mediactx.Account(ctx)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	mediaID, err := dal.NewMediaID()
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	parallel := conc.NewParallel()
 	var size uint64
@@ -176,14 +176,14 @@ func (s *service) PutMedia(ctx context.Context, mFile io.ReadSeeker, mediaType *
 		case "image":
 			im, err := s.imageService.PutReader(mediaID.String(), mFile)
 			if err != nil {
-				return err
+				return errors.Trace(err)
 			}
 			size = im.Size
 			url = im.URL
 		case "audio":
 			am, err := s.audioService.PutReader(mediaID.String(), mFile, mediaType.String())
 			if err != nil {
-				return err
+				return errors.Trace(err)
 			}
 			size = am.Size
 			duration = am.Duration
@@ -191,7 +191,7 @@ func (s *service) PutMedia(ctx context.Context, mFile io.ReadSeeker, mediaType *
 		case "video":
 			vm, err := s.videoService.PutReader(mediaID.String(), mFile, mediaType.String())
 			if err != nil {
-				return err
+				return errors.Trace(err)
 			}
 			size = vm.Size
 			duration = vm.Duration
@@ -199,7 +199,7 @@ func (s *service) PutMedia(ctx context.Context, mFile io.ReadSeeker, mediaType *
 		default:
 			bm, err := s.binaryService.PutReader(mediaID.String(), mFile, mediaType.String())
 			if err != nil {
-				return err
+				return errors.Trace(err)
 			}
 			size = bm.Size
 			url = bm.URL
@@ -210,13 +210,13 @@ func (s *service) PutMedia(ctx context.Context, mFile io.ReadSeeker, mediaType *
 	if mThumb != nil {
 		parallel.Go(func() error {
 			if _, err := s.imageService.PutReader(mediaID.String()+thumbnailSuffix, mThumb); err != nil {
-				return err
+				return errors.Trace(err)
 			}
 			return nil
 		})
 	}
 	if err := parallel.Wait(); err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	_, err = s.dal.InsertMedia(&dal.Media{
 		ID:         mediaID,
@@ -228,7 +228,7 @@ func (s *service) PutMedia(ctx context.Context, mFile io.ReadSeeker, mediaType *
 		DurationNS: uint64(duration.Nanoseconds()),
 	})
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	return &MediaMeta{
 		MediaID:  mediaID,

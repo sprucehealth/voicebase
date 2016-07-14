@@ -1,6 +1,9 @@
 package conc
 
-import "fmt"
+import (
+	"fmt"
+	"runtime"
+)
 
 // Errors is a slice of multiple errors
 type Errors []error
@@ -34,7 +37,10 @@ func (p *Parallel) Go(fn func() error) {
 				if err, ok := e.(error); ok {
 					ch <- err
 				} else {
-					ch <- fmt.Errorf("runtime error: %v", e)
+					const size = 64 << 10
+					buf := make([]byte, size)
+					buf = buf[:runtime.Stack(buf, false)]
+					ch <- fmt.Errorf("runtime error: %v\nstack: %s", e, string(buf))
 				}
 			}
 			close(ch)
