@@ -44,7 +44,7 @@ func init() {
 }
 
 func main() {
-	svc := boot.NewService("deploy")
+	svc := boot.NewService("deploy", nil)
 	validateArgs()
 	listenAddress := ":" + strconv.Itoa(config.listenPort)
 	lis, err := net.Listen("tcp", listenAddress)

@@ -43,7 +43,7 @@ func init() {
 }
 
 func main() {
-	svc := boot.NewService("layout")
+	svc := boot.NewService("layout", nil)
 
 	db, err := dbutil.ConnectMySQL(&dbutil.DBConfig{
 		User:          config.dbUserName,

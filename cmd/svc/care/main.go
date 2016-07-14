@@ -66,7 +66,7 @@ func init() {
 }
 
 func main() {
-	svc := boot.NewService("care")
+	svc := boot.NewService("care", nil)
 
 	switch {
 	case config.s3Bucket == "":

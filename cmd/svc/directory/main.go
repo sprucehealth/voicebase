@@ -43,7 +43,7 @@ func init() {
 }
 
 func main() {
-	svc := boot.NewService("directory")
+	svc := boot.NewService("directory", nil)
 
 	listenAddress := ":" + strconv.Itoa(config.listenPort)
 	lis, err := net.Listen("tcp", listenAddress)

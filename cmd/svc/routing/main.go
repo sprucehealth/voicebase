@@ -66,7 +66,7 @@ func init() {
 }
 
 func main() {
-	bootSvc := boot.NewService("routing")
+	bootSvc := boot.NewService("routing", nil)
 
 	directoryConn, err := grpc.Dial(
 		config.directoryServiceURL,

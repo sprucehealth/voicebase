@@ -52,7 +52,7 @@ func init() {
 }
 
 func main() {
-	bootSvc := boot.NewService("threading")
+	bootSvc := boot.NewService("threading", nil)
 
 	if *flagSettingsAddr == "" {
 		golog.Fatalf("Settings service not configured")

@@ -62,7 +62,7 @@ func init() {
 }
 
 func main() {
-	bootSvc := boot.NewService("notification")
+	bootSvc := boot.NewService("notification", nil)
 
 	golog.Infof("Initializing database connection on %s:%d, user: %s, db: %s...", config.dbHost, config.dbPort, config.dbUser, config.dbName)
 	db, err := dbutil.ConnectMySQL(&dbutil.DBConfig{

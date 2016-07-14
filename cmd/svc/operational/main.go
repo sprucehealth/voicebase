@@ -39,7 +39,7 @@ var (
 )
 
 func main() {
-	bootSvc := boot.NewService("operational")
+	bootSvc := boot.NewService("operational", nil)
 
 	if *flagKMSKeyARN == "" {
 		golog.Fatalf("-kms_key_arn flag is required")

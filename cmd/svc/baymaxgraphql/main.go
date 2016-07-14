@@ -84,7 +84,25 @@ var (
 )
 
 func main() {
-	svc := boot.NewService("baymaxgraphql")
+	var authClient auth.AuthClient
+	svc := boot.NewService("baymaxgraphql", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if authClient == nil {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+		defer cancel()
+		_, err := authClient.CheckAuthentication(ctx,
+			&auth.CheckAuthenticationRequest{
+				Token: "dummy",
+			},
+		)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
 
 	if *flagKMSKeyARN == "" {
 		golog.Fatalf("-kms_key_arn flag is required")
@@ -115,7 +133,7 @@ func main() {
 	if err != nil {
 		golog.Fatalf("Unable to connect to auth service: %s", err)
 	}
-	authClient := auth.NewAuthClient(conn)
+	authClient = auth.NewAuthClient(conn)
 
 	if *flagDirectoryAddr == "" {
 		golog.Fatalf("Directory service not configured")

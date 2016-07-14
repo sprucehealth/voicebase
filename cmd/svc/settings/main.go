@@ -35,7 +35,7 @@ func init() {
 }
 
 func main() {
-	bootSvc := boot.NewService("settings")
+	bootSvc := boot.NewService("settings", nil)
 
 	awsSession, err := bootSvc.AWSSession()
 	if err != nil {

@@ -88,7 +88,7 @@ func init() {
 }
 
 func main() {
-	bootSvc := boot.NewService("excomms")
+	bootSvc := boot.NewService("excomms", nil)
 
 	conc.Go(func() {
 		runAPI(bootSvc)

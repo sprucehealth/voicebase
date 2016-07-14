@@ -48,7 +48,7 @@ func init() {
 }
 
 func main() {
-	svc := boot.NewService("auth")
+	svc := boot.NewService("auth", nil)
 
 	if config.clientEncryptionKeySecret == "" {
 		golog.Fatalf("Client encryption key secret required")

@@ -56,7 +56,7 @@ var (
 )
 
 func main() {
-	svc := boot.NewService("invite")
+	svc := boot.NewService("invite", nil)
 
 	if *flagFromEmail == "" {
 		golog.Fatalf("from_email required")

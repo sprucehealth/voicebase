@@ -27,7 +27,7 @@ var (
 )
 
 func main() {
-	boot.NewService("admin")
+	boot.NewService("admin", nil)
 	r := mux.NewRouter()
 	gqlHandler, gqlSchema := gql.New(*flagBehindProxy)
 	r.Handle("/graphql", cors.New(cors.Options{

@@ -58,7 +58,7 @@ type Service struct {
 }
 
 // NewService should be called at the start of a service. It parses flags and sets up a mangement server.
-func NewService(name string) *Service {
+func NewService(name string, healthCheckHandler http.Handler) *Service {
 	svc := &Service{name: name}
 	flag.BoolVar(&svc.flags.debug, "debug", false, "Enable debug logging")
 	flag.StringVar(&svc.flags.env, "env", "", "Execution environment")
@@ -108,6 +108,10 @@ func NewService(name string) *Service {
 
 	// TODO: this can be expanded in the future to support registering custom health checks (e.g. checking connection to DB)
 	http.Handle("/health-check", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if healthCheckHandler != nil {
+			healthCheckHandler.ServeHTTP(w, r)
+			return
+		}
 		w.Write([]byte("OK"))
 	}))
 

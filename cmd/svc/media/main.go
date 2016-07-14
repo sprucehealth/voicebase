@@ -58,7 +58,7 @@ var (
 )
 
 func main() {
-	svc := boot.NewService("media")
+	svc := boot.NewService("media", nil)
 	awsSession, err := svc.AWSSession()
 	if err != nil {
 		golog.Fatalf("Failed to create AWS session: %s", err)
