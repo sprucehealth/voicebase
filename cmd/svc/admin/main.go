@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/handlers/gql"
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/handlers/schema"
+	"github.com/sprucehealth/backend/cmd/svc/admin/internal/ldap"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -19,6 +20,8 @@ import (
 
 var (
 	flagBehindProxy  = flag.Bool("behind_proxy", false, "Flag to indicate when the service is behind a proxy")
+	flagLDAPAddr     = flag.String("ldap_addr", "localhost:389", "Address of the LDAP server")
+	flagLDAPBaseDN   = flag.String("ldap_base_dn", "ou=People,dc=sprucehealth,dc=com", "The base DN for LDAP users")
 	flagLetsEncrypt  = flag.Bool("letsencrypt", false, "Enable Let's Encrypt certificates")
 	flagListenAddr   = flag.String("graphql_listen_addr", "127.0.0.1:8084", "host:port to listen on")
 	flagResourcePath = flag.String("resource_path", path.Join(os.Getenv("GOPATH"),
@@ -28,8 +31,17 @@ var (
 
 func main() {
 	boot.NewService("admin", nil)
+
+	ap, err := ldap.NewAuthenticationProvider(&ldap.Config{
+		Address: *flagLDAPAddr,
+		BaseDN:  *flagLDAPBaseDN,
+	})
+	if err != nil {
+		golog.Fatalf(err.Error())
+	}
+
 	r := mux.NewRouter()
-	gqlHandler, gqlSchema := gql.New(*flagBehindProxy)
+	gqlHandler, gqlSchema := gql.New(ap, *flagBehindProxy)
 	r.Handle("/graphql", cors.New(cors.Options{
 		AllowedOrigins:   []string{"https://" + *flagWebDomain},
 		AllowedMethods:   []string{httputil.Get, httputil.Options, httputil.Post},
