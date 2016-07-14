@@ -81,22 +81,24 @@ func (m *mediaSectionToResponseTransformer) transform(answer *models.Answer) (cl
 		}
 	}
 
-	res, err := m.mediaClient.MediaInfos(context.Background(), &media.MediaInfosRequest{
-		MediaIDs: mediaIDs,
-	})
-	if err != nil {
-		return nil, errors.Trace(fmt.Errorf("Unable to get media info for answer to question %s: %s", answer.QuestionID, err))
-	}
-
-	for _, mediaInfo := range res.MediaInfos {
-		mediaSlot, ok := slotMap[mediaInfo.ID]
-		if !ok {
-			return nil, errors.Trace(fmt.Errorf("Unable to find slot that media %s maps to for answer to question %s", mediaInfo.ID, answer.QuestionID))
+	if len(mediaIDs) > 0 {
+		res, err := m.mediaClient.MediaInfos(context.Background(), &media.MediaInfosRequest{
+			MediaIDs: mediaIDs,
+		})
+		if err != nil {
+			return nil, errors.Trace(fmt.Errorf("Unable to get media info for answer to question %s: %s", answer.QuestionID, err))
 		}
-		mediaSlot.URL = mediaInfo.URL
-		mediaSlot.ThumbnailURL = mediaInfo.ThumbURL
-		mediaSlot.Type = mediaInfo.MIME.Type
-		delete(slotMap, mediaInfo.ID)
+
+		for _, mediaInfo := range res.MediaInfos {
+			mediaSlot, ok := slotMap[mediaInfo.ID]
+			if !ok {
+				return nil, errors.Trace(fmt.Errorf("Unable to find slot that media %s maps to for answer to question %s", mediaInfo.ID, answer.QuestionID))
+			}
+			mediaSlot.URL = mediaInfo.URL
+			mediaSlot.ThumbnailURL = mediaInfo.ThumbURL
+			mediaSlot.Type = mediaInfo.MIME.Type
+			delete(slotMap, mediaInfo.ID)
+		}
 	}
 
 	// there should be no slot left for which we were unable to find the media object
