@@ -18,7 +18,6 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/settings"
-	"google.golang.org/grpc"
 )
 
 var config struct {
@@ -88,14 +87,14 @@ func main() {
 	if config.directoryServiceAddress == "" {
 		golog.Fatalf("Directory service not configured")
 	}
-	directoryConn, err := grpc.Dial(config.directoryServiceAddress, grpc.WithInsecure())
+	directoryConn, err := boot.DialGRPC("notification", config.directoryServiceAddress)
 	if err != nil {
 		golog.Fatalf("Unable to connect to directory service: %s", err)
 	}
 	defer directoryConn.Close()
 	directoryClient := directory.NewDirectoryClient(directoryConn)
 
-	settingsConn, err := grpc.Dial(config.settingsServiceAddress, grpc.WithInsecure())
+	settingsConn, err := boot.DialGRPC("notification", config.settingsServiceAddress)
 	if err != nil {
 		golog.Fatalf("Unable to connect to settings service: %s", err)
 	}

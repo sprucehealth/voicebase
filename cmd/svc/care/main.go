@@ -108,19 +108,19 @@ func main() {
 		golog.Fatalf(err.Error())
 	}
 
-	conn, err := grpc.Dial(config.layoutAddr, grpc.WithInsecure())
+	conn, err := boot.DialGRPC("care", config.layoutAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to directory service: %s", err)
 	}
 	layoutClient := layout.NewLayoutClient(conn)
 
-	conn, err = grpc.Dial(config.settingsAddr, grpc.WithInsecure())
+	conn, err = boot.DialGRPC("care", config.settingsAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to settings service :%s", err)
 	}
 	settingsClient := settings.NewSettingsClient(conn)
 
-	conn, err = grpc.Dial(config.mediaAddr, grpc.WithInsecure())
+	conn, err = boot.DialGRPC("care", config.mediaAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to media service :%s", err)
 	}

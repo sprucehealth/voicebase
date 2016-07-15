@@ -73,7 +73,7 @@ func main() {
 		golog.Fatalf("failed to iniitlize db connection: %s", err)
 	}
 
-	settingsConn, err := grpc.Dial(config.settingsServiceAddress, grpc.WithInsecure())
+	settingsConn, err := boot.DialGRPC("auth", config.settingsServiceAddress)
 	if err != nil {
 		golog.Fatalf("Unable to connect to settings service: %s", err)
 	}

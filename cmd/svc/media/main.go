@@ -72,37 +72,25 @@ func main() {
 		golog.Fatalf("Media Storage bucket not specified")
 	}
 
-	if *flagAuthAddr == "" {
-		golog.Fatalf("Auth service addr not configured")
-	}
-	conn, err := grpc.Dial(*flagAuthAddr, grpc.WithInsecure())
+	conn, err := boot.DialGRPC("media", *flagAuthAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to auth service: %s", err)
 	}
 	authClient := auth.NewAuthClient(conn)
 
-	if *flagDirectoryAddr == "" {
-		golog.Fatalf("Directory service addr not configured")
-	}
-	conn, err = grpc.Dial(*flagDirectoryAddr, grpc.WithInsecure())
+	conn, err = boot.DialGRPC("media", *flagDirectoryAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to directory service: %s", err)
 	}
 	directoryClient := directory.NewDirectoryClient(conn)
 
-	if *flagThreadingAddr == "" {
-		golog.Fatalf("Threading service addr not configured")
-	}
-	conn, err = grpc.Dial(*flagThreadingAddr, grpc.WithInsecure())
+	conn, err = boot.DialGRPC("media", *flagThreadingAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to threading service: %s", err)
 	}
 	threadingClient := threading.NewThreadsClient(conn)
 
-	if *flagCareAddr == "" {
-		golog.Fatalf("Care service addr not configured")
-	}
-	conn, err = grpc.Dial(*flagCareAddr, grpc.WithInsecure())
+	conn, err = boot.DialGRPC("media", *flagCareAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to care service :%s", err)
 	}

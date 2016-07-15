@@ -36,7 +36,6 @@ import (
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
-	"google.golang.org/grpc"
 )
 
 var (
@@ -126,64 +125,44 @@ func main() {
 	if err != nil {
 		golog.Fatalf("Failed to parse service phone number: %s", err)
 	}
-	if *flagAuthAddr == "" {
-		golog.Fatalf("Auth service not configured")
-	}
-	conn, err := grpc.Dial(*flagAuthAddr, grpc.WithInsecure())
+
+	conn, err := boot.DialGRPC("baymaxgraphql", *flagAuthAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to auth service: %s", err)
 	}
 	authClient = auth.NewAuthClient(conn)
 
-	if *flagDirectoryAddr == "" {
-		golog.Fatalf("Directory service not configured")
-	}
-	conn, err = grpc.Dial(*flagDirectoryAddr, grpc.WithInsecure())
+	conn, err = boot.DialGRPC("baymaxgraphql", *flagDirectoryAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to directory service: %s", err)
 	}
 	directoryClient := cache.NewCachedClient(directory.NewDirectoryClient(conn), svc.MetricsRegistry.Scope("CachedDirectoryClient"))
 
-	if *flagThreadingAddr == "" {
-		golog.Fatalf("Threading service not configured")
-	}
-	conn, err = grpc.Dial(*flagThreadingAddr, grpc.WithInsecure())
+	conn, err = boot.DialGRPC("baymaxgraphql", *flagThreadingAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to threading service: %s", err)
 	}
 	threadingClient := threading.NewThreadsClient(conn)
 
-	if *flagSettingsAddr == "" {
-		golog.Fatalf("Settings service not configured")
-	}
-	conn, err = grpc.Dial(*flagSettingsAddr, grpc.WithInsecure())
+	conn, err = boot.DialGRPC("baymaxgraphql", *flagSettingsAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to settings service: %s", err)
 	}
 	settingsClient := settings.NewContextCacheClient(settings.NewSettingsClient(conn))
 
-	if *flagLayoutAddr == "" {
-		golog.Fatalf("Layout service not configured")
-	}
-	conn, err = grpc.Dial(*flagLayoutAddr, grpc.WithInsecure())
+	conn, err = boot.DialGRPC("baymaxgraphql", *flagLayoutAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to Layout service: %s", err)
 	}
 	layoutClient := layout.NewLayoutClient(conn)
 
-	if *flagCareAddr == "" {
-		golog.Fatalf("Care service not configured")
-	}
-	conn, err = grpc.Dial(*flagCareAddr, grpc.WithInsecure())
+	conn, err = boot.DialGRPC("baymaxgraphql", *flagCareAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to care service: %s", err)
 	}
 	careClient := care.NewCareClient(conn)
 
-	if *flagMediaAddr == "" {
-		golog.Fatalf("Media service not configured")
-	}
-	conn, err = grpc.Dial(*flagMediaAddr, grpc.WithInsecure())
+	conn, err = boot.DialGRPC("baymaxgraphql", *flagMediaAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to media service: %s", err)
 	}
@@ -215,24 +194,18 @@ func main() {
 	}
 	cancel()
 
-	if *flagExCommsAddr == "" {
-		golog.Fatalf("ExComm service not configured")
-	}
 	var exCommsClient excomms.ExCommsClient
 	if *flagExCommsAddr == "stub" {
 		exCommsClient = stub.NewStubExcommsClient()
 	} else {
-		conn, err = grpc.Dial(*flagExCommsAddr, grpc.WithInsecure())
+		conn, err = boot.DialGRPC("baymaxgraphql", *flagExCommsAddr)
 		if err != nil {
 			golog.Fatalf("Unable to connect to excomms service: %s", err)
 		}
 		exCommsClient = excomms.NewExCommsClient(conn)
 	}
 
-	if *flagInviteAddr == "" {
-		golog.Fatalf("Invite service not configured")
-	}
-	conn, err = grpc.Dial(*flagInviteAddr, grpc.WithInsecure())
+	conn, err = boot.DialGRPC("baymaxgraphql", *flagInviteAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to invite service: %s", err)
 	}

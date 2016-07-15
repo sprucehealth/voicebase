@@ -140,21 +140,21 @@
 		{
 			"ImportPath": "github.com/gogo/protobuf/gogoproto",
 			"Comment": "v0.1-78-gd3235f0",
-			"Rev": "c18eea6ad611eecf94a9ba38471f59706199409e"
+			"Rev": "2752d97bbd91927dd1c43296dbf8700e50e2708c"
 		},
 		{
 			"ImportPath": "github.com/gogo/protobuf/proto",
 			"Comment": "v0.1-78-gd3235f0",
-			"Rev": "c18eea6ad611eecf94a9ba38471f59706199409e"
+			"Rev": "2752d97bbd91927dd1c43296dbf8700e50e2708c"
 		},
 		{
 			"ImportPath": "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
 			"Comment": "v0.1-78-gd3235f0",
-			"Rev": "c18eea6ad611eecf94a9ba38471f59706199409e"
+			"Rev": "2752d97bbd91927dd1c43296dbf8700e50e2708c"
 		},
 		{
 			"ImportPath": "github.com/golang/protobuf/proto",
-			"Rev": "02ac84f19cf2febf53ac06e7fbc446c1ea0258e3"
+			"Rev": "874264fbbb43f4d91e999fecb4b40143ed611400"
 		},
 		{
 			"ImportPath": "github.com/google/go-querystring/query",
@@ -310,7 +310,7 @@
 		},
 		{
 			"ImportPath": "google.golang.org/grpc",
-			"Rev": "b0b7afa173ab8030774fdf383cac027c3c5077d2"
+			"Rev": "02fca896ff5f50c6bbbee0860345a49344b37a03"
 		},
 		{
 			"ImportPath": "gopkg.in/yaml.v2",

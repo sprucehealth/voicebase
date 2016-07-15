@@ -1,12 +1,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"strings"
 	"time"
-
-	"context"
 
 	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/aws-sdk-go/service/sns"
@@ -71,27 +70,21 @@ func runService(bootSvc *boot.Service) {
 		return
 	}
 
-	directoryConn, err := grpc.Dial(
-		config.directoryServiceURL,
-		grpc.WithInsecure())
+	directoryConn, err := boot.DialGRPC("excomms", config.directoryServiceURL)
 	if err != nil {
 		golog.Fatalf("Unable to communicate with directory service: %s", err.Error())
 		return
 	}
 	defer directoryConn.Close()
 
-	threadingConn, err := grpc.Dial(
-		config.threadingServiceAddress,
-		grpc.WithInsecure())
+	threadingConn, err := boot.DialGRPC("excomms", config.threadingServiceAddress)
 	if err != nil {
 		golog.Fatalf("Unable to communicate with threading service: %s", err.Error())
 		return
 	}
 	defer threadingConn.Close()
 
-	settingsConn, err := grpc.Dial(
-		config.settingsServiceURL,
-		grpc.WithInsecure())
+	settingsConn, err := boot.DialGRPC("excomms", config.settingsServiceURL)
 	if err != nil {
 		golog.Fatalf("Unable to communicate with settings service: %s", err.Error())
 		return

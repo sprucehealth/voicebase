@@ -23,6 +23,7 @@ import (
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/grpcdns"
 	"github.com/sprucehealth/backend/libs/mcutil"
 	"github.com/sprucehealth/backend/libs/ratelimit"
 	"github.com/sprucehealth/backend/libs/storage"
@@ -223,6 +224,21 @@ func (svc *Service) StoreFromURL(u string) (storage.Store, error) {
 		return storage.NewS3(awsSession, ur.Host, strings.TrimPrefix(ur.Path, "/")), nil
 	}
 	return nil, errors.Errorf("no storage available for scheme %s", ur.Scheme)
+}
+
+// DialGRPC connects to a GRPC service with the given address. Agent is
+// the name of the service making the connection (used to build the user agent).
+func DialGRPC(agent, addr string) (*grpc.ClientConn, error) {
+	if addr == "" {
+		return nil, errors.New("empty address")
+	}
+	balancerOpt := grpc.WithBalancer(grpc.RoundRobin(grpcdns.Resolver(time.Second * 10)))
+	userAgentOpt := grpc.WithUserAgent(fmt.Sprintf("%s/%s", agent, BuildNumber))
+	conn, err := grpc.Dial(addr, balancerOpt, userAgentOpt, grpc.WithInsecure())
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return conn, nil
 }
 
 // WaitForTermination waits for an INT or TERM signal.

@@ -54,10 +54,7 @@ func init() {
 func main() {
 	bootSvc := boot.NewService("threading", nil)
 
-	if *flagSettingsAddr == "" {
-		golog.Fatalf("Settings service not configured")
-	}
-	settingsConn, err := grpc.Dial(*flagSettingsAddr, grpc.WithInsecure())
+	settingsConn, err := boot.DialGRPC("threading", *flagSettingsAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to settings service: %s", err)
 	}
@@ -108,19 +105,13 @@ func main() {
 		})
 	}
 
-	if *flagDirectoryAddr == "" {
-		golog.Fatalf("Directory service not configured")
-	}
-	conn, err := grpc.Dial(*flagDirectoryAddr, grpc.WithInsecure())
+	conn, err := boot.DialGRPC("threading", *flagDirectoryAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to directory service: %s", err)
 	}
 	directoryClient := directory.NewDirectoryClient(conn)
 
-	if *flagMediaAddr == "" {
-		golog.Fatalf("Media service not configured")
-	}
-	conn, err = grpc.Dial(*flagMediaAddr, grpc.WithInsecure())
+	conn, err = boot.DialGRPC("threading", *flagMediaAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to media service: %s", err)
 	}

@@ -15,9 +15,7 @@ import (
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
-
 	"github.com/sprucehealth/backend/svc/threading"
-	"google.golang.org/grpc"
 )
 
 var (
@@ -74,40 +72,28 @@ func main() {
 	}
 
 	// Configure auth client
-	if *flagAuthAddr == "" {
-		golog.Fatalf("Auth service not configured")
-	}
-	conn, err := grpc.Dial(*flagAuthAddr, grpc.WithInsecure())
+	conn, err := boot.DialGRPC("operational", *flagAuthAddr)
 	if err != nil {
 		golog.Fatalf(err.Error())
 	}
 	authClient := auth.NewAuthClient(conn)
 
 	// Configure threading client
-	if *flagThreadingAddr == "" {
-		golog.Fatalf("Threading service not configured")
-	}
-	conn, err = grpc.Dial(*flagThreadingAddr, grpc.WithInsecure())
+	conn, err = boot.DialGRPC("operational", *flagThreadingAddr)
 	if err != nil {
 		golog.Fatalf(err.Error())
 	}
 	threadingClient := threading.NewThreadsClient(conn)
 
 	// Configure excomms client
-	if *flagExcommsAddr == "" {
-		golog.Fatalf("Excomms service not configured")
-	}
-	conn, err = grpc.Dial(*flagExcommsAddr, grpc.WithInsecure())
+	conn, err = boot.DialGRPC("operational", *flagExcommsAddr)
 	if err != nil {
 		golog.Fatalf(err.Error())
 	}
 	excommsClient := excomms.NewExCommsClient(conn)
 
 	// Configure directory client
-	if *flagDirectoryAddr == "" {
-		golog.Fatalf("Directory service not configured")
-	}
-	conn, err = grpc.Dial(*flagDirectoryAddr, grpc.WithInsecure())
+	conn, err = boot.DialGRPC("operational", *flagDirectoryAddr)
 	if err != nil {
 		golog.Fatalf(err.Error())
 	}

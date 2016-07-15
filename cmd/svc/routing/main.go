@@ -1,10 +1,9 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"time"
-
-	"context"
 
 	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/aws-sdk-go/service/sns"
@@ -19,7 +18,6 @@ import (
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
-	"google.golang.org/grpc"
 )
 
 var config struct {
@@ -68,33 +66,25 @@ func init() {
 func main() {
 	bootSvc := boot.NewService("routing", nil)
 
-	directoryConn, err := grpc.Dial(
-		config.directoryServiceURL,
-		grpc.WithInsecure())
+	directoryConn, err := boot.DialGRPC("routing", config.directoryServiceURL)
 	if err != nil {
 		golog.Fatalf("Unable to communicate with directory service: %s", err.Error())
 	}
 	defer directoryConn.Close()
 
-	threadConn, err := grpc.Dial(
-		config.threadServiceURL,
-		grpc.WithInsecure())
+	threadConn, err := boot.DialGRPC("routing", config.threadServiceURL)
 	if err != nil {
 		golog.Fatalf("Unable to communicate with thread service: %s", err.Error())
 	}
 	defer threadConn.Close()
 
-	excommsConn, err := grpc.Dial(
-		config.excommsServiceURL,
-		grpc.WithInsecure())
+	excommsConn, err := boot.DialGRPC("routing", config.excommsServiceURL)
 	if err != nil {
 		golog.Fatalf("Unable to communicate with excomms service: %s", err.Error())
 	}
 	defer excommsConn.Close()
 
-	settingsConn, err := grpc.Dial(
-		config.settingsServiceURL,
-		grpc.WithInsecure())
+	settingsConn, err := boot.DialGRPC("routing", config.settingsServiceURL)
 	if err != nil {
 		golog.Fatalf("Unable to communicate with settings service: %s", err.Error())
 	}
