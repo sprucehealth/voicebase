@@ -74,7 +74,7 @@ func (m *manager) ReserveNumber(originatingPhoneNumber, destinationPhoneNumber p
 				Expires: ptr.Time(expiration),
 			}); err != nil {
 				return errors.Trace(err)
-			} else if rowsAffected != 1 {
+			} else if rowsAffected > 1 {
 				return errors.Trace(fmt.Errorf("Expected 1 row to be updated, instead %d rows were updated for proxyPhoneNumber %s", rowsAffected, ppnr.ProxyPhoneNumber))
 			}
 
