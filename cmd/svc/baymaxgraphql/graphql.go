@@ -189,8 +189,8 @@ const (
 	defaultAuthCookieDuration = time.Hour * 24 * 30
 )
 
-func setAuthCookie(w http.ResponseWriter, domain, token string, expires time.Time) {
-	// set the auth cookie for the root domain rather than the specific endpoint.
+func rootDomain(host string) string {
+	domain := host
 	idx := strings.IndexByte(domain, '.')
 	if idx != -1 {
 		domain = domain[idx:]
@@ -199,12 +199,17 @@ func setAuthCookie(w http.ResponseWriter, domain, token string, expires time.Tim
 	if idx != -1 {
 		domain = domain[:idx]
 	}
+
+	return domain
+}
+
+func setAuthCookie(w http.ResponseWriter, domain, token string, expires time.Time) {
 	if expires.IsZero() {
 		expires = time.Now().Add(defaultAuthCookieDuration)
 	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     authTokenCookieName,
-		Domain:   domain,
+		Domain:   rootDomain(domain),
 		Value:    token,
 		Path:     "/",
 		MaxAge:   int(expires.Sub(time.Now()).Nanoseconds() / 1e9),
@@ -216,7 +221,7 @@ func setAuthCookie(w http.ResponseWriter, domain, token string, expires time.Tim
 func removeAuthCookie(w http.ResponseWriter, domain string) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     authTokenCookieName,
-		Domain:   domain,
+		Domain:   rootDomain(domain),
 		Value:    "",
 		Path:     "/",
 		MaxAge:   -1,
@@ -263,15 +268,14 @@ func (h *graphQLHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Internal error", http.StatusInternalServerError)
 			return
 		} else if res.IsAuthenticated {
-			// TODO : For now set the cookie on every request so that we are setting the cookie
-			// for the root domain rather than the specific endpoint. This will enable clients
-			// to seamlessly reuse the cookie for the media endpoint and other subdomains we come up with. After about 2 weeks, we should switch this
-			// to only setting the cookie when the auth token changes or the user logs in.
-			var expires time.Time
-			if res.Token.ExpirationEpoch > 0 {
-				expires = time.Unix(int64(res.Token.ExpirationEpoch), 0)
+			// If token changed then update the cookie
+			if res.Token.Value != c.Value {
+				var expires time.Time
+				if res.Token.ExpirationEpoch > 0 {
+					expires = time.Unix(int64(res.Token.ExpirationEpoch), 0)
+				}
+				setAuthCookie(w, r.Host, res.Token.Value, expires)
 			}
-			setAuthCookie(w, r.Host, res.Token.Value, expires)
 			acc = res.Account
 			ctx = gqlctx.WithClientEncryptionKey(ctx, res.Token.ClientEncryptionKey)
 			ctx = gqlctx.WithAuthToken(ctx, c.Value)
