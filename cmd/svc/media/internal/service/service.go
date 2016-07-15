@@ -9,7 +9,6 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/mediactx"
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/mime"
-	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/media"
@@ -167,57 +166,49 @@ func (s *service) PutMedia(ctx context.Context, mFile io.ReadSeeker, mediaType *
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	parallel := conc.NewParallel()
 	var size uint64
 	var duration time.Duration
 	var url string
-	parallel.Go(func() error {
-		switch mediaType.Type {
-		case "image":
-			im, err := s.imageService.PutReader(mediaID.String(), mFile)
-			if err != nil {
-				return errors.Trace(err)
-			}
-			size = im.Size
-			url = im.URL
-		case "audio":
-			am, err := s.audioService.PutReader(mediaID.String(), mFile, mediaType.String())
-			if err != nil {
-				return errors.Trace(err)
-			}
-			size = am.Size
-			duration = am.Duration
-			url = am.URL
-		case "video":
-			vm, err := s.videoService.PutReader(mediaID.String(), mFile, mediaType.String())
-			if err != nil {
-				return errors.Trace(err)
-			}
-			size = vm.Size
-			duration = vm.Duration
-			url = vm.URL
-		default:
-			bm, err := s.binaryService.PutReader(mediaID.String(), mFile, mediaType.String())
-			if err != nil {
-				return errors.Trace(err)
-			}
-			size = bm.Size
-			url = bm.URL
+	switch mediaType.Type {
+	case "image":
+		im, err := s.imageService.PutReader(mediaID.String(), mFile)
+		if err != nil {
+			return nil, errors.Trace(err)
 		}
-		return nil
-	})
+		size = im.Size
+		url = im.URL
+	case "audio":
+		am, err := s.audioService.PutReader(mediaID.String(), mFile, mediaType.String())
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		size = am.Size
+		duration = am.Duration
+		url = am.URL
+	case "video":
+		vm, err := s.videoService.PutReader(mediaID.String(), mFile, mediaType.String())
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		size = vm.Size
+		duration = vm.Duration
+		url = vm.URL
+	default:
+		bm, err := s.binaryService.PutReader(mediaID.String(), mFile, mediaType.String())
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		size = bm.Size
+		url = bm.URL
+	}
+
 	// If thumbnail information for the media was provided, upload and map it
 	if mThumb != nil {
-		parallel.Go(func() error {
-			if _, err := s.imageService.PutReader(mediaID.String()+thumbnailSuffix, mThumb); err != nil {
-				return errors.Trace(err)
-			}
-			return nil
-		})
+		if _, err := s.imageService.PutReader(mediaID.String()+thumbnailSuffix, mThumb); err != nil {
+			return nil, errors.Trace(err)
+		}
 	}
-	if err := parallel.Wait(); err != nil {
-		return nil, errors.Trace(err)
-	}
+
 	_, err = s.dal.InsertMedia(&dal.Media{
 		ID:         mediaID,
 		URL:        url,
