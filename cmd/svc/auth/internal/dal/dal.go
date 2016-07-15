@@ -713,7 +713,7 @@ func (d *dal) AuthToken(token string, expiresAfter time.Time, forUpdate bool) (*
 // ActiveAuthTokenForAccount returns the current active non shadow auth token record that conforms to the provided input
 func (d *dal) ActiveAuthTokenForAccount(accountID AccountID) (*AuthToken, error) {
 	row := d.db.QueryRow(
-		selectAuthToken+` WHERE account_id = ? AND expires > ? AND shadow = false`, accountID, time.Now())
+		selectAuthToken+` WHERE account_id = ? AND expires > ? AND shadow = false ORDER BY created DESC LIMIT 1`, accountID, time.Now())
 	model, err := scanAuthToken(row)
 	return model, errors.Trace(err)
 }
