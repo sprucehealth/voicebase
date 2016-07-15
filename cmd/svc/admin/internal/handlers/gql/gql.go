@@ -5,7 +5,9 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/sprucehealth/backend/cmd/svc/admin/internal/gql/mutation"
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/gql/query"
+	"github.com/sprucehealth/backend/libs/auth"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -27,9 +29,10 @@ type gqlHandler struct {
 }
 
 // New returns an initialized instance of *gqlHandler
-func New(behindProxy bool) (http.Handler, graphql.Schema) {
+func New(ap auth.AuthenticationProvider, behindProxy bool) (http.Handler, graphql.Schema) {
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
-		Query: query.NewRoot(),
+		Query:    query.NewRoot(),
+		Mutation: mutation.NewRoot(ap),
 	})
 	if err != nil {
 		golog.Fatalf("Failed to initialized gqlHandler: %s", err.Error())
