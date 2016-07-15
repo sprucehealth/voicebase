@@ -121,8 +121,6 @@ func (m *mediaSectionAnswer) unmarshalMapFromClient(data dataMap) error {
 	answers, err := data.getInterfaceSlice("sections")
 	if err != nil {
 		return err
-	} else if len(answers) == 0 {
-		return errors.New("No answers found when trying to parse photo section answer.")
 	}
 
 	m.Sections = make([]*mediaSectionAnswerItem, len(answers))
