@@ -33,7 +33,7 @@ func TLSConfig() *tls.Config {
 			tls.TLS_RSA_WITH_AES_128_CBC_SHA,
 			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
 		},
-		NextProtos: []string{"h2", "h2-14", "http/1.1"},
+		NextProtos: []string{"http/1.1"},
 	}
 }
 
