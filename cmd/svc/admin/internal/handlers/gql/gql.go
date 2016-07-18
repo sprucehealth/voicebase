@@ -5,12 +5,12 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/sprucehealth/backend/cmd/svc/admin/internal/gql/mutation"
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/gql/query"
 	"github.com/sprucehealth/backend/libs/auth"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/graphql"
 	"github.com/sprucehealth/graphql/gqlerrors"
 	"github.com/sprucehealth/graphql/language/parser"
@@ -29,10 +29,12 @@ type gqlHandler struct {
 }
 
 // New returns an initialized instance of *gqlHandler
-func New(ap auth.AuthenticationProvider, behindProxy bool) (http.Handler, graphql.Schema) {
+func New(
+	ap auth.AuthenticationProvider,
+	signer *sig.Signer,
+	behindProxy bool) (http.Handler, graphql.Schema) {
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
-		Query:    query.NewRoot(),
-		Mutation: mutation.NewRoot(ap),
+		Query: query.NewRoot(),
 	})
 	if err != nil {
 		golog.Fatalf("Failed to initialized gqlHandler: %s", err.Error())
@@ -87,6 +89,7 @@ func (h *gqlHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		httputil.CtxLogMap(r.Context()).Set("GraphQLErrors", strings.Join(errorTypes, " "))
 	}
+
 	httputil.JSONResponse(w, http.StatusOK, response)
 }
 
