@@ -42,7 +42,7 @@ func ErrNotAuthorized(ctx context.Context, resourceID string) error {
 	acc := gqlctx.Account(ctx)
 	rid := httputil.RequestID(ctx)
 	//Fuzz identifiables before logging att the err level
-	golog.LogDepthf(1, golog.ERR, "NotAuthorized: Account %+v attempted to access resource %s and is not authorized [RequestID %d]", auth.ObfuscateAccount(acc), resourceID, rid)
+	golog.LogDepthf(1, golog.INFO, "NotAuthorized: Account %+v attempted to access resource %s and is not authorized [RequestID %d]", auth.ObfuscateAccount(acc), resourceID, rid)
 	return UserError(ctx, ErrTypeNotAuthorized, "This account is not authorized to access the requested resource.")
 }
 

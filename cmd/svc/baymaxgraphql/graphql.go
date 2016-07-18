@@ -103,14 +103,16 @@ func init() {
 }
 
 type graphQLHandler struct {
-	auth                   auth.AuthClient
-	ram                    raccess.ResourceAccessor
-	service                *service
-	statRequests           *metrics.Counter
-	statResponseErrors     *metrics.Counter
-	statLatency            metrics.Histogram
-	statGQLParseLatency    metrics.Histogram
-	statGQLValidateLatency metrics.Histogram
+	auth                    auth.AuthClient
+	ram                     raccess.ResourceAccessor
+	service                 *service
+	statRequests            *metrics.Counter
+	statResponseErrors      *metrics.Counter
+	statErrNotAuthorized    *metrics.Counter
+	statErrNotAuthenticated *metrics.Counter
+	statLatency             metrics.Histogram
+	statGQLParseLatency     metrics.Histogram
+	statGQLValidateLatency  metrics.Histogram
 }
 
 // NewGraphQL returns an initialized instance of graphQLHandler
@@ -141,11 +143,15 @@ func NewGraphQL(
 ) http.Handler {
 	statRequests := metrics.NewCounter()
 	statResponseErrors := metrics.NewCounter()
+	statErrNotAuthorized := metrics.NewCounter()
+	statErrNotAuthenticated := metrics.NewCounter()
 	statLatency := metrics.NewUnbiasedHistogram()
 	statGQLParseLatency := metrics.NewUnbiasedHistogram()
 	statGQLValidateLatency := metrics.NewUnbiasedHistogram()
 	metricsRegistry.Add("requests", statRequests)
 	metricsRegistry.Add("response_errors", statResponseErrors)
+	metricsRegistry.Add("user_error/not_authorized", statErrNotAuthorized)
+	metricsRegistry.Add("user_error/not_authenticated", statErrNotAuthenticated)
 	metricsRegistry.Add("latency_us", statLatency)
 	metricsRegistry.Add("gql_parse_latency_us", statGQLParseLatency)
 	metricsRegistry.Add("gql_validate_latency_us", statGQLValidateLatency)
@@ -171,11 +177,13 @@ func NewGraphQL(
 			layoutStore:            layoutStore,
 			emailTemplateIDs:       emailTemplateIDs,
 		},
-		statRequests:           statRequests,
-		statResponseErrors:     statResponseErrors,
-		statLatency:            statLatency,
-		statGQLParseLatency:    statGQLParseLatency,
-		statGQLValidateLatency: statGQLValidateLatency,
+		statRequests:            statRequests,
+		statResponseErrors:      statResponseErrors,
+		statErrNotAuthorized:    statErrNotAuthorized,
+		statErrNotAuthenticated: statErrNotAuthenticated,
+		statLatency:             statLatency,
+		statGQLParseLatency:     statGQLParseLatency,
+		statGQLValidateLatency:  statGQLValidateLatency,
 	}
 }
 
@@ -387,6 +395,12 @@ func (h *graphQLHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				e.StackTrace = ""
 			} else {
 				golog.Warningf("GraphQL error response %s: %s (%s)\n%s", e.Type, e.Message, e.UserMessage, req.Query)
+			}
+			switch errors.ErrorType(e.Type) {
+			case errors.ErrTypeNotAuthorized:
+				h.statErrNotAuthorized.Inc(1)
+			case errors.ErrTypeNotAuthenticated:
+				h.statErrNotAuthenticated.Inc(1)
 			}
 			// Wrap any non well formed gql errors as internal
 			if errors.Type(e) == errors.ErrTypeUnknown {

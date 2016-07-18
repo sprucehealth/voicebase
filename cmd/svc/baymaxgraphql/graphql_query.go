@@ -15,6 +15,7 @@ import (
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
+	"github.com/sprucehealth/graphql/gqlerrors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
@@ -217,6 +218,8 @@ func lookupThreadWithReadStatus(ctx context.Context, ram raccess.ResourceAccesso
 	th, err := lookupThread(ctx, ram, id, "")
 	if grpc.Code(err) == codes.NotFound {
 		return nil, errors.ErrNotFound(ctx, id)
+	} else if e, ok := err.(*gqlerrors.FormattedError); ok {
+		return nil, e
 	} else if err != nil {
 		return nil, errors.InternalError(ctx, fmt.Errorf("account=%+v threadID=%s: %s", gqlctx.Account(ctx), id, err))
 	}
