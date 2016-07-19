@@ -271,17 +271,32 @@ func determinePlatformForAuth(headers *device.SpruceHeaders) auth.Platform {
 }
 
 func (m *resourceAccessor) CarePlan(ctx context.Context, id string) (*care.CarePlan, error) {
-	// Authorization: if the care plan has no parent (not yet submitted), then only permit the owner (match account ID)
-	// access to it. If it has been submitted, then fetch the object the parent ID references (e.g. thread item) and validate
-	// the account has access to the thread.
-	golog.Errorf("TODO: implement authorization for CarePlan")
 	res, err := m.care.CarePlan(ctx, &care.CarePlanRequest{ID: id})
 	if grpc.Code(err) == codes.NotFound {
 		return nil, errors.ErrNotFound(ctx, fmt.Sprintf("care plan %s not found", id))
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
+	if err := m.canAccessCarePlan(ctx, res.CarePlan); err != nil {
+		return nil, err
+	}
 	return res.CarePlan, nil
+}
+
+// canAccessCarePlan performs an auth check for a care plan. If it has no parent (not yet submitted),
+// then only permit the owner (match account ID) access to it. If it has been submitted, then fetch
+// the object the parent ID references (e.g. thread item) and validate the account has access to the thread.
+func (m *resourceAccessor) canAccessCarePlan(ctx context.Context, cp *care.CarePlan) error {
+	if cp.ParentID == "" {
+		acc := gqlctx.Account(ctx)
+		if acc == nil || acc.ID != cp.CreatorID {
+			return errors.ErrNotAuthorized(ctx, cp.ID)
+		}
+		return nil
+	}
+
+	// TODO: for now assuming the parent is a thread item as currently that's always the case
+	return m.canAccessResource(ctx, cp.ParentID, m.orgsForThreadItem)
 }
 
 func (m *resourceAccessor) CheckPasswordResetToken(ctx context.Context, token string) (*auth.CheckPasswordResetTokenResponse, error) {
@@ -772,8 +787,9 @@ func (m *resourceAccessor) SendMessage(ctx context.Context, req *excomms.SendMes
 }
 
 func (m *resourceAccessor) SubmitCarePlan(ctx context.Context, cp *care.CarePlan, parentID string) error {
-	// Authorization is the same as for CarePlan
-	golog.Errorf("TODO: implement authorization for SubmitCarePlan")
+	if err := m.canAccessCarePlan(ctx, cp); err != nil {
+		return err
+	}
 	_, err := m.care.SubmitCarePlan(ctx, &care.SubmitCarePlanRequest{ID: cp.ID, ParentID: parentID})
 	return err
 }
