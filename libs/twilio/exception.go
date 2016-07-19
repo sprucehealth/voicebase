@@ -33,6 +33,12 @@ const (
 	// ErrorNoSMSSupportToNumber is returned when the `To` number is not reachable via SMS or MMS.
 	// https://www.twilio.com/docs/api/errors/21612
 	ErrorNoSMSSupportToNumber = 21612
+
+	// ErrBlackListRuleViolation is returned when the `To` number has replied with STOP to one of the previous
+	// messages. We cannot send a message to the phone number until the subscriber identified by the phone number
+	// responds with START.
+	// https://www.twilio.com/docs/api/errors/21610
+	ErrorBlackListRuleViolation = 21610
 )
 
 // Exception holds information about error response returned by Twilio API

@@ -409,6 +409,8 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 					return nil, grpcErrorf(excomms.ErrorCodeSMSIncapableFromPhoneNumber, "from phone number %s does not have SMS capabilities", in.GetSMS().FromPhoneNumber)
 				case twilio.ErrorNoSMSSupportToNumber:
 					return nil, grpcErrorf(excomms.ErrorCodeMessageDeliveryFailed, "the `to` phone number %s is not reachable via sms or mms", in.GetSMS().ToPhoneNumber)
+				case twilio.ErrorBlackListRuleViolation:
+					return nil, grpcErrorf(excomms.ErrorCodeMessageDeliveryFailed, "the `to` phone nubmer %s requested to STOP receiving messages from %s so no message can be delivered until subscriber responds with START.", in.GetSMS().ToPhoneNumber, in.GetSMS().FromPhoneNumber)
 				}
 			}
 			return nil, grpcErrorf(codes.Internal, err.Error())
