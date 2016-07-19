@@ -178,37 +178,6 @@ func TestPhotoSectionAnswer_Invalid(t *testing.T) {
 		t.Fatalf("expected error but did not get one")
 	}
 
-	//	 required slot not filled
-
-	p = &MediaQuestionAnswer{
-		Sections: []*MediaSectionItem{
-			{
-				Name: "Test",
-				Slots: []*MediaSlotItem{
-					{
-						SlotID:  "10",
-						MediaID: "100",
-					},
-				},
-			},
-		},
-	}
-
-	err = p.Validate(&layout.Question{
-		Type: "q_type_media_section",
-		MediaSlots: []*layout.MediaSlot{
-			{
-				ID: "10",
-			},
-			{
-				ID:       "11",
-				Required: ptr.Bool(true),
-			},
-		},
-	})
-	if err == nil {
-		t.Fatalf("expected error but did not get one")
-	}
 }
 
 func TestMultipleChoiceQuestion(t *testing.T) {

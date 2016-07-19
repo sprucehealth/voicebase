@@ -84,7 +84,6 @@ func (p *MediaQuestionAnswer) Validate(question *layout.Question) error {
 		}
 	}
 
-	slotsFilled := make(map[string]struct{})
 	for _, section := range p.Sections {
 		if section.Name == "" {
 			return errors.Trace(fmt.Errorf("answer to question %s cannot have empty photo section name", question.ID))
@@ -99,7 +98,6 @@ func (p *MediaQuestionAnswer) Validate(question *layout.Question) error {
 			if slot.SlotID == "" {
 				return errors.Trace(fmt.Errorf("answer to question %s has a photo slot with no slot ID", question.ID))
 			}
-			slotsFilled[slot.SlotID] = struct{}{}
 
 			// TODO: With the help of the media service verify that the media stored matches the type
 			// of media supported
@@ -114,14 +112,6 @@ func (p *MediaQuestionAnswer) Validate(question *layout.Question) error {
 			if !slotFound {
 				return errors.Trace(fmt.Errorf("answer to question %s has a media slot referenced (%s) that does not exist in the question", question.ID, slot.SlotID))
 			}
-		}
-	}
-
-	// ensure that there are no required media slots in the question that did
-	// not have an answer
-	for _, slot := range question.MediaSlots {
-		if _, ok := slotsFilled[slot.ID]; !ok && slot.Required != nil && *slot.Required {
-			return errors.Trace(fmt.Errorf("question %s has a required media slot %s that is not answered", question.ID, slot.ID))
 		}
 	}
 
