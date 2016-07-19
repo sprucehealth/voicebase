@@ -35,6 +35,22 @@ func (s *MockSNSAPI) AddPermission(in *sns.AddPermissionInput) (*sns.AddPermissi
 	return rets[0].(*sns.AddPermissionOutput), SafeError(rets[1])
 }
 
+func (s *MockSNSAPI) CheckIfPhoneNumberIsOptedOut(in *sns.CheckIfPhoneNumberIsOptedOutInput) (*sns.CheckIfPhoneNumberIsOptedOutOutput, error) {
+	rets := s.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*sns.CheckIfPhoneNumberIsOptedOutOutput), SafeError(rets[1])
+}
+
+func (s *MockSNSAPI) CheckIfPhoneNumberIsOptedOutRequest(in *sns.CheckIfPhoneNumberIsOptedOutInput) (*request.Request, *sns.CheckIfPhoneNumberIsOptedOutOutput) {
+	rets := s.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*request.Request), rets[1].(*sns.CheckIfPhoneNumberIsOptedOutOutput)
+}
+
 func (s *MockSNSAPI) ConfirmSubscriptionRequest(in *sns.ConfirmSubscriptionInput) (*request.Request, *sns.ConfirmSubscriptionOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
@@ -179,6 +195,22 @@ func (s *MockSNSAPI) GetPlatformApplicationAttributes(in *sns.GetPlatformApplica
 	return rets[0].(*sns.GetPlatformApplicationAttributesOutput), SafeError(rets[1])
 }
 
+func (s *MockSNSAPI) GetSMSAttributes(in *sns.GetSMSAttributesInput) (*sns.GetSMSAttributesOutput, error) {
+	rets := s.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*sns.GetSMSAttributesOutput), SafeError(rets[1])
+}
+
+func (s *MockSNSAPI) GetSMSAttributesRequest(in *sns.GetSMSAttributesInput) (*request.Request, *sns.GetSMSAttributesOutput) {
+	rets := s.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*request.Request), rets[1].(*sns.GetSMSAttributesOutput)
+}
+
 func (s *MockSNSAPI) GetSubscriptionAttributesRequest(in *sns.GetSubscriptionAttributesInput) (*request.Request, *sns.GetSubscriptionAttributesOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
@@ -259,6 +291,22 @@ func (s *MockSNSAPI) ListPlatformApplicationsPages(in *sns.ListPlatformApplicati
 	return SafeError(rets[0])
 }
 
+func (s *MockSNSAPI) ListPhoneNumbersOptedOut(in *sns.ListPhoneNumbersOptedOutInput) (*sns.ListPhoneNumbersOptedOutOutput, error) {
+	rets := s.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*sns.ListPhoneNumbersOptedOutOutput), SafeError(rets[1])
+}
+
+func (s *MockSNSAPI) ListPhoneNumbersOptedOutRequest(in *sns.ListPhoneNumbersOptedOutInput) (*request.Request, *sns.ListPhoneNumbersOptedOutOutput) {
+	rets := s.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*request.Request), rets[1].(*sns.ListPhoneNumbersOptedOutOutput)
+}
+
 func (s *MockSNSAPI) ListSubscriptionsRequest(in *sns.ListSubscriptionsInput) (*request.Request, *sns.ListSubscriptionsOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
@@ -331,6 +379,22 @@ func (s *MockSNSAPI) ListTopicsPages(in *sns.ListTopicsInput, f func(*sns.ListTo
 	return SafeError(rets[0])
 }
 
+func (s *MockSNSAPI) OptInPhoneNumber(in *sns.OptInPhoneNumberInput) (*sns.OptInPhoneNumberOutput, error) {
+	rets := s.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*sns.OptInPhoneNumberOutput), SafeError(rets[1])
+}
+
+func (s *MockSNSAPI) OptInPhoneNumberRequest(in *sns.OptInPhoneNumberInput) (*request.Request, *sns.OptInPhoneNumberOutput) {
+	rets := s.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*request.Request), rets[1].(*sns.OptInPhoneNumberOutput)
+}
+
 func (s *MockSNSAPI) PublishRequest(in *sns.PublishInput) (*request.Request, *sns.PublishOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
@@ -393,6 +457,22 @@ func (s *MockSNSAPI) SetPlatformApplicationAttributes(in *sns.SetPlatformApplica
 		return nil, nil
 	}
 	return rets[0].(*sns.SetPlatformApplicationAttributesOutput), SafeError(rets[1])
+}
+
+func (s *MockSNSAPI) SetSMSAttributes(in *sns.SetSMSAttributesInput) (*sns.SetSMSAttributesOutput, error) {
+	rets := s.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*sns.SetSMSAttributesOutput), SafeError(rets[1])
+}
+
+func (s *MockSNSAPI) SetSMSAttributesRequest(in *sns.SetSMSAttributesInput) (*request.Request, *sns.SetSMSAttributesOutput) {
+	rets := s.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*request.Request), rets[1].(*sns.SetSMSAttributesOutput)
 }
 
 func (s *MockSNSAPI) SetSubscriptionAttributesRequest(in *sns.SetSubscriptionAttributesInput) (*request.Request, *sns.SetSubscriptionAttributesOutput) {

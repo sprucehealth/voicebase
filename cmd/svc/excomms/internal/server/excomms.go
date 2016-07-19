@@ -410,8 +410,6 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 				case twilio.ErrorNoSMSSupportToNumber:
 					return nil, grpcErrorf(excomms.ErrorCodeMessageDeliveryFailed, "the `to` phone number %s is not reachable via sms or mms", in.GetSMS().ToPhoneNumber)
 				}
-				if e.Code == twilio.ErrorCodeInvalidToPhoneNumber {
-				}
 			}
 			return nil, grpcErrorf(codes.Internal, err.Error())
 		}
