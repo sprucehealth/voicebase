@@ -274,13 +274,17 @@ func (s *server) CheckAuthentication(ctx context.Context, rd *auth.CheckAuthenti
 			ClientEncryptionKey: base64.StdEncoding.EncodeToString(aToken.ClientEncryptionKey),
 		}
 
+		tokenDurationExpiration := tokenDurationExpiration[auth.TokenDuration(auth.TokenDuration_value[aToken.DurationType.String()])]
+
 		// Conditions for extending and rotating token.
 		// 1. Not a shadow token
 		// 2. Not outside the token lifecycle.
 		// 3. Inside the token expiration refresh window.
 		if !aToken.Shadow &&
 			!s.clk.Now().After(aToken.Expires) &&
-			s.clk.Now().After(aToken.Created.Add(defaultTokenRefreshWindow)) {
+			// Since rotated tokens do not have their Created field updated, we check the refresh windows as
+			//   expiration - duration + refresh windows
+			s.clk.Now().After(aToken.Expires.Add(-tokenDurationExpiration).Add(defaultTokenRefreshWindow)) {
 			authToken, err = s.rotateAndExtendToken(dl, aToken, rd.TokenAttributes)
 			if err != nil {
 				return errors.Trace(err)

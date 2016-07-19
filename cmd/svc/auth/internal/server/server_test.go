@@ -532,6 +532,59 @@ func TestCheckAuthentication(t *testing.T) {
 	}, resp.Token)
 }
 
+func TestCheckAuthenticationJustRotated(t *testing.T) {
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+
+	mClock := clock.NewManaged(time.Now())
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
+	svr, ok := s.(*server)
+	test.Assert(t, ok, "Expected a *server")
+	svr.clk = mClock
+	s = svr
+	token := "123abc"
+	tokenAttributes := map[string]string{"token": "attribute"}
+	aID1, err := dal.NewAccountID()
+	test.OK(t, err)
+	expires := mClock.Now().Add(tokenDurationExpiration[auth.TokenDuration_SHORT])
+	created := mClock.Now().Add(-(defaultTokenRefreshWindow * 2))
+	dl.Expect(mock.NewExpectation(dl.AuthToken, token+":tokenattribute", mClock.Now(), true).WithReturns(&dal.AuthToken{
+		Token:               []byte(token + ":tokenattribute"),
+		AccountID:           aID1,
+		Expires:             expires,
+		Created:             created,
+		ClientEncryptionKey: []byte(clientEncryptionSecret),
+	}, nil))
+	dl.Expect(mock.NewExpectation(dl.Account, aID1).WithReturns(&dal.Account{
+		ID:        aID1,
+		FirstName: "bat",
+		LastName:  "man",
+	}, nil))
+	resp, err := s.CheckAuthentication(context.Background(), &auth.CheckAuthenticationRequest{
+		Token:           token,
+		TokenAttributes: tokenAttributes,
+	})
+	test.OK(t, err)
+
+	test.Assert(t, resp.IsAuthenticated, "Expected authentication")
+	test.AssertNotNil(t, resp.Account)
+	test.AssertNotNil(t, resp.Token)
+	test.Equals(t, &auth.Account{
+		ID:        aID1.String(),
+		FirstName: "bat",
+		LastName:  "man",
+	}, resp.Account)
+	test.Equals(t, &auth.AuthToken{
+		Value:               token,
+		ExpirationEpoch:     uint64(expires.Unix()),
+		ClientEncryptionKey: base64.StdEncoding.EncodeToString([]byte(clientEncryptionSecret)),
+	}, resp.Token)
+}
+
 func TestCheckAuthenticationShadowed(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
