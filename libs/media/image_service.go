@@ -11,7 +11,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strconv"
 
 	"github.com/sprucehealth/backend/libs/conc"
@@ -99,11 +98,8 @@ func (s *ImageService) PutReader(id string, r io.ReadSeeker) (*ImageMeta, error)
 	}
 
 	// Figure out the size of the data
-	size, err := r.Seek(0, os.SEEK_END)
+	size, err := SeekerSize(r)
 	if err != nil {
-		return nil, errors.Trace(err)
-	}
-	if _, err := r.Seek(0, os.SEEK_SET); err != nil {
 		return nil, errors.Trace(err)
 	}
 

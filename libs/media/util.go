@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/url"
-	"os"
 	"strings"
 )
 
@@ -26,11 +25,11 @@ const IDRegexPattern = `(\d+|[0-9a-f]{8}(-[0-9a-f]{4}){4}-[0-9a-f]{8})`
 
 // SeekerSize returns the size of the provided seeker
 func SeekerSize(sk io.Seeker) (int64, error) {
-	size, err := sk.Seek(0, os.SEEK_END)
+	size, err := sk.Seek(0, io.SeekEnd)
 	if err != nil {
 		return 0, err
 	}
-	_, err = sk.Seek(0, os.SEEK_SET)
+	_, err = sk.Seek(0, io.SeekStart)
 	return size, err
 }
 

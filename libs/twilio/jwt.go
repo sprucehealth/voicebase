@@ -97,9 +97,9 @@ func jwtDecode(token, key []byte, v interface{}) error {
 	payloadB64 := signed[ix+1:]
 
 	// Figure out the maximum size of a decoded segment to minimize allocation
-	headLen := base64RawURLEncodingDecodeLen(len(headerB64))
-	payloadLen := base64RawURLEncodingDecodeLen(len(payloadB64))
-	sigLen := base64RawURLEncodingDecodeLen(len(sigB64))
+	headLen := base64.RawURLEncoding.DecodedLen(len(headerB64))
+	payloadLen := base64.RawURLEncoding.DecodedLen(len(payloadB64))
+	sigLen := base64.RawURLEncoding.DecodedLen(len(sigB64))
 	maxN := headLen
 	if payloadLen > maxN {
 		maxN = payloadLen
@@ -151,9 +151,4 @@ func jwtDecode(token, key []byte, v interface{}) error {
 		return errInvalidJWT("invalid payload json")
 	}
 	return nil
-}
-
-// TODO: copied this from Go master as Go 1.6.2 has a bug
-func base64RawURLEncodingDecodeLen(n int) int {
-	return n * 6 / 8
 }

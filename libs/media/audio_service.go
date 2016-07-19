@@ -2,7 +2,6 @@ package media
 
 import (
 	"io"
-	"os"
 	"strconv"
 	"time"
 
@@ -49,7 +48,7 @@ func (s *AudioService) PutReader(id string, r io.ReadSeeker, contentType string)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	_, err = r.Seek(0, os.SEEK_SET)
+	_, err = r.Seek(0, io.SeekStart)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
