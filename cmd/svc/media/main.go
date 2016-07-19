@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/sprucehealth/backend/boot"
@@ -151,6 +152,10 @@ func main() {
 		Addr:           *flagHTTPListenAddr,
 		Handler:        shttputil.CompressResponse(h, httputil.CompressResponse),
 		MaxHeaderBytes: 1 << 20,
+		// 5 minute timeout is to allow for media uploads/downloads
+		ReadTimeout: 5 * time.Minute,
+		// Note: reason we don't include a write timeout is because we redirect the client
+		// to get media objects directly from S3.
 	}
 	go func() {
 		httpSrv.ListenAndServe()
