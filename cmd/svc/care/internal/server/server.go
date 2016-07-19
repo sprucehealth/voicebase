@@ -291,14 +291,14 @@ func (s *server) CreateVisitAnswers(ctx context.Context, in *care.CreateVisitAns
 			if err := dl.CreateVisitAnswer(ctx, visitID, in.ActorEntityID, answer); err != nil {
 				return errors.Trace(err)
 			}
+		}
 
-			if len(visitAnswers.ClearAnswers) > 0 {
-				rowsDeleted, err := dl.DeleteVisitAnswers(ctx, visitID, visitAnswers.ClearAnswers)
-				if err != nil {
-					return errors.Trace(err)
-				} else if rowsDeleted > int64(len(visitAnswers.ClearAnswers)) {
-					return errors.Trace(fmt.Errorf("more rows attempted to be deleted (%d) than anticpated (%d)", rowsDeleted, len(visitAnswers.ClearAnswers)))
-				}
+		if len(visitAnswers.ClearAnswers) > 0 {
+			rowsDeleted, err := dl.DeleteVisitAnswers(ctx, visitID, visitAnswers.ClearAnswers)
+			if err != nil {
+				return errors.Trace(err)
+			} else if rowsDeleted > int64(len(visitAnswers.ClearAnswers)) {
+				return errors.Trace(fmt.Errorf("more rows attempted to be deleted (%d) than anticpated (%d)", rowsDeleted, len(visitAnswers.ClearAnswers)))
 			}
 		}
 		return nil
