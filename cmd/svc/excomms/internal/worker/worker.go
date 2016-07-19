@@ -27,22 +27,24 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/media"
+	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/svc/excomms"
 )
 
 type IncomingRawMessageWorker struct {
-	started              bool
-	sqsAPI               sqsiface.SQSAPI
-	sqsURL               string
-	externalMessageTopic string
-	snsAPI               snsiface.SNSAPI
-	dal                  dal.DAL
-	store                storage.Store
-	twilioAccountSID     string
-	twilioAuthToken      string
-	resourceCleanerTopic string
+	started                  bool
+	sqsAPI                   sqsiface.SQSAPI
+	sqsURL                   string
+	externalMessageTopic     string
+	snsAPI                   snsiface.SNSAPI
+	dal                      dal.DAL
+	store                    storage.Store
+	twilioAccountSID         string
+	twilioAuthToken          string
+	resourceCleanerTopic     string
+	statErrorVoicemailUpload string
 }
 
 func NewWorker(
@@ -150,7 +152,15 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 	switch rm.Type {
 
 	case rawmsg.Incoming_TWILIO_SMS:
+
 		params := rm.GetTwilio()
+		// ensure that the from phone number is a valid number, otherwise reject
+		// the SMS
+		if _, err := phone.ParseNumber(params.From); err != nil {
+			golog.Infof("Invalid phone number as the FROM phone number for incoming SMS: %s", params.From)
+			return nil
+		}
+
 		smsItem := &excomms.PublishedExternalMessage_SMSItem{
 			SMSItem: &excomms.SMSItem{
 				Text:        params.Body,
