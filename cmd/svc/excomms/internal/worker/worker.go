@@ -101,28 +101,31 @@ func (w *IncomingRawMessageWorker) Start() {
 			}
 
 			for _, item := range sqsRes.Messages {
+
+				golog := golog.Context("handle", *item.ReceiptHandle)
+
 				var m awsutil.SNSSQSMessage
 				if err := json.Unmarshal([]byte(*item.Body), &m); err != nil {
-					golog.Errorf(err.Error())
+					golog.Infof("Unable to unmarshal SQS message: " + err.Error())
 					continue
 				}
 
 				data, err := base64.StdEncoding.DecodeString(m.Message)
 				if err != nil {
-					golog.Errorf("Unable to decode string %s", err.Error())
+					golog.Infof("Unable to decode string %s", err.Error())
 					continue
 				}
 
 				var notif sns.IncomingRawMessageNotification
 				if err := json.Unmarshal(data, &notif); err != nil {
-					golog.Errorf(err.Error())
+					golog.Infof("Unable to unmarshal message data: " + err.Error())
 					continue
 				}
 
 				golog.Debugf("Process message %s", *item.ReceiptHandle)
 
 				if err := w.process(&notif); err != nil {
-					golog.Context("handle", *item.ReceiptHandle).Errorf(err.Error())
+					golog.Infof("Unable to process notification: " + err.Error())
 					continue
 				}
 
@@ -134,7 +137,7 @@ func (w *IncomingRawMessageWorker) Start() {
 					},
 				)
 				if err != nil {
-					golog.Errorf(err.Error())
+					golog.Infof("Unable to delete message: " + err.Error())
 				}
 
 				golog.Debugf("Delete message %s", *item.ReceiptHandle)

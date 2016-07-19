@@ -98,26 +98,28 @@ func (r *externalMessageWorker) Start() {
 				WaitTimeSeconds:     ptr.Int64(20),
 			})
 			if err != nil {
-				golog.Errorf(err.Error())
+				golog.Errorf("Unable to receive SQS message: " + err.Error())
 				continue
 			}
 
 			for _, item := range sqsRes.Messages {
+				golog := golog.Context("handle", *item.ReceiptHandle)
+
 				var m awsutil.SNSSQSMessage
 				if err := json.Unmarshal([]byte(*item.Body), &m); err != nil {
-					golog.Errorf(err.Error())
+					golog.Infof("Unable to unmarshal SQS message: " + err.Error())
 					continue
 				}
 
 				data, err := base64.StdEncoding.DecodeString(m.Message)
 				if err != nil {
-					golog.Errorf("Unable to decode base64 encoded string: %s", err.Error())
+					golog.Infof("Unable to decode base64 encoded string: %s", err.Error())
 					return
 				}
 
 				var pem excomms.PublishedExternalMessage
 				if err := pem.Unmarshal(data); err != nil {
-					golog.Errorf(err.Error())
+					golog.Infof("Unable to unmarshal message data: " + err.Error())
 					continue
 				}
 				golog.Debugf("Process message %s.", *item.ReceiptHandle)
@@ -130,13 +132,13 @@ func (r *externalMessageWorker) Start() {
 					case errLogMessageAsSpam:
 						status = statusSpam
 					default:
-						golog.Context("handle", *item.ReceiptHandle).Errorf(err.Error())
+						golog.Infof("Unable to process message: " + err.Error())
 						continue
 					}
 				}
 
 				if err := r.dal.LogExternalMessage(data, pem.Type.String(), pem.FromChannelID, pem.ToChannelID, status); err != nil {
-					golog.Errorf("Unable to persist message to database: %s", err.Error())
+					golog.Infof("Unable to persist message to database: %s", err.Error())
 					continue
 				}
 
@@ -148,7 +150,7 @@ func (r *externalMessageWorker) Start() {
 					},
 				)
 				if err != nil {
-					golog.Errorf(err.Error())
+					golog.Infof("ERROR: Unable to delete message: " + err.Error())
 					continue
 				}
 				golog.Debugf("Delete message %s", *item.ReceiptHandle)
@@ -203,7 +205,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 
 		toEntity := determineProviderOrOrgEntity(toEntityLookupRes, pem.ToChannelID)
 		if toEntity == nil {
-			golog.Errorf(`No organization or provider found for %s.
+			golog.Infof(`No organization or provider found for %s.
 				Note that this message will be considered processed and will be marked as errored in the database.
 				If this message should be routed to a thread, then manual intervention will be required to put the message back into the SQS queue after the issue has been resolved.`, pem.ToChannelID)
 			return errLogMessageAsErrored
@@ -225,7 +227,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 
 				data, err := bar.Marshal()
 				if err != nil {
-					golog.Errorf("Unable to marshal block account request for account %s: %s", accountID, err.Error())
+					golog.Infof("Unable to marshal block account request for account %s: %s", accountID, err.Error())
 					continue
 				}
 
@@ -234,7 +236,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 					TopicArn: &r.blockAccountsTopicARN,
 				})
 				if err != nil {
-					golog.Errorf("Unable to publish message to block accounts topic for account %s: %s", accountID, err.Error())
+					golog.Infof("Unable to publish message to block accounts topic for account %s: %s", accountID, err.Error())
 					continue
 				}
 			}

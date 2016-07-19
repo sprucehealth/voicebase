@@ -68,33 +68,36 @@ func (a *appMessageWorker) Start() {
 				WaitTimeSeconds:     ptr.Int64(20),
 			})
 			if err != nil {
-				golog.Errorf(err.Error())
+				golog.Errorf("Unable to receive message: " + err.Error())
 				continue
 			}
 
 			for _, item := range sqsRes.Messages {
+
+				golog := golog.Context("handle", *item.ReceiptHandle)
+
 				var m awsutil.SNSSQSMessage
 				if err := json.Unmarshal([]byte(*item.Body), &m); err != nil {
-					golog.Errorf(err.Error())
+					golog.Infof("Unable to unmarshal SQS message: " + err.Error())
 					continue
 				}
 
 				data, err := base64.StdEncoding.DecodeString(m.Message)
 				if err != nil {
-					golog.Errorf("Unable to decode string %s", err.Error())
+					golog.Infof("Unable to decode string %s", err.Error())
 					continue
 				}
 
 				var pti threading.PublishedThreadItem
 				if err := pti.Unmarshal(data); err != nil {
-					golog.Errorf(err.Error())
+					golog.Infof("Unable to unmarshal published thread item: " + err.Error())
 					continue
 				}
 
 				golog.Debugf("Process message %s", *item.ReceiptHandle)
 
 				if err := a.process(&pti); err != nil {
-					golog.Errorf(err.Error())
+					golog.Infof("Unable to process item: " + err.Error())
 					continue
 				}
 
@@ -106,7 +109,7 @@ func (a *appMessageWorker) Start() {
 					},
 				)
 				if err != nil {
-					golog.Errorf(err.Error())
+					golog.Infof("Unable to delete message: " + err.Error())
 				}
 
 				golog.Debugf("Delete message %s", *item.ReceiptHandle)
@@ -209,7 +212,7 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 	}
 	plainText, err := textBML.PlainText()
 	if err != nil {
-		golog.Errorf("Unable to render plain text version for message item %s: "+err.Error(), pti.GetItem().ID)
+		golog.Infof("Unable to render plain text version for message item %s: "+err.Error(), pti.GetItem().ID)
 		// Shouldn't fail here since the parsing should have done validation
 		return errors.Trace(err)
 	}
@@ -224,13 +227,13 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 		},
 	})
 	if err != nil {
-		golog.Errorf("Unable to read settings for reveling sender for organizationID %s: %s", organizationID, err.Error())
+		golog.Infof("Unable to read settings for reveling sender for organizationID %s: %s", organizationID, err.Error())
 	} else if len(res.Values) == 0 {
-		golog.Warningf("No value specified for revealing sender for %s", organizationID)
+		golog.Infof("No value specified for revealing sender for %s", organizationID)
 	} else if len(res.Values) != 1 {
-		golog.Warningf("Expected 1 value for revealing sender instead got %d for %s", len(res.Values), organizationID)
+		golog.Infof("Expected 1 value for revealing sender instead got %d for %s", len(res.Values), organizationID)
 	} else if res.Values[0].GetBoolean() == nil {
-		golog.Warningf("Expected boolean value for revealing sender instead got %T for %s", res.Values[0].Value, organizationID)
+		golog.Infof("Expected boolean value for revealing sender instead got %T for %s", res.Values[0].Value, organizationID)
 	} else {
 		revealSender = res.Values[0].GetBoolean().Value
 	}
@@ -254,7 +257,7 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 			// determine org phone number
 			orgContact := determineProvisionedContact(orgEntity, directory.ContactType_PHONE)
 			if orgContact == nil {
-				golog.Errorf("Unable to determine organization provisioned phone number for org %s. Dropping message...", organizationID)
+				golog.Infof("Unable to determine organization provisioned phone number for org %s. Dropping message...", organizationID)
 				return nil
 			}
 
@@ -284,12 +287,12 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 			if err != nil {
 				switch grpc.Code(err) {
 				case excomms.ErrorCodeMessageLengthExceeded:
-					golog.Errorf("Unable to send message as the message length was exceeded. Dropping message for now as handling this situation requires manual intervention. Support team should inform user of the situation. Error: %s", err)
+					golog.Infof("Unable to send message as the message length was exceeded. Dropping message for now as handling this situation requires manual intervention. Support team should inform user of the situation. Error: %s", err)
 					return nil
 				case excomms.ErrorCodeSMSIncapableFromPhoneNumber:
-					golog.Errorf("Unable to send message as the from phone number does not have SMS capabilities. Dropping this message for now as handling this situation requires manual intervention. Support team should handle mis-provisioned phone number. Error :%s", err)
+					golog.Infof("Unable to send message as the from phone number does not have SMS capabilities. Dropping this message for now as handling this situation requires manual intervention. Support team should handle mis-provisioned phone number. Error :%s", err)
 				case excomms.ErrorCodeMessageDeliveryFailed:
-					golog.Errorf("Message %s cannot be delivered. Not going to retry as the error is permanent. Manual intervention required by Support team to report issue to customer. Error = '%s", pti.GetItem().ID, err)
+					golog.Infof("Message %s cannot be delivered. Not going to retry as the error is permanent. Manual intervention required by Support team to report issue to customer. Error = '%s", pti.GetItem().ID, err)
 					return nil
 				}
 				return errors.Trace(fmt.Errorf("Unable to send message originating from thread item id : %s: %s", pti.GetItem().ID, err))
@@ -299,7 +302,7 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 			// determine org email address
 			orgContact := determineProvisionedContact(orgEntity, directory.ContactType_EMAIL)
 			if orgContact == nil {
-				golog.Errorf("Unable to determine organization provisioned email for org %s. Dropping message...", organizationID)
+				golog.Infof("Unable to determine organization provisioned email for org %s. Dropping message...", organizationID)
 				return nil
 			}
 
@@ -334,7 +337,7 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 			}
 			golog.Debugf("Sent Email %s → %s. Text %s", orgContact.Value, d.ID, pti.GetItem().GetMessage().Text)
 		default:
-			golog.Warningf("Dropping destination %s. Unknown how to send message.", d.Channel.String())
+			golog.Infof("Dropping destination %s. Unknown how to send message.", d.Channel.String())
 		}
 	}
 
