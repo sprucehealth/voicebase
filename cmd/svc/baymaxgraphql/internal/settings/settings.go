@@ -55,7 +55,7 @@ var ShakeToMarkThreadsAsReadConfig = &settings.Config{
 	Config: &settings.Config_Boolean{
 		Boolean: &settings.BooleanConfig{
 			Default: &settings.BooleanValue{
-				Value: false,
+				Value: true,
 			},
 		},
 	},
@@ -106,7 +106,7 @@ var FilteredTabsInInboxConfig = &settings.Config{
 	Config: &settings.Config_Boolean{
 		Boolean: &settings.BooleanConfig{
 			Default: &settings.BooleanValue{
-				Value: false,
+				Value: true,
 			},
 		},
 	},

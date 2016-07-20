@@ -40,6 +40,11 @@ func transformThreadToResponse(thread *models.Thread, forExternal bool) (*thread
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
+	t.Origin, err = transformThreadOriginToResponse(thread.Origin)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
 	if len(thread.LastPrimaryEntityEndpoints.Endpoints) != 0 {
 		t.LastPrimaryEntityEndpoints = make([]*threading.Endpoint, len(thread.LastPrimaryEntityEndpoints.Endpoints))
 		for i, ep := range thread.LastPrimaryEntityEndpoints.Endpoints {
@@ -109,6 +114,18 @@ func transformThreadOriginFromRequest(to threading.ThreadOrigin) (models.ThreadO
 		return models.ThreadOriginPatientInvite, nil
 	}
 	return models.ThreadOriginUnknown, errors.Trace(fmt.Errorf("unknown thread origin '%s'", to))
+}
+
+func transformThreadOriginToResponse(to models.ThreadOrigin) (threading.ThreadOrigin, error) {
+	switch to {
+	case models.ThreadOriginUnknown:
+		return threading.ThreadOrigin_THREAD_ORIGIN_UNKNOWN, nil
+	case models.ThreadOriginOrganizationCode:
+		return threading.ThreadOrigin_THREAD_ORIGIN_ORGANIZATION_CODE, nil
+	case models.ThreadOriginPatientInvite:
+		return threading.ThreadOrigin_THREAD_ORIGIN_PATIENT_INVITE, nil
+	}
+	return threading.ThreadOrigin_THREAD_ORIGIN_UNKNOWN, errors.Trace(fmt.Errorf("unknown thread origin '%s'", to))
 }
 
 func transformRequestEndpointChannelToDAL(c threading.Endpoint_Channel) (models.Endpoint_Channel, error) {
