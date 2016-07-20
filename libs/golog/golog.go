@@ -186,7 +186,9 @@ func (l *logger) L(lvl Level) bool {
 // context for the old logger.
 func (l *logger) Context(ctx ...interface{}) Logger {
 	if len(l.ctx) != 0 {
-		ctx = append(l.ctx, ctx...)
+		// Enforcing that the capacity of the existing context slice is exactly
+		// length so that a new slice gets allocated to avoid concurrency issues.
+		ctx = append(l.ctx[:len(l.ctx):len(l.ctx)], ctx...)
 	}
 	return newLogger(ctx, l.Handler(), l.Level(), l.stats)
 }

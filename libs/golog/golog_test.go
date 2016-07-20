@@ -1,16 +1,22 @@
 package golog
 
 import (
+	"reflect"
+	"sort"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
 
 type TestHandler struct {
 	Entries []*Entry
+	mu      sync.Mutex
 }
 
 func (o *TestHandler) Log(e *Entry) error {
+	o.mu.Lock()
+	defer o.mu.Unlock()
 	// Make sure not to retain the provided Entry
 	e2 := *e
 	o.Entries = append(o.Entries, &e2)
@@ -134,6 +140,41 @@ func TestStats(t *testing.T) {
 	}
 }
 
+func TestParallelContext(t *testing.T) {
+	var l Logger
+	h := &TestHandler{}
+	l = newLogger(nil, h, INFO, nil)
+	ctx := append(make([]interface{}, 0, 4), "a", "b")
+	l = l.Context(ctx...)
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		l.Context("c", "d").Infof("Foo")
+		wg.Done()
+	}()
+	go func() {
+		l.Context("e", "f").Infof("Bar")
+		wg.Done()
+	}()
+	wg.Wait()
+	if len(h.Entries) != 2 {
+		t.Fatalf("Expected 2 entries, got %d", len(h.Entries))
+	}
+	sort.Sort(entriesByMsg(h.Entries))
+	if h.Entries[0].Msg != "Bar" {
+		t.Errorf("Expected 'Bar' got '%s'", h.Entries[0].Msg)
+	}
+	if !reflect.DeepEqual(h.Entries[0].Ctx, []interface{}{"a", "b", "e", "f"}) {
+		t.Errorf(`Expected []interface{}{"a", "b", "e", "f"} got %v`, h.Entries[0].Ctx)
+	}
+	if h.Entries[1].Msg != "Foo" {
+		t.Errorf("Expected 'Foo' got '%s'", h.Entries[0].Msg)
+	}
+	if !reflect.DeepEqual(h.Entries[1].Ctx, []interface{}{"a", "b", "c", "d"}) {
+		t.Errorf(`Expected []interface{}{"a", "b", "c", "d"} got %v`, h.Entries[0].Ctx)
+	}
+}
+
 func BenchmarkLogInfo(b *testing.B) {
 	l := newLogger(nil, NullHandler{}, INFO, nil)
 	b.ReportAllocs()
@@ -149,3 +190,9 @@ func BenchmarkLogError(b *testing.B) {
 		l.Errorf("XXX")
 	}
 }
+
+type entriesByMsg []*Entry
+
+func (e entriesByMsg) Len() int           { return len(e) }
+func (e entriesByMsg) Swap(a, b int)      { e[a], e[b] = e[b], e[a] }
+func (e entriesByMsg) Less(a, b int) bool { return e[a].Msg < e[b].Msg }
