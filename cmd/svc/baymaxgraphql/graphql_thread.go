@@ -11,7 +11,6 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	baymaxgraphqlsettings "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/settings"
 	"github.com/sprucehealth/backend/device/devicectx"
-	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/caremessenger/deeplink"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/auth"
@@ -19,8 +18,6 @@ import (
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 )
 
 var threadConnectionType = ConnectionDefinitions(ConnectionConfig{
@@ -67,7 +64,6 @@ var threadType = graphql.NewObject(
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					svc := serviceFromParams(p)
 					ctx := p.Context
-					ram := raccess.ResourceAccess(p)
 					th := p.Source.(*models.Thread)
 					acc := gqlctx.Account(p.Context)
 					if acc == nil {
@@ -98,44 +94,10 @@ var threadType = graphql.NewObject(
 						return false, nil
 					}
 
-					// allow visit attachments if patient has not created account yet or if patient is on iOS
-					primaryEntity, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
-						LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-						LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-							EntityID: th.PrimaryEntityID,
-						},
-						Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
-						RootTypes: []directory.EntityType{directory.EntityType_PATIENT},
-					})
-					if err != nil {
-						if grpc.Code(err) == codes.NotFound {
-							return false, nil
-						}
-						return nil, errors.InternalError(ctx, err)
-					}
-
-					// if patient has not created account then we optimistically
-					// assume that patient is on iOS and allow attachments
-					if primaryEntity.AccountID == "" {
-						return true, nil
-					}
-
-					loginInfoRes, err := ram.LastLoginForAccount(ctx, &auth.GetLastLoginInfoRequest{
-						AccountID: primaryEntity.AccountID,
-					})
-					if err != nil {
-						if grpc.Code(err) == codes.NotFound {
-							// we dont have login information for the patient yet
-							// in which case optimistically allow provider to attach spruce visits
-							return true, nil
-						}
-						return false, errors.InternalError(ctx, err)
-					}
-
 					// if we do have login info, then ensure that user is on iOS before
 					// allowing attachment of spruce visits or always allow it in non-prod
 					// environments to make it easy to test visits on android.
-					return loginInfoRes.Platform == auth.Platform_IOS || !environment.IsProd(), nil
+					return booleanValue.Value, nil
 				},
 			},
 			"allowCarePlanAttachments": &graphql.Field{
