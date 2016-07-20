@@ -56,6 +56,7 @@ var (
 	flagDBCACert   = flag.String("db_ca_cert", "", "the ca cert to use when connecting to the database")
 	flagDBTLSCert  = flag.String("db_tls_cert", "", "the tls cert to use when connecting to the database")
 	flagDBTLSKey   = flag.String("db_tls_key", "", "the tls key to use when connecting to the database")
+	flagDBTLS      = flag.String("db_tls", "skip-verify", "Enable TLS for database connection (one of 'true', 'false', 'skip-verify'). Ignored if CA cert provided.")
 )
 
 func main() {
@@ -107,14 +108,16 @@ func main() {
 
 	golog.Infof("Initializing database connection on %s:%d, user: %s, db: %s...", *flagDBHost, *flagDBPort, *flagDBUser, *flagDBName)
 	db, err := dbutil.ConnectMySQL(&dbutil.DBConfig{
-		Host:     *flagDBHost,
-		Port:     *flagDBPort,
-		Name:     *flagDBName,
-		User:     *flagDBUser,
-		Password: *flagDBPassword,
-		CACert:   *flagDBCACert,
-		TLSCert:  *flagDBTLSCert,
-		TLSKey:   *flagDBTLSKey,
+		Host:          *flagDBHost,
+		Port:          *flagDBPort,
+		Name:          *flagDBName,
+		User:          *flagDBUser,
+		Password:      *flagDBPassword,
+		CACert:        *flagDBCACert,
+		TLSCert:       *flagDBTLSCert,
+		TLSKey:        *flagDBTLSKey,
+		EnableTLS:     *flagDBTLS == "true" || *flagDBTLS == "skip-verify",
+		SkipVerifyTLS: *flagDBTLS == "skip-verify",
 	})
 	if err != nil {
 		golog.Fatalf("Failed to initialize DB connection: %s", err)
