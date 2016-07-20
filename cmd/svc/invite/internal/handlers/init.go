@@ -11,5 +11,6 @@ func InitRoutes(
 	dal dal.DAL,
 ) {
 	r.Handle(`/{token:\d+}`, &orgCodeHandler{dal: dal})
-	r.Handle(`/apple-app-site-association`, &appleDeeplinkHandler{})
+	// TODO: re-enable once iOS issue for universal links handling fixed.
+	// r.Handle(`/apple-app-site-association`, &appleDeeplinkHandler{})
 }
