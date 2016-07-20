@@ -24,6 +24,7 @@ var config struct {
 	dbCACert             string
 	dbTLSCert            string
 	dbTLSKey             string
+	dbTLS                string
 	dbMaxOpenConnections int
 	dbMaxIdleConnections int
 }
@@ -38,6 +39,7 @@ func init() {
 	flag.StringVar(&config.dbCACert, "db_ca_cert", "", "the ca cert to use when connecting to the database")
 	flag.StringVar(&config.dbTLSCert, "db_tls_cert", "", "the tls cert to use when connecting to the database")
 	flag.StringVar(&config.dbTLSKey, "db_tls_key", "", "the tls key to use when connecting to the database")
+	flag.StringVar(&config.dbTLS, "db_tls", "false", "Enable TLS for database connection (one of 'true', 'false', 'skip-verify'). Ignored if CA cert provided.")
 	flag.IntVar(&config.dbMaxOpenConnections, "db_max_open_connections", 0, "the maximum amount of open connections to have with the database")
 	flag.IntVar(&config.dbMaxIdleConnections, "db_max_idle_connections", 0, "the maximum amount of idle connections to have with the database")
 }
@@ -60,6 +62,8 @@ func main() {
 		CACert:             config.dbCACert,
 		TLSCert:            config.dbTLSCert,
 		TLSKey:             config.dbTLSKey,
+		EnableTLS:          config.dbTLS == "true" || config.dbTLS == "skip-verify",
+		SkipVerifyTLS:      config.dbTLS == "skip-verify",
 		MaxOpenConnections: config.dbMaxOpenConnections,
 		MaxIdleConnections: config.dbMaxIdleConnections,
 	})

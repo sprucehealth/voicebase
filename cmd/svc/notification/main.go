@@ -29,6 +29,7 @@ var config struct {
 	dbCACert                          string
 	dbTLSCert                         string
 	dbTLSKey                          string
+	dbTLS                             string
 	sqsDeviceRegistrationURL          string
 	sqsDeviceDeregistrationURL        string
 	sqsNotificationURL                string
@@ -49,6 +50,7 @@ func init() {
 	flag.StringVar(&config.dbCACert, "db_ca_cert", "", "the ca cert to use when connecting to the database")
 	flag.StringVar(&config.dbTLSCert, "db_tls_cert", "", "the tls cert to use when connecting to the database")
 	flag.StringVar(&config.dbTLSKey, "db_tls_key", "", "the tls key to use when connecting to the database")
+	flag.StringVar(&config.dbTLS, "db_tls", "false", "Enable TLS for database connection (one of 'true', 'false', 'skip-verify'). Ignored if CA cert provided.")
 	flag.StringVar(&config.sqsDeviceRegistrationURL, "sqs_device_registration_url", "", "the sqs url for device registration messages")
 	flag.StringVar(&config.sqsDeviceDeregistrationURL, "sqs_device_deregistration_url", "", "the sqs url for device deregistration messages")
 	flag.StringVar(&config.sqsNotificationURL, "sqs_notification_url", "", "the sqs url for outgoing notifications")
@@ -65,14 +67,16 @@ func main() {
 
 	golog.Infof("Initializing database connection on %s:%d, user: %s, db: %s...", config.dbHost, config.dbPort, config.dbUser, config.dbName)
 	db, err := dbutil.ConnectMySQL(&dbutil.DBConfig{
-		Host:     config.dbHost,
-		Port:     config.dbPort,
-		Name:     config.dbName,
-		User:     config.dbUser,
-		Password: config.dbPassword,
-		CACert:   config.dbCACert,
-		TLSCert:  config.dbTLSCert,
-		TLSKey:   config.dbTLSKey,
+		Host:          config.dbHost,
+		Port:          config.dbPort,
+		Name:          config.dbName,
+		User:          config.dbUser,
+		Password:      config.dbPassword,
+		CACert:        config.dbCACert,
+		TLSCert:       config.dbTLSCert,
+		TLSKey:        config.dbTLSKey,
+		EnableTLS:     config.dbTLS == "true" || config.dbTLS == "skip-verify",
+		SkipVerifyTLS: config.dbTLS == "skip-verify",
 	})
 	if err != nil {
 		golog.Fatalf("failed to initialize db connection: %s", err)
