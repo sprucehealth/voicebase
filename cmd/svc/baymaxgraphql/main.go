@@ -170,9 +170,7 @@ func main() {
 
 	// enable for non-prod
 	baymaxgraphqlsettings.VisitAttachmentsConfig.GetBoolean().Default.Value = !environment.IsProd()
-	baymaxgraphqlsettings.ShakeToMarkThreadsAsReadConfig.GetBoolean().Default.Value = !environment.IsProd()
 	baymaxgraphqlsettings.CarePlansConfig.GetBoolean().Default.Value = !environment.IsProd()
-	baymaxgraphqlsettings.FilteredTabsInInboxConfig.GetBoolean().Default.Value = !environment.IsProd()
 	baymaxgraphqlsettings.VideoCallingConfig.GetBoolean().Default.Value = !environment.IsProd()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
