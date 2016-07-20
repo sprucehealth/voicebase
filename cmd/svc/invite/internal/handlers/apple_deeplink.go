@@ -20,7 +20,7 @@ type appLinks struct {
 }
 
 type appLinksContainer struct {
-	AppLinks appLinks `json:"appLinks"`
+	AppLinks appLinks `json:"applinks"`
 }
 
 func (*appleDeeplinkHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
