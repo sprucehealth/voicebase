@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"time"
 
 	"github.com/go-sql-driver/mysql"
 )
@@ -32,12 +33,28 @@ func ConnectMySQL(dbconfig *DBConfig) (*sql.DB, error) {
 	if dbconfig.User == "" || dbconfig.Host == "" || dbconfig.Name == "" {
 		return nil, errors.New("missing one or more of user, host, or name for db config")
 	}
+	if dbconfig.Port == 0 {
+		dbconfig.Port = 3306
+	}
 
-	opt := "?strict=true&sql_notes=false&parseTime=true&charset=utf8mb4&collation=utf8mb4_unicode_ci&loc=Local&interpolateParams=true"
+	cfg := &mysql.Config{
+		User:              dbconfig.User,
+		Passwd:            dbconfig.Password,
+		Net:               "tcp",
+		Addr:              fmt.Sprintf("%s:%d", dbconfig.Host, dbconfig.Port),
+		DBName:            dbconfig.Name,
+		Collation:         "utf8mb4_unicode_ci",
+		Loc:               time.Local,
+		Strict:            true,
+		ParseTime:         true,
+		InterpolateParams: true,
+		Params: map[string]string{
+			"sql_notes": "false",
+			"charset":   "utf8mb4",
+		},
+	}
 
 	if dbconfig.CACert != "" || (dbconfig.TLSCert != "" && dbconfig.TLSKey != "") {
-		opt += "&tls=custom"
-
 		var rootCertPool *x509.CertPool
 
 		if dbconfig.CACert != "" {
@@ -74,23 +91,27 @@ func ConnectMySQL(dbconfig *DBConfig) (*sql.DB, error) {
 			tlsConfig.Certificates = append(tlsConfig.Certificates, pair)
 		}
 
+		cfg.TLSConfig = "custom"
 		if err := mysql.RegisterTLSConfig("custom", tlsConfig); err != nil {
 			return nil, fmt.Errorf("failed to register custom DB TLS config: %s", err)
 		}
 	} else if dbconfig.EnableTLS {
 		if dbconfig.SkipVerifyTLS {
-			opt += "&tls=skip-verify"
+			cfg.TLSConfig = "skip-verify"
 		} else {
-			opt += "&tls=true"
+			// The MySQL pkg doesn't handle 'true' correctly in that it doesn't set the ServerName on the TLS config
+			// so we need to use a custom config.
+			tlsConfig := &tls.Config{
+				ServerName: dbconfig.Host,
+			}
+			cfg.TLSConfig = "custom"
+			if err := mysql.RegisterTLSConfig("custom", tlsConfig); err != nil {
+				return nil, fmt.Errorf("failed to register custom DB TLS config: %s", err)
+			}
 		}
 	}
 
-	if dbconfig.Port == 0 {
-		dbconfig.Port = 3306
-	}
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s%s",
-		dbconfig.User, dbconfig.Password, dbconfig.Host, dbconfig.Port, dbconfig.Name, opt)
-	db, err := sql.Open("mysql", dsn)
+	db, err := sql.Open("mysql", cfg.FormatDSN())
 	if err != nil {
 		return nil, err
 	}
