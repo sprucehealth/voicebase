@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/sprucehealth/backend/svc/deploy"
@@ -72,8 +73,8 @@ func printDeployableConfigs(cs []*deploy.DeployableConfig) {
 
 func printDeployableConfig(c *deploy.DeployableConfig) {
 	pprint("Deployable Config: %s (deployable %s) (environment %s) (status %q)\n", c.ID, c.DeployableID, c.EnvironmentID, c.Status)
-	for k, v := range c.Values {
-		pprint("\tName: %s Value: %s\n", k, v)
+	for _, kv := range valuesToSortedKV(c.Values) {
+		pprint("\tName: %s Value: %s\n", kv[0], kv[1])
 	}
 }
 
@@ -108,3 +109,18 @@ func printDeployment(d *deploy.Deployment) {
 		pprint("\tUnknown Deployment Type: %+v", d.DeploymentOneof)
 	}
 }
+
+func valuesToSortedKV(v map[string]string) [][2]string {
+	vals := make([][2]string, 0, len(v))
+	for k, v := range v {
+		vals = append(vals, [2]string{k, v})
+	}
+	sort.Sort(kv(vals))
+	return vals
+}
+
+type kv [][2]string
+
+func (kv kv) Len() int           { return len(kv) }
+func (kv kv) Swap(a, b int)      { kv[a], kv[b] = kv[b], kv[a] }
+func (kv kv) Less(a, b int) bool { return kv[a][0] < kv[b][0] }
