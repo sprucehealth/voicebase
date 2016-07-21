@@ -8,6 +8,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/aws-sdk-go/service/sns"
+	"github.com/samuel/go-metrics/metrics"
 	analytics "github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
@@ -108,6 +109,10 @@ func runAPI(bootSvc *boot.Service) {
 	router.Handle("/twilio/sms/status", handlers.NewTwilioSMSStatusHandler(eh))
 	router.Handle("/twilio/call/{event}", handlers.NewTwilioRequestHandler(eh, bootSvc.MetricsRegistry.Scope("voice")))
 	router.Handle("/sendgrid/email", handlers.NewSendGridHandler(config.incomingRawMessageTopic, eSNS, dl, store))
+
+	statTwilioError := metrics.NewCounter()
+	bootSvc.MetricsRegistry.Scope("twilio").Add("errors", statTwilioError)
+	router.Handle("/twilio/error", handlers.NewTwilioErrorHandler(statTwilioError))
 
 	h := httputil.LoggingHandler(router, "excommsapi", config.behindProxy, nil)
 	h = httputil.RequestIDHandler(h)
