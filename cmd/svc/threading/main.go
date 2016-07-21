@@ -140,7 +140,7 @@ func main() {
 	w.Start()
 	defer w.Stop(time.Second * 10)
 
-	s := grpc.NewServer()
+	s := bootSvc.NewGRPCServer()
 	threading.RegisterThreadsServer(s, srv)
 	golog.Infof("Starting Threads service on %s...", *flagListen)
 
@@ -148,11 +148,11 @@ func main() {
 	if err != nil {
 		golog.Fatalf("failed to listen on %s: %v", *flagListen, err)
 	}
-	go func() {
-		s.Serve(ln)
-	}()
+	go s.Serve(ln)
 
 	boot.WaitForTermination()
+	ln.Close()
+	bootSvc.Shutdown()
 }
 
 // workerClient allows using the server directly as a client. avoids the worker from having to make calls out and back in

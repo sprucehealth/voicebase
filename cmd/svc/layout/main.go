@@ -13,7 +13,6 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/svc/layout"
-	"google.golang.org/grpc"
 )
 
 var config struct {
@@ -77,7 +76,7 @@ func main() {
 		golog.Fatalf(err.Error())
 	}
 
-	layoutServer := grpc.NewServer()
+	layoutServer := svc.NewGRPCServer()
 	layoutService := server.New(dal.NewDAL(db), layout.NewStore(storage.NewS3(awsSession, config.s3Bucket, config.s3Prefix)))
 
 	layout.InitMetrics(layoutService, svc.MetricsRegistry.Scope("server"))
@@ -86,9 +85,11 @@ func main() {
 	conc.Go(func() {
 		golog.Infof("Starting layout service on port %d", config.listeningPort)
 		if err := layoutServer.Serve(lis); err != nil {
-			golog.Fatalf(err.Error())
+			golog.Errorf(err.Error())
 		}
 	})
 
 	boot.WaitForTermination()
+	lis.Close()
+	svc.Shutdown()
 }

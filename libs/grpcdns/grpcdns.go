@@ -134,6 +134,7 @@ func (w *watcher) update() ([]*naming.Update, error) {
 		if _, ok := w.addr[a]; ok {
 			delete(w.addr, a)
 		} else {
+			golog.Debugf("Added address %s to %s", a, w.target)
 			updates = append(updates, &naming.Update{
 				Op:   naming.Add,
 				Addr: a,
@@ -142,6 +143,7 @@ func (w *watcher) update() ([]*naming.Update, error) {
 	}
 	// anything left no longer exists
 	for a := range w.addr {
+		golog.Debugf("Deleted address %s from %s", a, w.target)
 		updates = append(updates, &naming.Update{
 			Op:   naming.Delete,
 			Addr: a,
@@ -155,6 +157,9 @@ func (w *watcher) update() ([]*naming.Update, error) {
 func lookuperFromTarget(target string) (lookuper, error) {
 	if ix := strings.Index(target, ":"); ix >= 0 {
 		host := target[:ix]
+		if len(host) == 0 {
+			host = "127.0.0.1"
+		}
 		port, err := strconv.Atoi(target[ix+1:])
 		if err != nil {
 			return nil, fmt.Errorf("grpcdns: failed to parse port '%s'", target[ix+1:])

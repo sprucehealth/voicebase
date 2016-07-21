@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"log"
 	"net"
 	"net/http"
 
@@ -30,7 +29,6 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/invite"
-	"google.golang.org/grpc"
 )
 
 var (
@@ -124,7 +122,7 @@ func main() {
 	dl := dal.New(db, environment.GetCurrent())
 	srv := server.New(dl, nil, directoryClient, exCommsClient, eSNS, branchCli, sendMail, *flagFromEmail, *flagServiceNumber, *flagEventsTopic, *flagWebInviteURL, *flagColleagueInviteTemplateID)
 	invite.InitMetrics(srv, svc.MetricsRegistry.Scope("server"))
-	s := grpc.NewServer()
+	s := svc.NewGRPCServer()
 	defer s.Stop()
 	invite.RegisterInviteServer(s, srv)
 	golog.Infof("Invite RPC listening on %s...", *flagListen)
@@ -136,7 +134,7 @@ func main() {
 	defer ln.Close()
 	go func() {
 		if err := s.Serve(ln); err != nil {
-			log.Fatal(err)
+			golog.Errorf(err.Error())
 		}
 	}()
 
@@ -155,4 +153,6 @@ func main() {
 	}()
 
 	boot.WaitForTermination()
+	ln.Close()
+	svc.Shutdown()
 }

@@ -12,7 +12,6 @@ import (
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/deploy"
-	"google.golang.org/grpc"
 )
 
 var config struct {
@@ -81,12 +80,14 @@ func main() {
 	srvMetricsRegistry := svc.MetricsRegistry.Scope("server")
 	srv := server.New(dl, dMan)
 	deploy.InitMetrics(srv, srvMetricsRegistry)
-	s := grpc.NewServer()
+	s := svc.NewGRPCServer()
 	deploy.RegisterDeployServer(s, srv)
 	golog.Infof("Starting DeployService on %s...", listenAddress)
 	go s.Serve(lis)
 
 	boot.WaitForTermination()
+	lis.Close()
+	svc.Shutdown()
 }
 
 func validateArgs() {

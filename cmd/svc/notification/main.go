@@ -1,10 +1,9 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"time"
-
-	"context"
 
 	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/aws-sdk-go/service/sns"

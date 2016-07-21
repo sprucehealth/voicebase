@@ -29,6 +29,8 @@ import (
 	"github.com/sprucehealth/backend/libs/storage"
 	"golang.org/x/net/trace"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
+	"google.golang.org/grpc/health/grpc_health_v1"
 )
 
 type Service struct {
@@ -49,13 +51,15 @@ type Service struct {
 		memcachedHosts         string
 		jsonLogs               bool
 	}
-	name           string
-	awsSessionOnce sync.Once
-	awsSession     *session.Session
-	awsSessionErr  error
-	memcacheOnce   sync.Once
-	memcacheCli    *memcache.Client
-	memcacheErr    error
+	name             string
+	awsSessionOnce   sync.Once
+	awsSession       *session.Session
+	awsSessionErr    error
+	memcacheOnce     sync.Once
+	memcacheCli      *memcache.Client
+	memcacheErr      error
+	healthServerOnce sync.Once
+	healthServer     *health.HealthServer
 }
 
 // NewService should be called at the start of a service. It parses flags and sets up a mangement server.
@@ -226,15 +230,45 @@ func (svc *Service) StoreFromURL(u string) (storage.Store, error) {
 	return nil, errors.Errorf("no storage available for scheme %s", ur.Scheme)
 }
 
+// HealthServer returns a singleton of the health server.
+func (svc *Service) HealthServer() *health.HealthServer {
+	svc.healthServerOnce.Do(func() {
+		svc.healthServer = health.NewHealthServer()
+		// Set the default to serving since it won't actually have any effect
+		// until the server is listening.
+		svc.healthServer.SetServingStatus("", grpc_health_v1.HealthCheckResponse_SERVING)
+	})
+	return svc.healthServer
+}
+
+// NewGRPCServer returns a new GRPC server with a health service registered,
+// and any default options set.
+func (svc *Service) NewGRPCServer() *grpc.Server {
+	s := grpc.NewServer()
+	grpc_health_v1.RegisterHealthServer(s, svc.HealthServer())
+	return s
+}
+
+// Shutdown performs a graceful shutdown.
+func (svc *Service) Shutdown() {
+	svc.HealthServer().SetServingStatus("", grpc_health_v1.HealthCheckResponse_NOT_SERVING)
+	// TODO: Only wait until all requests in flight are complete, but
+	//       we don't have a way to do that at the moment so just sleep.
+	//       Chose 20 seconds because it's less than the 30 seconds we get
+	//       from docker before a hard kill.
+	time.Sleep(time.Second * 20)
+}
+
 // DialGRPC connects to a GRPC service with the given address. Agent is
 // the name of the service making the connection (used to build the user agent).
-func DialGRPC(agent, addr string) (*grpc.ClientConn, error) {
+func DialGRPC(agent, addr string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
 	if addr == "" {
 		return nil, errors.New("empty address")
 	}
-	balancerOpt := grpc.WithBalancer(grpc.RoundRobin(grpcdns.Resolver(time.Second * 5)))
-	userAgentOpt := grpc.WithUserAgent(fmt.Sprintf("%s/%s", agent, BuildNumber))
-	conn, err := grpc.Dial(addr, balancerOpt, userAgentOpt, grpc.WithInsecure())
+	opts = append(opts, grpc.WithInsecure())
+	opts = append(opts, grpc.WithBalancer(grpc.RoundRobin(grpcdns.Resolver(time.Second*5))))
+	opts = append(opts, grpc.WithUserAgent(fmt.Sprintf("%s/%s", agent, BuildNumber)))
+	conn, err := grpc.Dial(addr, opts...)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

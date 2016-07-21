@@ -14,7 +14,6 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/svc/settings"
-	"google.golang.org/grpc"
 )
 
 var config struct {
@@ -58,7 +57,7 @@ func main() {
 	dal := dal.New(dynamoDBClient, config.dyanmoDBSettingsTableName, config.dynamoDBSettingsConfigTableName)
 	settingsService := server.New(dal)
 	settings.InitMetrics(settingsService, bootSvc.MetricsRegistry.Scope("server"))
-	server := grpc.NewServer()
+	server := bootSvc.NewGRPCServer()
 	settings.RegisterSettingsServer(server, settingsService)
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", config.port))
@@ -70,9 +69,11 @@ func main() {
 	golog.Infof("Starting settings service on port %d", config.port)
 	go func() {
 		if err := server.Serve(lis); err != nil {
-			golog.Fatalf(err.Error())
+			golog.Errorf(err.Error())
 		}
 	}()
 
 	boot.WaitForTermination()
+	lis.Close()
+	bootSvc.Shutdown()
 }

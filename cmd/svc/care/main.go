@@ -22,7 +22,6 @@ import (
 	"github.com/sprucehealth/backend/svc/layout"
 	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/settings"
-	"google.golang.org/grpc"
 )
 
 var config struct {
@@ -142,7 +141,7 @@ func main() {
 		golog.Fatalf(err.Error())
 	}
 
-	careServer := grpc.NewServer()
+	careServer := svc.NewGRPCServer()
 	careService := server.New(dal.New(db), layoutClient, settingsClient, mediaClient, layout.NewStore(storage.NewS3(awsSession, config.s3Bucket, config.s3Prefix)), doseSpotClient, clock.New())
 
 	care.InitMetrics(careServer, svc.MetricsRegistry.Scope("care"))
@@ -151,9 +150,11 @@ func main() {
 	conc.Go(func() {
 		golog.Infof("Starting visit service on port %d", config.listeningPort)
 		if err := careServer.Serve(lis); err != nil {
-			golog.Fatalf(err.Error())
+			golog.Errorf(err.Error())
 		}
 	})
 
 	boot.WaitForTermination()
+	lis.Close()
+	svc.Shutdown()
 }

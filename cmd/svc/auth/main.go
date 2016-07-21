@@ -16,7 +16,6 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	pb "github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/settings"
-	"google.golang.org/grpc"
 )
 
 var config struct {
@@ -103,10 +102,12 @@ func main() {
 	}
 	pb.InitMetrics(aSrv, svc.MetricsRegistry.Scope("server"))
 
-	s := grpc.NewServer()
+	s := svc.NewGRPCServer()
 	pb.RegisterAuthServer(s, aSrv)
 	golog.Infof("Starting AuthService on %s...", listenAddress)
 	go s.Serve(lis)
 
 	boot.WaitForTermination()
+	lis.Close()
+	svc.Shutdown()
 }

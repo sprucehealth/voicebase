@@ -28,7 +28,6 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/threading"
-	"google.golang.org/grpc"
 )
 
 var (
@@ -167,12 +166,14 @@ func main() {
 	srvMetricsRegistry := svc.MetricsRegistry.Scope("server")
 	srv := server.New(dl, msvc, *flagMediaAPIDomain)
 	media.InitMetrics(srv, srvMetricsRegistry)
-	s := grpc.NewServer()
+	s := svc.NewGRPCServer()
 	media.RegisterMediaServer(s, srv)
 	golog.Infof("Media RPC listening on %s...", *flagRPCListenAddr)
 	go s.Serve(lis)
 
 	boot.WaitForTermination()
+	lis.Close()
+	svc.Shutdown()
 }
 
 func initService(

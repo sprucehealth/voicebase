@@ -31,7 +31,6 @@ import (
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
-	"google.golang.org/grpc"
 )
 
 func runService(bootSvc *boot.Service) {
@@ -176,7 +175,7 @@ func runService(bootSvc *boot.Service) {
 		notificationClient)
 	excomms.InitMetrics(excommsService, bootSvc.MetricsRegistry.Scope("server"))
 
-	excommsServer := grpc.NewServer()
+	excommsServer := bootSvc.NewGRPCServer()
 	excomms.RegisterExCommsServer(excommsServer, excommsService)
 
 	res, err := eSQS.GetQueueUrl(&sqs.GetQueueUrlInput{

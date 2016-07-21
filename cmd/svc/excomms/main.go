@@ -99,4 +99,5 @@ func main() {
 	})
 
 	boot.WaitForTermination()
+	bootSvc.Shutdown()
 }
