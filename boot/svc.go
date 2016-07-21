@@ -232,7 +232,7 @@ func DialGRPC(agent, addr string) (*grpc.ClientConn, error) {
 	if addr == "" {
 		return nil, errors.New("empty address")
 	}
-	balancerOpt := grpc.WithBalancer(grpc.RoundRobin(grpcdns.Resolver(time.Second * 10)))
+	balancerOpt := grpc.WithBalancer(grpc.RoundRobin(grpcdns.Resolver(time.Second * 5)))
 	userAgentOpt := grpc.WithUserAgent(fmt.Sprintf("%s/%s", agent, BuildNumber))
 	conn, err := grpc.Dial(addr, balancerOpt, userAgentOpt, grpc.WithInsecure())
 	if err != nil {
@@ -245,6 +245,9 @@ func DialGRPC(agent, addr string) (*grpc.ClientConn, error) {
 func WaitForTermination() {
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
+	defer func() {
+		signal.Reset(os.Interrupt, syscall.SIGTERM)
+	}()
 	select {
 	case sig := <-ch:
 		golog.Infof("Quitting due to signal %s", sig.String())

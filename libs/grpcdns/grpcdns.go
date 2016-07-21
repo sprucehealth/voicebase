@@ -102,15 +102,15 @@ func (w *watcher) loop() {
 	tick := time.NewTicker(w.interval)
 	defer tick.Stop()
 	for {
-		select {
-		case <-w.stopCh:
-			return
-		case <-tick.C:
-		}
 		if updates, err := w.update(); err != nil {
 			golog.Errorf(err.Error())
 		} else if len(updates) != 0 {
 			w.updateCh <- updates
+		}
+		select {
+		case <-w.stopCh:
+			return
+		case <-tick.C:
 		}
 	}
 }
