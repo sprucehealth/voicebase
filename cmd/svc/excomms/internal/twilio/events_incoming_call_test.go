@@ -28,6 +28,26 @@ import (
 	settingsmock "github.com/sprucehealth/backend/svc/settings/mock"
 )
 
+func TestIncoming_InvalidPhoneNumber(t *testing.T) {
+	es := NewEventHandler(nil, nil, nil, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, nil)
+	params := &rawmsg.TwilioParams{
+		From: "+97143430391",
+		To:   "+17348465522",
+	}
+
+	twiml, err := processIncomingCall(context.Background(), params, es.(*eventsHandler))
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	expected := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
+<Response><Say voice="alice">Sorry, your call cannot be completed as dialed.</Say></Response>`)
+
+	if twiml != expected {
+		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
+	}
+
+}
+
 func TestIncoming_Organization(t *testing.T) {
 	orgID := "12345"
 	providerPersonalPhone := "+14152222222"

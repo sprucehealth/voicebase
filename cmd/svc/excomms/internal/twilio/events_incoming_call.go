@@ -28,6 +28,23 @@ import (
 
 func processIncomingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
 
+	source, err := phone.ParseNumber(params.From)
+	if err != nil {
+		golog.Errorf("Invalid from phone number: %s when calling %s", params.From, params.To)
+		// if we are dealing with an invalid phone number of the caller, then inform the caller
+		// that their call cannot be completed as dialed.
+		tw := &twiml.Response{
+			Verbs: []interface{}{
+				&twiml.Say{
+					Voice: "alice",
+					Text:  "Sorry, your call cannot be completed as dialed.",
+				},
+			},
+		}
+
+		return tw.GenerateTwiML()
+	}
+
 	entity, err := directory.SingleEntityByContact(ctx, eh.directory, &directory.LookupEntitiesByContactRequest{
 		ContactValue: params.To,
 		RequestedInformation: &directory.RequestedInformation{
@@ -44,10 +61,6 @@ func processIncomingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 	}
 	organizationID := entity.ID
 
-	source, err := phone.ParseNumber(params.From)
-	if err != nil {
-		return "", errors.Trace(err)
-	}
 	destination, err := phone.ParseNumber(params.To)
 	if err != nil {
 		return "", errors.Trace(err)
