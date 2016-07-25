@@ -3,6 +3,8 @@ package ldap
 import (
 	"fmt"
 
+	"context"
+
 	"github.com/samuel/go-ldap/ldap"
 	"github.com/sprucehealth/backend/libs/golog"
 )
@@ -33,9 +35,9 @@ func NewAuthenticationProvider(cfg *Config) (*AuthProvider, error) {
 }
 
 // Authenticate binds the provided username and password against the initialized LDAP client
-func (ap *AuthProvider) Authenticate(username, password string) (string, error) {
+func (ap *AuthProvider) Authenticate(ctx context.Context, username, password string) (string, error) {
 	bindDN := fmt.Sprintf("uid=%s,%s", username, ap.baseDN)
-	golog.Debugf("Binding with %s:%s", bindDN, password)
+	golog.ContextLogger(ctx).Debugf("Binding with %s:%s", bindDN, password)
 	if err := ap.ldapCli.Bind(bindDN, []byte(password)); err != nil {
 		return "", err
 	}

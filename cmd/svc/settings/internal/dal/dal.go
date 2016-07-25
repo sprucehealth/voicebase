@@ -14,9 +14,12 @@ const (
 	dataColumn      = "data"
 )
 
+// DAL defines the methods required to correctly interact with the data access layer
 type DAL interface {
+	GetAllConfigs() ([]*models.Config, error)
 	GetConfigs(keys []string) ([]*models.Config, error)
 	SetConfigs(config []*models.Config) error
+	GetNodeValues(nodeID string) ([]*models.Value, error)
 	GetValues(nodeID string, keys []*models.ConfigKey) ([]*models.Value, error)
 	SetValues(nodeID string, values []*models.Value) error
 }
@@ -27,6 +30,7 @@ type dal struct {
 	tableNameSettingsConfig string
 }
 
+// New returns an initialized instance of dal
 func New(db dynamodbiface.DynamoDBAPI, tableNameSettings, tableNameSettingConfigs string) DAL {
 	return &dal{
 		db:                      db,
@@ -67,6 +71,34 @@ func (d *dal) GetConfigs(keys []string) ([]*models.Config, error) {
 			return nil, errors.Trace(err)
 		}
 		configs[i] = &c
+	}
+	return configs, nil
+}
+
+func (d *dal) GetAllConfigs() ([]*models.Config, error) {
+	var configs []*models.Config
+
+	first := true
+	var lastEvaluatedKey map[string]*dynamodb.AttributeValue
+	for len(lastEvaluatedKey) != 0 || first {
+		first = false
+		res, err := d.db.Scan(&dynamodb.ScanInput{
+			AttributesToGet:   []*string{ptr.String(dataColumn)},
+			TableName:         &d.tableNameSettingsConfig,
+			ExclusiveStartKey: lastEvaluatedKey,
+		})
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		lastEvaluatedKey = res.LastEvaluatedKey
+
+		for _, r := range res.Items {
+			var c models.Config
+			if err := c.Unmarshal(r[dataColumn].B); err != nil {
+				return nil, errors.Trace(err)
+			}
+			configs = append(configs, &c)
+		}
 	}
 	return configs, nil
 }
@@ -138,6 +170,37 @@ func (d *dal) GetValues(nodeID string, keys []*models.ConfigKey) ([]*models.Valu
 		values = append(values, &v)
 	}
 
+	return values, nil
+}
+
+func (d *dal) GetNodeValues(nodeID string) ([]*models.Value, error) {
+	var values []*models.Value
+
+	first := true
+	var lastEvaluatedKey map[string]*dynamodb.AttributeValue
+	for len(lastEvaluatedKey) != 0 || first {
+		first = false
+		res, err := d.db.Query(&dynamodb.QueryInput{
+			TableName:              &d.tableNameSettings,
+			ExclusiveStartKey:      lastEvaluatedKey,
+			KeyConditionExpression: ptr.String(`nodeID = :nodeID`),
+			ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+				`:nodeID`: &dynamodb.AttributeValue{S: &nodeID},
+			},
+		})
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		lastEvaluatedKey = res.LastEvaluatedKey
+
+		for _, ri := range res.Items {
+			var v models.Value
+			if err := v.Unmarshal(ri[dataColumn].B); err != nil {
+				return nil, errors.Trace(err)
+			}
+			values = append(values, &v)
+		}
+	}
 	return values, nil
 }
 

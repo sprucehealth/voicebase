@@ -153,6 +153,83 @@ func (s *server) GetValues(ctx context.Context, in *settings.GetValuesRequest) (
 	}, nil
 }
 
+func (s *server) GetNodeValues(ctx context.Context, in *settings.GetNodeValuesRequest) (*settings.GetNodeValuesResponse, error) {
+	configs, err := s.dal.GetAllConfigs()
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	values, err := s.dal.GetNodeValues(in.NodeID)
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	// create a value map to quickly check if data is present
+	valueMap := make(map[string]*models.Value, len(values))
+	for _, v := range values {
+		valueMap[v.Key.String()] = v
+	}
+
+	// TODO: Filter these settings by possible owner types (ORGANIZATION,INTERNAL,etc)
+	// Build out all the possible settings for the node with the total config set
+	transformedValues := make([]*settings.Value, 0, len(configs))
+	for _, c := range configs {
+		// TODO: I don't think this is quite right for keys than can have multiple subkeys
+		if v, ok := valueMap[c.Key]; ok {
+			transformedValues = append(transformedValues, transformModelToValue(v))
+			continue
+		}
+
+		// assign default
+		val := &models.Value{
+			Config: c,
+			Key: &models.ConfigKey{
+				Key: c.Key,
+			},
+		}
+		switch c.Type {
+		case models.ConfigType_BOOLEAN:
+			if c.GetBoolean().Default != nil {
+				val.Value = &models.Value_Boolean{
+					Boolean: c.GetBoolean().Default,
+				}
+			}
+		case models.ConfigType_SINGLE_SELECT:
+			if c.GetSingleSelect().Default != nil {
+				val.Value = &models.Value_SingleSelect{
+					SingleSelect: c.GetSingleSelect().Default,
+				}
+			}
+		case models.ConfigType_MULTI_SELECT:
+			if c.GetMultiSelect().Default != nil {
+				val.Value = &models.Value_MultiSelect{
+					MultiSelect: c.GetMultiSelect().Default,
+				}
+			}
+		case models.ConfigType_STRING_LIST:
+			if c.GetStringList().Default != nil {
+				val.Value = &models.Value_StringList{
+					StringList: c.GetStringList().Default,
+				}
+			}
+		case models.ConfigType_INTEGER:
+			if c.GetInteger().Default != nil {
+				val.Value = &models.Value_Integer{
+					Integer: c.GetInteger().Default,
+				}
+			}
+		default:
+			return nil, grpcErrorf(codes.Unimplemented, "config type %s not supported", c.Type)
+		}
+
+		transformedValues = append(transformedValues, transformModelToValue(val))
+	}
+
+	return &settings.GetNodeValuesResponse{
+		Values: transformedValues,
+	}, nil
+}
+
 func (s *server) GetConfigs(ctx context.Context, in *settings.GetConfigsRequest) (*settings.GetConfigsResponse, error) {
 	configs, err := s.dal.GetConfigs(in.Keys)
 	if err != nil {

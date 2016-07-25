@@ -8,12 +8,8 @@ func NewRoot() *graphql.Object {
 		graphql.ObjectConfig{
 			Name: "Query",
 			Fields: graphql.Fields{
-				"hello": &graphql.Field{
-					Type: graphql.NewNonNull(graphql.String),
-					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-						return "world", nil
-					},
-				},
+				"me":     newMeField(),
+				"entity": newEntityField(),
 			},
 		})
 }
