@@ -404,8 +404,7 @@ func generateNotification(webDomain string, n *notification.Notification, target
 	}
 
 	iOSData := &iOSPushData{
-		Alert:            msg,
-		ContentAvailable: 1,
+		Alert: msg,
 	}
 	if msg != "" {
 		if n.Type == notification.IncomingIPCall {
