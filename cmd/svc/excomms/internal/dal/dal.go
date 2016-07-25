@@ -69,8 +69,10 @@ type ProvisionedEndpointUpdate struct {
 }
 
 type IncomingCallUpdate struct {
-	Afterhours *bool
-	Urgent     *bool
+	Afterhours      *bool
+	Urgent          *bool
+	Answered        *bool
+	SentToVoicemail *bool
 }
 
 type DAL interface {
@@ -655,14 +657,22 @@ func (d *dal) LookupMedia(ids []string) (map[string]*models.Media, error) {
 }
 
 func (d *dal) CreateIncomingCall(ic *models.IncomingCall) error {
-	_, err := d.db.Exec(`REPLACE INTO incoming_call (call_sid, source, destination, organization_id, afterhours, urgent) VALUES (?,?,?,?,?,?)`, ic.CallSID, ic.Source, ic.Destination, ic.OrganizationID, ic.AfterHours, ic.Urgent)
+	_, err := d.db.Exec(`REPLACE INTO incoming_call (call_sid, source, destination, organization_id, afterhours, urgent, answered, sent_to_voicemail) VALUES (?,?,?,?,?,?,?,?)`,
+		ic.CallSID,
+		ic.Source,
+		ic.Destination,
+		ic.OrganizationID,
+		ic.AfterHours,
+		ic.Urgent,
+		ic.Answered,
+		ic.SentToVoicemail)
 	return errors.Trace(err)
 }
 
 func (d *dal) LookupIncomingCall(sid string) (*models.IncomingCall, error) {
 	var ic models.IncomingCall
 	if err := d.db.QueryRow(`
-		SELECT call_sid, source, destination, organization_id, afterhours, urgent
+		SELECT call_sid, source, destination, organization_id, afterhours, urgent, answered, sent_to_voicemail
 		FROM incoming_call
 		WHERE call_sid = ?`, sid).Scan(
 		&ic.CallSID,
@@ -670,7 +680,9 @@ func (d *dal) LookupIncomingCall(sid string) (*models.IncomingCall, error) {
 		&ic.Destination,
 		&ic.OrganizationID,
 		&ic.AfterHours,
-		&ic.Urgent); err == sql.ErrNoRows {
+		&ic.Urgent,
+		&ic.Answered,
+		&ic.SentToVoicemail); err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrIncomingCallNotFound)
 	} else if err != nil {
 		return nil, errors.Trace(err)
@@ -686,6 +698,12 @@ func (d *dal) UpdateIncomingCall(sid string, update *IncomingCallUpdate) (int64,
 	}
 	if update.Urgent != nil {
 		args.Append("urgent", *update.Urgent)
+	}
+	if update.Answered != nil {
+		args.Append("answered", *update.Answered)
+	}
+	if update.SentToVoicemail != nil {
+		args.Append("sent_to_voicemail", *update.SentToVoicemail)
 	}
 
 	if args == nil || args.IsEmpty() {

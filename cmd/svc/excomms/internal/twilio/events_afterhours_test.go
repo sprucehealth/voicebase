@@ -298,7 +298,7 @@ func TestAfterHours_IncomingCallStatus(t *testing.T) {
 		DialCallStatus: rawmsg.TwilioParams_NO_ANSWER,
 	}
 
-	twiml, err := processIncomingCallStatus(context.Background(), params, es.(*eventsHandler))
+	twiml, err := processDialedCallStatus(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
 		t.Fatal(err)
 	}

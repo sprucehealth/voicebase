@@ -57,7 +57,7 @@ message TwilioParams {
 	string call_sid = 1 [(gogoproto.customname) = "CallSID"];
 	string account_sid = 2 [(gogoproto.customname) = "AccountSID"];
 	string from = 3;
-	string to_number = 4 [(gogoproto.customname) = "To"];	
+	string to_number = 4 [(gogoproto.customname) = "To"];
 	CallStatus call_status = 5;
 	string api_version = 6 [(gogoproto.customname) = "APIVersion"];
 	Direction direction = 7;
@@ -68,13 +68,13 @@ message TwilioParams {
 	string digits = 12;
 	string message_sid = 13 [(gogoproto.customname) = "MessageSID"];
 	string sms_sid  = 14 [(gogoproto.customname) = "SMSSID"];
-	string body = 15; 
+	string body = 15;
 	uint32 num_media = 16;
-	repeated TwilioMediaItem media_items = 17;  
+	repeated TwilioMediaItem media_items = 17;
 	string messaging_service_id = 18 [(gogoproto.customname) = "MessagingServiceID"];
 
 	// these three parameters are only present in a twilio request
-	// attempting to get a twiml document to execute on the queued caller's 
+	// attempting to get a twiml document to execute on the queued caller's
 	// end before the two parties are connected.
 	string queue_sid = 19 [(gogoproto.customname) = "QueueSID"];
 	uint32 queue_time = 20;
@@ -85,15 +85,15 @@ message TwilioParams {
 
 	CallStatus dial_call_status = 23 [(gogoproto.customname) = "DialCallStatus"];
 	uint32 dial_call_duration = 24 [(gogoproto.customname) = "DialCallDuration"];
-	
+
 	// Deprecated
 	uint64 deprecated_recording_media_id = 25 [(gogoproto.customname) = "DeprecatedRecordingMediaID"];
 
 	MessageStatus message_status = 26;
 	string dial_call_sid = 27 [(gogoproto.customname) = "DialCallSID"];
-	
+
 	string recording_media_id = 28 [(gogoproto.customname) = "RecordingMediaID"];
-	
+
 	// transcription parameters
 	TranscriptionStatus transcription_status = 29;
 	string transcription_url = 30 [(gogoproto.customname) = "TranscriptionURL"];
@@ -118,7 +118,8 @@ enum TwilioEvent {
 	PROVIDER_CALL_CONNECTED = 1;
 	PROVIDER_ENTERED_DIGITS = 2;
 	TWIML_REQUESTED_VOICEMAIL = 3;
-	PROCESS_INCOMING_CALL_STATUS = 4;
+	PROCESS_DIALED_CALL_STATUS = 4;
+	PROCESS_INCOMING_CALL_STATUS = 15;
 	PROCESS_OUTGOING_CALL = 6;
 	PROCESS_VOICEMAIL = 7;
 	PROCESS_OUTGOING_CALL_STATUS = 8;
@@ -153,7 +154,7 @@ message SendGridIncomingEmail {
 		string id = 4 [(gogoproto.customname) = "ID"];
 	}
 
-	repeated Attachment attachments = 15; 
+	repeated Attachment attachments = 15;
 }
 
 // IncomingRawMessage represents a message parsed by the excommsapi layer

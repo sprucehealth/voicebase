@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/cleaner"
+	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/sns"
@@ -76,6 +77,62 @@ func processIncomingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 	}
 
 	return callForwardingList(ctx, entity, params, eh)
+}
+
+func processIncomingCallStatus(ctx context.Context, params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
+	switch params.CallStatus {
+	default:
+		// do nothing until end state reached
+
+	case rawmsg.TwilioParams_COMPLETED, rawmsg.TwilioParams_NO_ANSWER:
+		// end state reached
+
+		incomingCall, err := eh.dal.LookupIncomingCall(params.CallSID)
+		if err != nil {
+			return "", errors.Trace(err)
+		}
+
+		if incomingCall.Answered {
+			conc.Go(func() {
+				if err := sns.Publish(eh.sns, eh.externalMessageTopic, &excomms.PublishedExternalMessage{
+					FromChannelID: params.From,
+					ToChannelID:   params.To,
+					Timestamp:     uint64(eh.clock.Now().Unix()),
+					Direction:     excomms.PublishedExternalMessage_INBOUND,
+					Type:          excomms.PublishedExternalMessage_INCOMING_CALL_EVENT,
+					Item: &excomms.PublishedExternalMessage_Incoming{
+						Incoming: &excomms.IncomingCallEventItem{
+							Type:              excomms.IncomingCallEventItem_ANSWERED,
+							DurationInSeconds: params.CallDuration,
+						},
+					},
+				}); err != nil {
+					golog.Errorf(err.Error())
+				}
+			})
+			trackInboundCall(eh, params.CallSID, "answered")
+		} else if !incomingCall.Answered && !incomingCall.SentToVoicemail {
+			conc.Go(func() {
+				if err := sns.Publish(eh.sns, eh.externalMessageTopic, &excomms.PublishedExternalMessage{
+					FromChannelID: params.From,
+					ToChannelID:   params.To,
+					Timestamp:     uint64(time.Now().Unix()),
+					Direction:     excomms.PublishedExternalMessage_INBOUND,
+					Type:          excomms.PublishedExternalMessage_INCOMING_CALL_EVENT,
+					Item: &excomms.PublishedExternalMessage_Incoming{
+						Incoming: &excomms.IncomingCallEventItem{
+							Type: excomms.IncomingCallEventItem_UNANSWERED,
+						},
+					},
+				}); err != nil {
+					golog.Errorf(err.Error())
+				}
+			})
+			trackInboundCall(eh, params.CallSID, "missed-call")
+		}
+	}
+
+	return "", nil
 }
 
 // STEP: If call forwarding list, then send all calls to voicemail or simultaneously call numbers in list?
@@ -262,6 +319,16 @@ func providerEnteredDigits(ctx context.Context, params *rawmsg.TwilioParams, eh 
 	golog.Infof("Provider entered digits %s at %s.", params.Digits, params.To)
 
 	if params.Digits == "1" {
+
+		// update the call metadata to indicate that the provider answered the call
+		if rowsUpdated, err := eh.dal.UpdateIncomingCall(params.ParentCallSID, &dal.IncomingCallUpdate{
+			Answered: ptr.Bool(true),
+		}); err != nil {
+			return "", errors.Trace(err)
+		} else if rowsUpdated != 1 {
+			return "", errors.Trace(fmt.Errorf("Expected 1 row to be updated for %s but %d rows updated", params.ParentCallSID, rowsUpdated))
+		}
+
 		// accept the call if the provider entered the right digit
 		// by generating an empty response.
 		tw := twiml.NewResponse()
@@ -365,6 +432,22 @@ func voicemailTWIML(ctx context.Context, params *rawmsg.TwilioParams, eh *events
 		}
 	}
 
+	// update the incoming call status to indicate that the patient was sent to voicemail
+	callSID := params.CallSID
+	// if the parentCallSID is specified, that means we are trying to direct the
+	// dialed call to the voicemail prompt for the patient.
+	if params.ParentCallSID != "" {
+		callSID = params.ParentCallSID
+	}
+	// update the call metadata to indicate that the provider answered the call
+	if rowsUpdated, err := eh.dal.UpdateIncomingCall(callSID, &dal.IncomingCallUpdate{
+		SentToVoicemail: ptr.Bool(true),
+	}); err != nil {
+		return "", errors.Trace(err)
+	} else if rowsUpdated != 1 {
+		return "", errors.Trace(fmt.Errorf("Expected 1 row to be updated for %s but %d rows updated", params.ParentCallSID, rowsUpdated))
+	}
+
 	tw := &twiml.Response{
 		Verbs: []interface{}{
 			firstVerb,
@@ -385,28 +468,11 @@ func voicemailTWIML(ctx context.Context, params *rawmsg.TwilioParams, eh *events
 
 // STEP: Process the status of the incoming call.
 
-func processIncomingCallStatus(ctx context.Context, params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
+func processDialedCallStatus(ctx context.Context, params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
 	switch params.DialCallStatus {
 	case rawmsg.TwilioParams_ANSWERED, rawmsg.TwilioParams_COMPLETED:
-		conc.Go(func() {
-			if err := sns.Publish(eh.sns, eh.externalMessageTopic, &excomms.PublishedExternalMessage{
-				FromChannelID: params.From,
-				ToChannelID:   params.To,
-				Timestamp:     uint64(time.Now().Unix()),
-				Direction:     excomms.PublishedExternalMessage_INBOUND,
-				Type:          excomms.PublishedExternalMessage_INCOMING_CALL_EVENT,
-				Item: &excomms.PublishedExternalMessage_Incoming{
-					Incoming: &excomms.IncomingCallEventItem{
-						Type:              excomms.IncomingCallEventItem_ANSWERED,
-						DurationInSeconds: params.CallDuration,
-					},
-				},
-			}); err != nil {
-				golog.Errorf(err.Error())
-			}
-		})
-		trackInboundCall(eh, params.CallSID, "answered")
-
+		// do nothing because the processing of the call status of the patient call
+		// will handle adding the right events
 	case rawmsg.TwilioParams_CALL_STATUS_UNDEFINED:
 	default:
 		incomingCall, err := eh.dal.LookupIncomingCall(params.CallSID)

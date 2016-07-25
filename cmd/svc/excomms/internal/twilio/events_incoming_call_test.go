@@ -9,6 +9,7 @@ import (
 
 	"context"
 
+	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	dalmock "github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal/mock"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
@@ -474,6 +475,10 @@ func TestIncoming_Organization_MultipleContacts_SendCallsToVoicemail(t *testing.
 		},
 	}, nil))
 
+	mdal.Expect(mock.NewExpectation(mdal.UpdateIncomingCall, callSID, &dal.IncomingCallUpdate{
+		SentToVoicemail: ptr.Bool(true),
+	}).WithReturns(int64(1), nil))
+
 	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
 	test.OK(t, err)
 	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
@@ -645,12 +650,21 @@ func TestProviderCallConnected_NoName(t *testing.T) {
 
 func TestProviderEnteredDigits_Entered1(t *testing.T) {
 	params := &rawmsg.TwilioParams{
-		From:   "+14151111111",
-		To:     "+14152222222",
-		Digits: "1",
+		From:          "+14151111111",
+		To:            "+14152222222",
+		Digits:        "1",
+		CallSID:       "callSID",
+		ParentCallSID: "parentCallSID",
 	}
+	mdal := dalmock.New(t)
+	defer mdal.Finish()
 
-	twiml, err := providerEnteredDigits(context.Background(), params, nil)
+	mdal.Expect(mock.NewExpectation(mdal.UpdateIncomingCall, params.ParentCallSID, &dal.IncomingCallUpdate{
+		Answered: ptr.Bool(true),
+	}).WithReturns(int64(1), nil))
+
+	es := NewEventHandler(nil, nil, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, nil)
+	twiml, err := providerEnteredDigits(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -773,9 +787,10 @@ func TestVoicemailTwiML(t *testing.T) {
 	}
 
 	params := &rawmsg.TwilioParams{
-		From:   "+14151111111",
-		To:     "+14152222222",
-		Digits: "2",
+		From:    "+14151111111",
+		To:      "+14152222222",
+		Digits:  "2",
+		CallSID: "callSID",
 	}
 
 	msettings := settingsmock.New(t)
@@ -830,11 +845,18 @@ func TestVoicemailTwiML(t *testing.T) {
 		},
 	}, nil))
 
+	mdal := dalmock.New(t)
+	defer mdal.Finish()
+
+	mdal.Expect(mock.NewExpectation(mdal.UpdateIncomingCall, params.CallSID, &dal.IncomingCallUpdate{
+		SentToVoicemail: ptr.Bool(true),
+	}).WithReturns(int64(1), nil))
+
 	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
 	test.OK(t, err)
 	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
 
-	es := NewEventHandler(md, msettings, nil, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, signer)
+	es := NewEventHandler(md, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, signer)
 
 	twiml, err := voicemailTWIML(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
@@ -883,9 +905,10 @@ func TestVoicemailTwiML_Custom(t *testing.T) {
 	}
 
 	params := &rawmsg.TwilioParams{
-		From:   "+14151111111",
-		To:     "+14152222222",
-		Digits: "2",
+		From:    "+14151111111",
+		To:      "+14152222222",
+		Digits:  "2",
+		CallSID: "callSID",
 	}
 
 	msettings := settingsmock.New(t)
@@ -943,6 +966,12 @@ func TestVoicemailTwiML_Custom(t *testing.T) {
 		},
 	}, nil))
 
+	mdal := dalmock.New(t)
+	defer mdal.Finish()
+	mdal.Expect(mock.NewExpectation(mdal.UpdateIncomingCall, params.CallSID, &dal.IncomingCallUpdate{
+		SentToVoicemail: ptr.Bool(true),
+	}).WithReturns(int64(1), nil))
+
 	mc := clock.NewManaged(time.Now())
 	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
 	test.OK(t, err)
@@ -951,7 +980,7 @@ func TestVoicemailTwiML_Custom(t *testing.T) {
 	expectedURL, err := signer.SignedURL(fmt.Sprintf("/media/%s", customVoicemailMediaID), url.Values{}, ptr.Time(mc.Now().Add(time.Hour)))
 	test.OK(t, err)
 
-	es := NewEventHandler(md, msettings, nil, &mockSNS_Twilio{}, mc, nil, "https://test.com", "", "", "", nil, signer)
+	es := NewEventHandler(md, msettings, mdal, &mockSNS_Twilio{}, mc, nil, "https://test.com", "", "", "", nil, signer)
 
 	twiml, err := voicemailTWIML(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
@@ -1000,9 +1029,10 @@ func TestVoicemailTwiML_NoTranscription(t *testing.T) {
 	}
 
 	params := &rawmsg.TwilioParams{
-		From:   "+14151111111",
-		To:     "+14152222222",
-		Digits: "2",
+		From:    "+14151111111",
+		To:      "+14152222222",
+		Digits:  "2",
+		CallSID: "callSID",
 	}
 
 	msettings := settingsmock.New(t)
@@ -1057,11 +1087,18 @@ func TestVoicemailTwiML_NoTranscription(t *testing.T) {
 		},
 	}, nil))
 
+	mdal := dalmock.New(t)
+	defer mdal.Finish()
+
+	mdal.Expect(mock.NewExpectation(mdal.UpdateIncomingCall, params.CallSID, &dal.IncomingCallUpdate{
+		SentToVoicemail: ptr.Bool(true),
+	}).WithReturns(int64(1), nil))
+
 	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
 	test.OK(t, err)
 	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
 
-	es := NewEventHandler(md, msettings, nil, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, signer)
+	es := NewEventHandler(md, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, signer)
 
 	twiml, err := voicemailTWIML(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
@@ -1075,12 +1112,234 @@ func TestVoicemailTwiML_NoTranscription(t *testing.T) {
 	}
 }
 
-func TestIncomingCallStatus_CallAnswered(t *testing.T) {
-	testIncomingCallStatus(t, rawmsg.TwilioParams_ANSWERED)
+func TestIncomingCallStatus_CallCompleted(t *testing.T) {
+	conc.Testing = true
+	ms := &mockSNS_Twilio{}
+	params := &rawmsg.TwilioParams{
+		From:       "+12068773590",
+		To:         "+17348465522",
+		CallStatus: rawmsg.TwilioParams_COMPLETED,
+		CallSID:    "12345",
+	}
+
+	md := dalmock.New(t)
+	defer md.Finish()
+
+	md.Expect(mock.NewExpectation(md.LookupIncomingCall, params.CallSID).WithReturns(&models.IncomingCall{
+		OrganizationID: "o1",
+		Source:         phone.Number(params.From),
+		Destination:    phone.Number(params.To),
+		Answered:       true,
+	}, nil))
+
+	md.Expect(mock.NewExpectation(md.LookupIncomingCall, params.CallSID).WithReturns(&models.IncomingCall{
+		OrganizationID: "o1",
+		Source:         phone.Number(params.From),
+		Destination:    phone.Number(params.To),
+		Answered:       true,
+	}, nil))
+
+	mdir := directorymock.New(t)
+	defer mdir.Finish()
+
+	mdir.Expect(mock.NewExpectation(mdir.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: "o1",
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth: 1,
+			EntityInformation: []directory.EntityInformation{
+				directory.EntityInformation_EXTERNAL_IDS,
+				directory.EntityInformation_MEMBERS,
+			},
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{
+				ID:   "o1",
+				Type: directory.EntityType_ORGANIZATION,
+				Members: []*directory.Entity{
+					{
+						ID:   "p1",
+						Type: directory.EntityType_INTERNAL,
+					},
+				},
+				ExternalIDs: []string{"account_1"},
+			},
+		},
+	}, nil))
+
+	mclock := clock.NewManaged(time.Now())
+	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
+	test.OK(t, err)
+	signer := urlutil.NewSigner("apiDomain", sig, mclock)
+
+	es := NewEventHandler(mdir, nil, md, ms, mclock, nil, "", "", "", "", nil, signer)
+
+	twiml, err := processIncomingCallStatus(context.Background(), params, es.(*eventsHandler))
+	if err != nil {
+		t.Fatal(err)
+	} else if twiml != "" {
+		t.Fatalf("Expected %s but got %s", "", twiml)
+	}
+
+	// ensure that item was published
+	if len(ms.published) != 1 {
+		t.Fatalf("Expected %d got %d", 1, len(ms.published))
+	}
+
+	pem, err := parsePublishedExternalMessage(*ms.published[0].Message)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	test.Equals(t, &excomms.PublishedExternalMessage{
+		FromChannelID: params.From,
+		ToChannelID:   params.To,
+		Timestamp:     uint64(mclock.Now().Unix()),
+		Direction:     excomms.PublishedExternalMessage_INBOUND,
+		Type:          excomms.PublishedExternalMessage_INCOMING_CALL_EVENT,
+		Item: &excomms.PublishedExternalMessage_Incoming{
+			Incoming: &excomms.IncomingCallEventItem{
+				Type:              excomms.IncomingCallEventItem_ANSWERED,
+				DurationInSeconds: params.CallDuration,
+			},
+		},
+	}, pem)
 }
 
-func TestIncomingCallStatus_CallCompleted(t *testing.T) {
-	testIncomingCallStatus(t, rawmsg.TwilioParams_COMPLETED)
+func TestIncomingCallStatus_MissedCall(t *testing.T) {
+	conc.Testing = true
+	ms := &mockSNS_Twilio{}
+	params := &rawmsg.TwilioParams{
+		From:       "+12068773590",
+		To:         "+17348465522",
+		CallStatus: rawmsg.TwilioParams_COMPLETED,
+		CallSID:    "12345",
+	}
+
+	md := dalmock.New(t)
+	defer md.Finish()
+
+	md.Expect(mock.NewExpectation(md.LookupIncomingCall, params.CallSID).WithReturns(&models.IncomingCall{
+		OrganizationID: "o1",
+		Source:         phone.Number(params.From),
+		Destination:    phone.Number(params.To),
+	}, nil))
+
+	md.Expect(mock.NewExpectation(md.LookupIncomingCall, params.CallSID).WithReturns(&models.IncomingCall{
+		OrganizationID: "o1",
+		Source:         phone.Number(params.From),
+		Destination:    phone.Number(params.To),
+	}, nil))
+
+	mdir := directorymock.New(t)
+	defer mdir.Finish()
+
+	mdir.Expect(mock.NewExpectation(mdir.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: "o1",
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth: 1,
+			EntityInformation: []directory.EntityInformation{
+				directory.EntityInformation_EXTERNAL_IDS,
+				directory.EntityInformation_MEMBERS,
+			},
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{
+				ID:   "o1",
+				Type: directory.EntityType_ORGANIZATION,
+				Members: []*directory.Entity{
+					{
+						ID:   "p1",
+						Type: directory.EntityType_INTERNAL,
+					},
+				},
+				ExternalIDs: []string{"account_1"},
+			},
+		},
+	}, nil))
+
+	mclock := clock.NewManaged(time.Now())
+	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
+	test.OK(t, err)
+	signer := urlutil.NewSigner("apiDomain", sig, mclock)
+
+	es := NewEventHandler(mdir, nil, md, ms, mclock, nil, "", "", "", "", nil, signer)
+
+	twiml, err := processIncomingCallStatus(context.Background(), params, es.(*eventsHandler))
+	if err != nil {
+		t.Fatal(err)
+	} else if twiml != "" {
+		t.Fatalf("Expected %s but got %s", "", twiml)
+	}
+
+	// ensure that item was published
+	if len(ms.published) != 1 {
+		t.Fatalf("Expected %d got %d", 1, len(ms.published))
+	}
+
+	pem, err := parsePublishedExternalMessage(*ms.published[0].Message)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	test.Equals(t, &excomms.PublishedExternalMessage{
+		FromChannelID: params.From,
+		ToChannelID:   params.To,
+		Timestamp:     uint64(mclock.Now().Unix()),
+		Direction:     excomms.PublishedExternalMessage_INBOUND,
+		Type:          excomms.PublishedExternalMessage_INCOMING_CALL_EVENT,
+		Item: &excomms.PublishedExternalMessage_Incoming{
+			Incoming: &excomms.IncomingCallEventItem{
+				Type:              excomms.IncomingCallEventItem_UNANSWERED,
+				DurationInSeconds: params.CallDuration,
+			},
+		},
+	}, pem)
+}
+
+func TestIncomingCallStatus_SentToVoicemail(t *testing.T) {
+	conc.Testing = true
+	ms := &mockSNS_Twilio{}
+	params := &rawmsg.TwilioParams{
+		From:       "+12068773590",
+		To:         "+17348465522",
+		CallStatus: rawmsg.TwilioParams_COMPLETED,
+		CallSID:    "12345",
+	}
+
+	md := dalmock.New(t)
+	defer md.Finish()
+
+	md.Expect(mock.NewExpectation(md.LookupIncomingCall, params.CallSID).WithReturns(&models.IncomingCall{
+		OrganizationID:  "o1",
+		Source:          phone.Number(params.From),
+		Destination:     phone.Number(params.To),
+		SentToVoicemail: true,
+	}, nil))
+
+	mclock := clock.NewManaged(time.Now())
+	es := NewEventHandler(nil, nil, md, ms, mclock, nil, "", "", "", "", nil, nil)
+
+	twiml, err := processIncomingCallStatus(context.Background(), params, es.(*eventsHandler))
+	if err != nil {
+		t.Fatal(err)
+	} else if twiml != "" {
+		t.Fatalf("Expected %s but got %s", "", twiml)
+	}
+
+	// ensure that item was published
+	if len(ms.published) != 0 {
+		t.Fatalf("Expected %d got %d", 0, len(ms.published))
+	}
 }
 
 func TestIncomingCallStatus_OtherCallStatus(t *testing.T) {
@@ -1102,6 +1361,7 @@ func testIncomingCallStatus_Other(t *testing.T, incomingStatus rawmsg.TwilioPara
 		To:             "+17348465522",
 		DialCallStatus: incomingStatus,
 		CallSID:        "callSID12345",
+		ParentCallSID:  "parentCallSID12345",
 	}
 
 	orgID := "12345"
@@ -1196,6 +1456,10 @@ func testIncomingCallStatus_Other(t *testing.T, incomingStatus rawmsg.TwilioPara
 		OrganizationID: orgID,
 	}, nil))
 
+	mdal.Expect(mock.NewExpectation(mdal.UpdateIncomingCall, params.ParentCallSID, &dal.IncomingCallUpdate{
+		SentToVoicemail: ptr.Bool(true),
+	}).WithReturns(int64(1), nil))
+
 	msettings := settingsmock.New(t)
 	defer msettings.Finish()
 
@@ -1275,7 +1539,7 @@ func testIncomingCallStatus_Other(t *testing.T, incomingStatus rawmsg.TwilioPara
 
 	es := NewEventHandler(md, msettings, mdal, ms, clock.New(), nil, "https://test.com", "", "", "", nil, signer)
 
-	twiml, err := processIncomingCallStatus(context.Background(), params, es.(*eventsHandler))
+	twiml, err := processDialedCallStatus(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1289,89 +1553,6 @@ func testIncomingCallStatus_Other(t *testing.T, incomingStatus rawmsg.TwilioPara
 	// ensure that item was published
 	if len(ms.published) != 0 {
 		t.Fatalf("Expected %d got %d", 0, len(ms.published))
-	}
-}
-
-func testIncomingCallStatus(t *testing.T, incomingStatus rawmsg.TwilioParams_CallStatus) {
-	conc.Testing = true
-	ms := &mockSNS_Twilio{}
-	params := &rawmsg.TwilioParams{
-		From:           "+12068773590",
-		To:             "+17348465522",
-		DialCallStatus: incomingStatus,
-		CallSID:        "12345",
-	}
-
-	md := dalmock.New(t)
-	defer md.Finish()
-
-	md.Expect(mock.NewExpectation(md.LookupIncomingCall, params.CallSID).WithReturns(&models.IncomingCall{
-		OrganizationID: "o1",
-		Source:         phone.Number(params.From),
-		Destination:    phone.Number(params.To),
-	}, nil))
-
-	mdir := directorymock.New(t)
-	defer mdir.Finish()
-
-	mdir.Expect(mock.NewExpectation(mdir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-			EntityID: "o1",
-		},
-		RequestedInformation: &directory.RequestedInformation{
-			Depth: 1,
-			EntityInformation: []directory.EntityInformation{
-				directory.EntityInformation_EXTERNAL_IDS,
-				directory.EntityInformation_MEMBERS,
-			},
-		},
-		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
-	}).WithReturns(&directory.LookupEntitiesResponse{
-		Entities: []*directory.Entity{
-			{
-				ID:   "o1",
-				Type: directory.EntityType_ORGANIZATION,
-				Members: []*directory.Entity{
-					{
-						ID:   "p1",
-						Type: directory.EntityType_INTERNAL,
-					},
-				},
-				ExternalIDs: []string{"account_1"},
-			},
-		},
-	}, nil))
-
-	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
-	test.OK(t, err)
-	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
-
-	es := NewEventHandler(mdir, nil, md, ms, clock.New(), nil, "", "", "", "", nil, signer)
-
-	twiml, err := processIncomingCallStatus(context.Background(), params, es.(*eventsHandler))
-	if err != nil {
-		t.Fatal(err)
-	} else if twiml != "" {
-		t.Fatalf("Expected %s but got %s", "", twiml)
-	}
-
-	// ensure that item was published
-	if len(ms.published) != 2 {
-		t.Fatalf("Expected %d got %d", 2, len(ms.published))
-	}
-
-	pem, err := parsePublishedExternalMessage(*ms.published[0].Message)
-	if err != nil {
-		t.Fatal(err)
-	} else if pem.FromChannelID != "+12068773590" {
-		t.Fatalf("Expected %s but got %s", "+12068773590", params.From)
-	} else if pem.ToChannelID != "+17348465522" {
-		t.Fatalf("Expected %s but got %s", "+17348465522", params.To)
-	} else if pem.Direction != excomms.PublishedExternalMessage_INBOUND {
-		t.Fatalf("Expected %s but got %s", excomms.PublishedExternalMessage_INBOUND, pem.Direction)
-	} else if pem.Type != excomms.PublishedExternalMessage_INCOMING_CALL_EVENT {
-		t.Fatalf("Expected %s but got %s", excomms.PublishedExternalMessage_INCOMING_CALL_EVENT, pem.Type)
 	}
 }
 

@@ -29,6 +29,7 @@ var (
 		rawmsg.TwilioEvent_PROVIDER_CALL_CONNECTED:      providerCallConnected,
 		rawmsg.TwilioEvent_PROVIDER_ENTERED_DIGITS:      providerEnteredDigits,
 		rawmsg.TwilioEvent_TWIML_REQUESTED_VOICEMAIL:    voicemailTWIML,
+		rawmsg.TwilioEvent_PROCESS_DIALED_CALL_STATUS:   processDialedCallStatus,
 		rawmsg.TwilioEvent_PROCESS_INCOMING_CALL_STATUS: processIncomingCallStatus,
 		rawmsg.TwilioEvent_PROCESS_VOICEMAIL:            processVoicemail,
 		rawmsg.TwilioEvent_NO_OP:                        processNoOp,

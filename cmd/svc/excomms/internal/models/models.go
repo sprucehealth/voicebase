@@ -70,12 +70,14 @@ type CallRequest struct {
 
 // IncomingCall represents a call from an external party to an organization.
 type IncomingCall struct {
-	CallSID        string
-	Source         phone.Number
-	Destination    phone.Number
-	OrganizationID string
-	Urgent         bool
-	AfterHours     bool
+	CallSID         string
+	Source          phone.Number
+	Destination     phone.Number
+	OrganizationID  string
+	Urgent          bool
+	AfterHours      bool
+	Answered        bool
+	SentToVoicemail bool
 }
 
 // CallEvent represents an entry pertaining to a call event

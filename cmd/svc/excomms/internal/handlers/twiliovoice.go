@@ -12,9 +12,15 @@ import (
 )
 
 var twilioEventMapper = map[string]rawmsg.TwilioEvent{
-	"process_incoming_call":             rawmsg.TwilioEvent_PROCESS_INCOMING_CALL,
-	"process_outgoing_call":             rawmsg.TwilioEvent_PROCESS_OUTGOING_CALL,
-	"process_incoming_call_status":      rawmsg.TwilioEvent_PROCESS_INCOMING_CALL_STATUS,
+	"process_incoming_call": rawmsg.TwilioEvent_PROCESS_INCOMING_CALL,
+	"process_outgoing_call": rawmsg.TwilioEvent_PROCESS_OUTGOING_CALL,
+
+	// process_incoming_call_status path is deprecated
+	// and replaced with process_dialed_call_status since it more accurately represents
+	// the action.
+	"process_incoming_call_status":      rawmsg.TwilioEvent_PROCESS_DIALED_CALL_STATUS,
+	"process_dialed_call_status":        rawmsg.TwilioEvent_PROCESS_DIALED_CALL_STATUS,
+	"process_inbound_call_status":       rawmsg.TwilioEvent_PROCESS_INCOMING_CALL_STATUS,
 	"process_outgoing_call_status":      rawmsg.TwilioEvent_PROCESS_OUTGOING_CALL_STATUS,
 	"process_voicemail":                 rawmsg.TwilioEvent_PROCESS_VOICEMAIL,
 	"provider_call_connected":           rawmsg.TwilioEvent_PROVIDER_CALL_CONNECTED,
