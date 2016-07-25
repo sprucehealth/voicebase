@@ -111,7 +111,7 @@ func processIncomingCallStatus(ctx context.Context, params *rawmsg.TwilioParams,
 				}
 			})
 			trackInboundCall(eh, params.CallSID, "answered")
-		} else if !incomingCall.Answered && !incomingCall.SentToVoicemail {
+		} else if !incomingCall.Answered {
 			conc.Go(func() {
 				if err := sns.Publish(eh.sns, eh.externalMessageTopic, &excomms.PublishedExternalMessage{
 					FromChannelID: params.From,

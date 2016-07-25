@@ -1326,8 +1326,46 @@ func TestIncomingCallStatus_SentToVoicemail(t *testing.T) {
 		SentToVoicemail: true,
 	}, nil))
 
+	md.Expect(mock.NewExpectation(md.LookupIncomingCall, params.CallSID).WithReturns(&models.IncomingCall{
+		OrganizationID: "o1",
+		Source:         phone.Number(params.From),
+		Destination:    phone.Number(params.To),
+	}, nil))
+
+	mdir := directorymock.New(t)
+	defer mdir.Finish()
+
+	mdir.Expect(mock.NewExpectation(mdir.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: "o1",
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth: 1,
+			EntityInformation: []directory.EntityInformation{
+				directory.EntityInformation_EXTERNAL_IDS,
+				directory.EntityInformation_MEMBERS,
+			},
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{
+				ID:   "o1",
+				Type: directory.EntityType_ORGANIZATION,
+				Members: []*directory.Entity{
+					{
+						ID:   "p1",
+						Type: directory.EntityType_INTERNAL,
+					},
+				},
+				ExternalIDs: []string{"account_1"},
+			},
+		},
+	}, nil))
+
 	mclock := clock.NewManaged(time.Now())
-	es := NewEventHandler(nil, nil, md, ms, mclock, nil, "", "", "", "", nil, nil)
+	es := NewEventHandler(mdir, nil, md, ms, mclock, nil, "", "", "", "", nil, nil)
 
 	twiml, err := processIncomingCallStatus(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
@@ -1337,9 +1375,28 @@ func TestIncomingCallStatus_SentToVoicemail(t *testing.T) {
 	}
 
 	// ensure that item was published
-	if len(ms.published) != 0 {
-		t.Fatalf("Expected %d got %d", 0, len(ms.published))
+	if len(ms.published) != 1 {
+		t.Fatalf("Expected %d got %d", 1, len(ms.published))
 	}
+
+	pem, err := parsePublishedExternalMessage(*ms.published[0].Message)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	test.Equals(t, &excomms.PublishedExternalMessage{
+		FromChannelID: params.From,
+		ToChannelID:   params.To,
+		Timestamp:     uint64(mclock.Now().Unix()),
+		Direction:     excomms.PublishedExternalMessage_INBOUND,
+		Type:          excomms.PublishedExternalMessage_INCOMING_CALL_EVENT,
+		Item: &excomms.PublishedExternalMessage_Incoming{
+			Incoming: &excomms.IncomingCallEventItem{
+				Type:              excomms.IncomingCallEventItem_UNANSWERED,
+				DurationInSeconds: params.CallDuration,
+			},
+		},
+	}, pem)
 }
 
 func TestIncomingCallStatus_OtherCallStatus(t *testing.T) {
