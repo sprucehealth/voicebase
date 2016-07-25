@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"time"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/auth"
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
@@ -38,17 +40,17 @@ func (h *authenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			apiservice.WriteBadRequestError(err, w, r)
 			return
 		}
-		id, err := h.ap.Authenticate(req.Username, req.Password)
+		id, err := h.ap.Authenticate(r.Context(), req.Username, req.Password)
 		if err != nil {
 			http.Error(w, "Bad Request", http.StatusBadRequest)
 			return
 		}
-		token, exp, err := auth.NewToken(id, h.signer)
+		token, exp, err := auth.NewToken(r.Context(), id, h.signer)
 		if err != nil {
 			http.Error(w, "Internal Error", http.StatusInternalServerError)
 			return
 		}
-		setAuthCookie(w, r.Host, token, exp)
+		setAuthCookie(r.Context(), w, r.Host, token, exp)
 		httputil.JSONResponse(w, http.StatusOK, &authenticationResponse{
 			Token: token,
 			UID:   id,
@@ -67,9 +69,9 @@ func NewAuthentication(ap lauth.AuthenticationProvider, signer *sig.Signer) http
 	}
 }
 
-func setAuthCookie(w http.ResponseWriter, domain, token string, expires time.Time) {
+func setAuthCookie(ctx context.Context, w http.ResponseWriter, domain, token string, expires time.Time) {
 	domain = getDomain(domain)
-	golog.Debugf("Setting auth cookie: %s, %s, expires - %v", domain, token, expires)
+	golog.ContextLogger(ctx).Debugf("Setting auth cookie: %s, %s, expires - %v", domain, token, expires)
 	http.SetCookie(w, &http.Cookie{
 		Name:     common.AuthCookieName,
 		Domain:   domain,

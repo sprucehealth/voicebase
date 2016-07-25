@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"context"
+
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/sig"
@@ -28,11 +30,11 @@ func hash(id, nonce, expirationts string, signer *sig.Signer) (string, error) {
 }
 
 // NewToken generates a signed token and expiration timestamp
-func NewToken(uid string, signer *sig.Signer) (string, time.Time, error) {
+func NewToken(ctx context.Context, uid string, signer *sig.Signer) (string, time.Time, error) {
 	nonce := make([]byte, 32)
 	_, err := rand.Read(nonce)
 	if err != nil {
-		golog.Debugf("Error while generating nonce: %s", err)
+		golog.ContextLogger(ctx).Debugf("Error while generating nonce: %s", err)
 		return "", time.Time{}, errors.Trace(err)
 	}
 	snonce := base64.StdEncoding.EncodeToString(nonce)
@@ -43,11 +45,11 @@ func NewToken(uid string, signer *sig.Signer) (string, time.Time, error) {
 }
 
 // IsTokenValid returns a boolean value representing if the provided token is valid and the uid of the user if they are
-func IsTokenValid(token string, signer *sig.Signer) (bool, string) {
+func IsTokenValid(ctx context.Context, token string, signer *sig.Signer) (bool, string) {
 	// We expect the token to be of the format token:uid:nonce:expiration_ts
 	tSegs := strings.Split(token, ":")
 	if len(tSegs) != 4 {
-		golog.Debugf("Expected 4 segments but got %v", tSegs)
+		golog.ContextLogger(ctx).Debugf("Expected 4 segments but got %v", tSegs)
 		return false, ""
 	}
 	t := tSegs[0]
@@ -56,30 +58,30 @@ func IsTokenValid(token string, signer *sig.Signer) (bool, string) {
 	expirationts := tSegs[3]
 	ht, err := hash(uid, nonce, expirationts, signer)
 	if err != nil {
-		golog.Debugf("Error while matching hash for %s, %s, %s: %s", uid, nonce, expirationts, err)
+		golog.ContextLogger(ctx).Debugf("Error while matching hash for %s, %s, %s: %s", uid, nonce, expirationts, err)
 		return false, ""
 	}
 
 	dt, err := base64.StdEncoding.DecodeString(t)
 	if err != nil {
-		golog.Debugf("Error while decoding token %s: %s", t, err)
+		golog.ContextLogger(ctx).Debugf("Error while decoding token %s: %s", t, err)
 		return false, ""
 	}
 
 	if !signer.Verify([]byte(uid+expirationts+nonce), dt) {
-		golog.Debugf("Verification failed for %s - %s", string(t), string(ht))
+		golog.ContextLogger(ctx).Debugf("Verification failed for %s - %s", string(t), string(ht))
 		return false, ""
 	}
 
 	// If the hash matches assert that it's not expired
 	ets, err := strconv.ParseInt(expirationts, 10, 64)
 	if err != nil {
-		golog.Debugf("Error while parsing expiration timestamp", tSegs)
+		golog.ContextLogger(ctx).Debugf("Error while parsing expiration timestamp", tSegs)
 		return false, ""
 	}
 
 	if !time.Now().Before(time.Unix(ets, 0)) {
-		golog.Debugf("The token %s is expired at timestamp %d", token, ets)
+		golog.ContextLogger(ctx).Debugf("The token %s is expired at timestamp %d", token, ets)
 		return false, ""
 	}
 	return true, uid

@@ -54,3 +54,21 @@ func (d *mockDAL) SetValues(nodeID string, values []*models.Value) error {
 
 	return mock.SafeError(rets[0])
 }
+
+func (d *mockDAL) GetAllConfigs() ([]*models.Config, error) {
+	rets := d.Record()
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].([]*models.Config), mock.SafeError(rets[1])
+}
+
+func (d *mockDAL) GetNodeValues(nodeID string) ([]*models.Value, error) {
+	rets := d.Record(nodeID)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].([]*models.Value), mock.SafeError(rets[1])
+}

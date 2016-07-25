@@ -55,3 +55,11 @@ func (s *Client) GetValues(ctx context.Context, in *settings.GetValuesRequest, o
 	}
 	return rets[0].(*settings.GetValuesResponse), mock.SafeError(rets[1])
 }
+
+func (s *Client) GetNodeValues(ctx context.Context, in *settings.GetNodeValuesRequest, opts ...grpc.CallOption) (*settings.GetNodeValuesResponse, error) {
+	rets := s.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*settings.GetNodeValuesResponse), mock.SafeError(rets[1])
+}

@@ -5,12 +5,15 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/sprucehealth/backend/cmd/svc/admin/internal/gql/client"
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/gql/query"
 	"github.com/sprucehealth/backend/libs/auth"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/sig"
+	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/graphql"
 	"github.com/sprucehealth/graphql/gqlerrors"
 	"github.com/sprucehealth/graphql/language/parser"
@@ -24,13 +27,17 @@ type gqlReq struct {
 }
 
 type gqlHandler struct {
-	behindProxy bool
-	schema      graphql.Schema
+	behindProxy     bool
+	schema          graphql.Schema
+	directoryClient directory.DirectoryClient
+	settingsClient  settings.SettingsClient
 }
 
 // New returns an initialized instance of *gqlHandler
 func New(
 	ap auth.AuthenticationProvider,
+	directoryClient directory.DirectoryClient,
+	settingsClient settings.SettingsClient,
 	signer *sig.Signer,
 	behindProxy bool) (http.Handler, graphql.Schema) {
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
@@ -40,8 +47,10 @@ func New(
 		golog.Fatalf("Failed to initialized gqlHandler: %s", err.Error())
 	}
 	return &gqlHandler{
-		behindProxy: behindProxy,
-		schema:      schema,
+		behindProxy:     behindProxy,
+		schema:          schema,
+		directoryClient: directoryClient,
+		settingsClient:  settingsClient,
 	}, schema
 }
 
@@ -63,11 +72,13 @@ func (h *gqlHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		RequestString:  req.Query,
 		VariableValues: req.Variables,
 		Context:        r.Context(),
-		RootObject: map[string]interface{}{
+		RootObject: client.InitRoot(map[string]interface{}{
 			"remoteAddr": httputil.RemoteAddrFromRequest(r, h.behindProxy),
 			"userAgent":  r.UserAgent(),
 			"result":     result,
 		},
+			h.directoryClient,
+			h.settingsClient),
 	})
 
 	if len(response.Errors) != 0 {
@@ -75,11 +86,11 @@ func (h *gqlHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		for i, e := range response.Errors {
 			errorTypes[i] = e.Type
 			if e.StackTrace != "" {
-				golog.Errorf("[%s] %s\n%s", e.Type, e.Message, e.StackTrace)
+				golog.ContextLogger(r.Context()).Errorf("[%s] %s\n%s", e.Type, e.Message, e.StackTrace)
 				// The stack trace shouldn't be serialized in the response but clear it out just to be sure
 				e.StackTrace = ""
 			} else {
-				golog.Warningf("GraphQL error response %s: %s (%s)\n%s", e.Type, e.Message, e.UserMessage, req.Query)
+				golog.ContextLogger(r.Context()).Warningf("GraphQL error response %s: %s (%s)\n%s", e.Type, e.Message, e.UserMessage, req.Query)
 			}
 			// TODO: Libify common aspects of errors baymaxgraphql internal package
 			// Wrap any non well formed gql errors as internal

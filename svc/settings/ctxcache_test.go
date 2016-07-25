@@ -50,6 +50,10 @@ func (tc *testClient) GetValues(ctx context.Context, in *GetValuesRequest, opts 
 	return res, nil
 }
 
+func (tc *testClient) GetNodeValues(ctx context.Context, in *GetNodeValuesRequest, opts ...grpc.CallOption) (*GetNodeValuesResponse, error) {
+	return nil, nil
+}
+
 func TestContextCache(t *testing.T) {
 	tc := &testClient{}
 	c := NewContextCacheClient(tc)

@@ -85,3 +85,8 @@ func (c *contextCacheClient) GetValues(ctx context.Context, in *GetValuesRequest
 	}
 	return res, nil
 }
+
+func (c *contextCacheClient) GetNodeValues(ctx context.Context, in *GetNodeValuesRequest, opts ...grpc.CallOption) (*GetNodeValuesResponse, error) {
+	// TODO: Utilize the context cache here
+	return c.c.GetNodeValues(ctx, in, opts...)
+}

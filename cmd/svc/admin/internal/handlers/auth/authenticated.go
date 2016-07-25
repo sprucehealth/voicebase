@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"strings"
 
+	"context"
+
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/auth"
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/common"
 	"github.com/sprucehealth/backend/environment"
@@ -17,17 +19,18 @@ type authenticatedHandler struct {
 }
 
 func (h *authenticatedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	golog.Debugf("Cookies: %d", len(r.Cookies()))
+	golog.ContextLogger(r.Context()).Debugf("Cookies: %d", len(r.Cookies()))
 	for _, c := range r.Cookies() {
-		golog.Debugf("%s: %s", c.Name, c.Value)
+		golog.ContextLogger(r.Context()).Debugf("%s: %s", c.Name, c.Value)
 	}
 	if c, err := r.Cookie(common.AuthCookieName); err == nil && c.Value != "" {
-		valid, _ := auth.IsTokenValid(c.Value, h.signer)
+		valid, uid := auth.IsTokenValid(r.Context(), c.Value, h.signer)
 		if !valid {
 			removeAuthCookie(w, r.Host)
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}
+		r = r.WithContext(WithUID(r.Context(), uid))
 	} else {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
@@ -67,4 +70,21 @@ func getDomain(domain string) string {
 		domain = domain[:idx]
 	}
 	return domain
+}
+
+type ctxKey int
+
+const (
+	ctxUID ctxKey = iota
+)
+
+// WithUID attaches the uid to the context
+func WithUID(ctx context.Context, uid string) context.Context {
+	return context.WithValue(ctx, ctxUID, uid)
+}
+
+// UID returns the uid for the requesting user
+func UID(ctx context.Context) string {
+	uid, _ := ctx.Value(ctxUID).(string)
+	return uid
 }

@@ -160,9 +160,18 @@ message GetValuesResponse {
 	repeated Value values = 1;
 }
 
+message GetNodeValuesRequest {
+	string node_id = 2 [(gogoproto.customname) = "NodeID"];
+}
+
+message GetNodeValuesResponse {
+	repeated Value values = 1;
+}
+
 service Settings {
-	rpc RegisterConfigs (RegisterConfigsRequest) returns (RegisterConfigsResponse);
 	rpc GetConfigs (GetConfigsRequest) returns (GetConfigsResponse);
-	rpc SetValue (SetValueRequest) returns (SetValueResponse);
+	rpc GetNodeValues (GetNodeValuesRequest) returns (GetNodeValuesResponse);
 	rpc GetValues (GetValuesRequest) returns (GetValuesResponse);
+	rpc RegisterConfigs (RegisterConfigsRequest) returns (RegisterConfigsResponse);
+	rpc SetValue (SetValueRequest) returns (SetValueResponse);
 }
