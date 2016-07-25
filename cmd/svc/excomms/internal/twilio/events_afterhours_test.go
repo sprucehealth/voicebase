@@ -296,6 +296,7 @@ func TestAfterHours_IncomingCallStatus(t *testing.T) {
 		To:             practicePhoneNumber,
 		CallSID:        callSID,
 		DialCallStatus: rawmsg.TwilioParams_NO_ANSWER,
+		CallStatus:     rawmsg.TwilioParams_IN_PROGRESS,
 	}
 
 	twiml, err := processDialedCallStatus(context.Background(), params, es.(*eventsHandler))

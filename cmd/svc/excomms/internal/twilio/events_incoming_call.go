@@ -236,7 +236,7 @@ func callForwardingList(ctx context.Context, orgEntity *directory.Entity, params
 	verbs = append(verbs, &twiml.Dial{
 		CallerID:         params.To,
 		TimeoutInSeconds: uint(timeoutInSeconds),
-		Action:           "/twilio/call/process_incoming_call_status",
+		Action:           "/twilio/call/process_dialed_call_status",
 		Nouns:            numbers,
 	})
 
@@ -469,6 +469,13 @@ func voicemailTWIML(ctx context.Context, params *rawmsg.TwilioParams, eh *events
 // STEP: Process the status of the incoming call.
 
 func processDialedCallStatus(ctx context.Context, params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
+
+	// nothing to do if the incoming call is not in progress. This is because the status call back
+	// for the incoming call will manage the state of the call
+	if params.CallStatus != rawmsg.TwilioParams_IN_PROGRESS {
+		return "", nil
+	}
+
 	switch params.DialCallStatus {
 	case rawmsg.TwilioParams_ANSWERED, rawmsg.TwilioParams_COMPLETED:
 		// do nothing because the processing of the call status of the patient call
