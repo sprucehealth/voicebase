@@ -83,7 +83,7 @@ func New(kvs kvs, env string) (Service, error) {
 				KeyType:       ptr.String("RANGE"),
 			},
 		},
-		// Note: This table should essentially never recieve a write except when loading. Only invest in reads.
+		// Note: This table should essentially never receive a write except when loading. Only invest in reads.
 		ProvisionedThroughput: &dynamodb.ProvisionedThroughput{
 			ReadCapacityUnits:  ptr.Int64(50),
 			WriteCapacityUnits: ptr.Int64(5),

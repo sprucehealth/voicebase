@@ -127,7 +127,7 @@ func homeCardsForAuthenticatedUser(
 
 	// only show the care team if the patient has a case for which:
 	// a) they have submitted a visit
-	// b) they have not received a TP OR they have recieved but not viewed their TP
+	// b) they have not received a TP OR they have received but not viewed their TP
 	if len(cases) == 1 {
 		visits, err := dataAPI.GetVisitsForCase(cases[0].ID.Int64(), common.TreatedPatientVisitStates())
 		if err != nil {

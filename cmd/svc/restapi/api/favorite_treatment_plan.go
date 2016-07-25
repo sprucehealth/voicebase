@@ -108,7 +108,7 @@ func (d *dataService) FavoriteTreatmentPlansForDoctor(doctorID int64, pathwayTag
 		case err := <-errs:
 			return nil, err
 		case ftpPair := <-ftps:
-			// When we recieve an FTP via our channel map it to every pathway it has a membership for
+			// When we receive an FTP via our channel map it to every pathway it has a membership for
 			for _, v := range ftpPair.pathways {
 				ftpsByPathway[v] = append(ftpsByPathway[v], ftpPair.ftp)
 			}

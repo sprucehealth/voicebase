@@ -94,6 +94,6 @@ func (c *enableOrgCodeCmd) run(args []string) error {
 		return err
 	}
 
-	fmt.Printf("Organization Link: https://invite.sprucehealth.com/%s\n", cResp.Organization.Token)
+	fmt.Printf("Organization Link: https://%s/%s\n", c.cnf.InviteAPIDomain, cResp.Organization.Token)
 	return nil
 }

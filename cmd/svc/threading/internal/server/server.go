@@ -1438,7 +1438,7 @@ func (s *threadsServer) notifyMembersOfPublishMessage(
 		}
 
 		// Figure out who should receive notifications
-		var recieverEntityIDs []string
+		var receiverEntityIDs []string
 		if thread.Type == models.ThreadTypeTeam {
 			entIDs := make([]string, 0, len(threadEntities))
 			for _, te := range threadEntities {
@@ -1464,7 +1464,7 @@ func (s *threadsServer) notifyMembersOfPublishMessage(
 					return
 				}
 				for _, e := range resp.Entities {
-					recieverEntityIDs = append(recieverEntityIDs, e.ID)
+					receiverEntityIDs = append(receiverEntityIDs, e.ID)
 				}
 			}
 		} else {
@@ -1491,17 +1491,17 @@ func (s *threadsServer) notifyMembersOfPublishMessage(
 			org := resp.Entities[0]
 			for _, m := range org.Members {
 				if m.Type == directory.EntityType_INTERNAL && m.ID != publishingEntityID {
-					recieverEntityIDs = append(recieverEntityIDs, m.ID)
+					receiverEntityIDs = append(receiverEntityIDs, m.ID)
 				}
 			}
 
 			// If this is a secure external thread, then also notify the primary entity if the thread item is not internal
 			if thread.Type == models.ThreadTypeSecureExternal && !message.Internal && thread.PrimaryEntityID != publishingEntityID {
-				recieverEntityIDs = append(recieverEntityIDs, thread.PrimaryEntityID)
+				receiverEntityIDs = append(receiverEntityIDs, thread.PrimaryEntityID)
 			}
 		}
 
-		if len(recieverEntityIDs) == 0 {
+		if len(receiverEntityIDs) == 0 {
 			golog.Debugf("No entities to notify of new message on thread %s", thread.ID)
 			return
 		}
@@ -1522,7 +1522,7 @@ func (s *threadsServer) notifyMembersOfPublishMessage(
 			// Update the memberships for everyone who needs to be notified
 			// Note: It takes human interaction for this update state to trigger so shouldn't be too often.
 			now := s.clk.Now()
-			for _, entID := range recieverEntityIDs {
+			for _, entID := range receiverEntityIDs {
 				if entID == publishingEntityID {
 					continue
 				}
@@ -1568,7 +1568,7 @@ func (s *threadsServer) notifyMembersOfPublishMessage(
 			SavedQueryID:     savedQueryID.String(),
 			ThreadID:         thread.ID.String(),
 			MessageID:        messageID.String(),
-			EntitiesToNotify: recieverEntityIDs,
+			EntitiesToNotify: receiverEntityIDs,
 			// Note: Parameterizing with these may not be the best. The notification infterface needs to be
 			//   rethought, but going with this for now
 			DedupeKey:            newMessageNotificationKey,

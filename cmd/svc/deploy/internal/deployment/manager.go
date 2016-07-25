@@ -43,13 +43,13 @@ func NewManager(dl dal.DAL, awsSession *session.Session, eventsQueueURL string) 
 // Start starts the service workers
 func (m *Manager) Start() {
 	m.StartDiscovery()
-	m.StartEventReciever()
+	m.StartEventReceiver()
 }
 
 // Stop stops the service workers
 func (m *Manager) Stop() {
 	m.StopDiscovery()
-	m.StopEventReciever()
+	m.StopEventReceiver()
 }
 
 // StartDiscovery starts the discovery of new pending deployments
@@ -62,13 +62,13 @@ func (m *Manager) StopDiscovery() {
 	m.dWorker.Stop(time.Second * 5)
 }
 
-// StartEventReciever starts the event reciever for deployment events
-func (m *Manager) StartEventReciever() {
+// StartEventReceiver starts the event receiver for deployment events
+func (m *Manager) StartEventReceiver() {
 	m.nWorker.Start()
 }
 
-// StopEventReciever stops the event reciever for deployment events
-func (m *Manager) StopEventReciever() {
+// StopEventReceiver stops the event receiver for deployment events
+func (m *Manager) StopEventReceiver() {
 	m.nWorker.Stop(time.Second * 5)
 }
 
@@ -83,7 +83,7 @@ func (m *Manager) ProcessBuildCompleteEvent(ev *deploy.BuildCompleteEvent) ([]da
 	if err != nil {
 		return nil, err
 	} else if len(vectors) == 0 {
-		golog.Warningf("Recieved build complete event for deployable %s but no deployable vectors exist with source BUILD", deploym.DeployableID)
+		golog.Warningf("Received build complete event for deployable %s but no deployable vectors exist with source BUILD", deploym.DeployableID)
 		return nil, nil
 	}
 
@@ -101,7 +101,7 @@ func (m *Manager) ProcessPromotionEvent(ev *deploy.PromotionEvent) ([]dal.Deploy
 	if err != nil {
 		return nil, err
 	} else if len(vectors) == 0 {
-		golog.Warningf("Recieved promotion complete event for deployment %s but no deployable vectors exist for deployable %s with source env %s", ev.DeploymentID, deploym.DeployableID, sourceEnv)
+		golog.Warningf("Received promotion complete event for deployment %s but no deployable vectors exist for deployable %s with source env %s", ev.DeploymentID, deploym.DeployableID, sourceEnv)
 		return nil, nil
 	}
 	return m.deploy(vectors, deploym)

@@ -798,7 +798,7 @@ var SetDefaultPromotionReferralTemplateModal = React.createClass({displayName: "
 
 				{this.state.error ? <Utils.Alert type="danger">{this.state.error}</Utils.Alert> : null}
 				{this.state.busy ? <Utils.LoadingAnimation /> : null}
-				<p>This will cause all patients who are not routed to a specific promotion to recieve this promotion.</p>
+				<p>This will cause all patients who are not routed to a specific promotion to receive this promotion.</p>
 			</Modals.ModalForm>
 		);
 	}

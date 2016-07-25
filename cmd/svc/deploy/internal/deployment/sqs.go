@@ -42,7 +42,7 @@ func (w *notificationWorker) Started() bool {
 
 // TODO: Don't make this so Build complete specific
 func (w *notificationWorker) processSQSEvent(ctx context.Context, msg string) error {
-	golog.Debugf("Recieved SQS Message: %s", msg)
+	golog.Debugf("Received SQS Message: %s", msg)
 	ev := &deploy.BuildCompleteEvent{}
 	if err := json.Unmarshal([]byte(msg), ev); err != nil {
 		golog.Errorf("Failed to unmarshal event: %s", err)

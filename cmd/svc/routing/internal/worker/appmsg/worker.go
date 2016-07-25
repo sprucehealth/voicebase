@@ -151,7 +151,7 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 	// Do this circuit break after the above debug logging since it may be useful
 	// If there are no destinations then we don't care about this message
 	if len(destinations) == 0 {
-		golog.Debugf("Message recieved with no valid destinations. Item ID: %s. Ignoring...", pti.Item.ID)
+		golog.Debugf("Message received with no valid destinations. Item ID: %s. Ignoring...", pti.Item.ID)
 		return nil
 	}
 

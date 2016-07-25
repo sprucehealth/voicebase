@@ -28,18 +28,19 @@ import (
 const configPath = "~/.baymax.conf"
 
 type config struct {
-	DBHost        string
-	DBPort        int
-	DBUsername    string
-	DBPassword    string
-	AuthAddr      string
-	DirectoryAddr string
-	ExCommsAddr   string
-	SettingsAddr  string
-	ThreadingAddr string
-	LayoutAddr    string
-	InviteAddr    string
-	Env           string
+	DBHost          string
+	DBPort          int
+	DBUsername      string
+	DBPassword      string
+	AuthAddr        string
+	DirectoryAddr   string
+	ExCommsAddr     string
+	SettingsAddr    string
+	ThreadingAddr   string
+	LayoutAddr      string
+	InviteAddr      string
+	InviteAPIDomain string
+	Env             string
 }
 
 func (c *config) authClient() (auth.AuthClient, error) {
