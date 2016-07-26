@@ -85,15 +85,30 @@ func processIncomingCallStatus(ctx context.Context, params *rawmsg.TwilioParams,
 		// do nothing until end state reached
 
 	case rawmsg.TwilioParams_COMPLETED, rawmsg.TwilioParams_NO_ANSWER:
+
 		// end state reached
+		if rowsUpdated, err := eh.dal.UpdateIncomingCall(params.CallSID, &dal.IncomingCallUpdate{
+			Completed:     ptr.Bool(true),
+			CompletedTime: ptr.Time(eh.clock.Now()),
+		}); err != nil {
+			return "", errors.Trace(err)
+		} else if rowsUpdated != 1 {
+			return "", errors.Errorf("Expected to update 1 row for %s but updated %d instead", params.CallSID, rowsUpdated)
+		}
 
 		incomingCall, err := eh.dal.LookupIncomingCall(params.CallSID)
 		if err != nil {
 			return "", errors.Trace(err)
 		}
 
-		if incomingCall.Answered {
+		// only consider the call answered if the call has been active for more than 2 seconds for the patient
+		if incomingCall.Answered && eh.clock.Now().Sub(*incomingCall.AnsweredTime) > 2*time.Second {
 			conc.Go(func() {
+				durationInSeconds := params.CallDuration
+				if incomingCall.AnsweredTime != nil {
+					durationInSeconds = uint32(eh.clock.Now().Sub(*incomingCall.AnsweredTime).Seconds())
+				}
+
 				if err := sns.Publish(eh.sns, eh.externalMessageTopic, &excomms.PublishedExternalMessage{
 					FromChannelID: params.From,
 					ToChannelID:   params.To,
@@ -103,15 +118,16 @@ func processIncomingCallStatus(ctx context.Context, params *rawmsg.TwilioParams,
 					Item: &excomms.PublishedExternalMessage_Incoming{
 						Incoming: &excomms.IncomingCallEventItem{
 							Type:              excomms.IncomingCallEventItem_ANSWERED,
-							DurationInSeconds: params.CallDuration,
+							DurationInSeconds: durationInSeconds,
 						},
 					},
 				}); err != nil {
 					golog.Errorf(err.Error())
 				}
 			})
+
 			trackInboundCall(eh, params.CallSID, "answered")
-		} else if !incomingCall.Answered {
+		} else {
 			conc.Go(func() {
 				if err := sns.Publish(eh.sns, eh.externalMessageTopic, &excomms.PublishedExternalMessage{
 					FromChannelID: params.From,
@@ -322,11 +338,12 @@ func providerEnteredDigits(ctx context.Context, params *rawmsg.TwilioParams, eh 
 
 		// update the call metadata to indicate that the provider answered the call
 		if rowsUpdated, err := eh.dal.UpdateIncomingCall(params.ParentCallSID, &dal.IncomingCallUpdate{
-			Answered: ptr.Bool(true),
+			Answered:     ptr.Bool(true),
+			AnsweredTime: ptr.Time(eh.clock.Now()),
 		}); err != nil {
 			return "", errors.Trace(err)
 		} else if rowsUpdated != 1 {
-			return "", errors.Trace(fmt.Errorf("Expected 1 row to be updated for %s but %d rows updated", params.ParentCallSID, rowsUpdated))
+			return "", errors.Errorf("Expected 1 row to be updated for %s but %d rows updated", params.ParentCallSID, rowsUpdated)
 		}
 
 		// accept the call if the provider entered the right digit
@@ -439,6 +456,7 @@ func voicemailTWIML(ctx context.Context, params *rawmsg.TwilioParams, eh *events
 	if params.ParentCallSID != "" {
 		callSID = params.ParentCallSID
 	}
+
 	// update the call metadata to indicate that the provider answered the call
 	if rowsUpdated, err := eh.dal.UpdateIncomingCall(callSID, &dal.IncomingCallUpdate{
 		SentToVoicemail: ptr.Bool(true),
@@ -525,6 +543,16 @@ func processVoicemail(ctx context.Context, params *rawmsg.TwilioParams, eh *even
 	})
 	if err != nil {
 		return "", errors.Trace(err)
+	}
+
+	// mark the call as completed
+	if rowsUpdated, err := eh.dal.UpdateIncomingCall(params.CallSID, &dal.IncomingCallUpdate{
+		Completed:     ptr.Bool(true),
+		CompletedTime: ptr.Time(eh.clock.Now()),
+	}); err != nil {
+		return "", errors.Trace(err)
+	} else if rowsUpdated != 1 {
+		return "", errors.Errorf("Expected to update 1 row for %s but updated %d instead", params.CallSID, rowsUpdated)
 	}
 
 	trackInboundCall(eh, params.CallSID, "voicemail")

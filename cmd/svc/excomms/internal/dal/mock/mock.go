@@ -208,7 +208,7 @@ func (m *mockDAL) CreateIncomingCall(ic *models.IncomingCall) error {
 	return mock.SafeError(rets[0])
 }
 
-func (m *mockDAL) LookupIncomingCall(sid string) (*models.IncomingCall, error) {
+func (m *mockDAL) LookupIncomingCall(sid string, opts ...dal.QueryOption) (*models.IncomingCall, error) {
 	rets := m.Record(sid)
 	if len(rets) == 0 {
 		return nil, nil

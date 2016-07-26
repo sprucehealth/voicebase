@@ -73,6 +73,9 @@ type IncomingCallUpdate struct {
 	Urgent          *bool
 	Answered        *bool
 	SentToVoicemail *bool
+	Completed       *bool
+	AnsweredTime    *time.Time
+	CompletedTime   *time.Time
 }
 
 type DAL interface {
@@ -109,7 +112,7 @@ type DAL interface {
 	CreateIncomingCall(*models.IncomingCall) error
 
 	// LookupIncomingCall identifies an incoming call by the SID
-	LookupIncomingCall(sid string) (*models.IncomingCall, error)
+	LookupIncomingCall(sid string, opts ...QueryOption) (*models.IncomingCall, error)
 
 	// UpdateIncomingCall allows updating of the mutable properties of the incoming call
 	UpdateIncomingCall(sid string, update *IncomingCallUpdate) (int64, error)
@@ -657,7 +660,7 @@ func (d *dal) LookupMedia(ids []string) (map[string]*models.Media, error) {
 }
 
 func (d *dal) CreateIncomingCall(ic *models.IncomingCall) error {
-	_, err := d.db.Exec(`REPLACE INTO incoming_call (call_sid, source, destination, organization_id, afterhours, urgent, answered, sent_to_voicemail) VALUES (?,?,?,?,?,?,?,?)`,
+	_, err := d.db.Exec(`REPLACE INTO incoming_call (call_sid, source, destination, organization_id, afterhours, urgent, answered, answered_time, sent_to_voicemail, completed, completed_time) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
 		ic.CallSID,
 		ic.Source,
 		ic.Destination,
@@ -665,16 +668,23 @@ func (d *dal) CreateIncomingCall(ic *models.IncomingCall) error {
 		ic.AfterHours,
 		ic.Urgent,
 		ic.Answered,
-		ic.SentToVoicemail)
+		ic.AnsweredTime,
+		ic.SentToVoicemail,
+		ic.Completed,
+		ic.CompletedTime)
 	return errors.Trace(err)
 }
 
-func (d *dal) LookupIncomingCall(sid string) (*models.IncomingCall, error) {
+func (d *dal) LookupIncomingCall(sid string, opts ...QueryOption) (*models.IncomingCall, error) {
+	forUpdate := ""
+	if queryOptions(opts).Has(ForUpdate) {
+		forUpdate = " FOR UPDATE"
+	}
 	var ic models.IncomingCall
 	if err := d.db.QueryRow(`
-		SELECT call_sid, source, destination, organization_id, afterhours, urgent, answered, sent_to_voicemail
+		SELECT call_sid, source, destination, organization_id, afterhours, urgent, answered, answered_time, sent_to_voicemail, completed, completed_time
 		FROM incoming_call
-		WHERE call_sid = ?`, sid).Scan(
+		WHERE call_sid = ?`+forUpdate, sid).Scan(
 		&ic.CallSID,
 		&ic.Source,
 		&ic.Destination,
@@ -682,7 +692,10 @@ func (d *dal) LookupIncomingCall(sid string) (*models.IncomingCall, error) {
 		&ic.AfterHours,
 		&ic.Urgent,
 		&ic.Answered,
-		&ic.SentToVoicemail); err == sql.ErrNoRows {
+		&ic.AnsweredTime,
+		&ic.SentToVoicemail,
+		&ic.Completed,
+		&ic.CompletedTime); err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrIncomingCallNotFound)
 	} else if err != nil {
 		return nil, errors.Trace(err)
@@ -705,7 +718,15 @@ func (d *dal) UpdateIncomingCall(sid string, update *IncomingCallUpdate) (int64,
 	if update.SentToVoicemail != nil {
 		args.Append("sent_to_voicemail", *update.SentToVoicemail)
 	}
-
+	if update.Completed != nil {
+		args.Append("completed", *update.Completed)
+	}
+	if update.AnsweredTime != nil {
+		args.Append("answered_time", *update.AnsweredTime)
+	}
+	if update.CompletedTime != nil {
+		args.Append("completed_time", *update.CompletedTime)
+	}
 	if args == nil || args.IsEmpty() {
 		return 0, nil
 	}

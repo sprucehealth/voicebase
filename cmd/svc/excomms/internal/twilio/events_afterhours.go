@@ -211,10 +211,22 @@ func afterHoursVoicemailTWIML(ctx context.Context, params *rawmsg.TwilioParams, 
 // STEP: Process the voicemail that was left.
 
 func afterHoursProcessVoicemail(ctx context.Context, params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
+
+	// mark the call as completed
+	if rowsUpdated, err := eh.dal.UpdateIncomingCall(params.CallSID, &dal.IncomingCallUpdate{
+		Completed:     ptr.Bool(true),
+		CompletedTime: ptr.Time(eh.clock.Now()),
+	}); err != nil {
+		return "", errors.Trace(err)
+	} else if rowsUpdated != 1 {
+		return "", errors.Errorf("Expected to update 1 row for %s but updated %d instead", params.CallSID, rowsUpdated)
+	}
+
 	incomingCall, err := eh.dal.LookupIncomingCall(params.CallSID)
 	if err != nil {
-		return "", errors.Trace(fmt.Errorf("Unable to lookup call %s: %s", params.CallSID, err))
+		return "", errors.Errorf("Unable to lookup call %s: %s", params.CallSID, err)
 	}
+
 	urgentAfterHoursVoicemail := incomingCall.AfterHours && incomingCall.Urgent
 
 	rawMessageID, err := eh.dal.StoreIncomingRawMessage(&rawmsg.Incoming{

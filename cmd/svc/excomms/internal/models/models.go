@@ -78,6 +78,9 @@ type IncomingCall struct {
 	AfterHours      bool
 	Answered        bool
 	SentToVoicemail bool
+	Completed       bool
+	AnsweredTime    *time.Time
+	CompletedTime   *time.Time
 }
 
 // CallEvent represents an entry pertaining to a call event

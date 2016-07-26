@@ -659,11 +659,14 @@ func TestProviderEnteredDigits_Entered1(t *testing.T) {
 	mdal := dalmock.New(t)
 	defer mdal.Finish()
 
+	mclock := clock.NewManaged(time.Now())
+
 	mdal.Expect(mock.NewExpectation(mdal.UpdateIncomingCall, params.ParentCallSID, &dal.IncomingCallUpdate{
-		Answered: ptr.Bool(true),
+		Answered:     ptr.Bool(true),
+		AnsweredTime: ptr.Time(mclock.Now()),
 	}).WithReturns(int64(1), nil))
 
-	es := NewEventHandler(nil, nil, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, nil)
+	es := NewEventHandler(nil, nil, mdal, &mockSNS_Twilio{}, mclock, nil, "https://test.com", "", "", "", nil, nil)
 	twiml, err := providerEnteredDigits(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
 		t.Fatal(err)
@@ -968,6 +971,7 @@ func TestVoicemailTwiML_Custom(t *testing.T) {
 
 	mdal := dalmock.New(t)
 	defer mdal.Finish()
+
 	mdal.Expect(mock.NewExpectation(mdal.UpdateIncomingCall, params.CallSID, &dal.IncomingCallUpdate{
 		SentToVoicemail: ptr.Bool(true),
 	}).WithReturns(int64(1), nil))
@@ -1122,14 +1126,21 @@ func TestIncomingCallStatus_CallCompleted(t *testing.T) {
 		CallSID:    "12345",
 	}
 
+	mclock := clock.NewManaged(time.Now())
 	md := dalmock.New(t)
 	defer md.Finish()
+
+	md.Expect(mock.NewExpectation(md.UpdateIncomingCall, params.CallSID, &dal.IncomingCallUpdate{
+		Completed:     ptr.Bool(true),
+		CompletedTime: ptr.Time(mclock.Now()),
+	}).WithReturns(int64(1), nil))
 
 	md.Expect(mock.NewExpectation(md.LookupIncomingCall, params.CallSID).WithReturns(&models.IncomingCall{
 		OrganizationID: "o1",
 		Source:         phone.Number(params.From),
 		Destination:    phone.Number(params.To),
 		Answered:       true,
+		AnsweredTime:   ptr.Time(mclock.Now().Add(-20 * time.Second)),
 	}, nil))
 
 	md.Expect(mock.NewExpectation(md.LookupIncomingCall, params.CallSID).WithReturns(&models.IncomingCall{
@@ -1137,6 +1148,7 @@ func TestIncomingCallStatus_CallCompleted(t *testing.T) {
 		Source:         phone.Number(params.From),
 		Destination:    phone.Number(params.To),
 		Answered:       true,
+		AnsweredTime:   ptr.Time(mclock.Now().Add(-20 * time.Second)),
 	}, nil))
 
 	mdir := directorymock.New(t)
@@ -1171,7 +1183,6 @@ func TestIncomingCallStatus_CallCompleted(t *testing.T) {
 		},
 	}, nil))
 
-	mclock := clock.NewManaged(time.Now())
 	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
 	test.OK(t, err)
 	signer := urlutil.NewSigner("apiDomain", sig, mclock)
@@ -1204,7 +1215,7 @@ func TestIncomingCallStatus_CallCompleted(t *testing.T) {
 		Item: &excomms.PublishedExternalMessage_Incoming{
 			Incoming: &excomms.IncomingCallEventItem{
 				Type:              excomms.IncomingCallEventItem_ANSWERED,
-				DurationInSeconds: params.CallDuration,
+				DurationInSeconds: 20,
 			},
 		},
 	}, pem)
@@ -1220,8 +1231,14 @@ func TestIncomingCallStatus_MissedCall(t *testing.T) {
 		CallSID:    "12345",
 	}
 
+	mclock := clock.NewManaged(time.Now())
 	md := dalmock.New(t)
 	defer md.Finish()
+
+	md.Expect(mock.NewExpectation(md.UpdateIncomingCall, params.CallSID, &dal.IncomingCallUpdate{
+		Completed:     ptr.Bool(true),
+		CompletedTime: ptr.Time(mclock.Now()),
+	}).WithReturns(int64(1), nil))
 
 	md.Expect(mock.NewExpectation(md.LookupIncomingCall, params.CallSID).WithReturns(&models.IncomingCall{
 		OrganizationID: "o1",
@@ -1267,7 +1284,109 @@ func TestIncomingCallStatus_MissedCall(t *testing.T) {
 		},
 	}, nil))
 
+	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
+	test.OK(t, err)
+	signer := urlutil.NewSigner("apiDomain", sig, mclock)
+
+	es := NewEventHandler(mdir, nil, md, ms, mclock, nil, "", "", "", "", nil, signer)
+
+	twiml, err := processIncomingCallStatus(context.Background(), params, es.(*eventsHandler))
+	if err != nil {
+		t.Fatal(err)
+	} else if twiml != "" {
+		t.Fatalf("Expected %s but got %s", "", twiml)
+	}
+
+	// ensure that item was published
+	if len(ms.published) != 1 {
+		t.Fatalf("Expected %d got %d", 1, len(ms.published))
+	}
+
+	pem, err := parsePublishedExternalMessage(*ms.published[0].Message)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	test.Equals(t, &excomms.PublishedExternalMessage{
+		FromChannelID: params.From,
+		ToChannelID:   params.To,
+		Timestamp:     uint64(mclock.Now().Unix()),
+		Direction:     excomms.PublishedExternalMessage_INBOUND,
+		Type:          excomms.PublishedExternalMessage_INCOMING_CALL_EVENT,
+		Item: &excomms.PublishedExternalMessage_Incoming{
+			Incoming: &excomms.IncomingCallEventItem{
+				Type:              excomms.IncomingCallEventItem_UNANSWERED,
+				DurationInSeconds: params.CallDuration,
+			},
+		},
+	}, pem)
+}
+
+func TestIncomingCallStatus_MissedCall_ShortCall(t *testing.T) {
+	conc.Testing = true
+	ms := &mockSNS_Twilio{}
+	params := &rawmsg.TwilioParams{
+		From:       "+12068773590",
+		To:         "+17348465522",
+		CallStatus: rawmsg.TwilioParams_COMPLETED,
+		CallSID:    "12345",
+	}
+
 	mclock := clock.NewManaged(time.Now())
+	md := dalmock.New(t)
+	defer md.Finish()
+
+	md.Expect(mock.NewExpectation(md.UpdateIncomingCall, params.CallSID, &dal.IncomingCallUpdate{
+		Completed:     ptr.Bool(true),
+		CompletedTime: ptr.Time(mclock.Now()),
+	}).WithReturns(int64(1), nil))
+
+	md.Expect(mock.NewExpectation(md.LookupIncomingCall, params.CallSID).WithReturns(&models.IncomingCall{
+		OrganizationID: "o1",
+		Source:         phone.Number(params.From),
+		Destination:    phone.Number(params.To),
+		Answered:       true,
+		AnsweredTime:   ptr.Time(mclock.Now().Add(-time.Second)),
+	}, nil))
+
+	md.Expect(mock.NewExpectation(md.LookupIncomingCall, params.CallSID).WithReturns(&models.IncomingCall{
+		OrganizationID: "o1",
+		Source:         phone.Number(params.From),
+		Destination:    phone.Number(params.To),
+	}, nil))
+
+	mdir := directorymock.New(t)
+	defer mdir.Finish()
+
+	mdir.Expect(mock.NewExpectation(mdir.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: "o1",
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth: 1,
+			EntityInformation: []directory.EntityInformation{
+				directory.EntityInformation_EXTERNAL_IDS,
+				directory.EntityInformation_MEMBERS,
+			},
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{
+				ID:   "o1",
+				Type: directory.EntityType_ORGANIZATION,
+				Members: []*directory.Entity{
+					{
+						ID:   "p1",
+						Type: directory.EntityType_INTERNAL,
+					},
+				},
+				ExternalIDs: []string{"account_1"},
+			},
+		},
+	}, nil))
+
 	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
 	test.OK(t, err)
 	signer := urlutil.NewSigner("apiDomain", sig, mclock)
@@ -1316,14 +1435,19 @@ func TestIncomingCallStatus_SentToVoicemail(t *testing.T) {
 		CallSID:    "12345",
 	}
 
+	mclock := clock.NewManaged(time.Now())
 	md := dalmock.New(t)
 	defer md.Finish()
 
+	md.Expect(mock.NewExpectation(md.UpdateIncomingCall, params.CallSID, &dal.IncomingCallUpdate{
+		Completed:     ptr.Bool(true),
+		CompletedTime: ptr.Time(mclock.Now()),
+	}).WithReturns(int64(1), nil))
+
 	md.Expect(mock.NewExpectation(md.LookupIncomingCall, params.CallSID).WithReturns(&models.IncomingCall{
-		OrganizationID:  "o1",
-		Source:          phone.Number(params.From),
-		Destination:     phone.Number(params.To),
-		SentToVoicemail: true,
+		OrganizationID: "o1",
+		Source:         phone.Number(params.From),
+		Destination:    phone.Number(params.To),
 	}, nil))
 
 	md.Expect(mock.NewExpectation(md.LookupIncomingCall, params.CallSID).WithReturns(&models.IncomingCall{
@@ -1364,7 +1488,6 @@ func TestIncomingCallStatus_SentToVoicemail(t *testing.T) {
 		},
 	}, nil))
 
-	mclock := clock.NewManaged(time.Now())
 	es := NewEventHandler(mdir, nil, md, ms, mclock, nil, "", "", "", "", nil, nil)
 
 	twiml, err := processIncomingCallStatus(context.Background(), params, es.(*eventsHandler))
@@ -1399,18 +1522,18 @@ func TestIncomingCallStatus_SentToVoicemail(t *testing.T) {
 	}, pem)
 }
 
-func TestIncomingCallStatus_OtherCallStatus(t *testing.T) {
-	testIncomingCallStatus_Other(t, rawmsg.TwilioParams_FAILED)
-	testIncomingCallStatus_Other(t, rawmsg.TwilioParams_NO_ANSWER)
-	testIncomingCallStatus_Other(t, rawmsg.TwilioParams_IN_PROGRESS)
-	testIncomingCallStatus_Other(t, rawmsg.TwilioParams_QUEUED)
-	testIncomingCallStatus_Other(t, rawmsg.TwilioParams_INITIATED)
-	testIncomingCallStatus_Other(t, rawmsg.TwilioParams_BUSY)
-	testIncomingCallStatus_Other(t, rawmsg.TwilioParams_CANCELED)
-	testIncomingCallStatus_Other(t, rawmsg.TwilioParams_RINGING)
+func TestDialedCallStatus_OtherCallStatus(t *testing.T) {
+	testDialedCallStatus_Other(t, rawmsg.TwilioParams_FAILED)
+	testDialedCallStatus_Other(t, rawmsg.TwilioParams_NO_ANSWER)
+	testDialedCallStatus_Other(t, rawmsg.TwilioParams_IN_PROGRESS)
+	testDialedCallStatus_Other(t, rawmsg.TwilioParams_QUEUED)
+	testDialedCallStatus_Other(t, rawmsg.TwilioParams_INITIATED)
+	testDialedCallStatus_Other(t, rawmsg.TwilioParams_BUSY)
+	testDialedCallStatus_Other(t, rawmsg.TwilioParams_CANCELED)
+	testDialedCallStatus_Other(t, rawmsg.TwilioParams_RINGING)
 }
 
-func testIncomingCallStatus_Other(t *testing.T, incomingStatus rawmsg.TwilioParams_CallStatus) {
+func testDialedCallStatus_Other(t *testing.T, incomingStatus rawmsg.TwilioParams_CallStatus) {
 	conc.Testing = true
 	ms := &mockSNS_Twilio{}
 	params := &rawmsg.TwilioParams{
@@ -1418,7 +1541,7 @@ func testIncomingCallStatus_Other(t *testing.T, incomingStatus rawmsg.TwilioPara
 		To:             "+17348465522",
 		DialCallStatus: incomingStatus,
 		CallSID:        "callSID12345",
-		ParentCallSID:  "parentCallSID12345",
+		DialCallSID:    "dialCallSID12345",
 		CallStatus:     rawmsg.TwilioParams_IN_PROGRESS,
 	}
 
@@ -1507,6 +1630,7 @@ func testIncomingCallStatus_Other(t *testing.T, incomingStatus rawmsg.TwilioPara
 		},
 	}, nil))
 
+	mclock := clock.NewManaged(time.Now())
 	mdal := dalmock.New(t)
 	defer mdal.Finish()
 
@@ -1514,7 +1638,7 @@ func testIncomingCallStatus_Other(t *testing.T, incomingStatus rawmsg.TwilioPara
 		OrganizationID: orgID,
 	}, nil))
 
-	mdal.Expect(mock.NewExpectation(mdal.UpdateIncomingCall, params.ParentCallSID, &dal.IncomingCallUpdate{
+	mdal.Expect(mock.NewExpectation(mdal.UpdateIncomingCall, params.CallSID, &dal.IncomingCallUpdate{
 		SentToVoicemail: ptr.Bool(true),
 	}).WithReturns(int64(1), nil))
 
@@ -1595,7 +1719,7 @@ func testIncomingCallStatus_Other(t *testing.T, incomingStatus rawmsg.TwilioPara
 	test.OK(t, err)
 	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
 
-	es := NewEventHandler(md, msettings, mdal, ms, clock.New(), nil, "https://test.com", "", "", "", nil, signer)
+	es := NewEventHandler(md, msettings, mdal, ms, mclock, nil, "https://test.com", "", "", "", nil, signer)
 
 	twiml, err := processDialedCallStatus(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
@@ -1623,6 +1747,8 @@ func TestProcessVoicemail(t *testing.T) {
 		RecordingURL:      "http://google.com",
 	}
 
+	mclock := clock.NewManaged(time.Now())
+
 	ms := &mockSNS_Twilio{}
 	md := dalmock.New(t)
 	defer md.Finish()
@@ -1633,6 +1759,11 @@ func TestProcessVoicemail(t *testing.T) {
 			Twilio: params,
 		},
 	}))
+
+	md.Expect(mock.NewExpectation(md.UpdateIncomingCall, params.CallSID, &dal.IncomingCallUpdate{
+		Completed:     ptr.Bool(true),
+		CompletedTime: ptr.Time(mclock.Now()),
+	}).WithReturns(int64(1), nil))
 
 	md.Expect(mock.NewExpectation(md.LookupIncomingCall, params.CallSID).WithReturns(&models.IncomingCall{
 		OrganizationID: "o1",
@@ -1676,7 +1807,7 @@ func TestProcessVoicemail(t *testing.T) {
 	test.OK(t, err)
 	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
 
-	es := NewEventHandler(mdir, nil, md, ms, clock.New(), nil, "", "", "", "", nil, signer)
+	es := NewEventHandler(mdir, nil, md, ms, mclock, nil, "", "", "", "", nil, signer)
 
 	twiml, err := processVoicemail(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
