@@ -545,16 +545,15 @@ func processVoicemail(ctx context.Context, params *rawmsg.TwilioParams, eh *even
 		return "", errors.Trace(err)
 	}
 
-	// mark the call as completed
+	// update the call metadata to indicate that the patient left a voicemail
 	if rowsUpdated, err := eh.dal.UpdateIncomingCall(params.CallSID, &dal.IncomingCallUpdate{
-		Completed:     ptr.Bool(true),
-		CompletedTime: ptr.Time(eh.clock.Now()),
+		LeftVoicemail:     ptr.Bool(true),
+		LeftVoicemailTime: ptr.Time(eh.clock.Now()),
 	}); err != nil {
 		return "", errors.Trace(err)
 	} else if rowsUpdated != 1 {
-		return "", errors.Errorf("Expected to update 1 row for %s but updated %d instead", params.CallSID, rowsUpdated)
+		return "", errors.Trace(fmt.Errorf("Expected 1 row to be updated for %s but %d rows updated", params.ParentCallSID, rowsUpdated))
 	}
-
 	trackInboundCall(eh, params.CallSID, "voicemail")
 
 	conc.Go(func() {

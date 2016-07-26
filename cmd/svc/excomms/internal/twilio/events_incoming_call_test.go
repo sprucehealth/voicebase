@@ -1761,8 +1761,8 @@ func TestProcessVoicemail(t *testing.T) {
 	}))
 
 	md.Expect(mock.NewExpectation(md.UpdateIncomingCall, params.CallSID, &dal.IncomingCallUpdate{
-		Completed:     ptr.Bool(true),
-		CompletedTime: ptr.Time(mclock.Now()),
+		LeftVoicemail:     ptr.Bool(true),
+		LeftVoicemailTime: ptr.Time(mclock.Now()),
 	}).WithReturns(int64(1), nil))
 
 	md.Expect(mock.NewExpectation(md.LookupIncomingCall, params.CallSID).WithReturns(&models.IncomingCall{

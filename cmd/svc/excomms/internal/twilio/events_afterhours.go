@@ -205,22 +205,29 @@ func afterHoursVoicemailTWIML(ctx context.Context, params *rawmsg.TwilioParams, 
 		},
 	}
 
+	// update the incoming call status to indicate that the patient was sent to voicemail
+	callSID := params.CallSID
+	// if the parentCallSID is specified, that means we are trying to direct the
+	// dialed call to the voicemail prompt for the patient.
+	if params.ParentCallSID != "" {
+		callSID = params.ParentCallSID
+	}
+
+	// update the call metadata to indicate that the provider answered the call
+	if rowsUpdated, err := eh.dal.UpdateIncomingCall(callSID, &dal.IncomingCallUpdate{
+		SentToVoicemail: ptr.Bool(true),
+	}); err != nil {
+		return "", errors.Trace(err)
+	} else if rowsUpdated != 1 {
+		return "", errors.Trace(fmt.Errorf("Expected 1 row to be updated for %s but %d rows updated", params.ParentCallSID, rowsUpdated))
+	}
+
 	return tw.GenerateTwiML()
 }
 
 // STEP: Process the voicemail that was left.
 
 func afterHoursProcessVoicemail(ctx context.Context, params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
-
-	// mark the call as completed
-	if rowsUpdated, err := eh.dal.UpdateIncomingCall(params.CallSID, &dal.IncomingCallUpdate{
-		Completed:     ptr.Bool(true),
-		CompletedTime: ptr.Time(eh.clock.Now()),
-	}); err != nil {
-		return "", errors.Trace(err)
-	} else if rowsUpdated != 1 {
-		return "", errors.Errorf("Expected to update 1 row for %s but updated %d instead", params.CallSID, rowsUpdated)
-	}
 
 	incomingCall, err := eh.dal.LookupIncomingCall(params.CallSID)
 	if err != nil {
@@ -243,6 +250,16 @@ func afterHoursProcessVoicemail(ctx context.Context, params *rawmsg.TwilioParams
 		trackInboundCall(eh, params.CallSID, "urgent-voicemail")
 	} else {
 		trackInboundCall(eh, params.CallSID, "voicemail")
+	}
+
+	// update the call metadata to indicate that the patient left a voicemail
+	if rowsUpdated, err := eh.dal.UpdateIncomingCall(params.CallSID, &dal.IncomingCallUpdate{
+		LeftVoicemail:     ptr.Bool(true),
+		LeftVoicemailTime: ptr.Time(eh.clock.Now()),
+	}); err != nil {
+		return "", errors.Trace(err)
+	} else if rowsUpdated != 1 {
+		return "", errors.Trace(fmt.Errorf("Expected 1 row to be updated for %s but %d rows updated", params.ParentCallSID, rowsUpdated))
 	}
 
 	conc.Go(func() {
