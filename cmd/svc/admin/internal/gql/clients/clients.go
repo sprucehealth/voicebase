@@ -3,7 +3,7 @@ package client
 import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/settings"
-	"github.com/sprucehealth/backend/vendor/github.com/sprucehealth/graphql"
+	"github.com/sprucehealth/graphql"
 )
 
 const (
@@ -20,8 +20,8 @@ func Directory(p graphql.ResolveParams) directory.DirectoryClient {
 }
 
 // Settings returns the settings client mapped into the request params
-func Settings(p graphql.ResolveParams) directory.SettingsClient {
-	return p.Info.RootValue.(map[string]interface{})[SettingsClientParamKey].(directory.SettingsClient)
+func Settings(p graphql.ResolveParams) settings.SettingsClient {
+	return p.Info.RootValue.(map[string]interface{})[SettingsClientParamKey].(settings.SettingsClient)
 }
 
 // InitClients attached the various clients into the request structure
