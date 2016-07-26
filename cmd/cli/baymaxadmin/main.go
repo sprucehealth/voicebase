@@ -12,6 +12,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -22,7 +23,6 @@ import (
 	"github.com/sprucehealth/backend/svc/layout"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
-	"google.golang.org/grpc"
 )
 
 const configPath = "~/.baymax.conf"
@@ -32,6 +32,7 @@ type config struct {
 	DBPort          int
 	DBUsername      string
 	DBPassword      string
+	DBTLS           string
 	AuthAddr        string
 	DirectoryAddr   string
 	ExCommsAddr     string
@@ -44,10 +45,7 @@ type config struct {
 }
 
 func (c *config) authClient() (auth.AuthClient, error) {
-	if c.AuthAddr == "" {
-		return nil, errors.New("Auth service address required")
-	}
-	conn, err := grpc.Dial(c.AuthAddr, grpc.WithInsecure())
+	conn, err := boot.DialGRPC("baymaxadmin", c.AuthAddr)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to connect to auth service: %s", err)
 	}
@@ -55,10 +53,7 @@ func (c *config) authClient() (auth.AuthClient, error) {
 }
 
 func (c *config) directoryClient() (directory.DirectoryClient, error) {
-	if c.DirectoryAddr == "" {
-		return nil, errors.New("Directory service address required")
-	}
-	conn, err := grpc.Dial(c.DirectoryAddr, grpc.WithInsecure())
+	conn, err := boot.DialGRPC("baymaxadmin", c.DirectoryAddr)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to connect to directory service: %s", err)
 	}
@@ -66,10 +61,7 @@ func (c *config) directoryClient() (directory.DirectoryClient, error) {
 }
 
 func (c *config) exCommsClient() (excomms.ExCommsClient, error) {
-	if c.ExCommsAddr == "" {
-		return nil, errors.New("ExComms service address required")
-	}
-	conn, err := grpc.Dial(c.ExCommsAddr, grpc.WithInsecure())
+	conn, err := boot.DialGRPC("baymaxadmin", c.ExCommsAddr)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to connect to excomms service: %s", err)
 	}
@@ -77,10 +69,7 @@ func (c *config) exCommsClient() (excomms.ExCommsClient, error) {
 }
 
 func (c *config) settingsClient() (settings.SettingsClient, error) {
-	if c.SettingsAddr == "" {
-		return nil, errors.New("Settings service address required")
-	}
-	conn, err := grpc.Dial(c.SettingsAddr, grpc.WithInsecure())
+	conn, err := boot.DialGRPC("baymaxadmin", c.SettingsAddr)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to connect to settings service: %s", err)
 	}
@@ -88,10 +77,7 @@ func (c *config) settingsClient() (settings.SettingsClient, error) {
 }
 
 func (c *config) threadingClient() (threading.ThreadsClient, error) {
-	if c.ThreadingAddr == "" {
-		return nil, errors.New("Threading service address required")
-	}
-	conn, err := grpc.Dial(c.ThreadingAddr, grpc.WithInsecure())
+	conn, err := boot.DialGRPC("baymaxadmin", c.ThreadingAddr)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to connect to threading service: %s", err)
 	}
@@ -99,11 +85,7 @@ func (c *config) threadingClient() (threading.ThreadsClient, error) {
 }
 
 func (c *config) layoutClient() (layout.LayoutClient, error) {
-	if c.LayoutAddr == "" {
-		return nil, errors.New("Layout service address required")
-	}
-
-	conn, err := grpc.Dial(c.LayoutAddr, grpc.WithInsecure())
+	conn, err := boot.DialGRPC("baymaxadmin", c.LayoutAddr)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to connect to layout service: %s", err)
 	}
@@ -111,11 +93,7 @@ func (c *config) layoutClient() (layout.LayoutClient, error) {
 }
 
 func (c *config) inviteClient() (invite.InviteClient, error) {
-	if c.InviteAddr == "" {
-		return nil, errors.New("Layout service address required")
-	}
-
-	conn, err := grpc.Dial(c.InviteAddr, grpc.WithInsecure())
+	conn, err := boot.DialGRPC("baymaxadmin", c.InviteAddr)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to connect to invite service: %s", err)
 	}
@@ -141,11 +119,13 @@ func (c *config) db(name string) (*sql.DB, error) {
 		c.DBPort = 3306
 	}
 	return dbutil.ConnectMySQL(&dbutil.DBConfig{
-		Name:     name,
-		Host:     c.DBHost,
-		Port:     c.DBPort,
-		User:     c.DBUsername,
-		Password: c.DBPassword,
+		Name:          name,
+		Host:          c.DBHost,
+		Port:          c.DBPort,
+		User:          c.DBUsername,
+		Password:      c.DBPassword,
+		EnableTLS:     c.DBTLS == "true" || c.DBTLS == "skip-verify",
+		SkipVerifyTLS: c.DBTLS == "skip-verify",
 	})
 }
 
@@ -205,6 +185,7 @@ func main() {
 	flag.IntVar(&cnf.DBPort, "db_port", cnf.DBPort, "mysql database `port`")
 	flag.StringVar(&cnf.DBUsername, "db_username", cnf.DBUsername, "mysql database `username`")
 	flag.StringVar(&cnf.DBPassword, "db_password", cnf.DBPassword, "mysql database `password`")
+	flag.StringVar(&cnf.DBTLS, "db_tls", cnf.DBTLS, "mysql database TLS setting (skip-verify or true)")
 	flag.StringVar(&cnf.DirectoryAddr, "directory_addr", cnf.DirectoryAddr, "`host:port` of directory service")
 	flag.StringVar(&cnf.ThreadingAddr, "threading_addr", cnf.ThreadingAddr, "`host:port` of treading service")
 	flag.StringVar(&cnf.LayoutAddr, "layout_addr", cnf.LayoutAddr, "`host:port` of layout service")
