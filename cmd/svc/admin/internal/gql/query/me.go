@@ -27,6 +27,8 @@ func newMeType() *graphql.Object {
 						return auth.UID(p.Context), nil
 					},
 				},
+				// For single query purposes allow entities to be lookedup inside a `me` call
+				"entity": newEntityField(),
 			},
 		},
 	)

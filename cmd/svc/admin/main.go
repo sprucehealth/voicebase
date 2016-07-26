@@ -38,7 +38,7 @@ var (
 )
 
 func main() {
-	boot.NewService("admin", nil)
+	boot.NewService("admin-api", nil)
 
 	ap, err := ldap.NewAuthenticationProvider(&ldap.Config{
 		Address: *flagLDAPAddr,
@@ -47,12 +47,12 @@ func main() {
 	if err != nil {
 		golog.Fatalf(err.Error())
 	}
-	conn, err := boot.DialGRPC("admin", *flagDirectoryAddr)
+	conn, err := boot.DialGRPC("admin-api", *flagDirectoryAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to directory service: %s", err)
 	}
 	dirCli := directory.NewDirectoryClient(conn)
-	conn, err = boot.DialGRPC("admin", *flagSettingsAddr)
+	conn, err = boot.DialGRPC("admin-api", *flagSettingsAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to directory service: %s", err)
 	}
