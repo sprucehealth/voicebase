@@ -15,3 +15,14 @@ func TestCause(t *testing.T) {
 		t.Fatal("Cause for aerr should return the original error")
 	}
 }
+
+func TestErrorf(t *testing.T) {
+	err := testFuncf1()
+	if ex := "Test 123 [backend/libs/errors/errors_test.go:27]"; err.Error() != ex {
+		t.Fatalf("Expected '%s' got '%s'", ex, err.Error())
+	}
+}
+
+func testFuncf1() error {
+	return Errorf("Test %d", 123)
+}
