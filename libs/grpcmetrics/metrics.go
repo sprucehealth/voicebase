@@ -1,11 +1,12 @@
 package grpcmetrics
 
 import (
+	"context"
+	"runtime"
 	"time"
 
-	"context"
-
 	"github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/libs/golog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
@@ -43,6 +44,16 @@ func WrapMethods(methods []grpc.MethodDesc) {
 		methodName := m.MethodName
 		oldHandler := m.Handler
 		m.Handler = func(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (out interface{}, err error) {
+			defer func() {
+				if r := recover(); r != nil {
+					const size = 64 << 10
+					buf := make([]byte, size)
+					buf = buf[:runtime.Stack(buf, false)]
+					golog.Criticalf("Panic in %s: %v\n%s", methodName, r, buf)
+					out = nil
+					err = grpc.Errorf(codes.Internal, "Panic in %s: %v\n%s", methodName, r, buf)
+				}
+			}()
 			sm := serviceMetrics[srv]
 			if sm != nil {
 				hm := sm[methodName]
