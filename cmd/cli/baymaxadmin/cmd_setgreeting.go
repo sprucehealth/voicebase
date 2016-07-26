@@ -2,14 +2,11 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"flag"
 	"fmt"
 	"os"
 	"strings"
-
-	"github.com/tcolgate/mp3"
-
-	"context"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	excommsSettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
@@ -20,6 +17,7 @@ import (
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/settings"
+	"github.com/tcolgate/mp3"
 )
 
 type setGreetingCmd struct {
@@ -131,6 +129,10 @@ func (c *setGreetingCmd) run(args []string) error {
 	var frame mp3.Frame
 	if err := dec.Decode(&frame); err != nil {
 		return fmt.Errorf("Failed to decode MP3 frame: %s", err)
+	}
+	head := frame.Header()
+	if head.Layer() != mp3.Layer3 {
+		return fmt.Errorf("Expected MPEG Layer 3 (MP3) got %s", head.Layer())
 	}
 
 	size, err := media.SeekerSize(mp3File)
