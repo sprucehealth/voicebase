@@ -1,12 +1,11 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"net"
 	"time"
-
-	"context"
 
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/dal"
@@ -141,7 +140,7 @@ func main() {
 		golog.Fatalf(err.Error())
 	}
 
-	careServer := svc.NewGRPCServer()
+	careServer := svc.GRPCServer()
 	careService := server.New(dal.New(db), layoutClient, settingsClient, mediaClient, layout.NewStore(storage.NewS3(awsSession, config.s3Bucket, config.s3Prefix)), doseSpotClient, clock.New())
 
 	care.InitMetrics(careServer, svc.MetricsRegistry.Scope("care"))
@@ -155,6 +154,5 @@ func main() {
 	})
 
 	boot.WaitForTermination()
-	lis.Close()
 	svc.Shutdown()
 }

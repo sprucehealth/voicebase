@@ -140,7 +140,7 @@ func main() {
 	w.Start()
 	defer w.Stop(time.Second * 10)
 
-	s := bootSvc.NewGRPCServer()
+	s := bootSvc.GRPCServer()
 	threading.RegisterThreadsServer(s, srv)
 	golog.Infof("Starting Threads service on %s...", *flagListen)
 
@@ -151,7 +151,6 @@ func main() {
 	go s.Serve(ln)
 
 	boot.WaitForTermination()
-	ln.Close()
 	bootSvc.Shutdown()
 }
 

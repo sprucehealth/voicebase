@@ -57,7 +57,7 @@ func main() {
 	dal := dal.New(dynamoDBClient, config.dyanmoDBSettingsTableName, config.dynamoDBSettingsConfigTableName)
 	settingsService := server.New(dal)
 	settings.InitMetrics(settingsService, bootSvc.MetricsRegistry.Scope("server"))
-	server := bootSvc.NewGRPCServer()
+	server := bootSvc.GRPCServer()
 	settings.RegisterSettingsServer(server, settingsService)
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", config.port))
@@ -74,6 +74,5 @@ func main() {
 	}()
 
 	boot.WaitForTermination()
-	lis.Close()
 	bootSvc.Shutdown()
 }

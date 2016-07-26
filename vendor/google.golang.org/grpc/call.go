@@ -90,7 +90,10 @@ func sendRequest(ctx context.Context, codec Codec, compressor Compressor, callHd
 		return nil, transport.StreamErrorf(codes.Internal, "grpc: %v", err)
 	}
 	err = t.Write(stream, outBuf, opts)
-	if err != nil {
+	// t.NewStream(...) could lead to an early rejection of the RPC (e.g., the service/method
+	// does not exist.) so that t.Write could get io.EOF from wait(...). Leave the following
+	// recvResponse to get the final status.
+	if err != nil && err != io.EOF {
 		return nil, err
 	}
 	// Sent successfully.
@@ -176,7 +179,10 @@ func Invoke(ctx context.Context, method string, args, reply interface{}, cc *Cli
 				put()
 				put = nil
 			}
-			if _, ok := err.(transport.ConnectionError); ok {
+			// Retry a non-failfast RPC when
+			// i) there is a connection error; or
+			// ii) the server started to drain before this RPC was initiated.
+			if _, ok := err.(transport.ConnectionError); ok || err == transport.ErrStreamDrain {
 				if c.failFast {
 					return toRPCErr(err)
 				}

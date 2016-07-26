@@ -32,7 +32,9 @@ var _ = math.Inf
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the proto package it is being compiled against.
-const _ = proto.GoGoProtoPackageIsVersion1
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 type HealthCheckResponse_ServingStatus int32
 
@@ -514,6 +516,8 @@ var (
 	ErrInvalidLengthHealth = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowHealth   = fmt.Errorf("proto: integer overflow")
 )
+
+func init() { proto.RegisterFile("health.proto", fileDescriptorHealth) }
 
 var fileDescriptorHealth = []byte{
 	// 223 bytes of a gzipped FileDescriptorProto

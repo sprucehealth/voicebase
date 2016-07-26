@@ -76,7 +76,7 @@ func main() {
 		golog.Fatalf(err.Error())
 	}
 
-	layoutServer := svc.NewGRPCServer()
+	layoutServer := svc.GRPCServer()
 	layoutService := server.New(dal.NewDAL(db), layout.NewStore(storage.NewS3(awsSession, config.s3Bucket, config.s3Prefix)))
 
 	layout.InitMetrics(layoutService, svc.MetricsRegistry.Scope("server"))
@@ -90,6 +90,5 @@ func main() {
 	})
 
 	boot.WaitForTermination()
-	lis.Close()
 	svc.Shutdown()
 }

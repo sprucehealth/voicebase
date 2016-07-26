@@ -122,7 +122,7 @@ func main() {
 	dl := dal.New(db, environment.GetCurrent())
 	srv := server.New(dl, nil, directoryClient, exCommsClient, eSNS, branchCli, sendMail, *flagFromEmail, *flagServiceNumber, *flagEventsTopic, *flagWebInviteURL, *flagColleagueInviteTemplateID)
 	invite.InitMetrics(srv, svc.MetricsRegistry.Scope("server"))
-	s := svc.NewGRPCServer()
+	s := svc.GRPCServer()
 	defer s.Stop()
 	invite.RegisterInviteServer(s, srv)
 	golog.Infof("Invite RPC listening on %s...", *flagListen)
@@ -153,6 +153,5 @@ func main() {
 	}()
 
 	boot.WaitForTermination()
-	ln.Close()
 	svc.Shutdown()
 }

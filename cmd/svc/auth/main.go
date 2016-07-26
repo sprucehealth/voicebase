@@ -1,12 +1,11 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"net"
 	"strconv"
 	"time"
-
-	"context"
 
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/auth/internal/dal"
@@ -102,12 +101,11 @@ func main() {
 	}
 	pb.InitMetrics(aSrv, svc.MetricsRegistry.Scope("server"))
 
-	s := svc.NewGRPCServer()
+	s := svc.GRPCServer()
 	pb.RegisterAuthServer(s, aSrv)
 	golog.Infof("Starting AuthService on %s...", listenAddress)
 	go s.Serve(lis)
 
 	boot.WaitForTermination()
-	lis.Close()
 	svc.Shutdown()
 }

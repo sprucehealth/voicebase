@@ -166,13 +166,12 @@ func main() {
 	srvMetricsRegistry := svc.MetricsRegistry.Scope("server")
 	srv := server.New(dl, msvc, *flagMediaAPIDomain)
 	media.InitMetrics(srv, srvMetricsRegistry)
-	s := svc.NewGRPCServer()
+	s := svc.GRPCServer()
 	media.RegisterMediaServer(s, srv)
 	golog.Infof("Media RPC listening on %s...", *flagRPCListenAddr)
 	go s.Serve(lis)
 
 	boot.WaitForTermination()
-	lis.Close()
 	svc.Shutdown()
 }
 
