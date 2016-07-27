@@ -3,13 +3,14 @@ package main
 import (
 	"fmt"
 
-	"github.com/segmentio/analytics-go"
+	segment "github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	excommssettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
 	"github.com/sprucehealth/backend/device/devicectx"
+	"github.com/sprucehealth/backend/libs/analytics"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -152,7 +153,7 @@ var provisionPhoneNumberMutation = &graphql.Field{
 			return nil, errors.InternalError(ctx, err)
 		}
 
-		svc.segmentio.Track(&analytics.Track{
+		analytics.SegmentTrack(&segment.Track{
 			Event:  "provisioned-phone",
 			UserId: acc.ID,
 			Properties: map[string]interface{}{

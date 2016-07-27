@@ -1,11 +1,14 @@
 package main
 
 import (
+	segment "github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/device/devicectx"
+	"github.com/sprucehealth/backend/libs/analytics"
 	"github.com/sprucehealth/backend/libs/gqldecode"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -167,6 +170,17 @@ var createVideoCallMutation = &graphql.Field{
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}
+
+		sh := devicectx.SpruceHeaders(ctx)
+
+		analytics.SegmentTrack(&segment.Track{
+			Event:  "video-visit-initiated",
+			UserId: acc.ID,
+			Properties: map[string]interface{}{
+				"platform": sh.Platform.String(),
+				"call_id":  call.ID,
+			},
+		})
 
 		return &createCallPayload{
 			ClientMutationID: in.ClientMutationID,

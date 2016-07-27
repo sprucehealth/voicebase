@@ -35,7 +35,6 @@ type service struct {
 	inviteAPIDomain        string
 	staticURLPrefix        string
 	spruceOrgID            string
-	segmentio              *segmentIOWrapper
 	sns                    snsiface.SNSAPI
 	supportMessageTopicARN string
 	emailTemplateIDs       emailTemplateIDs

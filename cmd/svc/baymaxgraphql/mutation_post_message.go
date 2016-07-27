@@ -5,12 +5,14 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/segmentio/analytics-go"
+	segment "github.com/segmentio/analytics-go"
+
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/libs/analytics"
 	"github.com/sprucehealth/backend/libs/bml"
 	"github.com/sprucehealth/backend/libs/caremessenger/deeplink"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -292,6 +294,8 @@ var postMessageMutation = &graphql.Field{
 		}
 		summary := fmt.Sprintf("%s: %s", fromName, plainText)
 
+		var visitLayoutAttached *layout.VisitLayout
+
 		// Need to track the care plans so we can flag them as submitted after posting
 		var carePlans []*care.CarePlan
 
@@ -305,6 +309,7 @@ var postMessageMutation = &graphql.Field{
 			var attachment *threading.Attachment
 			switch mAttachmentType {
 			case threading.Attachment_VISIT:
+
 				// can only attach visits on secure external threads
 				if thr.Type != threading.ThreadType_SECURE_EXTERNAL {
 					return nil, errors.ErrNotSupported(ctx, fmt.Errorf("Cannot attach a visit to thread of type %s", thr.Type.String()))
@@ -317,6 +322,7 @@ var postMessageMutation = &graphql.Field{
 				if err != nil {
 					return nil, err
 				}
+				visitLayoutAttached = visitLayoutRes.VisitLayout
 
 				// create the visit from the visit layout
 				createVisitRes, err := ram.CreateVisit(ctx, &care.CreateVisitRequest{
@@ -465,9 +471,19 @@ var postMessageMutation = &graphql.Field{
 				// mutation succeed and log these to be fixed up by hand.
 				golog.Errorf("[MANUAL_INTERVENTION] Failed to submit care plan %s for thread item %s: %s", cp.ID, pmres.Item.ID, err)
 			}
+
+			analytics.SegmentTrack(&segment.Track{
+				Event:  "care-plan-attached",
+				UserId: acc.ID,
+				Properties: map[string]interface{}{
+					"organization_id": thr.OrganizationID,
+					"thread_id":       req.ThreadID,
+					"care_plan_id":    cp.ID,
+				},
+			})
 		}
 
-		svc.segmentio.Track(&analytics.Track{
+		analytics.SegmentTrack(&segment.Track{
 			Event:  fmt.Sprintf("posted-message-%s", strings.ToLower(thr.Type.String())),
 			UserId: acc.ID,
 			Properties: map[string]interface{}{
@@ -475,6 +491,18 @@ var postMessageMutation = &graphql.Field{
 				"thread_id":       req.ThreadID,
 			},
 		})
+
+		if visitLayoutAttached != nil {
+			analytics.SegmentTrack(&segment.Track{
+				Event:  "visit-attached",
+				UserId: acc.ID,
+				Properties: map[string]interface{}{
+					"organization_id": thr.OrganizationID,
+					"thread_id":       req.ThreadID,
+					"visit_layout_id": visitLayoutAttached.ID,
+				},
+			})
+		}
 
 		it, err := transformThreadItemToResponse(pmres.Item, req.UUID, acc.ID, svc.webDomain, svc.mediaAPIDomain)
 		if err != nil {

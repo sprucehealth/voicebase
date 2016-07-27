@@ -20,6 +20,7 @@ import (
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/samuel/go-metrics/reporter"
 	"github.com/sprucehealth/backend/environment"
+	"github.com/sprucehealth/backend/libs/analytics"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -49,6 +50,7 @@ type Service struct {
 		awsRegion              string
 		memcachedDiscoveryAddr string
 		memcachedHosts         string
+		segmentIOKey           string
 		jsonLogs               bool
 	}
 	name             string
@@ -79,6 +81,7 @@ func NewService(name string, healthCheckHandler http.Handler) *Service {
 	flag.StringVar(&svc.flags.awsRegion, "aws_region", "us-east-1", "AWS `region`")
 	flag.StringVar(&svc.flags.memcachedDiscoveryAddr, "memcached_discovery_addr", "", "host:port of memcached discovery service")
 	flag.StringVar(&svc.flags.memcachedHosts, "memcached_hosts", "", "Comma separate host:port list of memcached server addresses")
+	flag.StringVar(&svc.flags.segmentIOKey, "segmentio_key", "", "Segment IO API `key`")
 	flag.BoolVar(&svc.flags.jsonLogs, "json_logs", false, "Enable JSON formatted logs")
 
 	ParseFlags(strings.ToUpper(name) + "_")
@@ -158,6 +161,10 @@ func NewService(name string, healthCheckHandler http.Handler) *Service {
 		statsReporter := reporter.NewLibratoReporter(
 			metricsRegistry, time.Minute, true, svc.flags.libratoUsername, svc.flags.libratoToken, source)
 		statsReporter.Start()
+	}
+
+	if svc.flags.segmentIOKey != "" {
+		analytics.InitSegment(svc.flags.segmentIOKey)
 	}
 
 	return svc

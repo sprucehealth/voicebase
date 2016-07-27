@@ -3,11 +3,13 @@ package main
 import (
 	"fmt"
 
+	segment "github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/libs/analytics"
 	"github.com/sprucehealth/backend/libs/bml"
 	"github.com/sprucehealth/backend/libs/caremessenger/deeplink"
 	"github.com/sprucehealth/backend/svc/care"
@@ -170,6 +172,17 @@ var submitVisitMutation = &graphql.Field{
 				if err != nil {
 					return nil, errors.InternalError(ctx, err)
 				}
+
+				analytics.SegmentTrack(&segment.Track{
+					Event:  "visit-submitted",
+					UserId: acc.ID,
+					Properties: map[string]interface{}{
+						"organization_id": thread.OrganizationID,
+						"thread_id":       thread.ID,
+						"visit_layout_id": visitRes.Visit.LayoutVersionID,
+					},
+				})
+
 				return &submitVisitOutput{
 					Success:          true,
 					Thread:           transformedThread,

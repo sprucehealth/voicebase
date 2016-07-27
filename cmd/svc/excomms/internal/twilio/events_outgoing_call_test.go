@@ -54,7 +54,7 @@ func TestOutgoing_BlockedCallerID(t *testing.T) {
 	test.OK(t, err)
 	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
 
-	es := NewEventHandler(nil, nil, mdal, &mockSNS_Twilio{}, mclock, nil, "https://test.com", "", "", "", nil, signer)
+	es := NewEventHandler(nil, nil, mdal, &mockSNS_Twilio{}, mclock, nil, "https://test.com", "", "", "", signer)
 
 	params := &rawmsg.TwilioParams{
 		From:    providerPersonalPhoneNumber.String(),
@@ -167,7 +167,7 @@ func testOutgoing(t *testing.T, testExpired bool, patientName string) {
 	test.OK(t, err)
 	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
 
-	es := NewEventHandler(md, nil, mdal, &mockSNS_Twilio{}, mclock, mproxynumberManager, "https://test.com", "", "", "", nil, signer)
+	es := NewEventHandler(md, nil, mdal, &mockSNS_Twilio{}, mclock, mproxynumberManager, "https://test.com", "", "", "", signer)
 
 	params := &rawmsg.TwilioParams{
 		From:    providerPersonalPhoneNumber.String(),
@@ -259,7 +259,7 @@ func TestOutgoingCallStatus(t *testing.T) {
 	test.OK(t, err)
 	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
 
-	es := NewEventHandler(mdir, nil, md, ms, clock.New(), mproxynumberManager, "", "", "", "", nil, signer)
+	es := NewEventHandler(mdir, nil, md, ms, clock.New(), mproxynumberManager, "", "", "", "", signer)
 
 	twiml, err := processOutgoingCallStatus(context.Background(), params, es.(*eventsHandler))
 	if err != nil {

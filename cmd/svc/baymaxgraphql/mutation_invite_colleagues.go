@@ -3,11 +3,12 @@ package main
 import (
 	"fmt"
 
-	"github.com/segmentio/analytics-go"
+	segment "github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/libs/analytics"
 	"github.com/sprucehealth/backend/libs/gqldecode"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/validate"
@@ -159,7 +160,7 @@ var inviteColleaguesMutation = &graphql.Field{
 				}
 
 				for _, c := range colleagues {
-					svc.segmentio.Track(&analytics.Track{
+					analytics.SegmentTrack(&segment.Track{
 						Event:  "invited-colleague",
 						UserId: acc.ID,
 						Properties: map[string]interface{}{

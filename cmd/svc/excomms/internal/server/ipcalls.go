@@ -9,9 +9,12 @@ import (
 
 	"context"
 
+	segment "github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
+	"github.com/sprucehealth/backend/libs/analytics"
 	"github.com/sprucehealth/backend/libs/bml"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
@@ -396,12 +399,42 @@ func (e *excommsService) postIPCallMessage(ctx context.Context, call *models.IPC
 	thread := res.Threads[0]
 
 	var title bml.BML
+	var track *segment.Track
 	if call.ConnectedTime != nil {
 		dt := e.clock.Now().Sub(*call.ConnectedTime).Nanoseconds() / 1e9
 		title = append(title, fmt.Sprintf("Video call, %d:%02ds", dt/60, dt%60))
+		track = &segment.Track{
+			Event: "video-visit-completed",
+			Properties: map[string]interface{}{
+				"duration":            fmt.Sprintf("%d:%02ds", dt/60, dt%60),
+				"recipient_entity_id": recipient.EntityID,
+			},
+		}
 	} else {
 		title = append(title, "Video call, no answer")
+		track = &segment.Track{
+			Event: "video-visit-no-answer",
+			Properties: map[string]interface{}{
+				"recipient_entity_id": recipient.EntityID,
+			},
+		}
 	}
+
+	conc.Go(func() {
+		entity, err := directory.SingleEntity(ctx, e.directory, &directory.LookupEntitiesRequest{
+			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+				EntityID: caller.EntityID,
+			},
+		})
+		if err != nil {
+			golog.Errorf("Unable to get entity for %s : %s", entity.ID, err)
+			return
+		}
+
+		track.UserId = entity.AccountID
+		analytics.SegmentTrack(track)
+	})
 
 	titleText, err := title.Format()
 	if err != nil {

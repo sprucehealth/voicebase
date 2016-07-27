@@ -6,7 +6,8 @@ import (
 
 	"context"
 
-	analytics "github.com/segmentio/analytics-go"
+	segment "github.com/segmentio/analytics-go"
+	"github.com/sprucehealth/backend/libs/analytics"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/auth"
@@ -63,24 +64,13 @@ func trackInboundCall(eh *eventsHandler, callSID, eventSuffix string) {
 				return
 			}
 
-			msg := &analytics.Track{
+			analytics.SegmentTrack(&segment.Track{
 				Event:  fmt.Sprintf("inbound-call-%s", eventSuffix),
 				UserId: accountID,
 				Properties: map[string]interface{}{
 					"destination": incomingCall.Destination,
 				},
-			}
-
-			if eh.segmentClient == nil {
-				golog.Infof("SegmentIO Track(%+v)", msg)
-				return
-			}
-
-			if err := eh.segmentClient.Track(msg); err != nil {
-				golog.Errorf("SegmentIO Track(%+v) failed: %s", msg, err)
-				return
-			}
-
+			})
 		}
 	})
 }
@@ -114,7 +104,7 @@ func trackOutboundCall(eh *eventsHandler, callerEntityID, orgID, destination str
 			return
 		}
 
-		msg := &analytics.Track{
+		analytics.SegmentTrack(&segment.Track{
 			Event:  "outbound-call-connected",
 			UserId: accountID,
 			Properties: map[string]interface{}{
@@ -122,16 +112,8 @@ func trackOutboundCall(eh *eventsHandler, callerEntityID, orgID, destination str
 				"org_id":              orgID,
 				"duration_in_seconds": durationInSeconds,
 			},
-		}
+		})
 
-		if eh.segmentClient == nil {
-			golog.Infof("SegmentIO Track(%+v)", msg)
-			return
-		}
-
-		if err := eh.segmentClient.Track(msg); err != nil {
-			golog.Errorf("SegmentIO Track(%+v) failed: %s", msg, err)
-		}
 	})
 }
 

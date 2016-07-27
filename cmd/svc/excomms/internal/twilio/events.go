@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
-	analytics "github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/proxynumber"
@@ -62,7 +61,6 @@ type eventsHandler struct {
 	externalMessageTopic string
 	incomingRawMsgTopic  string
 	resourceCleanerTopic string
-	segmentClient        *analytics.Client
 }
 
 func NewEventHandler(
@@ -73,7 +71,6 @@ func NewEventHandler(
 	clock clock.Clock,
 	proxyNumberManager proxynumber.Manager,
 	apiURL, externalMessageTopic, incomingRawMsgTopic, resourceCleanerTopic string,
-	segmentClient *analytics.Client,
 	signer *urlutil.Signer) EventHandler {
 	return &eventsHandler{
 		directory:            directory,
@@ -86,7 +83,6 @@ func NewEventHandler(
 		incomingRawMsgTopic:  incomingRawMsgTopic,
 		proxyNumberManager:   proxyNumberManager,
 		resourceCleanerTopic: resourceCleanerTopic,
-		segmentClient:        segmentClient,
 		signer:               signer,
 	}
 }

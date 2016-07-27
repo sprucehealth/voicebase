@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/segmentio/analytics-go"
+	segment "github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
-	"github.com/sprucehealth/backend/libs/conc"
+	"github.com/sprucehealth/backend/libs/analytics"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/gqldecode"
 	"github.com/sprucehealth/backend/svc/auth"
@@ -77,7 +77,6 @@ var postEventMutation = &graphql.Field{
 		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(postEventInputType)},
 	},
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-		svc := serviceFromParams(p)
 		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
 
@@ -154,12 +153,10 @@ var postEventMutation = &graphql.Field{
 					segmentProps[at.Key] = at.Value
 				}
 			}
-			conc.Go(func() {
-				svc.segmentio.Track(&analytics.Track{
-					Event:      in.EventName,
-					UserId:     acc.ID,
-					Properties: segmentProps,
-				})
+			analytics.SegmentTrack(&segment.Track{
+				Event:      in.EventName,
+				UserId:     acc.ID,
+				Properties: segmentProps,
 			})
 			_, err := ram.OnboardingThreadEvent(ctx, &threading.OnboardingThreadEventRequest{
 				LookupByType: threading.OnboardingThreadEventRequest_ENTITY_ID,

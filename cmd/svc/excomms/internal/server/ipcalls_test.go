@@ -9,6 +9,7 @@ import (
 	dalmock "github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal/mock"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
 	"github.com/sprucehealth/backend/libs/clock"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
@@ -206,11 +207,12 @@ func TestIPCall(t *testing.T) {
 func TestIPCall_Timeout(t *testing.T) {
 	dl := dalmock.New(t)
 	thr := threadmock.New(t)
-	defer mock.FinishAll(dl, thr)
-
+	dir := dirmock.New(t)
+	defer mock.FinishAll(dl, thr, dir)
+	conc.Testing = true
 	clk := clock.NewManaged(time.Unix(1e9, 0))
 	svc := NewService("accountSID", "authToken", "appSID", "sigSID", "sig", "vidSID", dl,
-		"apiURL", nil, thr, nil, "extTopic", "evTopic", clk, nil, nil, nil, nil, nil)
+		"apiURL", dir, thr, nil, "extTopic", "evTopic", clk, nil, nil, nil, nil, nil)
 
 	ipcID, err := models.NewIPCallID()
 	test.OK(t, err)
@@ -252,6 +254,7 @@ func TestIPCall_Timeout(t *testing.T) {
 			{ID: "thread"},
 		},
 	}, nil))
+
 	thr.Expect(mock.NewExpectation(thr.PostMessage, &threading.PostMessageRequest{
 		UUID:         ipcID.String(),
 		ThreadID:     "thread",
@@ -259,6 +262,13 @@ func TestIPCall_Timeout(t *testing.T) {
 		Title:        "Video call, no answer",
 		Summary:      "Video call, no answer",
 	}))
+
+	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: "entity_caller",
+		},
+	}).WithReturns(&directory.LookupEntitiesResponse{Entities: []*directory.Entity{{AccountID: "1234"}}}, nil))
 
 	res, err := svc.IPCall(nil, &excomms.IPCallRequest{IPCallID: ipcID.String(), AccountID: "account_1"})
 	test.OK(t, err)
@@ -368,11 +378,13 @@ func TestPendingIPCalls(t *testing.T) {
 func TestPendingIPCalls_Timeout(t *testing.T) {
 	dl := dalmock.New(t)
 	thr := threadmock.New(t)
-	defer mock.FinishAll(dl, thr)
+	dir := dirmock.New(t)
+	defer mock.FinishAll(dl, thr, dir)
+	conc.Testing = true
 
 	clk := clock.NewManaged(time.Unix(1e9, 0))
 	svc := NewService("accountSID", "authToken", "appSID", "sigSID", "sig", "vidSID", dl,
-		"apiURL", nil, thr, nil, "extTopic", "evTopic", clk, nil, nil, nil, nil, nil)
+		"apiURL", dir, thr, nil, "extTopic", "evTopic", clk, nil, nil, nil, nil, nil)
 
 	dl.Expect(mock.NewExpectation(dl.PendingIPCallsForAccount, "account_1").WithReturns([]*models.IPCall{}, nil))
 	res, err := svc.PendingIPCalls(nil, &excomms.PendingIPCallsRequest{AccountID: "account_1"})
@@ -419,6 +431,13 @@ func TestPendingIPCalls_Timeout(t *testing.T) {
 			{ID: "thread"},
 		},
 	}, nil))
+	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: "entity_caller",
+		},
+	}).WithReturns(&directory.LookupEntitiesResponse{Entities: []*directory.Entity{{AccountID: "1234"}}}, nil))
+
 	thr.Expect(mock.NewExpectation(thr.PostMessage, &threading.PostMessageRequest{
 		UUID:         ipcID.String(),
 		ThreadID:     "thread",
@@ -435,11 +454,12 @@ func TestPendingIPCalls_Timeout(t *testing.T) {
 func TestUpdateIPCall(t *testing.T) {
 	dl := dalmock.New(t)
 	thr := threadmock.New(t)
-	defer mock.FinishAll(dl, thr)
+	dir := dirmock.New(t)
+	defer mock.FinishAll(dl, thr, dir)
 
 	clk := clock.NewManaged(time.Unix(1e9, 0))
 	svc := NewService("accountSID", "authToken", "appSID", "sigSID", "sig", "vidSID", dl,
-		"apiURL", nil, thr, nil, "extTopic", "evTopic", clk, nil, nil, nil, nil, nil)
+		"apiURL", dir, thr, nil, "extTopic", "evTopic", clk, nil, nil, nil, nil, nil)
 
 	ipcid, err := models.NewIPCallID()
 	test.OK(t, err)
@@ -554,6 +574,13 @@ func TestUpdateIPCall(t *testing.T) {
 			{ID: "thread"},
 		},
 	}, nil))
+	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: "entity_caller",
+		},
+	}).WithReturns(&directory.LookupEntitiesResponse{Entities: []*directory.Entity{{AccountID: "1234"}}}, nil))
+
 	thr.Expect(mock.NewExpectation(thr.PostMessage, &threading.PostMessageRequest{
 		UUID:         ipcid.String(),
 		ThreadID:     "thread",

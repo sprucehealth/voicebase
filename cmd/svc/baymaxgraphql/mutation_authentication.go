@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/segmentio/analytics-go"
+	segment "github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/device/devicectx"
+	"github.com/sprucehealth/backend/libs/analytics"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/gqldecode"
@@ -262,15 +263,14 @@ var authenticateMutation = &graphql.Field{
 }
 
 func trackAuthentication(p graphql.ResolveParams, accountID string, eh *device.SpruceHeaders) {
-	svc := serviceFromParams(p)
-	svc.segmentio.Track(&analytics.Track{
+	analytics.SegmentTrack(&segment.Track{
 		UserId: accountID,
 		Event:  "signedin",
 		Properties: map[string]interface{}{
 			"platform": eh.Platform.String(),
 		},
 	})
-	svc.segmentio.Identify(&analytics.Identify{
+	analytics.SegmentIdentify(&segment.Identify{
 		UserId: accountID,
 		Traits: map[string]interface{}{
 			"platform": eh.Platform.String(),
@@ -404,7 +404,6 @@ var modifyTokenDurationMutation = &graphql.Field{
 		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(modifyTokenDurationInputType)},
 	},
 	Resolve: apiaccess.Authenticated(func(p graphql.ResolveParams) (interface{}, error) {
-		svc := serviceFromParams(p)
 		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
 
@@ -428,15 +427,13 @@ var modifyTokenDurationMutation = &graphql.Field{
 		result.Set("auth_token", token.Value)
 		result.Set("auth_expiration", time.Unix(int64(token.ExpirationEpoch), 0))
 
-		conc.Go(func() {
-			svc.segmentio.Track(&analytics.Track{
-				UserId: gqlctx.Account(ctx).ID,
-				Event:  "modifytokenduration",
-				Properties: map[string]interface{}{
-					"platform": devicectx.SpruceHeaders(ctx).Platform.String(),
-					"duration": in.Duration,
-				},
-			})
+		analytics.SegmentTrack(&segment.Track{
+			UserId: gqlctx.Account(ctx).ID,
+			Event:  "modifytokenduration",
+			Properties: map[string]interface{}{
+				"platform": devicectx.SpruceHeaders(ctx).Platform.String(),
+				"duration": in.Duration,
+			},
 		})
 
 		return &modifyTokenDurationOutput{
@@ -525,14 +522,12 @@ var unauthenticateMutation = &graphql.Field{
 			msg += " Device ID: " + headers.DeviceID
 		}
 
-		conc.Go(func() {
-			svc.segmentio.Track(&analytics.Track{
-				UserId: gqlctx.Account(ctx).ID,
-				Event:  "signedout",
-				Properties: map[string]interface{}{
-					"platform": devicectx.SpruceHeaders(ctx).Platform.String(),
-				},
-			})
+		analytics.SegmentTrack(&segment.Track{
+			UserId: gqlctx.Account(ctx).ID,
+			Event:  "signedout",
+			Properties: map[string]interface{}{
+				"platform": devicectx.SpruceHeaders(ctx).Platform.String(),
+			},
 		})
 
 		golog.Infof(msg)
