@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"github.com/samuel/go-ldap/ldap"
+	"github.com/sprucehealth/backend/libs/golog"
 )
 
 // Config represents the ocnfigurable LDAP aspects
@@ -27,11 +28,13 @@ func NewAuthenticationProvider(cfg *Config) (*AuthProvider, error) {
 	var err error
 	var ldapCli *ldap.Client
 	if cfg.TLSConfig == nil {
+		golog.Debugf("Initiating connection to LDAP Server at %s", cfg.Address)
 		ldapCli, err = ldap.Dial("tcp", cfg.Address)
 		if err != nil {
 			return nil, err
 		}
 	} else {
+		golog.Debugf("Initiating SSL connection to LDAP Server at %s", cfg.Address)
 		ldapCli, err = ldap.DialTLS("tcp", cfg.Address, cfg.TLSConfig)
 		if err != nil {
 			return nil, err
