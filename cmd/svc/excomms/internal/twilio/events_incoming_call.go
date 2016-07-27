@@ -308,7 +308,7 @@ func providerCallConnected(ctx context.Context, params *rawmsg.TwilioParams, eh 
 		&twiml.Gather{
 			Action:           "/twilio/call/provider_entered_digits",
 			Method:           "POST",
-			TimeoutInSeconds: 10,
+			TimeoutInSeconds: 5,
 			NumDigits:        1,
 			Verbs: []interface{}{
 				&twiml.Say{
