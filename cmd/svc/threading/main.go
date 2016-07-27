@@ -125,8 +125,9 @@ func main() {
 		ctx,
 		settingsClient,
 		[]*settings.Config{
-			tsettings.ClearTextMessageNotificationsConfig,
 			tsettings.AlertAllMessagesConfig,
+			tsettings.PreviewPatientMessageContentInNotificationConfig,
+			tsettings.PreviewTeamMessageContentInNotificationConfig,
 		})
 	if err != nil {
 		golog.Fatalf("Unable to register configs with the settings service: %s", err.Error())

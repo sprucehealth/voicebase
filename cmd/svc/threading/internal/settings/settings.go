@@ -5,22 +5,6 @@ import (
 	"github.com/sprucehealth/backend/svc/threading"
 )
 
-// ClearTextMessageNotificationsConfig represents the config controlling if notifications are disabled or not
-var ClearTextMessageNotificationsConfig = &settings.Config{
-	Title:          "Show message in notifications",
-	AllowSubkeys:   false,
-	Key:            threading.ClearTextMessageNotifications,
-	Type:           settings.ConfigType_BOOLEAN,
-	PossibleOwners: []settings.OwnerType{settings.OwnerType_ORGANIZATION},
-	Config: &settings.Config_Boolean{
-		Boolean: &settings.BooleanConfig{
-			Default: &settings.BooleanValue{
-				Value: false,
-			},
-		},
-	},
-}
-
 // AlertAllMessagesConfig represents the config controlling if all messages should generate alerts or not
 var AlertAllMessagesConfig = &settings.Config{
 	Title:          "Alert for all new messages",
@@ -32,6 +16,40 @@ var AlertAllMessagesConfig = &settings.Config{
 		Boolean: &settings.BooleanConfig{
 			Default: &settings.BooleanValue{
 				Value: true,
+			},
+		},
+	},
+}
+
+// PreviewPatientMessageContentInNotificationConfig represents the config controlling when the actual content
+// for team messages is sent as part of the notification payload.
+var PreviewPatientMessageContentInNotificationConfig = &settings.Config{
+	Title:          "Show preview for patient messages",
+	AllowSubkeys:   false,
+	Key:            threading.PreviewPatientMessageContentInNotification,
+	Type:           settings.ConfigType_BOOLEAN,
+	PossibleOwners: []settings.OwnerType{settings.OwnerType_ORGANIZATION},
+	Config: &settings.Config_Boolean{
+		Boolean: &settings.BooleanConfig{
+			Default: &settings.BooleanValue{
+				Value: false,
+			},
+		},
+	},
+}
+
+// PreviewTeamMessageContentInNotificationConfig represents the config controlling when the actual content
+// for team messages is sent as part of the notification payload.
+var PreviewTeamMessageContentInNotificationConfig = &settings.Config{
+	Title:          "Show preview for team messages",
+	AllowSubkeys:   false,
+	Key:            threading.PreviewTeamMessageContentInNotification,
+	Type:           settings.ConfigType_BOOLEAN,
+	PossibleOwners: []settings.OwnerType{settings.OwnerType_ORGANIZATION},
+	Config: &settings.Config_Boolean{
+		Boolean: &settings.BooleanConfig{
+			Default: &settings.BooleanValue{
+				Value: false,
 			},
 		},
 	},
