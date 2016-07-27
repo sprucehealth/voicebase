@@ -1,6 +1,7 @@
 package ldap
 
 import (
+	"crypto/tls"
 	"fmt"
 
 	"context"
@@ -11,8 +12,9 @@ import (
 
 // Config represents the ocnfigurable LDAP aspects
 type Config struct {
-	Address string
-	BaseDN  string
+	Address   string
+	BaseDN    string
+	TLSConfig *tls.Config
 }
 
 // AuthProvider returns an auth provider backed by LDAP
@@ -23,10 +25,18 @@ type AuthProvider struct {
 
 // NewAuthenticationProvider returns an LDAP compatible authentication provider
 func NewAuthenticationProvider(cfg *Config) (*AuthProvider, error) {
-	// TODO: Add TLS parameterization/support
-	ldapCli, err := ldap.Dial("tcp", cfg.Address)
-	if err != nil {
-		return nil, err
+	var err error
+	var ldapCli *ldap.Client
+	if cfg.TLSConfig == nil {
+		ldapCli, err = ldap.Dial("tcp", cfg.Address)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		ldapCli, err = ldap.DialTLS("tcp", cfg.Address, cfg.TLSConfig)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return &AuthProvider{
 		ldapCli: ldapCli,

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"flag"
 	"net/http"
 	"os"
@@ -32,6 +33,7 @@ var (
 	flagDirectoryAddr   = flag.String("directory_addr", "127.0.0.1:50052", "Address of the directory server")
 	flagLDAPAddr        = flag.String("ldap_addr", "localhost:389", "Address of the LDAP server")
 	flagLDAPBaseDN      = flag.String("ldap_base_dn", "ou=People,dc=sprucehealth,dc=com", "The base DN for LDAP users")
+	flagLDAPTLS         = flag.Bool("ldap_tls", false, "Flag indicating if the ldap client should use TLS")
 	flagLetsEncrypt     = flag.Bool("letsencrypt", false, "Enable Let's Encrypt certificates")
 	flagListenAddr      = flag.String("graphql_listen_addr", "127.0.0.1:8084", "host:port to listen on")
 	flagProxyProtocol   = flag.Bool("proxy_protocol", false, "If behind a TCP proxy and proxy protocol wrapping is enabled")
@@ -44,9 +46,16 @@ var (
 func main() {
 	svc := boot.NewService("admin", nil)
 
+	var ldapTLS *tls.Config
+	if *flagLDAPTLS {
+		ldapTLS = &tls.Config{
+			InsecureSkipVerify: true,
+		}
+	}
 	ap, err := ldap.NewAuthenticationProvider(&ldap.Config{
-		Address: *flagLDAPAddr,
-		BaseDN:  *flagLDAPBaseDN,
+		Address:   *flagLDAPAddr,
+		BaseDN:    *flagLDAPBaseDN,
+		TLSConfig: ldapTLS,
 	})
 	if err != nil {
 		golog.Fatalf(err.Error())
@@ -58,7 +67,7 @@ func main() {
 	dirCli := directory.NewDirectoryClient(conn)
 	conn, err = boot.DialGRPC("admin", *flagSettingsAddr)
 	if err != nil {
-		golog.Fatalf("Unable to connect to directory service: %s", err)
+		golog.Fatalf("Unable to connect to settings service: %s", err)
 	}
 	settingsCli := settings.NewSettingsClient(conn)
 	signer, err := sig.NewSigner([][]byte{[]byte(*flagAuthTokenSecret)}, nil)
