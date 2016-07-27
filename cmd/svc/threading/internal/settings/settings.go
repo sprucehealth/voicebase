@@ -28,7 +28,7 @@ var PreviewPatientMessageContentInNotificationConfig = &settings.Config{
 	AllowSubkeys:   false,
 	Key:            threading.PreviewPatientMessageContentInNotification,
 	Type:           settings.ConfigType_BOOLEAN,
-	PossibleOwners: []settings.OwnerType{settings.OwnerType_ORGANIZATION},
+	PossibleOwners: []settings.OwnerType{settings.OwnerType_INTERNAL_ENTITY},
 	Config: &settings.Config_Boolean{
 		Boolean: &settings.BooleanConfig{
 			Default: &settings.BooleanValue{
@@ -45,7 +45,7 @@ var PreviewTeamMessageContentInNotificationConfig = &settings.Config{
 	AllowSubkeys:   false,
 	Key:            threading.PreviewTeamMessageContentInNotification,
 	Type:           settings.ConfigType_BOOLEAN,
-	PossibleOwners: []settings.OwnerType{settings.OwnerType_ORGANIZATION},
+	PossibleOwners: []settings.OwnerType{settings.OwnerType_INTERNAL_ENTITY},
 	Config: &settings.Config_Boolean{
 		Boolean: &settings.BooleanConfig{
 			Default: &settings.BooleanValue{

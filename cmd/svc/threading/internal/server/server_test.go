@@ -1795,8 +1795,8 @@ func TestNotifyMembersOfPublishMessage(t *testing.T) {
 		{ThreadID: tID, EntityID: publishingEntity, LastViewed: nil, LastUnreadNotify: nil},
 	}, nil))
 
-	expectPreviewPatientMessageContentInNotificationEnabled(sm, orgID, false)
 	expectIsAlertAllMessagesEnabled(sm, "notify1", true)
+	expectPreviewPatientMessageContentInNotificationEnabled(sm, "notify1", false)
 
 	notificationClient.Expect(mock.NewExpectation(notificationClient.SendNotification, &notification.Notification{
 		ShortMessages: map[string]string{
@@ -1892,9 +1892,10 @@ func TestNotifyMembersOfPublishMessage_Team(t *testing.T) {
 		{ThreadID: tID, EntityID: publishingEntity, LastViewed: nil, LastUnreadNotify: nil},
 	}, nil))
 
-	expectPreviewTeamMessageContentInNotificationEnabled(sm, orgID, false)
 	expectIsAlertAllMessagesEnabled(sm, "notify1", true)
+	expectPreviewTeamMessageContentInNotificationEnabled(sm, "notify1", false)
 	expectIsAlertAllMessagesEnabled(sm, "notify3", true)
+	expectPreviewTeamMessageContentInNotificationEnabled(sm, "notify3", false)
 
 	notificationClient.Expect(mock.NewExpectation(notificationClient.SendNotification, &notification.Notification{
 		ShortMessages: map[string]string{
@@ -2073,10 +2074,14 @@ func TestNotifyMembersOfPublishMessageClearTextEnabled(t *testing.T) {
 		{ThreadID: tID, EntityID: publishingEntity, LastViewed: nil, LastUnreadNotify: nil},
 	}, nil))
 
-	expectPreviewPatientMessageContentInNotificationEnabled(sm, orgID, true)
 	expectIsAlertAllMessagesEnabled(sm, "notify1", true)
+	expectPreviewPatientMessageContentInNotificationEnabled(sm, "notify1", true)
+
 	expectIsAlertAllMessagesEnabled(sm, "notify2", true)
+	expectPreviewPatientMessageContentInNotificationEnabled(sm, "notify2", true)
+
 	expectIsAlertAllMessagesEnabled(sm, "notify3", true)
+	expectPreviewPatientMessageContentInNotificationEnabled(sm, "notify3", true)
 
 	notificationClient.Expect(mock.NewExpectation(notificationClient.SendNotification, &notification.Notification{
 		ShortMessages: map[string]string{
@@ -2167,11 +2172,14 @@ func TestNotifyMembersOfPublishMessageSecureExternalNonInternal(t *testing.T) {
 		{ThreadID: tID, EntityID: publishingEntity, LastViewed: nil, LastUnreadNotify: nil},
 	}, nil))
 
-	expectPreviewPatientMessageContentInNotificationEnabled(sm, orgID, false)
 	expectIsAlertAllMessagesEnabled(sm, "notify1", true)
+	expectPreviewPatientMessageContentInNotificationEnabled(sm, "notify1", false)
 	expectIsAlertAllMessagesEnabled(sm, "notify2", true)
+	expectPreviewPatientMessageContentInNotificationEnabled(sm, "notify2", false)
 	expectIsAlertAllMessagesEnabled(sm, "notify3", true)
+	expectPreviewPatientMessageContentInNotificationEnabled(sm, "notify3", false)
 	expectIsAlertAllMessagesEnabled(sm, "patientNotify1", true)
+	expectPreviewPatientMessageContentInNotificationEnabled(sm, "patientNotify1", false)
 
 	notificationClient.Expect(mock.NewExpectation(notificationClient.SendNotification, &notification.Notification{
 		ShortMessages: map[string]string{
@@ -2265,10 +2273,14 @@ func TestNotifyMembersOfPublishMessageSecureExternalInternal(t *testing.T) {
 		{ThreadID: tID, EntityID: publishingEntity, LastViewed: nil, LastUnreadNotify: nil},
 	}, nil))
 
-	expectPreviewPatientMessageContentInNotificationEnabled(sm, orgID, false)
 	expectIsAlertAllMessagesEnabled(sm, "notify1", true)
+	expectPreviewPatientMessageContentInNotificationEnabled(sm, "notify1", false)
+
 	expectIsAlertAllMessagesEnabled(sm, "notify2", true)
+	expectPreviewPatientMessageContentInNotificationEnabled(sm, "notify2", false)
+
 	expectIsAlertAllMessagesEnabled(sm, "notify3", true)
+	expectPreviewPatientMessageContentInNotificationEnabled(sm, "notify3", false)
 
 	notificationClient.Expect(mock.NewExpectation(notificationClient.SendNotification, &notification.Notification{
 		ShortMessages: map[string]string{

@@ -1511,7 +1511,6 @@ func (s *threadsServer) notifyMembersOfPublishMessage(
 			teMap[te.EntityID] = te
 		}
 
-		notificationText := s.getNotificationText(ctx, thread, message)
 		mentionedEntityIDs := getReferencedEntities(ctx, thread, message)
 
 		// Track the messages we want to send and how many unread threads there were
@@ -1531,7 +1530,7 @@ func (s *threadsServer) notifyMembersOfPublishMessage(
 				if _, ok := mentionedEntityIDs[entID]; ok {
 					messages[entID] = "You have a new mention in a thread"
 				} else if s.isAlertAllMessagesEnabled(ctx, entID) {
-					messages[entID] = notificationText
+					messages[entID] = s.getNotificationText(ctx, thread, message, entID)
 				} else if te == nil || te.LastUnreadNotify == nil || (te.LastViewed != nil && te.LastViewed.After(*te.LastUnreadNotify)) {
 					// Only send a notification if no notification has been sent or the person has viewed the thread since the last notification
 					if err := dl.UpdateThreadEntity(ctx, thread.ID, entID, &dal.ThreadEntityUpdate{
@@ -1539,7 +1538,7 @@ func (s *threadsServer) notifyMembersOfPublishMessage(
 					}); err != nil {
 						return errors.Trace(err)
 					}
-					messages[entID] = notificationText
+					messages[entID] = s.getNotificationText(ctx, thread, message, entID)
 				}
 			}
 			return nil
@@ -1599,9 +1598,9 @@ func getReferencedEntities(ctx context.Context, thread *models.Thread, message *
 	return referencedEntityIDs
 }
 
-func (s *threadsServer) getNotificationText(ctx context.Context, thread *models.Thread, message *models.ThreadItem) string {
+func (s *threadsServer) getNotificationText(ctx context.Context, thread *models.Thread, message *models.ThreadItem, receiverEntityID string) string {
 	notificationText := "You have a new message"
-	isClearText := s.isClearTextMessageNotificationsEnabled(ctx, thread.Type, thread.OrganizationID)
+	isClearText := s.isClearTextMessageNotificationsEnabled(ctx, thread.Type, receiverEntityID)
 	if isClearText {
 		if message.Type == models.ItemTypeMessage {
 			// TODO: Optimizatoin: Refactor and merge the converion of the data to models.Message for use by both notification text and refs
@@ -1650,7 +1649,7 @@ func (s *threadsServer) isAlertAllMessagesEnabled(ctx context.Context, entityID 
 	return booleanValue.Value
 }
 
-func (s *threadsServer) isClearTextMessageNotificationsEnabled(ctx context.Context, threadType models.ThreadType, organizationID string) bool {
+func (s *threadsServer) isClearTextMessageNotificationsEnabled(ctx context.Context, threadType models.ThreadType, receiverEntityID string) bool {
 
 	var key string
 	switch threadType {
@@ -1666,10 +1665,10 @@ func (s *threadsServer) isClearTextMessageNotificationsEnabled(ctx context.Conte
 
 	booleanValue, err := settings.GetBooleanValue(ctx, s.settingsClient, &settings.GetValuesRequest{
 		Keys:   []*settings.ConfigKey{{Key: key}},
-		NodeID: organizationID,
+		NodeID: receiverEntityID,
 	})
 	if err != nil {
-		golog.Errorf("Encountered an error when getting %s for org %s: %s", key, organizationID, err)
+		golog.Errorf("Encountered an error when getting %s for org %s: %s", key, receiverEntityID, err)
 		return false
 	}
 
