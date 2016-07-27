@@ -15,6 +15,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
 	excommsSettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
 	"github.com/sprucehealth/backend/libs/clock"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/sig"
@@ -596,6 +597,11 @@ func TestAfterHours_Voicemail(t *testing.T) {
 
 	mdal := dalmock.New(t)
 	defer mdal.Finish()
+	mclock := clock.NewManaged(time.Now())
+
+	mdal.Expect(mock.NewExpectation(mdal.UpdateIncomingCall, callSID, &dal.IncomingCallUpdate{
+		SentToVoicemail: ptr.Bool(true),
+	}).WithReturns(int64(1), nil))
 
 	msettings := settingsmock.New(t)
 	defer msettings.Finish()
@@ -624,7 +630,7 @@ func TestAfterHours_Voicemail(t *testing.T) {
 	test.OK(t, err)
 	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
 
-	es := NewEventHandler(mdir, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, signer)
+	es := NewEventHandler(mdir, msettings, mdal, &mockSNS_Twilio{}, mclock, nil, "https://test.com", "", "", "", nil, signer)
 	params := &rawmsg.TwilioParams{
 		From:    patientPhone,
 		To:      practicePhoneNumber,
@@ -674,6 +680,10 @@ func TestAfterHours_Voicemail_Transcription(t *testing.T) {
 	mdal := dalmock.New(t)
 	defer mdal.Finish()
 
+	mdal.Expect(mock.NewExpectation(mdal.UpdateIncomingCall, callSID, &dal.IncomingCallUpdate{
+		SentToVoicemail: ptr.Bool(true),
+	}).WithReturns(int64(1), nil))
+
 	msettings := settingsmock.New(t)
 	defer msettings.Finish()
 
@@ -717,5 +727,95 @@ func TestAfterHours_Voicemail_Transcription(t *testing.T) {
 
 	if twiml != expected {
 		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
+	}
+}
+
+func TestAfterHours_Voicemail_Process(t *testing.T) {
+	conc.Testing = true
+	params := &rawmsg.TwilioParams{
+		From:              "+12068773590",
+		To:                "+17348465522",
+		RecordingDuration: 10,
+		RecordingURL:      "http://google.com",
+	}
+
+	mclock := clock.NewManaged(time.Now())
+
+	ms := &mockSNS_Twilio{}
+	md := dalmock.New(t)
+	defer md.Finish()
+
+	md.Expect(mock.NewExpectation(md.LookupIncomingCall, params.CallSID).WithReturns(&models.IncomingCall{
+		OrganizationID: "o1",
+		Source:         phone.Number(params.From),
+		Destination:    phone.Number(params.To),
+		AfterHours:     true,
+	}, nil))
+
+	md.Expect(mock.NewExpectation(md.StoreIncomingRawMessage, &rawmsg.Incoming{
+		Type: rawmsg.Incoming_TWILIO_VOICEMAIL,
+		Message: &rawmsg.Incoming_Twilio{
+			Twilio: params,
+		},
+	}))
+
+	md.Expect(mock.NewExpectation(md.LookupIncomingCall, params.CallSID).WithReturns(&models.IncomingCall{
+		OrganizationID: "o1",
+		Source:         phone.Number(params.From),
+		Destination:    phone.Number(params.To),
+	}, nil))
+
+	md.Expect(mock.NewExpectation(md.UpdateIncomingCall, params.CallSID, &dal.IncomingCallUpdate{
+		LeftVoicemail:     ptr.Bool(true),
+		LeftVoicemailTime: ptr.Time(mclock.Now()),
+	}).WithReturns(int64(1), nil))
+
+	mdir := dirmock.New(t)
+	defer mdir.Finish()
+
+	mdir.Expect(mock.NewExpectation(mdir.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: "o1",
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth: 1,
+			EntityInformation: []directory.EntityInformation{
+				directory.EntityInformation_EXTERNAL_IDS,
+				directory.EntityInformation_MEMBERS,
+			},
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{
+				ID:   "o1",
+				Type: directory.EntityType_ORGANIZATION,
+				Members: []*directory.Entity{
+					{
+						ID:   "p1",
+						Type: directory.EntityType_INTERNAL,
+					},
+				},
+				ExternalIDs: []string{"account_1"},
+			},
+		},
+	}, nil))
+
+	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
+	test.OK(t, err)
+	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
+
+	es := NewEventHandler(mdir, nil, md, ms, mclock, nil, "", "", "", "", nil, signer)
+
+	twiml, err := afterHoursProcessVoicemail(context.Background(), params, es.(*eventsHandler))
+	if err != nil {
+		t.Fatal(err)
+	} else if twiml != "" {
+		t.Fatalf("Expected %s got %s", "", twiml)
+	}
+
+	if len(ms.published) != 1 {
+		t.Fatalf("Expected 1 but got %d", len(ms.published))
 	}
 }

@@ -69,13 +69,15 @@ type ProvisionedEndpointUpdate struct {
 }
 
 type IncomingCallUpdate struct {
-	Afterhours      *bool
-	Urgent          *bool
-	Answered        *bool
-	SentToVoicemail *bool
-	Completed       *bool
-	AnsweredTime    *time.Time
-	CompletedTime   *time.Time
+	Afterhours        *bool
+	Urgent            *bool
+	Answered          *bool
+	SentToVoicemail   *bool
+	Completed         *bool
+	AnsweredTime      *time.Time
+	CompletedTime     *time.Time
+	LeftVoicemail     *bool
+	LeftVoicemailTime *time.Time
 }
 
 type DAL interface {
@@ -727,6 +729,13 @@ func (d *dal) UpdateIncomingCall(sid string, update *IncomingCallUpdate) (int64,
 	if update.CompletedTime != nil {
 		args.Append("completed_time", *update.CompletedTime)
 	}
+	if update.LeftVoicemail != nil {
+		args.Append("left_voicemail", *update.LeftVoicemail)
+	}
+	if update.LeftVoicemailTime != nil {
+		args.Append("left_voicemail_time", *update.LeftVoicemailTime)
+	}
+
 	if args == nil || args.IsEmpty() {
 		return 0, nil
 	}

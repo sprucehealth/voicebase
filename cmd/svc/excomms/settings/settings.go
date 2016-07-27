@@ -54,7 +54,7 @@ var ForwardingListTimeoutConfig = &settings.Config{
 	Config: &settings.Config_Integer{
 		Integer: &settings.IntegerConfig{
 			Default: &settings.IntegerValue{
-				Value: 30,
+				Value: 15,
 			},
 		},
 	},

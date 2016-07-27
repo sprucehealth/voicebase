@@ -570,7 +570,7 @@ func TestProviderCallConnected(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 	expected := `<?xml version="1.0" encoding="UTF-8"?>
-<Response><Gather action="/twilio/call/provider_entered_digits" method="POST" timeout="10" numDigits="1"><Say voice="alice">You have an incoming call from JS</Say><Say voice="alice">Press 1 to answer.</Say></Gather><Hangup></Hangup></Response>`
+<Response><Gather action="/twilio/call/provider_entered_digits" method="POST" timeout="5" numDigits="1"><Say voice="alice">You have an incoming call from JS</Say><Say voice="alice">Press 1 to answer.</Say></Gather><Hangup></Hangup></Response>`
 
 	if twiml != expected {
 		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
@@ -641,7 +641,7 @@ func TestProviderCallConnected_NoName(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 	expected := `<?xml version="1.0" encoding="UTF-8"?>
-<Response><Gather action="/twilio/call/provider_entered_digits" method="POST" timeout="10" numDigits="1"><Say voice="alice">You have an incoming call from 206 111 1111</Say><Say voice="alice">Press 1 to answer.</Say></Gather><Hangup></Hangup></Response>`
+<Response><Gather action="/twilio/call/provider_entered_digits" method="POST" timeout="5" numDigits="1"><Say voice="alice">You have an incoming call from 206 111 1111</Say><Say voice="alice">Press 1 to answer.</Say></Gather><Hangup></Hangup></Response>`
 
 	if twiml != expected {
 		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
@@ -748,7 +748,7 @@ func TestProviderEnteredDigits_EnteredOtherDigit(t *testing.T) {
 	}
 
 	expected := `<?xml version="1.0" encoding="UTF-8"?>
-<Response><Gather action="/twilio/call/provider_entered_digits" method="POST" timeout="10" numDigits="1"><Say voice="alice">You have an incoming call from JS</Say><Say voice="alice">Press 1 to answer.</Say></Gather><Hangup></Hangup></Response>`
+<Response><Gather action="/twilio/call/provider_entered_digits" method="POST" timeout="5" numDigits="1"><Say voice="alice">You have an incoming call from JS</Say><Say voice="alice">Press 1 to answer.</Say></Gather><Hangup></Hangup></Response>`
 
 	if expected != twiml {
 		t.Fatalf(`\nExpected: %s\nGot:%s`, expected, twiml)
@@ -1761,8 +1761,8 @@ func TestProcessVoicemail(t *testing.T) {
 	}))
 
 	md.Expect(mock.NewExpectation(md.UpdateIncomingCall, params.CallSID, &dal.IncomingCallUpdate{
-		Completed:     ptr.Bool(true),
-		CompletedTime: ptr.Time(mclock.Now()),
+		LeftVoicemail:     ptr.Bool(true),
+		LeftVoicemailTime: ptr.Time(mclock.Now()),
 	}).WithReturns(int64(1), nil))
 
 	md.Expect(mock.NewExpectation(md.LookupIncomingCall, params.CallSID).WithReturns(&models.IncomingCall{
