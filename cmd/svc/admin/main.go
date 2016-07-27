@@ -134,10 +134,12 @@ func main() {
 		}
 		server.TLSConfig.GetCertificate = boot.LetsEncryptCertManager(certStore.(storage.DeterministicStore), []string{*flagAPIDomain})
 		go func() {
+			golog.Infof("GraphQL server listening at %s...", *flagListenAddr)
 			if err := boot.HTTPSListenAndServe(server, *flagProxyProtocol); err != nil {
 				golog.Fatalf(err.Error())
 			}
 		}()
 	}
+	golog.Debugf("Service started and waiting for termination")
 	boot.WaitForTermination()
 }

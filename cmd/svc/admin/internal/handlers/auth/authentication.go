@@ -42,11 +42,13 @@ func (h *authenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		}
 		id, err := h.ap.Authenticate(r.Context(), req.Username, req.Password)
 		if err != nil {
+			golog.ContextLogger(r.Context()).Debugf("Error authenticating user %s: %s", req.Username, err)
 			http.Error(w, "Bad Request", http.StatusBadRequest)
 			return
 		}
 		token, exp, err := auth.NewToken(r.Context(), id, h.signer)
 		if err != nil {
+			golog.ContextLogger(r.Context()).Debugf("Error creating token for user %s: %s", id, err)
 			http.Error(w, "Internal Error", http.StatusInternalServerError)
 			return
 		}
