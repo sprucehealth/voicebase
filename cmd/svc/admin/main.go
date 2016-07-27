@@ -18,19 +18,23 @@ import (
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/sig"
+	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/shttputil"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/settings"
 )
 
 var (
+	flagAPIDomain       = flag.String("api_domain", "", "API `domain`")
 	flagAuthTokenSecret = flag.String("auth_token_secret", "super_secret", "Auth token secret")
 	flagBehindProxy     = flag.Bool("behind_proxy", false, "Flag to indicate when the service is behind a proxy")
+	flagCertCacheURL    = flag.String("cert_cache_url", "", "URL path where to store cert cache (e.g. s3://bucket/path/)")
 	flagDirectoryAddr   = flag.String("directory_addr", "127.0.0.1:50052", "Address of the directory server")
 	flagLDAPAddr        = flag.String("ldap_addr", "localhost:389", "Address of the LDAP server")
 	flagLDAPBaseDN      = flag.String("ldap_base_dn", "ou=People,dc=sprucehealth,dc=com", "The base DN for LDAP users")
 	flagLetsEncrypt     = flag.Bool("letsencrypt", false, "Enable Let's Encrypt certificates")
 	flagListenAddr      = flag.String("graphql_listen_addr", "127.0.0.1:8084", "host:port to listen on")
+	flagProxyProtocol   = flag.Bool("proxy_protocol", false, "If behind a TCP proxy and proxy protocol wrapping is enabled")
 	flagResourcePath    = flag.String("resource_path", path.Join(os.Getenv("GOPATH"),
 		"src/github.com/sprucehealth/backend/cmd/svc/admin/resources"), "Path to resources (defaults to use GOPATH)")
 	flagSettingsAddr = flag.String("settings_addr", "127.0.0.1:50054", "Address of the settings server")
@@ -38,7 +42,7 @@ var (
 )
 
 func main() {
-	boot.NewService("admin", nil)
+	svc := boot.NewService("admin", nil)
 
 	ap, err := ldap.NewAuthenticationProvider(&ldap.Config{
 		Address: *flagLDAPAddr,
@@ -95,14 +99,36 @@ func main() {
 	h = httputil.LoggingHandler(h, "admin", *flagBehindProxy, nil)
 	h = httputil.RequestIDHandler(h)
 
-	go func() {
+	if !*flagLetsEncrypt {
+		go func() {
+			server := &http.Server{
+				Addr:           *flagListenAddr,
+				Handler:        h,
+				MaxHeaderBytes: 1 << 20,
+			}
+			golog.Infof("GraphQL server listening at %s...", *flagListenAddr)
+			server.ListenAndServe()
+		}()
+	} else {
 		server := &http.Server{
-			Addr:           *flagListenAddr,
-			Handler:        h,
+			Addr:      *flagListenAddr,
+			TLSConfig: boot.TLSConfig(),
+			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				r.Header.Set("X-Forwarded-Proto", "https")
+				h.ServeHTTP(w, r)
+			}),
 			MaxHeaderBytes: 1 << 20,
 		}
-		golog.Infof("GraphQL server listening at %s...", *flagListenAddr)
-		server.ListenAndServe()
-	}()
+		certStore, err := svc.StoreFromURL(*flagCertCacheURL)
+		if err != nil {
+			golog.Fatalf("Failed to generate cert cache store from url '%s': %s", *flagCertCacheURL, err)
+		}
+		server.TLSConfig.GetCertificate = boot.LetsEncryptCertManager(certStore.(storage.DeterministicStore), []string{*flagAPIDomain})
+		go func() {
+			if err := boot.HTTPSListenAndServe(server, *flagProxyProtocol); err != nil {
+				golog.Fatalf(err.Error())
+			}
+		}()
+	}
 	boot.WaitForTermination()
 }
