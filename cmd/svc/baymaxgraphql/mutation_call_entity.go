@@ -3,12 +3,12 @@ package main
 import (
 	"fmt"
 
-	"github.com/segmentio/analytics-go"
+	segment "github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/device/devicectx"
-	"github.com/sprucehealth/backend/libs/conc"
+	"github.com/sprucehealth/backend/libs/analytics"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -133,7 +133,6 @@ var callEntityMutation = &graphql.Field{
 		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
 		acc := gqlctx.Account(ctx)
-		svc := serviceFromParams(p)
 		headers := devicectx.SpruceHeaders(ctx)
 
 		if acc == nil {
@@ -272,17 +271,15 @@ var callEntityMutation = &graphql.Field{
 			golog.Errorf("Unable to format originating phone number %s: %s", ires.OriginatingPhoneNumber, err.Error())
 		}
 
-		conc.Go(func() {
-			svc.segmentio.Track(&analytics.Track{
-				Event:  "outbound-call-attempted",
-				UserId: acc.ID,
-				Properties: map[string]interface{}{
-					"org_id":                   org.ID,
-					"originating_phone_number": originatingPhoneNumber,
-					"proxy_phone_number":       ires.ProxyPhoneNumber,
-					"platform":                 headers.Platform.String(),
-				},
-			})
+		analytics.SegmentTrack(&segment.Track{
+			Event:  "outbound-call-attempted",
+			UserId: acc.ID,
+			Properties: map[string]interface{}{
+				"org_id":                   org.ID,
+				"originating_phone_number": originatingPhoneNumber,
+				"proxy_phone_number":       ires.ProxyPhoneNumber,
+				"platform":                 headers.Platform.String(),
+			},
 		})
 
 		return &callEntityOutput{

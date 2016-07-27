@@ -10,7 +10,6 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/samuel/go-metrics/metrics"
-	"github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
@@ -135,7 +134,6 @@ func NewGraphQL(
 	serviceNumber phone.Number,
 	spruceOrgID string,
 	staticURLPrefix string,
-	segmentClient *analytics.Client,
 	sns snsiface.SNSAPI,
 	supportMessageTopicARN string,
 	emailTemplateIDs emailTemplateIDs,
@@ -171,7 +169,6 @@ func NewGraphQL(
 			care:            care,
 			spruceOrgID:     spruceOrgID,
 			staticURLPrefix: staticURLPrefix,
-			segmentio:       &segmentIOWrapper{Client: segmentClient},
 			sns:             sns,
 			supportMessageTopicARN: supportMessageTopicARN,
 			layoutStore:            layoutStore,

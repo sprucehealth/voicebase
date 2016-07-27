@@ -9,7 +9,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/samuel/go-metrics/metrics"
-	analytics "github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/handlers"
@@ -73,12 +72,6 @@ func runAPI(bootSvc *boot.Service) {
 		return
 	}
 
-	var segmentClient *analytics.Client
-	if config.segmentIOKey != "" {
-		segmentClient = analytics.New(config.segmentIOKey)
-		defer segmentClient.Close()
-	}
-
 	sigKeys := strings.Split(config.sigKeys, ",")
 	sigKeysByteSlice := make([][]byte, len(sigKeys))
 	for i, sk := range sigKeys {
@@ -101,7 +94,6 @@ func runAPI(bootSvc *boot.Service) {
 		config.externalMessageTopic,
 		config.incomingRawMessageTopic,
 		config.resourceCleanerTopic,
-		segmentClient,
 		ms)
 
 	router := mux.NewRouter().StrictSlash(true)

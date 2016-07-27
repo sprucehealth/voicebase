@@ -6,12 +6,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/segmentio/analytics-go"
+	segment "github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/device/devicectx"
+	"github.com/sprucehealth/backend/libs/analytics"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/caremessenger/deeplink"
 	"github.com/sprucehealth/backend/libs/conc"
@@ -455,7 +456,7 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 				groupTraits["adjust_adgroup"] = s
 			}
 		}
-		svc.segmentio.Identify(&analytics.Identify{
+		analytics.SegmentIdentify(&segment.Identify{
 			UserId: res.Account.ID,
 			Traits: userTraits,
 			Context: map[string]interface{}{
@@ -463,12 +464,12 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 				"userAgent": userAgentFromParams(p),
 			},
 		})
-		svc.segmentio.Group(&analytics.Group{
+		analytics.SegmentGroup(&segment.Group{
 			UserId:  res.Account.ID,
 			GroupId: orgEntityID,
 			Traits:  groupTraits,
 		})
-		svc.segmentio.Track(&analytics.Track{
+		analytics.SegmentTrack(&segment.Track{
 			Event:      "signedup",
 			UserId:     res.Account.ID,
 			Properties: eventProps,

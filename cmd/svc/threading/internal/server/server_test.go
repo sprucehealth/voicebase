@@ -1696,9 +1696,23 @@ func TestMarkThreadAsReadExistingMembership(t *testing.T) {
 	test.Equals(t, &threading.MarkThreadsAsReadResponse{}, resp)
 }
 
-func expectIsClearTextMessageNotificationsEnabled(sm *mock_settings.Client, organizationID string, answer bool) {
+func expectPreviewTeamMessageContentInNotificationEnabled(sm *mock_settings.Client, organizationID string, answer bool) {
 	sm.Expect(mock.NewExpectation(sm.GetValues, &settings.GetValuesRequest{
-		Keys:   []*settings.ConfigKey{{Key: threading.ClearTextMessageNotifications}},
+		Keys:   []*settings.ConfigKey{{Key: threading.PreviewTeamMessageContentInNotification}},
+		NodeID: organizationID,
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Type:  settings.ConfigType_BOOLEAN,
+				Value: &settings.Value_Boolean{Boolean: &settings.BooleanValue{Value: answer}},
+			},
+		},
+	}, nil))
+}
+
+func expectPreviewPatientMessageContentInNotificationEnabled(sm *mock_settings.Client, organizationID string, answer bool) {
+	sm.Expect(mock.NewExpectation(sm.GetValues, &settings.GetValuesRequest{
+		Keys:   []*settings.ConfigKey{{Key: threading.PreviewPatientMessageContentInNotification}},
 		NodeID: organizationID,
 	}).WithReturns(&settings.GetValuesResponse{
 		Values: []*settings.Value{
@@ -1781,7 +1795,7 @@ func TestNotifyMembersOfPublishMessage(t *testing.T) {
 		{ThreadID: tID, EntityID: publishingEntity, LastViewed: nil, LastUnreadNotify: nil},
 	}, nil))
 
-	expectIsClearTextMessageNotificationsEnabled(sm, orgID, false)
+	expectPreviewPatientMessageContentInNotificationEnabled(sm, orgID, false)
 	expectIsAlertAllMessagesEnabled(sm, "notify1", true)
 
 	notificationClient.Expect(mock.NewExpectation(notificationClient.SendNotification, &notification.Notification{
@@ -1878,7 +1892,7 @@ func TestNotifyMembersOfPublishMessage_Team(t *testing.T) {
 		{ThreadID: tID, EntityID: publishingEntity, LastViewed: nil, LastUnreadNotify: nil},
 	}, nil))
 
-	expectIsClearTextMessageNotificationsEnabled(sm, orgID, false)
+	expectPreviewTeamMessageContentInNotificationEnabled(sm, orgID, false)
 	expectIsAlertAllMessagesEnabled(sm, "notify1", true)
 	expectIsAlertAllMessagesEnabled(sm, "notify3", true)
 
@@ -2059,7 +2073,7 @@ func TestNotifyMembersOfPublishMessageClearTextEnabled(t *testing.T) {
 		{ThreadID: tID, EntityID: publishingEntity, LastViewed: nil, LastUnreadNotify: nil},
 	}, nil))
 
-	expectIsClearTextMessageNotificationsEnabled(sm, orgID, true)
+	expectPreviewPatientMessageContentInNotificationEnabled(sm, orgID, true)
 	expectIsAlertAllMessagesEnabled(sm, "notify1", true)
 	expectIsAlertAllMessagesEnabled(sm, "notify2", true)
 	expectIsAlertAllMessagesEnabled(sm, "notify3", true)
@@ -2153,7 +2167,7 @@ func TestNotifyMembersOfPublishMessageSecureExternalNonInternal(t *testing.T) {
 		{ThreadID: tID, EntityID: publishingEntity, LastViewed: nil, LastUnreadNotify: nil},
 	}, nil))
 
-	expectIsClearTextMessageNotificationsEnabled(sm, orgID, false)
+	expectPreviewPatientMessageContentInNotificationEnabled(sm, orgID, false)
 	expectIsAlertAllMessagesEnabled(sm, "notify1", true)
 	expectIsAlertAllMessagesEnabled(sm, "notify2", true)
 	expectIsAlertAllMessagesEnabled(sm, "notify3", true)
@@ -2251,7 +2265,7 @@ func TestNotifyMembersOfPublishMessageSecureExternalInternal(t *testing.T) {
 		{ThreadID: tID, EntityID: publishingEntity, LastViewed: nil, LastUnreadNotify: nil},
 	}, nil))
 
-	expectIsClearTextMessageNotificationsEnabled(sm, orgID, false)
+	expectPreviewPatientMessageContentInNotificationEnabled(sm, orgID, false)
 	expectIsAlertAllMessagesEnabled(sm, "notify1", true)
 	expectIsAlertAllMessagesEnabled(sm, "notify2", true)
 	expectIsAlertAllMessagesEnabled(sm, "notify3", true)

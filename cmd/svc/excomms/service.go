@@ -175,7 +175,7 @@ func runService(bootSvc *boot.Service) {
 		notificationClient)
 	excomms.InitMetrics(excommsService, bootSvc.MetricsRegistry.Scope("server"))
 
-	excommsServer := bootSvc.NewGRPCServer()
+	excommsServer := bootSvc.GRPCServer()
 	excomms.RegisterExCommsServer(excommsServer, excommsService)
 
 	res, err := eSQS.GetQueueUrl(&sqs.GetQueueUrlInput{

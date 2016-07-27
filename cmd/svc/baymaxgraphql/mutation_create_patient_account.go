@@ -6,12 +6,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/segmentio/analytics-go"
+	segment "github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/device/devicectx"
+	"github.com/sprucehealth/backend/libs/analytics"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/gqldecode"
@@ -534,30 +535,29 @@ func recordCreatePatientAccountAnalytics(
 		platform = headers.Platform.String()
 		golog.Debugf("Patient Account created. ID = %s Device = %s", account.ID, headers.DeviceID)
 	}
-	conc.Go(func() {
-		svc.segmentio.Identify(&analytics.Identify{
-			UserId: account.ID,
-			Traits: map[string]interface{}{
-				"platform":  platform,
-				"createdAt": time.Now().Unix(),
-				"type":      "patient",
-			},
-			Context: map[string]interface{}{
-				"ip":        remoteAddrFromParams(p),
-				"userAgent": userAgentFromParams(p),
-			},
-		})
-		props := map[string]interface{}{
-			"entity_id":       accEntityID,
-			"organization_id": orgID,
-		}
-		if inv != nil {
-			props["invite"] = inv.Type.String()
-		}
-		svc.segmentio.Track(&analytics.Track{
-			Event:      "signedup",
-			UserId:     account.ID,
-			Properties: props,
-		})
+
+	analytics.SegmentIdentify(&segment.Identify{
+		UserId: account.ID,
+		Traits: map[string]interface{}{
+			"platform":  platform,
+			"createdAt": time.Now().Unix(),
+			"type":      "patient",
+		},
+		Context: map[string]interface{}{
+			"ip":        remoteAddrFromParams(p),
+			"userAgent": userAgentFromParams(p),
+		},
+	})
+	props := map[string]interface{}{
+		"entity_id":       accEntityID,
+		"organization_id": orgID,
+	}
+	if inv != nil {
+		props["invite"] = inv.Type.String()
+	}
+	analytics.SegmentTrack(&segment.Track{
+		Event:      "signedup",
+		UserId:     account.ID,
+		Properties: props,
 	})
 }

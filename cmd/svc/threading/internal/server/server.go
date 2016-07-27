@@ -1601,7 +1601,7 @@ func getReferencedEntities(ctx context.Context, thread *models.Thread, message *
 
 func (s *threadsServer) getNotificationText(ctx context.Context, thread *models.Thread, message *models.ThreadItem) string {
 	notificationText := "You have a new message"
-	isClearText := thread.Type == models.ThreadTypeSupport || s.isClearTextMessageNotificationsEnabled(ctx, thread.OrganizationID)
+	isClearText := s.isClearTextMessageNotificationsEnabled(ctx, thread.Type, thread.OrganizationID)
 	if isClearText {
 		if message.Type == models.ItemTypeMessage {
 			// TODO: Optimizatoin: Refactor and merge the converion of the data to models.Message for use by both notification text and refs
@@ -1650,13 +1650,26 @@ func (s *threadsServer) isAlertAllMessagesEnabled(ctx context.Context, entityID 
 	return booleanValue.Value
 }
 
-func (s *threadsServer) isClearTextMessageNotificationsEnabled(ctx context.Context, organizationID string) bool {
+func (s *threadsServer) isClearTextMessageNotificationsEnabled(ctx context.Context, threadType models.ThreadType, organizationID string) bool {
+
+	var key string
+	switch threadType {
+	case models.ThreadTypeSecureExternal, models.ThreadTypeExternal:
+		key = threading.PreviewPatientMessageContentInNotification
+	case models.ThreadTypeTeam, models.ThreadTypeLegacyTeam:
+		key = threading.PreviewTeamMessageContentInNotification
+	case models.ThreadTypeSupport, models.ThreadTypeSetup:
+		return true
+	default:
+		return false
+	}
+
 	booleanValue, err := settings.GetBooleanValue(ctx, s.settingsClient, &settings.GetValuesRequest{
-		Keys:   []*settings.ConfigKey{{Key: threading.ClearTextMessageNotifications}},
+		Keys:   []*settings.ConfigKey{{Key: key}},
 		NodeID: organizationID,
 	})
 	if err != nil {
-		golog.Errorf("Encountered an error when getting ClearTextMessageNotifications for org %s: %s", organizationID, err)
+		golog.Errorf("Encountered an error when getting %s for org %s: %s", key, organizationID, err)
 		return false
 	}
 

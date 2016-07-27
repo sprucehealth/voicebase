@@ -50,7 +50,6 @@ func newGQL(t testing.TB) *gql {
 		settings:     g.settingsC,
 		notification: g.notificationC,
 		spruceOrgID:  "spruce_org",
-		segmentio:    &segmentIOWrapper{},
 		sns:          &awsutil.SNS{},
 		layout:       g.layoutC,
 		layoutStore:  g.layoutStore,

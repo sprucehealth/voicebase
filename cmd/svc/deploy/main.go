@@ -80,13 +80,12 @@ func main() {
 	srvMetricsRegistry := svc.MetricsRegistry.Scope("server")
 	srv := server.New(dl, dMan)
 	deploy.InitMetrics(srv, srvMetricsRegistry)
-	s := svc.NewGRPCServer()
+	s := svc.GRPCServer()
 	deploy.RegisterDeployServer(s, srv)
 	golog.Infof("Starting DeployService on %s...", listenAddress)
 	go s.Serve(lis)
 
 	boot.WaitForTermination()
-	lis.Close()
 	svc.Shutdown()
 }
 

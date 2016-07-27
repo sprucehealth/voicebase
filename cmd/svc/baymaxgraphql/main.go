@@ -13,7 +13,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/rs/cors"
-	"github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/boot"
 	baymaxgraphqlsettings "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/settings"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/stub"
@@ -53,7 +52,6 @@ var (
 	flagServiceNumber       = flag.String("service_phone_number", "", "TODO: This should be managed by the excomms service")
 	flagSpruceOrgID         = flag.String("spruce_org_id", "", "`ID` for the Spruce support organization")
 	flagStaticURLPrefix     = flag.String("static_url_prefix", "", "URL prefix of static assets")
-	flagSegmentIOKey        = flag.String("segmentio_key", "", "Segment IO API `key`")
 	flagBehindProxy         = flag.Bool("behind_proxy", false, "Flag to indicate when the service is behind a proxy")
 	flagLayoutStoreS3Prefix = flag.String("s3_prefix_saml", "", "S3 Prefix for layouts")
 
@@ -261,11 +259,6 @@ func main() {
 
 	corsOrigins := []string{"https://" + *flagWebDomain}
 
-	var segmentClient *analytics.Client
-	if *flagSegmentIOKey != "" {
-		segmentClient = analytics.New(*flagSegmentIOKey)
-		defer segmentClient.Close()
-	}
 	if *flagMediaAPIDomain == "" {
 		golog.Fatalf("Media API Domain required")
 	}
@@ -293,7 +286,6 @@ func main() {
 		pn,
 		*flagSpruceOrgID,
 		*flagStaticURLPrefix,
-		segmentClient,
 		eSNS,
 		*flagSupportMessageTopicARN,
 		emailTemplateIDs{

@@ -4,14 +4,14 @@ import (
 	"context"
 	"fmt"
 
-	analytics "github.com/segmentio/analytics-go"
+	segment "github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/libs/conc"
+	"github.com/sprucehealth/backend/libs/analytics"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
@@ -36,7 +36,6 @@ var queryType = graphql.NewObject(
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					ctx := p.Context
 					acc := gqlctx.Account(p.Context)
-					svc := serviceFromParams(p)
 
 					headers := devicectx.SpruceHeaders(ctx)
 					if acc == nil {
@@ -48,18 +47,15 @@ var queryType = graphql.NewObject(
 					if headers != nil {
 						platform = headers.Platform.String()
 					}
-					conc.Go(func() {
-						svc.segmentio.Identify(&analytics.Identify{
-							UserId: acc.ID,
-							Traits: map[string]interface{}{
-								"platform": platform,
-							},
-							Context: map[string]interface{}{
-								"ip":        remoteAddrFromParams(p),
-								"userAgent": userAgentFromParams(p),
-							},
-						})
-
+					analytics.SegmentIdentify(&segment.Identify{
+						UserId: acc.ID,
+						Traits: map[string]interface{}{
+							"platform": platform,
+						},
+						Context: map[string]interface{}{
+							"ip":        remoteAddrFromParams(p),
+							"userAgent": userAgentFromParams(p),
+						},
 					})
 
 					return &models.Me{Account: transformAccountToResponse(acc), ClientEncryptionKey: cek}, nil
