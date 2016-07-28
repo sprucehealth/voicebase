@@ -113,6 +113,7 @@ message EmailMessage {
 		string value = 2;
 	}
 	repeated Substitution template_substitutions = 9;
+	bool transactional = 10;
 }
 
 message SMSMessage {

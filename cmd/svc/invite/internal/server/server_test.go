@@ -9,7 +9,6 @@ import (
 	"context"
 
 	"github.com/aws/aws-sdk-go/service/sns"
-	"github.com/sendgrid/sendgrid-go/helpers/mail"
 	"github.com/sprucehealth/backend/cmd/svc/invite/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/invite/internal/models"
 	branchmock "github.com/sprucehealth/backend/libs/branch/mock"
@@ -50,7 +49,7 @@ func TestAttribution(t *testing.T) {
 	dl := newMockDAL(t)
 	snsC := mock.NewSNSAPI(t)
 	defer mock.FinishAll(dl, snsC)
-	srv := New(dl, nil, nil, nil, snsC, nil, nil, "", "", "", "", "")
+	srv := New(dl, nil, nil, nil, snsC, nil, "", "", "", "", "")
 
 	values := []*invite.AttributionValue{
 		{Key: "abc", Value: "123"},
@@ -81,12 +80,8 @@ func TestInviteColleagues(t *testing.T) {
 	excommsC := excommsmock.New(t)
 	defer mock.FinishAll(dl, dir, branch, snsC, excommsC)
 	clk := clock.NewManaged(time.Unix(10000000, 0))
-	var sentMail *mail.SGMailV3
-	sg := func(m *mail.SGMailV3) error {
-		sentMail = m
-		return nil
-	}
-	srv := New(dl, clk, dir, excommsC, snsC, branch, sg, "from@example.com", "+1234567890", "eventsTopic", "https://app.sprucehealth.com/signup?some=other", "templateID")
+
+	srv := New(dl, clk, dir, excommsC, snsC, branch, "from@example.com", "+1234567890", "eventsTopic", "https://app.sprucehealth.com/signup?some=other", "templateID")
 
 	// Lookup organization
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
@@ -117,6 +112,27 @@ func TestInviteColleagues(t *testing.T) {
 			{ID: "ent", Type: directory.EntityType_INTERNAL, Info: &directory.EntityInfo{DisplayName: "Inviter"}},
 		},
 	}, nil))
+
+	excommsC.Expect(mock.NewExpectation(excommsC.SendMessage, &excomms.SendMessageRequest{
+		Channel: excomms.ChannelType_EMAIL,
+		Message: &excomms.SendMessageRequest_Email{
+			Email: &excomms.EmailMessage{
+				Subject:          "Invite to join Orgo on Spruce",
+				FromName:         "Spruce",
+				FromEmailAddress: "from@example.com",
+				Body:             "Your invite link is https://example.com/invite [simpleToken]",
+				ToEmailAddress:   "someone@example.com",
+				TemplateID:       "templateID",
+				Transactional:    true,
+				TemplateSubstitutions: []*excomms.EmailMessage_Substitution{
+					{Key: "{orgname}", Value: "Orgo"},
+					{Key: "{inviteurl}", Value: "https://example.com/invite"},
+					{Key: "{invitername}", Value: "Inviter"},
+					{Key: "{invitecode}", Value: "simpleToken"},
+				},
+			},
+		},
+	}))
 
 	// Generate branch URL
 	values := map[string]string{
@@ -168,7 +184,6 @@ func TestInviteColleagues(t *testing.T) {
 	})
 	test.OK(t, err)
 	test.Equals(t, &invite.InviteColleaguesResponse{}, ires)
-	test.AssertNotNil(t, sentMail)
 }
 
 func TestInvitePatients(t *testing.T) {
@@ -179,7 +194,7 @@ func TestInvitePatients(t *testing.T) {
 	excommsC := excommsmock.New(t)
 	defer mock.FinishAll(dl, dir, branch, snsC, excommsC)
 	clk := clock.NewManaged(time.Unix(10000000, 0))
-	srv := New(dl, clk, dir, excommsC, snsC, branch, nil, "from@example.com", "+1234567890", "eventsTopic", "https://app.sprucehealth.com/signup?some=other", "")
+	srv := New(dl, clk, dir, excommsC, snsC, branch, "from@example.com", "+1234567890", "eventsTopic", "https://app.sprucehealth.com/signup?some=other", "")
 
 	// Lookup organization
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
@@ -295,7 +310,7 @@ func TestInvitePatientsNoFirstName(t *testing.T) {
 	excommsC := excommsmock.New(t)
 	defer mock.FinishAll(dl, dir, branch, snsC, excommsC)
 	clk := clock.NewManaged(time.Unix(10000000, 0))
-	srv := New(dl, clk, dir, excommsC, snsC, branch, nil, "from@example.com", "+1234567890", "eventsTopic", "https://app.sprucehealth.com/signup?some=other", "")
+	srv := New(dl, clk, dir, excommsC, snsC, branch, "from@example.com", "+1234567890", "eventsTopic", "https://app.sprucehealth.com/signup?some=other", "")
 
 	// Lookup organization
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
@@ -407,7 +422,7 @@ func TestLookupInvite(t *testing.T) {
 	dl := newMockDAL(t)
 	snsC := mock.NewSNSAPI(t)
 	defer mock.FinishAll(dl, snsC)
-	srv := New(dl, nil, nil, nil, snsC, nil, nil, "", "", "", "", "")
+	srv := New(dl, nil, nil, nil, snsC, nil, "", "", "", "", "")
 
 	dl.Expect(mock.NewExpectation(dl.InviteForToken, "testtoken").WithReturns(
 		&models.Invite{
@@ -449,7 +464,7 @@ func TestMarkInviteConsumed(t *testing.T) {
 	dl := newMockDAL(t)
 	snsC := mock.NewSNSAPI(t)
 	defer mock.FinishAll(dl, snsC)
-	srv := New(dl, nil, nil, nil, snsC, nil, nil, "", "", "", "", "")
+	srv := New(dl, nil, nil, nil, snsC, nil, "", "", "", "", "")
 
 	dl.Expect(mock.NewExpectation(dl.DeleteInvite, "testtoken").WithReturns(nil))
 	res, err := srv.MarkInviteConsumed(nil, &invite.MarkInviteConsumedRequest{Token: "testtoken"})

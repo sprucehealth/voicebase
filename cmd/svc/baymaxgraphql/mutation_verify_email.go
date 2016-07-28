@@ -178,6 +178,7 @@ func createAndSendVerificationEmail(ctx context.Context, ram raccess.ResourceAcc
 				Subject:          "Your Email Verification Code",
 				FromName:         "Spruce Support",
 				FromEmailAddress: "support@sprucehealth.com",
+				Transactional:    true,
 				Body:             body,
 				ToEmailAddress:   email,
 				TemplateID:       templateID,

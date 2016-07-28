@@ -11,7 +11,6 @@ import (
 	"context"
 
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
-	"github.com/sendgrid/sendgrid-go/helpers/mail"
 	"github.com/sprucehealth/backend/cmd/svc/invite/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/invite/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
@@ -84,16 +83,12 @@ func init() {
 	complexTokenGenerator = complexTokenGen{}
 }
 
-// SendMailFn is a function that knows how to send email
-type SendMailFn func(*mail.SGMailV3) error
-
 type server struct {
 	dal                       dal.DAL
 	clk                       clock.Clock
 	directoryClient           directory.DirectoryClient
 	excommsClient             excomms.ExCommsClient
 	branch                    branch.Client
-	sg                        SendMailFn
 	fromEmail                 string
 	fromNumber                string
 	eventsTopic               string
@@ -142,7 +137,6 @@ func New(
 	excommsClient excomms.ExCommsClient,
 	snsC snsiface.SNSAPI,
 	branch branch.Client,
-	sg SendMailFn,
 	fromEmail, fromNumber, eventsTopic, webInviteURL string,
 	colleagueInviteTemplateID string,
 ) invite.InviteServer {
@@ -164,7 +158,6 @@ func New(
 		excommsClient:             excommsClient,
 		sns:                       snsC,
 		branch:                    branch,
-		sg:                        sg,
 		fromEmail:                 fromEmail,
 		fromNumber:                fromNumber,
 		eventsTopic:               eventsTopic,
@@ -401,20 +394,31 @@ func (s *server) proccessInvite(
 }
 
 func (s *server) sendColleagueOutbound(ctx context.Context, email, inviteURL, token string, org, inviter *directory.Entity) error {
-	m := mail.NewV3MailInit(
-		mail.NewEmail("Spruce", s.fromEmail), " ",
-		mail.NewEmail("", email),
-		mail.NewContent("text/plain", " ")) // single character body and subject as they're required even though unused in the template
-	m.Content = append(m.Content, mail.NewContent("text/html", " "))
-	m.Personalizations[0].Substitutions = map[string]string{
-		"{orgname}":     org.Info.DisplayName,
-		"{inviteurl}":   inviteURL,
-		"{invitername}": inviter.Info.DisplayName,
-		"{invitecode}":  token,
+
+	if _, err := s.excommsClient.SendMessage(ctx, &excomms.SendMessageRequest{
+		Channel: excomms.ChannelType_EMAIL,
+		Message: &excomms.SendMessageRequest_Email{
+			Email: &excomms.EmailMessage{
+				Subject:          fmt.Sprintf("Invite to join %s on Spruce", org.Info.DisplayName),
+				FromName:         "Spruce",
+				FromEmailAddress: s.fromEmail,
+				Body:             fmt.Sprintf("Your invite link is %s [%s]", inviteURL, token),
+				ToEmailAddress:   email,
+				Transactional:    true,
+				TemplateID:       s.colleagueInviteTemplateID,
+				TemplateSubstitutions: []*excomms.EmailMessage_Substitution{
+					{Key: "{orgname}", Value: org.Info.DisplayName},
+					{Key: "{inviteurl}", Value: inviteURL},
+					{Key: "{invitername}", Value: inviter.Info.DisplayName},
+					{Key: "{invitecode}", Value: token},
+				},
+			},
+		},
+	}); err != nil {
+		return errors.Trace(err)
 	}
-	m.SetTemplateID(s.colleagueInviteTemplateID)
-	m.Headers = map[string]string{"X-Invite-Token": token}
-	return errors.Trace(s.sg(m))
+
+	return nil
 }
 
 func (s *server) sendPatientOutbound(ctx context.Context, firstName, phoneNumber, inviteURL, token string, org, inviter *directory.Entity) error {

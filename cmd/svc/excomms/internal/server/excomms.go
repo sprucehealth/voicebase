@@ -43,27 +43,30 @@ func grpcErrorf(c codes.Code, format string, a ...interface{}) error {
 var grpcErrf = grpc.Errorf
 
 type excommsService struct {
-	twilio               *twilio.Client
-	twilioAccountSID     string
-	twilioApplicationSID string
-	twilioSigningKeySID  string
-	twilioSigningKey     string
-	twilioVideoConfigSID string
-	dal                  dal.DAL
-	apiURL               string
-	directory            directory.DirectoryClient
-	threading            threading.ThreadsClient
-	sns                  snsiface.SNSAPI
-	externalMessageTopic string
-	eventTopic           string
-	clock                clock.Clock
-	emailClient          EmailClient
-	idgen                idGenerator
-	proxyNumberManager   proxynumber.Manager
-	signer               *urlutil.Signer
-	httpClient           httputil.Client
-	notificationClient   notification.Client
-	genIPCallIdentity    func() (string, error)
+	twilio                   *twilio.Client
+	twilioAccountSID         string
+	twilioApplicationSID     string
+	twilioSigningKeySID      string
+	twilioSigningKey         string
+	twilioVideoConfigSID     string
+	dal                      dal.DAL
+	apiURL                   string
+	directory                directory.DirectoryClient
+	threading                threading.ThreadsClient
+	sns                      snsiface.SNSAPI
+	externalMessageTopic     string
+	eventTopic               string
+	clock                    clock.Clock
+	emailClient              EmailClient
+	spruceEmailDomain        string
+	transactionalEmailClient EmailClient
+	transactionalEmailDomain string
+	idgen                    idGenerator
+	proxyNumberManager       proxynumber.Manager
+	signer                   *urlutil.Signer
+	httpClient               httputil.Client
+	notificationClient       notification.Client
+	genIPCallIdentity        func() (string, error)
 }
 
 func NewService(
@@ -77,7 +80,10 @@ func NewService(
 	externalMessageTopic string,
 	eventTopic string,
 	clock clock.Clock,
+	spruceEmailDomain string,
 	emailClient EmailClient,
+	transactionalEmailDomain string,
+	transactionalEmailClient EmailClient,
 	idgen idGenerator,
 	proxyNumberManager proxynumber.Manager,
 	signer *urlutil.Signer,
@@ -85,27 +91,30 @@ func NewService(
 ) excomms.ExCommsServer {
 
 	es := &excommsService{
-		apiURL:               apiURL,
-		twilio:               twilio.NewClient(twilioAccountSID, twilioAuthToken, nil),
-		twilioAccountSID:     twilioAccountSID,
-		twilioApplicationSID: twilioApplicationSID,
-		twilioSigningKeySID:  twilioSigningKeySID,
-		twilioSigningKey:     twilioSigningKey,
-		twilioVideoConfigSID: twilioVideoConfigSID,
-		dal:                  dal,
-		directory:            directory,
-		threading:            threading,
-		sns:                  sns,
-		externalMessageTopic: externalMessageTopic,
-		eventTopic:           eventTopic,
-		clock:                clock,
-		emailClient:          emailClient,
-		idgen:                idgen,
-		proxyNumberManager:   proxyNumberManager,
-		signer:               signer,
-		httpClient:           &httputil.DefaultClient{},
-		notificationClient:   notificationClient,
-		genIPCallIdentity:    generateIPCallIdentity,
+		apiURL:                   apiURL,
+		twilio:                   twilio.NewClient(twilioAccountSID, twilioAuthToken, nil),
+		twilioAccountSID:         twilioAccountSID,
+		twilioApplicationSID:     twilioApplicationSID,
+		twilioSigningKeySID:      twilioSigningKeySID,
+		twilioSigningKey:         twilioSigningKey,
+		twilioVideoConfigSID:     twilioVideoConfigSID,
+		dal:                      dal,
+		directory:                directory,
+		threading:                threading,
+		sns:                      sns,
+		externalMessageTopic:     externalMessageTopic,
+		eventTopic:               eventTopic,
+		clock:                    clock,
+		spruceEmailDomain:        spruceEmailDomain,
+		emailClient:              emailClient,
+		transactionalEmailDomain: transactionalEmailDomain,
+		transactionalEmailClient: transactionalEmailClient,
+		idgen:              idgen,
+		proxyNumberManager: proxyNumberManager,
+		signer:             signer,
+		httpClient:         &httputil.DefaultClient{},
+		notificationClient: notificationClient,
+		genIPCallIdentity:  generateIPCallIdentity,
 	}
 	return es
 }
@@ -427,6 +436,25 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 			},
 		}
 	case excomms.ChannelType_EMAIL:
+
+		// ensure that the domain of the sender matches
+		// the domain configuration
+
+		ec := e.emailClient
+		domainToEnforce := e.spruceEmailDomain
+
+		if in.GetEmail().Transactional {
+			ec = e.transactionalEmailClient
+			domainToEnforce = e.transactionalEmailDomain
+		}
+
+		domain, err := domainFromEmail(in.GetEmail().FromEmailAddress)
+		if err != nil {
+			return nil, grpcErrorf(codes.InvalidArgument, "Cannot parse domain from email %s: %s", in.GetEmail().FromEmailAddress, err)
+		} else if domain != domainToEnforce {
+			return nil, grpcErrorf(codes.InvalidArgument, "Sender (%s) does not match expected domain (%s)", in.GetEmail().FromEmailAddress, domainToEnforce)
+		}
+
 		id, err := e.idgen.NewID()
 		if err != nil {
 			return nil, grpcErrorf(codes.Internal, err.Error())
@@ -452,7 +480,7 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 		}
 		sentMessage.ID = id
 
-		if err := e.emailClient.SendMessage(sentMessage.GetEmailMsg()); err != nil {
+		if err := ec.SendMessage(sentMessage.GetEmailMsg()); err != nil {
 			return nil, grpcErrorf(codes.Internal, err.Error())
 		}
 	}

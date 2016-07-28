@@ -10,8 +10,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/aws-sdk-go/service/sns"
-	"github.com/sendgrid/sendgrid-go"
-	"github.com/sendgrid/sendgrid-go/helpers/mail"
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/stub"
 	"github.com/sprucehealth/backend/cmd/svc/invite/internal/dal"
@@ -20,7 +18,6 @@ import (
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/branch"
-	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
@@ -38,7 +35,6 @@ var (
 	flagFromEmail                 = flag.String("from_email", "", "Email address from which to send invites")
 	flagServiceNumber             = flag.String("service_phone_number", "", "TODO: This should be managed by the excomms service")
 	flagListen                    = flag.String("listen_addr", ":5001", "`host:port` for grpc server")
-	flagSendGridKey               = flag.String("sendgrid_key", "", "SendGrid API `key`")
 	flagEventsTopic               = flag.String("events_topic", "", "SNS topic `ARN` for publishing events")
 	flagKMSKeyARN                 = flag.String("kms_key_arn", "", "the `ARN` of the master key that should be used to encrypt outbound and decrypt inbound data")
 	flagWebInviteURL              = flag.String("web_invite_url", "", "`URL` for the webapp invite page")
@@ -58,9 +54,6 @@ func main() {
 
 	if *flagFromEmail == "" {
 		golog.Fatalf("from_email required")
-	}
-	if *flagSendGridKey == "" {
-		golog.Fatalf("sendgrid_key required")
 	}
 	if *flagServiceNumber == "" {
 		golog.Fatalf("service_phone_number required")
@@ -103,14 +96,6 @@ func main() {
 		exCommsClient = excomms.NewExCommsClient(conn)
 	}
 
-	sendMail := func(m *mail.SGMailV3) error {
-		req := sendgrid.GetRequest(*flagSendGridKey, "/v3/mail/send", "https://api.sendgrid.com")
-		req.Method = "POST"
-		req.Body = mail.GetRequestBody(m)
-		_, err := sendgrid.API(req)
-		return errors.Trace(err)
-	}
-
 	branchCli := branch.NewClient(*flagBranchKey)
 
 	eSNS, err := awsutil.NewEncryptedSNS(*flagKMSKeyARN, kms.New(awsSession), sns.New(awsSession))
@@ -120,7 +105,7 @@ func main() {
 	}
 
 	dl := dal.New(db, environment.GetCurrent())
-	srv := server.New(dl, nil, directoryClient, exCommsClient, eSNS, branchCli, sendMail, *flagFromEmail, *flagServiceNumber, *flagEventsTopic, *flagWebInviteURL, *flagColleagueInviteTemplateID)
+	srv := server.New(dl, nil, directoryClient, exCommsClient, eSNS, branchCli, *flagFromEmail, *flagServiceNumber, *flagEventsTopic, *flagWebInviteURL, *flagColleagueInviteTemplateID)
 	invite.InitMetrics(srv, svc.MetricsRegistry.Scope("server"))
 	s := svc.GRPCServer()
 	defer s.Stop()

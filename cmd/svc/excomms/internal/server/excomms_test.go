@@ -604,13 +604,14 @@ func TestSendMessage_Email(t *testing.T) {
 	}))
 
 	es := &excommsService{
-		twilio:      twilio.NewClient("", "", nil),
-		dal:         md,
-		emailClient: me,
-		idgen:       newMockIDGen(),
-		clock:       clk,
-		signer:      signer,
-		httpClient:  mHTTPClient,
+		twilio:            twilio.NewClient("", "", nil),
+		dal:               md,
+		emailClient:       me,
+		idgen:             newMockIDGen(),
+		clock:             clk,
+		signer:            signer,
+		httpClient:        mHTTPClient,
+		spruceEmailDomain: "schmoe",
 	}
 
 	_, err = es.SendMessage(context.Background(), &excomms.SendMessageRequest{

@@ -123,6 +123,7 @@ func TestVerifyEmailForAccountCreationMutation_Invite(t *testing.T) {
 				FromEmailAddress: "support@sprucehealth.com",
 				Body:             "During sign up, please enter this code when prompted: 123456\nIf you have any troubles, we're here to help - simply reply to this email!\n\nThanks,\nThe Team at Spruce",
 				ToEmailAddress:   "someone@example.com",
+				Transactional:    true,
 				TemplateSubstitutions: []*excomms.EmailMessage_Substitution{
 					{Key: "{verification_code}", Value: "123456"},
 				},

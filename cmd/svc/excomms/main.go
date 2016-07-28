@@ -8,43 +8,46 @@ import (
 )
 
 var config struct {
-	excommsServicePort      int
-	excommsAPIURL           string
-	directoryServiceURL     string
-	threadingServiceAddress string
-	settingsServiceURL      string
-	twilioAuthToken         string
-	twilioAccountSID        string
-	twilioApplicationSID    string
-	twilioSigningKeySID     string
-	twilioSigningKey        string
-	twilioVideoConfigSID    string
-	sendgridAPIKey          string
-	attachmentBucket        string
-	attachmentPrefix        string
-	externalMessageTopic    string
-	eventTopic              string
-	incomingRawMessageQueue string
-	dbHost                  string
-	dbPassword              string
-	dbName                  string
-	dbUserName              string
-	dbPort                  int
-	dbCACert                string
-	dbTLS                   string
-	httpAddr                string
-	proxyProtocol           bool
-	excommsServiceURL       string
-	incomingRawMessageTopic string
-	kmsKeyARN               string
-	resourceCleanerQueueURL string
-	resourceCleanerTopic    string
-	segmentIOKey            string
-	apiDomain               string
-	mediaAPIDomain          string
-	sigKeys                 string
-	behindProxy             bool
-	notificationSQSURL      string
+	excommsServicePort          int
+	excommsAPIURL               string
+	directoryServiceURL         string
+	threadingServiceAddress     string
+	settingsServiceURL          string
+	twilioAuthToken             string
+	twilioAccountSID            string
+	twilioApplicationSID        string
+	twilioSigningKeySID         string
+	twilioSigningKey            string
+	twilioVideoConfigSID        string
+	sendgridAPIKey              string
+	spruceEmailDomain           string
+	transactionalSendgridAPIKey string
+	transactionalEmailDomain    string
+	attachmentBucket            string
+	attachmentPrefix            string
+	externalMessageTopic        string
+	eventTopic                  string
+	incomingRawMessageQueue     string
+	dbHost                      string
+	dbPassword                  string
+	dbName                      string
+	dbUserName                  string
+	dbPort                      int
+	dbCACert                    string
+	dbTLS                       string
+	httpAddr                    string
+	proxyProtocol               bool
+	excommsServiceURL           string
+	incomingRawMessageTopic     string
+	kmsKeyARN                   string
+	resourceCleanerQueueURL     string
+	resourceCleanerTopic        string
+	segmentIOKey                string
+	apiDomain                   string
+	mediaAPIDomain              string
+	sigKeys                     string
+	behindProxy                 bool
+	notificationSQSURL          string
 }
 
 func init() {
@@ -59,7 +62,10 @@ func init() {
 	flag.StringVar(&config.directoryServiceURL, "directory_endpoint", "", "url to connect with directory service")
 	flag.StringVar(&config.threadingServiceAddress, "threading_endpoint", "", "address to connect with threading service")
 	flag.StringVar(&config.settingsServiceURL, "settings_endpoint", "", "url to connect with settings service")
+	flag.StringVar(&config.spruceEmailDomain, "spruce_email_domain", "", "domain from which spruce emails will originate")
 	flag.StringVar(&config.sendgridAPIKey, "sendgrid_api_key", "", "sendgrid api key")
+	flag.StringVar(&config.transactionalSendgridAPIKey, "transactional_sendgrid_api_key", "", "sendgrid api key for transactional emails (password reset, email verification, invites, etc.)")
+	flag.StringVar(&config.transactionalEmailDomain, "transactional_email_domain", "", "domain from which transactional emails will originate")
 	flag.StringVar(&config.externalMessageTopic, "sns_external_message_topic", "", "sns topic on which to post external message events")
 	flag.StringVar(&config.eventTopic, "sns_event_topic", "", "SNS topic on which to publish events")
 	flag.StringVar(&config.dbHost, "db_host", "", "database host")

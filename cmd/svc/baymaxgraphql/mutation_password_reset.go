@@ -222,6 +222,7 @@ func createAndSendPasswordResetEmail(ctx context.Context, ram raccess.ResourceAc
 				Subject:          "Password Reset",
 				FromName:         "Spruce Support",
 				FromEmailAddress: "support@sprucehealth.com",
+				Transactional:    true,
 				Body:             body,
 				ToEmailAddress:   email,
 				TemplateID:       templateID,
