@@ -148,7 +148,7 @@ func makeVerifyEmailResolve(forAccountCreation bool) func(p graphql.ResolveParam
 			}
 		}
 
-		token, err := createAndSendVerificationEmail(ctx, ram, svc.emailTemplateIDs.emailVerification, email)
+		token, err := createAndSendVerificationEmail(ctx, ram, svc.emailTemplateIDs.emailVerification, email, svc.transactionalEmailSender)
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}
@@ -163,7 +163,7 @@ func makeVerifyEmailResolve(forAccountCreation bool) func(p graphql.ResolveParam
 }
 
 // createAndSendVerificationEmail creates and sends a verification code email
-func createAndSendVerificationEmail(ctx context.Context, ram raccess.ResourceAccessor, templateID, email string) (string, error) {
+func createAndSendVerificationEmail(ctx context.Context, ram raccess.ResourceAccessor, templateID, email, transactionalEmailSender string) (string, error) {
 	resp, err := ram.CreateVerificationCode(ctx, auth.VerificationCodeType_EMAIL, email)
 	if err != nil {
 		return "", errors.Trace(err)
@@ -177,7 +177,7 @@ func createAndSendVerificationEmail(ctx context.Context, ram raccess.ResourceAcc
 			Email: &excomms.EmailMessage{
 				Subject:          "Your Email Verification Code",
 				FromName:         "Spruce Support",
-				FromEmailAddress: "support@sprucehealth.com",
+				FromEmailAddress: transactionalEmailSender,
 				Transactional:    true,
 				Body:             body,
 				ToEmailAddress:   email,

@@ -20,6 +20,7 @@ import (
 func TestVerifyEmailForAccountCreationMutation_Invite(t *testing.T) {
 	g := newGQL(t)
 	defer g.finish()
+	g.svc.transactionalEmailSender = "support@example.com"
 
 	ctx := context.Background()
 	var acc *auth.Account
@@ -120,7 +121,7 @@ func TestVerifyEmailForAccountCreationMutation_Invite(t *testing.T) {
 			Email: &excomms.EmailMessage{
 				Subject:          "Your Email Verification Code",
 				FromName:         "Spruce Support",
-				FromEmailAddress: "support@sprucehealth.com",
+				FromEmailAddress: "support@example.com",
 				Body:             "During sign up, please enter this code when prompted: 123456\nIf you have any troubles, we're here to help - simply reply to this email!\n\nThanks,\nThe Team at Spruce",
 				ToEmailAddress:   "someone@example.com",
 				Transactional:    true,

@@ -138,6 +138,7 @@ func NewGraphQL(
 	supportMessageTopicARN string,
 	emailTemplateIDs emailTemplateIDs,
 	metricsRegistry metrics.Registry,
+	transactionalEmailSender string,
 ) http.Handler {
 	statRequests := metrics.NewCounter()
 	statResponseErrors := metrics.NewCounter()
@@ -170,9 +171,10 @@ func NewGraphQL(
 			spruceOrgID:     spruceOrgID,
 			staticURLPrefix: staticURLPrefix,
 			sns:             sns,
-			supportMessageTopicARN: supportMessageTopicARN,
-			layoutStore:            layoutStore,
-			emailTemplateIDs:       emailTemplateIDs,
+			supportMessageTopicARN:   supportMessageTopicARN,
+			layoutStore:              layoutStore,
+			emailTemplateIDs:         emailTemplateIDs,
+			transactionalEmailSender: transactionalEmailSender,
 		},
 		statRequests:            statRequests,
 		statResponseErrors:      statResponseErrors,

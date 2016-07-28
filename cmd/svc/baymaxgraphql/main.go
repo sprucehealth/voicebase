@@ -38,22 +38,23 @@ import (
 )
 
 var (
-	flagListenAddr          = flag.String("listen_addr", "127.0.0.1:8080", "host:port to listen on")
-	flagLetsEncrypt         = flag.Bool("letsencrypt", false, "Enable Let's Encrypt certificates")
-	flagCertCacheURL        = flag.String("cert_cache_url", "", "URL path where to store cert cache (e.g. s3://bucket/path/)")
-	flagProxyProtocol       = flag.Bool("proxy_protocol", false, "If behind a TCP proxy and proxy protocol wrapping is enabled")
-	flagResourcePath        = flag.String("resource_path", "", "Path to resources (defaults to use GOPATH)")
-	flagAPIDomain           = flag.String("api_domain", "", "API `domain`")
-	flagMediaAPIDomain      = flag.String("media_api_domain", "", "Media API `domain`")
-	flagInviteAPIDomain     = flag.String("invite_api_domain", "", "Invite API `domain`")
-	flagWebDomain           = flag.String("web_domain", "", "Web `domain`")
-	flagStorageBucket       = flag.String("storage_bucket", "", "storage bucket for media")
-	flagEmailDomain         = flag.String("email_domain", "", "domain to use for email address provisioning")
-	flagServiceNumber       = flag.String("service_phone_number", "", "TODO: This should be managed by the excomms service")
-	flagSpruceOrgID         = flag.String("spruce_org_id", "", "`ID` for the Spruce support organization")
-	flagStaticURLPrefix     = flag.String("static_url_prefix", "", "URL prefix of static assets")
-	flagBehindProxy         = flag.Bool("behind_proxy", false, "Flag to indicate when the service is behind a proxy")
-	flagLayoutStoreS3Prefix = flag.String("s3_prefix_saml", "", "S3 Prefix for layouts")
+	flagListenAddr               = flag.String("listen_addr", "127.0.0.1:8080", "host:port to listen on")
+	flagLetsEncrypt              = flag.Bool("letsencrypt", false, "Enable Let's Encrypt certificates")
+	flagCertCacheURL             = flag.String("cert_cache_url", "", "URL path where to store cert cache (e.g. s3://bucket/path/)")
+	flagProxyProtocol            = flag.Bool("proxy_protocol", false, "If behind a TCP proxy and proxy protocol wrapping is enabled")
+	flagResourcePath             = flag.String("resource_path", "", "Path to resources (defaults to use GOPATH)")
+	flagAPIDomain                = flag.String("api_domain", "", "API `domain`")
+	flagMediaAPIDomain           = flag.String("media_api_domain", "", "Media API `domain`")
+	flagInviteAPIDomain          = flag.String("invite_api_domain", "", "Invite API `domain`")
+	flagWebDomain                = flag.String("web_domain", "", "Web `domain`")
+	flagStorageBucket            = flag.String("storage_bucket", "", "storage bucket for media")
+	flagEmailDomain              = flag.String("email_domain", "", "domain to use for email address provisioning")
+	flagServiceNumber            = flag.String("service_phone_number", "", "TODO: This should be managed by the excomms service")
+	flagSpruceOrgID              = flag.String("spruce_org_id", "", "`ID` for the Spruce support organization")
+	flagStaticURLPrefix          = flag.String("static_url_prefix", "", "URL prefix of static assets")
+	flagBehindProxy              = flag.Bool("behind_proxy", false, "Flag to indicate when the service is behind a proxy")
+	flagLayoutStoreS3Prefix      = flag.String("s3_prefix_saml", "", "S3 Prefix for layouts")
+	flagTransactionalEmailSender = flag.String("transactional_email_sender", "", "Email address for the transactional email sender")
 
 	// Email tempaltes
 	flagPasswordResetTemplateID     = flag.String("password_reset_template_id", "", "ID of password reset template")
@@ -265,6 +266,9 @@ func main() {
 	if *flagInviteAPIDomain == "" {
 		golog.Fatalf("Invite API Domain required")
 	}
+	if *flagTransactionalEmailSender == "" {
+		golog.Fatalf("Transactioanl email sender required")
+	}
 
 	r := mux.NewRouter()
 	gqlHandler := NewGraphQL(
@@ -292,7 +296,9 @@ func main() {
 			passwordReset:     *flagPasswordResetTemplateID,
 			emailVerification: *flagEmailVerificationTemplateID,
 		},
-		svc.MetricsRegistry.Scope("handler"))
+		svc.MetricsRegistry.Scope("handler"),
+		*flagTransactionalEmailSender,
+	)
 	r.Handle("/graphql", cors.New(cors.Options{
 		AllowedOrigins:   corsOrigins,
 		AllowedMethods:   []string{httputil.Get, httputil.Options, httputil.Post},
