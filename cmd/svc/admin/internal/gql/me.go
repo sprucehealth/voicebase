@@ -1,4 +1,4 @@
-package query
+package gql
 
 import (
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/gql/models"
@@ -22,14 +22,16 @@ func newMeType() *graphql.Object {
 			Name: "Me",
 			Fields: graphql.Fields{
 				"username": &graphql.Field{
-					Type: graphql.NewNonNull(graphql.String),
-					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-						return auth.UID(p.Context), nil
-					},
+					Type:    graphql.NewNonNull(graphql.String),
+					Resolve: meResolve,
 				},
 				// For single query purposes allow entities to be lookedup inside a `me` call
 				"entity": newEntityField(),
 			},
 		},
 	)
+}
+
+func meResolve(p graphql.ResolveParams) (interface{}, error) {
+	return auth.UID(p.Context), nil
 }

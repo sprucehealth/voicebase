@@ -167,16 +167,16 @@ func (s *server) GetNodeValues(ctx context.Context, in *settings.GetNodeValuesRe
 	// create a value map to quickly check if data is present
 	valueMap := make(map[string]*models.Value, len(values))
 	for _, v := range values {
-		valueMap[v.Key.String()] = v
+		valueMap[v.Key.Key+v.Key.Subkey] = v
 	}
 
 	// TODO: Filter these settings by possible owner types (ORGANIZATION,INTERNAL,etc)
 	// Build out all the possible settings for the node with the total config set
 	transformedValues := make([]*settings.Value, 0, len(configs))
 	for _, c := range configs {
-		// TODO: I don't think this is quite right for keys than can have multiple subkeys
 		if v, ok := valueMap[c.Key]; ok {
 			transformedValues = append(transformedValues, transformModelToValue(v))
+			delete(valueMap, c.Key)
 			continue
 		}
 
@@ -223,6 +223,10 @@ func (s *server) GetNodeValues(ctx context.Context, in *settings.GetNodeValuesRe
 		}
 
 		transformedValues = append(transformedValues, transformModelToValue(val))
+	}
+
+	for _, v := range valueMap {
+		transformedValues = append(transformedValues, transformModelToValue(v))
 	}
 
 	return &settings.GetNodeValuesResponse{

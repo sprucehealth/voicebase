@@ -215,7 +215,6 @@ func (d *dal) SetValues(nodeID string, values []*models.Value) error {
 		if err != nil {
 			return errors.Trace(err)
 		}
-
 		req[i] = &dynamodb.WriteRequest{
 			PutRequest: &dynamodb.PutRequest{
 				Item: map[string]*dynamodb.AttributeValue{

@@ -1,9 +1,9 @@
-package query
+package gql
 
 import "github.com/sprucehealth/graphql"
 
-// NewRoot returns the root query object
-func NewRoot() *graphql.Object {
+// NewQueryRoot returns the root query object
+func NewQueryRoot() *graphql.Object {
 	return graphql.NewObject(
 		graphql.ObjectConfig{
 			Name: "Query",

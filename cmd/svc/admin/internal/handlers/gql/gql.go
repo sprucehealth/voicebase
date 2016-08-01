@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/sprucehealth/backend/cmd/svc/admin/internal/gql"
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/gql/client"
-	"github.com/sprucehealth/backend/cmd/svc/admin/internal/gql/query"
 	"github.com/sprucehealth/backend/libs/auth"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -41,7 +41,8 @@ func New(
 	signer *sig.Signer,
 	behindProxy bool) (http.Handler, graphql.Schema) {
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
-		Query: query.NewRoot(),
+		Query:    gql.NewQueryRoot(),
+		Mutation: gql.NewMutationRoot(),
 	})
 	if err != nil {
 		golog.Fatalf("Failed to initialized gqlHandler: %s", err.Error())

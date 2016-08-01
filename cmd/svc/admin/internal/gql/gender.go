@@ -1,4 +1,4 @@
-package query
+package gql
 
 import "github.com/sprucehealth/graphql"
 

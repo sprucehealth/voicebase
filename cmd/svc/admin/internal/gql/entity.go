@@ -1,15 +1,13 @@
-package query
+package gql
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/gql/client"
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/gql/models"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
-	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/graphql"
 )
 
@@ -39,18 +37,20 @@ func parseEntityArguments(args map[string]interface{}) *entityArguments {
 // newEntityField returns a graphql field for Querying an Entity object
 func newEntityField() *graphql.Field {
 	return &graphql.Field{
-		Type: newEntityType(),
-		Args: entityArgumentsConfig,
-		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			ctx := p.Context
-			args := parseEntityArguments(p.Args)
-			golog.ContextLogger(ctx).Debugf("Resolving Entity with args %+v", args)
-			if args.ID == "" {
-				return nil, nil
-			}
-			return getEntity(ctx, client.Directory(p), args.ID)
-		},
+		Type:    newEntityType(),
+		Args:    entityArgumentsConfig,
+		Resolve: entityResolve,
 	}
+}
+
+func entityResolve(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+	args := parseEntityArguments(p.Args)
+	golog.ContextLogger(ctx).Debugf("Resolving Entity with args %+v", args)
+	if args.ID == "" {
+		return nil, nil
+	}
+	return getEntity(ctx, client.Directory(p), args.ID)
 }
 
 // special case the way we handle entity types since they are recursive
@@ -91,18 +91,8 @@ func newEntityType() *graphql.Object {
 func resolveEntitySettings(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	entity := p.Source.(*models.Entity)
-	golog.ContextLogger(ctx).Debugf("Looking up entity settings for ", entity.ID)
+	golog.ContextLogger(ctx).Debugf("Looking up entity settings for %s", entity.ID)
 	return getEntitySettings(ctx, client.Settings(p), entity.ID)
-}
-
-func getEntitySettings(ctx context.Context, settingsClient settings.SettingsClient, id string) ([]*models.Setting, error) {
-	settings, err := settingsClient.GetNodeValues(ctx, &settings.GetNodeValuesRequest{
-		NodeID: id,
-	})
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
-	return models.TransformSettingsToModel(settings.Values), nil
 }
 
 func getEntity(ctx context.Context, dirCli directory.DirectoryClient, id string) (*models.Entity, error) {
@@ -123,7 +113,7 @@ func getEntity(ctx context.Context, dirCli directory.DirectoryClient, id string)
 		golog.ContextLogger(ctx).Warningf("Error while fetching entity %s", err)
 		return nil, errors.Trace(err)
 	} else if len(resp.Entities) != 1 {
-		return nil, errors.Trace(fmt.Errorf("Expected 1 result but got %v", resp.Entities))
+		return nil, errors.Errorf("Expected 1 result but got %v", resp.Entities)
 	}
 	return models.TransformEntityToModel(resp.Entities[0]), nil
 }
