@@ -132,7 +132,7 @@ func processIncomingCallStatus(ctx context.Context, params *rawmsg.TwilioParams,
 
 				// check if send all calls to voicemail is turned on for organization in which case
 				// don't log missed call
-				sendAllCallsToVoicemailValue, err := settings.GetBooleanValue(ctx, eh.settings, &settings.GetValuesRequest{
+				sendAllCallsToVoicemailValue, err := settings.GetBooleanValue(context.Background(), eh.settings, &settings.GetValuesRequest{
 					NodeID: incomingCall.OrganizationID,
 					Keys: []*settings.ConfigKey{
 						{
