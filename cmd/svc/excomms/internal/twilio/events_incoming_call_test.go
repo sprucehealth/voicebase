@@ -1224,9 +1224,11 @@ func TestIncomingCallStatus_CallCompleted(t *testing.T) {
 func TestIncomingCallStatus_MissedCall(t *testing.T) {
 	conc.Testing = true
 	ms := &mockSNS_Twilio{}
+	practicePhoneNumber := "+17348465522"
+	orgID := "o1"
 	params := &rawmsg.TwilioParams{
 		From:       "+12068773590",
-		To:         "+17348465522",
+		To:         practicePhoneNumber,
 		CallStatus: rawmsg.TwilioParams_COMPLETED,
 		CallSID:    "12345",
 	}
@@ -1241,13 +1243,13 @@ func TestIncomingCallStatus_MissedCall(t *testing.T) {
 	}).WithReturns(int64(1), nil))
 
 	md.Expect(mock.NewExpectation(md.LookupIncomingCall, params.CallSID).WithReturns(&models.IncomingCall{
-		OrganizationID: "o1",
+		OrganizationID: orgID,
 		Source:         phone.Number(params.From),
 		Destination:    phone.Number(params.To),
 	}, nil))
 
 	md.Expect(mock.NewExpectation(md.LookupIncomingCall, params.CallSID).WithReturns(&models.IncomingCall{
-		OrganizationID: "o1",
+		OrganizationID: orgID,
 		Source:         phone.Number(params.From),
 		Destination:    phone.Number(params.To),
 	}, nil))
@@ -1258,7 +1260,7 @@ func TestIncomingCallStatus_MissedCall(t *testing.T) {
 	mdir.Expect(mock.NewExpectation(mdir.LookupEntities, &directory.LookupEntitiesRequest{
 		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
 		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-			EntityID: "o1",
+			EntityID: orgID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
 			Depth: 1,
@@ -1271,7 +1273,7 @@ func TestIncomingCallStatus_MissedCall(t *testing.T) {
 	}).WithReturns(&directory.LookupEntitiesResponse{
 		Entities: []*directory.Entity{
 			{
-				ID:   "o1",
+				ID:   orgID,
 				Type: directory.EntityType_ORGANIZATION,
 				Members: []*directory.Entity{
 					{
@@ -1284,11 +1286,35 @@ func TestIncomingCallStatus_MissedCall(t *testing.T) {
 		},
 	}, nil))
 
+	msettings := settingsmock.New(t)
+	defer msettings.Finish()
+
+	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
+		Keys: []*settings.ConfigKey{
+			{
+				Key:    excommsSettings.ConfigKeySendCallsToVoicemail,
+				Subkey: practicePhoneNumber,
+			},
+		},
+		NodeID: orgID,
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Type: settings.ConfigType_BOOLEAN,
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: false,
+					},
+				},
+			},
+		},
+	}, nil))
+
 	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
 	test.OK(t, err)
 	signer := urlutil.NewSigner("apiDomain", sig, mclock)
 
-	es := NewEventHandler(mdir, nil, md, ms, mclock, nil, "", "", "", "", signer)
+	es := NewEventHandler(mdir, msettings, md, ms, mclock, nil, "", "", "", "", signer)
 
 	twiml, err := processIncomingCallStatus(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
@@ -1322,12 +1348,14 @@ func TestIncomingCallStatus_MissedCall(t *testing.T) {
 	}, pem)
 }
 
-func TestIncomingCallStatus_MissedCall_ShortCall(t *testing.T) {
+func TestIncomingCallStatus_MissedCall_SendAllCallsToVoicemail(t *testing.T) {
 	conc.Testing = true
 	ms := &mockSNS_Twilio{}
+	practicePhoneNumber := "+17348465522"
+	orgID := "o1"
 	params := &rawmsg.TwilioParams{
 		From:       "+12068773590",
-		To:         "+17348465522",
+		To:         practicePhoneNumber,
 		CallStatus: rawmsg.TwilioParams_COMPLETED,
 		CallSID:    "12345",
 	}
@@ -1342,7 +1370,115 @@ func TestIncomingCallStatus_MissedCall_ShortCall(t *testing.T) {
 	}).WithReturns(int64(1), nil))
 
 	md.Expect(mock.NewExpectation(md.LookupIncomingCall, params.CallSID).WithReturns(&models.IncomingCall{
-		OrganizationID: "o1",
+		OrganizationID: orgID,
+		Source:         phone.Number(params.From),
+		Destination:    phone.Number(params.To),
+	}, nil))
+
+	md.Expect(mock.NewExpectation(md.LookupIncomingCall, params.CallSID).WithReturns(&models.IncomingCall{
+		OrganizationID: orgID,
+		Source:         phone.Number(params.From),
+		Destination:    phone.Number(params.To),
+	}, nil))
+
+	mdir := directorymock.New(t)
+	defer mdir.Finish()
+
+	mdir.Expect(mock.NewExpectation(mdir.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: orgID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth: 1,
+			EntityInformation: []directory.EntityInformation{
+				directory.EntityInformation_EXTERNAL_IDS,
+				directory.EntityInformation_MEMBERS,
+			},
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{
+				ID:   orgID,
+				Type: directory.EntityType_ORGANIZATION,
+				Members: []*directory.Entity{
+					{
+						ID:   "p1",
+						Type: directory.EntityType_INTERNAL,
+					},
+				},
+				ExternalIDs: []string{"account_1"},
+			},
+		},
+	}, nil))
+
+	msettings := settingsmock.New(t)
+	defer msettings.Finish()
+
+	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
+		Keys: []*settings.ConfigKey{
+			{
+				Key:    excommsSettings.ConfigKeySendCallsToVoicemail,
+				Subkey: practicePhoneNumber,
+			},
+		},
+		NodeID: orgID,
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Type: settings.ConfigType_BOOLEAN,
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: true,
+					},
+				},
+			},
+		},
+	}, nil))
+
+	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
+	test.OK(t, err)
+	signer := urlutil.NewSigner("apiDomain", sig, mclock)
+
+	es := NewEventHandler(mdir, msettings, md, ms, mclock, nil, "", "", "", "", signer)
+
+	twiml, err := processIncomingCallStatus(context.Background(), params, es.(*eventsHandler))
+	if err != nil {
+		t.Fatal(err)
+	} else if twiml != "" {
+		t.Fatalf("Expected %s but got %s", "", twiml)
+	}
+
+	// ensure that item was published
+	if len(ms.published) != 0 {
+		t.Fatalf("Expected %d got %d", 0, len(ms.published))
+	}
+}
+
+func TestIncomingCallStatus_MissedCall_ShortCall(t *testing.T) {
+	conc.Testing = true
+	ms := &mockSNS_Twilio{}
+	practicePhoneNumber := "+17348465522"
+	orgID := "o1"
+	params := &rawmsg.TwilioParams{
+		From:       "+12068773590",
+		To:         practicePhoneNumber,
+		CallStatus: rawmsg.TwilioParams_COMPLETED,
+		CallSID:    "12345",
+	}
+
+	mclock := clock.NewManaged(time.Now())
+	md := dalmock.New(t)
+	defer md.Finish()
+
+	md.Expect(mock.NewExpectation(md.UpdateIncomingCall, params.CallSID, &dal.IncomingCallUpdate{
+		Completed:     ptr.Bool(true),
+		CompletedTime: ptr.Time(mclock.Now()),
+	}).WithReturns(int64(1), nil))
+
+	md.Expect(mock.NewExpectation(md.LookupIncomingCall, params.CallSID).WithReturns(&models.IncomingCall{
+		OrganizationID: orgID,
 		Source:         phone.Number(params.From),
 		Destination:    phone.Number(params.To),
 		Answered:       true,
@@ -1350,7 +1486,7 @@ func TestIncomingCallStatus_MissedCall_ShortCall(t *testing.T) {
 	}, nil))
 
 	md.Expect(mock.NewExpectation(md.LookupIncomingCall, params.CallSID).WithReturns(&models.IncomingCall{
-		OrganizationID: "o1",
+		OrganizationID: orgID,
 		Source:         phone.Number(params.From),
 		Destination:    phone.Number(params.To),
 	}, nil))
@@ -1361,7 +1497,7 @@ func TestIncomingCallStatus_MissedCall_ShortCall(t *testing.T) {
 	mdir.Expect(mock.NewExpectation(mdir.LookupEntities, &directory.LookupEntitiesRequest{
 		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
 		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-			EntityID: "o1",
+			EntityID: orgID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
 			Depth: 1,
@@ -1374,7 +1510,7 @@ func TestIncomingCallStatus_MissedCall_ShortCall(t *testing.T) {
 	}).WithReturns(&directory.LookupEntitiesResponse{
 		Entities: []*directory.Entity{
 			{
-				ID:   "o1",
+				ID:   orgID,
 				Type: directory.EntityType_ORGANIZATION,
 				Members: []*directory.Entity{
 					{
@@ -1383,6 +1519,30 @@ func TestIncomingCallStatus_MissedCall_ShortCall(t *testing.T) {
 					},
 				},
 				ExternalIDs: []string{"account_1"},
+			},
+		},
+	}, nil))
+
+	msettings := settingsmock.New(t)
+	defer msettings.Finish()
+
+	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
+		Keys: []*settings.ConfigKey{
+			{
+				Key:    excommsSettings.ConfigKeySendCallsToVoicemail,
+				Subkey: practicePhoneNumber,
+			},
+		},
+		NodeID: orgID,
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Type: settings.ConfigType_BOOLEAN,
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: false,
+					},
+				},
 			},
 		},
 	}, nil))
@@ -1391,104 +1551,7 @@ func TestIncomingCallStatus_MissedCall_ShortCall(t *testing.T) {
 	test.OK(t, err)
 	signer := urlutil.NewSigner("apiDomain", sig, mclock)
 
-	es := NewEventHandler(mdir, nil, md, ms, mclock, nil, "", "", "", "", signer)
-
-	twiml, err := processIncomingCallStatus(context.Background(), params, es.(*eventsHandler))
-	if err != nil {
-		t.Fatal(err)
-	} else if twiml != "" {
-		t.Fatalf("Expected %s but got %s", "", twiml)
-	}
-
-	// ensure that item was published
-	if len(ms.published) != 1 {
-		t.Fatalf("Expected %d got %d", 1, len(ms.published))
-	}
-
-	pem, err := parsePublishedExternalMessage(*ms.published[0].Message)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	test.Equals(t, &excomms.PublishedExternalMessage{
-		FromChannelID: params.From,
-		ToChannelID:   params.To,
-		Timestamp:     uint64(mclock.Now().Unix()),
-		Direction:     excomms.PublishedExternalMessage_INBOUND,
-		Type:          excomms.PublishedExternalMessage_INCOMING_CALL_EVENT,
-		Item: &excomms.PublishedExternalMessage_Incoming{
-			Incoming: &excomms.IncomingCallEventItem{
-				Type:              excomms.IncomingCallEventItem_UNANSWERED,
-				DurationInSeconds: params.CallDuration,
-			},
-		},
-	}, pem)
-}
-
-func TestIncomingCallStatus_SentToVoicemail(t *testing.T) {
-	conc.Testing = true
-	ms := &mockSNS_Twilio{}
-	params := &rawmsg.TwilioParams{
-		From:       "+12068773590",
-		To:         "+17348465522",
-		CallStatus: rawmsg.TwilioParams_COMPLETED,
-		CallSID:    "12345",
-	}
-
-	mclock := clock.NewManaged(time.Now())
-	md := dalmock.New(t)
-	defer md.Finish()
-
-	md.Expect(mock.NewExpectation(md.UpdateIncomingCall, params.CallSID, &dal.IncomingCallUpdate{
-		Completed:     ptr.Bool(true),
-		CompletedTime: ptr.Time(mclock.Now()),
-	}).WithReturns(int64(1), nil))
-
-	md.Expect(mock.NewExpectation(md.LookupIncomingCall, params.CallSID).WithReturns(&models.IncomingCall{
-		OrganizationID: "o1",
-		Source:         phone.Number(params.From),
-		Destination:    phone.Number(params.To),
-	}, nil))
-
-	md.Expect(mock.NewExpectation(md.LookupIncomingCall, params.CallSID).WithReturns(&models.IncomingCall{
-		OrganizationID: "o1",
-		Source:         phone.Number(params.From),
-		Destination:    phone.Number(params.To),
-	}, nil))
-
-	mdir := directorymock.New(t)
-	defer mdir.Finish()
-
-	mdir.Expect(mock.NewExpectation(mdir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-			EntityID: "o1",
-		},
-		RequestedInformation: &directory.RequestedInformation{
-			Depth: 1,
-			EntityInformation: []directory.EntityInformation{
-				directory.EntityInformation_EXTERNAL_IDS,
-				directory.EntityInformation_MEMBERS,
-			},
-		},
-		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
-	}).WithReturns(&directory.LookupEntitiesResponse{
-		Entities: []*directory.Entity{
-			{
-				ID:   "o1",
-				Type: directory.EntityType_ORGANIZATION,
-				Members: []*directory.Entity{
-					{
-						ID:   "p1",
-						Type: directory.EntityType_INTERNAL,
-					},
-				},
-				ExternalIDs: []string{"account_1"},
-			},
-		},
-	}, nil))
-
-	es := NewEventHandler(mdir, nil, md, ms, mclock, nil, "", "", "", "", nil)
+	es := NewEventHandler(mdir, msettings, md, ms, mclock, nil, "", "", "", "", signer)
 
 	twiml, err := processIncomingCallStatus(context.Background(), params, es.(*eventsHandler))
 	if err != nil {

@@ -129,6 +129,26 @@ func processIncomingCallStatus(ctx context.Context, params *rawmsg.TwilioParams,
 			trackInboundCall(eh, params.CallSID, "answered")
 		} else {
 			conc.Go(func() {
+
+				// check if send all calls to voicemail is turned on for organization in which case
+				// don't log missed call
+				sendAllCallsToVoicemailValue, err := settings.GetBooleanValue(ctx, eh.settings, &settings.GetValuesRequest{
+					NodeID: incomingCall.OrganizationID,
+					Keys: []*settings.ConfigKey{
+						{
+							Key:    excommsSettings.ConfigKeySendCallsToVoicemail,
+							Subkey: params.To,
+						},
+					},
+				})
+				if err != nil {
+					golog.Errorf("Unable to get %s value for %s: %s", excommsSettings.ConfigKeySendCallsToVoicemail, incomingCall.OrganizationID, err)
+					return
+				} else if sendAllCallsToVoicemailValue.Value {
+					// dont track missed calls
+					return
+				}
+
 				if err := sns.Publish(eh.sns, eh.externalMessageTopic, &excomms.PublishedExternalMessage{
 					FromChannelID: params.From,
 					ToChannelID:   params.To,
