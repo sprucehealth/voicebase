@@ -259,6 +259,9 @@ func main() {
 	}
 
 	corsOrigins := []string{"https://" + *flagWebDomain}
+	if environment.IsProd() {
+		corsOrigins = append(corsOrigins, "https://rc."+*flagWebDomain)
+	}
 
 	if *flagMediaAPIDomain == "" {
 		golog.Fatalf("Media API Domain required")

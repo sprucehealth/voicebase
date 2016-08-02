@@ -3,6 +3,7 @@ package handlers
 import (
 	"github.com/rs/cors"
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/service"
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/mux"
@@ -26,6 +27,9 @@ func InitRoutes(
 	maxMemory int64,
 ) {
 	corsOrigins := []string{"https://" + webDomain}
+	if environment.IsProd() {
+		corsOrigins = append(corsOrigins, "https://rc."+webDomain)
+	}
 	mHandler := &mediaHandler{
 		svc:            svc,
 		mediaAPIDomain: mediaAPIDomain,
