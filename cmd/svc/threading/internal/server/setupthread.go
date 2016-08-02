@@ -44,7 +44,7 @@ func (s *threadsServer) CreateOnboardingThread(ctx context.Context, in *threadin
 	})
 	msgBML := bml.BML{
 		"Welcome! You can access our ",
-		&bml.Anchor{HREF: "http://bit.ly/22VjkkX", Text: "setup guide here"},
+		&bml.Anchor{HREF: "https://help.sprucehealth.com", Text: "setup guide here"},
 		", at any time. In the meantime, how would you like to use Spruce? (You can tap on multiple options)\n\n",
 
 		&bml.Anchor{HREF: phoneSetupURL, Text: "Second phone line"},
