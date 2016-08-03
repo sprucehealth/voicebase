@@ -450,6 +450,7 @@ func (e *excommsService) postIPCallMessage(ctx context.Context, call *models.IPC
 		FromEntityID: caller.EntityID,
 		Title:        titleText,
 		Summary:      summary,
+		DontNotify:   true,
 	})
 	return errors.Trace(err)
 }

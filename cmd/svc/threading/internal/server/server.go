@@ -826,14 +826,19 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 		return nil, internalError(err)
 	}
 	s.publishMessage(ctx, thread.OrganizationID, thread.PrimaryEntityID, threadID, it, in.UUID)
-	s.notifyMembersOfPublishMessage(ctx, thread.OrganizationID, models.EmptySavedQueryID(), thread, item, in.FromEntityID)
+	if !in.DontNotify {
+		s.notifyMembersOfPublishMessage(ctx, thread.OrganizationID, models.EmptySavedQueryID(), thread, item, in.FromEntityID)
+	}
+
 	if linkedItem != nil {
 		it2, err := transformThreadItemToResponse(linkedItem, linkedThread.OrganizationID)
 		if err != nil {
 			return nil, internalError(err)
 		}
 		s.publishMessage(ctx, linkedThread.OrganizationID, linkedThread.PrimaryEntityID, linkedThread.ID, it2, "")
-		s.notifyMembersOfPublishMessage(ctx, linkedThread.OrganizationID, models.EmptySavedQueryID(), linkedThread, linkedItem, linkedItem.ActorEntityID)
+		if !in.DontNotify {
+			s.notifyMembersOfPublishMessage(ctx, linkedThread.OrganizationID, models.EmptySavedQueryID(), linkedThread, linkedItem, linkedItem.ActorEntityID)
+		}
 	}
 	return &threading.PostMessageResponse{
 		Item:   it,

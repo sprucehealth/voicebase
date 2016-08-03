@@ -261,6 +261,7 @@ func TestIPCall_Timeout(t *testing.T) {
 		FromEntityID: "entity_caller",
 		Title:        "Video call, no answer",
 		Summary:      "Video call, no answer",
+		DontNotify:   true,
 	}))
 
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
@@ -444,6 +445,7 @@ func TestPendingIPCalls_Timeout(t *testing.T) {
 		FromEntityID: "entity_caller",
 		Title:        "Video call, no answer",
 		Summary:      "Video call, no answer",
+		DontNotify:   true,
 	}))
 
 	res, err = svc.PendingIPCalls(nil, &excomms.PendingIPCallsRequest{AccountID: "account_1"})
@@ -587,6 +589,7 @@ func TestUpdateIPCall(t *testing.T) {
 		FromEntityID: "entity_caller",
 		Title:        "Video call, 1:30s",
 		Summary:      "Video call, 1:30s",
+		DontNotify:   true,
 	}))
 
 	res, err = svc.UpdateIPCall(nil, &excomms.UpdateIPCallRequest{

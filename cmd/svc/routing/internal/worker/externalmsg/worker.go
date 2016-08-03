@@ -339,6 +339,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 		var fromName, toName string
 		var fromEntity, toEntity *directory.Entity
 		var urgentVoicemail bool
+		var dontNotify bool
 
 		switch pem.Direction {
 		case excomms.PublishedExternalMessage_INBOUND:
@@ -418,6 +419,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 			}
 		case excomms.PublishedExternalMessage_OUTGOING_CALL_EVENT:
 			endpointChannel = threading.Endpoint_VOICE
+			dontNotify = true
 
 			switch pem.GetOutgoing().Type {
 			case excomms.OutgoingCallEventItem_PLACED:
@@ -509,6 +511,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 					Summary:      summary,
 					Type:         threading.ThreadType_EXTERNAL,
 					SystemTitle:  externalEntity.Info.DisplayName,
+					DontNotify:   dontNotify,
 				},
 			)
 			if err != nil {
@@ -538,6 +541,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 					Text:        plainText,
 					Attachments: attachments,
 					Summary:     summary,
+					DontNotify:  dontNotify,
 				},
 			)
 			if err != nil {

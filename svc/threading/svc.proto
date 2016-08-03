@@ -225,6 +225,7 @@ message PostMessageRequest {
 	repeated Attachment attachments = 8;
 	string title = 9;
 	string summary = 10;
+	bool dont_notify = 11;
 }
 
 message PostMessageResponse {
@@ -379,6 +380,7 @@ message CreateThreadRequest {
 	repeated string member_entity_ids = 14 [(gogoproto.customname) = "MemberEntityIDs"];
 	string system_title = 15;
 	ThreadOrigin origin = 16;
+	bool dont_notify = 17;
 }
 
 message CreateThreadResponse {
