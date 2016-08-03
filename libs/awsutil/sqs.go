@@ -144,11 +144,11 @@ func (w *SQSWorker) process(msg *sqs.Message) {
 				ReceiptHandle:     msg.ReceiptHandle,
 				VisibilityTimeout: ptr.Int64(int64(edr.Duration.Seconds())),
 			}); err != nil {
-				golog.Context("handle", *msg.ReceiptHandle).Infof("Failed to change message visibility: %s", err.Error())
+				golog.Context("handle", *msg.ReceiptHandle).Errorf("Failed to change message visibility: %s", err.Error())
 			}
 			return
 		}
-		golog.Context("handle", *msg.ReceiptHandle).Infof(err.Error())
+		golog.Context("handle", *msg.ReceiptHandle).Errorf(err.Error())
 		return
 	}
 
