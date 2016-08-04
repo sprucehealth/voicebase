@@ -290,7 +290,7 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 					golog.Errorf("Unable to send message as the message length was exceeded. Dropping message for now as handling this situation requires manual intervention. Support team should inform user of the situation. Error: %s", err)
 					return nil
 				case excomms.ErrorCodeSMSIncapableFromPhoneNumber:
-					golog.Errorf("Unable to send message as the from phone number does not have SMS capabilities. Dropping this message for now as handling this situation requires manual intervention. Support team should handle mis-provisioned phone number. Error :%s", err)
+					golog.Errorf("Unable to send message as the from phone number does not have SMS capabilities. Error :%s", err)
 				case excomms.ErrorCodeMessageDeliveryFailed:
 					golog.Errorf("Message %s cannot be delivered. Not going to retry as the error is permanent. Manual intervention required by Support team to report issue to customer. Error = '%s", pti.GetItem().ID, err)
 					return nil
