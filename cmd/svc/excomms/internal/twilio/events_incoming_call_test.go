@@ -82,6 +82,8 @@ func TestIncoming_Organization(t *testing.T) {
 		CallSID:        callSID,
 	}))
 
+	mdal.Expect(mock.NewExpectation(mdal.LookupBlockedNumbers, phone.Number(practicePhoneNumber)))
+
 	msettings := settingsmock.New(t)
 	defer msettings.Finish()
 
@@ -181,6 +183,67 @@ func TestIncoming_Organization(t *testing.T) {
 	}
 }
 
+func TestIncoming_Organization_BlockedNumber(t *testing.T) {
+	orgID := "12345"
+	patientPhone := "+14151111111"
+	practicePhoneNumber := "+14150000000"
+	callSID := "12345"
+
+	md := &mockDirectoryService_Twilio{
+		entitiesList: []*directory.Entity{
+			{
+				ID:   orgID,
+				Type: directory.EntityType_ORGANIZATION,
+				Contacts: []*directory.Contact{
+					{
+						ContactType: directory.ContactType_PHONE,
+						Value:       practicePhoneNumber,
+						Provisioned: true,
+					},
+				},
+			},
+		},
+	}
+
+	mdal := dalmock.New(t)
+	defer mdal.Finish()
+
+	mdal.Expect(mock.NewExpectation(mdal.CreateIncomingCall, &models.IncomingCall{
+		OrganizationID: orgID,
+		Source:         phone.Number(patientPhone),
+		Destination:    phone.Number(practicePhoneNumber),
+		CallSID:        callSID,
+	}))
+
+	mdal.Expect(mock.NewExpectation(mdal.LookupBlockedNumbers, phone.Number(practicePhoneNumber)).WithReturns(
+		models.BlockedNumbers([]phone.Number{phone.Number(patientPhone)}), nil))
+
+	msettings := settingsmock.New(t)
+	defer msettings.Finish()
+
+	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
+	test.OK(t, err)
+	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
+
+	es := NewEventHandler(md, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", signer)
+	params := &rawmsg.TwilioParams{
+		From:    patientPhone,
+		To:      practicePhoneNumber,
+		CallSID: callSID,
+	}
+
+	twiml, err := processIncomingCall(context.Background(), params, es.(*eventsHandler))
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	expected := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
+<Response><Reject reason="busy"></Reject></Response>`)
+
+	if twiml != expected {
+		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
+	}
+}
+
 func TestIncoming_Organization_MultipleContacts(t *testing.T) {
 	orgID := "12345"
 	listedNumber1 := "+14152222222"
@@ -215,6 +278,8 @@ func TestIncoming_Organization_MultipleContacts(t *testing.T) {
 		Destination:    phone.Number(practicePhoneNumber),
 		CallSID:        callSID,
 	}))
+
+	mdal.Expect(mock.NewExpectation(mdal.LookupBlockedNumbers, phone.Number(practicePhoneNumber)))
 
 	msettings := settingsmock.New(t)
 	defer msettings.Finish()
@@ -349,6 +414,8 @@ func TestIncoming_Organization_MultipleContacts_SendCallsToVoicemail(t *testing.
 		Destination:    phone.Number(practicePhoneNumber),
 		CallSID:        callSID,
 	}))
+
+	mdal.Expect(mock.NewExpectation(mdal.LookupBlockedNumbers, phone.Number(practicePhoneNumber)))
 
 	msettings := settingsmock.New(t)
 	defer msettings.Finish()

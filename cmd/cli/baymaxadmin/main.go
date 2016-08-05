@@ -174,6 +174,7 @@ var commands = map[string]commandNew{
 	"updateentity":        newUpdateEntityCmd,
 	"uploadlayout":        newUploadLayoutCmd,
 	"enablepackage":       newEnablePackageCmd,
+	"blocknumber":         newBlockNumberCmd,
 }
 
 func main() {

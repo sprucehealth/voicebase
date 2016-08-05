@@ -170,6 +170,15 @@ type DAL interface {
 
 	// UpdateIPCallParticipant updates a participant of an IP call
 	UpdateIPCallParticipant(ctx context.Context, callID models.IPCallID, accountID string, update *IPCallParticipantUpdate) error
+
+	// InsertBlockNumber creates a record for the (blockNumber, provisionedNumber) pair.
+	InsertBlockedNumber(ctx context.Context, blockNumber phone.Number, provisionedNumber phone.Number) error
+
+	// DeleteBlockedNumber deletes the (blockNumber, provisionedNumber) pair.
+	DeleteBlockedNumber(ctx context.Context, blockNumber phone.Number, provisionedNumber phone.Number) error
+
+	// LookupBlockedNumbers returns the list of blockedNumbers for the specified provisioned number
+	LookupBlockedNumbers(ctx context.Context, provisionedPhoneNumber phone.Number) (models.BlockedNumbers, error)
 }
 
 type dal struct {
@@ -762,4 +771,36 @@ func (d *dal) CreateDeletedResource(resource, resourceID string) error {
 		return errors.Trace(err)
 	}
 	return nil
+}
+
+func (d *dal) InsertBlockedNumber(ctx context.Context, blockNumber phone.Number, provisionedNumber phone.Number) error {
+	_, err := d.db.Exec("REPLACE INTO blocked_number (blocked_phone_number, provisioned_phone_number) VALUES (?,?)", blockNumber, provisionedNumber)
+	return errors.Trace(err)
+}
+
+func (d *dal) DeleteBlockedNumber(ctx context.Context, blockNumber phone.Number, provisionedNumber phone.Number) error {
+	_, err := d.db.Exec("DELETE FROM blocked_number WHERE blocked_phone_number = ? AND provisioned_phone_number = ?", blockNumber, provisionedNumber)
+	return errors.Trace(err)
+}
+
+func (d *dal) LookupBlockedNumbers(ctx context.Context, provisionedPhoneNumber phone.Number) (models.BlockedNumbers, error) {
+	rows, err := d.db.Query(`
+		SELECT blocked_phone_number
+		FROM blocked_number
+		WHERE provisioned_phone_number = ?`, provisionedPhoneNumber)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	defer rows.Close()
+
+	var phoneNumbers []phone.Number
+	for rows.Next() {
+		var pn phone.Number
+		if err := rows.Scan(&pn); err != nil {
+			return nil, errors.Trace(err)
+		}
+		phoneNumbers = append(phoneNumbers, pn)
+	}
+
+	return models.BlockedNumbers(phoneNumbers), errors.Trace(rows.Err())
 }

@@ -301,6 +301,36 @@ message UpdateIPCallResponse {
 	IPCall call = 1;
 }
 
+message BlockNumberRequest {
+	string number = 1;
+	string org_id = 2 [(gogoproto.customname) = "OrgID"];
+	string provisioned_phone_number = 3;
+}
+
+message BlockNumberResponse {
+	repeated string numbers = 1;
+}
+
+message UnblockNumberRequest {
+	string number = 1;
+	string org_id = 2 [(gogoproto.customname) = "OrgID"];
+	string provisioned_phone_number = 3;
+}
+
+
+message UnblockNumberResponse {
+	repeated string numbers = 1;
+}
+
+message ListBlockedNumbersRequest {
+	string provisioned_phone_number = 1;
+	string org_id = 2 [(gogoproto.customname) = "OrgID"];
+}
+
+message ListBlockedNumbersResponse {
+	repeated string numbers = 1;
+}
+
 service ExComms {
 
 	// SearchAvailablephoneNumbers returns a list of available phone numbers based on the search criteria.
@@ -314,6 +344,16 @@ service ExComms {
 
 	// DeprovisionEmail deprovisions the email address if one is currently provisioned
 	rpc DeprovisionEmail (DeprovisionEmailRequest) returns (DeprovisionEmailResponse);
+
+	// BlockNumber blocks any incoming calls or sms that originate from the number to the provisioned
+	// number for the org.
+	rpc BlockNumber (BlockNumberRequest) returns (BlockNumberResponse);
+
+	// UnblockNumber unblocks any blocked phone number for the provisioned number for the org.
+	rpc UnblockNumber (UnblockNumberRequest) returns (UnblockNumberResponse);
+
+	// ListBlockedNumbers returns a list of blocked numbers for the provisioned phone number and org.
+	rpc ListBlockedNumbers (ListBlockedNumbersRequest) returns (ListBlockedNumbersResponse);
 
 	// ProvisionEmailAddress provisions an email address for the requester.
 	rpc ProvisionEmailAddress (ProvisionEmailAddressRequest) returns (ProvisionEmailAddressResponse);

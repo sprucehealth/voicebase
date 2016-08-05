@@ -684,3 +684,79 @@ func (e *excommsService) ProvisionEmailAddress(ctx context.Context, req *excomms
 		EmailAddress: emailAddress,
 	}, nil
 }
+
+func (e *excommsService) BlockNumber(ctx context.Context, in *excomms.BlockNumberRequest) (*excomms.BlockNumberResponse, error) {
+	provisionedPhoneNumber, err := phone.ParseNumber(in.ProvisionedPhoneNumber)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "invalid phone number %s: %s", in.ProvisionedPhoneNumber, err)
+	}
+
+	blockedPhoneNumber, err := phone.ParseNumber(in.Number)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "invalid phone number %s", in.Number, err)
+	}
+
+	// ensure that the number is provisioned by the org listed in the request
+	pe, err := e.dal.LookupProvisionedEndpoint(provisionedPhoneNumber.String(), models.EndpointTypePhone)
+	if errors.Cause(err) == dal.ErrProvisionedEndpointNotFound {
+		return nil, grpcErrorf(codes.NotFound, "provisioned phone number %s not found", in.ProvisionedPhoneNumber)
+	} else if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	} else if in.OrgID != pe.ProvisionedFor {
+		return nil, grpcErrorf(codes.InvalidArgument, "phone number %s not owned by %s", in.ProvisionedPhoneNumber, in.OrgID)
+	}
+
+	if err := e.dal.InsertBlockedNumber(ctx, blockedPhoneNumber, provisionedPhoneNumber); err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	blockedNumbers, err := e.dal.LookupBlockedNumbers(ctx, provisionedPhoneNumber)
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	return &excomms.BlockNumberResponse{
+		Numbers: blockedNumbers.ToStringSlice(),
+	}, nil
+}
+
+func (e *excommsService) UnblockNumber(ctx context.Context, in *excomms.UnblockNumberRequest) (*excomms.UnblockNumberResponse, error) {
+	provisionedPhoneNumber, err := phone.ParseNumber(in.ProvisionedPhoneNumber)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "invalid phone number %s: %s", in.ProvisionedPhoneNumber, err)
+	}
+
+	blockedPhoneNumber, err := phone.ParseNumber(in.Number)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "invalid phone number %s", in.Number, err)
+	}
+
+	if err := e.dal.DeleteBlockedNumber(ctx, blockedPhoneNumber, provisionedPhoneNumber); err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	blockedNumbers, err := e.dal.LookupBlockedNumbers(ctx, provisionedPhoneNumber)
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	return &excomms.UnblockNumberResponse{
+		Numbers: blockedNumbers.ToStringSlice(),
+	}, nil
+}
+func (e *excommsService) ListBlockedNumbers(ctx context.Context, in *excomms.ListBlockedNumbersRequest) (*excomms.ListBlockedNumbersResponse, error) {
+	provisionedPhoneNumber, err := phone.ParseNumber(in.ProvisionedPhoneNumber)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "invalid phone number %s: %s", in.ProvisionedPhoneNumber, err)
+	}
+
+	blockedNumbers, err := e.dal.LookupBlockedNumbers(ctx, provisionedPhoneNumber)
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	return &excomms.ListBlockedNumbersResponse{
+		Numbers: blockedNumbers.ToStringSlice(),
+	}, nil
+
+}

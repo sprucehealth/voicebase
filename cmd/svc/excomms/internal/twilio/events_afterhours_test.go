@@ -68,6 +68,8 @@ func TestAfterHours_IncomingCall_SendAllCallsToVM_DefaultGreeting(t *testing.T) 
 		CallSID:        callSID,
 	}))
 
+	mdal.Expect(mock.NewExpectation(mdal.LookupBlockedNumbers, phone.Number(practicePhoneNumber)))
+
 	msettings := settingsmock.New(t)
 	defer msettings.Finish()
 
@@ -351,6 +353,8 @@ func TestAfterHours_IncomingCall_SendAllCallsToVM_CustomGreeting(t *testing.T) {
 		Destination:    phone.Number(practicePhoneNumber),
 		CallSID:        callSID,
 	}))
+
+	mdal.Expect(mock.NewExpectation(mdal.LookupBlockedNumbers, phone.Number(practicePhoneNumber)))
 
 	msettings := settingsmock.New(t)
 	defer msettings.Finish()

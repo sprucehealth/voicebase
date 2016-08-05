@@ -136,3 +136,24 @@ type Media struct {
 	Name     *string
 	Duration time.Duration
 }
+
+type BlockedNumbers []phone.Number
+
+func (b BlockedNumbers) Includes(pn phone.Number) bool {
+	for _, item := range b {
+		if item.String() == pn.String() {
+			return true
+		}
+	}
+	return false
+}
+
+func (b BlockedNumbers) ToStringSlice() []string {
+
+	phoneNumbers := make([]string, len(b))
+	for i, blockedNumber := range b {
+		phoneNumbers[i] = blockedNumber.String()
+	}
+
+	return phoneNumbers
+}

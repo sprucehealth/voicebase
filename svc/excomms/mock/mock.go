@@ -110,3 +110,27 @@ func (c *Client) UpdateIPCall(ctx context.Context, in *excomms.UpdateIPCallReque
 	}
 	return rets[0].(*excomms.UpdateIPCallResponse), mock.SafeError(rets[1])
 }
+
+func (c *Client) BlockNumber(ctx context.Context, in *excomms.BlockNumberRequest, opts ...grpc.CallOption) (*excomms.BlockNumberResponse, error) {
+	rets := c.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*excomms.BlockNumberResponse), mock.SafeError(rets[1])
+}
+
+func (c *Client) UnblockNumber(ctx context.Context, in *excomms.UnblockNumberRequest, opts ...grpc.CallOption) (*excomms.UnblockNumberResponse, error) {
+	rets := c.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*excomms.UnblockNumberResponse), mock.SafeError(rets[1])
+}
+
+func (c *Client) ListBlockedNumbers(ctx context.Context, in *excomms.ListBlockedNumbersRequest, opts ...grpc.CallOption) (*excomms.ListBlockedNumbersResponse, error) {
+	rets := c.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*excomms.ListBlockedNumbersResponse), mock.SafeError(rets[1])
+}

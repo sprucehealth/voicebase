@@ -273,3 +273,29 @@ func (m *mockDAL) UpdateIPCallParticipant(ctx context.Context, callID models.IPC
 	}
 	return mock.SafeError(rets[0])
 }
+
+func (m *mockDAL) InsertBlockedNumber(ctx context.Context, blockNumber phone.Number, provisionedNumber phone.Number) error {
+	rets := m.Record(blockNumber, provisionedNumber)
+	if len(rets) == 0 {
+		return nil
+	}
+
+	return mock.SafeError(rets[0])
+}
+
+func (m *mockDAL) DeleteBlockedNumber(ctx context.Context, blockNumber phone.Number, provisionedNumber phone.Number) error {
+	rets := m.Record(blockNumber, provisionedNumber)
+	if len(rets) == 0 {
+		return nil
+	}
+
+	return mock.SafeError(rets[0])
+}
+
+func (m *mockDAL) LookupBlockedNumbers(ctx context.Context, provisionedPhoneNumber phone.Number) (models.BlockedNumbers, error) {
+	rets := m.Record(provisionedPhoneNumber)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(models.BlockedNumbers), mock.SafeError(rets[1])
+}

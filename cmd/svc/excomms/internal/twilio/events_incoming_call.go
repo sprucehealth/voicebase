@@ -76,6 +76,16 @@ func processIncomingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 		return "", errors.Trace(err)
 	}
 
+	blockedNumbers, err := eh.dal.LookupBlockedNumbers(ctx, destination)
+	if err != nil {
+		return "", errors.Trace(err)
+	}
+
+	// reject blocked numbers
+	if blockedNumbers.Includes(source) {
+		return twiml.NewResponse(&twiml.Reject{Reason: "busy"}).GenerateTwiML()
+	}
+
 	return callForwardingList(ctx, entity, params, eh)
 }
 

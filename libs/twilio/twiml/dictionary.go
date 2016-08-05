@@ -399,7 +399,7 @@ func (r *Redirect) Validate() error {
 
 type Reject struct {
 	XMLName xml.Name `xml:"Reject"`
-	Reason  string   `xml:"reason"`
+	Reason  string   `xml:"reason,attr,omitempty"`
 }
 
 func (r *Reject) Validate() error {

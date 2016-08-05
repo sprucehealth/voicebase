@@ -62,3 +62,15 @@ func (e *excommsClient) PendingIPCalls(ctx context.Context, in *excomms.PendingI
 func (e *excommsClient) UpdateIPCall(ctx context.Context, in *excomms.UpdateIPCallRequest, opts ...grpc.CallOption) (*excomms.UpdateIPCallResponse, error) {
 	return &excomms.UpdateIPCallResponse{}, nil
 }
+
+func (c *excommsClient) BlockNumber(ctx context.Context, in *excomms.BlockNumberRequest, opts ...grpc.CallOption) (*excomms.BlockNumberResponse, error) {
+	return &excomms.BlockNumberResponse{}, nil
+}
+
+func (c *excommsClient) UnblockNumber(ctx context.Context, in *excomms.UnblockNumberRequest, opts ...grpc.CallOption) (*excomms.UnblockNumberResponse, error) {
+	return &excomms.UnblockNumberResponse{}, nil
+}
+
+func (c *excommsClient) ListBlockedNumbers(ctx context.Context, in *excomms.ListBlockedNumbersRequest, opts ...grpc.CallOption) (*excomms.ListBlockedNumbersResponse, error) {
+	return &excomms.ListBlockedNumbersResponse{}, nil
+}

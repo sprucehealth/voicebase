@@ -1412,3 +1412,71 @@ func TestDeprovisionPhoneNumber(t *testing.T) {
 	})
 	test.OK(t, err)
 }
+
+func TestBlockNumber(t *testing.T) {
+	md := dalmock.New(t)
+	defer md.Finish()
+
+	blockedNumber := phone.Number("+12222222222")
+	provisionedPhoneNumber := phone.Number("+13333333333")
+	orgID := "orgID1"
+
+	md.Expect(mock.NewExpectation(md.LookupProvisionedEndpoint, provisionedPhoneNumber.String(), models.EndpointTypePhone).WithReturns(&models.ProvisionedEndpoint{
+		ProvisionedFor: orgID,
+	}, nil))
+	md.Expect(mock.NewExpectation(md.InsertBlockedNumber, blockedNumber, provisionedPhoneNumber))
+	md.Expect(mock.NewExpectation(md.LookupBlockedNumbers, provisionedPhoneNumber))
+	es := &excommsService{
+		dal: md,
+	}
+	_, err := es.BlockNumber(context.Background(), &excomms.BlockNumberRequest{
+		Number:                 blockedNumber.String(),
+		ProvisionedPhoneNumber: provisionedPhoneNumber.String(),
+		OrgID: orgID,
+	})
+	test.OK(t, err)
+}
+
+func TestBlockNumber_WrongOrg(t *testing.T) {
+	md := dalmock.New(t)
+	defer md.Finish()
+
+	blockedNumber := phone.Number("+12222222222")
+	provisionedPhoneNumber := phone.Number("+13333333333")
+	orgID := "orgID1"
+
+	md.Expect(mock.NewExpectation(md.LookupProvisionedEndpoint, provisionedPhoneNumber.String(), models.EndpointTypePhone).WithReturns(&models.ProvisionedEndpoint{
+		ProvisionedFor: "org2",
+	}, nil))
+
+	es := &excommsService{
+		dal: md,
+	}
+	_, err := es.BlockNumber(context.Background(), &excomms.BlockNumberRequest{
+		Number:                 blockedNumber.String(),
+		ProvisionedPhoneNumber: provisionedPhoneNumber.String(),
+		OrgID: orgID,
+	})
+	test.Equals(t, codes.InvalidArgument, grpc.Code(err))
+}
+
+func TestUnblockNumber(t *testing.T) {
+	md := dalmock.New(t)
+	defer md.Finish()
+
+	blockedNumber := phone.Number("+12222222222")
+	provisionedPhoneNumber := phone.Number("+13333333333")
+
+	md.Expect(mock.NewExpectation(md.DeleteBlockedNumber, blockedNumber, provisionedPhoneNumber))
+	md.Expect(mock.NewExpectation(md.LookupBlockedNumbers, provisionedPhoneNumber))
+
+	es := &excommsService{
+		dal: md,
+	}
+	_, err := es.UnblockNumber(context.Background(), &excomms.UnblockNumberRequest{
+		Number:                 blockedNumber.String(),
+		ProvisionedPhoneNumber: provisionedPhoneNumber.String(),
+	})
+	test.OK(t, err)
+
+}

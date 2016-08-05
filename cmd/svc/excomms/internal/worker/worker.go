@@ -2,6 +2,7 @@ package worker
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -159,8 +160,25 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 		params := rm.GetTwilio()
 		// ensure that the from phone number is a valid number, otherwise reject
 		// the SMS
-		if _, err := phone.ParseNumber(params.From); err != nil {
-			golog.Infof("Invalid phone number as the FROM phone number for incoming SMS: %s", params.From)
+		source, err := phone.ParseNumber(params.From)
+		if err != nil {
+			golog.Errorf("Invalid phone number as the FROM phone number for incoming SMS: %s", params.From)
+			return nil
+		}
+
+		destination, err := phone.ParseNumber(params.To)
+		if err != nil {
+			golog.Errorf("Invalid destination phone number %s: %s", params.To, err)
+			return nil
+		}
+
+		// ensure that the source number is not a blocked number. If it is, reject the SMS
+		blockedNumbers, err := w.dal.LookupBlockedNumbers(context.Background(), destination)
+		if err != nil {
+			return errors.Trace(err)
+		}
+		if blockedNumbers.Includes(source) {
+			golog.Infof("Dropping SMS since number %s is blocked for %s", source, destination)
 			return nil
 		}
 
