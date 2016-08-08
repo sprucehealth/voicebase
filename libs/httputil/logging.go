@@ -121,6 +121,8 @@ func (h *requestIDHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		golog.Errorf("Failed to generate request ID: %s", err.Error())
 	}
 	w.Header().Set("S-Request-ID", strconv.FormatUint(requestID, 10))
+	logger := golog.ContextLogger(r.Context()).Context("RequestID", requestID)
+	r = r.WithContext(golog.WithLogger(r.Context(), logger))
 	h.h.ServeHTTP(w, r.WithContext(CtxWithRequestID(r.Context(), requestID)))
 }
 

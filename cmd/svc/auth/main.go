@@ -72,7 +72,7 @@ func main() {
 		SkipVerifyTLS: config.dbTLS == "skip-verify",
 	})
 	if err != nil {
-		golog.Fatalf("failed to iniitlize db connection: %s", err)
+		golog.Fatalf("failed to initialize db connection: %s", err)
 	}
 
 	settingsConn, err := boot.DialGRPC("auth", config.settingsServiceAddress)

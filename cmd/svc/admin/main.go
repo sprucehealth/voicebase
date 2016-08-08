@@ -11,7 +11,6 @@ import (
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/handlers/auth"
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/handlers/gql"
-	"github.com/sprucehealth/backend/cmd/svc/admin/internal/handlers/logging"
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/handlers/schema"
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/ldap"
 	"github.com/sprucehealth/backend/environment"
@@ -83,18 +82,14 @@ func main() {
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"*"},
 	}).Handler(
-		httputil.RequestIDHandler(
-			logging.NewRequestID(
-				auth.NewAuthenticated(gqlHandler, signer)))))
+		httputil.RequestIDHandler(auth.NewAuthenticated(gqlHandler, signer))))
 	r.Handle("/authenticate", cors.New(cors.Options{
 		AllowedOrigins:   []string{"https://" + *flagWebDomain},
 		AllowedMethods:   []string{httputil.Post},
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"*"},
 	}).Handler(
-		httputil.RequestIDHandler(
-			logging.NewRequestID(
-				auth.NewAuthentication(ap, signer)))))
+		httputil.RequestIDHandler(auth.NewAuthentication(ap, signer))))
 
 	golog.Debugf("Resource path %s", *flagResourcePath)
 	if !environment.IsProd() {
