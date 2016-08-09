@@ -187,6 +187,85 @@ func TestLookupEntitiesByExternalID(t *testing.T) {
 	test.Equals(t, directory.EntityType_INTERNAL, resp.Entities[1].Type)
 }
 
+func TestLookupEntitiesByExternalID_MemberOfEntity(t *testing.T) {
+	t.Parallel()
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+	s := New(dl, metrics.NewRegistry())
+	externalID := "account:12345678"
+	eID1, err := dal.NewEntityID()
+	test.OK(t, err)
+	eID2, err := dal.NewEntityID()
+	test.OK(t, err)
+	orgID1, err := dal.NewEntityID()
+	test.OK(t, err)
+	orgID2, err := dal.NewEntityID()
+	test.OK(t, err)
+
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.ExternalEntityIDs, externalID), []*dal.ExternalEntityID{
+		{
+			EntityID: eID1,
+		},
+		{
+			EntityID: eID2,
+		},
+	}, nil))
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{eID1, eID2}, ([]dal.EntityStatus)(nil), []dal.EntityType{}), []*dal.Entity{
+		{
+			ID:          eID1,
+			DisplayName: "entity1",
+			Type:        dal.EntityTypeInternal,
+			Status:      dal.EntityStatusActive,
+		},
+		{
+			ID:          eID2,
+			DisplayName: "entity2",
+			Type:        dal.EntityTypeInternal,
+			Status:      dal.EntityStatusActive,
+		},
+	}, nil))
+
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.EntityMemberships, eID1), []*dal.EntityMembership{
+		{
+			TargetEntityID: orgID1,
+		},
+	}, nil))
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{orgID1}, ([]dal.EntityStatus)(nil), []dal.EntityType{}), []*dal.Entity{
+		{
+			ID:          orgID1,
+			DisplayName: orgID1.String(),
+			Type:        dal.EntityTypeOrganization,
+			Status:      dal.EntityStatusActive,
+		},
+	}, nil))
+
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.EntityMemberships, eID2), []*dal.EntityMembership{
+		{
+			TargetEntityID: orgID2,
+		},
+	}, nil))
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{orgID2}, ([]dal.EntityStatus)(nil), []dal.EntityType{}), []*dal.Entity{
+		{
+			ID:          orgID2,
+			DisplayName: orgID2.String(),
+			Type:        dal.EntityTypeOrganization,
+			Status:      dal.EntityStatusActive,
+		},
+	}, nil))
+
+	resp, err := s.LookupEntities(context.Background(), &directory.LookupEntitiesRequest{
+		LookupKeyType:  directory.LookupEntitiesRequest_EXTERNAL_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{ExternalID: externalID},
+		MemberOfEntity: orgID1.String(),
+	})
+	test.OK(t, err)
+
+	test.Equals(t, 1, len(resp.Entities))
+	test.Equals(t, eID1.String(), resp.Entities[0].ID)
+	test.Equals(t, "entity1", resp.Entities[0].Info.DisplayName)
+	test.Equals(t, directory.EntityType_INTERNAL, resp.Entities[0].Type)
+}
+
 func TestLookupEntitiesNoResults(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
@@ -237,6 +316,7 @@ func TestLookupEntitiesByContact(t *testing.T) {
 			Status:      dal.EntityStatusActive,
 		},
 	}, nil))
+
 	resp, err := s.LookupEntitiesByContact(context.Background(), &directory.LookupEntitiesByContactRequest{
 		ContactValue:         contactValue,
 		RequestedInformation: &directory.RequestedInformation{},
@@ -255,6 +335,89 @@ func TestLookupEntitiesByContact(t *testing.T) {
 	test.Equals(t, "entity2", resp.Entities[1].Info.DisplayName)
 	test.Equals(t, directory.EntityType_INTERNAL, resp.Entities[1].Type)
 	mock.FinishAll(dl)
+}
+
+func TestLookupEntitiesByContact_MemberOfEntity(t *testing.T) {
+	t.Parallel()
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+	s := New(dl, metrics.NewRegistry())
+	contactValue := " 1234567@gmail.com "
+	eID1, err := dal.NewEntityID()
+	test.OK(t, err)
+	eID2, err := dal.NewEntityID()
+	test.OK(t, err)
+	orgID1, err := dal.NewEntityID()
+	test.OK(t, err)
+	orgID2, err := dal.NewEntityID()
+	test.OK(t, err)
+
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.EntityContactsForValue, strings.TrimSpace(contactValue)), []*dal.EntityContact{
+		{
+			EntityID: eID1,
+		},
+		{
+			EntityID: eID2,
+		},
+	}, nil))
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{eID1, eID2}, []dal.EntityStatus{dal.EntityStatusActive, dal.EntityStatusDeleted}, []dal.EntityType{}), []*dal.Entity{
+		{
+			ID:          eID1,
+			DisplayName: "entity1",
+			Type:        dal.EntityTypeInternal,
+			Status:      dal.EntityStatusActive,
+		},
+		{
+			ID:          eID2,
+			DisplayName: "entity2",
+			Type:        dal.EntityTypeInternal,
+			Status:      dal.EntityStatusActive,
+		},
+	}, nil))
+
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.EntityMemberships, eID1), []*dal.EntityMembership{
+		{
+			TargetEntityID: orgID1,
+		},
+	}, nil))
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{orgID1}, []dal.EntityStatus{dal.EntityStatusActive, dal.EntityStatusDeleted}, []dal.EntityType{}), []*dal.Entity{
+		{
+			ID:          orgID1,
+			DisplayName: orgID1.String(),
+			Type:        dal.EntityTypeOrganization,
+			Status:      dal.EntityStatusActive,
+		},
+	}, nil))
+
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.EntityMemberships, eID2), []*dal.EntityMembership{
+		{
+			TargetEntityID: orgID2,
+		},
+	}, nil))
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{orgID2}, []dal.EntityStatus{dal.EntityStatusActive, dal.EntityStatusDeleted}, []dal.EntityType{}), []*dal.Entity{
+		{
+			ID:          orgID2,
+			DisplayName: orgID2.String(),
+			Type:        dal.EntityTypeOrganization,
+			Status:      dal.EntityStatusActive,
+		},
+	}, nil))
+
+	resp, err := s.LookupEntitiesByContact(context.Background(), &directory.LookupEntitiesByContactRequest{
+		ContactValue:         contactValue,
+		RequestedInformation: &directory.RequestedInformation{},
+		Statuses: []directory.EntityStatus{
+			directory.EntityStatus_ACTIVE,
+			directory.EntityStatus_DELETED,
+		},
+		MemberOfEntity: orgID1.String(),
+	})
+	test.OK(t, err)
+
+	test.Equals(t, 1, len(resp.Entities))
+	test.Equals(t, eID1.String(), resp.Entities[0].ID)
+	test.Equals(t, "entity1", resp.Entities[0].Info.DisplayName)
+	test.Equals(t, directory.EntityType_INTERNAL, resp.Entities[0].Type)
 }
 
 func TestLookupEntitiesByContactNoResults(t *testing.T) {

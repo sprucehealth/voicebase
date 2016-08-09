@@ -145,6 +145,7 @@ message LookupEntitiesRequest {
 	repeated EntityStatus statuses = 5;
 	repeated EntityType root_types = 7;
 	repeated EntityType child_types = 8;
+	string member_of_entity = 10;
 }
 
 message LookupEntitiesResponse {
@@ -194,6 +195,7 @@ message LookupEntitiesByContactRequest {
 	repeated EntityStatus statuses = 5;
 	repeated EntityType root_types = 6;
 	repeated EntityType child_types = 7;
+	string member_of_entity = 8;
 }
 
 message LookupEntitiesByContactResponse {

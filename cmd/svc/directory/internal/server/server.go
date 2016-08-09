@@ -72,6 +72,43 @@ func riDepth(ri *directory.RequestedInformation) int64 {
 	return ri.Depth
 }
 
+func appendMembershipEntityInformation(entityInfo []directory.EntityInformation) []directory.EntityInformation {
+	if entityInfo == nil {
+		return []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS}
+	}
+
+	var membershipFound bool
+	for _, ei := range entityInfo {
+		if ei == directory.EntityInformation_MEMBERSHIPS {
+			membershipFound = true
+			break
+		}
+	}
+
+	if !membershipFound {
+		entityInfo = append(entityInfo, directory.EntityInformation_MEMBERSHIPS)
+	}
+
+	return entityInfo
+}
+
+func filterToMembersOnly(pbEntities []*directory.Entity, memberOfEntity string) []*directory.Entity {
+	if memberOfEntity == "" {
+		return pbEntities
+	}
+
+	filteredpbEntities := make([]*directory.Entity, 0, len(pbEntities))
+	for _, pbEntity := range pbEntities {
+		for _, m := range pbEntity.Memberships {
+			if m.ID == memberOfEntity {
+				filteredpbEntities = append(filteredpbEntities, pbEntity)
+				break
+			}
+		}
+	}
+	return filteredpbEntities
+}
+
 func (s *server) LookupEntities(ctx context.Context, rd *directory.LookupEntitiesRequest) (out *directory.LookupEntitiesResponse, err error) {
 	var entityIDs []dal.EntityID
 	switch rd.LookupKeyType {
@@ -133,13 +170,24 @@ func (s *server) LookupEntities(ctx context.Context, rd *directory.LookupEntitie
 	if len(entities) == 0 {
 		return nil, grpcErrorf(codes.NotFound, "No entities located matching query")
 	}
+
+	if rd.MemberOfEntity != "" {
+		// ensure that memberships is in the requested information
+		if rd.RequestedInformation == nil {
+			rd.RequestedInformation = &directory.RequestedInformation{}
+		}
+
+		rd.RequestedInformation.EntityInformation = appendMembershipEntityInformation(rd.RequestedInformation.EntityInformation)
+	}
+
 	pbEntities, err := getPBEntities(s.dl, entities, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation), statuses, childTypes)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
+
 	s.statLookupEntitiesEntities.Inc(uint64(len(pbEntities)))
 	return &directory.LookupEntitiesResponse{
-		Entities: pbEntities,
+		Entities: filterToMembersOnly(pbEntities, rd.MemberOfEntity),
 	}, nil
 }
 
@@ -582,12 +630,21 @@ func (s *server) LookupEntitiesByContact(ctx context.Context, rd *directory.Look
 		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 
+	if rd.MemberOfEntity != "" {
+		// ensure that memberships is in the requested information
+		if rd.RequestedInformation == nil {
+			rd.RequestedInformation = &directory.RequestedInformation{}
+		}
+
+		rd.RequestedInformation.EntityInformation = appendMembershipEntityInformation(rd.RequestedInformation.EntityInformation)
+	}
+
 	pbEntities, err := getPBEntities(s.dl, entities, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation), statuses, childTypes)
 	if err != nil {
 		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 	return &directory.LookupEntitiesByContactResponse{
-		Entities: pbEntities,
+		Entities: filterToMembersOnly(pbEntities, rd.MemberOfEntity),
 	}, nil
 }
 
