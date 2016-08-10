@@ -10,7 +10,7 @@ import (
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
-	mock_media "github.com/sprucehealth/backend/svc/media/mock"
+	mockmedia "github.com/sprucehealth/backend/svc/media/mock"
 	"github.com/sprucehealth/backend/svc/threading"
 )
 
@@ -18,7 +18,7 @@ func TestCreateOnboardingThread(t *testing.T) {
 	t.Parallel()
 	dl := dalmock.New(t)
 	defer dl.Finish()
-	mm := mock_media.New(t)
+	mm := mockmedia.New(t)
 	defer mm.Finish()
 	clk := clock.New()
 	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, nil, mm, "WEBDOMAIN")
@@ -33,6 +33,8 @@ func TestCreateOnboardingThread(t *testing.T) {
 		LastMessageSummary: "Setup: Welcome! You can access our setup guide here, at any time. In the meantime, how would you like to use Spruce? (You can tap on multiple options) Second phone line for calls and texts with patients, without disclosing your personal number. Automated answering service that transcribes urgent voicemails and notifies you. Secure team chat and care coordination. Digital care and telemedicine.",
 		Type:               models.ThreadTypeSetup,
 	}).WithReturns(thid, nil))
+
+	dl.Expect(mock.NewExpectation(dl.AddThreadMembers, thid, []string{"o1"}))
 
 	dl.Expect(mock.NewExpectation(dl.PostMessage, &dal.PostMessageRequest{
 		ThreadID:     thid,
@@ -77,7 +79,7 @@ func TestOnboardingThreadEvent_PROVISIONED_PHONE(t *testing.T) {
 	t.Parallel()
 	dl := dalmock.New(t)
 	defer dl.Finish()
-	mm := mock_media.New(t)
+	mm := mockmedia.New(t)
 	defer mm.Finish()
 	clk := clock.New()
 	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, nil, mm, "WEBDOMAIN")
@@ -147,7 +149,7 @@ func TestOnboardingThreadEvent_GENERIC_SETUP_eventSetupAnsweringService(t *testi
 	t.Parallel()
 	dl := dalmock.New(t)
 	defer dl.Finish()
-	mm := mock_media.New(t)
+	mm := mockmedia.New(t)
 	defer mm.Finish()
 	clk := clock.New()
 	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, nil, mm, "WEBDOMAIN")
@@ -193,7 +195,7 @@ func TestOnboardingThreadEvent_GENERIC_SETUP_eventSetupTeamMessaging(t *testing.
 	t.Parallel()
 	dl := dalmock.New(t)
 	defer dl.Finish()
-	mm := mock_media.New(t)
+	mm := mockmedia.New(t)
 	defer mm.Finish()
 	clk := clock.New()
 	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, nil, mm, "WEBDOMAIN")
@@ -239,7 +241,7 @@ func TestOnboardingThreadEvent_GENERIC_SETUP_eventSetupTelemedicine(t *testing.T
 	t.Parallel()
 	dl := dalmock.New(t)
 	defer dl.Finish()
-	mm := mock_media.New(t)
+	mm := mockmedia.New(t)
 	defer mm.Finish()
 	clk := clock.New()
 	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, nil, mm, "WEBDOMAIN")

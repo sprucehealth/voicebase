@@ -77,6 +77,9 @@ func (s *threadsServer) CreateOnboardingThread(ctx context.Context, in *threadin
 		if err != nil {
 			return errors.Trace(err)
 		}
+		if err := dl.AddThreadMembers(ctx, threadID, []string{in.OrganizationID}); err != nil {
+			return errors.Trace(err)
+		}
 		if _, err := dl.PostMessage(ctx, &dal.PostMessageRequest{
 			ThreadID:     threadID,
 			FromEntityID: in.PrimaryEntityID,

@@ -58,6 +58,7 @@ func TestIterateThreads(t *testing.T) {
 		LastExternalMessageSummary: "extsummary",
 	})
 	test.OK(t, err)
+	test.OK(t, dal.AddThreadMembers(ctx, tid1, []string{"org"}))
 	// Create team thread
 	tid2, err := dal.CreateThread(ctx, &models.Thread{
 		OrganizationID:             "org",
@@ -69,7 +70,7 @@ func TestIterateThreads(t *testing.T) {
 	test.OK(t, err)
 
 	// Viewer without membership in team thread should only see external thread
-	tc, err := dal.IterateThreads(ctx, "org", "viewer", false, &Iterator{
+	tc, err := dal.IterateThreads(ctx, []string{"org", "viewer"}, "viewer", false, &Iterator{
 		Direction: FromStart,
 		Count:     10,
 	})
@@ -81,7 +82,7 @@ func TestIterateThreads(t *testing.T) {
 
 	// Still not a member but now has a thread entity row
 	test.OK(t, dal.UpdateThreadEntity(ctx, tid2, "viewer", nil))
-	tc, err = dal.IterateThreads(ctx, "org", "viewer", false, &Iterator{
+	tc, err = dal.IterateThreads(ctx, []string{"org", "viewer"}, "viewer", false, &Iterator{
 		Direction: FromStart,
 		Count:     10,
 	})
@@ -92,8 +93,8 @@ func TestIterateThreads(t *testing.T) {
 	test.Equals(t, (*models.ThreadEntity)(nil), tc.Edges[0].ThreadEntity)
 
 	// Now they're a member and should get both threads
-	test.OK(t, dal.UpdateThreadEntity(ctx, tid2, "viewer", &ThreadEntityUpdate{Member: ptr.Bool(true)}))
-	tc, err = dal.IterateThreads(ctx, "org", "viewer", false, &Iterator{
+	test.OK(t, dal.AddThreadMembers(ctx, tid2, []string{"viewer"}))
+	tc, err = dal.IterateThreads(ctx, []string{"org", "viewer"}, "viewer", false, &Iterator{
 		Direction: FromStart,
 		Count:     10,
 	})
@@ -266,7 +267,7 @@ func TestThreadsForOrg(t *testing.T) {
 	test.Equals(t, threads[0].Type, models.ThreadTypeSupport)
 }
 
-func TestUpdateThreadMembers(t *testing.T) {
+func TestAddRemoveThreadMembers(t *testing.T) {
 	dt := testsql.Setup(t, schemaGlob)
 	defer dt.Cleanup(t)
 
@@ -282,29 +283,14 @@ func TestUpdateThreadMembers(t *testing.T) {
 	})
 	test.OK(t, err)
 
-	test.OK(t, dal.UpdateThreadMembers(ctx, tid, []string{}))
+	test.OK(t, dal.AddThreadMembers(ctx, tid, []string{"e1"}))
 	tes, err := dal.EntitiesForThread(ctx, tid)
-	test.OK(t, err)
-	test.Equals(t, 0, len(tes))
-
-	test.OK(t, dal.UpdateThreadMembers(ctx, tid, []string{"e1"}))
-	tes, err = dal.EntitiesForThread(ctx, tid)
 	test.OK(t, err)
 	test.Equals(t, 1, len(tes))
 	test.Equals(t, tes[0].EntityID, "e1")
 	test.Equals(t, tes[0].Member, true)
 
-	test.OK(t, dal.UpdateThreadMembers(ctx, tid, []string{"e2"}))
-	tes, err = dal.EntitiesForThread(ctx, tid)
-	test.OK(t, err)
-	sort.Sort(teByID(tes))
-	test.Equals(t, 2, len(tes))
-	test.Equals(t, tes[0].EntityID, "e1")
-	test.Equals(t, tes[0].Member, false)
-	test.Equals(t, tes[1].EntityID, "e2")
-	test.Equals(t, tes[1].Member, true)
-
-	test.OK(t, dal.UpdateThreadMembers(ctx, tid, []string{"e1", "e2"}))
+	test.OK(t, dal.AddThreadMembers(ctx, tid, []string{"e2"}))
 	tes, err = dal.EntitiesForThread(ctx, tid)
 	test.OK(t, err)
 	sort.Sort(teByID(tes))
@@ -314,7 +300,18 @@ func TestUpdateThreadMembers(t *testing.T) {
 	test.Equals(t, tes[1].EntityID, "e2")
 	test.Equals(t, tes[1].Member, true)
 
-	test.OK(t, dal.UpdateThreadMembers(ctx, tid, []string{"e1", "e1", "e3", "e3"}))
+	test.OK(t, dal.AddThreadMembers(ctx, tid, []string{"e1", "e2"}))
+	tes, err = dal.EntitiesForThread(ctx, tid)
+	test.OK(t, err)
+	sort.Sort(teByID(tes))
+	test.Equals(t, 2, len(tes))
+	test.Equals(t, tes[0].EntityID, "e1")
+	test.Equals(t, tes[0].Member, true)
+	test.Equals(t, tes[1].EntityID, "e2")
+	test.Equals(t, tes[1].Member, true)
+
+	test.OK(t, dal.RemoveThreadMembers(ctx, tid, []string{"e2"}))
+	test.OK(t, dal.AddThreadMembers(ctx, tid, []string{"e3"}))
 	tes, err = dal.EntitiesForThread(ctx, tid)
 	test.OK(t, err)
 	sort.Sort(teByID(tes))

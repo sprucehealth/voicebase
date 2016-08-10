@@ -1,12 +1,11 @@
 package server
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"strings"
 	"time"
-
-	"context"
 
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
@@ -147,10 +146,15 @@ func (s *threadsServer) CreateEmptyThread(ctx context.Context, in *threading.Cre
 		return nil, grpcErrorf(codes.InvalidArgument, "Invalid thread origin")
 	}
 
+	memberEntityIDs, err := memberEntityIDsForNewThread(in.Type, in.OrganizationID, in.FromEntityID, in.MemberEntityIDs)
+	if err != nil {
+		return nil, err
+	}
+
 	var systemTitle string
 	switch in.Type {
 	case threading.ThreadType_TEAM:
-		systemTitle, err = s.teamThreadSystemTitle(ctx, in.OrganizationID, in.MemberEntityIDs)
+		systemTitle, err = s.teamThreadSystemTitle(ctx, in.OrganizationID, memberEntityIDs)
 		if err != nil {
 			return nil, internalError(err)
 		}
@@ -174,13 +178,10 @@ func (s *threadsServer) CreateEmptyThread(ctx context.Context, in *threading.Cre
 		if err != nil {
 			return errors.Trace(err)
 		}
-		if in.Type == threading.ThreadType_TEAM || in.Type == threading.ThreadType_SECURE_EXTERNAL {
-			// Make sure posted is a member
-			in.MemberEntityIDs = append(in.MemberEntityIDs, in.FromEntityID)
-			if err := dl.UpdateThreadMembers(ctx, threadID, in.MemberEntityIDs); err != nil {
-				return errors.Trace(err)
-			}
-		} else if in.FromEntityID != "" {
+		if err := dl.AddThreadMembers(ctx, threadID, memberEntityIDs); err != nil {
+			return errors.Trace(err)
+		}
+		if in.FromEntityID != "" {
 			if err := dl.UpdateThreadEntity(ctx, threadID, in.FromEntityID, nil); err != nil {
 				return errors.Trace(err)
 			}
@@ -246,10 +247,15 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 		return nil, grpcErrorf(codes.InvalidArgument, fmt.Sprintf("Text is invalid format: %s", errors.Cause(err).Error()))
 	}
 
+	memberEntityIDs, err := memberEntityIDsForNewThread(in.Type, in.OrganizationID, in.FromEntityID, in.MemberEntityIDs)
+	if err != nil {
+		return nil, err
+	}
+
 	var systemTitle string
 	switch in.Type {
 	case threading.ThreadType_TEAM:
-		systemTitle, err = s.teamThreadSystemTitle(ctx, in.OrganizationID, in.MemberEntityIDs)
+		systemTitle, err = s.teamThreadSystemTitle(ctx, in.OrganizationID, memberEntityIDs)
 		if err != nil {
 			return nil, internalError(err)
 		}
@@ -275,16 +281,11 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 		if err != nil {
 			return errors.Trace(err)
 		}
-		if in.Type == threading.ThreadType_TEAM {
-			// Make sure posted is a member
-			in.MemberEntityIDs = append(in.MemberEntityIDs, in.FromEntityID)
-			if err := dl.UpdateThreadMembers(ctx, threadID, in.MemberEntityIDs); err != nil {
-				return errors.Trace(err)
-			}
-		} else {
-			if err := dl.UpdateThreadEntity(ctx, threadID, in.FromEntityID, nil); err != nil {
-				return errors.Trace(err)
-			}
+		if err := dl.AddThreadMembers(ctx, threadID, memberEntityIDs); err != nil {
+			return errors.Trace(err)
+		}
+		if err := dl.UpdateThreadEntity(ctx, threadID, in.FromEntityID, nil); err != nil {
+			return errors.Trace(err)
 		}
 
 		// Update unread reference status for anyone mentioned
@@ -407,6 +408,12 @@ func (s *threadsServer) CreateLinkedThreads(ctx context.Context, in *threading.C
 			SystemTitle:        in.SystemTitle2,
 		})
 		if err != nil {
+			return errors.Trace(err)
+		}
+		if err := dl.AddThreadMembers(ctx, thread1ID, []string{in.Organization1ID}); err != nil {
+			return errors.Trace(err)
+		}
+		if err := dl.AddThreadMembers(ctx, thread2ID, []string{in.Organization2ID}); err != nil {
 			return errors.Trace(err)
 		}
 		if err := dl.CreateThreadLink(ctx, &dal.ThreadLink{
@@ -863,6 +870,9 @@ func mediaIDsFromAttachments(as []*models.Attachment) []string {
 
 // QueryThreads queries the list of threads
 func (s *threadsServer) QueryThreads(ctx context.Context, in *threading.QueryThreadsRequest) (*threading.QueryThreadsResponse, error) {
+	if in.ViewerEntityID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "ViewerEntityID required")
+	}
 	if in.Type != threading.QueryThreadsRequest_ALL_FOR_VIEWER && in.OrganizationID == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "Organization ID required for non ALL_FOR_VIEWER queries")
 	}
@@ -877,7 +887,13 @@ func (s *threadsServer) QueryThreads(ctx context.Context, in *threading.QueryThr
 		return nil, err
 	}
 
-	ir, err := s.dal.IterateThreads(ctx, in.OrganizationID, in.ViewerEntityID, forExternal, &dal.Iterator{
+	memberEntityIDs := []string{in.ViewerEntityID}
+	if in.Type != threading.QueryThreadsRequest_ALL_FOR_VIEWER {
+		memberEntityIDs = append(memberEntityIDs, in.OrganizationID)
+	}
+	// TODO: likely should remove the "OrganizationID" from the request and get all MEMBERSHIPS for the viewer from the directory service.
+
+	ir, err := s.dal.IterateThreads(ctx, memberEntityIDs, in.ViewerEntityID, forExternal, &dal.Iterator{
 		StartCursor: in.Iterator.StartCursor,
 		EndCursor:   in.Iterator.EndCursor,
 		Direction:   d,
@@ -1276,8 +1292,14 @@ func (s *threadsServer) UpdateThread(ctx context.Context, in *threading.UpdateTh
 		if in.SystemTitle != "" {
 			update.SystemTitle = &in.SystemTitle
 		}
-		if len(in.AddMemberEntityIDs) != 0 || len(in.RemoveMemberEntityIDs) != 0 {
-			if err := dl.UpdateThreadMembers(ctx, tid, memberIDs); err != nil {
+		if len(in.AddMemberEntityIDs) != 0 {
+			if err := dl.AddThreadMembers(ctx, tid, in.AddMemberEntityIDs); err != nil {
+				return errors.Trace(err)
+			}
+			update.SystemTitle = &systemTitle
+		}
+		if len(in.RemoveMemberEntityIDs) != 0 {
+			if err := dl.RemoveThreadMembers(ctx, tid, in.RemoveMemberEntityIDs); err != nil {
 				return errors.Trace(err)
 			}
 			update.SystemTitle = &systemTitle
@@ -1655,7 +1677,6 @@ func (s *threadsServer) isAlertAllMessagesEnabled(ctx context.Context, entityID 
 }
 
 func (s *threadsServer) isClearTextMessageNotificationsEnabled(ctx context.Context, threadType models.ThreadType, receiverEntityID string) bool {
-
 	var key string
 	switch threadType {
 	case models.ThreadTypeSecureExternal, models.ThreadTypeExternal:
@@ -1678,6 +1699,53 @@ func (s *threadsServer) isClearTextMessageNotificationsEnabled(ctx context.Conte
 	}
 
 	return booleanValue.Value
+}
+
+func (s *threadsServer) forExternalViewer(ctx context.Context, viewerEntityID string) (bool, error) {
+	// Default to not showing internal notes for privacy reasons
+	forExternal := true
+	if viewerEntityID != "" {
+		ent, err := directory.SingleEntity(ctx, s.directoryClient, &directory.LookupEntitiesRequest{
+			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+				EntityID: viewerEntityID,
+			},
+			RequestedInformation: &directory.RequestedInformation{
+				Depth: 0,
+			},
+		})
+		if grpc.Code(err) == codes.NotFound {
+			return false, grpcErrorf(codes.NotFound, "Viewing entity %s not found", viewerEntityID)
+		} else if err != nil {
+			return false, internalError(err)
+		}
+		forExternal = ent.Type == directory.EntityType_EXTERNAL || ent.Type == directory.EntityType_PATIENT
+	}
+	return forExternal, nil
+}
+
+func memberEntityIDsForNewThread(ttype threading.ThreadType, orgID, fromEntityID string, memberEntityIDs []string) ([]string, error) {
+	switch ttype {
+	case threading.ThreadType_EXTERNAL, threading.ThreadType_SECURE_EXTERNAL, threading.ThreadType_SETUP, threading.ThreadType_SUPPORT:
+		memberEntityIDs = append(memberEntityIDs, orgID)
+	case threading.ThreadType_TEAM:
+		// Make sure creator is a member
+		if fromEntityID != "" {
+			var found bool
+			for _, id := range memberEntityIDs {
+				if id == fromEntityID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				memberEntityIDs = append(memberEntityIDs, fromEntityID)
+			}
+		}
+	default:
+		return nil, grpcErrorf(codes.Internal, fmt.Sprintf("Unhandled thread type %s", ttype))
+	}
+	return memberEntityIDs, nil
 }
 
 func parseRefsAndNormalize(s string) (string, []*models.Reference, error) {
@@ -1712,27 +1780,4 @@ func parseRefsAndNormalize(s string) (string, []*models.Reference, error) {
 func internalError(err error) error {
 	golog.LogDepthf(-1, golog.ERR, err.Error())
 	return grpcErrorf(codes.Internal, errors.Trace(err).Error())
-}
-
-func (s *threadsServer) forExternalViewer(ctx context.Context, viewerEntityID string) (bool, error) {
-	// Default to not showing internal notes for privacy reasons
-	forExternal := true
-	if viewerEntityID != "" {
-		ent, err := directory.SingleEntity(ctx, s.directoryClient, &directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-				EntityID: viewerEntityID,
-			},
-			RequestedInformation: &directory.RequestedInformation{
-				Depth: 0,
-			},
-		})
-		if grpc.Code(err) == codes.NotFound {
-			return false, grpcErrorf(codes.NotFound, "Viewing entity %s not found", viewerEntityID)
-		} else if err != nil {
-			return false, internalError(err)
-		}
-		forExternal = ent.Type == directory.EntityType_EXTERNAL || ent.Type == directory.EntityType_PATIENT
-	}
-	return forExternal, nil
 }

@@ -26,6 +26,14 @@ func (dl *DAL) Transact(ctx context.Context, trans func(context.Context, dal.DAL
 	return trans(ctx, dl)
 }
 
+func (dl *DAL) AddThreadMembers(ctx context.Context, threadID models.ThreadID, members []string) error {
+	rets := dl.Expector.Record(threadID, members)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[0])
+}
+
 func (dl *DAL) CreateOnboardingState(ctx context.Context, threadID models.ThreadID, entityID string) error {
 	rets := dl.Expector.Record(threadID, entityID)
 	if len(rets) == 0 {
@@ -82,8 +90,8 @@ func (dl *DAL) DeleteThread(ctx context.Context, threadID models.ThreadID) error
 	return mock.SafeError(rets[0])
 }
 
-func (dl *DAL) IterateThreads(ctx context.Context, orgID, viewerID string, forExternal bool, it *dal.Iterator) (*dal.ThreadConnection, error) {
-	rets := dl.Expector.Record(orgID, viewerID, forExternal, it)
+func (dl *DAL) IterateThreads(ctx context.Context, memberEntityIDs []string, viewerID string, forExternal bool, it *dal.Iterator) (*dal.ThreadConnection, error) {
+	rets := dl.Expector.Record(memberEntityIDs, viewerID, forExternal, it)
 	if len(rets) == 0 {
 		return nil, nil
 	}
@@ -116,6 +124,14 @@ func (dl *DAL) PostMessage(ctx context.Context, req *dal.PostMessageRequest) (*m
 
 func (dl *DAL) RecordThreadEvent(ctx context.Context, threadID models.ThreadID, actorEntityID string, event models.ThreadEvent) error {
 	rets := dl.Expector.Record(threadID, actorEntityID, event)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[0])
+}
+
+func (dl *DAL) RemoveThreadMembers(ctx context.Context, threadID models.ThreadID, members []string) error {
+	rets := dl.Expector.Record(threadID, members)
 	if len(rets) == 0 {
 		return nil
 	}
@@ -236,14 +252,6 @@ func (dl *DAL) UpdateThread(ctx context.Context, threadID models.ThreadID, updat
 
 func (dl *DAL) UpdateThreadEntity(ctx context.Context, threadID models.ThreadID, entityID string, update *dal.ThreadEntityUpdate) error {
 	rets := dl.Expector.Record(threadID, entityID, update)
-	if len(rets) == 0 {
-		return nil
-	}
-	return mock.SafeError(rets[0])
-}
-
-func (dl *DAL) UpdateThreadMembers(ctx context.Context, threadID models.ThreadID, members []string) error {
-	rets := dl.Expector.Record(threadID, members)
 	if len(rets) == 0 {
 		return nil
 	}
