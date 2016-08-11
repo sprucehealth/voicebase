@@ -10,6 +10,7 @@ const (
 	ConfigKeyTeamConversations        = "team_conversations_enabled"
 	ConfigKeyVideoCalling             = "video_calling_enabled"
 	ConfigKeyVisitAttachments         = "visit_attachments_enabled"
+	ConfigKeyPayments                 = "payments_enabled"
 )
 
 // TeamConversationsConfig represents the config controlling whether or not team conversations is enabled at the org level
@@ -118,6 +119,22 @@ var VideoCallingConfig = &settings.Config{
 	Title:          "Enable/Disable video calling at org level",
 	AllowSubkeys:   false,
 	Key:            ConfigKeyVideoCalling,
+	Type:           settings.ConfigType_BOOLEAN,
+	PossibleOwners: []settings.OwnerType{settings.OwnerType_ORGANIZATION},
+	Config: &settings.Config_Boolean{
+		Boolean: &settings.BooleanConfig{
+			Default: &settings.BooleanValue{
+				Value: false,
+			},
+		},
+	},
+}
+
+// PaymentsConfig represents the config controlling whether or not payments is enabled at the org level
+var PaymentsConfig = &settings.Config{
+	Title:          "Enable/disable payment support",
+	AllowSubkeys:   false,
+	Key:            ConfigKeyPayments,
 	Type:           settings.ConfigType_BOOLEAN,
 	PossibleOwners: []settings.OwnerType{settings.OwnerType_ORGANIZATION},
 	Config: &settings.Config_Boolean{

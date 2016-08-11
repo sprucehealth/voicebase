@@ -5,6 +5,7 @@ import (
 
 	"context"
 
+	"github.com/sprucehealth/backend/cmd/svc/admin/internal/common"
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/gql/client"
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/gql/models"
 	"github.com/sprucehealth/backend/libs/errors"
@@ -50,7 +51,7 @@ type modifySettingInput struct {
 
 var modifySettingInputType = graphql.NewInputObject(
 	graphql.InputObjectConfig{
-		Name: "modifySettingInput",
+		Name: "ModifySettingInput",
 		Fields: graphql.InputObjectConfigFieldMap{
 			"nodeID": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 			"key":    &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
@@ -62,9 +63,8 @@ var modifySettingInputType = graphql.NewInputObject(
 )
 
 type modifySettingOutput struct {
-	Success      bool            `json:"success"`
-	ErrorMessage string          `json:"errorMessage,omitempty"`
-	Setting      *models.Setting `json:"setting"`
+	Success      bool   `json:"success"`
+	ErrorMessage string `json:"errorMessage,omitempty"`
 }
 
 var modifySettingOutputType = graphql.NewObject(
@@ -85,7 +85,7 @@ func newModifySettingField() *graphql.Field {
 	return &graphql.Field{
 		Type: graphql.NewNonNull(modifySettingOutputType),
 		Args: graphql.FieldConfigArgument{
-			"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(modifySettingInputType)},
+			common.InputFieldName: &graphql.ArgumentConfig{Type: graphql.NewNonNull(modifySettingInputType)},
 		},
 		Resolve: modifySettingResolve,
 	}
@@ -93,7 +93,7 @@ func newModifySettingField() *graphql.Field {
 
 func modifySettingResolve(p graphql.ResolveParams) (interface{}, error) {
 	var in modifySettingInput
-	if err := gqldecode.Decode(p.Args["input"].(map[string]interface{}), &in); err != nil {
+	if err := gqldecode.Decode(p.Args[common.InputFieldName].(map[string]interface{}), &in); err != nil {
 		switch err := err.(type) {
 		case gqldecode.ErrValidationFailed:
 			return nil, errors.Errorf("%s is invalid: %s", err.Field, err.Reason)

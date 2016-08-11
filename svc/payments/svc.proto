@@ -4,8 +4,80 @@ import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
 option (gogoproto.marshaler_all) = true;
 option (gogoproto.unmarshaler_all) = true;
-option (gogoproto.goproto_enum_prefix_all) = true;
 
 package payments;
 
-service Payments {}
+enum VendorAccountType {
+	VENDOR_ACCOUNT_TYPE_UNKNOWN = 0;
+	VENDOR_ACCOUNT_TYPE_STRIPE = 1;
+}
+
+enum VendorAccountLifecycle {
+	VENDOR_ACCOUNT_LIFECYCLE_UNKNOWN = 0;
+	VENDOR_ACCOUNT_LIFECYCLE_CONNECTED = 1;
+	VENDOR_ACCOUNT_LIFECYCLE_DISCONNECTED = 2;
+}
+
+enum VendorAccountChangeState {
+	VENDOR_ACCOUNT_CHANGE_STATE_UNKNOWN = 0;
+	VENDOR_ACCOUNT_CHANGE_STATE_NONE = 1;
+	VENDOR_ACCOUNT_CHANGE_STATE_PENDING = 2;
+}
+
+message StripeAccount {
+	string user_id = 1 [(gogoproto.customname) = "UserID"];
+	string scope = 2;
+
+}
+
+message VendorAccount {
+	string id = 1 [(gogoproto.customname) = "ID"];
+	string entity_id = 2 [(gogoproto.customname) = "EntityID"];
+	VendorAccountLifecycle lifecycle = 3;
+	VendorAccountChangeState change_state = 4;
+	bool   live = 5;
+
+	VendorAccountType vendor_account_type = 6;
+	oneof vendor_account_oneof {
+		StripeAccount stripe_account = 7;
+	}
+}
+
+message StripeAccountConnectRequest {
+	string code = 1;
+}
+
+message ConnectVendorAccountRequest {
+	string entity_id = 1 [(gogoproto.customname) = "EntityID"];
+
+	VendorAccountType vendor_account_type = 2;
+	oneof connect_vendor_account_oneof {
+		StripeAccountConnectRequest stripe_request = 3;
+	}
+}
+
+message ConnectVendorAccountResponse {
+	repeated VendorAccount vendor_accounts = 1;
+}
+
+message VendorAccountsRequest {
+	string entity_id = 1 [(gogoproto.customname) = "EntityID"];
+}
+
+message VendorAccountsResponse {
+	repeated VendorAccount vendor_accounts = 1;
+}
+
+message DisconnectVendorAccountRequest {
+	string vendor_account_id = 1 [(gogoproto.customname) = "VendorAccountID"];
+}
+
+message DisconnectVendorAccountResponse {
+	repeated VendorAccount vendor_accounts = 1;
+}
+
+service Payments {
+	rpc ConnectVendorAccount (ConnectVendorAccountRequest) returns (ConnectVendorAccountResponse);
+	rpc DisconnectVendorAccount (DisconnectVendorAccountRequest) returns (DisconnectVendorAccountResponse);
+	rpc VendorAccounts (VendorAccountsRequest) returns (VendorAccountsResponse);
+}

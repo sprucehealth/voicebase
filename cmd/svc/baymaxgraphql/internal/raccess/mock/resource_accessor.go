@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/layout"
 	"github.com/sprucehealth/backend/svc/media"
+	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/backend/svc/threading"
 )
 
@@ -664,4 +665,13 @@ func (m *ResourceAccessor) UpdateAuthToken(ctx context.Context, req *auth.Update
 	}
 
 	return rets[0].(*auth.AuthToken), mock.SafeError(rets[1])
+}
+
+func (m *ResourceAccessor) ConnectVendorAccount(ctx context.Context, req *payments.ConnectVendorAccountRequest) (*payments.ConnectVendorAccountResponse, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].(*payments.ConnectVendorAccountResponse), mock.SafeError(rets[1])
 }

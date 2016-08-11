@@ -72,6 +72,7 @@ devDeployableMap["layout"]="deployable_0E6H974S00O00"
 devDeployableMap["care"]="deployable_0E91VDOHG0O00"
 devDeployableMap["media"]="deployable_0EM1LSDHG0O00,deployable_0EP10F1PG0O00"
 devDeployableMap["admin"]="deployable_0FRP18V1G0O00"
+devDeployableMap["payments"]="deployable_0G6QO9CUO0O00"
 
 if [[ "$DEPLOY_TO_S3" != "" ]]; then
 	echo "Pushing images for revision: $GIT_REV"

@@ -3,12 +3,21 @@
 // DO NOT EDIT!
 
 /*
-Package payments is a generated protocol buffer package.
+	Package payments is a generated protocol buffer package.
 
-It is generated from these files:
-	svc.proto
+	It is generated from these files:
+		svc.proto
 
-It has these top-level messages:
+	It has these top-level messages:
+		StripeAccount
+		VendorAccount
+		StripeAccountConnectRequest
+		ConnectVendorAccountRequest
+		ConnectVendorAccountResponse
+		VendorAccountsRequest
+		VendorAccountsResponse
+		DisconnectVendorAccountRequest
+		DisconnectVendorAccountResponse
 */
 package payments
 
@@ -17,10 +26,19 @@ import fmt "fmt"
 import math "math"
 import _ "github.com/gogo/protobuf/gogoproto"
 
+import strconv "strconv"
+
+import strings "strings"
+import github_com_gogo_protobuf_proto "github.com/gogo/protobuf/proto"
+import sort "sort"
+import reflect "reflect"
+
 import (
 	context "context"
 	grpc "google.golang.org/grpc"
 )
+
+import io "io"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -33,6 +51,912 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
+type VendorAccountType int32
+
+const (
+	VENDOR_ACCOUNT_TYPE_UNKNOWN VendorAccountType = 0
+	VENDOR_ACCOUNT_TYPE_STRIPE  VendorAccountType = 1
+)
+
+var VendorAccountType_name = map[int32]string{
+	0: "VENDOR_ACCOUNT_TYPE_UNKNOWN",
+	1: "VENDOR_ACCOUNT_TYPE_STRIPE",
+}
+var VendorAccountType_value = map[string]int32{
+	"VENDOR_ACCOUNT_TYPE_UNKNOWN": 0,
+	"VENDOR_ACCOUNT_TYPE_STRIPE":  1,
+}
+
+func (VendorAccountType) EnumDescriptor() ([]byte, []int) { return fileDescriptorSvc, []int{0} }
+
+type VendorAccountLifecycle int32
+
+const (
+	VENDOR_ACCOUNT_LIFECYCLE_UNKNOWN      VendorAccountLifecycle = 0
+	VENDOR_ACCOUNT_LIFECYCLE_CONNECTED    VendorAccountLifecycle = 1
+	VENDOR_ACCOUNT_LIFECYCLE_DISCONNECTED VendorAccountLifecycle = 2
+)
+
+var VendorAccountLifecycle_name = map[int32]string{
+	0: "VENDOR_ACCOUNT_LIFECYCLE_UNKNOWN",
+	1: "VENDOR_ACCOUNT_LIFECYCLE_CONNECTED",
+	2: "VENDOR_ACCOUNT_LIFECYCLE_DISCONNECTED",
+}
+var VendorAccountLifecycle_value = map[string]int32{
+	"VENDOR_ACCOUNT_LIFECYCLE_UNKNOWN":      0,
+	"VENDOR_ACCOUNT_LIFECYCLE_CONNECTED":    1,
+	"VENDOR_ACCOUNT_LIFECYCLE_DISCONNECTED": 2,
+}
+
+func (VendorAccountLifecycle) EnumDescriptor() ([]byte, []int) { return fileDescriptorSvc, []int{1} }
+
+type VendorAccountChangeState int32
+
+const (
+	VENDOR_ACCOUNT_CHANGE_STATE_UNKNOWN VendorAccountChangeState = 0
+	VENDOR_ACCOUNT_CHANGE_STATE_NONE    VendorAccountChangeState = 1
+	VENDOR_ACCOUNT_CHANGE_STATE_PENDING VendorAccountChangeState = 2
+)
+
+var VendorAccountChangeState_name = map[int32]string{
+	0: "VENDOR_ACCOUNT_CHANGE_STATE_UNKNOWN",
+	1: "VENDOR_ACCOUNT_CHANGE_STATE_NONE",
+	2: "VENDOR_ACCOUNT_CHANGE_STATE_PENDING",
+}
+var VendorAccountChangeState_value = map[string]int32{
+	"VENDOR_ACCOUNT_CHANGE_STATE_UNKNOWN": 0,
+	"VENDOR_ACCOUNT_CHANGE_STATE_NONE":    1,
+	"VENDOR_ACCOUNT_CHANGE_STATE_PENDING": 2,
+}
+
+func (VendorAccountChangeState) EnumDescriptor() ([]byte, []int) { return fileDescriptorSvc, []int{2} }
+
+type StripeAccount struct {
+	UserID string `protobuf:"bytes,1,opt,name=user_id,proto3" json:"user_id,omitempty"`
+	Scope  string `protobuf:"bytes,2,opt,name=scope,proto3" json:"scope,omitempty"`
+}
+
+func (m *StripeAccount) Reset()                    { *m = StripeAccount{} }
+func (*StripeAccount) ProtoMessage()               {}
+func (*StripeAccount) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{0} }
+
+type VendorAccount struct {
+	ID                string                   `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	EntityID          string                   `protobuf:"bytes,2,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
+	Lifecycle         VendorAccountLifecycle   `protobuf:"varint,3,opt,name=lifecycle,proto3,enum=payments.VendorAccountLifecycle" json:"lifecycle,omitempty"`
+	ChangeState       VendorAccountChangeState `protobuf:"varint,4,opt,name=change_state,proto3,enum=payments.VendorAccountChangeState" json:"change_state,omitempty"`
+	Live              bool                     `protobuf:"varint,5,opt,name=live,proto3" json:"live,omitempty"`
+	VendorAccountType VendorAccountType        `protobuf:"varint,6,opt,name=vendor_account_type,proto3,enum=payments.VendorAccountType" json:"vendor_account_type,omitempty"`
+	// Types that are valid to be assigned to VendorAccountOneof:
+	//	*VendorAccount_StripeAccount
+	VendorAccountOneof isVendorAccount_VendorAccountOneof `protobuf_oneof:"vendor_account_oneof"`
+}
+
+func (m *VendorAccount) Reset()                    { *m = VendorAccount{} }
+func (*VendorAccount) ProtoMessage()               {}
+func (*VendorAccount) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{1} }
+
+type isVendorAccount_VendorAccountOneof interface {
+	isVendorAccount_VendorAccountOneof()
+	Equal(interface{}) bool
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+
+type VendorAccount_StripeAccount struct {
+	StripeAccount *StripeAccount `protobuf:"bytes,7,opt,name=stripe_account,oneof"`
+}
+
+func (*VendorAccount_StripeAccount) isVendorAccount_VendorAccountOneof() {}
+
+func (m *VendorAccount) GetVendorAccountOneof() isVendorAccount_VendorAccountOneof {
+	if m != nil {
+		return m.VendorAccountOneof
+	}
+	return nil
+}
+
+func (m *VendorAccount) GetStripeAccount() *StripeAccount {
+	if x, ok := m.GetVendorAccountOneof().(*VendorAccount_StripeAccount); ok {
+		return x.StripeAccount
+	}
+	return nil
+}
+
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*VendorAccount) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _VendorAccount_OneofMarshaler, _VendorAccount_OneofUnmarshaler, _VendorAccount_OneofSizer, []interface{}{
+		(*VendorAccount_StripeAccount)(nil),
+	}
+}
+
+func _VendorAccount_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*VendorAccount)
+	// vendor_account_oneof
+	switch x := m.VendorAccountOneof.(type) {
+	case *VendorAccount_StripeAccount:
+		_ = b.EncodeVarint(7<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.StripeAccount); err != nil {
+			return err
+		}
+	case nil:
+	default:
+		return fmt.Errorf("VendorAccount.VendorAccountOneof has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _VendorAccount_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*VendorAccount)
+	switch tag {
+	case 7: // vendor_account_oneof.stripe_account
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(StripeAccount)
+		err := b.DecodeMessage(msg)
+		m.VendorAccountOneof = &VendorAccount_StripeAccount{msg}
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+func _VendorAccount_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*VendorAccount)
+	// vendor_account_oneof
+	switch x := m.VendorAccountOneof.(type) {
+	case *VendorAccount_StripeAccount:
+		s := proto.Size(x.StripeAccount)
+		n += proto.SizeVarint(7<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
+}
+
+type StripeAccountConnectRequest struct {
+	Code string `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
+}
+
+func (m *StripeAccountConnectRequest) Reset()                    { *m = StripeAccountConnectRequest{} }
+func (*StripeAccountConnectRequest) ProtoMessage()               {}
+func (*StripeAccountConnectRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{2} }
+
+type ConnectVendorAccountRequest struct {
+	EntityID          string            `protobuf:"bytes,1,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
+	VendorAccountType VendorAccountType `protobuf:"varint,2,opt,name=vendor_account_type,proto3,enum=payments.VendorAccountType" json:"vendor_account_type,omitempty"`
+	// Types that are valid to be assigned to ConnectVendorAccountOneof:
+	//	*ConnectVendorAccountRequest_StripeRequest
+	ConnectVendorAccountOneof isConnectVendorAccountRequest_ConnectVendorAccountOneof `protobuf_oneof:"connect_vendor_account_oneof"`
+}
+
+func (m *ConnectVendorAccountRequest) Reset()                    { *m = ConnectVendorAccountRequest{} }
+func (*ConnectVendorAccountRequest) ProtoMessage()               {}
+func (*ConnectVendorAccountRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{3} }
+
+type isConnectVendorAccountRequest_ConnectVendorAccountOneof interface {
+	isConnectVendorAccountRequest_ConnectVendorAccountOneof()
+	Equal(interface{}) bool
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+
+type ConnectVendorAccountRequest_StripeRequest struct {
+	StripeRequest *StripeAccountConnectRequest `protobuf:"bytes,3,opt,name=stripe_request,oneof"`
+}
+
+func (*ConnectVendorAccountRequest_StripeRequest) isConnectVendorAccountRequest_ConnectVendorAccountOneof() {
+}
+
+func (m *ConnectVendorAccountRequest) GetConnectVendorAccountOneof() isConnectVendorAccountRequest_ConnectVendorAccountOneof {
+	if m != nil {
+		return m.ConnectVendorAccountOneof
+	}
+	return nil
+}
+
+func (m *ConnectVendorAccountRequest) GetStripeRequest() *StripeAccountConnectRequest {
+	if x, ok := m.GetConnectVendorAccountOneof().(*ConnectVendorAccountRequest_StripeRequest); ok {
+		return x.StripeRequest
+	}
+	return nil
+}
+
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*ConnectVendorAccountRequest) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _ConnectVendorAccountRequest_OneofMarshaler, _ConnectVendorAccountRequest_OneofUnmarshaler, _ConnectVendorAccountRequest_OneofSizer, []interface{}{
+		(*ConnectVendorAccountRequest_StripeRequest)(nil),
+	}
+}
+
+func _ConnectVendorAccountRequest_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*ConnectVendorAccountRequest)
+	// connect_vendor_account_oneof
+	switch x := m.ConnectVendorAccountOneof.(type) {
+	case *ConnectVendorAccountRequest_StripeRequest:
+		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.StripeRequest); err != nil {
+			return err
+		}
+	case nil:
+	default:
+		return fmt.Errorf("ConnectVendorAccountRequest.ConnectVendorAccountOneof has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _ConnectVendorAccountRequest_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*ConnectVendorAccountRequest)
+	switch tag {
+	case 3: // connect_vendor_account_oneof.stripe_request
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(StripeAccountConnectRequest)
+		err := b.DecodeMessage(msg)
+		m.ConnectVendorAccountOneof = &ConnectVendorAccountRequest_StripeRequest{msg}
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+func _ConnectVendorAccountRequest_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*ConnectVendorAccountRequest)
+	// connect_vendor_account_oneof
+	switch x := m.ConnectVendorAccountOneof.(type) {
+	case *ConnectVendorAccountRequest_StripeRequest:
+		s := proto.Size(x.StripeRequest)
+		n += proto.SizeVarint(3<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
+}
+
+type ConnectVendorAccountResponse struct {
+	VendorAccounts []*VendorAccount `protobuf:"bytes,1,rep,name=vendor_accounts" json:"vendor_accounts,omitempty"`
+}
+
+func (m *ConnectVendorAccountResponse) Reset()                    { *m = ConnectVendorAccountResponse{} }
+func (*ConnectVendorAccountResponse) ProtoMessage()               {}
+func (*ConnectVendorAccountResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{4} }
+
+func (m *ConnectVendorAccountResponse) GetVendorAccounts() []*VendorAccount {
+	if m != nil {
+		return m.VendorAccounts
+	}
+	return nil
+}
+
+type VendorAccountsRequest struct {
+	EntityID string `protobuf:"bytes,1,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
+}
+
+func (m *VendorAccountsRequest) Reset()                    { *m = VendorAccountsRequest{} }
+func (*VendorAccountsRequest) ProtoMessage()               {}
+func (*VendorAccountsRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{5} }
+
+type VendorAccountsResponse struct {
+	VendorAccounts []*VendorAccount `protobuf:"bytes,1,rep,name=vendor_accounts" json:"vendor_accounts,omitempty"`
+}
+
+func (m *VendorAccountsResponse) Reset()                    { *m = VendorAccountsResponse{} }
+func (*VendorAccountsResponse) ProtoMessage()               {}
+func (*VendorAccountsResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{6} }
+
+func (m *VendorAccountsResponse) GetVendorAccounts() []*VendorAccount {
+	if m != nil {
+		return m.VendorAccounts
+	}
+	return nil
+}
+
+type DisconnectVendorAccountRequest struct {
+	VendorAccountID string `protobuf:"bytes,1,opt,name=vendor_account_id,proto3" json:"vendor_account_id,omitempty"`
+}
+
+func (m *DisconnectVendorAccountRequest) Reset()      { *m = DisconnectVendorAccountRequest{} }
+func (*DisconnectVendorAccountRequest) ProtoMessage() {}
+func (*DisconnectVendorAccountRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptorSvc, []int{7}
+}
+
+type DisconnectVendorAccountResponse struct {
+	VendorAccounts []*VendorAccount `protobuf:"bytes,1,rep,name=vendor_accounts" json:"vendor_accounts,omitempty"`
+}
+
+func (m *DisconnectVendorAccountResponse) Reset()      { *m = DisconnectVendorAccountResponse{} }
+func (*DisconnectVendorAccountResponse) ProtoMessage() {}
+func (*DisconnectVendorAccountResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptorSvc, []int{8}
+}
+
+func (m *DisconnectVendorAccountResponse) GetVendorAccounts() []*VendorAccount {
+	if m != nil {
+		return m.VendorAccounts
+	}
+	return nil
+}
+
+func init() {
+	proto.RegisterType((*StripeAccount)(nil), "payments.StripeAccount")
+	proto.RegisterType((*VendorAccount)(nil), "payments.VendorAccount")
+	proto.RegisterType((*StripeAccountConnectRequest)(nil), "payments.StripeAccountConnectRequest")
+	proto.RegisterType((*ConnectVendorAccountRequest)(nil), "payments.ConnectVendorAccountRequest")
+	proto.RegisterType((*ConnectVendorAccountResponse)(nil), "payments.ConnectVendorAccountResponse")
+	proto.RegisterType((*VendorAccountsRequest)(nil), "payments.VendorAccountsRequest")
+	proto.RegisterType((*VendorAccountsResponse)(nil), "payments.VendorAccountsResponse")
+	proto.RegisterType((*DisconnectVendorAccountRequest)(nil), "payments.DisconnectVendorAccountRequest")
+	proto.RegisterType((*DisconnectVendorAccountResponse)(nil), "payments.DisconnectVendorAccountResponse")
+	proto.RegisterEnum("payments.VendorAccountType", VendorAccountType_name, VendorAccountType_value)
+	proto.RegisterEnum("payments.VendorAccountLifecycle", VendorAccountLifecycle_name, VendorAccountLifecycle_value)
+	proto.RegisterEnum("payments.VendorAccountChangeState", VendorAccountChangeState_name, VendorAccountChangeState_value)
+}
+func (x VendorAccountType) String() string {
+	s, ok := VendorAccountType_name[int32(x)]
+	if ok {
+		return s
+	}
+	return strconv.Itoa(int(x))
+}
+func (x VendorAccountLifecycle) String() string {
+	s, ok := VendorAccountLifecycle_name[int32(x)]
+	if ok {
+		return s
+	}
+	return strconv.Itoa(int(x))
+}
+func (x VendorAccountChangeState) String() string {
+	s, ok := VendorAccountChangeState_name[int32(x)]
+	if ok {
+		return s
+	}
+	return strconv.Itoa(int(x))
+}
+func (this *StripeAccount) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*StripeAccount)
+	if !ok {
+		that2, ok := that.(StripeAccount)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.UserID != that1.UserID {
+		return false
+	}
+	if this.Scope != that1.Scope {
+		return false
+	}
+	return true
+}
+func (this *VendorAccount) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*VendorAccount)
+	if !ok {
+		that2, ok := that.(VendorAccount)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.ID != that1.ID {
+		return false
+	}
+	if this.EntityID != that1.EntityID {
+		return false
+	}
+	if this.Lifecycle != that1.Lifecycle {
+		return false
+	}
+	if this.ChangeState != that1.ChangeState {
+		return false
+	}
+	if this.Live != that1.Live {
+		return false
+	}
+	if this.VendorAccountType != that1.VendorAccountType {
+		return false
+	}
+	if that1.VendorAccountOneof == nil {
+		if this.VendorAccountOneof != nil {
+			return false
+		}
+	} else if this.VendorAccountOneof == nil {
+		return false
+	} else if !this.VendorAccountOneof.Equal(that1.VendorAccountOneof) {
+		return false
+	}
+	return true
+}
+func (this *VendorAccount_StripeAccount) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*VendorAccount_StripeAccount)
+	if !ok {
+		that2, ok := that.(VendorAccount_StripeAccount)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.StripeAccount.Equal(that1.StripeAccount) {
+		return false
+	}
+	return true
+}
+func (this *StripeAccountConnectRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*StripeAccountConnectRequest)
+	if !ok {
+		that2, ok := that.(StripeAccountConnectRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Code != that1.Code {
+		return false
+	}
+	return true
+}
+func (this *ConnectVendorAccountRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*ConnectVendorAccountRequest)
+	if !ok {
+		that2, ok := that.(ConnectVendorAccountRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.EntityID != that1.EntityID {
+		return false
+	}
+	if this.VendorAccountType != that1.VendorAccountType {
+		return false
+	}
+	if that1.ConnectVendorAccountOneof == nil {
+		if this.ConnectVendorAccountOneof != nil {
+			return false
+		}
+	} else if this.ConnectVendorAccountOneof == nil {
+		return false
+	} else if !this.ConnectVendorAccountOneof.Equal(that1.ConnectVendorAccountOneof) {
+		return false
+	}
+	return true
+}
+func (this *ConnectVendorAccountRequest_StripeRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*ConnectVendorAccountRequest_StripeRequest)
+	if !ok {
+		that2, ok := that.(ConnectVendorAccountRequest_StripeRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.StripeRequest.Equal(that1.StripeRequest) {
+		return false
+	}
+	return true
+}
+func (this *ConnectVendorAccountResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*ConnectVendorAccountResponse)
+	if !ok {
+		that2, ok := that.(ConnectVendorAccountResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if len(this.VendorAccounts) != len(that1.VendorAccounts) {
+		return false
+	}
+	for i := range this.VendorAccounts {
+		if !this.VendorAccounts[i].Equal(that1.VendorAccounts[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *VendorAccountsRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*VendorAccountsRequest)
+	if !ok {
+		that2, ok := that.(VendorAccountsRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.EntityID != that1.EntityID {
+		return false
+	}
+	return true
+}
+func (this *VendorAccountsResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*VendorAccountsResponse)
+	if !ok {
+		that2, ok := that.(VendorAccountsResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if len(this.VendorAccounts) != len(that1.VendorAccounts) {
+		return false
+	}
+	for i := range this.VendorAccounts {
+		if !this.VendorAccounts[i].Equal(that1.VendorAccounts[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *DisconnectVendorAccountRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*DisconnectVendorAccountRequest)
+	if !ok {
+		that2, ok := that.(DisconnectVendorAccountRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.VendorAccountID != that1.VendorAccountID {
+		return false
+	}
+	return true
+}
+func (this *DisconnectVendorAccountResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*DisconnectVendorAccountResponse)
+	if !ok {
+		that2, ok := that.(DisconnectVendorAccountResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if len(this.VendorAccounts) != len(that1.VendorAccounts) {
+		return false
+	}
+	for i := range this.VendorAccounts {
+		if !this.VendorAccounts[i].Equal(that1.VendorAccounts[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *StripeAccount) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&payments.StripeAccount{")
+	s = append(s, "UserID: "+fmt.Sprintf("%#v", this.UserID)+",\n")
+	s = append(s, "Scope: "+fmt.Sprintf("%#v", this.Scope)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *VendorAccount) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 11)
+	s = append(s, "&payments.VendorAccount{")
+	s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
+	s = append(s, "EntityID: "+fmt.Sprintf("%#v", this.EntityID)+",\n")
+	s = append(s, "Lifecycle: "+fmt.Sprintf("%#v", this.Lifecycle)+",\n")
+	s = append(s, "ChangeState: "+fmt.Sprintf("%#v", this.ChangeState)+",\n")
+	s = append(s, "Live: "+fmt.Sprintf("%#v", this.Live)+",\n")
+	s = append(s, "VendorAccountType: "+fmt.Sprintf("%#v", this.VendorAccountType)+",\n")
+	if this.VendorAccountOneof != nil {
+		s = append(s, "VendorAccountOneof: "+fmt.Sprintf("%#v", this.VendorAccountOneof)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *VendorAccount_StripeAccount) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&payments.VendorAccount_StripeAccount{` +
+		`StripeAccount:` + fmt.Sprintf("%#v", this.StripeAccount) + `}`}, ", ")
+	return s
+}
+func (this *StripeAccountConnectRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&payments.StripeAccountConnectRequest{")
+	s = append(s, "Code: "+fmt.Sprintf("%#v", this.Code)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *ConnectVendorAccountRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&payments.ConnectVendorAccountRequest{")
+	s = append(s, "EntityID: "+fmt.Sprintf("%#v", this.EntityID)+",\n")
+	s = append(s, "VendorAccountType: "+fmt.Sprintf("%#v", this.VendorAccountType)+",\n")
+	if this.ConnectVendorAccountOneof != nil {
+		s = append(s, "ConnectVendorAccountOneof: "+fmt.Sprintf("%#v", this.ConnectVendorAccountOneof)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *ConnectVendorAccountRequest_StripeRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&payments.ConnectVendorAccountRequest_StripeRequest{` +
+		`StripeRequest:` + fmt.Sprintf("%#v", this.StripeRequest) + `}`}, ", ")
+	return s
+}
+func (this *ConnectVendorAccountResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&payments.ConnectVendorAccountResponse{")
+	if this.VendorAccounts != nil {
+		s = append(s, "VendorAccounts: "+fmt.Sprintf("%#v", this.VendorAccounts)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *VendorAccountsRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&payments.VendorAccountsRequest{")
+	s = append(s, "EntityID: "+fmt.Sprintf("%#v", this.EntityID)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *VendorAccountsResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&payments.VendorAccountsResponse{")
+	if this.VendorAccounts != nil {
+		s = append(s, "VendorAccounts: "+fmt.Sprintf("%#v", this.VendorAccounts)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *DisconnectVendorAccountRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&payments.DisconnectVendorAccountRequest{")
+	s = append(s, "VendorAccountID: "+fmt.Sprintf("%#v", this.VendorAccountID)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *DisconnectVendorAccountResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&payments.DisconnectVendorAccountResponse{")
+	if this.VendorAccounts != nil {
+		s = append(s, "VendorAccounts: "+fmt.Sprintf("%#v", this.VendorAccounts)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func valueToGoStringSvc(v interface{}, typ string) string {
+	rv := reflect.ValueOf(v)
+	if rv.IsNil() {
+		return "nil"
+	}
+	pv := reflect.Indirect(rv).Interface()
+	return fmt.Sprintf("func(v %v) *%v { return &v } ( %#v )", typ, typ, pv)
+}
+func extensionToGoStringSvc(m github_com_gogo_protobuf_proto.Message) string {
+	e := github_com_gogo_protobuf_proto.GetUnsafeExtensionsMap(m)
+	if e == nil {
+		return "nil"
+	}
+	s := "proto.NewUnsafeXXX_InternalExtensions(map[int32]proto.Extension{"
+	keys := make([]int, 0, len(e))
+	for k := range e {
+		keys = append(keys, int(k))
+	}
+	sort.Ints(keys)
+	ss := []string{}
+	for _, k := range keys {
+		ss = append(ss, strconv.Itoa(k)+": "+e[int32(k)].GoString())
+	}
+	s += strings.Join(ss, ",") + "})"
+	return s
+}
+
 // Reference imports to suppress errors if they are not otherwise used.
 var _ context.Context
 var _ grpc.ClientConn
@@ -44,6 +968,9 @@ const _ = grpc.SupportPackageIsVersion3
 // Client API for Payments service
 
 type PaymentsClient interface {
+	ConnectVendorAccount(ctx context.Context, in *ConnectVendorAccountRequest, opts ...grpc.CallOption) (*ConnectVendorAccountResponse, error)
+	DisconnectVendorAccount(ctx context.Context, in *DisconnectVendorAccountRequest, opts ...grpc.CallOption) (*DisconnectVendorAccountResponse, error)
+	VendorAccounts(ctx context.Context, in *VendorAccountsRequest, opts ...grpc.CallOption) (*VendorAccountsResponse, error)
 }
 
 type paymentsClient struct {
@@ -54,34 +981,1835 @@ func NewPaymentsClient(cc *grpc.ClientConn) PaymentsClient {
 	return &paymentsClient{cc}
 }
 
+func (c *paymentsClient) ConnectVendorAccount(ctx context.Context, in *ConnectVendorAccountRequest, opts ...grpc.CallOption) (*ConnectVendorAccountResponse, error) {
+	out := new(ConnectVendorAccountResponse)
+	err := grpc.Invoke(ctx, "/payments.Payments/ConnectVendorAccount", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *paymentsClient) DisconnectVendorAccount(ctx context.Context, in *DisconnectVendorAccountRequest, opts ...grpc.CallOption) (*DisconnectVendorAccountResponse, error) {
+	out := new(DisconnectVendorAccountResponse)
+	err := grpc.Invoke(ctx, "/payments.Payments/DisconnectVendorAccount", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *paymentsClient) VendorAccounts(ctx context.Context, in *VendorAccountsRequest, opts ...grpc.CallOption) (*VendorAccountsResponse, error) {
+	out := new(VendorAccountsResponse)
+	err := grpc.Invoke(ctx, "/payments.Payments/VendorAccounts", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for Payments service
 
 type PaymentsServer interface {
+	ConnectVendorAccount(context.Context, *ConnectVendorAccountRequest) (*ConnectVendorAccountResponse, error)
+	DisconnectVendorAccount(context.Context, *DisconnectVendorAccountRequest) (*DisconnectVendorAccountResponse, error)
+	VendorAccounts(context.Context, *VendorAccountsRequest) (*VendorAccountsResponse, error)
 }
 
 func RegisterPaymentsServer(s *grpc.Server, srv PaymentsServer) {
 	s.RegisterService(&_Payments_serviceDesc, srv)
 }
 
+func _Payments_ConnectVendorAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ConnectVendorAccountRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PaymentsServer).ConnectVendorAccount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/payments.Payments/ConnectVendorAccount",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PaymentsServer).ConnectVendorAccount(ctx, req.(*ConnectVendorAccountRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Payments_DisconnectVendorAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DisconnectVendorAccountRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PaymentsServer).DisconnectVendorAccount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/payments.Payments/DisconnectVendorAccount",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PaymentsServer).DisconnectVendorAccount(ctx, req.(*DisconnectVendorAccountRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Payments_VendorAccounts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VendorAccountsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PaymentsServer).VendorAccounts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/payments.Payments/VendorAccounts",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PaymentsServer).VendorAccounts(ctx, req.(*VendorAccountsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Payments_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "payments.Payments",
 	HandlerType: (*PaymentsServer)(nil),
-	Methods:     []grpc.MethodDesc{},
-	Streams:     []grpc.StreamDesc{},
-	Metadata:    fileDescriptorSvc,
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "ConnectVendorAccount",
+			Handler:    _Payments_ConnectVendorAccount_Handler,
+		},
+		{
+			MethodName: "DisconnectVendorAccount",
+			Handler:    _Payments_DisconnectVendorAccount_Handler,
+		},
+		{
+			MethodName: "VendorAccounts",
+			Handler:    _Payments_VendorAccounts_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: fileDescriptorSvc,
 }
+
+func (m *StripeAccount) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *StripeAccount) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.UserID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.UserID)))
+		i += copy(data[i:], m.UserID)
+	}
+	if len(m.Scope) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Scope)))
+		i += copy(data[i:], m.Scope)
+	}
+	return i, nil
+}
+
+func (m *VendorAccount) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *VendorAccount) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.ID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.ID)))
+		i += copy(data[i:], m.ID)
+	}
+	if len(m.EntityID) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.EntityID)))
+		i += copy(data[i:], m.EntityID)
+	}
+	if m.Lifecycle != 0 {
+		data[i] = 0x18
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Lifecycle))
+	}
+	if m.ChangeState != 0 {
+		data[i] = 0x20
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.ChangeState))
+	}
+	if m.Live {
+		data[i] = 0x28
+		i++
+		if m.Live {
+			data[i] = 1
+		} else {
+			data[i] = 0
+		}
+		i++
+	}
+	if m.VendorAccountType != 0 {
+		data[i] = 0x30
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.VendorAccountType))
+	}
+	if m.VendorAccountOneof != nil {
+		nn1, err := m.VendorAccountOneof.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += nn1
+	}
+	return i, nil
+}
+
+func (m *VendorAccount_StripeAccount) MarshalTo(data []byte) (int, error) {
+	i := 0
+	if m.StripeAccount != nil {
+		data[i] = 0x3a
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.StripeAccount.Size()))
+		n2, err := m.StripeAccount.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n2
+	}
+	return i, nil
+}
+func (m *StripeAccountConnectRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *StripeAccountConnectRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Code) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Code)))
+		i += copy(data[i:], m.Code)
+	}
+	return i, nil
+}
+
+func (m *ConnectVendorAccountRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *ConnectVendorAccountRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.EntityID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.EntityID)))
+		i += copy(data[i:], m.EntityID)
+	}
+	if m.VendorAccountType != 0 {
+		data[i] = 0x10
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.VendorAccountType))
+	}
+	if m.ConnectVendorAccountOneof != nil {
+		nn3, err := m.ConnectVendorAccountOneof.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += nn3
+	}
+	return i, nil
+}
+
+func (m *ConnectVendorAccountRequest_StripeRequest) MarshalTo(data []byte) (int, error) {
+	i := 0
+	if m.StripeRequest != nil {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.StripeRequest.Size()))
+		n4, err := m.StripeRequest.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n4
+	}
+	return i, nil
+}
+func (m *ConnectVendorAccountResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *ConnectVendorAccountResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.VendorAccounts) > 0 {
+		for _, msg := range m.VendorAccounts {
+			data[i] = 0xa
+			i++
+			i = encodeVarintSvc(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	return i, nil
+}
+
+func (m *VendorAccountsRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *VendorAccountsRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.EntityID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.EntityID)))
+		i += copy(data[i:], m.EntityID)
+	}
+	return i, nil
+}
+
+func (m *VendorAccountsResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *VendorAccountsResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.VendorAccounts) > 0 {
+		for _, msg := range m.VendorAccounts {
+			data[i] = 0xa
+			i++
+			i = encodeVarintSvc(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	return i, nil
+}
+
+func (m *DisconnectVendorAccountRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *DisconnectVendorAccountRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.VendorAccountID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.VendorAccountID)))
+		i += copy(data[i:], m.VendorAccountID)
+	}
+	return i, nil
+}
+
+func (m *DisconnectVendorAccountResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *DisconnectVendorAccountResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.VendorAccounts) > 0 {
+		for _, msg := range m.VendorAccounts {
+			data[i] = 0xa
+			i++
+			i = encodeVarintSvc(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	return i, nil
+}
+
+func encodeFixed64Svc(data []byte, offset int, v uint64) int {
+	data[offset] = uint8(v)
+	data[offset+1] = uint8(v >> 8)
+	data[offset+2] = uint8(v >> 16)
+	data[offset+3] = uint8(v >> 24)
+	data[offset+4] = uint8(v >> 32)
+	data[offset+5] = uint8(v >> 40)
+	data[offset+6] = uint8(v >> 48)
+	data[offset+7] = uint8(v >> 56)
+	return offset + 8
+}
+func encodeFixed32Svc(data []byte, offset int, v uint32) int {
+	data[offset] = uint8(v)
+	data[offset+1] = uint8(v >> 8)
+	data[offset+2] = uint8(v >> 16)
+	data[offset+3] = uint8(v >> 24)
+	return offset + 4
+}
+func encodeVarintSvc(data []byte, offset int, v uint64) int {
+	for v >= 1<<7 {
+		data[offset] = uint8(v&0x7f | 0x80)
+		v >>= 7
+		offset++
+	}
+	data[offset] = uint8(v)
+	return offset + 1
+}
+func (m *StripeAccount) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.UserID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.Scope)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *VendorAccount) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.ID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.EntityID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if m.Lifecycle != 0 {
+		n += 1 + sovSvc(uint64(m.Lifecycle))
+	}
+	if m.ChangeState != 0 {
+		n += 1 + sovSvc(uint64(m.ChangeState))
+	}
+	if m.Live {
+		n += 2
+	}
+	if m.VendorAccountType != 0 {
+		n += 1 + sovSvc(uint64(m.VendorAccountType))
+	}
+	if m.VendorAccountOneof != nil {
+		n += m.VendorAccountOneof.Size()
+	}
+	return n
+}
+
+func (m *VendorAccount_StripeAccount) Size() (n int) {
+	var l int
+	_ = l
+	if m.StripeAccount != nil {
+		l = m.StripeAccount.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+func (m *StripeAccountConnectRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Code)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *ConnectVendorAccountRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.EntityID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if m.VendorAccountType != 0 {
+		n += 1 + sovSvc(uint64(m.VendorAccountType))
+	}
+	if m.ConnectVendorAccountOneof != nil {
+		n += m.ConnectVendorAccountOneof.Size()
+	}
+	return n
+}
+
+func (m *ConnectVendorAccountRequest_StripeRequest) Size() (n int) {
+	var l int
+	_ = l
+	if m.StripeRequest != nil {
+		l = m.StripeRequest.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+func (m *ConnectVendorAccountResponse) Size() (n int) {
+	var l int
+	_ = l
+	if len(m.VendorAccounts) > 0 {
+		for _, e := range m.VendorAccounts {
+			l = e.Size()
+			n += 1 + l + sovSvc(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *VendorAccountsRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.EntityID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *VendorAccountsResponse) Size() (n int) {
+	var l int
+	_ = l
+	if len(m.VendorAccounts) > 0 {
+		for _, e := range m.VendorAccounts {
+			l = e.Size()
+			n += 1 + l + sovSvc(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *DisconnectVendorAccountRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.VendorAccountID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *DisconnectVendorAccountResponse) Size() (n int) {
+	var l int
+	_ = l
+	if len(m.VendorAccounts) > 0 {
+		for _, e := range m.VendorAccounts {
+			l = e.Size()
+			n += 1 + l + sovSvc(uint64(l))
+		}
+	}
+	return n
+}
+
+func sovSvc(x uint64) (n int) {
+	for {
+		n++
+		x >>= 7
+		if x == 0 {
+			break
+		}
+	}
+	return n
+}
+func sozSvc(x uint64) (n int) {
+	return sovSvc(uint64((x << 1) ^ uint64((int64(x) >> 63))))
+}
+func (this *StripeAccount) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&StripeAccount{`,
+		`UserID:` + fmt.Sprintf("%v", this.UserID) + `,`,
+		`Scope:` + fmt.Sprintf("%v", this.Scope) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *VendorAccount) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&VendorAccount{`,
+		`ID:` + fmt.Sprintf("%v", this.ID) + `,`,
+		`EntityID:` + fmt.Sprintf("%v", this.EntityID) + `,`,
+		`Lifecycle:` + fmt.Sprintf("%v", this.Lifecycle) + `,`,
+		`ChangeState:` + fmt.Sprintf("%v", this.ChangeState) + `,`,
+		`Live:` + fmt.Sprintf("%v", this.Live) + `,`,
+		`VendorAccountType:` + fmt.Sprintf("%v", this.VendorAccountType) + `,`,
+		`VendorAccountOneof:` + fmt.Sprintf("%v", this.VendorAccountOneof) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *VendorAccount_StripeAccount) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&VendorAccount_StripeAccount{`,
+		`StripeAccount:` + strings.Replace(fmt.Sprintf("%v", this.StripeAccount), "StripeAccount", "StripeAccount", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *StripeAccountConnectRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&StripeAccountConnectRequest{`,
+		`Code:` + fmt.Sprintf("%v", this.Code) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ConnectVendorAccountRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ConnectVendorAccountRequest{`,
+		`EntityID:` + fmt.Sprintf("%v", this.EntityID) + `,`,
+		`VendorAccountType:` + fmt.Sprintf("%v", this.VendorAccountType) + `,`,
+		`ConnectVendorAccountOneof:` + fmt.Sprintf("%v", this.ConnectVendorAccountOneof) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ConnectVendorAccountRequest_StripeRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ConnectVendorAccountRequest_StripeRequest{`,
+		`StripeRequest:` + strings.Replace(fmt.Sprintf("%v", this.StripeRequest), "StripeAccountConnectRequest", "StripeAccountConnectRequest", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ConnectVendorAccountResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ConnectVendorAccountResponse{`,
+		`VendorAccounts:` + strings.Replace(fmt.Sprintf("%v", this.VendorAccounts), "VendorAccount", "VendorAccount", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *VendorAccountsRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&VendorAccountsRequest{`,
+		`EntityID:` + fmt.Sprintf("%v", this.EntityID) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *VendorAccountsResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&VendorAccountsResponse{`,
+		`VendorAccounts:` + strings.Replace(fmt.Sprintf("%v", this.VendorAccounts), "VendorAccount", "VendorAccount", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DisconnectVendorAccountRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&DisconnectVendorAccountRequest{`,
+		`VendorAccountID:` + fmt.Sprintf("%v", this.VendorAccountID) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DisconnectVendorAccountResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&DisconnectVendorAccountResponse{`,
+		`VendorAccounts:` + strings.Replace(fmt.Sprintf("%v", this.VendorAccounts), "VendorAccount", "VendorAccount", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func valueToStringSvc(v interface{}) string {
+	rv := reflect.ValueOf(v)
+	if rv.IsNil() {
+		return "nil"
+	}
+	pv := reflect.Indirect(rv).Interface()
+	return fmt.Sprintf("*%v", pv)
+}
+func (m *StripeAccount) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: StripeAccount: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: StripeAccount: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UserID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.UserID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Scope", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Scope = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *VendorAccount) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: VendorAccount: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: VendorAccount: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.EntityID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Lifecycle", wireType)
+			}
+			m.Lifecycle = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.Lifecycle |= (VendorAccountLifecycle(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ChangeState", wireType)
+			}
+			m.ChangeState = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.ChangeState |= (VendorAccountChangeState(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Live", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Live = bool(v != 0)
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VendorAccountType", wireType)
+			}
+			m.VendorAccountType = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.VendorAccountType |= (VendorAccountType(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StripeAccount", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &StripeAccount{}
+			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.VendorAccountOneof = &VendorAccount_StripeAccount{v}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *StripeAccountConnectRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: StripeAccountConnectRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: StripeAccountConnectRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Code", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Code = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ConnectVendorAccountRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ConnectVendorAccountRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ConnectVendorAccountRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.EntityID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VendorAccountType", wireType)
+			}
+			m.VendorAccountType = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.VendorAccountType |= (VendorAccountType(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StripeRequest", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &StripeAccountConnectRequest{}
+			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.ConnectVendorAccountOneof = &ConnectVendorAccountRequest_StripeRequest{v}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ConnectVendorAccountResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ConnectVendorAccountResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ConnectVendorAccountResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VendorAccounts", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.VendorAccounts = append(m.VendorAccounts, &VendorAccount{})
+			if err := m.VendorAccounts[len(m.VendorAccounts)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *VendorAccountsRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: VendorAccountsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: VendorAccountsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.EntityID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *VendorAccountsResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: VendorAccountsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: VendorAccountsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VendorAccounts", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.VendorAccounts = append(m.VendorAccounts, &VendorAccount{})
+			if err := m.VendorAccounts[len(m.VendorAccounts)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DisconnectVendorAccountRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DisconnectVendorAccountRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DisconnectVendorAccountRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VendorAccountID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.VendorAccountID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DisconnectVendorAccountResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DisconnectVendorAccountResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DisconnectVendorAccountResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VendorAccounts", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.VendorAccounts = append(m.VendorAccounts, &VendorAccount{})
+			if err := m.VendorAccounts[len(m.VendorAccounts)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func skipSvc(data []byte) (n int, err error) {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return 0, ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return 0, io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		wireType := int(wire & 0x7)
+		switch wireType {
+		case 0:
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return 0, ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return 0, io.ErrUnexpectedEOF
+				}
+				iNdEx++
+				if data[iNdEx-1] < 0x80 {
+					break
+				}
+			}
+			return iNdEx, nil
+		case 1:
+			iNdEx += 8
+			return iNdEx, nil
+		case 2:
+			var length int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return 0, ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return 0, io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				length |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			iNdEx += length
+			if length < 0 {
+				return 0, ErrInvalidLengthSvc
+			}
+			return iNdEx, nil
+		case 3:
+			for {
+				var innerWire uint64
+				var start int = iNdEx
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return 0, ErrIntOverflowSvc
+					}
+					if iNdEx >= l {
+						return 0, io.ErrUnexpectedEOF
+					}
+					b := data[iNdEx]
+					iNdEx++
+					innerWire |= (uint64(b) & 0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				innerWireType := int(innerWire & 0x7)
+				if innerWireType == 4 {
+					break
+				}
+				next, err := skipSvc(data[start:])
+				if err != nil {
+					return 0, err
+				}
+				iNdEx = start + next
+			}
+			return iNdEx, nil
+		case 4:
+			return iNdEx, nil
+		case 5:
+			iNdEx += 4
+			return iNdEx, nil
+		default:
+			return 0, fmt.Errorf("proto: illegal wireType %d", wireType)
+		}
+	}
+	panic("unreachable")
+}
+
+var (
+	ErrInvalidLengthSvc = fmt.Errorf("proto: negative length found during unmarshaling")
+	ErrIntOverflowSvc   = fmt.Errorf("proto: integer overflow")
+)
 
 func init() { proto.RegisterFile("svc.proto", fileDescriptorSvc) }
 
 var fileDescriptorSvc = []byte{
-	// 136 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xe2, 0xe2, 0x2c, 0x2e, 0x4b, 0xd6,
-	0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0xe2, 0x28, 0x48, 0xac, 0xcc, 0x4d, 0xcd, 0x2b, 0x29, 0x96,
-	0xd2, 0x4d, 0xcf, 0x2c, 0xc9, 0x28, 0x4d, 0xd2, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0xcf, 0x4f, 0xcf,
-	0xd7, 0x07, 0x2b, 0x48, 0x2a, 0x4d, 0x03, 0xf3, 0xc0, 0x1c, 0x30, 0x0b, 0xa2, 0xd1, 0x88, 0x8b,
-	0x8b, 0x23, 0x00, 0xaa, 0xd5, 0x49, 0xe7, 0xc2, 0x43, 0x39, 0xc6, 0x1b, 0x0f, 0xe5, 0x18, 0x3e,
-	0x3c, 0x94, 0x63, 0x6c, 0x78, 0x24, 0xc7, 0xb8, 0xe2, 0x91, 0x1c, 0xe3, 0x89, 0x47, 0x72, 0x8c,
-	0x17, 0x1e, 0xc9, 0x31, 0x3e, 0x78, 0x24, 0xc7, 0xf8, 0xe2, 0x91, 0x1c, 0xc3, 0x87, 0x47, 0x72,
-	0x8c, 0x13, 0x1e, 0xcb, 0x31, 0x24, 0xb1, 0x81, 0x0d, 0x30, 0x06, 0x04, 0x00, 0x00, 0xff, 0xff,
-	0x12, 0x1e, 0x0c, 0x5e, 0x86, 0x00, 0x00, 0x00,
+	// 719 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x9c, 0x95, 0xcd, 0x4e, 0xdb, 0x4a,
+	0x14, 0xc7, 0x33, 0x06, 0x42, 0x72, 0xf8, 0x0a, 0x03, 0x17, 0xac, 0x04, 0x8d, 0x2d, 0xdf, 0x0b,
+	0x37, 0xd0, 0x36, 0xb4, 0x61, 0x83, 0xd4, 0x45, 0x95, 0xd8, 0x2e, 0xb8, 0x45, 0x4e, 0x44, 0x0c,
+	0x15, 0x2b, 0x2b, 0x98, 0x21, 0x58, 0x02, 0xdb, 0x8d, 0x1d, 0xa4, 0xec, 0xfa, 0x08, 0x6d, 0x9f,
+	0xa2, 0x4f, 0xd0, 0x47, 0xa8, 0xba, 0x64, 0xd9, 0x6e, 0xa2, 0xe2, 0x6e, 0xba, 0xe4, 0x11, 0xaa,
+	0x38, 0x09, 0xc1, 0x21, 0x06, 0xc4, 0x2e, 0x9e, 0xfc, 0xfe, 0xe7, 0xe3, 0x3f, 0xe7, 0xd8, 0x90,
+	0x74, 0xcf, 0x8d, 0x9c, 0x53, 0xb7, 0x3d, 0x1b, 0x27, 0x9c, 0x6a, 0xf3, 0x8c, 0x5a, 0x9e, 0x9b,
+	0x7e, 0x56, 0x33, 0xbd, 0x93, 0xc6, 0x61, 0xce, 0xb0, 0xcf, 0xd6, 0x6b, 0x76, 0xcd, 0x5e, 0x0f,
+	0x80, 0xc3, 0xc6, 0x71, 0xf0, 0x14, 0x3c, 0x04, 0xbf, 0x3a, 0x42, 0xe1, 0x25, 0x4c, 0x55, 0xbc,
+	0xba, 0xe9, 0xd0, 0x82, 0x61, 0xd8, 0x0d, 0xcb, 0xc3, 0x19, 0x18, 0x6f, 0xb8, 0xb4, 0xae, 0x9b,
+	0x47, 0x2c, 0xe2, 0x51, 0x36, 0x59, 0x04, 0xbf, 0xc5, 0xc5, 0xf7, 0x5c, 0x5a, 0x57, 0x24, 0x3c,
+	0x05, 0x63, 0xae, 0x61, 0x3b, 0x94, 0x65, 0xda, 0x7f, 0x09, 0xdf, 0x18, 0x98, 0xda, 0xa7, 0xd6,
+	0x91, 0x5d, 0xef, 0xa9, 0x31, 0x30, 0xd7, 0xc2, 0xb8, 0xdf, 0xe2, 0x18, 0x45, 0xc2, 0x1c, 0x24,
+	0xa9, 0xe5, 0x99, 0x5e, 0xb3, 0x1d, 0x33, 0x10, 0x16, 0x27, 0xfd, 0x16, 0x97, 0x90, 0x83, 0x43,
+	0x45, 0xc2, 0x1b, 0x90, 0x3c, 0x35, 0x8f, 0xa9, 0xd1, 0x34, 0x4e, 0x29, 0x3b, 0xc2, 0xa3, 0xec,
+	0x74, 0x9e, 0xcf, 0xf5, 0x1a, 0xca, 0x85, 0x12, 0xec, 0xf4, 0x38, 0xbc, 0x09, 0x93, 0xc6, 0x49,
+	0xd5, 0xaa, 0x51, 0xdd, 0xf5, 0xaa, 0x1e, 0x65, 0x47, 0x03, 0x9d, 0x10, 0xa1, 0x13, 0x03, 0xb4,
+	0xd2, 0x26, 0xf1, 0x24, 0x8c, 0x9e, 0x9a, 0xe7, 0x94, 0x1d, 0xe3, 0x51, 0x36, 0x81, 0x37, 0x61,
+	0xee, 0x3c, 0x20, 0xf5, 0x6a, 0x07, 0xd5, 0xbd, 0xa6, 0x43, 0xd9, 0x78, 0x10, 0x2e, 0x13, 0x11,
+	0x4e, 0x6b, 0x3a, 0x14, 0xbf, 0x80, 0x69, 0x37, 0xb0, 0xae, 0xa7, 0x64, 0xc7, 0x79, 0x94, 0x9d,
+	0xc8, 0x2f, 0xf6, 0x45, 0x21, 0x6b, 0xb7, 0x63, 0xc5, 0x05, 0x98, 0x1f, 0x48, 0x66, 0x5b, 0xd4,
+	0x3e, 0x16, 0x9e, 0x40, 0x26, 0x84, 0x8a, 0xb6, 0x65, 0x51, 0xc3, 0xdb, 0xa5, 0xef, 0x1b, 0xd4,
+	0xf5, 0xda, 0x15, 0x1b, 0xf6, 0x11, 0xed, 0xf8, 0x2a, 0xfc, 0x44, 0x90, 0xe9, 0x02, 0xa1, 0xa2,
+	0x7a, 0x74, 0xc8, 0x6f, 0x34, 0xc4, 0xef, 0x88, 0x96, 0x99, 0xfb, 0x5b, 0x7e, 0x75, 0xdd, 0x72,
+	0xbd, 0x93, 0x2c, 0xb8, 0xae, 0x89, 0xfc, 0x72, 0x44, 0xcb, 0xe1, 0x3e, 0xb6, 0x63, 0x45, 0x02,
+	0x4b, 0x46, 0xe7, 0x4c, 0x1f, 0x6a, 0x44, 0x19, 0x96, 0x86, 0xb7, 0xe6, 0x3a, 0xb6, 0xe5, 0x52,
+	0xfc, 0x1c, 0x66, 0xc2, 0x3a, 0x97, 0x45, 0xfc, 0x48, 0xd8, 0xf4, 0x90, 0x52, 0xd8, 0x84, 0x7f,
+	0x42, 0x07, 0xee, 0x43, 0x6d, 0x12, 0xde, 0xc0, 0xc2, 0xa0, 0xf2, 0xd1, 0x55, 0x94, 0x81, 0x48,
+	0xa6, 0x6b, 0xdc, 0x71, 0x6b, 0x39, 0x98, 0x1d, 0x70, 0xe4, 0xba, 0xac, 0x39, 0xbf, 0xc5, 0xcd,
+	0x84, 0x44, 0x8a, 0x24, 0x54, 0x80, 0x8b, 0x8c, 0xf8, 0xd8, 0x32, 0xd7, 0x34, 0x98, 0xbd, 0x7d,
+	0xe9, 0x1c, 0x64, 0xf6, 0x65, 0x55, 0x2a, 0xed, 0xea, 0x05, 0x51, 0x2c, 0xed, 0xa9, 0x9a, 0xae,
+	0x1d, 0x94, 0x65, 0x7d, 0x4f, 0x7d, 0xab, 0x96, 0xde, 0xa9, 0xa9, 0x18, 0x26, 0x90, 0x1e, 0x06,
+	0x54, 0xb4, 0x5d, 0xa5, 0x2c, 0xa7, 0xd0, 0xda, 0x27, 0x34, 0xe0, 0x64, 0x7f, 0x8b, 0xff, 0x03,
+	0x7e, 0x40, 0xba, 0xa3, 0xbc, 0x96, 0xc5, 0x03, 0x71, 0xe7, 0x66, 0x82, 0x15, 0x10, 0x22, 0x29,
+	0xb1, 0xa4, 0xaa, 0xb2, 0xa8, 0xc9, 0x52, 0x0a, 0xe1, 0x55, 0x58, 0x8e, 0xe4, 0x24, 0xa5, 0xd2,
+	0x47, 0x99, 0xb5, 0xcf, 0x08, 0xd8, 0xc8, 0x37, 0xc4, 0xff, 0xf0, 0xef, 0x40, 0x1c, 0x71, 0xbb,
+	0xa0, 0x6e, 0xb5, 0x5b, 0x2a, 0x68, 0x37, 0x0b, 0xbb, 0x5d, 0x7e, 0x08, 0x54, 0x4b, 0xaa, 0x9c,
+	0x42, 0xf7, 0x85, 0x2b, 0xcb, 0xaa, 0xa4, 0xa8, 0x5b, 0x29, 0x26, 0xff, 0x95, 0x81, 0x44, 0xb9,
+	0x7b, 0x33, 0x98, 0xc2, 0xfc, 0xb0, 0x55, 0xc0, 0x37, 0x76, 0xed, 0x8e, 0xb7, 0x40, 0x7a, 0xe5,
+	0x3e, 0xac, 0x3b, 0x24, 0x16, 0x2c, 0x46, 0xcc, 0x11, 0xce, 0xf6, 0x43, 0xdc, 0x3d, 0xbc, 0xe9,
+	0xd5, 0x07, 0x90, 0xdd, 0x7c, 0x15, 0x98, 0x0e, 0x6f, 0x15, 0xe6, 0x22, 0xa6, 0xb1, 0xb7, 0xa9,
+	0x69, 0x3e, 0x1a, 0xe8, 0x04, 0x2d, 0x3e, 0xbd, 0xb8, 0x24, 0xb1, 0x1f, 0x97, 0x24, 0x76, 0x75,
+	0x49, 0xd0, 0x07, 0x9f, 0xa0, 0x2f, 0x3e, 0x41, 0xdf, 0x7d, 0x82, 0x2e, 0x7c, 0x82, 0x7e, 0xf9,
+	0x04, 0xfd, 0xf1, 0x49, 0xec, 0xca, 0x27, 0xe8, 0xe3, 0x6f, 0x12, 0x3b, 0x8c, 0x07, 0x9f, 0xbe,
+	0x8d, 0xbf, 0x01, 0x00, 0x00, 0xff, 0xff, 0x17, 0xb5, 0x51, 0x15, 0x40, 0x07, 0x00, 0x00,
 }

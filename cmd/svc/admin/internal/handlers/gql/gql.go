@@ -13,6 +13,7 @@ import (
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/graphql"
 	"github.com/sprucehealth/graphql/gqlerrors"
@@ -31,6 +32,7 @@ type gqlHandler struct {
 	schema          graphql.Schema
 	directoryClient directory.DirectoryClient
 	settingsClient  settings.SettingsClient
+	paymentsClient  payments.PaymentsClient
 }
 
 // New returns an initialized instance of *gqlHandler
@@ -38,6 +40,7 @@ func New(
 	ap auth.AuthenticationProvider,
 	directoryClient directory.DirectoryClient,
 	settingsClient settings.SettingsClient,
+	paymentsClient payments.PaymentsClient,
 	signer *sig.Signer,
 	behindProxy bool) (http.Handler, graphql.Schema) {
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
@@ -52,6 +55,7 @@ func New(
 		schema:          schema,
 		directoryClient: directoryClient,
 		settingsClient:  settingsClient,
+		paymentsClient:  paymentsClient,
 	}, schema
 }
 
@@ -79,7 +83,8 @@ func (h *gqlHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			"result":     result,
 		},
 			h.directoryClient,
-			h.settingsClient),
+			h.settingsClient,
+			h.paymentsClient),
 	})
 
 	if len(response.Errors) != 0 {

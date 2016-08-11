@@ -21,6 +21,7 @@ import (
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/shttputil"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/backend/svc/settings"
 )
 
@@ -35,6 +36,7 @@ var (
 	flagLDAPTLS         = flag.Bool("ldap_tls", false, "Flag indicating if the ldap client should use TLS")
 	flagLetsEncrypt     = flag.Bool("letsencrypt", false, "Enable Let's Encrypt certificates")
 	flagListenAddr      = flag.String("graphql_listen_addr", "127.0.0.1:8084", "host:port to listen on")
+	flagPaymentsAddr    = flag.String("payments_addr", "127.0.0.1:50062", "Address of the payments server")
 	flagProxyProtocol   = flag.Bool("proxy_protocol", false, "If behind a TCP proxy and proxy protocol wrapping is enabled")
 	flagResourcePath    = flag.String("resource_path", path.Join(os.Getenv("GOPATH"),
 		"src/github.com/sprucehealth/backend/cmd/svc/admin/resources"), "Path to resources (defaults to use GOPATH)")
@@ -69,13 +71,18 @@ func main() {
 		golog.Fatalf("Unable to connect to settings service: %s", err)
 	}
 	settingsCli := settings.NewSettingsClient(conn)
+	conn, err = boot.DialGRPC("admin", *flagPaymentsAddr)
+	if err != nil {
+		golog.Fatalf("Unable to connect to payments service: %s", err)
+	}
+	paymentsCli := payments.NewPaymentsClient(conn)
 	signer, err := sig.NewSigner([][]byte{[]byte(*flagAuthTokenSecret)}, nil)
 	if err != nil {
 		golog.Fatalf(err.Error())
 	}
 
 	r := mux.NewRouter()
-	gqlHandler, gqlSchema := gql.New(ap, dirCli, settingsCli, signer, *flagBehindProxy)
+	gqlHandler, gqlSchema := gql.New(ap, dirCli, settingsCli, paymentsCli, signer, *flagBehindProxy)
 	r.Handle("/graphql", cors.New(cors.Options{
 		AllowedOrigins:   []string{"https://" + *flagWebDomain},
 		AllowedMethods:   []string{httputil.Get, httputil.Options, httputil.Post},

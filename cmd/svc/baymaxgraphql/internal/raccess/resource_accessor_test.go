@@ -18,6 +18,7 @@ import (
 	emock "github.com/sprucehealth/backend/svc/excomms/mock"
 	lmock "github.com/sprucehealth/backend/svc/layout/mock"
 	mmock "github.com/sprucehealth/backend/svc/media/mock"
+	pmock "github.com/sprucehealth/backend/svc/payments/mock"
 	"github.com/sprucehealth/backend/svc/threading"
 	tmock "github.com/sprucehealth/backend/svc/threading/mock"
 )
@@ -30,6 +31,7 @@ type ratest struct {
 	lC *lmock.Client
 	vC *vmock.Client
 	mC *mmock.Client
+	pC *pmock.Client
 	ra ResourceAccessor
 }
 
@@ -46,7 +48,8 @@ func new(t *testing.T) *ratest {
 	rat.lC = lmock.New(t)
 	rat.vC = vmock.New(t)
 	rat.mC = mmock.New(t)
-	rat.ra = New(rat.aC, rat.dC, rat.tC, rat.eC, rat.lC, rat.vC, rat.mC)
+	rat.pC = pmock.New(t)
+	rat.ra = New(rat.aC, rat.dC, rat.tC, rat.eC, rat.lC, rat.vC, rat.mC, rat.pC)
 	return &rat
 }
 

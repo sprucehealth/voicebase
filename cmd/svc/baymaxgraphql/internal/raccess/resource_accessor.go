@@ -17,6 +17,7 @@ import (
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/layout"
 	"github.com/sprucehealth/backend/svc/media"
+	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 	"google.golang.org/grpc"
@@ -90,6 +91,7 @@ type ResourceAccessor interface {
 	CheckPasswordResetToken(ctx context.Context, token string) (*auth.CheckPasswordResetTokenResponse, error)
 	CheckVerificationCode(ctx context.Context, token, code string) (*auth.CheckVerificationCodeResponse, error)
 	ClaimMedia(ctx context.Context, req *media.ClaimMediaRequest) error
+	ConnectVendorAccount(ctx context.Context, req *payments.ConnectVendorAccountRequest) (*payments.ConnectVendorAccountResponse, error)
 	CreateAccount(ctx context.Context, req *auth.CreateAccountRequest) (*auth.CreateAccountResponse, error)
 	CreateCarePlan(ctx context.Context, req *care.CreateCarePlanRequest) (*care.CreateCarePlanResponse, error)
 	CreateContact(ctx context.Context, req *directory.CreateContactRequest) (*directory.CreateContactResponse, error)
@@ -165,6 +167,7 @@ type resourceAccessor struct {
 	layout    layout.LayoutClient
 	care      care.CareClient
 	media     media.MediaClient
+	payments  payments.PaymentsClient
 }
 
 // New returns an initialized instance of resourceAccessor
@@ -176,6 +179,7 @@ func New(
 	layout layout.LayoutClient,
 	care care.CareClient,
 	media media.MediaClient,
+	payments payments.PaymentsClient,
 ) ResourceAccessor {
 	return &resourceAccessor{
 		rMap:      newResourceMap(),
@@ -186,6 +190,7 @@ func New(
 		layout:    layout,
 		care:      care,
 		media:     media,
+		payments:  payments,
 	}
 }
 
@@ -339,6 +344,18 @@ func (m *resourceAccessor) ClaimMedia(ctx context.Context, req *media.ClaimMedia
 	}
 	_, err = m.media.ClaimMedia(ctx, req)
 	return err
+}
+
+func (m *resourceAccessor) ConnectVendorAccount(ctx context.Context, req *payments.ConnectVendorAccountRequest) (*payments.ConnectVendorAccountResponse, error) {
+	if err := m.canAccessResource(ctx, req.EntityID, m.orgsForEntity); err != nil {
+		return nil, err
+	}
+
+	resp, err := m.payments.ConnectVendorAccount(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }
 
 func (m *resourceAccessor) CreateAccount(ctx context.Context, req *auth.CreateAccountRequest) (*auth.CreateAccountResponse, error) {

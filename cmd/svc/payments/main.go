@@ -3,18 +3,26 @@ package main
 import (
 	"flag"
 	"net"
+	"time"
 
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/payments/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/payments/internal/server"
+	"github.com/sprucehealth/backend/cmd/svc/payments/internal/workers"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/payments"
 )
 
 var (
+	// Payments Service
 	flagRPCListenAddr = flag.String("rpc_listen_addr", "127.0.0.1:50062", "host:port to listen on for rpc requests")
 	flagBehindProxy   = flag.Bool("behind_proxy", false, "Flag to indicate when the service is behind a proxy")
+
+	// Stripe
+	flagStripeSecretKey = flag.String("stripe_secret_key", "", "the secret key of the platform stripe account")
+	flagStripeClientID  = flag.String("stripe_client_id", "", "the client id of the platform stripe account")
+
 	// DB
 	flagDBHost     = flag.String("db_host", "localhost", "the host at which we should attempt to connect to the database")
 	flagDBPort     = flag.Int("db_port", 3306, "the port on which we should attempt to connect to the database")
@@ -51,7 +59,8 @@ func main() {
 		golog.Fatalf("failed to initialize db connection: %s", err)
 	}
 
-	pSrv, err := server.New(dal.New(db))
+	dl := dal.New(db)
+	pSrv, err := server.New(dl, *flagStripeSecretKey)
 	if err != nil {
 		golog.Fatalf("Error while initializing payments server: %s", err)
 	}
@@ -61,6 +70,11 @@ func main() {
 	payments.RegisterPaymentsServer(s, pSrv)
 	golog.Infof("Starting PaymentsService on %s...", *flagRPCListenAddr)
 	go s.Serve(lis)
+
+	golog.Infof("Starting Payments Workers...")
+	works := workers.New(dl, *flagStripeSecretKey, *flagStripeClientID)
+	works.Start()
+	defer works.Stop(time.Second * 20)
 
 	boot.WaitForTermination()
 	svc.Shutdown()

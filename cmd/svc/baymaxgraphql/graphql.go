@@ -31,6 +31,7 @@ import (
 	"github.com/sprucehealth/backend/svc/layout"
 	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/notification"
+	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
@@ -126,6 +127,7 @@ func NewGraphQL(
 	layout layout.LayoutClient,
 	care care.CareClient,
 	media media.MediaClient,
+	payments payments.PaymentsClient,
 	layoutStore layout.Storage,
 	emailDomain string,
 	webDomain string,
@@ -156,7 +158,7 @@ func NewGraphQL(
 	metricsRegistry.Add("gql_validate_latency_us", statGQLValidateLatency)
 	return &graphQLHandler{
 		auth: authClient,
-		ram:  raccess.New(authClient, directoryClient, threadingClient, exComms, layout, care, media),
+		ram:  raccess.New(authClient, directoryClient, threadingClient, exComms, layout, care, media, payments),
 		service: &service{
 			notification:    notificationClient,
 			emailDomain:     emailDomain,

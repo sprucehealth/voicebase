@@ -61,23 +61,24 @@ func init() {
 		graphql.ObjectConfig{
 			Name: "Entity",
 			Fields: graphql.Fields{
-				"id":            &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"type":          &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"firstName":     &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"middleInitial": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"lastName":      &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"groupName":     &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"displayName":   &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"shortTitle":    &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"longTitle":     &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"gender":        &graphql.Field{Type: graphql.NewNonNull(genderEnumType)},
-				"dob":           &graphql.Field{Type: newDateType()},
-				"note":          &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"members":       &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(newEntityType()))},
-				"memberships":   &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(newEntityType()))},
-				"contacts":      &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(newContactType()))},
-				"externalIDs":   &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(graphql.String))},
-				"settings":      &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(newSettingType())), Resolve: resolveEntitySettings},
+				"id":             &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+				"type":           &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+				"firstName":      &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+				"middleInitial":  &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+				"lastName":       &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+				"groupName":      &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+				"displayName":    &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+				"shortTitle":     &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+				"longTitle":      &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+				"gender":         &graphql.Field{Type: graphql.NewNonNull(genderEnumType)},
+				"dob":            &graphql.Field{Type: newDateType()},
+				"note":           &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+				"members":        &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(newEntityType()))},
+				"memberships":    &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(newEntityType()))},
+				"contacts":       &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(newContactType()))},
+				"externalIDs":    &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(graphql.String))},
+				"settings":       &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(newSettingType())), Resolve: resolveEntitySettings},
+				"vendorAccounts": &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(newVendorAccountType())), Resolve: resolveEntityVendorAccounts},
 			},
 		},
 	)
@@ -93,6 +94,13 @@ func resolveEntitySettings(p graphql.ResolveParams) (interface{}, error) {
 	entity := p.Source.(*models.Entity)
 	golog.ContextLogger(ctx).Debugf("Looking up entity settings for %s", entity.ID)
 	return getEntitySettings(ctx, client.Settings(p), entity.ID)
+}
+
+func resolveEntityVendorAccounts(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+	entity := p.Source.(*models.Entity)
+	golog.ContextLogger(ctx).Debugf("Looking up entity vendor accounts for %s", entity.ID)
+	return getEntityVendorAccounts(ctx, client.Payments(p), entity.ID)
 }
 
 func getEntity(ctx context.Context, dirCli directory.DirectoryClient, id string) (*models.Entity, error) {

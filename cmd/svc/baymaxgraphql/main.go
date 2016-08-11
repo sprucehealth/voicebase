@@ -33,6 +33,7 @@ import (
 	"github.com/sprucehealth/backend/svc/layout"
 	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/notification"
+	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
 )
@@ -70,6 +71,7 @@ var (
 	flagLayoutAddr    = flag.String("layout_addr", "", "host:port of layout service")
 	flagCareAddr      = flag.String("care_addr", "", "host:port of care service")
 	flagMediaAddr     = flag.String("media_addr", "", "host:port of media service")
+	flagPaymentsAddr  = flag.String("payments_addr", "", "host:port of payments service")
 
 	// Messages
 	flagSQSDeviceRegistrationURL   = flag.String("sqs_device_registration_url", "", "the sqs url for device registration messages")
@@ -167,10 +169,17 @@ func main() {
 	}
 	mediaClient := media.NewMediaClient(conn)
 
+	conn, err = boot.DialGRPC("baymaxgraphql", *flagPaymentsAddr)
+	if err != nil {
+		golog.Fatalf("Unable to connect to payments service: %s", err)
+	}
+	paymentsClient := payments.NewPaymentsClient(conn)
+
 	// enable for non-prod
 	baymaxgraphqlsettings.VisitAttachmentsConfig.GetBoolean().Default.Value = !environment.IsProd()
 	baymaxgraphqlsettings.CarePlansConfig.GetBoolean().Default.Value = !environment.IsProd()
 	baymaxgraphqlsettings.VideoCallingConfig.GetBoolean().Default.Value = !environment.IsProd()
+	baymaxgraphqlsettings.PaymentsConfig.GetBoolean().Default.Value = !environment.IsProd()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	_, err = settings.RegisterConfigs(
@@ -184,6 +193,7 @@ func main() {
 			baymaxgraphqlsettings.CarePlansConfig,
 			baymaxgraphqlsettings.FilteredTabsInInboxConfig,
 			baymaxgraphqlsettings.VideoCallingConfig,
+			baymaxgraphqlsettings.PaymentsConfig,
 			invite.OrganizationCodeConfig,
 		})
 	if err != nil {
@@ -285,6 +295,7 @@ func main() {
 		layoutClient,
 		careClient,
 		mediaClient,
+		paymentsClient,
 		layout.NewStore(storage.NewS3(awsSession, *flagStorageBucket, *flagLayoutStoreS3Prefix)),
 		*flagEmailDomain,
 		*flagWebDomain,

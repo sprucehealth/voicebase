@@ -111,6 +111,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 		"callEntity":                          callEntityMutation,
 		"checkPasswordResetToken":             checkPasswordResetTokenMutation,
 		"checkVerificationCode":               checkVerificationCodeMutation,
+		"connectVendorStripeAccount":          connectVendorStripeAccountMutation,
 		"createAccount":                       createAccountMutation,
 		"createCarePlan":                      createCarePlanMutation,
 		"createEntityProfile":                 createEntityProfileMutation,
