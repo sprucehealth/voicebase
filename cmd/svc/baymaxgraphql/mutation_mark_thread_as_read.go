@@ -6,8 +6,10 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/gqldecode"
+	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 	"github.com/sprucehealth/graphql/gqlerrors"
@@ -96,15 +98,17 @@ var markThreadAsReadMutation = &graphql.Field{
 // markThreadsAsRead
 
 type markThreadsAsReadOutput struct {
-	ClientMutationID string `json:"clientMutationId,omitempty"`
-	Success          bool   `json:"success"`
-	ErrorCode        string `json:"errorCode,omitempty"`
-	ErrorMessage     string `json:"errorMessage,omitempty"`
+	ClientMutationID string            `json:"clientMutationId,omitempty"`
+	Success          bool              `json:"success"`
+	ErrorCode        string            `json:"errorCode,omitempty"`
+	ErrorMessage     string            `json:"errorMessage,omitempty"`
+	Threads          []*models.Thread  `json:"threads"`
+	ThreadIDs        []string          `json:"-"`
+	Entity           *directory.Entity `json:"-"`
 }
 
 // JANK: can't have an empty enum and we want this field to always exist so make it a string until it's needed
 var markThreadsAsReadErrorCodeEnum = graphql.String
-
 var markThreadsAsReadOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "MarkThreadsAsReadPayload",
@@ -113,6 +117,37 @@ var markThreadsAsReadOutputType = graphql.NewObject(
 			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"errorCode":        &graphql.Field{Type: markThreadsAsReadErrorCodeEnum},
 			"errorMessage":     &graphql.Field{Type: graphql.String},
+			"threads": &graphql.Field{
+				Type: graphql.NewList(threadType),
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					ctx := p.Context
+					ram := raccess.ResourceAccess(p)
+					acc := gqlctx.Account(ctx)
+
+					output := p.Source.(*markThreadsAsReadOutput)
+					if len(output.ThreadIDs) == 0 {
+						return nil, nil
+					}
+
+					// requery all the threads in the list of marking threads as read
+					res, err := ram.Threads(ctx, &threading.ThreadsRequest{
+						ViewerEntityID: output.Entity.ID,
+						ThreadIDs:      output.ThreadIDs,
+					})
+					if err != nil {
+						return nil, errors.InternalError(ctx, err)
+					}
+
+					transformedThreads := make([]*models.Thread, len(res.Threads))
+					for i, thread := range res.Threads {
+						transformedThreads[i], err = transformThreadToResponse(ctx, ram, thread, acc)
+						if err != nil {
+							return nil, errors.InternalError(ctx, err)
+						}
+					}
+
+					return transformedThreads, nil
+				}},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 			_, ok := value.(*markThreadsAsReadOutput)
@@ -192,11 +227,13 @@ var markThreadsAsReadMutation = &graphql.Field{
 		}
 
 		threadWatermarks := make([]*threading.MarkThreadsAsReadRequest_ThreadWatermark, len(in.ThreadWatermarks))
+		threadIDs := make([]string, len(in.ThreadWatermarks))
 		for i, watermark := range in.ThreadWatermarks {
 			threadWatermarks[i] = &threading.MarkThreadsAsReadRequest_ThreadWatermark{
 				ThreadID:             watermark.ThreadID,
 				LastMessageTimestamp: uint64(watermark.LastMessageTimestamp),
 			}
+			threadIDs[i] = watermark.ThreadID
 		}
 		_, err = ram.MarkThreadsAsRead(ctx, &threading.MarkThreadsAsReadRequest{
 			ThreadWatermarks: threadWatermarks,
@@ -204,12 +241,14 @@ var markThreadsAsReadMutation = &graphql.Field{
 			Seen:             in.Seen,
 		})
 		if err != nil {
-			return nil, err
+			return nil, errors.InternalError(ctx, err)
 		}
 
 		return &markThreadsAsReadOutput{
 			ClientMutationID: in.ClientMutationID,
 			Success:          true,
+			ThreadIDs:        threadIDs,
+			Entity:           ent,
 		}, nil
 	}),
 }

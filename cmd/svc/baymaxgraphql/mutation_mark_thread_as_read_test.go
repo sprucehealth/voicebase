@@ -47,6 +47,20 @@ func TestMarkThreadsAsReadMutation(t *testing.T) {
 		},
 	}))
 
+	g.ra.Expect(mock.NewExpectation(g.ra.Threads, &threading.ThreadsRequest{
+		ViewerEntityID: "e_12345",
+		ThreadIDs:      []string{"t_1", "t_2"},
+	}).WithReturns(&threading.ThreadsResponse{
+		Threads: []*threading.Thread{
+			{
+				ID: "t_1",
+			},
+			{
+				ID: "t_2",
+			},
+		},
+	}, nil))
+
 	res := g.query(ctx, `
     mutation _ {
       markThreadsAsRead(input: {
@@ -66,13 +80,22 @@ func TestMarkThreadsAsReadMutation(t *testing.T) {
       }) {
         clientMutationId
         success
+        threads {
+        	id
+        }
       }
     }`, nil)
 	responseEquals(t, `{
     "data": {
       "markThreadsAsRead": {
         "clientMutationId": "a1b2c3",
-        "success": true
+        "success": true,
+        "threads": [{
+        	"id": "t_1"
+        },
+        {
+        	"id": "t_2"
+		}]
       }
     }}`, res)
 }

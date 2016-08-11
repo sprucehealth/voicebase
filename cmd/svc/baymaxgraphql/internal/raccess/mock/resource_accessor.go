@@ -448,6 +448,15 @@ func (m *ResourceAccessor) Thread(ctx context.Context, threadID, viewerEntityID 
 	return rets[0].(*threading.Thread), mock.SafeError(rets[1])
 }
 
+func (m *ResourceAccessor) Threads(ctx context.Context, req *threading.ThreadsRequest) (*threading.ThreadsResponse, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].(*threading.ThreadsResponse), mock.SafeError(rets[1])
+}
+
 func (m *ResourceAccessor) ThreadItem(ctx context.Context, threadItemID string) (*threading.ThreadItem, error) {
 	rets := m.Record(threadItemID)
 	if len(rets) == 0 {

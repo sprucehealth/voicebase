@@ -133,6 +133,7 @@ type ResourceAccessor interface {
 	SubmitCarePlan(ctx context.Context, cp *care.CarePlan, parentID string) error
 	SubmitVisit(ctx context.Context, req *care.SubmitVisitRequest) (*care.SubmitVisitResponse, error)
 	Thread(ctx context.Context, threadID, viewerEntityID string) (*threading.Thread, error)
+	Threads(ctx context.Context, req *threading.ThreadsRequest) (*threading.ThreadsResponse, error)
 	ThreadItem(ctx context.Context, threadItemID string) (*threading.ThreadItem, error)
 	ThreadItems(ctx context.Context, req *threading.ThreadItemsRequest) (*threading.ThreadItemsResponse, error)
 	ThreadItemViewDetails(ctx context.Context, threadItemID string) ([]*threading.ThreadItemViewDetails, error)
@@ -817,6 +818,67 @@ func (m *resourceAccessor) Thread(ctx context.Context, threadID, viewerEntityID 
 		return nil, err
 	}
 	return res.Thread, nil
+}
+
+func (m *resourceAccessor) Threads(ctx context.Context, req *threading.ThreadsRequest) (*threading.ThreadsResponse, error) {
+
+	// ensure that one of the entities that the account maps to is the viewer entity id
+	acc := gqlctx.Account(ctx)
+	if acc == nil {
+		return nil, errors.ErrNotAuthenticated(ctx)
+	}
+
+	entities, err := m.Entities(ctx, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+			AccountID: acc.ID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
+		},
+		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL, directory.EntityType_PATIENT},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var entityFound bool
+	for _, entity := range entities {
+		if entity.ID == req.ViewerEntityID {
+			entityFound = true
+			break
+		}
+	}
+
+	if !entityFound {
+		return nil, errors.ErrNotAuthorized(ctx, req.ViewerEntityID)
+	}
+
+	res, err := m.threading.Threads(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	// ensure that each of the threads queried for belongs to an organization that one of the entities that the account maps to
+	// belongs to as well
+	for _, thread := range res.Threads {
+		var orgFound bool
+		for _, entity := range entities {
+			for _, membership := range entity.Memberships {
+				if membership.ID == thread.OrganizationID {
+					orgFound = true
+					break
+				}
+			}
+		}
+
+		if !orgFound {
+			return nil, errors.ErrNotAuthorized(ctx, thread.ID)
+		}
+	}
+
+	return res, nil
 }
 
 func (m *resourceAccessor) ThreadItem(ctx context.Context, threadItemID string) (*threading.ThreadItem, error) {
