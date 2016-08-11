@@ -1727,20 +1727,12 @@ func (s *threadsServer) forExternalViewer(ctx context.Context, viewerEntityID st
 func memberEntityIDsForNewThread(ttype threading.ThreadType, orgID, fromEntityID string, memberEntityIDs []string) ([]string, error) {
 	switch ttype {
 	case threading.ThreadType_EXTERNAL, threading.ThreadType_SECURE_EXTERNAL, threading.ThreadType_SETUP, threading.ThreadType_SUPPORT:
-		memberEntityIDs = append(memberEntityIDs, orgID)
+		// Make sure org is a member
+		memberEntityIDs = appendStringToSet(memberEntityIDs, orgID)
 	case threading.ThreadType_TEAM:
 		// Make sure creator is a member
 		if fromEntityID != "" {
-			var found bool
-			for _, id := range memberEntityIDs {
-				if id == fromEntityID {
-					found = true
-					break
-				}
-			}
-			if !found {
-				memberEntityIDs = append(memberEntityIDs, fromEntityID)
-			}
+			memberEntityIDs = appendStringToSet(memberEntityIDs, fromEntityID)
 		}
 	default:
 		return nil, grpcErrorf(codes.Internal, fmt.Sprintf("Unhandled thread type %s", ttype))
@@ -1780,4 +1772,14 @@ func parseRefsAndNormalize(s string) (string, []*models.Reference, error) {
 func internalError(err error) error {
 	golog.LogDepthf(-1, golog.ERR, err.Error())
 	return grpcErrorf(codes.Internal, errors.Trace(err).Error())
+}
+
+// appendStringToSet appends a string to the slice if it's not already included
+func appendStringToSet(set []string, s string) []string {
+	for _, id := range set {
+		if id == s {
+			return set
+		}
+	}
+	return append(set, s)
 }

@@ -334,22 +334,28 @@ func (d *dal) IterateThreads(ctx context.Context, memberEntityIDs []string, view
 	defer rows.Close()
 
 	var tc ThreadConnection
+	seen := make(map[uint64]struct{}) // track which IDs have been seen to remove duplicates
+	var nThreads int
 	for rows.Next() {
 		t, te, err := scanThreadAndEntity(rows)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-		var cursor string
-		if forExternal {
-			cursor = formatTimeCursor(t.LastExternalMessageTimestamp)
-		} else {
-			cursor = formatTimeCursor(t.LastMessageTimestamp)
+		nThreads++
+		if _, ok := seen[t.ID.Val]; !ok {
+			seen[t.ID.Val] = struct{}{}
+			var cursor string
+			if forExternal {
+				cursor = formatTimeCursor(t.LastExternalMessageTimestamp)
+			} else {
+				cursor = formatTimeCursor(t.LastMessageTimestamp)
+			}
+			tc.Edges = append(tc.Edges, ThreadEdge{
+				Thread:       t,
+				ThreadEntity: te,
+				Cursor:       cursor,
+			})
 		}
-		tc.Edges = append(tc.Edges, ThreadEdge{
-			Thread:       t,
-			ThreadEntity: te,
-			Cursor:       cursor,
-		})
 	}
 
 	if err := rows.Err(); err != nil {
@@ -357,7 +363,7 @@ func (d *dal) IterateThreads(ctx context.Context, memberEntityIDs []string, view
 	}
 
 	// If we got more than was asked then we know there's more to be had
-	if len(tc.Edges) > it.Count {
+	if nThreads > it.Count {
 		tc.Edges = tc.Edges[:it.Count]
 		tc.HasMore = true
 	}

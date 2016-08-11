@@ -87,6 +87,7 @@ func TestCreateThreadMutation_NoExistingThreads(t *testing.T) {
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateEmptyThread, &threading.CreateEmptyThreadRequest{
 		UUID:            "zztop",
 		OrganizationID:  "e_org",
+		MemberEntityIDs: []string{"e_org"},
 		FromEntityID:    "e_creator",
 		PrimaryEntityID: "e_patient",
 		Summary:         "New conversation",
@@ -236,6 +237,7 @@ func TestCreateThreadMutation_DifferentOrg(t *testing.T) {
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateEmptyThread, &threading.CreateEmptyThreadRequest{
 		UUID:            "zztop",
 		OrganizationID:  "e_org",
+		MemberEntityIDs: []string{"e_org"},
 		FromEntityID:    "e_creator",
 		SystemTitle:     "firstName middleInitial. lastName, shortTitle",
 		PrimaryEntityID: "e_patient",

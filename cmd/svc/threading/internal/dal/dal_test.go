@@ -110,6 +110,25 @@ func TestIterateThreads(t *testing.T) {
 		Joined:   tc.Edges[0].ThreadEntity.Joined,
 	}, tc.Edges[0].ThreadEntity)
 	test.Equals(t, (*models.ThreadEntity)(nil), tc.Edges[1].ThreadEntity)
+
+	// Make sure we don't get duplicates if both org and viewer are members
+	test.OK(t, dal.AddThreadMembers(ctx, tid2, []string{"org"}))
+	tc, err = dal.IterateThreads(ctx, []string{"org", "viewer"}, "viewer", false, &Iterator{
+		Direction: FromStart,
+		Count:     10,
+	})
+	test.OK(t, err)
+	t.Logf("%+v", tc)
+	test.Equals(t, 2, len(tc.Edges))
+	test.Equals(t, tid2, tc.Edges[0].Thread.ID)
+	test.Equals(t, tid1, tc.Edges[1].Thread.ID)
+	test.Equals(t, &models.ThreadEntity{
+		ThreadID: tid2,
+		EntityID: "viewer",
+		Member:   true,
+		Joined:   tc.Edges[0].ThreadEntity.Joined,
+	}, tc.Edges[0].ThreadEntity)
+	test.Equals(t, (*models.ThreadEntity)(nil), tc.Edges[1].ThreadEntity)
 }
 
 func TestThread(t *testing.T) {

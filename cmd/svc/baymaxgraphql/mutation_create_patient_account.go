@@ -450,7 +450,7 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 		if _, err := ram.CreateEmptyThread(ctx, &threading.CreateEmptyThreadRequest{
 			OrganizationID:  inv.GetOrganization().OrganizationEntityID,
 			PrimaryEntityID: patientEntity.ID,
-			MemberEntityIDs: []string{accountEntityID},
+			MemberEntityIDs: []string{inv.GetOrganization().OrganizationEntityID, accountEntityID},
 			Type:            threading.ThreadType_SECURE_EXTERNAL,
 			Summary:         patientEntity.Info.DisplayName,
 			SystemTitle:     patientEntity.Info.DisplayName,

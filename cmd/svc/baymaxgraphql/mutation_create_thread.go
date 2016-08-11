@@ -283,6 +283,7 @@ var createThreadMutation = &graphql.Field{
 		thread, err := ram.CreateEmptyThread(ctx, &threading.CreateEmptyThreadRequest{
 			UUID:            uuid,
 			OrganizationID:  orgID,
+			MemberEntityIDs: []string{orgID},
 			FromEntityID:    creatorEnt.ID,
 			PrimaryEntityID: primaryEnt.ID,
 			Summary:         "New conversation",

@@ -222,7 +222,7 @@ var invitePatientsMutation = &graphql.Field{
 					thread, err := ram.CreateEmptyThread(ctx, &threading.CreateEmptyThreadRequest{
 						OrganizationID:  orgID,
 						PrimaryEntityID: patientEntity.ID,
-						MemberEntityIDs: []string{inviterEnt.ID, patientEntity.ID},
+						MemberEntityIDs: []string{orgID, patientEntity.ID},
 						Type:            threading.ThreadType_SECURE_EXTERNAL,
 						Summary:         patientEntity.Info.DisplayName,
 						SystemTitle:     patientEntity.Info.DisplayName,
