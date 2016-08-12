@@ -1421,9 +1421,11 @@ func TestBlockNumber(t *testing.T) {
 	provisionedPhoneNumber := phone.Number("+13333333333")
 	orgID := "orgID1"
 
-	md.Expect(mock.NewExpectation(md.LookupProvisionedEndpoint, provisionedPhoneNumber.String(), models.EndpointTypePhone).WithReturns(&models.ProvisionedEndpoint{
-		ProvisionedFor: orgID,
-	}, nil))
+	md.Expect(mock.NewExpectation(md.LookupProvisionedEndpoint, orgID, models.EndpointTypePhone).WithReturns(
+		&models.ProvisionedEndpoint{
+			ProvisionedFor: orgID,
+			Endpoint:       provisionedPhoneNumber.String(),
+		}, nil))
 	md.Expect(mock.NewExpectation(md.InsertBlockedNumber, blockedNumber, provisionedPhoneNumber))
 	md.Expect(mock.NewExpectation(md.LookupBlockedNumbers, provisionedPhoneNumber))
 	es := &excommsService{
@@ -1437,7 +1439,7 @@ func TestBlockNumber(t *testing.T) {
 	test.OK(t, err)
 }
 
-func TestBlockNumber_WrongOrg(t *testing.T) {
+func TestBlockNumber_WrongNumber(t *testing.T) {
 	md := dalmock.New(t)
 	defer md.Finish()
 
@@ -1445,9 +1447,11 @@ func TestBlockNumber_WrongOrg(t *testing.T) {
 	provisionedPhoneNumber := phone.Number("+13333333333")
 	orgID := "orgID1"
 
-	md.Expect(mock.NewExpectation(md.LookupProvisionedEndpoint, provisionedPhoneNumber.String(), models.EndpointTypePhone).WithReturns(&models.ProvisionedEndpoint{
-		ProvisionedFor: "org2",
-	}, nil))
+	md.Expect(mock.NewExpectation(md.LookupProvisionedEndpoint, orgID, models.EndpointTypePhone).WithReturns(
+		&models.ProvisionedEndpoint{
+			ProvisionedFor: "org2",
+			Endpoint:       blockedNumber.String(),
+		}, nil))
 
 	es := &excommsService{
 		dal: md,

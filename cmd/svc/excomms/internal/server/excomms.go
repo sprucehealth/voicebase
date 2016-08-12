@@ -697,12 +697,12 @@ func (e *excommsService) BlockNumber(ctx context.Context, in *excomms.BlockNumbe
 	}
 
 	// ensure that the number is provisioned by the org listed in the request
-	pe, err := e.dal.LookupProvisionedEndpoint(provisionedPhoneNumber.String(), models.EndpointTypePhone)
+	pe, err := e.dal.LookupProvisionedEndpoint(in.OrgID, models.EndpointTypePhone)
 	if errors.Cause(err) == dal.ErrProvisionedEndpointNotFound {
 		return nil, grpcErrorf(codes.NotFound, "provisioned phone number %s not found", in.ProvisionedPhoneNumber)
 	} else if err != nil {
 		return nil, grpcErrorf(codes.Internal, err.Error())
-	} else if in.OrgID != pe.ProvisionedFor {
+	} else if pe.Endpoint != provisionedPhoneNumber.String() {
 		return nil, grpcErrorf(codes.InvalidArgument, "phone number %s not owned by %s", in.ProvisionedPhoneNumber, in.OrgID)
 	}
 
