@@ -364,8 +364,10 @@ func (d *dal) IterateThreads(ctx context.Context, memberEntityIDs []string, view
 
 	// If we got more than was asked then we know there's more to be had
 	if nThreads > it.Count {
-		tc.Edges = tc.Edges[:it.Count]
 		tc.HasMore = true
+	}
+	if len(tc.Edges) > it.Count {
+		tc.Edges = tc.Edges[:it.Count]
 	}
 
 	// Always return in descending order so reverse if we were asked to query FromEnd
