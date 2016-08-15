@@ -80,6 +80,9 @@ type DAL interface {
 	EntityProfileForEntity(id EntityID) (*EntityProfile, error)
 	UpsertEntityProfile(model *EntityProfile) (EntityProfileID, error)
 	DeleteEntityProfile(id EntityProfileID) (int64, error)
+	InsertEHRLinkForEntity(entityID EntityID, name, url string) error
+	DeleteEHRLinkForEntity(entityID EntityID, name string) error
+	EHRLinksForEntity(entityID EntityID) ([]*EHRLink, error)
 }
 
 type dal struct {
@@ -763,6 +766,12 @@ type EntityProfile struct {
 	Modified time.Time
 }
 
+// EHRLink represents a link to an EHR for an entity
+type EHRLink struct {
+	Name string
+	URL  string
+}
+
 // InsertEntity inserts a entity record
 func (d *dal) InsertEntity(model *Entity) (EntityID, error) {
 	if !model.ID.IsValid {
@@ -1399,6 +1408,37 @@ func (d *dal) DeleteEntityProfile(id EntityProfileID) (int64, error) {
 
 	aff, err := res.RowsAffected()
 	return aff, errors.Trace(err)
+}
+
+func (d *dal) InsertEHRLinkForEntity(entityID EntityID, name, url string) error {
+	_, err := d.db.Exec(`REPLACE INTO ehr_link (entity_id, name, url) VALUES (?,?,?)`, entityID, name, url)
+	return errors.Trace(err)
+}
+func (d *dal) DeleteEHRLinkForEntity(entityID EntityID, name string) error {
+	_, err := d.db.Exec(`DELETE FROM ehr_link WHERE entity_id = ? AND name = ?`, entityID, name)
+	return errors.Trace(err)
+}
+
+func (d *dal) EHRLinksForEntity(entityID EntityID) ([]*EHRLink, error) {
+	rows, err := d.db.Query(`
+		SELECT name, url 
+		FROM ehr_link
+		WHERE entity_id = ?`, entityID)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	defer rows.Close()
+
+	var ehrLinks []*EHRLink
+	for rows.Next() {
+		var ehrLink EHRLink
+		if err := rows.Scan(&ehrLink.Name, &ehrLink.URL); err != nil {
+			return nil, errors.Trace(err)
+		}
+		ehrLinks = append(ehrLinks, &ehrLink)
+	}
+
+	return ehrLinks, errors.Trace(rows.Err())
 }
 
 const selectExternalEntityID = `

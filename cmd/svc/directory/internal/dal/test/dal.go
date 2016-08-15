@@ -313,6 +313,31 @@ func (dl *MockDAL) Transact(trans func(dal dal.DAL) error) (err error) {
 	return nil
 }
 
+func (dl *MockDAL) InsertEHRLinkForEntity(entityID dal.EntityID, name, url string) error {
+	rets := dl.Record(entityID, name, url)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[0])
+}
+
+func (dl *MockDAL) DeleteEHRLinkForEntity(entityID dal.EntityID, name string) error {
+	rets := dl.Record(entityID, name)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[0])
+}
+
+func (dl *MockDAL) EHRLinksForEntity(entityID dal.EntityID) ([]*dal.EHRLink, error) {
+	rets := dl.Record(entityID)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].([]*dal.EHRLink), mock.SafeError(rets[1])
+}
+
 func optsToInterfaces(opts []dal.QueryOption) []interface{} {
 	ifs := make([]interface{}, len(opts))
 	for i, o := range opts {

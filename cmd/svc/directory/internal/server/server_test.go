@@ -1361,6 +1361,81 @@ func TestSerializedEntityContact(t *testing.T) {
 	}, resp.SerializedEntityContact)
 }
 
+func TestCreateEHRLink(t *testing.T) {
+	t.Parallel()
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+	s := New(dl, metrics.NewRegistry())
+	eID1, err := dal.NewEntityID()
+	test.OK(t, err)
+
+	name := "drchrono"
+	url := "https://drchrono.com"
+
+	dl.Expect(mock.NewExpectation(dl.InsertEHRLinkForEntity, eID1, name, url))
+
+	resp, err := s.CreateEHRLink(context.Background(), &directory.CreateEHRLinkRequest{
+		Name:     "drchrono",
+		URL:      "https://drchrono.com",
+		EntityID: eID1.String(),
+	})
+	test.OK(t, err)
+	test.AssertNotNil(t, resp)
+}
+
+func TestDeleteEHRLink(t *testing.T) {
+	t.Parallel()
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+	s := New(dl, metrics.NewRegistry())
+	eID1, err := dal.NewEntityID()
+	test.OK(t, err)
+
+	name := "drchrono"
+
+	dl.Expect(mock.NewExpectation(dl.DeleteEHRLinkForEntity, eID1, name))
+
+	resp, err := s.DeleteEHRLink(context.Background(), &directory.DeleteEHRLinkRequest{
+		Name:     "drchrono",
+		EntityID: eID1.String(),
+	})
+	test.OK(t, err)
+	test.AssertNotNil(t, resp)
+}
+
+func TestEHRLinksForEntity(t *testing.T) {
+	t.Parallel()
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+	s := New(dl, metrics.NewRegistry())
+	eID1, err := dal.NewEntityID()
+	test.OK(t, err)
+
+	name := "drchrono"
+	url := "https://drchrono.com"
+
+	dl.Expect(mock.NewExpectation(dl.EHRLinksForEntity, eID1).WithReturns([]*dal.EHRLink{
+		{
+			Name: name,
+			URL:  url,
+		},
+	}, nil))
+
+	resp, err := s.LookupEHRLinksForEntity(context.Background(), &directory.LookupEHRLinksForEntityRequest{
+		EntityID: eID1.String(),
+	})
+	test.OK(t, err)
+	test.AssertNotNil(t, resp)
+	test.Equals(t, &directory.LookupEHRLinksforEntityResponse{
+		Links: []*directory.LookupEHRLinksforEntityResponse_EHRLink{
+			{
+				Name: name,
+				URL:  url,
+			},
+		},
+	}, resp)
+}
+
 func TestSerializedEntityContactNotFound(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)

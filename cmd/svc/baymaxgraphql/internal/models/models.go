@@ -104,6 +104,11 @@ type Entity struct {
 	CallableEndpoints     []*CallEndpoint `json:"callableEndpoints"`
 }
 
+type EHRLink struct {
+	Name string `json:"name"`
+	URL  string `json:"url"`
+}
+
 type Profile struct {
 	ID                    string            `json:"id"`
 	EntityID              string            `json:"entityID"`

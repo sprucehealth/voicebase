@@ -1129,6 +1129,73 @@ func (s *server) UpdateProfile(ctx context.Context, rd *directory.UpdateProfileR
 	}, nil
 }
 
+func (s *server) CreateEHRLink(ctx context.Context, in *directory.CreateEHRLinkRequest) (*directory.CreateEHRLinkResponse, error) {
+	if in.EntityID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "entity_id required")
+	} else if in.Name == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "name required")
+	} else if in.URL == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "url required")
+	}
+
+	entityID, err := dal.ParseEntityID(in.EntityID)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "invalid entity_id %s : %s", in.EntityID, err)
+	}
+
+	if err := s.dl.InsertEHRLinkForEntity(entityID, in.Name, in.URL); err != nil {
+		return nil, grpcErrorf(codes.Internal, "unable to insert ehr link (%s, %s) for %s : %s", in.Name, in.URL, entityID, err)
+	}
+
+	return &directory.CreateEHRLinkResponse{}, nil
+}
+
+func (s *server) DeleteEHRLink(ctx context.Context, in *directory.DeleteEHRLinkRequest) (*directory.DeleteEHRLinkResponse, error) {
+	if in.EntityID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "entity_id required")
+	} else if in.Name == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "name required")
+	}
+
+	entityID, err := dal.ParseEntityID(in.EntityID)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "invalid entity_id %s : %s", in.EntityID, err)
+	}
+
+	if err := s.dl.DeleteEHRLinkForEntity(entityID, in.Name); err != nil {
+		return nil, grpcErrorf(codes.Internal, "unable to delete ehr link (%s, %s) : %s", entityID, in.Name, err)
+	}
+
+	return &directory.DeleteEHRLinkResponse{}, nil
+}
+
+func (s *server) LookupEHRLinksForEntity(ctx context.Context, in *directory.LookupEHRLinksForEntityRequest) (*directory.LookupEHRLinksforEntityResponse, error) {
+	if in.EntityID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "entity_id required")
+	}
+
+	entityID, err := dal.ParseEntityID(in.EntityID)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "invalid entity_id %s : %s", in.EntityID, err)
+	}
+
+	ehrLinks, err := s.dl.EHRLinksForEntity(entityID)
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, "unable to get ehr links for %s : %s", entityID, err)
+	}
+
+	transformedEHRLinks := make([]*directory.LookupEHRLinksforEntityResponse_EHRLink, len(ehrLinks))
+	for i, ehrLink := range ehrLinks {
+		transformedEHRLinks[i] = &directory.LookupEHRLinksforEntityResponse_EHRLink{
+			Name: ehrLink.Name,
+			URL:  ehrLink.URL,
+		}
+	}
+	return &directory.LookupEHRLinksforEntityResponse{
+		Links: transformedEHRLinks,
+	}, nil
+}
+
 func getPBEntities(dl dal.DAL, dEntities []*dal.Entity, entityInformation []directory.EntityInformation, depth int64, statuses []dal.EntityStatus, types []dal.EntityType) ([]*directory.Entity, error) {
 	pbEntities := make([]*directory.Entity, len(dEntities))
 	for i, e := range dEntities {

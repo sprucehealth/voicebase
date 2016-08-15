@@ -59,6 +59,16 @@ var dateType = graphql.NewObject(graphql.ObjectConfig{
 	},
 })
 
+// ehrLink represents a link to an ehr for an entity
+var ehrLinkType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "EHRLink",
+	Description: "A link to an EHR for an entity",
+	Fields: graphql.Fields{
+		"name": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"url":  &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+	},
+})
+
 var entityType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Entity",
 	Interfaces: []*graphql.Interface{
@@ -157,6 +167,30 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 				ctx := p.Context
 				ram := raccess.ResourceAccess(p)
 				return lookupEntityProfile(ctx, ram, ent.ID)
+			},
+		},
+		"ehrLinks": &graphql.Field{
+			Type: graphql.NewList(ehrLinkType),
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				ent := p.Source.(*models.Entity)
+				ram := raccess.ResourceAccess(p)
+				ctx := p.Context
+				res, err := ram.LookupEHRLinksForEntity(ctx, &directory.LookupEHRLinksForEntityRequest{
+					EntityID: ent.ID,
+				})
+				if err != nil {
+					return nil, errors.InternalError(ctx, err)
+				}
+
+				transformedEHRLinks := make([]*models.EHRLink, len(res.Links))
+				for i, ehrLink := range res.Links {
+					transformedEHRLinks[i] = &models.EHRLink{
+						Name: ehrLink.Name,
+						URL:  ehrLink.URL,
+					}
+				}
+
+				return transformedEHRLinks, nil
 			},
 		},
 	},

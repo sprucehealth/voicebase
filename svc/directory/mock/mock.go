@@ -183,3 +183,27 @@ func (c *Client) UpdateProfile(ctx context.Context, in *directory.UpdateProfileR
 	}
 	return rets[0].(*directory.UpdateProfileResponse), mock.SafeError(rets[1])
 }
+
+func (c *Client) CreateEHRLink(ctx context.Context, in *directory.CreateEHRLinkRequest, opts ...grpc.CallOption) (*directory.CreateEHRLinkResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*directory.CreateEHRLinkResponse), mock.SafeError(rets[1])
+}
+
+func (c *Client) DeleteEHRLink(ctx context.Context, in *directory.DeleteEHRLinkRequest, opts ...grpc.CallOption) (*directory.DeleteEHRLinkResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*directory.DeleteEHRLinkResponse), mock.SafeError(rets[1])
+}
+
+func (c *Client) LookupEHRLinksForEntity(ctx context.Context, in *directory.LookupEHRLinksForEntityRequest, opts ...grpc.CallOption) (*directory.LookupEHRLinksforEntityResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*directory.LookupEHRLinksforEntityResponse), mock.SafeError(rets[1])
+}

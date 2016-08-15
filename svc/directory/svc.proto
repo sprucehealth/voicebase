@@ -338,6 +338,35 @@ message UpdateProfileResponse {
 	Profile profile = 2;
 }
 
+message CreateEHRLinkRequest {
+	string entity_id = 1 [(gogoproto.customname) = "EntityID"];
+	string name = 2;
+	string url = 3 [(gogoproto.customname) = "URL"];
+}
+
+message CreateEHRLinkResponse {}
+
+message DeleteEHRLinkRequest {
+	string entity_id = 1 [(gogoproto.customname) = "EntityID"];
+	string name = 2;
+}
+
+message DeleteEHRLinkResponse {}
+
+message LookupEHRLinksForEntityRequest {
+	string entity_id = 1 [(gogoproto.customname) = "EntityID"];
+}
+
+message LookupEHRLinksforEntityResponse {
+	message EHRLink {
+		string name = 1;
+		string url = 2 [(gogoproto.customname) = "URL"];
+	}
+
+	repeated EHRLink links = 1 ;
+}
+
+
 service Directory {
 	// TODO: 1/22/16 - Remove the single version of this call once this code has been deployed and all callers have been changed and deployed
 	rpc CreateContact (CreateContactRequest) returns (CreateContactResponse);
@@ -358,4 +387,7 @@ service Directory {
 	rpc UpdateEntity (UpdateEntityRequest) returns (UpdateEntityResponse);
 	rpc UpdateEntityDomain (UpdateEntityDomainRequest) returns (UpdateEntityDomainResponse);
 	rpc UpdateProfile (UpdateProfileRequest) returns (UpdateProfileResponse);
+	rpc CreateEHRLink (CreateEHRLinkRequest) returns (CreateEHRLinkResponse);
+	rpc DeleteEHRLink (DeleteEHRLinkRequest) returns (DeleteEHRLinkResponse);
+	rpc LookupEHRLinksForEntity (LookupEHRLinksForEntityRequest) returns (LookupEHRLinksforEntityResponse);
 }

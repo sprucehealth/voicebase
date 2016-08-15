@@ -280,3 +280,17 @@ func (c *CachedClient) UpdateProfile(ctx context.Context, in *directory.UpdatePr
 	c.bustCache(ctx)
 	return c.dc.UpdateProfile(ctx, in, opts...)
 }
+
+func (c *CachedClient) CreateEHRLink(ctx context.Context, in *directory.CreateEHRLinkRequest, opts ...grpc.CallOption) (*directory.CreateEHRLinkResponse, error) {
+	c.bustCache(ctx)
+	return c.dc.CreateEHRLink(ctx, in, opts...)
+}
+
+func (c *CachedClient) DeleteEHRLink(ctx context.Context, in *directory.DeleteEHRLinkRequest, opts ...grpc.CallOption) (*directory.DeleteEHRLinkResponse, error) {
+	c.bustCache(ctx)
+	return c.dc.DeleteEHRLink(ctx, in, opts...)
+}
+
+func (c *CachedClient) LookupEHRLinksForEntity(ctx context.Context, in *directory.LookupEHRLinksForEntityRequest, opts ...grpc.CallOption) (*directory.LookupEHRLinksforEntityResponse, error) {
+	return c.dc.LookupEHRLinksForEntity(ctx, in, opts...)
+}

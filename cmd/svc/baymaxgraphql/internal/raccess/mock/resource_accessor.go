@@ -675,3 +675,11 @@ func (m *ResourceAccessor) ConnectVendorAccount(ctx context.Context, req *paymen
 
 	return rets[0].(*payments.ConnectVendorAccountResponse), mock.SafeError(rets[1])
 }
+
+func (m *ResourceAccessor) LookupEHRLinksForEntity(ctx context.Context, req *directory.LookupEHRLinksForEntityRequest) (*directory.LookupEHRLinksforEntityResponse, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*directory.LookupEHRLinksforEntityResponse), mock.SafeError(rets[1])
+}
