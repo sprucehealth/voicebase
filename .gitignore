@@ -85,3 +85,4 @@ cmd/cli/spruceadmin/spruceadmin
 cmd/cli/baymaxadmin/baymaxadmin
 cmd/svc/layout/layout
 cmd/svc/care/care
+cmd/svc/patientsync/patientsync

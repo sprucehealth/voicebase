@@ -277,9 +277,12 @@ func (s *server) InvitePatients(ctx context.Context, in *invite.InvitePatientsRe
 	}
 
 	// Lookup inviter to get name
-	inviter, err := s.getInternalEntity(ctx, in.InviterEntityID)
-	if err != nil {
-		return nil, err
+	var inviter *directory.Entity
+	if in.InviterEntityID != "" {
+		inviter, err = s.getInternalEntity(ctx, in.InviterEntityID)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	for _, p := range in.Patients {
@@ -356,11 +359,17 @@ func (s *server) proccessInvite(
 			pn = phiAttributeText
 			email = phiAttributeText
 		}
+
+		var inviterID string
+		if inviter != nil {
+			inviterID = inviter.ID
+		}
+
 		err = s.dal.InsertInvite(ctx, &models.Invite{
 			Token:                token,
 			Type:                 inviteType,
 			OrganizationEntityID: org.ID,
-			InviterEntityID:      inviter.ID,
+			InviterEntityID:      inviterID,
 			Email:                email,
 			PhoneNumber:          pn,
 			Created:              s.clk.Now(),
@@ -383,7 +392,7 @@ func (s *server) proccessInvite(
 			golog.Errorf("Failed to send colleague invite outbound comms: %s", err)
 		}
 	case models.PatientInvite:
-		if err := s.sendPatientOutbound(ctx, firstName, phoneNumber, inviteURL, token, org, inviter); err != nil {
+		if err := s.sendPatientOutbound(ctx, firstName, phoneNumber, inviteURL, token, org); err != nil {
 			golog.Errorf("Failed to send patient invite outbound comms: %s", err)
 		}
 	default:
@@ -421,7 +430,7 @@ func (s *server) sendColleagueOutbound(ctx context.Context, email, inviteURL, to
 	return nil
 }
 
-func (s *server) sendPatientOutbound(ctx context.Context, firstName, phoneNumber, inviteURL, token string, org, inviter *directory.Entity) error {
+func (s *server) sendPatientOutbound(ctx context.Context, firstName, phoneNumber, inviteURL, token string, org *directory.Entity) error {
 	golog.Debugf("Sending outbound patient invite messaging. URL: %s, Token: %s", inviteURL, token)
 	msgText := fmt.Sprintf("%s has invited you to use Spruce for secure messaging and digital care.", org.Info.DisplayName)
 	if firstName != "" {

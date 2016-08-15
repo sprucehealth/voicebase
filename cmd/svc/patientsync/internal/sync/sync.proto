@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package sync;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+
+// Source represents where the patient is coming from
+enum Source {
+	SOURCE_UNKNOWN = 0;
+	SOURCE_DRCHRONO = 1;
+	SOURCE_HINT = 2;
+	SOURCE_ELATION = 3;
+	SOURCE_CSV = 4;
+}
+
+// Config represents the sync config for a particular organization
+message Config {
+	Source source = 1;
+	string organization_entity_id = 2 [(gogoproto.customname) = "OrganizationEntityID"];
+
+	enum ThreadCreationType {
+		THREAD_CREATION_TYPE_UKNOWN = 0;
+		THREAD_CREATION_TYPE_STANDARD = 1;
+		THREAD_CREATION_TYPE_SECURE = 2;
+	}
+	ThreadCreationType thread_creation_type = 3;
+}
+
+// Event represents the sync event that our system should process.
+message Event {
+	enum EventType {
+		EVENT_TYPE_UNKNOWN = 0;
+		EVENT_TYPE_PATIENT_ADD = 1;
+	}
+
+	EventType type = 1;
+	Source source = 2;
+	string organization_entity_id = 3 [(gogoproto.customname) = "OrganizationEntityID"];
+	oneof event {
+		PatientAddEvent patient_add_event = 4;
+	}
+}
+
+// PatientAddEvent represents an event to add a list of patients to our system
+message PatientAddEvent {
+	repeated Patient patients = 1;
+}
+
+// Patient represents a standard form for a patient from different sources.
+message Patient {
+	string id = 1 [(gogoproto.customname) = "ID"];
+	string first_name = 2;
+	string last_name = 3;
+	string middle_name = 4;
+	repeated string email_addresses = 5;
+	repeated Phone phone_numbers = 6;
+}
+
+message Phone {
+	enum PhoneType {
+		PHONE_TYPE_UNKNOWN = 0;
+		PHONE_TYPE_HOME = 1;
+		PHONE_TYPE_MOBILE = 2;
+	}
+	PhoneType type = 4;
+	string number = 5;
+}
+
