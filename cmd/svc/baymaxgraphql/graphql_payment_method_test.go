@@ -30,7 +30,7 @@ func TestPaymentMethodEntityResolve(t *testing.T) {
 				mra.Expect(mock.NewExpectation(mra.PaymentMethods, &payments.PaymentMethodsRequest{
 					EntityID: entityID,
 				}).WithReturns(&payments.PaymentMethodsResponse{
-					[]*payments.PaymentMethod{
+					PaymentMethods: []*payments.PaymentMethod{
 						{
 							ID:          "ID",
 							EntityID:    entityID,
