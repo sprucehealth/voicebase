@@ -8,8 +8,8 @@ func NewMutationRoot() *graphql.Object {
 		graphql.ObjectConfig{
 			Name: "Mutation",
 			Fields: graphql.Fields{
-				"disconnectVendorAccount": newDisconnectVendorAccountField(),
-				"modifySetting":           newModifySettingField(),
+				"updateVendorAccount": newUpdateVendorAccountField(),
+				"modifySetting":       newModifySettingField(),
 			},
 		})
 }

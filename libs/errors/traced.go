@@ -1,15 +1,9 @@
 package errors
 
 import (
-	"errors"
 	"fmt"
 	"runtime"
 )
-
-// New returns an error that formats as the given text.
-// Copying this over since this package has the same name
-// as the stdlib package.
-var New = errors.New
 
 // Trace returns an error wrapped in a struct to track where the error is generated.
 func Trace(err error) error {

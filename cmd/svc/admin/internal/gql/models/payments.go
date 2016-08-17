@@ -28,26 +28,26 @@ func TransformVendorAccountsToModel(vas []*payments.VendorAccount) []*VendorAcco
 func TransformVendorAccountToModel(va *payments.VendorAccount) *VendorAccount {
 	mva := &VendorAccount{
 		ID:          va.ID,
-		Type:        friendlyVendorAccountType(va.VendorAccountType),
+		Type:        friendlyVendorAccountType(va.Type),
 		Lifecycle:   friendlyVendorAccountLifecycle(va.Lifecycle),
 		ChangeState: friendlyVendorAccountChangeState(va.ChangeState),
 		Live:        va.Live,
 	}
-	switch va.VendorAccountType {
+	switch va.Type {
 	case payments.VENDOR_ACCOUNT_TYPE_STRIPE:
 		mva.AccountID = va.GetStripeAccount().UserID
 	default:
-		golog.Errorf("Unknown vendor account type %s", va.VendorAccountType)
+		golog.Errorf("Unknown vendor account type %s", va.Type)
 	}
 	return mva
 }
 
 const (
 	// FriendlyVendorAccountTypeUnknown unknown
-	FriendlyVendorAccountTypeUnknown = "Unknown"
+	FriendlyVendorAccountTypeUnknown = "UNKNOWN"
 
 	// FriendlyVendorAccountTypeStripe a stripe account
-	FriendlyVendorAccountTypeStripe = "Stripe"
+	FriendlyVendorAccountTypeStripe = "STRIPE"
 )
 
 func friendlyVendorAccountType(at payments.VendorAccountType) string {

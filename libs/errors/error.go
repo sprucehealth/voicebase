@@ -6,9 +6,13 @@
 package errors
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
+
+// New creates a new error with the provided string
+var New = errors.New
 
 type aerr struct {
 	err         error // actual error
@@ -38,7 +42,7 @@ func (e aerr) Error() string {
 // Cause returns the original error ignoring any wrapped errors (traces).
 func Cause(e error) error {
 	if e, ok := e.(aerr); ok {
-		return e.err
+		return Cause(e.err)
 	}
 	return e
 }

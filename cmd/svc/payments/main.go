@@ -8,9 +8,11 @@ import (
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/payments/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/payments/internal/server"
+	"github.com/sprucehealth/backend/cmd/svc/payments/internal/stripe"
 	"github.com/sprucehealth/backend/cmd/svc/payments/internal/workers"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/payments"
 )
 
@@ -22,6 +24,12 @@ var (
 	// Stripe
 	flagStripeSecretKey = flag.String("stripe_secret_key", "", "the secret key of the platform stripe account")
 	flagStripeClientID  = flag.String("stripe_client_id", "", "the client id of the platform stripe account")
+
+	// Master Vendor Account
+	flagMasterVendorAccountID = flag.String("master_vendor_account_id", "", "the vendor_account_id of the master account")
+
+	// Services
+	flagDirectoryAddr = flag.String("directory_addr", "127.0.0.1:50052", "host:port of directory service")
 
 	// DB
 	flagDBHost     = flag.String("db_host", "localhost", "the host at which we should attempt to connect to the database")
@@ -37,6 +45,16 @@ var (
 
 func main() {
 	svc := boot.NewService("payments", nil)
+
+	if *flagMasterVendorAccountID == "" {
+		golog.Fatalf("master_vendor_account_id required")
+	}
+	if *flagStripeSecretKey == "" {
+		golog.Fatalf("stripe_secret_key required")
+	}
+	if *flagStripeClientID == "" {
+		golog.Fatalf("stripe_client_id required")
+	}
 
 	lis, err := net.Listen("tcp", *flagRPCListenAddr)
 	if err != nil {
@@ -59,8 +77,15 @@ func main() {
 		golog.Fatalf("failed to initialize db connection: %s", err)
 	}
 
+	conn, err := boot.DialGRPC("payments", *flagDirectoryAddr)
+	if err != nil {
+		golog.Fatalf("Unable to connect to directory service: %s", err)
+	}
+	directoryClient := directory.NewDirectoryClient(conn)
+
+	stripeClient := stripe.NewClient(*flagStripeSecretKey)
 	dl := dal.New(db)
-	pSrv, err := server.New(dl, *flagStripeSecretKey)
+	pSrv, err := server.New(dl, directoryClient, *flagMasterVendorAccountID, stripeClient, *flagStripeSecretKey)
 	if err != nil {
 		golog.Fatalf("Error while initializing payments server: %s", err)
 	}

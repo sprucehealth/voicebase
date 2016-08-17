@@ -33,13 +33,55 @@ message StripeAccount {
 message VendorAccount {
 	string id = 1 [(gogoproto.customname) = "ID"];
 	string entity_id = 2 [(gogoproto.customname) = "EntityID"];
-	VendorAccountLifecycle lifecycle = 3;
+	VendorAccountLifecycle   lifecycle = 3;
 	VendorAccountChangeState change_state = 4;
-	bool   live = 5;
+	bool live = 5;
 
-	VendorAccountType vendor_account_type = 6;
+	VendorAccountType type = 6;
 	oneof vendor_account_oneof {
 		StripeAccount stripe_account = 7;
+	}
+}
+
+enum PaymentMethodType {
+	PAYMENT_METHOD_TYPE_UNKNOWN = 0;
+	PAYMENT_METHOD_TYPE_CARD = 1;
+}
+
+enum PaymentMethodStorageType {
+	PAYMENT_METHOD_STORAGE_TYPE_UNKNOWN = 0;
+	PAYMENT_METHOD_STORAGE_TYPE_STRIPE = 1;
+}
+
+enum PaymentMethodLifecycle {
+	PAYMENT_METHOD_LIFECYCLE_UNKNOWN = 0;
+	PAYMENT_METHOD_LIFECYCLE_ACTIVE = 1;
+}
+
+enum PaymentMethodChangeState {
+	PAYMENT_METHOD_CHANGE_STATE_UNKNOWN = 0;
+	PAYMENT_METHOD_CHANGE_STATE_NONE = 1;
+	PAYMENT_METHOD_CHANGE_STATE_PENDING = 2;
+}
+
+message StripeCard {
+	string id = 1 [(gogoproto.customname) = "ID"];
+	string tokenization_method = 2;
+	string brand = 3;
+	string last4 = 4;
+}
+
+message PaymentMethod {
+	string id = 1 [(gogoproto.customname) = "ID"];
+	string entity_id = 2 [(gogoproto.customname) = "EntityID"];
+	bool   default = 3;
+	PaymentMethodLifecycle   lifecycle = 4;
+	PaymentMethodChangeState change_state = 5;
+
+	PaymentMethodStorageType storage_type = 6;
+	PaymentMethodType type = 7;
+	oneof payment_method_oneof {
+		StripeCard stripe_card = 8;
 	}
 }
 
@@ -50,7 +92,7 @@ message StripeAccountConnectRequest {
 message ConnectVendorAccountRequest {
 	string entity_id = 1 [(gogoproto.customname) = "EntityID"];
 
-	VendorAccountType vendor_account_type = 2;
+	VendorAccountType type = 2;
 	oneof connect_vendor_account_oneof {
 		StripeAccountConnectRequest stripe_request = 3;
 	}
@@ -68,16 +110,54 @@ message VendorAccountsResponse {
 	repeated VendorAccount vendor_accounts = 1;
 }
 
-message DisconnectVendorAccountRequest {
-	string vendor_account_id = 1 [(gogoproto.customname) = "VendorAccountID"];
+message UpdateVendorAccountRequest {
+	string                   vendor_account_id = 1 [(gogoproto.customname) = "VendorAccountID"];
+	VendorAccountLifecycle   lifecycle = 2;
+	VendorAccountChangeState change_state = 3;
 }
 
-message DisconnectVendorAccountResponse {
-	repeated VendorAccount vendor_accounts = 1;
+message UpdateVendorAccountResponse {}
+
+message StripeCardCreateRequest {
+	string token = 1;
 }
 
-service Payments {
+message CreatePaymentMethodRequest {
+	string entity_id = 1 [(gogoproto.customname) = "EntityID"];
+	bool   default = 2;                 
+
+	PaymentMethodStorageType storage_type = 3;
+	PaymentMethodType        type = 4;
+	oneof create_payment_method_oneof {
+		StripeCardCreateRequest stripe_card = 5;
+	}
+}
+
+message CreatePaymentMethodResponse {
+	repeated PaymentMethod payment_methods = 1;
+}
+
+message PaymentMethodsRequest {
+	string entity_id = 1 [(gogoproto.customname) = "EntityID"];
+}
+
+message PaymentMethodsResponse {
+	repeated PaymentMethod payment_methods = 1;
+}
+
+message DeletePaymentMethodRequest {
+	string payment_method_id = 1 [(gogoproto.customname) = "PaymentMethodID"];
+}
+
+message DeletePaymentMethodResponse {
+	repeated PaymentMethod payment_methods = 1;
+}
+
+service Payments { 
 	rpc ConnectVendorAccount (ConnectVendorAccountRequest) returns (ConnectVendorAccountResponse);
-	rpc DisconnectVendorAccount (DisconnectVendorAccountRequest) returns (DisconnectVendorAccountResponse);
+	rpc CreatePaymentMethod (CreatePaymentMethodRequest) returns (CreatePaymentMethodResponse);
+	rpc DeletePaymentMethod (DeletePaymentMethodRequest) returns (DeletePaymentMethodResponse);
+	rpc PaymentMethods (PaymentMethodsRequest) returns (PaymentMethodsResponse);
+	rpc UpdateVendorAccount (UpdateVendorAccountRequest) returns (UpdateVendorAccountResponse);
 	rpc VendorAccounts (VendorAccountsRequest) returns (VendorAccountsResponse);
 }

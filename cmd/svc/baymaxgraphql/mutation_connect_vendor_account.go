@@ -90,8 +90,8 @@ func connectVendorStripeAccount(p graphql.ResolveParams, in connectVendorStripeA
 	ctx := p.Context
 
 	_, err := ram.ConnectVendorAccount(ctx, &payments.ConnectVendorAccountRequest{
-		EntityID:          in.EntityID,
-		VendorAccountType: payments.VENDOR_ACCOUNT_TYPE_STRIPE,
+		EntityID: in.EntityID,
+		Type:     payments.VENDOR_ACCOUNT_TYPE_STRIPE,
 		ConnectVendorAccountOneof: &payments.ConnectVendorAccountRequest_StripeRequest{
 			StripeRequest: &payments.StripeAccountConnectRequest{Code: in.Code},
 		},

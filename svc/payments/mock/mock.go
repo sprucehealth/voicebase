@@ -32,13 +32,13 @@ func (c *Client) ConnectVendorAccount(ctx context.Context, in *payments.ConnectV
 	return rets[0].(*payments.ConnectVendorAccountResponse), mock.SafeError(rets[1])
 }
 
-// DisconnectVendorAccount implements payments.PaymentsClient
-func (c *Client) DisconnectVendorAccount(ctx context.Context, in *payments.DisconnectVendorAccountRequest, opts ...grpc.CallOption) (*payments.DisconnectVendorAccountResponse, error) {
+// UpdateVendorAccount implements payments.PaymentsClient
+func (c *Client) UpdateVendorAccount(ctx context.Context, in *payments.UpdateVendorAccountRequest, opts ...grpc.CallOption) (*payments.UpdateVendorAccountResponse, error) {
 	rets := c.Expector.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
 	}
-	return rets[0].(*payments.DisconnectVendorAccountResponse), mock.SafeError(rets[1])
+	return rets[0].(*payments.UpdateVendorAccountResponse), mock.SafeError(rets[1])
 }
 
 // VendorAccounts implements payments.PaymentsClient
@@ -48,4 +48,31 @@ func (c *Client) VendorAccounts(ctx context.Context, in *payments.VendorAccounts
 		return nil, nil
 	}
 	return rets[0].(*payments.VendorAccountsResponse), mock.SafeError(rets[1])
+}
+
+// CreatePaymentMethod implements payments.PaymentsClient
+func (c *Client) CreatePaymentMethod(ctx context.Context, in *payments.CreatePaymentMethodRequest, opts ...grpc.CallOption) (*payments.CreatePaymentMethodResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*payments.CreatePaymentMethodResponse), mock.SafeError(rets[1])
+}
+
+// DeletePaymentMethod implements payments.PaymentsClient
+func (c *Client) DeletePaymentMethod(ctx context.Context, in *payments.DeletePaymentMethodRequest, opts ...grpc.CallOption) (*payments.DeletePaymentMethodResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*payments.DeletePaymentMethodResponse), mock.SafeError(rets[1])
+}
+
+// PaymentMethods implements payments.PaymentsClient
+func (c *Client) PaymentMethods(ctx context.Context, in *payments.PaymentMethodsRequest, opts ...grpc.CallOption) (*payments.PaymentMethodsResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*payments.PaymentMethodsResponse), mock.SafeError(rets[1])
 }

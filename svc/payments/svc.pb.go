@@ -11,13 +11,22 @@
 	It has these top-level messages:
 		StripeAccount
 		VendorAccount
+		StripeCard
+		PaymentMethod
 		StripeAccountConnectRequest
 		ConnectVendorAccountRequest
 		ConnectVendorAccountResponse
 		VendorAccountsRequest
 		VendorAccountsResponse
-		DisconnectVendorAccountRequest
-		DisconnectVendorAccountResponse
+		UpdateVendorAccountRequest
+		UpdateVendorAccountResponse
+		StripeCardCreateRequest
+		CreatePaymentMethodRequest
+		CreatePaymentMethodResponse
+		PaymentMethodsRequest
+		PaymentMethodsResponse
+		DeletePaymentMethodRequest
+		DeletePaymentMethodResponse
 */
 package payments
 
@@ -111,6 +120,81 @@ var VendorAccountChangeState_value = map[string]int32{
 
 func (VendorAccountChangeState) EnumDescriptor() ([]byte, []int) { return fileDescriptorSvc, []int{2} }
 
+type PaymentMethodType int32
+
+const (
+	PAYMENT_METHOD_TYPE_UNKNOWN PaymentMethodType = 0
+	PAYMENT_METHOD_TYPE_CARD    PaymentMethodType = 1
+)
+
+var PaymentMethodType_name = map[int32]string{
+	0: "PAYMENT_METHOD_TYPE_UNKNOWN",
+	1: "PAYMENT_METHOD_TYPE_CARD",
+}
+var PaymentMethodType_value = map[string]int32{
+	"PAYMENT_METHOD_TYPE_UNKNOWN": 0,
+	"PAYMENT_METHOD_TYPE_CARD":    1,
+}
+
+func (PaymentMethodType) EnumDescriptor() ([]byte, []int) { return fileDescriptorSvc, []int{3} }
+
+type PaymentMethodStorageType int32
+
+const (
+	PAYMENT_METHOD_STORAGE_TYPE_UNKNOWN PaymentMethodStorageType = 0
+	PAYMENT_METHOD_STORAGE_TYPE_STRIPE  PaymentMethodStorageType = 1
+)
+
+var PaymentMethodStorageType_name = map[int32]string{
+	0: "PAYMENT_METHOD_STORAGE_TYPE_UNKNOWN",
+	1: "PAYMENT_METHOD_STORAGE_TYPE_STRIPE",
+}
+var PaymentMethodStorageType_value = map[string]int32{
+	"PAYMENT_METHOD_STORAGE_TYPE_UNKNOWN": 0,
+	"PAYMENT_METHOD_STORAGE_TYPE_STRIPE":  1,
+}
+
+func (PaymentMethodStorageType) EnumDescriptor() ([]byte, []int) { return fileDescriptorSvc, []int{4} }
+
+type PaymentMethodLifecycle int32
+
+const (
+	PAYMENT_METHOD_LIFECYCLE_UNKNOWN PaymentMethodLifecycle = 0
+	PAYMENT_METHOD_LIFECYCLE_ACTIVE  PaymentMethodLifecycle = 1
+)
+
+var PaymentMethodLifecycle_name = map[int32]string{
+	0: "PAYMENT_METHOD_LIFECYCLE_UNKNOWN",
+	1: "PAYMENT_METHOD_LIFECYCLE_ACTIVE",
+}
+var PaymentMethodLifecycle_value = map[string]int32{
+	"PAYMENT_METHOD_LIFECYCLE_UNKNOWN": 0,
+	"PAYMENT_METHOD_LIFECYCLE_ACTIVE":  1,
+}
+
+func (PaymentMethodLifecycle) EnumDescriptor() ([]byte, []int) { return fileDescriptorSvc, []int{5} }
+
+type PaymentMethodChangeState int32
+
+const (
+	PAYMENT_METHOD_CHANGE_STATE_UNKNOWN PaymentMethodChangeState = 0
+	PAYMENT_METHOD_CHANGE_STATE_NONE    PaymentMethodChangeState = 1
+	PAYMENT_METHOD_CHANGE_STATE_PENDING PaymentMethodChangeState = 2
+)
+
+var PaymentMethodChangeState_name = map[int32]string{
+	0: "PAYMENT_METHOD_CHANGE_STATE_UNKNOWN",
+	1: "PAYMENT_METHOD_CHANGE_STATE_NONE",
+	2: "PAYMENT_METHOD_CHANGE_STATE_PENDING",
+}
+var PaymentMethodChangeState_value = map[string]int32{
+	"PAYMENT_METHOD_CHANGE_STATE_UNKNOWN": 0,
+	"PAYMENT_METHOD_CHANGE_STATE_NONE":    1,
+	"PAYMENT_METHOD_CHANGE_STATE_PENDING": 2,
+}
+
+func (PaymentMethodChangeState) EnumDescriptor() ([]byte, []int) { return fileDescriptorSvc, []int{6} }
+
 type StripeAccount struct {
 	UserID string `protobuf:"bytes,1,opt,name=user_id,proto3" json:"user_id,omitempty"`
 	Scope  string `protobuf:"bytes,2,opt,name=scope,proto3" json:"scope,omitempty"`
@@ -121,12 +205,12 @@ func (*StripeAccount) ProtoMessage()               {}
 func (*StripeAccount) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{0} }
 
 type VendorAccount struct {
-	ID                string                   `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	EntityID          string                   `protobuf:"bytes,2,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
-	Lifecycle         VendorAccountLifecycle   `protobuf:"varint,3,opt,name=lifecycle,proto3,enum=payments.VendorAccountLifecycle" json:"lifecycle,omitempty"`
-	ChangeState       VendorAccountChangeState `protobuf:"varint,4,opt,name=change_state,proto3,enum=payments.VendorAccountChangeState" json:"change_state,omitempty"`
-	Live              bool                     `protobuf:"varint,5,opt,name=live,proto3" json:"live,omitempty"`
-	VendorAccountType VendorAccountType        `protobuf:"varint,6,opt,name=vendor_account_type,proto3,enum=payments.VendorAccountType" json:"vendor_account_type,omitempty"`
+	ID          string                   `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	EntityID    string                   `protobuf:"bytes,2,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
+	Lifecycle   VendorAccountLifecycle   `protobuf:"varint,3,opt,name=lifecycle,proto3,enum=payments.VendorAccountLifecycle" json:"lifecycle,omitempty"`
+	ChangeState VendorAccountChangeState `protobuf:"varint,4,opt,name=change_state,proto3,enum=payments.VendorAccountChangeState" json:"change_state,omitempty"`
+	Live        bool                     `protobuf:"varint,5,opt,name=live,proto3" json:"live,omitempty"`
+	Type        VendorAccountType        `protobuf:"varint,6,opt,name=type,proto3,enum=payments.VendorAccountType" json:"type,omitempty"`
 	// Types that are valid to be assigned to VendorAccountOneof:
 	//	*VendorAccount_StripeAccount
 	VendorAccountOneof isVendorAccount_VendorAccountOneof `protobuf_oneof:"vendor_account_oneof"`
@@ -218,17 +302,127 @@ func _VendorAccount_OneofSizer(msg proto.Message) (n int) {
 	return n
 }
 
+type StripeCard struct {
+	ID                 string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	TokenizationMethod string `protobuf:"bytes,2,opt,name=tokenization_method,proto3" json:"tokenization_method,omitempty"`
+	Brand              string `protobuf:"bytes,3,opt,name=brand,proto3" json:"brand,omitempty"`
+	Last4              string `protobuf:"bytes,4,opt,name=last4,proto3" json:"last4,omitempty"`
+}
+
+func (m *StripeCard) Reset()                    { *m = StripeCard{} }
+func (*StripeCard) ProtoMessage()               {}
+func (*StripeCard) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{2} }
+
+type PaymentMethod struct {
+	ID          string                   `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	EntityID    string                   `protobuf:"bytes,2,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
+	Default     bool                     `protobuf:"varint,3,opt,name=default,proto3" json:"default,omitempty"`
+	Lifecycle   PaymentMethodLifecycle   `protobuf:"varint,4,opt,name=lifecycle,proto3,enum=payments.PaymentMethodLifecycle" json:"lifecycle,omitempty"`
+	ChangeState PaymentMethodChangeState `protobuf:"varint,5,opt,name=change_state,proto3,enum=payments.PaymentMethodChangeState" json:"change_state,omitempty"`
+	StorageType PaymentMethodStorageType `protobuf:"varint,6,opt,name=storage_type,proto3,enum=payments.PaymentMethodStorageType" json:"storage_type,omitempty"`
+	Type        PaymentMethodType        `protobuf:"varint,7,opt,name=type,proto3,enum=payments.PaymentMethodType" json:"type,omitempty"`
+	// Types that are valid to be assigned to PaymentMethodOneof:
+	//	*PaymentMethod_StripeCard
+	PaymentMethodOneof isPaymentMethod_PaymentMethodOneof `protobuf_oneof:"payment_method_oneof"`
+}
+
+func (m *PaymentMethod) Reset()                    { *m = PaymentMethod{} }
+func (*PaymentMethod) ProtoMessage()               {}
+func (*PaymentMethod) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{3} }
+
+type isPaymentMethod_PaymentMethodOneof interface {
+	isPaymentMethod_PaymentMethodOneof()
+	Equal(interface{}) bool
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+
+type PaymentMethod_StripeCard struct {
+	StripeCard *StripeCard `protobuf:"bytes,8,opt,name=stripe_card,oneof"`
+}
+
+func (*PaymentMethod_StripeCard) isPaymentMethod_PaymentMethodOneof() {}
+
+func (m *PaymentMethod) GetPaymentMethodOneof() isPaymentMethod_PaymentMethodOneof {
+	if m != nil {
+		return m.PaymentMethodOneof
+	}
+	return nil
+}
+
+func (m *PaymentMethod) GetStripeCard() *StripeCard {
+	if x, ok := m.GetPaymentMethodOneof().(*PaymentMethod_StripeCard); ok {
+		return x.StripeCard
+	}
+	return nil
+}
+
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*PaymentMethod) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _PaymentMethod_OneofMarshaler, _PaymentMethod_OneofUnmarshaler, _PaymentMethod_OneofSizer, []interface{}{
+		(*PaymentMethod_StripeCard)(nil),
+	}
+}
+
+func _PaymentMethod_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*PaymentMethod)
+	// payment_method_oneof
+	switch x := m.PaymentMethodOneof.(type) {
+	case *PaymentMethod_StripeCard:
+		_ = b.EncodeVarint(8<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.StripeCard); err != nil {
+			return err
+		}
+	case nil:
+	default:
+		return fmt.Errorf("PaymentMethod.PaymentMethodOneof has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _PaymentMethod_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*PaymentMethod)
+	switch tag {
+	case 8: // payment_method_oneof.stripe_card
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(StripeCard)
+		err := b.DecodeMessage(msg)
+		m.PaymentMethodOneof = &PaymentMethod_StripeCard{msg}
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+func _PaymentMethod_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*PaymentMethod)
+	// payment_method_oneof
+	switch x := m.PaymentMethodOneof.(type) {
+	case *PaymentMethod_StripeCard:
+		s := proto.Size(x.StripeCard)
+		n += proto.SizeVarint(8<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
+}
+
 type StripeAccountConnectRequest struct {
 	Code string `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
 }
 
 func (m *StripeAccountConnectRequest) Reset()                    { *m = StripeAccountConnectRequest{} }
 func (*StripeAccountConnectRequest) ProtoMessage()               {}
-func (*StripeAccountConnectRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{2} }
+func (*StripeAccountConnectRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{4} }
 
 type ConnectVendorAccountRequest struct {
-	EntityID          string            `protobuf:"bytes,1,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
-	VendorAccountType VendorAccountType `protobuf:"varint,2,opt,name=vendor_account_type,proto3,enum=payments.VendorAccountType" json:"vendor_account_type,omitempty"`
+	EntityID string            `protobuf:"bytes,1,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
+	Type     VendorAccountType `protobuf:"varint,2,opt,name=type,proto3,enum=payments.VendorAccountType" json:"type,omitempty"`
 	// Types that are valid to be assigned to ConnectVendorAccountOneof:
 	//	*ConnectVendorAccountRequest_StripeRequest
 	ConnectVendorAccountOneof isConnectVendorAccountRequest_ConnectVendorAccountOneof `protobuf_oneof:"connect_vendor_account_oneof"`
@@ -236,7 +430,7 @@ type ConnectVendorAccountRequest struct {
 
 func (m *ConnectVendorAccountRequest) Reset()                    { *m = ConnectVendorAccountRequest{} }
 func (*ConnectVendorAccountRequest) ProtoMessage()               {}
-func (*ConnectVendorAccountRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{3} }
+func (*ConnectVendorAccountRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{5} }
 
 type isConnectVendorAccountRequest_ConnectVendorAccountOneof interface {
 	isConnectVendorAccountRequest_ConnectVendorAccountOneof()
@@ -327,7 +521,7 @@ type ConnectVendorAccountResponse struct {
 
 func (m *ConnectVendorAccountResponse) Reset()                    { *m = ConnectVendorAccountResponse{} }
 func (*ConnectVendorAccountResponse) ProtoMessage()               {}
-func (*ConnectVendorAccountResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{4} }
+func (*ConnectVendorAccountResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{6} }
 
 func (m *ConnectVendorAccountResponse) GetVendorAccounts() []*VendorAccount {
 	if m != nil {
@@ -342,7 +536,7 @@ type VendorAccountsRequest struct {
 
 func (m *VendorAccountsRequest) Reset()                    { *m = VendorAccountsRequest{} }
 func (*VendorAccountsRequest) ProtoMessage()               {}
-func (*VendorAccountsRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{5} }
+func (*VendorAccountsRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{7} }
 
 type VendorAccountsResponse struct {
 	VendorAccounts []*VendorAccount `protobuf:"bytes,1,rep,name=vendor_accounts" json:"vendor_accounts,omitempty"`
@@ -350,7 +544,7 @@ type VendorAccountsResponse struct {
 
 func (m *VendorAccountsResponse) Reset()                    { *m = VendorAccountsResponse{} }
 func (*VendorAccountsResponse) ProtoMessage()               {}
-func (*VendorAccountsResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{6} }
+func (*VendorAccountsResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{8} }
 
 func (m *VendorAccountsResponse) GetVendorAccounts() []*VendorAccount {
 	if m != nil {
@@ -359,29 +553,185 @@ func (m *VendorAccountsResponse) GetVendorAccounts() []*VendorAccount {
 	return nil
 }
 
-type DisconnectVendorAccountRequest struct {
-	VendorAccountID string `protobuf:"bytes,1,opt,name=vendor_account_id,proto3" json:"vendor_account_id,omitempty"`
+type UpdateVendorAccountRequest struct {
+	VendorAccountID string                   `protobuf:"bytes,1,opt,name=vendor_account_id,proto3" json:"vendor_account_id,omitempty"`
+	Lifecycle       VendorAccountLifecycle   `protobuf:"varint,2,opt,name=lifecycle,proto3,enum=payments.VendorAccountLifecycle" json:"lifecycle,omitempty"`
+	ChangeState     VendorAccountChangeState `protobuf:"varint,3,opt,name=change_state,proto3,enum=payments.VendorAccountChangeState" json:"change_state,omitempty"`
 }
 
-func (m *DisconnectVendorAccountRequest) Reset()      { *m = DisconnectVendorAccountRequest{} }
-func (*DisconnectVendorAccountRequest) ProtoMessage() {}
-func (*DisconnectVendorAccountRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptorSvc, []int{7}
+func (m *UpdateVendorAccountRequest) Reset()                    { *m = UpdateVendorAccountRequest{} }
+func (*UpdateVendorAccountRequest) ProtoMessage()               {}
+func (*UpdateVendorAccountRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{9} }
+
+type UpdateVendorAccountResponse struct {
 }
 
-type DisconnectVendorAccountResponse struct {
-	VendorAccounts []*VendorAccount `protobuf:"bytes,1,rep,name=vendor_accounts" json:"vendor_accounts,omitempty"`
+func (m *UpdateVendorAccountResponse) Reset()                    { *m = UpdateVendorAccountResponse{} }
+func (*UpdateVendorAccountResponse) ProtoMessage()               {}
+func (*UpdateVendorAccountResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{10} }
+
+type StripeCardCreateRequest struct {
+	Token string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
 }
 
-func (m *DisconnectVendorAccountResponse) Reset()      { *m = DisconnectVendorAccountResponse{} }
-func (*DisconnectVendorAccountResponse) ProtoMessage() {}
-func (*DisconnectVendorAccountResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptorSvc, []int{8}
+func (m *StripeCardCreateRequest) Reset()                    { *m = StripeCardCreateRequest{} }
+func (*StripeCardCreateRequest) ProtoMessage()               {}
+func (*StripeCardCreateRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{11} }
+
+type CreatePaymentMethodRequest struct {
+	EntityID    string                   `protobuf:"bytes,1,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
+	Default     bool                     `protobuf:"varint,2,opt,name=default,proto3" json:"default,omitempty"`
+	StorageType PaymentMethodStorageType `protobuf:"varint,3,opt,name=storage_type,proto3,enum=payments.PaymentMethodStorageType" json:"storage_type,omitempty"`
+	Type        PaymentMethodType        `protobuf:"varint,4,opt,name=type,proto3,enum=payments.PaymentMethodType" json:"type,omitempty"`
+	// Types that are valid to be assigned to CreatePaymentMethodOneof:
+	//	*CreatePaymentMethodRequest_StripeCard
+	CreatePaymentMethodOneof isCreatePaymentMethodRequest_CreatePaymentMethodOneof `protobuf_oneof:"create_payment_method_oneof"`
 }
 
-func (m *DisconnectVendorAccountResponse) GetVendorAccounts() []*VendorAccount {
+func (m *CreatePaymentMethodRequest) Reset()                    { *m = CreatePaymentMethodRequest{} }
+func (*CreatePaymentMethodRequest) ProtoMessage()               {}
+func (*CreatePaymentMethodRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{12} }
+
+type isCreatePaymentMethodRequest_CreatePaymentMethodOneof interface {
+	isCreatePaymentMethodRequest_CreatePaymentMethodOneof()
+	Equal(interface{}) bool
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+
+type CreatePaymentMethodRequest_StripeCard struct {
+	StripeCard *StripeCardCreateRequest `protobuf:"bytes,5,opt,name=stripe_card,oneof"`
+}
+
+func (*CreatePaymentMethodRequest_StripeCard) isCreatePaymentMethodRequest_CreatePaymentMethodOneof() {
+}
+
+func (m *CreatePaymentMethodRequest) GetCreatePaymentMethodOneof() isCreatePaymentMethodRequest_CreatePaymentMethodOneof {
 	if m != nil {
-		return m.VendorAccounts
+		return m.CreatePaymentMethodOneof
+	}
+	return nil
+}
+
+func (m *CreatePaymentMethodRequest) GetStripeCard() *StripeCardCreateRequest {
+	if x, ok := m.GetCreatePaymentMethodOneof().(*CreatePaymentMethodRequest_StripeCard); ok {
+		return x.StripeCard
+	}
+	return nil
+}
+
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*CreatePaymentMethodRequest) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _CreatePaymentMethodRequest_OneofMarshaler, _CreatePaymentMethodRequest_OneofUnmarshaler, _CreatePaymentMethodRequest_OneofSizer, []interface{}{
+		(*CreatePaymentMethodRequest_StripeCard)(nil),
+	}
+}
+
+func _CreatePaymentMethodRequest_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*CreatePaymentMethodRequest)
+	// create_payment_method_oneof
+	switch x := m.CreatePaymentMethodOneof.(type) {
+	case *CreatePaymentMethodRequest_StripeCard:
+		_ = b.EncodeVarint(5<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.StripeCard); err != nil {
+			return err
+		}
+	case nil:
+	default:
+		return fmt.Errorf("CreatePaymentMethodRequest.CreatePaymentMethodOneof has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _CreatePaymentMethodRequest_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*CreatePaymentMethodRequest)
+	switch tag {
+	case 5: // create_payment_method_oneof.stripe_card
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(StripeCardCreateRequest)
+		err := b.DecodeMessage(msg)
+		m.CreatePaymentMethodOneof = &CreatePaymentMethodRequest_StripeCard{msg}
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+func _CreatePaymentMethodRequest_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*CreatePaymentMethodRequest)
+	// create_payment_method_oneof
+	switch x := m.CreatePaymentMethodOneof.(type) {
+	case *CreatePaymentMethodRequest_StripeCard:
+		s := proto.Size(x.StripeCard)
+		n += proto.SizeVarint(5<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
+}
+
+type CreatePaymentMethodResponse struct {
+	PaymentMethods []*PaymentMethod `protobuf:"bytes,1,rep,name=payment_methods" json:"payment_methods,omitempty"`
+}
+
+func (m *CreatePaymentMethodResponse) Reset()                    { *m = CreatePaymentMethodResponse{} }
+func (*CreatePaymentMethodResponse) ProtoMessage()               {}
+func (*CreatePaymentMethodResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{13} }
+
+func (m *CreatePaymentMethodResponse) GetPaymentMethods() []*PaymentMethod {
+	if m != nil {
+		return m.PaymentMethods
+	}
+	return nil
+}
+
+type PaymentMethodsRequest struct {
+	EntityID string `protobuf:"bytes,1,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
+}
+
+func (m *PaymentMethodsRequest) Reset()                    { *m = PaymentMethodsRequest{} }
+func (*PaymentMethodsRequest) ProtoMessage()               {}
+func (*PaymentMethodsRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{14} }
+
+type PaymentMethodsResponse struct {
+	PaymentMethods []*PaymentMethod `protobuf:"bytes,1,rep,name=payment_methods" json:"payment_methods,omitempty"`
+}
+
+func (m *PaymentMethodsResponse) Reset()                    { *m = PaymentMethodsResponse{} }
+func (*PaymentMethodsResponse) ProtoMessage()               {}
+func (*PaymentMethodsResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{15} }
+
+func (m *PaymentMethodsResponse) GetPaymentMethods() []*PaymentMethod {
+	if m != nil {
+		return m.PaymentMethods
+	}
+	return nil
+}
+
+type DeletePaymentMethodRequest struct {
+	PaymentMethodID string `protobuf:"bytes,1,opt,name=payment_method_id,proto3" json:"payment_method_id,omitempty"`
+}
+
+func (m *DeletePaymentMethodRequest) Reset()                    { *m = DeletePaymentMethodRequest{} }
+func (*DeletePaymentMethodRequest) ProtoMessage()               {}
+func (*DeletePaymentMethodRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{16} }
+
+type DeletePaymentMethodResponse struct {
+	PaymentMethods []*PaymentMethod `protobuf:"bytes,1,rep,name=payment_methods" json:"payment_methods,omitempty"`
+}
+
+func (m *DeletePaymentMethodResponse) Reset()                    { *m = DeletePaymentMethodResponse{} }
+func (*DeletePaymentMethodResponse) ProtoMessage()               {}
+func (*DeletePaymentMethodResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{17} }
+
+func (m *DeletePaymentMethodResponse) GetPaymentMethods() []*PaymentMethod {
+	if m != nil {
+		return m.PaymentMethods
 	}
 	return nil
 }
@@ -389,16 +739,29 @@ func (m *DisconnectVendorAccountResponse) GetVendorAccounts() []*VendorAccount {
 func init() {
 	proto.RegisterType((*StripeAccount)(nil), "payments.StripeAccount")
 	proto.RegisterType((*VendorAccount)(nil), "payments.VendorAccount")
+	proto.RegisterType((*StripeCard)(nil), "payments.StripeCard")
+	proto.RegisterType((*PaymentMethod)(nil), "payments.PaymentMethod")
 	proto.RegisterType((*StripeAccountConnectRequest)(nil), "payments.StripeAccountConnectRequest")
 	proto.RegisterType((*ConnectVendorAccountRequest)(nil), "payments.ConnectVendorAccountRequest")
 	proto.RegisterType((*ConnectVendorAccountResponse)(nil), "payments.ConnectVendorAccountResponse")
 	proto.RegisterType((*VendorAccountsRequest)(nil), "payments.VendorAccountsRequest")
 	proto.RegisterType((*VendorAccountsResponse)(nil), "payments.VendorAccountsResponse")
-	proto.RegisterType((*DisconnectVendorAccountRequest)(nil), "payments.DisconnectVendorAccountRequest")
-	proto.RegisterType((*DisconnectVendorAccountResponse)(nil), "payments.DisconnectVendorAccountResponse")
+	proto.RegisterType((*UpdateVendorAccountRequest)(nil), "payments.UpdateVendorAccountRequest")
+	proto.RegisterType((*UpdateVendorAccountResponse)(nil), "payments.UpdateVendorAccountResponse")
+	proto.RegisterType((*StripeCardCreateRequest)(nil), "payments.StripeCardCreateRequest")
+	proto.RegisterType((*CreatePaymentMethodRequest)(nil), "payments.CreatePaymentMethodRequest")
+	proto.RegisterType((*CreatePaymentMethodResponse)(nil), "payments.CreatePaymentMethodResponse")
+	proto.RegisterType((*PaymentMethodsRequest)(nil), "payments.PaymentMethodsRequest")
+	proto.RegisterType((*PaymentMethodsResponse)(nil), "payments.PaymentMethodsResponse")
+	proto.RegisterType((*DeletePaymentMethodRequest)(nil), "payments.DeletePaymentMethodRequest")
+	proto.RegisterType((*DeletePaymentMethodResponse)(nil), "payments.DeletePaymentMethodResponse")
 	proto.RegisterEnum("payments.VendorAccountType", VendorAccountType_name, VendorAccountType_value)
 	proto.RegisterEnum("payments.VendorAccountLifecycle", VendorAccountLifecycle_name, VendorAccountLifecycle_value)
 	proto.RegisterEnum("payments.VendorAccountChangeState", VendorAccountChangeState_name, VendorAccountChangeState_value)
+	proto.RegisterEnum("payments.PaymentMethodType", PaymentMethodType_name, PaymentMethodType_value)
+	proto.RegisterEnum("payments.PaymentMethodStorageType", PaymentMethodStorageType_name, PaymentMethodStorageType_value)
+	proto.RegisterEnum("payments.PaymentMethodLifecycle", PaymentMethodLifecycle_name, PaymentMethodLifecycle_value)
+	proto.RegisterEnum("payments.PaymentMethodChangeState", PaymentMethodChangeState_name, PaymentMethodChangeState_value)
 }
 func (x VendorAccountType) String() string {
 	s, ok := VendorAccountType_name[int32(x)]
@@ -416,6 +779,34 @@ func (x VendorAccountLifecycle) String() string {
 }
 func (x VendorAccountChangeState) String() string {
 	s, ok := VendorAccountChangeState_name[int32(x)]
+	if ok {
+		return s
+	}
+	return strconv.Itoa(int(x))
+}
+func (x PaymentMethodType) String() string {
+	s, ok := PaymentMethodType_name[int32(x)]
+	if ok {
+		return s
+	}
+	return strconv.Itoa(int(x))
+}
+func (x PaymentMethodStorageType) String() string {
+	s, ok := PaymentMethodStorageType_name[int32(x)]
+	if ok {
+		return s
+	}
+	return strconv.Itoa(int(x))
+}
+func (x PaymentMethodLifecycle) String() string {
+	s, ok := PaymentMethodLifecycle_name[int32(x)]
+	if ok {
+		return s
+	}
+	return strconv.Itoa(int(x))
+}
+func (x PaymentMethodChangeState) String() string {
+	s, ok := PaymentMethodChangeState_name[int32(x)]
 	if ok {
 		return s
 	}
@@ -494,7 +885,7 @@ func (this *VendorAccount) Equal(that interface{}) bool {
 	if this.Live != that1.Live {
 		return false
 	}
-	if this.VendorAccountType != that1.VendorAccountType {
+	if this.Type != that1.Type {
 		return false
 	}
 	if that1.VendorAccountOneof == nil {
@@ -534,6 +925,132 @@ func (this *VendorAccount_StripeAccount) Equal(that interface{}) bool {
 		return false
 	}
 	if !this.StripeAccount.Equal(that1.StripeAccount) {
+		return false
+	}
+	return true
+}
+func (this *StripeCard) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*StripeCard)
+	if !ok {
+		that2, ok := that.(StripeCard)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.ID != that1.ID {
+		return false
+	}
+	if this.TokenizationMethod != that1.TokenizationMethod {
+		return false
+	}
+	if this.Brand != that1.Brand {
+		return false
+	}
+	if this.Last4 != that1.Last4 {
+		return false
+	}
+	return true
+}
+func (this *PaymentMethod) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*PaymentMethod)
+	if !ok {
+		that2, ok := that.(PaymentMethod)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.ID != that1.ID {
+		return false
+	}
+	if this.EntityID != that1.EntityID {
+		return false
+	}
+	if this.Default != that1.Default {
+		return false
+	}
+	if this.Lifecycle != that1.Lifecycle {
+		return false
+	}
+	if this.ChangeState != that1.ChangeState {
+		return false
+	}
+	if this.StorageType != that1.StorageType {
+		return false
+	}
+	if this.Type != that1.Type {
+		return false
+	}
+	if that1.PaymentMethodOneof == nil {
+		if this.PaymentMethodOneof != nil {
+			return false
+		}
+	} else if this.PaymentMethodOneof == nil {
+		return false
+	} else if !this.PaymentMethodOneof.Equal(that1.PaymentMethodOneof) {
+		return false
+	}
+	return true
+}
+func (this *PaymentMethod_StripeCard) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*PaymentMethod_StripeCard)
+	if !ok {
+		that2, ok := that.(PaymentMethod_StripeCard)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.StripeCard.Equal(that1.StripeCard) {
 		return false
 	}
 	return true
@@ -596,7 +1113,7 @@ func (this *ConnectVendorAccountRequest) Equal(that interface{}) bool {
 	if this.EntityID != that1.EntityID {
 		return false
 	}
-	if this.VendorAccountType != that1.VendorAccountType {
+	if this.Type != that1.Type {
 		return false
 	}
 	if that1.ConnectVendorAccountOneof == nil {
@@ -740,7 +1257,7 @@ func (this *VendorAccountsResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *DisconnectVendorAccountRequest) Equal(that interface{}) bool {
+func (this *UpdateVendorAccountRequest) Equal(that interface{}) bool {
 	if that == nil {
 		if this == nil {
 			return true
@@ -748,9 +1265,9 @@ func (this *DisconnectVendorAccountRequest) Equal(that interface{}) bool {
 		return false
 	}
 
-	that1, ok := that.(*DisconnectVendorAccountRequest)
+	that1, ok := that.(*UpdateVendorAccountRequest)
 	if !ok {
-		that2, ok := that.(DisconnectVendorAccountRequest)
+		that2, ok := that.(UpdateVendorAccountRequest)
 		if ok {
 			that1 = &that2
 		} else {
@@ -768,9 +1285,15 @@ func (this *DisconnectVendorAccountRequest) Equal(that interface{}) bool {
 	if this.VendorAccountID != that1.VendorAccountID {
 		return false
 	}
+	if this.Lifecycle != that1.Lifecycle {
+		return false
+	}
+	if this.ChangeState != that1.ChangeState {
+		return false
+	}
 	return true
 }
-func (this *DisconnectVendorAccountResponse) Equal(that interface{}) bool {
+func (this *UpdateVendorAccountResponse) Equal(that interface{}) bool {
 	if that == nil {
 		if this == nil {
 			return true
@@ -778,9 +1301,9 @@ func (this *DisconnectVendorAccountResponse) Equal(that interface{}) bool {
 		return false
 	}
 
-	that1, ok := that.(*DisconnectVendorAccountResponse)
+	that1, ok := that.(*UpdateVendorAccountResponse)
 	if !ok {
-		that2, ok := that.(DisconnectVendorAccountResponse)
+		that2, ok := that.(UpdateVendorAccountResponse)
 		if ok {
 			that1 = &that2
 		} else {
@@ -795,11 +1318,276 @@ func (this *DisconnectVendorAccountResponse) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if len(this.VendorAccounts) != len(that1.VendorAccounts) {
+	return true
+}
+func (this *StripeCardCreateRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
 		return false
 	}
-	for i := range this.VendorAccounts {
-		if !this.VendorAccounts[i].Equal(that1.VendorAccounts[i]) {
+
+	that1, ok := that.(*StripeCardCreateRequest)
+	if !ok {
+		that2, ok := that.(StripeCardCreateRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Token != that1.Token {
+		return false
+	}
+	return true
+}
+func (this *CreatePaymentMethodRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*CreatePaymentMethodRequest)
+	if !ok {
+		that2, ok := that.(CreatePaymentMethodRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.EntityID != that1.EntityID {
+		return false
+	}
+	if this.Default != that1.Default {
+		return false
+	}
+	if this.StorageType != that1.StorageType {
+		return false
+	}
+	if this.Type != that1.Type {
+		return false
+	}
+	if that1.CreatePaymentMethodOneof == nil {
+		if this.CreatePaymentMethodOneof != nil {
+			return false
+		}
+	} else if this.CreatePaymentMethodOneof == nil {
+		return false
+	} else if !this.CreatePaymentMethodOneof.Equal(that1.CreatePaymentMethodOneof) {
+		return false
+	}
+	return true
+}
+func (this *CreatePaymentMethodRequest_StripeCard) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*CreatePaymentMethodRequest_StripeCard)
+	if !ok {
+		that2, ok := that.(CreatePaymentMethodRequest_StripeCard)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.StripeCard.Equal(that1.StripeCard) {
+		return false
+	}
+	return true
+}
+func (this *CreatePaymentMethodResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*CreatePaymentMethodResponse)
+	if !ok {
+		that2, ok := that.(CreatePaymentMethodResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if len(this.PaymentMethods) != len(that1.PaymentMethods) {
+		return false
+	}
+	for i := range this.PaymentMethods {
+		if !this.PaymentMethods[i].Equal(that1.PaymentMethods[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *PaymentMethodsRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*PaymentMethodsRequest)
+	if !ok {
+		that2, ok := that.(PaymentMethodsRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.EntityID != that1.EntityID {
+		return false
+	}
+	return true
+}
+func (this *PaymentMethodsResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*PaymentMethodsResponse)
+	if !ok {
+		that2, ok := that.(PaymentMethodsResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if len(this.PaymentMethods) != len(that1.PaymentMethods) {
+		return false
+	}
+	for i := range this.PaymentMethods {
+		if !this.PaymentMethods[i].Equal(that1.PaymentMethods[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *DeletePaymentMethodRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*DeletePaymentMethodRequest)
+	if !ok {
+		that2, ok := that.(DeletePaymentMethodRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.PaymentMethodID != that1.PaymentMethodID {
+		return false
+	}
+	return true
+}
+func (this *DeletePaymentMethodResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*DeletePaymentMethodResponse)
+	if !ok {
+		that2, ok := that.(DeletePaymentMethodResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if len(this.PaymentMethods) != len(that1.PaymentMethods) {
+		return false
+	}
+	for i := range this.PaymentMethods {
+		if !this.PaymentMethods[i].Equal(that1.PaymentMethods[i]) {
 			return false
 		}
 	}
@@ -827,7 +1615,7 @@ func (this *VendorAccount) GoString() string {
 	s = append(s, "Lifecycle: "+fmt.Sprintf("%#v", this.Lifecycle)+",\n")
 	s = append(s, "ChangeState: "+fmt.Sprintf("%#v", this.ChangeState)+",\n")
 	s = append(s, "Live: "+fmt.Sprintf("%#v", this.Live)+",\n")
-	s = append(s, "VendorAccountType: "+fmt.Sprintf("%#v", this.VendorAccountType)+",\n")
+	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
 	if this.VendorAccountOneof != nil {
 		s = append(s, "VendorAccountOneof: "+fmt.Sprintf("%#v", this.VendorAccountOneof)+",\n")
 	}
@@ -840,6 +1628,46 @@ func (this *VendorAccount_StripeAccount) GoString() string {
 	}
 	s := strings.Join([]string{`&payments.VendorAccount_StripeAccount{` +
 		`StripeAccount:` + fmt.Sprintf("%#v", this.StripeAccount) + `}`}, ", ")
+	return s
+}
+func (this *StripeCard) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 8)
+	s = append(s, "&payments.StripeCard{")
+	s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
+	s = append(s, "TokenizationMethod: "+fmt.Sprintf("%#v", this.TokenizationMethod)+",\n")
+	s = append(s, "Brand: "+fmt.Sprintf("%#v", this.Brand)+",\n")
+	s = append(s, "Last4: "+fmt.Sprintf("%#v", this.Last4)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *PaymentMethod) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 12)
+	s = append(s, "&payments.PaymentMethod{")
+	s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
+	s = append(s, "EntityID: "+fmt.Sprintf("%#v", this.EntityID)+",\n")
+	s = append(s, "Default: "+fmt.Sprintf("%#v", this.Default)+",\n")
+	s = append(s, "Lifecycle: "+fmt.Sprintf("%#v", this.Lifecycle)+",\n")
+	s = append(s, "ChangeState: "+fmt.Sprintf("%#v", this.ChangeState)+",\n")
+	s = append(s, "StorageType: "+fmt.Sprintf("%#v", this.StorageType)+",\n")
+	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
+	if this.PaymentMethodOneof != nil {
+		s = append(s, "PaymentMethodOneof: "+fmt.Sprintf("%#v", this.PaymentMethodOneof)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *PaymentMethod_StripeCard) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&payments.PaymentMethod_StripeCard{` +
+		`StripeCard:` + fmt.Sprintf("%#v", this.StripeCard) + `}`}, ", ")
 	return s
 }
 func (this *StripeAccountConnectRequest) GoString() string {
@@ -859,7 +1687,7 @@ func (this *ConnectVendorAccountRequest) GoString() string {
 	s := make([]string, 0, 7)
 	s = append(s, "&payments.ConnectVendorAccountRequest{")
 	s = append(s, "EntityID: "+fmt.Sprintf("%#v", this.EntityID)+",\n")
-	s = append(s, "VendorAccountType: "+fmt.Sprintf("%#v", this.VendorAccountType)+",\n")
+	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
 	if this.ConnectVendorAccountOneof != nil {
 		s = append(s, "ConnectVendorAccountOneof: "+fmt.Sprintf("%#v", this.ConnectVendorAccountOneof)+",\n")
 	}
@@ -908,24 +1736,113 @@ func (this *VendorAccountsResponse) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
-func (this *DisconnectVendorAccountRequest) GoString() string {
+func (this *UpdateVendorAccountRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 5)
-	s = append(s, "&payments.DisconnectVendorAccountRequest{")
+	s := make([]string, 0, 7)
+	s = append(s, "&payments.UpdateVendorAccountRequest{")
 	s = append(s, "VendorAccountID: "+fmt.Sprintf("%#v", this.VendorAccountID)+",\n")
+	s = append(s, "Lifecycle: "+fmt.Sprintf("%#v", this.Lifecycle)+",\n")
+	s = append(s, "ChangeState: "+fmt.Sprintf("%#v", this.ChangeState)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
-func (this *DisconnectVendorAccountResponse) GoString() string {
+func (this *UpdateVendorAccountResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 4)
+	s = append(s, "&payments.UpdateVendorAccountResponse{")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *StripeCardCreateRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
 	s := make([]string, 0, 5)
-	s = append(s, "&payments.DisconnectVendorAccountResponse{")
-	if this.VendorAccounts != nil {
-		s = append(s, "VendorAccounts: "+fmt.Sprintf("%#v", this.VendorAccounts)+",\n")
+	s = append(s, "&payments.StripeCardCreateRequest{")
+	s = append(s, "Token: "+fmt.Sprintf("%#v", this.Token)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *CreatePaymentMethodRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 9)
+	s = append(s, "&payments.CreatePaymentMethodRequest{")
+	s = append(s, "EntityID: "+fmt.Sprintf("%#v", this.EntityID)+",\n")
+	s = append(s, "Default: "+fmt.Sprintf("%#v", this.Default)+",\n")
+	s = append(s, "StorageType: "+fmt.Sprintf("%#v", this.StorageType)+",\n")
+	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
+	if this.CreatePaymentMethodOneof != nil {
+		s = append(s, "CreatePaymentMethodOneof: "+fmt.Sprintf("%#v", this.CreatePaymentMethodOneof)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *CreatePaymentMethodRequest_StripeCard) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&payments.CreatePaymentMethodRequest_StripeCard{` +
+		`StripeCard:` + fmt.Sprintf("%#v", this.StripeCard) + `}`}, ", ")
+	return s
+}
+func (this *CreatePaymentMethodResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&payments.CreatePaymentMethodResponse{")
+	if this.PaymentMethods != nil {
+		s = append(s, "PaymentMethods: "+fmt.Sprintf("%#v", this.PaymentMethods)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *PaymentMethodsRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&payments.PaymentMethodsRequest{")
+	s = append(s, "EntityID: "+fmt.Sprintf("%#v", this.EntityID)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *PaymentMethodsResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&payments.PaymentMethodsResponse{")
+	if this.PaymentMethods != nil {
+		s = append(s, "PaymentMethods: "+fmt.Sprintf("%#v", this.PaymentMethods)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *DeletePaymentMethodRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&payments.DeletePaymentMethodRequest{")
+	s = append(s, "PaymentMethodID: "+fmt.Sprintf("%#v", this.PaymentMethodID)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *DeletePaymentMethodResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&payments.DeletePaymentMethodResponse{")
+	if this.PaymentMethods != nil {
+		s = append(s, "PaymentMethods: "+fmt.Sprintf("%#v", this.PaymentMethods)+",\n")
 	}
 	s = append(s, "}")
 	return strings.Join(s, "")
@@ -969,7 +1886,10 @@ const _ = grpc.SupportPackageIsVersion3
 
 type PaymentsClient interface {
 	ConnectVendorAccount(ctx context.Context, in *ConnectVendorAccountRequest, opts ...grpc.CallOption) (*ConnectVendorAccountResponse, error)
-	DisconnectVendorAccount(ctx context.Context, in *DisconnectVendorAccountRequest, opts ...grpc.CallOption) (*DisconnectVendorAccountResponse, error)
+	CreatePaymentMethod(ctx context.Context, in *CreatePaymentMethodRequest, opts ...grpc.CallOption) (*CreatePaymentMethodResponse, error)
+	DeletePaymentMethod(ctx context.Context, in *DeletePaymentMethodRequest, opts ...grpc.CallOption) (*DeletePaymentMethodResponse, error)
+	PaymentMethods(ctx context.Context, in *PaymentMethodsRequest, opts ...grpc.CallOption) (*PaymentMethodsResponse, error)
+	UpdateVendorAccount(ctx context.Context, in *UpdateVendorAccountRequest, opts ...grpc.CallOption) (*UpdateVendorAccountResponse, error)
 	VendorAccounts(ctx context.Context, in *VendorAccountsRequest, opts ...grpc.CallOption) (*VendorAccountsResponse, error)
 }
 
@@ -990,9 +1910,36 @@ func (c *paymentsClient) ConnectVendorAccount(ctx context.Context, in *ConnectVe
 	return out, nil
 }
 
-func (c *paymentsClient) DisconnectVendorAccount(ctx context.Context, in *DisconnectVendorAccountRequest, opts ...grpc.CallOption) (*DisconnectVendorAccountResponse, error) {
-	out := new(DisconnectVendorAccountResponse)
-	err := grpc.Invoke(ctx, "/payments.Payments/DisconnectVendorAccount", in, out, c.cc, opts...)
+func (c *paymentsClient) CreatePaymentMethod(ctx context.Context, in *CreatePaymentMethodRequest, opts ...grpc.CallOption) (*CreatePaymentMethodResponse, error) {
+	out := new(CreatePaymentMethodResponse)
+	err := grpc.Invoke(ctx, "/payments.Payments/CreatePaymentMethod", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *paymentsClient) DeletePaymentMethod(ctx context.Context, in *DeletePaymentMethodRequest, opts ...grpc.CallOption) (*DeletePaymentMethodResponse, error) {
+	out := new(DeletePaymentMethodResponse)
+	err := grpc.Invoke(ctx, "/payments.Payments/DeletePaymentMethod", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *paymentsClient) PaymentMethods(ctx context.Context, in *PaymentMethodsRequest, opts ...grpc.CallOption) (*PaymentMethodsResponse, error) {
+	out := new(PaymentMethodsResponse)
+	err := grpc.Invoke(ctx, "/payments.Payments/PaymentMethods", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *paymentsClient) UpdateVendorAccount(ctx context.Context, in *UpdateVendorAccountRequest, opts ...grpc.CallOption) (*UpdateVendorAccountResponse, error) {
+	out := new(UpdateVendorAccountResponse)
+	err := grpc.Invoke(ctx, "/payments.Payments/UpdateVendorAccount", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1012,7 +1959,10 @@ func (c *paymentsClient) VendorAccounts(ctx context.Context, in *VendorAccountsR
 
 type PaymentsServer interface {
 	ConnectVendorAccount(context.Context, *ConnectVendorAccountRequest) (*ConnectVendorAccountResponse, error)
-	DisconnectVendorAccount(context.Context, *DisconnectVendorAccountRequest) (*DisconnectVendorAccountResponse, error)
+	CreatePaymentMethod(context.Context, *CreatePaymentMethodRequest) (*CreatePaymentMethodResponse, error)
+	DeletePaymentMethod(context.Context, *DeletePaymentMethodRequest) (*DeletePaymentMethodResponse, error)
+	PaymentMethods(context.Context, *PaymentMethodsRequest) (*PaymentMethodsResponse, error)
+	UpdateVendorAccount(context.Context, *UpdateVendorAccountRequest) (*UpdateVendorAccountResponse, error)
 	VendorAccounts(context.Context, *VendorAccountsRequest) (*VendorAccountsResponse, error)
 }
 
@@ -1038,20 +1988,74 @@ func _Payments_ConnectVendorAccount_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Payments_DisconnectVendorAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DisconnectVendorAccountRequest)
+func _Payments_CreatePaymentMethod_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreatePaymentMethodRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(PaymentsServer).DisconnectVendorAccount(ctx, in)
+		return srv.(PaymentsServer).CreatePaymentMethod(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/payments.Payments/DisconnectVendorAccount",
+		FullMethod: "/payments.Payments/CreatePaymentMethod",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PaymentsServer).DisconnectVendorAccount(ctx, req.(*DisconnectVendorAccountRequest))
+		return srv.(PaymentsServer).CreatePaymentMethod(ctx, req.(*CreatePaymentMethodRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Payments_DeletePaymentMethod_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeletePaymentMethodRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PaymentsServer).DeletePaymentMethod(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/payments.Payments/DeletePaymentMethod",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PaymentsServer).DeletePaymentMethod(ctx, req.(*DeletePaymentMethodRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Payments_PaymentMethods_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PaymentMethodsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PaymentsServer).PaymentMethods(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/payments.Payments/PaymentMethods",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PaymentsServer).PaymentMethods(ctx, req.(*PaymentMethodsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Payments_UpdateVendorAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateVendorAccountRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PaymentsServer).UpdateVendorAccount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/payments.Payments/UpdateVendorAccount",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PaymentsServer).UpdateVendorAccount(ctx, req.(*UpdateVendorAccountRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1083,8 +2087,20 @@ var _Payments_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Payments_ConnectVendorAccount_Handler,
 		},
 		{
-			MethodName: "DisconnectVendorAccount",
-			Handler:    _Payments_DisconnectVendorAccount_Handler,
+			MethodName: "CreatePaymentMethod",
+			Handler:    _Payments_CreatePaymentMethod_Handler,
+		},
+		{
+			MethodName: "DeletePaymentMethod",
+			Handler:    _Payments_DeletePaymentMethod_Handler,
+		},
+		{
+			MethodName: "PaymentMethods",
+			Handler:    _Payments_PaymentMethods_Handler,
+		},
+		{
+			MethodName: "UpdateVendorAccount",
+			Handler:    _Payments_UpdateVendorAccount_Handler,
 		},
 		{
 			MethodName: "VendorAccounts",
@@ -1172,10 +2188,10 @@ func (m *VendorAccount) MarshalTo(data []byte) (int, error) {
 		}
 		i++
 	}
-	if m.VendorAccountType != 0 {
+	if m.Type != 0 {
 		data[i] = 0x30
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.VendorAccountType))
+		i = encodeVarintSvc(data, i, uint64(m.Type))
 	}
 	if m.VendorAccountOneof != nil {
 		nn1, err := m.VendorAccountOneof.MarshalTo(data[i:])
@@ -1198,6 +2214,129 @@ func (m *VendorAccount_StripeAccount) MarshalTo(data []byte) (int, error) {
 			return 0, err
 		}
 		i += n2
+	}
+	return i, nil
+}
+func (m *StripeCard) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *StripeCard) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.ID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.ID)))
+		i += copy(data[i:], m.ID)
+	}
+	if len(m.TokenizationMethod) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.TokenizationMethod)))
+		i += copy(data[i:], m.TokenizationMethod)
+	}
+	if len(m.Brand) > 0 {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Brand)))
+		i += copy(data[i:], m.Brand)
+	}
+	if len(m.Last4) > 0 {
+		data[i] = 0x22
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Last4)))
+		i += copy(data[i:], m.Last4)
+	}
+	return i, nil
+}
+
+func (m *PaymentMethod) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *PaymentMethod) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.ID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.ID)))
+		i += copy(data[i:], m.ID)
+	}
+	if len(m.EntityID) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.EntityID)))
+		i += copy(data[i:], m.EntityID)
+	}
+	if m.Default {
+		data[i] = 0x18
+		i++
+		if m.Default {
+			data[i] = 1
+		} else {
+			data[i] = 0
+		}
+		i++
+	}
+	if m.Lifecycle != 0 {
+		data[i] = 0x20
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Lifecycle))
+	}
+	if m.ChangeState != 0 {
+		data[i] = 0x28
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.ChangeState))
+	}
+	if m.StorageType != 0 {
+		data[i] = 0x30
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.StorageType))
+	}
+	if m.Type != 0 {
+		data[i] = 0x38
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Type))
+	}
+	if m.PaymentMethodOneof != nil {
+		nn3, err := m.PaymentMethodOneof.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += nn3
+	}
+	return i, nil
+}
+
+func (m *PaymentMethod_StripeCard) MarshalTo(data []byte) (int, error) {
+	i := 0
+	if m.StripeCard != nil {
+		data[i] = 0x42
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.StripeCard.Size()))
+		n4, err := m.StripeCard.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n4
 	}
 	return i, nil
 }
@@ -1246,17 +2385,17 @@ func (m *ConnectVendorAccountRequest) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintSvc(data, i, uint64(len(m.EntityID)))
 		i += copy(data[i:], m.EntityID)
 	}
-	if m.VendorAccountType != 0 {
+	if m.Type != 0 {
 		data[i] = 0x10
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.VendorAccountType))
+		i = encodeVarintSvc(data, i, uint64(m.Type))
 	}
 	if m.ConnectVendorAccountOneof != nil {
-		nn3, err := m.ConnectVendorAccountOneof.MarshalTo(data[i:])
+		nn5, err := m.ConnectVendorAccountOneof.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += nn3
+		i += nn5
 	}
 	return i, nil
 }
@@ -1267,11 +2406,11 @@ func (m *ConnectVendorAccountRequest_StripeRequest) MarshalTo(data []byte) (int,
 		data[i] = 0x1a
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.StripeRequest.Size()))
-		n4, err := m.StripeRequest.MarshalTo(data[i:])
+		n6, err := m.StripeRequest.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n4
+		i += n6
 	}
 	return i, nil
 }
@@ -1359,7 +2498,7 @@ func (m *VendorAccountsResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *DisconnectVendorAccountRequest) Marshal() (data []byte, err error) {
+func (m *UpdateVendorAccountRequest) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
 	n, err := m.MarshalTo(data)
@@ -1369,7 +2508,7 @@ func (m *DisconnectVendorAccountRequest) Marshal() (data []byte, err error) {
 	return data[:n], nil
 }
 
-func (m *DisconnectVendorAccountRequest) MarshalTo(data []byte) (int, error) {
+func (m *UpdateVendorAccountRequest) MarshalTo(data []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -1380,10 +2519,20 @@ func (m *DisconnectVendorAccountRequest) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintSvc(data, i, uint64(len(m.VendorAccountID)))
 		i += copy(data[i:], m.VendorAccountID)
 	}
+	if m.Lifecycle != 0 {
+		data[i] = 0x10
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Lifecycle))
+	}
+	if m.ChangeState != 0 {
+		data[i] = 0x18
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.ChangeState))
+	}
 	return i, nil
 }
 
-func (m *DisconnectVendorAccountResponse) Marshal() (data []byte, err error) {
+func (m *UpdateVendorAccountResponse) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
 	n, err := m.MarshalTo(data)
@@ -1393,13 +2542,228 @@ func (m *DisconnectVendorAccountResponse) Marshal() (data []byte, err error) {
 	return data[:n], nil
 }
 
-func (m *DisconnectVendorAccountResponse) MarshalTo(data []byte) (int, error) {
+func (m *UpdateVendorAccountResponse) MarshalTo(data []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.VendorAccounts) > 0 {
-		for _, msg := range m.VendorAccounts {
+	return i, nil
+}
+
+func (m *StripeCardCreateRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *StripeCardCreateRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Token) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Token)))
+		i += copy(data[i:], m.Token)
+	}
+	return i, nil
+}
+
+func (m *CreatePaymentMethodRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CreatePaymentMethodRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.EntityID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.EntityID)))
+		i += copy(data[i:], m.EntityID)
+	}
+	if m.Default {
+		data[i] = 0x10
+		i++
+		if m.Default {
+			data[i] = 1
+		} else {
+			data[i] = 0
+		}
+		i++
+	}
+	if m.StorageType != 0 {
+		data[i] = 0x18
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.StorageType))
+	}
+	if m.Type != 0 {
+		data[i] = 0x20
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Type))
+	}
+	if m.CreatePaymentMethodOneof != nil {
+		nn7, err := m.CreatePaymentMethodOneof.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += nn7
+	}
+	return i, nil
+}
+
+func (m *CreatePaymentMethodRequest_StripeCard) MarshalTo(data []byte) (int, error) {
+	i := 0
+	if m.StripeCard != nil {
+		data[i] = 0x2a
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.StripeCard.Size()))
+		n8, err := m.StripeCard.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n8
+	}
+	return i, nil
+}
+func (m *CreatePaymentMethodResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CreatePaymentMethodResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.PaymentMethods) > 0 {
+		for _, msg := range m.PaymentMethods {
+			data[i] = 0xa
+			i++
+			i = encodeVarintSvc(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	return i, nil
+}
+
+func (m *PaymentMethodsRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *PaymentMethodsRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.EntityID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.EntityID)))
+		i += copy(data[i:], m.EntityID)
+	}
+	return i, nil
+}
+
+func (m *PaymentMethodsResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *PaymentMethodsResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.PaymentMethods) > 0 {
+		for _, msg := range m.PaymentMethods {
+			data[i] = 0xa
+			i++
+			i = encodeVarintSvc(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	return i, nil
+}
+
+func (m *DeletePaymentMethodRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *DeletePaymentMethodRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.PaymentMethodID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.PaymentMethodID)))
+		i += copy(data[i:], m.PaymentMethodID)
+	}
+	return i, nil
+}
+
+func (m *DeletePaymentMethodResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *DeletePaymentMethodResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.PaymentMethods) > 0 {
+		for _, msg := range m.PaymentMethods {
 			data[i] = 0xa
 			i++
 			i = encodeVarintSvc(data, i, uint64(msg.Size()))
@@ -1474,8 +2838,8 @@ func (m *VendorAccount) Size() (n int) {
 	if m.Live {
 		n += 2
 	}
-	if m.VendorAccountType != 0 {
-		n += 1 + sovSvc(uint64(m.VendorAccountType))
+	if m.Type != 0 {
+		n += 1 + sovSvc(uint64(m.Type))
 	}
 	if m.VendorAccountOneof != nil {
 		n += m.VendorAccountOneof.Size()
@@ -1488,6 +2852,69 @@ func (m *VendorAccount_StripeAccount) Size() (n int) {
 	_ = l
 	if m.StripeAccount != nil {
 		l = m.StripeAccount.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+func (m *StripeCard) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.ID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.TokenizationMethod)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.Brand)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.Last4)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *PaymentMethod) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.ID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.EntityID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if m.Default {
+		n += 2
+	}
+	if m.Lifecycle != 0 {
+		n += 1 + sovSvc(uint64(m.Lifecycle))
+	}
+	if m.ChangeState != 0 {
+		n += 1 + sovSvc(uint64(m.ChangeState))
+	}
+	if m.StorageType != 0 {
+		n += 1 + sovSvc(uint64(m.StorageType))
+	}
+	if m.Type != 0 {
+		n += 1 + sovSvc(uint64(m.Type))
+	}
+	if m.PaymentMethodOneof != nil {
+		n += m.PaymentMethodOneof.Size()
+	}
+	return n
+}
+
+func (m *PaymentMethod_StripeCard) Size() (n int) {
+	var l int
+	_ = l
+	if m.StripeCard != nil {
+		l = m.StripeCard.Size()
 		n += 1 + l + sovSvc(uint64(l))
 	}
 	return n
@@ -1509,8 +2936,8 @@ func (m *ConnectVendorAccountRequest) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
-	if m.VendorAccountType != 0 {
-		n += 1 + sovSvc(uint64(m.VendorAccountType))
+	if m.Type != 0 {
+		n += 1 + sovSvc(uint64(m.Type))
 	}
 	if m.ConnectVendorAccountOneof != nil {
 		n += m.ConnectVendorAccountOneof.Size()
@@ -1561,21 +2988,118 @@ func (m *VendorAccountsResponse) Size() (n int) {
 	return n
 }
 
-func (m *DisconnectVendorAccountRequest) Size() (n int) {
+func (m *UpdateVendorAccountRequest) Size() (n int) {
 	var l int
 	_ = l
 	l = len(m.VendorAccountID)
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
+	if m.Lifecycle != 0 {
+		n += 1 + sovSvc(uint64(m.Lifecycle))
+	}
+	if m.ChangeState != 0 {
+		n += 1 + sovSvc(uint64(m.ChangeState))
+	}
 	return n
 }
 
-func (m *DisconnectVendorAccountResponse) Size() (n int) {
+func (m *UpdateVendorAccountResponse) Size() (n int) {
 	var l int
 	_ = l
-	if len(m.VendorAccounts) > 0 {
-		for _, e := range m.VendorAccounts {
+	return n
+}
+
+func (m *StripeCardCreateRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Token)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *CreatePaymentMethodRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.EntityID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if m.Default {
+		n += 2
+	}
+	if m.StorageType != 0 {
+		n += 1 + sovSvc(uint64(m.StorageType))
+	}
+	if m.Type != 0 {
+		n += 1 + sovSvc(uint64(m.Type))
+	}
+	if m.CreatePaymentMethodOneof != nil {
+		n += m.CreatePaymentMethodOneof.Size()
+	}
+	return n
+}
+
+func (m *CreatePaymentMethodRequest_StripeCard) Size() (n int) {
+	var l int
+	_ = l
+	if m.StripeCard != nil {
+		l = m.StripeCard.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+func (m *CreatePaymentMethodResponse) Size() (n int) {
+	var l int
+	_ = l
+	if len(m.PaymentMethods) > 0 {
+		for _, e := range m.PaymentMethods {
+			l = e.Size()
+			n += 1 + l + sovSvc(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *PaymentMethodsRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.EntityID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *PaymentMethodsResponse) Size() (n int) {
+	var l int
+	_ = l
+	if len(m.PaymentMethods) > 0 {
+		for _, e := range m.PaymentMethods {
+			l = e.Size()
+			n += 1 + l + sovSvc(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *DeletePaymentMethodRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.PaymentMethodID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *DeletePaymentMethodResponse) Size() (n int) {
+	var l int
+	_ = l
+	if len(m.PaymentMethods) > 0 {
+		for _, e := range m.PaymentMethods {
 			l = e.Size()
 			n += 1 + l + sovSvc(uint64(l))
 		}
@@ -1617,7 +3141,7 @@ func (this *VendorAccount) String() string {
 		`Lifecycle:` + fmt.Sprintf("%v", this.Lifecycle) + `,`,
 		`ChangeState:` + fmt.Sprintf("%v", this.ChangeState) + `,`,
 		`Live:` + fmt.Sprintf("%v", this.Live) + `,`,
-		`VendorAccountType:` + fmt.Sprintf("%v", this.VendorAccountType) + `,`,
+		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
 		`VendorAccountOneof:` + fmt.Sprintf("%v", this.VendorAccountOneof) + `,`,
 		`}`,
 	}, "")
@@ -1629,6 +3153,46 @@ func (this *VendorAccount_StripeAccount) String() string {
 	}
 	s := strings.Join([]string{`&VendorAccount_StripeAccount{`,
 		`StripeAccount:` + strings.Replace(fmt.Sprintf("%v", this.StripeAccount), "StripeAccount", "StripeAccount", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *StripeCard) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&StripeCard{`,
+		`ID:` + fmt.Sprintf("%v", this.ID) + `,`,
+		`TokenizationMethod:` + fmt.Sprintf("%v", this.TokenizationMethod) + `,`,
+		`Brand:` + fmt.Sprintf("%v", this.Brand) + `,`,
+		`Last4:` + fmt.Sprintf("%v", this.Last4) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PaymentMethod) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PaymentMethod{`,
+		`ID:` + fmt.Sprintf("%v", this.ID) + `,`,
+		`EntityID:` + fmt.Sprintf("%v", this.EntityID) + `,`,
+		`Default:` + fmt.Sprintf("%v", this.Default) + `,`,
+		`Lifecycle:` + fmt.Sprintf("%v", this.Lifecycle) + `,`,
+		`ChangeState:` + fmt.Sprintf("%v", this.ChangeState) + `,`,
+		`StorageType:` + fmt.Sprintf("%v", this.StorageType) + `,`,
+		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
+		`PaymentMethodOneof:` + fmt.Sprintf("%v", this.PaymentMethodOneof) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PaymentMethod_StripeCard) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PaymentMethod_StripeCard{`,
+		`StripeCard:` + strings.Replace(fmt.Sprintf("%v", this.StripeCard), "StripeCard", "StripeCard", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1649,7 +3213,7 @@ func (this *ConnectVendorAccountRequest) String() string {
 	}
 	s := strings.Join([]string{`&ConnectVendorAccountRequest{`,
 		`EntityID:` + fmt.Sprintf("%v", this.EntityID) + `,`,
-		`VendorAccountType:` + fmt.Sprintf("%v", this.VendorAccountType) + `,`,
+		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
 		`ConnectVendorAccountOneof:` + fmt.Sprintf("%v", this.ConnectVendorAccountOneof) + `,`,
 		`}`,
 	}, "")
@@ -1695,22 +3259,107 @@ func (this *VendorAccountsResponse) String() string {
 	}, "")
 	return s
 }
-func (this *DisconnectVendorAccountRequest) String() string {
+func (this *UpdateVendorAccountRequest) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&DisconnectVendorAccountRequest{`,
+	s := strings.Join([]string{`&UpdateVendorAccountRequest{`,
 		`VendorAccountID:` + fmt.Sprintf("%v", this.VendorAccountID) + `,`,
+		`Lifecycle:` + fmt.Sprintf("%v", this.Lifecycle) + `,`,
+		`ChangeState:` + fmt.Sprintf("%v", this.ChangeState) + `,`,
 		`}`,
 	}, "")
 	return s
 }
-func (this *DisconnectVendorAccountResponse) String() string {
+func (this *UpdateVendorAccountResponse) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&DisconnectVendorAccountResponse{`,
-		`VendorAccounts:` + strings.Replace(fmt.Sprintf("%v", this.VendorAccounts), "VendorAccount", "VendorAccount", 1) + `,`,
+	s := strings.Join([]string{`&UpdateVendorAccountResponse{`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *StripeCardCreateRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&StripeCardCreateRequest{`,
+		`Token:` + fmt.Sprintf("%v", this.Token) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CreatePaymentMethodRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CreatePaymentMethodRequest{`,
+		`EntityID:` + fmt.Sprintf("%v", this.EntityID) + `,`,
+		`Default:` + fmt.Sprintf("%v", this.Default) + `,`,
+		`StorageType:` + fmt.Sprintf("%v", this.StorageType) + `,`,
+		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
+		`CreatePaymentMethodOneof:` + fmt.Sprintf("%v", this.CreatePaymentMethodOneof) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CreatePaymentMethodRequest_StripeCard) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CreatePaymentMethodRequest_StripeCard{`,
+		`StripeCard:` + strings.Replace(fmt.Sprintf("%v", this.StripeCard), "StripeCardCreateRequest", "StripeCardCreateRequest", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CreatePaymentMethodResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CreatePaymentMethodResponse{`,
+		`PaymentMethods:` + strings.Replace(fmt.Sprintf("%v", this.PaymentMethods), "PaymentMethod", "PaymentMethod", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PaymentMethodsRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PaymentMethodsRequest{`,
+		`EntityID:` + fmt.Sprintf("%v", this.EntityID) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PaymentMethodsResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PaymentMethodsResponse{`,
+		`PaymentMethods:` + strings.Replace(fmt.Sprintf("%v", this.PaymentMethods), "PaymentMethod", "PaymentMethod", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DeletePaymentMethodRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&DeletePaymentMethodRequest{`,
+		`PaymentMethodID:` + fmt.Sprintf("%v", this.PaymentMethodID) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DeletePaymentMethodResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&DeletePaymentMethodResponse{`,
+		`PaymentMethods:` + strings.Replace(fmt.Sprintf("%v", this.PaymentMethods), "PaymentMethod", "PaymentMethod", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1978,9 +3627,9 @@ func (m *VendorAccount) Unmarshal(data []byte) error {
 			m.Live = bool(v != 0)
 		case 6:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field VendorAccountType", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
 			}
-			m.VendorAccountType = 0
+			m.Type = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowSvc
@@ -1990,7 +3639,7 @@ func (m *VendorAccount) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				m.VendorAccountType |= (VendorAccountType(b) & 0x7F) << shift
+				m.Type |= (VendorAccountType(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2026,6 +3675,408 @@ func (m *VendorAccount) Unmarshal(data []byte) error {
 				return err
 			}
 			m.VendorAccountOneof = &VendorAccount_StripeAccount{v}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *StripeCard) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: StripeCard: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: StripeCard: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TokenizationMethod", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.TokenizationMethod = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Brand", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Brand = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Last4", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Last4 = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *PaymentMethod) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PaymentMethod: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PaymentMethod: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.EntityID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Default", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Default = bool(v != 0)
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Lifecycle", wireType)
+			}
+			m.Lifecycle = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.Lifecycle |= (PaymentMethodLifecycle(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ChangeState", wireType)
+			}
+			m.ChangeState = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.ChangeState |= (PaymentMethodChangeState(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StorageType", wireType)
+			}
+			m.StorageType = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.StorageType |= (PaymentMethodStorageType(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 7:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
+			}
+			m.Type = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.Type |= (PaymentMethodType(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 8:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StripeCard", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &StripeCard{}
+			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.PaymentMethodOneof = &PaymentMethod_StripeCard{v}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -2187,9 +4238,9 @@ func (m *ConnectVendorAccountRequest) Unmarshal(data []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field VendorAccountType", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
 			}
-			m.VendorAccountType = 0
+			m.Type = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowSvc
@@ -2199,7 +4250,7 @@ func (m *ConnectVendorAccountRequest) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				m.VendorAccountType |= (VendorAccountType(b) & 0x7F) << shift
+				m.Type |= (VendorAccountType(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2498,7 +4549,7 @@ func (m *VendorAccountsResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *DisconnectVendorAccountRequest) Unmarshal(data []byte) error {
+func (m *UpdateVendorAccountRequest) Unmarshal(data []byte) error {
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -2521,10 +4572,10 @@ func (m *DisconnectVendorAccountRequest) Unmarshal(data []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: DisconnectVendorAccountRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: UpdateVendorAccountRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: DisconnectVendorAccountRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: UpdateVendorAccountRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -2556,6 +4607,44 @@ func (m *DisconnectVendorAccountRequest) Unmarshal(data []byte) error {
 			}
 			m.VendorAccountID = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Lifecycle", wireType)
+			}
+			m.Lifecycle = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.Lifecycle |= (VendorAccountLifecycle(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ChangeState", wireType)
+			}
+			m.ChangeState = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.ChangeState |= (VendorAccountChangeState(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])
@@ -2577,7 +4666,7 @@ func (m *DisconnectVendorAccountRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *DisconnectVendorAccountResponse) Unmarshal(data []byte) error {
+func (m *UpdateVendorAccountResponse) Unmarshal(data []byte) error {
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -2600,15 +4689,231 @@ func (m *DisconnectVendorAccountResponse) Unmarshal(data []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: DisconnectVendorAccountResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: UpdateVendorAccountResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: DisconnectVendorAccountResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: UpdateVendorAccountResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *StripeCardCreateRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: StripeCardCreateRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: StripeCardCreateRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field VendorAccounts", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Token", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Token = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CreatePaymentMethodRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CreatePaymentMethodRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CreatePaymentMethodRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.EntityID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Default", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Default = bool(v != 0)
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StorageType", wireType)
+			}
+			m.StorageType = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.StorageType |= (PaymentMethodStorageType(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
+			}
+			m.Type = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.Type |= (PaymentMethodType(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StripeCard", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -2632,8 +4937,410 @@ func (m *DisconnectVendorAccountResponse) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.VendorAccounts = append(m.VendorAccounts, &VendorAccount{})
-			if err := m.VendorAccounts[len(m.VendorAccounts)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+			v := &StripeCardCreateRequest{}
+			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.CreatePaymentMethodOneof = &CreatePaymentMethodRequest_StripeCard{v}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CreatePaymentMethodResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CreatePaymentMethodResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CreatePaymentMethodResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PaymentMethods", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PaymentMethods = append(m.PaymentMethods, &PaymentMethod{})
+			if err := m.PaymentMethods[len(m.PaymentMethods)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *PaymentMethodsRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PaymentMethodsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PaymentMethodsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.EntityID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *PaymentMethodsResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PaymentMethodsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PaymentMethodsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PaymentMethods", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PaymentMethods = append(m.PaymentMethods, &PaymentMethod{})
+			if err := m.PaymentMethods[len(m.PaymentMethods)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DeletePaymentMethodRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DeletePaymentMethodRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DeletePaymentMethodRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PaymentMethodID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PaymentMethodID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DeletePaymentMethodResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DeletePaymentMethodResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DeletePaymentMethodResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PaymentMethods", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PaymentMethods = append(m.PaymentMethods, &PaymentMethod{})
+			if err := m.PaymentMethods[len(m.PaymentMethods)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -2766,50 +5473,76 @@ var (
 func init() { proto.RegisterFile("svc.proto", fileDescriptorSvc) }
 
 var fileDescriptorSvc = []byte{
-	// 719 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x9c, 0x95, 0xcd, 0x4e, 0xdb, 0x4a,
-	0x14, 0xc7, 0x33, 0x06, 0x42, 0x72, 0xf8, 0x0a, 0x03, 0x17, 0xac, 0x04, 0x8d, 0x2d, 0xdf, 0x0b,
-	0x37, 0xd0, 0x36, 0xb4, 0x61, 0x83, 0xd4, 0x45, 0x95, 0xd8, 0x2e, 0xb8, 0x45, 0x4e, 0x44, 0x0c,
-	0x15, 0x2b, 0x2b, 0x98, 0x21, 0x58, 0x02, 0xdb, 0x8d, 0x1d, 0xa4, 0xec, 0xfa, 0x08, 0x6d, 0x9f,
-	0xa2, 0x4f, 0xd0, 0x47, 0xa8, 0xba, 0x64, 0xd9, 0x6e, 0xa2, 0xe2, 0x6e, 0xba, 0xe4, 0x11, 0xaa,
-	0x38, 0x09, 0xc1, 0x21, 0x06, 0xc4, 0x2e, 0x9e, 0xfc, 0xfe, 0xe7, 0xe3, 0x3f, 0xe7, 0xd8, 0x90,
-	0x74, 0xcf, 0x8d, 0x9c, 0x53, 0xb7, 0x3d, 0x1b, 0x27, 0x9c, 0x6a, 0xf3, 0x8c, 0x5a, 0x9e, 0x9b,
-	0x7e, 0x56, 0x33, 0xbd, 0x93, 0xc6, 0x61, 0xce, 0xb0, 0xcf, 0xd6, 0x6b, 0x76, 0xcd, 0x5e, 0x0f,
-	0x80, 0xc3, 0xc6, 0x71, 0xf0, 0x14, 0x3c, 0x04, 0xbf, 0x3a, 0x42, 0xe1, 0x25, 0x4c, 0x55, 0xbc,
-	0xba, 0xe9, 0xd0, 0x82, 0x61, 0xd8, 0x0d, 0xcb, 0xc3, 0x19, 0x18, 0x6f, 0xb8, 0xb4, 0xae, 0x9b,
-	0x47, 0x2c, 0xe2, 0x51, 0x36, 0x59, 0x04, 0xbf, 0xc5, 0xc5, 0xf7, 0x5c, 0x5a, 0x57, 0x24, 0x3c,
-	0x05, 0x63, 0xae, 0x61, 0x3b, 0x94, 0x65, 0xda, 0x7f, 0x09, 0xdf, 0x18, 0x98, 0xda, 0xa7, 0xd6,
-	0x91, 0x5d, 0xef, 0xa9, 0x31, 0x30, 0xd7, 0xc2, 0xb8, 0xdf, 0xe2, 0x18, 0x45, 0xc2, 0x1c, 0x24,
-	0xa9, 0xe5, 0x99, 0x5e, 0xb3, 0x1d, 0x33, 0x10, 0x16, 0x27, 0xfd, 0x16, 0x97, 0x90, 0x83, 0x43,
-	0x45, 0xc2, 0x1b, 0x90, 0x3c, 0x35, 0x8f, 0xa9, 0xd1, 0x34, 0x4e, 0x29, 0x3b, 0xc2, 0xa3, 0xec,
-	0x74, 0x9e, 0xcf, 0xf5, 0x1a, 0xca, 0x85, 0x12, 0xec, 0xf4, 0x38, 0xbc, 0x09, 0x93, 0xc6, 0x49,
-	0xd5, 0xaa, 0x51, 0xdd, 0xf5, 0xaa, 0x1e, 0x65, 0x47, 0x03, 0x9d, 0x10, 0xa1, 0x13, 0x03, 0xb4,
-	0xd2, 0x26, 0xf1, 0x24, 0x8c, 0x9e, 0x9a, 0xe7, 0x94, 0x1d, 0xe3, 0x51, 0x36, 0x81, 0x37, 0x61,
-	0xee, 0x3c, 0x20, 0xf5, 0x6a, 0x07, 0xd5, 0xbd, 0xa6, 0x43, 0xd9, 0x78, 0x10, 0x2e, 0x13, 0x11,
-	0x4e, 0x6b, 0x3a, 0x14, 0xbf, 0x80, 0x69, 0x37, 0xb0, 0xae, 0xa7, 0x64, 0xc7, 0x79, 0x94, 0x9d,
-	0xc8, 0x2f, 0xf6, 0x45, 0x21, 0x6b, 0xb7, 0x63, 0xc5, 0x05, 0x98, 0x1f, 0x48, 0x66, 0x5b, 0xd4,
-	0x3e, 0x16, 0x9e, 0x40, 0x26, 0x84, 0x8a, 0xb6, 0x65, 0x51, 0xc3, 0xdb, 0xa5, 0xef, 0x1b, 0xd4,
-	0xf5, 0xda, 0x15, 0x1b, 0xf6, 0x11, 0xed, 0xf8, 0x2a, 0xfc, 0x44, 0x90, 0xe9, 0x02, 0xa1, 0xa2,
-	0x7a, 0x74, 0xc8, 0x6f, 0x34, 0xc4, 0xef, 0x88, 0x96, 0x99, 0xfb, 0x5b, 0x7e, 0x75, 0xdd, 0x72,
-	0xbd, 0x93, 0x2c, 0xb8, 0xae, 0x89, 0xfc, 0x72, 0x44, 0xcb, 0xe1, 0x3e, 0xb6, 0x63, 0x45, 0x02,
-	0x4b, 0x46, 0xe7, 0x4c, 0x1f, 0x6a, 0x44, 0x19, 0x96, 0x86, 0xb7, 0xe6, 0x3a, 0xb6, 0xe5, 0x52,
-	0xfc, 0x1c, 0x66, 0xc2, 0x3a, 0x97, 0x45, 0xfc, 0x48, 0xd8, 0xf4, 0x90, 0x52, 0xd8, 0x84, 0x7f,
-	0x42, 0x07, 0xee, 0x43, 0x6d, 0x12, 0xde, 0xc0, 0xc2, 0xa0, 0xf2, 0xd1, 0x55, 0x94, 0x81, 0x48,
-	0xa6, 0x6b, 0xdc, 0x71, 0x6b, 0x39, 0x98, 0x1d, 0x70, 0xe4, 0xba, 0xac, 0x39, 0xbf, 0xc5, 0xcd,
-	0x84, 0x44, 0x8a, 0x24, 0x54, 0x80, 0x8b, 0x8c, 0xf8, 0xd8, 0x32, 0xd7, 0x34, 0x98, 0xbd, 0x7d,
-	0xe9, 0x1c, 0x64, 0xf6, 0x65, 0x55, 0x2a, 0xed, 0xea, 0x05, 0x51, 0x2c, 0xed, 0xa9, 0x9a, 0xae,
-	0x1d, 0x94, 0x65, 0x7d, 0x4f, 0x7d, 0xab, 0x96, 0xde, 0xa9, 0xa9, 0x18, 0x26, 0x90, 0x1e, 0x06,
-	0x54, 0xb4, 0x5d, 0xa5, 0x2c, 0xa7, 0xd0, 0xda, 0x27, 0x34, 0xe0, 0x64, 0x7f, 0x8b, 0xff, 0x03,
-	0x7e, 0x40, 0xba, 0xa3, 0xbc, 0x96, 0xc5, 0x03, 0x71, 0xe7, 0x66, 0x82, 0x15, 0x10, 0x22, 0x29,
-	0xb1, 0xa4, 0xaa, 0xb2, 0xa8, 0xc9, 0x52, 0x0a, 0xe1, 0x55, 0x58, 0x8e, 0xe4, 0x24, 0xa5, 0xd2,
-	0x47, 0x99, 0xb5, 0xcf, 0x08, 0xd8, 0xc8, 0x37, 0xc4, 0xff, 0xf0, 0xef, 0x40, 0x1c, 0x71, 0xbb,
-	0xa0, 0x6e, 0xb5, 0x5b, 0x2a, 0x68, 0x37, 0x0b, 0xbb, 0x5d, 0x7e, 0x08, 0x54, 0x4b, 0xaa, 0x9c,
-	0x42, 0xf7, 0x85, 0x2b, 0xcb, 0xaa, 0xa4, 0xa8, 0x5b, 0x29, 0x26, 0xff, 0x95, 0x81, 0x44, 0xb9,
-	0x7b, 0x33, 0x98, 0xc2, 0xfc, 0xb0, 0x55, 0xc0, 0x37, 0x76, 0xed, 0x8e, 0xb7, 0x40, 0x7a, 0xe5,
-	0x3e, 0xac, 0x3b, 0x24, 0x16, 0x2c, 0x46, 0xcc, 0x11, 0xce, 0xf6, 0x43, 0xdc, 0x3d, 0xbc, 0xe9,
-	0xd5, 0x07, 0x90, 0xdd, 0x7c, 0x15, 0x98, 0x0e, 0x6f, 0x15, 0xe6, 0x22, 0xa6, 0xb1, 0xb7, 0xa9,
-	0x69, 0x3e, 0x1a, 0xe8, 0x04, 0x2d, 0x3e, 0xbd, 0xb8, 0x24, 0xb1, 0x1f, 0x97, 0x24, 0x76, 0x75,
-	0x49, 0xd0, 0x07, 0x9f, 0xa0, 0x2f, 0x3e, 0x41, 0xdf, 0x7d, 0x82, 0x2e, 0x7c, 0x82, 0x7e, 0xf9,
-	0x04, 0xfd, 0xf1, 0x49, 0xec, 0xca, 0x27, 0xe8, 0xe3, 0x6f, 0x12, 0x3b, 0x8c, 0x07, 0x9f, 0xbe,
-	0x8d, 0xbf, 0x01, 0x00, 0x00, 0xff, 0xff, 0x17, 0xb5, 0x51, 0x15, 0x40, 0x07, 0x00, 0x00,
+	// 1134 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x9c, 0x57, 0xcd, 0x4e, 0xe3, 0x56,
+	0x14, 0xce, 0x35, 0x01, 0xc2, 0xe1, 0x2f, 0x18, 0x3a, 0x63, 0x25, 0x8c, 0x93, 0x9a, 0x81, 0x61,
+	0x98, 0x36, 0xd3, 0x32, 0x5d, 0x20, 0x75, 0x51, 0x25, 0xb6, 0x0b, 0x69, 0xc1, 0x89, 0x12, 0x43,
+	0x85, 0xba, 0xb0, 0x8c, 0x73, 0x81, 0x68, 0x82, 0x9d, 0xda, 0x0e, 0x12, 0x5d, 0xf5, 0x01, 0xba,
+	0x68, 0xfb, 0x14, 0x7d, 0x83, 0x2e, 0xfa, 0x00, 0xad, 0xba, 0x9a, 0x65, 0x57, 0xa8, 0xb8, 0x9b,
+	0xae, 0xaa, 0x79, 0x84, 0x91, 0xaf, 0x13, 0xe2, 0x6b, 0xec, 0xc0, 0x64, 0x87, 0x6f, 0xbe, 0xef,
+	0x9e, 0x73, 0xcf, 0x77, 0xce, 0x77, 0x2f, 0x30, 0xe3, 0x5c, 0x1a, 0xa5, 0xae, 0x6d, 0xb9, 0x16,
+	0x9b, 0xe9, 0xea, 0x57, 0x17, 0xd8, 0x74, 0x9d, 0xdc, 0xc7, 0x67, 0x6d, 0xf7, 0xbc, 0x77, 0x52,
+	0x32, 0xac, 0x8b, 0x97, 0x67, 0xd6, 0x99, 0xf5, 0x92, 0x00, 0x4e, 0x7a, 0xa7, 0xe4, 0x8b, 0x7c,
+	0x90, 0xbf, 0x02, 0xa2, 0xf0, 0x39, 0xcc, 0x37, 0x5d, 0xbb, 0xdd, 0xc5, 0x65, 0xc3, 0xb0, 0x7a,
+	0xa6, 0xcb, 0xe6, 0x61, 0xba, 0xe7, 0x60, 0x5b, 0x6b, 0xb7, 0x38, 0x54, 0x44, 0x9b, 0x33, 0x15,
+	0xf0, 0xae, 0x0b, 0x53, 0x87, 0x0e, 0xb6, 0xab, 0x12, 0x3b, 0x0f, 0x93, 0x8e, 0x61, 0x75, 0x31,
+	0xc7, 0xf8, 0x3f, 0x09, 0xbf, 0x31, 0x30, 0x7f, 0x84, 0xcd, 0x96, 0x65, 0x0f, 0xd8, 0x2c, 0x30,
+	0xb7, 0xc4, 0x29, 0xef, 0xba, 0xc0, 0x54, 0x25, 0xb6, 0x00, 0x33, 0xd8, 0x74, 0xdb, 0xee, 0x95,
+	0xbf, 0x27, 0x21, 0x56, 0xe6, 0xbc, 0xeb, 0x42, 0x46, 0x26, 0x8b, 0x55, 0x89, 0x7d, 0x05, 0x33,
+	0x9d, 0xf6, 0x29, 0x36, 0xae, 0x8c, 0x0e, 0xe6, 0x26, 0x8a, 0x68, 0x73, 0x61, 0xbb, 0x58, 0x1a,
+	0x1c, 0xa8, 0x44, 0x05, 0xd8, 0x1f, 0xe0, 0xd8, 0x1d, 0x98, 0x33, 0xce, 0x75, 0xf3, 0x0c, 0x6b,
+	0x8e, 0xab, 0xbb, 0x98, 0x4b, 0x13, 0x9e, 0x90, 0xc0, 0x13, 0x09, 0xb4, 0xe9, 0x23, 0xd9, 0x39,
+	0x48, 0x77, 0xda, 0x97, 0x98, 0x9b, 0x2c, 0xa2, 0xcd, 0x0c, 0xfb, 0x1c, 0xd2, 0xee, 0x55, 0x17,
+	0x73, 0x53, 0x84, 0x9f, 0x4f, 0xe0, 0xab, 0x57, 0x5d, 0xcc, 0x7e, 0x0a, 0x0b, 0x0e, 0xa9, 0x95,
+	0xa6, 0x07, 0xab, 0xdc, 0x74, 0x11, 0x6d, 0xce, 0x6e, 0x3f, 0x1e, 0x92, 0xa8, 0x5a, 0xee, 0xa5,
+	0x2a, 0x8f, 0x60, 0xe5, 0x92, 0xec, 0x33, 0xa0, 0x68, 0x96, 0x89, 0xad, 0x53, 0xe1, 0x5b, 0x80,
+	0x00, 0x2a, 0xea, 0x76, 0x2b, 0xb6, 0x6a, 0x79, 0x58, 0x76, 0xad, 0xd7, 0xd8, 0x6c, 0x7f, 0xaf,
+	0xbb, 0x6d, 0xcb, 0xd4, 0x2e, 0xb0, 0x7b, 0x6e, 0xf5, 0xeb, 0xe7, 0xeb, 0x70, 0x62, 0xeb, 0x66,
+	0x8b, 0x54, 0x8b, 0x7c, 0x76, 0x74, 0xc7, 0xfd, 0x8c, 0x14, 0x61, 0x46, 0xf8, 0x9f, 0x81, 0xf9,
+	0x7a, 0x90, 0xd1, 0x01, 0x61, 0x8d, 0x27, 0xcb, 0x22, 0x4c, 0xb7, 0xf0, 0xa9, 0xde, 0xeb, 0xb8,
+	0x24, 0x4c, 0x86, 0xd6, 0x29, 0x1d, 0xd5, 0x89, 0x8a, 0x98, 0xac, 0xd3, 0x64, 0x54, 0x27, 0x8a,
+	0x17, 0xd6, 0x69, 0x07, 0xe6, 0x1c, 0xd7, 0xb2, 0xf5, 0x33, 0xac, 0x85, 0x14, 0x4a, 0x62, 0x36,
+	0x03, 0x28, 0x11, 0x6a, 0xa0, 0xe9, 0x74, 0x54, 0x53, 0x8a, 0x41, 0xa0, 0x2f, 0x60, 0xb6, 0xaf,
+	0xa9, 0xa1, 0xdb, 0x2d, 0x2e, 0x43, 0x04, 0x5d, 0x89, 0x0a, 0xea, 0xab, 0x14, 0xa8, 0xd9, 0xff,
+	0xa1, 0x2f, 0x47, 0x5f, 0xcd, 0x17, 0x90, 0xa7, 0x84, 0x17, 0x2d, 0xd3, 0xc4, 0x86, 0xdb, 0xc0,
+	0xdf, 0xf5, 0xb0, 0xe3, 0xfa, 0x0d, 0x67, 0x58, 0x2d, 0x1c, 0xd4, 0x5f, 0xf8, 0x0b, 0x41, 0xbe,
+	0x0f, 0xa0, 0x5a, 0x6c, 0x80, 0xa6, 0x74, 0x41, 0x31, 0xba, 0x0c, 0x4e, 0xc7, 0xdc, 0xdf, 0xb1,
+	0x5f, 0xdc, 0x76, 0xac, 0x1d, 0xec, 0x4e, 0x94, 0x9c, 0xdd, 0x5e, 0x4f, 0xe8, 0x58, 0x3a, 0xf1,
+	0xbd, 0x54, 0x85, 0x87, 0x55, 0x23, 0x58, 0xd3, 0x62, 0xfb, 0xb8, 0x0e, 0xab, 0xf1, 0x67, 0x71,
+	0xba, 0x96, 0xe9, 0x60, 0xf6, 0x13, 0x58, 0xa4, 0x79, 0x0e, 0x87, 0x8a, 0x13, 0xf4, 0xcc, 0x50,
+	0x4c, 0x61, 0x07, 0x3e, 0xa0, 0x16, 0x9c, 0x87, 0xd6, 0x45, 0xf8, 0x0a, 0x1e, 0x45, 0x99, 0x63,
+	0x67, 0xf1, 0x3b, 0x82, 0xdc, 0x61, 0xb7, 0xa5, 0xbb, 0x38, 0x56, 0xa3, 0x12, 0x2c, 0x45, 0xca,
+	0x71, 0x9b, 0xd3, 0xb2, 0x77, 0x5d, 0x58, 0xa4, 0x48, 0x51, 0x87, 0x63, 0xc6, 0x74, 0xb8, 0x89,
+	0x87, 0x3a, 0x9c, 0xf0, 0x04, 0xf2, 0xb1, 0xc9, 0x07, 0xe5, 0x10, 0x36, 0xe1, 0xf1, 0xb0, 0xad,
+	0x45, 0x1b, 0xeb, 0x2e, 0x1e, 0x1c, 0x6c, 0x1e, 0x26, 0x89, 0xeb, 0xf4, 0x7b, 0xf5, 0x47, 0x06,
+	0x72, 0x01, 0x80, 0x9a, 0x9c, 0x07, 0xb7, 0x6a, 0xc8, 0x42, 0x18, 0x62, 0x21, 0xd1, 0x99, 0x9e,
+	0x78, 0xef, 0x99, 0x4e, 0xdf, 0x3f, 0xd3, 0x3b, 0xf4, 0x4c, 0x4f, 0x92, 0x96, 0xff, 0x30, 0x6e,
+	0xa6, 0xa9, 0xc3, 0xef, 0xa5, 0x2a, 0x4f, 0x20, 0x6f, 0x90, 0x25, 0x2d, 0x76, 0xce, 0x6b, 0x90,
+	0x8f, 0xad, 0xc6, 0xb0, 0xcd, 0x68, 0x5a, 0x4c, 0x9b, 0x51, 0x4c, 0xbf, 0xd9, 0xa9, 0x85, 0xf7,
+	0x6a, 0xf6, 0x28, 0x73, 0xec, 0x2c, 0xf6, 0x21, 0x27, 0xe1, 0x0e, 0x4e, 0x10, 0xb9, 0x04, 0x4b,
+	0x91, 0x62, 0xd0, 0xbd, 0x4e, 0x91, 0xaa, 0x92, 0x5f, 0xa4, 0xd8, 0xdd, 0xc6, 0x4d, 0x6f, 0x4b,
+	0x85, 0xa5, 0xbb, 0xce, 0x56, 0x80, 0xfc, 0x91, 0xac, 0x48, 0xb5, 0x86, 0x56, 0x16, 0xc5, 0xda,
+	0xa1, 0xa2, 0x6a, 0xea, 0x71, 0x5d, 0xd6, 0x0e, 0x95, 0xaf, 0x95, 0xda, 0x37, 0x4a, 0x36, 0xc5,
+	0xf2, 0x90, 0x8b, 0x03, 0x34, 0xd5, 0x46, 0xb5, 0x2e, 0x67, 0xd1, 0xd6, 0xcf, 0x28, 0x62, 0x17,
+	0xc3, 0xc1, 0x7b, 0x0a, 0xc5, 0x08, 0x75, 0xbf, 0xfa, 0xa5, 0x2c, 0x1e, 0x8b, 0xfb, 0xe1, 0x00,
+	0x1b, 0x20, 0x24, 0xa2, 0xc4, 0x9a, 0xa2, 0xc8, 0xa2, 0x2a, 0x4b, 0x59, 0xc4, 0x3e, 0x87, 0xf5,
+	0x44, 0x9c, 0x54, 0x6d, 0x0e, 0xa1, 0xcc, 0xd6, 0x2f, 0x08, 0xb8, 0xc4, 0x67, 0xcb, 0x33, 0x58,
+	0x8b, 0xec, 0x23, 0xee, 0x95, 0x95, 0x5d, 0xff, 0x48, 0x65, 0x35, 0x9c, 0xd8, 0xdd, 0xf4, 0x29,
+	0xa0, 0x52, 0x53, 0xe4, 0x2c, 0xba, 0x6f, 0xbb, 0xba, 0xac, 0x48, 0x55, 0x65, 0x37, 0xcb, 0x6c,
+	0x35, 0x60, 0xe9, 0xee, 0x88, 0x15, 0x20, 0x5f, 0x2f, 0x1f, 0x1f, 0xc8, 0x8a, 0xaa, 0x1d, 0xc8,
+	0xea, 0x5e, 0x4d, 0x8a, 0x96, 0x7f, 0x15, 0xb8, 0x38, 0x80, 0x58, 0x6e, 0x48, 0x59, 0xb4, 0xf5,
+	0x1a, 0xb8, 0xc4, 0x41, 0x7f, 0x06, 0x6b, 0x11, 0x66, 0x53, 0xad, 0x35, 0xca, 0xbb, 0x72, 0x34,
+	0xc4, 0x06, 0x08, 0xa3, 0x80, 0xb7, 0x4a, 0x1b, 0x91, 0x51, 0xa1, 0x84, 0x8e, 0xec, 0x10, 0x27,
+	0xf4, 0x1a, 0x14, 0x12, 0x51, 0x65, 0x51, 0xad, 0x1e, 0xf9, 0x41, 0x7c, 0xe9, 0x12, 0x5f, 0x32,
+	0x77, 0x8f, 0x94, 0x2c, 0xdd, 0x28, 0xe0, 0x50, 0xba, 0x51, 0xa8, 0x5b, 0xe9, 0xb6, 0xff, 0x48,
+	0x43, 0xa6, 0x9f, 0x94, 0xc3, 0x62, 0x58, 0x89, 0xbb, 0xaa, 0xd9, 0xd0, 0x5b, 0x60, 0xc4, 0xb3,
+	0x24, 0xb7, 0x71, 0x1f, 0xac, 0x3f, 0xdf, 0x27, 0xb0, 0x1c, 0xe3, 0x91, 0xec, 0xd3, 0x10, 0x3d,
+	0xf1, 0x42, 0xc9, 0xad, 0xdf, 0x83, 0x1a, 0xc6, 0x88, 0xb1, 0x98, 0x70, 0x8c, 0x64, 0x3f, 0x0b,
+	0xc7, 0x18, 0xe5, 0x53, 0x4d, 0x58, 0xa0, 0x0d, 0x96, 0x2d, 0x24, 0x18, 0xd4, 0xc0, 0xb4, 0x73,
+	0xc5, 0x64, 0xc0, 0x30, 0xf1, 0x98, 0x8b, 0x39, 0x9c, 0x78, 0xf2, 0xa3, 0x23, 0x9c, 0xf8, 0x88,
+	0xdb, 0xdd, 0x4f, 0x9c, 0x7e, 0x06, 0x85, 0x13, 0x8f, 0x7d, 0x5a, 0xe5, 0x8a, 0xc9, 0x80, 0x60,
+	0xd3, 0xca, 0x47, 0x6f, 0x6e, 0xf8, 0xd4, 0xdf, 0x37, 0x7c, 0xea, 0xed, 0x0d, 0x8f, 0x7e, 0xf0,
+	0x78, 0xf4, 0xab, 0xc7, 0xa3, 0x3f, 0x3d, 0x1e, 0xbd, 0xf1, 0x78, 0xf4, 0x8f, 0xc7, 0xa3, 0xff,
+	0x3c, 0x3e, 0xf5, 0xd6, 0xe3, 0xd1, 0x4f, 0xff, 0xf2, 0xa9, 0x93, 0x29, 0xf2, 0xbf, 0xe5, 0xab,
+	0x77, 0x01, 0x00, 0x00, 0xff, 0xff, 0x3e, 0x17, 0x47, 0xaa, 0xa1, 0x0e, 0x00, 0x00,
 }

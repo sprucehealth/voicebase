@@ -85,3 +85,101 @@ func (d *MockDAL) VendorAccountsInState(ctx context.Context, lifecycle dal.Vendo
 	}
 	return rets[0].([]*dal.VendorAccount), mock.SafeError(rets[1])
 }
+
+// Customer
+func (d *MockDAL) InsertCustomer(ctx context.Context, model *dal.Customer) (dal.CustomerID, error) {
+	rets := d.Record(model)
+	if len(rets) == 0 {
+		return dal.EmptyCustomerID(), nil
+	}
+	return rets[0].(dal.CustomerID), mock.SafeError(rets[1])
+}
+
+func (d *MockDAL) Customer(ctx context.Context, id dal.CustomerID, opts ...dal.QueryOption) (*dal.Customer, error) {
+	rets := d.Record(id, opts)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*dal.Customer), mock.SafeError(rets[1])
+}
+
+func (d *MockDAL) UpdateCustomer(ctx context.Context, id dal.CustomerID, update *dal.CustomerUpdate) (int64, error) {
+	rets := d.Record(id, update)
+	if len(rets) == 0 {
+		return 0, nil
+	}
+	return rets[0].(int64), mock.SafeError(rets[1])
+}
+
+func (d *MockDAL) DeleteCustomer(ctx context.Context, id dal.CustomerID) (int64, error) {
+	rets := d.Record(id)
+	if len(rets) == 0 {
+		return 0, nil
+	}
+	return rets[0].(int64), mock.SafeError(rets[1])
+}
+
+func (d *MockDAL) CustomerForVendor(ctx context.Context, vendorAccountID dal.VendorAccountID, entityID string, opts ...dal.QueryOption) (*dal.Customer, error) {
+	rets := d.Record(vendorAccountID, entityID, opts)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*dal.Customer), mock.SafeError(rets[1])
+}
+
+// Payment Method
+func (d *MockDAL) InsertPaymentMethod(ctx context.Context, model *dal.PaymentMethod) (dal.PaymentMethodID, error) {
+	rets := d.Record(model)
+	if len(rets) == 0 {
+		return dal.EmptyPaymentMethodID(), nil
+	}
+	return rets[0].(dal.PaymentMethodID), mock.SafeError(rets[1])
+}
+
+func (d *MockDAL) PaymentMethod(ctx context.Context, id dal.PaymentMethodID, opts ...dal.QueryOption) (*dal.PaymentMethod, error) {
+	rets := d.Record(id, opts)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*dal.PaymentMethod), mock.SafeError(rets[1])
+}
+
+func (d *MockDAL) UpdatePaymentMethod(ctx context.Context, id dal.PaymentMethodID, update *dal.PaymentMethodUpdate) (int64, error) {
+	rets := d.Record(id, update)
+	if len(rets) == 0 {
+		return 0, nil
+	}
+	return rets[0].(int64), mock.SafeError(rets[1])
+}
+
+func (d *MockDAL) DeletePaymentMethod(ctx context.Context, id dal.PaymentMethodID) (int64, error) {
+	rets := d.Record(id)
+	if len(rets) == 0 {
+		return 0, nil
+	}
+	return rets[0].(int64), mock.SafeError(rets[1])
+}
+
+func (d *MockDAL) EntityPaymentMethods(ctx context.Context, vendorAccountID dal.VendorAccountID, entityID string, opts ...dal.QueryOption) ([]*dal.PaymentMethod, error) {
+	rets := d.Record(vendorAccountID, entityID, opts)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].([]*dal.PaymentMethod), mock.SafeError(rets[1])
+}
+
+func (d *MockDAL) PaymentMethodWithFingerprint(ctx context.Context, customerID dal.CustomerID, storageFingerprint string, opts ...dal.QueryOption) (*dal.PaymentMethod, error) {
+	rets := d.Record(customerID, storageFingerprint, opts)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*dal.PaymentMethod), mock.SafeError(rets[1])
+}
+
+func (d *MockDAL) PaymentMethodsWithFingerprint(ctx context.Context, storageFingerprint string, opts ...dal.QueryOption) ([]*dal.PaymentMethod, error) {
+	rets := d.Record(storageFingerprint, opts)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].([]*dal.PaymentMethod), mock.SafeError(rets[1])
+}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
@@ -11,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/media"
+	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/graphql"
 )
 
@@ -193,8 +195,26 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 				return transformedEHRLinks, nil
 			},
 		},
+		"paymentMethods": &graphql.Field{
+			Type:    graphql.NewList(graphql.NewNonNull(paymentMethodInterfaceType)),
+			Resolve: apiaccess.Authenticated(resolveEntityPaymentMethods),
+		},
 	},
 })
+
+func resolveEntityPaymentMethods(p graphql.ResolveParams) (interface{}, error) {
+	ent := p.Source.(*models.Entity)
+	ctx := p.Context
+	ram := raccess.ResourceAccess(p)
+
+	resp, err := ram.PaymentMethods(ctx, &payments.PaymentMethodsRequest{
+		EntityID: ent.ID,
+	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return transformPaymentMethodsToResponse(resp.PaymentMethods), nil
+}
 
 func lookupEntity(ctx context.Context, svc *service, ram raccess.ResourceAccessor, entityID string) (interface{}, error) {
 	em, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{

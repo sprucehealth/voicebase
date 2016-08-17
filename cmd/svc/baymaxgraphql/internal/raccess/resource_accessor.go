@@ -103,11 +103,13 @@ type ResourceAccessor interface {
 	CreateLinkedThreads(ctx context.Context, req *threading.CreateLinkedThreadsRequest) (*threading.CreateLinkedThreadsResponse, error)
 	CreateOnboardingThread(ctx context.Context, req *threading.CreateOnboardingThreadRequest) (*threading.CreateOnboardingThreadResponse, error)
 	CreatePasswordResetToken(ctx context.Context, email string) (*auth.CreatePasswordResetTokenResponse, error)
+	CreatePaymentMethod(ctx context.Context, req *payments.CreatePaymentMethodRequest) (*payments.CreatePaymentMethodResponse, error)
 	CreateSavedQuery(ctx context.Context, req *threading.CreateSavedQueryRequest) error
 	CreateVerificationCode(ctx context.Context, codeType auth.VerificationCodeType, valueToVerify string) (*auth.CreateVerificationCodeResponse, error)
 	CreateVisit(ctx context.Context, req *care.CreateVisitRequest) (*care.CreateVisitResponse, error)
 	CreateVisitAnswers(ctx context.Context, req *care.CreateVisitAnswersRequest) (*care.CreateVisitAnswersResponse, error)
 	DeleteContacts(ctx context.Context, req *directory.DeleteContactsRequest) (*directory.Entity, error)
+	DeletePaymentMethod(ctx context.Context, req *payments.DeletePaymentMethodRequest) (*payments.DeletePaymentMethodResponse, error)
 	DeleteThread(ctx context.Context, threadID, entityID string) error
 	Entities(ctx context.Context, req *directory.LookupEntitiesRequest, opts ...EntityQueryOption) ([]*directory.Entity, error)
 	EntitiesByContact(ctx context.Context, req *directory.LookupEntitiesByContactRequest) ([]*directory.Entity, error)
@@ -119,6 +121,7 @@ type ResourceAccessor interface {
 	MarkThreadsAsRead(ctx context.Context, req *threading.MarkThreadsAsReadRequest) (*threading.MarkThreadsAsReadResponse, error)
 	MediaInfo(ctx context.Context, mediaID string) (*media.MediaInfo, error)
 	OnboardingThreadEvent(ctx context.Context, req *threading.OnboardingThreadEventRequest) (*threading.OnboardingThreadEventResponse, error)
+	PaymentMethods(ctx context.Context, req *payments.PaymentMethodsRequest) (*payments.PaymentMethodsResponse, error)
 	PendingIPCalls(ctx context.Context) (*excomms.PendingIPCallsResponse, error)
 	PostMessage(ctx context.Context, req *threading.PostMessageRequest) (*threading.PostMessageResponse, error)
 	Profile(ctx context.Context, req *directory.ProfileRequest) (*directory.Profile, error)
@@ -345,18 +348,6 @@ func (m *resourceAccessor) ClaimMedia(ctx context.Context, req *media.ClaimMedia
 	}
 	_, err = m.media.ClaimMedia(ctx, req)
 	return err
-}
-
-func (m *resourceAccessor) ConnectVendorAccount(ctx context.Context, req *payments.ConnectVendorAccountRequest) (*payments.ConnectVendorAccountResponse, error) {
-	if err := m.canAccessResource(ctx, req.EntityID, m.orgsForEntity); err != nil {
-		return nil, err
-	}
-
-	resp, err := m.payments.ConnectVendorAccount(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
 }
 
 func (m *resourceAccessor) CreateAccount(ctx context.Context, req *auth.CreateAccountRequest) (*auth.CreateAccountResponse, error) {
@@ -1315,6 +1306,28 @@ func (m *resourceAccessor) LookupEHRLinksForEntity(ctx context.Context, req *dir
 func (m *resourceAccessor) isAccountType(ctx context.Context, accType auth.AccountType) bool {
 	acc := gqlctx.Account(ctx)
 	return acc != nil && acc.Type == accType
+}
+
+func (m *resourceAccessor) assertIsEntity(ctx context.Context, entityID string) error {
+	acc := gqlctx.Account(ctx)
+	if acc == nil {
+		return errors.ErrNotAuthenticated(ctx)
+	}
+	ent, err := directory.SingleEntity(ctx, m.directory, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: entityID,
+		},
+	})
+	if grpc.Code(err) == codes.NotFound {
+		return errors.ErrNotFound(ctx, entityID)
+	} else if err != nil {
+		return errors.InternalError(ctx, err)
+	}
+	if ent.AccountID != acc.ID {
+		return errors.ErrNotAuthorized(ctx, entityID)
+	}
+	return nil
 }
 
 func (m *resourceAccessor) canAccessResource(ctx context.Context, resourceID string, missF func(ctx context.Context, resourceID string) (map[string]struct{}, error)) error {

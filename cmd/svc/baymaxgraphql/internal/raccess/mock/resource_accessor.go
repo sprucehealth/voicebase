@@ -683,3 +683,30 @@ func (m *ResourceAccessor) LookupEHRLinksForEntity(ctx context.Context, req *dir
 	}
 	return rets[0].(*directory.LookupEHRLinksforEntityResponse), mock.SafeError(rets[1])
 }
+
+func (m *ResourceAccessor) PaymentMethods(ctx context.Context, req *payments.PaymentMethodsRequest) (*payments.PaymentMethodsResponse, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].(*payments.PaymentMethodsResponse), mock.SafeError(rets[1])
+}
+
+func (m *ResourceAccessor) CreatePaymentMethod(ctx context.Context, req *payments.CreatePaymentMethodRequest) (*payments.CreatePaymentMethodResponse, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].(*payments.CreatePaymentMethodResponse), mock.SafeError(rets[1])
+}
+
+func (m *ResourceAccessor) DeletePaymentMethod(ctx context.Context, req *payments.DeletePaymentMethodRequest) (*payments.DeletePaymentMethodResponse, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].(*payments.DeletePaymentMethodResponse), mock.SafeError(rets[1])
+}

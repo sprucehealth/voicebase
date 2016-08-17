@@ -35,8 +35,8 @@ func TestConnectVendorStripeAccount(t *testing.T) {
 			TestParams: func() *testConnectVendorAccountParams {
 				mra := ramock.New(t)
 				mra.Expect(mock.NewExpectation(mra.ConnectVendorAccount, &payments.ConnectVendorAccountRequest{
-					EntityID:          entityID,
-					VendorAccountType: payments.VENDOR_ACCOUNT_TYPE_STRIPE,
+					EntityID: entityID,
+					Type:     payments.VENDOR_ACCOUNT_TYPE_STRIPE,
 					ConnectVendorAccountOneof: &payments.ConnectVendorAccountRequest_StripeRequest{
 						StripeRequest: &payments.StripeAccountConnectRequest{
 							Code: code,

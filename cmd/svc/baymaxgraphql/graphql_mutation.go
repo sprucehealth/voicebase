@@ -104,6 +104,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Mutation",
 	Fields: graphql.Fields{
 		"addContactInfos":                     addContactInfosMutation,
+		"addPaymentMethod":                    addCardPaymentMethodMutation,
 		"associateAttribution":                associateAttributionMutation,
 		"associateInvite":                     associateInviteMutation,
 		"authenticate":                        authenticateMutation,
@@ -122,6 +123,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 		"createThread":                        createThreadMutation,
 		"createVideoCall":                     createVideoCallMutation,
 		"deleteContactInfos":                  deleteContactInfosMutation,
+		"deletePaymentMethod":                 deletePaymentMethodMutation,
 		"deleteThread":                        deleteThreadMutation,
 		"inviteColleagues":                    inviteColleaguesMutation,
 		"invitePatients":                      invitePatientsMutation,
