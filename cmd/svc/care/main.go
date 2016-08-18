@@ -58,11 +58,11 @@ func init() {
 	flag.StringVar(&config.doseSpotSOAPEndpoint, "dosespot_soap_endpoint", "", "DoseSpot SOAP endpoint URL")
 	flag.Int64Var(&config.doseSpotClinicID, "dosespot_clinic_id", 0, "DoseSpot clinic ID")
 	flag.Int64Var(&config.doseSpotUserID, "dosespot_user_id", 0, "DoseSpot user ID")
-	flag.StringVar(&config.mediaAddr, "media_addr", "", "`host:port of media service`")
 
 	// Services
 	flag.StringVar(&config.layoutAddr, "layout_addr", "_layout._tcp.service", "`host:port` to communicate with the layout service")
 	flag.StringVar(&config.settingsAddr, "settings_addr", "_settings._tcp.service", "`host:port` of settings service")
+	flag.StringVar(&config.mediaAddr, "media_addr", "_media._tcp.service", "`host:port of media service`")
 }
 
 func main() {
