@@ -43,8 +43,10 @@ func init() {
 	flag.StringVar(&config.dbTLSCert, "db_tls_cert", "", "the tls cert to use when connecting to the database")
 	flag.StringVar(&config.dbTLSKey, "db_tls_key", "", "the tls key to use when connecting to the database")
 	flag.StringVar(&config.dbTLS, "db_tls", "false", "Enable TLS for database connection (one of 'true', 'false', 'skip-verify'). Ignored if CA cert provided.")
-	flag.StringVar(&config.settingsServiceAddress, "settings_addr", "", "host:port of settings service")
 	flag.StringVar(&config.clientEncryptionKeySecret, "client_encryption_key_secret", "", "the secret to use when generating the disk cache encryption keys for client")
+
+	// Services
+	flag.StringVar(&config.settingsServiceAddress, "settings_addr", "_settings._tcp.service", "host:port of settings service")
 }
 
 func main() {

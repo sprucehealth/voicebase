@@ -18,7 +18,7 @@ import (
 
 var (
 	// Payments Service
-	flagRPCListenAddr = flag.String("rpc_listen_addr", "127.0.0.1:50062", "host:port to listen on for rpc requests")
+	flagRPCListenAddr = flag.String("rpc_listen_addr", "", "host:port to listen on for rpc requests")
 	flagBehindProxy   = flag.Bool("behind_proxy", false, "Flag to indicate when the service is behind a proxy")
 
 	// Stripe
@@ -29,7 +29,7 @@ var (
 	flagMasterVendorAccountID = flag.String("master_vendor_account_id", "", "the vendor_account_id of the master account")
 
 	// Services
-	flagDirectoryAddr = flag.String("directory_addr", "127.0.0.1:50052", "host:port of directory service")
+	flagDirectoryAddr = flag.String("directory_addr", "_directory._tcp.service", "host:port of directory service")
 
 	// DB
 	flagDBHost     = flag.String("db_host", "localhost", "the host at which we should attempt to connect to the database")

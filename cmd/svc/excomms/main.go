@@ -59,9 +59,6 @@ func init() {
 	flag.StringVar(&config.twilioSigningKeySID, "twilio_signing_key_sid", "", "SID of API key used to sign tokens")
 	flag.StringVar(&config.twilioSigningKey, "twilio_signing_key", "", "API key secret used to sign tokens")
 	flag.StringVar(&config.twilioVideoConfigSID, "twilio_video_config_sid", "", "Video call configuration SID")
-	flag.StringVar(&config.directoryServiceURL, "directory_endpoint", "", "url to connect with directory service")
-	flag.StringVar(&config.threadingServiceAddress, "threading_endpoint", "", "address to connect with threading service")
-	flag.StringVar(&config.settingsServiceURL, "settings_endpoint", "", "url to connect with settings service")
 	flag.StringVar(&config.spruceEmailDomain, "spruce_email_domain", "", "domain from which spruce emails will originate")
 	flag.StringVar(&config.sendgridAPIKey, "sendgrid_api_key", "", "sendgrid api key")
 	flag.StringVar(&config.transactionalSendgridAPIKey, "transactional_sendgrid_api_key", "", "sendgrid api key for transactional emails (password reset, email verification, invites, etc.)")
@@ -90,6 +87,11 @@ func init() {
 	flag.StringVar(&config.sigKeys, "signature_keys_csv", "", "csv signature keys")
 	flag.BoolVar(&config.behindProxy, "behind_proxy", false, "Set to true if behind a proxy")
 	flag.StringVar(&config.notificationSQSURL, "notification_sqs_url", "", "URL of the notification SQS queue")
+
+	// Services
+	flag.StringVar(&config.directoryServiceURL, "directory_addr", "_directory._tcp.service", "address to connect with directory service")
+	flag.StringVar(&config.threadingServiceAddress, "threading_addr", "_threading._tcp.service", "address to connect with threading service")
+	flag.StringVar(&config.settingsServiceURL, "settings_addr", "_settings._tcp.service", "address to connect with settings service")
 }
 
 func main() {

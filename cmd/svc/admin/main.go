@@ -30,18 +30,20 @@ var (
 	flagAuthTokenSecret = flag.String("auth_token_secret", "super_secret", "Auth token secret")
 	flagBehindProxy     = flag.Bool("behind_proxy", false, "Flag to indicate when the service is behind a proxy")
 	flagCertCacheURL    = flag.String("cert_cache_url", "", "URL path where to store cert cache (e.g. s3://bucket/path/)")
-	flagDirectoryAddr   = flag.String("directory_addr", "127.0.0.1:50052", "Address of the directory server")
 	flagLDAPAddr        = flag.String("ldap_addr", "localhost:389", "Address of the LDAP server")
 	flagLDAPBaseDN      = flag.String("ldap_base_dn", "ou=People,dc=sprucehealth,dc=com", "The base DN for LDAP users")
 	flagLDAPTLS         = flag.Bool("ldap_tls", false, "Flag indicating if the ldap client should use TLS")
 	flagLetsEncrypt     = flag.Bool("letsencrypt", false, "Enable Let's Encrypt certificates")
 	flagListenAddr      = flag.String("graphql_listen_addr", "127.0.0.1:8084", "host:port to listen on")
-	flagPaymentsAddr    = flag.String("payments_addr", "127.0.0.1:50062", "Address of the payments server")
 	flagProxyProtocol   = flag.Bool("proxy_protocol", false, "If behind a TCP proxy and proxy protocol wrapping is enabled")
 	flagResourcePath    = flag.String("resource_path", path.Join(os.Getenv("GOPATH"),
 		"src/github.com/sprucehealth/backend/cmd/svc/admin/resources"), "Path to resources (defaults to use GOPATH)")
-	flagSettingsAddr = flag.String("settings_addr", "127.0.0.1:50054", "Address of the settings server")
-	flagWebDomain    = flag.String("web_domain", "localhost", "Web `domain`")
+	flagWebDomain = flag.String("web_domain", "localhost", "Web `domain`")
+
+	// Services
+	flagDirectoryAddr = flag.String("directory_addr", "_directory._tcp.service", "Address of the directory server")
+	flagPaymentsAddr  = flag.String("payments_addr", "_payments._tcp.service", "Address of the payments server")
+	flagSettingsAddr  = flag.String("settings_addr", "_settings._tcp.service", "Address of the settings server")
 )
 
 func main() {

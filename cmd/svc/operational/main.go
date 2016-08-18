@@ -20,10 +20,6 @@ import (
 
 var (
 	flagKMSKeyARN            = flag.String("kms_key_arn", "", "the arn of the master key that should be used for encrypting data")
-	flagAuthAddr             = flag.String("auth_addr", "", "`host:port` of the auth service")
-	flagExcommsAddr          = flag.String("excomms_addr", "", "`host:port` of the excomms service")
-	flagDirectoryAddr        = flag.String("directory_addr", "", "`host:port` of the directory service")
-	flagThreadingAddr        = flag.String("threading_addr", "", "`host:port` of the threading service")
 	flagBlockAccountSQSURL   = flag.String("block_account_sqs_url", "", "url of the sqs queue for block account requests")
 	flagDBName               = flag.String("db_name", "threading", "Database name")
 	flagDBHost               = flag.String("db_host", "127.0.0.1", "Database host")
@@ -34,6 +30,12 @@ var (
 	flagDBTLS                = flag.String("db_tls", "false", "Enable TLS for database connection (one of 'true', 'false', 'skip-verify'). Ignored if CA cert provided.")
 	flagSpruceOrgID          = flag.String("spruce_org_id", "", "`ID` for the Spruce support organization")
 	flagSupportMessageSQSURL = flag.String("support_message_sqs_url", "", "url of the sqs queue for org related events")
+
+	// Services
+	flagAuthAddr      = flag.String("auth_addr", "_auth._tcp.service", "`host:port` of the auth service")
+	flagExcommsAddr   = flag.String("excomms_addr", "_excomms._tcp.service", "`host:port` of the excomms service")
+	flagDirectoryAddr = flag.String("directory_addr", "_directory._tcp.service", "`host:port` of the directory service")
+	flagThreadingAddr = flag.String("threading_addr", "_threading._tcp.service", "`host:port` of the threading service")
 )
 
 func main() {

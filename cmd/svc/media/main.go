@@ -41,10 +41,10 @@ var (
 	flagMaxMemory          = flag.Int64("max_memory", 8<<20, "Maximum memory to use when decoding POST bodies")
 
 	// Services
-	flagAuthAddr      = flag.String("auth_addr", "", "host:port of auth service")
-	flagDirectoryAddr = flag.String("directory_addr", "", "host:port of directory service")
-	flagThreadingAddr = flag.String("threading_addr", "", "host:port of threading service")
-	flagCareAddr      = flag.String("care_addr", "", "host:port of the care service")
+	flagAuthAddr      = flag.String("auth_addr", "_auth._tcp.service", "host:port of auth service")
+	flagDirectoryAddr = flag.String("directory_addr", "_directory._tcp.service", "host:port of directory service")
+	flagThreadingAddr = flag.String("threading_addr", "_threading._tcp.service", "host:port of threading service")
+	flagCareAddr      = flag.String("care_addr", "_care._tcp.service", "host:port of the care service")
 
 	// DB
 	flagDBHost     = flag.String("db_host", "localhost", "the host at which we should attempt to connect to the database")

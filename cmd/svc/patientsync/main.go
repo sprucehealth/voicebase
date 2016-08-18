@@ -17,8 +17,8 @@ import (
 
 var (
 	// Services
-	flagDirectoryAddr = flag.String("directory_addr", "", "host:port of directory service")
-	flagThreadingAddr = flag.String("threading_addr", "", "host:port of threading service")
+	flagDirectoryAddr = flag.String("directory_addr", "_directory._tcp.service", "host:port of directory service")
+	flagThreadingAddr = flag.String("threading_addr", "_threading._tcp.service", "host:port of threading service")
 
 	// database
 	flagDBHost     = flag.String("db_host", "", "database host")

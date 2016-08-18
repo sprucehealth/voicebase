@@ -39,11 +39,13 @@ var (
 	flagSNSTopicARN        = flag.String("sns_topic_arn", "", "SNS topic ARN to publish new messages to")
 	flagSQSNotificationURL = flag.String("sqs_notification_url", "", "the sqs url for notification messages")
 	flagSQSEventsURL       = flag.String("sqs_events_url", "", "SQS URL for events queue")
-	flagDirectoryAddr      = flag.String("directory_addr", "", "host:port of directory service")
 	flagWebDomain          = flag.String("web_domain", "", "Domain of the website")
 	flagKMSKeyARN          = flag.String("kms_key_arn", "", "the arn of the master key that should be used to encrypt outbound and decrypt inbound data")
-	flagSettingsAddr       = flag.String("settings_addr", "", "host:port of settings service")
-	flagMediaAddr          = flag.String("media_addr", "", "host:port of media service")
+
+	// Services
+	flagSettingsAddr  = flag.String("settings_addr", "_settings._tcp.service", "host:port of settings service")
+	flagMediaAddr     = flag.String("media_addr", "_media._tcp.service", "host:port of media service")
+	flagDirectoryAddr = flag.String("directory_addr", "_directory._tcp.service", "host:port of directory service")
 )
 
 func init() {

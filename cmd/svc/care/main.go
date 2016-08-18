@@ -54,13 +54,15 @@ func init() {
 	flag.IntVar(&config.listeningPort, "listening_port", 0, "Port on which visit service should listen")
 	flag.StringVar(&config.s3Bucket, "s3_bucket", "", "name of S3 bucket where layouts are stored")
 	flag.StringVar(&config.s3Prefix, "s3_prefix", "", "prefix for layouts in s3 bucket")
-	flag.StringVar(&config.layoutAddr, "layout_addr", "", "`host:port` to communicate with the layout service")
 	flag.StringVar(&config.doseSpotClinicKey, "dosespot_clinic_key", "", "DoseSpot clinic key")
 	flag.StringVar(&config.doseSpotSOAPEndpoint, "dosespot_soap_endpoint", "", "DoseSpot SOAP endpoint URL")
 	flag.Int64Var(&config.doseSpotClinicID, "dosespot_clinic_id", 0, "DoseSpot clinic ID")
 	flag.Int64Var(&config.doseSpotUserID, "dosespot_user_id", 0, "DoseSpot user ID")
-	flag.StringVar(&config.settingsAddr, "settings_addr", "", "`host:port` of settings service")
 	flag.StringVar(&config.mediaAddr, "media_addr", "", "`host:port of media service`")
+
+	// Services
+	flag.StringVar(&config.layoutAddr, "layout_addr", "_layout._tcp.service", "`host:port` to communicate with the layout service")
+	flag.StringVar(&config.settingsAddr, "settings_addr", "_settings._tcp.service", "`host:port` of settings service")
 }
 
 func main() {

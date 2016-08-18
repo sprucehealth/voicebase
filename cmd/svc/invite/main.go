@@ -30,8 +30,6 @@ import (
 
 var (
 	flagBranchKey                 = flag.String("branch_key", "", "Branch API key")
-	flagDirectoryAddr             = flag.String("directory_addr", "", "`host:port` of directory service")
-	flagExcommsAddr               = flag.String("excomms_addr", "", "`host:port` of excomms service")
 	flagFromEmail                 = flag.String("from_email", "", "Email address from which to send invites")
 	flagServiceNumber             = flag.String("service_phone_number", "", "TODO: This should be managed by the excomms service")
 	flagListen                    = flag.String("listen_addr", ":5001", "`host:port` for grpc server")
@@ -47,6 +45,10 @@ var (
 
 	// For local development
 	flagDynamoDBEndpoint = flag.String("dynamodb_endpoint", "", "DynamoDB endpoint `URL` (for local development)")
+
+	// Services
+	flagDirectoryAddr = flag.String("directory_addr", "_directory._tcp.service", "`host:port` of directory service")
+	flagExcommsAddr   = flag.String("excomms_addr", "_excomms._tcp.service", "`host:port` of excomms service")
 )
 
 func main() {

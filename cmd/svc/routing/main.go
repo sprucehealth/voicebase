@@ -42,10 +42,10 @@ var config struct {
 
 func init() {
 	// Services
-	flag.StringVar(&config.directoryServiceURL, "directory_addr", "", "`host:port` to connect to directory service")
-	flag.StringVar(&config.threadServiceURL, "threading_addr", "", "`host:port`to connect to threading service")
-	flag.StringVar(&config.excommsServiceURL, "excomms_addr", "", "`host:port` to connect to excomms service")
-	flag.StringVar(&config.settingsServiceURL, "settings_addr", "", "`host:port` to connect to settings service")
+	flag.StringVar(&config.directoryServiceURL, "directory_addr", "_directory._tcp.service", "`host:port` to connect to directory service")
+	flag.StringVar(&config.threadServiceURL, "threading_addr", "_threading._tcp.service", "`host:port`to connect to threading service")
+	flag.StringVar(&config.excommsServiceURL, "excomms_addr", "_excomms._tcp.service", "`host:port` to connect to excomms service")
+	flag.StringVar(&config.settingsServiceURL, "settings_addr", "_settings._tcp.service", "`host:port` to connect to settings service")
 
 	// database
 	flag.StringVar(&config.dbHost, "db_host", "", "database host")

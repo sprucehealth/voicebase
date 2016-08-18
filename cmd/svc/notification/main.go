@@ -55,10 +55,12 @@ func init() {
 	flag.StringVar(&config.sqsNotificationURL, "sqs_notification_url", "", "the sqs url for outgoing notifications")
 	flag.StringVar(&config.snsAppleDeviceRegistrationTopic, "sns_apple_device_registration_arn", "", "the arn of the sns topic for apple device push registration")
 	flag.StringVar(&config.snsAndroidDeviceRegistrationTopic, "sns_android_device_registration_arn", "", "the arn of the sns topic for android device push registration")
-	flag.StringVar(&config.directoryServiceAddress, "directory_addr", "", "host:port of directory service")
-	flag.StringVar(&config.settingsServiceAddress, "settings_addr", "", "host:port of settings service")
 	flag.StringVar(&config.webDomain, "web_domain", "", "the baymax web domain")
 	flag.StringVar(&config.kmsKeyARN, "kms_key_arn", "", "the arn of the master key that should be used to encrypt outbound and decrypt inbound data")
+
+	// Services
+	flag.StringVar(&config.directoryServiceAddress, "directory_addr", "_directory._tcp.service", "host:port of directory service")
+	flag.StringVar(&config.settingsServiceAddress, "settings_addr", "_settings._tcp.service", "host:port of settings service")
 }
 
 func main() {
