@@ -51,6 +51,7 @@ func (l *hostPortLookuper) lookup() ([]string, error) {
 
 type resolver struct {
 	interval time.Duration
+	lookuper lookuper
 }
 
 type watcher struct {
@@ -70,9 +71,13 @@ func Resolver(interval time.Duration) naming.Resolver {
 
 // Resolve creates a Watcher for target.
 func (r *resolver) Resolve(target string) (naming.Watcher, error) {
-	l, err := lookuperFromTarget(target)
-	if err != nil {
-		return nil, err
+	l := r.lookuper
+	if l == nil {
+		var err error
+		l, err = lookuperFromTarget(target)
+		if err != nil {
+			return nil, err
+		}
 	}
 	w := &watcher{
 		lookuper: l,
@@ -99,6 +104,19 @@ func (w *watcher) Close() {
 }
 
 func (w *watcher) loop() {
+	// HACK (@samuel): Do one special update before getting into the main loop.
+	// The gRPC lib expects a non-empty list during the initial Dial otherwise
+	// it'll fail/block. So, if we can't get a valid list of hosts then return
+	// an invalid host that we'll remove right away.
+	if updates, err := w.update(); err != nil {
+		golog.Errorf(err.Error())
+		// This must to be two separate updates instead of both in one
+		w.updateCh <- []*naming.Update{{Op: naming.Add, Addr: "127.0.0.1:1"}}
+		w.updateCh <- []*naming.Update{{Op: naming.Delete, Addr: "127.0.0.1:1"}}
+	} else if len(updates) != 0 {
+		w.updateCh <- updates
+	}
+
 	tick := time.NewTicker(w.interval)
 	defer tick.Stop()
 	for {

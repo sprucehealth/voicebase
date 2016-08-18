@@ -3,8 +3,10 @@ package grpcdns
 import (
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/sprucehealth/backend/libs/test"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/naming"
 )
 
@@ -113,4 +115,29 @@ func TestWatcher(t *testing.T) {
 	updates, err = w.update()
 	test.AssertNotNil(t, err)
 	test.AssertNil(t, updates)
+}
+
+func TestNonBlockingDial(t *testing.T) {
+	l := &testLookuper{addrs: []string{}}
+	r := &resolver{
+		interval: time.Millisecond * 50,
+		lookuper: l,
+	}
+	ch := make(chan interface{}, 1)
+	go func() {
+		conn, err := grpc.Dial("target", grpc.WithInsecure(), grpc.WithBalancer(grpc.RoundRobin(r)))
+		if err != nil {
+			ch <- err
+		} else {
+			ch <- conn
+		}
+	}()
+	select {
+	case <-time.After(time.Second):
+		t.Fatal("Timeout waiting for Dial")
+	case v := <-ch:
+		if err, ok := v.(error); ok {
+			t.Fatalf("Dial failed: %s", err)
+		}
+	}
 }
