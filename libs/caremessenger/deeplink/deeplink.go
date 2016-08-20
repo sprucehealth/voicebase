@@ -100,8 +100,8 @@ func VisitURL(webDomain, threadID, visitID string) string {
 }
 
 // PaymentURL returns a deeplink compatible URL to the payment
-func PaymentURL(webDomain, paymentID string) string {
-	return fmt.Sprintf("%s/payment/%s/", deepLinkBase(webDomain), paymentID)
+func PaymentURL(webDomain, orgID, threadID, paymentID string) string {
+	return fmt.Sprintf("%s/payment/%s", ThreadURLShareable(webDomain, orgID, threadID), paymentID)
 }
 
 // PostEventURL returns a deeplink compatible URL that trigger the postEvent mutation
