@@ -88,10 +88,112 @@ func validateMasterVendorAccount(dl dal.DAL, masterVendorAccountID dal.VendorAcc
 	}
 	masterStripeAccount, err := stripeClient.Account(context.Background())
 	if err != nil {
-		return nil, errors.Errorf("Encountered an error when validating Stripe credentials: %s", err)
+		golog.Errorf("Encountered an error when validating Stripe credentials: %s", err)
 	}
 	golog.Infof("Master Stripe Account: %+v", masterStripeAccount)
 	return masterVendorAccount, nil
+}
+
+func (s *server) AcceptPayment(ctx context.Context, req *payments.AcceptPaymentRequest) (*payments.AcceptPaymentResponse, error) {
+	if req.PaymentID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "PaymentID required")
+	}
+	paymentID, err := dal.ParsePaymentID(req.PaymentID)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
+	}
+	if req.PaymentMethodID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "PaymentMethodID required")
+	}
+	paymentMethodID, err := dal.ParsePaymentMethodID(req.PaymentMethodID)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
+	}
+
+	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
+		// Lock the row we intend to manipulate
+		payment, err := dl.Payment(ctx, paymentID, dal.ForUpdate)
+		if errors.Cause(err) == dal.ErrNotFound {
+			return grpcErrorf(codes.NotFound, "Payment %s Not Found", paymentID)
+		} else if err != nil {
+			return grpcError(err)
+		}
+		paymentMethod, err := dl.PaymentMethod(ctx, paymentMethodID)
+		if errors.Cause(err) == dal.ErrNotFound {
+			return grpcErrorf(codes.NotFound, "PaymentMethod %s Not Found", paymentID)
+		} else if err != nil {
+			return grpcError(err)
+		}
+		// If nothing is changing move on
+		if payment.ChangeState == dal.PaymentChangeStateNone &&
+			payment.Lifecycle == dal.PaymentLifecycleAccepted &&
+			payment.PaymentMethodID == paymentMethod.ID {
+			golog.Infof("Payment %s is already in the accepted state with payment method %s ignoring double submit", payment.ID, paymentMethod.ID)
+			return nil
+		}
+		// Acceptable States For Update
+		// 1. If we are just changing the payment method
+		// 2. We are accepting for the first time (NONE, SUBMITTED)
+		if (payment.ChangeState == dal.PaymentChangeStateNone && payment.Lifecycle == dal.PaymentLifecycleAccepted) ||
+			(payment.ChangeState == dal.PaymentChangeStateNone && payment.Lifecycle == dal.PaymentLifecycleSubmitted) {
+			if _, err := dl.UpdatePayment(ctx, paymentID, &dal.PaymentUpdate{
+				ChangeState:     dal.PaymentChangeStateNone,
+				Lifecycle:       dal.PaymentLifecycleAccepted,
+				PaymentMethodID: &paymentMethod.ID,
+			}); err != nil {
+				return grpcError(err)
+			}
+		} else {
+			return grpcErrorf(codes.FailedPrecondition, "Payment %s is in state %s|%s - it cannot be accepted", payment.ID, payment.ChangeState, payment.Lifecycle)
+		}
+		return nil
+	}); err != nil {
+		return nil, grpcError(err)
+	}
+
+	resp, err := s.Payment(ctx, &payments.PaymentRequest{PaymentID: req.PaymentID})
+	if err != nil {
+		return nil, grpcError(err)
+	}
+	return &payments.AcceptPaymentResponse{
+		Payment: resp.Payment,
+	}, nil
+}
+
+func (s *server) CreatePayment(ctx context.Context, req *payments.CreatePaymentRequest) (*payments.CreatePaymentResponse, error) {
+	if req.RequestingEntityID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "RequestingEntityID required")
+	}
+	if req.Amount <= 0 {
+		return nil, grpcErrorf(codes.InvalidArgument, "Positive no zero Amount required")
+	}
+	if req.Currency == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "Currency required")
+	}
+	vendorAccounts, err := s.dal.EntityVendorAccounts(ctx, req.RequestingEntityID)
+	if err != nil {
+		return nil, grpcError(err)
+	} else if len(vendorAccounts) == 0 {
+		return nil, grpcErrorf(codes.NotFound, "Vendor Account for %s Not Found", req.RequestingEntityID)
+	}
+	// For now just assume there will be only 1
+	vendorAccount := vendorAccounts[0]
+
+	paymentID, err := s.dal.InsertPayment(ctx, &dal.Payment{
+		VendorAccountID: vendorAccount.ID,
+		Currency:        req.Currency,
+		Amount:          req.Amount,
+		ChangeState:     dal.PaymentChangeStatePending,
+		Lifecycle:       dal.PaymentLifecycleSubmitted,
+	})
+
+	resp, err := s.Payment(ctx, &payments.PaymentRequest{PaymentID: paymentID.String()})
+	if err != nil {
+		return nil, grpcError(err)
+	}
+	return &payments.CreatePaymentResponse{
+		Payment: resp.Payment,
+	}, nil
 }
 
 func (s *server) CreatePaymentMethod(ctx context.Context, req *payments.CreatePaymentMethodRequest) (*payments.CreatePaymentMethodResponse, error) {
@@ -339,7 +441,7 @@ func (s *server) DeletePaymentMethod(ctx context.Context, req *payments.DeletePa
 	} else if err != nil {
 		return nil, grpcError(err)
 	}
-	if err := s.deletePaymentMethod(ctx, paymentMethod, s.dal); err != nil {
+	if err := s.deletePaymentMethod(ctx, paymentMethod.ID, s.dal); err != nil {
 		return nil, grpcError(err)
 	}
 	resp, err := s.PaymentMethods(ctx, &payments.PaymentMethodsRequest{EntityID: paymentMethod.EntityID})
@@ -351,47 +453,57 @@ func (s *server) DeletePaymentMethod(ctx context.Context, req *payments.DeletePa
 	}, nil
 }
 
-func (s *server) deletePaymentMethod(ctx context.Context, paymentMethod *dal.PaymentMethod, dl dal.DAL) error {
+func (s *server) deletePaymentMethod(ctx context.Context, paymentMethodID dal.PaymentMethodID, dl dal.DAL) error {
 	if err := dl.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
-		vendorAccount, err := dl.VendorAccount(ctx, paymentMethod.VendorAccountID)
+		// Lock the row for update -- This double read is inefficient, ignore for now
+		pm, err := dl.PaymentMethod(ctx, paymentMethodID, dal.ForUpdate)
 		if err != nil {
 			return errors.Trace(err)
 		}
-		customer, err := dl.Customer(ctx, paymentMethod.CustomerID)
+		vendorAccount, err := dl.VendorAccount(ctx, pm.VendorAccountID)
 		if err != nil {
 			return errors.Trace(err)
 		}
-		if _, err := dl.DeletePaymentMethod(ctx, paymentMethod.ID); err != nil {
+		customer, err := dl.Customer(ctx, pm.CustomerID)
+		if err != nil {
 			return errors.Trace(err)
 		}
-		switch paymentMethod.StorageType {
+		if pm.Lifecycle != dal.PaymentMethodLifecycleDeleted || pm.ChangeState != dal.PaymentMethodChangeStateNone {
+			if _, err := dl.UpdatePaymentMethod(ctx, pm.ID, &dal.PaymentMethodUpdate{
+				Lifecycle:   dal.PaymentMethodLifecycleDeleted,
+				ChangeState: dal.PaymentMethodChangeStateNone,
+			}); err != nil {
+				return errors.Trace(err)
+			}
+		}
+		switch pm.StorageType {
 		case dal.PaymentMethodStorageTypeStripe:
 			// TODO: This should be an inner switch on the type (CARD etc, need to store that in the record)
-			if err := s.stripeClient.DeleteCard(ctx, paymentMethod.StorageID, &stripe.CardParams{
+			if err := s.stripeClient.DeleteCard(ctx, pm.StorageID, &stripe.CardParams{
 				Customer: customer.StorageID,
 				Params: stripe.Params{
 					StripeAccount: vendorAccount.ConnectedAccountID,
 				},
 			}); err != nil {
 				if istripe.ErrCode(errors.Cause(err)) == stripe.Missing {
-					golog.Infof("Attempted to delete card %s mapped to payment method %s but Stripe reported it missing already. Moving on.", paymentMethod.StorageID, paymentMethod.ID)
+					golog.Infof("Attempted to delete card %s mapped to payment method %s but Stripe reported it missing already. Moving on.", pm.StorageID, pm.ID)
 				} else {
 					return errors.Trace(err)
 				}
 			}
 		default:
-			return errors.Errorf("Unhandled payment method storage type %s for %s in deletion", paymentMethod.StorageType, paymentMethod.ID)
+			return errors.Errorf("Unhandled payment method storage type %s for %s in deletion", pm.StorageType, pm.ID)
 		}
 		// If this is the master account, cleanup the card from sub vendors
 		if vendorAccount.ID == s.masterVendorAccount.ID {
 			// TODO: Tracking these payment method groupings by fingerprint locks us into only supporting types that provide a fingerprint.
 			//	Should consider a groping id for future payment types.
-			paymentMethods, err := dl.PaymentMethodsWithFingerprint(ctx, paymentMethod.StorageFingerprint)
+			paymentMethods, err := dl.PaymentMethodsWithFingerprint(ctx, pm.StorageFingerprint)
 			if err != nil {
 				return errors.Trace(err)
 			}
-			for _, pm := range paymentMethods {
-				if err := s.deletePaymentMethod(ctx, pm, dl); err != nil {
+			for _, spm := range paymentMethods {
+				if err := s.deletePaymentMethod(ctx, spm.ID, dl); err != nil {
 					return errors.Trace(err)
 				}
 			}
@@ -401,6 +513,73 @@ func (s *server) deletePaymentMethod(ctx context.Context, paymentMethod *dal.Pay
 		return errors.Trace(err)
 	}
 	return nil
+}
+
+func (s *server) Payment(ctx context.Context, req *payments.PaymentRequest) (*payments.PaymentResponse, error) {
+	if req.PaymentID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "PaymentID required")
+	}
+	paymentID, err := dal.ParsePaymentID(req.PaymentID)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
+	}
+	payment, err := s.dal.Payment(ctx, paymentID)
+	if errors.Cause(err) == dal.ErrNotFound {
+		return nil, grpcErrorf(codes.NotFound, "Payment %s Not Found", paymentID)
+	} else if err != nil {
+		return nil, grpcError(err)
+	}
+	rPayment, err := transformPaymentToResponse(ctx, payment, s.dal, s.stripeClient)
+	if err != nil {
+		return nil, grpcError(err)
+	}
+	return &payments.PaymentResponse{
+		Payment: rPayment,
+	}, nil
+}
+
+func (s *server) SubmitPayment(ctx context.Context, req *payments.SubmitPaymentRequest) (*payments.SubmitPaymentResponse, error) {
+	if req.PaymentID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "PaymentID required")
+	}
+	paymentID, err := dal.ParsePaymentID(req.PaymentID)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
+	}
+
+	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
+		// Lock the row we intend to manipulate
+		payment, err := dl.Payment(ctx, paymentID, dal.ForUpdate)
+		if errors.Cause(err) == dal.ErrNotFound {
+			return grpcErrorf(codes.NotFound, "Payment %s Not Found", paymentID)
+		} else if err != nil {
+			return grpcError(err)
+		}
+		if payment.ChangeState == dal.PaymentChangeStateNone && payment.Lifecycle == dal.PaymentLifecycleSubmitted {
+			golog.Infof("Payment %s is already in the submitted state %s|%s ignoring double submit", paymentID)
+			return nil
+		}
+		if payment.ChangeState == dal.PaymentChangeStatePending && payment.Lifecycle != dal.PaymentLifecycleSubmitted {
+			return grpcErrorf(codes.FailedPrecondition, "Payment %s is in state %s|%s - it cannot be submitted", payment.ChangeState, payment.Lifecycle)
+		}
+		if _, err := dl.UpdatePayment(ctx, paymentID, &dal.PaymentUpdate{
+			ChangeState: dal.PaymentChangeStateNone,
+			Lifecycle:   dal.PaymentLifecycleSubmitted,
+		}); err != nil {
+			return grpcError(err)
+		}
+		return nil
+	}); err != nil {
+		return nil, grpcError(err)
+	}
+
+	resp, err := s.Payment(ctx, &payments.PaymentRequest{PaymentID: req.PaymentID})
+	if err != nil {
+		return nil, grpcError(err)
+	}
+	return &payments.SubmitPaymentResponse{
+		Payment: resp.Payment,
+	}, nil
 }
 
 func (s *server) PaymentMethods(ctx context.Context, req *payments.PaymentMethodsRequest) (*payments.PaymentMethodsResponse, error) {

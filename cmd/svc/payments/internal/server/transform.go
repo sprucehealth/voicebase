@@ -148,6 +148,8 @@ func transformPaymentMethodLifecycleToResponse(vl dal.PaymentMethodLifecycle) pa
 	switch vl {
 	case dal.PaymentMethodLifecycleActive:
 		return payments.PAYMENT_METHOD_LIFECYCLE_ACTIVE
+	case dal.PaymentMethodLifecycleDeleted:
+		return payments.PAYMENT_METHOD_LIFECYCLE_DELETED
 	}
 	golog.Errorf("Unknown PaymentMethodLifecycle %s", vl)
 	return payments.PAYMENT_METHOD_LIFECYCLE_UNKNOWN
@@ -162,4 +164,80 @@ func transformPaymentMethodChangeStateToResponse(vc dal.PaymentMethodChangeState
 	}
 	golog.Errorf("Unknown PaymentMethodChangeState %s", vc)
 	return payments.PAYMENT_METHOD_CHANGE_STATE_UNKNOWN
+}
+
+func transformPaymentsToResponse(ctx context.Context, ps []*dal.Payment, dl dal.DAL, stripeClient istripe.IdempotentStripeClient) ([]*payments.Payment, error) {
+	rps := make([]*payments.Payment, len(ps))
+	for i, p := range ps {
+		rp, err := transformPaymentToResponse(ctx, p, dl, stripeClient)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		rps[i] = rp
+	}
+	return rps, nil
+}
+
+func transformPaymentToResponse(ctx context.Context, p *dal.Payment, dl dal.DAL, stripeClient istripe.IdempotentStripeClient) (*payments.Payment, error) {
+	// TODO: We could do these lookups in bulk to optimize here
+	vendorAccount, err := dl.VendorAccount(ctx, p.VendorAccountID)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	var rPaymentMethod *payments.PaymentMethod
+	if p.PaymentMethodID.IsValid {
+		paymentMethod, err := dl.PaymentMethod(ctx, p.PaymentMethodID)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		customer, err := dl.Customer(ctx, paymentMethod.CustomerID)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		rPaymentMethod, err = transformPaymentMethodToResponse(ctx, customer, paymentMethod, stripeClient)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+	}
+
+	return &payments.Payment{
+		ID:                 p.ID.String(),
+		RequestingEntityID: vendorAccount.EntityID,
+		PaymentMethod:      rPaymentMethod,
+		Amount:             p.Amount,
+		Currency:           p.Currency,
+		Lifecycle:          transformPaymentLifecycleToResponse(p.Lifecycle),
+		ChangeState:        transformPaymentChangeStateToResponse(p.ChangeState),
+		Created:            uint64(p.Created.Unix()),
+		Modified:           uint64(p.Modified.Unix()),
+	}, nil
+}
+
+func transformPaymentLifecycleToResponse(pl dal.PaymentLifecycle) payments.PaymentLifecycle {
+	switch pl {
+	case dal.PaymentLifecycleSubmitted:
+		return payments.PAYMENT_LIFECYCLE_SUBMITTED
+	case dal.PaymentLifecycleAccepted:
+		return payments.PAYMENT_LIFECYCLE_ACCEPTED
+	case dal.PaymentLifecycleProcessing:
+		return payments.PAYMENT_LIFECYCLE_PROCESSING
+	case dal.PaymentLifecycleErrorProcessing:
+		return payments.PAYMENT_LIFECYCLE_ERROR_PROCESSING
+	case dal.PaymentLifecycleCompleted:
+		return payments.PAYMENT_LIFECYCLE_COMPLETED
+	}
+	golog.Errorf("Unknown PaymentLifecycle %s", pl)
+	return payments.PAYMENT_LIFECYCLE_UNKNOWN
+}
+
+func transformPaymentChangeStateToResponse(pc dal.PaymentChangeState) payments.PaymentChangeState {
+	switch pc {
+	case dal.PaymentChangeStateNone:
+		return payments.PAYMENT_CHANGE_STATE_NONE
+	case dal.PaymentChangeStatePending:
+		return payments.PAYMENT_CHANGE_STATE_PENDING
+	}
+	golog.Errorf("Unknown PaymentChangeState %s", pc)
+	return payments.PAYMENT_CHANGE_STATE_UNKNOWN
 }

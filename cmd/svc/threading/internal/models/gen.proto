@@ -66,6 +66,7 @@ message Attachment {
 		CARE_PLAN = 3;
 		VISIT = 4;
 		VIDEO = 5;
+		PAYMENT_REQUEST = 6;
 	}
 	Type type = 1;
 	string title = 2;
@@ -77,6 +78,7 @@ message Attachment {
 		VisitAttachment visit = 13;
 		CarePlanAttachment care_plan = 14;
 		VideoAttachment video = 15;
+		PaymentRequestAttachment payment_request = 16;
 	}
 }
 
@@ -113,4 +115,8 @@ message VisitAttachment {
 message CarePlanAttachment {
 	string care_plan_id = 1 [(gogoproto.customname) = "CarePlanID"];
 	string care_plan_name = 2;
+}
+
+message PaymentRequestAttachment {
+	string payment_id = 1 [(gogoproto.customname) = "PaymentID"];
 }

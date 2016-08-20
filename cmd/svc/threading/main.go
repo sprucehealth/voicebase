@@ -22,6 +22,7 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/notification"
+	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
 	"google.golang.org/grpc"
@@ -46,6 +47,7 @@ var (
 	flagSettingsAddr  = flag.String("settings_addr", "_settings._tcp.service", "host:port of settings service")
 	flagMediaAddr     = flag.String("media_addr", "_media._tcp.service", "host:port of media service")
 	flagDirectoryAddr = flag.String("directory_addr", "_directory._tcp.service", "host:port of directory service")
+	flagPaymentsAddr  = flag.String("payments_addr", "_payments._tcp.service", "host:port of payments service")
 )
 
 func init() {
@@ -119,6 +121,12 @@ func main() {
 	}
 	mediaClient := media.NewMediaClient(conn)
 
+	conn, err = boot.DialGRPC("threading", *flagPaymentsAddr)
+	if err != nil {
+		golog.Fatalf("Unable to connect to payments service: %s", err)
+	}
+	paymentsClient := payments.NewPaymentsClient(conn)
+
 	dl := dal.New(db)
 
 	// register the settings with the service
@@ -136,7 +144,7 @@ func main() {
 	}
 	cancel()
 
-	srv := server.NewThreadsServer(clock.New(), dl, eSNS, *flagSNSTopicARN, notificationClient, directoryClient, settingsClient, mediaClient, *flagWebDomain)
+	srv := server.NewThreadsServer(clock.New(), dl, eSNS, *flagSNSTopicARN, notificationClient, directoryClient, settingsClient, mediaClient, paymentsClient, *flagWebDomain)
 	threading.InitMetrics(srv, bootSvc.MetricsRegistry.Scope("server"))
 
 	w := setupthread.NewWorker(eSQS, workerClient{srv: srv}, *flagSQSEventsURL)

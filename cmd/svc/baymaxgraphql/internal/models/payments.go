@@ -22,3 +22,14 @@ type PaymentCard struct {
 func (p *PaymentCard) PaymentMethodType() payments.PaymentMethodType {
 	return payments.PAYMENT_METHOD_TYPE_CARD
 }
+
+// PaymentRequest represents a card payment method
+type PaymentRequest struct {
+	ID                 string        `json:"id"`
+	RequestingEntity   *Entity       `json:"requestingEntity"`
+	PaymentMethod      PaymentMethod `json:"paymentMethod"`
+	Amount             uint64        `json:"amount"`
+	Status             string        `json:"status"`
+	RequestedTimestamp uint64        `json:"requestedTimestamp"`
+	CompletedTimestamp uint64        `json:"completedTimestamp"`
+}

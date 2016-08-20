@@ -466,6 +466,18 @@ func TestDeletePaymentMethod(t *testing.T) {
 						StorageID:          storageID,
 						StorageFingerprint: storageFingerprint,
 					}, nil))
+				tsrv.mdal.Expect(mock.NewExpectation(tsrv.mdal.PaymentMethod, pmID1, []dal.QueryOption{dal.ForUpdate}).WithReturns(
+					&dal.PaymentMethod{
+						ID:                 pmID1,
+						CustomerID:         cID,
+						EntityID:           entityID,
+						VendorAccountID:    masterVendorAccountID,
+						Lifecycle:          dal.PaymentMethodLifecycleActive,
+						ChangeState:        dal.PaymentMethodChangeStateNone,
+						StorageType:        dal.PaymentMethodStorageTypeStripe,
+						StorageID:          storageID,
+						StorageFingerprint: storageFingerprint,
+					}, nil))
 				tsrv.mdal.Expect(mock.NewExpectation(tsrv.mdal.VendorAccount, masterVendorAccountID).WithReturns(
 					&dal.VendorAccount{
 						ID:                 masterVendorAccountID,
@@ -476,7 +488,10 @@ func TestDeletePaymentMethod(t *testing.T) {
 						ID:        cID,
 						StorageID: storageID,
 					}, nil))
-				tsrv.mdal.Expect(mock.NewExpectation(tsrv.mdal.DeletePaymentMethod, pmID1))
+				tsrv.mdal.Expect(mock.NewExpectation(tsrv.mdal.UpdatePaymentMethod, pmID1, &dal.PaymentMethodUpdate{
+					Lifecycle:   dal.PaymentMethodLifecycleDeleted,
+					ChangeState: dal.PaymentMethodChangeStateNone,
+				}))
 				tsrv.mstripe.Expect(mock.NewExpectation(tsrv.mstripe.DeleteCard, storageID, &stripe.CardParams{
 					Customer: storageID,
 					Params: stripe.Params{

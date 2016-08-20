@@ -76,3 +76,39 @@ func (c *Client) PaymentMethods(ctx context.Context, in *payments.PaymentMethods
 	}
 	return rets[0].(*payments.PaymentMethodsResponse), mock.SafeError(rets[1])
 }
+
+// AcceptPayment implements payments.PaymentsClient
+func (c *Client) AcceptPayment(ctx context.Context, in *payments.AcceptPaymentRequest, opts ...grpc.CallOption) (*payments.AcceptPaymentResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*payments.AcceptPaymentResponse), mock.SafeError(rets[1])
+}
+
+// CreatePayment implements payments.PaymentsClient
+func (c *Client) CreatePayment(ctx context.Context, in *payments.CreatePaymentRequest, opts ...grpc.CallOption) (*payments.CreatePaymentResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*payments.CreatePaymentResponse), mock.SafeError(rets[1])
+}
+
+// Payment implements payments.PaymentsClient
+func (c *Client) Payment(ctx context.Context, in *payments.PaymentRequest, opts ...grpc.CallOption) (*payments.PaymentResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*payments.PaymentResponse), mock.SafeError(rets[1])
+}
+
+// Expector implements payments.PaymentsClient
+func (c *Client) SubmitPayment(ctx context.Context, in *payments.SubmitPaymentRequest, opts ...grpc.CallOption) (*payments.SubmitPaymentResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*payments.SubmitPaymentResponse), mock.SafeError(rets[1])
+}

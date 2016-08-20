@@ -2,6 +2,9 @@ package main
 
 import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/graphql"
 )
 
@@ -60,14 +63,6 @@ func init() {
 	}
 }
 
-func paymentMethodInterfaceResolveType(value interface{}, info graphql.ResolveInfo) *graphql.Object {
-	switch value.(type) {
-	case *models.PaymentCard:
-		return paymentMethodCardType
-	}
-	return nil
-}
-
 var paymentMethodCardType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "PaymentCard",
 	Interfaces: []*graphql.Interface{
@@ -84,3 +79,17 @@ var paymentMethodCardType = graphql.NewObject(graphql.ObjectConfig{
 		"last4":              &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 	},
 })
+
+func resolveEntityPaymentMethods(p graphql.ResolveParams) (interface{}, error) {
+	ent := p.Source.(*models.Entity)
+	ctx := p.Context
+	ram := raccess.ResourceAccess(p)
+
+	resp, err := ram.PaymentMethods(ctx, &payments.PaymentMethodsRequest{
+		EntityID: ent.ID,
+	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return transformPaymentMethodsToResponse(resp.PaymentMethods), nil
+}

@@ -86,7 +86,6 @@ func (d *MockDAL) VendorAccountsInState(ctx context.Context, lifecycle dal.Vendo
 	return rets[0].([]*dal.VendorAccount), mock.SafeError(rets[1])
 }
 
-// Customer
 func (d *MockDAL) InsertCustomer(ctx context.Context, model *dal.Customer) (dal.CustomerID, error) {
 	rets := d.Record(model)
 	if len(rets) == 0 {
@@ -127,7 +126,6 @@ func (d *MockDAL) CustomerForVendor(ctx context.Context, vendorAccountID dal.Ven
 	return rets[0].(*dal.Customer), mock.SafeError(rets[1])
 }
 
-// Payment Method
 func (d *MockDAL) InsertPaymentMethod(ctx context.Context, model *dal.PaymentMethod) (dal.PaymentMethodID, error) {
 	rets := d.Record(model)
 	if len(rets) == 0 {
@@ -182,4 +180,36 @@ func (d *MockDAL) PaymentMethodsWithFingerprint(ctx context.Context, storageFing
 		return nil, nil
 	}
 	return rets[0].([]*dal.PaymentMethod), mock.SafeError(rets[1])
+}
+
+func (d *MockDAL) InsertPayment(ctx context.Context, model *dal.Payment) (dal.PaymentID, error) {
+	rets := d.Record(model)
+	if len(rets) == 0 {
+		return dal.EmptyPaymentID(), nil
+	}
+	return rets[0].(dal.PaymentID), mock.SafeError(rets[1])
+}
+
+func (d *MockDAL) Payment(ctx context.Context, id dal.PaymentID, opts ...dal.QueryOption) (*dal.Payment, error) {
+	rets := d.Record(id, opts)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*dal.Payment), mock.SafeError(rets[1])
+}
+
+func (d *MockDAL) UpdatePayment(ctx context.Context, id dal.PaymentID, update *dal.PaymentUpdate) (int64, error) {
+	rets := d.Record(id, update)
+	if len(rets) == 0 {
+		return 0, nil
+	}
+	return rets[0].(int64), mock.SafeError(rets[1])
+}
+
+func (d *MockDAL) DeletePayment(ctx context.Context, id dal.PaymentID) (int64, error) {
+	rets := d.Record(id)
+	if len(rets) == 0 {
+		return 0, nil
+	}
+	return rets[0].(int64), mock.SafeError(rets[1])
 }

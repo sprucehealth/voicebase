@@ -710,3 +710,30 @@ func (m *ResourceAccessor) DeletePaymentMethod(ctx context.Context, req *payment
 
 	return rets[0].(*payments.DeletePaymentMethodResponse), mock.SafeError(rets[1])
 }
+
+func (m *ResourceAccessor) AcceptPayment(ctx context.Context, req *payments.AcceptPaymentRequest) (*payments.AcceptPaymentResponse, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].(*payments.AcceptPaymentResponse), mock.SafeError(rets[1])
+}
+
+func (m *ResourceAccessor) CreatePayment(ctx context.Context, req *payments.CreatePaymentRequest) (*payments.CreatePaymentResponse, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].(*payments.CreatePaymentResponse), mock.SafeError(rets[1])
+}
+
+func (m *ResourceAccessor) Payment(ctx context.Context, req *payments.PaymentRequest) (*payments.PaymentResponse, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].(*payments.PaymentResponse), mock.SafeError(rets[1])
+}

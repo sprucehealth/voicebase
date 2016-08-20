@@ -6,12 +6,45 @@ import (
 	"github.com/sprucehealth/backend/svc/payments"
 )
 
+func (m *resourceAccessor) AcceptPayment(ctx context.Context, req *payments.AcceptPaymentRequest) (*payments.AcceptPaymentResponse, error) {
+	paymentResp, err := m.payments.Payment(ctx, &payments.PaymentRequest{
+		PaymentID: req.PaymentID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: Authorize access to the payment method
+
+	if err := m.canAccessResource(ctx, paymentResp.Payment.RequestingEntityID, m.orgsForEntity); err != nil {
+		return nil, err
+	}
+
+	resp, err := m.payments.AcceptPayment(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
 func (m *resourceAccessor) ConnectVendorAccount(ctx context.Context, req *payments.ConnectVendorAccountRequest) (*payments.ConnectVendorAccountResponse, error) {
 	if err := m.canAccessResource(ctx, req.EntityID, m.orgsForEntity); err != nil {
 		return nil, err
 	}
 
 	resp, err := m.payments.ConnectVendorAccount(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+func (m *resourceAccessor) CreatePayment(ctx context.Context, req *payments.CreatePaymentRequest) (*payments.CreatePaymentResponse, error) {
+	if err := m.canAccessResource(ctx, req.RequestingEntityID, m.orgsForEntity); err != nil {
+		return nil, err
+	}
+
+	resp, err := m.payments.CreatePayment(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -27,6 +60,19 @@ func (m *resourceAccessor) CreatePaymentMethod(ctx context.Context, req *payment
 	if err != nil {
 		return nil, err
 	}
+	return resp, nil
+}
+
+func (m *resourceAccessor) Payment(ctx context.Context, req *payments.PaymentRequest) (*payments.PaymentResponse, error) {
+	resp, err := m.payments.Payment(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := m.canAccessResource(ctx, resp.Payment.RequestingEntityID, m.orgsForEntity); err != nil {
+		return nil, err
+	}
+
 	return resp, nil
 }
 

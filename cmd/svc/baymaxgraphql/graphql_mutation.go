@@ -103,6 +103,7 @@ var registerDeviceForPushOutputType = graphql.NewObject(
 var mutationType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Mutation",
 	Fields: graphql.Fields{
+		"acceptPaymentRequest":                acceptPaymentRequestMutation,
 		"addContactInfos":                     addContactInfosMutation,
 		"addPaymentMethod":                    addCardPaymentMethodMutation,
 		"associateAttribution":                associateAttributionMutation,
@@ -118,6 +119,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 		"createEntityProfile":                 createEntityProfileMutation,
 		"createOrganizationProfile":           createOrganizationProfileMutation,
 		"createPatientAccount":                createPatientAccountMutation,
+		"createPaymentRequest":                createPaymentRequestMutation,
 		"createProviderAccount":               createProviderAccountMutation,
 		"createTeamThread":                    createTeamThreadMutation,
 		"createThread":                        createThreadMutation,

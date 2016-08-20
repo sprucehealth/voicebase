@@ -21,6 +21,7 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/notification"
+	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
 	"google.golang.org/grpc"
@@ -53,6 +54,7 @@ type threadsServer struct {
 	directoryClient    directory.DirectoryClient
 	settingsClient     settings.SettingsClient
 	mediaClient        media.MediaClient
+	paymentsClient     payments.PaymentsClient
 	webDomain          string
 }
 
@@ -66,6 +68,7 @@ func NewThreadsServer(
 	directoryClient directory.DirectoryClient,
 	settingsClient settings.SettingsClient,
 	mediaClient media.MediaClient,
+	paymentsClient payments.PaymentsClient,
 	webDomain string,
 ) threading.ThreadsServer {
 	if clk == nil {
@@ -81,6 +84,7 @@ func NewThreadsServer(
 		settingsClient:     settingsClient,
 		mediaClient:        mediaClient,
 		webDomain:          webDomain,
+		paymentsClient:     paymentsClient,
 	}
 }
 
@@ -696,6 +700,14 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 			return nil, internalError(err)
 		}
 	}
+	for _, pID := range paymentsIDsFromAttachments(attachments) {
+		// This call should be idempotent as long as the payment request is just being submitted
+		if _, err := s.paymentsClient.SubmitPayment(ctx, &payments.SubmitPaymentRequest{
+			PaymentID: pID,
+		}); err != nil {
+			return nil, internalError(err)
+		}
+	}
 	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
 		req := &dal.PostMessageRequest{
 			ThreadID:     threadID,
@@ -866,6 +878,17 @@ func mediaIDsFromAttachments(as []*models.Attachment) []string {
 		}
 	}
 	return mediaIDs
+}
+
+func paymentsIDsFromAttachments(as []*models.Attachment) []string {
+	paymentIDs := make([]string, 0, len(as))
+	for _, a := range as {
+		switch a.Type {
+		case models.Attachment_PAYMENT_REQUEST:
+			paymentIDs = append(paymentIDs, a.GetPaymentRequest().PaymentID)
+		}
+	}
+	return paymentIDs
 }
 
 // QueryThreads queries the list of threads

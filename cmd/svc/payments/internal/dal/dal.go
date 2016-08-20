@@ -50,6 +50,12 @@ type DAL interface {
 	UpdateCustomer(ctx context.Context, id CustomerID, update *CustomerUpdate) (int64, error)
 	DeleteCustomer(ctx context.Context, id CustomerID) (int64, error)
 
+	// Payment
+	InsertPayment(ctx context.Context, model *Payment) (PaymentID, error)
+	Payment(ctx context.Context, id PaymentID, opts ...QueryOption) (*Payment, error)
+	UpdatePayment(ctx context.Context, id PaymentID, update *PaymentUpdate) (int64, error)
+	DeletePayment(ctx context.Context, id PaymentID) (int64, error)
+
 	// Payment Method
 	InsertPaymentMethod(ctx context.Context, model *PaymentMethod) (PaymentMethodID, error)
 	PaymentMethod(ctx context.Context, id PaymentMethodID, opts ...QueryOption) (*PaymentMethod, error)
@@ -217,6 +223,46 @@ func ParsePaymentMethodID(s string) (PaymentMethodID, error) {
 
 // PaymentMethodID is the ID for a PaymentMethodID object
 type PaymentMethodID struct {
+	modellib.ObjectID
+}
+
+// PaymentIDPrefix represents the string that is attached to the beginning of these identifiers
+const PaymentIDPrefix = "payment_"
+
+// NewPaymentID returns a new PaymentID.
+func NewPaymentID() (PaymentID, error) {
+	id, err := idgen.NewID()
+	if err != nil {
+		return PaymentID{}, errors.Trace(err)
+	}
+	return PaymentID{
+		modellib.ObjectID{
+			Prefix:  PaymentIDPrefix,
+			Val:     id,
+			IsValid: true,
+		},
+	}, nil
+}
+
+// EmptyPaymentID returns an empty initialized ID
+func EmptyPaymentID() PaymentID {
+	return PaymentID{
+		modellib.ObjectID{
+			Prefix:  PaymentIDPrefix,
+			IsValid: false,
+		},
+	}
+}
+
+// ParsePaymentID transforms an PaymentID from it's string representation into the actual ID value
+func ParsePaymentID(s string) (PaymentID, error) {
+	id := EmptyPaymentID()
+	err := id.UnmarshalText([]byte(s))
+	return id, errors.Trace(err)
+}
+
+// PaymentID is the ID for a PaymentID object
+type PaymentID struct {
 	modellib.ObjectID
 }
 
@@ -460,12 +506,14 @@ type PaymentMethodLifecycle string
 const (
 	// PaymentMethodLifecycleActive represents the ACTIVE state of the lifecycle field on a payment_method record
 	PaymentMethodLifecycleActive PaymentMethodLifecycle = "ACTIVE"
+	// PaymentMethodLifecycleDeleted represents the DELETED state of the lifecycle field on a payment_method record
+	PaymentMethodLifecycleDeleted PaymentMethodLifecycle = "DELETED"
 )
 
 // ParsePaymentMethodLifecycle converts a string into the correcponding enum value
 func ParsePaymentMethodLifecycle(s string) (PaymentMethodLifecycle, error) {
 	switch t := PaymentMethodLifecycle(strings.ToUpper(s)); t {
-	case PaymentMethodLifecycleActive:
+	case PaymentMethodLifecycleActive, PaymentMethodLifecycleDeleted:
 		return t, nil
 	}
 	return PaymentMethodLifecycle(""), errors.Trace(fmt.Errorf("Unknown lifecycle:%s", s))
@@ -566,6 +614,92 @@ func (t *PaymentMethodChangeState) Scan(src interface{}) error {
 		*t, err = ParsePaymentMethodChangeState(ts)
 	case []byte:
 		*t, err = ParsePaymentMethodChangeState(string(ts))
+	}
+	return errors.Trace(err)
+}
+
+// PaymentLifecycle represents the type associated with the lifecycle column of the payment table
+type PaymentLifecycle string
+
+const (
+	// PaymentLifecycleSubmitted represents the SUBMITTED state of the lifecycle field on a payment record
+	PaymentLifecycleSubmitted PaymentLifecycle = "SUBMITTED"
+	// PaymentLifecycleAccepted represents the ACCEPTED state of the lifecycle field on a payment record
+	PaymentLifecycleAccepted PaymentLifecycle = "ACCEPTED"
+	// PaymentLifecycleProcessing represents the PROCESSING state of the lifecycle field on a payment record
+	PaymentLifecycleProcessing PaymentLifecycle = "PROCESSING"
+	// PaymentLifecycleErrorProcessing represents the ERROR_PROCESSING state of the lifecycle field on a payment record
+	PaymentLifecycleErrorProcessing PaymentLifecycle = "ERROR_PROCESSING"
+	// PaymentLifecycleCompleted represents the COMPLETED state of the lifecycle field on a payment record
+	PaymentLifecycleCompleted PaymentLifecycle = "COMPLETED"
+)
+
+// ParsePaymentLifecycle converts a string into the correcponding enum value
+func ParsePaymentLifecycle(s string) (PaymentLifecycle, error) {
+	switch t := PaymentLifecycle(strings.ToUpper(s)); t {
+	case PaymentLifecycleSubmitted, PaymentLifecycleAccepted, PaymentLifecycleProcessing, PaymentLifecycleErrorProcessing, PaymentLifecycleCompleted:
+		return t, nil
+	}
+	return PaymentLifecycle(""), errors.Trace(fmt.Errorf("Unknown lifecycle:%s", s))
+}
+
+func (t PaymentLifecycle) String() string {
+	return string(t)
+}
+
+// Value implements sql/driver.Valr to allow it to be used in an sql query
+func (t PaymentLifecycle) Value() (driver.Value, error) {
+	return string(t), nil
+}
+
+// Scan allows for scanning of PaymentLifecycle from a database conforming to the sql.Scanner interface
+func (t *PaymentLifecycle) Scan(src interface{}) error {
+	var err error
+	switch ts := src.(type) {
+	case string:
+		*t, err = ParsePaymentLifecycle(ts)
+	case []byte:
+		*t, err = ParsePaymentLifecycle(string(ts))
+	}
+	return errors.Trace(err)
+}
+
+// PaymentChangeState represents the type associated with the change_state column of the payment table
+type PaymentChangeState string
+
+const (
+	// PaymentChangeStateNone represents the NONE state of the change_state field on a payment record
+	PaymentChangeStateNone PaymentChangeState = "NONE"
+	// PaymentChangeStatePending represents the PENDING state of the change_state field on a payment record
+	PaymentChangeStatePending PaymentChangeState = "PENDING"
+)
+
+// ParsePaymentChangeState converts a string into the correcponding enum value
+func ParsePaymentChangeState(s string) (PaymentChangeState, error) {
+	switch t := PaymentChangeState(strings.ToUpper(s)); t {
+	case PaymentChangeStateNone, PaymentChangeStatePending:
+		return t, nil
+	}
+	return PaymentChangeState(""), errors.Trace(fmt.Errorf("Unknown change_state:%s", s))
+}
+
+func (t PaymentChangeState) String() string {
+	return string(t)
+}
+
+// Value implements sql/driver.Valr to allow it to be used in an sql query
+func (t PaymentChangeState) Value() (driver.Value, error) {
+	return string(t), nil
+}
+
+// Scan allows for scanning of PaymentChangeState from a database conforming to the sql.Scanner interface
+func (t *PaymentChangeState) Scan(src interface{}) error {
+	var err error
+	switch ts := src.(type) {
+	case string:
+		*t, err = ParsePaymentChangeState(ts)
+	case []byte:
+		*t, err = ParsePaymentChangeState(string(ts))
 	}
 	return errors.Trace(err)
 }
@@ -725,6 +859,60 @@ func (m *CustomerUpdate) Validate() error {
 	}
 	if m.ChangeState == "" {
 		return errors.New("ChangeState cannot be empty")
+	}
+	return nil
+}
+
+// Payment represents a payment record
+type Payment struct {
+	Created         time.Time
+	Modified        time.Time
+	ID              PaymentID
+	Currency        string
+	Amount          uint64
+	ChangeState     PaymentChangeState
+	VendorAccountID VendorAccountID
+	PaymentMethodID PaymentMethodID
+	Lifecycle       PaymentLifecycle
+}
+
+// Validate asserts that the object is well formed
+func (m *Payment) Validate() error {
+	if m.Lifecycle == "" {
+		return errors.New("Lifecycle cannot be empty")
+	}
+	if m.ChangeState == "" {
+		return errors.New("ChangeState cannot be empty")
+	}
+	if m.Currency == "" {
+		return errors.New("Currency cannot be empty")
+	}
+	if !m.VendorAccountID.IsValid {
+		return errors.New("VendorAccountID must be valid")
+	}
+	if m.Amount <= 0 {
+		return errors.New("Amount must be positive non zero value")
+	}
+	return nil
+}
+
+// PaymentUpdate represents the mutable aspects of a payment record
+type PaymentUpdate struct {
+	Lifecycle       PaymentLifecycle
+	ChangeState     PaymentChangeState
+	PaymentMethodID *PaymentMethodID
+}
+
+// Validate asserts that the object is well formed
+func (m *PaymentUpdate) Validate() error {
+	if m.Lifecycle == "" {
+		return errors.New("Lifecycle cannot be empty")
+	}
+	if m.ChangeState == "" {
+		return errors.New("ChangeState cannot be empty")
+	}
+	if m.PaymentMethodID != nil && !m.PaymentMethodID.IsValid {
+		return errors.New("PaymentMethodID must be valid")
 	}
 	return nil
 }
@@ -999,12 +1187,12 @@ func (d *dal) PaymentMethodsWithFingerprint(ctx context.Context, storageFingerpr
 
 // EntityVendorAccounts retrieves a set of payment_method records for the provided entity id
 func (d *dal) EntityPaymentMethods(ctx context.Context, vendorAccountID VendorAccountID, entityID string, opts ...QueryOption) ([]*PaymentMethod, error) {
-	q := selectPaymentMethod + ` WHERE vendor_account_id = ? AND entity_id = ?`
+	q := selectPaymentMethod + ` WHERE vendor_account_id = ? AND entity_id = ? AND lifecycle = ?`
 	if queryOptions(opts).Has(ForUpdate) {
 		q += ` FOR UPDATE`
 	}
 	q += ` ORDER BY created DESC`
-	rows, err := d.db.Query(q, vendorAccountID, entityID)
+	rows, err := d.db.Query(q, vendorAccountID, entityID, PaymentMethodLifecycleActive)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -1061,6 +1249,80 @@ func (d *dal) DeletePaymentMethod(ctx context.Context, id PaymentMethodID) (int6
 	return aff, errors.Trace(err)
 }
 
+// InsertPayment inserts a payment record
+func (d *dal) InsertPayment(ctx context.Context, model *Payment) (PaymentID, error) {
+	if !model.ID.IsValid {
+		id, err := NewPaymentID()
+		if err != nil {
+			return EmptyPaymentID(), errors.Trace(err)
+		}
+		model.ID = id
+	}
+	if err := model.Validate(); err != nil {
+		return EmptyPaymentID(), errors.Trace(err)
+	}
+	_, err := d.db.Exec(
+		`INSERT INTO payment
+          (vendor_account_id, currency, amount, change_state, id, payment_method_id, lifecycle)
+          VALUES (?, ?, ?, ?, ?, ?, ?)`, model.VendorAccountID, model.Currency, model.Amount, model.ChangeState, model.ID, model.PaymentMethodID, model.Lifecycle)
+	if err != nil {
+		return EmptyPaymentID(), errors.Trace(err)
+	}
+
+	return model.ID, nil
+}
+
+// Payment retrieves a payment record
+func (d *dal) Payment(ctx context.Context, id PaymentID, opts ...QueryOption) (*Payment, error) {
+	q := selectPayment + ` WHERE id = ?`
+	if queryOptions(opts).Has(ForUpdate) {
+		q += ` FOR UPDATE`
+	}
+	row := d.db.QueryRow(q, id)
+	model, err := scanPayment(row, id.String())
+	return model, errors.Trace(err)
+}
+
+// UpdatePayment updates the mutable aspects of a payment record
+func (d *dal) UpdatePayment(ctx context.Context, id PaymentID, update *PaymentUpdate) (int64, error) {
+	if err := update.Validate(); err != nil {
+		return 0, errors.Trace(err)
+	}
+
+	args := dbutil.MySQLVarArgs()
+	args.Append("lifecycle", update.Lifecycle)
+	args.Append("change_state", update.ChangeState)
+	if update.PaymentMethodID != nil {
+		args.Append("payment_method_id", update.PaymentMethodID)
+	}
+	if args.IsEmpty() {
+		return 0, nil
+	}
+
+	res, err := d.db.Exec(
+		`UPDATE payment
+          SET `+args.ColumnsForUpdate()+` WHERE id = ?`, append(args.Values(), id.Val)...)
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+
+	aff, err := res.RowsAffected()
+	return aff, errors.Trace(err)
+}
+
+// DeletePayment deletes a payment record
+func (d *dal) DeletePayment(ctx context.Context, id PaymentID) (int64, error) {
+	res, err := d.db.Exec(
+		`DELETE FROM payment
+          WHERE id = ?`, id)
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+
+	aff, err := res.RowsAffected()
+	return aff, errors.Trace(err)
+}
+
 const selectVendorAccount = `
     SELECT vendor_account.created, vendor_account.id, vendor_account.entity_id, vendor_account.account_type, vendor_account.lifecycle, vendor_account.change_state, vendor_account.modified, vendor_account.access_token, vendor_account.refresh_token, vendor_account.publishable_key, vendor_account.connected_account_id, vendor_account.live, vendor_account.scope
       FROM vendor_account`
@@ -1105,6 +1367,23 @@ func scanPaymentMethod(row dbutil.Scanner, contextFormat string, args ...interfa
 	err := row.Scan(&m.Lifecycle, &m.Created, &m.Modified, &m.CustomerID, &m.EntityID, &m.StorageID, &m.StorageFingerprint, &m.ChangeState, &m.ID, &m.VendorAccountID, &m.StorageType)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(errors.Annotate(ErrNotFound, "No rows found - payment_method - Context: "+fmt.Sprintf(contextFormat, args...)))
+	}
+	return &m, errors.Trace(err)
+}
+
+const selectPayment = `
+    SELECT payment.id, payment.payment_method_id, payment.lifecycle, payment.vendor_account_id, payment.currency, payment.amount, payment.change_state, payment.created, payment.modified
+      FROM payment`
+
+func scanPayment(row dbutil.Scanner, contextFormat string, args ...interface{}) (*Payment, error) {
+	var m Payment
+	m.ID = EmptyPaymentID()
+	m.PaymentMethodID = EmptyPaymentMethodID()
+	m.VendorAccountID = EmptyVendorAccountID()
+
+	err := row.Scan(&m.ID, &m.PaymentMethodID, &m.Lifecycle, &m.VendorAccountID, &m.Currency, &m.Amount, &m.ChangeState, &m.Created, &m.Modified)
+	if err == sql.ErrNoRows {
+		return nil, errors.Trace(errors.Annotate(ErrNotFound, "No rows found - payment - Context: "+fmt.Sprintf(contextFormat, args...)))
 	}
 	return &m, errors.Trace(err)
 }

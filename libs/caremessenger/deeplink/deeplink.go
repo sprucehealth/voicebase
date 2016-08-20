@@ -99,6 +99,11 @@ func VisitURL(webDomain, threadID, visitID string) string {
 	return fmt.Sprintf("%s/thread/%s/visit/%s", deepLinkBase(webDomain), threadID, visitID)
 }
 
+// PaymentURL returns a deeplink compatible URL to the payment
+func PaymentURL(webDomain, paymentID string) string {
+	return fmt.Sprintf("%s/payment/%s/", deepLinkBase(webDomain), paymentID)
+}
+
 // PostEventURL returns a deeplink compatible URL that trigger the postEvent mutation
 func PostEventURL(webDomain, event string, values url.Values) string {
 	if values == nil {

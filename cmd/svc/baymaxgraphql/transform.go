@@ -415,7 +415,14 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 					TapURL:  a.URL,
 					IconURL: "https://dlzz6qy5jmbag.cloudfront.net/caremessenger/icon_careplan.png",
 				}
-
+			case threading.Attachment_PAYMENT_REQUEST:
+				p := a.GetPaymentRequest()
+				data = &models.BannerButtonAttachment{
+					Title:   a.Title,
+					CTAText: "View Payment Request",
+					TapURL:  deeplink.PaymentURL(webDomain, p.PaymentID),
+					IconURL: "https://dlzz6qy5jmbag.cloudfront.net/caremessenger/icon_payment.png",
+				}
 			case threading.Attachment_GENERIC_URL:
 				d := a.GetGenericURL()
 

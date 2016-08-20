@@ -269,6 +269,14 @@ func transformThreadItemToResponse(item *models.ThreadItem, orgID string) (*thre
 						CarePlanName: data.CarePlanName,
 					},
 				}
+			case models.Attachment_PAYMENT_REQUEST:
+				data := a.GetPaymentRequest()
+				at.Type = threading.Attachment_PAYMENT_REQUEST
+				at.Data = &threading.Attachment_PaymentRequest{
+					PaymentRequest: &threading.PaymentRequestAttachment{
+						PaymentID: data.PaymentID,
+					},
+				}
 			default:
 				return nil, errors.New("invalid attachment type " + a.Type.String())
 
@@ -382,6 +390,14 @@ func transformAttachmentsFromRequest(atts []*threading.Attachment) ([]*models.At
 				Visit: &models.VisitAttachment{
 					VisitName: data.VisitName,
 					VisitID:   data.VisitID,
+				},
+			}
+		case threading.Attachment_PAYMENT_REQUEST:
+			data := a.GetPaymentRequest()
+			at.Type = models.Attachment_PAYMENT_REQUEST
+			at.Data = &models.Attachment_PaymentRequest{
+				PaymentRequest: &models.PaymentRequestAttachment{
+					PaymentID: data.PaymentID,
 				},
 			}
 		default:

@@ -77,6 +77,8 @@ func init() {
 			return entityType
 		case *models.Organization:
 			return organizationType
+		case *models.PaymentRequest:
+			return paymentRequestType
 		case *models.Profile:
 			return profileType
 		case *models.ProviderAccount:

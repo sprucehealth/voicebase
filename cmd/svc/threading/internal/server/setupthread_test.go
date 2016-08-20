@@ -21,7 +21,7 @@ func TestCreateOnboardingThread(t *testing.T) {
 	mm := mockmedia.New(t)
 	defer mm.Finish()
 	clk := clock.New()
-	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, nil, mm, "WEBDOMAIN")
+	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, nil, mm, nil, "WEBDOMAIN")
 
 	now := clk.Now()
 
@@ -82,7 +82,7 @@ func TestOnboardingThreadEvent_PROVISIONED_PHONE(t *testing.T) {
 	mm := mockmedia.New(t)
 	defer mm.Finish()
 	clk := clock.New()
-	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, nil, mm, "WEBDOMAIN")
+	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, nil, mm, nil, "WEBDOMAIN")
 
 	setupTID, err := models.NewThreadID()
 	test.OK(t, err)
@@ -152,7 +152,7 @@ func TestOnboardingThreadEvent_GENERIC_SETUP_eventSetupAnsweringService(t *testi
 	mm := mockmedia.New(t)
 	defer mm.Finish()
 	clk := clock.New()
-	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, nil, mm, "WEBDOMAIN")
+	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, nil, mm, nil, "WEBDOMAIN")
 
 	setupTID, err := models.NewThreadID()
 	test.OK(t, err)
@@ -198,7 +198,7 @@ func TestOnboardingThreadEvent_GENERIC_SETUP_eventSetupTeamMessaging(t *testing.
 	mm := mockmedia.New(t)
 	defer mm.Finish()
 	clk := clock.New()
-	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, nil, mm, "WEBDOMAIN")
+	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, nil, mm, nil, "WEBDOMAIN")
 
 	setupTID, err := models.NewThreadID()
 	test.OK(t, err)
@@ -244,7 +244,7 @@ func TestOnboardingThreadEvent_GENERIC_SETUP_eventSetupTelemedicine(t *testing.T
 	mm := mockmedia.New(t)
 	defer mm.Finish()
 	clk := clock.New()
-	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, nil, mm, "WEBDOMAIN")
+	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, nil, mm, nil, "WEBDOMAIN")
 
 	setupTID, err := models.NewThreadID()
 	test.OK(t, err)

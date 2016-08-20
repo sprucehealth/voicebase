@@ -1,8 +1,17 @@
 package main
 
 import (
+	"fmt"
+
+	"context"
+
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/device/devicectx"
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/payments"
 )
 
@@ -15,6 +24,9 @@ func transformPaymentMethodsToResponse(pms []*payments.PaymentMethod) []models.P
 }
 
 func transformPaymentMethodToResponse(pm *payments.PaymentMethod) models.PaymentMethod {
+	if pm == nil {
+		return nil
+	}
 	switch pm.Type {
 	case payments.PAYMENT_METHOD_TYPE_CARD:
 		rpm := &models.PaymentCard{
@@ -37,4 +49,55 @@ func transformPaymentMethodToResponse(pm *payments.PaymentMethod) models.Payment
 		golog.Errorf("Unhandled payment method type %s in %s, unable to transform", pm.Type, pm.ID)
 		return nil
 	}
+}
+
+func transformPaymentsToResponse(ctx context.Context, ps []*payments.Payment, ram raccess.ResourceAccessor, staticURLPrefix string) ([]*models.PaymentRequest, error) {
+	rps := make([]*models.PaymentRequest, len(ps))
+	for i, p := range ps {
+		rp, err := transformPaymentToResponse(ctx, p, ram, staticURLPrefix)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		rps[i] = rp
+	}
+	return rps, nil
+}
+
+func transformPaymentToResponse(ctx context.Context, p *payments.Payment, ram raccess.ResourceAccessor, staticURLPrefix string) (*models.PaymentRequest, error) {
+	headers := devicectx.SpruceHeaders(ctx)
+	account := gqlctx.Account(ctx)
+	// TODO: Where some of this info comes from will change in time, this is just to get something working
+	requestingEntity, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: p.RequestingEntityID,
+		},
+	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	rRequestingEntity, err := transformEntityToResponse(ctx, staticURLPrefix, requestingEntity, headers, account)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	var completedTimestamp uint64
+	if p.Lifecycle == payments.PAYMENT_LIFECYCLE_COMPLETED {
+		completedTimestamp = p.Modified
+	}
+	return &models.PaymentRequest{
+		ID:               p.ID,
+		RequestingEntity: rRequestingEntity,
+		PaymentMethod:    transformPaymentMethodToResponse(p.PaymentMethod),
+		Amount:           p.Amount,
+		// TODO: Figure out what we want this text to be
+		Status: paymentStatus(p.Lifecycle, p.ChangeState),
+		// TODO: The source of these two timestamps will change
+		RequestedTimestamp: p.Created,
+		CompletedTimestamp: completedTimestamp,
+	}, nil
+}
+
+func paymentStatus(l payments.PaymentLifecycle, cs payments.PaymentChangeState) string {
+	// TODO: Figure out what we want this text to be
+	return fmt.Sprintf("%s|%s", l, cs)
 }

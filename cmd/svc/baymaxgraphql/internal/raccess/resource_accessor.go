@@ -84,6 +84,7 @@ func (e entityQueryOptions) has(opt EntityQueryOption) bool {
 type ResourceAccessor interface {
 	Account(ctx context.Context, accountID string) (*auth.Account, error)
 	LastLoginForAccount(ctx context.Context, req *auth.GetLastLoginInfoRequest) (*auth.GetLastLoginInfoResponse, error)
+	AcceptPayment(ctx context.Context, req *payments.AcceptPaymentRequest) (*payments.AcceptPaymentResponse, error)
 	AuthenticateLogin(ctx context.Context, email, password string, duration auth.TokenDuration) (*auth.AuthenticateLoginResponse, error)
 	AuthenticateLoginWithCode(ctx context.Context, token, code string, duration auth.TokenDuration) (*auth.AuthenticateLoginWithCodeResponse, error)
 	CanPostMessage(ctx context.Context, threadID string) error
@@ -103,6 +104,7 @@ type ResourceAccessor interface {
 	CreateLinkedThreads(ctx context.Context, req *threading.CreateLinkedThreadsRequest) (*threading.CreateLinkedThreadsResponse, error)
 	CreateOnboardingThread(ctx context.Context, req *threading.CreateOnboardingThreadRequest) (*threading.CreateOnboardingThreadResponse, error)
 	CreatePasswordResetToken(ctx context.Context, email string) (*auth.CreatePasswordResetTokenResponse, error)
+	CreatePayment(ctx context.Context, req *payments.CreatePaymentRequest) (*payments.CreatePaymentResponse, error)
 	CreatePaymentMethod(ctx context.Context, req *payments.CreatePaymentMethodRequest) (*payments.CreatePaymentMethodResponse, error)
 	CreateSavedQuery(ctx context.Context, req *threading.CreateSavedQueryRequest) error
 	CreateVerificationCode(ctx context.Context, codeType auth.VerificationCodeType, valueToVerify string) (*auth.CreateVerificationCodeResponse, error)
@@ -121,6 +123,7 @@ type ResourceAccessor interface {
 	MarkThreadsAsRead(ctx context.Context, req *threading.MarkThreadsAsReadRequest) (*threading.MarkThreadsAsReadResponse, error)
 	MediaInfo(ctx context.Context, mediaID string) (*media.MediaInfo, error)
 	OnboardingThreadEvent(ctx context.Context, req *threading.OnboardingThreadEventRequest) (*threading.OnboardingThreadEventResponse, error)
+	Payment(ctx context.Context, req *payments.PaymentRequest) (*payments.PaymentResponse, error)
 	PaymentMethods(ctx context.Context, req *payments.PaymentMethodsRequest) (*payments.PaymentMethodsResponse, error)
 	PendingIPCalls(ctx context.Context) (*excomms.PendingIPCallsResponse, error)
 	PostMessage(ctx context.Context, req *threading.PostMessageRequest) (*threading.PostMessageResponse, error)

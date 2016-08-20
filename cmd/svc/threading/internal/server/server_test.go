@@ -39,7 +39,7 @@ func TestCreateSavedQuery(t *testing.T) {
 	test.OK(t, err)
 	esq := &models.SavedQuery{OrganizationID: "o1", EntityID: "e1"}
 	dl.Expect(mock.NewExpectation(dl.CreateSavedQuery, esq).WithReturns(eid, nil))
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil, sm, mm, "WEBDOMAIN")
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil, sm, mm, nil, "WEBDOMAIN")
 	res, err := srv.CreateSavedQuery(nil, &threading.CreateSavedQueryRequest{
 		OrganizationID: "o1",
 		EntityID:       "e1",
@@ -62,7 +62,7 @@ func TestCreateEmptyThread_Team(t *testing.T) {
 	defer mock.FinishAll(dl, sm, mm, dir)
 
 	now := time.Unix(1e7, 0)
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dir, sm, mm, "WEBDOMAIN")
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dir, sm, mm, nil, "WEBDOMAIN")
 
 	thid, err := models.NewThreadID()
 	test.OK(t, err)
@@ -135,7 +135,7 @@ func TestCreateEmptyThread_SecureExternal(t *testing.T) {
 	defer mock.FinishAll(dl, sm, mm, dir)
 
 	now := time.Unix(1e7, 0)
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dir, sm, mm, "WEBDOMAIN")
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dir, sm, mm, nil, "WEBDOMAIN")
 
 	thid, err := models.NewThreadID()
 	test.OK(t, err)
@@ -254,7 +254,7 @@ func TestCreateThread(t *testing.T) {
 	}
 	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{thid}).WithReturns([]*models.Thread{th2}, nil))
 
-	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, sm, mm, "WEBDOMAIN")
+	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, sm, mm, nil, "WEBDOMAIN")
 	res, err := srv.CreateThread(nil, &threading.CreateThreadRequest{
 		OrganizationID: "o1",
 		FromEntityID:   "e1",
@@ -384,7 +384,7 @@ func TestPostMessage(t *testing.T) {
 		},
 	}, nil))
 
-	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, sm, mm, "WEBDOMAIN")
+	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, sm, mm, nil, "WEBDOMAIN")
 	res, err := srv.PostMessage(nil, &threading.PostMessageRequest{
 		ThreadID:     th1id.String(),
 		FromEntityID: "e1",
@@ -515,7 +515,7 @@ func TestPostMessage_Linked(t *testing.T) {
 		},
 	}, nil))
 
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil, sm, mm, "WEBDOMAIN")
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil, sm, mm, nil, "WEBDOMAIN")
 	res, err := srv.PostMessage(nil, &threading.PostMessageRequest{
 		ThreadID:     th1id.String(),
 		FromEntityID: "e1",
@@ -664,7 +664,7 @@ func TestPostMessage_Linked_PrependSender(t *testing.T) {
 		},
 	}, nil))
 
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dir, sm, mm, "WEBDOMAIN")
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dir, sm, mm, nil, "WEBDOMAIN")
 	res, err := srv.PostMessage(nil, &threading.PostMessageRequest{
 		ThreadID:     th1id.String(),
 		FromEntityID: "e1",
@@ -788,7 +788,7 @@ func TestCreateLinkedThreads(t *testing.T) {
 
 	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{th1id, th2id}).WithReturns([]*models.Thread{th1res, th2res}, nil))
 
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil, sm, mm, "WEBDOMAIN")
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil, sm, mm, nil, "WEBDOMAIN")
 	res, err := srv.CreateLinkedThreads(nil, &threading.CreateLinkedThreadsRequest{
 		Organization1ID:      "o1",
 		Organization2ID:      "o2",
@@ -838,7 +838,7 @@ func TestThreadItem(t *testing.T) {
 	defer sm.Finish()
 	mm := mock_media.New(t)
 	defer mm.Finish()
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil, sm, mm, "WEBDOMAIN")
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil, sm, mm, nil, "WEBDOMAIN")
 
 	eid, err := models.NewThreadItemID()
 	test.OK(t, err)
@@ -904,7 +904,7 @@ func TestQueryThreads(t *testing.T) {
 	mm := mock_media.New(t)
 	defer mock.FinishAll(dl, sm, dm, mm)
 
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dm, sm, mm, "WEBDOMAIN")
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dm, sm, mm, nil, "WEBDOMAIN")
 
 	orgID := "entity:1"
 	peID := "entity:2"
@@ -1014,7 +1014,7 @@ func TestQueryThreadsWithViewer(t *testing.T) {
 	clk := clock.NewManaged(time.Unix(1e6, 0))
 	now := clk.Now()
 
-	srv := NewThreadsServer(clk, dl, nil, "arn", nil, dm, sm, mm, "WEBDOMAIN")
+	srv := NewThreadsServer(clk, dl, nil, "arn", nil, dm, sm, mm, nil, "WEBDOMAIN")
 
 	orgID := "entity:1"
 	peID := "entity:2"
@@ -1193,7 +1193,7 @@ func TestThread(t *testing.T) {
 	defer dm.Finish()
 	mm := mock_media.New(t)
 	defer mm.Finish()
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dm, sm, mm, "WEBDOMAIN")
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dm, sm, mm, nil, "WEBDOMAIN")
 
 	thID, err := models.NewThreadID()
 	test.OK(t, err)
@@ -1243,7 +1243,7 @@ func TestThreadWithViewer(t *testing.T) {
 	defer dm.Finish()
 	mm := mock_media.New(t)
 	defer mm.Finish()
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dm, sm, mm, "WEBDOMAIN")
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dm, sm, mm, nil, "WEBDOMAIN")
 
 	thID, err := models.NewThreadID()
 	test.OK(t, err)
@@ -1314,7 +1314,7 @@ func TestThreadWithViewerNoMembership(t *testing.T) {
 	defer dm.Finish()
 	mm := mock_media.New(t)
 	defer mm.Finish()
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dm, sm, mm, "WEBDOMAIN")
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dm, sm, mm, nil, "WEBDOMAIN")
 
 	thID, err := models.NewThreadID()
 	test.OK(t, err)
@@ -1377,7 +1377,7 @@ func TestThreadWithViewerNoMessages(t *testing.T) {
 	defer dm.Finish()
 	mm := mock_media.New(t)
 	defer mm.Finish()
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dm, sm, mm, "WEBDOMAIN")
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dm, sm, mm, nil, "WEBDOMAIN")
 
 	thID, err := models.NewThreadID()
 	test.OK(t, err)
@@ -1438,7 +1438,7 @@ func TestSavedQuery(t *testing.T) {
 	defer dm.Finish()
 	mm := mock_media.New(t)
 	defer mm.Finish()
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dm, sm, mm, "WEBDOMAIN")
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dm, sm, mm, nil, "WEBDOMAIN")
 
 	sqID, err := models.NewSavedQueryID()
 	test.OK(t, err)
@@ -1484,7 +1484,7 @@ func TestMarkThreadAsRead(t *testing.T) {
 	lView := ptr.Time(time.Unix(time.Now().Unix()-1000, 0))
 	readTime := time.Now()
 	clk := clock.NewManaged(readTime)
-	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, sm, mm, "WEBDOMAIN")
+	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, sm, mm, nil, "WEBDOMAIN")
 
 	// Lookup the membership of the viewer in the threads records
 	dl.Expect(mock.NewExpectation(dl.ThreadEntities, []models.ThreadID{tID}, eID, dal.ForUpdate).WithReturns(
@@ -1546,7 +1546,7 @@ func TestMarkThreadsAsRead_NotSeen(t *testing.T) {
 	lView := ptr.Time(time.Unix(time.Now().Unix()-1000, 0))
 	readTime := time.Now()
 	clk := clock.NewManaged(readTime)
-	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, sm, mm, "WEBDOMAIN")
+	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, sm, mm, nil, "WEBDOMAIN")
 
 	// Lookup the membership of the viewer in the threads records
 	dl.Expect(mock.NewExpectation(dl.ThreadEntities, []models.ThreadID{tID}, eID, dal.ForUpdate).WithReturns(
@@ -1607,7 +1607,7 @@ func TestMarkThreadAsReadNilLastView(t *testing.T) {
 	lView := time.Unix(0, 0)
 	readTime := time.Now()
 	clk := clock.NewManaged(readTime)
-	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, sm, mm, "WEBDOMAIN")
+	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, sm, mm, nil, "WEBDOMAIN")
 
 	// Lookup the membership of the viewer in the threads records
 	dl.Expect(mock.NewExpectation(dl.ThreadEntities, []models.ThreadID{tID}, eID, dal.ForUpdate).WithReturns(
@@ -1675,7 +1675,7 @@ func TestMarkThreadAsReadExistingMembership(t *testing.T) {
 	lView := time.Unix(0, 0)
 	readTime := time.Now()
 	clk := clock.NewManaged(readTime)
-	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, sm, mm, "WEBDOMAIN")
+	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, sm, mm, nil, "WEBDOMAIN")
 
 	// Lookup the membership of the viewer in the threads records
 	dl.Expect(mock.NewExpectation(dl.ThreadEntities, []models.ThreadID{tID}, eID, dal.ForUpdate))
@@ -1781,7 +1781,7 @@ func TestNotifyMembersOfPublishMessage(t *testing.T) {
 	orgID := "orgID"
 	readTime := time.Now()
 	clk := clock.NewManaged(readTime)
-	srv := NewThreadsServer(clk, dl, nil, "arn", notificationClient, directoryClient, sm, mm, "WEBDOMAIN")
+	srv := NewThreadsServer(clk, dl, nil, "arn", notificationClient, directoryClient, sm, mm, nil, "WEBDOMAIN")
 	csrv := srv.(*threadsServer)
 
 	directoryClient.Expect(mock.NewExpectation(directoryClient.LookupEntities, &directory.LookupEntitiesRequest{
@@ -1881,7 +1881,7 @@ func TestNotifyMembersOfPublishMessage_Team(t *testing.T) {
 	orgID := "orgID"
 	readTime := time.Now()
 	clk := clock.NewManaged(readTime)
-	srv := NewThreadsServer(clk, dl, nil, "arn", notificationClient, directoryClient, sm, mm, "WEBDOMAIN")
+	srv := NewThreadsServer(clk, dl, nil, "arn", notificationClient, directoryClient, sm, mm, nil, "WEBDOMAIN")
 	csrv := srv.(*threadsServer)
 
 	directoryClient.Expect(mock.NewExpectation(directoryClient.LookupEntities, &directory.LookupEntitiesRequest{
@@ -1968,7 +1968,7 @@ func TestNotifyMembersOfPublishMessageClearTextSupportThread(t *testing.T) {
 	orgID := "orgID"
 	readTime := time.Now()
 	clk := clock.NewManaged(readTime)
-	srv := NewThreadsServer(clk, dl, nil, "arn", notificationClient, directoryClient, sm, mm, "WEBDOMAIN")
+	srv := NewThreadsServer(clk, dl, nil, "arn", notificationClient, directoryClient, sm, mm, nil, "WEBDOMAIN")
 	csrv := srv.(*threadsServer)
 
 	directoryClient.Expect(mock.NewExpectation(directoryClient.LookupEntities, &directory.LookupEntitiesRequest{
@@ -2060,7 +2060,7 @@ func TestNotifyMembersOfPublishMessageClearTextEnabled(t *testing.T) {
 	orgID := "orgID"
 	readTime := time.Now()
 	clk := clock.NewManaged(readTime)
-	srv := NewThreadsServer(clk, dl, nil, "arn", notificationClient, directoryClient, sm, mm, "WEBDOMAIN")
+	srv := NewThreadsServer(clk, dl, nil, "arn", notificationClient, directoryClient, sm, mm, nil, "WEBDOMAIN")
 	csrv := srv.(*threadsServer)
 
 	directoryClient.Expect(mock.NewExpectation(directoryClient.LookupEntities, &directory.LookupEntitiesRequest{
@@ -2158,7 +2158,7 @@ func TestNotifyMembersOfPublishMessageSecureExternalNonInternal(t *testing.T) {
 	orgID := "orgID"
 	readTime := time.Now()
 	clk := clock.NewManaged(readTime)
-	srv := NewThreadsServer(clk, dl, nil, "arn", notificationClient, directoryClient, sm, mm, "WEBDOMAIN")
+	srv := NewThreadsServer(clk, dl, nil, "arn", notificationClient, directoryClient, sm, mm, nil, "WEBDOMAIN")
 	csrv := srv.(*threadsServer)
 
 	directoryClient.Expect(mock.NewExpectation(directoryClient.LookupEntities, &directory.LookupEntitiesRequest{
@@ -2259,7 +2259,7 @@ func TestNotifyMembersOfPublishMessageSecureExternalInternal(t *testing.T) {
 	orgID := "orgID"
 	readTime := time.Now()
 	clk := clock.NewManaged(readTime)
-	srv := NewThreadsServer(clk, dl, nil, "arn", notificationClient, directoryClient, sm, mm, "WEBDOMAIN")
+	srv := NewThreadsServer(clk, dl, nil, "arn", notificationClient, directoryClient, sm, mm, nil, "WEBDOMAIN")
 	csrv := srv.(*threadsServer)
 
 	directoryClient.Expect(mock.NewExpectation(directoryClient.LookupEntities, &directory.LookupEntitiesRequest{
@@ -2350,7 +2350,7 @@ func TestUpdateThread(t *testing.T) {
 
 	tID, err := models.NewThreadID()
 	test.OK(t, err)
-	srv := NewThreadsServer(nil, dl, nil, "arn", nil, directoryClient, sm, mm, "WEBDOMAIN")
+	srv := NewThreadsServer(nil, dl, nil, "arn", nil, directoryClient, sm, mm, nil, "WEBDOMAIN")
 
 	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{tID}).WithReturns([]*models.Thread{
 		{
@@ -2435,7 +2435,7 @@ func TestUpdateThread_LastPersonLeaves(t *testing.T) {
 
 	tID, err := models.NewThreadID()
 	test.OK(t, err)
-	srv := NewThreadsServer(nil, dl, nil, "arn", nil, directoryClient, sm, mm, "WEBDOMAIN")
+	srv := NewThreadsServer(nil, dl, nil, "arn", nil, directoryClient, sm, mm, nil, "WEBDOMAIN")
 
 	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{tID}).WithReturns([]*models.Thread{
 		{
@@ -2492,7 +2492,7 @@ func TestDeleteThread(t *testing.T) {
 
 	tID, err := models.NewThreadID()
 	test.OK(t, err)
-	srv := NewThreadsServer(nil, dl, nil, "arn", nil, directoryClient, sm, mm, "WEBDOMAIN")
+	srv := NewThreadsServer(nil, dl, nil, "arn", nil, directoryClient, sm, mm, nil, "WEBDOMAIN")
 	eID := "entity_123"
 	peID := "entity_456"
 
@@ -2533,7 +2533,7 @@ func TestDeleteThreadNoPE(t *testing.T) {
 
 	tID, err := models.NewThreadID()
 	test.OK(t, err)
-	srv := NewThreadsServer(nil, dl, nil, "arn", nil, directoryClient, sm, mm, "WEBDOMAIN")
+	srv := NewThreadsServer(nil, dl, nil, "arn", nil, directoryClient, sm, mm, nil, "WEBDOMAIN")
 	eID := "entity_123"
 
 	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{tID}).WithReturns([]*models.Thread{{PrimaryEntityID: ""}}, nil))
@@ -2560,7 +2560,7 @@ func TestDeleteThreadPEInternal(t *testing.T) {
 
 	tID, err := models.NewThreadID()
 	test.OK(t, err)
-	srv := NewThreadsServer(nil, dl, nil, "arn", nil, directoryClient, sm, mm, "WEBDOMAIN")
+	srv := NewThreadsServer(nil, dl, nil, "arn", nil, directoryClient, sm, mm, nil, "WEBDOMAIN")
 	eID := "entity_123"
 	peID := "entity_456"
 

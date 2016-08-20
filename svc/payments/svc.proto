@@ -56,6 +56,7 @@ enum PaymentMethodStorageType {
 enum PaymentMethodLifecycle {
 	PAYMENT_METHOD_LIFECYCLE_UNKNOWN = 0;
 	PAYMENT_METHOD_LIFECYCLE_ACTIVE = 1;
+	PAYMENT_METHOD_LIFECYCLE_DELETED = 2;
 }
 
 enum PaymentMethodChangeState {
@@ -71,6 +72,11 @@ message StripeCard {
 	string last4 = 4;
 }
 
+message Customer {
+	string id = 1 [(gogoproto.customname) = "ID"];
+	string entity_id = 2 [(gogoproto.customname) = "EntityID"];
+}
+
 message PaymentMethod {
 	string id = 1 [(gogoproto.customname) = "ID"];
 	string entity_id = 2 [(gogoproto.customname) = "EntityID"];
@@ -83,6 +89,33 @@ message PaymentMethod {
 	oneof payment_method_oneof {
 		StripeCard stripe_card = 8;
 	}
+}
+
+enum PaymentLifecycle {
+	PAYMENT_LIFECYCLE_UNKNOWN = 0;
+	PAYMENT_LIFECYCLE_SUBMITTED = 1;
+	PAYMENT_LIFECYCLE_ACCEPTED = 2;
+	PAYMENT_LIFECYCLE_PROCESSING = 3;
+	PAYMENT_LIFECYCLE_ERROR_PROCESSING = 4;
+	PAYMENT_LIFECYCLE_COMPLETED = 5;
+}
+
+enum PaymentChangeState {
+	PAYMENT_CHANGE_STATE_UNKNOWN = 0;
+	PAYMENT_CHANGE_STATE_NONE = 1;
+	PAYMENT_CHANGE_STATE_PENDING = 2;
+}
+
+message Payment {
+	string id = 1 [(gogoproto.customname) = "ID"];
+	string requesting_entity_id = 2 [(gogoproto.customname) = "RequestingEntityID"];
+	PaymentMethod payment_method = 3;
+	PaymentLifecycle   lifecycle = 4;
+	PaymentChangeState change_state = 5;
+	uint64 amount = 6;
+	string currency = 7;
+	uint64 created = 8;
+	uint64 modified = 9;
 }
 
 message StripeAccountConnectRequest {
@@ -153,11 +186,50 @@ message DeletePaymentMethodResponse {
 	repeated PaymentMethod payment_methods = 1;
 }
 
-service Payments { 
+message CreatePaymentRequest {
+	string requesting_entity_id = 1 [(gogoproto.customname) = "RequestingEntityID"];
+	uint64 amount = 3;
+	string currency = 4;
+}
+
+message CreatePaymentResponse {
+	Payment payment = 1;
+}
+
+message PaymentRequest {
+	string payment_id = 1 [(gogoproto.customname) = "PaymentID"];
+}
+
+message PaymentResponse {
+	Payment payment = 1;
+}
+
+message SubmitPaymentRequest {
+	string payment_id = 1 [(gogoproto.customname) = "PaymentID"];
+}
+
+message SubmitPaymentResponse {
+	Payment payment = 1;
+}
+
+message AcceptPaymentRequest {
+	string payment_id = 1 [(gogoproto.customname) = "PaymentID"];
+	string payment_method_id = 2 [(gogoproto.customname) = "PaymentMethodID"];
+}
+
+message AcceptPaymentResponse {
+	Payment payment = 1;
+}
+
+service Payments {
+	rpc AcceptPayment (AcceptPaymentRequest) returns (AcceptPaymentResponse); 
 	rpc ConnectVendorAccount (ConnectVendorAccountRequest) returns (ConnectVendorAccountResponse);
+	rpc CreatePayment (CreatePaymentRequest) returns (CreatePaymentResponse);
 	rpc CreatePaymentMethod (CreatePaymentMethodRequest) returns (CreatePaymentMethodResponse);
 	rpc DeletePaymentMethod (DeletePaymentMethodRequest) returns (DeletePaymentMethodResponse);
 	rpc PaymentMethods (PaymentMethodsRequest) returns (PaymentMethodsResponse);
+	rpc Payment (PaymentRequest) returns (PaymentResponse);
+	rpc SubmitPayment (SubmitPaymentRequest) returns (SubmitPaymentResponse);
 	rpc UpdateVendorAccount (UpdateVendorAccountRequest) returns (UpdateVendorAccountResponse);
 	rpc VendorAccounts (VendorAccountsRequest) returns (VendorAccountsResponse);
 }
