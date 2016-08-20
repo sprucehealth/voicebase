@@ -420,7 +420,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 				data = &models.BannerButtonAttachment{
 					Title:   a.Title,
 					CTAText: "View Payment Request",
-					TapURL:  deeplink.PaymentURL(webDomain, p.PaymentID),
+					TapURL:  deeplink.PaymentURL(webDomain, item.OrganizationID, item.ThreadID, p.PaymentID),
 					IconURL: "https://dlzz6qy5jmbag.cloudfront.net/caremessenger/icon_payment.png",
 				}
 			case threading.Attachment_GENERIC_URL:
