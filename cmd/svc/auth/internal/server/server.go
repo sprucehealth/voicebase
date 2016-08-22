@@ -976,9 +976,10 @@ func stripAttributes(token string) string {
 }
 
 const (
-	verificationCodeDigitCount        = 6
-	verificationCodeMaxValue          = 999999
-	defaultVerificationCodeExpiration = 15 * time.Minute
+	verificationCodeDigitCount                = 6
+	verificationCodeMaxValue                  = 999999
+	defaultVerificationCodeExpiration         = 15 * time.Minute
+	defaultVerificationCodeExpirationForEmail = 24 * time.Hour
 )
 
 func generateAndInsertVerificationCode(dl dal.DAL, valueToVerify string, codeType auth.VerificationCodeType, clk clock.Clock) (*auth.VerificationCode, error) {
@@ -1013,7 +1014,14 @@ func generateAndInsertVerificationCode(dl dal.DAL, valueToVerify string, codeTyp
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	tokenExpiration := clk.Now().Add(defaultVerificationCodeExpiration)
+
+	var tokenExpiration time.Time
+	switch vType {
+	case dal.VerificationCodeTypeEmail:
+		tokenExpiration = clk.Now().Add(defaultVerificationCodeExpirationForEmail)
+	default:
+		tokenExpiration = clk.Now().Add(defaultVerificationCodeExpiration)
+	}
 
 	// TODO: Remove logging of the code perhaps?
 	golog.Debugf("Inserting verification code %s - with token %s - for value %s - expires %+v.", code, token, valueToVerify, tokenExpiration)
