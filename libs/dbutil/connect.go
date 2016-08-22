@@ -49,7 +49,7 @@ func ConnectMySQL(dbconfig *DBConfig) (*sql.DB, error) {
 		ParseTime:         true,
 		InterpolateParams: true,
 		Params: map[string]string{
-			"sql_notes": "false",
+			"sql_notes": "0",
 			"charset":   "utf8mb4",
 		},
 	}
