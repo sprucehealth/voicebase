@@ -590,13 +590,16 @@ func (s *server) PaymentMethods(ctx context.Context, req *payments.PaymentMethod
 	if err != nil {
 		return nil, grpcError(err)
 	}
-	customer, err := s.dal.CustomerForVendor(ctx, s.masterVendorAccount.ID, req.EntityID)
-	if err != nil {
-		return nil, grpcError(err)
-	}
-	rPaymentMethods, err := transformPaymentMethodsToResponse(ctx, customer, paymentMethods, s.stripeClient)
-	if err != nil {
-		return nil, grpcError(err)
+	var rPaymentMethods []*payments.PaymentMethod
+	if len(paymentMethods) != 0 {
+		customer, err := s.dal.CustomerForVendor(ctx, s.masterVendorAccount.ID, req.EntityID)
+		if err != nil {
+			return nil, grpcError(err)
+		}
+		rPaymentMethods, err = transformPaymentMethodsToResponse(ctx, customer, paymentMethods, s.stripeClient)
+		if err != nil {
+			return nil, grpcError(err)
+		}
 	}
 	return &payments.PaymentMethodsResponse{
 		PaymentMethods: rPaymentMethods,
