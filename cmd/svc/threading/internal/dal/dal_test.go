@@ -378,6 +378,45 @@ func TestSetupThreadState(t *testing.T) {
 	test.Equals(t, 1, state.Step)
 }
 
+func TestCreateThreadItemViewDetails(t *testing.T) {
+	dt := testsql.Setup(t, schemaGlob)
+	defer dt.Cleanup(t)
+
+	dal := New(dt.DB)
+	ctx := context.Background()
+
+	tid, err := dal.CreateThread(ctx, &models.Thread{
+		OrganizationID:             "org",
+		Type:                       models.ThreadTypeTeam,
+		LastMessageSummary:         "summary",
+		LastMessageTimestamp:       time.Unix(2, 0),
+		LastExternalMessageSummary: "extsummary",
+		SystemTitle:                "systemTitle",
+		UserTitle:                  "userTitle",
+	})
+	test.OK(t, err)
+
+	ti, err := dal.PostMessage(ctx, &PostMessageRequest{
+		ThreadID:     tid,
+		FromEntityID: "actor",
+		Title:        "title",
+		Text:         "text",
+		Summary:      "summary",
+	})
+	test.OK(t, err)
+
+	details := []*models.ThreadItemViewDetails{
+		{
+			ThreadItemID:  ti.ID,
+			ActorEntityID: "actor",
+			ViewTime:      ptr.Time(time.Now()),
+		},
+	}
+	test.OK(t, dal.CreateThreadItemViewDetails(ctx, details))
+	// Duplicate details should be ignore
+	test.OK(t, dal.CreateThreadItemViewDetails(ctx, details))
+}
+
 type teByID []*models.ThreadEntity
 
 func (tes teByID) Len() int           { return len(tes) }

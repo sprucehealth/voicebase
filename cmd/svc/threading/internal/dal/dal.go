@@ -251,6 +251,9 @@ func (d *dal) CreateThreadItemViewDetails(ctx context.Context, tds []*models.Thr
         INSERT IGNORE INTO thread_item_view_details
 	        (thread_item_id, actor_entity_id, view_time)
         VALUES `+ins.Query(), ins.Values()...)
+	if dbutil.IsMySQLWarning(err, dbutil.MySQLDuplicateEntry) {
+		return nil
+	}
 	return errors.Trace(err)
 }
 

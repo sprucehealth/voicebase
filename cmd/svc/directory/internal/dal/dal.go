@@ -927,11 +927,10 @@ func (d *dal) InsertExternalEntityID(model *ExternalEntityID) error {
 		`INSERT IGNORE INTO external_entity_id
           (entity_id, external_id)
           VALUES (?, ?)`, model.EntityID, model.ExternalID)
-	if err != nil {
-		return errors.Trace(err)
+	if dbutil.IsMySQLWarning(err, dbutil.MySQLDuplicateEntry) {
+		return nil
 	}
-
-	return nil
+	return errors.Trace(err)
 }
 
 // InsertExternalEntityIDs inserts a set of external_entity_id record
@@ -948,11 +947,10 @@ func (d *dal) InsertExternalEntityIDs(models []*ExternalEntityID) error {
 		`INSERT IGNORE INTO external_entity_id
           (entity_id, external_id)
           VALUES `+ins.Query(), ins.Values()...)
-	if err != nil {
-		return errors.Trace(err)
+	if dbutil.IsMySQLWarning(err, dbutil.MySQLDuplicateEntry) {
+		return nil
 	}
-
-	return nil
+	return errors.Trace(err)
 }
 
 // ExternalEntityIDs returns the external_entity_id records associated with the externalID
@@ -1098,6 +1096,9 @@ func (d *dal) InsertEntityContacts(models []*EntityContact) error {
 		`INSERT IGNORE INTO entity_contact
           (id, entity_id, type, value, provisioned, label)
           VALUES `+ins.Query(), ins.Values()...)
+	if dbutil.IsMySQLWarning(err, dbutil.MySQLDuplicateEntry) {
+		return nil
+	}
 	return errors.Trace(err)
 }
 

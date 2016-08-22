@@ -905,10 +905,12 @@ func (d *dal) InsertEnvironmentConfig(model *EnvironmentConfig) (EnvironmentConf
 		`INSERT IGNORE INTO environment_config
           (id, environment_id, status)
           VALUES (?, ?, ?)`, model.ID, model.EnvironmentID, model.Status.String())
+	if dbutil.IsMySQLWarning(err, dbutil.MySQLDuplicateEntry) {
+		err = nil
+	}
 	if err != nil {
 		return EmptyEnvironmentConfigID(), errors.Trace(err)
 	}
-
 	return model.ID, nil
 }
 
@@ -1052,10 +1054,12 @@ func (d *dal) InsertDeployableConfig(model *DeployableConfig) (DeployableConfigI
 		`INSERT IGNORE INTO deployable_config
           (id, deployable_id, environment_id, status)
           VALUES (?, ?, ?, ?)`, model.ID, model.DeployableID, model.EnvironmentID, model.Status.String())
+	if dbutil.IsMySQLWarning(err, dbutil.MySQLDuplicateEntry) {
+		err = nil
+	}
 	if err != nil {
 		return EmptyDeployableConfigID(), errors.Trace(err)
 	}
-
 	return model.ID, nil
 }
 
