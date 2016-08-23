@@ -508,13 +508,11 @@ func (s *server) deletePaymentMethod(ctx context.Context, paymentMethodID dal.Pa
 		if err != nil {
 			return errors.Trace(err)
 		}
-		if pm.Lifecycle != dal.PaymentMethodLifecycleDeleted || pm.ChangeState != dal.PaymentMethodChangeStateNone {
-			if _, err := dl.UpdatePaymentMethod(ctx, pm.ID, &dal.PaymentMethodUpdate{
-				Lifecycle:   dal.PaymentMethodLifecycleDeleted,
-				ChangeState: dal.PaymentMethodChangeStateNone,
-			}); err != nil {
-				return errors.Trace(err)
-			}
+		if _, err := dl.UpdatePaymentMethod(ctx, pm.ID, &dal.PaymentMethodUpdate{
+			Lifecycle:   dal.PaymentMethodLifecycleDeleted,
+			ChangeState: dal.PaymentMethodChangeStateNone,
+		}); err != nil {
+			return errors.Trace(err)
 		}
 		switch pm.StorageType {
 		case dal.PaymentMethodStorageTypeStripe:
