@@ -77,11 +77,11 @@ func (w *Worker) processEvent(ctx context.Context, env *events.Envelope) error {
 			switch e.EndpointType {
 			case excomms.EndpointType_PHONE:
 				_, err := w.threadingCli.OnboardingThreadEvent(ctx, &threading.OnboardingThreadEventRequest{
-					LookupByType: threading.OnboardingThreadEventRequest_ENTITY_ID,
+					LookupByType: threading.ONBOARDING_THREAD_LOOKUP_BY_ENTITY_ID,
 					LookupBy: &threading.OnboardingThreadEventRequest_EntityID{
 						EntityID: e.ForEntityID,
 					},
-					EventType: threading.OnboardingThreadEventRequest_PROVISIONED_PHONE,
+					EventType: threading.ONBOARDING_THREAD_EVENT_TYPE_PROVISIONED_PHONE,
 					Event: &threading.OnboardingThreadEventRequest_ProvisionedPhone{
 						ProvisionedPhone: &threading.ProvisionedPhoneEvent{
 							PhoneNumber: e.Endpoint,

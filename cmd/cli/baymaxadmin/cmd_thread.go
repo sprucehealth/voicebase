@@ -67,7 +67,7 @@ func (c *threadCmd) run(args []string) error {
 
 	displayThread(res.Thread)
 
-	if res.Thread.Type == threading.ThreadType_SUPPORT {
+	if res.Thread.Type == threading.THREAD_TYPE_SUPPORT {
 		res, err := c.threadingCli.LinkedThread(ctx, &threading.LinkedThreadRequest{
 			ThreadID: res.Thread.ID,
 		})

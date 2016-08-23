@@ -12,8 +12,11 @@ type PageInfo struct {
 }
 
 type Connection struct {
-	Edges    []*Edge  `json:"edges"`
-	PageInfo PageInfo `json:"pageInfo"`
+	Edges            []*Edge  `json:"edges"`
+	PageInfo         PageInfo `json:"pageInfo"`
+	Total            int      `json:"total"`
+	TotalText        string   `json:"totalText,omitempty"`
+	EndOfResultsText string   `json:"endOfResultsText,omitempty"`
 }
 
 type Edge struct {

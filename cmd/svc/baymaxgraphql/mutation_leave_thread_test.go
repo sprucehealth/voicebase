@@ -24,7 +24,7 @@ func TestLeaveThreadMutation(t *testing.T) {
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Thread, "t_1", "").WithReturns(&threading.Thread{
 		ID:             "t_1",
-		Type:           threading.ThreadType_TEAM,
+		Type:           threading.THREAD_TYPE_TEAM,
 		OrganizationID: organizationID,
 	}, nil))
 
@@ -59,7 +59,7 @@ func TestLeaveThreadMutation(t *testing.T) {
 	}).WithReturns(&threading.UpdateThreadResponse{
 		Thread: &threading.Thread{
 			ID:          "t_1",
-			Type:        threading.ThreadType_TEAM,
+			Type:        threading.THREAD_TYPE_TEAM,
 			SystemTitle: "Person1, Person2",
 		},
 	}, nil))

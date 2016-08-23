@@ -297,11 +297,41 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 		accEntityID = ent.ID
 	}
 
-	// Create a default saved query
+	// Create a default saved queries
+	// TODO: make this more reliable & idempotent
 	if err = ram.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
 		OrganizationID: orgEntityID,
 		EntityID:       accEntityID,
-		// TODO: query
+		Title:          "All",
+		Query:          &threading.Query{},
+		Ordinal:        1,
+	}); err != nil {
+		return nil, errors.InternalError(ctx, err)
+	}
+	if err = ram.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
+		OrganizationID: orgEntityID,
+		EntityID:       accEntityID,
+		Title:          "Patient",
+		Query:          &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_PATIENT}}}},
+		Ordinal:        2,
+	}); err != nil {
+		return nil, errors.InternalError(ctx, err)
+	}
+	if err = ram.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
+		OrganizationID: orgEntityID,
+		EntityID:       accEntityID,
+		Title:          "Team",
+		Query:          &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_TEAM}}}},
+		Ordinal:        3,
+	}); err != nil {
+		return nil, errors.InternalError(ctx, err)
+	}
+	if err = ram.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
+		OrganizationID: orgEntityID,
+		EntityID:       accEntityID,
+		Title:          "@Pages",
+		Query:          &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_REFERENCED}}}},
+		Ordinal:        4,
 	}); err != nil {
 		return nil, errors.InternalError(ctx, err)
 	}
@@ -355,7 +385,7 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 				PrependSenderThread2: true,
 				Summary:              supportThreadTitle + ": " + teamSpruceInitialText[:128],
 				Text:                 teamSpruceInitialText,
-				Type:                 threading.ThreadType_SUPPORT,
+				Type:                 threading.THREAD_TYPE_SUPPORT,
 				SystemTitle1:         supportThreadTitle,
 				SystemTitle2:         remoteSupportThreadTitle,
 			})

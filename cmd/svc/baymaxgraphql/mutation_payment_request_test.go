@@ -65,7 +65,7 @@ func TestAcceptPaymentRequest(t *testing.T) {
 					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
 						EntityID: requestinEntityID,
 					},
-				}).WithReturns([]*directory.Entity{&directory.Entity{ID: requestinEntityID, Info: &directory.EntityInfo{}}}, nil))
+				}).WithReturns([]*directory.Entity{{ID: requestinEntityID, Info: &directory.EntityInfo{}}}, nil))
 				return &testAcceptPaymentRequestParams{
 					p: graphql.ResolveParams{
 						Context: ctx,
@@ -140,7 +140,7 @@ func TestAcceptPaymentRequest(t *testing.T) {
 					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
 						EntityID: requestinEntityID,
 					},
-				}).WithReturns([]*directory.Entity{&directory.Entity{ID: requestinEntityID, Info: &directory.EntityInfo{}}}, nil))
+				}).WithReturns([]*directory.Entity{{ID: requestinEntityID, Info: &directory.EntityInfo{}}}, nil))
 				return &testAcceptPaymentRequestParams{
 					p: graphql.ResolveParams{
 						Context: ctx,

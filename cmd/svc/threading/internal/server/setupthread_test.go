@@ -105,11 +105,11 @@ func TestOnboardingThreadEvent_PROVISIONED_PHONE(t *testing.T) {
 	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{setupTID}).WithReturns([]*models.Thread{{ID: setupTID, OrganizationID: "org"}}, nil))
 
 	res, err := srv.OnboardingThreadEvent(nil, &threading.OnboardingThreadEventRequest{
-		LookupByType: threading.OnboardingThreadEventRequest_ENTITY_ID,
+		LookupByType: threading.ONBOARDING_THREAD_LOOKUP_BY_ENTITY_ID,
 		LookupBy: &threading.OnboardingThreadEventRequest_EntityID{
 			EntityID: "org",
 		},
-		EventType: threading.OnboardingThreadEventRequest_PROVISIONED_PHONE,
+		EventType: threading.ONBOARDING_THREAD_EVENT_TYPE_PROVISIONED_PHONE,
 		Event: &threading.OnboardingThreadEventRequest_ProvisionedPhone{
 			ProvisionedPhone: &threading.ProvisionedPhoneEvent{
 				PhoneNumber: "+14155551212",
@@ -130,11 +130,11 @@ func TestOnboardingThreadEvent_PROVISIONED_PHONE(t *testing.T) {
 	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{setupTID}).WithReturns([]*models.Thread{{ID: setupTID, OrganizationID: "org"}}, nil))
 
 	res, err = srv.OnboardingThreadEvent(nil, &threading.OnboardingThreadEventRequest{
-		LookupByType: threading.OnboardingThreadEventRequest_ENTITY_ID,
+		LookupByType: threading.ONBOARDING_THREAD_LOOKUP_BY_ENTITY_ID,
 		LookupBy: &threading.OnboardingThreadEventRequest_EntityID{
 			EntityID: "org",
 		},
-		EventType: threading.OnboardingThreadEventRequest_PROVISIONED_PHONE,
+		EventType: threading.ONBOARDING_THREAD_EVENT_TYPE_PROVISIONED_PHONE,
 		Event: &threading.OnboardingThreadEventRequest_ProvisionedPhone{
 			ProvisionedPhone: &threading.ProvisionedPhoneEvent{
 				PhoneNumber: "+14155551212",
@@ -176,11 +176,11 @@ func TestOnboardingThreadEvent_GENERIC_SETUP_eventSetupAnsweringService(t *testi
 	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{setupTID}).WithReturns([]*models.Thread{{ID: setupTID, OrganizationID: "org"}}, nil))
 
 	res, err := srv.OnboardingThreadEvent(nil, &threading.OnboardingThreadEventRequest{
-		LookupByType: threading.OnboardingThreadEventRequest_ENTITY_ID,
+		LookupByType: threading.ONBOARDING_THREAD_LOOKUP_BY_ENTITY_ID,
 		LookupBy: &threading.OnboardingThreadEventRequest_EntityID{
 			EntityID: "org",
 		},
-		EventType: threading.OnboardingThreadEventRequest_GENERIC_SETUP,
+		EventType: threading.ONBOARDING_THREAD_EVENT_TYPE_GENERIC_SETUP,
 		Event: &threading.OnboardingThreadEventRequest_GenericSetup{
 			GenericSetup: &threading.GenericSetupEvent{
 				Name: eventSetupAnsweringService,
@@ -222,11 +222,11 @@ func TestOnboardingThreadEvent_GENERIC_SETUP_eventSetupTeamMessaging(t *testing.
 	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{setupTID}).WithReturns([]*models.Thread{{ID: setupTID, OrganizationID: "org"}}, nil))
 
 	res, err := srv.OnboardingThreadEvent(nil, &threading.OnboardingThreadEventRequest{
-		LookupByType: threading.OnboardingThreadEventRequest_ENTITY_ID,
+		LookupByType: threading.ONBOARDING_THREAD_LOOKUP_BY_ENTITY_ID,
 		LookupBy: &threading.OnboardingThreadEventRequest_EntityID{
 			EntityID: "org",
 		},
-		EventType: threading.OnboardingThreadEventRequest_GENERIC_SETUP,
+		EventType: threading.ONBOARDING_THREAD_EVENT_TYPE_GENERIC_SETUP,
 		Event: &threading.OnboardingThreadEventRequest_GenericSetup{
 			GenericSetup: &threading.GenericSetupEvent{
 				Name: eventSetupTeamMessaging,
@@ -267,11 +267,11 @@ func TestOnboardingThreadEvent_GENERIC_SETUP_eventSetupTelemedicine(t *testing.T
 	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{setupTID}).WithReturns([]*models.Thread{{ID: setupTID, OrganizationID: "org"}}, nil))
 
 	res, err := srv.OnboardingThreadEvent(nil, &threading.OnboardingThreadEventRequest{
-		LookupByType: threading.OnboardingThreadEventRequest_ENTITY_ID,
+		LookupByType: threading.ONBOARDING_THREAD_LOOKUP_BY_ENTITY_ID,
 		LookupBy: &threading.OnboardingThreadEventRequest_EntityID{
 			EntityID: "org",
 		},
-		EventType: threading.OnboardingThreadEventRequest_GENERIC_SETUP,
+		EventType: threading.ONBOARDING_THREAD_EVENT_TYPE_GENERIC_SETUP,
 		Event: &threading.OnboardingThreadEventRequest_GenericSetup{
 			GenericSetup: &threading.GenericSetupEvent{
 				Name: eventSetupTelemedicine,

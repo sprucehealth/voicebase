@@ -66,11 +66,11 @@ func TestPostEventMutation(t *testing.T) {
 
 	g.ra.Expect(mock.NewExpectation(g.ra.OnboardingThreadEvent,
 		&threading.OnboardingThreadEventRequest{
-			LookupByType: threading.OnboardingThreadEventRequest_ENTITY_ID,
+			LookupByType: threading.ONBOARDING_THREAD_LOOKUP_BY_ENTITY_ID,
 			LookupBy: &threading.OnboardingThreadEventRequest_EntityID{
 				EntityID: "org",
 			},
-			EventType: threading.OnboardingThreadEventRequest_GENERIC_SETUP,
+			EventType: threading.ONBOARDING_THREAD_EVENT_TYPE_GENERIC_SETUP,
 			Event: &threading.OnboardingThreadEventRequest_GenericSetup{
 				GenericSetup: &threading.GenericSetupEvent{
 					Name:       "setup_answering_service",
@@ -115,11 +115,11 @@ func TestPostEventMutation(t *testing.T) {
 
 	g.ra.Expect(mock.NewExpectation(g.ra.OnboardingThreadEvent,
 		&threading.OnboardingThreadEventRequest{
-			LookupByType: threading.OnboardingThreadEventRequest_ENTITY_ID,
+			LookupByType: threading.ONBOARDING_THREAD_LOOKUP_BY_ENTITY_ID,
 			LookupBy: &threading.OnboardingThreadEventRequest_EntityID{
 				EntityID: "0rg",
 			},
-			EventType: threading.OnboardingThreadEventRequest_GENERIC_SETUP,
+			EventType: threading.ONBOARDING_THREAD_EVENT_TYPE_GENERIC_SETUP,
 			Event: &threading.OnboardingThreadEventRequest_GenericSetup{
 				GenericSetup: &threading.GenericSetupEvent{
 					Name: "setup_answering_service",

@@ -53,10 +53,12 @@ func TestMarkThreadsAsReadMutation(t *testing.T) {
 	}).WithReturns(&threading.ThreadsResponse{
 		Threads: []*threading.Thread{
 			{
-				ID: "t_1",
+				ID:   "t_1",
+				Type: threading.THREAD_TYPE_EXTERNAL,
 			},
 			{
-				ID: "t_2",
+				ID:   "t_2",
+				Type: threading.THREAD_TYPE_TEAM,
 			},
 		},
 	}, nil))

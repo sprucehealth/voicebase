@@ -352,10 +352,10 @@ func TestCreatePatientAccountMutation_PracticeLink(t *testing.T) {
 		OrganizationID:  "e_org_inv",
 		PrimaryEntityID: "parkedEntityID",
 		MemberEntityIDs: []string{"e_org_inv", "parkedEntityID"},
-		Type:            threading.ThreadType_SECURE_EXTERNAL,
+		Type:            threading.THREAD_TYPE_SECURE_EXTERNAL,
 		Summary:         "first last",
 		SystemTitle:     "first last",
-		Origin:          threading.ThreadOrigin_THREAD_ORIGIN_ORGANIZATION_CODE,
+		Origin:          threading.THREAD_ORIGIN_ORGANIZATION_CODE,
 	}))
 
 	// update entity

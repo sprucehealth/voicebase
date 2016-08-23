@@ -14,7 +14,6 @@ import (
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/analytics"
 	"github.com/sprucehealth/backend/svc/auth"
-	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 	"github.com/sprucehealth/graphql/gqlerrors"
 	"google.golang.org/grpc"
@@ -188,8 +187,9 @@ var queryType = graphql.NewObject(
 			"medicationSearch":        medicationSearchQuery,
 			"paymentRequest":          paymentRequestQuery,
 			"pendingCalls":            pendingCallsQuery,
-			"visitAutocompleteSearch": visitAutocompleteSearchQuery,
 			"setting":                 settingsQuery,
+			"threadsSearch":           threadsSearchQuery,
+			"visitAutocompleteSearch": visitAutocompleteSearchQuery,
 		},
 	},
 )
@@ -206,7 +206,7 @@ func lookupThreadWithReadStatus(ctx context.Context, ram raccess.ResourceAccesso
 	}
 
 	headers := devicectx.SpruceHeaders(ctx)
-	if th.Type == threading.ThreadType_TEAM.String() {
+	if th.Type == models.ThreadTypeTeam {
 		if !headers.AppVersion.GreaterThanOrEqualTo(&encoding.Version{Major: 1, Minor: 1, Patch: 0}) {
 			return nil, errors.UserError(ctx, errors.ErrTypeNotSupported, "Team Conversations does not work on this version. Please refresh your browser or update your app to open this thread.")
 		}

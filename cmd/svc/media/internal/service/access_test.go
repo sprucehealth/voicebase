@@ -272,7 +272,7 @@ func TestCanAccess(t *testing.T) {
 					ThreadID: "threadID",
 				}).WithReturns(&threading.ThreadResponse{
 					Thread: &threading.Thread{
-						Type:           threading.ThreadType_EXTERNAL,
+						Type:           threading.THREAD_TYPE_EXTERNAL,
 						OrganizationID: "orgID",
 					},
 				}, nil))
@@ -324,7 +324,7 @@ func TestCanAccess(t *testing.T) {
 					ThreadID: "threadID",
 				}).WithReturns(&threading.ThreadResponse{
 					Thread: &threading.Thread{
-						Type:           threading.ThreadType_EXTERNAL,
+						Type:           threading.THREAD_TYPE_EXTERNAL,
 						OrganizationID: "orgID",
 					},
 				}, nil))
@@ -376,7 +376,7 @@ func TestCanAccess(t *testing.T) {
 					ThreadID: "threadID",
 				}).WithReturns(&threading.ThreadResponse{
 					Thread: &threading.Thread{
-						Type: threading.ThreadType_TEAM,
+						Type: threading.THREAD_TYPE_TEAM,
 					},
 				}, nil))
 
@@ -430,7 +430,7 @@ func TestCanAccess(t *testing.T) {
 					ThreadID: "threadID",
 				}).WithReturns(&threading.ThreadResponse{
 					Thread: &threading.Thread{
-						Type: threading.ThreadType_TEAM,
+						Type: threading.THREAD_TYPE_TEAM,
 					},
 				}, nil))
 
@@ -484,7 +484,7 @@ func TestCanAccess(t *testing.T) {
 					ThreadID: "threadID",
 				}).WithReturns(&threading.ThreadResponse{
 					Thread: &threading.Thread{
-						Type:           threading.ThreadType_SUPPORT,
+						Type:           threading.THREAD_TYPE_SUPPORT,
 						OrganizationID: "orgID2",
 					},
 				}, nil))
@@ -513,7 +513,7 @@ func TestCanAccess(t *testing.T) {
 					ThreadID: "threadID",
 				}).WithReturns(&threading.LinkedThreadResponse{
 					Thread: &threading.Thread{
-						Type:           threading.ThreadType_SUPPORT,
+						Type:           threading.THREAD_TYPE_SUPPORT,
 						OrganizationID: "orgID",
 					},
 				}, nil))

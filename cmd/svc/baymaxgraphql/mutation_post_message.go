@@ -102,15 +102,15 @@ var attachmentInputType = graphql.NewInputObject(
 func attachmentTypeEnumAsThreadingEnum(t string) (threading.Attachment_Type, error) {
 	switch t {
 	case attachmentTypeCarePlan:
-		return threading.Attachment_CARE_PLAN, nil
+		return threading.ATTACHMENT_TYPE_CARE_PLAN, nil
 	case attachmentTypeImage:
-		return threading.Attachment_IMAGE, nil
+		return threading.ATTACHMENT_TYPE_IMAGE, nil
 	case attachmentTypeVideo:
-		return threading.Attachment_VIDEO, nil
+		return threading.ATTACHMENT_TYPE_VIDEO, nil
 	case attachmentTypeVisit:
-		return threading.Attachment_VISIT, nil
+		return threading.ATTACHMENT_TYPE_VISIT, nil
 	case attachmentTypePaymentRequest:
-		return threading.Attachment_PAYMENT_REQUEST, nil
+		return threading.ATTACHMENT_TYPE_PAYMENT_REQUEST, nil
 	}
 	return threading.Attachment_Type(0), fmt.Errorf("Unknown attachment type %s", t)
 }
@@ -321,10 +321,10 @@ var postMessageMutation = &graphql.Field{
 			// TODO: Verify that the media at the ID exists
 			var attachment *threading.Attachment
 			switch mAttachmentType {
-			case threading.Attachment_VISIT:
+			case threading.ATTACHMENT_TYPE_VISIT:
 
 				// can only attach visits on secure external threads
-				if thr.Type != threading.ThreadType_SECURE_EXTERNAL {
+				if thr.Type != threading.THREAD_TYPE_SECURE_EXTERNAL {
 					return nil, errors.ErrNotSupported(ctx, fmt.Errorf("Cannot attach a visit to thread of type %s", thr.Type.String()))
 				}
 
@@ -360,9 +360,9 @@ var postMessageMutation = &graphql.Field{
 						},
 					},
 				}
-			case threading.Attachment_CARE_PLAN:
+			case threading.ATTACHMENT_TYPE_CARE_PLAN:
 				// can only attach visits on secure external threads
-				if thr.Type != threading.ThreadType_SECURE_EXTERNAL {
+				if thr.Type != threading.THREAD_TYPE_SECURE_EXTERNAL {
 					return nil, errors.ErrNotSupported(ctx, fmt.Errorf("Cannot attach a care plan to thread of type %s", thr.Type.String()))
 				}
 
@@ -391,7 +391,7 @@ var postMessageMutation = &graphql.Field{
 						},
 					},
 				}
-			case threading.Attachment_IMAGE:
+			case threading.ATTACHMENT_TYPE_IMAGE:
 				info, err := ram.MediaInfo(ctx, mAttachment.AttachmentID)
 				if err != nil {
 					return nil, fmt.Errorf("Error while locating media info for %s: %s", mAttachment.AttachmentID, err)
@@ -407,7 +407,7 @@ var postMessageMutation = &graphql.Field{
 						},
 					},
 				}
-			case threading.Attachment_VIDEO:
+			case threading.ATTACHMENT_TYPE_VIDEO:
 				info, err := ram.MediaInfo(ctx, mAttachment.AttachmentID)
 				if err != nil {
 					return nil, fmt.Errorf("Error while locating media info for %s: %s", mAttachment.AttachmentID, err)
@@ -424,7 +424,7 @@ var postMessageMutation = &graphql.Field{
 						},
 					},
 				}
-			case threading.Attachment_PAYMENT_REQUEST:
+			case threading.ATTACHMENT_TYPE_PAYMENT_REQUEST:
 				resp, err := ram.Payment(ctx, &payments.PaymentRequest{
 					PaymentID: mAttachment.AttachmentID,
 				})
@@ -454,7 +454,7 @@ var postMessageMutation = &graphql.Field{
 			Internal:     in.Msg.Internal,
 			FromEntityID: ent.ID,
 			Source: &threading.Endpoint{
-				Channel: threading.Endpoint_APP,
+				Channel: threading.ENDPOINT_CHANNEL_APP,
 				ID:      ent.ID,
 			},
 			Summary:     summary,
@@ -473,11 +473,11 @@ var postMessageMutation = &graphql.Field{
 
 		if len(title) == 0 {
 			for _, a := range req.Attachments {
-				if a.Type == threading.Attachment_VISIT {
+				if a.Type == threading.ATTACHMENT_TYPE_VISIT {
 					title = append(title, "Shared a visit:")
 					break
 				}
-				if a.Type == threading.Attachment_CARE_PLAN {
+				if a.Type == threading.ATTACHMENT_TYPE_CARE_PLAN {
 					title = append(title, "Shared a care plan:")
 					break
 				}
@@ -574,10 +574,10 @@ func buildMessageTitleBasedOnDestinations(
 			switch d.Channel {
 			case models.EndpointChannelEmail:
 				ct = directory.ContactType_EMAIL
-				ec = threading.Endpoint_EMAIL
+				ec = threading.ENDPOINT_CHANNEL_EMAIL
 			case models.EndpointChannelSMS:
 				ct = directory.ContactType_PHONE
-				ec = threading.Endpoint_SMS
+				ec = threading.ENDPOINT_CHANNEL_SMS
 			default:
 				return nil, fmt.Errorf("unsupported destination endpoint channel %q", d.Channel)
 			}
@@ -597,9 +597,9 @@ func buildMessageTitleBasedOnDestinations(
 			}
 			req.Destinations = append(req.Destinations, e)
 			switch e.Channel {
-			case threading.Endpoint_SMS:
+			case threading.ENDPOINT_CHANNEL_SMS:
 				destSet["SMS"] = struct{}{}
-			case threading.Endpoint_EMAIL:
+			case threading.ENDPOINT_CHANNEL_EMAIL:
 				destSet["Email"] = struct{}{}
 			}
 		}

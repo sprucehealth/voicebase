@@ -65,7 +65,7 @@ var leaveThreadMutation = &graphql.Field{
 		if thread == nil {
 			return nil, errors.ErrNotFound(ctx, threadID)
 		}
-		if thread.Type != threading.ThreadType_TEAM {
+		if thread.Type != threading.THREAD_TYPE_TEAM {
 			return nil, errors.New("Cannot leave non-team threads")
 		}
 

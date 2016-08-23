@@ -202,11 +202,11 @@ var organizationType = graphql.NewObject(
 							}
 							var qs []*models.SavedThreadQuery
 							for _, q := range sqs {
-								qs = append(qs, &models.SavedThreadQuery{
-									ID:             q.ID,
-									OrganizationID: org.ID,
-									// TODO: query
-								})
+								sq, err := transformSavedQueryToResponse(q)
+								if err != nil {
+									return nil, errors.InternalError(ctx, err)
+								}
+								qs = append(qs, sq)
 							}
 							return qs, nil
 						})),

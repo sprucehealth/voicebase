@@ -2,7 +2,6 @@ package raccess
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -13,7 +12,7 @@ func EntityInOrgForAccountID(ctx context.Context, ram ResourceAccessor, req *dir
 	// assert that the lookup entities request is for looking up an entity
 	// via externalID
 	if req.LookupKeyType != directory.LookupEntitiesRequest_EXTERNAL_ID {
-		return nil, errors.Trace(fmt.Errorf("Expected lookup of type %s but got %s", directory.LookupEntitiesRequest_EXTERNAL_ID, req.LookupKeyType))
+		return nil, errors.Errorf("Expected lookup of type %s but got %s", directory.LookupEntitiesRequest_EXTERNAL_ID, req.LookupKeyType)
 	}
 
 	entities, err := ram.Entities(ctx, req)
@@ -29,7 +28,26 @@ func EntityInOrgForAccountID(ctx context.Context, ram ResourceAccessor, req *dir
 		}
 	}
 
-	return nil, errors.Trace(fmt.Errorf("Did not find entity for account %s and org %s", req.GetExternalID(), orgID))
+	return nil, errors.Errorf("Did not find entity for account %s and org %s", req.GetExternalID(), orgID)
+}
+
+// EntityForAccountID returns the entity for an account.
+// TODO: this assumes there's only one active entity per account which is currently always the case
+func EntityForAccountID(ctx context.Context, ram ResourceAccessor, accountID string) (*directory.Entity, error) {
+	ent, err := Entity(ctx, ram, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+			ExternalID: accountID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
+		},
+		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL, directory.EntityType_PATIENT},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	})
+	return ent, errors.Trace(err)
 }
 
 // Entity returns a single expected entity for the directory request.
@@ -44,9 +62,8 @@ func UnauthorizedEntity(ctx context.Context, ram ResourceAccessor, req *director
 
 // Entity returns a single expected entity for the directory request.
 func entity(ctx context.Context, ram ResourceAccessor, req *directory.LookupEntitiesRequest, opts ...EntityQueryOption) (*directory.Entity, error) {
-
 	if req.LookupKeyType != directory.LookupEntitiesRequest_ENTITY_ID && req.LookupKeyType != directory.LookupEntitiesRequest_EXTERNAL_ID {
-		return nil, fmt.Errorf("Expected lookup of type %s but got %s", directory.LookupEntitiesRequest_ENTITY_ID, req.LookupKeyType)
+		return nil, errors.Errorf("Expected lookup of type %s but got %s", directory.LookupEntitiesRequest_ENTITY_ID, req.LookupKeyType)
 	}
 
 	entities, err := ram.Entities(ctx, req, opts...)
@@ -59,7 +76,7 @@ func entity(ctx context.Context, ram ResourceAccessor, req *directory.LookupEnti
 		if id == "" {
 			id = req.GetExternalID()
 		}
-		return nil, errors.Trace(fmt.Errorf("Expected 1 entity got %d for %s", len(entities), id))
+		return nil, errors.Errorf("Expected 1 entity got %d for %s", len(entities), id)
 	}
 
 	return entities[0], nil

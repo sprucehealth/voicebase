@@ -287,7 +287,7 @@ var createThreadMutation = &graphql.Field{
 			FromEntityID:    creatorEnt.ID,
 			PrimaryEntityID: primaryEnt.ID,
 			Summary:         "New conversation",
-			Type:            threading.ThreadType_EXTERNAL,
+			Type:            threading.THREAD_TYPE_EXTERNAL,
 			SystemTitle:     primaryEnt.Info.DisplayName,
 		})
 		if err != nil {

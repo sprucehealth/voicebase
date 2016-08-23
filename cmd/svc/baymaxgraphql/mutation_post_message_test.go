@@ -38,7 +38,7 @@ func TestPostMessage(t *testing.T) {
 		OrganizationID:  orgID,
 		PrimaryEntityID: extEntID,
 		SystemTitle:     "Barro",
-		Type:            threading.ThreadType_EXTERNAL,
+		Type:            threading.THREAD_TYPE_EXTERNAL,
 	}, nil))
 	g.ra.Expect(mock.NewExpectation(g.ra.CanPostMessage, threadID))
 	expectEntityInOrgForAccountID(g.ra, acc.ID, []*directory.Entity{
@@ -97,12 +97,12 @@ func TestPostMessage(t *testing.T) {
 		UUID:         "abc",
 		FromEntityID: entID,
 		Source: &threading.Endpoint{
-			Channel: threading.Endpoint_APP,
+			Channel: threading.ENDPOINT_CHANNEL_APP,
 			ID:      entID,
 		},
 		Destinations: []*threading.Endpoint{
 			{
-				Channel: threading.Endpoint_SMS,
+				Channel: threading.ENDPOINT_CHANNEL_SMS,
 				ID:      entPhoneNumber,
 			},
 		},
@@ -111,7 +111,7 @@ func TestPostMessage(t *testing.T) {
 		Summary: `Schmee: foo`,
 		Attachments: []*threading.Attachment{
 			{
-				Type:  threading.Attachment_IMAGE,
+				Type:  threading.ATTACHMENT_TYPE_IMAGE,
 				Title: "",
 				URL:   "mediaID",
 				Data: &threading.Attachment_Image{
@@ -126,7 +126,7 @@ func TestPostMessage(t *testing.T) {
 		Thread: &threading.Thread{
 			ID:                   threadID,
 			OrganizationID:       orgID,
-			Type:                 threading.ThreadType_EXTERNAL,
+			Type:                 threading.THREAD_TYPE_EXTERNAL,
 			SystemTitle:          "Barro",
 			PrimaryEntityID:      extEntID,
 			LastMessageTimestamp: now,
@@ -137,26 +137,26 @@ func TestPostMessage(t *testing.T) {
 			Timestamp:     now,
 			ActorEntityID: entID,
 			Internal:      false,
-			Type:          threading.ThreadItem_MESSAGE,
+			Type:          threading.THREAD_ITEM_TYPE_MESSAGE,
 			Item: &threading.ThreadItem_Message{
 				Message: &threading.Message{
 					Text:   "foo",
-					Status: threading.Message_NORMAL,
+					Status: threading.MESSAGE_STATUS_NORMAL,
 					Source: &threading.Endpoint{
-						Channel: threading.Endpoint_APP,
+						Channel: threading.ENDPOINT_CHANNEL_APP,
 						ID:      entID,
 					},
 					Destinations: []*threading.Endpoint{
 						{
-							Channel: threading.Endpoint_SMS,
+							Channel: threading.ENDPOINT_CHANNEL_SMS,
 							ID:      entPhoneNumber,
 						},
 					},
 					Title:   `SMS`,
 					Summary: `Schmee: foo`,
 					TextRefs: []*threading.Reference{
-						{Type: threading.Reference_ENTITY, ID: entID},
-						{Type: threading.Reference_ENTITY, ID: extEntID},
+						{Type: threading.REFERENCE_TYPE_ENTITY, ID: entID},
+						{Type: threading.REFERENCE_TYPE_ENTITY, ID: extEntID},
 					},
 				},
 			},
@@ -275,7 +275,7 @@ func TestPostMessage_VisitAttachment(t *testing.T) {
 		OrganizationID:  orgID,
 		PrimaryEntityID: extEntID,
 		SystemTitle:     "Barro",
-		Type:            threading.ThreadType_SECURE_EXTERNAL,
+		Type:            threading.THREAD_TYPE_SECURE_EXTERNAL,
 	}, nil))
 	g.ra.Expect(mock.NewExpectation(g.ra.CanPostMessage, threadID))
 	expectEntityInOrgForAccountID(g.ra, acc.ID, []*directory.Entity{
@@ -350,7 +350,7 @@ func TestPostMessage_VisitAttachment(t *testing.T) {
 		UUID:         "abc",
 		FromEntityID: entID,
 		Source: &threading.Endpoint{
-			Channel: threading.Endpoint_APP,
+			Channel: threading.ENDPOINT_CHANNEL_APP,
 			ID:      entID,
 		},
 		Text:    "foo",
@@ -358,7 +358,7 @@ func TestPostMessage_VisitAttachment(t *testing.T) {
 		Summary: `Schmee: foo`,
 		Attachments: []*threading.Attachment{
 			{
-				Type:  threading.Attachment_VISIT,
+				Type:  threading.ATTACHMENT_TYPE_VISIT,
 				Title: "Sinus Infection",
 				URL:   "https://test.com/thread/t1/visit/visit_12345",
 				Data: &threading.Attachment_Visit{
@@ -373,7 +373,7 @@ func TestPostMessage_VisitAttachment(t *testing.T) {
 		Thread: &threading.Thread{
 			ID:                   threadID,
 			OrganizationID:       orgID,
-			Type:                 threading.ThreadType_SECURE_EXTERNAL,
+			Type:                 threading.THREAD_TYPE_SECURE_EXTERNAL,
 			SystemTitle:          "Barro",
 			PrimaryEntityID:      extEntID,
 			MessageCount:         10,
@@ -385,20 +385,20 @@ func TestPostMessage_VisitAttachment(t *testing.T) {
 			Timestamp:     now,
 			ActorEntityID: entID,
 			Internal:      false,
-			Type:          threading.ThreadItem_MESSAGE,
+			Type:          threading.THREAD_ITEM_TYPE_MESSAGE,
 			Item: &threading.ThreadItem_Message{
 				Message: &threading.Message{
 					Text:   "foo",
-					Status: threading.Message_NORMAL,
+					Status: threading.MESSAGE_STATUS_NORMAL,
 					Source: &threading.Endpoint{
-						Channel: threading.Endpoint_APP,
+						Channel: threading.ENDPOINT_CHANNEL_APP,
 						ID:      entID,
 					},
 					Title:   `Shared a visit:`,
 					Summary: `Schmee: Shared a visit:`,
 					Attachments: []*threading.Attachment{
 						{
-							Type:  threading.Attachment_VISIT,
+							Type:  threading.ATTACHMENT_TYPE_VISIT,
 							Title: "Sinus Infection",
 							URL:   "https://test.com/visit/visit_12345",
 							Data: &threading.Attachment_Visit{
@@ -639,7 +639,7 @@ func TestPostMessagePatientSecureExternal(t *testing.T) {
 		OrganizationID:  orgID,
 		PrimaryEntityID: extEntID,
 		SystemTitle:     "Barro",
-		Type:            threading.ThreadType_SECURE_EXTERNAL,
+		Type:            threading.THREAD_TYPE_SECURE_EXTERNAL,
 	}, nil))
 	g.ra.Expect(mock.NewExpectation(g.ra.CanPostMessage, threadID))
 	// Looking up the account's entity for the org
@@ -701,7 +701,7 @@ func TestPostMessagePatientSecureExternal(t *testing.T) {
 		UUID:         "abc",
 		FromEntityID: entID,
 		Source: &threading.Endpoint{
-			Channel: threading.Endpoint_APP,
+			Channel: threading.ENDPOINT_CHANNEL_APP,
 			ID:      entID,
 		},
 		Text:    "foo",
@@ -709,7 +709,7 @@ func TestPostMessagePatientSecureExternal(t *testing.T) {
 		Summary: `Schmee: foo`,
 		Attachments: []*threading.Attachment{
 			{
-				Type:  threading.Attachment_VIDEO,
+				Type:  threading.ATTACHMENT_TYPE_VIDEO,
 				Title: "",
 				URL:   "mediaID",
 				Data: &threading.Attachment_Video{
@@ -725,7 +725,7 @@ func TestPostMessagePatientSecureExternal(t *testing.T) {
 		Thread: &threading.Thread{
 			ID:                   threadID,
 			OrganizationID:       orgID,
-			Type:                 threading.ThreadType_SECURE_EXTERNAL,
+			Type:                 threading.THREAD_TYPE_SECURE_EXTERNAL,
 			SystemTitle:          "Barro",
 			PrimaryEntityID:      extEntID,
 			LastMessageTimestamp: now,
@@ -736,20 +736,20 @@ func TestPostMessagePatientSecureExternal(t *testing.T) {
 			Timestamp:     now,
 			ActorEntityID: entID,
 			Internal:      false,
-			Type:          threading.ThreadItem_MESSAGE,
+			Type:          threading.THREAD_ITEM_TYPE_MESSAGE,
 			Item: &threading.ThreadItem_Message{
 				Message: &threading.Message{
 					Text:   "foo",
-					Status: threading.Message_NORMAL,
+					Status: threading.MESSAGE_STATUS_NORMAL,
 					Source: &threading.Endpoint{
-						Channel: threading.Endpoint_APP,
+						Channel: threading.ENDPOINT_CHANNEL_APP,
 						ID:      entID,
 					},
 					Title:   ``,
 					Summary: `Schmee: foo`,
 					TextRefs: []*threading.Reference{
-						{Type: threading.Reference_ENTITY, ID: entID},
-						{Type: threading.Reference_ENTITY, ID: extEntID},
+						{Type: threading.REFERENCE_TYPE_ENTITY, ID: entID},
+						{Type: threading.REFERENCE_TYPE_ENTITY, ID: extEntID},
 					},
 				},
 			},

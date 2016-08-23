@@ -54,7 +54,7 @@ func TestIterateThreads(t *testing.T) {
 		OrganizationID:             "org",
 		Type:                       models.ThreadTypeExternal,
 		LastMessageSummary:         "summary",
-		LastMessageTimestamp:       time.Unix(1, 0),
+		LastMessageTimestamp:       time.Unix(10e8, 0),
 		LastExternalMessageSummary: "extsummary",
 	})
 	test.OK(t, err)
@@ -64,13 +64,13 @@ func TestIterateThreads(t *testing.T) {
 		OrganizationID:             "org",
 		Type:                       models.ThreadTypeTeam,
 		LastMessageSummary:         "summary",
-		LastMessageTimestamp:       time.Unix(2, 0),
+		LastMessageTimestamp:       time.Unix(11e8, 0),
 		LastExternalMessageSummary: "extsummary",
 	})
 	test.OK(t, err)
 
 	// Viewer without membership in team thread should only see external thread
-	tc, err := dal.IterateThreads(ctx, []string{"org", "viewer"}, "viewer", false, &Iterator{
+	tc, err := dal.IterateThreads(ctx, nil, []string{"org", "viewer"}, "viewer", false, &Iterator{
 		Direction: FromStart,
 		Count:     10,
 	})
@@ -82,7 +82,7 @@ func TestIterateThreads(t *testing.T) {
 
 	// Still not a member but now has a thread entity row
 	test.OK(t, dal.UpdateThreadEntity(ctx, tid2, "viewer", nil))
-	tc, err = dal.IterateThreads(ctx, []string{"org", "viewer"}, "viewer", false, &Iterator{
+	tc, err = dal.IterateThreads(ctx, nil, []string{"org", "viewer"}, "viewer", false, &Iterator{
 		Direction: FromStart,
 		Count:     10,
 	})
@@ -94,7 +94,7 @@ func TestIterateThreads(t *testing.T) {
 
 	// Now they're a member and should get both threads
 	test.OK(t, dal.AddThreadMembers(ctx, tid2, []string{"viewer"}))
-	tc, err = dal.IterateThreads(ctx, []string{"org", "viewer"}, "viewer", false, &Iterator{
+	tc, err = dal.IterateThreads(ctx, nil, []string{"org", "viewer"}, "viewer", false, &Iterator{
 		Direction: FromStart,
 		Count:     10,
 	})
@@ -113,7 +113,7 @@ func TestIterateThreads(t *testing.T) {
 
 	// Make sure we don't get duplicates if both org and viewer are members
 	test.OK(t, dal.AddThreadMembers(ctx, tid2, []string{"org"}))
-	tc, err = dal.IterateThreads(ctx, []string{"org", "viewer"}, "viewer", false, &Iterator{
+	tc, err = dal.IterateThreads(ctx, nil, []string{"org", "viewer"}, "viewer", false, &Iterator{
 		Direction: FromStart,
 		Count:     10,
 	})
@@ -131,6 +131,124 @@ func TestIterateThreads(t *testing.T) {
 	test.Equals(t, (*models.ThreadEntity)(nil), tc.Edges[1].ThreadEntity)
 }
 
+func TestIterateThreadsQuery(t *testing.T) {
+	dt := testsql.Setup(t, schemaGlob)
+	defer dt.Cleanup(t)
+
+	dal := New(dt.DB)
+	ctx := context.Background()
+
+	// Create external thread
+	tid1, err := dal.CreateThread(ctx, &models.Thread{
+		OrganizationID:             "org",
+		Type:                       models.ThreadTypeExternal,
+		SystemTitle:                "Zoe Smith",
+		LastMessageSummary:         "Some message or other with the patient",
+		LastMessageTimestamp:       time.Unix(10e8, 0),
+		LastExternalMessageSummary: "extsummary",
+	})
+	test.OK(t, err)
+	test.OK(t, dal.AddThreadMembers(ctx, tid1, []string{"org"}))
+	// Create team thread
+	tid2, err := dal.CreateThread(ctx, &models.Thread{
+		OrganizationID:             "org",
+		Type:                       models.ThreadTypeTeam,
+		UserTitle:                  "User set title",
+		LastMessageSummary:         "Blah blah foo other bar",
+		LastMessageTimestamp:       time.Unix(11e8, 0),
+		LastExternalMessageSummary: "extsummary",
+	})
+	test.OK(t, err)
+	test.OK(t, dal.AddThreadMembers(ctx, tid2, []string{"viewer"}))
+	// Create team thread 2
+	tid3, err := dal.CreateThread(ctx, &models.Thread{
+		OrganizationID:             "org",
+		Type:                       models.ThreadTypeTeam,
+		UserTitle:                  "User",
+		LastMessageSummary:         "Summary",
+		LastMessageTimestamp:       time.Unix(12e8, 0),
+		LastExternalMessageSummary: "extsummary",
+	})
+	test.OK(t, err)
+	test.OK(t, dal.AddThreadMembers(ctx, tid3, []string{"viewer"}))
+
+	// Thread 1 has been read
+	test.OK(t, dal.UpdateThreadEntity(ctx, tid1, "viewer", &ThreadEntityUpdate{
+		LastViewed: ptr.Time(time.Unix(10e8, 0)),
+	}))
+	// Thread 2 has a reference, has not been read (no thread entity record)
+	test.OK(t, dal.UpdateThreadEntity(ctx, tid2, "viewer", &ThreadEntityUpdate{
+		LastReferenced: ptr.Time(time.Unix(10e8, 0)),
+	}))
+	// Thread 3 has a reference, has not been read, but the reference is already read
+	test.OK(t, dal.UpdateThreadEntity(ctx, tid3, "viewer", &ThreadEntityUpdate{
+		LastViewed:     ptr.Time(time.Unix(11e8, 0)),
+		LastReferenced: ptr.Time(time.Unix(10e8, 0)),
+	}))
+
+	cases := map[string]*struct {
+		query *models.Query
+		ids   []models.ThreadID
+	}{
+		"non-existant-token": {
+			query: &models.Query{
+				Expressions: []*models.Expr{{Value: &models.Expr_Token{Token: "Nonexistant"}}},
+			},
+			ids: []models.ThreadID{},
+		},
+		"token-single-match": {
+			query: &models.Query{
+				Expressions: []*models.Expr{{Value: &models.Expr_Token{Token: "zoe"}}},
+			},
+			ids: []models.ThreadID{tid1},
+		},
+		"token-multiple-match": {
+			query: &models.Query{
+				Expressions: []*models.Expr{{Value: &models.Expr_Token{Token: "OTHER"}}},
+			},
+			ids: []models.ThreadID{tid2, tid1},
+		},
+		"type-patient": {
+			query: &models.Query{
+				Expressions: []*models.Expr{{Value: &models.Expr_ThreadType_{ThreadType: models.EXPR_THREAD_TYPE_PATIENT}}},
+			},
+			ids: []models.ThreadID{tid1},
+		},
+		"type-team": {
+			query: &models.Query{
+				Expressions: []*models.Expr{{Value: &models.Expr_ThreadType_{ThreadType: models.EXPR_THREAD_TYPE_TEAM}}},
+			},
+			ids: []models.ThreadID{tid3, tid2},
+		},
+		"flag-unread": {
+			query: &models.Query{
+				Expressions: []*models.Expr{{Value: &models.Expr_Flag_{Flag: models.EXPR_FLAG_UNREAD}}},
+			},
+			ids: []models.ThreadID{tid3, tid2},
+		},
+		"flag-referenced": {
+			query: &models.Query{
+				Expressions: []*models.Expr{{Value: &models.Expr_Flag_{Flag: models.EXPR_FLAG_REFERENCED}}},
+			},
+			ids: []models.ThreadID{tid2},
+		},
+	}
+
+	for tcName, tc := range cases {
+		t.Run(tcName, func(t *testing.T) {
+			con, err := dal.IterateThreads(ctx, tc.query, []string{"org", "viewer"}, "viewer", false, &Iterator{
+				Direction: FromStart,
+				Count:     10,
+			})
+			test.OK(t, err)
+			test.Equals(t, len(tc.ids), len(con.Edges))
+			for i, id := range tc.ids {
+				test.Equals(t, id, con.Edges[i].Thread.ID)
+			}
+		})
+	}
+}
+
 func TestThread(t *testing.T) {
 	dt := testsql.Setup(t, schemaGlob)
 	defer dt.Cleanup(t)
@@ -142,7 +260,7 @@ func TestThread(t *testing.T) {
 		OrganizationID:             "org",
 		Type:                       models.ThreadTypeTeam,
 		LastMessageSummary:         "summary",
-		LastMessageTimestamp:       time.Unix(2, 0),
+		LastMessageTimestamp:       time.Unix(1e9, 0),
 		LastExternalMessageSummary: "extsummary",
 		SystemTitle:                "systemTitle",
 		UserTitle:                  "userTitle",
@@ -176,7 +294,7 @@ func TestUpdateThread(t *testing.T) {
 		OrganizationID:             "org",
 		Type:                       models.ThreadTypeTeam,
 		LastMessageSummary:         "summary",
-		LastMessageTimestamp:       time.Unix(2, 0),
+		LastMessageTimestamp:       time.Unix(1e9, 0),
 		LastExternalMessageSummary: "extsummary",
 		SystemTitle:                "systemTitle",
 		UserTitle:                  "userTitle",
@@ -212,7 +330,7 @@ func TestThreadEntities(t *testing.T) {
 		OrganizationID:             "org",
 		Type:                       models.ThreadTypeTeam,
 		LastMessageSummary:         "summary",
-		LastMessageTimestamp:       time.Unix(2, 0),
+		LastMessageTimestamp:       time.Unix(1e9, 0),
 		LastExternalMessageSummary: "extsummary",
 	})
 	test.OK(t, err)
@@ -248,7 +366,7 @@ func TestThreadsForOrg(t *testing.T) {
 		OrganizationID:             "org1",
 		Type:                       models.ThreadTypeTeam,
 		LastMessageSummary:         "summary",
-		LastMessageTimestamp:       time.Unix(2, 0),
+		LastMessageTimestamp:       time.Unix(1e9, 0),
 		LastExternalMessageSummary: "extsummary",
 	})
 	test.OK(t, err)
@@ -257,7 +375,7 @@ func TestThreadsForOrg(t *testing.T) {
 		OrganizationID:             "org1",
 		Type:                       models.ThreadTypeSupport,
 		LastMessageSummary:         "summary",
-		LastMessageTimestamp:       time.Unix(2, 0),
+		LastMessageTimestamp:       time.Unix(1e9, 0),
 		LastExternalMessageSummary: "extsummary",
 	})
 	test.OK(t, err)
@@ -266,7 +384,7 @@ func TestThreadsForOrg(t *testing.T) {
 		OrganizationID:             "org2",
 		Type:                       models.ThreadTypeSupport,
 		LastMessageSummary:         "summary",
-		LastMessageTimestamp:       time.Unix(2, 0),
+		LastMessageTimestamp:       time.Unix(1e9, 0),
 		LastExternalMessageSummary: "extsummary",
 	})
 	test.OK(t, err)
@@ -297,7 +415,7 @@ func TestAddRemoveThreadMembers(t *testing.T) {
 		OrganizationID:             "org",
 		Type:                       models.ThreadTypeTeam,
 		LastMessageSummary:         "summary",
-		LastMessageTimestamp:       time.Unix(2, 0),
+		LastMessageTimestamp:       time.Unix(1e9, 0),
 		LastExternalMessageSummary: "extsummary",
 	})
 	test.OK(t, err)
@@ -354,7 +472,7 @@ func TestSetupThreadState(t *testing.T) {
 		OrganizationID:             "org",
 		Type:                       models.ThreadTypeSetup,
 		LastMessageSummary:         "summary",
-		LastMessageTimestamp:       time.Unix(2, 0),
+		LastMessageTimestamp:       time.Unix(1e9, 0),
 		LastExternalMessageSummary: "extsummary",
 	})
 	test.OK(t, err)
@@ -389,7 +507,7 @@ func TestCreateThreadItemViewDetails(t *testing.T) {
 		OrganizationID:             "org",
 		Type:                       models.ThreadTypeTeam,
 		LastMessageSummary:         "summary",
-		LastMessageTimestamp:       time.Unix(2, 0),
+		LastMessageTimestamp:       time.Unix(1e9, 0),
 		LastExternalMessageSummary: "extsummary",
 		SystemTitle:                "systemTitle",
 		UserTitle:                  "userTitle",
@@ -415,6 +533,51 @@ func TestCreateThreadItemViewDetails(t *testing.T) {
 	test.OK(t, dal.CreateThreadItemViewDetails(ctx, details))
 	// Duplicate details should be ignore
 	test.OK(t, dal.CreateThreadItemViewDetails(ctx, details))
+}
+
+func TestSavedQueries(t *testing.T) {
+	dt := testsql.Setup(t, schemaGlob)
+	defer dt.Cleanup(t)
+
+	dal := New(dt.DB)
+	ctx := context.Background()
+
+	sq1 := &models.SavedQuery{
+		Ordinal:        2,
+		OrganizationID: "org",
+		EntityID:       "ent",
+		Query:          &models.Query{},
+		Title:          "sq1",
+	}
+	_, err := dal.CreateSavedQuery(ctx, sq1)
+	test.OK(t, err)
+
+	sq2 := &models.SavedQuery{
+		Ordinal:        1,
+		OrganizationID: "org",
+		EntityID:       "ent",
+		Query: &models.Query{
+			Expressions: []*models.Expr{
+				{Value: &models.Expr_Token{Token: "foo"}},
+			},
+		},
+		Title: "sq2",
+	}
+	_, err = dal.CreateSavedQuery(ctx, sq2)
+	test.OK(t, err)
+
+	sq, err := dal.SavedQuery(ctx, sq1.ID)
+	test.OK(t, err)
+	test.Equals(t, sq1, sq)
+	sq, err = dal.SavedQuery(ctx, sq2.ID)
+	test.OK(t, err)
+	test.Equals(t, sq2, sq)
+
+	sqs, err := dal.SavedQueries(ctx, "ent")
+	test.OK(t, err)
+	test.Equals(t, 2, len(sqs))
+	test.Equals(t, sq1.ID, sqs[1].ID)
+	test.Equals(t, sq2.ID, sqs[0].ID)
 }
 
 type teByID []*models.ThreadEntity

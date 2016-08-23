@@ -208,7 +208,6 @@ type AudioAttachment struct {
 
 // Thread type enum
 const (
-	ThreadTypeUnknown        = "UNKNOWN" // TODO: remove this once old threads are migrated
 	ThreadTypeExternal       = "EXTERNAL"
 	ThreadTypeTeam           = "TEAM"
 	ThreadTypeSetup          = "SETUP"
@@ -277,6 +276,10 @@ type SerializedEntityContact struct {
 
 type SavedThreadQuery struct {
 	ID             string `json:"id"`
+	Query          string `json:"query"`
+	Title          string `json:"title"`
+	Unread         int    `json:"unread"`
+	Total          int    `json:"total"`
 	OrganizationID string `json:"organizationID"`
 }
 

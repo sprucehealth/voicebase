@@ -128,7 +128,7 @@ type DAL interface {
 	CreateThreadLink(ctx context.Context, thread1Link, thread2Link *ThreadLink) error
 	DeleteThread(ctx context.Context, threadID models.ThreadID) error
 	EntitiesForThread(ctx context.Context, threadID models.ThreadID) ([]*models.ThreadEntity, error)
-	IterateThreads(ctx context.Context, memberEntityIDs []string, viewerEntityID string, forExternal bool, it *Iterator) (*ThreadConnection, error)
+	IterateThreads(ctx context.Context, query *models.Query, memberEntityIDs []string, viewerEntityID string, forExternal bool, it *Iterator) (*ThreadConnection, error)
 	IterateThreadItems(ctx context.Context, threadID models.ThreadID, forExternal bool, it *Iterator) (*ThreadItemConnection, error)
 	LinkedThread(ctx context.Context, threadID models.ThreadID) (*models.Thread, bool, error)
 	PostMessage(context.Context, *PostMessageRequest) (*models.ThreadItem, error)
@@ -199,13 +199,18 @@ func (d *dal) CreateSavedQuery(ctx context.Context, sq *models.SavedQuery) (mode
 	if err != nil {
 		return models.SavedQueryID{}, errors.Trace(err)
 	}
-	queryBlob := []byte{} // TODO
-	if _, err := d.db.Exec(`
-		INSERT INTO saved_queries (id, organization_id, entity_id, query)
-		VALUES (?, ?, ?, ?)
-	`, id, sq.OrganizationID, sq.EntityID, queryBlob); err != nil {
+	queryBlob, err := sq.Query.Marshal()
+	if err != nil {
 		return models.SavedQueryID{}, errors.Trace(err)
 	}
+	_, err = d.db.Exec(`
+		INSERT INTO saved_queries (id, ordinal, organization_id, entity_id, query, title, unread, total)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	`, id, sq.Ordinal, sq.OrganizationID, sq.EntityID, queryBlob, sq.Title, sq.Unread, sq.Total)
+	if err != nil {
+		return models.SavedQueryID{}, errors.Trace(err)
+	}
+	sq.ID = id
 	return id, nil
 }
 
@@ -223,14 +228,21 @@ func (d *dal) CreateThread(ctx context.Context, thread *models.Thread) (models.T
 	}
 
 	now := time.Now()
+	if thread.LastMessageTimestamp.IsZero() {
+		thread.LastMessageTimestamp = now
+	}
+	if thread.LastExternalMessageTimestamp.IsZero() {
+		thread.LastExternalMessageTimestamp = now
+	}
+
 	_, err = d.db.Exec(`
 		INSERT INTO threads (
 			id, organization_id, primary_entity_id, last_message_timestamp, last_external_message_timestamp, last_message_summary,
 			last_external_message_summary, last_primary_entity_endpoints, type,
 			system_title, user_title, origin)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, id, thread.OrganizationID, thread.PrimaryEntityID, now, now, thread.LastMessageSummary,
-		thread.LastExternalMessageSummary, lastPrimaryEntityEndpointsData, thread.Type,
+	`, id, thread.OrganizationID, thread.PrimaryEntityID, thread.LastMessageTimestamp, thread.LastExternalMessageTimestamp,
+		thread.LastMessageSummary, thread.LastExternalMessageSummary, lastPrimaryEntityEndpointsData, thread.Type,
 		thread.SystemTitle, thread.UserTitle, thread.Origin)
 	if err != nil {
 		return models.ThreadID{}, errors.Trace(err)
@@ -272,7 +284,7 @@ func (d *dal) DeleteThread(ctx context.Context, threadID models.ThreadID) error 
 	return errors.Trace(err)
 }
 
-func (d *dal) IterateThreads(ctx context.Context, memberEntityIDs []string, viewerEntityID string, forExternal bool, it *Iterator) (*ThreadConnection, error) {
+func (d *dal) IterateThreads(ctx context.Context, query *models.Query, memberEntityIDs []string, viewerEntityID string, forExternal bool, it *Iterator) (*ThreadConnection, error) {
 	if len(memberEntityIDs) == 0 {
 		return nil, errors.Errorf("memberEntityIDs missing")
 	}
@@ -296,6 +308,46 @@ func (d *dal) IterateThreads(ctx context.Context, memberEntityIDs []string, view
 
 	cond = append(cond, "t.deleted = ?")
 	vals = append(vals, false)
+
+	// TODO: This produces what's likely a very inefficient query. It's done just to get this out for testing.
+	// TODO: implement the 'not' for the expression
+	if query != nil {
+		for _, e := range query.Expressions {
+			switch v := e.Value.(type) {
+			case *models.Expr_Flag_:
+				switch v.Flag {
+				case models.EXPR_FLAG_UNREAD:
+					// TODO: handle "forExternal"
+					cond = append(cond, "(viewer.last_viewed IS NULL OR viewer.last_viewed < t.last_message_timestamp)")
+				case models.EXPR_FLAG_REFERENCED:
+					cond = append(cond, "(viewer.last_referenced IS NOT NULL AND (viewer.last_viewed IS NULL OR viewer.last_viewed < viewer.last_referenced))")
+				default:
+					return nil, errors.Errorf("unknown expression flag %s", v.Flag)
+				}
+			case *models.Expr_ThreadType_:
+				switch v.ThreadType {
+				case models.EXPR_THREAD_TYPE_PATIENT:
+					cond = append(cond, "(t.type = ? OR t.type = ?)")
+					vals = append(vals, models.ThreadTypeExternal, models.ThreadTypeSecureExternal)
+				case models.EXPR_THREAD_TYPE_TEAM:
+					cond = append(cond, "t.type = ?")
+					vals = append(vals, models.ThreadTypeTeam)
+				default:
+					return nil, errors.Errorf("unknown expression thread type %s", v.ThreadType)
+				}
+			case *models.Expr_Token:
+				col := "t.last_message_summary"
+				if forExternal {
+					col = "t.last_external_message_summary"
+				}
+				cond = append(cond, `(COALESCE(t.system_title, '') LIKE ? OR COALESCE(t.user_title, '') LIKE ? OR `+col+` LIKE ?)`)
+				match := "%" + v.Token + "%"
+				vals = append(vals, match, match, match)
+			default:
+				return nil, errors.Errorf("unknown expression type %T", e.Value)
+			}
+		}
+	}
 
 	// Build query based on iterator in descending order so start = later and end = earlier.
 	if it.StartCursor != "" {
@@ -323,14 +375,15 @@ func (d *dal) IterateThreads(ctx context.Context, memberEntityIDs []string, view
 		order += " DESC"
 	}
 	limit := fmt.Sprintf(" LIMIT %d", it.Count+1) // +1 to see if there's more threads than we need to set the "HasMore" flag
-	rows, err := d.db.Query(`
+	queryStr := `
 		SELECT t.id, t.organization_id, COALESCE(t.primary_entity_id, ''), t.last_message_timestamp, t.last_external_message_timestamp, t.last_message_summary,
 			t.last_external_message_summary, t.last_primary_entity_endpoints, t.created, t.message_count, t.type, COALESCE(t.system_title, ''), COALESCE(t.user_title, ''), t.origin,
 			viewer.thread_id, viewer.entity_id, viewer.member, viewer.joined, viewer.last_viewed, viewer.last_unread_notify, viewer.last_referenced
 		FROM threads t
-		INNER JOIN thread_entities te ON te.thread_id = t.id AND te.member = true AND te.entity_id IN (`+dbutil.MySQLArgs(len(memberEntityIDs))+`)
+		INNER JOIN thread_entities te ON te.thread_id = t.id AND te.member = true AND te.entity_id IN (` + dbutil.MySQLArgs(len(memberEntityIDs)) + `)
 		LEFT OUTER JOIN thread_entities viewer ON viewer.thread_id = t.id AND viewer.entity_id = ?
-		WHERE `+where+order+limit, vals...)
+		WHERE ` + where + order + limit
+	rows, err := d.db.Query(queryStr, vals...)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -533,7 +586,7 @@ func (d *dal) PostMessage(ctx context.Context, req *PostMessageRequest) (*models
 		Title:        req.Title,
 		Text:         req.Text,
 		Attachments:  req.Attachments,
-		Status:       models.Message_NORMAL,
+		Status:       models.MESSAGE_STATUS_NORMAL,
 		Source:       req.Source,
 		Destinations: req.Destinations,
 		TextRefs:     req.TextRefs,
@@ -640,7 +693,7 @@ func (d *dal) RecordThreadEvent(ctx context.Context, threadID models.ThreadID, a
 
 func (d *dal) SavedQuery(ctx context.Context, id models.SavedQueryID) (*models.SavedQuery, error) {
 	row := d.db.QueryRow(`
-		SELECT id, organization_id, entity_id
+		SELECT id, ordinal, organization_id, entity_id, query, title, unread, total
 		FROM saved_queries
 		WHERE id = ?`, id)
 	sq, err := scanSavedQuery(row)
@@ -649,9 +702,10 @@ func (d *dal) SavedQuery(ctx context.Context, id models.SavedQueryID) (*models.S
 
 func (d *dal) SavedQueries(ctx context.Context, entityID string) ([]*models.SavedQuery, error) {
 	rows, err := d.db.Query(`
-		SELECT id, organization_id, entity_id
+		SELECT id, ordinal, organization_id, entity_id, query, title, unread, total
 		FROM saved_queries
-		WHERE entity_id = ?`, entityID)
+		WHERE entity_id = ?
+		ORDER BY ordinal`, entityID)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -971,10 +1025,15 @@ func (d *dal) UpdateSetupThreadState(ctx context.Context, threadID models.Thread
 
 func scanSavedQuery(row dbutil.Scanner) (*models.SavedQuery, error) {
 	var sq models.SavedQuery
+	var queryBlob []byte
 	sq.ID = models.EmptySavedQueryID()
-	if err := row.Scan(&sq.ID, &sq.OrganizationID, &sq.EntityID); err == sql.ErrNoRows {
+	if err := row.Scan(&sq.ID, &sq.Ordinal, &sq.OrganizationID, &sq.EntityID, &queryBlob, &sq.Title, &sq.Unread, &sq.Total); err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrNotFound)
 	} else if err != nil {
+		return nil, errors.Trace(err)
+	}
+	sq.Query = new(models.Query)
+	if err := proto.Unmarshal(queryBlob, sq.Query); err != nil {
 		return nil, errors.Trace(err)
 	}
 	return &sq, nil

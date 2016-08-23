@@ -32,7 +32,7 @@ func TestAllowVisitAttachmentsQuery(t *testing.T) {
 	defer g.finish()
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Thread, threadID, "").WithReturns(&threading.Thread{
-		Type:            threading.ThreadType_SECURE_EXTERNAL,
+		Type:            threading.THREAD_TYPE_SECURE_EXTERNAL,
 		PrimaryEntityID: primaryEntityID,
 		OrganizationID:  orgID,
 	}, nil))
@@ -65,7 +65,7 @@ func TestAllowVisitAttachmentsQuery(t *testing.T) {
 	})
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Thread, threadID, "").WithReturns(&threading.Thread{
-		Type:            threading.ThreadType_SECURE_EXTERNAL,
+		Type:            threading.THREAD_TYPE_SECURE_EXTERNAL,
 		PrimaryEntityID: primaryEntityID,
 		OrganizationID:  orgID,
 	}, nil))
@@ -129,7 +129,7 @@ func TestAllowVisitAttachmentsQuery_FeatureDisabled(t *testing.T) {
 	defer g.finish()
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Thread, threadID, "").WithReturns(&threading.Thread{
-		Type:            threading.ThreadType_SECURE_EXTERNAL,
+		Type:            threading.THREAD_TYPE_SECURE_EXTERNAL,
 		PrimaryEntityID: primaryEntityID,
 		OrganizationID:  orgID,
 	}, nil))
@@ -162,7 +162,7 @@ func TestAllowVisitAttachmentsQuery_FeatureDisabled(t *testing.T) {
 	})
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Thread, threadID, "").WithReturns(&threading.Thread{
-		Type:            threading.ThreadType_SECURE_EXTERNAL,
+		Type:            threading.THREAD_TYPE_SECURE_EXTERNAL,
 		PrimaryEntityID: primaryEntityID,
 		OrganizationID:  orgID,
 	}, nil))
@@ -226,7 +226,7 @@ func TestAllowVisitAttachmentsQuery_Allowed(t *testing.T) {
 	defer g.finish()
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Thread, threadID, "").WithReturns(&threading.Thread{
-		Type:            threading.ThreadType_SECURE_EXTERNAL,
+		Type:            threading.THREAD_TYPE_SECURE_EXTERNAL,
 		PrimaryEntityID: primaryEntityID,
 		OrganizationID:  orgID,
 	}, nil))
@@ -259,7 +259,7 @@ func TestAllowVisitAttachmentsQuery_Allowed(t *testing.T) {
 	})
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Thread, threadID, "").WithReturns(&threading.Thread{
-		Type:            threading.ThreadType_SECURE_EXTERNAL,
+		Type:            threading.THREAD_TYPE_SECURE_EXTERNAL,
 		PrimaryEntityID: primaryEntityID,
 		OrganizationID:  orgID,
 	}, nil))
@@ -350,7 +350,7 @@ func TestAllowPaymentRequestAttachment(t *testing.T) {
 				}, nil))
 				rm.Expect(mock.NewExpectation(rm.VendorAccounts, &payments.VendorAccountsRequest{
 					EntityID: orgID,
-				}).WithReturns(&payments.VendorAccountsResponse{VendorAccounts: []*payments.VendorAccount{&payments.VendorAccount{}}}, nil))
+				}).WithReturns(&payments.VendorAccountsResponse{VendorAccounts: []*payments.VendorAccount{{}}}, nil))
 				return &testAllowPaymentRequestAttachmentParams{
 					p: graphql.ResolveParams{
 						Context: gqlctx.WithAccount(context.Background(), &auth.Account{ID: "ID", Type: auth.AccountType_PROVIDER}),

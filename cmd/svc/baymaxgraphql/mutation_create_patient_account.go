@@ -455,10 +455,10 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 			OrganizationID:  inv.GetOrganization().OrganizationEntityID,
 			PrimaryEntityID: patientEntity.ID,
 			MemberEntityIDs: []string{inv.GetOrganization().OrganizationEntityID, accountEntityID},
-			Type:            threading.ThreadType_SECURE_EXTERNAL,
+			Type:            threading.THREAD_TYPE_SECURE_EXTERNAL,
 			Summary:         patientEntity.Info.DisplayName,
 			SystemTitle:     patientEntity.Info.DisplayName,
-			Origin:          threading.ThreadOrigin_THREAD_ORIGIN_ORGANIZATION_CODE,
+			Origin:          threading.THREAD_ORIGIN_ORGANIZATION_CODE,
 		}); err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}

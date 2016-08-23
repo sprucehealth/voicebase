@@ -6,12 +6,6 @@ import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
 option (gogoproto.marshaler_all) = true;
 option (gogoproto.unmarshaler_all) = true;
-option (gogoproto.goproto_enum_prefix_all) = true;
-
-/*
-TODO:
-- What do queries look like? (free form or structured?)
-*/
 
 // Models
 
@@ -19,21 +13,21 @@ message Iterator {
 	string start_cursor = 1;
 	string end_cursor = 2;
 	enum Direction {
-		FROM_START = 0;
-		FROM_END = 1;
+		ITERATOR_DIRECTION_FROM_START = 0;
+		ITERATOR_DIRECTION_FROM_END = 1;
 	}
 	Direction direction = 3;
 	uint32 count = 4;
 }
 
 enum ThreadType {
-	UNKNOWN = 0;
-	EXTERNAL = 1;
-	TEAM = 2;
-	SETUP = 3;
-	SUPPORT = 4;
-	LEGACY_TEAM = 5;
-	SECURE_EXTERNAL = 6;
+	THREAD_TYPE_INVALID = 0;
+	THREAD_TYPE_EXTERNAL = 1;
+	THREAD_TYPE_TEAM = 2;
+	THREAD_TYPE_SETUP = 3;
+	THREAD_TYPE_SUPPORT = 4;
+	THREAD_TYPE_LEGACY_TEAM = 5;
+	THREAD_TYPE_SECURE_EXTERNAL = 6;
 }
 
 enum ThreadOrigin {
@@ -71,9 +65,9 @@ message ThreadItem {
 	string actor_entity_id = 3 [(gogoproto.customname) = "ActorEntityID"];
 	bool internal = 4; // item is internal to the organization (not seen by external entities)
 	enum Type {
-		MESSAGE = 0;
-		MESSAGE_UPDATED = 1;
-		FOLLOWER_UPDATED = 2;
+		THREAD_ITEM_TYPE_MESSAGE = 0;
+		THREAD_ITEM_TYPE_MESSAGE_UPDATED = 1;
+		THREAD_ITEM_TYPE_FOLLOWER_UPDATED = 2;
 	}
 	Type type = 5;
 	oneof item {
@@ -93,7 +87,7 @@ message ThreadItemViewDetails {
 
 message Reference {
 	enum Type {
-		ENTITY = 0;
+		REFERENCE_TYPE_ENTITY = 0;
 	}
 	Type type = 1;
 	string id = 2 [(gogoproto.customname) = "ID"];
@@ -103,8 +97,8 @@ message Message {
 	string text = 1;
 	repeated Attachment attachments = 2;
 	enum Status {
-		NORMAL = 0;
-		DELETED = 1;
+		MESSAGE_STATUS_NORMAL = 0;
+		MESSAGE_STATUS_DELETED = 1;
 	}
 	Status status = 3;
 	Endpoint source = 4;
@@ -118,10 +112,10 @@ message Message {
 
 message Endpoint {
 	enum Channel {
-		APP = 0;
-		SMS = 1;
-		VOICE = 2;
-		EMAIL = 3;
+		ENDPOINT_CHANNEL_APP = 0;
+		ENDPOINT_CHANNEL_SMS = 1;
+		ENDPOINT_CHANNEL_VOICE = 2;
+		ENDPOINT_CHANNEL_EMAIL = 3;
 	}
 	Channel channel = 1;
 	string id = 2 [(gogoproto.customname) = "ID"];
@@ -141,21 +135,47 @@ message SavedQuery {
 	string id = 1 [(gogoproto.customname) = "ID"];
 	string organization_id = 2 [(gogoproto.customname) = "OrganizationID"];
 	Query query = 3;
+	string title = 4;
+	uint32 unread = 5;
+	uint32 total = 6;
+	int32 ordinal = 7;
 }
 
 message Query {
-	// TODO: either free form string or structured in some way
+	// All expressions are required to match (i.e. AND)
+	repeated Expr expressions = 1;
+}
+
+message Expr {
+	enum Flag {
+		EXPR_FLAG_INVALID = 0;
+		EXPR_FLAG_UNREAD = 1;
+		EXPR_FLAG_REFERENCED = 2;
+	}
+	// This is separate from the top-level thread type to handle logical types like "patient"
+	enum ThreadType {
+		EXPR_THREAD_TYPE_INVALID = 0;
+		EXPR_THREAD_TYPE_PATIENT = 1;
+		EXPR_THREAD_TYPE_TEAM = 2;
+	}
+
+	bool not = 1;
+	oneof value {
+		string token = 2;
+		Flag flag = 3;
+		ThreadType thread_type = 4;
+	}
 }
 
 message Attachment {
 	enum Type {
-		IMAGE = 0;
-		AUDIO = 1;
-		GENERIC_URL = 2;
-		VISIT = 3;
-		CARE_PLAN = 4;
-		VIDEO = 5;
-		PAYMENT_REQUEST = 6;
+		ATTACHMENT_TYPE_IMAGE = 0;
+		ATTACHMENT_TYPE_AUDIO = 1;
+		ATTACHMENT_TYPE_GENERIC_URL = 2;
+		ATTACHMENT_TYPE_VISIT = 3;
+		ATTACHMENT_TYPE_CARE_PLAN = 4;
+		ATTACHMENT_TYPE_VIDEO = 5;
+		ATTACHMENT_TYPE_PAYMENT_REQUEST = 6;
 	}
 	Type type = 1;
 	string title = 2;
@@ -275,9 +295,9 @@ message QueryThreadsRequest {
 	string organization_id = 1 [(gogoproto.customname) = "OrganizationID"];
 	Iterator iterator = 2;
 	enum Type {
-		ADHOC = 0;
-		SAVED = 1;
-		ALL_FOR_VIEWER = 2;
+		QUERY_THREADS_TYPE_ADHOC = 0;
+		QUERY_THREADS_TYPE_SAVED = 1;
+		QUERY_THREADS_TYPE_ALL_FOR_VIEWER = 2;
 	}
 	Type type = 3;
 	oneof query_type {
@@ -292,9 +312,17 @@ message ThreadEdge {
 	string cursor = 2;
 }
 
+enum ValueType {
+	VALUE_TYPE_UNKNOWN = 0;
+	VALUE_TYPE_EXACT = 1;
+	VALUE_TYPE_MANY = 2;
+}
+
 message QueryThreadsResponse {
 	repeated ThreadEdge edges = 1;
 	bool has_more = 2;
+	ValueType total_type = 3;
+	uint32 total = 4;
 }
 
 message SavedQueriesRequest {
@@ -328,6 +356,8 @@ message CreateSavedQueryRequest {
 	string organization_id = 1 [(gogoproto.customname) = "OrganizationID"];
 	string entity_id = 2 [(gogoproto.customname) = "EntityID"];
 	Query query = 3;
+	string title = 4;
+	int32 ordinal = 5;
 }
 
 message CreateSavedQueryResponse {
@@ -338,9 +368,12 @@ message UpdateSavedQueryRequest {
 	string organization_id = 1 [(gogoproto.customname) = "OrganizationID"];
 	string query_id = 2 [(gogoproto.customname) = "QueryID"];
 	Query query = 3;
+	string title = 4;
+	int32 ordinal = 5;
 }
 
 message UpdateSavedQueryResponse {
+	SavedQuery query = 1;
 }
 
 message DeleteMessageRequest {
@@ -510,9 +543,9 @@ message ProvisionedPhoneEvent {
 
 message OnboardingThreadEventRequest {
 	enum LookupByType {
-		INVALID_LOOKUP_BY_TYPE = 0;
-		THREAD_ID = 1;
-		ENTITY_ID = 2;
+		ONBOARDING_THREAD_LOOKUP_BY_INVALID = 0;
+		ONBOARDING_THREAD_LOOKUP_BY_THREAD_ID = 1;
+		ONBOARDING_THREAD_LOOKUP_BY_ENTITY_ID = 2;
 	}
 	LookupByType lookup_by_type = 1;
 	oneof lookup_by {
@@ -521,9 +554,9 @@ message OnboardingThreadEventRequest {
 	}
 
 	enum EventType {
-		INVALID_EVENT_TYPE = 0;
-		GENERIC_SETUP = 1;
-		PROVISIONED_PHONE = 2;
+		ONBOARDING_THREAD_EVENT_TYPE_INVALID = 0;
+		ONBOARDING_THREAD_EVENT_TYPE_GENERIC_SETUP = 1;
+		ONBOARDING_THREAD_EVENT_TYPE_PROVISIONED_PHONE = 2;
 	}
 	EventType event_type = 4;
 	oneof event {

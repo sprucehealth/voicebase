@@ -1,14 +1,13 @@
 package externalmsg
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
-
-	"context"
 
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
@@ -363,7 +362,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 		switch pem.Type {
 
 		case excomms.PublishedExternalMessage_SMS:
-			endpointChannel = threading.Endpoint_SMS
+			endpointChannel = threading.ENDPOINT_CHANNEL_SMS
 			text = pem.GetSMSItem().Text
 			title = bml.BML{"SMS"}
 			summary = fmt.Sprintf("%s: %s", fromName, text)
@@ -372,7 +371,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 			attachments = make([]*threading.Attachment, len(pem.GetSMSItem().Attachments))
 			for i, a := range pem.GetSMSItem().Attachments {
 				attachments[i] = &threading.Attachment{
-					Type: threading.Attachment_IMAGE,
+					Type: threading.ATTACHMENT_TYPE_IMAGE,
 					Data: &threading.Attachment_Image{
 						Image: &threading.ImageAttachment{
 							Mimetype: a.ContentType,
@@ -383,7 +382,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 			}
 
 		case excomms.PublishedExternalMessage_INCOMING_CALL_EVENT:
-			endpointChannel = threading.Endpoint_VOICE
+			endpointChannel = threading.ENDPOINT_CHANNEL_VOICE
 			switch pem.GetIncoming().Type {
 			case excomms.IncomingCallEventItem_ANSWERED:
 				if d := pem.GetIncoming().DurationInSeconds; d != 0 {
@@ -410,7 +409,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 				}
 				attachments = []*threading.Attachment{
 					{
-						Type: threading.Attachment_AUDIO,
+						Type: threading.ATTACHMENT_TYPE_AUDIO,
 						Data: &threading.Attachment_Audio{
 							Audio: &threading.AudioAttachment{
 								MediaID:    pem.GetIncoming().VoicemailMediaID,
@@ -421,7 +420,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 				}
 			}
 		case excomms.PublishedExternalMessage_OUTGOING_CALL_EVENT:
-			endpointChannel = threading.Endpoint_VOICE
+			endpointChannel = threading.ENDPOINT_CHANNEL_VOICE
 			dontNotify = true
 
 			switch pem.GetOutgoing().Type {
@@ -441,7 +440,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 			}
 
 		case excomms.PublishedExternalMessage_EMAIL:
-			endpointChannel = threading.Endpoint_EMAIL
+			endpointChannel = threading.ENDPOINT_CHANNEL_EMAIL
 			subject := pem.GetEmailItem().Subject
 			if len(strings.TrimSpace(subject)) == 0 {
 				subject = "No Subject"
@@ -453,7 +452,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 			for _, attachmentItem := range pem.GetEmailItem().Attachments {
 				if strings.HasPrefix(attachmentItem.ContentType, "image") {
 					attachments = append(attachments, &threading.Attachment{
-						Type:  threading.Attachment_IMAGE,
+						Type:  threading.ATTACHMENT_TYPE_IMAGE,
 						Title: attachmentItem.Name,
 						Data: &threading.Attachment_Image{
 							Image: &threading.ImageAttachment{
@@ -464,7 +463,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 					})
 				} else {
 					attachments = append(attachments, &threading.Attachment{
-						Type:  threading.Attachment_GENERIC_URL,
+						Type:  threading.ATTACHMENT_TYPE_GENERIC_URL,
 						Title: attachmentItem.Name,
 						Data: &threading.Attachment_GenericURL{
 							GenericURL: &threading.GenericURLAttachment{
@@ -506,7 +505,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 					Text:         plainText,
 					Attachments:  attachments,
 					Summary:      summary,
-					Type:         threading.ThreadType_EXTERNAL,
+					Type:         threading.THREAD_TYPE_EXTERNAL,
 					SystemTitle:  externalEntity.Info.DisplayName,
 					DontNotify:   dontNotify,
 				},

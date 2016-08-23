@@ -73,7 +73,7 @@ func patientThreads(p graphql.ResolveParams, a *models.PatientAccount) (*Connect
 		return nil, errors.InternalError(ctx, err)
 	}
 	req := &threading.QueryThreadsRequest{
-		Type:           threading.QueryThreadsRequest_ALL_FOR_VIEWER,
+		Type:           threading.QUERY_THREADS_TYPE_ALL_FOR_VIEWER,
 		Iterator:       &threading.Iterator{},
 		ViewerEntityID: ent.ID,
 	}
@@ -85,10 +85,10 @@ func patientThreads(p graphql.ResolveParams, a *models.PatientAccount) (*Connect
 	}
 	if i, ok := p.Args["last"].(int); ok {
 		req.Iterator.Count = uint32(i)
-		req.Iterator.Direction = threading.Iterator_FROM_END
+		req.Iterator.Direction = threading.ITERATOR_DIRECTION_FROM_END
 	} else if i, ok := p.Args["first"].(int); ok {
 		req.Iterator.Count = uint32(i)
-		req.Iterator.Direction = threading.Iterator_FROM_START
+		req.Iterator.Direction = threading.ITERATOR_DIRECTION_FROM_START
 	}
 	res, err := ram.QueryThreads(ctx, req)
 	if err != nil {
@@ -98,7 +98,7 @@ func patientThreads(p graphql.ResolveParams, a *models.PatientAccount) (*Connect
 	cn := &Connection{
 		Edges: make([]*Edge, len(res.Edges)),
 	}
-	if req.Iterator.Direction == threading.Iterator_FROM_START {
+	if req.Iterator.Direction == threading.ITERATOR_DIRECTION_FROM_START {
 		cn.PageInfo.HasNextPage = res.HasMore
 	} else {
 		cn.PageInfo.HasPreviousPage = res.HasMore

@@ -99,7 +99,7 @@ func TestHasConnectedStripeAccount(t *testing.T) {
 				rm := ramock.New(t)
 				rm.Expect(mock.NewExpectation(rm.VendorAccounts, &payments.VendorAccountsRequest{
 					EntityID: entID,
-				}).WithReturns(&payments.VendorAccountsResponse{VendorAccounts: []*payments.VendorAccount{&payments.VendorAccount{}}}, nil))
+				}).WithReturns(&payments.VendorAccountsResponse{VendorAccounts: []*payments.VendorAccount{{}}}, nil))
 				return &testHasConnectedStripeAccountParams{
 					p: graphql.ResolveParams{
 						Context: context.Background(),

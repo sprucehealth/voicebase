@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
@@ -21,18 +20,17 @@ var savedThreadQueryType = graphql.NewObject(
 			nodeInterfaceType,
 		},
 		Fields: graphql.Fields{
-			"id": &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
-			// TODO: query
+			"id":     &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+			"query":  &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"title":  &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"unread": &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+			"total":  &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
 			"threads": &graphql.Field{
 				Type: threadConnectionType.ConnectionType,
 				Args: NewConnectionArguments(nil),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					ctx := p.Context
 					stq := p.Source.(*models.SavedThreadQuery)
-					if stq == nil {
-						// Shouldn't be possible I don't think
-						return nil, errors.InternalError(ctx, errors.New("savedThreadQuery is nil"))
-					}
 
 					ram := raccess.ResourceAccess(p)
 					acc := gqlctx.Account(ctx)
@@ -49,7 +47,7 @@ var savedThreadQueryType = graphql.NewObject(
 					}
 					req := &threading.QueryThreadsRequest{
 						OrganizationID: stq.OrganizationID,
-						Type:           threading.QueryThreadsRequest_SAVED,
+						Type:           threading.QUERY_THREADS_TYPE_SAVED,
 						QueryType: &threading.QueryThreadsRequest_SavedQueryID{
 							SavedQueryID: stq.ID,
 						},
@@ -64,42 +62,16 @@ var savedThreadQueryType = graphql.NewObject(
 					}
 					if i, ok := p.Args["last"].(int); ok {
 						req.Iterator.Count = uint32(i)
-						req.Iterator.Direction = threading.Iterator_FROM_END
+						req.Iterator.Direction = threading.ITERATOR_DIRECTION_FROM_END
 					} else if i, ok := p.Args["first"].(int); ok {
 						req.Iterator.Count = uint32(i)
-						req.Iterator.Direction = threading.Iterator_FROM_START
+						req.Iterator.Direction = threading.ITERATOR_DIRECTION_FROM_START
 					}
 					res, err := ram.QueryThreads(ctx, req)
 					if err != nil {
 						return nil, err
 					}
-
-					cn := &Connection{
-						Edges: make([]*Edge, len(res.Edges)),
-					}
-					if req.Iterator.Direction == threading.Iterator_FROM_START {
-						cn.PageInfo.HasNextPage = res.HasMore
-					} else {
-						cn.PageInfo.HasPreviousPage = res.HasMore
-					}
-					threads := make([]*models.Thread, len(res.Edges))
-					for i, e := range res.Edges {
-						t, err := transformThreadToResponse(ctx, ram, e.Thread, acc)
-						if err != nil {
-							return nil, errors.InternalError(ctx, fmt.Errorf("Failed to transform thread: %s", err))
-						}
-						threads[i] = t
-						cn.Edges[i] = &Edge{
-							Node:   t,
-							Cursor: ConnectionCursor(e.Cursor),
-						}
-					}
-
-					if err := hydrateThreads(ctx, ram, threads); err != nil {
-						return nil, errors.InternalError(ctx, err)
-					}
-
-					return cn, nil
+					return transformQueryThreadsResponseToConnection(ctx, ram, acc, res)
 				},
 			},
 			"deeplink": &graphql.Field{

@@ -130,7 +130,7 @@ func (s *service) canAccessThreadMedia(ctx context.Context, threadID, accountID 
 		return err
 	}
 	// If this is a non team thread then just do an org check
-	if tResp.Thread.Type != threading.ThreadType_TEAM {
+	if tResp.Thread.Type != threading.THREAD_TYPE_TEAM {
 
 		if err := s.canAccessOrganizationMedia(ctx, tResp.Thread.OrganizationID, accountID); err != nil {
 			if err != ErrAccessDenied {
@@ -140,7 +140,7 @@ func (s *service) canAccessThreadMedia(ctx context.Context, threadID, accountID 
 			// only support threads have linked threads
 			// so for efficiency sake ignore the check for linked threads
 			// note though its possible for this assumption to no longer hold true in the future.
-			if tResp.Thread.Type != threading.ThreadType_SUPPORT {
+			if tResp.Thread.Type != threading.THREAD_TYPE_SUPPORT {
 				return err
 			}
 

@@ -325,9 +325,13 @@ type ThreadItemViewDetails struct {
 // SavedQuery is a saved thread query.
 type SavedQuery struct {
 	ID             SavedQueryID
+	Ordinal        int
+	Title          string
 	OrganizationID string
 	EntityID       string
-	Query          []byte // TODO
+	Query          *Query
+	Unread         int
+	Total          int
 	Created        time.Time
 	Modified       time.Time
 }

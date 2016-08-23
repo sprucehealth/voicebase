@@ -94,11 +94,11 @@ func (s *syncEvent) processPatientAddEvent(ctx context.Context, cfg *sync.Config
 
 		switch cfg.ThreadCreationType {
 		case sync.THREAD_CREATION_TYPE_STANDARD:
-			if err := s.createThread(ctx, patient, event.Source, event.OrganizationEntityID, threading.ThreadType_EXTERNAL); err != nil {
+			if err := s.createThread(ctx, patient, event.Source, event.OrganizationEntityID, threading.THREAD_TYPE_EXTERNAL); err != nil {
 				return errors.Trace(err)
 			}
 		case sync.THREAD_CREATION_TYPE_SECURE:
-			if err := s.createThread(ctx, patient, event.Source, event.OrganizationEntityID, threading.ThreadType_SECURE_EXTERNAL); err != nil {
+			if err := s.createThread(ctx, patient, event.Source, event.OrganizationEntityID, threading.THREAD_TYPE_SECURE_EXTERNAL); err != nil {
 				return errors.Trace(err)
 			}
 		default:
@@ -117,7 +117,7 @@ func (s *syncEvent) createThread(ctx context.Context, patient *sync.Patient, sou
 	}
 
 	entityType := directory.EntityType_EXTERNAL
-	if threadType == threading.ThreadType_SECURE_EXTERNAL {
+	if threadType == threading.THREAD_TYPE_SECURE_EXTERNAL {
 		entityType = directory.EntityType_PATIENT
 	}
 
@@ -186,7 +186,7 @@ func (s *syncEvent) createThread(ctx context.Context, patient *sync.Patient, sou
 			Type:            threadType,
 			Summary:         externalEntity.Info.DisplayName,
 			SystemTitle:     externalEntity.Info.DisplayName,
-			Origin:          threading.ThreadOrigin_THREAD_ORIGIN_SYNC,
+			Origin:          threading.THREAD_ORIGIN_SYNC,
 		})
 		if err != nil {
 			return errors.Errorf("Unable to create thread for %s : %s", externalEntity.ID, err)

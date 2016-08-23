@@ -223,10 +223,10 @@ var invitePatientsMutation = &graphql.Field{
 						OrganizationID:  orgID,
 						PrimaryEntityID: patientEntity.ID,
 						MemberEntityIDs: []string{orgID, patientEntity.ID},
-						Type:            threading.ThreadType_SECURE_EXTERNAL,
+						Type:            threading.THREAD_TYPE_SECURE_EXTERNAL,
 						Summary:         patientEntity.Info.DisplayName,
 						SystemTitle:     patientEntity.Info.DisplayName,
-						Origin:          threading.ThreadOrigin_THREAD_ORIGIN_PATIENT_INVITE,
+						Origin:          threading.THREAD_ORIGIN_PATIENT_INVITE,
 					})
 					if err != nil {
 						return nil, errors.InternalError(ctx, err)

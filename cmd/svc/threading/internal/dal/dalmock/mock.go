@@ -90,8 +90,8 @@ func (dl *DAL) DeleteThread(ctx context.Context, threadID models.ThreadID) error
 	return mock.SafeError(rets[0])
 }
 
-func (dl *DAL) IterateThreads(ctx context.Context, memberEntityIDs []string, viewerID string, forExternal bool, it *dal.Iterator) (*dal.ThreadConnection, error) {
-	rets := dl.Expector.Record(memberEntityIDs, viewerID, forExternal, it)
+func (dl *DAL) IterateThreads(ctx context.Context, query *models.Query, memberEntityIDs []string, viewerID string, forExternal bool, it *dal.Iterator) (*dal.ThreadConnection, error) {
+	rets := dl.Expector.Record(query, memberEntityIDs, viewerID, forExternal, it)
 	if len(rets) == 0 {
 		return nil, nil
 	}

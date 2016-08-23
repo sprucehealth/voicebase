@@ -191,22 +191,22 @@ func testSendMessageSMS(t *testing.T, revealSender bool) {
 			ID:            "11000",
 			ActorEntityID: providerEntity.ID,
 			Internal:      false,
-			Type:          threading.ThreadItem_MESSAGE,
+			Type:          threading.THREAD_ITEM_TYPE_MESSAGE,
 			Item: &threading.ThreadItem_Message{
 				Message: &threading.Message{
 					Text: "Hello",
 					Source: &threading.Endpoint{
-						Channel: threading.Endpoint_APP,
+						Channel: threading.ENDPOINT_CHANNEL_APP,
 					},
 					Destinations: []*threading.Endpoint{
 						{
 							ID:      "+12068773590",
-							Channel: threading.Endpoint_SMS,
+							Channel: threading.ENDPOINT_CHANNEL_SMS,
 						},
 					},
 					Attachments: []*threading.Attachment{
 						{
-							Type: threading.Attachment_IMAGE,
+							Type: threading.ATTACHMENT_TYPE_IMAGE,
 							URL:  "image/attachment/url",
 							Data: &threading.Attachment_Image{
 								Image: &threading.ImageAttachment{
@@ -214,7 +214,7 @@ func testSendMessageSMS(t *testing.T, revealSender bool) {
 								},
 							},
 						},
-						{Type: threading.Attachment_GENERIC_URL, URL: "generic/url"},
+						{Type: threading.ATTACHMENT_TYPE_GENERIC_URL, URL: "generic/url"},
 					},
 				},
 			},
@@ -393,22 +393,22 @@ func testSendingEmail(t *testing.T, revealSender bool) {
 			ID:            "11000",
 			ActorEntityID: "30",
 			Internal:      false,
-			Type:          threading.ThreadItem_MESSAGE,
+			Type:          threading.THREAD_ITEM_TYPE_MESSAGE,
 			Item: &threading.ThreadItem_Message{
 				Message: &threading.Message{
 					Text: "Hello",
 					Source: &threading.Endpoint{
-						Channel: threading.Endpoint_APP,
+						Channel: threading.ENDPOINT_CHANNEL_APP,
 					},
 					Destinations: []*threading.Endpoint{
 						{
 							ID:      "patient@test.com",
-							Channel: threading.Endpoint_EMAIL,
+							Channel: threading.ENDPOINT_CHANNEL_EMAIL,
 						},
 					},
 					Attachments: []*threading.Attachment{
 						{
-							Type: threading.Attachment_IMAGE,
+							Type: threading.ATTACHMENT_TYPE_IMAGE,
 							URL:  "image/attachment/url",
 							Data: &threading.Attachment_Image{
 								Image: &threading.ImageAttachment{
@@ -416,7 +416,7 @@ func testSendingEmail(t *testing.T, revealSender bool) {
 								},
 							},
 						},
-						{Type: threading.Attachment_GENERIC_URL, URL: "generic/url"},
+						{Type: threading.ATTACHMENT_TYPE_GENERIC_URL, URL: "generic/url"},
 					},
 				},
 			},
@@ -581,21 +581,21 @@ func TestSendMessage_Multiple(t *testing.T) {
 			ID:            "11000",
 			ActorEntityID: "30",
 			Internal:      false,
-			Type:          threading.ThreadItem_MESSAGE,
+			Type:          threading.THREAD_ITEM_TYPE_MESSAGE,
 			Item: &threading.ThreadItem_Message{
 				Message: &threading.Message{
 					Text: "Hello",
 					Source: &threading.Endpoint{
-						Channel: threading.Endpoint_APP,
+						Channel: threading.ENDPOINT_CHANNEL_APP,
 					},
 					Destinations: []*threading.Endpoint{
 						{
 							ID:      "patient@test.com",
-							Channel: threading.Endpoint_EMAIL,
+							Channel: threading.ENDPOINT_CHANNEL_EMAIL,
 						},
 						{
 							ID:      "+12068773590",
-							Channel: threading.Endpoint_SMS,
+							Channel: threading.ENDPOINT_CHANNEL_SMS,
 						},
 					},
 				},
@@ -690,17 +690,17 @@ func TestSendMessage_OnlyAppDestinations(t *testing.T) {
 			ID:            "11000",
 			ActorEntityID: "30",
 			Internal:      false,
-			Type:          threading.ThreadItem_MESSAGE,
+			Type:          threading.THREAD_ITEM_TYPE_MESSAGE,
 			Item: &threading.ThreadItem_Message{
 				Message: &threading.Message{
 					Text: "Hello",
 					Source: &threading.Endpoint{
-						Channel: threading.Endpoint_APP,
+						Channel: threading.ENDPOINT_CHANNEL_APP,
 					},
 					Destinations: []*threading.Endpoint{
 						{
 							ID:      "APP",
-							Channel: threading.Endpoint_APP,
+							Channel: threading.ENDPOINT_CHANNEL_APP,
 						},
 					},
 				},
@@ -795,12 +795,12 @@ func TestSendMessage_NoDestinations(t *testing.T) {
 			ID:            "11000",
 			ActorEntityID: "30",
 			Internal:      false,
-			Type:          threading.ThreadItem_MESSAGE,
+			Type:          threading.THREAD_ITEM_TYPE_MESSAGE,
 			Item: &threading.ThreadItem_Message{
 				Message: &threading.Message{
 					Text: "Hello",
 					Source: &threading.Endpoint{
-						Channel: threading.Endpoint_APP,
+						Channel: threading.ENDPOINT_CHANNEL_APP,
 					},
 					Destinations: []*threading.Endpoint{},
 				},
@@ -837,7 +837,7 @@ func TestSendMessage_Internal(t *testing.T) {
 			ID:            "11000",
 			ActorEntityID: "30",
 			Internal:      true,
-			Type:          threading.ThreadItem_MESSAGE,
+			Type:          threading.THREAD_ITEM_TYPE_MESSAGE,
 			Item: &threading.ThreadItem_Message{
 				Message: &threading.Message{
 					Text: "Hello",

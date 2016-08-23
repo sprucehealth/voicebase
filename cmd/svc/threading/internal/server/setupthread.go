@@ -115,13 +115,13 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 	var state *models.SetupThreadState
 	var err error
 	switch in.LookupByType {
-	case threading.OnboardingThreadEventRequest_THREAD_ID:
+	case threading.ONBOARDING_THREAD_LOOKUP_BY_THREAD_ID:
 		id, err := models.ParseThreadID(in.GetThreadID())
 		if err != nil {
 			return nil, grpcErrorf(codes.InvalidArgument, "Invalid thread ID")
 		}
 		state, err = s.dal.SetupThreadState(ctx, id)
-	case threading.OnboardingThreadEventRequest_ENTITY_ID:
+	case threading.ONBOARDING_THREAD_LOOKUP_BY_ENTITY_ID:
 		state, err = s.dal.SetupThreadStateForEntity(ctx, in.GetEntityID())
 	default:
 		return nil, grpcErrorf(codes.InvalidArgument, "Unknown lookup by type %s", in.LookupBy)
@@ -154,7 +154,7 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 	var newStepBit int
 	var msgBML bml.BML
 	switch in.EventType {
-	case threading.OnboardingThreadEventRequest_PROVISIONED_PHONE:
+	case threading.ONBOARDING_THREAD_EVENT_TYPE_PROVISIONED_PHONE:
 		if state.Step&1 == 0 {
 			// Second phone line
 			pn, err := phone.ParseNumber(in.GetProvisionedPhone().PhoneNumber)
@@ -173,7 +173,7 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 			}
 			newStepBit = 1
 		}
-	case threading.OnboardingThreadEventRequest_GENERIC_SETUP:
+	case threading.ONBOARDING_THREAD_EVENT_TYPE_GENERIC_SETUP:
 		ev := in.GetGenericSetup()
 		switch ev.Name {
 		case eventSetupAnsweringService:

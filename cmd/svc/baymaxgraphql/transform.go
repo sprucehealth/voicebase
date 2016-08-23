@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
@@ -27,6 +28,41 @@ import (
 	"github.com/sprucehealth/backend/svc/threading"
 )
 
+func transformQueryThreadsResponseToConnection(ctx context.Context, ram raccess.ResourceAccessor, acc *auth.Account, res *threading.QueryThreadsResponse) (*Connection, error) {
+	cn := &Connection{
+		Edges: make([]*Edge, 0, len(res.Edges)),
+		Total: int(res.Total),
+	}
+	switch res.TotalType {
+	case threading.VALUE_TYPE_EXACT:
+		cn.TotalText = strconv.Itoa(cn.Total)
+	case threading.VALUE_TYPE_MANY:
+		cn.TotalText = "many"
+	case threading.VALUE_TYPE_UNKNOWN:
+		cn.TotalText = "uknown"
+	default:
+		return nil, errors.Errorf("unknown total value type %s", res.TotalType)
+	}
+	cn.EndOfResultsText = fmt.Sprintf("%d out of %s conversations shown\nSearch to access more", len(res.Edges), cn.TotalText)
+	cn.PageInfo.HasNextPage = res.HasMore
+	threads := make([]*models.Thread, len(res.Edges))
+	for i, e := range res.Edges {
+		t, err := transformThreadToResponse(ctx, ram, e.Thread, acc)
+		if err != nil {
+			return nil, errors.Errorf("Failed to transform thread: %s", err)
+		}
+		threads[i] = t
+		cn.Edges = append(cn.Edges, &Edge{
+			Node:   t,
+			Cursor: ConnectionCursor(e.Cursor),
+		})
+	}
+	if err := hydrateThreads(ctx, ram, threads); err != nil {
+		return nil, errors.Trace(err)
+	}
+	return cn, nil
+}
+
 func transformAccountToResponse(a *auth.Account) models.Account {
 	if a == nil {
 		return nil
@@ -41,7 +77,7 @@ func transformAccountToResponse(a *auth.Account) models.Account {
 			ID: a.ID,
 		}
 	}
-	golog.Errorf("Unable to transform account of type %s to repsonse", a.Type.String())
+	golog.Errorf("Unable to transform account of type %s to repsonse", a.Type)
 	return nil
 }
 
@@ -128,7 +164,6 @@ func transformThreadToResponse(ctx context.Context, ram raccess.ResourceAccessor
 		MessageCount:               int(t.MessageCount),
 		LastPrimaryEntityEndpoints: make([]*models.Endpoint, len(t.LastPrimaryEntityEndpoints)),
 		EmptyStateTextMarkup:       threadEmptyStateTextMarkup(ctx, ram, t, viewingAccount),
-		Type:                       t.Type.String(),
 		TypeIndicator:              threadTypeIndicator(t, viewingAccount),
 		Title:                      threadTitle(ctx, ram, t, viewingAccount),
 	}
@@ -137,46 +172,45 @@ func transformThreadToResponse(ctx context.Context, ram raccess.ResourceAccessor
 	}
 
 	switch t.Type {
-	case threading.ThreadType_TEAM:
+	case threading.THREAD_TYPE_TEAM:
 		th.AllowAddMembers = true
 		th.AllowLeave = true
 		th.AllowRemoveMembers = true
 		th.AllowUpdateTitle = true
 		th.IsTeamThread = true
 		th.Type = models.ThreadTypeTeam
-	case threading.ThreadType_EXTERNAL:
+	case threading.THREAD_TYPE_EXTERNAL:
 		th.AllowDelete = true
 		th.AllowExternalDelivery = true
 		th.IsPatientThread = true
 		th.Type = models.ThreadTypeExternal
-	case threading.ThreadType_SECURE_EXTERNAL:
+	case threading.THREAD_TYPE_SECURE_EXTERNAL:
 		th.Type = models.ThreadTypeSecureExternal
 		th.IsPatientThread = true
-	case threading.ThreadType_SETUP:
+	case threading.THREAD_TYPE_SETUP:
 		if th.Title == "" {
 			th.Title = onboardingThreadTitle
 		}
 		th.Type = models.ThreadTypeSetup
 		th.AlwaysShowNotifications = true
-	case threading.ThreadType_SUPPORT:
+	case threading.THREAD_TYPE_SUPPORT:
 		if th.Title == "" {
 			th.Title = supportThreadTitle
 		}
 		th.Type = models.ThreadTypeSupport
 		th.AlwaysShowNotifications = true
-	case threading.ThreadType_LEGACY_TEAM:
+	case threading.THREAD_TYPE_LEGACY_TEAM:
 		th.Type = models.ThreadTypeLegacyTeam
 		th.IsTeamThread = true
-	case threading.ThreadType_UNKNOWN: // TODO: remove this once old threads are migrated
-		th.Type = models.ThreadTypeUnknown
 	default:
 		return nil, fmt.Errorf("Unknown thread type %s", t.Type)
 	}
 	for i, ep := range t.LastPrimaryEntityEndpoints {
-		th.LastPrimaryEntityEndpoints[i] = &models.Endpoint{
-			Channel: ep.Channel.String(),
-			ID:      ep.ID,
+		e, err := transformEndpointToModel(ep)
+		if err != nil {
+			return nil, errors.Trace(err)
 		}
+		th.LastPrimaryEntityEndpoints[i] = e
 	}
 	return th, nil
 }
@@ -184,9 +218,9 @@ func transformThreadToResponse(ctx context.Context, ram raccess.ResourceAccessor
 func threadTypeIndicator(t *threading.Thread, acc *auth.Account) string {
 	if acc.Type != auth.AccountType_PATIENT {
 		switch t.Type {
-		case threading.ThreadType_SECURE_EXTERNAL:
+		case threading.THREAD_TYPE_SECURE_EXTERNAL:
 			return models.ThreadTypeIndicatorLock
-		case threading.ThreadType_TEAM:
+		case threading.THREAD_TYPE_TEAM:
 			return models.ThreadTypeIndicatorGroup
 		}
 	}
@@ -195,10 +229,10 @@ func threadTypeIndicator(t *threading.Thread, acc *auth.Account) string {
 
 func allowVideoAttachments(t *threading.Thread) bool {
 	switch t.Type {
-	case threading.ThreadType_TEAM,
-		threading.ThreadType_SECURE_EXTERNAL,
-		threading.ThreadType_SUPPORT,
-		threading.ThreadType_LEGACY_TEAM:
+	case threading.THREAD_TYPE_TEAM,
+		threading.THREAD_TYPE_SECURE_EXTERNAL,
+		threading.THREAD_TYPE_SUPPORT,
+		threading.THREAD_TYPE_LEGACY_TEAM:
 		return true
 	}
 	return false
@@ -206,15 +240,15 @@ func allowVideoAttachments(t *threading.Thread) bool {
 
 func allowMentions(t *threading.Thread, acc *auth.Account) bool {
 	switch t.Type {
-	case threading.ThreadType_TEAM:
+	case threading.THREAD_TYPE_TEAM:
 		return true
-	case threading.ThreadType_EXTERNAL:
+	case threading.THREAD_TYPE_EXTERNAL:
 		return true
-	case threading.ThreadType_SECURE_EXTERNAL:
+	case threading.THREAD_TYPE_SECURE_EXTERNAL:
 		return acc.Type == auth.AccountType_PROVIDER
-	case threading.ThreadType_LEGACY_TEAM:
+	case threading.THREAD_TYPE_LEGACY_TEAM:
 		return true
-	case threading.ThreadType_SUPPORT:
+	case threading.THREAD_TYPE_SUPPORT:
 		return t.OrganizationID == *flagSpruceOrgID
 	}
 	return false
@@ -222,13 +256,13 @@ func allowMentions(t *threading.Thread, acc *auth.Account) bool {
 
 func allowInternalMessages(t *threading.Thread, acc *auth.Account) bool {
 	switch t.Type {
-	case threading.ThreadType_EXTERNAL:
+	case threading.THREAD_TYPE_EXTERNAL:
 		return true
-	case threading.ThreadType_SECURE_EXTERNAL:
+	case threading.THREAD_TYPE_SECURE_EXTERNAL:
 		return acc.Type == auth.AccountType_PROVIDER
-	case threading.ThreadType_SETUP:
+	case threading.THREAD_TYPE_SETUP:
 		return true
-	case threading.ThreadType_SUPPORT:
+	case threading.THREAD_TYPE_SUPPORT:
 		return t.OrganizationID == *flagSpruceOrgID
 	}
 	return false
@@ -260,9 +294,9 @@ func threadEmptyStateTextMarkup(ctx context.Context, ram raccess.ResourceAccesso
 		return ""
 	}
 	switch t.Type {
-	case threading.ThreadType_TEAM:
+	case threading.THREAD_TYPE_TEAM:
 		return "This is the beginning of your team conversation.\nSend a message to get things started."
-	case threading.ThreadType_SECURE_EXTERNAL:
+	case threading.THREAD_TYPE_SECURE_EXTERNAL:
 		if viewingAccount.Type == auth.AccountType_PROVIDER {
 			esm, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
 				LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
@@ -277,9 +311,9 @@ func threadEmptyStateTextMarkup(ctx context.Context, ram raccess.ResourceAccesso
 				golog.Errorf("Failed to get primary entity %s for thread %s to populate empty state markup: %s", t.PrimaryEntityID, t.ID, err)
 			} else {
 				switch t.Origin {
-				case threading.ThreadOrigin_THREAD_ORIGIN_UNKNOWN, threading.ThreadOrigin_THREAD_ORIGIN_PATIENT_INVITE:
+				case threading.THREAD_ORIGIN_UNKNOWN, threading.THREAD_ORIGIN_PATIENT_INVITE:
 					return fmt.Sprintf("We've sent an invitation to %s to download the Spruce application and connect with you. You can message the patient below -- we recommend sending a personal welcome to kick things off.\n\nYou can also make internal notes about the patient’s care. These are not sent to the patient but are visible to you and your teammates.", esm.Info.DisplayName)
-				case threading.ThreadOrigin_THREAD_ORIGIN_ORGANIZATION_CODE:
+				case threading.THREAD_ORIGIN_ORGANIZATION_CODE:
 					return fmt.Sprintf("%s has signed up for Spruce using your practice’s code. You can message the patient below -- we recommend sending a personal welcome to kick things off. You can also make internal notes about the patient’s care. These are not sent to the patient but are visible to you and your teammates.", esm.Info.DisplayName)
 				}
 			}
@@ -303,6 +337,28 @@ func threadEmptyStateTextMarkup(ctx context.Context, ram raccess.ResourceAccesso
 	return ""
 }
 
+func transformEndpointToModel(e *threading.Endpoint) (*models.Endpoint, error) {
+	switch e.Channel {
+	case threading.ENDPOINT_CHANNEL_APP:
+		return &models.Endpoint{ID: e.ID, Channel: models.EndpointChannelApp}, nil
+	case threading.ENDPOINT_CHANNEL_EMAIL:
+		return &models.Endpoint{ID: e.ID, Channel: models.EndpointChannelEmail}, nil
+	case threading.ENDPOINT_CHANNEL_SMS:
+		return &models.Endpoint{ID: e.ID, Channel: models.EndpointChannelSMS}, nil
+	case threading.ENDPOINT_CHANNEL_VOICE:
+		return &models.Endpoint{ID: e.ID, Channel: models.EndpointChannelVoice}, nil
+	}
+	return nil, errors.Errorf("unknown endpoint channel type %s", e.Channel)
+}
+
+func transformReferenceToModel(r *threading.Reference) (*models.Reference, error) {
+	switch r.Type {
+	case threading.REFERENCE_TYPE_ENTITY:
+		return &models.Reference{ID: r.ID, Type: models.EntityRef}, nil
+	}
+	return nil, errors.Errorf("unknown reference type %s", r.Type)
+}
+
 func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, webDomain, mediaAPIDomain string) (*models.ThreadItem, error) {
 	it := &models.ThreadItem{
 		ID:             item.ID,
@@ -314,7 +370,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 		OrganizationID: item.OrganizationID,
 	}
 	switch item.Type {
-	case threading.ThreadItem_MESSAGE:
+	case threading.THREAD_ITEM_TYPE_MESSAGE:
 		m := item.GetMessage()
 		m2 := &models.Message{
 			ThreadItemID:  item.ID,
@@ -324,28 +380,30 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 			// TODO: EditedTimestamp
 		}
 		if m.Source != nil {
-			m2.Source = &models.Endpoint{
-				Channel: m.Source.Channel.String(),
-				ID:      m.Source.ID,
+			var err error
+			m2.Source, err = transformEndpointToModel(m.Source)
+			if err != nil {
+				return nil, errors.Trace(err)
 			}
 		} else {
 			// TODO: for now setting source to APP if not included since clients might assume it's always included
 			m2.Source = &models.Endpoint{
-				Channel: threading.Endpoint_APP.String(),
+				Channel: models.EndpointChannelApp,
 				ID:      item.ActorEntityID,
 			}
 		}
 
 		for _, r := range m.TextRefs {
-			m2.Refs = append(m2.Refs, &models.Reference{
-				ID:   r.ID,
-				Type: strings.ToLower(r.Type.String()),
-			})
+			ref, err := transformReferenceToModel(r)
+			if err != nil {
+				return nil, errors.Trace(err)
+			}
+			m2.Refs = append(m2.Refs, ref)
 		}
 		for _, a := range m.Attachments {
 			var data interface{}
 			switch a.Type {
-			case threading.Attachment_AUDIO:
+			case threading.ATTACHMENT_TYPE_AUDIO:
 				d := a.GetAudio()
 				if d.Mimetype == "" { // TODO
 					d.Mimetype = "audio/mp3"
@@ -368,7 +426,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 					a.Title = "Audio"
 				}
 
-			case threading.Attachment_IMAGE:
+			case threading.ATTACHMENT_TYPE_IMAGE:
 				d := a.GetImage()
 				if d.Mimetype == "" { // TODO
 					d.Mimetype = "image/jpeg"
@@ -390,7 +448,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 					a.Title = "Photo"
 				}
 
-			case threading.Attachment_VISIT:
+			case threading.ATTACHMENT_TYPE_VISIT:
 				v := a.GetVisit()
 				data = &models.BannerButtonAttachment{
 					Title:   v.VisitName,
@@ -398,7 +456,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 					TapURL:  deeplink.VisitURL(webDomain, item.ThreadID, v.VisitID),
 					IconURL: "https://dlzz6qy5jmbag.cloudfront.net/caremessenger/icon_visit.png",
 				}
-			case threading.Attachment_VIDEO:
+			case threading.ATTACHMENT_TYPE_VIDEO:
 				v := a.GetVideo()
 				a.URL = media.URL(mediaAPIDomain, v.MediaID)
 				data = &models.VideoAttachment{
@@ -406,7 +464,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 					URL:          a.URL,
 					ThumbnailURL: media.ThumbnailURL(mediaAPIDomain, v.MediaID, 0, 0, false),
 				}
-			case threading.Attachment_CARE_PLAN:
+			case threading.ATTACHMENT_TYPE_CARE_PLAN:
 				cp := a.GetCarePlan()
 				a.URL = deeplink.CarePlanURL(webDomain, item.ThreadID, cp.CarePlanID)
 				data = &models.BannerButtonAttachment{
@@ -415,7 +473,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 					TapURL:  a.URL,
 					IconURL: "https://dlzz6qy5jmbag.cloudfront.net/caremessenger/icon_careplan.png",
 				}
-			case threading.Attachment_PAYMENT_REQUEST:
+			case threading.ATTACHMENT_TYPE_PAYMENT_REQUEST:
 				p := a.GetPaymentRequest()
 				data = &models.BannerButtonAttachment{
 					Title:   a.Title,
@@ -423,7 +481,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 					TapURL:  deeplink.PaymentURL(webDomain, item.OrganizationID, item.ThreadID, p.PaymentID),
 					IconURL: "https://dlzz6qy5jmbag.cloudfront.net/caremessenger/icon_payment.png",
 				}
-			case threading.Attachment_GENERIC_URL:
+			case threading.ATTACHMENT_TYPE_GENERIC_URL:
 				d := a.GetGenericURL()
 
 				// append to message
@@ -463,7 +521,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 				}
 				continue
 			default:
-				return nil, errors.Errorf("unknown attachment type %s", a.Type.String())
+				return nil, errors.Errorf("unknown attachment type %s", a.Type)
 			}
 			m2.Attachments = append(m2.Attachments, &models.Attachment{
 				Title: a.Title,
@@ -472,22 +530,31 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 			})
 		}
 		for _, dc := range m.Destinations {
-			m2.Destinations = append(m2.Destinations, &models.Endpoint{
-				Channel: dc.Channel.String(),
-				ID:      dc.ID,
-			})
+			e, err := transformEndpointToModel(dc)
+			if err != nil {
+				return nil, errors.Trace(err)
+			}
+			m2.Destinations = append(m2.Destinations, e)
 		}
 		it.Data = m2
 	default:
-		return nil, errors.Errorf("unknown thread item type %s", item.Type.String())
+		return nil, errors.Errorf("unknown thread item type %s", item.Type)
 	}
 	return it, nil
 }
 
 func transformSavedQueryToResponse(sq *threading.SavedQuery) (*models.SavedThreadQuery, error) {
+	query, err := threading.FormatQuery(sq.Query)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
 	return &models.SavedThreadQuery{
 		ID:             sq.ID,
 		OrganizationID: sq.OrganizationID,
+		Title:          sq.Title,
+		Query:          query,
+		Unread:         int(sq.Unread),
+		Total:          int(sq.Total),
 	}, nil
 }
 

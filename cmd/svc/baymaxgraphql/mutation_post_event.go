@@ -159,11 +159,11 @@ var postEventMutation = &graphql.Field{
 				Properties: segmentProps,
 			})
 			_, err := ram.OnboardingThreadEvent(ctx, &threading.OnboardingThreadEventRequest{
-				LookupByType: threading.OnboardingThreadEventRequest_ENTITY_ID,
+				LookupByType: threading.ONBOARDING_THREAD_LOOKUP_BY_ENTITY_ID,
 				LookupBy: &threading.OnboardingThreadEventRequest_EntityID{
 					EntityID: orgID,
 				},
-				EventType: threading.OnboardingThreadEventRequest_GENERIC_SETUP,
+				EventType: threading.ONBOARDING_THREAD_EVENT_TYPE_GENERIC_SETUP,
 				Event: &threading.OnboardingThreadEventRequest_GenericSetup{
 					GenericSetup: &threading.GenericSetupEvent{
 						Name:       in.EventName,

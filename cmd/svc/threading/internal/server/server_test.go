@@ -37,18 +37,43 @@ func TestCreateSavedQuery(t *testing.T) {
 
 	eid, err := models.NewSavedQueryID()
 	test.OK(t, err)
-	esq := &models.SavedQuery{OrganizationID: "o1", EntityID: "e1"}
+	esq := &models.SavedQuery{
+		OrganizationID: "o1",
+		EntityID:       "e1",
+		Title:          "Stuff",
+		Ordinal:        2,
+		Query: &models.Query{
+			Expressions: []*models.Expr{
+				{Not: true, Value: &models.Expr_Flag_{Flag: models.EXPR_FLAG_UNREAD}},
+				{Value: &models.Expr_ThreadType_{ThreadType: models.EXPR_THREAD_TYPE_PATIENT}},
+				{Value: &models.Expr_Token{Token: "tooooooke"}},
+			},
+		},
+	}
 	dl.Expect(mock.NewExpectation(dl.CreateSavedQuery, esq).WithReturns(eid, nil))
 	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil, sm, mm, nil, "WEBDOMAIN")
+	query := &threading.Query{
+		Expressions: []*threading.Expr{
+			{Not: true, Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_UNREAD}},
+			{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_PATIENT}},
+			{Value: &threading.Expr_Token{Token: "tooooooke"}},
+		},
+	}
 	res, err := srv.CreateSavedQuery(nil, &threading.CreateSavedQueryRequest{
 		OrganizationID: "o1",
 		EntityID:       "e1",
+		Title:          "Stuff",
+		Query:          query,
+		Ordinal:        2,
 	})
 	test.OK(t, err)
 	test.Equals(t, &threading.CreateSavedQueryResponse{
 		SavedQuery: &threading.SavedQuery{
 			ID:             eid.String(),
 			OrganizationID: "o1",
+			Title:          "Stuff",
+			Query:          query,
+			Ordinal:        2,
 		},
 	}, res)
 }
@@ -110,7 +135,7 @@ func TestCreateEmptyThread_Team(t *testing.T) {
 		FromEntityID:    "e1",
 		Summary:         "summ",
 		MemberEntityIDs: []string{"e1", "e2"},
-		Type:            threading.ThreadType_TEAM,
+		Type:            threading.THREAD_TYPE_TEAM,
 	})
 	test.OK(t, err)
 	test.Equals(t, &threading.CreateEmptyThreadResponse{
@@ -121,7 +146,7 @@ func TestCreateEmptyThread_Team(t *testing.T) {
 			LastMessageSummary:   "summ",
 			CreatedTimestamp:     uint64(now.Unix()),
 			MessageCount:         0,
-			Type:                 threading.ThreadType_TEAM,
+			Type:                 threading.THREAD_TYPE_TEAM,
 		},
 	}, res)
 }
@@ -169,7 +194,7 @@ func TestCreateEmptyThread_SecureExternal(t *testing.T) {
 		PrimaryEntityID: "e2",
 		SystemTitle:     "system title",
 		Summary:         "summ",
-		Type:            threading.ThreadType_SECURE_EXTERNAL,
+		Type:            threading.THREAD_TYPE_SECURE_EXTERNAL,
 	})
 	test.OK(t, err)
 	test.Equals(t, &threading.CreateEmptyThreadResponse{
@@ -181,7 +206,7 @@ func TestCreateEmptyThread_SecureExternal(t *testing.T) {
 			LastMessageSummary:   "summ",
 			CreatedTimestamp:     uint64(now.Unix()),
 			MessageCount:         0,
-			Type:                 threading.ThreadType_SECURE_EXTERNAL,
+			Type:                 threading.THREAD_TYPE_SECURE_EXTERNAL,
 		},
 	}, res)
 }
@@ -219,10 +244,10 @@ func TestCreateThread(t *testing.T) {
 		Text:         "<ref id=\"e2\" type=\"entity\">Foo</ref> bar",
 		Source: &models.Endpoint{
 			ID:      "555-555-5555",
-			Channel: models.Endpoint_SMS,
+			Channel: models.ENDPOINT_CHANNEL_SMS,
 		},
 		TextRefs: []*models.Reference{
-			{ID: "e2", Type: models.Reference_ENTITY},
+			{ID: "e2", Type: models.REFERENCE_TYPE_ENTITY},
 		},
 		Summary: "Foo bar",
 	}
@@ -236,7 +261,7 @@ func TestCreateThread(t *testing.T) {
 		Data: &models.Message{
 			Title:    ps.Title,
 			Text:     ps.Text,
-			Status:   models.Message_NORMAL,
+			Status:   models.MESSAGE_STATUS_NORMAL,
 			Source:   ps.Source,
 			TextRefs: ps.TextRefs,
 			Summary:  ps.Summary,
@@ -264,10 +289,10 @@ func TestCreateThread(t *testing.T) {
 		Internal:       true,
 		Source: &threading.Endpoint{
 			ID:      "555-555-5555",
-			Channel: threading.Endpoint_SMS,
+			Channel: threading.ENDPOINT_CHANNEL_SMS,
 		},
 		Summary: "Foo bar",
-		Type:    threading.ThreadType_EXTERNAL,
+		Type:    threading.THREAD_TYPE_EXTERNAL,
 	})
 	test.OK(t, err)
 	test.Equals(t, &threading.CreateThreadResponse{
@@ -275,7 +300,7 @@ func TestCreateThread(t *testing.T) {
 		ThreadItem: &threading.ThreadItem{
 			ID:             mid.String(),
 			Timestamp:      uint64(now.Unix()),
-			Type:           threading.ThreadItem_MESSAGE,
+			Type:           threading.THREAD_ITEM_TYPE_MESSAGE,
 			Internal:       true,
 			ActorEntityID:  "e1",
 			ThreadID:       th2.ID.String(),
@@ -285,13 +310,13 @@ func TestCreateThread(t *testing.T) {
 					Title:   "foo % woo",
 					Text:    "<ref id=\"e2\" type=\"entity\">Foo</ref> bar",
 					Summary: "Foo bar",
-					Status:  threading.Message_NORMAL,
+					Status:  threading.MESSAGE_STATUS_NORMAL,
 					Source: &threading.Endpoint{
 						ID:      "555-555-5555",
-						Channel: threading.Endpoint_SMS,
+						Channel: threading.ENDPOINT_CHANNEL_SMS,
 					},
 					TextRefs: []*threading.Reference{
-						{ID: "e2", Type: threading.Reference_ENTITY},
+						{ID: "e2", Type: threading.REFERENCE_TYPE_ENTITY},
 					},
 				},
 			},
@@ -339,8 +364,8 @@ func TestPostMessage(t *testing.T) {
 		Text:         "<ref id=\"e2\" type=\"entity\">Foo</ref> <ref id=\"e3\" type=\"entity\">Bar</ref>",
 		Summary:      "summary",
 		TextRefs: []*models.Reference{
-			{ID: "e2", Type: models.Reference_ENTITY},
-			{ID: "e3", Type: models.Reference_ENTITY},
+			{ID: "e2", Type: models.REFERENCE_TYPE_ENTITY},
+			{ID: "e3", Type: models.REFERENCE_TYPE_ENTITY},
 		},
 	}).WithReturns(&models.ThreadItem{
 		ID:            ti1id,
@@ -352,11 +377,11 @@ func TestPostMessage(t *testing.T) {
 		Data: &models.Message{
 			Title:   "title",
 			Text:    "<ref id=\"e2\" type=\"entity\">Foo</ref> <ref id=\"e3\" type=\"entity\">Bar</ref>",
-			Status:  models.Message_NORMAL,
+			Status:  models.MESSAGE_STATUS_NORMAL,
 			Summary: "summary",
 			TextRefs: []*models.Reference{
-				{ID: "e2", Type: models.Reference_ENTITY},
-				{ID: "e3", Type: models.Reference_ENTITY},
+				{ID: "e2", Type: models.REFERENCE_TYPE_ENTITY},
+				{ID: "e3", Type: models.REFERENCE_TYPE_ENTITY},
 			},
 		},
 	}, nil))
@@ -400,17 +425,17 @@ func TestPostMessage(t *testing.T) {
 			OrganizationID: "o1",
 			ActorEntityID:  "e1",
 			Internal:       false,
-			Type:           threading.ThreadItem_MESSAGE,
+			Type:           threading.THREAD_ITEM_TYPE_MESSAGE,
 			Timestamp:      uint64(now.Unix()),
 			Item: &threading.ThreadItem_Message{
 				Message: &threading.Message{
 					Title:   "title",
 					Text:    "<ref id=\"e2\" type=\"entity\">Foo</ref> <ref id=\"e3\" type=\"entity\">Bar</ref>",
-					Status:  threading.Message_NORMAL,
+					Status:  threading.MESSAGE_STATUS_NORMAL,
 					Summary: "summary",
 					TextRefs: []*threading.Reference{
-						{ID: "e2", Type: threading.Reference_ENTITY},
-						{ID: "e3", Type: threading.Reference_ENTITY},
+						{ID: "e2", Type: threading.REFERENCE_TYPE_ENTITY},
+						{ID: "e3", Type: threading.REFERENCE_TYPE_ENTITY},
 					},
 				},
 			},
@@ -473,7 +498,7 @@ func TestPostMessage_Linked(t *testing.T) {
 		Data: &models.Message{
 			Title:   "title",
 			Text:    "text",
-			Status:  models.Message_NORMAL,
+			Status:  models.MESSAGE_STATUS_NORMAL,
 			Summary: "summary",
 		},
 	}, nil))
@@ -498,7 +523,7 @@ func TestPostMessage_Linked(t *testing.T) {
 		Data: &models.Message{
 			Title:   "title",
 			Text:    "text",
-			Status:  models.Message_NORMAL,
+			Status:  models.MESSAGE_STATUS_NORMAL,
 			Summary: "Spruce: text",
 		},
 	}, nil))
@@ -531,13 +556,13 @@ func TestPostMessage_Linked(t *testing.T) {
 			OrganizationID: "o1",
 			ActorEntityID:  "e1",
 			Internal:       false,
-			Type:           threading.ThreadItem_MESSAGE,
+			Type:           threading.THREAD_ITEM_TYPE_MESSAGE,
 			Timestamp:      uint64(now.Unix()),
 			Item: &threading.ThreadItem_Message{
 				Message: &threading.Message{
 					Title:   "title",
 					Text:    "text",
-					Status:  threading.Message_NORMAL,
+					Status:  threading.MESSAGE_STATUS_NORMAL,
 					Summary: "summary",
 				},
 			},
@@ -600,7 +625,7 @@ func TestPostMessage_Linked_PrependSender(t *testing.T) {
 		Data: &models.Message{
 			Title:   "title",
 			Text:    "text",
-			Status:  models.Message_NORMAL,
+			Status:  models.MESSAGE_STATUS_NORMAL,
 			Summary: "summary",
 		},
 	}, nil))
@@ -625,7 +650,7 @@ func TestPostMessage_Linked_PrependSender(t *testing.T) {
 		Data: &models.Message{
 			Title:   "title",
 			Text:    "dewabi: text",
-			Status:  models.Message_NORMAL,
+			Status:  models.MESSAGE_STATUS_NORMAL,
 			Summary: "Spruce: text",
 		},
 	}, nil))
@@ -680,13 +705,13 @@ func TestPostMessage_Linked_PrependSender(t *testing.T) {
 			OrganizationID: "o1",
 			ActorEntityID:  "e1",
 			Internal:       false,
-			Type:           threading.ThreadItem_MESSAGE,
+			Type:           threading.THREAD_ITEM_TYPE_MESSAGE,
 			Timestamp:      uint64(now.Unix()),
 			Item: &threading.ThreadItem_Message{
 				Message: &threading.Message{
 					Title:   "title",
 					Text:    "text",
-					Status:  threading.Message_NORMAL,
+					Status:  threading.MESSAGE_STATUS_NORMAL,
 					Summary: "summary",
 				},
 			},
@@ -799,7 +824,7 @@ func TestCreateLinkedThreads(t *testing.T) {
 		Summary:              "summ",
 		Text:                 "text",
 		MessageTitle:         "title",
-		Type:                 threading.ThreadType_SUPPORT,
+		Type:                 threading.THREAD_TYPE_SUPPORT,
 		SystemTitle1:         "sys1",
 		SystemTitle2:         "sys2",
 	})
@@ -813,7 +838,7 @@ func TestCreateLinkedThreads(t *testing.T) {
 			LastMessageSummary:   "summ",
 			CreatedTimestamp:     uint64(now.Unix()),
 			MessageCount:         0,
-			Type:                 threading.ThreadType_SUPPORT,
+			Type:                 threading.THREAD_TYPE_SUPPORT,
 			SystemTitle:          "sys1",
 		},
 		Thread2: &threading.Thread{
@@ -824,7 +849,7 @@ func TestCreateLinkedThreads(t *testing.T) {
 			LastMessageSummary:   "summ",
 			CreatedTimestamp:     uint64(now.Unix()),
 			MessageCount:         0,
-			Type:                 threading.ThreadType_SUPPORT,
+			Type:                 threading.THREAD_TYPE_SUPPORT,
 			SystemTitle:          "sys2",
 		},
 	}, res)
@@ -855,10 +880,10 @@ func TestThreadItem(t *testing.T) {
 		Data: &models.Message{
 			Title:  "abc",
 			Text:   "hello",
-			Status: models.Message_NORMAL,
+			Status: models.MESSAGE_STATUS_NORMAL,
 			Source: &models.Endpoint{
 				ID:      "555-555-5555",
-				Channel: models.Endpoint_VOICE,
+				Channel: models.ENDPOINT_CHANNEL_VOICE,
 			},
 			EditedTimestamp: 123,
 			EditorEntityID:  "entity:1",
@@ -874,7 +899,7 @@ func TestThreadItem(t *testing.T) {
 		Item: &threading.ThreadItem{
 			ID:             eid.String(),
 			Timestamp:      uint64(now.Unix()),
-			Type:           threading.ThreadItem_MESSAGE,
+			Type:           threading.THREAD_ITEM_TYPE_MESSAGE,
 			Internal:       true,
 			ActorEntityID:  "e2",
 			ThreadID:       tid.String(),
@@ -883,10 +908,10 @@ func TestThreadItem(t *testing.T) {
 				Message: &threading.Message{
 					Title:  "abc",
 					Text:   "hello",
-					Status: threading.Message_NORMAL,
+					Status: threading.MESSAGE_STATUS_NORMAL,
 					Source: &threading.Endpoint{
 						ID:      "555-555-5555",
-						Channel: threading.Endpoint_VOICE,
+						Channel: threading.ENDPOINT_CHANNEL_VOICE,
 					},
 					EditedTimestamp: 123,
 					EditorEntityID:  "entity:1",
@@ -928,7 +953,8 @@ func TestQueryThreads(t *testing.T) {
 
 	// Adhoc query
 
-	dl.Expect(mock.NewExpectation(dl.IterateThreads, []string{peID, orgID}, peID, true, &dal.Iterator{
+	query := &models.Query{Expressions: []*models.Expr{{Value: &models.Expr_ThreadType_{ThreadType: models.EXPR_THREAD_TYPE_TEAM}}}}
+	dl.Expect(mock.NewExpectation(dl.IterateThreads, query, []string{peID, orgID}, peID, true, &dal.Iterator{
 		EndCursor: "c1",
 		Direction: dal.FromEnd,
 		Count:     11,
@@ -947,7 +973,7 @@ func TestQueryThreads(t *testing.T) {
 					LastPrimaryEntityEndpoints: models.EndpointList{
 						Endpoints: []*models.Endpoint{
 							{
-								Channel: models.Endpoint_SMS,
+								Channel: models.ENDPOINT_CHANNEL_SMS,
 								ID:      "+1234567890",
 							},
 						},
@@ -965,12 +991,12 @@ func TestQueryThreads(t *testing.T) {
 		ViewerEntityID: peID,
 		Iterator: &threading.Iterator{
 			EndCursor: "c1",
-			Direction: threading.Iterator_FROM_END,
+			Direction: threading.ITERATOR_DIRECTION_FROM_END,
 			Count:     11,
 		},
-		Type: threading.QueryThreadsRequest_ADHOC,
+		Type: threading.QUERY_THREADS_TYPE_ADHOC,
 		QueryType: &threading.QueryThreadsRequest_Query{
-			Query: &threading.Query{},
+			Query: &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_TEAM}}}},
 		},
 	})
 	test.OK(t, err)
@@ -986,14 +1012,14 @@ func TestQueryThreads(t *testing.T) {
 					LastMessageSummary:   "ExternalSummary",
 					LastPrimaryEntityEndpoints: []*threading.Endpoint{
 						{
-							Channel: threading.Endpoint_SMS,
+							Channel: threading.ENDPOINT_CHANNEL_SMS,
 							ID:      "+1234567890",
 						},
 					},
 					CreatedTimestamp: uint64(created.Unix()),
 					MessageCount:     32,
 					Unread:           true,
-					Type:             threading.ThreadType_EXTERNAL,
+					Type:             threading.THREAD_TYPE_EXTERNAL,
 				},
 				Cursor: "c2",
 			},
@@ -1004,13 +1030,11 @@ func TestQueryThreads(t *testing.T) {
 func TestQueryThreadsWithViewer(t *testing.T) {
 	t.Parallel()
 	dl := dalmock.New(t)
-	defer dl.Finish()
 	sm := mock_settings.New(t)
-	defer sm.Finish()
 	dm := mock_directory.New(t)
-	defer dm.Finish()
 	mm := mock_media.New(t)
-	defer mm.Finish()
+	defer mock.FinishAll(dl, sm, dm, mm)
+
 	clk := clock.NewManaged(time.Unix(1e6, 0))
 	now := clk.Now()
 
@@ -1025,6 +1049,8 @@ func TestQueryThreadsWithViewer(t *testing.T) {
 	tID3, err := models.NewThreadID()
 	test.OK(t, err)
 
+	// Adhoc query
+
 	dm.Expect(mock.NewExpectation(dm.LookupEntities, &directory.LookupEntitiesRequest{
 		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
 		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
@@ -1038,8 +1064,8 @@ func TestQueryThreadsWithViewer(t *testing.T) {
 			{Type: directory.EntityType_INTERNAL},
 		}}, nil))
 
-	// Adhoc query
-	dl.Expect(mock.NewExpectation(dl.IterateThreads, []string{peID, orgID}, peID, false, &dal.Iterator{
+	query := &models.Query{Expressions: []*models.Expr{{Value: &models.Expr_ThreadType_{ThreadType: models.EXPR_THREAD_TYPE_PATIENT}}}}
+	dl.Expect(mock.NewExpectation(dl.IterateThreads, query, []string{peID, orgID}, peID, false, &dal.Iterator{
 		EndCursor: "c1",
 		Direction: dal.FromEnd,
 		Count:     11,
@@ -1115,12 +1141,12 @@ func TestQueryThreadsWithViewer(t *testing.T) {
 		OrganizationID: orgID,
 		Iterator: &threading.Iterator{
 			EndCursor: "c1",
-			Direction: threading.Iterator_FROM_END,
+			Direction: threading.ITERATOR_DIRECTION_FROM_END,
 			Count:     11,
 		},
-		Type: threading.QueryThreadsRequest_ADHOC,
+		Type: threading.QUERY_THREADS_TYPE_ADHOC,
 		QueryType: &threading.QueryThreadsRequest_Query{
-			Query: &threading.Query{},
+			Query: &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_PATIENT}}}},
 		},
 	})
 	test.OK(t, err)
@@ -1178,6 +1204,86 @@ func TestQueryThreadsWithViewer(t *testing.T) {
 					MessageCount:         0,
 				},
 				Cursor: "c5",
+			},
+		},
+	}, res)
+
+	// Saved query
+
+	sqID, err := models.NewSavedQueryID()
+	test.OK(t, err)
+
+	dl.Expect(mock.NewExpectation(dl.SavedQuery, sqID).WithReturns(&models.SavedQuery{Query: query, EntityID: peID}, nil))
+
+	dm.Expect(mock.NewExpectation(dm.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: peID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth: 0,
+		},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{Type: directory.EntityType_INTERNAL},
+		}}, nil))
+
+	dl.Expect(mock.NewExpectation(dl.IterateThreads, query, []string{peID, orgID}, peID, false, &dal.Iterator{
+		EndCursor: "c1",
+		Direction: dal.FromEnd,
+		Count:     11,
+	}).WithReturns(&dal.ThreadConnection{
+		HasMore: true,
+		Edges: []dal.ThreadEdge{
+			{
+				Cursor: "c2",
+				Thread: &models.Thread{
+					ID:                   tID,
+					OrganizationID:       orgID,
+					PrimaryEntityID:      peID,
+					LastMessageTimestamp: now,
+					Created:              time.Unix(now.Unix()-1000, 0),
+					MessageCount:         32,
+				},
+				ThreadEntity: &models.ThreadEntity{
+					ThreadID:       tID,
+					EntityID:       peID,
+					LastViewed:     ptr.Time(time.Unix(1, 1)),
+					LastReferenced: ptr.Time(time.Unix(10, 1)),
+				},
+			},
+		},
+	}, nil))
+
+	res, err = srv.QueryThreads(nil, &threading.QueryThreadsRequest{
+		ViewerEntityID: peID,
+		OrganizationID: orgID,
+		Iterator: &threading.Iterator{
+			EndCursor: "c1",
+			Direction: threading.ITERATOR_DIRECTION_FROM_END,
+			Count:     11,
+		},
+		Type: threading.QUERY_THREADS_TYPE_SAVED,
+		QueryType: &threading.QueryThreadsRequest_SavedQueryID{
+			SavedQueryID: sqID.String(),
+		},
+	})
+	test.OK(t, err)
+	test.Equals(t, &threading.QueryThreadsResponse{
+		HasMore: true,
+		Edges: []*threading.ThreadEdge{
+			{
+				Thread: &threading.Thread{
+					ID:                   tID.String(),
+					OrganizationID:       orgID,
+					PrimaryEntityID:      peID,
+					LastMessageTimestamp: uint64(now.Unix()),
+					Unread:               true,
+					UnreadReference:      true,
+					CreatedTimestamp:     uint64(time.Unix(now.Unix()-1000, 0).Unix()),
+					MessageCount:         32,
+				},
+				Cursor: "c2",
 			},
 		},
 	}, res)
@@ -1370,13 +1476,11 @@ func TestThreadWithViewerNoMembership(t *testing.T) {
 func TestThreadWithViewerNoMessages(t *testing.T) {
 	t.Parallel()
 	dl := dalmock.New(t)
-	defer dl.Finish()
 	sm := mock_settings.New(t)
-	defer sm.Finish()
 	dm := mock_directory.New(t)
-	defer dm.Finish()
 	mm := mock_media.New(t)
-	defer mm.Finish()
+	defer mock.FinishAll(dl, sm, dm, mm)
+
 	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dm, sm, mm, nil, "WEBDOMAIN")
 
 	thID, err := models.NewThreadID()
@@ -1431,13 +1535,10 @@ func TestThreadWithViewerNoMessages(t *testing.T) {
 func TestSavedQuery(t *testing.T) {
 	t.Parallel()
 	dl := dalmock.New(t)
-	defer dl.Finish()
 	sm := mock_settings.New(t)
-	defer sm.Finish()
 	dm := mock_directory.New(t)
-	defer dm.Finish()
 	mm := mock_media.New(t)
-	defer mm.Finish()
+	defer mock.FinishAll(dl, sm, dm, mm)
 	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dm, sm, mm, nil, "WEBDOMAIN")
 
 	sqID, err := models.NewSavedQueryID()
@@ -1451,8 +1552,16 @@ func TestSavedQuery(t *testing.T) {
 			ID:             sqID,
 			OrganizationID: orgID,
 			EntityID:       entID,
-			Created:        now,
-			Modified:       now,
+			Title:          "Foo",
+			Unread:         1,
+			Total:          9,
+			Query: &models.Query{
+				Expressions: []*models.Expr{
+					{Value: &models.Expr_Flag_{Flag: models.EXPR_FLAG_REFERENCED}},
+				},
+			},
+			Created:  now,
+			Modified: now,
 		}, nil))
 	res, err := srv.SavedQuery(nil, &threading.SavedQueryRequest{
 		SavedQueryID: sqID.String(),
@@ -1462,6 +1571,14 @@ func TestSavedQuery(t *testing.T) {
 		SavedQuery: &threading.SavedQuery{
 			ID:             sqID.String(),
 			OrganizationID: orgID,
+			Title:          "Foo",
+			Unread:         1,
+			Total:          9,
+			Query: &threading.Query{
+				Expressions: []*threading.Expr{
+					{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_REFERENCED}},
+				},
+			},
 		},
 	}, res)
 }
@@ -1470,10 +1587,9 @@ func TestMarkThreadAsRead(t *testing.T) {
 	t.Parallel()
 	dl := dalmock.New(t)
 	sm := mock_settings.New(t)
-	defer sm.Finish()
-	defer dl.Finish()
 	mm := mock_media.New(t)
-	defer mm.Finish()
+	defer mock.FinishAll(sm, dl, mm)
+
 	tID, err := models.NewThreadID()
 	test.OK(t, err)
 	tiID1, err := models.NewThreadItemID()
@@ -1833,7 +1949,7 @@ func TestNotifyMembersOfPublishMessage(t *testing.T) {
 		CollapseKey:          newMessageNotificationKey,
 		DedupeKey:            newMessageNotificationKey,
 		EntitiesToNotify:     []string{"notify1", "notify2", "notify3"},
-		EntitiesAtReferenced: map[string]struct{}{"notify2": struct{}{}, "notify3": struct{}{}},
+		EntitiesAtReferenced: map[string]struct{}{"notify2": {}, "notify3": {}},
 		Type:                 notification.NewMessageOnExternalThread,
 	}))
 
@@ -1846,12 +1962,12 @@ func TestNotifyMembersOfPublishMessage(t *testing.T) {
 		Type: models.ItemTypeMessage,
 		Data: &models.Message{
 			TextRefs: []*models.Reference{
-				&models.Reference{
-					Type: models.Reference_ENTITY,
+				{
+					Type: models.REFERENCE_TYPE_ENTITY,
 					ID:   "notify2",
 				},
-				&models.Reference{
-					Type: models.Reference_ENTITY,
+				{
+					Type: models.REFERENCE_TYPE_ENTITY,
 					ID:   "notify3",
 				},
 			},

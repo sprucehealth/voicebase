@@ -140,7 +140,7 @@ func TestNodeQuery(t *testing.T) {
 		ID:              id,
 		OrganizationID:  "entity_1",
 		PrimaryEntityID: "entity_2",
-		Type:            threading.ThreadType_EXTERNAL,
+		Type:            threading.THREAD_TYPE_EXTERNAL,
 	}, nil))
 
 	expectEntityInOrgForAccountID(ra, acc.ID, []*directory.Entity{
@@ -165,7 +165,7 @@ func TestNodeQuery(t *testing.T) {
 		OrganizationID:  "entity_1",
 		PrimaryEntityID: "entity_2",
 		SystemTitle:     "Someone",
-		Type:            threading.ThreadType_EXTERNAL,
+		Type:            threading.THREAD_TYPE_EXTERNAL,
 		Unread:          true,
 		UnreadReference: true,
 	}, nil))
@@ -203,18 +203,18 @@ func TestNodeQuery(t *testing.T) {
 		Timestamp:     1234,
 		ActorEntityID: "entity_1",
 		Internal:      true,
-		Type:          threading.ThreadItem_MESSAGE,
+		Type:          threading.THREAD_ITEM_TYPE_MESSAGE,
 		Item: &threading.ThreadItem_Message{
 			Message: &threading.Message{
 				Title:  "abc",
 				Text:   "hello",
-				Status: threading.Message_NORMAL,
+				Status: threading.MESSAGE_STATUS_NORMAL,
 				Source: &threading.Endpoint{
 					ID:      "555-555-5555",
-					Channel: threading.Endpoint_VOICE,
+					Channel: threading.ENDPOINT_CHANNEL_VOICE,
 				},
 				TextRefs: []*threading.Reference{
-					{ID: "e2", Type: threading.Reference_ENTITY},
+					{ID: "e2", Type: threading.REFERENCE_TYPE_ENTITY},
 				},
 			},
 		},
@@ -249,11 +249,27 @@ func TestNodeQuery(t *testing.T) {
 	}
 	ra.Expect(mock.NewExpectation(ra.SavedQuery, id).WithReturns(&threading.SavedQuery{
 		ID:             id,
+		Title:          "Foo",
+		Unread:         1,
+		Total:          2,
 		OrganizationID: "entity_1",
+		Query: &threading.Query{
+			Expressions: []*threading.Expr{
+				{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_UNREAD}},
+				{Value: &threading.Expr_Token{Token: "Joe"}},
+			},
+		},
 	}, nil))
 	res, err = nodeField.Resolve(p)
 	test.OK(t, err)
-	test.Equals(t, &models.SavedThreadQuery{ID: id, OrganizationID: "entity_1"}, res)
+	test.Equals(t, &models.SavedThreadQuery{
+		ID:             id,
+		OrganizationID: "entity_1",
+		Title:          "Foo",
+		Unread:         1,
+		Total:          2,
+		Query:          "is:unread Joe",
+	}, res)
 	mock.FinishAll(ra)
 }
 
@@ -293,7 +309,7 @@ func TestTeamThread_OlderVersion(t *testing.T) {
 		ID:              id,
 		OrganizationID:  "entity_1",
 		PrimaryEntityID: "entity_2",
-		Type:            threading.ThreadType_TEAM,
+		Type:            threading.THREAD_TYPE_TEAM,
 	}, nil))
 
 	_, err := nodeField.Resolve(p)

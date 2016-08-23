@@ -64,10 +64,10 @@ func TestCreateTeamThreadMutation(t *testing.T) {
 		Summary:         "New conversation",
 		UserTitle:       "thetitle",
 		MemberEntityIDs: []string{"e1", "e2", "e3", "e_creator"},
-		Type:            threading.ThreadType_TEAM,
+		Type:            threading.THREAD_TYPE_TEAM,
 	}).WithReturns(&threading.Thread{
 		ID:          "t_1",
-		Type:        threading.ThreadType_TEAM,
+		Type:        threading.THREAD_TYPE_TEAM,
 		UserTitle:   "thetitle",
 		SystemTitle: "Person1, Poster",
 	}, nil))

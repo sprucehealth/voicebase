@@ -136,10 +136,10 @@ func TestStandardThreadSync(t *testing.T) {
 		OrganizationID:  orgID,
 		PrimaryEntityID: "ent_1",
 		MemberEntityIDs: []string{orgID},
-		Type:            threading.ThreadType_EXTERNAL,
+		Type:            threading.THREAD_TYPE_EXTERNAL,
 		Summary:         "DisplayName1",
 		SystemTitle:     "DisplayName1",
-		Origin:          threading.ThreadOrigin_THREAD_ORIGIN_SYNC,
+		Origin:          threading.THREAD_ORIGIN_SYNC,
 	}).WithReturns(&threading.CreateEmptyThreadResponse{
 		Thread: &threading.Thread{
 			ID:             "thread_1",
@@ -260,10 +260,10 @@ func TestStandardThreadSync_EntityExists(t *testing.T) {
 		OrganizationID:  orgID,
 		PrimaryEntityID: "ent_1",
 		MemberEntityIDs: []string{orgID},
-		Type:            threading.ThreadType_EXTERNAL,
+		Type:            threading.THREAD_TYPE_EXTERNAL,
 		Summary:         "DisplayName1",
 		SystemTitle:     "DisplayName1",
-		Origin:          threading.ThreadOrigin_THREAD_ORIGIN_SYNC,
+		Origin:          threading.THREAD_ORIGIN_SYNC,
 	}).WithReturns(&threading.CreateEmptyThreadResponse{
 		Thread: &threading.Thread{
 			ID:             "thread_1",

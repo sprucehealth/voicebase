@@ -20,11 +20,11 @@ func TestWorker(t *testing.T) {
 	w := NewWorker(nil, ts, "")
 
 	ts.Expect(mock.NewExpectation(ts.OnboardingThreadEvent, &threading.OnboardingThreadEventRequest{
-		LookupByType: threading.OnboardingThreadEventRequest_ENTITY_ID,
+		LookupByType: threading.ONBOARDING_THREAD_LOOKUP_BY_ENTITY_ID,
 		LookupBy: &threading.OnboardingThreadEventRequest_EntityID{
 			EntityID: "ent",
 		},
-		EventType: threading.OnboardingThreadEventRequest_PROVISIONED_PHONE,
+		EventType: threading.ONBOARDING_THREAD_EVENT_TYPE_PROVISIONED_PHONE,
 		Event: &threading.OnboardingThreadEventRequest_ProvisionedPhone{
 			ProvisionedPhone: &threading.ProvisionedPhoneEvent{
 				PhoneNumber: "+15551112222",

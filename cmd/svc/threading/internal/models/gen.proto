@@ -6,11 +6,10 @@ import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
 option (gogoproto.marshaler_all) = true;
 option (gogoproto.unmarshaler_all) = true;
-option (gogoproto.goproto_enum_prefix_all) = true;
 
 message Reference {
 	enum Type {
-		ENTITY = 0;
+		REFERENCE_TYPE_ENTITY = 0;
 	}
 	Type type = 1;
 	string id = 2 [(gogoproto.customname) = "ID"];
@@ -20,8 +19,8 @@ message Message {
 	string text = 1;
 	repeated Attachment attachments = 2;
 	enum Status {
-		NORMAL = 0;
-		DELETED = 1;
+		MESSAGE_STATUS_NORMAL = 0;
+		MESSAGE_STATUS_DELETED = 1;
 	}
 	Status status = 3;
 	Endpoint source = 4;
@@ -39,10 +38,10 @@ message EndpointList {
 
 message Endpoint {
 	enum Channel {
-		APP = 0;
-		SMS = 1;
-		VOICE = 2;
-		EMAIL = 3;
+		ENDPOINT_CHANNEL_APP = 0;
+		ENDPOINT_CHANNEL_SMS = 1;
+		ENDPOINT_CHANNEL_VOICE = 2;
+		ENDPOINT_CHANNEL_EMAIL = 3;
 	}
 	Channel channel = 1;
 	string id = 2 [(gogoproto.customname) = "ID"];
@@ -60,13 +59,13 @@ message FollowerUpdated {
 
 message Attachment {
 	enum Type {
-		IMAGE = 0;
-		AUDIO = 1;
-		GENERIC = 2;
-		CARE_PLAN = 3;
-		VISIT = 4;
-		VIDEO = 5;
-		PAYMENT_REQUEST = 6;
+		ATTACHMENT_TYPE_IMAGE = 0;
+		ATTACHMENT_TYPE_AUDIO = 1;
+		ATTACHMENT_TYPE_GENERIC_URL = 2;
+		ATTACHMENT_TYPE_CARE_PLAN = 3;
+		ATTACHMENT_TYPE_VISIT = 4;
+		ATTACHMENT_TYPE_VIDEO = 5;
+		ATTACHMENT_TYPE_PAYMENT_REQUEST = 6;
 	}
 	Type type = 1;
 	string title = 2;
@@ -119,4 +118,30 @@ message CarePlanAttachment {
 
 message PaymentRequestAttachment {
 	string payment_id = 1 [(gogoproto.customname) = "PaymentID"];
+}
+
+message Query {
+	// All expressions are required to match (i.e. AND)
+	repeated Expr expressions = 1;
+}
+
+message Expr {
+	enum Flag {
+		EXPR_FLAG_INVALID = 0;
+		EXPR_FLAG_UNREAD = 1;
+		EXPR_FLAG_REFERENCED = 2;
+	}
+	// This is separate from the top-level thread type to handle logical types like "patient"
+	enum ThreadType {
+		EXPR_THREAD_TYPE_INVALID = 0;
+		EXPR_THREAD_TYPE_PATIENT = 1;
+		EXPR_THREAD_TYPE_TEAM = 2;
+	}
+
+	bool not = 1;
+	oneof value {
+		string token = 2;
+		Flag flag = 3;
+		ThreadType thread_type = 4;
+	}
 }

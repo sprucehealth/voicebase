@@ -61,7 +61,7 @@ func TestThreadEmptyStateMarkup(t *testing.T) {
 		},
 		// Team threads always have the same ESTM
 		"TeamThreads": {
-			Thread:   &threading.Thread{Type: threading.ThreadType_TEAM},
+			Thread:   &threading.Thread{Type: threading.THREAD_TYPE_TEAM},
 			Expected: "This is the beginning of your team conversation.\nSend a message to get things started.",
 		},
 	}

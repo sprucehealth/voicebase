@@ -24,6 +24,20 @@ import (
 var threadConnectionType = ConnectionDefinitions(ConnectionConfig{
 	Name:     "Thread",
 	NodeType: threadType,
+	ConnectionFields: graphql.Fields{
+		"total": &graphql.Field{
+			Type:        graphql.Int,
+			Description: "Total number of matching threads",
+		},
+		"totalText": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "A textual version of the total number of threads (e.g. \"many\")",
+		},
+		"endOfResultsText": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Text shown at the end of the results set (e.g. \"500 out of 1,200 conversations shown\nSearch to access more\")",
+		},
+	},
 })
 
 var threadTypeIndicatorEnum = graphql.NewEnum(graphql.EnumConfig{
@@ -505,13 +519,13 @@ var threadType = graphql.NewObject(
 						}
 						if i, ok := p.Args["last"].(int); ok {
 							req.Iterator.Count = uint32(i)
-							req.Iterator.Direction = threading.Iterator_FROM_END
+							req.Iterator.Direction = threading.ITERATOR_DIRECTION_FROM_END
 						} else if i, ok := p.Args["first"].(int); ok {
 							req.Iterator.Count = uint32(i)
-							req.Iterator.Direction = threading.Iterator_FROM_START
+							req.Iterator.Direction = threading.ITERATOR_DIRECTION_FROM_START
 						} else {
 							req.Iterator.Count = 20 // default
-							req.Iterator.Direction = threading.Iterator_FROM_START
+							req.Iterator.Direction = threading.ITERATOR_DIRECTION_FROM_START
 						}
 						res, err := ram.ThreadItems(ctx, req)
 						if err != nil {
@@ -521,7 +535,7 @@ var threadType = graphql.NewObject(
 						cn := &Connection{
 							Edges: make([]*Edge, len(res.Edges)),
 						}
-						if req.Iterator.Direction == threading.Iterator_FROM_START {
+						if req.Iterator.Direction == threading.ITERATOR_DIRECTION_FROM_START {
 							cn.PageInfo.HasNextPage = res.HasMore
 						} else {
 							cn.PageInfo.HasPreviousPage = res.HasMore

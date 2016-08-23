@@ -1,14 +1,11 @@
 package appmsg
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"time"
-
-	"google.golang.org/grpc"
-
-	"context"
 
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
@@ -23,6 +20,7 @@ import (
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
+	"google.golang.org/grpc"
 )
 
 type appMessageWorker struct {
@@ -132,10 +130,10 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 	if pti.GetItem().Internal {
 		golog.Debugf("Internal message posted. Ignoring...")
 		return nil
-	} else if pti.GetItem().Type != threading.ThreadItem_MESSAGE {
+	} else if pti.GetItem().Type != threading.THREAD_ITEM_TYPE_MESSAGE {
 		golog.Debugf("Thread item is not a message, it is of type %s. Ignoring...", pti.GetItem().Type.String())
 		return nil
-	} else if !(pti.GetItem().GetMessage().Source == nil || pti.GetItem().GetMessage().Source.Channel == threading.Endpoint_APP) {
+	} else if !(pti.GetItem().GetMessage().Source == nil || pti.GetItem().GetMessage().Source.Channel == threading.ENDPOINT_CHANNEL_APP) {
 		golog.Debugf("SourceContact has to have type APP, but has %s. Ignoring...", pti.GetItem().GetMessage().Source.Channel)
 		return nil
 	}
@@ -143,7 +141,7 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 	// TODO: Remove this filterings once the APP destination is no longer valid
 	destinations := make([]*threading.Endpoint, 0, len(pti.GetItem().GetMessage().Destinations))
 	for _, d := range pti.GetItem().GetMessage().Destinations {
-		if d.Channel != threading.Endpoint_APP {
+		if d.Channel != threading.ENDPOINT_CHANNEL_APP {
 			destinations = append(destinations, d)
 		}
 	}
@@ -241,7 +239,7 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 	var mediaIDs []string
 	for _, at := range pti.GetItem().GetMessage().Attachments {
 		// TODO: Add async video support?
-		if at.Type == threading.Attachment_IMAGE {
+		if at.Type == threading.ATTACHMENT_TYPE_IMAGE {
 			mediaIDs = append(mediaIDs, at.GetImage().MediaID)
 		}
 	}
@@ -250,10 +248,10 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 	orgEntity := orgLookupRes.Entities[0]
 	for _, d := range destinations {
 		switch d.Channel {
-		case threading.Endpoint_APP:
+		case threading.ENDPOINT_CHANNEL_APP:
 			// Note: Do nothing in this case since it should already be in the app.
 			// TODO: Remove this case when Endpoint_APP is removed from the system
-		case threading.Endpoint_SMS:
+		case threading.ENDPOINT_CHANNEL_SMS:
 			// determine org phone number
 			orgContact := determineProvisionedContact(orgEntity, directory.ContactType_PHONE)
 			if orgContact == nil {
@@ -298,7 +296,7 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 				return errors.Trace(fmt.Errorf("Unable to send message originating from thread item id : %s: %s", pti.GetItem().ID, err))
 			}
 			golog.Debugf("Sent SMS %s → %s. Text %s", orgContact.Value, d.ID, pti.GetItem().GetMessage().Text)
-		case threading.Endpoint_EMAIL:
+		case threading.ENDPOINT_CHANNEL_EMAIL:
 			// determine org email address
 			orgContact := determineProvisionedContact(orgEntity, directory.ContactType_EMAIL)
 			if orgContact == nil {

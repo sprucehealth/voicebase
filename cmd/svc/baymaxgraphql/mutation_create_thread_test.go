@@ -92,11 +92,11 @@ func TestCreateThreadMutation_NoExistingThreads(t *testing.T) {
 		PrimaryEntityID: "e_patient",
 		Summary:         "New conversation",
 		SystemTitle:     "firstName middleInitial. lastName, shortTitle",
-		Type:            threading.ThreadType_EXTERNAL,
+		Type:            threading.THREAD_TYPE_EXTERNAL,
 	}).WithReturns(&threading.Thread{
 		ID:              "t_1",
 		PrimaryEntityID: "e_patient",
-		Type:            threading.ThreadType_EXTERNAL,
+		Type:            threading.THREAD_TYPE_EXTERNAL,
 	}, nil))
 
 	res := g.query(ctx, `
@@ -242,10 +242,10 @@ func TestCreateThreadMutation_DifferentOrg(t *testing.T) {
 		SystemTitle:     "firstName middleInitial. lastName, shortTitle",
 		PrimaryEntityID: "e_patient",
 		Summary:         "New conversation",
-		Type:            threading.ThreadType_EXTERNAL,
+		Type:            threading.THREAD_TYPE_EXTERNAL,
 	}).WithReturns(&threading.Thread{
 		ID:              "t_1",
-		Type:            threading.ThreadType_EXTERNAL,
+		Type:            threading.THREAD_TYPE_EXTERNAL,
 		PrimaryEntityID: "e_patient",
 		SystemTitle:     "firstName middleInitial. lastName, shortTitle",
 	}, nil))
@@ -361,11 +361,11 @@ func TestCreateThreadMutation_ExistingThreads_DifferentName(t *testing.T) {
 	}, nil))
 
 	g.ra.Expect(mock.NewExpectation(g.ra.ThreadsForMember, "e_existing_1", true).WithReturns([]*threading.Thread{
-		{ID: "t_1", OrganizationID: "e_org", PrimaryEntityID: "e_existing_1", SystemTitle: "(415) 555-5555", Type: threading.ThreadType_EXTERNAL},
+		{ID: "t_1", OrganizationID: "e_org", PrimaryEntityID: "e_existing_1", SystemTitle: "(415) 555-5555", Type: threading.THREAD_TYPE_EXTERNAL},
 	}, nil))
 
 	g.ra.Expect(mock.NewExpectation(g.ra.ThreadsForMember, "e_existing_2", true).WithReturns([]*threading.Thread{
-		{ID: "t_2", OrganizationID: "e_org", PrimaryEntityID: "e_existing_2", SystemTitle: "someone@example.com", Type: threading.ThreadType_EXTERNAL},
+		{ID: "t_2", OrganizationID: "e_org", PrimaryEntityID: "e_existing_2", SystemTitle: "someone@example.com", Type: threading.THREAD_TYPE_EXTERNAL},
 	}, nil))
 
 	res := g.query(ctx, `
@@ -517,11 +517,11 @@ func TestCreateThreadMutation_ExistingThreads_SameName(t *testing.T) {
 	}, nil))
 
 	g.ra.Expect(mock.NewExpectation(g.ra.ThreadsForMember, "e_existing_1", true).WithReturns([]*threading.Thread{
-		{ID: "t_1", OrganizationID: "e_org", PrimaryEntityID: "e_existing_1", Type: threading.ThreadType_EXTERNAL},
+		{ID: "t_1", OrganizationID: "e_org", PrimaryEntityID: "e_existing_1", Type: threading.THREAD_TYPE_EXTERNAL},
 	}, nil))
 
 	g.ra.Expect(mock.NewExpectation(g.ra.ThreadsForMember, "e_existing_2", true).WithReturns([]*threading.Thread{
-		{ID: "t_2", OrganizationID: "e_org", PrimaryEntityID: "e_existing_2", Type: threading.ThreadType_EXTERNAL},
+		{ID: "t_2", OrganizationID: "e_org", PrimaryEntityID: "e_existing_2", Type: threading.THREAD_TYPE_EXTERNAL},
 	}, nil))
 
 	res := g.query(ctx, `

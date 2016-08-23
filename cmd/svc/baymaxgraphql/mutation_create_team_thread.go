@@ -121,7 +121,7 @@ var createTeamThreadMutation = &graphql.Field{
 			Summary:         "New conversation", // TODO: not sure what we want here
 			UserTitle:       title,
 			MemberEntityIDs: dedupeStrings(append(members, creatorEnt.ID)),
-			Type:            threading.ThreadType_TEAM,
+			Type:            threading.THREAD_TYPE_TEAM,
 		})
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)

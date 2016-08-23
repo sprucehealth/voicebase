@@ -51,6 +51,7 @@ func TestTriage(t *testing.T) {
 		{
 			ID:             threadID,
 			OrganizationID: orgID,
+			Type:           threading.THREAD_TYPE_SECURE_EXTERNAL,
 		},
 	}, nil))
 
@@ -80,6 +81,7 @@ func TestTriage(t *testing.T) {
 			ID:             threadID,
 			OrganizationID: orgID,
 			MessageCount:   10,
+			Type:           threading.THREAD_TYPE_SECURE_EXTERNAL,
 		},
 	}, nil))
 
