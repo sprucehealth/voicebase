@@ -10,5 +10,13 @@ const (
 // IsMySQLWarning returns true if the err represents a MySQL warning of the provided code
 func IsMySQLWarning(err error, code string) bool {
 	warns, ok := err.(mysql.MySQLWarnings)
-	return ok && len(warns) == 1 && warns[0].Code == code
+	if !ok {
+		return false
+	}
+	for _, w := range warns {
+		if w.Code != code {
+			return false
+		}
+	}
+	return true
 }
