@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/device/devicectx"
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/analytics"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -207,7 +208,7 @@ var authenticateMutation = &graphql.Field{
 			}
 		}
 		headers := devicectx.SpruceHeaders(ctx)
-		if res.Account.Type == auth.AccountType_PATIENT && (headers.Platform != device.Android && headers.Platform != device.IOS) {
+		if !environment.IsDev() && res.Account.Type == auth.AccountType_PATIENT && (headers.Platform != device.Android && headers.Platform != device.IOS) {
 			return &authenticateOutput{
 				ClientMutationID: in.ClientMutationID,
 				Success:          false,

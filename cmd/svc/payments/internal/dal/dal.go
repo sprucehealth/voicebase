@@ -55,6 +55,7 @@ type DAL interface {
 	Payment(ctx context.Context, id PaymentID, opts ...QueryOption) (*Payment, error)
 	UpdatePayment(ctx context.Context, id PaymentID, update *PaymentUpdate) (int64, error)
 	DeletePayment(ctx context.Context, id PaymentID) (int64, error)
+	PaymentsInState(ctx context.Context, lifecycle PaymentLifecycle, changeState PaymentChangeState, limit int64, opts ...QueryOption) ([]*Payment, error)
 
 	// Payment Method
 	InsertPaymentMethod(ctx context.Context, model *PaymentMethod) (PaymentMethodID, error)
@@ -618,6 +619,44 @@ func (t *PaymentMethodChangeState) Scan(src interface{}) error {
 	return errors.Trace(err)
 }
 
+// PaymentMethodType represents the type associated with the type column of the payment_method table
+type PaymentMethodType string
+
+const (
+	// PaymentMethodTypeCard represents the CARD state of the type field on a payment_method record
+	PaymentMethodTypeCard PaymentMethodType = "CARD"
+)
+
+// ParsePaymentMethodType converts a string into the correcponding enum value
+func ParsePaymentMethodType(s string) (PaymentMethodType, error) {
+	switch t := PaymentMethodType(strings.ToUpper(s)); t {
+	case PaymentMethodTypeCard:
+		return t, nil
+	}
+	return PaymentMethodType(""), errors.Trace(fmt.Errorf("Unknown change_state:%s", s))
+}
+
+func (t PaymentMethodType) String() string {
+	return string(t)
+}
+
+// Value implements sql/driver.Valr to allow it to be used in an sql query
+func (t PaymentMethodType) Value() (driver.Value, error) {
+	return string(t), nil
+}
+
+// Scan allows for scanning of PaymentMethodType from a database conforming to the sql.Scanner interface
+func (t *PaymentMethodType) Scan(src interface{}) error {
+	var err error
+	switch ts := src.(type) {
+	case string:
+		*t, err = ParsePaymentMethodType(ts)
+	case []byte:
+		*t, err = ParsePaymentMethodType(string(ts))
+	}
+	return errors.Trace(err)
+}
+
 // PaymentLifecycle represents the type associated with the lifecycle column of the payment table
 type PaymentLifecycle string
 
@@ -762,6 +801,12 @@ type PaymentMethod struct {
 	StorageFingerprint string
 	Lifecycle          PaymentMethodLifecycle
 	Created            time.Time
+	Type               PaymentMethodType
+	Brand              string
+	Last4              string
+	ExpMonth           int
+	ExpYear            int
+	TokenizationMethod string
 }
 
 // Validate asserts that the object is well formed
@@ -1131,8 +1176,8 @@ func (d *dal) InsertPaymentMethod(ctx context.Context, model *PaymentMethod) (Pa
 	}
 	_, err := d.db.Exec(
 		`INSERT INTO payment_method
-          (id, vendor_account_id, storage_type, storage_fingerprint, change_state, customer_id, entity_id, storage_id, lifecycle)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, model.ID, model.VendorAccountID, model.StorageType, model.StorageFingerprint, model.ChangeState, model.CustomerID, model.EntityID, model.StorageID, model.Lifecycle)
+          (id, vendor_account_id, storage_type, storage_fingerprint, change_state, customer_id, entity_id, storage_id, lifecycle, type, brand, last_four, exp_month, exp_year, tokenization_method)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, model.ID, model.VendorAccountID, model.StorageType, model.StorageFingerprint, model.ChangeState, model.CustomerID, model.EntityID, model.StorageID, model.Lifecycle, model.Type, model.Brand, model.Last4, model.ExpMonth, model.ExpYear, model.TokenizationMethod)
 	if err != nil {
 		return EmptyPaymentMethodID(), errors.Trace(err)
 	}
@@ -1283,6 +1328,30 @@ func (d *dal) Payment(ctx context.Context, id PaymentID, opts ...QueryOption) (*
 	return model, errors.Trace(err)
 }
 
+// PaymentsInState retrieves a random set of payment records with the corresponding state
+func (d *dal) PaymentsInState(ctx context.Context, lifecycle PaymentLifecycle, changeState PaymentChangeState, limit int64, opts ...QueryOption) ([]*Payment, error) {
+	q := selectPayment + ` WHERE lifecycle = ? AND change_state = ?`
+	q += ` ORDER BY RAND() LIMIT ?`
+	if queryOptions(opts).Has(ForUpdate) {
+		q += ` FOR UPDATE`
+	}
+	rows, err := d.db.Query(q, lifecycle, changeState, limit)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	defer rows.Close()
+
+	var payments []*Payment
+	for rows.Next() {
+		p, err := scanPayment(rows, fmt.Sprintf("lifecycle: %s - change_state: %s - limit: %d", lifecycle, changeState, limit))
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		payments = append(payments, p)
+	}
+	return payments, errors.Trace(rows.Err())
+}
+
 // UpdatePayment updates the mutable aspects of a payment record
 func (d *dal) UpdatePayment(ctx context.Context, id PaymentID, update *PaymentUpdate) (int64, error) {
 	if err := update.Validate(); err != nil {
@@ -1355,7 +1424,7 @@ func scanCustomer(row dbutil.Scanner, contextFormat string, args ...interface{})
 }
 
 const selectPaymentMethod = `
-    SELECT payment_method.lifecycle, payment_method.created, payment_method.modified, payment_method.customer_id, payment_method.entity_id, payment_method.storage_id, payment_method.storage_fingerprint, payment_method.change_state, payment_method.id, payment_method.vendor_account_id, payment_method.storage_type
+    SELECT payment_method.lifecycle, payment_method.created, payment_method.modified, payment_method.customer_id, payment_method.entity_id, payment_method.storage_id, payment_method.storage_fingerprint, payment_method.change_state, payment_method.id, payment_method.vendor_account_id, payment_method.storage_type, payment_method.type, payment_method.brand, payment_method.last_four, payment_method.exp_month, payment_method.exp_year, payment_method.tokenization_method
       FROM payment_method`
 
 func scanPaymentMethod(row dbutil.Scanner, contextFormat string, args ...interface{}) (*PaymentMethod, error) {
@@ -1364,7 +1433,7 @@ func scanPaymentMethod(row dbutil.Scanner, contextFormat string, args ...interfa
 	m.ID = EmptyPaymentMethodID()
 	m.VendorAccountID = EmptyVendorAccountID()
 
-	err := row.Scan(&m.Lifecycle, &m.Created, &m.Modified, &m.CustomerID, &m.EntityID, &m.StorageID, &m.StorageFingerprint, &m.ChangeState, &m.ID, &m.VendorAccountID, &m.StorageType)
+	err := row.Scan(&m.Lifecycle, &m.Created, &m.Modified, &m.CustomerID, &m.EntityID, &m.StorageID, &m.StorageFingerprint, &m.ChangeState, &m.ID, &m.VendorAccountID, &m.StorageType, &m.Type, &m.Brand, &m.Last4, &m.ExpMonth, &m.ExpYear, &m.TokenizationMethod)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(errors.Annotate(ErrNotFound, "No rows found - payment_method - Context: "+fmt.Sprintf(contextFormat, args...)))
 	}

@@ -29,14 +29,9 @@ func grpcErrorf(c codes.Code, format string, a ...interface{}) error {
 
 func grpcError(err error) error {
 	if grpc.Code(err) == codes.Unknown {
-		return grpcErrorf(codes.Internal, err.Error())
+		golog.LogDepthf(1, golog.ERR, "Payments - Internal GRPC Error: %s", err)
 	}
 	return err
-}
-
-func grpcIErrorf(fmt string, args ...interface{}) error {
-	golog.LogDepthf(1, golog.ERR, fmt, args...)
-	return grpcErrorf(codes.Internal, fmt, args...)
 }
 
 var (
@@ -200,7 +195,7 @@ func (s *server) CreatePaymentMethod(ctx context.Context, req *payments.CreatePa
 	if req.EntityID == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "EntityID required")
 	}
-	customer, err := s.addCustomer(ctx, s.masterVendorAccount, req.EntityID)
+	customer, err := AddCustomer(ctx, s.masterVendorAccount, req.EntityID, s.dal, s.directoryClient, s.stripeClient)
 	if err != nil {
 		return nil, grpcError(err)
 	}
@@ -220,7 +215,7 @@ func (s *server) CreatePaymentMethod(ctx context.Context, req *payments.CreatePa
 	default:
 		return nil, grpcErrorf(codes.InvalidArgument, "Unhandled payment method storage type %s", req.StorageType)
 	}
-	_, err = s.addPaymentMethod(ctx, s.masterVendorAccount, customer, req.Type, token)
+	_, err = AddPaymentMethod(ctx, s.masterVendorAccount, customer, req.Type, &LiteralTokenSource{T: token}, s.dal, s.stripeClient)
 	if err != nil {
 		return nil, grpcError(err)
 	}
@@ -233,9 +228,16 @@ func (s *server) CreatePaymentMethod(ctx context.Context, req *payments.CreatePa
 	}, nil
 }
 
-func (s *server) addCustomer(ctx context.Context, vendorAccount *dal.VendorAccount, entityID string) (*dal.Customer, error) {
+// AddCustomer adds a customer to the provided vendor account
+func AddCustomer(
+	ctx context.Context,
+	vendorAccount *dal.VendorAccount,
+	entityID string,
+	dl dal.DAL,
+	directoryClient directory.DirectoryClient,
+	stripeClient istripe.IdempotentStripeClient) (*dal.Customer, error) {
 	// Check to see if we've already added this customer
-	customer, err := s.dal.CustomerForVendor(ctx, vendorAccount.ID, entityID)
+	customer, err := dl.CustomerForVendor(ctx, vendorAccount.ID, entityID)
 	if err != nil && errors.Cause(err) != dal.ErrNotFound {
 		return nil, errors.Trace(err)
 	} else if customer != nil {
@@ -244,7 +246,7 @@ func (s *server) addCustomer(ctx context.Context, vendorAccount *dal.VendorAccou
 	}
 
 	// If we haven't added this customer look up the information we will want to associate with them
-	ent, err := directory.SingleEntity(ctx, s.directoryClient, &directory.LookupEntitiesRequest{
+	ent, err := directory.SingleEntity(ctx, directoryClient, &directory.LookupEntitiesRequest{
 		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
 		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: entityID,
@@ -275,7 +277,7 @@ func (s *server) addCustomer(ctx context.Context, vendorAccount *dal.VendorAccou
 	var newCustomer *dal.Customer
 	switch vendorAccount.AccountType {
 	case dal.VendorAccountAccountTypeStripe:
-		stripeCustomer, err := s.stripeClient.CreateCustomer(ctx, &stripe.CustomerParams{
+		stripeCustomer, err := stripeClient.CreateCustomer(ctx, &stripe.CustomerParams{
 			Desc:  customerDescription(ent),
 			Email: customerEmail,
 			Params: stripe.Params{
@@ -302,7 +304,7 @@ func (s *server) addCustomer(ctx context.Context, vendorAccount *dal.VendorAccou
 	newCustomer.Lifecycle = dal.CustomerLifecycleActive
 	newCustomer.ChangeState = dal.CustomerChangeStateNone
 
-	id, err := s.dal.InsertCustomer(ctx, newCustomer)
+	id, err := dl.InsertCustomer(ctx, newCustomer)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -316,13 +318,45 @@ func customerDescription(ent *directory.Entity) string {
 	return ent.Info.DisplayName + " - Added by Spruce Health"
 }
 
-func (s *server) addPaymentMethod(ctx context.Context, vendorAccount *dal.VendorAccount, customer *dal.Customer, paymentMethodType payments.PaymentMethodType, token string) (*dal.PaymentMethod, error) {
+type TokenSource interface {
+	Token() (string, error)
+}
+
+type LiteralTokenSource struct {
+	T string
+}
+
+func (lt *LiteralTokenSource) Token() (string, error) {
+	return lt.T, nil
+}
+
+type DynamicTokenSource struct {
+	D func() (string, error)
+}
+
+func (dt *DynamicTokenSource) Token() (string, error) {
+	return dt.D()
+}
+
+// AddPaymentMethod adds a payment method to the provided vendor account and customer
+func AddPaymentMethod(
+	ctx context.Context,
+	vendorAccount *dal.VendorAccount,
+	customer *dal.Customer,
+	paymentMethodType payments.PaymentMethodType,
+	tokenSource TokenSource,
+	dl dal.DAL,
+	stripeClient istripe.IdempotentStripeClient) (*dal.PaymentMethod, error) {
+	token, err := tokenSource.Token()
+	if err != nil {
+		return nil, errors.Errorf("Error getting token for payment method addition: %s", err)
+	}
 	var newPaymentMethod *dal.PaymentMethod
 	switch vendorAccount.AccountType {
 	case dal.VendorAccountAccountTypeStripe:
 		switch paymentMethodType {
 		case payments.PAYMENT_METHOD_TYPE_CARD:
-			stripeCard, err := s.stripeClient.CreateCard(ctx, &stripe.CardParams{
+			stripeCard, err := stripeClient.CreateCard(ctx, &stripe.CardParams{
 				Customer: customer.StorageID,
 				Token:    token,
 				Params: stripe.Params{
@@ -337,9 +371,15 @@ func (s *server) addPaymentMethod(ctx context.Context, vendorAccount *dal.Vendor
 				return nil, errors.Trace(err)
 			}
 			newPaymentMethod = &dal.PaymentMethod{
+				Type:               dal.PaymentMethodTypeCard,
 				StorageType:        dal.PaymentMethodStorageTypeStripe,
 				StorageID:          stripeCard.ID,
 				StorageFingerprint: stripeCard.Fingerprint,
+				Brand:              string(stripeCard.Brand),
+				Last4:              stripeCard.LastFour,
+				ExpMonth:           int(stripeCard.Month),
+				ExpYear:            int(stripeCard.Year),
+				TokenizationMethod: string(stripeCard.TokenizationMethod),
 			}
 		default:
 			return nil, errors.Errorf("Unhandled payment method type %s for vendor account %s payment method addition", paymentMethodType, vendorAccount.ID)
@@ -358,7 +398,7 @@ func (s *server) addPaymentMethod(ctx context.Context, vendorAccount *dal.Vendor
 	newPaymentMethod.ChangeState = dal.PaymentMethodChangeStateNone
 
 	// Check to see if we've already added this payment method - the stripe endpoint is idempotent
-	paymentMethod, err := s.dal.PaymentMethodWithFingerprint(ctx, customer.ID, newPaymentMethod.StorageFingerprint)
+	paymentMethod, err := dl.PaymentMethodWithFingerprint(ctx, customer.ID, newPaymentMethod.StorageFingerprint)
 	if err != nil && errors.Cause(err) != dal.ErrNotFound {
 		return nil, errors.Trace(err)
 	} else if paymentMethod != nil {
@@ -367,7 +407,7 @@ func (s *server) addPaymentMethod(ctx context.Context, vendorAccount *dal.Vendor
 	}
 
 	golog.Debugf("Payment Method NOT FOUND - Fingerprint: %s Entity: %s for VendorAccount: %s - ADDING", newPaymentMethod.StorageFingerprint, newPaymentMethod.EntityID, vendorAccount.ID)
-	id, err := s.dal.InsertPaymentMethod(ctx, newPaymentMethod)
+	id, err := dl.InsertPaymentMethod(ctx, newPaymentMethod)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -590,16 +630,9 @@ func (s *server) PaymentMethods(ctx context.Context, req *payments.PaymentMethod
 	if err != nil {
 		return nil, grpcError(err)
 	}
-	var rPaymentMethods []*payments.PaymentMethod
-	if len(paymentMethods) != 0 {
-		customer, err := s.dal.CustomerForVendor(ctx, s.masterVendorAccount.ID, req.EntityID)
-		if err != nil {
-			return nil, grpcError(err)
-		}
-		rPaymentMethods, err = transformPaymentMethodsToResponse(ctx, customer, paymentMethods, s.stripeClient)
-		if err != nil {
-			return nil, grpcError(err)
-		}
+	rPaymentMethods, err := transformPaymentMethodsToResponse(paymentMethods)
+	if err != nil {
+		return nil, grpcError(err)
 	}
 	return &payments.PaymentMethodsResponse{
 		PaymentMethods: rPaymentMethods,

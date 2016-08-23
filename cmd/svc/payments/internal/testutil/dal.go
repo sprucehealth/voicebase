@@ -213,3 +213,11 @@ func (d *MockDAL) DeletePayment(ctx context.Context, id dal.PaymentID) (int64, e
 	}
 	return rets[0].(int64), mock.SafeError(rets[1])
 }
+
+func (d *MockDAL) PaymentsInState(ctx context.Context, lifecycle dal.PaymentLifecycle, changeState dal.PaymentChangeState, limit int64, opts ...dal.QueryOption) ([]*dal.Payment, error) {
+	rets := d.Record(lifecycle, changeState, limit, opts)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].([]*dal.Payment), mock.SafeError(rets[1])
+}

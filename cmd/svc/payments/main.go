@@ -97,7 +97,7 @@ func main() {
 	go s.Serve(lis)
 
 	golog.Infof("Starting Payments Workers...")
-	works := workers.New(dl, *flagStripeSecretKey, *flagStripeClientID)
+	works := workers.New(dl, directoryClient, *flagStripeSecretKey, *flagStripeClientID)
 	works.Start()
 	defer works.Stop(time.Second * 20)
 

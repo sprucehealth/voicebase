@@ -306,7 +306,6 @@ func TestPaymentMethods(t *testing.T) {
 	stripeSecretKey := "stripeSecretKey"
 	entityID := "entityID"
 	storageID := "storageID"
-	cardID := "cardID"
 	cases := map[string]struct {
 		Server      *tServer
 		Request     *payments.PaymentMethodsRequest
@@ -327,45 +326,32 @@ func TestPaymentMethods(t *testing.T) {
 				tsrv.mdal.Expect(mock.NewExpectation(tsrv.mdal.EntityPaymentMethods, masterVendorAccountID, entityID, []dal.QueryOption(nil)).WithReturns(
 					[]*dal.PaymentMethod{
 						{
-							ID:          pmID1,
-							CustomerID:  cID,
-							EntityID:    entityID,
-							Lifecycle:   dal.PaymentMethodLifecycleActive,
-							ChangeState: dal.PaymentMethodChangeStateNone,
-							StorageType: dal.PaymentMethodStorageTypeStripe,
-							StorageID:   storageID,
+							ID:                 pmID1,
+							CustomerID:         cID,
+							EntityID:           entityID,
+							Lifecycle:          dal.PaymentMethodLifecycleActive,
+							ChangeState:        dal.PaymentMethodChangeStateNone,
+							StorageType:        dal.PaymentMethodStorageTypeStripe,
+							StorageID:          storageID,
+							Type:               dal.PaymentMethodTypeCard,
+							TokenizationMethod: "TokenizationMethod",
+							Brand:              "Brand",
+							Last4:              "LastFour",
 						},
 						{
-							ID:          pmID2,
-							CustomerID:  cID,
-							EntityID:    entityID,
-							Lifecycle:   dal.PaymentMethodLifecycleActive,
-							ChangeState: dal.PaymentMethodChangeStateNone,
-							StorageType: dal.PaymentMethodStorageTypeStripe,
-							StorageID:   storageID,
+							ID:                 pmID2,
+							CustomerID:         cID,
+							EntityID:           entityID,
+							Lifecycle:          dal.PaymentMethodLifecycleActive,
+							ChangeState:        dal.PaymentMethodChangeStateNone,
+							StorageType:        dal.PaymentMethodStorageTypeStripe,
+							StorageID:          storageID,
+							Type:               dal.PaymentMethodTypeCard,
+							TokenizationMethod: "TokenizationMethod",
+							Brand:              "Brand",
+							Last4:              "LastFour",
 						},
 					}, nil))
-				tsrv.mdal.Expect(mock.NewExpectation(tsrv.mdal.CustomerForVendor, masterVendorAccountID, entityID, []dal.QueryOption(nil)).WithReturns(
-					&dal.Customer{
-						ID:        cID,
-						StorageID: storageID,
-					}, nil))
-				tsrv.mstripe.Expect(mock.NewExpectation(tsrv.mstripe.Card, storageID, &stripe.CardParams{
-					Customer: storageID,
-				}).WithReturns(&stripe.Card{
-					ID:                 cardID,
-					TokenizationMethod: stripe.TokenizationMethod("TokenizationMethod"),
-					Brand:              stripe.CardBrand("Brand"),
-					LastFour:           "LastFour",
-				}, nil))
-				tsrv.mstripe.Expect(mock.NewExpectation(tsrv.mstripe.Card, storageID, &stripe.CardParams{
-					Customer: storageID,
-				}).WithReturns(&stripe.Card{
-					ID:                 cardID,
-					TokenizationMethod: stripe.TokenizationMethod("TokenizationMethod"),
-					Brand:              stripe.CardBrand("Brand"),
-					LastFour:           "LastFour",
-				}, nil))
 				return tsrv
 			}(),
 			Request: &payments.PaymentMethodsRequest{
@@ -383,7 +369,7 @@ func TestPaymentMethods(t *testing.T) {
 						Type:        payments.PAYMENT_METHOD_TYPE_CARD,
 						PaymentMethodOneof: &payments.PaymentMethod_StripeCard{
 							StripeCard: &payments.StripeCard{
-								ID:                 cardID,
+								ID:                 storageID,
 								TokenizationMethod: "TokenizationMethod",
 								Brand:              "Brand",
 								Last4:              "LastFour",
@@ -400,7 +386,7 @@ func TestPaymentMethods(t *testing.T) {
 						Type:        payments.PAYMENT_METHOD_TYPE_CARD,
 						PaymentMethodOneof: &payments.PaymentMethod_StripeCard{
 							StripeCard: &payments.StripeCard{
-								ID:                 cardID,
+								ID:                 storageID,
 								TokenizationMethod: "TokenizationMethod",
 								Brand:              "Brand",
 								Last4:              "LastFour",
@@ -433,7 +419,6 @@ func TestDeletePaymentMethod(t *testing.T) {
 	stripeSecretKey := "stripeSecretKey"
 	entityID := "entityID"
 	storageID := "storageID"
-	cardID := "cardID"
 	connectedAccountID := "connectedAccountID"
 	storageFingerprint := "storageFingerprint"
 	cases := map[string]struct {
@@ -504,28 +489,19 @@ func TestDeletePaymentMethod(t *testing.T) {
 				tsrv.mdal.Expect(mock.NewExpectation(tsrv.mdal.EntityPaymentMethods, masterVendorAccountID, entityID, []dal.QueryOption(nil)).WithReturns(
 					[]*dal.PaymentMethod{
 						{
-							ID:          pmID2,
-							CustomerID:  cID,
-							EntityID:    entityID,
-							Lifecycle:   dal.PaymentMethodLifecycleActive,
-							ChangeState: dal.PaymentMethodChangeStateNone,
-							StorageType: dal.PaymentMethodStorageTypeStripe,
-							StorageID:   storageID,
+							ID:                 pmID2,
+							CustomerID:         cID,
+							EntityID:           entityID,
+							Lifecycle:          dal.PaymentMethodLifecycleActive,
+							ChangeState:        dal.PaymentMethodChangeStateNone,
+							StorageType:        dal.PaymentMethodStorageTypeStripe,
+							StorageID:          storageID,
+							Type:               dal.PaymentMethodTypeCard,
+							TokenizationMethod: "TokenizationMethod",
+							Brand:              "Brand",
+							Last4:              "LastFour",
 						},
 					}, nil))
-				tsrv.mdal.Expect(mock.NewExpectation(tsrv.mdal.CustomerForVendor, masterVendorAccountID, entityID, []dal.QueryOption(nil)).WithReturns(
-					&dal.Customer{
-						ID:        cID,
-						StorageID: storageID,
-					}, nil))
-				tsrv.mstripe.Expect(mock.NewExpectation(tsrv.mstripe.Card, storageID, &stripe.CardParams{
-					Customer: storageID,
-				}).WithReturns(&stripe.Card{
-					ID:                 cardID,
-					TokenizationMethod: stripe.TokenizationMethod("TokenizationMethod"),
-					Brand:              stripe.CardBrand("Brand"),
-					LastFour:           "LastFour",
-				}, nil))
 				return tsrv
 			}(),
 			Request: &payments.DeletePaymentMethodRequest{
@@ -543,7 +519,7 @@ func TestDeletePaymentMethod(t *testing.T) {
 						Type:        payments.PAYMENT_METHOD_TYPE_CARD,
 						PaymentMethodOneof: &payments.PaymentMethod_StripeCard{
 							StripeCard: &payments.StripeCard{
-								ID:                 cardID,
+								ID:                 storageID,
 								TokenizationMethod: "TokenizationMethod",
 								Brand:              "Brand",
 								Last4:              "LastFour",

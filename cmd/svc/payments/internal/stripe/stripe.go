@@ -18,6 +18,7 @@ type IdempotentStripeClient interface {
 	Account(ctx context.Context) (*stripe.Account, error)
 	Card(ctx context.Context, id string, cParams *stripe.CardParams) (*stripe.Card, error)
 	CreateCard(ctx context.Context, cParams *stripe.CardParams, opts ...CallOption) (*stripe.Card, error)
+	CreateCharge(ctx context.Context, cParams *stripe.ChargeParams, opts ...CallOption) (*stripe.Charge, error)
 	CreateCustomer(ctx context.Context, cParams *stripe.CustomerParams, opts ...CallOption) (*stripe.Customer, error)
 	DeleteCard(ctx context.Context, id string, cParams *stripe.CardParams, opts ...CallOption) error
 	Token(ctx context.Context, tParams *stripe.TokenParams, opts ...CallOption) (*stripe.Token, error)
@@ -82,6 +83,21 @@ func (sw *stripeWrapper) CreateCard(ctx context.Context, cParams *stripe.CardPar
 		cParams.Params.IdempotencyKey = idk
 	}
 	card, err := sw.stripeClient.Cards.New(cParams)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return card, nil
+}
+
+func (sw *stripeWrapper) CreateCharge(ctx context.Context, cParams *stripe.ChargeParams, opts ...CallOption) (*stripe.Charge, error) {
+	if !callOptions(opts).Has(PreserveIdempotencyKey) {
+		idk, err := sw.idempotencyKey("create_charge", cParams)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		cParams.Params.IdempotencyKey = idk
+	}
+	card, err := sw.stripeClient.Charges.New(cParams)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

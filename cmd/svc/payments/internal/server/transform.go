@@ -8,7 +8,6 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/payments"
-	"github.com/stripe/stripe-go"
 )
 
 func transformVendorAccountsToResponse(vas []*dal.VendorAccount) []*payments.VendorAccount {
@@ -85,10 +84,10 @@ func transformVendorAccountChangeStateToDAL(vc payments.VendorAccountChangeState
 	return "", errors.Errorf("Unknown VendorAccountChangeState %s", vc)
 }
 
-func transformPaymentMethodsToResponse(ctx context.Context, customer *dal.Customer, pms []*dal.PaymentMethod, stripeClient istripe.IdempotentStripeClient) ([]*payments.PaymentMethod, error) {
+func transformPaymentMethodsToResponse(pms []*dal.PaymentMethod) ([]*payments.PaymentMethod, error) {
 	rpms := make([]*payments.PaymentMethod, len(pms))
 	for i, pm := range pms {
-		rpm, err := transformPaymentMethodToResponse(ctx, customer, pm, stripeClient)
+		rpm, err := transformPaymentMethodToResponse(pm)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
@@ -102,46 +101,34 @@ func transformPaymentMethodsToResponse(ctx context.Context, customer *dal.Custom
 	return rpms, nil
 }
 
-func transformPaymentMethodToResponse(ctx context.Context, customer *dal.Customer, pm *dal.PaymentMethod, stripeClient istripe.IdempotentStripeClient) (*payments.PaymentMethod, error) {
+func transformPaymentMethodToResponse(pm *dal.PaymentMethod) (*payments.PaymentMethod, error) {
 	rpm := &payments.PaymentMethod{
 		ID:          pm.ID.String(),
 		EntityID:    pm.EntityID,
 		Lifecycle:   transformPaymentMethodLifecycleToResponse(pm.Lifecycle),
 		ChangeState: transformPaymentMethodChangeStateToResponse(pm.ChangeState),
+		StorageType: transformPaymentMethodStorageTypeToResponse(pm.StorageType),
+		Type:        TransformPaymentMethodTypeToResponse(pm.Type),
 	}
 	switch pm.StorageType {
 	case dal.PaymentMethodStorageTypeStripe:
-		rpm.StorageType = payments.PAYMENT_METHOD_STORAGE_TYPE_STRIPE
-		// TODO: This should be a subswitch
-		rpm.Type = payments.PAYMENT_METHOD_TYPE_CARD
-		// TODO: Do the card lookup in bulk
-		card, err := stripeClient.Card(ctx, pm.StorageID, &stripe.CardParams{
-			Customer: customer.StorageID,
-		})
-		if err != nil {
-			return nil, errors.Trace(err)
-		}
-		rpm.PaymentMethodOneof = &payments.PaymentMethod_StripeCard{
-			StripeCard: transformStripeCardToResponse(card),
+		switch pm.Type {
+		case dal.PaymentMethodTypeCard:
+			rpm.PaymentMethodOneof = &payments.PaymentMethod_StripeCard{
+				StripeCard: &payments.StripeCard{
+					ID:                 pm.StorageID,
+					TokenizationMethod: pm.TokenizationMethod,
+					Brand:              pm.Brand,
+					Last4:              pm.Last4,
+				},
+			}
+		default:
+			golog.Errorf("Unknown payment method type %s - id %s - cannot transform fully", pm.Type, pm.ID)
 		}
 	default:
 		golog.Errorf("Unknown payment method storage type %s - id %s - cannot transform fully", pm.StorageType, pm.ID)
 	}
-
 	return rpm, nil
-}
-
-func transformStripeCardToResponse(card *stripe.Card) *payments.StripeCard {
-	last4 := card.LastFour
-	if last4 == "" {
-		last4 = card.DynLastFour
-	}
-	return &payments.StripeCard{
-		ID:                 card.ID,
-		TokenizationMethod: string(card.TokenizationMethod),
-		Brand:              string(card.Brand),
-		Last4:              last4,
-	}
 }
 
 func transformPaymentMethodLifecycleToResponse(vl dal.PaymentMethodLifecycle) payments.PaymentMethodLifecycle {
@@ -164,6 +151,24 @@ func transformPaymentMethodChangeStateToResponse(vc dal.PaymentMethodChangeState
 	}
 	golog.Errorf("Unknown PaymentMethodChangeState %s", vc)
 	return payments.PAYMENT_METHOD_CHANGE_STATE_UNKNOWN
+}
+
+func transformPaymentMethodStorageTypeToResponse(pst dal.PaymentMethodStorageType) payments.PaymentMethodStorageType {
+	switch pst {
+	case dal.PaymentMethodStorageTypeStripe:
+		return payments.PAYMENT_METHOD_STORAGE_TYPE_STRIPE
+	}
+	golog.Errorf("Unknown PaymentMethodStorageType %s", pst)
+	return payments.PAYMENT_METHOD_STORAGE_TYPE_UNKNOWN
+}
+
+func TransformPaymentMethodTypeToResponse(pt dal.PaymentMethodType) payments.PaymentMethodType {
+	switch pt {
+	case dal.PaymentMethodTypeCard:
+		return payments.PAYMENT_METHOD_TYPE_CARD
+	}
+	golog.Errorf("Unknown PaymentMethodType %s", pt)
+	return payments.PAYMENT_METHOD_TYPE_UNKNOWN
 }
 
 func transformPaymentsToResponse(ctx context.Context, ps []*dal.Payment, dl dal.DAL, stripeClient istripe.IdempotentStripeClient) ([]*payments.Payment, error) {
@@ -191,11 +196,7 @@ func transformPaymentToResponse(ctx context.Context, p *dal.Payment, dl dal.DAL,
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-		customer, err := dl.Customer(ctx, paymentMethod.CustomerID)
-		if err != nil {
-			return nil, errors.Trace(err)
-		}
-		rPaymentMethod, err = transformPaymentMethodToResponse(ctx, customer, paymentMethod, stripeClient)
+		rPaymentMethod, err = transformPaymentMethodToResponse(paymentMethod)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}

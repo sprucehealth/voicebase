@@ -75,6 +75,14 @@ func (m *MockIdempotentStripeClient) CreateCard(ctx context.Context, cParams *st
 	return rets[0].(*stripe.Card), mock.SafeError(rets[1])
 }
 
+func (m *MockIdempotentStripeClient) CreateCharge(ctx context.Context, cParams *stripe.ChargeParams, opts ...istripe.CallOption) (*stripe.Charge, error) {
+	rets := m.Record(cParams, opts)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*stripe.Charge), mock.SafeError(rets[1])
+}
+
 func (m *MockIdempotentStripeClient) CreateCustomer(ctx context.Context, cParams *stripe.CustomerParams, opts ...istripe.CallOption) (*stripe.Customer, error) {
 	rets := m.Record(cParams, opts)
 	if len(rets) == 0 {

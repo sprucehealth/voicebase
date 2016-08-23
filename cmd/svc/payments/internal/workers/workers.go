@@ -5,32 +5,51 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/payments/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/payments/internal/oauth"
+	"github.com/sprucehealth/backend/cmd/svc/payments/internal/stripe"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/worker"
+	"github.com/sprucehealth/backend/svc/directory"
 )
 
 // Workers collection of all workers used by the Payments system
 type Workers struct {
-	dal                                    dal.DAL
-	stripeOAuth                            oauth.StripeOAuth
-	vendorAccountPendingDisconnectedWorker worker.Worker
+	dal             dal.DAL
+	stripeOAuth     oauth.StripeOAuth
+	stripeClient    stripe.IdempotentStripeClient
+	directoryClient directory.DirectoryClient
+	workers         []worker.Worker
 }
 
 // New initializes a collection of all workers used by the Payments system
-func New(dl dal.DAL, stripeSecretKey, stripeClientID string) *Workers {
+func New(dl dal.DAL, directoryClient directory.DirectoryClient, stripeSecretKey, stripeClientID string) *Workers {
 	w := &Workers{
-		dal:         dl,
-		stripeOAuth: oauth.NewStripe(stripeSecretKey, stripeClientID),
+		dal:             dl,
+		stripeOAuth:     oauth.NewStripe(stripeSecretKey, stripeClientID),
+		stripeClient:    stripe.NewClient(stripeSecretKey),
+		directoryClient: directoryClient,
 	}
-	w.vendorAccountPendingDisconnectedWorker = worker.NewRepeat(time.Second*15, w.processVendorAccountPendingDisconnected)
+	w.workers = append(w.workers, worker.NewRepeat(time.Second*15, w.processVendorAccountPendingDisconnected))
+	// TODO: We should stagger this query relative to the number of processes. V1 just poll every 3 seconds
+	w.workers = append(w.workers, worker.NewRepeat(time.Second*3, w.processPaymentNoneAccepted))
+	w.workers = append(w.workers, worker.NewRepeat(time.Second*3, w.processPaymentPendingProcessing))
 	return w
 }
 
 // Start starts the service workers
-func (m *Workers) Start() {
-	m.vendorAccountPendingDisconnectedWorker.Start()
+func (w *Workers) Start() {
+	for _, wk := range w.workers {
+		conc.Go(wk.Start)
+	}
 }
 
 // Stop stops the service workers
-func (m *Workers) Stop(wait time.Duration) {
-	m.vendorAccountPendingDisconnectedWorker.Stop(wait)
+func (w *Workers) Stop(wait time.Duration) {
+	parallel := conc.NewParallel()
+	for _, wk := range w.workers {
+		parallel.Go(func() error {
+			wk.Stop(wait)
+			return nil
+		})
+	}
+	parallel.Wait()
 }
