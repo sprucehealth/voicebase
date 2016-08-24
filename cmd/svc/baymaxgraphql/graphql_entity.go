@@ -207,7 +207,7 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 })
 
 var entityQuery = &graphql.Field{
-	Type: graphql.NewNonNull(organizationType),
+	Type: graphql.NewNonNull(entityType),
 	Args: graphql.FieldConfigArgument{
 		"id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
 	},

@@ -29,7 +29,7 @@ var paymentRequestType = graphql.NewObject(graphql.ObjectConfig{
 })
 
 var paymentRequestQuery = &graphql.Field{
-	Type: graphql.NewNonNull(organizationType),
+	Type: graphql.NewNonNull(paymentRequestType),
 	Args: graphql.FieldConfigArgument{
 		"id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
 	},
