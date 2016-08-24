@@ -80,15 +80,16 @@ func transformPaymentToResponse(ctx context.Context, p *payments.Payment, ram ra
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	var completedTimestamp uint64
+	var completedTimestamp *uint64
 	if p.Lifecycle == payments.PAYMENT_LIFECYCLE_COMPLETED {
-		completedTimestamp = p.Modified
+		completedTimestamp = &p.Modified
 	}
 	return &models.PaymentRequest{
 		ID:               p.ID,
 		RequestingEntity: rRequestingEntity,
 		PaymentMethod:    transformPaymentMethodToResponse(p.PaymentMethod),
-		Amount:           p.Amount,
+		Currency:         p.Currency,
+		AmountInCents:    p.Amount,
 		// TODO: Figure out what we want this text to be
 		Status: paymentStatus(p.Lifecycle, p.ChangeState),
 		// TODO: The source of these two timestamps will change

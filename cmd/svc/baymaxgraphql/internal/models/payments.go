@@ -28,8 +28,9 @@ type PaymentRequest struct {
 	ID                 string        `json:"id"`
 	RequestingEntity   *Entity       `json:"requestingEntity"`
 	PaymentMethod      PaymentMethod `json:"paymentMethod"`
-	Amount             uint64        `json:"amount"`
+	AmountInCents      uint64        `json:"amountInCents"`
 	Status             string        `json:"status"`
+	Currency           string        `json:"currency"`
 	RequestedTimestamp uint64        `json:"requestedTimestamp"`
-	CompletedTimestamp uint64        `json:"completedTimestamp"`
+	CompletedTimestamp *uint64       `json:"completedTimestamp"`
 }
