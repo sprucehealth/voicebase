@@ -200,7 +200,7 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 			Resolve: apiaccess.Authenticated(resolveEntityPaymentMethods),
 		},
 		"hasConnectedStripeAccount": &graphql.Field{
-			Type:    graphql.NewList(graphql.NewNonNull(graphql.Boolean)),
+			Type:    graphql.NewNonNull(graphql.Boolean),
 			Resolve: apiaccess.Authenticated(resolveHasConnectedStripeAccount),
 		},
 	},
