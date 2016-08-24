@@ -92,7 +92,8 @@ func transformPaymentToResponse(ctx context.Context, p *payments.Payment, ram ra
 		Currency:         p.Currency,
 		AmountInCents:    p.Amount,
 		// TODO: Figure out what we want this text to be
-		Status: paymentStatus(p.Lifecycle, p.ChangeState),
+		Status:          paymentStatus(p.Lifecycle, p.ChangeState),
+		ProcessingError: p.Lifecycle == payments.PAYMENT_LIFECYCLE_ERROR_PROCESSING,
 		// TODO: The source of these two timestamps will change
 		RequestedTimestamp: p.Created,
 		CompletedTimestamp: completedTimestamp,

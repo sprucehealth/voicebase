@@ -24,6 +24,7 @@ var paymentRequestType = graphql.NewObject(graphql.ObjectConfig{
 		"currency":           &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"amountInCents":      &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
 		"status":             &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"processingError":    &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		"requestedTimestamp": &graphql.Field{Type: graphql.Int},
 		"completedTimestamp": &graphql.Field{Type: graphql.Int},
 	},
