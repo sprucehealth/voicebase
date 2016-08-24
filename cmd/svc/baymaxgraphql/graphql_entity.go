@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/media"
+	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/graphql"
 )
 
@@ -198,8 +199,25 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 			Type:    graphql.NewList(graphql.NewNonNull(paymentMethodInterfaceType)),
 			Resolve: apiaccess.Authenticated(resolveEntityPaymentMethods),
 		},
+		"hasConnectedStripeAccount": &graphql.Field{
+			Type:    graphql.NewList(graphql.NewNonNull(graphql.Boolean)),
+			Resolve: apiaccess.Authenticated(resolveHasConnectedStripeAccount),
+		},
 	},
 })
+
+var entityQuery = &graphql.Field{
+	Type: graphql.NewNonNull(organizationType),
+	Args: graphql.FieldConfigArgument{
+		"id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+	},
+	Resolve: apiaccess.Authenticated(func(p graphql.ResolveParams) (interface{}, error) {
+		ram := raccess.ResourceAccess(p)
+		ctx := p.Context
+		svc := serviceFromParams(p)
+		return lookupEntity(ctx, svc, ram, p.Args["id"].(string))
+	}),
+}
 
 func lookupEntity(ctx context.Context, svc *service, ram raccess.ResourceAccessor, entityID string) (interface{}, error) {
 	em, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
@@ -252,4 +270,19 @@ func lookupEntity(ctx context.Context, svc *service, ram raccess.ResourceAccesso
 		return e, nil
 	}
 	return nil, errors.InternalError(ctx, fmt.Errorf("unknown entity type: %s", em.Type.String()))
+}
+
+func resolveHasConnectedStripeAccount(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+	ent := p.Source.(*models.Entity)
+	ram := raccess.ResourceAccess(p)
+
+	resp, err := ram.VendorAccounts(ctx, &payments.VendorAccountsRequest{
+		EntityID: ent.ID,
+	})
+	if err != nil {
+		return false, errors.InternalError(ctx, err)
+	}
+	// TODO: This should obviously do some inspection in the future if we allow more than 1 connected vendor account
+	return len(resp.VendorAccounts) != 0, nil
 }

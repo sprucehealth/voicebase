@@ -737,3 +737,12 @@ func (m *ResourceAccessor) Payment(ctx context.Context, req *payments.PaymentReq
 
 	return rets[0].(*payments.PaymentResponse), mock.SafeError(rets[1])
 }
+
+func (m *ResourceAccessor) VendorAccounts(ctx context.Context, req *payments.VendorAccountsRequest) (*payments.VendorAccountsResponse, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].(*payments.VendorAccountsResponse), mock.SafeError(rets[1])
+}

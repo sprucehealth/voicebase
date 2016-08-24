@@ -158,6 +158,7 @@ type ResourceAccessor interface {
 	UpdatePassword(ctx context.Context, token, code, newPassword string) error
 	UpdateProfile(ctx context.Context, req *directory.UpdateProfileRequest) (*directory.UpdateProfileResponse, error)
 	UpdateThread(ctx context.Context, req *threading.UpdateThreadRequest) (*threading.UpdateThreadResponse, error)
+	VendorAccounts(ctx context.Context, req *payments.VendorAccountsRequest) (*payments.VendorAccountsResponse, error)
 	VerifiedValue(ctx context.Context, token string) (string, error)
 	Visit(ctx context.Context, req *care.GetVisitRequest) (*care.GetVisitResponse, error)
 	VisitLayout(ctx context.Context, req *layout.GetVisitLayoutRequest) (*layout.GetVisitLayoutResponse, error)

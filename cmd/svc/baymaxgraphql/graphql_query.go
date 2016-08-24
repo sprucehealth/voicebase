@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	segment "github.com/segmentio/analytics-go"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
@@ -115,77 +116,57 @@ var queryType = graphql.NewObject(
 				Args: graphql.FieldConfigArgument{
 					"id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
 				},
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: apiaccess.Authenticated(func(p graphql.ResolveParams) (interface{}, error) {
 					ram := raccess.ResourceAccess(p)
 					ctx := p.Context
 					svc := serviceFromParams(p)
-					acc := gqlctx.Account(ctx)
-
-					if acc == nil {
-						return nil, errors.ErrNotAuthenticated(ctx)
-					}
 					return lookupEntity(ctx, svc, ram, p.Args["id"].(string))
-				},
+				}),
 			},
 			"savedThreadQuery": &graphql.Field{
 				Type: graphql.NewNonNull(savedThreadQueryType),
 				Args: graphql.FieldConfigArgument{
 					"id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
 				},
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: apiaccess.Authenticated(func(p graphql.ResolveParams) (interface{}, error) {
 					ram := raccess.ResourceAccess(p)
 					ctx := p.Context
-					acc := gqlctx.Account(ctx)
-					if acc == nil {
-						return nil, errors.ErrNotAuthenticated(ctx)
-					}
 					return lookupSavedQuery(ctx, ram, p.Args["id"].(string))
-				},
+				}),
 			},
 			"thread": &graphql.Field{
 				Type: graphql.NewNonNull(threadType),
 				Args: graphql.FieldConfigArgument{
 					"id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
 				},
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: apiaccess.Authenticated(func(p graphql.ResolveParams) (interface{}, error) {
 					ram := raccess.ResourceAccess(p)
 					ctx := p.Context
 					acc := gqlctx.Account(ctx)
-					if acc == nil {
-						return nil, errors.ErrNotAuthenticated(ctx)
-					}
 					return lookupThreadWithReadStatus(ctx, ram, acc, p.Args["id"].(string))
-				},
+				}),
 			},
 			"visit": &graphql.Field{
 				Type: graphql.NewNonNull(visitType),
 				Args: graphql.FieldConfigArgument{
 					"id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
 				},
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: apiaccess.Authenticated(func(p graphql.ResolveParams) (interface{}, error) {
 					svc := serviceFromParams(p)
 					ram := raccess.ResourceAccess(p)
 					ctx := p.Context
-					acc := gqlctx.Account(ctx)
-					if acc == nil {
-						return nil, errors.ErrNotAuthenticated(ctx)
-					}
 					return lookupVisit(ctx, svc, ram, p.Args["id"].(string))
-				},
+				}),
 			},
 			"subdomain": &graphql.Field{
 				Type: graphql.NewNonNull(subdomainType),
 				Args: graphql.FieldConfigArgument{
 					"value": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 				},
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: apiaccess.Authenticated(func(p graphql.ResolveParams) (interface{}, error) {
 					ram := raccess.ResourceAccess(p)
 					ctx := p.Context
-					acc := gqlctx.Account(ctx)
 					domain := p.Args["value"].(string)
-					if acc == nil {
-						return nil, errors.ErrNotAuthenticated(ctx)
-					}
 
 					var available bool
 					_, err := ram.EntityDomain(ctx, "", domain)
@@ -198,12 +179,14 @@ var queryType = graphql.NewObject(
 					return &models.Subdomain{
 						Available: available,
 					}, nil
-				},
+				}),
 			},
+			"entity":                  entityQuery,
 			"call":                    callQuery,
 			"carePlan":                carePlanQuery,
 			"forceUpgradeStatus":      forceUpgradeQuery,
 			"medicationSearch":        medicationSearchQuery,
+			"paymentRequest":          paymentRequestQuery,
 			"pendingCalls":            pendingCallsQuery,
 			"visitAutocompleteSearch": visitAutocompleteSearchQuery,
 			"setting":                 settingsQuery,

@@ -398,14 +398,26 @@ func AddPaymentMethod(
 	newPaymentMethod.ChangeState = dal.PaymentMethodChangeStateNone
 
 	// Check to see if we've already added this payment method - the stripe endpoint is idempotent
-	paymentMethod, err := dl.PaymentMethodWithFingerprint(ctx, customer.ID, newPaymentMethod.StorageFingerprint)
+	existingPaymentMethod, err := dl.PaymentMethodWithFingerprint(ctx, customer.ID, newPaymentMethod.StorageFingerprint)
 	if err != nil && errors.Cause(err) != dal.ErrNotFound {
 		return nil, errors.Trace(err)
-	} else if paymentMethod != nil {
-		golog.Debugf("Payment Method FOUND - Fingerprint: %s Entity: %s for VendorAccount: %s - NOT ADDING", paymentMethod.StorageFingerprint, paymentMethod.EntityID, vendorAccount.ID)
-		return paymentMethod, nil
+	} else if existingPaymentMethod != nil {
+		golog.Debugf("Payment Method FOUND - Fingerprint: %s Entity: %s for VendorAccount: %s - NOT ADDING", existingPaymentMethod.StorageFingerprint, existingPaymentMethod.EntityID, vendorAccount.ID)
+		if existingPaymentMethod.Lifecycle == dal.PaymentMethodLifecycleDeleted {
+			golog.Debugf("Payment Method added, but was previously deleted - resurrecting record")
+			if _, err := dl.UpdatePaymentMethod(ctx, existingPaymentMethod.ID, &dal.PaymentMethodUpdate{
+				Lifecycle:   dal.PaymentMethodLifecycleActive,
+				ChangeState: dal.PaymentMethodChangeStateNone,
+				StorageID:   &newPaymentMethod.StorageID,
+			}); err != nil {
+				return nil, errors.Trace(err)
+			}
+			existingPaymentMethod.Lifecycle = dal.PaymentMethodLifecycleActive
+			existingPaymentMethod.ChangeState = dal.PaymentMethodChangeStateNone
+			existingPaymentMethod.StorageID = newPaymentMethod.StorageID
+		}
+		return existingPaymentMethod, nil
 	}
-
 	golog.Debugf("Payment Method NOT FOUND - Fingerprint: %s Entity: %s for VendorAccount: %s - ADDING", newPaymentMethod.StorageFingerprint, newPaymentMethod.EntityID, vendorAccount.ID)
 	id, err := dl.InsertPaymentMethod(ctx, newPaymentMethod)
 	if err != nil {

@@ -842,6 +842,7 @@ func (m *PaymentMethod) Validate() error {
 type PaymentMethodUpdate struct {
 	Lifecycle   PaymentMethodLifecycle
 	ChangeState PaymentMethodChangeState
+	StorageID   *string
 }
 
 // Validate asserts that the object is well formed
@@ -1266,6 +1267,9 @@ func (d *dal) UpdatePaymentMethod(ctx context.Context, id PaymentMethodID, updat
 	args := dbutil.MySQLVarArgs()
 	args.Append("lifecycle", update.Lifecycle)
 	args.Append("change_state", update.ChangeState)
+	if update.StorageID != nil {
+		args.Append("storage_id", *update.StorageID)
+	}
 	if args.IsEmpty() {
 		return 0, nil
 	}

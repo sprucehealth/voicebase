@@ -96,3 +96,15 @@ func (m *resourceAccessor) DeletePaymentMethod(ctx context.Context, req *payment
 	}
 	return resp, nil
 }
+
+func (m *resourceAccessor) VendorAccounts(ctx context.Context, req *payments.VendorAccountsRequest) (*payments.VendorAccountsResponse, error) {
+	if err := m.canAccessResource(ctx, req.EntityID, m.orgsForEntity); err != nil {
+		return nil, err
+	}
+
+	resp, err := m.payments.VendorAccounts(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}

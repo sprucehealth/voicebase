@@ -5,12 +5,19 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	ramock "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess/mock"
 	baymaxgraphqlsettings "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/settings"
+	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/backend/svc/settings"
+	smock "github.com/sprucehealth/backend/svc/settings/mock"
 	"github.com/sprucehealth/backend/svc/threading"
+	"github.com/sprucehealth/graphql"
 )
 
 func TestAllowVisitAttachmentsQuery(t *testing.T) {
@@ -302,4 +309,210 @@ func TestAllowVisitAttachmentsQuery_Allowed(t *testing.T) {
 `, nil)
 
 	responseEquals(t, `{"data":{"thread":{"allowVisitAttachments":true}}}`, res)
+}
+
+type testAllowPaymentRequestAttachmentParams struct {
+	p  graphql.ResolveParams
+	rm *ramock.ResourceAccessor
+	sm *smock.Client
+}
+
+func (t *testAllowPaymentRequestAttachmentParams) Finishers() []mock.Finisher {
+	return []mock.Finisher{t.rm, t.sm}
+}
+
+func TestAllowPaymentRequestAttachment(t *testing.T) {
+	orgID := "orgID"
+	cases := map[string]struct {
+		tp          *testAllowPaymentRequestAttachmentParams
+		Expected    interface{}
+		ExpectedErr error
+	}{
+		"Success-Allowed": {
+			tp: func() *testAllowPaymentRequestAttachmentParams {
+				rm := ramock.New(t)
+				sm := smock.New(t)
+				sm.Expect(mock.NewExpectation(sm.GetValues, &settings.GetValuesRequest{
+					NodeID: orgID,
+					Keys: []*settings.ConfigKey{
+						{
+							Key: baymaxgraphqlsettings.ConfigKeyPayments,
+						},
+					},
+				}).WithReturns(&settings.GetValuesResponse{
+					Values: []*settings.Value{
+						{
+							Value: &settings.Value_Boolean{
+								Boolean: &settings.BooleanValue{Value: true},
+							},
+						},
+					},
+				}, nil))
+				rm.Expect(mock.NewExpectation(rm.VendorAccounts, &payments.VendorAccountsRequest{
+					EntityID: orgID,
+				}).WithReturns(&payments.VendorAccountsResponse{VendorAccounts: []*payments.VendorAccount{&payments.VendorAccount{}}}, nil))
+				return &testAllowPaymentRequestAttachmentParams{
+					p: graphql.ResolveParams{
+						Context: gqlctx.WithAccount(context.Background(), &auth.Account{ID: "ID", Type: auth.AccountType_PROVIDER}),
+						Source: &models.Thread{
+							Type:           models.ThreadTypeSecureExternal,
+							OrganizationID: orgID,
+						},
+						Info: graphql.ResolveInfo{
+							RootValue: map[string]interface{}{
+								raccess.ParamKey: rm,
+								"service":        &service{settings: sm},
+							},
+						},
+					},
+					rm: rm,
+					sm: sm,
+				}
+			}(),
+			Expected:    true,
+			ExpectedErr: nil,
+		},
+		"Success-NotAllowed-NoVendorAccounts": {
+			tp: func() *testAllowPaymentRequestAttachmentParams {
+				rm := ramock.New(t)
+				sm := smock.New(t)
+				sm.Expect(mock.NewExpectation(sm.GetValues, &settings.GetValuesRequest{
+					NodeID: orgID,
+					Keys: []*settings.ConfigKey{
+						{
+							Key: baymaxgraphqlsettings.ConfigKeyPayments,
+						},
+					},
+				}).WithReturns(&settings.GetValuesResponse{
+					Values: []*settings.Value{
+						{
+							Value: &settings.Value_Boolean{
+								Boolean: &settings.BooleanValue{Value: true},
+							},
+						},
+					},
+				}, nil))
+				rm.Expect(mock.NewExpectation(rm.VendorAccounts, &payments.VendorAccountsRequest{
+					EntityID: orgID,
+				}).WithReturns(&payments.VendorAccountsResponse{VendorAccounts: []*payments.VendorAccount{}}, nil))
+				return &testAllowPaymentRequestAttachmentParams{
+					p: graphql.ResolveParams{
+						Context: gqlctx.WithAccount(context.Background(), &auth.Account{ID: "ID", Type: auth.AccountType_PROVIDER}),
+						Source: &models.Thread{
+							Type:           models.ThreadTypeSecureExternal,
+							OrganizationID: orgID,
+						},
+						Info: graphql.ResolveInfo{
+							RootValue: map[string]interface{}{
+								raccess.ParamKey: rm,
+								"service":        &service{settings: sm},
+							},
+						},
+					},
+					rm: rm,
+					sm: sm,
+				}
+			}(),
+			Expected:    false,
+			ExpectedErr: nil,
+		},
+		"Success-NotAllowed-SettingDisabled": {
+			tp: func() *testAllowPaymentRequestAttachmentParams {
+				rm := ramock.New(t)
+				sm := smock.New(t)
+				sm.Expect(mock.NewExpectation(sm.GetValues, &settings.GetValuesRequest{
+					NodeID: orgID,
+					Keys: []*settings.ConfigKey{
+						{
+							Key: baymaxgraphqlsettings.ConfigKeyPayments,
+						},
+					},
+				}).WithReturns(&settings.GetValuesResponse{
+					Values: []*settings.Value{
+						{
+							Value: &settings.Value_Boolean{
+								Boolean: &settings.BooleanValue{Value: false},
+							},
+						},
+					},
+				}, nil))
+				return &testAllowPaymentRequestAttachmentParams{
+					p: graphql.ResolveParams{
+						Context: gqlctx.WithAccount(context.Background(), &auth.Account{ID: "ID", Type: auth.AccountType_PROVIDER}),
+						Source: &models.Thread{
+							Type:           models.ThreadTypeSecureExternal,
+							OrganizationID: orgID,
+						},
+						Info: graphql.ResolveInfo{
+							RootValue: map[string]interface{}{
+								raccess.ParamKey: rm,
+								"service":        &service{settings: sm},
+							},
+						},
+					},
+					rm: rm,
+					sm: sm,
+				}
+			}(),
+			Expected:    false,
+			ExpectedErr: nil,
+		},
+		"Success-NotAllowed-Patient": {
+			tp: func() *testAllowPaymentRequestAttachmentParams {
+				rm := ramock.New(t)
+				sm := smock.New(t)
+				return &testAllowPaymentRequestAttachmentParams{
+					p: graphql.ResolveParams{
+						Context: gqlctx.WithAccount(context.Background(), &auth.Account{ID: "ID", Type: auth.AccountType_PATIENT}),
+						Source: &models.Thread{
+							Type:           models.ThreadTypeSecureExternal,
+							OrganizationID: orgID,
+						},
+						Info: graphql.ResolveInfo{
+							RootValue: map[string]interface{}{
+								raccess.ParamKey: rm,
+								"service":        &service{settings: sm},
+							},
+						},
+					},
+					rm: rm,
+					sm: sm,
+				}
+			}(),
+			Expected:    false,
+			ExpectedErr: nil,
+		},
+		"Success-NotAllowed-ExternalThread": {
+			tp: func() *testAllowPaymentRequestAttachmentParams {
+				rm := ramock.New(t)
+				sm := smock.New(t)
+				return &testAllowPaymentRequestAttachmentParams{
+					p: graphql.ResolveParams{
+						Context: gqlctx.WithAccount(context.Background(), &auth.Account{ID: "ID", Type: auth.AccountType_PROVIDER}),
+						Source: &models.Thread{
+							Type:           models.ThreadTypeExternal,
+							OrganizationID: orgID,
+						},
+						Info: graphql.ResolveInfo{
+							RootValue: map[string]interface{}{
+								raccess.ParamKey: rm,
+								"service":        &service{settings: sm},
+							},
+						},
+					},
+					rm: rm,
+					sm: sm,
+				}
+			}(),
+			Expected:    false,
+			ExpectedErr: nil,
+		},
+	}
+
+	for cn, c := range cases {
+		out, err := resolveAllowPaymentRequestAttachments(c.tp.p)
+		test.EqualsCase(t, cn, c.Expected, out)
+		test.EqualsCase(t, cn, c.ExpectedErr, err)
+		mock.FinishAll(c.tp.Finishers()...)
+	}
 }

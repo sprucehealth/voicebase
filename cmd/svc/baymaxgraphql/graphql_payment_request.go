@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/svc/payments"
@@ -26,6 +27,19 @@ var paymentRequestType = graphql.NewObject(graphql.ObjectConfig{
 		"completedTimestamp": &graphql.Field{Type: graphql.Int},
 	},
 })
+
+var paymentRequestQuery = &graphql.Field{
+	Type: graphql.NewNonNull(organizationType),
+	Args: graphql.FieldConfigArgument{
+		"id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+	},
+	Resolve: apiaccess.Authenticated(func(p graphql.ResolveParams) (interface{}, error) {
+		ram := raccess.ResourceAccess(p)
+		ctx := p.Context
+		svc := serviceFromParams(p)
+		return lookupPaymentRequest(ctx, svc, ram, p.Args["id"].(string))
+	}),
+}
 
 func lookupPaymentRequest(ctx context.Context, svc *service, ram raccess.ResourceAccessor, id string) (interface{}, error) {
 	resp, err := ram.Payment(ctx, &payments.PaymentRequest{PaymentID: id})

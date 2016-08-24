@@ -5,9 +5,15 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	ramock "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess/mock"
+	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/payments"
+	"github.com/sprucehealth/graphql"
 )
 
 func TestEHRLinkQuery(t *testing.T) {
@@ -70,4 +76,78 @@ func TestEHRLinkQuery(t *testing.T) {
 `, nil)
 
 	responseEquals(t, `{"data":{"node":{"__typename":"Entity","ehrLinks":[{"name":"drchrono","url":"https://www.drcrhono.com"},{"name":"hint","url":"https://www.hint.com"}]}}}`, res)
+}
+
+type testHasConnectedStripeAccountParams struct {
+	p  graphql.ResolveParams
+	rm *ramock.ResourceAccessor
+}
+
+func (t *testHasConnectedStripeAccountParams) Finishers() []mock.Finisher {
+	return []mock.Finisher{t.rm}
+}
+
+func TestHasConnectedStripeAccount(t *testing.T) {
+	entID := "entID"
+	cases := map[string]struct {
+		tp          *testHasConnectedStripeAccountParams
+		Expected    interface{}
+		ExpectedErr error
+	}{
+		"Success-True-ConnectedAccount": {
+			tp: func() *testHasConnectedStripeAccountParams {
+				rm := ramock.New(t)
+				rm.Expect(mock.NewExpectation(rm.VendorAccounts, &payments.VendorAccountsRequest{
+					EntityID: entID,
+				}).WithReturns(&payments.VendorAccountsResponse{VendorAccounts: []*payments.VendorAccount{&payments.VendorAccount{}}}, nil))
+				return &testHasConnectedStripeAccountParams{
+					p: graphql.ResolveParams{
+						Context: context.Background(),
+						Source: &models.Entity{
+							ID: entID,
+						},
+						Info: graphql.ResolveInfo{
+							RootValue: map[string]interface{}{
+								raccess.ParamKey: rm,
+							},
+						},
+					},
+					rm: rm,
+				}
+			}(),
+			Expected:    true,
+			ExpectedErr: nil,
+		},
+		"Success-False-NoConnectedAccount": {
+			tp: func() *testHasConnectedStripeAccountParams {
+				rm := ramock.New(t)
+				rm.Expect(mock.NewExpectation(rm.VendorAccounts, &payments.VendorAccountsRequest{
+					EntityID: entID,
+				}).WithReturns(&payments.VendorAccountsResponse{VendorAccounts: []*payments.VendorAccount{}}, nil))
+				return &testHasConnectedStripeAccountParams{
+					p: graphql.ResolveParams{
+						Context: context.Background(),
+						Source: &models.Entity{
+							ID: entID,
+						},
+						Info: graphql.ResolveInfo{
+							RootValue: map[string]interface{}{
+								raccess.ParamKey: rm,
+							},
+						},
+					},
+					rm: rm,
+				}
+			}(),
+			Expected:    false,
+			ExpectedErr: nil,
+		},
+	}
+
+	for cn, c := range cases {
+		out, err := resolveHasConnectedStripeAccount(c.tp.p)
+		test.EqualsCase(t, cn, c.Expected, out)
+		test.EqualsCase(t, cn, c.ExpectedErr, err)
+		mock.FinishAll(c.tp.Finishers()...)
+	}
 }

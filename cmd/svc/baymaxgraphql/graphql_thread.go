@@ -15,6 +15,7 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
@@ -99,6 +100,10 @@ var threadType = graphql.NewObject(
 					// environments to make it easy to test visits on android.
 					return booleanValue.Value, nil
 				},
+			},
+			"allowPaymentRequestAttachments": &graphql.Field{
+				Type:    graphql.NewNonNull(graphql.Boolean),
+				Resolve: apiaccess.Authenticated(resolveAllowPaymentRequestAttachments),
 			},
 			"allowCarePlanAttachments": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.Boolean),
@@ -576,4 +581,45 @@ func lookupThread(ctx context.Context, ram raccess.ResourceAccessor, threadID, v
 		return nil, errors.InternalError(ctx, err)
 	}
 	return th, nil
+}
+
+func resolveAllowPaymentRequestAttachments(p graphql.ResolveParams) (interface{}, error) {
+	svc := serviceFromParams(p)
+	ctx := p.Context
+	th := p.Source.(*models.Thread)
+	acc := gqlctx.Account(ctx)
+	ram := raccess.ResourceAccess(p)
+
+	// TODO: For now just do ThreadTypeSecureExternal, we can sort support threads after initial release
+	if th.Type != models.ThreadTypeSecureExternal {
+		return false, nil
+	}
+
+	if acc.Type != auth.AccountType_PROVIDER {
+		return false, nil
+	}
+
+	booleanValue, err := settings.GetBooleanValue(ctx, svc.settings, &settings.GetValuesRequest{
+		NodeID: th.OrganizationID,
+		Keys: []*settings.ConfigKey{
+			{
+				Key: baymaxgraphqlsettings.ConfigKeyPayments,
+			},
+		},
+	})
+	if err != nil {
+		return false, errors.InternalError(ctx, err)
+	}
+	if !booleanValue.Value {
+		return false, nil
+	}
+
+	resp, err := ram.VendorAccounts(ctx, &payments.VendorAccountsRequest{
+		EntityID: th.OrganizationID,
+	})
+	if err != nil {
+		return false, errors.InternalError(ctx, err)
+	}
+
+	return len(resp.VendorAccounts) != 0, nil
 }
