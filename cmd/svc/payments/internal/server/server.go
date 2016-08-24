@@ -123,7 +123,7 @@ func (s *server) AcceptPayment(ctx context.Context, req *payments.AcceptPaymentR
 		if payment.ChangeState == dal.PaymentChangeStateNone &&
 			payment.Lifecycle == dal.PaymentLifecycleAccepted &&
 			payment.PaymentMethodID == paymentMethod.ID {
-			golog.Infof("Payment %s is already in the accepted state with payment method %s ignoring double submit", payment.ID, paymentMethod.ID)
+			golog.Infof("Payment %s is already in the accepted state with payment method %s ignoring double accept", payment.ID, paymentMethod.ID)
 			return nil
 		}
 		// Acceptable States For Update
@@ -139,7 +139,7 @@ func (s *server) AcceptPayment(ctx context.Context, req *payments.AcceptPaymentR
 				return grpcError(err)
 			}
 		} else {
-			return grpcErrorf(codes.FailedPrecondition, "Payment %s is in state %s|%s - it cannot be accepted", payment.ID, payment.ChangeState, payment.Lifecycle)
+			golog.Infof("Payment %s is in state %s|%s - it cannot be accepted - ignoring accept", payment.ID, payment.ChangeState, payment.Lifecycle)
 		}
 		return nil
 	}); err != nil {

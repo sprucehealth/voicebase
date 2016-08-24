@@ -80,9 +80,10 @@ func transformPaymentToResponse(ctx context.Context, p *payments.Payment, ram ra
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	var completedTimestamp *uint64
-	if p.Lifecycle == payments.PAYMENT_LIFECYCLE_COMPLETED {
-		completedTimestamp = &p.Modified
+	var completedTimestamp uint64
+	if p.Lifecycle != payments.PAYMENT_LIFECYCLE_SUBMITTED {
+		// TODO: This is a stop gap solution until we get payment history enabled
+		completedTimestamp = p.Modified
 	}
 	return &models.PaymentRequest{
 		ID:               p.ID,

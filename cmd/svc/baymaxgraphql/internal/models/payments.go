@@ -32,5 +32,5 @@ type PaymentRequest struct {
 	Status             string        `json:"status"`
 	Currency           string        `json:"currency"`
 	RequestedTimestamp uint64        `json:"requestedTimestamp"`
-	CompletedTimestamp *uint64       `json:"completedTimestamp"`
+	CompletedTimestamp uint64        `json:"completedTimestamp,omitempty"`
 }
