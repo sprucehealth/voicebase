@@ -915,6 +915,7 @@ type Payment struct {
 	Created         time.Time
 	Modified        time.Time
 	ID              PaymentID
+	ThreadID        string
 	Currency        string
 	Amount          uint64
 	ChangeState     PaymentChangeState
@@ -948,6 +949,7 @@ type PaymentUpdate struct {
 	Lifecycle       PaymentLifecycle
 	ChangeState     PaymentChangeState
 	PaymentMethodID *PaymentMethodID
+	ThreadID        *string
 }
 
 // Validate asserts that the object is well formed
@@ -1316,8 +1318,8 @@ func (d *dal) InsertPayment(ctx context.Context, model *Payment) (PaymentID, err
 	}
 	_, err := d.db.Exec(
 		`INSERT INTO payment
-          (vendor_account_id, currency, amount, change_state, id, payment_method_id, lifecycle)
-          VALUES (?, ?, ?, ?, ?, ?, ?)`, model.VendorAccountID, model.Currency, model.Amount, model.ChangeState, model.ID, model.PaymentMethodID, model.Lifecycle)
+          (vendor_account_id, currency, amount, change_state, id, payment_method_id, lifecycle, thread_id)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, model.VendorAccountID, model.Currency, model.Amount, model.ChangeState, model.ID, model.PaymentMethodID, model.Lifecycle, model.ThreadID)
 	if err != nil {
 		return EmptyPaymentID(), errors.Trace(err)
 	}
@@ -1371,6 +1373,9 @@ func (d *dal) UpdatePayment(ctx context.Context, id PaymentID, update *PaymentUp
 	args.Append("change_state", update.ChangeState)
 	if update.PaymentMethodID != nil {
 		args.Append("payment_method_id", update.PaymentMethodID)
+	}
+	if update.ThreadID != nil {
+		args.Append("thread_id", update.ThreadID)
 	}
 	if args.IsEmpty() {
 		return 0, nil
@@ -1449,7 +1454,7 @@ func scanPaymentMethod(row dbutil.Scanner, contextFormat string, args ...interfa
 }
 
 const selectPayment = `
-    SELECT payment.id, payment.payment_method_id, payment.lifecycle, payment.vendor_account_id, payment.currency, payment.amount, payment.change_state, payment.created, payment.modified
+    SELECT payment.id, payment.payment_method_id, payment.lifecycle, payment.vendor_account_id, payment.currency, payment.amount, payment.change_state, payment.created, payment.modified, payment.thread_id
       FROM payment`
 
 func scanPayment(row dbutil.Scanner, contextFormat string, args ...interface{}) (*Payment, error) {
@@ -1458,7 +1463,7 @@ func scanPayment(row dbutil.Scanner, contextFormat string, args ...interface{}) 
 	m.PaymentMethodID = EmptyPaymentMethodID()
 	m.VendorAccountID = EmptyVendorAccountID()
 
-	err := row.Scan(&m.ID, &m.PaymentMethodID, &m.Lifecycle, &m.VendorAccountID, &m.Currency, &m.Amount, &m.ChangeState, &m.Created, &m.Modified)
+	err := row.Scan(&m.ID, &m.PaymentMethodID, &m.Lifecycle, &m.VendorAccountID, &m.Currency, &m.Amount, &m.ChangeState, &m.Created, &m.Modified, &m.ThreadID)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(errors.Annotate(ErrNotFound, "No rows found - payment - Context: "+fmt.Sprintf(contextFormat, args...)))
 	}

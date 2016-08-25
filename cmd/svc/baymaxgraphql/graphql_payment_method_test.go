@@ -24,7 +24,7 @@ func TestPaymentMethodEntityResolve(t *testing.T) {
 		Expected    interface{}
 		ExpectedErr error
 	}{
-		"Success": {
+		"Success-StripeCard-ApplePay": {
 			TestParams: func() *testPaymentMethodParams {
 				mra := ramock.New(t)
 				mra.Expect(mock.NewExpectation(mra.PaymentMethods, &payments.PaymentMethodsRequest{
@@ -42,7 +42,7 @@ func TestPaymentMethodEntityResolve(t *testing.T) {
 							PaymentMethodOneof: &payments.PaymentMethod_StripeCard{
 								StripeCard: &payments.StripeCard{
 									ID:                 "cardID",
-									TokenizationMethod: "TokenizationMethod",
+									TokenizationMethod: "apple_pay",
 									Brand:              "Brand",
 									Last4:              "LastFour",
 								},
@@ -75,7 +75,66 @@ func TestPaymentMethodEntityResolve(t *testing.T) {
 					PaymentMethodOneof: &payments.PaymentMethod_StripeCard{
 						StripeCard: &payments.StripeCard{
 							ID:                 "cardID",
-							TokenizationMethod: "TokenizationMethod",
+							TokenizationMethod: "apple_pay",
+							Brand:              "Brand",
+							Last4:              "LastFour",
+						},
+					},
+				},
+			}),
+		},
+		"Success-StripeCard-AndroidPay": {
+			TestParams: func() *testPaymentMethodParams {
+				mra := ramock.New(t)
+				mra.Expect(mock.NewExpectation(mra.PaymentMethods, &payments.PaymentMethodsRequest{
+					EntityID: entityID,
+				}).WithReturns(&payments.PaymentMethodsResponse{
+					PaymentMethods: []*payments.PaymentMethod{
+						{
+							ID:          "ID",
+							EntityID:    entityID,
+							Default:     true,
+							Lifecycle:   payments.PAYMENT_METHOD_LIFECYCLE_ACTIVE,
+							ChangeState: payments.PAYMENT_METHOD_CHANGE_STATE_NONE,
+							StorageType: payments.PAYMENT_METHOD_STORAGE_TYPE_STRIPE,
+							Type:        payments.PAYMENT_METHOD_TYPE_CARD,
+							PaymentMethodOneof: &payments.PaymentMethod_StripeCard{
+								StripeCard: &payments.StripeCard{
+									ID:                 "cardID",
+									TokenizationMethod: "android_pay",
+									Brand:              "Brand",
+									Last4:              "LastFour",
+								},
+							},
+						},
+					},
+				}, nil))
+				return &testPaymentMethodParams{
+					p: graphql.ResolveParams{
+						Source: &models.Entity{ID: entityID},
+						Info: graphql.ResolveInfo{
+							RootValue: map[string]interface{}{
+								raccess.ParamKey: mra,
+							},
+						},
+					},
+					finishers: []mock.Finisher{mra},
+				}
+			}(),
+			ExpectedErr: nil,
+			Expected: transformPaymentMethodsToResponse([]*payments.PaymentMethod{
+				{
+					ID:          "ID",
+					EntityID:    entityID,
+					Default:     true,
+					Lifecycle:   payments.PAYMENT_METHOD_LIFECYCLE_ACTIVE,
+					ChangeState: payments.PAYMENT_METHOD_CHANGE_STATE_NONE,
+					StorageType: payments.PAYMENT_METHOD_STORAGE_TYPE_STRIPE,
+					Type:        payments.PAYMENT_METHOD_TYPE_CARD,
+					PaymentMethodOneof: &payments.PaymentMethod_StripeCard{
+						StripeCard: &payments.StripeCard{
+							ID:                 "cardID",
+							TokenizationMethod: "android_pay",
 							Brand:              "Brand",
 							Last4:              "LastFour",
 						},

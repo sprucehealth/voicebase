@@ -16,6 +16,8 @@ type PaymentCard struct {
 	TokenizationMethod string `json:"tokenizationMethod"`
 	Brand              string `json:"brand"`
 	Last4              string `json:"last4"`
+	IsApplePay         bool   `json:"isApplePay"`
+	IsAndroidPay       bool   `json:"isAndroidPay"`
 }
 
 // PaymentMethodType returns the type of the payment method
@@ -34,4 +36,5 @@ type PaymentRequest struct {
 	ProcessingError    bool          `json:"processingError"`
 	RequestedTimestamp uint64        `json:"requestedTimestamp"`
 	CompletedTimestamp uint64        `json:"completedTimestamp,omitempty"`
+	AllowPay           bool          `json:"allowPay"`
 }

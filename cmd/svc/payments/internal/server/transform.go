@@ -212,6 +212,7 @@ func transformPaymentToResponse(ctx context.Context, p *dal.Payment, dl dal.DAL,
 		ChangeState:        transformPaymentChangeStateToResponse(p.ChangeState),
 		Created:            uint64(p.Created.Unix()),
 		Modified:           uint64(p.Modified.Unix()),
+		ThreadID:           p.ThreadID,
 	}, nil
 }
 

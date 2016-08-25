@@ -704,6 +704,7 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 		// This call should be idempotent as long as the payment request is just being submitted
 		if _, err := s.paymentsClient.SubmitPayment(ctx, &payments.SubmitPaymentRequest{
 			PaymentID: pID,
+			ThreadID:  threadID.String(),
 		}); err != nil {
 			return nil, internalError(err)
 		}
