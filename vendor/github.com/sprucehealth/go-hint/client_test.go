@@ -211,3 +211,31 @@ func TestPatientClient(t *testing.T) {
 		}
 	})
 }
+
+func TestPartnerClient(t *testing.T) {
+	Testing = true
+	partnerKey := os.Getenv("HINT_PARTNER_KEY")
+	if partnerKey == "" {
+		t.Skip("Skipping tests since practice key not found")
+	}
+	Key = partnerKey
+
+	partner, err := GetPartner()
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	// turn around and call update with the same parameters
+	params := &PartnerParams{
+		Partner: partner,
+	}
+
+	updatedPartner, err := UpdatePartner(params)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !reflect.DeepEqual(partner, updatedPartner) {
+		t.Fatalf("Expected both partner objects to be equal but they werent")
+	}
+}
