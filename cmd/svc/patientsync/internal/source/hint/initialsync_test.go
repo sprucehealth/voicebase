@@ -9,11 +9,11 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/dal"
 	dalmock "github.com/sprucehealth/backend/cmd/svc/patientsync/internal/dal/mock"
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/sync"
-	"github.com/sprucehealth/backend/libs/hint"
 	patientmock "github.com/sprucehealth/backend/libs/hintutils/mock"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
+	"github.com/sprucehealth/go-hint"
 )
 
 func TestInitialSync(t *testing.T) {

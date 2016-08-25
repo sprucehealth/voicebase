@@ -13,10 +13,10 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/dal"
 	dalmock "github.com/sprucehealth/backend/cmd/svc/patientsync/internal/dal/mock"
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/sync"
-	"github.com/sprucehealth/backend/libs/hint"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
+	"github.com/sprucehealth/go-hint"
 )
 
 func TestWebhookHandler(t *testing.T) {

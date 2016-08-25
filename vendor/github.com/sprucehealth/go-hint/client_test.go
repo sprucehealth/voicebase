@@ -115,7 +115,7 @@ func TestPatientClient(t *testing.T) {
 						},
 						{
 							Operator: OperatorLessThan,
-							Operand:  startTime.Add(3 * time.Second).String(),
+							Operand:  startTime.Add(2500 * time.Millisecond).String(),
 						},
 					},
 				},

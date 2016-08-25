@@ -3,8 +3,8 @@ package mock
 import (
 	"testing"
 
-	"github.com/sprucehealth/backend/libs/hint"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
+	"github.com/sprucehealth/go-hint"
 )
 
 var _ hint.PatientClient = &mockPatientClient{}

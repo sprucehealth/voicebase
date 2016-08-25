@@ -5,7 +5,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/sync"
 	"github.com/sprucehealth/backend/libs/errors"
-	"github.com/sprucehealth/backend/libs/hint"
+	"github.com/sprucehealth/go-hint"
 )
 
 // DoInitialSync is responsible for paginating through all patients in the existing account for the practice

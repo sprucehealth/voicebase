@@ -319,6 +319,10 @@
 		{
 			"ImportPath": "github.com/sajari/docconv",
 			"Rev": "58ce7c24dbfe10223dcb51d378d5d89361942ba6"
+		},
+		{
+			"ImportPath": "github.com/sprucehealth/go-hint",
+			"Rev": "155bda051de65d782830649e92343b067f5609d4"
 		}
 	]
 }

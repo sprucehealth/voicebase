@@ -16,12 +16,12 @@ import (
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
-	hintlib "github.com/sprucehealth/backend/libs/hint"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/patientsync"
 	"github.com/sprucehealth/backend/svc/threading"
+	hintlib "github.com/sprucehealth/go-hint"
 	"github.com/sprucehealth/go-proxy-protocol/proxyproto"
 )
 

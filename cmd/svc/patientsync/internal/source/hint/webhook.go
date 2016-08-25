@@ -10,7 +10,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/sync"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/hint"
+	"github.com/sprucehealth/go-hint"
 )
 
 type webhookHandler struct {

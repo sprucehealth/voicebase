@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/sync"
 	"github.com/sprucehealth/backend/libs/errors"
-	"github.com/sprucehealth/backend/libs/hint"
+	"github.com/sprucehealth/go-hint"
 )
 
 // byPhoneNumber sorts the hint phone numbers by surfacing the mobile numbers
