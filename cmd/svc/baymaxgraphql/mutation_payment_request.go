@@ -7,8 +7,10 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/libs/bml"
 	"github.com/sprucehealth/backend/libs/gqldecode"
 	"github.com/sprucehealth/backend/svc/payments"
+	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 	"github.com/sprucehealth/graphql/gqlerrors"
 	"google.golang.org/grpc"
@@ -19,7 +21,7 @@ import (
 type createPaymentRequestInput struct {
 	ClientMutationID   string `gql:"clientMutationId"`
 	RequestingEntityID string `gql:"requestingEntityID,nonempty"`
-	Amount             int    `gql:"amount,nonempty"`
+	AmountInCents      int    `gql:"amountInCents,nonempty"`
 }
 
 var createPaymentRequestInputType = graphql.NewInputObject(
@@ -28,7 +30,7 @@ var createPaymentRequestInputType = graphql.NewInputObject(
 		Fields: graphql.InputObjectConfigFieldMap{
 			"clientMutationId":   newClientMutationIDInputField(),
 			"requestingEntityID": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
-			"amount":             &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.Int)},
+			"amountInCents":      &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.Int)},
 		},
 	},
 )
@@ -96,7 +98,7 @@ func createPaymentRequest(p graphql.ResolveParams, in createPaymentRequestInput)
 	ram := raccess.ResourceAccess(p)
 	resp, err := ram.CreatePayment(ctx, &payments.CreatePaymentRequest{
 		RequestingEntityID: in.RequestingEntityID,
-		Amount:             uint64(in.Amount),
+		Amount:             uint64(in.AmountInCents),
 		Currency:           "USD", // Always default to this for now
 	})
 	if grpc.Code(err) == codes.NotFound {
@@ -213,6 +215,29 @@ func acceptPaymentRequest(p graphql.ResolveParams, in acceptPaymentRequestInput)
 		}, nil
 	} else if err != nil {
 		return nil, errors.InternalError(p.Context, err)
+	}
+
+	if resp.Payment.ThreadID != "" {
+		var title bml.BML
+		title = append(title, fmt.Sprintf("Completed Payment: $%.2f", float64(resp.Payment.Amount)/float64(100)))
+		titleText, err := title.Format()
+		if err != nil {
+			return nil, errors.InternalError(p.Context, err)
+		}
+		summary, err := title.PlainText()
+		if err != nil {
+			return nil, errors.InternalError(p.Context, err)
+		}
+		if _, err = ram.PostMessage(ctx, &threading.PostMessageRequest{
+			UUID:     `accept_` + resp.Payment.ID,
+			ThreadID: resp.Payment.ThreadID,
+			// TODO: For now just assume whoever owns the payment method accepted it
+			FromEntityID: resp.Payment.PaymentMethod.EntityID,
+			Title:        titleText,
+			Summary:      summary,
+		}); err != nil {
+			return nil, errors.InternalError(p.Context, err)
+		}
 	}
 
 	paymentRequest, err := transformPaymentToResponse(ctx, resp.Payment, ram, svc.staticURLPrefix)

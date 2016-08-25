@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/payments"
 )
@@ -30,16 +31,20 @@ func transformPaymentMethodToResponse(pm *payments.PaymentMethod) models.Payment
 	switch pm.Type {
 	case payments.PAYMENT_METHOD_TYPE_CARD:
 		rpm := &models.PaymentCard{
-			ID:   pm.ID,
-			Type: paymentMethodTypeCard,
+			ID:      pm.ID,
+			Default: pm.Default,
+			Type:    paymentMethodTypeCard,
 		}
 		switch pm.StorageType {
 		case payments.PAYMENT_METHOD_STORAGE_TYPE_STRIPE:
+			// https://stripe.com/docs/api#card_object
 			sc := pm.GetStripeCard()
 			rpm.PaymentProcessor = paymentProcessorStripe
 			rpm.TokenizationMethod = sc.TokenizationMethod
 			rpm.Brand = sc.Brand
 			rpm.Last4 = sc.Last4
+			rpm.IsApplePay = sc.TokenizationMethod == `apple_pay`
+			rpm.IsAndroidPay = sc.TokenizationMethod == `android_pay`
 		default:
 			golog.Errorf("Unhandled payment method storage type %s in %s, unable to transform", pm.StorageType, pm.ID)
 			return nil
@@ -97,6 +102,7 @@ func transformPaymentToResponse(ctx context.Context, p *payments.Payment, ram ra
 		// TODO: The source of these two timestamps will change
 		RequestedTimestamp: p.Created,
 		CompletedTimestamp: completedTimestamp,
+		AllowPay:           account.Type == auth.AccountType_PATIENT,
 	}, nil
 }
 

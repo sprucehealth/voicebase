@@ -114,6 +114,7 @@ func TestPaymentRequestLookup(t *testing.T) {
 						},
 					},
 				}),
+				AllowPay: true,
 			},
 		},
 	}

@@ -77,6 +77,8 @@ var paymentMethodCardType = graphql.NewObject(graphql.ObjectConfig{
 		"tokenizationMethod": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"brand":              &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"last4":              &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"isApplePay":         &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+		"isAndroidPay":       &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 	},
 })
 

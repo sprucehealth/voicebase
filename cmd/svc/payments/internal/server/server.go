@@ -582,6 +582,11 @@ func (s *server) SubmitPayment(ctx context.Context, req *payments.SubmitPaymentR
 	if err != nil {
 		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
 	}
+	// Payments don't have to be associated with a thread_id, but if it is track it.
+	var threadID *string
+	if req.ThreadID != "" {
+		threadID = &req.ThreadID
+	}
 
 	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
 		// Lock the row we intend to manipulate
@@ -601,6 +606,7 @@ func (s *server) SubmitPayment(ctx context.Context, req *payments.SubmitPaymentR
 		if _, err := dl.UpdatePayment(ctx, paymentID, &dal.PaymentUpdate{
 			ChangeState: dal.PaymentChangeStateNone,
 			Lifecycle:   dal.PaymentLifecycleSubmitted,
+			ThreadID:    threadID,
 		}); err != nil {
 			return grpcError(err)
 		}
