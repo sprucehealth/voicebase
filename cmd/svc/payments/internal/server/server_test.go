@@ -483,7 +483,6 @@ func TestDeletePaymentMethod(t *testing.T) {
 						StripeAccount: connectedAccountID,
 					},
 				}, []istripe.CallOption(nil)))
-				tsrv.mdal.Expect(mock.NewExpectation(tsrv.mdal.PaymentMethodsWithFingerprint, storageFingerprint, []dal.QueryOption(nil)))
 
 				// Return Existing Payment Methods
 				tsrv.mdal.Expect(mock.NewExpectation(tsrv.mdal.EntityPaymentMethods, masterVendorAccountID, entityID, []dal.QueryOption(nil)).WithReturns(

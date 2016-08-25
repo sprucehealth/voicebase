@@ -544,20 +544,6 @@ func (s *server) deletePaymentMethod(ctx context.Context, paymentMethodID dal.Pa
 		default:
 			return errors.Errorf("Unhandled payment method storage type %s for %s in deletion", pm.StorageType, pm.ID)
 		}
-		// If this is the master account, cleanup the card from sub vendors
-		if vendorAccount.ID == s.masterVendorAccount.ID {
-			// TODO: Tracking these payment method groupings by fingerprint locks us into only supporting types that provide a fingerprint.
-			//	Should consider a groping id for future payment types.
-			paymentMethods, err := dl.PaymentMethodsWithFingerprint(ctx, pm.StorageFingerprint)
-			if err != nil {
-				return errors.Trace(err)
-			}
-			for _, spm := range paymentMethods {
-				if err := s.deletePaymentMethod(ctx, spm.ID, dl); err != nil {
-					return errors.Trace(err)
-				}
-			}
-		}
 		return nil
 	}); err != nil {
 		return errors.Trace(err)

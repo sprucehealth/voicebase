@@ -840,9 +840,10 @@ func (m *PaymentMethod) Validate() error {
 
 // PaymentMethodUpdate represents the mutable aspects of a payment_method record
 type PaymentMethodUpdate struct {
-	Lifecycle   PaymentMethodLifecycle
-	ChangeState PaymentMethodChangeState
-	StorageID   *string
+	Lifecycle          PaymentMethodLifecycle
+	ChangeState        PaymentMethodChangeState
+	StorageID          *string
+	StorageFingerprint *string
 }
 
 // Validate asserts that the object is well formed
@@ -1269,6 +1270,9 @@ func (d *dal) UpdatePaymentMethod(ctx context.Context, id PaymentMethodID, updat
 	args.Append("change_state", update.ChangeState)
 	if update.StorageID != nil {
 		args.Append("storage_id", *update.StorageID)
+	}
+	if update.StorageFingerprint != nil {
+		args.Append("storage_fingerprint", *update.StorageFingerprint)
 	}
 	if args.IsEmpty() {
 		return 0, nil
