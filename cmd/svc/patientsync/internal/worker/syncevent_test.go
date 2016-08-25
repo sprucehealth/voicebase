@@ -1,4 +1,4 @@
-package service
+package worker
 
 import (
 	"context"
@@ -149,8 +149,8 @@ func TestStandardThreadSync(t *testing.T) {
 
 	data, err := event.Marshal()
 	test.OK(t, err)
-	s := New(dmock, dirmock, tmock, nil, "", "")
-	test.OK(t, s.(*service).processSyncEvent(context.Background(), string(data)))
+	s := NewSyncEvent(dmock, dirmock, tmock, nil, "", "")
+	test.OK(t, s.(*syncEvent).processSyncEvent(context.Background(), string(data)))
 }
 
 func TestStandardThreadSync_EntityExists(t *testing.T) {
@@ -273,8 +273,8 @@ func TestStandardThreadSync_EntityExists(t *testing.T) {
 
 	data, err := event.Marshal()
 	test.OK(t, err)
-	s := New(dmock, dirmock, tmock, nil, "", "")
-	test.OK(t, s.(*service).processSyncEvent(context.Background(), string(data)))
+	s := NewSyncEvent(dmock, dirmock, tmock, nil, "", "")
+	test.OK(t, s.(*syncEvent).processSyncEvent(context.Background(), string(data)))
 }
 
 func TestStandardThreadSync_ThreadExists(t *testing.T) {
@@ -390,6 +390,6 @@ func TestStandardThreadSync_ThreadExists(t *testing.T) {
 
 	data, err := event.Marshal()
 	test.OK(t, err)
-	s := New(dmock, dirmock, tmock, nil, "", "")
-	test.OK(t, s.(*service).processSyncEvent(context.Background(), string(data)))
+	s := NewSyncEvent(dmock, dirmock, tmock, nil, "", "")
+	test.OK(t, s.(*syncEvent).processSyncEvent(context.Background(), string(data)))
 }

@@ -2,20 +2,35 @@ package main
 
 import (
 	"flag"
+	"net"
+	"net/http"
+	"time"
 
 	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/dal"
-	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/service"
+	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/server"
+	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/source/hint"
+	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/worker"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
+	hintlib "github.com/sprucehealth/backend/libs/hint"
+	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/patientsync"
 	"github.com/sprucehealth/backend/svc/threading"
+	"github.com/sprucehealth/go-proxy-protocol/proxyproto"
 )
 
 var (
+	flagHTTPListenAddr = flag.String("http_listen_addr", ":5001", "`host:port to listen for http requests")
+	flagRPCListenAddr  = flag.String("rpc_listen_addr", ":5000", "`host:port to listen for rpc requests")
+	flagBehindProxy    = flag.Bool("behind_proxy", false, "Set to true if behind a proxy")
+	flagProxyProtocol  = flag.Bool("proxyproto", false, "enable proxy protocol")
+
 	// Services
 	flagDirectoryAddr = flag.String("directory_addr", "_directory._tcp.service", "host:port of directory service")
 	flagThreadingAddr = flag.String("threading_addr", "_threading._tcp.service", "host:port of threading service")
@@ -33,10 +48,13 @@ var (
 	flagKMSKeyArn = flag.String("kms_key_arn", "", "arn of the master key used to encrypt/decrypt queued data")
 
 	// Messages
-	flagSyncEventQueue = flag.String("sqs_emr_sync_event_url", "", "sqs url for emr sync events")
+	flagSyncEventQueueURL   = flag.String("sqs_sync_event_url", "", "sqs url for patient sync events")
+	flagInitialSyncQueueURL = flag.String("sqs_initiate_sync_url", "", "sqs url for initiating patient sync")
 
 	// domains
 	flagWebDomain = flag.String("web_domain", "", "web domain")
+
+	flagHintPartnerAPIKey = flag.String("hint_partner_api_key", "", "partner API key for Hint")
 
 	svcName = "patientsync"
 )
@@ -62,6 +80,11 @@ func main() {
 		golog.Fatalf(err.Error())
 	}
 
+	if *flagHintPartnerAPIKey == "" {
+		golog.Fatalf("Hint PartnerAPIKey not configured")
+	}
+	hintlib.Key = *flagHintPartnerAPIKey
+
 	eSQS, err := awsutil.NewEncryptedSQS(*flagKMSKeyArn, kms.New(awsSession), sqs.New(awsSession))
 	if err != nil {
 		golog.Fatalf("Unable to initialize sqs: %s", err)
@@ -81,15 +104,64 @@ func main() {
 		golog.Fatalf(err.Error())
 	}
 
-	s := service.New(
+	syncEventWorker := worker.NewSyncEvent(
 		dal.New(db),
 		directory.NewDirectoryClient(directoryConn),
 		threading.NewThreadsClient(threadingConn),
 		eSQS,
-		*flagSyncEventQueue,
+		*flagSyncEventQueueURL,
 		*flagWebDomain)
-	s.Start()
+	syncEventWorker.Start()
+
+	initiateSyncWorker := worker.NewInitateSync(
+		dal.New(db),
+		*flagSyncEventQueueURL,
+		*flagInitialSyncQueueURL,
+		eSQS)
+	initiateSyncWorker.Start()
+
+	// start the RPC server and listen on specified port
+	lis, err := net.Listen("tcp", *flagRPCListenAddr)
+	if err != nil {
+		golog.Fatalf("failed to listen: %v", err)
+	}
+
+	srvMetricsRegistry := bootSvc.MetricsRegistry.Scope("server")
+	srv := server.New(dal.New(db), *flagInitialSyncQueueURL, eSQS)
+	patientsync.InitMetrics(srv, srvMetricsRegistry)
+
+	s := bootSvc.GRPCServer()
+	patientsync.RegisterPatientSyncServer(s, srv)
+	golog.Infof("PatientSync RPC listening on %s...", *flagRPCListenAddr)
+	go s.Serve(lis)
+
+	router := mux.NewRouter().StrictSlash(true)
+	router.Handle("/hint/webhook", hint.NewWebhookHandler(dal.New(db), *flagSyncEventQueueURL, eSQS))
+
+	h := httputil.LoggingHandler(router, "patientsyncaapi", *flagBehindProxy, nil)
+	h = httputil.RequestIDHandler(h)
+	h = httputil.CompressResponse(httputil.DecompressRequest(h))
+	go serve(h)
 
 	boot.WaitForTermination()
-	s.Shutdown()
+	syncEventWorker.Shutdown()
+	initiateSyncWorker.Shutdown()
+}
+
+func serve(handler http.Handler) {
+	listener, err := net.Listen("tcp", *flagHTTPListenAddr)
+	if err != nil {
+		golog.Fatalf(err.Error())
+	}
+	if *flagProxyProtocol {
+		listener = &proxyproto.Listener{Listener: listener}
+	}
+	s := &http.Server{
+		Handler:        handler,
+		ReadTimeout:    10 * time.Second,
+		WriteTimeout:   10 * time.Second,
+		MaxHeaderBytes: 1 << 20,
+	}
+	golog.Infof("Starting listener on %s...", *flagHTTPListenAddr)
+	golog.Fatalf(s.Serve(listener).Error())
 }

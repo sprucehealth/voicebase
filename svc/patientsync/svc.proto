@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package patientsync;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+
+enum Source {
+	SOURCE_UNKNOWN = 0;
+	SOURCE_DRCHRONO = 1;
+	SOURCE_HINT = 2;
+	SOURCE_ELATION = 3;
+	SOURCE_CSV = 4;
+}
+
+enum ThreadType {
+	THREAD_TYPE_UNKNOWN = 0;
+	THREAD_TYPE_STANDARD = 1;
+	THREAD_TYPE_SECURE = 2;
+}
+
+message InitiateSyncRequest {
+	string organization_entity_id = 1 [(gogoproto.customname) = "OrganizationEntityID"];
+	Source source = 2;
+}
+
+message InitiateSyncResponse {}
+
+
+message ConfigureSyncRequest{
+	string organization_entity_id = 1 [(gogoproto.customname) = "OrganizationEntityID"];
+	Source source = 2;
+	ThreadType thread_type = 3;
+	string token = 4;
+}
+
+message ConfigureSyncResponse {
+}
+
+service PatientSync {
+	
+	// ConfigureSync sets up a patient sync for a practice. 
+	rpc ConfigureSync (ConfigureSyncRequest) returns (ConfigureSyncResponse);
+
+	// InitiateSync kicks off the initial sync for a practice. It assumes that 
+	// sync has already been configured. Calling this will ensure that all existing 
+	// patients from the source are synced in to the practice account on Spruce, and that
+	// the account is in a connected state on a move forward basis for all new patients
+	// created in the source.
+	rpc InitiateSync (InitiateSyncRequest) returns (InitiateSyncResponse);
+}

@@ -1,4 +1,4 @@
-package service
+package worker
 
 import (
 	"context"
@@ -24,7 +24,7 @@ type Service interface {
 	Shutdown() error
 }
 
-type service struct {
+type syncEvent struct {
 	dl               dal.DAL
 	directory        directory.DirectoryClient
 	threading        threading.ThreadsClient
@@ -32,14 +32,16 @@ type service struct {
 	webDomain        string
 }
 
-func New(
+// NewSyncEvent returns a worker that is responsible for processing messages to
+// undertake sync events for a particular organization paired with a particular source (eg hint, elation, csv, drchrono, etc)
+func NewSyncEvent(
 	dl dal.DAL,
 	directory directory.DirectoryClient,
 	threading threading.ThreadsClient,
 	sqsAPI sqsiface.SQSAPI,
 	syncEventsSQSURL, webDomain string,
 ) Service {
-	s := &service{
+	s := &syncEvent{
 		dl:        dl,
 		directory: directory,
 		threading: threading,
@@ -49,18 +51,18 @@ func New(
 	return s
 }
 
-func (s *service) Start() {
+func (s *syncEvent) Start() {
 	s.syncEventsWorker.Start()
 }
 
-func (s *service) Shutdown() error {
+func (s *syncEvent) Shutdown() error {
 	s.syncEventsWorker.Stop(time.Second * 30)
 	return nil
 }
 
 // processSyncEvent is the core function of the worker to sync a particular event
 // from an EMR to the org's inbox.
-func (s *service) processSyncEvent(ctx context.Context, data string) error {
+func (s *syncEvent) processSyncEvent(ctx context.Context, data string) error {
 	var event sync.Event
 	if err := event.Unmarshal([]byte(data)); err != nil {
 		return errors.Trace(err)
@@ -79,7 +81,7 @@ func (s *service) processSyncEvent(ctx context.Context, data string) error {
 	return errors.Errorf("Unknown event type %s for org %s", event.Type.String(), event.OrganizationEntityID)
 }
 
-func (s *service) processPatientAddEvent(ctx context.Context, cfg *sync.Config, event *sync.Event) error {
+func (s *syncEvent) processPatientAddEvent(ctx context.Context, cfg *sync.Config, event *sync.Event) error {
 	addEvent := event.GetPatientAddEvent()
 	if addEvent == nil {
 		return errors.Errorf("Expected add event for %s and org %s but got none", event.Type.String(), event.OrganizationEntityID)
@@ -107,7 +109,7 @@ func (s *service) processPatientAddEvent(ctx context.Context, cfg *sync.Config, 
 	return nil
 }
 
-func (s *service) createThread(ctx context.Context, patient *sync.Patient, source sync.Source, orgID string, threadType threading.ThreadType) error {
+func (s *syncEvent) createThread(ctx context.Context, patient *sync.Patient, source sync.Source, orgID string, threadType threading.ThreadType) error {
 
 	// check if the patient already exists as an entity based on the patient ID
 	if patient.ID == "" {
@@ -192,6 +194,16 @@ func (s *service) createThread(ctx context.Context, patient *sync.Patient, sourc
 		thread = createThreadRes.Thread
 	} else {
 		thread = threadRes.Threads[0]
+	}
+
+	if patient.ExternalURL != "" {
+		if _, err := s.directory.CreateEHRLink(ctx, &directory.CreateEHRLinkRequest{
+			EntityID: externalEntity.ID,
+			Name:     nameForExternalURL(source),
+			URL:      patient.ExternalURL,
+		}); err != nil {
+			return errors.Errorf("Unable to create external link for entity %s: %s", externalEntity.ID, err)
+		}
 	}
 
 	// TODO: link patient back to source (probably by posting another notification that creation is complete)

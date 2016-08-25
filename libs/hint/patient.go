@@ -2,7 +2,15 @@ package hint
 
 import (
 	"errors"
+	"fmt"
+	"strconv"
 	"time"
+)
+
+const (
+	PhoneTypeMobile = "Mobile"
+	PhoneTypeOffice = "Office"
+	PhoneTypeHome   = "Home"
 )
 
 // Phone represents a typed phone number
@@ -75,4 +83,116 @@ type Patient struct {
 	AddressCity              string        `json:"address_city,omitempty"`
 	AddressState             string        `json:"address_state,omitempty"`
 	AddressCountry           string        `json:"address_country,omitempty"`
+}
+
+func PatientURLForProvider(id string) string {
+	return ProviderURL() + "/patients/" + id
+}
+
+type PatientClient interface {
+	New(practiceKey string, params *PatientParams) (*Patient, error)
+	Get(practiceKey, id string) (*Patient, error)
+	Update(practiceKey, id string, params *PatientParams) (*Patient, error)
+	Delete(practiceKey, id string) error
+	List(practiceKey string, params *ListParams) *Iter
+}
+
+type patientClient struct {
+	B   Backend
+	Key string
+}
+
+func NewPatientClient(backend Backend, key string) PatientClient {
+	return &patientClient{
+		B:   backend,
+		Key: key,
+	}
+}
+
+func (c patientClient) New(practiceKey string, params *PatientParams) (*Patient, error) {
+	if practiceKey == "" {
+		return nil, errors.New("practice_key required")
+	}
+
+	patient := &Patient{}
+	if _, err := c.B.Call("POST", "/provider/patients", practiceKey, params, patient); err != nil {
+		return nil, err
+	}
+
+	return patient, nil
+}
+
+func (c patientClient) Get(practiceKey, id string) (*Patient, error) {
+	if practiceKey == "" {
+		return nil, errors.New("practice_key required")
+	}
+
+	patient := &Patient{}
+	if _, err := c.B.Call("GET", fmt.Sprintf("/provider/patients/%s", id), practiceKey, nil, patient); err != nil {
+		return nil, err
+	}
+	return patient, nil
+}
+
+func (c patientClient) Update(practiceKey, id string, params *PatientParams) (*Patient, error) {
+	if practiceKey == "" {
+		return nil, errors.New("practice_key required")
+	}
+
+	patient := &Patient{}
+	if _, err := c.B.Call("PATCH", fmt.Sprintf("/provider/patients/%s", id), practiceKey, params, patient); err != nil {
+		return nil, err
+	}
+
+	return patient, nil
+}
+
+func (c patientClient) Delete(practiceKey, id string) error {
+	if practiceKey == "" {
+		return errors.New("practice_key required")
+	}
+
+	if _, err := c.B.Call("DELETE", fmt.Sprintf("/provider/patients/%s", id), practiceKey, nil, nil); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c patientClient) List(practiceKey string, params *ListParams) *Iter {
+	return GetIter(params, func(lp *ListParams) ([]interface{}, ListMeta, error) {
+		var meta ListMeta
+
+		encodedParams, err := lp.Encode()
+		if err != nil {
+			return nil, meta, err
+		}
+
+		var patients []*Patient
+		resHeaders, err := c.B.Call("GET", fmt.Sprintf("provider/patients?%s", encodedParams), practiceKey, nil, &patients)
+		if err != nil {
+			return nil, meta, err
+		}
+
+		if xCountHeader := resHeaders.Get("x-count"); xCountHeader != "" {
+			meta.CurrentCount, err = strconv.ParseUint(xCountHeader, 10, 64)
+			if err != nil {
+				return nil, meta, err
+			}
+		}
+
+		if xTotalCountHeader := resHeaders.Get("x-total-count"); xTotalCountHeader != "" {
+			meta.TotalCount, err = strconv.ParseUint(xTotalCountHeader, 10, 64)
+			if err != nil {
+				return nil, meta, err
+			}
+		}
+
+		ret := make([]interface{}, len(patients))
+		for i, patient := range patients {
+			ret[i] = patient
+		}
+
+		return ret, meta, nil
+	})
 }

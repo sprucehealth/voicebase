@@ -27,6 +27,25 @@ message Config {
 		THREAD_CREATION_TYPE_SECURE = 2;
 	}
 	ThreadCreationType thread_creation_type = 3;
+
+	oneof token {
+		HintToken hint = 5;
+	}
+}
+
+// HintToken represents the token information pertaining to a particular practice
+message HintToken {
+	string access_token = 1;
+	string refresh_token = 2;
+	uint64 expires_in = 3;
+	string practice_id = 4 [(gogoproto.customname) = "PracticeID"];
+}
+
+
+// Initiate represents the initial sync between the external component and Spruce.
+message Initiate {
+	Source source = 1;
+	string organization_entity_id = 2 [(gogoproto.customname) = "OrganizationEntityID"];
 }
 
 // Event represents the sync event that our system should process.
@@ -57,6 +76,7 @@ message Patient {
 	string middle_name = 4;
 	repeated string email_addresses = 5;
 	repeated Phone phone_numbers = 6;
+	string external_url = 7 [(gogoproto.customname) = "ExternalURL"];
 }
 
 message Phone {
@@ -64,6 +84,7 @@ message Phone {
 		PHONE_TYPE_UNKNOWN = 0;
 		PHONE_TYPE_HOME = 1;
 		PHONE_TYPE_MOBILE = 2;
+		PHONE_TYPE_OFFICE = 3;
 	}
 	PhoneType type = 4;
 	string number = 5;

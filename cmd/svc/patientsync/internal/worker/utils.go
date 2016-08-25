@@ -1,4 +1,4 @@
-package service
+package worker
 
 import (
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/sync"
@@ -28,4 +28,17 @@ func sanitizePatient(patient *sync.Patient) {
 	patient.EmailAddresses = emailAddresses
 
 	return
+}
+
+func nameForExternalURL(source sync.Source) string {
+	switch source {
+	case sync.SOURCE_DRCHRONO:
+		return "DrChrono"
+	case sync.SOURCE_HINT:
+		return "Hint"
+	case sync.SOURCE_ELATION:
+		return "Elation"
+	}
+
+	return "Unknown"
 }

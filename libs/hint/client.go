@@ -1,141 +1,46 @@
 package hint
 
-import (
-	"bytes"
-	"encoding/json"
-	"io"
-	"io/ioutil"
-	"net/http"
-	"strings"
-	"time"
-)
-
-const (
-	prodAPIURL    = "https://api.hint.com/api"
-	stagingAPIURL = "https://api.staging.hint.com/api"
-)
-
-// apiURL returns the production or staging url based on the
-// Testing bool
-func apiURL() string {
-	if Testing {
-		return stagingAPIURL
-	}
-	return prodAPIURL
+type Client struct {
+	Patient PatientClient
+	OAuth   OAuthClient
 }
 
-// Backend is an interface for making calls against a Hint service.
-// This interface exists to enable mocking during testing if needed.
-type Backend interface {
-	Call(method, path, key string, params Params, v interface{}) (http.Header, error)
-}
+var defaultClient = getC()
 
-// BackendConfiguration is the internal implementation for making HTTP calls to Hint.
-type BackendConfiguration struct {
-	HTTPClient *http.Client
-	URL        string
-}
-
-// GetBackend returns the currently used backend in the binding.
-func GetBackend() Backend {
-	return BackendConfiguration{
-		HTTPClient: httpClient,
-		URL:        apiURL(),
+func getC() *Client {
+	return &Client{
+		Patient: &patientClient{B: GetBackend(), Key: Key},
 	}
 }
 
-//Key is the Hint Partner API key used globally in the binding.
-var Key string
-
-// Testing indicates whether to use the staging or production URL
-var Testing bool
-
-var httpClient = &http.Client{Timeout: 30 * time.Second}
-
-// SetHTTPClient overrides the default HTTP client.
-func SetHTTPClient(client *http.Client) {
-	httpClient = client
+func SetPatientClient(c PatientClient) {
+	defaultClient.Patient = c
 }
 
-func (s BackendConfiguration) Call(method, path, key string, params Params, v interface{}) (http.Header, error) {
-	var data io.Reader
-	if params != nil {
-		if err := params.Validate(); err != nil {
-			return nil, err
-		}
-
-		jsonData, err := json.Marshal(params)
-		if err != nil {
-			return nil, err
-		}
-		data = bytes.NewReader(jsonData)
-	}
-
-	req, err := s.NewRequest(method, path, key, data)
-	if err != nil {
-		return nil, err
-	}
-
-	responseHeaders, err := s.Do(req, v)
-	if err != nil {
-		return nil, err
-	}
-
-	return responseHeaders, nil
+func SetOAuthClient(c OAuthClient) {
+	defaultClient.OAuth = c
 }
 
-// NewRequest is used by Call to generate an http.Request.
-func (s BackendConfiguration) NewRequest(method, path, key string, body io.Reader) (*http.Request, error) {
-	if !strings.HasPrefix(path, "/") {
-		path = "/" + path
-	}
-	path = s.URL + path
-
-	req, err := http.NewRequest(method, path, body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.SetBasicAuth(key, "")
-
-	switch method {
-	case "POST", "PATCH", "PUT":
-		req.Header.Add("Content-Type", "application/json")
-	}
-
-	return req, nil
+func NewPatient(practiceKey string, params *PatientParams) (*Patient, error) {
+	return defaultClient.Patient.New(practiceKey, params)
 }
 
-// Do is used by Call to execute an API request and parse the response. It uses
-// the backend's HTTP client to execute the request and unmarshals the response
-// into v. It also handles unmarshaling errors returned by the API.
-func (s BackendConfiguration) Do(req *http.Request, v interface{}) (http.Header, error) {
+func GetPatient(practiceKey, id string) (*Patient, error) {
+	return defaultClient.Patient.Get(practiceKey, id)
+}
 
-	res, err := s.HTTPClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
+func UpdatePatient(practiceKey, id string, params *PatientParams) (*Patient, error) {
+	return defaultClient.Patient.Update(practiceKey, id, params)
+}
 
-	resBody, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
+func DeletePatient(practiceKey, id string) error {
+	return defaultClient.Patient.Delete(practiceKey, id)
+}
 
-	if res.StatusCode >= 400 {
-		var hintError Error
-		if err := json.Unmarshal(resBody, &hintError); err != nil {
-			return nil, err
-		}
-		return nil, &hintError
-	}
+func ListPatient(practiceKey string, params *ListParams) *Iter {
+	return defaultClient.Patient.List(practiceKey, params)
+}
 
-	if v != nil {
-		if err := json.Unmarshal(resBody, v); err != nil {
-			return nil, err
-		}
-		return res.Header, nil
-	}
-
-	return res.Header, nil
+func GrantAPIKey(code string) (*PracticeGrant, error) {
+	return defaultClient.OAuth.GrantAPIKey(code)
 }

@@ -30,16 +30,19 @@ func GetIter(params *ListParams, query Query) *Iter {
 	return iter
 }
 
-func (it *Iter) getPage() {
+func (it *Iter) getPage() error {
 	it.values, it.meta, it.err = it.query(it.params)
 	it.totalQueried += uint64(len(it.values))
 	it.hasMore = it.totalQueried < it.meta.TotalCount
+	return it.err
 }
 
 func (it *Iter) Next() bool {
 	if len(it.values) == 0 && it.hasMore {
 		it.params.Offset = it.totalQueried
-		it.getPage()
+		if err := it.getPage(); err != nil {
+			return false
+		}
 	}
 	if len(it.values) == 0 {
 		return false

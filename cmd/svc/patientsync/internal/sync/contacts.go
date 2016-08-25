@@ -30,6 +30,8 @@ func labelFromType(phoneType Phone_PhoneType) string {
 		return "Mobile"
 	case PHONE_TYPE_HOME:
 		return "Home"
+	case PHONE_TYPE_OFFICE:
+		return "Office"
 	}
 
 	return ""
