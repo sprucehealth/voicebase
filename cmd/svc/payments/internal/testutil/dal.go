@@ -166,8 +166,8 @@ func (d *MockDAL) EntityPaymentMethods(ctx context.Context, vendorAccountID dal.
 	return rets[0].([]*dal.PaymentMethod), mock.SafeError(rets[1])
 }
 
-func (d *MockDAL) PaymentMethodWithFingerprint(ctx context.Context, customerID dal.CustomerID, storageFingerprint string, opts ...dal.QueryOption) (*dal.PaymentMethod, error) {
-	rets := d.Record(customerID, storageFingerprint, opts)
+func (d *MockDAL) PaymentMethodWithFingerprint(ctx context.Context, customerID dal.CustomerID, storageFingerprint, tokenizationMethod string, opts ...dal.QueryOption) (*dal.PaymentMethod, error) {
+	rets := d.Record(customerID, storageFingerprint, tokenizationMethod, opts)
 	if len(rets) == 0 {
 		return nil, nil
 	}

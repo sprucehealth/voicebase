@@ -64,7 +64,7 @@ type DAL interface {
 	DeletePaymentMethod(ctx context.Context, id PaymentMethodID) (int64, error)
 	EntityPaymentMethods(ctx context.Context, vendorAccountID VendorAccountID, entityID string, opts ...QueryOption) ([]*PaymentMethod, error)
 	PaymentMethodsWithFingerprint(ctx context.Context, storageFingerprint string, opts ...QueryOption) ([]*PaymentMethod, error)
-	PaymentMethodWithFingerprint(ctx context.Context, customerID CustomerID, storageFingerprint string, opts ...QueryOption) (*PaymentMethod, error)
+	PaymentMethodWithFingerprint(ctx context.Context, customerID CustomerID, storageFingerprint, tokenizationMethod string, opts ...QueryOption) (*PaymentMethod, error)
 
 	// Vendor Account
 	DeleteVendorAccount(ctx context.Context, id VendorAccountID) (int64, error)
@@ -1201,13 +1201,13 @@ func (d *dal) PaymentMethod(ctx context.Context, id PaymentMethodID, opts ...Que
 }
 
 // PaymentMethodWithFingerprint retrieves a payment_method record with the corresponding fingerprint belonging to the specified vendor
-func (d *dal) PaymentMethodWithFingerprint(ctx context.Context, customerID CustomerID, storageFingerprint string, opts ...QueryOption) (*PaymentMethod, error) {
-	q := selectPaymentMethod + ` WHERE customer_id = ? AND storage_fingerprint = ?`
+func (d *dal) PaymentMethodWithFingerprint(ctx context.Context, customerID CustomerID, storageFingerprint, tokenizationMethod string, opts ...QueryOption) (*PaymentMethod, error) {
+	q := selectPaymentMethod + ` WHERE customer_id = ? AND storage_fingerprint = ? AND tokenization_method = ?`
 	if queryOptions(opts).Has(ForUpdate) {
 		q += ` FOR UPDATE`
 	}
-	row := d.db.QueryRow(q, customerID, storageFingerprint)
-	model, err := scanPaymentMethod(row, "customer_id: %s - storage_fingerprint: %s", customerID, storageFingerprint)
+	row := d.db.QueryRow(q, customerID, storageFingerprint, tokenizationMethod)
+	model, err := scanPaymentMethod(row, "customer_id: %s - storage_fingerprint: %s - tokenization_method: %s", customerID, storageFingerprint, tokenizationMethod)
 	return model, errors.Trace(err)
 }
 

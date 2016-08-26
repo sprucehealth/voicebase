@@ -51,7 +51,7 @@ func (w *Workers) processPaymentNoneAccepted() {
 					continue
 				}
 				// Check to see if there is an existing matching payment method for this vendor customer
-				vendorPaymentMethod, err := dl.PaymentMethodWithFingerprint(ctx, vendorCustomer.ID, paymentMethod.StorageFingerprint)
+				vendorPaymentMethod, err := dl.PaymentMethodWithFingerprint(ctx, vendorCustomer.ID, paymentMethod.StorageFingerprint, paymentMethod.TokenizationMethod)
 				if errors.Cause(err) == dal.ErrNotFound {
 					// Create the token source for adding this card
 					var tokenSource server.TokenSource

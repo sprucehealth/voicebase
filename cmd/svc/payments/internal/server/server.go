@@ -398,7 +398,7 @@ func AddPaymentMethod(
 	newPaymentMethod.ChangeState = dal.PaymentMethodChangeStateNone
 
 	// Check to see if we've already added this payment method - the stripe endpoint is idempotent
-	existingPaymentMethod, err := dl.PaymentMethodWithFingerprint(ctx, customer.ID, newPaymentMethod.StorageFingerprint)
+	existingPaymentMethod, err := dl.PaymentMethodWithFingerprint(ctx, customer.ID, newPaymentMethod.StorageFingerprint, newPaymentMethod.TokenizationMethod)
 	if err != nil && errors.Cause(err) != dal.ErrNotFound {
 		return nil, errors.Trace(err)
 	} else if existingPaymentMethod != nil {
