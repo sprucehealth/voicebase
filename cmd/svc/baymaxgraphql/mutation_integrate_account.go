@@ -3,10 +3,14 @@ package main
 import (
 	"fmt"
 
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/gqldecode"
+	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/patientsync"
 	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/graphql"
@@ -35,6 +39,8 @@ var integrateAccountInputType = graphql.NewInputObject(
 const (
 	integrateAccountErrorCodeExpiredCode             = "EXPIRED_CODE"
 	integrateAccountErrorCodeIntegrationNotSupported = "INTEGRATION_NOT_SUPPORTED"
+	integrateAccountErrorCodeEntityNotFound          = "ENTITY_NOT_FOUND"
+	integrateAccountErrorCodeEntityNotSupported      = "ENTITY_NOT_SUPPORTED"
 	integrateAccountTypeStripe                       = "STRIPE"
 	integrateAccountTypeHint                         = "HINT"
 	integrateAccountTypeDrChrono                     = "DRCHRONO"
@@ -50,6 +56,14 @@ var integrateAccountErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
 		integrateAccountErrorCodeIntegrationNotSupported: &graphql.EnumValueConfig{
 			Value:       integrateAccountErrorCodeIntegrationNotSupported,
 			Description: "Integration not yet supported.",
+		},
+		integrateAccountErrorCodeEntityNotFound: &graphql.EnumValueConfig{
+			Value:       integrateAccountErrorCodeEntityNotFound,
+			Description: "The referenced entity was not found.",
+		},
+		integrateAccountErrorCodeEntityNotSupported: &graphql.EnumValueConfig{
+			Value:       integrateAccountErrorCodeEntityNotSupported,
+			Description: "The referenced entity is not supported for this integration.",
 		},
 	},
 })
@@ -113,7 +127,31 @@ func connectVendorStripeAccount(p graphql.ResolveParams, in integrateAccountInpu
 	ram := raccess.ResourceAccess(p)
 	ctx := p.Context
 
-	_, err := ram.ConnectVendorAccount(ctx, &payments.ConnectVendorAccountRequest{
+	ent, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: in.EntityID,
+		},
+	})
+	if grpc.Code(err) == codes.NotFound {
+		return &integrateAccountOutput{
+			ClientMutationID: in.ClientMutationID,
+			Success:          false,
+			ErrorCode:        integrateAccountErrorCodeEntityNotFound,
+			ErrorMessage:     fmt.Sprintf("Entity %s Not Found", in.EntityID),
+		}, nil
+	} else if err != nil {
+		return nil, errors.InternalError(p.Context, err)
+	} else if ent.Type != directory.EntityType_ORGANIZATION {
+		return &integrateAccountOutput{
+			ClientMutationID: in.ClientMutationID,
+			Success:          false,
+			ErrorCode:        integrateAccountErrorCodeEntityNotSupported,
+			ErrorMessage:     fmt.Sprintf("Entity %s is not supported for this integration. Expect an Organization", in.EntityID),
+		}, nil
+	}
+
+	_, err = ram.ConnectVendorAccount(ctx, &payments.ConnectVendorAccountRequest{
 		EntityID: in.EntityID,
 		Type:     payments.VENDOR_ACCOUNT_TYPE_STRIPE,
 		ConnectVendorAccountOneof: &payments.ConnectVendorAccountRequest_StripeRequest{
