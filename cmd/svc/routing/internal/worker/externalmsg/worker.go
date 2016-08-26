@@ -501,12 +501,6 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 						Channel: endpointChannel,
 						ID:      fromName,
 					},
-					Destinations: []*threading.Endpoint{
-						{
-							Channel: endpointChannel,
-							ID:      pem.ToChannelID,
-						},
-					},
 					Internal:     false,
 					MessageTitle: titleStr,
 					Text:         plainText,
@@ -532,12 +526,6 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 					Source: &threading.Endpoint{
 						Channel: endpointChannel,
 						ID:      fromName,
-					},
-					Destinations: []*threading.Endpoint{
-						{
-							Channel: endpointChannel,
-							ID:      pem.ToChannelID,
-						},
 					},
 					Internal:    false,
 					Title:       titleStr,
