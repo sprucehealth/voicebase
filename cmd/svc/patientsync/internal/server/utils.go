@@ -2,14 +2,14 @@ package server
 
 import (
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/sync"
-	"github.com/sprucehealth/backend/svc/patientsync"
+	psettings "github.com/sprucehealth/backend/cmd/svc/patientsync/settings"
 )
 
-func transformThreadType(threadType patientsync.ThreadType) sync.Config_ThreadCreationType {
+func transformThreadType(threadType string) sync.Config_ThreadCreationType {
 	switch threadType {
-	case patientsync.THREAD_TYPE_SECURE:
+	case psettings.ThreadTypeOptionSecure:
 		return sync.THREAD_CREATION_TYPE_SECURE
-	case patientsync.THREAD_TYPE_STANDARD:
+	case psettings.ThreadTypeOptionStandard:
 		return sync.THREAD_CREATION_TYPE_STANDARD
 	}
 	return sync.THREAD_CREATION_TYPE_UKNOWN

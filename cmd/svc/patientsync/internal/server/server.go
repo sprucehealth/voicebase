@@ -12,8 +12,10 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/sync"
+	psettings "github.com/sprucehealth/backend/cmd/svc/patientsync/settings"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/patientsync"
+	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/go-hint"
 )
 
@@ -31,14 +33,17 @@ type server struct {
 	dl                   dal.DAL
 	initiateSyncQueueURL string
 	sqsAPI               sqsiface.SQSAPI
+	settings             settings.SettingsClient
 }
 
 func New(
 	dl dal.DAL,
+	settings settings.SettingsClient,
 	initiateSyncQueueURL string,
 	sqsAPI sqsiface.SQSAPI) patientsync.PatientSyncServer {
 	return &server{
 		dl:                   dl,
+		settings:             settings,
 		initiateSyncQueueURL: initiateSyncQueueURL,
 		sqsAPI:               sqsAPI,
 	}
@@ -106,10 +111,23 @@ func (s *server) ConfigureSync(ctx context.Context, in *patientsync.ConfigureSyn
 		if grant.ExpiresIn != nil {
 			expiresIn = uint64(grant.ExpiresIn.Unix())
 		}
+
+		threadTypeVal, err := settings.GetSingleSelectValue(ctx, s.settings, &settings.GetValuesRequest{
+			Keys: []*settings.ConfigKey{
+				{
+					Key: psettings.ConfigKeyThreadTypeOption,
+				},
+			},
+			NodeID: in.OrganizationEntityID,
+		})
+		if err != nil {
+			return nil, grpcErrorf(codes.Internal, "Unable to get settings %s for %s: %s", psettings.ThreadTypeOptionConfig, in.OrganizationEntityID, err)
+		}
+
 		config = &sync.Config{
 			OrganizationEntityID: in.OrganizationEntityID,
 			Source:               sync.SOURCE_HINT,
-			ThreadCreationType:   transformThreadType(in.ThreadType),
+			ThreadCreationType:   transformThreadType(threadTypeVal.GetItem().ID),
 			Token: &sync.Config_Hint{
 				Hint: &sync.HintToken{
 					AccessToken:  grant.AccessToken,

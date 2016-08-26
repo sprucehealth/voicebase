@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/layout"
 	"github.com/sprucehealth/backend/svc/media"
+	"github.com/sprucehealth/backend/svc/patientsync"
 	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/backend/svc/threading"
 )
@@ -674,6 +675,15 @@ func (m *ResourceAccessor) ConnectVendorAccount(ctx context.Context, req *paymen
 	}
 
 	return rets[0].(*payments.ConnectVendorAccountResponse), mock.SafeError(rets[1])
+}
+
+func (m *ResourceAccessor) ConfigurePatientSync(ctx context.Context, req *patientsync.ConfigureSyncRequest) (*patientsync.ConfigureSyncResponse, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].(*patientsync.ConfigureSyncResponse), mock.SafeError(rets[1])
 }
 
 func (m *ResourceAccessor) LookupEHRLinksForEntity(ctx context.Context, req *directory.LookupEHRLinksForEntityRequest) (*directory.LookupEHRLinksforEntityResponse, error) {

@@ -17,6 +17,7 @@ import (
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/layout"
 	"github.com/sprucehealth/backend/svc/media"
+	"github.com/sprucehealth/backend/svc/patientsync"
 	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
@@ -93,6 +94,7 @@ type ResourceAccessor interface {
 	CheckVerificationCode(ctx context.Context, token, code string) (*auth.CheckVerificationCodeResponse, error)
 	ClaimMedia(ctx context.Context, req *media.ClaimMediaRequest) error
 	ConnectVendorAccount(ctx context.Context, req *payments.ConnectVendorAccountRequest) (*payments.ConnectVendorAccountResponse, error)
+	ConfigurePatientSync(ctx context.Context, req *patientsync.ConfigureSyncRequest) (*patientsync.ConfigureSyncResponse, error)
 	CreateAccount(ctx context.Context, req *auth.CreateAccountRequest) (*auth.CreateAccountResponse, error)
 	CreateCarePlan(ctx context.Context, req *care.CreateCarePlanRequest) (*care.CreateCarePlanResponse, error)
 	CreateContact(ctx context.Context, req *directory.CreateContactRequest) (*directory.CreateContactResponse, error)
@@ -167,15 +169,16 @@ type ResourceAccessor interface {
 }
 
 type resourceAccessor struct {
-	rMap      *resourceMap
-	auth      auth.AuthClient
-	directory directory.DirectoryClient
-	threading threading.ThreadsClient
-	excomms   excomms.ExCommsClient
-	layout    layout.LayoutClient
-	care      care.CareClient
-	media     media.MediaClient
-	payments  payments.PaymentsClient
+	rMap        *resourceMap
+	auth        auth.AuthClient
+	directory   directory.DirectoryClient
+	threading   threading.ThreadsClient
+	excomms     excomms.ExCommsClient
+	layout      layout.LayoutClient
+	care        care.CareClient
+	media       media.MediaClient
+	payments    payments.PaymentsClient
+	patientsync patientsync.PatientSyncClient
 }
 
 // New returns an initialized instance of resourceAccessor
@@ -188,17 +191,19 @@ func New(
 	care care.CareClient,
 	media media.MediaClient,
 	payments payments.PaymentsClient,
+	patientsync patientsync.PatientSyncClient,
 ) ResourceAccessor {
 	return &resourceAccessor{
-		rMap:      newResourceMap(),
-		auth:      auth,
-		directory: directory,
-		threading: threading,
-		excomms:   excomms,
-		layout:    layout,
-		care:      care,
-		media:     media,
-		payments:  payments,
+		rMap:        newResourceMap(),
+		auth:        auth,
+		directory:   directory,
+		threading:   threading,
+		excomms:     excomms,
+		layout:      layout,
+		care:        care,
+		media:       media,
+		payments:    payments,
+		patientsync: patientsync,
 	}
 }
 

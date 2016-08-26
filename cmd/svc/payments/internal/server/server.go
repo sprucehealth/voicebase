@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/payments"
+	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/stripe/stripe-go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -42,6 +43,7 @@ var (
 type server struct {
 	dal             dal.DAL
 	directoryClient directory.DirectoryClient
+	settingsClient  settings.SettingsClient
 	// The master vendor account owns all customers and payment methods and adds applicable ones to individual vendor accounts
 	masterVendorAccount *dal.VendorAccount
 	stripeOAuth         oauth.StripeOAuth

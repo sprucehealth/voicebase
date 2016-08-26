@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"net"
 	"net/http"
@@ -13,6 +14,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/server"
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/source/hint"
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/worker"
+	psettings "github.com/sprucehealth/backend/cmd/svc/patientsync/settings"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -20,6 +22,7 @@ import (
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/patientsync"
+	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
 	hintlib "github.com/sprucehealth/go-hint"
 	"github.com/sprucehealth/go-proxy-protocol/proxyproto"
@@ -34,6 +37,7 @@ var (
 	// Services
 	flagDirectoryAddr = flag.String("directory_addr", "_directory._tcp.service", "host:port of directory service")
 	flagThreadingAddr = flag.String("threading_addr", "_threading._tcp.service", "host:port of threading service")
+	flagSettingsAddr  = flag.String("settings_addr", "_settings._tcp.service", "host:port of settings service")
 
 	// database
 	flagDBHost     = flag.String("db_host", "", "database host")
@@ -74,6 +78,12 @@ func main() {
 		golog.Fatalf("Unable to communicate with threading service: %s", err)
 	}
 	defer threadingConn.Close()
+
+	settingsConn, err := boot.DialGRPC(svcName, *flagSettingsAddr)
+	if err != nil {
+		golog.Fatalf("Unable to communicate with settings service: %s", err)
+	}
+	defer settingsConn.Close()
 
 	awsSession, err := bootSvc.AWSSession()
 	if err != nil {
@@ -126,8 +136,21 @@ func main() {
 		golog.Fatalf("failed to listen: %v", err)
 	}
 
+	settingsClient := settings.NewSettingsClient(settingsConn)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	_, err = settings.RegisterConfigs(
+		ctx,
+		settingsClient,
+		[]*settings.Config{
+			psettings.ThreadTypeOptionConfig,
+		})
+	if err != nil {
+		golog.Fatalf("Unable to register configs with the settings service: %s", err.Error())
+	}
+	cancel()
+
 	srvMetricsRegistry := bootSvc.MetricsRegistry.Scope("server")
-	srv := server.New(dal.New(db), *flagInitialSyncQueueURL, eSQS)
+	srv := server.New(dal.New(db), settingsClient, *flagInitialSyncQueueURL, eSQS)
 	patientsync.InitMetrics(srv, srvMetricsRegistry)
 
 	s := bootSvc.GRPCServer()

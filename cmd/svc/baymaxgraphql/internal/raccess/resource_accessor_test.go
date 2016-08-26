@@ -18,21 +18,23 @@ import (
 	emock "github.com/sprucehealth/backend/svc/excomms/mock"
 	lmock "github.com/sprucehealth/backend/svc/layout/mock"
 	mmock "github.com/sprucehealth/backend/svc/media/mock"
+	psmock "github.com/sprucehealth/backend/svc/patientsync/mock"
 	pmock "github.com/sprucehealth/backend/svc/payments/mock"
 	"github.com/sprucehealth/backend/svc/threading"
 	tmock "github.com/sprucehealth/backend/svc/threading/mock"
 )
 
 type ratest struct {
-	aC *amock.Client
-	dC *dmock.Client
-	tC *tmock.Client
-	eC *emock.Client
-	lC *lmock.Client
-	vC *vmock.Client
-	mC *mmock.Client
-	pC *pmock.Client
-	ra ResourceAccessor
+	aC  *amock.Client
+	dC  *dmock.Client
+	tC  *tmock.Client
+	eC  *emock.Client
+	lC  *lmock.Client
+	vC  *vmock.Client
+	mC  *mmock.Client
+	pC  *pmock.Client
+	psC *psmock.Client
+	ra  ResourceAccessor
 }
 
 func (r *ratest) finish() {
@@ -49,7 +51,8 @@ func new(t *testing.T) *ratest {
 	rat.vC = vmock.New(t)
 	rat.mC = mmock.New(t)
 	rat.pC = pmock.New(t)
-	rat.ra = New(rat.aC, rat.dC, rat.tC, rat.eC, rat.lC, rat.vC, rat.mC, rat.pC)
+	rat.psC = psmock.New(t)
+	rat.ra = New(rat.aC, rat.dC, rat.tC, rat.eC, rat.lC, rat.vC, rat.mC, rat.pC, rat.psC)
 	return &rat
 }
 

@@ -14,11 +14,6 @@ enum Source {
 	SOURCE_CSV = 4;
 }
 
-enum ThreadType {
-	THREAD_TYPE_UNKNOWN = 0;
-	THREAD_TYPE_STANDARD = 1;
-	THREAD_TYPE_SECURE = 2;
-}
 
 message InitiateSyncRequest {
 	string organization_entity_id = 1 [(gogoproto.customname) = "OrganizationEntityID"];
@@ -31,8 +26,7 @@ message InitiateSyncResponse {}
 message ConfigureSyncRequest{
 	string organization_entity_id = 1 [(gogoproto.customname) = "OrganizationEntityID"];
 	Source source = 2;
-	ThreadType thread_type = 3;
-	string token = 4;
+	string token = 3;
 }
 
 message ConfigureSyncResponse {

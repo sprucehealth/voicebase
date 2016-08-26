@@ -1,7 +1,7 @@
 -- sync_config stores the sync configuration for a given organization
 CREATE TABLE sync_config (
 	org_id VARCHAR(64) NOT NULL,
-	source VARCHAR(64) NOT NULL CHARSET ascii COLLATE ascii_bin,
+	source VARCHAR(64) CHARSET ascii COLLATE ascii_bin NOT NULL,
 	external_id VARCHAR(64) CHARSET ascii COLLATE ascii_bin,
 	config BLOB NOT NULL,
 	created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -11,7 +11,7 @@ CREATE TABLE sync_config (
 );
 
 CREATE TABLE sync_bookmark (
-	org_id VARHCAR(64) NOT NULL,
+	org_id VARCHAR(64) NOT NULL,
 	bookmark TIMESTAMP NOT NULL,
 	PRIMARY KEY (org_id)
 );

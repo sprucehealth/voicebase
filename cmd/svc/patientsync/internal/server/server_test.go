@@ -6,11 +6,14 @@ import (
 
 	dalmock "github.com/sprucehealth/backend/cmd/svc/patientsync/internal/dal/mock"
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/sync"
+	psettings "github.com/sprucehealth/backend/cmd/svc/patientsync/settings"
 	hintoauthmock "github.com/sprucehealth/backend/libs/hintutils/mock"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/patientsync"
+	"github.com/sprucehealth/backend/svc/settings"
+	settingsmock "github.com/sprucehealth/backend/svc/settings/mock"
 	"github.com/sprucehealth/go-hint"
 )
 
@@ -21,10 +24,14 @@ func TestConfigureSync(t *testing.T) {
 	omock := hintoauthmock.NewOAuthClient(t)
 	defer omock.Finish()
 
+	smock := settingsmock.New(t)
+	defer smock.Finish()
+
 	hint.SetOAuthClient(omock)
 
 	s := &server{
-		dl: dmock,
+		dl:       dmock,
+		settings: smock,
 	}
 
 	dmock.Expect(mock.NewExpectation(dmock.CreateSyncConfig, &sync.Config{
@@ -41,6 +48,27 @@ func TestConfigureSync(t *testing.T) {
 		},
 	}, ptr.String("prac-1")))
 
+	smock.Expect(mock.NewExpectation(smock.GetValues, &settings.GetValuesRequest{
+		NodeID: "orgID",
+		Keys: []*settings.ConfigKey{
+			{
+				Key: psettings.ConfigKeyThreadTypeOption,
+			},
+		},
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Value: &settings.Value_SingleSelect{
+					SingleSelect: &settings.SingleSelectValue{
+						Item: &settings.ItemValue{
+							ID: psettings.ThreadTypeOptionSecure,
+						},
+					},
+				},
+			},
+		},
+	}, nil))
+
 	omock.Expect(mock.NewExpectation(omock.GrantAPIKey, "token123").WithReturns(&hint.PracticeGrant{
 		AccessToken: "accessToken123",
 		Practice: &hint.Practice{
@@ -51,7 +79,6 @@ func TestConfigureSync(t *testing.T) {
 	_, err := s.ConfigureSync(context.Background(), &patientsync.ConfigureSyncRequest{
 		OrganizationEntityID: "orgID",
 		Source:               patientsync.SOURCE_HINT,
-		ThreadType:           patientsync.THREAD_TYPE_SECURE,
 		Token:                "token123",
 	})
 	test.OK(t, err)

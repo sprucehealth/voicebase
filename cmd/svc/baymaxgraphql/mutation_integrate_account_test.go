@@ -7,6 +7,7 @@ import (
 	ramock "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess/mock"
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
+	"github.com/sprucehealth/backend/svc/patientsync"
 	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/graphql"
 )
@@ -21,13 +22,13 @@ func TestConnectVendorStripeAccount(t *testing.T) {
 	entityID := "entityID"
 	code := "code"
 	cases := map[string]struct {
-		In          connectVendorStripeAccountInput
+		In          integrateAccountInput
 		TestParams  *testConnectVendorAccountParams
 		Expected    interface{}
 		ExpectedErr error
 	}{
 		"Success": {
-			In: connectVendorStripeAccountInput{
+			In: integrateAccountInput{
 				ClientMutationID: mutationID,
 				EntityID:         entityID,
 				Code:             code,
@@ -55,7 +56,7 @@ func TestConnectVendorStripeAccount(t *testing.T) {
 				}
 			}(),
 			ExpectedErr: nil,
-			Expected: &connectVendorStripeAccountOutput{
+			Expected: &integrateAccountOutput{
 				ClientMutationID: mutationID,
 				Success:          true,
 			},
@@ -63,6 +64,55 @@ func TestConnectVendorStripeAccount(t *testing.T) {
 	}
 	for cn, c := range cases {
 		out, err := connectVendorStripeAccount(c.TestParams.p, c.In)
+		test.EqualsCase(t, cn, c.ExpectedErr, err)
+		test.EqualsCase(t, cn, c.Expected, out)
+		mock.FinishAll(c.TestParams.finishers...)
+	}
+}
+
+func TestConfigureSync(t *testing.T) {
+	mutationID := "mutationID"
+	entityID := "entityID"
+	code := "code"
+	cases := map[string]struct {
+		In          integrateAccountInput
+		TestParams  *testConnectVendorAccountParams
+		Expected    interface{}
+		ExpectedErr error
+	}{
+		"Success": {
+			In: integrateAccountInput{
+				ClientMutationID: mutationID,
+				EntityID:         entityID,
+				Code:             code,
+			},
+			TestParams: func() *testConnectVendorAccountParams {
+				mra := ramock.New(t)
+				mra.Expect(mock.NewExpectation(mra.ConfigurePatientSync, &patientsync.ConfigureSyncRequest{
+					OrganizationEntityID: entityID,
+					Token:                code,
+					Source:               patientsync.SOURCE_HINT,
+				}))
+				return &testConnectVendorAccountParams{
+					p: graphql.ResolveParams{
+						Info: graphql.ResolveInfo{
+							RootValue: map[string]interface{}{
+								raccess.ParamKey: mra,
+							},
+						},
+					},
+					finishers: []mock.Finisher{mra},
+				}
+			}(),
+			ExpectedErr: nil,
+			Expected: &integrateAccountOutput{
+				ClientMutationID: mutationID,
+				Success:          true,
+			},
+		},
+	}
+	for cn, c := range cases {
+		out, err := configureSync(c.TestParams.p, c.In)
 		test.EqualsCase(t, cn, c.ExpectedErr, err)
 		test.EqualsCase(t, cn, c.Expected, out)
 		mock.FinishAll(c.TestParams.finishers...)
