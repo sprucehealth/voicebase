@@ -17,6 +17,7 @@ func transformEntityContactToResponse(dEntityContact *dal.EntityContact) *direct
 		Value:       dEntityContact.Value,
 		ID:          dEntityContact.ID.String(),
 		Label:       dEntityContact.Label,
+		Verified:    dEntityContact.Verified,
 	}
 	contactType, ok := directory.ContactType_value[dEntityContact.Type.String()]
 	if !ok {

@@ -89,6 +89,7 @@ func TestProvisionEmail_Organization(t *testing.T) {
 			ContactType: directory.ContactType_EMAIL,
 			Value:       "sup@pup.amdava.com",
 			Provisioned: true,
+			Verified:    true,
 		},
 		RequestedInformation: &directory.RequestedInformation{
 			Depth: 0,
@@ -233,6 +234,7 @@ func TestProvisionEmail_Internal(t *testing.T) {
 			ContactType: directory.ContactType_EMAIL,
 			Value:       "sup@pup.amdava.com",
 			Provisioned: true,
+			Verified:    true,
 		},
 		RequestedInformation: &directory.RequestedInformation{
 			Depth: 0,
@@ -380,6 +382,7 @@ func TestProvisionEmail_Organization_DomainExists(t *testing.T) {
 			ContactType: directory.ContactType_EMAIL,
 			Value:       "sup@pup.amdava.com",
 			Provisioned: true,
+			Verified:    true,
 		},
 		RequestedInformation: &directory.RequestedInformation{
 			Depth: 0,

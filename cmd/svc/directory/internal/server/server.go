@@ -757,6 +757,7 @@ func (s *server) CreateContact(ctx context.Context, rd *directory.CreateContactR
 			Value:       rd.GetContact().Value,
 			Provisioned: rd.GetContact().Provisioned,
 			Label:       rd.GetContact().Label,
+			Verified:    rd.GetContact().Verified,
 		}); err != nil {
 			return errors.Trace(err)
 		}
@@ -816,6 +817,7 @@ func (s *server) CreateContacts(ctx context.Context, rd *directory.CreateContact
 			Value:       c.Value,
 			Provisioned: c.Provisioned,
 			Label:       c.Label,
+			Verified:    c.Verified,
 		}
 	}
 
@@ -890,9 +892,10 @@ func (s *server) UpdateContacts(ctx context.Context, rd *directory.UpdateContact
 				return grpcErrorf(codes.InvalidArgument, "Unknown contact type: %v", c.ContactType)
 			}
 			aff, err := s.dl.UpdateEntityContact(cID, &dal.EntityContactUpdate{
-				Type:  &contactType,
-				Value: &c.Value,
-				Label: &c.Label,
+				Type:     &contactType,
+				Value:    &c.Value,
+				Label:    &c.Label,
+				Verified: &c.Verified,
 			})
 			if err != nil {
 				return errors.Trace(err)

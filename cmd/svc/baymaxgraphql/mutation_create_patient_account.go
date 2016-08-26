@@ -279,6 +279,7 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 	} else {
 		phoneNumber = in.PhoneNumber
 	}
+
 	pn, err := phone.ParseNumber(phoneNumber)
 	if err != nil {
 		return &createPatientAccountOutput{
@@ -348,6 +349,7 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 	// Only do email verification if it was a direct patient invite
 	var accountEntityID string
 	var orgID string
+	var emailVerified bool
 	switch inv.Type {
 	case invite.LookupInviteResponse_PATIENT:
 		// Assert that the email was verified
@@ -359,6 +361,7 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 				ErrorMessage:     "Email verification token required.",
 			}, nil
 		}
+
 		if _, err := ram.VerifiedValue(ctx, in.EmailVerificationToken); err != nil {
 			if grpc.Code(err) == auth.ValueNotYetVerified {
 				return &createPatientAccountOutput{
@@ -375,6 +378,7 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 		}
 		accountEntityID = inv.GetPatient().Patient.ParkedEntityID
 		orgID = inv.GetPatient().OrganizationEntityID
+		emailVerified = true
 	case invite.LookupInviteResponse_ORGANIZATION_CODE:
 	default:
 		return nil, errors.InternalError(ctx, fmt.Errorf("Unsupported invite type %s", inv.Type))
@@ -469,8 +473,8 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 		AccountID:        res.Account.ID,
 		UpdateContacts:   true,
 		Contacts: []*directory.Contact{
-			{ContactType: directory.ContactType_EMAIL, Value: req.Email},
-			{ContactType: directory.ContactType_PHONE, Value: req.PhoneNumber},
+			{ContactType: directory.ContactType_EMAIL, Value: req.Email, Verified: emailVerified},
+			{ContactType: directory.ContactType_PHONE, Value: req.PhoneNumber, Verified: true},
 		},
 	})
 	if err != nil {

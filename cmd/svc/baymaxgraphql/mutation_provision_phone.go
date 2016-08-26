@@ -140,6 +140,7 @@ var provisionPhoneNumberMutation = &graphql.Field{
 				ContactType: directory.ContactType_PHONE,
 				Provisioned: true,
 				Value:       res.PhoneNumber,
+				Verified:    true,
 			},
 			RequestedInformation: &directory.RequestedInformation{
 				Depth: 0,

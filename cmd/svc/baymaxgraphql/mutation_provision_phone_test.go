@@ -63,6 +63,7 @@ func TestProvisionPhone(t *testing.T) {
 			ContactType: directory.ContactType_PHONE,
 			Value:       "+12068773590",
 			Provisioned: true,
+			Verified:    true,
 		},
 		RequestedInformation: &directory.RequestedInformation{
 			Depth: 0,

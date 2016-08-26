@@ -647,6 +647,7 @@ type EntityContact struct {
 	ID          EntityContactID
 	Label       string
 	Provisioned bool
+	Verified    bool
 }
 
 // Recycle puts the value back in the pool after which it must not be used.
@@ -656,9 +657,10 @@ func (ec *EntityContact) Recycle() {
 
 // EntityContactUpdate represents the mutable aspects of a entity_contact record
 type EntityContactUpdate struct {
-	Type  *EntityContactType
-	Value *string
-	Label *string
+	Type     *EntityContactType
+	Value    *string
+	Label    *string
+	Verified *bool
 }
 
 // EntityMembership represents a entity_membership record
@@ -1066,8 +1068,8 @@ func (d *dal) InsertEntityContact(model *EntityContact) (EntityContactID, error)
 	}
 	_, err := d.db.Exec(
 		`INSERT INTO entity_contact
-          (id, entity_id, type, value, provisioned, label)
-          VALUES (?, ?, ?, ?, ?, ?)`, model.ID, model.EntityID, model.Type, model.Value, model.Provisioned, model.Label)
+          (id, entity_id, type, value, provisioned, verified, label)
+          VALUES (?, ?, ?, ?, ?, ?, ?)`, model.ID, model.EntityID, model.Type, model.Value, model.Provisioned, model.Verified, model.Label)
 	if err != nil {
 		return EmptyEntityContactID(), errors.Trace(err)
 	}
@@ -1161,6 +1163,9 @@ func (d *dal) UpdateEntityContact(id EntityContactID, update *EntityContactUpdat
 	}
 	if update.Label != nil {
 		args.Append("label", *update.Label)
+	}
+	if update.Verified != nil {
+		args.Append("verified", *update.Verified)
 	}
 	if args.IsEmpty() {
 		return 0, nil
@@ -1474,7 +1479,7 @@ func scanEntityMembership(row dbutil.Scanner) (*EntityMembership, error) {
 }
 
 const selectEntityContact = `
-    SELECT entity_contact.modified, entity_contact.id, entity_contact.entity_id, entity_contact.type, entity_contact.value, entity_contact.created, entity_contact.provisioned, entity_contact.label
+    SELECT entity_contact.modified, entity_contact.id, entity_contact.entity_id, entity_contact.type, entity_contact.value, entity_contact.created, entity_contact.provisioned, entity_contact.verified, entity_contact.label
       FROM entity_contact`
 
 func scanEntityContact(row dbutil.Scanner) (*EntityContact, error) {
@@ -1482,7 +1487,7 @@ func scanEntityContact(row dbutil.Scanner) (*EntityContact, error) {
 	m.ID = EmptyEntityContactID()
 	m.EntityID = EmptyEntityID()
 
-	err := row.Scan(&m.Modified, &m.ID, &m.EntityID, &m.Type, &m.Value, &m.Created, &m.Provisioned, &m.Label)
+	err := row.Scan(&m.Modified, &m.ID, &m.EntityID, &m.Type, &m.Value, &m.Created, &m.Provisioned, &m.Verified, &m.Label)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrNotFound)
 	}

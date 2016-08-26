@@ -1031,14 +1031,16 @@ func TestUpdateContacts(t *testing.T) {
 	}, nil))
 
 	dl.Expect(mock.NewExpectation(dl.UpdateEntityContact, eCID1, &dal.EntityContactUpdate{
-		Type:  &phoneType,
-		Value: ptr.String("+12345678910"),
-		Label: ptr.String(""),
+		Type:     &phoneType,
+		Value:    ptr.String("+12345678910"),
+		Label:    ptr.String(""),
+		Verified: ptr.Bool(false),
 	}).WithReturns(int64(1), nil))
 	dl.Expect(mock.NewExpectation(dl.UpdateEntityContact, eCID2, &dal.EntityContactUpdate{
-		Type:  &emailType,
-		Value: ptr.String("test@email.com"),
-		Label: ptr.String("NewLabel"),
+		Type:     &emailType,
+		Value:    ptr.String("test@email.com"),
+		Label:    ptr.String("NewLabel"),
+		Verified: ptr.Bool(false),
 	}).WithReturns(int64(1), nil))
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), &dal.Entity{
 		ID:          eID1,

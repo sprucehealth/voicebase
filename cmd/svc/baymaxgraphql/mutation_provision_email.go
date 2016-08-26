@@ -261,6 +261,7 @@ var provisionEmailMutation = &graphql.Field{
 				ContactType: directory.ContactType_EMAIL,
 				Provisioned: true,
 				Value:       emailAddress,
+				Verified:    true,
 			},
 			RequestedInformation: &directory.RequestedInformation{
 				Depth: 0,

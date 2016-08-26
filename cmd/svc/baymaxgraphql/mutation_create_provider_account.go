@@ -278,6 +278,7 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 				ContactType: directory.ContactType_PHONE,
 				Value:       req.PhoneNumber,
 				Provisioned: false,
+				Verified:    true,
 			},
 		}
 

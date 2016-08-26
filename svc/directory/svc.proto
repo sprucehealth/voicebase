@@ -187,6 +187,7 @@ message Contact {
 	bool provisioned = 3;
 	string id = 4 [(gogoproto.customname) = "ID"];
 	string label = 5;
+	bool verified = 6;
 }
 
 message LookupEntitiesByContactRequest {
