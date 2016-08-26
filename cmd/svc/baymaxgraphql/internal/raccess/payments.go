@@ -7,15 +7,24 @@ import (
 )
 
 func (m *resourceAccessor) AcceptPayment(ctx context.Context, req *payments.AcceptPaymentRequest) (*payments.AcceptPaymentResponse, error) {
+	// Authorize access to the payment method
+	paymentMethodResp, err := m.payments.PaymentMethod(ctx, &payments.PaymentMethodRequest{
+		PaymentMethodID: req.PaymentMethodID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if err := m.assertIsEntity(ctx, paymentMethodResp.PaymentMethod.EntityID); err != nil {
+		return nil, err
+	}
+
+	// Authorize access to the payment
 	paymentResp, err := m.payments.Payment(ctx, &payments.PaymentRequest{
 		PaymentID: req.PaymentID,
 	})
 	if err != nil {
 		return nil, err
 	}
-
-	// TODO: Authorize access to the payment method
-
 	if err := m.canAccessResource(ctx, paymentResp.Payment.RequestingEntityID, m.orgsForEntity); err != nil {
 		return nil, err
 	}
@@ -69,6 +78,8 @@ func (m *resourceAccessor) Payment(ctx context.Context, req *payments.PaymentReq
 		return nil, err
 	}
 
+	// if we are in the same org as the requestor, allow access
+	// TODO: We need to improve the thread permissions model
 	if err := m.canAccessResource(ctx, resp.Payment.RequestingEntityID, m.orgsForEntity); err != nil {
 		return nil, err
 	}
@@ -89,7 +100,17 @@ func (m *resourceAccessor) PaymentMethods(ctx context.Context, req *payments.Pay
 }
 
 func (m *resourceAccessor) DeletePaymentMethod(ctx context.Context, req *payments.DeletePaymentMethodRequest) (*payments.DeletePaymentMethodResponse, error) {
-	// TODO: Add ability to look up payment method by ID and assert entity identity
+	// Authorize access to the payment method
+	paymentMethodResp, err := m.payments.PaymentMethod(ctx, &payments.PaymentMethodRequest{
+		PaymentMethodID: req.PaymentMethodID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if err := m.assertIsEntity(ctx, paymentMethodResp.PaymentMethod.EntityID); err != nil {
+		return nil, err
+	}
+
 	resp, err := m.payments.DeletePaymentMethod(ctx, req)
 	if err != nil {
 		return nil, err

@@ -406,6 +406,94 @@ func TestPaymentMethods(t *testing.T) {
 	}
 }
 
+func TestPaymentMethod(t *testing.T) {
+	ctx := context.Background()
+	pmID1, err := dal.NewPaymentMethodID()
+	test.OK(t, err)
+	cID, err := dal.NewCustomerID()
+	test.OK(t, err)
+	masterVendorAccountID, err := dal.NewVendorAccountID()
+	test.OK(t, err)
+	stripeSecretKey := "stripeSecretKey"
+	storageID := "storageID"
+	entityID := "entityID"
+	cases := map[string]struct {
+		Server      *tServer
+		Request     *payments.PaymentMethodRequest
+		Expected    *payments.PaymentMethodResponse
+		ExpectedErr error
+	}{
+		"Error-InvalidArgument-PaymentMethodID": {
+			Server: func() *tServer {
+				return newTestServer(t, &dal.VendorAccount{ID: masterVendorAccountID}, stripeSecretKey)
+			}(),
+			Request:     &payments.PaymentMethodRequest{},
+			Expected:    nil,
+			ExpectedErr: grpc.Errorf(codes.InvalidArgument, "PaymentMethodID required"),
+		},
+		"Error-NotFound-PaymentMethodID": {
+			Server: func() *tServer {
+				tsrv := newTestServer(t, &dal.VendorAccount{ID: masterVendorAccountID}, stripeSecretKey)
+				tsrv.mdal.Expect(mock.NewExpectation(tsrv.mdal.PaymentMethod, pmID1, []dal.QueryOption(nil)).WithReturns((*dal.PaymentMethod)(nil), dal.ErrNotFound))
+				return tsrv
+			}(),
+			Request: &payments.PaymentMethodRequest{
+				PaymentMethodID: pmID1.String(),
+			},
+			Expected:    nil,
+			ExpectedErr: grpcErrorf(codes.NotFound, "PaymentMethod %s Not Found", pmID1),
+		},
+		"Success": {
+			Server: func() *tServer {
+				tsrv := newTestServer(t, &dal.VendorAccount{ID: masterVendorAccountID}, stripeSecretKey)
+				tsrv.mdal.Expect(mock.NewExpectation(tsrv.mdal.PaymentMethod, pmID1, []dal.QueryOption(nil)).WithReturns(
+					&dal.PaymentMethod{
+						ID:                 pmID1,
+						CustomerID:         cID,
+						EntityID:           entityID,
+						Lifecycle:          dal.PaymentMethodLifecycleActive,
+						ChangeState:        dal.PaymentMethodChangeStateNone,
+						StorageType:        dal.PaymentMethodStorageTypeStripe,
+						StorageID:          storageID,
+						Type:               dal.PaymentMethodTypeCard,
+						TokenizationMethod: "TokenizationMethod",
+						Brand:              "Brand",
+						Last4:              "LastFour",
+					}, nil))
+				return tsrv
+			}(),
+			Request: &payments.PaymentMethodRequest{
+				PaymentMethodID: pmID1.String(),
+			},
+			Expected: &payments.PaymentMethodResponse{
+				PaymentMethod: &payments.PaymentMethod{
+					ID:          pmID1.String(),
+					EntityID:    entityID,
+					Lifecycle:   payments.PAYMENT_METHOD_LIFECYCLE_ACTIVE,
+					ChangeState: payments.PAYMENT_METHOD_CHANGE_STATE_NONE,
+					StorageType: payments.PAYMENT_METHOD_STORAGE_TYPE_STRIPE,
+					Type:        payments.PAYMENT_METHOD_TYPE_CARD,
+					PaymentMethodOneof: &payments.PaymentMethod_StripeCard{
+						StripeCard: &payments.StripeCard{
+							ID:                 storageID,
+							TokenizationMethod: "TokenizationMethod",
+							Brand:              "Brand",
+							Last4:              "LastFour",
+						},
+					},
+				},
+			},
+			ExpectedErr: nil,
+		},
+	}
+	for cn, c := range cases {
+		resp, err := c.Server.srv.PaymentMethod(ctx, c.Request)
+		test.EqualsCase(t, cn, c.ExpectedErr, err)
+		test.EqualsCase(t, cn, c.Expected, resp)
+		mock.FinishAll(c.Server.Finishers()...)
+	}
+}
+
 func TestDeletePaymentMethod(t *testing.T) {
 	ctx := context.Background()
 	pmID1, err := dal.NewPaymentMethodID()

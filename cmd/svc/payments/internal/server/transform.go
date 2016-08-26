@@ -84,13 +84,10 @@ func transformVendorAccountChangeStateToDAL(vc payments.VendorAccountChangeState
 	return "", errors.Errorf("Unknown VendorAccountChangeState %s", vc)
 }
 
-func transformPaymentMethodsToResponse(pms []*dal.PaymentMethod) ([]*payments.PaymentMethod, error) {
+func transformPaymentMethodsToResponse(pms []*dal.PaymentMethod) []*payments.PaymentMethod {
 	rpms := make([]*payments.PaymentMethod, len(pms))
 	for i, pm := range pms {
-		rpm, err := transformPaymentMethodToResponse(pm)
-		if err != nil {
-			return nil, errors.Trace(err)
-		}
+		rpm := transformPaymentMethodToResponse(pm)
 		// TODO: For now just assume that the first payment method is the default one since we should be sorting by created time desc
 		// 	We may track a true default in the future.
 		if i == 0 {
@@ -98,10 +95,10 @@ func transformPaymentMethodsToResponse(pms []*dal.PaymentMethod) ([]*payments.Pa
 		}
 		rpms[i] = rpm
 	}
-	return rpms, nil
+	return rpms
 }
 
-func transformPaymentMethodToResponse(pm *dal.PaymentMethod) (*payments.PaymentMethod, error) {
+func transformPaymentMethodToResponse(pm *dal.PaymentMethod) *payments.PaymentMethod {
 	rpm := &payments.PaymentMethod{
 		ID:          pm.ID.String(),
 		EntityID:    pm.EntityID,
@@ -128,7 +125,7 @@ func transformPaymentMethodToResponse(pm *dal.PaymentMethod) (*payments.PaymentM
 	default:
 		golog.Errorf("Unknown payment method storage type %s - id %s - cannot transform fully", pm.StorageType, pm.ID)
 	}
-	return rpm, nil
+	return rpm
 }
 
 func transformPaymentMethodLifecycleToResponse(vl dal.PaymentMethodLifecycle) payments.PaymentMethodLifecycle {
@@ -196,10 +193,7 @@ func transformPaymentToResponse(ctx context.Context, p *dal.Payment, dl dal.DAL,
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-		rPaymentMethod, err = transformPaymentMethodToResponse(paymentMethod)
-		if err != nil {
-			return nil, errors.Trace(err)
-		}
+		rPaymentMethod = transformPaymentMethodToResponse(paymentMethod)
 	}
 
 	return &payments.Payment{

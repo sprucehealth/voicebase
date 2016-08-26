@@ -487,7 +487,7 @@ func (s *server) DeletePaymentMethod(ctx context.Context, req *payments.DeletePa
 	}
 	paymentMethodID, err := dal.ParsePaymentMethodID(req.PaymentMethodID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid PaymentMethodID")
 	}
 	paymentMethod, err := s.dal.PaymentMethod(ctx, paymentMethodID)
 	if errors.Cause(err) == dal.ErrNotFound {
@@ -559,7 +559,7 @@ func (s *server) Payment(ctx context.Context, req *payments.PaymentRequest) (*pa
 	}
 	paymentID, err := dal.ParsePaymentID(req.PaymentID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid PaymentID")
 	}
 	payment, err := s.dal.Payment(ctx, paymentID)
 	if errors.Cause(err) == dal.ErrNotFound {
@@ -582,7 +582,7 @@ func (s *server) SubmitPayment(ctx context.Context, req *payments.SubmitPaymentR
 	}
 	paymentID, err := dal.ParsePaymentID(req.PaymentID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid PaymentID")
 	}
 	// Payments don't have to be associated with a thread_id, but if it is track it.
 	var threadID *string
@@ -626,20 +626,36 @@ func (s *server) SubmitPayment(ctx context.Context, req *payments.SubmitPaymentR
 	}, nil
 }
 
+func (s *server) PaymentMethod(ctx context.Context, req *payments.PaymentMethodRequest) (*payments.PaymentMethodResponse, error) {
+	if req.PaymentMethodID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "PaymentMethodID required")
+	}
+	paymentMethodID, err := dal.ParsePaymentMethodID(req.PaymentMethodID)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid PaymentMethodID")
+	}
+	paymentMethod, err := s.dal.PaymentMethod(ctx, paymentMethodID)
+	if errors.Cause(err) == dal.ErrNotFound {
+		return nil, grpcErrorf(codes.NotFound, "PaymentMethod %s Not Found", req.PaymentMethodID)
+	} else if err != nil {
+		return nil, grpcError(err)
+	}
+
+	return &payments.PaymentMethodResponse{
+		PaymentMethod: transformPaymentMethodToResponse(paymentMethod),
+	}, nil
+}
+
 func (s *server) PaymentMethods(ctx context.Context, req *payments.PaymentMethodsRequest) (*payments.PaymentMethodsResponse, error) {
 	if req.EntityID == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "EntityID required")
 	}
 	paymentMethods, err := s.dal.EntityPaymentMethods(ctx, s.masterVendorAccount.ID, req.EntityID)
 	if err != nil {
-		return nil, grpcError(err)
-	}
-	rPaymentMethods, err := transformPaymentMethodsToResponse(paymentMethods)
-	if err != nil {
-		return nil, grpcError(err)
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid EntityID")
 	}
 	return &payments.PaymentMethodsResponse{
-		PaymentMethods: rPaymentMethods,
+		PaymentMethods: transformPaymentMethodsToResponse(paymentMethods),
 	}, nil
 }
 

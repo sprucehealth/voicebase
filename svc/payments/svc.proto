@@ -223,12 +223,21 @@ message AcceptPaymentResponse {
 	Payment payment = 1;
 }
 
+message PaymentMethodRequest {
+	string payment_method_id = 1 [(gogoproto.customname) = "PaymentMethodID"];
+}
+
+message PaymentMethodResponse {
+	PaymentMethod payment_method = 1;
+}
+
 service Payments {
 	rpc AcceptPayment (AcceptPaymentRequest) returns (AcceptPaymentResponse); 
 	rpc ConnectVendorAccount (ConnectVendorAccountRequest) returns (ConnectVendorAccountResponse);
 	rpc CreatePayment (CreatePaymentRequest) returns (CreatePaymentResponse);
 	rpc CreatePaymentMethod (CreatePaymentMethodRequest) returns (CreatePaymentMethodResponse);
 	rpc DeletePaymentMethod (DeletePaymentMethodRequest) returns (DeletePaymentMethodResponse);
+	rpc PaymentMethod (PaymentMethodRequest) returns (PaymentMethodResponse);
 	rpc PaymentMethods (PaymentMethodsRequest) returns (PaymentMethodsResponse);
 	rpc Payment (PaymentRequest) returns (PaymentResponse);
 	rpc SubmitPayment (SubmitPaymentRequest) returns (SubmitPaymentResponse);

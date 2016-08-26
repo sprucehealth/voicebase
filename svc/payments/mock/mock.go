@@ -112,3 +112,12 @@ func (c *Client) SubmitPayment(ctx context.Context, in *payments.SubmitPaymentRe
 	}
 	return rets[0].(*payments.SubmitPaymentResponse), mock.SafeError(rets[1])
 }
+
+// PaymentMethod implements payments.PaymentsClient
+func (c *Client) PaymentMethod(ctx context.Context, in *payments.PaymentMethodRequest, opts ...grpc.CallOption) (*payments.PaymentMethodResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*payments.PaymentMethodResponse), mock.SafeError(rets[1])
+}
