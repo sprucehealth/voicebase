@@ -6,6 +6,7 @@ import (
 	"flag"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -92,7 +93,7 @@ func (c *updateVerifiedEmailCmd) run(args []string) error {
 			if _, err := c.directoryCli.UpdateContacts(context.Background(), &directory.UpdateContactsRequest{
 				EntityID: entity.ID,
 				Contacts: entity.Contacts,
-			}); err != nil {
+			}); err != nil && grpc.Code(err) != codes.NotFound && !strings.Contains(err.Error(), "was not found") {
 				return errors.Errorf("Unable to update contact for entity %s: %s", entity.ID, err)
 			}
 			golog.Infof("Updated contact for entity %s", entity.ID)
