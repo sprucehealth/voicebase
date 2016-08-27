@@ -30,6 +30,7 @@ const (
 	ErrTypeNotFound         ErrorType = "NOT_FOUND"
 	ErrTypeUnknown          ErrorType = "UNKNOWN"
 	ErrTypeNotSupported     ErrorType = "NOT_SUPPORTED"
+	ErrTypeInputError       ErrorType = "INPUT_ERROR"
 )
 
 // ErrNotAuthenticated returns the standard not authenticated user error

@@ -148,7 +148,7 @@ func (sw *stripeWrapper) Token(ctx context.Context, tParams *stripe.TokenParams,
 	return token, nil
 }
 
-// ErrType converts a generic error into a well formed stripe api error
+// ErrType converts a generic error into a well formed stripe api error type
 func ErrType(err error) stripe.ErrorType {
 	if err == nil {
 		return stripe.ErrorType("")
@@ -159,7 +159,7 @@ func ErrType(err error) stripe.ErrorType {
 	return stripe.ErrorType("")
 }
 
-// ErrCode converts a generic error into a well formed stripe api error
+// ErrCode converts a generic error into a well formed stripe api error code
 func ErrCode(err error) stripe.ErrorCode {
 	if err == nil {
 		return stripe.ErrorCode("")
@@ -168,6 +168,17 @@ func ErrCode(err error) stripe.ErrorCode {
 		return stripeErr.Code
 	}
 	return stripe.ErrorCode("")
+}
+
+// ErrMessage converts a generic error into a well formed stripe api error message
+func ErrMessage(err error) string {
+	if err == nil {
+		return ""
+	}
+	if stripeErr, ok := err.(*stripe.Error); ok {
+		return stripeErr.Msg
+	}
+	return ""
 }
 
 func (sw *stripeWrapper) idempotencyKey(apiName string, req interface{}) (string, error) {

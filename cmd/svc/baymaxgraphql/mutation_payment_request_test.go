@@ -12,8 +12,10 @@ import (
 	ramock "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess/mock"
 	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/libs/bml"
+	"github.com/sprucehealth/backend/libs/caremessenger/deeplink"
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
+	"github.com/sprucehealth/backend/libs/textutil"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/payments"
@@ -34,6 +36,7 @@ func TestAcceptPaymentRequest(t *testing.T) {
 	paymentMethodID := "paymentMethodID"
 	threadID := "threadID"
 	entityID := "entityID"
+	organizationID := "organizationID"
 	cases := map[string]struct {
 		In          acceptPaymentRequestInput
 		TestParams  *testAcceptPaymentRequestParams
@@ -48,6 +51,17 @@ func TestAcceptPaymentRequest(t *testing.T) {
 			},
 			TestParams: func() *testAcceptPaymentRequestParams {
 				mra := ramock.New(t)
+				mra.Expect(mock.NewExpectation(mra.Payment, &payments.PaymentRequest{
+					PaymentID: paymentRequestID,
+				}).WithReturns(&payments.PaymentResponse{
+					Payment: &payments.Payment{
+						ThreadID: threadID,
+					},
+				}, nil))
+				mra.Expect(mock.NewExpectation(mra.Thread, threadID, "").WithReturns(&threading.Thread{
+					ID:             threadID,
+					OrganizationID: organizationID,
+				}, nil))
 				mra.Expect(mock.NewExpectation(mra.AcceptPayment, &payments.AcceptPaymentRequest{
 					PaymentID:       paymentRequestID,
 					PaymentMethodID: paymentMethodID,
@@ -94,7 +108,6 @@ func TestAcceptPaymentRequest(t *testing.T) {
 						PaymentMethod: transformPaymentMethodToResponse(&payments.PaymentMethod{
 							EntityID: entityID,
 						}),
-						Status: "PAYMENT_LIFECYCLE_UNKNOWN|PAYMENT_CHANGE_STATE_UNKNOWN",
 					},
 				}
 			}(),
@@ -107,6 +120,18 @@ func TestAcceptPaymentRequest(t *testing.T) {
 			},
 			TestParams: func() *testAcceptPaymentRequestParams {
 				mra := ramock.New(t)
+				mra.Expect(mock.NewExpectation(mra.Payment, &payments.PaymentRequest{
+					PaymentID: paymentRequestID,
+				}).WithReturns(&payments.PaymentResponse{
+					Payment: &payments.Payment{
+						ID:       paymentRequestID,
+						ThreadID: threadID,
+					},
+				}, nil))
+				mra.Expect(mock.NewExpectation(mra.Thread, threadID, "").WithReturns(&threading.Thread{
+					ID:             threadID,
+					OrganizationID: organizationID,
+				}, nil))
 				mra.Expect(mock.NewExpectation(mra.AcceptPayment, &payments.AcceptPaymentRequest{
 					PaymentID:       paymentRequestID,
 					PaymentMethodID: paymentMethodID,
@@ -122,7 +147,11 @@ func TestAcceptPaymentRequest(t *testing.T) {
 					},
 				}, nil))
 				var title bml.BML
-				title = append(title, fmt.Sprintf("Completed Payment: $%.2f", float64(234)/float64(100)))
+				title = append(title, "Completed Payment: ")
+				title = append(title, &bml.Anchor{
+					HREF: deeplink.PaymentURL("webDomain", organizationID, threadID, paymentRequestID),
+					Text: "$" + textutil.FormatCurrencyAmount(fmt.Sprintf("%.2f", float64(234)/float64(100))),
+				})
 				titleText, err := title.Format()
 				test.OK(t, err)
 				summary, err := title.PlainText()
@@ -149,6 +178,7 @@ func TestAcceptPaymentRequest(t *testing.T) {
 								raccess.ParamKey: mra,
 								"service": &service{
 									staticURLPrefix: "staticURLPrefix",
+									webDomain:       "webDomain",
 								},
 							},
 						},
@@ -170,7 +200,7 @@ func TestAcceptPaymentRequest(t *testing.T) {
 							EntityID: entityID,
 						}),
 						AmountInCents: 234,
-						Status:        "PAYMENT_LIFECYCLE_UNKNOWN|PAYMENT_CHANGE_STATE_UNKNOWN",
+						Status:        "",
 					},
 				}
 			}(),

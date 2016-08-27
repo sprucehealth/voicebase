@@ -96,7 +96,6 @@ func TestPaymentRequestLookup(t *testing.T) {
 					test.OK(t, err)
 					return ent
 				}(),
-				Status: paymentStatus(payments.PAYMENT_LIFECYCLE_SUBMITTED, payments.PAYMENT_CHANGE_STATE_NONE),
 				PaymentMethod: transformPaymentMethodToResponse(&payments.PaymentMethod{
 					ID:          "ID",
 					EntityID:    customerEntityID,

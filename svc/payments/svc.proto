@@ -117,6 +117,8 @@ message Payment {
 	uint64 created = 8;
 	uint64 modified = 9;
 	string thread_id = 10 [(gogoproto.customname) = "ThreadID"];
+	string processor_transaction_id = 11 [(gogoproto.customname) = "ProcessorTransactionID"];
+	string processor_status_message = 12;
 }
 
 message StripeAccountConnectRequest {

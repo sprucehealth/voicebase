@@ -9,24 +9,29 @@ import (
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/worker"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/threading"
 )
 
 // Workers collection of all workers used by the Payments system
 type Workers struct {
 	dal             dal.DAL
+	webDomain       string
 	stripeOAuth     oauth.StripeOAuth
 	stripeClient    stripe.IdempotentStripeClient
 	directoryClient directory.DirectoryClient
+	threadingClient threading.ThreadsClient
 	workers         []worker.Worker
 }
 
 // New initializes a collection of all workers used by the Payments system
-func New(dl dal.DAL, directoryClient directory.DirectoryClient, stripeSecretKey, stripeClientID string) *Workers {
+func New(dl dal.DAL, directoryClient directory.DirectoryClient, threadingClient threading.ThreadsClient, stripeSecretKey, stripeClientID, webDomain string) *Workers {
 	w := &Workers{
 		dal:             dl,
 		stripeOAuth:     oauth.NewStripe(stripeSecretKey, stripeClientID),
 		stripeClient:    stripe.NewClient(stripeSecretKey),
+		webDomain:       webDomain,
 		directoryClient: directoryClient,
+		threadingClient: threadingClient,
 	}
 	w.workers = append(w.workers, worker.NewRepeat(time.Second*10, w.processVendorAccountPendingDisconnected))
 	// TODO: We should stagger this query relative to the number of processes. V1 just poll every 3 seconds

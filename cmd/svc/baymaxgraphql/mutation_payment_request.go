@@ -8,7 +8,9 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/bml"
+	"github.com/sprucehealth/backend/libs/caremessenger/deeplink"
 	"github.com/sprucehealth/backend/libs/gqldecode"
+	"github.com/sprucehealth/backend/libs/textutil"
 	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
@@ -202,6 +204,25 @@ func acceptPaymentRequest(p graphql.ResolveParams, in acceptPaymentRequestInput)
 	svc := serviceFromParams(p)
 	ctx := p.Context
 	ram := raccess.ResourceAccess(p)
+	paymentResp, err := ram.Payment(ctx, &payments.PaymentRequest{
+		PaymentID: in.PaymentRequestID,
+	})
+	if grpc.Code(err) == codes.NotFound {
+		return &acceptPaymentRequestOutput{
+			ClientMutationID: in.ClientMutationID,
+			Success:          false,
+			ErrorCode:        acceptPaymentRequestErrorCodeNotFound,
+			ErrorMessage:     fmt.Sprintf("Payment %s Not Found", in.PaymentRequestID),
+		}, nil
+	} else if err != nil {
+		return nil, errors.InternalError(p.Context, err)
+	}
+
+	threadResp, err := ram.Thread(ctx, paymentResp.Payment.ThreadID, "")
+	if err != nil {
+		return nil, errors.InternalError(p.Context, err)
+	}
+
 	resp, err := ram.AcceptPayment(ctx, &payments.AcceptPaymentRequest{
 		PaymentID:       in.PaymentRequestID,
 		PaymentMethodID: in.PaymentMethodID,
@@ -219,7 +240,11 @@ func acceptPaymentRequest(p graphql.ResolveParams, in acceptPaymentRequestInput)
 
 	if resp.Payment.ThreadID != "" {
 		var title bml.BML
-		title = append(title, fmt.Sprintf("Completed Payment: $%.2f", float64(resp.Payment.Amount)/float64(100)))
+		title = append(title, "Completed Payment: ")
+		title = append(title, &bml.Anchor{
+			HREF: deeplink.PaymentURL(svc.webDomain, threadResp.OrganizationID, threadResp.ID, paymentResp.Payment.ID),
+			Text: "$" + textutil.FormatCurrencyAmount(fmt.Sprintf("%.2f", float64(resp.Payment.Amount)/float64(100))),
+		})
 		titleText, err := title.Format()
 		if err != nil {
 			return nil, errors.InternalError(p.Context, err)

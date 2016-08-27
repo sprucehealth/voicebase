@@ -133,17 +133,16 @@ var addCardPaymentMethodInputType = graphql.NewInputObject(
 	},
 )
 
-// TODO: This currently serves no purpose, but graphql compalins if it's empty
 const (
-	addCardPaymentMethodErrorCodeMissingInfo = "MISSING_INFO"
+	addCardPaymentMethodErrorPaymentMethodError = "PAYMENT_METHOD_ERROR"
 )
 
 var addCardPaymentMethodErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
 	Name: "AddCardPaymentMethodErrorCode",
 	Values: graphql.EnumValueConfigMap{
-		addCardPaymentMethodErrorCodeMissingInfo: &graphql.EnumValueConfig{
-			Value:       addCardPaymentMethodErrorCodeMissingInfo,
-			Description: "There is missing information",
+		addCardPaymentMethodErrorPaymentMethodError: &graphql.EnumValueConfig{
+			Value:       addCardPaymentMethodErrorPaymentMethodError,
+			Description: "There is an error associated with the payment method being added.",
 		},
 	},
 })
@@ -211,7 +210,9 @@ func addCardPaymentMethod(p graphql.ResolveParams, in addCardPaymentMethodInput)
 		return nil, gqlerrors.FormatError(fmt.Errorf("paymentProcessor %s is unsupported", in.PaymentProcessor))
 	}
 	resp, err := ram.CreatePaymentMethod(ctx, req)
-	if err != nil {
+	if grpc.Code(err) == payments.PaymentMethodError {
+		return nil, errors.UserError(ctx, errors.ErrTypeInputError, grpc.ErrorDesc(err))
+	} else if err != nil {
 		return nil, errors.InternalError(p.Context, err)
 	}
 	return &addCardPaymentMethodOutput{

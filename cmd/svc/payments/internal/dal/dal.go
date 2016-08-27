@@ -912,16 +912,18 @@ func (m *CustomerUpdate) Validate() error {
 
 // Payment represents a payment record
 type Payment struct {
-	Created         time.Time
-	Modified        time.Time
-	ID              PaymentID
-	ThreadID        string
-	Currency        string
-	Amount          uint64
-	ChangeState     PaymentChangeState
-	VendorAccountID VendorAccountID
-	PaymentMethodID PaymentMethodID
-	Lifecycle       PaymentLifecycle
+	Created                time.Time
+	Modified               time.Time
+	ID                     PaymentID
+	ThreadID               string
+	Currency               string
+	Amount                 uint64
+	ChangeState            PaymentChangeState
+	VendorAccountID        VendorAccountID
+	PaymentMethodID        PaymentMethodID
+	Lifecycle              PaymentLifecycle
+	ProcessorTransactionID string
+	ProcessorStatusMessage string
 }
 
 // Validate asserts that the object is well formed
@@ -946,10 +948,12 @@ func (m *Payment) Validate() error {
 
 // PaymentUpdate represents the mutable aspects of a payment record
 type PaymentUpdate struct {
-	Lifecycle       PaymentLifecycle
-	ChangeState     PaymentChangeState
-	PaymentMethodID *PaymentMethodID
-	ThreadID        *string
+	Lifecycle              PaymentLifecycle
+	ChangeState            PaymentChangeState
+	PaymentMethodID        *PaymentMethodID
+	ThreadID               *string
+	ProcessorTransactionID *string
+	ProcessorStatusMessage *string
 }
 
 // Validate asserts that the object is well formed
@@ -1318,8 +1322,8 @@ func (d *dal) InsertPayment(ctx context.Context, model *Payment) (PaymentID, err
 	}
 	_, err := d.db.Exec(
 		`INSERT INTO payment
-          (vendor_account_id, currency, amount, change_state, id, payment_method_id, lifecycle, thread_id)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, model.VendorAccountID, model.Currency, model.Amount, model.ChangeState, model.ID, model.PaymentMethodID, model.Lifecycle, model.ThreadID)
+          (vendor_account_id, currency, amount, change_state, id, payment_method_id, lifecycle, thread_id, processor_transaction_id, processor_status_message)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, model.VendorAccountID, model.Currency, model.Amount, model.ChangeState, model.ID, model.PaymentMethodID, model.Lifecycle, model.ThreadID, model.ProcessorTransactionID, model.ProcessorStatusMessage)
 	if err != nil {
 		return EmptyPaymentID(), errors.Trace(err)
 	}
@@ -1376,6 +1380,12 @@ func (d *dal) UpdatePayment(ctx context.Context, id PaymentID, update *PaymentUp
 	}
 	if update.ThreadID != nil {
 		args.Append("thread_id", update.ThreadID)
+	}
+	if update.ProcessorTransactionID != nil {
+		args.Append("processor_transaction_id", update.ProcessorTransactionID)
+	}
+	if update.ProcessorStatusMessage != nil {
+		args.Append("processor_status_message", update.ProcessorStatusMessage)
 	}
 	if args.IsEmpty() {
 		return 0, nil
@@ -1454,7 +1464,7 @@ func scanPaymentMethod(row dbutil.Scanner, contextFormat string, args ...interfa
 }
 
 const selectPayment = `
-    SELECT payment.id, payment.payment_method_id, payment.lifecycle, payment.vendor_account_id, payment.currency, payment.amount, payment.change_state, payment.created, payment.modified, payment.thread_id
+    SELECT payment.id, payment.payment_method_id, payment.lifecycle, payment.vendor_account_id, payment.currency, payment.amount, payment.change_state, payment.created, payment.modified, payment.thread_id, payment.processor_transaction_id, payment.processor_status_message
       FROM payment`
 
 func scanPayment(row dbutil.Scanner, contextFormat string, args ...interface{}) (*Payment, error) {
@@ -1463,7 +1473,7 @@ func scanPayment(row dbutil.Scanner, contextFormat string, args ...interface{}) 
 	m.PaymentMethodID = EmptyPaymentMethodID()
 	m.VendorAccountID = EmptyVendorAccountID()
 
-	err := row.Scan(&m.ID, &m.PaymentMethodID, &m.Lifecycle, &m.VendorAccountID, &m.Currency, &m.Amount, &m.ChangeState, &m.Created, &m.Modified, &m.ThreadID)
+	err := row.Scan(&m.ID, &m.PaymentMethodID, &m.Lifecycle, &m.VendorAccountID, &m.Currency, &m.Amount, &m.ChangeState, &m.Created, &m.Modified, &m.ThreadID, &m.ProcessorTransactionID, &m.ProcessorStatusMessage)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(errors.Annotate(ErrNotFound, "No rows found - payment - Context: "+fmt.Sprintf(contextFormat, args...)))
 	}

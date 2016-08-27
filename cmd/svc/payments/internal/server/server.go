@@ -218,7 +218,9 @@ func (s *server) CreatePaymentMethod(ctx context.Context, req *payments.CreatePa
 		return nil, grpcErrorf(codes.InvalidArgument, "Unhandled payment method storage type %s", req.StorageType)
 	}
 	_, err = AddPaymentMethod(ctx, s.masterVendorAccount, customer, req.Type, &LiteralTokenSource{T: token}, s.dal, s.stripeClient)
-	if err != nil {
+	if IsPaymentMethodError(errors.Cause(err)) {
+		return nil, grpcErrorf(payments.PaymentMethodError, PaymentMethodErrorMesssage(errors.Cause(err)))
+	} else if err != nil {
 		return nil, grpcError(err)
 	}
 	resp, err := s.PaymentMethods(ctx, &payments.PaymentMethodsRequest{EntityID: req.EntityID})

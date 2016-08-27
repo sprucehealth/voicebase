@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
@@ -97,16 +95,11 @@ func transformPaymentToResponse(ctx context.Context, p *payments.Payment, ram ra
 		Currency:         p.Currency,
 		AmountInCents:    p.Amount,
 		// TODO: Figure out what we want this text to be
-		Status:          paymentStatus(p.Lifecycle, p.ChangeState),
+		Status:          p.ProcessorStatusMessage,
 		ProcessingError: p.Lifecycle == payments.PAYMENT_LIFECYCLE_ERROR_PROCESSING,
 		// TODO: The source of these two timestamps will change
 		RequestedTimestamp: p.Created,
 		CompletedTimestamp: completedTimestamp,
-		AllowPay:           account.Type == auth.AccountType_PATIENT,
+		AllowPay:           account.Type == auth.AccountType_PATIENT && p.Lifecycle != payments.PAYMENT_LIFECYCLE_ERROR_PROCESSING,
 	}, nil
-}
-
-func paymentStatus(l payments.PaymentLifecycle, cs payments.PaymentChangeState) string {
-	// TODO: Figure out what we want this text to be
-	return fmt.Sprintf("%s|%s", l, cs)
 }

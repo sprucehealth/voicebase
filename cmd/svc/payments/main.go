@@ -14,6 +14,7 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/payments"
+	"github.com/sprucehealth/backend/svc/threading"
 )
 
 var (
@@ -30,6 +31,10 @@ var (
 
 	// Services
 	flagDirectoryAddr = flag.String("directory_addr", "_directory._tcp.service", "host:port of directory service")
+	flagThreadingAddr = flag.String("threading_addr", "_threading._tcp.service", "host:port of directory service")
+
+	// Baymax
+	flagWebDomain = flag.String("web_domain", "", "The domain of the web app")
 
 	// DB
 	flagDBHost     = flag.String("db_host", "localhost", "the host at which we should attempt to connect to the database")
@@ -83,6 +88,12 @@ func main() {
 	}
 	directoryClient := directory.NewDirectoryClient(conn)
 
+	conn, err = boot.DialGRPC("payments", *flagThreadingAddr)
+	if err != nil {
+		golog.Fatalf("Unable to connect to threading service: %s", err)
+	}
+	threadingClient := threading.NewThreadsClient(conn)
+
 	stripeClient := stripe.NewClient(*flagStripeSecretKey)
 	dl := dal.New(db)
 	pSrv, err := server.New(dl, directoryClient, *flagMasterVendorAccountID, stripeClient, *flagStripeSecretKey)
@@ -97,7 +108,7 @@ func main() {
 	go s.Serve(lis)
 
 	golog.Infof("Starting Payments Workers...")
-	works := workers.New(dl, directoryClient, *flagStripeSecretKey, *flagStripeClientID)
+	works := workers.New(dl, directoryClient, threadingClient, *flagStripeSecretKey, *flagStripeClientID, *flagWebDomain)
 	works.Start()
 	defer works.Stop(time.Second * 20)
 

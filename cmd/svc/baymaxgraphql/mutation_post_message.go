@@ -18,6 +18,7 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/gqldecode"
 	"github.com/sprucehealth/backend/libs/phone"
+	"github.com/sprucehealth/backend/libs/textutil"
 	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/layout"
@@ -434,7 +435,7 @@ var postMessageMutation = &graphql.Field{
 				attachment = &threading.Attachment{
 					Type: mAttachmentType,
 					// TODO: This currently assumed everything is USD - This also freezes the title. If the data changes the title won't.
-					Title: fmt.Sprintf("Payment Amount: $%.2f", float64(resp.Payment.Amount)/float64(100)),
+					Title: fmt.Sprintf("$%s", textutil.FormatCurrencyAmount(fmt.Sprintf("%.2f", float64(resp.Payment.Amount)/float64(100)))),
 					// TODO: Deep link to payment
 					Data: &threading.Attachment_PaymentRequest{
 						PaymentRequest: &threading.PaymentRequestAttachment{
@@ -479,6 +480,10 @@ var postMessageMutation = &graphql.Field{
 				}
 				if a.Type == threading.ATTACHMENT_TYPE_CARE_PLAN {
 					title = append(title, "Shared a care plan:")
+					break
+				}
+				if a.Type == threading.ATTACHMENT_TYPE_PAYMENT_REQUEST {
+					title = append(title, "Requested a payment:")
 					break
 				}
 			}
