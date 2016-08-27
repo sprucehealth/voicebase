@@ -15,6 +15,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/source/hint"
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/worker"
 	psettings "github.com/sprucehealth/backend/cmd/svc/patientsync/settings"
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -94,6 +95,7 @@ func main() {
 		golog.Fatalf("Hint PartnerAPIKey not configured")
 	}
 	hintlib.Key = *flagHintPartnerAPIKey
+	hintlib.Testing = !environment.IsProd()
 
 	eSQS, err := awsutil.NewEncryptedSQS(*flagKMSKeyArn, kms.New(awsSession), sqs.New(awsSession))
 	if err != nil {
