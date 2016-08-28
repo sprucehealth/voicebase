@@ -31,25 +31,6 @@ func EntityInOrgForAccountID(ctx context.Context, ram ResourceAccessor, req *dir
 	return nil, errors.Errorf("Did not find entity for account %s and org %s", req.GetExternalID(), orgID)
 }
 
-// EntityForAccountID returns the entity for an account.
-// TODO: this assumes there's only one active entity per account which is currently always the case
-func EntityForAccountID(ctx context.Context, ram ResourceAccessor, accountID string) (*directory.Entity, error) {
-	ent, err := Entity(ctx, ram, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
-			ExternalID: accountID,
-		},
-		RequestedInformation: &directory.RequestedInformation{
-			Depth:             0,
-			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
-		},
-		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
-		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL, directory.EntityType_PATIENT},
-		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
-	})
-	return ent, errors.Trace(err)
-}
-
 // Entity returns a single expected entity for the directory request.
 func Entity(ctx context.Context, ram ResourceAccessor, req *directory.LookupEntitiesRequest) (*directory.Entity, error) {
 	return entity(ctx, ram, req)

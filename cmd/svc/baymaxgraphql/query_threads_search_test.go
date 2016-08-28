@@ -65,7 +65,7 @@ func TestThreadsSearch(t *testing.T) {
 
 	res := g.query(ctx, `
 		query _ {
-			threadsSearch(query: "is:unread Zulu") {
+			threadsSearch(organizationID: "org", query: "is:unread Zulu") {
 				total
 				totalText
 				endOfResultsText
