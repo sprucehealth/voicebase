@@ -21,6 +21,7 @@ import (
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/layout"
+	"github.com/sprucehealth/backend/svc/patientsync"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
 )
@@ -40,6 +41,7 @@ type config struct {
 	ThreadingAddr   string
 	LayoutAddr      string
 	InviteAddr      string
+	PatientSyncAddr string
 	InviteAPIDomain string
 	Env             string
 }
@@ -98,6 +100,14 @@ func (c *config) inviteClient() (invite.InviteClient, error) {
 		return nil, fmt.Errorf("Unable to connect to invite service: %s", err)
 	}
 	return invite.NewInviteClient(conn), nil
+}
+
+func (c *config) patientSyncClient() (patientsync.PatientSyncClient, error) {
+	conn, err := boot.DialGRPC("baymaxadmin", c.PatientSyncAddr)
+	if err != nil {
+		return nil, fmt.Errorf("Unable to connect to patientsync service: %s", err)
+	}
+	return patientsync.NewPatientSyncClient(conn), nil
 }
 
 func (c *config) directoryDB() (*sql.DB, error) {
@@ -176,6 +186,7 @@ var commands = map[string]commandNew{
 	"enablepackage":       newEnablePackageCmd,
 	"blocknumber":         newBlockNumberCmd,
 	"updateverifiedemail": newUpdateVerifiedEmailCmd,
+	"initiatesync":        newInitiateSyncCmd,
 }
 
 func main() {

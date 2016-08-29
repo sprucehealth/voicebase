@@ -5,12 +5,14 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/sync"
 	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/go-hint"
 )
 
 // DoInitialSync is responsible for paginating through all patients in the existing account for the practice
 // and publishing sync events to create corresponding conversations in the spruce account.
 func DoInitialSync(dl dal.DAL, orgID string, syncEventsQueueURL string, sqsAPI sqsiface.SQSAPI) error {
+	golog.Debugf("Attempting initial sync for %s", orgID)
 	// get sync config for orgID
 	syncConfig, err := dl.SyncConfigForOrg(orgID)
 	if err != nil {

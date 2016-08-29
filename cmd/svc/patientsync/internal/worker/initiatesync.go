@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/sync"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/worker"
 )
 
@@ -48,6 +49,7 @@ func (s *initiateSync) Shutdown() error {
 }
 
 func (s *initiateSync) processInitiateSync(ctx context.Context, data string) error {
+	golog.Debugf("processing incoming message to initiate sync")
 	var initiate sync.Initiate
 	if err := initiate.Unmarshal([]byte(data)); err != nil {
 		return errors.Trace(err)
