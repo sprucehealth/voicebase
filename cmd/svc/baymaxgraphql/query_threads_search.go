@@ -17,13 +17,15 @@ import (
 const maxThreadSearchResults = 500
 
 type threadsSearchInput struct {
-	Query string `gql:"query"`
+	OrganizationID string `gql:"organizationID"`
+	Query          string `gql:"query"`
 }
 
 var threadsSearchQuery = &graphql.Field{
 	Type: graphql.NewNonNull(threadConnectionType.ConnectionType),
 	Args: graphql.FieldConfigArgument{
-		"query": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+		"organizationID": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+		"query":          &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 	},
 	Resolve: apiaccess.Authenticated(func(p graphql.ResolveParams) (interface{}, error) {
 		ctx := p.Context
@@ -44,10 +46,19 @@ var threadsSearchQuery = &graphql.Field{
 			return nil, gqlerrors.FormatError(errors.New("Your query is invalid"))
 		}
 
-		ent, err := raccess.EntityForAccountID(ctx, ram, acc.ID)
-		if err != nil {
-			return nil, errors.InternalError(ctx, err)
-		}
+		ent, err := raccess.EntityInOrgForAccountID(ctx, ram, &directory.LookupEntitiesRequest{
+			LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+			LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+				ExternalID: acc.ID,
+			},
+			RequestedInformation: &directory.RequestedInformation{
+				Depth:             0,
+				EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
+			},
+			Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+			RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL, directory.EntityType_PATIENT},
+			ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+		}, in.OrganizationID)
 		var org *directory.Entity
 		for _, em := range ent.Memberships {
 			if em.Type == directory.EntityType_ORGANIZATION {
