@@ -85,15 +85,17 @@ func transformVendorAccountChangeStateToDAL(vc payments.VendorAccountChangeState
 }
 
 func transformPaymentMethodsToResponse(pms []*dal.PaymentMethod) []*payments.PaymentMethod {
+	// Track if we ever found a default. If we don't then just pick one
+	var defaultFound bool
 	rpms := make([]*payments.PaymentMethod, len(pms))
 	for i, pm := range pms {
-		rpm := transformPaymentMethodToResponse(pm)
-		// TODO: For now just assume that the first payment method is the default one since we should be sorting by created time desc
-		// 	We may track a true default in the future.
-		if i == 0 {
-			rpm.Default = true
+		rpms[i] = transformPaymentMethodToResponse(pm)
+		if rpms[i].Default && !defaultFound {
+			defaultFound = true
 		}
-		rpms[i] = rpm
+	}
+	if len(rpms) > 0 && !defaultFound {
+		rpms[0].Default = true
 	}
 	return rpms
 }
@@ -106,6 +108,7 @@ func transformPaymentMethodToResponse(pm *dal.PaymentMethod) *payments.PaymentMe
 		ChangeState: transformPaymentMethodChangeStateToResponse(pm.ChangeState),
 		StorageType: transformPaymentMethodStorageTypeToResponse(pm.StorageType),
 		Type:        TransformPaymentMethodTypeToResponse(pm.Type),
+		Default:     pm.Default,
 	}
 	switch pm.StorageType {
 	case dal.PaymentMethodStorageTypeStripe:

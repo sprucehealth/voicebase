@@ -10,6 +10,7 @@ import (
 	istripe "github.com/sprucehealth/backend/cmd/svc/payments/internal/stripe"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/backend/svc/settings"
@@ -121,6 +122,12 @@ func (s *server) AcceptPayment(ctx context.Context, req *payments.AcceptPaymentR
 		} else if err != nil {
 			return grpcError(err)
 		}
+
+		// Set the default payment method to the one we're accepting this payment with
+		if err := s.setDefaultPaymentMethod(ctx, dl, paymentMethod.ID, paymentMethod.EntityID); err != nil {
+			return errors.Trace(err)
+		}
+
 		// If nothing is changing move on
 		if payment.ChangeState == dal.PaymentChangeStateNone &&
 			payment.Lifecycle == dal.PaymentLifecycleAccepted &&
@@ -128,6 +135,7 @@ func (s *server) AcceptPayment(ctx context.Context, req *payments.AcceptPaymentR
 			golog.Infof("Payment %s is already in the accepted state with payment method %s ignoring double accept", payment.ID, paymentMethod.ID)
 			return nil
 		}
+
 		// Acceptable States For Update
 		// 1. If we are just changing the payment method
 		// 2. We are accepting for the first time (NONE, SUBMITTED)
@@ -217,10 +225,18 @@ func (s *server) CreatePaymentMethod(ctx context.Context, req *payments.CreatePa
 	default:
 		return nil, grpcErrorf(codes.InvalidArgument, "Unhandled payment method storage type %s", req.StorageType)
 	}
-	_, err = AddPaymentMethod(ctx, s.masterVendorAccount, customer, req.Type, &LiteralTokenSource{T: token}, s.dal, s.stripeClient)
-	if IsPaymentMethodError(errors.Cause(err)) {
-		return nil, grpcErrorf(payments.PaymentMethodError, PaymentMethodErrorMesssage(errors.Cause(err)))
-	} else if err != nil {
+	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
+		paymentMethod, err := AddPaymentMethod(ctx, s.masterVendorAccount, customer, req.Type, &LiteralTokenSource{T: token}, s.dal, s.stripeClient)
+		if IsPaymentMethodError(errors.Cause(err)) {
+			return grpcErrorf(payments.PaymentMethodError, PaymentMethodErrorMesssage(errors.Cause(err)))
+		} else if err != nil {
+			return errors.Trace(err)
+		}
+		if err := s.setDefaultPaymentMethod(ctx, dl, paymentMethod.ID, req.EntityID); err != nil {
+			return errors.Trace(err)
+		}
+		return nil
+	}); err != nil {
 		return nil, grpcError(err)
 	}
 	resp, err := s.PaymentMethods(ctx, &payments.PaymentMethodsRequest{EntityID: req.EntityID})
@@ -497,7 +513,24 @@ func (s *server) DeletePaymentMethod(ctx context.Context, req *payments.DeletePa
 	} else if err != nil {
 		return nil, grpcError(err)
 	}
-	if err := s.deletePaymentMethod(ctx, paymentMethod.ID, s.dal); err != nil {
+	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
+		if err := s.deletePaymentMethod(ctx, paymentMethod.ID, dl); err != nil {
+			return grpcError(err)
+		}
+		if paymentMethod.Default {
+			// Payment methods are returned sorted by order created desc, so we should set the first payment method returned as the default
+			paymentMethods, err := dl.EntityPaymentMethods(ctx, paymentMethod.VendorAccountID, paymentMethod.EntityID)
+			if err != nil {
+				return grpcError(err)
+			}
+			if len(paymentMethods) != 0 {
+				if err := s.setDefaultPaymentMethod(ctx, dl, paymentMethods[0].ID, paymentMethod.EntityID); err != nil {
+					return grpcError(err)
+				}
+			}
+		}
+		return nil
+	}); err != nil {
 		return nil, grpcError(err)
 	}
 	resp, err := s.PaymentMethods(ctx, &payments.PaymentMethodsRequest{EntityID: paymentMethod.EntityID})
@@ -712,4 +745,42 @@ func (s *server) VendorAccounts(ctx context.Context, req *payments.VendorAccount
 	return &payments.VendorAccountsResponse{
 		VendorAccounts: transformVendorAccountsToResponse(vendorAccounts),
 	}, nil
+}
+
+func (s *server) setDefaultPaymentMethod(ctx context.Context, dl dal.DAL, paymentMethodID dal.PaymentMethodID, entityID string) error {
+	err := dl.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
+		// TODO: Could perhaps optimize this read out.
+		paymentMethod, err := dl.PaymentMethod(ctx, paymentMethodID)
+		if err != nil {
+			return errors.Trace(err)
+		}
+		if paymentMethod.EntityID != entityID {
+			return errors.Errorf("Entity %s does not own payment method %s - cannot set as default", entityID, paymentMethodID)
+		}
+		if paymentMethod.VendorAccountID != s.masterVendorAccount.ID {
+			return errors.Errorf("Payment method %s is not owned by the master account - cannot set as default", paymentMethodID)
+		}
+		paymentMethods, err := dl.EntityPaymentMethods(ctx, s.masterVendorAccount.ID, entityID, dal.ForUpdate)
+		if err != nil {
+			return errors.Trace(err)
+		}
+		for _, pm := range paymentMethods {
+			if pm.Default {
+				if _, err := dl.UpdatePaymentMethod(ctx, paymentMethodID, &dal.PaymentMethodUpdate{
+					Lifecycle:   pm.Lifecycle,
+					ChangeState: pm.ChangeState,
+					Default:     ptr.Bool(false),
+				}); err != nil {
+					return errors.Trace(err)
+				}
+			}
+		}
+		_, err = dl.UpdatePaymentMethod(ctx, paymentMethodID, &dal.PaymentMethodUpdate{
+			Lifecycle:   paymentMethod.Lifecycle,
+			ChangeState: paymentMethod.ChangeState,
+			Default:     ptr.Bool(true),
+		})
+		return errors.Trace(err)
+	})
+	return errors.Trace(err)
 }
