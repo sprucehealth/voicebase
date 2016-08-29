@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"encoding/base64"
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
@@ -50,8 +51,14 @@ func (s *initiateSync) Shutdown() error {
 
 func (s *initiateSync) processInitiateSync(ctx context.Context, data string) error {
 	golog.Debugf("processing incoming message to initiate sync")
+
+	decodedData, err := base64.StdEncoding.DecodeString(data)
+	if err != nil {
+		return errors.Trace(err)
+	}
+
 	var initiate sync.Initiate
-	if err := initiate.Unmarshal([]byte(data)); err != nil {
+	if err := initiate.Unmarshal([]byte(decodedData)); err != nil {
 		return errors.Trace(err)
 	}
 
