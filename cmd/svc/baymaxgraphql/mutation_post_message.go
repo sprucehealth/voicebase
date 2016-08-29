@@ -483,7 +483,7 @@ var postMessageMutation = &graphql.Field{
 					break
 				}
 				if a.Type == threading.ATTACHMENT_TYPE_PAYMENT_REQUEST {
-					title = append(title, "Requested a payment:")
+					title = append(title, "Requested payment:")
 					break
 				}
 			}
