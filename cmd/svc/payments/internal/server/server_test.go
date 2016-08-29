@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/payments/internal/oauth"
 	istripe "github.com/sprucehealth/backend/cmd/svc/payments/internal/stripe"
 	"github.com/sprucehealth/backend/cmd/svc/payments/internal/testutil"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	dmock "github.com/sprucehealth/backend/svc/directory/mock"
@@ -337,6 +338,7 @@ func TestPaymentMethods(t *testing.T) {
 							TokenizationMethod: "TokenizationMethod",
 							Brand:              "Brand",
 							Last4:              "LastFour",
+							Default:            true,
 						},
 						{
 							ID:                 pmID2,
@@ -500,6 +502,8 @@ func TestDeletePaymentMethod(t *testing.T) {
 	test.OK(t, err)
 	pmID2, err := dal.NewPaymentMethodID()
 	test.OK(t, err)
+	newDefaultPMID, err := dal.NewPaymentMethodID()
+	test.OK(t, err)
 	cID, err := dal.NewCustomerID()
 	test.OK(t, err)
 	masterVendorAccountID, err := dal.NewVendorAccountID()
@@ -523,10 +527,10 @@ func TestDeletePaymentMethod(t *testing.T) {
 			Expected:    nil,
 			ExpectedErr: grpc.Errorf(codes.InvalidArgument, "PaymentMethodID required"),
 		},
-		"Success": {
+		"Success-NonDefaultDeleted": {
 			Server: func() *tServer {
 				tsrv := newTestServer(t, &dal.VendorAccount{ID: masterVendorAccountID}, stripeSecretKey)
-				// Delete Payment Methods
+				// Delete Payment Method
 				tsrv.mdal.Expect(mock.NewExpectation(tsrv.mdal.PaymentMethod, pmID1, []dal.QueryOption(nil)).WithReturns(
 					&dal.PaymentMethod{
 						ID:                 pmID1,
@@ -571,6 +575,118 @@ func TestDeletePaymentMethod(t *testing.T) {
 						StripeAccount: connectedAccountID,
 					},
 				}, []istripe.CallOption(nil)))
+
+				// Return Existing Payment Methods
+				tsrv.mdal.Expect(mock.NewExpectation(tsrv.mdal.EntityPaymentMethods, masterVendorAccountID, entityID, []dal.QueryOption(nil)).WithReturns(
+					[]*dal.PaymentMethod{
+						{
+							ID:                 pmID2,
+							CustomerID:         cID,
+							EntityID:           entityID,
+							Lifecycle:          dal.PaymentMethodLifecycleActive,
+							ChangeState:        dal.PaymentMethodChangeStateNone,
+							StorageType:        dal.PaymentMethodStorageTypeStripe,
+							StorageID:          storageID,
+							Type:               dal.PaymentMethodTypeCard,
+							TokenizationMethod: "TokenizationMethod",
+							Brand:              "Brand",
+							Last4:              "LastFour",
+						},
+					}, nil))
+				return tsrv
+			}(),
+			Request: &payments.DeletePaymentMethodRequest{
+				PaymentMethodID: pmID1.String(),
+			},
+			Expected: &payments.DeletePaymentMethodResponse{
+				PaymentMethods: []*payments.PaymentMethod{
+					{
+						ID:          pmID2.String(),
+						EntityID:    entityID,
+						Default:     true,
+						Lifecycle:   payments.PAYMENT_METHOD_LIFECYCLE_ACTIVE,
+						ChangeState: payments.PAYMENT_METHOD_CHANGE_STATE_NONE,
+						StorageType: payments.PAYMENT_METHOD_STORAGE_TYPE_STRIPE,
+						Type:        payments.PAYMENT_METHOD_TYPE_CARD,
+						PaymentMethodOneof: &payments.PaymentMethod_StripeCard{
+							StripeCard: &payments.StripeCard{
+								ID:                 storageID,
+								TokenizationMethod: "TokenizationMethod",
+								Brand:              "Brand",
+								Last4:              "LastFour",
+							},
+						},
+					},
+				},
+			},
+			ExpectedErr: nil,
+		},
+		"Success-DefaultDeleted": {
+			Server: func() *tServer {
+				tsrv := newTestServer(t, &dal.VendorAccount{ID: masterVendorAccountID}, stripeSecretKey)
+				// Delete Payment Method
+				tsrv.mdal.Expect(mock.NewExpectation(tsrv.mdal.PaymentMethod, pmID1, []dal.QueryOption(nil)).WithReturns(
+					&dal.PaymentMethod{
+						ID:                 pmID1,
+						CustomerID:         cID,
+						EntityID:           entityID,
+						VendorAccountID:    masterVendorAccountID,
+						Lifecycle:          dal.PaymentMethodLifecycleActive,
+						ChangeState:        dal.PaymentMethodChangeStateNone,
+						StorageType:        dal.PaymentMethodStorageTypeStripe,
+						StorageID:          storageID,
+						StorageFingerprint: storageFingerprint,
+						Default:            true,
+					}, nil))
+				tsrv.mdal.Expect(mock.NewExpectation(tsrv.mdal.PaymentMethod, pmID1, []dal.QueryOption{dal.ForUpdate}).WithReturns(
+					&dal.PaymentMethod{
+						ID:                 pmID1,
+						CustomerID:         cID,
+						EntityID:           entityID,
+						VendorAccountID:    masterVendorAccountID,
+						Lifecycle:          dal.PaymentMethodLifecycleActive,
+						ChangeState:        dal.PaymentMethodChangeStateNone,
+						StorageType:        dal.PaymentMethodStorageTypeStripe,
+						StorageID:          storageID,
+						StorageFingerprint: storageFingerprint,
+					}, nil))
+				tsrv.mdal.Expect(mock.NewExpectation(tsrv.mdal.VendorAccount, masterVendorAccountID).WithReturns(
+					&dal.VendorAccount{
+						ID:                 masterVendorAccountID,
+						ConnectedAccountID: connectedAccountID,
+					}, nil))
+				tsrv.mdal.Expect(mock.NewExpectation(tsrv.mdal.Customer, cID, []dal.QueryOption(nil)).WithReturns(
+					&dal.Customer{
+						ID:        cID,
+						StorageID: storageID,
+					}, nil))
+				tsrv.mdal.Expect(mock.NewExpectation(tsrv.mdal.UpdatePaymentMethod, pmID1, &dal.PaymentMethodUpdate{
+					Lifecycle:   dal.PaymentMethodLifecycleDeleted,
+					ChangeState: dal.PaymentMethodChangeStateNone,
+				}))
+				tsrv.mstripe.Expect(mock.NewExpectation(tsrv.mstripe.DeleteCard, storageID, &stripe.CardParams{
+					Customer: storageID,
+					Params: stripe.Params{
+						StripeAccount: connectedAccountID,
+					},
+				}, []istripe.CallOption(nil)))
+
+				// update the default
+				tsrv.mdal.Expect(mock.NewExpectation(tsrv.mdal.EntityPaymentMethods, masterVendorAccountID, entityID, []dal.QueryOption(nil)).WithReturns([]*dal.PaymentMethod{
+					{ID: newDefaultPMID},
+				}, nil))
+				tsrv.mdal.Expect(mock.NewExpectation(tsrv.mdal.PaymentMethod, newDefaultPMID, []dal.QueryOption(nil)).WithReturns(&dal.PaymentMethod{
+					ID:              newDefaultPMID,
+					EntityID:        entityID,
+					VendorAccountID: masterVendorAccountID,
+				}, nil))
+				tsrv.mdal.Expect(mock.NewExpectation(tsrv.mdal.EntityPaymentMethods, masterVendorAccountID, entityID, []dal.QueryOption{dal.ForUpdate}).WithReturns([]*dal.PaymentMethod{
+					{ID: pmID1},
+					{ID: pmID2},
+				}, nil))
+				tsrv.mdal.Expect(mock.NewExpectation(tsrv.mdal.UpdatePaymentMethod, newDefaultPMID, &dal.PaymentMethodUpdate{
+					Default: ptr.Bool(true),
+				}))
 
 				// Return Existing Payment Methods
 				tsrv.mdal.Expect(mock.NewExpectation(tsrv.mdal.EntityPaymentMethods, masterVendorAccountID, entityID, []dal.QueryOption(nil)).WithReturns(
