@@ -549,12 +549,17 @@ func (e *excommsService) InitiatePhoneCall(ctx context.Context, in *excomms.Init
 		return nil, grpcErrorf(codes.NotFound, "%s is not the phone number of a caller belonging to the organization.", in.FromPhoneNumber)
 	}
 
+	toPhoneNumber, err := phone.Format(in.ToPhoneNumber, phone.E164)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "phone number %s not formatted: %s", toPhoneNumber, err)
+	}
+
 	// validate callee
 	var destinationEntity *directory.Entity
 	lookupByContacRes, err := e.directory.LookupEntitiesByContact(
 		ctx,
 		&directory.LookupEntitiesByContactRequest{
-			ContactValue: in.ToPhoneNumber,
+			ContactValue: toPhoneNumber,
 			RequestedInformation: &directory.RequestedInformation{
 				Depth:             0,
 				EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
