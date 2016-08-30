@@ -141,6 +141,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 		"provisionPhoneNumber":                provisionPhoneNumberMutation,
 		"registerDeviceForPush":               registerDeviceForPushMutation,
 		"requestPasswordReset":                requestPasswordResetMutation,
+		"sendExistingPatientInvite":           sendExistingPatientInviteMutation,
 		"submitVisit":                         submitVisitMutation,
 		"submitVisitAnswers":                  submitVisitAnswersMutation,
 		"textInviteLink":                      textInviteLinkMutation,

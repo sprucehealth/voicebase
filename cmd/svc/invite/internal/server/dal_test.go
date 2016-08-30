@@ -41,6 +41,14 @@ func (dl *mockDAL) InviteForToken(ctx context.Context, token string) (*models.In
 	return r[0].(*models.Invite), mock.SafeError(r[1])
 }
 
+func (dl *mockDAL) InvitesForParkedEntityID(ctx context.Context, parkedEntityID string) ([]*models.Invite, error) {
+	r := dl.Expector.Record(parkedEntityID)
+	if len(r) == 0 {
+		return nil, nil
+	}
+	return r[0].([]*models.Invite), mock.SafeError(r[1])
+}
+
 func (dl *mockDAL) DeleteInvite(ctx context.Context, token string) error {
 	r := dl.Expector.Record(token)
 	return mock.SafeError(r[0])

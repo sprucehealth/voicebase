@@ -107,6 +107,34 @@ message LookupInviteResponse {
 	repeated AttributionValue values = 2;
 }
 
+message LookupInvitesRequest {
+	enum LookupKeyType {
+		INVALID = 0;
+		PARKED_ENTITY_ID = 1;
+	}
+
+	LookupKeyType lookup_key_type = 1;
+	oneof key {
+		string parked_entity_id = 2 [(gogoproto.customname) = "ParkedEntityID"];
+	}
+}
+
+message LookupInvitesResponse {
+	enum Type {
+		INVALID = 0;
+		PATIENT_LIST = 1;
+	}
+
+	Type type = 1;
+	oneof list {
+		PatientInviteList patient_invite_list = 2;
+	}
+}
+
+message PatientInviteList {
+	repeated PatientInvite patient_invites = 1;
+}
+
 message AttributionValue {
 	string key = 1;
 	string value = 2;
@@ -139,6 +167,8 @@ service Invite {
 	rpc InvitePatients(InvitePatientsRequest) returns (InvitePatientsResponse);
 	// LookupInvite returns information about an invite by token
 	rpc LookupInvite(LookupInviteRequest) returns (LookupInviteResponse);
+	// LookupInvites returns the list of invites for the given key.
+	rpc LookupInvites(LookupInvitesRequest) returns (LookupInvitesResponse);
 	// MarkInviteConsumed deletes the associated invite and records it's consumption
 	rpc MarkInviteConsumed(MarkInviteConsumedRequest) returns (MarkInviteConsumedResponse);
 	// SetAttributionData associate attribution data with a device

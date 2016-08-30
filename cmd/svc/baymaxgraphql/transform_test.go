@@ -7,44 +7,8 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/svc/auth"
-	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
 )
-
-func TestEntityHasPendingInvite(t *testing.T) {
-	cases := []struct {
-		Entity   *directory.Entity
-		Expected bool
-	}{
-		// Patients without accounts should have pending invites
-		{
-			Entity: &directory.Entity{
-				Type:      directory.EntityType_PATIENT,
-				AccountID: "",
-			},
-			Expected: true,
-		},
-		// Non patients without accounts should not have pending invite
-		{
-			Entity: &directory.Entity{
-				Type:      directory.EntityType_INTERNAL,
-				AccountID: "",
-			},
-			Expected: false,
-		},
-		// Patients with accounts should not have pending invite
-		{
-			Entity: &directory.Entity{
-				Type:      directory.EntityType_PATIENT,
-				AccountID: "account_123456",
-			},
-			Expected: false,
-		},
-	}
-	for _, c := range cases {
-		test.Equals(t, c.Expected, entityHasPendingInvite(c.Entity))
-	}
-}
 
 func TestThreadEmptyStateMarkup(t *testing.T) {
 	cases := map[string]struct {

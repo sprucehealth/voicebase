@@ -56,6 +56,11 @@ func (c *Client) LookupInvite(ctx context.Context, in *invite.LookupInviteReques
 	return ret[0].(*invite.LookupInviteResponse), mock.SafeError(ret[1])
 }
 
+func (c *Client) LookupInvites(ctx context.Context, in *invite.LookupInvitesRequest, opts ...grpc.CallOption) (*invite.LookupInvitesResponse, error) {
+	ret := c.Expector.Record(in)
+	return ret[0].(*invite.LookupInvitesResponse), mock.SafeError(ret[1])
+}
+
 // SetAttributionData associate attribution data with a device
 func (c *Client) SetAttributionData(ctx context.Context, in *invite.SetAttributionDataRequest, opts ...grpc.CallOption) (*invite.SetAttributionDataResponse, error) {
 	ret := c.Expector.Record(in)

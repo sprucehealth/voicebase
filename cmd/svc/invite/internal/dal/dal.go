@@ -45,24 +45,27 @@ type DAL interface {
 	InsertEntityToken(ctx context.Context, entityID, token string) error
 	InsertInvite(ctx context.Context, invite *models.Invite) error
 	InviteForToken(ctx context.Context, token string) (*models.Invite, error)
+	InvitesForParkedEntityID(ctx context.Context, parkedEntityID string) ([]*models.Invite, error)
 	SetAttributionData(ctx context.Context, deviceID string, values map[string]string) error
 	TokenForEntity(ctx context.Context, entityID string) (string, error)
 }
 
 type dal struct {
-	db               dynamodbiface.DynamoDBAPI
-	attributionTable string
-	inviteTable      string
-	entityTokenTable string
+	db                  dynamodbiface.DynamoDBAPI
+	attributionTable    string
+	inviteTable         string
+	parkedEntityIDIndex string
+	entityTokenTable    string
 }
 
 // New returns a new DAL using DynamoDB for storage
 func New(db dynamodbiface.DynamoDBAPI, env string) DAL {
 	return &dal{
-		db:               db,
-		attributionTable: env + "-invite-attribution",
-		inviteTable:      env + "-invite",
-		entityTokenTable: env + "-entity-token",
+		db:                  db,
+		attributionTable:    env + "-invite-attribution",
+		inviteTable:         env + "-invite",
+		entityTokenTable:    env + "-entity-token",
+		parkedEntityIDIndex: env + "-parked_entity_id-index",
 	}
 }
 
@@ -205,44 +208,72 @@ func (d *dal) InviteForToken(ctx context.Context, token string) (*models.Invite,
 	if len(res.Item) == 0 {
 		return nil, ErrNotFound
 	}
-	ct, err := strconv.ParseInt(*res.Item[createdTimestampKey].N, 10, 64)
+
+	return inviteFromAttributes(res.Item), nil
+}
+
+func (d *dal) InvitesForParkedEntityID(ctx context.Context, parkedEntityID string) ([]*models.Invite, error) {
+	res, err := d.db.Query(&dynamodb.QueryInput{
+		ConsistentRead:         ptr.Bool(true),
+		TableName:              &d.inviteTable,
+		IndexName:              &d.parkedEntityIDIndex,
+		KeyConditionExpression: ptr.String("ParkedEntityID = :parkedEntityID"),
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			`:parkedEntityID`: {S: &parkedEntityID},
+		},
+	})
 	if err != nil {
-		golog.Errorf("Invalid created time in invite for token %s", token)
+		return nil, errors.Trace(err)
+	}
+
+	invites := make([]*models.Invite, len(res.Items))
+	for i, ri := range res.Items {
+		invites[i] = inviteFromAttributes(ri)
+	}
+
+	return invites, nil
+}
+
+func inviteFromAttributes(attributes map[string]*dynamodb.AttributeValue) *models.Invite {
+	ct, err := strconv.ParseInt(*attributes[createdTimestampKey].N, 10, 64)
+	if err != nil {
+		golog.Errorf("Invalid created time in invite %s", *attributes[inviteTokenKey])
 	}
 	// Not all invites have associated parked entity ID's
 	var parkedEntityID string
-	if peID, ok := res.Item[parkedEntityIDKey]; ok {
+	if peID, ok := attributes[parkedEntityIDKey]; ok {
 		parkedEntityID = *peID.S
 	}
 	var inviterEntityID string
-	if ieID, ok := res.Item[inviterEntityIDKey]; ok {
+	if ieID, ok := attributes[inviterEntityIDKey]; ok {
 		inviterEntityID = *ieID.S
 	}
 	var email string
-	if em, ok := res.Item[emailKey]; ok {
+	if em, ok := attributes[emailKey]; ok {
 		email = *em.S
 	}
 	var phoneNumber string
-	if pn, ok := res.Item[phoneNumberKey]; ok {
+	if pn, ok := attributes[phoneNumberKey]; ok {
 		phoneNumber = *pn.S
 	}
 	inv := &models.Invite{
-		Token:                token,
-		Type:                 models.InviteType(*res.Item[typeKey].S),
-		OrganizationEntityID: *res.Item[organizationEntityIDKey].S,
+		Token:                *attributes[inviteTokenKey].S,
+		Type:                 models.InviteType(*attributes[typeKey].S),
+		OrganizationEntityID: *attributes[organizationEntityIDKey].S,
 		InviterEntityID:      inviterEntityID,
 		Email:                email,
 		PhoneNumber:          phoneNumber,
-		URL:                  *res.Item[urlKey].S,
+		URL:                  *attributes[urlKey].S,
 		ParkedEntityID:       parkedEntityID,
 		Created:              time.Unix(ct/1e9, ct%1e9),
 	}
-	valuesAttr := res.Item[valuesKey].M
+	valuesAttr := attributes[valuesKey].M
 	inv.Values = make(map[string]string, len(valuesAttr))
 	for k, v := range valuesAttr {
 		inv.Values[k] = *v.S
 	}
-	return inv, nil
+
+	return inv
 }
 
 func (d *dal) DeleteInvite(ctx context.Context, token string) error {

@@ -10,7 +10,9 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/device/devicectx"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/graphql"
@@ -156,9 +158,29 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 				}, nil
 			},
 		},
-		"callableEndpoints":     &graphql.Field{Type: graphql.NewList(callEndpointType)},
-		"hasAccount":            &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-		"hasPendingInvite":      &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+		"callableEndpoints": &graphql.Field{Type: graphql.NewList(callEndpointType)},
+		"hasAccount":        &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+		"hasPendingInvite": &graphql.Field{
+			Type: graphql.NewNonNull(graphql.Boolean),
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				ent := p.Source.(*models.Entity)
+				ctx := p.Context
+				svc := serviceFromParams(p)
+
+				res, err := svc.invite.LookupInvites(ctx, &invite.LookupInvitesRequest{
+					LookupKeyType: invite.LookupInvitesRequest_PARKED_ENTITY_ID,
+					Key: &invite.LookupInvitesRequest_ParkedEntityID{
+						ParkedEntityID: ent.ID,
+					},
+				})
+				if err != nil {
+					golog.Errorf("Unable to determine pending invite for %s", ent.ID)
+					return false, nil
+				}
+
+				return res.GetPatientInviteList() != nil && len(res.GetPatientInviteList().PatientInvites) > 0, nil
+			},
+		},
 		"isInternal":            &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		"lastModifiedTimestamp": &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
 		"hasProfile":            &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},

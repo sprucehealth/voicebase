@@ -8,6 +8,49 @@ resource "aws_dynamodb_table" "invite" {
       name = "InviteToken"
       type = "S"
     }
+     attribute {
+      name = "CreatedTimestamp"
+      type = "N"
+    }
+     attribute {
+      name = "Type"
+      type = "S"
+    }
+     attribute {
+      name = "URL"
+      type = "S"
+    }
+     attribute {
+      name = "OrganizationEntityID"
+      type = "S"
+    }
+     attribute {
+      name = "Email"
+      type = "S"
+    }
+     attribute {
+      name = "InviterEntityID"
+      type = "S"
+    }
+     attribute {
+      name = "PhoneNumber"
+      type = "S"
+    }
+     attribute {
+      name = "Values"
+      type = "S"
+    }
+     attribute {
+      name = "ParkedEntityID"
+      type = "S"
+    }
+    global_secondary_index {
+      name = "${var.env}-parked_entity_id-index"
+      hash_key = "ParkedEntityID"
+      write_capacity = 2
+      read_capacity = 10
+      projection_type = "ALL"
+    }
 }
 
 resource "aws_dynamodb_table" "attribution" {

@@ -591,7 +591,6 @@ func transformEntityToResponse(ctx context.Context, staticURLPrefix string, e *d
 		LastModifiedTimestamp: e.LastModifiedTimestamp,
 		HasAccount:            e.AccountID != "",
 		AllowEdit:             canEditEntity(e, viewingAccount, sh),
-		HasPendingInvite:      entityHasPendingInvite(e),
 		ImageMediaID:          e.ImageMediaID,
 		HasProfile:            e.HasProfile,
 	}
@@ -657,13 +656,6 @@ func transformEntityToResponse(ctx context.Context, staticURLPrefix string, e *d
 	}
 
 	return ent, nil
-}
-
-func entityHasPendingInvite(ent *directory.Entity) bool {
-	// TODO: We should actually look this up. But for now we can do a poor man's version.
-	// If an entity is a Patient and has not created an account then in the current system
-	// they MUST have a pending invite.
-	return ent.Type == directory.EntityType_PATIENT && ent.AccountID == ""
 }
 
 func canEditEntity(e *directory.Entity, viewingAccount *auth.Account, sh *device.SpruceHeaders) bool {

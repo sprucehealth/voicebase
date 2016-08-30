@@ -460,6 +460,54 @@ func TestLookupInvite(t *testing.T) {
 	}, res)
 }
 
+func TestLookupInvites(t *testing.T) {
+	dl := newMockDAL(t)
+	snsC := mock.NewSNSAPI(t)
+	defer mock.FinishAll(dl, snsC)
+	srv := New(dl, nil, nil, nil, snsC, nil, "", "", "", "", "")
+
+	dl.Expect(mock.NewExpectation(dl.InvitesForParkedEntityID, "parkedEntityID").WithReturns(
+		[]*models.Invite{
+			{
+				Type:                 models.ColleagueInvite,
+				Token:                "testtoken",
+				ParkedEntityID:       "parkedEntityID",
+				OrganizationEntityID: "org",
+				InviterEntityID:      "ent",
+				Email:                "someone@example.com",
+				PhoneNumber:          "+15555551212",
+				Created:              time.Now(),
+				Values: map[string]string{
+					"foo": "bar",
+				},
+			},
+		}, nil))
+	res, err := srv.LookupInvites(nil, &invite.LookupInvitesRequest{
+		LookupKeyType: invite.LookupInvitesRequest_PARKED_ENTITY_ID,
+		Key: &invite.LookupInvitesRequest_ParkedEntityID{
+			ParkedEntityID: "parkedEntityID",
+		},
+	})
+	test.OK(t, err)
+	test.Equals(t, &invite.LookupInvitesResponse{
+		Type: invite.LookupInvitesResponse_PATIENT_LIST,
+		List: &invite.LookupInvitesResponse_PatientInviteList{
+			PatientInviteList: &invite.PatientInviteList{
+				PatientInvites: []*invite.PatientInvite{
+					{
+						OrganizationEntityID: "org",
+						InviterEntityID:      "ent",
+						Patient: &invite.Patient{
+							ParkedEntityID: "parkedEntityID",
+							PhoneNumber:    "+15555551212",
+						},
+					},
+				},
+			},
+		},
+	}, res)
+}
+
 func TestMarkInviteConsumed(t *testing.T) {
 	dl := newMockDAL(t)
 	snsC := mock.NewSNSAPI(t)

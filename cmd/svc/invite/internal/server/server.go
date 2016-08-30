@@ -579,6 +579,40 @@ func (s *server) LookupInvite(ctx context.Context, in *invite.LookupInviteReques
 	return resp, nil
 }
 
+func (s *server) LookupInvites(ctx context.Context, in *invite.LookupInvitesRequest) (*invite.LookupInvitesResponse, error) {
+
+	var res invite.LookupInvitesResponse
+	switch in.LookupKeyType {
+	case invite.LookupInvitesRequest_PARKED_ENTITY_ID:
+		invites, err := s.dal.InvitesForParkedEntityID(ctx, in.GetParkedEntityID())
+		if err != nil {
+			return nil, grpcError(err)
+		}
+		patientInvitesList := invite.PatientInviteList{
+			PatientInvites: make([]*invite.PatientInvite, len(invites)),
+		}
+		for i, inv := range invites {
+			patientInvitesList.PatientInvites[i] = &invite.PatientInvite{
+				OrganizationEntityID: inv.OrganizationEntityID,
+				InviterEntityID:      inv.InviterEntityID,
+				Patient: &invite.Patient{
+					ParkedEntityID: inv.ParkedEntityID,
+					PhoneNumber:    inv.PhoneNumber,
+				},
+			}
+		}
+
+		res.Type = invite.LookupInvitesResponse_PATIENT_LIST
+		res.List = &invite.LookupInvitesResponse_PatientInviteList{
+			PatientInviteList: &patientInvitesList,
+		}
+	default:
+		return nil, grpcErrorf(codes.InvalidArgument, "Unsupported lookup key type %s", in.LookupKeyType.String())
+	}
+
+	return &res, nil
+}
+
 func (s *server) lookupInviteForOrganization(ctx context.Context, orgEntityID string) (*models.Invite, error) {
 	token, err := s.dal.TokenForEntity(ctx, orgEntityID)
 	if err != nil {
