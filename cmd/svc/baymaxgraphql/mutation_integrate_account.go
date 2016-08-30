@@ -41,9 +41,9 @@ const (
 	integrateAccountErrorCodeIntegrationNotSupported = "INTEGRATION_NOT_SUPPORTED"
 	integrateAccountErrorCodeEntityNotFound          = "ENTITY_NOT_FOUND"
 	integrateAccountErrorCodeEntityNotSupported      = "ENTITY_NOT_SUPPORTED"
-	integrateAccountTypeStripe                       = "STRIPE"
-	integrateAccountTypeHint                         = "HINT"
-	integrateAccountTypeDrChrono                     = "DRCHRONO"
+	integrateAccountTypeStripe                       = "stripe"
+	integrateAccountTypeHint                         = "hint"
+	integrateAccountTypeDrChrono                     = "drchrono"
 )
 
 var integrateAccountErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
