@@ -1,6 +1,8 @@
 package hint
 
 import (
+	"time"
+
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/sync"
@@ -32,12 +34,15 @@ func DoInitialSync(dl dal.DAL, orgID string, syncEventsQueueURL string, sqsAPI s
 	practiceKey := syncConfig.GetHint().AccessToken
 
 	var queryItems []*hint.QueryItem
+	var syncBookmark time.Time
 	if sb != nil {
 
 		// nothing to do if the sync is already complete
 		if sb.Status == dal.SyncStatusConnected {
 			return nil
 		}
+
+		syncBookmark = sb.Bookmark
 
 		queryItems = []*hint.QueryItem{
 			{
@@ -61,7 +66,6 @@ func DoInitialSync(dl dal.DAL, orgID string, syncEventsQueueURL string, sqsAPI s
 
 	// initiate adding of 20 items at a time
 	patients := make([]*sync.Patient, 0, 20)
-	syncBookmark := sb.Bookmark
 	for iter.Next() {
 
 		hintPatient := iter.Current().(*hint.Patient)
