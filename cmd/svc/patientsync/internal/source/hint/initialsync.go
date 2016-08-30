@@ -29,15 +29,16 @@ func DoInitialSync(dl dal.DAL, orgID string, syncEventsQueueURL string, sqsAPI s
 		return errors.Trace(err)
 	}
 
-	// nothing to do if the sync is already complete
-	if sb.Status == dal.SyncStatusConnected {
-		return nil
-	}
-
 	practiceKey := syncConfig.GetHint().AccessToken
 
 	var queryItems []*hint.QueryItem
 	if sb != nil {
+
+		// nothing to do if the sync is already complete
+		if sb.Status == dal.SyncStatusConnected {
+			return nil
+		}
+
 		queryItems = []*hint.QueryItem{
 			{
 				Field: "created_at",
