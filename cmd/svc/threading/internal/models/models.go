@@ -226,6 +226,8 @@ const (
 	ThreadOriginPatientInvite ThreadOrigin = "PATIENT_INVITE"
 	// ThreadOriginOrganizationCode is a thread created from an organization code
 	ThreadOriginOrganizationCode ThreadOrigin = "ORGANIZATION_CODE"
+	// ThreadOriginPatientSync is a thread created from an external system sync
+	ThreadOriginPatientSync ThreadOrigin = "SYNC"
 )
 
 // Scan implements sql.Scanner and expects src to be nil or of type string or []byte

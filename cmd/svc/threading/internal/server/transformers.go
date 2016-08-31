@@ -197,6 +197,8 @@ func transformThreadOriginFromRequest(to threading.ThreadOrigin) (models.ThreadO
 		return models.ThreadOriginOrganizationCode, nil
 	case threading.THREAD_ORIGIN_PATIENT_INVITE:
 		return models.ThreadOriginPatientInvite, nil
+	case threading.THREAD_ORIGIN_SYNC:
+		return models.ThreadOriginPatientSync, nil
 	}
 	return models.ThreadOriginUnknown, errors.Errorf("unknown thread origin '%s'", to)
 }
@@ -209,6 +211,8 @@ func transformThreadOriginToResponse(to models.ThreadOrigin) (threading.ThreadOr
 		return threading.THREAD_ORIGIN_ORGANIZATION_CODE, nil
 	case models.ThreadOriginPatientInvite:
 		return threading.THREAD_ORIGIN_PATIENT_INVITE, nil
+	case models.ThreadOriginPatientSync:
+		return threading.THREAD_ORIGIN_SYNC, nil
 	}
 	return threading.THREAD_ORIGIN_UNKNOWN, errors.Errorf("unknown thread origin '%s'", to)
 }
