@@ -151,7 +151,7 @@ func (s *server) ConfigureSync(ctx context.Context, in *patientsync.ConfigureSyn
 }
 
 func (s *server) LookupSyncConfiguration(ctx context.Context, in *patientsync.LookupSyncConfigurationRequest) (*patientsync.LookupSyncConfigurationResponse, error) {
-	if in.OrganizationEntityID != "" {
+	if in.OrganizationEntityID == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "organization_entity_id is missing")
 	} else if in.Source == patientsync.SOURCE_UNKNOWN {
 		return nil, grpcErrorf(codes.InvalidArgument, "source required")
