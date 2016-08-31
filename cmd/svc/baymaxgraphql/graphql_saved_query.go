@@ -71,7 +71,22 @@ var savedThreadQueryType = graphql.NewObject(
 					if err != nil {
 						return nil, err
 					}
-					return transformQueryThreadsResponseToConnection(ctx, ram, acc, res)
+					cn, err := transformQueryThreadsResponseToConnection(ctx, ram, acc, res)
+					if err != nil {
+						return nil, err
+					}
+					// TODO: the title isn't totally reliable, but since we control it on the backend at the moment it seems the simplest for now
+					switch stq.Title {
+					case "Patient":
+						cn.EmptyState = ThreadConnectionEmptyStatePatient
+					case "Team":
+						cn.EmptyState = ThreadConnectionEmptyStateTeam
+					case "@Pages":
+						cn.EmptyState = ThreadConnectionEmptyStatePages
+					default:
+						cn.EmptyState = ThreadConnectionEmptyStateGeneric
+					}
+					return cn, nil
 				},
 			},
 			"deeplink": &graphql.Field{

@@ -21,6 +21,35 @@ import (
 	"github.com/sprucehealth/graphql"
 )
 
+const (
+	ThreadConnectionEmptyStatePatient = "PATIENT"
+	ThreadConnectionEmptyStateTeam    = "TEAM"
+	ThreadConnectionEmptyStatePages   = "PAGES"
+	ThreadConnectionEmptyStateGeneric = "GENERIC"
+)
+
+var threadConnectionEmptyStateTypeEnum = graphql.NewEnum(graphql.EnumConfig{
+	Name: "ThreadConnectionEmptyStateType",
+	Values: graphql.EnumValueConfigMap{
+		ThreadConnectionEmptyStatePatient: &graphql.EnumValueConfig{
+			Value:       ThreadConnectionEmptyStatePatient,
+			Description: "Patient threads",
+		},
+		ThreadConnectionEmptyStateTeam: &graphql.EnumValueConfig{
+			Value:       ThreadConnectionEmptyStateTeam,
+			Description: "Team threads",
+		},
+		ThreadConnectionEmptyStatePages: &graphql.EnumValueConfig{
+			Value:       ThreadConnectionEmptyStatePages,
+			Description: "Unread reference threads",
+		},
+		ThreadConnectionEmptyStateGeneric: &graphql.EnumValueConfig{
+			Value:       ThreadConnectionEmptyStateGeneric,
+			Description: "Other",
+		},
+	},
+})
+
 var threadConnectionType = ConnectionDefinitions(ConnectionConfig{
 	Name:     "Thread",
 	NodeType: threadType,
@@ -36,6 +65,10 @@ var threadConnectionType = ConnectionDefinitions(ConnectionConfig{
 		"endOfResultsText": &graphql.Field{
 			Type:        graphql.NewNonNull(graphql.String),
 			Description: "Text shown at the end of the results set (e.g. \"500 out of 1,200 conversations shown\nSearch to access more\")",
+		},
+		"emptyState": &graphql.Field{
+			Type:        graphql.NewNonNull(threadConnectionEmptyStateTypeEnum),
+			Description: "What to display if the thread list is empty",
 		},
 	},
 })

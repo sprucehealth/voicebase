@@ -124,7 +124,7 @@ func TestCreateProviderAccountMutation(t *testing.T) {
 		EntityID:       "e_int",
 		Title:          "@Pages",
 		Ordinal:        4,
-		Query:          &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_REFERENCED}}}},
+		Query:          &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_UNREAD_REFERENCE}}}},
 	}).WithReturns(&threading.CreateSavedQueryResponse{
 		SavedQuery: &threading.SavedQuery{
 			ID: "sq_4",
@@ -386,7 +386,7 @@ func TestCreateProviderAccountMutation_InviteColleague(t *testing.T) {
 		EntityID:       "e_int",
 		Title:          "@Pages",
 		Ordinal:        4,
-		Query:          &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_REFERENCED}}}},
+		Query:          &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_UNREAD_REFERENCE}}}},
 	}).WithReturns(&threading.CreateSavedQueryResponse{
 		SavedQuery: &threading.SavedQuery{
 			ID: "sq_4",

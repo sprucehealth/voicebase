@@ -30,18 +30,25 @@ import (
 
 func transformQueryThreadsResponseToConnection(ctx context.Context, ram raccess.ResourceAccessor, acc *auth.Account, res *threading.QueryThreadsResponse) (*Connection, error) {
 	cn := &Connection{
-		Edges: make([]*Edge, 0, len(res.Edges)),
-		Total: int(res.Total),
+		Edges:      make([]*Edge, 0, len(res.Edges)),
+		Total:      int(res.Total),
+		EmptyState: ThreadConnectionEmptyStateGeneric,
 	}
-	switch res.TotalType {
-	case threading.VALUE_TYPE_EXACT:
+	if !res.HasMore && res.TotalType != threading.VALUE_TYPE_EXACT {
+		// TODO: for now we're ignoring paging and assuming the # of results we get is the total if there's no more threads
+		cn.Total = len(res.Edges)
 		cn.TotalText = strconv.Itoa(cn.Total)
-	case threading.VALUE_TYPE_MANY:
-		cn.TotalText = "many"
-	case threading.VALUE_TYPE_UNKNOWN:
-		cn.TotalText = "uknown"
-	default:
-		return nil, errors.Errorf("unknown total value type %s", res.TotalType)
+	} else {
+		switch res.TotalType {
+		case threading.VALUE_TYPE_EXACT:
+			cn.TotalText = strconv.Itoa(cn.Total)
+		case threading.VALUE_TYPE_MANY:
+			cn.TotalText = "many"
+		case threading.VALUE_TYPE_UNKNOWN:
+			cn.TotalText = "unknown"
+		default:
+			return nil, errors.Errorf("unknown total value type %s", res.TotalType)
+		}
 	}
 	cn.EndOfResultsText = fmt.Sprintf("%d out of %s conversations shown\nSearch to access more", len(res.Edges), cn.TotalText)
 	cn.PageInfo.HasNextPage = res.HasMore

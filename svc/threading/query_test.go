@@ -17,9 +17,9 @@ func TestQueries(t *testing.T) {
 		{s: "is:read", q: &Query{Expressions: []*Expr{{Not: true, Value: &Expr_Flag_{Flag: EXPR_FLAG_UNREAD}}}}},
 		{s: "type:patient", q: &Query{Expressions: []*Expr{{Value: &Expr_ThreadType_{ThreadType: EXPR_THREAD_TYPE_PATIENT}}}}},
 		{s: "type:team", q: &Query{Expressions: []*Expr{{Value: &Expr_ThreadType_{ThreadType: EXPR_THREAD_TYPE_TEAM}}}}},
-		{s: "is:unread is:referenced", q: &Query{Expressions: []*Expr{
-			{Value: &Expr_Flag_{Flag: EXPR_FLAG_UNREAD}},
-			{Value: &Expr_Flag_{Flag: EXPR_FLAG_REFERENCED}},
+		{s: "type:patient is:unreadreference", q: &Query{Expressions: []*Expr{
+			{Value: &Expr_ThreadType_{ThreadType: EXPR_THREAD_TYPE_PATIENT}},
+			{Value: &Expr_Flag_{Flag: EXPR_FLAG_UNREAD_REFERENCE}},
 		}}},
 		{s: "type:patient Esther Smith", q: &Query{Expressions: []*Expr{
 			{Value: &Expr_ThreadType_{ThreadType: EXPR_THREAD_TYPE_PATIENT}},

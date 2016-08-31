@@ -150,7 +150,7 @@ message Expr {
 	enum Flag {
 		EXPR_FLAG_INVALID = 0;
 		EXPR_FLAG_UNREAD = 1;
-		EXPR_FLAG_REFERENCED = 2;
+		EXPR_FLAG_UNREAD_REFERENCE = 2;
 	}
 	// This is separate from the top-level thread type to handle logical types like "patient"
 	enum ThreadType {

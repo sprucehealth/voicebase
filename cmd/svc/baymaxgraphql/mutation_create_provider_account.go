@@ -330,7 +330,7 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 		OrganizationID: orgEntityID,
 		EntityID:       accEntityID,
 		Title:          "@Pages",
-		Query:          &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_REFERENCED}}}},
+		Query:          &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_UNREAD_REFERENCE}}}},
 		Ordinal:        4,
 	}); err != nil {
 		return nil, errors.InternalError(ctx, err)

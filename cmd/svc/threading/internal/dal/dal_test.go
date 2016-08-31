@@ -228,7 +228,7 @@ func TestIterateThreadsQuery(t *testing.T) {
 		},
 		"flag-referenced": {
 			query: &models.Query{
-				Expressions: []*models.Expr{{Value: &models.Expr_Flag_{Flag: models.EXPR_FLAG_REFERENCED}}},
+				Expressions: []*models.Expr{{Value: &models.Expr_Flag_{Flag: models.EXPR_FLAG_UNREAD_REFERENCE}}},
 			},
 			ids: []models.ThreadID{tid2},
 		},

@@ -319,7 +319,7 @@ func (d *dal) IterateThreads(ctx context.Context, query *models.Query, memberEnt
 				case models.EXPR_FLAG_UNREAD:
 					// TODO: handle "forExternal"
 					cond = append(cond, "(viewer.last_viewed IS NULL OR viewer.last_viewed < t.last_message_timestamp)")
-				case models.EXPR_FLAG_REFERENCED:
+				case models.EXPR_FLAG_UNREAD_REFERENCE:
 					cond = append(cond, "(viewer.last_referenced IS NOT NULL AND (viewer.last_viewed IS NULL OR viewer.last_viewed < viewer.last_referenced))")
 				default:
 					return nil, errors.Errorf("unknown expression flag %s", v.Flag)

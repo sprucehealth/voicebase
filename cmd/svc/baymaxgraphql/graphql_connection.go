@@ -17,6 +17,7 @@ type Connection struct {
 	Total            int      `json:"total"`
 	TotalText        string   `json:"totalText,omitempty"`
 	EndOfResultsText string   `json:"endOfResultsText,omitempty"`
+	EmptyState       string   `json:"emptyState,omitempty"`
 }
 
 type Edge struct {

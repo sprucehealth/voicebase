@@ -29,8 +29,8 @@ func ParseQuery(qs string) (*Query, error) {
 					e = &Expr{Value: &Expr_Flag_{Flag: EXPR_FLAG_UNREAD}}
 				case "read":
 					e = &Expr{Not: true, Value: &Expr_Flag_{Flag: EXPR_FLAG_UNREAD}}
-				case "referenced":
-					e = &Expr{Value: &Expr_Flag_{Flag: EXPR_FLAG_REFERENCED}}
+				case "unreadreference":
+					e = &Expr{Value: &Expr_Flag_{Flag: EXPR_FLAG_UNREAD_REFERENCE}}
 				}
 			case "type": // Type of thread
 				switch value {
@@ -66,8 +66,8 @@ func FormatQuery(q *Query) (string, error) {
 				} else {
 					parts = append(parts, "is:unread")
 				}
-			case EXPR_FLAG_REFERENCED:
-				parts = append(parts, not+"is:referenced")
+			case EXPR_FLAG_UNREAD_REFERENCE:
+				parts = append(parts, not+"is:unreadreference")
 			default:
 				return "", errors.Errorf("unknown expression flag %s", v.Flag)
 			}

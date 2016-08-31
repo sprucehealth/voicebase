@@ -1557,7 +1557,7 @@ func TestSavedQuery(t *testing.T) {
 			Total:          9,
 			Query: &models.Query{
 				Expressions: []*models.Expr{
-					{Value: &models.Expr_Flag_{Flag: models.EXPR_FLAG_REFERENCED}},
+					{Value: &models.Expr_Flag_{Flag: models.EXPR_FLAG_UNREAD_REFERENCE}},
 				},
 			},
 			Created:  now,
@@ -1576,7 +1576,7 @@ func TestSavedQuery(t *testing.T) {
 			Total:          9,
 			Query: &threading.Query{
 				Expressions: []*threading.Expr{
-					{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_REFERENCED}},
+					{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_UNREAD_REFERENCE}},
 				},
 			},
 		},

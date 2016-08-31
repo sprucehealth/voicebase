@@ -19,8 +19,8 @@ func transformQueryFromRequest(q *threading.Query) (*models.Query, error) {
 			switch v.Flag {
 			case threading.EXPR_FLAG_UNREAD:
 				me.Value = &models.Expr_Flag_{Flag: models.EXPR_FLAG_UNREAD}
-			case threading.EXPR_FLAG_REFERENCED:
-				me.Value = &models.Expr_Flag_{Flag: models.EXPR_FLAG_REFERENCED}
+			case threading.EXPR_FLAG_UNREAD_REFERENCE:
+				me.Value = &models.Expr_Flag_{Flag: models.EXPR_FLAG_UNREAD_REFERENCE}
 			default:
 				return nil, errors.Errorf("unknown query flag type %s", v.Flag)
 			}
@@ -54,8 +54,8 @@ func transformQueryToResponse(q *models.Query) (*threading.Query, error) {
 			switch v.Flag {
 			case models.EXPR_FLAG_UNREAD:
 				me.Value = &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_UNREAD}
-			case models.EXPR_FLAG_REFERENCED:
-				me.Value = &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_REFERENCED}
+			case models.EXPR_FLAG_UNREAD_REFERENCE:
+				me.Value = &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_UNREAD_REFERENCE}
 			default:
 				return nil, errors.Errorf("unknown query flag type %s", v.Flag)
 			}
