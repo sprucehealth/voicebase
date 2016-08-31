@@ -1132,7 +1132,7 @@ func (s *server) UpdateProfile(ctx context.Context, rd *directory.UpdateProfileR
 	}, nil
 }
 
-func (s *server) CreateEHRLink(ctx context.Context, in *directory.CreateEHRLinkRequest) (*directory.CreateEHRLinkResponse, error) {
+func (s *server) CreateExternalLink(ctx context.Context, in *directory.CreateExternalLinkRequest) (*directory.CreateExternalLinkResponse, error) {
 	if in.EntityID == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "entity_id required")
 	} else if in.Name == "" {
@@ -1146,14 +1146,14 @@ func (s *server) CreateEHRLink(ctx context.Context, in *directory.CreateEHRLinkR
 		return nil, grpcErrorf(codes.InvalidArgument, "invalid entity_id %s : %s", in.EntityID, err)
 	}
 
-	if err := s.dl.InsertEHRLinkForEntity(entityID, in.Name, in.URL); err != nil {
-		return nil, grpcErrorf(codes.Internal, "unable to insert ehr link (%s, %s) for %s : %s", in.Name, in.URL, entityID, err)
+	if err := s.dl.InsertExternalLinkForEntity(entityID, in.Name, in.URL); err != nil {
+		return nil, grpcErrorf(codes.Internal, "unable to insert external link (%s, %s) for %s : %s", in.Name, in.URL, entityID, err)
 	}
 
-	return &directory.CreateEHRLinkResponse{}, nil
+	return &directory.CreateExternalLinkResponse{}, nil
 }
 
-func (s *server) DeleteEHRLink(ctx context.Context, in *directory.DeleteEHRLinkRequest) (*directory.DeleteEHRLinkResponse, error) {
+func (s *server) DeleteExternalLink(ctx context.Context, in *directory.DeleteExternalLinkRequest) (*directory.DeleteExternalLinkResponse, error) {
 	if in.EntityID == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "entity_id required")
 	} else if in.Name == "" {
@@ -1165,14 +1165,14 @@ func (s *server) DeleteEHRLink(ctx context.Context, in *directory.DeleteEHRLinkR
 		return nil, grpcErrorf(codes.InvalidArgument, "invalid entity_id %s : %s", in.EntityID, err)
 	}
 
-	if err := s.dl.DeleteEHRLinkForEntity(entityID, in.Name); err != nil {
-		return nil, grpcErrorf(codes.Internal, "unable to delete ehr link (%s, %s) : %s", entityID, in.Name, err)
+	if err := s.dl.DeleteExternalLinkForEntity(entityID, in.Name); err != nil {
+		return nil, grpcErrorf(codes.Internal, "unable to delete external link (%s, %s) : %s", entityID, in.Name, err)
 	}
 
-	return &directory.DeleteEHRLinkResponse{}, nil
+	return &directory.DeleteExternalLinkResponse{}, nil
 }
 
-func (s *server) LookupEHRLinksForEntity(ctx context.Context, in *directory.LookupEHRLinksForEntityRequest) (*directory.LookupEHRLinksforEntityResponse, error) {
+func (s *server) LookupExternalLinksForEntity(ctx context.Context, in *directory.LookupExternalLinksForEntityRequest) (*directory.LookupExternalLinksforEntityResponse, error) {
 	if in.EntityID == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "entity_id required")
 	}
@@ -1182,20 +1182,20 @@ func (s *server) LookupEHRLinksForEntity(ctx context.Context, in *directory.Look
 		return nil, grpcErrorf(codes.InvalidArgument, "invalid entity_id %s : %s", in.EntityID, err)
 	}
 
-	ehrLinks, err := s.dl.EHRLinksForEntity(entityID)
+	externalLinks, err := s.dl.ExternalLinksForEntity(entityID)
 	if err != nil {
 		return nil, grpcErrorf(codes.Internal, "unable to get ehr links for %s : %s", entityID, err)
 	}
 
-	transformedEHRLinks := make([]*directory.LookupEHRLinksforEntityResponse_EHRLink, len(ehrLinks))
-	for i, ehrLink := range ehrLinks {
-		transformedEHRLinks[i] = &directory.LookupEHRLinksforEntityResponse_EHRLink{
-			Name: ehrLink.Name,
-			URL:  ehrLink.URL,
+	transformedExternalLinks := make([]*directory.LookupExternalLinksforEntityResponse_ExternalLink, len(externalLinks))
+	for i, externalLink := range externalLinks {
+		transformedExternalLinks[i] = &directory.LookupExternalLinksforEntityResponse_ExternalLink{
+			Name: externalLink.Name,
+			URL:  externalLink.URL,
 		}
 	}
-	return &directory.LookupEHRLinksforEntityResponse{
-		Links: transformedEHRLinks,
+	return &directory.LookupExternalLinksforEntityResponse{
+		Links: transformedExternalLinks,
 	}, nil
 }
 

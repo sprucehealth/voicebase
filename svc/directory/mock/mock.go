@@ -184,26 +184,26 @@ func (c *Client) UpdateProfile(ctx context.Context, in *directory.UpdateProfileR
 	return rets[0].(*directory.UpdateProfileResponse), mock.SafeError(rets[1])
 }
 
-func (c *Client) CreateEHRLink(ctx context.Context, in *directory.CreateEHRLinkRequest, opts ...grpc.CallOption) (*directory.CreateEHRLinkResponse, error) {
+func (c *Client) CreateExternalLink(ctx context.Context, in *directory.CreateExternalLinkRequest, opts ...grpc.CallOption) (*directory.CreateExternalLinkResponse, error) {
 	rets := c.Expector.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
 	}
-	return rets[0].(*directory.CreateEHRLinkResponse), mock.SafeError(rets[1])
+	return rets[0].(*directory.CreateExternalLinkResponse), mock.SafeError(rets[1])
 }
 
-func (c *Client) DeleteEHRLink(ctx context.Context, in *directory.DeleteEHRLinkRequest, opts ...grpc.CallOption) (*directory.DeleteEHRLinkResponse, error) {
+func (c *Client) DeleteExternalLink(ctx context.Context, in *directory.DeleteExternalLinkRequest, opts ...grpc.CallOption) (*directory.DeleteExternalLinkResponse, error) {
 	rets := c.Expector.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
 	}
-	return rets[0].(*directory.DeleteEHRLinkResponse), mock.SafeError(rets[1])
+	return rets[0].(*directory.DeleteExternalLinkResponse), mock.SafeError(rets[1])
 }
 
-func (c *Client) LookupEHRLinksForEntity(ctx context.Context, in *directory.LookupEHRLinksForEntityRequest, opts ...grpc.CallOption) (*directory.LookupEHRLinksforEntityResponse, error) {
+func (c *Client) LookupExternalLinksForEntity(ctx context.Context, in *directory.LookupExternalLinksForEntityRequest, opts ...grpc.CallOption) (*directory.LookupExternalLinksforEntityResponse, error) {
 	rets := c.Expector.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
 	}
-	return rets[0].(*directory.LookupEHRLinksforEntityResponse), mock.SafeError(rets[1])
+	return rets[0].(*directory.LookupExternalLinksforEntityResponse), mock.SafeError(rets[1])
 }

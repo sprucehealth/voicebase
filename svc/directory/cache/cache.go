@@ -281,16 +281,16 @@ func (c *CachedClient) UpdateProfile(ctx context.Context, in *directory.UpdatePr
 	return c.dc.UpdateProfile(ctx, in, opts...)
 }
 
-func (c *CachedClient) CreateEHRLink(ctx context.Context, in *directory.CreateEHRLinkRequest, opts ...grpc.CallOption) (*directory.CreateEHRLinkResponse, error) {
+func (c *CachedClient) CreateExternalLink(ctx context.Context, in *directory.CreateExternalLinkRequest, opts ...grpc.CallOption) (*directory.CreateExternalLinkResponse, error) {
 	c.bustCache(ctx)
-	return c.dc.CreateEHRLink(ctx, in, opts...)
+	return c.dc.CreateExternalLink(ctx, in, opts...)
 }
 
-func (c *CachedClient) DeleteEHRLink(ctx context.Context, in *directory.DeleteEHRLinkRequest, opts ...grpc.CallOption) (*directory.DeleteEHRLinkResponse, error) {
+func (c *CachedClient) DeleteExternalLink(ctx context.Context, in *directory.DeleteExternalLinkRequest, opts ...grpc.CallOption) (*directory.DeleteExternalLinkResponse, error) {
 	c.bustCache(ctx)
-	return c.dc.DeleteEHRLink(ctx, in, opts...)
+	return c.dc.DeleteExternalLink(ctx, in, opts...)
 }
 
-func (c *CachedClient) LookupEHRLinksForEntity(ctx context.Context, in *directory.LookupEHRLinksForEntityRequest, opts ...grpc.CallOption) (*directory.LookupEHRLinksforEntityResponse, error) {
-	return c.dc.LookupEHRLinksForEntity(ctx, in, opts...)
+func (c *CachedClient) LookupExternalLinksForEntity(ctx context.Context, in *directory.LookupExternalLinksForEntityRequest, opts ...grpc.CallOption) (*directory.LookupExternalLinksforEntityResponse, error) {
+	return c.dc.LookupExternalLinksForEntity(ctx, in, opts...)
 }

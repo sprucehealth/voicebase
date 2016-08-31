@@ -62,10 +62,10 @@ var dateType = graphql.NewObject(graphql.ObjectConfig{
 	},
 })
 
-// ehrLink represents a link to an ehr for an entity
-var ehrLinkType = graphql.NewObject(graphql.ObjectConfig{
-	Name:        "EHRLink",
-	Description: "A link to an EHR for an entity",
+// externalLinkType represents a link to an ehr for an entity
+var externalLinkType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "ExternalLink",
+	Description: "A link to the correspoding resource in an external system (like EMR or payments system) for an entity",
 	Fields: graphql.Fields{
 		"name": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"url":  &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
@@ -196,28 +196,28 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 				return lookupEntityProfile(ctx, ram, ent.ID)
 			},
 		},
-		"ehrLinks": &graphql.Field{
-			Type: graphql.NewList(ehrLinkType),
+		"externalLinks": &graphql.Field{
+			Type: graphql.NewList(externalLinkType),
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				ent := p.Source.(*models.Entity)
 				ram := raccess.ResourceAccess(p)
 				ctx := p.Context
-				res, err := ram.LookupEHRLinksForEntity(ctx, &directory.LookupEHRLinksForEntityRequest{
+				res, err := ram.LookupExternalLinksForEntity(ctx, &directory.LookupExternalLinksForEntityRequest{
 					EntityID: ent.ID,
 				})
 				if err != nil {
 					return nil, errors.InternalError(ctx, err)
 				}
 
-				transformedEHRLinks := make([]*models.EHRLink, len(res.Links))
-				for i, ehrLink := range res.Links {
-					transformedEHRLinks[i] = &models.EHRLink{
-						Name: ehrLink.Name,
-						URL:  ehrLink.URL,
+				transformedExternalLinks := make([]*models.ExternalLink, len(res.Links))
+				for i, externalLink := range res.Links {
+					transformedExternalLinks[i] = &models.ExternalLink{
+						Name: externalLink.Name,
+						URL:  externalLink.URL,
 					}
 				}
 
-				return transformedEHRLinks, nil
+				return transformedExternalLinks, nil
 			},
 		},
 		"paymentMethods": &graphql.Field{

@@ -103,7 +103,7 @@ type Entity struct {
 	CallableEndpoints     []*CallEndpoint `json:"callableEndpoints"`
 }
 
-type EHRLink struct {
+type ExternalLink struct {
 	Name string `json:"name"`
 	URL  string `json:"url"`
 }

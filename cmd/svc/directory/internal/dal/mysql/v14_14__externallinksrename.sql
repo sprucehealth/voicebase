@@ -1,0 +1,1 @@
+RENAME TABLE ehr_link TO external_link;

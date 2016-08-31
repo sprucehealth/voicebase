@@ -313,7 +313,7 @@ func (dl *MockDAL) Transact(trans func(dal dal.DAL) error) (err error) {
 	return nil
 }
 
-func (dl *MockDAL) InsertEHRLinkForEntity(entityID dal.EntityID, name, url string) error {
+func (dl *MockDAL) InsertExternalLinkForEntity(entityID dal.EntityID, name, url string) error {
 	rets := dl.Record(entityID, name, url)
 	if len(rets) == 0 {
 		return nil
@@ -321,7 +321,7 @@ func (dl *MockDAL) InsertEHRLinkForEntity(entityID dal.EntityID, name, url strin
 	return mock.SafeError(rets[0])
 }
 
-func (dl *MockDAL) DeleteEHRLinkForEntity(entityID dal.EntityID, name string) error {
+func (dl *MockDAL) DeleteExternalLinkForEntity(entityID dal.EntityID, name string) error {
 	rets := dl.Record(entityID, name)
 	if len(rets) == 0 {
 		return nil
@@ -329,13 +329,13 @@ func (dl *MockDAL) DeleteEHRLinkForEntity(entityID dal.EntityID, name string) er
 	return mock.SafeError(rets[0])
 }
 
-func (dl *MockDAL) EHRLinksForEntity(entityID dal.EntityID) ([]*dal.EHRLink, error) {
+func (dl *MockDAL) ExternalLinksForEntity(entityID dal.EntityID) ([]*dal.ExternalLink, error) {
 	rets := dl.Record(entityID)
 	if len(rets) == 0 {
 		return nil, nil
 	}
 
-	return rets[0].([]*dal.EHRLink), mock.SafeError(rets[1])
+	return rets[0].([]*dal.ExternalLink), mock.SafeError(rets[1])
 }
 
 func optsToInterfaces(opts []dal.QueryOption) []interface{} {

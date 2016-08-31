@@ -1374,9 +1374,9 @@ func TestCreateEHRLink(t *testing.T) {
 	name := "drchrono"
 	url := "https://drchrono.com"
 
-	dl.Expect(mock.NewExpectation(dl.InsertEHRLinkForEntity, eID1, name, url))
+	dl.Expect(mock.NewExpectation(dl.InsertExternalLinkForEntity, eID1, name, url))
 
-	resp, err := s.CreateEHRLink(context.Background(), &directory.CreateEHRLinkRequest{
+	resp, err := s.CreateExternalLink(context.Background(), &directory.CreateExternalLinkRequest{
 		Name:     "drchrono",
 		URL:      "https://drchrono.com",
 		EntityID: eID1.String(),
@@ -1395,9 +1395,9 @@ func TestDeleteEHRLink(t *testing.T) {
 
 	name := "drchrono"
 
-	dl.Expect(mock.NewExpectation(dl.DeleteEHRLinkForEntity, eID1, name))
+	dl.Expect(mock.NewExpectation(dl.DeleteExternalLinkForEntity, eID1, name))
 
-	resp, err := s.DeleteEHRLink(context.Background(), &directory.DeleteEHRLinkRequest{
+	resp, err := s.DeleteExternalLink(context.Background(), &directory.DeleteExternalLinkRequest{
 		Name:     "drchrono",
 		EntityID: eID1.String(),
 	})
@@ -1416,20 +1416,20 @@ func TestEHRLinksForEntity(t *testing.T) {
 	name := "drchrono"
 	url := "https://drchrono.com"
 
-	dl.Expect(mock.NewExpectation(dl.EHRLinksForEntity, eID1).WithReturns([]*dal.EHRLink{
+	dl.Expect(mock.NewExpectation(dl.ExternalLinksForEntity, eID1).WithReturns([]*dal.ExternalLink{
 		{
 			Name: name,
 			URL:  url,
 		},
 	}, nil))
 
-	resp, err := s.LookupEHRLinksForEntity(context.Background(), &directory.LookupEHRLinksForEntityRequest{
+	resp, err := s.LookupExternalLinksForEntity(context.Background(), &directory.LookupExternalLinksForEntityRequest{
 		EntityID: eID1.String(),
 	})
 	test.OK(t, err)
 	test.AssertNotNil(t, resp)
-	test.Equals(t, &directory.LookupEHRLinksforEntityResponse{
-		Links: []*directory.LookupEHRLinksforEntityResponse_EHRLink{
+	test.Equals(t, &directory.LookupExternalLinksforEntityResponse{
+		Links: []*directory.LookupExternalLinksforEntityResponse_ExternalLink{
 			{
 				Name: name,
 				URL:  url,

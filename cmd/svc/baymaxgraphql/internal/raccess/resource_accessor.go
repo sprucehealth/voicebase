@@ -165,7 +165,7 @@ type ResourceAccessor interface {
 	Visit(ctx context.Context, req *care.GetVisitRequest) (*care.GetVisitResponse, error)
 	VisitLayout(ctx context.Context, req *layout.GetVisitLayoutRequest) (*layout.GetVisitLayoutResponse, error)
 	VisitLayoutVersion(ctx context.Context, req *layout.GetVisitLayoutVersionRequest) (*layout.GetVisitLayoutVersionResponse, error)
-	LookupEHRLinksForEntity(ctx context.Context, req *directory.LookupEHRLinksForEntityRequest) (*directory.LookupEHRLinksforEntityResponse, error)
+	LookupExternalLinksForEntity(ctx context.Context, req *directory.LookupExternalLinksForEntityRequest) (*directory.LookupExternalLinksforEntityResponse, error)
 }
 
 type resourceAccessor struct {
@@ -1299,12 +1299,12 @@ func (m *resourceAccessor) GetAnswersForVisit(ctx context.Context, req *care.Get
 	return res, nil
 }
 
-func (m *resourceAccessor) LookupEHRLinksForEntity(ctx context.Context, req *directory.LookupEHRLinksForEntityRequest) (*directory.LookupEHRLinksforEntityResponse, error) {
+func (m *resourceAccessor) LookupExternalLinksForEntity(ctx context.Context, req *directory.LookupExternalLinksForEntityRequest) (*directory.LookupExternalLinksforEntityResponse, error) {
 	if err := m.canAccessResource(ctx, req.EntityID, m.orgsForEntity); err != nil {
 		return nil, err
 	}
 
-	res, err := m.directory.LookupEHRLinksForEntity(ctx, req)
+	res, err := m.directory.LookupExternalLinksForEntity(ctx, req)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

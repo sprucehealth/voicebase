@@ -197,7 +197,7 @@ func (s *syncEvent) createThread(ctx context.Context, patient *sync.Patient, sou
 	}
 
 	if patient.ExternalURL != "" {
-		if _, err := s.directory.CreateEHRLink(ctx, &directory.CreateEHRLinkRequest{
+		if _, err := s.directory.CreateExternalLink(ctx, &directory.CreateExternalLinkRequest{
 			EntityID: externalEntity.ID,
 			Name:     nameForExternalURL(source),
 			URL:      patient.ExternalURL,

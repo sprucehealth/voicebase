@@ -11,7 +11,7 @@ import (
 	"github.com/sprucehealth/backend/svc/payments"
 )
 
-func TestEHRLinkQuery(t *testing.T) {
+func TestExternalLinkQuery(t *testing.T) {
 	acc := &auth.Account{ID: "account_12345", Type: auth.AccountType_PROVIDER}
 	ctx := context.Background()
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -41,10 +41,10 @@ func TestEHRLinkQuery(t *testing.T) {
 		},
 	}, nil))
 
-	g.ra.Expect(mock.NewExpectation(g.ra.LookupEHRLinksForEntity, &directory.LookupEHRLinksForEntityRequest{
+	g.ra.Expect(mock.NewExpectation(g.ra.LookupExternalLinksForEntity, &directory.LookupExternalLinksForEntityRequest{
 		EntityID: id,
-	}).WithReturns(&directory.LookupEHRLinksforEntityResponse{
-		Links: []*directory.LookupEHRLinksforEntityResponse_EHRLink{
+	}).WithReturns(&directory.LookupExternalLinksforEntityResponse{
+		Links: []*directory.LookupExternalLinksforEntityResponse_ExternalLink{
 			{
 				Name: "drchrono",
 				URL:  "https://www.drcrhono.com",
@@ -61,7 +61,7 @@ func TestEHRLinkQuery(t *testing.T) {
    node(id: "entity_12345") {
    	__typename
    	... on Entity {
-	    ehrLinks {
+	    externalLinks {
 	    	name
 	    	url
 	      }
@@ -70,7 +70,7 @@ func TestEHRLinkQuery(t *testing.T) {
  }
 `, nil)
 
-	responseEquals(t, `{"data":{"node":{"__typename":"Entity","ehrLinks":[{"name":"drchrono","url":"https://www.drcrhono.com"},{"name":"hint","url":"https://www.hint.com"}]}}}`, res)
+	responseEquals(t, `{"data":{"node":{"__typename":"Entity","externalLinks":[{"name":"drchrono","url":"https://www.drcrhono.com"},{"name":"hint","url":"https://www.hint.com"}]}}}`, res)
 }
 
 func TestPartnerIntegrations(t *testing.T) {

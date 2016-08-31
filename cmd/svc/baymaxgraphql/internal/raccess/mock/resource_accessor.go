@@ -686,12 +686,12 @@ func (m *ResourceAccessor) ConfigurePatientSync(ctx context.Context, req *patien
 	return rets[0].(*patientsync.ConfigureSyncResponse), mock.SafeError(rets[1])
 }
 
-func (m *ResourceAccessor) LookupEHRLinksForEntity(ctx context.Context, req *directory.LookupEHRLinksForEntityRequest) (*directory.LookupEHRLinksforEntityResponse, error) {
+func (m *ResourceAccessor) LookupExternalLinksForEntity(ctx context.Context, req *directory.LookupExternalLinksForEntityRequest) (*directory.LookupExternalLinksforEntityResponse, error) {
 	rets := m.Record(req)
 	if len(rets) == 0 {
 		return nil, nil
 	}
-	return rets[0].(*directory.LookupEHRLinksforEntityResponse), mock.SafeError(rets[1])
+	return rets[0].(*directory.LookupExternalLinksforEntityResponse), mock.SafeError(rets[1])
 }
 
 func (m *ResourceAccessor) PaymentMethods(ctx context.Context, req *payments.PaymentMethodsRequest) (*payments.PaymentMethodsResponse, error) {

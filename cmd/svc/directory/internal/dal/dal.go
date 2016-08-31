@@ -80,9 +80,9 @@ type DAL interface {
 	EntityProfileForEntity(id EntityID) (*EntityProfile, error)
 	UpsertEntityProfile(model *EntityProfile) (EntityProfileID, error)
 	DeleteEntityProfile(id EntityProfileID) (int64, error)
-	InsertEHRLinkForEntity(entityID EntityID, name, url string) error
-	DeleteEHRLinkForEntity(entityID EntityID, name string) error
-	EHRLinksForEntity(entityID EntityID) ([]*EHRLink, error)
+	InsertExternalLinkForEntity(entityID EntityID, name, url string) error
+	DeleteExternalLinkForEntity(entityID EntityID, name string) error
+	ExternalLinksForEntity(entityID EntityID) ([]*ExternalLink, error)
 }
 
 type dal struct {
@@ -768,8 +768,8 @@ type EntityProfile struct {
 	Modified time.Time
 }
 
-// EHRLink represents a link to an EHR for an entity
-type EHRLink struct {
+// ExternalLink represents a link to an external system for an entity
+type ExternalLink struct {
 	Name string
 	URL  string
 }
@@ -1416,35 +1416,35 @@ func (d *dal) DeleteEntityProfile(id EntityProfileID) (int64, error) {
 	return aff, errors.Trace(err)
 }
 
-func (d *dal) InsertEHRLinkForEntity(entityID EntityID, name, url string) error {
-	_, err := d.db.Exec(`REPLACE INTO ehr_link (entity_id, name, url) VALUES (?,?,?)`, entityID, name, url)
+func (d *dal) InsertExternalLinkForEntity(entityID EntityID, name, url string) error {
+	_, err := d.db.Exec(`REPLACE INTO external_link (entity_id, name, url) VALUES (?,?,?)`, entityID, name, url)
 	return errors.Trace(err)
 }
-func (d *dal) DeleteEHRLinkForEntity(entityID EntityID, name string) error {
-	_, err := d.db.Exec(`DELETE FROM ehr_link WHERE entity_id = ? AND name = ?`, entityID, name)
+func (d *dal) DeleteExternalLinkForEntity(entityID EntityID, name string) error {
+	_, err := d.db.Exec(`DELETE FROM external_link WHERE entity_id = ? AND name = ?`, entityID, name)
 	return errors.Trace(err)
 }
 
-func (d *dal) EHRLinksForEntity(entityID EntityID) ([]*EHRLink, error) {
+func (d *dal) ExternalLinksForEntity(entityID EntityID) ([]*ExternalLink, error) {
 	rows, err := d.db.Query(`
 		SELECT name, url 
-		FROM ehr_link
+		FROM external_link
 		WHERE entity_id = ?`, entityID)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 	defer rows.Close()
 
-	var ehrLinks []*EHRLink
+	var externalLinks []*ExternalLink
 	for rows.Next() {
-		var ehrLink EHRLink
-		if err := rows.Scan(&ehrLink.Name, &ehrLink.URL); err != nil {
+		var externalLink ExternalLink
+		if err := rows.Scan(&externalLink.Name, &externalLink.URL); err != nil {
 			return nil, errors.Trace(err)
 		}
-		ehrLinks = append(ehrLinks, &ehrLink)
+		externalLinks = append(externalLinks, &externalLink)
 	}
 
-	return ehrLinks, errors.Trace(rows.Err())
+	return externalLinks, errors.Trace(rows.Err())
 }
 
 const selectExternalEntityID = `
