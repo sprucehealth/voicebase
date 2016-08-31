@@ -1,0 +1,1 @@
+ALTER TABLE sync_config ADD UNIQUE KEY uk_org_id_source (org_id, source);

@@ -18,7 +18,7 @@ type SyncBookmark struct {
 
 type DAL interface {
 	CreateSyncConfig(cfg *sync.Config, externalID *string) error
-	SyncConfigForOrg(orgID string) (*sync.Config, error)
+	SyncConfigForOrg(orgID, source string) (*sync.Config, error)
 	SyncConfigForExternalID(externalID string) (*sync.Config, error)
 	UpdateSyncBookmarkForOrg(orgID string, bookmark time.Time, status SyncStatus) error
 	SyncBookmarkForOrg(orgID string) (*SyncBookmark, error)
@@ -97,12 +97,12 @@ func (d *dal) CreateSyncConfig(cfg *sync.Config, externalID *string) error {
 	return nil
 }
 
-func (d *dal) SyncConfigForOrg(orgID string) (*sync.Config, error) {
+func (d *dal) SyncConfigForOrg(orgID, source string) (*sync.Config, error) {
 	var data []byte
 	if err := d.db.QueryRow(`
 		SELECT config 
 		FROM sync_config 
-		WHERE org_id = ?`, orgID).Scan(&data); err != nil {
+		WHERE org_id = ? and source = ?`, orgID, source).Scan(&data); err != nil {
 		return nil, errors.Trace(err)
 	}
 

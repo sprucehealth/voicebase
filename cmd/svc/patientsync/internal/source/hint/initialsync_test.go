@@ -28,7 +28,7 @@ func TestInitialSync(t *testing.T) {
 	mocksqsAPI := mock.NewSQSAPI(t)
 	defer mocksqsAPI.Finish()
 
-	dmock.Expect(mock.NewExpectation(dmock.SyncConfigForOrg, "orgID").WithReturns(&sync.Config{
+	dmock.Expect(mock.NewExpectation(dmock.SyncConfigForOrg, "orgID", "SOURCE_HINT").WithReturns(&sync.Config{
 		OrganizationEntityID: "orgID",
 		Source:               sync.SOURCE_HINT,
 		Token: &sync.Config_Hint{

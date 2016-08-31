@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/patientsync"
 	"github.com/sprucehealth/backend/svc/payments"
 )
 
@@ -123,6 +124,11 @@ func TestPartnerIntegrations(t *testing.T) {
 		EntityID: id,
 	}).WithReturns(&payments.VendorAccountsResponse{VendorAccounts: []*payments.VendorAccount{{}}}, nil))
 
+	g.ra.Expect(mock.NewExpectation(g.ra.LookupPatientSyncConfiguration, &patientsync.LookupSyncConfigurationRequest{
+		OrganizationEntityID: id,
+		Source:               patientsync.SOURCE_HINT,
+	}).WithReturns(&patientsync.LookupSyncConfigurationResponse{}, nil))
+
 	res := g.query(ctx, `
  query _ {
    node(id: "entity_12345") {
@@ -141,5 +147,5 @@ func TestPartnerIntegrations(t *testing.T) {
  }
 `, nil)
 
-	responseEquals(t, `{"data":{"node":{"__typename":"Organization","partnerIntegrations":[{"buttonText":"Stripe Dashboard","buttonURL":"https://dashboard.stripe.com","connected":true,"errored":false,"subtitle":"View and manage your transaction history through Stripe.","title":"Connected to Stripe"}]}}}`, res)
+	responseEquals(t, `{"data":{"node":{"__typename":"Organization","partnerIntegrations":[{"buttonText":"Stripe Dashboard","buttonURL":"https://dashboard.stripe.com","connected":true,"errored":false,"subtitle":"View and manage your transaction history through Stripe.","title":"Connected to Stripe"},{"buttonText":"Hint Dashboard","buttonURL":"","connected":true,"errored":false,"subtitle":"View and manage patient membership information in Hint.","title":"Connected to Hint"}]}}}`, res)
 }

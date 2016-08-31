@@ -13,6 +13,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/sync"
 	psettings "github.com/sprucehealth/backend/cmd/svc/patientsync/settings"
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/patientsync"
 	"github.com/sprucehealth/backend/svc/settings"
@@ -147,4 +148,33 @@ func (s *server) ConfigureSync(ctx context.Context, in *patientsync.ConfigureSyn
 	}
 
 	return nil, nil
+}
+
+func (s *server) LookupSyncConfiguration(ctx context.Context, in *patientsync.LookupSyncConfigurationRequest) (*patientsync.LookupSyncConfigurationResponse, error) {
+	if in.OrganizationEntityID != "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "organization_entity_id is missing")
+	} else if in.Source == patientsync.SOURCE_UNKNOWN {
+		return nil, grpcErrorf(codes.InvalidArgument, "source required")
+	}
+
+	syncConfig, err := s.dl.SyncConfigForOrg(in.OrganizationEntityID, in.Source.String())
+	if errors.Cause(err) == dal.NotFound {
+		return nil, grpcErrorf(codes.NotFound, "config not found for %s, %s", in.OrganizationEntityID, in.Source)
+	} else if err != nil {
+		return nil, grpcErrorf(codes.Internal, "unable to lookup sync config for %s, %s : %s", in.OrganizationEntityID, in.Source, err)
+	}
+
+	var threadType patientsync.ThreadCreationType
+	switch syncConfig.ThreadCreationType {
+	case sync.THREAD_CREATION_TYPE_SECURE:
+		threadType = patientsync.THREAD_CREATION_TYPE_SECURE
+	case sync.THREAD_CREATION_TYPE_STANDARD:
+		threadType = patientsync.THREAD_CREATION_TYPE_STANDARD
+
+	}
+
+	return &patientsync.LookupSyncConfigurationResponse{
+		ThreadCreationType: threadType,
+		PracticeID:         syncConfig.GetHint().PracticeID,
+	}, nil
 }

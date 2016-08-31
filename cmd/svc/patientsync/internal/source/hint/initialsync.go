@@ -16,7 +16,7 @@ import (
 func DoInitialSync(dl dal.DAL, orgID string, syncEventsQueueURL string, sqsAPI sqsiface.SQSAPI) error {
 	golog.Debugf("Attempting initial sync for %s", orgID)
 	// get sync config for orgID
-	syncConfig, err := dl.SyncConfigForOrg(orgID)
+	syncConfig, err := dl.SyncConfigForOrg(orgID, sync.SOURCE_HINT.String())
 	if err != nil {
 		return errors.Trace(err)
 	} else if syncConfig.Source != sync.SOURCE_HINT {

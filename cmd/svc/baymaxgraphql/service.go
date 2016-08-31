@@ -40,6 +40,7 @@ type service struct {
 	emailTemplateIDs         emailTemplateIDs
 	transactionalEmailSender string
 	stripeConnectURL         string
+	hintConnectURL           string
 	// TODO: Remove this
 	serviceNumber phone.Number
 	layoutStore   layout.Storage

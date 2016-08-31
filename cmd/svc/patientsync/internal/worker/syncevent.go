@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"time"
 
@@ -63,12 +64,17 @@ func (s *syncEvent) Shutdown() error {
 // processSyncEvent is the core function of the worker to sync a particular event
 // from an EMR to the org's inbox.
 func (s *syncEvent) processSyncEvent(ctx context.Context, data string) error {
-	var event sync.Event
-	if err := event.Unmarshal([]byte(data)); err != nil {
+	decodedData, err := base64.StdEncoding.DecodeString(data)
+	if err != nil {
 		return errors.Trace(err)
 	}
 
-	cfg, err := s.dl.SyncConfigForOrg(event.OrganizationEntityID)
+	var event sync.Event
+	if err := event.Unmarshal([]byte(decodedData)); err != nil {
+		return errors.Trace(err)
+	}
+
+	cfg, err := s.dl.SyncConfigForOrg(event.OrganizationEntityID, event.Source.String())
 	if err != nil {
 		return errors.Errorf("Unable to look up sync config for org %s : %s", event.OrganizationEntityID, err)
 	}

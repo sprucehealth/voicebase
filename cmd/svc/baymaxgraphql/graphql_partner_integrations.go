@@ -4,8 +4,11 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/svc/patientsync"
 	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/graphql"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 var partnerIntegrationType = graphql.NewObject(graphql.ObjectConfig{
@@ -25,9 +28,9 @@ func lookupPartnerIntegrationsForOrg(p graphql.ResolveParams, orgID string) ([]*
 	ctx := p.Context
 	ram := raccess.ResourceAccess(p)
 	svc := serviceFromParams(p)
+
 	// *** stripe ****
 
-	var errored bool
 	stripeIntegration := &models.PartnerIntegration{
 		ButtonText: "Connect to Stripe",
 		ButtonURL:  svc.stripeConnectURL,
@@ -38,8 +41,12 @@ func lookupPartnerIntegrationsForOrg(p graphql.ResolveParams, orgID string) ([]*
 		EntityID: orgID,
 	})
 	if err != nil {
+		// errored
 		golog.Errorf("Unable to read vendor account for %s : %s", orgID, err)
-		errored = true
+		stripeIntegration.Connected = false
+		stripeIntegration.Errored = true
+		stripeIntegration.Title = "Unable to connect to Stripe"
+		stripeIntegration.Subtitle = "Sorry, something went wrong during the connection process, please try connecting again."
 	}
 
 	// connected
@@ -51,13 +58,34 @@ func lookupPartnerIntegrationsForOrg(p graphql.ResolveParams, orgID string) ([]*
 		stripeIntegration.Subtitle = "View and manage your transaction history through Stripe."
 	}
 
-	// errored
-	if errored {
-		stripeIntegration.Connected = false
-		stripeIntegration.Errored = true
-		stripeIntegration.Title = "Unable to connect to Stripe"
-		stripeIntegration.Subtitle = "Sorry, something went wrong during the connection process, please try connecting again."
+	// *** hint ***
+
+	hintIntegration := &models.PartnerIntegration{
+		ButtonText: "Connect to Hint",
+		ButtonURL:  svc.hintConnectURL,
+		Title:      "Connect your Hint Account",
+		Subtitle:   "Import all patients from Hint into Spruce. Before doing this, contact Spruce Support to configure standard or secure conversations for all patients.",
+	}
+	patientSyncResp, err := ram.LookupPatientSyncConfiguration(ctx, &patientsync.LookupSyncConfigurationRequest{
+		OrganizationEntityID: orgID,
+		Source:               patientsync.SOURCE_HINT,
+	})
+	if err != nil && grpc.Code(err) != codes.NotFound {
+		// errored
+		golog.Errorf("Unable to lookup sync configuration for org %s: %s", orgID, err)
+		hintIntegration.Connected = false
+		hintIntegration.Errored = true
+		hintIntegration.Title = "Unable to connect to Hint"
+		hintIntegration.Subtitle = "Sorry, something went wrong during the connection process, please try connecting again."
 	}
 
-	return []*models.PartnerIntegration{stripeIntegration}, nil
+	if patientSyncResp != nil {
+		hintIntegration.Connected = true
+		hintIntegration.Title = "Connected to Hint"
+		hintIntegration.ButtonText = "Hint Dashboard"
+		hintIntegration.ButtonURL = *flagHintConnectURL
+		hintIntegration.Subtitle = "View and manage patient membership information in Hint."
+	}
+
+	return []*models.PartnerIntegration{stripeIntegration, hintIntegration}, nil
 }

@@ -33,8 +33,8 @@ func (m *mockDAL) CreateSyncConfig(cfg *sync.Config, externalID *string) error {
 
 }
 
-func (m *mockDAL) SyncConfigForOrg(orgID string) (*sync.Config, error) {
-	rets := m.Record(orgID)
+func (m *mockDAL) SyncConfigForOrg(orgID, source string) (*sync.Config, error) {
+	rets := m.Record(orgID, source)
 	if len(rets) == 0 {
 		return nil, nil
 	}

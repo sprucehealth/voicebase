@@ -13,6 +13,8 @@
 		InitiateSyncResponse
 		ConfigureSyncRequest
 		ConfigureSyncResponse
+		LookupSyncConfigurationRequest
+		LookupSyncConfigurationResponse
 */
 package patientsync
 
@@ -73,6 +75,27 @@ var Source_value = map[string]int32{
 
 func (Source) EnumDescriptor() ([]byte, []int) { return fileDescriptorSvc, []int{0} }
 
+type ThreadCreationType int32
+
+const (
+	THREAD_CREATION_TYPE_INVALID  ThreadCreationType = 0
+	THREAD_CREATION_TYPE_SECURE   ThreadCreationType = 1
+	THREAD_CREATION_TYPE_STANDARD ThreadCreationType = 2
+)
+
+var ThreadCreationType_name = map[int32]string{
+	0: "THREAD_CREATION_TYPE_INVALID",
+	1: "THREAD_CREATION_TYPE_SECURE",
+	2: "THREAD_CREATION_TYPE_STANDARD",
+}
+var ThreadCreationType_value = map[string]int32{
+	"THREAD_CREATION_TYPE_INVALID":  0,
+	"THREAD_CREATION_TYPE_SECURE":   1,
+	"THREAD_CREATION_TYPE_STANDARD": 2,
+}
+
+func (ThreadCreationType) EnumDescriptor() ([]byte, []int) { return fileDescriptorSvc, []int{1} }
+
 type InitiateSyncRequest struct {
 	OrganizationEntityID string `protobuf:"bytes,1,opt,name=organization_entity_id,proto3" json:"organization_entity_id,omitempty"`
 	Source               Source `protobuf:"varint,2,opt,name=source,proto3,enum=patientsync.Source" json:"source,omitempty"`
@@ -106,15 +129,47 @@ func (m *ConfigureSyncResponse) Reset()                    { *m = ConfigureSyncR
 func (*ConfigureSyncResponse) ProtoMessage()               {}
 func (*ConfigureSyncResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{3} }
 
+type LookupSyncConfigurationRequest struct {
+	OrganizationEntityID string `protobuf:"bytes,1,opt,name=organization_entity_id,proto3" json:"organization_entity_id,omitempty"`
+	Source               Source `protobuf:"varint,2,opt,name=source,proto3,enum=patientsync.Source" json:"source,omitempty"`
+}
+
+func (m *LookupSyncConfigurationRequest) Reset()      { *m = LookupSyncConfigurationRequest{} }
+func (*LookupSyncConfigurationRequest) ProtoMessage() {}
+func (*LookupSyncConfigurationRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptorSvc, []int{4}
+}
+
+type LookupSyncConfigurationResponse struct {
+	PracticeID         string             `protobuf:"bytes,1,opt,name=practice_id,proto3" json:"practice_id,omitempty"`
+	ThreadCreationType ThreadCreationType `protobuf:"varint,2,opt,name=thread_creation_type,proto3,enum=patientsync.ThreadCreationType" json:"thread_creation_type,omitempty"`
+}
+
+func (m *LookupSyncConfigurationResponse) Reset()      { *m = LookupSyncConfigurationResponse{} }
+func (*LookupSyncConfigurationResponse) ProtoMessage() {}
+func (*LookupSyncConfigurationResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptorSvc, []int{5}
+}
+
 func init() {
 	proto.RegisterType((*InitiateSyncRequest)(nil), "patientsync.InitiateSyncRequest")
 	proto.RegisterType((*InitiateSyncResponse)(nil), "patientsync.InitiateSyncResponse")
 	proto.RegisterType((*ConfigureSyncRequest)(nil), "patientsync.ConfigureSyncRequest")
 	proto.RegisterType((*ConfigureSyncResponse)(nil), "patientsync.ConfigureSyncResponse")
+	proto.RegisterType((*LookupSyncConfigurationRequest)(nil), "patientsync.LookupSyncConfigurationRequest")
+	proto.RegisterType((*LookupSyncConfigurationResponse)(nil), "patientsync.LookupSyncConfigurationResponse")
 	proto.RegisterEnum("patientsync.Source", Source_name, Source_value)
+	proto.RegisterEnum("patientsync.ThreadCreationType", ThreadCreationType_name, ThreadCreationType_value)
 }
 func (x Source) String() string {
 	s, ok := Source_name[int32(x)]
+	if ok {
+		return s
+	}
+	return strconv.Itoa(int(x))
+}
+func (x ThreadCreationType) String() string {
+	s, ok := ThreadCreationType_name[int32(x)]
 	if ok {
 		return s
 	}
@@ -243,6 +298,72 @@ func (this *ConfigureSyncResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *LookupSyncConfigurationRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*LookupSyncConfigurationRequest)
+	if !ok {
+		that2, ok := that.(LookupSyncConfigurationRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.OrganizationEntityID != that1.OrganizationEntityID {
+		return false
+	}
+	if this.Source != that1.Source {
+		return false
+	}
+	return true
+}
+func (this *LookupSyncConfigurationResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*LookupSyncConfigurationResponse)
+	if !ok {
+		that2, ok := that.(LookupSyncConfigurationResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.PracticeID != that1.PracticeID {
+		return false
+	}
+	if this.ThreadCreationType != that1.ThreadCreationType {
+		return false
+	}
+	return true
+}
 func (this *InitiateSyncRequest) GoString() string {
 	if this == nil {
 		return "nil"
@@ -281,6 +402,28 @@ func (this *ConfigureSyncResponse) GoString() string {
 	}
 	s := make([]string, 0, 4)
 	s = append(s, "&patientsync.ConfigureSyncResponse{")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *LookupSyncConfigurationRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&patientsync.LookupSyncConfigurationRequest{")
+	s = append(s, "OrganizationEntityID: "+fmt.Sprintf("%#v", this.OrganizationEntityID)+",\n")
+	s = append(s, "Source: "+fmt.Sprintf("%#v", this.Source)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *LookupSyncConfigurationResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&patientsync.LookupSyncConfigurationResponse{")
+	s = append(s, "PracticeID: "+fmt.Sprintf("%#v", this.PracticeID)+",\n")
+	s = append(s, "ThreadCreationType: "+fmt.Sprintf("%#v", this.ThreadCreationType)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -330,6 +473,8 @@ type PatientSyncClient interface {
 	// the account is in a connected state on a move forward basis for all new patients
 	// created in the source.
 	InitiateSync(ctx context.Context, in *InitiateSyncRequest, opts ...grpc.CallOption) (*InitiateSyncResponse, error)
+	// LookupSyncConfiguration enables the looking up of sync configuration for an organization from a particular source.
+	LookupSyncConfiguration(ctx context.Context, in *LookupSyncConfigurationRequest, opts ...grpc.CallOption) (*LookupSyncConfigurationResponse, error)
 }
 
 type patientSyncClient struct {
@@ -358,6 +503,15 @@ func (c *patientSyncClient) InitiateSync(ctx context.Context, in *InitiateSyncRe
 	return out, nil
 }
 
+func (c *patientSyncClient) LookupSyncConfiguration(ctx context.Context, in *LookupSyncConfigurationRequest, opts ...grpc.CallOption) (*LookupSyncConfigurationResponse, error) {
+	out := new(LookupSyncConfigurationResponse)
+	err := grpc.Invoke(ctx, "/patientsync.PatientSync/LookupSyncConfiguration", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for PatientSync service
 
 type PatientSyncServer interface {
@@ -369,6 +523,8 @@ type PatientSyncServer interface {
 	// the account is in a connected state on a move forward basis for all new patients
 	// created in the source.
 	InitiateSync(context.Context, *InitiateSyncRequest) (*InitiateSyncResponse, error)
+	// LookupSyncConfiguration enables the looking up of sync configuration for an organization from a particular source.
+	LookupSyncConfiguration(context.Context, *LookupSyncConfigurationRequest) (*LookupSyncConfigurationResponse, error)
 }
 
 func RegisterPatientSyncServer(s *grpc.Server, srv PatientSyncServer) {
@@ -411,6 +567,24 @@ func _PatientSync_InitiateSync_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PatientSync_LookupSyncConfiguration_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LookupSyncConfigurationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PatientSyncServer).LookupSyncConfiguration(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/patientsync.PatientSync/LookupSyncConfiguration",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PatientSyncServer).LookupSyncConfiguration(ctx, req.(*LookupSyncConfigurationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _PatientSync_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "patientsync.PatientSync",
 	HandlerType: (*PatientSyncServer)(nil),
@@ -422,6 +596,10 @@ var _PatientSync_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "InitiateSync",
 			Handler:    _PatientSync_InitiateSync_Handler,
+		},
+		{
+			MethodName: "LookupSyncConfiguration",
+			Handler:    _PatientSync_LookupSyncConfiguration_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -528,6 +706,64 @@ func (m *ConfigureSyncResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *LookupSyncConfigurationRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *LookupSyncConfigurationRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.OrganizationEntityID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.OrganizationEntityID)))
+		i += copy(data[i:], m.OrganizationEntityID)
+	}
+	if m.Source != 0 {
+		data[i] = 0x10
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Source))
+	}
+	return i, nil
+}
+
+func (m *LookupSyncConfigurationResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *LookupSyncConfigurationResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.PracticeID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.PracticeID)))
+		i += copy(data[i:], m.PracticeID)
+	}
+	if m.ThreadCreationType != 0 {
+		data[i] = 0x10
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.ThreadCreationType))
+	}
+	return i, nil
+}
+
 func encodeFixed64Svc(data []byte, offset int, v uint64) int {
 	data[offset] = uint8(v)
 	data[offset+1] = uint8(v >> 8)
@@ -597,6 +833,32 @@ func (m *ConfigureSyncResponse) Size() (n int) {
 	return n
 }
 
+func (m *LookupSyncConfigurationRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.OrganizationEntityID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if m.Source != 0 {
+		n += 1 + sovSvc(uint64(m.Source))
+	}
+	return n
+}
+
+func (m *LookupSyncConfigurationResponse) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.PracticeID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if m.ThreadCreationType != 0 {
+		n += 1 + sovSvc(uint64(m.ThreadCreationType))
+	}
+	return n
+}
+
 func sovSvc(x uint64) (n int) {
 	for {
 		n++
@@ -647,6 +909,28 @@ func (this *ConfigureSyncResponse) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&ConfigureSyncResponse{`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *LookupSyncConfigurationRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&LookupSyncConfigurationRequest{`,
+		`OrganizationEntityID:` + fmt.Sprintf("%v", this.OrganizationEntityID) + `,`,
+		`Source:` + fmt.Sprintf("%v", this.Source) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *LookupSyncConfigurationResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&LookupSyncConfigurationResponse{`,
+		`PracticeID:` + fmt.Sprintf("%v", this.PracticeID) + `,`,
+		`ThreadCreationType:` + fmt.Sprintf("%v", this.ThreadCreationType) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -984,6 +1268,202 @@ func (m *ConfigureSyncResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
+func (m *LookupSyncConfigurationRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: LookupSyncConfigurationRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: LookupSyncConfigurationRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OrganizationEntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.OrganizationEntityID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Source", wireType)
+			}
+			m.Source = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.Source |= (Source(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *LookupSyncConfigurationResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: LookupSyncConfigurationResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: LookupSyncConfigurationResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PracticeID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PracticeID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ThreadCreationType", wireType)
+			}
+			m.ThreadCreationType = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.ThreadCreationType |= (ThreadCreationType(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func skipSvc(data []byte) (n int, err error) {
 	l := len(data)
 	iNdEx := 0
@@ -1092,31 +1572,40 @@ var (
 func init() { proto.RegisterFile("svc.proto", fileDescriptorSvc) }
 
 var fileDescriptorSvc = []byte{
-	// 402 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xe2, 0xe2, 0x2c, 0x2e, 0x4b, 0xd6,
-	0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0xe2, 0x2e, 0x48, 0x2c, 0xc9, 0x4c, 0xcd, 0x2b, 0x29, 0xae,
-	0xcc, 0x4b, 0x96, 0xd2, 0x4d, 0xcf, 0x2c, 0xc9, 0x28, 0x4d, 0xd2, 0x4b, 0xce, 0xcf, 0xd5, 0x4f,
-	0xcf, 0x4f, 0xcf, 0xd7, 0x07, 0xab, 0x49, 0x2a, 0x4d, 0x03, 0xf3, 0xc0, 0x1c, 0x30, 0x0b, 0xa2,
-	0x57, 0xa9, 0x84, 0x4b, 0xd8, 0x33, 0x2f, 0xb3, 0x24, 0x33, 0xb1, 0x24, 0x35, 0xb8, 0x32, 0x2f,
-	0x39, 0x28, 0xb5, 0xb0, 0x34, 0xb5, 0xb8, 0x44, 0xc8, 0x82, 0x4b, 0x2c, 0xbf, 0x28, 0x3d, 0x31,
-	0x2f, 0xb3, 0x2a, 0xb1, 0x24, 0x33, 0x3f, 0x2f, 0x3e, 0x35, 0xaf, 0x24, 0xb3, 0xa4, 0x32, 0x3e,
-	0x33, 0x45, 0x82, 0x51, 0x81, 0x51, 0x83, 0xd3, 0x49, 0xe2, 0xd1, 0x3d, 0x79, 0x11, 0x7f, 0x24,
-	0x15, 0xae, 0x60, 0x05, 0x9e, 0x2e, 0x42, 0xca, 0x5c, 0x6c, 0xc5, 0xf9, 0xa5, 0x45, 0xc9, 0xa9,
-	0x12, 0x4c, 0x0a, 0x8c, 0x1a, 0x7c, 0x46, 0xc2, 0x7a, 0x48, 0xae, 0xd3, 0x0b, 0x06, 0x4b, 0x29,
-	0x89, 0x71, 0x89, 0xa0, 0xda, 0x5a, 0x5c, 0x90, 0x9f, 0x57, 0x9c, 0xaa, 0xd4, 0xc2, 0xc8, 0x25,
-	0xe2, 0x9c, 0x9f, 0x97, 0x96, 0x99, 0x5e, 0x5a, 0x44, 0x47, 0xf7, 0x08, 0xf1, 0x72, 0xb1, 0x96,
-	0xe4, 0x67, 0xa7, 0xe6, 0x49, 0x30, 0x83, 0x4c, 0x53, 0x12, 0xe7, 0x12, 0x45, 0x73, 0x05, 0xc4,
-	0x7d, 0x5a, 0x69, 0x5c, 0x6c, 0x50, 0x1d, 0x42, 0x5c, 0x7c, 0xc1, 0xfe, 0xa1, 0x41, 0xce, 0xae,
-	0xf1, 0xa1, 0x7e, 0xde, 0x7e, 0xfe, 0xe1, 0x7e, 0x02, 0x0c, 0x42, 0xc2, 0x5c, 0xfc, 0x50, 0x31,
-	0x97, 0x20, 0x67, 0x8f, 0x20, 0x7f, 0x3f, 0x7f, 0x01, 0x46, 0x21, 0x7e, 0x2e, 0x6e, 0xa8, 0xa0,
-	0x87, 0xa7, 0x5f, 0x88, 0x00, 0x13, 0x92, 0x4e, 0x57, 0x1f, 0xc7, 0x10, 0x4f, 0x7f, 0x3f, 0x01,
-	0x66, 0x21, 0x3e, 0x2e, 0x2e, 0xa8, 0x98, 0x73, 0x70, 0x98, 0x00, 0x8b, 0xd1, 0x2e, 0x46, 0x2e,
-	0xee, 0x00, 0x88, 0x33, 0x41, 0xf6, 0x0b, 0x85, 0x71, 0xf1, 0xa2, 0x38, 0x48, 0x48, 0x11, 0xc5,
-	0x17, 0xd8, 0x82, 0x4c, 0x4a, 0x09, 0x9f, 0x12, 0x88, 0x7f, 0x84, 0x82, 0xb9, 0x78, 0x90, 0xe3,
-	0x41, 0x48, 0x01, 0x45, 0x0f, 0x96, 0x84, 0x21, 0xa5, 0x88, 0x47, 0x05, 0xc4, 0x50, 0x27, 0x9d,
-	0x0b, 0x0f, 0xe5, 0x18, 0x6e, 0x3c, 0x94, 0x63, 0xf8, 0xf0, 0x50, 0x8e, 0xb1, 0xe1, 0x91, 0x1c,
-	0xe3, 0x8a, 0x47, 0x72, 0x8c, 0x27, 0x1e, 0xc9, 0x31, 0x5e, 0x78, 0x24, 0xc7, 0xf8, 0xe0, 0x91,
-	0x1c, 0xe3, 0x8b, 0x47, 0x72, 0x0c, 0x1f, 0x1e, 0xc9, 0x31, 0x4e, 0x78, 0x2c, 0xc7, 0x90, 0xc4,
-	0x06, 0x4e, 0x87, 0xc6, 0x80, 0x00, 0x00, 0x00, 0xff, 0xff, 0xe7, 0x1c, 0xea, 0xfe, 0xd0, 0x02,
-	0x00, 0x00,
+	// 553 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xbc, 0x94, 0x3f, 0x6f, 0xd3, 0x5c,
+	0x14, 0xc6, 0x7d, 0xd3, 0xf7, 0xad, 0xd4, 0x13, 0x9a, 0x5a, 0xb7, 0xa1, 0x8d, 0x02, 0xdc, 0xfc,
+	0xe9, 0x52, 0x95, 0x92, 0x4a, 0x65, 0x61, 0x61, 0x48, 0x6d, 0x4b, 0xb1, 0x88, 0xec, 0xc8, 0x76,
+	0x82, 0x98, 0x2c, 0xc7, 0xbd, 0x49, 0xad, 0x0a, 0x5f, 0x63, 0x5f, 0x23, 0xa5, 0x0b, 0x0c, 0xb0,
+	0xf3, 0x31, 0x18, 0xf9, 0x18, 0x8c, 0x1d, 0x99, 0x2a, 0x62, 0x16, 0xc6, 0x7e, 0x04, 0x14, 0xc7,
+	0x15, 0x31, 0xa4, 0x11, 0x53, 0x37, 0xdf, 0xe3, 0xdf, 0xb9, 0xcf, 0xa3, 0xc7, 0xe7, 0x18, 0x36,
+	0xa2, 0xb7, 0x6e, 0x2b, 0x08, 0x19, 0x67, 0xb8, 0x18, 0x38, 0xdc, 0xa3, 0x3e, 0x8f, 0x26, 0xbe,
+	0x5b, 0x7d, 0x32, 0xf6, 0xf8, 0x59, 0x3c, 0x6c, 0xb9, 0xec, 0xf5, 0xd1, 0x98, 0x8d, 0xd9, 0x51,
+	0xca, 0x0c, 0xe3, 0x51, 0x7a, 0x4a, 0x0f, 0xe9, 0xd3, 0xbc, 0xb7, 0xc9, 0x61, 0x5b, 0xf5, 0x3d,
+	0xee, 0x39, 0x9c, 0x9a, 0x13, 0xdf, 0x35, 0xe8, 0x9b, 0x98, 0x46, 0x1c, 0x3f, 0x83, 0x1d, 0x16,
+	0x8e, 0x1d, 0xdf, 0xbb, 0x70, 0xb8, 0xc7, 0x7c, 0x9b, 0xfa, 0xdc, 0xe3, 0x13, 0xdb, 0x3b, 0xad,
+	0xa0, 0x3a, 0xda, 0xdf, 0x38, 0xa9, 0x24, 0x57, 0xb5, 0xb2, 0xbe, 0x40, 0x28, 0x29, 0xa0, 0xca,
+	0x78, 0x0f, 0xd6, 0x23, 0x16, 0x87, 0x2e, 0xad, 0x14, 0xea, 0x68, 0xbf, 0x74, 0xbc, 0xdd, 0x5a,
+	0x70, 0xd7, 0x32, 0xd3, 0x57, 0xcd, 0x1d, 0x28, 0xe7, 0x55, 0xa3, 0x80, 0xf9, 0x11, 0x6d, 0x7e,
+	0x40, 0x50, 0x96, 0x98, 0x3f, 0xf2, 0xc6, 0x71, 0x78, 0x87, 0x7e, 0xf0, 0x26, 0xfc, 0xcf, 0xd9,
+	0x39, 0xf5, 0x2b, 0x6b, 0xb3, 0xdb, 0x9a, 0xbb, 0x70, 0xff, 0x0f, 0x17, 0x99, 0xbf, 0x77, 0x40,
+	0xba, 0x8c, 0x9d, 0xc7, 0xc1, 0xac, 0x7a, 0x83, 0xa4, 0x7a, 0x77, 0x14, 0xdc, 0x47, 0x04, 0xb5,
+	0x5b, 0x1d, 0xcc, 0x4d, 0xe2, 0x3d, 0x28, 0x06, 0xa1, 0xe3, 0x72, 0xcf, 0xa5, 0xbf, 0x75, 0x4b,
+	0xc9, 0x55, 0x0d, 0x7a, 0x59, 0x59, 0x95, 0xf1, 0x73, 0x28, 0xf3, 0xb3, 0x90, 0x3a, 0xa7, 0xb6,
+	0x1b, 0xd2, 0xb9, 0x55, 0x3e, 0x09, 0x6e, 0xb4, 0x6b, 0x39, 0x6d, 0x2b, 0x05, 0xa5, 0x8c, 0xb3,
+	0x26, 0x01, 0x3d, 0x18, 0xc1, 0x7a, 0x16, 0x1d, 0x86, 0x92, 0xa9, 0xf7, 0x0d, 0x49, 0xb1, 0xfb,
+	0xda, 0x0b, 0x4d, 0x7f, 0xa9, 0x89, 0x02, 0xde, 0x86, 0xad, 0xac, 0x26, 0x1b, 0x52, 0xc7, 0xd0,
+	0x35, 0x5d, 0x44, 0x78, 0x0b, 0x8a, 0x59, 0xb1, 0xa3, 0x6a, 0x96, 0x58, 0x58, 0xe8, 0x54, 0xba,
+	0x6d, 0x4b, 0xd5, 0x35, 0x71, 0x0d, 0x97, 0x00, 0xb2, 0x9a, 0x64, 0x0e, 0xc4, 0xff, 0x0e, 0x2e,
+	0x00, 0xff, 0xad, 0x8e, 0xeb, 0xf0, 0xd0, 0xea, 0x18, 0x4a, 0x5b, 0xb6, 0x25, 0x43, 0x49, 0x5b,
+	0x6d, 0xeb, 0x55, 0x4f, 0xb1, 0x55, 0x6d, 0xd0, 0xee, 0xaa, 0xb2, 0x28, 0xe0, 0x1a, 0x3c, 0x58,
+	0x4a, 0x98, 0x8a, 0xd4, 0x37, 0x14, 0x11, 0xe1, 0x06, 0x3c, 0x5a, 0x0e, 0x58, 0x6d, 0x4d, 0x6e,
+	0x1b, 0xb2, 0x58, 0x38, 0xfe, 0x52, 0x80, 0x62, 0x6f, 0x1e, 0xc3, 0x2c, 0x6c, 0x3c, 0x80, 0xcd,
+	0xdc, 0x54, 0xe0, 0x46, 0x2e, 0xa5, 0x65, 0x73, 0x5b, 0x6d, 0xae, 0x42, 0xb2, 0xef, 0x65, 0xc2,
+	0xbd, 0xc5, 0x65, 0xc0, 0xf5, 0x5c, 0xcf, 0x92, 0xed, 0xac, 0x36, 0x56, 0x10, 0xd9, 0xa5, 0x1c,
+	0x76, 0x6f, 0x99, 0x13, 0xfc, 0x38, 0xd7, 0xbd, 0x7a, 0x9e, 0xab, 0x87, 0xff, 0x06, 0xcf, 0x55,
+	0x4f, 0x0e, 0x2f, 0xa7, 0x44, 0xf8, 0x36, 0x25, 0xc2, 0xf5, 0x94, 0xa0, 0xf7, 0x09, 0x41, 0x9f,
+	0x13, 0x82, 0xbe, 0x26, 0x04, 0x5d, 0x26, 0x04, 0x7d, 0x4f, 0x08, 0xfa, 0x99, 0x10, 0xe1, 0x3a,
+	0x21, 0xe8, 0xd3, 0x0f, 0x22, 0x0c, 0xd7, 0xd3, 0x5f, 0xd0, 0xd3, 0x5f, 0x01, 0x00, 0x00, 0xff,
+	0xff, 0xce, 0x03, 0x59, 0x1a, 0xcb, 0x04, 0x00, 0x00,
 }

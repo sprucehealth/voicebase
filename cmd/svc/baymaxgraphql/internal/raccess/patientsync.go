@@ -11,10 +11,13 @@ func (m *resourceAccessor) ConfigurePatientSync(ctx context.Context, req *patien
 		return nil, err
 	}
 
-	resp, err := m.patientsync.ConfigureSync(ctx, req)
-	if err != nil {
+	return m.patientsync.ConfigureSync(ctx, req)
+}
+
+func (m *resourceAccessor) LookupPatientSyncConfiguration(ctx context.Context, req *patientsync.LookupSyncConfigurationRequest) (*patientsync.LookupSyncConfigurationResponse, error) {
+	if err := m.canAccessResource(ctx, req.OrganizationEntityID, m.orgsForEntity); err != nil {
 		return nil, err
 	}
 
-	return resp, nil
+	return m.patientsync.LookupSyncConfiguration(ctx, req)
 }

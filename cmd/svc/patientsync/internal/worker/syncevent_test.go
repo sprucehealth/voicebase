@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"encoding/base64"
 	"testing"
 
 	dalmock "github.com/sprucehealth/backend/cmd/svc/patientsync/internal/dal/mock"
@@ -49,7 +50,7 @@ func TestStandardThreadSync(t *testing.T) {
 	dmock := dalmock.New(t)
 	defer mock.FinishAll(dmock, tmock, dirmock)
 
-	dmock.Expect(mock.NewExpectation(dmock.SyncConfigForOrg, orgID).WithReturns(&sync.Config{
+	dmock.Expect(mock.NewExpectation(dmock.SyncConfigForOrg, orgID, "SOURCE_ELATION").WithReturns(&sync.Config{
 		OrganizationEntityID: orgID,
 		Source:               sync.SOURCE_ELATION,
 		ThreadCreationType:   sync.THREAD_CREATION_TYPE_STANDARD,
@@ -150,7 +151,7 @@ func TestStandardThreadSync(t *testing.T) {
 	data, err := event.Marshal()
 	test.OK(t, err)
 	s := NewSyncEvent(dmock, dirmock, tmock, nil, "", "")
-	test.OK(t, s.(*syncEvent).processSyncEvent(context.Background(), string(data)))
+	test.OK(t, s.(*syncEvent).processSyncEvent(context.Background(), base64.StdEncoding.EncodeToString(data)))
 }
 
 func TestStandardThreadSync_EntityExists(t *testing.T) {
@@ -188,7 +189,7 @@ func TestStandardThreadSync_EntityExists(t *testing.T) {
 	dmock := dalmock.New(t)
 	defer mock.FinishAll(dmock, tmock, dirmock)
 
-	dmock.Expect(mock.NewExpectation(dmock.SyncConfigForOrg, orgID).WithReturns(&sync.Config{
+	dmock.Expect(mock.NewExpectation(dmock.SyncConfigForOrg, orgID, "SOURCE_ELATION").WithReturns(&sync.Config{
 		OrganizationEntityID: orgID,
 		Source:               sync.SOURCE_ELATION,
 		ThreadCreationType:   sync.THREAD_CREATION_TYPE_STANDARD,
@@ -274,7 +275,7 @@ func TestStandardThreadSync_EntityExists(t *testing.T) {
 	data, err := event.Marshal()
 	test.OK(t, err)
 	s := NewSyncEvent(dmock, dirmock, tmock, nil, "", "")
-	test.OK(t, s.(*syncEvent).processSyncEvent(context.Background(), string(data)))
+	test.OK(t, s.(*syncEvent).processSyncEvent(context.Background(), base64.StdEncoding.EncodeToString(data)))
 }
 
 func TestStandardThreadSync_ThreadExists(t *testing.T) {
@@ -312,7 +313,7 @@ func TestStandardThreadSync_ThreadExists(t *testing.T) {
 	dmock := dalmock.New(t)
 	defer mock.FinishAll(dmock, tmock, dirmock)
 
-	dmock.Expect(mock.NewExpectation(dmock.SyncConfigForOrg, orgID).WithReturns(&sync.Config{
+	dmock.Expect(mock.NewExpectation(dmock.SyncConfigForOrg, orgID, "SOURCE_ELATION").WithReturns(&sync.Config{
 		OrganizationEntityID: orgID,
 		Source:               sync.SOURCE_ELATION,
 		ThreadCreationType:   sync.THREAD_CREATION_TYPE_STANDARD,
@@ -391,5 +392,5 @@ func TestStandardThreadSync_ThreadExists(t *testing.T) {
 	data, err := event.Marshal()
 	test.OK(t, err)
 	s := NewSyncEvent(dmock, dirmock, tmock, nil, "", "")
-	test.OK(t, s.(*syncEvent).processSyncEvent(context.Background(), string(data)))
+	test.OK(t, s.(*syncEvent).processSyncEvent(context.Background(), base64.StdEncoding.EncodeToString(data)))
 }

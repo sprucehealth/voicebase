@@ -146,6 +146,7 @@ func NewGraphQL(
 	metricsRegistry metrics.Registry,
 	transactionalEmailSender string,
 	stripeConnectURL string,
+	hintConnectURL string,
 ) http.Handler {
 	statRequests := metrics.NewCounter()
 	statResponseErrors := metrics.NewCounter()
@@ -177,6 +178,7 @@ func NewGraphQL(
 			care:             care,
 			spruceOrgID:      spruceOrgID,
 			stripeConnectURL: stripeConnectURL,
+			hintConnectURL:   hintConnectURL,
 			staticURLPrefix:  staticURLPrefix,
 			sns:              sns,
 			supportMessageTopicARN:   supportMessageTopicARN,

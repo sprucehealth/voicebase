@@ -14,6 +14,12 @@ enum Source {
 	SOURCE_CSV = 4;
 }
 
+enum ThreadCreationType {
+	THREAD_CREATION_TYPE_INVALID = 0;
+	THREAD_CREATION_TYPE_SECURE = 1;
+	THREAD_CREATION_TYPE_STANDARD = 2;
+}
+
 
 message InitiateSyncRequest {
 	string organization_entity_id = 1 [(gogoproto.customname) = "OrganizationEntityID"];
@@ -32,6 +38,16 @@ message ConfigureSyncRequest{
 message ConfigureSyncResponse {
 }
 
+message LookupSyncConfigurationRequest {
+	string organization_entity_id = 1 [(gogoproto.customname) = "OrganizationEntityID"];
+	Source source = 2;
+}
+
+message LookupSyncConfigurationResponse {
+	string practice_id = 1 [(gogoproto.customname) = "PracticeID"];
+	ThreadCreationType thread_creation_type = 2;
+}
+
 service PatientSync {
 	
 	// ConfigureSync sets up a patient sync for a practice. 
@@ -43,4 +59,7 @@ service PatientSync {
 	// the account is in a connected state on a move forward basis for all new patients
 	// created in the source.
 	rpc InitiateSync (InitiateSyncRequest) returns (InitiateSyncResponse);
+
+	// LookupSyncConfiguration enables the looking up of sync configuration for an organization from a particular source.
+	rpc LookupSyncConfiguration(LookupSyncConfigurationRequest) returns (LookupSyncConfigurationResponse);
 }

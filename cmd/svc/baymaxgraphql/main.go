@@ -75,6 +75,7 @@ var (
 	flagPaymentsAddr     = flag.String("payments_addr", "_payments._tcp.service", "host:port of payments service")
 	flagPatientSyncAddr  = flag.String("patientsync_addr", "_patientsync._tcp.service", "host:port of patientsync service")
 	flagStripeConnectURL = flag.String("stripe_connect_url", "", "url for stripe connect")
+	flagHintConnectURL   = flag.String("hint_connect_url", "", "integration URL for hint")
 
 	// Messages
 	flagSQSDeviceRegistrationURL   = flag.String("sqs_device_registration_url", "", "the sqs url for device registration messages")
@@ -323,6 +324,7 @@ func main() {
 		svc.MetricsRegistry.Scope("handler"),
 		*flagTransactionalEmailSender,
 		*flagStripeConnectURL,
+		*flagHintConnectURL,
 	)
 	r.Handle("/graphql", cors.New(cors.Options{
 		AllowedOrigins:   corsOrigins,
