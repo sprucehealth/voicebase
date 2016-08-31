@@ -256,6 +256,7 @@ func AddCustomer(
 	dl dal.DAL,
 	directoryClient directory.DirectoryClient,
 	stripeClient istripe.IdempotentStripeClient) (*dal.Customer, error) {
+
 	// Check to see if we've already added this customer
 	customer, err := dl.CustomerForVendor(ctx, vendorAccount.ID, entityID)
 	if err != nil && errors.Cause(err) != dal.ErrNotFound {
@@ -264,78 +265,49 @@ func AddCustomer(
 		golog.Debugf("Customer FOUND - Entity: %s for VendorAccount: %s NOT ADDING", entityID, vendorAccount.ID)
 		return customer, nil
 	}
-
-	// If we haven't added this customer look up the information we will want to associate with them
-	ent, err := directory.SingleEntity(ctx, directoryClient, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-			EntityID: entityID,
-		},
-		RequestedInformation: &directory.RequestedInformation{
-			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
-		},
-	})
-	if errors.Cause(err) == directory.ErrEntityNotFound {
-		return nil, grpcErrorf(codes.NotFound, "Entity %s Not Found", entityID)
-	} else if err != nil {
-		return nil, errors.Trace(err)
-	}
-
-	// TODO: In the future how do we know what email to use?
-	var customerEmail string
-	for _, c := range ent.Contacts {
-		if c.ContactType == directory.ContactType_EMAIL && !c.Provisioned {
-			customerEmail = c.Value
-			break
-		}
-	}
-	if customerEmail == "" {
-		// TODO: Is worth an error?
-		golog.Errorf("Encountered payments customer addition for entity %s but could not find an associated unprovisioned email", ent.ID)
-	}
+	//TODO: Assert remote existance
 
 	var newCustomer *dal.Customer
-	switch vendorAccount.AccountType {
-	case dal.VendorAccountAccountTypeStripe:
-		stripeCustomer, err := stripeClient.CreateCustomer(ctx, &stripe.CustomerParams{
-			Desc:  customerDescription(ent),
-			Email: customerEmail,
-			Params: stripe.Params{
-				StripeAccount: vendorAccount.ConnectedAccountID,
-				Meta:          map[string]string{"entity_id": entityID},
-			},
-		})
+	// This transaction is likely ignored since an outer one is in effect, but do it anyways
+	if err := dl.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
+		switch vendorAccount.AccountType {
+		case dal.VendorAccountAccountTypeStripe:
+			stripeCustomer, err := stripeClient.CreateCustomer(ctx, &stripe.CustomerParams{
+				Params: stripe.Params{
+					StripeAccount: vendorAccount.ConnectedAccountID,
+					Meta:          map[string]string{"entity_id": entityID},
+				},
+			})
+			if err != nil {
+				return errors.Trace(err)
+			}
+			newCustomer = &dal.Customer{
+				StorageType: dal.CustomerStorageTypeStripe,
+				StorageID:   stripeCustomer.ID,
+			}
+		default:
+			return errors.Errorf("Unknown vendor account type %s for vendor account %s customer creation", vendorAccount.AccountType, vendorAccount.ID)
+		}
+		// sanity
+		if newCustomer == nil {
+			return grpcErrorf(codes.Internal, "nil newCustomer, this should never happen")
+		}
+		newCustomer.VendorAccountID = vendorAccount.ID
+		newCustomer.EntityID = entityID
+		newCustomer.Lifecycle = dal.CustomerLifecycleActive
+		newCustomer.ChangeState = dal.CustomerChangeStateNone
+
+		id, err := dl.InsertCustomer(ctx, newCustomer)
 		if err != nil {
-			return nil, errors.Trace(err)
+			return errors.Trace(err)
 		}
-		newCustomer = &dal.Customer{
-			StorageType: dal.CustomerStorageTypeStripe,
-			StorageID:   stripeCustomer.ID,
-		}
-	default:
-		return nil, errors.Errorf("Unknown vendor account type %s for vendor account %s customer creation", vendorAccount.AccountType, vendorAccount.ID)
+		newCustomer.ID = id
+		golog.Debugf("Customer NOT FOUND - Entity: %s for VendorAccount: %s, ADDED - %+v", entityID, vendorAccount.ID, newCustomer)
+		return nil
+	}); err != nil {
+		return nil, grpcError(err)
 	}
-	// sanity
-	if newCustomer == nil {
-		return nil, grpcErrorf(codes.Internal, "nil newCustomer, this should never happen")
-	}
-	newCustomer.VendorAccountID = vendorAccount.ID
-	newCustomer.EntityID = entityID
-	newCustomer.Lifecycle = dal.CustomerLifecycleActive
-	newCustomer.ChangeState = dal.CustomerChangeStateNone
-
-	id, err := dl.InsertCustomer(ctx, newCustomer)
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
-	newCustomer.ID = id
-	golog.Debugf("Customer NOT FOUND - Entity: %s for VendorAccount: %s, ADDED - %+v", entityID, vendorAccount.ID, newCustomer)
 	return newCustomer, nil
-}
-
-// TODO: What should be in this info?
-func customerDescription(ent *directory.Entity) string {
-	return ent.Info.DisplayName + " - Added by Spruce Health"
 }
 
 type TokenSource interface {
