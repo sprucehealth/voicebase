@@ -167,6 +167,10 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 				ctx := p.Context
 				svc := serviceFromParams(p)
 
+				if ent.HasAccount {
+					return false, nil
+				}
+
 				res, err := svc.invite.LookupInvites(ctx, &invite.LookupInvitesRequest{
 					LookupKeyType: invite.LookupInvitesRequest_PARKED_ENTITY_ID,
 					Key: &invite.LookupInvitesRequest_ParkedEntityID{

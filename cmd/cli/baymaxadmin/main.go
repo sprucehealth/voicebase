@@ -210,6 +210,25 @@ func main() {
 
 	cmd := flag.Arg(0)
 
+	if cnf.DirectoryAddr == "" {
+		cnf.DirectoryAddr = fmt.Sprintf("_directory._tcp.service.%s-us-east-1.spruce", strings.ToLower(cnf.Env))
+	}
+	if cnf.ThreadingAddr == "" {
+		cnf.ThreadingAddr = fmt.Sprintf("_threading._tcp.service.%s-us-east-1.spruce", strings.ToLower(cnf.Env))
+	}
+	if cnf.LayoutAddr == "" {
+		cnf.LayoutAddr = fmt.Sprintf("_layout._tcp.service.%s-us-east-1.spruce", strings.ToLower(cnf.Env))
+	}
+	if cnf.InviteAddr == "" {
+		cnf.InviteAddr = fmt.Sprintf("_invite._tcp.service.%s-us-east-1.spruce", strings.ToLower(cnf.Env))
+	}
+	if cnf.SettingsAddr == "" {
+		cnf.SettingsAddr = fmt.Sprintf("_settings._tcp.service.%s-us-east-1.spruce", strings.ToLower(cnf.Env))
+	}
+	if cnf.PatientSyncAddr == "" {
+		cnf.PatientSyncAddr = fmt.Sprintf("_patientsync._tcp.service.%s-us-east-1.spruce", strings.ToLower(cnf.Env))
+	}
+
 	for name, cfn := range commands {
 		if name == cmd {
 			c, err := cfn(cnf)

@@ -214,7 +214,6 @@ func (d *dal) InviteForToken(ctx context.Context, token string) (*models.Invite,
 
 func (d *dal) InvitesForParkedEntityID(ctx context.Context, parkedEntityID string) ([]*models.Invite, error) {
 	res, err := d.db.Query(&dynamodb.QueryInput{
-		ConsistentRead:         ptr.Bool(true),
 		TableName:              &d.inviteTable,
 		IndexName:              &d.parkedEntityIDIndex,
 		KeyConditionExpression: ptr.String("ParkedEntityID = :parkedEntityID"),
