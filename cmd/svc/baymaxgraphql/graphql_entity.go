@@ -14,7 +14,6 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/media"
-	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/graphql"
 )
 
@@ -225,10 +224,6 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 			Type:    graphql.NewList(graphql.NewNonNull(paymentMethodInterfaceType)),
 			Resolve: apiaccess.Authenticated(resolveEntityPaymentMethods),
 		},
-		"hasConnectedStripeAccount": &graphql.Field{
-			Type:    graphql.NewNonNull(graphql.Boolean),
-			Resolve: apiaccess.Authenticated(resolveHasConnectedStripeAccount),
-		},
 	},
 })
 
@@ -296,19 +291,4 @@ func lookupEntity(ctx context.Context, svc *service, ram raccess.ResourceAccesso
 		return e, nil
 	}
 	return nil, errors.InternalError(ctx, fmt.Errorf("unknown entity type: %s", em.Type.String()))
-}
-
-func resolveHasConnectedStripeAccount(p graphql.ResolveParams) (interface{}, error) {
-	ctx := p.Context
-	ent := p.Source.(*models.Entity)
-	ram := raccess.ResourceAccess(p)
-
-	resp, err := ram.VendorAccounts(ctx, &payments.VendorAccountsRequest{
-		EntityID: ent.ID,
-	})
-	if err != nil {
-		return false, errors.InternalError(ctx, err)
-	}
-	// TODO: This should obviously do some inspection in the future if we allow more than 1 connected vendor account
-	return len(resp.VendorAccounts) != 0, nil
 }

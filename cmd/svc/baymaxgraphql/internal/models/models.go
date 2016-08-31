@@ -468,3 +468,12 @@ type VisitAutocompleteSearchResult struct {
 	Subtitle string `json:"subtitle"`
 	Title    string `json:"title"`
 }
+
+type PartnerIntegration struct {
+	ButtonText string `json:"buttonText"`
+	ButtonURL  string `json:"buttonURL"`
+	Title      string `json:"title"`
+	Subtitle   string `json:"subtitle"`
+	Connected  bool   `json:"connected"`
+	Errored    bool   `json:"errored"`
+}

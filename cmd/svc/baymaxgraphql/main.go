@@ -63,17 +63,18 @@ var (
 	flagEmailVerificationTemplateID = flag.String("email_verification_template_id", "", "ID of email verification template")
 
 	// Services
-	flagAuthAddr        = flag.String("auth_addr", "_auth._tcp.service", "host:port of auth service")
-	flagDirectoryAddr   = flag.String("directory_addr", "_directory._tcp.service", "host:port of directory service")
-	flagExCommsAddr     = flag.String("excomms_addr", "_excomms._tcp.service", "host:port of excomms service")
-	flagInviteAddr      = flag.String("invite_addr", "_invite._tcp.service", "host:port of invites service")
-	flagSettingsAddr    = flag.String("settings_addr", "_settings._tcp.service", "host:port of settings service")
-	flagThreadingAddr   = flag.String("threading_addr", "_threading._tcp.service", "host:port of threading service")
-	flagLayoutAddr      = flag.String("layout_addr", "_layout._tcp.service", "host:port of layout service")
-	flagCareAddr        = flag.String("care_addr", "_care._tcp.service", "host:port of care service")
-	flagMediaAddr       = flag.String("media_addr", "_media._tcp.service", "host:port of media service")
-	flagPaymentsAddr    = flag.String("payments_addr", "_payments._tcp.service", "host:port of payments service")
-	flagPatientSyncAddr = flag.String("patientsync_addr", "_patientsync._tcp.service", "host:port of patientsync service")
+	flagAuthAddr         = flag.String("auth_addr", "_auth._tcp.service", "host:port of auth service")
+	flagDirectoryAddr    = flag.String("directory_addr", "_directory._tcp.service", "host:port of directory service")
+	flagExCommsAddr      = flag.String("excomms_addr", "_excomms._tcp.service", "host:port of excomms service")
+	flagInviteAddr       = flag.String("invite_addr", "_invite._tcp.service", "host:port of invites service")
+	flagSettingsAddr     = flag.String("settings_addr", "_settings._tcp.service", "host:port of settings service")
+	flagThreadingAddr    = flag.String("threading_addr", "_threading._tcp.service", "host:port of threading service")
+	flagLayoutAddr       = flag.String("layout_addr", "_layout._tcp.service", "host:port of layout service")
+	flagCareAddr         = flag.String("care_addr", "_care._tcp.service", "host:port of care service")
+	flagMediaAddr        = flag.String("media_addr", "_media._tcp.service", "host:port of media service")
+	flagPaymentsAddr     = flag.String("payments_addr", "_payments._tcp.service", "host:port of payments service")
+	flagPatientSyncAddr  = flag.String("patientsync_addr", "_patientsync._tcp.service", "host:port of patientsync service")
+	flagStripeConnectURL = flag.String("stripe_connect_url", "", "url for stripe connect")
 
 	// Messages
 	flagSQSDeviceRegistrationURL   = flag.String("sqs_device_registration_url", "", "the sqs url for device registration messages")
@@ -321,6 +322,7 @@ func main() {
 		},
 		svc.MetricsRegistry.Scope("handler"),
 		*flagTransactionalEmailSender,
+		*flagStripeConnectURL,
 	)
 	r.Handle("/graphql", cors.New(cors.Options{
 		AllowedOrigins:   corsOrigins,

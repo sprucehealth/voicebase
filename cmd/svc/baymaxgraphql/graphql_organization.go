@@ -233,6 +233,22 @@ var organizationType = graphql.NewObject(
 				Type:    graphql.String,
 				Resolve: patientInviteURL(),
 			},
+			"partnerIntegrations": &graphql.Field{
+				Type: graphql.NewList(partnerIntegrationType),
+				Resolve: apiaccess.Authenticated(
+					apiaccess.Provider(
+						func(p graphql.ResolveParams) (interface{}, error) {
+							org := p.Source.(*models.Organization)
+
+							partnerIntegrations, err := lookupPartnerIntegrationsForOrg(p, org.ID)
+							if err != nil {
+								return nil, errors.InternalError(p.Context, err)
+							}
+
+							return partnerIntegrations, nil
+						},
+					)),
+			},
 		},
 	},
 )
