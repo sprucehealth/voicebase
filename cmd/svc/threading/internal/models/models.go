@@ -257,7 +257,7 @@ func (to ThreadOrigin) Value() (driver.Value, error) {
 // Validate returns nil iff the value of the type is valid
 func (to ThreadOrigin) Validate() error {
 	switch to {
-	case ThreadOriginUnknown, ThreadOriginPatientInvite, ThreadOriginOrganizationCode:
+	case ThreadOriginUnknown, ThreadOriginPatientInvite, ThreadOriginOrganizationCode, ThreadOriginPatientSync:
 		return nil
 	}
 	return errors.Trace(fmt.Errorf("unknown thread origin '%s'", string(to)))
