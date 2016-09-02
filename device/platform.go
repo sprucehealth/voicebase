@@ -8,6 +8,7 @@ import (
 type Platform string
 
 const (
+	Unknown Platform = ""
 	Android Platform = "android"
 	IOS     Platform = "iOS"
 	Web     Platform = "web"
@@ -27,6 +28,8 @@ func ParsePlatform(p string) (Platform, error) {
 		return IOS, nil
 	case "web":
 		return Web, nil
+	case "":
+		return Unknown, nil
 	}
 	return "", fmt.Errorf("Unable to determine platform type from %s", p)
 }
