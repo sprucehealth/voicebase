@@ -446,6 +446,7 @@ func (s *server) UpdateEntity(ctx context.Context, rd *directory.UpdateEntityReq
 						Value:       contact.Value,
 						Provisioned: contact.Provisioned,
 						Label:       contact.Label,
+						Verified:    contact.Verified,
 					}
 				}
 				if err := dl.InsertEntityContacts(dalContacts); err != nil {
