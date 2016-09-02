@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/patientsync"
 	"github.com/sprucehealth/backend/svc/payments"
 )
@@ -72,6 +73,111 @@ func TestExternalLinkQuery(t *testing.T) {
 `, nil)
 
 	responseEquals(t, `{"data":{"node":{"__typename":"Entity","externalLinks":[{"name":"drchrono","url":"https://www.drcrhono.com"},{"name":"hint","url":"https://www.hint.com"}]}}}`, res)
+}
+
+func TestInvitationBannerQuery_Paitent(t *testing.T) {
+	acc := &auth.Account{ID: "account_12345", Type: auth.AccountType_PROVIDER}
+	ctx := context.Background()
+	ctx = gqlctx.WithAccount(ctx, acc)
+	id := "entity_12345"
+
+	t.Run("Patient", func(t *testing.T) {
+		g := newGQL(t)
+		defer g.finish()
+
+		g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+				EntityID: id,
+			},
+			RequestedInformation: &directory.RequestedInformation{
+				Depth:             0,
+				EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+			},
+			Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		}).WithReturns([]*directory.Entity{
+			{
+				Type: directory.EntityType_PATIENT,
+				ID:   id,
+				Info: &directory.EntityInfo{
+					DisplayName: "Someone",
+					Gender:      directory.EntityInfo_MALE,
+				},
+			},
+		}, nil))
+
+		g.inviteC.Expect(mock.NewExpectation(g.inviteC.LookupInvites, &invite.LookupInvitesRequest{
+			LookupKeyType: invite.LookupInvitesRequest_PARKED_ENTITY_ID,
+			Key: &invite.LookupInvitesRequest_ParkedEntityID{
+				ParkedEntityID: id,
+			},
+		}).WithReturns(&invite.LookupInvitesResponse{
+			List: &invite.LookupInvitesResponse_PatientInviteList{
+				PatientInviteList: &invite.PatientInviteList{
+					PatientInvites: []*invite.PatientInvite{
+						{},
+					},
+				},
+			},
+		}, nil))
+
+		res := g.query(ctx, `
+ query _ {
+   node(id: "entity_12345") {
+   	__typename
+   	... on Entity {
+	    invitationBanner {
+	    	hasPendingInvite
+	      }
+	    }   		
+   	}
+ }
+`, nil)
+
+		responseEquals(t, `{"data":{"node":{"__typename":"Entity","invitationBanner":{"hasPendingInvite":true}}}}`, res)
+	})
+
+	t.Run("External", func(t *testing.T) {
+		g := newGQL(t)
+		defer g.finish()
+
+		g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+				EntityID: id,
+			},
+			RequestedInformation: &directory.RequestedInformation{
+				Depth:             0,
+				EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+			},
+			Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		}).WithReturns([]*directory.Entity{
+			{
+				Type: directory.EntityType_EXTERNAL,
+				ID:   id,
+				Info: &directory.EntityInfo{
+					DisplayName: "Someone",
+					Gender:      directory.EntityInfo_MALE,
+				},
+			},
+		}, nil))
+
+		res := g.query(ctx, `
+ query _ {
+   node(id: "entity_12345") {
+   	__typename
+   	... on Entity {
+	    invitationBanner {
+	    	hasPendingInvite
+	      }
+	    }   		
+   	}
+ }
+`, nil)
+
+		responseEquals(t, `{"data":{"node":{"__typename":"Entity","invitationBanner":null}}}`, res)
+	})
+
 }
 
 func TestPartnerIntegrations(t *testing.T) {

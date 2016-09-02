@@ -80,27 +80,28 @@ type DOB struct {
 }
 
 type Entity struct {
-	ID                    string          `json:"id"`
-	IsEditable            bool            `json:"isEditable"`
-	FirstName             string          `json:"firstName"`
-	MiddleInitial         string          `json:"middleInitial"`
-	LastName              string          `json:"lastName"`
-	GroupName             string          `json:"groupName"`
-	DisplayName           string          `json:"displayName"`
-	ShortTitle            string          `json:"shortTitle"`
-	LongTitle             string          `json:"longTitle"`
-	Gender                string          `json:"gender"`
-	DOB                   *DOB            `json:"dob"`
-	Note                  string          `json:"note"`
-	Contacts              []*ContactInfo  `json:"contacts"`
-	IsInternal            bool            `json:"isInternal"`
-	LastModifiedTimestamp uint64          `json:"lastModifiedTimestamp"`
-	HasAccount            bool            `json:"hasAccount"`
-	AllowEdit             bool            `json:"allowEdit"`
-	Avatar                *Image          `json:"-"`
-	ImageMediaID          string          `json:"-"`
-	HasProfile            bool            `json:"hasProfile"`
-	CallableEndpoints     []*CallEndpoint `json:"callableEndpoints"`
+	ID                    string            `json:"id"`
+	IsEditable            bool              `json:"isEditable"`
+	FirstName             string            `json:"firstName"`
+	MiddleInitial         string            `json:"middleInitial"`
+	LastName              string            `json:"lastName"`
+	GroupName             string            `json:"groupName"`
+	DisplayName           string            `json:"displayName"`
+	ShortTitle            string            `json:"shortTitle"`
+	LongTitle             string            `json:"longTitle"`
+	Gender                string            `json:"gender"`
+	DOB                   *DOB              `json:"dob"`
+	Note                  string            `json:"note"`
+	Contacts              []*ContactInfo    `json:"contacts"`
+	IsInternal            bool              `json:"isInternal"`
+	LastModifiedTimestamp uint64            `json:"lastModifiedTimestamp"`
+	HasAccount            bool              `json:"hasAccount"`
+	AllowEdit             bool              `json:"allowEdit"`
+	Avatar                *Image            `json:"-"`
+	ImageMediaID          string            `json:"-"`
+	HasProfile            bool              `json:"hasProfile"`
+	CallableEndpoints     []*CallEndpoint   `json:"callableEndpoints"`
+	InvitationBanner      *InvitationBanner `json:"invitationBanner"`
 }
 
 type ExternalLink struct {
@@ -476,4 +477,8 @@ type PartnerIntegration struct {
 	Subtitle   string `json:"subtitle"`
 	Connected  bool   `json:"connected"`
 	Errored    bool   `json:"errored"`
+}
+
+type InvitationBanner struct {
+	HasPendingInvite bool `json:"hasPendingInvite"`
 }

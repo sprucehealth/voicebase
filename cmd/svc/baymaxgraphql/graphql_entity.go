@@ -72,6 +72,18 @@ var externalLinkType = graphql.NewObject(graphql.ObjectConfig{
 	},
 })
 
+var invitationBannerType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "InvitationBanner",
+	Description: "Represents information needed to show a banner at the top of a thread to indicate that the patient has not yet created an account, and give the provider the ability to (re)send an invite.",
+	Fields: graphql.Fields{
+		"hasPendingInvite": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+	},
+	IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+		_, ok := value.(*models.InvitationBanner)
+		return ok
+	},
+})
+
 var entityType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Entity",
 	Interfaces: []*graphql.Interface{
@@ -160,7 +172,8 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 		"callableEndpoints": &graphql.Field{Type: graphql.NewList(callEndpointType)},
 		"hasAccount":        &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		"hasPendingInvite": &graphql.Field{
-			Type: graphql.NewNonNull(graphql.Boolean),
+			Type:              graphql.NewNonNull(graphql.Boolean),
+			DeprecationReason: "Use hasPendingInvite in InvitationBanner instead.",
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				ent := p.Source.(*models.Entity)
 				ctx := p.Context
@@ -177,11 +190,48 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 					},
 				})
 				if err != nil {
-					golog.Errorf("Unable to determine pending invite for %s", ent.ID)
+					golog.Errorf("Unable to determine pending invite for %s: %s", ent.ID, err)
 					return false, nil
 				}
 
 				return res.GetPatientInviteList() != nil && len(res.GetPatientInviteList().PatientInvites) > 0, nil
+			},
+		},
+		"invitationBanner": &graphql.Field{
+			Type: invitationBannerType,
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				ent := p.Source.(*models.Entity)
+
+				// use the fact that the invitation banner was not initialized
+				// in the transformation of the entity as an indicator that we
+				// dont need to populate the information inside the invitation banner.
+
+				// TODO: This is a bit of a hack as the business logic for when to populate
+				// an invitation banner is not centralized. However, that is a bit hard to do right now
+				// given that we don't have information at this point without another lookup
+				// to know whether the entity we are dealing with is for a patient or not.
+				if ent.InvitationBanner == nil {
+					return nil, nil
+				}
+
+				ctx := p.Context
+				svc := serviceFromParams(p)
+
+				res, err := svc.invite.LookupInvites(ctx, &invite.LookupInvitesRequest{
+					LookupKeyType: invite.LookupInvitesRequest_PARKED_ENTITY_ID,
+					Key: &invite.LookupInvitesRequest_ParkedEntityID{
+						ParkedEntityID: ent.ID,
+					},
+				})
+				if err != nil {
+					golog.Errorf("Unable to determine pending invite for %s: %s", ent.ID, err)
+					return ent.InvitationBanner, nil
+				}
+
+				ent.InvitationBanner.HasPendingInvite = res.GetPatientInviteList() != nil && len(res.GetPatientInviteList().PatientInvites) > 0
+
+				return ent.InvitationBanner, nil
+
 			},
 		},
 		"isInternal":            &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},

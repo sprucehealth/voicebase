@@ -609,6 +609,10 @@ func transformEntityToResponse(ctx context.Context, staticURLPrefix string, e *d
 		}
 	}
 
+	if e.Type == directory.EntityType_PATIENT && e.AccountID == "" {
+		ent.InvitationBanner = &models.InvitationBanner{}
+	}
+
 	switch e.Type {
 	case directory.EntityType_ORGANIZATION:
 		ent.Avatar = &models.Image{
