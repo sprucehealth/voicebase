@@ -10,6 +10,7 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/validate"
@@ -229,4 +230,18 @@ func entityInOrgForAccountID(ctx context.Context, ram raccess.ResourceAccessor, 
 		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL, directory.EntityType_PATIENT},
 		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
 	}, orgID)
+}
+
+func authPlatform(devicePlatform device.Platform) auth.Platform {
+	var platform auth.Platform
+	switch devicePlatform {
+	case device.Android:
+		platform = auth.Platform_ANDROID
+	case device.IOS:
+		platform = auth.Platform_IOS
+	case device.Web:
+		platform = auth.Platform_WEB
+	}
+
+	return platform
 }

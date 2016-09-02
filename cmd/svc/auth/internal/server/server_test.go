@@ -186,6 +186,8 @@ func TestAuthenticateLoginDeviceInside2FAWindow(t *testing.T) {
 		Token:               []byte("genToken:testattribute"),
 		ClientEncryptionKey: cek,
 		DurationType:        dal.AuthTokenDurationTypeLong,
+		DeviceID:            "deviceID",
+		Platform:            device.IOS,
 	}))
 	dl.Expect(mock.NewExpectation(dl.TrackLogin, aID1, device.IOS, deviceID))
 
@@ -611,8 +613,11 @@ func TestCheckAuthenticationShadowed(t *testing.T) {
 		Expires:             expires,
 		ClientEncryptionKey: []byte(clientEncryptionSecret),
 		Shadow:              true,
+		DeviceID:            "deviceID",
+		Platform:            device.Android,
+		DurationType:        dal.AuthTokenDurationTypeShort,
 	}, nil))
-	dl.Expect(mock.NewExpectation(dl.ActiveAuthTokenForAccount, aID1).WithReturns(&dal.AuthToken{
+	dl.Expect(mock.NewExpectation(dl.ActiveAuthTokenForAccount, aID1, "deviceID", dal.AuthTokenDurationTypeShort).WithReturns(&dal.AuthToken{
 		Token:               []byte(nonShadowToken + ":tokenattribute"),
 		AccountID:           aID1,
 		Expires:             expires,

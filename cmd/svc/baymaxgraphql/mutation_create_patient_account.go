@@ -229,6 +229,7 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 	ram := raccess.ResourceAccess(p)
 	ctx := p.Context
 	input := p.Args["input"].(map[string]interface{})
+	sh := devicectx.SpruceHeaders(ctx)
 
 	var in createPatientAccountInput
 	if err := gqldecode.Decode(p.Args["input"].(map[string]interface{}), &in); err != nil {
@@ -257,6 +258,8 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 		Email:    in.Email,
 		Password: in.Password,
 		Type:     auth.AccountType_PATIENT,
+		DeviceID: sh.DeviceID,
+		Platform: authPlatform(sh.Platform),
 	}
 	if in.Duration == "" {
 		in.Duration = auth.TokenDuration_SHORT.String()

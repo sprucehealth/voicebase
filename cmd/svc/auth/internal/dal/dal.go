@@ -28,7 +28,7 @@ type DAL interface {
 	UpdateAccount(id AccountID, update *AccountUpdate) (int64, error)
 	DeleteAccount(id AccountID) (int64, error)
 	InsertAuthToken(model *AuthToken) error
-	ActiveAuthTokenForAccount(accountID AccountID) (*AuthToken, error)
+	ActiveAuthTokenForAccount(accountID AccountID, deviceID string, duration AuthTokenDurationType) (*AuthToken, error)
 	AuthToken(token string, expiresAfter time.Time, forUpdate bool) (*AuthToken, error)
 	DeleteAuthTokens(accountID AccountID) (int64, error)
 	DeleteAuthToken(token string) (int64, error)
@@ -582,6 +582,8 @@ type AuthToken struct {
 	//  of supporting in flight calls while the master token is rotating
 	Shadow       bool
 	DurationType AuthTokenDurationType
+	DeviceID     string
+	Platform     device.Platform
 }
 
 // AuthTokenUpdate represents the mutable aspects of a auth_token record
@@ -711,10 +713,19 @@ func (d *dal) AuthToken(token string, expiresAfter time.Time, forUpdate bool) (*
 }
 
 // ActiveAuthTokenForAccount returns the current active non shadow auth token record that conforms to the provided input
-func (d *dal) ActiveAuthTokenForAccount(accountID AccountID) (*AuthToken, error) {
+func (d *dal) ActiveAuthTokenForAccount(accountID AccountID, deviceID string, duration AuthTokenDurationType) (*AuthToken, error) {
 	row := d.db.QueryRow(
-		selectAuthToken+` WHERE account_id = ? AND expires > ? AND shadow = false ORDER BY created DESC LIMIT 1`, accountID, time.Now())
+		selectAuthToken+` WHERE account_id = ? AND shadow = false AND expires > ? AND device_id = ? ORDER BY created DESC LIMIT 1`, accountID, time.Now(), deviceID)
 	model, err := scanAuthToken(row)
+
+	// for backwards compatibiltiy for when we were not recording device_id, lookup an active auth token
+	// of the same duration type
+	if errors.Cause(err) == ErrNotFound {
+		row = d.db.QueryRow(
+			selectAuthToken+` WHERE account_id = ? AND shadow = false AND expires > ? AND duration_type = ? ORDER BY created DESC LIMIT 1`, accountID, time.Now(), duration.String())
+		model, err = scanAuthToken(row)
+	}
+
 	return model, errors.Trace(err)
 }
 
@@ -722,8 +733,8 @@ func (d *dal) ActiveAuthTokenForAccount(accountID AccountID) (*AuthToken, error)
 func (d *dal) InsertAuthToken(model *AuthToken) error {
 	_, err := d.db.Exec(
 		`INSERT INTO auth_token
-          (token, client_encryption_key, account_id, expires, shadow, duration_type)
-          VALUES (?, ?, ?, ?, ?, ?)`, model.Token, model.ClientEncryptionKey, model.AccountID, model.Expires, model.Shadow, model.DurationType.String())
+          (token, client_encryption_key, account_id, expires, shadow, duration_type, device_id, platform)
+          VALUES (?, ?, ?, ?, ?, ?, ? ,?)`, model.Token, model.ClientEncryptionKey, model.AccountID, model.Expires, model.Shadow, model.DurationType.String(), model.DeviceID, model.Platform.String())
 	if err != nil {
 		return errors.Trace(err)
 	}
@@ -1099,14 +1110,14 @@ func scanAccount(row dbutil.Scanner) (*Account, error) {
 }
 
 const selectAuthToken = `
-    SELECT auth_token.token, auth_token.client_encryption_key, auth_token.account_id, auth_token.created, auth_token.expires, auth_token.shadow, auth_token.duration_type
+    SELECT auth_token.token, auth_token.client_encryption_key, auth_token.account_id, auth_token.created, auth_token.expires, auth_token.shadow, auth_token.duration_type, auth_token.device_id, auth_token.platform
       FROM auth_token`
 
 func scanAuthToken(row dbutil.Scanner) (*AuthToken, error) {
 	var m AuthToken
 	m.AccountID = EmptyAccountID()
 
-	err := row.Scan(&m.Token, &m.ClientEncryptionKey, &m.AccountID, &m.Created, &m.Expires, &m.Shadow, &m.DurationType)
+	err := row.Scan(&m.Token, &m.ClientEncryptionKey, &m.AccountID, &m.Created, &m.Expires, &m.Shadow, &m.DurationType, &m.DeviceID, &m.Platform)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrNotFound)
 	}

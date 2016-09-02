@@ -125,13 +125,14 @@ func (s *server) AuthenticateLogin(ctx context.Context, rd *auth.AuthenticateLog
 		}
 		twoFactorPhone = accountPhone.PhoneNumber
 	} else {
-		authToken, err = s.generateAndInsertToken(s.dal, account.ID, rd.TokenAttributes, rd.Duration)
-		if err != nil {
-			return nil, grpcIErrorf(err.Error())
-		}
 		platform, err := determinePlatform(rd.Platform)
 		if err != nil {
 			golog.Errorf("Unable to determine platform for login attempt for %s: %s", account.ID, err)
+		}
+
+		authToken, err = s.generateAndInsertToken(s.dal, account.ID, rd.TokenAttributes, rd.Duration, rd.DeviceID, platform)
+		if err != nil {
+			return nil, grpcIErrorf(err.Error())
 		}
 		if err := s.dal.TrackLogin(account.ID, platform, rd.DeviceID); err != nil {
 			golog.Errorf("Unable to record login for account %s: %s", account.ID, err)
@@ -199,7 +200,13 @@ func (s *server) AuthenticateLoginWithCode(ctx context.Context, rd *auth.Authent
 		return nil, grpcIErrorf("ACCOUNT_2FA verification code value %q failed to parse into account id, unable to generate auth token: %s", verificationCode.VerifiedValue, err)
 	}
 
-	authToken, err := s.generateAndInsertToken(s.dal, accountID, rd.TokenAttributes, rd.Duration)
+	// Record the 2FA login attempt
+	platform, err := determinePlatform(rd.Platform)
+	if err != nil {
+		golog.Errorf(err.Error())
+	}
+
+	authToken, err := s.generateAndInsertToken(s.dal, accountID, rd.TokenAttributes, rd.Duration, rd.DeviceID, platform)
 	if err != nil {
 		return nil, grpcIErrorf("Failed to generate and insert new auth token for ACCOUNT_2FA: %s", err)
 	}
@@ -207,12 +214,6 @@ func (s *server) AuthenticateLoginWithCode(ctx context.Context, rd *auth.Authent
 	acc, err := s.dal.Account(accountID)
 	if err != nil {
 		return nil, grpcIErrorf("Failed to fetch account record for ACCOUNT_2FA: %s", err)
-	}
-
-	// Record the 2FA login attempt
-	platform, err := determinePlatform(rd.Platform)
-	if err != nil {
-		golog.Errorf(err.Error())
 	}
 
 	if err := s.dal.Transact(func(dl dal.DAL) error {
@@ -293,7 +294,7 @@ func (s *server) CheckAuthentication(ctx context.Context, rd *auth.CheckAuthenti
 
 		// If the token is valid, but it's a shadow token, return their active token
 		if aToken.Shadow {
-			activeToken, err := s.dal.ActiveAuthTokenForAccount(aToken.AccountID)
+			activeToken, err := s.dal.ActiveAuthTokenForAccount(aToken.AccountID, aToken.DeviceID, aToken.DurationType)
 			if err != nil {
 				// Log the error here but allow the user to continue since their shadow token is still good.
 				golog.Errorf("Encountered an error when attempting to return the active token for account %s: %s", aToken.AccountID, err)
@@ -525,7 +526,12 @@ func (s *server) CreateAccount(ctx context.Context, rd *auth.CreateAccountReques
 			return errors.Trace(fmt.Errorf("Expected 1 row to be affected but got %d", aff))
 		}
 
-		authToken, err = s.generateAndInsertToken(dl, accountID, rd.TokenAttributes, rd.Duration)
+		platform, err := determinePlatform(rd.Platform)
+		if err != nil {
+			golog.Errorf(err.Error())
+		}
+
+		authToken, err = s.generateAndInsertToken(dl, accountID, rd.TokenAttributes, rd.Duration, rd.DeviceID, platform)
 		if err != nil {
 			return errors.Trace(err)
 		}
@@ -847,7 +853,13 @@ func determinePlatform(platform auth.Platform) (device.Platform, error) {
 }
 
 // generateAndInsertToken generates and inserts an auth token for the provided account and information
-func (s *server) generateAndInsertToken(dl dal.DAL, accountID dal.AccountID, tokenAttributes map[string]string, duration auth.TokenDuration) (*auth.AuthToken, error) {
+func (s *server) generateAndInsertToken(
+	dl dal.DAL,
+	accountID dal.AccountID,
+	tokenAttributes map[string]string,
+	duration auth.TokenDuration,
+	devideID string,
+	platform device.Platform) (*auth.AuthToken, error) {
 	token, err := s.tokenGenerator.GenerateToken()
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -879,6 +891,8 @@ func (s *server) generateAndInsertToken(dl dal.DAL, accountID dal.AccountID, tok
 		Token:               []byte(tokenWithAttributes),
 		ClientEncryptionKey: key,
 		DurationType:        durationType,
+		DeviceID:            devideID,
+		Platform:            platform,
 	}); err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -922,6 +936,8 @@ func (s *server) rotateAndExtendToken(dl dal.DAL, authToken *dal.AuthToken, toke
 			ClientEncryptionKey: authToken.ClientEncryptionKey,
 			Shadow:              true,
 			DurationType:        authToken.DurationType,
+			DeviceID:            authToken.DeviceID,
+			Platform:            authToken.Platform,
 		}))
 	}); err != nil {
 		return nil, errors.Trace(err)

@@ -271,6 +271,7 @@ func TestCreateAccountMutation_InviteColleague(t *testing.T) {
 	ctx = gqlctx.WithAccount(ctx, acc)
 	ctx = devicectx.WithSpruceHeaders(ctx, &device.SpruceHeaders{
 		DeviceID: "DevID",
+		Platform: device.Android,
 	})
 
 	// Fetch invite info
@@ -311,6 +312,8 @@ func TestCreateAccountMutation_InviteColleague(t *testing.T) {
 		Password:    "password",
 		Type:        auth.AccountType_PROVIDER,
 		Duration:    auth.TokenDuration_SHORT,
+		DeviceID:    "DevID",
+		Platform:    auth.Platform_ANDROID,
 	}).WithReturns(&auth.CreateAccountResponse{
 		Account: &auth.Account{
 			ID:   "a_1",

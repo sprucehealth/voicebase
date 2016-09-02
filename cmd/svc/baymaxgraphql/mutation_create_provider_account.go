@@ -113,6 +113,7 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 	svc := serviceFromParams(p)
 	ram := raccess.ResourceAccess(p)
 	ctx := p.Context
+	sh := devicectx.SpruceHeaders(ctx)
 
 	// TODO: We shoudln't need to keep this map around, but need it for entityInfoFromInput currently
 	input := p.Args["input"].(map[string]interface{})
@@ -141,6 +142,8 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 		Email:    in.Email,
 		Password: in.Password,
 		Type:     auth.AccountType_PROVIDER,
+		DeviceID: sh.DeviceID,
+		Platform: authPlatform(sh.Platform),
 	}
 	req.Email = strings.TrimSpace(req.Email)
 	if !validate.Email(req.Email) {

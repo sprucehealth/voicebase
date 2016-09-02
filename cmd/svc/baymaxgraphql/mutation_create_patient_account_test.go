@@ -28,6 +28,7 @@ func TestCreatePatientAccountMutation(t *testing.T) {
 
 	ctx = devicectx.WithSpruceHeaders(ctx, &device.SpruceHeaders{
 		DeviceID: "DevID",
+		Platform: device.Android,
 	})
 
 	g.inviteC.Expect(mock.NewExpectation(g.inviteC.AttributionData, &invite.AttributionDataRequest{
@@ -89,6 +90,8 @@ func TestCreatePatientAccountMutation(t *testing.T) {
 		Password:    "password",
 		Type:        auth.AccountType_PATIENT,
 		Duration:    auth.TokenDuration_LONG,
+		DeviceID:    "DevID",
+		Platform:    auth.Platform_ANDROID,
 	}).WithReturns(&auth.CreateAccountResponse{
 		Account: &auth.Account{
 			ID:   "a_1",
@@ -262,6 +265,7 @@ func TestCreatePatientAccountMutation_PracticeLink(t *testing.T) {
 
 	ctx = devicectx.WithSpruceHeaders(ctx, &device.SpruceHeaders{
 		DeviceID: "DevID",
+		Platform: device.Android,
 	})
 
 	g.inviteC.Expect(mock.NewExpectation(g.inviteC.AttributionData, &invite.AttributionDataRequest{
@@ -298,6 +302,8 @@ func TestCreatePatientAccountMutation_PracticeLink(t *testing.T) {
 		Password:    "password",
 		Type:        auth.AccountType_PATIENT,
 		Duration:    auth.TokenDuration_LONG,
+		DeviceID:    "DevID",
+		Platform:    auth.Platform_ANDROID,
 	}).WithReturns(&auth.CreateAccountResponse{
 		Account: &auth.Account{
 			ID:   "a_1",
