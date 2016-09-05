@@ -1,4 +1,10 @@
 #Auth Service
+The auth service is responsible for managing authentication of users on Baymax. This includes:
+
+- Managing accounts (email, password, phone associated with account)
+- Managing and rotating auth tokens 
+- Managing email/phone number verification
+
 ## Local Development
 ### Database Setup
 If you don't already have it setup install `flyway`

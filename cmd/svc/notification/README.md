@@ -1,4 +1,6 @@
 #Notification Service
+The notification service is responsible for notifying endpoints of activity within the app.
+
 ## Local Development
 ### Database Setup
 If you don't already have it setup install `flyway`

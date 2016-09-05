@@ -1,5 +1,6 @@
 #Admin Service
-The admin service is intended to expose an administrative interface for the Baymax system
+The admin service is intended to expose an administrative interface for the Baymax system.
+
 ## Getting Started
 ### Setting up LDAP
 The admin service uses ldap for authentication.

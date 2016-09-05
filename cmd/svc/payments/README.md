@@ -1,4 +1,6 @@
 #Payments Service
+The payments service is responsible for managing payments for baymax. This includes managing customers, cards and processing payments.
+
 ## Local Development
 ### Database Setup
 

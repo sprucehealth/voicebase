@@ -1,4 +1,7 @@
 # Settings Service
+The settings service is responsible for managing settings for addressable nodes in the system. New settings configurations are registered by different services
+and the service validates all settings that are stored and served.
+
 ## Local Development
 * Get Local Dynamo Runnning
 

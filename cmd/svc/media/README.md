@@ -1,4 +1,6 @@
 #Media Service
+The media service is responsible for uploading, processing and serving generic media objects (photos, async videos, pdfs, etc.). It manages authentication and authorization of media objects as well.
+
 ## Local Development
 ### Database Setup
 If you don't already have it setup install `flyway`

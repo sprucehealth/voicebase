@@ -12,7 +12,7 @@ CREATE TABLE sync_config (
 
 CREATE TABLE sync_bookmark (
 	org_id VARCHAR(64) NOT NULL,
-	bookmark TIMESTAMP NOT NULL,
+	bookmark TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	status VARCHAR(64) NOT NULL,
 	PRIMARY KEY (org_id)
 );

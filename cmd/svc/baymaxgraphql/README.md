@@ -1,5 +1,8 @@
 Baymax GraphQL API
 ==================
+The Baymax GraphQL service is responsible for the external API communication via GraphQL for baymax. There are also a couple of restful endpoints for managing media objects. You can introspect our schema definition by running: https://dev-baymax-api.carefront.net/schema at any time. 
+
+This service communicates with almost all of the other services in the network to serve the necessary data to clients.
 
 GraphQL References
 ------------------

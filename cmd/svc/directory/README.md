@@ -1,4 +1,6 @@
 #Directory Service
+The directory service is responsible for managing addressable "entities" or nodes in the system. Entities include providers, patients, organizations, individuals addressable by email/sms, and system objects (like Spruce Support). It is a flat structure where each node can have members and memberships. 
+
 ## Local Development
 ### Database Setup
 If you don't already have it setup install `flyway`

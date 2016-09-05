@@ -1,5 +1,9 @@
 Invite Service
 ==============
+The invite service is responsible for managing the patient and provider invites. This includes:
+- Managing patient invites when a provider wants to invite a patient to a secure conversation.
+- Managing practice links on an org specific basis
+- Managing provider invites for providers to join existing team memnbers on spruce.
 
 Setup for local development
 ---------------------------
