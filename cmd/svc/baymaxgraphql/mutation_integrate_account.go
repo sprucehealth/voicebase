@@ -6,9 +6,12 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 
+	segment "github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/libs/analytics"
 	"github.com/sprucehealth/backend/libs/gqldecode"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/patientsync"
@@ -126,6 +129,7 @@ var integrateAccountMutation = &graphql.Field{
 func connectVendorStripeAccount(p graphql.ResolveParams, in integrateAccountInput) (interface{}, error) {
 	ram := raccess.ResourceAccess(p)
 	ctx := p.Context
+	acc := gqlctx.Account(ctx)
 
 	ent, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
 		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
@@ -162,6 +166,14 @@ func connectVendorStripeAccount(p graphql.ResolveParams, in integrateAccountInpu
 		return nil, errors.InternalError(ctx, err)
 	}
 
+	analytics.SegmentTrack(&segment.Track{
+		Event:  "integrated-account-stripe",
+		UserId: acc.ID,
+		Properties: map[string]interface{}{
+			"organization_id": ent.ID,
+		},
+	})
+
 	return &integrateAccountOutput{
 		ClientMutationID: in.ClientMutationID,
 		Success:          true,
@@ -171,6 +183,7 @@ func connectVendorStripeAccount(p graphql.ResolveParams, in integrateAccountInpu
 func configureSync(p graphql.ResolveParams, in integrateAccountInput) (interface{}, error) {
 	ram := raccess.ResourceAccess(p)
 	ctx := p.Context
+	acc := gqlctx.Account(ctx)
 
 	_, err := ram.ConfigurePatientSync(ctx, &patientsync.ConfigureSyncRequest{
 		OrganizationEntityID: in.EntityID,
@@ -180,6 +193,14 @@ func configureSync(p graphql.ResolveParams, in integrateAccountInput) (interface
 	if err != nil {
 		return nil, errors.InternalError(ctx, err)
 	}
+
+	analytics.SegmentTrack(&segment.Track{
+		Event:  fmt.Sprintf("integrated-account-%s", patientsync.SOURCE_HINT.String()),
+		UserId: acc.ID,
+		Properties: map[string]interface{}{
+			"organization_id": in.EntityID,
+		},
+	})
 
 	return &integrateAccountOutput{
 		ClientMutationID: in.ClientMutationID,

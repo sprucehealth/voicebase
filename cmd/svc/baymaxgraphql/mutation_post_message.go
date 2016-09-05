@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strings"
@@ -304,8 +305,6 @@ var postMessageMutation = &graphql.Field{
 		}
 		summary := fmt.Sprintf("%s: %s", fromName, plainText)
 
-		var visitLayoutAttached *layout.VisitLayout
-
 		// Need to track the care plans so we can flag them as submitted after posting
 		var carePlans []*care.CarePlan
 
@@ -336,7 +335,6 @@ var postMessageMutation = &graphql.Field{
 				if err != nil {
 					return nil, err
 				}
-				visitLayoutAttached = visitLayoutRes.VisitLayout
 
 				// create the visit from the visit layout
 				createVisitRes, err := ram.CreateVisit(ctx, &care.CreateVisitRequest{
@@ -507,38 +505,9 @@ var postMessageMutation = &graphql.Field{
 				// mutation succeed and log these to be fixed up by hand.
 				golog.Errorf("[MANUAL_INTERVENTION] Failed to submit care plan %s for thread item %s: %s", cp.ID, pmres.Item.ID, err)
 			}
-
-			analytics.SegmentTrack(&segment.Track{
-				Event:  "care-plan-attached",
-				UserId: acc.ID,
-				Properties: map[string]interface{}{
-					"organization_id": thr.OrganizationID,
-					"thread_id":       req.ThreadID,
-					"care_plan_id":    cp.ID,
-				},
-			})
 		}
 
-		analytics.SegmentTrack(&segment.Track{
-			Event:  fmt.Sprintf("posted-message-%s", strings.ToLower(thr.Type.String())),
-			UserId: acc.ID,
-			Properties: map[string]interface{}{
-				"organization_id": thr.OrganizationID,
-				"thread_id":       req.ThreadID,
-			},
-		})
-
-		if visitLayoutAttached != nil {
-			analytics.SegmentTrack(&segment.Track{
-				Event:  "visit-attached",
-				UserId: acc.ID,
-				Properties: map[string]interface{}{
-					"organization_id": thr.OrganizationID,
-					"thread_id":       req.ThreadID,
-					"visit_layout_id": visitLayoutAttached.ID,
-				},
-			})
-		}
+		trackPostMessage(ctx, thr, req)
 
 		it, err := transformThreadItemToResponse(pmres.Item, req.UUID, acc.ID, svc.webDomain, svc.mediaAPIDomain)
 		if err != nil {
@@ -559,6 +528,53 @@ var postMessageMutation = &graphql.Field{
 			Thread:           th,
 		}, nil
 	}),
+}
+
+func trackPostMessage(ctx context.Context, thr *threading.Thread, req *threading.PostMessageRequest) {
+	acc := gqlctx.Account(ctx)
+
+	for _, attachment := range req.Attachments {
+		switch attachment.GetData().(type) {
+		case *threading.Attachment_Visit:
+			analytics.SegmentTrack(&segment.Track{
+				Event:  "visit-attached",
+				UserId: acc.ID,
+				Properties: map[string]interface{}{
+					"organization_id": thr.OrganizationID,
+					"thread_id":       req.ThreadID,
+				},
+			})
+		case *threading.Attachment_CarePlan:
+			analytics.SegmentTrack(&segment.Track{
+				Event:  "care-plan-attached",
+				UserId: acc.ID,
+				Properties: map[string]interface{}{
+					"organization_id": thr.OrganizationID,
+					"thread_id":       req.ThreadID,
+					"care_plan_id":    attachment.GetCarePlan().CarePlanID,
+				},
+			})
+		case *threading.Attachment_PaymentRequest:
+			analytics.SegmentTrack(&segment.Track{
+				Event:  "payment-request-attached",
+				UserId: acc.ID,
+				Properties: map[string]interface{}{
+					"organization_id": thr.OrganizationID,
+					"thread_id":       req.ThreadID,
+					"payment_id":      attachment.GetPaymentRequest().PaymentID,
+				},
+			})
+		}
+	}
+
+	analytics.SegmentTrack(&segment.Track{
+		Event:  fmt.Sprintf("posted-message-%s", strings.ToLower(thr.Type.String())),
+		UserId: acc.ID,
+		Properties: map[string]interface{}{
+			"organization_id": thr.OrganizationID,
+			"thread_id":       req.ThreadID,
+		},
+	})
 }
 
 func buildMessageTitleBasedOnDestinations(

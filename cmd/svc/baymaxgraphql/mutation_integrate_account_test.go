@@ -1,16 +1,19 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	ramock "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess/mock"
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
+	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/patientsync"
 	"github.com/sprucehealth/backend/svc/payments"
@@ -46,6 +49,12 @@ func TestConnectVendorStripeAccount(t *testing.T) {
 						EntityID: entityID,
 					},
 				}).WithReturns(([]*directory.Entity)(nil), grpc.Errorf(codes.NotFound, "Not Found")))
+
+				ctx := context.Background()
+				acc := &auth.Account{
+					ID: "account_12345",
+				}
+				ctx = gqlctx.WithAccount(ctx, acc)
 				return &testConnectVendorAccountParams{
 					p: graphql.ResolveParams{
 						Info: graphql.ResolveInfo{
@@ -53,6 +62,7 @@ func TestConnectVendorStripeAccount(t *testing.T) {
 								raccess.ParamKey: mra,
 							},
 						},
+						Context: ctx,
 					},
 					finishers: []mock.Finisher{mra},
 				}
@@ -83,6 +93,12 @@ func TestConnectVendorStripeAccount(t *testing.T) {
 						Type: directory.EntityType_INTERNAL,
 					},
 				}, nil))
+
+				ctx := context.Background()
+				acc := &auth.Account{
+					ID: "account_12345",
+				}
+				ctx = gqlctx.WithAccount(ctx, acc)
 				return &testConnectVendorAccountParams{
 					p: graphql.ResolveParams{
 						Info: graphql.ResolveInfo{
@@ -90,6 +106,7 @@ func TestConnectVendorStripeAccount(t *testing.T) {
 								raccess.ParamKey: mra,
 							},
 						},
+						Context: ctx,
 					},
 					finishers: []mock.Finisher{mra},
 				}
@@ -129,6 +146,11 @@ func TestConnectVendorStripeAccount(t *testing.T) {
 						},
 					},
 				}))
+				ctx := context.Background()
+				acc := &auth.Account{
+					ID: "account_12345",
+				}
+				ctx = gqlctx.WithAccount(ctx, acc)
 				return &testConnectVendorAccountParams{
 					p: graphql.ResolveParams{
 						Info: graphql.ResolveInfo{
@@ -136,6 +158,7 @@ func TestConnectVendorStripeAccount(t *testing.T) {
 								raccess.ParamKey: mra,
 							},
 						},
+						Context: ctx,
 					},
 					finishers: []mock.Finisher{mra},
 				}
@@ -178,6 +201,12 @@ func TestConfigureSync(t *testing.T) {
 					Token:                code,
 					Source:               patientsync.SOURCE_HINT,
 				}))
+
+				ctx := context.Background()
+				acc := &auth.Account{
+					ID: "account_12345",
+				}
+				ctx = gqlctx.WithAccount(ctx, acc)
 				return &testConnectVendorAccountParams{
 					p: graphql.ResolveParams{
 						Info: graphql.ResolveInfo{
@@ -185,6 +214,7 @@ func TestConfigureSync(t *testing.T) {
 								raccess.ParamKey: mra,
 							},
 						},
+						Context: ctx,
 					},
 					finishers: []mock.Finisher{mra},
 				}
