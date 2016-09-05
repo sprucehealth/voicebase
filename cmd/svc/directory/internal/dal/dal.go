@@ -1092,11 +1092,11 @@ func (d *dal) InsertEntityContacts(models []*EntityContact) error {
 			}
 			models[i].ID = id
 		}
-		ins.Append(m.ID, m.EntityID, m.Type, m.Value, m.Provisioned, m.Label)
+		ins.Append(m.ID, m.EntityID, m.Type, m.Value, m.Provisioned, m.Verified, m.Label)
 	}
 	_, err := d.db.Exec(
 		`INSERT IGNORE INTO entity_contact
-          (id, entity_id, type, value, provisioned, label)
+          (id, entity_id, type, value, provisioned, verified, label)
           VALUES `+ins.Query(), ins.Values()...)
 	if dbutil.IsMySQLWarning(err, dbutil.MySQLDuplicateEntry) {
 		return nil
