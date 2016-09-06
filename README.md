@@ -1,6 +1,8 @@
 Backend Monorepo
 ================
 
+WARNING: This README likely has some very old information and really none about the baymax services. It needs a good update.
+
 Setting up your environment & running the `gotour`
 --------------------------------------------------
 
@@ -387,118 +389,10 @@ Creating a new migration
 Deploying
 ---------
 
-Generally, continuous integration server handles deployment. The following instructions refer to manual deployment:
+Generally, continuous integration server handles deployment.
 
-### Manually deploying the `restapi` or `curbside` apps
+TODO: fill in this section with information about deployadmin cli
 
-Currently, the `restapi` and `curbside` apps run on the same server instance (reasoning [here](https://spruce.slack.com/archives/ft-curbside/p1442350784000033)).
-
-#### Setup
-
-First, you need to be able to `ssh` into the EC2 instance. Talk to someone on the backend team to create a private key pair for your SSH public key `~/.ssh/id_rsa.pub` on our EC2 instance.
-
-Then, you'll need an LDAP user account with file system access to the directories to which you are trying to deploy (currently, that would be `/usr/local/apps/curbside` and/or `/usr/local/apps/restapi`).
-
-Then, add the following to `~/.ssh/config`:
-
-```
-# Production
-
-Host 10.0.*
-    ProxyCommand ssh 54.209.10.66 nc %h %p
-Host ip-10-0-*.ec2.internal
-    ProxyCommand ssh 54.209.10.66 nc %h %p
-Host *.prod-us-east-1.spruce
-    ProxyCommand ssh 54.209.10.66 nc %h %p
-
-# Staging
-
-Host 10.1.*
-    ProxyCommand ssh 54.84.90.84 nc %h %p
-Host ip-10-1-*.ec2.internal
-    ProxyCommand ssh 54.84.90.84 nc %h %p
-Host *.staging-us-east-1.spruce
-    ProxyCommand ssh 54.84.90.84 nc %h %p
-
-# Dev
-
-Host 10.10.*
-    ProxyCommand ssh 52.4.213.186 nc %h %p
-Host ip-10-10-*.ec2.internal
-    ProxyCommand ssh 52.4.213.186 nc %h %p
-Host *.dev-us-east-1.spruce
-    ProxyCommand ssh 52.4.213.186 nc %h %p
-```
-
-To test that this is working, try: `ssh 52.4.213.186`
-
-#### Manually deploying the restapi app
-
-```
-cd $GOPATH/src/github.com/sprucehealth/backend/cmd/svc/restapi
-./deploy.sh [staging|dev|prod] [build number] [branch]
-```
-
-#### Manually deploying the curbside app:
-
-```
-cd $GOPATH/src/github.com/sprucehealth/backend/cmd/svc/curbside
-./deploy.sh [staging|dev|prod] [build number] [branch]
-```
-
-Working with the Server
------------------------
-
-### Starting the ssh session
-
-```
-# Dev
-ssh dev-restapi-1.node.dev-us-east-1.spruce
-
-# Staging
-
-
-# Prod
-
-```
-
-### Common tasks
-
-````
-# Start the server manually
-/usr/local/apps/[restapi|curbside]/[restapi|curbside]
-
-# Stop the server manually
-sudo supervisorctl stop [restapi|curbside]
-
-# View logs:
-tail /var/log/[restapi|curbside].log
-```
-
-
-## The supervisor config file
-
-The supervisor config keeps the app processes running if they die, starts them when the system restarts, etc. It resides at `/etc/supervisor/conf.d/curbside.conf`
-
-Here's what it looks like:
-```
-[program:curbside]
-command = /usr/local/apps/curbside/curbside -smtp_host=smtp.mandrillapp.com -smtp_port=587 -email_user=brittany@sprucehealth.com -email_pass=co-xxx -env=dev -static_resource_url=https://dlzz6qy5jmbag.cloudfront.net/curbside/{BuildNumber}
-numprocs = 1
-autostart = true
-autorestart = true
-startretries = 5
-stdout_logfile = /var/log/curbside.log
-stdout_logfile_maxbytes = 1MB
-stdout_logfile_backups = 5
-redirect_stderr = true
-```
-
-After making changes to a supervisor config file, you must reload it for it to have effect:
-
-```
-supervisorctl reload
-```
 
 Static Resources on S3 and CloudFront
 -------------------------------------
@@ -577,7 +471,7 @@ not realistic here's how you can get access if necessary.
 
 SSH into the production bastion
 
-	$ ssh 54.209.10.66
+	$ ssh prod-bastion
 
 Use the MySQL cli
 
