@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/base32"
 	"encoding/binary"
+	"fmt"
 	"strconv"
 
 	"github.com/sprucehealth/backend/libs/errors"
@@ -13,7 +14,14 @@ const (
 	base32EncodedUint64len = 13 // length of 8-byte as base32 with '=' stripped
 )
 
-var errInvalidID = errors.New("invalid ID")
+type errInvalidID struct {
+	id     string
+	prefix string
+}
+
+func (e errInvalidID) Error() string {
+	return fmt.Sprintf("invalid ID '%s' (expected prefix '%s')", e.id, e.prefix)
+}
 
 // ObjectID is used for the (un)marshalling of data models 64-bit IDs
 type ObjectID struct {
@@ -44,16 +52,16 @@ func (id *ObjectID) UnmarshalText(text []byte) error {
 		return nil
 	}
 	if len(text) != len(id.Prefix)+base32EncodedUint64len {
-		return errors.Trace(errInvalidID)
+		return errors.Trace(errInvalidID{id: string(text), prefix: id.Prefix})
 	}
 	s := string(text)
 	if s[:len(id.Prefix)] != id.Prefix {
-		return errors.Trace(errInvalidID)
+		return errors.Trace(errInvalidID{id: string(text), prefix: id.Prefix})
 	}
 	s = s[len(id.Prefix):]
 	decoded, err := base32.HexEncoding.DecodeString(s + "===") // repad for decoding
 	if err != nil {
-		return errors.Trace(errInvalidID)
+		return errors.Trace(errInvalidID{id: string(text), prefix: id.Prefix})
 	}
 	id.Val = binary.BigEndian.Uint64(decoded)
 	id.IsValid = true

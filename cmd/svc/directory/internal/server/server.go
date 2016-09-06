@@ -31,7 +31,8 @@ func grpcErrorf(c codes.Code, format string, a ...interface{}) error {
 
 func grpcError(err error) error {
 	if grpc.Code(err) == codes.Unknown {
-		return grpcErrorf(codes.Internal, err.Error())
+		golog.LogDepthf(1, golog.ERR, "Internal Error: "+err.Error())
+		err = grpcErrf(codes.Internal, err.Error())
 	}
 	return err
 }

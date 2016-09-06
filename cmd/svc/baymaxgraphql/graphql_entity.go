@@ -243,6 +243,10 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 				ent := p.Source.(*models.Entity)
 				ctx := p.Context
 				ram := raccess.ResourceAccess(p)
+				// TODO: remove this once we no longer have the primaryEntity stub
+				if ent.ID == "entity_stub" {
+					return nil, nil
+				}
 				return lookupEntityProfile(ctx, ram, ent.ID)
 			},
 		},
@@ -252,6 +256,11 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 				ent := p.Source.(*models.Entity)
 				ram := raccess.ResourceAccess(p)
 				ctx := p.Context
+				// TODO: remove this once we no longer have the primaryEntity stub
+				if ent.ID == "entity_stub" {
+					return nil, nil
+				}
+
 				res, err := ram.LookupExternalLinksForEntity(ctx, &directory.LookupExternalLinksForEntityRequest{
 					EntityID: ent.ID,
 				})
