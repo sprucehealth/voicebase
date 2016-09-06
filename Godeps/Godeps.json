@@ -323,6 +323,10 @@
 		{
 			"ImportPath": "github.com/sprucehealth/go-hint",
 			"Rev": "66b76af583576ae53d4e1ca24223a1b893f6e467"
+		},
+		{
+			"ImportPath": "github.com/dustin/go-humanize",
+			"Rev": "2fcb5204cdc65b4bec9fd0a87606bb0d0e3c54e8"
 		}
 	]
 }

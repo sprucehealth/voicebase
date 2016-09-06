@@ -10,7 +10,6 @@ import (
 	"github.com/sprucehealth/backend/libs/bml"
 	"github.com/sprucehealth/backend/libs/caremessenger/deeplink"
 	"github.com/sprucehealth/backend/libs/gqldecode"
-	"github.com/sprucehealth/backend/libs/textutil"
 	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
@@ -243,7 +242,7 @@ func acceptPaymentRequest(p graphql.ResolveParams, in acceptPaymentRequestInput)
 		title = append(title, "Completed Payment: ")
 		title = append(title, &bml.Anchor{
 			HREF: deeplink.PaymentURL(svc.webDomain, threadResp.OrganizationID, threadResp.ID, paymentResp.Payment.ID),
-			Text: "$" + textutil.FormatCurrencyAmount(fmt.Sprintf("%.2f", float64(resp.Payment.Amount)/float64(100))),
+			Text: payments.FormatAmount(resp.Payment.Amount, "USD"),
 		})
 		titleText, err := title.Format()
 		if err != nil {

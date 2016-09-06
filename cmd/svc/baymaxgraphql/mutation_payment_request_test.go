@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"testing"
 
 	"context"
@@ -15,7 +14,6 @@ import (
 	"github.com/sprucehealth/backend/libs/caremessenger/deeplink"
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
-	"github.com/sprucehealth/backend/libs/textutil"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/payments"
@@ -150,7 +148,7 @@ func TestAcceptPaymentRequest(t *testing.T) {
 				title = append(title, "Completed Payment: ")
 				title = append(title, &bml.Anchor{
 					HREF: deeplink.PaymentURL("webDomain", organizationID, threadID, paymentRequestID),
-					Text: "$" + textutil.FormatCurrencyAmount(fmt.Sprintf("%.2f", float64(234)/float64(100))),
+					Text: payments.FormatAmount(234, "USD"),
 				})
 				titleText, err := title.Format()
 				test.OK(t, err)
