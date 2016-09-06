@@ -2,11 +2,13 @@ package workers
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/sprucehealth/backend/cmd/svc/payments/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/payments/internal/server"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/stripe/stripe-go"
 )
 
@@ -46,12 +48,35 @@ func (w *Workers) processPaymentNoneAccepted() {
 						golog.Errorf("Error while adding customer for vendor account %s and entity id %s for payment %s: %s", p.VendorAccountID, paymentMethod.EntityID, p.ID, err)
 						continue
 					}
+
+					// link the stripe customer to the entity
+					if _, err := w.directoryClient.CreateExternalLink(ctx, &directory.CreateExternalLinkRequest{
+						EntityID: paymentMethod.EntityID,
+						Name:     "Stripe",
+						URL:      fmt.Sprintf("https://dashboard.stripe.com/customers/%s", vendorCustomer.StorageID),
+					}); err != nil {
+						golog.Errorf("Unable to create external link for %s : %s", paymentMethod.EntityID, err)
+						continue
+					}
+
+					if _, err := w.directoryClient.CreateExternalIDs(ctx, &directory.CreateExternalIDsRequest{
+						EntityID:    paymentMethod.EntityID,
+						ExternalIDs: []string{scopeID(vendorCustomer.StorageID)},
+					}); err != nil {
+						golog.Errorf("Unable to create externalIDs for %s : %s", paymentMethod.EntityID, err)
+						continue
+					}
+
 				} else if err != nil {
 					golog.Errorf("Error while looking up customer for vendor account %s and entity id %s for payment %s: %s", p.VendorAccountID, paymentMethod.EntityID, p.ID, err)
 					continue
 				}
 				// Check to see if there is an existing matching payment method for this vendor customer
-				vendorPaymentMethod, err := dl.PaymentMethodWithFingerprint(ctx, vendorCustomer.ID, paymentMethod.StorageFingerprint, paymentMethod.TokenizationMethod)
+				vendorPaymentMethod, err := dl.PaymentMethodWithFingerprint(
+					ctx,
+					vendorCustomer.ID,
+					paymentMethod.StorageFingerprint,
+					paymentMethod.TokenizationMethod)
 				if errors.Cause(err) == dal.ErrNotFound {
 					// Create the token source for adding this card
 					var tokenSource server.TokenSource
@@ -88,7 +113,14 @@ func (w *Workers) processPaymentNoneAccepted() {
 					}
 
 					// TODO: Assert that we can make this idempotent with new tokens each attempt
-					vendorPaymentMethod, err = server.AddPaymentMethod(ctx, vendorAccount, vendorCustomer, server.TransformPaymentMethodTypeToResponse(paymentMethod.Type), tokenSource, w.dal, w.stripeClient)
+					vendorPaymentMethod, err = server.AddPaymentMethod(
+						ctx,
+						vendorAccount,
+						vendorCustomer,
+						server.TransformPaymentMethodTypeToResponse(paymentMethod.Type),
+						tokenSource,
+						w.dal,
+						w.stripeClient)
 					if err != nil {
 						golog.Errorf("Error while adding payment method for vendor account %s and entity id %s for payment %s: %s", p.VendorAccountID, paymentMethod.EntityID, p.ID, err)
 						continue

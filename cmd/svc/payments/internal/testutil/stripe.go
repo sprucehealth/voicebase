@@ -68,7 +68,7 @@ func (m *MockIdempotentStripeClient) Card(ctx context.Context, id string, cParam
 }
 
 func (m *MockIdempotentStripeClient) CreateCard(ctx context.Context, cParams *stripe.CardParams, opts ...istripe.CallOption) (*stripe.Card, error) {
-	rets := m.Record(cParams, opts)
+	rets := m.Record(cParams)
 	if len(rets) == 0 {
 		return nil, nil
 	}
@@ -76,7 +76,7 @@ func (m *MockIdempotentStripeClient) CreateCard(ctx context.Context, cParams *st
 }
 
 func (m *MockIdempotentStripeClient) CreateCharge(ctx context.Context, cParams *stripe.ChargeParams, opts ...istripe.CallOption) (*stripe.Charge, error) {
-	rets := m.Record(cParams, opts)
+	rets := m.Record(cParams)
 	if len(rets) == 0 {
 		return nil, nil
 	}
@@ -84,7 +84,7 @@ func (m *MockIdempotentStripeClient) CreateCharge(ctx context.Context, cParams *
 }
 
 func (m *MockIdempotentStripeClient) CreateCustomer(ctx context.Context, cParams *stripe.CustomerParams, opts ...istripe.CallOption) (*stripe.Customer, error) {
-	rets := m.Record(cParams, opts)
+	rets := m.Record(cParams)
 	if len(rets) == 0 {
 		return nil, nil
 	}
@@ -92,7 +92,7 @@ func (m *MockIdempotentStripeClient) CreateCustomer(ctx context.Context, cParams
 }
 
 func (m *MockIdempotentStripeClient) DeleteCard(ctx context.Context, id string, cParams *stripe.CardParams, opts ...istripe.CallOption) error {
-	rets := m.Record(id, cParams, opts)
+	rets := m.Record(id, cParams)
 	if len(rets) == 0 {
 		return nil
 	}
@@ -100,7 +100,7 @@ func (m *MockIdempotentStripeClient) DeleteCard(ctx context.Context, id string, 
 }
 
 func (m *MockIdempotentStripeClient) Token(ctx context.Context, tParams *stripe.TokenParams, opts ...istripe.CallOption) (*stripe.Token, error) {
-	rets := m.Record(tParams, opts)
+	rets := m.Record(tParams)
 	if len(rets) == 0 {
 		return nil, nil
 	}

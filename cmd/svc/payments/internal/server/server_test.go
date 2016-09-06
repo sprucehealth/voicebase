@@ -7,7 +7,6 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/payments/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/payments/internal/oauth"
-	istripe "github.com/sprucehealth/backend/cmd/svc/payments/internal/stripe"
 	"github.com/sprucehealth/backend/cmd/svc/payments/internal/testutil"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/test"
@@ -574,7 +573,7 @@ func TestDeletePaymentMethod(t *testing.T) {
 					Params: stripe.Params{
 						StripeAccount: connectedAccountID,
 					},
-				}, []istripe.CallOption(nil)))
+				}))
 
 				// Return Existing Payment Methods
 				tsrv.mdal.Expect(mock.NewExpectation(tsrv.mdal.EntityPaymentMethods, masterVendorAccountID, entityID, []dal.QueryOption(nil)).WithReturns(
@@ -669,7 +668,7 @@ func TestDeletePaymentMethod(t *testing.T) {
 					Params: stripe.Params{
 						StripeAccount: connectedAccountID,
 					},
-				}, []istripe.CallOption(nil)))
+				}))
 
 				// update the default
 				tsrv.mdal.Expect(mock.NewExpectation(tsrv.mdal.EntityPaymentMethods, masterVendorAccountID, entityID, []dal.QueryOption(nil)).WithReturns([]*dal.PaymentMethod{

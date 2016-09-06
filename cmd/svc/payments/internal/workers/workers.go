@@ -24,11 +24,16 @@ type Workers struct {
 }
 
 // New initializes a collection of all workers used by the Payments system
-func New(dl dal.DAL, directoryClient directory.DirectoryClient, threadingClient threading.ThreadsClient, stripeSecretKey, stripeClientID, webDomain string) *Workers {
+func New(
+	dl dal.DAL,
+	directoryClient directory.DirectoryClient,
+	threadingClient threading.ThreadsClient,
+	stripeClient stripe.IdempotentStripeClient,
+	stripeSecretKey, stripeClientID, webDomain string) *Workers {
 	w := &Workers{
 		dal:             dl,
 		stripeOAuth:     oauth.NewStripe(stripeSecretKey, stripeClientID),
-		stripeClient:    stripe.NewClient(stripeSecretKey),
+		stripeClient:    stripeClient,
 		webDomain:       webDomain,
 		directoryClient: directoryClient,
 		threadingClient: threadingClient,

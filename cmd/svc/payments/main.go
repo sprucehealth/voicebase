@@ -108,7 +108,7 @@ func main() {
 	go s.Serve(lis)
 
 	golog.Infof("Starting Payments Workers...")
-	works := workers.New(dl, directoryClient, threadingClient, *flagStripeSecretKey, *flagStripeClientID, *flagWebDomain)
+	works := workers.New(dl, directoryClient, threadingClient, stripe.NewClient(*flagStripeSecretKey), *flagStripeSecretKey, *flagStripeClientID, *flagWebDomain)
 	works.Start()
 	defer works.Stop(time.Second * 20)
 
