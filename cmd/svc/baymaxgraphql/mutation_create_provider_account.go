@@ -301,6 +301,7 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 	}
 
 	// Create a default saved queries
+	// TODO: for now make if making a change here also change bayaxmadmin cli. Should centralize the account creation logic.
 	// TODO: make this more reliable & idempotent
 	if err = ram.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
 		OrganizationID: orgEntityID,

@@ -2,15 +2,15 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"database/sql"
-	"errors"
 	"flag"
 	"fmt"
 	"os"
 	"strings"
 
-	"context"
-
+	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
 )
@@ -80,10 +80,10 @@ func (c *moveEntityCmd) run(args []string) error {
 		return err
 	}
 	if entity.Type != directory.EntityType_INTERNAL {
-		return fmt.Errorf("Can only move %s entities, not %s", directory.EntityType_INTERNAL, entity.Type)
+		return errors.Errorf("Can only move %s entities, not %s", directory.EntityType_INTERNAL, entity.Type)
 	}
 	if entity.Status != directory.EntityStatus_ACTIVE {
-		return fmt.Errorf("Expected original entity to be %s, got %s", directory.EntityStatus_ACTIVE, entity.Status)
+		return errors.Errorf("Expected original entity to be %s, got %s", directory.EntityStatus_ACTIVE, entity.Status)
 	}
 
 	fmt.Printf("\nFrom organization:\n\n")
@@ -103,7 +103,7 @@ func (c *moveEntityCmd) run(args []string) error {
 	}
 	// Sanity check, we already selected specifically an org ID above
 	if oldOrg.Type != directory.EntityType_ORGANIZATION {
-		return fmt.Errorf("Can only move an entity from an organization, not %s", oldOrg.Type)
+		return errors.Errorf("Can only move an entity from an organization, not %s", oldOrg.Type)
 	}
 
 	fmt.Printf("\nTo organization:\n\n")
@@ -112,7 +112,7 @@ func (c *moveEntityCmd) run(args []string) error {
 		return err
 	}
 	if newOrg.Type != directory.EntityType_ORGANIZATION {
-		return fmt.Errorf("Can only move an entity into an organization, not %s", newOrg.Type)
+		return errors.Errorf("Can only move an entity into an organization, not %s", newOrg.Type)
 	}
 
 	// TODO: automate the phone number validation
@@ -146,7 +146,7 @@ func (c *moveEntityCmd) run(args []string) error {
 	}
 	ceRes, err := c.dirCli.CreateEntity(ctx, ceReq)
 	if err != nil {
-		return fmt.Errorf("Failed to create new entity: %s", err)
+		return errors.Errorf("Failed to create new entity: %s", err)
 	}
 	fmt.Printf("\nCreated new entity in new org:\n\n")
 	newEntity := ceRes.Entity
@@ -156,14 +156,43 @@ func (c *moveEntityCmd) run(args []string) error {
 	if _, err := c.threadingCli.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
 		OrganizationID: newOrg.ID,
 		EntityID:       newEntity.ID,
-		// TODO: query
+		Title:          "All",
+		Query:          &threading.Query{},
+		Ordinal:        1,
 	}); err != nil {
-		return fmt.Errorf("Failed to create saved query: %s", err)
+		golog.Errorf("Failed to create saved query 'All': %s", err)
+	}
+	if _, err := c.threadingCli.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
+		OrganizationID: newOrg.ID,
+		EntityID:       newEntity.ID,
+		Title:          "Patient",
+		Query:          &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_PATIENT}}}},
+		Ordinal:        2,
+	}); err != nil {
+		golog.Errorf("Failed to create saved query 'Patient': %s", err)
+	}
+	if _, err := c.threadingCli.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
+		OrganizationID: newOrg.ID,
+		EntityID:       newEntity.ID,
+		Title:          "Team",
+		Query:          &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_TEAM}}}},
+		Ordinal:        3,
+	}); err != nil {
+		golog.Errorf("Failed to create saved query 'Team': %s", err)
+	}
+	if _, err := c.threadingCli.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
+		OrganizationID: newOrg.ID,
+		EntityID:       newEntity.ID,
+		Title:          "@Pages",
+		Query:          &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_UNREAD_REFERENCE}}}},
+		Ordinal:        4,
+	}); err != nil {
+		golog.Errorf("Failed to create saved query '@Pages': %s", err)
 	}
 
 	// Delete the old entity (really updates the status so we don't lose anything here)
 	if _, err := c.dirCli.DeleteEntity(ctx, &directory.DeleteEntityRequest{EntityID: entity.ID}); err != nil {
-		return fmt.Errorf("Failed to delete old entity: %s", err)
+		return errors.Errorf("Failed to delete old entity: %s", err)
 	}
 
 	// Remove external ID association of the account with the old entity
@@ -179,14 +208,14 @@ func (c *moveEntityCmd) run(args []string) error {
 	res, err := tx.Exec(`DELETE FROM external_entity_id WHERE entity_id = ? AND external_id = ?`, oldEntityDBID, entity.AccountID)
 	if err != nil {
 		tx.Rollback()
-		return fmt.Errorf("Failed to update entity account_id: %s", err)
+		return errors.Errorf("Failed to update entity account_id: %s", err)
 	}
 	if err := checkRowCount("deleting old external_entity_id", res, 1); err != nil {
 		tx.Rollback()
 		return err
 	}
 	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("Failed to commit directory transaction: %s", err)
+		return errors.Errorf("Failed to commit directory transaction: %s", err)
 	}
 
 	return nil
@@ -195,10 +224,10 @@ func (c *moveEntityCmd) run(args []string) error {
 func checkRowCount(op string, res sql.Result, expected int64) error {
 	n, err := res.RowsAffected()
 	if err != nil {
-		return fmt.Errorf("Failed to get affect rows count: %s", err)
+		return errors.Errorf("Failed to get affect rows count: %s", err)
 	}
 	if n != expected {
-		return fmt.Errorf("Expected %d row when %s, got %d\n", expected, op, n)
+		return errors.Errorf("Expected %d row when %s, got %d\n", expected, op, n)
 	}
 	return nil
 }
