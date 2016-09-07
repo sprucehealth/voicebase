@@ -15,6 +15,7 @@ import (
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/caremessenger/deeplink"
 	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/worker"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
@@ -104,6 +105,13 @@ func (s *syncEvent) processPatientAddEvent(ctx context.Context, cfg *sync.Config
 				return errors.Trace(err)
 			}
 		case sync.THREAD_CREATION_TYPE_SECURE:
+
+			// ensure that we have at least one phone number and email address before proceeding
+			if len(patient.PhoneNumbers) == 0 || len(patient.EmailAddresses) == 0 {
+				golog.Warningf("Ignoring patient %s since we dont have at least one valid phone number and email address for the patient: %s", patient.ID)
+				continue
+			}
+
 			if err := s.createThread(ctx, patient, event.Source, event.OrganizationEntityID, threading.THREAD_TYPE_SECURE_EXTERNAL); err != nil {
 				return errors.Trace(err)
 			}
