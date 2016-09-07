@@ -102,7 +102,9 @@ func (d *dal) SyncConfigForOrg(orgID, source string) (*sync.Config, error) {
 	if err := d.db.QueryRow(`
 		SELECT config 
 		FROM sync_config 
-		WHERE org_id = ? and source = ?`, orgID, source).Scan(&data); err != nil {
+		WHERE org_id = ? and source = ?`, orgID, source).Scan(&data); err == sql.ErrNoRows {
+		return nil, errors.Trace(NotFound)
+	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
 
