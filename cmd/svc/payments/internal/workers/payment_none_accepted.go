@@ -6,6 +6,7 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/payments/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/payments/internal/server"
+	istripe "github.com/sprucehealth/backend/cmd/svc/payments/internal/stripe"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -53,7 +54,7 @@ func (w *Workers) processPaymentNoneAccepted() {
 					if _, err := w.directoryClient.CreateExternalLink(ctx, &directory.CreateExternalLinkRequest{
 						EntityID: paymentMethod.EntityID,
 						Name:     "Stripe",
-						URL:      fmt.Sprintf("https://dashboard.stripe.com/customers/%s", vendorCustomer.StorageID),
+						URL:      fmt.Sprintf("%s/customers/%s", istripe.DashboardURL(), vendorCustomer.StorageID),
 					}); err != nil {
 						golog.Errorf("Unable to create external link for %s : %s", paymentMethod.EntityID, err)
 						continue

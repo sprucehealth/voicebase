@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/directory"
 	dirmock "github.com/sprucehealth/backend/svc/directory/mock"
+
 	"github.com/stripe/stripe-go"
 )
 
@@ -175,7 +176,7 @@ func TestPaymentNoneAccepted(t *testing.T) {
 	directorymock.Expect(mock.NewExpectation(directorymock.CreateExternalLink, &directory.CreateExternalLinkRequest{
 		EntityID: "entityID",
 		Name:     "Stripe",
-		URL:      "https://dashboard.stripe.com/customers/stripeCustomerID",
+		URL:      "https://dashboard.stripe.com/test/customers/stripeCustomerID",
 	}))
 
 	directorymock.Expect(mock.NewExpectation(directorymock.CreateExternalIDs, &directory.CreateExternalIDsRequest{

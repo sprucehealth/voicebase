@@ -7,11 +7,21 @@ import (
 
 	"context"
 
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/stripe/stripe-go"
 	"github.com/stripe/stripe-go/client"
 )
+
+// DashboardURL returns the appropriate URL for the dashboard based on Live/Test
+// environments
+func DashboardURL() string {
+	if environment.IsProd() {
+		return "https://dashboard.stripe.com"
+	}
+	return "https://dashboard.stripe.com/test"
+}
 
 // IdempotentStripeClient exposes a wrapped stripe client with built in idempotency mechanisms
 type IdempotentStripeClient interface {
