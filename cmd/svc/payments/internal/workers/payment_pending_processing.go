@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
+	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/stripe/stripe-go"
 )
@@ -96,6 +97,12 @@ func (w *Workers) processPaymentPendingProcessing() {
 				golog.Errorf("Error while processing payment %s: %s", p.ID, processingErr)
 				continue
 			} else {
+
+				if err := w.postPaymentCompletedToThread(ctx, p); err != nil {
+					golog.Errorf("Unable to post completed message to thread for payment %s : %s", p.ID, err)
+					continue
+				}
+
 				if _, err := dl.UpdatePayment(ctx, p.ID, &dal.PaymentUpdate{
 					Lifecycle:              dal.PaymentLifecycleCompleted,
 					ChangeState:            dal.PaymentChangeStateNone,
@@ -111,6 +118,50 @@ func (w *Workers) processPaymentPendingProcessing() {
 	}); err != nil {
 		golog.Errorf("Encountered error while processing PENDING/PROCESSING payments: %s", err)
 	}
+}
+
+func (w *Workers) postPaymentCompletedToThread(ctx context.Context, payment *dal.Payment) error {
+	if payment.ThreadID == "" {
+		return nil
+	}
+
+	resp, err := w.threadingClient.Thread(ctx, &threading.ThreadRequest{
+		ThreadID: payment.ThreadID,
+	})
+	if err != nil {
+		return errors.Trace(err)
+	}
+
+	paymentMethod, err := w.dal.PaymentMethod(ctx, payment.PaymentMethodID)
+	if err != nil {
+		return errors.Trace(err)
+	}
+
+	var title bml.BML
+	title = append(title, "Completed Payment: ")
+	title = append(title, &bml.Anchor{
+		HREF: deeplink.PaymentURL(w.webDomain, resp.Thread.OrganizationID, resp.Thread.ID, payment.ID.String()),
+		Text: payments.FormatAmount(payment.Amount, "USD"),
+	})
+	titleText, err := title.Format()
+	if err != nil {
+		return errors.Trace(err)
+	}
+	summary, err := title.PlainText()
+	if err != nil {
+		return errors.Trace(err)
+	}
+	if _, err = w.threadingClient.PostMessage(ctx, &threading.PostMessageRequest{
+		UUID:         `accept_` + payment.ID.String(),
+		ThreadID:     payment.ThreadID,
+		FromEntityID: paymentMethod.EntityID,
+		Title:        titleText,
+		Summary:      summary,
+	}); err != nil {
+		return errors.Trace(err)
+	}
+
+	return nil
 }
 
 func (w *Workers) postErrorProcessingToThread(ctx context.Context, payment *dal.Payment, errorMessage string) error {

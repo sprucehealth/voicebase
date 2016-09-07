@@ -17,7 +17,6 @@ import (
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/payments"
-	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 )
 
@@ -55,10 +54,6 @@ func TestAcceptPaymentRequest(t *testing.T) {
 					Payment: &payments.Payment{
 						ThreadID: threadID,
 					},
-				}, nil))
-				mra.Expect(mock.NewExpectation(mra.Thread, threadID, "").WithReturns(&threading.Thread{
-					ID:             threadID,
-					OrganizationID: organizationID,
 				}, nil))
 				mra.Expect(mock.NewExpectation(mra.AcceptPayment, &payments.AcceptPaymentRequest{
 					PaymentID:       paymentRequestID,
@@ -126,10 +121,6 @@ func TestAcceptPaymentRequest(t *testing.T) {
 						ThreadID: threadID,
 					},
 				}, nil))
-				mra.Expect(mock.NewExpectation(mra.Thread, threadID, "").WithReturns(&threading.Thread{
-					ID:             threadID,
-					OrganizationID: organizationID,
-				}, nil))
 				mra.Expect(mock.NewExpectation(mra.AcceptPayment, &payments.AcceptPaymentRequest{
 					PaymentID:       paymentRequestID,
 					PaymentMethodID: paymentMethodID,
@@ -150,18 +141,6 @@ func TestAcceptPaymentRequest(t *testing.T) {
 					HREF: deeplink.PaymentURL("webDomain", organizationID, threadID, paymentRequestID),
 					Text: payments.FormatAmount(234, "USD"),
 				})
-				titleText, err := title.Format()
-				test.OK(t, err)
-				summary, err := title.PlainText()
-				test.OK(t, err)
-				mra.Expect(mock.NewExpectation(mra.PostMessage, &threading.PostMessageRequest{
-					UUID:     `accept_` + paymentRequestID,
-					ThreadID: threadID,
-					// TODO: For now just assume whoever owns the payment method accepted it
-					FromEntityID: entityID,
-					Title:        titleText,
-					Summary:      summary,
-				}))
 				mra.Expect(mock.NewExpectation(mra.Entities, &directory.LookupEntitiesRequest{
 					LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
 					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{

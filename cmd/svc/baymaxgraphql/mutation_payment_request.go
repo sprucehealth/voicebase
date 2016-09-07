@@ -7,11 +7,8 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
-	"github.com/sprucehealth/backend/libs/bml"
-	"github.com/sprucehealth/backend/libs/caremessenger/deeplink"
 	"github.com/sprucehealth/backend/libs/gqldecode"
 	"github.com/sprucehealth/backend/svc/payments"
-	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 	"github.com/sprucehealth/graphql/gqlerrors"
 	"google.golang.org/grpc"
@@ -38,6 +35,7 @@ var createPaymentRequestInputType = graphql.NewInputObject(
 
 const (
 	createPaymentRequestErrorCodeVendorNotFound = "NO_VENDOR_FOR_ENTITY"
+	createPaymentRequestErrorCodeInvalidAmount  = "INVALID_AMOUNT"
 )
 
 var createPaymentRequestErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
@@ -46,6 +44,10 @@ var createPaymentRequestErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
 		createPaymentRequestErrorCodeVendorNotFound: &graphql.EnumValueConfig{
 			Value:       createPaymentRequestErrorCodeVendorNotFound,
 			Description: "The requested entity couldn't be matched to a vendor account",
+		},
+		createPaymentRequestErrorCodeInvalidAmount: &graphql.EnumValueConfig{
+			Value:       createPaymentRequestErrorCodeInvalidAmount,
+			Description: "The entered amount is invalid.",
 		},
 	},
 })
@@ -97,6 +99,16 @@ func createPaymentRequest(p graphql.ResolveParams, in createPaymentRequestInput)
 	svc := serviceFromParams(p)
 	ctx := p.Context
 	ram := raccess.ResourceAccess(p)
+
+	if in.AmountInCents <= 0 {
+		return &createPaymentRequestOutput{
+			ClientMutationID: in.ClientMutationID,
+			Success:          false,
+			ErrorCode:        createPaymentRequestErrorCodeInvalidAmount,
+			ErrorMessage:     "Please enter a valid amount greater than 0.",
+		}, nil
+	}
+
 	resp, err := ram.CreatePayment(ctx, &payments.CreatePaymentRequest{
 		RequestingEntityID: in.RequestingEntityID,
 		Amount:             uint64(in.AmountInCents),
@@ -203,7 +215,7 @@ func acceptPaymentRequest(p graphql.ResolveParams, in acceptPaymentRequestInput)
 	svc := serviceFromParams(p)
 	ctx := p.Context
 	ram := raccess.ResourceAccess(p)
-	paymentResp, err := ram.Payment(ctx, &payments.PaymentRequest{
+	_, err := ram.Payment(ctx, &payments.PaymentRequest{
 		PaymentID: in.PaymentRequestID,
 	})
 	if grpc.Code(err) == codes.NotFound {
@@ -214,11 +226,6 @@ func acceptPaymentRequest(p graphql.ResolveParams, in acceptPaymentRequestInput)
 			ErrorMessage:     fmt.Sprintf("Payment %s Not Found", in.PaymentRequestID),
 		}, nil
 	} else if err != nil {
-		return nil, errors.InternalError(p.Context, err)
-	}
-
-	threadResp, err := ram.Thread(ctx, paymentResp.Payment.ThreadID, "")
-	if err != nil {
 		return nil, errors.InternalError(p.Context, err)
 	}
 
@@ -235,33 +242,6 @@ func acceptPaymentRequest(p graphql.ResolveParams, in acceptPaymentRequestInput)
 		}, nil
 	} else if err != nil {
 		return nil, errors.InternalError(p.Context, err)
-	}
-
-	if resp.Payment.ThreadID != "" {
-		var title bml.BML
-		title = append(title, "Completed Payment: ")
-		title = append(title, &bml.Anchor{
-			HREF: deeplink.PaymentURL(svc.webDomain, threadResp.OrganizationID, threadResp.ID, paymentResp.Payment.ID),
-			Text: payments.FormatAmount(resp.Payment.Amount, "USD"),
-		})
-		titleText, err := title.Format()
-		if err != nil {
-			return nil, errors.InternalError(p.Context, err)
-		}
-		summary, err := title.PlainText()
-		if err != nil {
-			return nil, errors.InternalError(p.Context, err)
-		}
-		if _, err = ram.PostMessage(ctx, &threading.PostMessageRequest{
-			UUID:     `accept_` + resp.Payment.ID,
-			ThreadID: resp.Payment.ThreadID,
-			// TODO: For now just assume whoever owns the payment method accepted it
-			FromEntityID: resp.Payment.PaymentMethod.EntityID,
-			Title:        titleText,
-			Summary:      summary,
-		}); err != nil {
-			return nil, errors.InternalError(p.Context, err)
-		}
 	}
 
 	paymentRequest, err := transformPaymentToResponse(ctx, resp.Payment, ram, svc.staticURLPrefix)

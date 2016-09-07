@@ -226,10 +226,8 @@ func (s *server) CreatePaymentMethod(ctx context.Context, req *payments.CreatePa
 		return nil, grpcErrorf(codes.InvalidArgument, "Unhandled payment method storage type %s", req.StorageType)
 	}
 	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
-		paymentMethod, err := AddPaymentMethod(ctx, s.masterVendorAccount, customer, req.Type, &LiteralTokenSource{T: token}, s.dal, s.stripeClient)
-		if IsPaymentMethodError(errors.Cause(err)) {
-			return grpcErrorf(payments.PaymentMethodError, PaymentMethodErrorMesssage(errors.Cause(err)))
-		} else if err != nil {
+		paymentMethod, err := AddPaymentMethod(ctx, s.masterVendorAccount, customer, req.Type, &LiteralTokenSource{T: token}, dl, s.stripeClient)
+		if err != nil {
 			return errors.Trace(err)
 		}
 		if err := s.setDefaultPaymentMethod(ctx, dl, paymentMethod.ID, req.EntityID); err != nil {
@@ -237,6 +235,9 @@ func (s *server) CreatePaymentMethod(ctx context.Context, req *payments.CreatePa
 		}
 		return nil
 	}); err != nil {
+		if IsPaymentMethodError(errors.Cause(err)) {
+			return nil, grpcErrorf(payments.PaymentMethodError, PaymentMethodErrorMesssage(errors.Cause(err)))
+		}
 		return nil, grpcError(err)
 	}
 	resp, err := s.PaymentMethods(ctx, &payments.PaymentMethodsRequest{EntityID: req.EntityID})

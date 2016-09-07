@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	dirmock "github.com/sprucehealth/backend/svc/directory/mock"
+	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/backend/svc/threading"
 	threadmock "github.com/sprucehealth/backend/svc/threading/mock"
 	"github.com/stripe/stripe-go"
@@ -46,6 +47,7 @@ func TestPaymentPendingProcessing(t *testing.T) {
 			PaymentMethodID: paymentMethodID,
 			Amount:          1000,
 			Currency:        "USD",
+			ThreadID:        "threadID",
 		},
 	}, nil))
 
@@ -70,6 +72,17 @@ func TestPaymentPendingProcessing(t *testing.T) {
 		StorageID: "customerStripeID",
 	}, nil))
 
+	dmock.Expect(mock.NewExpectation(dmock.PaymentMethod, paymentMethodID, []dal.QueryOption(nil)).WithReturns(&dal.PaymentMethod{
+		ID:                 paymentMethodID,
+		EntityID:           "entityID",
+		VendorAccountID:    vendorAccountID,
+		StorageFingerprint: "stripeFingerprint",
+		TokenizationMethod: "token",
+		CustomerID:         customerID,
+		StorageID:          "stripeCardStorageID",
+		Type:               dal.PaymentMethodTypeCard,
+	}, nil))
+
 	sourceParams, err := stripe.SourceParamsFor("stripeCardStorageID")
 	test.OK(t, err)
 
@@ -89,7 +102,38 @@ func TestPaymentPendingProcessing(t *testing.T) {
 		ProcessorTransactionID: ptr.String("stripeChargeID"),
 	}))
 
-	w := New(dmock, directorymock, nil, smock, "", "", "")
+	tmock := threadmock.New(t)
+	defer tmock.Finish()
+
+	var title bml.BML
+	title = append(title, "Completed Payment: ")
+	title = append(title, &bml.Anchor{
+		HREF: deeplink.PaymentURL("test.com", "orgID", "threadID", paymentID.String()),
+		Text: payments.FormatAmount(1000, "USD"),
+	})
+	titleText, err := title.Format()
+	test.OK(t, err)
+	summary, err := title.PlainText()
+	test.OK(t, err)
+
+	tmock.Expect(mock.NewExpectation(tmock.Thread, &threading.ThreadRequest{
+		ThreadID: "threadID",
+	}).WithReturns(&threading.ThreadResponse{
+		Thread: &threading.Thread{
+			ID:             "threadID",
+			OrganizationID: "orgID",
+		},
+	}, nil))
+
+	tmock.Expect(mock.NewExpectation(tmock.PostMessage, &threading.PostMessageRequest{
+		UUID:         `accept_` + paymentID.String(),
+		ThreadID:     "threadID",
+		FromEntityID: "entityID",
+		Title:        titleText,
+		Summary:      summary,
+	}))
+
+	w := New(dmock, directorymock, tmock, smock, "", "", "test.com")
 	w.processPaymentPendingProcessing()
 
 }
