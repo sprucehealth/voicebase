@@ -199,7 +199,9 @@ func main() {
 	flag.StringVar(&cnf.DBUsername, "db_username", cnf.DBUsername, "mysql database `username`")
 	flag.StringVar(&cnf.DBPassword, "db_password", cnf.DBPassword, "mysql database `password`")
 	flag.StringVar(&cnf.DBTLS, "db_tls", cnf.DBTLS, "mysql database TLS setting (skip-verify or true)")
+	flag.StringVar(&cnf.AuthAddr, "auth_addr", cnf.AuthAddr, "`host:port` of auth service")
 	flag.StringVar(&cnf.DirectoryAddr, "directory_addr", cnf.DirectoryAddr, "`host:port` of directory service")
+	flag.StringVar(&cnf.ExCommsAddr, "excomms_addr", cnf.ExCommsAddr, "`host:port` of excomms service")
 	flag.StringVar(&cnf.ThreadingAddr, "threading_addr", cnf.ThreadingAddr, "`host:port` of treading service")
 	flag.StringVar(&cnf.LayoutAddr, "layout_addr", cnf.LayoutAddr, "`host:port` of layout service")
 	flag.StringVar(&cnf.InviteAddr, "invite_addr", cnf.InviteAddr, "`host:port` of invite service")
@@ -210,8 +212,14 @@ func main() {
 
 	cmd := flag.Arg(0)
 
+	if cnf.AuthAddr == "" {
+		cnf.AuthAddr = fmt.Sprintf("_auth._tcp.service.%s-us-east-1.spruce", strings.ToLower(cnf.Env))
+	}
 	if cnf.DirectoryAddr == "" {
 		cnf.DirectoryAddr = fmt.Sprintf("_directory._tcp.service.%s-us-east-1.spruce", strings.ToLower(cnf.Env))
+	}
+	if cnf.ExCommsAddr == "" {
+		cnf.ExCommsAddr = fmt.Sprintf("_excomms._tcp.service.%s-us-east-1.spruce", strings.ToLower(cnf.Env))
 	}
 	if cnf.ThreadingAddr == "" {
 		cnf.ThreadingAddr = fmt.Sprintf("_threading._tcp.service.%s-us-east-1.spruce", strings.ToLower(cnf.Env))
