@@ -280,6 +280,7 @@ func (s *server) CreateEntity(ctx context.Context, rd *directory.CreateEntityReq
 				Value:       contact.Value,
 				Provisioned: contact.Provisioned,
 				Label:       contact.Label,
+				Verified:    contact.Verified,
 			}); err != nil {
 				return errors.Trace(err)
 			}
