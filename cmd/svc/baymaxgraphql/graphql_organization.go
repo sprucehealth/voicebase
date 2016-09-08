@@ -20,6 +20,41 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
+var savedThreadQueriesField = &graphql.Field{
+	Type: graphql.NewList(graphql.NewNonNull(savedThreadQueryType)),
+	Resolve: apiaccess.Authenticated(
+		apiaccess.Provider(
+			func(p graphql.ResolveParams) (interface{}, error) {
+
+				var entityID string
+				switch s := p.Source.(type) {
+				case *models.Organization:
+					if s.Entity == nil || s.Entity.ID == "" {
+						return nil, errors.New("no entity for organization")
+					}
+					entityID = s.Entity.ID
+				case *markThreadsAsReadOutput:
+					entityID = s.entity.ID
+				}
+
+				ram := raccess.ResourceAccess(p)
+				ctx := p.Context
+				sqs, err := ram.SavedQueries(ctx, entityID)
+				if err != nil {
+					return nil, err
+				}
+				var qs []*models.SavedThreadQuery
+				for _, q := range sqs {
+					sq, err := transformSavedQueryToResponse(q)
+					if err != nil {
+						return nil, errors.InternalError(ctx, err)
+					}
+					qs = append(qs, sq)
+				}
+				return qs, nil
+			})),
+}
+
 var organizationType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "Organization",
@@ -185,33 +220,8 @@ var organizationType = graphql.NewObject(
 					return entities, nil
 				},
 			},
-			"savedThreadQueries": &graphql.Field{
-				Type: graphql.NewList(graphql.NewNonNull(savedThreadQueryType)),
-				Resolve: apiaccess.Authenticated(
-					apiaccess.Provider(
-						func(p graphql.ResolveParams) (interface{}, error) {
-							org := p.Source.(*models.Organization)
-							if org.Entity == nil || org.Entity.ID == "" {
-								return nil, errors.New("no entity for organization")
-							}
-							ram := raccess.ResourceAccess(p)
-							ctx := p.Context
-							sqs, err := ram.SavedQueries(ctx, org.Entity.ID)
-							if err != nil {
-								return nil, err
-							}
-							var qs []*models.SavedThreadQuery
-							for _, q := range sqs {
-								sq, err := transformSavedQueryToResponse(q)
-								if err != nil {
-									return nil, errors.InternalError(ctx, err)
-								}
-								qs = append(qs, sq)
-							}
-							return qs, nil
-						})),
-			},
-			"visitCategories": visitCategoriesField,
+			"savedThreadQueries": savedThreadQueriesField,
+			"visitCategories":    visitCategoriesField,
 			"deeplink": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.String),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {

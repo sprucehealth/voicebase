@@ -42,10 +42,11 @@ var markThreadAsReadOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "MarkThreadAsReadPayload",
 		Fields: graphql.Fields{
-			"clientMutationId": newClientMutationIDOutputField(),
-			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-			"errorCode":        &graphql.Field{Type: markThreadAsReadErrorCodeEnum},
-			"errorMessage":     &graphql.Field{Type: graphql.String},
+			"clientMutationId":   newClientMutationIDOutputField(),
+			"success":            &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"errorCode":          &graphql.Field{Type: markThreadAsReadErrorCodeEnum},
+			"errorMessage":       &graphql.Field{Type: graphql.String},
+			"savedThreadQueries": savedThreadQueriesField,
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 			_, ok := value.(*markThreadAsReadOutput)
@@ -98,13 +99,13 @@ var markThreadAsReadMutation = &graphql.Field{
 // markThreadsAsRead
 
 type markThreadsAsReadOutput struct {
-	ClientMutationID string            `json:"clientMutationId,omitempty"`
-	Success          bool              `json:"success"`
-	ErrorCode        string            `json:"errorCode,omitempty"`
-	ErrorMessage     string            `json:"errorMessage,omitempty"`
-	Threads          []*models.Thread  `json:"threads"`
-	ThreadIDs        []string          `json:"-"`
-	Entity           *directory.Entity `json:"-"`
+	ClientMutationID string           `json:"clientMutationId,omitempty"`
+	Success          bool             `json:"success"`
+	ErrorCode        string           `json:"errorCode,omitempty"`
+	ErrorMessage     string           `json:"errorMessage,omitempty"`
+	Threads          []*models.Thread `json:"threads"`
+	threadIDs        []string
+	entity           *directory.Entity
 }
 
 // JANK: can't have an empty enum and we want this field to always exist so make it a string until it's needed
@@ -125,14 +126,14 @@ var markThreadsAsReadOutputType = graphql.NewObject(
 					acc := gqlctx.Account(ctx)
 
 					output := p.Source.(*markThreadsAsReadOutput)
-					if len(output.ThreadIDs) == 0 {
+					if len(output.threadIDs) == 0 {
 						return nil, nil
 					}
 
 					// requery all the threads in the list of marking threads as read
 					res, err := ram.Threads(ctx, &threading.ThreadsRequest{
-						ViewerEntityID: output.Entity.ID,
-						ThreadIDs:      output.ThreadIDs,
+						ViewerEntityID: output.entity.ID,
+						ThreadIDs:      output.threadIDs,
 					})
 					if err != nil {
 						return nil, errors.InternalError(ctx, err)
@@ -247,8 +248,8 @@ var markThreadsAsReadMutation = &graphql.Field{
 		return &markThreadsAsReadOutput{
 			ClientMutationID: in.ClientMutationID,
 			Success:          true,
-			ThreadIDs:        threadIDs,
-			Entity:           ent,
+			threadIDs:        threadIDs,
+			entity:           ent,
 		}, nil
 	}),
 }
