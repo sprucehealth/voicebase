@@ -483,14 +483,18 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 			eventProps["invite"] = inv.Type.String()
 			userTraits["inviter_entity_id"] = inv.GetColleague().InviterEntityID
 		}
-		if s := attribValues["adjust_adgroup"]; s != "" {
-			eventProps["adjust_adgroup"] = s
-			userTraits["adjust_adgroup"] = s
+
+		for key, value := range attribValues {
+			if strings.HasPrefix(key, "adjust_") {
+				eventProps[key] = value
+				userTraits[key] = value
+			}
 			// Creating new org so likely we want to track source on it as well
 			if inv == nil {
-				groupTraits["adjust_adgroup"] = s
+				groupTraits[key] = value
 			}
 		}
+
 		analytics.SegmentIdentify(&segment.Identify{
 			UserId: res.Account.ID,
 			Traits: userTraits,
