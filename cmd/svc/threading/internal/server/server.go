@@ -607,7 +607,7 @@ func (s *threadsServer) MarkThreadsAsRead(ctx context.Context, in *threading.Mar
 				readTime = time.Unix(int64(watermark.LastMessageTimestamp), 0)
 			}
 
-			threadEntities, err := dl.ThreadEntities(ctx, []models.ThreadID{threadID}, in.EntityID, dal.ForUpdate)
+			threadEntities, err := dl.ThreadEntities(ctx, []models.ThreadID{threadID}, in.EntityID)
 			if err != nil {
 				return errors.Trace(err)
 			}
