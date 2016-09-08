@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -9,8 +10,6 @@ import (
 	"strings"
 	"text/tabwriter"
 	"time"
-
-	"context"
 
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -172,7 +171,7 @@ func displayEntityInfo(indent string, info *directory.EntityInfo) {
 		fmt.Printf("%sGender: %s\n", indent, info.Gender)
 	}
 	if info.DOB != nil {
-		fmt.Printf("%sDOB: %s\n", indent, time.Date(int(info.DOB.Year), time.Month(info.DOB.Month), int(info.DOB.Day), 12, 0, 0, 0, nil).Format("Jan _2, 2006"))
+		fmt.Printf("%sDOB: %04d-%02d-%02d\n", indent, info.DOB.Year, info.DOB.Month, info.DOB.Day)
 	}
 	if info.Note != "" {
 		fmt.Printf("%sNote: %s\n", indent, info.Note)

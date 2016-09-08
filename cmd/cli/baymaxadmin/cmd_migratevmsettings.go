@@ -3,14 +3,13 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/csv"
 	"flag"
 	"fmt"
 	"io"
 	"os"
 	"strings"
-
-	"context"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/sprucehealth/backend/libs/awsutil"

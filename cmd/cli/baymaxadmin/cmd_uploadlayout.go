@@ -3,13 +3,12 @@ package main
 import (
 	"archive/zip"
 	"bufio"
+	"context"
 	"flag"
 	"fmt"
 	"os"
 	"path"
 	"strings"
-
-	"context"
 
 	"github.com/sajari/docconv"
 	"github.com/sprucehealth/backend/libs/errors"

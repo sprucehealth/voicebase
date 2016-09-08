@@ -2,12 +2,11 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"flag"
 	"fmt"
 	"os"
-
-	"context"
 
 	"github.com/sprucehealth/backend/svc/settings"
 	"google.golang.org/grpc"

@@ -2,13 +2,12 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"flag"
 	"fmt"
 	"os"
 	"strings"
-
-	"context"
 
 	"github.com/sprucehealth/backend/svc/directory"
 )

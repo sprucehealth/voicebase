@@ -2,14 +2,11 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"flag"
 	"fmt"
 	"os"
 	"strings"
-
-	"github.com/tcolgate/mp3"
-
-	"context"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	excommsSettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
@@ -21,6 +18,7 @@ import (
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/settings"
+	"github.com/tcolgate/mp3"
 )
 
 type enablePackageCmd struct {

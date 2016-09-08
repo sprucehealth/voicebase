@@ -2,13 +2,12 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"database/sql"
 	"flag"
 	"fmt"
 	"os"
 	"strings"
-
-	"context"
 
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/svc/auth"
@@ -113,36 +112,6 @@ func (c *blockAccountCmd) run(args []string) error {
 		AccountID: *accountID,
 	}); err != nil {
 		return errors.Trace(err)
-	}
-
-	// because graphQL layer does not filter out members of org that are not ACTIVE, delete the membership of the
-	// entity to its org
-	// this will prevent any of its members from seeing the entity that was just blocked
-	// TODO: Implement this through the directory service
-
-	entityDBID, err := decodeID(entity.ID)
-	if err != nil {
-		return errors.Trace(err)
-	}
-
-	tx, err := c.dirDB.Begin()
-	if err != nil {
-		return errors.Trace(err)
-	}
-
-	res, err := tx.Exec(`DELETE FROM entity_membership WHERE entity_id = ?`, entityDBID)
-	if err != nil {
-		tx.Rollback()
-		return errors.Trace(err)
-	}
-
-	if err := checkRowCount("deleting entity membership for the entity whose account is being blocked", res, 1); err != nil {
-		tx.Rollback()
-		return errors.Trace(err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("Failed to commit directory transaction: %s", err)
 	}
 
 	return nil
