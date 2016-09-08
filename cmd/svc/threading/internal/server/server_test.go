@@ -1603,7 +1603,7 @@ func TestMarkThreadAsRead(t *testing.T) {
 	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, sm, mm, nil, "WEBDOMAIN")
 
 	// Lookup the membership of the viewer in the threads records
-	dl.Expect(mock.NewExpectation(dl.ThreadEntities, []models.ThreadID{tID}, eID, dal.ForUpdate).WithReturns(
+	dl.Expect(mock.NewExpectation(dl.ThreadEntities, []models.ThreadID{tID}, eID).WithReturns(
 		map[string]*models.ThreadEntity{
 			tID.String(): {
 				ThreadID:   tID,
@@ -1665,7 +1665,7 @@ func TestMarkThreadsAsRead_NotSeen(t *testing.T) {
 	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, sm, mm, nil, "WEBDOMAIN")
 
 	// Lookup the membership of the viewer in the threads records
-	dl.Expect(mock.NewExpectation(dl.ThreadEntities, []models.ThreadID{tID}, eID, dal.ForUpdate).WithReturns(
+	dl.Expect(mock.NewExpectation(dl.ThreadEntities, []models.ThreadID{tID}, eID).WithReturns(
 		map[string]*models.ThreadEntity{
 			tID.String(): {
 				ThreadID:   tID,
@@ -1678,7 +1678,7 @@ func TestMarkThreadsAsRead_NotSeen(t *testing.T) {
 	// Update the whole thread as being read
 	dl.Expect(mock.NewExpectation(dl.UpdateThreadEntity, tID, eID, &dal.ThreadEntityUpdate{LastViewed: ptr.Time(readTime)}))
 
-	dl.Expect(mock.NewExpectation(dl.ThreadEntities, []models.ThreadID{tID2}, eID, dal.ForUpdate).WithReturns(
+	dl.Expect(mock.NewExpectation(dl.ThreadEntities, []models.ThreadID{tID2}, eID).WithReturns(
 		map[string]*models.ThreadEntity{
 			tID2.String(): {
 				ThreadID:   tID2,
@@ -1726,7 +1726,7 @@ func TestMarkThreadAsReadNilLastView(t *testing.T) {
 	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, sm, mm, nil, "WEBDOMAIN")
 
 	// Lookup the membership of the viewer in the threads records
-	dl.Expect(mock.NewExpectation(dl.ThreadEntities, []models.ThreadID{tID}, eID, dal.ForUpdate).WithReturns(
+	dl.Expect(mock.NewExpectation(dl.ThreadEntities, []models.ThreadID{tID}, eID).WithReturns(
 		map[string]*models.ThreadEntity{
 			tID.String(): {
 				ThreadID:   tID,
@@ -1794,7 +1794,7 @@ func TestMarkThreadAsReadExistingMembership(t *testing.T) {
 	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, sm, mm, nil, "WEBDOMAIN")
 
 	// Lookup the membership of the viewer in the threads records
-	dl.Expect(mock.NewExpectation(dl.ThreadEntities, []models.ThreadID{tID}, eID, dal.ForUpdate))
+	dl.Expect(mock.NewExpectation(dl.ThreadEntities, []models.ThreadID{tID}, eID))
 
 	// Update the whole thread as being read
 	dl.Expect(mock.NewExpectation(dl.UpdateThreadEntity, tID, eID, &dal.ThreadEntityUpdate{LastViewed: ptr.Time(readTime)}))
