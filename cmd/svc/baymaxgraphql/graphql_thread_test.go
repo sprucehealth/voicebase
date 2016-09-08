@@ -53,6 +53,22 @@ func TestAllowVisitAttachmentsQuery(t *testing.T) {
 		},
 	}, nil))
 
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: primaryEntityID,
+		},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{directory.EntityType_PATIENT},
+	}).WithReturns([]*directory.Entity{
+		{
+			Type: directory.EntityType_PATIENT,
+			Info: &directory.EntityInfo{
+				DisplayName: "patient",
+			},
+		},
+	}, nil))
+
 	expectEntityInOrgForAccountID(g.ra, acc.ID, []*directory.Entity{
 		{
 			Type: directory.EntityType_INTERNAL,
@@ -68,6 +84,22 @@ func TestAllowVisitAttachmentsQuery(t *testing.T) {
 		Type:            threading.THREAD_TYPE_SECURE_EXTERNAL,
 		PrimaryEntityID: primaryEntityID,
 		OrganizationID:  orgID,
+	}, nil))
+
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: primaryEntityID,
+		},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{directory.EntityType_PATIENT},
+	}).WithReturns([]*directory.Entity{
+		{
+			Type: directory.EntityType_PATIENT,
+			Info: &directory.EntityInfo{
+				DisplayName: "patient",
+			},
+		},
 	}, nil))
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
@@ -149,6 +181,21 @@ func TestAllowVisitAttachmentsQuery_FeatureDisabled(t *testing.T) {
 			},
 		},
 	}, nil))
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: primaryEntityID,
+		},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{directory.EntityType_PATIENT},
+	}).WithReturns([]*directory.Entity{
+		{
+			Type: directory.EntityType_PATIENT,
+			Info: &directory.EntityInfo{
+				DisplayName: "patient",
+			},
+		},
+	}, nil))
 
 	expectEntityInOrgForAccountID(g.ra, acc.ID, []*directory.Entity{
 		{
@@ -167,6 +214,21 @@ func TestAllowVisitAttachmentsQuery_FeatureDisabled(t *testing.T) {
 		OrganizationID:  orgID,
 	}, nil))
 
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: primaryEntityID,
+		},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{directory.EntityType_PATIENT},
+	}).WithReturns([]*directory.Entity{
+		{
+			Type: directory.EntityType_PATIENT,
+			Info: &directory.EntityInfo{
+				DisplayName: "patient",
+			},
+		},
+	}, nil))
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
 		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
 		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
@@ -247,6 +309,22 @@ func TestAllowVisitAttachmentsQuery_Allowed(t *testing.T) {
 		},
 	}, nil))
 
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: primaryEntityID,
+		},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{directory.EntityType_PATIENT},
+	}).WithReturns([]*directory.Entity{
+		{
+			Type: directory.EntityType_PATIENT,
+			Info: &directory.EntityInfo{
+				DisplayName: "patient",
+			},
+		},
+	}, nil))
+
 	expectEntityInOrgForAccountID(g.ra, acc.ID, []*directory.Entity{
 		{
 			Type: directory.EntityType_INTERNAL,
@@ -262,6 +340,22 @@ func TestAllowVisitAttachmentsQuery_Allowed(t *testing.T) {
 		Type:            threading.THREAD_TYPE_SECURE_EXTERNAL,
 		PrimaryEntityID: primaryEntityID,
 		OrganizationID:  orgID,
+	}, nil))
+
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: primaryEntityID,
+		},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{directory.EntityType_PATIENT},
+	}).WithReturns([]*directory.Entity{
+		{
+			Type: directory.EntityType_PATIENT,
+			Info: &directory.EntityInfo{
+				DisplayName: "patient",
+			},
+		},
 	}, nil))
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{

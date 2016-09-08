@@ -78,10 +78,11 @@ func TestSubmitVisit(t *testing.T) {
 		Title:        "Completed a visit: <a href=\"https://test.com/thread/threadID/visit/visit_12345\">infection</a>",
 	}).WithReturns(&threading.PostMessageResponse{
 		Thread: &threading.Thread{
-			ID:             threadID,
-			OrganizationID: orgID,
-			MessageCount:   10,
-			Type:           threading.THREAD_TYPE_SECURE_EXTERNAL,
+			ID:              threadID,
+			OrganizationID:  orgID,
+			MessageCount:    10,
+			Type:            threading.THREAD_TYPE_SECURE_EXTERNAL,
+			PrimaryEntityID: entityID,
 		},
 	}, nil))
 
@@ -97,6 +98,22 @@ func TestSubmitVisit(t *testing.T) {
 			ID: orgID,
 			Info: &directory.EntityInfo{
 				DisplayName: "ORG NAME",
+			},
+		},
+	}, nil))
+
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: entityID,
+		},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{directory.EntityType_PATIENT},
+	}).WithReturns([]*directory.Entity{
+		{
+			ID: entityID,
+			Info: &directory.EntityInfo{
+				DisplayName: "Joe Schmoe",
 			},
 		},
 	}, nil))

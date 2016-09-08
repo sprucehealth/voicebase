@@ -644,6 +644,33 @@ func (s *server) MarkInviteConsumed(ctx context.Context, in *invite.MarkInviteCo
 	return &invite.MarkInviteConsumedResponse{}, nil
 }
 
+// DeleteInvite deletes an invite based on the key.
+func (s *server) DeleteInvite(ctx context.Context, in *invite.DeleteInviteRequest) (*invite.DeleteInviteResponse, error) {
+	var token string
+	switch in.DeleteInviteKey {
+	case invite.DeleteInviteRequest_TOKEN:
+		token = in.GetToken()
+	case invite.DeleteInviteRequest_PARKED_ENTITY_ID:
+		var err error
+		token, err = s.dal.TokenForEntity(ctx, in.GetParkedEntityID())
+		if err != nil {
+			if errors.Cause(err) == dal.ErrNotFound {
+				// nothing to do
+				return &invite.DeleteInviteResponse{}, nil
+			}
+			return nil, grpcErrorf(codes.Internal, "unable to get token for entity %s: %s", in.GetParkedEntityID(), err)
+		}
+	default:
+		return nil, grpcErrorf(codes.InvalidArgument, "unknown delete key %s", in.DeleteInviteKey)
+	}
+
+	if err := s.dal.DeleteInvite(ctx, token); err != nil {
+		return nil, grpcErrorf(codes.Internal, "unable to delete invite for token %s : %s", token, err.Error())
+	}
+
+	return &invite.DeleteInviteResponse{}, nil
+}
+
 // SetAttributionData associate attribution data with a device
 func (s *server) SetAttributionData(ctx context.Context, in *invite.SetAttributionDataRequest) (*invite.SetAttributionDataResponse, error) {
 	if in.DeviceID == "" {

@@ -72,3 +72,11 @@ func (c *Client) MarkInviteConsumed(ctx context.Context, in *invite.MarkInviteCo
 	ret := c.Expector.Record(in)
 	return ret[0].(*invite.MarkInviteConsumedResponse), mock.SafeError(ret[1])
 }
+
+func (c *Client) DeleteInvite(ctx context.Context, in *invite.DeleteInviteRequest, opts ...grpc.CallOption) (*invite.DeleteInviteResponse, error) {
+	ret := c.Expector.Record(in)
+	if len(ret) == 0 {
+		return nil, nil
+	}
+	return ret[0].(*invite.DeleteInviteResponse), mock.SafeError(ret[1])
+}

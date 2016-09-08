@@ -194,12 +194,21 @@ func transformThreadToResponse(ctx context.Context, ram raccess.ResourceAccessor
 	case threading.THREAD_TYPE_SECURE_EXTERNAL:
 		th.Type = models.ThreadTypeSecureExternal
 		th.IsPatientThread = true
-	case threading.THREAD_TYPE_SETUP:
-		if th.Title == "" {
-			th.Title = onboardingThreadTitle
+
+		entity, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+				EntityID: t.PrimaryEntityID,
+			},
+			Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+			RootTypes: []directory.EntityType{directory.EntityType_PATIENT},
+		})
+		if err != nil {
+			return nil, err
 		}
-		th.Type = models.ThreadTypeSetup
-		th.AlwaysShowNotifications = true
+		// only allow delete if account has not been created yet
+		th.AllowDelete = entity.AccountID == ""
+
 	case threading.THREAD_TYPE_SUPPORT:
 		if th.Title == "" {
 			th.Title = supportThreadTitle

@@ -413,6 +413,24 @@ func TestPostMessage_VisitAttachment(t *testing.T) {
 			},
 		},
 	}, nil))
+
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: extEntID,
+		},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{directory.EntityType_PATIENT},
+	}).WithReturns([]*directory.Entity{
+		{
+			AccountID: "account_id",
+			Type:      directory.EntityType_PATIENT,
+			Info: &directory.EntityInfo{
+				DisplayName: "patient",
+			},
+		},
+	}, nil))
+
 	res := g.query(ctx, `
 		mutation _ ($threadID: ID!) {
 			postMessage(input: {
@@ -758,6 +776,7 @@ func TestPostMessagePatientSecureExternal(t *testing.T) {
 
 	// since this is a patient thread there should be an org lookup
 	// Looking up the primary entity on the thread
+
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
 		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
 		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
@@ -788,6 +807,29 @@ func TestPostMessagePatientSecureExternal(t *testing.T) {
 			Type: directory.EntityType_ORGANIZATION,
 			Info: &directory.EntityInfo{
 				DisplayName: "OrganizationName",
+			},
+		},
+	}, nil))
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: extEntID,
+		},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{directory.EntityType_PATIENT},
+	}).WithReturns([]*directory.Entity{
+		{
+			ID:        extEntID,
+			Type:      directory.EntityType_PATIENT,
+			AccountID: "account_id",
+			Info: &directory.EntityInfo{
+				DisplayName: "Barro",
+			},
+			Contacts: []*directory.Contact{
+				{
+					ContactType: directory.ContactType_PHONE,
+					Value:       entPhoneNumber,
+				},
 			},
 		},
 	}, nil))

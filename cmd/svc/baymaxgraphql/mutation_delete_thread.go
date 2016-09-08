@@ -5,6 +5,8 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/invite"
+	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -26,8 +28,19 @@ var deleteThreadInputType = graphql.NewInputObject(graphql.InputObjectConfig{
 	},
 })
 
-// JANK: can't have an empty enum and we want this field to always exist so make it a string until it's needed
-var deleteThreadErrorCodeEnum = graphql.String
+const (
+	deleteThreadErrorCodePatientCreatedAccount = "PATIENT_ALREADY_CREATED_ACCOUNT"
+)
+
+var deleteThreadErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
+	Name: "DeleteThreadErrorCode",
+	Values: graphql.EnumValueConfigMap{
+		deleteThreadErrorCodePatientCreatedAccount: &graphql.EnumValueConfig{
+			Value:       deleteThreadErrorCodePatientCreatedAccount,
+			Description: "Patient has already created an account",
+		},
+	},
+})
 
 var deleteThreadOutputType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "DeleteThreadPayload",
@@ -51,6 +64,7 @@ var deleteThreadMutation = &graphql.Field{
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
+		svc := serviceFromParams(p)
 		acc := gqlctx.Account(ctx)
 		if acc == nil {
 			return nil, errors.ErrNotAuthenticated(ctx)
@@ -76,6 +90,36 @@ var deleteThreadMutation = &graphql.Field{
 		}
 		if ent == nil || ent.Type != directory.EntityType_INTERNAL {
 			return nil, errors.UserError(ctx, errors.ErrTypeNotAuthorized, "Permission denied.")
+		}
+
+		if thread.Type == threading.THREAD_TYPE_SECURE_EXTERNAL {
+			// ensure that primary entity has not created account yet
+			entity, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+				LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+					EntityID: thread.PrimaryEntityID,
+				},
+				Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+				RootTypes: []directory.EntityType{directory.EntityType_PATIENT}})
+			if err != nil {
+				return nil, errors.InternalError(ctx, err)
+			}
+			if entity.AccountID != "" {
+				return &deleteThreadOutput{
+					ClientMutationID: mutationID,
+					Success:          false,
+					ErrorMessage:     "Cannot delete thread if the patient has already created an account",
+					ErrorCode:        deleteThreadErrorCodePatientCreatedAccount,
+				}, nil
+			}
+
+			if _, err := svc.invite.DeleteInvite(ctx, &invite.DeleteInviteRequest{
+				DeleteInviteKey: invite.DeleteInviteRequest_PARKED_ENTITY_ID,
+				Key: &invite.DeleteInviteRequest_ParkedEntityID{
+					ParkedEntityID: entity.ID,
+				},
+			}); err != nil {
+				return nil, errors.InternalError(ctx, err)
+			}
 		}
 
 		if err := ram.DeleteThread(ctx, threadID, ent.ID); err != nil {

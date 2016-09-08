@@ -78,6 +78,21 @@ message MarkInviteConsumedRequest {
 
 message MarkInviteConsumedResponse {}
 
+message DeleteInviteRequest {
+	enum DeleteInviteKey {
+		UNKNOWN = 0;
+		TOKEN = 1;
+		PARKED_ENTITY_ID = 2;
+	}
+	oneof key {
+		string token = 1;
+		string parked_entity_id = 2 [(gogoproto.customname) = "ParkedEntityID"];
+	}
+	DeleteInviteKey delete_invite_key = 3;
+}
+
+message DeleteInviteResponse {}
+
 message LookupInviteRequest {
 	enum LookupKeyType {
 		UNKNOWN = 0;
@@ -173,4 +188,6 @@ service Invite {
 	rpc MarkInviteConsumed(MarkInviteConsumedRequest) returns (MarkInviteConsumedResponse);
 	// SetAttributionData associate attribution data with a device
 	rpc SetAttributionData(SetAttributionDataRequest) returns (SetAttributionDataResponse);
+	// DeleteInvite deletes an invite based on the key.
+	rpc DeleteInvite(DeleteInviteRequest) returns (DeleteInviteResponse);
 }
