@@ -58,12 +58,20 @@ func main() {
 				fmt.Printf("\tdeleting %s\n", tag)
 				toDelete[i] = &ecr.ImageIdentifier{ImageTag: aws.String(tag)}
 			}
-			_, err = cr.BatchDeleteImage(&ecr.BatchDeleteImageInput{
-				RepositoryName: r.RepositoryName,
-				ImageIds:       toDelete,
-			})
-			if err != nil {
-				golog.Fatalf(err.Error())
+			// Delete in batches of 100 which is the max size for BatchDelete
+			for len(toDelete) > 0 {
+				ids := toDelete
+				if len(ids) > 100 {
+					ids = ids[:100]
+				}
+				toDelete = toDelete[len(ids):]
+				_, err = cr.BatchDeleteImage(&ecr.BatchDeleteImageInput{
+					RepositoryName: r.RepositoryName,
+					ImageIds:       ids,
+				})
+				if err != nil {
+					golog.Fatalf(err.Error())
+				}
 			}
 		}
 	}
