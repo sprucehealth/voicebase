@@ -218,6 +218,12 @@ func transformThreadToResponse(ctx context.Context, ram raccess.ResourceAccessor
 	case threading.THREAD_TYPE_LEGACY_TEAM:
 		th.Type = models.ThreadTypeLegacyTeam
 		th.IsTeamThread = true
+	case threading.THREAD_TYPE_SETUP:
+		if th.Title == "" {
+			th.Title = onboardingThreadTitle
+		}
+		th.Type = models.ThreadTypeSetup
+		th.AlwaysShowNotifications = true
 	default:
 		return nil, fmt.Errorf("Unknown thread type %s", t.Type)
 	}
