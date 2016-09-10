@@ -7,7 +7,7 @@ and the service validates all settings that are stored and served.
 
 ```
 brew install awscli
-docker run -p 7777:7777 --deatch tray/dynamodb-local -inMemory -port 7777 -delayTransientStatuses
+docker run -p 7777:7777 --detach tray/dynamodb-local -inMemory -port 7777 -delayTransientStatuses
 aws --endpoint-url="http://localhost:7777" --color=on dynamodb list-tables
 {
     "TableNames": []
