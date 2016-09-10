@@ -1,8 +1,8 @@
-FROM ubuntu:14.04
+FROM ubuntu:16.04
 MAINTAINER Spruce Backend <backend@sprucehealth.com>
-RUN apt-get update # January 20, 2015
+RUN apt-get update # September 9, 2016
 RUN apt-get -y upgrade
-RUN DEBIAN_FRONTEND=noninteractive apt-get -y install mysql-client-5.6 mysql-server-5.6 postgresql-9.3 \
+RUN DEBIAN_FRONTEND=noninteractive apt-get -y install mysql-client-5.7 mysql-server-5.7 postgresql-9.5 \
 	ruby unzip zip curl libelf1 git python-pip python-magic python-dateutil tmux memcached && \
 	apt-get clean
 RUN pip install --upgrade https://github.com/s3tools/s3cmd/releases/download/v1.6.1/s3cmd-1.6.1.tar.gz
