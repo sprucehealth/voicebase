@@ -7,36 +7,32 @@ and the service validates all settings that are stored and served.
 
 ```
 brew install awscli
-docker run -p 7777:7777 tray/dynamodb-local -inMemory -port 7777 -delayTransientStatuses
-aws --endpoint-url="http://$(docker-machine ip spruce):7777" --color=on dynamodb list-tables
+docker run -p 7777:7777 --deatch tray/dynamodb-local -inMemory -port 7777 -delayTransientStatuses
+aws --endpoint-url="http://localhost:7777" --color=on dynamodb list-tables
 {
     "TableNames": []
 }
 ```
 
-* Create the Setting and SettingConfig tables
+* Apply terraform changes to the local DynmoDB instance
 
-- Setting
 ```
-aws --endpoint-url="http://$(docker-machine ip spruce):7777" --color=on dynamodb  create-table --table-name Setting --attribute-definitions AttributeName=nodeID,AttributeType=S AttributeName=key,AttributeType=S --key-schema AttributeName=nodeID,KeyType=HASH AttributeName=key,KeyType=RANGE --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5
+cd schema/local
+terraform get
+terraform plan
+terraform apply
 ```
 
-- SettingConfig
+* Ensure that the tables were created on the local dynamodb instance
+
 ```
-aws --endpoint-url="http://$(docker-machine ip spruce):7777" --color=on dynamodb  create-table --table-name SettingConfig --attribute-definitions AttributeName=key,AttributeType=S --key-schema AttributeName=key,KeyType=HASH --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5
+aws --endpoint-url="http://localhost:7777" --color=on dynamodb list-tables
 ```
+_At this point you should see the tables created that are present in the terraform files_
 
 * Run Service
 
 ```
-go build -i && \
-SETTINGS_ENV=local \
-SETTINGS_LOCAL_DYNAMODB_ENDPOINT=http://$(docker-machine ip spruce):7777 \
-SETTINGS_DYNAMODB_TABLE_NAME_SETTINGS="Setting" \
-SETTINGS_DYNAMODB_TABLE_NAME_SETTING_CONFIGS="SettingConfig" \
-SETTINGS_AWS_REGION="us-east-1" \
-SETTINGS_AWS_SECRET_KEY="something-seekirt" \
-SETTINGS_AWS_ACCESS_KEY="<AWS_ACCESS_KEY>" \
-SETTINGS_DEBUG=true \
-./settings
+go build -i -v
+./settings -env=local
 ```

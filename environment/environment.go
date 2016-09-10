@@ -12,6 +12,7 @@ const (
 	Test    = "test"
 	Staging = "staging"
 	Demo    = "demo"
+	Local   = "local"
 )
 
 var current = Test
@@ -22,7 +23,7 @@ var once sync.Once
 func SetCurrent(env string) {
 	once.Do(func() {
 		switch env {
-		case Dev, Test, Staging, Prod, Demo, Corp:
+		case Dev, Test, Staging, Prod, Demo, Corp, Local:
 			current = env
 		default:
 			panic("unexpected environment: " + env)
@@ -38,6 +39,10 @@ func GetCurrent() string {
 
 func IsTest() bool {
 	return current == Test
+}
+
+func IsLocal() bool {
+	return current == Local
 }
 
 func IsCorp() bool {
