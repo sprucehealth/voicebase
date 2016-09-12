@@ -326,16 +326,15 @@ type ThreadItemViewDetails struct {
 
 // SavedQuery is a saved thread query.
 type SavedQuery struct {
-	ID             SavedQueryID
-	Ordinal        int
-	Title          string
-	OrganizationID string
-	EntityID       string
-	Query          *Query
-	Unread         int
-	Total          int
-	Created        time.Time
-	Modified       time.Time
+	ID       SavedQueryID
+	Ordinal  int
+	Title    string
+	EntityID string
+	Query    *Query
+	Unread   int
+	Total    int
+	Created  time.Time
+	Modified time.Time
 }
 
 // SetupThreadState is the state of a setup thread

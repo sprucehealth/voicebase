@@ -1,8 +1,6 @@
 package server
 
 import (
-	"fmt"
-
 	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/dal"
@@ -98,7 +96,7 @@ func (s *threadsServer) CreateOnboardingThread(ctx context.Context, in *threadin
 	if err != nil {
 		return nil, errors.Trace(err)
 	} else if len(threads) == 0 {
-		return nil, internalError(fmt.Errorf("thread %s not found", threadID))
+		return nil, errors.Errorf("thread %s not found", threadID)
 	}
 
 	th, err := transformThreadToResponse(threads[0], false)
@@ -137,7 +135,7 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 	if err != nil {
 		return nil, grpcErrorf(codes.Internal, err.Error())
 	} else if len(threads) == 0 {
-		return nil, internalError(fmt.Errorf("thread %s not found", state.ThreadID))
+		return nil, errors.Errorf("thread %s not found", state.ThreadID)
 	}
 	setupThread := threads[0]
 

@@ -517,7 +517,6 @@ func TestCreatePasswordResetToken(t *testing.T) {
 
 func TestCreateSavedQuery(t *testing.T) {
 	accountID := "account_12345"
-	orgID := "org_12345"
 	entityID := "entity_12345"
 	ctx := context.Background()
 	acc := &auth.Account{
@@ -528,67 +527,14 @@ func TestCreateSavedQuery(t *testing.T) {
 	rat := new(t)
 	defer rat.finish()
 
-	expectOrgsForEntity(rat, entityID, orgID)
-	expectOrgsForEntityForExternalID(rat, accountID, orgID)
-	expectOrgsForEntityForExternalID(rat, accountID, orgID)
 	rat.tC.Expect(mock.NewExpectation(rat.tC.CreateSavedQuery, &threading.CreateSavedQueryRequest{
-		OrganizationID: orgID,
-		EntityID:       entityID,
+		EntityID: entityID,
 	}).WithReturns(&threading.CreateSavedQueryResponse{}, nil))
 
 	err := rat.ra.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
-		OrganizationID: orgID,
-		EntityID:       entityID,
+		EntityID: entityID,
 	})
 	test.OK(t, err)
-}
-
-func TestCreateSavedQueryNotAuthorizedEntity(t *testing.T) {
-	accountID := "account_12345"
-	orgID := "org_12345"
-	orgID2 := "org_67890"
-	entityID := "entity_12345"
-	ctx := context.Background()
-	acc := &auth.Account{
-		ID: accountID,
-	}
-	ctx = gqlctx.WithAccount(ctx, acc)
-
-	rat := new(t)
-	defer rat.finish()
-
-	expectOrgsForEntity(rat, entityID, orgID2)
-	expectOrgsForEntityForExternalID(rat, accountID, orgID)
-
-	err := rat.ra.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
-		OrganizationID: orgID,
-		EntityID:       entityID,
-	})
-	test.Equals(t, errors.ErrTypeNotAuthorized, errors.Type(err))
-}
-
-func TestCreateSavedQueryNotAuthorizedOrganization(t *testing.T) {
-	accountID := "account_12345"
-	orgID := "org_12345"
-	orgID2 := "org_67890"
-	entityID := "entity_12345"
-	ctx := context.Background()
-	acc := &auth.Account{
-		ID: accountID,
-	}
-	ctx = gqlctx.WithAccount(ctx, acc)
-
-	rat := new(t)
-	defer rat.finish()
-
-	expectOrgsForEntity(rat, entityID, orgID)
-	expectOrgsForEntityForExternalID(rat, accountID, orgID)
-	expectOrgsForEntityForExternalID(rat, accountID, orgID)
-	err := rat.ra.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
-		OrganizationID: orgID2,
-		EntityID:       entityID,
-	})
-	test.Equals(t, errors.ErrTypeNotAuthorized, errors.Type(err))
 }
 
 func TestCreateVerificationToken(t *testing.T) {

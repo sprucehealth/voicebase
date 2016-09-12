@@ -275,12 +275,13 @@ type SerializedEntityContact struct {
 }
 
 type SavedThreadQuery struct {
-	ID             string `json:"id"`
-	Query          string `json:"query"`
-	Title          string `json:"title"`
-	Unread         int    `json:"unread"`
-	Total          int    `json:"total"`
-	OrganizationID string `json:"organizationID"`
+	ID     string `json:"id"`
+	Query  string `json:"query"`
+	Title  string `json:"title"`
+	Unread int    `json:"unread"`
+	Total  int    `json:"total"`
+
+	EntityID string `json:"-"`
 }
 
 type Organization struct {

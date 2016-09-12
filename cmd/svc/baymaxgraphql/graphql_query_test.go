@@ -248,11 +248,10 @@ func TestNodeQuery(t *testing.T) {
 		"id": id,
 	}
 	ra.Expect(mock.NewExpectation(ra.SavedQuery, id).WithReturns(&threading.SavedQuery{
-		ID:             id,
-		Title:          "Foo",
-		Unread:         1,
-		Total:          2,
-		OrganizationID: "entity_1",
+		ID:     id,
+		Title:  "Foo",
+		Unread: 1,
+		Total:  2,
 		Query: &threading.Query{
 			Expressions: []*threading.Expr{
 				{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_UNREAD}},
@@ -263,12 +262,11 @@ func TestNodeQuery(t *testing.T) {
 	res, err = nodeField.Resolve(p)
 	test.OK(t, err)
 	test.Equals(t, &models.SavedThreadQuery{
-		ID:             id,
-		OrganizationID: "entity_1",
-		Title:          "Foo",
-		Unread:         1,
-		Total:          2,
-		Query:          "is:unread Joe",
+		ID:     id,
+		Title:  "Foo",
+		Unread: 1,
+		Total:  2,
+		Query:  "is:unread Joe",
 	}, res)
 	mock.FinishAll(ra)
 }

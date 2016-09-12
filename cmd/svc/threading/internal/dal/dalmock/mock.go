@@ -210,8 +210,8 @@ func (dl *DAL) ThreadEntities(ctx context.Context, threadIDs []models.ThreadID, 
 	return rets[0].(map[string]*models.ThreadEntity), mock.SafeError(rets[1])
 }
 
-func (dl *DAL) EntitiesForThread(ctx context.Context, threadIDs models.ThreadID) ([]*models.ThreadEntity, error) {
-	rets := dl.Expector.Record(threadIDs)
+func (dl *DAL) EntitiesForThread(ctx context.Context, threadID models.ThreadID) ([]*models.ThreadEntity, error) {
+	rets := dl.Expector.Record(threadID)
 	if len(rets) == 0 {
 		return nil, nil
 	}
@@ -234,6 +234,14 @@ func (dl *DAL) ThreadsForOrg(ctx context.Context, organizationID string, typ mod
 	return rets[0].([]*models.Thread), mock.SafeError(rets[1])
 }
 
+func (dl *DAL) ThreadsWithEntity(ctx context.Context, entityID string, ids []models.ThreadID) ([]*models.Thread, []*models.ThreadEntity, error) {
+	rets := dl.Expector.Record(entityID, ids)
+	if len(rets) == 0 {
+		return nil, nil, nil
+	}
+	return rets[0].([]*models.Thread), rets[1].([]*models.ThreadEntity), mock.SafeError(rets[2])
+}
+
 func (dl *DAL) UpdateSetupThreadState(ctx context.Context, threadID models.ThreadID, update *dal.SetupThreadStateUpdate) error {
 	rets := dl.Expector.Record(threadID, update)
 	if len(rets) == 0 {
@@ -250,8 +258,56 @@ func (dl *DAL) UpdateThread(ctx context.Context, threadID models.ThreadID, updat
 	return mock.SafeError(rets[0])
 }
 
+func (dl *DAL) UpdateSavedQuery(ctx context.Context, id models.SavedQueryID, update *dal.SavedQueryUpdate) error {
+	rets := dl.Expector.Record(id, update)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[0])
+}
+
 func (dl *DAL) UpdateThreadEntity(ctx context.Context, threadID models.ThreadID, entityID string, update *dal.ThreadEntityUpdate) error {
 	rets := dl.Expector.Record(threadID, entityID, update)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[0])
+}
+
+func (dl *DAL) AddItemsToSavedQueryIndex(ctx context.Context, items []*dal.SavedQueryThread) error {
+	rets := dl.Expector.Record(items)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[0])
+}
+
+func (dl *DAL) IterateThreadsInSavedQuery(ctx context.Context, sqID models.SavedQueryID, viewerEntityID string, it *dal.Iterator) (*dal.ThreadConnection, error) {
+	rets := dl.Expector.Record(sqID, viewerEntityID, it)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*dal.ThreadConnection), mock.SafeError(rets[1])
+}
+
+func (dl *DAL) RemoveAllItemsFromSavedQueryIndex(ctx context.Context, sqID models.SavedQueryID) error {
+	rets := dl.Expector.Record(sqID)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[0])
+}
+
+func (dl *DAL) RemoveItemsFromSavedQueryIndex(ctx context.Context, items []*dal.SavedQueryThread) error {
+	rets := dl.Expector.Record(items)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[0])
+}
+
+func (dl *DAL) RemoveThreadFromAllSavedQueryIndexes(ctx context.Context, threadID models.ThreadID) error {
+	rets := dl.Expector.Record(threadID)
 	if len(rets) == 0 {
 		return nil
 	}

@@ -283,6 +283,43 @@ func TestThread(t *testing.T) {
 	test.Equals(t, "userTitle", th.UserTitle)
 }
 
+func TestThreadsWithEntity(t *testing.T) {
+	dt := testsql.Setup(t, schemaGlob)
+	defer dt.Cleanup(t)
+
+	dal := New(dt.DB)
+	ctx := context.Background()
+
+	tid, err := dal.CreateThread(ctx, &models.Thread{
+		OrganizationID:             "org",
+		Type:                       models.ThreadTypeTeam,
+		LastMessageSummary:         "summary",
+		LastMessageTimestamp:       time.Unix(1e9, 0),
+		LastExternalMessageSummary: "extsummary",
+		SystemTitle:                "systemTitle",
+		UserTitle:                  "userTitle",
+	})
+	test.OK(t, err)
+
+	ths, tes, err := dal.ThreadsWithEntity(ctx, "ent", []models.ThreadID{tid})
+	test.OK(t, err)
+	test.Equals(t, 1, len(ths))
+	test.Equals(t, 1, len(tes))
+	test.Equals(t, (*models.ThreadEntity)(nil), tes[0])
+
+	test.OK(t, dal.UpdateThreadEntity(ctx, tid, "ent", &ThreadEntityUpdate{}))
+
+	ths, tes, err = dal.ThreadsWithEntity(ctx, "ent", []models.ThreadID{tid})
+	test.OK(t, err)
+	test.Equals(t, 1, len(ths))
+	test.Equals(t, 1, len(tes))
+	test.Equals(t, &models.ThreadEntity{
+		ThreadID: tid,
+		EntityID: "ent",
+		Joined:   tes[0].Joined,
+	}, tes[0])
+}
+
 func TestUpdateThread(t *testing.T) {
 	dt := testsql.Setup(t, schemaGlob)
 	defer dt.Cleanup(t)
@@ -543,19 +580,17 @@ func TestSavedQueries(t *testing.T) {
 	ctx := context.Background()
 
 	sq1 := &models.SavedQuery{
-		Ordinal:        2,
-		OrganizationID: "org",
-		EntityID:       "ent",
-		Query:          &models.Query{},
-		Title:          "sq1",
+		Ordinal:  2,
+		EntityID: "ent",
+		Query:    &models.Query{},
+		Title:    "sq1",
 	}
 	_, err := dal.CreateSavedQuery(ctx, sq1)
 	test.OK(t, err)
 
 	sq2 := &models.SavedQuery{
-		Ordinal:        1,
-		OrganizationID: "org",
-		EntityID:       "ent",
+		Ordinal:  1,
+		EntityID: "ent",
 		Query: &models.Query{
 			Expressions: []*models.Expr{
 				{Value: &models.Expr_Token{Token: "foo"}},
@@ -578,6 +613,19 @@ func TestSavedQueries(t *testing.T) {
 	test.Equals(t, 2, len(sqs))
 	test.Equals(t, sq1.ID, sqs[1].ID)
 	test.Equals(t, sq2.ID, sqs[0].ID)
+
+	newQuery := &models.Query{Expressions: []*models.Expr{{Value: &models.Expr_Flag_{Flag: models.EXPR_FLAG_UNREAD_REFERENCE}}}}
+	test.OK(t, dal.UpdateSavedQuery(ctx, sq1.ID, &SavedQueryUpdate{
+		Title:   ptr.String("new title"),
+		Ordinal: ptr.Int(19),
+		Query:   newQuery,
+	}))
+
+	sq, err = dal.SavedQuery(ctx, sq1.ID)
+	test.OK(t, err)
+	test.Equals(t, "new title", sq.Title)
+	test.Equals(t, 19, sq.Ordinal)
+	test.Equals(t, newQuery, sq.Query)
 }
 
 type teByID []*models.ThreadEntity

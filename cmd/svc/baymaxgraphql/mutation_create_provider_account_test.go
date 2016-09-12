@@ -87,44 +87,40 @@ func TestCreateProviderAccountMutation(t *testing.T) {
 
 	// Create saved query
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateSavedQuery, &threading.CreateSavedQueryRequest{
-		OrganizationID: "e_org",
-		EntityID:       "e_int",
-		Title:          "All",
-		Ordinal:        1,
-		Query:          &threading.Query{},
+		EntityID: "e_int",
+		Title:    "All",
+		Ordinal:  1000,
+		Query:    &threading.Query{},
 	}).WithReturns(&threading.CreateSavedQueryResponse{
 		SavedQuery: &threading.SavedQuery{
 			ID: "sq_1",
 		},
 	}, nil))
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateSavedQuery, &threading.CreateSavedQueryRequest{
-		OrganizationID: "e_org",
-		EntityID:       "e_int",
-		Title:          "Patient",
-		Ordinal:        2,
-		Query:          &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_PATIENT}}}},
+		EntityID: "e_int",
+		Title:    "Patient",
+		Ordinal:  2000,
+		Query:    &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_PATIENT}}}},
 	}).WithReturns(&threading.CreateSavedQueryResponse{
 		SavedQuery: &threading.SavedQuery{
 			ID: "sq_2",
 		},
 	}, nil))
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateSavedQuery, &threading.CreateSavedQueryRequest{
-		OrganizationID: "e_org",
-		EntityID:       "e_int",
-		Title:          "Team",
-		Ordinal:        3,
-		Query:          &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_TEAM}}}},
+		EntityID: "e_int",
+		Title:    "Team",
+		Ordinal:  3000,
+		Query:    &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_TEAM}}}},
 	}).WithReturns(&threading.CreateSavedQueryResponse{
 		SavedQuery: &threading.SavedQuery{
 			ID: "sq_3",
 		},
 	}, nil))
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateSavedQuery, &threading.CreateSavedQueryRequest{
-		OrganizationID: "e_org",
-		EntityID:       "e_int",
-		Title:          "@Pages",
-		Ordinal:        4,
-		Query:          &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_UNREAD_REFERENCE}}}},
+		EntityID: "e_int",
+		Title:    "@Pages",
+		Ordinal:  4000,
+		Query:    &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_UNREAD_REFERENCE}}}},
 	}).WithReturns(&threading.CreateSavedQueryResponse{
 		SavedQuery: &threading.SavedQuery{
 			ID: "sq_4",
@@ -352,44 +348,40 @@ func TestCreateProviderAccountMutation_InviteColleague(t *testing.T) {
 
 	// Create saved query
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateSavedQuery, &threading.CreateSavedQueryRequest{
-		OrganizationID: "e_org_inv",
-		EntityID:       "e_int",
-		Title:          "All",
-		Ordinal:        1,
-		Query:          &threading.Query{},
+		EntityID: "e_int",
+		Title:    "All",
+		Ordinal:  1000,
+		Query:    &threading.Query{},
 	}).WithReturns(&threading.CreateSavedQueryResponse{
 		SavedQuery: &threading.SavedQuery{
 			ID: "sq_1",
 		},
 	}, nil))
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateSavedQuery, &threading.CreateSavedQueryRequest{
-		OrganizationID: "e_org_inv",
-		EntityID:       "e_int",
-		Title:          "Patient",
-		Ordinal:        2,
-		Query:          &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_PATIENT}}}},
+		EntityID: "e_int",
+		Title:    "Patient",
+		Ordinal:  2000,
+		Query:    &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_PATIENT}}}},
 	}).WithReturns(&threading.CreateSavedQueryResponse{
 		SavedQuery: &threading.SavedQuery{
 			ID: "sq_2",
 		},
 	}, nil))
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateSavedQuery, &threading.CreateSavedQueryRequest{
-		OrganizationID: "e_org_inv",
-		EntityID:       "e_int",
-		Title:          "Team",
-		Ordinal:        3,
-		Query:          &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_TEAM}}}},
+		EntityID: "e_int",
+		Title:    "Team",
+		Ordinal:  3000,
+		Query:    &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_TEAM}}}},
 	}).WithReturns(&threading.CreateSavedQueryResponse{
 		SavedQuery: &threading.SavedQuery{
 			ID: "sq_3",
 		},
 	}, nil))
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateSavedQuery, &threading.CreateSavedQueryRequest{
-		OrganizationID: "e_org_inv",
-		EntityID:       "e_int",
-		Title:          "@Pages",
-		Ordinal:        4,
-		Query:          &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_UNREAD_REFERENCE}}}},
+		EntityID: "e_int",
+		Title:    "@Pages",
+		Ordinal:  4000,
+		Query:    &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_UNREAD_REFERENCE}}}},
 	}).WithReturns(&threading.CreateSavedQueryResponse{
 		SavedQuery: &threading.SavedQuery{
 			ID: "sq_4",

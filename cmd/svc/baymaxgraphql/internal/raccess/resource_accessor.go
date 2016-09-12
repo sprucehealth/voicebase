@@ -457,14 +457,7 @@ func (m *resourceAccessor) CreatePasswordResetToken(ctx context.Context, email s
 }
 
 func (m *resourceAccessor) CreateSavedQuery(ctx context.Context, req *threading.CreateSavedQueryRequest) error {
-	// TODO: This auth pattern isn't quite right. This asserts that the caller is in the same org as the entity
-	// It does not assert that the caller is the entity
-	if err := m.canAccessResource(ctx, req.EntityID, m.orgsForEntity); err != nil {
-		return err
-	}
-	if err := m.canAccessResource(ctx, req.OrganizationID, m.orgsForOrganization); err != nil {
-		return err
-	}
+	// Note: There is no authorization required for this operation.
 	if _, err := m.createSavedQuery(ctx, req); err != nil {
 		return err
 	}
@@ -773,11 +766,11 @@ func (m *resourceAccessor) SavedQueries(ctx context.Context, entityID string) ([
 }
 
 func (m *resourceAccessor) SavedQuery(ctx context.Context, savedQueryID string) (*threading.SavedQuery, error) {
-	if err := m.canAccessResource(ctx, savedQueryID, m.orgsForSavedQuery); err != nil {
-		return nil, err
-	}
 	res, err := m.savedQuery(ctx, savedQueryID)
 	if err != nil {
+		return nil, err
+	}
+	if err := m.assertIsEntity(ctx, res.SavedQuery.EntityID); err != nil {
 		return nil, err
 	}
 	return res.SavedQuery, nil
@@ -1005,12 +998,7 @@ func (m *resourceAccessor) ThreadsForMember(ctx context.Context, entityID string
 }
 
 func (m *resourceAccessor) QueryThreads(ctx context.Context, req *threading.QueryThreadsRequest) (*threading.QueryThreadsResponse, error) {
-	// TODO: Add auth check that the calling account owns the viewing entity
-	if req.OrganizationID != "" {
-		if err := m.canAccessResource(ctx, req.OrganizationID, m.orgsForOrganization); err != nil {
-			return nil, err
-		}
-	}
+	// Note: There is no authorization required as the threading service will only return threads for the viewing entity ID.
 	res, err := m.queryThreads(ctx, req)
 	if err != nil {
 		return nil, err
@@ -1436,14 +1424,6 @@ func (m *resourceAccessor) orgsForEntityForExternalID(ctx context.Context, exter
 		return nil, errors.InternalError(ctx, fmt.Errorf("Expected only 1 entity to be returned for external id %s but found %d", externalID, len(res.Entities)))
 	}
 	return orgsForEntity(res.Entities[0]), nil
-}
-
-func (m *resourceAccessor) orgsForSavedQuery(ctx context.Context, savedQueryID string) (map[string]struct{}, error) {
-	res, err := m.savedQuery(ctx, savedQueryID)
-	if err != nil {
-		return nil, err
-	}
-	return map[string]struct{}{res.SavedQuery.OrganizationID: {}}, nil
 }
 
 func (m *resourceAccessor) orgsForThread(ctx context.Context, threadID string) (map[string]struct{}, error) {

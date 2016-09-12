@@ -22,6 +22,7 @@ type DB struct {
 	name string
 }
 
+// Setup creates a new temporary database and applies all schemas matching the provided glob ordered by name.
 func Setup(t *testing.T, migrationGlob string) *DB {
 	user := os.Getenv("TEST_DB_USER")
 	if user == "" {
@@ -62,6 +63,7 @@ func Setup(t *testing.T, migrationGlob string) *DB {
 		}
 		s := string(b)
 		lines := strings.Split(s, "\n")
+		delimiter := ";"
 		nonEmpty := make([]string, 0, len(lines))
 		for _, l := range lines {
 			if i := strings.Index(l, "--"); i >= 0 {
@@ -69,10 +71,15 @@ func Setup(t *testing.T, migrationGlob string) *DB {
 			}
 			l := strings.TrimSpace(l)
 			if l != "" {
-				nonEmpty = append(nonEmpty, l)
+				// Only support delimiter statement on first non-blank line (i.e. only one delimiter per file)
+				if len(nonEmpty) == 0 && strings.HasPrefix(strings.ToUpper(l), "DELIMITER ") {
+					delimiter = strings.Split(l, " ")[1]
+				} else {
+					nonEmpty = append(nonEmpty, l)
+				}
 			}
 		}
-		stmts := strings.Split(strings.Join(nonEmpty, "\n"), ";")
+		stmts := strings.Split(strings.Join(nonEmpty, "\n"), delimiter)
 		for _, st := range stmts {
 			st = strings.TrimSpace(st)
 			if st != "" {
@@ -89,6 +96,7 @@ func Setup(t *testing.T, migrationGlob string) *DB {
 	}
 }
 
+// Cleanup drops the test database
 func (d *DB) Cleanup(t *testing.T) {
 	_, err := d.DB.Exec(`DROP DATABASE ` + d.name)
 	if err != nil {

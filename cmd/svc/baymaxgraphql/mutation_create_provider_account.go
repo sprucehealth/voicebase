@@ -304,38 +304,34 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 	// TODO: for now make if making a change here also change bayaxmadmin cli. Should centralize the account creation logic.
 	// TODO: make this more reliable & idempotent
 	if err = ram.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
-		OrganizationID: orgEntityID,
-		EntityID:       accEntityID,
-		Title:          "All",
-		Query:          &threading.Query{},
-		Ordinal:        1,
+		EntityID: accEntityID,
+		Title:    "All",
+		Query:    &threading.Query{},
+		Ordinal:  1000,
 	}); err != nil {
 		return nil, errors.InternalError(ctx, err)
 	}
 	if err = ram.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
-		OrganizationID: orgEntityID,
-		EntityID:       accEntityID,
-		Title:          "Patient",
-		Query:          &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_PATIENT}}}},
-		Ordinal:        2,
+		EntityID: accEntityID,
+		Title:    "Patient",
+		Query:    &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_PATIENT}}}},
+		Ordinal:  2000,
 	}); err != nil {
 		return nil, errors.InternalError(ctx, err)
 	}
 	if err = ram.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
-		OrganizationID: orgEntityID,
-		EntityID:       accEntityID,
-		Title:          "Team",
-		Query:          &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_TEAM}}}},
-		Ordinal:        3,
+		EntityID: accEntityID,
+		Title:    "Team",
+		Query:    &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_TEAM}}}},
+		Ordinal:  3000,
 	}); err != nil {
 		return nil, errors.InternalError(ctx, err)
 	}
 	if err = ram.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
-		OrganizationID: orgEntityID,
-		EntityID:       accEntityID,
-		Title:          "@Pages",
-		Query:          &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_UNREAD_REFERENCE}}}},
-		Ordinal:        4,
+		EntityID: accEntityID,
+		Title:    "@Pages",
+		Query:    &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_UNREAD_REFERENCE}}}},
+		Ordinal:  4000,
 	}); err != nil {
 		return nil, errors.InternalError(ctx, err)
 	}

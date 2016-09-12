@@ -571,12 +571,12 @@ func transformSavedQueryToResponse(sq *threading.SavedQuery) (*models.SavedThrea
 		return nil, errors.Trace(err)
 	}
 	return &models.SavedThreadQuery{
-		ID:             sq.ID,
-		OrganizationID: sq.OrganizationID,
-		Title:          sq.Title,
-		Query:          query,
-		Unread:         int(sq.Unread),
-		Total:          int(sq.Total),
+		ID:       sq.ID,
+		Title:    sq.Title,
+		Query:    query,
+		Unread:   int(sq.Unread),
+		Total:    int(sq.Total),
+		EntityID: sq.EntityID,
 	}, nil
 }
 

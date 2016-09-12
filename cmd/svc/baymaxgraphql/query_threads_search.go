@@ -73,7 +73,6 @@ var threadsSearchQuery = &graphql.Field{
 		}
 
 		res, err := ram.QueryThreads(ctx, &threading.QueryThreadsRequest{
-			OrganizationID: org.ID,
 			ViewerEntityID: ent.ID,
 			Iterator: &threading.Iterator{
 				Direction: threading.ITERATOR_DIRECTION_FROM_START,

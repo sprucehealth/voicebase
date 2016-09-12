@@ -38,16 +38,20 @@ var savedThreadQueryType = graphql.NewObject(
 						return nil, errors.ErrNotAuthenticated(ctx)
 					}
 
-					ent, err := entityInOrgForAccountID(ctx, ram, stq.OrganizationID, acc)
+					ent, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+						LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+						LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+							EntityID: stq.EntityID,
+						},
+						RequestedInformation: &directory.RequestedInformation{},
+						Statuses:             []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+						RootTypes:            []directory.EntityType{directory.EntityType_INTERNAL},
+					})
 					if err != nil {
 						return nil, errors.InternalError(ctx, err)
 					}
-					if ent == nil || ent.Type != directory.EntityType_INTERNAL {
-						return nil, errors.UserError(ctx, errors.ErrTypeNotAuthorized, "Not a member of the organization")
-					}
 					req := &threading.QueryThreadsRequest{
-						OrganizationID: stq.OrganizationID,
-						Type:           threading.QUERY_THREADS_TYPE_SAVED,
+						Type: threading.QUERY_THREADS_TYPE_SAVED,
 						QueryType: &threading.QueryThreadsRequest_SavedQueryID{
 							SavedQueryID: stq.ID,
 						},
@@ -92,9 +96,32 @@ var savedThreadQueryType = graphql.NewObject(
 			"deeplink": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.String),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					ctx := p.Context
 					sq := p.Source.(*models.SavedThreadQuery)
 					svc := serviceFromParams(p)
-					return deeplink.SavedQueryURL(svc.webDomain, sq.OrganizationID, sq.ID), nil
+					ram := raccess.ResourceAccess(p)
+					ent, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+						LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+						LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+							EntityID: sq.EntityID,
+						},
+						RequestedInformation: &directory.RequestedInformation{
+							EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
+						},
+						Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+						RootTypes: []directory.EntityType{directory.EntityType_INTERNAL},
+					})
+					if err != nil {
+						return nil, errors.InternalError(ctx, err)
+					}
+					var orgID string
+					for _, em := range ent.Memberships {
+						if em.Type == directory.EntityType_ORGANIZATION {
+							orgID = em.ID
+							break
+						}
+					}
+					return deeplink.SavedQueryURL(svc.webDomain, orgID, sq.ID), nil
 				},
 			},
 		},

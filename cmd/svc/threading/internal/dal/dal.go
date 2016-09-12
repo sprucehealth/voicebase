@@ -119,6 +119,19 @@ type SetupThreadStateUpdate struct {
 	Step *int
 }
 
+type SavedQueryThread struct {
+	ThreadID     models.ThreadID
+	SavedQueryID models.SavedQueryID
+	Timestamp    time.Time
+	Unread       bool
+}
+
+type SavedQueryUpdate struct {
+	Query   *models.Query
+	Title   *string
+	Ordinal *int
+}
+
 type DAL interface {
 	AddThreadMembers(ctx context.Context, threadID models.ThreadID, memberEntityIDs []string) error
 	CreateSavedQuery(context.Context, *models.SavedQuery) (models.SavedQueryID, error)
@@ -145,10 +158,20 @@ type DAL interface {
 	ThreadEntities(ctx context.Context, threadIDs []models.ThreadID, entityID string, opts ...QueryOption) (map[string]*models.ThreadEntity, error)
 	ThreadsForMember(ctx context.Context, entityID string, primaryOnly bool) ([]*models.Thread, error)
 	ThreadsForOrg(ctx context.Context, organizationID string, typ models.ThreadType, limit int) ([]*models.Thread, error)
+	ThreadsWithEntity(ctx context.Context, entityID string, ids []models.ThreadID) ([]*models.Thread, []*models.ThreadEntity, error)
+	UpdateSavedQuery(context.Context, models.SavedQueryID, *SavedQueryUpdate) error
 	UpdateSetupThreadState(context.Context, models.ThreadID, *SetupThreadStateUpdate) error
 	UpdateThread(ctx context.Context, threadID models.ThreadID, update *ThreadUpdate) error
 	// UpdateThreadEntity updates attributes about a thread entity. If the thread entity relationship doesn't exist then it is created.
 	UpdateThreadEntity(ctx context.Context, threadID models.ThreadID, entityID string, update *ThreadEntityUpdate) error
+
+	// Saved Query Indexes
+
+	AddItemsToSavedQueryIndex(ctx context.Context, items []*SavedQueryThread) error
+	IterateThreadsInSavedQuery(ctx context.Context, sqID models.SavedQueryID, viewerEntityID string, it *Iterator) (*ThreadConnection, error)
+	RemoveAllItemsFromSavedQueryIndex(ctx context.Context, sqID models.SavedQueryID) error
+	RemoveItemsFromSavedQueryIndex(ctx context.Context, items []*SavedQueryThread) error
+	RemoveThreadFromAllSavedQueryIndexes(ctx context.Context, threadID models.ThreadID) error
 
 	Transact(context.Context, func(context.Context, DAL) error) error
 }
@@ -189,11 +212,6 @@ func (d *dal) Transact(ctx context.Context, trans func(context.Context, DAL) err
 	return errors.Trace(tx.Commit())
 }
 
-func (d *dal) CreateSetupThreadState(ctx context.Context, threadID models.ThreadID, entityID string) error {
-	_, err := d.db.Exec(`INSERT INTO onboarding_threads (thread_id, entity_id, step) VALUES (?, ?, ?)`, threadID, entityID, 0)
-	return errors.Trace(err)
-}
-
 func (d *dal) CreateSavedQuery(ctx context.Context, sq *models.SavedQuery) (models.SavedQueryID, error) {
 	id, err := models.NewSavedQueryID()
 	if err != nil {
@@ -204,9 +222,9 @@ func (d *dal) CreateSavedQuery(ctx context.Context, sq *models.SavedQuery) (mode
 		return models.SavedQueryID{}, errors.Trace(err)
 	}
 	_, err = d.db.Exec(`
-		INSERT INTO saved_queries (id, ordinal, organization_id, entity_id, query, title, unread, total)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-	`, id, sq.Ordinal, sq.OrganizationID, sq.EntityID, queryBlob, sq.Title, sq.Unread, sq.Total)
+		INSERT INTO saved_queries (id, ordinal, entity_id, query, title, unread, total)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+	`, id, sq.Ordinal, sq.EntityID, queryBlob, sq.Title, sq.Unread, sq.Total)
 	if err != nil {
 		return models.SavedQueryID{}, errors.Trace(err)
 	}
@@ -542,38 +560,6 @@ func (d *dal) LinkedThread(ctx context.Context, threadID models.ThreadID) (*mode
 	return t, linkedThread.PrependSender, errors.Trace(err)
 }
 
-func (d *dal) SetupThreadState(ctx context.Context, threadID models.ThreadID, opts ...QueryOption) (*models.SetupThreadState, error) {
-	var forUpdateSQL string
-	if queryOptions(opts).Has(ForUpdate) {
-		forUpdateSQL = ` FOR UPDATE`
-	}
-	row := d.db.QueryRow(`SELECT thread_id, step FROM onboarding_threads WHERE thread_id = ?`+forUpdateSQL, threadID)
-	var state models.SetupThreadState
-	state.ThreadID = models.EmptyThreadID()
-	if err := row.Scan(&state.ThreadID, &state.Step); err == sql.ErrNoRows {
-		return nil, ErrNotFound
-	} else if err != nil {
-		return nil, errors.Trace(err)
-	}
-	return &state, nil
-}
-
-func (d *dal) SetupThreadStateForEntity(ctx context.Context, entityID string, opts ...QueryOption) (*models.SetupThreadState, error) {
-	var forUpdateSQL string
-	if queryOptions(opts).Has(ForUpdate) {
-		forUpdateSQL = ` FOR UPDATE`
-	}
-	row := d.db.QueryRow(`SELECT thread_id, step FROM onboarding_threads WHERE entity_id = ?`+forUpdateSQL, entityID)
-	var state models.SetupThreadState
-	state.ThreadID = models.EmptyThreadID()
-	if err := row.Scan(&state.ThreadID, &state.Step); err == sql.ErrNoRows {
-		return nil, ErrNotFound
-	} else if err != nil {
-		return nil, errors.Trace(err)
-	}
-	return &state, nil
-}
-
 func (d *dal) PostMessage(ctx context.Context, req *PostMessageRequest) (*models.ThreadItem, error) {
 	// TODO: validate request
 
@@ -693,7 +679,7 @@ func (d *dal) RecordThreadEvent(ctx context.Context, threadID models.ThreadID, a
 
 func (d *dal) SavedQuery(ctx context.Context, id models.SavedQueryID) (*models.SavedQuery, error) {
 	row := d.db.QueryRow(`
-		SELECT id, ordinal, organization_id, entity_id, query, title, unread, total
+		SELECT id, ordinal, entity_id, query, title, unread, total
 		FROM saved_queries
 		WHERE id = ?`, id)
 	sq, err := scanSavedQuery(row)
@@ -702,7 +688,7 @@ func (d *dal) SavedQuery(ctx context.Context, id models.SavedQueryID) (*models.S
 
 func (d *dal) SavedQueries(ctx context.Context, entityID string) ([]*models.SavedQuery, error) {
 	rows, err := d.db.Query(`
-		SELECT id, ordinal, organization_id, entity_id, query, title, unread, total
+		SELECT id, ordinal, entity_id, query, title, unread, total
 		FROM saved_queries
 		WHERE entity_id = ?
 		ORDER BY ordinal`, entityID)
@@ -755,6 +741,35 @@ func (d *dal) threads(ctx context.Context, db tsql.DB, ids []models.ThreadID, op
 	}
 
 	return threads, errors.Trace(rows.Err())
+}
+
+func (d *dal) ThreadsWithEntity(ctx context.Context, entityID string, ids []models.ThreadID) ([]*models.Thread, []*models.ThreadEntity, error) {
+	if len(ids) == 0 {
+		return nil, nil, nil
+	}
+	rows, err := d.db.Query(`
+		SELECT t.id, t.organization_id, COALESCE(t.primary_entity_id, ''), t.last_message_timestamp, t.last_external_message_timestamp, t.last_message_summary,
+			t.last_external_message_summary, t.last_primary_entity_endpoints, t.created, t.message_count, t.type, COALESCE(t.system_title, ''), COALESCE(t.user_title, ''), t.origin,
+			te.thread_id, te.entity_id, te.member, te.joined, te.last_viewed, te.last_unread_notify, te.last_referenced
+		FROM threads t
+		LEFT OUTER JOIN thread_entities te ON te.thread_id = t.id AND te.entity_id = ?
+		WHERE id in (`+dbutil.MySQLArgs(len(ids))+`) AND deleted = false`,
+		append([]interface{}{entityID}, models.ThreadIDsToInterfaces(ids)...)...)
+	if err != nil {
+		return nil, nil, errors.Trace(err)
+	}
+	defer rows.Close()
+	threads := make([]*models.Thread, 0, len(ids))
+	threadEntities := make([]*models.ThreadEntity, 0, len(ids))
+	for rows.Next() {
+		t, te, err := scanThreadAndEntity(rows)
+		if err != nil {
+			return nil, nil, errors.Trace(err)
+		}
+		threads = append(threads, t)
+		threadEntities = append(threadEntities, te)
+	}
+	return threads, threadEntities, errors.Trace(rows.Err())
 }
 
 func (d *dal) ThreadItem(ctx context.Context, id models.ThreadItemID) (*models.ThreadItem, error) {
@@ -926,6 +941,34 @@ func (d *dal) ThreadsForOrg(ctx context.Context, organizationID string, typ mode
 	return threads, errors.Trace(rows.Err())
 }
 
+func (d *dal) UpdateSavedQuery(ctx context.Context, id models.SavedQueryID, update *SavedQueryUpdate) error {
+	if update == nil {
+		return nil
+	}
+
+	args := dbutil.MySQLVarArgs()
+	if update.Query != nil {
+		queryBlob, err := update.Query.Marshal()
+		if err != nil {
+			return errors.Trace(err)
+		}
+		args.Append("query", queryBlob)
+	}
+	if update.Title != nil {
+		args.Append("title", *update.Title)
+	}
+	if update.Ordinal != nil {
+		args.Append("ordinal", *update.Ordinal)
+	}
+	if args.IsEmpty() {
+		return nil
+	}
+
+	_, err := d.db.Exec(`UPDATE saved_queries SET `+args.ColumnsForUpdate()+` WHERE id = ?`,
+		append(args.Values(), id)...)
+	return errors.Trace(err)
+}
+
 func (d *dal) UpdateThread(ctx context.Context, threadID models.ThreadID, update *ThreadUpdate) error {
 	if update == nil {
 		return nil
@@ -1010,24 +1053,11 @@ func (d *dal) UpdateThreadEntity(ctx context.Context, threadID models.ThreadID, 
 	return errors.Trace(err)
 }
 
-func (d *dal) UpdateSetupThreadState(ctx context.Context, threadID models.ThreadID, update *SetupThreadStateUpdate) error {
-	args := dbutil.MySQLVarArgs()
-	if update.Step != nil {
-		args.Append("step", *update.Step)
-	}
-	if args.IsEmpty() {
-		return nil
-	}
-	_, err := d.db.Exec(`UPDATE onboarding_threads SET `+args.ColumnsForUpdate()+` WHERE thread_id = ?`,
-		append(args.Values(), threadID)...)
-	return errors.Trace(err)
-}
-
 func scanSavedQuery(row dbutil.Scanner) (*models.SavedQuery, error) {
 	var sq models.SavedQuery
 	var queryBlob []byte
 	sq.ID = models.EmptySavedQueryID()
-	if err := row.Scan(&sq.ID, &sq.Ordinal, &sq.OrganizationID, &sq.EntityID, &queryBlob, &sq.Title, &sq.Unread, &sq.Total); err == sql.ErrNoRows {
+	if err := row.Scan(&sq.ID, &sq.Ordinal, &sq.EntityID, &queryBlob, &sq.Title, &sq.Unread, &sq.Total); err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrNotFound)
 	} else if err != nil {
 		return nil, errors.Trace(err)

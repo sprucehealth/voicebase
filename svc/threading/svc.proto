@@ -133,12 +133,12 @@ message FollowerUpdated {
 
 message SavedQuery {
 	string id = 1 [(gogoproto.customname) = "ID"];
-	string organization_id = 2 [(gogoproto.customname) = "OrganizationID"];
 	Query query = 3;
 	string title = 4;
 	uint32 unread = 5;
 	uint32 total = 6;
 	int32 ordinal = 7;
+	string entity_id = 8 [(gogoproto.customname) = "EntityID"];
 }
 
 message Query {
@@ -292,7 +292,8 @@ message ThreadItemsResponse {
 }
 
 message QueryThreadsRequest {
-	string organization_id = 1 [(gogoproto.customname) = "OrganizationID"];
+	// organization_id is deprecated and should no longer be sent. viewer_entity_id is now used for all queries.
+	string deprecated_organization_id = 1 [(gogoproto.customname) = "DeprecatedOrganizationID"];
 	Iterator iterator = 2;
 	enum Type {
 		QUERY_THREADS_TYPE_ADHOC = 0;
@@ -353,7 +354,6 @@ message ThreadsResponse {
 }
 
 message CreateSavedQueryRequest {
-	string organization_id = 1 [(gogoproto.customname) = "OrganizationID"];
 	string entity_id = 2 [(gogoproto.customname) = "EntityID"];
 	Query query = 3;
 	string title = 4;
@@ -365,11 +365,11 @@ message CreateSavedQueryResponse {
 }
 
 message UpdateSavedQueryRequest {
-	string organization_id = 1 [(gogoproto.customname) = "OrganizationID"];
-	string query_id = 2 [(gogoproto.customname) = "QueryID"];
-	Query query = 3;
-	string title = 4;
-	int32 ordinal = 5;
+	string saved_query_id = 1 [(gogoproto.customname) = "SavedQueryID"];
+	Query query = 2;
+	string title = 3;
+	int32 ordinal = 4;
+	bool force_rebuild = 5; // If true then force rebuilding the saved query index even if the query doesn't change
 }
 
 message UpdateSavedQueryResponse {

@@ -154,38 +154,34 @@ func (c *moveEntityCmd) run(args []string) error {
 
 	// Create new default saved query
 	if _, err := c.threadingCli.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
-		OrganizationID: newOrg.ID,
-		EntityID:       newEntity.ID,
-		Title:          "All",
-		Query:          &threading.Query{},
-		Ordinal:        1,
+		EntityID: newEntity.ID,
+		Title:    "All",
+		Query:    &threading.Query{},
+		Ordinal:  1000,
 	}); err != nil {
 		golog.Errorf("Failed to create saved query 'All': %s", err)
 	}
 	if _, err := c.threadingCli.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
-		OrganizationID: newOrg.ID,
-		EntityID:       newEntity.ID,
-		Title:          "Patient",
-		Query:          &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_PATIENT}}}},
-		Ordinal:        2,
+		EntityID: newEntity.ID,
+		Title:    "Patient",
+		Query:    &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_PATIENT}}}},
+		Ordinal:  2000,
 	}); err != nil {
 		golog.Errorf("Failed to create saved query 'Patient': %s", err)
 	}
 	if _, err := c.threadingCli.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
-		OrganizationID: newOrg.ID,
-		EntityID:       newEntity.ID,
-		Title:          "Team",
-		Query:          &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_TEAM}}}},
-		Ordinal:        3,
+		EntityID: newEntity.ID,
+		Title:    "Team",
+		Query:    &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_TEAM}}}},
+		Ordinal:  3000,
 	}); err != nil {
 		golog.Errorf("Failed to create saved query 'Team': %s", err)
 	}
 	if _, err := c.threadingCli.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
-		OrganizationID: newOrg.ID,
-		EntityID:       newEntity.ID,
-		Title:          "@Pages",
-		Query:          &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_UNREAD_REFERENCE}}}},
-		Ordinal:        4,
+		EntityID: newEntity.ID,
+		Title:    "@Pages",
+		Query:    &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_UNREAD_REFERENCE}}}},
+		Ordinal:  4000,
 	}); err != nil {
 		golog.Errorf("Failed to create saved query '@Pages': %s", err)
 	}

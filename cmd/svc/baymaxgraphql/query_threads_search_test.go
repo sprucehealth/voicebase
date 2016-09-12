@@ -32,7 +32,6 @@ func TestThreadsSearch(t *testing.T) {
 	}, nil))
 
 	g.ra.Expect(mock.NewExpectation(g.ra.QueryThreads, &threading.QueryThreadsRequest{
-		OrganizationID: "org",
 		ViewerEntityID: "ent",
 		Iterator: &threading.Iterator{
 			Direction: threading.ITERATOR_DIRECTION_FROM_START,

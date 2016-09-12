@@ -3,14 +3,60 @@ package server
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/models"
 	"github.com/sprucehealth/backend/libs/bml"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
 	"google.golang.org/grpc/codes"
 )
+
+// threadMatchesQuery returns true iff the thread matches the provided query for the entity
+func threadMatchesQuery(q *models.Query, t *models.Thread, te *models.ThreadEntity, externalEntity bool) (bool, error) {
+	// For efficiency with multiple tokens generate the full set of text to match against using
+	// a delimiter that's very unlikely to be found in a token expression.
+	fullText := strings.ToLower(t.UserTitle + "⇄" + t.SystemTitle)
+	for _, e := range q.Expressions {
+		switch v := e.Value.(type) {
+		case *models.Expr_Flag_:
+			switch v.Flag {
+			case models.EXPR_FLAG_UNREAD:
+				if !isUnread(t, te, externalEntity) {
+					return false, nil
+				}
+			case models.EXPR_FLAG_UNREAD_REFERENCE:
+				if !hasUnreadReference(te) {
+					return false, nil
+				}
+			default:
+				return false, errors.Errorf("unknown expression flag %s", v.Flag)
+			}
+		case *models.Expr_ThreadType_:
+			switch v.ThreadType {
+			case models.EXPR_THREAD_TYPE_PATIENT:
+				if t.Type != models.ThreadTypeExternal && t.Type != models.ThreadTypeSecureExternal {
+					return false, nil
+				}
+			case models.EXPR_THREAD_TYPE_TEAM:
+				if t.Type != models.ThreadTypeTeam {
+					return false, nil
+				}
+			default:
+				return false, errors.Errorf("unknown expression thread type %s", v.ThreadType)
+			}
+		case *models.Expr_Token:
+			if !strings.Contains(fullText, strings.ToLower(v.Token)) {
+				return false, nil
+			}
+		default:
+			return false, errors.Errorf("unknown expression value type %T", e.Value)
+		}
+	}
+	return true, nil
+}
 
 func mediaIDsFromAttachments(as []*models.Attachment) []string {
 	mediaIDs := make([]string, 0, len(as))
@@ -101,11 +147,6 @@ func parseRefsAndNormalize(s string) (string, []*models.Reference, error) {
 	return s, refs, nil
 }
 
-func internalError(err error) error {
-	golog.LogDepthf(-1, golog.ERR, err.Error())
-	return grpcErrorf(codes.Internal, errors.Trace(err).Error())
-}
-
 // appendStringToSet appends a string to the slice if it's not already included
 func appendStringToSet(set []string, s string) []string {
 	for _, id := range set {
@@ -114,4 +155,34 @@ func appendStringToSet(set []string, s string) []string {
 		}
 	}
 	return append(set, s)
+}
+
+// isUnread returns true iff the thread has not been read by the entity
+func isUnread(t *models.Thread, te *models.ThreadEntity, externalEntity bool) bool {
+	// Threads without message are never unread
+	if t.MessageCount == 0 {
+		return false
+	}
+	if te == nil || te.LastViewed == nil {
+		return true
+	}
+	if externalEntity {
+		return te.LastViewed.Before(t.LastExternalMessageTimestamp)
+	}
+	return te.LastViewed.Before(t.LastMessageTimestamp)
+}
+
+// hasUnreadReference returns true iff the entity has an unread reference
+func hasUnreadReference(te *models.ThreadEntity) bool {
+	if te == nil || te.LastReferenced == nil {
+		return false
+	}
+	if te.LastViewed == nil {
+		return true
+	}
+	return te.LastViewed.Before(*te.LastReferenced)
+}
+
+func isExternalEntity(e *directory.Entity) bool {
+	return e.Type == directory.EntityType_PATIENT || e.Type == directory.EntityType_EXTERNAL
 }

@@ -66,7 +66,14 @@ func WrapMethods(methods []grpc.MethodDesc) {
 					}
 				}()
 			}
-			return oldHandler(srv, ctx, dec, interceptor)
+			out, err = oldHandler(srv, ctx, dec, interceptor)
+			if err != nil {
+				switch grpc.Code(err) {
+				case codes.Unknown, codes.Internal, codes.DataLoss:
+					golog.Errorf("%s: %s", methodName, err)
+				}
+			}
+			return
 		}
 		methods[i] = m
 	}
