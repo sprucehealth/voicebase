@@ -179,7 +179,7 @@ func (s *threadsServer) updateSavedQueriesForThread(ctx context.Context, thread 
 		if err := dl.RemoveThreadFromAllSavedQueryIndexes(ctx, thread.ID); err != nil {
 			return errors.Trace(err)
 		}
-		return errors.Trace(s.dal.AddItemsToSavedQueryIndex(ctx, addItems))
+		return errors.Trace(dl.AddItemsToSavedQueryIndex(ctx, addItems))
 	}))
 }
 
