@@ -28,8 +28,8 @@ var config struct {
 
 func init() {
 	flag.StringVar(&config.localDynamoDBEndpoint, "local_dynamodb_endpoint", "", "local dynamodb endpoint for testing")
-	flag.StringVar(&config.dyanmoDBSettingsTableName, "dynamodb_table_name_settings", "local-setting", "table name where settings are stored")
-	flag.StringVar(&config.dynamoDBSettingsConfigTableName, "dynamodb_table_name_setting_configs", "local-setting-config", "table name where setting configs are stored")
+	flag.StringVar(&config.dyanmoDBSettingsTableName, "dynamodb_table_name_settings", "", "table name where settings are stored")
+	flag.StringVar(&config.dynamoDBSettingsConfigTableName, "dynamodb_table_name_setting_configs", "", "table name where setting configs are stored")
 	flag.IntVar(&config.port, "port", 50053, "port on which to run settings service")
 }
 

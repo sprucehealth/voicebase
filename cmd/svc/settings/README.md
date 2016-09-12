@@ -34,5 +34,5 @@ _At this point you should see the tables created that are present in the terrafo
 
 ```
 go build -i -v
-./settings -env=local
+./settings -env=local -local_dynamodb_endpoint=localhost -dynamodb_table_name_settings=local-setting -dynamodb_table_name_setting_configs=local-setting-config
 ```
