@@ -90,9 +90,22 @@ func (c *migrateSavedQueriesCmd) run(args []string) error {
 		if err != nil {
 			return errors.Trace(err)
 		}
-		// Unmigrated entities have 1 saved query without a title
-		if len(res.SavedQueries) != 1 || res.SavedQueries[0].Title != "" {
-			fmt.Printf("Skipping entity %s\n", eid)
+		// Unmigrated entities have 1 saved query with ordinal of 0
+		if len(res.SavedQueries) != 1 || res.SavedQueries[0].Ordinal != 0 {
+			// Rebuild saved queries with no threads to be safe
+			for _, sq := range res.SavedQueries {
+				if sq.Total == 0 {
+					fmt.Printf("Rebuilding saved query %s '%s'\n", sq.ID, sq.Title)
+					for _, sq := range res.SavedQueries {
+						if _, err := c.threadingCli.UpdateSavedQuery(ctx, &threading.UpdateSavedQueryRequest{
+							SavedQueryID: sq.ID,
+							ForceRebuild: true,
+						}); err != nil {
+							return errors.Errorf("Failed to force rebuild of saved query %s for entity %s: %s", sq.ID, eid, err)
+						}
+					}
+				}
+			}
 			continue
 		}
 		fmt.Printf("Migration entity %s\n", eid)
@@ -102,6 +115,7 @@ func (c *migrateSavedQueriesCmd) run(args []string) error {
 			Title:        "All",
 			Query:        &threading.Query{},
 			Ordinal:      1000,
+			ForceRebuild: true,
 		}); err != nil {
 			return errors.Errorf("Failed to update saved query %s for entity %s: %s", sq.ID, eid, err)
 		}
