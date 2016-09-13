@@ -679,7 +679,7 @@ func (s *threadsServer) MarkThreadsAsRead(ctx context.Context, in *threading.Mar
 			}
 		}
 		if !isMember {
-			golog.Infof("Entity '%s' trying to mark as a read a thread '%s' it is not a member of", in.EntityID, thread.ID)
+			golog.Errorf("Entity '%s' trying to mark as a read a thread '%s' it is not a member of", in.EntityID, thread.ID)
 			continue
 		}
 
