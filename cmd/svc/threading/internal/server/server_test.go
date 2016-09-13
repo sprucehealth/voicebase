@@ -66,6 +66,7 @@ func TestCreateSavedQuery(t *testing.T) {
 		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 		RootTypes: []directory.EntityType{
 			directory.EntityType_INTERNAL,
+			directory.EntityType_PATIENT,
 		},
 		ChildTypes: []directory.EntityType{
 			directory.EntityType_ORGANIZATION,
@@ -1198,6 +1199,7 @@ func TestQueryThreads(t *testing.T) {
 		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 		RootTypes: []directory.EntityType{
 			directory.EntityType_INTERNAL,
+			directory.EntityType_PATIENT,
 		},
 		ChildTypes: []directory.EntityType{
 			directory.EntityType_ORGANIZATION,
@@ -1385,6 +1387,7 @@ func TestQueryThreads(t *testing.T) {
 		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 		RootTypes: []directory.EntityType{
 			directory.EntityType_INTERNAL,
+			directory.EntityType_PATIENT,
 		},
 		ChildTypes: []directory.EntityType{
 			directory.EntityType_ORGANIZATION,
@@ -1792,6 +1795,7 @@ func TestMarkThreadAsRead(t *testing.T) {
 		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 		RootTypes: []directory.EntityType{
 			directory.EntityType_INTERNAL,
+			directory.EntityType_PATIENT,
 		},
 		ChildTypes: []directory.EntityType{
 			directory.EntityType_ORGANIZATION,
@@ -1923,6 +1927,7 @@ func TestMarkThreadsAsRead_NotSeen(t *testing.T) {
 		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 		RootTypes: []directory.EntityType{
 			directory.EntityType_INTERNAL,
+			directory.EntityType_PATIENT,
 		},
 		ChildTypes: []directory.EntityType{
 			directory.EntityType_ORGANIZATION,
@@ -2046,6 +2051,7 @@ func TestMarkThreadAsReadNilLastView(t *testing.T) {
 		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 		RootTypes: []directory.EntityType{
 			directory.EntityType_INTERNAL,
+			directory.EntityType_PATIENT,
 		},
 		ChildTypes: []directory.EntityType{
 			directory.EntityType_ORGANIZATION,
@@ -2184,6 +2190,7 @@ func TestMarkThreadAsReadExistingMembership(t *testing.T) {
 		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 		RootTypes: []directory.EntityType{
 			directory.EntityType_INTERNAL,
+			directory.EntityType_PATIENT,
 		},
 		ChildTypes: []directory.EntityType{
 			directory.EntityType_ORGANIZATION,

@@ -196,6 +196,7 @@ func (s *threadsServer) entityAndMemberships(ctx context.Context, entityID strin
 		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 		RootTypes: []directory.EntityType{
 			directory.EntityType_INTERNAL,
+			directory.EntityType_PATIENT,
 		},
 		ChildTypes: []directory.EntityType{
 			directory.EntityType_ORGANIZATION,
@@ -206,6 +207,10 @@ func (s *threadsServer) entityAndMemberships(ctx context.Context, entityID strin
 	}
 	if len(res.Entities) != 1 {
 		return nil, errors.Errorf("Expected 1 entity for '%s' got %d", entityID, len(res.Entities))
+	}
+	// For non-internal (patient_ entities we don't want to include anything but the entity itself
+	if res.Entities[0].Type != directory.EntityType_INTERNAL {
+		return res.Entities, nil
 	}
 	ents := make([]*directory.Entity, 0, 1+len(res.Entities[0].Memberships))
 	ents = append(ents, res.Entities[0])
