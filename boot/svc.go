@@ -85,9 +85,6 @@ func NewService(name string, healthCheckHandler http.Handler) *Service {
 	flag.StringVar(&svc.flags.segmentIOKey, "segmentio_key", "", "Segment IO API `key`")
 	flag.BoolVar(&svc.flags.jsonLogs, "json_logs", false, "Enable JSON formatted logs")
 
-	// Scope the global smet package to the application
-	smet.Scope(name)
-
 	ParseFlags(strings.ToUpper(name) + "_")
 
 	if svc.flags.env == "" {
@@ -170,6 +167,10 @@ func NewService(name string, healthCheckHandler http.Handler) *Service {
 	if svc.flags.segmentIOKey != "" {
 		analytics.InitSegment(svc.flags.segmentIOKey)
 	}
+
+	// Establish the metrics handler on management
+	http.Handle("/metrics", metrics.RegistryHandler(svc.MetricsRegistry))
+	smet.Init(svc.MetricsRegistry)
 
 	return svc
 }

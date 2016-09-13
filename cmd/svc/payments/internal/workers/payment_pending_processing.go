@@ -98,7 +98,6 @@ func (w *Workers) processPaymentPendingProcessing() {
 				smet.Errorf(workerErrMetricName, "Error while processing payment %s: %s", p.ID, processingErr)
 				continue
 			} else {
-
 				if err := w.postPaymentCompletedToThread(ctx, p); err != nil {
 					smet.Errorf(workerErrMetricName, "Unable to post completed message to thread for payment %s : %s", p.ID, err)
 					continue
@@ -112,6 +111,7 @@ func (w *Workers) processPaymentPendingProcessing() {
 					smet.Errorf(workerErrMetricName, "Error while updating payment %s with new processorTransactionID %s: %s", p.ID, *processorTransactionID, err)
 					continue
 				}
+				smet.GetCounter("PaymentProcessed-Success").Inc()
 				golog.Debugf("Payment %s processed", p.ID)
 			}
 		}

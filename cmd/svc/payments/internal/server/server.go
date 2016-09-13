@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
+	"github.com/sprucehealth/backend/libs/smet"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/backend/svc/settings"
@@ -148,6 +149,7 @@ func (s *server) AcceptPayment(ctx context.Context, req *payments.AcceptPaymentR
 			}); err != nil {
 				return grpcError(err)
 			}
+			smet.GetCounter("Server-AcceptPayment-Success").Inc()
 		} else {
 			golog.Infof("Payment %s is in state %s|%s - it cannot be accepted - ignoring accept", payment.ID, payment.ChangeState, payment.Lifecycle)
 		}
@@ -196,6 +198,7 @@ func (s *server) CreatePayment(ctx context.Context, req *payments.CreatePaymentR
 	if err != nil {
 		return nil, grpcError(err)
 	}
+	smet.GetCounter("Server-CreatePayment-Success").Inc()
 	return &payments.CreatePaymentResponse{
 		Payment: resp.Payment,
 	}, nil
@@ -244,6 +247,7 @@ func (s *server) CreatePaymentMethod(ctx context.Context, req *payments.CreatePa
 	if err != nil {
 		return nil, grpcError(err)
 	}
+	smet.GetCounter("Server-CreatePaymentMethod-Success").Inc()
 	return &payments.CreatePaymentMethodResponse{
 		PaymentMethods: resp.PaymentMethods,
 	}, nil
@@ -464,6 +468,7 @@ func (s *server) ConnectVendorAccount(ctx context.Context, req *payments.Connect
 	if err != nil {
 		return nil, err
 	}
+	smet.GetCounter("Server-ConnectVendorAccount-Success").Inc()
 	return &payments.ConnectVendorAccountResponse{
 		VendorAccounts: vendorAccounts.VendorAccounts,
 	}, nil
@@ -510,6 +515,7 @@ func (s *server) DeletePaymentMethod(ctx context.Context, req *payments.DeletePa
 	if err != nil {
 		return nil, grpcError(err)
 	}
+	smet.GetCounter("Server-DeletePaymentMethod-Success").Inc()
 	return &payments.DeletePaymentMethodResponse{
 		PaymentMethods: resp.PaymentMethods,
 	}, nil
@@ -620,6 +626,7 @@ func (s *server) SubmitPayment(ctx context.Context, req *payments.SubmitPaymentR
 		}); err != nil {
 			return grpcError(err)
 		}
+		smet.GetCounter("Server-SubmitPayment-Success").Inc()
 		return nil
 	}); err != nil {
 		return nil, grpcError(err)

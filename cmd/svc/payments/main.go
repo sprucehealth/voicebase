@@ -48,8 +48,10 @@ var (
 	flagDBTLS      = flag.String("db_tls", "skip-verify", "Enable TLS for database connection (one of 'true', 'false', 'skip-verify'). Ignored if CA cert provided.")
 )
 
+const appName = "payments"
+
 func main() {
-	svc := boot.NewService("payments", nil)
+	svc := boot.NewService(appName, nil)
 
 	if *flagMasterVendorAccountID == "" {
 		golog.Fatalf("master_vendor_account_id required")
@@ -82,13 +84,13 @@ func main() {
 		golog.Fatalf("failed to initialize db connection: %s", err)
 	}
 
-	conn, err := boot.DialGRPC("payments", *flagDirectoryAddr)
+	conn, err := boot.DialGRPC(appName, *flagDirectoryAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to directory service: %s", err)
 	}
 	directoryClient := directory.NewDirectoryClient(conn)
 
-	conn, err = boot.DialGRPC("payments", *flagThreadingAddr)
+	conn, err = boot.DialGRPC(appName, *flagThreadingAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to threading service: %s", err)
 	}
