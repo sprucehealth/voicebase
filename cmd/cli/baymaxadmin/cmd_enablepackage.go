@@ -86,10 +86,6 @@ func (c *enablePackageCmd) run(args []string) error {
 	}
 
 	if *digitalCare {
-		if err := c.enableAfterHours(scn, orgEntityID, phoneNumber, fileName, bucket); err != nil {
-			return errors.Trace(err)
-		}
-
 		if err := c.enableDigitalCare(scn, orgEntityID, fileName, bucket); err != nil {
 			return errors.Trace(err)
 		}
