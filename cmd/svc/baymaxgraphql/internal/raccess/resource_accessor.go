@@ -948,6 +948,8 @@ func (m *resourceAccessor) ThreadFollowers(ctx context.Context, orgID string, re
 			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
 		},
 		MemberOfEntity: orgID,
+		Statuses:       []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes:      []directory.EntityType{directory.EntityType_INTERNAL},
 	}, orgID)
 	if err != nil {
 		return nil, err
@@ -955,6 +957,10 @@ func (m *resourceAccessor) ThreadFollowers(ctx context.Context, orgID string, re
 
 	var found bool
 	for _, mem := range res.Members {
+		if mem.EntityID == orgID {
+			found = true
+			break
+		}
 		if mem.EntityID == ent.ID {
 			found = true
 			break
