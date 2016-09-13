@@ -6,6 +6,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/payments/internal/dal"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/smet"
 )
 
 func (w *Workers) processVendorAccountPendingDisconnected() {
@@ -25,11 +26,11 @@ func (w *Workers) processVendorAccountPendingDisconnected() {
 			switch va.AccountType {
 			case dal.VendorAccountAccountTypeStripe:
 				if err := w.stripeOAuth.DisconnectStripeAccount(va.ConnectedAccountID); err != nil {
-					golog.Errorf("Error while disconnecting vendor STRIPE account %s: %s", va.ID, err)
+					smet.Errorf(workerErrMetricName, "Error while disconnecting vendor STRIPE account %s: %s", va.ID, err)
 					continue
 				}
 			default:
-				golog.Errorf("Unable to disconnect vendor account %s because type %s is not understood", va.ID, va.AccountType)
+				smet.Errorf(workerErrMetricName, "Unable to disconnect vendor account %s because type %s is not understood", va.ID, va.AccountType)
 				continue
 			}
 			golog.Debugf("Deleting vendor account record %s", va.ID)
@@ -41,6 +42,6 @@ func (w *Workers) processVendorAccountPendingDisconnected() {
 		}
 		return nil
 	}); err != nil {
-		golog.Errorf("Encountered error while processing PENDING/DISCONNECTED vendor accounts: %s", err)
+		smet.Errorf(workerErrMetricName, "Encountered error while processing PENDING/DISCONNECTED vendor accounts: %s", err)
 	}
 }

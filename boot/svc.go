@@ -27,6 +27,7 @@ import (
 	"github.com/sprucehealth/backend/libs/grpcdns"
 	"github.com/sprucehealth/backend/libs/mcutil"
 	"github.com/sprucehealth/backend/libs/ratelimit"
+	"github.com/sprucehealth/backend/libs/smet"
 	"github.com/sprucehealth/backend/libs/storage"
 	"golang.org/x/net/trace"
 	"google.golang.org/grpc"
@@ -83,6 +84,9 @@ func NewService(name string, healthCheckHandler http.Handler) *Service {
 	flag.StringVar(&svc.flags.memcachedHosts, "memcached_hosts", "", "Comma separate host:port list of memcached server addresses")
 	flag.StringVar(&svc.flags.segmentIOKey, "segmentio_key", "", "Segment IO API `key`")
 	flag.BoolVar(&svc.flags.jsonLogs, "json_logs", false, "Enable JSON formatted logs")
+
+	// Scope the global smet package to the application
+	smet.Scope(name)
 
 	ParseFlags(strings.ToUpper(name) + "_")
 

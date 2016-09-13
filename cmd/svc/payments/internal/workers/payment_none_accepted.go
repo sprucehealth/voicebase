@@ -9,6 +9,7 @@ import (
 	istripe "github.com/sprucehealth/backend/cmd/svc/payments/internal/stripe"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/smet"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/stripe/stripe-go"
 )
@@ -29,12 +30,12 @@ func (w *Workers) processPaymentNoneAccepted() {
 			golog.Debugf("Attempting customer/payment_method processing of payment: %s", p.ID)
 			vendorAccount, err := dl.VendorAccount(ctx, p.VendorAccountID)
 			if err != nil {
-				golog.Errorf("Error while looking up vendor account %s for payment %s", p.VendorAccountID, p.ID)
+				smet.Errorf(workerErrMetricName, "Error while looking up vendor account %s for payment %s", p.VendorAccountID, p.ID)
 				continue
 			}
 			paymentMethod, err := dl.PaymentMethod(ctx, p.PaymentMethodID)
 			if err != nil {
-				golog.Errorf("Error while looking up payment method %s for payment %s", p.PaymentMethodID, p.ID)
+				smet.Errorf(workerErrMetricName, "Error while looking up payment method %s for payment %s", p.PaymentMethodID, p.ID)
 				continue
 			}
 			// If the payment method isn't mapped to this vendor then resolve it
@@ -46,7 +47,7 @@ func (w *Workers) processPaymentNoneAccepted() {
 					// TODO: Source the customer addition from a token rather than the entityID - https://app.asana.com/0/163568593435416/170802620739346
 					vendorCustomer, err = server.AddCustomer(ctx, vendorAccount, paymentMethod.EntityID, w.dal, w.directoryClient, w.stripeClient)
 					if err != nil {
-						golog.Errorf("Error while adding customer for vendor account %s and entity id %s for payment %s: %s", p.VendorAccountID, paymentMethod.EntityID, p.ID, err)
+						smet.Errorf(workerErrMetricName, "Error while adding customer for vendor account %s and entity id %s for payment %s: %s", p.VendorAccountID, paymentMethod.EntityID, p.ID, err)
 						continue
 					}
 
@@ -56,7 +57,7 @@ func (w *Workers) processPaymentNoneAccepted() {
 						Name:     "Stripe",
 						URL:      fmt.Sprintf("%s/customers/%s", istripe.DashboardURL(), vendorCustomer.StorageID),
 					}); err != nil {
-						golog.Errorf("Unable to create external link for %s : %s", paymentMethod.EntityID, err)
+						smet.Errorf(workerErrMetricName, "Unable to create external link for %s : %s", paymentMethod.EntityID, err)
 						continue
 					}
 
@@ -64,12 +65,12 @@ func (w *Workers) processPaymentNoneAccepted() {
 						EntityID:    paymentMethod.EntityID,
 						ExternalIDs: []string{scopeID(vendorCustomer.StorageID)},
 					}); err != nil {
-						golog.Errorf("Unable to create externalIDs for %s : %s", paymentMethod.EntityID, err)
+						smet.Errorf(workerErrMetricName, "Unable to create externalIDs for %s : %s", paymentMethod.EntityID, err)
 						continue
 					}
 
 				} else if err != nil {
-					golog.Errorf("Error while looking up customer for vendor account %s and entity id %s for payment %s: %s", p.VendorAccountID, paymentMethod.EntityID, p.ID, err)
+					smet.Errorf(workerErrMetricName, "Error while looking up customer for vendor account %s and entity id %s for payment %s: %s", p.VendorAccountID, paymentMethod.EntityID, p.ID, err)
 					continue
 				}
 				// Check to see if there is an existing matching payment method for this vendor customer
@@ -85,7 +86,7 @@ func (w *Workers) processPaymentNoneAccepted() {
 					case dal.VendorAccountAccountTypeStripe:
 						customer, err := dl.Customer(ctx, paymentMethod.CustomerID)
 						if err != nil {
-							golog.Errorf("Error while looking up customer %s for payment method %s", paymentMethod.CustomerID, paymentMethod.ID)
+							smet.Errorf(workerErrMetricName, "Error while looking up customer %s for payment method %s", paymentMethod.CustomerID, paymentMethod.ID)
 							continue
 						}
 						tokenSource = &server.DynamicTokenSource{
@@ -104,12 +105,12 @@ func (w *Workers) processPaymentNoneAccepted() {
 							},
 						}
 					default:
-						golog.Errorf("Unsupported vendor account type %s for vendor account %s and payment %s", vendorAccount.AccountType, p.VendorAccountID, p.ID)
+						smet.Errorf(workerErrMetricName, "Unsupported vendor account type %s for vendor account %s and payment %s", vendorAccount.AccountType, p.VendorAccountID, p.ID)
 						continue
 					}
 					//sanity
 					if tokenSource == nil {
-						golog.Errorf("Nil token source for payment %s - This should never happen", p.ID)
+						smet.Errorf(workerErrMetricName, "Nil token source for payment %s - This should never happen", p.ID)
 						continue
 					}
 
@@ -123,7 +124,7 @@ func (w *Workers) processPaymentNoneAccepted() {
 						w.dal,
 						w.stripeClient)
 					if err != nil {
-						golog.Errorf("Error while adding payment method for vendor account %s and entity id %s for payment %s: %s", p.VendorAccountID, paymentMethod.EntityID, p.ID, err)
+						smet.Errorf(workerErrMetricName, "Error while adding payment method for vendor account %s and entity id %s for payment %s: %s", p.VendorAccountID, paymentMethod.EntityID, p.ID, err)
 						continue
 					}
 
@@ -133,11 +134,11 @@ func (w *Workers) processPaymentNoneAccepted() {
 						ChangeState:     dal.PaymentChangeStateNone,
 						PaymentMethodID: &vendorPaymentMethod.ID,
 					}); err != nil {
-						golog.Errorf("Error while updating payment %s with new paymentMethodID: %s", p.ID, err)
+						smet.Errorf(workerErrMetricName, "Error while updating payment %s with new paymentMethodID: %s", p.ID, err)
 						continue
 					}
 				} else if err != nil {
-					golog.Errorf("Error while looking up customer for vendor account %s and entity id %s for payment %s: %s", p.VendorAccountID, paymentMethod.EntityID, p.ID, err)
+					smet.Errorf(workerErrMetricName, "Error while looking up customer for vendor account %s and entity id %s for payment %s: %s", p.VendorAccountID, paymentMethod.EntityID, p.ID, err)
 					continue
 				}
 			} else {
@@ -148,13 +149,13 @@ func (w *Workers) processPaymentNoneAccepted() {
 				Lifecycle:   dal.PaymentLifecycleProcessing,
 				ChangeState: dal.PaymentChangeStatePending,
 			}); err != nil {
-				golog.Errorf("Error while updating payment %s with new paymentMethodID: %s", p.ID, err)
+				smet.Errorf(workerErrMetricName, "Error while updating payment %s with new paymentMethodID: %s", p.ID, err)
 				continue
 			}
 			golog.Debugf("Payment %s customer/payment_method processed", p.ID)
 		}
 		return nil
 	}); err != nil {
-		golog.Errorf("Encountered error while processing NONE/ACCEPTED payments: %s", err)
+		smet.Errorf(workerErrMetricName, "Encountered error while processing NONE/ACCEPTED payments: %s", err)
 	}
 }

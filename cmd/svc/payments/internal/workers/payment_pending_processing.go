@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
+	"github.com/sprucehealth/backend/libs/smet"
 	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/stripe/stripe-go"
@@ -31,17 +32,17 @@ func (w *Workers) processPaymentPendingProcessing() {
 		for _, p := range paymentsPendingProcessing {
 			vendorAccount, err := dl.VendorAccount(ctx, p.VendorAccountID)
 			if err != nil {
-				golog.Errorf("Error while looking up vendor account %s for payment %s", p.VendorAccountID, p.ID)
+				smet.Errorf(workerErrMetricName, "Error while looking up vendor account %s for payment %s", p.VendorAccountID, p.ID)
 				continue
 			}
 			paymentMethod, err := dl.PaymentMethod(ctx, p.PaymentMethodID)
 			if err != nil {
-				golog.Errorf("Error while looking up payment method %s for payment %s", p.PaymentMethodID, p.ID)
+				smet.Errorf(workerErrMetricName, "Error while looking up payment method %s for payment %s", p.PaymentMethodID, p.ID)
 				continue
 			}
 			customer, err := dl.Customer(ctx, paymentMethod.CustomerID)
 			if err != nil {
-				golog.Errorf("Error while looking up customer %s for payment method %s", paymentMethod.CustomerID, paymentMethod.ID)
+				smet.Errorf(workerErrMetricName, "Error while looking up customer %s for payment method %s", paymentMethod.CustomerID, paymentMethod.ID)
 				continue
 			}
 			var processingErr error
@@ -70,7 +71,7 @@ func (w *Workers) processPaymentPendingProcessing() {
 				processorTransactionID = &charge.ID
 				golog.Debugf("Created stripe charge %+v", charge)
 			default:
-				golog.Errorf("Unsupported vendor account type %s for vendor account %s and payment %s", vendorAccount.AccountType, p.VendorAccountID, p.ID)
+				smet.Errorf(workerErrMetricName, "Unsupported vendor account type %s for vendor account %s and payment %s", vendorAccount.AccountType, p.VendorAccountID, p.ID)
 				continue
 			}
 			if processingErr != nil {
@@ -81,7 +82,7 @@ func (w *Workers) processPaymentPendingProcessing() {
 					} else {
 						processingErrReason := server.PaymentMethodErrorMesssage(errors.Cause(processingErr))
 						if err := w.postErrorProcessingToThread(ctx, p, processingErrReason); err != nil {
-							golog.Errorf("Error while posting processing error thread update to thread %s for payment %s: %s", p.ThreadID, p.ID, err)
+							smet.Errorf(workerErrMetricName, "Error while posting processing error thread update to thread %s for payment %s: %s", p.ThreadID, p.ID, err)
 							continue
 						}
 						if _, err := dl.UpdatePayment(ctx, p.ID, &dal.PaymentUpdate{
@@ -89,17 +90,17 @@ func (w *Workers) processPaymentPendingProcessing() {
 							ChangeState:            dal.PaymentChangeStateNone,
 							ProcessorStatusMessage: ptr.String(processingErrReason),
 						}); err != nil {
-							golog.Errorf("Error while updating payment %s with new processorStatusMessage %q: %s", p.ID, server.PaymentMethodErrorMesssage(errors.Cause(processingErr)), err)
+							smet.Errorf(workerErrMetricName, "Error while updating payment %s with new processorStatusMessage %q: %s", p.ID, server.PaymentMethodErrorMesssage(errors.Cause(processingErr)), err)
 						}
 						continue
 					}
 				}
-				golog.Errorf("Error while processing payment %s: %s", p.ID, processingErr)
+				smet.Errorf(workerErrMetricName, "Error while processing payment %s: %s", p.ID, processingErr)
 				continue
 			} else {
 
 				if err := w.postPaymentCompletedToThread(ctx, p); err != nil {
-					golog.Errorf("Unable to post completed message to thread for payment %s : %s", p.ID, err)
+					smet.Errorf(workerErrMetricName, "Unable to post completed message to thread for payment %s : %s", p.ID, err)
 					continue
 				}
 
@@ -108,7 +109,7 @@ func (w *Workers) processPaymentPendingProcessing() {
 					ChangeState:            dal.PaymentChangeStateNone,
 					ProcessorTransactionID: processorTransactionID,
 				}); err != nil {
-					golog.Errorf("Error while updating payment %s with new processorTransactionID %s: %s", p.ID, *processorTransactionID, err)
+					smet.Errorf(workerErrMetricName, "Error while updating payment %s with new processorTransactionID %s: %s", p.ID, *processorTransactionID, err)
 					continue
 				}
 				golog.Debugf("Payment %s processed", p.ID)
@@ -116,7 +117,7 @@ func (w *Workers) processPaymentPendingProcessing() {
 		}
 		return nil
 	}); err != nil {
-		golog.Errorf("Encountered error while processing PENDING/PROCESSING payments: %s", err)
+		smet.Errorf(workerErrMetricName, "Encountered error while processing PENDING/PROCESSING payments: %s", err)
 	}
 }
 

@@ -12,6 +12,8 @@ import (
 	"github.com/sprucehealth/backend/svc/threading"
 )
 
+const workerErrMetricName = "PaymentsWorkerError"
+
 // Workers collection of all workers used by the Payments system
 type Workers struct {
 	dal             dal.DAL
