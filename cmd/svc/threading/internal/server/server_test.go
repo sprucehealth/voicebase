@@ -2918,6 +2918,28 @@ func TestUpdateThread(t *testing.T) {
 		},
 	}, nil))
 
+	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: "ent1",
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{
+			directory.EntityType_INTERNAL,
+			directory.EntityType_ORGANIZATION,
+		},
+		ChildTypes: []directory.EntityType{
+			directory.EntityType_ORGANIZATION,
+		},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{ID: "ent1", Memberships: []*directory.Entity{{ID: "org"}}},
+		},
+	}, nil))
+
 	dl.Expect(mock.NewExpectation(dl.EntitiesForThread, tID).WithReturns([]*models.ThreadEntity{
 		{EntityID: "ent1", Member: true},
 		{EntityID: "ent2", Member: true},
@@ -2942,6 +2964,12 @@ func TestUpdateThread(t *testing.T) {
 			{ID: "ent1", Info: &directory.EntityInfo{DisplayName: "name1"}, Memberships: []*directory.Entity{{ID: "org"}}},
 			{ID: "ent4", Info: &directory.EntityInfo{DisplayName: "name4"}, Memberships: []*directory.Entity{{ID: "org"}}},
 		},
+	}, nil))
+
+	// Auth membership check
+	dl.Expect(mock.NewExpectation(dl.EntitiesForThread, tID).WithReturns([]*models.ThreadEntity{
+		{ThreadID: tID, EntityID: "ent1", Member: true},
+		{ThreadID: tID, EntityID: "ent2", Member: true},
 	}, nil))
 
 	dl.Expect(mock.NewExpectation(dl.AddThreadMembers, tID, []string{"ent4"}).WithReturns(nil))
@@ -3012,6 +3040,7 @@ func TestUpdateThread(t *testing.T) {
 		}))
 
 	resp, err := srv.UpdateThread(nil, &threading.UpdateThreadRequest{
+		ActorEntityID:         "ent1",
 		ThreadID:              tID.String(),
 		UserTitle:             "NewUserTitle",
 		AddMemberEntityIDs:    []string{"ent4"},
@@ -3072,6 +3101,7 @@ func TestUpdateThread_LastPersonLeaves(t *testing.T) {
 	dl.Expect(mock.NewExpectation(dl.RemoveThreadFromAllSavedQueryIndexes, tID))
 
 	resp, err := srv.UpdateThread(nil, &threading.UpdateThreadRequest{
+		ActorEntityID:         "org",
 		ThreadID:              tID.String(),
 		RemoveMemberEntityIDs: []string{"ent1"},
 	})

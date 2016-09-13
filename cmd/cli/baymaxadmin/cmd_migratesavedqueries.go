@@ -44,6 +44,7 @@ func newmigrateSavedQueriesCmd(cnf *config) (command, error) {
 func (c *migrateSavedQueriesCmd) run(args []string) error {
 	fs := flag.NewFlagSet("migratesavedqueries", flag.ExitOnError)
 	flagEntityID := fs.String("entity_id", "", "optional entity ID instead of migrating all entities")
+	flagRebuildAll := fs.Bool("rebuild", false, "rebuild all saved queries")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -94,7 +95,7 @@ func (c *migrateSavedQueriesCmd) run(args []string) error {
 		if len(res.SavedQueries) != 1 || res.SavedQueries[0].Ordinal != 0 {
 			// Rebuild saved queries with no threads to be safe
 			for _, sq := range res.SavedQueries {
-				if sq.Total == 0 {
+				if *flagRebuildAll || sq.Total == 0 {
 					fmt.Printf("Rebuilding saved query %s '%s'\n", sq.ID, sq.Title)
 					for _, sq := range res.SavedQueries {
 						if _, err := c.threadingCli.UpdateSavedQuery(ctx, &threading.UpdateSavedQueryRequest{
@@ -142,6 +143,14 @@ func (c *migrateSavedQueriesCmd) run(args []string) error {
 			Ordinal:  4000,
 		}); err != nil {
 			golog.Errorf("Failed to create saved query '@Pages': %s", err)
+		}
+		if _, err := c.threadingCli.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
+			EntityID: eid,
+			Title:    "Following",
+			Query:    &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_FOLLOWING}}}},
+			Ordinal:  5000,
+		}); err != nil {
+			golog.Errorf("Failed to create saved query 'Following': %s", err)
 		}
 	}
 

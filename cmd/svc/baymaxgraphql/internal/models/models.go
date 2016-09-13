@@ -234,6 +234,7 @@ type Thread struct {
 	IsPatientThread            bool   `json:"isPatientThread"`
 	IsTeamThread               bool   `json:"isTeamThread"`
 	AlwaysShowNotifications    bool   `json:"alwaysShowNotifications"`
+	AllowAddFollowers          bool   `json:"allowAddFollowers"`
 	AllowAddMembers            bool   `json:"allowAddMembers"`
 	AllowDelete                bool   `json:"allowDelete"`
 	AllowEmailAttachment       bool   `json:"allowEmailAttachments"`
@@ -241,6 +242,7 @@ type Thread struct {
 	AllowInternalMessages      bool   `json:"allowInternalMessages"`
 	AllowLeave                 bool   `json:"allowLeave"`
 	AllowMentions              bool   `json:"allowMentions"`
+	AllowRemoveFollowers       bool   `json:"allowRemoveFollowers"`
 	AllowRemoveMembers         bool   `json:"allowRemoveMembers"`
 	AllowSMSAttachments        bool   `json:"allowSMSAttachments"`
 	AllowUpdateTitle           bool   `json:"allowUpdateTitle"`

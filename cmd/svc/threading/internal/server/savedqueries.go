@@ -13,7 +13,7 @@ import (
 // rebuildSavedQuery reindexes the threads in a saved query
 func (s *threadsServer) rebuildSavedQuery(ctx context.Context, sq *models.SavedQuery) error {
 	// we need all the memberships for the entity to be able to get a full list of threads
-	ents, err := s.entityAndMemberships(ctx, sq.EntityID)
+	ents, err := s.entityAndMemberships(ctx, sq.EntityID, []directory.EntityType{directory.EntityType_INTERNAL, directory.EntityType_PATIENT})
 	if err != nil {
 		errors.Trace(err)
 	}
@@ -184,7 +184,7 @@ func (s *threadsServer) updateSavedQueriesForThread(ctx context.Context, thread 
 }
 
 // entityAndMemberships looks up an entity and returns the entity itself and all its memberships
-func (s *threadsServer) entityAndMemberships(ctx context.Context, entityID string) ([]*directory.Entity, error) {
+func (s *threadsServer) entityAndMemberships(ctx context.Context, entityID string, rootTypes []directory.EntityType) ([]*directory.Entity, error) {
 	res, err := s.directoryClient.LookupEntities(ctx, &directory.LookupEntitiesRequest{
 		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
 		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
@@ -193,11 +193,8 @@ func (s *threadsServer) entityAndMemberships(ctx context.Context, entityID strin
 		RequestedInformation: &directory.RequestedInformation{
 			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
 		},
-		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
-		RootTypes: []directory.EntityType{
-			directory.EntityType_INTERNAL,
-			directory.EntityType_PATIENT,
-		},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: rootTypes,
 		ChildTypes: []directory.EntityType{
 			directory.EntityType_ORGANIZATION,
 		},

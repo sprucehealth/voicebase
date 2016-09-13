@@ -75,6 +75,7 @@ var leaveThreadMutation = &graphql.Field{
 		}
 
 		_, err = ram.UpdateThread(ctx, &threading.UpdateThreadRequest{
+			ActorEntityID:         ent.ID,
 			ThreadID:              threadID,
 			RemoveMemberEntityIDs: []string{ent.ID},
 		})

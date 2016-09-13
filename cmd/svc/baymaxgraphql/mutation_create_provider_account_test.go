@@ -126,6 +126,16 @@ func TestCreateProviderAccountMutation(t *testing.T) {
 			ID: "sq_4",
 		},
 	}, nil))
+	g.ra.Expect(mock.NewExpectation(g.ra.CreateSavedQuery, &threading.CreateSavedQueryRequest{
+		EntityID: "e_int",
+		Title:    "Following",
+		Ordinal:  5000,
+		Query:    &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_FOLLOWING}}}},
+	}).WithReturns(&threading.CreateSavedQueryResponse{
+		SavedQuery: &threading.SavedQuery{
+			ID: "sq_5",
+		},
+	}, nil))
 
 	// Create linked support threads
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateEntity, &directory.CreateEntityRequest{
@@ -385,6 +395,16 @@ func TestCreateProviderAccountMutation_InviteColleague(t *testing.T) {
 	}).WithReturns(&threading.CreateSavedQueryResponse{
 		SavedQuery: &threading.SavedQuery{
 			ID: "sq_4",
+		},
+	}, nil))
+	g.ra.Expect(mock.NewExpectation(g.ra.CreateSavedQuery, &threading.CreateSavedQueryRequest{
+		EntityID: "e_int",
+		Title:    "Following",
+		Ordinal:  5000,
+		Query:    &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_FOLLOWING}}}},
+	}).WithReturns(&threading.CreateSavedQueryResponse{
+		SavedQuery: &threading.SavedQuery{
+			ID: "sq_5",
 		},
 	}, nil))
 

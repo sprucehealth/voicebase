@@ -133,6 +133,7 @@ type SavedQueryUpdate struct {
 }
 
 type DAL interface {
+	AddThreadFollowers(ctx context.Context, threadID models.ThreadID, followerEntityIDs []string) error
 	AddThreadMembers(ctx context.Context, threadID models.ThreadID, memberEntityIDs []string) error
 	CreateSavedQuery(context.Context, *models.SavedQuery) (models.SavedQueryID, error)
 	CreateSetupThreadState(ctx context.Context, threadID models.ThreadID, entityID string) error
@@ -146,6 +147,7 @@ type DAL interface {
 	LinkedThread(ctx context.Context, threadID models.ThreadID) (*models.Thread, bool, error)
 	PostMessage(context.Context, *PostMessageRequest) (*models.ThreadItem, error)
 	RecordThreadEvent(ctx context.Context, threadID models.ThreadID, actorEntityID string, event models.ThreadEvent) error
+	RemoveThreadFollowers(ctx context.Context, threadID models.ThreadID, followerEntityIDs []string) error
 	RemoveThreadMembers(ctx context.Context, threadID models.ThreadID, memberEntityIDs []string) error
 	SavedQuery(ctx context.Context, id models.SavedQueryID) (*models.SavedQuery, error)
 	SavedQueries(ctx context.Context, entityID string) ([]*models.SavedQuery, error)
@@ -339,6 +341,8 @@ func (d *dal) IterateThreads(ctx context.Context, query *models.Query, memberEnt
 					cond = append(cond, "(viewer.last_viewed IS NULL OR viewer.last_viewed < t.last_message_timestamp)")
 				case models.EXPR_FLAG_UNREAD_REFERENCE:
 					cond = append(cond, "(viewer.last_referenced IS NOT NULL AND (viewer.last_viewed IS NULL OR viewer.last_viewed < viewer.last_referenced))")
+				case models.EXPR_FLAG_FOLLOWING:
+					cond = append(cond, "(viewer.following IS NOT NULL AND viewer.following = true)")
 				default:
 					return nil, errors.Errorf("unknown expression flag %s", v.Flag)
 				}
@@ -396,7 +400,7 @@ func (d *dal) IterateThreads(ctx context.Context, query *models.Query, memberEnt
 	queryStr := `
 		SELECT t.id, t.organization_id, COALESCE(t.primary_entity_id, ''), t.last_message_timestamp, t.last_external_message_timestamp, t.last_message_summary,
 			t.last_external_message_summary, t.last_primary_entity_endpoints, t.created, t.message_count, t.type, COALESCE(t.system_title, ''), COALESCE(t.user_title, ''), t.origin,
-			viewer.thread_id, viewer.entity_id, viewer.member, viewer.joined, viewer.last_viewed, viewer.last_unread_notify, viewer.last_referenced
+			viewer.thread_id, viewer.entity_id, viewer.member, viewer.following, viewer.joined, viewer.last_viewed, viewer.last_unread_notify, viewer.last_referenced
 		FROM threads t
 		INNER JOIN thread_entities te ON te.thread_id = t.id AND te.member = true AND te.entity_id IN (` + dbutil.MySQLArgs(len(memberEntityIDs)) + `)
 		LEFT OUTER JOIN thread_entities viewer ON viewer.thread_id = t.id AND viewer.entity_id = ?
@@ -750,7 +754,7 @@ func (d *dal) ThreadsWithEntity(ctx context.Context, entityID string, ids []mode
 	rows, err := d.db.Query(`
 		SELECT t.id, t.organization_id, COALESCE(t.primary_entity_id, ''), t.last_message_timestamp, t.last_external_message_timestamp, t.last_message_summary,
 			t.last_external_message_summary, t.last_primary_entity_endpoints, t.created, t.message_count, t.type, COALESCE(t.system_title, ''), COALESCE(t.user_title, ''), t.origin,
-			te.thread_id, te.entity_id, te.member, te.joined, te.last_viewed, te.last_unread_notify, te.last_referenced
+			te.thread_id, te.entity_id, te.member, te.following, te.joined, te.last_viewed, te.last_unread_notify, te.last_referenced
 		FROM threads t
 		LEFT OUTER JOIN thread_entities te ON te.thread_id = t.id AND te.entity_id = ?
 		WHERE id in (`+dbutil.MySQLArgs(len(ids))+`) AND deleted = false`,
@@ -841,7 +845,7 @@ func (d *dal) ThreadEntities(ctx context.Context, threadIDs []models.ThreadID, e
 	}
 	values[len(threadIDs)] = entityID
 	rows, err := d.db.Query(`
-		SELECT thread_id, entity_id, member, joined, last_viewed, last_unread_notify, last_referenced
+		SELECT thread_id, entity_id, member, following, joined, last_viewed, last_unread_notify, last_referenced
 		FROM thread_entities
 		WHERE thread_id IN (`+dbutil.MySQLArgs(len(threadIDs))+`)
 			AND entity_id = ? `+sfu, values...)
@@ -863,7 +867,7 @@ func (d *dal) ThreadEntities(ctx context.Context, threadIDs []models.ThreadID, e
 
 func (d *dal) EntitiesForThread(ctx context.Context, threadID models.ThreadID) ([]*models.ThreadEntity, error) {
 	rows, err := d.db.Query(`
-		SELECT thread_id, entity_id, member, joined, last_viewed, last_unread_notify, last_referenced
+		SELECT thread_id, entity_id, member, following, joined, last_viewed, last_unread_notify, last_referenced
 		FROM thread_entities
         WHERE thread_id = ?`, threadID)
 	if err != nil {
@@ -990,6 +994,22 @@ func (d *dal) UpdateThread(ctx context.Context, threadID models.ThreadID, update
 	return errors.Trace(err)
 }
 
+func (d *dal) AddThreadFollowers(ctx context.Context, threadID models.ThreadID, followerEntityIDs []string) error {
+	if len(followerEntityIDs) == 0 {
+		return nil
+	}
+	ins := dbutil.MySQLMultiInsert(len(followerEntityIDs))
+	for _, id := range followerEntityIDs {
+		ins.Append(threadID, id, true)
+	}
+	_, err := d.db.Exec(`
+		INSERT INTO thread_entities (thread_id, entity_id, follower)
+		VALUES `+ins.Query()+`
+		ON DUPLICATE KEY UPDATE follower = true`,
+		ins.Values()...)
+	return errors.Trace(err)
+}
+
 func (d *dal) AddThreadMembers(ctx context.Context, threadID models.ThreadID, memberEntityIDs []string) error {
 	if len(memberEntityIDs) == 0 {
 		return nil
@@ -1003,6 +1023,18 @@ func (d *dal) AddThreadMembers(ctx context.Context, threadID models.ThreadID, me
 		VALUES `+ins.Query()+`
 		ON DUPLICATE KEY UPDATE member = true`,
 		ins.Values()...)
+	return errors.Trace(err)
+}
+
+func (d *dal) RemoveThreadFollowers(ctx context.Context, threadID models.ThreadID, followerEntityIDs []string) error {
+	if len(followerEntityIDs) == 0 {
+		return nil
+	}
+	_, err := d.db.Exec(`
+		UPDATE thread_entities
+		SET follower = false
+		WHERE entity_id IN (`+dbutil.MySQLArgs(len(followerEntityIDs))+`) AND thread_id = ?`,
+		append(dbutil.AppendStringsToInterfaceSlice(nil, followerEntityIDs), threadID)...)
 	return errors.Trace(err)
 }
 
@@ -1092,7 +1124,7 @@ func scanThread(row dbutil.Scanner) (*models.Thread, error) {
 func scanThreadEntity(row dbutil.Scanner) (*models.ThreadEntity, error) {
 	var te models.ThreadEntity
 	te.ThreadID = models.EmptyThreadID()
-	if err := row.Scan(&te.ThreadID, &te.EntityID, &te.Member, &te.Joined, &te.LastViewed, &te.LastUnreadNotify, &te.LastReferenced); err == sql.ErrNoRows {
+	if err := row.Scan(&te.ThreadID, &te.EntityID, &te.Member, &te.Following, &te.Joined, &te.LastViewed, &te.LastUnreadNotify, &te.LastReferenced); err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrNotFound)
 	} else if err != nil {
 		return nil, errors.Trace(err)
@@ -1104,14 +1136,14 @@ func scanThreadAndEntity(row dbutil.Scanner) (*models.Thread, *models.ThreadEnti
 	var t models.Thread
 	var te models.ThreadEntity
 	var teEntityID *string
-	var teMember *bool
+	var teMember, teFollowing *bool
 	var teJoined *time.Time
 	te.ThreadID = models.EmptyThreadID()
 	t.ID = models.EmptyThreadID()
 	var lastPrimaryEntityEndpointsData []byte
 	err := row.Scan(&t.ID, &t.OrganizationID, &t.PrimaryEntityID, &t.LastMessageTimestamp, &t.LastExternalMessageTimestamp,
 		&t.LastMessageSummary, &t.LastExternalMessageSummary, &lastPrimaryEntityEndpointsData, &t.Created, &t.MessageCount, &t.Type,
-		&t.SystemTitle, &t.UserTitle, &t.Origin, &te.ThreadID, &teEntityID, &teMember, &teJoined, &te.LastViewed, &te.LastUnreadNotify, &te.LastReferenced)
+		&t.SystemTitle, &t.UserTitle, &t.Origin, &te.ThreadID, &teEntityID, &teMember, &teFollowing, &teJoined, &te.LastViewed, &te.LastUnreadNotify, &te.LastReferenced)
 	if err == sql.ErrNoRows {
 		return nil, nil, errors.Trace(ErrNotFound)
 	} else if err != nil {
@@ -1126,6 +1158,7 @@ func scanThreadAndEntity(row dbutil.Scanner) (*models.Thread, *models.ThreadEnti
 	if te.ThreadID.IsValid && teEntityID != nil {
 		te.EntityID = *teEntityID
 		te.Member = *teMember
+		te.Following = *teFollowing
 		te.Joined = *teJoined
 		return &t, &te, nil
 	}

@@ -100,6 +100,7 @@ var threadType = graphql.NewObject(
 		Fields: graphql.Fields{
 			"id":                      &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
 			"typeIndicator":           &graphql.Field{Type: graphql.NewNonNull(threadTypeIndicatorEnum)},
+			"allowAddFollowers":       &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowAddMembers":         &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowDelete":             &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowVideoAttachments":   &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
@@ -189,6 +190,7 @@ var threadType = graphql.NewObject(
 			"allowInternalMessages": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowLeave":            &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowMentions":         &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"allowRemoveFollowers":  &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowRemoveMembers":    &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowSMSAttachments":   &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowUpdateTitle":      &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
@@ -264,14 +266,41 @@ var threadType = graphql.NewObject(
 					return p.Source.(*models.Thread).AllowDelete, nil
 				},
 			},
+			"followers": &graphql.Field{
+				Type: graphql.NewList(graphql.NewNonNull(entityType)),
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					ctx := p.Context
+					th := p.Source.(*models.Thread)
+
+					svc := serviceFromParams(p)
+					acc := gqlctx.Account(p.Context)
+					if acc == nil {
+						return nil, errors.ErrNotAuthenticated(ctx)
+					}
+					ram := raccess.ResourceAccess(p)
+					followers, err := ram.ThreadFollowers(ctx, th.OrganizationID, &threading.ThreadMembersRequest{
+						ThreadID: th.ID,
+					})
+					if err != nil {
+						return nil, err
+					}
+					sh := devicectx.SpruceHeaders(ctx)
+					ms := make([]*models.Entity, len(followers))
+					for i, em := range followers {
+						e, err := transformEntityToResponse(ctx, svc.staticURLPrefix, em, sh, acc)
+						if err != nil {
+							return nil, err
+						}
+						ms[i] = e
+					}
+					return ms, nil
+				},
+			},
 			"members": &graphql.Field{
 				Type: graphql.NewList(graphql.NewNonNull(entityType)),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					ctx := p.Context
 					th := p.Source.(*models.Thread)
-					if th == nil {
-						return nil, errors.InternalError(ctx, errors.New("thread is nil"))
-					}
 					// Only team threads have members
 					if th.Type != models.ThreadTypeTeam {
 						return nil, nil

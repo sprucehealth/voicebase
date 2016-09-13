@@ -9,8 +9,8 @@ CREATE TABLE saved_query_thread (
     unread BOOL NOT NULL, -- unread is included so the triggers know how to update the stats
     PRIMARY KEY (thread_id, saved_query_id),
     KEY saved_query_last_timestamp (saved_query_id, timestamp),
-    CONSTRAINT saved_query_thread_saved_query FOREIGN KEY (saved_query_id) REFERENCES saved_queries (id),
-    CONSTRAINT saved_query_thread_thread FOREIGN KEY (thread_id) REFERENCES threads (id)
+    CONSTRAINT saved_query_thread_saved_query FOREIGN KEY (saved_query_id) REFERENCES saved_queries (id) ON DELETE CASCADE,
+    CONSTRAINT saved_query_thread_thread FOREIGN KEY (thread_id) REFERENCES threads (id) ON DELETE CASCADE
 )$$
 
 CREATE TRIGGER saved_query_thread_update

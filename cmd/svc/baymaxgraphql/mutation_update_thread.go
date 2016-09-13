@@ -1,10 +1,13 @@
 package main
 
 import (
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/libs/gqldecode"
+	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 )
@@ -12,12 +15,14 @@ import (
 var updateThreadInputType = graphql.NewInputObject(graphql.InputObjectConfig{
 	Name: "UpdateThreadInput",
 	Fields: graphql.InputObjectConfigFieldMap{
-		"clientMutationId":      newClientMutationIDInputField(),
-		"uuid":                  newUUIDInputField(),
-		"threadID":              &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
-		"addMemberEntityIDs":    &graphql.InputObjectFieldConfig{Type: graphql.NewList(graphql.NewNonNull(graphql.ID))},
-		"removeMemberEntityIDs": &graphql.InputObjectFieldConfig{Type: graphql.NewList(graphql.NewNonNull(graphql.ID))},
-		"title":                 &graphql.InputObjectFieldConfig{Type: graphql.String},
+		"clientMutationId":        newClientMutationIDInputField(),
+		"uuid":                    newUUIDInputField(),
+		"threadID":                &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
+		"addMemberEntityIDs":      &graphql.InputObjectFieldConfig{Type: graphql.NewList(graphql.NewNonNull(graphql.ID))},
+		"removeMemberEntityIDs":   &graphql.InputObjectFieldConfig{Type: graphql.NewList(graphql.NewNonNull(graphql.ID))},
+		"addFollowerEntityIDs":    &graphql.InputObjectFieldConfig{Type: graphql.NewList(graphql.NewNonNull(graphql.ID))},
+		"removeFollowerEntityIDs": &graphql.InputObjectFieldConfig{Type: graphql.NewList(graphql.NewNonNull(graphql.ID))},
+		"title":                   &graphql.InputObjectFieldConfig{Type: graphql.String},
 	},
 })
 
@@ -32,6 +37,16 @@ var updateThreadOutputType = graphql.NewObject(graphql.ObjectConfig{
 		"errorCode":        &graphql.Field{Type: updateThreadErrorCodeEnum},
 		"errorMessage":     &graphql.Field{Type: graphql.String},
 		"thread":           &graphql.Field{Type: graphql.NewNonNull(threadType)},
+		"organization": &graphql.Field{
+			Type: graphql.NewList(graphql.NewNonNull(organizationType)),
+			Resolve: apiaccess.Provider(func(p graphql.ResolveParams) (interface{}, error) {
+				ram := raccess.ResourceAccess(p)
+				ctx := p.Context
+				svc := serviceFromParams(p)
+				out := p.Source.(*updateFollowingForThreadsOutput)
+				return lookupEntity(ctx, svc, ram, out.orgID)
+			}),
+		},
 	},
 	IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 		_, ok := value.(*updateThreadOutput)
@@ -39,12 +54,25 @@ var updateThreadOutputType = graphql.NewObject(graphql.ObjectConfig{
 	},
 })
 
+type updateThreadInput struct {
+	ClientMutationID        string   `gql:"clientMutationId"`
+	ThreadID                string   `gql:"threadID"`
+	Title                   string   `gql:"title"`
+	AddMemberEntityIDs      []string `gql:"addMemberEntityIDs"`
+	RemoveMemberEntityIDs   []string `gql:"removeMemberEntityIDs"`
+	AddFollowerEntityIDs    []string `gql:"addFollowerEntityIDs"`
+	RemoveFollowerEntityIDs []string `gql:"removeFollowerEntityIDs"`
+}
+
 type updateThreadOutput struct {
 	ClientMutationID string         `json:"clientMutationId,omitempty"`
 	Success          bool           `json:"success"`
 	ErrorCode        string         `json:"errorCode,omitempty"`
 	ErrorMessage     string         `json:"errorMessage,omitempty"`
 	Thread           *models.Thread `json:"thread"`
+
+	orgID    string
+	entityID string
 }
 
 var updateThreadMutation = &graphql.Field{
@@ -52,7 +80,7 @@ var updateThreadMutation = &graphql.Field{
 	Args: graphql.FieldConfigArgument{
 		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(updateThreadInputType)},
 	},
-	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+	Resolve: apiaccess.Provider(func(p graphql.ResolveParams) (interface{}, error) {
 		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
 		acc := gqlctx.Account(ctx)
@@ -60,48 +88,55 @@ var updateThreadMutation = &graphql.Field{
 			return nil, errors.ErrNotAuthenticated(ctx)
 		}
 
-		input := p.Args["input"].(map[string]interface{})
-		mutationID, _ := input["clientMutationId"].(string)
-		threadID := input["threadID"].(string)
+		var in updateThreadInput
+		if err := gqldecode.Decode(p.Args["input"].(map[string]interface{}), &in); err != nil {
+			return nil, errors.InternalError(ctx, err)
+		}
 
-		thread, err := ram.Thread(ctx, threadID, "")
+		thread, err := ram.Thread(ctx, in.ThreadID, "")
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}
 		if thread == nil {
-			return nil, errors.ErrNotFound(ctx, threadID)
+			return nil, errors.ErrNotFound(ctx, in.ThreadID)
 		}
 		if thread.Type != threading.THREAD_TYPE_TEAM {
 			return nil, errors.New("Cannot modify non-team threads")
 		}
 
-		updateReq := &threading.UpdateThreadRequest{
-			ThreadID: threadID,
+		// TODO: currently assuming that the person updating the thread is in the same org as the thread.
+		//       This is safe for now, but possibly may not be true in the future.
+		ent, err := raccess.EntityInOrgForAccountID(ctx, ram, &directory.LookupEntitiesRequest{
+			LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+			LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+				ExternalID: acc.ID,
+			},
+			RequestedInformation: &directory.RequestedInformation{
+				Depth:             0,
+				EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
+			},
+			Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+			RootTypes: []directory.EntityType{directory.EntityType_INTERNAL},
+		}, thread.OrganizationID)
+		if err == raccess.ErrNotFound {
+			return nil, errors.ErrNotAuthorized(ctx, thread.OrganizationID)
+		} else if err != nil {
+			return nil, errors.InternalError(ctx, err)
 		}
-		if t, ok := input["title"].(string); ok {
-			updateReq.UserTitle = t
+
+		res, err := ram.UpdateThread(ctx, &threading.UpdateThreadRequest{
+			ActorEntityID:           ent.ID,
+			ThreadID:                thread.ID,
+			UserTitle:               in.Title,
+			AddMemberEntityIDs:      in.AddMemberEntityIDs,
+			RemoveMemberEntityIDs:   in.RemoveMemberEntityIDs,
+			AddFollowerEntityIDs:    in.AddFollowerEntityIDs,
+			RemoveFollowerEntityIDs: in.RemoveFollowerEntityIDs,
+		})
+		if err != nil {
+			return nil, errors.InternalError(ctx, err)
 		}
-		if ms, ok := input["addMemberEntityIDs"].([]interface{}); ok && len(ms) != 0 {
-			members := make([]string, len(ms))
-			for i, m := range ms {
-				members[i] = m.(string)
-			}
-			updateReq.AddMemberEntityIDs = members
-		}
-		if ms, ok := input["removeMemberEntityIDs"].([]interface{}); ok && len(ms) != 0 {
-			members := make([]string, len(ms))
-			for i, m := range ms {
-				members[i] = m.(string)
-			}
-			updateReq.RemoveMemberEntityIDs = members
-		}
-		if updateReq.UserTitle != "" || len(updateReq.AddMemberEntityIDs) != 0 || len(updateReq.RemoveMemberEntityIDs) != 0 {
-			res, err := ram.UpdateThread(ctx, updateReq)
-			if err != nil {
-				return nil, errors.InternalError(ctx, err)
-			}
-			thread = res.Thread
-		}
+		thread = res.Thread
 
 		th, err := transformThreadToResponse(ctx, ram, thread, acc)
 		if err != nil {
@@ -112,9 +147,11 @@ var updateThreadMutation = &graphql.Field{
 		}
 
 		return &updateThreadOutput{
-			ClientMutationID: mutationID,
+			ClientMutationID: in.ClientMutationID,
 			Success:          true,
 			Thread:           th,
+			orgID:            thread.OrganizationID,
+			entityID:         ent.ID,
 		}, nil
-	},
+	}),
 }

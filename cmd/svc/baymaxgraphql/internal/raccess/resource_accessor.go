@@ -147,6 +147,7 @@ type ResourceAccessor interface {
 	ThreadItem(ctx context.Context, threadItemID string) (*threading.ThreadItem, error)
 	ThreadItems(ctx context.Context, req *threading.ThreadItemsRequest) (*threading.ThreadItemsResponse, error)
 	ThreadItemViewDetails(ctx context.Context, threadItemID string) ([]*threading.ThreadItemViewDetails, error)
+	ThreadFollowers(ctx context.Context, orgID string, req *threading.ThreadMembersRequest) ([]*directory.Entity, error)
 	ThreadMembers(ctx context.Context, orgID string, req *threading.ThreadMembersRequest) ([]*directory.Entity, error)
 	ThreadsForMember(ctx context.Context, entityID string, primaryOnly bool) ([]*threading.Thread, error)
 	TriageVisit(ctx context.Context, req *care.TriageVisitRequest) (*care.TriageVisitResponse, error)
@@ -926,6 +927,62 @@ func (m *resourceAccessor) ThreadItemViewDetails(ctx context.Context, threadItem
 	return res.ItemViewDetails, nil
 }
 
+func (m *resourceAccessor) ThreadFollowers(ctx context.Context, orgID string, req *threading.ThreadMembersRequest) ([]*directory.Entity, error) {
+	// Being a member of the thread provides access so no need to check out criteria
+	res, err := m.threading.ThreadMembers(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	// Make sure viewer is a member of the thread
+	acc := gqlctx.Account(ctx)
+	if acc == nil {
+		return nil, errors.ErrNotAuthorized(ctx, req.ThreadID)
+	}
+	ent, err := EntityInOrgForAccountID(ctx, m, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+			ExternalID: acc.ID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
+		},
+		MemberOfEntity: orgID,
+	}, orgID)
+	if err != nil {
+		return nil, err
+	}
+
+	var found bool
+	for _, mem := range res.Members {
+		if mem.EntityID == ent.ID {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return nil, errors.ErrNotAuthorized(ctx, req.ThreadID)
+	}
+
+	leres, err := m.directory.LookupEntities(ctx, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
+			BatchEntityID: &directory.IDList{
+				IDs: res.FollowerEntityIDs,
+			},
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	})
+	if err != nil {
+		return nil, errors.InternalError(ctx, err)
+	}
+	return leres.Entities, nil
+}
+
 func (m *resourceAccessor) ThreadMembers(ctx context.Context, orgID string, req *threading.ThreadMembersRequest) ([]*directory.Entity, error) {
 	// Being a member of the thread provides access so no need to check out criteria
 	res, err := m.threading.ThreadMembers(ctx, req)
@@ -1155,9 +1212,7 @@ func (m *resourceAccessor) UpdateProfile(ctx context.Context, req *directory.Upd
 }
 
 func (m *resourceAccessor) UpdateThread(ctx context.Context, req *threading.UpdateThreadRequest) (*threading.UpdateThreadResponse, error) {
-	if err := m.canAccessResource(ctx, req.ThreadID, m.orgsForThread); err != nil {
-		return nil, err
-	}
+	// For authorization, the threading services validtes the actor entity ID against the members of the thread
 	return m.threading.UpdateThread(ctx, req)
 }
 

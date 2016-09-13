@@ -170,7 +170,7 @@ func TestInvitationBannerQuery_Paitent(t *testing.T) {
 	    invitationBanner {
 	    	hasPendingInvite
 	      }
-	    }   		
+	    }
    	}
  }
 `, nil)

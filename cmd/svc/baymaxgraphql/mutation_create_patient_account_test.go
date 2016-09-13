@@ -152,11 +152,12 @@ func TestCreatePatientAccountMutation(t *testing.T) {
 
 	// Update any threads we find with the new display name
 	g.ra.Expect(mock.NewExpectation(g.ra.ThreadsForMember, "parkedEntityID", true).WithReturns([]*threading.Thread{
-		{ID: "threadID"},
+		{ID: "threadID", OrganizationID: "threadOrg"},
 	}, nil))
 	g.ra.Expect(mock.NewExpectation(g.ra.UpdateThread, &threading.UpdateThreadRequest{
-		ThreadID:    "threadID",
-		SystemTitle: "first last",
+		ActorEntityID: "threadOrg",
+		ThreadID:      "threadID",
+		SystemTitle:   "first last",
 	}).WithReturns(&threading.UpdateThreadResponse{}, nil))
 
 	// Clean up our invite
@@ -401,11 +402,12 @@ func TestCreatePatientAccountMutation_PracticeLink(t *testing.T) {
 
 	// Update any threads we find with the new display name
 	g.ra.Expect(mock.NewExpectation(g.ra.ThreadsForMember, "parkedEntityID", true).WithReturns([]*threading.Thread{
-		{ID: "threadID"},
+		{ID: "threadID", OrganizationID: "threadOrg"},
 	}, nil))
 	g.ra.Expect(mock.NewExpectation(g.ra.UpdateThread, &threading.UpdateThreadRequest{
-		ThreadID:    "threadID",
-		SystemTitle: "first last",
+		ActorEntityID: "threadOrg",
+		ThreadID:      "threadID",
+		SystemTitle:   "first last",
 	}).WithReturns(&threading.UpdateThreadResponse{}, nil))
 
 	// Query the acount entity

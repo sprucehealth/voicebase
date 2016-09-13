@@ -495,6 +495,15 @@ func (m *ResourceAccessor) ThreadsForMember(ctx context.Context, entityID string
 	return rets[0].([]*threading.Thread), mock.SafeError(rets[1])
 }
 
+func (m *ResourceAccessor) ThreadFollowers(ctx context.Context, orgID string, req *threading.ThreadMembersRequest) ([]*directory.Entity, error) {
+	rets := m.Record(orgID, req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].([]*directory.Entity), mock.SafeError(rets[1])
+}
+
 func (m *ResourceAccessor) ThreadMembers(ctx context.Context, orgID string, req *threading.ThreadMembersRequest) ([]*directory.Entity, error) {
 	rets := m.Record(orgID, req)
 	if len(rets) == 0 {

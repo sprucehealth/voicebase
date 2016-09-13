@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -68,10 +69,13 @@ func WrapMethods(methods []grpc.MethodDesc) {
 			}
 			out, err = oldHandler(srv, ctx, dec, interceptor)
 			if err != nil {
-				switch grpc.Code(err) {
+				switch grpc.Code(errors.Cause(err)) {
 				case codes.Unknown, codes.Internal, codes.DataLoss:
 					golog.Errorf("%s: %s", methodName, err)
 				}
+				// Return an unwrapped error to properly propagate the codes.
+				// Unwrap the error only after the logging so we capture the trace.
+				err = errors.Cause(err)
 			}
 			return
 		}

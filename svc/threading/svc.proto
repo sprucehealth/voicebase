@@ -41,7 +41,6 @@ message Thread {
 	string id = 1 [(gogoproto.customname) = "ID"];
 	string organization_id = 2 [(gogoproto.customname) = "OrganizationID"];
 	string primary_entity_id = 3 [(gogoproto.customname) = "PrimaryEntityID"];
-	repeated Member members = 4;
 	uint64 last_message_timestamp = 5;
 	string last_message_summary = 6;
     bool unread = 7;
@@ -151,6 +150,7 @@ message Expr {
 		EXPR_FLAG_INVALID = 0;
 		EXPR_FLAG_UNREAD = 1;
 		EXPR_FLAG_UNREAD_REFERENCE = 2;
+		EXPR_FLAG_FOLLOWING = 3;
 	}
 	// This is separate from the top-level thread type to handle logical types like "patient"
 	enum ThreadType {
@@ -394,10 +394,14 @@ message DeleteThreadResponse {
 
 message UpdateThreadRequest {
 	string thread_id = 1 [(gogoproto.customname) = "ThreadID"];
+	// The entity ID of the entity performing the update (used for authorization check)
+	string actor_entity_id = 2 [(gogoproto.customname) = "ActorEntityID"];
 	string user_title = 3;
 	repeated string add_member_entity_ids = 4 [(gogoproto.customname) = "AddMemberEntityIDs"];
 	repeated string remove_member_entity_ids = 5 [(gogoproto.customname) = "RemoveMemberEntityIDs"];
 	string system_title = 6;
+	repeated string add_follower_entity_ids = 7 [(gogoproto.customname) = "AddFollowerEntityIDs"];
+	repeated string remove_follower_entity_ids = 8 [(gogoproto.customname) = "RemoveFollowerEntityIDs"];
 }
 
 message UpdateThreadResponse {
@@ -452,6 +456,7 @@ message ThreadMembersRequest {
 
 message ThreadMembersResponse {
 	repeated Member members = 1;
+	repeated string follower_entity_ids = 2 [(gogoproto.customname) = "FollowerEntityIDs"];
 }
 
 message ThreadsForMemberRequest {

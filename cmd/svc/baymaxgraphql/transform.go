@@ -156,7 +156,9 @@ func transformContactsToResponse(contacts []*directory.Contact) ([]*models.Conta
 
 func transformThreadToResponse(ctx context.Context, ram raccess.ResourceAccessor, t *threading.Thread, viewingAccount *auth.Account) (*models.Thread, error) {
 	th := &models.Thread{
-		ID: t.ID,
+		ID:                         t.ID,
+		AllowAddFollowers:          true,
+		AllowRemoveFollowers:       true,
 		AllowInternalMessages:      allowInternalMessages(t, viewingAccount),
 		AllowMentions:              allowMentions(t, viewingAccount),
 		AllowSMSAttachments:        true,
