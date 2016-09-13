@@ -102,7 +102,7 @@ func (c *migrateSavedQueriesCmd) run(args []string) error {
 							SavedQueryID: sq.ID,
 							ForceRebuild: true,
 						}); err != nil {
-							return errors.Errorf("Failed to force rebuild of saved query %s for entity %s: %s", sq.ID, eid, err)
+							golog.Errorf("Failed to force rebuild of saved query %s for entity %s: %s", sq.ID, eid, err)
 						}
 					}
 				}

@@ -17,6 +17,10 @@ func (s *threadsServer) rebuildSavedQuery(ctx context.Context, sq *models.SavedQ
 	if err != nil {
 		errors.Trace(err)
 	}
+	if len(ents) == 0 {
+		// Inactive entities don't need saved queries so clear them
+		return errors.Trace(s.dal.RemoveAllItemsFromSavedQueryIndex(ctx, sq.ID))
+	}
 	forExternal := true
 	entIDs := make([]string, len(ents))
 	for i, e := range ents {
