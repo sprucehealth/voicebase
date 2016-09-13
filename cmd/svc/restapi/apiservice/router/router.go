@@ -8,6 +8,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/rainycape/memcache"
+	"github.com/rs/cors"
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/address"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/analytics"
@@ -55,6 +56,7 @@ import (
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/ratelimit"
 	"github.com/sprucehealth/backend/libs/sig"
@@ -98,6 +100,7 @@ type Config struct {
 	TechnicalSupportEmail    string
 	APIDomain                string
 	WebDomain                string
+	BaymaxWebDomains         []string
 	APICDNDomain             string
 	StaticContentURL         string
 	StaticResourceURL        string
@@ -353,7 +356,13 @@ func New(conf *Config) (*mux.Router, http.Handler) {
 	noAuthenticationRequired(conf, apipaths.PatientPathwaysURLPath, patient_visit.NewPathwayMenuHandler(conf.DataAPI))
 	noAuthenticationRequired(conf, apipaths.PatientPathwayDetailsURLPath, patient_visit.NewPathwayDetailsHandler(conf.DataAPI, conf.APICDNDomain, conf.Cfg))
 	noAuthenticationRequired(conf, apipaths.PingURLPath, handlers.NewPingHandler())
-	noAuthenticationRequired(conf, apipaths.AnalyticsURLPath, handlers.NewAnalyticsHandler(conf.Dispatcher, conf.MetricsRegistry.Scope("analytics/event/client")))
+	noAuthenticationRequired(conf, apipaths.AnalyticsURLPath,
+		cors.New(cors.Options{
+			AllowedOrigins:   conf.BaymaxWebDomains,
+			AllowedMethods:   []string{httputil.Options, httputil.Post},
+			AllowCredentials: true,
+			AllowedHeaders:   []string{"*"},
+		}).Handler(handlers.NewAnalyticsHandler(conf.Dispatcher, conf.MetricsRegistry.Scope("analytics/event/client"))))
 	noAuthenticationRequired(conf, apipaths.ResetPasswordURLPath, passreset.NewForgotPasswordHandler(conf.DataAPI, conf.AuthAPI, conf.EmailService, conf.WebDomain))
 	noAuthenticationRequired(conf, apipaths.ProfileImageURLPath, handlers.NewProfileImageHandler(conf.DataAPI, conf.StaticResourceURL, conf.Stores.MustGet("thumbnails")))
 	noAuthenticationRequired(conf, apipaths.SettingsURLPath, settings.NewHandler(conf.MinimumAppVersionConfigs))

@@ -42,11 +42,10 @@ var markThreadAsReadOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "MarkThreadAsReadPayload",
 		Fields: graphql.Fields{
-			"clientMutationId":   newClientMutationIDOutputField(),
-			"success":            &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-			"errorCode":          &graphql.Field{Type: markThreadAsReadErrorCodeEnum},
-			"errorMessage":       &graphql.Field{Type: graphql.String},
-			"savedThreadQueries": savedThreadQueriesField,
+			"clientMutationId": newClientMutationIDOutputField(),
+			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"errorCode":        &graphql.Field{Type: markThreadAsReadErrorCodeEnum},
+			"errorMessage":     &graphql.Field{Type: graphql.String},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 			_, ok := value.(*markThreadAsReadOutput)
@@ -105,6 +104,7 @@ type markThreadsAsReadOutput struct {
 	ErrorMessage     string           `json:"errorMessage,omitempty"`
 	Threads          []*models.Thread `json:"threads"`
 	threadIDs        []string
+	organizationID   string
 	entity           *directory.Entity
 }
 
@@ -118,6 +118,20 @@ var markThreadsAsReadOutputType = graphql.NewObject(
 			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"errorCode":        &graphql.Field{Type: markThreadsAsReadErrorCodeEnum},
 			"errorMessage":     &graphql.Field{Type: graphql.String},
+			"organization": &graphql.Field{
+				Type: organizationType,
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					ctx := p.Context
+					ram := raccess.ResourceAccess(p)
+					svc := serviceFromParams(p)
+
+					output := p.Source.(*markThreadsAsReadOutput)
+					if output == nil {
+						return nil, errors.InternalError(ctx, errors.New("markThreadsAsReadOutput expected as root but not present"))
+					}
+					return lookupEntity(ctx, svc, ram, output.organizationID)
+				},
+			},
 			"threads": &graphql.Field{
 				Type: graphql.NewList(threadType),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
@@ -224,6 +238,7 @@ var markThreadsAsReadMutation = &graphql.Field{
 			return &markThreadsAsReadOutput{
 				Success:          true,
 				ClientMutationID: in.ClientMutationID,
+				organizationID:   in.OrganizationID,
 			}, nil
 		}
 
@@ -249,6 +264,7 @@ var markThreadsAsReadMutation = &graphql.Field{
 			ClientMutationID: in.ClientMutationID,
 			Success:          true,
 			threadIDs:        threadIDs,
+			organizationID:   in.OrganizationID,
 			entity:           ent,
 		}, nil
 	}),

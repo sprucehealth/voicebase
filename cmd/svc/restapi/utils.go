@@ -175,6 +175,7 @@ type mainConfig struct {
 	ErrorLogSNSTopic             string
 	// Secret keys used for generating signatures
 	SecretSignatureKeys []string
+	BaymaxWebDomains    []string `long:"baymax_web_domains" description:"Web domains used for the baymax app"`
 }
 
 var defaultConfig = mainConfig{
@@ -189,6 +190,7 @@ var defaultConfig = mainConfig{
 	Twilio:                &twilioConfig{},
 	APIDomain:             "api.sprucehealth.com",
 	WebDomain:             "www.sprucehealth.com",
+	BaymaxWebDomains:      []string{"app.sprucehealth.com", "rc.app.sprucehealth.com"},
 	ListenAddr:            ":8080",
 	TLSListenAddr:         ":8443",
 	InfoAddr:              ":9000",
