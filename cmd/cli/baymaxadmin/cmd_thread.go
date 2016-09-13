@@ -88,13 +88,6 @@ func displayThread(t *threading.Thread) {
 	fmt.Printf("    Last Message Timestamp: %s\n", time.Unix(int64(t.LastMessageTimestamp), 0))
 	fmt.Printf("    Created Timestamp: %s\n", time.Unix(int64(t.CreatedTimestamp), 0))
 	fmt.Printf("    Message Count: %d\n", t.MessageCount)
-	if len(t.Members) != 0 {
-		fmt.Printf("    Members:\n")
-		fmt.Printf("        EntityID\n")
-		for _, m := range t.Members {
-			fmt.Printf("        %s\n", m.EntityID)
-		}
-	}
 	if len(t.LastPrimaryEntityEndpoints) != 0 {
 		fmt.Printf("    Last Primary Entity Endpoints:\n")
 		w := tabwriter.NewWriter(os.Stdout, 4, 8, 4, ' ', 0)

@@ -495,8 +495,9 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 		}
 		for _, th := range threads {
 			if _, err := ram.UpdateThread(asyncCtx, &threading.UpdateThreadRequest{
-				ThreadID:    th.ID,
-				SystemTitle: patientEntity.Info.DisplayName,
+				ActorEntityID: th.OrganizationID,
+				ThreadID:      th.ID,
+				SystemTitle:   patientEntity.Info.DisplayName,
 			}); err != nil {
 				golog.Errorf("Encountered error when attempting to update thread title for new patient account: %s", err)
 				return

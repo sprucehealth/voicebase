@@ -26,6 +26,14 @@ func (dl *DAL) Transact(ctx context.Context, trans func(context.Context, dal.DAL
 	return trans(ctx, dl)
 }
 
+func (dl *DAL) AddThreadFollowers(ctx context.Context, threadID models.ThreadID, followers []string) error {
+	rets := dl.Expector.Record(threadID, followers)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[0])
+}
+
 func (dl *DAL) AddThreadMembers(ctx context.Context, threadID models.ThreadID, members []string) error {
 	rets := dl.Expector.Record(threadID, members)
 	if len(rets) == 0 {
@@ -124,6 +132,14 @@ func (dl *DAL) PostMessage(ctx context.Context, req *dal.PostMessageRequest) (*m
 
 func (dl *DAL) RecordThreadEvent(ctx context.Context, threadID models.ThreadID, actorEntityID string, event models.ThreadEvent) error {
 	rets := dl.Expector.Record(threadID, actorEntityID, event)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[0])
+}
+
+func (dl *DAL) RemoveThreadFollowers(ctx context.Context, threadID models.ThreadID, followers []string) error {
+	rets := dl.Expector.Record(threadID, followers)
 	if len(rets) == 0 {
 		return nil
 	}

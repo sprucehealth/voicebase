@@ -119,8 +119,9 @@ var updateEntityMutation = &graphql.Field{
 		}
 		for _, thread := range threads {
 			if _, err := ram.UpdateThread(ctx, &threading.UpdateThreadRequest{
-				ThreadID:    thread.ID,
-				SystemTitle: entity.Info.DisplayName,
+				ActorEntityID: thread.OrganizationID,
+				ThreadID:      thread.ID,
+				SystemTitle:   entity.Info.DisplayName,
 			}); err != nil {
 				return nil, errors.InternalError(ctx, err)
 			}

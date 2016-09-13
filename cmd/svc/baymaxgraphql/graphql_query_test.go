@@ -173,7 +173,9 @@ func TestNodeQuery(t *testing.T) {
 	res, err = nodeField.Resolve(p)
 	test.OK(t, err)
 	test.Equals(t, &models.Thread{
-		ID: id,
+		ID:                    id,
+		AllowAddFollowers:     true,
+		AllowRemoveFollowers:  true,
 		AllowInternalMessages: true,
 		AllowDelete:           true,
 		AllowSMSAttachments:   true,

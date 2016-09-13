@@ -15,6 +15,7 @@ func TestQueries(t *testing.T) {
 		{s: "foo", q: &Query{Expressions: []*Expr{{Value: &Expr_Token{Token: "foo"}}}}},
 		{s: "is:unread", q: &Query{Expressions: []*Expr{{Value: &Expr_Flag_{Flag: EXPR_FLAG_UNREAD}}}}},
 		{s: "is:read", q: &Query{Expressions: []*Expr{{Not: true, Value: &Expr_Flag_{Flag: EXPR_FLAG_UNREAD}}}}},
+		{s: "is:following", q: &Query{Expressions: []*Expr{{Value: &Expr_Flag_{Flag: EXPR_FLAG_FOLLOWING}}}}},
 		{s: "type:patient", q: &Query{Expressions: []*Expr{{Value: &Expr_ThreadType_{ThreadType: EXPR_THREAD_TYPE_PATIENT}}}}},
 		{s: "type:team", q: &Query{Expressions: []*Expr{{Value: &Expr_ThreadType_{ThreadType: EXPR_THREAD_TYPE_TEAM}}}}},
 		{s: "type:patient is:unreadreference", q: &Query{Expressions: []*Expr{

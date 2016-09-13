@@ -615,7 +615,7 @@ func (s *threadsServer) MarkThreadsAsRead(ctx context.Context, in *threading.Mar
 	}
 
 	// Make a map of all the entities memberships and itself to be used for validating memberships to the threads
-	entities, err := s.entityAndMemberships(ctx, in.EntityID)
+	entities, err := s.entityAndMemberships(ctx, in.EntityID, []directory.EntityType{directory.EntityType_INTERNAL, directory.EntityType_PATIENT})
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -1039,7 +1039,7 @@ func (s *threadsServer) QueryThreads(ctx context.Context, in *threading.QueryThr
 		d = dal.FromEnd
 	}
 
-	memberEntities, err := s.entityAndMemberships(ctx, in.ViewerEntityID)
+	memberEntities, err := s.entityAndMemberships(ctx, in.ViewerEntityID, []directory.EntityType{directory.EntityType_INTERNAL, directory.EntityType_PATIENT})
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -1437,9 +1437,13 @@ func (s *threadsServer) UpdateSavedQuery(ctx context.Context, in *threading.Upda
 
 // UpdateThread update thread members and info
 func (s *threadsServer) UpdateThread(ctx context.Context, in *threading.UpdateThreadRequest) (*threading.UpdateThreadResponse, error) {
+	if in.ActorEntityID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "ActorEntityID required")
+	}
+
 	tid, err := models.ParseThreadID(in.ThreadID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadItemID")
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadID")
 	}
 
 	threads, err := s.dal.Threads(ctx, []models.ThreadID{tid})
@@ -1449,6 +1453,37 @@ func (s *threadsServer) UpdateThread(ctx context.Context, in *threading.UpdateTh
 		return nil, grpcErrorf(codes.NotFound, "Thread not found")
 	}
 	thread := threads[0]
+
+	// Verify authorization by checking actor is part of the memberslist
+	// The acting entity can be the organization itself in which case it's allowed to modify any thread in the organization.
+	if in.ActorEntityID != thread.OrganizationID {
+		actorEntities, err := s.entityAndMemberships(ctx, in.ActorEntityID,
+			[]directory.EntityType{directory.EntityType_INTERNAL, directory.EntityType_ORGANIZATION})
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		if len(actorEntities) == 0 {
+			return nil, grpcErrorf(codes.InvalidArgument, "No entities found for actor")
+		}
+		actorEntityIDs := make(map[string]struct{}, len(actorEntities))
+		for _, e := range actorEntities {
+			actorEntityIDs[e.ID] = struct{}{}
+		}
+		members, err := s.membersForThread(ctx, thread.ID)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		isMember := false
+		for _, m := range members {
+			if _, ok := actorEntityIDs[m.EntityID]; ok {
+				isMember = true
+				break
+			}
+		}
+		if !isMember {
+			return nil, grpcErrorf(codes.PermissionDenied, "Entity is not a member of thread %s", thread.ID)
+		}
+	}
 
 	// can only update system title for an external thread
 	switch thread.Type {
@@ -1471,7 +1506,7 @@ func (s *threadsServer) UpdateThread(ctx context.Context, in *threading.UpdateTh
 				removeMap[id] = struct{}{}
 			}
 		}
-		entities, err := s.dal.EntitiesForThread(ctx, tid)
+		entities, err := s.dal.EntitiesForThread(ctx, thread.ID)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
@@ -1497,19 +1532,29 @@ func (s *threadsServer) UpdateThread(ctx context.Context, in *threading.UpdateTh
 			update.SystemTitle = &in.SystemTitle
 		}
 		if len(in.AddMemberEntityIDs) != 0 {
-			if err := dl.AddThreadMembers(ctx, tid, in.AddMemberEntityIDs); err != nil {
+			if err := dl.AddThreadMembers(ctx, thread.ID, in.AddMemberEntityIDs); err != nil {
 				return errors.Trace(err)
 			}
 			update.SystemTitle = &systemTitle
 		}
 		if len(in.RemoveMemberEntityIDs) != 0 {
-			if err := dl.RemoveThreadMembers(ctx, tid, in.RemoveMemberEntityIDs); err != nil {
+			if err := dl.RemoveThreadMembers(ctx, thread.ID, in.RemoveMemberEntityIDs); err != nil {
 				return errors.Trace(err)
 			}
 			update.SystemTitle = &systemTitle
 		}
+		if len(in.AddFollowerEntityIDs) != 0 {
+			if err := dl.AddThreadFollowers(ctx, thread.ID, in.AddFollowerEntityIDs); err != nil {
+				return errors.Trace(err)
+			}
+		}
+		if len(in.RemoveFollowerEntityIDs) != 0 {
+			if err := dl.RemoveThreadFollowers(ctx, thread.ID, in.RemoveFollowerEntityIDs); err != nil {
+				return errors.Trace(err)
+			}
+		}
 		if update.UserTitle != nil || update.SystemTitle != nil {
-			if err := dl.UpdateThread(ctx, tid, update); err != nil {
+			if err := dl.UpdateThread(ctx, thread.ID, update); err != nil {
 				return errors.Trace(err)
 			}
 		}
@@ -1526,11 +1571,15 @@ func (s *threadsServer) UpdateThread(ctx context.Context, in *threading.UpdateTh
 	if err := s.updateSavedQueriesForThread(ctx, thread); err != nil {
 		golog.Errorf("Failed to updated saved query for thread %s: %s", thread.ID, err)
 	}
-
 	th, err := transformThreadToResponse(thread, false)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
+	ts, err := s.hydrateThreadForViewer(ctx, []*threading.Thread{th}, in.ActorEntityID)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	th = ts[0]
 	return &threading.UpdateThreadResponse{
 		Thread: th,
 	}, nil

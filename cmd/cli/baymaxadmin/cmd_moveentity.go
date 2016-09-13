@@ -185,6 +185,14 @@ func (c *moveEntityCmd) run(args []string) error {
 	}); err != nil {
 		golog.Errorf("Failed to create saved query '@Pages': %s", err)
 	}
+	if _, err := c.threadingCli.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
+		EntityID: newEntity.ID,
+		Title:    "Following",
+		Query:    &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_FOLLOWING}}}},
+		Ordinal:  5000,
+	}); err != nil {
+		golog.Errorf("Failed to create saved query 'Following': %s", err)
+	}
 
 	// Delete the old entity (really updates the status so we don't lose anything here)
 	if _, err := c.dirCli.DeleteEntity(ctx, &directory.DeleteEntityRequest{EntityID: entity.ID}); err != nil {

@@ -300,6 +300,7 @@ type ThreadEntity struct {
 	ThreadID         ThreadID
 	EntityID         string
 	Member           bool
+	Following        bool
 	Joined           time.Time
 	LastViewed       *time.Time
 	LastUnreadNotify *time.Time

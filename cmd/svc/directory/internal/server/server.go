@@ -76,20 +76,12 @@ func appendMembershipEntityInformation(entityInfo []directory.EntityInformation)
 	if entityInfo == nil {
 		return []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS}
 	}
-
-	var membershipFound bool
 	for _, ei := range entityInfo {
 		if ei == directory.EntityInformation_MEMBERSHIPS {
-			membershipFound = true
-			break
+			return entityInfo
 		}
 	}
-
-	if !membershipFound {
-		entityInfo = append(entityInfo, directory.EntityInformation_MEMBERSHIPS)
-	}
-
-	return entityInfo
+	return append(entityInfo, directory.EntityInformation_MEMBERSHIPS)
 }
 
 func filterToMembersOnly(pbEntities []*directory.Entity, memberOfEntity string) []*directory.Entity {

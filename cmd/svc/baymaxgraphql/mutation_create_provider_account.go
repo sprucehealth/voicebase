@@ -335,6 +335,14 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 	}); err != nil {
 		return nil, errors.InternalError(ctx, err)
 	}
+	if err = ram.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
+		EntityID: accEntityID,
+		Title:    "Following",
+		Query:    &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_FOLLOWING}}}},
+		Ordinal:  5000,
+	}); err != nil {
+		return nil, errors.InternalError(ctx, err)
+	}
 
 	var createLinkedThreadsResponse *threading.CreateLinkedThreadsResponse
 	if inv == nil {

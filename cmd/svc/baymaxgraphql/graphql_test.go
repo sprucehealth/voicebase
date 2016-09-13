@@ -83,7 +83,14 @@ func (g *gql) finish() {
 	g.layoutStore.Finish()
 }
 
-func responseEquals(t *testing.T, expected string, actual interface{}) {
+func responseEquals(t *testing.T, expected string, actual *graphql.Result) {
+	for _, e := range actual.Errors {
+		if e.StackTrace != "" {
+			t.Fatal(e.StackTrace)
+			return
+		}
+	}
+
 	// Roundtrip response to normalize into basic types
 	b, err := json.Marshal(actual)
 	test.OK(t, err)

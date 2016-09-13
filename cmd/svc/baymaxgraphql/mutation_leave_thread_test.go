@@ -54,6 +54,7 @@ func TestLeaveThreadMutation(t *testing.T) {
 	}, nil))
 
 	g.ra.Expect(mock.NewExpectation(g.ra.UpdateThread, &threading.UpdateThreadRequest{
+		ActorEntityID:         "eor",
 		ThreadID:              "t_1",
 		RemoveMemberEntityIDs: []string{"eor"},
 	}).WithReturns(&threading.UpdateThreadResponse{
