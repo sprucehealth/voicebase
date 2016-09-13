@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/models"
 	"github.com/sprucehealth/backend/libs/bml"
@@ -167,9 +168,9 @@ func isUnread(t *models.Thread, te *models.ThreadEntity, externalEntity bool) bo
 		return true
 	}
 	if externalEntity {
-		return te.LastViewed.Before(t.LastExternalMessageTimestamp)
+		return te.LastViewed.Before(t.LastExternalMessageTimestamp.Truncate(time.Second))
 	}
-	return te.LastViewed.Before(t.LastMessageTimestamp)
+	return te.LastViewed.Before(t.LastMessageTimestamp.Truncate(time.Second))
 }
 
 // hasUnreadReference returns true iff the entity has an unread reference
@@ -180,7 +181,7 @@ func hasUnreadReference(te *models.ThreadEntity) bool {
 	if te.LastViewed == nil {
 		return true
 	}
-	return te.LastViewed.Before(*te.LastReferenced)
+	return te.LastViewed.Before(te.LastReferenced.Truncate(time.Second))
 }
 
 func isExternalEntity(e *directory.Entity) bool {
