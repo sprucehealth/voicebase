@@ -511,6 +511,8 @@ func TestPostMessage(t *testing.T) {
 	test.OK(t, err)
 	ti1id, err := models.NewThreadItemID()
 	test.OK(t, err)
+	sqid, err := models.NewSavedQueryID()
+	test.OK(t, err)
 
 	srv := NewThreadsServer(clk, dl, nil, "arn", nil, dir, sm, mm, nil, "WEBDOMAIN")
 
@@ -570,13 +572,49 @@ func TestPostMessage(t *testing.T) {
 			MessageCount:                 1,
 			OrganizationID:               "o1",
 			PrimaryEntityID:              "e2",
+			LastMessageTimestamp:         now,
 			LastExternalMessageSummary:   "summary",
 			LastExternalMessageTimestamp: now,
 		},
 	}, nil))
 
-	dl.Expect(mock.NewExpectation(dl.EntitiesForThread, th1id).WithReturns([]*models.ThreadEntity{}, nil))
+	dl.Expect(mock.NewExpectation(dl.EntitiesForThread, th1id).WithReturns(
+		[]*models.ThreadEntity{
+			{ThreadID: th1id, EntityID: "org", Member: true},
+		}, nil))
+	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
+			BatchEntityID: &directory.IDList{
+				IDs: []string{"org"},
+			},
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERS},
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{
+			directory.EntityType_INTERNAL,
+			directory.EntityType_ORGANIZATION,
+		},
+		ChildTypes: []directory.EntityType{
+			directory.EntityType_INTERNAL,
+		},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{
+				ID:   "org",
+				Type: directory.EntityType_ORGANIZATION,
+				Members: []*directory.Entity{
+					{ID: "e5", Type: directory.EntityType_INTERNAL},
+				},
+			},
+		},
+	}, nil))
+	dl.Expect(mock.NewExpectation(dl.SavedQueries, "e5").WithReturns([]*models.SavedQuery{{ID: sqid, Query: &models.Query{}}}, nil))
 	dl.Expect(mock.NewExpectation(dl.RemoveThreadFromAllSavedQueryIndexes, th1id))
+	dl.Expect(mock.NewExpectation(dl.AddItemsToSavedQueryIndex,
+		[]*dal.SavedQueryThread{{ThreadID: th1id, SavedQueryID: sqid, Timestamp: now, Unread: true}}))
 
 	res, err := srv.PostMessage(nil, &threading.PostMessageRequest{
 		ThreadID:     th1id.String(),

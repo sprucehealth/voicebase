@@ -1496,9 +1496,12 @@ func (s *threadsServer) UpdateThread(ctx context.Context, in *threading.UpdateTh
 	// can only update system title for an external thread
 	switch thread.Type {
 	case models.ThreadTypeTeam:
+		if in.SystemTitle != "" {
+			return nil, grpcErrorf(codes.PermissionDenied, "Can only update system title for non-team thread")
+		}
 	default:
-		if len(in.RemoveMemberEntityIDs) > 0 || len(in.AddMemberEntityIDs) > 0 || in.SystemTitle == "" {
-			return nil, grpcErrorf(codes.PermissionDenied, "Can only update system title for non team threads")
+		if len(in.RemoveMemberEntityIDs) > 0 || len(in.AddMemberEntityIDs) > 0 {
+			return nil, grpcErrorf(codes.PermissionDenied, "Can only update members for a team thread")
 		}
 	}
 
