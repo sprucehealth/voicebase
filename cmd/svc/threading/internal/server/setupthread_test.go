@@ -10,6 +10,8 @@ import (
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
+	"github.com/sprucehealth/backend/svc/directory"
+	mockdirectory "github.com/sprucehealth/backend/svc/directory/mock"
 	mockmedia "github.com/sprucehealth/backend/svc/media/mock"
 	"github.com/sprucehealth/backend/svc/threading"
 )
@@ -17,16 +19,20 @@ import (
 func TestCreateOnboardingThread(t *testing.T) {
 	t.Parallel()
 	dl := dalmock.New(t)
-	defer dl.Finish()
 	mm := mockmedia.New(t)
-	defer mm.Finish()
+	dir := mockdirectory.New(t)
+	defer mock.FinishAll(dl, mm, dir)
 	clk := clock.New()
-	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, nil, mm, nil, "WEBDOMAIN")
+
+	srv := NewThreadsServer(clk, dl, nil, "arn", nil, dir, nil, mm, nil, "WEBDOMAIN")
 
 	now := clk.Now()
 
 	thid, err := models.NewThreadID()
 	test.OK(t, err)
+	sqid, err := models.NewSavedQueryID()
+	test.OK(t, err)
+
 	dl.Expect(mock.NewExpectation(dl.CreateThread, &models.Thread{
 		OrganizationID:     "o1",
 		PrimaryEntityID:    "e2",
@@ -57,6 +63,41 @@ func TestCreateOnboardingThread(t *testing.T) {
 		},
 	}, nil))
 
+	// Update saved query indexes
+
+	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
+			BatchEntityID: &directory.IDList{
+				IDs: []string{"o1"},
+			},
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERS},
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{
+			directory.EntityType_INTERNAL,
+			directory.EntityType_ORGANIZATION,
+		},
+		ChildTypes: []directory.EntityType{
+			directory.EntityType_INTERNAL,
+		},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{
+				ID:   "o1",
+				Type: directory.EntityType_ORGANIZATION,
+				Members: []*directory.Entity{
+					{ID: "e1", Type: directory.EntityType_INTERNAL},
+				},
+			},
+		},
+	}, nil))
+	dl.Expect(mock.NewExpectation(dl.SavedQueries, "e1").WithReturns([]*models.SavedQuery{{ID: sqid, EntityID: "e1", Query: &models.Query{}}}, nil))
+	dl.Expect(mock.NewExpectation(dl.AddItemsToSavedQueryIndex, []*dal.SavedQueryThread{
+		{ThreadID: thid, SavedQueryID: sqid, Timestamp: now}}))
+
 	res, err := srv.CreateOnboardingThread(nil, &threading.CreateOnboardingThreadRequest{
 		OrganizationID:  "o1",
 		PrimaryEntityID: "e2",
@@ -78,11 +119,12 @@ func TestCreateOnboardingThread(t *testing.T) {
 func TestOnboardingThreadEvent_PROVISIONED_PHONE(t *testing.T) {
 	t.Parallel()
 	dl := dalmock.New(t)
-	defer dl.Finish()
 	mm := mockmedia.New(t)
-	defer mm.Finish()
+	dir := mockdirectory.New(t)
+	defer mock.FinishAll(dl, mm, dir)
 	clk := clock.New()
-	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, nil, mm, nil, "WEBDOMAIN")
+
+	srv := NewThreadsServer(clk, dl, nil, "arn", nil, dir, nil, mm, nil, "WEBDOMAIN")
 
 	setupTID, err := models.NewThreadID()
 	test.OK(t, err)
@@ -103,6 +145,10 @@ func TestOnboardingThreadEvent_PROVISIONED_PHONE(t *testing.T) {
 		ThreadID: setupTID,
 	}).WithReturns(&models.ThreadItem{}, nil))
 	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{setupTID}).WithReturns([]*models.Thread{{ID: setupTID, OrganizationID: "org"}}, nil))
+
+	// Update saved query indexes
+	dl.Expect(mock.NewExpectation(dl.EntitiesForThread, setupTID).WithReturns([]*models.ThreadEntity{}, nil))
+	dl.Expect(mock.NewExpectation(dl.RemoveThreadFromAllSavedQueryIndexes, setupTID))
 
 	res, err := srv.OnboardingThreadEvent(nil, &threading.OnboardingThreadEventRequest{
 		LookupByType: threading.ONBOARDING_THREAD_LOOKUP_BY_ENTITY_ID,
@@ -128,6 +174,10 @@ func TestOnboardingThreadEvent_PROVISIONED_PHONE(t *testing.T) {
 			{ID: supportTID, Type: models.ThreadTypeSupport},
 		}, nil))
 	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{setupTID}).WithReturns([]*models.Thread{{ID: setupTID, OrganizationID: "org"}}, nil))
+
+	// Update saved query indexes
+	dl.Expect(mock.NewExpectation(dl.EntitiesForThread, setupTID).WithReturns([]*models.ThreadEntity{}, nil))
+	dl.Expect(mock.NewExpectation(dl.RemoveThreadFromAllSavedQueryIndexes, setupTID))
 
 	res, err = srv.OnboardingThreadEvent(nil, &threading.OnboardingThreadEventRequest{
 		LookupByType: threading.ONBOARDING_THREAD_LOOKUP_BY_ENTITY_ID,
@@ -175,6 +225,10 @@ func TestOnboardingThreadEvent_GENERIC_SETUP_eventSetupAnsweringService(t *testi
 	}).WithReturns(&models.ThreadItem{}, nil))
 	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{setupTID}).WithReturns([]*models.Thread{{ID: setupTID, OrganizationID: "org"}}, nil))
 
+	// Update saved query indexes
+	dl.Expect(mock.NewExpectation(dl.EntitiesForThread, setupTID).WithReturns([]*models.ThreadEntity{}, nil))
+	dl.Expect(mock.NewExpectation(dl.RemoveThreadFromAllSavedQueryIndexes, setupTID))
+
 	res, err := srv.OnboardingThreadEvent(nil, &threading.OnboardingThreadEventRequest{
 		LookupByType: threading.ONBOARDING_THREAD_LOOKUP_BY_ENTITY_ID,
 		LookupBy: &threading.OnboardingThreadEventRequest_EntityID{
@@ -221,6 +275,10 @@ func TestOnboardingThreadEvent_GENERIC_SETUP_eventSetupTeamMessaging(t *testing.
 	}).WithReturns(&models.ThreadItem{}, nil))
 	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{setupTID}).WithReturns([]*models.Thread{{ID: setupTID, OrganizationID: "org"}}, nil))
 
+	// Update saved query indexes
+	dl.Expect(mock.NewExpectation(dl.EntitiesForThread, setupTID).WithReturns([]*models.ThreadEntity{}, nil))
+	dl.Expect(mock.NewExpectation(dl.RemoveThreadFromAllSavedQueryIndexes, setupTID))
+
 	res, err := srv.OnboardingThreadEvent(nil, &threading.OnboardingThreadEventRequest{
 		LookupByType: threading.ONBOARDING_THREAD_LOOKUP_BY_ENTITY_ID,
 		LookupBy: &threading.OnboardingThreadEventRequest_EntityID{
@@ -265,6 +323,10 @@ func TestOnboardingThreadEvent_GENERIC_SETUP_eventSetupTelemedicine(t *testing.T
 		ThreadID: setupTID,
 	}).WithReturns(&models.ThreadItem{}, nil))
 	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{setupTID}).WithReturns([]*models.Thread{{ID: setupTID, OrganizationID: "org"}}, nil))
+
+	// Update saved query indexes
+	dl.Expect(mock.NewExpectation(dl.EntitiesForThread, setupTID).WithReturns([]*models.ThreadEntity{}, nil))
+	dl.Expect(mock.NewExpectation(dl.RemoveThreadFromAllSavedQueryIndexes, setupTID))
 
 	res, err := srv.OnboardingThreadEvent(nil, &threading.OnboardingThreadEventRequest{
 		LookupByType: threading.ONBOARDING_THREAD_LOOKUP_BY_ENTITY_ID,
