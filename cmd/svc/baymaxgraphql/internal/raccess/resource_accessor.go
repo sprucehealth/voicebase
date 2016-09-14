@@ -951,7 +951,9 @@ func (m *resourceAccessor) ThreadFollowers(ctx context.Context, orgID string, re
 		Statuses:       []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 		RootTypes:      []directory.EntityType{directory.EntityType_INTERNAL},
 	}, orgID)
-	if err != nil {
+	if err == ErrNotFound {
+		return nil, errors.ErrNotAuthorized(ctx, req.ThreadID)
+	} else if err != nil {
 		return nil, err
 	}
 
