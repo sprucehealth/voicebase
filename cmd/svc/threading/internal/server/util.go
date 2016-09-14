@@ -32,6 +32,10 @@ func threadMatchesQuery(q *models.Query, t *models.Thread, te *models.ThreadEnti
 				if !hasUnreadReference(te) {
 					return false, nil
 				}
+			case models.EXPR_FLAG_FOLLOWING:
+				if !te.Following {
+					return false, nil
+				}
 			default:
 				return false, errors.Errorf("unknown expression flag %s", v.Flag)
 			}
