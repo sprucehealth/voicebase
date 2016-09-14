@@ -268,15 +268,16 @@ var threadType = graphql.NewObject(
 			},
 			"followers": &graphql.Field{
 				Type: graphql.NewList(graphql.NewNonNull(entityType)),
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: apiaccess.Authenticated(func(p graphql.ResolveParams) (interface{}, error) {
 					ctx := p.Context
 					th := p.Source.(*models.Thread)
 
 					svc := serviceFromParams(p)
 					acc := gqlctx.Account(p.Context)
-					if acc == nil {
-						return nil, errors.ErrNotAuthenticated(ctx)
+					if acc.Type != auth.AccountType_PROVIDER {
+						return nil, nil
 					}
+
 					ram := raccess.ResourceAccess(p)
 					followers, err := ram.ThreadFollowers(ctx, th.OrganizationID, &threading.ThreadMembersRequest{
 						ThreadID: th.ID,
@@ -294,11 +295,11 @@ var threadType = graphql.NewObject(
 						ms[i] = e
 					}
 					return ms, nil
-				},
+				}),
 			},
 			"members": &graphql.Field{
 				Type: graphql.NewList(graphql.NewNonNull(entityType)),
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: apiaccess.Authenticated(func(p graphql.ResolveParams) (interface{}, error) {
 					ctx := p.Context
 					th := p.Source.(*models.Thread)
 					// Only team threads have members
@@ -308,9 +309,10 @@ var threadType = graphql.NewObject(
 
 					svc := serviceFromParams(p)
 					acc := gqlctx.Account(p.Context)
-					if acc == nil {
-						return nil, errors.ErrNotAuthenticated(ctx)
+					if acc.Type != auth.AccountType_PROVIDER {
+						return nil, nil
 					}
+
 					ram := raccess.ResourceAccess(p)
 					members, err := ram.ThreadMembers(ctx, th.OrganizationID, &threading.ThreadMembersRequest{
 						ThreadID: th.ID,
@@ -328,7 +330,7 @@ var threadType = graphql.NewObject(
 						ms[i] = e
 					}
 					return ms, nil
-				},
+				}),
 			},
 			"addressableEntities": &graphql.Field{
 				Type: graphql.NewList(graphql.NewNonNull(entityType)),

@@ -1,13 +1,13 @@
 package dal
 
 import (
+	"context"
 	"sort"
 	"testing"
 	"time"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/models"
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testsql"
@@ -40,6 +40,79 @@ func TestDedupeStrings(t *testing.T) {
 	test.Equals(t, []string{"a", "b", "c"}, dedupeStrings([]string{"a", "b", "b", "c"}))
 	test.Equals(t, []string{"a", "b", "c"}, dedupeStrings([]string{"a", "b", "c", "c"}))
 	test.Equals(t, []string{"a", "b", "c"}, dedupeStrings([]string{"a", "b", "c", "a"}))
+}
+
+func TestTransact(t *testing.T) {
+	dt := testsql.Setup(t, schemaGlob)
+	defer dt.Cleanup(t)
+
+	dal := New(dt.DB)
+	ctx := context.Background()
+
+	t.Run("success", func(t *testing.T) {
+		var tid models.ThreadID
+		var terr error
+		err := dal.Transact(ctx, func(ctx context.Context, dl DAL) error {
+			tid, terr = dl.CreateThread(ctx, &models.Thread{
+				OrganizationID:             "org",
+				Type:                       models.ThreadTypeExternal,
+				LastMessageSummary:         "summary",
+				LastMessageTimestamp:       time.Unix(10e8, 0),
+				LastExternalMessageSummary: "extsummary",
+			})
+			return terr
+		})
+		test.OK(t, terr)
+		test.OK(t, err)
+
+		ts, err := dal.Threads(ctx, []models.ThreadID{tid})
+		test.OK(t, err)
+		test.Equals(t, 1, len(ts))
+	})
+
+	t.Run("fail", func(t *testing.T) {
+		var tid models.ThreadID
+		var terr error
+		err := dal.Transact(ctx, func(ctx context.Context, dl DAL) error {
+			tid, terr = dl.CreateThread(ctx, &models.Thread{
+				OrganizationID:             "org",
+				Type:                       models.ThreadTypeExternal,
+				LastMessageSummary:         "summary",
+				LastMessageTimestamp:       time.Unix(10e8, 0),
+				LastExternalMessageSummary: "extsummary",
+			})
+			return errors.New("FAIL")
+		})
+		test.OK(t, terr)
+		test.Assert(t, err != nil, "Err should not be nil on transaction error")
+		test.Equals(t, "FAIL", errors.Cause(err).Error())
+
+		ts, err := dal.Threads(ctx, []models.ThreadID{tid})
+		test.OK(t, err)
+		test.Equals(t, 0, len(ts))
+	})
+
+	t.Run("panic", func(t *testing.T) {
+		var tid models.ThreadID
+		var terr error
+		err := dal.Transact(ctx, func(ctx context.Context, dl DAL) error {
+			tid, terr = dl.CreateThread(ctx, &models.Thread{
+				OrganizationID:             "org",
+				Type:                       models.ThreadTypeExternal,
+				LastMessageSummary:         "summary",
+				LastMessageTimestamp:       time.Unix(10e8, 0),
+				LastExternalMessageSummary: "extsummary",
+			})
+			panic("BOOM")
+		})
+		test.OK(t, terr)
+		test.Assert(t, err != nil, "Err should not be nil on panic")
+		test.Equals(t, "Encountered panic during transaction execution: BOOM", errors.Cause(err).Error())
+
+		ts, err := dal.Threads(ctx, []models.ThreadID{tid})
+		test.OK(t, err)
+		test.Equals(t, 0, len(ts))
+	})
 }
 
 func TestIterateThreads(t *testing.T) {
@@ -531,6 +604,72 @@ func TestSetupThreadState(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, tid, state.ThreadID)
 	test.Equals(t, 1, state.Step)
+}
+
+func TestDeleteThread(t *testing.T) {
+	dt := testsql.Setup(t, schemaGlob)
+	defer dt.Cleanup(t)
+
+	dal := New(dt.DB)
+	ctx := context.Background()
+
+	tid, err := dal.CreateThread(ctx, &models.Thread{
+		OrganizationID:             "org",
+		Type:                       models.ThreadTypeTeam,
+		LastMessageSummary:         "summary",
+		LastMessageTimestamp:       time.Unix(1e9, 0),
+		LastExternalMessageSummary: "extsummary",
+		SystemTitle:                "systemTitle",
+		UserTitle:                  "userTitle",
+	})
+	test.OK(t, err)
+
+	ts, err := dal.Threads(ctx, []models.ThreadID{tid})
+	test.OK(t, err)
+	test.Equals(t, 1, len(ts))
+
+	test.OK(t, dal.DeleteThread(ctx, tid))
+
+	ts, err = dal.Threads(ctx, []models.ThreadID{tid})
+	test.OK(t, err)
+	test.Equals(t, 0, len(ts))
+}
+
+func TestFollowers(t *testing.T) {
+	dt := testsql.Setup(t, schemaGlob)
+	defer dt.Cleanup(t)
+
+	dal := New(dt.DB)
+	ctx := context.Background()
+
+	tid, err := dal.CreateThread(ctx, &models.Thread{
+		OrganizationID:             "org",
+		Type:                       models.ThreadTypeTeam,
+		LastMessageSummary:         "summary",
+		LastMessageTimestamp:       time.Unix(1e9, 0),
+		LastExternalMessageSummary: "extsummary",
+		SystemTitle:                "systemTitle",
+		UserTitle:                  "userTitle",
+	})
+	test.OK(t, err)
+
+	tes, err := dal.EntitiesForThread(ctx, tid)
+	test.OK(t, err)
+	test.Equals(t, 0, len(tes))
+
+	test.OK(t, dal.AddThreadFollowers(ctx, tid, []string{"ent"}))
+
+	tes, err = dal.EntitiesForThread(ctx, tid)
+	test.OK(t, err)
+	test.Equals(t, 1, len(tes))
+	test.Equals(t, true, tes[0].Following)
+
+	test.OK(t, dal.RemoveThreadFollowers(ctx, tid, []string{"ent"}))
+
+	tes, err = dal.EntitiesForThread(ctx, tid)
+	test.OK(t, err)
+	test.Equals(t, 1, len(tes))
+	test.Equals(t, false, tes[0].Following)
 }
 
 func TestCreateThreadItemViewDetails(t *testing.T) {

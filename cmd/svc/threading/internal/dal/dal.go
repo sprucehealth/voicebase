@@ -1003,9 +1003,9 @@ func (d *dal) AddThreadFollowers(ctx context.Context, threadID models.ThreadID, 
 		ins.Append(threadID, id, true)
 	}
 	_, err := d.db.Exec(`
-		INSERT INTO thread_entities (thread_id, entity_id, follower)
+		INSERT INTO thread_entities (thread_id, entity_id, following)
 		VALUES `+ins.Query()+`
-		ON DUPLICATE KEY UPDATE follower = true`,
+		ON DUPLICATE KEY UPDATE following = true`,
 		ins.Values()...)
 	return errors.Trace(err)
 }
@@ -1032,7 +1032,7 @@ func (d *dal) RemoveThreadFollowers(ctx context.Context, threadID models.ThreadI
 	}
 	_, err := d.db.Exec(`
 		UPDATE thread_entities
-		SET follower = false
+		SET following = false
 		WHERE entity_id IN (`+dbutil.MySQLArgs(len(followerEntityIDs))+`) AND thread_id = ?`,
 		append(dbutil.AppendStringsToInterfaceSlice(nil, followerEntityIDs), threadID)...)
 	return errors.Trace(err)
