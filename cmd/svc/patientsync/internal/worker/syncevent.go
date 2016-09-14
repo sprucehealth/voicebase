@@ -192,11 +192,19 @@ func (s *syncEvent) createThread(ctx context.Context, patient *sync.Patient, sou
 	if err != nil && grpc.Code(err) != codes.NotFound {
 		return errors.Errorf("Unable to lookup threads for member %s : %s", externalEntity.ID, err)
 	} else if threadRes == nil || len(threadRes.Threads) == 0 {
+
+		memberEntityIDs := make([]string, 0, 2)
+		memberEntityIDs = append(memberEntityIDs, orgID)
+
+		if threadType == threading.THREAD_TYPE_SECURE_EXTERNAL {
+			memberEntityIDs = append(memberEntityIDs, externalEntity.ID)
+		}
+
 		// create thread
 		createThreadRes, err := s.threading.CreateEmptyThread(ctx, &threading.CreateEmptyThreadRequest{
 			OrganizationID:  orgID,
 			PrimaryEntityID: externalEntity.ID,
-			MemberEntityIDs: []string{orgID},
+			MemberEntityIDs: memberEntityIDs,
 			Type:            threadType,
 			Summary:         externalEntity.Info.DisplayName,
 			SystemTitle:     externalEntity.Info.DisplayName,
