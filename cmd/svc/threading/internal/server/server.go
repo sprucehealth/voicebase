@@ -149,6 +149,9 @@ func (s *threadsServer) CreateEmptyThread(ctx context.Context, in *threading.Cre
 	if in.Type == threading.THREAD_TYPE_TEAM && in.FromEntityID == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "FromEntityID is required for TEAM threads")
 	}
+	if id, ok := validateEntityIDs(in.MemberEntityIDs); !ok {
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid entity ID %s in members list", id)
+	}
 
 	if (in.Type == threading.THREAD_TYPE_EXTERNAL || in.Type == threading.THREAD_TYPE_SECURE_EXTERNAL) && in.SystemTitle == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "SystemTitle is required for EXTERNAL and SECURE_EXTERNAL threads")
@@ -243,6 +246,9 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 	}
 	if in.Type == threading.THREAD_TYPE_EXTERNAL && in.SystemTitle == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "SystemTitle is required")
+	}
+	if id, ok := validateEntityIDs(in.MemberEntityIDs); !ok {
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid entity ID %s in members list", id)
 	}
 
 	tt, err := transformThreadTypeFromRequest(in.Type)
@@ -1394,15 +1400,21 @@ func (s *threadsServer) ThreadMembers(ctx context.Context, in *threading.ThreadM
 	if err != nil {
 		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadItemID")
 	}
-	members, err := s.membersForThread(ctx, tid)
+	tes, err := s.dal.EntitiesForThread(ctx, tid)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 	res := &threading.ThreadMembersResponse{
-		Members: make([]*threading.Member, len(members)),
+		Members:           make([]*threading.Member, 0, len(tes)),
+		FollowerEntityIDs: make([]string, 0, len(tes)),
 	}
-	for i, m := range members {
-		res.Members[i] = &threading.Member{EntityID: m.EntityID}
+	for _, te := range tes {
+		if te.Member {
+			res.Members = append(res.Members, &threading.Member{EntityID: te.EntityID})
+		}
+		if te.Following {
+			res.FollowerEntityIDs = append(res.FollowerEntityIDs, te.EntityID)
+		}
 	}
 	return res, nil
 }
@@ -1447,6 +1459,18 @@ func (s *threadsServer) UpdateSavedQuery(ctx context.Context, in *threading.Upda
 func (s *threadsServer) UpdateThread(ctx context.Context, in *threading.UpdateThreadRequest) (*threading.UpdateThreadResponse, error) {
 	if in.ActorEntityID == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "ActorEntityID required")
+	}
+	if id, ok := validateEntityIDs(in.AddMemberEntityIDs); !ok {
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid entity ID %s when adding members", id)
+	}
+	if id, ok := validateEntityIDs(in.RemoveMemberEntityIDs); !ok {
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid entity ID %s when removing members", id)
+	}
+	if id, ok := validateEntityIDs(in.AddFollowerEntityIDs); !ok {
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid entity ID %s when adding followers", id)
+	}
+	if id, ok := validateEntityIDs(in.RemoveFollowerEntityIDs); !ok {
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid entity ID %s when removing followers", id)
 	}
 
 	tid, err := models.ParseThreadID(in.ThreadID)

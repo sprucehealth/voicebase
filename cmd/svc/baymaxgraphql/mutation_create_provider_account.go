@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/device/devicectx"
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/analytics"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/caremessenger/deeplink"
@@ -335,13 +336,15 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 	}); err != nil {
 		return nil, errors.InternalError(ctx, err)
 	}
-	if err = ram.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
-		EntityID: accEntityID,
-		Title:    "Following",
-		Query:    &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_FOLLOWING}}}},
-		Ordinal:  5000,
-	}); err != nil {
-		return nil, errors.InternalError(ctx, err)
+	if !environment.IsProd() {
+		if err = ram.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
+			EntityID: accEntityID,
+			Title:    "Following",
+			Query:    &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_FOLLOWING}}}},
+			Ordinal:  5000,
+		}); err != nil {
+			return nil, errors.InternalError(ctx, err)
+		}
 	}
 
 	var createLinkedThreadsResponse *threading.CreateLinkedThreadsResponse

@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/model"
@@ -144,13 +145,15 @@ func (c *migrateSavedQueriesCmd) run(args []string) error {
 		}); err != nil {
 			golog.Errorf("Failed to create saved query '@Pages': %s", err)
 		}
-		if _, err := c.threadingCli.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
-			EntityID: eid,
-			Title:    "Following",
-			Query:    &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_FOLLOWING}}}},
-			Ordinal:  5000,
-		}); err != nil {
-			golog.Errorf("Failed to create saved query 'Following': %s", err)
+		if !environment.IsProd() {
+			if _, err := c.threadingCli.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
+				EntityID: eid,
+				Title:    "Following",
+				Query:    &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_FOLLOWING}}}},
+				Ordinal:  5000,
+			}); err != nil {
+				golog.Errorf("Failed to create saved query 'Following': %s", err)
+			}
 		}
 	}
 

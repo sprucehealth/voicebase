@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/sprucehealth/backend/boot"
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -211,6 +212,8 @@ func main() {
 	flag.Parse()
 
 	cmd := flag.Arg(0)
+
+	environment.SetCurrent(cnf.Env)
 
 	if cnf.AuthAddr == "" {
 		cnf.AuthAddr = fmt.Sprintf("_auth._tcp.service.%s-us-east-1.spruce", strings.ToLower(cnf.Env))

@@ -15,6 +15,17 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
+// validateEntityIDs makes sure a list of IDs are valid entity IDs. If one is not then
+// it returns the bad id and false. Otherwise it returns an emptry string anf true.
+func validateEntityIDs(ids []string) (string, bool) {
+	for _, id := range ids {
+		if !strings.HasPrefix(id, directory.EntityIDPrefix) {
+			return id, false
+		}
+	}
+	return "", true
+}
+
 // threadMatchesQuery returns true iff the thread matches the provided query for the entity
 func threadMatchesQuery(q *models.Query, t *models.Thread, te *models.ThreadEntity, externalEntity bool) (bool, error) {
 	// For efficiency with multiple tokens generate the full set of text to match against using
