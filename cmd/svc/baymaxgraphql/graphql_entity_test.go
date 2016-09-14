@@ -253,5 +253,5 @@ func TestPartnerIntegrations(t *testing.T) {
  }
 `, nil)
 
-	responseEquals(t, `{"data":{"node":{"__typename":"Organization","partnerIntegrations":[{"buttonText":"Stripe Dashboard","buttonURL":"https://dashboard.stripe.com","connected":true,"errored":false,"subtitle":"View and manage your transaction history through Stripe.","title":"Connected to Stripe"},{"buttonText":"Hint Dashboard","buttonURL":"","connected":true,"errored":false,"subtitle":"View and manage patient membership information in Hint.","title":"Connected to Hint"}]}}}`, res)
+	responseEquals(t, `{"data":{"node":{"__typename":"Organization","partnerIntegrations":[{"buttonText":"Stripe Dashboard","buttonURL":"https://dashboard.stripe.com","connected":true,"errored":false,"subtitle":"View and manage your transaction history through Stripe.","title":"Connected to Stripe"},{"buttonText":"Hint Dashboard","buttonURL":"","connected":true,"errored":false,"subtitle":"View and manage patient membership information in Hint.","title":"Connected"}]}}}`, res)
 }
