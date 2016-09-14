@@ -2,10 +2,8 @@ package server
 
 import (
 	"context"
-	"encoding/base64"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/service/sqs"
 	dalmock "github.com/sprucehealth/backend/cmd/svc/patientsync/internal/dal/mock"
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/sync"
 	psettings "github.com/sprucehealth/backend/cmd/svc/patientsync/settings"
@@ -31,13 +29,9 @@ func TestConfigureSync(t *testing.T) {
 
 	hint.SetOAuthClient(omock)
 
-	mocksqsAPI := mock.NewSQSAPI(t)
-	defer mocksqsAPI.Finish()
-
 	s := &server{
 		dl:       dmock,
 		settings: smock,
-		sqsAPI:   mocksqsAPI,
 	}
 
 	dmock.Expect(mock.NewExpectation(dmock.CreateSyncConfig, &sync.Config{
@@ -82,20 +76,7 @@ func TestConfigureSync(t *testing.T) {
 		},
 	}, nil))
 
-	initiate := &sync.Initiate{
-		OrganizationEntityID: "orgID",
-		Source:               sync.SOURCE_HINT,
-	}
-	data, err := initiate.Marshal()
-	test.OK(t, err)
-	msg := base64.StdEncoding.EncodeToString(data)
-
-	mocksqsAPI.Expect(mock.NewExpectation(mocksqsAPI.SendMessage, &sqs.SendMessageInput{
-		MessageBody: &msg,
-		QueueUrl:    ptr.String(""),
-	}))
-
-	_, err = s.ConfigureSync(context.Background(), &patientsync.ConfigureSyncRequest{
+	_, err := s.ConfigureSync(context.Background(), &patientsync.ConfigureSyncRequest{
 		OrganizationEntityID: "orgID",
 		Source:               patientsync.SOURCE_HINT,
 		Token:                "token123",

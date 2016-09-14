@@ -62,7 +62,7 @@ func lookupPartnerIntegrationsForOrg(p graphql.ResolveParams, orgID string) ([]*
 	// *** hint ***
 
 	hintIntegration := &models.PartnerIntegration{
-		ButtonText: "Connect",
+		ButtonText: "Connect to Hint",
 		ButtonURL:  svc.hintConnectURL,
 		Title:      "Connect your Hint Account",
 		Subtitle:   "Import all patients from Hint into Spruce. Before doing this, contact Spruce Support to configure standard or secure conversations for all patients.",
@@ -82,7 +82,7 @@ func lookupPartnerIntegrationsForOrg(p graphql.ResolveParams, orgID string) ([]*
 
 	if patientSyncResp != nil {
 		hintIntegration.Connected = true
-		hintIntegration.Title = "Connected"
+		hintIntegration.Title = "Connected to Hint"
 		hintIntegration.ButtonText = "Hint Dashboard"
 		hintIntegration.ButtonURL = *flagHintConnectURL
 		hintIntegration.Subtitle = "View and manage patient membership information in Hint."

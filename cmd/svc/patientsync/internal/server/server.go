@@ -147,14 +147,6 @@ func (s *server) ConfigureSync(ctx context.Context, in *patientsync.ConfigureSyn
 		return nil, grpcErrorf(codes.Internal, "Unable to create sync config for %s: %s", in.OrganizationEntityID, err.Error())
 	}
 
-	// initate sync at the same time as configuring it
-	if _, err := s.InitiateSync(ctx, &patientsync.InitiateSyncRequest{
-		OrganizationEntityID: in.OrganizationEntityID,
-		Source:               in.Source,
-	}); err != nil {
-		return nil, grpcErrorf(codes.Internal, "Unable to initiate sync for %s : %s", in.OrganizationEntityID, err)
-	}
-
 	return &patientsync.ConfigureSyncResponse{}, nil
 }
 
