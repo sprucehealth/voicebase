@@ -101,7 +101,15 @@ var updateThreadMutation = &graphql.Field{
 			return nil, errors.ErrNotFound(ctx, in.ThreadID)
 		}
 		if thread.Type != threading.THREAD_TYPE_TEAM {
-			return nil, errors.New("Cannot modify non-team threads")
+			if len(in.AddMemberEntityIDs) != 0 {
+				return nil, errors.New("Cannot modify members on non-team threads")
+			}
+			if len(in.RemoveMemberEntityIDs) != 0 {
+				return nil, errors.New("Cannot modify members on non-team threads")
+			}
+			if in.Title != "" {
+				return nil, errors.New("Cannot modify title on non-team threads")
+			}
 		}
 
 		// TODO: currently assuming that the person updating the thread is in the same org as the thread.

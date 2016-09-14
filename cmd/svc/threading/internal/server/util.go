@@ -33,7 +33,7 @@ func threadMatchesQuery(q *models.Query, t *models.Thread, te *models.ThreadEnti
 					return false, nil
 				}
 			case models.EXPR_FLAG_FOLLOWING:
-				if !te.Following {
+				if te == nil || !te.Following {
 					return false, nil
 				}
 			default:

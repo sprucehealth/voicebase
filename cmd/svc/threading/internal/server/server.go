@@ -309,15 +309,6 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 			return errors.Trace(err)
 		}
 
-		// Update unread reference status for anyone mentioned
-		for _, r := range textRefs {
-			if err := dl.UpdateThreadEntity(ctx, threadID, r.ID, &dal.ThreadEntityUpdate{
-				LastReferenced: ptr.Time(s.clk.Now()),
-			}); err != nil {
-				return errors.Trace(err)
-			}
-		}
-
 		req := &dal.PostMessageRequest{
 			ThreadID:     threadID,
 			FromEntityID: in.FromEntityID,
@@ -345,7 +336,18 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 			req.Destinations = append(req.Destinations, d)
 		}
 		item, err = dl.PostMessage(ctx, req)
-		return errors.Trace(err)
+		if err != nil {
+			return errors.Trace(err)
+		}
+		// Update unread reference status for anyone mentioned
+		for _, r := range textRefs {
+			if err := dl.UpdateThreadEntity(ctx, threadID, r.ID, &dal.ThreadEntityUpdate{
+				LastReferenced: &item.Created,
+			}); err != nil {
+				return errors.Trace(err)
+			}
+		}
+		return nil
 	}); err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -1044,12 +1046,18 @@ func (s *threadsServer) QueryThreads(ctx context.Context, in *threading.QueryThr
 		return nil, errors.Trace(err)
 	}
 	forExternal := true
+	var selfEntityID string
 	memberEntityIDs := make([]string, len(memberEntities))
 	for i, e := range memberEntities {
 		memberEntityIDs[i] = e.ID
 		if e.ID == in.ViewerEntityID {
 			forExternal = isExternalEntity(e)
+			selfEntityID = e.ID
 		}
+	}
+	// For external (patient) entities only use the entity itself
+	if forExternal {
+		memberEntityIDs = []string{selfEntityID}
 	}
 
 	it := &dal.Iterator{
