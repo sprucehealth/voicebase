@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
-	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/patientsync"
 	"github.com/sprucehealth/backend/svc/payments"
@@ -33,37 +32,31 @@ func lookupPartnerIntegrationsForOrg(p graphql.ResolveParams, orgID string) ([]*
 	// *** stripe ****
 	var stripeIntegration *models.PartnerIntegration
 
-	// @kajham: Dont include stripe integration in staging while demoing Spruce-Hint integration
-	// to Hint on September 13 2016 because our Stripe connection is in direct competition to their product.
-	// We want to work with them to make the integration into hint easier but that is the point of the demo and the
-	// conversation on September 13 so don't want the visibility of the stripe connection to muddy that relationship.
-	if !environment.IsStaging() {
-		stripeIntegration = &models.PartnerIntegration{
-			ButtonText: "Connect to Stripe",
-			ButtonURL:  svc.stripeConnectURL,
-			Title:      "Connect Your Stripe Account",
-			Subtitle:   "Allow Spruce to connect your Stripe account to enable patient billpay.",
-		}
-		resp, err := ram.VendorAccounts(ctx, &payments.VendorAccountsRequest{
-			EntityID: orgID,
-		})
-		if err != nil {
-			// errored
-			golog.Errorf("Unable to read vendor account for %s : %s", orgID, err)
-			stripeIntegration.Connected = false
-			stripeIntegration.Errored = true
-			stripeIntegration.Title = "Unable to connect to Stripe"
-			stripeIntegration.Subtitle = "Sorry, something went wrong during the connection process, please try connecting again."
-		}
+	stripeIntegration = &models.PartnerIntegration{
+		ButtonText: "Connect to Stripe",
+		ButtonURL:  svc.stripeConnectURL,
+		Title:      "Connect Your Stripe Account",
+		Subtitle:   "Allow Spruce to connect your Stripe account to enable patient billpay.",
+	}
+	resp, err := ram.VendorAccounts(ctx, &payments.VendorAccountsRequest{
+		EntityID: orgID,
+	})
+	if err != nil {
+		// errored
+		golog.Errorf("Unable to read vendor account for %s : %s", orgID, err)
+		stripeIntegration.Connected = false
+		stripeIntegration.Errored = true
+		stripeIntegration.Title = "Unable to connect to Stripe"
+		stripeIntegration.Subtitle = "Sorry, something went wrong during the connection process, please try connecting again."
+	}
 
-		// connected
-		if resp != nil && len(resp.VendorAccounts) > 0 {
-			stripeIntegration.Connected = true
-			stripeIntegration.Title = "Connected to Stripe"
-			stripeIntegration.ButtonText = "Stripe Dashboard"
-			stripeIntegration.ButtonURL = "https://dashboard.stripe.com"
-			stripeIntegration.Subtitle = "View and manage your transaction history through Stripe."
-		}
+	// connected
+	if resp != nil && len(resp.VendorAccounts) > 0 {
+		stripeIntegration.Connected = true
+		stripeIntegration.Title = "Connected to Stripe"
+		stripeIntegration.ButtonText = "Stripe Dashboard"
+		stripeIntegration.ButtonURL = "https://dashboard.stripe.com"
+		stripeIntegration.Subtitle = "View and manage your transaction history through Stripe."
 	}
 
 	// *** hint ***
