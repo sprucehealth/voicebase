@@ -972,6 +972,10 @@ func (m *resourceAccessor) ThreadFollowers(ctx context.Context, orgID string, re
 		return nil, errors.ErrNotAuthorized(ctx, req.ThreadID)
 	}
 
+	if len(res.FollowerEntityIDs) == 0 {
+		return []*directory.Entity{}, nil
+	}
+
 	leres, err := m.directory.LookupEntities(ctx, &directory.LookupEntitiesRequest{
 		LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
 		LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
@@ -1025,6 +1029,10 @@ func (m *resourceAccessor) ThreadMembers(ctx context.Context, orgID string, req 
 	}
 	if !found {
 		return nil, errors.ErrNotAuthorized(ctx, req.ThreadID)
+	}
+
+	if len(res.Members) == 0 {
+		return []*directory.Entity{}, nil
 	}
 
 	entIDs := make([]string, len(res.Members))
