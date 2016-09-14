@@ -674,6 +674,17 @@ func (s *threadsServer) MarkThreadsAsRead(ctx context.Context, in *threading.Mar
 			continue
 		}
 
+		// If the new read time is the last as the last message timestamp to the second then
+		// actually use the last message timestamp to avoid any issues with time resolution.
+		// Also, avoid storing a future time to make sure we see future posts.
+		lastTimestamp := thread.LastMessageTimestamp
+		if externalEntity {
+			lastTimestamp = thread.LastExternalMessageTimestamp
+		}
+		if !readTime.Before(lastTimestamp.Truncate(time.Second)) {
+			readTime = lastTimestamp
+		}
+
 		// Fetch members for thread to make sure the provided entity is a member
 		members, err := s.membersForThread(ctx, thread.ID)
 		if err != nil {
@@ -1095,7 +1106,7 @@ func (s *threadsServer) QueryThreads(ctx context.Context, in *threading.QueryThr
 	for _, e := range tc.Edges {
 		// Sanity check as either the saved query could be out of date or the adhoc sql query doesn't match our internal version
 		if ok, err := threadMatchesQuery(query, e.Thread, e.ThreadEntity, forExternal); err != nil {
-			log.Errorf("Failed to match thread %s against query %s", e.Thread.ID, query.String())
+			log.Errorf("Failed to match thread %s against query %s: %s", e.Thread.ID, query.String(), err)
 		} else if !ok {
 			log.Errorf("Thread query %s returned non-matching thread %s", query.String(), e.Thread.ID)
 			continue
