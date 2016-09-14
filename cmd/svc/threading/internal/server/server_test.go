@@ -359,11 +359,6 @@ func TestCreateThread(t *testing.T) {
 	dl.Expect(mock.NewExpectation(dl.AddThreadMembers, thid, []string{"o1"}))
 	dl.Expect(mock.NewExpectation(dl.UpdateThreadEntity, thid, "e1", (*dal.ThreadEntityUpdate)(nil)).WithReturns(nil))
 
-	// Update reference timestamp for mentioned entities
-	dl.Expect(mock.NewExpectation(dl.UpdateThreadEntity, thid, "e2", &dal.ThreadEntityUpdate{
-		LastReferenced: &now,
-	}).WithReturns(nil))
-
 	ps := &dal.PostMessageRequest{
 		ThreadID:     thid,
 		FromEntityID: "e1",
@@ -396,6 +391,12 @@ func TestCreateThread(t *testing.T) {
 		},
 	}
 	dl.Expect(mock.NewExpectation(dl.PostMessage, ps).WithReturns(ti, nil))
+
+	// Update reference timestamp for mentioned entities
+	dl.Expect(mock.NewExpectation(dl.UpdateThreadEntity, thid, "e2", &dal.ThreadEntityUpdate{
+		LastReferenced: &now,
+	}).WithReturns(nil))
+
 	th2 := &models.Thread{
 		ID:                   thid,
 		OrganizationID:       "o1",
