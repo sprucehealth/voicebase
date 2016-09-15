@@ -669,14 +669,6 @@ func (s *threadsServer) MarkThreadsAsRead(ctx context.Context, in *threading.Mar
 			readTime = time.Unix(int64(watermark.LastMessageTimestamp), 0)
 		}
 
-		// If unread matches expected state then don't do anything
-		currentUnread := isUnread(thread, threadEntity, externalEntity)
-		newUnread := isUnread(thread, &models.ThreadEntity{LastViewed: &readTime}, externalEntity)
-		if currentUnread == newUnread {
-			golog.Debugf("Not setting thread %s as read for %s as it's already ready", thread.ID, in.EntityID)
-			continue
-		}
-
 		// If the new read time is the last as the last message timestamp to the second then
 		// actually use the last message timestamp to avoid any issues with time resolution.
 		// Also, avoid storing a future time to make sure we see future posts.
@@ -686,6 +678,19 @@ func (s *threadsServer) MarkThreadsAsRead(ctx context.Context, in *threading.Mar
 		}
 		if !readTime.Before(lastTimestamp.Truncate(time.Second)) {
 			readTime = lastTimestamp
+		}
+
+		// If unread matches expected state then don't do anything
+		currentUnread := isUnread(thread, threadEntity, externalEntity)
+		newUnread := isUnread(thread, &models.ThreadEntity{LastViewed: &readTime}, externalEntity)
+		if currentUnread == newUnread {
+			var oldTimestamp *time.Time
+			if threadEntity != nil {
+				oldTimestamp = threadEntity.LastViewed
+			}
+			golog.Debugf("Not setting view time on thread %s for %s as unread state is already %t (old timestamp %v, new timestamp %v, last message timestamp %v)",
+				thread.ID, in.EntityID, newUnread, oldTimestamp, readTime, thread.LastMessageTimestamp)
+			continue
 		}
 
 		// Fetch members for thread to make sure the provided entity is a member
