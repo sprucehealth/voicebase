@@ -30,7 +30,16 @@ func validateEntityIDs(ids []string) (string, bool) {
 func threadMatchesQuery(q *models.Query, t *models.Thread, te *models.ThreadEntity, externalEntity bool) (bool, error) {
 	// For efficiency with multiple tokens generate the full set of text to match against using
 	// a delimiter that's very unlikely to be found in a token expression.
-	fullText := strings.ToLower(t.UserTitle + "⇄" + t.SystemTitle)
+	fullText := t.SystemTitle
+	if t.Type == models.ThreadTypeTeam && t.UserTitle != "" {
+		fullText = t.UserTitle
+	}
+	if externalEntity {
+		fullText += "⇄" + t.LastExternalMessageSummary
+	} else {
+		fullText += "⇄" + t.LastMessageSummary
+	}
+	fullText = strings.ToLower(fullText)
 	for _, e := range q.Expressions {
 		switch v := e.Value.(type) {
 		case *models.Expr_Flag_:
