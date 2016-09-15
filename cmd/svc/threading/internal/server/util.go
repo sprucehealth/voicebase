@@ -30,14 +30,11 @@ func validateEntityIDs(ids []string) (string, bool) {
 func threadMatchesQuery(q *models.Query, t *models.Thread, te *models.ThreadEntity, externalEntity bool) (bool, error) {
 	// For efficiency with multiple tokens generate the full set of text to match against using
 	// a delimiter that's very unlikely to be found in a token expression.
-	fullText := t.SystemTitle
-	if t.Type == models.ThreadTypeTeam && t.UserTitle != "" {
-		fullText = t.UserTitle
-	}
+	var fullText string
 	if externalEntity {
-		fullText += "⇄" + t.LastExternalMessageSummary
+		fullText = t.SystemTitle + "⇄" + t.UserTitle + "⇄" + t.LastExternalMessageSummary
 	} else {
-		fullText += "⇄" + t.LastMessageSummary
+		fullText = t.SystemTitle + "⇄" + t.UserTitle + "⇄" + t.LastMessageSummary
 	}
 	fullText = strings.ToLower(fullText)
 	for _, e := range q.Expressions {
@@ -45,15 +42,15 @@ func threadMatchesQuery(q *models.Query, t *models.Thread, te *models.ThreadEnti
 		case *models.Expr_Flag_:
 			switch v.Flag {
 			case models.EXPR_FLAG_UNREAD:
-				if !isUnread(t, te, externalEntity) {
+				if isUnread(t, te, externalEntity) == e.Not {
 					return false, nil
 				}
 			case models.EXPR_FLAG_UNREAD_REFERENCE:
-				if !hasUnreadReference(te) {
+				if hasUnreadReference(te) == e.Not {
 					return false, nil
 				}
 			case models.EXPR_FLAG_FOLLOWING:
-				if te == nil || !te.Following {
+				if (te == nil || !te.Following) != e.Not {
 					return false, nil
 				}
 			default:
@@ -62,18 +59,18 @@ func threadMatchesQuery(q *models.Query, t *models.Thread, te *models.ThreadEnti
 		case *models.Expr_ThreadType_:
 			switch v.ThreadType {
 			case models.EXPR_THREAD_TYPE_PATIENT:
-				if t.Type != models.ThreadTypeExternal && t.Type != models.ThreadTypeSecureExternal {
+				if (t.Type != models.ThreadTypeExternal && t.Type != models.ThreadTypeSecureExternal) != e.Not {
 					return false, nil
 				}
 			case models.EXPR_THREAD_TYPE_TEAM:
-				if t.Type != models.ThreadTypeTeam {
+				if (t.Type != models.ThreadTypeTeam) != e.Not {
 					return false, nil
 				}
 			default:
 				return false, errors.Errorf("unknown expression thread type %s", v.ThreadType)
 			}
 		case *models.Expr_Token:
-			if !strings.Contains(fullText, strings.ToLower(v.Token)) {
+			if strings.Contains(fullText, strings.ToLower(v.Token)) == e.Not {
 				return false, nil
 			}
 		default:

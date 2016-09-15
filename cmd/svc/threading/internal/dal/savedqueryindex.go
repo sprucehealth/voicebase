@@ -8,34 +8,57 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/models"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/libs/golog"
 )
 
+const sqItemBatchSize = 200
+
 func (d *dal) AddItemsToSavedQueryIndex(ctx context.Context, items []*SavedQueryThread) error {
-	if len(items) == 0 {
-		return nil
+	vals := dbutil.MySQLMultiInsert(sqItemBatchSize)
+	for len(items) > 0 {
+		vals.Reset()
+		n := len(items)
+		if n > sqItemBatchSize {
+			n = sqItemBatchSize
+		}
+		for _, it := range items[:n] {
+			vals.Append(it.SavedQueryID, it.ThreadID, it.Unread, it.Timestamp)
+		}
+		items = items[n:]
+		_, err := d.db.Exec(`
+			INSERT INTO saved_query_thread (saved_query_id, thread_id, unread, timestamp)
+			VALUES `+vals.Query()+`
+			ON DUPLICATE KEY UPDATE unread = VALUES(unread), timestamp = VALUES(timestamp)`,
+			vals.Values()...)
+		if dbutil.IsMySQLWarning(err, dbutil.MySQLNoRangeOptimization) {
+			golog.Errorf("When adding items to saved query got MySQL warning: %s", err)
+		} else if err != nil {
+			return errors.Trace(err)
+		}
 	}
-	vals := dbutil.MySQLMultiInsert(len(items))
-	for _, it := range items {
-		vals.Append(it.SavedQueryID, it.ThreadID, it.Unread, it.Timestamp)
-	}
-	_, err := d.db.Exec(`
-		INSERT INTO saved_query_thread (saved_query_id, thread_id, unread, timestamp)
-		VALUES `+vals.Query()+`
-		ON DUPLICATE KEY UPDATE unread = VALUES(unread), timestamp = VALUES(timestamp)`,
-		vals.Values()...)
-	return errors.Trace(err)
+	return nil
 }
 
 func (d *dal) RemoveItemsFromSavedQueryIndex(ctx context.Context, items []*SavedQueryThread) error {
-	if len(items) == 0 {
-		return nil
+	vals := dbutil.MySQLMultiInsert(sqItemBatchSize)
+	for len(items) > 0 {
+		vals.Reset()
+		n := len(items)
+		if n > sqItemBatchSize {
+			n = sqItemBatchSize
+		}
+		for _, it := range items[:n] {
+			vals.Append(it.SavedQueryID, it.ThreadID)
+		}
+		items = items[n:]
+		_, err := d.db.Exec(`DELETE FROM saved_query_thread WHERE (saved_query_id, thread_id) IN (`+vals.Query()+`)`, vals.Values()...)
+		if dbutil.IsMySQLWarning(err, dbutil.MySQLNoRangeOptimization) {
+			golog.Errorf("When removing items from saved query got warning: %s", err)
+		} else if err != nil {
+			return errors.Trace(err)
+		}
 	}
-	vals := dbutil.MySQLMultiInsert(len(items))
-	for _, it := range items {
-		vals.Append(it.SavedQueryID, it.ThreadID)
-	}
-	_, err := d.db.Exec(`DELETE FROM saved_query_thread WHERE (saved_query_id, thread_id) IN (`+vals.Query()+`)`, vals.Values()...)
-	return errors.Trace(err)
+	return nil
 }
 
 func (d *dal) RemoveAllItemsFromSavedQueryIndex(ctx context.Context, sqID models.SavedQueryID) error {

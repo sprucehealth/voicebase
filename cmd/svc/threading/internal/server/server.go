@@ -663,7 +663,7 @@ func (s *threadsServer) MarkThreadsAsRead(ctx context.Context, in *threading.Mar
 
 		readTime := currentTime
 		// only use the last message timestamp if one is provided by the client or it is in the past but after the reference date of the product launch
-		if watermark.LastMessageTimestamp != 0 && watermark.LastMessageTimestamp < uint64(readTime.Unix()) && watermark.LastMessageTimestamp > uint64(baymaxLaunchDate.Unix()) {
+		if watermark.LastMessageTimestamp != 0 && watermark.LastMessageTimestamp < uint64(currentTime.Unix()) && watermark.LastMessageTimestamp > uint64(baymaxLaunchDate.Unix()) {
 			readTime = time.Unix(int64(watermark.LastMessageTimestamp), 0)
 		}
 
@@ -1623,7 +1623,11 @@ func (s *threadsServer) UpdateThread(ctx context.Context, in *threading.UpdateTh
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	th = ts[0]
+	if len(ts) == 0 {
+		th = nil
+	} else {
+		th = ts[0]
+	}
 	return &threading.UpdateThreadResponse{
 		Thread: th,
 	}, nil

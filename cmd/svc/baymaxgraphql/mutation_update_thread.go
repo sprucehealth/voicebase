@@ -144,6 +144,15 @@ var updateThreadMutation = &graphql.Field{
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}
+		// The thread will be nil in the response if the viewer removed them self as a member of a team thread
+		if res.Thread == nil {
+			return &updateThreadOutput{
+				ClientMutationID: in.ClientMutationID,
+				Success:          true,
+				orgID:            thread.OrganizationID,
+				entityID:         ent.ID,
+			}, nil
+		}
 		thread = res.Thread
 
 		th, err := transformThreadToResponse(ctx, ram, thread, acc)

@@ -12,6 +12,7 @@ type MultiInsert interface {
 	NumColumns() int
 	Query() string
 	Values() []interface{}
+	Reset()
 }
 
 type multiInsert struct {
@@ -72,6 +73,11 @@ func (mi *multiInsert) Values() []interface{} {
 
 func (mi *multiInsert) IsEmpty() bool {
 	return len(mi.vals) == 0
+}
+
+func (mi *multiInsert) Reset() {
+	mi.vals = mi.vals[:0]
+	mi.nCols = 0
 }
 
 func (mi *mySQLMultiInsert) Query() string {

@@ -32,6 +32,13 @@ func TestThreadMatchesQuery(t *testing.T) {
 			q:  &models.Query{Expressions: []*models.Expr{{Value: &models.Expr_Token{Token: "oe"}}}},
 			m:  true,
 		},
+		"token in external summary": {
+			t:  &models.Thread{LastExternalMessageSummary: "Joe"},
+			te: nil,
+			ee: true,
+			q:  &models.Query{Expressions: []*models.Expr{{Value: &models.Expr_Token{Token: "oe"}}}},
+			m:  true,
+		},
 		"unread no thread entity": {
 			t:  &models.Thread{MessageCount: 1, LastMessageTimestamp: now},
 			te: nil,
@@ -88,6 +95,21 @@ func TestThreadMatchesQuery(t *testing.T) {
 			q:  &models.Query{Expressions: []*models.Expr{{Value: &models.Expr_ThreadType_{ThreadType: models.EXPR_THREAD_TYPE_TEAM}}}},
 			m:  true,
 		},
+		// Negative matches
+		"not token in system title": {
+			t:  &models.Thread{SystemTitle: "Bob"},
+			te: nil,
+			ee: false,
+			q:  &models.Query{Expressions: []*models.Expr{{Not: true, Value: &models.Expr_Token{Token: "Jo"}}}},
+			m:  true,
+		},
+		"not unread no thread entity": {
+			t:  &models.Thread{MessageCount: 0},
+			te: nil,
+			ee: false,
+			q:  &models.Query{Expressions: []*models.Expr{{Not: true, Value: &models.Expr_Flag_{Flag: models.EXPR_FLAG_UNREAD}}}},
+			m:  true,
+		},
 		// Non matches
 		"unmatched token": {
 			t:  &models.Thread{SystemTitle: "Esther"},
@@ -115,6 +137,21 @@ func TestThreadMatchesQuery(t *testing.T) {
 			te: nil,
 			ee: false,
 			q:  &models.Query{Expressions: []*models.Expr{{Value: &models.Expr_Flag_{Flag: models.EXPR_FLAG_FOLLOWING}}}},
+			m:  false,
+		},
+		// Negative non-matches
+		"unmatched not token in system title": {
+			t:  &models.Thread{SystemTitle: "Joe"},
+			te: nil,
+			ee: false,
+			q:  &models.Query{Expressions: []*models.Expr{{Not: true, Value: &models.Expr_Token{Token: "Jo"}}}},
+			m:  false,
+		},
+		"unmatched not unread": {
+			t:  &models.Thread{MessageCount: 1, LastMessageTimestamp: now},
+			te: &models.ThreadEntity{LastViewed: ptr.Time(now.Add(-time.Second))},
+			ee: false,
+			q:  &models.Query{Expressions: []*models.Expr{{Not: true, Value: &models.Expr_Flag_{Flag: models.EXPR_FLAG_UNREAD}}}},
 			m:  false,
 		},
 	}

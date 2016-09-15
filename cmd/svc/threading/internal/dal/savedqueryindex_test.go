@@ -161,3 +161,46 @@ func TestSavedQueryIndex(t *testing.T) {
 	test.Equals(t, 0, sqr.Unread)
 	test.Equals(t, 0, sqr.Total)
 }
+
+func TestLargeBatchSavedQueryItems(t *testing.T) {
+	dt := testsql.Setup(t, schemaGlob)
+	defer dt.Cleanup(t)
+
+	dal := New(dt.DB)
+	ctx := context.Background()
+
+	sq := &models.SavedQuery{
+		Ordinal:  1,
+		EntityID: "ent",
+		Query: &models.Query{
+			Expressions: []*models.Expr{
+				{Value: &models.Expr_Token{Token: "summary"}},
+			},
+		},
+		Title: "sq1",
+	}
+	_, err := dal.CreateSavedQuery(ctx, sq)
+	test.OK(t, err)
+
+	sqr, err := dal.SavedQuery(ctx, sq.ID)
+	test.OK(t, err)
+	test.Equals(t, sq, sqr)
+
+	// Create some threads
+	t1 := &models.Thread{
+		OrganizationID:             "org",
+		Type:                       models.ThreadTypeExternal,
+		LastMessageSummary:         "thread1 summary",
+		LastMessageTimestamp:       time.Unix(10e8, 0),
+		LastExternalMessageSummary: "extsummary",
+	}
+	tid1, err := dal.CreateThread(ctx, t1)
+	test.OK(t, err)
+
+	items := make([]*SavedQueryThread, 5000)
+	for i := range items {
+		items[i] = &SavedQueryThread{ThreadID: tid1, SavedQueryID: sqr.ID, Timestamp: time.Now(), Unread: false}
+	}
+	test.OK(t, dal.AddItemsToSavedQueryIndex(ctx, items))
+	test.OK(t, dal.RemoveItemsFromSavedQueryIndex(ctx, items))
+}

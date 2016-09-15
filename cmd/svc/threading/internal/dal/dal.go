@@ -329,30 +329,52 @@ func (d *dal) IterateThreads(ctx context.Context, query *models.Query, memberEnt
 	cond = append(cond, "t.deleted = ?")
 	vals = append(vals, false)
 
-	// TODO: This produces what's likely a very inefficient query. It's done just to get this out for testing.
-	// TODO: implement the 'not' for the expression
+	// TODO: This produces what's likely a very inefficient query.
 	if query != nil {
 		for _, e := range query.Expressions {
 			switch v := e.Value.(type) {
 			case *models.Expr_Flag_:
 				switch v.Flag {
 				case models.EXPR_FLAG_UNREAD:
-					// TODO: handle "forExternal"
-					cond = append(cond, "(viewer.last_viewed IS NULL OR viewer.last_viewed < t.last_message_timestamp)")
+					col := "last_message_timestamp"
+					if forExternal {
+						col = "last_external_message_timestamp"
+					}
+					if e.Not {
+						cond = append(cond, "(viewer.last_viewed IS NOT NULL AND viewer.last_viewed >= t."+col+")")
+					} else {
+						cond = append(cond, "(viewer.last_viewed IS NULL OR viewer.last_viewed < t."+col+")")
+					}
 				case models.EXPR_FLAG_UNREAD_REFERENCE:
-					cond = append(cond, "(viewer.last_referenced IS NOT NULL AND (viewer.last_viewed IS NULL OR viewer.last_viewed < viewer.last_referenced))")
+					if e.Not {
+						cond = append(cond, "(viewer.last_referenced IS NULL OR (viewer.last_viewed IS NOT NULL AND viewer.last_viewed >= viewer.last_referenced))")
+					} else {
+						cond = append(cond, "(viewer.last_referenced IS NOT NULL AND (viewer.last_viewed IS NULL OR viewer.last_viewed < viewer.last_referenced))")
+					}
 				case models.EXPR_FLAG_FOLLOWING:
-					cond = append(cond, "(viewer.following IS NOT NULL AND viewer.following = true)")
+					if e.Not {
+						cond = append(cond, "(viewer.following IS NULL AND viewer.following = false)")
+					} else {
+						cond = append(cond, "(viewer.following IS NOT NULL AND viewer.following = true)")
+					}
 				default:
 					return nil, errors.Errorf("unknown expression flag %s", v.Flag)
 				}
 			case *models.Expr_ThreadType_:
 				switch v.ThreadType {
 				case models.EXPR_THREAD_TYPE_PATIENT:
-					cond = append(cond, "(t.type = ? OR t.type = ?)")
+					if e.Not {
+						cond = append(cond, "(t.type != ? AND t.type != ?)")
+					} else {
+						cond = append(cond, "(t.type = ? OR t.type = ?)")
+					}
 					vals = append(vals, models.ThreadTypeExternal, models.ThreadTypeSecureExternal)
 				case models.EXPR_THREAD_TYPE_TEAM:
-					cond = append(cond, "t.type = ?")
+					if e.Not {
+						cond = append(cond, "t.type != ?")
+					} else {
+						cond = append(cond, "t.type = ?")
+					}
 					vals = append(vals, models.ThreadTypeTeam)
 				default:
 					return nil, errors.Errorf("unknown expression thread type %s", v.ThreadType)
@@ -362,7 +384,11 @@ func (d *dal) IterateThreads(ctx context.Context, query *models.Query, memberEnt
 				if forExternal {
 					col = "t.last_external_message_summary"
 				}
-				cond = append(cond, `(COALESCE(t.system_title, '') LIKE ? OR COALESCE(t.user_title, '') LIKE ? OR `+col+` LIKE ?)`)
+				if e.Not {
+					cond = append(cond, `NOT (COALESCE(t.system_title, '') LIKE ? OR COALESCE(t.user_title, '') LIKE ? OR `+col+` LIKE ?)`)
+				} else {
+					cond = append(cond, `(COALESCE(t.system_title, '') LIKE ? OR COALESCE(t.user_title, '') LIKE ? OR `+col+` LIKE ?)`)
+				}
 				match := "%" + v.Token + "%"
 				vals = append(vals, match, match, match)
 			default:
