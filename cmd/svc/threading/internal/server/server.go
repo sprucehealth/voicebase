@@ -766,14 +766,10 @@ func (s *threadsServer) MarkThreadsAsRead(ctx context.Context, in *threading.Mar
 		}
 	}
 
-	p := conc.NewParallel()
-	p.Go(func() error {
-		return errors.Trace(s.dal.AddItemsToSavedQueryIndex(ctx, addIndex))
-	})
-	p.Go(func() error {
-		return errors.Trace(s.dal.RemoveItemsFromSavedQueryIndex(ctx, removeIndex))
-	})
-	if err := p.Wait(); err != nil {
+	if err := s.dal.AddItemsToSavedQueryIndex(ctx, addIndex); err != nil {
+		return nil, errors.Trace(err)
+	}
+	if err := s.dal.RemoveItemsFromSavedQueryIndex(ctx, removeIndex); err != nil {
 		return nil, errors.Trace(err)
 	}
 

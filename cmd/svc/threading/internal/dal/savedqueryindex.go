@@ -3,7 +3,9 @@ package dal
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"strings"
+	"time"
 
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/models"
 	"github.com/sprucehealth/backend/libs/dbutil"
@@ -25,15 +27,21 @@ func (d *dal) AddItemsToSavedQueryIndex(ctx context.Context, items []*SavedQuery
 			vals.Append(it.SavedQueryID, it.ThreadID, it.Unread, it.Timestamp)
 		}
 		items = items[n:]
-		_, err := d.db.Exec(`
-			INSERT INTO saved_query_thread (saved_query_id, thread_id, unread, timestamp)
-			VALUES `+vals.Query()+`
-			ON DUPLICATE KEY UPDATE unread = VALUES(unread), timestamp = VALUES(timestamp)`,
-			vals.Values()...)
-		if dbutil.IsMySQLWarning(err, dbutil.MySQLNoRangeOptimization) {
-			golog.Errorf("When adding items to saved query got MySQL warning: %s", err)
-		} else if err != nil {
-			return errors.Trace(err)
+		for retry := 3; retry > 0; retry-- {
+			_, err := d.db.Exec(`
+				INSERT INTO saved_query_thread (saved_query_id, thread_id, unread, timestamp)
+				VALUES `+vals.Query()+`
+				ON DUPLICATE KEY UPDATE unread = VALUES(unread), timestamp = VALUES(timestamp)`,
+				vals.Values()...)
+			if dbutil.IsMySQLWarning(err, dbutil.MySQLNoRangeOptimization) {
+				golog.Errorf("When adding items to saved query got MySQL warning: %s", err)
+			} else if dbutil.IsMySQLError(err, dbutil.MySQLDeadlock) {
+				time.Sleep(time.Millisecond * time.Duration(5+rand.Intn(10)))
+				continue
+			} else if err != nil {
+				return errors.Trace(err)
+			}
+			break
 		}
 	}
 	return nil
@@ -51,11 +59,17 @@ func (d *dal) RemoveItemsFromSavedQueryIndex(ctx context.Context, items []*Saved
 			vals.Append(it.SavedQueryID, it.ThreadID)
 		}
 		items = items[n:]
-		_, err := d.db.Exec(`DELETE FROM saved_query_thread WHERE (saved_query_id, thread_id) IN (`+vals.Query()+`)`, vals.Values()...)
-		if dbutil.IsMySQLWarning(err, dbutil.MySQLNoRangeOptimization) {
-			golog.Errorf("When removing items from saved query got warning: %s", err)
-		} else if err != nil {
-			return errors.Trace(err)
+		for retry := 3; retry > 0; retry-- {
+			_, err := d.db.Exec(`DELETE FROM saved_query_thread WHERE (saved_query_id, thread_id) IN (`+vals.Query()+`)`, vals.Values()...)
+			if dbutil.IsMySQLWarning(err, dbutil.MySQLNoRangeOptimization) {
+				golog.Errorf("When removing items from saved query got warning: %s", err)
+			} else if dbutil.IsMySQLError(err, dbutil.MySQLDeadlock) {
+				time.Sleep(time.Millisecond * time.Duration(5+rand.Intn(10)))
+				continue
+			} else if err != nil {
+				return errors.Trace(err)
+			}
+			break
 		}
 	}
 	return nil
