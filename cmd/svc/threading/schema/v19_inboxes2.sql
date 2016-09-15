@@ -1,6 +1,6 @@
 DELIMITER $$
 
-ALTER TABLE saved_queries DROP COLUMN organization_id$$
+ALTER TABLE saved_queries MODIFY organization_id VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NULL$$
 
 CREATE TABLE saved_query_thread (
     saved_query_id BIGINT UNSIGNED NOT NULL,
