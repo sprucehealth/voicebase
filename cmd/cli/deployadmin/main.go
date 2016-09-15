@@ -68,6 +68,10 @@ func main() {
 
 	cmd := flag.Arg(0)
 
+	if cnf.DeployAddr == "" {
+		cnf.DeployAddr = "_deploy._tcp.service.corp-us-east-1.spruce"
+	}
+
 	for name, cfn := range commands {
 		if name == cmd {
 			c, err := cfn(cnf)
