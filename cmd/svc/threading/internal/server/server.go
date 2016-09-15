@@ -650,6 +650,8 @@ func (s *threadsServer) MarkThreadsAsRead(ctx context.Context, in *threading.Mar
 		return nil, errors.Trace(err)
 	}
 
+	golog.Debugf("Marking threads as read for entity %s: %v", in.EntityID, threadIDs)
+
 	sqs, err := s.dal.SavedQueries(ctx, in.EntityID)
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -671,6 +673,7 @@ func (s *threadsServer) MarkThreadsAsRead(ctx context.Context, in *threading.Mar
 		currentUnread := isUnread(thread, threadEntity, externalEntity)
 		newUnread := isUnread(thread, &models.ThreadEntity{LastViewed: &readTime}, externalEntity)
 		if currentUnread == newUnread {
+			golog.Debugf("Not setting thread %s as read for %s as it's already ready", thread.ID, in.EntityID)
 			continue
 		}
 
