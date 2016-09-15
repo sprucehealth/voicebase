@@ -100,12 +100,12 @@ func createPaymentRequest(p graphql.ResolveParams, in createPaymentRequestInput)
 	ctx := p.Context
 	ram := raccess.ResourceAccess(p)
 
-	if in.AmountInCents <= 0 {
+	if in.AmountInCents < 50 {
 		return &createPaymentRequestOutput{
 			ClientMutationID: in.ClientMutationID,
 			Success:          false,
 			ErrorCode:        createPaymentRequestErrorCodeInvalidAmount,
-			ErrorMessage:     "Please enter a valid amount greater than 0.",
+			ErrorMessage:     "Please enter a valid amount greater than 50 cents.",
 		}, nil
 	}
 

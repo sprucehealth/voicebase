@@ -75,27 +75,28 @@ func (w *Workers) processPaymentPendingProcessing() {
 				continue
 			}
 			if processingErr != nil {
-				if server.IsPaymentMethodError(errors.Cause(processingErr)) {
-					if server.IsPaymentMethodErrorRetryable(errors.Cause(processingErr)) {
-						golog.Infof("Encountered retryable error while processing payment %s: %s", p.ID, processingErr)
-						continue
-					} else {
-						processingErrReason := server.PaymentMethodErrorMesssage(errors.Cause(processingErr))
-						if err := w.postErrorProcessingToThread(ctx, p, processingErrReason); err != nil {
-							smet.Errorf(workerErrMetricName, "Error while posting processing error thread update to thread %s for payment %s: %s", p.ThreadID, p.ID, err)
-							continue
-						}
-						if _, err := dl.UpdatePayment(ctx, p.ID, &dal.PaymentUpdate{
-							Lifecycle:              dal.PaymentLifecycleErrorProcessing,
-							ChangeState:            dal.PaymentChangeStateNone,
-							ProcessorStatusMessage: ptr.String(processingErrReason),
-						}); err != nil {
-							smet.Errorf(workerErrMetricName, "Error while updating payment %s with new processorStatusMessage %q: %s", p.ID, server.PaymentMethodErrorMesssage(errors.Cause(processingErr)), err)
-						}
-						continue
-					}
+				if server.IsProcessingErrorRetryable(processingErr) {
+					golog.Infof("Encountered retryable error while processing payment %s: %s", p.ID, processingErr)
+					continue
 				}
-				smet.Errorf(workerErrMetricName, "Error while processing payment %s: %s", p.ID, processingErr)
+				var processingErrReason string
+				if server.IsPaymentMethodError(processingErr) {
+					processingErrReason = server.PaymentMethodErrorMesssage(processingErr)
+				} else {
+					smet.Errorf(workerErrMetricName, "Encountered non retryable non user error while processing payment %s: %s", p.ID, processingErr)
+					processingErrReason = "An unexpected error occured while processing the payment. Our engineers have been notified and are investigating the issue."
+				}
+				if err := w.postErrorProcessingToThread(ctx, p, processingErrReason); err != nil {
+					smet.Errorf(workerErrMetricName, "Error while posting processing error thread update to thread %s for payment %s: %s", p.ThreadID, p.ID, err)
+					continue
+				}
+				if _, err := dl.UpdatePayment(ctx, p.ID, &dal.PaymentUpdate{
+					Lifecycle:              dal.PaymentLifecycleErrorProcessing,
+					ChangeState:            dal.PaymentChangeStateNone,
+					ProcessorStatusMessage: ptr.String(processingErrReason),
+				}); err != nil {
+					smet.Errorf(workerErrMetricName, "Error while updating payment %s with new processorStatusMessage %q: %s", p.ID, server.PaymentMethodErrorMesssage(errors.Cause(processingErr)), err)
+				}
 				continue
 			} else {
 				if err := w.postPaymentCompletedToThread(ctx, p); err != nil {

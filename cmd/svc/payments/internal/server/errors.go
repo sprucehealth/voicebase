@@ -2,12 +2,13 @@ package server
 
 import (
 	istripe "github.com/sprucehealth/backend/cmd/svc/payments/internal/stripe"
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/stripe/stripe-go"
 )
 
 // IsPaymentMethodError returns a boolean value representing if a payment processor claims the payment method is in error
 func IsPaymentMethodError(err error) bool {
-	if isStripeCardErr(err) {
+	if isStripeCardErr(errors.Cause(err)) {
 		return true
 	}
 	return false
@@ -19,20 +20,19 @@ func isStripeCardErr(err error) bool {
 
 // PaymentMethodErrorMesssage returns the well formtted message inside a payment method error
 func PaymentMethodErrorMesssage(err error) string {
-	if isStripeCardErr(err) {
+	if isStripeCardErr(errors.Cause(err)) {
 		return istripe.ErrMessage(err)
 	}
 	return ""
 }
 
-// IsPaymentMethodErrorRetryable returns is the error related to the payment method is retryable
-func IsPaymentMethodErrorRetryable(err error) bool {
-	if isStripeCardErr(err) {
-		return isStripeCardErrorRetryable(err)
-	}
-	return false
+// IsProcessingErrorRetryable returns is the error related to payment processing is retryable
+func IsProcessingErrorRetryable(err error) bool {
+	return isStripeErrorRetryable(errors.Cause(err))
 }
 
-func isStripeCardErrorRetryable(err error) bool {
-	return istripe.ErrCode(err) == stripe.ProcessingErr
+func isStripeErrorRetryable(err error) bool {
+	return istripe.ErrCode(err) == stripe.ProcessingErr ||
+		// TODO: Backoff
+		istripe.ErrCode(err) == stripe.RateLimit
 }
