@@ -1,14 +1,12 @@
 package config
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/aws/aws-sdk-go/service/sts/stsiface"
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/svc/deploy"
-	"google.golang.org/grpc"
 )
 
 type Config struct {
@@ -17,12 +15,9 @@ type Config struct {
 }
 
 func (c *Config) DeployClient() (deploy.DeployClient, error) {
-	if c.DeployAddr == "" {
-		return nil, errors.New("Deploy service address required")
-	}
-	conn, err := grpc.Dial(c.DeployAddr, grpc.WithInsecure())
+	conn, err := boot.DialGRPC("deploy", c.DeployAddr)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to connect to auth service: %s", err)
+		return nil, fmt.Errorf("Unable to connect to deploy service: %s", err)
 	}
 	return deploy.NewDeployClient(conn), nil
 }
