@@ -650,6 +650,11 @@ func (s *threadsServer) MarkThreadsAsRead(ctx context.Context, in *threading.Mar
 		return nil, errors.Trace(err)
 	}
 
+	watermarks := make(map[string]uint64, len(in.ThreadWatermarks))
+	for _, w := range in.ThreadWatermarks {
+		watermarks[w.ThreadID] = w.LastMessageTimestamp
+	}
+
 	golog.Debugf("Marking threads as read for entity %s: %v", in.EntityID, threadIDs)
 
 	sqs, err := s.dal.SavedQueries(ctx, in.EntityID)
@@ -659,14 +664,14 @@ func (s *threadsServer) MarkThreadsAsRead(ctx context.Context, in *threading.Mar
 	var addIndex, removeIndex []*dal.SavedQueryThread
 
 	currentTime := s.clk.Now()
-	for i, watermark := range in.ThreadWatermarks {
-		thread := threads[i]
+	for i, thread := range threads {
 		threadEntity := threadEntities[i]
+		watermarkTimestamp := watermarks[thread.ID.String()]
 
 		readTime := currentTime
 		// only use the last message timestamp if one is provided by the client or it is in the past but after the reference date of the product launch
-		if watermark.LastMessageTimestamp != 0 && watermark.LastMessageTimestamp < uint64(currentTime.Unix()) && watermark.LastMessageTimestamp > uint64(baymaxLaunchDate.Unix()) {
-			readTime = time.Unix(int64(watermark.LastMessageTimestamp), 0)
+		if watermarkTimestamp != 0 && watermarkTimestamp < uint64(currentTime.Unix()) && watermarkTimestamp > uint64(baymaxLaunchDate.Unix()) {
+			readTime = time.Unix(int64(watermarkTimestamp), 0)
 		}
 
 		// If the new read time is the last as the last message timestamp to the second then
