@@ -36,7 +36,11 @@ func (d *dal) AddItemsToSavedQueryIndex(ctx context.Context, items []*SavedQuery
 			if dbutil.IsMySQLWarning(err, dbutil.MySQLNoRangeOptimization) {
 				golog.Errorf("When adding items to saved query got MySQL warning: %s", err)
 			} else if dbutil.IsMySQLError(err, dbutil.MySQLDeadlock) {
-				time.Sleep(time.Millisecond * time.Duration(5+rand.Intn(10)))
+				if retry == 0 {
+					return errors.Trace(err)
+				}
+				golog.Infof("Deadlock when add items to saved query, retry %d: %s", retry, err)
+				time.Sleep(time.Millisecond * time.Duration(10+rand.Intn(20)))
 				continue
 			} else if err != nil {
 				return errors.Trace(err)
@@ -64,7 +68,11 @@ func (d *dal) RemoveItemsFromSavedQueryIndex(ctx context.Context, items []*Saved
 			if dbutil.IsMySQLWarning(err, dbutil.MySQLNoRangeOptimization) {
 				golog.Errorf("When removing items from saved query got warning: %s", err)
 			} else if dbutil.IsMySQLError(err, dbutil.MySQLDeadlock) {
-				time.Sleep(time.Millisecond * time.Duration(5+rand.Intn(10)))
+				if retry == 0 {
+					return errors.Trace(err)
+				}
+				golog.Infof("Deadlock when removing items from saved query, retry %d: %s", retry, err)
+				time.Sleep(time.Millisecond * time.Duration(10+rand.Intn(20)))
 				continue
 			} else if err != nil {
 				return errors.Trace(err)
