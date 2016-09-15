@@ -60,6 +60,13 @@ func TestThreadMatchesQuery(t *testing.T) {
 			q:  &models.Query{Expressions: []*models.Expr{{Value: &models.Expr_Flag_{Flag: models.EXPR_FLAG_UNREAD_REFERENCE}}}},
 			m:  true,
 		},
+		"following": {
+			t:  &models.Thread{MessageCount: 1, LastMessageTimestamp: now},
+			te: &models.ThreadEntity{Following: true},
+			ee: false,
+			q:  &models.Query{Expressions: []*models.Expr{{Value: &models.Expr_Flag_{Flag: models.EXPR_FLAG_FOLLOWING}}}},
+			m:  true,
+		},
 		"patient thread": {
 			t:  &models.Thread{Type: models.ThreadTypeSecureExternal},
 			te: nil,
@@ -94,6 +101,20 @@ func TestThreadMatchesQuery(t *testing.T) {
 			te: &models.ThreadEntity{LastViewed: &now},
 			ee: false,
 			q:  &models.Query{Expressions: []*models.Expr{{Value: &models.Expr_Flag_{Flag: models.EXPR_FLAG_UNREAD}}}},
+			m:  false,
+		},
+		"unmatched unread reference no thread entity": {
+			t:  &models.Thread{MessageCount: 1, LastMessageTimestamp: now},
+			te: nil,
+			ee: false,
+			q:  &models.Query{Expressions: []*models.Expr{{Value: &models.Expr_Flag_{Flag: models.EXPR_FLAG_UNREAD_REFERENCE}}}},
+			m:  false,
+		},
+		"unmatched following no thread entity": {
+			t:  &models.Thread{MessageCount: 1, LastMessageTimestamp: now},
+			te: nil,
+			ee: false,
+			q:  &models.Query{Expressions: []*models.Expr{{Value: &models.Expr_Flag_{Flag: models.EXPR_FLAG_FOLLOWING}}}},
 			m:  false,
 		},
 	}

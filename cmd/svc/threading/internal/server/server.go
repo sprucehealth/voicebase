@@ -883,12 +883,10 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 			return errors.Trace(err)
 		}
 
-		now := s.clk.Now()
-
 		// Update unread reference status for anyone mentioned
 		for _, r := range textRefs {
 			if err := dl.UpdateThreadEntity(ctx, threadID, r.ID, &dal.ThreadEntityUpdate{
-				LastReferenced: &now,
+				LastReferenced: &item.Created,
 			}); err != nil {
 				return errors.Trace(err)
 			}
@@ -907,9 +905,9 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 			if lastViewed == nil {
 				lastViewed = &thread.Created
 			}
-			if lastViewed.Unix() >= prePostLastMessageTimestamp.Unix() {
+			if !lastViewed.Before(prePostLastMessageTimestamp.Truncate(time.Second)) {
 				teUpdate = &dal.ThreadEntityUpdate{
-					LastViewed: &now,
+					LastViewed: &item.Created,
 				}
 			}
 		}
