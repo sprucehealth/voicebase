@@ -306,6 +306,20 @@ func (h *graphQLHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// then the account can be updated in the context.
 	ctx = gqlctx.WithAccount(ctx, acc)
 
+	logCtx := []interface{}{
+		"Query", req.Query,
+		"AppType", sHeaders.AppType,
+		"Platform", sHeaders.Platform,
+		"DeviceID", sHeaders.DeviceID,
+	}
+	if acc != nil {
+		logCtx = append(logCtx, "AccountID", acc.ID)
+	}
+	if sHeaders.AppVersion != nil {
+		logCtx = append(logCtx, "AppVersion", sHeaders.AppVersion.String())
+	}
+	ctx = golog.WithLogger(ctx, golog.ContextLogger(ctx).Context(logCtx...))
+
 	httputil.CtxLogMap(ctx).Transact(func(m map[interface{}]interface{}) {
 		m["Query"] = req.Query
 		if acc != nil {
@@ -345,11 +359,11 @@ func (h *graphQLHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
 		}, raccess.EntityQueryOptionUnathorized)
 		if err != nil {
-			golog.Errorf("Failed to lookup entities for account %s: %s", acc.ID, err)
+			golog.ContextLogger(ctx).Errorf("Failed to lookup entities for account %s: %s", acc.ID, err)
 			return false
 		}
 		if len(eres) != 1 {
-			golog.Errorf("No entities found for account %s", acc.ID)
+			golog.ContextLogger(ctx).Errorf("No entities found for account %s", acc.ID)
 			return false
 		}
 
@@ -361,7 +375,7 @@ func (h *graphQLHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		if org == nil {
-			golog.Errorf("No org found for account %s entity %s", acc.ID, eres[0].ID)
+			golog.ContextLogger(ctx).Errorf("No org found for account %s entity %s", acc.ID, eres[0].ID)
 			return false
 		}
 
@@ -370,7 +384,7 @@ func (h *graphQLHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			Keys:   []*settings.ConfigKey{{Key: gqlsettings.ConfigKeyVideoCalling}},
 		})
 		if err != nil {
-			golog.Errorf("Failed to lookup setting %s for org %s: %s", gqlsettings.ConfigKeyVideoCalling, org.ID, err)
+			golog.ContextLogger(ctx).Errorf("Failed to lookup setting %s for org %s: %s", gqlsettings.ConfigKeyVideoCalling, org.ID, err)
 			return false
 		}
 		return res.Values[0].GetBoolean().Value
@@ -399,11 +413,11 @@ func (h *graphQLHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		for i, e := range response.Errors {
 			errorTypes[i] = e.Type
 			if e.StackTrace != "" {
-				golog.Errorf("[%s] %s\n%s", e.Type, e.Message, e.StackTrace)
+				golog.ContextLogger(ctx).Errorf("[%s] %s\n%s", e.Type, e.Message, e.StackTrace)
 				// The stack trace shouldn't be serialized in the response but clear it out just to be sure
 				e.StackTrace = ""
 			} else {
-				golog.Warningf("GraphQL error response %s: %s (%s)\n%s", e.Type, e.Message, e.UserMessage, req.Query)
+				golog.ContextLogger(ctx).Warningf("GraphQL error response %s: %s (%s)", e.Type, e.Message, e.UserMessage)
 			}
 			switch errors.ErrorType(e.Type) {
 			case errors.ErrTypeNotAuthorized:
