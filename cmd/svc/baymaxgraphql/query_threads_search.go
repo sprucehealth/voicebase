@@ -59,6 +59,12 @@ var threadsSearchQuery = &graphql.Field{
 			RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL, directory.EntityType_PATIENT},
 			ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
 		}, in.OrganizationID)
+		if err == raccess.ErrNotFound {
+			return nil, errors.ErrNotAuthorized(ctx, in.OrganizationID)
+		} else if err != nil {
+			return nil, errors.Trace(err)
+		}
+
 		var org *directory.Entity
 		for _, em := range ent.Memberships {
 			if em.Type == directory.EntityType_ORGANIZATION {
