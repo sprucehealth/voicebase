@@ -985,7 +985,7 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 	if err != nil {
 		return nil, errors.Trace(err)
 	} else if len(threads) == 0 {
-		return nil, errors.Errorf("Thread %s that was just created was not found", threadID)
+		return nil, errors.Errorf("Thread %s that was just posted to was not found", threadID)
 	}
 	thread = threads[0]
 	if err := s.updateSavedQueriesForThread(ctx, thread); err != nil {
@@ -1006,6 +1006,18 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 	}
 
 	if linkedItem != nil {
+		// Requery the linked thread to get updated metadata (e.g. last message timestamp)
+		linkedThreads, err := s.dal.Threads(ctx, []models.ThreadID{linkedItem.ThreadID})
+		if err != nil {
+			return nil, errors.Trace(err)
+		} else if len(linkedThreads) == 0 {
+			golog.Errorf("Thread %s that was just posted to was not found", linkedItem.ThreadID)
+		} else {
+			if err := s.updateSavedQueriesForThread(ctx, linkedThreads[0]); err != nil {
+				golog.Errorf("Failed to updated saved query for thread %s: %s", linkedThreads[0].ID, err)
+			}
+		}
+
 		it2, err := transformThreadItemToResponse(linkedItem, linkedThread.OrganizationID)
 		if err != nil {
 			return nil, errors.Trace(err)

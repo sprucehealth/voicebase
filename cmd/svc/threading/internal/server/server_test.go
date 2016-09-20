@@ -748,9 +748,24 @@ func TestPostMessage_Linked(t *testing.T) {
 			LastExternalMessageTimestamp: now,
 		},
 	}, nil))
-
 	dl.Expect(mock.NewExpectation(dl.EntitiesForThread, th1id).WithReturns([]*models.ThreadEntity{}, nil))
 	dl.Expect(mock.NewExpectation(dl.RemoveThreadFromAllSavedQueryIndexes, th1id))
+
+	// Linked thread saved query index update
+
+	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{th2id}).WithReturns([]*models.Thread{
+		{
+			ID:                           th2id,
+			Created:                      now,
+			MessageCount:                 1,
+			OrganizationID:               "entity_org2",
+			PrimaryEntityID:              "entity_3",
+			LastExternalMessageSummary:   "summary",
+			LastExternalMessageTimestamp: now,
+		},
+	}, nil))
+	dl.Expect(mock.NewExpectation(dl.EntitiesForThread, th2id).WithReturns([]*models.ThreadEntity{}, nil))
+	dl.Expect(mock.NewExpectation(dl.RemoveThreadFromAllSavedQueryIndexes, th2id))
 
 	res, err := srv.PostMessage(nil, &threading.PostMessageRequest{
 		ThreadID:     th1id.String(),
@@ -902,6 +917,22 @@ func TestPostMessage_Linked_PrependSender(t *testing.T) {
 
 	dl.Expect(mock.NewExpectation(dl.EntitiesForThread, th1id).WithReturns([]*models.ThreadEntity{}, nil))
 	dl.Expect(mock.NewExpectation(dl.RemoveThreadFromAllSavedQueryIndexes, th1id))
+
+	// Linked thread saved query index update
+
+	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{th2id}).WithReturns([]*models.Thread{
+		{
+			ID:                           th2id,
+			Created:                      now,
+			MessageCount:                 1,
+			OrganizationID:               "entity_org2",
+			PrimaryEntityID:              "entity_3",
+			LastExternalMessageSummary:   "summary",
+			LastExternalMessageTimestamp: now,
+		},
+	}, nil))
+	dl.Expect(mock.NewExpectation(dl.EntitiesForThread, th2id).WithReturns([]*models.ThreadEntity{}, nil))
+	dl.Expect(mock.NewExpectation(dl.RemoveThreadFromAllSavedQueryIndexes, th2id))
 
 	res, err := srv.PostMessage(nil, &threading.PostMessageRequest{
 		ThreadID:     th1id.String(),
