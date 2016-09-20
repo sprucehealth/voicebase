@@ -150,6 +150,10 @@ func (c *enablePackageCmd) enableAfterHours(
 		return errors.Trace(err)
 	}
 
+	if err := c.turnOnSetting(*orgEntityID, excommsSettings.ConfigKeyAfterHoursVociemailEnabled, *phoneNumber); err != nil {
+		return errors.Trace(err)
+	}
+
 	return nil
 }
 

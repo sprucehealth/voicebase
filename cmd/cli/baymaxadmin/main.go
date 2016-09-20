@@ -171,6 +171,7 @@ var commands = map[string]commandNew{
 	"blockaccount":        newBlockAccountCmd,
 	"blocknumber":         newBlockNumberCmd,
 	"changeorgemail":      newChangeOrgEmailCmd,
+	"createsupporthread":  newCreateSupportThreadCmd,
 	"decodeid":            newDecodeIDCmd,
 	"deletecontact":       newDeleteContactCmd,
 	"enableorgcode":       newEnableOrgCodeCmd,
