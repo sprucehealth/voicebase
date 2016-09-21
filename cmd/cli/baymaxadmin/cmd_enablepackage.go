@@ -114,6 +114,11 @@ func (c *enablePackageCmd) enableDigitalCare(
 		return errors.Trace(err)
 	}
 
+	// payments
+	if err := c.turnOnSetting(*orgEntityID, "payments_enabled", ""); err != nil {
+		return errors.Trace(err)
+	}
+
 	// turn on voicemail transcription
 	if err := c.turnOnSetting(*orgEntityID, excommsSettings.ConfigKeyTranscribeVoicemail, ""); err != nil {
 		return errors.Trace(err)
