@@ -83,6 +83,8 @@ node {
 	stage 'Deploy'
 
 	if (deploy) {
-		sh "./docker-ci/deploy.sh"
+		env.GIT_REV = gitCommit
+		env.BRANCH = gitBranch
+		sh(script: "./docker-ci/deploy.sh")
 	}
 }
