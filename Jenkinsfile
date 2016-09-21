@@ -29,8 +29,9 @@ node {
 	// use docker gid to give job access to docker socket
 	def parentGID = sh(script: 'getent group docker | cut -d: -f3', returnStdout: true).trim()
 
-	// # origin/master -> master
-	def gitBranch = sh(script: "git rev-parse --abbrev-ref HEAD", returnStdout: true).trim()
+	// origin/master -> master
+	//def gitBranch = sh(script: "git rev-parse --abbrev-ref HEAD", returnStdout: true).trim()
+	def gitBranch = env.BRANCH_NAME
 	def gitCommit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
 	echo "${gitBranch}"
 	echo "${gitCommit}"
@@ -41,12 +42,15 @@ node {
 
 	def deploy = false
 	if (gitBranch == "master") {
+		echo "DEPLOYING"
 		deploy = true
+	} else {
+		echo "NOT DEPLOYING"
 	}
 
-	env.DEPLOY_TO_S3 = ""
+	def deployToS3 = ""
 	if (deploy) {
-		env.DEPLOY_TO_S3 = "true"
+		deployToS3 = "true"
 	}
 	env.FULLCOVERAGE = ""
 	env.TEST_S3_BUCKET = ""
@@ -64,7 +68,7 @@ node {
         -e "GIT_COMMIT=${gitCommit}" \
         -e "GIT_BRANCH=${gitBranch}" \
         -e "JOB_NAME=${env.JOB_NAME}" \
-        -e "DEPLOY_TO_S3=${env.DEPLOY_TO_S3}" \
+        -e "DEPLOY_TO_S3=${deployToS3}" \
         -e "FULLCOVERAGE=${env.FULLCOVERAGE}" \
         -e "TEST_S3_BUCKET=${env.TEST_S3_BUCKET}" \
         -e "PARENT_UID=${parentUID}" \
