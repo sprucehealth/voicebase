@@ -57,7 +57,6 @@ var queryType = graphql.NewObject(
 							"userAgent": userAgentFromParams(p),
 						},
 					})
-
 					return &models.Me{Account: transformAccountToResponse(acc), ClientEncryptionKey: cek}, nil
 				},
 			},

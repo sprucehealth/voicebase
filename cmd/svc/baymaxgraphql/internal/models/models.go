@@ -485,3 +485,8 @@ type PartnerIntegration struct {
 type InvitationBanner struct {
 	HasPendingInvite bool `json:"hasPendingInvite"`
 }
+
+type IntercomToken struct {
+	HMACDigest string `json:"hmacDigest"`
+	UserData   string `json:"userData"`
+}

@@ -41,6 +41,7 @@ type service struct {
 	transactionalEmailSender string
 	stripeConnectURL         string
 	hintConnectURL           string
+	intercomSecretKey        string
 	// TODO: Remove this
 	serviceNumber phone.Number
 	layoutStore   layout.Storage
