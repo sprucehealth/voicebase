@@ -1017,8 +1017,12 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 		} else if len(linkedThreads) == 0 {
 			golog.Errorf("Thread %s that was just posted to was not found", linkedItem.ThreadID)
 		} else {
-			if _, err := s.updateSavedQueriesForThread(ctx, linkedThreads[0]); err != nil {
+			updateResult, err := s.updateSavedQueriesForThread(ctx, linkedThreads[0])
+			if err != nil {
 				golog.Errorf("Failed to updated saved query for thread %s: %s", linkedThreads[0].ID, err)
+			}
+			if !in.DontNotify && updateResult != nil {
+				s.notifyMembersOfPublishMessage(ctx, linkedThread.OrganizationID, models.EmptySavedQueryID(), linkedThread, linkedItem, linkedItem.ActorEntityID, updateResult.EntityShouldBeNotified)
 			}
 		}
 
