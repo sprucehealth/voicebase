@@ -218,7 +218,7 @@ func (s *threadsServer) CreateEmptyThread(ctx context.Context, in *threading.Cre
 	if len(threads) == 0 {
 		return nil, errors.Trace(fmt.Errorf("thread with id %s just created not found", threadID))
 	}
-	if err := s.updateSavedQueriesAddThread(ctx, threads[0], memberEntityIDs); err != nil {
+	if _, err := s.updateSavedQueriesAddThread(ctx, threads[0], memberEntityIDs); err != nil {
 		golog.Errorf("Failed to updated saved query when adding thread: %s", threadID)
 	}
 	th, err := transformThreadToResponse(threads[0], false)
@@ -364,7 +364,8 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 		return nil, errors.Errorf("thread %s just created not found", threadID)
 	}
 	thread := threads[0]
-	if err := s.updateSavedQueriesAddThread(ctx, thread, memberEntityIDs); err != nil {
+	updateResult, err := s.updateSavedQueriesAddThread(ctx, thread, memberEntityIDs)
+	if err != nil {
 		golog.Errorf("Failed to updated saved query when adding thread: %s", threadID)
 	}
 	th, err := transformThreadToResponse(thread, !in.Internal)
@@ -376,7 +377,9 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 		return nil, errors.Trace(err)
 	}
 	s.publishMessage(ctx, in.OrganizationID, in.FromEntityID, threadID, it, in.UUID)
-	s.notifyMembersOfPublishMessage(ctx, thread.OrganizationID, models.EmptySavedQueryID(), thread, item, in.FromEntityID)
+	if updateResult != nil {
+		s.notifyMembersOfPublishMessage(ctx, thread.OrganizationID, models.EmptySavedQueryID(), thread, item, in.FromEntityID, updateResult.EntityShouldBeNotified)
+	}
 	return &threading.CreateThreadResponse{
 		ThreadID:   threadID.String(),
 		ThreadItem: it,
@@ -500,10 +503,10 @@ func (s *threadsServer) CreateLinkedThreads(ctx context.Context, in *threading.C
 		threads[0], threads[1] = threads[1], threads[0]
 	}
 
-	if err := s.updateSavedQueriesAddThread(ctx, threads[0], []string{in.Organization1ID}); err != nil {
+	if _, err := s.updateSavedQueriesAddThread(ctx, threads[0], []string{in.Organization1ID}); err != nil {
 		golog.Errorf("Failed to updated saved query when adding thread: %s", threads[0].ID)
 	}
-	if err := s.updateSavedQueriesAddThread(ctx, threads[1], []string{in.Organization2ID}); err != nil {
+	if _, err := s.updateSavedQueriesAddThread(ctx, threads[1], []string{in.Organization2ID}); err != nil {
 		golog.Errorf("Failed to updated saved query when adding thread: %s", threads[1].ID)
 	}
 
@@ -988,7 +991,8 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 		return nil, errors.Errorf("Thread %s that was just posted to was not found", threadID)
 	}
 	thread = threads[0]
-	if err := s.updateSavedQueriesForThread(ctx, thread); err != nil {
+	updateResult, err := s.updateSavedQueriesForThread(ctx, thread)
+	if err != nil {
 		golog.Errorf("Failed to updated saved query for thread %s: %s", thread.ID, err)
 	}
 
@@ -1001,8 +1005,8 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 		return nil, errors.Trace(err)
 	}
 	s.publishMessage(ctx, thread.OrganizationID, thread.PrimaryEntityID, threadID, it, in.UUID)
-	if !in.DontNotify {
-		s.notifyMembersOfPublishMessage(ctx, thread.OrganizationID, models.EmptySavedQueryID(), thread, item, in.FromEntityID)
+	if !in.DontNotify && updateResult != nil {
+		s.notifyMembersOfPublishMessage(ctx, thread.OrganizationID, models.EmptySavedQueryID(), thread, item, in.FromEntityID, updateResult.EntityShouldBeNotified)
 	}
 
 	if linkedItem != nil {
@@ -1013,7 +1017,7 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 		} else if len(linkedThreads) == 0 {
 			golog.Errorf("Thread %s that was just posted to was not found", linkedItem.ThreadID)
 		} else {
-			if err := s.updateSavedQueriesForThread(ctx, linkedThreads[0]); err != nil {
+			if _, err := s.updateSavedQueriesForThread(ctx, linkedThreads[0]); err != nil {
 				golog.Errorf("Failed to updated saved query for thread %s: %s", linkedThreads[0].ID, err)
 			}
 		}
@@ -1023,9 +1027,6 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 			return nil, errors.Trace(err)
 		}
 		s.publishMessage(ctx, linkedThread.OrganizationID, linkedThread.PrimaryEntityID, linkedThread.ID, it2, "")
-		if !in.DontNotify {
-			s.notifyMembersOfPublishMessage(ctx, linkedThread.OrganizationID, models.EmptySavedQueryID(), linkedThread, linkedItem, linkedItem.ActorEntityID)
-		}
 	}
 	return &threading.PostMessageResponse{
 		Item:   it,
@@ -1463,6 +1464,17 @@ func (s *threadsServer) UpdateSavedQuery(ctx context.Context, in *threading.Upda
 	if in.Ordinal > 0 {
 		update.Ordinal = ptr.Int(int(in.Ordinal))
 	}
+	// Unfortunate artifact of go defaults and no grpc/protobuf ptr support
+	if in.NotificationsEnabled != threading.NOTIFICATIONS_ENABLED_UPDATE_NONE {
+		switch in.NotificationsEnabled {
+		case threading.NOTIFICATIONS_ENABLED_UPDATE_TRUE:
+			update.NotificationsEnabled = ptr.Bool(true)
+		case threading.NOTIFICATIONS_ENABLED_UPDATE_FALSE:
+			update.NotificationsEnabled = ptr.Bool(false)
+		default:
+			return nil, grpcErrorf(codes.InvalidArgument, "Invalid NotificationsEnabled value %s", in.NotificationsEnabled)
+		}
+	}
 	if in.Query != nil {
 		update.Query, err = transformQueryFromRequest(in.Query)
 		if err != nil {
@@ -1473,16 +1485,23 @@ func (s *threadsServer) UpdateSavedQuery(ctx context.Context, in *threading.Upda
 	if err := s.dal.UpdateSavedQuery(ctx, id, update); err != nil {
 		return nil, errors.Trace(err)
 	}
+	sq, err := s.dal.SavedQuery(ctx, id)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
 	if rebuild {
-		sq, err := s.dal.SavedQuery(ctx, id)
-		if err != nil {
-			return nil, errors.Trace(err)
-		}
 		if err := s.rebuildSavedQuery(ctx, sq); err != nil {
 			return nil, errors.Trace(err)
 		}
 	}
-	return &threading.UpdateSavedQueryResponse{}, nil
+
+	sqResp, err := transformSavedQueryToResponse(sq)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return &threading.UpdateSavedQueryResponse{
+		Query: sqResp,
+	}, nil
 }
 
 // UpdateThread update thread members and info
@@ -1633,7 +1652,7 @@ func (s *threadsServer) UpdateThread(ctx context.Context, in *threading.UpdateTh
 		return nil, errors.Trace(err)
 	}
 	thread = threads[0]
-	if err := s.updateSavedQueriesForThread(ctx, thread); err != nil {
+	if _, err := s.updateSavedQueriesForThread(ctx, thread); err != nil {
 		golog.Errorf("Failed to updated saved query for thread %s: %s", thread.ID, err)
 	}
 	th, err := transformThreadToResponse(thread, false)

@@ -153,6 +153,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 		"updateEntityProfile":                 updateEntityProfileMutation,
 		"updateFollowingForThreads":           updateFollowingForThreadsMutation,
 		"updateOrganizationProfile":           updateOrganizationProfileMutation,
+		"updateSavedThreadQuery":              updateSavedThreadQueryMutation,
 		"updateThread":                        updateThreadMutation,
 		"verifyEmail":                         verifyEmailMutation,
 		"verifyEmailForAccountCreation":       verifyEmailForAccountCreationMutation,

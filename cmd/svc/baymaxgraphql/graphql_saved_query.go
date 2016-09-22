@@ -20,11 +20,13 @@ var savedThreadQueryType = graphql.NewObject(
 			nodeInterfaceType,
 		},
 		Fields: graphql.Fields{
-			"id":     &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
-			"query":  &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-			"title":  &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-			"unread": &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
-			"total":  &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+			"id":                              &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+			"query":                           &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"title":                           &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"unread":                          &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+			"total":                           &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+			"notificationsEnabled":            &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"allowUpdateNotificationsEnabled": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"threads": &graphql.Field{
 				Type: threadConnectionType.ConnectionType,
 				Args: NewConnectionArguments(nil),

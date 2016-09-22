@@ -127,9 +127,10 @@ type SavedQueryThread struct {
 }
 
 type SavedQueryUpdate struct {
-	Query   *models.Query
-	Title   *string
-	Ordinal *int
+	Query                *models.Query
+	Title                *string
+	Ordinal              *int
+	NotificationsEnabled *bool
 }
 
 type DAL interface {
@@ -709,7 +710,7 @@ func (d *dal) RecordThreadEvent(ctx context.Context, threadID models.ThreadID, a
 
 func (d *dal) SavedQuery(ctx context.Context, id models.SavedQueryID) (*models.SavedQuery, error) {
 	row := d.db.QueryRow(`
-		SELECT id, ordinal, entity_id, query, title, unread, total
+		SELECT id, ordinal, entity_id, query, title, unread, total, notifications_enabled
 		FROM saved_queries
 		WHERE id = ?`, id)
 	sq, err := scanSavedQuery(row)
@@ -718,7 +719,7 @@ func (d *dal) SavedQuery(ctx context.Context, id models.SavedQueryID) (*models.S
 
 func (d *dal) SavedQueries(ctx context.Context, entityID string) ([]*models.SavedQuery, error) {
 	rows, err := d.db.Query(`
-		SELECT id, ordinal, entity_id, query, title, unread, total
+		SELECT id, ordinal, entity_id, query, title, unread, total, notifications_enabled
 		FROM saved_queries
 		WHERE entity_id = ?
 		ORDER BY ordinal`, entityID)
@@ -990,6 +991,9 @@ func (d *dal) UpdateSavedQuery(ctx context.Context, id models.SavedQueryID, upda
 	if update.Ordinal != nil {
 		args.Append("ordinal", *update.Ordinal)
 	}
+	if update.NotificationsEnabled != nil {
+		args.Append("notifications_enabled", *update.NotificationsEnabled)
+	}
 	if args.IsEmpty() {
 		return nil
 	}
@@ -1115,7 +1119,7 @@ func scanSavedQuery(row dbutil.Scanner) (*models.SavedQuery, error) {
 	var sq models.SavedQuery
 	var queryBlob []byte
 	sq.ID = models.EmptySavedQueryID()
-	if err := row.Scan(&sq.ID, &sq.Ordinal, &sq.EntityID, &queryBlob, &sq.Title, &sq.Unread, &sq.Total); err == sql.ErrNoRows {
+	if err := row.Scan(&sq.ID, &sq.Ordinal, &sq.EntityID, &queryBlob, &sq.Title, &sq.Unread, &sq.Total, &sq.NotificationsEnabled); err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrNotFound)
 	} else if err != nil {
 		return nil, errors.Trace(err)

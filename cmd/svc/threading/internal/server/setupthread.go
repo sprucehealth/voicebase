@@ -98,7 +98,7 @@ func (s *threadsServer) CreateOnboardingThread(ctx context.Context, in *threadin
 	} else if len(threads) == 0 {
 		return nil, errors.Errorf("thread %s not found", threadID)
 	}
-	if err := s.updateSavedQueriesAddThread(ctx, threads[0], []string{in.OrganizationID}); err != nil {
+	if _, err := s.updateSavedQueriesAddThread(ctx, threads[0], []string{in.OrganizationID}); err != nil {
 		golog.Errorf("Failed to updated saved query when adding thread: %s", threads[0].ID)
 	}
 
@@ -265,7 +265,7 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 	}
 	thread := threads[0]
 
-	if err := s.updateSavedQueriesForThread(ctx, thread); err != nil {
+	if _, err := s.updateSavedQueriesForThread(ctx, thread); err != nil {
 		golog.Errorf("Failed to updated saved query for thread %s: %s", thread.ID, err)
 	}
 

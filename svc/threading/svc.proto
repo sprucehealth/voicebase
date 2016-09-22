@@ -138,6 +138,7 @@ message SavedQuery {
 	uint32 total = 6;
 	int32 ordinal = 7;
 	string entity_id = 8 [(gogoproto.customname) = "EntityID"];
+	bool notifications_enabled = 9;
 }
 
 message Query {
@@ -364,12 +365,20 @@ message CreateSavedQueryResponse {
 	SavedQuery saved_query = 1;
 }
 
+// Unfortunate artifact of go defaults and no grpc/protobuf ptr support
+enum NotificationsEnabledUpdate {
+	NOTIFICATIONS_ENABLED_UPDATE_NONE = 0;
+	NOTIFICATIONS_ENABLED_UPDATE_TRUE = 1;
+	NOTIFICATIONS_ENABLED_UPDATE_FALSE = 2;
+}
+
 message UpdateSavedQueryRequest {
 	string saved_query_id = 1 [(gogoproto.customname) = "SavedQueryID"];
 	Query query = 2;
 	string title = 3;
 	int32 ordinal = 4;
 	bool force_rebuild = 5; // If true then force rebuilding the saved query index even if the query doesn't change
+	NotificationsEnabledUpdate notifications_enabled = 6;
 }
 
 message UpdateSavedQueryResponse {

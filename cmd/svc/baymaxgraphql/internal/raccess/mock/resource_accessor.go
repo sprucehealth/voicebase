@@ -774,3 +774,12 @@ func (m *ResourceAccessor) LookupPatientSyncConfiguration(ctx context.Context, r
 
 	return rets[0].(*patientsync.LookupSyncConfigurationResponse), mock.SafeError(rets[1])
 }
+
+func (m *ResourceAccessor) UpdateSavedQuery(ctx context.Context, req *threading.UpdateSavedQueryRequest) (*threading.UpdateSavedQueryResponse, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].(*threading.UpdateSavedQueryResponse), mock.SafeError(rets[1])
+}

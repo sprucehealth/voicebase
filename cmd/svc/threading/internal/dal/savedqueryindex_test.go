@@ -25,7 +25,8 @@ func TestSavedQueryIndex(t *testing.T) {
 				{Value: &models.Expr_Token{Token: "summary"}},
 			},
 		},
-		Title: "sq1",
+		Title:                "sq1",
+		NotificationsEnabled: true,
 	}
 	_, err := dal.CreateSavedQuery(ctx, sq)
 	test.OK(t, err)
@@ -177,7 +178,8 @@ func TestLargeBatchSavedQueryItems(t *testing.T) {
 				{Value: &models.Expr_Token{Token: "summary"}},
 			},
 		},
-		Title: "sq1",
+		Title:                "sq1",
+		NotificationsEnabled: true,
 	}
 	_, err := dal.CreateSavedQuery(ctx, sq)
 	test.OK(t, err)

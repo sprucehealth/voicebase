@@ -10,7 +10,6 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/textutil"
-	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
@@ -26,6 +25,7 @@ func (s *threadsServer) notifyMembersOfPublishMessage(
 	thread *models.Thread,
 	message *models.ThreadItem,
 	publishingEntityID string,
+	effectedEntityShouldBeNotified map[string]bool,
 ) {
 	messageID := message.ID
 	if s.notificationClient == nil || s.directoryClient == nil {
@@ -46,84 +46,38 @@ func (s *threadsServer) notifyMembersOfPublishMessage(
 			return
 		}
 
-		// Figure out who should receive notifications
-		var receiverEntityIDs []string
-		if thread.Type == models.ThreadTypeTeam {
-			entIDs := make([]string, 0, len(threadEntities))
-			for _, te := range threadEntities {
-				if te.Member {
-					entIDs = append(entIDs, te.EntityID)
-				}
-			}
-			if len(entIDs) != 0 {
-				resp, err := s.directoryClient.LookupEntities(ctx, &directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
-						BatchEntityID: &directory.IDList{
-							IDs: entIDs,
-						},
-					},
-					RequestedInformation: &directory.RequestedInformation{
-						Depth:             0,
-						EntityInformation: []directory.EntityInformation{},
-					},
-				})
-				if err != nil {
-					golog.Errorf("Failed to fetch entities to notify about thread %s: %s", thread.ID, err)
-					return
-				}
-				for _, e := range resp.Entities {
-					receiverEntityIDs = append(receiverEntityIDs, e.ID)
-				}
-			}
-		} else {
-			// TODO: for now treating all other types the same which is the old behavior
-			// Lookup all members of the org this thread belongs to and notify them of the new message unless they published it
-			resp, err := s.directoryClient.LookupEntities(ctx, &directory.LookupEntitiesRequest{
-				LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-				LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-					EntityID: orgID,
-				},
-				RequestedInformation: &directory.RequestedInformation{
-					Depth:             0,
-					EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERS},
-				},
-			})
-			if err != nil {
-				golog.Errorf("Failed to fetch org members of %s to notify about thread %s: %s", orgID, thread.ID, err)
-				return
-			}
-			if len(resp.Entities) != 1 {
-				golog.Errorf("Expected to find 1 org for ID %s but found %d", orgID, len(resp.Entities))
-				return
-			}
-			org := resp.Entities[0]
-			for _, m := range org.Members {
-				if m.Type == directory.EntityType_INTERNAL && m.ID != publishingEntityID {
-					receiverEntityIDs = append(receiverEntityIDs, m.ID)
-				}
-			}
-
-			// If this is a secure external thread, then also notify the primary entity if the thread item is not internal
-			if thread.Type == models.ThreadTypeSecureExternal && !message.Internal && thread.PrimaryEntityID != publishingEntityID {
-				receiverEntityIDs = append(receiverEntityIDs, thread.PrimaryEntityID)
-			}
-		}
-
-		if len(receiverEntityIDs) == 0 {
-			golog.Debugf("No entities to notify of new message on thread %s", thread.ID)
-			return
-		}
-
-		teMap := make(map[string]*models.ThreadEntity, len(threadEntities))
+		threadMemberEntIDs := make([]string, 0, len(threadEntities))
 		for _, te := range threadEntities {
-			teMap[te.EntityID] = te
+			if te.Member {
+				threadMemberEntIDs = append(threadMemberEntIDs, te.EntityID)
+			}
+		}
+
+		receiverEntities, err := s.resolveInternalEntities(ctx, threadMemberEntIDs)
+		if err != nil {
+			golog.Errorf("Failed to resolve internal entities for ids %v: %s", threadMemberEntIDs, err)
+			return
 		}
 
 		mentionedEntityIDs := getReferencedEntities(ctx, thread, message)
 
 		// Track the messages we want to send and how many unread threads there were
 		messages := make(map[string]string)
+		receiverEntityIDs := make([]string, 0, len(receiverEntities))
+		for _, e := range receiverEntities {
+			if e.ID != publishingEntityID {
+				receiverEntityIDs = append(receiverEntityIDs, e.ID)
+			}
+		}
+		// If this is a secure external thread, then also notify the primary entity if the thread item is not internal
+		if thread.Type == models.ThreadTypeSecureExternal && !message.Internal && thread.PrimaryEntityID != publishingEntityID {
+			receiverEntityIDs = append(receiverEntityIDs, thread.PrimaryEntityID)
+		}
+
+		teMap := make(map[string]*models.ThreadEntity, len(threadEntities))
+		for _, te := range threadEntities {
+			teMap[te.EntityID] = te
+		}
 
 		// Get the unread and notification information
 		if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
@@ -136,18 +90,20 @@ func (s *threadsServer) notifyMembersOfPublishMessage(
 				}
 
 				te := teMap[entID]
-				if _, ok := mentionedEntityIDs[entID]; ok {
-					messages[entID] = "You have a new mention in a thread"
-				} else if s.isAlertAllMessagesEnabled(ctx, entID) {
-					messages[entID] = s.getNotificationText(ctx, thread, message, entID)
-				} else if te == nil || te.LastUnreadNotify == nil || (te.LastViewed != nil && te.LastViewed.After(*te.LastUnreadNotify)) {
-					// Only send a notification if no notification has been sent or the person has viewed the thread since the last notification
-					if err := dl.UpdateThreadEntity(ctx, thread.ID, entID, &dal.ThreadEntityUpdate{
-						LastUnreadNotify: &now,
-					}); err != nil {
-						return errors.Trace(err)
+				if effectedEntityShouldBeNotified[entID] || entID == thread.PrimaryEntityID {
+					if _, ok := mentionedEntityIDs[entID]; ok {
+						messages[entID] = "You have a new mention in a thread"
+					} else if s.isAlertAllMessagesEnabled(ctx, entID) {
+						messages[entID] = s.getNotificationText(ctx, thread, message, entID)
+					} else if te == nil || te.LastUnreadNotify == nil || (te.LastViewed != nil && te.LastViewed.After(*te.LastUnreadNotify)) {
+						// Only send a notification if no notification has been sent or the person has viewed the thread since the last notification
+						if err := dl.UpdateThreadEntity(ctx, thread.ID, entID, &dal.ThreadEntityUpdate{
+							LastUnreadNotify: &now,
+						}); err != nil {
+							return errors.Trace(err)
+						}
+						messages[entID] = s.getNotificationText(ctx, thread, message, entID)
 					}
-					messages[entID] = s.getNotificationText(ctx, thread, message, entID)
 				}
 			}
 			return nil

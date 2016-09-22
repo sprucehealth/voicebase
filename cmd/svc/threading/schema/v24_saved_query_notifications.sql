@@ -1,0 +1,1 @@
+ALTER TABLE saved_queries ADD COLUMN notifications_enabled BOOL NOT NULL DEFAULT TRUE;

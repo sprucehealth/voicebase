@@ -77,20 +77,25 @@ func (s *threadsServer) rebuildSavedQuery(ctx context.Context, sq *models.SavedQ
 	return nil
 }
 
+type savedQueryUpdateResult struct {
+	EntityShouldBeNotified map[string]bool
+}
+
 // updateSavedQueriesAddThread updates all matching saved queries for a new thread
-func (s *threadsServer) updateSavedQueriesAddThread(ctx context.Context, thread *models.Thread, memberEntityIDs []string) error {
+func (s *threadsServer) updateSavedQueriesAddThread(ctx context.Context, thread *models.Thread, memberEntityIDs []string) (*savedQueryUpdateResult, error) {
 	if len(memberEntityIDs) == 0 {
-		return nil
+		return &savedQueryUpdateResult{EntityShouldBeNotified: make(map[string]bool)}, nil
 	}
 	// Resolve the root entities to be able to query for all possible saved queries
 	entities, err := s.resolveInternalEntities(ctx, memberEntityIDs)
 	if err != nil {
-		return errors.Trace(err)
+		return nil, errors.Trace(err)
 	}
 	// Currently only supporting internal entities. The entity resolution guarantees that.
 	externalEntity := false
 	// Add threads to all saved queries for all members that match
 	var newItems []*dal.SavedQueryThread
+	result := &savedQueryUpdateResult{EntityShouldBeNotified: make(map[string]bool, len(entities))}
 	for _, e := range entities {
 		sqs, err := s.dal.SavedQueries(ctx, e.ID)
 		if err != nil {
@@ -108,6 +113,7 @@ func (s *threadsServer) updateSavedQueriesAddThread(ctx context.Context, thread 
 				if externalEntity {
 					timestamp = thread.LastExternalMessageTimestamp
 				}
+				result.EntityShouldBeNotified[e.ID] = sq.NotificationsEnabled || result.EntityShouldBeNotified[e.ID]
 				newItems = append(newItems, &dal.SavedQueryThread{
 					ThreadID:     thread.ID,
 					SavedQueryID: sq.ID,
@@ -118,9 +124,9 @@ func (s *threadsServer) updateSavedQueriesAddThread(ctx context.Context, thread 
 		}
 	}
 	if len(newItems) != 0 {
-		return errors.Trace(s.dal.AddItemsToSavedQueryIndex(ctx, newItems))
+		return result, errors.Trace(s.dal.AddItemsToSavedQueryIndex(ctx, newItems))
 	}
-	return nil
+	return result, nil
 }
 
 func (s *threadsServer) updateSavedQueriesRemoveThread(ctx context.Context, threadID models.ThreadID) error {
@@ -128,11 +134,11 @@ func (s *threadsServer) updateSavedQueriesRemoveThread(ctx context.Context, thre
 }
 
 // updateSavedQueriesForThread updates all relevant saved queries when a thread is updated (e.g. new post, membership change)
-func (s *threadsServer) updateSavedQueriesForThread(ctx context.Context, thread *models.Thread) error {
+func (s *threadsServer) updateSavedQueriesForThread(ctx context.Context, thread *models.Thread) (*savedQueryUpdateResult, error) {
 	// Get the list of members for the thread and follow memberships to get the root internal entities.
 	tes, err := s.dal.EntitiesForThread(ctx, thread.ID)
 	if err != nil {
-		return errors.Trace(err)
+		return nil, errors.Trace(err)
 	}
 	memberEntityIDs := make([]string, 0, len(tes))
 	teMap := make(map[string]*models.ThreadEntity, len(tes))
@@ -143,17 +149,20 @@ func (s *threadsServer) updateSavedQueriesForThread(ctx context.Context, thread 
 		}
 	}
 	if len(memberEntityIDs) == 0 {
-		return errors.Trace(s.dal.RemoveThreadFromAllSavedQueryIndexes(ctx, thread.ID))
+		return &savedQueryUpdateResult{
+			EntityShouldBeNotified: map[string]bool{},
+		}, errors.Trace(s.dal.RemoveThreadFromAllSavedQueryIndexes(ctx, thread.ID))
 	}
 	entities, err := s.resolveInternalEntities(ctx, memberEntityIDs)
 	if err != nil {
-		return errors.Trace(err)
+		return nil, errors.Trace(err)
 	}
 
 	// TODO: assume all entities are internal (which is currently always true as guaranteed by the resolve)
 	externalEntity := false
 
 	var addItems []*dal.SavedQueryThread
+	result := &savedQueryUpdateResult{EntityShouldBeNotified: make(map[string]bool, len(entities))}
 	for _, ent := range entities {
 		te := teMap[ent.ID]
 		sqs, err := s.dal.SavedQueries(ctx, ent.ID)
@@ -169,6 +178,7 @@ func (s *threadsServer) updateSavedQueriesForThread(ctx context.Context, thread 
 				if externalEntity {
 					timestamp = thread.LastExternalMessageTimestamp
 				}
+				result.EntityShouldBeNotified[ent.ID] = sq.NotificationsEnabled || result.EntityShouldBeNotified[ent.ID]
 				addItems = append(addItems, &dal.SavedQueryThread{
 					ThreadID:     thread.ID,
 					SavedQueryID: sq.ID,
@@ -179,7 +189,7 @@ func (s *threadsServer) updateSavedQueriesForThread(ctx context.Context, thread 
 		}
 	}
 
-	return errors.Trace(s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
+	return result, errors.Trace(s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
 		if err := dl.RemoveThreadFromAllSavedQueryIndexes(ctx, thread.ID); err != nil {
 			return errors.Trace(err)
 		}

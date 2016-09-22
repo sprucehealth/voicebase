@@ -162,6 +162,7 @@ type ResourceAccessor interface {
 	UpdateProfile(ctx context.Context, req *directory.UpdateProfileRequest) (*directory.UpdateProfileResponse, error)
 	UpdateThread(ctx context.Context, req *threading.UpdateThreadRequest) (*threading.UpdateThreadResponse, error)
 	VendorAccounts(ctx context.Context, req *payments.VendorAccountsRequest) (*payments.VendorAccountsResponse, error)
+	UpdateSavedQuery(ctx context.Context, req *threading.UpdateSavedQueryRequest) (*threading.UpdateSavedQueryResponse, error)
 	VerifiedValue(ctx context.Context, token string) (string, error)
 	Visit(ctx context.Context, req *care.GetVisitRequest) (*care.GetVisitResponse, error)
 	VisitLayout(ctx context.Context, req *layout.GetVisitLayoutRequest) (*layout.GetVisitLayoutResponse, error)
@@ -1365,6 +1366,24 @@ func (m *resourceAccessor) LookupExternalLinksForEntity(ctx context.Context, req
 	}
 
 	res, err := m.directory.LookupExternalLinksForEntity(ctx, req)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	return res, nil
+}
+
+func (m *resourceAccessor) UpdateSavedQuery(ctx context.Context, req *threading.UpdateSavedQueryRequest) (*threading.UpdateSavedQueryResponse, error) {
+	sResp, err := m.SavedQuery(ctx, req.SavedQueryID)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := m.assertIsEntity(ctx, sResp.EntityID); err != nil {
+		return nil, err
+	}
+
+	res, err := m.threading.UpdateSavedQuery(ctx, req)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

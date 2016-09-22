@@ -719,10 +719,11 @@ func TestSavedQueries(t *testing.T) {
 	ctx := context.Background()
 
 	sq1 := &models.SavedQuery{
-		Ordinal:  2,
-		EntityID: "ent",
-		Query:    &models.Query{},
-		Title:    "sq1",
+		Ordinal:              2,
+		EntityID:             "ent",
+		Query:                &models.Query{},
+		Title:                "sq1",
+		NotificationsEnabled: true,
 	}
 	_, err := dal.CreateSavedQuery(ctx, sq1)
 	test.OK(t, err)
@@ -735,7 +736,8 @@ func TestSavedQueries(t *testing.T) {
 				{Value: &models.Expr_Token{Token: "foo"}},
 			},
 		},
-		Title: "sq2",
+		Title:                "sq2",
+		NotificationsEnabled: true,
 	}
 	_, err = dal.CreateSavedQuery(ctx, sq2)
 	test.OK(t, err)

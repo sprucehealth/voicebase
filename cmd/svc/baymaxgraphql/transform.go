@@ -573,12 +573,14 @@ func transformSavedQueryToResponse(sq *threading.SavedQuery) (*models.SavedThrea
 		return nil, errors.Trace(err)
 	}
 	return &models.SavedThreadQuery{
-		ID:       sq.ID,
-		Title:    sq.Title,
-		Query:    query,
-		Unread:   int(sq.Unread),
-		Total:    int(sq.Total),
-		EntityID: sq.EntityID,
+		ID:                              sq.ID,
+		Title:                           sq.Title,
+		Query:                           query,
+		Unread:                          int(sq.Unread),
+		Total:                           int(sq.Total),
+		NotificationsEnabled:            sq.NotificationsEnabled,
+		AllowUpdateNotificationsEnabled: !strings.EqualFold(sq.Title, "all"),
+		EntityID:                        sq.EntityID,
 	}, nil
 }
 

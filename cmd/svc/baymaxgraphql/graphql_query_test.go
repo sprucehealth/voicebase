@@ -260,15 +260,18 @@ func TestNodeQuery(t *testing.T) {
 				{Value: &threading.Expr_Token{Token: "Joe"}},
 			},
 		},
+		NotificationsEnabled: true,
 	}, nil))
 	res, err = nodeField.Resolve(p)
 	test.OK(t, err)
 	test.Equals(t, &models.SavedThreadQuery{
-		ID:     id,
-		Title:  "Foo",
-		Unread: 1,
-		Total:  2,
-		Query:  "is:unread Joe",
+		ID:                              id,
+		Title:                           "Foo",
+		Unread:                          1,
+		Total:                           2,
+		Query:                           "is:unread Joe",
+		NotificationsEnabled:            true,
+		AllowUpdateNotificationsEnabled: true,
 	}, res)
 	mock.FinishAll(ra)
 }
