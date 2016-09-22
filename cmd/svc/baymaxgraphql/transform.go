@@ -217,15 +217,21 @@ func transformThreadToResponse(ctx context.Context, ram raccess.ResourceAccessor
 		}
 		th.Type = models.ThreadTypeSupport
 		th.AlwaysShowNotifications = true
+		th.AllowAddFollowers = false
+		th.AllowRemoveFollowers = false
 	case threading.THREAD_TYPE_LEGACY_TEAM:
 		th.Type = models.ThreadTypeLegacyTeam
 		th.IsTeamThread = true
+		th.AllowAddFollowers = false
+		th.AllowRemoveFollowers = false
 	case threading.THREAD_TYPE_SETUP:
 		if th.Title == "" {
 			th.Title = onboardingThreadTitle
 		}
 		th.Type = models.ThreadTypeSetup
 		th.AlwaysShowNotifications = true
+		th.AllowAddFollowers = false
+		th.AllowRemoveFollowers = false
 	default:
 		return nil, fmt.Errorf("Unknown thread type %s", t.Type)
 	}
