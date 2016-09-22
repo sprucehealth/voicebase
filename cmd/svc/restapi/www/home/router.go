@@ -156,6 +156,7 @@ func SetupRoutes(r *mux.Router, config *Config) {
 	r.Handle("/api/practices/demo-request", newPracticeExtensionDemoAPIHandler(config.Cfg))
 	r.Handle("/api/caremessenger/whitepaper-request", newCareMessengerWhitePaperRequestAPIHandler(config.Cfg))
 	r.Handle("/api/caremessenger/beta-request", newCareMessengerBetaRequestAPIHandler(config.Cfg))
+	r.Handle("/api/caremessenger/contact-us", newCareMessengerContactUsAPIHandler(config.Cfg))
 
 	// Analytics
 	ah := newAnalyticsHandler(config.AnalyticsLogger, config.MetricsRegistry.Scope("analytics"))
