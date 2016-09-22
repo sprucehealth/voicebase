@@ -57,7 +57,7 @@ func PatientInviteClientJSON(org *directory.Entity, firstName, mediaAPIDomain st
 		PatientInvite: PatientInvite{
 			Greeting: Greeting{
 				Title:      welcomeText,
-				Message:    fmt.Sprintf("Let's create your account so you can start securely messaging with %s.", org.Info.DisplayName),
+				Message:    fmt.Sprintf("Let's create your account so you can start securely messaging with %s", org.Info.DisplayName),
 				ButtonText: "Get Started",
 			},
 			OrgID:   org.ID,
