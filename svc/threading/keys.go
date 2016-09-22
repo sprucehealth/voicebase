@@ -9,4 +9,6 @@ const (
 	// PreviewTeamMessageContentInNotification is the settings key used to determine whether or not to send the actual content of the message in the notification payload
 	// for team messages
 	PreviewTeamMessageContentInNotification = "preview_team_message_content"
+	// BadgeCount is the settings key used to track whether badge count is enabled or disabled for a provider within an organization.
+	BadgeCount = "badge_count"
 )
