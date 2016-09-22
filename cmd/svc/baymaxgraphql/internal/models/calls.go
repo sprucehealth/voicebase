@@ -63,4 +63,5 @@ type CallEndpoint struct {
 	DisplayValue            string `json:"displayValue"`
 	ValueOrID               string `json:"valueOrID"`
 	LANConnectivityRequired bool   `json:"lanConnectivityRequired"`
+	Label                   string `json:"label"`
 }

@@ -118,6 +118,7 @@ var callEndpointType = graphql.NewObject(graphql.ObjectConfig{
 		"displayValue":            &graphql.Field{Type: graphql.String},
 		"valueOrID":               &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"lanConnectivityRequired": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+		"label":                   &graphql.Field{Type: graphql.String},
 	},
 	IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 		_, ok := value.(*models.CallEndpoint)
@@ -214,6 +215,7 @@ func callableEndpointsForEntity(ctx context.Context, ent *directory.Entity) ([]*
 				Channel:      models.CallChannelTypePhone,
 				DisplayValue: display,
 				ValueOrID:    c.Value,
+				Label:        c.Label,
 			})
 		}
 	}
