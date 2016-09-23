@@ -106,10 +106,11 @@ func (s *threadsServer) CreateSavedQuery(ctx context.Context, in *threading.Crea
 	}
 
 	sq := &models.SavedQuery{
-		EntityID: in.EntityID,
-		Title:    in.Title,
-		Query:    query,
-		Ordinal:  int(in.Ordinal),
+		EntityID:             in.EntityID,
+		Title:                in.Title,
+		Query:                query,
+		Ordinal:              int(in.Ordinal),
+		NotificationsEnabled: in.NotificationsEnabled,
 	}
 	id, err := s.dal.CreateSavedQuery(ctx, sq)
 	if err != nil {

@@ -225,9 +225,9 @@ func (d *dal) CreateSavedQuery(ctx context.Context, sq *models.SavedQuery) (mode
 		return models.SavedQueryID{}, errors.Trace(err)
 	}
 	_, err = d.db.Exec(`
-		INSERT INTO saved_queries (id, ordinal, entity_id, query, title, unread, total)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
-	`, id, sq.Ordinal, sq.EntityID, queryBlob, sq.Title, sq.Unread, sq.Total)
+		INSERT INTO saved_queries (id, ordinal, entity_id, query, title, unread, total, notifications_enabled)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	`, id, sq.Ordinal, sq.EntityID, queryBlob, sq.Title, sq.Unread, sq.Total, sq.NotificationsEnabled)
 	if err != nil {
 		return models.SavedQueryID{}, errors.Trace(err)
 	}

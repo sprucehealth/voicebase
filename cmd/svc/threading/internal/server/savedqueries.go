@@ -178,7 +178,8 @@ func (s *threadsServer) updateSavedQueriesForThread(ctx context.Context, thread 
 				if externalEntity {
 					timestamp = thread.LastExternalMessageTimestamp
 				}
-				result.EntityShouldBeNotified[ent.ID] = sq.NotificationsEnabled || result.EntityShouldBeNotified[ent.ID]
+				// Specia case support threads
+				result.EntityShouldBeNotified[ent.ID] = sq.NotificationsEnabled || result.EntityShouldBeNotified[ent.ID] || thread.Type == models.ThreadTypeSupport
 				addItems = append(addItems, &dal.SavedQueryThread{
 					ThreadID:     thread.ID,
 					SavedQueryID: sq.ID,

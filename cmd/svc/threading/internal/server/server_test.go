@@ -52,6 +52,7 @@ func TestCreateSavedQuery(t *testing.T) {
 				{Value: &models.Expr_Token{Token: "tooooooke"}},
 			},
 		},
+		NotificationsEnabled: true,
 	}
 	dl.Expect(mock.NewExpectation(dl.CreateSavedQuery, esq).WithReturns(eid, nil))
 
@@ -109,19 +110,21 @@ func TestCreateSavedQuery(t *testing.T) {
 		},
 	}
 	res, err := srv.CreateSavedQuery(nil, &threading.CreateSavedQueryRequest{
-		EntityID: "entity_1",
-		Title:    "Stuff",
-		Query:    query,
-		Ordinal:  2,
+		EntityID:             "entity_1",
+		Title:                "Stuff",
+		Query:                query,
+		Ordinal:              2,
+		NotificationsEnabled: true,
 	})
 	test.OK(t, err)
 	test.Equals(t, &threading.CreateSavedQueryResponse{
 		SavedQuery: &threading.SavedQuery{
-			ID:       eid.String(),
-			Title:    "Stuff",
-			Query:    query,
-			Ordinal:  2,
-			EntityID: "entity_1",
+			ID:                   eid.String(),
+			Title:                "Stuff",
+			Query:                query,
+			Ordinal:              2,
+			EntityID:             "entity_1",
+			NotificationsEnabled: true,
 		},
 	}, res)
 }

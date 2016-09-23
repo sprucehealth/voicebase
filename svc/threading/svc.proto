@@ -359,6 +359,7 @@ message CreateSavedQueryRequest {
 	Query query = 3;
 	string title = 4;
 	int32 ordinal = 5;
+	bool notifications_enabled = 6;
 }
 
 message CreateSavedQueryResponse {
