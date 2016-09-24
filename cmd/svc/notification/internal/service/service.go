@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"sort"
 	"time"
 
 	"context"
@@ -206,6 +207,8 @@ func (s *service) processPushNotification(ctx context.Context, n *notification.N
 		i++
 	}
 	n.EntitiesToNotify = dedupedEntityList
+	// Sort the results for emergent fix tests
+	sort.Strings(n.EntitiesToNotify)
 
 	// Filter the entity list for org specific settings since the entity is scoped to the org
 	entitiesToNotify, err := s.filterNodesWithNotificationsDisabled(ctx, n.EntitiesToNotify)
