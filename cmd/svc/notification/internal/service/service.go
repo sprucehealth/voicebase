@@ -194,6 +194,19 @@ func (s *service) processNotification(ctx context.Context, data string) error {
 // TODO: mraines: This section of code has become incredibly push and new_message specific. It needs a desperate refactor before any other
 //   notification work is done.
 func (s *service) processPushNotification(ctx context.Context, n *notification.Notification) error {
+	// Hack: We're getting duplicate notifications in prod. Not sure how this could be happening right now. Dedupe here as an emergency measure
+	dedupedEntityMap := make(map[string]struct{}, len(n.EntitiesToNotify))
+	for _, eID := range n.EntitiesToNotify {
+		dedupedEntityMap[eID] = struct{}{}
+	}
+	dedupedEntityList := make([]string, len(dedupedEntityMap))
+	i := 0
+	for eID := range dedupedEntityMap {
+		dedupedEntityList[i] = eID
+		i++
+	}
+	n.EntitiesToNotify = dedupedEntityList
+
 	// Filter the entity list for org specific settings since the entity is scoped to the org
 	entitiesToNotify, err := s.filterNodesWithNotificationsDisabled(ctx, n.EntitiesToNotify)
 	if err != nil {
