@@ -261,8 +261,9 @@ func (s *service) processPushNotification(ctx context.Context, n *notification.N
 		i++
 	}
 
+	golog.Infof("Sending notifications to %v", dedupedExternalIDList)
 	for _, accountID := range dedupedExternalIDList {
-		if err := s.sendPushNotificationToExternalGroupID(accountID.ID, n); err != nil {
+		if err := s.sendPushNotificationToExternalGroupID(accountID, n); err != nil {
 			golog.Errorf(err.Error())
 		}
 	}
