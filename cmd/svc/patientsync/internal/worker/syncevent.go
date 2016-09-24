@@ -101,6 +101,11 @@ func (s *syncEvent) processPatientAddEvent(ctx context.Context, cfg *sync.Config
 
 		switch cfg.ThreadCreationType {
 		case sync.THREAD_CREATION_TYPE_STANDARD:
+			if len(patient.PhoneNumbers) == 0 && len(patient.EmailAddresses) == 0 {
+				golog.Warningf("Ignoring patient %s since we don't have at least one valid phone number and email address for the patient", patient.ID)
+				continue
+			}
+
 			if err := s.createThread(ctx, patient, event.Source, event.OrganizationEntityID, threading.THREAD_TYPE_EXTERNAL); err != nil {
 				return errors.Trace(err)
 			}
@@ -108,7 +113,7 @@ func (s *syncEvent) processPatientAddEvent(ctx context.Context, cfg *sync.Config
 
 			// ensure that we have at least one phone number and email address before proceeding
 			if len(patient.PhoneNumbers) == 0 || len(patient.EmailAddresses) == 0 {
-				golog.Warningf("Ignoring patient %s since we dont have at least one valid phone number and email address for the patient: %s", patient.ID)
+				golog.Warningf("Ignoring patient %s since we dont have at least one valid phone number and email address for the patient", patient.ID)
 				continue
 			}
 

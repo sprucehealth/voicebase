@@ -48,8 +48,12 @@ func (h *webhookHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// only deal with patient created events
-	if ev.Type != "patient.created" {
+	switch ev.Type {
+	case "patient.created":
+		// if the patient is being updated and we did not create the patient in the first place,
+		// then we will create the patient on the update.
+	case "patient.updated":
+	default:
 		w.WriteHeader(http.StatusOK)
 		return
 	}
