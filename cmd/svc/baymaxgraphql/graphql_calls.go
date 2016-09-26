@@ -200,7 +200,7 @@ func callableEndpointsForEntity(ctx context.Context, ent *directory.Entity) ([]*
 			endpoints = append(endpoints, &models.CallEndpoint{
 				Channel:                 models.CallChannelTypeVideo,
 				ValueOrID:               ent.ID,
-				LANConnectivityRequired: environment.IsProd(),
+				LANConnectivityRequired: false,
 			})
 		}
 	}
@@ -232,7 +232,7 @@ func transformCallToResponse(call *excomms.IPCall, accountID string) (*models.Ca
 		AllowVideo:              true,
 		VideoEnabledByDefault:   true,
 		Recipients:              make([]*models.CallParticipant, 0, len(call.Participants)-1),
-		LANConnectivityRequired: environment.IsProd(),
+		LANConnectivityRequired: false,
 	}
 	for _, p := range call.Participants {
 		par := &models.CallParticipant{
