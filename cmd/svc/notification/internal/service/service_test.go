@@ -366,6 +366,7 @@ func TestProcessNotification(t *testing.T) {
 			MessageID:      "ItemID",
 			SavedQueryID:   "SavedQueryID",
 			PushID:         "dedupe",
+			Sound:          pushNotificationSoundFileMP3,
 		},
 	})
 	test.OK(t, err)
@@ -401,7 +402,7 @@ func TestProcessNotification(t *testing.T) {
 	iData, err = json.Marshal(&iOSPushNotification{
 		PushData: &iOSPushData{
 			Alert: "ShortMessage2",
-			Sound: "default",
+			Sound: pushNotificationSoundFileCAF,
 		},
 		URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
 		ThreadID:       "ThreadID",
@@ -422,6 +423,7 @@ func TestProcessNotification(t *testing.T) {
 			MessageID:      "ItemID",
 			SavedQueryID:   "SavedQueryID",
 			PushID:         "dedupe",
+			Sound:          pushNotificationSoundFileMP3,
 		},
 	})
 	test.OK(t, err)
@@ -455,7 +457,7 @@ func TestProcessNotification(t *testing.T) {
 	iData, err = json.Marshal(&iOSPushNotification{
 		PushData: &iOSPushData{
 			Alert: "ShortMessage4",
-			Sound: "default",
+			Sound: pushNotificationSoundFileCAF,
 		},
 		URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
 		ThreadID:       "ThreadID",
@@ -476,6 +478,7 @@ func TestProcessNotification(t *testing.T) {
 			MessageID:      "ItemID",
 			SavedQueryID:   "SavedQueryID",
 			PushID:         "dedupe",
+			Sound:          pushNotificationSoundFileMP3,
 		},
 	})
 	test.OK(t, err)
@@ -554,7 +557,7 @@ func TestProcessNotificationDisabledEndpoint(t *testing.T) {
 	// Build out expected notification structure
 	iData, err := json.Marshal(&iOSPushNotification{
 		PushData: &iOSPushData{
-			Sound: "default",
+			Sound: pushNotificationSoundFileCAF,
 			Alert: "ShortMessage",
 		},
 		URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
@@ -575,6 +578,7 @@ func TestProcessNotificationDisabledEndpoint(t *testing.T) {
 			MessageID:      "ItemID",
 			SavedQueryID:   "SavedQueryID",
 			PushID:         "dedupe",
+			Sound:          pushNotificationSoundFileMP3,
 		},
 	})
 	test.OK(t, err)
@@ -697,6 +701,7 @@ func TestProcessNotificationInternalMessage(t *testing.T) {
 			MessageID:      "ItemID",
 			SavedQueryID:   "SavedQueryID",
 			PushID:         "dedupe",
+			Sound:          pushNotificationSoundFileMP3,
 		},
 	})
 	test.OK(t, err)
@@ -731,7 +736,7 @@ func TestProcessNotificationInternalMessage(t *testing.T) {
 	iData, err = json.Marshal(&iOSPushNotification{
 		PushData: &iOSPushData{
 			Alert: "ShortMessage2",
-			Sound: "default",
+			Sound: pushNotificationSoundFileCAF,
 		},
 		Type:           string(notification.NewMessageOnInternalThread),
 		URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
@@ -754,6 +759,7 @@ func TestProcessNotificationInternalMessage(t *testing.T) {
 			MessageID:      "ItemID",
 			SavedQueryID:   "SavedQueryID",
 			PushID:         "dedupe",
+			Sound:          pushNotificationSoundFileMP3,
 		},
 	})
 	test.OK(t, err)
@@ -873,6 +879,7 @@ func TestProcessNotificationExternalMessage(t *testing.T) {
 			MessageID:      "ItemID",
 			SavedQueryID:   "SavedQueryID",
 			PushID:         "dedupe",
+			Sound:          pushNotificationSoundFileMP3,
 		},
 	})
 	test.OK(t, err)
@@ -907,7 +914,7 @@ func TestProcessNotificationExternalMessage(t *testing.T) {
 	iData, err = json.Marshal(&iOSPushNotification{
 		PushData: &iOSPushData{
 			Alert: "ShortMessage2",
-			Sound: "default",
+			Sound: pushNotificationSoundFileCAF,
 		},
 		Type:           string(notification.NewMessageOnExternalThread),
 		URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
@@ -930,6 +937,7 @@ func TestProcessNotificationExternalMessage(t *testing.T) {
 			MessageID:      "ItemID",
 			SavedQueryID:   "SavedQueryID",
 			PushID:         "dedupe",
+			Sound:          pushNotificationSoundFileMP3,
 		},
 	})
 	test.OK(t, err)

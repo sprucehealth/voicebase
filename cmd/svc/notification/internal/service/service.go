@@ -407,7 +407,14 @@ type androidPushData struct {
 	MessageID      string `json:"message_id,omitempty"`
 	CallID         string `json:"call_id,omitempty"`
 	PushID         string `json:"push_id"`
+	Sound          string `json:"sound"`
 }
+
+const (
+	pushNotificationSoundFileMP3         = "push_notification.mp3"
+	pushNotificationSoundFileCAF         = "push_notification.caf"
+	incomingCallNotificationSoundFileCAF = "ReceivingCall_Looped.caf"
+)
 
 func generateNotification(webDomain string, n *notification.Notification, targetID string) *snsNotification {
 	msg := n.ShortMessages[targetID]
@@ -425,9 +432,9 @@ func generateNotification(webDomain string, n *notification.Notification, target
 	}
 	if msg != "" {
 		if n.Type == notification.IncomingIPCall {
-			iOSData.Sound = "ReceivingCall_Looped.caf"
+			iOSData.Sound = incomingCallNotificationSoundFileCAF
 		} else {
-			iOSData.Sound = "default"
+			iOSData.Sound = pushNotificationSoundFileCAF
 		}
 	}
 	isNotifData, err := json.Marshal(&iOSPushNotification{
@@ -446,8 +453,11 @@ func generateNotification(webDomain string, n *notification.Notification, target
 
 	// TODO: Perhaps move this into an option for the notification creator
 	priority := "normal"
+	var sound string
 	if n.Type == notification.IncomingIPCall {
 		priority = "high"
+	} else {
+		sound = pushNotificationSoundFileMP3
 	}
 	androidNotifData, err := json.Marshal(&androidPushNotification{
 		CollapseKey: n.CollapseKey,
@@ -463,6 +473,7 @@ func generateNotification(webDomain string, n *notification.Notification, target
 			MessageID:      n.MessageID,
 			CallID:         n.CallID,
 			PushID:         n.DedupeKey,
+			Sound:          sound,
 		},
 	})
 	if err != nil {
