@@ -93,7 +93,7 @@ var createProviderAccountOutputType = graphql.NewObject(graphql.ObjectConfig{
 		"token":               &graphql.Field{Type: graphql.String},
 		"account":             &graphql.Field{Type: accountInterfaceType},
 		"clientEncryptionKey": &graphql.Field{Type: graphql.String},
-		"intercomToken":       &graphql.Field{Type: intercomTokenType},
+		"intercomToken":       intercomTokenField,
 	},
 	IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 		_, ok := value.(*createProviderAccountOutput)

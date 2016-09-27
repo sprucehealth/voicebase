@@ -116,7 +116,7 @@ var authenticateOutputType = graphql.NewObject(
 				Description: "Last couple digits of phone number used to send 2FA verification code. Only when errorCode=TWO_FACTOR_REQUIRED.",
 			},
 			"clientEncryptionKey": &graphql.Field{Type: graphql.String},
-			"intercomToken":       &graphql.Field{Type: intercomTokenType},
+			"intercomToken":       intercomTokenField,
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 			_, ok := value.(*authenticateOutput)

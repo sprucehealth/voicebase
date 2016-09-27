@@ -29,37 +29,39 @@ var intercomTokenType = graphql.NewObject(
 	},
 )
 
+var intercomTokenField = &graphql.Field{
+	Type: intercomTokenType,
+	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+		acc := gqlctx.Account(p.Context)
+		svc := serviceFromParams(p)
+
+		if acc == nil {
+			return nil, errors.ErrNotAuthenticated(p.Context)
+		} else if acc.Type != auth.AccountType_PROVIDER {
+			// only return the intercom token in the case of the provider
+			return nil, nil
+		}
+
+		h := hmac.New(sha256.New, []byte(svc.intercomSecretKey))
+		if _, err := h.Write([]byte(acc.ID)); err != nil {
+			golog.Errorf("Unable to create hmac digest using the account_id and the intercom secret key for %s: %s", acc.ID, err)
+			return nil, nil
+		}
+
+		return &models.IntercomToken{
+			HMACDigest: base64.StdEncoding.EncodeToString(h.Sum(nil)),
+			UserData:   acc.ID,
+		}, nil
+	},
+}
+
 var meType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "Me",
 		Fields: graphql.Fields{
 			"account":             &graphql.Field{Type: graphql.NewNonNull(accountInterfaceType)},
 			"clientEncryptionKey": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-			"intercomToken": &graphql.Field{
-				Type: intercomTokenType,
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					acc := gqlctx.Account(p.Context)
-					svc := serviceFromParams(p)
-
-					if acc == nil {
-						return nil, errors.ErrNotAuthenticated(p.Context)
-					} else if acc.Type != auth.AccountType_PROVIDER {
-						// only return the intercom token in the case of the provider
-						return nil, nil
-					}
-
-					h := hmac.New(sha256.New, []byte(svc.intercomSecretKey))
-					if _, err := h.Write([]byte(acc.ID)); err != nil {
-						golog.Errorf("Unable to create hmac digest using the account_id and the intercom secret key for %s: %s", acc.ID, err)
-						return nil, nil
-					}
-
-					return &models.IntercomToken{
-						HMACDigest: base64.StdEncoding.EncodeToString(h.Sum(nil)),
-						UserData:   acc.ID,
-					}, nil
-				},
-			},
+			"intercomToken":       intercomTokenField,
 		},
 	},
 )
