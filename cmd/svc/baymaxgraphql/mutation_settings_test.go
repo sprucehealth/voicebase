@@ -12,7 +12,9 @@ import (
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/settings"
+	"github.com/sprucehealth/backend/svc/threading"
 )
 
 func TestModifySetting_Boolean(t *testing.T) {
@@ -744,4 +746,320 @@ func TestModifySetting_InvalidOwner(t *testing.T) {
 	b, err := json.MarshalIndent(res, "", "\t")
 	test.OK(t, err)
 	test.Equals(t, true, strings.Contains(string(b), "cannot modify"))
+}
+
+func TestModifySetting_PatientBackwardsNotifications(t *testing.T) {
+	g := newGQL(t)
+	defer g.finish()
+
+	ctx := context.Background()
+	acc := &auth.Account{
+		ID: "account_12345",
+	}
+	ctx = gqlctx.WithAccount(ctx, acc)
+
+	key := notification.PatientNotificationPreferencesSettingsKey
+	nodeID := "entity_e1"
+	g.settingsC.Expect(mock.NewExpectation(g.settingsC.GetConfigs, &settings.GetConfigsRequest{
+		Keys: []string{key},
+	}).WithReturns(&settings.GetConfigsResponse{
+		Configs: []*settings.Config{
+			{
+				Title:          "Hello",
+				Description:    "Hi",
+				Key:            key,
+				AllowSubkeys:   false,
+				Type:           settings.ConfigType_SINGLE_SELECT,
+				PossibleOwners: []settings.OwnerType{settings.OwnerType_INTERNAL_ENTITY},
+				Config: &settings.Config_SingleSelect{
+					SingleSelect: &settings.SingleSelectConfig{
+						Items: []*settings.Item{
+							{
+								ID:    notification.ThreadActivityNotificationPreferenceAllMessages,
+								Label: notification.ThreadActivityNotificationPreferenceAllMessages,
+							},
+							{
+								ID:    notification.ThreadActivityNotificationPreferenceReferencedOnly,
+								Label: notification.ThreadActivityNotificationPreferenceReferencedOnly,
+							},
+							{
+								ID:    notification.ThreadActivityNotificationPreferenceOff,
+								Label: notification.ThreadActivityNotificationPreferenceOff,
+							},
+						},
+					},
+				},
+			},
+		},
+	}, nil))
+
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: nodeID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	}).WithReturns([]*directory.Entity{
+		{
+			Type: directory.EntityType_INTERNAL,
+			ID:   nodeID,
+			Info: &directory.EntityInfo{
+				DisplayName: "HI",
+			},
+		},
+	}, nil))
+
+	g.settingsC.Expect(mock.NewExpectation(g.settingsC.SetValue, &settings.SetValueRequest{
+		NodeID: nodeID,
+		Value: &settings.Value{
+			Key: &settings.ConfigKey{
+				Key: key,
+			},
+			Type: settings.ConfigType_SINGLE_SELECT,
+			Value: &settings.Value_SingleSelect{
+				SingleSelect: &settings.SingleSelectValue{
+					Item: &settings.ItemValue{
+						ID: notification.ThreadActivityNotificationPreferenceOff,
+					},
+				},
+			},
+		},
+	}).WithReturns(&settings.SetValueResponse{}, nil))
+
+	g.ra.Expect(mock.NewExpectation(g.ra.SavedQueries, nodeID).WithReturns([]*threading.SavedQuery{
+		{
+			ID:    "patientSQID",
+			Title: "patient",
+		},
+	}, nil))
+
+	g.ra.Expect(mock.NewExpectation(g.ra.UpdateSavedQuery, &threading.UpdateSavedQueryRequest{
+		SavedQueryID:         "patientSQID",
+		NotificationsEnabled: threading.NOTIFICATIONS_ENABLED_UPDATE_FALSE,
+	}))
+
+	res := g.query(ctx, `
+		mutation _ ($nodeID: ID!, $key: String!) {
+			modifySetting(input: {
+				clientMutationId: "a1b2c3",
+				nodeID: $nodeID,
+				key: $key,
+				selectValue: {
+					items: [{
+							id: "`+notification.ThreadActivityNotificationPreferenceOff+`"
+						}
+					]
+				}
+			}) {
+				clientMutationId
+				success
+				setting {
+					key
+					subkey
+					title
+					description
+					... on SelectSetting {
+						allowsMultipleSelection
+					}
+					value {
+						__typename
+						... on SelectableSettingValue {
+							items {
+								id
+							}
+						}
+					}
+				}
+			}
+		}`, map[string]interface{}{
+		"nodeID": nodeID,
+		"key":    key,
+	})
+	b, err := json.MarshalIndent(res, "", "\t")
+	test.OK(t, err)
+	test.Equals(t, `{
+	"data": {
+		"modifySetting": {
+			"clientMutationId": "a1b2c3",
+			"setting": {
+				"allowsMultipleSelection": false,
+				"description": "Hi",
+				"key": "`+key+`",
+				"subkey": null,
+				"title": "Hello",
+				"value": {
+					"__typename": "SelectableSettingValue",
+					"items": [
+						{
+							"id": "`+notification.ThreadActivityNotificationPreferenceOff+`"
+						}
+					]
+				}
+			},
+			"success": true
+		}
+	}
+}`, string(b))
+}
+
+func TestModifySetting_TeamBackwardsNotifications(t *testing.T) {
+	g := newGQL(t)
+	defer g.finish()
+
+	ctx := context.Background()
+	acc := &auth.Account{
+		ID: "account_12345",
+	}
+	ctx = gqlctx.WithAccount(ctx, acc)
+
+	key := notification.TeamNotificationPreferencesSettingsKey
+	nodeID := "entity_e1"
+	g.settingsC.Expect(mock.NewExpectation(g.settingsC.GetConfigs, &settings.GetConfigsRequest{
+		Keys: []string{key},
+	}).WithReturns(&settings.GetConfigsResponse{
+		Configs: []*settings.Config{
+			{
+				Title:          "Hello",
+				Description:    "Hi",
+				Key:            key,
+				AllowSubkeys:   false,
+				Type:           settings.ConfigType_SINGLE_SELECT,
+				PossibleOwners: []settings.OwnerType{settings.OwnerType_INTERNAL_ENTITY},
+				Config: &settings.Config_SingleSelect{
+					SingleSelect: &settings.SingleSelectConfig{
+						Items: []*settings.Item{
+							{
+								ID:    notification.ThreadActivityNotificationPreferenceAllMessages,
+								Label: notification.ThreadActivityNotificationPreferenceAllMessages,
+							},
+							{
+								ID:    notification.ThreadActivityNotificationPreferenceReferencedOnly,
+								Label: notification.ThreadActivityNotificationPreferenceReferencedOnly,
+							},
+							{
+								ID:    notification.ThreadActivityNotificationPreferenceOff,
+								Label: notification.ThreadActivityNotificationPreferenceOff,
+							},
+						},
+					},
+				},
+			},
+		},
+	}, nil))
+
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: nodeID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	}).WithReturns([]*directory.Entity{
+		{
+			Type: directory.EntityType_INTERNAL,
+			ID:   nodeID,
+			Info: &directory.EntityInfo{
+				DisplayName: "HI",
+			},
+		},
+	}, nil))
+
+	g.settingsC.Expect(mock.NewExpectation(g.settingsC.SetValue, &settings.SetValueRequest{
+		NodeID: nodeID,
+		Value: &settings.Value{
+			Key: &settings.ConfigKey{
+				Key: key,
+			},
+			Type: settings.ConfigType_SINGLE_SELECT,
+			Value: &settings.Value_SingleSelect{
+				SingleSelect: &settings.SingleSelectValue{
+					Item: &settings.ItemValue{
+						ID: notification.ThreadActivityNotificationPreferenceOff,
+					},
+				},
+			},
+		},
+	}).WithReturns(&settings.SetValueResponse{}, nil))
+
+	g.ra.Expect(mock.NewExpectation(g.ra.SavedQueries, nodeID).WithReturns([]*threading.SavedQuery{
+		{
+			ID:    "teamSQID",
+			Title: "team",
+		},
+	}, nil))
+
+	g.ra.Expect(mock.NewExpectation(g.ra.UpdateSavedQuery, &threading.UpdateSavedQueryRequest{
+		SavedQueryID:         "teamSQID",
+		NotificationsEnabled: threading.NOTIFICATIONS_ENABLED_UPDATE_FALSE,
+	}))
+
+	res := g.query(ctx, `
+		mutation _ ($nodeID: ID!, $key: String!) {
+			modifySetting(input: {
+				clientMutationId: "a1b2c3",
+				nodeID: $nodeID,
+				key: $key,
+				selectValue: {
+					items: [{
+							id: "`+notification.ThreadActivityNotificationPreferenceOff+`"
+						}
+					]
+				}
+			}) {
+				clientMutationId
+				success
+				setting {
+					key
+					subkey
+					title
+					description
+					... on SelectSetting {
+						allowsMultipleSelection
+					}
+					value {
+						__typename
+						... on SelectableSettingValue {
+							items {
+								id
+							}
+						}
+					}
+				}
+			}
+		}`, map[string]interface{}{
+		"nodeID": nodeID,
+		"key":    key,
+	})
+	b, err := json.MarshalIndent(res, "", "\t")
+	test.OK(t, err)
+	test.Equals(t, `{
+	"data": {
+		"modifySetting": {
+			"clientMutationId": "a1b2c3",
+			"setting": {
+				"allowsMultipleSelection": false,
+				"description": "Hi",
+				"key": "`+key+`",
+				"subkey": null,
+				"title": "Hello",
+				"value": {
+					"__typename": "SelectableSettingValue",
+					"items": [
+						{
+							"id": "`+notification.ThreadActivityNotificationPreferenceOff+`"
+						}
+					]
+				}
+			},
+			"success": true
+		}
+	}
+}`, string(b))
 }

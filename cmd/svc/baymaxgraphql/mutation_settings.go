@@ -2,15 +2,21 @@ package main
 
 import (
 	"fmt"
+	"strings"
+
+	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	excommsSettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/settings"
+	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -390,10 +396,82 @@ var modifySettingMutation = &graphql.Field{
 
 		}
 
+		if err := handleSavedQueryBackwards(ctx, ram, nodeID, val); err != nil {
+			return nil, errors.InternalError(ctx, fmt.Errorf("Error while setting old config for %s", val.Key.Key))
+		}
+
 		return &modifySettingOutput{
 			ClientMutationID: mutationID,
 			Success:          true,
 			Setting:          setting,
 		}, nil
 	},
+}
+
+func handleSavedQueryBackwards(ctx context.Context, ram raccess.ResourceAccessor, nodeID string, value *settings.Value) error {
+	switch value.Key.Key {
+	case notification.PatientNotificationPreferencesSettingsKey, notification.TeamNotificationPreferencesSettingsKey:
+		// If it's something we care about then get the saved queries for the entity
+		sqs, err := ram.SavedQueries(ctx, nodeID)
+		if err != nil {
+			return errors.Trace(err)
+		}
+		settingValue := value.GetSingleSelect().Item.ID
+		switch value.Key.Key {
+		case notification.PatientNotificationPreferencesSettingsKey:
+			patientSQ := savedQueryFromList(ctx, sqs, "Patient")
+			if patientSQ == nil {
+				golog.Errorf("Unable to find patient saved query for nodeID %s - aborting backwards compatibility change for notifications", nodeID)
+				return nil
+			}
+			switch settingValue {
+			case notification.ThreadActivityNotificationPreferenceAllMessages:
+				if _, err := ram.UpdateSavedQuery(ctx, &threading.UpdateSavedQueryRequest{
+					SavedQueryID:         patientSQ.ID,
+					NotificationsEnabled: threading.NOTIFICATIONS_ENABLED_UPDATE_TRUE,
+				}); err != nil {
+					return errors.Trace(err)
+				}
+			case notification.ThreadActivityNotificationPreferenceReferencedOnly, notification.ThreadActivityNotificationPreferenceOff:
+				if _, err := ram.UpdateSavedQuery(ctx, &threading.UpdateSavedQueryRequest{
+					SavedQueryID:         patientSQ.ID,
+					NotificationsEnabled: threading.NOTIFICATIONS_ENABLED_UPDATE_FALSE,
+				}); err != nil {
+					return errors.Trace(err)
+				}
+			}
+		case notification.TeamNotificationPreferencesSettingsKey:
+			teamSQ := savedQueryFromList(ctx, sqs, "Team")
+			if teamSQ == nil {
+				golog.Errorf("Unable to find team saved query for nodeID %s - aborting backwards compatibility change for notifications", nodeID)
+				return nil
+			}
+			switch settingValue {
+			case notification.ThreadActivityNotificationPreferenceAllMessages:
+				if _, err := ram.UpdateSavedQuery(ctx, &threading.UpdateSavedQueryRequest{
+					SavedQueryID:         teamSQ.ID,
+					NotificationsEnabled: threading.NOTIFICATIONS_ENABLED_UPDATE_TRUE,
+				}); err != nil {
+					return errors.Trace(err)
+				}
+			case notification.ThreadActivityNotificationPreferenceReferencedOnly, notification.ThreadActivityNotificationPreferenceOff:
+				if _, err := ram.UpdateSavedQuery(ctx, &threading.UpdateSavedQueryRequest{
+					SavedQueryID:         teamSQ.ID,
+					NotificationsEnabled: threading.NOTIFICATIONS_ENABLED_UPDATE_FALSE,
+				}); err != nil {
+					return errors.Trace(err)
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func savedQueryFromList(ctx context.Context, savedQueries []*threading.SavedQuery, title string) *threading.SavedQuery {
+	for _, sq := range savedQueries {
+		if strings.EqualFold(sq.Title, title) {
+			return sq
+		}
+	}
+	return nil
 }

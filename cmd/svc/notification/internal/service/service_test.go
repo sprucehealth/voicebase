@@ -12,7 +12,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/sprucehealth/backend/cmd/svc/notification/internal/dal"
 	testdal "github.com/sprucehealth/backend/cmd/svc/notification/internal/dal/test"
-	nsettings "github.com/sprucehealth/backend/cmd/svc/notification/internal/settings"
 	"github.com/sprucehealth/backend/libs/caremessenger/deeplink"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/model"
@@ -657,8 +656,8 @@ func TestProcessNotificationInternalMessage(t *testing.T) {
 
 	// Check the setting for the entities
 	expectFilterNodesForThreadActivityPreferences(t, sc, notification.TeamNotificationPreferencesSettingsKey, []string{"entity:1", "entity:2"}, []string{
-		nsettings.ThreadActivityNotificationPreferenceAllMessages,
-		nsettings.ThreadActivityNotificationPreferenceReferencedOnly,
+		notification.ThreadActivityNotificationPreferenceAllMessages,
+		notification.ThreadActivityNotificationPreferenceReferencedOnly,
 	})
 
 	// Lookup account IDs for the entities via their external identifiers, we should have filtered 1
@@ -835,8 +834,8 @@ func TestProcessNotificationExternalMessage(t *testing.T) {
 
 	// Check the setting for the entities
 	expectFilterNodesForThreadActivityPreferences(t, sc, notification.PatientNotificationPreferencesSettingsKey, []string{"entity:1", "entity:2"}, []string{
-		nsettings.ThreadActivityNotificationPreferenceAllMessages,
-		nsettings.ThreadActivityNotificationPreferenceReferencedOnly,
+		notification.ThreadActivityNotificationPreferenceAllMessages,
+		notification.ThreadActivityNotificationPreferenceReferencedOnly,
 	})
 
 	// Lookup account IDs for the entities via their external identifiers, we should have filtered 1

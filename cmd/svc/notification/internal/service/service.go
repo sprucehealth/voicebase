@@ -12,7 +12,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 	"github.com/sprucehealth/backend/cmd/svc/notification/internal/dal"
-	nsettings "github.com/sprucehealth/backend/cmd/svc/notification/internal/settings"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/caremessenger/deeplink"
 	"github.com/sprucehealth/backend/libs/conc"
@@ -249,7 +248,6 @@ func (s *service) processPushNotification(ctx context.Context, n *notification.N
 		}
 	}
 
-	golog.Infof("Sending notifications to %v", externalIDsResp.ExternalIDs)
 	for _, accountID := range externalIDsResp.ExternalIDs {
 		if err := s.sendPushNotificationToExternalGroupID(accountID.ID, n); err != nil {
 			golog.Errorf(err.Error())
@@ -303,9 +301,9 @@ func (s *service) filterNodesForThreadActivityPreferences(ctx context.Context, e
 			continue
 		}
 		switch singleSelect.Item.ID {
-		case nsettings.ThreadActivityNotificationPreferenceAllMessages:
+		case notification.ThreadActivityNotificationPreferenceAllMessages:
 			filteredNodes = append(filteredNodes, eID)
-		case nsettings.ThreadActivityNotificationPreferenceReferencedOnly:
+		case notification.ThreadActivityNotificationPreferenceReferencedOnly:
 			if _, ok := atReferencedEntityIDs[eID]; ok {
 				filteredNodes = append(filteredNodes, eID)
 			}

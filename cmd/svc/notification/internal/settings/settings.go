@@ -21,31 +21,25 @@ var ReceiveNotificationsConfig = &settings.Config{
 	},
 }
 
-var (
-	ThreadActivityNotificationPreferenceAllMessages    = "notification_preference_all"
-	ThreadActivityNotificationPreferenceReferencedOnly = "notification_preference_referenced_only"
-	ThreadActivityNotificationPreferenceOff            = "notification_preference_off"
-)
-
 var threadActivityNotificationPreferenceSingleSelect = &settings.Config_SingleSelect{
 	SingleSelect: &settings.SingleSelectConfig{
 		Items: []*settings.Item{
 			{
-				ID:    ThreadActivityNotificationPreferenceAllMessages,
+				ID:    notification.ThreadActivityNotificationPreferenceAllMessages,
 				Label: "All messages",
 			},
 			{
-				ID:    ThreadActivityNotificationPreferenceReferencedOnly,
+				ID:    notification.ThreadActivityNotificationPreferenceReferencedOnly,
 				Label: "@ only",
 			},
 			{
-				ID:    ThreadActivityNotificationPreferenceOff,
+				ID:    notification.ThreadActivityNotificationPreferenceOff,
 				Label: "Notifications off",
 			},
 		},
 		Default: &settings.SingleSelectValue{
 			Item: &settings.ItemValue{
-				ID: ThreadActivityNotificationPreferenceAllMessages,
+				ID: notification.ThreadActivityNotificationPreferenceAllMessages,
 			},
 		},
 	},
