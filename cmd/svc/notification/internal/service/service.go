@@ -249,21 +249,9 @@ func (s *service) processPushNotification(ctx context.Context, n *notification.N
 		}
 	}
 
-	// Hack: We're getting duplicate notifications in prod. Not sure how this could be happening right now. Dedupe here as an emergency measure
-	dedupedExternalIDMap := make(map[string]struct{}, len(externalIDsResp.ExternalIDs))
-	for _, eID := range externalIDsResp.ExternalIDs {
-		dedupedExternalIDMap[eID.ID] = struct{}{}
-	}
-	dedupedExternalIDList := make([]string, len(dedupedEntityMap))
-	i = 0
-	for eID := range dedupedExternalIDMap {
-		dedupedExternalIDList[i] = eID
-		i++
-	}
-
-	golog.Infof("Sending notifications to %v", dedupedExternalIDList)
-	for _, accountID := range dedupedExternalIDList {
-		if err := s.sendPushNotificationToExternalGroupID(accountID, n); err != nil {
+	golog.Infof("Sending notifications to %v", externalIDsResp.ExternalIDs)
+	for _, accountID := range externalIDsResp.ExternalIDs {
+		if err := s.sendPushNotificationToExternalGroupID(accountID.ID, n); err != nil {
 			golog.Errorf(err.Error())
 		}
 	}
