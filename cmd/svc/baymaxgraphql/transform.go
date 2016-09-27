@@ -188,6 +188,8 @@ func transformThreadToResponse(ctx context.Context, ram raccess.ResourceAccessor
 		th.AllowUpdateTitle = true
 		th.IsTeamThread = true
 		th.Type = models.ThreadTypeTeam
+		th.AllowAddFollowers = false
+		th.AllowRemoveFollowers = false
 	case threading.THREAD_TYPE_EXTERNAL:
 		th.AllowDelete = true
 		th.AllowExternalDelivery = true
