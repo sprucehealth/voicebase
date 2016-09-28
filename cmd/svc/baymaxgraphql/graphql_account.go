@@ -35,9 +35,7 @@ var intercomTokenField = &graphql.Field{
 		acc := gqlctx.Account(p.Context)
 		svc := serviceFromParams(p)
 
-		if acc == nil {
-			return nil, errors.ErrNotAuthenticated(p.Context)
-		} else if acc.Type != auth.AccountType_PROVIDER {
+		if acc == nil || acc.Type != auth.AccountType_PROVIDER {
 			// only return the intercom token in the case of the provider
 			return nil, nil
 		}
