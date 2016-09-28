@@ -89,6 +89,8 @@ var savedThreadQueryType = graphql.NewObject(
 						cn.EmptyState = ThreadConnectionEmptyStateTeam
 					case "@Pages":
 						cn.EmptyState = ThreadConnectionEmptyStatePages
+					case "Following":
+						cn.EmptyState = ThreadConnectionEmptyStateFollowing
 					default:
 						cn.EmptyState = ThreadConnectionEmptyStateGeneric
 					}

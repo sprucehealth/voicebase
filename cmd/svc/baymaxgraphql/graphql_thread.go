@@ -22,10 +22,11 @@ import (
 )
 
 const (
-	ThreadConnectionEmptyStatePatient = "PATIENT"
-	ThreadConnectionEmptyStateTeam    = "TEAM"
-	ThreadConnectionEmptyStatePages   = "PAGES"
-	ThreadConnectionEmptyStateGeneric = "GENERIC"
+	ThreadConnectionEmptyStatePatient   = "PATIENT"
+	ThreadConnectionEmptyStateTeam      = "TEAM"
+	ThreadConnectionEmptyStatePages     = "PAGES"
+	ThreadConnectionEmptyStateGeneric   = "GENERIC"
+	ThreadConnectionEmptyStateFollowing = "FOLLOWING"
 )
 
 var threadConnectionEmptyStateTypeEnum = graphql.NewEnum(graphql.EnumConfig{
@@ -42,6 +43,10 @@ var threadConnectionEmptyStateTypeEnum = graphql.NewEnum(graphql.EnumConfig{
 		ThreadConnectionEmptyStatePages: &graphql.EnumValueConfig{
 			Value:       ThreadConnectionEmptyStatePages,
 			Description: "Unread reference threads",
+		},
+		ThreadConnectionEmptyStateFollowing: &graphql.EnumValueConfig{
+			Value:       ThreadConnectionEmptyStateFollowing,
+			Description: "Following threads",
 		},
 		ThreadConnectionEmptyStateGeneric: &graphql.EnumValueConfig{
 			Value:       ThreadConnectionEmptyStateGeneric,
