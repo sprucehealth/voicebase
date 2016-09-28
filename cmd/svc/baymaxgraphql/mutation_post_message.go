@@ -22,6 +22,7 @@ import (
 	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/layout"
+	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
@@ -60,6 +61,7 @@ var (
 	attachmentTypeVideo          = "VIDEO"
 	attachmentTypeVisit          = "VISIT"
 	attachmentTypePaymentRequest = "PAYMENT_REQUEST"
+	attachmentTypeDocument       = "DOCUMENT"
 )
 
 var attachmentInputTypeEnum = graphql.NewEnum(graphql.EnumConfig{
@@ -85,6 +87,10 @@ var attachmentInputTypeEnum = graphql.NewEnum(graphql.EnumConfig{
 			Value:       attachmentTypePaymentRequest,
 			Description: "The attachment type representing a paymentRequest",
 		},
+		attachmentTypeDocument: &graphql.EnumValueConfig{
+			Value:       attachmentTypeDocument,
+			Description: "The attachemnt type representing a document",
+		},
 	},
 })
 
@@ -92,7 +98,8 @@ var attachmentInputType = graphql.NewInputObject(
 	graphql.InputObjectConfig{
 		Name: "AttachmentInput",
 		Fields: graphql.InputObjectConfigFieldMap{
-			"title":          &graphql.InputObjectFieldConfig{Type: graphql.String},
+			"title": &graphql.InputObjectFieldConfig{Type: graphql.String},
+			// deprecated
 			"mediaID":        &graphql.InputObjectFieldConfig{Type: graphql.String},
 			"attachmentID":   &graphql.InputObjectFieldConfig{Type: graphql.String},
 			"attachmentType": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(attachmentInputTypeEnum)},
@@ -110,6 +117,8 @@ func attachmentTypeEnumAsThreadingEnum(t string) (threading.Attachment_Type, err
 		return threading.ATTACHMENT_TYPE_VIDEO, nil
 	case attachmentTypeVisit:
 		return threading.ATTACHMENT_TYPE_VISIT, nil
+	case attachmentTypeDocument:
+		return threading.ATTACHMENT_TYPE_DOCUMENT, nil
 	case attachmentTypePaymentRequest:
 		return threading.ATTACHMENT_TYPE_PAYMENT_REQUEST, nil
 	}
@@ -422,6 +431,22 @@ var postMessageMutation = &graphql.Field{
 						},
 					},
 				}
+			case threading.ATTACHMENT_TYPE_DOCUMENT:
+				info, err := ram.MediaInfo(ctx, mAttachment.AttachmentID)
+				if err != nil {
+					return nil, fmt.Errorf("Error while locating media info for %s : %s", mAttachment.AttachmentID, err)
+				}
+				attachment = &threading.Attachment{
+					Type:  mAttachmentType,
+					Title: mAttachment.Title,
+					URL:   info.ID,
+					Data: &threading.Attachment_Document{
+						Document: &threading.DocumentAttachment{
+							Mimetype: media.MIMEType(info.MIME),
+							MediaID:  info.ID,
+						},
+					},
+				}
 			case threading.ATTACHMENT_TYPE_PAYMENT_REQUEST:
 				resp, err := ram.Payment(ctx, &payments.PaymentRequest{
 					PaymentID: mAttachment.AttachmentID,
@@ -480,6 +505,10 @@ var postMessageMutation = &graphql.Field{
 				}
 				if a.Type == threading.ATTACHMENT_TYPE_PAYMENT_REQUEST {
 					title = append(title, "Requested payment:")
+					break
+				}
+				if a.Type == threading.ATTACHMENT_TYPE_DOCUMENT {
+					title = append(title, "Shared a file:")
 					break
 				}
 			}

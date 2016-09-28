@@ -33,6 +33,7 @@ message MediaInfo {
 	uint64 duration_ns = 7 [(gogoproto.customname) = "DurationNS"];
 	MIME mime = 8 [(gogoproto.customname) = "MIME"];
 	bool public = 9;
+	string name = 10;
 }
 
 message MediaInfosRequest {

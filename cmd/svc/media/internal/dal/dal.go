@@ -166,6 +166,7 @@ type Media struct {
 	ID         MediaID
 	URL        string
 	MimeType   string
+	Name       string
 	OwnerType  MediaOwnerType
 	OwnerID    string
 	SizeBytes  uint64
@@ -192,8 +193,17 @@ func (d *dal) InsertMedia(model *Media) (MediaID, error) {
 	}
 	_, err := d.db.Exec(
 		`INSERT INTO media
-          (mime_type, owner_type, owner_id, id, url, size_bytes, duration_ns, public)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, model.MimeType, model.OwnerType, model.OwnerID, model.ID, model.URL, model.SizeBytes, model.DurationNS, model.Public)
+          (mime_type, owner_type, owner_id, id, url, size_bytes, duration_ns, public, name)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		model.MimeType,
+		model.OwnerType,
+		model.OwnerID,
+		model.ID,
+		model.URL,
+		model.SizeBytes,
+		model.DurationNS,
+		model.Public,
+		model.Name)
 	if err != nil {
 		return EmptyMediaID(), errors.Trace(err)
 	}
@@ -279,14 +289,14 @@ func (d *dal) DeleteMedia(id MediaID) (int64, error) {
 }
 
 const selectMedia = `
-    SELECT media.owner_type, media.owner_id, media.created, media.id, media.url, media.mime_type, media.size_bytes, media.duration_ns, media.public
+    SELECT media.owner_type, media.owner_id, media.created, media.id, media.url, media.mime_type, media.size_bytes, media.duration_ns, media.public, media.name
       FROM media`
 
 func scanMedia(row dbutil.Scanner) (*Media, error) {
 	var m Media
 	m.ID = EmptyMediaID()
 
-	err := row.Scan(&m.OwnerType, &m.OwnerID, &m.Created, &m.ID, &m.URL, &m.MimeType, &m.SizeBytes, &m.DurationNS, &m.Public)
+	err := row.Scan(&m.OwnerType, &m.OwnerID, &m.Created, &m.ID, &m.URL, &m.MimeType, &m.SizeBytes, &m.DurationNS, &m.Public, &m.Name)
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound
 	}

@@ -31,6 +31,7 @@ func (s *server) transformMediaToResponse(m *dal.Media) (*media.MediaInfo, error
 		OwnerType:  media.MediaOwnerType(media.MediaOwnerType_value[m.OwnerType.String()]),
 		SizeBytes:  m.SizeBytes,
 		DurationNS: m.DurationNS,
+		Name:       m.Name,
 		MIME: &media.MIME{
 			Type:    t.Type,
 			Subtype: t.Subtype,

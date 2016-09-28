@@ -53,7 +53,7 @@ func (h *mediaHandler) servePOST(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	file, mimeType, err := parseMultiPartMedia("media", r)
+	file, mimeType, fileName, err := parseMultiPartMedia("media", r)
 	if err != nil {
 		if file != nil {
 			file.Close()
@@ -63,7 +63,7 @@ func (h *mediaHandler) servePOST(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	thumbFile, tType, err := parseMultiPartMedia("thumbnail", r)
+	thumbFile, tType, _, err := parseMultiPartMedia("thumbnail", r)
 	if thumbFile != nil {
 		defer thumbFile.Close()
 	}
@@ -73,7 +73,7 @@ func (h *mediaHandler) servePOST(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	meta, err := h.svc.PutMedia(r.Context(), file, mimeType, thumbFile)
+	meta, err := h.svc.PutMedia(r.Context(), file, fileName, mimeType, thumbFile)
 	if err == service.ErrUnsupportedContentType {
 		http.Error(w, err.Error()+" - "+mimeType.String(), http.StatusBadRequest)
 		return
@@ -89,16 +89,16 @@ func (h *mediaHandler) servePOST(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func parseMultiPartMedia(formKey string, r *http.Request) (multipart.File, *mime.Type, error) {
+func parseMultiPartMedia(formKey string, r *http.Request) (multipart.File, *mime.Type, string, error) {
 	file, fHeaders, err := r.FormFile(formKey)
 	if err != nil {
-		return nil, nil, fmt.Errorf("Missing or invalid value for %s in parameters: %s", formKey, err)
+		return nil, nil, "", fmt.Errorf("Missing or invalid value for %s in parameters: %s", formKey, err)
 	}
 	mimeType, err := mime.ParseType(fHeaders.Header.Get(contentTypeHeader))
 	if err != nil {
-		return file, nil, fmt.Errorf("Unable to parse Content-Type for %s", formKey)
+		return file, nil, "", fmt.Errorf("Unable to parse Content-Type for %s", formKey)
 	}
-	return file, mimeType, nil
+	return file, mimeType, fHeaders.Filename, nil
 }
 
 func (h *mediaHandler) redirectToSource(w http.ResponseWriter, r *http.Request) {

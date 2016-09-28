@@ -66,6 +66,7 @@ message Attachment {
 		ATTACHMENT_TYPE_VISIT = 4;
 		ATTACHMENT_TYPE_VIDEO = 5;
 		ATTACHMENT_TYPE_PAYMENT_REQUEST = 6;
+		ATTACHMENT_TYPE_DOCUMENT = 7;
 	}
 	Type type = 1;
 	string title = 2;
@@ -78,6 +79,7 @@ message Attachment {
 		CarePlanAttachment care_plan = 14;
 		VideoAttachment video = 15;
 		PaymentRequestAttachment payment_request = 16;
+		DocumentAttachment document = 17;
 	}
 }
 
@@ -99,6 +101,12 @@ message AudioAttachment {
 	string media_id = 2 [(gogoproto.customname) = "MediaID"];
 	uint32 deprecated_duration_in_seconds = 3; // Deprecated
 	uint64 duration_ns = 4 [(gogoproto.customname) = "DurationNS"];
+}
+
+message DocumentAttachment {
+	string mimetype = 1;
+	string media_id = 2 [(gogoproto.customname) = "MediaID"];
+	string name = 3;
 }
 
 message GenericAttachment {

@@ -461,6 +461,18 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 							},
 						},
 					})
+				} else if attachmentItem.ContentType == "application/pdf" {
+					attachments = append(attachments, &threading.Attachment{
+						Type:  threading.ATTACHMENT_TYPE_DOCUMENT,
+						Title: attachmentItem.Name,
+						Data: &threading.Attachment_Document{
+							Document: &threading.DocumentAttachment{
+								Mimetype: attachmentItem.ContentType,
+								MediaID:  attachmentItem.MediaID,
+								Name:     attachmentItem.Name,
+							},
+						},
+					})
 				} else {
 					attachments = append(attachments, &threading.Attachment{
 						Type:  threading.ATTACHMENT_TYPE_GENERIC_URL,

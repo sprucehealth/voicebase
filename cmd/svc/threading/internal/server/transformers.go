@@ -342,6 +342,16 @@ func transformThreadItemToResponse(item *models.ThreadItem, orgID string) (*thre
 						Mimetype: data.Mimetype,
 					},
 				}
+			case models.ATTACHMENT_TYPE_DOCUMENT:
+				data := a.GetDocument()
+				at.Type = threading.ATTACHMENT_TYPE_DOCUMENT
+				at.Data = &threading.Attachment_Document{
+					Document: &threading.DocumentAttachment{
+						Mimetype: data.Mimetype,
+						MediaID:  data.MediaID,
+						Name:     data.Name,
+					},
+				}
 			case models.ATTACHMENT_TYPE_VISIT:
 				data := a.GetVisit()
 				at.Type = threading.ATTACHMENT_TYPE_VISIT
@@ -493,6 +503,16 @@ func transformAttachmentsFromRequest(atts []*threading.Attachment) ([]*models.At
 					Mimetype:   data.Mimetype,
 					MediaID:    data.MediaID,
 					DurationNS: data.DurationNS,
+				},
+			}
+		case threading.ATTACHMENT_TYPE_DOCUMENT:
+			data := a.GetDocument()
+			at.Type = models.ATTACHMENT_TYPE_DOCUMENT
+			at.Data = &models.Attachment_Document{
+				Document: &models.DocumentAttachment{
+					Mimetype: data.Mimetype,
+					MediaID:  data.MediaID,
+					Name:     data.Name,
 				},
 			}
 		case threading.ATTACHMENT_TYPE_VISIT:

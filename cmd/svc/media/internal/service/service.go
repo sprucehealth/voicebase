@@ -25,7 +25,7 @@ type Service interface {
 	GetReader(ctx context.Context, mediaID dal.MediaID) (io.ReadCloser, *MediaMeta, error)
 	GetThumbnailReader(ctx context.Context, mediaID dal.MediaID, size *media.ImageSize) (io.ReadCloser, *media.ImageMeta, error)
 	IsPublic(ctx context.Context, mediaID dal.MediaID) (bool, error)
-	PutMedia(ctx context.Context, mFile io.ReadSeeker, mediaType *mime.Type, mThumb io.ReadSeeker) (*MediaMeta, error)
+	PutMedia(ctx context.Context, mFile io.ReadSeeker, fileName string, mediaType *mime.Type, mThumb io.ReadSeeker) (*MediaMeta, error)
 }
 
 // New returns a new initialized multi media service.
@@ -158,7 +158,7 @@ func (s *service) ExpiringURL(ctx context.Context, mediaID dal.MediaID, exp time
 }
 
 // PutReader sends the provided reader to the storage layers. Optionally, if a thumbnail is provided, that is mapped to the media
-func (s *service) PutMedia(ctx context.Context, mFile io.ReadSeeker, mediaType *mime.Type, mThumb io.ReadSeeker) (*MediaMeta, error) {
+func (s *service) PutMedia(ctx context.Context, mFile io.ReadSeeker, mFileName string, mediaType *mime.Type, mThumb io.ReadSeeker) (*MediaMeta, error) {
 	acc, err := mediactx.Account(ctx)
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -221,6 +221,7 @@ func (s *service) PutMedia(ctx context.Context, mFile io.ReadSeeker, mediaType *
 	_, err = s.dal.InsertMedia(&dal.Media{
 		ID:         mediaID,
 		URL:        url,
+		Name:       mFileName,
 		MimeType:   mediaType.String(),
 		OwnerType:  dal.MediaOwnerTypeAccount,
 		OwnerID:    acc.ID,

@@ -16,6 +16,7 @@ import (
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 	"github.com/sprucehealth/graphql/gqlerrors"
@@ -173,19 +174,20 @@ func TestNodeQuery(t *testing.T) {
 	res, err = nodeField.Resolve(p)
 	test.OK(t, err)
 	test.Equals(t, &models.Thread{
-		ID:                    id,
-		AllowAddFollowers:     true,
-		AllowRemoveFollowers:  true,
-		AllowInternalMessages: true,
-		AllowDelete:           true,
-		AllowSMSAttachments:   true,
-		AllowEmailAttachment:  true,
-		AllowExternalDelivery: true,
-		AllowMentions:         true,
-		IsPatientThread:       true,
-		OrganizationID:        "entity_1",
-		PrimaryEntityID:       "entity_2",
-		Title:                 "Someone",
+		ID:                         id,
+		AllowAddFollowers:          true,
+		AllowRemoveFollowers:       true,
+		AllowInternalMessages:      true,
+		AllowDelete:                true,
+		AllowSMSAttachments:        true,
+		AllowEmailAttachment:       true,
+		AllowExternalDelivery:      true,
+		AllowMentions:              true,
+		IsPatientThread:            true,
+		AllowedAttachmentMIMETypes: media.SupportedImageMIMETypes,
+		OrganizationID:             "entity_1",
+		PrimaryEntityID:            "entity_2",
+		Title:                      "Someone",
 		LastPrimaryEntityEndpoints: []*models.Endpoint{},
 		Type:            models.ThreadTypeExternal,
 		Unread:          true,

@@ -223,30 +223,31 @@ const (
 )
 
 type Thread struct {
-	ID                         string `json:"id"`
-	OrganizationID             string `json:"organizationID"`
-	PrimaryEntityID            string `json:"primaryEntityID"`
-	Title                      string `json:"title"`
-	Subtitle                   string `json:"subtitle"`
-	LastMessageTimestamp       uint64 `json:"lastMessageTimestamp"`
-	Unread                     bool   `json:"unread"`
-	UnreadReference            bool   `json:"unreadReference"`
-	IsPatientThread            bool   `json:"isPatientThread"`
-	IsTeamThread               bool   `json:"isTeamThread"`
-	AlwaysShowNotifications    bool   `json:"alwaysShowNotifications"`
-	AllowAddFollowers          bool   `json:"allowAddFollowers"`
-	AllowAddMembers            bool   `json:"allowAddMembers"`
-	AllowDelete                bool   `json:"allowDelete"`
-	AllowEmailAttachment       bool   `json:"allowEmailAttachments"`
-	AllowExternalDelivery      bool   `json:"allowExternalDelivery"`
-	AllowInternalMessages      bool   `json:"allowInternalMessages"`
-	AllowLeave                 bool   `json:"allowLeave"`
-	AllowMentions              bool   `json:"allowMentions"`
-	AllowRemoveFollowers       bool   `json:"allowRemoveFollowers"`
-	AllowRemoveMembers         bool   `json:"allowRemoveMembers"`
-	AllowSMSAttachments        bool   `json:"allowSMSAttachments"`
-	AllowUpdateTitle           bool   `json:"allowUpdateTitle"`
-	AllowVideoAttachment       bool   `json:"allowVideoAttachments"`
+	ID                         string   `json:"id"`
+	OrganizationID             string   `json:"organizationID"`
+	PrimaryEntityID            string   `json:"primaryEntityID"`
+	Title                      string   `json:"title"`
+	Subtitle                   string   `json:"subtitle"`
+	LastMessageTimestamp       uint64   `json:"lastMessageTimestamp"`
+	Unread                     bool     `json:"unread"`
+	UnreadReference            bool     `json:"unreadReference"`
+	IsPatientThread            bool     `json:"isPatientThread"`
+	IsTeamThread               bool     `json:"isTeamThread"`
+	AlwaysShowNotifications    bool     `json:"alwaysShowNotifications"`
+	AllowAddFollowers          bool     `json:"allowAddFollowers"`
+	AllowAddMembers            bool     `json:"allowAddMembers"`
+	AllowDelete                bool     `json:"allowDelete"`
+	AllowEmailAttachment       bool     `json:"allowEmailAttachments"`
+	AllowExternalDelivery      bool     `json:"allowExternalDelivery"`
+	AllowInternalMessages      bool     `json:"allowInternalMessages"`
+	AllowLeave                 bool     `json:"allowLeave"`
+	AllowMentions              bool     `json:"allowMentions"`
+	AllowRemoveFollowers       bool     `json:"allowRemoveFollowers"`
+	AllowRemoveMembers         bool     `json:"allowRemoveMembers"`
+	AllowSMSAttachments        bool     `json:"allowSMSAttachments"`
+	AllowUpdateTitle           bool     `json:"allowUpdateTitle"`
+	AllowVideoAttachment       bool     `json:"allowVideoAttachments"`
+	AllowedAttachmentMIMETypes []string `json:"allowedAttachmentMIMETypes"`
 	LastPrimaryEntityEndpoints []*Endpoint
 	EmptyStateTextMarkup       string `json:"emptyStateTextMarkup,omitempty"`
 	MessageCount               int    `json:"messageCount"`

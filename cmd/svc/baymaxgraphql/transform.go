@@ -190,14 +190,17 @@ func transformThreadToResponse(ctx context.Context, ram raccess.ResourceAccessor
 		th.Type = models.ThreadTypeTeam
 		th.AllowAddFollowers = false
 		th.AllowRemoveFollowers = false
+		th.AllowedAttachmentMIMETypes = media.SupportedMIMETypes
 	case threading.THREAD_TYPE_EXTERNAL:
 		th.AllowDelete = true
 		th.AllowExternalDelivery = true
 		th.IsPatientThread = true
 		th.Type = models.ThreadTypeExternal
+		th.AllowedAttachmentMIMETypes = media.SupportedImageMIMETypes
 	case threading.THREAD_TYPE_SECURE_EXTERNAL:
 		th.Type = models.ThreadTypeSecureExternal
 		th.IsPatientThread = true
+		th.AllowedAttachmentMIMETypes = media.SupportedMIMETypes
 
 		entity, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
 			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
@@ -219,13 +222,13 @@ func transformThreadToResponse(ctx context.Context, ram raccess.ResourceAccessor
 		}
 		th.Type = models.ThreadTypeSupport
 		th.AlwaysShowNotifications = true
-		th.AllowAddFollowers = false
-		th.AllowRemoveFollowers = false
+		th.AllowedAttachmentMIMETypes = media.SupportedMIMETypes
 	case threading.THREAD_TYPE_LEGACY_TEAM:
 		th.Type = models.ThreadTypeLegacyTeam
 		th.IsTeamThread = true
 		th.AllowAddFollowers = false
 		th.AllowRemoveFollowers = false
+		th.AllowedAttachmentMIMETypes = media.SupportedMIMETypes
 	case threading.THREAD_TYPE_SETUP:
 		if th.Title == "" {
 			th.Title = onboardingThreadTitle
@@ -511,6 +514,14 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 					Title:   a.Title,
 					CTAText: "View Payment Request",
 					TapURL:  deeplink.PaymentURL(webDomain, item.OrganizationID, item.ThreadID, p.PaymentID),
+					IconURL: "https://dlzz6qy5jmbag.cloudfront.net/caremessenger/icon_payment.png",
+				}
+			case threading.ATTACHMENT_TYPE_DOCUMENT:
+				f := a.GetDocument()
+				data = &models.BannerButtonAttachment{
+					Title:   f.Name,
+					CTAText: "View File",
+					TapURL:  media.URL(mediaAPIDomain, f.MediaID, f.Mimetype),
 					IconURL: "https://dlzz6qy5jmbag.cloudfront.net/caremessenger/icon_payment.png",
 				}
 			case threading.ATTACHMENT_TYPE_GENERIC_URL:
