@@ -225,7 +225,7 @@ func (s *server) InviteColleagues(ctx context.Context, in *invite.InviteColleagu
 	}
 
 	for _, c := range in.Colleagues {
-		inviteClientDataJSON, err := clientdata.ColleagueInviteClientJSON(org, inviter, c.FirstName, "")
+		inviteClientDataJSON, err := clientdata.ColleagueInviteClientJSON(org, inviter, c.FirstName, "", "")
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
@@ -286,7 +286,7 @@ func (s *server) InvitePatients(ctx context.Context, in *invite.InvitePatientsRe
 	}
 
 	for _, p := range in.Patients {
-		inviteClientDataJSON, err := clientdata.PatientInviteClientJSON(org, p.FirstName, "", invite.LookupInviteResponse_PATIENT)
+		inviteClientDataJSON, err := clientdata.PatientInviteClientJSON(org, p.FirstName, "", "", invite.LookupInviteResponse_PATIENT)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
@@ -711,7 +711,7 @@ func (s *server) CreateOrganizationInvite(ctx context.Context, in *invite.Create
 		}, nil
 	}
 
-	inviteClientDataJSON, err := clientdata.PatientInviteClientJSON(org, "", "", invite.LookupInviteResponse_ORGANIZATION_CODE)
+	inviteClientDataJSON, err := clientdata.PatientInviteClientJSON(org, "", "", "", invite.LookupInviteResponse_ORGANIZATION_CODE)
 	if err != nil {
 		return nil, grpcError(err)
 	}

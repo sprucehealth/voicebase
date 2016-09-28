@@ -673,7 +673,7 @@ func TestCreateOrganizationInvite(t *testing.T) {
 					Info: &directory.EntityInfo{
 						DisplayName: "DisplayName",
 					},
-				}, "", "", invite.LookupInviteResponse_ORGANIZATION_CODE)
+				}, "", "", "", invite.LookupInviteResponse_ORGANIZATION_CODE)
 				test.OK(t, err)
 				// Retry 5 times
 				mb.Expect(mock.NewExpectation(mb.URL, map[string]interface{}{
@@ -745,7 +745,7 @@ func TestCreateOrganizationInvite(t *testing.T) {
 					Info: &directory.EntityInfo{
 						DisplayName: "DisplayName",
 					},
-				}, "", "", invite.LookupInviteResponse_ORGANIZATION_CODE)
+				}, "", "", "", invite.LookupInviteResponse_ORGANIZATION_CODE)
 				test.OK(t, err)
 				// Retry 5 times
 				mb.Expect(mock.NewExpectation(mb.URL, map[string]interface{}{

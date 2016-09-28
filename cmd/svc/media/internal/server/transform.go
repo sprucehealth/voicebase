@@ -25,8 +25,8 @@ func (s *server) transformMediaToResponse(m *dal.Media) (*media.MediaInfo, error
 	}
 	return &media.MediaInfo{
 		ID:         m.ID.String(),
-		URL:        media.URL(s.mediaAPIDomain, m.ID.String()),
-		ThumbURL:   media.ThumbnailURL(s.mediaAPIDomain, m.ID.String(), 0, 0, false),
+		URL:        media.URL(s.mediaAPIDomain, m.ID.String(), m.MimeType),
+		ThumbURL:   media.ThumbnailURL(s.mediaAPIDomain, m.ID.String(), m.MimeType, 0, 0, false),
 		OwnerID:    m.OwnerID,
 		OwnerType:  media.MediaOwnerType(media.MediaOwnerType_value[m.OwnerType.String()]),
 		SizeBytes:  m.SizeBytes,

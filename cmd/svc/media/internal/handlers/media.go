@@ -84,8 +84,8 @@ func (h *mediaHandler) servePOST(w http.ResponseWriter, r *http.Request) {
 	httputil.JSONResponse(w, http.StatusOK, &mediaPOSTResponse{
 		MediaID:  meta.MediaID.String(),
 		MIMEType: meta.MIMEType,
-		URL:      media.URL(h.mediaAPIDomain, meta.MediaID.String()),
-		ThumbURL: media.ThumbnailURL(h.mediaAPIDomain, meta.MediaID.String(), 0, 0, false),
+		URL:      media.URL(h.mediaAPIDomain, meta.MediaID.String(), meta.MIMEType),
+		ThumbURL: media.ThumbnailURL(h.mediaAPIDomain, meta.MediaID.String(), meta.MIMEType, 0, 0, false),
 	})
 }
 

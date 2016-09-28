@@ -153,6 +153,8 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				svc := serviceFromParams(p)
 				imgArgs := ParseImageArguments(p.Args)
+				ram := raccess.ResourceAccess(p)
+				ctx := p.Context
 				ent := p.Source.(*models.Entity)
 				if ent.ImageMediaID == "" {
 					return ent.Avatar, nil
@@ -162,8 +164,14 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 					imgArgs.Width = 108
 					imgArgs.Height = 108
 				}
+
+				meta, err := ram.MediaInfo(ctx, ent.ImageMediaID)
+				if err != nil {
+					return nil, errors.InternalError(ctx, err)
+				}
+
 				return &models.Image{
-					URL:    media.ThumbnailURL(svc.mediaAPIDomain, ent.ImageMediaID, imgArgs.Height, imgArgs.Width, imgArgs.Crop),
+					URL:    media.ThumbnailURL(svc.mediaAPIDomain, ent.ImageMediaID, media.MIMEType(meta.MIME), imgArgs.Height, imgArgs.Width, imgArgs.Crop),
 					Width:  imgArgs.Width,
 					Height: imgArgs.Height,
 				}, nil

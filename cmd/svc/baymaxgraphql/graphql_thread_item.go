@@ -174,9 +174,9 @@ var imageAttachmentType = graphql.NewObject(
 
 					var url string
 					if width == 0 && height == 0 {
-						url = media.URL(svc.mediaAPIDomain, mediaID)
+						url = media.URL(svc.mediaAPIDomain, mediaID, attachment.Mimetype)
 					} else {
-						url = media.ThumbnailURL(svc.mediaAPIDomain, mediaID, height, width, crop)
+						url = media.ThumbnailURL(svc.mediaAPIDomain, mediaID, attachment.Mimetype, height, width, crop)
 					}
 
 					return &models.Image{

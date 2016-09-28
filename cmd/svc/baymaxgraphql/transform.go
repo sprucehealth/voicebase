@@ -446,7 +446,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 					golog.Errorf("Unable to parse mediaID out of url %s", d.MediaID)
 				}
 
-				a.URL = media.URL(mediaAPIDomain, mediaID)
+				a.URL = media.URL(mediaAPIDomain, mediaID, d.Mimetype)
 				duration := float64(d.DurationNS) / 1e9
 				data = &models.AudioAttachment{
 					Mimetype:          d.Mimetype,
@@ -468,11 +468,11 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 				if err != nil {
 					golog.Errorf("Unable to parse mediaID out of url %s", d.MediaID)
 				}
-				a.URL = media.URL(mediaAPIDomain, mediaID)
+				a.URL = media.URL(mediaAPIDomain, mediaID, d.Mimetype)
 				data = &models.ImageAttachment{
 					Mimetype:     d.Mimetype,
 					URL:          a.URL,
-					ThumbnailURL: media.ThumbnailURL(mediaAPIDomain, mediaID, 0, 0, false),
+					ThumbnailURL: media.ThumbnailURL(mediaAPIDomain, mediaID, d.Mimetype, 0, 0, false),
 					MediaID:      mediaID,
 				}
 				// TODO
@@ -490,11 +490,11 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 				}
 			case threading.ATTACHMENT_TYPE_VIDEO:
 				v := a.GetVideo()
-				a.URL = media.URL(mediaAPIDomain, v.MediaID)
+				a.URL = media.URL(mediaAPIDomain, v.MediaID, v.Mimetype)
 				data = &models.VideoAttachment{
 					Mimetype:     v.Mimetype,
 					URL:          a.URL,
-					ThumbnailURL: media.ThumbnailURL(mediaAPIDomain, v.MediaID, 0, 0, false),
+					ThumbnailURL: media.ThumbnailURL(mediaAPIDomain, v.MediaID, v.Mimetype, 0, 0, false),
 				}
 			case threading.ATTACHMENT_TYPE_CARE_PLAN:
 				cp := a.GetCarePlan()
@@ -529,7 +529,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 						title = "PDF Attachment"
 					}
 
-					a.URL = media.URL(mediaAPIDomain, mediaID)
+					a.URL = media.URL(mediaAPIDomain, mediaID, d.Mimetype)
 					pdfAttachment := &bml.Anchor{
 						HREF: a.URL,
 						Text: title,

@@ -14,6 +14,7 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/invite/clientdata"
+	"github.com/sprucehealth/backend/svc/media"
 	"google.golang.org/grpc/codes"
 )
 
@@ -51,7 +52,7 @@ func TestAssociateInviteMutation(t *testing.T) {
 		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: "orgID",
 		},
-	}).WithReturns([]*directory.Entity{{ID: "orgID", Info: &directory.EntityInfo{DisplayName: "displayName"}}}, nil))
+	}).WithReturns([]*directory.Entity{{ID: "orgID", ImageMediaID: "mediaID", Info: &directory.EntityInfo{DisplayName: "displayName"}}}, nil))
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
 		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
@@ -63,12 +64,14 @@ func TestAssociateInviteMutation(t *testing.T) {
 	cData, err := clientdata.ColleagueInviteClientJSON(
 		&directory.Entity{ID: "orgID", Info: &directory.EntityInfo{DisplayName: "displayName"}},
 		&directory.Entity{ID: "inviterID", Info: &directory.EntityInfo{DisplayName: "inviterDisplayName"}},
-		"colleagueFirstName", "")
+		"colleagueFirstName", "", "")
 	test.OK(t, err)
 	g.inviteC.Expect(mock.NewExpectation(g.inviteC.SetAttributionData, &invite.SetAttributionDataRequest{
 		DeviceID: "deviceID",
 		Values:   []*invite.AttributionValue{{Key: "foo", Value: "bar"}, {Key: "client_data", Value: cData}, {Key: "invite_type", Value: "COLLEAGUE"}},
 	}).WithReturns(&invite.SetAttributionDataResponse{}, nil))
+
+	g.ra.Expect(mock.NewExpectation(g.ra.MediaInfo, "mediaID").WithReturns(&media.MediaInfo{MIME: &media.MIME{Type: "image", Subtype: "png"}}, nil))
 
 	res := g.query(ctx, `
 		mutation _ {

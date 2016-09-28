@@ -45,7 +45,7 @@ type PatientInviteClientData struct {
 }
 
 // PatientInviteClientJSON creates the invite client JSON required for patient invites
-func PatientInviteClientJSON(org *directory.Entity, firstName, mediaAPIDomain string, inviteType invite.LookupInviteResponse_Type) (string, error) {
+func PatientInviteClientJSON(org *directory.Entity, firstName, mediaAPIDomain, mimeType string, inviteType invite.LookupInviteResponse_Type) (string, error) {
 	welcomeText := "Welcome!"
 	if firstName != "" {
 		welcomeText = fmt.Sprintf("Welcome, %s!", firstName)
@@ -65,7 +65,7 @@ func PatientInviteClientJSON(org *directory.Entity, firstName, mediaAPIDomain st
 		},
 	}
 	if mediaAPIDomain != "" && org.ImageMediaID != "" {
-		pcd.PatientInvite.Greeting.PhotoURL = media.ThumbnailURL(mediaAPIDomain, org.ImageMediaID, 0, 0, false)
+		pcd.PatientInvite.Greeting.PhotoURL = media.ThumbnailURL(mediaAPIDomain, org.ImageMediaID, mimeType, 0, 0, false)
 	}
 	inviteClientDataJSON, err := json.Marshal(pcd)
 	if err != nil {
@@ -75,7 +75,7 @@ func PatientInviteClientJSON(org *directory.Entity, firstName, mediaAPIDomain st
 }
 
 // ColleagueInviteClientJSON creates the invite client JSON required for colleague invites
-func ColleagueInviteClientJSON(org *directory.Entity, inviter *directory.Entity, firstName, mediaAPIDomain string) (string, error) {
+func ColleagueInviteClientJSON(org *directory.Entity, inviter *directory.Entity, firstName, mediaAPIDomain, mimeType string) (string, error) {
 	welcomeText := "Welcome to Spruce!"
 	if firstName != "" {
 		welcomeText = fmt.Sprintf("Welcome %s!", firstName)
@@ -92,7 +92,7 @@ func ColleagueInviteClientJSON(org *directory.Entity, inviter *directory.Entity,
 		},
 	}
 	if mediaAPIDomain != "" && org.ImageMediaID != "" {
-		icd.OrganizationInvite.Popover.PhotoURL = media.ThumbnailURL(mediaAPIDomain, org.ImageMediaID, 0, 0, false)
+		icd.OrganizationInvite.Popover.PhotoURL = media.ThumbnailURL(mediaAPIDomain, org.ImageMediaID, mimeType, 0, 0, false)
 	}
 	inviteClientDataJSON, err := json.Marshal(icd)
 	if err != nil {

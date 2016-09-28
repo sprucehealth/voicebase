@@ -261,13 +261,18 @@ var associateInviteMutation = &graphql.Field{
 		var clientData string
 		switch res.Type {
 		case invite.LookupInviteResponse_PATIENT, invite.LookupInviteResponse_ORGANIZATION_CODE:
+			var meta *media.MediaInfo
 			if org.ImageMediaID != "" {
-				ram.UpdateMedia(ctx, &media.UpdateMediaRequest{
+
+				meta, err = ram.UpdateMedia(ctx, &media.UpdateMediaRequest{
 					MediaID: org.ImageMediaID,
 					Public:  true,
 				})
+				if err != nil {
+					return err, errors.InternalError(ctx, err)
+				}
 			}
-			clientData, err = clientdata.PatientInviteClientJSON(org, firstName, svc.mediaAPIDomain, res.Type)
+			clientData, err = clientdata.PatientInviteClientJSON(org, firstName, svc.mediaAPIDomain, media.MIMEType(meta.MIME), res.Type)
 			if err != nil {
 				golog.Errorf("Error while generating client data for invite to org %s: %s", org.ID, err)
 			}
@@ -281,7 +286,13 @@ var associateInviteMutation = &graphql.Field{
 			if err != nil {
 				return nil, errors.InternalError(ctx, fmt.Errorf("Error while looking up inviter %s for device association: %s", res.GetColleague().InviterEntityID, err))
 			}
-			clientData, err = clientdata.ColleagueInviteClientJSON(org, inviter, firstName, svc.mediaAPIDomain)
+
+			meta, err := ram.MediaInfo(ctx, org.ImageMediaID)
+			if err != nil {
+				return err, errors.InternalError(ctx, err)
+			}
+
+			clientData, err = clientdata.ColleagueInviteClientJSON(org, inviter, firstName, svc.mediaAPIDomain, media.MIMEType(meta.MIME))
 			if err != nil {
 				golog.Errorf("Error while generating client data for invite to org %s: %s", org.ID, err)
 			}

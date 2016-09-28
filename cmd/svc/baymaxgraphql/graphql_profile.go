@@ -54,8 +54,14 @@ var profileType = graphql.NewObject(graphql.ObjectConfig{
 				if ent.ImageMediaID == "" {
 					return nil, nil
 				}
+
+				meta, err := ram.MediaInfo(ctx, ent.ImageMediaID)
+				if err != nil {
+					return nil, errors.InternalError(ctx, err)
+				}
+
 				return &models.Image{
-					URL:    media.ThumbnailURL(svc.mediaAPIDomain, ent.ImageMediaID, imgArgs.Height, imgArgs.Width, imgArgs.Crop),
+					URL:    media.ThumbnailURL(svc.mediaAPIDomain, ent.ImageMediaID, media.MIMEType(meta.MIME), imgArgs.Height, imgArgs.Width, imgArgs.Crop),
 					Width:  imgArgs.Width,
 					Height: imgArgs.Height,
 				}, nil
