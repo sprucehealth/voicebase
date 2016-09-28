@@ -391,6 +391,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 					title = bml.BML{"Inbound call, answered"}
 				}
 				summary = "Called, answered"
+				dontNotify = true
 			case excomms.IncomingCallEventItem_UNANSWERED:
 				title = bml.BML{"Inbound call, no answer"}
 				summary = "Called, no answer"

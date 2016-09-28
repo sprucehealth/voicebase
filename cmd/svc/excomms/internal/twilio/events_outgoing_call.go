@@ -198,15 +198,6 @@ func processOutgoingCallStatus(ctx context.Context, params *rawmsg.TwilioParams,
 
 	var cet *excomms.PublishedExternalMessage_Outgoing
 	switch params.CallStatus {
-	case rawmsg.TwilioParams_RINGING:
-		cet = &excomms.PublishedExternalMessage_Outgoing{
-			Outgoing: &excomms.OutgoingCallEventItem{
-				Type:              excomms.OutgoingCallEventItem_PLACED,
-				DurationInSeconds: params.CallDuration,
-				CallerEntityID:    cr.CallerEntityID,
-				CalleeEntityID:    cr.CalleeEntityID,
-			},
-		}
 	case rawmsg.TwilioParams_ANSWERED, rawmsg.TwilioParams_COMPLETED:
 		cet = &excomms.PublishedExternalMessage_Outgoing{
 			Outgoing: &excomms.OutgoingCallEventItem{
