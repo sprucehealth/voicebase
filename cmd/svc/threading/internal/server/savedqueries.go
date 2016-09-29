@@ -107,7 +107,6 @@ func (s *threadsServer) updateSavedQueriesAddThread(ctx context.Context, thread 
 	externalEntity := false
 	// Add threads to all saved queries for all members that match
 	var newItems []*dal.SavedQueryThread
-	entityIDsToNotify := make(map[string]struct{})
 	result := &savedQueryUpdateResult{entityShouldBeNotified: make(map[string]bool, len(entities))}
 	for _, e := range entities {
 		sqs, err := s.dal.SavedQueries(ctx, e.ID)
@@ -147,7 +146,6 @@ func (s *threadsServer) updateSavedQueriesAddThread(ctx context.Context, thread 
 					Unread:       unread,
 				})
 				if sq.NotificationsEnabled && nsq != nil {
-					entityIDsToNotify[sq.EntityID] = struct{}{}
 					newItems = append(newItems, &dal.SavedQueryThread{
 						ThreadID:     thread.ID,
 						SavedQueryID: nsq.ID,
