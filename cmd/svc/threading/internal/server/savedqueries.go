@@ -213,7 +213,12 @@ func (s *threadsServer) updateSavedQueriesForThread(ctx context.Context, thread 
 				break
 			}
 		}
+
 		for _, sq := range sqs {
+			if sq.Type == models.SavedQueryTypeNotifications {
+				continue
+			}
+
 			if ok, err := threadMatchesQuery(sq.Query, thread, te, externalEntity); err != nil {
 				golog.Errorf("Failed to match thread %s against saved query %s: %s", thread.ID, sq.ID, err)
 			} else if ok {
