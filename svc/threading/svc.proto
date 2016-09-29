@@ -147,6 +147,7 @@ message SavedQuery {
 	string entity_id = 8 [(gogoproto.customname) = "EntityID"];
 	bool notifications_enabled = 9;
 	bool hidden = 10;
+	bool template = 11;
 }
 
 message Query {
@@ -353,6 +354,22 @@ message SavedQueriesResponse {
 	repeated SavedQuery saved_queries = 1;
 }
 
+
+message DeleteSavedQueriesRequest {
+	repeated string saved_query_ids = 1 [(gogoproto.customname) = "SavedQueryIDs"];
+}
+
+message DeleteSavedQueriesResponse {
+}
+
+message SavedQueryTemplatesRequest {
+	string entity_id = 1 [(gogoproto.customname) = "EntityID"];	
+}
+
+message SavedQueryTemplatesResponse {
+	repeated SavedQuery saved_queries = 1;
+}
+
 message ThreadRequest {
 	string thread_id = 1 [(gogoproto.customname) = "ThreadID"];
     string viewer_entity_id = 2 [(gogoproto.customname) = "ViewerEntityID"];
@@ -379,6 +396,7 @@ message CreateSavedQueryRequest {
 	int32 ordinal = 5;
 	bool notifications_enabled = 6;
 	bool hidden = 7;
+	bool template = 8;
 }
 
 message CreateSavedQueryResponse {
@@ -632,6 +650,10 @@ service Threads {
 	rpc SavedQuery(SavedQueryRequest) returns (SavedQueryResponse);
 	// SavedQueries returns the list of saved queries for an org / entity pair
 	rpc SavedQueries(SavedQueriesRequest) returns (SavedQueriesResponse);
+	// DeleteSavedQueries delets the provided list of saved queries 
+	rpc DeleteSavedQueries(DeleteSavedQueriesRequest) returns (DeleteSavedQueriesResponse);
+	// SavedQueryTemplates returns the list of saved query templates for an entity
+	rpc SavedQueryTemplates(SavedQueryTemplatesRequest) returns (SavedQueryTemplatesResponse);
 	// DEPRECATED: Thread lookups and returns a single thread by ID
 	rpc Thread(ThreadRequest) returns (ThreadResponse);
 	// Theads looks up list of threads.

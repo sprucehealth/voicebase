@@ -9,7 +9,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -154,46 +153,26 @@ func (c *moveEntityCmd) run(args []string) error {
 	displayEntity("", newEntity)
 
 	// Create new default saved query
-	if _, err := c.threadingCli.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
-		EntityID: newEntity.ID,
-		Title:    "All",
-		Query:    &threading.Query{},
-		Ordinal:  1000,
-	}); err != nil {
-		golog.Errorf("Failed to create saved query 'All': %s", err)
+
+	savedQueryTemplatesRes, err := c.threadingCli.SavedQueryTemplates(ctx, &threading.SavedQueryTemplatesRequest{
+		EntityID: newOrg.ID,
+	})
+	if err != nil {
+		return errors.Errorf("Failed to get saved query templates for org %s : %s", newOrg.ID, err)
 	}
-	if _, err := c.threadingCli.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
-		EntityID: newEntity.ID,
-		Title:    "Patient",
-		Query:    &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_PATIENT}}}},
-		Ordinal:  2000,
-	}); err != nil {
-		golog.Errorf("Failed to create saved query 'Patient': %s", err)
-	}
-	if _, err := c.threadingCli.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
-		EntityID: newEntity.ID,
-		Title:    "Team",
-		Query:    &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_TEAM}}}},
-		Ordinal:  3000,
-	}); err != nil {
-		golog.Errorf("Failed to create saved query 'Team': %s", err)
-	}
-	if _, err := c.threadingCli.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
-		EntityID: newEntity.ID,
-		Title:    "@Pages",
-		Query:    &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_UNREAD_REFERENCE}}}},
-		Ordinal:  4000,
-	}); err != nil {
-		golog.Errorf("Failed to create saved query '@Pages': %s", err)
-	}
-	if !environment.IsProd() {
+
+	for _, savedQueryTemplate := range savedQueryTemplatesRes.SavedQueries {
+
 		if _, err := c.threadingCli.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
-			EntityID: newEntity.ID,
-			Title:    "Following",
-			Query:    &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_FOLLOWING}}}},
-			Ordinal:  5000,
+			EntityID:             newEntity.ID,
+			Title:                savedQueryTemplate.Title,
+			Query:                savedQueryTemplate.Query,
+			Ordinal:              savedQueryTemplate.Ordinal,
+			NotificationsEnabled: savedQueryTemplate.NotificationsEnabled,
+			Hidden:               savedQueryTemplate.Hidden,
+			Type:                 savedQueryTemplate.Type,
 		}); err != nil {
-			golog.Errorf("Failed to create saved query 'Following': %s", err)
+			golog.Errorf("Failed to create saved query %s : %s", savedQueryTemplate.Title, err)
 		}
 	}
 

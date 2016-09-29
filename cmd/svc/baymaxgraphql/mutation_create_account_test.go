@@ -88,19 +88,18 @@ func TestCreateAccountMutation(t *testing.T) {
 		},
 	}, nil))
 
-	// Create saved query
-	g.ra.Expect(mock.NewExpectation(g.ra.CreateSavedQuery, &threading.CreateSavedQueryRequest{
-		Type:                 threading.SAVED_QUERY_TYPE_NORMAL,
-		EntityID:             "e_int",
-		Title:                "All",
-		Ordinal:              1000,
-		Query:                &threading.Query{},
-		NotificationsEnabled: false,
-	}).WithReturns(&threading.CreateSavedQueryResponse{
-		SavedQuery: &threading.SavedQuery{
-			ID: "sq_1",
+	g.ra.Expect(mock.NewExpectation(g.ra.SavedQueryTemplates, "e_org").WithReturns([]*threading.SavedQuery{
+		{
+			Title:                "Patient",
+			Ordinal:              2000,
+			Query:                &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_PATIENT}}}},
+			Type:                 threading.SAVED_QUERY_TYPE_NORMAL,
+			NotificationsEnabled: true,
 		},
 	}, nil))
+
+	// Create saved query
+
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateSavedQuery, &threading.CreateSavedQueryRequest{
 		Type:                 threading.SAVED_QUERY_TYPE_NORMAL,
 		EntityID:             "e_int",
@@ -111,66 +110,6 @@ func TestCreateAccountMutation(t *testing.T) {
 	}).WithReturns(&threading.CreateSavedQueryResponse{
 		SavedQuery: &threading.SavedQuery{
 			ID: "sq_2",
-		},
-	}, nil))
-	g.ra.Expect(mock.NewExpectation(g.ra.CreateSavedQuery, &threading.CreateSavedQueryRequest{
-		Type:                 threading.SAVED_QUERY_TYPE_NORMAL,
-		EntityID:             "e_int",
-		Title:                "Team",
-		Ordinal:              3000,
-		Query:                &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_TEAM}}}},
-		NotificationsEnabled: true,
-	}).WithReturns(&threading.CreateSavedQueryResponse{
-		SavedQuery: &threading.SavedQuery{
-			ID: "sq_3",
-		},
-	}, nil))
-	g.ra.Expect(mock.NewExpectation(g.ra.CreateSavedQuery, &threading.CreateSavedQueryRequest{
-		Type:                 threading.SAVED_QUERY_TYPE_NORMAL,
-		EntityID:             "e_int",
-		Title:                "@Pages",
-		Ordinal:              4000,
-		Query:                &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_UNREAD_REFERENCE}}}},
-		NotificationsEnabled: true,
-	}).WithReturns(&threading.CreateSavedQueryResponse{
-		SavedQuery: &threading.SavedQuery{
-			ID: "sq_4",
-		},
-	}, nil))
-	g.ra.Expect(mock.NewExpectation(g.ra.CreateSavedQuery, &threading.CreateSavedQueryRequest{
-		Type:                 threading.SAVED_QUERY_TYPE_NORMAL,
-		EntityID:             "e_int",
-		Title:                "Following",
-		Ordinal:              5000,
-		Query:                &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_FOLLOWING}}}},
-		NotificationsEnabled: true,
-	}).WithReturns(&threading.CreateSavedQueryResponse{
-		SavedQuery: &threading.SavedQuery{
-			ID: "sq_5",
-		},
-	}, nil))
-	g.ra.Expect(mock.NewExpectation(g.ra.CreateSavedQuery, &threading.CreateSavedQueryRequest{
-		Type:                 threading.SAVED_QUERY_TYPE_NORMAL,
-		EntityID:             "e_int",
-		Title:                "Support",
-		Ordinal:              6000,
-		Query:                &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_SUPPORT}}}},
-		NotificationsEnabled: true,
-		Hidden:               true,
-	}).WithReturns(&threading.CreateSavedQueryResponse{
-		SavedQuery: &threading.SavedQuery{
-			ID: "sq_6",
-		},
-	}, nil))
-	g.ra.Expect(mock.NewExpectation(g.ra.CreateSavedQuery, &threading.CreateSavedQueryRequest{
-		Type:     threading.SAVED_QUERY_TYPE_NOTIFICATIONS,
-		EntityID: "e_int",
-		Title:    "Notifications",
-		Ordinal:  1000000000,
-		Query:    &threading.Query{},
-	}).WithReturns(&threading.CreateSavedQueryResponse{
-		SavedQuery: &threading.SavedQuery{
-			ID: "sq_7",
 		},
 	}, nil))
 
@@ -391,19 +330,18 @@ func TestCreateAccountMutation_InviteColleague(t *testing.T) {
 		},
 	}, nil))
 
-	// Create saved query
-	g.ra.Expect(mock.NewExpectation(g.ra.CreateSavedQuery, &threading.CreateSavedQueryRequest{
-		Type:                 threading.SAVED_QUERY_TYPE_NORMAL,
-		EntityID:             "e_int",
-		Title:                "All",
-		Ordinal:              1000,
-		Query:                &threading.Query{},
-		NotificationsEnabled: false,
-	}).WithReturns(&threading.CreateSavedQueryResponse{
-		SavedQuery: &threading.SavedQuery{
-			ID: "sq_1",
+	g.ra.Expect(mock.NewExpectation(g.ra.SavedQueryTemplates, "e_org_inv").WithReturns([]*threading.SavedQuery{
+		{
+			Title:                "Patient",
+			Ordinal:              2000,
+			Query:                &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_PATIENT}}}},
+			NotificationsEnabled: true,
+			Type:                 threading.SAVED_QUERY_TYPE_NORMAL,
 		},
 	}, nil))
+
+	// Create saved query
+
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateSavedQuery, &threading.CreateSavedQueryRequest{
 		Type:                 threading.SAVED_QUERY_TYPE_NORMAL,
 		EntityID:             "e_int",
@@ -414,66 +352,6 @@ func TestCreateAccountMutation_InviteColleague(t *testing.T) {
 	}).WithReturns(&threading.CreateSavedQueryResponse{
 		SavedQuery: &threading.SavedQuery{
 			ID: "sq_2",
-		},
-	}, nil))
-	g.ra.Expect(mock.NewExpectation(g.ra.CreateSavedQuery, &threading.CreateSavedQueryRequest{
-		Type:                 threading.SAVED_QUERY_TYPE_NORMAL,
-		EntityID:             "e_int",
-		Title:                "Team",
-		Ordinal:              3000,
-		Query:                &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_TEAM}}}},
-		NotificationsEnabled: true,
-	}).WithReturns(&threading.CreateSavedQueryResponse{
-		SavedQuery: &threading.SavedQuery{
-			ID: "sq_3",
-		},
-	}, nil))
-	g.ra.Expect(mock.NewExpectation(g.ra.CreateSavedQuery, &threading.CreateSavedQueryRequest{
-		Type:                 threading.SAVED_QUERY_TYPE_NORMAL,
-		EntityID:             "e_int",
-		Title:                "@Pages",
-		Ordinal:              4000,
-		Query:                &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_UNREAD_REFERENCE}}}},
-		NotificationsEnabled: true,
-	}).WithReturns(&threading.CreateSavedQueryResponse{
-		SavedQuery: &threading.SavedQuery{
-			ID: "sq_4",
-		},
-	}, nil))
-	g.ra.Expect(mock.NewExpectation(g.ra.CreateSavedQuery, &threading.CreateSavedQueryRequest{
-		Type:                 threading.SAVED_QUERY_TYPE_NORMAL,
-		EntityID:             "e_int",
-		Title:                "Following",
-		Ordinal:              5000,
-		Query:                &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_FOLLOWING}}}},
-		NotificationsEnabled: true,
-	}).WithReturns(&threading.CreateSavedQueryResponse{
-		SavedQuery: &threading.SavedQuery{
-			ID: "sq_5",
-		},
-	}, nil))
-	g.ra.Expect(mock.NewExpectation(g.ra.CreateSavedQuery, &threading.CreateSavedQueryRequest{
-		Type:                 threading.SAVED_QUERY_TYPE_NORMAL,
-		EntityID:             "e_int",
-		Title:                "Support",
-		Ordinal:              6000,
-		Query:                &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_SUPPORT}}}},
-		NotificationsEnabled: true,
-		Hidden:               true,
-	}).WithReturns(&threading.CreateSavedQueryResponse{
-		SavedQuery: &threading.SavedQuery{
-			ID: "sq_6",
-		},
-	}, nil))
-	g.ra.Expect(mock.NewExpectation(g.ra.CreateSavedQuery, &threading.CreateSavedQueryRequest{
-		Type:     threading.SAVED_QUERY_TYPE_NOTIFICATIONS,
-		EntityID: "e_int",
-		Title:    "Notifications",
-		Ordinal:  1000000000,
-		Query:    &threading.Query{},
-	}).WithReturns(&threading.CreateSavedQueryResponse{
-		SavedQuery: &threading.SavedQuery{
-			ID: "sq_7",
 		},
 	}, nil))
 

@@ -303,79 +303,28 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 	}
 
 	// Create a default saved queries
-	// TODO: for now make if making a change here also change bayaxmadmin cli. Should centralize the account creation logic.
 	// TODO: make this more reliable & idempotent
-	if err = ram.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
-		Type:                 threading.SAVED_QUERY_TYPE_NORMAL,
-		EntityID:             accEntityID,
-		Title:                "All",
-		Query:                &threading.Query{},
-		Ordinal:              1000,
-		NotificationsEnabled: false,
-	}); err != nil {
+	savedQueryTemplates, err := ram.SavedQueryTemplates(ctx, orgEntityID)
+	if err != nil {
 		return nil, errors.InternalError(ctx, err)
 	}
-	if err = ram.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
-		Type:                 threading.SAVED_QUERY_TYPE_NORMAL,
-		EntityID:             accEntityID,
-		Title:                "Patient",
-		Query:                &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_PATIENT}}}},
-		Ordinal:              2000,
-		NotificationsEnabled: true,
-	}); err != nil {
-		return nil, errors.InternalError(ctx, err)
-	}
-	if err = ram.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
-		Type:                 threading.SAVED_QUERY_TYPE_NORMAL,
-		EntityID:             accEntityID,
-		Title:                "Team",
-		Query:                &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_TEAM}}}},
-		Ordinal:              3000,
-		NotificationsEnabled: true,
-	}); err != nil {
-		return nil, errors.InternalError(ctx, err)
-	}
-	if err = ram.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
-		Type:                 threading.SAVED_QUERY_TYPE_NORMAL,
-		EntityID:             accEntityID,
-		Title:                "@Pages",
-		Query:                &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_UNREAD_REFERENCE}}}},
-		Ordinal:              4000,
-		NotificationsEnabled: true,
-	}); err != nil {
-		return nil, errors.InternalError(ctx, err)
-	}
-	if !environment.IsProd() {
+
+	for _, savedQueryTemplate := range savedQueryTemplates {
+		// skip creating following tab in prod
+		if savedQueryTemplate.Title == "Following" && environment.IsProd() {
+			continue
+		}
 		if err = ram.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
-			Type:                 threading.SAVED_QUERY_TYPE_NORMAL,
 			EntityID:             accEntityID,
-			Title:                "Following",
-			Query:                &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_FOLLOWING}}}},
-			Ordinal:              5000,
-			NotificationsEnabled: true,
+			Title:                savedQueryTemplate.Title,
+			Query:                savedQueryTemplate.Query,
+			Ordinal:              savedQueryTemplate.Ordinal,
+			NotificationsEnabled: savedQueryTemplate.NotificationsEnabled,
+			Hidden:               savedQueryTemplate.Hidden,
+			Type:                 savedQueryTemplate.Type,
 		}); err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}
-	}
-	if err = ram.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
-		Type:                 threading.SAVED_QUERY_TYPE_NORMAL,
-		EntityID:             accEntityID,
-		Title:                "Support",
-		Query:                &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_SUPPORT}}}},
-		Ordinal:              6000,
-		NotificationsEnabled: true,
-		Hidden:               true,
-	}); err != nil {
-		return nil, errors.InternalError(ctx, err)
-	}
-	if err = ram.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
-		Type:     threading.SAVED_QUERY_TYPE_NOTIFICATIONS,
-		EntityID: accEntityID,
-		Title:    "Notifications",
-		Query:    &threading.Query{},
-		Ordinal:  1000000000,
-	}); err != nil {
-		return nil, errors.InternalError(ctx, err)
 	}
 
 	var createLinkedThreadsResponse *threading.CreateLinkedThreadsResponse

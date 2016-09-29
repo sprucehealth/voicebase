@@ -149,6 +149,22 @@ func (c *Client) SavedQueries(ctx context.Context, in *threading.SavedQueriesReq
 	return rets[0].(*threading.SavedQueriesResponse), mock.SafeError(rets[1])
 }
 
+func (c *Client) DeleteSavedQueries(ctx context.Context, in *threading.DeleteSavedQueriesRequest, opts ...grpc.CallOption) (*threading.DeleteSavedQueriesResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*threading.DeleteSavedQueriesResponse), mock.SafeError(rets[1])
+}
+
+func (c *Client) SavedQueryTemplates(ctx context.Context, in *threading.SavedQueryTemplatesRequest, opts ...grpc.CallOption) (*threading.SavedQueryTemplatesResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*threading.SavedQueryTemplatesResponse), mock.SafeError(rets[1])
+}
+
 // Thread lookups and returns a single thread by ID
 func (c *Client) Thread(ctx context.Context, in *threading.ThreadRequest, opts ...grpc.CallOption) (*threading.ThreadResponse, error) {
 	rets := c.Expector.Record(in)

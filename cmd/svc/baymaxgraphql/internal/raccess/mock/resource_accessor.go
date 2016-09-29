@@ -391,6 +391,15 @@ func (m *ResourceAccessor) SavedQueries(ctx context.Context, entityID string) ([
 	return rets[0].([]*threading.SavedQuery), mock.SafeError(rets[1])
 }
 
+func (m *ResourceAccessor) SavedQueryTemplates(ctx context.Context, entityID string) ([]*threading.SavedQuery, error) {
+	rets := m.Record(entityID)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].([]*threading.SavedQuery), mock.SafeError(rets[1])
+}
+
 func (m *ResourceAccessor) SearchMedications(ctx context.Context, req *care.SearchMedicationsRequest) (*care.SearchMedicationsResponse, error) {
 	rets := m.Record(req)
 	if len(rets) == 0 {

@@ -371,6 +371,61 @@ type ThreadItemViewDetails struct {
 	ViewTime      *time.Time
 }
 
+// DefaultSavedQueries is the default set of queries that gets created for every organization
+// unless an organization has a particular template of saved thread queries to be created.
+var DefaultSavedQueries = []*SavedQuery{
+	{
+		Type:                 SavedQueryTypeNormal,
+		Title:                "All",
+		Ordinal:              1000,
+		NotificationsEnabled: false,
+		Query:                &Query{},
+	},
+	{
+		Type:                 SavedQueryTypeNormal,
+		Title:                "Patient",
+		Ordinal:              2000,
+		NotificationsEnabled: true,
+		Query:                &Query{Expressions: []*Expr{{Value: &Expr_ThreadType_{ThreadType: EXPR_THREAD_TYPE_PATIENT}}}},
+	},
+	{
+		Type:                 SavedQueryTypeNormal,
+		Title:                "Team",
+		Ordinal:              3000,
+		NotificationsEnabled: true,
+		Query:                &Query{Expressions: []*Expr{{Value: &Expr_ThreadType_{ThreadType: EXPR_THREAD_TYPE_TEAM}}}},
+	},
+	{
+		Type:                 SavedQueryTypeNormal,
+		Title:                "@Pages",
+		Ordinal:              4000,
+		NotificationsEnabled: true,
+		Query:                &Query{Expressions: []*Expr{{Value: &Expr_Flag_{Flag: EXPR_FLAG_UNREAD_REFERENCE}}}},
+	},
+	{
+		Type:                 SavedQueryTypeNormal,
+		Title:                "Following",
+		Ordinal:              5000,
+		NotificationsEnabled: true,
+		Query:                &Query{Expressions: []*Expr{{Value: &Expr_Flag_{Flag: EXPR_FLAG_FOLLOWING}}}},
+	},
+	{
+		Type:                 SavedQueryTypeNormal,
+		Title:                "Support",
+		Query:                &Query{Expressions: []*Expr{{Value: &Expr_ThreadType_{ThreadType: EXPR_THREAD_TYPE_SUPPORT}}}},
+		Ordinal:              6000,
+		NotificationsEnabled: true,
+		Hidden:               true,
+	},
+	{
+		Type:    SavedQueryTypeNotifications,
+		Title:   "Notifications",
+		Query:   &Query{},
+		Ordinal: 1000000000,
+		Hidden:  true,
+	},
+}
+
 // SavedQuery is a saved thread query.
 type SavedQuery struct {
 	ID                   SavedQueryID
@@ -385,6 +440,7 @@ type SavedQuery struct {
 	Type                 SavedQueryType
 	Created              time.Time
 	Modified             time.Time
+	Template             bool
 }
 
 // SetupThreadState is the state of a setup thread

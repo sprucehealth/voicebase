@@ -170,6 +170,22 @@ func (dl *DAL) SavedQueries(ctx context.Context, entityID string) ([]*models.Sav
 	return rets[0].([]*models.SavedQuery), mock.SafeError(rets[1])
 }
 
+func (dl *DAL) DeleteSavedQueries(ctx context.Context, ids []models.SavedQueryID) error {
+	rets := dl.Expector.Record(ids)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[0])
+}
+
+func (dl *DAL) SavedQueryTemplates(ctx context.Context, entityID string) ([]*models.SavedQuery, error) {
+	rets := dl.Expector.Record(entityID)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].([]*models.SavedQuery), mock.SafeError(rets[1])
+}
+
 func (dl *DAL) SetupThreadState(ctx context.Context, threadID models.ThreadID, opts ...dal.QueryOption) (*models.SetupThreadState, error) {
 	rets := dl.Expector.Record(threadID)
 	if len(rets) == 0 {

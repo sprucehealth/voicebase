@@ -1223,6 +1223,44 @@ func (s *threadsServer) SavedQueries(ctx context.Context, in *threading.SavedQue
 	return res, nil
 }
 
+func (s *threadsServer) DeleteSavedQueries(ctx context.Context, in *threading.DeleteSavedQueriesRequest) (*threading.DeleteSavedQueriesResponse, error) {
+	ids := make([]models.SavedQueryID, len(in.SavedQueryIDs))
+	var err error
+	for i, id := range in.SavedQueryIDs {
+		ids[i], err = models.ParseSavedQueryID(id)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+	}
+
+	if err := s.dal.DeleteSavedQueries(ctx, ids); err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	return &threading.DeleteSavedQueriesResponse{}, nil
+}
+
+func (s *threadsServer) SavedQueryTemplates(ctx context.Context, in *threading.SavedQueryTemplatesRequest) (*threading.SavedQueryTemplatesResponse, error) {
+	queries, err := s.dal.SavedQueryTemplates(ctx, in.EntityID)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	if len(queries) == 0 {
+		queries = models.DefaultSavedQueries
+	}
+	res := &threading.SavedQueryTemplatesResponse{
+		SavedQueries: make([]*threading.SavedQuery, len(queries)),
+	}
+	for i, q := range queries {
+		sq, err := transformSavedQueryToResponse(q)
+		if err != nil {
+			return nil, errors.Trace(fmt.Errorf("Failed to transform saved query: %s", err))
+		}
+		res.SavedQueries[i] = sq
+	}
+	return res, nil
+}
+
 // Thread looks up and returns a single thread by ID
 func (s *threadsServer) Thread(ctx context.Context, in *threading.ThreadRequest) (*threading.ThreadResponse, error) {
 	golog.Debugf("Querying for thread %s", in.ThreadID)

@@ -184,6 +184,7 @@ var commands = map[string]commandNew{
 	"migratevmsettings":   newMigrateVMSettingCmd,
 	"moveentity":          newMoveEntityCmd,
 	"rebuildsavedqueries": newRebuildSavedQueriesCmd,
+	"replacesavedqueries": newReplaceSavedQueriesCmd,
 	"setgreeting":         newSetGreetingCmd,
 	"setsetting":          newSetSettingCmd,
 	"thread":              newThreadCmd,

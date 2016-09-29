@@ -152,6 +152,8 @@ type DAL interface {
 	RemoveThreadMembers(ctx context.Context, threadID models.ThreadID, memberEntityIDs []string) error
 	SavedQuery(ctx context.Context, id models.SavedQueryID) (*models.SavedQuery, error)
 	SavedQueries(ctx context.Context, entityID string) ([]*models.SavedQuery, error)
+	DeleteSavedQueries(ctx context.Context, ids []models.SavedQueryID) error
+	SavedQueryTemplates(ctx context.Context, entityID string) ([]*models.SavedQuery, error)
 	SetupThreadState(ctx context.Context, threadID models.ThreadID, opts ...QueryOption) (*models.SetupThreadState, error)
 	SetupThreadStateForEntity(ctx context.Context, entityID string, opts ...QueryOption) (*models.SetupThreadState, error)
 	Threads(ctx context.Context, ids []models.ThreadID, opts ...QueryOption) ([]*models.Thread, error)
@@ -233,9 +235,9 @@ func (d *dal) CreateSavedQuery(ctx context.Context, sq *models.SavedQuery) (mode
 		return models.SavedQueryID{}, errors.Trace(err)
 	}
 	_, err = d.db.Exec(`
-		INSERT INTO saved_queries (id, ordinal, entity_id, query, title, unread, total, notifications_enabled, type, hidden)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, id, sq.Ordinal, sq.EntityID, queryBlob, sq.Title, sq.Unread, sq.Total, sq.NotificationsEnabled, sq.Type, sq.Hidden)
+		INSERT INTO saved_queries (id, ordinal, entity_id, query, title, unread, total, notifications_enabled, type, hidden, template)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, id, sq.Ordinal, sq.EntityID, queryBlob, sq.Title, sq.Unread, sq.Total, sq.NotificationsEnabled, sq.Type, sq.Hidden, sq.Template)
 	if err != nil {
 		return models.SavedQueryID{}, errors.Trace(err)
 	}
@@ -725,7 +727,7 @@ func (d *dal) RecordThreadEvent(ctx context.Context, threadID models.ThreadID, a
 
 func (d *dal) SavedQuery(ctx context.Context, id models.SavedQueryID) (*models.SavedQuery, error) {
 	row := d.db.QueryRow(`
-		SELECT id, ordinal, entity_id, query, title, unread, total, notifications_enabled, type, hidden
+		SELECT id, ordinal, entity_id, query, title, unread, total, notifications_enabled, type, hidden, template
 		FROM saved_queries
 		WHERE id = ?`, id)
 	sq, err := scanSavedQuery(row)
@@ -734,9 +736,46 @@ func (d *dal) SavedQuery(ctx context.Context, id models.SavedQueryID) (*models.S
 
 func (d *dal) SavedQueries(ctx context.Context, entityID string) ([]*models.SavedQuery, error) {
 	rows, err := d.db.Query(`
-		SELECT id, ordinal, entity_id, query, title, unread, total, notifications_enabled, type, hidden
+		SELECT id, ordinal, entity_id, query, title, unread, total, notifications_enabled, type, hidden, template
 		FROM saved_queries
 		WHERE entity_id = ?
+		ORDER BY ordinal`, entityID)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	defer rows.Close()
+
+	var sqs []*models.SavedQuery
+	for rows.Next() {
+		sq, err := scanSavedQuery(rows)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		sqs = append(sqs, sq)
+	}
+	return sqs, errors.Trace(rows.Err())
+}
+
+func (d *dal) DeleteSavedQueries(ctx context.Context, ids []models.SavedQueryID) error {
+
+	if len(ids) == 0 {
+		return nil
+	}
+
+	interfaceSlice := make([]interface{}, len(ids))
+	for i, id := range ids {
+		interfaceSlice[i] = id.String()
+	}
+
+	_, err := d.db.Exec(`DELETE FORM saved_queries WHERE id in (`+dbutil.MySQLArgs(len(ids))+`)`, interfaceSlice...)
+	return errors.Trace(err)
+}
+
+func (d *dal) SavedQueryTemplates(ctx context.Context, entityID string) ([]*models.SavedQuery, error) {
+	rows, err := d.db.Query(`
+		SELECT id, ordinal, entity_id, query, title, unread, total, notifications_enabled, type, hidden, template
+		FROM saved_queries
+		WHERE entity_id = ? AND template = 1
 		ORDER BY ordinal`, entityID)
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -1134,7 +1173,7 @@ func scanSavedQuery(row dbutil.Scanner) (*models.SavedQuery, error) {
 	var sq models.SavedQuery
 	var queryBlob []byte
 	sq.ID = models.EmptySavedQueryID()
-	err := row.Scan(&sq.ID, &sq.Ordinal, &sq.EntityID, &queryBlob, &sq.Title, &sq.Unread, &sq.Total, &sq.NotificationsEnabled, &sq.Type, &sq.Hidden)
+	err := row.Scan(&sq.ID, &sq.Ordinal, &sq.EntityID, &queryBlob, &sq.Title, &sq.Unread, &sq.Total, &sq.NotificationsEnabled, &sq.Type, &sq.Hidden, &sq.Template)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrNotFound)
 	} else if err != nil {

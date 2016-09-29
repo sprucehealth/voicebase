@@ -1,0 +1,6 @@
+[[savedQueries]]
+title = "Team"
+notificationsEnabled = true
+ordinal = 2000
+query = "type:team"
+template = true

@@ -134,6 +134,7 @@ type ResourceAccessor interface {
 	ProvisionPhoneNumber(ctx context.Context, req *excomms.ProvisionPhoneNumberRequest) (*excomms.ProvisionPhoneNumberResponse, error)
 	QueryThreads(ctx context.Context, req *threading.QueryThreadsRequest) (*threading.QueryThreadsResponse, error)
 	SavedQueries(ctx context.Context, entityID string) ([]*threading.SavedQuery, error)
+	SavedQueryTemplates(ctx context.Context, entityID string) ([]*threading.SavedQuery, error)
 	SavedQuery(ctx context.Context, savedQueryID string) (*threading.SavedQuery, error)
 	SearchAllergyMedications(ctx context.Context, req *care.SearchAllergyMedicationsRequest) (*care.SearchAllergyMedicationsResponse, error)
 	SearchMedications(ctx context.Context, req *care.SearchMedicationsRequest) (*care.SearchMedicationsResponse, error)
@@ -761,6 +762,17 @@ func (m *resourceAccessor) SavedQueries(ctx context.Context, entityID string) ([
 		return nil, err
 	}
 	res, err := m.savedQueries(ctx, entityID)
+	if err != nil {
+		return nil, err
+	}
+	return res.SavedQueries, nil
+}
+
+func (m *resourceAccessor) SavedQueryTemplates(ctx context.Context, entityID string) ([]*threading.SavedQuery, error) {
+	if err := m.canAccessResource(ctx, entityID, m.orgsForEntity); err != nil {
+		return nil, err
+	}
+	res, err := m.savedQueryTemplates(ctx, entityID)
 	if err != nil {
 		return nil, err
 	}
@@ -1718,6 +1730,16 @@ func (m *resourceAccessor) queryThreads(ctx context.Context, req *threading.Quer
 
 func (m *resourceAccessor) savedQueries(ctx context.Context, entityID string) (*threading.SavedQueriesResponse, error) {
 	res, err := m.threading.SavedQueries(ctx, &threading.SavedQueriesRequest{
+		EntityID: entityID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (m *resourceAccessor) savedQueryTemplates(ctx context.Context, entityID string) (*threading.SavedQueryTemplatesResponse, error) {
+	res, err := m.threading.SavedQueryTemplates(ctx, &threading.SavedQueryTemplatesRequest{
 		EntityID: entityID,
 	})
 	if err != nil {
