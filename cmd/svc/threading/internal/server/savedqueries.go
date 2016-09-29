@@ -229,7 +229,7 @@ func (s *threadsServer) updateSavedQueriesForThread(ctx context.Context, thread 
 					Unread:       unread,
 					Timestamp:    timestamp,
 				})
-				if nsq != nil {
+				if sq.NotificationsEnabled && nsq != nil {
 					addItems = append(addItems, &dal.SavedQueryThread{
 						ThreadID:     thread.ID,
 						SavedQueryID: nsq.ID,
