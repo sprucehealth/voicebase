@@ -57,6 +57,7 @@ go version
 go get github.com/golang/lint/golint
 go get github.com/axw/gocov/...
 go get github.com/AlekSi/gocov-xml
+go get github.com/sectioneight/go-junit-report
 
 # Find all directories that contain Go files (all packages). This lets us
 # exclude everything under the vendoring directory.
@@ -113,15 +114,30 @@ elif [[ ! -z "$NO_COVERAGE" ]]; then
             TESTPKGS+="$PKG "
         fi
     done
-    go test $TESTPKGS
+    set +e
+    2>&1 go test -v $TESTPKGS | tee tests.out
+    RET=$?
+    set -e
+    cat tests.out | go-junit-report > tests.xml
+    if [[ "$RET" != "0" ]]; then
+        exit $RET
+    fi
 else
+    rm -f tests.out || true
     for PKG in $PKGS; do
         if [[ "$PKG" == *"/test/"* ]]; then
             if [[ -z "$NO_INTEGRATION_TESTS" ]]; then
                 go test -test.parallel 4 "$PKG"
             fi
         else
-            go test -covermode=count -coverprofile="$PKG/cover.out" -test.parallel 4 "$PKG"
+            set +e
+            2>&1 go test -covermode=count -coverprofile="$PKG/cover.out" -test.parallel 4 "$PKG" | tee -a tests.out
+            RET=$?
+            set -e
+            cat tests.out | go-junit-report > tests.xml
+            if [[ "$RET" != "0" ]]; then
+                exit $RET
+            fi
             grep -v .pb.go "$PKG/cover.out" | grep -v "cmd/svc/restapi" | grep -v "cmd/svc/regimens" | grep -v "cmd/svc/carefinder" | grep -v "cmd/svc/products" > "$PKG/cover.out.2"
             mv "$PKG/cover.out.2" "$PKG/cover.out"
             gocov convert "$PKG/cover.out" | gocov-xml | sed 's=workspace/go/src/github.com/sprucehealth/backend/==g' > "$PKG/coverage.xml"
