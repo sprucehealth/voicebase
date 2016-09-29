@@ -66,6 +66,10 @@ func threadMatchesQuery(q *models.Query, t *models.Thread, te *models.ThreadEnti
 				if (t.Type != models.ThreadTypeTeam) != e.Not {
 					return false, nil
 				}
+			case models.EXPR_THREAD_TYPE_SUPPORT:
+				if (t.Type != models.ThreadTypeSupport) != e.Not {
+					return false, nil
+				}
 			default:
 				return false, errors.Errorf("unknown expression thread type %s", v.ThreadType)
 			}
