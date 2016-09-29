@@ -83,6 +83,8 @@ func FormatQuery(q *Query) (string, error) {
 				parts = append(parts, not+"type:patient")
 			case EXPR_THREAD_TYPE_TEAM:
 				parts = append(parts, not+"type:team")
+			case EXPR_THREAD_TYPE_SUPPORT:
+				parts = append(parts, not+"type:support")
 			default:
 				return "", errors.Errorf("unknown expression thread type %s", v.ThreadType)
 			}
