@@ -32,6 +32,8 @@ func transformQueryFromRequest(q *threading.Query) (*models.Query, error) {
 				me.Value = &models.Expr_ThreadType_{ThreadType: models.EXPR_THREAD_TYPE_PATIENT}
 			case threading.EXPR_THREAD_TYPE_TEAM:
 				me.Value = &models.Expr_ThreadType_{ThreadType: models.EXPR_THREAD_TYPE_TEAM}
+			case threading.EXPR_THREAD_TYPE_SUPPORT:
+				me.Value = &models.Expr_ThreadType_{ThreadType: models.EXPR_THREAD_TYPE_SUPPORT}
 			default:
 				return nil, errors.Errorf("unknown query thread type %s", v.ThreadType)
 			}
@@ -69,6 +71,8 @@ func transformQueryToResponse(q *models.Query) (*threading.Query, error) {
 				me.Value = &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_PATIENT}
 			case models.EXPR_THREAD_TYPE_TEAM:
 				me.Value = &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_TEAM}
+			case models.EXPR_THREAD_TYPE_SUPPORT:
+				me.Value = &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_SUPPORT}
 			default:
 				return nil, errors.Errorf("unknown query thread type %s", v.ThreadType)
 			}
@@ -431,14 +435,25 @@ func transformSavedQueryToResponse(sq *models.SavedQuery) (*threading.SavedQuery
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
+	var t threading.SavedQueryType
+	switch sq.Type {
+	case models.SavedQueryTypeNormal:
+		t = threading.SAVED_QUERY_TYPE_NORMAL
+	case models.SavedQueryTypeNotifications:
+		t = threading.SAVED_QUERY_TYPE_NOTIFICATIONS
+	default:
+		return nil, errors.Errorf("unknown saved query type %s", sq.Type)
+	}
 	return &threading.SavedQuery{
 		ID:                   sq.ID.String(),
+		Type:                 t,
 		Ordinal:              int32(sq.Ordinal),
 		Query:                query,
 		Title:                sq.Title,
 		Unread:               uint32(sq.Unread),
 		Total:                uint32(sq.Total),
 		EntityID:             sq.EntityID,
+		Hidden:               sq.Hidden,
 		NotificationsEnabled: sq.NotificationsEnabled,
 	}, nil
 }

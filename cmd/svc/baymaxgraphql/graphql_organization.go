@@ -15,6 +15,7 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/settings"
+	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -22,37 +23,43 @@ import (
 
 var savedThreadQueriesField = &graphql.Field{
 	Type: graphql.NewList(graphql.NewNonNull(savedThreadQueryType)),
-	Resolve: apiaccess.Authenticated(
-		apiaccess.Provider(
-			func(p graphql.ResolveParams) (interface{}, error) {
-
-				var entityID string
-				switch s := p.Source.(type) {
-				case *models.Organization:
-					if s.Entity == nil || s.Entity.ID == "" {
-						return nil, errors.New("no entity for organization")
-					}
-					entityID = s.Entity.ID
-				case *markThreadsAsReadOutput:
-					entityID = s.entity.ID
+	Args: graphql.FieldConfigArgument{
+		"withHidden": &graphql.ArgumentConfig{Type: graphql.Boolean},
+	},
+	Resolve: apiaccess.Provider(
+		func(p graphql.ResolveParams) (interface{}, error) {
+			var entityID string
+			switch s := p.Source.(type) {
+			case *models.Organization:
+				if s.Entity == nil || s.Entity.ID == "" {
+					return nil, errors.New("no entity for organization")
 				}
+				entityID = s.Entity.ID
+			case *markThreadsAsReadOutput:
+				entityID = s.entity.ID
+			}
 
-				ram := raccess.ResourceAccess(p)
-				ctx := p.Context
-				sqs, err := ram.SavedQueries(ctx, entityID)
-				if err != nil {
-					return nil, err
-				}
-				var qs []*models.SavedThreadQuery
-				for _, q := range sqs {
+			// withHidden defaults to false if not provided
+			withHidden, _ := p.Args["withHidden"].(bool)
+
+			ram := raccess.ResourceAccess(p)
+			ctx := p.Context
+			sqs, err := ram.SavedQueries(ctx, entityID)
+			if err != nil {
+				return nil, err
+			}
+			qs := make([]*models.SavedThreadQuery, 0, len(sqs))
+			for _, q := range sqs {
+				if q.Type == threading.SAVED_QUERY_TYPE_NORMAL && (withHidden || !q.Hidden) {
 					sq, err := transformSavedQueryToResponse(q)
 					if err != nil {
 						return nil, errors.InternalError(ctx, err)
 					}
 					qs = append(qs, sq)
 				}
-				return qs, nil
-			})),
+			}
+			return qs, nil
+		}),
 }
 
 var organizationType = graphql.NewObject(

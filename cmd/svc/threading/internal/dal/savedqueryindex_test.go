@@ -27,6 +27,7 @@ func TestSavedQueryIndex(t *testing.T) {
 		},
 		Title:                "sq1",
 		NotificationsEnabled: true,
+		Type:                 models.SavedQueryTypeNormal,
 	}
 	_, err := dal.CreateSavedQuery(ctx, sq)
 	test.OK(t, err)
@@ -56,7 +57,7 @@ func TestSavedQueryIndex(t *testing.T) {
 	tid2, err := dal.CreateThread(ctx, t2)
 	test.OK(t, err)
 
-	// Add a unread thread
+	// Add an unread thread
 
 	test.OK(t, dal.AddItemsToSavedQueryIndex(ctx, []*SavedQueryThread{
 		{SavedQueryID: sq.ID, ThreadID: tid1, Unread: true, Timestamp: t1.LastMessageTimestamp},
@@ -180,6 +181,7 @@ func TestLargeBatchSavedQueryItems(t *testing.T) {
 		},
 		Title:                "sq1",
 		NotificationsEnabled: true,
+		Type:                 models.SavedQueryTypeNormal,
 	}
 	_, err := dal.CreateSavedQuery(ctx, sq)
 	test.OK(t, err)
@@ -205,4 +207,150 @@ func TestLargeBatchSavedQueryItems(t *testing.T) {
 	}
 	test.OK(t, dal.AddItemsToSavedQueryIndex(ctx, items))
 	test.OK(t, dal.RemoveItemsFromSavedQueryIndex(ctx, items))
+}
+
+func TestNotificationsSavedQuery(t *testing.T) {
+	dt := testsql.Setup(t, schemaGlob)
+	defer dt.Cleanup(t)
+
+	dal := New(dt.DB)
+	ctx := context.Background()
+
+	sq1 := &models.SavedQuery{
+		Ordinal:  1,
+		EntityID: "ent",
+		Query: &models.Query{
+			Expressions: []*models.Expr{
+				{Value: &models.Expr_Token{Token: "summary"}},
+			},
+		},
+		Title:                "sq1",
+		NotificationsEnabled: true,
+		Type:                 models.SavedQueryTypeNormal,
+	}
+	_, err := dal.CreateSavedQuery(ctx, sq1)
+	test.OK(t, err)
+
+	sq2 := &models.SavedQuery{
+		Ordinal:  2,
+		EntityID: "ent",
+		Query: &models.Query{
+			Expressions: []*models.Expr{
+				{Value: &models.Expr_Token{Token: "summary"}},
+			},
+		},
+		Title:                "sq1",
+		NotificationsEnabled: true,
+		Type:                 models.SavedQueryTypeNormal,
+	}
+	_, err = dal.CreateSavedQuery(ctx, sq2)
+	test.OK(t, err)
+
+	nsq := &models.SavedQuery{
+		Ordinal:              3,
+		EntityID:             "ent",
+		Query:                &models.Query{},
+		Title:                "nsq",
+		NotificationsEnabled: false,
+		Type:                 models.SavedQueryTypeNotifications,
+	}
+	_, err = dal.CreateSavedQuery(ctx, nsq)
+	test.OK(t, err)
+
+	sqr, err := dal.SavedQuery(ctx, sq1.ID)
+	test.OK(t, err)
+	test.Equals(t, sq1, sqr)
+
+	sqr, err = dal.SavedQuery(ctx, sq2.ID)
+	test.OK(t, err)
+	test.Equals(t, sq2, sqr)
+
+	sqr, err = dal.SavedQuery(ctx, nsq.ID)
+	test.OK(t, err)
+	test.Equals(t, nsq, sqr)
+
+	// Create some threads
+	t1 := &models.Thread{
+		OrganizationID:             "org",
+		Type:                       models.ThreadTypeExternal,
+		LastMessageSummary:         "thread1 summary",
+		LastMessageTimestamp:       time.Unix(10e8, 0),
+		LastExternalMessageSummary: "extsummary",
+	}
+	tid1, err := dal.CreateThread(ctx, t1)
+	test.OK(t, err)
+	test.OK(t, dal.AddThreadMembers(ctx, tid1, []string{"org"}))
+	t2 := &models.Thread{
+		OrganizationID:             "org",
+		Type:                       models.ThreadTypeTeam,
+		LastMessageSummary:         "thread2 summary",
+		LastMessageTimestamp:       time.Unix(11e8, 0),
+		LastExternalMessageSummary: "extsummary",
+	}
+	tid2, err := dal.CreateThread(ctx, t2)
+	test.OK(t, err)
+
+	counts, err := dal.UnreadNotificationsCounts(ctx, []string{"ent"})
+	test.OK(t, err)
+	test.Equals(t, map[string]int{"ent": 0}, counts)
+
+	// Add an unread thread
+
+	test.OK(t, dal.AddItemsToSavedQueryIndex(ctx, []*SavedQueryThread{
+		{SavedQueryID: sq1.ID, ThreadID: tid1, Unread: true, Timestamp: t1.LastMessageTimestamp},
+	}))
+	sqr, err = dal.SavedQuery(ctx, sq1.ID)
+	test.OK(t, err)
+	test.Equals(t, 1, sqr.Unread)
+	test.Equals(t, 1, sqr.Total)
+
+	test.OK(t, dal.RebuildNotificationsSavedQuery(ctx, "ent"))
+	sqr, err = dal.SavedQuery(ctx, nsq.ID)
+	test.OK(t, err)
+	test.Equals(t, 1, sqr.Unread)
+	test.Equals(t, 1, sqr.Total)
+
+	counts, err = dal.UnreadNotificationsCounts(ctx, []string{"ent"})
+	test.OK(t, err)
+	test.Equals(t, map[string]int{"ent": 1}, counts)
+
+	// Add same thread to second saved query
+
+	test.OK(t, dal.AddItemsToSavedQueryIndex(ctx, []*SavedQueryThread{
+		{SavedQueryID: sq2.ID, ThreadID: tid1, Unread: true, Timestamp: t1.LastMessageTimestamp},
+	}))
+	sqr, err = dal.SavedQuery(ctx, sq2.ID)
+	test.OK(t, err)
+	test.Equals(t, 1, sqr.Unread)
+	test.Equals(t, 1, sqr.Total)
+
+	test.OK(t, dal.RebuildNotificationsSavedQuery(ctx, "ent"))
+	sqr, err = dal.SavedQuery(ctx, nsq.ID)
+	test.OK(t, err)
+	test.Equals(t, 1, sqr.Unread)
+	test.Equals(t, 1, sqr.Total)
+
+	counts, err = dal.UnreadNotificationsCounts(ctx, []string{"ent"})
+	test.OK(t, err)
+	test.Equals(t, map[string]int{"ent": 1}, counts)
+
+	// Add read thread
+
+	test.OK(t, dal.AddItemsToSavedQueryIndex(ctx, []*SavedQueryThread{
+		{SavedQueryID: sq2.ID, ThreadID: tid2, Unread: false, Timestamp: t2.LastMessageTimestamp},
+	}))
+	sqr, err = dal.SavedQuery(ctx, sq2.ID)
+	test.OK(t, err)
+	test.Equals(t, 1, sqr.Unread)
+	test.Equals(t, 2, sqr.Total)
+
+	test.OK(t, dal.RebuildNotificationsSavedQuery(ctx, "ent"))
+	sqr, err = dal.SavedQuery(ctx, nsq.ID)
+	test.OK(t, err)
+	test.Equals(t, 1, sqr.Unread)
+	test.Equals(t, 2, sqr.Total)
+
+	counts, err = dal.UnreadNotificationsCounts(ctx, []string{"ent"})
+	test.OK(t, err)
+	test.Equals(t, map[string]int{"ent": 1}, counts)
 }

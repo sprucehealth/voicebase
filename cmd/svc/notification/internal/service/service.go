@@ -222,12 +222,35 @@ func (s *service) processPushNotification(ctx context.Context, n *notification.N
 	case notification.NewMessageOnExternalThread:
 		entitiesToNotify, err = s.filterNodesForThreadActivityPreferences(ctx, entitiesToNotify, n.EntitiesAtReferenced, notification.PatientNotificationPreferencesSettingsKey)
 	case notification.IncomingIPCall:
+	case notification.BadgeUpdate:
 	default:
 		golog.Errorf("Unable to handle unknown notification type %s", n.Type)
 		return nil
 	}
 	if err != nil {
 		return errors.Trace(err)
+	}
+
+	// No entities left after filtering so nothing to do
+	if len(entitiesToNotify) == 0 {
+		return nil
+	}
+
+	// Clear out badge counts for entities that have the badge disabled
+	for _, id := range entitiesToNotify {
+		res, err := s.settingsClient.GetValues(ctx, &settings.GetValuesRequest{
+			Keys:   []*settings.ConfigKey{{Key: notification.BadgeCount}},
+			NodeID: id,
+		})
+		if err != nil {
+			golog.Errorf("Failed to get badge count setting: %s", err)
+			continue
+		}
+		if len(res.Values) != 0 {
+			if !res.Values[0].GetBoolean().Value {
+				n.UnreadCounts[id] = 0
+			}
+		}
 	}
 
 	// Fetch the external ids for these entities and attempt to resolve them to accounts for groups
@@ -380,8 +403,8 @@ type iOSPushNotification struct {
 
 // https://developer.apple.com/library/ios/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/Chapters/TheNotificationPayload.html#//apple_ref/doc/uid/TP40008194-CH107-SW1
 type iOSPushData struct {
-	Alert string `json:"alert"`
-	//Badge            int    `json:"badge"`
+	Alert            string `json:"alert"`
+	Badge            int    `json:"badge"`
 	ContentAvailable int    `json:"content-available,omitempty"`
 	Sound            string `json:"sound"`
 }
@@ -427,6 +450,7 @@ func generateNotification(webDomain string, n *notification.Notification, target
 
 	iOSData := &iOSPushData{
 		Alert: msg,
+		Badge: n.UnreadCounts[targetID],
 	}
 	if msg != "" {
 		if n.Type == notification.IncomingIPCall {
@@ -472,6 +496,7 @@ func generateNotification(webDomain string, n *notification.Notification, target
 			CallID:         n.CallID,
 			PushID:         n.DedupeKey,
 			Sound:          sound,
+			UnreadCount:    n.UnreadCounts[targetID],
 		},
 	})
 	if err != nil {

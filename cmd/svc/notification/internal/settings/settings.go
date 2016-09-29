@@ -64,3 +64,21 @@ var PatientNotificationPreferenceConfig = &settings.Config{
 	PossibleOwners: []settings.OwnerType{settings.OwnerType_INTERNAL_ENTITY},
 	Config:         threadActivityNotificationPreferenceSingleSelect,
 }
+
+// BadgeCountConfig represents the config controlling whether the badge count is enabled or disabled for
+// a provider using Spruce. The badge count is maintained on a per platform basis so that the provider
+// can configure whether to enable/disable on iOS independent of android an web.
+var BadgeCountConfig = &settings.Config{
+	Title:          "Enable/disable badge count for app",
+	AllowSubkeys:   true,
+	Key:            notification.BadgeCount,
+	Type:           settings.ConfigType_BOOLEAN,
+	PossibleOwners: []settings.OwnerType{settings.OwnerType_INTERNAL_ENTITY},
+	Config: &settings.Config_Boolean{
+		Boolean: &settings.BooleanConfig{
+			Default: &settings.BooleanValue{
+				Value: true,
+			},
+		},
+	},
+}

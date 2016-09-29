@@ -330,6 +330,22 @@ func (dl *DAL) RemoveThreadFromAllSavedQueryIndexes(ctx context.Context, threadI
 	return mock.SafeError(rets[0])
 }
 
+func (dl *DAL) RebuildNotificationsSavedQuery(ctx context.Context, entityID string) error {
+	rets := dl.Expector.Record(entityID)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[0])
+}
+
+func (dl *DAL) UnreadNotificationsCounts(ctx context.Context, entityIDs []string) (map[string]int, error) {
+	rets := dl.Expector.Record(entityIDs)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(map[string]int), mock.SafeError(rets[1])
+}
+
 func optsToInterfaces(opts []dal.QueryOption) []interface{} {
 	ifs := make([]interface{}, len(opts))
 	for i, o := range opts {

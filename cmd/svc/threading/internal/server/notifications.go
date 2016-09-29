@@ -15,7 +15,31 @@ import (
 	"github.com/sprucehealth/backend/svc/threading"
 )
 
-const newMessageNotificationKey = "new_message" // This is used for both collapse and dedupe
+const (
+	newMessageNotificationKey = "new_message" // This is used for both collapse and dedupe
+	badgeCountNotificationKey = "badge_count"
+)
+
+func (s *threadsServer) notifyBadgeCountUpdate(ctx context.Context, entityIDs []string) error {
+	if len(entityIDs) == 0 {
+		return nil
+	}
+	unreadCounts, err := s.dal.UnreadNotificationsCounts(ctx, entityIDs)
+	if err != nil {
+		return errors.Trace(err)
+	}
+	if s.notificationClient == nil {
+		golog.Debugf("Member notification aborted because either notification client or directory client is not configured")
+		return nil
+	}
+	return errors.Trace(s.notificationClient.SendNotification(&notification.Notification{
+		UnreadCounts:     unreadCounts,
+		EntitiesToNotify: entityIDs,
+		DedupeKey:        badgeCountNotificationKey,
+		CollapseKey:      badgeCountNotificationKey,
+		Type:             notification.BadgeUpdate,
+	}))
+}
 
 // TODO: mraines: This code is spagetti poo (I wrote it), refactor
 func (s *threadsServer) notifyMembersOfPublishMessage(
@@ -120,13 +144,19 @@ func (s *threadsServer) notifyMembersOfPublishMessage(
 			nType = notification.NewMessageOnInternalThread
 		}
 
+		unreadCounts, err := s.dal.UnreadNotificationsCounts(ctx, receiverEntityIDs)
+		if err != nil {
+			golog.Errorf("Failed to fetch unread notification counts: %s", err)
+			// Continue without the counts as it seems more important to send notifications even without counts
+		}
+
 		// Note: We always send the unread push to all interested entities.
 		//   This is because clients rely on the push to update state.
 		//   An empty ShortMessage for an entity indicated that a notification
 		//   should be sent silently or flagged as such.
-		//   Notifications with ShortMEssages for the entity will be displayed to the user
+		//   Notifications with ShortMessages for the entity will be displayed to the user
 		if err := s.notificationClient.SendNotification(&notification.Notification{
-			// UnreadCounts:     unreadCounts, TODO: currently don't support counts
+			UnreadCounts:     unreadCounts,
 			ShortMessages:    messages,
 			OrganizationID:   orgID,
 			SavedQueryID:     savedQueryID.String(),

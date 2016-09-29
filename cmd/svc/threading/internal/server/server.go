@@ -99,6 +99,10 @@ func (s *threadsServer) CreateSavedQuery(ctx context.Context, in *threading.Crea
 	if in.Title == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "Title is required")
 	}
+	// TODO: in order to be backwards compatible with clients that don't send the type for now assume the normal type. remove once updated clients are deployed.
+	if in.Type == threading.SAVED_QUERY_TYPE_INVALID {
+		in.Type = threading.SAVED_QUERY_TYPE_NORMAL
+	}
 
 	query, err := transformQueryFromRequest(in.Query)
 	if err != nil {
@@ -111,6 +115,15 @@ func (s *threadsServer) CreateSavedQuery(ctx context.Context, in *threading.Crea
 		Query:                query,
 		Ordinal:              int(in.Ordinal),
 		NotificationsEnabled: in.NotificationsEnabled,
+		Hidden:               in.Hidden,
+	}
+	switch in.Type {
+	case threading.SAVED_QUERY_TYPE_NORMAL:
+		sq.Type = models.SavedQueryTypeNormal
+	case threading.SAVED_QUERY_TYPE_NOTIFICATIONS:
+		sq.Type = models.SavedQueryTypeNotifications
+	default:
+		return nil, grpcErrorf(codes.InvalidArgument, "Unknown saved query type %s", in.Type)
 	}
 	id, err := s.dal.CreateSavedQuery(ctx, sq)
 	if err != nil {
@@ -120,7 +133,11 @@ func (s *threadsServer) CreateSavedQuery(ctx context.Context, in *threading.Crea
 	if err := s.rebuildSavedQuery(ctx, sq); err != nil {
 		golog.Errorf("Failed to build new saved query %s: %s", sq.ID, err)
 	}
-	sq.ID = id
+	if sq.NotificationsEnabled {
+		if err := s.notifyBadgeCountUpdate(ctx, []string{sq.EntityID}); err != nil {
+			golog.Errorf("Failed to notify entity %s of updated badge count: %s", sq.EntityID, err)
+		}
+	}
 	sqr, err := transformSavedQueryToResponse(sq)
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -217,7 +234,7 @@ func (s *threadsServer) CreateEmptyThread(ctx context.Context, in *threading.Cre
 		return nil, errors.Trace(err)
 	}
 	if len(threads) == 0 {
-		return nil, errors.Trace(fmt.Errorf("thread with id %s just created not found", threadID))
+		return nil, errors.Errorf("thread with id %s just created not found", threadID)
 	}
 	if _, err := s.updateSavedQueriesAddThread(ctx, threads[0], memberEntityIDs); err != nil {
 		golog.Errorf("Failed to updated saved query when adding thread: %s", threadID)
@@ -379,7 +396,7 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 	}
 	s.publishMessage(ctx, in.OrganizationID, in.FromEntityID, threadID, it, in.UUID)
 	if updateResult != nil {
-		s.notifyMembersOfPublishMessage(ctx, thread.OrganizationID, models.EmptySavedQueryID(), thread, item, in.FromEntityID, updateResult.EntityShouldBeNotified)
+		s.notifyMembersOfPublishMessage(ctx, thread.OrganizationID, models.EmptySavedQueryID(), thread, item, in.FromEntityID, updateResult.entityShouldBeNotified)
 	}
 	return &threading.CreateThreadResponse{
 		ThreadID:   threadID.String(),
@@ -790,6 +807,10 @@ func (s *threadsServer) MarkThreadsAsRead(ctx context.Context, in *threading.Mar
 		return nil, errors.Trace(err)
 	}
 
+	if err := s.notifyBadgeCountUpdate(ctx, []string{in.EntityID}); err != nil {
+		golog.Errorf("Failed to notify entity %s of updated badge count: %s", in.EntityID, err)
+	}
+
 	return &threading.MarkThreadsAsReadResponse{}, nil
 }
 
@@ -1007,7 +1028,7 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 	}
 	s.publishMessage(ctx, thread.OrganizationID, thread.PrimaryEntityID, threadID, it, in.UUID)
 	if !in.DontNotify && updateResult != nil {
-		s.notifyMembersOfPublishMessage(ctx, thread.OrganizationID, models.EmptySavedQueryID(), thread, item, in.FromEntityID, updateResult.EntityShouldBeNotified)
+		s.notifyMembersOfPublishMessage(ctx, thread.OrganizationID, models.EmptySavedQueryID(), thread, item, in.FromEntityID, updateResult.entityShouldBeNotified)
 	}
 
 	if linkedItem != nil {
@@ -1023,7 +1044,7 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 				golog.Errorf("Failed to updated saved query for thread %s: %s", linkedThreads[0].ID, err)
 			}
 			if !in.DontNotify && updateResult != nil {
-				s.notifyMembersOfPublishMessage(ctx, linkedThread.OrganizationID, models.EmptySavedQueryID(), linkedThread, linkedItem, linkedItem.ActorEntityID, updateResult.EntityShouldBeNotified)
+				s.notifyMembersOfPublishMessage(ctx, linkedThread.OrganizationID, models.EmptySavedQueryID(), linkedThread, linkedItem, linkedItem.ActorEntityID, updateResult.entityShouldBeNotified)
 			}
 		}
 
@@ -1195,7 +1216,7 @@ func (s *threadsServer) SavedQueries(ctx context.Context, in *threading.SavedQue
 	for i, q := range queries {
 		sq, err := transformSavedQueryToResponse(q)
 		if err != nil {
-			return nil, errors.Trace(fmt.Errorf("Failed to transform saved query: %s", err))
+			return nil, errors.Errorf("Failed to transform saved query: %s", err)
 		}
 		res.SavedQueries[i] = sq
 	}
@@ -1499,6 +1520,13 @@ func (s *threadsServer) UpdateSavedQuery(ctx context.Context, in *threading.Upda
 			return nil, errors.Trace(err)
 		}
 	}
+	if rebuild || update.NotificationsEnabled != nil {
+		if err := s.dal.RebuildNotificationsSavedQuery(ctx, sq.EntityID); err != nil {
+			golog.ContextLogger(ctx).Errorf("Failed to update notifications saved query for entity %s: %s", sq.EntityID, err)
+		} else if err := s.notifyBadgeCountUpdate(ctx, []string{sq.EntityID}); err != nil {
+			golog.ContextLogger(ctx).Errorf("Failed to notify entity %s of updated badge count: %s", sq.EntityID, err)
+		}
+	}
 
 	sqResp, err := transformSavedQueryToResponse(sq)
 	if err != nil {
@@ -1660,6 +1688,27 @@ func (s *threadsServer) UpdateThread(ctx context.Context, in *threading.UpdateTh
 	if _, err := s.updateSavedQueriesForThread(ctx, thread); err != nil {
 		golog.Errorf("Failed to updated saved query for thread %s: %s", thread.ID, err)
 	}
+
+	// Notify all possible people affected about their new badge count
+	conc.Go(func() {
+		ctx := context.Background()
+		members, err := s.membersForThread(ctx, thread.ID)
+		if err != nil {
+			golog.Errorf(err.Error())
+			return
+		}
+		entityIDs := make([]string, 0, len(members)+len(in.RemoveMemberEntityIDs))
+		for _, m := range members {
+			entityIDs = append(entityIDs, m.EntityID)
+		}
+		for _, id := range in.RemoveMemberEntityIDs {
+			entityIDs = append(entityIDs, id)
+		}
+		if err := s.notifyBadgeCountUpdate(ctx, entityIDs); err != nil {
+			golog.Fatalf("Failed to notify entities of updated badge count: %s", err)
+		}
+	})
+
 	th, err := transformThreadToResponse(thread, false)
 	if err != nil {
 		return nil, errors.Trace(err)

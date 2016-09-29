@@ -29,6 +29,8 @@ const (
 	NewMessageOnExternalThread Type = "new_message_on_external_thread"
 	// IncomingIPCall notifies if an incoming video or voip call
 	IncomingIPCall Type = "incoming_ipcall"
+	// BadgeUpdate notification is a silent/empty notification just to update the app badge count
+	BadgeUpdate Type = "badge_update"
 )
 
 // Notification represents the information to be transformed into a notification

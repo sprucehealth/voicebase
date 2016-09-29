@@ -2,7 +2,6 @@ package models
 
 import (
 	"database/sql/driver"
-	"fmt"
 	"sort"
 	"strings"
 	"time"
@@ -172,7 +171,7 @@ const (
 	ThreadTypeSetup ThreadType = "SETUP"
 	// ThreadTypeSupport is a thread linked to the spruce support org
 	ThreadTypeSupport ThreadType = "SUPPORT"
-	// ThreadTypeLegacyInternal is a thread that represents the legacy internal thread
+	// ThreadTypeLegacyTeam is a thread that represents the legacy internal thread
 	// visible to all members of the org for internal communication.
 	ThreadTypeLegacyTeam ThreadType = "LEGACY_TEAM"
 	// ThreadTypeSecureExternal is a thread with with an external entity (e.g. patient) limited to secure in app communication
@@ -192,7 +191,7 @@ func (tt *ThreadType) Scan(src interface{}) error {
 	case string:
 		typ = v
 	default:
-		return errors.Trace(fmt.Errorf("unsupported type for ThreadType: %T", src))
+		return errors.Errorf("unsupported type for ThreadType: %T", src)
 	}
 	*tt = ThreadType(strings.ToUpper(typ))
 	return errors.Trace(tt.Validate())
@@ -209,11 +208,58 @@ func (tt ThreadType) Validate() error {
 	case ThreadTypeUnknown, ThreadTypeExternal, ThreadTypeTeam, ThreadTypeSetup, ThreadTypeSupport, ThreadTypeLegacyTeam, ThreadTypeSecureExternal:
 		return nil
 	}
-	return errors.Trace(fmt.Errorf("unknown thread type '%s'", string(tt)))
+	return errors.Errorf("unknown thread type '%s'", string(tt))
 }
 
 func (tt ThreadType) String() string {
 	return string(tt)
+}
+
+// SavedQueryType is an enum of possible saved query types
+type SavedQueryType string
+
+const (
+	// SavedQueryTypeNormal is
+	SavedQueryTypeNormal SavedQueryType = "NORMAL"
+	// SavedQueryTypeNotifications is
+	SavedQueryTypeNotifications SavedQueryType = "NOTIFICATIONS"
+)
+
+// Scan implements sql.Scanner and expects src to be nil or of type string or []byte
+func (t *SavedQueryType) Scan(src interface{}) error {
+	if src == nil {
+		*t = SavedQueryType("")
+		return nil
+	}
+	var typ string
+	switch v := src.(type) {
+	case []byte:
+		typ = string(v)
+	case string:
+		typ = v
+	default:
+		return errors.Errorf("unsupported type for SavedQueryType: %T", src)
+	}
+	*t = SavedQueryType(strings.ToUpper(typ))
+	return errors.Trace(t.Validate())
+}
+
+// Value implements sql/driver.Valuer
+func (t SavedQueryType) Value() (driver.Value, error) {
+	return strings.ToUpper(string(t)), errors.Trace(t.Validate())
+}
+
+// Validate returns nil iff the value of the type is valid
+func (t SavedQueryType) Validate() error {
+	switch t {
+	case SavedQueryTypeNormal, SavedQueryTypeNotifications:
+		return nil
+	}
+	return errors.Errorf("unknown saved query type '%s'", string(t))
+}
+
+func (t SavedQueryType) String() string {
+	return string(t)
 }
 
 // ThreadOrigin is an enum of possible thread origins
@@ -243,7 +289,7 @@ func (to *ThreadOrigin) Scan(src interface{}) error {
 	case string:
 		typ = v
 	default:
-		return errors.Trace(fmt.Errorf("unsupported type for ThreadType: %T", src))
+		return errors.Errorf("unsupported type for ThreadType: %T", src)
 	}
 	*to = ThreadOrigin(strings.ToUpper(typ))
 	return errors.Trace(to.Validate())
@@ -260,7 +306,7 @@ func (to ThreadOrigin) Validate() error {
 	case ThreadOriginUnknown, ThreadOriginPatientInvite, ThreadOriginOrganizationCode, ThreadOriginPatientSync:
 		return nil
 	}
-	return errors.Trace(fmt.Errorf("unknown thread origin '%s'", string(to)))
+	return errors.Errorf("unknown thread origin '%s'", string(to))
 }
 
 func (to ThreadOrigin) String() string {
@@ -334,7 +380,9 @@ type SavedQuery struct {
 	Query                *Query
 	Unread               int
 	Total                int
+	Hidden               bool
 	NotificationsEnabled bool
+	Type                 SavedQueryType
 	Created              time.Time
 	Modified             time.Time
 }

@@ -45,6 +45,7 @@ func TestCreateSavedQuery(t *testing.T) {
 		EntityID: "entity_1",
 		Title:    "Stuff",
 		Ordinal:  2,
+		Type:     models.SavedQueryTypeNormal,
 		Query: &models.Query{
 			Expressions: []*models.Expr{
 				{Not: true, Value: &models.Expr_Flag_{Flag: models.EXPR_FLAG_UNREAD}},
@@ -102,6 +103,9 @@ func TestCreateSavedQuery(t *testing.T) {
 			HasMore: false,
 		}, nil))
 
+	dl.Expect(mock.NewExpectation(dl.RebuildNotificationsSavedQuery, "entity_1"))
+	dl.Expect(mock.NewExpectation(dl.UnreadNotificationsCounts, []string{"entity_1"}))
+
 	query := &threading.Query{
 		Expressions: []*threading.Expr{
 			{Not: true, Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_UNREAD}},
@@ -115,6 +119,7 @@ func TestCreateSavedQuery(t *testing.T) {
 		Query:                query,
 		Ordinal:              2,
 		NotificationsEnabled: true,
+		Type:                 threading.SAVED_QUERY_TYPE_NORMAL,
 	})
 	test.OK(t, err)
 	test.Equals(t, &threading.CreateSavedQueryResponse{
@@ -125,6 +130,7 @@ func TestCreateSavedQuery(t *testing.T) {
 			Ordinal:              2,
 			EntityID:             "entity_1",
 			NotificationsEnabled: true,
+			Type:                 threading.SAVED_QUERY_TYPE_NORMAL,
 		},
 	}, res)
 }
@@ -1812,6 +1818,7 @@ func TestSavedQuery(t *testing.T) {
 			},
 			Created:  now,
 			Modified: now,
+			Type:     models.SavedQueryTypeNotifications,
 		}, nil))
 	res, err := srv.SavedQuery(nil, &threading.SavedQueryRequest{
 		SavedQueryID: sqID.String(),
@@ -1829,6 +1836,7 @@ func TestSavedQuery(t *testing.T) {
 					{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_UNREAD_REFERENCE}},
 				},
 			},
+			Type: threading.SAVED_QUERY_TYPE_NOTIFICATIONS,
 		},
 	}, res)
 }
@@ -1955,6 +1963,8 @@ func TestMarkThreadAsRead(t *testing.T) {
 		{ThreadID: tID, SavedQueryID: sq2ID},
 	}))
 
+	dl.Expect(mock.NewExpectation(dl.UnreadNotificationsCounts, []string{eID}))
+
 	resp, err := srv.MarkThreadsAsRead(nil, &threading.MarkThreadsAsReadRequest{
 		ThreadWatermarks: []*threading.MarkThreadsAsReadRequest_ThreadWatermark{
 			{
@@ -2072,6 +2082,8 @@ func TestMarkThreadsAsRead_NotSeen(t *testing.T) {
 		{ThreadID: tID, SavedQueryID: sq2ID},
 		{ThreadID: tID2, SavedQueryID: sq2ID},
 	}))
+
+	dl.Expect(mock.NewExpectation(dl.UnreadNotificationsCounts, []string{eID}))
 
 	resp, err := srv.MarkThreadsAsRead(nil, &threading.MarkThreadsAsReadRequest{
 		ThreadWatermarks: []*threading.MarkThreadsAsReadRequest_ThreadWatermark{
@@ -2215,6 +2227,8 @@ func TestMarkThreadAsReadNilLastView(t *testing.T) {
 		{ThreadID: tID, SavedQueryID: sq2ID},
 	}))
 
+	dl.Expect(mock.NewExpectation(dl.UnreadNotificationsCounts, []string{eID}))
+
 	resp, err := srv.MarkThreadsAsRead(nil, &threading.MarkThreadsAsReadRequest{
 		ThreadWatermarks: []*threading.MarkThreadsAsReadRequest_ThreadWatermark{
 			{
@@ -2346,6 +2360,8 @@ func TestMarkThreadAsReadExistingMembership(t *testing.T) {
 		{ThreadID: tID, SavedQueryID: sq2ID},
 	}))
 
+	dl.Expect(mock.NewExpectation(dl.UnreadNotificationsCounts, []string{eID}))
+
 	resp, err := srv.MarkThreadsAsRead(nil, &threading.MarkThreadsAsReadRequest{
 		ThreadWatermarks: []*threading.MarkThreadsAsReadRequest_ThreadWatermark{
 			{
@@ -2471,13 +2487,15 @@ func TestNotifyMembersOfPublishMessage(t *testing.T) {
 	expectIsAlertAllMessagesEnabled(sm, "notify1", true)
 	expectPreviewPatientMessageContentInNotificationEnabled(sm, "notify1", false)
 
+	dl.Expect(mock.NewExpectation(dl.UnreadNotificationsCounts, []string{"notify1", "notify2", "notify3"}).WithReturns(map[string]int{"notify1": 1, "notify3": 3}, nil))
+
 	notificationClient.Expect(mock.NewExpectation(notificationClient.SendNotification, &notification.Notification{
 		ShortMessages: map[string]string{
 			"notify1": "You have a new message",
 			"notify2": "You have a new mention in a thread",
 			"notify3": "You have a new mention in a thread",
 		},
-		UnreadCounts:         nil,
+		UnreadCounts:         map[string]int{"notify1": 1, "notify3": 3},
 		OrganizationID:       orgID,
 		SavedQueryID:         sqID.String(),
 		ThreadID:             tID.String(),
@@ -2559,6 +2577,8 @@ func TestNotifyMembersOfPublishMessageClearTextSupportThread(t *testing.T) {
 	expectIsAlertAllMessagesEnabled(sm, "notify1", true)
 	expectIsAlertAllMessagesEnabled(sm, "notify2", true)
 	expectIsAlertAllMessagesEnabled(sm, "notify3", true)
+
+	dl.Expect(mock.NewExpectation(dl.UnreadNotificationsCounts, []string{"notify1", "notify2", "notify3"}))
 
 	notificationClient.Expect(mock.NewExpectation(notificationClient.SendNotification, &notification.Notification{
 		ShortMessages: map[string]string{
@@ -2645,6 +2665,8 @@ func TestNotifyMembersOfPublishMessageClearTextEnabled(t *testing.T) {
 	expectIsAlertAllMessagesEnabled(sm, "notify3", true)
 	expectPreviewPatientMessageContentInNotificationEnabled(sm, "notify3", true)
 
+	dl.Expect(mock.NewExpectation(dl.UnreadNotificationsCounts, []string{"notify1", "notify2", "notify3"}))
+
 	notificationClient.Expect(mock.NewExpectation(notificationClient.SendNotification, &notification.Notification{
 		ShortMessages: map[string]string{
 			"notify1": "ThreadTitle: Clear Text Message",
@@ -2730,6 +2752,8 @@ func TestNotifyMembersOfPublishMessageSecureExternalNonInternal(t *testing.T) {
 	expectPreviewPatientMessageContentInNotificationEnabled(sm, "notify3", false)
 	expectIsAlertAllMessagesEnabled(sm, "patientNotify1", true)
 	expectPreviewPatientMessageContentInNotificationEnabled(sm, "patientNotify1", false)
+
+	dl.Expect(mock.NewExpectation(dl.UnreadNotificationsCounts, []string{"notify1", "notify2", "notify3", "patientNotify1"}))
 
 	notificationClient.Expect(mock.NewExpectation(notificationClient.SendNotification, &notification.Notification{
 		ShortMessages: map[string]string{
@@ -2819,6 +2843,8 @@ func TestNotifyMembersOfPublishMessageSecureExternalInternal(t *testing.T) {
 
 	expectIsAlertAllMessagesEnabled(sm, "notify3", true)
 	expectPreviewPatientMessageContentInNotificationEnabled(sm, "notify3", false)
+
+	dl.Expect(mock.NewExpectation(dl.UnreadNotificationsCounts, []string{"notify1", "notify2", "notify3"}))
 
 	notificationClient.Expect(mock.NewExpectation(notificationClient.SendNotification, &notification.Notification{
 		ShortMessages: map[string]string{
@@ -2999,6 +3025,9 @@ func TestUpdateThread(t *testing.T) {
 			{SavedQueryID: sq2ID, ThreadID: tID, Timestamp: time.Unix(1, 0)},
 		}))
 
+	dl.Expect(mock.NewExpectation(dl.EntitiesForThread, tID))
+	dl.Expect(mock.NewExpectation(dl.UnreadNotificationsCounts, []string{"entity_2"}))
+
 	resp, err := srv.UpdateThread(nil, &threading.UpdateThreadRequest{
 		ActorEntityID:         "entity_1",
 		ThreadID:              tID.String(),
@@ -3083,6 +3112,9 @@ func TestUpdateThread_LastPersonLeaves(t *testing.T) {
 
 	dl.Expect(mock.NewExpectation(dl.EntitiesForThread, tID).WithReturns([]*models.ThreadEntity{}, nil))
 	dl.Expect(mock.NewExpectation(dl.RemoveThreadFromAllSavedQueryIndexes, tID))
+
+	dl.Expect(mock.NewExpectation(dl.EntitiesForThread, tID).WithReturns([]*models.ThreadEntity{}, nil))
+	dl.Expect(mock.NewExpectation(dl.UnreadNotificationsCounts, []string{"entity_1"}))
 
 	resp, err := srv.UpdateThread(nil, &threading.UpdateThreadRequest{
 		ActorEntityID:         "entity_org",

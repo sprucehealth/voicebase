@@ -115,9 +115,10 @@ func main() {
 			nsettings.ReceiveNotificationsConfig,
 			nsettings.TeamNotificationPreferenceConfig,
 			nsettings.PatientNotificationPreferenceConfig,
+			nsettings.BadgeCountConfig,
 		})
 	if err != nil {
-		golog.Fatalf("Unable to register configs with the settings service: %s", err.Error())
+		golog.Fatalf("Unable to register configs with the settings service: %s", err)
 	}
 	cancel()
 

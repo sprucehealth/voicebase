@@ -7,4 +7,6 @@ const (
 	TeamNotificationPreferencesSettingsKey = "team_notification_preference"
 	// PatientNotificationPreferencesSettingsKey is the settings key used to determine what notifcations a user wants to receive
 	PatientNotificationPreferencesSettingsKey = "patient_notification_preference"
+	// BadgeCount is the settings key used to track whether badge count is enabled or disabled for a provider within an organization.
+	BadgeCount = "badge_count"
 )

@@ -21,70 +21,82 @@ func (s *threadsServer) rebuildSavedQuery(ctx context.Context, sq *models.SavedQ
 		// Inactive entities don't need saved queries so clear them
 		return errors.Trace(s.dal.RemoveAllItemsFromSavedQueryIndex(ctx, sq.ID))
 	}
-	forExternal := true
-	entIDs := make([]string, len(ents))
-	for i, e := range ents {
-		entIDs[i] = e.ID
-		if e.ID == sq.EntityID {
-			forExternal = isExternalEntity(e)
+
+	// The notifications saved query is handled specifically so ignore them here
+	if sq.Type != models.SavedQueryTypeNotifications {
+		forExternal := true
+		entIDs := make([]string, len(ents))
+		for i, e := range ents {
+			entIDs[i] = e.ID
+			if e.ID == sq.EntityID {
+				forExternal = isExternalEntity(e)
+			}
 		}
-	}
 
-	if err := s.dal.RemoveAllItemsFromSavedQueryIndex(ctx, sq.ID); err != nil {
-		return errors.Trace(err)
-	}
-
-	it := &dal.Iterator{
-		Direction: dal.FromStart,
-		Count:     5000,
-	}
-	var newItems []*dal.SavedQueryThread
-	for {
-		tc, err := s.dal.IterateThreads(ctx, sq.Query, entIDs, sq.EntityID, forExternal, it)
-		if err != nil {
+		if err := s.dal.RemoveAllItemsFromSavedQueryIndex(ctx, sq.ID); err != nil {
 			return errors.Trace(err)
 		}
-		newItems = newItems[:0]
-		for _, e := range tc.Edges {
-			// Sanity check to make sure the thread should really be included
-			if ok, err := threadMatchesQuery(sq.Query, e.Thread, e.ThreadEntity, forExternal); err != nil {
-				golog.Errorf("Failed to match thread %s against query %s: %s", e.Thread.ID, sq.ID, err)
-			} else if !ok {
-				golog.Errorf("Query %s returned non-matching thread %s from database", sq.ID, e.Thread.ID)
-				continue
-			}
-			timestamp := e.Thread.LastMessageTimestamp
-			if forExternal {
-				timestamp = e.Thread.LastExternalMessageTimestamp
-			}
-			newItems = append(newItems, &dal.SavedQueryThread{
-				ThreadID:     e.Thread.ID,
-				SavedQueryID: sq.ID,
-				Timestamp:    timestamp,
-				Unread:       isUnread(e.Thread, e.ThreadEntity, forExternal),
-			})
+
+		it := &dal.Iterator{
+			Direction: dal.FromStart,
+			Count:     5000,
 		}
-		if len(newItems) != 0 {
-			if err := s.dal.AddItemsToSavedQueryIndex(ctx, newItems); err != nil {
+		var newItems []*dal.SavedQueryThread
+		for {
+			tc, err := s.dal.IterateThreads(ctx, sq.Query, entIDs, sq.EntityID, forExternal, it)
+			if err != nil {
 				return errors.Trace(err)
 			}
+			newItems = newItems[:0]
+			for _, e := range tc.Edges {
+				// Sanity check to make sure the thread should really be included
+				if ok, err := threadMatchesQuery(sq.Query, e.Thread, e.ThreadEntity, forExternal); err != nil {
+					golog.Errorf("Failed to match thread %s against query %s: %s", e.Thread.ID, sq.ID, err)
+				} else if !ok {
+					golog.Errorf("Query %s returned non-matching thread %s from database", sq.ID, e.Thread.ID)
+					continue
+				}
+				timestamp := e.Thread.LastMessageTimestamp
+				if forExternal {
+					timestamp = e.Thread.LastExternalMessageTimestamp
+				}
+				newItems = append(newItems, &dal.SavedQueryThread{
+					ThreadID:     e.Thread.ID,
+					SavedQueryID: sq.ID,
+					Timestamp:    timestamp,
+					Unread:       isUnread(e.Thread, e.ThreadEntity, forExternal),
+				})
+			}
+			if len(newItems) != 0 {
+				if err := s.dal.AddItemsToSavedQueryIndex(ctx, newItems); err != nil {
+					return errors.Trace(err)
+				}
+			}
+			if !tc.HasMore {
+				break
+			}
+			it.StartCursor = tc.Edges[len(tc.Edges)-1].Cursor
 		}
-		if !tc.HasMore {
-			break
-		}
-		it.StartCursor = tc.Edges[len(tc.Edges)-1].Cursor
 	}
+
+	// Rebuild the notifications saved query when necessary
+	if sq.Type == models.SavedQueryTypeNotifications || sq.NotificationsEnabled {
+		if err := s.dal.RebuildNotificationsSavedQuery(ctx, sq.EntityID); err != nil {
+			return errors.Trace(err)
+		}
+	}
+
 	return nil
 }
 
 type savedQueryUpdateResult struct {
-	EntityShouldBeNotified map[string]bool
+	entityShouldBeNotified map[string]bool
 }
 
 // updateSavedQueriesAddThread updates all matching saved queries for a new thread
 func (s *threadsServer) updateSavedQueriesAddThread(ctx context.Context, thread *models.Thread, memberEntityIDs []string) (*savedQueryUpdateResult, error) {
 	if len(memberEntityIDs) == 0 {
-		return &savedQueryUpdateResult{EntityShouldBeNotified: make(map[string]bool)}, nil
+		return &savedQueryUpdateResult{entityShouldBeNotified: make(map[string]bool)}, nil
 	}
 	// Resolve the root entities to be able to query for all possible saved queries
 	entities, err := s.resolveInternalEntities(ctx, memberEntityIDs)
@@ -95,14 +107,27 @@ func (s *threadsServer) updateSavedQueriesAddThread(ctx context.Context, thread 
 	externalEntity := false
 	// Add threads to all saved queries for all members that match
 	var newItems []*dal.SavedQueryThread
-	result := &savedQueryUpdateResult{EntityShouldBeNotified: make(map[string]bool, len(entities))}
+	entityIDsToNotify := make(map[string]struct{})
+	result := &savedQueryUpdateResult{entityShouldBeNotified: make(map[string]bool, len(entities))}
 	for _, e := range entities {
 		sqs, err := s.dal.SavedQueries(ctx, e.ID)
 		if err != nil {
 			golog.Errorf("Failed to get saved queries for entity '%s': %s", e.ID, err)
 			continue
 		}
+		// Find the notifications saved query
+		var nsq *models.SavedQuery
 		for _, sq := range sqs {
+			if sq.Type == models.SavedQueryTypeNotifications {
+				nsq = sq
+				break
+			}
+		}
+		// Match against saved queries to see which ones the thread falls into
+		for _, sq := range sqs {
+			if sq.Type == models.SavedQueryTypeNotifications {
+				continue
+			}
 			matched, err := threadMatchesQuery(sq.Query, thread, nil, externalEntity)
 			if err != nil {
 				golog.Errorf("Failed to matched thread %s against saved query %s: %s", thread.ID, sq.ID, err)
@@ -113,13 +138,23 @@ func (s *threadsServer) updateSavedQueriesAddThread(ctx context.Context, thread 
 				if externalEntity {
 					timestamp = thread.LastExternalMessageTimestamp
 				}
-				result.EntityShouldBeNotified[e.ID] = sq.NotificationsEnabled || result.EntityShouldBeNotified[e.ID]
+				result.entityShouldBeNotified[e.ID] = sq.NotificationsEnabled || result.entityShouldBeNotified[e.ID]
+				unread := isUnread(thread, nil, externalEntity)
 				newItems = append(newItems, &dal.SavedQueryThread{
 					ThreadID:     thread.ID,
 					SavedQueryID: sq.ID,
 					Timestamp:    timestamp,
-					Unread:       isUnread(thread, nil, externalEntity),
+					Unread:       unread,
 				})
+				if sq.NotificationsEnabled && nsq != nil {
+					entityIDsToNotify[sq.EntityID] = struct{}{}
+					newItems = append(newItems, &dal.SavedQueryThread{
+						ThreadID:     thread.ID,
+						SavedQueryID: nsq.ID,
+						Timestamp:    timestamp,
+						Unread:       unread,
+					})
+				}
 			}
 		}
 	}
@@ -150,7 +185,7 @@ func (s *threadsServer) updateSavedQueriesForThread(ctx context.Context, thread 
 	}
 	if len(memberEntityIDs) == 0 {
 		return &savedQueryUpdateResult{
-			EntityShouldBeNotified: map[string]bool{},
+			entityShouldBeNotified: map[string]bool{},
 		}, errors.Trace(s.dal.RemoveThreadFromAllSavedQueryIndexes(ctx, thread.ID))
 	}
 	entities, err := s.resolveInternalEntities(ctx, memberEntityIDs)
@@ -162,13 +197,21 @@ func (s *threadsServer) updateSavedQueriesForThread(ctx context.Context, thread 
 	externalEntity := false
 
 	var addItems []*dal.SavedQueryThread
-	result := &savedQueryUpdateResult{EntityShouldBeNotified: make(map[string]bool, len(entities))}
+	result := &savedQueryUpdateResult{entityShouldBeNotified: make(map[string]bool, len(entities))}
 	for _, ent := range entities {
 		te := teMap[ent.ID]
 		sqs, err := s.dal.SavedQueries(ctx, ent.ID)
 		if err != nil {
 			golog.Errorf("Failed to fetch saved queries for entity %s: %s", ent.ID, err)
 			continue
+		}
+		// Find the notifications saved query
+		var nsq *models.SavedQuery
+		for _, sq := range sqs {
+			if sq.Type == models.SavedQueryTypeNotifications {
+				nsq = sq
+				break
+			}
 		}
 		for _, sq := range sqs {
 			if ok, err := threadMatchesQuery(sq.Query, thread, te, externalEntity); err != nil {
@@ -178,24 +221,37 @@ func (s *threadsServer) updateSavedQueriesForThread(ctx context.Context, thread 
 				if externalEntity {
 					timestamp = thread.LastExternalMessageTimestamp
 				}
-				// Specia case support threads
-				result.EntityShouldBeNotified[ent.ID] = sq.NotificationsEnabled || result.EntityShouldBeNotified[ent.ID] || thread.Type == models.ThreadTypeSupport
+				// Specia case setup threads because the apps need the push to update the thread in a timely manner
+				result.entityShouldBeNotified[ent.ID] = sq.NotificationsEnabled || result.entityShouldBeNotified[ent.ID] || thread.Type == models.ThreadTypeSetup
+				unread := isUnread(thread, te, externalEntity)
 				addItems = append(addItems, &dal.SavedQueryThread{
 					ThreadID:     thread.ID,
 					SavedQueryID: sq.ID,
-					Unread:       isUnread(thread, te, externalEntity),
+					Unread:       unread,
 					Timestamp:    timestamp,
 				})
+				if nsq != nil {
+					addItems = append(addItems, &dal.SavedQueryThread{
+						ThreadID:     thread.ID,
+						SavedQueryID: nsq.ID,
+						Unread:       unread,
+						Timestamp:    timestamp,
+					})
+				}
 			}
 		}
 	}
 
-	return result, errors.Trace(s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
+	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
 		if err := dl.RemoveThreadFromAllSavedQueryIndexes(ctx, thread.ID); err != nil {
 			return errors.Trace(err)
 		}
 		return errors.Trace(dl.AddItemsToSavedQueryIndex(ctx, addItems))
-	}))
+	}); err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	return result, nil
 }
 
 // entityAndMemberships looks up an entity and returns the entity itself and all its memberships

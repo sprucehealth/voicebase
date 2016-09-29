@@ -6,10 +6,8 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/model"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
 )
@@ -21,7 +19,7 @@ type migrateSavedQueriesCmd struct {
 	directoryDB  *sql.DB
 }
 
-func newmigrateSavedQueriesCmd(cnf *config) (command, error) {
+func newMigrateSavedQueriesCmd(cnf *config) (command, error) {
 	threadingCli, err := cnf.threadingClient()
 	if err != nil {
 		return nil, err
@@ -92,87 +90,61 @@ func (c *migrateSavedQueriesCmd) run(args []string) error {
 		if err != nil {
 			return errors.Trace(err)
 		}
-		// Unmigrated entities have 1 saved query with ordinal of 0
-		if len(res.SavedQueries) != 1 || res.SavedQueries[0].Ordinal != 0 {
-			// Rebuild saved queries with no threads to be safe
+
+		var notifySQ, supportSQ *threading.SavedQuery
+		for _, sq := range res.SavedQueries {
+			if sq.Type == threading.SAVED_QUERY_TYPE_NOTIFICATIONS {
+				notifySQ = sq
+			} else if sq.Hidden && sq.Title == "Support" {
+				supportSQ = sq
+			}
+		}
+
+		// Create whatever saved queries are missing
+
+		if supportSQ == nil {
+			fmt.Printf("Creating support saved query for entity %s\n", eid)
+			if _, err := c.threadingCli.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
+				Type:                 threading.SAVED_QUERY_TYPE_NORMAL,
+				EntityID:             eid,
+				Title:                "Support",
+				Query:                &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_SUPPORT}}}},
+				Ordinal:              6000,
+				Hidden:               true,
+				NotificationsEnabled: true,
+			}); err != nil {
+				golog.Errorf("Failed to create saved query 'Support': %s", err)
+			}
+		}
+
+		if notifySQ == nil {
+			fmt.Printf("Creating notifications saved query for entity %s\n", eid)
+			if _, err := c.threadingCli.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
+				Type:     threading.SAVED_QUERY_TYPE_NOTIFICATIONS,
+				EntityID: eid,
+				Title:    "Notifications",
+				Query:    &threading.Query{},
+				Ordinal:  1000000000,
+			}); err != nil {
+				golog.Errorf("Failed to create saved query 'Notifications': %s", err)
+			}
+		}
+
+		if *flagRebuildAll {
 			for _, sq := range res.SavedQueries {
-				if *flagRebuildAll || sq.Total == 0 {
-					fmt.Printf("Rebuilding saved query %s '%s'\n", sq.ID, sq.Title)
-					for _, sq := range res.SavedQueries {
-						if _, err := c.threadingCli.UpdateSavedQuery(ctx, &threading.UpdateSavedQueryRequest{
-							SavedQueryID: sq.ID,
-							ForceRebuild: true,
-						}); err != nil {
-							golog.Errorf("Failed to force rebuild of saved query %s for entity %s: %s", sq.ID, eid, err)
-						}
+				if sq.Type == threading.SAVED_QUERY_TYPE_NORMAL {
+					fmt.Printf("Rebuilding saved query %s '%s' (%d)\n", sq.ID, sq.Title, sq.Total)
+					if _, err := c.threadingCli.UpdateSavedQuery(ctx, &threading.UpdateSavedQueryRequest{
+						SavedQueryID: sq.ID,
+						ForceRebuild: true,
+					}); err != nil {
+						golog.Errorf("Failed to force rebuild of saved query %s for entity %s: %s", sq.ID, eid, err)
 					}
 				}
 			}
-			continue
 		}
-		fmt.Printf("Migration entity %s\n", eid)
-		sq := res.SavedQueries[0]
-		if _, err := c.threadingCli.UpdateSavedQuery(ctx, &threading.UpdateSavedQueryRequest{
-			SavedQueryID: sq.ID,
-			Title:        "All",
-			Query:        &threading.Query{},
-			Ordinal:      1000,
-			ForceRebuild: true,
-		}); err != nil {
-			return errors.Errorf("Failed to update saved query %s for entity %s: %s", sq.ID, eid, err)
-		}
-		if _, err := c.threadingCli.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
-			EntityID: eid,
-			Title:    "Patient",
-			Query:    &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_PATIENT}}}},
-			Ordinal:  2000,
-		}); err != nil {
-			golog.Errorf("Failed to create saved query 'Patient': %s", err)
-		}
-		if _, err := c.threadingCli.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
-			EntityID: eid,
-			Title:    "Team",
-			Query:    &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_TEAM}}}},
-			Ordinal:  3000,
-		}); err != nil {
-			golog.Errorf("Failed to create saved query 'Team': %s", err)
-		}
-		if _, err := c.threadingCli.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
-			EntityID: eid,
-			Title:    "@Pages",
-			Query:    &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_UNREAD_REFERENCE}}}},
-			Ordinal:  4000,
-		}); err != nil {
-			golog.Errorf("Failed to create saved query '@Pages': %s", err)
-		}
-		if !environment.IsProd() {
-			if _, err := c.threadingCli.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
-				EntityID: eid,
-				Title:    "Following",
-				Query:    &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_FOLLOWING}}}},
-				Ordinal:  5000,
-			}); err != nil {
-				golog.Errorf("Failed to create saved query 'Following': %s", err)
-			}
-		}
+
 	}
 
 	return nil
-}
-
-func internalEntityIDs(db *sql.DB) ([]string, error) {
-	rows, err := db.Query(`SELECT id FROM entity WHERE type = ? ORDER BY id`, "INTERNAL")
-	if err != nil {
-		return nil, fmt.Errorf("Failed to get list of org IDs: %s", err)
-	}
-	defer rows.Close()
-	var entityIDs []string
-	for rows.Next() {
-		id := model.ObjectID{Prefix: "entity_"}
-		if err := rows.Scan(&id); err != nil {
-			return nil, fmt.Errorf("Failed to scan org ID: %s", err)
-		}
-		entityIDs = append(entityIDs, id.String())
-	}
-	return entityIDs, errors.Trace(rows.Err())
 }

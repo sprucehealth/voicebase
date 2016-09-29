@@ -306,6 +306,7 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 	// TODO: for now make if making a change here also change bayaxmadmin cli. Should centralize the account creation logic.
 	// TODO: make this more reliable & idempotent
 	if err = ram.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
+		Type:                 threading.SAVED_QUERY_TYPE_NORMAL,
 		EntityID:             accEntityID,
 		Title:                "All",
 		Query:                &threading.Query{},
@@ -315,6 +316,7 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 		return nil, errors.InternalError(ctx, err)
 	}
 	if err = ram.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
+		Type:                 threading.SAVED_QUERY_TYPE_NORMAL,
 		EntityID:             accEntityID,
 		Title:                "Patient",
 		Query:                &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_PATIENT}}}},
@@ -324,6 +326,7 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 		return nil, errors.InternalError(ctx, err)
 	}
 	if err = ram.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
+		Type:                 threading.SAVED_QUERY_TYPE_NORMAL,
 		EntityID:             accEntityID,
 		Title:                "Team",
 		Query:                &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_TEAM}}}},
@@ -333,6 +336,7 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 		return nil, errors.InternalError(ctx, err)
 	}
 	if err = ram.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
+		Type:                 threading.SAVED_QUERY_TYPE_NORMAL,
 		EntityID:             accEntityID,
 		Title:                "@Pages",
 		Query:                &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_UNREAD_REFERENCE}}}},
@@ -343,6 +347,7 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 	}
 	if !environment.IsProd() {
 		if err = ram.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
+			Type:                 threading.SAVED_QUERY_TYPE_NORMAL,
 			EntityID:             accEntityID,
 			Title:                "Following",
 			Query:                &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_FOLLOWING}}}},
@@ -351,6 +356,26 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 		}); err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}
+	}
+	if err = ram.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
+		Type:                 threading.SAVED_QUERY_TYPE_NORMAL,
+		EntityID:             accEntityID,
+		Title:                "Support",
+		Query:                &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_SUPPORT}}}},
+		Ordinal:              6000,
+		NotificationsEnabled: true,
+		Hidden:               true,
+	}); err != nil {
+		return nil, errors.InternalError(ctx, err)
+	}
+	if err = ram.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
+		Type:     threading.SAVED_QUERY_TYPE_NOTIFICATIONS,
+		EntityID: accEntityID,
+		Title:    "Notifications",
+		Query:    &threading.Query{},
+		Ordinal:  1000000000,
+	}); err != nil {
+		return nil, errors.InternalError(ctx, err)
 	}
 
 	var createLinkedThreadsResponse *threading.CreateLinkedThreadsResponse

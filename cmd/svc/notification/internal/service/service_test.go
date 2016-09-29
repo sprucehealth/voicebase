@@ -326,6 +326,29 @@ func TestProcessNotification(t *testing.T) {
 	// Check the settings for each entity
 	expectFilterNodesWithNotificationsDisabled(t, sc, []string{"entity:1", "entity:2", "entity:4"}, []bool{true, true, true})
 
+	sc.Expect(mock.NewExpectation(sc.GetValues, &settings.GetValuesRequest{
+		Keys:   []*settings.ConfigKey{{Key: notification.BadgeCount}},
+		NodeID: "entity:1",
+	}).WithReturns(&settings.GetValuesResponse{}, nil))
+	sc.Expect(mock.NewExpectation(sc.GetValues, &settings.GetValuesRequest{
+		Keys:   []*settings.ConfigKey{{Key: notification.BadgeCount}},
+		NodeID: "entity:2",
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: false,
+					},
+				},
+			},
+		},
+	}, nil))
+	sc.Expect(mock.NewExpectation(sc.GetValues, &settings.GetValuesRequest{
+		Keys:   []*settings.ConfigKey{{Key: notification.BadgeCount}},
+		NodeID: "entity:4",
+	}).WithReturns(&settings.GetValuesResponse{}, nil))
+
 	// Lookup account IDs for the entities via their external identifiers, we should have filtered 1
 	dc.Expect(mock.NewExpectation(dc.ExternalIDs, &directory.ExternalIDsRequest{
 		EntityIDs: []string{"entity:1", "entity:2", "entity:4"},
@@ -345,7 +368,9 @@ func TestProcessNotification(t *testing.T) {
 
 	// Build out expected notification structures
 	iData, err := json.Marshal(&iOSPushNotification{
-		PushData:       &iOSPushData{},
+		PushData: &iOSPushData{
+			Badge: 1,
+		},
 		URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
 		ThreadID:       "ThreadID",
 		OrganizationID: "OrganizationID",
@@ -357,6 +382,7 @@ func TestProcessNotification(t *testing.T) {
 		CollapseKey: "collapse",
 		Priority:    "normal",
 		PushData: &androidPushData{
+			UnreadCount:    1,
 			Message:        "",
 			Background:     true,
 			URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
@@ -402,6 +428,7 @@ func TestProcessNotification(t *testing.T) {
 		PushData: &iOSPushData{
 			Alert: "ShortMessage2",
 			Sound: pushNotificationSoundFileCAF,
+			Badge: 0,
 		},
 		URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
 		ThreadID:       "ThreadID",
@@ -414,6 +441,7 @@ func TestProcessNotification(t *testing.T) {
 		CollapseKey: "collapse",
 		Priority:    "normal",
 		PushData: &androidPushData{
+			UnreadCount:    0,
 			Message:        "ShortMessage2",
 			Background:     false,
 			URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
@@ -457,6 +485,7 @@ func TestProcessNotification(t *testing.T) {
 		PushData: &iOSPushData{
 			Alert: "ShortMessage4",
 			Sound: pushNotificationSoundFileCAF,
+			Badge: 4,
 		},
 		URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
 		ThreadID:       "ThreadID",
@@ -469,6 +498,7 @@ func TestProcessNotification(t *testing.T) {
 		CollapseKey: "collapse",
 		Priority:    "normal",
 		PushData: &androidPushData{
+			UnreadCount:    4,
 			Message:        "ShortMessage4",
 			Background:     false,
 			URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
@@ -505,10 +535,9 @@ func TestProcessNotificationDisabledEndpoint(t *testing.T) {
 	dc := dmock.New(t)
 	snsAPI := mock.NewSNSAPI(t)
 	sqsAPI := mock.NewSQSAPI(t)
-	pcID, err := dal.NewPushConfigID()
-	test.OK(t, err)
 	sc := smock.New(t)
 	defer mock.FinishAll(dl, dc, snsAPI, sqsAPI, sc)
+
 	svc := New(dl, dc, sc, &Config{
 		NotificationSQSURL:              notificationSQSURL,
 		AppleDeviceRegistrationSNSARN:   appleDeviceRegistrationSNSARN,
@@ -518,6 +547,9 @@ func TestProcessNotificationDisabledEndpoint(t *testing.T) {
 		WebDomain: "testDomain",
 	})
 	cSvc := svc.(*service)
+
+	pcID, err := dal.NewPushConfigID()
+	test.OK(t, err)
 
 	notificationData, err := json.Marshal(&notification.Notification{
 		ShortMessages: map[string]string{
@@ -537,6 +569,11 @@ func TestProcessNotificationDisabledEndpoint(t *testing.T) {
 	test.OK(t, err)
 
 	expectFilterNodesWithNotificationsDisabled(t, sc, []string{"entity:1", "entity:2"}, []bool{true, false})
+
+	sc.Expect(mock.NewExpectation(sc.GetValues, &settings.GetValuesRequest{
+		Keys:   []*settings.ConfigKey{{Key: notification.BadgeCount}},
+		NodeID: "entity:1",
+	}).WithReturns(&settings.GetValuesResponse{}, nil))
 
 	// Lookup account IDs for the entities via their external identifiers
 	dc.Expect(mock.NewExpectation(dc.ExternalIDs, &directory.ExternalIDsRequest{
@@ -558,6 +595,7 @@ func TestProcessNotificationDisabledEndpoint(t *testing.T) {
 		PushData: &iOSPushData{
 			Sound: pushNotificationSoundFileCAF,
 			Alert: "ShortMessage",
+			Badge: 1,
 		},
 		URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
 		ThreadID:       "ThreadID",
@@ -570,6 +608,7 @@ func TestProcessNotificationDisabledEndpoint(t *testing.T) {
 		CollapseKey: "collapse",
 		Priority:    "normal",
 		PushData: &androidPushData{
+			UnreadCount:    1,
 			Message:        "ShortMessage",
 			URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
 			ThreadID:       "ThreadID",
@@ -660,6 +699,15 @@ func TestProcessNotificationInternalMessage(t *testing.T) {
 		notification.ThreadActivityNotificationPreferenceReferencedOnly,
 	})
 
+	sc.Expect(mock.NewExpectation(sc.GetValues, &settings.GetValuesRequest{
+		Keys:   []*settings.ConfigKey{{Key: notification.BadgeCount}},
+		NodeID: "entity:1",
+	}).WithReturns(&settings.GetValuesResponse{}, nil))
+	sc.Expect(mock.NewExpectation(sc.GetValues, &settings.GetValuesRequest{
+		Keys:   []*settings.ConfigKey{{Key: notification.BadgeCount}},
+		NodeID: "entity:2",
+	}).WithReturns(&settings.GetValuesResponse{}, nil))
+
 	// Lookup account IDs for the entities via their external identifiers, we should have filtered 1
 	dc.Expect(mock.NewExpectation(dc.ExternalIDs, &directory.ExternalIDsRequest{
 		EntityIDs: []string{"entity:1", "entity:2"},
@@ -678,7 +726,9 @@ func TestProcessNotificationInternalMessage(t *testing.T) {
 
 	// Build out expected notification structures
 	iData, err := json.Marshal(&iOSPushNotification{
-		PushData:       &iOSPushData{},
+		PushData: &iOSPushData{
+			Badge: 1,
+		},
 		Type:           string(notification.NewMessageOnInternalThread),
 		URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
 		ThreadID:       "ThreadID",
@@ -691,6 +741,7 @@ func TestProcessNotificationInternalMessage(t *testing.T) {
 		CollapseKey: "collapse",
 		Priority:    "normal",
 		PushData: &androidPushData{
+			UnreadCount:    1,
 			Message:        "",
 			Background:     true,
 			Type:           string(notification.NewMessageOnInternalThread),
@@ -736,6 +787,7 @@ func TestProcessNotificationInternalMessage(t *testing.T) {
 		PushData: &iOSPushData{
 			Alert: "ShortMessage2",
 			Sound: pushNotificationSoundFileCAF,
+			Badge: 2,
 		},
 		Type:           string(notification.NewMessageOnInternalThread),
 		URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
@@ -749,6 +801,7 @@ func TestProcessNotificationInternalMessage(t *testing.T) {
 		CollapseKey: "collapse",
 		Priority:    "normal",
 		PushData: &androidPushData{
+			UnreadCount:    2,
 			Type:           string(notification.NewMessageOnInternalThread),
 			Message:        "ShortMessage2",
 			Background:     false,
@@ -838,6 +891,15 @@ func TestProcessNotificationExternalMessage(t *testing.T) {
 		notification.ThreadActivityNotificationPreferenceReferencedOnly,
 	})
 
+	sc.Expect(mock.NewExpectation(sc.GetValues, &settings.GetValuesRequest{
+		Keys:   []*settings.ConfigKey{{Key: notification.BadgeCount}},
+		NodeID: "entity:1",
+	}).WithReturns(&settings.GetValuesResponse{}, nil))
+	sc.Expect(mock.NewExpectation(sc.GetValues, &settings.GetValuesRequest{
+		Keys:   []*settings.ConfigKey{{Key: notification.BadgeCount}},
+		NodeID: "entity:2",
+	}).WithReturns(&settings.GetValuesResponse{}, nil))
+
 	// Lookup account IDs for the entities via their external identifiers, we should have filtered 1
 	dc.Expect(mock.NewExpectation(dc.ExternalIDs, &directory.ExternalIDsRequest{
 		EntityIDs: []string{"entity:1", "entity:2"},
@@ -856,7 +918,9 @@ func TestProcessNotificationExternalMessage(t *testing.T) {
 
 	// Build out expected notification structures
 	iData, err := json.Marshal(&iOSPushNotification{
-		PushData:       &iOSPushData{},
+		PushData: &iOSPushData{
+			Badge: 1,
+		},
 		Type:           string(notification.NewMessageOnExternalThread),
 		URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
 		ThreadID:       "ThreadID",
@@ -869,6 +933,7 @@ func TestProcessNotificationExternalMessage(t *testing.T) {
 		CollapseKey: "collapse",
 		Priority:    "normal",
 		PushData: &androidPushData{
+			UnreadCount:    1,
 			Type:           string(notification.NewMessageOnExternalThread),
 			Message:        "",
 			Background:     true,
@@ -914,6 +979,7 @@ func TestProcessNotificationExternalMessage(t *testing.T) {
 		PushData: &iOSPushData{
 			Alert: "ShortMessage2",
 			Sound: pushNotificationSoundFileCAF,
+			Badge: 2,
 		},
 		Type:           string(notification.NewMessageOnExternalThread),
 		URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
@@ -927,6 +993,7 @@ func TestProcessNotificationExternalMessage(t *testing.T) {
 		CollapseKey: "collapse",
 		Priority:    "normal",
 		PushData: &androidPushData{
+			UnreadCount:    2,
 			Type:           string(notification.NewMessageOnExternalThread),
 			Message:        "ShortMessage2",
 			Background:     false,

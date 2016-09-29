@@ -176,3 +176,70 @@ func (d *dal) IterateThreadsInSavedQuery(ctx context.Context, sqID models.SavedQ
 
 	return &tc, nil
 }
+
+func (d *dal) RebuildNotificationsSavedQuery(ctx context.Context, entityID string) error {
+	sqs, err := d.SavedQueries(ctx, entityID)
+	if err != nil {
+		return errors.Trace(err)
+	}
+
+	var nsq *models.SavedQuery
+	notifySQIDs := make([]interface{}, 0, len(sqs))
+	for _, sq := range sqs {
+		if sq.Type == models.SavedQueryTypeNotifications {
+			nsq = sq
+		} else if sq.NotificationsEnabled {
+			notifySQIDs = append(notifySQIDs, sq.ID)
+		}
+	}
+
+	if nsq == nil {
+		return nil
+	}
+
+	if err := d.RemoveAllItemsFromSavedQueryIndex(ctx, nsq.ID); err != nil {
+		return errors.Trace(err)
+	}
+	if len(notifySQIDs) == 0 {
+		return nil
+	}
+	_, err = d.db.Exec(`
+		INSERT INTO saved_query_thread (saved_query_id, thread_id, unread, timestamp)
+		SELECT ?, thread_id, unread, timestamp
+		FROM saved_query_thread sqt
+		WHERE saved_query_id IN (`+dbutil.MySQLArgs(len(notifySQIDs))+`)
+		ON DUPLICATE KEY UPDATE saved_query_thread.unread = sqt.unread, saved_query_thread.timestamp = sqt.timestamp`,
+		append([]interface{}{nsq.ID}, notifySQIDs...)...)
+	if err != nil {
+		return errors.Trace(err)
+	}
+	return nil
+}
+
+func (d *dal) UnreadNotificationsCounts(ctx context.Context, entityIDs []string) (map[string]int, error) {
+	if len(entityIDs) == 0 {
+		return nil, nil
+	}
+	vals := make([]interface{}, len(entityIDs)+1)
+	vals[0] = models.SavedQueryTypeNotifications
+	for i, id := range entityIDs {
+		vals[i+1] = id
+	}
+	rows, err := d.db.Query(`SELECT entity_id, unread FROM saved_queries WHERE type = ? AND entity_id IN (`+dbutil.MySQLArgs(len(entityIDs))+`)`, vals...)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	defer rows.Close()
+
+	counts := make(map[string]int, len(entityIDs))
+	for rows.Next() {
+		var id string
+		var count int
+		if err := rows.Scan(&id, &count); err != nil {
+			return nil, errors.Trace(err)
+		}
+		counts[id] = count
+	}
+
+	return counts, errors.Trace(rows.Err())
+}

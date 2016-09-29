@@ -158,7 +158,7 @@ func parseRefsAndNormalize(s string) (string, []*models.Reference, error) {
 					Type: models.REFERENCE_TYPE_ENTITY,
 				})
 			default:
-				return "", nil, errors.Trace(fmt.Errorf("unknown reference type %s", r.Type))
+				return "", nil, errors.Errorf("unknown reference type %s", r.Type)
 			}
 		}
 	}

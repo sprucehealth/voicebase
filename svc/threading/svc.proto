@@ -130,8 +130,15 @@ message FollowerUpdated {
 	string entity_id = 1 [(gogoproto.customname) = "EntityID"];
 }
 
+enum SavedQueryType {
+	SAVED_QUERY_TYPE_INVALID = 0;
+	SAVED_QUERY_TYPE_NORMAL = 1;
+	SAVED_QUERY_TYPE_NOTIFICATIONS = 2;
+}
+
 message SavedQuery {
 	string id = 1 [(gogoproto.customname) = "ID"];
+	SavedQueryType type = 2;
 	Query query = 3;
 	string title = 4;
 	uint32 unread = 5;
@@ -139,6 +146,7 @@ message SavedQuery {
 	int32 ordinal = 7;
 	string entity_id = 8 [(gogoproto.customname) = "EntityID"];
 	bool notifications_enabled = 9;
+	bool hidden = 10;
 }
 
 message Query {
@@ -158,6 +166,7 @@ message Expr {
 		EXPR_THREAD_TYPE_INVALID = 0;
 		EXPR_THREAD_TYPE_PATIENT = 1;
 		EXPR_THREAD_TYPE_TEAM = 2;
+		EXPR_THREAD_TYPE_SUPPORT = 3;
 	}
 
 	bool not = 1;
@@ -363,11 +372,13 @@ message ThreadsResponse {
 }
 
 message CreateSavedQueryRequest {
+	SavedQueryType type = 1;
 	string entity_id = 2 [(gogoproto.customname) = "EntityID"];
 	Query query = 3;
 	string title = 4;
 	int32 ordinal = 5;
 	bool notifications_enabled = 6;
+	bool hidden = 7;
 }
 
 message CreateSavedQueryResponse {

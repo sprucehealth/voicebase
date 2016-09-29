@@ -40,6 +40,8 @@ func ParseQuery(qs string) (*Query, error) {
 					e = &Expr{Value: &Expr_ThreadType_{ThreadType: EXPR_THREAD_TYPE_PATIENT}}
 				case "team":
 					e = &Expr{Value: &Expr_ThreadType_{ThreadType: EXPR_THREAD_TYPE_TEAM}}
+				case "support":
+					e = &Expr{Value: &Expr_ThreadType_{ThreadType: EXPR_THREAD_TYPE_SUPPORT}}
 				}
 			}
 		}

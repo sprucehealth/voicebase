@@ -1,9 +1,8 @@
 package server
 
 import (
-	"fmt"
-
 	"context"
+	"fmt"
 
 	"github.com/sprucehealth/backend/cmd/svc/settings/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/settings/internal/models"

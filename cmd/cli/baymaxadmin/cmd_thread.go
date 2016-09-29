@@ -36,6 +36,7 @@ func (c *threadCmd) run(args []string) error {
 	fs := flag.NewFlagSet("thread", flag.ExitOnError)
 	threadID := fs.String("thread_id", "", "ID of a thread")
 	viewerEntityID := fs.String("viewer_entity_id", "", "Optional viewer entity ID")
+	members := fs.Bool("members", false, "Lookup members for the thread")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -75,6 +76,25 @@ func (c *threadCmd) run(args []string) error {
 			displayThread(res.Thread)
 		} else if err != nil && grpc.Code(err) != codes.NotFound {
 			return err
+		}
+	}
+
+	if *members {
+		res, err := c.threadingCli.ThreadMembers(ctx, &threading.ThreadMembersRequest{ThreadID: *threadID})
+		if err != nil {
+			return fmt.Errorf("Failed to lookup thread members: %s", err)
+		}
+		if len(res.Members) != 0 {
+			fmt.Printf("\nMembers:\n")
+			for _, m := range res.Members {
+				fmt.Printf("\t%s\n", m.EntityID)
+			}
+		}
+		if len(res.FollowerEntityIDs) != 0 {
+			fmt.Printf("\nFollowers:\n")
+			for _, id := range res.FollowerEntityIDs {
+				fmt.Printf("\t%s\n", id)
+			}
 		}
 	}
 

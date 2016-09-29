@@ -174,7 +174,12 @@ type DAL interface {
 	IterateThreadsInSavedQuery(ctx context.Context, sqID models.SavedQueryID, viewerEntityID string, it *Iterator) (*ThreadConnection, error)
 	RemoveAllItemsFromSavedQueryIndex(ctx context.Context, sqID models.SavedQueryID) error
 	RemoveItemsFromSavedQueryIndex(ctx context.Context, items []*SavedQueryThread) error
+	// RemoveThreadFromAllSavedQueryIndexes clears a saved query index of all threads
 	RemoveThreadFromAllSavedQueryIndexes(ctx context.Context, threadID models.ThreadID) error
+	// RebuildNotificationsSavedQuery recreates the notifications saved query from all saved queries from the entity marked for notifications
+	RebuildNotificationsSavedQuery(ctx context.Context, entityID string) error
+	// UnreadNotificationsCounts returns the number of unread notifications for a set of entities
+	UnreadNotificationsCounts(ctx context.Context, entityIDs []string) (map[string]int, error)
 
 	Transact(context.Context, func(context.Context, DAL) error) error
 }
@@ -216,6 +221,9 @@ func (d *dal) Transact(ctx context.Context, trans func(context.Context, DAL) err
 }
 
 func (d *dal) CreateSavedQuery(ctx context.Context, sq *models.SavedQuery) (models.SavedQueryID, error) {
+	if err := sq.Type.Validate(); err != nil {
+		return models.SavedQueryID{}, errors.Trace(err)
+	}
 	id, err := models.NewSavedQueryID()
 	if err != nil {
 		return models.SavedQueryID{}, errors.Trace(err)
@@ -225,9 +233,9 @@ func (d *dal) CreateSavedQuery(ctx context.Context, sq *models.SavedQuery) (mode
 		return models.SavedQueryID{}, errors.Trace(err)
 	}
 	_, err = d.db.Exec(`
-		INSERT INTO saved_queries (id, ordinal, entity_id, query, title, unread, total, notifications_enabled)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-	`, id, sq.Ordinal, sq.EntityID, queryBlob, sq.Title, sq.Unread, sq.Total, sq.NotificationsEnabled)
+		INSERT INTO saved_queries (id, ordinal, entity_id, query, title, unread, total, notifications_enabled, type, hidden)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, id, sq.Ordinal, sq.EntityID, queryBlob, sq.Title, sq.Unread, sq.Total, sq.NotificationsEnabled, sq.Type, sq.Hidden)
 	if err != nil {
 		return models.SavedQueryID{}, errors.Trace(err)
 	}
@@ -377,6 +385,13 @@ func (d *dal) IterateThreads(ctx context.Context, query *models.Query, memberEnt
 						cond = append(cond, "t.type = ?")
 					}
 					vals = append(vals, models.ThreadTypeTeam)
+				case models.EXPR_THREAD_TYPE_SUPPORT:
+					if e.Not {
+						cond = append(cond, "t.type != ?")
+					} else {
+						cond = append(cond, "t.type = ?")
+					}
+					vals = append(vals, models.ThreadTypeSupport)
 				default:
 					return nil, errors.Errorf("unknown expression thread type %s", v.ThreadType)
 				}
@@ -710,7 +725,7 @@ func (d *dal) RecordThreadEvent(ctx context.Context, threadID models.ThreadID, a
 
 func (d *dal) SavedQuery(ctx context.Context, id models.SavedQueryID) (*models.SavedQuery, error) {
 	row := d.db.QueryRow(`
-		SELECT id, ordinal, entity_id, query, title, unread, total, notifications_enabled
+		SELECT id, ordinal, entity_id, query, title, unread, total, notifications_enabled, type, hidden
 		FROM saved_queries
 		WHERE id = ?`, id)
 	sq, err := scanSavedQuery(row)
@@ -719,7 +734,7 @@ func (d *dal) SavedQuery(ctx context.Context, id models.SavedQueryID) (*models.S
 
 func (d *dal) SavedQueries(ctx context.Context, entityID string) ([]*models.SavedQuery, error) {
 	rows, err := d.db.Query(`
-		SELECT id, ordinal, entity_id, query, title, unread, total, notifications_enabled
+		SELECT id, ordinal, entity_id, query, title, unread, total, notifications_enabled, type, hidden
 		FROM saved_queries
 		WHERE entity_id = ?
 		ORDER BY ordinal`, entityID)
@@ -1119,7 +1134,8 @@ func scanSavedQuery(row dbutil.Scanner) (*models.SavedQuery, error) {
 	var sq models.SavedQuery
 	var queryBlob []byte
 	sq.ID = models.EmptySavedQueryID()
-	if err := row.Scan(&sq.ID, &sq.Ordinal, &sq.EntityID, &queryBlob, &sq.Title, &sq.Unread, &sq.Total, &sq.NotificationsEnabled); err == sql.ErrNoRows {
+	err := row.Scan(&sq.ID, &sq.Ordinal, &sq.EntityID, &queryBlob, &sq.Title, &sq.Unread, &sq.Total, &sq.NotificationsEnabled, &sq.Type, &sq.Hidden)
+	if err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrNotFound)
 	} else if err != nil {
 		return nil, errors.Trace(err)

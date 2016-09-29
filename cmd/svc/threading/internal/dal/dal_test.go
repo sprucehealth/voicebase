@@ -724,6 +724,7 @@ func TestSavedQueries(t *testing.T) {
 		Query:                &models.Query{},
 		Title:                "sq1",
 		NotificationsEnabled: true,
+		Type:                 models.SavedQueryTypeNormal,
 	}
 	_, err := dal.CreateSavedQuery(ctx, sq1)
 	test.OK(t, err)
@@ -738,6 +739,7 @@ func TestSavedQueries(t *testing.T) {
 		},
 		Title:                "sq2",
 		NotificationsEnabled: true,
+		Type:                 models.SavedQueryTypeNormal,
 	}
 	_, err = dal.CreateSavedQuery(ctx, sq2)
 	test.OK(t, err)
