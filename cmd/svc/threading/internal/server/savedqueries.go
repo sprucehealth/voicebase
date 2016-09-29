@@ -221,8 +221,7 @@ func (s *threadsServer) updateSavedQueriesForThread(ctx context.Context, thread 
 				if externalEntity {
 					timestamp = thread.LastExternalMessageTimestamp
 				}
-				// Specia case setup threads because the apps need the push to update the thread in a timely manner
-				result.entityShouldBeNotified[ent.ID] = sq.NotificationsEnabled || result.entityShouldBeNotified[ent.ID] || thread.Type == models.ThreadTypeSetup
+				result.entityShouldBeNotified[ent.ID] = sq.NotificationsEnabled || result.entityShouldBeNotified[ent.ID]
 				unread := isUnread(thread, te, externalEntity)
 				addItems = append(addItems, &dal.SavedQueryThread{
 					ThreadID:     thread.ID,

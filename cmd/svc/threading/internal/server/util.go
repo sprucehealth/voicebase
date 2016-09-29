@@ -67,7 +67,7 @@ func threadMatchesQuery(q *models.Query, t *models.Thread, te *models.ThreadEnti
 					return false, nil
 				}
 			case models.EXPR_THREAD_TYPE_SUPPORT:
-				if (t.Type != models.ThreadTypeSupport) != e.Not {
+				if (t.Type != models.ThreadTypeSupport && t.Type != models.ThreadTypeSetup) != e.Not {
 					return false, nil
 				}
 			default:

@@ -95,6 +95,20 @@ func TestThreadMatchesQuery(t *testing.T) {
 			q:  &models.Query{Expressions: []*models.Expr{{Value: &models.Expr_ThreadType_{ThreadType: models.EXPR_THREAD_TYPE_TEAM}}}},
 			m:  true,
 		},
+		"support thread": {
+			t:  &models.Thread{Type: models.ThreadTypeSupport},
+			te: nil,
+			ee: false,
+			q:  &models.Query{Expressions: []*models.Expr{{Value: &models.Expr_ThreadType_{ThreadType: models.EXPR_THREAD_TYPE_SUPPORT}}}},
+			m:  true,
+		},
+		"setup thread": {
+			t:  &models.Thread{Type: models.ThreadTypeSetup},
+			te: nil,
+			ee: false,
+			q:  &models.Query{Expressions: []*models.Expr{{Value: &models.Expr_ThreadType_{ThreadType: models.EXPR_THREAD_TYPE_SUPPORT}}}},
+			m:  true,
+		},
 		// Negative matches
 		"not token in system title": {
 			t:  &models.Thread{SystemTitle: "Bob"},
@@ -137,6 +151,13 @@ func TestThreadMatchesQuery(t *testing.T) {
 			te: nil,
 			ee: false,
 			q:  &models.Query{Expressions: []*models.Expr{{Value: &models.Expr_Flag_{Flag: models.EXPR_FLAG_FOLLOWING}}}},
+			m:  false,
+		},
+		"unmatched support thread": {
+			t:  &models.Thread{Type: models.ThreadTypeExternal},
+			te: nil,
+			ee: false,
+			q:  &models.Query{Expressions: []*models.Expr{{Value: &models.Expr_ThreadType_{ThreadType: models.EXPR_THREAD_TYPE_SUPPORT}}}},
 			m:  false,
 		},
 		// Negative non-matches

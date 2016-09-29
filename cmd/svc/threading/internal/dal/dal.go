@@ -387,11 +387,11 @@ func (d *dal) IterateThreads(ctx context.Context, query *models.Query, memberEnt
 					vals = append(vals, models.ThreadTypeTeam)
 				case models.EXPR_THREAD_TYPE_SUPPORT:
 					if e.Not {
-						cond = append(cond, "t.type != ?")
+						cond = append(cond, "(t.type != ? AND t.type != ?)")
 					} else {
-						cond = append(cond, "t.type = ?")
+						cond = append(cond, "(t.type = ? OR t.type = ?)")
 					}
-					vals = append(vals, models.ThreadTypeSupport)
+					vals = append(vals, models.ThreadTypeSupport, models.ThreadTypeSetup)
 				default:
 					return nil, errors.Errorf("unknown expression thread type %s", v.ThreadType)
 				}
