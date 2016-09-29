@@ -214,22 +214,6 @@ func (s *service) processPushNotification(ctx context.Context, n *notification.N
 	if err != nil {
 		return errors.Trace(err)
 	}
-	switch n.Type {
-	case notification.DeprecatedNewMessageOnThread:
-		// do nothing in this case since we don't have the information to filter properly
-	case notification.NewMessageOnInternalThread:
-		entitiesToNotify, err = s.filterNodesForThreadActivityPreferences(ctx, entitiesToNotify, n.EntitiesAtReferenced, notification.TeamNotificationPreferencesSettingsKey)
-	case notification.NewMessageOnExternalThread:
-		entitiesToNotify, err = s.filterNodesForThreadActivityPreferences(ctx, entitiesToNotify, n.EntitiesAtReferenced, notification.PatientNotificationPreferencesSettingsKey)
-	case notification.IncomingIPCall:
-	case notification.BadgeUpdate:
-	default:
-		golog.Errorf("Unable to handle unknown notification type %s", n.Type)
-		return nil
-	}
-	if err != nil {
-		return errors.Trace(err)
-	}
 
 	// No entities left after filtering so nothing to do
 	if len(entitiesToNotify) == 0 {
@@ -303,33 +287,6 @@ func (s *service) filterNodesWithNotificationsDisabled(ctx context.Context, node
 		}
 		if resp.Values[0].GetBoolean().Value {
 			filteredNodes = append(filteredNodes, nID)
-		}
-	}
-	return filteredNodes, nil
-}
-
-func (s *service) filterNodesForThreadActivityPreferences(ctx context.Context, entityIDs []string, atReferencedEntityIDs map[string]struct{}, activityPreferenceSettingsKey string) ([]string, error) {
-	// Filter any nodes who explicitly have notifications disabled from the list
-	filteredNodes := make([]string, 0, len(entityIDs))
-	for _, eID := range entityIDs {
-		// TODO: Perhaps we should have a bulk version of this call
-		// TODO: It would be great to live in a world where the settings service pushed changed settings to hosts that are interested in them
-		singleSelect, err := settings.GetSingleSelectValue(ctx, s.settingsClient, &settings.GetValuesRequest{
-			Keys:   []*settings.ConfigKey{{Key: activityPreferenceSettingsKey}},
-			NodeID: eID,
-		})
-		// If we failed to get the notification settings then just fail. We'd rather not notify than notify someone disabled
-		if err != nil {
-			golog.Errorf("Error while getting activity preference setting for node %s ignoring: %s", eID, err)
-			continue
-		}
-		switch singleSelect.Item.ID {
-		case notification.ThreadActivityNotificationPreferenceAllMessages:
-			filteredNodes = append(filteredNodes, eID)
-		case notification.ThreadActivityNotificationPreferenceReferencedOnly:
-			if _, ok := atReferencedEntityIDs[eID]; ok {
-				filteredNodes = append(filteredNodes, eID)
-			}
 		}
 	}
 	return filteredNodes, nil
