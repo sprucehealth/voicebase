@@ -60,12 +60,12 @@ func TestSRVLookuper(t *testing.T) {
 
 func TestHostPortLookuper(t *testing.T) {
 	l := &hostPortLookuper{
-		host: "corp-ns1.sprucehealth.com",
+		host: "o4.sendgrid.sprucehealth.com",
 		port: 1234,
 	}
 	addr, err := l.lookup()
 	test.OK(t, err)
-	test.Equals(t, []string{"10.201.0.1:1234"}, addr)
+	test.Equals(t, []string{"167.89.97.19:1234"}, addr)
 }
 
 func TestWatcher(t *testing.T) {
