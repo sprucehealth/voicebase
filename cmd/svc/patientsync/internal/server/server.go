@@ -69,6 +69,33 @@ func (s *server) InitiateSync(ctx context.Context, in *patientsync.InitiateSyncR
 		return nil, grpcErrorf(codes.InvalidArgument, "OrganizationEntityID required")
 	}
 
+	// ensure that the preference matches what is currently stored in the config
+	// its possible that the user changed the configuration
+	threadTypeVal, err := settings.GetSingleSelectValue(ctx, s.settings, &settings.GetValuesRequest{
+		Keys: []*settings.ConfigKey{
+			{
+				Key: psettings.ConfigKeyThreadTypeOption,
+			},
+		},
+		NodeID: in.OrganizationEntityID,
+	})
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, "Unable to get settings %s for %s: %s", psettings.ThreadTypeOptionConfig, in.OrganizationEntityID, err)
+	}
+
+	syncConfig, err := s.dl.SyncConfigForOrg(in.OrganizationEntityID, source.String())
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	// update sync config
+	if syncConfig.ThreadCreationType != transformThreadType(threadTypeVal.GetItem().ID) {
+		syncConfig.ThreadCreationType = transformThreadType(threadTypeVal.GetItem().ID)
+		if err := s.dl.CreateSyncConfig(syncConfig, &syncConfig.GetHint().PracticeID); err != nil {
+			return nil, grpcErrorf(codes.Internal, "Unable to update sync config for %s: %s", in.OrganizationEntityID, err.Error())
+		}
+	}
+
 	initiate := sync.Initiate{
 		OrganizationEntityID: in.OrganizationEntityID,
 		Source:               source,
