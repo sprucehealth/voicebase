@@ -91,42 +91,26 @@ func (c *migrateSavedQueriesCmd) run(args []string) error {
 			return errors.Trace(err)
 		}
 
-		var notifySQ, supportSQ *threading.SavedQuery
+		var followersSQ *threading.SavedQuery
 		for _, sq := range res.SavedQueries {
-			if sq.Type == threading.SAVED_QUERY_TYPE_NOTIFICATIONS {
-				notifySQ = sq
-			} else if sq.Hidden && sq.Title == "Support" {
-				supportSQ = sq
+			if sq.Title == "Following" {
+				followersSQ = sq
 			}
 		}
 
-		// Create whatever saved queries are missing
+		// Create followers tab if missing
 
-		if supportSQ == nil {
-			fmt.Printf("Creating support saved query for entity %s\n", eid)
+		if followersSQ == nil {
+			fmt.Printf("Creating followers saved query for entity %s\n", eid)
 			if _, err := c.threadingCli.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
 				Type:                 threading.SAVED_QUERY_TYPE_NORMAL,
 				EntityID:             eid,
-				Title:                "Support",
-				Query:                &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_SUPPORT}}}},
-				Ordinal:              6000,
-				Hidden:               true,
+				Title:                "Following",
+				Ordinal:              5000,
 				NotificationsEnabled: true,
+				Query:                &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_FOLLOWING}}}},
 			}); err != nil {
-				golog.Errorf("Failed to create saved query 'Support': %s", err)
-			}
-		}
-
-		if notifySQ == nil {
-			fmt.Printf("Creating notifications saved query for entity %s\n", eid)
-			if _, err := c.threadingCli.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
-				Type:     threading.SAVED_QUERY_TYPE_NOTIFICATIONS,
-				EntityID: eid,
-				Title:    "Notifications",
-				Query:    &threading.Query{},
-				Ordinal:  1000000000,
-			}); err != nil {
-				golog.Errorf("Failed to create saved query 'Notifications': %s", err)
+				golog.Errorf("Failed to create saved query 'Following': %s", err)
 			}
 		}
 
