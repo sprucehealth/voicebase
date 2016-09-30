@@ -1,15 +1,17 @@
 package main
 
 import (
-	"bufio"
 	"context"
+	"database/sql"
 	"encoding/csv"
 	"flag"
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
@@ -19,6 +21,7 @@ type migrateNotificationSettingCmd struct {
 	cnf          *config
 	settingsCli  settings.SettingsClient
 	threadingCli threading.ThreadsClient
+	directoryDB  *sql.DB
 }
 
 func newMigrateNotificationSettingCmd(cnf *config) (command, error) {
@@ -32,36 +35,30 @@ func newMigrateNotificationSettingCmd(cnf *config) (command, error) {
 		return nil, err
 	}
 
+	directoryDB, err := cnf.db("directory")
+	if err != nil {
+		return nil, err
+	}
 	return &migrateNotificationSettingCmd{
 		cnf:          cnf,
 		threadingCli: threadingCli,
 		settingsCli:  settingsCli,
+		directoryDB:  directoryDB,
 	}, nil
 }
 
 func (c *migrateNotificationSettingCmd) run(args []string) error {
 	ctx := context.Background()
 	fs := flag.NewFlagSet("migratenotificationsettings", flag.ExitOnError)
-	entityIDsFile := fs.String("entity_ids_filename", "", "file containing orgIDs")
-	if err := fs.Parse(args); err != nil {
-		return err
-	}
 	args = fs.Args()
 
-	scn := bufio.NewScanner(os.Stdin)
-	if *entityIDsFile == "" {
-		*entityIDsFile = prompt(scn, "Name of file containing entity ids: ")
-	}
-	if *entityIDsFile == "" {
-		return errors.New("Filename required")
-	}
-
-	entityIDs, err := getEntityIDs(*entityIDsFile)
+	entityIDs, err := internalEntityIDs(c.directoryDB)
 	if err != nil {
 		return errors.Trace(err)
 	}
 
-	for _, entID := range entityIDs {
+	golog.Infof("Entites: %d - %d Minutes Estimated", len(entityIDs), len(entityIDs)/60)
+	for i, entID := range entityIDs {
 		getResp, err := c.settingsCli.GetValues(ctx, &settings.GetValuesRequest{
 			Keys: []*settings.ConfigKey{
 				{
@@ -91,7 +88,8 @@ func (c *migrateNotificationSettingCmd) run(args []string) error {
 				case notification.PatientNotificationPreferencesSettingsKey:
 					patientSQ := savedQueryFromList(ctx, sqsResp.SavedQueries, "Patient")
 					if patientSQ == nil {
-						return errors.Trace(err)
+						golog.Errorf("Entity %s has no Patient saved query. Ignoring", entID)
+						continue
 					}
 					switch settingValue {
 					case notification.ThreadActivityNotificationPreferenceAllMessages:
@@ -112,7 +110,8 @@ func (c *migrateNotificationSettingCmd) run(args []string) error {
 				case notification.TeamNotificationPreferencesSettingsKey:
 					teamSQ := savedQueryFromList(ctx, sqsResp.SavedQueries, "Team")
 					if teamSQ == nil {
-						return errors.Trace(err)
+						golog.Errorf("Entity %s has no Team saved query. Ignoring", entID)
+						continue
 					}
 					switch settingValue {
 					case notification.ThreadActivityNotificationPreferenceAllMessages:
@@ -133,7 +132,12 @@ func (c *migrateNotificationSettingCmd) run(args []string) error {
 				}
 			}
 		}
+		if i%25 == 0 {
+			golog.Infof("%d completed", i)
+		}
+		time.Sleep(time.Second)
 	}
+	golog.Infof("Completed: %d", len(entityIDs))
 
 	return nil
 }
