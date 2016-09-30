@@ -780,7 +780,21 @@ func (s *threadsServer) MarkThreadsAsRead(ctx context.Context, in *threading.Mar
 			threadEntity = &models.ThreadEntity{EntityID: in.EntityID, ThreadID: thread.ID}
 		}
 		threadEntity.LastViewed = &readTime
+
+		// find the notifications saved query
+		var nsq *models.SavedQuery
 		for _, sq := range sqs {
+			if sq.Type == models.SavedQueryTypeNotifications {
+				nsq = sq
+				break
+			}
+		}
+
+		for _, sq := range sqs {
+			if sq.Type == models.SavedQueryTypeNotifications {
+				continue
+			}
+
 			if ok, err := threadMatchesQuery(sq.Query, thread, threadEntity, externalEntity); err != nil {
 				golog.Errorf("Error matching thread %s against saved query %s: %s", thread.ID, sq.ID, err)
 			} else if ok {
@@ -788,12 +802,21 @@ func (s *threadsServer) MarkThreadsAsRead(ctx context.Context, in *threading.Mar
 				if externalEntity {
 					timestamp = thread.LastExternalMessageTimestamp
 				}
+				unread := isUnread(thread, threadEntity, externalEntity)
 				addIndex = append(addIndex, &dal.SavedQueryThread{
 					SavedQueryID: sq.ID,
 					ThreadID:     thread.ID,
-					Unread:       isUnread(thread, threadEntity, externalEntity),
+					Unread:       unread,
 					Timestamp:    timestamp,
 				})
+				if sq.NotificationsEnabled && nsq != nil {
+					addIndex = append(addIndex, &dal.SavedQueryThread{
+						SavedQueryID: nsq.ID,
+						ThreadID:     thread.ID,
+						Unread:       unread,
+						Timestamp:    timestamp,
+					})
+				}
 			} else {
 				removeIndex = append(removeIndex, &dal.SavedQueryThread{SavedQueryID: sq.ID, ThreadID: thread.ID})
 			}
