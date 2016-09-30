@@ -1180,6 +1180,14 @@ func (s *threadsServer) QueryThreads(ctx context.Context, in *threading.QueryThr
 			log.Errorf("Thread query %s returned non-matching thread %s", query.String(), e.Thread.ID)
 			continue
 		}
+		if e.Thread.Deleted {
+			if in.Type == threading.QUERY_THREADS_TYPE_SAVED {
+				log.Errorf("Deleted thread %s returned for saved query %s for entity %s", e.Thread.ID, in.GetSavedQueryID(), in.ViewerEntityID)
+			} else {
+				log.Errorf("Deleted thread %s returned for query %s for entity %s", e.Thread.ID, query, in.ViewerEntityID)
+			}
+			continue
+		}
 
 		th, err := transformThreadToResponse(e.Thread, forExternal)
 		if err != nil {
