@@ -198,7 +198,7 @@ var threadType = graphql.NewObject(
 			"allowRemoveFollowers":       &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowRemoveMembers":         &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowSMSAttachments":        &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-			"allowedAttachmentMIMEtypes": &graphql.Field{Type: graphql.NewList(graphql.String)},
+			"allowedAttachmentMIMETypes": &graphql.Field{Type: graphql.NewList(graphql.String)},
 			"allowUpdateTitle":           &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowInvitePatientToSecureThread": &graphql.Field{
 				Type:    graphql.NewNonNull(graphql.Boolean),
