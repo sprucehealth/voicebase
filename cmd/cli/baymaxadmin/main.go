@@ -12,8 +12,13 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/kms"
+	"github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/environment"
+	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -30,21 +35,23 @@ import (
 const configPath = "~/.baymax.conf"
 
 type config struct {
-	DBHost          string
-	DBPort          int
-	DBUsername      string
-	DBPassword      string
-	DBTLS           string
-	AuthAddr        string
-	DirectoryAddr   string
-	ExCommsAddr     string
-	SettingsAddr    string
-	ThreadingAddr   string
-	LayoutAddr      string
-	InviteAddr      string
-	PatientSyncAddr string
-	InviteAPIDomain string
-	Env             string
+	DBHost              string
+	DBPort              int
+	DBUsername          string
+	DBPassword          string
+	DBTLS               string
+	AuthAddr            string
+	DirectoryAddr       string
+	ExCommsAddr         string
+	SettingsAddr        string
+	ThreadingAddr       string
+	LayoutAddr          string
+	InviteAddr          string
+	PatientSyncAddr     string
+	NotificationsSQSURL string
+	InviteAPIDomain     string
+	KMSKeyARN           string
+	Env                 string
 }
 
 func (c *config) authClient() (auth.AuthClient, error) {
@@ -109,6 +116,25 @@ func (c *config) patientSyncClient() (patientsync.PatientSyncClient, error) {
 		return nil, fmt.Errorf("Unable to connect to patientsync service: %s", err)
 	}
 	return patientsync.NewPatientSyncClient(conn), nil
+}
+
+func (c *config) awsSession() (*session.Session, error) {
+	awsConfig, err := awsutil.Config("us-east-1", "", "", "")
+	if err != nil {
+		return nil, err
+	}
+	return session.New(awsConfig), nil
+}
+
+func (c *config) sqsClient() (sqsiface.SQSAPI, error) {
+	if c.KMSKeyARN == "" {
+		return nil, errors.New("KMSKeyARN required")
+	}
+	awsSession, err := c.awsSession()
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return awsutil.NewEncryptedSQS(c.KMSKeyARN, kms.New(awsSession), sqs.New(awsSession))
 }
 
 func (c *config) directoryDB() (*sql.DB, error) {

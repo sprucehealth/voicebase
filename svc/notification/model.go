@@ -41,6 +41,7 @@ type Notification struct {
 	OrganizationID   string            `json:"organization_id"`
 	EntitiesToNotify []string          `json:"entities_to_notify"`
 	Type             Type              `json:"type"`
+	ForceZeroBadge   bool              `json:"force_zero_badge"`
 
 	// For NewMessageOnInternalThread and NewMessageOnExternalThread
 	UnreadCounts         map[string]int      `json:"unread_counts"`
