@@ -220,19 +220,28 @@ func (s *service) processPushNotification(ctx context.Context, n *notification.N
 		return nil
 	}
 
-	// Clear out badge counts for entities that have the badge disabled
-	for _, id := range entitiesToNotify {
-		res, err := s.settingsClient.GetValues(ctx, &settings.GetValuesRequest{
-			Keys:   []*settings.ConfigKey{{Key: notification.BadgeCount}},
-			NodeID: id,
-		})
-		if err != nil {
-			golog.Errorf("Failed to get badge count setting: %s", err)
-			continue
+	if n.ForceZeroBadge {
+		if n.UnreadCounts == nil {
+			n.UnreadCounts = make(map[string]int, len(n.EntitiesToNotify))
 		}
-		if len(res.Values) != 0 {
-			if !res.Values[0].GetBoolean().Value {
-				n.UnreadCounts[id] = 0
+		for _, id := range n.EntitiesToNotify {
+			n.UnreadCounts[id] = 0
+		}
+	} else if n.UnreadCounts != nil {
+		// Don't send badge count for people who have it disabled
+		for _, id := range entitiesToNotify {
+			res, err := s.settingsClient.GetValues(ctx, &settings.GetValuesRequest{
+				Keys:   []*settings.ConfigKey{{Key: notification.BadgeCount}},
+				NodeID: id,
+			})
+			if err != nil {
+				golog.Errorf("Failed to get badge count setting: %s", err)
+				continue
+			}
+			if len(res.Values) != 0 {
+				if !res.Values[0].GetBoolean().Value {
+					delete(n.UnreadCounts, id)
+				}
 			}
 		}
 	}
@@ -361,7 +370,7 @@ type iOSPushNotification struct {
 // https://developer.apple.com/library/ios/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/Chapters/TheNotificationPayload.html#//apple_ref/doc/uid/TP40008194-CH107-SW1
 type iOSPushData struct {
 	Alert            string `json:"alert"`
-	Badge            int    `json:"badge"`
+	Badge            *int   `json:"badge,omitempty"`
 	ContentAvailable int    `json:"content-available,omitempty"`
 	Sound            string `json:"sound"`
 }
@@ -407,8 +416,11 @@ func generateNotification(webDomain string, n *notification.Notification, target
 
 	iOSData := &iOSPushData{
 		Alert: msg,
-		Badge: n.UnreadCounts[targetID],
 	}
+	if n, ok := n.UnreadCounts[targetID]; ok {
+		iOSData.Badge = &n
+	}
+
 	if msg != "" {
 		if n.Type == notification.IncomingIPCall {
 			iOSData.Sound = incomingCallNotificationSoundFileCAF

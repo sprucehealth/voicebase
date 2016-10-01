@@ -12,7 +12,6 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/device/devicectx"
-	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/analytics"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/caremessenger/deeplink"
@@ -310,10 +309,7 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 	}
 
 	for _, savedQueryTemplate := range savedQueryTemplates {
-		// skip creating following tab in prod
-		if savedQueryTemplate.Title == "Following" && environment.IsProd() {
-			continue
-		}
+
 		if err = ram.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
 			EntityID:             accEntityID,
 			Title:                savedQueryTemplate.Title,

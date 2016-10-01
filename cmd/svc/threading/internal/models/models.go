@@ -329,6 +329,7 @@ type Thread struct {
 	UserTitle                    string
 	Type                         ThreadType
 	Origin                       ThreadOrigin
+	Deleted                      bool
 }
 
 // ThreadIDs is a convenience method for retrieving ID's from a list

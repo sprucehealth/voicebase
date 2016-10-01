@@ -17,7 +17,7 @@ import (
 	"github.com/sprucehealth/backend/libs/transactional/tsql"
 )
 
-const threadColumns = `t.id, t.organization_id, COALESCE(t.primary_entity_id, ''), t.last_message_timestamp, t.last_external_message_timestamp, t.last_message_summary, t.last_external_message_summary, t.last_primary_entity_endpoints, t.created, t.message_count, t.type, COALESCE(t.system_title, ''), COALESCE(t.user_title, ''), t.origin`
+const threadColumns = `t.id, t.organization_id, COALESCE(t.primary_entity_id, ''), t.last_message_timestamp, t.last_external_message_timestamp, t.last_message_summary, t.last_external_message_summary, t.last_primary_entity_endpoints, t.created, t.message_count, t.type, COALESCE(t.system_title, ''), COALESCE(t.user_title, ''), t.origin, t.deleted`
 
 type QueryOption int
 
@@ -443,7 +443,7 @@ func (d *dal) IterateThreads(ctx context.Context, query *models.Query, memberEnt
 	limit := fmt.Sprintf(" LIMIT %d", it.Count+1) // +1 to see if there's more threads than we need to set the "HasMore" flag
 	queryStr := `
 		SELECT t.id, t.organization_id, COALESCE(t.primary_entity_id, ''), t.last_message_timestamp, t.last_external_message_timestamp, t.last_message_summary,
-			t.last_external_message_summary, t.last_primary_entity_endpoints, t.created, t.message_count, t.type, COALESCE(t.system_title, ''), COALESCE(t.user_title, ''), t.origin,
+			t.last_external_message_summary, t.last_primary_entity_endpoints, t.created, t.message_count, t.type, COALESCE(t.system_title, ''), COALESCE(t.user_title, ''), t.origin, t.deleted,
 			viewer.thread_id, viewer.entity_id, viewer.member, viewer.following, viewer.joined, viewer.last_viewed, viewer.last_unread_notify, viewer.last_referenced
 		FROM threads t
 		INNER JOIN thread_entities te ON te.thread_id = t.id AND te.member = true AND te.entity_id IN (` + dbutil.MySQLArgs(len(memberEntityIDs)) + `)
@@ -834,7 +834,7 @@ func (d *dal) ThreadsWithEntity(ctx context.Context, entityID string, ids []mode
 	}
 	rows, err := d.db.Query(`
 		SELECT t.id, t.organization_id, COALESCE(t.primary_entity_id, ''), t.last_message_timestamp, t.last_external_message_timestamp, t.last_message_summary,
-			t.last_external_message_summary, t.last_primary_entity_endpoints, t.created, t.message_count, t.type, COALESCE(t.system_title, ''), COALESCE(t.user_title, ''), t.origin,
+			t.last_external_message_summary, t.last_primary_entity_endpoints, t.created, t.message_count, t.type, COALESCE(t.system_title, ''), COALESCE(t.user_title, ''), t.origin, t.deleted,
 			te.thread_id, te.entity_id, te.member, te.following, te.joined, te.last_viewed, te.last_unread_notify, te.last_referenced
 		FROM threads t
 		LEFT OUTER JOIN thread_entities te ON te.thread_id = t.id AND te.entity_id = ?
@@ -1192,7 +1192,7 @@ func scanThread(row dbutil.Scanner) (*models.Thread, error) {
 	var lastPrimaryEntityEndpointsData []byte
 	err := row.Scan(&t.ID, &t.OrganizationID, &t.PrimaryEntityID, &t.LastMessageTimestamp, &t.LastExternalMessageTimestamp,
 		&t.LastMessageSummary, &t.LastExternalMessageSummary, &lastPrimaryEntityEndpointsData, &t.Created, &t.MessageCount,
-		&t.Type, &t.SystemTitle, &t.UserTitle, &t.Origin)
+		&t.Type, &t.SystemTitle, &t.UserTitle, &t.Origin, &t.Deleted)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrNotFound)
 	} else if err != nil {
@@ -1228,7 +1228,7 @@ func scanThreadAndEntity(row dbutil.Scanner) (*models.Thread, *models.ThreadEnti
 	var lastPrimaryEntityEndpointsData []byte
 	err := row.Scan(&t.ID, &t.OrganizationID, &t.PrimaryEntityID, &t.LastMessageTimestamp, &t.LastExternalMessageTimestamp,
 		&t.LastMessageSummary, &t.LastExternalMessageSummary, &lastPrimaryEntityEndpointsData, &t.Created, &t.MessageCount, &t.Type,
-		&t.SystemTitle, &t.UserTitle, &t.Origin, &te.ThreadID, &teEntityID, &teMember, &teFollowing, &teJoined, &te.LastViewed, &te.LastUnreadNotify, &te.LastReferenced)
+		&t.SystemTitle, &t.UserTitle, &t.Origin, &t.Deleted, &te.ThreadID, &teEntityID, &teMember, &teFollowing, &teJoined, &te.LastViewed, &te.LastUnreadNotify, &te.LastReferenced)
 	if err == sql.ErrNoRows {
 		return nil, nil, errors.Trace(ErrNotFound)
 	} else if err != nil {

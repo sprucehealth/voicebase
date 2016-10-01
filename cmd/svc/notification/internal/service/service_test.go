@@ -369,7 +369,7 @@ func TestProcessNotification(t *testing.T) {
 	// Build out expected notification structures
 	iData, err := json.Marshal(&iOSPushNotification{
 		PushData: &iOSPushData{
-			Badge: 1,
+			Badge: ptr.Int(1),
 		},
 		URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
 		ThreadID:       "ThreadID",
@@ -428,7 +428,7 @@ func TestProcessNotification(t *testing.T) {
 		PushData: &iOSPushData{
 			Alert: "ShortMessage2",
 			Sound: pushNotificationSoundFileCAF,
-			Badge: 0,
+			Badge: ptr.Int(0),
 		},
 		URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
 		ThreadID:       "ThreadID",
@@ -485,7 +485,7 @@ func TestProcessNotification(t *testing.T) {
 		PushData: &iOSPushData{
 			Alert: "ShortMessage4",
 			Sound: pushNotificationSoundFileCAF,
-			Badge: 4,
+			Badge: ptr.Int(4),
 		},
 		URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
 		ThreadID:       "ThreadID",
@@ -595,7 +595,7 @@ func TestProcessNotificationDisabledEndpoint(t *testing.T) {
 		PushData: &iOSPushData{
 			Sound: pushNotificationSoundFileCAF,
 			Alert: "ShortMessage",
-			Badge: 1,
+			Badge: ptr.Int(1),
 		},
 		URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
 		ThreadID:       "ThreadID",
