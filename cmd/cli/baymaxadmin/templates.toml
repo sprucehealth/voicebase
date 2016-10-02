@@ -4,3 +4,20 @@ notificationsEnabled = true
 ordinal = 2000
 query = "type:team"
 template = true
+type = "SAVED_QUERY_TYPE_NORMAL"
+
+[[savedQueries]]
+title = "@Pages"
+notificationsEnabled = true
+ordinal = 3000
+query = "is:unreadreference"
+type = "SAVED_QUERY_TYPE_NORMAL"
+template = true
+
+[[savedQueries]]
+title = "Notifications"
+hidden = true
+ordinal = 4000
+query = ""
+type = "SAVED_QUERY_TYPE_NOTIFICATIONS"
+template = true
