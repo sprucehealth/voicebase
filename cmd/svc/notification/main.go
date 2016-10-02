@@ -12,7 +12,6 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/notification/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/notification/internal/service"
 	nsettings "github.com/sprucehealth/backend/cmd/svc/notification/internal/settings"
-	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -106,8 +105,6 @@ func main() {
 	}
 	defer settingsConn.Close()
 	settingsClient := settings.NewSettingsClient(settingsConn)
-
-	nsettings.BadgeCountConfig.GetBoolean().Default.Value = !environment.IsProd()
 
 	// register the settings with the service
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
