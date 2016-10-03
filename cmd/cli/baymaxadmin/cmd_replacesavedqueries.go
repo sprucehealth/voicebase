@@ -10,6 +10,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
 )
@@ -152,6 +153,8 @@ func (c *replaceSavedQueriesCmd) run(args []string) error {
 		}); err != nil {
 			return errors.Errorf("Unable to create saved query %s : %s", savedQuery.Title, err)
 		}
+
+		golog.Infof("Created saved query %+v", savedQuery)
 	}
 	return nil
 }

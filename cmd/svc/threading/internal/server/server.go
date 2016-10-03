@@ -116,6 +116,7 @@ func (s *threadsServer) CreateSavedQuery(ctx context.Context, in *threading.Crea
 		Ordinal:              int(in.Ordinal),
 		NotificationsEnabled: in.NotificationsEnabled,
 		Hidden:               in.Hidden,
+		Template:             in.Template,
 	}
 	switch in.Type {
 	case threading.SAVED_QUERY_TYPE_NORMAL:
