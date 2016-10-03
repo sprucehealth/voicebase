@@ -70,6 +70,15 @@ func threadMatchesQuery(q *models.Query, t *models.Thread, te *models.ThreadEnti
 				if (t.Type != models.ThreadTypeSupport && t.Type != models.ThreadTypeSetup) != e.Not {
 					return false, nil
 				}
+			case models.EXPR_THREAD_TYPE_SECURE:
+				if (t.Type != models.ThreadTypeSecureExternal) != e.Not {
+					return false, nil
+				}
+			case models.EXPR_THREAD_TYPE_STANDARD:
+				if (t.Type != models.ThreadTypeExternal) != e.Not {
+					return false, nil
+				}
+
 			default:
 				return false, errors.Errorf("unknown expression thread type %s", v.ThreadType)
 			}

@@ -380,6 +380,20 @@ func (d *dal) IterateThreads(ctx context.Context, query *models.Query, memberEnt
 						cond = append(cond, "(t.type = ? OR t.type = ?)")
 					}
 					vals = append(vals, models.ThreadTypeExternal, models.ThreadTypeSecureExternal)
+				case models.EXPR_THREAD_TYPE_SECURE:
+					if e.Not {
+						cond = append(cond, "t.type != ?")
+					} else {
+						cond = append(cond, "t.type = ?")
+					}
+					vals = append(vals, models.ThreadTypeSecureExternal)
+				case models.EXPR_THREAD_TYPE_STANDARD:
+					if e.Not {
+						cond = append(cond, "t.type != ?")
+					} else {
+						cond = append(cond, "t.type = ?")
+					}
+					vals = append(vals, models.ThreadTypeExternal)
 				case models.EXPR_THREAD_TYPE_TEAM:
 					if e.Not {
 						cond = append(cond, "t.type != ?")
@@ -394,6 +408,7 @@ func (d *dal) IterateThreads(ctx context.Context, query *models.Query, memberEnt
 						cond = append(cond, "(t.type = ? OR t.type = ?)")
 					}
 					vals = append(vals, models.ThreadTypeSupport, models.ThreadTypeSetup)
+
 				default:
 					return nil, errors.Errorf("unknown expression thread type %s", v.ThreadType)
 				}

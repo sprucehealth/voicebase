@@ -38,6 +38,10 @@ func ParseQuery(qs string) (*Query, error) {
 				switch value {
 				case "patient":
 					e = &Expr{Value: &Expr_ThreadType_{ThreadType: EXPR_THREAD_TYPE_PATIENT}}
+				case "standard":
+					e = &Expr{Value: &Expr_ThreadType_{ThreadType: EXPR_THREAD_TYPE_PATIENT_STANDARD}}
+				case "secure":
+					e = &Expr{Value: &Expr_ThreadType_{ThreadType: EXPR_THREAD_TYPE_PATIENT_SECURE}}
 				case "team":
 					e = &Expr{Value: &Expr_ThreadType_{ThreadType: EXPR_THREAD_TYPE_TEAM}}
 				case "support":
@@ -85,6 +89,10 @@ func FormatQuery(q *Query) (string, error) {
 				parts = append(parts, not+"type:team")
 			case EXPR_THREAD_TYPE_SUPPORT:
 				parts = append(parts, not+"type:support")
+			case EXPR_THREAD_TYPE_PATIENT_STANDARD:
+				parts = append(parts, not+"type:standard")
+			case EXPR_THREAD_TYPE_PATIENT_SECURE:
+				parts = append(parts, not+"type:secure")
 			default:
 				return "", errors.Errorf("unknown expression thread type %s", v.ThreadType)
 			}
