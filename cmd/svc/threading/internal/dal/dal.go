@@ -764,7 +764,7 @@ func (d *dal) DeleteSavedQueries(ctx context.Context, ids []models.SavedQueryID)
 
 	interfaceSlice := make([]interface{}, len(ids))
 	for i, id := range ids {
-		interfaceSlice[i] = id.String()
+		interfaceSlice[i] = id
 	}
 
 	_, err := d.db.Exec(`DELETE FROM saved_queries WHERE id in (`+dbutil.MySQLArgs(len(ids))+`)`, interfaceSlice...)
