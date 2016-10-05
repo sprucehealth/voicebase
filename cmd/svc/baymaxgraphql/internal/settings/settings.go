@@ -73,7 +73,7 @@ var VisitAttachmentsConfig = &settings.Config{
 	Config: &settings.Config_Boolean{
 		Boolean: &settings.BooleanConfig{
 			Default: &settings.BooleanValue{
-				Value: false,
+				Value: true,
 			},
 		},
 	},
@@ -90,7 +90,7 @@ var CarePlansConfig = &settings.Config{
 	Config: &settings.Config_Boolean{
 		Boolean: &settings.BooleanConfig{
 			Default: &settings.BooleanValue{
-				Value: false,
+				Value: true,
 			},
 		},
 	},
@@ -124,7 +124,7 @@ var VideoCallingConfig = &settings.Config{
 	Config: &settings.Config_Boolean{
 		Boolean: &settings.BooleanConfig{
 			Default: &settings.BooleanValue{
-				Value: false,
+				Value: true,
 			},
 		},
 	},
@@ -140,7 +140,7 @@ var PaymentsConfig = &settings.Config{
 	Config: &settings.Config_Boolean{
 		Boolean: &settings.BooleanConfig{
 			Default: &settings.BooleanValue{
-				Value: false,
+				Value: true,
 			},
 		},
 	},
