@@ -10,7 +10,6 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
-	"log"
 	"math/big"
 	"net"
 	"net/http"
@@ -141,7 +140,7 @@ func pemBlockForKey(priv interface{}) (*pem.Block, error) {
 func SelfSignedCertificate() ([]tls.Certificate, error) {
 	priv, err := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
 	if err != nil {
-		log.Fatal(err)
+		return nil, errors.Trace(err)
 	}
 	template := x509.Certificate{
 		SerialNumber: big.NewInt(1),
@@ -157,7 +156,7 @@ func SelfSignedCertificate() ([]tls.Certificate, error) {
 	}
 	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, publicKey(priv), priv)
 	if err != nil {
-		log.Fatalf("Failed to create certificate: %s", err)
+		return nil, errors.Trace(err)
 	}
 	cert := &bytes.Buffer{}
 	key := &bytes.Buffer{}
