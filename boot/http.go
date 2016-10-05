@@ -3,7 +3,6 @@ package boot
 import (
 	"bytes"
 	"crypto/ecdsa"
-	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/tls"
@@ -138,7 +137,7 @@ func pemBlockForKey(priv interface{}) (*pem.Block, error) {
 
 // SelfSignedCertificate generates a certificate list with a single self signed certificate in it
 func SelfSignedCertificate() ([]tls.Certificate, error) {
-	priv, err := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
+	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
