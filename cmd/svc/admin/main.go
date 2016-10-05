@@ -122,13 +122,11 @@ func main() {
 		MaxHeaderBytes: 1 << 20,
 	}
 	if !*flagLetsEncrypt {
-		go func() {
-			certs, err := boot.SelfSignedCertificate()
-			if err != nil {
-				golog.Fatalf("Failed to generate self signed cert %s", err)
-			}
-			server.TLSConfig.Certificates = certs
-		}()
+		certs, err := boot.SelfSignedCertificate()
+		if err != nil {
+			golog.Fatalf("Failed to generate self signed cert %s", err)
+		}
+		server.TLSConfig.Certificates = certs
 	} else {
 		certStore, err := svc.StoreFromURL(*flagCertCacheURL)
 		if err != nil {
