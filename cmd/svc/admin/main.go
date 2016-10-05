@@ -112,38 +112,36 @@ func main() {
 	h = httputil.LoggingHandler(h, "admin", *flagBehindProxy, nil)
 	h = httputil.RequestIDHandler(h)
 
+	server := &http.Server{
+		Addr:      *flagListenAddr,
+		TLSConfig: boot.TLSConfig(),
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			r.Header.Set("X-Forwarded-Proto", "https")
+			h.ServeHTTP(w, r)
+		}),
+		MaxHeaderBytes: 1 << 20,
+	}
 	if !*flagLetsEncrypt {
 		go func() {
-			server := &http.Server{
-				Addr:           *flagListenAddr,
-				Handler:        h,
-				MaxHeaderBytes: 1 << 20,
+			certs, err := boot.SelfSignedCertificate()
+			if err != nil {
+				golog.Fatalf("Failed to generate self signed cert %s", err)
 			}
-			golog.Infof("GraphQL server listening at %s...", *flagListenAddr)
-			server.ListenAndServe()
+			server.TLSConfig.Certificates = certs
 		}()
 	} else {
-		server := &http.Server{
-			Addr:      *flagListenAddr,
-			TLSConfig: boot.TLSConfig(),
-			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				r.Header.Set("X-Forwarded-Proto", "https")
-				h.ServeHTTP(w, r)
-			}),
-			MaxHeaderBytes: 1 << 20,
-		}
 		certStore, err := svc.StoreFromURL(*flagCertCacheURL)
 		if err != nil {
 			golog.Fatalf("Failed to generate cert cache store from url '%s': %s", *flagCertCacheURL, err)
 		}
 		server.TLSConfig.GetCertificate = boot.LetsEncryptCertManager(certStore.(storage.DeterministicStore), []string{*flagAPIDomain})
-		go func() {
-			golog.Infof("GraphQL server with SSL listening at %s...", *flagListenAddr)
-			if err := boot.HTTPSListenAndServe(server, *flagProxyProtocol); err != nil {
-				golog.Fatalf(err.Error())
-			}
-		}()
 	}
+	go func() {
+		golog.Infof("GraphQL server with SSL listening at %s...", *flagListenAddr)
+		if err := boot.HTTPSListenAndServe(server, *flagProxyProtocol); err != nil {
+			golog.Fatalf(err.Error())
+		}
+	}()
 	golog.Debugf("Service started and waiting for termination")
 	boot.WaitForTermination()
 }

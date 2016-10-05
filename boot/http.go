@@ -1,7 +1,17 @@
 package boot
 
 import (
+	"bytes"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/rsa"
 	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
+	"log"
+	"math/big"
 	"net"
 	"net/http"
 	"sort"
@@ -99,4 +109,68 @@ func (ln tcpKeepAliveListener) Accept() (net.Conn, error) {
 	tc.SetKeepAlive(true)
 	tc.SetKeepAlivePeriod(3 * time.Minute)
 	return tc, nil
+}
+
+func publicKey(priv interface{}) interface{} {
+	switch k := priv.(type) {
+	case *rsa.PrivateKey:
+		return &k.PublicKey
+	case *ecdsa.PrivateKey:
+		return &k.PublicKey
+	default:
+		return nil
+	}
+}
+
+func pemBlockForKey(priv interface{}) (*pem.Block, error) {
+	switch k := priv.(type) {
+	case *rsa.PrivateKey:
+		return &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(k)}, nil
+	case *ecdsa.PrivateKey:
+		b, err := x509.MarshalECPrivateKey(k)
+		if err != nil {
+			return nil, errors.Errorf("Unable to marshal ECDSA private key: %v", err)
+		}
+		return &pem.Block{Type: "EC PRIVATE KEY", Bytes: b}, nil
+	default:
+		return nil, nil
+	}
+}
+
+// SelfSignedCertificate generates a certificate list with a single self signed certificate in it
+func SelfSignedCertificate() ([]tls.Certificate, error) {
+	priv, err := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
+	if err != nil {
+		log.Fatal(err)
+	}
+	template := x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject: pkix.Name{
+			Organization: []string{"Spruce Health Self Signed"},
+		},
+		NotBefore: time.Now(),
+		NotAfter:  time.Now().Add(time.Hour * 24 * 180),
+
+		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		BasicConstraintsValid: true,
+	}
+	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, publicKey(priv), priv)
+	if err != nil {
+		log.Fatalf("Failed to create certificate: %s", err)
+	}
+	cert := &bytes.Buffer{}
+	key := &bytes.Buffer{}
+	pem.Encode(cert, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
+	block, err := pemBlockForKey(priv)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	pem.Encode(key, block)
+	tlsCert, err := tls.X509KeyPair(cert.Bytes(), key.Bytes())
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return []tls.Certificate{tlsCert}, nil
 }
