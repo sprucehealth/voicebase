@@ -20,6 +20,7 @@ import (
 	"github.com/sprucehealth/backend/libs/caremessenger/deeplink"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/worker"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -463,13 +464,19 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 						},
 					})
 				} else if attachmentItem.ContentType == "application/pdf" {
+
+					mediaID, err := media.ParseMediaID(attachmentItem.MediaID)
+					if err != nil {
+						golog.Errorf("Unable to parse mediaID for an attachment %s : %s", mediaID, err)
+						continue
+					}
 					attachments = append(attachments, &threading.Attachment{
 						Type:  threading.ATTACHMENT_TYPE_DOCUMENT,
 						Title: attachmentItem.Name,
 						Data: &threading.Attachment_Document{
 							Document: &threading.DocumentAttachment{
 								Mimetype: attachmentItem.ContentType,
-								MediaID:  attachmentItem.MediaID,
+								MediaID:  mediaID,
 								Name:     attachmentItem.Name,
 							},
 						},

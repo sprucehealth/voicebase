@@ -347,7 +347,7 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 			for i, item := range sgEmail.Attachments {
 				media := mediaMap[item.ID]
 				mediaAttachments[i] = &excomms.MediaAttachment{
-					MediaID:     media.Location,
+					MediaID:     media.ID,
 					ContentType: media.Type,
 				}
 				if media.Name != nil {
