@@ -396,7 +396,7 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 		return nil, errors.Trace(err)
 	}
 	s.publishMessage(ctx, in.OrganizationID, in.FromEntityID, threadID, it, in.UUID)
-	if updateResult != nil {
+	if !in.DontNotify && updateResult != nil {
 		s.notifyMembersOfPublishMessage(ctx, thread.OrganizationID, models.EmptySavedQueryID(), thread, item, in.FromEntityID, updateResult.entityShouldBeNotified)
 	}
 	return &threading.CreateThreadResponse{
