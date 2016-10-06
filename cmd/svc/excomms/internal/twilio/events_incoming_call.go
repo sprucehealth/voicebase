@@ -208,11 +208,15 @@ func callForwardingList(ctx context.Context, orgEntity *directory.Entity, params
 				Key:    excommsSettings.ConfigKeyPauseBeforeCallConnect,
 				Subkey: params.To,
 			},
+			{
+				Key:    excommsSettings.ConfigKeyExposeCaller,
+				Subkey: params.To,
+			},
 		},
 	})
 	if err != nil {
 		return "", errors.Trace(fmt.Errorf("Unable to get settings for org %s: %s", orgEntity.ID, err.Error()))
-	} else if len(valuesRes.Values) != 5 {
+	} else if len(valuesRes.Values) != 6 {
 		return "", errors.Trace(fmt.Errorf("Expected 5 values to be returned but got %d for org %s", len(valuesRes.Values), orgEntity.ID))
 	}
 
@@ -221,6 +225,7 @@ func callForwardingList(ctx context.Context, orgEntity *directory.Entity, params
 	timeoutInSeconds := valuesRes.Values[2].GetInteger().Value
 	forwardingList := valuesRes.Values[3].GetStringList().Values
 	pauseBeforeCallConnectInSeconds := valuesRes.Values[4].GetInteger().Value
+	exposeCaller := valuesRes.Values[5].GetBoolean().Value
 
 	if sendAllCallsToVoicemail && afterHoursVoicemailEnabled {
 		return afterHoursCallTriage(ctx, orgEntity, params, eh)
@@ -279,8 +284,14 @@ func callForwardingList(ctx context.Context, orgEntity *directory.Entity, params
 			Length: uint(pauseBeforeCallConnectInSeconds),
 		})
 	}
+
+	callerID := params.To
+	if exposeCaller {
+		callerID = params.From
+	}
+
 	verbs = append(verbs, &twiml.Dial{
-		CallerID:         params.To,
+		CallerID:         callerID,
 		TimeoutInSeconds: uint(timeoutInSeconds),
 		Action:           "/twilio/call/process_dialed_call_status",
 		Nouns:            numbers,

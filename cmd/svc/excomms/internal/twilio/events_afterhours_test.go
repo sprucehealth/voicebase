@@ -95,6 +95,10 @@ func TestAfterHours_IncomingCall_SendAllCallsToVM_DefaultGreeting(t *testing.T) 
 				Key:    excommsSettings.ConfigKeyPauseBeforeCallConnect,
 				Subkey: practicePhoneNumber,
 			},
+			{
+				Key:    excommsSettings.ConfigKeyExposeCaller,
+				Subkey: practicePhoneNumber,
+			},
 		},
 		NodeID: orgID,
 	}).WithReturns(&settings.GetValuesResponse{
@@ -140,6 +144,14 @@ func TestAfterHours_IncomingCall_SendAllCallsToVM_DefaultGreeting(t *testing.T) 
 				Value: &settings.Value_Integer{
 					Integer: &settings.IntegerValue{
 						Value: 0,
+					},
+				},
+			},
+			{
+				Type: settings.ConfigType_BOOLEAN,
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: false,
 					},
 				},
 			},
@@ -381,6 +393,10 @@ func TestAfterHours_IncomingCall_SendAllCallsToVM_CustomGreeting(t *testing.T) {
 				Key:    excommsSettings.ConfigKeyPauseBeforeCallConnect,
 				Subkey: practicePhoneNumber,
 			},
+			{
+				Key:    excommsSettings.ConfigKeyExposeCaller,
+				Subkey: practicePhoneNumber,
+			},
 		},
 		NodeID: orgID,
 	}).WithReturns(&settings.GetValuesResponse{
@@ -426,6 +442,14 @@ func TestAfterHours_IncomingCall_SendAllCallsToVM_CustomGreeting(t *testing.T) {
 				Value: &settings.Value_Integer{
 					Integer: &settings.IntegerValue{
 						Value: 0,
+					},
+				},
+			},
+			{
+				Type: settings.ConfigType_BOOLEAN,
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: false,
 					},
 				},
 			},

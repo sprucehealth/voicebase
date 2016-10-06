@@ -109,6 +109,10 @@ func TestIncoming_Organization(t *testing.T) {
 				Key:    excommsSettings.ConfigKeyPauseBeforeCallConnect,
 				Subkey: practicePhoneNumber,
 			},
+			{
+				Key:    excommsSettings.ConfigKeyExposeCaller,
+				Subkey: practicePhoneNumber,
+			},
 		},
 		NodeID: orgID,
 	}).WithReturns(&settings.GetValuesResponse{
@@ -157,6 +161,14 @@ func TestIncoming_Organization(t *testing.T) {
 					},
 				},
 			},
+			{
+				Type: settings.ConfigType_BOOLEAN,
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: false,
+					},
+				},
+			},
 		},
 	}, nil))
 
@@ -177,6 +189,152 @@ func TestIncoming_Organization(t *testing.T) {
 	}
 	expected := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
 <Response><Dial action="/twilio/call/process_dialed_call_status" timeout="50" callerId="%s"><Number url="/twilio/call/provider_call_connected">%s</Number></Dial></Response>`, practicePhoneNumber, providerPersonalPhone)
+
+	if twiml != expected {
+		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
+	}
+}
+
+func TestIncoming_Organization_ExposeCallerID(t *testing.T) {
+	orgID := "12345"
+	providerPersonalPhone := "+14152222222"
+	patientPhone := "+14151111111"
+	practicePhoneNumber := "+14150000000"
+	callSID := "12345"
+
+	md := &mockDirectoryService_Twilio{
+		entitiesList: []*directory.Entity{
+			{
+				ID:   orgID,
+				Type: directory.EntityType_ORGANIZATION,
+				Contacts: []*directory.Contact{
+					{
+						ContactType: directory.ContactType_PHONE,
+						Value:       practicePhoneNumber,
+						Provisioned: true,
+					},
+				},
+			},
+		},
+	}
+
+	mdal := dalmock.New(t)
+	defer mdal.Finish()
+
+	mdal.Expect(mock.NewExpectation(mdal.CreateIncomingCall, &models.IncomingCall{
+		OrganizationID: orgID,
+		Source:         phone.Number(patientPhone),
+		Destination:    phone.Number(practicePhoneNumber),
+		CallSID:        callSID,
+	}))
+
+	mdal.Expect(mock.NewExpectation(mdal.LookupBlockedNumbers, phone.Number(practicePhoneNumber)))
+
+	msettings := settingsmock.New(t)
+	defer msettings.Finish()
+
+	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
+		Keys: []*settings.ConfigKey{
+			{
+				Key:    excommsSettings.ConfigKeySendCallsToVoicemail,
+				Subkey: practicePhoneNumber,
+			},
+			{
+				Key:    excommsSettings.ConfigKeyAfterHoursVociemailEnabled,
+				Subkey: practicePhoneNumber,
+			},
+			{
+				Key:    excommsSettings.ConfigKeyForwardingListTimeout,
+				Subkey: practicePhoneNumber,
+			},
+			{
+				Key:    excommsSettings.ConfigKeyForwardingList,
+				Subkey: practicePhoneNumber,
+			},
+			{
+				Key:    excommsSettings.ConfigKeyPauseBeforeCallConnect,
+				Subkey: practicePhoneNumber,
+			},
+			{
+				Key:    excommsSettings.ConfigKeyExposeCaller,
+				Subkey: practicePhoneNumber,
+			},
+		},
+		NodeID: orgID,
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Type: settings.ConfigType_BOOLEAN,
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: false,
+					},
+				},
+			},
+			{
+				Type: settings.ConfigType_BOOLEAN,
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: false,
+					},
+				},
+			},
+			{
+				Type: settings.ConfigType_INTEGER,
+				Value: &settings.Value_Integer{
+					Integer: &settings.IntegerValue{
+						Value: 50,
+					},
+				},
+			},
+			{
+				Key: &settings.ConfigKey{
+					Key:    excommsSettings.ConfigKeyForwardingList,
+					Subkey: practicePhoneNumber,
+				},
+				Type: settings.ConfigType_STRING_LIST,
+				Value: &settings.Value_StringList{
+					StringList: &settings.StringListValue{
+						Values: []string{providerPersonalPhone},
+					},
+				},
+			},
+			{
+				Type: settings.ConfigType_INTEGER,
+				Value: &settings.Value_Integer{
+					Integer: &settings.IntegerValue{
+						Value: 0,
+					},
+				},
+			},
+			{
+				Type: settings.ConfigType_BOOLEAN,
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: true,
+					},
+				},
+			},
+		},
+	}, nil))
+
+	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
+	test.OK(t, err)
+	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
+
+	es := NewEventHandler(md, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", signer)
+	params := &rawmsg.TwilioParams{
+		From:    patientPhone,
+		To:      practicePhoneNumber,
+		CallSID: callSID,
+	}
+
+	twiml, err := processIncomingCall(context.Background(), params, es.(*eventsHandler))
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	expected := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
+<Response><Dial action="/twilio/call/process_dialed_call_status" timeout="50" callerId="%s"><Number url="/twilio/call/provider_call_connected">%s</Number></Dial></Response>`, patientPhone, providerPersonalPhone)
 
 	if twiml != expected {
 		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
@@ -306,6 +464,10 @@ func TestIncoming_Organization_MultipleContacts(t *testing.T) {
 				Key:    excommsSettings.ConfigKeyPauseBeforeCallConnect,
 				Subkey: practicePhoneNumber,
 			},
+			{
+				Key:    excommsSettings.ConfigKeyExposeCaller,
+				Subkey: practicePhoneNumber,
+			},
 		},
 		NodeID: orgID,
 	}).WithReturns(&settings.GetValuesResponse{
@@ -351,6 +513,14 @@ func TestIncoming_Organization_MultipleContacts(t *testing.T) {
 				Value: &settings.Value_Integer{
 					Integer: &settings.IntegerValue{
 						Value: 0,
+					},
+				},
+			},
+			{
+				Type: settings.ConfigType_BOOLEAN,
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: false,
 					},
 				},
 			},
@@ -442,6 +612,10 @@ func TestIncoming_Organization_MultipleContacts_SendCallsToVoicemail(t *testing.
 				Key:    excommsSettings.ConfigKeyPauseBeforeCallConnect,
 				Subkey: practicePhoneNumber,
 			},
+			{
+				Key:    excommsSettings.ConfigKeyExposeCaller,
+				Subkey: practicePhoneNumber,
+			},
 		},
 		NodeID: orgID,
 	}).WithReturns(&settings.GetValuesResponse{
@@ -487,6 +661,14 @@ func TestIncoming_Organization_MultipleContacts_SendCallsToVoicemail(t *testing.
 				Value: &settings.Value_Integer{
 					Integer: &settings.IntegerValue{
 						Value: 0,
+					},
+				},
+			},
+			{
+				Type: settings.ConfigType_BOOLEAN,
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: false,
 					},
 				},
 			},

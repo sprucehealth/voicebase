@@ -12,6 +12,7 @@ const (
 	ConfigKeyAfterHoursVociemailEnabled = "afterhours_voicemail_enabled"
 	ConfigKeyForwardingListTimeout      = "forwarding_list_timeout"
 	ConfigKeyPauseBeforeCallConnect     = "pause_before_call_connect"
+	ConfigKeyExposeCaller               = "expose_caller"
 )
 
 //
@@ -55,6 +56,21 @@ var ForwardingListTimeoutConfig = &settings.Config{
 		Integer: &settings.IntegerConfig{
 			Default: &settings.IntegerValue{
 				Value: 15,
+			},
+		},
+	},
+}
+
+var ExposeCallerConfig = &settings.Config{
+	Title:          "Expose/Hide ID of the actual caller to a Spruce phone number",
+	Key:            ConfigKeyExposeCaller,
+	PossibleOwners: []settings.OwnerType{settings.OwnerType_ORGANIZATION},
+	AllowSubkeys:   true,
+	Type:           settings.ConfigType_BOOLEAN,
+	Config: &settings.Config_Boolean{
+		Boolean: &settings.BooleanConfig{
+			Default: &settings.BooleanValue{
+				Value: false,
 			},
 		},
 	},
