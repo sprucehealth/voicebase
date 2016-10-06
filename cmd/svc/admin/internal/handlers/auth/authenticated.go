@@ -60,12 +60,7 @@ func removeAuthCookie(w http.ResponseWriter, domain string) {
 }
 
 func getDomain(domain string) string {
-	// set the auth cookie for the root domain rather than the specific endpoint.
-	idx := strings.IndexByte(domain, '.')
-	if idx != -1 {
-		domain = domain[idx:]
-	}
-	idx = strings.IndexByte(domain, ':')
+	idx := strings.IndexByte(domain, ':')
 	if idx != -1 {
 		domain = domain[:idx]
 	}
