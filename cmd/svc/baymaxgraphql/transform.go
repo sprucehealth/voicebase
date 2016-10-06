@@ -518,10 +518,16 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 				}
 			case threading.ATTACHMENT_TYPE_DOCUMENT:
 				f := a.GetDocument()
+				mediaID, err := lmedia.ParseMediaID(f.MediaID)
+				if err != nil {
+					golog.Errorf("Unable to parse media id %s : %s", f.MediaID, err)
+					continue
+				}
+
 				data = &models.BannerButtonAttachment{
 					Title:   f.Name,
 					CTAText: "View File",
-					TapURL:  media.URL(mediaAPIDomain, f.MediaID, f.Mimetype),
+					TapURL:  media.URL(mediaAPIDomain, mediaID, f.Mimetype),
 					IconURL: "https://dlzz6qy5jmbag.cloudfront.net/caremessenger/icon_payment.png",
 				}
 			case threading.ATTACHMENT_TYPE_GENERIC_URL:
