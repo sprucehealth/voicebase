@@ -21,6 +21,7 @@ import (
 	"github.com/sprucehealth/backend/svc/settings"
 	mocksettings "github.com/sprucehealth/backend/svc/settings/mock"
 	"github.com/sprucehealth/backend/svc/threading"
+	"google.golang.org/grpc/codes"
 )
 
 func init() {
@@ -3152,6 +3153,8 @@ func TestDeleteThread(t *testing.T) {
 		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: peID,
 		},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{directory.EntityType_EXTERNAL, directory.EntityType_PATIENT},
 	}).WithReturns(&directory.LookupEntitiesResponse{
 		Entities: []*directory.Entity{
 			{ID: peID, Type: directory.EntityType_EXTERNAL, Status: directory.EntityStatus_ACTIVE},
@@ -3216,11 +3219,9 @@ func TestDeleteThreadPEInternal(t *testing.T) {
 		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: peID,
 		},
-	}).WithReturns(&directory.LookupEntitiesResponse{
-		Entities: []*directory.Entity{
-			{ID: peID, Type: directory.EntityType_INTERNAL, Status: directory.EntityStatus_ACTIVE},
-		},
-	}, nil))
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{directory.EntityType_EXTERNAL, directory.EntityType_PATIENT},
+	}).WithReturns(&directory.LookupEntitiesResponse{}, grpcErrorf(codes.NotFound, "")))
 	dl.Expect(mock.NewExpectation(dl.DeleteThread, tID).WithReturns(nil))
 	dl.Expect(mock.NewExpectation(dl.RecordThreadEvent, tID, eID, models.ThreadEventDelete).WithReturns(nil))
 	dl.Expect(mock.NewExpectation(dl.RemoveThreadFromAllSavedQueryIndexes, tID))

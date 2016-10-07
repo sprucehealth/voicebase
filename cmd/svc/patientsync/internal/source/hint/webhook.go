@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/sync"
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/go-hint"
 )
@@ -70,10 +71,10 @@ func (h *webhookHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// ensure that sync has been initiated and is in connected state
 	syncBookmark, err := h.dl.SyncBookmarkForOrg(syncConfig.OrganizationEntityID)
-	if err != nil {
+	if err != nil && errors.Cause(err) != dal.NotFound {
 		httpError(w, fmt.Sprintf("Unable to get sync bookmark for org %s : %s", syncConfig.OrganizationEntityID, err.Error()), http.StatusInternalServerError)
 		return
-	} else if syncBookmark.Status != dal.SyncStatusConnected {
+	} else if syncBookmark == nil || syncBookmark.Status != dal.SyncStatusConnected {
 		// nothing to do since this patient creation will be taken into account in the initial sync
 		w.WriteHeader(http.StatusOK)
 		return

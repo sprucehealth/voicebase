@@ -102,8 +102,8 @@ func processIncomingCallStatus(ctx context.Context, params *rawmsg.TwilioParams,
 			CompletedTime: ptr.Time(eh.clock.Now()),
 		}); err != nil {
 			return "", errors.Trace(err)
-		} else if rowsUpdated != 1 {
-			return "", errors.Errorf("Expected to update 1 row for %s but updated %d instead", params.CallSID, rowsUpdated)
+		} else if rowsUpdated > 1 {
+			return "", errors.Errorf("Expected to update <= 1 rows for %s but updated %d instead", params.CallSID, rowsUpdated)
 		}
 
 		incomingCall, err := eh.dal.LookupIncomingCall(params.CallSID)
