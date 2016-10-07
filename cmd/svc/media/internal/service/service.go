@@ -180,6 +180,11 @@ func (s *service) PutMedia(ctx context.Context, mFile io.ReadSeeker, mFileName s
 			}
 			size = im.Size
 			url = im.URL
+			// Trust what the decoder/uploader sent
+			mediaType, err = mime.ParseType(im.MimeType)
+			if err != nil {
+				return errors.Trace(err)
+			}
 		case "audio":
 			am, err := s.audioService.PutReader(mediaID.String(), mFile, mediaType.String())
 			if err != nil {
