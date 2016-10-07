@@ -1357,7 +1357,7 @@ func (s *threadsServer) Threads(ctx context.Context, in *threading.ThreadsReques
 		return nil, errors.Trace(err)
 	}
 
-	threadsInResponse := make([]*threading.Thread, len(threadIDs))
+	threadsInResponse := make([]*threading.Thread, len(threads))
 	for i, thread := range threads {
 		th, err := transformThreadToResponse(thread, forExternal)
 		if err != nil {
