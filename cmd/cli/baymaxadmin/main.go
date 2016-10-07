@@ -207,6 +207,7 @@ var commands = map[string]commandNew{
 	"entity":                      newEntityCmd,
 	"getsetting":                  newGetSettingCmd,
 	"initiatesync":                newInitiateSyncCmd,
+	"migratebrokenimages":         newMigrateBrokenImagesCmd,
 	"migratenotificationsettings": newMigrateNotificationSettingCmd,
 	"migratesavedqueries":         newMigrateSavedQueriesCmd,
 	"migratevmsettings":           newMigrateVMSettingCmd,
