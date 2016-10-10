@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/tls"
 	"flag"
 	"net/http"
 	"os"
@@ -9,10 +8,10 @@ import (
 
 	"github.com/rs/cors"
 	"github.com/sprucehealth/backend/boot"
+	"github.com/sprucehealth/backend/cmd/svc/admin/internal/google"
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/handlers/auth"
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/handlers/gql"
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/handlers/schema"
-	"github.com/sprucehealth/backend/cmd/svc/admin/internal/ldap"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -30,11 +29,9 @@ var (
 	flagAuthTokenSecret = flag.String("auth_token_secret", "super_secret", "Auth token secret")
 	flagBehindProxy     = flag.Bool("behind_proxy", false, "Flag to indicate when the service is behind a proxy")
 	flagCertCacheURL    = flag.String("cert_cache_url", "", "URL path where to store cert cache (e.g. s3://bucket/path/)")
-	flagLDAPAddr        = flag.String("ldap_addr", "localhost:389", "Address of the LDAP server")
-	flagLDAPBaseDN      = flag.String("ldap_base_dn", "ou=People,dc=sprucehealth,dc=com", "The base DN for LDAP users")
-	flagLDAPTLS         = flag.Bool("ldap_tls", false, "Flag indicating if the ldap client should use TLS")
 	flagLetsEncrypt     = flag.Bool("letsencrypt", false, "Enable Let's Encrypt certificates")
 	flagListenAddr      = flag.String("graphql_listen_addr", "127.0.0.1:8084", "host:port to listen on")
+	flagNoSSL           = flag.Bool("no_ssl", false, "Flag to force no ssl")
 	flagProxyProtocol   = flag.Bool("proxy_protocol", false, "If behind a TCP proxy and proxy protocol wrapping is enabled")
 	flagResourcePath    = flag.String("resource_path", path.Join(os.Getenv("GOPATH"),
 		"src/github.com/sprucehealth/backend/cmd/svc/admin/resources"), "Path to resources (defaults to use GOPATH)")
@@ -49,20 +46,7 @@ var (
 func main() {
 	svc := boot.NewService("admin", nil)
 
-	var ldapTLS *tls.Config
-	if *flagLDAPTLS {
-		ldapTLS = &tls.Config{
-			InsecureSkipVerify: true,
-		}
-	}
-	ap, err := ldap.NewAuthenticationProvider(&ldap.Config{
-		Address:   *flagLDAPAddr,
-		BaseDN:    *flagLDAPBaseDN,
-		TLSConfig: ldapTLS,
-	})
-	if err != nil {
-		golog.Fatalf(err.Error())
-	}
+	ap := google.NewAuthenticationProvider()
 	conn, err := boot.DialGRPC("admin", *flagDirectoryAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to directory service: %s", err)
@@ -84,21 +68,32 @@ func main() {
 	}
 
 	r := mux.NewRouter()
-	gqlHandler, gqlSchema := gql.New(ap, dirCli, settingsCli, paymentsCli, signer, *flagBehindProxy)
+	proto := "https://"
+	if *flagNoSSL {
+		proto = "http://"
+	}
+	gqlHandler, gqlSchema := gql.New(dirCli, settingsCli, paymentsCli, signer, *flagBehindProxy)
 	r.Handle("/graphql", cors.New(cors.Options{
-		AllowedOrigins:   []string{"https://" + *flagWebDomain},
+		AllowedOrigins:   []string{proto + *flagWebDomain},
 		AllowedMethods:   []string{httputil.Get, httputil.Options, httputil.Post},
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"*"},
 	}).Handler(
 		httputil.RequestIDHandler(auth.NewAuthenticated(gqlHandler, signer))))
 	r.Handle("/authenticate", cors.New(cors.Options{
-		AllowedOrigins:   []string{"https://" + *flagWebDomain},
+		AllowedOrigins:   []string{proto + *flagWebDomain},
 		AllowedMethods:   []string{httputil.Post},
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"*"},
 	}).Handler(
 		httputil.RequestIDHandler(auth.NewAuthentication(ap, signer))))
+	r.Handle("/unauthenticate", cors.New(cors.Options{
+		AllowedOrigins:   []string{proto + *flagWebDomain},
+		AllowedMethods:   []string{httputil.Post},
+		AllowCredentials: true,
+		AllowedHeaders:   []string{"*"},
+	}).Handler(
+		httputil.RequestIDHandler(auth.NewUnauthentication())))
 
 	golog.Debugf("Resource path %s", *flagResourcePath)
 	if !environment.IsProd() {
@@ -112,34 +107,48 @@ func main() {
 	h = httputil.LoggingHandler(h, "admin", *flagBehindProxy, nil)
 	h = httputil.RequestIDHandler(h)
 
-	server := &http.Server{
-		Addr:      *flagListenAddr,
-		TLSConfig: boot.TLSConfig(),
-		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			r.Header.Set("X-Forwarded-Proto", "https")
-			h.ServeHTTP(w, r)
-		}),
-		MaxHeaderBytes: 1 << 20,
-	}
-	if !*flagLetsEncrypt {
-		certs, err := boot.SelfSignedCertificate()
-		if err != nil {
-			golog.Fatalf("Failed to generate self signed cert %s", err)
+	if *flagNoSSL {
+		server := &http.Server{
+			Addr:           *flagListenAddr,
+			Handler:        h,
+			MaxHeaderBytes: 1 << 20,
 		}
-		server.TLSConfig.Certificates = certs
+		go func() {
+			golog.Infof("GraphQL server listening at %s...", *flagListenAddr)
+			if err := server.ListenAndServe(); err != nil {
+				golog.Fatalf(err.Error())
+			}
+		}()
 	} else {
-		certStore, err := svc.StoreFromURL(*flagCertCacheURL)
-		if err != nil {
-			golog.Fatalf("Failed to generate cert cache store from url '%s': %s", *flagCertCacheURL, err)
+		server := &http.Server{
+			Addr:      *flagListenAddr,
+			TLSConfig: boot.TLSConfig(),
+			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				r.Header.Set("X-Forwarded-Proto", "https")
+				h.ServeHTTP(w, r)
+			}),
+			MaxHeaderBytes: 1 << 20,
 		}
-		server.TLSConfig.GetCertificate = boot.LetsEncryptCertManager(certStore.(storage.DeterministicStore), []string{*flagAPIDomain})
+		if !*flagLetsEncrypt {
+			certs, err := boot.SelfSignedCertificate()
+			if err != nil {
+				golog.Fatalf("Failed to generate self signed cert %s", err)
+			}
+			server.TLSConfig.Certificates = certs
+		} else {
+			certStore, err := svc.StoreFromURL(*flagCertCacheURL)
+			if err != nil {
+				golog.Fatalf("Failed to generate cert cache store from url '%s': %s", *flagCertCacheURL, err)
+			}
+			server.TLSConfig.GetCertificate = boot.LetsEncryptCertManager(certStore.(storage.DeterministicStore), []string{*flagAPIDomain})
+		}
+		go func() {
+			golog.Infof("GraphQL server with SSL listening at %s...", *flagListenAddr)
+			if err := boot.HTTPSListenAndServe(server, *flagProxyProtocol); err != nil {
+				golog.Fatalf(err.Error())
+			}
+		}()
 	}
-	go func() {
-		golog.Infof("GraphQL server with SSL listening at %s...", *flagListenAddr)
-		if err := boot.HTTPSListenAndServe(server, *flagProxyProtocol); err != nil {
-			golog.Fatalf(err.Error())
-		}
-	}()
 	golog.Debugf("Service started and waiting for termination")
 	boot.WaitForTermination()
 }

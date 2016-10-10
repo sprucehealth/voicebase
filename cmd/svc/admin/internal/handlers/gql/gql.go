@@ -7,7 +7,6 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/gql"
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/gql/client"
-	"github.com/sprucehealth/backend/libs/auth"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -37,7 +36,6 @@ type gqlHandler struct {
 
 // New returns an initialized instance of *gqlHandler
 func New(
-	ap auth.AuthenticationProvider,
 	directoryClient directory.DirectoryClient,
 	settingsClient settings.SettingsClient,
 	paymentsClient payments.PaymentsClient,
