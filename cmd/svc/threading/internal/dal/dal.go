@@ -22,7 +22,7 @@ const threadColumns = `t.id, t.organization_id, COALESCE(t.primary_entity_id, ''
 type QueryOption int
 
 const (
-	ForUpdate QueryOption = 1 << iota
+	ForUpdate QueryOption = iota + 1
 )
 
 type queryOptions []QueryOption

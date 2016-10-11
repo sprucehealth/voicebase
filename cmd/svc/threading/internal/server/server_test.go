@@ -2493,8 +2493,8 @@ func TestNotifyMembersOfPublishMessage(t *testing.T) {
 	notificationClient.Expect(mock.NewExpectation(notificationClient.SendNotification, &notification.Notification{
 		ShortMessages: map[string]string{
 			"notify1": "You have a new message",
-			"notify2": "You have a new mention in a thread",
-			"notify3": "You have a new mention in a thread",
+			"notify2": "You've been @ paged",
+			"notify3": "You've been @ paged",
 		},
 		UnreadCounts:         map[string]int{"notify1": 1, "notify3": 3},
 		OrganizationID:       orgID,

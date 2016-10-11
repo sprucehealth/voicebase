@@ -116,7 +116,7 @@ func (s *threadsServer) notifyMembersOfPublishMessage(
 				te := teMap[entID]
 				if effectedEntityShouldBeNotified[entID] || entID == thread.PrimaryEntityID {
 					if _, ok := mentionedEntityIDs[entID]; ok {
-						messages[entID] = "You have a new mention in a thread"
+						messages[entID] = "You've been @ paged"
 					} else if s.isAlertAllMessagesEnabled(ctx, entID) {
 						messages[entID] = s.getNotificationText(ctx, thread, message, entID)
 					} else if te == nil || te.LastUnreadNotify == nil || (te.LastViewed != nil && te.LastViewed.After(*te.LastUnreadNotify)) {

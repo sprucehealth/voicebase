@@ -478,23 +478,25 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 			}
 		}
 
-		analytics.SegmentIdentify(&segment.Identify{
-			UserId: res.Account.ID,
-			Traits: userTraits,
-			Context: map[string]interface{}{
-				"ip":        remoteAddrFromParams(p),
-				"userAgent": userAgentFromParams(p),
-			},
-		})
-		analytics.SegmentGroup(&segment.Group{
-			UserId:  res.Account.ID,
-			GroupId: orgEntityID,
-			Traits:  groupTraits,
-		})
-		analytics.SegmentTrack(&segment.Track{
-			Event:      "signedup",
-			UserId:     res.Account.ID,
-			Properties: eventProps,
+		conc.Go(func() {
+			analytics.SegmentIdentify(&segment.Identify{
+				UserId: res.Account.ID,
+				Traits: userTraits,
+				Context: map[string]interface{}{
+					"ip":        remoteAddrFromParams(p),
+					"userAgent": userAgentFromParams(p),
+				},
+			}, analytics.Synchronous)
+			analytics.SegmentGroup(&segment.Group{
+				UserId:  res.Account.ID,
+				GroupId: orgEntityID,
+				Traits:  groupTraits,
+			}, analytics.Synchronous)
+			analytics.SegmentTrack(&segment.Track{
+				Event:      "signedup",
+				UserId:     res.Account.ID,
+				Properties: eventProps,
+			}, analytics.Synchronous)
 		})
 	})
 
