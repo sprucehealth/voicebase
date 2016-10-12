@@ -80,7 +80,7 @@ func transformSettingToModel(ctx context.Context, vc *valueAndConfig) (*Setting,
 	case settings.ConfigType_BOOLEAN:
 		ms.Value = fmt.Sprintf("%v", vc.Value.GetBoolean().Value)
 	case settings.ConfigType_SINGLE_SELECT:
-		ms.Value = vc.Value.GetSingleSelect().Item.FreeTextResponse
+		ms.Value = vc.Value.GetSingleSelect().Item.ID
 		ms.ValidValues, err = getConfigValidValues(ctx, vc.Config)
 		if err != nil {
 			return nil, errors.Trace(err)
@@ -88,7 +88,7 @@ func transformSettingToModel(ctx context.Context, vc *valueAndConfig) (*Setting,
 	case settings.ConfigType_MULTI_SELECT:
 		values := make([]string, len(vc.Value.GetMultiSelect().Items))
 		for i, si := range vc.Value.GetMultiSelect().Items {
-			values[i] = si.FreeTextResponse
+			values[i] = si.ID
 		}
 		ms.Values = values
 		ms.ValidValues, err = getConfigValidValues(ctx, vc.Config)
