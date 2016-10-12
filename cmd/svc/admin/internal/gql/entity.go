@@ -62,7 +62,7 @@ func init() {
 			Name: "Entity",
 			Fields: graphql.Fields{
 				"id":             &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"type":           &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+				"contacts":       &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(newContactType()))},
 				"firstName":      &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 				"middleInitial":  &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 				"lastName":       &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
@@ -75,7 +75,8 @@ func init() {
 				"note":           &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 				"members":        &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(newEntityType()))},
 				"memberships":    &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(newEntityType()))},
-				"contacts":       &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(newContactType()))},
+				"orgLink":        &graphql.Field{Type: graphql.NewNonNull(graphql.String), Resolve: resolveOrganizationLink},
+				"type":           &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 				"externalIDs":    &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(graphql.String))},
 				"settings":       &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(newSettingType())), Resolve: resolveEntitySettings},
 				"vendorAccounts": &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(newVendorAccountType())), Resolve: resolveEntityVendorAccounts},
@@ -116,6 +117,7 @@ func getEntity(ctx context.Context, dirCli directory.DirectoryClient, id string)
 				directory.EntityInformation_CONTACTS,
 			},
 		},
+		ChildTypes: []directory.EntityType{directory.EntityType_INTERNAL},
 	})
 	if err != nil {
 		golog.ContextLogger(ctx).Warningf("Error while fetching entity %s", err)
@@ -124,4 +126,11 @@ func getEntity(ctx context.Context, dirCli directory.DirectoryClient, id string)
 		return nil, errors.Errorf("Expected 1 result but got %v", resp.Entities)
 	}
 	return models.TransformEntityToModel(resp.Entities[0]), nil
+}
+
+func resolveOrganizationLink(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+	entity := p.Source.(*models.Entity)
+	golog.ContextLogger(ctx).Debugf("Looking up org link for %s", entity.ID)
+	return getOrganizationLink(ctx, client.Invite(p), client.Domains(p).InviteAPI, entity.ID)
 }

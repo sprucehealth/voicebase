@@ -20,6 +20,7 @@ import (
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/shttputil"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/backend/svc/settings"
 )
@@ -29,18 +30,20 @@ var (
 	flagAuthTokenSecret = flag.String("auth_token_secret", "super_secret", "Auth token secret")
 	flagBehindProxy     = flag.Bool("behind_proxy", false, "Flag to indicate when the service is behind a proxy")
 	flagCertCacheURL    = flag.String("cert_cache_url", "", "URL path where to store cert cache (e.g. s3://bucket/path/)")
+	flagInviteAPIDomain = flag.String("invite_api_domain", "", "Invite API `domain`")
 	flagLetsEncrypt     = flag.Bool("letsencrypt", false, "Enable Let's Encrypt certificates")
 	flagListenAddr      = flag.String("graphql_listen_addr", "127.0.0.1:8084", "host:port to listen on")
 	flagNoSSL           = flag.Bool("no_ssl", false, "Flag to force no ssl")
 	flagProxyProtocol   = flag.Bool("proxy_protocol", false, "If behind a TCP proxy and proxy protocol wrapping is enabled")
 	flagResourcePath    = flag.String("resource_path", path.Join(os.Getenv("GOPATH"),
 		"src/github.com/sprucehealth/backend/cmd/svc/admin/resources"), "Path to resources (defaults to use GOPATH)")
-	flagWebDomain = flag.String("web_domain", "localhost", "Web `domain`")
+	flagWebDomain = flag.String("web_domain", "", "Web `domain`")
 
 	// Services
-	flagDirectoryAddr = flag.String("directory_addr", "_directory._tcp.service", "Address of the directory server")
-	flagPaymentsAddr  = flag.String("payments_addr", "_payments._tcp.service", "Address of the payments server")
-	flagSettingsAddr  = flag.String("settings_addr", "_settings._tcp.service", "Address of the settings server")
+	flagDirectoryAddr = flag.String("directory_addr", "_directory._tcp.service", "Address of the directory service")
+	flagInviteAddr    = flag.String("invite_addr", "_invite._tcp.service", "Address of the invite service")
+	flagPaymentsAddr  = flag.String("payments_addr", "_payments._tcp.service", "Address of the payments service")
+	flagSettingsAddr  = flag.String("settings_addr", "_settings._tcp.service", "Address of the settings service")
 )
 
 func main() {
@@ -62,6 +65,12 @@ func main() {
 		golog.Fatalf("Unable to connect to payments service: %s", err)
 	}
 	paymentsCli := payments.NewPaymentsClient(conn)
+	conn, err = boot.DialGRPC("admin", *flagInviteAddr)
+	if err != nil {
+		golog.Fatalf("Unable to connect to invite service: %s", err)
+	}
+	inviteCli := invite.NewInviteClient(conn)
+
 	signer, err := sig.NewSigner([][]byte{[]byte(*flagAuthTokenSecret)}, nil)
 	if err != nil {
 		golog.Fatalf(err.Error())
@@ -72,7 +81,16 @@ func main() {
 	if *flagNoSSL {
 		proto = "http://"
 	}
-	gqlHandler, gqlSchema := gql.New(dirCli, settingsCli, paymentsCli, signer, *flagBehindProxy)
+	gqlHandler, gqlSchema := gql.New(
+		*flagAPIDomain,
+		*flagInviteAPIDomain,
+		*flagWebDomain,
+		dirCli,
+		settingsCli,
+		paymentsCli,
+		inviteCli,
+		signer,
+		*flagBehindProxy)
 	r.Handle("/graphql", cors.New(cors.Options{
 		AllowedOrigins:   []string{proto + *flagWebDomain},
 		AllowedMethods:   []string{httputil.Get, httputil.Options, httputil.Post},

@@ -2,12 +2,15 @@ package client
 
 import (
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/graphql"
 )
 
 const (
+	// DomainsKey is where in the root object the domains structure is stored
+	DomainsKey = "domains"
 	// DirectoryClientParamKey is where in the root object the directory client is stored
 	DirectoryClientParamKey = "directory_client"
 
@@ -16,7 +19,15 @@ const (
 
 	// PaymentsClientParamKey is where in the root object the payments client is stored
 	PaymentsClientParamKey = "payments_client"
+
+	// InviteClientParamKey is where in the root object the invite client is stored
+	InviteClientParamKey = "invite_client"
 )
+
+// Domains returns the domain sturcture mapped into the request params
+func Domains(p graphql.ResolveParams) *Domain {
+	return p.Info.RootValue.(map[string]interface{})[DomainsKey].(*Domain)
+}
 
 // Directory returns the directory client mapped into the request params
 func Directory(p graphql.ResolveParams) directory.DirectoryClient {
@@ -33,13 +44,29 @@ func Payments(p graphql.ResolveParams) payments.PaymentsClient {
 	return p.Info.RootValue.(map[string]interface{})[PaymentsClientParamKey].(payments.PaymentsClient)
 }
 
+// Invite returns the invite client mapped into the request params
+func Invite(p graphql.ResolveParams) invite.InviteClient {
+	return p.Info.RootValue.(map[string]interface{})[InviteClientParamKey].(invite.InviteClient)
+}
+
+// Domain collects the domains used for url generation
+type Domain struct {
+	AdminAPI  string
+	InviteAPI string
+	Web       string
+}
+
 // InitRoot attaches the various clients into the request structure
 func InitRoot(p map[string]interface{},
+	domain *Domain,
 	directoryClient directory.DirectoryClient,
 	settingsClient settings.SettingsClient,
-	paymentsClient payments.PaymentsClient) map[string]interface{} {
+	paymentsClient payments.PaymentsClient,
+	inviteClient invite.InviteClient) map[string]interface{} {
 	p[DirectoryClientParamKey] = directoryClient
 	p[SettingsClientParamKey] = settingsClient
 	p[PaymentsClientParamKey] = paymentsClient
+	p[InviteClientParamKey] = inviteClient
+	p[DomainsKey] = domain
 	return p
 }
