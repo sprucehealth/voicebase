@@ -25,8 +25,6 @@ savepid() {
 
 export HOME=/workspace
 
-PHABRICATOR_COMMENT=".phabricator-comment"
-
 # Start Consul
 mkdir -p /tmp/consul
 tmux new -d -s consul 'GOMAXPROCS=2 /usr/local/bin/consul agent -data-dir /tmp/consul -bootstrap -server'
@@ -71,12 +69,12 @@ echo $PKGS | xargs go build -i
 echo "FMT"
 FMT=$(echo $PKGS | xargs go fmt)
 if [[ ! -z "$FMT" ]]; then
-    echo $FMT | tee -a $PHABRICATOR_COMMENT
+    echo $FMT
     exit 1
 fi
 
 echo "VET"
-echo $PKGS | xargs go vet | tee -a $PHABRICATOR_COMMENT
+echo $PKGS | xargs go vet
 
 echo "LINT"
 #echo $PKGS | xargs -n 1 golint | grep -v "_test.go" | grep -v ".pb.go"
@@ -131,7 +129,7 @@ else
             fi
         else
             set +e
-            2>&1 go test -covermode=count -coverprofile="$PKG/cover.out" -test.parallel 4 "$PKG" | tee -a tests.out
+            2>&1 go test -v -covermode=count -coverprofile="$PKG/cover.out" -test.parallel 4 "$PKG" | tee -a tests.out
             RET=$?
             set -e
             cat tests.out | go-junit-report > tests.xml
@@ -145,15 +143,16 @@ else
     done
 fi
 
-if [[ -z "$NO_INTEGRATION_TESTS" ]]; then
-    go run docker-ci/covermerge.go ./coverage-$BUILD_NUMBER.out ./
-    go tool cover -html=coverage-$BUILD_NUMBER.out -o coverage.html
-    cp coverage.html coverage-$BUILD_NUMBER.html
-    go tool cover -func=coverage-$BUILD_NUMBER.out | grep "total:" | tee -a $PHABRICATOR_COMMENT
+if [[ -z "$NO_INTEGRATION_TESTS" ]] || [[ -z "$NO_COVERAGE" ]]; then
+    go run docker-ci/covermerge.go ./coverage.out ./
+    go tool cover -html=coverage.out -o coverage.html
+    go tool cover -func=coverage.out | grep "total:"
+    mkdir coverage || true
+    cp coverage.html coverage/index.html
 fi
 
-flow version | tee -a $PHABRICATOR_COMMENT
-npm version | tee -a $PHABRICATOR_COMMENT
+flow version
+npm version
 
 # Disable some steps for dev builds (that aren't related to testing)
 export BUILDENV=dev
