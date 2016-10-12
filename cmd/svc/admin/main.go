@@ -81,6 +81,10 @@ func main() {
 	if *flagNoSSL {
 		proto = "http://"
 	}
+	allowOrigin := proto + *flagWebDomain
+	if environment.IsDev() {
+		allowOrigin = "*"
+	}
 	gqlHandler, gqlSchema := gql.New(
 		*flagAPIDomain,
 		*flagInviteAPIDomain,
@@ -92,21 +96,21 @@ func main() {
 		signer,
 		*flagBehindProxy)
 	r.Handle("/graphql", cors.New(cors.Options{
-		AllowedOrigins:   []string{proto + *flagWebDomain},
+		AllowedOrigins:   []string{allowOrigin},
 		AllowedMethods:   []string{httputil.Get, httputil.Options, httputil.Post},
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"*"},
 	}).Handler(
 		httputil.RequestIDHandler(auth.NewAuthenticated(gqlHandler, signer))))
 	r.Handle("/authenticate", cors.New(cors.Options{
-		AllowedOrigins:   []string{proto + *flagWebDomain},
+		AllowedOrigins:   []string{allowOrigin},
 		AllowedMethods:   []string{httputil.Post},
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"*"},
 	}).Handler(
 		httputil.RequestIDHandler(auth.NewAuthentication(ap, signer))))
 	r.Handle("/unauthenticate", cors.New(cors.Options{
-		AllowedOrigins:   []string{proto + *flagWebDomain},
+		AllowedOrigins:   []string{allowOrigin},
 		AllowedMethods:   []string{httputil.Post},
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"*"},
