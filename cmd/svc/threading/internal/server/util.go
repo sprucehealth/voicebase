@@ -103,6 +103,8 @@ func mediaIDsFromAttachments(as []*models.Attachment) []string {
 			mediaIDs = append(mediaIDs, a.GetImage().MediaID)
 		case models.ATTACHMENT_TYPE_VIDEO:
 			mediaIDs = append(mediaIDs, a.GetVideo().MediaID)
+		case models.ATTACHMENT_TYPE_DOCUMENT:
+			mediaIDs = append(mediaIDs, a.GetDocument().MediaID)
 		}
 	}
 	return mediaIDs
