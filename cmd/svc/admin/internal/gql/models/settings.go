@@ -47,7 +47,7 @@ func getValuesAndConfigs(ctx context.Context, settingsClient settings.SettingsCl
 	for _, v := range vs {
 		dedeupedKeys[v.Key.Key] = struct{}{}
 	}
-	keys := make([]string, len(vs))
+	keys := make([]string, len(dedeupedKeys))
 	var idx int
 	for k := range dedeupedKeys {
 		keys[idx] = k
