@@ -332,7 +332,7 @@ func providerCallConnected(ctx context.Context, params *rawmsg.TwilioParams, eh 
 		return "", errors.Trace(err)
 	}
 
-	externalEntityName, err := determineExternalEntityName(ctx, incomingCall.Source, incomingCall.OrganizationID, eh)
+	externalEntityName, err := determinePatientName(ctx, incomingCall.Source, incomingCall.OrganizationID, eh)
 	if err != nil {
 		golog.Errorf("Unable to determine external entity name based on call sid %s. Error: %s", params.ParentCallSID, err.Error())
 	}

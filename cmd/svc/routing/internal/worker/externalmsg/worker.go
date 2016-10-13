@@ -247,9 +247,6 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 
 		orgEntity = determineOrganization(toEntity)
 		fromEntities = determineExternalEntities(fromEntityLookupRes, orgEntity.ID)
-		if patientEntities := patientEntitiesWithVerifiedContact(pem.FromChannelID, fromEntityLookupRes, orgEntity.ID); len(patientEntities) > 0 {
-			fromEntities = append(fromEntities, patientEntities...)
-		}
 		externalEntities = fromEntities
 		externalChannelID = pem.FromChannelID
 	case excomms.PublishedExternalMessage_OUTBOUND:

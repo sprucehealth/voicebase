@@ -787,8 +787,9 @@ func TestProviderCallConnected(t *testing.T) {
 				directory.EntityInformation_MEMBERSHIPS,
 			},
 		},
-		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
-		RootTypes: []directory.EntityType{directory.EntityType_EXTERNAL},
+		Statuses:       []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes:      []directory.EntityType{directory.EntityType_EXTERNAL, directory.EntityType_PATIENT},
+		MemberOfEntity: orgID,
 	}).WithReturns(&directory.LookupEntitiesByContactResponse{
 		Entities: []*directory.Entity{
 			{
@@ -862,8 +863,9 @@ func TestProviderCallConnected_NoName(t *testing.T) {
 				directory.EntityInformation_MEMBERSHIPS,
 			},
 		},
-		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
-		RootTypes: []directory.EntityType{directory.EntityType_EXTERNAL},
+		MemberOfEntity: orgID,
+		Statuses:       []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes:      []directory.EntityType{directory.EntityType_EXTERNAL, directory.EntityType_PATIENT},
 	}).WithReturns(&directory.LookupEntitiesByContactResponse{
 		Entities: []*directory.Entity{
 			{
@@ -965,8 +967,9 @@ func TestProviderEnteredDigits_EnteredOtherDigit(t *testing.T) {
 				directory.EntityInformation_MEMBERSHIPS,
 			},
 		},
-		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
-		RootTypes: []directory.EntityType{directory.EntityType_EXTERNAL},
+		MemberOfEntity: orgID,
+		Statuses:       []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes:      []directory.EntityType{directory.EntityType_EXTERNAL, directory.EntityType_PATIENT},
 	}).WithReturns(&directory.LookupEntitiesByContactResponse{
 		Entities: []*directory.Entity{
 			{
