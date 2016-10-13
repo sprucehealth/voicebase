@@ -43,9 +43,15 @@ func TransformSettingsToModel(ctx context.Context, settingsClient settings.Setti
 
 // TODO: Should likely get these in bulk for the list
 func getValuesAndConfigs(ctx context.Context, settingsClient settings.SettingsClient, vs []*settings.Value) ([]*valueAndConfig, error) {
+	dedeupedKeys := make(map[string]struct{}, len(vs))
+	for _, v := range vs {
+		dedeupedKeys[v.Key.Key] = struct{}{}
+	}
 	keys := make([]string, len(vs))
-	for i, v := range vs {
-		keys[i] = v.Key.Key
+	var idx int
+	for k := range dedeupedKeys {
+		keys[idx] = k
+		idx++
 	}
 	resp, err := settingsClient.GetConfigs(ctx, &settings.GetConfigsRequest{
 		Keys: keys,
