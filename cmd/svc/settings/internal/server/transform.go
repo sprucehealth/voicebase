@@ -133,7 +133,7 @@ func transformModelToConfig(config *models.Config) *settings.Config {
 			MultiSelect: &settings.MultiSelectConfig{
 				Items: make([]*settings.Item, len(config.GetMultiSelect().Items)),
 				Default: &settings.MultiSelectValue{
-					Items: make([]*settings.ItemValue, len(config.GetMultiSelect().Items)),
+					Items: make([]*settings.ItemValue, len(config.GetMultiSelect().Default.Items)),
 				},
 			},
 		}
