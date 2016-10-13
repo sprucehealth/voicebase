@@ -167,9 +167,11 @@ var triageVisitMutation = &graphql.Field{
 		postMessageRes, err := ram.PostMessage(ctx, &threading.PostMessageRequest{
 			ThreadID:     thread.ID,
 			FromEntityID: visitRes.Visit.EntityID,
-			Summary:      fmt.Sprintf("%s:%s", entity.Info.DisplayName, " Warning! Triaged out of visit before completion"),
 			UUID:         uuid,
-			Title:        titleStr,
+			Message: &threading.MessagePost{
+				Summary: fmt.Sprintf("%s:%s", entity.Info.DisplayName, " Warning! Triaged out of visit before completion"),
+				Title:   titleStr,
+			},
 		})
 
 		transformedThread, err := transformThreadToResponse(ctx, ram, postMessageRes.Thread, acc)

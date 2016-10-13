@@ -193,7 +193,9 @@ message Attachment {
 	}
 	Type type = 1;
 	string title = 2;
-	string mediaID = 3 [(gogoproto.customname) = "URL"];
+	string url = 3 [(gogoproto.customname) = "URL"];
+	string user_title = 4;
+	string content_id = 5 [(gogoproto.customname) = "ContentID"];
 	oneof data {
 		ImageAttachment image = 10;
 		AudioAttachment audio = 11;
@@ -262,18 +264,31 @@ message PublishedThreadItem {
 
 // RPC
 
+message MessagePost {
+	Endpoint source = 1;
+	repeated Endpoint destinations = 2;
+	bool internal = 3;
+	string text = 4;
+	repeated Attachment attachments = 5;
+	string title = 6;
+	string summary = 7;
+}
+
 message PostMessageRequest {
 	string uuid = 1 [(gogoproto.customname) = "UUID"];
 	string thread_id = 2 [(gogoproto.customname) = "ThreadID"];
 	string from_entity_id = 3 [(gogoproto.customname) = "FromEntityID"];
-	Endpoint source = 4;
-	repeated Endpoint destinations = 5;
-	bool internal = 6;
-	string text = 7;
-	repeated Attachment attachments = 8;
-	string title = 9;
-	string summary = 10;
 	bool dont_notify = 11;
+	MessagePost message = 12;
+
+	// The following deprecated fields have been replaced by the message field
+	Endpoint deprecated_source = 4;
+	repeated Endpoint deprecated_destinations = 5;
+	bool deprecated_internal = 6;
+	string deprecated_text = 7;
+	repeated Attachment deprecated_attachments = 8;
+	string deprecated_title = 9;
+	string deprecated_summary = 10;
 }
 
 message PostMessageResponse {
@@ -461,19 +476,22 @@ message CreateThreadRequest {
 	string uuid = 1 [(gogoproto.customname) = "UUID"];
 	string organization_id = 2 [(gogoproto.customname) = "OrganizationID"];
 	string from_entity_id = 3 [(gogoproto.customname) = "FromEntityID"];
-	Endpoint source = 4;
-	repeated Endpoint destinations = 5;
-	bool internal = 6;
-	string text = 7;
-	repeated Attachment attachments = 8;
-	string message_title = 9;
-	string summary = 10;
+	MessagePost message = 11;
 	string user_title = 12;
 	ThreadType type = 13;
 	repeated string member_entity_ids = 14 [(gogoproto.customname) = "MemberEntityIDs"];
 	string system_title = 15;
 	ThreadOrigin origin = 16;
 	bool dont_notify = 17;
+
+	// The following deprecated fields have been replaced by the message field
+	Endpoint deprecated_source = 4;
+	repeated Endpoint deprecated_destinations = 5;
+	bool deprecated_internal = 6;
+	string deprecated_text = 7;
+	repeated Attachment deprecated_attachments = 8;
+	string deprecated_message_title = 9;
+	string deprecated_summary = 10;
 }
 
 message CreateThreadResponse {
@@ -623,19 +641,87 @@ message OnboardingThreadEventResponse {
 	Thread thread = 1;
 }
 
+message SavedMessage {
+	string id = 1 [(gogoproto.customname) = "ID"];
+	string title = 2;
+	string organization_id = 3 [(gogoproto.customname) = "OrganizationID"];
+	string creator_entity_id = 4 [(gogoproto.customname) = "CreatorEntityID"];
+	string owner_entity_id = 5 [(gogoproto.customname) = "OwnerEntityID"];
+	bool internal = 6; // item is internal to the organization (not seen by external entities)
+	uint64 created = 7;
+	uint64 modified = 8;
+	oneof content {
+		Message message = 10;
+	}
+}
+
+message IDList {
+	repeated string ids = 1 [(gogoproto.customname) = "IDs"];
+}
+
+message SavedMessagesRequest {
+	oneof by {
+		IDList ids = 1 [(gogoproto.customname) = "IDs"];
+		IDList entity_ids = 2 [(gogoproto.customname) = "EntityIDs"];
+	}
+}
+
+message SavedMessagesResponse {
+	repeated SavedMessage saved_messages = 1;
+}
+
+message CreateSavedMessageRequest {
+	string title = 1;
+	string organization_id = 2 [(gogoproto.customname) = "OrganizationID"];
+	string creator_entity_id = 3 [(gogoproto.customname) = "CreatorEntityID"];
+	string owner_entity_id = 4 [(gogoproto.customname) = "OwnerEntityID"];
+	oneof content {
+		MessagePost message = 10;
+	}
+}
+
+message CreateSavedMessageResponse {
+	SavedMessage saved_message = 1;
+}
+
+message DeleteSavedMessageRequest {
+	string saved_message_id = 1 [(gogoproto.customname) = "SavedMessageID"];
+}
+
+message DeleteSavedMessageResponse {
+}
+
+message UpdateSavedMessageRequest {
+	string saved_message_id = 1 [(gogoproto.customname) = "SavedMessageID"];
+	string title = 2;
+	oneof content {
+		MessagePost message = 10;
+	}
+}
+
+message UpdateSavedMessageResponse {
+	SavedMessage saved_message = 1;
+}
+
 service Threads {
-	// CreateSavedQuery saves a query for later use
-	rpc CreateSavedQuery(CreateSavedQueryRequest) returns (CreateSavedQueryResponse);
 	// CreateEmptyThread creates a new thread with no messages
 	rpc CreateEmptyThread(CreateEmptyThreadRequest) returns (CreateEmptyThreadResponse);
+	// CreateSavedQuery saves a query for later use
+	rpc CreateSavedQuery(CreateSavedQueryRequest) returns (CreateSavedQueryResponse);
 	// CreateLinkedThreads creates a pair of threads in two separate organizations that allows cross-org communication.
 	rpc CreateLinkedThreads(CreateLinkedThreadsRequest) returns (CreateLinkedThreadsResponse);
 	// CreateOnboardingThread create a new scripted onboarding thread.
 	rpc CreateOnboardingThread(CreateOnboardingThreadRequest) returns (CreateOnboardingThreadResponse);
+	// CreateSavedMessage creates a new saved message
+	rpc CreateSavedMessage(CreateSavedMessageRequest) returns (CreateSavedMessageResponse);
 	// CreateThread create a new thread with an initial message
 	rpc CreateThread(CreateThreadRequest) returns (CreateThreadResponse);
 	// DeleteMessage deletes a message from a thread
 	rpc DeleteMessage(DeleteMessageRequest) returns (DeleteMessageResponse);
+	// DeleteSavedMessage deletes a saved message
+	rpc DeleteSavedMessage(DeleteSavedMessageRequest) returns (DeleteSavedMessageResponse);
+	// DeleteSavedQueries delets the provided list of saved queries
+	rpc DeleteSavedQueries(DeleteSavedQueriesRequest) returns (DeleteSavedQueriesResponse);
 	// DeleteThread deletes a thread
 	rpc DeleteThread(DeleteThreadRequest) returns (DeleteThreadResponse);
 	// LinkedThread returns the linked thread of one exists
@@ -648,12 +734,12 @@ service Threads {
 	rpc PostMessage(PostMessageRequest) returns (PostMessageResponse);
 	// QueryThreads queries the list of threads in an organization
 	rpc QueryThreads(QueryThreadsRequest) returns (QueryThreadsResponse);
+	// SavedMessages queries for saved messages
+	rpc SavedMessages(SavedMessagesRequest) returns (SavedMessagesResponse);
 	// SavedQuery returns a single saved query by ID
 	rpc SavedQuery(SavedQueryRequest) returns (SavedQueryResponse);
 	// SavedQueries returns the list of saved queries for an org / entity pair
 	rpc SavedQueries(SavedQueriesRequest) returns (SavedQueriesResponse);
-	// DeleteSavedQueries delets the provided list of saved queries 
-	rpc DeleteSavedQueries(DeleteSavedQueriesRequest) returns (DeleteSavedQueriesResponse);
 	// SavedQueryTemplates returns the list of saved query templates for an entity
 	rpc SavedQueryTemplates(SavedQueryTemplatesRequest) returns (SavedQueryTemplatesResponse);
 	// DEPRECATED: Thread lookups and returns a single thread by ID
@@ -670,6 +756,8 @@ service Threads {
 	rpc ThreadMembers(ThreadMembersRequest) returns (ThreadMembersResponse);
     // ThreadItemViewDetails returns the view details of a thread
 	rpc ThreadItemViewDetails(ThreadItemViewDetailsRequest) returns (ThreadItemViewDetailsResponse);
+	// UpdateSavedMessage updated a saved messages
+	rpc UpdateSavedMessage(UpdateSavedMessageRequest) returns (UpdateSavedMessageResponse);
 	// UpdateSavedQuery updated a saved query
 	rpc UpdateSavedQuery(UpdateSavedQueryRequest) returns (UpdateSavedQueryResponse);
 	// UpdateThread updates the thread members and other information

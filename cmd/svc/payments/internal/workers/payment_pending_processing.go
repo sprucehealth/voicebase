@@ -157,8 +157,10 @@ func (w *Workers) postPaymentCompletedToThread(ctx context.Context, payment *dal
 		UUID:         `accept_` + payment.ID.String(),
 		ThreadID:     payment.ThreadID,
 		FromEntityID: paymentMethod.EntityID,
-		Title:        titleText,
-		Summary:      summary,
+		Message: &threading.MessagePost{
+			Title:   titleText,
+			Summary: summary,
+		},
 	}); err != nil {
 		return errors.Trace(err)
 	}
@@ -199,8 +201,10 @@ func (w *Workers) postErrorProcessingToThread(ctx context.Context, payment *dal.
 		ThreadID: payment.ThreadID,
 		// TODO: For now just assume whoever owns the payment method accepted it
 		FromEntityID: paymentMethod.EntityID,
-		Title:        titleText,
-		Summary:      summary,
+		Message: &threading.MessagePost{
+			Title:   titleText,
+			Summary: summary,
+		},
 	}); err != nil {
 		return errors.Trace(err)
 	}

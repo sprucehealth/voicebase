@@ -1,7 +1,7 @@
-// Extensions for Protocol Buffers to create more go like structures.
+// Protocol Buffers for Go with Gadgets
 //
-// Copyright (c) 2013, Vastech SA (PTY) LTD. All rights reserved.
-// http://github.com/gogo/protobuf/gogoproto
+// Copyright (c) 2016, The GoGo Authors. All rights reserved.
+// http://github.com/gogo/protobuf
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -26,53 +26,69 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-package version
+package types
 
 import (
-	"fmt"
-	"os/exec"
-	"strconv"
-	"strings"
+	"time"
 )
 
-func Get() string {
-	versionBytes, _ := exec.Command("protoc", "--version").CombinedOutput()
-	version := strings.TrimSpace(string(versionBytes))
-	versions := strings.Split(version, " ")
-	if len(versions) != 2 {
-		panic("version string returned from protoc is seperated with a space: " + version)
-	}
-	return versions[1]
+func NewPopulatedTimestamp(r interface {
+	Int63() int64
+}, easy bool) *Timestamp {
+	this := &Timestamp{}
+	ns := int64(r.Int63())
+	this.Seconds = ns / 1e9
+	this.Nanos = int32(ns % 1e9)
+	return this
 }
 
-func parseVersion(version string) (int, error) {
-	versions := strings.Split(version, ".")
-	if len(versions) != 3 {
-		return 0, fmt.Errorf("version does not have 3 numbers seperated by dots: %s", version)
-	}
-	n := 0
-	for _, v := range versions {
-		i, err := strconv.Atoi(v)
-		if err != nil {
-			return 0, err
-		}
-		n = n*10 + i
-	}
-	return n, nil
+func (ts *Timestamp) String() string {
+	return TimestampString(ts)
 }
 
-func less(this, that string) bool {
-	thisNum, err := parseVersion(this)
+func NewPopulatedStdTime(r interface {
+	Int63() int64
+}, easy bool) *time.Time {
+	timestamp := NewPopulatedTimestamp(r, easy)
+	t, err := TimestampFromProto(timestamp)
 	if err != nil {
-		panic(err)
+		return nil
 	}
-	thatNum, err := parseVersion(that)
-	if err != nil {
-		panic(err)
-	}
-	return thisNum <= thatNum
+	return &t
 }
 
-func AtLeast(v string) bool {
-	return less(v, Get())
+func SizeOfStdTime(t time.Time) int {
+	ts, err := TimestampProto(t)
+	if err != nil {
+		return 0
+	}
+	return ts.Size()
+}
+
+func StdTimeMarshal(t time.Time) ([]byte, error) {
+	size := SizeOfStdTime(t)
+	buf := make([]byte, size)
+	_, err := StdTimeMarshalTo(t, buf)
+	return buf, err
+}
+
+func StdTimeMarshalTo(t time.Time, data []byte) (int, error) {
+	ts, err := TimestampProto(t)
+	if err != nil {
+		return 0, err
+	}
+	return ts.MarshalTo(data)
+}
+
+func StdTimeUnmarshal(t *time.Time, data []byte) error {
+	ts := &Timestamp{}
+	if err := ts.Unmarshal(data); err != nil {
+		return err
+	}
+	tt, err := TimestampFromProto(ts)
+	if err != nil {
+		return err
+	}
+	*t = tt
+	return nil
 }

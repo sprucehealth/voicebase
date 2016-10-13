@@ -448,9 +448,11 @@ func (e *excommsService) postIPCallMessage(ctx context.Context, call *models.IPC
 		UUID:         call.ID.String(),
 		ThreadID:     thread.ID,
 		FromEntityID: caller.EntityID,
-		Title:        titleText,
-		Summary:      summary,
 		DontNotify:   true,
+		Message: &threading.MessagePost{
+			Title:   titleText,
+			Summary: summary,
+		},
 	})
 	return errors.Trace(err)
 }

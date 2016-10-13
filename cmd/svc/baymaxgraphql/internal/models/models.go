@@ -168,9 +168,12 @@ type VerifiedEntityInfo struct {
 }
 
 type Attachment struct {
-	Title string      `json:"title"`
-	URL   string      `json:"url"`
-	Data  interface{} `json:"data"`
+	ID            string      `json:"id"`
+	Type          string      `json:"type"`
+	OriginalTitle string      `json:"originalTitle"`
+	Title         string      `json:"title"`
+	URL           string      `json:"url"`
+	Data          interface{} `json:"data"`
 }
 
 type ImageAttachment struct {
@@ -261,7 +264,6 @@ type ThreadItem struct {
 	Timestamp      uint64      `json:"timestamp"`
 	ActorEntityID  string      `json:"actorEntityID"`
 	Internal       bool        `json:"internal"`
-	Type           string      `json:"type"`
 	Data           interface{} `json:"data"`
 	OrganizationID string      `json:"organizationID"`
 	ThreadID       string      `json:"threadID"`
@@ -271,6 +273,18 @@ type ThreadItemViewDetails struct {
 	ThreadItemID  string `json:"threadItemID"`
 	ActorEntityID string `json:"actorEntityID"`
 	ViewTime      uint64 `json:"viewTime"`
+}
+
+type SavedMessage struct {
+	ID         string      `json:"id"`
+	Title      string      `json:"title"`
+	Shared     bool        `json:"shared"`
+	ThreadItem *ThreadItem `json:"threadItem"`
+}
+
+type SavedMessageSection struct {
+	Title    string          `json:"title"`
+	Messages []*SavedMessage `json:"messages"`
 }
 
 type SerializedEntityContact struct {

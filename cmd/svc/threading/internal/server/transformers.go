@@ -271,142 +271,9 @@ func transformThreadItemToResponse(item *models.ThreadItem, orgID string) (*thre
 	switch item.Type {
 	case models.ItemTypeMessage:
 		it.Type = threading.THREAD_ITEM_TYPE_MESSAGE
-		m := item.Data.(*models.Message)
-		m2 := &threading.Message{
-			Title:           m.Title,
-			Text:            m.Text,
-			Summary:         m.Summary,
-			EditedTimestamp: m.EditedTimestamp,
-			EditorEntityID:  m.EditorEntityID,
-		}
-		switch m.Status {
-		case models.MESSAGE_STATUS_NORMAL:
-			m2.Status = threading.MESSAGE_STATUS_NORMAL
-		case models.MESSAGE_STATUS_DELETED:
-			m2.Status = threading.MESSAGE_STATUS_DELETED
-		default:
-			return nil, errors.Errorf("unknown message status %s", m.Status)
-		}
-		if m.Source != nil {
-			var err error
-			m2.Source, err = transformEndpointToResponse(m.Source)
-			if err != nil {
-				return nil, errors.Trace(err)
-			}
-		}
-		if len(m.TextRefs) != 0 {
-			m2.TextRefs = make([]*threading.Reference, len(m.TextRefs))
-			for i, r := range m.TextRefs {
-				var err error
-				m2.TextRefs[i], err = transformReferenceToResponse(r)
-				if err != nil {
-					return nil, errors.Trace(err)
-				}
-			}
-		}
-		for _, a := range m.Attachments {
-			at := &threading.Attachment{
-				Title: a.Title,
-				URL:   a.URL,
-			}
-			switch a.Type {
-			case models.ATTACHMENT_TYPE_AUDIO:
-				data := a.GetAudio()
-				at.Type = threading.ATTACHMENT_TYPE_AUDIO
-				var durationNS uint64
-				if data.DeprecatedDurationInSeconds != 0 {
-					durationNS = uint64(data.DeprecatedDurationInSeconds) * 1e9
-				} else {
-					durationNS = data.DurationNS
-				}
-				at.Data = &threading.Attachment_Audio{
-					Audio: &threading.AudioAttachment{
-						Mimetype:   data.Mimetype,
-						MediaID:    data.MediaID,
-						DurationNS: durationNS,
-					},
-				}
-			case models.ATTACHMENT_TYPE_IMAGE:
-				data := a.GetImage()
-				at.Type = threading.ATTACHMENT_TYPE_IMAGE
-				at.Data = &threading.Attachment_Image{
-					Image: &threading.ImageAttachment{
-						Mimetype: data.Mimetype,
-						MediaID:  data.MediaID,
-						Width:    data.Width,
-						Height:   data.Height,
-					},
-				}
-			case models.ATTACHMENT_TYPE_GENERIC_URL:
-				data := a.GetGeneric()
-				at.Type = threading.ATTACHMENT_TYPE_GENERIC_URL
-				at.Data = &threading.Attachment_GenericURL{
-					GenericURL: &threading.GenericURLAttachment{
-						URL:      data.URL,
-						Mimetype: data.Mimetype,
-					},
-				}
-			case models.ATTACHMENT_TYPE_DOCUMENT:
-				data := a.GetDocument()
-				at.Type = threading.ATTACHMENT_TYPE_DOCUMENT
-				at.Data = &threading.Attachment_Document{
-					Document: &threading.DocumentAttachment{
-						Mimetype: data.Mimetype,
-						MediaID:  data.MediaID,
-						Name:     data.Name,
-					},
-				}
-			case models.ATTACHMENT_TYPE_VISIT:
-				data := a.GetVisit()
-				at.Type = threading.ATTACHMENT_TYPE_VISIT
-				at.Data = &threading.Attachment_Visit{
-					Visit: &threading.VisitAttachment{
-						VisitID:   data.VisitID,
-						VisitName: data.VisitName,
-					},
-				}
-			case models.ATTACHMENT_TYPE_VIDEO:
-				data := a.GetVideo()
-				at.Type = threading.ATTACHMENT_TYPE_VIDEO
-				at.Data = &threading.Attachment_Video{
-					Video: &threading.VideoAttachment{
-						Mimetype:   data.Mimetype,
-						MediaID:    data.MediaID,
-						DurationNS: data.DurationNS,
-					},
-				}
-			case models.ATTACHMENT_TYPE_CARE_PLAN:
-				data := a.GetCarePlan()
-				at.Type = threading.ATTACHMENT_TYPE_CARE_PLAN
-				at.Data = &threading.Attachment_CarePlan{
-					CarePlan: &threading.CarePlanAttachment{
-						CarePlanID:   data.CarePlanID,
-						CarePlanName: data.CarePlanName,
-					},
-				}
-			case models.ATTACHMENT_TYPE_PAYMENT_REQUEST:
-				data := a.GetPaymentRequest()
-				at.Type = threading.ATTACHMENT_TYPE_PAYMENT_REQUEST
-				at.Data = &threading.Attachment_PaymentRequest{
-					PaymentRequest: &threading.PaymentRequestAttachment{
-						PaymentID: data.PaymentID,
-					},
-				}
-			default:
-				return nil, errors.New("invalid attachment type " + a.Type.String())
-
-			}
-			m2.Attachments = append(m2.Attachments, at)
-		}
-		if len(m.Destinations) != 0 {
-			m2.Destinations = make([]*threading.Endpoint, len(m.Destinations))
-			for i, dc := range m.Destinations {
-				e, err := transformEndpointToResponse(dc)
-				if err != nil {
-					return nil, errors.Trace(err)
-				}
-				m2.Destinations[i] = e
-			}
+		m2, err := transformMessageToResponse(item.Data.(*models.Message))
+		if err != nil {
+			return nil, errors.Trace(err)
 		}
 		it.Item = &threading.ThreadItem_Message{
 			Message: m2,
@@ -415,6 +282,173 @@ func transformThreadItemToResponse(item *models.ThreadItem, orgID string) (*thre
 		return nil, errors.Errorf("unknown thread item type %s", item.Type)
 	}
 	return it, nil
+}
+
+func transformMessageToResponse(m *models.Message) (*threading.Message, error) {
+	m2 := &threading.Message{
+		Title:           m.Title,
+		Text:            m.Text,
+		Summary:         m.Summary,
+		EditedTimestamp: m.EditedTimestamp,
+		EditorEntityID:  m.EditorEntityID,
+	}
+	switch m.Status {
+	case models.MESSAGE_STATUS_NORMAL:
+		m2.Status = threading.MESSAGE_STATUS_NORMAL
+	case models.MESSAGE_STATUS_DELETED:
+		m2.Status = threading.MESSAGE_STATUS_DELETED
+	default:
+		return nil, errors.Errorf("unknown message status %s", m.Status)
+	}
+	if m.Source != nil {
+		var err error
+		m2.Source, err = transformEndpointToResponse(m.Source)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+	}
+	if len(m.TextRefs) != 0 {
+		m2.TextRefs = make([]*threading.Reference, len(m.TextRefs))
+		for i, r := range m.TextRefs {
+			var err error
+			m2.TextRefs[i], err = transformReferenceToResponse(r)
+			if err != nil {
+				return nil, errors.Trace(err)
+			}
+		}
+	}
+	for _, a := range m.Attachments {
+		at := &threading.Attachment{
+			Title:     a.Title,
+			UserTitle: a.UserTitle,
+			URL:       a.URL,
+			ContentID: a.ContentID,
+		}
+		switch a.Type {
+		case models.ATTACHMENT_TYPE_AUDIO:
+			data := a.GetAudio()
+			at.Type = threading.ATTACHMENT_TYPE_AUDIO
+			var durationNS uint64
+			if data.DeprecatedDurationInSeconds != 0 {
+				durationNS = uint64(data.DeprecatedDurationInSeconds) * 1e9
+			} else {
+				durationNS = data.DurationNS
+			}
+			at.Data = &threading.Attachment_Audio{
+				Audio: &threading.AudioAttachment{
+					Mimetype:   data.Mimetype,
+					MediaID:    data.MediaID,
+					DurationNS: durationNS,
+				},
+			}
+			if at.ContentID == "" {
+				at.ContentID = data.MediaID
+			}
+		case models.ATTACHMENT_TYPE_IMAGE:
+			data := a.GetImage()
+			at.Type = threading.ATTACHMENT_TYPE_IMAGE
+			at.Data = &threading.Attachment_Image{
+				Image: &threading.ImageAttachment{
+					Mimetype: data.Mimetype,
+					MediaID:  data.MediaID,
+					Width:    data.Width,
+					Height:   data.Height,
+				},
+			}
+			if at.ContentID == "" {
+				at.ContentID = data.MediaID
+			}
+		case models.ATTACHMENT_TYPE_GENERIC_URL:
+			data := a.GetGeneric()
+			at.Type = threading.ATTACHMENT_TYPE_GENERIC_URL
+			at.Data = &threading.Attachment_GenericURL{
+				GenericURL: &threading.GenericURLAttachment{
+					URL:      data.URL,
+					Mimetype: data.Mimetype,
+				},
+			}
+			if at.ContentID == "" {
+				at.ContentID = data.URL
+			}
+		case models.ATTACHMENT_TYPE_DOCUMENT:
+			data := a.GetDocument()
+			at.Type = threading.ATTACHMENT_TYPE_DOCUMENT
+			at.Data = &threading.Attachment_Document{
+				Document: &threading.DocumentAttachment{
+					Mimetype: data.Mimetype,
+					MediaID:  data.MediaID,
+					Name:     data.Name,
+				},
+			}
+			if at.ContentID == "" {
+				at.ContentID = data.MediaID
+			}
+		case models.ATTACHMENT_TYPE_VISIT:
+			data := a.GetVisit()
+			at.Type = threading.ATTACHMENT_TYPE_VISIT
+			at.Data = &threading.Attachment_Visit{
+				Visit: &threading.VisitAttachment{
+					VisitID:   data.VisitID,
+					VisitName: data.VisitName,
+				},
+			}
+			if at.ContentID == "" {
+				// TODO: this isn't right as it should be the source layout ID
+				at.ContentID = data.VisitID
+			}
+		case models.ATTACHMENT_TYPE_VIDEO:
+			data := a.GetVideo()
+			at.Type = threading.ATTACHMENT_TYPE_VIDEO
+			at.Data = &threading.Attachment_Video{
+				Video: &threading.VideoAttachment{
+					Mimetype:   data.Mimetype,
+					MediaID:    data.MediaID,
+					DurationNS: data.DurationNS,
+				},
+			}
+			if at.ContentID == "" {
+				at.ContentID = data.MediaID
+			}
+		case models.ATTACHMENT_TYPE_CARE_PLAN:
+			data := a.GetCarePlan()
+			at.Type = threading.ATTACHMENT_TYPE_CARE_PLAN
+			at.Data = &threading.Attachment_CarePlan{
+				CarePlan: &threading.CarePlanAttachment{
+					CarePlanID:   data.CarePlanID,
+					CarePlanName: data.CarePlanName,
+				},
+			}
+			if at.ContentID == "" {
+				at.ContentID = data.CarePlanID
+			}
+		case models.ATTACHMENT_TYPE_PAYMENT_REQUEST:
+			data := a.GetPaymentRequest()
+			at.Type = threading.ATTACHMENT_TYPE_PAYMENT_REQUEST
+			at.Data = &threading.Attachment_PaymentRequest{
+				PaymentRequest: &threading.PaymentRequestAttachment{
+					PaymentID: data.PaymentID,
+				},
+			}
+			if at.ContentID == "" {
+				at.ContentID = data.PaymentID
+			}
+		default:
+			return nil, errors.New("invalid attachment type " + a.Type.String())
+
+		}
+		m2.Attachments = append(m2.Attachments, at)
+	}
+	if len(m.Destinations) != 0 {
+		m2.Destinations = make([]*threading.Endpoint, len(m.Destinations))
+		for i, dc := range m.Destinations {
+			e, err := transformEndpointToResponse(dc)
+			if err != nil {
+				return nil, errors.Trace(err)
+			}
+			m2.Destinations[i] = e
+		}
+	}
+	return m2, nil
 }
 
 func transformReferenceToResponse(r *models.Reference) (*threading.Reference, error) {
@@ -467,8 +501,10 @@ func transformAttachmentsFromRequest(atts []*threading.Attachment) ([]*models.At
 	as := make([]*models.Attachment, 0, len(atts))
 	for _, a := range atts {
 		at := &models.Attachment{
-			Title: a.Title,
-			URL:   a.URL,
+			Title:     a.Title,
+			UserTitle: a.UserTitle,
+			URL:       a.URL,
+			ContentID: a.ContentID,
 		}
 		switch a.Type {
 		case threading.ATTACHMENT_TYPE_AUDIO:

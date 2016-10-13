@@ -162,9 +162,9 @@ func TestIncomingSMS_NewUser_SMS(t *testing.T) {
 	}
 	test.Equals(t, threadRequested.FromEntityID, externalEntityToBeCreated.ID)
 	test.Equals(t, threadRequested.OrganizationID, organizationEntity.ID)
-	test.Equals(t, threadRequested.MessageTitle, "SMS")
-	test.Equals(t, threadRequested.Text, pem.GetSMSItem().Text)
-	test.Equals(t, len(threadRequested.Attachments), len(pem.GetSMSItem().GetAttachments()))
+	test.Equals(t, threadRequested.Message.Title, "SMS")
+	test.Equals(t, threadRequested.Message.Text, pem.GetSMSItem().Text)
+	test.Equals(t, len(threadRequested.Message.Attachments), len(pem.GetSMSItem().GetAttachments()))
 
 	// ensure no call to post message to thread
 	if len(mt.postMessageRequests) != 0 {
@@ -259,11 +259,11 @@ func TestIncomingSMS_NewUser_Email(t *testing.T) {
 	}
 	test.Equals(t, threadRequested.FromEntityID, externalEntityToBeCreated.ID)
 	test.Equals(t, threadRequested.OrganizationID, organizationEntity.ID)
-	test.Equals(t, threadRequested.MessageTitle, "Email")
-	test.Equals(t, threadRequested.Text, "Subject: Hello\n\n"+pem.GetEmailItem().Body)
-	test.Equals(t, pem.GetEmailItem().Attachments[0].MediaID, threadRequested.Attachments[0].GetImage().MediaID)
-	test.Equals(t, pem.GetEmailItem().Attachments[0].Name, threadRequested.Attachments[0].Title)
-	test.Equals(t, pem.GetEmailItem().Attachments[0].ContentType, threadRequested.Attachments[0].GetImage().Mimetype)
+	test.Equals(t, threadRequested.Message.Title, "Email")
+	test.Equals(t, threadRequested.Message.Text, "Subject: Hello\n\n"+pem.GetEmailItem().Body)
+	test.Equals(t, pem.GetEmailItem().Attachments[0].MediaID, threadRequested.Message.Attachments[0].GetImage().MediaID)
+	test.Equals(t, pem.GetEmailItem().Attachments[0].Name, threadRequested.Message.Attachments[0].Title)
+	test.Equals(t, pem.GetEmailItem().Attachments[0].ContentType, threadRequested.Message.Attachments[0].GetImage().Mimetype)
 
 	// ensure no call to post message to thread
 	if len(mt.postMessageRequests) != 0 {
@@ -437,9 +437,9 @@ func TestIncomingSMS_ExistingUser_SMS(t *testing.T) {
 		t.Fatal("Expected message to be posted to existing thread")
 	}
 	test.Equals(t, mt.postMessageRequests[0].FromEntityID, externalEntity.ID)
-	test.Equals(t, mt.postMessageRequests[0].Title, "SMS")
-	test.Equals(t, mt.postMessageRequests[0].Text, pem.GetSMSItem().Text)
-	test.Equals(t, len(mt.postMessageRequests[0].Attachments), len(pem.GetSMSItem().GetAttachments()))
+	test.Equals(t, mt.postMessageRequests[0].Message.Title, "SMS")
+	test.Equals(t, mt.postMessageRequests[0].Message.Text, pem.GetSMSItem().Text)
+	test.Equals(t, len(mt.postMessageRequests[0].Message.Attachments), len(pem.GetSMSItem().GetAttachments()))
 }
 
 func TestIncomingSMS_ExistingUser_Email(t *testing.T) {
@@ -532,8 +532,8 @@ func TestIncomingSMS_ExistingUser_Email(t *testing.T) {
 		t.Fatal("Expected message to be posted to existing thread")
 	}
 	test.Equals(t, mt.postMessageRequests[0].FromEntityID, externalEntity.ID)
-	test.Equals(t, mt.postMessageRequests[0].Title, "Email")
-	test.Equals(t, mt.postMessageRequests[0].Text, "Subject: Hello\n\n"+pem.GetEmailItem().Body)
+	test.Equals(t, mt.postMessageRequests[0].Message.Title, "Email")
+	test.Equals(t, mt.postMessageRequests[0].Message.Text, "Subject: Hello\n\n"+pem.GetEmailItem().Body)
 }
 
 func TestIncomingSMS_MultipleExistingUsers_Email(t *testing.T) {
@@ -648,10 +648,10 @@ func TestIncomingSMS_MultipleExistingUsers_Email(t *testing.T) {
 	test.Equals(t, "10000", mt.postMessageRequests[1].ThreadID)
 	test.Equals(t, externalEntity.ID, mt.postMessageRequests[0].FromEntityID)
 	test.Equals(t, externalEntity2.ID, mt.postMessageRequests[1].FromEntityID)
-	test.Equals(t, "Email", mt.postMessageRequests[0].Title)
-	test.Equals(t, "Subject: Hello\n\n"+pem.GetEmailItem().Body, mt.postMessageRequests[0].Text)
-	test.Equals(t, "Email", mt.postMessageRequests[1].Title)
-	test.Equals(t, "Subject: Hello\n\n"+pem.GetEmailItem().Body, mt.postMessageRequests[1].Text)
+	test.Equals(t, "Email", mt.postMessageRequests[0].Message.Title)
+	test.Equals(t, "Subject: Hello\n\n"+pem.GetEmailItem().Body, mt.postMessageRequests[0].Message.Text)
+	test.Equals(t, "Email", mt.postMessageRequests[1].Message.Title)
+	test.Equals(t, "Subject: Hello\n\n"+pem.GetEmailItem().Body, mt.postMessageRequests[1].Message.Text)
 }
 
 func TestIncomingVoicemail_NewUser(t *testing.T) {
@@ -737,10 +737,10 @@ func TestIncomingVoicemail_NewUser(t *testing.T) {
 	}
 	test.Equals(t, externalEntityToBeCreated.ID, threadRequested.FromEntityID)
 	test.Equals(t, organizationEntity.ID, threadRequested.OrganizationID)
-	test.Equals(t, "", threadRequested.Text)
-	test.Equals(t, "Voicemail", threadRequested.MessageTitle)
-	test.Equals(t, pem.GetIncoming().VoicemailDurationNS, threadRequested.GetAttachments()[0].GetAudio().DurationNS)
-	test.Equals(t, pem.GetIncoming().VoicemailMediaID, threadRequested.GetAttachments()[0].GetAudio().MediaID)
+	test.Equals(t, "", threadRequested.Message.Text)
+	test.Equals(t, "Voicemail", threadRequested.Message.Title)
+	test.Equals(t, pem.GetIncoming().VoicemailDurationNS, threadRequested.Message.GetAttachments()[0].GetAudio().DurationNS)
+	test.Equals(t, pem.GetIncoming().VoicemailMediaID, threadRequested.Message.GetAttachments()[0].GetAudio().MediaID)
 
 	// ensure no call to post message to thread
 	if len(mt.postMessageRequests) != 0 {
@@ -843,8 +843,8 @@ func TestOutgoingCallEvent(t *testing.T) {
 		t.Fatal("Expected message to be posted to existing thread")
 	}
 	test.Equals(t, providerEntity.ID, mt.postMessageRequests[0].FromEntityID)
-	test.Equals(t, "", mt.postMessageRequests[0].Text)
-	test.Equals(t, "Outbound call", mt.postMessageRequests[0].Title)
+	test.Equals(t, "", mt.postMessageRequests[0].Message.Text)
+	test.Equals(t, "Outbound call", mt.postMessageRequests[0].Message.Title)
 
 }
 

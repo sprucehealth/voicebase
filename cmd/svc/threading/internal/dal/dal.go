@@ -141,6 +141,7 @@ type DAL interface {
 	CreateThread(ctx context.Context, t *models.Thread) (models.ThreadID, error)
 	CreateThreadItemViewDetails(ctx context.Context, tds []*models.ThreadItemViewDetails) error
 	CreateThreadLink(ctx context.Context, thread1Link, thread2Link *ThreadLink) error
+	DeleteSavedQueries(ctx context.Context, ids []models.SavedQueryID) error
 	DeleteThread(ctx context.Context, threadID models.ThreadID) error
 	EntitiesForThread(ctx context.Context, threadID models.ThreadID) ([]*models.ThreadEntity, error)
 	IterateThreads(ctx context.Context, query *models.Query, memberEntityIDs []string, viewerEntityID string, forExternal bool, it *Iterator) (*ThreadConnection, error)
@@ -152,7 +153,6 @@ type DAL interface {
 	RemoveThreadMembers(ctx context.Context, threadID models.ThreadID, memberEntityIDs []string) error
 	SavedQuery(ctx context.Context, id models.SavedQueryID) (*models.SavedQuery, error)
 	SavedQueries(ctx context.Context, entityID string) ([]*models.SavedQuery, error)
-	DeleteSavedQueries(ctx context.Context, ids []models.SavedQueryID) error
 	SavedQueryTemplates(ctx context.Context, entityID string) ([]*models.SavedQuery, error)
 	SetupThreadState(ctx context.Context, threadID models.ThreadID, opts ...QueryOption) (*models.SetupThreadState, error)
 	SetupThreadStateForEntity(ctx context.Context, entityID string, opts ...QueryOption) (*models.SetupThreadState, error)
@@ -169,6 +169,20 @@ type DAL interface {
 	UpdateThread(ctx context.Context, threadID models.ThreadID, update *ThreadUpdate) error
 	// UpdateThreadEntity updates attributes about a thread entity. If the thread entity relationship doesn't exist then it is created.
 	UpdateThreadEntity(ctx context.Context, threadID models.ThreadID, entityID string, update *ThreadEntityUpdate) error
+	// UpsertSavedMessage creates or updates a saved message depending on if ID is provided
+
+	// Saved Messages
+
+	// CreateSavedMessage creates a saved messages setting the ID in the provided model
+	CreateSavedMessage(ctx context.Context, sm *models.SavedMessage) (models.SavedMessageID, error)
+	// DeleteSavedMessages deletes a set of saved messages by ID
+	DeleteSavedMessages(ctx context.Context, ids []models.SavedMessageID) (int, error)
+	// SavedMessages returns a set of saved messages by ID
+	SavedMessages(ctx context.Context, ids []models.SavedMessageID) ([]*models.SavedMessage, error)
+	// SavedMessagesForEntities returns all saved messages owned by a set of entities
+	SavedMessagesForEntities(ctx context.Context, ownerEntityIDs []string) ([]*models.SavedMessage, error)
+	// UpdateSavedMessage updates an existing saved message
+	UpdateSavedMessage(ctx context.Context, id models.SavedMessageID, update *SavedMessageUpdate) error
 
 	// Saved Query Indexes
 
@@ -380,14 +394,14 @@ func (d *dal) IterateThreads(ctx context.Context, query *models.Query, memberEnt
 						cond = append(cond, "(t.type = ? OR t.type = ?)")
 					}
 					vals = append(vals, models.ThreadTypeExternal, models.ThreadTypeSecureExternal)
-				case models.EXPR_THREAD_TYPE_SECURE:
+				case models.EXPR_THREAD_TYPE_PATIENT_SECURE:
 					if e.Not {
 						cond = append(cond, "t.type != ?")
 					} else {
 						cond = append(cond, "t.type = ?")
 					}
 					vals = append(vals, models.ThreadTypeSecureExternal)
-				case models.EXPR_THREAD_TYPE_STANDARD:
+				case models.EXPR_THREAD_TYPE_PATIENT_STANDARD:
 					if e.Not {
 						cond = append(cond, "t.type != ?")
 					} else {

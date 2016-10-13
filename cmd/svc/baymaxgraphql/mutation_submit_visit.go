@@ -163,9 +163,11 @@ var submitVisitMutation = &graphql.Field{
 				postMessageRes, err := ram.PostMessage(ctx, &threading.PostMessageRequest{
 					ThreadID:     thread.ID,
 					FromEntityID: visitRes.Visit.EntityID,
-					Summary:      fmt.Sprintf("%s:%s", entity.Info.DisplayName, " Completed a visit"),
 					UUID:         uuid,
-					Title:        titleStr,
+					Message: &threading.MessagePost{
+						Summary: fmt.Sprintf("%s:%s", entity.Info.DisplayName, " Completed a visit"),
+						Title:   titleStr,
+					},
 				})
 
 				transformedThread, err := transformThreadToResponse(ctx, ram, postMessageRes.Thread, acc)

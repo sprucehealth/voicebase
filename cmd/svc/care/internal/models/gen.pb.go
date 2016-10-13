@@ -35,8 +35,6 @@ import sort "sort"
 import reflect "reflect"
 import github_com_gogo_protobuf_sortkeys "github.com/gogo/protobuf/sortkeys"
 
-import errors "errors"
-
 import io "io"
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -46,7 +44,9 @@ var _ = math.Inf
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the proto package it is being compiled against.
-const _ = proto.GoGoProtoPackageIsVersion1
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 // MediaType represents the type of media for an object.
 type MediaType int32
@@ -1393,11 +1393,12 @@ func valueToGoStringGen(v interface{}, typ string) string {
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("func(v %v) *%v { return &v } ( %#v )", typ, typ, pv)
 }
-func extensionToGoStringGen(e map[int32]github_com_gogo_protobuf_proto.Extension) string {
+func extensionToGoStringGen(m github_com_gogo_protobuf_proto.Message) string {
+	e := github_com_gogo_protobuf_proto.GetUnsafeExtensionsMap(m)
 	if e == nil {
 		return "nil"
 	}
-	s := "map[int32]proto.Extension{"
+	s := "proto.NewUnsafeXXX_InternalExtensions(map[int32]proto.Extension{"
 	keys := make([]int, 0, len(e))
 	for k := range e {
 		keys = append(keys, int(k))
@@ -1407,7 +1408,7 @@ func extensionToGoStringGen(e map[int32]github_com_gogo_protobuf_proto.Extension
 	for _, k := range keys {
 		ss = append(ss, strconv.Itoa(k)+": "+e[int32(k)].GoString())
 	}
-	s += strings.Join(ss, ",") + "}"
+	s += strings.Join(ss, ",") + "})"
 	return s
 }
 func (m *Answer) Marshal() (data []byte, err error) {
@@ -1713,24 +1714,27 @@ func (m *AnswerOption) MarshalTo(data []byte) (int, error) {
 			data[i] = 0x1a
 			i++
 			v := m.SubAnswers[k]
-			if v == nil {
-				return 0, errors.New("proto: map has nil element")
+			msgSize := 0
+			if v != nil {
+				msgSize = v.Size()
+				msgSize += 1 + sovGen(uint64(msgSize))
 			}
-			msgSize := v.Size()
-			mapSize := 1 + len(k) + sovGen(uint64(len(k))) + 1 + msgSize + sovGen(uint64(msgSize))
+			mapSize := 1 + len(k) + sovGen(uint64(len(k))) + msgSize
 			i = encodeVarintGen(data, i, uint64(mapSize))
 			data[i] = 0xa
 			i++
 			i = encodeVarintGen(data, i, uint64(len(k)))
 			i += copy(data[i:], k)
-			data[i] = 0x12
-			i++
-			i = encodeVarintGen(data, i, uint64(v.Size()))
-			n11, err := v.MarshalTo(data[i:])
-			if err != nil {
-				return 0, err
+			if v != nil {
+				data[i] = 0x12
+				i++
+				i = encodeVarintGen(data, i, uint64(v.Size()))
+				n11, err := v.MarshalTo(data[i:])
+				if err != nil {
+					return 0, err
+				}
+				i += n11
 			}
-			i += n11
 		}
 	}
 	return i, nil
@@ -1762,24 +1766,27 @@ func (m *AutocompleteAnswerItem) MarshalTo(data []byte) (int, error) {
 			data[i] = 0x12
 			i++
 			v := m.SubAnswers[k]
-			if v == nil {
-				return 0, errors.New("proto: map has nil element")
+			msgSize := 0
+			if v != nil {
+				msgSize = v.Size()
+				msgSize += 1 + sovGen(uint64(msgSize))
 			}
-			msgSize := v.Size()
-			mapSize := 1 + len(k) + sovGen(uint64(len(k))) + 1 + msgSize + sovGen(uint64(msgSize))
+			mapSize := 1 + len(k) + sovGen(uint64(len(k))) + msgSize
 			i = encodeVarintGen(data, i, uint64(mapSize))
 			data[i] = 0xa
 			i++
 			i = encodeVarintGen(data, i, uint64(len(k)))
 			i += copy(data[i:], k)
-			data[i] = 0x12
-			i++
-			i = encodeVarintGen(data, i, uint64(v.Size()))
-			n12, err := v.MarshalTo(data[i:])
-			if err != nil {
-				return 0, err
+			if v != nil {
+				data[i] = 0x12
+				i++
+				i = encodeVarintGen(data, i, uint64(v.Size()))
+				n12, err := v.MarshalTo(data[i:])
+				if err != nil {
+					return 0, err
+				}
+				i += n12
 			}
-			i += n12
 		}
 	}
 	return i, nil
@@ -2099,8 +2106,9 @@ func (m *AnswerOption) Size() (n int) {
 			l = 0
 			if v != nil {
 				l = v.Size()
+				l += 1 + sovGen(uint64(l))
 			}
-			mapEntrySize := 1 + len(k) + sovGen(uint64(len(k))) + 1 + l + sovGen(uint64(l))
+			mapEntrySize := 1 + len(k) + sovGen(uint64(len(k))) + l
 			n += mapEntrySize + 1 + sovGen(uint64(mapEntrySize))
 		}
 	}
@@ -2121,8 +2129,9 @@ func (m *AutocompleteAnswerItem) Size() (n int) {
 			l = 0
 			if v != nil {
 				l = v.Size()
+				l += 1 + sovGen(uint64(l))
 			}
-			mapEntrySize := 1 + len(k) + sovGen(uint64(len(k))) + 1 + l + sovGen(uint64(l))
+			mapEntrySize := 1 + len(k) + sovGen(uint64(len(k))) + l
 			n += mapEntrySize + 1 + sovGen(uint64(mapEntrySize))
 		}
 	}
@@ -3320,55 +3329,60 @@ func (m *AnswerOption) Unmarshal(data []byte) error {
 			}
 			mapkey := string(data[iNdEx:postStringIndexmapkey])
 			iNdEx = postStringIndexmapkey
-			var valuekey uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGen
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				valuekey |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			var mapmsglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGen
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				mapmsglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if mapmsglen < 0 {
-				return ErrInvalidLengthGen
-			}
-			postmsgIndex := iNdEx + mapmsglen
-			if mapmsglen < 0 {
-				return ErrInvalidLengthGen
-			}
-			if postmsgIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			mapvalue := &Answer{}
-			if err := mapvalue.Unmarshal(data[iNdEx:postmsgIndex]); err != nil {
-				return err
-			}
-			iNdEx = postmsgIndex
 			if m.SubAnswers == nil {
 				m.SubAnswers = make(map[string]*Answer)
 			}
-			m.SubAnswers[mapkey] = mapvalue
+			if iNdEx < postIndex {
+				var valuekey uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowGen
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := data[iNdEx]
+					iNdEx++
+					valuekey |= (uint64(b) & 0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				var mapmsglen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowGen
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := data[iNdEx]
+					iNdEx++
+					mapmsglen |= (int(b) & 0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if mapmsglen < 0 {
+					return ErrInvalidLengthGen
+				}
+				postmsgIndex := iNdEx + mapmsglen
+				if mapmsglen < 0 {
+					return ErrInvalidLengthGen
+				}
+				if postmsgIndex > l {
+					return io.ErrUnexpectedEOF
+				}
+				mapvalue := &Answer{}
+				if err := mapvalue.Unmarshal(data[iNdEx:postmsgIndex]); err != nil {
+					return err
+				}
+				iNdEx = postmsgIndex
+				m.SubAnswers[mapkey] = mapvalue
+			} else {
+				var mapvalue *Answer
+				m.SubAnswers[mapkey] = mapvalue
+			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -3515,55 +3529,60 @@ func (m *AutocompleteAnswerItem) Unmarshal(data []byte) error {
 			}
 			mapkey := string(data[iNdEx:postStringIndexmapkey])
 			iNdEx = postStringIndexmapkey
-			var valuekey uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGen
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				valuekey |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			var mapmsglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGen
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				mapmsglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if mapmsglen < 0 {
-				return ErrInvalidLengthGen
-			}
-			postmsgIndex := iNdEx + mapmsglen
-			if mapmsglen < 0 {
-				return ErrInvalidLengthGen
-			}
-			if postmsgIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			mapvalue := &Answer{}
-			if err := mapvalue.Unmarshal(data[iNdEx:postmsgIndex]); err != nil {
-				return err
-			}
-			iNdEx = postmsgIndex
 			if m.SubAnswers == nil {
 				m.SubAnswers = make(map[string]*Answer)
 			}
-			m.SubAnswers[mapkey] = mapvalue
+			if iNdEx < postIndex {
+				var valuekey uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowGen
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := data[iNdEx]
+					iNdEx++
+					valuekey |= (uint64(b) & 0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				var mapmsglen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowGen
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := data[iNdEx]
+					iNdEx++
+					mapmsglen |= (int(b) & 0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if mapmsglen < 0 {
+					return ErrInvalidLengthGen
+				}
+				postmsgIndex := iNdEx + mapmsglen
+				if mapmsglen < 0 {
+					return ErrInvalidLengthGen
+				}
+				if postmsgIndex > l {
+					return io.ErrUnexpectedEOF
+				}
+				mapvalue := &Answer{}
+				if err := mapvalue.Unmarshal(data[iNdEx:postmsgIndex]); err != nil {
+					return err
+				}
+				iNdEx = postmsgIndex
+				m.SubAnswers[mapkey] = mapvalue
+			} else {
+				var mapvalue *Answer
+				m.SubAnswers[mapkey] = mapvalue
+			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -4118,6 +4137,8 @@ var (
 	ErrInvalidLengthGen = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowGen   = fmt.Errorf("proto: integer overflow")
 )
+
+func init() { proto.RegisterFile("gen.proto", fileDescriptorGen) }
 
 var fileDescriptorGen = []byte{
 	// 830 bytes of a gzipped FileDescriptorProto

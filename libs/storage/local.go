@@ -14,6 +14,8 @@ import (
 	"time"
 )
 
+const fsMetaSuffix = ".meta"
+
 // local is a store that uses the local filesystem.
 type local struct {
 	path string
@@ -63,9 +65,10 @@ func (s *local) PutReader(name string, r io.ReadSeeker, size int64, contentType 
 		return "", err
 	}
 	if err := f.Sync(); err != nil {
+		os.Remove(fullPath)
 		return "", err
 	}
-	f, err = os.Create(fullPath + ".meta")
+	f, err = os.Create(fullPath + fsMetaSuffix)
 	defer f.Close()
 	if meta == nil {
 		meta = map[string]string{}
@@ -74,7 +77,7 @@ func (s *local) PutReader(name string, r io.ReadSeeker, size int64, contentType 
 	meta["Content-Type"] = contentType
 	if err := json.NewEncoder(f).Encode(meta); err != nil {
 		os.Remove(fullPath)
-		os.Remove(fullPath + ".meta")
+		os.Remove(fullPath + fsMetaSuffix)
 		return "", err
 	}
 	return fullPath, f.Sync()
@@ -95,7 +98,7 @@ func (s *local) GetHeader(id string) (http.Header, error) {
 }
 
 func localHeader(id string) (http.Header, error) {
-	f, err := os.Open(id + ".meta")
+	f, err := os.Open(id + fsMetaSuffix)
 	if os.IsNotExist(err) {
 		return nil, ErrNoObject
 	} else if err != nil {
@@ -126,10 +129,48 @@ func (s *local) GetReader(id string) (io.ReadCloser, http.Header, error) {
 }
 
 func (s *local) Delete(id string) error {
-	os.Remove(id + ".meta")
+	os.Remove(id + fsMetaSuffix)
 	return os.Remove(id)
 }
 
 func (s *local) ExpiringURL(id string, expiration time.Duration) (string, error) {
 	return id, nil
+}
+
+func (s *local) Copy(dstID, srcID string) (err error) {
+	defer func() {
+		if err != nil {
+			os.Remove(dstID)
+			os.Remove(dstID + fsMetaSuffix)
+		}
+	}()
+	src, err := os.Open(srcID)
+	if err != nil {
+		return err
+	}
+	defer src.Close()
+	srcMeta, err := os.Open(srcID + fsMetaSuffix)
+	if err != nil {
+		return err
+	}
+	dst, err := os.Create(dstID)
+	if err != nil {
+		return err
+	}
+	defer dst.Close()
+	if _, err := io.Copy(dst, src); err != nil {
+		return err
+	}
+	if err := dst.Sync(); err != nil {
+		return err
+	}
+	dstMeta, err := os.Create(dstID + fsMetaSuffix)
+	if err != nil {
+		return err
+	}
+	defer dstMeta.Close()
+	if _, err := io.Copy(dstMeta, srcMeta); err != nil {
+		return err
+	}
+	return dstMeta.Sync()
 }

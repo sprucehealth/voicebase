@@ -10,10 +10,33 @@ import (
 	"github.com/sprucehealth/backend/libs/bml"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/textutil"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
 	"google.golang.org/grpc/codes"
 )
+
+func processMessagePost(msg *threading.MessagePost) ([]*models.Reference, error) {
+	if msg == nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "Message is required")
+	}
+	if msg.Summary == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "Summary is required")
+	}
+	msg.Summary = textutil.TruncateUTF8(msg.Summary, maxSummaryLength)
+	if msg.Title != "" {
+		if _, err := bml.Parse(msg.Title); err != nil {
+			return nil, grpcErrorf(codes.InvalidArgument, "Title is invalid format: %s", err.Error())
+		}
+	}
+	var err error
+	var textRefs []*models.Reference
+	msg.Text, textRefs, err = parseRefsAndNormalize(msg.Text)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "Text is invalid format: %s", errors.Cause(err).Error())
+	}
+	return textRefs, nil
+}
 
 // validateEntityIDs makes sure a list of IDs are valid entity IDs. If one is not then
 // it returns the bad id and false. Otherwise it returns an emptry string anf true.
@@ -70,11 +93,11 @@ func threadMatchesQuery(q *models.Query, t *models.Thread, te *models.ThreadEnti
 				if (t.Type != models.ThreadTypeSupport && t.Type != models.ThreadTypeSetup) != e.Not {
 					return false, nil
 				}
-			case models.EXPR_THREAD_TYPE_SECURE:
+			case models.EXPR_THREAD_TYPE_PATIENT_SECURE:
 				if (t.Type != models.ThreadTypeSecureExternal) != e.Not {
 					return false, nil
 				}
-			case models.EXPR_THREAD_TYPE_STANDARD:
+			case models.EXPR_THREAD_TYPE_PATIENT_STANDARD:
 				if (t.Type != models.ThreadTypeExternal) != e.Not {
 					return false, nil
 				}

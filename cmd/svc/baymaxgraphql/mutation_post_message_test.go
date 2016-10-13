@@ -96,28 +96,31 @@ func TestPostMessage(t *testing.T) {
 		ThreadID:     threadID,
 		UUID:         "abc",
 		FromEntityID: entID,
-		Source: &threading.Endpoint{
-			Channel: threading.ENDPOINT_CHANNEL_APP,
-			ID:      entID,
-		},
-		Destinations: []*threading.Endpoint{
-			{
-				Channel: threading.ENDPOINT_CHANNEL_SMS,
-				ID:      entPhoneNumber,
+		Message: &threading.MessagePost{
+			Source: &threading.Endpoint{
+				Channel: threading.ENDPOINT_CHANNEL_APP,
+				ID:      entID,
 			},
-		},
-		Text:    "foo",
-		Title:   `SMS`,
-		Summary: `Schmee: foo`,
-		Attachments: []*threading.Attachment{
-			{
-				Type:  threading.ATTACHMENT_TYPE_IMAGE,
-				Title: "",
-				URL:   "mediaID",
-				Data: &threading.Attachment_Image{
-					Image: &threading.ImageAttachment{
-						Mimetype: "image/png",
-						MediaID:  "mediaID",
+			Destinations: []*threading.Endpoint{
+				{
+					Channel: threading.ENDPOINT_CHANNEL_SMS,
+					ID:      entPhoneNumber,
+				},
+			},
+			Text:    "foo",
+			Title:   `SMS`,
+			Summary: `Schmee: foo`,
+			Attachments: []*threading.Attachment{
+				{
+					ContentID: "mediaID",
+					Type:      threading.ATTACHMENT_TYPE_IMAGE,
+					Title:     "",
+					URL:       "mediaID",
+					Data: &threading.Attachment_Image{
+						Image: &threading.ImageAttachment{
+							Mimetype: "image/png",
+							MediaID:  "mediaID",
+						},
 					},
 				},
 			},
@@ -349,22 +352,25 @@ func TestPostMessage_VisitAttachment(t *testing.T) {
 		ThreadID:     threadID,
 		UUID:         "abc",
 		FromEntityID: entID,
-		Source: &threading.Endpoint{
-			Channel: threading.ENDPOINT_CHANNEL_APP,
-			ID:      entID,
-		},
-		Text:    "foo",
-		Title:   "Shared a visit:",
-		Summary: `Schmee: foo`,
-		Attachments: []*threading.Attachment{
-			{
-				Type:  threading.ATTACHMENT_TYPE_VISIT,
-				Title: "Sinus Infection",
-				URL:   "https://test.com/thread/t1/visit/visit_12345",
-				Data: &threading.Attachment_Visit{
-					Visit: &threading.VisitAttachment{
-						VisitID:   "visit_12345",
-						VisitName: "Sinus Infection",
+		Message: &threading.MessagePost{
+			Source: &threading.Endpoint{
+				Channel: threading.ENDPOINT_CHANNEL_APP,
+				ID:      entID,
+			},
+			Text:    "foo",
+			Title:   "Shared a visit:",
+			Summary: `Schmee: foo`,
+			Attachments: []*threading.Attachment{
+				{
+					ContentID: "visitLayout_12345",
+					Type:      threading.ATTACHMENT_TYPE_VISIT,
+					Title:     "Sinus Infection",
+					URL:       "https://test.com/thread/t1/visit/visit_12345",
+					Data: &threading.Attachment_Visit{
+						Visit: &threading.VisitAttachment{
+							VisitID:   "visit_12345",
+							VisitName: "Sinus Infection",
+						},
 					},
 				},
 			},
@@ -718,23 +724,26 @@ func TestPostMessagePatientSecureExternal(t *testing.T) {
 		ThreadID:     threadID,
 		UUID:         "abc",
 		FromEntityID: entID,
-		Source: &threading.Endpoint{
-			Channel: threading.ENDPOINT_CHANNEL_APP,
-			ID:      entID,
-		},
-		Text:    "foo",
-		Title:   ``,
-		Summary: `Schmee: foo`,
-		Attachments: []*threading.Attachment{
-			{
-				Type:  threading.ATTACHMENT_TYPE_VIDEO,
-				Title: "",
-				URL:   "mediaID",
-				Data: &threading.Attachment_Video{
-					Video: &threading.VideoAttachment{
-						Mimetype:   "video/mp4",
-						MediaID:    "mediaID",
-						DurationNS: 12345,
+		Message: &threading.MessagePost{
+			Source: &threading.Endpoint{
+				Channel: threading.ENDPOINT_CHANNEL_APP,
+				ID:      entID,
+			},
+			Text:    "foo",
+			Title:   ``,
+			Summary: `Schmee: foo`,
+			Attachments: []*threading.Attachment{
+				{
+					ContentID: "mediaID",
+					Type:      threading.ATTACHMENT_TYPE_VIDEO,
+					Title:     "",
+					URL:       "mediaID",
+					Data: &threading.Attachment_Video{
+						Video: &threading.VideoAttachment{
+							Mimetype:   "video/mp4",
+							MediaID:    "mediaID",
+							DurationNS: 12345,
+						},
 					},
 				},
 			},

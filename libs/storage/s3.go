@@ -12,6 +12,8 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/libs/ptr"
 )
 
 // awsError matches against aws-sdk-go/internal/apierr.*RequestError since it's an
@@ -182,6 +184,30 @@ func (s *S3) ExpiringURL(id string, expiration time.Duration) (string, error) {
 	})
 
 	return req.Presign(expiration)
+}
+
+func (s *S3) Copy(dstID, srcID string) error {
+	_, _, path, err := s.parseURI(dstID)
+	if err != nil {
+		return errors.Trace(err)
+	}
+	_, srcBkt, srcPath, err := s.parseURI(srcID)
+	if err != nil {
+		return errors.Trace(err)
+	}
+	_, err = s.s3.CopyObject(&s3.CopyObjectInput{
+		Bucket:               &s.bucket,
+		Key:                  &path,
+		ServerSideEncryption: &sseAlgorithm,
+		CopySource:           ptr.String(url.QueryEscape(srcBkt + srcPath)),
+	})
+	if e, ok := err.(awsError); ok {
+		if e.StatusCode() == http.StatusNotFound {
+			return ErrNoObject
+		}
+		return errors.Trace(err)
+	}
+	return nil
 }
 
 func (s *S3) parseURI(uri string) (region string, bucket string, key string, err error) {

@@ -257,9 +257,12 @@ var attachmentType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "Attachment",
 		Fields: graphql.Fields{
-			"title": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-			"url":   &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-			"data":  &graphql.Field{Type: attachmentDataType},
+			"id":            &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+			"type":          &graphql.Field{Type: graphql.NewNonNull(attachmentInputTypeEnum)},
+			"originalTitle": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"title":         &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"url":           &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"data":          &graphql.Field{Type: attachmentDataType},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 			_, ok := value.(*models.Attachment)

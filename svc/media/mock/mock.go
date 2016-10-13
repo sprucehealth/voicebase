@@ -58,3 +58,12 @@ func (c *Client) CanAccess(ctx context.Context, in *media.CanAccessRequest, opts
 	}
 	return rets[0].(*media.CanAccessResponse), mock.SafeError(rets[1])
 }
+
+// CloneMedia implements media.MediaClient
+func (c *Client) CloneMedia(ctx context.Context, in *media.CloneMediaRequest, opts ...grpc.CallOption) (*media.CloneMediaResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*media.CloneMediaResponse), mock.SafeError(rets[1])
+}

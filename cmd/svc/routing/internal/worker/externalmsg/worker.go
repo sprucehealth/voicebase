@@ -513,18 +513,20 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 				&threading.CreateThreadRequest{
 					OrganizationID: orgEntity.ID,
 					FromEntityID:   externalEntity.ID,
-					Source: &threading.Endpoint{
-						Channel: endpointChannel,
-						ID:      fromName,
+					DontNotify:     dontNotify,
+					Type:           threading.THREAD_TYPE_EXTERNAL,
+					SystemTitle:    externalEntity.Info.DisplayName,
+					Message: &threading.MessagePost{
+						Source: &threading.Endpoint{
+							Channel: endpointChannel,
+							ID:      fromName,
+						},
+						Internal:    false,
+						Title:       titleStr,
+						Text:        plainText,
+						Attachments: attachments,
+						Summary:     summary,
 					},
-					Internal:     false,
-					MessageTitle: titleStr,
-					Text:         plainText,
-					Attachments:  attachments,
-					Summary:      summary,
-					Type:         threading.THREAD_TYPE_EXTERNAL,
-					SystemTitle:  externalEntity.Info.DisplayName,
-					DontNotify:   dontNotify,
 				},
 			)
 			if err != nil {
@@ -539,16 +541,18 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 				&threading.PostMessageRequest{
 					ThreadID:     externalThread.ID,
 					FromEntityID: fromEntity.ID,
-					Source: &threading.Endpoint{
-						Channel: endpointChannel,
-						ID:      fromName,
+					DontNotify:   dontNotify,
+					Message: &threading.MessagePost{
+						Source: &threading.Endpoint{
+							Channel: endpointChannel,
+							ID:      fromName,
+						},
+						Internal:    false,
+						Title:       titleStr,
+						Text:        plainText,
+						Attachments: attachments,
+						Summary:     summary,
 					},
-					Internal:    false,
-					Title:       titleStr,
-					Text:        plainText,
-					Attachments: attachments,
-					Summary:     summary,
-					DontNotify:  dontNotify,
 				},
 			)
 			if err != nil {

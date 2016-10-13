@@ -21,6 +21,7 @@ import (
 // Service implements a multi media storage service.
 type Service interface {
 	CanAccess(ctx context.Context, mediaID dal.MediaID, accountID string) error
+	CopyMedia(ctx context.Context, ownerType dal.MediaOwnerType, ownerID string, sourceID dal.MediaID) (*MediaMeta, error)
 	ExpiringURL(ctx context.Context, mediaID dal.MediaID, exp time.Duration) (string, error)
 	GetReader(ctx context.Context, mediaID dal.MediaID) (io.ReadCloser, *MediaMeta, error)
 	GetThumbnailReader(ctx context.Context, mediaID dal.MediaID, size *media.ImageSize) (io.ReadCloser, *media.ImageMeta, error)
@@ -76,6 +77,68 @@ type MediaMeta struct {
 }
 
 const thumbnailSuffix = "-thumbnail"
+
+func (s *service) CopyMedia(ctx context.Context, ownerType dal.MediaOwnerType, ownerID string, sourceID dal.MediaID) (*MediaMeta, error) {
+	med, err := s.dal.Media(sourceID)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	mimeType, err := mime.ParseType(med.MimeType)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	newID, err := dal.NewMediaID()
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	var url string
+	par := conc.NewParallel()
+	par.Go(func() error {
+		var err error
+		switch mimeType.Type {
+		case "image":
+			url, err = s.imageService.Copy(newID.String(), sourceID.String())
+			return errors.Trace(err)
+		case "audio":
+			url, err = s.audioService.Copy(newID.String(), sourceID.String())
+			return errors.Trace(err)
+		case "video":
+			url, err = s.videoService.Copy(newID.String(), sourceID.String())
+			return errors.Trace(err)
+		}
+		url, err = s.binaryService.Copy(newID.String(), sourceID.String())
+		return errors.Trace(err)
+	})
+	par.Go(func() error {
+		if _, err := s.imageService.Copy(newID.String()+thumbnailSuffix, sourceID.String()+thumbnailSuffix); err != nil && errors.Cause(err) != media.ErrNotFound {
+			return errors.Trace(err)
+		}
+		return nil
+	})
+	if err := par.Wait(); err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	_, err = s.dal.InsertMedia(&dal.Media{
+		ID:         newID,
+		URL:        url,
+		Name:       med.Name,
+		MimeType:   med.MimeType,
+		OwnerType:  ownerType,
+		OwnerID:    ownerID,
+		SizeBytes:  med.SizeBytes,
+		DurationNS: med.DurationNS,
+	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return &MediaMeta{
+		MediaID:  newID,
+		MIMEType: med.MimeType,
+	}, nil
+}
 
 func (s *service) GetReader(ctx context.Context, mediaID dal.MediaID) (io.ReadCloser, *MediaMeta, error) {
 	media, err := s.dal.Media(mediaID)
@@ -147,6 +210,9 @@ func thumbnailID(m *dal.Media) string {
 		golog.Errorf("Unable to parse content type for media %s: %s - %s", m.ID, t, err)
 		return m.ID.String() + thumbnailSuffix
 	}
+	// Thumbnails served to clients are dynamically generated for the requested size. For images
+	// we don't store a specific thumbnail image and instead use the original. For other types
+	// there should be a thumbnail image.
 	if t.Type == "image" {
 		return m.ID.String()
 	}

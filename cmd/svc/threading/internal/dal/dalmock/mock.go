@@ -362,6 +362,46 @@ func (dl *DAL) UnreadNotificationsCounts(ctx context.Context, entityIDs []string
 	return rets[0].(map[string]int), mock.SafeError(rets[1])
 }
 
+func (dl *DAL) CreateSavedMessage(ctx context.Context, sm *models.SavedMessage) (models.SavedMessageID, error) {
+	rets := dl.Expector.Record(sm)
+	if len(rets) == 0 {
+		return models.SavedMessageID{}, nil
+	}
+	return rets[0].(models.SavedMessageID), mock.SafeError(rets[1])
+}
+
+func (dl *DAL) DeleteSavedMessages(ctx context.Context, ids []models.SavedMessageID) (int, error) {
+	rets := dl.Expector.Record(ids)
+	if len(rets) == 0 {
+		return 0, nil
+	}
+	return rets[0].(int), mock.SafeError(rets[1])
+}
+
+func (dl *DAL) SavedMessages(ctx context.Context, ids []models.SavedMessageID) ([]*models.SavedMessage, error) {
+	rets := dl.Expector.Record(ids)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].([]*models.SavedMessage), mock.SafeError(rets[1])
+}
+
+func (dl *DAL) SavedMessagesForEntities(ctx context.Context, ownerEntityIDs []string) ([]*models.SavedMessage, error) {
+	rets := dl.Expector.Record(ownerEntityIDs)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].([]*models.SavedMessage), mock.SafeError(rets[1])
+}
+
+func (dl *DAL) UpdateSavedMessage(ctx context.Context, id models.SavedMessageID, update *dal.SavedMessageUpdate) error {
+	rets := dl.Expector.Record(id, update)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[0])
+}
+
 func optsToInterfaces(opts []dal.QueryOption) []interface{} {
 	ifs := make([]interface{}, len(opts))
 	for i, o := range opts {

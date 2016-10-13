@@ -30,64 +30,64 @@ message Visit {
 
 // Anwer represents a response to a particular question in the visit.
 message Answer {
-  string question_id = 1 [(gogoproto.customname) = "QuestionID"];
-  oneof answer {
-    FreeTextAnswer free_text = 10;
-    MultipleChoiceAnswer multiple_choice = 11;
-    SingleSelectAnswer single_select = 12;
-    AutocompleteAnswer autocomplete = 13;
-    MediaSectionAnswer media_section = 14;
-    SingleEntryAnswer single_entry = 15;
-    SegmentedControlAnswer segmented_control = 16;
-  }
+	string question_id = 1 [(gogoproto.customname) = "QuestionID"];
+	oneof answer {
+		FreeTextAnswer free_text = 10;
+		MultipleChoiceAnswer multiple_choice = 11;
+		SingleSelectAnswer single_select = 12;
+		AutocompleteAnswer autocomplete = 13;
+		MediaSectionAnswer media_section = 14;
+		SingleEntryAnswer single_entry = 15;
+		SegmentedControlAnswer segmented_control = 16;
+	}
 }
 
 // FreeTextAnswer represents a free text response to a question.
 message FreeTextAnswer {
-  string free_text = 1;
+	string free_text = 1;
 }
 
 // MultipleChoiceAnswer represents a response that contains multiple options
 // selected by the patient from a list of available options in a question.
 message MultipleChoiceAnswer {
-  repeated AnswerOption selected_answers = 1;
+	repeated AnswerOption selected_answers = 1;
 }
 
 // SingleSelectAnswer represents a response that contains a single option
 // selected from a list of available options.
 message SingleSelectAnswer {
-  AnswerOption selected_answer = 1;
+	AnswerOption selected_answer = 1;
 }
 
 // SegmentedControlAnswer represents a single option selected from a list of
 // available options.
 message SegmentedControlAnswer {
-  AnswerOption selected_answer = 1;
+	AnswerOption selected_answer = 1;
 }
 
 // SingleEntryAnswer represents a single free text response to a question.
 message SingleEntryAnswer {
-  string free_text = 1;
+	string free_text = 1;
 }
 
 // AnswerOption represents a single selection that is part of an answer.
 message AnswerOption {
-  string id = 1 [(gogoproto.customname) = "ID"];
-  string free_text = 2;
-  map<string,Answer> sub_answers = 3;
+	string id = 1 [(gogoproto.customname) = "ID"];
+	string free_text = 2;
+	map<string,Answer> sub_answers = 3;
 }
 
 // AutocompleteAnswerItem represents a single entry that is part of the
 // autocomplete answer.
 message AutocompleteAnswerItem {
-  string answer = 1;
-  map<string,Answer> sub_answers = 2;
+	string answer = 1;
+	map<string,Answer> sub_answers = 2;
 }
 
 // AutocompleteAnswer represents a response to a question that uses an
 // external data source to autocomplete the answer.
 message AutocompleteAnswer {
-  repeated AutocompleteAnswerItem items = 1;
+	repeated AutocompleteAnswerItem items = 1;
 }
 
 // MediaType represents the type of media for an object.
@@ -99,21 +99,21 @@ enum MediaType {
 
 // MediaSectionAnswer represents a series of media items pertaining to a question.
 message MediaSectionAnswer {
-  message MediaSectionItem {
-    message MediaSlotItem {
-        string slot_id = 1 [(gogoproto.customname) = "SlotID"];
-        string name = 2;
-        string media_id = 3 [(gogoproto.customname) = "MediaID"];
-				string url = 4 [(gogoproto.customname) = "URL"];
-				MediaType type = 5;
-				string thumbnail_url = 6 [(gogoproto.customname) = "ThumbnailURL"];
-    }
+	message MediaSectionItem {
+		message MediaSlotItem {
+			string slot_id = 1 [(gogoproto.customname) = "SlotID"];
+			string name = 2;
+			string media_id = 3 [(gogoproto.customname) = "MediaID"];
+			string url = 4 [(gogoproto.customname) = "URL"];
+			MediaType type = 5;
+			string thumbnail_url = 6 [(gogoproto.customname) = "ThumbnailURL"];
+		}
 
-    string name = 1;
-    repeated MediaSlotItem slots = 2;
-  }
+		string name = 1;
+		repeated MediaSlotItem slots = 2;
+	}
 
-  repeated MediaSectionItem sections = 1;
+	repeated MediaSectionItem sections = 1;
 }
 
 message CreateVisitRequest {

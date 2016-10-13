@@ -234,10 +234,6 @@ func Marshal(pb Message) ([]byte, error) {
 	}
 	p := NewBuffer(nil)
 	err := p.Marshal(pb)
-	var state errorState
-	if err != nil && !state.shouldContinue(err, nil) {
-		return nil, err
-	}
 	if p.buf == nil && err == nil {
 		// Return a non-nil slice on success.
 		return []byte{}, nil
@@ -266,11 +262,8 @@ func (p *Buffer) Marshal(pb Message) error {
 	// Can the object marshal itself?
 	if m, ok := pb.(Marshaler); ok {
 		data, err := m.Marshal()
-		if err != nil {
-			return err
-		}
 		p.buf = append(p.buf, data...)
-		return nil
+		return err
 	}
 
 	t, base, err := getbase(pb)
@@ -282,7 +275,7 @@ func (p *Buffer) Marshal(pb Message) error {
 	}
 
 	if collectStats {
-		stats.Encode++
+		(stats).Encode++ // Parens are to work around a goimports bug.
 	}
 
 	if len(p.buf) > maxMarshalSize {
@@ -309,7 +302,7 @@ func Size(pb Message) (n int) {
 	}
 
 	if collectStats {
-		stats.Size++
+		(stats).Size++ // Parens are to work around a goimports bug.
 	}
 
 	return
@@ -1014,7 +1007,6 @@ func size_slice_struct_message(p *Properties, base structPointer) (n int) {
 		if p.isMarshaler {
 			m := structPointer_Interface(structp, p.stype).(Marshaler)
 			data, _ := m.Marshal()
-			n += len(p.tagcode)
 			n += sizeRawBytes(data)
 			continue
 		}
@@ -1149,7 +1141,7 @@ func (o *Buffer) enc_new_map(p *Properties, base structPointer) error {
 		if err := p.mkeyprop.enc(o, p.mkeyprop, keybase); err != nil {
 			return err
 		}
-		if err := p.mvalprop.enc(o, p.mvalprop, valbase); err != nil {
+		if err := p.mvalprop.enc(o, p.mvalprop, valbase); err != nil && err != ErrNil {
 			return err
 		}
 		return nil
@@ -1158,11 +1150,6 @@ func (o *Buffer) enc_new_map(p *Properties, base structPointer) error {
 	// Don't sort map keys. It is not required by the spec, and C++ doesn't do it.
 	for _, key := range v.MapKeys() {
 		val := v.MapIndex(key)
-
-		// The only illegal map entry values are nil message pointers.
-		if val.Kind() == reflect.Ptr && val.IsNil() {
-			return errors.New("proto: map has nil element")
-		}
 
 		keycopy.Set(key)
 		valcopy.Set(val)

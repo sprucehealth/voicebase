@@ -64,3 +64,14 @@ func (s *AudioService) PutReader(id string, r io.ReadSeeker, contentType string)
 	}
 	return meta, errors.Trace(err)
 }
+
+// Copy a stored audio file
+func (s *AudioService) Copy(dstID, srcID string) (string, error) {
+	if err := s.store.Copy(s.store.IDFromName(dstID), s.store.IDFromName(srcID)); err != nil {
+		if errors.Cause(err) == storage.ErrNoObject {
+			return "", ErrNotFound
+		}
+		return "", errors.Trace(err)
+	}
+	return s.store.IDFromName(dstID), nil
+}

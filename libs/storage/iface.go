@@ -25,6 +25,7 @@ type Store interface {
 // value for ID so that it can be generated from the name given to Put(Reader).
 type DeterministicStore interface {
 	Store
+	Copy(dest, source string) error
 	IDFromName(name string) string
 }
 

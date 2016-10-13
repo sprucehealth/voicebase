@@ -129,8 +129,10 @@ func TestPaymentPendingProcessing(t *testing.T) {
 		UUID:         `accept_` + paymentID.String(),
 		ThreadID:     "threadID",
 		FromEntityID: "entityID",
-		Title:        titleText,
-		Summary:      summary,
+		Message: &threading.MessagePost{
+			Title:   titleText,
+			Summary: summary,
+		},
 	}))
 
 	w := New(dmock, directorymock, tmock, smock, "", "", "test.com")
@@ -254,8 +256,10 @@ func TestPaymentPendingProcessing_CardDeclined(t *testing.T) {
 		UUID:         `error_processing_` + paymentID.String(),
 		ThreadID:     "threadID",
 		FromEntityID: "entityID",
-		Title:        titleText,
-		Summary:      summary,
+		Message: &threading.MessagePost{
+			Title:   titleText,
+			Summary: summary,
+		},
 	}))
 
 	w := New(dmock, directorymock, tmock, smock, "", "", "test.com")
@@ -379,8 +383,10 @@ func TestPaymentPendingProcessing_UnexpectedError(t *testing.T) {
 		UUID:         `error_processing_` + paymentID.String(),
 		ThreadID:     "threadID",
 		FromEntityID: "entityID",
-		Title:        titleText,
-		Summary:      summary,
+		Message: &threading.MessagePost{
+			Title:   titleText,
+			Summary: summary,
+		},
 	}))
 
 	w := New(dmock, directorymock, tmock, smock, "", "", "test.com")

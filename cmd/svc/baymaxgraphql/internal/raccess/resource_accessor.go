@@ -3,7 +3,6 @@ package raccess
 import (
 	"context"
 	"fmt"
-	"strings"
 	"sync"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
@@ -93,6 +92,7 @@ type ResourceAccessor interface {
 	CheckPasswordResetToken(ctx context.Context, token string) (*auth.CheckPasswordResetTokenResponse, error)
 	CheckVerificationCode(ctx context.Context, token, code string) (*auth.CheckVerificationCodeResponse, error)
 	ClaimMedia(ctx context.Context, req *media.ClaimMediaRequest) error
+	CloneMedia(ctx context.Context, req *media.CloneMediaRequest) (*media.CloneMediaResponse, error)
 	ConnectVendorAccount(ctx context.Context, req *payments.ConnectVendorAccountRequest) (*payments.ConnectVendorAccountResponse, error)
 	ConfigurePatientSync(ctx context.Context, req *patientsync.ConfigureSyncRequest) (*patientsync.ConfigureSyncResponse, error)
 	CreateAccount(ctx context.Context, req *auth.CreateAccountRequest) (*auth.CreateAccountResponse, error)
@@ -108,12 +108,14 @@ type ResourceAccessor interface {
 	CreatePasswordResetToken(ctx context.Context, email string) (*auth.CreatePasswordResetTokenResponse, error)
 	CreatePayment(ctx context.Context, req *payments.CreatePaymentRequest) (*payments.CreatePaymentResponse, error)
 	CreatePaymentMethod(ctx context.Context, req *payments.CreatePaymentMethodRequest) (*payments.CreatePaymentMethodResponse, error)
+	CreateSavedMessage(ctx context.Context, orgID string, req *threading.CreateSavedMessageRequest) (*threading.CreateSavedMessageResponse, error)
 	CreateSavedQuery(ctx context.Context, req *threading.CreateSavedQueryRequest) error
 	CreateVerificationCode(ctx context.Context, codeType auth.VerificationCodeType, valueToVerify string) (*auth.CreateVerificationCodeResponse, error)
 	CreateVisit(ctx context.Context, req *care.CreateVisitRequest) (*care.CreateVisitResponse, error)
 	CreateVisitAnswers(ctx context.Context, req *care.CreateVisitAnswersRequest) (*care.CreateVisitAnswersResponse, error)
 	DeleteContacts(ctx context.Context, req *directory.DeleteContactsRequest) (*directory.Entity, error)
 	DeletePaymentMethod(ctx context.Context, req *payments.DeletePaymentMethodRequest) (*payments.DeletePaymentMethodResponse, error)
+	DeleteSavedMessage(ctx context.Context, req *threading.DeleteSavedMessageRequest) (*threading.DeleteSavedMessageResponse, error)
 	DeleteThread(ctx context.Context, threadID, entityID string) error
 	Entities(ctx context.Context, req *directory.LookupEntitiesRequest, opts ...EntityQueryOption) ([]*directory.Entity, error)
 	EntitiesByContact(ctx context.Context, req *directory.LookupEntitiesByContactRequest) ([]*directory.Entity, error)
@@ -133,6 +135,7 @@ type ResourceAccessor interface {
 	ProvisionEmailAddress(ctx context.Context, req *excomms.ProvisionEmailAddressRequest) (*excomms.ProvisionEmailAddressResponse, error)
 	ProvisionPhoneNumber(ctx context.Context, req *excomms.ProvisionPhoneNumberRequest) (*excomms.ProvisionPhoneNumberResponse, error)
 	QueryThreads(ctx context.Context, req *threading.QueryThreadsRequest) (*threading.QueryThreadsResponse, error)
+	SavedMessages(ctx context.Context, req *threading.SavedMessagesRequest) (*threading.SavedMessagesResponse, error)
 	SavedQueries(ctx context.Context, entityID string) ([]*threading.SavedQuery, error)
 	SavedQueryTemplates(ctx context.Context, entityID string) ([]*threading.SavedQuery, error)
 	SavedQuery(ctx context.Context, savedQueryID string) (*threading.SavedQuery, error)
@@ -161,6 +164,7 @@ type ResourceAccessor interface {
 	UpdateMedia(ctx context.Context, req *media.UpdateMediaRequest) (*media.MediaInfo, error)
 	UpdatePassword(ctx context.Context, token, code, newPassword string) error
 	UpdateProfile(ctx context.Context, req *directory.UpdateProfileRequest) (*directory.UpdateProfileResponse, error)
+	UpdateSavedMessage(ctx context.Context, req *threading.UpdateSavedMessageRequest) (*threading.UpdateSavedMessageResponse, error)
 	UpdateThread(ctx context.Context, req *threading.UpdateThreadRequest) (*threading.UpdateThreadResponse, error)
 	VendorAccounts(ctx context.Context, req *payments.VendorAccountsRequest) (*payments.VendorAccountsResponse, error)
 	UpdateSavedQuery(ctx context.Context, req *threading.UpdateSavedQueryRequest) (*threading.UpdateSavedQueryResponse, error)
@@ -343,24 +347,6 @@ func (m *resourceAccessor) CheckVerificationCode(ctx context.Context, token, cod
 		return nil, err
 	}
 	return resp, nil
-}
-
-func (m *resourceAccessor) ClaimMedia(ctx context.Context, req *media.ClaimMediaRequest) error {
-	account := gqlctx.Account(ctx)
-	if account == nil {
-		return errors.ErrNotAuthenticated(ctx)
-	}
-	canAccess, err := m.media.CanAccess(ctx, &media.CanAccessRequest{
-		MediaIDs:  req.MediaIDs,
-		AccountID: account.ID,
-	})
-	if err != nil {
-		return err
-	} else if !canAccess.CanAccess {
-		return errors.ErrNotAuthorized(ctx, strings.Join(req.MediaIDs, ", "))
-	}
-	_, err = m.media.ClaimMedia(ctx, req)
-	return err
 }
 
 func (m *resourceAccessor) CreateAccount(ctx context.Context, req *auth.CreateAccountRequest) (*auth.CreateAccountResponse, error) {
@@ -656,27 +642,6 @@ func (m *resourceAccessor) MarkThreadsAsRead(ctx context.Context, req *threading
 	}
 
 	return m.threading.MarkThreadsAsRead(ctx, req)
-}
-
-func (m *resourceAccessor) MediaInfo(ctx context.Context, mediaID string) (*media.MediaInfo, error) {
-	// TODO: Auth the resource once it comes back and we know who it belongs to
-	infos, err := m.mediaInfos(ctx, []string{mediaID})
-	if err != nil {
-		return nil, err
-	}
-	info := infos[mediaID]
-	if info == nil {
-		return nil, ErrNotFound
-	}
-	return info, nil
-}
-
-func (m *resourceAccessor) UpdateMedia(ctx context.Context, req *media.UpdateMediaRequest) (*media.MediaInfo, error) {
-	resp, err := m.media.UpdateMedia(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-	return resp.MediaInfo, nil
 }
 
 func (m *resourceAccessor) OnboardingThreadEvent(ctx context.Context, req *threading.OnboardingThreadEventRequest) (*threading.OnboardingThreadEventResponse, error) {
@@ -1668,16 +1633,6 @@ func (m *resourceAccessor) entityDomain(ctx context.Context, entityID, domain st
 		return nil, err
 	}
 	return resp, nil
-}
-
-func (m *resourceAccessor) mediaInfos(ctx context.Context, mediaIDs []string) (map[string]*media.MediaInfo, error) {
-	resp, err := m.media.MediaInfos(ctx, &media.MediaInfosRequest{
-		MediaIDs: mediaIDs,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return resp.MediaInfos, nil
 }
 
 func (m *resourceAccessor) initiatePhoneCall(ctx context.Context, req *excomms.InitiatePhoneCallRequest) (*excomms.InitiatePhoneCallResponse, error) {

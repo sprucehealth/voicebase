@@ -56,20 +56,30 @@ var messageInputType = graphql.NewInputObject(
 )
 
 var (
+	attachmentTypeAudio          = "AUDIO"
 	attachmentTypeCarePlan       = "CARE_PLAN"
+	attachmentTypeDocument       = "DOCUMENT"
+	attachmentTypeGenericURL     = "GENERIC_URL"
 	attachmentTypeImage          = "IMAGE"
+	attachmentTypePaymentRequest = "PAYMENT_REQUEST"
 	attachmentTypeVideo          = "VIDEO"
 	attachmentTypeVisit          = "VISIT"
-	attachmentTypePaymentRequest = "PAYMENT_REQUEST"
-	attachmentTypeDocument       = "DOCUMENT"
 )
 
 var attachmentInputTypeEnum = graphql.NewEnum(graphql.EnumConfig{
 	Name: "AttachmentInputType",
 	Values: graphql.EnumValueConfigMap{
+		attachmentTypeAudio: &graphql.EnumValueConfig{
+			Value:       attachmentTypeAudio,
+			Description: "The attachment type representing an audio recording",
+		},
 		attachmentTypeCarePlan: &graphql.EnumValueConfig{
 			Value:       attachmentTypeCarePlan,
 			Description: "The attachment type representing a care plan",
+		},
+		attachmentTypeGenericURL: &graphql.EnumValueConfig{
+			Value:       attachmentTypeGenericURL,
+			Description: "The attachment type representing a generic URL",
 		},
 		attachmentTypeImage: &graphql.EnumValueConfig{
 			Value:       attachmentTypeImage,
@@ -85,7 +95,7 @@ var attachmentInputTypeEnum = graphql.NewEnum(graphql.EnumConfig{
 		},
 		attachmentTypePaymentRequest: &graphql.EnumValueConfig{
 			Value:       attachmentTypePaymentRequest,
-			Description: "The attachment type representing a paymentRequest",
+			Description: "The attachment type representing a payment request",
 		},
 		attachmentTypeDocument: &graphql.EnumValueConfig{
 			Value:       attachmentTypeDocument,
@@ -294,6 +304,48 @@ var postMessageMutation = &graphql.Field{
 		} else if err != nil {
 			return nil, errors.New("text is not valid markup")
 		}
+
+		// Validate referenced entities and covert tag to plain text for any that aren't allowed
+		// first make a quick check to make sure there's any refs to avoid lookups
+		hasRefs := false
+		for _, e := range textBML {
+			if _, ok := e.(*bml.Ref); ok {
+				hasRefs = true
+				break
+			}
+		}
+		if hasRefs {
+			threadType, err := transformThreadTypeToResponse(thr.Type)
+			if err != nil {
+				return nil, errors.Trace(err)
+			}
+			refEntities, err := addressableEntitiesForThread(ctx, ram, thr.OrganizationID, thr.ID, threadType)
+			if err != nil {
+				return nil, errors.Trace(err)
+			}
+			refEntitiesMap := make(map[string]*directory.Entity, len(refEntities))
+			for _, e := range refEntities {
+				refEntitiesMap[e.ID] = e
+			}
+			for i, e := range textBML {
+				if r, ok := e.(*bml.Ref); ok {
+					switch r.Type {
+					case bml.EntityRef:
+						e := refEntitiesMap[r.ID]
+						if e == nil {
+							// If the entitiy isn't in the addressable list then replace the tag with plain text
+							textBML[i] = r.Text
+						} else {
+							// Make sure the name of the addressable entity matches what it should
+							r.Text = e.Info.DisplayName
+						}
+					default:
+						return nil, errors.Errorf("unknown reference type %s", r.Type)
+					}
+				}
+			}
+		}
+
 		plainText, err := textBML.PlainText()
 		if err != nil {
 			// Shouldn't fail here since the parsing should have done validation
@@ -313,179 +365,35 @@ var postMessageMutation = &graphql.Field{
 		}
 		summary := fmt.Sprintf("%s: %s", fromName, plainText)
 
-		// Need to track the care plans so we can flag them as submitted after posting
-		var carePlans []*care.CarePlan
-
-		attachments := make([]*threading.Attachment, len(in.Msg.Attachments))
-		for i, mAttachment := range in.Msg.Attachments {
-			// Backfill the attachmentID from the deprecated mediaID
-			if mAttachment.MediaID != "" {
-				mAttachment.AttachmentID = mAttachment.MediaID
-			}
-			mAttachmentType, err := attachmentTypeEnumAsThreadingEnum(mAttachment.Type)
-			if err != nil {
-				return nil, err
-			}
-			// TODO: Verify that the media at the ID exists
-			var attachment *threading.Attachment
-			switch mAttachmentType {
-			case threading.ATTACHMENT_TYPE_VISIT:
-
-				// can only attach visits on secure external threads
-				if thr.Type != threading.THREAD_TYPE_SECURE_EXTERNAL {
-					return nil, errors.ErrNotSupported(ctx, fmt.Errorf("Cannot attach a visit to thread of type %s", thr.Type.String()))
-				}
-
-				// ensure that the visit layout exists from which to create a visit
-				visitLayoutRes, err := ram.VisitLayout(ctx, &layout.GetVisitLayoutRequest{
-					ID: mAttachment.AttachmentID,
-				})
-				if err != nil {
-					return nil, err
-				}
-
-				// create the visit from the visit layout
-				createVisitRes, err := ram.CreateVisit(ctx, &care.CreateVisitRequest{
-					EntityID:        thr.PrimaryEntityID,
-					Name:            visitLayoutRes.VisitLayout.Name,
-					LayoutVersionID: visitLayoutRes.VisitLayout.Version.ID,
-					OrganizationID:  thr.OrganizationID,
-					CreatorID:       ent.ID,
-				})
-				if err != nil {
-					return nil, err
-				}
-
-				attachment = &threading.Attachment{
-					Type:  mAttachmentType,
-					Title: createVisitRes.Visit.Name,
-					URL:   deeplink.VisitURL(svc.webDomain, thr.ID, createVisitRes.Visit.ID),
-					Data: &threading.Attachment_Visit{
-						Visit: &threading.VisitAttachment{
-							VisitID:   createVisitRes.Visit.ID,
-							VisitName: createVisitRes.Visit.Name,
-						},
-					},
-				}
-			case threading.ATTACHMENT_TYPE_CARE_PLAN:
-				// can only attach visits on secure external threads
-				if thr.Type != threading.THREAD_TYPE_SECURE_EXTERNAL {
-					return nil, errors.ErrNotSupported(ctx, fmt.Errorf("Cannot attach a care plan to thread of type %s", thr.Type.String()))
-				}
-
-				// Make sure the care plan exists, the poster has access to it, and it hasn't yet been submitted
-				cp, err := ram.CarePlan(ctx, mAttachment.AttachmentID)
-				if err != nil {
-					return nil, err
-				}
-				if cp.Submitted {
-					return &postMessageOutput{
-						Success:      false,
-						ErrorCode:    postMessageErrorCodeInvalidAttachment,
-						ErrorMessage: "The attached care plan has already been submitted.",
-					}, nil
-				}
-				carePlans = append(carePlans, cp)
-
-				attachment = &threading.Attachment{
-					Type:  mAttachmentType,
-					Title: cp.Name,
-					URL:   deeplink.CarePlanURL(svc.webDomain, thr.ID, cp.ID),
-					Data: &threading.Attachment_CarePlan{
-						CarePlan: &threading.CarePlanAttachment{
-							CarePlanID:   cp.ID,
-							CarePlanName: cp.Name,
-						},
-					},
-				}
-			case threading.ATTACHMENT_TYPE_IMAGE:
-				info, err := ram.MediaInfo(ctx, mAttachment.AttachmentID)
-				if err != nil {
-					return nil, fmt.Errorf("Error while locating media info for %s: %s", mAttachment.AttachmentID, err)
-				}
-				attachment = &threading.Attachment{
-					Type:  mAttachmentType,
-					Title: mAttachment.Title,
-					URL:   info.ID,
-					Data: &threading.Attachment_Image{
-						Image: &threading.ImageAttachment{
-							Mimetype: info.MIME.Type + "/" + info.MIME.Subtype,
-							MediaID:  info.ID,
-						},
-					},
-				}
-			case threading.ATTACHMENT_TYPE_VIDEO:
-				info, err := ram.MediaInfo(ctx, mAttachment.AttachmentID)
-				if err != nil {
-					return nil, fmt.Errorf("Error while locating media info for %s: %s", mAttachment.AttachmentID, err)
-				}
-				attachment = &threading.Attachment{
-					Type:  mAttachmentType,
-					Title: mAttachment.Title,
-					URL:   info.ID,
-					Data: &threading.Attachment_Video{
-						Video: &threading.VideoAttachment{
-							Mimetype:   info.MIME.Type + "/" + info.MIME.Subtype,
-							MediaID:    info.ID,
-							DurationNS: info.DurationNS,
-						},
-					},
-				}
-			case threading.ATTACHMENT_TYPE_DOCUMENT:
-				info, err := ram.MediaInfo(ctx, mAttachment.AttachmentID)
-				if err != nil {
-					return nil, fmt.Errorf("Error while locating media info for %s : %s", mAttachment.AttachmentID, err)
-				}
-				attachment = &threading.Attachment{
-					Type:  mAttachmentType,
-					Title: mAttachment.Title,
-					URL:   info.ID,
-					Data: &threading.Attachment_Document{
-						Document: &threading.DocumentAttachment{
-							Mimetype: media.MIMEType(info.MIME),
-							MediaID:  info.ID,
-						},
-					},
-				}
-			case threading.ATTACHMENT_TYPE_PAYMENT_REQUEST:
-				resp, err := ram.Payment(ctx, &payments.PaymentRequest{
-					PaymentID: mAttachment.AttachmentID,
-				})
-				if err != nil {
-					return nil, fmt.Errorf("Error while locating payment info for %s: %s", mAttachment.AttachmentID, err)
-				}
-				attachment = &threading.Attachment{
-					Type:  mAttachmentType,
-					Title: payments.FormatAmount(resp.Payment.Amount, "USD"),
-					// TODO: Deep link to payment
-					Data: &threading.Attachment_PaymentRequest{
-						PaymentRequest: &threading.PaymentRequestAttachment{
-							PaymentID: resp.Payment.ID,
-						},
-					},
-				}
-			default:
-				return nil, fmt.Errorf("Unknown message attachment type %d", mAttachmentType)
-			}
-			attachments[i] = attachment
+		attachments, carePlans, err := processIncomingAttachments(ctx, ram, svc, ent, thr.OrganizationID, in.Msg.Attachments, thr)
+		if e, ok := err.(errInvalidAttachment); ok {
+			return &postMessageOutput{
+				Success:      false,
+				ErrorCode:    postMessageErrorCodeInvalidAttachment,
+				ErrorMessage: string(e),
+			}, nil
+		} else if err != nil {
+			return nil, err
 		}
 
 		req := &threading.PostMessageRequest{
 			ThreadID:     in.ThreadID,
-			Text:         in.Msg.Text,
-			Internal:     in.Msg.Internal,
 			FromEntityID: ent.ID,
-			Source: &threading.Endpoint{
-				Channel: threading.ENDPOINT_CHANNEL_APP,
-				ID:      ent.ID,
+			UUID:         in.Msg.UUID,
+			Message: &threading.MessagePost{
+				Text:     in.Msg.Text,
+				Internal: in.Msg.Internal,
+				Source: &threading.Endpoint{
+					Channel: threading.ENDPOINT_CHANNEL_APP,
+					ID:      ent.ID,
+				},
+				Summary:     summary,
+				Attachments: attachments,
 			},
-			Summary:     summary,
-			Attachments: attachments,
-			UUID:        in.Msg.UUID,
 		}
 
 		if primaryEntity == nil || primaryEntity.Type == directory.EntityType_ORGANIZATION {
-			req.Internal = false
+			req.Message.Internal = false
 		}
 
 		title, err := buildMessageTitleBasedOnDestinations(req, in.Msg.Destinations, thr, ent, primaryEntity)
@@ -494,7 +402,7 @@ var postMessageMutation = &graphql.Field{
 		}
 
 		if len(title) == 0 {
-			for _, a := range req.Attachments {
+			for _, a := range req.Message.Attachments {
 				if a.Type == threading.ATTACHMENT_TYPE_VISIT {
 					title = append(title, "Shared a visit:")
 					break
@@ -518,7 +426,7 @@ var postMessageMutation = &graphql.Field{
 		if err != nil {
 			return nil, errors.InternalError(ctx, fmt.Errorf("invalid title BML %+v: %s", title, err))
 		}
-		req.Title = titleStr
+		req.Message.Title = titleStr
 
 		pmres, err := ram.PostMessage(ctx, req)
 		if err != nil {
@@ -560,7 +468,7 @@ var postMessageMutation = &graphql.Field{
 func trackPostMessage(ctx context.Context, thr *threading.Thread, req *threading.PostMessageRequest) {
 	acc := gqlctx.Account(ctx)
 
-	for _, attachment := range req.Attachments {
+	for _, attachment := range req.Message.Attachments {
 		switch attachment.GetData().(type) {
 		case *threading.Attachment_Visit:
 			analytics.SegmentTrack(&segment.Track{
@@ -613,7 +521,7 @@ func buildMessageTitleBasedOnDestinations(
 	var title bml.BML
 	// For a message to be considered by sending externally it needs to marked as not internal,
 	// sent by someone who is internal, and there needs to be a primary entity on the thread.
-	isExternal := !req.Internal && thr.PrimaryEntityID != "" && fromEntity.Type == directory.EntityType_INTERNAL && primaryEntity.Type == directory.EntityType_EXTERNAL
+	isExternal := !req.Message.Internal && thr.PrimaryEntityID != "" && fromEntity.Type == directory.EntityType_INTERNAL && primaryEntity.Type == directory.EntityType_EXTERNAL
 	if isExternal && len(dests) != 0 {
 		destSet := make(map[string]struct{}, len(dests))
 		for _, d := range dests {
@@ -643,7 +551,7 @@ func buildMessageTitleBasedOnDestinations(
 			if e == nil {
 				return nil, fmt.Errorf("The provided destination contact info does not belong to the primary entity for this thread: %q, %q", d.Channel, d.ID)
 			}
-			req.Destinations = append(req.Destinations, e)
+			req.Message.Destinations = append(req.Message.Destinations, e)
 			switch e.Channel {
 			case threading.ENDPOINT_CHANNEL_SMS:
 				destSet["SMS"] = struct{}{}
@@ -662,8 +570,187 @@ func buildMessageTitleBasedOnDestinations(
 			}
 			title = append(title, d)
 		}
-	} else if req.Internal {
+	} else if req.Message.Internal {
 		title = append(title[:0], "Internal")
 	}
 	return title, nil
+}
+
+type errInvalidAttachment string
+
+func (e errInvalidAttachment) Error() string {
+	return string(e)
+}
+
+func processIncomingAttachments(ctx context.Context, ram raccess.ResourceAccessor, svc *service, ent *directory.Entity, orgID string, attachs []attachmentInput, thread *threading.Thread) ([]*threading.Attachment, []*care.CarePlan, error) {
+	// Need to track the care plans so we can flag them as submitted after posting
+	var carePlans []*care.CarePlan
+	attachments := make([]*threading.Attachment, 0, len(attachs))
+	for _, mAttachment := range attachs {
+		// Backfill the attachmentID from the deprecated mediaID
+		if mAttachment.MediaID != "" {
+			mAttachment.AttachmentID = mAttachment.MediaID
+		}
+		mAttachmentType, err := attachmentTypeEnumAsThreadingEnum(mAttachment.Type)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		// TODO: Verify that the media at the ID exists
+
+		if thread != nil && !allowAttachment(thread, mAttachmentType) {
+			return nil, nil, errors.ErrNotSupported(ctx, fmt.Errorf("Cannot attach %s to thread of type %s", mAttachmentType, thread.Type))
+		}
+
+		var attachment *threading.Attachment
+		switch mAttachmentType {
+		case threading.ATTACHMENT_TYPE_VISIT:
+			// ensure that the visit layout exists from which to create a visit
+			visitLayoutRes, err := ram.VisitLayout(ctx, &layout.GetVisitLayoutRequest{
+				ID: mAttachment.AttachmentID,
+			})
+			if err != nil {
+				return nil, nil, err
+			}
+
+			// create the visit from the visit layout
+			createVisitReq := &care.CreateVisitRequest{
+				Name:            visitLayoutRes.VisitLayout.Name,
+				LayoutVersionID: visitLayoutRes.VisitLayout.Version.ID,
+				CreatorID:       ent.ID,
+			}
+			if thread != nil {
+				createVisitReq.EntityID = thread.PrimaryEntityID
+				createVisitReq.OrganizationID = thread.OrganizationID
+			} else {
+				createVisitReq.EntityID = ent.ID
+				createVisitReq.OrganizationID = orgID
+			}
+			createVisitRes, err := ram.CreateVisit(ctx, createVisitReq)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			attachment = &threading.Attachment{
+				ContentID: mAttachment.AttachmentID,
+				Type:      mAttachmentType,
+				UserTitle: mAttachment.Title,
+				Title:     createVisitRes.Visit.Name,
+				Data: &threading.Attachment_Visit{
+					Visit: &threading.VisitAttachment{
+						VisitID:   createVisitRes.Visit.ID,
+						VisitName: createVisitRes.Visit.Name,
+					},
+				},
+			}
+			if thread != nil {
+				attachment.URL = deeplink.VisitURL(svc.webDomain, thread.ID, createVisitRes.Visit.ID)
+			}
+		case threading.ATTACHMENT_TYPE_CARE_PLAN:
+			// Make sure the care plan exists, the poster has access to it, and it hasn't yet been submitted
+			cp, err := ram.CarePlan(ctx, mAttachment.AttachmentID)
+			if err != nil {
+				return nil, nil, err
+			}
+			if cp.Submitted {
+				return nil, nil, errInvalidAttachment("The attached care plan has already been submitted.")
+			}
+			carePlans = append(carePlans, cp)
+
+			attachment = &threading.Attachment{
+				ContentID: mAttachment.AttachmentID,
+				Type:      mAttachmentType,
+				UserTitle: mAttachment.Title,
+				Title:     cp.Name,
+				Data: &threading.Attachment_CarePlan{
+					CarePlan: &threading.CarePlanAttachment{
+						CarePlanID:   cp.ID,
+						CarePlanName: cp.Name,
+					},
+				},
+			}
+			if thread != nil {
+				attachment.URL = deeplink.CarePlanURL(svc.webDomain, thread.ID, cp.ID)
+
+			}
+		case threading.ATTACHMENT_TYPE_IMAGE:
+			info, err := ram.MediaInfo(ctx, mAttachment.AttachmentID)
+			if err != nil {
+				return nil, nil, fmt.Errorf("Error while locating media info for %s: %s", mAttachment.AttachmentID, err)
+			}
+			attachment = &threading.Attachment{
+				ContentID: mAttachment.AttachmentID,
+				Type:      mAttachmentType,
+				UserTitle: mAttachment.Title,
+				Title:     mAttachment.Title,
+				URL:       info.ID,
+				Data: &threading.Attachment_Image{
+					Image: &threading.ImageAttachment{
+						Mimetype: info.MIME.Type + "/" + info.MIME.Subtype,
+						MediaID:  info.ID,
+					},
+				},
+			}
+		case threading.ATTACHMENT_TYPE_VIDEO:
+			info, err := ram.MediaInfo(ctx, mAttachment.AttachmentID)
+			if err != nil {
+				return nil, nil, fmt.Errorf("Error while locating media info for %s: %s", mAttachment.AttachmentID, err)
+			}
+			attachment = &threading.Attachment{
+				ContentID: mAttachment.AttachmentID,
+				Type:      mAttachmentType,
+				UserTitle: mAttachment.Title,
+				Title:     mAttachment.Title,
+				URL:       info.ID,
+				Data: &threading.Attachment_Video{
+					Video: &threading.VideoAttachment{
+						Mimetype:   info.MIME.Type + "/" + info.MIME.Subtype,
+						MediaID:    info.ID,
+						DurationNS: info.DurationNS,
+					},
+				},
+			}
+		case threading.ATTACHMENT_TYPE_DOCUMENT:
+			info, err := ram.MediaInfo(ctx, mAttachment.AttachmentID)
+			if err != nil {
+				return nil, nil, fmt.Errorf("Error while locating media info for %s : %s", mAttachment.AttachmentID, err)
+			}
+			attachment = &threading.Attachment{
+				ContentID: mAttachment.AttachmentID,
+				Type:      mAttachmentType,
+				UserTitle: mAttachment.Title,
+				Title:     mAttachment.Title,
+				URL:       info.ID,
+				Data: &threading.Attachment_Document{
+					Document: &threading.DocumentAttachment{
+						Mimetype: media.MIMEType(info.MIME),
+						MediaID:  info.ID,
+					},
+				},
+			}
+		case threading.ATTACHMENT_TYPE_PAYMENT_REQUEST:
+			resp, err := ram.Payment(ctx, &payments.PaymentRequest{
+				PaymentID: mAttachment.AttachmentID,
+			})
+			if err != nil {
+				return nil, nil, fmt.Errorf("Error while locating payment info for %s: %s", mAttachment.AttachmentID, err)
+			}
+			attachment = &threading.Attachment{
+				ContentID: mAttachment.AttachmentID,
+				Type:      mAttachmentType,
+				UserTitle: mAttachment.Title,
+				Title:     payments.FormatAmount(resp.Payment.Amount, "USD"),
+				// TODO: Deep link to payment
+				Data: &threading.Attachment_PaymentRequest{
+					PaymentRequest: &threading.PaymentRequestAttachment{
+						PaymentID: resp.Payment.ID,
+					},
+				},
+			}
+		default:
+			return nil, nil, fmt.Errorf("Unknown message attachment type %d", mAttachmentType)
+		}
+		attachments = append(attachments, attachment)
+	}
+	return attachments, carePlans, nil
 }

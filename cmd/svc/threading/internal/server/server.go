@@ -278,19 +278,20 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 	if err != nil {
 		return nil, grpcErrorf(codes.InvalidArgument, "Invalid thread origin")
 	}
-	if in.Summary == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "Summary is required")
-	}
-	in.Summary = textutil.TruncateUTF8(in.Summary, maxSummaryLength)
-	if in.MessageTitle != "" {
-		if _, err := bml.Parse(in.MessageTitle); err != nil {
-			return nil, grpcErrorf(codes.InvalidArgument, fmt.Sprintf("MessageTitle is invalid format: %s", err.Error()))
+
+	if in.Message == nil {
+		in.Message = &threading.MessagePost{
+			Summary:      in.DeprecatedSummary,
+			Title:        in.DeprecatedMessageTitle,
+			Attachments:  in.DeprecatedAttachments,
+			Source:       in.DeprecatedSource,
+			Destinations: in.DeprecatedDestinations,
+			Internal:     in.DeprecatedInternal,
 		}
 	}
-	var textRefs []*models.Reference
-	in.Text, textRefs, err = parseRefsAndNormalize(in.Text)
+	textRefs, err := processMessagePost(in.Message)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, fmt.Sprintf("Text is invalid format: %s", errors.Cause(err).Error()))
+		return nil, err
 	}
 
 	memberEntityIDs, err := memberEntityIDsForNewThread(in.Type, in.OrganizationID, in.FromEntityID, in.MemberEntityIDs)
@@ -337,23 +338,23 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 		req := &dal.PostMessageRequest{
 			ThreadID:     threadID,
 			FromEntityID: in.FromEntityID,
-			Internal:     in.Internal,
-			Text:         in.Text,
-			Title:        in.MessageTitle,
+			Internal:     in.Message.Internal,
+			Text:         in.Message.Text,
+			Title:        in.Message.Title,
 			TextRefs:     textRefs,
-			Summary:      in.Summary,
+			Summary:      in.Message.Summary,
 		}
-		if in.Source != nil {
-			req.Source, err = transformEndpointFromRequest(in.Source)
+		if in.Message.Source != nil {
+			req.Source, err = transformEndpointFromRequest(in.Message.Source)
 			if err != nil {
 				return errors.Trace(err)
 			}
 		}
-		req.Attachments, err = transformAttachmentsFromRequest(in.Attachments)
+		req.Attachments, err = transformAttachmentsFromRequest(in.Message.Attachments)
 		if err != nil {
 			return errors.Trace(err)
 		}
-		for _, dc := range in.Destinations {
+		for _, dc := range in.Message.Destinations {
 			d, err := transformEndpointFromRequest(dc)
 			if err != nil {
 				return errors.Trace(err)
@@ -387,7 +388,7 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 	if err != nil {
 		golog.Errorf("Failed to updated saved query when adding thread: %s", threadID)
 	}
-	th, err := transformThreadToResponse(thread, !in.Internal)
+	th, err := transformThreadToResponse(thread, !in.Message.Internal)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -850,19 +851,20 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 	if in.FromEntityID == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "FromEntityID is required")
 	}
-	if in.Summary == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "Summary is required")
-	}
-	in.Summary = textutil.TruncateUTF8(in.Summary, maxSummaryLength)
-	if in.Title != "" {
-		if _, err := bml.Parse(in.Title); err != nil {
-			return nil, grpcErrorf(codes.InvalidArgument, "Title is invalid format: %s", err.Error())
+
+	if in.Message == nil {
+		in.Message = &threading.MessagePost{
+			Summary:      in.DeprecatedSummary,
+			Title:        in.DeprecatedTitle,
+			Attachments:  in.DeprecatedAttachments,
+			Source:       in.DeprecatedSource,
+			Destinations: in.DeprecatedDestinations,
+			Internal:     in.DeprecatedInternal,
 		}
 	}
-	var textRefs []*models.Reference
-	in.Text, textRefs, err = parseRefsAndNormalize(in.Text)
+	textRefs, err := processMessagePost(in.Message)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Text is invalid format: %s", errors.Cause(err).Error())
+		return nil, err
 	}
 
 	threads, err := s.dal.Threads(ctx, []models.ThreadID{threadID})
@@ -883,7 +885,7 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 	var linkedItem *models.ThreadItem
 
 	// TODO: validate any attachments
-	attachments, err := transformAttachmentsFromRequest(in.Attachments)
+	attachments, err := transformAttachmentsFromRequest(in.Message.Attachments)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -915,20 +917,20 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 		req := &dal.PostMessageRequest{
 			ThreadID:     threadID,
 			FromEntityID: in.FromEntityID,
-			Internal:     in.Internal,
-			Text:         in.Text,
-			Title:        in.Title,
+			Internal:     in.Message.Internal,
+			Text:         in.Message.Text,
+			Title:        in.Message.Title,
 			TextRefs:     textRefs,
-			Summary:      in.Summary,
+			Summary:      in.Message.Summary,
 			Attachments:  attachments,
 		}
-		if in.Source != nil {
-			req.Source, err = transformEndpointFromRequest(in.Source)
+		if in.Message.Source != nil {
+			req.Source, err = transformEndpointFromRequest(in.Message.Source)
 			if err != nil {
 				return errors.Trace(err)
 			}
 		}
-		for _, dc := range in.Destinations {
+		for _, dc := range in.Message.Destinations {
 			d, err := transformEndpointFromRequest(dc)
 			if err != nil {
 				return errors.Trace(err)
@@ -973,13 +975,13 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 		}
 
 		// Also post in linked thread if there is one
-		if linkedThread != nil && !in.Internal {
+		if linkedThread != nil && !in.Message.Internal {
 			// TODO: should use primary entity name here
-			summary, err := models.SummaryFromText("Spruce: " + in.Text)
+			summary, err := models.SummaryFromText("Spruce: " + in.Message.Text)
 			if err != nil {
 				return errors.Trace(err)
 			}
-			text := in.Text
+			text := in.Message.Text
 			if prependSender {
 				resp, err := s.directoryClient.LookupEntities(ctx, &directory.LookupEntitiesRequest{
 					LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
@@ -1007,13 +1009,13 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 				ThreadID:     linkedThread.ID,
 				FromEntityID: linkedThread.PrimaryEntityID,
 				Text:         text,
-				Title:        in.Title,
+				Title:        in.Message.Title,
 				TextRefs:     textRefs,
 				Summary:      summary,
 				Attachments:  attachments,
 			}
-			if in.Source != nil {
-				req.Source, err = transformEndpointFromRequest(in.Source)
+			if in.Message.Source != nil {
+				req.Source, err = transformEndpointFromRequest(in.Message.Source)
 				if err != nil {
 					return errors.Trace(err)
 				}
@@ -1041,7 +1043,7 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 		golog.Errorf("Failed to updated saved query for thread %s: %s", thread.ID, err)
 	}
 
-	th, err := transformThreadToResponse(thread, !in.Internal)
+	th, err := transformThreadToResponse(thread, !in.Message.Internal)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

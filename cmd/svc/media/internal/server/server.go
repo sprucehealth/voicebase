@@ -93,6 +93,40 @@ func (s *server) ClaimMedia(ctx context.Context, rd *media.ClaimMediaRequest) (*
 	return &media.ClaimMediaResponse{}, nil
 }
 
+func (s *server) CloneMedia(ctx context.Context, req *media.CloneMediaRequest) (*media.CloneMediaResponse, error) {
+	id, err := dal.ParseMediaID(req.MediaID)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid media ID %s", req.MediaID)
+	}
+	ownerType, err := dal.ParseMediaOwnerType(req.OwnerType.String())
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "Unknown owner type: %s", req.OwnerType)
+	}
+	if req.OwnerID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "Owner ID required")
+	}
+	meta, err := s.svc.CopyMedia(ctx, ownerType, req.OwnerID, id)
+	if errors.Cause(err) == dal.ErrNotFound {
+		return nil, grpcErrorf(codes.NotFound, "media %s not found", id)
+	} else if err != nil {
+		return nil, errors.Trace(err)
+	}
+	ms, err := s.dl.Medias([]dal.MediaID{meta.MediaID})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	if len(ms) == 0 {
+		return nil, errors.Errorf("media %s was just created but is not found", meta.MediaID)
+	}
+	rms, err := s.transformMediasToResponse([]*dal.Media{ms[0]})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return &media.CloneMediaResponse{
+		MediaInfo: rms[0],
+	}, nil
+}
+
 func (s *server) MediaInfos(ctx context.Context, rd *media.MediaInfosRequest) (*media.MediaInfosResponse, error) {
 	var err error
 	ids := make([]dal.MediaID, len(rd.MediaIDs))

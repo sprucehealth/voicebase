@@ -192,8 +192,10 @@ func (w *Worker) postMessage(ctx context.Context, event *operational.NewOrgCreat
 	if _, err := w.threading.PostMessage(ctx, &threading.PostMessageRequest{
 		ThreadID:     event.SpruceSupportThreadID,
 		FromEntityID: res.Thread.PrimaryEntityID,
-		Text:         plainText,
-		Summary:      summary,
+		Message: &threading.MessagePost{
+			Text:    plainText,
+			Summary: summary,
+		},
 	}); err != nil {
 		return errors.Trace(err)
 	}

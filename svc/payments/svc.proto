@@ -160,7 +160,7 @@ message StripeCardCreateRequest {
 
 message CreatePaymentMethodRequest {
 	string entity_id = 1 [(gogoproto.customname) = "EntityID"];
-	bool   default = 2;                 
+	bool   default = 2;
 
 	PaymentMethodStorageType storage_type = 3;
 	PaymentMethodType        type = 4;
@@ -209,7 +209,7 @@ message PaymentResponse {
 
 message SubmitPaymentRequest {
 	string payment_id = 1 [(gogoproto.customname) = "PaymentID"];
-	string thread_id = 3 [(gogoproto.customname) = "ThreadID"]; 
+	string thread_id = 3 [(gogoproto.customname) = "ThreadID"];
 }
 
 message SubmitPaymentResponse {
@@ -234,7 +234,7 @@ message PaymentMethodResponse {
 }
 
 service Payments {
-	rpc AcceptPayment (AcceptPaymentRequest) returns (AcceptPaymentResponse); 
+	rpc AcceptPayment (AcceptPaymentRequest) returns (AcceptPaymentResponse);
 	rpc ConnectVendorAccount (ConnectVendorAccountRequest) returns (ConnectVendorAccountResponse);
 	rpc CreatePayment (CreatePaymentRequest) returns (CreatePaymentResponse);
 	rpc CreatePaymentMethod (CreatePaymentMethodRequest) returns (CreatePaymentMethodResponse);

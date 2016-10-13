@@ -39,24 +39,25 @@ func TestS3(t *testing.T) {
 	storage := NewS3(sess, bucket, "/storage-test")
 
 	// Test not existant object
-	_, _, err := storage.Get("s3://us-east-1/" + bucket + "/storage-test/ofiu3j2n90f32u09fnmeuw9")
+	nonExistantID := "s3://us-east-1/" + bucket + "/storage-test/ofiu3j2n90f32u09fnmeuw9"
+	_, _, err := storage.Get(nonExistantID)
 	if err != ErrNoObject {
 		t.Fatalf("Expected ErrNoObject got %T %+v", err, err)
 	}
-	_, _, err = storage.GetReader("s3://us-east-1/" + bucket + "/storage-test/ofiu3j2n90f32u09fnmeuw9")
+	_, _, err = storage.GetReader(nonExistantID)
 	if err != ErrNoObject {
 		t.Fatalf("Expected ErrNoObject got %T %+v", err, err)
 	}
 
 	// Test put
-	id, err := storage.Put("test-1", data, "", nil)
+	id, err := storage.Put("test-1", data, "image/tiff", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Logf("ID: %s", id)
 	defer func() {
 		if err := storage.Delete(id); err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 	}()
 
@@ -66,6 +67,36 @@ func TestS3(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Logf("Headers: %+v", headers)
+	if headers.Get("Content-Type") != "image/tiff" {
+		t.Errorf("Expected content-type of image/tiff, got %s", headers.Get("Content-Type"))
+	}
+	if !bytes.Equal(out, data) {
+		t.Fatalf("get %+v but expected %+v", out, data)
+	}
+
+	// Copy non-existant object
+	dstID := storage.IDFromName("thecopy")
+	if err := storage.Copy(dstID, nonExistantID); err != ErrNoObject {
+		t.Errorf("Expected error ErrNoObject got %s", err)
+	}
+
+	// Copy object
+	if err := storage.Copy(dstID, id); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := storage.Delete(dstID); err != nil {
+			t.Error(err)
+		}
+	}()
+	out, headers, err = storage.Get(dstID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("Headers: %+v", headers)
+	if headers.Get("Content-Type") != "image/tiff" {
+		t.Errorf("Expected content-type of image/tiff, got %s", headers.Get("Content-Type"))
+	}
 	if !bytes.Equal(out, data) {
 		t.Fatalf("get %+v but expected %+v", out, data)
 	}

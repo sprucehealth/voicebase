@@ -75,8 +75,10 @@ func TestTriage(t *testing.T) {
 	g.ra.Expect(mock.NewExpectation(g.ra.PostMessage, &threading.PostMessageRequest{
 		FromEntityID: entityID,
 		ThreadID:     threadID,
-		Summary:      "Joe Schmoe: Warning! Triaged out of visit before completion",
-		Title:        "Warning! Triaged out of visit before completion: <a href=\"https://test.com/thread/threadID/visit/visit_12345\">infection</a>",
+		Message: &threading.MessagePost{
+			Summary: "Joe Schmoe: Warning! Triaged out of visit before completion",
+			Title:   "Warning! Triaged out of visit before completion: <a href=\"https://test.com/thread/threadID/visit/visit_12345\">infection</a>",
+		},
 	}).WithReturns(&threading.PostMessageResponse{
 		Thread: &threading.Thread{
 			ID:              threadID,

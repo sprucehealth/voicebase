@@ -71,6 +71,8 @@ message Attachment {
 	Type type = 1;
 	string title = 2;
 	string url = 3 [(gogoproto.customname) = "URL"];
+	string user_title = 4;
+	string content_id = 5 [(gogoproto.customname) = "ContentID"];
 	oneof data {
 		ImageAttachment image = 10;
 		AudioAttachment audio = 11;

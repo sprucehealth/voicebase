@@ -50,6 +50,15 @@ func (c *Client) CreateOnboardingThread(ctx context.Context, in *threading.Creat
 	return rets[0].(*threading.CreateOnboardingThreadResponse), mock.SafeError(rets[1])
 }
 
+// CreateSavedMessage create a new saved message
+func (c *Client) CreateSavedMessage(ctx context.Context, in *threading.CreateSavedMessageRequest, opts ...grpc.CallOption) (*threading.CreateSavedMessageResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*threading.CreateSavedMessageResponse), mock.SafeError(rets[1])
+}
+
 // CreateThread create a new thread with an initial message
 func (c *Client) CreateThread(ctx context.Context, in *threading.CreateThreadRequest, opts ...grpc.CallOption) (*threading.CreateThreadResponse, error) {
 	rets := c.Expector.Record(in)
@@ -75,6 +84,15 @@ func (c *Client) DeleteMessage(ctx context.Context, in *threading.DeleteMessageR
 		return nil, nil
 	}
 	return rets[0].(*threading.DeleteMessageResponse), mock.SafeError(rets[1])
+}
+
+// DeleteSavedMessage deletes a saved message
+func (c *Client) DeleteSavedMessage(ctx context.Context, in *threading.DeleteSavedMessageRequest, opts ...grpc.CallOption) (*threading.DeleteSavedMessageResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*threading.DeleteSavedMessageResponse), mock.SafeError(rets[1])
 }
 
 // DeleteThread deletes a message from a thread
@@ -157,6 +175,15 @@ func (c *Client) DeleteSavedQueries(ctx context.Context, in *threading.DeleteSav
 	return rets[0].(*threading.DeleteSavedQueriesResponse), mock.SafeError(rets[1])
 }
 
+// SavedMessages returns a set of saved messages
+func (c *Client) SavedMessages(ctx context.Context, in *threading.SavedMessagesRequest, opts ...grpc.CallOption) (*threading.SavedMessagesResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*threading.SavedMessagesResponse), mock.SafeError(rets[1])
+}
+
 func (c *Client) SavedQueryTemplates(ctx context.Context, in *threading.SavedQueryTemplatesRequest, opts ...grpc.CallOption) (*threading.SavedQueryTemplatesResponse, error) {
 	rets := c.Expector.Record(in)
 	if len(rets) == 0 {
@@ -174,6 +201,7 @@ func (c *Client) Thread(ctx context.Context, in *threading.ThreadRequest, opts .
 	return rets[0].(*threading.ThreadResponse), mock.SafeError(rets[1])
 }
 
+// Threads returns threads
 func (c *Client) Threads(ctx context.Context, in *threading.ThreadsRequest, opts ...grpc.CallOption) (*threading.ThreadsResponse, error) {
 	rets := c.Expector.Record(in)
 	if len(rets) == 0 {
@@ -225,6 +253,15 @@ func (c *Client) ThreadMembers(ctx context.Context, in *threading.ThreadMembersR
 		return nil, nil
 	}
 	return rets[0].(*threading.ThreadMembersResponse), mock.SafeError(rets[1])
+}
+
+// UpdateSavedMessage updated a saved message
+func (c *Client) UpdateSavedMessage(ctx context.Context, in *threading.UpdateSavedMessageRequest, opts ...grpc.CallOption) (*threading.UpdateSavedMessageResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*threading.UpdateSavedMessageResponse), mock.SafeError(rets[1])
 }
 
 // UpdateSavedQuery updated a saved query

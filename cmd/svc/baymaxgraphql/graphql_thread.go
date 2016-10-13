@@ -340,75 +340,28 @@ var threadType = graphql.NewObject(
 			},
 			"addressableEntities": &graphql.Field{
 				Type: graphql.NewList(graphql.NewNonNull(entityType)),
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: apiaccess.Provider(func(p graphql.ResolveParams) (interface{}, error) {
 					ctx := p.Context
 					th := p.Source.(*models.Thread)
-					if th == nil {
-						return nil, errors.InternalError(ctx, errors.New("thread is nil"))
-					}
 
 					svc := serviceFromParams(p)
 					acc := gqlctx.Account(p.Context)
-					if acc == nil {
-						return nil, errors.ErrNotAuthenticated(ctx)
-					}
 					ram := raccess.ResourceAccess(p)
+					headers := devicectx.SpruceHeaders(ctx)
 
-					switch th.Type {
-					case models.ThreadTypeTeam:
-						members, err := ram.ThreadMembers(ctx, th.OrganizationID, &threading.ThreadMembersRequest{
-							ThreadID: th.ID,
-						})
-						if err != nil {
-							return nil, err
-						}
-						ms := make([]*models.Entity, len(members))
-						for i, em := range members {
-							e, err := transformEntityToResponse(ctx, svc.staticURLPrefix, em, devicectx.SpruceHeaders(ctx), acc)
-							if err != nil {
-								return nil, err
-							}
-							ms[i] = e
-						}
-						return ms, nil
-					case models.ThreadTypeExternal, models.ThreadTypeSupport, models.ThreadTypeLegacyTeam, models.ThreadTypeSecureExternal:
-
-						// no addressable entities to return for a support thread not in spruce support
-						if th.Type == models.ThreadTypeSupport && th.OrganizationID != *flagSpruceOrgID {
-							return nil, nil
-						}
-
-						orgEntity, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
-							LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-							LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-								EntityID: th.OrganizationID,
-							},
-							RequestedInformation: &directory.RequestedInformation{
-								Depth:             0,
-								EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERS, directory.EntityInformation_CONTACTS},
-							},
-							Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
-							RootTypes:  []directory.EntityType{directory.EntityType_ORGANIZATION},
-							ChildTypes: []directory.EntityType{directory.EntityType_INTERNAL},
-						})
-						if err != nil {
-							return nil, err
-						}
-
-						entities := make([]*models.Entity, 0, len(orgEntity.Members))
-						for _, em := range orgEntity.Members {
-							if em.Type == directory.EntityType_INTERNAL {
-								ent, err := transformEntityToResponse(ctx, svc.staticURLPrefix, em, devicectx.SpruceHeaders(ctx), acc)
-								if err != nil {
-									return nil, errors.InternalError(ctx, err)
-								}
-								entities = append(entities, ent)
-							}
-						}
-						return entities, nil
+					entities, err := addressableEntitiesForThread(ctx, ram, th.OrganizationID, th.ID, th.Type)
+					if err != nil {
+						return nil, errors.Trace(err)
 					}
-					return nil, nil
-				},
+					resEntities := make([]*models.Entity, 0, len(entities))
+					for i, e := range entities {
+						resEntities[i], err = transformEntityToResponse(ctx, svc.staticURLPrefix, e, headers, acc)
+						if err != nil {
+							return nil, errors.Trace(err)
+						}
+					}
+					return resEntities, nil
+				}),
 			},
 			// TODO: We currently just assume all contacts for an entity are available endpoints
 			"availableEndpoints": &graphql.Field{
@@ -706,4 +659,45 @@ func resolveAllowPaymentRequestAttachments(p graphql.ResolveParams) (interface{}
 	}
 
 	return len(resp.VendorAccounts) != 0, nil
+}
+
+func addressableEntitiesForThread(ctx context.Context, ram raccess.ResourceAccessor, orgID, threadID, threadType string) ([]*directory.Entity, error) {
+	switch threadType {
+	case models.ThreadTypeTeam:
+		members, err := ram.ThreadMembers(ctx, orgID, &threading.ThreadMembersRequest{
+			ThreadID: threadID,
+		})
+		return members, errors.Trace(err)
+	case models.ThreadTypeExternal, models.ThreadTypeSupport, models.ThreadTypeLegacyTeam, models.ThreadTypeSecureExternal:
+		// no addressable entities to return for a support thread not in spruce support
+		if threadType == models.ThreadTypeSupport && orgID != *flagSpruceOrgID {
+			return nil, nil
+		}
+
+		orgEntity, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+				EntityID: orgID,
+			},
+			RequestedInformation: &directory.RequestedInformation{
+				Depth:             0,
+				EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERS, directory.EntityInformation_CONTACTS},
+			},
+			Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+			RootTypes:  []directory.EntityType{directory.EntityType_ORGANIZATION},
+			ChildTypes: []directory.EntityType{directory.EntityType_INTERNAL},
+		})
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+
+		entities := make([]*directory.Entity, 0, len(orgEntity.Members))
+		for _, em := range orgEntity.Members {
+			if em.Type == directory.EntityType_INTERNAL {
+				entities = append(entities, em)
+			}
+		}
+		return entities, nil
+	}
+	return nil, nil
 }

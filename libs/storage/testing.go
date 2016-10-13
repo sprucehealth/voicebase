@@ -102,3 +102,10 @@ func (s *testStore) URL(id string) string {
 func (s *testStore) ExpiringURL(id string, duration time.Duration) (string, error) {
 	return id, nil
 }
+
+func (s *testStore) Copy(dstID, srcID string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.objects[dstID] = s.objects[srcID]
+	return nil
+}

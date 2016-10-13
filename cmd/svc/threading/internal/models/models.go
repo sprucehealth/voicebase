@@ -109,6 +109,38 @@ func EmptyThreadItemID() ThreadItemID {
 	}
 }
 
+// SavedMessageID is the ID for a SavedMessage
+type SavedMessageID struct{ model.ObjectID }
+
+func NewSavedMessageID() (SavedMessageID, error) {
+	id, err := idgen.NewID()
+	if err != nil {
+		return SavedMessageID{}, errors.Trace(err)
+	}
+	return SavedMessageID{
+		model.ObjectID{
+			Prefix:  threading.SavedMessageIDPrefix,
+			Val:     id,
+			IsValid: true,
+		},
+	}, nil
+}
+
+func ParseSavedMessageID(s string) (SavedMessageID, error) {
+	t := EmptySavedMessageID()
+	err := t.UnmarshalText([]byte(s))
+	return t, errors.Trace(err)
+}
+
+func EmptySavedMessageID() SavedMessageID {
+	return SavedMessageID{
+		model.ObjectID{
+			Prefix:  threading.SavedMessageIDPrefix,
+			IsValid: false,
+		},
+	}
+}
+
 // SavedQueryID is the ID for a SavedQuery
 type SavedQueryID struct{ model.ObjectID }
 
@@ -148,6 +180,20 @@ const (
 	// ItemTypeMessage is a message item which is the only concrete type. Every other item type is an event.
 	ItemTypeMessage ItemType = "MESSAGE"
 )
+
+// ItemValue is the interface for a thread item value
+type ItemValue interface {
+	Marshal() ([]byte, error)
+}
+
+// ItemTypeForValue returns the ItemType for a given value object
+func ItemTypeForValue(v ItemValue) (ItemType, error) {
+	switch v.(type) {
+	case *Message:
+		return ItemTypeMessage, nil
+	}
+	return "INVALID", errors.Errorf("invalid item value type %T", v)
+}
 
 // ThreadEvent is an enum of possible thread event types
 type ThreadEvent string
@@ -333,7 +379,7 @@ type Thread struct {
 }
 
 // ThreadIDs is a convenience method for retrieving ID's from a list
-// Note: This could be made more gneeric using reflection but don't want the performance cost
+// Note: This could be made more generic using reflection but don't want the performance cost
 func ThreadIDs(ts []*Thread) []ThreadID {
 	ids := make([]ThreadID, len(ts))
 	for i, t := range ts {
@@ -362,7 +408,7 @@ type ThreadItem struct {
 	ActorEntityID string
 	Internal      bool
 	Type          ItemType
-	Data          interface{}
+	Data          ItemValue
 }
 
 // ThreadItemViewDetails is the view details associated with a thread item
@@ -370,6 +416,19 @@ type ThreadItemViewDetails struct {
 	ThreadItemID  ThreadItemID
 	ActorEntityID string
 	ViewTime      *time.Time
+}
+
+// SavedMessage is a message template
+type SavedMessage struct {
+	ID              SavedMessageID
+	Title           string
+	OrganizationID  string
+	CreatorEntityID string
+	OwnerEntityID   string
+	Internal        bool
+	Content         ItemValue
+	Created         time.Time
+	Modified        time.Time
 }
 
 // DefaultSavedQueries is the default set of queries that gets created for every organization
