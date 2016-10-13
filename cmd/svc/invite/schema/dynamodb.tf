@@ -9,38 +9,6 @@ resource "aws_dynamodb_table" "invite" {
       type = "S"
     }
      attribute {
-      name = "CreatedTimestamp"
-      type = "N"
-    }
-     attribute {
-      name = "Type"
-      type = "S"
-    }
-     attribute {
-      name = "URL"
-      type = "S"
-    }
-     attribute {
-      name = "OrganizationEntityID"
-      type = "S"
-    }
-     attribute {
-      name = "Email"
-      type = "S"
-    }
-     attribute {
-      name = "InviterEntityID"
-      type = "S"
-    }
-     attribute {
-      name = "PhoneNumber"
-      type = "S"
-    }
-     attribute {
-      name = "Values"
-      type = "S"
-    }
-     attribute {
       name = "ParkedEntityID"
       type = "S"
     }

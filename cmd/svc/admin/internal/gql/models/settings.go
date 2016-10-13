@@ -1,59 +1,132 @@
 package models
 
 import (
+	"context"
 	"fmt"
-	"strings"
 
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/settings"
 )
 
+type valueAndConfig struct {
+	Value  *settings.Value
+	Config *settings.Config
+}
+
 // Setting represents the values contained in the settings service
 type Setting struct {
-	Type   string `json:"type"`
-	Key    string `json:"key"`
-	Subkey string `json:"subkey"`
-	// TODO: Perhaps move to a more granular value representation. For now just strings
-	Value string `json:"value"`
+	Type           string   `json:"type"`
+	Key            string   `json:"key"`
+	Subkey         string   `json:"subkey"`
+	SubkeyRequired bool     `json:"subkeyRequired"`
+	Value          string   `json:"value"`
+	Values         []string `json:"values"`
+	ValidValues    []string `json:"validValues"`
 }
 
 // TransformSettingsToModel transforms the internal setting into something understood by graphql
-func TransformSettingsToModel(ss []*settings.Value) []*Setting {
-	mss := make([]*Setting, len(ss))
-	for i, s := range ss {
-		mss[i] = TransformSettingToModel(s)
+func TransformSettingsToModel(ctx context.Context, settingsClient settings.SettingsClient, vs []*settings.Value) ([]*Setting, error) {
+	mss := make([]*Setting, len(vs))
+	vcs, err := getValuesAndConfigs(ctx, settingsClient, vs)
+	if err != nil {
+		return nil, errors.Trace(err)
 	}
-	return mss
+	for i, vc := range vcs {
+		mss[i], err = transformSettingToModel(ctx, vc)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+	}
+	return mss, nil
+}
+
+// TODO: Should likely get these in bulk for the list
+func getValuesAndConfigs(ctx context.Context, settingsClient settings.SettingsClient, vs []*settings.Value) ([]*valueAndConfig, error) {
+	dedeupedKeys := make(map[string]struct{}, len(vs))
+	for _, v := range vs {
+		dedeupedKeys[v.Key.Key] = struct{}{}
+	}
+	keys := make([]string, len(dedeupedKeys))
+	var idx int
+	for k := range dedeupedKeys {
+		keys[idx] = k
+		idx++
+	}
+	resp, err := settingsClient.GetConfigs(ctx, &settings.GetConfigsRequest{
+		Keys: keys,
+	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	configMap := make(map[string]*settings.Config)
+	for _, c := range resp.Configs {
+		configMap[c.Key] = c
+	}
+	valueAndConfigs := make([]*valueAndConfig, len(vs))
+	for i, v := range vs {
+		valueAndConfigs[i] = &valueAndConfig{
+			Value:  v,
+			Config: configMap[v.Key.Key],
+		}
+	}
+	return valueAndConfigs, nil
 }
 
 // TransformSettingToModel transforms the internal setting into something understood by graphql
-func TransformSettingToModel(s *settings.Value) *Setting {
+func transformSettingToModel(ctx context.Context, vc *valueAndConfig) (*Setting, error) {
 	ms := &Setting{
-		Type:   s.Type.String(),
-		Key:    s.Key.Key,
-		Subkey: s.Key.Subkey,
+		Type:           vc.Value.Type.String(),
+		Key:            vc.Value.Key.Key,
+		Subkey:         vc.Value.Key.Subkey,
+		SubkeyRequired: vc.Config.AllowSubkeys,
 	}
-	switch s.Type {
+	var err error
+	switch vc.Value.Type {
 	case settings.ConfigType_BOOLEAN:
-		ms.Value = fmt.Sprintf("%v", s.GetBoolean().Value)
+		ms.Value = fmt.Sprintf("%v", vc.Value.GetBoolean().Value)
 	case settings.ConfigType_SINGLE_SELECT:
-		ms.Value = s.GetSingleSelect().Item.FreeTextResponse
-	case settings.ConfigType_MULTI_SELECT:
-		values := make([]string, len(s.GetMultiSelect().Items))
-		for i, si := range s.GetMultiSelect().Items {
-			values[i] = si.FreeTextResponse
+		ms.Value = vc.Value.GetSingleSelect().Item.ID
+		ms.ValidValues, err = getConfigValidValues(ctx, vc.Config)
+		if err != nil {
+			return nil, errors.Trace(err)
 		}
-		ms.Value = strings.Join(values, ", ")
+	case settings.ConfigType_MULTI_SELECT:
+		values := make([]string, len(vc.Value.GetMultiSelect().Items))
+		for i, si := range vc.Value.GetMultiSelect().Items {
+			values[i] = si.ID
+		}
+		ms.Values = values
+		ms.ValidValues, err = getConfigValidValues(ctx, vc.Config)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
 	case settings.ConfigType_STRING_LIST:
-		values := make([]string, len(s.GetStringList().Values))
-		for i, si := range s.GetStringList().Values {
+		values := make([]string, len(vc.Value.GetStringList().Values))
+		for i, si := range vc.Value.GetStringList().Values {
 			values[i] = si
 		}
-		ms.Value = strings.Join(values, ", ")
+		ms.Values = values
 	case settings.ConfigType_INTEGER:
-		ms.Value = fmt.Sprintf("%d", s.GetInteger().Value)
+		ms.Value = fmt.Sprintf("%d", vc.Value.GetInteger().Value)
 	default:
-		golog.Errorf("Unknown setting type %s", s.Type)
+		golog.Errorf("Unknown setting type %s", vc.Value.Type)
 	}
-	return ms
+	return ms, nil
+}
+
+func getConfigValidValues(ctx context.Context, config *settings.Config) ([]string, error) {
+	var validItems []*settings.Item
+	switch config.Type {
+	case settings.ConfigType_SINGLE_SELECT:
+		validItems = config.GetSingleSelect().Items
+	case settings.ConfigType_MULTI_SELECT:
+		validItems = config.GetMultiSelect().Items
+	}
+
+	var validValues []string
+	for _, i := range validItems {
+		validValues = append(validValues, i.ID)
+	}
+	return validValues, nil
 }

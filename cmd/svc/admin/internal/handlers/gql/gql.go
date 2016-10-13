@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/graphql"
@@ -29,16 +30,22 @@ type gqlReq struct {
 type gqlHandler struct {
 	behindProxy     bool
 	schema          graphql.Schema
+	domains         *client.Domain
 	directoryClient directory.DirectoryClient
 	settingsClient  settings.SettingsClient
 	paymentsClient  payments.PaymentsClient
+	inviteClient    invite.InviteClient
 }
 
 // New returns an initialized instance of *gqlHandler
 func New(
+	adminAPIDomain string,
+	inviteAPIDomain string,
+	webDomain string,
 	directoryClient directory.DirectoryClient,
 	settingsClient settings.SettingsClient,
 	paymentsClient payments.PaymentsClient,
+	inviteClient invite.InviteClient,
 	signer *sig.Signer,
 	behindProxy bool) (http.Handler, graphql.Schema) {
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
@@ -49,11 +56,17 @@ func New(
 		golog.Fatalf("Failed to initialized gqlHandler: %s", err.Error())
 	}
 	return &gqlHandler{
-		behindProxy:     behindProxy,
-		schema:          schema,
+		behindProxy: behindProxy,
+		schema:      schema,
+		domains: &client.Domain{
+			AdminAPI:  adminAPIDomain,
+			Web:       webDomain,
+			InviteAPI: inviteAPIDomain,
+		},
 		directoryClient: directoryClient,
 		settingsClient:  settingsClient,
 		paymentsClient:  paymentsClient,
+		inviteClient:    inviteClient,
 	}, schema
 }
 
@@ -80,9 +93,11 @@ func (h *gqlHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			"userAgent":  r.UserAgent(),
 			"result":     result,
 		},
+			h.domains,
 			h.directoryClient,
 			h.settingsClient,
-			h.paymentsClient),
+			h.paymentsClient,
+			h.inviteClient),
 	})
 
 	if len(response.Errors) != 0 {

@@ -39,10 +39,14 @@ node {
 			if (deploy) {
 				deployToS3 = "true"
 			}
-			env.FULLCOVERAGE = ""
-			env.TEST_S3_BUCKET = ""
-			env.NO_INTEGRATION_TESTS = "true"
-			env.NO_COVERAGE = "true"
+			def fullCoverage = ""
+			def testS3Bucket = ""
+			def noIntegrationTests = "true"
+			def noCoverage = "true"
+
+			if (gitBranch == "master") {
+				noCoverage = ""
+			}
 
 			def memPath = "/mnt/mem/jenkins/" + name
 			sh "mkdir -p ${memPath}"
@@ -64,16 +68,21 @@ node {
                 -e "GIT_BRANCH=${gitBranch}" \
                 -e "JOB_NAME=${env.JOB_NAME}" \
                 -e "DEPLOY_TO_S3=${deployToS3}" \
-                -e "FULLCOVERAGE=${env.FULLCOVERAGE}" \
-                -e "TEST_S3_BUCKET=${env.TEST_S3_BUCKET}" \
+                -e "FULLCOVERAGE=${fullCoverage}" \
+                -e "TEST_S3_BUCKET=${testS3Bucket}" \
                 -e "PARENT_UID=${parentUID}" \
                 -e "PARENT_GID=${parentGID}" \
-                -e "NO_INTEGRATION_TESTS=${env.NO_INTEGRATION_TESTS}" \
-                -e "NO_COVERAGE=${env.NO_COVERAGE}" \
+                -e "NO_INTEGRATION_TESTS=${noIntegrationTests}" \
+                -e "NO_COVERAGE=${noCoverage}" \
                 -v ${memPath}:/mem \
                 -v ${workspace}:/workspace/go/src/github.com/sprucehealth/backend \
                 -v /var/run/docker.sock:/var/run/docker.sock \
                 ${name}"""
+
+			if (noCoverage == "") {
+				archive(includes: 'coverage/index.html')
+				publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'coverage', reportFiles: 'index.html', reportName: 'Code Coverage'])
+			}
 
 		stage 'Deploy'
 

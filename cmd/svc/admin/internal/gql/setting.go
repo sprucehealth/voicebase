@@ -21,11 +21,13 @@ func newSettingType() *graphql.Object {
 		graphql.ObjectConfig{
 			Name: "Setting",
 			Fields: graphql.Fields{
-				"type":   &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"key":    &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"subkey": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"value":  &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"values": &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(graphql.String))},
+				"type":           &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+				"key":            &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+				"subkey":         &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+				"subkeyRequired": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+				"value":          &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+				"values":         &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(graphql.String))},
+				"validValues":    &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(graphql.String))},
 			},
 		})
 }
@@ -37,16 +39,17 @@ func getEntitySettings(ctx context.Context, settingsClient settings.SettingsClie
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	return models.TransformSettingsToModel(settings.Values), nil
+	return models.TransformSettingsToModel(ctx, settingsClient, settings.Values)
 }
 
 // modifySettingInput
 type modifySettingInput struct {
-	NodeID string   `gql:"nodeID"`
-	Key    string   `gql:"key"`
-	Subkey string   `gql:"subkey"`
-	Value  string   `gql:"value"`
-	Values []string `gql:"values"`
+	NodeID         string   `gql:"nodeID"`
+	Key            string   `gql:"key"`
+	Subkey         string   `gql:"subkey"`
+	SubkeyRequired bool     `gql:"subkeyRequired"`
+	Value          string   `gql:"value"`
+	Values         []string `gql:"values"`
 }
 
 var modifySettingInputType = graphql.NewInputObject(
