@@ -353,7 +353,6 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 	// Only do email verification if it was a direct patient invite
 	var accountEntityID string
 	var orgID string
-	var emailVerified bool
 	switch inv.Type {
 	case invite.LookupInviteResponse_PATIENT:
 		// Assert that the email was verified
@@ -382,7 +381,6 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 		}
 		accountEntityID = inv.GetPatient().Patient.ParkedEntityID
 		orgID = inv.GetPatient().OrganizationEntityID
-		emailVerified = true
 	case invite.LookupInviteResponse_ORGANIZATION_CODE:
 	default:
 		return nil, errors.InternalError(ctx, fmt.Errorf("Unsupported invite type %s", inv.Type))
@@ -468,16 +466,15 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 		}
 	}
 
-	// Update our parked entity
 	patientEntity, err = ram.UpdateEntity(ctx, &directory.UpdateEntityRequest{
 		EntityID:         accountEntityID,
-		UpdateEntityInfo: true,
-		EntityInfo:       entityInfo,
 		UpdateAccountID:  true,
+		EntityInfo:       entityInfo,
+		UpdateEntityInfo: true,
 		AccountID:        res.Account.ID,
 		UpdateContacts:   true,
 		Contacts: []*directory.Contact{
-			{ContactType: directory.ContactType_EMAIL, Value: req.Email, Verified: emailVerified},
+			{ContactType: directory.ContactType_EMAIL, Value: req.Email, Verified: false},
 			{ContactType: directory.ContactType_PHONE, Value: req.PhoneNumber, Verified: true},
 		},
 	})

@@ -154,35 +154,12 @@ var organizationType = graphql.NewObject(
 				Resolve: isSecureThreadsEnabled(),
 			},
 			"entity": &graphql.Field{
-				Type: entityType,
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					org := p.Source.(*models.Organization)
-					if org.Entity != nil {
-						return org.Entity, nil
-					}
-
-					ram := raccess.ResourceAccess(p)
-					svc := serviceFromParams(p)
-					ctx := p.Context
-					acc := gqlctx.Account(ctx)
-					if acc == nil {
-						return nil, errors.ErrNotAuthenticated(ctx)
-					}
-
-					e, err := entityInOrgForAccountID(ctx, ram, org.ID, acc)
-					if err != nil {
-						return nil, errors.InternalError(ctx, err)
-					}
-					if e == nil {
-						return nil, errors.New("entity not found for organization")
-					}
-					sh := devicectx.SpruceHeaders(ctx)
-					rE, err := transformEntityToResponse(ctx, svc.staticURLPrefix, e, sh, gqlctx.Account(ctx))
-					if err != nil {
-						return nil, errors.InternalError(ctx, err)
-					}
-					return rE, nil
-				},
+				Type:    entityType,
+				Resolve: entityWithinOrg(),
+			},
+			"myEntity": &graphql.Field{
+				Type:    entityType,
+				Resolve: entityWithinOrg(),
 			},
 			"contacts": &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(contactInfoType))},
 			"entities": &graphql.Field{
@@ -269,6 +246,36 @@ var organizationType = graphql.NewObject(
 		},
 	},
 )
+
+func entityWithinOrg() func(p graphql.ResolveParams) (interface{}, error) {
+	return apiaccess.Authenticated(
+		func(p graphql.ResolveParams) (interface{}, error) {
+			org := p.Source.(*models.Organization)
+			if org.Entity != nil {
+				return org.Entity, nil
+			}
+
+			ram := raccess.ResourceAccess(p)
+			svc := serviceFromParams(p)
+			ctx := p.Context
+			acc := gqlctx.Account(ctx)
+
+			e, err := entityInOrgForAccountID(ctx, ram, org.ID, acc)
+			if err != nil {
+				return nil, errors.InternalError(ctx, err)
+			}
+			if e == nil {
+				return nil, errors.New("entity not found for organization")
+			}
+			sh := devicectx.SpruceHeaders(ctx)
+			rE, err := transformEntityToResponse(ctx, svc.staticURLPrefix, e, sh, gqlctx.Account(ctx))
+			if err != nil {
+				return nil, errors.InternalError(ctx, err)
+			}
+			return rE, nil
+		},
+	)
+}
 
 func patientInviteURL() func(p graphql.ResolveParams) (interface{}, error) {
 	return func(p graphql.ResolveParams) (interface{}, error) {

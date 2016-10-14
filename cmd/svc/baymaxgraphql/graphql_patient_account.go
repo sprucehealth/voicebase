@@ -34,6 +34,12 @@ var patientAccountType = graphql.NewObject(
 					return patientEntity(p, p.Source.(*models.PatientAccount))
 				},
 			},
+			"accountEntity": &graphql.Field{
+				Type: graphql.NewNonNull(entityType),
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					return patientEntity(p, p.Source.(*models.PatientAccount))
+				},
+			},
 			"organizations": &graphql.Field{
 				Type: graphql.NewList(graphql.NewNonNull(organizationType)),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
@@ -72,6 +78,7 @@ func patientThreads(p graphql.ResolveParams, a *models.PatientAccount) (*Connect
 	if err != nil {
 		return nil, errors.InternalError(ctx, err)
 	}
+
 	req := &threading.QueryThreadsRequest{
 		Type:           threading.QUERY_THREADS_TYPE_ALL_FOR_VIEWER,
 		Iterator:       &threading.Iterator{},
@@ -147,5 +154,11 @@ func patientEntity(p graphql.ResolveParams, a *models.PatientAccount) (*models.E
 	} else if len(entities) != 1 {
 		return nil, fmt.Errorf("expected 1 entity for %s but got %d back", a.GetID(), len(entities))
 	}
-	return transformEntityToResponse(ctx, svc.staticURLPrefix, entities[0], devicectx.SpruceHeaders(ctx), gqlctx.Account(ctx))
+
+	return transformEntityToResponse(
+		ctx,
+		svc.staticURLPrefix,
+		entities[0],
+		devicectx.SpruceHeaders(ctx),
+		gqlctx.Account(ctx))
 }

@@ -770,9 +770,13 @@ func canEditEntity(e *directory.Entity, viewingAccount *auth.Account, sh *device
 		return true
 	}
 
-	// If the viewer is a provider and the entity is an external entity then they can edit
+	// don't allow editing of entity if the account has not been created yet
+	if e.AccountID == "" && e.Type == directory.EntityType_PATIENT {
+		return false
+	}
+
 	if viewingAccount.Type == auth.AccountType_PROVIDER &&
-		e.Type == directory.EntityType_EXTERNAL {
+		(e.Type == directory.EntityType_EXTERNAL || e.Type == directory.EntityType_PATIENT) {
 		if sh.Platform == device.IOS {
 			return (sh.AppVersion != nil && !sh.AppVersion.Equals(&encoding.Version{Major: 1}))
 		}

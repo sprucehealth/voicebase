@@ -133,7 +133,7 @@ func TestCreatePatientAccountMutation(t *testing.T) {
 		AccountID:       "a_1",
 		UpdateContacts:  true,
 		Contacts: []*directory.Contact{
-			{ContactType: directory.ContactType_EMAIL, Value: "someoneElse@somewhere.com", Verified: true},
+			{ContactType: directory.ContactType_EMAIL, Value: "someoneElse@somewhere.com"},
 			{ContactType: directory.ContactType_PHONE, Value: "+14155551212", Verified: true},
 		},
 	}).WithReturns(&directory.Entity{
