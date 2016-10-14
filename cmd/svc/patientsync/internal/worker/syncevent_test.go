@@ -235,8 +235,8 @@ func TestStandardThreadSync_EntityExists(t *testing.T) {
 	}).WithReturns(&directory.LookupEntitiesResponse{
 		Entities: []*directory.Entity{
 			{
-
-				ID: "ent_1",
+				Status: directory.EntityStatus_ACTIVE,
+				ID:     "ent_1",
 				Info: &directory.EntityInfo{
 					FirstName:   "FirstName1",
 					LastName:    "LastName1",
@@ -359,8 +359,8 @@ func TestStandardThreadSync_ThreadExists(t *testing.T) {
 	}).WithReturns(&directory.LookupEntitiesResponse{
 		Entities: []*directory.Entity{
 			{
-
-				ID: "ent_1",
+				Status: directory.EntityStatus_ACTIVE,
+				ID:     "ent_1",
 				Info: &directory.EntityInfo{
 					FirstName:   "FirstName1",
 					LastName:    "LastName1",

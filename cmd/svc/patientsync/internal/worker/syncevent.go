@@ -161,9 +161,19 @@ func (s *syncEvent) createThread(ctx context.Context, patient *sync.Patient, sou
 	}
 
 	var externalEntity *directory.Entity
-	if res != nil && len(res.Entities) > 0 {
-		externalEntity = res.Entities[0]
-	} else {
+	if res != nil {
+		for _, entity := range res.Entities {
+			if entity.Status == directory.EntityStatus_DELETED {
+				// if the entity has been deleted, ignore the sync
+				return nil
+			} else if entity.Status == directory.EntityStatus_ACTIVE {
+				externalEntity = entity
+				break
+			}
+		}
+	}
+
+	if externalEntity == nil {
 		// create entity
 		res, err := s.directory.CreateEntity(ctx, &directory.CreateEntityRequest{
 			Type:                      entityType,
