@@ -353,7 +353,7 @@ var threadType = graphql.NewObject(
 					if err != nil {
 						return nil, errors.Trace(err)
 					}
-					resEntities := make([]*models.Entity, 0, len(entities))
+					resEntities := make([]*models.Entity, len(entities))
 					for i, e := range entities {
 						resEntities[i], err = transformEntityToResponse(ctx, svc.staticURLPrefix, e, headers, acc)
 						if err != nil {
