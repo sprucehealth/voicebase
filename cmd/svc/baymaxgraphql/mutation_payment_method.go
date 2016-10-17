@@ -3,9 +3,6 @@ package main
 import (
 	"fmt"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
@@ -14,6 +11,8 @@ import (
 	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/graphql"
 	"github.com/sprucehealth/graphql/gqlerrors"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 // deletePaymentMethod

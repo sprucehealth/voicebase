@@ -115,14 +115,11 @@ var threadType = graphql.NewObject(
 			"alwaysShowNotifications": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowVisitAttachments": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.Boolean),
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: apiaccess.Authenticated(func(p graphql.ResolveParams) (interface{}, error) {
 					svc := serviceFromParams(p)
 					ctx := p.Context
 					th := p.Source.(*models.Thread)
 					acc := gqlctx.Account(p.Context)
-					if acc == nil {
-						return false, errors.ErrNotAuthenticated(ctx)
-					}
 
 					if th.Type != models.ThreadTypeSecureExternal {
 						return false, nil
@@ -152,7 +149,7 @@ var threadType = graphql.NewObject(
 					// allowing attachment of spruce visits or always allow it in non-prod
 					// environments to make it easy to test visits on android.
 					return booleanValue.Value, nil
-				},
+				}),
 			},
 			"allowPaymentRequestAttachments": &graphql.Field{
 				Type:    graphql.NewNonNull(graphql.Boolean),
@@ -160,14 +157,11 @@ var threadType = graphql.NewObject(
 			},
 			"allowCarePlanAttachments": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.Boolean),
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: apiaccess.Authenticated(func(p graphql.ResolveParams) (interface{}, error) {
 					svc := serviceFromParams(p)
 					ctx := p.Context
 					th := p.Source.(*models.Thread)
 					acc := gqlctx.Account(p.Context)
-					if acc == nil {
-						return false, errors.ErrNotAuthenticated(ctx)
-					}
 
 					if th.Type != models.ThreadTypeSecureExternal {
 						return false, nil
@@ -189,7 +183,7 @@ var threadType = graphql.NewObject(
 						return false, errors.InternalError(ctx, err)
 					}
 					return booleanValue.Value, nil
-				},
+				}),
 			},
 			"allowExternalDelivery":      &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowInternalMessages":      &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
@@ -211,6 +205,10 @@ var threadType = graphql.NewObject(
 					ram := raccess.ResourceAccess(p)
 					svc := serviceFromParams(p)
 					acc := gqlctx.Account(p.Context)
+					if acc.Type != auth.AccountType_PROVIDER {
+						return []*models.CallableIdentity{}, nil
+					}
+
 					th := p.Source.(*models.Thread)
 					switch th.Type {
 					case models.ThreadTypeSecureExternal, models.ThreadTypeExternal:
@@ -218,9 +216,6 @@ var threadType = graphql.NewObject(
 						return []*models.CallableIdentity{}, nil
 					}
 					if th.PrimaryEntityID == "" {
-						return []*models.CallableIdentity{}, nil
-					}
-					if acc.Type != auth.AccountType_PROVIDER {
 						return []*models.CallableIdentity{}, nil
 					}
 					ent, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
@@ -316,7 +311,7 @@ var threadType = graphql.NewObject(
 					svc := serviceFromParams(p)
 					acc := gqlctx.Account(p.Context)
 					if acc.Type != auth.AccountType_PROVIDER {
-						return nil, nil
+						return []*models.Entity{}, nil
 					}
 
 					ram := raccess.ResourceAccess(p)
@@ -340,13 +335,16 @@ var threadType = graphql.NewObject(
 			},
 			"addressableEntities": &graphql.Field{
 				Type: graphql.NewList(graphql.NewNonNull(entityType)),
-				Resolve: apiaccess.Provider(func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: apiaccess.Authenticated(func(p graphql.ResolveParams) (interface{}, error) {
 					ctx := p.Context
-					th := p.Source.(*models.Thread)
-
 					svc := serviceFromParams(p)
 					acc := gqlctx.Account(p.Context)
 					ram := raccess.ResourceAccess(p)
+					if acc.Type != auth.AccountType_PROVIDER {
+						return []*models.Entity{}, nil
+					}
+
+					th := p.Source.(*models.Thread)
 					headers := devicectx.SpruceHeaders(ctx)
 
 					entities, err := addressableEntitiesForThread(ctx, ram, th.OrganizationID, th.ID, th.Type)
@@ -366,7 +364,7 @@ var threadType = graphql.NewObject(
 			// TODO: We currently just assume all contacts for an entity are available endpoints
 			"availableEndpoints": &graphql.Field{
 				Type: graphql.NewList(graphql.NewNonNull(endpointType)),
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: apiaccess.Authenticated(func(p graphql.ResolveParams) (interface{}, error) {
 					ctx := p.Context
 					th := p.Source.(*models.Thread)
 					if th == nil {
@@ -405,12 +403,12 @@ var threadType = graphql.NewObject(
 						endpoints[i] = endpoint
 					}
 					return endpoints, nil
-				},
+				}),
 			},
 			// Default endpoints are build from the last primary entity endpoints filtering out anything contacts that no longer exist for the entity
 			"defaultEndpoints": &graphql.Field{
 				Type: graphql.NewList(graphql.NewNonNull(endpointType)),
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: apiaccess.Authenticated(func(p graphql.ResolveParams) (interface{}, error) {
 					ctx := p.Context
 					th := p.Source.(*models.Thread)
 					if th == nil {
@@ -467,7 +465,7 @@ var threadType = graphql.NewObject(
 						}
 					}
 					return filteredEndpoints, nil
-				},
+				}),
 			},
 			"primaryEntity": &graphql.Field{
 				Type: entityType,
