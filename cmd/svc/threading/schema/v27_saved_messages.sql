@@ -1,4 +1,4 @@
-CREATE TABLE saved_message (
+CREATE TABLE saved_messages (
     id BIGINT UNSIGNED NOT NULL,
     title VARCHAR(2048) NOT NULL,
     organization_id VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,

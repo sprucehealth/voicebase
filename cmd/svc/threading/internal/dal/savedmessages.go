@@ -30,7 +30,7 @@ func (d *dal) CreateSavedMessage(ctx context.Context, sm *models.SavedMessage) (
 		return sm.ID, errors.Trace(err)
 	}
 	_, err = d.db.Exec(`
-		INSERT INTO saved_message (id, title, organization_id, creator_entity_id, owner_entity_id, internal, type, data, created, modified)
+		INSERT INTO saved_messages (id, title, organization_id, creator_entity_id, owner_entity_id, internal, type, data, created, modified)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		sm.ID, sm.Title, sm.OrganizationID, sm.CreatorEntityID, sm.OwnerEntityID, sm.Internal, string(itemType), data, sm.Created, sm.Modified)
 	return sm.ID, errors.Trace(err)
@@ -44,7 +44,7 @@ func (d *dal) DeleteSavedMessages(ctx context.Context, ids []models.SavedMessage
 	for i, id := range ids {
 		ifids[i] = id
 	}
-	res, err := d.db.Exec(`DELETE FROM saved_message WHERE id IN (`+dbutil.MySQLArgs(len(ids))+`)`, ifids...)
+	res, err := d.db.Exec(`DELETE FROM saved_messages WHERE id IN (`+dbutil.MySQLArgs(len(ids))+`)`, ifids...)
 	if err != nil {
 		return 0, errors.Trace(err)
 	}
@@ -62,7 +62,7 @@ func (d *dal) SavedMessages(ctx context.Context, ids []models.SavedMessageID) ([
 	}
 	rows, err := d.db.Query(`
 		SELECT id, title, organization_id, creator_entity_id, owner_entity_id, internal, type, data, created, modified
-		FROM saved_message
+		FROM saved_messages
 		WHERE id IN (`+dbutil.MySQLArgs(len(idfs))+`)`,
 		idfs...)
 	if err != nil {
@@ -86,7 +86,7 @@ func (d *dal) SavedMessagesForEntities(ctx context.Context, ownerEntityIDs []str
 	}
 	rows, err := d.db.Query(`
 		SELECT id, title, organization_id, creator_entity_id, owner_entity_id, internal, type, data, created, modified
-		FROM saved_message
+		FROM saved_messages
 		WHERE owner_entity_id IN (`+dbutil.MySQLArgs(len(ownerEntityIDs))+`)`,
 		dbutil.AppendStringsToInterfaceSlice(nil, ownerEntityIDs)...)
 	if err != nil {
@@ -134,7 +134,7 @@ func (d *dal) UpdateSavedMessage(ctx context.Context, id models.SavedMessageID, 
 		return nil
 	}
 
-	_, err := d.db.Exec(`UPDATE saved_message SET `+args.ColumnsForUpdate()+` WHERE id = ?`,
+	_, err := d.db.Exec(`UPDATE saved_messages SET `+args.ColumnsForUpdate()+` WHERE id = ?`,
 		append(args.Values(), id)...)
 	return errors.Trace(err)
 }
