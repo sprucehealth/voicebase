@@ -125,10 +125,6 @@
 			"Rev": "e008c9143e114c4462104da78fabbc4faf085a79"
 		},
 		{
-			"ImportPath": "github.com/dominicphillips/amazing",
-			"Rev": "cea80a4a0b01ed85818a682ba1560f68704b92e4"
-		},
-		{
 			"ImportPath": "github.com/garyburd/go-oauth/oauth",
 			"Rev": "3131beb69b81ff119923bdefbf029318f1f53794"
 		},
@@ -136,25 +132,6 @@
 			"ImportPath": "github.com/go-sql-driver/mysql",
 			"Comment": "v1.2-88-ga197e5d",
 			"Rev": "267b128680c46286b9ca13475c3cca5de8f79bd7"
-		},
-		{
-			"ImportPath": "github.com/gogo/protobuf/gogoproto",
-			"Comment": "v0.1-78-gd3235f0",
-			"Rev": "2752d97bbd91927dd1c43296dbf8700e50e2708c"
-		},
-		{
-			"ImportPath": "github.com/gogo/protobuf/proto",
-			"Comment": "v0.1-78-gd3235f0",
-			"Rev": "2752d97bbd91927dd1c43296dbf8700e50e2708c"
-		},
-		{
-			"ImportPath": "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
-			"Comment": "v0.1-78-gd3235f0",
-			"Rev": "2752d97bbd91927dd1c43296dbf8700e50e2708c"
-		},
-		{
-			"ImportPath": "github.com/golang/protobuf/proto",
-			"Rev": "874264fbbb43f4d91e999fecb4b40143ed611400"
 		},
 		{
 			"ImportPath": "github.com/google/go-querystring/query",

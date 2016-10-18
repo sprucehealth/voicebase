@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/sprucehealth/backend/libs/test"
 )
 
 func TestException(t *testing.T) {
@@ -17,7 +17,7 @@ func TestException(t *testing.T) {
 
 	ex := new(Exception)
 	err := json.Unmarshal([]byte(data), &ex)
-	assert.Nil(t, err)
+	test.AssertNil(t, err)
 
 	want := &Exception{
 		Status:   400,
@@ -26,7 +26,7 @@ func TestException(t *testing.T) {
 		MoreInfo: "http://www.twilio.com/docs/errors/21201",
 	}
 
-	assert.Equal(t, ex, want)
+	test.Equals(t, ex, want)
 }
 
 func TestException_Error(t *testing.T) {
@@ -38,5 +38,5 @@ func TestException_Error(t *testing.T) {
 	}
 
 	want := "21201: No to number is specified"
-	assert.Equal(t, ex.Error(), want)
+	test.Equals(t, ex.Error(), want)
 }

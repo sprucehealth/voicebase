@@ -48,7 +48,7 @@ func EqualsCase(t testing.TB, caseName string, exp, act interface{}) {
 
 // AssertNil fails the test if the provided value is not nil
 func AssertNil(t testing.TB, e interface{}) {
-	if !reflect.ValueOf(e).IsNil() {
+	if e != nil && !reflect.ValueOf(e).IsNil() {
 		t.Fatalf("[%s] Expected a nil value but got %+v", CallerString(1), e)
 	}
 }

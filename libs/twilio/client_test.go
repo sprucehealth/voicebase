@@ -6,13 +6,13 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/sprucehealth/backend/libs/test"
 )
 
 func TestNewClient(t *testing.T) {
 	c := NewClient(accountSid, authToken, nil)
-	assert.Equal(t, c.BaseURL.String(), apiBaseURL)
-	assert.Equal(t, c.UserAgent, userAgent)
+	test.Equals(t, c.BaseURL.String(), apiBaseURL)
+	test.Equals(t, c.UserAgent, userAgent)
 }
 
 func TestNewRequest(t *testing.T) {
@@ -24,21 +24,21 @@ func TestNewRequest(t *testing.T) {
 	req, _ := c.NewRequest("GET", inURL, nil)
 
 	userAgent := req.Header.Get("User-Agent")
-	assert.Equal(t, userAgent, c.UserAgent)
-	assert.Equal(t, req.URL.String(), outURL)
-	assert.Equal(t, req.Header.Get("Authorization"), encodeAuth())
+	test.Equals(t, userAgent, c.UserAgent)
+	test.Equals(t, req.URL.String(), outURL)
+	test.Equals(t, req.Header.Get("Authorization"), encodeAuth())
 }
 
 func TestNewRequest_badURL(t *testing.T) {
 	c := NewClient(accountSid, authToken, nil)
 
 	_, err := c.NewRequest("GET", ":", nil)
-	assert.NotNil(t, err)
+	test.AssertNotNil(t, err)
 
 	erx, ok := err.(*url.Error)
-	assert.True(t, ok)
-	assert.NotNil(t, erx)
-	assert.Equal(t, erx.Op, "parse")
+	test.Equals(t, true, ok)
+	test.AssertNotNil(t, erx)
+	test.Equals(t, erx.Op, "parse")
 }
 
 func TestDo(t *testing.T) {
@@ -62,7 +62,7 @@ func TestDo(t *testing.T) {
 	client.Do(req, body)
 
 	want := &foo{"bar"}
-	assert.Equal(t, body, want)
+	test.Equals(t, body, want)
 }
 
 func TestDo_httpError(t *testing.T) {
@@ -75,7 +75,7 @@ func TestDo_httpError(t *testing.T) {
 
 	req, _ := client.NewRequest("GET", "/", nil)
 	_, err := client.Do(req, nil)
-	assert.NotNil(t, err)
+	test.AssertNotNil(t, err)
 }
 
 func TestDo_redirectLoop(t *testing.T) {
@@ -88,11 +88,11 @@ func TestDo_redirectLoop(t *testing.T) {
 
 	req, _ := client.NewRequest("GET", "/", nil)
 	_, err := client.Do(req, nil)
-	assert.NotNil(t, err)
+	test.AssertNotNil(t, err)
 
 	err, ok := err.(*url.Error)
-	assert.True(t, ok)
-	assert.NotNil(t, err)
+	test.Equals(t, true, ok)
+	test.AssertNotNil(t, err)
 }
 
 func TestEndPoint(t *testing.T) {
@@ -101,5 +101,5 @@ func TestEndPoint(t *testing.T) {
 
 	u := client.EndPoint("Hello", "123")
 	want, _ := url.Parse("/2010-04-01/Accounts/AC5ef87/Hello/123.json")
-	assert.Equal(t, u, want)
+	test.Equals(t, u, want)
 }
