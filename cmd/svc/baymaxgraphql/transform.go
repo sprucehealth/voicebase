@@ -497,7 +497,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 				duration := float64(d.DurationNS) / 1e9
 				att.Data = &models.AudioAttachment{
 					Mimetype:          d.Mimetype,
-					URL:               a.URL,
+					URL:               att.URL,
 					DurationInSeconds: duration,
 				}
 				// TODO
@@ -519,7 +519,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 				att.URL = media.URL(mediaAPIDomain, mediaID, d.Mimetype)
 				att.Data = &models.ImageAttachment{
 					Mimetype:     d.Mimetype,
-					URL:          a.URL,
+					URL:          att.URL,
 					ThumbnailURL: media.ThumbnailURL(mediaAPIDomain, mediaID, d.Mimetype, 0, 0, false),
 					MediaID:      mediaID,
 				}
@@ -543,7 +543,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 				att.URL = media.URL(mediaAPIDomain, v.MediaID, v.Mimetype)
 				att.Data = &models.VideoAttachment{
 					Mimetype:     v.Mimetype,
-					URL:          a.URL,
+					URL:          att.URL,
 					ThumbnailURL: media.ThumbnailURL(mediaAPIDomain, v.MediaID, v.Mimetype, 0, 0, false),
 				}
 			case threading.ATTACHMENT_TYPE_CARE_PLAN:
@@ -599,7 +599,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 
 					att.URL = media.URL(mediaAPIDomain, mediaID, d.Mimetype)
 					pdfAttachment := &bml.Anchor{
-						HREF: a.URL,
+						HREF: att.URL,
 						Text: title,
 					}
 
