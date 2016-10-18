@@ -22,7 +22,7 @@ RUN cd /usr/local && \
 	ln -s /usr/local/go/bin/go /usr/local/bin/go
 
 # Install Consul
-RUN curl -s -o /usr/local/bin/consul.zip https://releases.hashicorp.com/consul/0.6.3/consul_0.6.3_linux_amd64.zip && \
+RUN curl -s -o /usr/local/bin/consul.zip https://releases.hashicorp.com/consul/0.7.0/consul_0.7.0_linux_amd64.zip && \
 	cd /usr/local/bin && \
 	unzip consul.zip && \
 	rm consul.zip

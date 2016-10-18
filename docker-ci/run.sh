@@ -45,7 +45,6 @@ export TEST_DB_HOST=127.0.0.1
 export TEST_DB_USER=root
 export TEST_DB_PASSWORD=
 
-export GO15VENDOREXPERIMENT=1
 export GOPATH=/workspace/go
 export PATH=$GOPATH/bin:$PATH
 export MONOREPO_PATH=$GOPATH/src/github.com/sprucehealth/backend
@@ -181,10 +180,22 @@ if [[ "$DEPLOY_TO_S3" != "" ]]; then
     for SVC in $SVCS; do
         echo "BUILDING ($SVC)"
         cd $MONOREPO_PATH/cmd/svc/$SVC
+        BINPATH=$GOPATH/bin/$SVC
+        if [[ "$(go env GOHOSTOS)" != "linux" ]]; then
+            BINPATH=$GOPATH/bin/linux_amd64/$SVC
+        fi
+
         if [ -e ./build.sh ]; then
             ./build.sh
         else
-            GO15VENDOREXPERIMENT=1 GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
+            GOOS=linux GOARCH=amd64 \
+                go install -race -tags netgo -ldflags " \
+                    -X 'github.com/sprucehealth/backend/boot.GitRevision=$REV' \
+                    -X 'github.com/sprucehealth/backend/boot.GitBranch=$BRANCH' \
+                    -X 'github.com/sprucehealth/backend/boot.BuildTime=$TIME' \
+                    -X 'github.com/sprucehealth/backend/boot.BuildNumber=$BUILD_NUMBER'"
+            mv $BINPATH $BINPATH.race
+            GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
                 go install -tags netgo -ldflags " \
                     -X 'github.com/sprucehealth/backend/boot.GitRevision=$REV' \
                     -X 'github.com/sprucehealth/backend/boot.GitBranch=$BRANCH' \
@@ -192,13 +203,12 @@ if [[ "$DEPLOY_TO_S3" != "" ]]; then
                     -X 'github.com/sprucehealth/backend/boot.BuildNumber=$BUILD_NUMBER'"
         fi
 
-        BINPATH=$GOPATH/bin/$SVC
-        if [[ "$(go env GOHOSTOS)" != "linux" ]]; then
-            BINPATH=$GOPATH/bin/linux_amd64/$SVC
-        fi
         rm -rf build
         mkdir build
         cp $BINPATH build/
+        if [[ -e "$BINPATH.race" ]]; then
+            cp $BINPATH.race build/
+        fi
         if [[ -e resources ]]; then
             cp -r resources build/
         fi
@@ -212,7 +222,7 @@ LABEL revision=$REV
 WORKDIR /workspace
 ADD . /workspace
 USER 65534
-CMD ["/workspace/$SVC"]
+ENTRYPOINT ["/workspace/$SVC"]
 EOF
         docker build --rm=true -t $SVC:$TAG -f build/Dockerfile build
         STATIC_PREFIX="s3://spruce-static/web/$BUILD_NUMBER"
