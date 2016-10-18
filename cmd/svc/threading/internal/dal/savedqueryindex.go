@@ -241,5 +241,40 @@ func (d *dal) UnreadNotificationsCounts(ctx context.Context, entityIDs []string)
 		counts[id] = count
 	}
 
-	return counts, errors.Trace(rows.Err())
+	if err := rows.Err(); err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	// Entities that don't have notification saved queries are likely patients so look for threads with matching primary entity
+	eids := make([]interface{}, 0, len(entityIDs)-len(counts))
+	for _, id := range entityIDs {
+		if _, ok := counts[id]; !ok {
+			eids = append(eids, id)
+		}
+	}
+	if len(eids) != 0 {
+		rows, err := d.db.Query(`SELECT id, primary_entity_id FROM threads WHERE primary_entity_id IN (`+dbutil.MySQLArgs(len(eids))+`)`, eids...)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		defer rows.Close()
+		for rows.Next() {
+			threadID := models.EmptyThreadID()
+			var entityID string
+			if err := rows.Scan(&threadID, &entityID); err != nil {
+				return nil, errors.Trace(err)
+			}
+			// TODO: assuming anyone who's a primary entity is external
+			n, err := d.UnreadMessagesInThread(ctx, threadID, entityID, true)
+			if err != nil {
+				return nil, errors.Trace(err)
+			}
+			counts[entityID] += n
+		}
+		if err := rows.Err(); err != nil {
+			return nil, errors.Trace(err)
+		}
+	}
+
+	return counts, nil
 }

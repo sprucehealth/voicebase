@@ -394,6 +394,14 @@ func (dl *DAL) SavedMessagesForEntities(ctx context.Context, ownerEntityIDs []st
 	return rets[0].([]*models.SavedMessage), mock.SafeError(rets[1])
 }
 
+func (dl *DAL) UnreadMessagesInThread(ctx context.Context, threadID models.ThreadID, entityID string, external bool) (int, error) {
+	rets := dl.Expector.Record(threadID, entityID)
+	if len(rets) == 0 {
+		return 0, nil
+	}
+	return rets[0].(int), mock.SafeError(rets[1])
+}
+
 func (dl *DAL) UpdateSavedMessage(ctx context.Context, id models.SavedMessageID, update *dal.SavedMessageUpdate) error {
 	rets := dl.Expector.Record(id, update)
 	if len(rets) == 0 {

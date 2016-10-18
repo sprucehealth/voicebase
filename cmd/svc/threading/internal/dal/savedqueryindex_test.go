@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/models"
+	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testsql"
 )
@@ -14,7 +15,7 @@ func TestSavedQueryIndex(t *testing.T) {
 	dt := testsql.Setup(t, schemaGlob)
 	defer dt.Cleanup(t)
 
-	dal := New(dt.DB)
+	dal := New(dt.DB, clock.New())
 	ctx := context.Background()
 
 	sq := &models.SavedQuery{
@@ -168,7 +169,7 @@ func TestLargeBatchSavedQueryItems(t *testing.T) {
 	dt := testsql.Setup(t, schemaGlob)
 	defer dt.Cleanup(t)
 
-	dal := New(dt.DB)
+	dal := New(dt.DB, clock.New())
 	ctx := context.Background()
 
 	sq := &models.SavedQuery{
@@ -213,7 +214,7 @@ func TestNotificationsSavedQuery(t *testing.T) {
 	dt := testsql.Setup(t, schemaGlob)
 	defer dt.Cleanup(t)
 
-	dal := New(dt.DB)
+	dal := New(dt.DB, clock.New())
 	ctx := context.Background()
 
 	sq1 := &models.SavedQuery{
@@ -353,4 +354,55 @@ func TestNotificationsSavedQuery(t *testing.T) {
 	counts, err = dal.UnreadNotificationsCounts(ctx, []string{"ent"})
 	test.OK(t, err)
 	test.Equals(t, map[string]int{"ent": 1}, counts)
+}
+
+func TestNotificationCountPrimaryEntity(t *testing.T) {
+	dt := testsql.Setup(t, schemaGlob)
+	defer dt.Cleanup(t)
+
+	dal := New(dt.DB, clock.New())
+	ctx := context.Background()
+
+	// Create a thread
+	thread := &models.Thread{
+		OrganizationID:             "org",
+		Type:                       models.ThreadTypeExternal,
+		LastMessageSummary:         "thread1 summary",
+		LastMessageTimestamp:       time.Unix(10e8, 0),
+		LastExternalMessageSummary: "extsummary",
+		PrimaryEntityID:            "ext1",
+	}
+	tid, err := dal.CreateThread(ctx, thread)
+	test.OK(t, err)
+
+	counts, err := dal.UnreadNotificationsCounts(ctx, []string{"nonexistant"})
+	test.OK(t, err)
+	test.Equals(t, map[string]int{}, counts)
+
+	_, err = dal.PostMessage(ctx, &PostMessageRequest{
+		ThreadID:     tid,
+		FromEntityID: "actor",
+		Title:        "external",
+		Text:         "text",
+		Summary:      "summary",
+	})
+	test.OK(t, err)
+
+	counts, err = dal.UnreadNotificationsCounts(ctx, []string{"ext1"})
+	test.OK(t, err)
+	test.Equals(t, map[string]int{"ext1": 1}, counts)
+
+	_, err = dal.PostMessage(ctx, &PostMessageRequest{
+		ThreadID:     tid,
+		FromEntityID: "actor",
+		Title:        "internal",
+		Text:         "text",
+		Summary:      "summary",
+		Internal:     true,
+	})
+	test.OK(t, err)
+
+	counts, err = dal.UnreadNotificationsCounts(ctx, []string{"ext1"})
+	test.OK(t, err)
+	test.Equals(t, map[string]int{"ext1": 1}, counts)
 }

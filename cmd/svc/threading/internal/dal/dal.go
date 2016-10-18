@@ -10,6 +10,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/models"
+	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -164,6 +165,8 @@ type DAL interface {
 	ThreadsForMember(ctx context.Context, entityID string, primaryOnly bool) ([]*models.Thread, error)
 	ThreadsForOrg(ctx context.Context, organizationID string, typ models.ThreadType, limit int) ([]*models.Thread, error)
 	ThreadsWithEntity(ctx context.Context, entityID string, ids []models.ThreadID) ([]*models.Thread, []*models.ThreadEntity, error)
+	// UnreadMessagesInThread returns the number of unread messages in a thread for an entity.
+	UnreadMessagesInThread(ctx context.Context, threadID models.ThreadID, entityID string, external bool) (int, error)
 	UpdateSavedQuery(context.Context, models.SavedQueryID, *SavedQueryUpdate) error
 	UpdateSetupThreadState(context.Context, models.ThreadID, *SetupThreadStateUpdate) error
 	UpdateThread(ctx context.Context, threadID models.ThreadID, update *ThreadUpdate) error
@@ -201,14 +204,16 @@ type DAL interface {
 }
 
 // New returns an initialized instance of dal
-func New(db *sql.DB) DAL {
+func New(db *sql.DB, clk clock.Clock) DAL {
 	return &dal{
-		db: tsql.AsDB(db),
+		db:  tsql.AsDB(db),
+		clk: clk,
 	}
 }
 
 type dal struct {
-	db tsql.DB
+	db  tsql.DB
+	clk clock.Clock
 }
 
 // Transact encapsulates the provided function in a transaction and handles rollback and commit actions
@@ -218,7 +223,8 @@ func (d *dal) Transact(ctx context.Context, trans func(context.Context, DAL) err
 		return errors.Trace(err)
 	}
 	tdal := &dal{
-		db: tsql.AsSafeTx(tx),
+		db:  tsql.AsSafeTx(tx),
+		clk: d.clk,
 	}
 	// Recover from any inner panics that happened and close the transaction
 	defer func() {
@@ -272,7 +278,7 @@ func (d *dal) CreateThread(ctx context.Context, thread *models.Thread) (models.T
 		return models.ThreadID{}, errors.Trace(err)
 	}
 
-	now := time.Now()
+	now := d.clk.Now()
 	if thread.LastMessageTimestamp.IsZero() {
 		thread.LastMessageTimestamp = now
 	}
@@ -658,7 +664,7 @@ func (d *dal) PostMessage(ctx context.Context, req *PostMessageRequest) (*models
 	item := &models.ThreadItem{
 		ID:            id,
 		ThreadID:      req.ThreadID,
-		Created:       time.Now(),
+		Created:       d.clk.Now(),
 		ActorEntityID: req.FromEntityID,
 		Internal:      req.Internal,
 		Type:          models.ItemTypeMessage,
@@ -786,7 +792,6 @@ func (d *dal) SavedQueries(ctx context.Context, entityID string) ([]*models.Save
 }
 
 func (d *dal) DeleteSavedQueries(ctx context.Context, ids []models.SavedQueryID) error {
-
 	if len(ids) == 0 {
 		return nil
 	}
@@ -1161,6 +1166,28 @@ func (d *dal) RemoveThreadMembers(ctx context.Context, threadID models.ThreadID,
 		WHERE entity_id IN (`+dbutil.MySQLArgs(len(memberEntityIDs))+`) AND thread_id = ?`,
 		append(dbutil.AppendStringsToInterfaceSlice(nil, memberEntityIDs), threadID)...)
 	return errors.Trace(err)
+}
+
+func (d *dal) UnreadMessagesInThread(ctx context.Context, threadID models.ThreadID, entityID string, external bool) (int, error) {
+	var lastViewed *time.Time
+	row := d.db.QueryRow(`SELECT last_viewed FROM thread_entities WHERE thread_id = ? AND entity_id = ?`, threadID, entityID)
+	if err := row.Scan(&lastViewed); err != nil && err != sql.ErrNoRows {
+		return 0, errors.Trace(err)
+	}
+	var andInternal string
+	if external {
+		andInternal = " AND internal = false"
+	}
+	if lastViewed == nil {
+		row = d.db.QueryRow(`SELECT COUNT(1) FROM thread_items WHERE thread_id = ? AND type = ?`+andInternal,
+			threadID, string(models.ItemTypeMessage))
+	} else {
+		row = d.db.QueryRow(`SELECT COUNT(1) FROM thread_items WHERE thread_id = ? AND type = ? AND created > ?`+andInternal,
+			threadID, string(models.ItemTypeMessage), *lastViewed)
+	}
+	var count int
+	err := row.Scan(&count)
+	return count, errors.Trace(err)
 }
 
 func (d *dal) UpdateThreadEntity(ctx context.Context, threadID models.ThreadID, entityID string, update *ThreadEntityUpdate) error {

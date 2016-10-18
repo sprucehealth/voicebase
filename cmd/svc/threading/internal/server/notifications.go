@@ -41,7 +41,6 @@ func (s *threadsServer) notifyBadgeCountUpdate(ctx context.Context, entityIDs []
 	}))
 }
 
-// TODO: mraines: This code is spagetti poo (I wrote it), refactor
 func (s *threadsServer) notifyMembersOfPublishMessage(
 	ctx context.Context,
 	orgID string,

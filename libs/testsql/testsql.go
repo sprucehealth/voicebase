@@ -90,6 +90,15 @@ func Setup(t *testing.T, migrationGlob string) *DB {
 			}
 		}
 	}
+	// Reconnect so that we use the actual database name in case of reconnect
+	test.OK(t, db.Close())
+	db, err = dbutil.ConnectMySQL(&dbutil.DBConfig{
+		Host:     host,
+		Name:     dbName,
+		User:     user,
+		Password: password,
+	})
+	test.OK(t, err)
 	return &DB{
 		DB:   db,
 		name: dbName,

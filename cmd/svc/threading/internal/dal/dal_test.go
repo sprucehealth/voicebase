@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/models"
+	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/test"
@@ -46,7 +47,7 @@ func TestTransact(t *testing.T) {
 	dt := testsql.Setup(t, schemaGlob)
 	defer dt.Cleanup(t)
 
-	dal := New(dt.DB)
+	dal := New(dt.DB, clock.New())
 	ctx := context.Background()
 
 	t.Run("success", func(t *testing.T) {
@@ -119,7 +120,7 @@ func TestIterateThreads(t *testing.T) {
 	dt := testsql.Setup(t, schemaGlob)
 	defer dt.Cleanup(t)
 
-	dal := New(dt.DB)
+	dal := New(dt.DB, clock.New())
 	ctx := context.Background()
 
 	// Create external thread
@@ -208,7 +209,7 @@ func TestIterateThreadsQuery(t *testing.T) {
 	dt := testsql.Setup(t, schemaGlob)
 	defer dt.Cleanup(t)
 
-	dal := New(dt.DB)
+	dal := New(dt.DB, clock.New())
 	ctx := context.Background()
 
 	// Create external thread
@@ -326,7 +327,7 @@ func TestThread(t *testing.T) {
 	dt := testsql.Setup(t, schemaGlob)
 	defer dt.Cleanup(t)
 
-	dal := New(dt.DB)
+	dal := New(dt.DB, clock.New())
 	ctx := context.Background()
 
 	tid, err := dal.CreateThread(ctx, &models.Thread{
@@ -360,7 +361,7 @@ func TestThreadsWithEntity(t *testing.T) {
 	dt := testsql.Setup(t, schemaGlob)
 	defer dt.Cleanup(t)
 
-	dal := New(dt.DB)
+	dal := New(dt.DB, clock.New())
 	ctx := context.Background()
 
 	tid, err := dal.CreateThread(ctx, &models.Thread{
@@ -397,7 +398,7 @@ func TestUpdateThread(t *testing.T) {
 	dt := testsql.Setup(t, schemaGlob)
 	defer dt.Cleanup(t)
 
-	dal := New(dt.DB)
+	dal := New(dt.DB, clock.New())
 	ctx := context.Background()
 
 	tid, err := dal.CreateThread(ctx, &models.Thread{
@@ -429,11 +430,98 @@ func TestUpdateThread(t *testing.T) {
 	test.Equals(t, "bar", th.UserTitle)
 }
 
+func TestLinkedThreads(t *testing.T) {
+	dt := testsql.Setup(t, schemaGlob)
+	defer dt.Cleanup(t)
+
+	dal := New(dt.DB, clock.New())
+	ctx := context.Background()
+
+	tid1, err := dal.CreateThread(ctx, &models.Thread{
+		OrganizationID:             "org1",
+		Type:                       models.ThreadTypeSupport,
+		LastMessageSummary:         "summary1",
+		LastMessageTimestamp:       time.Unix(1e9, 0),
+		LastExternalMessageSummary: "extsummary1",
+	})
+	test.OK(t, err)
+
+	tid2, err := dal.CreateThread(ctx, &models.Thread{
+		OrganizationID:             "org1",
+		Type:                       models.ThreadTypeSupport,
+		LastMessageSummary:         "summary1",
+		LastMessageTimestamp:       time.Unix(1e9, 0),
+		LastExternalMessageSummary: "extsummary1",
+	})
+	test.OK(t, err)
+
+	test.OK(t, dal.CreateThreadLink(ctx, &ThreadLink{
+		ThreadID:      tid1,
+		PrependSender: true,
+	}, &ThreadLink{
+		ThreadID:      tid2,
+		PrependSender: false,
+	}))
+
+	th, prepend, err := dal.LinkedThread(ctx, tid1)
+	test.OK(t, err)
+	test.Equals(t, tid2, th.ID)
+	test.Equals(t, false, prepend)
+
+	th, prepend, err = dal.LinkedThread(ctx, tid2)
+	test.OK(t, err)
+	test.Equals(t, tid1, th.ID)
+	test.Equals(t, true, prepend)
+}
+
+func TestThreadsForMember(t *testing.T) {
+	dt := testsql.Setup(t, schemaGlob)
+	defer dt.Cleanup(t)
+
+	dal := New(dt.DB, clock.New())
+	ctx := context.Background()
+
+	tid1, err := dal.CreateThread(ctx, &models.Thread{
+		OrganizationID:             "org1",
+		Type:                       models.ThreadTypeSupport,
+		LastMessageSummary:         "summary1",
+		LastMessageTimestamp:       time.Unix(1e9, 0),
+		LastExternalMessageSummary: "extsummary1",
+		PrimaryEntityID:            "e3",
+	})
+	test.OK(t, err)
+	dal.AddThreadMembers(ctx, tid1, []string{"e1", "e2"})
+
+	tid2, err := dal.CreateThread(ctx, &models.Thread{
+		OrganizationID:             "org1",
+		Type:                       models.ThreadTypeSupport,
+		LastMessageSummary:         "summary1",
+		LastMessageTimestamp:       time.Unix(1e9, 0),
+		LastExternalMessageSummary: "extsummary1",
+	})
+	test.OK(t, err)
+	dal.AddThreadMembers(ctx, tid2, []string{"e2", "e3"})
+
+	threads, err := dal.ThreadsForMember(ctx, "e1", false)
+	test.OK(t, err)
+	test.Equals(t, 1, len(threads))
+	test.Equals(t, tid1, threads[0].ID)
+
+	threads, err = dal.ThreadsForMember(ctx, "e2", false)
+	test.OK(t, err)
+	test.Equals(t, 2, len(threads))
+
+	threads, err = dal.ThreadsForMember(ctx, "e3", true)
+	test.OK(t, err)
+	test.Equals(t, 1, len(threads))
+	test.Equals(t, tid1, threads[0].ID)
+}
+
 func TestThreadEntities(t *testing.T) {
 	dt := testsql.Setup(t, schemaGlob)
 	defer dt.Cleanup(t)
 
-	dal := New(dt.DB)
+	dal := New(dt.DB, clock.New())
 	ctx := context.Background()
 
 	tid, err := dal.CreateThread(ctx, &models.Thread{
@@ -469,7 +557,7 @@ func TestThreadsForOrg(t *testing.T) {
 	dt := testsql.Setup(t, schemaGlob)
 	defer dt.Cleanup(t)
 
-	dal := New(dt.DB)
+	dal := New(dt.DB, clock.New())
 	ctx := context.Background()
 
 	_, err := dal.CreateThread(ctx, &models.Thread{
@@ -518,7 +606,7 @@ func TestAddRemoveThreadMembers(t *testing.T) {
 	dt := testsql.Setup(t, schemaGlob)
 	defer dt.Cleanup(t)
 
-	dal := New(dt.DB)
+	dal := New(dt.DB, clock.New())
 	ctx := context.Background()
 
 	tid, err := dal.CreateThread(ctx, &models.Thread{
@@ -575,7 +663,7 @@ func TestSetupThreadState(t *testing.T) {
 	dt := testsql.Setup(t, schemaGlob)
 	defer dt.Cleanup(t)
 
-	dal := New(dt.DB)
+	dal := New(dt.DB, clock.New())
 	ctx := context.Background()
 
 	tid, err := dal.CreateThread(ctx, &models.Thread{
@@ -610,7 +698,7 @@ func TestDeleteThread(t *testing.T) {
 	dt := testsql.Setup(t, schemaGlob)
 	defer dt.Cleanup(t)
 
-	dal := New(dt.DB)
+	dal := New(dt.DB, clock.New())
 	ctx := context.Background()
 
 	tid, err := dal.CreateThread(ctx, &models.Thread{
@@ -639,7 +727,7 @@ func TestFollowers(t *testing.T) {
 	dt := testsql.Setup(t, schemaGlob)
 	defer dt.Cleanup(t)
 
-	dal := New(dt.DB)
+	dal := New(dt.DB, clock.New())
 	ctx := context.Background()
 
 	tid, err := dal.CreateThread(ctx, &models.Thread{
@@ -672,11 +760,12 @@ func TestFollowers(t *testing.T) {
 	test.Equals(t, false, tes[0].Following)
 }
 
-func TestCreateThreadItemViewDetails(t *testing.T) {
+func TestThreadItemViewDetails(t *testing.T) {
 	dt := testsql.Setup(t, schemaGlob)
 	defer dt.Cleanup(t)
 
-	dal := New(dt.DB)
+	clk := clock.NewManaged(time.Unix(1e9, 0))
+	dal := New(dt.DB, clk)
 	ctx := context.Background()
 
 	tid, err := dal.CreateThread(ctx, &models.Thread{
@@ -699,23 +788,36 @@ func TestCreateThreadItemViewDetails(t *testing.T) {
 	})
 	test.OK(t, err)
 
+	item, err := dal.ThreadItem(ctx, ti.ID)
+	test.OK(t, err)
+	test.Equals(t, ti.ID, item.ID)
+
+	dets, err := dal.ThreadItemViewDetails(ctx, ti.ID)
+	test.OK(t, err)
+	test.Equals(t, 0, len(dets))
+
 	details := []*models.ThreadItemViewDetails{
 		{
 			ThreadItemID:  ti.ID,
 			ActorEntityID: "actor",
-			ViewTime:      ptr.Time(time.Now()),
+			ViewTime:      ptr.Time(clk.Now()),
 		},
 	}
 	test.OK(t, dal.CreateThreadItemViewDetails(ctx, details))
 	// Duplicate details should be ignore
 	test.OK(t, dal.CreateThreadItemViewDetails(ctx, details))
+
+	dets, err = dal.ThreadItemViewDetails(ctx, ti.ID)
+	test.OK(t, err)
+	test.Equals(t, 1, len(dets))
+	test.Equals(t, details[0], dets[0])
 }
 
 func TestSavedQueries(t *testing.T) {
 	dt := testsql.Setup(t, schemaGlob)
 	defer dt.Cleanup(t)
 
-	dal := New(dt.DB)
+	dal := New(dt.DB, clock.New())
 	ctx := context.Background()
 
 	sq1 := &models.SavedQuery{
@@ -769,6 +871,129 @@ func TestSavedQueries(t *testing.T) {
 	test.Equals(t, "new title", sq.Title)
 	test.Equals(t, 19, sq.Ordinal)
 	test.Equals(t, newQuery, sq.Query)
+
+	test.OK(t, dal.DeleteSavedQueries(ctx, []models.SavedQueryID{sq1.ID}))
+	_, err = dal.SavedQuery(ctx, sq1.ID)
+	test.Equals(t, ErrNotFound, errors.Cause(err))
+}
+
+func TestUnreadMessagesInThread(t *testing.T) {
+	dt := testsql.Setup(t, schemaGlob)
+	defer dt.Cleanup(t)
+
+	clk := clock.NewManaged(time.Unix(1e9, 0))
+	dal := New(dt.DB, clk)
+	ctx := context.Background()
+
+	tid, err := dal.CreateThread(ctx, &models.Thread{
+		OrganizationID:             "org",
+		Type:                       models.ThreadTypeExternal,
+		SystemTitle:                "SystemTitle",
+		LastMessageSummary:         "Summary",
+		LastMessageTimestamp:       time.Unix(10e8, 0),
+		LastExternalMessageSummary: "extsummary",
+	})
+	test.OK(t, err)
+
+	t1 := clk.Now()
+	_, err = dal.PostMessage(ctx, &PostMessageRequest{
+		ThreadID:     tid,
+		FromEntityID: "actor",
+		Title:        "internal",
+		Text:         "text",
+		Summary:      "summary",
+		Internal:     true,
+	})
+	test.OK(t, err)
+	clk.WarpForward(time.Second)
+	t2 := clk.Now()
+	_, err = dal.PostMessage(ctx, &PostMessageRequest{
+		ThreadID:     tid,
+		FromEntityID: "actor",
+		Title:        "external",
+		Text:         "text",
+		Summary:      "summary",
+	})
+	test.OK(t, err)
+	clk.WarpForward(time.Second)
+	_, err = dal.PostMessage(ctx, &PostMessageRequest{
+		ThreadID:     tid,
+		FromEntityID: "actor",
+		Title:        "internal2",
+		Text:         "text",
+		Summary:      "summary",
+		Internal:     true,
+	})
+	test.OK(t, err)
+
+	t.Run("no views internal", func(t *testing.T) {
+		n, err := dal.UnreadMessagesInThread(ctx, tid, "e1", false)
+		test.OK(t, err)
+		test.Equals(t, 3, n)
+	})
+	t.Run("no views external", func(t *testing.T) {
+		n, err := dal.UnreadMessagesInThread(ctx, tid, "e1", true)
+		test.OK(t, err)
+		test.Equals(t, 1, n)
+	})
+
+	test.OK(t, dal.UpdateThreadEntity(ctx, tid, "e1", &ThreadEntityUpdate{}))
+
+	t.Run("viewed unread internal", func(t *testing.T) {
+		n, err := dal.UnreadMessagesInThread(ctx, tid, "e1", false)
+		test.OK(t, err)
+		test.Equals(t, 3, n)
+	})
+	t.Run("viewed unread external", func(t *testing.T) {
+		n, err := dal.UnreadMessagesInThread(ctx, tid, "e1", true)
+		test.OK(t, err)
+		test.Equals(t, 1, n)
+	})
+
+	test.OK(t, dal.UpdateThreadEntity(ctx, tid, "e1", &ThreadEntityUpdate{
+		LastViewed: ptr.Time(t1.Add(-time.Second)),
+	}))
+
+	t.Run("read before first internal", func(t *testing.T) {
+		n, err := dal.UnreadMessagesInThread(ctx, tid, "e1", false)
+		test.OK(t, err)
+		test.Equals(t, 3, n)
+	})
+	t.Run("read before first external", func(t *testing.T) {
+		n, err := dal.UnreadMessagesInThread(ctx, tid, "e1", true)
+		test.OK(t, err)
+		test.Equals(t, 1, n)
+	})
+
+	test.OK(t, dal.UpdateThreadEntity(ctx, tid, "e1", &ThreadEntityUpdate{
+		LastViewed: &t1,
+	}))
+
+	t.Run("read first internal", func(t *testing.T) {
+		n, err := dal.UnreadMessagesInThread(ctx, tid, "e1", false)
+		test.OK(t, err)
+		test.Equals(t, 2, n)
+	})
+	t.Run("read first external", func(t *testing.T) {
+		n, err := dal.UnreadMessagesInThread(ctx, tid, "e1", true)
+		test.OK(t, err)
+		test.Equals(t, 1, n)
+	})
+
+	test.OK(t, dal.UpdateThreadEntity(ctx, tid, "e1", &ThreadEntityUpdate{
+		LastViewed: &t2,
+	}))
+
+	t.Run("read second internal", func(t *testing.T) {
+		n, err := dal.UnreadMessagesInThread(ctx, tid, "e1", false)
+		test.OK(t, err)
+		test.Equals(t, 1, n)
+	})
+	t.Run("read second external", func(t *testing.T) {
+		n, err := dal.UnreadMessagesInThread(ctx, tid, "e1", true)
+		test.OK(t, err)
+		test.Equals(t, 0, n)
+	})
 }
 
 type teByID []*models.ThreadEntity

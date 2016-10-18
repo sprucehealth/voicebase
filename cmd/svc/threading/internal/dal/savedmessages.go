@@ -2,7 +2,6 @@ package dal
 
 import (
 	"context"
-	"time"
 
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/models"
 	"github.com/sprucehealth/backend/libs/dbutil"
@@ -16,10 +15,10 @@ func (d *dal) CreateSavedMessage(ctx context.Context, sm *models.SavedMessage) (
 		return sm.ID, errors.Trace(err)
 	}
 	if sm.Modified.IsZero() {
-		sm.Modified = time.Now()
+		sm.Modified = d.clk.Now()
 	}
 	if sm.Created.IsZero() {
-		sm.Created = time.Now()
+		sm.Created = d.clk.Now()
 	}
 	itemType, err := models.ItemTypeForValue(sm.Content)
 	if err != nil {

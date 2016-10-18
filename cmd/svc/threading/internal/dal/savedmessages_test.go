@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/models"
+	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testsql"
@@ -15,7 +16,7 @@ func TestSavedMessages(t *testing.T) {
 	dt := testsql.Setup(t, schemaGlob)
 	defer dt.Cleanup(t)
 
-	dal := New(dt.DB)
+	dal := New(dt.DB, clock.New())
 	ctx := context.Background()
 	now := time.Unix(1e9, 0)
 

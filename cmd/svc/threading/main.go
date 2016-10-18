@@ -127,7 +127,7 @@ func main() {
 	}
 	paymentsClient := payments.NewPaymentsClient(conn)
 
-	dl := dal.New(db)
+	dl := dal.New(db, clock.New())
 
 	// register the settings with the service
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
