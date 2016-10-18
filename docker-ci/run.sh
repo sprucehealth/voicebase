@@ -135,7 +135,7 @@ else
             if [[ "$RET" != "0" ]]; then
                 exit $RET
             fi
-            grep -v .pb.go "$PKG/cover.out" | grep -v "cmd/svc/restapi" | grep -v "cmd/svc/regimens" | grep -v "cmd/svc/carefinder" | grep -v "cmd/svc/products" > "$PKG/cover.out.2"
+            grep -v .pb.go "$PKG/cover.out" | grep -v "cmd/svc/restapi" | grep -v "cmd/svc/carefinder" | grep -v "cmd/svc/products" > "$PKG/cover.out.2"
             mv "$PKG/cover.out.2" "$PKG/cover.out"
             gocov convert "$PKG/cover.out" | gocov-xml | sed 's=workspace/go/src/github.com/sprucehealth/backend/==g' > "$PKG/coverage.xml"
         fi
@@ -176,7 +176,7 @@ TIME=$(date)
 export TAG="$BRANCH-$BUILD_NUMBER"
 
 if [[ "$DEPLOY_TO_S3" != "" ]]; then
-    SVCS="auth baymaxgraphql carefinder curbside directory excomms invite notification regimensapi restapi routing threading settings operational deploy layout care media admin payments patientsync"
+    SVCS="auth baymaxgraphql carefinder curbside directory excomms invite notification restapi routing threading settings operational deploy layout care media admin payments patientsync"
     for SVC in $SVCS; do
         echo "BUILDING ($SVC)"
         cd $MONOREPO_PATH/cmd/svc/$SVC
