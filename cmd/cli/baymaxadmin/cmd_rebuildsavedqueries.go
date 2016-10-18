@@ -61,10 +61,16 @@ func (c *rebuildSavedQueriesCmd) run(args []string) error {
 				EntityID: *flagEntityID,
 			},
 			RequestedInformation: &directory.RequestedInformation{
-				EntityInformation: []directory.EntityInformation{},
+				EntityInformation: []directory.EntityInformation{
+					directory.EntityInformation_MEMBERS,
+				},
 			},
 			Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 			RootTypes: []directory.EntityType{
+				directory.EntityType_INTERNAL,
+				directory.EntityType_ORGANIZATION,
+			},
+			ChildTypes: []directory.EntityType{
 				directory.EntityType_INTERNAL,
 			},
 		})
@@ -74,10 +80,17 @@ func (c *rebuildSavedQueriesCmd) run(args []string) error {
 		if len(res.Entities) == 0 {
 			return errors.Errorf("No entity found for entity ID %s", *flagEntityID)
 		}
-		if e := res.Entities[0]; e.Type != directory.EntityType_INTERNAL {
+		e := res.Entities[0]
+		switch e.Type {
+		case directory.EntityType_INTERNAL:
+			entityIDs = []string{e.ID}
+		case directory.EntityType_ORGANIZATION:
+			for _, em := range e.Members {
+				entityIDs = append(entityIDs, em.ID)
+			}
+		default:
 			return errors.Errorf("Entity is %s, expected %s", e.Type, directory.EntityType_INTERNAL)
 		}
-		entityIDs = []string{res.Entities[0].ID}
 	} else {
 		var err error
 		entityIDs, err = internalEntityIDs(c.directoryDB)
