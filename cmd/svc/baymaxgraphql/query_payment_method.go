@@ -66,7 +66,6 @@ func init() {
 var paymentMethodCardType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "PaymentCard",
 	Interfaces: []*graphql.Interface{
-		// TODO: Node support
 		paymentMethodInterfaceType,
 	},
 	Fields: graphql.Fields{
