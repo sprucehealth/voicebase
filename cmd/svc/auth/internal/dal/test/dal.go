@@ -1,6 +1,7 @@
 package test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -10,21 +11,18 @@ import (
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 )
 
-type mockDAL struct {
+var _ dal.DAL = &MockDAL{}
+
+type MockDAL struct {
 	*mock.Expector
 }
 
-// NewDAL returns an initialized instance of mockDAL. This returns the interface for a build time check that this mock always matches.
-func NewDAL() dal.DAL {
-	return &mockDAL{}
+// NewMockDAL returns an initialized instance of MockDAL
+func NewMockDAL(t *testing.T) *MockDAL {
+	return &MockDAL{&mock.Expector{T: t}}
 }
 
-// NewMockDAL returns an initialized instance of mockDAL
-func NewMockDAL(t *testing.T) *mockDAL {
-	return &mockDAL{&mock.Expector{T: t}}
-}
-
-func (dl *mockDAL) InsertAccount(model *dal.Account) (dal.AccountID, error) {
+func (dl *MockDAL) InsertAccount(ctx context.Context, model *dal.Account) (dal.AccountID, error) {
 	rets := dl.Record(model)
 	if len(rets) == 0 {
 		return dal.AccountID{}, nil
@@ -32,7 +30,7 @@ func (dl *mockDAL) InsertAccount(model *dal.Account) (dal.AccountID, error) {
 	return rets[0].(dal.AccountID), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) Account(id dal.AccountID) (*dal.Account, error) {
+func (dl *MockDAL) Account(ctx context.Context, id dal.AccountID) (*dal.Account, error) {
 	rets := dl.Record(id)
 	if len(rets) == 0 {
 		return nil, nil
@@ -40,7 +38,7 @@ func (dl *mockDAL) Account(id dal.AccountID) (*dal.Account, error) {
 	return rets[0].(*dal.Account), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) AccountForEmail(email string) (*dal.Account, error) {
+func (dl *MockDAL) AccountForEmail(ctx context.Context, email string) (*dal.Account, error) {
 	rets := dl.Record(email)
 	if len(rets) == 0 {
 		return nil, nil
@@ -48,7 +46,7 @@ func (dl *mockDAL) AccountForEmail(email string) (*dal.Account, error) {
 	return rets[0].(*dal.Account), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) UpdateAccount(id dal.AccountID, update *dal.AccountUpdate) (int64, error) {
+func (dl *MockDAL) UpdateAccount(ctx context.Context, id dal.AccountID, update *dal.AccountUpdate) (int64, error) {
 	rets := dl.Record(id, update)
 	if len(rets) == 0 {
 		return 0, nil
@@ -56,7 +54,7 @@ func (dl *mockDAL) UpdateAccount(id dal.AccountID, update *dal.AccountUpdate) (i
 	return rets[0].(int64), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) DeleteAccount(id dal.AccountID) (int64, error) {
+func (dl *MockDAL) DeleteAccount(ctx context.Context, id dal.AccountID) (int64, error) {
 	rets := dl.Record(id)
 	if len(rets) == 0 {
 		return 0, nil
@@ -64,7 +62,7 @@ func (dl *mockDAL) DeleteAccount(id dal.AccountID) (int64, error) {
 	return rets[0].(int64), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) InsertAuthToken(model *dal.AuthToken) error {
+func (dl *MockDAL) InsertAuthToken(ctx context.Context, model *dal.AuthToken) error {
 	rets := dl.Record(model)
 	if len(rets) == 0 {
 		return nil
@@ -72,7 +70,7 @@ func (dl *mockDAL) InsertAuthToken(model *dal.AuthToken) error {
 	return mock.SafeError(rets[0])
 }
 
-func (dl *mockDAL) ActiveAuthTokenForAccount(accountID dal.AccountID, deviceID string, duration dal.AuthTokenDurationType) (*dal.AuthToken, error) {
+func (dl *MockDAL) ActiveAuthTokenForAccount(ctx context.Context, accountID dal.AccountID, deviceID string, duration dal.AuthTokenDurationType) (*dal.AuthToken, error) {
 	rets := dl.Record(accountID, deviceID, duration)
 	if len(rets) == 0 {
 		return nil, nil
@@ -80,7 +78,7 @@ func (dl *mockDAL) ActiveAuthTokenForAccount(accountID dal.AccountID, deviceID s
 	return rets[0].(*dal.AuthToken), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) AuthToken(token string, expiresAfter time.Time, forUpdate bool) (*dal.AuthToken, error) {
+func (dl *MockDAL) AuthToken(ctx context.Context, token string, expiresAfter time.Time, forUpdate bool) (*dal.AuthToken, error) {
 	rets := dl.Record(token, expiresAfter, forUpdate)
 	if len(rets) == 0 {
 		return nil, nil
@@ -88,7 +86,7 @@ func (dl *mockDAL) AuthToken(token string, expiresAfter time.Time, forUpdate boo
 	return rets[0].(*dal.AuthToken), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) DeleteAuthTokens(accountID dal.AccountID) (int64, error) {
+func (dl *MockDAL) DeleteAuthTokens(ctx context.Context, accountID dal.AccountID) (int64, error) {
 	rets := dl.Record(accountID)
 	if len(rets) == 0 {
 		return 0, nil
@@ -96,7 +94,7 @@ func (dl *mockDAL) DeleteAuthTokens(accountID dal.AccountID) (int64, error) {
 	return rets[0].(int64), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) DeleteAuthTokensWithSuffix(accountID dal.AccountID, suffix string) (int64, error) {
+func (dl *MockDAL) DeleteAuthTokensWithSuffix(ctx context.Context, accountID dal.AccountID, suffix string) (int64, error) {
 	rets := dl.Record(accountID, suffix)
 	if len(rets) == 0 {
 		return 0, nil
@@ -104,7 +102,15 @@ func (dl *mockDAL) DeleteAuthTokensWithSuffix(accountID dal.AccountID, suffix st
 	return rets[0].(int64), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) DeleteAuthToken(token string) (int64, error) {
+func (dl *MockDAL) DeleteExpiredAuthTokens(ctx context.Context, expiredBefore time.Time) (int64, error) {
+	rets := dl.Record(expiredBefore)
+	if len(rets) == 0 {
+		return 0, nil
+	}
+	return rets[0].(int64), mock.SafeError(rets[1])
+}
+
+func (dl *MockDAL) DeleteAuthToken(ctx context.Context, token string) (int64, error) {
 	rets := dl.Record(token)
 	if len(rets) == 0 {
 		return 0, nil
@@ -112,7 +118,7 @@ func (dl *mockDAL) DeleteAuthToken(token string) (int64, error) {
 	return rets[0].(int64), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) UpdateAuthToken(token string, update *dal.AuthTokenUpdate) (int64, error) {
+func (dl *MockDAL) UpdateAuthToken(ctx context.Context, token string, update *dal.AuthTokenUpdate) (int64, error) {
 	rets := dl.Record(token, update)
 	if len(rets) == 0 {
 		return 0, nil
@@ -120,7 +126,7 @@ func (dl *mockDAL) UpdateAuthToken(token string, update *dal.AuthTokenUpdate) (i
 	return rets[0].(int64), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) InsertAccountEvent(model *dal.AccountEvent) (dal.AccountEventID, error) {
+func (dl *MockDAL) InsertAccountEvent(ctx context.Context, model *dal.AccountEvent) (dal.AccountEventID, error) {
 	rets := dl.Record(model)
 	if len(rets) == 0 {
 		return dal.AccountEventID{}, nil
@@ -128,7 +134,7 @@ func (dl *mockDAL) InsertAccountEvent(model *dal.AccountEvent) (dal.AccountEvent
 	return rets[0].(dal.AccountEventID), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) AccountEvent(id dal.AccountEventID) (*dal.AccountEvent, error) {
+func (dl *MockDAL) AccountEvent(ctx context.Context, id dal.AccountEventID) (*dal.AccountEvent, error) {
 	rets := dl.Record(id)
 	if len(rets) == 0 {
 		return nil, nil
@@ -136,7 +142,7 @@ func (dl *mockDAL) AccountEvent(id dal.AccountEventID) (*dal.AccountEvent, error
 	return rets[0].(*dal.AccountEvent), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) DeleteAccountEvent(id dal.AccountEventID) (int64, error) {
+func (dl *MockDAL) DeleteAccountEvent(ctx context.Context, id dal.AccountEventID) (int64, error) {
 	rets := dl.Record(id)
 	if len(rets) == 0 {
 		return 0, nil
@@ -144,7 +150,7 @@ func (dl *mockDAL) DeleteAccountEvent(id dal.AccountEventID) (int64, error) {
 	return rets[0].(int64), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) InsertAccountPhone(model *dal.AccountPhone) (dal.AccountPhoneID, error) {
+func (dl *MockDAL) InsertAccountPhone(ctx context.Context, model *dal.AccountPhone) (dal.AccountPhoneID, error) {
 	rets := dl.Record(model)
 	if len(rets) == 0 {
 		return dal.AccountPhoneID{}, nil
@@ -152,7 +158,7 @@ func (dl *mockDAL) InsertAccountPhone(model *dal.AccountPhone) (dal.AccountPhone
 	return rets[0].(dal.AccountPhoneID), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) AccountPhone(id dal.AccountPhoneID) (*dal.AccountPhone, error) {
+func (dl *MockDAL) AccountPhone(ctx context.Context, id dal.AccountPhoneID) (*dal.AccountPhone, error) {
 	rets := dl.Record(id)
 	if len(rets) == 0 {
 		return nil, nil
@@ -160,7 +166,7 @@ func (dl *mockDAL) AccountPhone(id dal.AccountPhoneID) (*dal.AccountPhone, error
 	return rets[0].(*dal.AccountPhone), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) UpdateAccountPhone(id dal.AccountPhoneID, update *dal.AccountPhoneUpdate) (int64, error) {
+func (dl *MockDAL) UpdateAccountPhone(ctx context.Context, id dal.AccountPhoneID, update *dal.AccountPhoneUpdate) (int64, error) {
 	rets := dl.Record(id, update)
 	if len(rets) == 0 {
 		return 0, nil
@@ -168,7 +174,7 @@ func (dl *mockDAL) UpdateAccountPhone(id dal.AccountPhoneID, update *dal.Account
 	return rets[0].(int64), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) DeleteAccountPhone(id dal.AccountPhoneID) (int64, error) {
+func (dl *MockDAL) DeleteAccountPhone(ctx context.Context, id dal.AccountPhoneID) (int64, error) {
 	rets := dl.Record(id)
 	if len(rets) == 0 {
 		return 0, nil
@@ -176,7 +182,7 @@ func (dl *mockDAL) DeleteAccountPhone(id dal.AccountPhoneID) (int64, error) {
 	return rets[0].(int64), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) InsertAccountEmail(model *dal.AccountEmail) (dal.AccountEmailID, error) {
+func (dl *MockDAL) InsertAccountEmail(ctx context.Context, model *dal.AccountEmail) (dal.AccountEmailID, error) {
 	rets := dl.Record(model)
 	if len(rets) == 0 {
 		return dal.AccountEmailID{}, nil
@@ -184,7 +190,7 @@ func (dl *mockDAL) InsertAccountEmail(model *dal.AccountEmail) (dal.AccountEmail
 	return rets[0].(dal.AccountEmailID), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) AccountEmail(id dal.AccountEmailID) (*dal.AccountEmail, error) {
+func (dl *MockDAL) AccountEmail(ctx context.Context, id dal.AccountEmailID) (*dal.AccountEmail, error) {
 	rets := dl.Record(id)
 	if len(rets) == 0 {
 		return nil, nil
@@ -192,7 +198,7 @@ func (dl *mockDAL) AccountEmail(id dal.AccountEmailID) (*dal.AccountEmail, error
 	return rets[0].(*dal.AccountEmail), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) UpdateAccountEmail(id dal.AccountEmailID, update *dal.AccountEmailUpdate) (int64, error) {
+func (dl *MockDAL) UpdateAccountEmail(ctx context.Context, id dal.AccountEmailID, update *dal.AccountEmailUpdate) (int64, error) {
 	rets := dl.Record(id, update)
 	if len(rets) == 0 {
 		return 0, nil
@@ -200,7 +206,7 @@ func (dl *mockDAL) UpdateAccountEmail(id dal.AccountEmailID, update *dal.Account
 	return rets[0].(int64), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) DeleteAccountEmail(id dal.AccountEmailID) (int64, error) {
+func (dl *MockDAL) DeleteAccountEmail(ctx context.Context, id dal.AccountEmailID) (int64, error) {
 	rets := dl.Record(id)
 	if len(rets) == 0 {
 		return 0, nil
@@ -208,7 +214,7 @@ func (dl *mockDAL) DeleteAccountEmail(id dal.AccountEmailID) (int64, error) {
 	return rets[0].(int64), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) InsertVerificationCode(model *dal.VerificationCode) error {
+func (dl *MockDAL) InsertVerificationCode(ctx context.Context, model *dal.VerificationCode) error {
 	rets := dl.Record(model)
 	if len(rets) == 0 {
 		return nil
@@ -216,7 +222,7 @@ func (dl *mockDAL) InsertVerificationCode(model *dal.VerificationCode) error {
 	return mock.SafeError(rets[0])
 }
 
-func (dl *mockDAL) UpdateVerificationCode(token string, update *dal.VerificationCodeUpdate) (int64, error) {
+func (dl *MockDAL) UpdateVerificationCode(ctx context.Context, token string, update *dal.VerificationCodeUpdate) (int64, error) {
 	rets := dl.Record(token, update)
 	if len(rets) == 0 {
 		return 0, nil
@@ -224,7 +230,7 @@ func (dl *mockDAL) UpdateVerificationCode(token string, update *dal.Verification
 	return rets[0].(int64), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) VerificationCode(token string) (*dal.VerificationCode, error) {
+func (dl *MockDAL) VerificationCode(ctx context.Context, token string) (*dal.VerificationCode, error) {
 	rets := dl.Record(token)
 	if len(rets) == 0 {
 		return nil, nil
@@ -232,7 +238,7 @@ func (dl *mockDAL) VerificationCode(token string) (*dal.VerificationCode, error)
 	return rets[0].(*dal.VerificationCode), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) VerificationCodesByValue(codeType dal.VerificationCodeType, value string) ([]*dal.VerificationCode, error) {
+func (dl *MockDAL) VerificationCodesByValue(ctx context.Context, codeType dal.VerificationCodeType, value string) ([]*dal.VerificationCode, error) {
 	rets := dl.Record(codeType, value)
 	if len(rets) == 0 {
 		return nil, nil
@@ -241,7 +247,7 @@ func (dl *mockDAL) VerificationCodesByValue(codeType dal.VerificationCodeType, v
 	return rets[0].([]*dal.VerificationCode), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) DeleteVerificationCode(token string) (int64, error) {
+func (dl *MockDAL) DeleteVerificationCode(ctx context.Context, token string) (int64, error) {
 	rets := dl.Record(token)
 	if len(rets) == 0 {
 		return 0, nil
@@ -249,7 +255,7 @@ func (dl *mockDAL) DeleteVerificationCode(token string) (int64, error) {
 	return rets[0].(int64), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) TwoFactorLogin(accountID dal.AccountID, deviceID string) (*dal.TwoFactorLogin, error) {
+func (dl *MockDAL) TwoFactorLogin(ctx context.Context, accountID dal.AccountID, deviceID string) (*dal.TwoFactorLogin, error) {
 	rets := dl.Record(accountID, deviceID)
 	if len(rets) == 0 {
 		return nil, nil
@@ -257,7 +263,7 @@ func (dl *mockDAL) TwoFactorLogin(accountID dal.AccountID, deviceID string) (*da
 	return rets[0].(*dal.TwoFactorLogin), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) UpsertTwoFactorLogin(accountID dal.AccountID, deviceID string, loginTime time.Time) error {
+func (dl *MockDAL) UpsertTwoFactorLogin(ctx context.Context, accountID dal.AccountID, deviceID string, loginTime time.Time) error {
 	rets := dl.Record(accountID, deviceID, loginTime)
 	if len(rets) == 0 {
 		return nil
@@ -265,7 +271,7 @@ func (dl *mockDAL) UpsertTwoFactorLogin(accountID dal.AccountID, deviceID string
 	return mock.SafeError(rets[0])
 }
 
-func (dl *mockDAL) TrackLogin(accountID dal.AccountID, platform device.Platform, deviceID string) error {
+func (dl *MockDAL) TrackLogin(ctx context.Context, accountID dal.AccountID, platform device.Platform, deviceID string) error {
 	rets := dl.Record(accountID, platform, deviceID)
 	if len(rets) == 0 {
 		return nil
@@ -274,7 +280,7 @@ func (dl *mockDAL) TrackLogin(accountID dal.AccountID, platform device.Platform,
 	return mock.SafeError(rets[0])
 }
 
-func (dl *mockDAL) LastLogin(accountID dal.AccountID) (*dal.LoginInfo, error) {
+func (dl *MockDAL) LastLogin(ctx context.Context, accountID dal.AccountID) (*dal.LoginInfo, error) {
 	rets := dl.Record(accountID)
 	if len(rets) == 0 {
 		return nil, nil
@@ -283,8 +289,8 @@ func (dl *mockDAL) LastLogin(accountID dal.AccountID) (*dal.LoginInfo, error) {
 	return rets[0].(*dal.LoginInfo), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) Transact(trans func(dal dal.DAL) error) (err error) {
-	if err := trans(dl); err != nil {
+func (dl *MockDAL) Transact(ctx context.Context, trans func(ctx context.Context, dal dal.DAL) error) (err error) {
+	if err := trans(ctx, dl); err != nil {
 		return errors.Trace(err)
 	}
 	return nil

@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/auth/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/auth/internal/server"
 	authSetting "github.com/sprucehealth/backend/cmd/svc/auth/internal/settings"
+	"github.com/sprucehealth/backend/cmd/svc/auth/internal/workers"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
 	pb "github.com/sprucehealth/backend/svc/auth"
@@ -97,7 +98,8 @@ func main() {
 	}
 	cancel()
 
-	aSrv, err := server.New(dal.New(db), settingsClient, config.clientEncryptionKeySecret)
+	dl := dal.New(db)
+	aSrv, err := server.New(dl, settingsClient, config.clientEncryptionKeySecret)
 	if err != nil {
 		golog.Fatalf("Error while initializing auth server: %s", err)
 	}
@@ -107,6 +109,11 @@ func main() {
 	pb.RegisterAuthServer(s, aSrv)
 	golog.Infof("Starting AuthService on %s...", listenAddress)
 	go s.Serve(lis)
+
+	golog.Infof("Starting Payments Workers...")
+	works := workers.New(dl)
+	works.Start()
+	defer works.Stop(time.Second * 20)
 
 	boot.WaitForTermination()
 	svc.Shutdown()

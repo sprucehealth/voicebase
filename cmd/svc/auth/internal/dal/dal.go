@@ -1,6 +1,7 @@
 package dal
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"runtime/debug"
@@ -22,38 +23,39 @@ var ErrNotFound = errors.New("auth/dal: item not found")
 
 // DAL represents the methods required to provide data access layer functionality
 type DAL interface {
-	InsertAccount(model *Account) (AccountID, error)
-	Account(id AccountID) (*Account, error)
-	AccountForEmail(email string) (*Account, error)
-	UpdateAccount(id AccountID, update *AccountUpdate) (int64, error)
-	DeleteAccount(id AccountID) (int64, error)
-	InsertAuthToken(model *AuthToken) error
-	ActiveAuthTokenForAccount(accountID AccountID, deviceID string, duration AuthTokenDurationType) (*AuthToken, error)
-	AuthToken(token string, expiresAfter time.Time, forUpdate bool) (*AuthToken, error)
-	DeleteAuthTokens(accountID AccountID) (int64, error)
-	DeleteAuthToken(token string) (int64, error)
-	UpdateAuthToken(token string, update *AuthTokenUpdate) (int64, error)
-	InsertAccountEvent(model *AccountEvent) (AccountEventID, error)
-	AccountEvent(id AccountEventID) (*AccountEvent, error)
-	DeleteAccountEvent(id AccountEventID) (int64, error)
-	InsertAccountPhone(model *AccountPhone) (AccountPhoneID, error)
-	AccountPhone(id AccountPhoneID) (*AccountPhone, error)
-	UpdateAccountPhone(id AccountPhoneID, update *AccountPhoneUpdate) (int64, error)
-	DeleteAccountPhone(id AccountPhoneID) (int64, error)
-	InsertAccountEmail(model *AccountEmail) (AccountEmailID, error)
-	AccountEmail(id AccountEmailID) (*AccountEmail, error)
-	UpdateAccountEmail(id AccountEmailID, update *AccountEmailUpdate) (int64, error)
-	DeleteAccountEmail(id AccountEmailID) (int64, error)
-	InsertVerificationCode(model *VerificationCode) error
-	UpdateVerificationCode(token string, update *VerificationCodeUpdate) (int64, error)
-	VerificationCode(token string) (*VerificationCode, error)
-	VerificationCodesByValue(codeType VerificationCodeType, verifiedValue string) ([]*VerificationCode, error)
-	DeleteVerificationCode(token string) (int64, error)
-	TwoFactorLogin(accountID AccountID, deviceID string) (*TwoFactorLogin, error)
-	TrackLogin(accountID AccountID, platform device.Platform, deviceID string) error
-	LastLogin(accountID AccountID) (*LoginInfo, error)
-	UpsertTwoFactorLogin(accountID AccountID, deviceID string, loginTime time.Time) error
-	Transact(trans func(dal DAL) error) (err error)
+	InsertAccount(ctx context.Context, model *Account) (AccountID, error)
+	Account(ctx context.Context, id AccountID) (*Account, error)
+	AccountForEmail(ctx context.Context, email string) (*Account, error)
+	UpdateAccount(ctx context.Context, id AccountID, update *AccountUpdate) (int64, error)
+	DeleteAccount(ctx context.Context, id AccountID) (int64, error)
+	InsertAuthToken(ctx context.Context, model *AuthToken) error
+	ActiveAuthTokenForAccount(ctx context.Context, accountID AccountID, deviceID string, duration AuthTokenDurationType) (*AuthToken, error)
+	AuthToken(ctx context.Context, token string, expiresAfter time.Time, forUpdate bool) (*AuthToken, error)
+	DeleteExpiredAuthTokens(ctx context.Context, expiredAgo time.Time) (int64, error)
+	DeleteAuthTokens(ctx context.Context, accountID AccountID) (int64, error)
+	DeleteAuthToken(ctx context.Context, token string) (int64, error)
+	UpdateAuthToken(ctx context.Context, token string, update *AuthTokenUpdate) (int64, error)
+	InsertAccountEvent(ctx context.Context, model *AccountEvent) (AccountEventID, error)
+	AccountEvent(ctx context.Context, id AccountEventID) (*AccountEvent, error)
+	DeleteAccountEvent(ctx context.Context, id AccountEventID) (int64, error)
+	InsertAccountPhone(ctx context.Context, model *AccountPhone) (AccountPhoneID, error)
+	AccountPhone(ctx context.Context, id AccountPhoneID) (*AccountPhone, error)
+	UpdateAccountPhone(ctx context.Context, id AccountPhoneID, update *AccountPhoneUpdate) (int64, error)
+	DeleteAccountPhone(ctx context.Context, id AccountPhoneID) (int64, error)
+	InsertAccountEmail(ctx context.Context, model *AccountEmail) (AccountEmailID, error)
+	AccountEmail(ctx context.Context, id AccountEmailID) (*AccountEmail, error)
+	UpdateAccountEmail(ctx context.Context, id AccountEmailID, update *AccountEmailUpdate) (int64, error)
+	DeleteAccountEmail(ctx context.Context, id AccountEmailID) (int64, error)
+	InsertVerificationCode(ctx context.Context, model *VerificationCode) error
+	UpdateVerificationCode(ctx context.Context, token string, update *VerificationCodeUpdate) (int64, error)
+	VerificationCode(ctx context.Context, token string) (*VerificationCode, error)
+	VerificationCodesByValue(ctx context.Context, codeType VerificationCodeType, verifiedValue string) ([]*VerificationCode, error)
+	DeleteVerificationCode(ctx context.Context, token string) (int64, error)
+	TwoFactorLogin(ctx context.Context, accountID AccountID, deviceID string) (*TwoFactorLogin, error)
+	TrackLogin(ctx context.Context, accountID AccountID, platform device.Platform, deviceID string) error
+	LastLogin(ctx context.Context, accountID AccountID) (*LoginInfo, error)
+	UpsertTwoFactorLogin(ctx context.Context, accountID AccountID, deviceID string, loginTime time.Time) error
+	Transact(ctx context.Context, trans func(ctx context.Context, dal DAL) error) (err error)
 }
 
 type dal struct {
@@ -66,7 +68,7 @@ func New(db *sql.DB) DAL {
 }
 
 // Transact encapsulated the provided function in a transaction and handles rollback and commit actions
-func (d *dal) Transact(trans func(dal DAL) error) (err error) {
+func (d *dal) Transact(ctx context.Context, trans func(ctx context.Context, dal DAL) error) (err error) {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return errors.Trace(err)
@@ -82,7 +84,7 @@ func (d *dal) Transact(trans func(dal DAL) error) (err error) {
 			err = errors.Trace(fmt.Errorf("Encountered panic during transaction execution: %v", r))
 		}
 	}()
-	if err := trans(tdal); err != nil {
+	if err := trans(ctx, tdal); err != nil {
 		tx.Rollback()
 		return errors.Trace(err)
 	}
@@ -609,7 +611,7 @@ type LoginInfo struct {
 }
 
 // InsertAccount inserts a account record
-func (d *dal) InsertAccount(model *Account) (AccountID, error) {
+func (d *dal) InsertAccount(ctx context.Context, model *Account) (AccountID, error) {
 	if !model.ID.IsValid {
 		id, err := NewAccountID()
 		if err != nil {
@@ -635,7 +637,7 @@ func (d *dal) InsertAccount(model *Account) (AccountID, error) {
 }
 
 // Account retrieves a account record
-func (d *dal) Account(id AccountID) (*Account, error) {
+func (d *dal) Account(ctx context.Context, id AccountID) (*Account, error) {
 	row := d.db.QueryRow(
 		selectAccount+` WHERE id = ?`, id.Val)
 	model, err := scanAccount(row)
@@ -643,7 +645,7 @@ func (d *dal) Account(id AccountID) (*Account, error) {
 }
 
 // AccountForEmail returns the account record associated with the provided email
-func (d *dal) AccountForEmail(email string) (*Account, error) {
+func (d *dal) AccountForEmail(ctx context.Context, email string) (*Account, error) {
 	row := d.db.QueryRow(
 		selectAccount+` JOIN account_email ON account.id = account_email.account_id
           WHERE account_email.email = ?`, email)
@@ -652,7 +654,7 @@ func (d *dal) AccountForEmail(email string) (*Account, error) {
 }
 
 // UpdateAccount updates the mutable aspects of a account record
-func (d *dal) UpdateAccount(id AccountID, update *AccountUpdate) (int64, error) {
+func (d *dal) UpdateAccount(ctx context.Context, id AccountID, update *AccountUpdate) (int64, error) {
 	args := dbutil.MySQLVarArgs()
 	if update.PrimaryAccountEmailID.IsValid {
 		args.Append("primary_account_email_id", update.PrimaryAccountEmailID)
@@ -688,7 +690,7 @@ func (d *dal) UpdateAccount(id AccountID, update *AccountUpdate) (int64, error) 
 }
 
 // DeleteAccount deletes a account record
-func (d *dal) DeleteAccount(id AccountID) (int64, error) {
+func (d *dal) DeleteAccount(ctx context.Context, id AccountID) (int64, error) {
 	res, err := d.db.Exec(
 		`DELETE FROM account
           WHERE id = ?`, id)
@@ -701,7 +703,7 @@ func (d *dal) DeleteAccount(id AccountID) (int64, error) {
 }
 
 // AuthToken returns the auth token record that conforms to the provided input
-func (d *dal) AuthToken(token string, expiresAfter time.Time, forUpdate bool) (*AuthToken, error) {
+func (d *dal) AuthToken(ctx context.Context, token string, expiresAfter time.Time, forUpdate bool) (*AuthToken, error) {
 	var fu string
 	if forUpdate {
 		fu = "FOR UPDATE"
@@ -713,7 +715,7 @@ func (d *dal) AuthToken(token string, expiresAfter time.Time, forUpdate bool) (*
 }
 
 // ActiveAuthTokenForAccount returns the current active non shadow auth token record that conforms to the provided input
-func (d *dal) ActiveAuthTokenForAccount(accountID AccountID, deviceID string, duration AuthTokenDurationType) (*AuthToken, error) {
+func (d *dal) ActiveAuthTokenForAccount(ctx context.Context, accountID AccountID, deviceID string, duration AuthTokenDurationType) (*AuthToken, error) {
 	row := d.db.QueryRow(
 		selectAuthToken+` WHERE account_id = ? AND shadow = false AND expires > ? AND device_id = ? ORDER BY created DESC LIMIT 1`, accountID, time.Now(), deviceID)
 	model, err := scanAuthToken(row)
@@ -730,7 +732,7 @@ func (d *dal) ActiveAuthTokenForAccount(accountID AccountID, deviceID string, du
 }
 
 // InsertAuthToken inserts a auth_token record
-func (d *dal) InsertAuthToken(model *AuthToken) error {
+func (d *dal) InsertAuthToken(ctx context.Context, model *AuthToken) error {
 	_, err := d.db.Exec(
 		`INSERT INTO auth_token
           (token, client_encryption_key, account_id, expires, shadow, duration_type, device_id, platform)
@@ -742,8 +744,21 @@ func (d *dal) InsertAuthToken(model *AuthToken) error {
 	return nil
 }
 
+// DeleteExpiredAuthTokens deleted the auth tokens associated with the provided account id
+func (d *dal) DeleteExpiredAuthTokens(ctx context.Context, expiredBefore time.Time) (int64, error) {
+	res, err := d.db.Exec(
+		`DELETE FROM auth_token
+          WHERE expires < ?`, expiredBefore)
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+
+	aff, err := res.RowsAffected()
+	return aff, errors.Trace(err)
+}
+
 // DeleteAuthTokens deleted the auth tokens associated with the provided account id
-func (d *dal) DeleteAuthTokens(id AccountID) (int64, error) {
+func (d *dal) DeleteAuthTokens(ctx context.Context, id AccountID) (int64, error) {
 	res, err := d.db.Exec(
 		`DELETE FROM auth_token
           WHERE account_id = ?`, id)
@@ -756,7 +771,7 @@ func (d *dal) DeleteAuthTokens(id AccountID) (int64, error) {
 }
 
 // DeleteAuthToken deleted the provided auth token
-func (d *dal) DeleteAuthToken(token string) (int64, error) {
+func (d *dal) DeleteAuthToken(ctx context.Context, token string) (int64, error) {
 	res, err := d.db.Exec(
 		`DELETE FROM auth_token
           WHERE token = BINARY ?`, token)
@@ -769,7 +784,7 @@ func (d *dal) DeleteAuthToken(token string) (int64, error) {
 }
 
 // UpdateAuthToken updated the mutable aspects of the provided token
-func (d *dal) UpdateAuthToken(token string, update *AuthTokenUpdate) (int64, error) {
+func (d *dal) UpdateAuthToken(ctx context.Context, token string, update *AuthTokenUpdate) (int64, error) {
 	args := dbutil.MySQLVarArgs()
 	if len(update.Token) != 0 {
 		args.Append("token", update.Token)
@@ -796,7 +811,7 @@ func (d *dal) UpdateAuthToken(token string, update *AuthTokenUpdate) (int64, err
 }
 
 // InsertAccountEvent inserts a account_event record
-func (d *dal) InsertAccountEvent(model *AccountEvent) (AccountEventID, error) {
+func (d *dal) InsertAccountEvent(ctx context.Context, model *AccountEvent) (AccountEventID, error) {
 	if !model.ID.IsValid {
 		id, err := NewAccountEventID()
 		if err != nil {
@@ -816,7 +831,7 @@ func (d *dal) InsertAccountEvent(model *AccountEvent) (AccountEventID, error) {
 }
 
 // AccountEvent retrieves a account_event record
-func (d *dal) AccountEvent(id AccountEventID) (*AccountEvent, error) {
+func (d *dal) AccountEvent(ctx context.Context, id AccountEventID) (*AccountEvent, error) {
 	row := d.db.QueryRow(
 		selectAccountEvent+` WHERE id = ?`, id.Val)
 	model, err := scanAccountEvent(row)
@@ -824,7 +839,7 @@ func (d *dal) AccountEvent(id AccountEventID) (*AccountEvent, error) {
 }
 
 // DeleteAccountEvent deletes a account_event record
-func (d *dal) DeleteAccountEvent(id AccountEventID) (int64, error) {
+func (d *dal) DeleteAccountEvent(ctx context.Context, id AccountEventID) (int64, error) {
 	res, err := d.db.Exec(
 		`DELETE FROM account_event
           WHERE id = ?`, id)
@@ -837,7 +852,7 @@ func (d *dal) DeleteAccountEvent(id AccountEventID) (int64, error) {
 }
 
 // InsertAccountPhone inserts a account_phone record
-func (d *dal) InsertAccountPhone(model *AccountPhone) (AccountPhoneID, error) {
+func (d *dal) InsertAccountPhone(ctx context.Context, model *AccountPhone) (AccountPhoneID, error) {
 	if !model.ID.IsValid {
 		id, err := NewAccountPhoneID()
 		if err != nil {
@@ -857,7 +872,7 @@ func (d *dal) InsertAccountPhone(model *AccountPhone) (AccountPhoneID, error) {
 }
 
 // AccountPhone retrieves a account_phone record
-func (d *dal) AccountPhone(id AccountPhoneID) (*AccountPhone, error) {
+func (d *dal) AccountPhone(ctx context.Context, id AccountPhoneID) (*AccountPhone, error) {
 	row := d.db.QueryRow(
 		selectAccountPhone+` WHERE id = ?`, id.Val)
 	model, err := scanAccountPhone(row)
@@ -865,7 +880,7 @@ func (d *dal) AccountPhone(id AccountPhoneID) (*AccountPhone, error) {
 }
 
 // UpdateAccountPhone updates the mutable aspects of a account_phone record
-func (d *dal) UpdateAccountPhone(id AccountPhoneID, update *AccountPhoneUpdate) (int64, error) {
+func (d *dal) UpdateAccountPhone(ctx context.Context, id AccountPhoneID, update *AccountPhoneUpdate) (int64, error) {
 	args := dbutil.MySQLVarArgs()
 	if update.PhoneNumber != nil {
 		args.Append("phone_number", *update.PhoneNumber)
@@ -892,7 +907,7 @@ func (d *dal) UpdateAccountPhone(id AccountPhoneID, update *AccountPhoneUpdate) 
 }
 
 // DeleteAccountPhone deletes a account_phone record
-func (d *dal) DeleteAccountPhone(id AccountPhoneID) (int64, error) {
+func (d *dal) DeleteAccountPhone(ctx context.Context, id AccountPhoneID) (int64, error) {
 	res, err := d.db.Exec(
 		`DELETE FROM account_phone
           WHERE id = ?`, id)
@@ -905,7 +920,7 @@ func (d *dal) DeleteAccountPhone(id AccountPhoneID) (int64, error) {
 }
 
 // InsertAccountEmail inserts a account_email record
-func (d *dal) InsertAccountEmail(model *AccountEmail) (AccountEmailID, error) {
+func (d *dal) InsertAccountEmail(ctx context.Context, model *AccountEmail) (AccountEmailID, error) {
 	if !model.ID.IsValid {
 		id, err := NewAccountEmailID()
 		if err != nil {
@@ -925,7 +940,7 @@ func (d *dal) InsertAccountEmail(model *AccountEmail) (AccountEmailID, error) {
 }
 
 // AccountEmail retrieves a account_email record
-func (d *dal) AccountEmail(id AccountEmailID) (*AccountEmail, error) {
+func (d *dal) AccountEmail(ctx context.Context, id AccountEmailID) (*AccountEmail, error) {
 	row := d.db.QueryRow(
 		selectAccountEmail+` WHERE id = ?`, id.Val)
 	model, err := scanAccountEmail(row)
@@ -933,7 +948,7 @@ func (d *dal) AccountEmail(id AccountEmailID) (*AccountEmail, error) {
 }
 
 // UpdateAccountEmail updates the mutable aspects of a account_email record
-func (d *dal) UpdateAccountEmail(id AccountEmailID, update *AccountEmailUpdate) (int64, error) {
+func (d *dal) UpdateAccountEmail(ctx context.Context, id AccountEmailID, update *AccountEmailUpdate) (int64, error) {
 	args := dbutil.MySQLVarArgs()
 	if update.Email != nil {
 		args.Append("email", *update.Email)
@@ -960,7 +975,7 @@ func (d *dal) UpdateAccountEmail(id AccountEmailID, update *AccountEmailUpdate) 
 }
 
 // DeleteAccountEmail deletes a account_email record
-func (d *dal) DeleteAccountEmail(id AccountEmailID) (int64, error) {
+func (d *dal) DeleteAccountEmail(ctx context.Context, id AccountEmailID) (int64, error) {
 	res, err := d.db.Exec(
 		`DELETE FROM account_email
           WHERE id = ?`, id)
@@ -973,7 +988,7 @@ func (d *dal) DeleteAccountEmail(id AccountEmailID) (int64, error) {
 }
 
 // InsertVerificationCode inserts a verification_code record
-func (d *dal) InsertVerificationCode(model *VerificationCode) error {
+func (d *dal) InsertVerificationCode(ctx context.Context, model *VerificationCode) error {
 	_, err := d.db.Exec(
 		`INSERT INTO verification_code
           (expires, token, code, verification_type, verified_value, consumed)
@@ -986,7 +1001,7 @@ func (d *dal) InsertVerificationCode(model *VerificationCode) error {
 }
 
 // UpdateVerificationCode updates the mutable aspects of a verification_code record
-func (d *dal) UpdateVerificationCode(token string, update *VerificationCodeUpdate) (int64, error) {
+func (d *dal) UpdateVerificationCode(ctx context.Context, token string, update *VerificationCodeUpdate) (int64, error) {
 	args := dbutil.MySQLVarArgs()
 	if update.Consumed != nil {
 		args.Append("consumed", *update.Consumed)
@@ -1007,14 +1022,14 @@ func (d *dal) UpdateVerificationCode(token string, update *VerificationCodeUpdat
 }
 
 // VerificationCode retrieves a verification_code record
-func (d *dal) VerificationCode(token string) (*VerificationCode, error) {
+func (d *dal) VerificationCode(ctx context.Context, token string) (*VerificationCode, error) {
 	row := d.db.QueryRow(
 		selectVerificationCode+` WHERE token = ?`, token)
 	model, err := scanVerificationCode(row)
 	return model, errors.Trace(err)
 }
 
-func (d *dal) VerificationCodesByValue(codeType VerificationCodeType, verifiedValue string) ([]*VerificationCode, error) {
+func (d *dal) VerificationCodesByValue(ctx context.Context, codeType VerificationCodeType, verifiedValue string) ([]*VerificationCode, error) {
 	rows, err := d.db.Query(selectVerificationCode+` WHERE verification_type = ? AND verified_value = ?`, codeType.String(), verifiedValue)
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -1034,7 +1049,7 @@ func (d *dal) VerificationCodesByValue(codeType VerificationCodeType, verifiedVa
 }
 
 // DeleteVerificationCode deletes a verification_code record
-func (d *dal) DeleteVerificationCode(token string) (int64, error) {
+func (d *dal) DeleteVerificationCode(ctx context.Context, token string) (int64, error) {
 	res, err := d.db.Exec(
 		`DELETE FROM verification_code
           WHERE token = ?`, token)
@@ -1047,7 +1062,7 @@ func (d *dal) DeleteVerificationCode(token string) (int64, error) {
 }
 
 // TwoFactorLogin retrieves a verification_code record
-func (d *dal) TwoFactorLogin(accountID AccountID, deviceID string) (*TwoFactorLogin, error) {
+func (d *dal) TwoFactorLogin(ctx context.Context, accountID AccountID, deviceID string) (*TwoFactorLogin, error) {
 	row := d.db.QueryRow(
 		selectTwoFactorLogin+` WHERE account_id = ? AND device_id = ?`, accountID, deviceID)
 	model, err := scanTwoFactorLogin(row)
@@ -1055,7 +1070,7 @@ func (d *dal) TwoFactorLogin(accountID AccountID, deviceID string) (*TwoFactorLo
 }
 
 // UpsertTwoFactorLogin inserts a new two factor login record if one doesn't already exist. If it does then the record is updated.
-func (d *dal) UpsertTwoFactorLogin(accountID AccountID, deviceID string, loginTime time.Time) error {
+func (d *dal) UpsertTwoFactorLogin(ctx context.Context, accountID AccountID, deviceID string, loginTime time.Time) error {
 	_, err := d.db.Exec(
 		`INSERT INTO two_factor_login
           (account_id, device_id, last_login)
@@ -1064,13 +1079,13 @@ func (d *dal) UpsertTwoFactorLogin(accountID AccountID, deviceID string, loginTi
 	return errors.Trace(err)
 }
 
-func (d *dal) TrackLogin(accountID AccountID, platform device.Platform, deviceID string) error {
+func (d *dal) TrackLogin(ctx context.Context, accountID AccountID, platform device.Platform, deviceID string) error {
 	_, err := d.db.Exec(`
 		REPLACE INTO login_info (account_id, platform, device_id) VALUES (?, ?, ?)`, accountID, platform.String(), deviceID)
 	return errors.Trace(err)
 }
 
-func (d *dal) LastLogin(accountID AccountID) (*LoginInfo, error) {
+func (d *dal) LastLogin(ctx context.Context, accountID AccountID) (*LoginInfo, error) {
 	loginInfo := LoginInfo{
 		AccountID: accountID,
 	}
