@@ -64,6 +64,15 @@ func ecsConfigName(sub string) string {
 	return `ECS_CONFIG_` + strings.ToUpper(sub)
 }
 
+func splitStringPtrList(s string) []*string {
+	vals := strings.Split(s, ",")
+	strs := make([]*string, len(vals))
+	for i, v := range vals {
+		strs[i] = ptr.String(strings.TrimSpace(v))
+	}
+	return strs
+}
+
 // TODO: How to handle multiple containers in a task?
 func (m *Manager) taskDefinitionInputForDeployment(d *dal.Deployment) (*ecs.RegisterTaskDefinitionInput, error) {
 	// Validate our config
@@ -83,6 +92,8 @@ func (m *Manager) taskDefinitionInputForDeployment(d *dal.Deployment) (*ecs.Regi
 	var portMappings []*ecs.PortMapping
 	var dnsServers []*string
 	var dnsSearchDomains []*string
+	var entryPoint []*string
+	var command []*string
 	cMap := make(map[string]string, len(dConfigs))
 	for _, c := range dConfigs {
 		switch {
@@ -93,17 +104,13 @@ func (m *Manager) taskDefinitionInputForDeployment(d *dal.Deployment) (*ecs.Regi
 			}
 			portMappings = append(portMappings, pm)
 		case strings.HasPrefix(c.Name, ecsConfigName("DNS_SERVERS")):
-			vals := strings.Split(c.Value, ",")
-			dnsServers = make([]*string, len(vals))
-			for i, v := range vals {
-				dnsServers[i] = ptr.String(strings.TrimSpace(v))
-			}
+			dnsServers = splitStringPtrList(c.Value)
 		case strings.HasPrefix(c.Name, ecsConfigName("DNS_SEARCH_DOMAINS")):
-			vals := strings.Split(c.Value, ",")
-			dnsSearchDomains = make([]*string, len(vals))
-			for i, v := range vals {
-				dnsSearchDomains[i] = ptr.String(strings.TrimSpace(v))
-			}
+			dnsSearchDomains = splitStringPtrList(c.Value)
+		case strings.HasPrefix(c.Name, ecsConfigName("ENTRY_POINT")):
+			entryPoint = splitStringPtrList(c.Value)
+		case strings.HasPrefix(c.Name, ecsConfigName("COMMAND")):
+			command = splitStringPtrList(c.Value)
 		default:
 			cMap[c.Name] = c.Value
 		}
@@ -134,6 +141,8 @@ func (m *Manager) taskDefinitionInputForDeployment(d *dal.Deployment) (*ecs.Regi
 				Image:       ptr.String(ecsDeployment.Image),
 				Cpu:         &cpu,
 				Memory:      &memory,
+				EntryPoint:  entryPoint,
+				Command:     command,
 				Environment: envVariables,
 				// TODO: Figure out how to manage this with multiple containers in task
 				Essential:        ptr.Bool(true),
