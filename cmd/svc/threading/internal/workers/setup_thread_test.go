@@ -1,4 +1,4 @@
-package setupthread
+package workers
 
 import (
 	"testing"
@@ -17,7 +17,7 @@ func TestWorker(t *testing.T) {
 	t.Parallel()
 
 	ts := tmock.New(t)
-	w := NewWorker(nil, ts, "")
+	w := newSetupThreadWorker(nil, ts, "")
 
 	ts.Expect(mock.NewExpectation(ts.OnboardingThreadEvent, &threading.OnboardingThreadEventRequest{
 		LookupByType: threading.ONBOARDING_THREAD_LOOKUP_BY_ENTITY_ID,

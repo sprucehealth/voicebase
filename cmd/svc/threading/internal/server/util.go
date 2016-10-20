@@ -6,12 +6,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sprucehealth/backend/cmd/svc/threading/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/models"
 	"github.com/sprucehealth/backend/libs/bml"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/textutil"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/media"
+	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/backend/svc/threading"
 	"google.golang.org/grpc/codes"
 )
@@ -245,4 +248,76 @@ func hasUnreadReference(te *models.ThreadEntity) bool {
 
 func isExternalEntity(e *directory.Entity) bool {
 	return e.Type == directory.EntityType_PATIENT || e.Type == directory.EntityType_EXTERNAL
+}
+
+// NOTE: This should remain idempotent since it is called for both scheduling and posting a message
+func claimAttachments(ctx context.Context, mediaClient media.MediaClient, paymentsClient payments.PaymentsClient, threadID models.ThreadID, attachments []*models.Attachment) error {
+	mediaIDs := mediaIDsFromAttachments(attachments)
+	if len(mediaIDs) > 0 {
+		// Before posting the actual message, map all the attached media to the thread
+		// Failure scenarios:
+		// 1. This call succeeds and the post fails. The media is now mapped to the thread which should still allow a repost.
+		// 2. This call fails. The media is still mapped to the caller
+		_, err := mediaClient.ClaimMedia(ctx, &media.ClaimMediaRequest{
+			MediaIDs:  mediaIDs,
+			OwnerType: media.MediaOwnerType_THREAD,
+			OwnerID:   threadID.String(),
+		})
+		if err != nil {
+			return errors.Trace(err)
+		}
+	}
+	for _, pID := range paymentsIDsFromAttachments(attachments) {
+		// This call should be idempotent as long as the payment request is just being submitted
+		if _, err := paymentsClient.SubmitPayment(ctx, &payments.SubmitPaymentRequest{
+			PaymentID: pID,
+			ThreadID:  threadID.String(),
+		}); err != nil {
+			return errors.Trace(err)
+		}
+	}
+	return nil
+}
+
+func createPostMessageRequest(ctx context.Context, threadID models.ThreadID, fromEntityID string, postMessage *threading.MessagePost) (*dal.PostMessageRequest, error) {
+	textRefs, err := processMessagePost(postMessage)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: validate any attachments
+	attachments, err := transformAttachmentsFromRequest(postMessage.Attachments)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	var source *models.Endpoint
+	if postMessage.Source != nil {
+		source, err = transformEndpointFromRequest(postMessage.Source)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+	}
+
+	destinations := make([]*models.Endpoint, len(postMessage.Destinations))
+	for _, dc := range postMessage.Destinations {
+		d, err := transformEndpointFromRequest(dc)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		destinations = append(destinations, d)
+	}
+
+	return &dal.PostMessageRequest{
+		ThreadID:     threadID,
+		FromEntityID: fromEntityID,
+		Internal:     postMessage.Internal,
+		Text:         postMessage.Text,
+		Title:        postMessage.Title,
+		TextRefs:     textRefs,
+		Summary:      postMessage.Summary,
+		Attachments:  attachments,
+		Source:       source,
+		Destinations: destinations,
+	}, nil
 }

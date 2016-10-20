@@ -862,10 +862,6 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 			Internal:     in.DeprecatedInternal,
 		}
 	}
-	textRefs, err := processMessagePost(in.Message)
-	if err != nil {
-		return nil, err
-	}
 
 	threads, err := s.dal.Threads(ctx, []models.ThreadID{threadID})
 	if err != nil {
@@ -884,66 +880,23 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 	var item *models.ThreadItem
 	var linkedItem *models.ThreadItem
 
-	// TODO: validate any attachments
-	attachments, err := transformAttachmentsFromRequest(in.Message.Attachments)
+	req, err := createPostMessageRequest(ctx, threadID, in.FromEntityID, in.Message)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	mediaIDs := mediaIDsFromAttachments(attachments)
-	if len(mediaIDs) > 0 {
-		// Before posting the actual message, map all the attached media to the thread
-		// Failure scenarios:
-		// 1. This call succeeds and the post fails. The media is now mapped to the thread which should still allow a repost.
-		// 2. This call fails. The media is still mapped to the caller
-		_, err = s.mediaClient.ClaimMedia(ctx, &media.ClaimMediaRequest{
-			MediaIDs:  mediaIDs,
-			OwnerType: media.MediaOwnerType_THREAD,
-			OwnerID:   threadID.String(),
-		})
-		if err != nil {
-			return nil, errors.Trace(err)
-		}
+
+	if err := claimAttachments(ctx, s.mediaClient, s.paymentsClient, threadID, req.Attachments); err != nil {
+		return nil, errors.Trace(err)
 	}
-	for _, pID := range paymentsIDsFromAttachments(attachments) {
-		// This call should be idempotent as long as the payment request is just being submitted
-		if _, err := s.paymentsClient.SubmitPayment(ctx, &payments.SubmitPaymentRequest{
-			PaymentID: pID,
-			ThreadID:  threadID.String(),
-		}); err != nil {
-			return nil, errors.Trace(err)
-		}
-	}
+
 	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
-		req := &dal.PostMessageRequest{
-			ThreadID:     threadID,
-			FromEntityID: in.FromEntityID,
-			Internal:     in.Message.Internal,
-			Text:         in.Message.Text,
-			Title:        in.Message.Title,
-			TextRefs:     textRefs,
-			Summary:      in.Message.Summary,
-			Attachments:  attachments,
-		}
-		if in.Message.Source != nil {
-			req.Source, err = transformEndpointFromRequest(in.Message.Source)
-			if err != nil {
-				return errors.Trace(err)
-			}
-		}
-		for _, dc := range in.Message.Destinations {
-			d, err := transformEndpointFromRequest(dc)
-			if err != nil {
-				return errors.Trace(err)
-			}
-			req.Destinations = append(req.Destinations, d)
-		}
 		item, err = dl.PostMessage(ctx, req)
 		if err != nil {
 			return errors.Trace(err)
 		}
 
 		// Update unread reference status for anyone mentioned
-		for _, r := range textRefs {
+		for _, r := range req.TextRefs {
 			if err := dl.UpdateThreadEntity(ctx, threadID, r.ID, &dal.ThreadEntityUpdate{
 				LastReferenced: &item.Created,
 			}); err != nil {
@@ -1010,9 +963,9 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 				FromEntityID: linkedThread.PrimaryEntityID,
 				Text:         text,
 				Title:        in.Message.Title,
-				TextRefs:     textRefs,
+				TextRefs:     req.TextRefs,
 				Summary:      summary,
-				Attachments:  attachments,
+				Attachments:  req.Attachments,
 			}
 			if in.Message.Source != nil {
 				req.Source, err = transformEndpointFromRequest(in.Message.Source)

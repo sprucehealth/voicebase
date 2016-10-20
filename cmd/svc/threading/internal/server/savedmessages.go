@@ -205,7 +205,7 @@ func transformSavedMessageToResponse(sm *models.SavedMessage) (*threading.SavedM
 	}
 	switch v := sm.Content.(type) {
 	case *models.Message:
-		m, err := transformMessageToResponse(v)
+		m, err := TransformMessageToResponse(v)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}

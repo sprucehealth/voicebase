@@ -703,6 +703,60 @@ message UpdateSavedMessageResponse {
 	SavedMessage saved_message = 1;
 }
 
+enum ScheduledMessageStatus {
+	SCHEDULED_MESSAGE_STATUS_UNKNOWN = 0;
+	SCHEDULED_MESSAGE_STATUS_PENDING = 1;
+	SCHEDULED_MESSAGE_STATUS_SENT = 2;
+	SCHEDULED_MESSAGE_STATUS_DELETED = 3;
+}
+
+message ScheduledMessage {
+	string id = 1 [(gogoproto.customname) = "ID"];
+	string thread_id = 2 [(gogoproto.customname) = "ThreadID"];
+	string actor_entity_id = 3 [(gogoproto.customname) = "ActorEntityID"];
+	bool internal = 4; // item is internal to the organization (not seen by external entities)
+	uint64 scheduled_for = 5;
+	uint64 sent_at = 6;
+	string sent_thread_item_id = 7 [(gogoproto.customname) = "SentThreadItemID"];;
+	uint64 created = 8;
+	uint64 modified = 9;
+	ScheduledMessageStatus status = 10;
+	oneof content {
+		Message message = 11;
+	}
+}
+
+message CreateScheduledMessageRequest {
+	string thread_id = 1 [(gogoproto.customname) = "ThreadID"];
+	string actor_entity_id = 2 [(gogoproto.customname) = "ActorEntityID"];
+	uint64 scheduled_for = 3;
+	oneof content {
+		MessagePost message = 4;
+	}
+}
+
+message CreateScheduledMessageResponse {
+	ScheduledMessage scheduled_message = 1;
+}
+
+message DeleteScheduledMessageRequest {
+	string scheduled_message_id = 1 [(gogoproto.customname) = "ScheduledMessageID"];
+}
+
+message DeleteScheduledMessageResponse {}
+
+message ScheduledMessagesRequest {
+	repeated ScheduledMessageStatus status = 1;
+	oneof lookup_key {
+		string scheduled_message_id = 2 [(gogoproto.customname) = "ScheduledMessageID"];
+		string thread_id = 3 [(gogoproto.customname) = "ThreadID"];
+	}
+}
+
+message ScheduledMessagesResponse {
+	repeated ScheduledMessage scheduled_messages = 1;
+}
+
 service Threads {
 	// CreateEmptyThread creates a new thread with no messages
 	rpc CreateEmptyThread(CreateEmptyThreadRequest) returns (CreateEmptyThreadResponse);
@@ -714,6 +768,8 @@ service Threads {
 	rpc CreateOnboardingThread(CreateOnboardingThreadRequest) returns (CreateOnboardingThreadResponse);
 	// CreateSavedMessage creates a new saved message
 	rpc CreateSavedMessage(CreateSavedMessageRequest) returns (CreateSavedMessageResponse);
+	// CreateScheduledMessage creates a new scheduled message
+	rpc CreateScheduledMessage(CreateScheduledMessageRequest) returns (CreateScheduledMessageResponse);
 	// CreateThread create a new thread with an initial message
 	rpc CreateThread(CreateThreadRequest) returns (CreateThreadResponse);
 	// DeleteMessage deletes a message from a thread
@@ -722,6 +778,8 @@ service Threads {
 	rpc DeleteSavedMessage(DeleteSavedMessageRequest) returns (DeleteSavedMessageResponse);
 	// DeleteSavedQueries delets the provided list of saved queries
 	rpc DeleteSavedQueries(DeleteSavedQueriesRequest) returns (DeleteSavedQueriesResponse);
+	// DeleteScheduledMessage deletes a scheduled message
+	rpc DeleteScheduledMessage(DeleteScheduledMessageRequest) returns (DeleteScheduledMessageResponse);
 	// DeleteThread deletes a thread
 	rpc DeleteThread(DeleteThreadRequest) returns (DeleteThreadResponse);
 	// LinkedThread returns the linked thread of one exists
@@ -736,6 +794,8 @@ service Threads {
 	rpc QueryThreads(QueryThreadsRequest) returns (QueryThreadsResponse);
 	// SavedMessages queries for saved messages
 	rpc SavedMessages(SavedMessagesRequest) returns (SavedMessagesResponse);
+	// ScheduledMessages queries for scheduled messages
+	rpc ScheduledMessages(ScheduledMessagesRequest) returns (ScheduledMessagesResponse);
 	// SavedQuery returns a single saved query by ID
 	rpc SavedQuery(SavedQueryRequest) returns (SavedQueryResponse);
 	// SavedQueries returns the list of saved queries for an org / entity pair

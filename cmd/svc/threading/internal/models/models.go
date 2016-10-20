@@ -2,6 +2,7 @@ package models
 
 import (
 	"database/sql/driver"
+	"fmt"
 	"sort"
 	"strings"
 	"time"
@@ -527,4 +528,109 @@ func SummaryFromText(textMarkup string) (string, error) {
 		pt += "…"
 	}
 	return pt, nil
+}
+
+// ScheduledMessageIDPrefix represents the string that is attached to the beginning of these identifiers
+const ScheduledMessageIDPrefix = "scm_"
+
+// NewScheduledMessageID returns a new ScheduledMessageID.
+func NewScheduledMessageID() (ScheduledMessageID, error) {
+	id, err := idgen.NewID()
+	if err != nil {
+		return ScheduledMessageID{}, errors.Trace(err)
+	}
+	return ScheduledMessageID{
+		model.ObjectID{
+			Prefix:  ScheduledMessageIDPrefix,
+			Val:     id,
+			IsValid: true,
+		},
+	}, nil
+}
+
+// EmptyScheduledMessageID returns an empty initialized ID
+func EmptyScheduledMessageID() ScheduledMessageID {
+	return ScheduledMessageID{
+		model.ObjectID{
+			Prefix:  ScheduledMessageIDPrefix,
+			IsValid: false,
+		},
+	}
+}
+
+// ParseScheduledMessageID transforms an ScheduledMessageID from it's string representation into the actual ID value
+func ParseScheduledMessageID(s string) (ScheduledMessageID, error) {
+	id := EmptyScheduledMessageID()
+	err := id.UnmarshalText([]byte(s))
+	return id, errors.Trace(err)
+}
+
+// ScheduledMessageID is the ID for a ScheduledMessageID object
+type ScheduledMessageID struct {
+	model.ObjectID
+}
+
+// ScheduledMessageStatus represents the type associated with the status column of the scheduled_message table
+type ScheduledMessageStatus string
+
+const (
+	// ScheduledMessageStatusPending represents the PENDING state of the status field on a scheduled_message record
+	ScheduledMessageStatusPending ScheduledMessageStatus = "PENDING"
+	// ScheduledMessageStatusSent represents the SENT state of the status field on a scheduled_message record
+	ScheduledMessageStatusSent ScheduledMessageStatus = "SENT"
+	// ScheduledMessageStatusDeleted represents the DELETED state of the status field on a scheduled_message record
+	ScheduledMessageStatusDeleted ScheduledMessageStatus = "DELETED"
+)
+
+// ParseScheduledMessageStatus converts a string into the correcponding enum value
+func ParseScheduledMessageStatus(s string) (ScheduledMessageStatus, error) {
+	switch t := ScheduledMessageStatus(strings.ToUpper(s)); t {
+	case ScheduledMessageStatusPending, ScheduledMessageStatusSent, ScheduledMessageStatusDeleted:
+		return t, nil
+	}
+	return ScheduledMessageStatus(""), errors.Trace(fmt.Errorf("Unknown status:%s", s))
+}
+
+func (t ScheduledMessageStatus) String() string {
+	return string(t)
+}
+
+// Value implements sql/driver.Valr to allow it to be used in an sql query
+func (t ScheduledMessageStatus) Value() (driver.Value, error) {
+	return string(t), nil
+}
+
+// Scan allows for scanning of ScheduledMessageStatus from a database conforming to the sql.Scanner interface
+func (t *ScheduledMessageStatus) Scan(src interface{}) error {
+	var err error
+	switch ts := src.(type) {
+	case string:
+		*t, err = ParseScheduledMessageStatus(ts)
+	case []byte:
+		*t, err = ParseScheduledMessageStatus(string(ts))
+	}
+	return errors.Trace(err)
+}
+
+// ScheduledMessage represents a scheduled_message record
+type ScheduledMessage struct {
+	Type             ItemType
+	ScheduledFor     time.Time
+	SentAt           *time.Time
+	Created          time.Time
+	Modified         time.Time
+	ActorEntityID    string
+	ThreadID         ThreadID
+	Internal         bool
+	Data             ItemValue
+	Status           ScheduledMessageStatus
+	ID               ScheduledMessageID
+	SentThreadItemID *ThreadItemID
+}
+
+// ScheduledMessageUpdate represents the mutable aspects of a scheduled_message record
+type ScheduledMessageUpdate struct {
+	SentAt           *time.Time
+	Status           *ScheduledMessageStatus
+	SentThreadItemID *ThreadItemID
 }

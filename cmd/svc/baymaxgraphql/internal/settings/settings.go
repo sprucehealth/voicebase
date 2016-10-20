@@ -11,6 +11,7 @@ const (
 	ConfigKeyVideoCalling             = "video_calling_enabled"
 	ConfigKeyVisitAttachments         = "visit_attachments_enabled"
 	ConfigKeyPayments                 = "payments_enabled"
+	ConfigKeyScheduledMessages        = "scheduled_messages_enabled"
 )
 
 // TeamConversationsConfig represents the config controlling whether or not team conversations is enabled at the org level
@@ -141,6 +142,22 @@ var PaymentsConfig = &settings.Config{
 		Boolean: &settings.BooleanConfig{
 			Default: &settings.BooleanValue{
 				Value: true,
+			},
+		},
+	},
+}
+
+// ScheduledMessagesConfig represents the config controlling whether or not scheduled messages are enabled at the org level
+var ScheduledMessagesConfig = &settings.Config{
+	Title:          "Enable/disable scheduled messages",
+	AllowSubkeys:   false,
+	Key:            ConfigKeyScheduledMessages,
+	Type:           settings.ConfigType_BOOLEAN,
+	PossibleOwners: []settings.OwnerType{settings.OwnerType_ORGANIZATION},
+	Config: &settings.Config_Boolean{
+		Boolean: &settings.BooleanConfig{
+			Default: &settings.BooleanValue{
+				Value: false,
 			},
 		},
 	},

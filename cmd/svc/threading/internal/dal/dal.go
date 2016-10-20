@@ -201,6 +201,14 @@ type DAL interface {
 	UnreadNotificationsCounts(ctx context.Context, entityIDs []string) (map[string]int, error)
 
 	Transact(context.Context, func(context.Context, DAL) error) error
+
+	// Scheduled Messages
+	CreateScheduledMessage(ctx context.Context, model *models.ScheduledMessage) (models.ScheduledMessageID, error)
+	DeleteScheduledMessage(ctx context.Context, id models.ScheduledMessageID) (int64, error)
+	ScheduledMessage(ctx context.Context, id models.ScheduledMessageID, opts ...QueryOption) (*models.ScheduledMessage, error)
+	ScheduledMessages(ctx context.Context, status []models.ScheduledMessageStatus, scheduledForBefore time.Time, opts ...QueryOption) ([]*models.ScheduledMessage, error)
+	ScheduledMessagesForThread(ctx context.Context, threadID models.ThreadID, status []models.ScheduledMessageStatus, opts ...QueryOption) ([]*models.ScheduledMessage, error)
+	UpdateScheduledMessage(ctx context.Context, id models.ScheduledMessageID, update *models.ScheduledMessageUpdate) (int64, error)
 }
 
 // New returns an initialized instance of dal
@@ -643,9 +651,8 @@ func (d *dal) LinkedThread(ctx context.Context, threadID models.ThreadID) (*mode
 	return t, linkedThread.PrependSender, errors.Trace(err)
 }
 
-func (d *dal) PostMessage(ctx context.Context, req *PostMessageRequest) (*models.ThreadItem, error) {
-	// TODO: validate request
-
+// ThreadItemFromPostMessageRequest transforms a post request into it's ThreadItem representation
+func ThreadItemFromPostMessageRequest(ctx context.Context, req *PostMessageRequest, clk clock.Clock) (*models.ThreadItem, error) {
 	id, err := models.NewThreadItemID()
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -661,15 +668,24 @@ func (d *dal) PostMessage(ctx context.Context, req *PostMessageRequest) (*models
 		TextRefs:     req.TextRefs,
 		Summary:      req.Summary,
 	}
-	item := &models.ThreadItem{
+	return &models.ThreadItem{
 		ID:            id,
 		ThreadID:      req.ThreadID,
-		Created:       d.clk.Now(),
+		Created:       clk.Now(),
 		ActorEntityID: req.FromEntityID,
 		Internal:      req.Internal,
 		Type:          models.ItemTypeMessage,
 		Data:          msg,
+	}, nil
+}
+
+func (d *dal) PostMessage(ctx context.Context, req *PostMessageRequest) (*models.ThreadItem, error) {
+	// TODO: validate request
+	item, err := ThreadItemFromPostMessageRequest(ctx, req, d.clk)
+	if err != nil {
+		return nil, errors.Trace(err)
 	}
+	msg := item.Data.(*models.Message)
 
 	data, err := msg.Marshal()
 	if err != nil {

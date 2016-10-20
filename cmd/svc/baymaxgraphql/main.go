@@ -199,6 +199,7 @@ func main() {
 			baymaxgraphqlsettings.FilteredTabsInInboxConfig,
 			baymaxgraphqlsettings.VideoCallingConfig,
 			baymaxgraphqlsettings.PaymentsConfig,
+			baymaxgraphqlsettings.ScheduledMessagesConfig,
 			invite.OrganizationCodeConfig,
 		})
 	if err != nil {

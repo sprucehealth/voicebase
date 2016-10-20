@@ -1,4 +1,4 @@
-package setupthread
+package workers
 
 import (
 	"encoding/json"
@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/worker"
 	"github.com/sprucehealth/backend/svc/events"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/threading"
@@ -17,22 +18,24 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
-type SetupThreadClient interface {
+var _ worker.Worker = &setupThreadWorker{}
+
+type setupThreadClient interface {
 	OnboardingThreadEvent(context.Context, *threading.OnboardingThreadEventRequest, ...grpc.CallOption) (*threading.OnboardingThreadEventResponse, error)
 }
 
-type Worker struct {
+type setupThreadWorker struct {
 	sqs          sqsiface.SQSAPI
 	eventWorker  *awsutil.SQSWorker
-	threadingCli SetupThreadClient
+	threadingCli setupThreadClient
 }
 
 type snsMessage struct {
 	Message []byte
 }
 
-func NewWorker(sqs sqsiface.SQSAPI, threadingCli SetupThreadClient, eventQueueURL string) *Worker {
-	w := &Worker{
+func newSetupThreadWorker(sqs sqsiface.SQSAPI, threadingCli setupThreadClient, eventQueueURL string) *setupThreadWorker {
+	w := &setupThreadWorker{
 		sqs:          sqs,
 		threadingCli: threadingCli,
 	}
@@ -40,15 +43,19 @@ func NewWorker(sqs sqsiface.SQSAPI, threadingCli SetupThreadClient, eventQueueUR
 	return w
 }
 
-func (w *Worker) Start() {
+func (w *setupThreadWorker) Start() {
 	w.eventWorker.Start()
 }
 
-func (w *Worker) Stop(wait time.Duration) {
+func (w *setupThreadWorker) Started() bool {
+	return w.eventWorker.Started()
+}
+
+func (w *setupThreadWorker) Stop(wait time.Duration) {
 	w.eventWorker.Stop(wait)
 }
 
-func (w *Worker) processSNSEvent(ctx context.Context, msg string) error {
+func (w *setupThreadWorker) processSNSEvent(ctx context.Context, msg string) error {
 	var snsMsg snsMessage
 	if err := json.Unmarshal([]byte(msg), &snsMsg); err != nil {
 		golog.Errorf("Failed to unmarshal sns message: %s", err.Error())
@@ -62,7 +69,7 @@ func (w *Worker) processSNSEvent(ctx context.Context, msg string) error {
 	return w.processEvent(ctx, env)
 }
 
-func (w *Worker) processEvent(ctx context.Context, env *events.Envelope) error {
+func (w *setupThreadWorker) processEvent(ctx context.Context, env *events.Envelope) error {
 	switch env.Service {
 	case events.Service_EXCOMMS:
 		var ev excomms.Event

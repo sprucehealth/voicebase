@@ -271,7 +271,7 @@ func transformThreadItemToResponse(item *models.ThreadItem, orgID string) (*thre
 	switch item.Type {
 	case models.ItemTypeMessage:
 		it.Type = threading.THREAD_ITEM_TYPE_MESSAGE
-		m2, err := transformMessageToResponse(item.Data.(*models.Message))
+		m2, err := TransformMessageToResponse(item.Data.(*models.Message))
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
@@ -284,7 +284,7 @@ func transformThreadItemToResponse(item *models.ThreadItem, orgID string) (*thre
 	return it, nil
 }
 
-func transformMessageToResponse(m *models.Message) (*threading.Message, error) {
+func TransformMessageToResponse(m *models.Message) (*threading.Message, error) {
 	m2 := &threading.Message{
 		Title:           m.Title,
 		Text:            m.Text,
@@ -590,4 +590,50 @@ func transformAttachmentsFromRequest(atts []*threading.Attachment) ([]*models.At
 		as = append(as, at)
 	}
 	return as, nil
+}
+
+func transformScheduledMessagesToResponse(sms []*models.ScheduledMessage) ([]*threading.ScheduledMessage, error) {
+	rsms := make([]*threading.ScheduledMessage, len(sms))
+	for i, sm := range sms {
+		rsm, err := transformScheduledMessageToResponse(sm)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		rsms[i] = rsm
+	}
+	return rsms, nil
+}
+
+func transformScheduledMessageToResponse(sm *models.ScheduledMessage) (*threading.ScheduledMessage, error) {
+	var sentAt uint64
+	if sm.SentAt != nil {
+		sentAt = uint64(sm.SentAt.Unix())
+	}
+
+	var sentThreadItemID string
+	if sm.SentThreadItemID != nil {
+		sentThreadItemID = sm.SentThreadItemID.String()
+	}
+	rsm := &threading.ScheduledMessage{
+		ID:               sm.ID.String(),
+		ScheduledFor:     uint64(sm.ScheduledFor.Unix()),
+		ActorEntityID:    sm.ActorEntityID,
+		Internal:         sm.Internal,
+		ThreadID:         sm.ThreadID.String(),
+		SentAt:           sentAt,
+		SentThreadItemID: sentThreadItemID,
+	}
+	switch sm.Type {
+	case models.ItemTypeMessage:
+		msg, err := TransformMessageToResponse(sm.Data.(*models.Message))
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		rsm.Content = &threading.ScheduledMessage_Message{
+			Message: msg,
+		}
+	default:
+		return nil, errors.Errorf("Unknown scheduled message type %s", sm.Type)
+	}
+	return rsm, nil
 }

@@ -198,6 +198,10 @@ var threadType = graphql.NewObject(
 				Type:    graphql.NewNonNull(graphql.Boolean),
 				Resolve: isSecureThreadsEnabled(),
 			},
+			"allowScheduledMessages": &graphql.Field{
+				Type:    graphql.NewNonNull(graphql.Boolean),
+				Resolve: isScheduledMessagesEnabled(),
+			},
 			"callableIdentities": &graphql.Field{
 				Type: graphql.NewList(graphql.NewNonNull(callableIdentityType)),
 				Resolve: apiaccess.Authenticated(func(p graphql.ResolveParams) (interface{}, error) {
@@ -595,6 +599,13 @@ var threadType = graphql.NewObject(
 					th := p.Source.(*models.Thread)
 					svc := serviceFromParams(p)
 					return deeplink.ThreadURLShareable(svc.webDomain, th.OrganizationID, th.ID), nil
+				},
+			},
+			"scheduledMessages": &graphql.Field{
+				Type: graphql.NewList(graphql.NewNonNull(scheduledMessageType)),
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					th := p.Source.(*models.Thread)
+					return getScheduledMessages(p.Context, raccess.ResourceAccess(p), th.ID, th.OrganizationID)
 				},
 			},
 		},

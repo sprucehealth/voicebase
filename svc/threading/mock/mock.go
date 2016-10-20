@@ -281,3 +281,30 @@ func (c *Client) UpdateThread(ctx context.Context, in *threading.UpdateThreadReq
 	}
 	return rets[0].(*threading.UpdateThreadResponse), mock.SafeError(rets[1])
 }
+
+// ScheduledMessages is a mock
+func (c *Client) ScheduledMessages(ctx context.Context, in *threading.ScheduledMessagesRequest, opts ...grpc.CallOption) (*threading.ScheduledMessagesResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*threading.ScheduledMessagesResponse), mock.SafeError(rets[1])
+}
+
+// CreateScheduledMessage is a mock
+func (c *Client) CreateScheduledMessage(ctx context.Context, in *threading.CreateScheduledMessageRequest, opts ...grpc.CallOption) (*threading.CreateScheduledMessageResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*threading.CreateScheduledMessageResponse), mock.SafeError(rets[1])
+}
+
+// DeleteScheduledMessage is a mock
+func (c *Client) DeleteScheduledMessage(ctx context.Context, in *threading.DeleteScheduledMessageRequest, opts ...grpc.CallOption) (*threading.DeleteScheduledMessageResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*threading.DeleteScheduledMessageResponse), mock.SafeError(rets[1])
+}

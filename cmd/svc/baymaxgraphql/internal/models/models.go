@@ -287,6 +287,12 @@ type SavedMessageSection struct {
 	Messages []*SavedMessage `json:"messages"`
 }
 
+type ScheduledMessage struct {
+	ID           string      `json:"id"`
+	ThreadItem   *ThreadItem `json:"threadItem"`
+	ScheduledFor uint64      `json:"scheduledFor"`
+}
+
 type SerializedEntityContact struct {
 	SerializedContact string `json:"serializedContact"`
 }

@@ -14,7 +14,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/server"
 	tsettings "github.com/sprucehealth/backend/cmd/svc/threading/internal/settings"
-	"github.com/sprucehealth/backend/cmd/svc/threading/internal/setupthread"
+	"github.com/sprucehealth/backend/cmd/svc/threading/internal/workers"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/dbutil"
@@ -147,13 +147,14 @@ func main() {
 	srv := server.NewThreadsServer(clock.New(), dl, eSNS, *flagSNSTopicARN, notificationClient, directoryClient, settingsClient, mediaClient, paymentsClient, *flagWebDomain)
 	threading.InitMetrics(srv, bootSvc.MetricsRegistry.Scope("server"))
 
-	w := setupthread.NewWorker(eSQS, workerClient{srv: srv}, *flagSQSEventsURL)
-	w.Start()
-	defer w.Stop(time.Second * 10)
-
 	s := bootSvc.GRPCServer()
 	threading.RegisterThreadsServer(s, srv)
 	golog.Infof("Starting Threads service on %s...", *flagListen)
+
+	golog.Infof("Starting Threads Workers...")
+	works := workers.New(dl, eSQS, workerClient{srv: srv}, *flagSQSEventsURL)
+	works.Start()
+	defer works.Stop(time.Second * 20)
 
 	ln, err := net.Listen("tcp", *flagListen)
 	if err != nil {
@@ -173,4 +174,8 @@ type workerClient struct {
 
 func (wc workerClient) OnboardingThreadEvent(ctx context.Context, req *threading.OnboardingThreadEventRequest, opts ...grpc.CallOption) (*threading.OnboardingThreadEventResponse, error) {
 	return wc.srv.OnboardingThreadEvent(ctx, req)
+}
+
+func (wc workerClient) PostMessage(ctx context.Context, req *threading.PostMessageRequest, opts ...grpc.CallOption) (*threading.PostMessageResponse, error) {
+	return wc.srv.PostMessage(ctx, req)
 }

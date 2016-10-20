@@ -108,6 +108,7 @@ type ResourceAccessor interface {
 	CreatePasswordResetToken(ctx context.Context, email string) (*auth.CreatePasswordResetTokenResponse, error)
 	CreatePayment(ctx context.Context, req *payments.CreatePaymentRequest) (*payments.CreatePaymentResponse, error)
 	CreatePaymentMethod(ctx context.Context, req *payments.CreatePaymentMethodRequest) (*payments.CreatePaymentMethodResponse, error)
+	CreateScheduledMessage(ctx context.Context, req *threading.CreateScheduledMessageRequest) (*threading.CreateScheduledMessageResponse, error)
 	CreateSavedMessage(ctx context.Context, orgID string, req *threading.CreateSavedMessageRequest) (*threading.CreateSavedMessageResponse, error)
 	CreateSavedQuery(ctx context.Context, req *threading.CreateSavedQueryRequest) error
 	CreateVerificationCode(ctx context.Context, codeType auth.VerificationCodeType, valueToVerify string) (*auth.CreateVerificationCodeResponse, error)
@@ -115,6 +116,7 @@ type ResourceAccessor interface {
 	CreateVisitAnswers(ctx context.Context, req *care.CreateVisitAnswersRequest) (*care.CreateVisitAnswersResponse, error)
 	DeleteContacts(ctx context.Context, req *directory.DeleteContactsRequest) (*directory.Entity, error)
 	DeletePaymentMethod(ctx context.Context, req *payments.DeletePaymentMethodRequest) (*payments.DeletePaymentMethodResponse, error)
+	DeleteScheduledMessage(ctx context.Context, req *threading.DeleteScheduledMessageRequest) (*threading.DeleteScheduledMessageResponse, error)
 	DeleteSavedMessage(ctx context.Context, req *threading.DeleteSavedMessageRequest) (*threading.DeleteSavedMessageResponse, error)
 	DeleteThread(ctx context.Context, threadID, entityID string) error
 	Entities(ctx context.Context, req *directory.LookupEntitiesRequest, opts ...EntityQueryOption) ([]*directory.Entity, error)
@@ -139,6 +141,7 @@ type ResourceAccessor interface {
 	SavedQueries(ctx context.Context, entityID string) ([]*threading.SavedQuery, error)
 	SavedQueryTemplates(ctx context.Context, entityID string) ([]*threading.SavedQuery, error)
 	SavedQuery(ctx context.Context, savedQueryID string) (*threading.SavedQuery, error)
+	ScheduledMessages(ctx context.Context, req *threading.ScheduledMessagesRequest) (*threading.ScheduledMessagesResponse, error)
 	SearchAllergyMedications(ctx context.Context, req *care.SearchAllergyMedicationsRequest) (*care.SearchAllergyMedicationsResponse, error)
 	SearchMedications(ctx context.Context, req *care.SearchMedicationsRequest) (*care.SearchMedicationsResponse, error)
 	SearchSelfReportedMedications(ctx context.Context, req *care.SearchSelfReportedMedicationsRequest) (*care.SearchSelfReportedMedicationsResponse, error)

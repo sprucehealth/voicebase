@@ -439,6 +439,7 @@ func TestPostMessage(t *testing.T) {
 			{ID: "entity_2", Type: models.REFERENCE_TYPE_ENTITY},
 			{ID: "entity_3", Type: models.REFERENCE_TYPE_ENTITY},
 		},
+		Destinations: []*models.Endpoint{},
 	}).WithReturns(&models.ThreadItem{
 		ID:            ti1id,
 		ThreadID:      th1id,
@@ -603,6 +604,7 @@ func TestPostMessage_Linked(t *testing.T) {
 		Title:        "title",
 		Text:         "text",
 		Summary:      "summary",
+		Destinations: []*models.Endpoint{},
 	}).WithReturns(&models.ThreadItem{
 		ID:            ti1id,
 		ThreadID:      th1id,
@@ -752,6 +754,7 @@ func TestPostMessage_Linked_PrependSender(t *testing.T) {
 		Title:        "title",
 		Text:         "text",
 		Summary:      "summary",
+		Destinations: []*models.Endpoint{},
 	}).WithReturns(&models.ThreadItem{
 		ID:            ti1id,
 		ThreadID:      th1id,

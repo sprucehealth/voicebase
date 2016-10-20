@@ -407,7 +407,55 @@ func (dl *DAL) UpdateSavedMessage(ctx context.Context, id models.SavedMessageID,
 	if len(rets) == 0 {
 		return nil
 	}
-	return mock.SafeError(rets[0])
+	return mock.SafeError(rets[1])
+}
+
+func (dl *DAL) CreateScheduledMessage(ctx context.Context, model *models.ScheduledMessage) (models.ScheduledMessageID, error) {
+	rets := dl.Expector.Record(model)
+	if len(rets) == 0 {
+		return models.EmptyScheduledMessageID(), nil
+	}
+	return rets[0].(models.ScheduledMessageID), mock.SafeError(rets[1])
+}
+
+func (dl *DAL) DeleteScheduledMessage(ctx context.Context, id models.ScheduledMessageID) (int64, error) {
+	rets := dl.Expector.Record(id)
+	if len(rets) == 0 {
+		return 0, nil
+	}
+	return rets[0].(int64), mock.SafeError(rets[1])
+}
+
+func (dl *DAL) ScheduledMessage(ctx context.Context, id models.ScheduledMessageID, opts ...dal.QueryOption) (*models.ScheduledMessage, error) {
+	rets := dl.Expector.Record(id, optsToInterfaces(opts))
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*models.ScheduledMessage), mock.SafeError(rets[1])
+}
+
+func (dl *DAL) ScheduledMessages(ctx context.Context, status []models.ScheduledMessageStatus, scheduledForBefore time.Time, opts ...dal.QueryOption) ([]*models.ScheduledMessage, error) {
+	rets := dl.Expector.Record(status, scheduledForBefore, optsToInterfaces(opts))
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].([]*models.ScheduledMessage), mock.SafeError(rets[1])
+}
+
+func (dl *DAL) ScheduledMessagesForThread(ctx context.Context, threadID models.ThreadID, status []models.ScheduledMessageStatus, opts ...dal.QueryOption) ([]*models.ScheduledMessage, error) {
+	rets := dl.Expector.Record(threadID, status, optsToInterfaces(opts))
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].([]*models.ScheduledMessage), mock.SafeError(rets[1])
+}
+
+func (dl *DAL) UpdateScheduledMessage(ctx context.Context, id models.ScheduledMessageID, update *models.ScheduledMessageUpdate) (int64, error) {
+	rets := dl.Expector.Record(id, update)
+	if len(rets) == 0 {
+		return 0, nil
+	}
+	return rets[0].(int64), mock.SafeError(rets[1])
 }
 
 func optsToInterfaces(opts []dal.QueryOption) []interface{} {
