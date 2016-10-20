@@ -222,14 +222,14 @@ func cloneAttachments(ctx context.Context, ram raccess.ResourceAccessor, ent *di
 	newAtts := make([]*threading.Attachment, 0, len(attachments))
 	var unsupportedAttachments []*threading.Attachment
 	par := conc.NewParallel()
-	for i, att := range attachments {
+	for _, att := range attachments {
 		if forThread != nil && !allowAttachment(forThread, att.Type) {
 			unsupportedAttachments = append(unsupportedAttachments, att)
 			continue
 		}
 		newAtt := &threading.Attachment{}
 		*newAtt = *att
-		newAtts[i] = newAtt
+		newAtts = append(newAtts, newAtt)
 		par.Go(func() error {
 			switch a := newAtt.Data.(type) {
 			case *threading.Attachment_Image:
