@@ -92,14 +92,14 @@ func main() {
 	if config.directoryServiceAddress == "" {
 		golog.Fatalf("Directory service not configured")
 	}
-	directoryConn, err := boot.DialGRPC("notification", config.directoryServiceAddress)
+	directoryConn, err := bootSvc.DialGRPC(config.directoryServiceAddress)
 	if err != nil {
 		golog.Fatalf("Unable to connect to directory service: %s", err)
 	}
 	defer directoryConn.Close()
 	directoryClient := directory.NewDirectoryClient(directoryConn)
 
-	settingsConn, err := boot.DialGRPC("notification", config.settingsServiceAddress)
+	settingsConn, err := bootSvc.DialGRPC(config.settingsServiceAddress)
 	if err != nil {
 		golog.Fatalf("Unable to connect to settings service: %s", err)
 	}

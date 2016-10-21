@@ -80,7 +80,7 @@ func main() {
 	if *flagDirectoryAddr == "" {
 		golog.Fatalf("Directory service not configured")
 	}
-	conn, err := boot.DialGRPC("invite", *flagDirectoryAddr)
+	conn, err := svc.DialGRPC(*flagDirectoryAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to directory service: %s", err)
 	}
@@ -91,7 +91,7 @@ func main() {
 	if *flagExcommsAddr == "stub" {
 		exCommsClient = stub.NewStubExcommsClient()
 	} else {
-		conn, err = boot.DialGRPC("invite", *flagExcommsAddr)
+		conn, err = svc.DialGRPC(*flagExcommsAddr)
 		if err != nil {
 			golog.Fatalf("Unable to connect to excomms service: %s", err)
 		}

@@ -50,22 +50,22 @@ func main() {
 	svc := boot.NewService("admin", nil)
 
 	ap := google.NewAuthenticationProvider()
-	conn, err := boot.DialGRPC("admin", *flagDirectoryAddr)
+	conn, err := svc.DialGRPC(*flagDirectoryAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to directory service: %s", err)
 	}
 	dirCli := directory.NewDirectoryClient(conn)
-	conn, err = boot.DialGRPC("admin", *flagSettingsAddr)
+	conn, err = svc.DialGRPC(*flagSettingsAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to settings service: %s", err)
 	}
 	settingsCli := settings.NewSettingsClient(conn)
-	conn, err = boot.DialGRPC("admin", *flagPaymentsAddr)
+	conn, err = svc.DialGRPC(*flagPaymentsAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to payments service: %s", err)
 	}
 	paymentsCli := payments.NewPaymentsClient(conn)
-	conn, err = boot.DialGRPC("admin", *flagInviteAddr)
+	conn, err = svc.DialGRPC(*flagInviteAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to invite service: %s", err)
 	}

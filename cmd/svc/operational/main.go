@@ -74,28 +74,28 @@ func main() {
 	}
 
 	// Configure auth client
-	conn, err := boot.DialGRPC("operational", *flagAuthAddr)
+	conn, err := bootSvc.DialGRPC(*flagAuthAddr)
 	if err != nil {
 		golog.Fatalf(err.Error())
 	}
 	authClient := auth.NewAuthClient(conn)
 
 	// Configure threading client
-	conn, err = boot.DialGRPC("operational", *flagThreadingAddr)
+	conn, err = bootSvc.DialGRPC(*flagThreadingAddr)
 	if err != nil {
 		golog.Fatalf(err.Error())
 	}
 	threadingClient := threading.NewThreadsClient(conn)
 
 	// Configure excomms client
-	conn, err = boot.DialGRPC("operational", *flagExcommsAddr)
+	conn, err = bootSvc.DialGRPC(*flagExcommsAddr)
 	if err != nil {
 		golog.Fatalf(err.Error())
 	}
 	excommsClient := excomms.NewExCommsClient(conn)
 
 	// Configure directory client
-	conn, err = boot.DialGRPC("operational", *flagDirectoryAddr)
+	conn, err = bootSvc.DialGRPC(*flagDirectoryAddr)
 	if err != nil {
 		golog.Fatalf(err.Error())
 	}

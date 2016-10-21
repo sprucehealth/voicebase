@@ -7,6 +7,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"os"
@@ -18,14 +19,30 @@ import (
 )
 
 func main() {
+	flagCACertPath := flag.String("ca_cert_path", "", "Path to CA cert")
 	flagServiceAddr := flag.String("addr", "", "Address of service to health check")
 	flagServiceName := flag.String("name", "", "Name of service to health check (normally not set)")
 	flagTimeout := flag.Duration("t", time.Second*2, "Timeout for check call")
+	flagTLS := flag.Bool("tls", false, "Use TLS to talk to service")
 	flag.Parse()
+
+	var tlsConfig *tls.Config
+	if *flagTLS {
+		tlsConfig = &tls.Config{
+			InsecureSkipVerify: true, // Since we're always using IP ignore the server name check
+		}
+		if *flagCACertPath != "" {
+			ca, err := boot.CAFromFile(*flagCACertPath)
+			if err != nil {
+				fail("Failed to load CA pool: %s", err)
+			}
+			tlsConfig.RootCAs = ca
+		}
+	}
 
 	// Record the time before dial so we can account for any used time in the total timeout
 	start := time.Now()
-	cn, err := boot.DialGRPC("grpchealthcheck", *flagServiceAddr, grpc.WithBlock(), grpc.WithTimeout(*flagTimeout))
+	cn, err := boot.DialGRPC("grpchealthcheck", *flagServiceAddr, tlsConfig, grpc.WithBlock(), grpc.WithTimeout(*flagTimeout))
 	if err != nil {
 		fail("Failed to connnect to service: %s\n", err)
 	}

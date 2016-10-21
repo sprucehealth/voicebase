@@ -69,21 +69,21 @@ func runService(bootSvc *boot.Service) {
 		return
 	}
 
-	directoryConn, err := boot.DialGRPC("excomms", config.directoryServiceURL)
+	directoryConn, err := bootSvc.DialGRPC(config.directoryServiceURL)
 	if err != nil {
 		golog.Fatalf("Unable to communicate with directory service: %s", err.Error())
 		return
 	}
 	defer directoryConn.Close()
 
-	threadingConn, err := boot.DialGRPC("excomms", config.threadingServiceAddress)
+	threadingConn, err := bootSvc.DialGRPC(config.threadingServiceAddress)
 	if err != nil {
 		golog.Fatalf("Unable to communicate with threading service: %s", err.Error())
 		return
 	}
 	defer threadingConn.Close()
 
-	settingsConn, err := boot.DialGRPC("excomms", config.settingsServiceURL)
+	settingsConn, err := bootSvc.DialGRPC(config.settingsServiceURL)
 	if err != nil {
 		golog.Fatalf("Unable to communicate with settings service: %s", err.Error())
 		return

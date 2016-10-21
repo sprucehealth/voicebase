@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"crypto/tls"
 	"database/sql"
 	"encoding/json"
 	"flag"
@@ -35,6 +36,8 @@ import (
 const configPath = "~/.baymax.conf"
 
 type config struct {
+	TLS                 bool
+	CACertPath          string
 	DBHost              string
 	DBPort              int
 	DBUsername          string
@@ -54,8 +57,23 @@ type config struct {
 	Env                 string
 }
 
+func (c *config) clientTLSConfig() *tls.Config {
+	if !c.TLS {
+		return nil
+	}
+	tlsConf := &tls.Config{}
+	if c.CACertPath != "" {
+		ca, err := boot.CAFromFile(c.CACertPath)
+		if err != nil {
+			golog.Fatalf("Failed to load CA from %s: %s", c.CACertPath, err)
+		}
+		tlsConf.RootCAs = ca
+	}
+	return tlsConf
+}
+
 func (c *config) authClient() (auth.AuthClient, error) {
-	conn, err := boot.DialGRPC("baymaxadmin", c.AuthAddr)
+	conn, err := boot.DialGRPC("baymaxadmin", c.AuthAddr, c.clientTLSConfig())
 	if err != nil {
 		return nil, fmt.Errorf("Unable to connect to auth service: %s", err)
 	}
@@ -63,7 +81,7 @@ func (c *config) authClient() (auth.AuthClient, error) {
 }
 
 func (c *config) directoryClient() (directory.DirectoryClient, error) {
-	conn, err := boot.DialGRPC("baymaxadmin", c.DirectoryAddr)
+	conn, err := boot.DialGRPC("baymaxadmin", c.DirectoryAddr, c.clientTLSConfig())
 	if err != nil {
 		return nil, fmt.Errorf("Unable to connect to directory service: %s", err)
 	}
@@ -71,7 +89,7 @@ func (c *config) directoryClient() (directory.DirectoryClient, error) {
 }
 
 func (c *config) exCommsClient() (excomms.ExCommsClient, error) {
-	conn, err := boot.DialGRPC("baymaxadmin", c.ExCommsAddr)
+	conn, err := boot.DialGRPC("baymaxadmin", c.ExCommsAddr, c.clientTLSConfig())
 	if err != nil {
 		return nil, fmt.Errorf("Unable to connect to excomms service: %s", err)
 	}
@@ -79,7 +97,7 @@ func (c *config) exCommsClient() (excomms.ExCommsClient, error) {
 }
 
 func (c *config) settingsClient() (settings.SettingsClient, error) {
-	conn, err := boot.DialGRPC("baymaxadmin", c.SettingsAddr)
+	conn, err := boot.DialGRPC("baymaxadmin", c.SettingsAddr, c.clientTLSConfig())
 	if err != nil {
 		return nil, fmt.Errorf("Unable to connect to settings service: %s", err)
 	}
@@ -87,7 +105,7 @@ func (c *config) settingsClient() (settings.SettingsClient, error) {
 }
 
 func (c *config) threadingClient() (threading.ThreadsClient, error) {
-	conn, err := boot.DialGRPC("baymaxadmin", c.ThreadingAddr)
+	conn, err := boot.DialGRPC("baymaxadmin", c.ThreadingAddr, c.clientTLSConfig())
 	if err != nil {
 		return nil, fmt.Errorf("Unable to connect to threading service: %s", err)
 	}
@@ -95,7 +113,7 @@ func (c *config) threadingClient() (threading.ThreadsClient, error) {
 }
 
 func (c *config) layoutClient() (layout.LayoutClient, error) {
-	conn, err := boot.DialGRPC("baymaxadmin", c.LayoutAddr)
+	conn, err := boot.DialGRPC("baymaxadmin", c.LayoutAddr, c.clientTLSConfig())
 	if err != nil {
 		return nil, fmt.Errorf("Unable to connect to layout service: %s", err)
 	}
@@ -103,7 +121,7 @@ func (c *config) layoutClient() (layout.LayoutClient, error) {
 }
 
 func (c *config) inviteClient() (invite.InviteClient, error) {
-	conn, err := boot.DialGRPC("baymaxadmin", c.InviteAddr)
+	conn, err := boot.DialGRPC("baymaxadmin", c.InviteAddr, c.clientTLSConfig())
 	if err != nil {
 		return nil, fmt.Errorf("Unable to connect to invite service: %s", err)
 	}
@@ -111,7 +129,7 @@ func (c *config) inviteClient() (invite.InviteClient, error) {
 }
 
 func (c *config) patientSyncClient() (patientsync.PatientSyncClient, error) {
-	conn, err := boot.DialGRPC("baymaxadmin", c.PatientSyncAddr)
+	conn, err := boot.DialGRPC("baymaxadmin", c.PatientSyncAddr, c.clientTLSConfig())
 	if err != nil {
 		return nil, fmt.Errorf("Unable to connect to patientsync service: %s", err)
 	}

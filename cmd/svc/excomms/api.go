@@ -29,7 +29,7 @@ import (
 )
 
 func runAPI(bootSvc *boot.Service) {
-	conn, err := boot.DialGRPC("excomms-api", config.directoryServiceURL)
+	conn, err := bootSvc.DialGRPC(config.directoryServiceURL)
 	if err != nil {
 		golog.Fatalf("Unable to communicate with events processor service: %s", err.Error())
 	}
@@ -59,7 +59,7 @@ func runAPI(bootSvc *boot.Service) {
 	store := storage.NewS3(awsSession, config.attachmentBucket, config.attachmentPrefix)
 	proxyNumberManager := proxynumber.NewManager(dl, clock.New())
 
-	settingsConn, err := boot.DialGRPC("excomms-api", config.settingsServiceURL)
+	settingsConn, err := bootSvc.DialGRPC(config.settingsServiceURL)
 	if err != nil {
 		golog.Fatalf("Unable to communicate with settings service: %s", err.Error())
 		return

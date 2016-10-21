@@ -84,13 +84,13 @@ func main() {
 		golog.Fatalf("failed to initialize db connection: %s", err)
 	}
 
-	conn, err := boot.DialGRPC(appName, *flagDirectoryAddr)
+	conn, err := svc.DialGRPC(*flagDirectoryAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to directory service: %s", err)
 	}
 	directoryClient := directory.NewDirectoryClient(conn)
 
-	conn, err = boot.DialGRPC(appName, *flagThreadingAddr)
+	conn, err = svc.DialGRPC(*flagThreadingAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to threading service: %s", err)
 	}

@@ -1,8 +1,11 @@
 package boot
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/http"
 	_ "net/http/pprof" // imported for side-effect of registering HTTP handlers
@@ -31,6 +34,7 @@ import (
 	"github.com/sprucehealth/backend/libs/storage"
 	"golang.org/x/net/trace"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 )
@@ -53,18 +57,25 @@ type Service struct {
 		memcachedHosts         string
 		segmentIOKey           string
 		jsonLogs               bool
+		tlsClients             bool
+		tlsCACertPath          string
+		tlsCertPath            string
+		tlsKeyPath             string
 	}
-	name             string
-	awsSessionOnce   sync.Once
-	awsSession       *session.Session
-	awsSessionErr    error
-	memcacheOnce     sync.Once
-	memcacheCli      *memcache.Client
-	memcacheErr      error
-	healthServerOnce sync.Once
-	healthServer     *health.HealthServer
-	grpcServerOnce   sync.Once
-	grpcServer       *grpc.Server
+	name                string
+	awsSessionOnce      sync.Once
+	awsSession          *session.Session
+	awsSessionErr       error
+	memcacheOnce        sync.Once
+	memcacheCli         *memcache.Client
+	memcacheErr         error
+	healthServerOnce    sync.Once
+	healthServer        *health.HealthServer
+	grpcServerOnce      sync.Once
+	grpcServer          *grpc.Server
+	grpcServerTLSConfig *tls.Config
+	grpcClientTLSConfig *tls.Config
+	clientCreds         credentials.TransportCredentials
 }
 
 // NewService should be called at the start of a service. It parses flags and sets up a mangement server.
@@ -84,6 +95,10 @@ func NewService(name string, healthCheckHandler http.Handler) *Service {
 	flag.StringVar(&svc.flags.memcachedHosts, "memcached_hosts", "", "Comma separate host:port list of memcached server addresses")
 	flag.StringVar(&svc.flags.segmentIOKey, "segmentio_key", "", "Segment IO API `key`")
 	flag.BoolVar(&svc.flags.jsonLogs, "json_logs", false, "Enable JSON formatted logs")
+	flag.BoolVar(&svc.flags.tlsClients, "tls_clients", false, "Enable JSON formatted logs")
+	flag.StringVar(&svc.flags.tlsCACertPath, "tls_ca_cert_path", "", "Path to TLS CA certificate")
+	flag.StringVar(&svc.flags.tlsCertPath, "tls_cert_path", "", "Path to TLS certificate")
+	flag.StringVar(&svc.flags.tlsKeyPath, "tls_key_path", "", "Path to TLS key")
 
 	ParseFlags(strings.ToUpper(name) + "_")
 
@@ -98,6 +113,41 @@ func NewService(name string, healthCheckHandler http.Handler) *Service {
 
 	if svc.flags.debug {
 		golog.Default().SetLevel(golog.DEBUG)
+	}
+
+	if svc.flags.tlsCertPath != "" && svc.flags.tlsKeyPath != "" {
+		golog.Infof("Enabling TLS with cert %s and key %s", svc.flags.tlsCertPath, svc.flags.tlsKeyPath)
+		cert, err := tls.LoadX509KeyPair(svc.flags.tlsCertPath, svc.flags.tlsKeyPath)
+		if err != nil {
+			golog.Fatalf("Failed to load TLS cert or key: %s", err)
+		}
+		svc.grpcServerTLSConfig = &tls.Config{
+			Certificates: []tls.Certificate{cert},
+		}
+	}
+
+	if svc.flags.tlsCACertPath != "" {
+		creds, err := credentials.NewClientTLSFromFile(svc.flags.tlsCACertPath, "")
+		if err != nil {
+			golog.Fatalf("Failed to load CA cert: %s", err)
+		}
+		svc.clientCreds = creds
+	}
+
+	if svc.flags.tlsClients {
+		if svc.flags.tlsCACertPath == "" {
+			golog.Infof("Using TLS for service clients")
+			svc.grpcClientTLSConfig = &tls.Config{}
+		} else {
+			golog.Infof("Using TLS for service clients with CA %s", svc.flags.tlsCACertPath)
+			cp, err := CAFromFile(svc.flags.tlsCACertPath)
+			if err != nil {
+				golog.Fatalf("Failed to create CA pool: %s", err.Error())
+			}
+			svc.grpcClientTLSConfig = &tls.Config{
+				RootCAs: cp,
+			}
+		}
 	}
 
 	// Use the built-in tracing for now, we'll want our own eventually to be able
@@ -259,10 +309,19 @@ func (svc *Service) HealthServer() *health.HealthServer {
 // and any default options set.
 func (svc *Service) GRPCServer() *grpc.Server {
 	svc.grpcServerOnce.Do(func() {
-		svc.grpcServer = grpc.NewServer()
+		var opts []grpc.ServerOption
+		if svc.grpcServerTLSConfig != nil {
+			opts = append(opts, grpc.Creds(credentials.NewTLS(svc.grpcServerTLSConfig)))
+		}
+		svc.grpcServer = grpc.NewServer(opts...)
 		grpc_health_v1.RegisterHealthServer(svc.grpcServer, svc.HealthServer())
 	})
 	return svc.grpcServer
+}
+
+// DialGRPC connects to a GRPC service with the given address.
+func (svc *Service) DialGRPC(addr string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
+	return DialGRPC(svc.name, addr, svc.grpcClientTLSConfig)
 }
 
 // Shutdown performs a graceful shutdown.
@@ -273,11 +332,33 @@ func (svc *Service) Shutdown() {
 
 // DialGRPC connects to a GRPC service with the given address. Agent is
 // the name of the service making the connection (used to build the user agent).
-func DialGRPC(agent, addr string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
+func DialGRPC(agent, addr string, tlsConfig *tls.Config, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
 	if addr == "" {
 		return nil, errors.New("empty address")
 	}
-	opts = append(opts, grpc.WithInsecure())
+	if tlsConfig == nil {
+		opts = append(opts, grpc.WithInsecure())
+	} else {
+		// Can't do a value copy here (tlsconfigCopy := *tls.Config) because the config contains a mutex.
+		tlsConfigCopy := &tls.Config{
+			Certificates:       tlsConfig.Certificates,
+			NameToCertificate:  tlsConfig.NameToCertificate,
+			GetCertificate:     tlsConfig.GetCertificate,
+			RootCAs:            tlsConfig.RootCAs,
+			ServerName:         tlsConfig.ServerName,
+			InsecureSkipVerify: tlsConfig.InsecureSkipVerify,
+			CipherSuites:       tlsConfig.CipherSuites,
+			MinVersion:         tlsConfig.MinVersion,
+			MaxVersion:         tlsConfig.MaxVersion,
+		}
+		if tlsConfigCopy.ServerName == "" && addr[0] == '_' {
+			// Rewrite SRV hostnames since they're not valid hostnames for certificate validation
+			// _servicename._tcp.service.* -> servicename.service.*
+			a := strings.SplitN(addr, ".", 3)
+			tlsConfigCopy.ServerName = a[0][1:] + "." + a[2]
+		}
+		opts = append(opts, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfigCopy)))
+	}
 	opts = append(opts, grpc.WithBalancer(grpc.RoundRobin(grpcdns.Resolver(time.Second*5))))
 	opts = append(opts, grpc.WithUserAgent(fmt.Sprintf("%s/%s", agent, BuildNumber)))
 	conn, err := grpc.Dial(addr, opts...)
@@ -285,6 +366,19 @@ func DialGRPC(agent, addr string, opts ...grpc.DialOption) (*grpc.ClientConn, er
 		return nil, errors.Trace(err)
 	}
 	return conn, nil
+}
+
+// CAFromFile loads a CA certificate from the provided path and creates a new pool.
+func CAFromFile(path string) (*x509.CertPool, error) {
+	b, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, errors.Errorf("Failed to read CA file %s: %s", path, err)
+	}
+	cp := x509.NewCertPool()
+	if !cp.AppendCertsFromPEM(b) {
+		return nil, errors.Errorf("Failed to append CA certificate")
+	}
+	return cp, nil
 }
 
 // WaitForTermination waits for an INT or TERM signal.

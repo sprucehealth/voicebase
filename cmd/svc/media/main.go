@@ -73,25 +73,25 @@ func main() {
 		golog.Fatalf("Media Storage bucket not specified")
 	}
 
-	conn, err := boot.DialGRPC("media", *flagAuthAddr)
+	conn, err := svc.DialGRPC(*flagAuthAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to auth service: %s", err)
 	}
 	authClient := auth.NewAuthClient(conn)
 
-	conn, err = boot.DialGRPC("media", *flagDirectoryAddr)
+	conn, err = svc.DialGRPC(*flagDirectoryAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to directory service: %s", err)
 	}
 	directoryClient := directory.NewDirectoryClient(conn)
 
-	conn, err = boot.DialGRPC("media", *flagThreadingAddr)
+	conn, err = svc.DialGRPC(*flagThreadingAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to threading service: %s", err)
 	}
 	threadingClient := threading.NewThreadsClient(conn)
 
-	conn, err = boot.DialGRPC("media", *flagCareAddr)
+	conn, err = svc.DialGRPC(*flagCareAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to care service :%s", err)
 	}

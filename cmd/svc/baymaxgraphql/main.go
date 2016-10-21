@@ -132,55 +132,55 @@ func main() {
 		golog.Fatalf("Failed to parse service phone number: %s", err)
 	}
 
-	conn, err := boot.DialGRPC("baymaxgraphql", *flagAuthAddr)
+	conn, err := svc.DialGRPC(*flagAuthAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to auth service: %s", err)
 	}
 	authClient = auth.NewAuthClient(conn)
 
-	conn, err = boot.DialGRPC("baymaxgraphql", *flagDirectoryAddr)
+	conn, err = svc.DialGRPC(*flagDirectoryAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to directory service: %s", err)
 	}
 	directoryClient := cache.NewCachedClient(directory.NewDirectoryClient(conn), svc.MetricsRegistry.Scope("CachedDirectoryClient"))
 
-	conn, err = boot.DialGRPC("baymaxgraphql", *flagThreadingAddr)
+	conn, err = svc.DialGRPC(*flagThreadingAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to threading service: %s", err)
 	}
 	threadingClient := threading.NewThreadsClient(conn)
 
-	conn, err = boot.DialGRPC("baymaxgraphql", *flagSettingsAddr)
+	conn, err = svc.DialGRPC(*flagSettingsAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to settings service: %s", err)
 	}
 	settingsClient := settings.NewContextCacheClient(settings.NewSettingsClient(conn))
 
-	conn, err = boot.DialGRPC("baymaxgraphql", *flagLayoutAddr)
+	conn, err = svc.DialGRPC(*flagLayoutAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to Layout service: %s", err)
 	}
 	layoutClient := layout.NewLayoutClient(conn)
 
-	conn, err = boot.DialGRPC("baymaxgraphql", *flagCareAddr)
+	conn, err = svc.DialGRPC(*flagCareAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to care service: %s", err)
 	}
 	careClient := care.NewCareClient(conn)
 
-	conn, err = boot.DialGRPC("baymaxgraphql", *flagMediaAddr)
+	conn, err = svc.DialGRPC(*flagMediaAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to media service: %s", err)
 	}
 	mediaClient := media.NewMediaClient(conn)
 
-	conn, err = boot.DialGRPC("baymaxgraphql", *flagPaymentsAddr)
+	conn, err = svc.DialGRPC(*flagPaymentsAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to payments service: %s", err)
 	}
 	paymentsClient := payments.NewPaymentsClient(conn)
 
-	conn, err = boot.DialGRPC("baymaxgraphql", *flagPatientSyncAddr)
+	conn, err = svc.DialGRPC(*flagPatientSyncAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to patientsync service: %s", err)
 	}
@@ -211,14 +211,14 @@ func main() {
 	if *flagExCommsAddr == "stub" {
 		exCommsClient = stub.NewStubExcommsClient()
 	} else {
-		conn, err = boot.DialGRPC("baymaxgraphql", *flagExCommsAddr)
+		conn, err = svc.DialGRPC(*flagExCommsAddr)
 		if err != nil {
 			golog.Fatalf("Unable to connect to excomms service: %s", err)
 		}
 		exCommsClient = excomms.NewExCommsClient(conn)
 	}
 
-	conn, err = boot.DialGRPC("baymaxgraphql", *flagInviteAddr)
+	conn, err = svc.DialGRPC(*flagInviteAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to invite service: %s", err)
 	}

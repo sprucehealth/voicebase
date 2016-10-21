@@ -58,7 +58,7 @@ func init() {
 func main() {
 	bootSvc := boot.NewService("threading", nil)
 
-	settingsConn, err := boot.DialGRPC("threading", *flagSettingsAddr)
+	settingsConn, err := bootSvc.DialGRPC(*flagSettingsAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to settings service: %s", err)
 	}
@@ -109,19 +109,19 @@ func main() {
 		})
 	}
 
-	conn, err := boot.DialGRPC("threading", *flagDirectoryAddr)
+	conn, err := bootSvc.DialGRPC(*flagDirectoryAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to directory service: %s", err)
 	}
 	directoryClient := directory.NewDirectoryClient(conn)
 
-	conn, err = boot.DialGRPC("threading", *flagMediaAddr)
+	conn, err = bootSvc.DialGRPC(*flagMediaAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to media service: %s", err)
 	}
 	mediaClient := media.NewMediaClient(conn)
 
-	conn, err = boot.DialGRPC("threading", *flagPaymentsAddr)
+	conn, err = bootSvc.DialGRPC(*flagPaymentsAddr)
 	if err != nil {
 		golog.Fatalf("Unable to connect to payments service: %s", err)
 	}
@@ -149,13 +149,13 @@ func main() {
 
 	s := bootSvc.GRPCServer()
 	threading.RegisterThreadsServer(s, srv)
-	golog.Infof("Starting Threads service on %s...", *flagListen)
 
 	golog.Infof("Starting Threads Workers...")
 	works := workers.New(dl, eSQS, workerClient{srv: srv}, *flagSQSEventsURL)
 	works.Start()
 	defer works.Stop(time.Second * 20)
 
+	golog.Infof("Starting Threads service on %s...", *flagListen)
 	ln, err := net.Listen("tcp", *flagListen)
 	if err != nil {
 		golog.Fatalf("failed to listen on %s: %v", *flagListen, err)
