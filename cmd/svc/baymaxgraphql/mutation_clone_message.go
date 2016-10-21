@@ -191,6 +191,9 @@ var cloneMessageMutation = &graphql.Field{
 			return nil, errors.InternalError(ctx, err)
 		}
 		newMsg.Attachments = clonedAttachments
+		newItem.Item = &threading.ThreadItem_Message{
+			Message: newMsg,
+		}
 
 		// If any attachments were stripped then return an alert
 		var alerts []string
