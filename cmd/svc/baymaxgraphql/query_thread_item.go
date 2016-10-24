@@ -361,12 +361,7 @@ func lookupThreadItem(ctx context.Context, ram raccess.ResourceAccessor, threadI
 	if err != nil {
 		return nil, err
 	}
-	account := gqlctx.Account(ctx)
-	if account == nil {
-		return nil, errors.ErrNotAuthenticated(ctx)
-	}
-
-	it, err := transformThreadItemToResponse(threadItem, "", account.ID, webdomain, mediaAPIDomain)
+	it, err := transformThreadItemToResponse(threadItem, "", webdomain, mediaAPIDomain)
 	if err != nil {
 		return nil, errors.InternalError(ctx, err)
 	}

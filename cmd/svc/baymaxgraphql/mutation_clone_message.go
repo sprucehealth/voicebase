@@ -206,7 +206,7 @@ var cloneMessageMutation = &graphql.Field{
 			alerts = []string{"The following attachments are not supported for this thread and have been removed: %s", strings.Join(atypes, ", ")}
 		}
 
-		rti, err := transformThreadItemToResponse(newItem, "", acc.ID, svc.webDomain, svc.mediaAPIDomain)
+		rti, err := transformThreadItemToResponse(newItem, "", svc.webDomain, svc.mediaAPIDomain)
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}

@@ -47,6 +47,7 @@ var savedMessagesQuery = &graphql.Field{
 		ctx := p.Context
 		ram := raccess.ResourceAccess(p)
 		acc := gqlctx.Account(ctx)
+		svc := serviceFromParams(p)
 
 		var in savedMessagesQueryInput
 		if err := gqldecode.Decode(p.Args, &in); err != nil {
@@ -89,7 +90,7 @@ var savedMessagesQuery = &graphql.Field{
 
 		sort.Sort(savedMessageByTitle(res.SavedMessages))
 		for _, m := range res.SavedMessages {
-			sm, err := transformSavedMessageToResponse(m)
+			sm, err := transformSavedMessageToResponse(m, svc.webDomain, svc.mediaAPIDomain)
 			if err != nil {
 				return nil, errors.InternalError(ctx, err)
 			}
@@ -111,18 +112,24 @@ var savedMessagesQuery = &graphql.Field{
 	}),
 }
 
-func transformSavedMessageToResponse(m *threading.SavedMessage) (*models.SavedMessage, error) {
-	return &models.SavedMessage{
-		ID:    m.ID,
-		Title: m.Title,
-		ThreadItem: &models.ThreadItem{
-			ID:             m.ID,
-			Internal:       m.Internal,
-			Timestamp:      m.Modified,
-			ActorEntityID:  m.CreatorEntityID,
-			OrganizationID: m.OrganizationID,
-			Data:           m.GetMessage(),
+func transformSavedMessageToResponse(m *threading.SavedMessage, webDomain, mediaAPIDomain string) (*models.SavedMessage, error) {
+	ti, err := transformThreadItemToResponse(&threading.ThreadItem{
+		ID:             m.ID,
+		Timestamp:      m.Modified,
+		ActorEntityID:  m.CreatorEntityID,
+		Internal:       m.Internal,
+		OrganizationID: m.OrganizationID,
+		Item: &threading.ThreadItem_Message{
+			Message: m.GetMessage(),
 		},
+	}, m.ID, webDomain, mediaAPIDomain)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return &models.SavedMessage{
+		ID:         m.ID,
+		Title:      m.Title,
+		ThreadItem: ti,
 	}, nil
 }
 

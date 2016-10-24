@@ -430,7 +430,7 @@ func transformReferenceToModel(r *threading.Reference) (*models.Reference, error
 	return nil, errors.Errorf("unknown reference type %s", r.Type)
 }
 
-func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, webDomain, mediaAPIDomain string) (*models.ThreadItem, error) {
+func transformThreadItemToResponse(item *threading.ThreadItem, uuid, webDomain, mediaAPIDomain string) (*models.ThreadItem, error) {
 	it := &models.ThreadItem{
 		ID:             item.ID,
 		UUID:           uuid,
@@ -440,9 +440,9 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 		ThreadID:       item.ThreadID,
 		OrganizationID: item.OrganizationID,
 	}
-	switch item.Type {
-	case threading.THREAD_ITEM_TYPE_MESSAGE:
-		m := item.GetMessage()
+	switch content := item.Item.(type) {
+	case *threading.ThreadItem_Message:
+		m := content.Message
 		m2 := &models.Message{
 			ThreadItemID:  item.ID,
 			SummaryMarkup: m.Title,
@@ -633,7 +633,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID, 
 		}
 		it.Data = m2
 	default:
-		return nil, errors.Errorf("unknown thread item type %s", item.Type)
+		return nil, errors.Errorf("unknown thread item type %T", item.Item)
 	}
 	return it, nil
 }

@@ -444,7 +444,7 @@ var postMessageMutation = &graphql.Field{
 
 		trackPostMessage(ctx, thr, req)
 
-		it, err := transformThreadItemToResponse(pmres.Item, req.UUID, acc.ID, svc.webDomain, svc.mediaAPIDomain)
+		it, err := transformThreadItemToResponse(pmres.Item, req.UUID, svc.webDomain, svc.mediaAPIDomain)
 		if err != nil {
 			return nil, errors.InternalError(ctx, fmt.Errorf("failed to transform thread item: %s", err))
 		}

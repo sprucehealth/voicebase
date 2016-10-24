@@ -51,11 +51,21 @@ func TestSavedMessagesQuery(t *testing.T) {
 				Title:         "foo",
 				Internal:      true,
 				OwnerEntityID: "org",
+				Content: &threading.SavedMessage_Message{
+					Message: &threading.Message{
+						Text: "one",
+					},
+				},
 			},
 			{
 				ID:            "sm_2",
 				Title:         "bar",
 				OwnerEntityID: "ent",
+				Content: &threading.SavedMessage_Message{
+					Message: &threading.Message{
+						Text: "two",
+					},
+				},
 			},
 		},
 	}, nil))
@@ -78,6 +88,11 @@ func TestSavedMessagesQuery(t *testing.T) {
 					threadItem {
 						id
 						internal
+						data {
+							... on Message {
+								textMarkup
+							}
+						}
 					}
 				}
 			}
@@ -93,7 +108,10 @@ func TestSavedMessagesQuery(t *testing.T) {
 						"shared": false,
 						"threadItem": {
 							"id": "sm_2",
-							"internal": false
+							"internal": false,
+							"data": {
+								"textMarkup": "two"
+							}
 						}
 					}
 				]
@@ -106,7 +124,10 @@ func TestSavedMessagesQuery(t *testing.T) {
 						"shared": true,
 						"threadItem": {
 							"id": "sm_1",
-							"internal": true
+							"internal": true,
+							"data": {
+								"textMarkup": "one"
+							}
 						}
 					}
 				]
