@@ -89,11 +89,16 @@ func (m *Manager) taskDefinitionInputForDeployment(d *dal.Deployment) (*ecs.Regi
 		return nil, err
 	}
 
+	awslogsGroup := env.Name + "-service"
+
 	var portMappings []*ecs.PortMapping
+	var mountPoints []*ecs.MountPoint
 	var dnsServers []*string
 	var dnsSearchDomains []*string
 	var entryPoint []*string
 	var command []*string
+	var taskRoleARN *string
+	var volumes []*ecs.Volume
 	cMap := make(map[string]string, len(dConfigs))
 	for _, c := range dConfigs {
 		switch {
@@ -103,14 +108,30 @@ func (m *Manager) taskDefinitionInputForDeployment(d *dal.Deployment) (*ecs.Regi
 				return nil, err
 			}
 			portMappings = append(portMappings, pm)
-		case strings.HasPrefix(c.Name, ecsConfigName("DNS_SERVERS")):
+		case strings.HasPrefix(c.Name, ecsConfigName("MOUNT_POINT")):
+			mp, err := parseMountPoint(c.Value)
+			if err != nil {
+				return nil, err
+			}
+			mountPoints = append(mountPoints, mp)
+		case strings.HasPrefix(c.Name, ecsConfigName("VOLUME")):
+			v, err := parseVolume(c.Value)
+			if err != nil {
+				return nil, err
+			}
+			volumes = append(volumes, v)
+		case c.Name == ecsConfigName("DNS_SERVERS"):
 			dnsServers = splitStringPtrList(c.Value)
-		case strings.HasPrefix(c.Name, ecsConfigName("DNS_SEARCH_DOMAINS")):
+		case c.Name == ecsConfigName("DNS_SEARCH_DOMAINS"):
 			dnsSearchDomains = splitStringPtrList(c.Value)
-		case strings.HasPrefix(c.Name, ecsConfigName("ENTRY_POINT")):
+		case c.Name == ecsConfigName("ENTRY_POINT"):
 			entryPoint = splitStringPtrList(c.Value)
-		case strings.HasPrefix(c.Name, ecsConfigName("COMMAND")):
+		case c.Name == ecsConfigName("COMMAND"):
 			command = splitStringPtrList(c.Value)
+		case c.Name == ecsConfigName("TASK_ROLE_ARN"):
+			taskRoleARN = ptr.String(c.Value)
+		case c.Name == ecsConfigName("AWSLOGS_GROUP"):
+			awslogsGroup = c.Value
 		default:
 			cMap[c.Name] = c.Value
 		}
@@ -148,18 +169,59 @@ func (m *Manager) taskDefinitionInputForDeployment(d *dal.Deployment) (*ecs.Regi
 				Essential:        ptr.Bool(true),
 				Name:             ptr.String(dep.Name),
 				PortMappings:     portMappings,
+				MountPoints:      mountPoints,
 				DnsServers:       dnsServers,
 				DnsSearchDomains: dnsSearchDomains,
 				LogConfiguration: &ecs.LogConfiguration{
 					LogDriver: ptr.String("awslogs"),
 					Options: map[string]*string{
-						"awslogs-group":  ptr.String(fmt.Sprintf("%s-%s", env.Name, dep.Name)),
-						"awslogs-region": ptr.String("us-east-1"), // TODO: dynamically set this once we do multi-region
+						"awslogs-group":         &awslogsGroup,
+						"awslogs-region":        ptr.String("us-east-1"), // TODO: dynamically set this once we do multi-region
+						"awslogs-stream-prefix": &dep.Name,
 					},
 				},
 			},
 		},
-		Family: ptr.String(fmt.Sprintf("%s-%s", env.Name, dep.Name)),
+		Family:      ptr.String(fmt.Sprintf("%s-%s", env.Name, dep.Name)),
+		TaskRoleArn: taskRoleARN,
+		Volumes:     volumes,
+	}, nil
+}
+
+// parseVolume parses a task volume in the format "name:source path" with source path being optional
+func parseVolume(v string) (*ecs.Volume, error) {
+	parts := strings.Split(strings.TrimSpace(v), ":")
+	if (len(parts) != 2 && len(parts) != 1) || parts[0] == "" {
+		return nil, fmt.Errorf("%s is not a valid volume of format name[:path]", v)
+	}
+	// No source path means docker creates a new path on the host
+	if len(parts) == 1 || parts[1] == "" {
+		return &ecs.Volume{
+			Name: &parts[0],
+		}, nil
+	}
+	return &ecs.Volume{
+		Name: &parts[0],
+		Host: &ecs.HostVolumeProperties{
+			SourcePath: &parts[1],
+		},
+	}, nil
+}
+
+// parseMountPoint parses a container mount point in the format "source volume:container path:read only"
+func parseMountPoint(mp string) (*ecs.MountPoint, error) {
+	parts := strings.Split(strings.TrimSpace(mp), ":")
+	if len(parts) != 3 || parts[0] == "" || parts[1] == "" || parts[2] == "" || parts[1][0] != '/' {
+		return nil, fmt.Errorf("%s is not a valid mount point of format path:volume:readonly", mp)
+	}
+	readonly, err := strconv.ParseBool(parts[2])
+	if err != nil {
+		return nil, fmt.Errorf("%s is not a valid mount point of format path:volume:readonly, readonly must be true or false", mp)
+	}
+	return &ecs.MountPoint{
+		SourceVolume:  &parts[0],
+		ContainerPath: &parts[1],
+		ReadOnly:      &readonly,
 	}, nil
 }
 
