@@ -107,7 +107,7 @@ func (m *Manager) taskDefinitionInputForDeployment(d *dal.Deployment) (*ecs.Regi
 	configs := make(map[string]string, len(dConfigs)+len(eConfigValues))
 	envConfigReplacements := strings.NewReplacer("{deployname}", dep.Name, "{DEPLOYNAME}", strings.ToUpper(dep.Name))
 	for _, c := range eConfigValues {
-		configs[c.Name] = envConfigReplacements.Replace(c.Value)
+		configs[envConfigReplacements.Replace(c.Name)] = envConfigReplacements.Replace(c.Value)
 	}
 	for _, c := range dConfigs {
 		configs[c.Name] = c.Value
