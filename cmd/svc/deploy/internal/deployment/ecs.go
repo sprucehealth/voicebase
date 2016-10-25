@@ -105,7 +105,7 @@ func (m *Manager) taskDefinitionInputForDeployment(d *dal.Deployment) (*ecs.Regi
 
 	// Default to environment config values and overwrite with deployable config values
 	configs := make(map[string]string, len(dConfigs)+len(eConfigValues))
-	envConfigReplacements := strings.NewReplacer("{deployname}", dep.Name)
+	envConfigReplacements := strings.NewReplacer("{deployname}", dep.Name, "{DEPLOYNAME}", strings.ToUpper(dep.Name))
 	for _, c := range eConfigValues {
 		configs[c.Name] = envConfigReplacements.Replace(c.Value)
 	}
