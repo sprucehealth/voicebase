@@ -88,6 +88,30 @@ func (m *Manager) taskDefinitionInputForDeployment(d *dal.Deployment) (*ecs.Regi
 	if err != nil {
 		return nil, err
 	}
+	eConfigs, err := m.dl.EnvironmentConfigsForStatus(d.EnvironmentID, dal.EnvironmentConfigStatusActive)
+	if err != nil {
+		return nil, err
+	}
+	var eConfigValues []*dal.EnvironmentConfigValue
+	if len(eConfigs) != 0 {
+		if len(eConfigs) > 1 {
+			golog.Errorf("More than one active environment config for %s, using first", d.EnvironmentID)
+		}
+		eConfigValues, err = m.dl.EnvironmentConfigValues(eConfigs[0].ID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Default to environment config values and overwrite with deployable config values
+	configs := make(map[string]string, len(dConfigs)+len(eConfigValues))
+	envConfigReplacements := strings.NewReplacer("{deployname}", dep.Name)
+	for _, c := range eConfigValues {
+		configs[c.Name] = envConfigReplacements.Replace(c.Value)
+	}
+	for _, c := range dConfigs {
+		configs[c.Name] = c.Value
+	}
 
 	awslogsGroup := env.Name + "-service"
 
@@ -99,41 +123,41 @@ func (m *Manager) taskDefinitionInputForDeployment(d *dal.Deployment) (*ecs.Regi
 	var command []*string
 	var taskRoleARN *string
 	var volumes []*ecs.Volume
-	cMap := make(map[string]string, len(dConfigs))
-	for _, c := range dConfigs {
+	cMap := make(map[string]string, len(configs))
+	for name, value := range configs {
 		switch {
-		case strings.HasPrefix(c.Name, ecsConfigName("PORT_MAPPING")):
-			pm, err := parsePortMapping(c.Value)
+		case strings.HasPrefix(name, ecsConfigName("PORT_MAPPING")):
+			pm, err := parsePortMapping(value)
 			if err != nil {
 				return nil, err
 			}
 			portMappings = append(portMappings, pm)
-		case strings.HasPrefix(c.Name, ecsConfigName("MOUNT_POINT")):
-			mp, err := parseMountPoint(c.Value)
+		case strings.HasPrefix(name, ecsConfigName("MOUNT_POINT")):
+			mp, err := parseMountPoint(value)
 			if err != nil {
 				return nil, err
 			}
 			mountPoints = append(mountPoints, mp)
-		case strings.HasPrefix(c.Name, ecsConfigName("VOLUME")):
-			v, err := parseVolume(c.Value)
+		case strings.HasPrefix(name, ecsConfigName("VOLUME")):
+			v, err := parseVolume(value)
 			if err != nil {
 				return nil, err
 			}
 			volumes = append(volumes, v)
-		case c.Name == ecsConfigName("DNS_SERVERS"):
-			dnsServers = splitStringPtrList(c.Value)
-		case c.Name == ecsConfigName("DNS_SEARCH_DOMAINS"):
-			dnsSearchDomains = splitStringPtrList(c.Value)
-		case c.Name == ecsConfigName("ENTRY_POINT"):
-			entryPoint = splitStringPtrList(c.Value)
-		case c.Name == ecsConfigName("COMMAND"):
-			command = splitStringPtrList(c.Value)
-		case c.Name == ecsConfigName("TASK_ROLE_ARN"):
-			taskRoleARN = ptr.String(c.Value)
-		case c.Name == ecsConfigName("AWSLOGS_GROUP"):
-			awslogsGroup = c.Value
+		case name == ecsConfigName("DNS_SERVERS"):
+			dnsServers = splitStringPtrList(value)
+		case name == ecsConfigName("DNS_SEARCH_DOMAINS"):
+			dnsSearchDomains = splitStringPtrList(value)
+		case name == ecsConfigName("ENTRY_POINT"):
+			entryPoint = splitStringPtrList(value)
+		case name == ecsConfigName("COMMAND"):
+			command = splitStringPtrList(value)
+		case name == ecsConfigName("TASK_ROLE_ARN"):
+			taskRoleARN = ptr.String(value)
+		case name == ecsConfigName("AWSLOGS_GROUP"):
+			awslogsGroup = value
 		default:
-			cMap[c.Name] = c.Value
+			cMap[name] = value
 		}
 	}
 
