@@ -203,15 +203,15 @@ func TestNodeQuery(t *testing.T) {
 		"id": id,
 	}
 	ra.Expect(mock.NewExpectation(ra.ThreadItem, id).WithReturns(&threading.ThreadItem{
-		ID:            id,
-		Timestamp:     1234,
-		ActorEntityID: "entity_1",
-		Internal:      true,
+		ID:                id,
+		CreatedTimestamp:  1234,
+		ModifiedTimestamp: 1234,
+		ActorEntityID:     "entity_1",
+		Internal:          true,
 		Item: &threading.ThreadItem_Message{
 			Message: &threading.Message{
-				Title:  "abc",
-				Text:   "hello",
-				Status: threading.MESSAGE_STATUS_NORMAL,
+				Title: "abc",
+				Text:  "hello",
 				Source: &threading.Endpoint{
 					ID:      "555-555-5555",
 					Channel: threading.ENDPOINT_CHANNEL_VOICE,
@@ -225,10 +225,11 @@ func TestNodeQuery(t *testing.T) {
 	res, err = nodeField.Resolve(p)
 	test.OK(t, err)
 	test.Equals(t, &models.ThreadItem{
-		ID:            id,
-		Timestamp:     1234,
-		ActorEntityID: "entity_1",
-		Internal:      true,
+		ID:                id,
+		Timestamp:         1234,
+		ModifiedTimestamp: 1234,
+		ActorEntityID:     "entity_1",
+		Internal:          true,
 		Data: &models.Message{
 			ThreadItemID:  id,
 			SummaryMarkup: "abc",

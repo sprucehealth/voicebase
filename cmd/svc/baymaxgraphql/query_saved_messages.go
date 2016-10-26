@@ -114,11 +114,12 @@ var savedMessagesQuery = &graphql.Field{
 
 func transformSavedMessageToResponse(m *threading.SavedMessage, webDomain, mediaAPIDomain string) (*models.SavedMessage, error) {
 	ti, err := transformThreadItemToResponse(&threading.ThreadItem{
-		ID:             m.ID,
-		Timestamp:      m.Modified,
-		ActorEntityID:  m.CreatorEntityID,
-		Internal:       m.Internal,
-		OrganizationID: m.OrganizationID,
+		ID:                m.ID,
+		CreatedTimestamp:  m.Created,
+		ModifiedTimestamp: m.Modified,
+		ActorEntityID:     m.CreatorEntityID,
+		Internal:          m.Internal,
+		OrganizationID:    m.OrganizationID,
 		Item: &threading.ThreadItem_Message{
 			Message: m.GetMessage(),
 		},

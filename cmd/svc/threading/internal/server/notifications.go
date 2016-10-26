@@ -175,38 +175,34 @@ func (s *threadsServer) notifyMembersOfPublishMessage(
 }
 
 func (s *threadsServer) getNotificationText(ctx context.Context, thread *models.Thread, message *models.ThreadItem, receiverEntityID string) string {
+	msg, ok := message.Data.(*models.Message)
+	if !ok {
+		return ""
+	}
 	notificationText := "You have a new message"
 	isClearText := s.isClearTextMessageNotificationsEnabled(ctx, thread.Type, receiverEntityID)
 	if isClearText {
-		if message.Type == models.ItemTypeMessage {
-			// TODO: Optimizatoin: Refactor and merge the converion of the data to models.Message for use by both notification text and refs
-			msg, ok := message.Data.(*models.Message)
-			if !ok {
-				golog.Errorf("Failed to convert thread item data to message for clear text notification for item id %s", message.ID)
-				return notificationText
-			}
-			bmlText, err := bml.Parse(msg.Text)
-			if err != nil {
-				golog.Errorf("Failed to convert thread item data to message for clear text notification for item id %s: %s", message.ID, err)
-				return notificationText
-			}
-			plainText, err := bmlText.PlainText()
-			if err != nil {
-				golog.Errorf("Failed to convert thread item data to message for clear text notification for item id %s: %s", message.ID, err)
-				return notificationText
-			}
-			notificationText = plainText
-			if thread.Type != models.ThreadTypeSupport {
-				if thread.UserTitle != "" {
-					notificationText = thread.UserTitle + ": " + notificationText
-				} else {
-					notificationText = thread.SystemTitle + ": " + notificationText
-				}
-			}
-			if len(notificationText) > 256 {
-				notificationText = textutil.TruncateUTF8(notificationText, 253) + "..."
-			}
+		// TODO: Optimization: Refactor and merge the converion of the data to models.Message for use by both notification text and refs
+		bmlText, err := bml.Parse(msg.Text)
+		if err != nil {
+			golog.Errorf("Failed to convert thread item data to message for clear text notification for item id %s: %s", message.ID, err)
 			return notificationText
+		}
+		plainText, err := bmlText.PlainText()
+		if err != nil {
+			golog.Errorf("Failed to convert thread item data to message for clear text notification for item id %s: %s", message.ID, err)
+			return notificationText
+		}
+		notificationText = plainText
+		if thread.Type != models.ThreadTypeSupport {
+			if thread.UserTitle != "" {
+				notificationText = thread.UserTitle + ": " + notificationText
+			} else {
+				notificationText = thread.SystemTitle + ": " + notificationText
+			}
+		}
+		if len(notificationText) > 256 {
+			notificationText = textutil.TruncateUTF8(notificationText, 253) + "..."
 		}
 	}
 	return notificationText

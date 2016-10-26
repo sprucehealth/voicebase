@@ -10,7 +10,6 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/models"
 	"github.com/sprucehealth/backend/libs/bml"
 	"github.com/sprucehealth/backend/libs/errors"
-	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/textutil"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/media"
@@ -163,15 +162,10 @@ func memberEntityIDsForNewThread(ttype threading.ThreadType, orgID, fromEntityID
 	return memberEntityIDs, nil
 }
 
-func getReferencedEntities(ctx context.Context, thread *models.Thread, message *models.ThreadItem) map[string]struct{} {
+func getReferencedEntities(ctx context.Context, thread *models.Thread, item *models.ThreadItem) map[string]struct{} {
 	referencedEntityIDs := make(map[string]struct{})
-	if message.Type == models.ItemTypeMessage {
-		// TODO: Optimizatoin: Refactor and merge the converion of the data to models.Message for use by both notification text and refs
-		msg, ok := message.Data.(*models.Message)
-		if !ok {
-			golog.Errorf("Failed to convert thread item data to message for referenced entities for item id %s", message.ID)
-			return referencedEntityIDs
-		}
+	if msg, ok := item.Data.(*models.Message); ok {
+		// TODO: Optimization: Refactor and merge the converion of the data to models.Message for use by both notification text and refs
 		for _, ref := range msg.TextRefs {
 			if ref.Type == models.REFERENCE_TYPE_ENTITY {
 				referencedEntityIDs[ref.ID] = struct{}{}

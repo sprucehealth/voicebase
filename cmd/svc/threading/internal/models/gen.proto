@@ -18,15 +18,8 @@ message Reference {
 message Message {
 	string text = 1;
 	repeated Attachment attachments = 2;
-	enum Status {
-		MESSAGE_STATUS_NORMAL = 0;
-		MESSAGE_STATUS_DELETED = 1;
-	}
-	Status status = 3;
 	Endpoint source = 4;
 	repeated Endpoint destinations = 5;
-	uint64 edited_timestamp = 6;
-	string editor_entity_id = 7 [(gogoproto.customname) = "EditorEntityID"];
 	string title = 8;
 	repeated Reference text_refs = 9; // References from the message body text
 	string summary = 10;
@@ -47,10 +40,17 @@ message Endpoint {
 	string id = 2 [(gogoproto.customname) = "ID"];
 }
 
-message MessageUpdated {
+message MessageUpdate {
+	// thread_item_id is the ID of the item that was modified
 	string thread_item_id = 1 [(gogoproto.customname) = "ThreadItemID"];
-	string actor_entity_id = 2 [(gogoproto.customname) = "ActorEntityID"];
-	Message message = 3;
+	// message is the new message content
+	Message message = 2;
+
+}
+
+message MessageDelete {
+	// thread_item_id is the ID of the item that was deleted
+	string thread_item_id = 1 [(gogoproto.customname) = "ThreadItemID"];
 }
 
 message Attachment {

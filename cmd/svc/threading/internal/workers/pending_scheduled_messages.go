@@ -45,7 +45,7 @@ func (w *Workers) processPendingScheduledMessage() {
 				return nil
 			}
 			// Decode the message to build the request we'll use to post the mesage
-			message, err := server.TransformMessageToResponse(scheduledMessage.Data.(*models.Message))
+			message, err := server.TransformMessageToResponse(scheduledMessage.Data.(*models.Message), false)
 			if err != nil {
 				return errors.Trace(err)
 			}

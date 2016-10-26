@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -280,13 +281,12 @@ func TestCreateThread(t *testing.T) {
 		ID:            mid,
 		ThreadID:      thid,
 		Created:       now,
+		Modified:      now,
 		ActorEntityID: ps.FromEntityID,
 		Internal:      ps.Internal,
-		Type:          models.ItemTypeMessage,
 		Data: &models.Message{
 			Title:    ps.Title,
 			Text:     ps.Text,
-			Status:   models.MESSAGE_STATUS_NORMAL,
 			Source:   ps.Source,
 			TextRefs: ps.TextRefs,
 			Summary:  ps.Summary,
@@ -365,18 +365,18 @@ func TestCreateThread(t *testing.T) {
 	test.Equals(t, &threading.CreateThreadResponse{
 		ThreadID: thid.String(),
 		ThreadItem: &threading.ThreadItem{
-			ID:             mid.String(),
-			Timestamp:      uint64(now.Unix()),
-			Internal:       true,
-			ActorEntityID:  "entity_1",
-			ThreadID:       th2.ID.String(),
-			OrganizationID: "entity_org1",
+			ID:                mid.String(),
+			CreatedTimestamp:  uint64(now.Unix()),
+			ModifiedTimestamp: uint64(now.Unix()),
+			Internal:          true,
+			ActorEntityID:     "entity_1",
+			ThreadID:          th2.ID.String(),
+			OrganizationID:    "entity_org1",
 			Item: &threading.ThreadItem_Message{
 				Message: &threading.Message{
 					Title:   "foo % woo",
 					Text:    "<ref id=\"entity_2\" type=\"entity\">Foo</ref> bar",
 					Summary: "Foo bar",
-					Status:  threading.MESSAGE_STATUS_NORMAL,
 					Source: &threading.Endpoint{
 						ID:      "555-555-5555",
 						Channel: threading.ENDPOINT_CHANNEL_SMS,
@@ -443,13 +443,12 @@ func TestPostMessage(t *testing.T) {
 		ID:            ti1id,
 		ThreadID:      th1id,
 		Created:       now,
+		Modified:      now,
 		ActorEntityID: "entity_1",
 		Internal:      false,
-		Type:          models.ItemTypeMessage,
 		Data: &models.Message{
 			Title:   "title",
 			Text:    "<ref id=\"entity_2\" type=\"entity\">Foo</ref> <ref id=\"entity_3\" type=\"entity\">Bar</ref>",
-			Status:  models.MESSAGE_STATUS_NORMAL,
 			Summary: "summary",
 			TextRefs: []*models.Reference{
 				{ID: "entity_2", Type: models.REFERENCE_TYPE_ENTITY},
@@ -532,17 +531,17 @@ func TestPostMessage(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, &threading.PostMessageResponse{
 		Item: &threading.ThreadItem{
-			ID:             ti1id.String(),
-			ThreadID:       th1id.String(),
-			OrganizationID: "entity_org1",
-			ActorEntityID:  "entity_1",
-			Internal:       false,
-			Timestamp:      uint64(now.Unix()),
+			ID:                ti1id.String(),
+			ThreadID:          th1id.String(),
+			OrganizationID:    "entity_org1",
+			ActorEntityID:     "entity_1",
+			Internal:          false,
+			CreatedTimestamp:  uint64(now.Unix()),
+			ModifiedTimestamp: uint64(now.Unix()),
 			Item: &threading.ThreadItem_Message{
 				Message: &threading.Message{
 					Title:   "title",
 					Text:    "<ref id=\"entity_2\" type=\"entity\">Foo</ref> <ref id=\"entity_3\" type=\"entity\">Bar</ref>",
-					Status:  threading.MESSAGE_STATUS_NORMAL,
 					Summary: "summary",
 					TextRefs: []*threading.Reference{
 						{ID: "entity_2", Type: threading.REFERENCE_TYPE_ENTITY},
@@ -607,13 +606,12 @@ func TestPostMessage_Linked(t *testing.T) {
 		ID:            ti1id,
 		ThreadID:      th1id,
 		Created:       now,
+		Modified:      now,
 		ActorEntityID: "entity_1",
 		Internal:      false,
-		Type:          models.ItemTypeMessage,
 		Data: &models.Message{
 			Title:   "title",
 			Text:    "text",
-			Status:  models.MESSAGE_STATUS_NORMAL,
 			Summary: "summary",
 		},
 	}, nil))
@@ -632,13 +630,12 @@ func TestPostMessage_Linked(t *testing.T) {
 		ID:            ti2id,
 		ThreadID:      th2id,
 		Created:       now,
+		Modified:      now,
 		ActorEntityID: "entity_3",
 		Internal:      false,
-		Type:          models.ItemTypeMessage,
 		Data: &models.Message{
 			Title:   "title",
 			Text:    "text",
-			Status:  models.MESSAGE_STATUS_NORMAL,
 			Summary: "Spruce: text",
 		},
 	}, nil))
@@ -685,17 +682,17 @@ func TestPostMessage_Linked(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, &threading.PostMessageResponse{
 		Item: &threading.ThreadItem{
-			ID:             ti1id.String(),
-			ThreadID:       th1id.String(),
-			OrganizationID: "entity_org1",
-			ActorEntityID:  "entity_1",
-			Internal:       false,
-			Timestamp:      uint64(now.Unix()),
+			ID:                ti1id.String(),
+			ThreadID:          th1id.String(),
+			OrganizationID:    "entity_org1",
+			ActorEntityID:     "entity_1",
+			Internal:          false,
+			CreatedTimestamp:  uint64(now.Unix()),
+			ModifiedTimestamp: uint64(now.Unix()),
 			Item: &threading.ThreadItem_Message{
 				Message: &threading.Message{
 					Title:   "title",
 					Text:    "text",
-					Status:  threading.MESSAGE_STATUS_NORMAL,
 					Summary: "summary",
 				},
 			},
@@ -756,13 +753,12 @@ func TestPostMessage_Linked_PrependSender(t *testing.T) {
 		ID:            ti1id,
 		ThreadID:      th1id,
 		Created:       now,
+		Modified:      now,
 		ActorEntityID: "entity_1",
 		Internal:      false,
-		Type:          models.ItemTypeMessage,
 		Data: &models.Message{
 			Title:   "title",
 			Text:    "text",
-			Status:  models.MESSAGE_STATUS_NORMAL,
 			Summary: "summary",
 		},
 	}, nil))
@@ -781,13 +777,12 @@ func TestPostMessage_Linked_PrependSender(t *testing.T) {
 		ID:            ti2id,
 		ThreadID:      th2id,
 		Created:       now,
+		Modified:      now,
 		ActorEntityID: "entity_3",
 		Internal:      false,
-		Type:          models.ItemTypeMessage,
 		Data: &models.Message{
 			Title:   "title",
 			Text:    "dewabi: text",
-			Status:  models.MESSAGE_STATUS_NORMAL,
 			Summary: "Spruce: text",
 		},
 	}, nil))
@@ -854,17 +849,17 @@ func TestPostMessage_Linked_PrependSender(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, &threading.PostMessageResponse{
 		Item: &threading.ThreadItem{
-			ID:             ti1id.String(),
-			ThreadID:       th1id.String(),
-			OrganizationID: "entity_org1",
-			ActorEntityID:  "entity_1",
-			Internal:       false,
-			Timestamp:      uint64(now.Unix()),
+			ID:                ti1id.String(),
+			ThreadID:          th1id.String(),
+			OrganizationID:    "entity_org1",
+			ActorEntityID:     "entity_1",
+			Internal:          false,
+			CreatedTimestamp:  uint64(now.Unix()),
+			ModifiedTimestamp: uint64(now.Unix()),
 			Item: &threading.ThreadItem_Message{
 				Message: &threading.Message{
 					Title:   "title",
 					Text:    "text",
-					Status:  threading.MESSAGE_STATUS_NORMAL,
 					Summary: "summary",
 				},
 			},
@@ -1094,21 +1089,18 @@ func TestThreadItem(t *testing.T) {
 	now := time.Now()
 	eti := &models.ThreadItem{
 		ID:            eid,
-		Type:          models.ItemTypeMessage,
 		Created:       now,
+		Modified:      now,
 		Internal:      true,
 		ActorEntityID: "entity_2",
 		ThreadID:      tid,
 		Data: &models.Message{
-			Title:  "abc",
-			Text:   "hello",
-			Status: models.MESSAGE_STATUS_NORMAL,
+			Title: "abc",
+			Text:  "hello",
 			Source: &models.Endpoint{
 				ID:      "555-555-5555",
 				Channel: models.ENDPOINT_CHANNEL_VOICE,
 			},
-			EditedTimestamp: 123,
-			EditorEntityID:  "entity:1",
 		},
 	}
 	dl.Expect(mock.NewExpectation(dl.ThreadItem, eid).WithReturns(eti, nil))
@@ -1119,23 +1111,21 @@ func TestThreadItem(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, &threading.ThreadItemResponse{
 		Item: &threading.ThreadItem{
-			ID:             eid.String(),
-			Timestamp:      uint64(now.Unix()),
-			Internal:       true,
-			ActorEntityID:  "entity_2",
-			ThreadID:       tid.String(),
-			OrganizationID: "orgID",
+			ID:                eid.String(),
+			CreatedTimestamp:  uint64(now.Unix()),
+			ModifiedTimestamp: uint64(now.Unix()),
+			Internal:          true,
+			ActorEntityID:     "entity_2",
+			ThreadID:          tid.String(),
+			OrganizationID:    "orgID",
 			Item: &threading.ThreadItem_Message{
 				Message: &threading.Message{
-					Title:  "abc",
-					Text:   "hello",
-					Status: threading.MESSAGE_STATUS_NORMAL,
+					Title: "abc",
+					Text:  "hello",
 					Source: &threading.Endpoint{
 						ID:      "555-555-5555",
 						Channel: threading.ENDPOINT_CHANNEL_VOICE,
 					},
-					EditedTimestamp: 123,
-					EditorEntityID:  "entity:1",
 				},
 			},
 		},
@@ -2360,8 +2350,7 @@ func TestNotifyMembersOfPublishMessage(t *testing.T) {
 		Type:           models.ThreadTypeExternal,
 		OrganizationID: orgID,
 	}, &models.ThreadItem{
-		ID:   tiID,
-		Type: models.ItemTypeMessage,
+		ID: tiID,
 		Data: &models.Message{
 			TextRefs: []*models.Reference{
 				{
@@ -2451,8 +2440,7 @@ func TestNotifyMembersOfPublishMessageClearTextSupportThread(t *testing.T) {
 		OrganizationID: orgID,
 		UserTitle:      "ThreadTitle",
 	}, &models.ThreadItem{
-		ID:   tiID,
-		Type: models.ItemTypeMessage,
+		ID: tiID,
 		Data: &models.Message{
 			Text: "Clear Text Message",
 		},
@@ -2539,8 +2527,7 @@ func TestNotifyMembersOfPublishMessageClearTextEnabled(t *testing.T) {
 		OrganizationID: orgID,
 		UserTitle:      "ThreadTitle",
 	}, &models.ThreadItem{
-		ID:   tiID,
-		Type: models.ItemTypeMessage,
+		ID: tiID,
 		Data: &models.Message{
 			Text: "Clear Text Message",
 		},
@@ -2629,8 +2616,7 @@ func TestNotifyMembersOfPublishMessageSecureExternalNonInternal(t *testing.T) {
 		UserTitle:       "ThreadTitle",
 		PrimaryEntityID: "patientNotify1",
 	}, &models.ThreadItem{
-		ID:   tiID,
-		Type: models.ItemTypeMessage,
+		ID: tiID,
 		Data: &models.Message{
 			Text: "Clear Text Message",
 		},
@@ -2719,8 +2705,7 @@ func TestNotifyMembersOfPublishMessageSecureExternalInternal(t *testing.T) {
 		UserTitle:       "ThreadTitle",
 		PrimaryEntityID: "patientNotify1",
 	}, &models.ThreadItem{
-		ID:   tiID,
-		Type: models.ItemTypeMessage,
+		ID: tiID,
 		Data: &models.Message{
 			Text: "Clear Text Message",
 		},
@@ -3019,6 +3004,119 @@ func TestDeleteThread(t *testing.T) {
 	})
 	test.OK(t, err)
 	test.Equals(t, &threading.DeleteThreadResponse{}, resp)
+}
+
+func TestDeleteMessage(t *testing.T) {
+	t.Parallel()
+	dl := dalmock.New(t)
+	dir := mockdirectory.New(t)
+	sm := mocksettings.New(t)
+	mm := mockmedia.New(t)
+	defer mock.FinishAll(dl, dir, sm, mm)
+
+	srv := NewThreadsServer(nil, dl, nil, "arn", nil, dir, sm, mm, nil, "WEBDOMAIN")
+
+	tID, err := models.NewThreadID()
+	test.OK(t, err)
+	tiID, err := models.NewThreadItemID()
+	test.OK(t, err)
+
+	// Not-already deleted
+
+	dl.Expect(mock.NewExpectation(dl.DeleteMessage, tiID).WithReturns(&models.ThreadItem{
+		ID:       tiID,
+		ThreadID: tID,
+	}, true, nil))
+	dl.Expect(mock.NewExpectation(dl.CreateThreadItem, &models.ThreadItem{
+		ThreadID:      tID,
+		ActorEntityID: "entity_1",
+		Data: &models.MessageDelete{
+			ThreadItemID: tiID.String(),
+		},
+	}))
+	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{tID}).WithReturns(
+		([]*models.Thread)(nil), errors.New("making sure this is called but no need to test the saved query building")))
+	res, err := srv.DeleteMessage(nil, &threading.DeleteMessageRequest{
+		ThreadItemID:  tiID.String(),
+		ActorEntityID: "entity_1",
+	})
+	test.OK(t, err)
+	test.Equals(t, &threading.DeleteMessageResponse{}, res)
+
+	// Already deleted, don't create thread item
+
+	dl.Expect(mock.NewExpectation(dl.DeleteMessage, tiID).WithReturns(&models.ThreadItem{
+		ID:       tiID,
+		ThreadID: tID,
+	}, false, nil))
+	res, err = srv.DeleteMessage(nil, &threading.DeleteMessageRequest{
+		ThreadItemID:  tiID.String(),
+		ActorEntityID: "entity_1",
+	})
+	test.OK(t, err)
+	test.Equals(t, &threading.DeleteMessageResponse{}, res)
+}
+
+func TestUpdateMessage(t *testing.T) {
+	t.Parallel()
+	dl := dalmock.New(t)
+	dir := mockdirectory.New(t)
+	sm := mocksettings.New(t)
+	mm := mockmedia.New(t)
+	defer mock.FinishAll(dl, dir, sm, mm)
+
+	srv := NewThreadsServer(nil, dl, nil, "arn", nil, dir, sm, mm, nil, "WEBDOMAIN")
+
+	tID, err := models.NewThreadID()
+	test.OK(t, err)
+	tiID, err := models.NewThreadItemID()
+	test.OK(t, err)
+
+	dl.Expect(mock.NewExpectation(dl.ThreadItem, tiID).WithReturns(&models.ThreadItem{
+		ID:       tiID,
+		ThreadID: tID,
+		Data:     &models.Message{},
+	}, nil))
+	dl.Expect(mock.NewExpectation(dl.UpdateMessage, tID, tiID, &dal.PostMessageRequest{
+		ThreadID:     tID,
+		FromEntityID: "entity_1",
+		Text:         "boo",
+		Summary:      "xxx",
+		Destinations: []*models.Endpoint{},
+	}))
+	dl.Expect(mock.NewExpectation(dl.ThreadItem, tiID).WithReturns(
+		&models.ThreadItem{
+			ID:       tiID,
+			ThreadID: tID,
+			Data: &models.Message{
+				Text:    "boo",
+				Summary: "xxx",
+			},
+		}, nil))
+	dl.Expect(mock.NewExpectation(dl.CreateThreadItem, &models.ThreadItem{
+		ThreadID:      tID,
+		ActorEntityID: "entity_1",
+		Data: &models.MessageUpdate{
+			ThreadItemID: tiID.String(),
+			Message: &models.Message{
+				Text:    "boo",
+				Summary: "xxx",
+			},
+		},
+	}))
+	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{tID}).WithReturns(
+		([]*models.Thread)(nil), errors.New("making sure this is called but no need to test the saved query building")))
+
+	res, err := srv.UpdateMessage(nil, &threading.UpdateMessageRequest{
+		ThreadItemID:  tiID.String(),
+		ActorEntityID: "entity_1",
+		Message: &threading.MessagePost{
+			Text:    "boo",
+			Summary: "xxx",
+		},
+	})
+	test.OK(t, err)
+	test.Equals(t, &threading.UpdateMessageResponse{}, res)
 }
 
 func TestDeleteThreadNoPE(t *testing.T) {

@@ -136,9 +136,10 @@ var cloneMessageMutation = &graphql.Field{
 		}
 
 		newItem := &threading.ThreadItem{
-			ActorEntityID:  ent.ID,
-			OrganizationID: in.OrganizationID,
-			Timestamp:      uint64(time.Now().Unix()),
+			ActorEntityID:     ent.ID,
+			OrganizationID:    in.OrganizationID,
+			CreatedTimestamp:  uint64(time.Now().Unix()),
+			ModifiedTimestamp: uint64(time.Now().Unix()),
 		}
 
 		var msg *threading.Message
@@ -155,6 +156,9 @@ var cloneMessageMutation = &graphql.Field{
 			// TODO: for now don't allow cloning across organizations
 			if item.OrganizationID != in.OrganizationID {
 				return nil, errors.ErrNotAuthorized(ctx, item.ID)
+			}
+			if item.Deleted {
+				return nil, errors.ErrNotSupported(ctx, errors.New("Cannot clone a delete item"))
 			}
 			newItem.Internal = item.Internal
 			msg = item.GetMessage()
@@ -185,7 +189,6 @@ var cloneMessageMutation = &graphql.Field{
 			TextRefs: msg.TextRefs,
 			Summary:  msg.Summary,
 			Title:    msg.Title,
-			Status:   threading.MESSAGE_STATUS_NORMAL,
 		}
 		clonedAttachments, unsupportedAttachments, err := cloneAttachments(ctx, ram, ent, msg.Attachments, thread)
 		if err != nil {

@@ -25,10 +25,15 @@ func (d *dal) CreateScheduledMessage(ctx context.Context, model *models.Schedule
 	if err != nil {
 		return models.EmptyScheduledMessageID(), errors.Trace(err)
 	}
+	itemType, err := models.ItemTypeForValue(model.Data)
+	if err != nil {
+		return models.ScheduledMessageID{}, errors.Trace(err)
+	}
 	_, err = d.db.Exec(
 		`INSERT INTO scheduled_messages
           (actor_entity_id, type, scheduled_for, sent_at, id, thread_id, internal, data, status, sent_thread_item_id)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, model.ActorEntityID, model.Type, model.ScheduledFor, model.SentAt, model.ID, model.ThreadID, model.Internal, serializedData, model.Status, model.SentThreadItemID)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, model.ActorEntityID, itemType, model.ScheduledFor, model.SentAt, model.ID,
+		model.ThreadID, model.Internal, serializedData, model.Status, model.SentThreadItemID)
 	if err != nil {
 		return models.EmptyScheduledMessageID(), errors.Trace(err)
 	}
@@ -145,16 +150,33 @@ func (d *dal) DeleteScheduledMessage(ctx context.Context, id models.ScheduledMes
 }
 
 const selectScheduledMessage = `
-    SELECT scheduled_messages.actor_entity_id, scheduled_messages.type, scheduled_messages.scheduled_for, scheduled_messages.sent_at, scheduled_messages.created, scheduled_messages.modified, scheduled_messages.id, scheduled_messages.thread_id, scheduled_messages.internal, scheduled_messages.data, scheduled_messages.status, scheduled_messages.sent_thread_item_id
-      FROM scheduled_messages`
+    SELECT sm.actor_entity_id, sm.type, sm.scheduled_for, sm.sent_at, sm.created, sm.modified, sm.id,
+        sm.thread_id, sm.internal, sm.data, sm.status, sm.sent_thread_item_id, sm.data
+    FROM scheduled_messages sm`
 
 func scanScheduledMessage(ctx context.Context, row dbutil.Scanner, contextFormat string, args ...interface{}) (*models.ScheduledMessage, error) {
 	var m models.ScheduledMessage
 	m.ID = models.EmptyScheduledMessageID()
 
-	err := row.Scan(&m.ActorEntityID, &m.Type, &m.ScheduledFor, &m.SentAt, &m.Created, &m.Modified, &m.ID, &m.ThreadID, &m.Internal, &m.Data, &m.Status, &m.SentThreadItemID)
+	var itemType string
+	var data []byte
+	err := row.Scan(&m.ActorEntityID, &itemType, &m.ScheduledFor, &m.SentAt, &m.Created, &m.Modified, &m.ID,
+		&m.ThreadID, &m.Internal, &m.Data, &m.Status, &m.SentThreadItemID, &data)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(errors.Annotate(ErrNotFound, "No rows found - threading.scheduled_messages - Context: "+fmt.Sprintf(contextFormat, args...)))
+	}
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	switch itemType {
+	default:
+		return nil, errors.Errorf("unknown thread item type %s", itemType)
+	case models.ItemTypeMessage:
+		msg := &models.Message{}
+		if err := msg.Unmarshal(data); err != nil {
+			return nil, errors.Trace(err)
+		}
+		m.Data = msg
 	}
 	return &m, errors.Trace(err)
 }

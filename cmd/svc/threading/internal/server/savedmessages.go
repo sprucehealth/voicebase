@@ -40,7 +40,6 @@ func (s *threadsServer) CreateSavedMessage(ctx context.Context, in *threading.Cr
 			Text:        msg.Text,
 			Title:       msg.Title,
 			Summary:     msg.Summary,
-			Status:      models.MESSAGE_STATUS_NORMAL,
 			TextRefs:    textRefs,
 			Attachments: attachments,
 		},
@@ -158,7 +157,6 @@ func (s *threadsServer) UpdateSavedMessage(ctx context.Context, in *threading.Up
 			Text:        msg.Text,
 			Title:       msg.Title,
 			Summary:     msg.Summary,
-			Status:      models.MESSAGE_STATUS_NORMAL,
 			TextRefs:    textRefs,
 			Attachments: attachments,
 		}
@@ -205,7 +203,7 @@ func transformSavedMessageToResponse(sm *models.SavedMessage) (*threading.SavedM
 	}
 	switch v := sm.Content.(type) {
 	case *models.Message:
-		m, err := TransformMessageToResponse(v)
+		m, err := TransformMessageToResponse(v, false)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}

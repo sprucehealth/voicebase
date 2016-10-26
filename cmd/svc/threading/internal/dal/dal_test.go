@@ -723,6 +723,302 @@ func TestDeleteThread(t *testing.T) {
 	test.Equals(t, 0, len(ts))
 }
 
+func TestDeleteMessage(t *testing.T) {
+	dt := testsql.Setup(t, schemaGlob)
+	defer dt.Cleanup(t)
+
+	dal := New(dt.DB, clock.New())
+	ctx := context.Background()
+
+	tid, err := dal.CreateThread(ctx, &models.Thread{
+		OrganizationID: "org",
+		Type:           models.ThreadTypeExternal,
+		SystemTitle:    "systemTitle",
+		UserTitle:      "userTitle",
+	})
+	test.OK(t, err)
+
+	// Create external message
+
+	ti, err := dal.PostMessage(ctx, &PostMessageRequest{
+		ThreadID:     tid,
+		FromEntityID: "actor",
+		Title:        "title",
+		Text:         "text",
+		Summary:      "summary1",
+	})
+	test.OK(t, err)
+	test.Equals(t, false, ti.Deleted)
+
+	item1, err := dal.ThreadItem(ctx, ti.ID)
+	test.OK(t, err)
+	test.Equals(t, ti.ID, item1.ID)
+	test.Equals(t, false, item1.Deleted)
+
+	threads, err := dal.Threads(ctx, []models.ThreadID{tid})
+	test.OK(t, err)
+	thread := threads[0]
+
+	test.Equals(t, 1, thread.MessageCount)
+	test.Equals(t, "summary1", thread.LastMessageSummary)
+	test.Equals(t, "summary1", thread.LastExternalMessageSummary)
+	test.Equals(t, item1.Created, thread.LastMessageTimestamp)
+	test.Equals(t, item1.Created, thread.LastExternalMessageTimestamp)
+
+	// Create internal message
+
+	ti, err = dal.PostMessage(ctx, &PostMessageRequest{
+		ThreadID:     tid,
+		FromEntityID: "actor",
+		Title:        "title",
+		Text:         "text",
+		Summary:      "summary2",
+		Internal:     true,
+	})
+	test.OK(t, err)
+
+	item2, err := dal.ThreadItem(ctx, ti.ID)
+	test.OK(t, err)
+	test.Equals(t, ti.ID, item2.ID)
+	test.Equals(t, false, item2.Deleted)
+
+	threads, err = dal.Threads(ctx, []models.ThreadID{tid})
+	test.OK(t, err)
+	thread = threads[0]
+
+	test.Equals(t, 2, thread.MessageCount)
+	test.Equals(t, "summary2", thread.LastMessageSummary)
+	test.Equals(t, "summary1", thread.LastExternalMessageSummary)
+	test.Equals(t, item2.Created, thread.LastMessageTimestamp)
+	test.Equals(t, item1.Created, thread.LastExternalMessageTimestamp)
+
+	// Create external message
+
+	ti, err = dal.PostMessage(ctx, &PostMessageRequest{
+		ThreadID:     tid,
+		FromEntityID: "actor",
+		Title:        "title",
+		Text:         "text",
+		Summary:      "summary3",
+	})
+	test.OK(t, err)
+
+	item3, err := dal.ThreadItem(ctx, ti.ID)
+	test.OK(t, err)
+	test.Equals(t, ti.ID, item3.ID)
+	test.Equals(t, false, item3.Deleted)
+
+	threads, err = dal.Threads(ctx, []models.ThreadID{tid})
+	test.OK(t, err)
+	thread = threads[0]
+
+	test.Equals(t, 3, thread.MessageCount)
+	test.Equals(t, "summary3", thread.LastMessageSummary)
+	test.Equals(t, "summary3", thread.LastExternalMessageSummary)
+	test.Equals(t, item3.Created, thread.LastMessageTimestamp)
+	test.Equals(t, item3.Created, thread.LastExternalMessageTimestamp)
+
+	// Deleted first message. Should not modify thread. Items 2 and 3 are left.
+
+	deletedItem, deleted, err := dal.DeleteMessage(ctx, item1.ID)
+	test.OK(t, err)
+	test.Equals(t, true, deleted)
+	item1.Deleted = true
+	test.Equals(t, item1, deletedItem)
+
+	item, err := dal.ThreadItem(ctx, item1.ID)
+	test.OK(t, err)
+	deletedItem.Modified = item.Modified
+	test.Equals(t, true, item.Deleted)
+	test.Equals(t, deletedItem, item)
+
+	threads, err = dal.Threads(ctx, []models.ThreadID{item.ThreadID})
+	test.OK(t, err)
+	thread = threads[0]
+
+	test.Equals(t, 2, thread.MessageCount)
+	test.Equals(t, "summary3", thread.LastMessageSummary)
+	test.Equals(t, "summary3", thread.LastExternalMessageSummary)
+	test.Equals(t, item3.Created, thread.LastMessageTimestamp)
+	test.Equals(t, item3.Created, thread.LastExternalMessageTimestamp)
+
+	// Deleted last message. Should update thread. Only item 2 left which is internal.
+
+	deletedItem, deleted, err = dal.DeleteMessage(ctx, item3.ID)
+	test.OK(t, err)
+	test.Equals(t, true, deleted)
+	item3.Deleted = true
+	test.Equals(t, item3, deletedItem)
+
+	item, err = dal.ThreadItem(ctx, item3.ID)
+	test.OK(t, err)
+	test.Equals(t, true, item.Deleted)
+	deletedItem.Modified = item.Modified
+	test.Equals(t, deletedItem, item)
+
+	threads, err = dal.Threads(ctx, []models.ThreadID{item.ThreadID})
+	test.OK(t, err)
+	thread = threads[0]
+
+	test.Equals(t, 1, thread.MessageCount)
+	test.Equals(t, "summary2", thread.LastMessageSummary)
+	test.Equals(t, "", thread.LastExternalMessageSummary)
+	test.Equals(t, item2.Created, thread.LastMessageTimestamp)
+	test.Equals(t, thread.Created, thread.LastExternalMessageTimestamp)
+
+	// Deleted last and only message. Should clear out summary and timestamp from thread.
+
+	deletedItem, deleted, err = dal.DeleteMessage(ctx, item2.ID)
+	test.OK(t, err)
+	test.Equals(t, true, deleted)
+	item2.Deleted = true
+	test.Equals(t, item2, deletedItem)
+
+	item, err = dal.ThreadItem(ctx, item2.ID)
+	test.OK(t, err)
+	test.Equals(t, true, item.Deleted)
+	deletedItem.Modified = item.Modified
+	test.Equals(t, deletedItem, item)
+
+	threads, err = dal.Threads(ctx, []models.ThreadID{item.ThreadID})
+	test.OK(t, err)
+	thread = threads[0]
+
+	test.Equals(t, 0, thread.MessageCount)
+	test.Equals(t, "", thread.LastMessageSummary)
+	test.Equals(t, "", thread.LastExternalMessageSummary)
+	test.Equals(t, thread.Created, thread.LastMessageTimestamp)
+	test.Equals(t, thread.Created, thread.LastExternalMessageTimestamp)
+
+	// Tyying to delete a thread that's already deleted should return false
+
+	_, deleted, err = dal.DeleteMessage(ctx, item2.ID)
+	test.OK(t, err)
+	test.Equals(t, false, deleted)
+}
+
+func TestUpdateMessage(t *testing.T) {
+	dt := testsql.Setup(t, schemaGlob)
+	defer dt.Cleanup(t)
+
+	dal := New(dt.DB, clock.New())
+	ctx := context.Background()
+
+	tid, err := dal.CreateThread(ctx, &models.Thread{
+		OrganizationID: "org",
+		Type:           models.ThreadTypeExternal,
+		SystemTitle:    "systemTitle",
+		UserTitle:      "userTitle",
+	})
+	test.OK(t, err)
+
+	// Create external message
+
+	ti, err := dal.PostMessage(ctx, &PostMessageRequest{
+		ThreadID:     tid,
+		FromEntityID: "actor",
+		Title:        "title",
+		Text:         "text",
+		Summary:      "summary1",
+	})
+	test.OK(t, err)
+	test.Equals(t, false, ti.Deleted)
+
+	item1, err := dal.ThreadItem(ctx, ti.ID)
+	test.OK(t, err)
+	test.Equals(t, ti.ID, item1.ID)
+	test.Equals(t, false, item1.Deleted)
+
+	threads, err := dal.Threads(ctx, []models.ThreadID{tid})
+	test.OK(t, err)
+	thread := threads[0]
+
+	test.Equals(t, 1, thread.MessageCount)
+	test.Equals(t, "summary1", thread.LastMessageSummary)
+	test.Equals(t, "summary1", thread.LastExternalMessageSummary)
+	test.Equals(t, item1.Created, thread.LastMessageTimestamp)
+	test.Equals(t, item1.Created, thread.LastExternalMessageTimestamp)
+
+	// Create internal message
+
+	ti, err = dal.PostMessage(ctx, &PostMessageRequest{
+		ThreadID:     tid,
+		FromEntityID: "actor",
+		Title:        "title",
+		Text:         "text",
+		Summary:      "summary2",
+		Internal:     true,
+	})
+	test.OK(t, err)
+
+	item2, err := dal.ThreadItem(ctx, ti.ID)
+	test.OK(t, err)
+	test.Equals(t, ti.ID, item2.ID)
+	test.Equals(t, false, item2.Deleted)
+
+	threads, err = dal.Threads(ctx, []models.ThreadID{tid})
+	test.OK(t, err)
+	thread = threads[0]
+
+	test.Equals(t, 2, thread.MessageCount)
+	test.Equals(t, "summary2", thread.LastMessageSummary)
+	test.Equals(t, "summary1", thread.LastExternalMessageSummary)
+	test.Equals(t, item2.Created, thread.LastMessageTimestamp)
+	test.Equals(t, item1.Created, thread.LastExternalMessageTimestamp)
+
+	// Update first message. Should modify external summary on thread.
+
+	err = dal.UpdateMessage(ctx, tid, item1.ID, &PostMessageRequest{
+		ThreadID:     tid,
+		FromEntityID: "actor",
+		Title:        "title",
+		Text:         "text3",
+		Summary:      "summary3",
+	})
+	test.OK(t, err)
+
+	item, err := dal.ThreadItem(ctx, item1.ID)
+	test.OK(t, err)
+	test.Equals(t, "text3", item.Data.(*models.Message).Text)
+	test.Equals(t, "summary3", item.Data.(*models.Message).Summary)
+
+	threads, err = dal.Threads(ctx, []models.ThreadID{item.ThreadID})
+	test.OK(t, err)
+	thread = threads[0]
+
+	test.Equals(t, 2, thread.MessageCount)
+	test.Equals(t, "summary2", thread.LastMessageSummary)
+	test.Equals(t, "summary3", thread.LastExternalMessageSummary)
+	test.Equals(t, item2.Created, thread.LastMessageTimestamp)
+	test.Equals(t, item1.Created, thread.LastExternalMessageTimestamp)
+
+	// Update last message. Should update internal summary of thread.
+
+	err = dal.UpdateMessage(ctx, tid, item2.ID, &PostMessageRequest{
+		ThreadID:     tid,
+		FromEntityID: "actor",
+		Title:        "title",
+		Text:         "text4",
+		Summary:      "summary4",
+	})
+	test.OK(t, err)
+
+	item, err = dal.ThreadItem(ctx, item2.ID)
+	test.OK(t, err)
+	test.Equals(t, "text4", item.Data.(*models.Message).Text)
+	test.Equals(t, "summary4", item.Data.(*models.Message).Summary)
+
+	threads, err = dal.Threads(ctx, []models.ThreadID{item.ThreadID})
+	test.OK(t, err)
+	thread = threads[0]
+
+	test.Equals(t, 2, thread.MessageCount)
+	test.Equals(t, "summary4", thread.LastMessageSummary)
+	test.Equals(t, "summary3", thread.LastExternalMessageSummary)
+	test.Equals(t, item2.Created, thread.LastMessageTimestamp)
+	test.Equals(t, item1.Created, thread.LastExternalMessageTimestamp)
+}
+
 func TestFollowers(t *testing.T) {
 	dt := testsql.Setup(t, schemaGlob)
 	defer dt.Cleanup(t)

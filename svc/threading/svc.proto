@@ -43,7 +43,7 @@ message Thread {
 	string primary_entity_id = 3 [(gogoproto.customname) = "PrimaryEntityID"];
 	uint64 last_message_timestamp = 5;
 	string last_message_summary = 6;
-    bool unread = 7;
+	bool unread = 7;
 	repeated Endpoint last_primary_entity_endpoints = 8;
 	uint64 created_timestamp = 9;
 	int32 message_count = 10;
@@ -60,21 +60,24 @@ message Member {
 
 message ThreadItem {
 	string id = 1 [(gogoproto.customname) = "ID"];
-	uint64 timestamp = 2;
+	uint64 created_timestamp = 2;
 	string actor_entity_id = 3 [(gogoproto.customname) = "ActorEntityID"];
 	bool internal = 4; // item is internal to the organization (not seen by external entities)
+	bool deleted = 5;
 	string thread_id = 6 [(gogoproto.customname) = "ThreadID"];
 	string organization_id = 7 [(gogoproto.customname) = "OrganizationID"];
+	uint64 modified_timestamp = 8;
 	oneof item {
 		Message message = 10;
-		MessageUpdated message_updated = 11;
+		MessageUpdate message_update = 11;
+		MessageDelete message_delete = 12;
 	}
 }
 
 message ThreadItemViewDetails {
-    string thread_item_id = 1 [(gogoproto.customname) = "ThreadItemID"];
-    string entity_id = 2 [(gogoproto.customname) = "EntityID"];
-    uint64 view_time = 3;
+	string thread_item_id = 1 [(gogoproto.customname) = "ThreadItemID"];
+	string entity_id = 2 [(gogoproto.customname) = "EntityID"];
+	uint64 view_time = 3;
 }
 
 message Reference {
@@ -88,15 +91,8 @@ message Reference {
 message Message {
 	string text = 1;
 	repeated Attachment attachments = 2;
-	enum Status {
-		MESSAGE_STATUS_NORMAL = 0;
-		MESSAGE_STATUS_DELETED = 1;
-	}
-	Status status = 3;
 	Endpoint source = 4;
 	repeated Endpoint destinations = 5;
-	uint64 edited_timestamp = 6;
-	string editor_entity_id = 7 [(gogoproto.customname) = "EditorEntityID"];
 	string title = 8;
 	repeated Reference text_refs = 9; // References from the message body text
 	string summary = 10;
@@ -113,10 +109,16 @@ message Endpoint {
 	string id = 2 [(gogoproto.customname) = "ID"];
 }
 
-message MessageUpdated {
+message MessageUpdate {
+	// thread_item_id is the ID of the item that was modified
 	string thread_item_id = 1 [(gogoproto.customname) = "ThreadItemID"];
-	string actor_entity_id = 2 [(gogoproto.customname) = "ActorEntityID"];
-	Message message = 3;
+	// message is the new message content
+	Message message = 2;
+}
+
+message MessageDelete {
+	// thread_item_id is the ID of the item that was deleted
+	string thread_item_id = 1 [(gogoproto.customname) = "ThreadItemID"];
 }
 
 enum SavedQueryType {
@@ -319,7 +321,7 @@ message QueryThreadsRequest {
 		Query query = 10;
 		string saved_query_id = 11 [(gogoproto.customname) = "SavedQueryID"];
 	}
-    string viewer_entity_id = 4 [(gogoproto.customname) = "ViewerEntityID"];
+	string viewer_entity_id = 4 [(gogoproto.customname) = "ViewerEntityID"];
 }
 
 message ThreadEdge {
@@ -367,7 +369,7 @@ message SavedQueryTemplatesResponse {
 
 message ThreadRequest {
 	string thread_id = 1 [(gogoproto.customname) = "ThreadID"];
-    string viewer_entity_id = 2 [(gogoproto.customname) = "ViewerEntityID"];
+	string viewer_entity_id = 2 [(gogoproto.customname) = "ViewerEntityID"];
 }
 
 message ThreadResponse {
@@ -531,11 +533,11 @@ message ThreadItemResponse {
 }
 
 message ThreadItemViewDetailsRequest {
-    string item_id = 1 [(gogoproto.customname) = "ItemID"];
+	string item_id = 1 [(gogoproto.customname) = "ItemID"];
 }
 
 message ThreadItemViewDetailsResponse {
-    repeated ThreadItemViewDetails item_view_details = 1;
+	repeated ThreadItemViewDetails item_view_details = 1;
 }
 
 message CreateLinkedThreadsRequest {
@@ -735,6 +737,15 @@ message ScheduledMessagesResponse {
 	repeated ScheduledMessage scheduled_messages = 1;
 }
 
+message UpdateMessageRequest {
+	string thread_item_id = 1 [(gogoproto.customname) = "ThreadItemID"];
+	string actor_entity_id = 2 [(gogoproto.customname) = "ActorEntityID"];
+	MessagePost message = 3;
+}
+
+message UpdateMessageResponse {
+}
+
 service Threads {
 	// CreateEmptyThread creates a new thread with no messages
 	rpc CreateEmptyThread(CreateEmptyThreadRequest) returns (CreateEmptyThreadResponse);
@@ -792,8 +803,10 @@ service Threads {
 	rpc ThreadItems(ThreadItemsRequest) returns (ThreadItemsResponse);
 	// ThreadMembers returns the members of a thread
 	rpc ThreadMembers(ThreadMembersRequest) returns (ThreadMembersResponse);
-    // ThreadItemViewDetails returns the view details of a thread
+	// ThreadItemViewDetails returns the view details of a thread
 	rpc ThreadItemViewDetails(ThreadItemViewDetailsRequest) returns (ThreadItemViewDetailsResponse);
+	// UpdateMessage updates a thread item that is a message by replacing the entire message
+	rpc UpdateMessage(UpdateMessageRequest) returns (UpdateMessageResponse);
 	// UpdateSavedMessage updated a saved messages
 	rpc UpdateSavedMessage(UpdateSavedMessageRequest) returns (UpdateSavedMessageResponse);
 	// UpdateSavedQuery updated a saved query

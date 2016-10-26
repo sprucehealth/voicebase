@@ -56,7 +56,6 @@ func (s *threadsServer) CreateScheduledMessage(ctx context.Context, in *threadin
 	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
 		// Transactionally schedule the message, read it back, and return it to the user
 		scheduledMessageID, err := dl.CreateScheduledMessage(ctx, &models.ScheduledMessage{
-			Type:          models.ItemTypeMessage,
 			ScheduledFor:  scheduledFor,
 			ActorEntityID: in.ActorEntityID,
 			ThreadID:      threadID,

@@ -308,3 +308,12 @@ func (c *Client) DeleteScheduledMessage(ctx context.Context, in *threading.Delet
 	}
 	return rets[0].(*threading.DeleteScheduledMessageResponse), mock.SafeError(rets[1])
 }
+
+// UpdateMessage is a mock
+func (c *Client) UpdateMessage(ctx context.Context, in *threading.UpdateMessageRequest, opts ...grpc.CallOption) (*threading.UpdateMessageResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*threading.UpdateMessageResponse), mock.SafeError(rets[1])
+}

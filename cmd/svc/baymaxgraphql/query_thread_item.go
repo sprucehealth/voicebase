@@ -117,8 +117,6 @@ var messageType = graphql.NewObject(
 					return lookupThreadItemViewDetails(ctx, ram, m.ThreadItemID)
 				}),
 			},
-			// TODO: "editor: Entity"
-			// TODO: "editedTimestamp: Int"
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 			_, ok := value.(*models.Message)
@@ -126,6 +124,82 @@ var messageType = graphql.NewObject(
 		},
 	},
 )
+
+// deletedMessageType is a sentinel that replaces messages that have been deleted.
+var deletedMessageType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name:        "DeletedMessage",
+		Description: "This structure is a tombstone for a message that has been deleted.",
+		Fields: graphql.Fields{
+			"placeholder": &graphql.Field{
+				Description: "Structs can't be empty but we have no useful fields to include so here we are.",
+				Type:        graphql.String,
+			},
+		},
+		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+			_, ok := value.(*models.DeletedMessage)
+			return ok
+		},
+	},
+)
+
+var messageUpdateType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "MessageUpdate",
+		Fields: graphql.Fields{
+			// Place holder field is overwritten in the init below
+			"threadItem": &graphql.Field{Type: graphql.String},
+		},
+		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+			_, ok := value.(*models.MessageUpdate)
+			return ok
+		},
+	},
+)
+
+var messageDeleteType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "MessageDelete",
+		Fields: graphql.Fields{
+			// Place holder field is overwritten in the init below
+			"threadItem": &graphql.Field{Type: graphql.String},
+		},
+		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+			_, ok := value.(*models.MessageDelete)
+			return ok
+		},
+	},
+)
+
+func init() {
+	// Can't create the threadItem field at decleration because it's a recursive type
+	messageUpdateType.AddFieldConfig("threadItem", &graphql.Field{
+		Type: graphql.NewNonNull(threadItemType),
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			ram := raccess.ResourceAccess(p)
+			svc := serviceFromParams(p)
+			ctx := p.Context
+			update := p.Source.(*models.MessageUpdate)
+			if selectingOnlyID(p) {
+				return &models.ThreadItem{ID: update.ThreadItemID}, nil
+			}
+			return lookupThreadItem(ctx, ram, update.ThreadItemID, svc.webDomain, svc.mediaAPIDomain)
+		},
+	})
+	messageDeleteType.AddFieldConfig("threadItem", &graphql.Field{
+		Type: graphql.NewNonNull(threadItemType),
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			ram := raccess.ResourceAccess(p)
+			svc := serviceFromParams(p)
+			ctx := p.Context
+			delete := p.Source.(*models.MessageDelete)
+			if selectingOnlyID(p) {
+				return &models.ThreadItem{ID: delete.ThreadItemID}, nil
+			}
+			return lookupThreadItem(ctx, ram, delete.ThreadItemID, svc.webDomain, svc.mediaAPIDomain)
+		},
+	})
+}
 
 var imageAttachmentType = graphql.NewObject(
 	graphql.ObjectConfig{
@@ -277,8 +351,9 @@ var threadItemDataType = graphql.NewUnion(
 		Description: "Possible types for the thread item data field",
 		Types: []*graphql.Object{
 			messageType,
-			// messageUpdatedType,
-			// followerUpdatedType,
+			deletedMessageType,
+			messageUpdateType,
+			messageDeleteType,
 		},
 	},
 )
@@ -290,12 +365,13 @@ var threadItemType = graphql.NewObject(
 			nodeInterfaceType,
 		},
 		Fields: graphql.Fields{
-			"id":            &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
-			"uuid":          &graphql.Field{Type: graphql.ID},
-			"timestamp":     &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
-			"actorEntityID": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-			"internal":      &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-			"data":          &graphql.Field{Type: graphql.NewNonNull(threadItemDataType)},
+			"id":                &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+			"uuid":              &graphql.Field{Type: graphql.ID},
+			"timestamp":         &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+			"modifiedTimestamp": &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+			"actorEntityID":     &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"internal":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"data":              &graphql.Field{Type: graphql.NewNonNull(threadItemDataType)},
 			"actor": &graphql.Field{
 				Type: graphql.NewNonNull(entityType),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {

@@ -432,206 +432,213 @@ func transformReferenceToModel(r *threading.Reference) (*models.Reference, error
 
 func transformThreadItemToResponse(item *threading.ThreadItem, uuid, webDomain, mediaAPIDomain string) (*models.ThreadItem, error) {
 	it := &models.ThreadItem{
-		ID:             item.ID,
-		UUID:           uuid,
-		Timestamp:      item.Timestamp,
-		ActorEntityID:  item.ActorEntityID,
-		Internal:       item.Internal,
-		ThreadID:       item.ThreadID,
-		OrganizationID: item.OrganizationID,
+		ID:                item.ID,
+		UUID:              uuid,
+		Timestamp:         item.CreatedTimestamp,
+		ModifiedTimestamp: item.ModifiedTimestamp,
+		ActorEntityID:     item.ActorEntityID,
+		Internal:          item.Internal,
+		ThreadID:          item.ThreadID,
+		OrganizationID:    item.OrganizationID,
 	}
 	switch content := item.Item.(type) {
+	case *threading.ThreadItem_MessageUpdate:
+		it.Data = &models.MessageUpdate{ThreadItemID: content.MessageUpdate.ThreadItemID}
+	case *threading.ThreadItem_MessageDelete:
+		it.Data = &models.MessageDelete{ThreadItemID: content.MessageDelete.ThreadItemID}
 	case *threading.ThreadItem_Message:
-		m := content.Message
-		m2 := &models.Message{
-			ThreadItemID:  item.ID,
-			SummaryMarkup: m.Title,
-			TextMarkup:    m.Text,
-			// TODO: EditorEntityID
-			// TODO: EditedTimestamp
-		}
-		if m.Source != nil {
-			var err error
-			m2.Source, err = transformEndpointToModel(m.Source)
-			if err != nil {
-				return nil, errors.Trace(err)
-			}
+		if item.Deleted {
+			it.Data = &models.DeletedMessage{}
 		} else {
-			// TODO: for now setting source to APP if not included since clients might assume it's always included
-			m2.Source = &models.Endpoint{
-				Channel: models.EndpointChannelApp,
-				ID:      item.ActorEntityID,
+			m := content.Message
+			m2 := &models.Message{
+				ThreadItemID:  item.ID,
+				SummaryMarkup: m.Title,
+				TextMarkup:    m.Text,
 			}
-		}
-
-		for _, r := range m.TextRefs {
-			ref, err := transformReferenceToModel(r)
-			if err != nil {
-				return nil, errors.Trace(err)
+			if m.Source != nil {
+				var err error
+				m2.Source, err = transformEndpointToModel(m.Source)
+				if err != nil {
+					return nil, errors.Trace(err)
+				}
+			} else {
+				// TODO: for now setting source to APP if not included since clients might assume it's always included
+				m2.Source = &models.Endpoint{
+					Channel: models.EndpointChannelApp,
+					ID:      item.ActorEntityID,
+				}
 			}
-			m2.Refs = append(m2.Refs, ref)
-		}
-		for _, a := range m.Attachments {
-			att := &models.Attachment{
-				ID:            a.ContentID,
-				Title:         a.Title,
-				OriginalTitle: a.UserTitle,
-				URL:           a.URL,
+
+			for _, r := range m.TextRefs {
+				ref, err := transformReferenceToModel(r)
+				if err != nil {
+					return nil, errors.Trace(err)
+				}
+				m2.Refs = append(m2.Refs, ref)
 			}
-			m2.Attachments = append(m2.Attachments, att)
+			for _, a := range m.Attachments {
+				att := &models.Attachment{
+					ID:            a.ContentID,
+					Title:         a.Title,
+					OriginalTitle: a.UserTitle,
+					URL:           a.URL,
+				}
+				m2.Attachments = append(m2.Attachments, att)
 
-			switch data := a.Data.(type) {
-			case *threading.Attachment_Audio:
-				att.Type = attachmentTypeAudio
-				d := data.Audio
-				if d.Mimetype == "" { // TODO
-					d.Mimetype = "audio/mp3"
-				}
-
-				mediaID, err := lmedia.ParseMediaID(d.MediaID)
-				if err != nil {
-					golog.Errorf("Unable to parse mediaID out of url %s", d.MediaID)
-				}
-
-				att.URL = media.URL(mediaAPIDomain, mediaID, d.Mimetype)
-				duration := float64(d.DurationNS) / 1e9
-				att.Data = &models.AudioAttachment{
-					Mimetype:          d.Mimetype,
-					URL:               att.URL,
-					DurationInSeconds: duration,
-				}
-				// TODO
-				if att.Title == "" {
-					att.Title = "Audio"
-				}
-
-			case *threading.Attachment_Image:
-				att.Type = attachmentTypeImage
-				d := data.Image
-				if d.Mimetype == "" { // TODO
-					d.Mimetype = "image/jpeg"
-				}
-
-				mediaID, err := lmedia.ParseMediaID(d.MediaID)
-				if err != nil {
-					golog.Errorf("Unable to parse mediaID out of url %s", d.MediaID)
-				}
-				att.URL = media.URL(mediaAPIDomain, mediaID, d.Mimetype)
-				att.Data = &models.ImageAttachment{
-					Mimetype:     d.Mimetype,
-					URL:          att.URL,
-					ThumbnailURL: media.ThumbnailURL(mediaAPIDomain, mediaID, d.Mimetype, 0, 0, false),
-					MediaID:      mediaID,
-				}
-				// TODO
-				if att.Title == "" {
-					att.Title = "Photo"
-				}
-
-			case *threading.Attachment_Visit:
-				att.Type = attachmentTypeVisit
-				v := data.Visit
-				att.Data = &models.BannerButtonAttachment{
-					Title:   v.VisitName,
-					CTAText: "View Visit",
-					TapURL:  deeplink.VisitURL(webDomain, item.ThreadID, v.VisitID),
-					IconURL: "https://dlzz6qy5jmbag.cloudfront.net/caremessenger/icon_visit.png",
-				}
-			case *threading.Attachment_Video:
-				att.Type = attachmentTypeVideo
-				v := data.Video
-				att.URL = media.URL(mediaAPIDomain, v.MediaID, v.Mimetype)
-				att.Data = &models.VideoAttachment{
-					Mimetype:     v.Mimetype,
-					URL:          att.URL,
-					ThumbnailURL: media.ThumbnailURL(mediaAPIDomain, v.MediaID, v.Mimetype, 0, 0, false),
-				}
-			case *threading.Attachment_CarePlan:
-				att.Type = attachmentTypeCarePlan
-				cp := data.CarePlan
-				att.URL = deeplink.CarePlanURL(webDomain, item.ThreadID, cp.CarePlanID)
-				att.Data = &models.BannerButtonAttachment{
-					Title:   cp.CarePlanName,
-					CTAText: "View Care Plan",
-					TapURL:  a.URL,
-					IconURL: "https://dlzz6qy5jmbag.cloudfront.net/caremessenger/icon_careplan.png",
-				}
-			case *threading.Attachment_PaymentRequest:
-				att.Type = attachmentTypePaymentRequest
-				p := data.PaymentRequest
-				att.Data = &models.BannerButtonAttachment{
-					Title:   a.Title,
-					CTAText: "View Payment Request",
-					TapURL:  deeplink.PaymentURL(webDomain, item.OrganizationID, item.ThreadID, p.PaymentID),
-					IconURL: "https://dlzz6qy5jmbag.cloudfront.net/caremessenger/icon_payment.png",
-				}
-			case *threading.Attachment_Document:
-				att.Type = attachmentTypeDocument
-				f := data.Document
-				mediaID, err := lmedia.ParseMediaID(f.MediaID)
-				if err != nil {
-					golog.Errorf("Unable to parse media id %s : %s", f.MediaID, err)
-					continue
-				}
-
-				att.Data = &models.BannerButtonAttachment{
-					Title:   f.Name,
-					CTAText: "View File",
-					TapURL:  media.URL(mediaAPIDomain, mediaID, f.Mimetype),
-					IconURL: "https://dlzz6qy5jmbag.cloudfront.net/caremessenger/icon_payment.png",
-				}
-			case *threading.Attachment_GenericURL:
-				att.Type = attachmentTypeGenericURL
-				d := data.GenericURL
-
-				// append to message
-				if d.Mimetype == "application/pdf" {
-					mediaID, err := lmedia.ParseMediaID(d.URL)
-					if err != nil {
-						golog.Errorf("Unable to parse mediaID out of url %s", d.URL)
-						continue
+				switch data := a.Data.(type) {
+				case *threading.Attachment_Audio:
+					att.Type = attachmentTypeAudio
+					d := data.Audio
+					if d.Mimetype == "" { // TODO
+						d.Mimetype = "audio/mp3"
 					}
 
-					title := a.Title
-					if title == "" {
-						title = "PDF Attachment"
+					mediaID, err := lmedia.ParseMediaID(d.MediaID)
+					if err != nil {
+						golog.Errorf("Unable to parse mediaID out of url %s", d.MediaID)
 					}
 
 					att.URL = media.URL(mediaAPIDomain, mediaID, d.Mimetype)
-					pdfAttachment := &bml.Anchor{
-						HREF: att.URL,
-						Text: title,
+					duration := float64(d.DurationNS) / 1e9
+					att.Data = &models.AudioAttachment{
+						Mimetype:          d.Mimetype,
+						URL:               att.URL,
+						DurationInSeconds: duration,
+					}
+					// TODO
+					if att.Title == "" {
+						att.Title = "Audio"
 					}
 
-					textMarkup, err := bml.Parse(m2.TextMarkup)
+				case *threading.Attachment_Image:
+					att.Type = attachmentTypeImage
+					d := data.Image
+					if d.Mimetype == "" { // TODO
+						d.Mimetype = "image/jpeg"
+					}
+
+					mediaID, err := lmedia.ParseMediaID(d.MediaID)
 					if err != nil {
-						// should not error because coming straight from the database and expected to be clean
-						return nil, errors.Trace(err)
+						golog.Errorf("Unable to parse mediaID out of url %s", d.MediaID)
 					}
-					textMarkup = append(textMarkup, "\n\n", pdfAttachment, "\n")
+					att.URL = media.URL(mediaAPIDomain, mediaID, d.Mimetype)
+					att.Data = &models.ImageAttachment{
+						Mimetype:     d.Mimetype,
+						URL:          att.URL,
+						ThumbnailURL: media.ThumbnailURL(mediaAPIDomain, mediaID, d.Mimetype, 0, 0, false),
+						MediaID:      mediaID,
+					}
+					// TODO
+					if att.Title == "" {
+						att.Title = "Photo"
+					}
 
-					m2.TextMarkup, err = textMarkup.Format()
+				case *threading.Attachment_Visit:
+					att.Type = attachmentTypeVisit
+					v := data.Visit
+					att.Data = &models.BannerButtonAttachment{
+						Title:   v.VisitName,
+						CTAText: "View Visit",
+						TapURL:  deeplink.VisitURL(webDomain, item.ThreadID, v.VisitID),
+						IconURL: "https://dlzz6qy5jmbag.cloudfront.net/caremessenger/icon_visit.png",
+					}
+				case *threading.Attachment_Video:
+					att.Type = attachmentTypeVideo
+					v := data.Video
+					att.URL = media.URL(mediaAPIDomain, v.MediaID, v.Mimetype)
+					att.Data = &models.VideoAttachment{
+						Mimetype:     v.Mimetype,
+						URL:          att.URL,
+						ThumbnailURL: media.ThumbnailURL(mediaAPIDomain, v.MediaID, v.Mimetype, 0, 0, false),
+					}
+				case *threading.Attachment_CarePlan:
+					att.Type = attachmentTypeCarePlan
+					cp := data.CarePlan
+					att.URL = deeplink.CarePlanURL(webDomain, item.ThreadID, cp.CarePlanID)
+					att.Data = &models.BannerButtonAttachment{
+						Title:   cp.CarePlanName,
+						CTAText: "View Care Plan",
+						TapURL:  a.URL,
+						IconURL: "https://dlzz6qy5jmbag.cloudfront.net/caremessenger/icon_careplan.png",
+					}
+				case *threading.Attachment_PaymentRequest:
+					att.Type = attachmentTypePaymentRequest
+					p := data.PaymentRequest
+					att.Data = &models.BannerButtonAttachment{
+						Title:   a.Title,
+						CTAText: "View Payment Request",
+						TapURL:  deeplink.PaymentURL(webDomain, item.OrganizationID, item.ThreadID, p.PaymentID),
+						IconURL: "https://dlzz6qy5jmbag.cloudfront.net/caremessenger/icon_payment.png",
+					}
+				case *threading.Attachment_Document:
+					att.Type = attachmentTypeDocument
+					f := data.Document
+					mediaID, err := lmedia.ParseMediaID(f.MediaID)
 					if err != nil {
-						// shouldn't fail
-						return nil, errors.Trace(err)
+						golog.Errorf("Unable to parse media id %s : %s", f.MediaID, err)
+						continue
 					}
 
-				} else {
-					golog.Warningf("Dropping attachment because mimetype %s for thread item %s is not supported", d.Mimetype, item.ID)
+					att.Data = &models.BannerButtonAttachment{
+						Title:   f.Name,
+						CTAText: "View File",
+						TapURL:  media.URL(mediaAPIDomain, mediaID, f.Mimetype),
+						IconURL: "https://dlzz6qy5jmbag.cloudfront.net/caremessenger/icon_payment.png",
+					}
+				case *threading.Attachment_GenericURL:
+					att.Type = attachmentTypeGenericURL
+					d := data.GenericURL
+
+					// append to message
+					if d.Mimetype == "application/pdf" {
+						mediaID, err := lmedia.ParseMediaID(d.URL)
+						if err != nil {
+							golog.Errorf("Unable to parse mediaID out of url %s", d.URL)
+							continue
+						}
+
+						title := a.Title
+						if title == "" {
+							title = "PDF Attachment"
+						}
+
+						att.URL = media.URL(mediaAPIDomain, mediaID, d.Mimetype)
+						pdfAttachment := &bml.Anchor{
+							HREF: att.URL,
+							Text: title,
+						}
+
+						textMarkup, err := bml.Parse(m2.TextMarkup)
+						if err != nil {
+							// should not error because coming straight from the database and expected to be clean
+							return nil, errors.Trace(err)
+						}
+						textMarkup = append(textMarkup, "\n\n", pdfAttachment, "\n")
+
+						m2.TextMarkup, err = textMarkup.Format()
+						if err != nil {
+							// shouldn't fail
+							return nil, errors.Trace(err)
+						}
+
+					} else {
+						golog.Warningf("Dropping attachment because mimetype %s for thread item %s is not supported", d.Mimetype, item.ID)
+					}
+					continue
+				default:
+					return nil, errors.Errorf("unknown attachment type %T", a.Data)
 				}
-				continue
-			default:
-				return nil, errors.Errorf("unknown attachment type %T", a.Data)
 			}
-		}
-		for _, dc := range m.Destinations {
-			e, err := transformEndpointToModel(dc)
-			if err != nil {
-				return nil, errors.Trace(err)
+			for _, dc := range m.Destinations {
+				e, err := transformEndpointToModel(dc)
+				if err != nil {
+					return nil, errors.Trace(err)
+				}
+				m2.Destinations = append(m2.Destinations, e)
 			}
-			m2.Destinations = append(m2.Destinations, e)
+			it.Data = m2
 		}
-		it.Data = m2
 	default:
 		return nil, errors.Errorf("unknown thread item type %T", item.Item)
 	}

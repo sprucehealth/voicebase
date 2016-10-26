@@ -12,11 +12,6 @@ const (
 )
 
 const (
-	MessageStatusNormal  = "NORMAL"
-	MessageStatusDeleted = "DELETED"
-)
-
-const (
 	ContactTypeApp   = "APP"
 	ContactTypePhone = "PHONE"
 	ContactTypeEmail = "EMAIL"
@@ -149,16 +144,21 @@ type Reference struct {
 }
 
 type Message struct {
-	ThreadItemID    string
-	SummaryMarkup   string        `json:"summaryMarkup"`
-	TextMarkup      string        `json:"textMarkup"`
-	Status          string        `json:"status"`
-	Source          *Endpoint     `json:"source"`
-	Destinations    []*Endpoint   `json:"destinations,omitempty"`
-	Attachments     []*Attachment `json:"attachments,omitempty"`
-	EditorEntityID  string        `json:"editorEntityID,omitempty"`
-	EditedTimestamp uint64        `json:"editedTimestamp,omitempty"`
-	Refs            []*Reference  `json:"refs,omitempty"`
+	ThreadItemID  string
+	SummaryMarkup string        `json:"summaryMarkup"`
+	TextMarkup    string        `json:"textMarkup"`
+	Source        *Endpoint     `json:"source"`
+	Destinations  []*Endpoint   `json:"destinations,omitempty"`
+	Attachments   []*Attachment `json:"attachments,omitempty"`
+	Refs          []*Reference  `json:"refs,omitempty"`
+}
+
+type MessageDelete struct {
+	ThreadItemID string `json:"-"`
+}
+
+type MessageUpdate struct {
+	ThreadItemID string `json:"-"`
 }
 
 type VerifiedEntityInfo struct {
@@ -259,14 +259,18 @@ type Thread struct {
 }
 
 type ThreadItem struct {
-	ID             string      `json:"id"`
-	UUID           string      `json:"uuid,omitempty"`
-	Timestamp      uint64      `json:"timestamp"`
-	ActorEntityID  string      `json:"actorEntityID"`
-	Internal       bool        `json:"internal"`
-	Data           interface{} `json:"data"`
-	OrganizationID string      `json:"organizationID"`
-	ThreadID       string      `json:"threadID"`
+	ID                string      `json:"id"`
+	UUID              string      `json:"uuid,omitempty"`
+	Timestamp         uint64      `json:"timestamp"`
+	ModifiedTimestamp uint64      `json:"modifiedTimestamp"`
+	ActorEntityID     string      `json:"actorEntityID"`
+	Internal          bool        `json:"internal"`
+	Data              interface{} `json:"data"`
+	OrganizationID    string      `json:"organizationID"`
+	ThreadID          string      `json:"threadID"`
+}
+
+type DeletedMessage struct {
 }
 
 type ThreadItemViewDetails struct {

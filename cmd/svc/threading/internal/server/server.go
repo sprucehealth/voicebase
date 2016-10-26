@@ -545,8 +545,51 @@ func (s *threadsServer) CreateLinkedThreads(ctx context.Context, in *threading.C
 }
 
 // DeleteMessage deletes a message from a thread
-func (s *threadsServer) DeleteMessage(context.Context, *threading.DeleteMessageRequest) (*threading.DeleteMessageResponse, error) {
-	return nil, grpcErrorf(codes.Unimplemented, "DeleteMessage not implemented")
+func (s *threadsServer) DeleteMessage(ctx context.Context, in *threading.DeleteMessageRequest) (*threading.DeleteMessageResponse, error) {
+	if in.ActorEntityID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "ActorEntityID is required")
+	}
+	if in.ThreadItemID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "ThreadItemID is required")
+	}
+	threadItemID, err := models.ParseThreadItemID(in.ThreadItemID)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadItemID '%s'", in.ThreadItemID)
+	}
+	var item *models.ThreadItem
+	var deleted bool
+	err = s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
+		item, deleted, err = dl.DeleteMessage(ctx, threadItemID)
+		if err != nil {
+			return errors.Trace(err)
+		}
+		if deleted {
+			return errors.Trace(dl.CreateThreadItem(ctx, &models.ThreadItem{
+				ThreadID:      item.ThreadID,
+				ActorEntityID: in.ActorEntityID,
+				Internal:      item.Internal,
+				Data: &models.MessageDelete{
+					ThreadItemID: threadItemID.String(),
+				},
+			}))
+		}
+		return nil
+	})
+	if errors.Cause(err) == dal.ErrNotFound {
+		return nil, grpcErrorf(codes.NotFound, "Thread item %s not found", in.ThreadItemID)
+	}
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	if deleted {
+		threads, err := s.dal.Threads(ctx, []models.ThreadID{item.ThreadID})
+		if err != nil {
+			golog.Errorf("Failed to fetch thread %s: %s", item.ThreadID, err)
+		} else if _, err := s.updateSavedQueriesForThread(ctx, threads[0]); err != nil {
+			golog.Errorf("Failed to updated saved query for thread %s: %s", item.ThreadID, err)
+		}
+	}
+	return &threading.DeleteMessageResponse{}, nil
 }
 
 // DeleteThread deletes a thread
@@ -1497,6 +1540,76 @@ func (s *threadsServer) ThreadMembers(ctx context.Context, in *threading.ThreadM
 		}
 	}
 	return res, nil
+}
+
+// UpdateMessage updates the content of a message
+func (s *threadsServer) UpdateMessage(ctx context.Context, in *threading.UpdateMessageRequest) (*threading.UpdateMessageResponse, error) {
+	if in.ActorEntityID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "ActorEntityID is required")
+	}
+	if in.ThreadItemID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "ThreadItemID is required")
+	}
+	if in.Message == nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "Message is required")
+	}
+	threadItemID, err := models.ParseThreadItemID(in.ThreadItemID)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadItemID %q", in.ThreadItemID)
+	}
+	item, err := s.dal.ThreadItem(ctx, threadItemID)
+	if errors.Cause(err) == dal.ErrNotFound {
+		return nil, grpcErrorf(codes.NotFound, "Thread item %q not found", threadItemID)
+	}
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	if item.Deleted {
+		return nil, grpcErrorf(codes.InvalidArgument, "Cannot update deleted message %q", threadItemID)
+	}
+	if _, ok := item.Data.(*models.Message); !ok {
+		return nil, grpcErrorf(codes.InvalidArgument, "Cannot update non-message item %q", threadItemID)
+	}
+
+	req, err := createPostMessageRequest(ctx, item.ThreadID, in.ActorEntityID, in.Message)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	if err := claimAttachments(ctx, s.mediaClient, s.paymentsClient, item.ThreadID, req.Attachments); err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	err = s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
+		if err := dl.UpdateMessage(ctx, item.ThreadID, item.ID, req); err != nil {
+			return errors.Trace(err)
+		}
+		item, err := dl.ThreadItem(ctx, item.ID)
+		if err != nil {
+			return errors.Trace(err)
+		}
+		return errors.Trace(dl.CreateThreadItem(ctx, &models.ThreadItem{
+			ThreadID:      item.ThreadID,
+			ActorEntityID: in.ActorEntityID,
+			Internal:      item.Internal,
+			Data: &models.MessageUpdate{
+				ThreadItemID: threadItemID.String(),
+				Message:      item.Data.(*models.Message),
+			},
+		}))
+	})
+	if errors.Cause(err) == dal.ErrNotFound {
+		return nil, grpcErrorf(codes.NotFound, "Thread item %s not found", in.ThreadItemID)
+	}
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	threads, err := s.dal.Threads(ctx, []models.ThreadID{item.ThreadID})
+	if err != nil {
+		golog.Errorf("Failed to fetch thread %s: %s", item.ThreadID, err)
+	} else if _, err := s.updateSavedQueriesForThread(ctx, threads[0]); err != nil {
+		golog.Errorf("Failed to updated saved query for thread %s: %s", item.ThreadID, err)
+	}
+	return &threading.UpdateMessageResponse{}, nil
 }
 
 // UpdateSavedQuery updated a saved query

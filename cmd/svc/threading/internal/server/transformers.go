@@ -261,43 +261,55 @@ func transformEndpointChannelToResponse(c models.Endpoint_Channel) (threading.En
 
 func transformThreadItemToResponse(item *models.ThreadItem, orgID string) (*threading.ThreadItem, error) {
 	it := &threading.ThreadItem{
-		ID:             item.ID.String(),
-		Timestamp:      uint64(item.Created.Unix()),
-		ActorEntityID:  item.ActorEntityID,
-		Internal:       item.Internal,
-		ThreadID:       item.ThreadID.String(),
-		OrganizationID: orgID,
+		ID:                item.ID.String(),
+		CreatedTimestamp:  uint64(item.Created.Unix()),
+		ModifiedTimestamp: uint64(item.Modified.Unix()),
+		ActorEntityID:     item.ActorEntityID,
+		Internal:          item.Internal,
+		ThreadID:          item.ThreadID.String(),
+		OrganizationID:    orgID,
+		Deleted:           item.Deleted,
 	}
-	switch item.Type {
-	case models.ItemTypeMessage:
-		m2, err := TransformMessageToResponse(item.Data.(*models.Message))
+	switch content := item.Data.(type) {
+	case *models.Message:
+		msg, err := TransformMessageToResponse(content, item.Deleted)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
 		it.Item = &threading.ThreadItem_Message{
-			Message: m2,
+			Message: msg,
+		}
+	case *models.MessageUpdate:
+		msg, err := TransformMessageToResponse(content.Message, item.Deleted)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		it.Item = &threading.ThreadItem_MessageUpdate{
+			MessageUpdate: &threading.MessageUpdate{
+				ThreadItemID: content.ThreadItemID,
+				Message:      msg,
+			},
+		}
+	case *models.MessageDelete:
+		it.Item = &threading.ThreadItem_MessageDelete{
+			MessageDelete: &threading.MessageDelete{
+				ThreadItemID: content.ThreadItemID,
+			},
 		}
 	default:
-		return nil, errors.Errorf("unknown thread item type %s", item.Type)
+		return nil, errors.Errorf("unknown thread item type %T", item.Data)
 	}
 	return it, nil
 }
 
-func TransformMessageToResponse(m *models.Message) (*threading.Message, error) {
-	m2 := &threading.Message{
-		Title:           m.Title,
-		Text:            m.Text,
-		Summary:         m.Summary,
-		EditedTimestamp: m.EditedTimestamp,
-		EditorEntityID:  m.EditorEntityID,
+func TransformMessageToResponse(m *models.Message, deleted bool) (*threading.Message, error) {
+	if deleted {
+		return &threading.Message{}, nil
 	}
-	switch m.Status {
-	case models.MESSAGE_STATUS_NORMAL:
-		m2.Status = threading.MESSAGE_STATUS_NORMAL
-	case models.MESSAGE_STATUS_DELETED:
-		m2.Status = threading.MESSAGE_STATUS_DELETED
-	default:
-		return nil, errors.Errorf("unknown message status %s", m.Status)
+	m2 := &threading.Message{
+		Title:   m.Title,
+		Text:    m.Text,
+		Summary: m.Summary,
 	}
 	if m.Source != nil {
 		var err error
@@ -606,17 +618,16 @@ func transformScheduledMessageToResponse(sm *models.ScheduledMessage) (*threadin
 		SentAt:           sentAt,
 		SentThreadItemID: sentThreadItemID,
 	}
-	switch sm.Type {
-	case models.ItemTypeMessage:
-		msg, err := TransformMessageToResponse(sm.Data.(*models.Message))
+	if msg, ok := sm.Data.(*models.Message); ok {
+		msg, err := TransformMessageToResponse(msg, false)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
 		rsm.Content = &threading.ScheduledMessage_Message{
 			Message: msg,
 		}
-	default:
-		return nil, errors.Errorf("Unknown scheduled message type %s", sm.Type)
+	} else {
+		return nil, errors.Errorf("Unknown scheduled message type %T", sm.Data)
 	}
 	return rsm, nil
 }

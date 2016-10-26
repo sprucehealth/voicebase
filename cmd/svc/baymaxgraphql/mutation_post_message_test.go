@@ -135,14 +135,14 @@ func TestPostMessage(t *testing.T) {
 			LastMessageSummary:   "Schmee: foo",
 		},
 		Item: &threading.ThreadItem{
-			ID:            itemID,
-			Timestamp:     now,
-			ActorEntityID: entID,
-			Internal:      false,
+			ID:                itemID,
+			CreatedTimestamp:  now,
+			ModifiedTimestamp: now,
+			ActorEntityID:     entID,
+			Internal:          false,
 			Item: &threading.ThreadItem_Message{
 				Message: &threading.Message{
-					Text:   "foo",
-					Status: threading.MESSAGE_STATUS_NORMAL,
+					Text: "foo",
 					Source: &threading.Endpoint{
 						Channel: threading.ENDPOINT_CHANNEL_APP,
 						ID:      entID,
@@ -384,14 +384,14 @@ func TestPostMessage_VisitAttachment(t *testing.T) {
 			LastMessageSummary:   "Schmee: foo",
 		},
 		Item: &threading.ThreadItem{
-			ID:            itemID,
-			Timestamp:     now,
-			ActorEntityID: entID,
-			Internal:      false,
+			ID:                itemID,
+			CreatedTimestamp:  now,
+			ModifiedTimestamp: now,
+			ActorEntityID:     entID,
+			Internal:          false,
 			Item: &threading.ThreadItem_Message{
 				Message: &threading.Message{
-					Text:   "foo",
-					Status: threading.MESSAGE_STATUS_NORMAL,
+					Text: "foo",
 					Source: &threading.Endpoint{
 						Channel: threading.ENDPOINT_CHANNEL_APP,
 						ID:      entID,
@@ -753,14 +753,14 @@ func TestPostMessagePatientSecureExternal(t *testing.T) {
 			LastMessageSummary:   "Schmee: foo",
 		},
 		Item: &threading.ThreadItem{
-			ID:            itemID,
-			Timestamp:     now,
-			ActorEntityID: entID,
-			Internal:      false,
+			ID:                itemID,
+			CreatedTimestamp:  now,
+			ModifiedTimestamp: now,
+			ActorEntityID:     entID,
+			Internal:          false,
 			Item: &threading.ThreadItem_Message{
 				Message: &threading.Message{
-					Text:   "foo",
-					Status: threading.MESSAGE_STATUS_NORMAL,
+					Text: "foo",
 					Source: &threading.Endpoint{
 						Channel: threading.ENDPOINT_CHANNEL_APP,
 						ID:      entID,

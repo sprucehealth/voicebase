@@ -147,9 +147,9 @@ func scanSavedMessage(row dbutil.Scanner) (*models.SavedMessage, error) {
 	if err := row.Scan(&sm.ID, &sm.Title, &sm.OrganizationID, &sm.CreatorEntityID, &sm.OwnerEntityID, &sm.Internal, &itemType, &data, &sm.Created, &sm.Modified); err != nil {
 		return nil, errors.Trace(err)
 	}
-	switch t := models.ItemType(itemType); t {
+	switch itemType {
 	default:
-		return nil, errors.Errorf("unknown thread item type %s", t)
+		return nil, errors.Errorf("unknown thread item type %s", itemType)
 	case models.ItemTypeMessage:
 		m := &models.Message{}
 		if err := m.Unmarshal(data); err != nil {

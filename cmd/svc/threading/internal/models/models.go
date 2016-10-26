@@ -174,12 +174,13 @@ func EmptySavedQueryID() SavedQueryID {
 	}
 }
 
-// ItemType is an enum of possible thread item types
-type ItemType string
-
 const (
 	// ItemTypeMessage is a message item which is the only concrete type. Every other item type is an event.
-	ItemTypeMessage ItemType = "MESSAGE"
+	ItemTypeMessage = "MESSAGE"
+	// ItemTypeMessageUpdate is an update to an existing message
+	ItemTypeMessageUpdate = "MESSAGE_UPDATE"
+	// ItemTypeMessageDelete is a message deletion event
+	ItemTypeMessageDelete = "MESSAGE_DELETE"
 )
 
 // ItemValue is the interface for a thread item value
@@ -188,10 +189,14 @@ type ItemValue interface {
 }
 
 // ItemTypeForValue returns the ItemType for a given value object
-func ItemTypeForValue(v ItemValue) (ItemType, error) {
+func ItemTypeForValue(v ItemValue) (string, error) {
 	switch v.(type) {
 	case *Message:
 		return ItemTypeMessage, nil
+	case *MessageUpdate:
+		return ItemTypeMessageUpdate, nil
+	case *MessageDelete:
+		return ItemTypeMessageDelete, nil
 	}
 	return "INVALID", errors.Errorf("invalid item value type %T", v)
 }
@@ -404,11 +409,12 @@ type ThreadEntity struct {
 // ThreadItem is an item within a thread. It can be a message or an event modifying a message.
 type ThreadItem struct {
 	ID            ThreadItemID
+	Deleted       bool
 	ThreadID      ThreadID
 	Created       time.Time
+	Modified      time.Time
 	ActorEntityID string
 	Internal      bool
-	Type          ItemType
 	Data          ItemValue
 }
 
@@ -611,7 +617,6 @@ func (t *ScheduledMessageStatus) Scan(src interface{}) error {
 
 // ScheduledMessage represents a scheduled_message record
 type ScheduledMessage struct {
-	Type             ItemType
 	ScheduledFor     time.Time
 	SentAt           *time.Time
 	Created          time.Time

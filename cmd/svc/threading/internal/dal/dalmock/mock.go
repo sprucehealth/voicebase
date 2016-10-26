@@ -74,6 +74,14 @@ func (dl *DAL) CreateThread(ctx context.Context, thread *models.Thread) (models.
 	return rets[0].(models.ThreadID), mock.SafeError(rets[1])
 }
 
+func (dl *DAL) CreateThreadItem(ctx context.Context, item *models.ThreadItem) error {
+	rets := dl.Expector.Record(item)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[0])
+}
+
 func (dl *DAL) CreateThreadItemViewDetails(ctx context.Context, tds []*models.ThreadItemViewDetails) error {
 	rets := dl.Expector.Record(tds)
 	if len(rets) == 0 {
@@ -96,6 +104,14 @@ func (dl *DAL) DeleteThread(ctx context.Context, threadID models.ThreadID) error
 		return nil
 	}
 	return mock.SafeError(rets[0])
+}
+
+func (dl *DAL) DeleteMessage(ctx context.Context, id models.ThreadItemID) (*models.ThreadItem, bool, error) {
+	rets := dl.Expector.Record(id)
+	if len(rets) == 0 {
+		return nil, false, nil
+	}
+	return rets[0].(*models.ThreadItem), rets[1].(bool), mock.SafeError(rets[2])
 }
 
 func (dl *DAL) IterateThreads(ctx context.Context, query *models.Query, memberEntityIDs []string, viewerID string, forExternal bool, it *dal.Iterator) (*dal.ThreadConnection, error) {
@@ -210,8 +226,8 @@ func (dl *DAL) Threads(ctx context.Context, ids []models.ThreadID, opts ...dal.Q
 	return rets[0].([]*models.Thread), mock.SafeError(rets[1])
 }
 
-func (dl *DAL) ThreadItem(ctx context.Context, id models.ThreadItemID) (*models.ThreadItem, error) {
-	rets := dl.Expector.Record(id)
+func (dl *DAL) ThreadItem(ctx context.Context, id models.ThreadItemID, opts ...dal.QueryOption) (*models.ThreadItem, error) {
+	rets := dl.Expector.Record(append([]interface{}{id}, optsToInterfaces(opts)...)...)
 	if len(rets) == 0 {
 		return nil, nil
 	}
@@ -448,6 +464,14 @@ func (dl *DAL) ScheduledMessagesForThread(ctx context.Context, threadID models.T
 		return nil, nil
 	}
 	return rets[0].([]*models.ScheduledMessage), mock.SafeError(rets[1])
+}
+
+func (dl *DAL) UpdateMessage(ctx context.Context, threadID models.ThreadID, itemID models.ThreadItemID, req *dal.PostMessageRequest) error {
+	rets := dl.Expector.Record(threadID, itemID, req)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[0])
 }
 
 func (dl *DAL) UpdateScheduledMessage(ctx context.Context, id models.ScheduledMessageID, update *models.ScheduledMessageUpdate) (int64, error) {
