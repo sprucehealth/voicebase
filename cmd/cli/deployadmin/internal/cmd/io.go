@@ -43,6 +43,7 @@ func printEnvironment(env *deploy.Environment) {
 }
 
 func printDeployables(deps []*deploy.Deployable) {
+	sort.Sort(deployableByName(deps))
 	for _, dep := range deps {
 		printDeployable(dep)
 	}
@@ -118,6 +119,12 @@ func valuesToSortedKV(v map[string]string) [][2]string {
 	sort.Sort(kv(vals))
 	return vals
 }
+
+type deployableByName []*deploy.Deployable
+
+func (d deployableByName) Len() int           { return len(d) }
+func (d deployableByName) Swap(a, b int)      { d[a], d[b] = d[b], d[a] }
+func (d deployableByName) Less(a, b int) bool { return d[a].Name < d[b].Name }
 
 type kv [][2]string
 

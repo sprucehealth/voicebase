@@ -207,7 +207,6 @@ func TestNodeQuery(t *testing.T) {
 		Timestamp:     1234,
 		ActorEntityID: "entity_1",
 		Internal:      true,
-		Type:          threading.THREAD_ITEM_TYPE_MESSAGE,
 		Item: &threading.ThreadItem_Message{
 			Message: &threading.Message{
 				Title:  "abc",

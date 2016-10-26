@@ -53,10 +53,6 @@ message MessageUpdated {
 	Message message = 3;
 }
 
-message FollowerUpdated {
-	string entity_id = 1 [(gogoproto.customname) = "EntityID"];
-}
-
 message Attachment {
 	enum Type {
 		ATTACHMENT_TYPE_IMAGE = 0;

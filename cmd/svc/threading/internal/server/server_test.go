@@ -367,7 +367,6 @@ func TestCreateThread(t *testing.T) {
 		ThreadItem: &threading.ThreadItem{
 			ID:             mid.String(),
 			Timestamp:      uint64(now.Unix()),
-			Type:           threading.THREAD_ITEM_TYPE_MESSAGE,
 			Internal:       true,
 			ActorEntityID:  "entity_1",
 			ThreadID:       th2.ID.String(),
@@ -538,7 +537,6 @@ func TestPostMessage(t *testing.T) {
 			OrganizationID: "entity_org1",
 			ActorEntityID:  "entity_1",
 			Internal:       false,
-			Type:           threading.THREAD_ITEM_TYPE_MESSAGE,
 			Timestamp:      uint64(now.Unix()),
 			Item: &threading.ThreadItem_Message{
 				Message: &threading.Message{
@@ -692,7 +690,6 @@ func TestPostMessage_Linked(t *testing.T) {
 			OrganizationID: "entity_org1",
 			ActorEntityID:  "entity_1",
 			Internal:       false,
-			Type:           threading.THREAD_ITEM_TYPE_MESSAGE,
 			Timestamp:      uint64(now.Unix()),
 			Item: &threading.ThreadItem_Message{
 				Message: &threading.Message{
@@ -862,7 +859,6 @@ func TestPostMessage_Linked_PrependSender(t *testing.T) {
 			OrganizationID: "entity_org1",
 			ActorEntityID:  "entity_1",
 			Internal:       false,
-			Type:           threading.THREAD_ITEM_TYPE_MESSAGE,
 			Timestamp:      uint64(now.Unix()),
 			Item: &threading.ThreadItem_Message{
 				Message: &threading.Message{
@@ -1125,7 +1121,6 @@ func TestThreadItem(t *testing.T) {
 		Item: &threading.ThreadItem{
 			ID:             eid.String(),
 			Timestamp:      uint64(now.Unix()),
-			Type:           threading.THREAD_ITEM_TYPE_MESSAGE,
 			Internal:       true,
 			ActorEntityID:  "entity_2",
 			ThreadID:       tid.String(),

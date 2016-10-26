@@ -148,8 +148,8 @@ var cloneMessageMutation = &graphql.Field{
 			} else if err != nil {
 				return nil, errors.InternalError(ctx, err)
 			}
-			if item.Type != threading.THREAD_ITEM_TYPE_MESSAGE {
-				return nil, errors.ErrNotSupported(ctx, fmt.Errorf("Cannot clone item of type %s", item.Type))
+			if _, ok := item.Item.(*threading.ThreadItem_Message); !ok {
+				return nil, errors.ErrNotSupported(ctx, fmt.Errorf("Cannot clone item of type %T", item.Item))
 			}
 			// TODO: for now don't allow cloning across organizations
 			if item.OrganizationID != in.OrganizationID {

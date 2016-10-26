@@ -125,22 +125,26 @@ func (a *appMessageWorker) Started() bool {
 }
 
 func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
-
+	item := pti.Item
 	// Only process external thread messages sent via app. Ignore everything else.
-	if pti.GetItem().Internal {
+	if item.Internal {
 		golog.Debugf("Internal message posted. Ignoring...")
 		return nil
-	} else if pti.GetItem().Type != threading.THREAD_ITEM_TYPE_MESSAGE {
-		golog.Debugf("Thread item is not a message, it is of type %s. Ignoring...", pti.GetItem().Type.String())
+	}
+	msgItem, ok := item.Item.(*threading.ThreadItem_Message)
+	if !ok {
+		golog.Debugf("Thread item is not a message, it is of type %T. Ignoring...", item.Item)
 		return nil
-	} else if !(pti.GetItem().GetMessage().Source == nil || pti.GetItem().GetMessage().Source.Channel == threading.ENDPOINT_CHANNEL_APP) {
-		golog.Debugf("SourceContact has to have type APP, but has %s. Ignoring...", pti.GetItem().GetMessage().Source.Channel)
+	}
+	msg := msgItem.Message
+	if !(msg.Source == nil || msg.Source.Channel == threading.ENDPOINT_CHANNEL_APP) {
+		golog.Debugf("SourceContact has to have type APP, but has %s. Ignoring...", msg.Source.Channel)
 		return nil
 	}
 
 	// TODO: Remove this filterings once the APP destination is no longer valid
-	destinations := make([]*threading.Endpoint, 0, len(pti.GetItem().GetMessage().Destinations))
-	for _, d := range pti.GetItem().GetMessage().Destinations {
+	destinations := make([]*threading.Endpoint, 0, len(msg.Destinations))
+	for _, d := range msg.Destinations {
 		if d.Channel != threading.ENDPOINT_CHANNEL_APP {
 			destinations = append(destinations, d)
 		}
@@ -176,7 +180,7 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 	if err != nil {
 		return errors.Trace(err)
 	} else if len(orgLookupRes.Entities) == 0 {
-		return errors.Trace(fmt.Errorf("Expected organization to exist for id %s", organizationID))
+		return errors.Errorf("Expected organization to exist for id %s", organizationID)
 	}
 
 	// determine external entity that belongs to this organization
@@ -198,11 +202,11 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 	if err != nil {
 		return errors.Trace(err)
 	} else if len(externalEntityLookupRes.Entities) == 0 {
-		return errors.Trace(fmt.Errorf("Expected external entity to exist for id %s", pti.PrimaryEntityID))
+		return errors.Errorf("Expected external entity to exist for id %s", pti.PrimaryEntityID)
 	}
 
 	// Parse text and render as plain text.
-	textBML, err := bml.Parse(pti.GetItem().GetMessage().Text)
+	textBML, err := bml.Parse(msg.Text)
 	if e, ok := err.(bml.ErrParseFailure); ok {
 		return fmt.Errorf("failed to parse text at pos %d: %s", e.Offset, e.Reason)
 	} else if err != nil {
@@ -210,7 +214,7 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 	}
 	plainText, err := textBML.PlainText()
 	if err != nil {
-		golog.Errorf("Unable to render plain text version for message item %s: "+err.Error(), pti.GetItem().ID)
+		golog.Errorf("Unable to render plain text version for message item %s: "+err.Error(), item.ID)
 		// Shouldn't fail here since the parsing should have done validation
 		return errors.Trace(err)
 	}
@@ -237,7 +241,7 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 	}
 
 	var mediaIDs []string
-	for _, at := range pti.GetItem().GetMessage().Attachments {
+	for _, at := range msg.Attachments {
 		// TODO: Add async video support?
 		if at.Type == threading.ATTACHMENT_TYPE_IMAGE {
 			mediaIDs = append(mediaIDs, at.GetImage().MediaID)
@@ -260,7 +264,7 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 			}
 
 			if revealSender {
-				providerEntity, err := determineActorEntity(ctx, a.directory, pti.GetItem().ActorEntityID)
+				providerEntity, err := determineActorEntity(ctx, a.directory, item.ActorEntityID)
 				if err != nil {
 					return errors.Trace(err)
 				}
@@ -270,7 +274,7 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 			_, err := a.excomms.SendMessage(
 				ctx,
 				&excomms.SendMessageRequest{
-					UUID:    pti.GetItem().ID,
+					UUID:    item.ID,
 					Channel: excomms.ChannelType_SMS,
 					Message: &excomms.SendMessageRequest_SMS{
 						SMS: &excomms.SMSMessage{
@@ -290,12 +294,12 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 				case excomms.ErrorCodeSMSIncapableFromPhoneNumber:
 					golog.Errorf("Unable to send message as the from phone number does not have SMS capabilities. Error :%s", err)
 				case excomms.ErrorCodeMessageDeliveryFailed:
-					golog.Errorf("Message %s cannot be delivered. Not going to retry as the error is permanent. Manual intervention required by Support team to report issue to customer. Error = '%s", pti.GetItem().ID, err)
+					golog.Errorf("Message %s cannot be delivered. Not going to retry as the error is permanent. Manual intervention required by Support team to report issue to customer. Error = '%s", item.ID, err)
 					return nil
 				}
-				return errors.Trace(fmt.Errorf("Unable to send message originating from thread item id : %s: %s", pti.GetItem().ID, err))
+				return errors.Trace(fmt.Errorf("Unable to send message originating from thread item id : %s: %s", item.ID, err))
 			}
-			golog.Debugf("Sent SMS %s → %s. Text %s", orgContact.Value, d.ID, pti.GetItem().GetMessage().Text)
+			golog.Debugf("Sent SMS %s → %s. Text %s", orgContact.Value, d.ID, msg.Text)
 		case threading.ENDPOINT_CHANNEL_EMAIL:
 			// determine org email address
 			orgContact := determineProvisionedContact(orgEntity, directory.ContactType_EMAIL)
@@ -306,7 +310,7 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 
 			fromName := orgEntity.Info.DisplayName
 			if revealSender {
-				providerEntity, err := determineActorEntity(ctx, a.directory, pti.GetItem().ActorEntityID)
+				providerEntity, err := determineActorEntity(ctx, a.directory, item.ActorEntityID)
 				if err != nil {
 					return errors.Trace(err)
 				}
@@ -316,7 +320,7 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 			_, err = a.excomms.SendMessage(
 				ctx,
 				&excomms.SendMessageRequest{
-					UUID:    pti.GetItem().ID,
+					UUID:    item.ID,
 					Channel: excomms.ChannelType_EMAIL,
 					Message: &excomms.SendMessageRequest_Email{
 						Email: &excomms.EmailMessage{
@@ -333,7 +337,7 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 			if err != nil {
 				return errors.Trace(err)
 			}
-			golog.Debugf("Sent Email %s → %s. Text %s", orgContact.Value, d.ID, pti.GetItem().GetMessage().Text)
+			golog.Debugf("Sent Email %s → %s. Text %s", orgContact.Value, d.ID, msg.Text)
 		default:
 			golog.Errorf("Dropping destination %s. Unknown how to send message.", d.Channel.String())
 		}

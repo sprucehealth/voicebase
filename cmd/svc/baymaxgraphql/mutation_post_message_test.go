@@ -140,7 +140,6 @@ func TestPostMessage(t *testing.T) {
 			Timestamp:     now,
 			ActorEntityID: entID,
 			Internal:      false,
-			Type:          threading.THREAD_ITEM_TYPE_MESSAGE,
 			Item: &threading.ThreadItem_Message{
 				Message: &threading.Message{
 					Text:   "foo",
@@ -391,7 +390,6 @@ func TestPostMessage_VisitAttachment(t *testing.T) {
 			Timestamp:     now,
 			ActorEntityID: entID,
 			Internal:      false,
-			Type:          threading.THREAD_ITEM_TYPE_MESSAGE,
 			Item: &threading.ThreadItem_Message{
 				Message: &threading.Message{
 					Text:   "foo",
@@ -763,7 +761,6 @@ func TestPostMessagePatientSecureExternal(t *testing.T) {
 			Timestamp:     now,
 			ActorEntityID: entID,
 			Internal:      false,
-			Type:          threading.THREAD_ITEM_TYPE_MESSAGE,
 			Item: &threading.ThreadItem_Message{
 				Message: &threading.Message{
 					Text:   "foo",

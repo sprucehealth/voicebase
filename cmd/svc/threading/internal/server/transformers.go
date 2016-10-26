@@ -270,7 +270,6 @@ func transformThreadItemToResponse(item *models.ThreadItem, orgID string) (*thre
 	}
 	switch item.Type {
 	case models.ItemTypeMessage:
-		it.Type = threading.THREAD_ITEM_TYPE_MESSAGE
 		m2, err := TransformMessageToResponse(item.Data.(*models.Message))
 		if err != nil {
 			return nil, errors.Trace(err)

@@ -63,19 +63,12 @@ message ThreadItem {
 	uint64 timestamp = 2;
 	string actor_entity_id = 3 [(gogoproto.customname) = "ActorEntityID"];
 	bool internal = 4; // item is internal to the organization (not seen by external entities)
-	enum Type {
-		THREAD_ITEM_TYPE_MESSAGE = 0;
-		THREAD_ITEM_TYPE_MESSAGE_UPDATED = 1;
-		THREAD_ITEM_TYPE_FOLLOWER_UPDATED = 2;
-	}
-	Type type = 5;
+	string thread_id = 6 [(gogoproto.customname) = "ThreadID"];
+	string organization_id = 7 [(gogoproto.customname) = "OrganizationID"];
 	oneof item {
 		Message message = 10;
 		MessageUpdated message_updated = 11;
-		FollowerUpdated follower_updated = 12;
 	}
-	string thread_id = 6 [(gogoproto.customname) = "ThreadID"];
-	string organization_id = 7 [(gogoproto.customname) = "OrganizationID"];
 }
 
 message ThreadItemViewDetails {
@@ -124,10 +117,6 @@ message MessageUpdated {
 	string thread_item_id = 1 [(gogoproto.customname) = "ThreadItemID"];
 	string actor_entity_id = 2 [(gogoproto.customname) = "ActorEntityID"];
 	Message message = 3;
-}
-
-message FollowerUpdated {
-	string entity_id = 1 [(gogoproto.customname) = "EntityID"];
 }
 
 enum SavedQueryType {

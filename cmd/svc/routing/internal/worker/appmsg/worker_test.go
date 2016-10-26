@@ -191,7 +191,6 @@ func testSendMessageSMS(t *testing.T, revealSender bool) {
 			ID:            "11000",
 			ActorEntityID: providerEntity.ID,
 			Internal:      false,
-			Type:          threading.THREAD_ITEM_TYPE_MESSAGE,
 			Item: &threading.ThreadItem_Message{
 				Message: &threading.Message{
 					Text: "Hello",
@@ -393,7 +392,6 @@ func testSendingEmail(t *testing.T, revealSender bool) {
 			ID:            "11000",
 			ActorEntityID: "30",
 			Internal:      false,
-			Type:          threading.THREAD_ITEM_TYPE_MESSAGE,
 			Item: &threading.ThreadItem_Message{
 				Message: &threading.Message{
 					Text: "Hello",
@@ -581,7 +579,6 @@ func TestSendMessage_Multiple(t *testing.T) {
 			ID:            "11000",
 			ActorEntityID: "30",
 			Internal:      false,
-			Type:          threading.THREAD_ITEM_TYPE_MESSAGE,
 			Item: &threading.ThreadItem_Message{
 				Message: &threading.Message{
 					Text: "Hello",
@@ -690,7 +687,6 @@ func TestSendMessage_OnlyAppDestinations(t *testing.T) {
 			ID:            "11000",
 			ActorEntityID: "30",
 			Internal:      false,
-			Type:          threading.THREAD_ITEM_TYPE_MESSAGE,
 			Item: &threading.ThreadItem_Message{
 				Message: &threading.Message{
 					Text: "Hello",
@@ -795,7 +791,6 @@ func TestSendMessage_NoDestinations(t *testing.T) {
 			ID:            "11000",
 			ActorEntityID: "30",
 			Internal:      false,
-			Type:          threading.THREAD_ITEM_TYPE_MESSAGE,
 			Item: &threading.ThreadItem_Message{
 				Message: &threading.Message{
 					Text: "Hello",
@@ -837,7 +832,6 @@ func TestSendMessage_Internal(t *testing.T) {
 			ID:            "11000",
 			ActorEntityID: "30",
 			Internal:      true,
-			Type:          threading.THREAD_ITEM_TYPE_MESSAGE,
 			Item: &threading.ThreadItem_Message{
 				Message: &threading.Message{
 					Text: "Hello",
