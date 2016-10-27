@@ -119,7 +119,7 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 	case threading.ONBOARDING_THREAD_LOOKUP_BY_THREAD_ID:
 		id, err := models.ParseThreadID(in.GetThreadID())
 		if err != nil {
-			return nil, grpcErrorf(codes.InvalidArgument, "Invalid thread ID")
+			return nil, grpcErrorf(codes.InvalidArgument, "Invalid thread ID '%s'", in.GetThreadID())
 		}
 		state, err = s.dal.SetupThreadState(ctx, id)
 	case threading.ONBOARDING_THREAD_LOOKUP_BY_ENTITY_ID:

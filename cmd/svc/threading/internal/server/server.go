@@ -178,12 +178,12 @@ func (s *threadsServer) CreateEmptyThread(ctx context.Context, in *threading.Cre
 
 	tt, err := transformThreadTypeFromRequest(in.Type)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid thread type")
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid thread type '%s'", in.Type)
 	}
 
 	to, err := transformThreadOriginFromRequest(in.Origin)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid thread origin")
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid thread origin '%s'", in.Origin)
 	}
 
 	memberEntityIDs, err := memberEntityIDsForNewThread(in.Type, in.OrganizationID, in.FromEntityID, in.MemberEntityIDs)
@@ -272,11 +272,11 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 
 	tt, err := transformThreadTypeFromRequest(in.Type)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid thread type")
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid thread type '%s'", in.Type)
 	}
 	to, err := transformThreadOriginFromRequest(in.Origin)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid thread origin")
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid thread origin '%s'", in.Origin)
 	}
 
 	if in.Message == nil {
@@ -425,7 +425,7 @@ func (s *threadsServer) CreateLinkedThreads(ctx context.Context, in *threading.C
 	}
 	tt, err := transformThreadTypeFromRequest(in.Type)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid thread type")
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid thread type '%s'", in.Type)
 	}
 	if in.Summary == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "Summary is required")
@@ -559,7 +559,7 @@ func (s *threadsServer) DeleteThread(ctx context.Context, in *threading.DeleteTh
 	}
 	threadID, err := models.ParseThreadID(in.ThreadID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadID")
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadID '%s'", in.ThreadID)
 	}
 
 	// If we can't find the thread then just return success
@@ -616,7 +616,7 @@ func (s *threadsServer) LinkedThread(ctx context.Context, in *threading.LinkedTh
 	}
 	threadID, err := models.ParseThreadID(in.ThreadID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadID")
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadID '%s'", in.ThreadID)
 	}
 	thread, prependSender, err := s.dal.LinkedThread(ctx, threadID)
 	if errors.Cause(err) == dal.ErrNotFound {
@@ -663,7 +663,7 @@ func (s *threadsServer) MarkThreadsAsRead(ctx context.Context, in *threading.Mar
 	for i, w := range in.ThreadWatermarks {
 		threadID, err := models.ParseThreadID(w.ThreadID)
 		if err != nil {
-			return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadID")
+			return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadID '%s'", w.ThreadID)
 		}
 		threadIDs[i] = threadID
 	}
@@ -846,7 +846,7 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 	}
 	threadID, err := models.ParseThreadID(in.ThreadID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadID")
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadID '%s'", in.ThreadID)
 	}
 	if in.FromEntityID == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "FromEntityID is required")
@@ -1173,7 +1173,7 @@ func (s *threadsServer) QueryThreads(ctx context.Context, in *threading.QueryThr
 func (s *threadsServer) SavedQuery(ctx context.Context, in *threading.SavedQueryRequest) (*threading.SavedQueryResponse, error) {
 	id, err := models.ParseSavedQueryID(in.SavedQueryID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid SavedQueryID")
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid SavedQueryID '%s'", in.SavedQueryID)
 	}
 	query, err := s.dal.SavedQuery(ctx, id)
 	if errors.Cause(err) == dal.ErrNotFound {
@@ -1252,7 +1252,7 @@ func (s *threadsServer) Thread(ctx context.Context, in *threading.ThreadRequest)
 	golog.Debugf("Querying for thread %s", in.ThreadID)
 	tid, err := models.ParseThreadID(in.ThreadID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadID")
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadID '%s'", in.ThreadID)
 	}
 
 	forExternal, err := s.forExternalViewer(ctx, in.ViewerEntityID)
@@ -1341,7 +1341,7 @@ func (s *threadsServer) Threads(ctx context.Context, in *threading.ThreadsReques
 func (s *threadsServer) ThreadItem(ctx context.Context, in *threading.ThreadItemRequest) (*threading.ThreadItemResponse, error) {
 	tid, err := models.ParseThreadItemID(in.ItemID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ItemID")
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ItemID '%s'", in.ItemID)
 	}
 
 	item, err := s.dal.ThreadItem(ctx, tid)
@@ -1401,7 +1401,7 @@ func (s *threadsServer) ThreadsForMember(ctx context.Context, in *threading.Thre
 func (s *threadsServer) ThreadItems(ctx context.Context, in *threading.ThreadItemsRequest) (*threading.ThreadItemsResponse, error) {
 	tid, err := models.ParseThreadID(in.ThreadID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadID")
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadID '%s'", in.ThreadID)
 	}
 
 	threads, err := s.dal.Threads(ctx, []models.ThreadID{tid})
@@ -1453,7 +1453,7 @@ func (s *threadsServer) ThreadItems(ctx context.Context, in *threading.ThreadIte
 func (s *threadsServer) ThreadItemViewDetails(ctx context.Context, in *threading.ThreadItemViewDetailsRequest) (*threading.ThreadItemViewDetailsResponse, error) {
 	tiid, err := models.ParseThreadItemID(in.ItemID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadItemID")
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ItemID '%s'", in.ItemID)
 	}
 
 	tivds, err := s.dal.ThreadItemViewDetails(ctx, tiid)
@@ -1479,7 +1479,7 @@ func (s *threadsServer) ThreadItemViewDetails(ctx context.Context, in *threading
 func (s *threadsServer) ThreadMembers(ctx context.Context, in *threading.ThreadMembersRequest) (*threading.ThreadMembersResponse, error) {
 	tid, err := models.ParseThreadID(in.ThreadID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadItemID")
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadID '%s'", in.ThreadID)
 	}
 	tes, err := s.dal.EntitiesForThread(ctx, tid)
 	if err != nil {
@@ -1504,7 +1504,7 @@ func (s *threadsServer) ThreadMembers(ctx context.Context, in *threading.ThreadM
 func (s *threadsServer) UpdateSavedQuery(ctx context.Context, in *threading.UpdateSavedQueryRequest) (*threading.UpdateSavedQueryResponse, error) {
 	id, err := models.ParseSavedQueryID(in.SavedQueryID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid SavedQueryID")
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid SavedQueryID '%s'", in.SavedQueryID)
 	}
 	rebuild := in.ForceRebuild
 	update := &dal.SavedQueryUpdate{}
@@ -1581,7 +1581,7 @@ func (s *threadsServer) UpdateThread(ctx context.Context, in *threading.UpdateTh
 
 	tid, err := models.ParseThreadID(in.ThreadID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadID")
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadID '%s'", in.ThreadID)
 	}
 
 	threads, err := s.dal.Threads(ctx, []models.ThreadID{tid})
