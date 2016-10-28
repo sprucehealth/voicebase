@@ -117,22 +117,22 @@ var attachmentInputType = graphql.NewInputObject(
 	},
 )
 
-func attachmentTypeEnumAsThreadingEnum(t string) (threading.Attachment_Type, error) {
-	switch t {
-	case attachmentTypeCarePlan:
-		return threading.ATTACHMENT_TYPE_CARE_PLAN, nil
-	case attachmentTypeImage:
-		return threading.ATTACHMENT_TYPE_IMAGE, nil
-	case attachmentTypeVideo:
-		return threading.ATTACHMENT_TYPE_VIDEO, nil
-	case attachmentTypeVisit:
-		return threading.ATTACHMENT_TYPE_VISIT, nil
-	case attachmentTypeDocument:
-		return threading.ATTACHMENT_TYPE_DOCUMENT, nil
-	case attachmentTypePaymentRequest:
-		return threading.ATTACHMENT_TYPE_PAYMENT_REQUEST, nil
+func attachmentTypeAsEnum(a *threading.Attachment) (string, error) {
+	switch a.Data.(type) {
+	case *threading.Attachment_CarePlan:
+		return attachmentTypeCarePlan, nil
+	case *threading.Attachment_Image:
+		return attachmentTypeImage, nil
+	case *threading.Attachment_Video:
+		return attachmentTypeVideo, nil
+	case *threading.Attachment_Visit:
+		return attachmentTypeVisit, nil
+	case *threading.Attachment_Document:
+		return attachmentTypeDocument, nil
+	case *threading.Attachment_PaymentRequest:
+		return attachmentTypePaymentRequest, nil
 	}
-	return threading.Attachment_Type(0), fmt.Errorf("Unknown attachment type %s", t)
+	return "", fmt.Errorf("Unknown attachment type %T", a.Data)
 }
 
 // postMessage
@@ -403,19 +403,19 @@ var postMessageMutation = &graphql.Field{
 
 		if len(title) == 0 {
 			for _, a := range req.Message.Attachments {
-				if a.Type == threading.ATTACHMENT_TYPE_VISIT {
+				if _, ok := a.Data.(*threading.Attachment_Visit); ok {
 					title = append(title, "Shared a visit:")
 					break
 				}
-				if a.Type == threading.ATTACHMENT_TYPE_CARE_PLAN {
+				if _, ok := a.Data.(*threading.Attachment_CarePlan); ok {
 					title = append(title, "Shared a care plan:")
 					break
 				}
-				if a.Type == threading.ATTACHMENT_TYPE_PAYMENT_REQUEST {
+				if _, ok := a.Data.(*threading.Attachment_PaymentRequest); ok {
 					title = append(title, "Requested payment:")
 					break
 				}
-				if a.Type == threading.ATTACHMENT_TYPE_DOCUMENT {
+				if _, ok := a.Data.(*threading.Attachment_Document); ok {
 					title = append(title, "Shared a file:")
 					break
 				}
@@ -591,23 +591,20 @@ func processIncomingAttachments(ctx context.Context, ram raccess.ResourceAccesso
 		if mAttachment.MediaID != "" {
 			mAttachment.AttachmentID = mAttachment.MediaID
 		}
-		mAttachmentType, err := attachmentTypeEnumAsThreadingEnum(mAttachment.Type)
-		if err != nil {
-			return nil, nil, err
-		}
 
 		// TODO: Verify that the media at the ID exists
 
-		if thread != nil && !allowAttachment(thread, mAttachmentType) {
-			return nil, nil, errors.ErrNotSupported(ctx, fmt.Errorf("Cannot attach %s to thread of type %s", mAttachmentType, thread.Type))
+		if thread != nil && !allowAttachment(thread, mAttachment.Type) {
+			return nil, nil, errors.ErrNotSupported(ctx, fmt.Errorf("Cannot attach %s to thread of type %s", mAttachment.Type, thread.Type))
 		}
 
 		var attachment *threading.Attachment
-		switch mAttachmentType {
-		case threading.ATTACHMENT_TYPE_VISIT:
+		switch mAttachment.Type {
+		case attachmentTypeVisit:
 			if mAttachment.AttachmentID == "" {
 				return nil, nil, errors.Errorf("Missing ID for visit attachment")
 			}
+
 			// ensure that the visit layout exists from which to create a visit
 			visitLayoutRes, err := ram.VisitLayout(ctx, &layout.GetVisitLayoutRequest{
 				ID: mAttachment.AttachmentID,
@@ -636,7 +633,6 @@ func processIncomingAttachments(ctx context.Context, ram raccess.ResourceAccesso
 
 			attachment = &threading.Attachment{
 				ContentID: mAttachment.AttachmentID,
-				Type:      mAttachmentType,
 				UserTitle: mAttachment.Title,
 				Title:     createVisitRes.Visit.Name,
 				Data: &threading.Attachment_Visit{
@@ -649,7 +645,7 @@ func processIncomingAttachments(ctx context.Context, ram raccess.ResourceAccesso
 			if thread != nil {
 				attachment.URL = deeplink.VisitURL(svc.webDomain, thread.ID, createVisitRes.Visit.ID)
 			}
-		case threading.ATTACHMENT_TYPE_CARE_PLAN:
+		case attachmentTypeCarePlan:
 			// Make sure the care plan exists, the poster has access to it, and it hasn't yet been submitted
 			cp, err := ram.CarePlan(ctx, mAttachment.AttachmentID)
 			if err != nil {
@@ -662,7 +658,6 @@ func processIncomingAttachments(ctx context.Context, ram raccess.ResourceAccesso
 
 			attachment = &threading.Attachment{
 				ContentID: mAttachment.AttachmentID,
-				Type:      mAttachmentType,
 				UserTitle: mAttachment.Title,
 				Title:     cp.Name,
 				Data: &threading.Attachment_CarePlan{
@@ -676,14 +671,13 @@ func processIncomingAttachments(ctx context.Context, ram raccess.ResourceAccesso
 				attachment.URL = deeplink.CarePlanURL(svc.webDomain, thread.ID, cp.ID)
 
 			}
-		case threading.ATTACHMENT_TYPE_IMAGE:
+		case attachmentTypeImage:
 			info, err := ram.MediaInfo(ctx, mAttachment.AttachmentID)
 			if err != nil {
 				return nil, nil, fmt.Errorf("Error while locating media info for %s: %s", mAttachment.AttachmentID, err)
 			}
 			attachment = &threading.Attachment{
 				ContentID: mAttachment.AttachmentID,
-				Type:      mAttachmentType,
 				UserTitle: mAttachment.Title,
 				Title:     mAttachment.Title,
 				URL:       info.ID,
@@ -694,14 +688,13 @@ func processIncomingAttachments(ctx context.Context, ram raccess.ResourceAccesso
 					},
 				},
 			}
-		case threading.ATTACHMENT_TYPE_VIDEO:
+		case attachmentTypeVideo:
 			info, err := ram.MediaInfo(ctx, mAttachment.AttachmentID)
 			if err != nil {
 				return nil, nil, fmt.Errorf("Error while locating media info for %s: %s", mAttachment.AttachmentID, err)
 			}
 			attachment = &threading.Attachment{
 				ContentID: mAttachment.AttachmentID,
-				Type:      mAttachmentType,
 				UserTitle: mAttachment.Title,
 				Title:     mAttachment.Title,
 				URL:       info.ID,
@@ -713,14 +706,13 @@ func processIncomingAttachments(ctx context.Context, ram raccess.ResourceAccesso
 					},
 				},
 			}
-		case threading.ATTACHMENT_TYPE_DOCUMENT:
+		case attachmentTypeDocument:
 			info, err := ram.MediaInfo(ctx, mAttachment.AttachmentID)
 			if err != nil {
 				return nil, nil, fmt.Errorf("Error while locating media info for %s : %s", mAttachment.AttachmentID, err)
 			}
 			attachment = &threading.Attachment{
 				ContentID: mAttachment.AttachmentID,
-				Type:      mAttachmentType,
 				UserTitle: mAttachment.Title,
 				Title:     mAttachment.Title,
 				URL:       info.ID,
@@ -731,7 +723,7 @@ func processIncomingAttachments(ctx context.Context, ram raccess.ResourceAccesso
 					},
 				},
 			}
-		case threading.ATTACHMENT_TYPE_PAYMENT_REQUEST:
+		case attachmentTypePaymentRequest:
 			resp, err := ram.Payment(ctx, &payments.PaymentRequest{
 				PaymentID: mAttachment.AttachmentID,
 			})
@@ -740,7 +732,6 @@ func processIncomingAttachments(ctx context.Context, ram raccess.ResourceAccesso
 			}
 			attachment = &threading.Attachment{
 				ContentID: mAttachment.AttachmentID,
-				Type:      mAttachmentType,
 				UserTitle: mAttachment.Title,
 				Title:     payments.FormatAmount(resp.Payment.Amount, "USD"),
 				// TODO: Deep link to payment
@@ -751,7 +742,7 @@ func processIncomingAttachments(ctx context.Context, ram raccess.ResourceAccesso
 				},
 			}
 		default:
-			return nil, nil, fmt.Errorf("Unknown message attachment type %d", mAttachmentType)
+			return nil, nil, fmt.Errorf("Unknown message attachment type %s", mAttachment.Type)
 		}
 		attachments = append(attachments, attachment)
 	}

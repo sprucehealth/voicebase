@@ -279,20 +279,20 @@ func threadTypeIndicator(t *threading.Thread, acc *auth.Account) string {
 	return models.ThreadTypeIndicatorNone
 }
 
-func allowAttachment(t *threading.Thread, at threading.Attachment_Type) bool {
+func allowAttachment(t *threading.Thread, at string) bool {
 	switch at {
-	case threading.ATTACHMENT_TYPE_IMAGE:
+	case attachmentTypeImage:
 		return true
-	case threading.ATTACHMENT_TYPE_VIDEO:
+	case attachmentTypeVideo:
 		return allowVideoAttachments(t)
-	case threading.ATTACHMENT_TYPE_AUDIO, threading.ATTACHMENT_TYPE_DOCUMENT, threading.ATTACHMENT_TYPE_GENERIC_URL:
+	case attachmentTypeAudio, attachmentTypeDocument, attachmentTypeGenericURL:
 		switch t.Type {
 		case threading.THREAD_TYPE_SUPPORT:
 			return t.OrganizationID == *flagSpruceOrgID
 		case threading.THREAD_TYPE_TEAM, threading.THREAD_TYPE_SECURE_EXTERNAL, threading.THREAD_TYPE_LEGACY_TEAM:
 			return true
 		}
-	case threading.ATTACHMENT_TYPE_VISIT, threading.ATTACHMENT_TYPE_CARE_PLAN, threading.ATTACHMENT_TYPE_PAYMENT_REQUEST:
+	case attachmentTypeVisit, attachmentTypeCarePlan, attachmentTypePaymentRequest:
 		return t.Type == threading.THREAD_TYPE_SECURE_EXTERNAL
 	}
 	return false
@@ -480,10 +480,10 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, webDomain, 
 			}
 			m2.Attachments = append(m2.Attachments, att)
 
-			switch a.Type {
-			case threading.ATTACHMENT_TYPE_AUDIO:
+			switch data := a.Data.(type) {
+			case *threading.Attachment_Audio:
 				att.Type = attachmentTypeAudio
-				d := a.GetAudio()
+				d := data.Audio
 				if d.Mimetype == "" { // TODO
 					d.Mimetype = "audio/mp3"
 				}
@@ -505,9 +505,9 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, webDomain, 
 					att.Title = "Audio"
 				}
 
-			case threading.ATTACHMENT_TYPE_IMAGE:
+			case *threading.Attachment_Image:
 				att.Type = attachmentTypeImage
-				d := a.GetImage()
+				d := data.Image
 				if d.Mimetype == "" { // TODO
 					d.Mimetype = "image/jpeg"
 				}
@@ -528,27 +528,27 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, webDomain, 
 					att.Title = "Photo"
 				}
 
-			case threading.ATTACHMENT_TYPE_VISIT:
+			case *threading.Attachment_Visit:
 				att.Type = attachmentTypeVisit
-				v := a.GetVisit()
+				v := data.Visit
 				att.Data = &models.BannerButtonAttachment{
 					Title:   v.VisitName,
 					CTAText: "View Visit",
 					TapURL:  deeplink.VisitURL(webDomain, item.ThreadID, v.VisitID),
 					IconURL: "https://dlzz6qy5jmbag.cloudfront.net/caremessenger/icon_visit.png",
 				}
-			case threading.ATTACHMENT_TYPE_VIDEO:
+			case *threading.Attachment_Video:
 				att.Type = attachmentTypeVideo
-				v := a.GetVideo()
+				v := data.Video
 				att.URL = media.URL(mediaAPIDomain, v.MediaID, v.Mimetype)
 				att.Data = &models.VideoAttachment{
 					Mimetype:     v.Mimetype,
 					URL:          att.URL,
 					ThumbnailURL: media.ThumbnailURL(mediaAPIDomain, v.MediaID, v.Mimetype, 0, 0, false),
 				}
-			case threading.ATTACHMENT_TYPE_CARE_PLAN:
+			case *threading.Attachment_CarePlan:
 				att.Type = attachmentTypeCarePlan
-				cp := a.GetCarePlan()
+				cp := data.CarePlan
 				att.URL = deeplink.CarePlanURL(webDomain, item.ThreadID, cp.CarePlanID)
 				att.Data = &models.BannerButtonAttachment{
 					Title:   cp.CarePlanName,
@@ -556,18 +556,18 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, webDomain, 
 					TapURL:  a.URL,
 					IconURL: "https://dlzz6qy5jmbag.cloudfront.net/caremessenger/icon_careplan.png",
 				}
-			case threading.ATTACHMENT_TYPE_PAYMENT_REQUEST:
+			case *threading.Attachment_PaymentRequest:
 				att.Type = attachmentTypePaymentRequest
-				p := a.GetPaymentRequest()
+				p := data.PaymentRequest
 				att.Data = &models.BannerButtonAttachment{
 					Title:   a.Title,
 					CTAText: "View Payment Request",
 					TapURL:  deeplink.PaymentURL(webDomain, item.OrganizationID, item.ThreadID, p.PaymentID),
 					IconURL: "https://dlzz6qy5jmbag.cloudfront.net/caremessenger/icon_payment.png",
 				}
-			case threading.ATTACHMENT_TYPE_DOCUMENT:
+			case *threading.Attachment_Document:
 				att.Type = attachmentTypeDocument
-				f := a.GetDocument()
+				f := data.Document
 				mediaID, err := lmedia.ParseMediaID(f.MediaID)
 				if err != nil {
 					golog.Errorf("Unable to parse media id %s : %s", f.MediaID, err)
@@ -580,9 +580,9 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, webDomain, 
 					TapURL:  media.URL(mediaAPIDomain, mediaID, f.Mimetype),
 					IconURL: "https://dlzz6qy5jmbag.cloudfront.net/caremessenger/icon_payment.png",
 				}
-			case threading.ATTACHMENT_TYPE_GENERIC_URL:
+			case *threading.Attachment_GenericURL:
 				att.Type = attachmentTypeGenericURL
-				d := a.GetGenericURL()
+				d := data.GenericURL
 
 				// append to message
 				if d.Mimetype == "application/pdf" {
@@ -621,7 +621,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, webDomain, 
 				}
 				continue
 			default:
-				return nil, errors.Errorf("unknown attachment type %s", a.Type)
+				return nil, errors.Errorf("unknown attachment type %T", a.Data)
 			}
 		}
 		for _, dc := range m.Destinations {

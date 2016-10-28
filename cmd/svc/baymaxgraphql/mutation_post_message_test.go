@@ -113,7 +113,6 @@ func TestPostMessage(t *testing.T) {
 			Attachments: []*threading.Attachment{
 				{
 					ContentID: "mediaID",
-					Type:      threading.ATTACHMENT_TYPE_IMAGE,
 					Title:     "",
 					URL:       "mediaID",
 					Data: &threading.Attachment_Image{
@@ -362,7 +361,6 @@ func TestPostMessage_VisitAttachment(t *testing.T) {
 			Attachments: []*threading.Attachment{
 				{
 					ContentID: "visitLayout_12345",
-					Type:      threading.ATTACHMENT_TYPE_VISIT,
 					Title:     "Sinus Infection",
 					URL:       "https://test.com/thread/t1/visit/visit_12345",
 					Data: &threading.Attachment_Visit{
@@ -402,7 +400,6 @@ func TestPostMessage_VisitAttachment(t *testing.T) {
 					Summary: `Schmee: Shared a visit:`,
 					Attachments: []*threading.Attachment{
 						{
-							Type:  threading.ATTACHMENT_TYPE_VISIT,
 							Title: "Sinus Infection",
 							URL:   "https://test.com/visit/visit_12345",
 							Data: &threading.Attachment_Visit{
@@ -733,7 +730,6 @@ func TestPostMessagePatientSecureExternal(t *testing.T) {
 			Attachments: []*threading.Attachment{
 				{
 					ContentID: "mediaID",
-					Type:      threading.ATTACHMENT_TYPE_VIDEO,
 					Title:     "",
 					URL:       "mediaID",
 					Data: &threading.Attachment_Video{

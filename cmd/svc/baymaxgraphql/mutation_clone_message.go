@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/conc"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/gqldecode"
 	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -201,7 +202,12 @@ var cloneMessageMutation = &graphql.Field{
 			// TODO: right now this just uses the raw attachment type, we should make the message nicer
 			atypes := make([]string, len(unsupportedAttachments))
 			for i, a := range unsupportedAttachments {
-				atypes[i] = strings.ToLower(a.Type.String())
+				atypes[i], err = attachmentTypeAsEnum(a)
+				if err != nil {
+					// This shouldn't ever happen but handle it anyway
+					golog.Errorf(err.Error())
+					atypes[i] = fmt.Sprintf("%T", a.Data)
+				}
 			}
 			alerts = []string{"The following attachments are not supported for this thread and have been removed: %s", strings.Join(atypes, ", ")}
 		}
@@ -226,7 +232,11 @@ func cloneAttachments(ctx context.Context, ram raccess.ResourceAccessor, ent *di
 	var unsupportedAttachments []*threading.Attachment
 	par := conc.NewParallel()
 	for _, att := range attachments {
-		if forThread != nil && !allowAttachment(forThread, att.Type) {
+		atype, err := attachmentTypeAsEnum(att)
+		if err != nil {
+			return nil, nil, errors.Trace(err)
+		}
+		if forThread != nil && !allowAttachment(forThread, atype) {
 			unsupportedAttachments = append(unsupportedAttachments, att)
 			continue
 		}

@@ -170,17 +170,6 @@ message Expr {
 }
 
 message Attachment {
-	enum Type {
-		ATTACHMENT_TYPE_IMAGE = 0;
-		ATTACHMENT_TYPE_AUDIO = 1;
-		ATTACHMENT_TYPE_GENERIC_URL = 2;
-		ATTACHMENT_TYPE_VISIT = 3;
-		ATTACHMENT_TYPE_CARE_PLAN = 4;
-		ATTACHMENT_TYPE_VIDEO = 5;
-		ATTACHMENT_TYPE_PAYMENT_REQUEST = 6;
-		ATTACHMENT_TYPE_DOCUMENT = 7;
-	}
-	Type type = 1;
 	string title = 2;
 	string url = 3 [(gogoproto.customname) = "URL"];
 	string user_title = 4;

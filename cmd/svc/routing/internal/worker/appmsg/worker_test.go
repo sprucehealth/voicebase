@@ -205,15 +205,17 @@ func testSendMessageSMS(t *testing.T, revealSender bool) {
 					},
 					Attachments: []*threading.Attachment{
 						{
-							Type: threading.ATTACHMENT_TYPE_IMAGE,
-							URL:  "image/attachment/url",
+							URL: "image/attachment/url",
 							Data: &threading.Attachment_Image{
 								Image: &threading.ImageAttachment{
 									MediaID: "s3://image/attachment/url",
 								},
 							},
 						},
-						{Type: threading.ATTACHMENT_TYPE_GENERIC_URL, URL: "generic/url"},
+						{
+							URL:  "generic/url",
+							Data: &threading.Attachment_GenericURL{},
+						},
 					},
 				},
 			},
@@ -406,15 +408,17 @@ func testSendingEmail(t *testing.T, revealSender bool) {
 					},
 					Attachments: []*threading.Attachment{
 						{
-							Type: threading.ATTACHMENT_TYPE_IMAGE,
-							URL:  "image/attachment/url",
+							URL: "image/attachment/url",
 							Data: &threading.Attachment_Image{
 								Image: &threading.ImageAttachment{
 									MediaID: "s3://image/attachment/url",
 								},
 							},
 						},
-						{Type: threading.ATTACHMENT_TYPE_GENERIC_URL, URL: "generic/url"},
+						{
+							URL:  "generic/url",
+							Data: &threading.Attachment_GenericURL{},
+						},
 					},
 				},
 			},

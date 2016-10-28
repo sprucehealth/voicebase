@@ -369,7 +369,6 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 			attachments = make([]*threading.Attachment, len(pem.GetSMSItem().Attachments))
 			for i, a := range pem.GetSMSItem().Attachments {
 				attachments[i] = &threading.Attachment{
-					Type: threading.ATTACHMENT_TYPE_IMAGE,
 					Data: &threading.Attachment_Image{
 						Image: &threading.ImageAttachment{
 							Mimetype: a.ContentType,
@@ -408,7 +407,6 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 				}
 				attachments = []*threading.Attachment{
 					{
-						Type: threading.ATTACHMENT_TYPE_AUDIO,
 						Data: &threading.Attachment_Audio{
 							Audio: &threading.AudioAttachment{
 								MediaID:    pem.GetIncoming().VoicemailMediaID,
@@ -451,7 +449,6 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 			for _, attachmentItem := range pem.GetEmailItem().Attachments {
 				if strings.HasPrefix(attachmentItem.ContentType, "image") {
 					attachments = append(attachments, &threading.Attachment{
-						Type:  threading.ATTACHMENT_TYPE_IMAGE,
 						Title: attachmentItem.Name,
 						Data: &threading.Attachment_Image{
 							Image: &threading.ImageAttachment{
@@ -468,7 +465,6 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 						continue
 					}
 					attachments = append(attachments, &threading.Attachment{
-						Type:  threading.ATTACHMENT_TYPE_DOCUMENT,
 						Title: attachmentItem.Name,
 						Data: &threading.Attachment_Document{
 							Document: &threading.DocumentAttachment{
@@ -480,7 +476,6 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 					})
 				} else {
 					attachments = append(attachments, &threading.Attachment{
-						Type:  threading.ATTACHMENT_TYPE_GENERIC_URL,
 						Title: attachmentItem.Name,
 						Data: &threading.Attachment_GenericURL{
 							GenericURL: &threading.GenericURLAttachment{

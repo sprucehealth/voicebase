@@ -122,15 +122,15 @@ func threadMatchesQuery(q *models.Query, t *models.Thread, te *models.ThreadEnti
 func mediaIDsFromAttachments(as []*models.Attachment) []string {
 	mediaIDs := make([]string, 0, len(as))
 	for _, a := range as {
-		switch a.Type {
-		case models.ATTACHMENT_TYPE_AUDIO:
-			mediaIDs = append(mediaIDs, a.GetAudio().MediaID)
-		case models.ATTACHMENT_TYPE_IMAGE:
-			mediaIDs = append(mediaIDs, a.GetImage().MediaID)
-		case models.ATTACHMENT_TYPE_VIDEO:
-			mediaIDs = append(mediaIDs, a.GetVideo().MediaID)
-		case models.ATTACHMENT_TYPE_DOCUMENT:
-			mediaIDs = append(mediaIDs, a.GetDocument().MediaID)
+		switch a := a.Data.(type) {
+		case *models.Attachment_Audio:
+			mediaIDs = append(mediaIDs, a.Audio.MediaID)
+		case *models.Attachment_Image:
+			mediaIDs = append(mediaIDs, a.Image.MediaID)
+		case *models.Attachment_Video:
+			mediaIDs = append(mediaIDs, a.Video.MediaID)
+		case *models.Attachment_Document:
+			mediaIDs = append(mediaIDs, a.Document.MediaID)
 		}
 	}
 	return mediaIDs
@@ -139,9 +139,9 @@ func mediaIDsFromAttachments(as []*models.Attachment) []string {
 func paymentsIDsFromAttachments(as []*models.Attachment) []string {
 	paymentIDs := make([]string, 0, len(as))
 	for _, a := range as {
-		switch a.Type {
-		case models.ATTACHMENT_TYPE_PAYMENT_REQUEST:
-			paymentIDs = append(paymentIDs, a.GetPaymentRequest().PaymentID)
+		switch a := a.Data.(type) {
+		case *models.Attachment_PaymentRequest:
+			paymentIDs = append(paymentIDs, a.PaymentRequest.PaymentID)
 		}
 	}
 	return paymentIDs

@@ -323,10 +323,9 @@ func TransformMessageToResponse(m *models.Message) (*threading.Message, error) {
 			URL:       a.URL,
 			ContentID: a.ContentID,
 		}
-		switch a.Type {
-		case models.ATTACHMENT_TYPE_AUDIO:
-			data := a.GetAudio()
-			at.Type = threading.ATTACHMENT_TYPE_AUDIO
+		switch adata := a.Data.(type) {
+		case *models.Attachment_Audio:
+			data := adata.Audio
 			var durationNS uint64
 			if data.DeprecatedDurationInSeconds != 0 {
 				durationNS = uint64(data.DeprecatedDurationInSeconds) * 1e9
@@ -343,9 +342,8 @@ func TransformMessageToResponse(m *models.Message) (*threading.Message, error) {
 			if at.ContentID == "" {
 				at.ContentID = data.MediaID
 			}
-		case models.ATTACHMENT_TYPE_IMAGE:
-			data := a.GetImage()
-			at.Type = threading.ATTACHMENT_TYPE_IMAGE
+		case *models.Attachment_Image:
+			data := adata.Image
 			at.Data = &threading.Attachment_Image{
 				Image: &threading.ImageAttachment{
 					Mimetype: data.Mimetype,
@@ -357,9 +355,8 @@ func TransformMessageToResponse(m *models.Message) (*threading.Message, error) {
 			if at.ContentID == "" {
 				at.ContentID = data.MediaID
 			}
-		case models.ATTACHMENT_TYPE_GENERIC_URL:
-			data := a.GetGeneric()
-			at.Type = threading.ATTACHMENT_TYPE_GENERIC_URL
+		case *models.Attachment_Generic:
+			data := adata.Generic
 			at.Data = &threading.Attachment_GenericURL{
 				GenericURL: &threading.GenericURLAttachment{
 					URL:      data.URL,
@@ -369,9 +366,8 @@ func TransformMessageToResponse(m *models.Message) (*threading.Message, error) {
 			if at.ContentID == "" {
 				at.ContentID = data.URL
 			}
-		case models.ATTACHMENT_TYPE_DOCUMENT:
-			data := a.GetDocument()
-			at.Type = threading.ATTACHMENT_TYPE_DOCUMENT
+		case *models.Attachment_Document:
+			data := adata.Document
 			at.Data = &threading.Attachment_Document{
 				Document: &threading.DocumentAttachment{
 					Mimetype: data.Mimetype,
@@ -382,9 +378,8 @@ func TransformMessageToResponse(m *models.Message) (*threading.Message, error) {
 			if at.ContentID == "" {
 				at.ContentID = data.MediaID
 			}
-		case models.ATTACHMENT_TYPE_VISIT:
-			data := a.GetVisit()
-			at.Type = threading.ATTACHMENT_TYPE_VISIT
+		case *models.Attachment_Visit:
+			data := adata.Visit
 			at.Data = &threading.Attachment_Visit{
 				Visit: &threading.VisitAttachment{
 					VisitID:   data.VisitID,
@@ -395,9 +390,8 @@ func TransformMessageToResponse(m *models.Message) (*threading.Message, error) {
 				// TODO: this isn't right as it should be the source layout ID
 				at.ContentID = data.VisitID
 			}
-		case models.ATTACHMENT_TYPE_VIDEO:
-			data := a.GetVideo()
-			at.Type = threading.ATTACHMENT_TYPE_VIDEO
+		case *models.Attachment_Video:
+			data := adata.Video
 			at.Data = &threading.Attachment_Video{
 				Video: &threading.VideoAttachment{
 					Mimetype:   data.Mimetype,
@@ -408,9 +402,8 @@ func TransformMessageToResponse(m *models.Message) (*threading.Message, error) {
 			if at.ContentID == "" {
 				at.ContentID = data.MediaID
 			}
-		case models.ATTACHMENT_TYPE_CARE_PLAN:
-			data := a.GetCarePlan()
-			at.Type = threading.ATTACHMENT_TYPE_CARE_PLAN
+		case *models.Attachment_CarePlan:
+			data := adata.CarePlan
 			at.Data = &threading.Attachment_CarePlan{
 				CarePlan: &threading.CarePlanAttachment{
 					CarePlanID:   data.CarePlanID,
@@ -420,9 +413,8 @@ func TransformMessageToResponse(m *models.Message) (*threading.Message, error) {
 			if at.ContentID == "" {
 				at.ContentID = data.CarePlanID
 			}
-		case models.ATTACHMENT_TYPE_PAYMENT_REQUEST:
-			data := a.GetPaymentRequest()
-			at.Type = threading.ATTACHMENT_TYPE_PAYMENT_REQUEST
+		case *models.Attachment_PaymentRequest:
+			data := adata.PaymentRequest
 			at.Data = &threading.Attachment_PaymentRequest{
 				PaymentRequest: &threading.PaymentRequestAttachment{
 					PaymentID: data.PaymentID,
@@ -432,7 +424,7 @@ func TransformMessageToResponse(m *models.Message) (*threading.Message, error) {
 				at.ContentID = data.PaymentID
 			}
 		default:
-			return nil, errors.New("invalid attachment type " + a.Type.String())
+			return nil, errors.Errorf("invalid attachment type %T", a.Data)
 
 		}
 		m2.Attachments = append(m2.Attachments, at)
@@ -505,10 +497,9 @@ func transformAttachmentsFromRequest(atts []*threading.Attachment) ([]*models.At
 			URL:       a.URL,
 			ContentID: a.ContentID,
 		}
-		switch a.Type {
-		case threading.ATTACHMENT_TYPE_AUDIO:
-			data := a.GetAudio()
-			at.Type = models.ATTACHMENT_TYPE_AUDIO
+		switch adata := a.Data.(type) {
+		case *threading.Attachment_Audio:
+			data := adata.Audio
 			at.Data = &models.Attachment_Audio{
 				Audio: &models.AudioAttachment{
 					Mimetype:   data.Mimetype,
@@ -516,27 +507,24 @@ func transformAttachmentsFromRequest(atts []*threading.Attachment) ([]*models.At
 					DurationNS: data.DurationNS,
 				},
 			}
-		case threading.ATTACHMENT_TYPE_CARE_PLAN:
-			data := a.GetCarePlan()
-			at.Type = models.ATTACHMENT_TYPE_CARE_PLAN
+		case *threading.Attachment_CarePlan:
+			data := adata.CarePlan
 			at.Data = &models.Attachment_CarePlan{
 				CarePlan: &models.CarePlanAttachment{
 					CarePlanName: data.CarePlanName,
 					CarePlanID:   data.CarePlanID,
 				},
 			}
-		case threading.ATTACHMENT_TYPE_GENERIC_URL:
-			data := a.GetGenericURL()
-			at.Type = models.ATTACHMENT_TYPE_GENERIC_URL
+		case *threading.Attachment_GenericURL:
+			data := adata.GenericURL
 			at.Data = &models.Attachment_Generic{
 				Generic: &models.GenericAttachment{
 					URL:      data.URL,
 					Mimetype: data.Mimetype,
 				},
 			}
-		case threading.ATTACHMENT_TYPE_IMAGE:
-			data := a.GetImage()
-			at.Type = models.ATTACHMENT_TYPE_IMAGE
+		case *threading.Attachment_Image:
+			data := adata.Image
 			at.Data = &models.Attachment_Image{
 				Image: &models.ImageAttachment{
 					Mimetype: data.Mimetype,
@@ -545,9 +533,8 @@ func transformAttachmentsFromRequest(atts []*threading.Attachment) ([]*models.At
 					Height:   data.Height,
 				},
 			}
-		case threading.ATTACHMENT_TYPE_VIDEO:
-			data := a.GetVideo()
-			at.Type = models.ATTACHMENT_TYPE_VIDEO
+		case *threading.Attachment_Video:
+			data := adata.Video
 			at.Data = &models.Attachment_Video{
 				Video: &models.VideoAttachment{
 					Mimetype:   data.Mimetype,
@@ -555,9 +542,8 @@ func transformAttachmentsFromRequest(atts []*threading.Attachment) ([]*models.At
 					DurationNS: data.DurationNS,
 				},
 			}
-		case threading.ATTACHMENT_TYPE_DOCUMENT:
-			data := a.GetDocument()
-			at.Type = models.ATTACHMENT_TYPE_DOCUMENT
+		case *threading.Attachment_Document:
+			data := adata.Document
 			at.Data = &models.Attachment_Document{
 				Document: &models.DocumentAttachment{
 					Mimetype: data.Mimetype,
@@ -565,25 +551,23 @@ func transformAttachmentsFromRequest(atts []*threading.Attachment) ([]*models.At
 					Name:     data.Name,
 				},
 			}
-		case threading.ATTACHMENT_TYPE_VISIT:
-			data := a.GetVisit()
-			at.Type = models.ATTACHMENT_TYPE_VISIT
+		case *threading.Attachment_Visit:
+			data := adata.Visit
 			at.Data = &models.Attachment_Visit{
 				Visit: &models.VisitAttachment{
 					VisitName: data.VisitName,
 					VisitID:   data.VisitID,
 				},
 			}
-		case threading.ATTACHMENT_TYPE_PAYMENT_REQUEST:
-			data := a.GetPaymentRequest()
-			at.Type = models.ATTACHMENT_TYPE_PAYMENT_REQUEST
+		case *threading.Attachment_PaymentRequest:
+			data := adata.PaymentRequest
 			at.Data = &models.Attachment_PaymentRequest{
 				PaymentRequest: &models.PaymentRequestAttachment{
 					PaymentID: data.PaymentID,
 				},
 			}
 		default:
-			return nil, errors.New("invalid attachment type " + a.Type.String())
+			return nil, errors.Errorf("invalid attachment type %T", a.Data)
 
 		}
 		as = append(as, at)

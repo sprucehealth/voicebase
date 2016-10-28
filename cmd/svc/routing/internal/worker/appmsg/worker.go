@@ -243,8 +243,8 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 	var mediaIDs []string
 	for _, at := range msg.Attachments {
 		// TODO: Add async video support?
-		if at.Type == threading.ATTACHMENT_TYPE_IMAGE {
-			mediaIDs = append(mediaIDs, at.GetImage().MediaID)
+		if d, ok := at.Data.(*threading.Attachment_Image); ok {
+			mediaIDs = append(mediaIDs, d.Image.MediaID)
 		}
 	}
 
