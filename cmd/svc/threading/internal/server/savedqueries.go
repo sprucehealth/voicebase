@@ -118,10 +118,6 @@ func (s *threadsServer) updateSavedQueriesAddThread(ctx context.Context, thread 
 	return &result, nil
 }
 
-func (s *threadsServer) updateSavedQueriesRemoveThread(ctx context.Context, threadID models.ThreadID) error {
-	return errors.Trace(s.dal.RemoveThreadFromAllSavedQueryIndexes(ctx, threadID))
-}
-
 // updateSavedQueriesForThread updates all relevant saved queries when a thread is updated (e.g. new post, membership change)
 func (s *threadsServer) updateSavedQueriesForThread(ctx context.Context, thread *models.Thread) (*savedQueryUpdateResult, error) {
 	// Get the list of members for the thread and follow memberships to get the root internal entities.

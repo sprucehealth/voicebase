@@ -575,7 +575,6 @@ func (s *threadsServer) DeleteThread(ctx context.Context, in *threading.DeleteTh
 
 	thread := threads[0]
 	if thread.PrimaryEntityID != "" {
-
 		entity, err := directory.SingleEntity(ctx, s.directoryClient, &directory.LookupEntitiesRequest{
 			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
 			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
@@ -597,15 +596,15 @@ func (s *threadsServer) DeleteThread(ctx context.Context, in *threading.DeleteTh
 		}
 	}
 	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
-		if err := s.dal.DeleteThread(ctx, threadID); err != nil {
+		if err := dl.DeleteThread(ctx, threadID); err != nil {
 			return errors.Trace(err)
 		}
-		return errors.Trace(s.dal.RecordThreadEvent(ctx, threadID, in.ActorEntityID, models.ThreadEventDelete))
+		if err := dl.RecordThreadEvent(ctx, threadID, in.ActorEntityID, models.ThreadEventDelete); err != nil {
+			return errors.Trace(err)
+		}
+		return errors.Trace(dl.RemoveThreadFromAllSavedQueryIndexes(ctx, threadID))
 	}); err != nil {
 		return nil, errors.Trace(err)
-	}
-	if err := s.updateSavedQueriesRemoveThread(ctx, thread.ID); err != nil {
-		golog.Errorf("Failed to remove thread %s from saved queries: %s", thread.ID, err)
 	}
 	return &threading.DeleteThreadResponse{}, nil
 }
@@ -620,7 +619,7 @@ func (s *threadsServer) LinkedThread(ctx context.Context, in *threading.LinkedTh
 	}
 	thread, prependSender, err := s.dal.LinkedThread(ctx, threadID)
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, "Linked thread not found")
+		return nil, grpcErrorf(codes.NotFound, "Linked thread for %s not found", threadID)
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -1177,7 +1176,7 @@ func (s *threadsServer) SavedQuery(ctx context.Context, in *threading.SavedQuery
 	}
 	query, err := s.dal.SavedQuery(ctx, id)
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, "Saved query not found")
+		return nil, grpcErrorf(codes.NotFound, "Saved query %s not found", in.SavedQueryID)
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -1264,7 +1263,7 @@ func (s *threadsServer) Thread(ctx context.Context, in *threading.ThreadRequest)
 	if err != nil {
 		return nil, errors.Trace(err)
 	} else if len(threads) == 0 {
-		return nil, grpcErrorf(codes.NotFound, "Thread not found")
+		return nil, grpcErrorf(codes.NotFound, "Thread %s not found", tid)
 	}
 	thread := threads[0]
 
@@ -1279,7 +1278,7 @@ func (s *threadsServer) Thread(ctx context.Context, in *threading.ThreadRequest)
 			return nil, errors.Trace(err)
 		}
 		if len(ts) == 0 {
-			return nil, grpcErrorf(codes.NotFound, "Thread not found")
+			return nil, grpcErrorf(codes.NotFound, "Thread %s not found", th.ID)
 		}
 		// TODO: for now can't require the viewer since the graphql service requests the thread to get the org ID before it can know the entity viewing
 		// } else if th.Type == threading.THREAD_TYPE_TEAM {
@@ -1346,7 +1345,7 @@ func (s *threadsServer) ThreadItem(ctx context.Context, in *threading.ThreadItem
 
 	item, err := s.dal.ThreadItem(ctx, tid)
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, "Thread item not found")
+		return nil, grpcErrorf(codes.NotFound, "Thread item %s not found", tid)
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -1588,7 +1587,7 @@ func (s *threadsServer) UpdateThread(ctx context.Context, in *threading.UpdateTh
 	if err != nil {
 		return nil, errors.Trace(err)
 	} else if len(threads) == 0 {
-		return nil, grpcErrorf(codes.NotFound, "Thread not found")
+		return nil, grpcErrorf(codes.NotFound, "Thread %s not found", tid)
 	}
 	thread := threads[0]
 
