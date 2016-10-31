@@ -265,6 +265,16 @@ message UpdateAuthTokenResponse {
 	AuthToken token = 1;
 }
 
+// DeleteAccountRequest represents a request to delete an account for logging in.
+message DeleteAccountRequest {
+	string account_id = 1 [(gogoproto.customname) = "AccountID"];
+}
+
+// DeleteAccountResponse represents the response from an DeleteAccount request
+message DeleteAccountResponse {
+	Account account = 1;
+}
+
 // Auth provides mechanisms for other services to perform authentication of external entities interacting with them
 service Auth {
 	rpc AuthenticateLogin (AuthenticateLoginRequest) returns (AuthenticateLoginResponse);
@@ -275,6 +285,7 @@ service Auth {
 	rpc CreateAccount (CreateAccountRequest) returns (CreateAccountResponse);
 	rpc CreatePasswordResetToken (CreatePasswordResetTokenRequest) returns (CreatePasswordResetTokenResponse);
 	rpc CreateVerificationCode (CreateVerificationCodeRequest) returns (CreateVerificationCodeResponse);
+	rpc DeleteAccount (DeleteAccountRequest) returns (DeleteAccountResponse);
 	rpc GetAccount (GetAccountRequest) returns (GetAccountResponse);
 	rpc Unauthenticate (UnauthenticateRequest) returns (UnauthenticateResponse);
 	rpc UpdatePassword (UpdatePasswordRequest) returns (UpdatePasswordResponse);

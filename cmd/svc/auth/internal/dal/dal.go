@@ -44,6 +44,7 @@ type DAL interface {
 	DeleteAccountPhone(ctx context.Context, id AccountPhoneID) (int64, error)
 	InsertAccountEmail(ctx context.Context, model *AccountEmail) (AccountEmailID, error)
 	AccountEmail(ctx context.Context, id AccountEmailID) (*AccountEmail, error)
+	AccountEmailForAccount(ctx context.Context, id AccountID) (*AccountEmail, error)
 	UpdateAccountEmail(ctx context.Context, id AccountEmailID, update *AccountEmailUpdate) (int64, error)
 	DeleteAccountEmail(ctx context.Context, id AccountEmailID) (int64, error)
 	InsertVerificationCode(ctx context.Context, model *VerificationCode) error
@@ -522,7 +523,7 @@ type Account struct {
 type AccountUpdate struct {
 	PrimaryAccountEmailID AccountEmailID
 	PrimaryAccountPhoneID AccountPhoneID
-	Password              *[]byte
+	Password              []byte
 	Status                *AccountStatus
 	LastName              *string
 	FirstName             *string
@@ -639,8 +640,8 @@ func (d *dal) InsertAccount(ctx context.Context, model *Account) (AccountID, err
 // Account retrieves a account record
 func (d *dal) Account(ctx context.Context, id AccountID) (*Account, error) {
 	row := d.db.QueryRow(
-		selectAccount+` WHERE id = ?`, id.Val)
-	model, err := scanAccount(row)
+		selectAccount+` WHERE id = ?`, id)
+	model, err := scanAccount(row, "id = %s", id)
 	return model, errors.Trace(err)
 }
 
@@ -649,7 +650,7 @@ func (d *dal) AccountForEmail(ctx context.Context, email string) (*Account, erro
 	row := d.db.QueryRow(
 		selectAccount+` JOIN account_email ON account.id = account_email.account_id
           WHERE account_email.email = ?`, email)
-	model, err := scanAccount(row)
+	model, err := scanAccount(row, "account_email.email = %s", email)
 	return model, errors.Trace(err)
 }
 
@@ -662,8 +663,8 @@ func (d *dal) UpdateAccount(ctx context.Context, id AccountID, update *AccountUp
 	if update.PrimaryAccountPhoneID.IsValid {
 		args.Append("primary_account_phone_id", update.PrimaryAccountPhoneID)
 	}
-	if update.Password != nil {
-		args.Append("password", *update.Password)
+	if len(update.Password) != 0 {
+		args.Append("password", update.Password)
 	}
 	if update.Status != nil {
 		args.Append("status", update.Status.String())
@@ -680,7 +681,7 @@ func (d *dal) UpdateAccount(ctx context.Context, id AccountID, update *AccountUp
 
 	res, err := d.db.Exec(
 		`UPDATE account
-          SET `+args.ColumnsForUpdate()+` WHERE id = ?`, append(args.Values(), id.Val)...)
+          SET `+args.ColumnsForUpdate()+` WHERE id = ?`, append(args.Values(), id)...)
 	if err != nil {
 		return 0, errors.Trace(err)
 	}
@@ -710,24 +711,16 @@ func (d *dal) AuthToken(ctx context.Context, token string, expiresAfter time.Tim
 	}
 	row := d.db.QueryRow(
 		selectAuthToken+` WHERE token = BINARY ? AND expires > ? `+fu, token, expiresAfter)
-	model, err := scanAuthToken(row)
+	model, err := scanAuthToken(row, "token = %s", token)
 	return model, errors.Trace(err)
 }
 
 // ActiveAuthTokenForAccount returns the current active non shadow auth token record that conforms to the provided input
 func (d *dal) ActiveAuthTokenForAccount(ctx context.Context, accountID AccountID, deviceID string, duration AuthTokenDurationType) (*AuthToken, error) {
+	now := time.Now()
 	row := d.db.QueryRow(
-		selectAuthToken+` WHERE account_id = ? AND shadow = false AND expires > ? AND device_id = ? ORDER BY created DESC LIMIT 1`, accountID, time.Now(), deviceID)
-	model, err := scanAuthToken(row)
-
-	// for backwards compatibiltiy for when we were not recording device_id, lookup an active auth token
-	// of the same duration type
-	if errors.Cause(err) == ErrNotFound {
-		row = d.db.QueryRow(
-			selectAuthToken+` WHERE account_id = ? AND shadow = false AND expires > ? AND duration_type = ? ORDER BY created DESC LIMIT 1`, accountID, time.Now(), duration.String())
-		model, err = scanAuthToken(row)
-	}
-
+		selectAuthToken+` WHERE account_id = ? AND shadow = false AND expires > ? AND device_id = ? ORDER BY created DESC LIMIT 1`, accountID, now, deviceID)
+	model, err := scanAuthToken(row, "account_id = %s, shadow = false, expires > %s, device_id = %s", accountID, now, deviceID)
 	return model, errors.Trace(err)
 }
 
@@ -833,8 +826,8 @@ func (d *dal) InsertAccountEvent(ctx context.Context, model *AccountEvent) (Acco
 // AccountEvent retrieves a account_event record
 func (d *dal) AccountEvent(ctx context.Context, id AccountEventID) (*AccountEvent, error) {
 	row := d.db.QueryRow(
-		selectAccountEvent+` WHERE id = ?`, id.Val)
-	model, err := scanAccountEvent(row)
+		selectAccountEvent+` WHERE id = ?`, id)
+	model, err := scanAccountEvent(row, "id = %s", id)
 	return model, errors.Trace(err)
 }
 
@@ -874,8 +867,8 @@ func (d *dal) InsertAccountPhone(ctx context.Context, model *AccountPhone) (Acco
 // AccountPhone retrieves a account_phone record
 func (d *dal) AccountPhone(ctx context.Context, id AccountPhoneID) (*AccountPhone, error) {
 	row := d.db.QueryRow(
-		selectAccountPhone+` WHERE id = ?`, id.Val)
-	model, err := scanAccountPhone(row)
+		selectAccountPhone+` WHERE id = ?`, id)
+	model, err := scanAccountPhone(row, "id = %s", id)
 	return model, errors.Trace(err)
 }
 
@@ -897,7 +890,7 @@ func (d *dal) UpdateAccountPhone(ctx context.Context, id AccountPhoneID, update 
 
 	res, err := d.db.Exec(
 		`UPDATE account_phone
-          SET `+args.ColumnsForUpdate()+` WHERE id = ?`, append(args.Values(), id.Val)...)
+          SET `+args.ColumnsForUpdate()+` WHERE id = ?`, append(args.Values(), id)...)
 	if err != nil {
 		return 0, errors.Trace(err)
 	}
@@ -942,8 +935,16 @@ func (d *dal) InsertAccountEmail(ctx context.Context, model *AccountEmail) (Acco
 // AccountEmail retrieves a account_email record
 func (d *dal) AccountEmail(ctx context.Context, id AccountEmailID) (*AccountEmail, error) {
 	row := d.db.QueryRow(
-		selectAccountEmail+` WHERE id = ?`, id.Val)
-	model, err := scanAccountEmail(row)
+		selectAccountEmail+` WHERE id = ?`, id)
+	model, err := scanAccountEmail(row, "id = %s", id)
+	return model, errors.Trace(err)
+}
+
+// AccountEmailForAccount retrieves a account_email record
+func (d *dal) AccountEmailForAccount(ctx context.Context, id AccountID) (*AccountEmail, error) {
+	row := d.db.QueryRow(
+		selectAccountEmail+` WHERE account_id = ?`, id)
+	model, err := scanAccountEmail(row, "account_id = %s", id)
 	return model, errors.Trace(err)
 }
 
@@ -965,7 +966,7 @@ func (d *dal) UpdateAccountEmail(ctx context.Context, id AccountEmailID, update 
 
 	res, err := d.db.Exec(
 		`UPDATE account_email
-          SET `+args.ColumnsForUpdate()+` WHERE id = ?`, append(args.Values(), id.Val)...)
+          SET `+args.ColumnsForUpdate()+` WHERE id = ?`, append(args.Values(), id)...)
 	if err != nil {
 		return 0, errors.Trace(err)
 	}
@@ -1025,7 +1026,7 @@ func (d *dal) UpdateVerificationCode(ctx context.Context, token string, update *
 func (d *dal) VerificationCode(ctx context.Context, token string) (*VerificationCode, error) {
 	row := d.db.QueryRow(
 		selectVerificationCode+` WHERE token = ?`, token)
-	model, err := scanVerificationCode(row)
+	model, err := scanVerificationCode(row, "token = %s", token)
 	return model, errors.Trace(err)
 }
 
@@ -1038,7 +1039,7 @@ func (d *dal) VerificationCodesByValue(ctx context.Context, codeType Verificatio
 
 	var verificationCodes []*VerificationCode
 	for rows.Next() {
-		verificationCode, err := scanVerificationCode(rows)
+		verificationCode, err := scanVerificationCode(rows, "verification_type = %s, verified_value = %s", codeType.String(), verifiedValue)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
@@ -1065,7 +1066,7 @@ func (d *dal) DeleteVerificationCode(ctx context.Context, token string) (int64, 
 func (d *dal) TwoFactorLogin(ctx context.Context, accountID AccountID, deviceID string) (*TwoFactorLogin, error) {
 	row := d.db.QueryRow(
 		selectTwoFactorLogin+` WHERE account_id = ? AND device_id = ?`, accountID, deviceID)
-	model, err := scanTwoFactorLogin(row)
+	model, err := scanTwoFactorLogin(row, "account_id = %s, device_id = %s", accountID, deviceID)
 	return model, errors.Trace(err)
 }
 
@@ -1111,7 +1112,7 @@ const selectAccount = `
     SELECT account.primary_account_phone_id, account.password, account.status, account.created, account.primary_account_email_id, account.first_name, account.last_name, account.modified, account.id, account.type
       FROM account`
 
-func scanAccount(row dbutil.Scanner) (*Account, error) {
+func scanAccount(row dbutil.Scanner, contextFormat string, args ...interface{}) (*Account, error) {
 	var m Account
 	m.PrimaryAccountPhoneID = EmptyAccountPhoneID()
 	m.PrimaryAccountEmailID = EmptyAccountEmailID()
@@ -1119,7 +1120,7 @@ func scanAccount(row dbutil.Scanner) (*Account, error) {
 
 	err := row.Scan(&m.PrimaryAccountPhoneID, &m.Password, &m.Status, &m.Created, &m.PrimaryAccountEmailID, &m.FirstName, &m.LastName, &m.Modified, &m.ID, &m.Type)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(ErrNotFound)
+		return nil, errors.Trace(errors.Annotate(ErrNotFound, "No rows found - account - Context: "+fmt.Sprintf(contextFormat, args...)))
 	}
 	return &m, errors.Trace(err)
 }
@@ -1128,13 +1129,13 @@ const selectAuthToken = `
     SELECT auth_token.token, auth_token.client_encryption_key, auth_token.account_id, auth_token.created, auth_token.expires, auth_token.shadow, auth_token.duration_type, auth_token.device_id, auth_token.platform
       FROM auth_token`
 
-func scanAuthToken(row dbutil.Scanner) (*AuthToken, error) {
+func scanAuthToken(row dbutil.Scanner, contextFormat string, args ...interface{}) (*AuthToken, error) {
 	var m AuthToken
 	m.AccountID = EmptyAccountID()
 
 	err := row.Scan(&m.Token, &m.ClientEncryptionKey, &m.AccountID, &m.Created, &m.Expires, &m.Shadow, &m.DurationType, &m.DeviceID, &m.Platform)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(ErrNotFound)
+		return nil, errors.Trace(errors.Annotate(ErrNotFound, "No rows found - auth_token - Context: "+fmt.Sprintf(contextFormat, args...)))
 	}
 	return &m, errors.Trace(err)
 }
@@ -1143,7 +1144,7 @@ const selectAccountEvent = `
     SELECT account_event.id, account_event.account_id, account_event.account_email_id, account_event.account_phone_id, account_event.event
       FROM account_event`
 
-func scanAccountEvent(row dbutil.Scanner) (*AccountEvent, error) {
+func scanAccountEvent(row dbutil.Scanner, contextFormat string, args ...interface{}) (*AccountEvent, error) {
 	var m AccountEvent
 	m.ID = EmptyAccountEventID()
 	m.AccountID = EmptyAccountID()
@@ -1152,7 +1153,7 @@ func scanAccountEvent(row dbutil.Scanner) (*AccountEvent, error) {
 
 	err := row.Scan(&m.ID, &m.AccountID, &m.AccountEmailID, &m.AccountPhoneID, &m.Event)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(ErrNotFound)
+		return nil, errors.Trace(errors.Annotate(ErrNotFound, "No rows found - account_event - Context: "+fmt.Sprintf(contextFormat, args...)))
 	}
 	return &m, errors.Trace(err)
 }
@@ -1161,14 +1162,14 @@ const selectAccountPhone = `
     SELECT account_phone.account_id, account_phone.phone_number, account_phone.status, account_phone.verified, account_phone.created, account_phone.modified, account_phone.id
       FROM account_phone`
 
-func scanAccountPhone(row dbutil.Scanner) (*AccountPhone, error) {
+func scanAccountPhone(row dbutil.Scanner, contextFormat string, args ...interface{}) (*AccountPhone, error) {
 	var m AccountPhone
 	m.AccountID = EmptyAccountID()
 	m.ID = EmptyAccountPhoneID()
 
 	err := row.Scan(&m.AccountID, &m.PhoneNumber, &m.Status, &m.Verified, &m.Created, &m.Modified, &m.ID)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(ErrNotFound)
+		return nil, errors.Trace(errors.Annotate(ErrNotFound, "No rows found - account_phone - Context: "+fmt.Sprintf(contextFormat, args...)))
 	}
 	return &m, errors.Trace(err)
 }
@@ -1177,14 +1178,14 @@ const selectAccountEmail = `
     SELECT account_email.email, account_email.status, account_email.verified, account_email.created, account_email.modified, account_email.id, account_email.account_id
       FROM account_email`
 
-func scanAccountEmail(row dbutil.Scanner) (*AccountEmail, error) {
+func scanAccountEmail(row dbutil.Scanner, contextFormat string, args ...interface{}) (*AccountEmail, error) {
 	var m AccountEmail
 	m.ID = EmptyAccountEmailID()
 	m.AccountID = EmptyAccountID()
 
 	err := row.Scan(&m.Email, &m.Status, &m.Verified, &m.Created, &m.Modified, &m.ID, &m.AccountID)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(ErrNotFound)
+		return nil, errors.Trace(errors.Annotate(ErrNotFound, "No rows found - account_email - Context: "+fmt.Sprintf(contextFormat, args...)))
 	}
 	return &m, errors.Trace(err)
 }
@@ -1193,12 +1194,12 @@ const selectVerificationCode = `
     SELECT verification_code.verified_value, verification_code.consumed, verification_code.created, verification_code.expires, verification_code.token, verification_code.code, verification_code.verification_type
       FROM verification_code`
 
-func scanVerificationCode(row dbutil.Scanner) (*VerificationCode, error) {
+func scanVerificationCode(row dbutil.Scanner, contextFormat string, args ...interface{}) (*VerificationCode, error) {
 	var m VerificationCode
 
 	err := row.Scan(&m.VerifiedValue, &m.Consumed, &m.Created, &m.Expires, &m.Token, &m.Code, &m.VerificationType)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(ErrNotFound)
+		return nil, errors.Trace(errors.Annotate(ErrNotFound, "No rows found - verification_code - Context: "+fmt.Sprintf(contextFormat, args...)))
 	}
 	return &m, errors.Trace(err)
 }
@@ -1207,13 +1208,13 @@ const selectTwoFactorLogin = `
     SELECT two_factor_login.account_id, two_factor_login.device_id, two_factor_login.last_login
       FROM two_factor_login`
 
-func scanTwoFactorLogin(row dbutil.Scanner) (*TwoFactorLogin, error) {
+func scanTwoFactorLogin(row dbutil.Scanner, contextFormat string, args ...interface{}) (*TwoFactorLogin, error) {
 	var m TwoFactorLogin
 	m.AccountID = EmptyAccountID()
 
 	err := row.Scan(&m.AccountID, &m.DeviceID, &m.LastLogin)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(ErrNotFound)
+		return nil, errors.Trace(errors.Annotate(ErrNotFound, "No rows found - two_factor_login - Context: "+fmt.Sprintf(contextFormat, args...)))
 	}
 	return &m, errors.Trace(err)
 }

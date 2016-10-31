@@ -3,6 +3,7 @@ package server
 import (
 	"crypto/sha512"
 	"encoding/base64"
+	"fmt"
 	"testing"
 	"time"
 
@@ -1462,7 +1463,8 @@ func TestCreatePasswordResetToken(t *testing.T) {
 	var token string
 
 	dl.Expect(mock.NewExpectation(dl.AccountForEmail, email).WithReturns(&dal.Account{
-		ID: aID1,
+		ID:     aID1,
+		Status: dal.AccountStatusActive,
 	}, nil))
 
 	dl.Expect(mock.NewExpectation(dl.VerificationCodesByValue, dal.VerificationCodeTypePasswordReset, aID1.String()))
@@ -1534,7 +1536,7 @@ func TestUpdatePassword(t *testing.T) {
 		acc, ok := p[1].(*dal.AccountUpdate)
 		test.Assert(t, ok, "Expected *dal.AccountUpdate")
 		test.AssertNotNil(t, acc.Password)
-		test.OK(t, hasher.CompareHashAndPassword(*acc.Password, []byte(newPassword)))
+		test.OK(t, hasher.CompareHashAndPassword(acc.Password, []byte(newPassword)))
 	}))
 	dl.Expect(mock.NewExpectation(dl.UpdateVerificationCode,
 		token, &dal.VerificationCodeUpdate{Consumed: ptr.Bool(true)}).WithReturns(int64(1), nil))
@@ -1693,5 +1695,92 @@ func TestLastLogin(t *testing.T) {
 		Platform:  auth.Platform_IOS,
 		DeviceID:  "deviceID",
 		LoginTime: uint64(loginTime.Unix()),
+	}, res)
+}
+
+func TestDeleteAccountAlreadyDeleted(t *testing.T) {
+	aID1, err := dal.NewAccountID()
+	test.OK(t, err)
+
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+
+	dl.Expect(mock.NewExpectation(dl.Account, aID1).WithReturns(&dal.Account{
+		ID:     aID1,
+		Status: dal.AccountStatusDeleted,
+	}, nil))
+
+	s, err := New(dl, nil, clientEncryptionSecret)
+	test.OK(t, err)
+
+	res, err := s.DeleteAccount(context.Background(), &auth.DeleteAccountRequest{
+		AccountID: aID1.String(),
+	})
+	test.OK(t, err)
+	test.Equals(t, &auth.DeleteAccountResponse{
+		Account: accountAsResponse(&dal.Account{
+			ID:     aID1,
+			Status: dal.AccountStatusDeleted,
+		}),
+	}, res)
+}
+
+func TestDeleteAccount(t *testing.T) {
+	aID1, err := dal.NewAccountID()
+	test.OK(t, err)
+	aeID1, err := dal.NewAccountEmailID()
+	test.OK(t, err)
+
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+
+	dl.Expect(mock.NewExpectation(dl.Account, aID1).WithReturns(&dal.Account{
+		ID:     aID1,
+		Status: dal.AccountStatusActive,
+	}, nil))
+
+	// Validate with expectation FN since password is rand
+	dl.Expect(mock.NewExpectationFn(dl.UpdateAccount, func(p ...interface{}) {
+		test.Assert(t, len(p) == 2, "Expected 2 params to be provided")
+		accountID, ok := p[0].(dal.AccountID)
+		test.Assert(t, ok, "Expected *dal.AccountID, got %T", accountID)
+		test.Equals(t, accountID, aID1)
+		update, ok := p[1].(*dal.AccountUpdate)
+		test.Assert(t, ok, "Expected *dal.AccountUpdate, got %T", update)
+		test.Assert(t, len(update.Password) == 15, "Expected password of length 15")
+	}).WithReturns(int64(1), nil))
+
+	testEmail := "test@test.com"
+	dl.Expect(mock.NewExpectation(dl.AccountEmailForAccount, aID1).WithReturns(&dal.AccountEmail{
+		ID:        aeID1,
+		AccountID: aID1,
+		Email:     testEmail,
+	}, nil))
+
+	dl.Expect(mock.NewExpectation(dl.UpdateAccountEmail, aeID1, &dal.AccountEmailUpdate{
+		Email: ptr.String(fmt.Sprintf("%s-deleted-%s", testEmail, aID1)),
+	}).WithReturns(int64(1), nil))
+
+	// Delete the auth tokens
+	dl.Expect(mock.NewExpectation(dl.DeleteAuthTokens, aID1))
+
+	// Reread the account
+	dl.Expect(mock.NewExpectation(dl.Account, aID1).WithReturns(&dal.Account{
+		ID:     aID1,
+		Status: dal.AccountStatusDeleted,
+	}, nil))
+
+	s, err := New(dl, nil, clientEncryptionSecret)
+	test.OK(t, err)
+
+	res, err := s.DeleteAccount(context.Background(), &auth.DeleteAccountRequest{
+		AccountID: aID1.String(),
+	})
+	test.OK(t, err)
+	test.Equals(t, &auth.DeleteAccountResponse{
+		Account: accountAsResponse(&dal.Account{
+			ID:     aID1,
+			Status: dal.AccountStatusDeleted,
+		}),
 	}, res)
 }

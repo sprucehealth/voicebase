@@ -198,6 +198,14 @@ func (dl *MockDAL) AccountEmail(ctx context.Context, id dal.AccountEmailID) (*da
 	return rets[0].(*dal.AccountEmail), mock.SafeError(rets[1])
 }
 
+func (dl *MockDAL) AccountEmailForAccount(ctx context.Context, id dal.AccountID) (*dal.AccountEmail, error) {
+	rets := dl.Record(id)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*dal.AccountEmail), mock.SafeError(rets[1])
+}
+
 func (dl *MockDAL) UpdateAccountEmail(ctx context.Context, id dal.AccountEmailID, update *dal.AccountEmailUpdate) (int64, error) {
 	rets := dl.Record(id, update)
 	if len(rets) == 0 {

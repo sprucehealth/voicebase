@@ -144,3 +144,12 @@ func (c *Client) UpdateAuthToken(ctx context.Context, in *auth.UpdateAuthTokenRe
 
 	return rets[0].(*auth.UpdateAuthTokenResponse), mock.SafeError(rets[1])
 }
+
+func (c *Client) DeleteAccount(ctx context.Context, in *auth.DeleteAccountRequest, opts ...grpc.CallOption) (*auth.DeleteAccountResponse, error) {
+	rets := c.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].(*auth.DeleteAccountResponse), mock.SafeError(rets[1])
+}

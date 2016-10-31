@@ -21,6 +21,7 @@ import (
 	"github.com/sprucehealth/backend/libs/hash"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/ptr"
+	"github.com/sprucehealth/backend/libs/randutils"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/auth"
@@ -33,28 +34,8 @@ import (
 var grpcErrf = grpc.Errorf
 
 func grpcErrorf(c codes.Code, format string, a ...interface{}) error {
-	if c == codes.Internal {
-		golog.LogDepthf(1, golog.ERR, "Auth - Internal GRPC Error: %s", fmt.Sprintf(format, a...))
-	}
 	return grpcErrf(c, format, a...)
 }
-
-func grpcError(err error) error {
-	if grpc.Code(err) == codes.Unknown {
-		return grpcErrorf(codes.Internal, err.Error())
-	}
-	return err
-}
-
-func grpcIErrorf(fmt string, args ...interface{}) error {
-	golog.LogDepthf(1, golog.ERR, fmt, args...)
-	return grpcErrorf(codes.Internal, fmt, args...)
-}
-
-var (
-	// ErrNotImplemented is returned from RPC calls that have yet to be implemented
-	ErrNotImplemented = errors.New("Not Implemented")
-)
 
 type server struct {
 	dal                       dal.DAL
@@ -88,7 +69,7 @@ func (s *server) AuthenticateLogin(ctx context.Context, rd *auth.AuthenticateLog
 	if errors.Cause(err) == dal.ErrNotFound {
 		return nil, grpcErrorf(auth.EmailNotFound, "Unknown email: %s", rd.Email)
 	} else if err != nil {
-		return nil, grpcIErrorf(err.Error())
+		return nil, errors.Trace(err)
 	} else if account.Status == dal.AccountStatusBlocked {
 		return nil, grpcErrorf(auth.AccountBlocked, "auth: blocked account")
 	} else if account.Status == dal.AccountStatusSuspended {
@@ -110,9 +91,9 @@ func (s *server) AuthenticateLogin(ctx context.Context, rd *auth.AuthenticateLog
 		},
 	})
 	if err != nil {
-		return nil, grpcIErrorf("Unable to lookup setting %s for account %s", authSetting.ConfigKey2FAEnabled, err.Error())
+		return nil, errors.Errorf("Unable to lookup setting %s for account %s", authSetting.ConfigKey2FAEnabled, err.Error())
 	} else if len(res.Values) != 1 {
-		return nil, grpcIErrorf("Expected 1 value for setting %s but got back %d", authSetting.ConfigKey2FAEnabled, len(res.Values))
+		return nil, errors.Errorf("Expected 1 value for setting %s but got back %d", authSetting.ConfigKey2FAEnabled, len(res.Values))
 	}
 	val := res.Values[0]
 	accountRequiresTwoFactor = val.GetBoolean().Value && s.deviceNeeds2FA(ctx, account.ID, rd.DeviceID)
@@ -121,7 +102,7 @@ func (s *server) AuthenticateLogin(ctx context.Context, rd *auth.AuthenticateLog
 		// TODO: Make this response and data less phone/sms specific
 		accountPhone, err := s.dal.AccountPhone(ctx, account.PrimaryAccountPhoneID)
 		if err != nil {
-			return nil, grpcIErrorf(err.Error())
+			return nil, errors.Trace(err)
 		}
 		twoFactorPhone = accountPhone.PhoneNumber
 	} else {
@@ -132,7 +113,7 @@ func (s *server) AuthenticateLogin(ctx context.Context, rd *auth.AuthenticateLog
 
 		authToken, err = s.generateAndInsertToken(ctx, s.dal, account.ID, rd.TokenAttributes, rd.Duration, rd.DeviceID, platform)
 		if err != nil {
-			return nil, grpcIErrorf(err.Error())
+			return nil, errors.Trace(err)
 		}
 		if err := s.dal.TrackLogin(ctx, account.ID, platform, rd.DeviceID); err != nil {
 			golog.Errorf("Unable to record login for account %s: %s", account.ID, err)
@@ -175,7 +156,7 @@ func (s *server) AuthenticateLoginWithCode(ctx context.Context, rd *auth.Authent
 	if errors.Cause(err) == dal.ErrNotFound {
 		return nil, grpcErrorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
 	} else if err != nil {
-		return nil, grpcIErrorf(err.Error())
+		return nil, errors.Trace(err)
 	} else if verificationCode.VerificationType != dal.VerificationCodeTypeAccount2fa {
 		return nil, grpcErrorf(codes.NotFound, "No 2FA verification code maps to the provided token %q", rd.Token)
 	}
@@ -192,12 +173,12 @@ func (s *server) AuthenticateLoginWithCode(ctx context.Context, rd *auth.Authent
 		Consumed: ptr.Bool(true),
 	})
 	if err != nil {
-		return nil, grpcIErrorf(err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	accountID, err := dal.ParseAccountID(verificationCode.VerifiedValue)
 	if err != nil {
-		return nil, grpcIErrorf("ACCOUNT_2FA verification code value %q failed to parse into account id, unable to generate auth token: %s", verificationCode.VerifiedValue, err)
+		return nil, errors.Errorf("ACCOUNT_2FA verification code value %q failed to parse into account id, unable to generate auth token: %s", verificationCode.VerifiedValue, err)
 	}
 
 	// Record the 2FA login attempt
@@ -208,12 +189,12 @@ func (s *server) AuthenticateLoginWithCode(ctx context.Context, rd *auth.Authent
 
 	authToken, err := s.generateAndInsertToken(ctx, s.dal, accountID, rd.TokenAttributes, rd.Duration, rd.DeviceID, platform)
 	if err != nil {
-		return nil, grpcIErrorf("Failed to generate and insert new auth token for ACCOUNT_2FA: %s", err)
+		return nil, errors.Errorf("Failed to generate and insert new auth token for ACCOUNT_2FA: %s", err)
 	}
 
 	acc, err := s.dal.Account(ctx, accountID)
 	if err != nil {
-		return nil, grpcIErrorf("Failed to fetch account record for ACCOUNT_2FA: %s", err)
+		return nil, errors.Errorf("Failed to fetch account record for ACCOUNT_2FA: %s", err)
 	}
 
 	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
@@ -252,7 +233,7 @@ var (
 func (s *server) CheckAuthentication(ctx context.Context, rd *auth.CheckAuthenticationRequest) (*auth.CheckAuthenticationResponse, error) {
 	attributedToken, err := appendAttributes(rd.Token, rd.TokenAttributes)
 	if err != nil {
-		return nil, grpcIErrorf(err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	var account *dal.Account
@@ -312,7 +293,7 @@ func (s *server) CheckAuthentication(ctx context.Context, rd *auth.CheckAuthenti
 		return nil
 	}); err != nil {
 		if err != nil {
-			return nil, grpcIErrorf(err.Error())
+			return nil, errors.Trace(err)
 		}
 	}
 	if !authenticated {
@@ -336,7 +317,7 @@ func (s *server) CheckVerificationCode(ctx context.Context, rd *auth.CheckVerifi
 	if errors.Cause(err) == dal.ErrNotFound {
 		return nil, grpcErrorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
 	} else if err != nil {
-		return nil, grpcIErrorf(err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	// Check that the code matches the token and it is not expired
@@ -351,7 +332,7 @@ func (s *server) CheckVerificationCode(ctx context.Context, rd *auth.CheckVerifi
 		Consumed: ptr.Bool(true),
 	})
 	if err != nil {
-		return nil, grpcIErrorf(err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	// If this is a ACCOUNT_2FA token return the account object as well
@@ -359,12 +340,12 @@ func (s *server) CheckVerificationCode(ctx context.Context, rd *auth.CheckVerifi
 	if verificationCode.VerificationType == dal.VerificationCodeTypeAccount2fa {
 		accountID, err := dal.ParseAccountID(verificationCode.VerifiedValue)
 		if err != nil {
-			return nil, grpcIErrorf("ACCOUNT_2FA verification code value %q failed to parse into account id: %s", verificationCode.VerifiedValue, err)
+			return nil, errors.Errorf("ACCOUNT_2FA verification code value %q failed to parse into account id: %s", verificationCode.VerifiedValue, err)
 		}
 
 		acc, err := s.dal.Account(ctx, accountID)
 		if err != nil {
-			return nil, grpcIErrorf("Failed to fetch account record for ACCOUNT_2FA: %s", err)
+			return nil, errors.Errorf("Failed to fetch account record for ACCOUNT_2FA: %s", err)
 		}
 		account = accountAsResponse(acc)
 	}
@@ -384,7 +365,7 @@ func (s *server) CheckPasswordResetToken(ctx context.Context, rd *auth.CheckPass
 	if errors.Cause(err) == dal.ErrNotFound {
 		return nil, grpcErrorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
 	} else if err != nil {
-		return nil, grpcIErrorf(err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	// Check that the token is of the appropriate type and is not expired
@@ -397,14 +378,14 @@ func (s *server) CheckPasswordResetToken(ctx context.Context, rd *auth.CheckPass
 	// Return the releveant password reset information for the account
 	accountID, err := dal.ParseAccountID(verificationCode.VerifiedValue)
 	if err != nil {
-		return nil, grpcIErrorf(err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	account, err := s.dal.Account(ctx, accountID)
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcIErrorf("No account maps to the ID contained in the provided token %q:%q", rd.Token, accountID.String())
+		return nil, errors.Errorf("No account maps to the ID contained in the provided token %q:%q", rd.Token, accountID.String())
 	} else if err != nil {
-		return nil, grpcIErrorf(err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	// Do the remaining operations in parallel
@@ -417,7 +398,7 @@ func (s *server) CheckPasswordResetToken(ctx context.Context, rd *auth.CheckPass
 			Consumed: ptr.Bool(true),
 		})
 		if err != nil {
-			return grpcIErrorf(err.Error())
+			return errors.Trace(err)
 		}
 		return nil
 	})
@@ -426,7 +407,7 @@ func (s *server) CheckPasswordResetToken(ctx context.Context, rd *auth.CheckPass
 		// Fetch the phone number for the account
 		accountPhone, err = s.dal.AccountPhone(ctx, account.PrimaryAccountPhoneID)
 		if err != nil {
-			return grpcIErrorf(err.Error())
+			return errors.Trace(err)
 		}
 		return nil
 	})
@@ -435,7 +416,7 @@ func (s *server) CheckPasswordResetToken(ctx context.Context, rd *auth.CheckPass
 		// Fetch the email for the account
 		accountEmail, err = s.dal.AccountEmail(ctx, account.PrimaryAccountEmailID)
 		if err != nil {
-			return grpcIErrorf(err.Error())
+			return errors.Trace(err)
 		}
 		return nil
 	})
@@ -463,7 +444,7 @@ func (s *server) CreateAccount(ctx context.Context, rd *auth.CreateAccountReques
 	// TODO: This is check should be coupled with some idempotency changes to actually be correct. Just detecting the duyplicate for now.
 	acc, err := s.dal.AccountForEmail(ctx, rd.Email)
 	if err != nil && errors.Cause(err) != dal.ErrNotFound {
-		return nil, grpcIErrorf(err.Error())
+		return nil, errors.Trace(err)
 	} else if acc != nil {
 		return nil, grpcErrorf(auth.DuplicateEmail, "The email %s is already in use by an account", rd.Email)
 	}
@@ -539,7 +520,7 @@ func (s *server) CreateAccount(ctx context.Context, rd *auth.CreateAccountReques
 		account, err = dl.Account(ctx, accountID)
 		return errors.Trace(err)
 	}); err != nil {
-		return nil, grpcIErrorf(err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	platform, err := determinePlatform(rd.Platform)
@@ -595,7 +576,7 @@ func (s *server) validateCreateAccountRequest(rd *auth.CreateAccountRequest) err
 func (s *server) CreateVerificationCode(ctx context.Context, rd *auth.CreateVerificationCodeRequest) (*auth.CreateVerificationCodeResponse, error) {
 	verificationCode, err := generateAndInsertVerificationCode(ctx, s.dal, rd.ValueToVerify, rd.Type, s.clk)
 	if err != nil {
-		return nil, grpcIErrorf(err.Error())
+		return nil, errors.Trace(err)
 	}
 	return &auth.CreateVerificationCodeResponse{
 		VerificationCode: verificationCode,
@@ -607,11 +588,16 @@ func (s *server) CreatePasswordResetToken(ctx context.Context, rd *auth.CreatePa
 	if errors.Cause(err) == dal.ErrNotFound {
 		return nil, grpcErrorf(codes.NotFound, err.Error())
 	} else if err != nil {
-		return nil, grpcIErrorf(err.Error())
+		return nil, errors.Trace(err)
+	}
+	if account.Status != dal.AccountStatusActive {
+		// If the account isn't active. Report it as not found and log the attempt
+		golog.ContextLogger(ctx).Infof("CreatePasswordResetToken called for NON ACTIVE account %s - Status: %s", account.ID, account.Status)
+		return nil, grpcErrorf(codes.NotFound, err.Error())
 	}
 	verificationCode, err := generateAndInsertVerificationCode(ctx, s.dal, account.ID.String(), auth.VerificationCodeType_PASSWORD_RESET, s.clk)
 	if err != nil {
-		return nil, grpcIErrorf(err.Error())
+		return nil, errors.Trace(err)
 	}
 	return &auth.CreatePasswordResetTokenResponse{
 		Token: verificationCode.Token,
@@ -635,12 +621,12 @@ func (s *server) GetAccount(ctx context.Context, rd *auth.GetAccountRequest) (*a
 func (s *server) Unauthenticate(ctx context.Context, rd *auth.UnauthenticateRequest) (*auth.UnauthenticateResponse, error) {
 	tokenWithAttributes, err := appendAttributes(rd.Token, rd.TokenAttributes)
 	if err != nil {
-		return nil, grpcIErrorf(err.Error())
+		return nil, errors.Trace(err)
 	}
 	if aff, err := s.dal.DeleteAuthToken(ctx, tokenWithAttributes); err != nil {
-		return nil, grpcIErrorf(err.Error())
+		return nil, errors.Trace(err)
 	} else if aff != 1 {
-		return nil, grpcIErrorf("Expected 1 row to be affected but got %d", aff)
+		return nil, errors.Errorf("Expected 1 row to be affected but got %d", aff)
 	}
 	return &auth.UnauthenticateResponse{}, nil
 }
@@ -660,7 +646,7 @@ func (s *server) UpdatePassword(ctx context.Context, rd *auth.UpdatePasswordRequ
 	if errors.Cause(err) == dal.ErrNotFound {
 		return nil, grpcErrorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
 	} else if err != nil {
-		return nil, grpcIErrorf(err.Error())
+		return nil, errors.Trace(err)
 	} else if verificationCode.Expires.Before(s.clk.Now()) {
 		return nil, grpcErrorf(auth.VerificationCodeExpired, "The code mapped to the provided token has expired.")
 	} else if verificationCode.Code != rd.Code {
@@ -669,19 +655,19 @@ func (s *server) UpdatePassword(ctx context.Context, rd *auth.UpdatePasswordRequ
 
 	hashedPassword, err := s.hasher.GenerateFromPassword([]byte(rd.NewPassword))
 	if err != nil {
-		return nil, grpcIErrorf(err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	accountID, err := dal.ParseAccountID(verificationCode.VerifiedValue)
 	if err != nil {
-		return nil, grpcIErrorf(err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	_, err = s.dal.UpdateAccount(ctx, accountID, &dal.AccountUpdate{
-		Password: &hashedPassword,
+		Password: hashedPassword,
 	})
 	if err != nil {
-		return nil, grpcIErrorf(err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	// Since we sucessfully checked the token, mark it as consumed
@@ -710,7 +696,7 @@ func (s *server) VerifiedValue(ctx context.Context, rd *auth.VerifiedValueReques
 	if errors.Cause(err) == dal.ErrNotFound {
 		return nil, grpcErrorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
 	} else if err != nil {
-		return nil, grpcIErrorf(err.Error())
+		return nil, errors.Trace(err)
 	} else if !verificationCode.Consumed {
 		return nil, grpcErrorf(auth.ValueNotYetVerified, "The value mapped to this token %q has not yet been verified", rd.Token)
 	}
@@ -734,7 +720,7 @@ func (s *server) BlockAccount(ctx context.Context, req *auth.BlockAccountRequest
 	if errors.Cause(err) == dal.ErrNotFound {
 		return nil, grpcErrorf(codes.NotFound, err.Error())
 	} else if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	} else if account.Status == dal.AccountStatusBlocked {
 		// work already done
 		return &auth.BlockAccountResponse{
@@ -744,7 +730,7 @@ func (s *server) BlockAccount(ctx context.Context, req *auth.BlockAccountRequest
 
 	_, err = s.dal.DeleteAuthTokens(ctx, account.ID)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	// update the status of the account
@@ -753,12 +739,92 @@ func (s *server) BlockAccount(ctx context.Context, req *auth.BlockAccountRequest
 		Status: &blocked,
 	})
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	} else if rowsUpdated > 1 {
 		return nil, grpcErrorf(codes.Internal, fmt.Sprintf("Expected no more than 1 row to be updated when updating status of account %s but updated %d rows", account.ID.String(), rowsUpdated))
 	}
 
 	return &auth.BlockAccountResponse{
+		Account: accountAsResponse(account),
+	}, nil
+}
+
+// Format deleted emails with a suffix of deleted and the account ID. This allows used to reuse the same email to create new accounts
+func formateDeletedEmail(accountEmail *dal.AccountEmail) string {
+	return fmt.Sprintf("%s-deleted-%s", accountEmail.Email, accountEmail.AccountID)
+}
+
+func (s *server) DeleteAccount(ctx context.Context, req *auth.DeleteAccountRequest) (*auth.DeleteAccountResponse, error) {
+	if req.AccountID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "AccountID required")
+	}
+
+	accountID, err := dal.ParseAccountID(req.AccountID)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse provided account ID")
+	}
+
+	account, err := s.dal.Account(ctx, accountID)
+	if errors.Cause(err) == dal.ErrNotFound {
+		return nil, grpcErrorf(codes.NotFound, err.Error())
+	} else if err != nil {
+		return nil, errors.Trace(err)
+	} else if account.Status == dal.AccountStatusDeleted {
+		// work already done
+		return &auth.DeleteAccountResponse{
+			Account: accountAsResponse(account),
+		}, nil
+	}
+
+	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
+		// update the status of the account and munge the password
+		deleted := dal.AccountStatusDeleted
+		rowsUpdated, err := dl.UpdateAccount(ctx, account.ID, &dal.AccountUpdate{
+			Status: &deleted,
+			// Generate a random password of length 15 for the account
+			Password: []byte(randutils.StringN(15)),
+		})
+		if err != nil {
+			return errors.Trace(err)
+		} else if rowsUpdated > 1 {
+			return grpcErrorf(codes.Internal, fmt.Sprintf("Expected no more than 1 row to be updated when updating status of account %s but updated %d rows", account.ID.String(), rowsUpdated))
+		}
+
+		// Munge the associated email in a known recoverable way
+		accountEmail, err := dl.AccountEmailForAccount(ctx, account.ID)
+		if err != nil {
+			return errors.Trace(err)
+		}
+		rowsUpdated, err = dl.UpdateAccountEmail(ctx, accountEmail.ID, &dal.AccountEmailUpdate{
+			Email: ptr.String(formateDeletedEmail(accountEmail)),
+		})
+		if err != nil {
+			return errors.Trace(err)
+		} else if rowsUpdated > 1 {
+			return grpcErrorf(codes.Internal, fmt.Sprintf("Expected no more than 1 row to be updated when updating email for account %s but updated %d rows", account.ID.String(), rowsUpdated))
+		}
+
+		// Delete any outstanding auth tokens for the account
+		_, err = dl.DeleteAuthTokens(ctx, account.ID)
+		if err != nil {
+			return errors.Trace(err)
+		}
+
+		// Reread the account to send back
+		account, err = s.dal.Account(ctx, account.ID)
+		if errors.Cause(err) == dal.ErrNotFound {
+			// This is an internal error since we should be able to find it
+			return errors.Trace(err)
+		} else if err != nil {
+			return errors.Trace(err)
+		}
+
+		return nil
+	}); err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	return &auth.DeleteAccountResponse{
 		Account: accountAsResponse(account),
 	}, nil
 }
@@ -770,7 +836,7 @@ func (s *server) GetLastLoginInfo(ctx context.Context, req *auth.GetLastLoginInf
 
 	accountID, err := dal.ParseAccountID(req.AccountID)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	loginInfo, err := s.dal.LastLogin(ctx, accountID)
@@ -778,7 +844,7 @@ func (s *server) GetLastLoginInfo(ctx context.Context, req *auth.GetLastLoginInf
 		if errors.Cause(err) == dal.ErrNotFound {
 			return nil, grpcErrorf(codes.NotFound, "login info for %s not found", accountID.String())
 		}
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	var platform auth.Platform
@@ -819,20 +885,20 @@ func (s *server) UpdateAuthToken(ctx context.Context, req *auth.UpdateAuthTokenR
 		if errors.Cause(err) == dal.ErrNotFound {
 			return grpcErrorf(codes.NotFound, "Token %s not found", req.Token)
 		} else if err != nil {
-			return grpcError(err)
+			return errors.Trace(err)
 		}
 		if _, err := dl.UpdateAuthToken(ctx, req.Token, &dal.AuthTokenUpdate{
 			DurationType: &durationType,
 		}); err != nil {
-			return grpcError(err)
+			return errors.Trace(err)
 		}
 		rAuthToken, err = s.rotateAndExtendToken(ctx, dl, authToken, req.TokenAttributes)
 		if err != nil {
-			return grpcError(err)
+			return errors.Trace(err)
 		}
 		return nil
 	}); err != nil {
-		return nil, grpcError(err)
+		return nil, errors.Trace(err)
 	}
 
 	return &auth.UpdateAuthTokenResponse{

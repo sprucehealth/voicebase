@@ -42,6 +42,8 @@
 		GetLastLoginInfoResponse
 		UpdateAuthTokenRequest
 		UpdateAuthTokenResponse
+		DeleteAccountRequest
+		DeleteAccountResponse
 */
 package auth
 
@@ -178,7 +180,7 @@ type VerificationCode struct {
 	Token           string               `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
 	Code            string               `protobuf:"bytes,2,opt,name=code,proto3" json:"code,omitempty"`
 	Type            VerificationCodeType `protobuf:"varint,4,opt,name=type,proto3,enum=auth.VerificationCodeType" json:"type,omitempty"`
-	ExpirationEpoch uint64               `protobuf:"varint,5,opt,name=expiration_epoch,json=expirationEpoch,proto3" json:"expiration_epoch,omitempty"`
+	ExpirationEpoch uint64               `protobuf:"varint,5,opt,name=expiration_epoch,proto3" json:"expiration_epoch,omitempty"`
 }
 
 func (m *VerificationCode) Reset()                    { *m = VerificationCode{} }
@@ -188,8 +190,8 @@ func (*VerificationCode) Descriptor() ([]byte, []int) { return fileDescriptorSvc
 // Account represents the data associated with an account
 type Account struct {
 	ID        string      `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	FirstName string      `protobuf:"bytes,2,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
-	LastName  string      `protobuf:"bytes,3,opt,name=last_name,json=lastName,proto3" json:"last_name,omitempty"`
+	FirstName string      `protobuf:"bytes,2,opt,name=first_name,proto3" json:"first_name,omitempty"`
+	LastName  string      `protobuf:"bytes,3,opt,name=last_name,proto3" json:"last_name,omitempty"`
 	Type      AccountType `protobuf:"varint,4,opt,name=type,proto3,enum=auth.AccountType" json:"type,omitempty"`
 }
 
@@ -200,8 +202,8 @@ func (*Account) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{1
 // An AuthToken represents the token value and metadata about the token
 type AuthToken struct {
 	Value               string `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
-	ExpirationEpoch     uint64 `protobuf:"varint,2,opt,name=expiration_epoch,json=expirationEpoch,proto3" json:"expiration_epoch,omitempty"`
-	ClientEncryptionKey string `protobuf:"bytes,3,opt,name=client_encryption_key,json=clientEncryptionKey,proto3" json:"client_encryption_key,omitempty"`
+	ExpirationEpoch     uint64 `protobuf:"varint,2,opt,name=expiration_epoch,proto3" json:"expiration_epoch,omitempty"`
+	ClientEncryptionKey string `protobuf:"bytes,3,opt,name=client_encryption_key,proto3" json:"client_encryption_key,omitempty"`
 }
 
 func (m *AuthToken) Reset()                    { *m = AuthToken{} }
@@ -214,8 +216,8 @@ func (*AuthToken) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int
 type AuthenticateLoginRequest struct {
 	Email           string            `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
 	Password        string            `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
-	TokenAttributes map[string]string `protobuf:"bytes,3,rep,name=token_attributes,json=tokenAttributes" json:"token_attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	DeviceID        string            `protobuf:"bytes,4,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
+	TokenAttributes map[string]string `protobuf:"bytes,3,rep,name=token_attributes" json:"token_attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	DeviceID        string            `protobuf:"bytes,4,opt,name=device_id,proto3" json:"device_id,omitempty"`
 	Platform        Platform          `protobuf:"varint,5,opt,name=platform,proto3,enum=auth.Platform" json:"platform,omitempty"`
 	Duration        TokenDuration     `protobuf:"varint,6,opt,name=duration,proto3,enum=auth.TokenDuration" json:"duration,omitempty"`
 }
@@ -236,8 +238,8 @@ func (m *AuthenticateLoginRequest) GetTokenAttributes() map[string]string {
 type AuthenticateLoginResponse struct {
 	Token                *AuthToken `protobuf:"bytes,1,opt,name=token" json:"token,omitempty"`
 	Account              *Account   `protobuf:"bytes,2,opt,name=account" json:"account,omitempty"`
-	TwoFactorRequired    bool       `protobuf:"varint,4,opt,name=two_factor_required,json=twoFactorRequired,proto3" json:"two_factor_required,omitempty"`
-	TwoFactorPhoneNumber string     `protobuf:"bytes,5,opt,name=two_factor_phone_number,json=twoFactorPhoneNumber,proto3" json:"two_factor_phone_number,omitempty"`
+	TwoFactorRequired    bool       `protobuf:"varint,4,opt,name=two_factor_required,proto3" json:"two_factor_required,omitempty"`
+	TwoFactorPhoneNumber string     `protobuf:"bytes,5,opt,name=two_factor_phone_number,proto3" json:"two_factor_phone_number,omitempty"`
 }
 
 func (m *AuthenticateLoginResponse) Reset()                    { *m = AuthenticateLoginResponse{} }
@@ -264,8 +266,8 @@ func (m *AuthenticateLoginResponse) GetAccount() *Account {
 type AuthenticateLoginWithCodeRequest struct {
 	Token           string            `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
 	Code            string            `protobuf:"bytes,2,opt,name=code,proto3" json:"code,omitempty"`
-	TokenAttributes map[string]string `protobuf:"bytes,3,rep,name=token_attributes,json=tokenAttributes" json:"token_attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	DeviceID        string            `protobuf:"bytes,4,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
+	TokenAttributes map[string]string `protobuf:"bytes,3,rep,name=token_attributes" json:"token_attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	DeviceID        string            `protobuf:"bytes,4,opt,name=device_id,proto3" json:"device_id,omitempty"`
 	Platform        Platform          `protobuf:"varint,5,opt,name=platform,proto3,enum=auth.Platform" json:"platform,omitempty"`
 	Duration        TokenDuration     `protobuf:"varint,6,opt,name=duration,proto3,enum=auth.TokenDuration" json:"duration,omitempty"`
 }
@@ -313,7 +315,7 @@ func (m *AuthenticateLoginWithCodeResponse) GetAccount() *Account {
 // The refresh parameter indicates if a new token should be created with an extended expiration
 type CheckAuthenticationRequest struct {
 	Token           string            `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
-	TokenAttributes map[string]string `protobuf:"bytes,2,rep,name=token_attributes,json=tokenAttributes" json:"token_attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	TokenAttributes map[string]string `protobuf:"bytes,2,rep,name=token_attributes" json:"token_attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
 func (m *CheckAuthenticationRequest) Reset()                    { *m = CheckAuthenticationRequest{} }
@@ -330,7 +332,7 @@ func (m *CheckAuthenticationRequest) GetTokenAttributes() map[string]string {
 // CheckAuthenticationResponse represents the information that is returned from IsAuthenticatedRequest
 // If a refresh was requested then a new token will be returned
 type CheckAuthenticationResponse struct {
-	IsAuthenticated bool       `protobuf:"varint,1,opt,name=is_authenticated,json=isAuthenticated,proto3" json:"is_authenticated,omitempty"`
+	IsAuthenticated bool       `protobuf:"varint,1,opt,name=is_authenticated,proto3" json:"is_authenticated,omitempty"`
 	Account         *Account   `protobuf:"bytes,2,opt,name=account" json:"account,omitempty"`
 	Token           *AuthToken `protobuf:"bytes,3,opt,name=token" json:"token,omitempty"`
 }
@@ -356,13 +358,13 @@ func (m *CheckAuthenticationResponse) GetToken() *AuthToken {
 // CreateAccountRequest represents the information that is expected in account creation requests
 // The email and optional? phone number are set as the primary for the account
 type CreateAccountRequest struct {
-	FirstName       string            `protobuf:"bytes,1,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
-	LastName        string            `protobuf:"bytes,2,opt,name=last_name,json=lastName,proto3" json:"last_name,omitempty"`
+	FirstName       string            `protobuf:"bytes,1,opt,name=first_name,proto3" json:"first_name,omitempty"`
+	LastName        string            `protobuf:"bytes,2,opt,name=last_name,proto3" json:"last_name,omitempty"`
 	Email           string            `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
-	PhoneNumber     string            `protobuf:"bytes,4,opt,name=phone_number,json=phoneNumber,proto3" json:"phone_number,omitempty"`
+	PhoneNumber     string            `protobuf:"bytes,4,opt,name=phone_number,proto3" json:"phone_number,omitempty"`
 	Password        string            `protobuf:"bytes,5,opt,name=password,proto3" json:"password,omitempty"`
-	TokenAttributes map[string]string `protobuf:"bytes,6,rep,name=token_attributes,json=tokenAttributes" json:"token_attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	DeviceID        string            `protobuf:"bytes,7,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
+	TokenAttributes map[string]string `protobuf:"bytes,6,rep,name=token_attributes" json:"token_attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	DeviceID        string            `protobuf:"bytes,7,opt,name=device_id,proto3" json:"device_id,omitempty"`
 	Type            AccountType       `protobuf:"varint,8,opt,name=type,proto3,enum=auth.AccountType" json:"type,omitempty"`
 	Platform        Platform          `protobuf:"varint,9,opt,name=platform,proto3,enum=auth.Platform" json:"platform,omitempty"`
 	Duration        TokenDuration     `protobuf:"varint,10,opt,name=duration,proto3,enum=auth.TokenDuration" json:"duration,omitempty"`
@@ -407,8 +409,8 @@ func (m *CreateAccountResponse) GetAccount() *Account {
 // GetAccountRequest represents the information required to request a users account information
 //  AccountEmail is an optional second field. If ID is not provided, then email will be used to lookup the account
 type GetAccountRequest struct {
-	AccountID    string `protobuf:"bytes,1,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
-	AccountEmail string `protobuf:"bytes,2,opt,name=account_email,json=accountEmail,proto3" json:"account_email,omitempty"`
+	AccountID    string `protobuf:"bytes,1,opt,name=account_id,proto3" json:"account_id,omitempty"`
+	AccountEmail string `protobuf:"bytes,2,opt,name=account_email,proto3" json:"account_email,omitempty"`
 }
 
 func (m *GetAccountRequest) Reset()                    { *m = GetAccountRequest{} }
@@ -434,7 +436,7 @@ func (m *GetAccountResponse) GetAccount() *Account {
 // UnauthenticateRequest represents the information required to tombstone a token
 type UnauthenticateRequest struct {
 	Token           string            `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
-	TokenAttributes map[string]string `protobuf:"bytes,2,rep,name=token_attributes,json=tokenAttributes" json:"token_attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	TokenAttributes map[string]string `protobuf:"bytes,2,rep,name=token_attributes" json:"token_attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
 func (m *UnauthenticateRequest) Reset()                    { *m = UnauthenticateRequest{} }
@@ -459,7 +461,7 @@ func (*UnauthenticateResponse) Descriptor() ([]byte, []int) { return fileDescrip
 // CreateVerificationCodeRequest represents the information required to create a verification code
 type CreateVerificationCodeRequest struct {
 	Type          VerificationCodeType `protobuf:"varint,1,opt,name=type,proto3,enum=auth.VerificationCodeType" json:"type,omitempty"`
-	ValueToVerify string               `protobuf:"bytes,2,opt,name=value_to_verify,json=valueToVerify,proto3" json:"value_to_verify,omitempty"`
+	ValueToVerify string               `protobuf:"bytes,2,opt,name=value_to_verify,proto3" json:"value_to_verify,omitempty"`
 }
 
 func (m *CreateVerificationCodeRequest) Reset()      { *m = CreateVerificationCodeRequest{} }
@@ -470,7 +472,7 @@ func (*CreateVerificationCodeRequest) Descriptor() ([]byte, []int) {
 
 // CreateVerificationCodeResponse represents the information returned from a CreateVerificationCode request
 type CreateVerificationCodeResponse struct {
-	VerificationCode *VerificationCode `protobuf:"bytes,1,opt,name=verification_code,json=verificationCode" json:"verification_code,omitempty"`
+	VerificationCode *VerificationCode `protobuf:"bytes,1,opt,name=verification_code" json:"verification_code,omitempty"`
 }
 
 func (m *CreateVerificationCodeResponse) Reset()      { *m = CreateVerificationCodeResponse{} }
@@ -490,7 +492,7 @@ func (m *CreateVerificationCodeResponse) GetVerificationCode() *VerificationCode
 type CheckVerificationCodeRequest struct {
 	Token           string            `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
 	Code            string            `protobuf:"bytes,2,opt,name=code,proto3" json:"code,omitempty"`
-	TokenAttributes map[string]string `protobuf:"bytes,3,rep,name=token_attributes,json=tokenAttributes" json:"token_attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	TokenAttributes map[string]string `protobuf:"bytes,3,rep,name=token_attributes" json:"token_attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
 func (m *CheckVerificationCodeRequest) Reset()                    { *m = CheckVerificationCodeRequest{} }
@@ -576,9 +578,9 @@ func (*CheckPasswordResetTokenRequest) Descriptor() ([]byte, []int) {
 
 // CheckPasswordResetTokenResponse represents the information returned from a call to CheckPasswordResetToken
 type CheckPasswordResetTokenResponse struct {
-	AccountID          string `protobuf:"bytes,1,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
-	AccountPhoneNumber string `protobuf:"bytes,2,opt,name=account_phone_number,json=accountPhoneNumber,proto3" json:"account_phone_number,omitempty"`
-	AccountEmail       string `protobuf:"bytes,3,opt,name=account_email,json=accountEmail,proto3" json:"account_email,omitempty"`
+	AccountID          string `protobuf:"bytes,1,opt,name=account_id,proto3" json:"account_id,omitempty"`
+	AccountPhoneNumber string `protobuf:"bytes,2,opt,name=account_phone_number,proto3" json:"account_phone_number,omitempty"`
+	AccountEmail       string `protobuf:"bytes,3,opt,name=account_email,proto3" json:"account_email,omitempty"`
 }
 
 func (m *CheckPasswordResetTokenResponse) Reset()      { *m = CheckPasswordResetTokenResponse{} }
@@ -591,7 +593,7 @@ func (*CheckPasswordResetTokenResponse) Descriptor() ([]byte, []int) {
 type UpdatePasswordRequest struct {
 	Token       string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
 	Code        string `protobuf:"bytes,2,opt,name=code,proto3" json:"code,omitempty"`
-	NewPassword string `protobuf:"bytes,3,opt,name=new_password,json=newPassword,proto3" json:"new_password,omitempty"`
+	NewPassword string `protobuf:"bytes,3,opt,name=new_password,proto3" json:"new_password,omitempty"`
 }
 
 func (m *UpdatePasswordRequest) Reset()                    { *m = UpdatePasswordRequest{} }
@@ -601,7 +603,7 @@ func (*UpdatePasswordRequest) Descriptor() ([]byte, []int) { return fileDescript
 // BlockAccountRequest represents the information required to block a certain account
 // from accessing the Spruce platform
 type BlockAccountRequest struct {
-	AccountID string `protobuf:"bytes,1,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
+	AccountID string `protobuf:"bytes,1,opt,name=account_id,proto3" json:"account_id,omitempty"`
 }
 
 func (m *BlockAccountRequest) Reset()                    { *m = BlockAccountRequest{} }
@@ -635,7 +637,7 @@ func (*UpdatePasswordResponse) Descriptor() ([]byte, []int) { return fileDescrip
 // GetLastLoginInfoRequest represents the information required
 // to make a request for the last login info for an account.
 type GetLastLoginInfoRequest struct {
-	AccountID string `protobuf:"bytes,1,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
+	AccountID string `protobuf:"bytes,1,opt,name=account_id,proto3" json:"account_id,omitempty"`
 }
 
 func (m *GetLastLoginInfoRequest) Reset()                    { *m = GetLastLoginInfoRequest{} }
@@ -646,9 +648,9 @@ func (*GetLastLoginInfoRequest) Descriptor() ([]byte, []int) { return fileDescri
 // login of the account.
 type GetLastLoginInfoResponse struct {
 	Platform  Platform `protobuf:"varint,1,opt,name=platform,proto3,enum=auth.Platform" json:"platform,omitempty"`
-	LoginTime uint64   `protobuf:"varint,2,opt,name=login_time,json=loginTime,proto3" json:"login_time,omitempty"`
-	DeviceID  string   `protobuf:"bytes,3,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
-	AccountID string   `protobuf:"bytes,4,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
+	LoginTime uint64   `protobuf:"varint,2,opt,name=login_time,proto3" json:"login_time,omitempty"`
+	DeviceID  string   `protobuf:"bytes,3,opt,name=device_id,proto3" json:"device_id,omitempty"`
+	AccountID string   `protobuf:"bytes,4,opt,name=account_id,proto3" json:"account_id,omitempty"`
 }
 
 func (m *GetLastLoginInfoResponse) Reset()                    { *m = GetLastLoginInfoResponse{} }
@@ -658,7 +660,7 @@ func (*GetLastLoginInfoResponse) Descriptor() ([]byte, []int) { return fileDescr
 // UpdateAuthTokenRequest represents the mutable aspects of an auth token
 type UpdateAuthTokenRequest struct {
 	Token           string            `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
-	TokenAttributes map[string]string `protobuf:"bytes,2,rep,name=token_attributes,json=tokenAttributes" json:"token_attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	TokenAttributes map[string]string `protobuf:"bytes,2,rep,name=token_attributes" json:"token_attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	Duration        TokenDuration     `protobuf:"varint,3,opt,name=duration,proto3,enum=auth.TokenDuration" json:"duration,omitempty"`
 }
 
@@ -685,6 +687,31 @@ func (*UpdateAuthTokenResponse) Descriptor() ([]byte, []int) { return fileDescri
 func (m *UpdateAuthTokenResponse) GetToken() *AuthToken {
 	if m != nil {
 		return m.Token
+	}
+	return nil
+}
+
+// DeleteAccountRequest represents a request to delete an account for logging in.
+type DeleteAccountRequest struct {
+	AccountID string `protobuf:"bytes,1,opt,name=account_id,proto3" json:"account_id,omitempty"`
+}
+
+func (m *DeleteAccountRequest) Reset()                    { *m = DeleteAccountRequest{} }
+func (*DeleteAccountRequest) ProtoMessage()               {}
+func (*DeleteAccountRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{33} }
+
+// DeleteAccountResponse represents the response from an DeleteAccount request
+type DeleteAccountResponse struct {
+	Account *Account `protobuf:"bytes,1,opt,name=account" json:"account,omitempty"`
+}
+
+func (m *DeleteAccountResponse) Reset()                    { *m = DeleteAccountResponse{} }
+func (*DeleteAccountResponse) ProtoMessage()               {}
+func (*DeleteAccountResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{34} }
+
+func (m *DeleteAccountResponse) GetAccount() *Account {
+	if m != nil {
+		return m.Account
 	}
 	return nil
 }
@@ -723,6 +750,8 @@ func init() {
 	proto.RegisterType((*GetLastLoginInfoResponse)(nil), "auth.GetLastLoginInfoResponse")
 	proto.RegisterType((*UpdateAuthTokenRequest)(nil), "auth.UpdateAuthTokenRequest")
 	proto.RegisterType((*UpdateAuthTokenResponse)(nil), "auth.UpdateAuthTokenResponse")
+	proto.RegisterType((*DeleteAccountRequest)(nil), "auth.DeleteAccountRequest")
+	proto.RegisterType((*DeleteAccountResponse)(nil), "auth.DeleteAccountResponse")
 	proto.RegisterEnum("auth.VerificationCodeType", VerificationCodeType_name, VerificationCodeType_value)
 	proto.RegisterEnum("auth.AccountType", AccountType_name, AccountType_value)
 	proto.RegisterEnum("auth.Platform", Platform_name, Platform_value)
@@ -1925,6 +1954,66 @@ func (this *UpdateAuthTokenResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *DeleteAccountRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*DeleteAccountRequest)
+	if !ok {
+		that2, ok := that.(DeleteAccountRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.AccountID != that1.AccountID {
+		return false
+	}
+	return true
+}
+func (this *DeleteAccountResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*DeleteAccountResponse)
+	if !ok {
+		that2, ok := that.(DeleteAccountResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.Account.Equal(that1.Account) {
+		return false
+	}
+	return true
+}
 func (this *VerificationCode) GoString() string {
 	if this == nil {
 		return "nil"
@@ -2413,6 +2502,28 @@ func (this *UpdateAuthTokenResponse) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *DeleteAccountRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&auth.DeleteAccountRequest{")
+	s = append(s, "AccountID: "+fmt.Sprintf("%#v", this.AccountID)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *DeleteAccountResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&auth.DeleteAccountResponse{")
+	if this.Account != nil {
+		s = append(s, "Account: "+fmt.Sprintf("%#v", this.Account)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func valueToGoStringSvc(v interface{}, typ string) string {
 	rv := reflect.ValueOf(v)
 	if rv.IsNil() {
@@ -2459,6 +2570,7 @@ type AuthClient interface {
 	CreateAccount(ctx context.Context, in *CreateAccountRequest, opts ...grpc.CallOption) (*CreateAccountResponse, error)
 	CreatePasswordResetToken(ctx context.Context, in *CreatePasswordResetTokenRequest, opts ...grpc.CallOption) (*CreatePasswordResetTokenResponse, error)
 	CreateVerificationCode(ctx context.Context, in *CreateVerificationCodeRequest, opts ...grpc.CallOption) (*CreateVerificationCodeResponse, error)
+	DeleteAccount(ctx context.Context, in *DeleteAccountRequest, opts ...grpc.CallOption) (*DeleteAccountResponse, error)
 	GetAccount(ctx context.Context, in *GetAccountRequest, opts ...grpc.CallOption) (*GetAccountResponse, error)
 	Unauthenticate(ctx context.Context, in *UnauthenticateRequest, opts ...grpc.CallOption) (*UnauthenticateResponse, error)
 	UpdatePassword(ctx context.Context, in *UpdatePasswordRequest, opts ...grpc.CallOption) (*UpdatePasswordResponse, error)
@@ -2548,6 +2660,15 @@ func (c *authClient) CreateVerificationCode(ctx context.Context, in *CreateVerif
 	return out, nil
 }
 
+func (c *authClient) DeleteAccount(ctx context.Context, in *DeleteAccountRequest, opts ...grpc.CallOption) (*DeleteAccountResponse, error) {
+	out := new(DeleteAccountResponse)
+	err := grpc.Invoke(ctx, "/auth.Auth/DeleteAccount", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *authClient) GetAccount(ctx context.Context, in *GetAccountRequest, opts ...grpc.CallOption) (*GetAccountResponse, error) {
 	out := new(GetAccountResponse)
 	err := grpc.Invoke(ctx, "/auth.Auth/GetAccount", in, out, c.cc, opts...)
@@ -2622,6 +2743,7 @@ type AuthServer interface {
 	CreateAccount(context.Context, *CreateAccountRequest) (*CreateAccountResponse, error)
 	CreatePasswordResetToken(context.Context, *CreatePasswordResetTokenRequest) (*CreatePasswordResetTokenResponse, error)
 	CreateVerificationCode(context.Context, *CreateVerificationCodeRequest) (*CreateVerificationCodeResponse, error)
+	DeleteAccount(context.Context, *DeleteAccountRequest) (*DeleteAccountResponse, error)
 	GetAccount(context.Context, *GetAccountRequest) (*GetAccountResponse, error)
 	Unauthenticate(context.Context, *UnauthenticateRequest) (*UnauthenticateResponse, error)
 	UpdatePassword(context.Context, *UpdatePasswordRequest) (*UpdatePasswordResponse, error)
@@ -2775,6 +2897,24 @@ func _Auth_CreateVerificationCode_Handler(srv interface{}, ctx context.Context, 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AuthServer).CreateVerificationCode(ctx, req.(*CreateVerificationCodeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Auth_DeleteAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteAccountRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServer).DeleteAccount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/auth.Auth/DeleteAccount",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).DeleteAccount(ctx, req.(*DeleteAccountRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2940,6 +3080,10 @@ var _Auth_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateVerificationCode",
 			Handler:    _Auth_CreateVerificationCode_Handler,
+		},
+		{
+			MethodName: "DeleteAccount",
+			Handler:    _Auth_DeleteAccount_Handler,
 		},
 		{
 			MethodName: "GetAccount",
@@ -4176,6 +4320,58 @@ func (m *UpdateAuthTokenResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *DeleteAccountRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *DeleteAccountRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.AccountID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.AccountID)))
+		i += copy(data[i:], m.AccountID)
+	}
+	return i, nil
+}
+
+func (m *DeleteAccountResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *DeleteAccountResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Account != nil {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Account.Size()))
+		n14, err := m.Account.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n14
+	}
+	return i, nil
+}
+
 func encodeFixed64Svc(data []byte, offset int, v uint64) int {
 	data[offset] = uint8(v)
 	data[offset+1] = uint8(v >> 8)
@@ -4736,6 +4932,26 @@ func (m *UpdateAuthTokenResponse) Size() (n int) {
 	return n
 }
 
+func (m *DeleteAccountRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.AccountID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *DeleteAccountResponse) Size() (n int) {
+	var l int
+	_ = l
+	if m.Account != nil {
+		l = m.Account.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
 func sovSvc(x uint64) (n int) {
 	for {
 		n++
@@ -5193,6 +5409,26 @@ func (this *UpdateAuthTokenResponse) String() string {
 	}
 	s := strings.Join([]string{`&UpdateAuthTokenResponse{`,
 		`Token:` + strings.Replace(fmt.Sprintf("%v", this.Token), "AuthToken", "AuthToken", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DeleteAccountRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&DeleteAccountRequest{`,
+		`AccountID:` + fmt.Sprintf("%v", this.AccountID) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DeleteAccountResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&DeleteAccountResponse{`,
+		`Account:` + strings.Replace(fmt.Sprintf("%v", this.Account), "Account", "Account", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -5787,55 +6023,50 @@ func (m *AuthenticateLoginRequest) Unmarshal(data []byte) error {
 			}
 			mapkey := string(data[iNdEx:postStringIndexmapkey])
 			iNdEx = postStringIndexmapkey
+			var valuekey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				valuekey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			var stringLenmapvalue uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLenmapvalue |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLenmapvalue := int(stringLenmapvalue)
+			if intStringLenmapvalue < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postStringIndexmapvalue := iNdEx + intStringLenmapvalue
+			if postStringIndexmapvalue > l {
+				return io.ErrUnexpectedEOF
+			}
+			mapvalue := string(data[iNdEx:postStringIndexmapvalue])
+			iNdEx = postStringIndexmapvalue
 			if m.TokenAttributes == nil {
 				m.TokenAttributes = make(map[string]string)
 			}
-			if iNdEx < postIndex {
-				var valuekey uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowSvc
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := data[iNdEx]
-					iNdEx++
-					valuekey |= (uint64(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				var stringLenmapvalue uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowSvc
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := data[iNdEx]
-					iNdEx++
-					stringLenmapvalue |= (uint64(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				intStringLenmapvalue := int(stringLenmapvalue)
-				if intStringLenmapvalue < 0 {
-					return ErrInvalidLengthSvc
-				}
-				postStringIndexmapvalue := iNdEx + intStringLenmapvalue
-				if postStringIndexmapvalue > l {
-					return io.ErrUnexpectedEOF
-				}
-				mapvalue := string(data[iNdEx:postStringIndexmapvalue])
-				iNdEx = postStringIndexmapvalue
-				m.TokenAttributes[mapkey] = mapvalue
-			} else {
-				var mapvalue string
-				m.TokenAttributes[mapkey] = mapvalue
-			}
+			m.TokenAttributes[mapkey] = mapvalue
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
@@ -6243,55 +6474,50 @@ func (m *AuthenticateLoginWithCodeRequest) Unmarshal(data []byte) error {
 			}
 			mapkey := string(data[iNdEx:postStringIndexmapkey])
 			iNdEx = postStringIndexmapkey
+			var valuekey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				valuekey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			var stringLenmapvalue uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLenmapvalue |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLenmapvalue := int(stringLenmapvalue)
+			if intStringLenmapvalue < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postStringIndexmapvalue := iNdEx + intStringLenmapvalue
+			if postStringIndexmapvalue > l {
+				return io.ErrUnexpectedEOF
+			}
+			mapvalue := string(data[iNdEx:postStringIndexmapvalue])
+			iNdEx = postStringIndexmapvalue
 			if m.TokenAttributes == nil {
 				m.TokenAttributes = make(map[string]string)
 			}
-			if iNdEx < postIndex {
-				var valuekey uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowSvc
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := data[iNdEx]
-					iNdEx++
-					valuekey |= (uint64(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				var stringLenmapvalue uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowSvc
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := data[iNdEx]
-					iNdEx++
-					stringLenmapvalue |= (uint64(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				intStringLenmapvalue := int(stringLenmapvalue)
-				if intStringLenmapvalue < 0 {
-					return ErrInvalidLengthSvc
-				}
-				postStringIndexmapvalue := iNdEx + intStringLenmapvalue
-				if postStringIndexmapvalue > l {
-					return io.ErrUnexpectedEOF
-				}
-				mapvalue := string(data[iNdEx:postStringIndexmapvalue])
-				iNdEx = postStringIndexmapvalue
-				m.TokenAttributes[mapkey] = mapvalue
-			} else {
-				var mapvalue string
-				m.TokenAttributes[mapkey] = mapvalue
-			}
+			m.TokenAttributes[mapkey] = mapvalue
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
@@ -6621,55 +6847,50 @@ func (m *CheckAuthenticationRequest) Unmarshal(data []byte) error {
 			}
 			mapkey := string(data[iNdEx:postStringIndexmapkey])
 			iNdEx = postStringIndexmapkey
+			var valuekey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				valuekey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			var stringLenmapvalue uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLenmapvalue |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLenmapvalue := int(stringLenmapvalue)
+			if intStringLenmapvalue < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postStringIndexmapvalue := iNdEx + intStringLenmapvalue
+			if postStringIndexmapvalue > l {
+				return io.ErrUnexpectedEOF
+			}
+			mapvalue := string(data[iNdEx:postStringIndexmapvalue])
+			iNdEx = postStringIndexmapvalue
 			if m.TokenAttributes == nil {
 				m.TokenAttributes = make(map[string]string)
 			}
-			if iNdEx < postIndex {
-				var valuekey uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowSvc
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := data[iNdEx]
-					iNdEx++
-					valuekey |= (uint64(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				var stringLenmapvalue uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowSvc
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := data[iNdEx]
-					iNdEx++
-					stringLenmapvalue |= (uint64(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				intStringLenmapvalue := int(stringLenmapvalue)
-				if intStringLenmapvalue < 0 {
-					return ErrInvalidLengthSvc
-				}
-				postStringIndexmapvalue := iNdEx + intStringLenmapvalue
-				if postStringIndexmapvalue > l {
-					return io.ErrUnexpectedEOF
-				}
-				mapvalue := string(data[iNdEx:postStringIndexmapvalue])
-				iNdEx = postStringIndexmapvalue
-				m.TokenAttributes[mapkey] = mapvalue
-			} else {
-				var mapvalue string
-				m.TokenAttributes[mapkey] = mapvalue
-			}
+			m.TokenAttributes[mapkey] = mapvalue
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -7068,55 +7289,50 @@ func (m *CreateAccountRequest) Unmarshal(data []byte) error {
 			}
 			mapkey := string(data[iNdEx:postStringIndexmapkey])
 			iNdEx = postStringIndexmapkey
+			var valuekey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				valuekey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			var stringLenmapvalue uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLenmapvalue |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLenmapvalue := int(stringLenmapvalue)
+			if intStringLenmapvalue < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postStringIndexmapvalue := iNdEx + intStringLenmapvalue
+			if postStringIndexmapvalue > l {
+				return io.ErrUnexpectedEOF
+			}
+			mapvalue := string(data[iNdEx:postStringIndexmapvalue])
+			iNdEx = postStringIndexmapvalue
 			if m.TokenAttributes == nil {
 				m.TokenAttributes = make(map[string]string)
 			}
-			if iNdEx < postIndex {
-				var valuekey uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowSvc
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := data[iNdEx]
-					iNdEx++
-					valuekey |= (uint64(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				var stringLenmapvalue uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowSvc
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := data[iNdEx]
-					iNdEx++
-					stringLenmapvalue |= (uint64(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				intStringLenmapvalue := int(stringLenmapvalue)
-				if intStringLenmapvalue < 0 {
-					return ErrInvalidLengthSvc
-				}
-				postStringIndexmapvalue := iNdEx + intStringLenmapvalue
-				if postStringIndexmapvalue > l {
-					return io.ErrUnexpectedEOF
-				}
-				mapvalue := string(data[iNdEx:postStringIndexmapvalue])
-				iNdEx = postStringIndexmapvalue
-				m.TokenAttributes[mapkey] = mapvalue
-			} else {
-				var mapvalue string
-				m.TokenAttributes[mapkey] = mapvalue
-			}
+			m.TokenAttributes[mapkey] = mapvalue
 			iNdEx = postIndex
 		case 7:
 			if wireType != 2 {
@@ -7656,55 +7872,50 @@ func (m *UnauthenticateRequest) Unmarshal(data []byte) error {
 			}
 			mapkey := string(data[iNdEx:postStringIndexmapkey])
 			iNdEx = postStringIndexmapkey
+			var valuekey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				valuekey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			var stringLenmapvalue uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLenmapvalue |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLenmapvalue := int(stringLenmapvalue)
+			if intStringLenmapvalue < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postStringIndexmapvalue := iNdEx + intStringLenmapvalue
+			if postStringIndexmapvalue > l {
+				return io.ErrUnexpectedEOF
+			}
+			mapvalue := string(data[iNdEx:postStringIndexmapvalue])
+			iNdEx = postStringIndexmapvalue
 			if m.TokenAttributes == nil {
 				m.TokenAttributes = make(map[string]string)
 			}
-			if iNdEx < postIndex {
-				var valuekey uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowSvc
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := data[iNdEx]
-					iNdEx++
-					valuekey |= (uint64(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				var stringLenmapvalue uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowSvc
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := data[iNdEx]
-					iNdEx++
-					stringLenmapvalue |= (uint64(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				intStringLenmapvalue := int(stringLenmapvalue)
-				if intStringLenmapvalue < 0 {
-					return ErrInvalidLengthSvc
-				}
-				postStringIndexmapvalue := iNdEx + intStringLenmapvalue
-				if postStringIndexmapvalue > l {
-					return io.ErrUnexpectedEOF
-				}
-				mapvalue := string(data[iNdEx:postStringIndexmapvalue])
-				iNdEx = postStringIndexmapvalue
-				m.TokenAttributes[mapkey] = mapvalue
-			} else {
-				var mapvalue string
-				m.TokenAttributes[mapkey] = mapvalue
-			}
+			m.TokenAttributes[mapkey] = mapvalue
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -8111,55 +8322,50 @@ func (m *CheckVerificationCodeRequest) Unmarshal(data []byte) error {
 			}
 			mapkey := string(data[iNdEx:postStringIndexmapkey])
 			iNdEx = postStringIndexmapkey
+			var valuekey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				valuekey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			var stringLenmapvalue uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLenmapvalue |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLenmapvalue := int(stringLenmapvalue)
+			if intStringLenmapvalue < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postStringIndexmapvalue := iNdEx + intStringLenmapvalue
+			if postStringIndexmapvalue > l {
+				return io.ErrUnexpectedEOF
+			}
+			mapvalue := string(data[iNdEx:postStringIndexmapvalue])
+			iNdEx = postStringIndexmapvalue
 			if m.TokenAttributes == nil {
 				m.TokenAttributes = make(map[string]string)
 			}
-			if iNdEx < postIndex {
-				var valuekey uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowSvc
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := data[iNdEx]
-					iNdEx++
-					valuekey |= (uint64(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				var stringLenmapvalue uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowSvc
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := data[iNdEx]
-					iNdEx++
-					stringLenmapvalue |= (uint64(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				intStringLenmapvalue := int(stringLenmapvalue)
-				if intStringLenmapvalue < 0 {
-					return ErrInvalidLengthSvc
-				}
-				postStringIndexmapvalue := iNdEx + intStringLenmapvalue
-				if postStringIndexmapvalue > l {
-					return io.ErrUnexpectedEOF
-				}
-				mapvalue := string(data[iNdEx:postStringIndexmapvalue])
-				iNdEx = postStringIndexmapvalue
-				m.TokenAttributes[mapkey] = mapvalue
-			} else {
-				var mapvalue string
-				m.TokenAttributes[mapkey] = mapvalue
-			}
+			m.TokenAttributes[mapkey] = mapvalue
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -9524,55 +9730,50 @@ func (m *UpdateAuthTokenRequest) Unmarshal(data []byte) error {
 			}
 			mapkey := string(data[iNdEx:postStringIndexmapkey])
 			iNdEx = postStringIndexmapkey
+			var valuekey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				valuekey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			var stringLenmapvalue uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLenmapvalue |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLenmapvalue := int(stringLenmapvalue)
+			if intStringLenmapvalue < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postStringIndexmapvalue := iNdEx + intStringLenmapvalue
+			if postStringIndexmapvalue > l {
+				return io.ErrUnexpectedEOF
+			}
+			mapvalue := string(data[iNdEx:postStringIndexmapvalue])
+			iNdEx = postStringIndexmapvalue
 			if m.TokenAttributes == nil {
 				m.TokenAttributes = make(map[string]string)
 			}
-			if iNdEx < postIndex {
-				var valuekey uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowSvc
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := data[iNdEx]
-					iNdEx++
-					valuekey |= (uint64(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				var stringLenmapvalue uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowSvc
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := data[iNdEx]
-					iNdEx++
-					stringLenmapvalue |= (uint64(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				intStringLenmapvalue := int(stringLenmapvalue)
-				if intStringLenmapvalue < 0 {
-					return ErrInvalidLengthSvc
-				}
-				postStringIndexmapvalue := iNdEx + intStringLenmapvalue
-				if postStringIndexmapvalue > l {
-					return io.ErrUnexpectedEOF
-				}
-				mapvalue := string(data[iNdEx:postStringIndexmapvalue])
-				iNdEx = postStringIndexmapvalue
-				m.TokenAttributes[mapkey] = mapvalue
-			} else {
-				var mapvalue string
-				m.TokenAttributes[mapkey] = mapvalue
-			}
+			m.TokenAttributes[mapkey] = mapvalue
 			iNdEx = postIndex
 		case 3:
 			if wireType != 0 {
@@ -9673,6 +9874,168 @@ func (m *UpdateAuthTokenResponse) Unmarshal(data []byte) error {
 				m.Token = &AuthToken{}
 			}
 			if err := m.Token.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DeleteAccountRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DeleteAccountRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DeleteAccountRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AccountID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AccountID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DeleteAccountResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DeleteAccountResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DeleteAccountResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Account", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Account == nil {
+				m.Account = &Account{}
+			}
+			if err := m.Account.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -9805,114 +10168,105 @@ var (
 func init() { proto.RegisterFile("svc.proto", fileDescriptorSvc) }
 
 var fileDescriptorSvc = []byte{
-	// 1729 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xe4, 0x59, 0x4f, 0x53, 0xdb, 0xd6,
-	0x16, 0xe7, 0xda, 0x06, 0xec, 0x63, 0xfe, 0x88, 0x8b, 0x01, 0x47, 0x04, 0x03, 0xca, 0x3f, 0xc2,
-	0x24, 0x90, 0xe7, 0x4c, 0x5e, 0x32, 0xef, 0x4d, 0x27, 0x35, 0xd8, 0x21, 0x1e, 0xc0, 0x76, 0x84,
-	0x09, 0x33, 0x69, 0x27, 0x8a, 0xb0, 0xaf, 0x41, 0x83, 0x91, 0x1c, 0x5b, 0x86, 0x7a, 0x97, 0xce,
-	0xf4, 0x03, 0x74, 0xd7, 0xf6, 0x0b, 0x74, 0xfa, 0x29, 0xba, 0xee, 0xaa, 0x93, 0xe9, 0x2a, 0xab,
-	0x4c, 0xe3, 0x6e, 0xba, 0xcc, 0xaa, 0xd3, 0x65, 0x47, 0x57, 0x57, 0xb6, 0x64, 0x24, 0x01, 0x69,
-	0xc3, 0xa6, 0x3b, 0xeb, 0x9c, 0x73, 0xcf, 0x39, 0xf7, 0x77, 0xfe, 0x5e, 0x80, 0x48, 0xe3, 0xa8,
-	0xb4, 0x54, 0xab, 0x6b, 0xba, 0x86, 0x43, 0x72, 0x53, 0xdf, 0xe7, 0x6f, 0xef, 0x29, 0xfa, 0x7e,
-	0x73, 0x77, 0xa9, 0xa4, 0x1d, 0x2e, 0xef, 0x69, 0x7b, 0xda, 0x32, 0x65, 0xee, 0x36, 0x2b, 0xf4,
-	0x8b, 0x7e, 0xd0, 0x5f, 0xe6, 0x21, 0xe1, 0x1b, 0x04, 0xdc, 0x53, 0x52, 0x57, 0x2a, 0x4a, 0x49,
-	0xd6, 0x15, 0x4d, 0x5d, 0xd5, 0xca, 0x04, 0xc7, 0xa0, 0x5f, 0xd7, 0x0e, 0x88, 0x1a, 0x47, 0x73,
-	0x68, 0x21, 0x22, 0x9a, 0x1f, 0x18, 0x43, 0xa8, 0xa4, 0x95, 0x49, 0x3c, 0x40, 0x89, 0xf4, 0x37,
-	0x5e, 0x82, 0x90, 0xde, 0xaa, 0x91, 0x78, 0x68, 0x0e, 0x2d, 0x8c, 0x24, 0xf9, 0x25, 0xc3, 0x85,
-	0xa5, 0x5e, 0x7d, 0xc5, 0x56, 0x8d, 0x88, 0x54, 0x0e, 0xdf, 0x04, 0x8e, 0x7c, 0x51, 0x53, 0xea,
-	0x94, 0x27, 0x91, 0x9a, 0x56, 0xda, 0x8f, 0xf7, 0xcf, 0xa1, 0x85, 0x90, 0x38, 0xda, 0xa5, 0x67,
-	0x0c, 0xb2, 0xf0, 0x15, 0x82, 0xc1, 0x54, 0xa9, 0xa4, 0x35, 0x55, 0x1d, 0x4f, 0x42, 0x40, 0x29,
-	0x9b, 0xde, 0xac, 0x0c, 0xb4, 0xdf, 0xce, 0x06, 0xb2, 0x69, 0x31, 0xa0, 0x94, 0xf1, 0x0c, 0x40,
-	0x45, 0xa9, 0x37, 0x74, 0x49, 0x95, 0x0f, 0x2d, 0xc7, 0x22, 0x94, 0x92, 0x93, 0x0f, 0x09, 0x9e,
-	0x86, 0x48, 0x55, 0xb6, 0xb8, 0x41, 0xca, 0x0d, 0x1b, 0x04, 0xca, 0xbc, 0xe6, 0x70, 0x7d, 0xcc,
-	0x74, 0x9d, 0x19, 0xec, 0x7a, 0x2c, 0xbc, 0x42, 0x10, 0x49, 0x35, 0xf5, 0xfd, 0x22, 0xc5, 0x20,
-	0x06, 0xfd, 0x47, 0x72, 0xb5, 0x49, 0x2c, 0x64, 0xe8, 0x87, 0xeb, 0xad, 0x02, 0xae, 0xb7, 0xc2,
-	0x49, 0x98, 0x28, 0x55, 0x15, 0xa2, 0xea, 0x12, 0x51, 0x4b, 0xf5, 0x56, 0x8d, 0x9e, 0x38, 0x20,
-	0x2d, 0xe6, 0xde, 0xb8, 0xc9, 0xcc, 0x74, 0x78, 0xeb, 0xa4, 0x25, 0xfc, 0x19, 0x80, 0xb8, 0xe1,
-	0x02, 0x51, 0x75, 0x03, 0x55, 0xb2, 0xa1, 0xed, 0x29, 0xaa, 0x48, 0x5e, 0x36, 0x49, 0x43, 0x37,
-	0x3c, 0x22, 0x87, 0xb2, 0x52, 0xb5, 0x3c, 0xa2, 0x1f, 0x98, 0x87, 0x70, 0x4d, 0x6e, 0x34, 0x8e,
-	0xb5, 0x7a, 0x99, 0xc1, 0xd2, 0xf9, 0xc6, 0xcf, 0x81, 0xa3, 0x01, 0x95, 0x64, 0x5d, 0xaf, 0x2b,
-	0xbb, 0x4d, 0x9d, 0x34, 0xe2, 0xc1, 0xb9, 0xe0, 0x42, 0x34, 0x79, 0x97, 0x81, 0xe0, 0x61, 0x6b,
-	0x89, 0x62, 0x90, 0xea, 0x9c, 0xca, 0xa8, 0x7a, 0xbd, 0x25, 0x8e, 0xea, 0x4e, 0x2a, 0xbe, 0x09,
-	0x91, 0x32, 0x39, 0x52, 0x4a, 0x44, 0x52, 0xca, 0x14, 0xdd, 0xc8, 0xca, 0x50, 0xfb, 0xed, 0x6c,
-	0x38, 0x4d, 0x89, 0xd9, 0xb4, 0x18, 0x36, 0xd9, 0xd9, 0x32, 0x5e, 0x84, 0x70, 0xad, 0x2a, 0xeb,
-	0x15, 0xad, 0x7e, 0x48, 0xd3, 0x60, 0x24, 0x39, 0x62, 0xba, 0x50, 0x60, 0x54, 0xb1, 0xc3, 0xc7,
-	0xcb, 0x10, 0x2e, 0x37, 0x4d, 0x28, 0xe3, 0x03, 0x54, 0x76, 0xdc, 0x94, 0xa5, 0x5e, 0xa5, 0x19,
-	0x4b, 0xec, 0x08, 0xf1, 0x2b, 0x10, 0x73, 0x73, 0x18, 0x73, 0x10, 0x34, 0x00, 0x37, 0xf1, 0x32,
-	0x7e, 0x76, 0xa3, 0x1a, 0xb0, 0x45, 0xf5, 0x7f, 0x81, 0x07, 0x48, 0xf8, 0x05, 0xc1, 0x25, 0x17,
-	0x38, 0x1a, 0x35, 0x4d, 0x6d, 0x18, 0x29, 0x64, 0xab, 0x93, 0x68, 0x72, 0xb4, 0x0b, 0x1f, 0x35,
-	0x6c, 0x15, 0xce, 0x0d, 0x18, 0x94, 0xcd, 0xbc, 0xa2, 0x06, 0xa2, 0xc9, 0x61, 0x47, 0xb2, 0x89,
-	0x16, 0x17, 0x2f, 0xc1, 0xb8, 0x7e, 0xac, 0x49, 0x15, 0xb9, 0xa4, 0x6b, 0x75, 0xa9, 0x4e, 0x5e,
-	0x36, 0x95, 0x3a, 0x31, 0x31, 0x0c, 0x8b, 0x63, 0xfa, 0xb1, 0xf6, 0x88, 0x72, 0x44, 0xc6, 0xc0,
-	0xf7, 0x60, 0xca, 0x26, 0x5f, 0xdb, 0xd7, 0x54, 0x22, 0xa9, 0xcd, 0xc3, 0x5d, 0x52, 0xa7, 0x68,
-	0x46, 0xc4, 0x58, 0xe7, 0x4c, 0xc1, 0x60, 0xe6, 0x28, 0x4f, 0x78, 0x15, 0x84, 0xb9, 0x13, 0x97,
-	0xda, 0x51, 0xf4, 0x7d, 0xa3, 0x58, 0x6d, 0x79, 0x75, 0xc6, 0x1e, 0x50, 0xf1, 0xcc, 0xa7, 0xff,
-	0x7b, 0xe4, 0x53, 0x8f, 0xad, 0x7f, 0x61, 0x5e, 0x35, 0x60, 0xde, 0x07, 0x95, 0x8f, 0x93, 0x5e,
-	0xc2, 0x1b, 0x04, 0xfc, 0xea, 0x3e, 0x29, 0x1d, 0xd8, 0x4c, 0x1b, 0x57, 0xf3, 0x8d, 0xf8, 0x0b,
-	0x97, 0xe8, 0x06, 0x68, 0x74, 0xef, 0x99, 0x66, 0xbc, 0x35, 0x9e, 0x2d, 0xae, 0xff, 0x08, 0x9e,
-	0xdf, 0x22, 0x98, 0x76, 0x75, 0x84, 0x41, 0x79, 0x13, 0x38, 0xa5, 0x21, 0xc9, 0x36, 0xc8, 0xcd,
-	0x71, 0x12, 0x16, 0x47, 0x95, 0x86, 0x3d, 0x12, 0xe5, 0xb3, 0x57, 0x6b, 0x27, 0x3c, 0x41, 0xbf,
-	0xf0, 0x08, 0x7f, 0x04, 0x21, 0xb6, 0x5a, 0x27, 0xb2, 0x4e, 0x2c, 0x0d, 0x0c, 0x6f, 0xe7, 0xf0,
-	0x42, 0xbe, 0xc3, 0x2b, 0xd0, 0x33, 0xbc, 0x3a, 0x5d, 0x3f, 0x68, 0xef, 0xfa, 0xf3, 0x30, 0xe4,
-	0x68, 0x02, 0xb4, 0x48, 0xc4, 0x68, 0xad, 0x5b, 0xfb, 0x8e, 0xc1, 0xd0, 0xdf, 0x33, 0x18, 0x9e,
-	0xb9, 0x84, 0x7a, 0x80, 0x86, 0x7a, 0x99, 0x85, 0xda, 0xe5, 0x1a, 0x1f, 0x52, 0xbc, 0x83, 0xbe,
-	0xc5, 0x6b, 0x0d, 0xe6, 0xb0, 0xef, 0x60, 0x76, 0xd4, 0x78, 0xe4, 0x1c, 0x35, 0x0e, 0x17, 0x55,
-	0xe3, 0x7b, 0x30, 0xd1, 0x03, 0xd8, 0x47, 0xaa, 0xeb, 0x0a, 0x8c, 0xad, 0x11, 0xbd, 0x27, 0xbb,
-	0x6e, 0x01, 0x30, 0xbe, 0xd4, 0x59, 0x9d, 0x86, 0xdb, 0x6f, 0x67, 0x23, 0x4c, 0x2e, 0x9b, 0x16,
-	0x23, 0x4c, 0x20, 0x5b, 0xc6, 0x57, 0x60, 0xd8, 0x92, 0x36, 0xf3, 0xca, 0xbc, 0xcd, 0x10, 0x23,
-	0x66, 0x0c, 0x9a, 0xf0, 0x09, 0x60, 0xbb, 0x1d, 0x76, 0x1b, 0x9b, 0x9b, 0xc8, 0xd7, 0xcd, 0x9f,
-	0x11, 0x4c, 0x6c, 0xab, 0xf6, 0x1a, 0xf4, 0xef, 0x3c, 0x9f, 0x79, 0x76, 0x9e, 0x3b, 0xa6, 0x05,
-	0x57, 0x65, 0x17, 0xd8, 0x74, 0xe2, 0x30, 0xd9, 0xeb, 0x82, 0x89, 0x89, 0x70, 0x0c, 0x33, 0x66,
-	0xe8, 0x7b, 0x57, 0x61, 0xeb, 0xc6, 0xd6, 0xde, 0x8c, 0xce, 0xb8, 0x37, 0x5f, 0x87, 0x51, 0x6a,
-	0x57, 0xd2, 0x35, 0xe9, 0xc8, 0x10, 0x6b, 0x31, 0x77, 0x86, 0x29, 0xb9, 0xa8, 0xd1, 0xb3, 0x2d,
-	0x81, 0x40, 0xc2, 0xcb, 0x30, 0x0b, 0xd7, 0x2a, 0x8c, 0x1d, 0xd9, 0x78, 0x12, 0x1d, 0xe7, 0x66,
-	0xe0, 0x26, 0xdd, 0xdd, 0x10, 0xb9, 0xa3, 0x1e, 0x8a, 0xf0, 0x1e, 0xc1, 0x65, 0xda, 0x6e, 0xbd,
-	0xee, 0x77, 0xf6, 0xed, 0x61, 0xd7, 0x73, 0x7b, 0xb8, 0x6f, 0x9b, 0x2f, 0x1e, 0x76, 0x2e, 0x30,
-	0xd8, 0xcf, 0x61, 0xc6, 0xc3, 0x93, 0x73, 0xd6, 0x81, 0xbb, 0x0d, 0xe1, 0x16, 0xc4, 0x4c, 0xd5,
-	0xa4, 0xfc, 0xd4, 0x20, 0xf8, 0x22, 0x29, 0xdc, 0x86, 0x89, 0x1e, 0x69, 0xe6, 0x85, 0xeb, 0x03,
-	0x45, 0xb8, 0x0f, 0xb3, 0x66, 0x5a, 0x14, 0x58, 0xaf, 0x17, 0x49, 0x83, 0xe8, 0x66, 0xb7, 0xf1,
-	0x7b, 0x47, 0x08, 0x0f, 0x60, 0xce, 0xfb, 0x60, 0xd7, 0xa4, 0x8b, 0x87, 0xff, 0x85, 0x04, 0xc5,
-	0xcb, 0xd7, 0xa2, 0xcb, 0xb9, 0xef, 0x11, 0xcc, 0x7a, 0x1e, 0x64, 0x16, 0xcf, 0xd7, 0xdb, 0xee,
-	0x40, 0xcc, 0x92, 0x76, 0x4c, 0x47, 0x13, 0x7e, 0xcc, 0x78, 0xb6, 0x05, 0xf9, 0x64, 0x37, 0x0c,
-	0xba, 0x74, 0xc3, 0x32, 0x4c, 0x6c, 0xd7, 0xca, 0x0e, 0x68, 0xce, 0x9b, 0xfb, 0xf3, 0x30, 0xa4,
-	0x92, 0x63, 0xa9, 0x33, 0x90, 0x4d, 0x33, 0x51, 0x95, 0x1c, 0x5b, 0x3a, 0x85, 0x55, 0x18, 0x5f,
-	0xa9, 0x6a, 0xa5, 0x83, 0xbf, 0xd3, 0xdd, 0x85, 0x87, 0x10, 0x73, 0x2a, 0x39, 0x6f, 0xeb, 0x36,
-	0x3a, 0x5d, 0xcf, 0x5d, 0x59, 0xa7, 0x5b, 0x83, 0xa9, 0x35, 0xa2, 0x6f, 0xc8, 0x0d, 0x9d, 0xee,
-	0xb0, 0x59, 0xb5, 0xa2, 0x7d, 0x98, 0x8f, 0x3f, 0x22, 0x88, 0x9f, 0xd4, 0xc4, 0x1c, 0xb5, 0xcf,
-	0x7a, 0x74, 0xca, 0xac, 0x9f, 0x01, 0xa8, 0x1a, 0x0a, 0x24, 0x5d, 0x61, 0x8b, 0x53, 0x48, 0x8c,
-	0x50, 0x4a, 0x51, 0x39, 0x24, 0xce, 0x45, 0x24, 0xe8, 0xbb, 0x88, 0x38, 0x2f, 0x10, 0x3a, 0xe5,
-	0x02, 0x5f, 0x06, 0x2c, 0x90, 0xba, 0x93, 0xdc, 0x37, 0x23, 0x3e, 0xf7, 0x9c, 0x6f, 0xff, 0x61,
-	0xf3, 0xcd, 0x55, 0xdb, 0x19, 0x17, 0x2e, 0xfb, 0xca, 0x13, 0xbc, 0xa8, 0x95, 0xe7, 0x53, 0x98,
-	0x3a, 0xe1, 0xf4, 0xb9, 0x96, 0x9e, 0xc5, 0x27, 0x56, 0x1b, 0x74, 0x8e, 0x41, 0x1c, 0x81, 0xfe,
-	0xc2, 0xe3, 0x7c, 0x2e, 0xc3, 0xf5, 0x19, 0x3f, 0x33, 0x9b, 0xa9, 0xec, 0x06, 0x87, 0xf0, 0x28,
-	0x44, 0x53, 0xab, 0xab, 0xf9, 0xed, 0x5c, 0x51, 0x4a, 0x3e, 0x4a, 0x71, 0x01, 0x8c, 0x61, 0xa4,
-	0x90, 0xda, 0xda, 0xda, 0xc9, 0x8b, 0x69, 0x49, 0xcc, 0x6c, 0x65, 0x8a, 0x5c, 0x70, 0xf1, 0x1e,
-	0x44, 0x6d, 0xdb, 0x23, 0x8e, 0xc2, 0xe0, 0x76, 0x6e, 0x3d, 0x97, 0xdf, 0xc9, 0x71, 0x7d, 0xc6,
-	0x47, 0x21, 0x55, 0xcc, 0x66, 0x72, 0x45, 0x0e, 0xe1, 0x21, 0x08, 0x17, 0xc4, 0xfc, 0xd3, 0x6c,
-	0x3a, 0x23, 0x72, 0x81, 0xc5, 0x87, 0x10, 0xb6, 0xb2, 0x0b, 0xc7, 0x80, 0x63, 0x67, 0xa4, 0xc2,
-	0x46, 0xaa, 0xf8, 0x28, 0x2f, 0x6e, 0x72, 0x7d, 0x78, 0x10, 0x82, 0xd9, 0xfc, 0x16, 0x87, 0x0c,
-	0x2d, 0xa9, 0x5c, 0x5a, 0xcc, 0x67, 0xd3, 0x5c, 0xc0, 0xa0, 0xee, 0x64, 0x56, 0xb8, 0xe0, 0xe2,
-	0x06, 0x0c, 0x3b, 0xb0, 0xc6, 0x3c, 0x4c, 0x5a, 0x5a, 0x8a, 0xf9, 0xf5, 0x4c, 0x4e, 0x4a, 0x6f,
-	0x8b, 0xa9, 0x62, 0x36, 0x9f, 0x33, 0x2f, 0xb5, 0xf5, 0x38, 0x2f, 0x1a, 0x6e, 0x00, 0x0c, 0x6c,
-	0x66, 0xd2, 0xd9, 0xed, 0x4d, 0x2e, 0x80, 0xc3, 0x10, 0xda, 0xc8, 0xe7, 0xd6, 0xb8, 0x60, 0xf2,
-	0x3b, 0x80, 0x90, 0x81, 0x16, 0x2e, 0xc2, 0xd8, 0x89, 0xa7, 0x23, 0x4e, 0xf8, 0xff, 0xe5, 0x86,
-	0x9f, 0xf5, 0xe4, 0xb3, 0xf0, 0x54, 0x5d, 0xfe, 0xce, 0x61, 0x3d, 0x48, 0xf1, 0xf5, 0xb3, 0xbd,
-	0xe3, 0xf9, 0x1b, 0xa7, 0xca, 0x31, 0x6b, 0xcf, 0x60, 0xdc, 0xe5, 0xb5, 0x86, 0xe7, 0x4e, 0x7b,
-	0x51, 0xf2, 0xf3, 0x3e, 0x12, 0x4c, 0x77, 0x05, 0xa6, 0x3c, 0xe6, 0x07, 0xbe, 0x6a, 0x3b, 0xed,
-	0x39, 0x97, 0xf8, 0x6b, 0xa7, 0x48, 0x31, 0x3b, 0x2f, 0x60, 0xc2, 0x75, 0x21, 0xc0, 0xc2, 0xe9,
-	0x7b, 0x0b, 0x7f, 0xc5, 0x57, 0x86, 0x59, 0x78, 0x0c, 0xc3, 0x8e, 0x07, 0x04, 0xe6, 0xbd, 0x9f,
-	0x61, 0xfc, 0xb4, 0x2b, 0x8f, 0x69, 0x52, 0x20, 0xee, 0x35, 0xc6, 0xf1, 0x35, 0xfb, 0x41, 0x6f,
-	0x54, 0xae, 0x9f, 0x26, 0xc6, 0x4c, 0x95, 0x60, 0xd2, 0x7d, 0x03, 0xc5, 0x57, 0xec, 0x1a, 0xbc,
-	0x80, 0xb9, 0xea, 0x2f, 0xc4, 0x8c, 0x3c, 0x04, 0xe8, 0xbe, 0x44, 0xf0, 0x94, 0x79, 0xe6, 0xc4,
-	0x1b, 0x88, 0x8f, 0x9f, 0x64, 0x30, 0x05, 0xeb, 0x30, 0xe2, 0x5c, 0xdd, 0xf1, 0xb4, 0xcf, 0x9b,
-	0x82, 0xbf, 0xec, 0xce, 0xb4, 0x29, 0x73, 0x4c, 0xc7, 0x8e, 0x32, 0xb7, 0xfd, 0xa0, 0xa3, 0xcc,
-	0x75, 0xa0, 0xe2, 0x1c, 0x8c, 0xf6, 0xb4, 0x50, 0x7c, 0xd9, 0x6f, 0x1c, 0xf0, 0x33, 0x1e, 0xdc,
-	0x6e, 0x12, 0x39, 0x36, 0x45, 0xec, 0x78, 0x6c, 0x38, 0x97, 0x4d, 0x2b, 0x89, 0xdc, 0x57, 0xcb,
-	0x0c, 0x0c, 0xd9, 0xb7, 0x08, 0x7c, 0xc9, 0x14, 0x76, 0x59, 0x4f, 0x78, 0xde, 0x8d, 0xc5, 0xd4,
-	0x3c, 0x01, 0xae, 0x77, 0xce, 0xe3, 0x99, 0x4e, 0xa0, 0xdc, 0x36, 0x09, 0x3e, 0xe1, 0xc5, 0x36,
-	0x55, 0xae, 0xdc, 0x7a, 0xfd, 0x2e, 0x81, 0xde, 0xbc, 0x4b, 0xf4, 0xbd, 0x7f, 0x97, 0x40, 0xaf,
-	0xda, 0x09, 0xf4, 0x43, 0x3b, 0x81, 0x7e, 0x6a, 0x27, 0xd0, 0xeb, 0x76, 0x02, 0xfd, 0xda, 0x4e,
-	0xa0, 0xdf, 0xdb, 0x89, 0xbe, 0xf7, 0xed, 0x04, 0xfa, 0xfa, 0xb7, 0x44, 0xdf, 0xee, 0x00, 0xfd,
-	0xcf, 0xc7, 0xdd, 0xbf, 0x02, 0x00, 0x00, 0xff, 0xff, 0x1f, 0xdf, 0xdb, 0x6b, 0x3b, 0x19, 0x00,
-	0x00,
+	// 1595 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xd4, 0x58, 0xcd, 0x52, 0x1b, 0xc7,
+	0x13, 0x67, 0x25, 0x19, 0xa4, 0xe6, 0x6b, 0x19, 0x24, 0x90, 0x17, 0x58, 0xc9, 0x6b, 0xe3, 0x3f,
+	0x45, 0xfd, 0x03, 0x36, 0x8e, 0xbf, 0x92, 0x54, 0xb9, 0x04, 0x92, 0x6d, 0x19, 0x90, 0xb0, 0x10,
+	0xa6, 0x2a, 0x97, 0x8d, 0x58, 0x0d, 0xb0, 0x85, 0xd8, 0x95, 0x57, 0x2b, 0x08, 0xb7, 0x54, 0x9e,
+	0x20, 0x87, 0x5c, 0xf2, 0x06, 0xa9, 0x54, 0x8e, 0x39, 0xe4, 0x09, 0x52, 0x39, 0xba, 0x2a, 0x97,
+	0x9c, 0x5c, 0xb1, 0x7c, 0xc9, 0xd1, 0x8f, 0x90, 0xda, 0x99, 0x59, 0xb1, 0x2b, 0xcd, 0x4a, 0x72,
+	0x8a, 0x4b, 0x6e, 0xda, 0x99, 0xee, 0x5f, 0x77, 0xff, 0x7a, 0xa6, 0xbb, 0x47, 0x10, 0x6b, 0x9c,
+	0x69, 0x2b, 0x75, 0xcb, 0xb4, 0x4d, 0x14, 0xa9, 0x34, 0xed, 0x63, 0xe9, 0x93, 0x23, 0xdd, 0x3e,
+	0x6e, 0x1e, 0xac, 0x68, 0xe6, 0xe9, 0xea, 0x91, 0x79, 0x64, 0xae, 0x92, 0xcd, 0x83, 0xe6, 0x21,
+	0xf9, 0x22, 0x1f, 0xe4, 0x17, 0x55, 0x52, 0x1a, 0x20, 0xbe, 0xc2, 0x96, 0x7e, 0xa8, 0x6b, 0x15,
+	0x5b, 0x37, 0x8d, 0x0d, 0xb3, 0x8a, 0xd1, 0x38, 0x5c, 0xb3, 0xcd, 0x13, 0x6c, 0x24, 0x85, 0xb4,
+	0xb0, 0x14, 0x43, 0x63, 0x10, 0xd1, 0xcc, 0x2a, 0x4e, 0x86, 0xc8, 0xd7, 0x12, 0x44, 0xec, 0x8b,
+	0x3a, 0x4e, 0x46, 0xd2, 0xc2, 0xd2, 0xc4, 0x9a, 0xb4, 0xe2, 0x18, 0x5d, 0xe9, 0x84, 0x28, 0x5f,
+	0xd4, 0x31, 0x4a, 0x82, 0x88, 0xbf, 0xae, 0xeb, 0x16, 0x59, 0x55, 0x71, 0xdd, 0xd4, 0x8e, 0x93,
+	0xd7, 0xd2, 0xc2, 0x52, 0x44, 0xc1, 0x30, 0x92, 0xd1, 0x34, 0xb3, 0x69, 0xd8, 0x08, 0x41, 0x48,
+	0xaf, 0x52, 0x43, 0xeb, 0xc3, 0xad, 0xb7, 0xa9, 0x50, 0x3e, 0x8b, 0x10, 0xc0, 0xa1, 0x6e, 0x35,
+	0x6c, 0xd5, 0xa8, 0x9c, 0xba, 0x66, 0xa7, 0x20, 0x56, 0xab, 0xb8, 0x4b, 0x61, 0xb2, 0x94, 0xf2,
+	0x79, 0x32, 0x45, 0x3d, 0x61, 0xb8, 0x8e, 0x03, 0xca, 0x2e, 0xc4, 0x32, 0x4d, 0xfb, 0xb8, 0xec,
+	0xc4, 0xe2, 0x04, 0x75, 0x56, 0xa9, 0x35, 0x31, 0x0b, 0x8a, 0xe7, 0x9c, 0x63, 0x29, 0x82, 0x16,
+	0x20, 0xa1, 0xd5, 0x74, 0x6c, 0xd8, 0x2a, 0x36, 0x34, 0xeb, 0xa2, 0x4e, 0x04, 0x4e, 0xf0, 0x05,
+	0xb5, 0xaa, 0xfc, 0x1c, 0x82, 0xa4, 0x83, 0x8a, 0x0d, 0xdb, 0x09, 0x18, 0x6f, 0x99, 0x47, 0xba,
+	0x51, 0xc2, 0xaf, 0x9b, 0xb8, 0x61, 0x3b, 0x46, 0xf0, 0x69, 0x45, 0xaf, 0x31, 0x23, 0x22, 0x44,
+	0xeb, 0x95, 0x46, 0xe3, 0xdc, 0xb4, 0xaa, 0x2c, 0x8c, 0x6d, 0x10, 0x09, 0xb5, 0x6a, 0xc5, 0xb6,
+	0x2d, 0xfd, 0xa0, 0x69, 0xe3, 0x46, 0x32, 0x9c, 0x0e, 0x2f, 0x8d, 0xae, 0xdd, 0x63, 0xfe, 0x07,
+	0x40, 0xaf, 0x90, 0x28, 0x32, 0x6d, 0xad, 0x9c, 0x61, 0x5b, 0x17, 0x28, 0x05, 0xb1, 0x2a, 0x3e,
+	0xd3, 0x35, 0xac, 0xea, 0x55, 0xc2, 0x43, 0x6c, 0x7d, 0xac, 0xf5, 0x36, 0x15, 0xcd, 0x92, 0xc5,
+	0x7c, 0x16, 0xa5, 0x21, 0x5a, 0xaf, 0x55, 0xec, 0x43, 0xd3, 0x3a, 0x25, 0xdc, 0x4f, 0xac, 0x4d,
+	0x50, 0x3b, 0x3b, 0x6c, 0x15, 0x2d, 0x42, 0xb4, 0xda, 0xa4, 0x34, 0x24, 0x87, 0x89, 0xc4, 0x34,
+	0x95, 0x20, 0x06, 0xb3, 0x6c, 0x4b, 0x7a, 0x00, 0x71, 0xae, 0x07, 0xa3, 0x10, 0x76, 0xb8, 0xa1,
+	0xf1, 0xb6, 0x39, 0x26, 0xc1, 0x7e, 0x16, 0x7a, 0x24, 0x28, 0x3f, 0x08, 0x70, 0x9d, 0x13, 0x53,
+	0xa3, 0x6e, 0x1a, 0x0d, 0x8c, 0x64, 0xef, 0x49, 0x1b, 0x5d, 0x9b, 0xbc, 0xe4, 0x80, 0x26, 0x4d,
+	0x86, 0x91, 0x0a, 0x4d, 0x28, 0x81, 0x1c, 0x5d, 0x1b, 0xf7, 0x65, 0x19, 0xcd, 0xc1, 0xb4, 0x7d,
+	0x6e, 0xaa, 0x87, 0x15, 0xcd, 0x36, 0x2d, 0xd5, 0xc2, 0xaf, 0x9b, 0xba, 0x85, 0x29, 0x13, 0x51,
+	0x94, 0x82, 0x59, 0xcf, 0x66, 0xfd, 0xd8, 0x34, 0xb0, 0x6a, 0x34, 0x4f, 0x0f, 0xb0, 0x45, 0xa8,
+	0x88, 0x29, 0xbf, 0x86, 0x20, 0xdd, 0xe5, 0xdb, 0xbe, 0x6e, 0x1f, 0x3b, 0x47, 0xd8, 0x93, 0xd2,
+	0xe0, 0xcb, 0xb0, 0x17, 0x98, 0xce, 0xcf, 0x03, 0xd2, 0xd9, 0x01, 0xff, 0x5f, 0x4d, 0xab, 0x06,
+	0x37, 0x7a, 0x84, 0x76, 0x35, 0xd9, 0x55, 0x7e, 0x11, 0x40, 0xda, 0x38, 0xc6, 0xda, 0x89, 0xc7,
+	0x94, 0x6e, 0x1a, 0x01, 0x99, 0x29, 0x72, 0x72, 0x11, 0x22, 0xb9, 0xb8, 0x4f, 0x61, 0x83, 0xa1,
+	0xb8, 0x59, 0xf8, 0xd7, 0xdc, 0x9c, 0xc3, 0x1c, 0xd7, 0x14, 0x63, 0x25, 0x09, 0xa2, 0xde, 0x50,
+	0x2b, 0x1e, 0xf6, 0x68, 0xfd, 0x8b, 0xf6, 0x3d, 0xed, 0x6d, 0x3e, 0xc3, 0x5c, 0x3e, 0x95, 0x6f,
+	0xc3, 0x10, 0xdf, 0xb0, 0x70, 0xc5, 0xc6, 0x4c, 0xc3, 0x65, 0xca, 0x5f, 0x50, 0x85, 0xee, 0x82,
+	0x1a, 0x72, 0x63, 0xa1, 0xd5, 0x8b, 0xd6, 0xd7, 0x38, 0x8c, 0xf9, 0x2e, 0x4d, 0xa4, 0xab, 0xa6,
+	0x91, 0x6b, 0x84, 0xf2, 0x1c, 0xe2, 0x87, 0x09, 0xf1, 0xab, 0x8c, 0x78, 0x8e, 0x4f, 0x03, 0x1c,
+	0xfc, 0x11, 0xce, 0xc1, 0x77, 0x6b, 0x7e, 0x34, 0xa0, 0xe6, 0xfb, 0x6e, 0x46, 0xac, 0xef, 0xcd,
+	0x80, 0xab, 0xbf, 0x19, 0xfb, 0x90, 0xe8, 0x88, 0xf7, 0x8a, 0x6e, 0xc3, 0x36, 0x4c, 0x3d, 0xc3,
+	0x76, 0x47, 0x66, 0x6f, 0x00, 0x30, 0x25, 0xb5, 0xdd, 0x46, 0xc7, 0x5b, 0x6f, 0x53, 0x31, 0x26,
+	0x97, 0xcf, 0xa2, 0x04, 0x8c, 0xbb, 0x22, 0x34, 0xbb, 0xc4, 0x57, 0xe5, 0x53, 0x40, 0x5e, 0xb8,
+	0xb6, 0x93, 0x6d, 0x27, 0x04, 0x9e, 0x13, 0x3f, 0x09, 0x90, 0xd8, 0x33, 0xbc, 0x87, 0x37, 0xe0,
+	0x36, 0xbe, 0x08, 0xbc, 0x8d, 0x77, 0x28, 0x22, 0x17, 0xe5, 0x6a, 0x2f, 0x62, 0x12, 0x66, 0x3a,
+	0xad, 0xd0, 0x30, 0x95, 0x03, 0x58, 0xa0, 0x49, 0xea, 0x1c, 0x5c, 0xdc, 0x68, 0xdc, 0x29, 0x47,
+	0xe8, 0x3b, 0xe5, 0xcc, 0xc2, 0x24, 0xb1, 0xab, 0xda, 0xa6, 0x7a, 0xe6, 0x08, 0x5c, 0x30, 0x82,
+	0x77, 0x41, 0x0e, 0xb2, 0xc1, 0xc8, 0xbe, 0x0b, 0x53, 0x67, 0x9e, 0x3d, 0x95, 0x34, 0x16, 0x4a,
+	0xfb, 0x0c, 0xdf, 0xa2, 0xf2, 0x9b, 0x00, 0xf3, 0xa4, 0xb8, 0x04, 0x39, 0xde, 0xb3, 0x5d, 0xbd,
+	0x0c, 0x6c, 0x57, 0x0f, 0x3d, 0x25, 0x32, 0x00, 0xfa, 0x6a, 0x73, 0x53, 0x80, 0x85, 0x00, 0x63,
+	0x83, 0x9d, 0xc4, 0x0e, 0x4c, 0x65, 0x11, 0xe2, 0x14, 0x0a, 0x57, 0x5f, 0x39, 0xcb, 0x7c, 0x3e,
+	0x94, 0xdb, 0x90, 0xe8, 0x10, 0x63, 0xe6, 0xfc, 0xe3, 0xa1, 0x72, 0x07, 0x52, 0x34, 0x79, 0x3b,
+	0xac, 0xd6, 0x95, 0x70, 0x03, 0xdb, 0x24, 0x52, 0xfe, 0xac, 0xa7, 0xdc, 0x85, 0x74, 0xb0, 0xc6,
+	0xa5, 0x11, 0xaf, 0x33, 0xab, 0x20, 0x13, 0x0e, 0x7a, 0xda, 0xf0, 0x2a, 0x5c, 0x40, 0x2a, 0x50,
+	0x81, 0x99, 0x18, 0xa0, 0x20, 0xcc, 0x43, 0xdc, 0x15, 0xf1, 0xd5, 0x77, 0x7a, 0x46, 0xba, 0xca,
+	0x05, 0x1d, 0x7b, 0x5f, 0x40, 0x62, 0xaf, 0x5e, 0xf5, 0x85, 0x37, 0xc0, 0x81, 0x8b, 0xc3, 0x98,
+	0x81, 0xcf, 0xd5, 0x76, 0xc3, 0xa0, 0x58, 0x8f, 0x60, 0x7a, 0xbd, 0x66, 0x6a, 0x27, 0x1f, 0x5d,
+	0xcb, 0x94, 0x07, 0x10, 0xf7, 0x6b, 0x0e, 0x58, 0xb6, 0x9c, 0x4a, 0xd0, 0xe1, 0x3d, 0xab, 0x04,
+	0x5f, 0xc0, 0xec, 0x33, 0x6c, 0x6f, 0x55, 0x1a, 0x36, 0x99, 0x61, 0xf2, 0xc6, 0xa1, 0xf9, 0x11,
+	0xfe, 0x7c, 0x2f, 0x40, 0xb2, 0x5b, 0x9d, 0x39, 0xe5, 0x6d, 0x45, 0x02, 0xb7, 0x15, 0x21, 0x80,
+	0x9a, 0xa3, 0xa6, 0xda, 0x3a, 0x6b, 0xc2, 0x11, 0x7f, 0x0b, 0x0c, 0x73, 0x5a, 0xa0, 0xdf, 0xad,
+	0x08, 0xcf, 0xad, 0x3f, 0x04, 0x37, 0xde, 0x76, 0x7b, 0x09, 0x48, 0xd7, 0x66, 0x60, 0x99, 0xbe,
+	0xcb, 0xca, 0x34, 0x17, 0x86, 0xdf, 0xbd, 0xbd, 0x9d, 0x35, 0x7c, 0xf5, 0x9d, 0xf5, 0x31, 0xcc,
+	0x76, 0x79, 0x33, 0x58, 0x6f, 0x55, 0x1e, 0x43, 0x3c, 0x8b, 0x6b, 0xb8, 0x6b, 0x30, 0x1a, 0x20,
+	0xc5, 0x0f, 0x21, 0xd1, 0xa1, 0x3a, 0xd8, 0x99, 0x5b, 0x7e, 0xe9, 0x56, 0xa4, 0x8e, 0x86, 0x11,
+	0x83, 0x6b, 0x3b, 0xcf, 0x8b, 0x85, 0x9c, 0x38, 0xe4, 0xfc, 0xcc, 0x6d, 0x67, 0xf2, 0x5b, 0xa2,
+	0x80, 0x26, 0x61, 0x34, 0xb3, 0xb1, 0x51, 0xdc, 0x2b, 0x94, 0xd5, 0xb5, 0xa7, 0x19, 0x31, 0x84,
+	0x10, 0x4c, 0xec, 0x64, 0x76, 0x77, 0xf7, 0x8b, 0xa5, 0xac, 0x5a, 0xca, 0xed, 0xe6, 0xca, 0x62,
+	0x78, 0xf9, 0x3e, 0x8c, 0x7a, 0x67, 0x9d, 0x51, 0x18, 0xd9, 0x2b, 0x6c, 0x16, 0x8a, 0xfb, 0x05,
+	0x71, 0xc8, 0xf9, 0xd8, 0xc9, 0x94, 0xf3, 0xb9, 0x42, 0x59, 0x14, 0xd0, 0x18, 0x44, 0x77, 0x4a,
+	0xc5, 0x57, 0xf9, 0x6c, 0xae, 0x24, 0x86, 0x96, 0x9f, 0x40, 0xb4, 0x7d, 0xe4, 0xe2, 0x20, 0x32,
+	0x1d, 0x75, 0x67, 0x2b, 0x53, 0x7e, 0x5a, 0x2c, 0x6d, 0x8b, 0x43, 0x68, 0x04, 0xc2, 0xf9, 0xe2,
+	0xae, 0x28, 0x38, 0x28, 0x99, 0x42, 0xb6, 0x54, 0xcc, 0x67, 0xc5, 0x90, 0xb3, 0xba, 0x9f, 0x5b,
+	0x17, 0xc3, 0xcb, 0x5b, 0x30, 0xee, 0x4b, 0x21, 0x92, 0x60, 0xc6, 0x45, 0x29, 0x17, 0x37, 0x73,
+	0x05, 0x35, 0xbb, 0x57, 0xca, 0x94, 0xf3, 0xc5, 0x02, 0x0d, 0x6a, 0xf7, 0x79, 0xb1, 0xe4, 0xb8,
+	0x01, 0x30, 0xbc, 0x9d, 0xcb, 0xe6, 0xf7, 0xb6, 0xc5, 0x10, 0x8a, 0x42, 0x64, 0xab, 0x58, 0x78,
+	0x26, 0x86, 0xd7, 0xde, 0x03, 0x44, 0x9c, 0xd4, 0xa0, 0x32, 0x4c, 0x75, 0x3d, 0x22, 0x90, 0xdc,
+	0xfb, 0x1d, 0x2c, 0xa5, 0x02, 0xf7, 0x59, 0x5e, 0x6a, 0x9c, 0x07, 0xa7, 0xfb, 0x34, 0x41, 0xb7,
+	0x07, 0x7b, 0x96, 0x49, 0xff, 0xeb, 0x2b, 0xc7, 0xac, 0x7d, 0x09, 0xd3, 0x9c, 0x61, 0x1f, 0xa5,
+	0xfb, 0x3d, 0x39, 0xa4, 0x1b, 0x3d, 0x24, 0x18, 0xf6, 0x21, 0xcc, 0x06, 0x94, 0x7b, 0x74, 0xcb,
+	0xa3, 0x1d, 0xd8, 0x3e, 0xa4, 0xc5, 0x3e, 0x52, 0xcc, 0xce, 0x57, 0x90, 0xe0, 0xf6, 0x62, 0xa4,
+	0xf4, 0x9f, 0x0a, 0xa4, 0x9b, 0x3d, 0x65, 0x98, 0x85, 0xe7, 0x30, 0xee, 0x1b, 0x8a, 0x91, 0x14,
+	0xfc, 0x32, 0x90, 0xe6, 0xb8, 0x7b, 0x0c, 0x49, 0x87, 0x64, 0x50, 0x9b, 0x45, 0x8b, 0x5e, 0xc5,
+	0x60, 0x56, 0x6e, 0xf7, 0x13, 0x63, 0xa6, 0x34, 0x98, 0xe1, 0x0f, 0x70, 0xe8, 0xa6, 0x17, 0x21,
+	0x88, 0x98, 0x5b, 0xbd, 0x85, 0x2e, 0x99, 0xf1, 0x95, 0x17, 0x97, 0x19, 0x5e, 0xb9, 0x72, 0x99,
+	0xe1, 0xd7, 0xa3, 0x27, 0x00, 0x97, 0x03, 0x3d, 0x9a, 0xa5, 0xa2, 0x5d, 0x2f, 0x06, 0x29, 0xd9,
+	0xbd, 0xc1, 0x00, 0x36, 0x61, 0xc2, 0x3f, 0x2e, 0xa3, 0xb9, 0x1e, 0xa3, 0xba, 0x34, 0xcf, 0xdf,
+	0xf4, 0x80, 0xf9, 0x3a, 0x6e, 0x1b, 0x8c, 0x37, 0x45, 0xb4, 0xc1, 0xb8, 0x4d, 0x1a, 0x15, 0x60,
+	0xb2, 0xa3, 0xf2, 0xa3, 0xf9, 0x5e, 0xed, 0x49, 0x5a, 0x08, 0xd8, 0xbd, 0x24, 0xdd, 0x37, 0x05,
+	0x22, 0xdf, 0x80, 0xef, 0x9f, 0x20, 0x5d, 0xd2, 0xf9, 0x63, 0x63, 0x0e, 0xc6, 0xbc, 0x03, 0x09,
+	0xba, 0x4e, 0x85, 0x39, 0xe3, 0x8d, 0x24, 0xf1, 0xb6, 0x18, 0xcc, 0x4b, 0x10, 0x3b, 0xc7, 0x08,
+	0xb4, 0xd0, 0x4e, 0x14, 0x6f, 0x3a, 0x91, 0xe4, 0xa0, 0x6d, 0x0a, 0xb9, 0xfe, 0xff, 0x37, 0xef,
+	0x64, 0xe1, 0xcf, 0x77, 0xf2, 0xd0, 0x87, 0x77, 0xb2, 0xf0, 0x4d, 0x4b, 0x16, 0x7e, 0x6c, 0xc9,
+	0xc2, 0xef, 0x2d, 0x59, 0x78, 0xd3, 0x92, 0x85, 0xbf, 0x5a, 0xb2, 0xf0, 0x77, 0x4b, 0x1e, 0xfa,
+	0xd0, 0x92, 0x85, 0xef, 0xde, 0xcb, 0x43, 0x07, 0xc3, 0xe4, 0xdf, 0xe0, 0x7b, 0xff, 0x04, 0x00,
+	0x00, 0xff, 0xff, 0xb8, 0x12, 0xcd, 0x72, 0x4f, 0x16, 0x00, 0x00,
 }
