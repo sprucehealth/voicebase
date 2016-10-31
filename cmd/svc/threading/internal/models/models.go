@@ -530,9 +530,6 @@ func SummaryFromText(textMarkup string) (string, error) {
 	return pt, nil
 }
 
-// ScheduledMessageIDPrefix represents the string that is attached to the beginning of these identifiers
-const ScheduledMessageIDPrefix = "scm_"
-
 // NewScheduledMessageID returns a new ScheduledMessageID.
 func NewScheduledMessageID() (ScheduledMessageID, error) {
 	id, err := idgen.NewID()
@@ -541,7 +538,7 @@ func NewScheduledMessageID() (ScheduledMessageID, error) {
 	}
 	return ScheduledMessageID{
 		model.ObjectID{
-			Prefix:  ScheduledMessageIDPrefix,
+			Prefix:  threading.ScheduledMessageIDPrefix,
 			Val:     id,
 			IsValid: true,
 		},
@@ -552,7 +549,7 @@ func NewScheduledMessageID() (ScheduledMessageID, error) {
 func EmptyScheduledMessageID() ScheduledMessageID {
 	return ScheduledMessageID{
 		model.ObjectID{
-			Prefix:  ScheduledMessageIDPrefix,
+			Prefix:  threading.ScheduledMessageIDPrefix,
 			IsValid: false,
 		},
 	}

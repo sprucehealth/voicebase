@@ -921,7 +921,7 @@ func (d *dal) ThreadItem(ctx context.Context, id models.ThreadItemID) (*models.T
 		FROM thread_items
 		WHERE id = ?`, id)
 	ti, err := scanThreadItem(row)
-	if err == sql.ErrNoRows {
+	if errors.Cause(err) == sql.ErrNoRows {
 		return nil, errors.Trace(ErrNotFound)
 	}
 	return ti, errors.Trace(err)

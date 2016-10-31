@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
@@ -10,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 )
 
@@ -57,6 +59,9 @@ var threadItemViewDetailsType = graphql.NewObject(
 )
 
 func lookupThreadItemViewDetails(ctx context.Context, ram raccess.ResourceAccessor, threadItemID string) ([]interface{}, error) {
+	if strings.HasPrefix(threadItemID, threading.SavedMessageIDPrefix) || strings.HasPrefix(threadItemID, threading.ScheduledMessageIDPrefix) {
+		return nil, nil
+	}
 	tivd, err := ram.ThreadItemViewDetails(ctx, threadItemID)
 	if err != nil {
 		return nil, errors.InternalError(ctx, err)

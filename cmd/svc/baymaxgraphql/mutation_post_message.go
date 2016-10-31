@@ -605,6 +605,9 @@ func processIncomingAttachments(ctx context.Context, ram raccess.ResourceAccesso
 		var attachment *threading.Attachment
 		switch mAttachmentType {
 		case threading.ATTACHMENT_TYPE_VISIT:
+			if mAttachment.AttachmentID == "" {
+				return nil, nil, errors.Errorf("Missing ID for visit attachment")
+			}
 			// ensure that the visit layout exists from which to create a visit
 			visitLayoutRes, err := ram.VisitLayout(ctx, &layout.GetVisitLayoutRequest{
 				ID: mAttachment.AttachmentID,
