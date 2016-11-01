@@ -164,8 +164,8 @@ func (s *threadsServer) notifyMembersOfPublishMessage(
 			EntitiesToNotify: receiverEntityIDs,
 			// Note: Parameterizing with these may not be the best. The notification infterface needs to be
 			//   rethought, but going with this for now
-			DedupeKey:            newMessageNotificationKey,
-			CollapseKey:          newMessageNotificationKey,
+			DedupeKey:            thread.ID.String(),
+			CollapseKey:          thread.ID.String(),
 			EntitiesAtReferenced: mentionedEntityIDs,
 			Type:                 nType,
 		}); err != nil {
