@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -9,9 +10,8 @@ import (
 	"strconv"
 	"time"
 
-	"context"
-
 	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/aws/aws-sdk-go/service/ecs/ecsiface"
 	"github.com/aws/aws-sdk-go/service/sts/stsiface"
 	"github.com/sprucehealth/backend/cmd/cli/deployadmin/internal/config"
 	"github.com/sprucehealth/backend/libs/awsutil"
@@ -70,11 +70,36 @@ func (c *cloneECSTaskDefinitionToDeployableConfigCmd) Run(args []string) error {
 		}
 	}
 
+	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
+	defer cancel()
+
+	// Fetch the environment to see if it's prod
+	eres, err := c.deployCli.Environments(ctx, &deploy.EnvironmentsRequest{
+		By: &deploy.EnvironmentsRequest_EnvironmentID{
+			EnvironmentID: *envID,
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("Failed to fetch environment: %s", err)
+	}
+	env := eres.Environments[0]
+	printEnvironment(env)
+
 	// Assume the correct role. For now hack this.
 	// TODO: Figure out how to track roles vs envs
-	aECSCli, err := awsutil.AssumedECSCli(c.stsCli, "arn:aws:iam::758505115169:role/dev-deploy-ecs", fmt.Sprintf("clone-%s-%s", *depID, *familyName))
-	if err != nil {
-		return err
+	var aECSCli ecsiface.ECSAPI
+	if !env.IsProd {
+		aECSCli, err = awsutil.AssumedECSCli(c.stsCli, "arn:aws:iam::758505115169:role/dev-deploy-ecs", fmt.Sprintf("clone-%s-%s", *depID, *familyName))
+		if err != nil {
+			return err
+		}
+	} else {
+		session, err := c.cnf.App.AWSSession()
+		if err != nil {
+			return fmt.Errorf("Failed to init AWS session: %s", err)
+		}
+		aECSCli = ecs.New(session)
 	}
 
 	res, err := aECSCli.DescribeTaskDefinition(&ecs.DescribeTaskDefinitionInput{
@@ -93,13 +118,9 @@ func (c *cloneECSTaskDefinitionToDeployableConfigCmd) Run(args []string) error {
 		configMap[fmt.Sprintf("ECS_CONFIG_PORT_MAPPING_%d", i)] = fmt.Sprintf("%d:%d:%s", *pm.ContainerPort, *pm.HostPort, *pm.Protocol)
 	}
 
-	ctx := context.Background()
-	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
-	defer cancel()
-
 	cRes, err := c.deployCli.CreateDeployableConfig(ctx, &deploy.CreateDeployableConfigRequest{
 		DeployableID:  *depID,
-		EnvironmentID: *envID,
+		EnvironmentID: env.ID,
 		Values:        configMap,
 	})
 	if err != nil {

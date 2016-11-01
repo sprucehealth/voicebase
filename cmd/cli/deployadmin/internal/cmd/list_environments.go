@@ -51,7 +51,9 @@ func (c *listEnvironmentsCmd) Run(args []string) error {
 	defer cancel()
 
 	res, err := c.deployCli.Environments(ctx, &deploy.EnvironmentsRequest{
-		DeployableGroupID: *groupID,
+		By: &deploy.EnvironmentsRequest_DeployableGroupID{
+			DeployableGroupID: *groupID,
+		},
 	})
 	if err != nil {
 		return err
