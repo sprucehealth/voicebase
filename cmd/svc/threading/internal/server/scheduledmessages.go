@@ -106,7 +106,7 @@ func (s *threadsServer) DeleteScheduledMessage(ctx context.Context, in *threadin
 func (s *threadsServer) ScheduledMessages(ctx context.Context, in *threading.ScheduledMessagesRequest) (*threading.ScheduledMessagesResponse, error) {
 	scheduledMessageStatus := make([]models.ScheduledMessageStatus, len(in.Status))
 	for i, s := range in.Status {
-		status, err := models.ParseScheduledMessageStatus(s.String())
+		status, err := transformScheduledMessageStatusFromRequest(s)
 		if err != nil {
 			return nil, grpcErrorf(codes.InvalidArgument, "Unknown ScheduledMessage Status %s", s)
 		}

@@ -620,3 +620,16 @@ func transformScheduledMessageToResponse(sm *models.ScheduledMessage) (*threadin
 	}
 	return rsm, nil
 }
+
+func transformScheduledMessageStatusFromRequest(status threading.ScheduledMessageStatus) (models.ScheduledMessageStatus, error) {
+	switch status {
+	case threading.SCHEDULED_MESSAGE_STATUS_PENDING:
+		return models.ScheduledMessageStatusPending, nil
+	case threading.SCHEDULED_MESSAGE_STATUS_SENT:
+		return models.ScheduledMessageStatusSent, nil
+	case threading.SCHEDULED_MESSAGE_STATUS_DELETED:
+		return models.ScheduledMessageStatusDeleted, nil
+
+	}
+	return "", errors.Errorf("Unknown scheduled message status %s", status)
+}
