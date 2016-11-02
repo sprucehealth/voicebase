@@ -81,7 +81,7 @@ func (c *listDeploymentsCmd) Run(args []string) error {
 		return err
 	}
 	if *lastN > 0 && len(res.Deployments) > *lastN {
-		res.Deployments = res.Deployments[:*lastN]
+		res.Deployments = res.Deployments[len(res.Deployments)-*lastN:]
 	}
 
 	envNames, err := environmentNames(ctx, c.deployCli, dep.DeployableGroupID)
