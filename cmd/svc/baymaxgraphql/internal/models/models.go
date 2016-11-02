@@ -411,6 +411,7 @@ type Visit struct {
 	CanReview           bool   `json:"canReview"`
 	CanPatientModify    bool   `json:"canPatientModify"`
 	Submitted           bool   `json:"submitted"`
+	SubmittedTimestamp  int    `json:"submittedTimestamp"`
 	Triaged             bool   `json:"triaged"`
 	LayoutContainer     string `json:"layoutContainer"`
 	LayoutContainerType string `json:"layoutContainerType"`

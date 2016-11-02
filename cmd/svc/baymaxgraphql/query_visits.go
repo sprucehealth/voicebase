@@ -86,6 +86,10 @@ var visitType = graphql.NewObject(
 				Type:        graphql.NewNonNull(graphql.Boolean),
 				Description: "True when patient has submitted visit, false otherwise.",
 			},
+			"submittedTimestamp": &graphql.Field{
+				Type:        graphql.NewNonNull(graphql.Int),
+				Description: "timestamp when the visit was submitted",
+			},
 			"triaged": &graphql.Field{
 				Type:        graphql.NewNonNull(graphql.Boolean),
 				Description: "True if a patient was triaged out before visit was completed, false otherwise.",

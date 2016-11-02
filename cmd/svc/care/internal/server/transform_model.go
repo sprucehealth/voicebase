@@ -15,14 +15,20 @@ import (
 )
 
 func transformVisitToResponse(v *models.Visit, optionalTriage *settings.BooleanValue) *care.Visit {
+	var submittedTimestamp uint64
+	if v.SubmittedTimestamp != nil {
+		submittedTimestamp = uint64(v.SubmittedTimestamp.Unix())
+	}
+
 	return &care.Visit{
-		ID:              v.ID.String(),
-		Name:            v.Name,
-		Submitted:       v.Submitted,
-		Triaged:         v.Triaged,
-		LayoutVersionID: v.LayoutVersionID,
-		EntityID:        v.EntityID,
-		OrganizationID:  v.OrganizationID,
+		ID:                 v.ID.String(),
+		Name:               v.Name,
+		Submitted:          v.Submitted,
+		SubmittedTimestamp: submittedTimestamp,
+		Triaged:            v.Triaged,
+		LayoutVersionID:    v.LayoutVersionID,
+		EntityID:           v.EntityID,
+		OrganizationID:     v.OrganizationID,
 		Preferences: &care.Visit_Preference{
 			OptionalTriage: optionalTriage.Value,
 		},

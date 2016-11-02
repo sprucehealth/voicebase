@@ -52,13 +52,13 @@ func (s *server) CreateDeployable(ctx context.Context, in *deploy.CreateDeployab
 		if errors.Cause(err) == dal.ErrNotFound {
 			return nil, grpcErrorf(codes.NotFound, "Not Found: Deployable Group: %q", groupID)
 		}
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	if _, err := s.dl.DeployableForNameAndGroup(in.Name, groupID); err == nil {
 		return nil, grpcErrorf(codes.InvalidArgument, "name %s is not available for this group", in.Name)
 	} else if errors.Cause(err) != dal.ErrNotFound {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	id, err := s.dl.InsertDeployable(&dal.Deployable{
@@ -68,12 +68,12 @@ func (s *server) CreateDeployable(ctx context.Context, in *deploy.CreateDeployab
 		GitURL:            in.GitURL,
 	})
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	dep, err := s.dl.Deployable(id)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	return &deploy.CreateDeployableResponse{
@@ -101,13 +101,13 @@ func (s *server) CreateDeployableConfig(ctx context.Context, in *deploy.CreateDe
 		if errors.Cause(err) == dal.ErrNotFound {
 			return nil, grpcErrorf(codes.NotFound, "Not Found: Deployable: %q", depID)
 		}
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 	if _, err = s.dl.Environment(envID); err != nil {
 		if errors.Cause(err) == dal.ErrNotFound {
 			return nil, grpcErrorf(codes.NotFound, "Not Found: Environment: %q", envID)
 		}
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 	omitMap := make(map[string]struct{})
 	for _, omit := range in.OmitFromSource {
@@ -124,11 +124,11 @@ func (s *server) CreateDeployableConfig(ctx context.Context, in *deploy.CreateDe
 			if errors.Cause(err) == dal.ErrNotFound {
 				return nil, grpcErrorf(codes.NotFound, "Not Found: Deployable Config: %q", sourceConfigID)
 			}
-			return nil, grpcErrorf(codes.Internal, err.Error())
+			return nil, errors.Trace(err)
 		}
 		sourceConfigValues, err := s.dl.DeployableConfigValues(sourceConfigID)
 		if err != nil {
-			return nil, grpcErrorf(codes.Internal, err.Error())
+			return nil, errors.Trace(err)
 		}
 		for _, sv := range sourceConfigValues {
 			if _, ok := omitMap[sv.Name]; !ok {
@@ -143,7 +143,7 @@ func (s *server) CreateDeployableConfig(ctx context.Context, in *deploy.CreateDe
 	var configID dal.DeployableConfigID
 	if err := s.dl.Transact(func(dl dal.DAL) error {
 		if _, err := dl.DeprecateActiveDeployableConfig(depID, envID); err != nil {
-			return grpcErrorf(codes.Internal, err.Error())
+			return errors.Trace(err)
 		}
 		configID, err = dl.InsertDeployableConfig(&dal.DeployableConfig{
 			DeployableID:  depID,
@@ -152,7 +152,7 @@ func (s *server) CreateDeployableConfig(ctx context.Context, in *deploy.CreateDe
 			Status: dal.DeployableConfigStatusActive,
 		})
 		if err != nil {
-			return grpcErrorf(codes.Internal, err.Error())
+			return errors.Trace(err)
 		}
 
 		var i int
@@ -168,7 +168,7 @@ func (s *server) CreateDeployableConfig(ctx context.Context, in *deploy.CreateDe
 
 		return dl.InsertDeployableConfigValues(configValues)
 	}); err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	return &deploy.CreateDeployableConfigResponse{
@@ -191,7 +191,7 @@ func (s *server) CreateDeployableGroup(ctx context.Context, in *deploy.CreateDep
 	if _, err := s.dl.DeployableGroupForName(in.Name); err == nil {
 		return nil, grpcErrorf(codes.InvalidArgument, "group name %s is not available", in.Name)
 	} else if errors.Cause(err) != dal.ErrNotFound {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	id, err := s.dl.InsertDeployableGroup(&dal.DeployableGroup{
@@ -199,12 +199,12 @@ func (s *server) CreateDeployableGroup(ctx context.Context, in *deploy.CreateDep
 		Description: in.Description,
 	})
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	group, err := s.dl.DeployableGroup(id)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	return &deploy.CreateDeployableGroupResponse{
@@ -248,14 +248,14 @@ func (s *server) CreateDeployableVector(ctx context.Context, in *deploy.CreateDe
 		if errors.Cause(err) == dal.ErrNotFound {
 			return nil, grpcErrorf(codes.NotFound, "Not Found: Deployable: %q", depID)
 		}
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 	tEnv, err := s.dl.Environment(targetEnvID)
 	if err != nil {
 		if errors.Cause(err) == dal.ErrNotFound {
 			return nil, grpcErrorf(codes.NotFound, "Not Found: Environment: %q", targetEnvID)
 		}
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 	if dep.DeployableGroupID != tEnv.DeployableGroupID {
 		return nil, grpcErrorf(codes.InvalidArgument, "this deployable does have access to environment %q", targetEnvID)
@@ -266,7 +266,7 @@ func (s *server) CreateDeployableVector(ctx context.Context, in *deploy.CreateDe
 			if errors.Cause(err) == dal.ErrNotFound {
 				return nil, grpcErrorf(codes.NotFound, "Not Found: Environment: %q", sourceEnvID)
 			}
-			return nil, grpcErrorf(codes.Internal, err.Error())
+			return nil, errors.Trace(err)
 		}
 		if dep.DeployableGroupID != sEnv.DeployableGroupID {
 			return nil, grpcErrorf(codes.InvalidArgument, "this deployable does have access to environment %q", sourceEnvID)
@@ -275,7 +275,7 @@ func (s *server) CreateDeployableVector(ctx context.Context, in *deploy.CreateDe
 	if _, err := s.dl.DeployableVectorForDeployableSourceTarget(depID, vectorSourceType, sourceEnvID, targetEnvID); err == nil {
 		return nil, grpcErrorf(codes.InvalidArgument, "deployable vector for deployable %s source type %s source env %s target env %s already exists", depID, vectorSourceType, sourceEnvID, targetEnvID)
 	} else if errors.Cause(err) != dal.ErrNotFound {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	id, err := s.dl.InsertDeployableVector(&dal.DeployableVector{
@@ -285,12 +285,12 @@ func (s *server) CreateDeployableVector(ctx context.Context, in *deploy.CreateDe
 		TargetEnvironmentID: targetEnvID,
 	})
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	dv, err := s.dl.DeployableVector(id)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	return &deploy.CreateDeployableVectorResponse{
@@ -315,13 +315,13 @@ func (s *server) CreateEnvironment(ctx context.Context, in *deploy.CreateEnviron
 		if errors.Cause(err) == dal.ErrNotFound {
 			return nil, grpcErrorf(codes.NotFound, "Not Found: Deployable Group: %q", groupID)
 		}
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	if _, err := s.dl.EnvironmentForNameAndGroup(in.Name, groupID); err == nil {
 		return nil, grpcErrorf(codes.InvalidArgument, "name %s is not available for this group", in.Name)
 	} else if errors.Cause(err) != dal.ErrNotFound {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	id, err := s.dl.InsertEnvironment(&dal.Environment{
@@ -331,12 +331,12 @@ func (s *server) CreateEnvironment(ctx context.Context, in *deploy.CreateEnviron
 		DeployableGroupID: groupID,
 	})
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	env, err := s.dl.Environment(id)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	return &deploy.CreateEnvironmentResponse{
@@ -359,7 +359,7 @@ func (s *server) CreateEnvironmentConfig(ctx context.Context, in *deploy.CreateE
 		if errors.Cause(err) == dal.ErrNotFound {
 			return nil, grpcErrorf(codes.NotFound, "Not Found: Environment: %q", envID)
 		}
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 	omitMap := make(map[string]struct{})
 	for _, omit := range in.OmitFromSource {
@@ -376,11 +376,11 @@ func (s *server) CreateEnvironmentConfig(ctx context.Context, in *deploy.CreateE
 			if errors.Cause(err) == dal.ErrNotFound {
 				return nil, grpcErrorf(codes.NotFound, "Not Found: Environment Config: %q", sourceConfigID)
 			}
-			return nil, grpcErrorf(codes.Internal, err.Error())
+			return nil, errors.Trace(err)
 		}
 		sourceConfigValues, err := s.dl.EnvironmentConfigValues(sourceConfigID)
 		if err != nil {
-			return nil, grpcErrorf(codes.Internal, err.Error())
+			return nil, errors.Trace(err)
 		}
 		for _, sv := range sourceConfigValues {
 			if _, ok := omitMap[sv.Name]; !ok {
@@ -395,7 +395,7 @@ func (s *server) CreateEnvironmentConfig(ctx context.Context, in *deploy.CreateE
 	var configID dal.EnvironmentConfigID
 	if err := s.dl.Transact(func(dl dal.DAL) error {
 		if _, err := dl.DeprecateActiveEnvironmentConfig(envID); err != nil {
-			return grpcErrorf(codes.Internal, err.Error())
+			return errors.Trace(err)
 		}
 		configID, err = dl.InsertEnvironmentConfig(&dal.EnvironmentConfig{
 			EnvironmentID: envID,
@@ -403,7 +403,7 @@ func (s *server) CreateEnvironmentConfig(ctx context.Context, in *deploy.CreateE
 			Status: dal.EnvironmentConfigStatusActive,
 		})
 		if err != nil {
-			return grpcErrorf(codes.Internal, err.Error())
+			return errors.Trace(err)
 		}
 
 		var i int
@@ -419,7 +419,7 @@ func (s *server) CreateEnvironmentConfig(ctx context.Context, in *deploy.CreateE
 
 		return dl.InsertEnvironmentConfigValues(configValues)
 	}); err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	return &deploy.CreateEnvironmentConfigResponse{
@@ -455,7 +455,7 @@ func (s *server) DeployableConfigs(ctx context.Context, in *deploy.DeployableCon
 
 	depConfigs, err := s.dl.DeployableConfigsForStatus(depID, envID, status)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	deployableConfigs := make([]*deploy.DeployableConfig, len(depConfigs))
@@ -463,7 +463,7 @@ func (s *server) DeployableConfigs(ctx context.Context, in *deploy.DeployableCon
 		configMap := make(map[string]string)
 		configValues, err := s.dl.DeployableConfigValues(dc.ID)
 		if err != nil {
-			return nil, grpcErrorf(codes.Internal, err.Error())
+			return nil, errors.Trace(err)
 		}
 		for _, v := range configValues {
 			configMap[v.Name] = v.Value
@@ -480,7 +480,7 @@ func (s *server) DeployableConfigs(ctx context.Context, in *deploy.DeployableCon
 func (s *server) DeployableGroups(ctx context.Context, in *deploy.DeployableGroupsRequest) (*deploy.DeployableGroupsResponse, error) {
 	groups, err := s.dl.DeployableGroups()
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	return &deploy.DeployableGroupsResponse{
@@ -502,7 +502,7 @@ func (s *server) Deployments(ctx context.Context, in *deploy.DeploymentsRequest)
 		if errors.Cause(err) == dal.ErrNotFound {
 			return nil, grpcErrorf(codes.NotFound, "Not Found: Deployable: %q", depID)
 		}
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	var deployments []*dal.Deployment
@@ -519,7 +519,7 @@ func (s *server) Deployments(ctx context.Context, in *deploy.DeploymentsRequest)
 
 	rDeployments, err := transformDeploymentsToResponse(deployments)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	return &deploy.DeploymentsResponse{
@@ -529,22 +529,42 @@ func (s *server) Deployments(ctx context.Context, in *deploy.DeploymentsRequest)
 
 // Deployables returns all the deployables for a given deployable group
 func (s *server) Deployables(ctx context.Context, in *deploy.DeployablesRequest) (*deploy.DeployablesResponse, error) {
-	if in.DeployableGroupID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "group id cannot be empty")
+	switch by := in.By.(type) {
+	case *deploy.DeployablesRequest_DeployableID:
+		if by.DeployableID == "" {
+			return nil, grpcErrorf(codes.InvalidArgument, "deployable id cannot be empty")
+		}
+		depID, err := dal.ParseDeployableID(by.DeployableID)
+		if err != nil {
+			return nil, grpcErrorf(codes.InvalidArgument, "deployable id %q is invalid", by.DeployableID)
+		}
+		dep, err := s.dl.Deployable(depID)
+		if errors.Cause(err) == dal.ErrNotFound {
+			return nil, grpcErrorf(codes.NotFound, "deployable id %q not found", by.DeployableID)
+		}
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		return &deploy.DeployablesResponse{
+			Deployables: transformDeployablesToResponse([]*dal.Deployable{dep}),
+		}, nil
+	case *deploy.DeployablesRequest_DeployableGroupID:
+		if by.DeployableGroupID == "" {
+			return nil, grpcErrorf(codes.InvalidArgument, "group id cannot be empty")
+		}
+		groupID, err := dal.ParseDeployableGroupID(by.DeployableGroupID)
+		if err != nil {
+			return nil, grpcErrorf(codes.InvalidArgument, "group id %q is invalid", by.DeployableGroupID)
+		}
+		deps, err := s.dl.DeployablesForGroup(groupID)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		return &deploy.DeployablesResponse{
+			Deployables: transformDeployablesToResponse(deps),
+		}, nil
 	}
-	groupID, err := dal.ParseDeployableGroupID(in.DeployableGroupID)
-	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "group id %q is invalid", in.DeployableGroupID)
-	}
-
-	deps, err := s.dl.DeployablesForGroup(groupID)
-	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
-	}
-
-	return &deploy.DeployablesResponse{
-		Deployables: transformDeployablesToResponse(deps),
-	}, nil
+	return nil, errors.Errorf("Unsupported by type %T", in.By)
 }
 
 // DeployableVectors returns all the deployable vectors for a given deployable
@@ -559,7 +579,7 @@ func (s *server) DeployableVectors(ctx context.Context, in *deploy.DeployableVec
 
 	vectors, err := s.dl.DeployableVectorsForDeployable(depID)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	return &deploy.DeployableVectorsResponse{
@@ -583,7 +603,7 @@ func (s *server) EnvironmentConfigs(ctx context.Context, in *deploy.EnvironmentC
 
 	envConfigs, err := s.dl.EnvironmentConfigsForStatus(envID, status)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	environmentConfigs := make([]*deploy.EnvironmentConfig, len(envConfigs))
@@ -591,7 +611,7 @@ func (s *server) EnvironmentConfigs(ctx context.Context, in *deploy.EnvironmentC
 		configMap := make(map[string]string)
 		configValues, err := s.dl.EnvironmentConfigValues(ec.ID)
 		if err != nil {
-			return nil, grpcErrorf(codes.Internal, err.Error())
+			return nil, errors.Trace(err)
 		}
 		for _, v := range configValues {
 			configMap[v.Name] = v.Value
@@ -606,22 +626,42 @@ func (s *server) EnvironmentConfigs(ctx context.Context, in *deploy.EnvironmentC
 
 // Environments returns all the environments for a given deployable group
 func (s *server) Environments(ctx context.Context, in *deploy.EnvironmentsRequest) (*deploy.EnvironmentsResponse, error) {
-	if in.DeployableGroupID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "group id cannot be empty")
+	switch by := in.By.(type) {
+	case *deploy.EnvironmentsRequest_EnvironmentID:
+		if by.EnvironmentID == "" {
+			return nil, grpcErrorf(codes.InvalidArgument, "environment id cannot be empty")
+		}
+		envID, err := dal.ParseEnvironmentID(by.EnvironmentID)
+		if err != nil {
+			return nil, grpcErrorf(codes.InvalidArgument, "environment id %q is invalid", by.EnvironmentID)
+		}
+		env, err := s.dl.Environment(envID)
+		if errors.Cause(err) == dal.ErrNotFound {
+			return nil, grpcErrorf(codes.NotFound, "environment id %q not found", by.EnvironmentID)
+		}
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		return &deploy.EnvironmentsResponse{
+			Environments: transformEnvironmentsToResponse([]*dal.Environment{env}),
+		}, nil
+	case *deploy.EnvironmentsRequest_DeployableGroupID:
+		if by.DeployableGroupID == "" {
+			return nil, grpcErrorf(codes.InvalidArgument, "group id cannot be empty")
+		}
+		groupID, err := dal.ParseDeployableGroupID(by.DeployableGroupID)
+		if err != nil {
+			return nil, grpcErrorf(codes.InvalidArgument, "group id %q is invalid", by.DeployableGroupID)
+		}
+		envs, err := s.dl.EnvironmentsForGroup(groupID)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		return &deploy.EnvironmentsResponse{
+			Environments: transformEnvironmentsToResponse(envs),
+		}, nil
 	}
-	groupID, err := dal.ParseDeployableGroupID(in.DeployableGroupID)
-	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "group id %q is invalid", in.DeployableGroupID)
-	}
-
-	envs, err := s.dl.EnvironmentsForGroup(groupID)
-	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
-	}
-
-	return &deploy.EnvironmentsResponse{
-		Environments: transformEnvironmentsToResponse(envs),
-	}, nil
+	return nil, errors.Errorf("Unsupported by type %T", in.By)
 }
 
 // Promote reports that a deployable or deployable group should be promoted to all available outbound vectors
@@ -634,20 +674,20 @@ func (s *server) Promote(ctx context.Context, in *deploy.PromotionRequest) (*dep
 		DeploymentID: in.DeploymentID,
 	})
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	deployments := make([]*dal.Deployment, len(deploymentIDs))
 	for i, dID := range deploymentIDs {
 		deployments[i], err = s.dl.Deployment(dID)
 		if err != nil {
-			return nil, grpcErrorf(codes.Internal, err.Error())
+			return nil, errors.Trace(err)
 		}
 	}
 
 	rDeployments, err := transformDeploymentsToResponse(deployments)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 	return &deploy.PromotionResponse{
 		Deployments: rDeployments,
@@ -710,20 +750,20 @@ func (s *server) PromoteGroup(ctx context.Context, in *deploy.PromoteGroupReques
 		deploymentIDs = append(deploymentIDs, dIDs...)
 	}
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	deployments := make([]*dal.Deployment, len(deploymentIDs))
 	for i, dID := range deploymentIDs {
 		deployments[i], err = s.dl.Deployment(dID)
 		if err != nil {
-			return nil, grpcErrorf(codes.Internal, err.Error())
+			return nil, errors.Trace(err)
 		}
 	}
 
 	rDeployments, err := transformDeploymentsToResponse(deployments)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 	return &deploy.PromoteGroupResponse{
 		Deployments: rDeployments,
@@ -758,20 +798,20 @@ func (s *server) ReportBuildComplete(ctx context.Context, in *deploy.ReportBuild
 
 	deploymentIDs, err := s.manager.ProcessBuildCompleteEvent(ev)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	deployments := make([]*dal.Deployment, len(deploymentIDs))
 	for i, dID := range deploymentIDs {
 		deployments[i], err = s.dl.Deployment(dID)
 		if err != nil {
-			return nil, grpcErrorf(codes.Internal, err.Error())
+			return nil, errors.Trace(err)
 		}
 	}
 
 	rDeployments, err := transformDeploymentsToResponse(deployments)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 	return &deploy.ReportBuildCompleteResponse{
 		Deployments: rDeployments,

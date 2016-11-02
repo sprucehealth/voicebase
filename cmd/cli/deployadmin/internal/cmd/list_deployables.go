@@ -51,7 +51,9 @@ func (c *listDeployablesCmd) Run(args []string) error {
 	defer cancel()
 
 	res, err := c.deployCli.Deployables(ctx, &deploy.DeployablesRequest{
-		DeployableGroupID: *groupID,
+		By: &deploy.DeployablesRequest_DeployableGroupID{
+			DeployableGroupID: *groupID,
+		},
 	})
 	if err != nil {
 		return err

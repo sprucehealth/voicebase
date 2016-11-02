@@ -24,6 +24,7 @@ message Visit {
 		bool optional_triage = 1;
 	}
 	Preference preferences = 9;
+	uint64 submitted_timestamp = 10;
 }
 
 

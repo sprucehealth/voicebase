@@ -27,7 +27,7 @@ message Environment {
 }
 
 message EnvironmentConfig {
-    enum DeployableConfigStatus {
+	enum DeployableConfigStatus {
 		UNKNOWN = 0;
 		ACTIVE = 1;
 		DEPRECATED = 2;
@@ -49,7 +49,7 @@ message Deployable {
 }
 
 message DeployableConfig {
-    enum DeployableConfigStatus {
+	enum DeployableConfigStatus {
 		UNKNOWN = 0;
 		ACTIVE = 1;
 		DEPRECATED = 2;
@@ -75,7 +75,7 @@ message Deployment {
 		FAILED = 4;
 	}
 	string id = 1 [(gogoproto.customname) = "ID"];
-	uint64 deployment_number = 2; 
+	uint64 deployment_number = 2;
 	string environment_id = 3 [(gogoproto.customname) = "EnvironmentID"];
 	string deployable_id = 4 [(gogoproto.customname) = "DeployableID"];
 	string deployable_config_id = 5 [(gogoproto.customname) = "DeployableConfigID"];
@@ -145,7 +145,7 @@ message CreateDeployableResponse {
 
 message CreateEnvironmentConfigRequest {
 	string environment_id = 1 [(gogoproto.customname) = "EnvironmentID"];
-	string source_config_id = 2 [(gogoproto.customname) = "SourceConfigID"]; 
+	string source_config_id = 2 [(gogoproto.customname) = "SourceConfigID"];
 	repeated string omit_from_source = 4;
 	map<string,string> values = 3;
 }
@@ -167,7 +167,7 @@ message CreateDeployableConfigResponse {
 }
 
 message CreateDeployableVectorRequest {
-    enum DeployableVectorSourceType {
+	enum DeployableVectorSourceType {
 		UNKNOWN = 0;
 		BUILD = 1;
 		ENVIRONMENT_ID = 2;
@@ -191,7 +191,10 @@ message DeployableGroupsResponse {
 }
 
 message EnvironmentsRequest {
-	string deployable_group_id = 1 [(gogoproto.customname) = "DeployableGroupID"];
+	oneof by {
+		string deployable_group_id = 1 [(gogoproto.customname) = "DeployableGroupID"];
+		string environment_id = 2 [(gogoproto.customname) = "EnvironmentID"];
+	}
 }
 
 message EnvironmentsResponse {
@@ -208,7 +211,10 @@ message EnvironmentConfigsResponse {
 }
 
 message DeployablesRequest {
-	string deployable_group_id = 1 [(gogoproto.customname) = "DeployableGroupID"];
+	oneof by {
+		string deployable_group_id = 1 [(gogoproto.customname) = "DeployableGroupID"];
+		string deployable_id = 2 [(gogoproto.customname) = "DeployableID"];
+	}
 }
 
 message DeployablesResponse {
@@ -238,7 +244,7 @@ message ReportBuildCompleteRequest {
 		UNKNOWN = 0;
 		DOCKER_IMAGE = 1;
 	}
-	
+
 	string deployable_id = 1 [(gogoproto.customname) = "DeployableID"];
 	string build_number = 2 [(gogoproto.customname) = "BuildNumber"];
 	BuildArtifactType artifact_type = 3;
@@ -260,7 +266,7 @@ message DeploymentsRequest {
 		COMPLETE = 3;
 		FAILED = 4;
 	}
-    string deployable_id = 1 [(gogoproto.customname) = "DeployableID"];
+	string deployable_id = 1 [(gogoproto.customname) = "DeployableID"];
 	Status status = 2;
 }
 
@@ -269,7 +275,7 @@ message DeploymentsResponse {
 }
 
 message PromotionRequest {
-    string deployment_id = 1 [(gogoproto.customname) = "DeploymentID"];
+	string deployment_id = 1 [(gogoproto.customname) = "DeploymentID"];
 }
 
 message PromotionResponse {
@@ -277,7 +283,7 @@ message PromotionResponse {
 }
 
 message PromoteGroupRequest {
-    string deployable_group_id = 1 [(gogoproto.customname) = "DeployableGroupID"];
+	string deployable_group_id = 1 [(gogoproto.customname) = "DeployableGroupID"];
 	string build_number = 2;
 	string environment_id = 3 [(gogoproto.customname) = "EnvironmentID"];
 }
@@ -302,6 +308,6 @@ service Deploy {
 	rpc Environments (EnvironmentsRequest) returns (EnvironmentsResponse);
 	rpc EnvironmentConfigs (EnvironmentConfigsRequest) returns (EnvironmentConfigsResponse);
 	rpc Promote (PromotionRequest) returns (PromotionResponse);
-	rpc PromoteGroup (PromoteGroupRequest) returns (PromoteGroupResponse); 
+	rpc PromoteGroup (PromoteGroupRequest) returns (PromoteGroupResponse);
 	rpc ReportBuildComplete (ReportBuildCompleteRequest) returns (ReportBuildCompleteResponse);
 }
