@@ -1,5 +1,5 @@
 
 -- don't consider email as verified
 UPDATE entity_contact
-SET verified = 1
+SET verified = 0
 WHERE type='email';
