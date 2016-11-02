@@ -299,7 +299,7 @@ func createPostMessageRequest(ctx context.Context, threadID models.ThreadID, fro
 		}
 	}
 
-	destinations := make([]*models.Endpoint, len(postMessage.Destinations))
+	destinations := make([]*models.Endpoint, 0, len(postMessage.Destinations))
 	for _, dc := range postMessage.Destinations {
 		d, err := transformEndpointFromRequest(dc)
 		if err != nil {

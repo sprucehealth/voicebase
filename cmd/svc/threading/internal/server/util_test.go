@@ -4,8 +4,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sprucehealth/backend/cmd/svc/threading/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/models"
 	"github.com/sprucehealth/backend/libs/ptr"
+	"github.com/sprucehealth/backend/libs/test"
+	"github.com/sprucehealth/backend/svc/threading"
 )
 
 func TestThreadMatchesQuery(t *testing.T) {
@@ -243,4 +246,35 @@ func TestIsUnread(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCreatePostMessageRequest(t *testing.T) {
+	threadID, err := models.NewThreadID()
+	test.OK(t, err)
+	req, err := createPostMessageRequest(nil, threadID, "entity_1", &threading.MessagePost{
+		Text:        "Foo",
+		Summary:     "summary",
+		Title:       "title",
+		Attachments: nil, // TODO
+		Source: &threading.Endpoint{
+			Channel: threading.ENDPOINT_CHANNEL_SMS,
+			ID:      "+11231231234",
+		},
+		Destinations: []*threading.Endpoint{
+			{Channel: threading.ENDPOINT_CHANNEL_VOICE, ID: "+14255551212"},
+		},
+	})
+	test.OK(t, err)
+	test.Equals(t, &dal.PostMessageRequest{
+		ThreadID:     threadID,
+		Text:         "Foo",
+		Summary:      "summary",
+		Title:        "title",
+		Attachments:  nil,
+		FromEntityID: "entity_1",
+		Source:       &models.Endpoint{Channel: models.ENDPOINT_CHANNEL_SMS, ID: "+11231231234"},
+		Destinations: []*models.Endpoint{
+			{Channel: models.ENDPOINT_CHANNEL_VOICE, ID: "+14255551212"},
+		},
+	}, req)
 }
