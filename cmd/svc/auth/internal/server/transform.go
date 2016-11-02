@@ -11,5 +11,6 @@ func accountAsResponse(account *dal.Account) *auth.Account {
 		FirstName: account.FirstName,
 		LastName:  account.LastName,
 		Type:      auth.AccountType(auth.AccountType_value[account.Type.String()]),
+		Status:    account.Status.String(),
 	}
 }

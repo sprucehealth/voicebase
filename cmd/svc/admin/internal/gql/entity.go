@@ -34,13 +34,11 @@ func parseEntityArguments(args map[string]interface{}) *entityArguments {
 	return entArgs
 }
 
-// newEntityField returns a graphql field for Querying an Entity object
-func newEntityField() *graphql.Field {
-	return &graphql.Field{
-		Type:    newEntityType(),
-		Args:    entityArgumentsConfig,
-		Resolve: entityResolve,
-	}
+// entityField returns is a graphql field for Querying an Entity object
+var entityField = &graphql.Field{
+	Type:    entityType,
+	Args:    entityArgumentsConfig,
+	Resolve: entityResolve,
 }
 
 func entityResolve(p graphql.ResolveParams) (interface{}, error) {
@@ -62,7 +60,8 @@ func init() {
 			Name: "Entity",
 			Fields: graphql.Fields{
 				"id":             &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"contacts":       &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(newContactType()))},
+				"accountID":      &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+				"contacts":       &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(contactType))},
 				"firstName":      &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 				"middleInitial":  &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 				"lastName":       &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
@@ -71,23 +70,18 @@ func init() {
 				"shortTitle":     &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 				"longTitle":      &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 				"gender":         &graphql.Field{Type: graphql.NewNonNull(genderEnumType)},
-				"dob":            &graphql.Field{Type: newDateType()},
+				"dob":            &graphql.Field{Type: dateType},
 				"note":           &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"members":        &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(newEntityType()))},
-				"memberships":    &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(newEntityType()))},
+				"members":        &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(entityType))},
+				"memberships":    &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(entityType))},
 				"orgLink":        &graphql.Field{Type: graphql.NewNonNull(graphql.String), Resolve: resolveOrganizationLink},
 				"type":           &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 				"externalIDs":    &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(graphql.String))},
-				"settings":       &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(newSettingType())), Resolve: resolveEntitySettings},
-				"vendorAccounts": &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(newVendorAccountType())), Resolve: resolveEntityVendorAccounts},
+				"settings":       &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(settingType)), Resolve: resolveEntitySettings},
+				"vendorAccounts": &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(vendorAccountType)), Resolve: resolveEntityVendorAccounts},
 			},
 		},
 	)
-}
-
-// newEntityType returns an instance of the Entity graphql type. This is just sugar to follow the pattern
-func newEntityType() *graphql.Object {
-	return entityType
 }
 
 func resolveEntitySettings(p graphql.ResolveParams) (interface{}, error) {

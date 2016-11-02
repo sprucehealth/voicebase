@@ -9,7 +9,7 @@ import (
 	"github.com/rs/cors"
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/google"
-	"github.com/sprucehealth/backend/cmd/svc/admin/internal/handlers/auth"
+	gqlauth "github.com/sprucehealth/backend/cmd/svc/admin/internal/handlers/auth"
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/handlers/gql"
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/handlers/schema"
 	"github.com/sprucehealth/backend/environment"
@@ -19,6 +19,7 @@ import (
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/shttputil"
+	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/payments"
@@ -40,6 +41,7 @@ var (
 	flagWebDomain = flag.String("web_domain", "", "Web `domain`")
 
 	// Services
+	flagAuthAddr      = flag.String("auth_addr", "_auth._tcp.service", "Address of the auth service")
 	flagDirectoryAddr = flag.String("directory_addr", "_directory._tcp.service", "Address of the directory service")
 	flagInviteAddr    = flag.String("invite_addr", "_invite._tcp.service", "Address of the invite service")
 	flagPaymentsAddr  = flag.String("payments_addr", "_payments._tcp.service", "Address of the payments service")
@@ -70,6 +72,11 @@ func main() {
 		golog.Fatalf("Unable to connect to invite service: %s", err)
 	}
 	inviteCli := invite.NewInviteClient(conn)
+	conn, err = svc.DialGRPC(*flagAuthAddr)
+	if err != nil {
+		golog.Fatalf("Unable to connect to auth service: %s", err)
+	}
+	authCli := auth.NewAuthClient(conn)
 
 	signer, err := sig.NewSigner([][]byte{[]byte(*flagAuthTokenSecret)}, nil)
 	if err != nil {
@@ -93,6 +100,7 @@ func main() {
 		settingsCli,
 		paymentsCli,
 		inviteCli,
+		authCli,
 		signer,
 		*flagBehindProxy)
 	r.Handle("/graphql", cors.New(cors.Options{
@@ -101,21 +109,21 @@ func main() {
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"*"},
 	}).Handler(
-		httputil.RequestIDHandler(auth.NewAuthenticated(gqlHandler, signer))))
+		httputil.RequestIDHandler(gqlauth.NewAuthenticated(gqlHandler, signer))))
 	r.Handle("/authenticate", cors.New(cors.Options{
 		AllowedOrigins:   []string{allowOrigin},
 		AllowedMethods:   []string{httputil.Post},
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"*"},
 	}).Handler(
-		httputil.RequestIDHandler(auth.NewAuthentication(ap, signer))))
+		httputil.RequestIDHandler(gqlauth.NewAuthentication(ap, signer))))
 	r.Handle("/unauthenticate", cors.New(cors.Options{
 		AllowedOrigins:   []string{allowOrigin},
 		AllowedMethods:   []string{httputil.Post},
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"*"},
 	}).Handler(
-		httputil.RequestIDHandler(auth.NewUnauthentication())))
+		httputil.RequestIDHandler(gqlauth.NewUnauthentication())))
 
 	golog.Debugf("Resource path %s", *flagResourcePath)
 	if !environment.IsProd() {

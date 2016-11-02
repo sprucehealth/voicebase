@@ -65,14 +65,12 @@ var createOrganizationLinkOutputType = graphql.NewObject(
 	},
 )
 
-func newCreateOrganizationLinkField() *graphql.Field {
-	return &graphql.Field{
-		Type: graphql.NewNonNull(createOrganizationLinkOutputType),
-		Args: graphql.FieldConfigArgument{
-			common.InputFieldName: &graphql.ArgumentConfig{Type: graphql.NewNonNull(createOrganizationLinkInputType)},
-		},
-		Resolve: createOrganizationLinkResolve,
-	}
+var createOrganizationLinkField = &graphql.Field{
+	Type: graphql.NewNonNull(createOrganizationLinkOutputType),
+	Args: graphql.FieldConfigArgument{
+		common.InputFieldName: &graphql.ArgumentConfig{Type: graphql.NewNonNull(createOrganizationLinkInputType)},
+	},
+	Resolve: createOrganizationLinkResolve,
 }
 
 func createOrganizationLinkResolve(p graphql.ResolveParams) (interface{}, error) {

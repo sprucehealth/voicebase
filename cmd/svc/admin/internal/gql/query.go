@@ -8,8 +8,9 @@ func NewQueryRoot() *graphql.Object {
 		graphql.ObjectConfig{
 			Name: "Query",
 			Fields: graphql.Fields{
-				"me":     newMeField(),
-				"entity": newEntityField(),
+				"me":      meField,
+				"entity":  entityField,
+				"account": accountField,
 			},
 		})
 }

@@ -15,22 +15,20 @@ import (
 	"github.com/sprucehealth/graphql"
 )
 
-// newSettingType returns a type object representing an entity contact
-func newSettingType() *graphql.Object {
-	return graphql.NewObject(
-		graphql.ObjectConfig{
-			Name: "Setting",
-			Fields: graphql.Fields{
-				"type":           &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"key":            &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"subkey":         &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"subkeyRequired": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-				"value":          &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"values":         &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(graphql.String))},
-				"validValues":    &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(graphql.String))},
-			},
-		})
-}
+// settingType is a type object representing an entity contact
+var settingType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "Setting",
+		Fields: graphql.Fields{
+			"type":           &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"key":            &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"subkey":         &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"subkeyRequired": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"value":          &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"values":         &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(graphql.String))},
+			"validValues":    &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(graphql.String))},
+		},
+	})
 
 func getEntitySettings(ctx context.Context, settingsClient settings.SettingsClient, id string) ([]*models.Setting, error) {
 	settings, err := settingsClient.GetNodeValues(ctx, &settings.GetNodeValuesRequest{
@@ -84,14 +82,12 @@ var modifySettingOutputType = graphql.NewObject(
 	},
 )
 
-func newModifySettingField() *graphql.Field {
-	return &graphql.Field{
-		Type: graphql.NewNonNull(modifySettingOutputType),
-		Args: graphql.FieldConfigArgument{
-			common.InputFieldName: &graphql.ArgumentConfig{Type: graphql.NewNonNull(modifySettingInputType)},
-		},
-		Resolve: modifySettingResolve,
-	}
+var modifySettingField = &graphql.Field{
+	Type: graphql.NewNonNull(modifySettingOutputType),
+	Args: graphql.FieldConfigArgument{
+		common.InputFieldName: &graphql.ArgumentConfig{Type: graphql.NewNonNull(modifySettingInputType)},
+	},
+	Resolve: modifySettingResolve,
 }
 
 func modifySettingResolve(p graphql.ResolveParams) (interface{}, error) {

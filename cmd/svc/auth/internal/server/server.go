@@ -70,6 +70,8 @@ func (s *server) AuthenticateLogin(ctx context.Context, rd *auth.AuthenticateLog
 		return nil, grpcErrorf(auth.EmailNotFound, "Unknown email: %s", rd.Email)
 	} else if err != nil {
 		return nil, errors.Trace(err)
+	} else if account.Status == dal.AccountStatusDeleted {
+		return nil, grpcErrorf(auth.AccountDeleted, "auth: deleted account")
 	} else if account.Status == dal.AccountStatusBlocked {
 		return nil, grpcErrorf(auth.AccountBlocked, "auth: blocked account")
 	} else if account.Status == dal.AccountStatusSuspended {
@@ -618,6 +620,66 @@ func (s *server) GetAccount(ctx context.Context, rd *auth.GetAccountRequest) (*a
 	}, nil
 }
 
+func (s *server) GetAccountContacts(ctx context.Context, rd *auth.GetAccountContactsRequest) (*auth.GetAccountContactsResponse, error) {
+	id, err := dal.ParseAccountID(rd.AccountID)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse provided account ID")
+	}
+	accountPhone, err := s.dal.AccountPhoneForAccount(ctx, id)
+	if errors.Cause(err) == dal.ErrNotFound {
+		return nil, grpcErrorf(codes.NotFound, "AccountPhone with Account ID %s not found", rd.AccountID)
+	}
+	accountEmail, err := s.dal.AccountEmailForAccount(ctx, id)
+	if errors.Cause(err) == dal.ErrNotFound {
+		return nil, grpcErrorf(codes.NotFound, "AccountEmail with Account ID %s not found", rd.AccountID)
+	}
+	return &auth.GetAccountContactsResponse{
+		PhoneNumber: accountPhone.PhoneNumber,
+		Email:       accountEmail.Email,
+	}, nil
+}
+
+func (s *server) UpdateAccountContacts(ctx context.Context, rd *auth.UpdateAccountContactsRequest) (*auth.UpdateAccountContactsResponse, error) {
+	accountID, err := dal.ParseAccountID(rd.AccountID)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse provided account ID")
+	}
+	accountPhone, err := s.dal.AccountPhoneForAccount(ctx, accountID)
+	if errors.Cause(err) == dal.ErrNotFound {
+		return nil, grpcErrorf(codes.NotFound, "AccountPhone with Account ID %s not found", rd.AccountID)
+	}
+	accountEmail, err := s.dal.AccountEmailForAccount(ctx, accountID)
+	if errors.Cause(err) == dal.ErrNotFound {
+		return nil, grpcErrorf(codes.NotFound, "AccountEmail with Account ID %s not found", rd.AccountID)
+	}
+	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
+		if rd.PhoneNumber != "" {
+			rowsUpdated, err := dl.UpdateAccountPhone(ctx, accountPhone.ID, &dal.AccountPhoneUpdate{
+				PhoneNumber: ptr.String(rd.PhoneNumber),
+			})
+			if err != nil {
+				return errors.Trace(err)
+			} else if rowsUpdated > 1 {
+				return errors.Errorf("Expected no more than 1 row to be updated when updating phone number of account %s but updated %d rows", accountID.String(), rowsUpdated)
+			}
+		}
+		if rd.Email != "" {
+			rowsUpdated, err := dl.UpdateAccountEmail(ctx, accountEmail.ID, &dal.AccountEmailUpdate{
+				Email: ptr.String(rd.Email),
+			})
+			if err != nil {
+				return errors.Trace(err)
+			} else if rowsUpdated > 1 {
+				return errors.Errorf("Expected no more than 1 row to be updated when updating email of account %s but updated %d rows", accountID.String(), rowsUpdated)
+			}
+		}
+		return nil
+	}); err != nil {
+		return nil, errors.Trace(err)
+	}
+	return &auth.UpdateAccountContactsResponse{}, nil
+}
+
 func (s *server) Unauthenticate(ctx context.Context, rd *auth.UnauthenticateRequest) (*auth.UnauthenticateResponse, error) {
 	tokenWithAttributes, err := appendAttributes(rd.Token, rd.TokenAttributes)
 	if err != nil {
@@ -741,7 +803,7 @@ func (s *server) BlockAccount(ctx context.Context, req *auth.BlockAccountRequest
 	if err != nil {
 		return nil, errors.Trace(err)
 	} else if rowsUpdated > 1 {
-		return nil, grpcErrorf(codes.Internal, fmt.Sprintf("Expected no more than 1 row to be updated when updating status of account %s but updated %d rows", account.ID.String(), rowsUpdated))
+		return nil, errors.Errorf("Expected no more than 1 row to be updated when updating status of account %s but updated %d rows", account.ID.String(), rowsUpdated)
 	}
 
 	return &auth.BlockAccountResponse{
@@ -787,7 +849,7 @@ func (s *server) DeleteAccount(ctx context.Context, req *auth.DeleteAccountReque
 		if err != nil {
 			return errors.Trace(err)
 		} else if rowsUpdated > 1 {
-			return grpcErrorf(codes.Internal, fmt.Sprintf("Expected no more than 1 row to be updated when updating status of account %s but updated %d rows", account.ID.String(), rowsUpdated))
+			return errors.Errorf("Expected no more than 1 row to be updated when updating status of account %s but updated %d rows", account.ID.String(), rowsUpdated)
 		}
 
 		// Munge the associated email in a known recoverable way
@@ -801,7 +863,7 @@ func (s *server) DeleteAccount(ctx context.Context, req *auth.DeleteAccountReque
 		if err != nil {
 			return errors.Trace(err)
 		} else if rowsUpdated > 1 {
-			return grpcErrorf(codes.Internal, fmt.Sprintf("Expected no more than 1 row to be updated when updating email for account %s but updated %d rows", account.ID.String(), rowsUpdated))
+			return errors.Errorf("Expected no more than 1 row to be updated when updating email for account %s but updated %d rows", account.ID.String(), rowsUpdated)
 		}
 
 		// Delete any outstanding auth tokens for the account

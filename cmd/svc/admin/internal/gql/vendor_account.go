@@ -61,21 +61,19 @@ var vendorAccountChangeState = graphql.NewEnum(
 	},
 )
 
-// newVendorAccountType returns a type object representing a payments vendor account
-func newVendorAccountType() *graphql.Object {
-	return graphql.NewObject(
-		graphql.ObjectConfig{
-			Name: "VendorAccount",
-			Fields: graphql.Fields{
-				"id":          &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"type":        &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"accountID":   &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"lifecycle":   &graphql.Field{Type: graphql.NewNonNull(vendorAccountLifecycle)},
-				"changeState": &graphql.Field{Type: graphql.NewNonNull(vendorAccountChangeState)},
-				"live":        &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-			},
-		})
-}
+// vendorAccountType is a type object representing a payments vendor account
+var vendorAccountType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "VendorAccount",
+		Fields: graphql.Fields{
+			"id":          &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"type":        &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"accountID":   &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"lifecycle":   &graphql.Field{Type: graphql.NewNonNull(vendorAccountLifecycle)},
+			"changeState": &graphql.Field{Type: graphql.NewNonNull(vendorAccountChangeState)},
+			"live":        &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+		},
+	})
 
 func getEntityVendorAccounts(ctx context.Context, paymentsClient payments.PaymentsClient, entityID string) ([]*models.VendorAccount, error) {
 	resp, err := paymentsClient.VendorAccounts(ctx, &payments.VendorAccountsRequest{
@@ -124,14 +122,12 @@ var updateVendorAccountOutputType = graphql.NewObject(
 	},
 )
 
-func newUpdateVendorAccountField() *graphql.Field {
-	return &graphql.Field{
-		Type: graphql.NewNonNull(updateVendorAccountOutputType),
-		Args: graphql.FieldConfigArgument{
-			common.InputFieldName: &graphql.ArgumentConfig{Type: graphql.NewNonNull(updateVendorAccountInputType)},
-		},
-		Resolve: updateVendorAccountResolve,
-	}
+var updateVendorAccountField = &graphql.Field{
+	Type: graphql.NewNonNull(updateVendorAccountOutputType),
+	Args: graphql.FieldConfigArgument{
+		common.InputFieldName: &graphql.ArgumentConfig{Type: graphql.NewNonNull(updateVendorAccountInputType)},
+	},
+	Resolve: updateVendorAccountResolve,
 }
 
 func updateVendorAccountResolve(p graphql.ResolveParams) (interface{}, error) {

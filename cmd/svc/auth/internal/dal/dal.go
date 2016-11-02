@@ -40,6 +40,7 @@ type DAL interface {
 	DeleteAccountEvent(ctx context.Context, id AccountEventID) (int64, error)
 	InsertAccountPhone(ctx context.Context, model *AccountPhone) (AccountPhoneID, error)
 	AccountPhone(ctx context.Context, id AccountPhoneID) (*AccountPhone, error)
+	AccountPhoneForAccount(ctx context.Context, id AccountID) (*AccountPhone, error)
 	UpdateAccountPhone(ctx context.Context, id AccountPhoneID, update *AccountPhoneUpdate) (int64, error)
 	DeleteAccountPhone(ctx context.Context, id AccountPhoneID) (int64, error)
 	InsertAccountEmail(ctx context.Context, model *AccountEmail) (AccountEmailID, error)
@@ -869,6 +870,14 @@ func (d *dal) AccountPhone(ctx context.Context, id AccountPhoneID) (*AccountPhon
 	row := d.db.QueryRow(
 		selectAccountPhone+` WHERE id = ?`, id)
 	model, err := scanAccountPhone(row, "id = %s", id)
+	return model, errors.Trace(err)
+}
+
+// AccountPhoneForAccount retrieves a account_phone record
+func (d *dal) AccountPhoneForAccount(ctx context.Context, id AccountID) (*AccountPhone, error) {
+	row := d.db.QueryRow(
+		selectAccountPhone+` WHERE account_id = ?`, id)
+	model, err := scanAccountPhone(row, "account_id = %s", id)
 	return model, errors.Trace(err)
 }
 

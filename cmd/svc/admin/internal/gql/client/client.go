@@ -1,6 +1,7 @@
 package client
 
 import (
+	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/payments"
@@ -22,6 +23,9 @@ const (
 
 	// InviteClientParamKey is where in the root object the invite client is stored
 	InviteClientParamKey = "invite_client"
+
+	// AuthClientParamKey is where in the root object the auth client is stored
+	AuthClientParamKey = "auth_client"
 )
 
 // Domains returns the domain sturcture mapped into the request params
@@ -49,6 +53,11 @@ func Invite(p graphql.ResolveParams) invite.InviteClient {
 	return p.Info.RootValue.(map[string]interface{})[InviteClientParamKey].(invite.InviteClient)
 }
 
+// Auth returns the invite client mapped into the request params
+func Auth(p graphql.ResolveParams) auth.AuthClient {
+	return p.Info.RootValue.(map[string]interface{})[AuthClientParamKey].(auth.AuthClient)
+}
+
 // Domain collects the domains used for url generation
 type Domain struct {
 	AdminAPI  string
@@ -62,11 +71,13 @@ func InitRoot(p map[string]interface{},
 	directoryClient directory.DirectoryClient,
 	settingsClient settings.SettingsClient,
 	paymentsClient payments.PaymentsClient,
-	inviteClient invite.InviteClient) map[string]interface{} {
+	inviteClient invite.InviteClient,
+	authClient auth.AuthClient) map[string]interface{} {
 	p[DirectoryClientParamKey] = directoryClient
 	p[SettingsClientParamKey] = settingsClient
 	p[PaymentsClientParamKey] = paymentsClient
 	p[InviteClientParamKey] = inviteClient
+	p[AuthClientParamKey] = authClient
 	p[DomainsKey] = domain
 	return p
 }

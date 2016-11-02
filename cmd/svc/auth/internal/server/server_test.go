@@ -59,6 +59,7 @@ func TestGetAccount(t *testing.T) {
 		ID:        aID1,
 		FirstName: fn,
 		LastName:  ln,
+		Status:    dal.AccountStatusDeleted,
 	}, nil))
 	resp, err := s.GetAccount(context.Background(), &auth.GetAccountRequest{AccountID: aID1.String()})
 	test.OK(t, err)
@@ -67,6 +68,7 @@ func TestGetAccount(t *testing.T) {
 	test.Equals(t, aID1.String(), resp.Account.ID)
 	test.Equals(t, fn, resp.Account.FirstName)
 	test.Equals(t, ln, resp.Account.LastName)
+	test.Equals(t, "DELETED", resp.Account.Status)
 }
 
 func TestGetAccountNotFound(t *testing.T) {
@@ -1783,4 +1785,69 @@ func TestDeleteAccount(t *testing.T) {
 			Status: dal.AccountStatusDeleted,
 		}),
 	}, res)
+}
+
+func TestGetAccountContacts(t *testing.T) {
+	aID1, err := dal.NewAccountID()
+	test.OK(t, err)
+	phoneNumber := "+1234567890"
+	email := "email@example.com"
+
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+
+	dl.Expect(mock.NewExpectation(dl.AccountPhoneForAccount, aID1).WithReturns(&dal.AccountPhone{
+		PhoneNumber: phoneNumber,
+	}, nil))
+	dl.Expect(mock.NewExpectation(dl.AccountEmailForAccount, aID1).WithReturns(&dal.AccountEmail{
+		Email: email,
+	}, nil))
+
+	s, err := New(dl, nil, clientEncryptionSecret)
+	test.OK(t, err)
+
+	res, err := s.GetAccountContacts(context.Background(), &auth.GetAccountContactsRequest{
+		AccountID: aID1.String(),
+	})
+	test.OK(t, err)
+	test.Equals(t, &auth.GetAccountContactsResponse{
+		PhoneNumber: phoneNumber,
+		Email:       email,
+	}, res)
+}
+
+func TestUpdateAccountContacts(t *testing.T) {
+	aID1, err := dal.NewAccountID()
+	aeID1, err := dal.NewAccountEmailID()
+	apID1, err := dal.NewAccountPhoneID()
+	test.OK(t, err)
+	phoneNumber := "+1234567890"
+	email := "email@example.com"
+
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+
+	dl.Expect(mock.NewExpectation(dl.AccountPhoneForAccount, aID1).WithReturns(&dal.AccountPhone{
+		ID: apID1,
+	}, nil))
+	dl.Expect(mock.NewExpectation(dl.AccountEmailForAccount, aID1).WithReturns(&dal.AccountEmail{
+		ID: aeID1,
+	}, nil))
+	dl.Expect(mock.NewExpectation(dl.UpdateAccountPhone, apID1, &dal.AccountPhoneUpdate{
+		PhoneNumber: ptr.String(phoneNumber),
+	}).WithReturns(int64(1), nil))
+	dl.Expect(mock.NewExpectation(dl.UpdateAccountEmail, aeID1, &dal.AccountEmailUpdate{
+		Email: ptr.String(email),
+	}).WithReturns(int64(1), nil))
+
+	s, err := New(dl, nil, clientEncryptionSecret)
+	test.OK(t, err)
+
+	res, err := s.UpdateAccountContacts(context.Background(), &auth.UpdateAccountContactsRequest{
+		AccountID:   aID1.String(),
+		PhoneNumber: phoneNumber,
+		Email:       email,
+	})
+	test.OK(t, err)
+	test.Equals(t, &auth.UpdateAccountContactsResponse{}, res)
 }

@@ -153,3 +153,21 @@ func (c *Client) DeleteAccount(ctx context.Context, in *auth.DeleteAccountReques
 
 	return rets[0].(*auth.DeleteAccountResponse), mock.SafeError(rets[1])
 }
+
+func (c *Client) GetAccountContacts(ctx context.Context, in *auth.GetAccountContactsRequest, opts ...grpc.CallOption) (*auth.GetAccountContactsResponse, error) {
+	rets := c.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].(*auth.GetAccountContactsResponse), mock.SafeError(rets[1])
+}
+
+func (c *Client) UpdateAccountContacts(ctx context.Context, in *auth.UpdateAccountContactsRequest, opts ...grpc.CallOption) (*auth.UpdateAccountContactsResponse, error) {
+	rets := c.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].(*auth.UpdateAccountContactsResponse), mock.SafeError(rets[1])
+}

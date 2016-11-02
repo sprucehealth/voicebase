@@ -37,6 +37,10 @@ message Account {
 	string first_name = 2;
 	string last_name = 3;
 	AccountType type = 4;
+
+	// Having this status be a string for now is a bit hacky 
+	// but prevents having to remove the auto prefixing from this service just yet since that's a larger change
+	string status = 5;
 }
 
 // An AuthToken represents the token value and metadata about the token
@@ -275,6 +279,27 @@ message DeleteAccountResponse {
 	Account account = 1;
 }
 
+// GetAccountContactsRequest represents a request to fetch the contact information for an account
+message GetAccountContactsRequest {
+	string account_id = 1 [(gogoproto.customname) = "AccountID"];
+}
+
+// GetAccountContactsResponse represents the response from a message GetAccountContacts request
+message GetAccountContactsResponse {
+	string email = 1;
+	string phone_number = 2;
+}
+
+// UpdateAccountContactsRequest represents a request to fetch the update the contact information for an account
+message UpdateAccountContactsRequest {
+	string account_id = 1 [(gogoproto.customname) = "AccountID"];
+	string phone_number = 2;
+	string email = 3;
+}
+
+// UpdateAccountContactsResponse represents the response from a message UpdateAccountContacts request
+message UpdateAccountContactsResponse {}
+
 // Auth provides mechanisms for other services to perform authentication of external entities interacting with them
 service Auth {
 	rpc AuthenticateLogin (AuthenticateLoginRequest) returns (AuthenticateLoginResponse);
@@ -287,10 +312,12 @@ service Auth {
 	rpc CreateVerificationCode (CreateVerificationCodeRequest) returns (CreateVerificationCodeResponse);
 	rpc DeleteAccount (DeleteAccountRequest) returns (DeleteAccountResponse);
 	rpc GetAccount (GetAccountRequest) returns (GetAccountResponse);
+	rpc GetAccountContacts (GetAccountContactsRequest) returns (GetAccountContactsResponse);
+	rpc GetLastLoginInfo(GetLastLoginInfoRequest) returns (GetLastLoginInfoResponse);
 	rpc Unauthenticate (UnauthenticateRequest) returns (UnauthenticateResponse);
-	rpc UpdatePassword (UpdatePasswordRequest) returns (UpdatePasswordResponse);
 	rpc UpdateAuthToken (UpdateAuthTokenRequest) returns (UpdateAuthTokenResponse);
+	rpc UpdateAccountContacts (UpdateAccountContactsRequest) returns (UpdateAccountContactsResponse);
+	rpc UpdatePassword (UpdatePasswordRequest) returns (UpdatePasswordResponse);
 	rpc VerifiedValue (VerifiedValueRequest) returns (VerifiedValueResponse);
 	rpc BlockAccount(BlockAccountRequest) returns (BlockAccountResponse);
-	rpc GetLastLoginInfo(GetLastLoginInfoRequest) returns (GetLastLoginInfoResponse);
 }

@@ -37,4 +37,7 @@ const (
 	// AccountSuspended indicates that the user account has been temporarily suspended and the user should
 	// contact support.
 	AccountSuspended gcode.Code = 110
+
+	// AccountDeleted indicates that the account is deleted and the user is forbidden from authenticating in with that email.
+	AccountDeleted gcode.Code = 111
 )
