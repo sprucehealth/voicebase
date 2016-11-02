@@ -196,7 +196,7 @@ func testSuccessfulPost(t *testing.T, mclock clock.Clock, orgCreationTime int64)
 		FromEntityID: primaryEntityID,
 		ThreadID:     spruceSupportThreadID,
 		Message: &threading.MessagePost{
-			Text:    `Hi Dr. Jham - you will have received an email from someone on the team, but I thought I’d check in here too. Do you have any questions about Spruce?`,
+			Text:    `Hi Dr. Jham - I’m reaching out because my job is to help you get the most out of Spruce. What type of practice are you in?`,
 			Summary: "Automated message from Spruce support",
 		},
 	}))

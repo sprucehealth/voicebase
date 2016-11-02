@@ -48,12 +48,12 @@ const (
 	spruceSupportEndHour   = 22
 	spruceSupportEndMinute = 30
 
-	postMessageThreshold = 12 * time.Minute
+	postMessageThreshold = 4 * time.Minute
 
 	// post delayed message after 9:00 am PST
 	spruceSupportDelayedMessageHour = 9
 
-	supportMessage = `Hi {{.ProviderName}} - you will have received an email from someone on the team, but I thought I’d check in here too. Do you have any questions about Spruce?`
+	supportMessage = `Hi {{.ProviderName}} - I’m reaching out because my job is to help you get the most out of Spruce. What type of practice are you in?`
 )
 
 type Worker struct {

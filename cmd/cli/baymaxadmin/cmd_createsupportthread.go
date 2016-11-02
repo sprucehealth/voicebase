@@ -13,9 +13,9 @@ import (
 
 const (
 	supportThreadTitle    = "Spruce Support"
-	teamSpruceInitialText = `This is a support conversation with Spruce Health.
+	teamSpruceInitialText = `Use this conversation to chat with directly with the team at Spruce 😀.
 
-If you're unsure about anything or need some help, send us a message here and a member of the Spruce Health team will respond.`
+We’re here 7am-7pm PST to answer any questions you have - big or small. Feel free to drop us a line at any time!`
 )
 
 type createSupportThreadCmd struct {
