@@ -13,6 +13,7 @@ const (
 	ConfigKeyForwardingListTimeout      = "forwarding_list_timeout"
 	ConfigKeyPauseBeforeCallConnect     = "pause_before_call_connect"
 	ConfigKeyExposeCaller               = "expose_caller"
+	ConfigKeyCallScreeningEnabled       = "call_screening_enabled"
 )
 
 //
@@ -71,6 +72,21 @@ var ExposeCallerConfig = &settings.Config{
 		Boolean: &settings.BooleanConfig{
 			Default: &settings.BooleanValue{
 				Value: false,
+			},
+		},
+	},
+}
+
+var CallScreeningConfig = &settings.Config{
+	Title:          "Enable/Disable call screening to ensure human answers call on provider side. Disabling this will prevent voicemails from being captured in the Spruce app as all calls will be treated as being answered.",
+	Key:            ConfigKeyCallScreeningEnabled,
+	PossibleOwners: []settings.OwnerType{settings.OwnerType_ORGANIZATION},
+	AllowSubkeys:   true,
+	Type:           settings.ConfigType_BOOLEAN,
+	Config: &settings.Config_Boolean{
+		Boolean: &settings.BooleanConfig{
+			Default: &settings.BooleanValue{
+				Value: true,
 			},
 		},
 	},

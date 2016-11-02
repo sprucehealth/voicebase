@@ -110,6 +110,7 @@ func runService(bootSvc *boot.Service) {
 			excommsSettings.ForwardingListTimeoutConfig,
 			excommsSettings.PauseBeforeCallConnectConfig,
 			excommsSettings.ExposeCallerConfig,
+			excommsSettings.CallScreeningConfig,
 		})
 	if err != nil {
 		golog.Fatalf("Unable to register configs with the settings service: %s", err.Error())

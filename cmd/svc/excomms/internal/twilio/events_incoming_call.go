@@ -332,6 +332,29 @@ func providerCallConnected(ctx context.Context, params *rawmsg.TwilioParams, eh 
 		return "", errors.Trace(err)
 	}
 
+	callScreeningEnabled := true
+	valuesRes, err := eh.settings.GetValues(ctx, &settings.GetValuesRequest{
+		NodeID: incomingCall.OrganizationID,
+		Keys: []*settings.ConfigKey{
+			{
+				Key:    excommsSettings.ConfigKeyCallScreeningEnabled,
+				Subkey: incomingCall.Destination.String(),
+			},
+		},
+	})
+	if err != nil {
+		golog.Errorf("Unable to get settings for org %s: %s", incomingCall.OrganizationID, err.Error())
+	} else if len(valuesRes.Values) != 1 {
+		return "", errors.Errorf("Expected 1 value to be returned but got %d for org %s", len(valuesRes.Values), incomingCall.OrganizationID)
+	} else {
+		callScreeningEnabled = valuesRes.Values[0].GetBoolean().Value
+	}
+
+	// if call screening is disabled, directly connect the provider and the patient
+	if !callScreeningEnabled {
+		return twiml.NewResponse().GenerateTwiML()
+	}
+
 	externalEntityName, err := determinePatientName(ctx, incomingCall.Source, incomingCall.OrganizationID, eh)
 	if err != nil {
 		golog.Errorf("Unable to determine external entity name based on call sid %s. Error: %s", params.ParentCallSID, err.Error())

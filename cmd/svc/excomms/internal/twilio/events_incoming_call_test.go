@@ -779,6 +779,30 @@ func TestProviderCallConnected(t *testing.T) {
 	mdirectory := directorymock.New(t)
 	defer mdirectory.Finish()
 
+	msettings := settingsmock.New(t)
+	defer msettings.Finish()
+
+	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
+		Keys: []*settings.ConfigKey{
+			{
+				Key:    excommsSettings.ConfigKeyCallScreeningEnabled,
+				Subkey: practicePhone,
+			},
+		},
+		NodeID: orgID,
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Type: settings.ConfigType_BOOLEAN,
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: true,
+					},
+				},
+			},
+		},
+	}, nil))
+
 	mdirectory.Expect(mock.NewExpectation(mdirectory.LookupEntitiesByContact, &directory.LookupEntitiesByContactRequest{
 		ContactValue: patientPhone,
 		RequestedInformation: &directory.RequestedInformation{
@@ -813,7 +837,7 @@ func TestProviderCallConnected(t *testing.T) {
 	test.OK(t, err)
 	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
 
-	es := NewEventHandler(mdirectory, nil, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", signer)
+	es := NewEventHandler(mdirectory, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", signer)
 
 	twiml, err := providerCallConnected(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
@@ -821,6 +845,76 @@ func TestProviderCallConnected(t *testing.T) {
 	}
 	expected := `<?xml version="1.0" encoding="UTF-8"?>
 <Response><Gather action="/twilio/call/provider_entered_digits" method="POST" timeout="5" numDigits="1"><Say voice="alice">You have an incoming call from JS</Say><Say voice="alice">Press 1 to answer.</Say></Gather><Hangup></Hangup></Response>`
+
+	if twiml != expected {
+		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
+	}
+}
+
+func TestProviderCallConnected_CallScreeningDisabled(t *testing.T) {
+	patientPhone := "+12061111111"
+	practicePhone := "+12062222222"
+	providerPhone := "+12063333333"
+	orgID := "o1"
+
+	// the params are intended to simulate the dial leg of the call
+	// where the call shows up as originating from the practice phone to
+	// the number of the provider in the forwarding list
+	params := &rawmsg.TwilioParams{
+		From:          practicePhone,
+		To:            providerPhone,
+		ParentCallSID: "12345",
+	}
+
+	mdal := dalmock.New(t)
+	defer mdal.Finish()
+
+	mdal.Expect(mock.NewExpectation(mdal.LookupIncomingCall, params.ParentCallSID).WithReturns(&models.IncomingCall{
+		OrganizationID: orgID,
+		Source:         phone.Number(patientPhone),
+		Destination:    phone.Number(practicePhone),
+		CallSID:        params.ParentCallSID,
+	}, nil))
+
+	mdirectory := directorymock.New(t)
+	defer mdirectory.Finish()
+
+	msettings := settingsmock.New(t)
+	defer msettings.Finish()
+
+	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
+		Keys: []*settings.ConfigKey{
+			{
+				Key:    excommsSettings.ConfigKeyCallScreeningEnabled,
+				Subkey: practicePhone,
+			},
+		},
+		NodeID: orgID,
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Type: settings.ConfigType_BOOLEAN,
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: false,
+					},
+				},
+			},
+		},
+	}, nil))
+
+	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
+	test.OK(t, err)
+	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
+
+	es := NewEventHandler(mdirectory, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", signer)
+
+	twiml, err := providerCallConnected(context.Background(), params, es.(*eventsHandler))
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	expected := `<?xml version="1.0" encoding="UTF-8"?>
+<Response></Response>`
 
 	if twiml != expected {
 		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
@@ -881,11 +975,35 @@ func TestProviderCallConnected_NoName(t *testing.T) {
 		},
 	}, nil))
 
+	msettings := settingsmock.New(t)
+	defer msettings.Finish()
+
+	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
+		Keys: []*settings.ConfigKey{
+			{
+				Key:    excommsSettings.ConfigKeyCallScreeningEnabled,
+				Subkey: practicePhone,
+			},
+		},
+		NodeID: orgID,
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Type: settings.ConfigType_BOOLEAN,
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: true,
+					},
+				},
+			},
+		},
+	}, nil))
+
 	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
 	test.OK(t, err)
 	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
 
-	es := NewEventHandler(mdirectory, nil, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", signer)
+	es := NewEventHandler(mdirectory, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", signer)
 
 	twiml, err := providerCallConnected(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
@@ -989,11 +1107,35 @@ func TestProviderEnteredDigits_EnteredOtherDigit(t *testing.T) {
 		},
 	}, nil))
 
+	msettings := settingsmock.New(t)
+	defer msettings.Finish()
+
+	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
+		Keys: []*settings.ConfigKey{
+			{
+				Key:    excommsSettings.ConfigKeyCallScreeningEnabled,
+				Subkey: practicePhone,
+			},
+		},
+		NodeID: orgID,
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Type: settings.ConfigType_BOOLEAN,
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: true,
+					},
+				},
+			},
+		},
+	}, nil))
+
 	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
 	test.OK(t, err)
 	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
 
-	es := NewEventHandler(mdirectory, nil, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", signer)
+	es := NewEventHandler(mdirectory, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", signer)
 	twiml, err := providerEnteredDigits(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
 		t.Fatal(err)
