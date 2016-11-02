@@ -2,14 +2,13 @@ package cmd
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"flag"
 	"fmt"
 	"os"
 	"strings"
 	"time"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/cli/deployadmin/internal/config"
 	"github.com/sprucehealth/backend/svc/deploy"

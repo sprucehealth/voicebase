@@ -2,12 +2,11 @@ package cmd
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"flag"
 	"os"
 	"time"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/cli/deployadmin/internal/config"
 	"github.com/sprucehealth/backend/svc/deploy"
@@ -83,6 +82,6 @@ func (c *reportBuildCompleteCmd) Run(args []string) error {
 		return err
 	}
 
-	printDeployments(res.Deployments)
+	printDeployments(res.Deployments, nil, nil)
 	return nil
 }

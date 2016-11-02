@@ -6,7 +6,9 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"text/tabwriter"
 
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/deploy"
 )
 
@@ -44,8 +46,14 @@ func printEnvironment(env *deploy.Environment) {
 
 func printDeployables(deps []*deploy.Deployable) {
 	sort.Sort(deployableByName(deps))
-	for _, dep := range deps {
-		printDeployable(dep)
+
+	w := tabwriter.NewWriter(os.Stdout, 4, 8, 4, ' ', 0)
+	fmt.Fprintf(w, "ID\tName\tDescription\tGitURL\n")
+	for _, d := range deps {
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", d.ID, d.Name, d.Description, d.GitURL)
+	}
+	if err := w.Flush(); err != nil {
+		golog.Fatalf(err.Error())
 	}
 }
 
@@ -93,9 +101,22 @@ func printDeployableVector(v *deploy.DeployableVector) {
 	pprint("Deployable Vector: %s (deployable %s) (source type %s) (source environment %s) (target environment %s)\n", v.ID, v.DeployableID, v.SourceType.String(), sournceEnvironment, v.TargetEnvironmentID)
 }
 
-func printDeployments(ds []*deploy.Deployment) {
+func printDeployments(ds []*deploy.Deployment, depNames, envNames map[string]string) {
+	w := tabwriter.NewWriter(os.Stdout, 4, 8, 4, ' ', 0)
+	fmt.Fprintf(w, "ID\tDeployableID\tEnvironmentID\tStatus\tDeployableConfigID\tType\tBuildNumber\n")
 	for _, d := range ds {
-		printDeployment(d)
+		dep := depNames[d.DeployableID]
+		if dep == "" {
+			dep = d.DeployableID
+		}
+		env := envNames[d.EnvironmentID]
+		if env == "" {
+			env = d.EnvironmentID
+		}
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\n", d.ID, dep, env, d.Status, d.DeployableConfigID, d.Type, d.BuildNumber)
+	}
+	if err := w.Flush(); err != nil {
+		golog.Fatalf(err.Error())
 	}
 }
 
