@@ -856,6 +856,7 @@ func TestProviderCallConnected_CallScreeningDisabled(t *testing.T) {
 	practicePhone := "+12062222222"
 	providerPhone := "+12063333333"
 	orgID := "o1"
+	mclock := clock.NewManaged(time.Now())
 
 	// the params are intended to simulate the dial leg of the call
 	// where the call shows up as originating from the practice phone to
@@ -875,6 +876,11 @@ func TestProviderCallConnected_CallScreeningDisabled(t *testing.T) {
 		Destination:    phone.Number(practicePhone),
 		CallSID:        params.ParentCallSID,
 	}, nil))
+
+	mdal.Expect(mock.NewExpectation(mdal.UpdateIncomingCall, params.ParentCallSID, &dal.IncomingCallUpdate{
+		Answered:     ptr.Bool(true),
+		AnsweredTime: ptr.Time(mclock.Now()),
+	}).WithReturns(int64(1), nil))
 
 	mdirectory := directorymock.New(t)
 	defer mdirectory.Finish()
@@ -905,9 +911,9 @@ func TestProviderCallConnected_CallScreeningDisabled(t *testing.T) {
 
 	sig, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
 	test.OK(t, err)
-	signer := urlutil.NewSigner("apiDomain", sig, clock.New())
+	signer := urlutil.NewSigner("apiDomain", sig, mclock)
 
-	es := NewEventHandler(mdirectory, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", signer)
+	es := NewEventHandler(mdirectory, msettings, mdal, &mockSNS_Twilio{}, mclock, nil, "https://test.com", "", "", "", signer)
 
 	twiml, err := providerCallConnected(context.Background(), params, es.(*eventsHandler))
 	if err != nil {

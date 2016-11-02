@@ -352,7 +352,7 @@ func providerCallConnected(ctx context.Context, params *rawmsg.TwilioParams, eh 
 
 	// if call screening is disabled, directly connect the provider and the patient
 	if !callScreeningEnabled {
-		return twiml.NewResponse().GenerateTwiML()
+		return connectProviderAndPatient(ctx, params, eh)
 	}
 
 	externalEntityName, err := determinePatientName(ctx, incomingCall.Source, incomingCall.OrganizationID, eh)
@@ -399,25 +399,28 @@ func providerEnteredDigits(ctx context.Context, params *rawmsg.TwilioParams, eh 
 	golog.Infof("Provider entered digits %s at %s.", params.Digits, params.To)
 
 	if params.Digits == "1" {
-
-		// update the call metadata to indicate that the provider answered the call
-		if rowsUpdated, err := eh.dal.UpdateIncomingCall(params.ParentCallSID, &dal.IncomingCallUpdate{
-			Answered:     ptr.Bool(true),
-			AnsweredTime: ptr.Time(eh.clock.Now()),
-		}); err != nil {
-			return "", errors.Trace(err)
-		} else if rowsUpdated != 1 {
-			return "", errors.Errorf("Expected 1 row to be updated for %s but %d rows updated", params.ParentCallSID, rowsUpdated)
-		}
-
-		// accept the call if the provider entered the right digit
-		// by generating an empty response.
-		tw := twiml.NewResponse()
-		return tw.GenerateTwiML()
+		return connectProviderAndPatient(ctx, params, eh)
 	}
 
 	// repeate message if any key other than one pressed.
 	return providerCallConnected(ctx, params, eh)
+}
+
+func connectProviderAndPatient(ctx context.Context, params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
+	// update the call metadata to indicate that the provider answered the call
+	if rowsUpdated, err := eh.dal.UpdateIncomingCall(params.ParentCallSID, &dal.IncomingCallUpdate{
+		Answered:     ptr.Bool(true),
+		AnsweredTime: ptr.Time(eh.clock.Now()),
+	}); err != nil {
+		golog.Errorf("Unable to update incoming call %s: %s", params.ParentCallSID, err.Error())
+	} else if rowsUpdated > 1 {
+		golog.Errorf("Expected 1 row to be updated for %s but %d rows updated", params.ParentCallSID, rowsUpdated)
+	}
+
+	// accept the call if the provider entered the right digit
+	// by generating an empty response.
+	tw := twiml.NewResponse()
+	return tw.GenerateTwiML()
 }
 
 // STEP: If call goes to voicemail, play a default or custom greeting based on setting, and
