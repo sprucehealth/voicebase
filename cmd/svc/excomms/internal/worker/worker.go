@@ -253,18 +253,6 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 			return errors.Trace(err)
 		}
 
-		cleaner.Publish(w.snsAPI, w.resourceCleanerTopic, &models.DeleteResourceRequest{
-			Type:       models.DeleteResourceRequest_TWILIO_RECORDING,
-			ResourceID: params.RecordingSID,
-		})
-
-		if params.TranscriptionStatus == rawmsg.TwilioParams_TRANSCRIPTION_STATUS_COMPLETED {
-			cleaner.Publish(w.snsAPI, w.resourceCleanerTopic, &models.DeleteResourceRequest{
-				Type:       models.DeleteResourceRequest_TWILIO_TRANSCRIPTION,
-				ResourceID: params.TranscriptionSID,
-			})
-		}
-
 		incomingCall, err := w.dal.LookupIncomingCall(params.CallSID)
 		if err != nil {
 			return errors.Trace(err)
@@ -291,6 +279,18 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 				},
 			},
 		})
+
+		cleaner.Publish(w.snsAPI, w.resourceCleanerTopic, &models.DeleteResourceRequest{
+			Type:       models.DeleteResourceRequest_TWILIO_RECORDING,
+			ResourceID: params.RecordingSID,
+		})
+
+		if params.TranscriptionStatus == rawmsg.TwilioParams_TRANSCRIPTION_STATUS_COMPLETED {
+			cleaner.Publish(w.snsAPI, w.resourceCleanerTopic, &models.DeleteResourceRequest{
+				Type:       models.DeleteResourceRequest_TWILIO_TRANSCRIPTION,
+				ResourceID: params.TranscriptionSID,
+			})
+		}
 
 	case rawmsg.Incoming_SENDGRID_EMAIL:
 		sgEmail := rm.GetSendGrid()
