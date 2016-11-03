@@ -76,6 +76,7 @@ func init() {
 				"memberships":    &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(entityType))},
 				"orgLink":        &graphql.Field{Type: graphql.NewNonNull(graphql.String), Resolve: resolveOrganizationLink},
 				"type":           &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+				"status":         &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 				"externalIDs":    &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(graphql.String))},
 				"settings":       &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(settingType)), Resolve: resolveEntitySettings},
 				"vendorAccounts": &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(vendorAccountType)), Resolve: resolveEntityVendorAccounts},
@@ -111,7 +112,7 @@ func getEntity(ctx context.Context, dirCli directory.DirectoryClient, id string)
 				directory.EntityInformation_CONTACTS,
 			},
 		},
-		ChildTypes: []directory.EntityType{directory.EntityType_INTERNAL},
+		ChildTypes: []directory.EntityType{directory.EntityType_INTERNAL, directory.EntityType_ORGANIZATION},
 	})
 	if err != nil {
 		golog.ContextLogger(ctx).Warningf("Error while fetching entity %s", err)

@@ -10,6 +10,7 @@ type Entity struct {
 	ID            string     `json:"id"`
 	AccountID     string     `json:"accountID"`
 	Type          string     `json:"type"`
+	Status        string     `json:"status"`
 	FirstName     string     `json:"firstName"`
 	MiddleInitial string     `json:"middleInitial"`
 	LastName      string     `json:"lastName"`
@@ -83,6 +84,7 @@ func TransformEntityToModel(e *directory.Entity) *Entity {
 		ID:            e.ID,
 		AccountID:     e.AccountID,
 		Type:          e.Type.String(),
+		Status:        e.Status.String(),
 		FirstName:     e.Info.FirstName,
 		MiddleInitial: e.Info.MiddleInitial,
 		LastName:      e.Info.LastName,

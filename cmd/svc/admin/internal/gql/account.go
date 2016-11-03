@@ -59,6 +59,7 @@ var accountType = graphql.NewObject(
 			"lastName":    &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"email":       &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"phoneNumber": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"entities":    &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(entityType)), Resolve: accountEntitiesResolve},
 		},
 	})
 
@@ -113,6 +114,28 @@ func getAccountContacts(ctx context.Context, authClient auth.AuthClient, account
 	return authClient.GetAccountContacts(ctx, &auth.GetAccountContactsRequest{
 		AccountID: accountID,
 	})
+}
+
+func accountEntitiesResolve(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+	account := p.Source.(*models.Account)
+	golog.ContextLogger(ctx).Debugf("Looking up account entities for %s", account.ID)
+	return entitiesForAccount(ctx, client.Directory(p), account.ID)
+}
+
+func entitiesForAccount(ctx context.Context, directoryClient directory.DirectoryClient, accountID string) ([]*models.Entity, error) {
+	// Collect all the entities mapped to the account
+	resp, err := directoryClient.LookupEntities(ctx, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+			AccountID: accountID,
+		},
+		RootTypes: []directory.EntityType{directory.EntityType_INTERNAL, directory.EntityType_PATIENT},
+	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return models.TransformEntitiesToModels(resp.Entities), nil
 }
 
 // modifyAccountContact
@@ -177,16 +200,23 @@ func modifyAccountContactResolve(p graphql.ResolveParams) (interface{}, error) {
 
 func modifyAccountContact(ctx context.Context, in *modifyAccountContactInput, authClient auth.AuthClient) (*modifyAccountContactOutput, error) {
 	in.Email = strings.TrimSpace(in.Email)
-	if !validate.Email(in.Email) {
-		return nil, errors.Errorf("Invalid email %q", in.Email)
+	if in.Email != "" {
+		if !validate.Email(in.Email) {
+			return nil, errors.Errorf("Invalid email %q", in.Email)
+		}
 	}
-	parsedNumber, err := phone.ParseNumber(in.PhoneNumber)
-	if err != nil {
-		return nil, errors.Errorf("Error parsing phone number %q", in.PhoneNumber)
+	var phoneNumber string
+	in.PhoneNumber = strings.TrimSpace(in.PhoneNumber)
+	if in.PhoneNumber != "" {
+		parsedNumber, err := phone.ParseNumber(in.PhoneNumber)
+		if err != nil {
+			return nil, errors.Errorf("Error parsing phone number %q", in.PhoneNumber)
+		}
+		phoneNumber = parsedNumber.String()
 	}
 	if _, err := authClient.UpdateAccountContacts(ctx, &auth.UpdateAccountContactsRequest{
 		AccountID:   in.AccountID,
-		PhoneNumber: parsedNumber.String(),
+		PhoneNumber: phoneNumber,
 		Email:       in.Email,
 	}); err != nil {
 		return nil, errors.Trace(err)
@@ -260,19 +290,12 @@ func disableAccount(ctx context.Context, in *disableAccountInput, authClient aut
 		return nil, errors.Trace(err)
 	}
 
-	// Collect all the entities mapped to the account
-	resp, err := directoryClient.LookupEntities(ctx, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
-			AccountID: in.AccountID,
-		},
-		RootTypes: []directory.EntityType{directory.EntityType_INTERNAL, directory.EntityType_PATIENT},
-	})
+	entities, err := entitiesForAccount(ctx, directoryClient, in.AccountID)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 
-	for _, ent := range resp.Entities {
+	for _, ent := range entities {
 		// Delete the related entities. This should be idempotent
 		if _, err := directoryClient.DeleteEntity(ctx, &directory.DeleteEntityRequest{
 			EntityID: ent.ID,
