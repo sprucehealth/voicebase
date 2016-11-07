@@ -29,10 +29,7 @@ func TestAssociateInviteMutation(t *testing.T) {
 	ctx = devicectx.WithSpruceHeaders(ctx, sh)
 
 	g.inviteC.Expect(mock.NewExpectation(g.inviteC.LookupInvite, &invite.LookupInviteRequest{
-		LookupKeyType: invite.LookupInviteRequest_TOKEN,
-		LookupKeyOneof: &invite.LookupInviteRequest_Token{
-			Token: "token",
-		},
+		InviteToken: "token",
 	}).WithReturns(&invite.LookupInviteResponse{
 		Type: invite.LookupInviteResponse_COLLEAGUE,
 		Invite: &invite.LookupInviteResponse_Colleague{
@@ -128,10 +125,7 @@ func TestAssociateInviteMutation_NotFound(t *testing.T) {
 	ctx = devicectx.WithSpruceHeaders(ctx, sh)
 
 	g.inviteC.Expect(mock.NewExpectation(g.inviteC.LookupInvite, &invite.LookupInviteRequest{
-		LookupKeyType: invite.LookupInviteRequest_TOKEN,
-		LookupKeyOneof: &invite.LookupInviteRequest_Token{
-			Token: "token",
-		},
+		InviteToken: "token",
 	}).WithReturns(&invite.LookupInviteResponse{}, grpcErrorf(codes.NotFound, "not found")))
 
 	res := g.query(ctx, `

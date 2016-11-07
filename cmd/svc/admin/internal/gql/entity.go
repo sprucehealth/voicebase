@@ -59,22 +59,26 @@ func init() {
 		graphql.ObjectConfig{
 			Name: "Entity",
 			Fields: graphql.Fields{
-				"id":             &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"accountID":      &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"contacts":       &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(contactType))},
-				"firstName":      &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"middleInitial":  &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"lastName":       &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"groupName":      &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"displayName":    &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"shortTitle":     &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"longTitle":      &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"gender":         &graphql.Field{Type: graphql.NewNonNull(genderEnumType)},
-				"dob":            &graphql.Field{Type: dateType},
-				"note":           &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"members":        &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(entityType))},
-				"memberships":    &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(entityType))},
-				"orgLink":        &graphql.Field{Type: graphql.NewNonNull(graphql.String), Resolve: resolveOrganizationLink},
+				"id":            &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+				"accountID":     &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+				"contacts":      &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(contactType))},
+				"firstName":     &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+				"middleInitial": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+				"lastName":      &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+				"groupName":     &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+				"displayName":   &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+				"shortTitle":    &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+				"longTitle":     &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+				"gender":        &graphql.Field{Type: graphql.NewNonNull(genderEnumType)},
+				"dob":           &graphql.Field{Type: dateType},
+				"note":          &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+				"members":       &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(entityType))},
+				"memberships":   &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(entityType))},
+				"orgLink": &graphql.Field{Type: graphql.NewNonNull(graphql.String),
+					Resolve:           resolvePracticeLink,
+					DeprecationReason: "DEPRECATED due to practice links becoming plural per org. Use `practiceLinks`",
+				},
+				"practiceLinks":  &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(practiceLinkType)), Resolve: resolvePracticeLinks},
 				"type":           &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 				"status":         &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 				"externalIDs":    &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(graphql.String))},
@@ -123,9 +127,30 @@ func getEntity(ctx context.Context, dirCli directory.DirectoryClient, id string)
 	return models.TransformEntityToModel(resp.Entities[0]), nil
 }
 
-func resolveOrganizationLink(p graphql.ResolveParams) (interface{}, error) {
+// DEPRECATED
+func resolvePracticeLink(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	entity := p.Source.(*models.Entity)
-	golog.ContextLogger(ctx).Debugf("Looking up org link for %s", entity.ID)
-	return getOrganizationLink(ctx, client.Invite(p), client.Domains(p).InviteAPI, entity.ID)
+	golog.ContextLogger(ctx).Debugf("Looking up practice link for %s", entity.ID)
+	practiceLinks, err := getPracticeLinksForEntity(ctx, client.Invite(p), client.Domains(p).InviteAPI, entity.ID)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	// For now on this old singular call just return the first once till all clients are ported and this is deprecated
+	var link string
+	if len(practiceLinks) != 0 {
+		link = practiceLinks[0].URL
+	}
+	return link, nil
+}
+
+func resolvePracticeLinks(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+	entity := p.Source.(*models.Entity)
+	golog.ContextLogger(ctx).Debugf("Looking up practice links for %s", entity.ID)
+	practiceLinks, err := getPracticeLinksForEntity(ctx, client.Invite(p), client.Domains(p).InviteAPI, entity.ID)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return practiceLinks, nil
 }

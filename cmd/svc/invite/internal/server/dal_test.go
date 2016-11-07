@@ -59,7 +59,7 @@ func (dl *mockDAL) InsertEntityToken(ctx context.Context, entityID, token string
 	return mock.SafeError(r[0])
 }
 
-func (dl *mockDAL) TokenForEntity(ctx context.Context, entityID string) (string, error) {
+func (dl *mockDAL) TokensForEntity(ctx context.Context, entityID string) ([]string, error) {
 	r := dl.Expector.Record(entityID)
-	return r[0].(string), mock.SafeError(r[1])
+	return r[0].([]string), mock.SafeError(r[1])
 }

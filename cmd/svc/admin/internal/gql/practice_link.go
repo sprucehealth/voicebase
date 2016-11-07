@@ -5,6 +5,7 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/common"
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/gql/client"
+	"github.com/sprucehealth/backend/cmd/svc/admin/internal/gql/models"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/gqldecode"
@@ -15,21 +16,30 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
-func getOrganizationLink(ctx context.Context, inviteCli invite.InviteClient, inviteAPIDomain, id string) (interface{}, error) {
-	inv, err := inviteCli.LookupInvite(ctx, &invite.LookupInviteRequest{
-		LookupKeyType: invite.LookupInviteRequest_ORGANIZATION_ENTITY_ID,
-		LookupKeyOneof: &invite.LookupInviteRequest_OrganizationEntityID{
-			OrganizationEntityID: id,
+// practiceLinkType is a type representing an practice link
+var practiceLinkType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "PracticeLink",
+		Fields: graphql.Fields{
+			"organizationID": &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+			"token":          &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"url":            &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		},
 	})
+
+func getPracticeLinksForEntity(ctx context.Context, inviteCli invite.InviteClient, inviteAPIDomain, entityID string) ([]*models.PracticeLink, error) {
+	resp, err := inviteCli.LookupOrganizationInvites(ctx, &invite.LookupOrganizationInvitesRequest{
+		OrganizationEntityID: entityID,
+	})
 	if grpc.Code(err) == codes.NotFound {
-		return "", nil
+		return nil, nil
 	} else if err != nil {
-		return nil, errors.Errorf("Error while getting org code: %s", err)
+		return nil, errors.Errorf("Error while getting practice link: %s", err)
 	}
-	return invite.OrganizationInviteURL(inviteAPIDomain, inv.GetOrganization().Token), nil
+	return models.TransformPracticeLinksToModel(ctx, resp.OrganizationInvites, inviteAPIDomain), nil
 }
 
+// TODO: Rename from Org Link to Practice Link in inputs/outputs
 // createOrganizationLinkInput
 type createOrganizationLinkInput struct {
 	OrganizationID string `gql:"organizationID"`
@@ -112,22 +122,11 @@ func createOrganizationLinkResolve(p graphql.ResolveParams) (interface{}, error)
 }
 
 func createOrganizationLink(ctx context.Context, settingsCli settings.SettingsClient, inviteCli invite.InviteClient, inviteAPIDomain, orgID string) (string, error) {
-	inv, err := inviteCli.LookupInvite(ctx, &invite.LookupInviteRequest{
-		LookupKeyType: invite.LookupInviteRequest_ORGANIZATION_ENTITY_ID,
-		LookupKeyOneof: &invite.LookupInviteRequest_OrganizationEntityID{
-			OrganizationEntityID: orgID,
-		},
+	resp, err := inviteCli.CreateOrganizationInvite(ctx, &invite.CreateOrganizationInviteRequest{
+		OrganizationEntityID: orgID,
 	})
-	if grpc.Code(err) == codes.NotFound {
-		resp, err := inviteCli.CreateOrganizationInvite(ctx, &invite.CreateOrganizationInviteRequest{
-			OrganizationEntityID: orgID,
-		})
-		if err != nil {
-			return "", errors.Errorf("Error while creating org code for organization %s: %s", orgID, err)
-		}
-		return invite.OrganizationInviteURL(inviteAPIDomain, resp.Organization.Token), nil
-	} else if err != nil {
-		return "", errors.Errorf("Error while getting org code: %s", err)
+	if err != nil {
+		return "", errors.Errorf("Error while creating org code for organization %s: %s", orgID, err)
 	}
-	return invite.OrganizationInviteURL(inviteAPIDomain, inv.GetOrganization().Token), nil
+	return invite.OrganizationInviteURL(inviteAPIDomain, resp.Organization.Token), nil
 }

@@ -96,15 +96,20 @@ message DeleteInviteResponse {}
 message LookupInviteRequest {
 	enum LookupKeyType {
 		UNKNOWN = 0;
-		TOKEN = 1;
-		ORGANIZATION_ENTITY_ID = 2;
+		DEPRECATED_TOKEN = 1;
+		// DEPRECATED - Use LookupInvites instead
+		DEPRECATED_ORGANIZATION_ENTITY_ID = 2;
 	}
 
+	// DEPRECATED - Use LookupInvites instead
 	LookupKeyType lookup_key_type = 1;
 	oneof lookup_key_oneof {
 		string token = 2;
+		// DEPRECATED - Use LookupInvites instead
 		string organization_entity_id = 3 [(gogoproto.customname) = "OrganizationEntityID"];
 	}
+	// The redundency in this name is unfortunate but cant be token and backwards compatible
+	string invite_token = 4;
 }
 
 message LookupInviteResponse {
@@ -120,7 +125,7 @@ message LookupInviteResponse {
 		OrganizationInvite organization = 12;
 	}
 	repeated AttributionValue values = 2;
-}
+} 
 
 message LookupInvitesRequest {
 	enum LookupKeyType {
@@ -144,6 +149,14 @@ message LookupInvitesResponse {
 	oneof list {
 		PatientInviteList patient_invite_list = 2;
 	}
+}
+
+message LookupOrganizationInvitesRequest {
+	string organization_entity_id = 1 [(gogoproto.customname) = "OrganizationEntityID"];
+}
+
+message LookupOrganizationInvitesResponse {
+	repeated OrganizationInvite organization_invites = 12;
 }
 
 message PatientInviteList {
@@ -184,6 +197,8 @@ service Invite {
 	rpc LookupInvite(LookupInviteRequest) returns (LookupInviteResponse);
 	// LookupInvites returns the list of invites for the given key.
 	rpc LookupInvites(LookupInvitesRequest) returns (LookupInvitesResponse);
+	// LookupOrganizationInvites returns the set of org invites mapped to an org
+	rpc LookupOrganizationInvites(LookupOrganizationInvitesRequest) returns (LookupOrganizationInvitesResponse);
 	// MarkInviteConsumed deletes the associated invite and records it's consumption
 	rpc MarkInviteConsumed(MarkInviteConsumedRequest) returns (MarkInviteConsumedResponse);
 	// SetAttributionData associate attribution data with a device

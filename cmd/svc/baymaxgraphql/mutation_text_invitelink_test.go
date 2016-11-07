@@ -31,10 +31,7 @@ func TestTextInviteLink_OrganizationCode(t *testing.T) {
 	g.svc.serviceNumber = phone.Number("+11234567890")
 
 	g.inviteC.Expect(mock.NewExpectation(g.inviteC.LookupInvite, &invite.LookupInviteRequest{
-		LookupKeyType: invite.LookupInviteRequest_TOKEN,
-		LookupKeyOneof: &invite.LookupInviteRequest_Token{
-			Token: "token",
-		},
+		InviteToken: "token",
 	}).WithReturns(&invite.LookupInviteResponse{
 		Type: invite.LookupInviteResponse_ORGANIZATION_CODE,
 		Invite: &invite.LookupInviteResponse_Organization{
@@ -108,10 +105,7 @@ func TestTextInviteLink_PatientInvite(t *testing.T) {
 	g.svc.serviceNumber = phone.Number("+11234567890")
 
 	g.inviteC.Expect(mock.NewExpectation(g.inviteC.LookupInvite, &invite.LookupInviteRequest{
-		LookupKeyType: invite.LookupInviteRequest_TOKEN,
-		LookupKeyOneof: &invite.LookupInviteRequest_Token{
-			Token: "token",
-		},
+		InviteToken: "token",
 	}).WithReturns(&invite.LookupInviteResponse{
 		Type: invite.LookupInviteResponse_PATIENT,
 		Invite: &invite.LookupInviteResponse_Patient{

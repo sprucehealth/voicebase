@@ -40,3 +40,12 @@ func String(s string) *string {
 func Time(t time.Time) *time.Time {
 	return &t
 }
+
+// Strings returns a list of pointers to the provided values.
+func Strings(ss []string) []*string {
+	pss := make([]*string, len(ss))
+	for i, s := range ss {
+		pss[i] = &s
+	}
+	return pss
+}

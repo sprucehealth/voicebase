@@ -95,10 +95,7 @@ var textInviteLinkMutation = &graphql.Field{
 		}
 
 		res, err := svc.invite.LookupInvite(ctx, &invite.LookupInviteRequest{
-			LookupKeyType: invite.LookupInviteRequest_TOKEN,
-			LookupKeyOneof: &invite.LookupInviteRequest_Token{
-				Token: in.Token,
-			},
+			InviteToken: in.Token,
 		})
 		if grpc.Code(err) == codes.NotFound {
 			return &textInviteLinkOutput{

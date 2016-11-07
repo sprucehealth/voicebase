@@ -50,7 +50,7 @@ func parseAccountArguments(args map[string]interface{}) *accountArguments {
 // accountType returns is a type object representing a baymax account
 var accountType = graphql.NewObject(
 	graphql.ObjectConfig{
-		Name: "account",
+		Name: "Account",
 		Fields: graphql.Fields{
 			"id":          &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"type":        &graphql.Field{Type: graphql.NewNonNull(graphql.String)},

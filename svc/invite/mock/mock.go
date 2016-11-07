@@ -56,9 +56,16 @@ func (c *Client) LookupInvite(ctx context.Context, in *invite.LookupInviteReques
 	return ret[0].(*invite.LookupInviteResponse), mock.SafeError(ret[1])
 }
 
+// LookupInvites is a mock
 func (c *Client) LookupInvites(ctx context.Context, in *invite.LookupInvitesRequest, opts ...grpc.CallOption) (*invite.LookupInvitesResponse, error) {
 	ret := c.Expector.Record(in)
 	return ret[0].(*invite.LookupInvitesResponse), mock.SafeError(ret[1])
+}
+
+// LookupOrganizationInvites is a mock
+func (c *Client) LookupOrganizationInvites(ctx context.Context, in *invite.LookupOrganizationInvitesRequest, opts ...grpc.CallOption) (*invite.LookupOrganizationInvitesResponse, error) {
+	ret := c.Expector.Record(in)
+	return ret[0].(*invite.LookupOrganizationInvitesResponse), mock.SafeError(ret[1])
 }
 
 // SetAttributionData associate attribution data with a device
@@ -73,6 +80,7 @@ func (c *Client) MarkInviteConsumed(ctx context.Context, in *invite.MarkInviteCo
 	return ret[0].(*invite.MarkInviteConsumedResponse), mock.SafeError(ret[1])
 }
 
+// DeleteInvite is a mock
 func (c *Client) DeleteInvite(ctx context.Context, in *invite.DeleteInviteRequest, opts ...grpc.CallOption) (*invite.DeleteInviteResponse, error) {
 	ret := c.Expector.Record(in)
 	if len(ret) == 0 {

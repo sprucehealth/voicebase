@@ -518,15 +518,26 @@ func (s *server) LookupInvite(ctx context.Context, in *invite.LookupInviteReques
 	var err error
 	var inv *models.Invite
 	switch in.LookupKeyType {
-	case invite.LookupInviteRequest_TOKEN:
-		inv, err = s.lookupInviteForToken(ctx, in.GetToken())
+	case invite.LookupInviteRequest_DEPRECATED_TOKEN:
+		// Do our backwards compatible mapping till we can get rid of this switch
+		token := in.GetToken()
+		if in.InviteToken != "" {
+			token = in.InviteToken
+		}
+		inv, err = s.lookupInviteForToken(ctx, token)
 		if err != nil {
 			return nil, grpcError(err)
 		}
-	case invite.LookupInviteRequest_ORGANIZATION_ENTITY_ID:
-		inv, err = s.lookupInviteForOrganization(ctx, in.GetOrganizationEntityID())
+	case invite.LookupInviteRequest_DEPRECATED_ORGANIZATION_ENTITY_ID:
+		// TODO: Until we can remove this code path just return the first one we find
+		invs, err := s.lookupInvitesForOrganization(ctx, in.GetOrganizationEntityID())
 		if err != nil {
 			return nil, grpcError(err)
+		}
+		if len(invs) != 0 {
+			inv = invs[0]
+		} else {
+			return nil, grpcErrorf(codes.NotFound, "No invites found for org %s", in.GetOrganizationEntityID())
 		}
 	default:
 		return nil, grpcErrorf(codes.InvalidArgument, "Unsupported lookup key type %s", in.LookupKeyType.String())
@@ -580,7 +591,6 @@ func (s *server) LookupInvite(ctx context.Context, in *invite.LookupInviteReques
 }
 
 func (s *server) LookupInvites(ctx context.Context, in *invite.LookupInvitesRequest) (*invite.LookupInvitesResponse, error) {
-
 	var res invite.LookupInvitesResponse
 	switch in.LookupKeyType {
 	case invite.LookupInvitesRequest_PARKED_ENTITY_ID:
@@ -613,15 +623,39 @@ func (s *server) LookupInvites(ctx context.Context, in *invite.LookupInvitesRequ
 	return &res, nil
 }
 
-func (s *server) lookupInviteForOrganization(ctx context.Context, orgEntityID string) (*models.Invite, error) {
-	token, err := s.dal.TokenForEntity(ctx, orgEntityID)
+// LookupOrganizationInvites returns the set of organization invites associated with an org id
+func (s *server) LookupOrganizationInvites(ctx context.Context, in *invite.LookupOrganizationInvitesRequest) (*invite.LookupOrganizationInvitesResponse, error) {
+	invs, err := s.lookupInvitesForOrganization(ctx, in.OrganizationEntityID)
+	if err != nil {
+		return nil, grpcError(err)
+	}
+	orgInvites := make([]*invite.OrganizationInvite, len(invs))
+	for i, inv := range invs {
+		orgInvites[i] = &invite.OrganizationInvite{
+			OrganizationEntityID: inv.OrganizationEntityID,
+			Token:                inv.Token,
+		}
+	}
+	return &invite.LookupOrganizationInvitesResponse{OrganizationInvites: orgInvites}, nil
+}
+
+func (s *server) lookupInvitesForOrganization(ctx context.Context, orgEntityID string) ([]*models.Invite, error) {
+	tokens, err := s.dal.TokensForEntity(ctx, orgEntityID)
 	if err != nil {
 		if errors.Cause(err) == dal.ErrNotFound {
 			return nil, grpcErrorf(codes.NotFound, "Invite not found for entity "+orgEntityID)
 		}
 		return nil, errors.Trace(err)
 	}
-	return s.lookupInviteForToken(ctx, token)
+	invites := make([]*models.Invite, len(tokens))
+	for i, t := range tokens {
+		inv, err := s.lookupInviteForToken(ctx, t)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		invites[i] = inv
+	}
+	return invites, nil
 }
 
 func (s *server) lookupInviteForToken(ctx context.Context, token string) (*models.Invite, error) {
@@ -701,23 +735,12 @@ func (s *server) CreateOrganizationInvite(ctx context.Context, in *invite.Create
 		return nil, grpcError(err)
 	}
 
-	// Check to see if it already exists for idempotency
-	token, err := s.dal.TokenForEntity(ctx, in.OrganizationEntityID)
-	if err != nil && errors.Cause(err) != dal.ErrNotFound {
-		return nil, grpcError(err)
-	} else if token != "" {
-		return &invite.CreateOrganizationInviteResponse{
-			Organization: &invite.OrganizationInvite{
-				OrganizationEntityID: in.OrganizationEntityID,
-				Token:                token,
-			},
-		}, nil
-	}
-
 	inviteClientDataJSON, err := clientdata.PatientInviteClientJSON(org, "", "", "", invite.LookupInviteResponse_ORGANIZATION_CODE)
 	if err != nil {
 		return nil, grpcError(err)
 	}
+
+	var token string
 	for retry := 0; retry < 5; retry++ {
 		token, err = simpleTokenGenerator.GenerateToken()
 		if err != nil {

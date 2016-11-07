@@ -47,7 +47,7 @@ type DAL interface {
 	InviteForToken(ctx context.Context, token string) (*models.Invite, error)
 	InvitesForParkedEntityID(ctx context.Context, parkedEntityID string) ([]*models.Invite, error)
 	SetAttributionData(ctx context.Context, deviceID string, values map[string]string) error
-	TokenForEntity(ctx context.Context, entityID string) (string, error)
+	TokensForEntity(ctx context.Context, entityID string) ([]string, error)
 }
 
 type dal struct {
@@ -292,17 +292,24 @@ func (d *dal) InsertEntityToken(ctx context.Context, entityID, token string) err
 	if token == "" {
 		return errors.Errorf("Token required")
 	}
+
+	// Get our existing set of tokens to append to
+	tokens, err := d.TokensForEntity(ctx, entityID)
+	if err != nil {
+		return errors.Trace(err)
+	}
+	tokens = append(tokens, token)
+
 	item := map[string]*dynamodb.AttributeValue{
 		entityIDKey:         {S: &entityID},
-		inviteTokenKey:      {S: &token},
+		inviteTokenKey:      {SS: ptr.Strings(tokens)},
 		createdTimestampKey: {N: ptr.String(strconv.FormatInt(time.Now().UnixNano(), 10))},
 	}
-	_, err := d.db.PutItem(&dynamodb.PutItemInput{
+	if _, err := d.db.PutItem(&dynamodb.PutItemInput{
 		TableName:           &d.entityTokenTable,
 		ConditionExpression: ptr.String("attribute_not_exists(" + entityIDKey + ")"),
 		Item:                item,
-	})
-	if err != nil {
+	}); err != nil {
 		if e, ok := err.(awserr.RequestFailure); ok && e.Code() == "ConditionalCheckFailedException" {
 			return ErrDuplicateInviteToken
 		}
@@ -311,7 +318,7 @@ func (d *dal) InsertEntityToken(ctx context.Context, entityID, token string) err
 	return nil
 }
 
-func (d *dal) TokenForEntity(ctx context.Context, entityID string) (string, error) {
+func (d *dal) TokensForEntity(ctx context.Context, entityID string) ([]string, error) {
 	res, err := d.db.GetItem(&dynamodb.GetItemInput{
 		ConsistentRead: ptr.Bool(true),
 		Key: map[string]*dynamodb.AttributeValue{
@@ -320,14 +327,25 @@ func (d *dal) TokenForEntity(ctx context.Context, entityID string) (string, erro
 		TableName: &d.entityTokenTable,
 	})
 	if err != nil {
-		return "", errors.Trace(err)
+		return nil, errors.Trace(err)
 	}
 	if len(res.Item) == 0 {
-		return "", ErrNotFound
+		return nil, ErrNotFound
 	}
+
+	// Map the old single token model into the new one
+	var tokens []string
 	token, ok := res.Item[inviteTokenKey]
 	if !ok {
-		return "", ErrNotFound
+		return nil, ErrNotFound
 	}
-	return *token.S, nil
+	if token.S != nil {
+		tokens = []string{*token.S}
+	} else {
+		tokens = make([]string, len(token.SS))
+		for i, ps := range token.SS {
+			tokens[i] = *ps
+		}
+	}
+	return tokens, nil
 }

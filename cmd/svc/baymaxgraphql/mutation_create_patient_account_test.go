@@ -39,10 +39,7 @@ func TestCreatePatientAccountMutation(t *testing.T) {
 		},
 	}, nil))
 	g.inviteC.Expect(mock.NewExpectation(g.inviteC.LookupInvite, &invite.LookupInviteRequest{
-		LookupKeyType: invite.LookupInviteRequest_TOKEN,
-		LookupKeyOneof: &invite.LookupInviteRequest_Token{
-			Token: "InviteToken",
-		},
+		InviteToken: "InviteToken",
 	}).WithReturns(&invite.LookupInviteResponse{
 		Type: invite.LookupInviteResponse_PATIENT,
 		Invite: &invite.LookupInviteResponse_Patient{
@@ -163,7 +160,7 @@ func TestCreatePatientAccountMutation(t *testing.T) {
 	// Clean up our invite
 	g.inviteC.Expect(mock.NewExpectation(g.inviteC.MarkInviteConsumed, &invite.MarkInviteConsumedRequest{Token: "InviteToken"}).WithReturns(&invite.MarkInviteConsumedResponse{}, nil))
 
-	// Query the acount entity
+	// Query the account entity
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
 		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
 		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
@@ -277,10 +274,7 @@ func TestCreatePatientAccountMutation_PracticeLink(t *testing.T) {
 		},
 	}, nil))
 	g.inviteC.Expect(mock.NewExpectation(g.inviteC.LookupInvite, &invite.LookupInviteRequest{
-		LookupKeyType: invite.LookupInviteRequest_TOKEN,
-		LookupKeyOneof: &invite.LookupInviteRequest_Token{
-			Token: "InviteToken",
-		},
+		InviteToken: "InviteToken",
 	}).WithReturns(&invite.LookupInviteResponse{
 		Type: invite.LookupInviteResponse_ORGANIZATION_CODE,
 		Invite: &invite.LookupInviteResponse_Organization{

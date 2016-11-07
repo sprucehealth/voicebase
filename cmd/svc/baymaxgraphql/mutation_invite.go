@@ -217,10 +217,7 @@ var associateInviteMutation = &graphql.Field{
 		mutationID, _ := input["clientMutationId"].(string)
 		token := input["token"].(string)
 		res, err := svc.invite.LookupInvite(ctx, &invite.LookupInviteRequest{
-			LookupKeyType: invite.LookupInviteRequest_TOKEN,
-			LookupKeyOneof: &invite.LookupInviteRequest_Token{
-				Token: token,
-			},
+			InviteToken: token,
 		})
 		if grpc.Code(err) == codes.NotFound {
 			return &associateInviteOutput{

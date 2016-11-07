@@ -262,10 +262,7 @@ func TestCreateAccountMutation_InviteColleague(t *testing.T) {
 		},
 	}, nil))
 	g.inviteC.Expect(mock.NewExpectation(g.inviteC.LookupInvite, &invite.LookupInviteRequest{
-		LookupKeyType: invite.LookupInviteRequest_TOKEN,
-		LookupKeyOneof: &invite.LookupInviteRequest_Token{
-			Token: "InviteToken",
-		},
+		InviteToken: "InviteToken",
 	}).WithReturns(&invite.LookupInviteResponse{
 		Type: invite.LookupInviteResponse_COLLEAGUE,
 		Invite: &invite.LookupInviteResponse_Colleague{
