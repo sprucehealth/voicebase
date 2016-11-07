@@ -294,7 +294,7 @@ type SavedMessageSection struct {
 type ScheduledMessage struct {
 	ID           string      `json:"id"`
 	ThreadItem   *ThreadItem `json:"threadItem"`
-	ScheduledFor uint64      `json:"scheduledFor"`
+	ScheduledFor uint64      `json:"scheduledForTimestamp"`
 }
 
 type SerializedEntityContact struct {

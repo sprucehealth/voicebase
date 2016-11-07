@@ -6,12 +6,10 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
-	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/bml"
 	"github.com/sprucehealth/backend/libs/gqldecode"
-	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 	"github.com/sprucehealth/graphql/gqlerrors"
@@ -100,10 +98,11 @@ func deleteScheduledMessage(ctx context.Context, ram raccess.ResourceAccessor, i
 	}, nil
 }
 
-// addCardScheduledMessage
+// scheduleMessage
 type scheduleMessageInput struct {
 	ClientMutationID      string        `gql:"clientMutationId"`
 	Message               *messageInput `gql:"message"`
+	ActingEntityID        string        `gql:"actingEntityID"`
 	ScheduledForTimestamp int           `gql:"scheduledForTimestamp"`
 	ThreadID              string        `gql:"threadID"`
 }
@@ -114,6 +113,7 @@ var scheduleMessageInputType = graphql.NewInputObject(
 		Fields: graphql.InputObjectConfigFieldMap{
 			"clientMutationId":      newClientMutationIDInputField(),
 			"message":               &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(messageInputType)},
+			"actingEntityID":        &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 			"threadID":              &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
 			"scheduledForTimestamp": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.Int)},
 		},
@@ -178,22 +178,12 @@ var scheduleMessageMutation = &graphql.Field{
 }
 
 func scheduleMessage(ctx context.Context, svc *service, ram raccess.ResourceAccessor, in scheduleMessageInput) (interface{}, error) {
-	thread, err := ram.Thread(ctx, in.ThreadID, "")
+	// TODO: Move this up into a validation chain eventually
+	ent, err := ram.AssertIsEntity(ctx, in.ActingEntityID)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	ent, err := raccess.EntityInOrgForAccountID(ctx, ram, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
-			ExternalID: gqlctx.Account(ctx).ID,
-		},
-		RequestedInformation: &directory.RequestedInformation{
-			Depth:             0,
-			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
-		},
-		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
-		RootTypes: []directory.EntityType{directory.EntityType_INTERNAL},
-	}, thread.OrganizationID)
+	thread, err := ram.Thread(ctx, in.ThreadID, "")
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

@@ -606,7 +606,7 @@ func transformScheduledMessageToResponse(sm *models.ScheduledMessage) (*threadin
 	}
 
 	var sentThreadItemID string
-	if sm.SentThreadItemID != nil {
+	if sm.SentThreadItemID.IsValid {
 		sentThreadItemID = sm.SentThreadItemID.String()
 	}
 	rsm := &threading.ScheduledMessage{
@@ -617,6 +617,8 @@ func transformScheduledMessageToResponse(sm *models.ScheduledMessage) (*threadin
 		ThreadID:         sm.ThreadID.String(),
 		SentAt:           sentAt,
 		SentThreadItemID: sentThreadItemID,
+		Created:          uint64(sm.Created.Unix()),
+		Modified:         uint64(sm.Modified.Unix()),
 	}
 	if msg, ok := sm.Data.(*models.Message); ok {
 		msg, err := TransformMessageToResponse(msg, false)

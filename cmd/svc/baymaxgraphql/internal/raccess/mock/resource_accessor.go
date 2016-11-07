@@ -38,6 +38,15 @@ func (m *ResourceAccessor) Account(ctx context.Context, accountID string) (*auth
 	return rets[0].(*auth.Account), mock.SafeError(rets[1])
 }
 
+func (m *ResourceAccessor) AssertIsEntity(ctx context.Context, entityID string) (*directory.Entity, error) {
+	rets := m.Record(entityID)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].(*directory.Entity), mock.SafeError(rets[1])
+}
+
 func (m *ResourceAccessor) LastLoginForAccount(ctx context.Context, req *auth.GetLastLoginInfoRequest) (*auth.GetLastLoginInfoResponse, error) {
 	rets := m.Record(req)
 	if len(rets) == 0 {

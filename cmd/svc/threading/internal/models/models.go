@@ -627,7 +627,7 @@ type ScheduledMessage struct {
 	Data             ItemValue
 	Status           ScheduledMessageStatus
 	ID               ScheduledMessageID
-	SentThreadItemID *ThreadItemID
+	SentThreadItemID ThreadItemID
 }
 
 // ScheduledMessageUpdate represents the mutable aspects of a scheduled_message record

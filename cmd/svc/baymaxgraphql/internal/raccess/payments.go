@@ -14,7 +14,7 @@ func (m *resourceAccessor) AcceptPayment(ctx context.Context, req *payments.Acce
 	if err != nil {
 		return nil, err
 	}
-	if err := m.assertIsEntity(ctx, paymentMethodResp.PaymentMethod.EntityID); err != nil {
+	if _, err := m.AssertIsEntity(ctx, paymentMethodResp.PaymentMethod.EntityID); err != nil {
 		return nil, err
 	}
 
@@ -61,7 +61,7 @@ func (m *resourceAccessor) CreatePayment(ctx context.Context, req *payments.Crea
 }
 
 func (m *resourceAccessor) CreatePaymentMethod(ctx context.Context, req *payments.CreatePaymentMethodRequest) (*payments.CreatePaymentMethodResponse, error) {
-	if err := m.assertIsEntity(ctx, req.EntityID); err != nil {
+	if _, err := m.AssertIsEntity(ctx, req.EntityID); err != nil {
 		return nil, err
 	}
 
@@ -88,7 +88,7 @@ func (m *resourceAccessor) Payment(ctx context.Context, req *payments.PaymentReq
 }
 
 func (m *resourceAccessor) PaymentMethods(ctx context.Context, req *payments.PaymentMethodsRequest) (*payments.PaymentMethodsResponse, error) {
-	if err := m.assertIsEntity(ctx, req.EntityID); err != nil {
+	if _, err := m.AssertIsEntity(ctx, req.EntityID); err != nil {
 		return nil, err
 	}
 
@@ -107,7 +107,7 @@ func (m *resourceAccessor) DeletePaymentMethod(ctx context.Context, req *payment
 	if err != nil {
 		return nil, err
 	}
-	if err := m.assertIsEntity(ctx, paymentMethodResp.PaymentMethod.EntityID); err != nil {
+	if _, err := m.AssertIsEntity(ctx, paymentMethodResp.PaymentMethod.EntityID); err != nil {
 		return nil, err
 	}
 

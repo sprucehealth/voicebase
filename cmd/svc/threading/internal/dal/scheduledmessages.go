@@ -151,17 +151,19 @@ func (d *dal) DeleteScheduledMessage(ctx context.Context, id models.ScheduledMes
 
 const selectScheduledMessage = `
     SELECT sm.actor_entity_id, sm.type, sm.scheduled_for, sm.sent_at, sm.created, sm.modified, sm.id,
-        sm.thread_id, sm.internal, sm.data, sm.status, sm.sent_thread_item_id, sm.data
+        sm.thread_id, sm.internal, sm.status, sm.sent_thread_item_id, sm.data
     FROM scheduled_messages sm`
 
 func scanScheduledMessage(ctx context.Context, row dbutil.Scanner, contextFormat string, args ...interface{}) (*models.ScheduledMessage, error) {
 	var m models.ScheduledMessage
 	m.ID = models.EmptyScheduledMessageID()
+	m.ThreadID = models.EmptyThreadID()
+	m.SentThreadItemID = models.EmptyThreadItemID()
 
 	var itemType string
 	var data []byte
 	err := row.Scan(&m.ActorEntityID, &itemType, &m.ScheduledFor, &m.SentAt, &m.Created, &m.Modified, &m.ID,
-		&m.ThreadID, &m.Internal, &m.Data, &m.Status, &m.SentThreadItemID, &data)
+		&m.ThreadID, &m.Internal, &m.Status, &m.SentThreadItemID, &data)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(errors.Annotate(ErrNotFound, "No rows found - threading.scheduled_messages - Context: "+fmt.Sprintf(contextFormat, args...)))
 	}

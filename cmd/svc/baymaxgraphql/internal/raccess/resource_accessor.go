@@ -87,6 +87,7 @@ type ResourceAccessor interface {
 	AcceptPayment(ctx context.Context, req *payments.AcceptPaymentRequest) (*payments.AcceptPaymentResponse, error)
 	AuthenticateLogin(ctx context.Context, email, password string, duration auth.TokenDuration) (*auth.AuthenticateLoginResponse, error)
 	AuthenticateLoginWithCode(ctx context.Context, token, code string, duration auth.TokenDuration) (*auth.AuthenticateLoginWithCodeResponse, error)
+	AssertIsEntity(ctx context.Context, entityID string) (*directory.Entity, error)
 	CanPostMessage(ctx context.Context, threadID string) error
 	CarePlan(ctx context.Context, id string) (*care.CarePlan, error)
 	CheckPasswordResetToken(ctx context.Context, token string) (*auth.CheckPasswordResetTokenResponse, error)
@@ -752,7 +753,7 @@ func (m *resourceAccessor) SavedQuery(ctx context.Context, savedQueryID string) 
 	if err != nil {
 		return nil, err
 	}
-	if err := m.assertIsEntity(ctx, res.SavedQuery.EntityID); err != nil {
+	if _, err := m.AssertIsEntity(ctx, res.SavedQuery.EntityID); err != nil {
 		return nil, err
 	}
 	return res.SavedQuery, nil
@@ -1359,7 +1360,7 @@ func (m *resourceAccessor) UpdateSavedQuery(ctx context.Context, req *threading.
 		return nil, err
 	}
 
-	if err := m.assertIsEntity(ctx, sResp.EntityID); err != nil {
+	if _, err := m.AssertIsEntity(ctx, sResp.EntityID); err != nil {
 		return nil, err
 	}
 
@@ -1376,10 +1377,10 @@ func (m *resourceAccessor) isAccountType(ctx context.Context, accType auth.Accou
 	return acc != nil && acc.Type == accType
 }
 
-func (m *resourceAccessor) assertIsEntity(ctx context.Context, entityID string) error {
+func (m *resourceAccessor) AssertIsEntity(ctx context.Context, entityID string) (*directory.Entity, error) {
 	acc := gqlctx.Account(ctx)
 	if acc == nil {
-		return errors.ErrNotAuthenticated(ctx)
+		return nil, errors.ErrNotAuthenticated(ctx)
 	}
 	ent, err := directory.SingleEntity(ctx, m.directory, &directory.LookupEntitiesRequest{
 		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
@@ -1388,14 +1389,14 @@ func (m *resourceAccessor) assertIsEntity(ctx context.Context, entityID string) 
 		},
 	})
 	if grpc.Code(err) == codes.NotFound {
-		return errors.ErrNotFound(ctx, entityID)
+		return nil, errors.ErrNotFound(ctx, entityID)
 	} else if err != nil {
-		return errors.InternalError(ctx, err)
+		return nil, errors.InternalError(ctx, err)
 	}
 	if ent.AccountID != acc.ID {
-		return errors.ErrNotAuthorized(ctx, entityID)
+		return nil, errors.ErrNotAuthorized(ctx, entityID)
 	}
-	return nil
+	return ent, nil
 }
 
 func (m *resourceAccessor) canAccessResource(ctx context.Context, resourceID string, missF func(ctx context.Context, resourceID string) (map[string]struct{}, error)) error {
