@@ -24,7 +24,7 @@ var scheduledMessageType = graphql.NewObject(graphql.ObjectConfig{
 	},
 })
 
-func getScheduledMessages(ctx context.Context, ram raccess.ResourceAccessor, threadID, organizationID string) ([]*models.ScheduledMessage, error) {
+func getScheduledMessages(ctx context.Context, ram raccess.ResourceAccessor, threadID, organizationID, webDomain, mediaAPIDomain string) ([]*models.ScheduledMessage, error) {
 	resp, err := ram.ScheduledMessages(ctx, &threading.ScheduledMessagesRequest{
 		LookupKey: &threading.ScheduledMessagesRequest_ThreadID{
 			ThreadID: threadID,
@@ -35,32 +35,46 @@ func getScheduledMessages(ctx context.Context, ram raccess.ResourceAccessor, thr
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	scheduledMessages := transformScheduledMessagesToResponse(ctx, resp.ScheduledMessages, organizationID)
+	scheduledMessages, err := transformScheduledMessagesToResponse(ctx, resp.ScheduledMessages, organizationID, webDomain, mediaAPIDomain)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
 	sort.Sort(scheduledMessageByScheduledFor(scheduledMessages))
 	return scheduledMessages, nil
 }
 
-func transformScheduledMessagesToResponse(ctx context.Context, ms []*threading.ScheduledMessage, organizationID string) []*models.ScheduledMessage {
+func transformScheduledMessagesToResponse(ctx context.Context, ms []*threading.ScheduledMessage, organizationID, webDomain, mediaAPIDomain string) ([]*models.ScheduledMessage, error) {
 	rms := make([]*models.ScheduledMessage, len(ms))
 	for i, m := range ms {
-		rms[i] = transformScheduledMessageToResponse(ctx, m, organizationID)
+		rm, err := transformScheduledMessageToResponse(ctx, m, organizationID, webDomain, mediaAPIDomain)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		rms[i] = rm
 	}
-	return rms
+	return rms, nil
 }
 
-func transformScheduledMessageToResponse(ctx context.Context, m *threading.ScheduledMessage, organizationID string) *models.ScheduledMessage {
+func transformScheduledMessageToResponse(ctx context.Context, m *threading.ScheduledMessage, organizationID, webDomain, mediaAPIDomain string) (*models.ScheduledMessage, error) {
+	ti, err := transformThreadItemToResponse(&threading.ThreadItem{
+		ID:                m.ID,
+		CreatedTimestamp:  m.Created,
+		ModifiedTimestamp: m.Modified,
+		ActorEntityID:     m.ActorEntityID,
+		Internal:          m.Internal,
+		OrganizationID:    organizationID,
+		Item: &threading.ThreadItem_Message{
+			Message: m.GetMessage(),
+		},
+	}, m.ID, webDomain, mediaAPIDomain)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
 	return &models.ScheduledMessage{
 		ID:           m.ID,
 		ScheduledFor: m.ScheduledFor,
-		ThreadItem: &models.ThreadItem{
-			ID:             m.ID,
-			Internal:       m.Internal,
-			Timestamp:      m.Modified,
-			ActorEntityID:  m.ActorEntityID,
-			OrganizationID: organizationID,
-			Data:           m.GetMessage(),
-		},
-	}
+		ThreadItem:   ti,
+	}, nil
 }
 
 func isScheduledMessagesEnabled() func(p graphql.ResolveParams) (interface{}, error) {

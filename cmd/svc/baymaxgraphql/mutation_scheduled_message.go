@@ -226,7 +226,7 @@ func scheduleMessage(ctx context.Context, svc *service, ram raccess.ResourceAcce
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	scheduledMessages, err := getScheduledMessages(ctx, ram, thread.ID, thread.OrganizationID)
+	scheduledMessages, err := getScheduledMessages(ctx, ram, thread.ID, thread.OrganizationID, svc.webDomain, svc.mediaAPIDomain)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

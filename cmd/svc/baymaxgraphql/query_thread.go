@@ -605,7 +605,8 @@ var threadType = graphql.NewObject(
 				Type: graphql.NewList(graphql.NewNonNull(scheduledMessageType)),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					th := p.Source.(*models.Thread)
-					return getScheduledMessages(p.Context, raccess.ResourceAccess(p), th.ID, th.OrganizationID)
+					svc := serviceFromParams(p)
+					return getScheduledMessages(p.Context, raccess.ResourceAccess(p), th.ID, th.OrganizationID, svc.webDomain, svc.mediaAPIDomain)
 				},
 			},
 		},

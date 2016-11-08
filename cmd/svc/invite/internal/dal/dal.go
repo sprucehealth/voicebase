@@ -295,7 +295,7 @@ func (d *dal) InsertEntityToken(ctx context.Context, entityID, token string) err
 
 	// Get our existing set of tokens to append to
 	tokens, err := d.TokensForEntity(ctx, entityID)
-	if err != nil {
+	if err != nil && err != ErrNotFound {
 		return errors.Trace(err)
 	}
 	tokens = append(tokens, token)
