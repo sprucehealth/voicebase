@@ -3,6 +3,7 @@ package server
 import (
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/mime"
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/svc/media"
 )
 
@@ -23,12 +24,16 @@ func (s *server) transformMediaToResponse(m *dal.Media) (*media.MediaInfo, error
 	if err != nil {
 		return nil, err
 	}
+	ownerType, err := transformMediaOwnerTypeToResponse(m.OwnerType)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
 	return &media.MediaInfo{
 		ID:         m.ID.String(),
 		URL:        media.URL(s.mediaAPIDomain, m.ID.String(), m.MimeType),
 		ThumbURL:   media.ThumbnailURL(s.mediaAPIDomain, m.ID.String(), m.MimeType, 0, 0, false),
 		OwnerID:    m.OwnerID,
-		OwnerType:  media.MediaOwnerType(media.MediaOwnerType_value[m.OwnerType.String()]),
+		OwnerType:  ownerType,
 		SizeBytes:  m.SizeBytes,
 		DurationNS: m.DurationNS,
 		Name:       m.Name,
@@ -38,4 +43,24 @@ func (s *server) transformMediaToResponse(m *dal.Media) (*media.MediaInfo, error
 		},
 		Public: m.Public,
 	}, nil
+}
+
+func transformMediaOwnerTypeToResponse(ot dal.MediaOwnerType) (media.MediaOwnerType, error) {
+	switch ot {
+	case dal.MediaOwnerTypeOrganization:
+		return media.MediaOwnerType_ORGANIZATION, nil
+	case dal.MediaOwnerTypeThread:
+		return media.MediaOwnerType_THREAD, nil
+	case dal.MediaOwnerTypeEntity:
+		return media.MediaOwnerType_ENTITY, nil
+	case dal.MediaOwnerTypeAccount:
+		return media.MediaOwnerType_ACCOUNT, nil
+	case dal.MediaOwnerTypeVisit:
+		return media.MediaOwnerType_VISIT, nil
+	case dal.MediaOwnerTypeSavedMessage:
+		return media.MediaOwnerType_SAVED_MESSAGE, nil
+	case dal.MediaOwnerTypeLegacy:
+		return media.MediaOwnerType_LEGACY, nil
+	}
+	return media.MediaOwnerType_OWNER_TYPE_UNKNOWN, errors.Errorf("unknown media owner type %s", ot)
 }

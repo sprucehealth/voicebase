@@ -2,11 +2,10 @@ package dal
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	"fmt"
 	"strings"
 	"time"
-
-	"database/sql/driver"
 
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/errors"
@@ -119,6 +118,8 @@ func (m MediaID) String() string {
 type MediaOwnerType string
 
 const (
+	// MediaOwnerTypeLegacy represents a stub owner which skips the authorization check
+	MediaOwnerTypeLegacy MediaOwnerType = "LEGACY"
 	// MediaOwnerTypeOrganization represents the ORGANIZATION state of the owner_type field on a media record
 	MediaOwnerTypeOrganization MediaOwnerType = "ORGANIZATION"
 	// MediaOwnerTypeThread represents the THREAD state of the owner_type field on a media record
@@ -137,10 +138,10 @@ const (
 func ParseMediaOwnerType(s string) (MediaOwnerType, error) {
 	switch t := MediaOwnerType(strings.ToUpper(s)); t {
 	case MediaOwnerTypeOrganization, MediaOwnerTypeThread, MediaOwnerTypeEntity,
-		MediaOwnerTypeAccount, MediaOwnerTypeVisit, MediaOwnerTypeSavedMessage:
+		MediaOwnerTypeAccount, MediaOwnerTypeVisit, MediaOwnerTypeSavedMessage, MediaOwnerTypeLegacy:
 		return t, nil
 	}
-	return MediaOwnerType(""), errors.Trace(fmt.Errorf("Unknown owner_type:%s", s))
+	return MediaOwnerType(""), errors.Errorf("Unknown owner_type:%s", s)
 }
 
 func (t MediaOwnerType) String() string {

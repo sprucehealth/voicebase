@@ -79,7 +79,7 @@ type MediaMeta struct {
 const thumbnailSuffix = "-thumbnail"
 
 func (s *service) CopyMedia(ctx context.Context, ownerType dal.MediaOwnerType, ownerID string, sourceID dal.MediaID) (*MediaMeta, error) {
-	med, err := s.dal.Media(sourceID)
+	med, err := s.media(ctx, sourceID)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -141,7 +141,7 @@ func (s *service) CopyMedia(ctx context.Context, ownerType dal.MediaOwnerType, o
 }
 
 func (s *service) GetReader(ctx context.Context, mediaID dal.MediaID) (io.ReadCloser, *MediaMeta, error) {
-	media, err := s.dal.Media(mediaID)
+	media, err := s.media(ctx, mediaID)
 	if err != nil {
 		return nil, nil, errors.Trace(err)
 	}
@@ -181,7 +181,7 @@ func (s *service) GetReader(ctx context.Context, mediaID dal.MediaID) (io.ReadCl
 
 func (s *service) GetThumbnailReader(ctx context.Context, mediaID dal.MediaID, size *media.ImageSize) (io.ReadCloser, *media.ImageMeta, error) {
 	var thumbID string
-	m, err := s.dal.Media(mediaID)
+	m, err := s.media(ctx, mediaID)
 	// If we didn't find it in our data store, assume it's a legacy media segment and that the id is consistent
 	if errors.Cause(err) == dal.ErrNotFound {
 		thumbID = mediaID.String()
@@ -306,6 +306,35 @@ func (s *service) PutMedia(ctx context.Context, mFile io.ReadSeeker, mFileName s
 		MediaID:  mediaID,
 		MIMEType: mediaType.String(),
 	}, nil
+}
+
+// media fetches the media metadata from the database. If the metadata doesn't exist
+// then it attempts to check the blob store and saves the metdata to the db.
+func (s *service) media(ctx context.Context, id dal.MediaID) (*dal.Media, error) {
+	med, err := s.dal.Media(id)
+	if err == nil {
+		return med, nil
+	}
+	if errors.Cause(err) != dal.ErrNotFound {
+		return nil, errors.Trace(err)
+	}
+	// Using the image service here, but it really shouldn't matter at the moment
+	// since all the stores point to the same S3 bucket.
+	meta, err := s.imageService.GetMeta(id.String())
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	med = &dal.Media{
+		ID:        id,
+		URL:       meta.URL,
+		Name:      meta.Name,
+		MimeType:  meta.MimeType,
+		SizeBytes: meta.Size,
+		OwnerType: dal.MediaOwnerTypeLegacy,
+		// TODO: DurationNS
+	}
+	_, err = s.dal.InsertMedia(med)
+	return med, errors.Trace(err)
 }
 
 const (

@@ -39,6 +39,7 @@ type ImageSize struct {
 
 // ImageMeta is is media metadata
 type ImageMeta struct {
+	Name     string
 	MimeType string
 	Width    int
 	Height   int
@@ -259,6 +260,7 @@ func metaFromHeaders(h http.Header) *ImageMeta {
 	height, _ := strconv.Atoi(h.Get(heightHeader))
 	size, _ := strconv.Atoi(h.Get(contentLengthHeader))
 	return &ImageMeta{
+		Name:     h.Get(originalNameHeader),
 		MimeType: h.Get(mimeTypeHeader),
 		Width:    width,
 		Height:   height,

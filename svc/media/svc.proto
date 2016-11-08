@@ -22,6 +22,7 @@ enum MediaOwnerType {
 	ACCOUNT = 4;
 	VISIT = 5;
 	SAVED_MESSAGE = 6;
+	LEGACY = 7;
 }
 
 message MediaInfo {

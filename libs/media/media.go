@@ -11,6 +11,7 @@ var (
 const (
 	mimeTypeHeader      = "Content-Type"
 	contentLengthHeader = "Content-Length"
+	originalNameHeader  = "x-amz-meta-original-name"
 	widthHeader         = "x-amz-meta-width"
 	heightHeader        = "x-amz-meta-height"
 	durationHeader      = "duration"

@@ -39,6 +39,8 @@ func (s *service) CanAccess(ctx context.Context, mediaID dal.MediaID, accountID 
 		return s.canAccessThreadMedia(ctx, media.OwnerID, accountID)
 	case dal.MediaOwnerTypeVisit:
 		return s.canAccessVisitMedia(ctx, media.OwnerID, accountID)
+	case dal.MediaOwnerTypeLegacy:
+		return nil
 	}
 	return fmt.Errorf("Unsupported Media Owner Type: %s", media.OwnerType)
 }
