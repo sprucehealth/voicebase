@@ -132,6 +132,7 @@ func main() {
 		if *flagBehindHTTPProxy {
 			if r.Header.Get("X-Forwarded-Proto") == "http" {
 				u := r.URL
+				u.Host = r.Host
 				u.Scheme = "https"
 				http.Redirect(w, r, u.String(), http.StatusPermanentRedirect)
 				return
