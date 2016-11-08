@@ -41,7 +41,7 @@ var (
 	// REST API
 	flagHTTPListenAddr  = flag.String("http_listen_addr", ":8082", "host:port to listen on for http requests")
 	flagInviteAPIDomain = flag.String("invite_api_domain", "", "Invite API `domain`")
-	flagBehindProxy     = flag.Bool("behind_proxy", false, "Flag to indicate when the service is behind a proxy")
+	flagBehindHTTPProxy = flag.Bool("behind_proxy", false, "Flag to indicate when the service is behind a proxy")
 
 	// For local development
 	flagDynamoDBEndpoint = flag.String("dynamodb_endpoint", "", "DynamoDB endpoint `URL` (for local development)")
@@ -125,9 +125,20 @@ func main() {
 		}
 	}()
 
-	r := mux.NewRouter()
-	handlers.InitRoutes(r, dl)
-	h := httputil.LoggingHandler(r, "media", *flagBehindProxy, nil)
+	router := mux.NewRouter()
+	handlers.InitRoutes(router, dl)
+	h := httputil.LoggingHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Redirect HTTP to HTTPS
+		if *flagBehindHTTPProxy {
+			if r.Header.Get("X-Forwarded-Proto") == "http" {
+				u := r.URL
+				u.Scheme = "https"
+				http.Redirect(w, r, u.String(), http.StatusPermanentRedirect)
+				return
+			}
+		}
+		router.ServeHTTP(w, r)
+	}), "media", *flagBehindHTTPProxy, nil)
 
 	golog.Infof("Invite HTTP Listening on %s...", *flagHTTPListenAddr)
 	httpSrv := &http.Server{

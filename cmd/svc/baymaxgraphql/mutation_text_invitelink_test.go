@@ -59,7 +59,7 @@ func TestTextInviteLink_OrganizationCode(t *testing.T) {
 		Channel: excomms.ChannelType_SMS,
 		Message: &excomms.SendMessageRequest_SMS{
 			SMS: &excomms.SMSMessage{
-				Text:            "Download the Spruce app now and connect with test org: invite.test.com/token [code: token]",
+				Text:            "Download the Spruce app now and connect with test org: https://invite.test.com/token [code: token]",
 				FromPhoneNumber: "+11234567890",
 				ToPhoneNumber:   "+17348465522",
 			},
