@@ -518,7 +518,7 @@ func (s *server) LookupInvite(ctx context.Context, in *invite.LookupInviteReques
 	var err error
 	var inv *models.Invite
 	switch in.LookupKeyType {
-	case invite.LookupInviteRequest_DEPRECATED_TOKEN:
+	case invite.LookupInviteRequest_DEPRECATED_TOKEN, invite.LookupInviteRequest_UNKNOWN:
 		// Do our backwards compatible mapping till we can get rid of this switch
 		token := in.GetToken()
 		if in.InviteToken != "" {
