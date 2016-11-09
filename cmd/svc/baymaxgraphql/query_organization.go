@@ -219,6 +219,11 @@ var organizationType = graphql.NewObject(
 					return lookupEntityProfile(ctx, ram, org.ID)
 				},
 			},
+			"patientInviteURL": &graphql.Field{
+				Type:              graphql.String,
+				Resolve:           func(p graphql.ResolveParams) (interface{}, error) { return "", nil },
+				DeprecationReason: "DEPRECATED due to practice links becoming plural per org. Use `practiceLinks` when it becomes available",
+			},
 			"partnerIntegrations": &graphql.Field{
 				Type: graphql.NewList(partnerIntegrationType),
 				Resolve: apiaccess.Authenticated(

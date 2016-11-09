@@ -57,7 +57,9 @@ func transformScheduledMessagesToResponse(ctx context.Context, ms []*threading.S
 
 func transformScheduledMessageToResponse(ctx context.Context, m *threading.ScheduledMessage, organizationID, webDomain, mediaAPIDomain string) (*models.ScheduledMessage, error) {
 	ti, err := transformThreadItemToResponse(&threading.ThreadItem{
-		ID:                m.ID,
+		// Munge the ID of the thread item to not duplicate with the scheduled message but also to indicate it's a thread item
+		// This is to prevent relay from getting confused
+		ID:                m.ID + "_ti",
 		CreatedTimestamp:  m.Created,
 		ModifiedTimestamp: m.Modified,
 		ActorEntityID:     m.ActorEntityID,
@@ -70,6 +72,8 @@ func transformScheduledMessageToResponse(ctx context.Context, m *threading.Sched
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
+	// Mark the thread item timestamp to be the scheduled for time of the scheduled message
+	ti.Timestamp = m.ScheduledFor
 	return &models.ScheduledMessage{
 		ID:           m.ID,
 		ScheduledFor: m.ScheduledFor,
