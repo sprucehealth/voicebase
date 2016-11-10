@@ -201,7 +201,7 @@ func scheduleMessage(ctx context.Context, svc *service, ram raccess.ResourceAcce
 	}
 	msg := &threading.MessagePost{
 		Internal: in.Message.Internal,
-		Summary:  plainText,
+		Summary:  summaryForEntityMessage(ent, plainText),
 	}
 	msg.Text, err = textBML.Format()
 	if err != nil {

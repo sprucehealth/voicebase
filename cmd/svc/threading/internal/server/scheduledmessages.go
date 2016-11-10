@@ -50,6 +50,7 @@ func (s *threadsServer) CreateScheduledMessage(ctx context.Context, in *threadin
 		return nil, errors.Trace(err)
 	}
 	threadItem.ID = models.EmptyThreadItemID()
+	threadItem.ThreadID = threadID
 	data := threadItem.Data.(*models.Message)
 
 	var rScheduledMessage *threading.ScheduledMessage

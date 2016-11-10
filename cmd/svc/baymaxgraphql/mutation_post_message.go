@@ -18,7 +18,6 @@ import (
 	"github.com/sprucehealth/backend/libs/caremessenger/deeplink"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/gqldecode"
-	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/layout"
@@ -351,19 +350,7 @@ var postMessageMutation = &graphql.Field{
 			// Shouldn't fail here since the parsing should have done validation
 			return nil, errors.InternalError(ctx, err)
 		}
-		fromName := ent.Info.DisplayName
-		if fromName == "" && len(ent.Contacts) != 0 {
-			switch c := ent.Contacts[0]; c.ContactType {
-			case directory.ContactType_PHONE:
-				fromName, err = phone.Format(c.Value, phone.Pretty)
-				if err != nil {
-					fromName = c.Value
-				}
-			default:
-				fromName = c.Value
-			}
-		}
-		summary := fmt.Sprintf("%s: %s", fromName, plainText)
+		summary := summaryForEntityMessage(ent, plainText)
 
 		attachments, carePlans, err := processIncomingAttachments(ctx, ram, svc, ent, thr.OrganizationID, in.Msg.Attachments, thr)
 		if e, ok := err.(errInvalidAttachment); ok {

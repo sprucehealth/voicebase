@@ -65,6 +65,7 @@ func transformScheduledMessageToResponse(ctx context.Context, m *threading.Sched
 		ActorEntityID:     m.ActorEntityID,
 		Internal:          m.Internal,
 		OrganizationID:    organizationID,
+		ThreadID:          m.ThreadID,
 		Item: &threading.ThreadItem_Message{
 			Message: m.GetMessage(),
 		},

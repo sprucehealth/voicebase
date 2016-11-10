@@ -245,3 +245,20 @@ func authPlatform(devicePlatform device.Platform) auth.Platform {
 
 	return platform
 }
+
+func summaryForEntityMessage(ent *directory.Entity, plainText string) string {
+	var err error
+	fromName := ent.Info.DisplayName
+	if fromName == "" && len(ent.Contacts) != 0 {
+		switch c := ent.Contacts[0]; c.ContactType {
+		case directory.ContactType_PHONE:
+			fromName, err = phone.Format(c.Value, phone.Pretty)
+			if err != nil {
+				fromName = c.Value
+			}
+		default:
+			fromName = c.Value
+		}
+	}
+	return fmt.Sprintf("%s: %s", fromName, plainText)
+}
