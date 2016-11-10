@@ -484,7 +484,6 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, webDomain, 
 					OriginalTitle: a.UserTitle,
 					URL:           a.URL,
 				}
-				m2.Attachments = append(m2.Attachments, att)
 
 				switch data := a.Data.(type) {
 				case *threading.Attachment_Audio:
@@ -621,7 +620,6 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, webDomain, 
 							// shouldn't fail
 							return nil, errors.Trace(err)
 						}
-
 					} else {
 						golog.Warningf("Dropping attachment because mimetype %s for thread item %s is not supported", d.Mimetype, item.ID)
 					}
@@ -629,6 +627,9 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, webDomain, 
 				default:
 					return nil, errors.Errorf("unknown attachment type %T", a.Data)
 				}
+
+				// only attach after we know that attachment is valid and supported
+				m2.Attachments = append(m2.Attachments, att)
 			}
 			for _, dc := range m.Destinations {
 				e, err := transformEndpointToModel(dc)
