@@ -31,9 +31,9 @@ node {
 			def pushDockerImageOnly = false
 			if (gitBranch == "master") {
 				echo "BUILDING DOCKER IMAGE AND DEPLOYING"
-				buildDockerImageAndDeploy = true
+				pushDockerImageAndDeploy = true
 			} else if (gitBranch == "production") {
-				buildDockerImageOnly = true
+				pushDockerImageOnly = true
 				echo "BUILDING DOCKER IMAGE ONLY"
 			} else {
 				echo "NOT DEPLOYING"
