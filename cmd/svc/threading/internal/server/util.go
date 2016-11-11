@@ -18,11 +18,11 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
-func processMessagePost(msg *threading.MessagePost) ([]*models.Reference, error) {
+func processMessagePost(msg *threading.MessagePost, allowEmptySummary bool) ([]*models.Reference, error) {
 	if msg == nil {
 		return nil, grpcErrorf(codes.InvalidArgument, "Message is required")
 	}
-	if msg.Summary == "" {
+	if !allowEmptySummary && msg.Summary == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "Summary is required")
 	}
 	msg.Summary = textutil.TruncateUTF8(msg.Summary, maxSummaryLength)
@@ -294,7 +294,7 @@ func claimAttachments(ctx context.Context, mediaClient media.MediaClient, paymen
 }
 
 func createPostMessageRequest(ctx context.Context, threadID models.ThreadID, fromEntityID string, postMessage *threading.MessagePost) (*dal.PostMessageRequest, error) {
-	textRefs, err := processMessagePost(postMessage)
+	textRefs, err := processMessagePost(postMessage, false)
 	if err != nil {
 		return nil, err
 	}

@@ -19,7 +19,7 @@ func (s *threadsServer) CreateSavedMessage(ctx context.Context, in *threading.Cr
 		return nil, grpcErrorf(codes.InvalidArgument, "CreatorEntityID is required")
 	}
 	msg := in.GetMessage()
-	textRefs, err := processMessagePost(msg)
+	textRefs, err := processMessagePost(msg, true)
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +143,7 @@ func (s *threadsServer) UpdateSavedMessage(ctx context.Context, in *threading.Up
 		update.Title = &in.Title
 	}
 	if msg := in.GetMessage(); msg != nil {
-		textRefs, err := processMessagePost(msg)
+		textRefs, err := processMessagePost(msg, true)
 		if err != nil {
 			return nil, err
 		}

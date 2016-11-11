@@ -293,7 +293,7 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 		return nil, grpcErrorf(codes.InvalidArgument, "Invalid thread origin '%s'", in.Origin)
 	}
 
-	textRefs, err := processMessagePost(in.Message)
+	textRefs, err := processMessagePost(in.Message, false)
 	if err != nil {
 		return nil, err
 	}
