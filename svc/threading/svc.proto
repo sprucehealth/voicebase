@@ -41,6 +41,7 @@ message Thread {
 	string id = 1 [(gogoproto.customname) = "ID"];
 	string organization_id = 2 [(gogoproto.customname) = "OrganizationID"];
 	string primary_entity_id = 3 [(gogoproto.customname) = "PrimaryEntityID"];
+	repeated Tag tags = 4;
 	uint64 last_message_timestamp = 5;
 	string last_message_summary = 6;
 	bool unread = 7;
@@ -168,6 +169,7 @@ message Expr {
 		string token = 2;
 		Flag flag = 3;
 		ThreadType thread_type = 4;
+		string tag = 5;
 	}
 }
 
@@ -360,7 +362,7 @@ message DeleteSavedQueriesResponse {
 }
 
 message SavedQueryTemplatesRequest {
-	string entity_id = 1 [(gogoproto.customname) = "EntityID"];	
+	string entity_id = 1 [(gogoproto.customname) = "EntityID"];
 }
 
 message SavedQueryTemplatesResponse {
@@ -446,6 +448,8 @@ message UpdateThreadRequest {
 	string system_title = 6;
 	repeated string add_follower_entity_ids = 7 [(gogoproto.customname) = "AddFollowerEntityIDs"];
 	repeated string remove_follower_entity_ids = 8 [(gogoproto.customname) = "RemoveFollowerEntityIDs"];
+	repeated string add_tags = 9;
+	repeated string remove_tags = 10;
 }
 
 message UpdateThreadResponse {
@@ -456,6 +460,7 @@ message CreateThreadRequest {
 	string uuid = 1 [(gogoproto.customname) = "UUID"];
 	string organization_id = 2 [(gogoproto.customname) = "OrganizationID"];
 	string from_entity_id = 3 [(gogoproto.customname) = "FromEntityID"];
+	repeated string tags = 4;
 	MessagePost message = 11;
 	string user_title = 12;
 	ThreadType type = 13;
@@ -463,15 +468,6 @@ message CreateThreadRequest {
 	string system_title = 15;
 	ThreadOrigin origin = 16;
 	bool dont_notify = 17;
-
-	// The following deprecated fields have been replaced by the message field
-	Endpoint deprecated_source = 4;
-	repeated Endpoint deprecated_destinations = 5;
-	bool deprecated_internal = 6;
-	string deprecated_text = 7;
-	repeated Attachment deprecated_attachments = 8;
-	string deprecated_message_title = 9;
-	string deprecated_summary = 10;
 }
 
 message CreateThreadResponse {
@@ -486,6 +482,7 @@ message CreateEmptyThreadRequest {
 	string from_entity_id = 3 [(gogoproto.customname) = "FromEntityID"];
 	string primary_entity_id = 5 [(gogoproto.customname) = "PrimaryEntityID"];
 	string summary = 6;
+	repeated string tags = 7;
 	string user_title = 8;
 	ThreadType type = 9;
 	repeated string member_entity_ids = 10 [(gogoproto.customname) = "MemberEntityIDs"];
@@ -746,6 +743,20 @@ message UpdateMessageRequest {
 message UpdateMessageResponse {
 }
 
+message TagsRequest {
+	string organization_id = 1 [(gogoproto.customname) = "OrganizationID"];
+	string prefix = 2;
+}
+
+message TagsResponse {
+	repeated Tag tags = 1;
+}
+
+message Tag {
+	string name = 1;
+	bool hidden = 2;
+}
+
 service Threads {
 	// CreateEmptyThread creates a new thread with no messages
 	rpc CreateEmptyThread(CreateEmptyThreadRequest) returns (CreateEmptyThreadResponse);
@@ -791,6 +802,8 @@ service Threads {
 	rpc SavedQueries(SavedQueriesRequest) returns (SavedQueriesResponse);
 	// SavedQueryTemplates returns the list of saved query templates for an entity
 	rpc SavedQueryTemplates(SavedQueryTemplatesRequest) returns (SavedQueryTemplatesResponse);
+	// Tags returns a list of tags for an organization
+	rpc Tags(TagsRequest) returns (TagsResponse);
 	// DEPRECATED: Thread lookups and returns a single thread by ID
 	rpc Thread(ThreadRequest) returns (ThreadResponse);
 	// Theads looks up list of threads.

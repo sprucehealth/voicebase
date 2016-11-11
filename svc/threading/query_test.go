@@ -13,6 +13,7 @@ func TestQueries(t *testing.T) {
 	}{
 		{s: "", q: &Query{Expressions: []*Expr{}}},
 		{s: "foo", q: &Query{Expressions: []*Expr{{Value: &Expr_Token{Token: "foo"}}}}},
+		{s: "tag:bar", q: &Query{Expressions: []*Expr{{Value: &Expr_Tag{Tag: "bar"}}}}},
 		{s: "is:unread", q: &Query{Expressions: []*Expr{{Value: &Expr_Flag_{Flag: EXPR_FLAG_UNREAD}}}}},
 		{s: "is:read", q: &Query{Expressions: []*Expr{{Not: true, Value: &Expr_Flag_{Flag: EXPR_FLAG_UNREAD}}}}},
 		{s: "is:following", q: &Query{Expressions: []*Expr{{Value: &Expr_Flag_{Flag: EXPR_FLAG_FOLLOWING}}}}},

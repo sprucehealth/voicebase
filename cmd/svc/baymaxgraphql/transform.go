@@ -194,6 +194,12 @@ func transformThreadToResponse(ctx context.Context, ram raccess.ResourceAccessor
 		TypeIndicator:              threadTypeIndicator(t, viewingAccount),
 		Title:                      threadTitle(ctx, ram, t, viewingAccount),
 	}
+	th.Tags = make([]string, 0, len(t.Tags))
+	for _, t := range t.Tags {
+		if !t.Hidden {
+			th.Tags = append(th.Tags, t.Name)
+		}
+	}
 	if th.Title == "" {
 		th.Title = t.SystemTitle
 	}

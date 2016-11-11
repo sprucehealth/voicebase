@@ -8,6 +8,20 @@ import (
 	"github.com/sprucehealth/backend/svc/threading"
 )
 
+func transformTagsToResponse(tags []models.Tag) []*threading.Tag {
+	if len(tags) == 0 {
+		return nil
+	}
+	rtags := make([]*threading.Tag, len(tags))
+	for i, t := range tags {
+		rtags[i] = &threading.Tag{
+			Hidden: t.Hidden,
+			Name:   t.Name,
+		}
+	}
+	return rtags
+}
+
 func transformQueryFromRequest(q *threading.Query) (*models.Query, error) {
 	mq := &models.Query{
 		Expressions: make([]*models.Expr, 0, len(q.Expressions)),
@@ -37,6 +51,8 @@ func transformQueryFromRequest(q *threading.Query) (*models.Query, error) {
 			default:
 				return nil, errors.Errorf("unknown query thread type %s", v.ThreadType)
 			}
+		case *threading.Expr_Tag:
+			me.Value = &models.Expr_Tag{Tag: v.Tag}
 		case *threading.Expr_Token:
 			me.Value = &models.Expr_Token{Token: v.Token}
 		default:
@@ -76,6 +92,8 @@ func transformQueryToResponse(q *models.Query) (*threading.Query, error) {
 			default:
 				return nil, errors.Errorf("unknown query thread type %s", v.ThreadType)
 			}
+		case *models.Expr_Tag:
+			me.Value = &threading.Expr_Tag{Tag: v.Tag}
 		case *models.Expr_Token:
 			me.Value = &threading.Expr_Token{Token: v.Token}
 		default:
@@ -127,6 +145,7 @@ func transformThreadToResponse(thread *models.Thread, forExternal bool) (*thread
 		MessageCount:         int32(thread.MessageCount),
 		SystemTitle:          thread.SystemTitle,
 		UserTitle:            thread.UserTitle,
+		Tags:                 transformTagsToResponse(thread.Tags),
 	}
 	var err error
 	t.Type, err = transformThreadTypeToResponse(thread.Type)

@@ -466,6 +466,30 @@ func (dl *DAL) ScheduledMessagesForThread(ctx context.Context, threadID models.T
 	return rets[0].([]*models.ScheduledMessage), mock.SafeError(rets[1])
 }
 
+func (dl *DAL) AddThreadTags(ctx context.Context, orgID string, threadID models.ThreadID, tags []string) error {
+	rets := dl.Expector.Record(orgID, threadID, tags)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[0])
+}
+
+func (dl *DAL) RemoveThreadTags(ctx context.Context, orgID string, threadID models.ThreadID, tags []string) error {
+	rets := dl.Expector.Record(orgID, threadID, tags)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[0])
+}
+
+func (dl *DAL) TagsForOrg(ctx context.Context, orgID, prefix string) ([]models.Tag, error) {
+	rets := dl.Expector.Record(orgID, prefix)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].([]models.Tag), mock.SafeError(rets[1])
+}
+
 func (dl *DAL) UpdateMessage(ctx context.Context, threadID models.ThreadID, itemID models.ThreadItemID, req *dal.PostMessageRequest) error {
 	rets := dl.Expector.Record(threadID, itemID, req)
 	if len(rets) == 0 {

@@ -38,7 +38,7 @@
 		{
 			"env":
 			{
-				"GOPATH": "$HOME/workspace/spruce/backend",
+				"GOPATH": "$HOME/go",
 				"PATH": "$GOPATH/bin:/usr/local/bin:$PATH",
 				"GO15VENDOREXPERIMENT": "1"
 			},
@@ -51,8 +51,8 @@
 		{
 			"env":
 			{
-				"GOPATH": "$HOME/workspace/spruce/backend",
-				"PATH": "$HOME/workspace/spruce/backend/bin:$PATH",
+				"GOPATH": "$HOME/go",
+				"PATH": "$HOME/go/bin:$PATH",
 				"GO15VENDOREXPERIMENT": "1"
 			}
 		}

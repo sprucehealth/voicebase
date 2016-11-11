@@ -161,6 +161,9 @@ func (s *threadsServer) CreateEmptyThread(ctx context.Context, in *threading.Cre
 	if in.PrimaryEntityID == "" && in.Type != threading.THREAD_TYPE_TEAM && in.Type != threading.THREAD_TYPE_SECURE_EXTERNAL {
 		return nil, grpcErrorf(codes.InvalidArgument, "PrimaryEntityID is required for non app only threads")
 	}
+	if t, ok := validateTags(in.Tags); !ok {
+		return nil, grpcErrorf(codes.InvalidArgument, "Tag %q is invalid", t)
+	}
 	if in.Summary == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "Summary is required")
 	}
@@ -221,6 +224,11 @@ func (s *threadsServer) CreateEmptyThread(ctx context.Context, in *threading.Cre
 		if err := dl.AddThreadMembers(ctx, threadID, memberEntityIDs); err != nil {
 			return errors.Trace(err)
 		}
+		if len(in.Tags) != 0 {
+			if err := dl.AddThreadTags(ctx, in.OrganizationID, threadID, in.Tags); err != nil {
+				return errors.Trace(err)
+			}
+		}
 		if in.FromEntityID != "" {
 			if err := dl.UpdateThreadEntity(ctx, threadID, in.FromEntityID, nil); err != nil {
 				return errors.Trace(err)
@@ -263,11 +271,17 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 	if in.FromEntityID == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "FromEntityID is required")
 	}
+	if in.Message == nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "Message is required")
+	}
 	if in.Type == threading.THREAD_TYPE_EXTERNAL && in.SystemTitle == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "SystemTitle is required")
 	}
 	if id, ok := validateEntityIDs(in.MemberEntityIDs); !ok {
 		return nil, grpcErrorf(codes.InvalidArgument, "Invalid entity ID %s in members list", id)
+	}
+	if t, ok := validateTags(in.Tags); !ok {
+		return nil, grpcErrorf(codes.InvalidArgument, "Tag %q is invalid", t)
 	}
 
 	tt, err := transformThreadTypeFromRequest(in.Type)
@@ -279,16 +293,6 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 		return nil, grpcErrorf(codes.InvalidArgument, "Invalid thread origin '%s'", in.Origin)
 	}
 
-	if in.Message == nil {
-		in.Message = &threading.MessagePost{
-			Summary:      in.DeprecatedSummary,
-			Title:        in.DeprecatedMessageTitle,
-			Attachments:  in.DeprecatedAttachments,
-			Source:       in.DeprecatedSource,
-			Destinations: in.DeprecatedDestinations,
-			Internal:     in.DeprecatedInternal,
-		}
-	}
 	textRefs, err := processMessagePost(in.Message)
 	if err != nil {
 		return nil, err
@@ -333,6 +337,11 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 		}
 		if err := dl.UpdateThreadEntity(ctx, threadID, in.FromEntityID, nil); err != nil {
 			return errors.Trace(err)
+		}
+		if len(in.Tags) != 0 {
+			if err := dl.AddThreadTags(ctx, in.OrganizationID, threadID, in.Tags); err != nil {
+				return errors.Trace(err)
+			}
 		}
 
 		req := &dal.PostMessageRequest{
@@ -1673,22 +1682,39 @@ func (s *threadsServer) UpdateSavedQuery(ctx context.Context, in *threading.Upda
 	}, nil
 }
 
+func (s *threadsServer) Tags(ctx context.Context, in *threading.TagsRequest) (*threading.TagsResponse, error) {
+	if in.OrganizationID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "OrganizationID required")
+	}
+	tags, err := s.dal.TagsForOrg(ctx, in.OrganizationID, in.Prefix)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return &threading.TagsResponse{Tags: transformTagsToResponse(tags)}, nil
+}
+
 // UpdateThread update thread members and info
 func (s *threadsServer) UpdateThread(ctx context.Context, in *threading.UpdateThreadRequest) (*threading.UpdateThreadResponse, error) {
 	if in.ActorEntityID == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "ActorEntityID required")
 	}
 	if id, ok := validateEntityIDs(in.AddMemberEntityIDs); !ok {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid entity ID %s when adding members", id)
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid entity ID %q when adding members", id)
 	}
 	if id, ok := validateEntityIDs(in.RemoveMemberEntityIDs); !ok {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid entity ID %s when removing members", id)
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid entity ID %q when removing members", id)
 	}
 	if id, ok := validateEntityIDs(in.AddFollowerEntityIDs); !ok {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid entity ID %s when adding followers", id)
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid entity ID %q when adding followers", id)
 	}
 	if id, ok := validateEntityIDs(in.RemoveFollowerEntityIDs); !ok {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid entity ID %s when removing followers", id)
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid entity ID %q when removing followers", id)
+	}
+	if tag, ok := validateTags(in.AddTags); !ok {
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid tag %q when adding tags", tag)
+	}
+	if tag, ok := validateTags(in.RemoveTags); !ok {
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid tag %q when removing tags", tag)
 	}
 
 	tid, err := models.ParseThreadID(in.ThreadID)
@@ -1703,6 +1729,9 @@ func (s *threadsServer) UpdateThread(ctx context.Context, in *threading.UpdateTh
 		return nil, grpcErrorf(codes.NotFound, "Thread %s not found", tid)
 	}
 	thread := threads[0]
+
+	// TODO: for now assume the thread exists only in a single org
+	orgID := thread.OrganizationID
 
 	// Verify authorization by checking actor is part of the memberslist
 	// The acting entity can be the organization itself in which case it's allowed to modify any thread in the organization.
@@ -1803,6 +1832,16 @@ func (s *threadsServer) UpdateThread(ctx context.Context, in *threading.UpdateTh
 		}
 		if len(in.RemoveFollowerEntityIDs) != 0 {
 			if err := dl.RemoveThreadFollowers(ctx, thread.ID, in.RemoveFollowerEntityIDs); err != nil {
+				return errors.Trace(err)
+			}
+		}
+		if len(in.AddTags) != 0 {
+			if err := dl.AddThreadTags(ctx, orgID, thread.ID, in.AddTags); err != nil {
+				return errors.Trace(err)
+			}
+		}
+		if len(in.RemoveTags) != 0 {
+			if err := dl.RemoveThreadTags(ctx, orgID, thread.ID, in.RemoveTags); err != nil {
 				return errors.Trace(err)
 			}
 		}

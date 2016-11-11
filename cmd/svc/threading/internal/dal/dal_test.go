@@ -116,6 +116,66 @@ func TestTransact(t *testing.T) {
 	})
 }
 
+func TestTags(t *testing.T) {
+	dt := testsql.Setup(t, schemaGlob)
+	defer dt.Cleanup(t)
+
+	dal := New(dt.DB, clock.New())
+	ctx := context.Background()
+
+	tid1, err := dal.CreateThread(ctx, &models.Thread{
+		OrganizationID:             "org",
+		Type:                       models.ThreadTypeExternal,
+		LastMessageSummary:         "summary",
+		LastMessageTimestamp:       time.Unix(10e8, 0),
+		LastExternalMessageSummary: "extsummary",
+	})
+	test.OK(t, err)
+
+	test.OK(t, dal.AddThreadTags(ctx, "org", tid1, []string{"foo", "bar"}))
+
+	threads, err := dal.Threads(ctx, []models.ThreadID{tid1})
+	test.OK(t, err)
+	test.Equals(t, 1, len(threads))
+	test.Equals(t, []models.Tag{{Name: "bar"}, {Name: "foo"}}, threads[0].Tags)
+
+	// Add a duplicate tag
+
+	test.OK(t, dal.AddThreadTags(ctx, "org", tid1, []string{"foo"}))
+
+	threads, err = dal.Threads(ctx, []models.ThreadID{tid1})
+	test.OK(t, err)
+	test.Equals(t, 1, len(threads))
+	test.Equals(t, []models.Tag{{Name: "bar"}, {Name: "foo"}}, threads[0].Tags)
+
+	test.OK(t, dal.RemoveThreadTags(ctx, "org", tid1, []string{"bar"}))
+
+	threads, err = dal.Threads(ctx, []models.ThreadID{tid1})
+	test.OK(t, err)
+	test.Equals(t, 1, len(threads))
+	test.Equals(t, []models.Tag{{Name: "foo"}}, threads[0].Tags)
+
+	// Removing non-existant tag is a no-op
+
+	test.OK(t, dal.RemoveThreadTags(ctx, "org", tid1, []string{"bar"}))
+
+	threads, err = dal.Threads(ctx, []models.ThreadID{tid1})
+	test.OK(t, err)
+	test.Equals(t, 1, len(threads))
+	test.Equals(t, []models.Tag{{Name: "foo"}}, threads[0].Tags)
+
+	test.OK(t, dal.RemoveThreadTags(ctx, "org", tid1, []string{"foo"}))
+
+	threads, err = dal.Threads(ctx, []models.ThreadID{tid1})
+	test.OK(t, err)
+	test.Equals(t, 1, len(threads))
+	test.Equals(t, ([]models.Tag)(nil), threads[0].Tags)
+
+	tags, err := dal.TagsForOrg(ctx, "org", "")
+	test.OK(t, err)
+	test.Equals(t, []models.Tag{{Name: "bar"}, {Name: "foo"}}, tags)
+}
+
 func TestIterateThreads(t *testing.T) {
 	dt := testsql.Setup(t, schemaGlob)
 	defer dt.Cleanup(t)
@@ -223,6 +283,7 @@ func TestIterateThreadsQuery(t *testing.T) {
 	})
 	test.OK(t, err)
 	test.OK(t, dal.AddThreadMembers(ctx, tid1, []string{"org"}))
+	test.OK(t, dal.AddThreadTags(ctx, "org", tid1, []string{"thistag"}))
 	// Create team thread
 	tid2, err := dal.CreateThread(ctx, &models.Thread{
 		OrganizationID:             "org",
@@ -281,6 +342,12 @@ func TestIterateThreadsQuery(t *testing.T) {
 				Expressions: []*models.Expr{{Value: &models.Expr_Token{Token: "OTHER"}}},
 			},
 			ids: []models.ThreadID{tid2, tid1},
+		},
+		"tag": {
+			query: &models.Query{
+				Expressions: []*models.Expr{{Value: &models.Expr_Tag{Tag: "thistag"}}},
+			},
+			ids: []models.ThreadID{tid1},
 		},
 		"type-patient": {
 			query: &models.Query{

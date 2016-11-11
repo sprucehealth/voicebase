@@ -40,6 +40,15 @@ func processMessagePost(msg *threading.MessagePost) ([]*models.Reference, error)
 	return textRefs, nil
 }
 
+func validateTags(tags []string) (string, bool) {
+	for _, t := range tags {
+		if !threading.ValidateTag(t, true) {
+			return t, false
+		}
+	}
+	return "", true
+}
+
 // validateEntityIDs makes sure a list of IDs are valid entity IDs. If one is not then
 // it returns the bad id and false. Otherwise it returns an emptry string anf true.
 func validateEntityIDs(ids []string) (string, bool) {
@@ -106,6 +115,17 @@ func threadMatchesQuery(q *models.Query, t *models.Thread, te *models.ThreadEnti
 
 			default:
 				return false, errors.Errorf("unknown expression thread type %s", v.ThreadType)
+			}
+		case *models.Expr_Tag:
+			hasTag := false
+			for _, tag := range t.Tags {
+				if strings.EqualFold(v.Tag, tag.Name) {
+					hasTag = true
+					break
+				}
+			}
+			if hasTag == e.Not {
+				return false, nil
 			}
 		case *models.Expr_Token:
 			if strings.Contains(fullText, strings.ToLower(v.Token)) == e.Not {

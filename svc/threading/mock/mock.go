@@ -291,6 +291,15 @@ func (c *Client) ScheduledMessages(ctx context.Context, in *threading.ScheduledM
 	return rets[0].(*threading.ScheduledMessagesResponse), mock.SafeError(rets[1])
 }
 
+// Tags is a mock
+func (c *Client) Tags(ctx context.Context, in *threading.TagsRequest, opts ...grpc.CallOption) (*threading.TagsResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*threading.TagsResponse), mock.SafeError(rets[1])
+}
+
 // CreateScheduledMessage is a mock
 func (c *Client) CreateScheduledMessage(ctx context.Context, in *threading.CreateScheduledMessageRequest, opts ...grpc.CallOption) (*threading.CreateScheduledMessageResponse, error) {
 	rets := c.Expector.Record(in)

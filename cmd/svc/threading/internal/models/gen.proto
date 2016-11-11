@@ -142,5 +142,6 @@ message Expr {
 		string token = 2;
 		Flag flag = 3;
 		ThreadType thread_type = 4;
+		string tag = 5;
 	}
 }

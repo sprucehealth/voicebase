@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
@@ -22,12 +24,26 @@ var updateThreadInputType = graphql.NewInputObject(graphql.InputObjectConfig{
 		"removeMemberEntityIDs":   &graphql.InputObjectFieldConfig{Type: graphql.NewList(graphql.NewNonNull(graphql.ID))},
 		"addFollowerEntityIDs":    &graphql.InputObjectFieldConfig{Type: graphql.NewList(graphql.NewNonNull(graphql.ID))},
 		"removeFollowerEntityIDs": &graphql.InputObjectFieldConfig{Type: graphql.NewList(graphql.NewNonNull(graphql.ID))},
+		"addTags":                 &graphql.InputObjectFieldConfig{Type: graphql.NewList(graphql.NewNonNull(graphql.String))},
+		"removeTags":              &graphql.InputObjectFieldConfig{Type: graphql.NewList(graphql.NewNonNull(graphql.String))},
 		"title":                   &graphql.InputObjectFieldConfig{Type: graphql.String},
 	},
 })
 
-// JANK: can't have an empty enum and we want this field to always exist so make it a string until it's needed
-var updateThreadErrorCodeEnum = graphql.String
+const (
+	updateThreadErrorCodeInvalidTag = "INVALID_TAG"
+)
+
+var updateThreadErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
+	Name:        "UpdateThreadErrorCode",
+	Description: "Result of updateThread mutation",
+	Values: graphql.EnumValueConfigMap{
+		updateThreadErrorCodeInvalidTag: &graphql.EnumValueConfig{
+			Value:       updateThreadErrorCodeInvalidTag,
+			Description: "A provided tag is invalid",
+		},
+	},
+})
 
 var updateThreadOutputType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "UpdateThreadPayload",
@@ -62,6 +78,8 @@ type updateThreadInput struct {
 	RemoveMemberEntityIDs   []string `gql:"removeMemberEntityIDs"`
 	AddFollowerEntityIDs    []string `gql:"addFollowerEntityIDs"`
 	RemoveFollowerEntityIDs []string `gql:"removeFollowerEntityIDs"`
+	AddTags                 []string `gql:"addTags"`
+	RemoveTags              []string `gql:"removeTags"`
 }
 
 type updateThreadOutput struct {
@@ -111,6 +129,16 @@ var updateThreadMutation = &graphql.Field{
 				return nil, errors.New("Cannot modify title on non-team threads")
 			}
 		}
+		for _, t := range append(in.AddTags, in.RemoveTags...) {
+			if !threading.ValidateTag(t, false) {
+				return &updateThreadOutput{
+					ClientMutationID: in.ClientMutationID,
+					Success:          false,
+					ErrorCode:        updateThreadErrorCodeInvalidTag,
+					ErrorMessage:     fmt.Sprintf("%q is not a valid tag. Tags must only contain characters, numbers, underscores, and dashes.", t),
+				}, nil
+			}
+		}
 
 		// TODO: currently assuming that the person updating the thread is in the same org as the thread.
 		//       This is safe for now, but possibly may not be true in the future.
@@ -140,6 +168,8 @@ var updateThreadMutation = &graphql.Field{
 			RemoveMemberEntityIDs:   in.RemoveMemberEntityIDs,
 			AddFollowerEntityIDs:    in.AddFollowerEntityIDs,
 			RemoveFollowerEntityIDs: in.RemoveFollowerEntityIDs,
+			AddTags:                 in.AddTags,
+			RemoveTags:              in.RemoveTags,
 		})
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)

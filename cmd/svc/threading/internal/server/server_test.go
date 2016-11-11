@@ -2794,6 +2794,9 @@ func TestUpdateThread(t *testing.T) {
 	dl.Expect(mock.NewExpectation(dl.AddThreadMembers, tID, []string{"entity_4"}).WithReturns(nil))
 	dl.Expect(mock.NewExpectation(dl.RemoveThreadMembers, tID, []string{"entity_2"}).WithReturns(nil))
 
+	dl.Expect(mock.NewExpectation(dl.AddThreadTags, "entity_org", tID, []string{"foo", "$hidden"}))
+	dl.Expect(mock.NewExpectation(dl.RemoveThreadTags, "entity_org", tID, []string{"bar"}))
+
 	dl.Expect(mock.NewExpectation(dl.UpdateThread, tID, &dal.ThreadUpdate{
 		UserTitle:   ptr.String("NewUserTitle"),
 		SystemTitle: ptr.String("name1, name4"),
@@ -2867,6 +2870,8 @@ func TestUpdateThread(t *testing.T) {
 		UserTitle:             "NewUserTitle",
 		AddMemberEntityIDs:    []string{"entity_4"},
 		RemoveMemberEntityIDs: []string{"entity_2"},
+		AddTags:               []string{"foo", "$hidden"},
+		RemoveTags:            []string{"bar"},
 	})
 	test.OK(t, err)
 	test.Equals(t, &threading.UpdateThreadResponse{

@@ -193,6 +193,7 @@ func TestNodeQuery(t *testing.T) {
 		Unread:          true,
 		UnreadReference: true,
 		TypeIndicator:   "NONE",
+		Tags:            []string{},
 	}, res)
 	mock.FinishAll(ra)
 

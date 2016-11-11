@@ -382,7 +382,19 @@ type Thread struct {
 	Type                         ThreadType
 	Origin                       ThreadOrigin
 	Deleted                      bool
+	Tags                         []Tag
 }
+
+type Tag struct {
+	Name   string
+	Hidden bool
+}
+
+type TagsByName []Tag
+
+func (ts TagsByName) Len() int           { return len(ts) }
+func (ts TagsByName) Swap(a, b int)      { ts[a], ts[b] = ts[b], ts[a] }
+func (ts TagsByName) Less(a, b int) bool { return ts[a].Name < ts[b].Name }
 
 // ThreadIDs is a convenience method for retrieving ID's from a list
 // Note: This could be made more generic using reflection but don't want the performance cost

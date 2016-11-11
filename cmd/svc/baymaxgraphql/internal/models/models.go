@@ -252,10 +252,11 @@ type Thread struct {
 	AllowVideoAttachment       bool     `json:"allowVideoAttachments"`
 	AllowedAttachmentMIMETypes []string `json:"allowedAttachmentMIMETypes"`
 	LastPrimaryEntityEndpoints []*Endpoint
-	EmptyStateTextMarkup       string `json:"emptyStateTextMarkup,omitempty"`
-	MessageCount               int    `json:"messageCount"`
-	Type                       string `json:"-"`
-	TypeIndicator              string `json:"typeIndicator"`
+	EmptyStateTextMarkup       string   `json:"emptyStateTextMarkup,omitempty"`
+	MessageCount               int      `json:"messageCount"`
+	Type                       string   `json:"-"`
+	TypeIndicator              string   `json:"typeIndicator"`
+	Tags                       []string `json:"tags"`
 }
 
 type ThreadItem struct {

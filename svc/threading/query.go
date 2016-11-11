@@ -47,6 +47,8 @@ func ParseQuery(qs string) (*Query, error) {
 				case "support":
 					e = &Expr{Value: &Expr_ThreadType_{ThreadType: EXPR_THREAD_TYPE_SUPPORT}}
 				}
+			case "tag":
+				e = &Expr{Value: &Expr_Tag{Tag: value}}
 			}
 		}
 		if e == nil {
@@ -96,6 +98,8 @@ func FormatQuery(q *Query) (string, error) {
 			default:
 				return "", errors.Errorf("unknown expression thread type %s", v.ThreadType)
 			}
+		case *Expr_Tag:
+			parts = append(parts, not+"tag:"+v.Tag)
 		case *Expr_Token:
 			parts = append(parts, not+v.Token)
 		default:

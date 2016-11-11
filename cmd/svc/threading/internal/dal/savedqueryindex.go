@@ -130,7 +130,8 @@ func (d *dal) IterateThreadsInSavedQuery(ctx context.Context, sqID models.SavedQ
 	queryStr := `
 		SELECT t.id, t.organization_id, COALESCE(t.primary_entity_id, ''), t.last_message_timestamp, t.last_external_message_timestamp, t.last_message_summary,
 			t.last_external_message_summary, t.last_primary_entity_endpoints, t.created, t.message_count, t.type, COALESCE(t.system_title, ''), COALESCE(t.user_title, ''), t.origin, t.deleted,
-			viewer.thread_id, viewer.entity_id, viewer.member, viewer.following, viewer.joined, viewer.last_viewed, viewer.last_unread_notify, viewer.last_referenced
+			viewer.thread_id, viewer.entity_id, viewer.member, viewer.following, viewer.joined, viewer.last_viewed, viewer.last_unread_notify, viewer.last_referenced,
+			(SELECT GROUP_CONCAT(tag SEPARATOR ' ') FROM thread_tags INNER JOIN tags ON tags.id = tag_id WHERE thread_tags.thread_id = t.id)
 		FROM saved_query_thread sqt
 		INNER JOIN threads t ON t.id = sqt.thread_id
 		LEFT OUTER JOIN thread_entities viewer ON viewer.thread_id = t.id AND viewer.entity_id = ?

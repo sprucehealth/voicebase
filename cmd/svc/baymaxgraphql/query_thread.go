@@ -262,6 +262,7 @@ var threadType = graphql.NewObject(
 			"lastMessageTimestamp": &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
 			"subtitle":             &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"title":                &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"tags":                 &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(graphql.String))},
 			"unread":               &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"unreadReference":      &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"isDeletable": &graphql.Field{

@@ -56,12 +56,15 @@ func TestUpdateThreadMutation(t *testing.T) {
 		UserTitle:             "newTitle",
 		AddMemberEntityIDs:    []string{"e1", "e2"},
 		RemoveMemberEntityIDs: []string{"e3"},
+		AddTags:               []string{"foo"},
+		RemoveTags:            []string{"bar"},
 	}).WithReturns(&threading.UpdateThreadResponse{
 		Thread: &threading.Thread{
 			ID:          "t_1",
 			Type:        threading.THREAD_TYPE_TEAM,
 			UserTitle:   "newTitle",
 			SystemTitle: "Person1, Person2",
+			Tags:        []*threading.Tag{{Hidden: true, Name: "$bar"}, {Hidden: false, Name: "foo"}},
 		},
 	}, nil))
 
@@ -73,6 +76,8 @@ func TestUpdateThreadMutation(t *testing.T) {
 				title: "newTitle",
 				addMemberEntityIDs: ["e1", "e2"],
 				removeMemberEntityIDs: ["e3"],
+				addTags: ["foo"],
+				removeTags: ["bar"],
 			}) {
 				clientMutationId
 				success
@@ -85,6 +90,7 @@ func TestUpdateThreadMutation(t *testing.T) {
 					allowLeave
 					allowUpdateTitle
 					title
+					tags
 				}
 			}
 		}`, nil)
@@ -101,7 +107,8 @@ func TestUpdateThreadMutation(t *testing.T) {
 					"allowRemoveMembers": true,
 					"allowUpdateTitle": true,
 					"id": "t_1",
-					"title": "newTitle"
+					"title": "newTitle",
+					"tags": ["foo"]
 				}
 			}
 		}}`, res)

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -17,10 +18,16 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/idgen"
 	"github.com/sprucehealth/backend/libs/transactional/tsql"
+	"github.com/sprucehealth/backend/svc/threading"
 )
 
 const (
-	threadColumns     = `t.id, t.organization_id, COALESCE(t.primary_entity_id, ''), t.last_message_timestamp, t.last_external_message_timestamp, t.last_message_summary, t.last_external_message_summary, t.last_primary_entity_endpoints, t.created, t.message_count, t.type, COALESCE(t.system_title, ''), COALESCE(t.user_title, ''), t.origin, t.deleted`
+	threadColumns = `
+        t.id, t.organization_id, COALESCE(t.primary_entity_id, ''), t.last_message_timestamp, t.last_external_message_timestamp,
+        t.last_message_summary, t.last_external_message_summary, t.last_primary_entity_endpoints, t.created, t.message_count,
+        t.type, COALESCE(t.system_title, ''), COALESCE(t.user_title, ''), t.origin, t.deleted,
+        (SELECT GROUP_CONCAT(tag SEPARATOR ' ') FROM thread_tags INNER JOIN tags ON tags.id = tag_id WHERE thread_tags.thread_id = t.id)
+	`
 	threadItemColumns = `ti.id, ti.thread_id, ti.created, ti.modified, ti.actor_entity_id, ti.internal, ti.type, ti.data, ti.deleted`
 )
 
@@ -141,6 +148,7 @@ type SavedQueryUpdate struct {
 type DAL interface {
 	AddThreadFollowers(ctx context.Context, threadID models.ThreadID, followerEntityIDs []string) error
 	AddThreadMembers(ctx context.Context, threadID models.ThreadID, memberEntityIDs []string) error
+	AddThreadTags(ctx context.Context, orgID string, threadID models.ThreadID, tags []string) error
 	CreateSavedQuery(context.Context, *models.SavedQuery) (models.SavedQueryID, error)
 	CreateSetupThreadState(ctx context.Context, threadID models.ThreadID, entityID string) error
 	CreateThread(ctx context.Context, t *models.Thread) (models.ThreadID, error)
@@ -159,11 +167,13 @@ type DAL interface {
 	RecordThreadEvent(ctx context.Context, threadID models.ThreadID, actorEntityID string, event models.ThreadEvent) error
 	RemoveThreadFollowers(ctx context.Context, threadID models.ThreadID, followerEntityIDs []string) error
 	RemoveThreadMembers(ctx context.Context, threadID models.ThreadID, memberEntityIDs []string) error
+	RemoveThreadTags(ctx context.Context, orgID string, threadID models.ThreadID, tags []string) error
 	SavedQuery(ctx context.Context, id models.SavedQueryID) (*models.SavedQuery, error)
 	SavedQueries(ctx context.Context, entityID string) ([]*models.SavedQuery, error)
 	SavedQueryTemplates(ctx context.Context, entityID string) ([]*models.SavedQuery, error)
 	SetupThreadState(ctx context.Context, threadID models.ThreadID, opts ...QueryOption) (*models.SetupThreadState, error)
 	SetupThreadStateForEntity(ctx context.Context, entityID string, opts ...QueryOption) (*models.SetupThreadState, error)
+	TagsForOrg(ctx context.Context, orgID, prefix string) ([]models.Tag, error)
 	Threads(ctx context.Context, ids []models.ThreadID, opts ...QueryOption) ([]*models.Thread, error)
 	ThreadItem(ctx context.Context, id models.ThreadItemID, opts ...QueryOption) (*models.ThreadItem, error)
 	ThreadItemIDsCreatedAfter(ctx context.Context, threadID models.ThreadID, after time.Time) ([]models.ThreadItemID, error)
@@ -509,7 +519,8 @@ func (d *dal) IterateThreads(ctx context.Context, query *models.Query, memberEnt
 	cond = append(cond, "t.deleted = ?")
 	vals = append(vals, false)
 
-	// TODO: This produces what's likely a very inefficient query.
+	var tags []string
+
 	if query != nil {
 		for _, e := range query.Expressions {
 			switch v := e.Value.(type) {
@@ -581,6 +592,8 @@ func (d *dal) IterateThreads(ctx context.Context, query *models.Query, memberEnt
 				default:
 					return nil, errors.Errorf("unknown expression thread type %s", v.ThreadType)
 				}
+			case *models.Expr_Tag:
+				tags = append(tags, v.Tag)
 			case *models.Expr_Token:
 				col := "t.last_message_summary"
 				if forExternal {
@@ -597,6 +610,18 @@ func (d *dal) IterateThreads(ctx context.Context, query *models.Query, memberEnt
 				return nil, errors.Errorf("unknown expression type %T", e.Value)
 			}
 		}
+	}
+	if len(tags) != 0 {
+		cond = append(cond, `(
+			SELECT COUNT(1)
+			FROM thread_tags tt
+			INNER JOIN tags ON tags.id = tt.tag_id AND tags.tag IN (`+dbutil.MySQLArgs(len(tags))+`)
+			WHERE tt.thread_id = t.id
+		) = ?`)
+		for _, t := range tags {
+			vals = append(vals, t)
+		}
+		vals = append(vals, len(tags))
 	}
 
 	// Build query based on iterator in descending order so start = later and end = earlier.
@@ -628,7 +653,8 @@ func (d *dal) IterateThreads(ctx context.Context, query *models.Query, memberEnt
 	queryStr := `
 		SELECT t.id, t.organization_id, COALESCE(t.primary_entity_id, ''), t.last_message_timestamp, t.last_external_message_timestamp, t.last_message_summary,
 			t.last_external_message_summary, t.last_primary_entity_endpoints, t.created, t.message_count, t.type, COALESCE(t.system_title, ''), COALESCE(t.user_title, ''), t.origin, t.deleted,
-			viewer.thread_id, viewer.entity_id, viewer.member, viewer.following, viewer.joined, viewer.last_viewed, viewer.last_unread_notify, viewer.last_referenced
+			viewer.thread_id, viewer.entity_id, viewer.member, viewer.following, viewer.joined, viewer.last_viewed, viewer.last_unread_notify, viewer.last_referenced,
+			(SELECT GROUP_CONCAT(tag SEPARATOR ' ') FROM thread_tags INNER JOIN tags ON tags.id = tag_id WHERE thread_tags.thread_id = t.id)
 		FROM threads t
 		INNER JOIN thread_entities te ON te.thread_id = t.id AND te.member = true AND te.entity_id IN (` + dbutil.MySQLArgs(len(memberEntityIDs)) + `)
 		LEFT OUTER JOIN thread_entities viewer ON viewer.thread_id = t.id AND viewer.entity_id = ?
@@ -974,6 +1000,29 @@ func (d *dal) SavedQueryTemplates(ctx context.Context, entityID string) ([]*mode
 	return sqs, errors.Trace(rows.Err())
 }
 
+func (d *dal) TagsForOrg(ctx context.Context, orgID, prefix string) ([]models.Tag, error) {
+	var rows *sql.Rows
+	var err error
+	if prefix == "" {
+		rows, err = d.db.Query(`SELECT hidden, tag FROM tags WHERE organization_id = ? ORDER BY tag`, orgID)
+	} else {
+		rows, err = d.db.Query(`SELECT hidden, tag FROM tags WHERE organization_id = ? AND tag LIKE ? ORDER BY tag`, orgID, prefix+"%")
+	}
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	defer rows.Close()
+	var tags []models.Tag
+	for rows.Next() {
+		var t models.Tag
+		if err := rows.Scan(&t.Hidden, &t.Name); err != nil {
+			return nil, errors.Trace(err)
+		}
+		tags = append(tags, t)
+	}
+	return tags, errors.Trace(rows.Err())
+}
+
 func (d *dal) Threads(ctx context.Context, ids []models.ThreadID, opts ...QueryOption) ([]*models.Thread, error) {
 	return d.threads(ctx, d.db, ids, opts...)
 }
@@ -1016,7 +1065,8 @@ func (d *dal) ThreadsWithEntity(ctx context.Context, entityID string, ids []mode
 	rows, err := d.db.Query(`
 		SELECT t.id, t.organization_id, COALESCE(t.primary_entity_id, ''), t.last_message_timestamp, t.last_external_message_timestamp, t.last_message_summary,
 			t.last_external_message_summary, t.last_primary_entity_endpoints, t.created, t.message_count, t.type, COALESCE(t.system_title, ''), COALESCE(t.user_title, ''), t.origin, t.deleted,
-			te.thread_id, te.entity_id, te.member, te.following, te.joined, te.last_viewed, te.last_unread_notify, te.last_referenced
+			te.thread_id, te.entity_id, te.member, te.following, te.joined, te.last_viewed, te.last_unread_notify, te.last_referenced,
+			(SELECT GROUP_CONCAT(tag SEPARATOR ' ') FROM thread_tags INNER JOIN tags ON tags.id = tag_id WHERE thread_tags.thread_id = t.id)
 		FROM threads t
 		LEFT OUTER JOIN thread_entities te ON te.thread_id = t.id AND te.entity_id = ?
 		WHERE id in (`+dbutil.MySQLArgs(len(ids))+`) AND deleted = false`,
@@ -1340,6 +1390,60 @@ func (d *dal) RemoveThreadMembers(ctx context.Context, threadID models.ThreadID,
 	return errors.Trace(err)
 }
 
+func (d *dal) AddThreadTags(ctx context.Context, orgID string, threadID models.ThreadID, tags []string) error {
+	if len(tags) == 0 {
+		return nil
+	}
+
+	// Make sure all tags exist
+	ins := dbutil.MySQLMultiInsert(len(tags))
+	for _, t := range tags {
+		ins.Append(orgID, false, t) // TODO: hidden
+	}
+	_, err := d.db.Exec(`
+		INSERT IGNORE INTO tags (organization_id, hidden, tag)
+		VALUES `+ins.Query(), ins.Values()...)
+	if err != nil && !dbutil.IsMySQLWarning(err, dbutil.MySQLDuplicateEntry) {
+		return errors.Trace(err)
+	}
+
+	// Fetch IDs for tags
+	rows, err := d.db.Query(`SELECT id FROM tags WHERE tag IN (`+dbutil.MySQLArgs(len(tags))+`) AND organization_id = ?`,
+		append(dbutil.AppendStringsToInterfaceSlice(nil, tags), orgID)...)
+	if err != nil {
+		return errors.Trace(err)
+	}
+	defer rows.Close()
+	ins.Reset()
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return errors.Trace(err)
+		}
+		ins.Append(threadID, id)
+	}
+
+	// Add tags to thread
+	_, err = d.db.Exec(`INSERT IGNORE INTO thread_tags (thread_id, tag_id) VALUES `+ins.Query(), ins.Values()...)
+	if err != nil && !dbutil.IsMySQLWarning(err, dbutil.MySQLDuplicateEntry) {
+		return errors.Trace(err)
+	}
+
+	return nil
+}
+
+func (d *dal) RemoveThreadTags(ctx context.Context, orgID string, threadID models.ThreadID, tags []string) error {
+	if len(tags) == 0 {
+		return nil
+	}
+	_, err := d.db.Exec(`
+		DELETE tt FROM thread_tags AS tt
+		INNER JOIN tags AS t ON t.id = tt.tag_id
+		WHERE thread_id = ? AND t.tag IN (`+dbutil.MySQLArgs(len(tags))+`)`,
+		dbutil.AppendStringsToInterfaceSlice([]interface{}{threadID}, tags)...)
+	return errors.Trace(err)
+}
+
 func (d *dal) UnreadMessagesInThread(ctx context.Context, threadID models.ThreadID, entityID string, external bool) (int, error) {
 	var lastViewed *time.Time
 	row := d.db.QueryRow(`SELECT last_viewed FROM thread_entities WHERE thread_id = ? AND entity_id = ?`, threadID, entityID)
@@ -1418,13 +1522,17 @@ func scanThread(row dbutil.Scanner) (*models.Thread, error) {
 	var t models.Thread
 	t.ID = models.EmptyThreadID()
 	var lastPrimaryEntityEndpointsData []byte
+	var tags sql.NullString
 	err := row.Scan(&t.ID, &t.OrganizationID, &t.PrimaryEntityID, &t.LastMessageTimestamp, &t.LastExternalMessageTimestamp,
 		&t.LastMessageSummary, &t.LastExternalMessageSummary, &lastPrimaryEntityEndpointsData, &t.Created, &t.MessageCount,
-		&t.Type, &t.SystemTitle, &t.UserTitle, &t.Origin, &t.Deleted)
+		&t.Type, &t.SystemTitle, &t.UserTitle, &t.Origin, &t.Deleted, &tags)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrNotFound)
 	} else if err != nil {
 		return nil, errors.Trace(err)
+	}
+	if tags.Valid {
+		t.Tags = parseGroupedTags(tags.String)
 	}
 	if len(lastPrimaryEntityEndpointsData) != 0 {
 		if err := proto.Unmarshal(lastPrimaryEntityEndpointsData, &t.LastPrimaryEntityEndpoints); err != nil {
@@ -1432,6 +1540,19 @@ func scanThread(row dbutil.Scanner) (*models.Thread, error) {
 		}
 	}
 	return &t, nil
+}
+
+func parseGroupedTags(groupedTags string) []models.Tag {
+	ts := strings.Split(groupedTags, " ")
+	tags := make([]models.Tag, 0, len(ts))
+	for _, tag := range ts {
+		tag = strings.TrimSpace(tag)
+		if tag != "" {
+			tags = append(tags, models.Tag{Name: tag, Hidden: strings.HasPrefix(tag, threading.HiddenTagPrefix)})
+		}
+	}
+	sort.Sort(models.TagsByName(tags))
+	return tags
 }
 
 func scanThreadEntity(row dbutil.Scanner) (*models.ThreadEntity, error) {
@@ -1454,10 +1575,11 @@ func scanThreadAndEntity(row dbutil.Scanner) (*models.Thread, *models.ThreadEnti
 	te.ThreadID = models.EmptyThreadID()
 	t.ID = models.EmptyThreadID()
 	var lastPrimaryEntityEndpointsData []byte
+	var tags sql.NullString
 	err := row.Scan(&t.ID, &t.OrganizationID, &t.PrimaryEntityID, &t.LastMessageTimestamp, &t.LastExternalMessageTimestamp,
 		&t.LastMessageSummary, &t.LastExternalMessageSummary, &lastPrimaryEntityEndpointsData, &t.Created, &t.MessageCount, &t.Type,
 		&t.SystemTitle, &t.UserTitle, &t.Origin, &t.Deleted,
-		&te.ThreadID, &teEntityID, &teMember, &teFollowing, &teJoined, &te.LastViewed, &te.LastUnreadNotify, &te.LastReferenced)
+		&te.ThreadID, &teEntityID, &teMember, &teFollowing, &teJoined, &te.LastViewed, &te.LastUnreadNotify, &te.LastReferenced, &tags)
 	if err == sql.ErrNoRows {
 		return nil, nil, errors.Trace(ErrNotFound)
 	} else if err != nil {
@@ -1467,6 +1589,9 @@ func scanThreadAndEntity(row dbutil.Scanner) (*models.Thread, *models.ThreadEnti
 		if err := proto.Unmarshal(lastPrimaryEntityEndpointsData, &t.LastPrimaryEntityEndpoints); err != nil {
 			return nil, nil, errors.Trace(err)
 		}
+	}
+	if tags.Valid {
+		t.Tags = parseGroupedTags(tags.String)
 	}
 	// The thread entity isn't guaranted to exist
 	if te.ThreadID.IsValid && teEntityID != nil {
