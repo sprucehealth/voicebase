@@ -707,6 +707,7 @@ func processIncomingAttachments(ctx context.Context, ram raccess.ResourceAccesso
 					Document: &threading.DocumentAttachment{
 						Mimetype: media.MIMEType(info.MIME),
 						MediaID:  info.ID,
+						Name:     mAttachment.Title,
 					},
 				},
 			}
