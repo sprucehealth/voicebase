@@ -59,7 +59,7 @@ var threadItemViewDetailsType = graphql.NewObject(
 )
 
 func lookupThreadItemViewDetails(ctx context.Context, ram raccess.ResourceAccessor, threadItemID string) ([]interface{}, error) {
-	if strings.HasPrefix(threadItemID, threading.SavedMessageIDPrefix) || strings.HasPrefix(threadItemID, threading.ScheduledMessageIDPrefix) {
+	if threadItemID == "" || strings.HasPrefix(threadItemID, threading.SavedMessageIDPrefix) || strings.HasPrefix(threadItemID, threading.ScheduledMessageIDPrefix) {
 		return nil, nil
 	}
 	tivd, err := ram.ThreadItemViewDetails(ctx, threadItemID)

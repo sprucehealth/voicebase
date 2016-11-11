@@ -243,7 +243,7 @@ func (s *threadsServer) CreateEmptyThread(ctx context.Context, in *threading.Cre
 		return nil, errors.Trace(err)
 	}
 	if len(threads) == 0 {
-		return nil, errors.Errorf("thread with id %s just created not found", threadID)
+		return nil, errors.Errorf("thread with id %q just created not found", threadID)
 	}
 	if _, err := s.updateSavedQueriesAddThread(ctx, threads[0], memberEntityIDs); err != nil {
 		golog.Errorf("Failed to updated saved query when adding thread: %s", threadID)
@@ -390,7 +390,7 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 	if err != nil {
 		return nil, errors.Trace(err)
 	} else if len(threads) == 0 {
-		return nil, errors.Errorf("thread %s just created not found", threadID)
+		return nil, errors.Errorf("thread %q just created not found", threadID)
 	}
 	thread := threads[0]
 	updateResult, err := s.updateSavedQueriesAddThread(ctx, thread, memberEntityIDs)
@@ -585,7 +585,7 @@ func (s *threadsServer) DeleteMessage(ctx context.Context, in *threading.DeleteM
 		return nil
 	})
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, "Thread item %s not found", in.ThreadItemID)
+		return nil, grpcErrorf(codes.NotFound, "Thread item %q not found", in.ThreadItemID)
 	}
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -671,7 +671,7 @@ func (s *threadsServer) LinkedThread(ctx context.Context, in *threading.LinkedTh
 	}
 	thread, prependSender, err := s.dal.LinkedThread(ctx, threadID)
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, "Linked thread for %s not found", threadID)
+		return nil, grpcErrorf(codes.NotFound, "Linked thread for %q not found", threadID)
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -918,7 +918,7 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 	if err != nil {
 		return nil, errors.Trace(err)
 	} else if len(threads) == 0 {
-		return nil, grpcErrorf(codes.NotFound, "Thread %s not found", threadID)
+		return nil, grpcErrorf(codes.NotFound, "Thread %q not found", threadID)
 	}
 	thread := threads[0]
 	prePostLastMessageTimestamp := thread.LastMessageTimestamp
@@ -1039,7 +1039,7 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 	if err != nil {
 		return nil, errors.Trace(err)
 	} else if len(threads) == 0 {
-		return nil, errors.Errorf("Thread %s that was just posted to was not found", threadID)
+		return nil, errors.Errorf("Thread %q that was just posted to was not found", threadID)
 	}
 	thread = threads[0]
 	updateResult, err := s.updateSavedQueriesForThread(ctx, thread)
@@ -1066,7 +1066,7 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 		if err != nil {
 			return nil, errors.Trace(err)
 		} else if len(linkedThreads) == 0 {
-			golog.Errorf("Thread %s that was just posted to was not found", linkedItem.ThreadID)
+			golog.Errorf("Thread %q that was just posted to was not found", linkedItem.ThreadID)
 		} else {
 			updateResult, err := s.updateSavedQueriesForThread(ctx, linkedThreads[0])
 			if err != nil {
@@ -1114,7 +1114,7 @@ func (s *threadsServer) QueryThreads(ctx context.Context, in *threading.QueryThr
 		}
 		sq, err = s.dal.SavedQuery(ctx, sqID)
 		if errors.Cause(err) == dal.ErrNotFound {
-			return nil, grpcErrorf(codes.NotFound, "Saved query %s not found", sqID)
+			return nil, grpcErrorf(codes.NotFound, "Saved query %q not found", sqID)
 		} else if err != nil {
 			return nil, errors.Trace(err)
 		}
@@ -1228,7 +1228,7 @@ func (s *threadsServer) SavedQuery(ctx context.Context, in *threading.SavedQuery
 	}
 	query, err := s.dal.SavedQuery(ctx, id)
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, "Saved query %s not found", in.SavedQueryID)
+		return nil, grpcErrorf(codes.NotFound, "Saved query %q not found", in.SavedQueryID)
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -1315,7 +1315,7 @@ func (s *threadsServer) Thread(ctx context.Context, in *threading.ThreadRequest)
 	if err != nil {
 		return nil, errors.Trace(err)
 	} else if len(threads) == 0 {
-		return nil, grpcErrorf(codes.NotFound, "Thread %s not found", tid)
+		return nil, grpcErrorf(codes.NotFound, "Thread %q not found", tid)
 	}
 	thread := threads[0]
 
@@ -1330,7 +1330,7 @@ func (s *threadsServer) Thread(ctx context.Context, in *threading.ThreadRequest)
 			return nil, errors.Trace(err)
 		}
 		if len(ts) == 0 {
-			return nil, grpcErrorf(codes.NotFound, "Thread %s not found", th.ID)
+			return nil, grpcErrorf(codes.NotFound, "Thread %q not found", th.ID)
 		}
 		// TODO: for now can't require the viewer since the graphql service requests the thread to get the org ID before it can know the entity viewing
 		// } else if th.Type == threading.THREAD_TYPE_TEAM {
@@ -1397,7 +1397,7 @@ func (s *threadsServer) ThreadItem(ctx context.Context, in *threading.ThreadItem
 
 	item, err := s.dal.ThreadItem(ctx, tid)
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, "Thread item %s not found", tid)
+		return nil, grpcErrorf(codes.NotFound, "Thread item %q not found", tid)
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -1406,7 +1406,7 @@ func (s *threadsServer) ThreadItem(ctx context.Context, in *threading.ThreadItem
 	if err != nil {
 		return nil, errors.Trace(err)
 	} else if len(threads) == 0 {
-		return nil, grpcErrorf(codes.NotFound, "Thread %s not found", tid)
+		return nil, grpcErrorf(codes.NotFound, "Thread %q not found", tid)
 	}
 	th := threads[0]
 
@@ -1459,7 +1459,7 @@ func (s *threadsServer) ThreadItems(ctx context.Context, in *threading.ThreadIte
 	if err != nil {
 		return nil, errors.Trace(err)
 	} else if len(threads) == 0 {
-		return nil, grpcErrorf(codes.NotFound, "Thread %s not found", tid)
+		return nil, grpcErrorf(codes.NotFound, "Thread %q not found", tid)
 	}
 	th := threads[0]
 
@@ -1607,7 +1607,7 @@ func (s *threadsServer) UpdateMessage(ctx context.Context, in *threading.UpdateM
 		}))
 	})
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, "Thread item %s not found", in.ThreadItemID)
+		return nil, grpcErrorf(codes.NotFound, "Thread item %q not found", in.ThreadItemID)
 	}
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -1726,7 +1726,7 @@ func (s *threadsServer) UpdateThread(ctx context.Context, in *threading.UpdateTh
 	if err != nil {
 		return nil, errors.Trace(err)
 	} else if len(threads) == 0 {
-		return nil, grpcErrorf(codes.NotFound, "Thread %s not found", tid)
+		return nil, grpcErrorf(codes.NotFound, "Thread %q not found", tid)
 	}
 	thread := threads[0]
 
@@ -2000,7 +2000,7 @@ func (s *threadsServer) teamThreadSystemTitle(ctx context.Context, orgID string,
 			}
 		}
 		if !found {
-			return "", errors.Errorf("Entity %s is not a member of org %s", e.ID, orgID)
+			return "", errors.Errorf("Entity %q is not a member of org %q", e.ID, orgID)
 		}
 		names[i] = e.Info.DisplayName
 	}
@@ -2020,7 +2020,7 @@ func (s *threadsServer) forExternalViewer(ctx context.Context, viewerEntityID st
 			},
 		})
 		if grpc.Code(err) == codes.NotFound {
-			return false, grpcErrorf(codes.NotFound, "Viewing entity %s not found", viewerEntityID)
+			return false, grpcErrorf(codes.NotFound, "Viewing entity %q not found", viewerEntityID)
 		} else if err != nil {
 			return false, errors.Trace(err)
 		}
