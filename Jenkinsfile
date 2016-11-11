@@ -27,16 +27,20 @@ node {
 			echo "${gitBranch}"
 			echo "${gitCommit}"
 
-			def deploy = false
+			def pushDockerImageAndDeploy = false
+			def pushDockerImageOnly = false
 			if (gitBranch == "master") {
-				echo "DEPLOYING"
-				deploy = true
+				echo "BUILDING DOCKER IMAGE AND DEPLOYING"
+				buildDockerImageAndDeploy = true
+			} else if (gitBranch == "production") {
+				buildDockerImageOnly = true
+				echo "BUILDING DOCKER IMAGE ONLY"
 			} else {
 				echo "NOT DEPLOYING"
 			}
 
 			def deployToS3 = ""
-			if (deploy) {
+			if (pushDockerImageAndDeploy) {
 				deployToS3 = "true"
 			}
 			def fullCoverage = ""
@@ -86,9 +90,14 @@ node {
 
 		stage 'Deploy'
 
-			if (deploy) {
+			if (pushDockerImageAndDeploy) {
 				env.GIT_REV = gitCommit
 				env.BRANCH = gitBranch
+				sh(script: "./docker-ci/deploy.sh")
+			} else if (pushDockerImageOnly) {
+				env.GIT_REV = gitCommit
+				env.BRANCH = gitBranch
+				env.SKIP_DEPLOY = true
 				sh(script: "./docker-ci/deploy.sh")
 			}
 	} catch (any) {

@@ -35,7 +35,7 @@ for IMAGEID in $IMAGES; do
 	done
 	IFS=':' read -a STAG <<< "$TAG"
 
-	if [[ "$MANUAL_DEPLOY" == "" ]]; then
+	if [[ "$SKIP_DEPLOY" == "" ]]; then
 		if [[ ${devDeployableMap[${STAG[0]}]} != "" ]]; then
 			IFS=',' read -a DEPLOYABLES <<< "${devDeployableMap[${STAG[0]}]}"
 			for DEPLOYABLE in ${DEPLOYABLES[@]}; do
