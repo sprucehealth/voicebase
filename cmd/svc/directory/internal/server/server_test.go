@@ -17,6 +17,7 @@ import (
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/directory"
+	eventsmock "github.com/sprucehealth/backend/svc/events/mock"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
@@ -25,7 +26,11 @@ func TestLookupEntitiesByEntityID(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl, metrics.NewRegistry())
+
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
+	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{eID1}, ([]dal.EntityStatus)(nil), []dal.EntityType{}), []*dal.Entity{
@@ -53,7 +58,10 @@ func TestLookupEntitiesByEntityIDNonZeroDepth(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl, metrics.NewRegistry())
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
+	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
 
@@ -105,7 +113,10 @@ func TestLookupEntitiesByBatchEntityID(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl, metrics.NewRegistry())
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
+	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
 	eID2, err := dal.NewEntityID()
@@ -144,7 +155,10 @@ func TestLookupEntitiesByExternalID(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl, metrics.NewRegistry())
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
+	s := New(dl, publisher, metrics.NewRegistry())
 	externalID := "account:12345678"
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
@@ -191,7 +205,10 @@ func TestLookupEntitiesByExternalID_MemberOfEntity(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl, metrics.NewRegistry())
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
+	s := New(dl, publisher, metrics.NewRegistry())
 	externalID := "account:12345678"
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
@@ -269,8 +286,11 @@ func TestLookupEntitiesByExternalID_MemberOfEntity(t *testing.T) {
 func TestLookupEntitiesNoResults(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
 	defer dl.Finish()
-	s := New(dl, metrics.NewRegistry())
+	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{eID1}, []dal.EntityStatus{dal.EntityStatusActive}, []dal.EntityType{}), []*dal.Entity{}, nil))
@@ -288,7 +308,10 @@ func TestLookupEntitiesByContact(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl, metrics.NewRegistry())
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
+	s := New(dl, publisher, metrics.NewRegistry())
 	contactValue := " 1234567@gmail.com "
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
@@ -341,7 +364,10 @@ func TestLookupEntitiesByContact_MemberOfEntity(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl, metrics.NewRegistry())
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
+	s := New(dl, publisher, metrics.NewRegistry())
 	contactValue := " 1234567@gmail.com "
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
@@ -424,7 +450,10 @@ func TestLookupEntitiesByContactNoResults(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl, metrics.NewRegistry())
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
+	s := New(dl, publisher, metrics.NewRegistry())
 	contactValue := " 1234567@gmail.com "
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.EntityContactsForValue, strings.TrimSpace(contactValue)), []*dal.EntityContact{}, nil))
 	_, err := s.LookupEntitiesByContact(context.Background(), &directory.LookupEntitiesByContactRequest{
@@ -440,7 +469,10 @@ func TestCreateEntityFull(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl, metrics.NewRegistry())
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
+	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
 	eID2, err := dal.NewEntityID()
@@ -523,7 +555,10 @@ func TestCreateEntityInitialEntityNotFound(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl, metrics.NewRegistry())
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
+	s := New(dl, publisher, metrics.NewRegistry())
 	eID2, err := dal.NewEntityID()
 	test.OK(t, err)
 	name := "batman"
@@ -560,7 +595,10 @@ func TestCreateEntityEmptyContact(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl, metrics.NewRegistry())
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
+	s := New(dl, publisher, metrics.NewRegistry())
 	eID2, err := dal.NewEntityID()
 	test.OK(t, err)
 	name := "batman"
@@ -592,7 +630,10 @@ func TestCreateEntityInvalidEmail(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl, metrics.NewRegistry())
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
+	s := New(dl, publisher, metrics.NewRegistry())
 	eID2, err := dal.NewEntityID()
 	test.OK(t, err)
 	name := "batman"
@@ -624,7 +665,10 @@ func TestCreateEntitySparse(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl, metrics.NewRegistry())
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
+	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
 	name := "batman"
@@ -662,7 +706,10 @@ func TestCreateMembership(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl, metrics.NewRegistry())
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
+	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
 	eID2, err := dal.NewEntityID()
@@ -694,7 +741,10 @@ func TestCreateMembershipEntityNotFound(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl, metrics.NewRegistry())
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
+	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
 	eID2, err := dal.NewEntityID()
@@ -712,7 +762,10 @@ func TestCreateMembershipTargetEntityNotFound(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl, metrics.NewRegistry())
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
+	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
 	eID2, err := dal.NewEntityID()
@@ -731,7 +784,10 @@ func TestCreateContact(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl, metrics.NewRegistry())
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
+	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), &dal.Entity{}, nil))
 	dl.Expect(mock.NewExpectation(dl.InsertEntityContact, &dal.EntityContact{
@@ -762,7 +818,10 @@ func TestCreateContact(t *testing.T) {
 func TestCreateContactEntityNotFound(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
-	s := New(dl, metrics.NewRegistry())
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
+	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), (*dal.Entity)(nil), dal.ErrNotFound))
@@ -783,7 +842,10 @@ func TestCreateContactInvalidEmail(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl, metrics.NewRegistry())
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
+	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), &dal.Entity{}, nil))
@@ -803,7 +865,10 @@ func TestCreateContactInvalidEmail(t *testing.T) {
 func TestCreateEntityDomain(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
-	s := New(dl, metrics.NewRegistry())
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
+	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
 
@@ -819,7 +884,10 @@ func TestCreateEntityDomain(t *testing.T) {
 func TestUpdateEntityDomain(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
-	s := New(dl, metrics.NewRegistry())
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
+	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
 
@@ -838,7 +906,10 @@ func TestUpdateEntityDomain(t *testing.T) {
 func TestLookupEntityDomain(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
-	s := New(dl, metrics.NewRegistry())
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
+	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
 
@@ -856,7 +927,10 @@ func TestLookupEntitiesAdditionalInformationGraphCrawl(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl, metrics.NewRegistry())
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
+	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
 	eID2, err := dal.NewEntityID()
@@ -971,7 +1045,10 @@ func TestCreateContacts(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl, metrics.NewRegistry())
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
+	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), &dal.Entity{}, nil))
@@ -1016,7 +1093,10 @@ func TestCreateContacts(t *testing.T) {
 func TestUpdateContacts(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl, metrics.NewRegistry())
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
+	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
 	eCID1, err := dal.NewEntityContactID()
@@ -1076,7 +1156,10 @@ func TestDeleteContacts(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl, metrics.NewRegistry())
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
+	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
 	eCID1, err := dal.NewEntityContactID()
@@ -1110,7 +1193,10 @@ func TestUpdateEntity(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl, metrics.NewRegistry())
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
+	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), &dal.Entity{
@@ -1138,6 +1224,10 @@ func TestUpdateEntity(t *testing.T) {
 		Status:      dal.EntityStatusActive,
 	}, nil))
 
+	publisher.Expect(mock.NewExpectation(publisher.PublishAsync, &directory.EntityUpdatedEvent{
+		EntityID: eID1.String(),
+	}))
+
 	resp, err := s.UpdateEntity(context.Background(), &directory.UpdateEntityRequest{
 		EntityID:         eID1.String(),
 		UpdateEntityInfo: true,
@@ -1162,7 +1252,10 @@ func TestUpdateEntityWithContacts(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl, metrics.NewRegistry())
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
+	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), &dal.Entity{
@@ -1207,6 +1300,10 @@ func TestUpdateEntityWithContacts(t *testing.T) {
 		Status:      dal.EntityStatusActive,
 	}, nil))
 
+	publisher.Expect(mock.NewExpectation(publisher.PublishAsync, &directory.EntityUpdatedEvent{
+		EntityID: eID1.String(),
+	}))
+
 	resp, err := s.UpdateEntity(context.Background(), &directory.UpdateEntityRequest{
 		EntityID:         eID1.String(),
 		UpdateEntityInfo: true,
@@ -1242,7 +1339,10 @@ func TestUpdateEntityWithSerializedContacts(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl, metrics.NewRegistry())
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
+	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), &dal.Entity{
@@ -1294,6 +1394,10 @@ func TestUpdateEntityWithSerializedContacts(t *testing.T) {
 		Status:      dal.EntityStatusActive,
 	}, nil))
 
+	publisher.Expect(mock.NewExpectation(publisher.PublishAsync, &directory.EntityUpdatedEvent{
+		EntityID: eID1.String(),
+	}))
+
 	resp, err := s.UpdateEntity(context.Background(), &directory.UpdateEntityRequest{
 		EntityID:         eID1.String(),
 		UpdateEntityInfo: true,
@@ -1339,7 +1443,10 @@ func TestSerializedEntityContact(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl, metrics.NewRegistry())
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
+	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
 	platform := dal.SerializedClientEntityContactPlatformIOS
@@ -1367,7 +1474,10 @@ func TestCreateEHRLink(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl, metrics.NewRegistry())
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
+	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
 
@@ -1389,7 +1499,10 @@ func TestDeleteEHRLink(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl, metrics.NewRegistry())
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
+	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
 
@@ -1409,7 +1522,10 @@ func TestEHRLinksForEntity(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl, metrics.NewRegistry())
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
+	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
 
@@ -1442,7 +1558,10 @@ func TestSerializedEntityContactNotFound(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl, metrics.NewRegistry())
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
+	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
 	platform := dal.SerializedClientEntityContactPlatformIOS
@@ -1461,7 +1580,10 @@ func TestDeleteEntity(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl, metrics.NewRegistry())
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
+	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
 
@@ -1609,8 +1731,12 @@ func TestProfile(t *testing.T) {
 		},
 	}
 
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
 	for cn, c := range cases {
-		svr := New(c.dal, metrics.NewRegistry())
+
+		svr := New(c.dal, publisher, metrics.NewRegistry())
 		resp, err := svr.Profile(context.Background(), c.request)
 		test.EqualsCase(t, cn, c.expectedResponse, resp)
 		test.EqualsCase(t, cn, c.expectedError, err)
@@ -1915,8 +2041,11 @@ func TestUpdateProfile(t *testing.T) {
 		},
 	}
 
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
 	for cn, c := range cases {
-		svr := New(c.dal, metrics.NewRegistry())
+		svr := New(c.dal, publisher, metrics.NewRegistry())
 		resp, err := svr.UpdateProfile(context.Background(), c.request)
 		test.EqualsCase(t, cn, c.expectedResponse, resp)
 		test.EqualsCase(t, cn, c.expectedError, err)

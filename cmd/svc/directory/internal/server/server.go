@@ -14,6 +14,7 @@ import (
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/events"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
@@ -44,13 +45,15 @@ var (
 type server struct {
 	dl                         dal.DAL
 	statLookupEntitiesEntities *metrics.Counter
+	publisher                  events.Publisher
 }
 
 // New returns an initialized instance of server
-func New(dl dal.DAL, metricsRegistry metrics.Registry) directory.DirectoryServer {
+func New(dl dal.DAL, publisher events.Publisher, metricsRegistry metrics.Registry) directory.DirectoryServer {
 	srv := &server{
 		dl: dl,
 		statLookupEntitiesEntities: metrics.NewCounter(),
+		publisher:                  publisher,
 	}
 	metricsRegistry.Add("LookupEntities.entities", srv.statLookupEntitiesEntities)
 	return srv
@@ -497,6 +500,11 @@ func (s *server) UpdateEntity(ctx context.Context, rd *directory.UpdateEntityReq
 	}); err != nil {
 		return nil, errors.Trace(err)
 	}
+
+	s.publisher.PublishAsync(&directory.EntityUpdatedEvent{
+		EntityID: rd.EntityID,
+	})
+
 	return &directory.UpdateEntityResponse{
 		Entity: pbEntity,
 	}, nil

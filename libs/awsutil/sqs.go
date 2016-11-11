@@ -134,7 +134,6 @@ func (w *SQSWorker) process(msg *sqs.Message) {
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, sqsWorkerVisibilityTimeoutSeconds*time.Second)
 	defer cancel()
-
 	if err := w.processF(ctx, *msg.Body); err != nil {
 		if errors.Cause(err) == ErrMsgNotProcessedYet {
 			return

@@ -5,12 +5,16 @@ import (
 	"net"
 	"strconv"
 
+	"github.com/aws/aws-sdk-go/service/kms"
+	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/directory/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/directory/internal/server"
+	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/events"
 )
 
 var config struct {
@@ -26,6 +30,7 @@ var config struct {
 	dbTLS                string
 	dbMaxOpenConnections int
 	dbMaxIdleConnections int
+	kmsKeyARN            string
 }
 
 func init() {
@@ -41,6 +46,7 @@ func init() {
 	flag.StringVar(&config.dbTLS, "db_tls", "false", "Enable TLS for database connection (one of 'true', 'false', 'skip-verify'). Ignored if CA cert provided.")
 	flag.IntVar(&config.dbMaxOpenConnections, "db_max_open_connections", 0, "the maximum amount of open connections to have with the database")
 	flag.IntVar(&config.dbMaxIdleConnections, "db_max_idle_connections", 0, "the maximum amount of idle connections to have with the database")
+	flag.StringVar(&config.kmsKeyARN, "kms_key_arn", "", "the arn of the master key used for encrypting sns communication")
 }
 
 func main() {
@@ -69,8 +75,24 @@ func main() {
 	if err != nil {
 		golog.Fatalf("failed to initialize db connection: %s", err)
 	}
+
+	awsSession, err := svc.AWSSession()
+	if err != nil {
+		golog.Fatalf("Unable to get aws session: %s", err)
+	}
+
+	eSNS, err := awsutil.NewEncryptedSNS(config.kmsKeyARN, kms.New(awsSession), sns.New(awsSession))
+	if err != nil {
+		golog.Fatalf("Unable to initialize encrypted sns: %s", err)
+	}
+
+	publisher, err := events.NewSNSPublisher(eSNS, awsSession)
+	if err != nil {
+		golog.Fatalf("Unable to initialize publisher: %s", err)
+	}
+
 	srvMetricsRegistry := svc.MetricsRegistry.Scope("server")
-	srv := server.New(dal.New(db), srvMetricsRegistry)
+	srv := server.New(dal.New(db), publisher, srvMetricsRegistry)
 	directory.InitMetrics(srv, srvMetricsRegistry)
 	s := svc.GRPCServer()
 	directory.RegisterDirectoryServer(s, srv)

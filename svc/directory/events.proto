@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+
+package directory;
+
+message EntityUpdatedEvent {
+	string entity_id = 1 [(gogoproto.customname) = "EntityID"];
+}
+
+message EntityDeletedEvent {
+	string entity_id = 1 [(gogoproto.customname) = "EntityID"];
+}
+

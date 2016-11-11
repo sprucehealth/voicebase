@@ -11,11 +11,6 @@ import (
 	"github.com/sprucehealth/backend/libs/ptr"
 )
 
-// Marshaler is implemented by protocol buffer structs
-type Marshaler interface {
-	Marshal() ([]byte, error)
-}
-
 // Publish posts an event to an SNS topic
 func Publish(sn snsiface.SNSAPI, topicARN string, svc Service, event Marshaler) {
 	envelopeData, err := MarshalEnvelope(svc, event)
