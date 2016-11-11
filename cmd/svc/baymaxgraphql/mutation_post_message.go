@@ -124,6 +124,8 @@ func attachmentTypeAsEnum(a *threading.Attachment) (string, error) {
 		return attachmentTypeImage, nil
 	case *threading.Attachment_Video:
 		return attachmentTypeVideo, nil
+	case *threading.Attachment_Audio:
+		return attachmentTypeAudio, nil
 	case *threading.Attachment_Visit:
 		return attachmentTypeVisit, nil
 	case *threading.Attachment_Document:
