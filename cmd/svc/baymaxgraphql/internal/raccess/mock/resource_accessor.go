@@ -593,6 +593,14 @@ func (m *ResourceAccessor) VisitLayout(ctx context.Context, req *layout.GetVisit
 	return rets[0].(*layout.GetVisitLayoutResponse), mock.SafeError(rets[1])
 }
 
+func (m *ResourceAccessor) VisitLayoutByVersion(ctx context.Context, req *layout.GetVisitLayoutByVersionRequest) (*layout.GetVisitLayoutByVersionResponse, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*layout.GetVisitLayoutByVersionResponse), mock.SafeError(rets[1])
+}
+
 func (m *ResourceAccessor) CreateVisit(ctx context.Context, req *care.CreateVisitRequest) (*care.CreateVisitResponse, error) {
 	rets := m.Record(req)
 	if len(rets) == 0 {

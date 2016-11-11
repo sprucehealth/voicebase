@@ -16,6 +16,7 @@ import (
 	"github.com/sprucehealth/backend/libs/gqldecode"
 	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/layout"
 	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/backend/svc/threading"
@@ -285,7 +286,13 @@ func cloneAttachments(ctx context.Context, ram raccess.ResourceAccessor, ent *di
 				if err != nil {
 					return errors.Trace(err)
 				}
-				newAtt.ContentID = res.Visit.LayoutVersionID
+				vres, err := ram.VisitLayoutByVersion(ctx, &layout.GetVisitLayoutByVersionRequest{
+					VisitLayoutVersionID: res.Visit.LayoutVersionID,
+				})
+				if err != nil {
+					return errors.Trace(err)
+				}
+				newAtt.ContentID = vres.VisitLayout.ID
 			case *threading.Attachment_PaymentRequest:
 				pres, err := ram.Payment(ctx, &payments.PaymentRequest{
 					PaymentID: a.PaymentRequest.PaymentID,

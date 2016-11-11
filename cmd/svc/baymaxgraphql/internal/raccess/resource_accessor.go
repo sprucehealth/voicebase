@@ -175,6 +175,7 @@ type ResourceAccessor interface {
 	VerifiedValue(ctx context.Context, token string) (string, error)
 	Visit(ctx context.Context, req *care.GetVisitRequest) (*care.GetVisitResponse, error)
 	VisitLayout(ctx context.Context, req *layout.GetVisitLayoutRequest) (*layout.GetVisitLayoutResponse, error)
+	VisitLayoutByVersion(ctx context.Context, req *layout.GetVisitLayoutByVersionRequest) (*layout.GetVisitLayoutByVersionResponse, error)
 	VisitLayoutVersion(ctx context.Context, req *layout.GetVisitLayoutVersionRequest) (*layout.GetVisitLayoutVersionResponse, error)
 	LookupExternalLinksForEntity(ctx context.Context, req *directory.LookupExternalLinksForEntityRequest) (*directory.LookupExternalLinksforEntityResponse, error)
 	LookupPatientSyncConfiguration(ctx context.Context, req *patientsync.LookupSyncConfigurationRequest) (*patientsync.LookupSyncConfigurationResponse, error)
@@ -1222,6 +1223,20 @@ func (m *resourceAccessor) VisitLayout(ctx context.Context, req *layout.GetVisit
 	res, err := m.layout.GetVisitLayout(ctx, req)
 	if grpc.Code(err) == codes.NotFound {
 		return nil, errors.ErrNotFound(ctx, req.ID)
+	} else if err != nil {
+		return nil, errors.InternalError(ctx, err)
+	}
+	return res, nil
+}
+
+func (m *resourceAccessor) VisitLayoutByVersion(ctx context.Context, req *layout.GetVisitLayoutByVersionRequest) (*layout.GetVisitLayoutByVersionResponse, error) {
+	if !m.isAccountType(ctx, auth.AccountType_PROVIDER) {
+		return nil, errors.ErrNotAuthorized(ctx, req.VisitLayoutVersionID)
+	}
+
+	res, err := m.layout.GetVisitLayoutByVersion(ctx, req)
+	if grpc.Code(err) == codes.NotFound {
+		return nil, errors.ErrNotFound(ctx, req.VisitLayoutVersionID)
 	} else if err != nil {
 		return nil, errors.InternalError(ctx, err)
 	}
