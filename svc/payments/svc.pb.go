@@ -2684,7 +2684,7 @@ var _ grpc.ClientConn
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion3
+const _ = grpc.SupportPackageIsVersion4
 
 // Client API for Payments service
 
@@ -3077,93 +3077,93 @@ var _Payments_serviceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: fileDescriptorSvc,
+	Metadata: "svc.proto",
 }
 
-func (m *StripeAccount) Marshal() (data []byte, err error) {
+func (m *StripeAccount) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *StripeAccount) MarshalTo(data []byte) (int, error) {
+func (m *StripeAccount) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.UserID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.UserID)))
-		i += copy(data[i:], m.UserID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.UserID)))
+		i += copy(dAtA[i:], m.UserID)
 	}
 	if len(m.Scope) > 0 {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.Scope)))
-		i += copy(data[i:], m.Scope)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.Scope)))
+		i += copy(dAtA[i:], m.Scope)
 	}
 	return i, nil
 }
 
-func (m *VendorAccount) Marshal() (data []byte, err error) {
+func (m *VendorAccount) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *VendorAccount) MarshalTo(data []byte) (int, error) {
+func (m *VendorAccount) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.ID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.ID)))
-		i += copy(data[i:], m.ID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.ID)))
+		i += copy(dAtA[i:], m.ID)
 	}
 	if len(m.EntityID) > 0 {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.EntityID)))
-		i += copy(data[i:], m.EntityID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.EntityID)))
+		i += copy(dAtA[i:], m.EntityID)
 	}
 	if m.Lifecycle != 0 {
-		data[i] = 0x18
+		dAtA[i] = 0x18
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.Lifecycle))
+		i = encodeVarintSvc(dAtA, i, uint64(m.Lifecycle))
 	}
 	if m.ChangeState != 0 {
-		data[i] = 0x20
+		dAtA[i] = 0x20
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.ChangeState))
+		i = encodeVarintSvc(dAtA, i, uint64(m.ChangeState))
 	}
 	if m.Live {
-		data[i] = 0x28
+		dAtA[i] = 0x28
 		i++
 		if m.Live {
-			data[i] = 1
+			dAtA[i] = 1
 		} else {
-			data[i] = 0
+			dAtA[i] = 0
 		}
 		i++
 	}
 	if m.Type != 0 {
-		data[i] = 0x30
+		dAtA[i] = 0x30
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.Type))
+		i = encodeVarintSvc(dAtA, i, uint64(m.Type))
 	}
 	if m.VendorAccountOneof != nil {
-		nn1, err := m.VendorAccountOneof.MarshalTo(data[i:])
+		nn1, err := m.VendorAccountOneof.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -3172,13 +3172,13 @@ func (m *VendorAccount) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *VendorAccount_StripeAccount) MarshalTo(data []byte) (int, error) {
+func (m *VendorAccount_StripeAccount) MarshalTo(dAtA []byte) (int, error) {
 	i := 0
 	if m.StripeAccount != nil {
-		data[i] = 0x3a
+		dAtA[i] = 0x3a
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.StripeAccount.Size()))
-		n2, err := m.StripeAccount.MarshalTo(data[i:])
+		i = encodeVarintSvc(dAtA, i, uint64(m.StripeAccount.Size()))
+		n2, err := m.StripeAccount.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -3186,137 +3186,137 @@ func (m *VendorAccount_StripeAccount) MarshalTo(data []byte) (int, error) {
 	}
 	return i, nil
 }
-func (m *StripeCard) Marshal() (data []byte, err error) {
+func (m *StripeCard) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *StripeCard) MarshalTo(data []byte) (int, error) {
+func (m *StripeCard) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.ID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.ID)))
-		i += copy(data[i:], m.ID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.ID)))
+		i += copy(dAtA[i:], m.ID)
 	}
 	if len(m.TokenizationMethod) > 0 {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.TokenizationMethod)))
-		i += copy(data[i:], m.TokenizationMethod)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.TokenizationMethod)))
+		i += copy(dAtA[i:], m.TokenizationMethod)
 	}
 	if len(m.Brand) > 0 {
-		data[i] = 0x1a
+		dAtA[i] = 0x1a
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.Brand)))
-		i += copy(data[i:], m.Brand)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.Brand)))
+		i += copy(dAtA[i:], m.Brand)
 	}
 	if len(m.Last4) > 0 {
-		data[i] = 0x22
+		dAtA[i] = 0x22
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.Last4)))
-		i += copy(data[i:], m.Last4)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.Last4)))
+		i += copy(dAtA[i:], m.Last4)
 	}
 	return i, nil
 }
 
-func (m *Customer) Marshal() (data []byte, err error) {
+func (m *Customer) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *Customer) MarshalTo(data []byte) (int, error) {
+func (m *Customer) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.ID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.ID)))
-		i += copy(data[i:], m.ID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.ID)))
+		i += copy(dAtA[i:], m.ID)
 	}
 	if len(m.EntityID) > 0 {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.EntityID)))
-		i += copy(data[i:], m.EntityID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.EntityID)))
+		i += copy(dAtA[i:], m.EntityID)
 	}
 	return i, nil
 }
 
-func (m *PaymentMethod) Marshal() (data []byte, err error) {
+func (m *PaymentMethod) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *PaymentMethod) MarshalTo(data []byte) (int, error) {
+func (m *PaymentMethod) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.ID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.ID)))
-		i += copy(data[i:], m.ID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.ID)))
+		i += copy(dAtA[i:], m.ID)
 	}
 	if len(m.EntityID) > 0 {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.EntityID)))
-		i += copy(data[i:], m.EntityID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.EntityID)))
+		i += copy(dAtA[i:], m.EntityID)
 	}
 	if m.Default {
-		data[i] = 0x18
+		dAtA[i] = 0x18
 		i++
 		if m.Default {
-			data[i] = 1
+			dAtA[i] = 1
 		} else {
-			data[i] = 0
+			dAtA[i] = 0
 		}
 		i++
 	}
 	if m.Lifecycle != 0 {
-		data[i] = 0x20
+		dAtA[i] = 0x20
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.Lifecycle))
+		i = encodeVarintSvc(dAtA, i, uint64(m.Lifecycle))
 	}
 	if m.ChangeState != 0 {
-		data[i] = 0x28
+		dAtA[i] = 0x28
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.ChangeState))
+		i = encodeVarintSvc(dAtA, i, uint64(m.ChangeState))
 	}
 	if m.StorageType != 0 {
-		data[i] = 0x30
+		dAtA[i] = 0x30
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.StorageType))
+		i = encodeVarintSvc(dAtA, i, uint64(m.StorageType))
 	}
 	if m.Type != 0 {
-		data[i] = 0x38
+		dAtA[i] = 0x38
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.Type))
+		i = encodeVarintSvc(dAtA, i, uint64(m.Type))
 	}
 	if m.PaymentMethodOneof != nil {
-		nn3, err := m.PaymentMethodOneof.MarshalTo(data[i:])
+		nn3, err := m.PaymentMethodOneof.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -3325,13 +3325,13 @@ func (m *PaymentMethod) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *PaymentMethod_StripeCard) MarshalTo(data []byte) (int, error) {
+func (m *PaymentMethod_StripeCard) MarshalTo(dAtA []byte) (int, error) {
 	i := 0
 	if m.StripeCard != nil {
-		data[i] = 0x42
+		dAtA[i] = 0x42
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.StripeCard.Size()))
-		n4, err := m.StripeCard.MarshalTo(data[i:])
+		i = encodeVarintSvc(dAtA, i, uint64(m.StripeCard.Size()))
+		n4, err := m.StripeCard.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -3339,147 +3339,147 @@ func (m *PaymentMethod_StripeCard) MarshalTo(data []byte) (int, error) {
 	}
 	return i, nil
 }
-func (m *Payment) Marshal() (data []byte, err error) {
+func (m *Payment) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *Payment) MarshalTo(data []byte) (int, error) {
+func (m *Payment) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.ID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.ID)))
-		i += copy(data[i:], m.ID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.ID)))
+		i += copy(dAtA[i:], m.ID)
 	}
 	if len(m.RequestingEntityID) > 0 {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.RequestingEntityID)))
-		i += copy(data[i:], m.RequestingEntityID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.RequestingEntityID)))
+		i += copy(dAtA[i:], m.RequestingEntityID)
 	}
 	if m.PaymentMethod != nil {
-		data[i] = 0x1a
+		dAtA[i] = 0x1a
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.PaymentMethod.Size()))
-		n5, err := m.PaymentMethod.MarshalTo(data[i:])
+		i = encodeVarintSvc(dAtA, i, uint64(m.PaymentMethod.Size()))
+		n5, err := m.PaymentMethod.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n5
 	}
 	if m.Lifecycle != 0 {
-		data[i] = 0x20
+		dAtA[i] = 0x20
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.Lifecycle))
+		i = encodeVarintSvc(dAtA, i, uint64(m.Lifecycle))
 	}
 	if m.ChangeState != 0 {
-		data[i] = 0x28
+		dAtA[i] = 0x28
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.ChangeState))
+		i = encodeVarintSvc(dAtA, i, uint64(m.ChangeState))
 	}
 	if m.Amount != 0 {
-		data[i] = 0x30
+		dAtA[i] = 0x30
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.Amount))
+		i = encodeVarintSvc(dAtA, i, uint64(m.Amount))
 	}
 	if len(m.Currency) > 0 {
-		data[i] = 0x3a
+		dAtA[i] = 0x3a
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.Currency)))
-		i += copy(data[i:], m.Currency)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.Currency)))
+		i += copy(dAtA[i:], m.Currency)
 	}
 	if m.Created != 0 {
-		data[i] = 0x40
+		dAtA[i] = 0x40
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.Created))
+		i = encodeVarintSvc(dAtA, i, uint64(m.Created))
 	}
 	if m.Modified != 0 {
-		data[i] = 0x48
+		dAtA[i] = 0x48
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.Modified))
+		i = encodeVarintSvc(dAtA, i, uint64(m.Modified))
 	}
 	if len(m.ThreadID) > 0 {
-		data[i] = 0x52
+		dAtA[i] = 0x52
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.ThreadID)))
-		i += copy(data[i:], m.ThreadID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.ThreadID)))
+		i += copy(dAtA[i:], m.ThreadID)
 	}
 	if len(m.ProcessorTransactionID) > 0 {
-		data[i] = 0x5a
+		dAtA[i] = 0x5a
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.ProcessorTransactionID)))
-		i += copy(data[i:], m.ProcessorTransactionID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.ProcessorTransactionID)))
+		i += copy(dAtA[i:], m.ProcessorTransactionID)
 	}
 	if len(m.ProcessorStatusMessage) > 0 {
-		data[i] = 0x62
+		dAtA[i] = 0x62
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.ProcessorStatusMessage)))
-		i += copy(data[i:], m.ProcessorStatusMessage)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.ProcessorStatusMessage)))
+		i += copy(dAtA[i:], m.ProcessorStatusMessage)
 	}
 	return i, nil
 }
 
-func (m *StripeAccountConnectRequest) Marshal() (data []byte, err error) {
+func (m *StripeAccountConnectRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *StripeAccountConnectRequest) MarshalTo(data []byte) (int, error) {
+func (m *StripeAccountConnectRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.Code) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.Code)))
-		i += copy(data[i:], m.Code)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.Code)))
+		i += copy(dAtA[i:], m.Code)
 	}
 	return i, nil
 }
 
-func (m *ConnectVendorAccountRequest) Marshal() (data []byte, err error) {
+func (m *ConnectVendorAccountRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *ConnectVendorAccountRequest) MarshalTo(data []byte) (int, error) {
+func (m *ConnectVendorAccountRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.EntityID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.EntityID)))
-		i += copy(data[i:], m.EntityID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.EntityID)))
+		i += copy(dAtA[i:], m.EntityID)
 	}
 	if m.Type != 0 {
-		data[i] = 0x10
+		dAtA[i] = 0x10
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.Type))
+		i = encodeVarintSvc(dAtA, i, uint64(m.Type))
 	}
 	if m.ConnectVendorAccountOneof != nil {
-		nn6, err := m.ConnectVendorAccountOneof.MarshalTo(data[i:])
+		nn6, err := m.ConnectVendorAccountOneof.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -3488,13 +3488,13 @@ func (m *ConnectVendorAccountRequest) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *ConnectVendorAccountRequest_StripeRequest) MarshalTo(data []byte) (int, error) {
+func (m *ConnectVendorAccountRequest_StripeRequest) MarshalTo(dAtA []byte) (int, error) {
 	i := 0
 	if m.StripeRequest != nil {
-		data[i] = 0x1a
+		dAtA[i] = 0x1a
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.StripeRequest.Size()))
-		n7, err := m.StripeRequest.MarshalTo(data[i:])
+		i = encodeVarintSvc(dAtA, i, uint64(m.StripeRequest.Size()))
+		n7, err := m.StripeRequest.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -3502,27 +3502,27 @@ func (m *ConnectVendorAccountRequest_StripeRequest) MarshalTo(data []byte) (int,
 	}
 	return i, nil
 }
-func (m *ConnectVendorAccountResponse) Marshal() (data []byte, err error) {
+func (m *ConnectVendorAccountResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *ConnectVendorAccountResponse) MarshalTo(data []byte) (int, error) {
+func (m *ConnectVendorAccountResponse) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.VendorAccounts) > 0 {
 		for _, msg := range m.VendorAccounts {
-			data[i] = 0xa
+			dAtA[i] = 0xa
 			i++
-			i = encodeVarintSvc(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
+			i = encodeVarintSvc(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
@@ -3532,51 +3532,51 @@ func (m *ConnectVendorAccountResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *VendorAccountsRequest) Marshal() (data []byte, err error) {
+func (m *VendorAccountsRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *VendorAccountsRequest) MarshalTo(data []byte) (int, error) {
+func (m *VendorAccountsRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.EntityID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.EntityID)))
-		i += copy(data[i:], m.EntityID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.EntityID)))
+		i += copy(dAtA[i:], m.EntityID)
 	}
 	return i, nil
 }
 
-func (m *VendorAccountsResponse) Marshal() (data []byte, err error) {
+func (m *VendorAccountsResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *VendorAccountsResponse) MarshalTo(data []byte) (int, error) {
+func (m *VendorAccountsResponse) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.VendorAccounts) > 0 {
 		for _, msg := range m.VendorAccounts {
-			data[i] = 0xa
+			dAtA[i] = 0xa
 			i++
-			i = encodeVarintSvc(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
+			i = encodeVarintSvc(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
@@ -3586,51 +3586,51 @@ func (m *VendorAccountsResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *UpdateVendorAccountRequest) Marshal() (data []byte, err error) {
+func (m *UpdateVendorAccountRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *UpdateVendorAccountRequest) MarshalTo(data []byte) (int, error) {
+func (m *UpdateVendorAccountRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.VendorAccountID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.VendorAccountID)))
-		i += copy(data[i:], m.VendorAccountID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.VendorAccountID)))
+		i += copy(dAtA[i:], m.VendorAccountID)
 	}
 	if m.Lifecycle != 0 {
-		data[i] = 0x10
+		dAtA[i] = 0x10
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.Lifecycle))
+		i = encodeVarintSvc(dAtA, i, uint64(m.Lifecycle))
 	}
 	if m.ChangeState != 0 {
-		data[i] = 0x18
+		dAtA[i] = 0x18
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.ChangeState))
+		i = encodeVarintSvc(dAtA, i, uint64(m.ChangeState))
 	}
 	return i, nil
 }
 
-func (m *UpdateVendorAccountResponse) Marshal() (data []byte, err error) {
+func (m *UpdateVendorAccountResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *UpdateVendorAccountResponse) MarshalTo(data []byte) (int, error) {
+func (m *UpdateVendorAccountResponse) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -3638,73 +3638,73 @@ func (m *UpdateVendorAccountResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *StripeCardCreateRequest) Marshal() (data []byte, err error) {
+func (m *StripeCardCreateRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *StripeCardCreateRequest) MarshalTo(data []byte) (int, error) {
+func (m *StripeCardCreateRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.Token) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.Token)))
-		i += copy(data[i:], m.Token)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.Token)))
+		i += copy(dAtA[i:], m.Token)
 	}
 	return i, nil
 }
 
-func (m *CreatePaymentMethodRequest) Marshal() (data []byte, err error) {
+func (m *CreatePaymentMethodRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *CreatePaymentMethodRequest) MarshalTo(data []byte) (int, error) {
+func (m *CreatePaymentMethodRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.EntityID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.EntityID)))
-		i += copy(data[i:], m.EntityID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.EntityID)))
+		i += copy(dAtA[i:], m.EntityID)
 	}
 	if m.Default {
-		data[i] = 0x10
+		dAtA[i] = 0x10
 		i++
 		if m.Default {
-			data[i] = 1
+			dAtA[i] = 1
 		} else {
-			data[i] = 0
+			dAtA[i] = 0
 		}
 		i++
 	}
 	if m.StorageType != 0 {
-		data[i] = 0x18
+		dAtA[i] = 0x18
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.StorageType))
+		i = encodeVarintSvc(dAtA, i, uint64(m.StorageType))
 	}
 	if m.Type != 0 {
-		data[i] = 0x20
+		dAtA[i] = 0x20
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.Type))
+		i = encodeVarintSvc(dAtA, i, uint64(m.Type))
 	}
 	if m.CreatePaymentMethodOneof != nil {
-		nn8, err := m.CreatePaymentMethodOneof.MarshalTo(data[i:])
+		nn8, err := m.CreatePaymentMethodOneof.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -3713,13 +3713,13 @@ func (m *CreatePaymentMethodRequest) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *CreatePaymentMethodRequest_StripeCard) MarshalTo(data []byte) (int, error) {
+func (m *CreatePaymentMethodRequest_StripeCard) MarshalTo(dAtA []byte) (int, error) {
 	i := 0
 	if m.StripeCard != nil {
-		data[i] = 0x2a
+		dAtA[i] = 0x2a
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.StripeCard.Size()))
-		n9, err := m.StripeCard.MarshalTo(data[i:])
+		i = encodeVarintSvc(dAtA, i, uint64(m.StripeCard.Size()))
+		n9, err := m.StripeCard.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -3727,27 +3727,27 @@ func (m *CreatePaymentMethodRequest_StripeCard) MarshalTo(data []byte) (int, err
 	}
 	return i, nil
 }
-func (m *CreatePaymentMethodResponse) Marshal() (data []byte, err error) {
+func (m *CreatePaymentMethodResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *CreatePaymentMethodResponse) MarshalTo(data []byte) (int, error) {
+func (m *CreatePaymentMethodResponse) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.PaymentMethods) > 0 {
 		for _, msg := range m.PaymentMethods {
-			data[i] = 0xa
+			dAtA[i] = 0xa
 			i++
-			i = encodeVarintSvc(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
+			i = encodeVarintSvc(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
@@ -3757,51 +3757,51 @@ func (m *CreatePaymentMethodResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *PaymentMethodsRequest) Marshal() (data []byte, err error) {
+func (m *PaymentMethodsRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *PaymentMethodsRequest) MarshalTo(data []byte) (int, error) {
+func (m *PaymentMethodsRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.EntityID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.EntityID)))
-		i += copy(data[i:], m.EntityID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.EntityID)))
+		i += copy(dAtA[i:], m.EntityID)
 	}
 	return i, nil
 }
 
-func (m *PaymentMethodsResponse) Marshal() (data []byte, err error) {
+func (m *PaymentMethodsResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *PaymentMethodsResponse) MarshalTo(data []byte) (int, error) {
+func (m *PaymentMethodsResponse) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.PaymentMethods) > 0 {
 		for _, msg := range m.PaymentMethods {
-			data[i] = 0xa
+			dAtA[i] = 0xa
 			i++
-			i = encodeVarintSvc(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
+			i = encodeVarintSvc(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
@@ -3811,51 +3811,51 @@ func (m *PaymentMethodsResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *DeletePaymentMethodRequest) Marshal() (data []byte, err error) {
+func (m *DeletePaymentMethodRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *DeletePaymentMethodRequest) MarshalTo(data []byte) (int, error) {
+func (m *DeletePaymentMethodRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.PaymentMethodID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.PaymentMethodID)))
-		i += copy(data[i:], m.PaymentMethodID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.PaymentMethodID)))
+		i += copy(dAtA[i:], m.PaymentMethodID)
 	}
 	return i, nil
 }
 
-func (m *DeletePaymentMethodResponse) Marshal() (data []byte, err error) {
+func (m *DeletePaymentMethodResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *DeletePaymentMethodResponse) MarshalTo(data []byte) (int, error) {
+func (m *DeletePaymentMethodResponse) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.PaymentMethods) > 0 {
 		for _, msg := range m.PaymentMethods {
-			data[i] = 0xa
+			dAtA[i] = 0xa
 			i++
-			i = encodeVarintSvc(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
+			i = encodeVarintSvc(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
@@ -3865,61 +3865,61 @@ func (m *DeletePaymentMethodResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *CreatePaymentRequest) Marshal() (data []byte, err error) {
+func (m *CreatePaymentRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *CreatePaymentRequest) MarshalTo(data []byte) (int, error) {
+func (m *CreatePaymentRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.RequestingEntityID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.RequestingEntityID)))
-		i += copy(data[i:], m.RequestingEntityID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.RequestingEntityID)))
+		i += copy(dAtA[i:], m.RequestingEntityID)
 	}
 	if m.Amount != 0 {
-		data[i] = 0x18
+		dAtA[i] = 0x18
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.Amount))
+		i = encodeVarintSvc(dAtA, i, uint64(m.Amount))
 	}
 	if len(m.Currency) > 0 {
-		data[i] = 0x22
+		dAtA[i] = 0x22
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.Currency)))
-		i += copy(data[i:], m.Currency)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.Currency)))
+		i += copy(dAtA[i:], m.Currency)
 	}
 	return i, nil
 }
 
-func (m *CreatePaymentResponse) Marshal() (data []byte, err error) {
+func (m *CreatePaymentResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *CreatePaymentResponse) MarshalTo(data []byte) (int, error) {
+func (m *CreatePaymentResponse) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if m.Payment != nil {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.Payment.Size()))
-		n10, err := m.Payment.MarshalTo(data[i:])
+		i = encodeVarintSvc(dAtA, i, uint64(m.Payment.Size()))
+		n10, err := m.Payment.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -3928,50 +3928,50 @@ func (m *CreatePaymentResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *PaymentRequest) Marshal() (data []byte, err error) {
+func (m *PaymentRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *PaymentRequest) MarshalTo(data []byte) (int, error) {
+func (m *PaymentRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.PaymentID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.PaymentID)))
-		i += copy(data[i:], m.PaymentID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.PaymentID)))
+		i += copy(dAtA[i:], m.PaymentID)
 	}
 	return i, nil
 }
 
-func (m *PaymentResponse) Marshal() (data []byte, err error) {
+func (m *PaymentResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *PaymentResponse) MarshalTo(data []byte) (int, error) {
+func (m *PaymentResponse) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if m.Payment != nil {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.Payment.Size()))
-		n11, err := m.Payment.MarshalTo(data[i:])
+		i = encodeVarintSvc(dAtA, i, uint64(m.Payment.Size()))
+		n11, err := m.Payment.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -3980,56 +3980,56 @@ func (m *PaymentResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *SubmitPaymentRequest) Marshal() (data []byte, err error) {
+func (m *SubmitPaymentRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *SubmitPaymentRequest) MarshalTo(data []byte) (int, error) {
+func (m *SubmitPaymentRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.PaymentID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.PaymentID)))
-		i += copy(data[i:], m.PaymentID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.PaymentID)))
+		i += copy(dAtA[i:], m.PaymentID)
 	}
 	if len(m.ThreadID) > 0 {
-		data[i] = 0x1a
+		dAtA[i] = 0x1a
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.ThreadID)))
-		i += copy(data[i:], m.ThreadID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.ThreadID)))
+		i += copy(dAtA[i:], m.ThreadID)
 	}
 	return i, nil
 }
 
-func (m *SubmitPaymentResponse) Marshal() (data []byte, err error) {
+func (m *SubmitPaymentResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *SubmitPaymentResponse) MarshalTo(data []byte) (int, error) {
+func (m *SubmitPaymentResponse) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if m.Payment != nil {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.Payment.Size()))
-		n12, err := m.Payment.MarshalTo(data[i:])
+		i = encodeVarintSvc(dAtA, i, uint64(m.Payment.Size()))
+		n12, err := m.Payment.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -4038,56 +4038,56 @@ func (m *SubmitPaymentResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *AcceptPaymentRequest) Marshal() (data []byte, err error) {
+func (m *AcceptPaymentRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *AcceptPaymentRequest) MarshalTo(data []byte) (int, error) {
+func (m *AcceptPaymentRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.PaymentID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.PaymentID)))
-		i += copy(data[i:], m.PaymentID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.PaymentID)))
+		i += copy(dAtA[i:], m.PaymentID)
 	}
 	if len(m.PaymentMethodID) > 0 {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.PaymentMethodID)))
-		i += copy(data[i:], m.PaymentMethodID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.PaymentMethodID)))
+		i += copy(dAtA[i:], m.PaymentMethodID)
 	}
 	return i, nil
 }
 
-func (m *AcceptPaymentResponse) Marshal() (data []byte, err error) {
+func (m *AcceptPaymentResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *AcceptPaymentResponse) MarshalTo(data []byte) (int, error) {
+func (m *AcceptPaymentResponse) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if m.Payment != nil {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.Payment.Size()))
-		n13, err := m.Payment.MarshalTo(data[i:])
+		i = encodeVarintSvc(dAtA, i, uint64(m.Payment.Size()))
+		n13, err := m.Payment.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -4096,50 +4096,50 @@ func (m *AcceptPaymentResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *PaymentMethodRequest) Marshal() (data []byte, err error) {
+func (m *PaymentMethodRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *PaymentMethodRequest) MarshalTo(data []byte) (int, error) {
+func (m *PaymentMethodRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.PaymentMethodID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.PaymentMethodID)))
-		i += copy(data[i:], m.PaymentMethodID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.PaymentMethodID)))
+		i += copy(dAtA[i:], m.PaymentMethodID)
 	}
 	return i, nil
 }
 
-func (m *PaymentMethodResponse) Marshal() (data []byte, err error) {
+func (m *PaymentMethodResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *PaymentMethodResponse) MarshalTo(data []byte) (int, error) {
+func (m *PaymentMethodResponse) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if m.PaymentMethod != nil {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.PaymentMethod.Size()))
-		n14, err := m.PaymentMethod.MarshalTo(data[i:])
+		i = encodeVarintSvc(dAtA, i, uint64(m.PaymentMethod.Size()))
+		n14, err := m.PaymentMethod.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -4148,31 +4148,31 @@ func (m *PaymentMethodResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func encodeFixed64Svc(data []byte, offset int, v uint64) int {
-	data[offset] = uint8(v)
-	data[offset+1] = uint8(v >> 8)
-	data[offset+2] = uint8(v >> 16)
-	data[offset+3] = uint8(v >> 24)
-	data[offset+4] = uint8(v >> 32)
-	data[offset+5] = uint8(v >> 40)
-	data[offset+6] = uint8(v >> 48)
-	data[offset+7] = uint8(v >> 56)
+func encodeFixed64Svc(dAtA []byte, offset int, v uint64) int {
+	dAtA[offset] = uint8(v)
+	dAtA[offset+1] = uint8(v >> 8)
+	dAtA[offset+2] = uint8(v >> 16)
+	dAtA[offset+3] = uint8(v >> 24)
+	dAtA[offset+4] = uint8(v >> 32)
+	dAtA[offset+5] = uint8(v >> 40)
+	dAtA[offset+6] = uint8(v >> 48)
+	dAtA[offset+7] = uint8(v >> 56)
 	return offset + 8
 }
-func encodeFixed32Svc(data []byte, offset int, v uint32) int {
-	data[offset] = uint8(v)
-	data[offset+1] = uint8(v >> 8)
-	data[offset+2] = uint8(v >> 16)
-	data[offset+3] = uint8(v >> 24)
+func encodeFixed32Svc(dAtA []byte, offset int, v uint32) int {
+	dAtA[offset] = uint8(v)
+	dAtA[offset+1] = uint8(v >> 8)
+	dAtA[offset+2] = uint8(v >> 16)
+	dAtA[offset+3] = uint8(v >> 24)
 	return offset + 4
 }
-func encodeVarintSvc(data []byte, offset int, v uint64) int {
+func encodeVarintSvc(dAtA []byte, offset int, v uint64) int {
 	for v >= 1<<7 {
-		data[offset] = uint8(v&0x7f | 0x80)
+		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
-	data[offset] = uint8(v)
+	dAtA[offset] = uint8(v)
 	return offset + 1
 }
 func (m *StripeAccount) Size() (n int) {
@@ -5057,8 +5057,8 @@ func valueToStringSvc(v interface{}) string {
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("*%v", pv)
 }
-func (m *StripeAccount) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *StripeAccount) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -5070,7 +5070,7 @@ func (m *StripeAccount) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -5098,7 +5098,7 @@ func (m *StripeAccount) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5113,7 +5113,7 @@ func (m *StripeAccount) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.UserID = string(data[iNdEx:postIndex])
+			m.UserID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -5127,7 +5127,7 @@ func (m *StripeAccount) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5142,11 +5142,11 @@ func (m *StripeAccount) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Scope = string(data[iNdEx:postIndex])
+			m.Scope = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -5165,8 +5165,8 @@ func (m *StripeAccount) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *VendorAccount) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *VendorAccount) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -5178,7 +5178,7 @@ func (m *VendorAccount) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -5206,7 +5206,7 @@ func (m *VendorAccount) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5221,7 +5221,7 @@ func (m *VendorAccount) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ID = string(data[iNdEx:postIndex])
+			m.ID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -5235,7 +5235,7 @@ func (m *VendorAccount) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5250,7 +5250,7 @@ func (m *VendorAccount) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.EntityID = string(data[iNdEx:postIndex])
+			m.EntityID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 0 {
@@ -5264,7 +5264,7 @@ func (m *VendorAccount) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.Lifecycle |= (VendorAccountLifecycle(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5283,7 +5283,7 @@ func (m *VendorAccount) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.ChangeState |= (VendorAccountChangeState(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5302,7 +5302,7 @@ func (m *VendorAccount) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5322,7 +5322,7 @@ func (m *VendorAccount) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.Type |= (VendorAccountType(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5341,7 +5341,7 @@ func (m *VendorAccount) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5356,14 +5356,14 @@ func (m *VendorAccount) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			v := &StripeAccount{}
-			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			m.VendorAccountOneof = &VendorAccount_StripeAccount{v}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -5382,8 +5382,8 @@ func (m *VendorAccount) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *StripeCard) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *StripeCard) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -5395,7 +5395,7 @@ func (m *StripeCard) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -5423,7 +5423,7 @@ func (m *StripeCard) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5438,7 +5438,7 @@ func (m *StripeCard) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ID = string(data[iNdEx:postIndex])
+			m.ID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -5452,7 +5452,7 @@ func (m *StripeCard) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5467,7 +5467,7 @@ func (m *StripeCard) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.TokenizationMethod = string(data[iNdEx:postIndex])
+			m.TokenizationMethod = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -5481,7 +5481,7 @@ func (m *StripeCard) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5496,7 +5496,7 @@ func (m *StripeCard) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Brand = string(data[iNdEx:postIndex])
+			m.Brand = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
@@ -5510,7 +5510,7 @@ func (m *StripeCard) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5525,11 +5525,11 @@ func (m *StripeCard) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Last4 = string(data[iNdEx:postIndex])
+			m.Last4 = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -5548,8 +5548,8 @@ func (m *StripeCard) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *Customer) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *Customer) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -5561,7 +5561,7 @@ func (m *Customer) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -5589,7 +5589,7 @@ func (m *Customer) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5604,7 +5604,7 @@ func (m *Customer) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ID = string(data[iNdEx:postIndex])
+			m.ID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -5618,7 +5618,7 @@ func (m *Customer) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5633,11 +5633,11 @@ func (m *Customer) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.EntityID = string(data[iNdEx:postIndex])
+			m.EntityID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -5656,8 +5656,8 @@ func (m *Customer) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *PaymentMethod) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *PaymentMethod) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -5669,7 +5669,7 @@ func (m *PaymentMethod) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -5697,7 +5697,7 @@ func (m *PaymentMethod) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5712,7 +5712,7 @@ func (m *PaymentMethod) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ID = string(data[iNdEx:postIndex])
+			m.ID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -5726,7 +5726,7 @@ func (m *PaymentMethod) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5741,7 +5741,7 @@ func (m *PaymentMethod) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.EntityID = string(data[iNdEx:postIndex])
+			m.EntityID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 0 {
@@ -5755,7 +5755,7 @@ func (m *PaymentMethod) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5775,7 +5775,7 @@ func (m *PaymentMethod) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.Lifecycle |= (PaymentMethodLifecycle(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5794,7 +5794,7 @@ func (m *PaymentMethod) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.ChangeState |= (PaymentMethodChangeState(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5813,7 +5813,7 @@ func (m *PaymentMethod) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.StorageType |= (PaymentMethodStorageType(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5832,7 +5832,7 @@ func (m *PaymentMethod) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.Type |= (PaymentMethodType(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5851,7 +5851,7 @@ func (m *PaymentMethod) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5866,14 +5866,14 @@ func (m *PaymentMethod) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			v := &StripeCard{}
-			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			m.PaymentMethodOneof = &PaymentMethod_StripeCard{v}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -5892,8 +5892,8 @@ func (m *PaymentMethod) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *Payment) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *Payment) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -5905,7 +5905,7 @@ func (m *Payment) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -5933,7 +5933,7 @@ func (m *Payment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5948,7 +5948,7 @@ func (m *Payment) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ID = string(data[iNdEx:postIndex])
+			m.ID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -5962,7 +5962,7 @@ func (m *Payment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5977,7 +5977,7 @@ func (m *Payment) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.RequestingEntityID = string(data[iNdEx:postIndex])
+			m.RequestingEntityID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -5991,7 +5991,7 @@ func (m *Payment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -6008,7 +6008,7 @@ func (m *Payment) Unmarshal(data []byte) error {
 			if m.PaymentMethod == nil {
 				m.PaymentMethod = &PaymentMethod{}
 			}
-			if err := m.PaymentMethod.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.PaymentMethod.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -6024,7 +6024,7 @@ func (m *Payment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.Lifecycle |= (PaymentLifecycle(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -6043,7 +6043,7 @@ func (m *Payment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.ChangeState |= (PaymentChangeState(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -6062,7 +6062,7 @@ func (m *Payment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.Amount |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -6081,7 +6081,7 @@ func (m *Payment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -6096,7 +6096,7 @@ func (m *Payment) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Currency = string(data[iNdEx:postIndex])
+			m.Currency = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 8:
 			if wireType != 0 {
@@ -6110,7 +6110,7 @@ func (m *Payment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.Created |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -6129,7 +6129,7 @@ func (m *Payment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.Modified |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -6148,7 +6148,7 @@ func (m *Payment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -6163,7 +6163,7 @@ func (m *Payment) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ThreadID = string(data[iNdEx:postIndex])
+			m.ThreadID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 11:
 			if wireType != 2 {
@@ -6177,7 +6177,7 @@ func (m *Payment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -6192,7 +6192,7 @@ func (m *Payment) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ProcessorTransactionID = string(data[iNdEx:postIndex])
+			m.ProcessorTransactionID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 12:
 			if wireType != 2 {
@@ -6206,7 +6206,7 @@ func (m *Payment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -6221,11 +6221,11 @@ func (m *Payment) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ProcessorStatusMessage = string(data[iNdEx:postIndex])
+			m.ProcessorStatusMessage = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -6244,8 +6244,8 @@ func (m *Payment) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *StripeAccountConnectRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *StripeAccountConnectRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -6257,7 +6257,7 @@ func (m *StripeAccountConnectRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -6285,7 +6285,7 @@ func (m *StripeAccountConnectRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -6300,11 +6300,11 @@ func (m *StripeAccountConnectRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Code = string(data[iNdEx:postIndex])
+			m.Code = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -6323,8 +6323,8 @@ func (m *StripeAccountConnectRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *ConnectVendorAccountRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *ConnectVendorAccountRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -6336,7 +6336,7 @@ func (m *ConnectVendorAccountRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -6364,7 +6364,7 @@ func (m *ConnectVendorAccountRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -6379,7 +6379,7 @@ func (m *ConnectVendorAccountRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.EntityID = string(data[iNdEx:postIndex])
+			m.EntityID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 0 {
@@ -6393,7 +6393,7 @@ func (m *ConnectVendorAccountRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.Type |= (VendorAccountType(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -6412,7 +6412,7 @@ func (m *ConnectVendorAccountRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -6427,14 +6427,14 @@ func (m *ConnectVendorAccountRequest) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			v := &StripeAccountConnectRequest{}
-			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			m.ConnectVendorAccountOneof = &ConnectVendorAccountRequest_StripeRequest{v}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -6453,8 +6453,8 @@ func (m *ConnectVendorAccountRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *ConnectVendorAccountResponse) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *ConnectVendorAccountResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -6466,7 +6466,7 @@ func (m *ConnectVendorAccountResponse) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -6494,7 +6494,7 @@ func (m *ConnectVendorAccountResponse) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -6509,13 +6509,13 @@ func (m *ConnectVendorAccountResponse) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.VendorAccounts = append(m.VendorAccounts, &VendorAccount{})
-			if err := m.VendorAccounts[len(m.VendorAccounts)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.VendorAccounts[len(m.VendorAccounts)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -6534,8 +6534,8 @@ func (m *ConnectVendorAccountResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *VendorAccountsRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *VendorAccountsRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -6547,7 +6547,7 @@ func (m *VendorAccountsRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -6575,7 +6575,7 @@ func (m *VendorAccountsRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -6590,11 +6590,11 @@ func (m *VendorAccountsRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.EntityID = string(data[iNdEx:postIndex])
+			m.EntityID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -6613,8 +6613,8 @@ func (m *VendorAccountsRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *VendorAccountsResponse) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *VendorAccountsResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -6626,7 +6626,7 @@ func (m *VendorAccountsResponse) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -6654,7 +6654,7 @@ func (m *VendorAccountsResponse) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -6669,13 +6669,13 @@ func (m *VendorAccountsResponse) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.VendorAccounts = append(m.VendorAccounts, &VendorAccount{})
-			if err := m.VendorAccounts[len(m.VendorAccounts)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.VendorAccounts[len(m.VendorAccounts)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -6694,8 +6694,8 @@ func (m *VendorAccountsResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *UpdateVendorAccountRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *UpdateVendorAccountRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -6707,7 +6707,7 @@ func (m *UpdateVendorAccountRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -6735,7 +6735,7 @@ func (m *UpdateVendorAccountRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -6750,7 +6750,7 @@ func (m *UpdateVendorAccountRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.VendorAccountID = string(data[iNdEx:postIndex])
+			m.VendorAccountID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 0 {
@@ -6764,7 +6764,7 @@ func (m *UpdateVendorAccountRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.Lifecycle |= (VendorAccountLifecycle(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -6783,7 +6783,7 @@ func (m *UpdateVendorAccountRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.ChangeState |= (VendorAccountChangeState(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -6792,7 +6792,7 @@ func (m *UpdateVendorAccountRequest) Unmarshal(data []byte) error {
 			}
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -6811,8 +6811,8 @@ func (m *UpdateVendorAccountRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *UpdateVendorAccountResponse) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *UpdateVendorAccountResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -6824,7 +6824,7 @@ func (m *UpdateVendorAccountResponse) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -6842,7 +6842,7 @@ func (m *UpdateVendorAccountResponse) Unmarshal(data []byte) error {
 		switch fieldNum {
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -6861,8 +6861,8 @@ func (m *UpdateVendorAccountResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *StripeCardCreateRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *StripeCardCreateRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -6874,7 +6874,7 @@ func (m *StripeCardCreateRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -6902,7 +6902,7 @@ func (m *StripeCardCreateRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -6917,11 +6917,11 @@ func (m *StripeCardCreateRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Token = string(data[iNdEx:postIndex])
+			m.Token = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -6940,8 +6940,8 @@ func (m *StripeCardCreateRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *CreatePaymentMethodRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *CreatePaymentMethodRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -6953,7 +6953,7 @@ func (m *CreatePaymentMethodRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -6981,7 +6981,7 @@ func (m *CreatePaymentMethodRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -6996,7 +6996,7 @@ func (m *CreatePaymentMethodRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.EntityID = string(data[iNdEx:postIndex])
+			m.EntityID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 0 {
@@ -7010,7 +7010,7 @@ func (m *CreatePaymentMethodRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -7030,7 +7030,7 @@ func (m *CreatePaymentMethodRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.StorageType |= (PaymentMethodStorageType(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -7049,7 +7049,7 @@ func (m *CreatePaymentMethodRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.Type |= (PaymentMethodType(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -7068,7 +7068,7 @@ func (m *CreatePaymentMethodRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -7083,14 +7083,14 @@ func (m *CreatePaymentMethodRequest) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			v := &StripeCardCreateRequest{}
-			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			m.CreatePaymentMethodOneof = &CreatePaymentMethodRequest_StripeCard{v}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -7109,8 +7109,8 @@ func (m *CreatePaymentMethodRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *CreatePaymentMethodResponse) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *CreatePaymentMethodResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -7122,7 +7122,7 @@ func (m *CreatePaymentMethodResponse) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -7150,7 +7150,7 @@ func (m *CreatePaymentMethodResponse) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -7165,13 +7165,13 @@ func (m *CreatePaymentMethodResponse) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.PaymentMethods = append(m.PaymentMethods, &PaymentMethod{})
-			if err := m.PaymentMethods[len(m.PaymentMethods)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.PaymentMethods[len(m.PaymentMethods)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -7190,8 +7190,8 @@ func (m *CreatePaymentMethodResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *PaymentMethodsRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *PaymentMethodsRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -7203,7 +7203,7 @@ func (m *PaymentMethodsRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -7231,7 +7231,7 @@ func (m *PaymentMethodsRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -7246,11 +7246,11 @@ func (m *PaymentMethodsRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.EntityID = string(data[iNdEx:postIndex])
+			m.EntityID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -7269,8 +7269,8 @@ func (m *PaymentMethodsRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *PaymentMethodsResponse) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *PaymentMethodsResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -7282,7 +7282,7 @@ func (m *PaymentMethodsResponse) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -7310,7 +7310,7 @@ func (m *PaymentMethodsResponse) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -7325,13 +7325,13 @@ func (m *PaymentMethodsResponse) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.PaymentMethods = append(m.PaymentMethods, &PaymentMethod{})
-			if err := m.PaymentMethods[len(m.PaymentMethods)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.PaymentMethods[len(m.PaymentMethods)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -7350,8 +7350,8 @@ func (m *PaymentMethodsResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *DeletePaymentMethodRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *DeletePaymentMethodRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -7363,7 +7363,7 @@ func (m *DeletePaymentMethodRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -7391,7 +7391,7 @@ func (m *DeletePaymentMethodRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -7406,11 +7406,11 @@ func (m *DeletePaymentMethodRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.PaymentMethodID = string(data[iNdEx:postIndex])
+			m.PaymentMethodID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -7429,8 +7429,8 @@ func (m *DeletePaymentMethodRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *DeletePaymentMethodResponse) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *DeletePaymentMethodResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -7442,7 +7442,7 @@ func (m *DeletePaymentMethodResponse) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -7470,7 +7470,7 @@ func (m *DeletePaymentMethodResponse) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -7485,13 +7485,13 @@ func (m *DeletePaymentMethodResponse) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.PaymentMethods = append(m.PaymentMethods, &PaymentMethod{})
-			if err := m.PaymentMethods[len(m.PaymentMethods)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.PaymentMethods[len(m.PaymentMethods)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -7510,8 +7510,8 @@ func (m *DeletePaymentMethodResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *CreatePaymentRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *CreatePaymentRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -7523,7 +7523,7 @@ func (m *CreatePaymentRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -7551,7 +7551,7 @@ func (m *CreatePaymentRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -7566,7 +7566,7 @@ func (m *CreatePaymentRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.RequestingEntityID = string(data[iNdEx:postIndex])
+			m.RequestingEntityID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 0 {
@@ -7580,7 +7580,7 @@ func (m *CreatePaymentRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.Amount |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -7599,7 +7599,7 @@ func (m *CreatePaymentRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -7614,11 +7614,11 @@ func (m *CreatePaymentRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Currency = string(data[iNdEx:postIndex])
+			m.Currency = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -7637,8 +7637,8 @@ func (m *CreatePaymentRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *CreatePaymentResponse) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *CreatePaymentResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -7650,7 +7650,7 @@ func (m *CreatePaymentResponse) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -7678,7 +7678,7 @@ func (m *CreatePaymentResponse) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -7695,13 +7695,13 @@ func (m *CreatePaymentResponse) Unmarshal(data []byte) error {
 			if m.Payment == nil {
 				m.Payment = &Payment{}
 			}
-			if err := m.Payment.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.Payment.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -7720,8 +7720,8 @@ func (m *CreatePaymentResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *PaymentRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *PaymentRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -7733,7 +7733,7 @@ func (m *PaymentRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -7761,7 +7761,7 @@ func (m *PaymentRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -7776,11 +7776,11 @@ func (m *PaymentRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.PaymentID = string(data[iNdEx:postIndex])
+			m.PaymentID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -7799,8 +7799,8 @@ func (m *PaymentRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *PaymentResponse) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *PaymentResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -7812,7 +7812,7 @@ func (m *PaymentResponse) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -7840,7 +7840,7 @@ func (m *PaymentResponse) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -7857,13 +7857,13 @@ func (m *PaymentResponse) Unmarshal(data []byte) error {
 			if m.Payment == nil {
 				m.Payment = &Payment{}
 			}
-			if err := m.Payment.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.Payment.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -7882,8 +7882,8 @@ func (m *PaymentResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *SubmitPaymentRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *SubmitPaymentRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -7895,7 +7895,7 @@ func (m *SubmitPaymentRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -7923,7 +7923,7 @@ func (m *SubmitPaymentRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -7938,7 +7938,7 @@ func (m *SubmitPaymentRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.PaymentID = string(data[iNdEx:postIndex])
+			m.PaymentID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -7952,7 +7952,7 @@ func (m *SubmitPaymentRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -7967,11 +7967,11 @@ func (m *SubmitPaymentRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ThreadID = string(data[iNdEx:postIndex])
+			m.ThreadID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -7990,8 +7990,8 @@ func (m *SubmitPaymentRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *SubmitPaymentResponse) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *SubmitPaymentResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -8003,7 +8003,7 @@ func (m *SubmitPaymentResponse) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -8031,7 +8031,7 @@ func (m *SubmitPaymentResponse) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -8048,13 +8048,13 @@ func (m *SubmitPaymentResponse) Unmarshal(data []byte) error {
 			if m.Payment == nil {
 				m.Payment = &Payment{}
 			}
-			if err := m.Payment.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.Payment.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -8073,8 +8073,8 @@ func (m *SubmitPaymentResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *AcceptPaymentRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *AcceptPaymentRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -8086,7 +8086,7 @@ func (m *AcceptPaymentRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -8114,7 +8114,7 @@ func (m *AcceptPaymentRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -8129,7 +8129,7 @@ func (m *AcceptPaymentRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.PaymentID = string(data[iNdEx:postIndex])
+			m.PaymentID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -8143,7 +8143,7 @@ func (m *AcceptPaymentRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -8158,11 +8158,11 @@ func (m *AcceptPaymentRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.PaymentMethodID = string(data[iNdEx:postIndex])
+			m.PaymentMethodID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -8181,8 +8181,8 @@ func (m *AcceptPaymentRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *AcceptPaymentResponse) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *AcceptPaymentResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -8194,7 +8194,7 @@ func (m *AcceptPaymentResponse) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -8222,7 +8222,7 @@ func (m *AcceptPaymentResponse) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -8239,13 +8239,13 @@ func (m *AcceptPaymentResponse) Unmarshal(data []byte) error {
 			if m.Payment == nil {
 				m.Payment = &Payment{}
 			}
-			if err := m.Payment.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.Payment.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -8264,8 +8264,8 @@ func (m *AcceptPaymentResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *PaymentMethodRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *PaymentMethodRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -8277,7 +8277,7 @@ func (m *PaymentMethodRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -8305,7 +8305,7 @@ func (m *PaymentMethodRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -8320,11 +8320,11 @@ func (m *PaymentMethodRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.PaymentMethodID = string(data[iNdEx:postIndex])
+			m.PaymentMethodID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -8343,8 +8343,8 @@ func (m *PaymentMethodRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *PaymentMethodResponse) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *PaymentMethodResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -8356,7 +8356,7 @@ func (m *PaymentMethodResponse) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -8384,7 +8384,7 @@ func (m *PaymentMethodResponse) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -8401,13 +8401,13 @@ func (m *PaymentMethodResponse) Unmarshal(data []byte) error {
 			if m.PaymentMethod == nil {
 				m.PaymentMethod = &PaymentMethod{}
 			}
-			if err := m.PaymentMethod.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.PaymentMethod.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -8426,8 +8426,8 @@ func (m *PaymentMethodResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func skipSvc(data []byte) (n int, err error) {
-	l := len(data)
+func skipSvc(dAtA []byte) (n int, err error) {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		var wire uint64
@@ -8438,7 +8438,7 @@ func skipSvc(data []byte) (n int, err error) {
 			if iNdEx >= l {
 				return 0, io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -8456,7 +8456,7 @@ func skipSvc(data []byte) (n int, err error) {
 					return 0, io.ErrUnexpectedEOF
 				}
 				iNdEx++
-				if data[iNdEx-1] < 0x80 {
+				if dAtA[iNdEx-1] < 0x80 {
 					break
 				}
 			}
@@ -8473,7 +8473,7 @@ func skipSvc(data []byte) (n int, err error) {
 				if iNdEx >= l {
 					return 0, io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				length |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -8496,7 +8496,7 @@ func skipSvc(data []byte) (n int, err error) {
 					if iNdEx >= l {
 						return 0, io.ErrUnexpectedEOF
 					}
-					b := data[iNdEx]
+					b := dAtA[iNdEx]
 					iNdEx++
 					innerWire |= (uint64(b) & 0x7F) << shift
 					if b < 0x80 {
@@ -8507,7 +8507,7 @@ func skipSvc(data []byte) (n int, err error) {
 				if innerWireType == 4 {
 					break
 				}
-				next, err := skipSvc(data[start:])
+				next, err := skipSvc(dAtA[start:])
 				if err != nil {
 					return 0, err
 				}

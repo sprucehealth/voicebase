@@ -18,6 +18,7 @@ import (
 )
 
 //go:generate protoc --gogoslick_out=plugins=grpc:. --proto_path=$GOPATH/src:. gen_test.proto
+//go:generate sed -i "" s#golang.org/x/net/context#context#g ./gen_test.pb.go
 //go:generate gofmt -w ./gen_test.pb.go
 //go:generate mv gen_test.pb.go gen_pb_test.go
 

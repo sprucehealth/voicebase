@@ -143,6 +143,22 @@ func (_mr *_MockThreadsClientRecorder) CreateThread(arg0, arg1 interface{}, arg2
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "CreateThread", _s...)
 }
 
+func (_m *MockThreadsClient) CreateTriggeredMessage(_param0 context.Context, _param1 *threading.CreateTriggeredMessageRequest, _param2 ...grpc.CallOption) (*threading.CreateTriggeredMessageResponse, error) {
+	_s := []interface{}{_param0, _param1}
+	for _, _x := range _param2 {
+		_s = append(_s, _x)
+	}
+	ret := _m.ctrl.Call(_m, "CreateTriggeredMessage", _s...)
+	ret0, _ := ret[0].(*threading.CreateTriggeredMessageResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockThreadsClientRecorder) CreateTriggeredMessage(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+	_s := append([]interface{}{arg0, arg1}, arg2...)
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "CreateTriggeredMessage", _s...)
+}
+
 func (_m *MockThreadsClient) DeleteMessage(_param0 context.Context, _param1 *threading.DeleteMessageRequest, _param2 ...grpc.CallOption) (*threading.DeleteMessageResponse, error) {
 	_s := []interface{}{_param0, _param1}
 	for _, _x := range _param2 {
@@ -221,6 +237,22 @@ func (_m *MockThreadsClient) DeleteThread(_param0 context.Context, _param1 *thre
 func (_mr *_MockThreadsClientRecorder) DeleteThread(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	_s := append([]interface{}{arg0, arg1}, arg2...)
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "DeleteThread", _s...)
+}
+
+func (_m *MockThreadsClient) DeleteTriggeredMessage(_param0 context.Context, _param1 *threading.DeleteTriggeredMessageRequest, _param2 ...grpc.CallOption) (*threading.DeleteTriggeredMessageResponse, error) {
+	_s := []interface{}{_param0, _param1}
+	for _, _x := range _param2 {
+		_s = append(_s, _x)
+	}
+	ret := _m.ctrl.Call(_m, "DeleteTriggeredMessage", _s...)
+	ret0, _ := ret[0].(*threading.DeleteTriggeredMessageResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockThreadsClientRecorder) DeleteTriggeredMessage(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+	_s := append([]interface{}{arg0, arg1}, arg2...)
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "DeleteTriggeredMessage", _s...)
 }
 
 func (_m *MockThreadsClient) LinkedThread(_param0 context.Context, _param1 *threading.LinkedThreadRequest, _param2 ...grpc.CallOption) (*threading.LinkedThreadResponse, error) {
@@ -509,6 +541,22 @@ func (_m *MockThreadsClient) ThreadsForMember(_param0 context.Context, _param1 *
 func (_mr *_MockThreadsClientRecorder) ThreadsForMember(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	_s := append([]interface{}{arg0, arg1}, arg2...)
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "ThreadsForMember", _s...)
+}
+
+func (_m *MockThreadsClient) TriggeredMessages(_param0 context.Context, _param1 *threading.TriggeredMessagesRequest, _param2 ...grpc.CallOption) (*threading.TriggeredMessagesResponse, error) {
+	_s := []interface{}{_param0, _param1}
+	for _, _x := range _param2 {
+		_s = append(_s, _x)
+	}
+	ret := _m.ctrl.Call(_m, "TriggeredMessages", _s...)
+	ret0, _ := ret[0].(*threading.TriggeredMessagesResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockThreadsClientRecorder) TriggeredMessages(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+	_s := append([]interface{}{arg0, arg1}, arg2...)
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "TriggeredMessages", _s...)
 }
 
 func (_m *MockThreadsClient) UpdateMessage(_param0 context.Context, _param1 *threading.UpdateMessageRequest, _param2 ...grpc.CallOption) (*threading.UpdateMessageResponse, error) {

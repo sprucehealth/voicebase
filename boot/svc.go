@@ -70,7 +70,7 @@ type Service struct {
 	memcacheCli         *memcache.Client
 	memcacheErr         error
 	healthServerOnce    sync.Once
-	healthServer        *health.HealthServer
+	healthServer        *health.Server
 	grpcServerOnce      sync.Once
 	grpcServer          *grpc.Server
 	grpcServerTLSConfig *tls.Config
@@ -295,9 +295,9 @@ func (svc *Service) StoreFromURL(u string) (storage.Store, error) {
 }
 
 // HealthServer returns a singleton of the health server.
-func (svc *Service) HealthServer() *health.HealthServer {
+func (svc *Service) HealthServer() *health.Server {
 	svc.healthServerOnce.Do(func() {
-		svc.healthServer = health.NewHealthServer()
+		svc.healthServer = health.NewServer()
 		// Set the default to serving since it won't actually have any effect
 		// until the server is listening.
 		svc.healthServer.SetServingStatus("", grpc_health_v1.HealthCheckResponse_SERVING)

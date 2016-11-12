@@ -2200,62 +2200,62 @@ func extensionToGoStringGen(m github_com_gogo_protobuf_proto.Message) string {
 	s += strings.Join(ss, ",") + "})"
 	return s
 }
-func (m *Reference) Marshal() (data []byte, err error) {
+func (m *Reference) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *Reference) MarshalTo(data []byte) (int, error) {
+func (m *Reference) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if m.Type != 0 {
-		data[i] = 0x8
+		dAtA[i] = 0x8
 		i++
-		i = encodeVarintGen(data, i, uint64(m.Type))
+		i = encodeVarintGen(dAtA, i, uint64(m.Type))
 	}
 	if len(m.ID) > 0 {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.ID)))
-		i += copy(data[i:], m.ID)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.ID)))
+		i += copy(dAtA[i:], m.ID)
 	}
 	return i, nil
 }
 
-func (m *Message) Marshal() (data []byte, err error) {
+func (m *Message) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *Message) MarshalTo(data []byte) (int, error) {
+func (m *Message) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.Text) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.Text)))
-		i += copy(data[i:], m.Text)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.Text)))
+		i += copy(dAtA[i:], m.Text)
 	}
 	if len(m.Attachments) > 0 {
 		for _, msg := range m.Attachments {
-			data[i] = 0x12
+			dAtA[i] = 0x12
 			i++
-			i = encodeVarintGen(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
+			i = encodeVarintGen(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
@@ -2263,10 +2263,10 @@ func (m *Message) MarshalTo(data []byte) (int, error) {
 		}
 	}
 	if m.Source != nil {
-		data[i] = 0x22
+		dAtA[i] = 0x22
 		i++
-		i = encodeVarintGen(data, i, uint64(m.Source.Size()))
-		n1, err := m.Source.MarshalTo(data[i:])
+		i = encodeVarintGen(dAtA, i, uint64(m.Source.Size()))
+		n1, err := m.Source.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -2274,10 +2274,10 @@ func (m *Message) MarshalTo(data []byte) (int, error) {
 	}
 	if len(m.Destinations) > 0 {
 		for _, msg := range m.Destinations {
-			data[i] = 0x2a
+			dAtA[i] = 0x2a
 			i++
-			i = encodeVarintGen(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
+			i = encodeVarintGen(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
@@ -2285,17 +2285,17 @@ func (m *Message) MarshalTo(data []byte) (int, error) {
 		}
 	}
 	if len(m.Title) > 0 {
-		data[i] = 0x42
+		dAtA[i] = 0x42
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.Title)))
-		i += copy(data[i:], m.Title)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.Title)))
+		i += copy(dAtA[i:], m.Title)
 	}
 	if len(m.TextRefs) > 0 {
 		for _, msg := range m.TextRefs {
-			data[i] = 0x4a
+			dAtA[i] = 0x4a
 			i++
-			i = encodeVarintGen(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
+			i = encodeVarintGen(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
@@ -2303,35 +2303,35 @@ func (m *Message) MarshalTo(data []byte) (int, error) {
 		}
 	}
 	if len(m.Summary) > 0 {
-		data[i] = 0x52
+		dAtA[i] = 0x52
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.Summary)))
-		i += copy(data[i:], m.Summary)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.Summary)))
+		i += copy(dAtA[i:], m.Summary)
 	}
 	return i, nil
 }
 
-func (m *EndpointList) Marshal() (data []byte, err error) {
+func (m *EndpointList) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *EndpointList) MarshalTo(data []byte) (int, error) {
+func (m *EndpointList) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.Endpoints) > 0 {
 		for _, msg := range m.Endpoints {
-			data[i] = 0xa
+			dAtA[i] = 0xa
 			i++
-			i = encodeVarintGen(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
+			i = encodeVarintGen(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
@@ -2341,61 +2341,61 @@ func (m *EndpointList) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *Endpoint) Marshal() (data []byte, err error) {
+func (m *Endpoint) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *Endpoint) MarshalTo(data []byte) (int, error) {
+func (m *Endpoint) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if m.Channel != 0 {
-		data[i] = 0x8
+		dAtA[i] = 0x8
 		i++
-		i = encodeVarintGen(data, i, uint64(m.Channel))
+		i = encodeVarintGen(dAtA, i, uint64(m.Channel))
 	}
 	if len(m.ID) > 0 {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.ID)))
-		i += copy(data[i:], m.ID)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.ID)))
+		i += copy(dAtA[i:], m.ID)
 	}
 	return i, nil
 }
 
-func (m *MessageUpdate) Marshal() (data []byte, err error) {
+func (m *MessageUpdate) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *MessageUpdate) MarshalTo(data []byte) (int, error) {
+func (m *MessageUpdate) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.ThreadItemID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.ThreadItemID)))
-		i += copy(data[i:], m.ThreadItemID)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.ThreadItemID)))
+		i += copy(dAtA[i:], m.ThreadItemID)
 	}
 	if m.Message != nil {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintGen(data, i, uint64(m.Message.Size()))
-		n2, err := m.Message.MarshalTo(data[i:])
+		i = encodeVarintGen(dAtA, i, uint64(m.Message.Size()))
+		n2, err := m.Message.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -2404,71 +2404,71 @@ func (m *MessageUpdate) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *MessageDelete) Marshal() (data []byte, err error) {
+func (m *MessageDelete) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *MessageDelete) MarshalTo(data []byte) (int, error) {
+func (m *MessageDelete) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.ThreadItemID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.ThreadItemID)))
-		i += copy(data[i:], m.ThreadItemID)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.ThreadItemID)))
+		i += copy(dAtA[i:], m.ThreadItemID)
 	}
 	return i, nil
 }
 
-func (m *Attachment) Marshal() (data []byte, err error) {
+func (m *Attachment) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *Attachment) MarshalTo(data []byte) (int, error) {
+func (m *Attachment) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.Title) > 0 {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.Title)))
-		i += copy(data[i:], m.Title)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.Title)))
+		i += copy(dAtA[i:], m.Title)
 	}
 	if len(m.URL) > 0 {
-		data[i] = 0x1a
+		dAtA[i] = 0x1a
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.URL)))
-		i += copy(data[i:], m.URL)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.URL)))
+		i += copy(dAtA[i:], m.URL)
 	}
 	if len(m.UserTitle) > 0 {
-		data[i] = 0x22
+		dAtA[i] = 0x22
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.UserTitle)))
-		i += copy(data[i:], m.UserTitle)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.UserTitle)))
+		i += copy(dAtA[i:], m.UserTitle)
 	}
 	if len(m.ContentID) > 0 {
-		data[i] = 0x2a
+		dAtA[i] = 0x2a
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.ContentID)))
-		i += copy(data[i:], m.ContentID)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.ContentID)))
+		i += copy(dAtA[i:], m.ContentID)
 	}
 	if m.Data != nil {
-		nn3, err := m.Data.MarshalTo(data[i:])
+		nn3, err := m.Data.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -2477,13 +2477,13 @@ func (m *Attachment) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *Attachment_Image) MarshalTo(data []byte) (int, error) {
+func (m *Attachment_Image) MarshalTo(dAtA []byte) (int, error) {
 	i := 0
 	if m.Image != nil {
-		data[i] = 0x52
+		dAtA[i] = 0x52
 		i++
-		i = encodeVarintGen(data, i, uint64(m.Image.Size()))
-		n4, err := m.Image.MarshalTo(data[i:])
+		i = encodeVarintGen(dAtA, i, uint64(m.Image.Size()))
+		n4, err := m.Image.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -2491,13 +2491,13 @@ func (m *Attachment_Image) MarshalTo(data []byte) (int, error) {
 	}
 	return i, nil
 }
-func (m *Attachment_Audio) MarshalTo(data []byte) (int, error) {
+func (m *Attachment_Audio) MarshalTo(dAtA []byte) (int, error) {
 	i := 0
 	if m.Audio != nil {
-		data[i] = 0x5a
+		dAtA[i] = 0x5a
 		i++
-		i = encodeVarintGen(data, i, uint64(m.Audio.Size()))
-		n5, err := m.Audio.MarshalTo(data[i:])
+		i = encodeVarintGen(dAtA, i, uint64(m.Audio.Size()))
+		n5, err := m.Audio.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -2505,13 +2505,13 @@ func (m *Attachment_Audio) MarshalTo(data []byte) (int, error) {
 	}
 	return i, nil
 }
-func (m *Attachment_Generic) MarshalTo(data []byte) (int, error) {
+func (m *Attachment_Generic) MarshalTo(dAtA []byte) (int, error) {
 	i := 0
 	if m.Generic != nil {
-		data[i] = 0x62
+		dAtA[i] = 0x62
 		i++
-		i = encodeVarintGen(data, i, uint64(m.Generic.Size()))
-		n6, err := m.Generic.MarshalTo(data[i:])
+		i = encodeVarintGen(dAtA, i, uint64(m.Generic.Size()))
+		n6, err := m.Generic.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -2519,13 +2519,13 @@ func (m *Attachment_Generic) MarshalTo(data []byte) (int, error) {
 	}
 	return i, nil
 }
-func (m *Attachment_Visit) MarshalTo(data []byte) (int, error) {
+func (m *Attachment_Visit) MarshalTo(dAtA []byte) (int, error) {
 	i := 0
 	if m.Visit != nil {
-		data[i] = 0x6a
+		dAtA[i] = 0x6a
 		i++
-		i = encodeVarintGen(data, i, uint64(m.Visit.Size()))
-		n7, err := m.Visit.MarshalTo(data[i:])
+		i = encodeVarintGen(dAtA, i, uint64(m.Visit.Size()))
+		n7, err := m.Visit.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -2533,13 +2533,13 @@ func (m *Attachment_Visit) MarshalTo(data []byte) (int, error) {
 	}
 	return i, nil
 }
-func (m *Attachment_CarePlan) MarshalTo(data []byte) (int, error) {
+func (m *Attachment_CarePlan) MarshalTo(dAtA []byte) (int, error) {
 	i := 0
 	if m.CarePlan != nil {
-		data[i] = 0x72
+		dAtA[i] = 0x72
 		i++
-		i = encodeVarintGen(data, i, uint64(m.CarePlan.Size()))
-		n8, err := m.CarePlan.MarshalTo(data[i:])
+		i = encodeVarintGen(dAtA, i, uint64(m.CarePlan.Size()))
+		n8, err := m.CarePlan.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -2547,13 +2547,13 @@ func (m *Attachment_CarePlan) MarshalTo(data []byte) (int, error) {
 	}
 	return i, nil
 }
-func (m *Attachment_Video) MarshalTo(data []byte) (int, error) {
+func (m *Attachment_Video) MarshalTo(dAtA []byte) (int, error) {
 	i := 0
 	if m.Video != nil {
-		data[i] = 0x7a
+		dAtA[i] = 0x7a
 		i++
-		i = encodeVarintGen(data, i, uint64(m.Video.Size()))
-		n9, err := m.Video.MarshalTo(data[i:])
+		i = encodeVarintGen(dAtA, i, uint64(m.Video.Size()))
+		n9, err := m.Video.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -2561,15 +2561,15 @@ func (m *Attachment_Video) MarshalTo(data []byte) (int, error) {
 	}
 	return i, nil
 }
-func (m *Attachment_PaymentRequest) MarshalTo(data []byte) (int, error) {
+func (m *Attachment_PaymentRequest) MarshalTo(dAtA []byte) (int, error) {
 	i := 0
 	if m.PaymentRequest != nil {
-		data[i] = 0x82
+		dAtA[i] = 0x82
 		i++
-		data[i] = 0x1
+		dAtA[i] = 0x1
 		i++
-		i = encodeVarintGen(data, i, uint64(m.PaymentRequest.Size()))
-		n10, err := m.PaymentRequest.MarshalTo(data[i:])
+		i = encodeVarintGen(dAtA, i, uint64(m.PaymentRequest.Size()))
+		n10, err := m.PaymentRequest.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -2577,15 +2577,15 @@ func (m *Attachment_PaymentRequest) MarshalTo(data []byte) (int, error) {
 	}
 	return i, nil
 }
-func (m *Attachment_Document) MarshalTo(data []byte) (int, error) {
+func (m *Attachment_Document) MarshalTo(dAtA []byte) (int, error) {
 	i := 0
 	if m.Document != nil {
-		data[i] = 0x8a
+		dAtA[i] = 0x8a
 		i++
-		data[i] = 0x1
+		dAtA[i] = 0x1
 		i++
-		i = encodeVarintGen(data, i, uint64(m.Document.Size()))
-		n11, err := m.Document.MarshalTo(data[i:])
+		i = encodeVarintGen(dAtA, i, uint64(m.Document.Size()))
+		n11, err := m.Document.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -2593,292 +2593,292 @@ func (m *Attachment_Document) MarshalTo(data []byte) (int, error) {
 	}
 	return i, nil
 }
-func (m *ImageAttachment) Marshal() (data []byte, err error) {
+func (m *ImageAttachment) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *ImageAttachment) MarshalTo(data []byte) (int, error) {
+func (m *ImageAttachment) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.Mimetype) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.Mimetype)))
-		i += copy(data[i:], m.Mimetype)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.Mimetype)))
+		i += copy(dAtA[i:], m.Mimetype)
 	}
 	if len(m.MediaID) > 0 {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.MediaID)))
-		i += copy(data[i:], m.MediaID)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.MediaID)))
+		i += copy(dAtA[i:], m.MediaID)
 	}
 	if m.Width != 0 {
-		data[i] = 0x18
+		dAtA[i] = 0x18
 		i++
-		i = encodeVarintGen(data, i, uint64(m.Width))
+		i = encodeVarintGen(dAtA, i, uint64(m.Width))
 	}
 	if m.Height != 0 {
-		data[i] = 0x20
+		dAtA[i] = 0x20
 		i++
-		i = encodeVarintGen(data, i, uint64(m.Height))
+		i = encodeVarintGen(dAtA, i, uint64(m.Height))
 	}
 	return i, nil
 }
 
-func (m *VideoAttachment) Marshal() (data []byte, err error) {
+func (m *VideoAttachment) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *VideoAttachment) MarshalTo(data []byte) (int, error) {
+func (m *VideoAttachment) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.Mimetype) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.Mimetype)))
-		i += copy(data[i:], m.Mimetype)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.Mimetype)))
+		i += copy(dAtA[i:], m.Mimetype)
 	}
 	if len(m.MediaID) > 0 {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.MediaID)))
-		i += copy(data[i:], m.MediaID)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.MediaID)))
+		i += copy(dAtA[i:], m.MediaID)
 	}
 	if m.DurationNS != 0 {
-		data[i] = 0x20
+		dAtA[i] = 0x20
 		i++
-		i = encodeVarintGen(data, i, uint64(m.DurationNS))
+		i = encodeVarintGen(dAtA, i, uint64(m.DurationNS))
 	}
 	return i, nil
 }
 
-func (m *AudioAttachment) Marshal() (data []byte, err error) {
+func (m *AudioAttachment) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *AudioAttachment) MarshalTo(data []byte) (int, error) {
+func (m *AudioAttachment) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.Mimetype) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.Mimetype)))
-		i += copy(data[i:], m.Mimetype)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.Mimetype)))
+		i += copy(dAtA[i:], m.Mimetype)
 	}
 	if len(m.MediaID) > 0 {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.MediaID)))
-		i += copy(data[i:], m.MediaID)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.MediaID)))
+		i += copy(dAtA[i:], m.MediaID)
 	}
 	if m.DeprecatedDurationInSeconds != 0 {
-		data[i] = 0x18
+		dAtA[i] = 0x18
 		i++
-		i = encodeVarintGen(data, i, uint64(m.DeprecatedDurationInSeconds))
+		i = encodeVarintGen(dAtA, i, uint64(m.DeprecatedDurationInSeconds))
 	}
 	if m.DurationNS != 0 {
-		data[i] = 0x20
+		dAtA[i] = 0x20
 		i++
-		i = encodeVarintGen(data, i, uint64(m.DurationNS))
+		i = encodeVarintGen(dAtA, i, uint64(m.DurationNS))
 	}
 	return i, nil
 }
 
-func (m *DocumentAttachment) Marshal() (data []byte, err error) {
+func (m *DocumentAttachment) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *DocumentAttachment) MarshalTo(data []byte) (int, error) {
+func (m *DocumentAttachment) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.Mimetype) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.Mimetype)))
-		i += copy(data[i:], m.Mimetype)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.Mimetype)))
+		i += copy(dAtA[i:], m.Mimetype)
 	}
 	if len(m.MediaID) > 0 {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.MediaID)))
-		i += copy(data[i:], m.MediaID)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.MediaID)))
+		i += copy(dAtA[i:], m.MediaID)
 	}
 	if len(m.Name) > 0 {
-		data[i] = 0x1a
+		dAtA[i] = 0x1a
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.Name)))
-		i += copy(data[i:], m.Name)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.Name)))
+		i += copy(dAtA[i:], m.Name)
 	}
 	return i, nil
 }
 
-func (m *GenericAttachment) Marshal() (data []byte, err error) {
+func (m *GenericAttachment) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *GenericAttachment) MarshalTo(data []byte) (int, error) {
+func (m *GenericAttachment) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.Mimetype) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.Mimetype)))
-		i += copy(data[i:], m.Mimetype)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.Mimetype)))
+		i += copy(dAtA[i:], m.Mimetype)
 	}
 	if len(m.URL) > 0 {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.URL)))
-		i += copy(data[i:], m.URL)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.URL)))
+		i += copy(dAtA[i:], m.URL)
 	}
 	return i, nil
 }
 
-func (m *VisitAttachment) Marshal() (data []byte, err error) {
+func (m *VisitAttachment) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *VisitAttachment) MarshalTo(data []byte) (int, error) {
+func (m *VisitAttachment) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.VisitID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.VisitID)))
-		i += copy(data[i:], m.VisitID)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.VisitID)))
+		i += copy(dAtA[i:], m.VisitID)
 	}
 	if len(m.VisitName) > 0 {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.VisitName)))
-		i += copy(data[i:], m.VisitName)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.VisitName)))
+		i += copy(dAtA[i:], m.VisitName)
 	}
 	return i, nil
 }
 
-func (m *CarePlanAttachment) Marshal() (data []byte, err error) {
+func (m *CarePlanAttachment) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *CarePlanAttachment) MarshalTo(data []byte) (int, error) {
+func (m *CarePlanAttachment) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.CarePlanID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.CarePlanID)))
-		i += copy(data[i:], m.CarePlanID)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.CarePlanID)))
+		i += copy(dAtA[i:], m.CarePlanID)
 	}
 	if len(m.CarePlanName) > 0 {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.CarePlanName)))
-		i += copy(data[i:], m.CarePlanName)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.CarePlanName)))
+		i += copy(dAtA[i:], m.CarePlanName)
 	}
 	return i, nil
 }
 
-func (m *PaymentRequestAttachment) Marshal() (data []byte, err error) {
+func (m *PaymentRequestAttachment) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *PaymentRequestAttachment) MarshalTo(data []byte) (int, error) {
+func (m *PaymentRequestAttachment) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.PaymentID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.PaymentID)))
-		i += copy(data[i:], m.PaymentID)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.PaymentID)))
+		i += copy(dAtA[i:], m.PaymentID)
 	}
 	return i, nil
 }
 
-func (m *Query) Marshal() (data []byte, err error) {
+func (m *Query) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *Query) MarshalTo(data []byte) (int, error) {
+func (m *Query) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.Expressions) > 0 {
 		for _, msg := range m.Expressions {
-			data[i] = 0xa
+			dAtA[i] = 0xa
 			i++
-			i = encodeVarintGen(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
+			i = encodeVarintGen(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
@@ -2888,33 +2888,33 @@ func (m *Query) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *Expr) Marshal() (data []byte, err error) {
+func (m *Expr) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *Expr) MarshalTo(data []byte) (int, error) {
+func (m *Expr) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if m.Not {
-		data[i] = 0x8
+		dAtA[i] = 0x8
 		i++
 		if m.Not {
-			data[i] = 1
+			dAtA[i] = 1
 		} else {
-			data[i] = 0
+			dAtA[i] = 0
 		}
 		i++
 	}
 	if m.Value != nil {
-		nn12, err := m.Value.MarshalTo(data[i:])
+		nn12, err := m.Value.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -2923,61 +2923,61 @@ func (m *Expr) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *Expr_Token) MarshalTo(data []byte) (int, error) {
+func (m *Expr_Token) MarshalTo(dAtA []byte) (int, error) {
 	i := 0
-	data[i] = 0x12
+	dAtA[i] = 0x12
 	i++
-	i = encodeVarintGen(data, i, uint64(len(m.Token)))
-	i += copy(data[i:], m.Token)
+	i = encodeVarintGen(dAtA, i, uint64(len(m.Token)))
+	i += copy(dAtA[i:], m.Token)
 	return i, nil
 }
-func (m *Expr_Flag_) MarshalTo(data []byte) (int, error) {
+func (m *Expr_Flag_) MarshalTo(dAtA []byte) (int, error) {
 	i := 0
-	data[i] = 0x18
+	dAtA[i] = 0x18
 	i++
-	i = encodeVarintGen(data, i, uint64(m.Flag))
+	i = encodeVarintGen(dAtA, i, uint64(m.Flag))
 	return i, nil
 }
-func (m *Expr_ThreadType_) MarshalTo(data []byte) (int, error) {
+func (m *Expr_ThreadType_) MarshalTo(dAtA []byte) (int, error) {
 	i := 0
-	data[i] = 0x20
+	dAtA[i] = 0x20
 	i++
-	i = encodeVarintGen(data, i, uint64(m.ThreadType))
+	i = encodeVarintGen(dAtA, i, uint64(m.ThreadType))
 	return i, nil
 }
-func (m *Expr_Tag) MarshalTo(data []byte) (int, error) {
+func (m *Expr_Tag) MarshalTo(dAtA []byte) (int, error) {
 	i := 0
-	data[i] = 0x2a
+	dAtA[i] = 0x2a
 	i++
-	i = encodeVarintGen(data, i, uint64(len(m.Tag)))
-	i += copy(data[i:], m.Tag)
+	i = encodeVarintGen(dAtA, i, uint64(len(m.Tag)))
+	i += copy(dAtA[i:], m.Tag)
 	return i, nil
 }
-func encodeFixed64Gen(data []byte, offset int, v uint64) int {
-	data[offset] = uint8(v)
-	data[offset+1] = uint8(v >> 8)
-	data[offset+2] = uint8(v >> 16)
-	data[offset+3] = uint8(v >> 24)
-	data[offset+4] = uint8(v >> 32)
-	data[offset+5] = uint8(v >> 40)
-	data[offset+6] = uint8(v >> 48)
-	data[offset+7] = uint8(v >> 56)
+func encodeFixed64Gen(dAtA []byte, offset int, v uint64) int {
+	dAtA[offset] = uint8(v)
+	dAtA[offset+1] = uint8(v >> 8)
+	dAtA[offset+2] = uint8(v >> 16)
+	dAtA[offset+3] = uint8(v >> 24)
+	dAtA[offset+4] = uint8(v >> 32)
+	dAtA[offset+5] = uint8(v >> 40)
+	dAtA[offset+6] = uint8(v >> 48)
+	dAtA[offset+7] = uint8(v >> 56)
 	return offset + 8
 }
-func encodeFixed32Gen(data []byte, offset int, v uint32) int {
-	data[offset] = uint8(v)
-	data[offset+1] = uint8(v >> 8)
-	data[offset+2] = uint8(v >> 16)
-	data[offset+3] = uint8(v >> 24)
+func encodeFixed32Gen(dAtA []byte, offset int, v uint32) int {
+	dAtA[offset] = uint8(v)
+	dAtA[offset+1] = uint8(v >> 8)
+	dAtA[offset+2] = uint8(v >> 16)
+	dAtA[offset+3] = uint8(v >> 24)
 	return offset + 4
 }
-func encodeVarintGen(data []byte, offset int, v uint64) int {
+func encodeVarintGen(dAtA []byte, offset int, v uint64) int {
 	for v >= 1<<7 {
-		data[offset] = uint8(v&0x7f | 0x80)
+		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
-	data[offset] = uint8(v)
+	dAtA[offset] = uint8(v)
 	return offset + 1
 }
 func (m *Reference) Size() (n int) {
@@ -3695,8 +3695,8 @@ func valueToStringGen(v interface{}) string {
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("*%v", pv)
 }
-func (m *Reference) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *Reference) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -3708,7 +3708,7 @@ func (m *Reference) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -3736,7 +3736,7 @@ func (m *Reference) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.Type |= (Reference_Type(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3755,7 +3755,7 @@ func (m *Reference) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3770,11 +3770,11 @@ func (m *Reference) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ID = string(data[iNdEx:postIndex])
+			m.ID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGen(data[iNdEx:])
+			skippy, err := skipGen(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -3793,8 +3793,8 @@ func (m *Reference) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *Message) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *Message) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -3806,7 +3806,7 @@ func (m *Message) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -3834,7 +3834,7 @@ func (m *Message) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3849,7 +3849,7 @@ func (m *Message) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Text = string(data[iNdEx:postIndex])
+			m.Text = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -3863,7 +3863,7 @@ func (m *Message) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3878,7 +3878,7 @@ func (m *Message) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.Attachments = append(m.Attachments, &Attachment{})
-			if err := m.Attachments[len(m.Attachments)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.Attachments[len(m.Attachments)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -3894,7 +3894,7 @@ func (m *Message) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3911,7 +3911,7 @@ func (m *Message) Unmarshal(data []byte) error {
 			if m.Source == nil {
 				m.Source = &Endpoint{}
 			}
-			if err := m.Source.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.Source.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -3927,7 +3927,7 @@ func (m *Message) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3942,7 +3942,7 @@ func (m *Message) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.Destinations = append(m.Destinations, &Endpoint{})
-			if err := m.Destinations[len(m.Destinations)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.Destinations[len(m.Destinations)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -3958,7 +3958,7 @@ func (m *Message) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3973,7 +3973,7 @@ func (m *Message) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Title = string(data[iNdEx:postIndex])
+			m.Title = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 9:
 			if wireType != 2 {
@@ -3987,7 +3987,7 @@ func (m *Message) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4002,7 +4002,7 @@ func (m *Message) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.TextRefs = append(m.TextRefs, &Reference{})
-			if err := m.TextRefs[len(m.TextRefs)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.TextRefs[len(m.TextRefs)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -4018,7 +4018,7 @@ func (m *Message) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4033,11 +4033,11 @@ func (m *Message) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Summary = string(data[iNdEx:postIndex])
+			m.Summary = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGen(data[iNdEx:])
+			skippy, err := skipGen(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -4056,8 +4056,8 @@ func (m *Message) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *EndpointList) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *EndpointList) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -4069,7 +4069,7 @@ func (m *EndpointList) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -4097,7 +4097,7 @@ func (m *EndpointList) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4112,13 +4112,13 @@ func (m *EndpointList) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.Endpoints = append(m.Endpoints, &Endpoint{})
-			if err := m.Endpoints[len(m.Endpoints)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.Endpoints[len(m.Endpoints)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGen(data[iNdEx:])
+			skippy, err := skipGen(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -4137,8 +4137,8 @@ func (m *EndpointList) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *Endpoint) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *Endpoint) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -4150,7 +4150,7 @@ func (m *Endpoint) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -4178,7 +4178,7 @@ func (m *Endpoint) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.Channel |= (Endpoint_Channel(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4197,7 +4197,7 @@ func (m *Endpoint) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4212,11 +4212,11 @@ func (m *Endpoint) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ID = string(data[iNdEx:postIndex])
+			m.ID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGen(data[iNdEx:])
+			skippy, err := skipGen(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -4235,8 +4235,8 @@ func (m *Endpoint) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *MessageUpdate) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *MessageUpdate) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -4248,7 +4248,7 @@ func (m *MessageUpdate) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -4276,7 +4276,7 @@ func (m *MessageUpdate) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4291,7 +4291,7 @@ func (m *MessageUpdate) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ThreadItemID = string(data[iNdEx:postIndex])
+			m.ThreadItemID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -4305,7 +4305,7 @@ func (m *MessageUpdate) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4322,13 +4322,13 @@ func (m *MessageUpdate) Unmarshal(data []byte) error {
 			if m.Message == nil {
 				m.Message = &Message{}
 			}
-			if err := m.Message.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.Message.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGen(data[iNdEx:])
+			skippy, err := skipGen(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -4347,8 +4347,8 @@ func (m *MessageUpdate) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *MessageDelete) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *MessageDelete) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -4360,7 +4360,7 @@ func (m *MessageDelete) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -4388,7 +4388,7 @@ func (m *MessageDelete) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4403,11 +4403,11 @@ func (m *MessageDelete) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ThreadItemID = string(data[iNdEx:postIndex])
+			m.ThreadItemID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGen(data[iNdEx:])
+			skippy, err := skipGen(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -4426,8 +4426,8 @@ func (m *MessageDelete) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *Attachment) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *Attachment) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -4439,7 +4439,7 @@ func (m *Attachment) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -4467,7 +4467,7 @@ func (m *Attachment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4482,7 +4482,7 @@ func (m *Attachment) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Title = string(data[iNdEx:postIndex])
+			m.Title = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -4496,7 +4496,7 @@ func (m *Attachment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4511,7 +4511,7 @@ func (m *Attachment) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.URL = string(data[iNdEx:postIndex])
+			m.URL = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
@@ -4525,7 +4525,7 @@ func (m *Attachment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4540,7 +4540,7 @@ func (m *Attachment) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.UserTitle = string(data[iNdEx:postIndex])
+			m.UserTitle = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 5:
 			if wireType != 2 {
@@ -4554,7 +4554,7 @@ func (m *Attachment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4569,7 +4569,7 @@ func (m *Attachment) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ContentID = string(data[iNdEx:postIndex])
+			m.ContentID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 10:
 			if wireType != 2 {
@@ -4583,7 +4583,7 @@ func (m *Attachment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4598,7 +4598,7 @@ func (m *Attachment) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			v := &ImageAttachment{}
-			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			m.Data = &Attachment_Image{v}
@@ -4615,7 +4615,7 @@ func (m *Attachment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4630,7 +4630,7 @@ func (m *Attachment) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			v := &AudioAttachment{}
-			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			m.Data = &Attachment_Audio{v}
@@ -4647,7 +4647,7 @@ func (m *Attachment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4662,7 +4662,7 @@ func (m *Attachment) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			v := &GenericAttachment{}
-			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			m.Data = &Attachment_Generic{v}
@@ -4679,7 +4679,7 @@ func (m *Attachment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4694,7 +4694,7 @@ func (m *Attachment) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			v := &VisitAttachment{}
-			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			m.Data = &Attachment_Visit{v}
@@ -4711,7 +4711,7 @@ func (m *Attachment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4726,7 +4726,7 @@ func (m *Attachment) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			v := &CarePlanAttachment{}
-			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			m.Data = &Attachment_CarePlan{v}
@@ -4743,7 +4743,7 @@ func (m *Attachment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4758,7 +4758,7 @@ func (m *Attachment) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			v := &VideoAttachment{}
-			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			m.Data = &Attachment_Video{v}
@@ -4775,7 +4775,7 @@ func (m *Attachment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4790,7 +4790,7 @@ func (m *Attachment) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			v := &PaymentRequestAttachment{}
-			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			m.Data = &Attachment_PaymentRequest{v}
@@ -4807,7 +4807,7 @@ func (m *Attachment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4822,14 +4822,14 @@ func (m *Attachment) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			v := &DocumentAttachment{}
-			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			m.Data = &Attachment_Document{v}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGen(data[iNdEx:])
+			skippy, err := skipGen(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -4848,8 +4848,8 @@ func (m *Attachment) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *ImageAttachment) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *ImageAttachment) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -4861,7 +4861,7 @@ func (m *ImageAttachment) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -4889,7 +4889,7 @@ func (m *ImageAttachment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4904,7 +4904,7 @@ func (m *ImageAttachment) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Mimetype = string(data[iNdEx:postIndex])
+			m.Mimetype = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -4918,7 +4918,7 @@ func (m *ImageAttachment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4933,7 +4933,7 @@ func (m *ImageAttachment) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.MediaID = string(data[iNdEx:postIndex])
+			m.MediaID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 0 {
@@ -4947,7 +4947,7 @@ func (m *ImageAttachment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.Width |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4966,7 +4966,7 @@ func (m *ImageAttachment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.Height |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4975,7 +4975,7 @@ func (m *ImageAttachment) Unmarshal(data []byte) error {
 			}
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGen(data[iNdEx:])
+			skippy, err := skipGen(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -4994,8 +4994,8 @@ func (m *ImageAttachment) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *VideoAttachment) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *VideoAttachment) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -5007,7 +5007,7 @@ func (m *VideoAttachment) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -5035,7 +5035,7 @@ func (m *VideoAttachment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5050,7 +5050,7 @@ func (m *VideoAttachment) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Mimetype = string(data[iNdEx:postIndex])
+			m.Mimetype = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -5064,7 +5064,7 @@ func (m *VideoAttachment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5079,7 +5079,7 @@ func (m *VideoAttachment) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.MediaID = string(data[iNdEx:postIndex])
+			m.MediaID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
 			if wireType != 0 {
@@ -5093,7 +5093,7 @@ func (m *VideoAttachment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.DurationNS |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5102,7 +5102,7 @@ func (m *VideoAttachment) Unmarshal(data []byte) error {
 			}
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGen(data[iNdEx:])
+			skippy, err := skipGen(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -5121,8 +5121,8 @@ func (m *VideoAttachment) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *AudioAttachment) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *AudioAttachment) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -5134,7 +5134,7 @@ func (m *AudioAttachment) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -5162,7 +5162,7 @@ func (m *AudioAttachment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5177,7 +5177,7 @@ func (m *AudioAttachment) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Mimetype = string(data[iNdEx:postIndex])
+			m.Mimetype = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -5191,7 +5191,7 @@ func (m *AudioAttachment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5206,7 +5206,7 @@ func (m *AudioAttachment) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.MediaID = string(data[iNdEx:postIndex])
+			m.MediaID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 0 {
@@ -5220,7 +5220,7 @@ func (m *AudioAttachment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.DeprecatedDurationInSeconds |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5239,7 +5239,7 @@ func (m *AudioAttachment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.DurationNS |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5248,7 +5248,7 @@ func (m *AudioAttachment) Unmarshal(data []byte) error {
 			}
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGen(data[iNdEx:])
+			skippy, err := skipGen(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -5267,8 +5267,8 @@ func (m *AudioAttachment) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *DocumentAttachment) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *DocumentAttachment) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -5280,7 +5280,7 @@ func (m *DocumentAttachment) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -5308,7 +5308,7 @@ func (m *DocumentAttachment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5323,7 +5323,7 @@ func (m *DocumentAttachment) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Mimetype = string(data[iNdEx:postIndex])
+			m.Mimetype = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -5337,7 +5337,7 @@ func (m *DocumentAttachment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5352,7 +5352,7 @@ func (m *DocumentAttachment) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.MediaID = string(data[iNdEx:postIndex])
+			m.MediaID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -5366,7 +5366,7 @@ func (m *DocumentAttachment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5381,11 +5381,11 @@ func (m *DocumentAttachment) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Name = string(data[iNdEx:postIndex])
+			m.Name = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGen(data[iNdEx:])
+			skippy, err := skipGen(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -5404,8 +5404,8 @@ func (m *DocumentAttachment) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *GenericAttachment) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *GenericAttachment) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -5417,7 +5417,7 @@ func (m *GenericAttachment) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -5445,7 +5445,7 @@ func (m *GenericAttachment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5460,7 +5460,7 @@ func (m *GenericAttachment) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Mimetype = string(data[iNdEx:postIndex])
+			m.Mimetype = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -5474,7 +5474,7 @@ func (m *GenericAttachment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5489,11 +5489,11 @@ func (m *GenericAttachment) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.URL = string(data[iNdEx:postIndex])
+			m.URL = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGen(data[iNdEx:])
+			skippy, err := skipGen(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -5512,8 +5512,8 @@ func (m *GenericAttachment) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *VisitAttachment) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *VisitAttachment) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -5525,7 +5525,7 @@ func (m *VisitAttachment) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -5553,7 +5553,7 @@ func (m *VisitAttachment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5568,7 +5568,7 @@ func (m *VisitAttachment) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.VisitID = string(data[iNdEx:postIndex])
+			m.VisitID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -5582,7 +5582,7 @@ func (m *VisitAttachment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5597,11 +5597,11 @@ func (m *VisitAttachment) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.VisitName = string(data[iNdEx:postIndex])
+			m.VisitName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGen(data[iNdEx:])
+			skippy, err := skipGen(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -5620,8 +5620,8 @@ func (m *VisitAttachment) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *CarePlanAttachment) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *CarePlanAttachment) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -5633,7 +5633,7 @@ func (m *CarePlanAttachment) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -5661,7 +5661,7 @@ func (m *CarePlanAttachment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5676,7 +5676,7 @@ func (m *CarePlanAttachment) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.CarePlanID = string(data[iNdEx:postIndex])
+			m.CarePlanID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -5690,7 +5690,7 @@ func (m *CarePlanAttachment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5705,11 +5705,11 @@ func (m *CarePlanAttachment) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.CarePlanName = string(data[iNdEx:postIndex])
+			m.CarePlanName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGen(data[iNdEx:])
+			skippy, err := skipGen(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -5728,8 +5728,8 @@ func (m *CarePlanAttachment) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *PaymentRequestAttachment) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *PaymentRequestAttachment) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -5741,7 +5741,7 @@ func (m *PaymentRequestAttachment) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -5769,7 +5769,7 @@ func (m *PaymentRequestAttachment) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5784,11 +5784,11 @@ func (m *PaymentRequestAttachment) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.PaymentID = string(data[iNdEx:postIndex])
+			m.PaymentID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGen(data[iNdEx:])
+			skippy, err := skipGen(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -5807,8 +5807,8 @@ func (m *PaymentRequestAttachment) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *Query) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *Query) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -5820,7 +5820,7 @@ func (m *Query) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -5848,7 +5848,7 @@ func (m *Query) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5863,13 +5863,13 @@ func (m *Query) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.Expressions = append(m.Expressions, &Expr{})
-			if err := m.Expressions[len(m.Expressions)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.Expressions[len(m.Expressions)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGen(data[iNdEx:])
+			skippy, err := skipGen(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -5888,8 +5888,8 @@ func (m *Query) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *Expr) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *Expr) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -5901,7 +5901,7 @@ func (m *Expr) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -5929,7 +5929,7 @@ func (m *Expr) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5949,7 +5949,7 @@ func (m *Expr) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5964,7 +5964,7 @@ func (m *Expr) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Value = &Expr_Token{string(data[iNdEx:postIndex])}
+			m.Value = &Expr_Token{string(dAtA[iNdEx:postIndex])}
 			iNdEx = postIndex
 		case 3:
 			if wireType != 0 {
@@ -5978,7 +5978,7 @@ func (m *Expr) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				v |= (Expr_Flag(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5998,7 +5998,7 @@ func (m *Expr) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				v |= (Expr_ThreadType(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -6018,7 +6018,7 @@ func (m *Expr) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -6033,11 +6033,11 @@ func (m *Expr) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Value = &Expr_Tag{string(data[iNdEx:postIndex])}
+			m.Value = &Expr_Tag{string(dAtA[iNdEx:postIndex])}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGen(data[iNdEx:])
+			skippy, err := skipGen(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -6056,8 +6056,8 @@ func (m *Expr) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func skipGen(data []byte) (n int, err error) {
-	l := len(data)
+func skipGen(dAtA []byte) (n int, err error) {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		var wire uint64
@@ -6068,7 +6068,7 @@ func skipGen(data []byte) (n int, err error) {
 			if iNdEx >= l {
 				return 0, io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -6086,7 +6086,7 @@ func skipGen(data []byte) (n int, err error) {
 					return 0, io.ErrUnexpectedEOF
 				}
 				iNdEx++
-				if data[iNdEx-1] < 0x80 {
+				if dAtA[iNdEx-1] < 0x80 {
 					break
 				}
 			}
@@ -6103,7 +6103,7 @@ func skipGen(data []byte) (n int, err error) {
 				if iNdEx >= l {
 					return 0, io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				length |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -6126,7 +6126,7 @@ func skipGen(data []byte) (n int, err error) {
 					if iNdEx >= l {
 						return 0, io.ErrUnexpectedEOF
 					}
-					b := data[iNdEx]
+					b := dAtA[iNdEx]
 					iNdEx++
 					innerWire |= (uint64(b) & 0x7F) << shift
 					if b < 0x80 {
@@ -6137,7 +6137,7 @@ func skipGen(data []byte) (n int, err error) {
 				if innerWireType == 4 {
 					break
 				}
-				next, err := skipGen(data[start:])
+				next, err := skipGen(dAtA[start:])
 				if err != nil {
 					return 0, err
 				}

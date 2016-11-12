@@ -39,7 +39,9 @@ var _ = math.Inf
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the proto package it is being compiled against.
-const _ = proto.GoGoProtoPackageIsVersion1
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 type AddRequest struct {
 	A int64 `protobuf:"varint,1,opt,name=a,proto3" json:"a,omitempty"`
@@ -154,11 +156,12 @@ func valueToGoStringGenTest(v interface{}, typ string) string {
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("func(v %v) *%v { return &v } ( %#v )", typ, typ, pv)
 }
-func extensionToGoStringGenTest(e map[int32]github_com_gogo_protobuf_proto.Extension) string {
+func extensionToGoStringGenTest(m github_com_gogo_protobuf_proto.Message) string {
+	e := github_com_gogo_protobuf_proto.GetUnsafeExtensionsMap(m)
 	if e == nil {
 		return "nil"
 	}
-	s := "map[int32]proto.Extension{"
+	s := "proto.NewUnsafeXXX_InternalExtensions(map[int32]proto.Extension{"
 	keys := make([]int, 0, len(e))
 	for k := range e {
 		keys = append(keys, int(k))
@@ -168,7 +171,7 @@ func extensionToGoStringGenTest(e map[int32]github_com_gogo_protobuf_proto.Exten
 	for _, k := range keys {
 		ss = append(ss, strconv.Itoa(k)+": "+e[int32(k)].GoString())
 	}
-	s += strings.Join(ss, ",") + "}"
+	s += strings.Join(ss, ",") + "})"
 	return s
 }
 
@@ -178,7 +181,7 @@ var _ grpc.ClientConn
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion3
+const _ = grpc.SupportPackageIsVersion4
 
 // Client API for Test service
 
@@ -241,85 +244,85 @@ var _Test_serviceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: fileDescriptorGenTest,
+	Metadata: "gen_test.proto",
 }
 
-func (m *AddRequest) Marshal() (data []byte, err error) {
+func (m *AddRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *AddRequest) MarshalTo(data []byte) (int, error) {
+func (m *AddRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if m.A != 0 {
-		data[i] = 0x8
+		dAtA[i] = 0x8
 		i++
-		i = encodeVarintGenTest(data, i, uint64(m.A))
+		i = encodeVarintGenTest(dAtA, i, uint64(m.A))
 	}
 	if m.B != 0 {
-		data[i] = 0x10
+		dAtA[i] = 0x10
 		i++
-		i = encodeVarintGenTest(data, i, uint64(m.B))
+		i = encodeVarintGenTest(dAtA, i, uint64(m.B))
 	}
 	return i, nil
 }
 
-func (m *AddResponse) Marshal() (data []byte, err error) {
+func (m *AddResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *AddResponse) MarshalTo(data []byte) (int, error) {
+func (m *AddResponse) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if m.Sum != 0 {
-		data[i] = 0x8
+		dAtA[i] = 0x8
 		i++
-		i = encodeVarintGenTest(data, i, uint64(m.Sum))
+		i = encodeVarintGenTest(dAtA, i, uint64(m.Sum))
 	}
 	return i, nil
 }
 
-func encodeFixed64GenTest(data []byte, offset int, v uint64) int {
-	data[offset] = uint8(v)
-	data[offset+1] = uint8(v >> 8)
-	data[offset+2] = uint8(v >> 16)
-	data[offset+3] = uint8(v >> 24)
-	data[offset+4] = uint8(v >> 32)
-	data[offset+5] = uint8(v >> 40)
-	data[offset+6] = uint8(v >> 48)
-	data[offset+7] = uint8(v >> 56)
+func encodeFixed64GenTest(dAtA []byte, offset int, v uint64) int {
+	dAtA[offset] = uint8(v)
+	dAtA[offset+1] = uint8(v >> 8)
+	dAtA[offset+2] = uint8(v >> 16)
+	dAtA[offset+3] = uint8(v >> 24)
+	dAtA[offset+4] = uint8(v >> 32)
+	dAtA[offset+5] = uint8(v >> 40)
+	dAtA[offset+6] = uint8(v >> 48)
+	dAtA[offset+7] = uint8(v >> 56)
 	return offset + 8
 }
-func encodeFixed32GenTest(data []byte, offset int, v uint32) int {
-	data[offset] = uint8(v)
-	data[offset+1] = uint8(v >> 8)
-	data[offset+2] = uint8(v >> 16)
-	data[offset+3] = uint8(v >> 24)
+func encodeFixed32GenTest(dAtA []byte, offset int, v uint32) int {
+	dAtA[offset] = uint8(v)
+	dAtA[offset+1] = uint8(v >> 8)
+	dAtA[offset+2] = uint8(v >> 16)
+	dAtA[offset+3] = uint8(v >> 24)
 	return offset + 4
 }
-func encodeVarintGenTest(data []byte, offset int, v uint64) int {
+func encodeVarintGenTest(dAtA []byte, offset int, v uint64) int {
 	for v >= 1<<7 {
-		data[offset] = uint8(v&0x7f | 0x80)
+		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
-	data[offset] = uint8(v)
+	dAtA[offset] = uint8(v)
 	return offset + 1
 }
 func (m *AddRequest) Size() (n int) {
@@ -385,8 +388,8 @@ func valueToStringGenTest(v interface{}) string {
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("*%v", pv)
 }
-func (m *AddRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *AddRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -398,7 +401,7 @@ func (m *AddRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -426,7 +429,7 @@ func (m *AddRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.A |= (int64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -445,7 +448,7 @@ func (m *AddRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.B |= (int64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -454,7 +457,7 @@ func (m *AddRequest) Unmarshal(data []byte) error {
 			}
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGenTest(data[iNdEx:])
+			skippy, err := skipGenTest(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -473,8 +476,8 @@ func (m *AddRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *AddResponse) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *AddResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -486,7 +489,7 @@ func (m *AddResponse) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -514,7 +517,7 @@ func (m *AddResponse) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.Sum |= (int64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -523,7 +526,7 @@ func (m *AddResponse) Unmarshal(data []byte) error {
 			}
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGenTest(data[iNdEx:])
+			skippy, err := skipGenTest(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -542,8 +545,8 @@ func (m *AddResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func skipGenTest(data []byte) (n int, err error) {
-	l := len(data)
+func skipGenTest(dAtA []byte) (n int, err error) {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		var wire uint64
@@ -554,7 +557,7 @@ func skipGenTest(data []byte) (n int, err error) {
 			if iNdEx >= l {
 				return 0, io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -572,7 +575,7 @@ func skipGenTest(data []byte) (n int, err error) {
 					return 0, io.ErrUnexpectedEOF
 				}
 				iNdEx++
-				if data[iNdEx-1] < 0x80 {
+				if dAtA[iNdEx-1] < 0x80 {
 					break
 				}
 			}
@@ -589,7 +592,7 @@ func skipGenTest(data []byte) (n int, err error) {
 				if iNdEx >= l {
 					return 0, io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				length |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -612,7 +615,7 @@ func skipGenTest(data []byte) (n int, err error) {
 					if iNdEx >= l {
 						return 0, io.ErrUnexpectedEOF
 					}
-					b := data[iNdEx]
+					b := dAtA[iNdEx]
 					iNdEx++
 					innerWire |= (uint64(b) & 0x7F) << shift
 					if b < 0x80 {
@@ -623,7 +626,7 @@ func skipGenTest(data []byte) (n int, err error) {
 				if innerWireType == 4 {
 					break
 				}
-				next, err := skipGenTest(data[start:])
+				next, err := skipGenTest(dAtA[start:])
 				if err != nil {
 					return 0, err
 				}
@@ -646,6 +649,8 @@ var (
 	ErrInvalidLengthGenTest = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowGenTest   = fmt.Errorf("proto: integer overflow")
 )
+
+func init() { proto.RegisterFile("gen_test.proto", fileDescriptorGenTest) }
 
 var fileDescriptorGenTest = []byte{
 	// 225 bytes of a gzipped FileDescriptorProto

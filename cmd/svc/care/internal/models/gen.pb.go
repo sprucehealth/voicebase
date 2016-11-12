@@ -1411,35 +1411,35 @@ func extensionToGoStringGen(m github_com_gogo_protobuf_proto.Message) string {
 	s += strings.Join(ss, ",") + "})"
 	return s
 }
-func (m *Answer) Marshal() (data []byte, err error) {
+func (m *Answer) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *Answer) MarshalTo(data []byte) (int, error) {
+func (m *Answer) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.QuestionID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.QuestionID)))
-		i += copy(data[i:], m.QuestionID)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.QuestionID)))
+		i += copy(dAtA[i:], m.QuestionID)
 	}
 	if len(m.Type) > 0 {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.Type)))
-		i += copy(data[i:], m.Type)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.Type)))
+		i += copy(dAtA[i:], m.Type)
 	}
 	if m.Answer != nil {
-		nn1, err := m.Answer.MarshalTo(data[i:])
+		nn1, err := m.Answer.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -1448,13 +1448,13 @@ func (m *Answer) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *Answer_FreeText) MarshalTo(data []byte) (int, error) {
+func (m *Answer_FreeText) MarshalTo(dAtA []byte) (int, error) {
 	i := 0
 	if m.FreeText != nil {
-		data[i] = 0x52
+		dAtA[i] = 0x52
 		i++
-		i = encodeVarintGen(data, i, uint64(m.FreeText.Size()))
-		n2, err := m.FreeText.MarshalTo(data[i:])
+		i = encodeVarintGen(dAtA, i, uint64(m.FreeText.Size()))
+		n2, err := m.FreeText.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -1462,13 +1462,13 @@ func (m *Answer_FreeText) MarshalTo(data []byte) (int, error) {
 	}
 	return i, nil
 }
-func (m *Answer_MultipleChoice) MarshalTo(data []byte) (int, error) {
+func (m *Answer_MultipleChoice) MarshalTo(dAtA []byte) (int, error) {
 	i := 0
 	if m.MultipleChoice != nil {
-		data[i] = 0x5a
+		dAtA[i] = 0x5a
 		i++
-		i = encodeVarintGen(data, i, uint64(m.MultipleChoice.Size()))
-		n3, err := m.MultipleChoice.MarshalTo(data[i:])
+		i = encodeVarintGen(dAtA, i, uint64(m.MultipleChoice.Size()))
+		n3, err := m.MultipleChoice.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -1476,13 +1476,13 @@ func (m *Answer_MultipleChoice) MarshalTo(data []byte) (int, error) {
 	}
 	return i, nil
 }
-func (m *Answer_SingleSelect) MarshalTo(data []byte) (int, error) {
+func (m *Answer_SingleSelect) MarshalTo(dAtA []byte) (int, error) {
 	i := 0
 	if m.SingleSelect != nil {
-		data[i] = 0x62
+		dAtA[i] = 0x62
 		i++
-		i = encodeVarintGen(data, i, uint64(m.SingleSelect.Size()))
-		n4, err := m.SingleSelect.MarshalTo(data[i:])
+		i = encodeVarintGen(dAtA, i, uint64(m.SingleSelect.Size()))
+		n4, err := m.SingleSelect.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -1490,13 +1490,13 @@ func (m *Answer_SingleSelect) MarshalTo(data []byte) (int, error) {
 	}
 	return i, nil
 }
-func (m *Answer_Autocomplete) MarshalTo(data []byte) (int, error) {
+func (m *Answer_Autocomplete) MarshalTo(dAtA []byte) (int, error) {
 	i := 0
 	if m.Autocomplete != nil {
-		data[i] = 0x6a
+		dAtA[i] = 0x6a
 		i++
-		i = encodeVarintGen(data, i, uint64(m.Autocomplete.Size()))
-		n5, err := m.Autocomplete.MarshalTo(data[i:])
+		i = encodeVarintGen(dAtA, i, uint64(m.Autocomplete.Size()))
+		n5, err := m.Autocomplete.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -1504,13 +1504,13 @@ func (m *Answer_Autocomplete) MarshalTo(data []byte) (int, error) {
 	}
 	return i, nil
 }
-func (m *Answer_MediaSection) MarshalTo(data []byte) (int, error) {
+func (m *Answer_MediaSection) MarshalTo(dAtA []byte) (int, error) {
 	i := 0
 	if m.MediaSection != nil {
-		data[i] = 0x72
+		dAtA[i] = 0x72
 		i++
-		i = encodeVarintGen(data, i, uint64(m.MediaSection.Size()))
-		n6, err := m.MediaSection.MarshalTo(data[i:])
+		i = encodeVarintGen(dAtA, i, uint64(m.MediaSection.Size()))
+		n6, err := m.MediaSection.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -1518,13 +1518,13 @@ func (m *Answer_MediaSection) MarshalTo(data []byte) (int, error) {
 	}
 	return i, nil
 }
-func (m *Answer_SingleEntry) MarshalTo(data []byte) (int, error) {
+func (m *Answer_SingleEntry) MarshalTo(dAtA []byte) (int, error) {
 	i := 0
 	if m.SingleEntry != nil {
-		data[i] = 0x7a
+		dAtA[i] = 0x7a
 		i++
-		i = encodeVarintGen(data, i, uint64(m.SingleEntry.Size()))
-		n7, err := m.SingleEntry.MarshalTo(data[i:])
+		i = encodeVarintGen(dAtA, i, uint64(m.SingleEntry.Size()))
+		n7, err := m.SingleEntry.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -1532,15 +1532,15 @@ func (m *Answer_SingleEntry) MarshalTo(data []byte) (int, error) {
 	}
 	return i, nil
 }
-func (m *Answer_SegmentedControl) MarshalTo(data []byte) (int, error) {
+func (m *Answer_SegmentedControl) MarshalTo(dAtA []byte) (int, error) {
 	i := 0
 	if m.SegmentedControl != nil {
-		data[i] = 0x82
+		dAtA[i] = 0x82
 		i++
-		data[i] = 0x1
+		dAtA[i] = 0x1
 		i++
-		i = encodeVarintGen(data, i, uint64(m.SegmentedControl.Size()))
-		n8, err := m.SegmentedControl.MarshalTo(data[i:])
+		i = encodeVarintGen(dAtA, i, uint64(m.SegmentedControl.Size()))
+		n8, err := m.SegmentedControl.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -1548,51 +1548,51 @@ func (m *Answer_SegmentedControl) MarshalTo(data []byte) (int, error) {
 	}
 	return i, nil
 }
-func (m *FreeTextAnswer) Marshal() (data []byte, err error) {
+func (m *FreeTextAnswer) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *FreeTextAnswer) MarshalTo(data []byte) (int, error) {
+func (m *FreeTextAnswer) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.FreeText) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.FreeText)))
-		i += copy(data[i:], m.FreeText)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.FreeText)))
+		i += copy(dAtA[i:], m.FreeText)
 	}
 	return i, nil
 }
 
-func (m *MultipleChoiceAnswer) Marshal() (data []byte, err error) {
+func (m *MultipleChoiceAnswer) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *MultipleChoiceAnswer) MarshalTo(data []byte) (int, error) {
+func (m *MultipleChoiceAnswer) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.SelectedAnswers) > 0 {
 		for _, msg := range m.SelectedAnswers {
-			data[i] = 0xa
+			dAtA[i] = 0xa
 			i++
-			i = encodeVarintGen(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
+			i = encodeVarintGen(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
@@ -1602,26 +1602,26 @@ func (m *MultipleChoiceAnswer) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *SingleSelectAnswer) Marshal() (data []byte, err error) {
+func (m *SingleSelectAnswer) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *SingleSelectAnswer) MarshalTo(data []byte) (int, error) {
+func (m *SingleSelectAnswer) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if m.SelectedAnswer != nil {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintGen(data, i, uint64(m.SelectedAnswer.Size()))
-		n9, err := m.SelectedAnswer.MarshalTo(data[i:])
+		i = encodeVarintGen(dAtA, i, uint64(m.SelectedAnswer.Size()))
+		n9, err := m.SelectedAnswer.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -1630,26 +1630,26 @@ func (m *SingleSelectAnswer) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *SegmentedControlAnswer) Marshal() (data []byte, err error) {
+func (m *SegmentedControlAnswer) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *SegmentedControlAnswer) MarshalTo(data []byte) (int, error) {
+func (m *SegmentedControlAnswer) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if m.SelectedAnswer != nil {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintGen(data, i, uint64(m.SelectedAnswer.Size()))
-		n10, err := m.SelectedAnswer.MarshalTo(data[i:])
+		i = encodeVarintGen(dAtA, i, uint64(m.SelectedAnswer.Size()))
+		n10, err := m.SelectedAnswer.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -1658,60 +1658,60 @@ func (m *SegmentedControlAnswer) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *SingleEntryAnswer) Marshal() (data []byte, err error) {
+func (m *SingleEntryAnswer) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *SingleEntryAnswer) MarshalTo(data []byte) (int, error) {
+func (m *SingleEntryAnswer) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.FreeText) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.FreeText)))
-		i += copy(data[i:], m.FreeText)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.FreeText)))
+		i += copy(dAtA[i:], m.FreeText)
 	}
 	return i, nil
 }
 
-func (m *AnswerOption) Marshal() (data []byte, err error) {
+func (m *AnswerOption) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *AnswerOption) MarshalTo(data []byte) (int, error) {
+func (m *AnswerOption) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.ID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.ID)))
-		i += copy(data[i:], m.ID)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.ID)))
+		i += copy(dAtA[i:], m.ID)
 	}
 	if len(m.FreeText) > 0 {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.FreeText)))
-		i += copy(data[i:], m.FreeText)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.FreeText)))
+		i += copy(dAtA[i:], m.FreeText)
 	}
 	if len(m.SubAnswers) > 0 {
 		for k, _ := range m.SubAnswers {
-			data[i] = 0x1a
+			dAtA[i] = 0x1a
 			i++
 			v := m.SubAnswers[k]
 			msgSize := 0
@@ -1720,16 +1720,16 @@ func (m *AnswerOption) MarshalTo(data []byte) (int, error) {
 				msgSize += 1 + sovGen(uint64(msgSize))
 			}
 			mapSize := 1 + len(k) + sovGen(uint64(len(k))) + msgSize
-			i = encodeVarintGen(data, i, uint64(mapSize))
-			data[i] = 0xa
+			i = encodeVarintGen(dAtA, i, uint64(mapSize))
+			dAtA[i] = 0xa
 			i++
-			i = encodeVarintGen(data, i, uint64(len(k)))
-			i += copy(data[i:], k)
+			i = encodeVarintGen(dAtA, i, uint64(len(k)))
+			i += copy(dAtA[i:], k)
 			if v != nil {
-				data[i] = 0x12
+				dAtA[i] = 0x12
 				i++
-				i = encodeVarintGen(data, i, uint64(v.Size()))
-				n11, err := v.MarshalTo(data[i:])
+				i = encodeVarintGen(dAtA, i, uint64(v.Size()))
+				n11, err := v.MarshalTo(dAtA[i:])
 				if err != nil {
 					return 0, err
 				}
@@ -1740,30 +1740,30 @@ func (m *AnswerOption) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *AutocompleteAnswerItem) Marshal() (data []byte, err error) {
+func (m *AutocompleteAnswerItem) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *AutocompleteAnswerItem) MarshalTo(data []byte) (int, error) {
+func (m *AutocompleteAnswerItem) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.Answer) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.Answer)))
-		i += copy(data[i:], m.Answer)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.Answer)))
+		i += copy(dAtA[i:], m.Answer)
 	}
 	if len(m.SubAnswers) > 0 {
 		for k, _ := range m.SubAnswers {
-			data[i] = 0x12
+			dAtA[i] = 0x12
 			i++
 			v := m.SubAnswers[k]
 			msgSize := 0
@@ -1772,16 +1772,16 @@ func (m *AutocompleteAnswerItem) MarshalTo(data []byte) (int, error) {
 				msgSize += 1 + sovGen(uint64(msgSize))
 			}
 			mapSize := 1 + len(k) + sovGen(uint64(len(k))) + msgSize
-			i = encodeVarintGen(data, i, uint64(mapSize))
-			data[i] = 0xa
+			i = encodeVarintGen(dAtA, i, uint64(mapSize))
+			dAtA[i] = 0xa
 			i++
-			i = encodeVarintGen(data, i, uint64(len(k)))
-			i += copy(data[i:], k)
+			i = encodeVarintGen(dAtA, i, uint64(len(k)))
+			i += copy(dAtA[i:], k)
 			if v != nil {
-				data[i] = 0x12
+				dAtA[i] = 0x12
 				i++
-				i = encodeVarintGen(data, i, uint64(v.Size()))
-				n12, err := v.MarshalTo(data[i:])
+				i = encodeVarintGen(dAtA, i, uint64(v.Size()))
+				n12, err := v.MarshalTo(dAtA[i:])
 				if err != nil {
 					return 0, err
 				}
@@ -1792,27 +1792,27 @@ func (m *AutocompleteAnswerItem) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *AutocompleteAnswer) Marshal() (data []byte, err error) {
+func (m *AutocompleteAnswer) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *AutocompleteAnswer) MarshalTo(data []byte) (int, error) {
+func (m *AutocompleteAnswer) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.Items) > 0 {
 		for _, msg := range m.Items {
-			data[i] = 0xa
+			dAtA[i] = 0xa
 			i++
-			i = encodeVarintGen(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
+			i = encodeVarintGen(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
@@ -1822,27 +1822,27 @@ func (m *AutocompleteAnswer) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *MediaSectionAnswer) Marshal() (data []byte, err error) {
+func (m *MediaSectionAnswer) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *MediaSectionAnswer) MarshalTo(data []byte) (int, error) {
+func (m *MediaSectionAnswer) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.Sections) > 0 {
 		for _, msg := range m.Sections {
-			data[i] = 0xa
+			dAtA[i] = 0xa
 			i++
-			i = encodeVarintGen(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
+			i = encodeVarintGen(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
@@ -1852,33 +1852,33 @@ func (m *MediaSectionAnswer) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *MediaSectionAnswer_MediaSectionItem) Marshal() (data []byte, err error) {
+func (m *MediaSectionAnswer_MediaSectionItem) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *MediaSectionAnswer_MediaSectionItem) MarshalTo(data []byte) (int, error) {
+func (m *MediaSectionAnswer_MediaSectionItem) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.Name) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.Name)))
-		i += copy(data[i:], m.Name)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.Name)))
+		i += copy(dAtA[i:], m.Name)
 	}
 	if len(m.Slots) > 0 {
 		for _, msg := range m.Slots {
-			data[i] = 0x12
+			dAtA[i] = 0x12
 			i++
-			i = encodeVarintGen(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
+			i = encodeVarintGen(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
@@ -1888,72 +1888,72 @@ func (m *MediaSectionAnswer_MediaSectionItem) MarshalTo(data []byte) (int, error
 	return i, nil
 }
 
-func (m *MediaSectionAnswer_MediaSectionItem_MediaSlotItem) Marshal() (data []byte, err error) {
+func (m *MediaSectionAnswer_MediaSectionItem_MediaSlotItem) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *MediaSectionAnswer_MediaSectionItem_MediaSlotItem) MarshalTo(data []byte) (int, error) {
+func (m *MediaSectionAnswer_MediaSectionItem_MediaSlotItem) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.SlotID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.SlotID)))
-		i += copy(data[i:], m.SlotID)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.SlotID)))
+		i += copy(dAtA[i:], m.SlotID)
 	}
 	if len(m.Name) > 0 {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.Name)))
-		i += copy(data[i:], m.Name)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.Name)))
+		i += copy(dAtA[i:], m.Name)
 	}
 	if len(m.MediaID) > 0 {
-		data[i] = 0x1a
+		dAtA[i] = 0x1a
 		i++
-		i = encodeVarintGen(data, i, uint64(len(m.MediaID)))
-		i += copy(data[i:], m.MediaID)
+		i = encodeVarintGen(dAtA, i, uint64(len(m.MediaID)))
+		i += copy(dAtA[i:], m.MediaID)
 	}
 	if m.Type != 0 {
-		data[i] = 0x20
+		dAtA[i] = 0x20
 		i++
-		i = encodeVarintGen(data, i, uint64(m.Type))
+		i = encodeVarintGen(dAtA, i, uint64(m.Type))
 	}
 	return i, nil
 }
 
-func encodeFixed64Gen(data []byte, offset int, v uint64) int {
-	data[offset] = uint8(v)
-	data[offset+1] = uint8(v >> 8)
-	data[offset+2] = uint8(v >> 16)
-	data[offset+3] = uint8(v >> 24)
-	data[offset+4] = uint8(v >> 32)
-	data[offset+5] = uint8(v >> 40)
-	data[offset+6] = uint8(v >> 48)
-	data[offset+7] = uint8(v >> 56)
+func encodeFixed64Gen(dAtA []byte, offset int, v uint64) int {
+	dAtA[offset] = uint8(v)
+	dAtA[offset+1] = uint8(v >> 8)
+	dAtA[offset+2] = uint8(v >> 16)
+	dAtA[offset+3] = uint8(v >> 24)
+	dAtA[offset+4] = uint8(v >> 32)
+	dAtA[offset+5] = uint8(v >> 40)
+	dAtA[offset+6] = uint8(v >> 48)
+	dAtA[offset+7] = uint8(v >> 56)
 	return offset + 8
 }
-func encodeFixed32Gen(data []byte, offset int, v uint32) int {
-	data[offset] = uint8(v)
-	data[offset+1] = uint8(v >> 8)
-	data[offset+2] = uint8(v >> 16)
-	data[offset+3] = uint8(v >> 24)
+func encodeFixed32Gen(dAtA []byte, offset int, v uint32) int {
+	dAtA[offset] = uint8(v)
+	dAtA[offset+1] = uint8(v >> 8)
+	dAtA[offset+2] = uint8(v >> 16)
+	dAtA[offset+3] = uint8(v >> 24)
 	return offset + 4
 }
-func encodeVarintGen(data []byte, offset int, v uint64) int {
+func encodeVarintGen(dAtA []byte, offset int, v uint64) int {
 	for v >= 1<<7 {
-		data[offset] = uint8(v&0x7f | 0x80)
+		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
-	data[offset] = uint8(v)
+	dAtA[offset] = uint8(v)
 	return offset + 1
 }
 func (m *Answer) Size() (n int) {
@@ -2439,8 +2439,8 @@ func valueToStringGen(v interface{}) string {
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("*%v", pv)
 }
-func (m *Answer) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *Answer) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -2452,7 +2452,7 @@ func (m *Answer) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -2480,7 +2480,7 @@ func (m *Answer) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2495,7 +2495,7 @@ func (m *Answer) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.QuestionID = string(data[iNdEx:postIndex])
+			m.QuestionID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -2509,7 +2509,7 @@ func (m *Answer) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2524,7 +2524,7 @@ func (m *Answer) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Type = string(data[iNdEx:postIndex])
+			m.Type = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 10:
 			if wireType != 2 {
@@ -2538,7 +2538,7 @@ func (m *Answer) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2553,7 +2553,7 @@ func (m *Answer) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			v := &FreeTextAnswer{}
-			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			m.Answer = &Answer_FreeText{v}
@@ -2570,7 +2570,7 @@ func (m *Answer) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2585,7 +2585,7 @@ func (m *Answer) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			v := &MultipleChoiceAnswer{}
-			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			m.Answer = &Answer_MultipleChoice{v}
@@ -2602,7 +2602,7 @@ func (m *Answer) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2617,7 +2617,7 @@ func (m *Answer) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			v := &SingleSelectAnswer{}
-			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			m.Answer = &Answer_SingleSelect{v}
@@ -2634,7 +2634,7 @@ func (m *Answer) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2649,7 +2649,7 @@ func (m *Answer) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			v := &AutocompleteAnswer{}
-			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			m.Answer = &Answer_Autocomplete{v}
@@ -2666,7 +2666,7 @@ func (m *Answer) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2681,7 +2681,7 @@ func (m *Answer) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			v := &MediaSectionAnswer{}
-			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			m.Answer = &Answer_MediaSection{v}
@@ -2698,7 +2698,7 @@ func (m *Answer) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2713,7 +2713,7 @@ func (m *Answer) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			v := &SingleEntryAnswer{}
-			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			m.Answer = &Answer_SingleEntry{v}
@@ -2730,7 +2730,7 @@ func (m *Answer) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2745,14 +2745,14 @@ func (m *Answer) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			v := &SegmentedControlAnswer{}
-			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			m.Answer = &Answer_SegmentedControl{v}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGen(data[iNdEx:])
+			skippy, err := skipGen(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -2771,8 +2771,8 @@ func (m *Answer) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *FreeTextAnswer) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *FreeTextAnswer) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -2784,7 +2784,7 @@ func (m *FreeTextAnswer) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -2812,7 +2812,7 @@ func (m *FreeTextAnswer) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2827,11 +2827,11 @@ func (m *FreeTextAnswer) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.FreeText = string(data[iNdEx:postIndex])
+			m.FreeText = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGen(data[iNdEx:])
+			skippy, err := skipGen(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -2850,8 +2850,8 @@ func (m *FreeTextAnswer) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *MultipleChoiceAnswer) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *MultipleChoiceAnswer) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -2863,7 +2863,7 @@ func (m *MultipleChoiceAnswer) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -2891,7 +2891,7 @@ func (m *MultipleChoiceAnswer) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2906,13 +2906,13 @@ func (m *MultipleChoiceAnswer) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.SelectedAnswers = append(m.SelectedAnswers, &AnswerOption{})
-			if err := m.SelectedAnswers[len(m.SelectedAnswers)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.SelectedAnswers[len(m.SelectedAnswers)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGen(data[iNdEx:])
+			skippy, err := skipGen(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -2931,8 +2931,8 @@ func (m *MultipleChoiceAnswer) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *SingleSelectAnswer) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *SingleSelectAnswer) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -2944,7 +2944,7 @@ func (m *SingleSelectAnswer) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -2972,7 +2972,7 @@ func (m *SingleSelectAnswer) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2989,13 +2989,13 @@ func (m *SingleSelectAnswer) Unmarshal(data []byte) error {
 			if m.SelectedAnswer == nil {
 				m.SelectedAnswer = &AnswerOption{}
 			}
-			if err := m.SelectedAnswer.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.SelectedAnswer.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGen(data[iNdEx:])
+			skippy, err := skipGen(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -3014,8 +3014,8 @@ func (m *SingleSelectAnswer) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *SegmentedControlAnswer) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *SegmentedControlAnswer) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -3027,7 +3027,7 @@ func (m *SegmentedControlAnswer) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -3055,7 +3055,7 @@ func (m *SegmentedControlAnswer) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3072,13 +3072,13 @@ func (m *SegmentedControlAnswer) Unmarshal(data []byte) error {
 			if m.SelectedAnswer == nil {
 				m.SelectedAnswer = &AnswerOption{}
 			}
-			if err := m.SelectedAnswer.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.SelectedAnswer.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGen(data[iNdEx:])
+			skippy, err := skipGen(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -3097,8 +3097,8 @@ func (m *SegmentedControlAnswer) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *SingleEntryAnswer) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *SingleEntryAnswer) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -3110,7 +3110,7 @@ func (m *SingleEntryAnswer) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -3138,7 +3138,7 @@ func (m *SingleEntryAnswer) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3153,11 +3153,11 @@ func (m *SingleEntryAnswer) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.FreeText = string(data[iNdEx:postIndex])
+			m.FreeText = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGen(data[iNdEx:])
+			skippy, err := skipGen(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -3176,8 +3176,8 @@ func (m *SingleEntryAnswer) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *AnswerOption) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *AnswerOption) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -3189,7 +3189,7 @@ func (m *AnswerOption) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -3217,7 +3217,7 @@ func (m *AnswerOption) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3232,7 +3232,7 @@ func (m *AnswerOption) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ID = string(data[iNdEx:postIndex])
+			m.ID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -3246,7 +3246,7 @@ func (m *AnswerOption) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3261,7 +3261,7 @@ func (m *AnswerOption) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.FreeText = string(data[iNdEx:postIndex])
+			m.FreeText = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -3275,7 +3275,7 @@ func (m *AnswerOption) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3297,7 +3297,7 @@ func (m *AnswerOption) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				keykey |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3312,7 +3312,7 @@ func (m *AnswerOption) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLenmapkey |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3327,7 +3327,7 @@ func (m *AnswerOption) Unmarshal(data []byte) error {
 			if postStringIndexmapkey > l {
 				return io.ErrUnexpectedEOF
 			}
-			mapkey := string(data[iNdEx:postStringIndexmapkey])
+			mapkey := string(dAtA[iNdEx:postStringIndexmapkey])
 			iNdEx = postStringIndexmapkey
 			if m.SubAnswers == nil {
 				m.SubAnswers = make(map[string]*Answer)
@@ -3341,7 +3341,7 @@ func (m *AnswerOption) Unmarshal(data []byte) error {
 					if iNdEx >= l {
 						return io.ErrUnexpectedEOF
 					}
-					b := data[iNdEx]
+					b := dAtA[iNdEx]
 					iNdEx++
 					valuekey |= (uint64(b) & 0x7F) << shift
 					if b < 0x80 {
@@ -3356,7 +3356,7 @@ func (m *AnswerOption) Unmarshal(data []byte) error {
 					if iNdEx >= l {
 						return io.ErrUnexpectedEOF
 					}
-					b := data[iNdEx]
+					b := dAtA[iNdEx]
 					iNdEx++
 					mapmsglen |= (int(b) & 0x7F) << shift
 					if b < 0x80 {
@@ -3374,7 +3374,7 @@ func (m *AnswerOption) Unmarshal(data []byte) error {
 					return io.ErrUnexpectedEOF
 				}
 				mapvalue := &Answer{}
-				if err := mapvalue.Unmarshal(data[iNdEx:postmsgIndex]); err != nil {
+				if err := mapvalue.Unmarshal(dAtA[iNdEx:postmsgIndex]); err != nil {
 					return err
 				}
 				iNdEx = postmsgIndex
@@ -3386,7 +3386,7 @@ func (m *AnswerOption) Unmarshal(data []byte) error {
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGen(data[iNdEx:])
+			skippy, err := skipGen(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -3405,8 +3405,8 @@ func (m *AnswerOption) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *AutocompleteAnswerItem) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *AutocompleteAnswerItem) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -3418,7 +3418,7 @@ func (m *AutocompleteAnswerItem) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -3446,7 +3446,7 @@ func (m *AutocompleteAnswerItem) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3461,7 +3461,7 @@ func (m *AutocompleteAnswerItem) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Answer = string(data[iNdEx:postIndex])
+			m.Answer = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -3475,7 +3475,7 @@ func (m *AutocompleteAnswerItem) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3497,7 +3497,7 @@ func (m *AutocompleteAnswerItem) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				keykey |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3512,7 +3512,7 @@ func (m *AutocompleteAnswerItem) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLenmapkey |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3527,7 +3527,7 @@ func (m *AutocompleteAnswerItem) Unmarshal(data []byte) error {
 			if postStringIndexmapkey > l {
 				return io.ErrUnexpectedEOF
 			}
-			mapkey := string(data[iNdEx:postStringIndexmapkey])
+			mapkey := string(dAtA[iNdEx:postStringIndexmapkey])
 			iNdEx = postStringIndexmapkey
 			if m.SubAnswers == nil {
 				m.SubAnswers = make(map[string]*Answer)
@@ -3541,7 +3541,7 @@ func (m *AutocompleteAnswerItem) Unmarshal(data []byte) error {
 					if iNdEx >= l {
 						return io.ErrUnexpectedEOF
 					}
-					b := data[iNdEx]
+					b := dAtA[iNdEx]
 					iNdEx++
 					valuekey |= (uint64(b) & 0x7F) << shift
 					if b < 0x80 {
@@ -3556,7 +3556,7 @@ func (m *AutocompleteAnswerItem) Unmarshal(data []byte) error {
 					if iNdEx >= l {
 						return io.ErrUnexpectedEOF
 					}
-					b := data[iNdEx]
+					b := dAtA[iNdEx]
 					iNdEx++
 					mapmsglen |= (int(b) & 0x7F) << shift
 					if b < 0x80 {
@@ -3574,7 +3574,7 @@ func (m *AutocompleteAnswerItem) Unmarshal(data []byte) error {
 					return io.ErrUnexpectedEOF
 				}
 				mapvalue := &Answer{}
-				if err := mapvalue.Unmarshal(data[iNdEx:postmsgIndex]); err != nil {
+				if err := mapvalue.Unmarshal(dAtA[iNdEx:postmsgIndex]); err != nil {
 					return err
 				}
 				iNdEx = postmsgIndex
@@ -3586,7 +3586,7 @@ func (m *AutocompleteAnswerItem) Unmarshal(data []byte) error {
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGen(data[iNdEx:])
+			skippy, err := skipGen(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -3605,8 +3605,8 @@ func (m *AutocompleteAnswerItem) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *AutocompleteAnswer) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *AutocompleteAnswer) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -3618,7 +3618,7 @@ func (m *AutocompleteAnswer) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -3646,7 +3646,7 @@ func (m *AutocompleteAnswer) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3661,13 +3661,13 @@ func (m *AutocompleteAnswer) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.Items = append(m.Items, &AutocompleteAnswerItem{})
-			if err := m.Items[len(m.Items)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.Items[len(m.Items)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGen(data[iNdEx:])
+			skippy, err := skipGen(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -3686,8 +3686,8 @@ func (m *AutocompleteAnswer) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *MediaSectionAnswer) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *MediaSectionAnswer) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -3699,7 +3699,7 @@ func (m *MediaSectionAnswer) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -3727,7 +3727,7 @@ func (m *MediaSectionAnswer) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3742,13 +3742,13 @@ func (m *MediaSectionAnswer) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.Sections = append(m.Sections, &MediaSectionAnswer_MediaSectionItem{})
-			if err := m.Sections[len(m.Sections)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.Sections[len(m.Sections)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGen(data[iNdEx:])
+			skippy, err := skipGen(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -3767,8 +3767,8 @@ func (m *MediaSectionAnswer) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *MediaSectionAnswer_MediaSectionItem) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *MediaSectionAnswer_MediaSectionItem) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -3780,7 +3780,7 @@ func (m *MediaSectionAnswer_MediaSectionItem) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -3808,7 +3808,7 @@ func (m *MediaSectionAnswer_MediaSectionItem) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3823,7 +3823,7 @@ func (m *MediaSectionAnswer_MediaSectionItem) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Name = string(data[iNdEx:postIndex])
+			m.Name = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -3837,7 +3837,7 @@ func (m *MediaSectionAnswer_MediaSectionItem) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3852,13 +3852,13 @@ func (m *MediaSectionAnswer_MediaSectionItem) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.Slots = append(m.Slots, &MediaSectionAnswer_MediaSectionItem_MediaSlotItem{})
-			if err := m.Slots[len(m.Slots)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.Slots[len(m.Slots)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGen(data[iNdEx:])
+			skippy, err := skipGen(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -3877,8 +3877,8 @@ func (m *MediaSectionAnswer_MediaSectionItem) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *MediaSectionAnswer_MediaSectionItem_MediaSlotItem) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *MediaSectionAnswer_MediaSectionItem_MediaSlotItem) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -3890,7 +3890,7 @@ func (m *MediaSectionAnswer_MediaSectionItem_MediaSlotItem) Unmarshal(data []byt
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -3918,7 +3918,7 @@ func (m *MediaSectionAnswer_MediaSectionItem_MediaSlotItem) Unmarshal(data []byt
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3933,7 +3933,7 @@ func (m *MediaSectionAnswer_MediaSectionItem_MediaSlotItem) Unmarshal(data []byt
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.SlotID = string(data[iNdEx:postIndex])
+			m.SlotID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -3947,7 +3947,7 @@ func (m *MediaSectionAnswer_MediaSectionItem_MediaSlotItem) Unmarshal(data []byt
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3962,7 +3962,7 @@ func (m *MediaSectionAnswer_MediaSectionItem_MediaSlotItem) Unmarshal(data []byt
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Name = string(data[iNdEx:postIndex])
+			m.Name = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -3976,7 +3976,7 @@ func (m *MediaSectionAnswer_MediaSectionItem_MediaSlotItem) Unmarshal(data []byt
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3991,7 +3991,7 @@ func (m *MediaSectionAnswer_MediaSectionItem_MediaSlotItem) Unmarshal(data []byt
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.MediaID = string(data[iNdEx:postIndex])
+			m.MediaID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
 			if wireType != 0 {
@@ -4005,7 +4005,7 @@ func (m *MediaSectionAnswer_MediaSectionItem_MediaSlotItem) Unmarshal(data []byt
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.Type |= (MediaType(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4014,7 +4014,7 @@ func (m *MediaSectionAnswer_MediaSectionItem_MediaSlotItem) Unmarshal(data []byt
 			}
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGen(data[iNdEx:])
+			skippy, err := skipGen(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -4033,8 +4033,8 @@ func (m *MediaSectionAnswer_MediaSectionItem_MediaSlotItem) Unmarshal(data []byt
 	}
 	return nil
 }
-func skipGen(data []byte) (n int, err error) {
-	l := len(data)
+func skipGen(dAtA []byte) (n int, err error) {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		var wire uint64
@@ -4045,7 +4045,7 @@ func skipGen(data []byte) (n int, err error) {
 			if iNdEx >= l {
 				return 0, io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -4063,7 +4063,7 @@ func skipGen(data []byte) (n int, err error) {
 					return 0, io.ErrUnexpectedEOF
 				}
 				iNdEx++
-				if data[iNdEx-1] < 0x80 {
+				if dAtA[iNdEx-1] < 0x80 {
 					break
 				}
 			}
@@ -4080,7 +4080,7 @@ func skipGen(data []byte) (n int, err error) {
 				if iNdEx >= l {
 					return 0, io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				length |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4103,7 +4103,7 @@ func skipGen(data []byte) (n int, err error) {
 					if iNdEx >= l {
 						return 0, io.ErrUnexpectedEOF
 					}
-					b := data[iNdEx]
+					b := dAtA[iNdEx]
 					iNdEx++
 					innerWire |= (uint64(b) & 0x7F) << shift
 					if b < 0x80 {
@@ -4114,7 +4114,7 @@ func skipGen(data []byte) (n int, err error) {
 				if innerWireType == 4 {
 					break
 				}
-				next, err := skipGen(data[start:])
+				next, err := skipGen(dAtA[start:])
 				if err != nil {
 					return 0, err
 				}

@@ -138,9 +138,9 @@ func displayEntity(indent string, ent *directory.Entity) {
 
 func displayEntities(indent string, entities []*directory.Entity) {
 	w := tabwriter.NewWriter(os.Stdout, 4, 8, 4, ' ', 0)
-	fmt.Fprintf(w, indent+"ID\tDisplay Name\tType\tStatus\n")
+	fmt.Fprintf(w, indent+"ID\tDisplay Name\tType\tStatus\tAccount ID\n")
 	for _, e := range entities {
-		fmt.Fprintf(w, indent+"%s\t%s\t%s\t%s\n", e.ID, e.Info.DisplayName, e.Type, e.Status)
+		fmt.Fprintf(w, indent+"%s\t%s\t%s\t%s\t%s\n", e.ID, e.Info.DisplayName, e.Type, e.Status, e.AccountID)
 	}
 	if err := w.Flush(); err != nil {
 		golog.Fatalf(err.Error())

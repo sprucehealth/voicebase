@@ -1636,7 +1636,7 @@ var _ grpc.ClientConn
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion3
+const _ = grpc.SupportPackageIsVersion4
 
 // Client API for Layout service
 
@@ -2062,178 +2062,178 @@ var _Layout_serviceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: fileDescriptorSvc,
+	Metadata: "svc.proto",
 }
 
-func (m *VisitLayout) Marshal() (data []byte, err error) {
+func (m *VisitLayout) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *VisitLayout) MarshalTo(data []byte) (int, error) {
+func (m *VisitLayout) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.ID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.ID)))
-		i += copy(data[i:], m.ID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.ID)))
+		i += copy(dAtA[i:], m.ID)
 	}
 	if len(m.Name) > 0 {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.Name)))
-		i += copy(data[i:], m.Name)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.Name)))
+		i += copy(dAtA[i:], m.Name)
 	}
 	if len(m.CategoryID) > 0 {
-		data[i] = 0x1a
+		dAtA[i] = 0x1a
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.CategoryID)))
-		i += copy(data[i:], m.CategoryID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.CategoryID)))
+		i += copy(dAtA[i:], m.CategoryID)
 	}
 	if m.Version != nil {
-		data[i] = 0x22
+		dAtA[i] = 0x22
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.Version.Size()))
-		n1, err := m.Version.MarshalTo(data[i:])
+		i = encodeVarintSvc(dAtA, i, uint64(m.Version.Size()))
+		n1, err := m.Version.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n1
 	}
 	if len(m.InternalName) > 0 {
-		data[i] = 0x2a
+		dAtA[i] = 0x2a
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.InternalName)))
-		i += copy(data[i:], m.InternalName)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.InternalName)))
+		i += copy(dAtA[i:], m.InternalName)
 	}
 	return i, nil
 }
 
-func (m *VisitLayoutVersion) Marshal() (data []byte, err error) {
+func (m *VisitLayoutVersion) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *VisitLayoutVersion) MarshalTo(data []byte) (int, error) {
+func (m *VisitLayoutVersion) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.ID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.ID)))
-		i += copy(data[i:], m.ID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.ID)))
+		i += copy(dAtA[i:], m.ID)
 	}
 	if len(m.SAMLLocation) > 0 {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.SAMLLocation)))
-		i += copy(data[i:], m.SAMLLocation)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.SAMLLocation)))
+		i += copy(dAtA[i:], m.SAMLLocation)
 	}
 	if len(m.IntakeLayoutLocation) > 0 {
-		data[i] = 0x1a
+		dAtA[i] = 0x1a
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.IntakeLayoutLocation)))
-		i += copy(data[i:], m.IntakeLayoutLocation)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.IntakeLayoutLocation)))
+		i += copy(dAtA[i:], m.IntakeLayoutLocation)
 	}
 	if len(m.ReviewLayoutLocation) > 0 {
-		data[i] = 0x22
+		dAtA[i] = 0x22
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.ReviewLayoutLocation)))
-		i += copy(data[i:], m.ReviewLayoutLocation)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.ReviewLayoutLocation)))
+		i += copy(dAtA[i:], m.ReviewLayoutLocation)
 	}
 	return i, nil
 }
 
-func (m *VisitCategory) Marshal() (data []byte, err error) {
+func (m *VisitCategory) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *VisitCategory) MarshalTo(data []byte) (int, error) {
+func (m *VisitCategory) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.ID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.ID)))
-		i += copy(data[i:], m.ID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.ID)))
+		i += copy(dAtA[i:], m.ID)
 	}
 	if len(m.Name) > 0 {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.Name)))
-		i += copy(data[i:], m.Name)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.Name)))
+		i += copy(dAtA[i:], m.Name)
 	}
 	return i, nil
 }
 
-func (m *ListVisitLayoutsRequest) Marshal() (data []byte, err error) {
+func (m *ListVisitLayoutsRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *ListVisitLayoutsRequest) MarshalTo(data []byte) (int, error) {
+func (m *ListVisitLayoutsRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.VisitCategoryID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.VisitCategoryID)))
-		i += copy(data[i:], m.VisitCategoryID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.VisitCategoryID)))
+		i += copy(dAtA[i:], m.VisitCategoryID)
 	}
 	return i, nil
 }
 
-func (m *ListVisitLayoutsResponse) Marshal() (data []byte, err error) {
+func (m *ListVisitLayoutsResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *ListVisitLayoutsResponse) MarshalTo(data []byte) (int, error) {
+func (m *ListVisitLayoutsResponse) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.VisitLayouts) > 0 {
 		for _, msg := range m.VisitLayouts {
-			data[i] = 0xa
+			dAtA[i] = 0xa
 			i++
-			i = encodeVarintSvc(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
+			i = encodeVarintSvc(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
@@ -2243,17 +2243,17 @@ func (m *ListVisitLayoutsResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *ListVisitCategoriesRequest) Marshal() (data []byte, err error) {
+func (m *ListVisitCategoriesRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *ListVisitCategoriesRequest) MarshalTo(data []byte) (int, error) {
+func (m *ListVisitCategoriesRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -2261,27 +2261,27 @@ func (m *ListVisitCategoriesRequest) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *ListVisitCategoriesResponse) Marshal() (data []byte, err error) {
+func (m *ListVisitCategoriesResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *ListVisitCategoriesResponse) MarshalTo(data []byte) (int, error) {
+func (m *ListVisitCategoriesResponse) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.Categories) > 0 {
 		for _, msg := range m.Categories {
-			data[i] = 0xa
+			dAtA[i] = 0xa
 			i++
-			i = encodeVarintSvc(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
+			i = encodeVarintSvc(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
@@ -2291,68 +2291,68 @@ func (m *ListVisitCategoriesResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *CreateVisitLayoutRequest) Marshal() (data []byte, err error) {
+func (m *CreateVisitLayoutRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *CreateVisitLayoutRequest) MarshalTo(data []byte) (int, error) {
+func (m *CreateVisitLayoutRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.Name) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.Name)))
-		i += copy(data[i:], m.Name)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.Name)))
+		i += copy(dAtA[i:], m.Name)
 	}
 	if len(m.CategoryID) > 0 {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.CategoryID)))
-		i += copy(data[i:], m.CategoryID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.CategoryID)))
+		i += copy(dAtA[i:], m.CategoryID)
 	}
 	if len(m.SAML) > 0 {
-		data[i] = 0x1a
+		dAtA[i] = 0x1a
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.SAML)))
-		i += copy(data[i:], m.SAML)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.SAML)))
+		i += copy(dAtA[i:], m.SAML)
 	}
 	if len(m.InternalName) > 0 {
-		data[i] = 0x22
+		dAtA[i] = 0x22
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.InternalName)))
-		i += copy(data[i:], m.InternalName)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.InternalName)))
+		i += copy(dAtA[i:], m.InternalName)
 	}
 	return i, nil
 }
 
-func (m *CreateVisitLayoutResponse) Marshal() (data []byte, err error) {
+func (m *CreateVisitLayoutResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *CreateVisitLayoutResponse) MarshalTo(data []byte) (int, error) {
+func (m *CreateVisitLayoutResponse) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if m.VisitLayout != nil {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.VisitLayout.Size()))
-		n2, err := m.VisitLayout.MarshalTo(data[i:])
+		i = encodeVarintSvc(dAtA, i, uint64(m.VisitLayout.Size()))
+		n2, err := m.VisitLayout.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -2361,60 +2361,60 @@ func (m *CreateVisitLayoutResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *GetVisitLayoutRequest) Marshal() (data []byte, err error) {
+func (m *GetVisitLayoutRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *GetVisitLayoutRequest) MarshalTo(data []byte) (int, error) {
+func (m *GetVisitLayoutRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.ID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.ID)))
-		i += copy(data[i:], m.ID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.ID)))
+		i += copy(dAtA[i:], m.ID)
 	}
 	if m.IncludeVersionInformation {
-		data[i] = 0x18
+		dAtA[i] = 0x18
 		i++
 		if m.IncludeVersionInformation {
-			data[i] = 1
+			dAtA[i] = 1
 		} else {
-			data[i] = 0
+			dAtA[i] = 0
 		}
 		i++
 	}
 	return i, nil
 }
 
-func (m *GetVisitLayoutResponse) Marshal() (data []byte, err error) {
+func (m *GetVisitLayoutResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *GetVisitLayoutResponse) MarshalTo(data []byte) (int, error) {
+func (m *GetVisitLayoutResponse) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if m.VisitLayout != nil {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.VisitLayout.Size()))
-		n3, err := m.VisitLayout.MarshalTo(data[i:])
+		i = encodeVarintSvc(dAtA, i, uint64(m.VisitLayout.Size()))
+		n3, err := m.VisitLayout.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -2423,50 +2423,50 @@ func (m *GetVisitLayoutResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *GetVisitLayoutByVersionRequest) Marshal() (data []byte, err error) {
+func (m *GetVisitLayoutByVersionRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *GetVisitLayoutByVersionRequest) MarshalTo(data []byte) (int, error) {
+func (m *GetVisitLayoutByVersionRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.VisitLayoutVersionID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.VisitLayoutVersionID)))
-		i += copy(data[i:], m.VisitLayoutVersionID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.VisitLayoutVersionID)))
+		i += copy(dAtA[i:], m.VisitLayoutVersionID)
 	}
 	return i, nil
 }
 
-func (m *GetVisitLayoutByVersionResponse) Marshal() (data []byte, err error) {
+func (m *GetVisitLayoutByVersionResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *GetVisitLayoutByVersionResponse) MarshalTo(data []byte) (int, error) {
+func (m *GetVisitLayoutByVersionResponse) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if m.VisitLayout != nil {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.VisitLayout.Size()))
-		n4, err := m.VisitLayout.MarshalTo(data[i:])
+		i = encodeVarintSvc(dAtA, i, uint64(m.VisitLayout.Size()))
+		n4, err := m.VisitLayout.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -2475,114 +2475,114 @@ func (m *GetVisitLayoutByVersionResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *UpdateVisitLayoutRequest) Marshal() (data []byte, err error) {
+func (m *UpdateVisitLayoutRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *UpdateVisitLayoutRequest) MarshalTo(data []byte) (int, error) {
+func (m *UpdateVisitLayoutRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.VisitLayoutID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.VisitLayoutID)))
-		i += copy(data[i:], m.VisitLayoutID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.VisitLayoutID)))
+		i += copy(dAtA[i:], m.VisitLayoutID)
 	}
 	if m.UpdateName {
-		data[i] = 0x10
+		dAtA[i] = 0x10
 		i++
 		if m.UpdateName {
-			data[i] = 1
+			dAtA[i] = 1
 		} else {
-			data[i] = 0
+			dAtA[i] = 0
 		}
 		i++
 	}
 	if len(m.Name) > 0 {
-		data[i] = 0x1a
+		dAtA[i] = 0x1a
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.Name)))
-		i += copy(data[i:], m.Name)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.Name)))
+		i += copy(dAtA[i:], m.Name)
 	}
 	if m.UpdateCategory {
-		data[i] = 0x20
+		dAtA[i] = 0x20
 		i++
 		if m.UpdateCategory {
-			data[i] = 1
+			dAtA[i] = 1
 		} else {
-			data[i] = 0
+			dAtA[i] = 0
 		}
 		i++
 	}
 	if len(m.CategoryID) > 0 {
-		data[i] = 0x2a
+		dAtA[i] = 0x2a
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.CategoryID)))
-		i += copy(data[i:], m.CategoryID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.CategoryID)))
+		i += copy(dAtA[i:], m.CategoryID)
 	}
 	if m.UpdateSAML {
-		data[i] = 0x30
+		dAtA[i] = 0x30
 		i++
 		if m.UpdateSAML {
-			data[i] = 1
+			dAtA[i] = 1
 		} else {
-			data[i] = 0
+			dAtA[i] = 0
 		}
 		i++
 	}
 	if len(m.SAML) > 0 {
-		data[i] = 0x3a
+		dAtA[i] = 0x3a
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.SAML)))
-		i += copy(data[i:], m.SAML)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.SAML)))
+		i += copy(dAtA[i:], m.SAML)
 	}
 	if m.UpdateInternalName {
-		data[i] = 0x40
+		dAtA[i] = 0x40
 		i++
 		if m.UpdateInternalName {
-			data[i] = 1
+			dAtA[i] = 1
 		} else {
-			data[i] = 0
+			dAtA[i] = 0
 		}
 		i++
 	}
 	if len(m.InternalName) > 0 {
-		data[i] = 0x4a
+		dAtA[i] = 0x4a
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.InternalName)))
-		i += copy(data[i:], m.InternalName)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.InternalName)))
+		i += copy(dAtA[i:], m.InternalName)
 	}
 	return i, nil
 }
 
-func (m *UpdateVisitLayoutResponse) Marshal() (data []byte, err error) {
+func (m *UpdateVisitLayoutResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *UpdateVisitLayoutResponse) MarshalTo(data []byte) (int, error) {
+func (m *UpdateVisitLayoutResponse) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if m.VisitLayout != nil {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.VisitLayout.Size()))
-		n5, err := m.VisitLayout.MarshalTo(data[i:])
+		i = encodeVarintSvc(dAtA, i, uint64(m.VisitLayout.Size()))
+		n5, err := m.VisitLayout.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -2591,41 +2591,41 @@ func (m *UpdateVisitLayoutResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *DeleteVisitLayoutRequest) Marshal() (data []byte, err error) {
+func (m *DeleteVisitLayoutRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *DeleteVisitLayoutRequest) MarshalTo(data []byte) (int, error) {
+func (m *DeleteVisitLayoutRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.VisitLayoutID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.VisitLayoutID)))
-		i += copy(data[i:], m.VisitLayoutID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.VisitLayoutID)))
+		i += copy(dAtA[i:], m.VisitLayoutID)
 	}
 	return i, nil
 }
 
-func (m *DeleteVisitLayoutResponse) Marshal() (data []byte, err error) {
+func (m *DeleteVisitLayoutResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *DeleteVisitLayoutResponse) MarshalTo(data []byte) (int, error) {
+func (m *DeleteVisitLayoutResponse) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -2633,50 +2633,50 @@ func (m *DeleteVisitLayoutResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *CreateVisitCategoryRequest) Marshal() (data []byte, err error) {
+func (m *CreateVisitCategoryRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *CreateVisitCategoryRequest) MarshalTo(data []byte) (int, error) {
+func (m *CreateVisitCategoryRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.Name) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.Name)))
-		i += copy(data[i:], m.Name)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.Name)))
+		i += copy(dAtA[i:], m.Name)
 	}
 	return i, nil
 }
 
-func (m *CreateVisitCategoryResponse) Marshal() (data []byte, err error) {
+func (m *CreateVisitCategoryResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *CreateVisitCategoryResponse) MarshalTo(data []byte) (int, error) {
+func (m *CreateVisitCategoryResponse) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if m.Category != nil {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.Category.Size()))
-		n6, err := m.Category.MarshalTo(data[i:])
+		i = encodeVarintSvc(dAtA, i, uint64(m.Category.Size()))
+		n6, err := m.Category.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -2685,56 +2685,56 @@ func (m *CreateVisitCategoryResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *UpdateVisitCategoryRequest) Marshal() (data []byte, err error) {
+func (m *UpdateVisitCategoryRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *UpdateVisitCategoryRequest) MarshalTo(data []byte) (int, error) {
+func (m *UpdateVisitCategoryRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.VisitCategoryID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.VisitCategoryID)))
-		i += copy(data[i:], m.VisitCategoryID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.VisitCategoryID)))
+		i += copy(dAtA[i:], m.VisitCategoryID)
 	}
 	if len(m.Name) > 0 {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.Name)))
-		i += copy(data[i:], m.Name)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.Name)))
+		i += copy(dAtA[i:], m.Name)
 	}
 	return i, nil
 }
 
-func (m *UpdateVisitCategoryResponse) Marshal() (data []byte, err error) {
+func (m *UpdateVisitCategoryResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *UpdateVisitCategoryResponse) MarshalTo(data []byte) (int, error) {
+func (m *UpdateVisitCategoryResponse) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if m.Category != nil {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.Category.Size()))
-		n7, err := m.Category.MarshalTo(data[i:])
+		i = encodeVarintSvc(dAtA, i, uint64(m.Category.Size()))
+		n7, err := m.Category.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -2743,41 +2743,41 @@ func (m *UpdateVisitCategoryResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *DeleteVisitCategoryRequest) Marshal() (data []byte, err error) {
+func (m *DeleteVisitCategoryRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *DeleteVisitCategoryRequest) MarshalTo(data []byte) (int, error) {
+func (m *DeleteVisitCategoryRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.VisitCategoryID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.VisitCategoryID)))
-		i += copy(data[i:], m.VisitCategoryID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.VisitCategoryID)))
+		i += copy(dAtA[i:], m.VisitCategoryID)
 	}
 	return i, nil
 }
 
-func (m *DeleteVisitCategoryResponse) Marshal() (data []byte, err error) {
+func (m *DeleteVisitCategoryResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *DeleteVisitCategoryResponse) MarshalTo(data []byte) (int, error) {
+func (m *DeleteVisitCategoryResponse) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -2785,56 +2785,56 @@ func (m *DeleteVisitCategoryResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *GetVisitLayoutVersionRequest) Marshal() (data []byte, err error) {
+func (m *GetVisitLayoutVersionRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *GetVisitLayoutVersionRequest) MarshalTo(data []byte) (int, error) {
+func (m *GetVisitLayoutVersionRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.ID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.ID)))
-		i += copy(data[i:], m.ID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.ID)))
+		i += copy(dAtA[i:], m.ID)
 	}
 	if len(m.VisitLayoutID) > 0 {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.VisitLayoutID)))
-		i += copy(data[i:], m.VisitLayoutID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.VisitLayoutID)))
+		i += copy(dAtA[i:], m.VisitLayoutID)
 	}
 	return i, nil
 }
 
-func (m *GetVisitLayoutVersionResponse) Marshal() (data []byte, err error) {
+func (m *GetVisitLayoutVersionResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *GetVisitLayoutVersionResponse) MarshalTo(data []byte) (int, error) {
+func (m *GetVisitLayoutVersionResponse) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if m.VisitLayoutVersion != nil {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.VisitLayoutVersion.Size()))
-		n8, err := m.VisitLayoutVersion.MarshalTo(data[i:])
+		i = encodeVarintSvc(dAtA, i, uint64(m.VisitLayoutVersion.Size()))
+		n8, err := m.VisitLayoutVersion.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -2843,50 +2843,50 @@ func (m *GetVisitLayoutVersionResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *GetVisitCategoryRequest) Marshal() (data []byte, err error) {
+func (m *GetVisitCategoryRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *GetVisitCategoryRequest) MarshalTo(data []byte) (int, error) {
+func (m *GetVisitCategoryRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.ID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.ID)))
-		i += copy(data[i:], m.ID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.ID)))
+		i += copy(dAtA[i:], m.ID)
 	}
 	return i, nil
 }
 
-func (m *GetVisitCategoryResponse) Marshal() (data []byte, err error) {
+func (m *GetVisitCategoryResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *GetVisitCategoryResponse) MarshalTo(data []byte) (int, error) {
+func (m *GetVisitCategoryResponse) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if m.VisitCategory != nil {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.VisitCategory.Size()))
-		n9, err := m.VisitCategory.MarshalTo(data[i:])
+		i = encodeVarintSvc(dAtA, i, uint64(m.VisitCategory.Size()))
+		n9, err := m.VisitCategory.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -2895,31 +2895,31 @@ func (m *GetVisitCategoryResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func encodeFixed64Svc(data []byte, offset int, v uint64) int {
-	data[offset] = uint8(v)
-	data[offset+1] = uint8(v >> 8)
-	data[offset+2] = uint8(v >> 16)
-	data[offset+3] = uint8(v >> 24)
-	data[offset+4] = uint8(v >> 32)
-	data[offset+5] = uint8(v >> 40)
-	data[offset+6] = uint8(v >> 48)
-	data[offset+7] = uint8(v >> 56)
+func encodeFixed64Svc(dAtA []byte, offset int, v uint64) int {
+	dAtA[offset] = uint8(v)
+	dAtA[offset+1] = uint8(v >> 8)
+	dAtA[offset+2] = uint8(v >> 16)
+	dAtA[offset+3] = uint8(v >> 24)
+	dAtA[offset+4] = uint8(v >> 32)
+	dAtA[offset+5] = uint8(v >> 40)
+	dAtA[offset+6] = uint8(v >> 48)
+	dAtA[offset+7] = uint8(v >> 56)
 	return offset + 8
 }
-func encodeFixed32Svc(data []byte, offset int, v uint32) int {
-	data[offset] = uint8(v)
-	data[offset+1] = uint8(v >> 8)
-	data[offset+2] = uint8(v >> 16)
-	data[offset+3] = uint8(v >> 24)
+func encodeFixed32Svc(dAtA []byte, offset int, v uint32) int {
+	dAtA[offset] = uint8(v)
+	dAtA[offset+1] = uint8(v >> 8)
+	dAtA[offset+2] = uint8(v >> 16)
+	dAtA[offset+3] = uint8(v >> 24)
 	return offset + 4
 }
-func encodeVarintSvc(data []byte, offset int, v uint64) int {
+func encodeVarintSvc(dAtA []byte, offset int, v uint64) int {
 	for v >= 1<<7 {
-		data[offset] = uint8(v&0x7f | 0x80)
+		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
-	data[offset] = uint8(v)
+	dAtA[offset] = uint8(v)
 	return offset + 1
 }
 func (m *VisitLayout) Size() (n int) {
@@ -3577,8 +3577,8 @@ func valueToStringSvc(v interface{}) string {
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("*%v", pv)
 }
-func (m *VisitLayout) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *VisitLayout) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -3590,7 +3590,7 @@ func (m *VisitLayout) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -3618,7 +3618,7 @@ func (m *VisitLayout) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3633,7 +3633,7 @@ func (m *VisitLayout) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ID = string(data[iNdEx:postIndex])
+			m.ID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -3647,7 +3647,7 @@ func (m *VisitLayout) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3662,7 +3662,7 @@ func (m *VisitLayout) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Name = string(data[iNdEx:postIndex])
+			m.Name = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -3676,7 +3676,7 @@ func (m *VisitLayout) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3691,7 +3691,7 @@ func (m *VisitLayout) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.CategoryID = string(data[iNdEx:postIndex])
+			m.CategoryID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
@@ -3705,7 +3705,7 @@ func (m *VisitLayout) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3722,7 +3722,7 @@ func (m *VisitLayout) Unmarshal(data []byte) error {
 			if m.Version == nil {
 				m.Version = &VisitLayoutVersion{}
 			}
-			if err := m.Version.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.Version.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -3738,7 +3738,7 @@ func (m *VisitLayout) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3753,11 +3753,11 @@ func (m *VisitLayout) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.InternalName = string(data[iNdEx:postIndex])
+			m.InternalName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -3776,8 +3776,8 @@ func (m *VisitLayout) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *VisitLayoutVersion) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *VisitLayoutVersion) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -3789,7 +3789,7 @@ func (m *VisitLayoutVersion) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -3817,7 +3817,7 @@ func (m *VisitLayoutVersion) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3832,7 +3832,7 @@ func (m *VisitLayoutVersion) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ID = string(data[iNdEx:postIndex])
+			m.ID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -3846,7 +3846,7 @@ func (m *VisitLayoutVersion) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3861,7 +3861,7 @@ func (m *VisitLayoutVersion) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.SAMLLocation = string(data[iNdEx:postIndex])
+			m.SAMLLocation = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -3875,7 +3875,7 @@ func (m *VisitLayoutVersion) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3890,7 +3890,7 @@ func (m *VisitLayoutVersion) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.IntakeLayoutLocation = string(data[iNdEx:postIndex])
+			m.IntakeLayoutLocation = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
@@ -3904,7 +3904,7 @@ func (m *VisitLayoutVersion) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3919,11 +3919,11 @@ func (m *VisitLayoutVersion) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ReviewLayoutLocation = string(data[iNdEx:postIndex])
+			m.ReviewLayoutLocation = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -3942,8 +3942,8 @@ func (m *VisitLayoutVersion) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *VisitCategory) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *VisitCategory) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -3955,7 +3955,7 @@ func (m *VisitCategory) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -3983,7 +3983,7 @@ func (m *VisitCategory) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3998,7 +3998,7 @@ func (m *VisitCategory) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ID = string(data[iNdEx:postIndex])
+			m.ID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -4012,7 +4012,7 @@ func (m *VisitCategory) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4027,11 +4027,11 @@ func (m *VisitCategory) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Name = string(data[iNdEx:postIndex])
+			m.Name = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -4050,8 +4050,8 @@ func (m *VisitCategory) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *ListVisitLayoutsRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *ListVisitLayoutsRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -4063,7 +4063,7 @@ func (m *ListVisitLayoutsRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -4091,7 +4091,7 @@ func (m *ListVisitLayoutsRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4106,11 +4106,11 @@ func (m *ListVisitLayoutsRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.VisitCategoryID = string(data[iNdEx:postIndex])
+			m.VisitCategoryID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -4129,8 +4129,8 @@ func (m *ListVisitLayoutsRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *ListVisitLayoutsResponse) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *ListVisitLayoutsResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -4142,7 +4142,7 @@ func (m *ListVisitLayoutsResponse) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -4170,7 +4170,7 @@ func (m *ListVisitLayoutsResponse) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4185,13 +4185,13 @@ func (m *ListVisitLayoutsResponse) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.VisitLayouts = append(m.VisitLayouts, &VisitLayout{})
-			if err := m.VisitLayouts[len(m.VisitLayouts)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.VisitLayouts[len(m.VisitLayouts)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -4210,8 +4210,8 @@ func (m *ListVisitLayoutsResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *ListVisitCategoriesRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *ListVisitCategoriesRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -4223,7 +4223,7 @@ func (m *ListVisitCategoriesRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -4241,7 +4241,7 @@ func (m *ListVisitCategoriesRequest) Unmarshal(data []byte) error {
 		switch fieldNum {
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -4260,8 +4260,8 @@ func (m *ListVisitCategoriesRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *ListVisitCategoriesResponse) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *ListVisitCategoriesResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -4273,7 +4273,7 @@ func (m *ListVisitCategoriesResponse) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -4301,7 +4301,7 @@ func (m *ListVisitCategoriesResponse) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4316,13 +4316,13 @@ func (m *ListVisitCategoriesResponse) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.Categories = append(m.Categories, &VisitCategory{})
-			if err := m.Categories[len(m.Categories)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.Categories[len(m.Categories)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -4341,8 +4341,8 @@ func (m *ListVisitCategoriesResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *CreateVisitLayoutRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *CreateVisitLayoutRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -4354,7 +4354,7 @@ func (m *CreateVisitLayoutRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -4382,7 +4382,7 @@ func (m *CreateVisitLayoutRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4397,7 +4397,7 @@ func (m *CreateVisitLayoutRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Name = string(data[iNdEx:postIndex])
+			m.Name = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -4411,7 +4411,7 @@ func (m *CreateVisitLayoutRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4426,7 +4426,7 @@ func (m *CreateVisitLayoutRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.CategoryID = string(data[iNdEx:postIndex])
+			m.CategoryID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -4440,7 +4440,7 @@ func (m *CreateVisitLayoutRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4455,7 +4455,7 @@ func (m *CreateVisitLayoutRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.SAML = string(data[iNdEx:postIndex])
+			m.SAML = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
@@ -4469,7 +4469,7 @@ func (m *CreateVisitLayoutRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4484,11 +4484,11 @@ func (m *CreateVisitLayoutRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.InternalName = string(data[iNdEx:postIndex])
+			m.InternalName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -4507,8 +4507,8 @@ func (m *CreateVisitLayoutRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *CreateVisitLayoutResponse) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *CreateVisitLayoutResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -4520,7 +4520,7 @@ func (m *CreateVisitLayoutResponse) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -4548,7 +4548,7 @@ func (m *CreateVisitLayoutResponse) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4565,13 +4565,13 @@ func (m *CreateVisitLayoutResponse) Unmarshal(data []byte) error {
 			if m.VisitLayout == nil {
 				m.VisitLayout = &VisitLayout{}
 			}
-			if err := m.VisitLayout.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.VisitLayout.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -4590,8 +4590,8 @@ func (m *CreateVisitLayoutResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *GetVisitLayoutRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *GetVisitLayoutRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -4603,7 +4603,7 @@ func (m *GetVisitLayoutRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -4631,7 +4631,7 @@ func (m *GetVisitLayoutRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4646,7 +4646,7 @@ func (m *GetVisitLayoutRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ID = string(data[iNdEx:postIndex])
+			m.ID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 0 {
@@ -4660,7 +4660,7 @@ func (m *GetVisitLayoutRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4670,7 +4670,7 @@ func (m *GetVisitLayoutRequest) Unmarshal(data []byte) error {
 			m.IncludeVersionInformation = bool(v != 0)
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -4689,8 +4689,8 @@ func (m *GetVisitLayoutRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *GetVisitLayoutResponse) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *GetVisitLayoutResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -4702,7 +4702,7 @@ func (m *GetVisitLayoutResponse) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -4730,7 +4730,7 @@ func (m *GetVisitLayoutResponse) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4747,13 +4747,13 @@ func (m *GetVisitLayoutResponse) Unmarshal(data []byte) error {
 			if m.VisitLayout == nil {
 				m.VisitLayout = &VisitLayout{}
 			}
-			if err := m.VisitLayout.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.VisitLayout.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -4772,8 +4772,8 @@ func (m *GetVisitLayoutResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *GetVisitLayoutByVersionRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *GetVisitLayoutByVersionRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -4785,7 +4785,7 @@ func (m *GetVisitLayoutByVersionRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -4813,7 +4813,7 @@ func (m *GetVisitLayoutByVersionRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4828,11 +4828,11 @@ func (m *GetVisitLayoutByVersionRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.VisitLayoutVersionID = string(data[iNdEx:postIndex])
+			m.VisitLayoutVersionID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -4851,8 +4851,8 @@ func (m *GetVisitLayoutByVersionRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *GetVisitLayoutByVersionResponse) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *GetVisitLayoutByVersionResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -4864,7 +4864,7 @@ func (m *GetVisitLayoutByVersionResponse) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -4892,7 +4892,7 @@ func (m *GetVisitLayoutByVersionResponse) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4909,13 +4909,13 @@ func (m *GetVisitLayoutByVersionResponse) Unmarshal(data []byte) error {
 			if m.VisitLayout == nil {
 				m.VisitLayout = &VisitLayout{}
 			}
-			if err := m.VisitLayout.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.VisitLayout.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -4934,8 +4934,8 @@ func (m *GetVisitLayoutByVersionResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *UpdateVisitLayoutRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *UpdateVisitLayoutRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -4947,7 +4947,7 @@ func (m *UpdateVisitLayoutRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -4975,7 +4975,7 @@ func (m *UpdateVisitLayoutRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -4990,7 +4990,7 @@ func (m *UpdateVisitLayoutRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.VisitLayoutID = string(data[iNdEx:postIndex])
+			m.VisitLayoutID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 0 {
@@ -5004,7 +5004,7 @@ func (m *UpdateVisitLayoutRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5024,7 +5024,7 @@ func (m *UpdateVisitLayoutRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5039,7 +5039,7 @@ func (m *UpdateVisitLayoutRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Name = string(data[iNdEx:postIndex])
+			m.Name = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
 			if wireType != 0 {
@@ -5053,7 +5053,7 @@ func (m *UpdateVisitLayoutRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5073,7 +5073,7 @@ func (m *UpdateVisitLayoutRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5088,7 +5088,7 @@ func (m *UpdateVisitLayoutRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.CategoryID = string(data[iNdEx:postIndex])
+			m.CategoryID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 6:
 			if wireType != 0 {
@@ -5102,7 +5102,7 @@ func (m *UpdateVisitLayoutRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5122,7 +5122,7 @@ func (m *UpdateVisitLayoutRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5137,7 +5137,7 @@ func (m *UpdateVisitLayoutRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.SAML = string(data[iNdEx:postIndex])
+			m.SAML = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 8:
 			if wireType != 0 {
@@ -5151,7 +5151,7 @@ func (m *UpdateVisitLayoutRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5171,7 +5171,7 @@ func (m *UpdateVisitLayoutRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5186,11 +5186,11 @@ func (m *UpdateVisitLayoutRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.InternalName = string(data[iNdEx:postIndex])
+			m.InternalName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -5209,8 +5209,8 @@ func (m *UpdateVisitLayoutRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *UpdateVisitLayoutResponse) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *UpdateVisitLayoutResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -5222,7 +5222,7 @@ func (m *UpdateVisitLayoutResponse) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -5250,7 +5250,7 @@ func (m *UpdateVisitLayoutResponse) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5267,13 +5267,13 @@ func (m *UpdateVisitLayoutResponse) Unmarshal(data []byte) error {
 			if m.VisitLayout == nil {
 				m.VisitLayout = &VisitLayout{}
 			}
-			if err := m.VisitLayout.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.VisitLayout.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -5292,8 +5292,8 @@ func (m *UpdateVisitLayoutResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *DeleteVisitLayoutRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *DeleteVisitLayoutRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -5305,7 +5305,7 @@ func (m *DeleteVisitLayoutRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -5333,7 +5333,7 @@ func (m *DeleteVisitLayoutRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5348,11 +5348,11 @@ func (m *DeleteVisitLayoutRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.VisitLayoutID = string(data[iNdEx:postIndex])
+			m.VisitLayoutID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -5371,8 +5371,8 @@ func (m *DeleteVisitLayoutRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *DeleteVisitLayoutResponse) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *DeleteVisitLayoutResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -5384,7 +5384,7 @@ func (m *DeleteVisitLayoutResponse) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -5402,7 +5402,7 @@ func (m *DeleteVisitLayoutResponse) Unmarshal(data []byte) error {
 		switch fieldNum {
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -5421,8 +5421,8 @@ func (m *DeleteVisitLayoutResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *CreateVisitCategoryRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *CreateVisitCategoryRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -5434,7 +5434,7 @@ func (m *CreateVisitCategoryRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -5462,7 +5462,7 @@ func (m *CreateVisitCategoryRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5477,11 +5477,11 @@ func (m *CreateVisitCategoryRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Name = string(data[iNdEx:postIndex])
+			m.Name = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -5500,8 +5500,8 @@ func (m *CreateVisitCategoryRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *CreateVisitCategoryResponse) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *CreateVisitCategoryResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -5513,7 +5513,7 @@ func (m *CreateVisitCategoryResponse) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -5541,7 +5541,7 @@ func (m *CreateVisitCategoryResponse) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5558,13 +5558,13 @@ func (m *CreateVisitCategoryResponse) Unmarshal(data []byte) error {
 			if m.Category == nil {
 				m.Category = &VisitCategory{}
 			}
-			if err := m.Category.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.Category.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -5583,8 +5583,8 @@ func (m *CreateVisitCategoryResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *UpdateVisitCategoryRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *UpdateVisitCategoryRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -5596,7 +5596,7 @@ func (m *UpdateVisitCategoryRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -5624,7 +5624,7 @@ func (m *UpdateVisitCategoryRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5639,7 +5639,7 @@ func (m *UpdateVisitCategoryRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.VisitCategoryID = string(data[iNdEx:postIndex])
+			m.VisitCategoryID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -5653,7 +5653,7 @@ func (m *UpdateVisitCategoryRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5668,11 +5668,11 @@ func (m *UpdateVisitCategoryRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Name = string(data[iNdEx:postIndex])
+			m.Name = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -5691,8 +5691,8 @@ func (m *UpdateVisitCategoryRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *UpdateVisitCategoryResponse) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *UpdateVisitCategoryResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -5704,7 +5704,7 @@ func (m *UpdateVisitCategoryResponse) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -5732,7 +5732,7 @@ func (m *UpdateVisitCategoryResponse) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5749,13 +5749,13 @@ func (m *UpdateVisitCategoryResponse) Unmarshal(data []byte) error {
 			if m.Category == nil {
 				m.Category = &VisitCategory{}
 			}
-			if err := m.Category.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.Category.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -5774,8 +5774,8 @@ func (m *UpdateVisitCategoryResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *DeleteVisitCategoryRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *DeleteVisitCategoryRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -5787,7 +5787,7 @@ func (m *DeleteVisitCategoryRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -5815,7 +5815,7 @@ func (m *DeleteVisitCategoryRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5830,11 +5830,11 @@ func (m *DeleteVisitCategoryRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.VisitCategoryID = string(data[iNdEx:postIndex])
+			m.VisitCategoryID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -5853,8 +5853,8 @@ func (m *DeleteVisitCategoryRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *DeleteVisitCategoryResponse) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *DeleteVisitCategoryResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -5866,7 +5866,7 @@ func (m *DeleteVisitCategoryResponse) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -5884,7 +5884,7 @@ func (m *DeleteVisitCategoryResponse) Unmarshal(data []byte) error {
 		switch fieldNum {
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -5903,8 +5903,8 @@ func (m *DeleteVisitCategoryResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *GetVisitLayoutVersionRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *GetVisitLayoutVersionRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -5916,7 +5916,7 @@ func (m *GetVisitLayoutVersionRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -5944,7 +5944,7 @@ func (m *GetVisitLayoutVersionRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5959,7 +5959,7 @@ func (m *GetVisitLayoutVersionRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ID = string(data[iNdEx:postIndex])
+			m.ID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -5973,7 +5973,7 @@ func (m *GetVisitLayoutVersionRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -5988,11 +5988,11 @@ func (m *GetVisitLayoutVersionRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.VisitLayoutID = string(data[iNdEx:postIndex])
+			m.VisitLayoutID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -6011,8 +6011,8 @@ func (m *GetVisitLayoutVersionRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *GetVisitLayoutVersionResponse) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *GetVisitLayoutVersionResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -6024,7 +6024,7 @@ func (m *GetVisitLayoutVersionResponse) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -6052,7 +6052,7 @@ func (m *GetVisitLayoutVersionResponse) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -6069,13 +6069,13 @@ func (m *GetVisitLayoutVersionResponse) Unmarshal(data []byte) error {
 			if m.VisitLayoutVersion == nil {
 				m.VisitLayoutVersion = &VisitLayoutVersion{}
 			}
-			if err := m.VisitLayoutVersion.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.VisitLayoutVersion.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -6094,8 +6094,8 @@ func (m *GetVisitLayoutVersionResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *GetVisitCategoryRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *GetVisitCategoryRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -6107,7 +6107,7 @@ func (m *GetVisitCategoryRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -6135,7 +6135,7 @@ func (m *GetVisitCategoryRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -6150,11 +6150,11 @@ func (m *GetVisitCategoryRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ID = string(data[iNdEx:postIndex])
+			m.ID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -6173,8 +6173,8 @@ func (m *GetVisitCategoryRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *GetVisitCategoryResponse) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *GetVisitCategoryResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -6186,7 +6186,7 @@ func (m *GetVisitCategoryResponse) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -6214,7 +6214,7 @@ func (m *GetVisitCategoryResponse) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -6231,13 +6231,13 @@ func (m *GetVisitCategoryResponse) Unmarshal(data []byte) error {
 			if m.VisitCategory == nil {
 				m.VisitCategory = &VisitCategory{}
 			}
-			if err := m.VisitCategory.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.VisitCategory.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -6256,8 +6256,8 @@ func (m *GetVisitCategoryResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func skipSvc(data []byte) (n int, err error) {
-	l := len(data)
+func skipSvc(dAtA []byte) (n int, err error) {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		var wire uint64
@@ -6268,7 +6268,7 @@ func skipSvc(data []byte) (n int, err error) {
 			if iNdEx >= l {
 				return 0, io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -6286,7 +6286,7 @@ func skipSvc(data []byte) (n int, err error) {
 					return 0, io.ErrUnexpectedEOF
 				}
 				iNdEx++
-				if data[iNdEx-1] < 0x80 {
+				if dAtA[iNdEx-1] < 0x80 {
 					break
 				}
 			}
@@ -6303,7 +6303,7 @@ func skipSvc(data []byte) (n int, err error) {
 				if iNdEx >= l {
 					return 0, io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				length |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -6326,7 +6326,7 @@ func skipSvc(data []byte) (n int, err error) {
 					if iNdEx >= l {
 						return 0, io.ErrUnexpectedEOF
 					}
-					b := data[iNdEx]
+					b := dAtA[iNdEx]
 					iNdEx++
 					innerWire |= (uint64(b) & 0x7F) << shift
 					if b < 0x80 {
@@ -6337,7 +6337,7 @@ func skipSvc(data []byte) (n int, err error) {
 				if innerWireType == 4 {
 					break
 				}
-				next, err := skipSvc(data[start:])
+				next, err := skipSvc(dAtA[start:])
 				if err != nil {
 					return 0, err
 				}

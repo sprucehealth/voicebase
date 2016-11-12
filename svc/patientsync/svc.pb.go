@@ -460,7 +460,7 @@ var _ grpc.ClientConn
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion3
+const _ = grpc.SupportPackageIsVersion4
 
 // Client API for PatientSync service
 
@@ -603,49 +603,49 @@ var _PatientSync_serviceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: fileDescriptorSvc,
+	Metadata: "svc.proto",
 }
 
-func (m *InitiateSyncRequest) Marshal() (data []byte, err error) {
+func (m *InitiateSyncRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *InitiateSyncRequest) MarshalTo(data []byte) (int, error) {
+func (m *InitiateSyncRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.OrganizationEntityID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.OrganizationEntityID)))
-		i += copy(data[i:], m.OrganizationEntityID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.OrganizationEntityID)))
+		i += copy(dAtA[i:], m.OrganizationEntityID)
 	}
 	if m.Source != 0 {
-		data[i] = 0x10
+		dAtA[i] = 0x10
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.Source))
+		i = encodeVarintSvc(dAtA, i, uint64(m.Source))
 	}
 	return i, nil
 }
 
-func (m *InitiateSyncResponse) Marshal() (data []byte, err error) {
+func (m *InitiateSyncResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *InitiateSyncResponse) MarshalTo(data []byte) (int, error) {
+func (m *InitiateSyncResponse) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -653,52 +653,52 @@ func (m *InitiateSyncResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *ConfigureSyncRequest) Marshal() (data []byte, err error) {
+func (m *ConfigureSyncRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *ConfigureSyncRequest) MarshalTo(data []byte) (int, error) {
+func (m *ConfigureSyncRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.OrganizationEntityID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.OrganizationEntityID)))
-		i += copy(data[i:], m.OrganizationEntityID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.OrganizationEntityID)))
+		i += copy(dAtA[i:], m.OrganizationEntityID)
 	}
 	if m.Source != 0 {
-		data[i] = 0x10
+		dAtA[i] = 0x10
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.Source))
+		i = encodeVarintSvc(dAtA, i, uint64(m.Source))
 	}
 	if len(m.Token) > 0 {
-		data[i] = 0x1a
+		dAtA[i] = 0x1a
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.Token)))
-		i += copy(data[i:], m.Token)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.Token)))
+		i += copy(dAtA[i:], m.Token)
 	}
 	return i, nil
 }
 
-func (m *ConfigureSyncResponse) Marshal() (data []byte, err error) {
+func (m *ConfigureSyncResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *ConfigureSyncResponse) MarshalTo(data []byte) (int, error) {
+func (m *ConfigureSyncResponse) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -706,89 +706,89 @@ func (m *ConfigureSyncResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *LookupSyncConfigurationRequest) Marshal() (data []byte, err error) {
+func (m *LookupSyncConfigurationRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *LookupSyncConfigurationRequest) MarshalTo(data []byte) (int, error) {
+func (m *LookupSyncConfigurationRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.OrganizationEntityID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.OrganizationEntityID)))
-		i += copy(data[i:], m.OrganizationEntityID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.OrganizationEntityID)))
+		i += copy(dAtA[i:], m.OrganizationEntityID)
 	}
 	if m.Source != 0 {
-		data[i] = 0x10
+		dAtA[i] = 0x10
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.Source))
+		i = encodeVarintSvc(dAtA, i, uint64(m.Source))
 	}
 	return i, nil
 }
 
-func (m *LookupSyncConfigurationResponse) Marshal() (data []byte, err error) {
+func (m *LookupSyncConfigurationResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *LookupSyncConfigurationResponse) MarshalTo(data []byte) (int, error) {
+func (m *LookupSyncConfigurationResponse) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.PracticeID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.PracticeID)))
-		i += copy(data[i:], m.PracticeID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.PracticeID)))
+		i += copy(dAtA[i:], m.PracticeID)
 	}
 	if m.ThreadCreationType != 0 {
-		data[i] = 0x10
+		dAtA[i] = 0x10
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.ThreadCreationType))
+		i = encodeVarintSvc(dAtA, i, uint64(m.ThreadCreationType))
 	}
 	return i, nil
 }
 
-func encodeFixed64Svc(data []byte, offset int, v uint64) int {
-	data[offset] = uint8(v)
-	data[offset+1] = uint8(v >> 8)
-	data[offset+2] = uint8(v >> 16)
-	data[offset+3] = uint8(v >> 24)
-	data[offset+4] = uint8(v >> 32)
-	data[offset+5] = uint8(v >> 40)
-	data[offset+6] = uint8(v >> 48)
-	data[offset+7] = uint8(v >> 56)
+func encodeFixed64Svc(dAtA []byte, offset int, v uint64) int {
+	dAtA[offset] = uint8(v)
+	dAtA[offset+1] = uint8(v >> 8)
+	dAtA[offset+2] = uint8(v >> 16)
+	dAtA[offset+3] = uint8(v >> 24)
+	dAtA[offset+4] = uint8(v >> 32)
+	dAtA[offset+5] = uint8(v >> 40)
+	dAtA[offset+6] = uint8(v >> 48)
+	dAtA[offset+7] = uint8(v >> 56)
 	return offset + 8
 }
-func encodeFixed32Svc(data []byte, offset int, v uint32) int {
-	data[offset] = uint8(v)
-	data[offset+1] = uint8(v >> 8)
-	data[offset+2] = uint8(v >> 16)
-	data[offset+3] = uint8(v >> 24)
+func encodeFixed32Svc(dAtA []byte, offset int, v uint32) int {
+	dAtA[offset] = uint8(v)
+	dAtA[offset+1] = uint8(v >> 8)
+	dAtA[offset+2] = uint8(v >> 16)
+	dAtA[offset+3] = uint8(v >> 24)
 	return offset + 4
 }
-func encodeVarintSvc(data []byte, offset int, v uint64) int {
+func encodeVarintSvc(dAtA []byte, offset int, v uint64) int {
 	for v >= 1<<7 {
-		data[offset] = uint8(v&0x7f | 0x80)
+		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
-	data[offset] = uint8(v)
+	dAtA[offset] = uint8(v)
 	return offset + 1
 }
 func (m *InitiateSyncRequest) Size() (n int) {
@@ -943,8 +943,8 @@ func valueToStringSvc(v interface{}) string {
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("*%v", pv)
 }
-func (m *InitiateSyncRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *InitiateSyncRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -956,7 +956,7 @@ func (m *InitiateSyncRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -984,7 +984,7 @@ func (m *InitiateSyncRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -999,7 +999,7 @@ func (m *InitiateSyncRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.OrganizationEntityID = string(data[iNdEx:postIndex])
+			m.OrganizationEntityID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 0 {
@@ -1013,7 +1013,7 @@ func (m *InitiateSyncRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.Source |= (Source(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1022,7 +1022,7 @@ func (m *InitiateSyncRequest) Unmarshal(data []byte) error {
 			}
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -1041,8 +1041,8 @@ func (m *InitiateSyncRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *InitiateSyncResponse) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *InitiateSyncResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -1054,7 +1054,7 @@ func (m *InitiateSyncResponse) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -1072,7 +1072,7 @@ func (m *InitiateSyncResponse) Unmarshal(data []byte) error {
 		switch fieldNum {
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -1091,8 +1091,8 @@ func (m *InitiateSyncResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *ConfigureSyncRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *ConfigureSyncRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -1104,7 +1104,7 @@ func (m *ConfigureSyncRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -1132,7 +1132,7 @@ func (m *ConfigureSyncRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1147,7 +1147,7 @@ func (m *ConfigureSyncRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.OrganizationEntityID = string(data[iNdEx:postIndex])
+			m.OrganizationEntityID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 0 {
@@ -1161,7 +1161,7 @@ func (m *ConfigureSyncRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.Source |= (Source(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1180,7 +1180,7 @@ func (m *ConfigureSyncRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1195,11 +1195,11 @@ func (m *ConfigureSyncRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Token = string(data[iNdEx:postIndex])
+			m.Token = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -1218,8 +1218,8 @@ func (m *ConfigureSyncRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *ConfigureSyncResponse) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *ConfigureSyncResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -1231,7 +1231,7 @@ func (m *ConfigureSyncResponse) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -1249,7 +1249,7 @@ func (m *ConfigureSyncResponse) Unmarshal(data []byte) error {
 		switch fieldNum {
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -1268,8 +1268,8 @@ func (m *ConfigureSyncResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *LookupSyncConfigurationRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *LookupSyncConfigurationRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -1281,7 +1281,7 @@ func (m *LookupSyncConfigurationRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -1309,7 +1309,7 @@ func (m *LookupSyncConfigurationRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1324,7 +1324,7 @@ func (m *LookupSyncConfigurationRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.OrganizationEntityID = string(data[iNdEx:postIndex])
+			m.OrganizationEntityID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 0 {
@@ -1338,7 +1338,7 @@ func (m *LookupSyncConfigurationRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.Source |= (Source(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1347,7 +1347,7 @@ func (m *LookupSyncConfigurationRequest) Unmarshal(data []byte) error {
 			}
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -1366,8 +1366,8 @@ func (m *LookupSyncConfigurationRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *LookupSyncConfigurationResponse) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *LookupSyncConfigurationResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -1379,7 +1379,7 @@ func (m *LookupSyncConfigurationResponse) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -1407,7 +1407,7 @@ func (m *LookupSyncConfigurationResponse) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1422,7 +1422,7 @@ func (m *LookupSyncConfigurationResponse) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.PracticeID = string(data[iNdEx:postIndex])
+			m.PracticeID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 0 {
@@ -1436,7 +1436,7 @@ func (m *LookupSyncConfigurationResponse) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.ThreadCreationType |= (ThreadCreationType(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1445,7 +1445,7 @@ func (m *LookupSyncConfigurationResponse) Unmarshal(data []byte) error {
 			}
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -1464,8 +1464,8 @@ func (m *LookupSyncConfigurationResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func skipSvc(data []byte) (n int, err error) {
-	l := len(data)
+func skipSvc(dAtA []byte) (n int, err error) {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		var wire uint64
@@ -1476,7 +1476,7 @@ func skipSvc(data []byte) (n int, err error) {
 			if iNdEx >= l {
 				return 0, io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -1494,7 +1494,7 @@ func skipSvc(data []byte) (n int, err error) {
 					return 0, io.ErrUnexpectedEOF
 				}
 				iNdEx++
-				if data[iNdEx-1] < 0x80 {
+				if dAtA[iNdEx-1] < 0x80 {
 					break
 				}
 			}
@@ -1511,7 +1511,7 @@ func skipSvc(data []byte) (n int, err error) {
 				if iNdEx >= l {
 					return 0, io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				length |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1534,7 +1534,7 @@ func skipSvc(data []byte) (n int, err error) {
 					if iNdEx >= l {
 						return 0, io.ErrUnexpectedEOF
 					}
-					b := data[iNdEx]
+					b := dAtA[iNdEx]
 					iNdEx++
 					innerWire |= (uint64(b) & 0x7F) << shift
 					if b < 0x80 {
@@ -1545,7 +1545,7 @@ func skipSvc(data []byte) (n int, err error) {
 				if innerWireType == 4 {
 					break
 				}
-				next, err := skipSvc(data[start:])
+				next, err := skipSvc(dAtA[start:])
 				if err != nil {
 					return 0, err
 				}

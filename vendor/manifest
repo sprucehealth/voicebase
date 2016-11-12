@@ -5,7 +5,7 @@
 			"importpath": "github.com/gogo/protobuf/gogoproto",
 			"repository": "https://github.com/gogo/protobuf",
 			"vcs": "git",
-			"revision": "99cb9b23110011cc45571c901ecae6f6f5e65cd3",
+			"revision": "8d70fb3182befc465c4a1eac8ad4d38ff49778e2",
 			"branch": "master",
 			"path": "/gogoproto",
 			"notests": true
@@ -14,7 +14,7 @@
 			"importpath": "github.com/gogo/protobuf/proto",
 			"repository": "https://github.com/gogo/protobuf",
 			"vcs": "git",
-			"revision": "99cb9b23110011cc45571c901ecae6f6f5e65cd3",
+			"revision": "8d70fb3182befc465c4a1eac8ad4d38ff49778e2",
 			"branch": "master",
 			"path": "/proto",
 			"notests": true
@@ -23,7 +23,7 @@
 			"importpath": "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
 			"repository": "https://github.com/gogo/protobuf",
 			"vcs": "git",
-			"revision": "99cb9b23110011cc45571c901ecae6f6f5e65cd3",
+			"revision": "8d70fb3182befc465c4a1eac8ad4d38ff49778e2",
 			"branch": "master",
 			"path": "protoc-gen-gogo/descriptor",
 			"notests": true
@@ -32,7 +32,7 @@
 			"importpath": "github.com/gogo/protobuf/sortkeys",
 			"repository": "https://github.com/gogo/protobuf",
 			"vcs": "git",
-			"revision": "99cb9b23110011cc45571c901ecae6f6f5e65cd3",
+			"revision": "8d70fb3182befc465c4a1eac8ad4d38ff49778e2",
 			"branch": "master",
 			"path": "sortkeys",
 			"notests": true
@@ -41,7 +41,7 @@
 			"importpath": "github.com/gogo/protobuf/types",
 			"repository": "https://github.com/gogo/protobuf",
 			"vcs": "git",
-			"revision": "99cb9b23110011cc45571c901ecae6f6f5e65cd3",
+			"revision": "8d70fb3182befc465c4a1eac8ad4d38ff49778e2",
 			"branch": "master",
 			"path": "types",
 			"notests": true
@@ -62,6 +62,42 @@
 			"revision": "bd3c8e81be01eef76d4b503f5e687d2d1354d2d9",
 			"branch": "master",
 			"path": "/mockgen",
+			"notests": true
+		},
+		{
+			"importpath": "golang.org/x/net/http2",
+			"repository": "https://github.com/golang/net",
+			"vcs": "git",
+			"revision": "0e2717dc3cc05907dc23096ef3a9086ea93f567f",
+			"branch": "master",
+			"path": "/http2",
+			"notests": true
+		},
+		{
+			"importpath": "golang.org/x/net/idna",
+			"repository": "https://go.googlesource.com/net",
+			"vcs": "git",
+			"revision": "0e2717dc3cc05907dc23096ef3a9086ea93f567f",
+			"branch": "master",
+			"path": "/idna",
+			"notests": true
+		},
+		{
+			"importpath": "golang.org/x/net/lex/httplex",
+			"repository": "https://go.googlesource.com/net",
+			"vcs": "git",
+			"revision": "0e2717dc3cc05907dc23096ef3a9086ea93f567f",
+			"branch": "master",
+			"path": "/lex/httplex",
+			"notests": true
+		},
+		{
+			"importpath": "google.golang.org/grpc",
+			"repository": "https://github.com/grpc/grpc-go",
+			"vcs": "git",
+			"revision": "0d9891286aca15aeb2b0a73be9f5946c3cfefa85",
+			"branch": "master",
+			"path": "/grpc",
 			"notests": true
 		}
 	]

@@ -42,8 +42,6 @@ import (
 	grpc "google.golang.org/grpc"
 )
 
-import errors "errors"
-
 import io "io"
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -109,11 +107,11 @@ func (*MIME) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{0} }
 type MediaInfo struct {
 	ID         string         `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	URL        string         `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
-	ThumbURL   string         `protobuf:"bytes,3,opt,name=thumb_url,proto3" json:"thumb_url,omitempty"`
-	OwnerID    string         `protobuf:"bytes,4,opt,name=owner_id,proto3" json:"owner_id,omitempty"`
-	OwnerType  MediaOwnerType `protobuf:"varint,5,opt,name=owner_type,proto3,enum=media.MediaOwnerType" json:"owner_type,omitempty"`
-	SizeBytes  uint64         `protobuf:"varint,6,opt,name=size_bytes,proto3" json:"size_bytes,omitempty"`
-	DurationNS uint64         `protobuf:"varint,7,opt,name=duration_ns,proto3" json:"duration_ns,omitempty"`
+	ThumbURL   string         `protobuf:"bytes,3,opt,name=thumb_url,json=thumbUrl,proto3" json:"thumb_url,omitempty"`
+	OwnerID    string         `protobuf:"bytes,4,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
+	OwnerType  MediaOwnerType `protobuf:"varint,5,opt,name=owner_type,json=ownerType,proto3,enum=media.MediaOwnerType" json:"owner_type,omitempty"`
+	SizeBytes  uint64         `protobuf:"varint,6,opt,name=size_bytes,json=sizeBytes,proto3" json:"size_bytes,omitempty"`
+	DurationNS uint64         `protobuf:"varint,7,opt,name=duration_ns,json=durationNs,proto3" json:"duration_ns,omitempty"`
 	MIME       *MIME          `protobuf:"bytes,8,opt,name=mime" json:"mime,omitempty"`
 	Public     bool           `protobuf:"varint,9,opt,name=public,proto3" json:"public,omitempty"`
 	Name       string         `protobuf:"bytes,10,opt,name=name,proto3" json:"name,omitempty"`
@@ -131,7 +129,7 @@ func (m *MediaInfo) GetMIME() *MIME {
 }
 
 type MediaInfosRequest struct {
-	MediaIDs []string `protobuf:"bytes,1,rep,name=media_ids" json:"media_ids,omitempty"`
+	MediaIDs []string `protobuf:"bytes,1,rep,name=media_ids,json=mediaIds" json:"media_ids,omitempty"`
 }
 
 func (m *MediaInfosRequest) Reset()                    { *m = MediaInfosRequest{} }
@@ -139,7 +137,7 @@ func (*MediaInfosRequest) ProtoMessage()               {}
 func (*MediaInfosRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{2} }
 
 type MediaInfosResponse struct {
-	MediaInfos map[string]*MediaInfo `protobuf:"bytes,1,rep,name=media_infos" json:"media_infos,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value"`
+	MediaInfos map[string]*MediaInfo `protobuf:"bytes,1,rep,name=media_infos,json=mediaInfos" json:"media_infos,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value"`
 }
 
 func (m *MediaInfosResponse) Reset()                    { *m = MediaInfosResponse{} }
@@ -154,9 +152,9 @@ func (m *MediaInfosResponse) GetMediaInfos() map[string]*MediaInfo {
 }
 
 type ClaimMediaRequest struct {
-	MediaIDs  []string       `protobuf:"bytes,1,rep,name=media_ids" json:"media_ids,omitempty"`
-	OwnerType MediaOwnerType `protobuf:"varint,2,opt,name=owner_type,proto3,enum=media.MediaOwnerType" json:"owner_type,omitempty"`
-	OwnerID   string         `protobuf:"bytes,3,opt,name=owner_id,proto3" json:"owner_id,omitempty"`
+	MediaIDs  []string       `protobuf:"bytes,1,rep,name=media_ids,json=mediaIds" json:"media_ids,omitempty"`
+	OwnerType MediaOwnerType `protobuf:"varint,2,opt,name=owner_type,json=ownerType,proto3,enum=media.MediaOwnerType" json:"owner_type,omitempty"`
+	OwnerID   string         `protobuf:"bytes,3,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
 }
 
 func (m *ClaimMediaRequest) Reset()                    { *m = ClaimMediaRequest{} }
@@ -171,9 +169,9 @@ func (*ClaimMediaResponse) ProtoMessage()               {}
 func (*ClaimMediaResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{5} }
 
 type CloneMediaRequest struct {
-	MediaID   string         `protobuf:"bytes,1,opt,name=media_id,proto3" json:"media_id,omitempty"`
-	OwnerType MediaOwnerType `protobuf:"varint,2,opt,name=owner_type,proto3,enum=media.MediaOwnerType" json:"owner_type,omitempty"`
-	OwnerID   string         `protobuf:"bytes,3,opt,name=owner_id,proto3" json:"owner_id,omitempty"`
+	MediaID   string         `protobuf:"bytes,1,opt,name=media_id,json=mediaId,proto3" json:"media_id,omitempty"`
+	OwnerType MediaOwnerType `protobuf:"varint,2,opt,name=owner_type,json=ownerType,proto3,enum=media.MediaOwnerType" json:"owner_type,omitempty"`
+	OwnerID   string         `protobuf:"bytes,3,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
 }
 
 func (m *CloneMediaRequest) Reset()                    { *m = CloneMediaRequest{} }
@@ -181,7 +179,7 @@ func (*CloneMediaRequest) ProtoMessage()               {}
 func (*CloneMediaRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{6} }
 
 type CloneMediaResponse struct {
-	MediaInfo *MediaInfo `protobuf:"bytes,1,opt,name=media_info" json:"media_info,omitempty"`
+	MediaInfo *MediaInfo `protobuf:"bytes,1,opt,name=media_info,json=mediaInfo" json:"media_info,omitempty"`
 }
 
 func (m *CloneMediaResponse) Reset()                    { *m = CloneMediaResponse{} }
@@ -196,7 +194,7 @@ func (m *CloneMediaResponse) GetMediaInfo() *MediaInfo {
 }
 
 type UpdateMediaRequest struct {
-	MediaID string `protobuf:"bytes,1,opt,name=media_id,proto3" json:"media_id,omitempty"`
+	MediaID string `protobuf:"bytes,1,opt,name=media_id,json=mediaId,proto3" json:"media_id,omitempty"`
 	Public  bool   `protobuf:"varint,2,opt,name=public,proto3" json:"public,omitempty"`
 }
 
@@ -205,7 +203,7 @@ func (*UpdateMediaRequest) ProtoMessage()               {}
 func (*UpdateMediaRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{8} }
 
 type UpdateMediaResponse struct {
-	MediaInfo *MediaInfo `protobuf:"bytes,1,opt,name=media_info" json:"media_info,omitempty"`
+	MediaInfo *MediaInfo `protobuf:"bytes,1,opt,name=media_info,json=mediaInfo" json:"media_info,omitempty"`
 }
 
 func (m *UpdateMediaResponse) Reset()                    { *m = UpdateMediaResponse{} }
@@ -220,8 +218,8 @@ func (m *UpdateMediaResponse) GetMediaInfo() *MediaInfo {
 }
 
 type CanAccessRequest struct {
-	MediaIDs  []string `protobuf:"bytes,1,rep,name=media_id" json:"media_id,omitempty"`
-	AccountID string   `protobuf:"bytes,2,opt,name=account_id,proto3" json:"account_id,omitempty"`
+	MediaIDs  []string `protobuf:"bytes,1,rep,name=media_id,json=mediaId" json:"media_id,omitempty"`
+	AccountID string   `protobuf:"bytes,2,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
 }
 
 func (m *CanAccessRequest) Reset()                    { *m = CanAccessRequest{} }
@@ -229,7 +227,7 @@ func (*CanAccessRequest) ProtoMessage()               {}
 func (*CanAccessRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{10} }
 
 type CanAccessResponse struct {
-	CanAccess bool `protobuf:"varint,1,opt,name=can_access,proto3" json:"can_access,omitempty"`
+	CanAccess bool `protobuf:"varint,1,opt,name=can_access,json=canAccess,proto3" json:"can_access,omitempty"`
 }
 
 func (m *CanAccessResponse) Reset()                    { *m = CanAccessResponse{} }
@@ -869,7 +867,7 @@ var _ grpc.ClientConn
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion3
+const _ = grpc.SupportPackageIsVersion4
 
 // Client API for Media service
 
@@ -1064,253 +1062,256 @@ var _Media_serviceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: fileDescriptorSvc,
+	Metadata: "svc.proto",
 }
 
-func (m *MIME) Marshal() (data []byte, err error) {
+func (m *MIME) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *MIME) MarshalTo(data []byte) (int, error) {
+func (m *MIME) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.Type) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.Type)))
-		i += copy(data[i:], m.Type)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.Type)))
+		i += copy(dAtA[i:], m.Type)
 	}
 	if len(m.Subtype) > 0 {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.Subtype)))
-		i += copy(data[i:], m.Subtype)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.Subtype)))
+		i += copy(dAtA[i:], m.Subtype)
 	}
 	return i, nil
 }
 
-func (m *MediaInfo) Marshal() (data []byte, err error) {
+func (m *MediaInfo) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *MediaInfo) MarshalTo(data []byte) (int, error) {
+func (m *MediaInfo) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.ID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.ID)))
-		i += copy(data[i:], m.ID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.ID)))
+		i += copy(dAtA[i:], m.ID)
 	}
 	if len(m.URL) > 0 {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.URL)))
-		i += copy(data[i:], m.URL)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.URL)))
+		i += copy(dAtA[i:], m.URL)
 	}
 	if len(m.ThumbURL) > 0 {
-		data[i] = 0x1a
+		dAtA[i] = 0x1a
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.ThumbURL)))
-		i += copy(data[i:], m.ThumbURL)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.ThumbURL)))
+		i += copy(dAtA[i:], m.ThumbURL)
 	}
 	if len(m.OwnerID) > 0 {
-		data[i] = 0x22
+		dAtA[i] = 0x22
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.OwnerID)))
-		i += copy(data[i:], m.OwnerID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.OwnerID)))
+		i += copy(dAtA[i:], m.OwnerID)
 	}
 	if m.OwnerType != 0 {
-		data[i] = 0x28
+		dAtA[i] = 0x28
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.OwnerType))
+		i = encodeVarintSvc(dAtA, i, uint64(m.OwnerType))
 	}
 	if m.SizeBytes != 0 {
-		data[i] = 0x30
+		dAtA[i] = 0x30
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.SizeBytes))
+		i = encodeVarintSvc(dAtA, i, uint64(m.SizeBytes))
 	}
 	if m.DurationNS != 0 {
-		data[i] = 0x38
+		dAtA[i] = 0x38
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.DurationNS))
+		i = encodeVarintSvc(dAtA, i, uint64(m.DurationNS))
 	}
 	if m.MIME != nil {
-		data[i] = 0x42
+		dAtA[i] = 0x42
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.MIME.Size()))
-		n1, err := m.MIME.MarshalTo(data[i:])
+		i = encodeVarintSvc(dAtA, i, uint64(m.MIME.Size()))
+		n1, err := m.MIME.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n1
 	}
 	if m.Public {
-		data[i] = 0x48
+		dAtA[i] = 0x48
 		i++
 		if m.Public {
-			data[i] = 1
+			dAtA[i] = 1
 		} else {
-			data[i] = 0
+			dAtA[i] = 0
 		}
 		i++
 	}
 	if len(m.Name) > 0 {
-		data[i] = 0x52
+		dAtA[i] = 0x52
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.Name)))
-		i += copy(data[i:], m.Name)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.Name)))
+		i += copy(dAtA[i:], m.Name)
 	}
 	return i, nil
 }
 
-func (m *MediaInfosRequest) Marshal() (data []byte, err error) {
+func (m *MediaInfosRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *MediaInfosRequest) MarshalTo(data []byte) (int, error) {
+func (m *MediaInfosRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.MediaIDs) > 0 {
 		for _, s := range m.MediaIDs {
-			data[i] = 0xa
+			dAtA[i] = 0xa
 			i++
 			l = len(s)
 			for l >= 1<<7 {
-				data[i] = uint8(uint64(l)&0x7f | 0x80)
+				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
 				l >>= 7
 				i++
 			}
-			data[i] = uint8(l)
+			dAtA[i] = uint8(l)
 			i++
-			i += copy(data[i:], s)
+			i += copy(dAtA[i:], s)
 		}
 	}
 	return i, nil
 }
 
-func (m *MediaInfosResponse) Marshal() (data []byte, err error) {
+func (m *MediaInfosResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *MediaInfosResponse) MarshalTo(data []byte) (int, error) {
+func (m *MediaInfosResponse) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.MediaInfos) > 0 {
 		for k, _ := range m.MediaInfos {
-			data[i] = 0xa
+			dAtA[i] = 0xa
 			i++
 			v := m.MediaInfos[k]
-			if v == nil {
-				return 0, errors.New("proto: map has nil element")
+			msgSize := 0
+			if v != nil {
+				msgSize = v.Size()
+				msgSize += 1 + sovSvc(uint64(msgSize))
 			}
-			msgSize := v.Size()
-			mapSize := 1 + len(k) + sovSvc(uint64(len(k))) + 1 + msgSize + sovSvc(uint64(msgSize))
-			i = encodeVarintSvc(data, i, uint64(mapSize))
-			data[i] = 0xa
+			mapSize := 1 + len(k) + sovSvc(uint64(len(k))) + msgSize
+			i = encodeVarintSvc(dAtA, i, uint64(mapSize))
+			dAtA[i] = 0xa
 			i++
-			i = encodeVarintSvc(data, i, uint64(len(k)))
-			i += copy(data[i:], k)
-			data[i] = 0x12
-			i++
-			i = encodeVarintSvc(data, i, uint64(v.Size()))
-			n2, err := v.MarshalTo(data[i:])
-			if err != nil {
-				return 0, err
+			i = encodeVarintSvc(dAtA, i, uint64(len(k)))
+			i += copy(dAtA[i:], k)
+			if v != nil {
+				dAtA[i] = 0x12
+				i++
+				i = encodeVarintSvc(dAtA, i, uint64(v.Size()))
+				n2, err := v.MarshalTo(dAtA[i:])
+				if err != nil {
+					return 0, err
+				}
+				i += n2
 			}
-			i += n2
 		}
 	}
 	return i, nil
 }
 
-func (m *ClaimMediaRequest) Marshal() (data []byte, err error) {
+func (m *ClaimMediaRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *ClaimMediaRequest) MarshalTo(data []byte) (int, error) {
+func (m *ClaimMediaRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.MediaIDs) > 0 {
 		for _, s := range m.MediaIDs {
-			data[i] = 0xa
+			dAtA[i] = 0xa
 			i++
 			l = len(s)
 			for l >= 1<<7 {
-				data[i] = uint8(uint64(l)&0x7f | 0x80)
+				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
 				l >>= 7
 				i++
 			}
-			data[i] = uint8(l)
+			dAtA[i] = uint8(l)
 			i++
-			i += copy(data[i:], s)
+			i += copy(dAtA[i:], s)
 		}
 	}
 	if m.OwnerType != 0 {
-		data[i] = 0x10
+		dAtA[i] = 0x10
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.OwnerType))
+		i = encodeVarintSvc(dAtA, i, uint64(m.OwnerType))
 	}
 	if len(m.OwnerID) > 0 {
-		data[i] = 0x1a
+		dAtA[i] = 0x1a
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.OwnerID)))
-		i += copy(data[i:], m.OwnerID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.OwnerID)))
+		i += copy(dAtA[i:], m.OwnerID)
 	}
 	return i, nil
 }
 
-func (m *ClaimMediaResponse) Marshal() (data []byte, err error) {
+func (m *ClaimMediaResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *ClaimMediaResponse) MarshalTo(data []byte) (int, error) {
+func (m *ClaimMediaResponse) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -1318,61 +1319,61 @@ func (m *ClaimMediaResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *CloneMediaRequest) Marshal() (data []byte, err error) {
+func (m *CloneMediaRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *CloneMediaRequest) MarshalTo(data []byte) (int, error) {
+func (m *CloneMediaRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.MediaID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.MediaID)))
-		i += copy(data[i:], m.MediaID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.MediaID)))
+		i += copy(dAtA[i:], m.MediaID)
 	}
 	if m.OwnerType != 0 {
-		data[i] = 0x10
+		dAtA[i] = 0x10
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.OwnerType))
+		i = encodeVarintSvc(dAtA, i, uint64(m.OwnerType))
 	}
 	if len(m.OwnerID) > 0 {
-		data[i] = 0x1a
+		dAtA[i] = 0x1a
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.OwnerID)))
-		i += copy(data[i:], m.OwnerID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.OwnerID)))
+		i += copy(dAtA[i:], m.OwnerID)
 	}
 	return i, nil
 }
 
-func (m *CloneMediaResponse) Marshal() (data []byte, err error) {
+func (m *CloneMediaResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *CloneMediaResponse) MarshalTo(data []byte) (int, error) {
+func (m *CloneMediaResponse) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if m.MediaInfo != nil {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.MediaInfo.Size()))
-		n3, err := m.MediaInfo.MarshalTo(data[i:])
+		i = encodeVarintSvc(dAtA, i, uint64(m.MediaInfo.Size()))
+		n3, err := m.MediaInfo.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -1381,60 +1382,60 @@ func (m *CloneMediaResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *UpdateMediaRequest) Marshal() (data []byte, err error) {
+func (m *UpdateMediaRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *UpdateMediaRequest) MarshalTo(data []byte) (int, error) {
+func (m *UpdateMediaRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.MediaID) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.MediaID)))
-		i += copy(data[i:], m.MediaID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.MediaID)))
+		i += copy(dAtA[i:], m.MediaID)
 	}
 	if m.Public {
-		data[i] = 0x10
+		dAtA[i] = 0x10
 		i++
 		if m.Public {
-			data[i] = 1
+			dAtA[i] = 1
 		} else {
-			data[i] = 0
+			dAtA[i] = 0
 		}
 		i++
 	}
 	return i, nil
 }
 
-func (m *UpdateMediaResponse) Marshal() (data []byte, err error) {
+func (m *UpdateMediaResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *UpdateMediaResponse) MarshalTo(data []byte) (int, error) {
+func (m *UpdateMediaResponse) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if m.MediaInfo != nil {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.MediaInfo.Size()))
-		n4, err := m.MediaInfo.MarshalTo(data[i:])
+		i = encodeVarintSvc(dAtA, i, uint64(m.MediaInfo.Size()))
+		n4, err := m.MediaInfo.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -1443,98 +1444,98 @@ func (m *UpdateMediaResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *CanAccessRequest) Marshal() (data []byte, err error) {
+func (m *CanAccessRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *CanAccessRequest) MarshalTo(data []byte) (int, error) {
+func (m *CanAccessRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.MediaIDs) > 0 {
 		for _, s := range m.MediaIDs {
-			data[i] = 0xa
+			dAtA[i] = 0xa
 			i++
 			l = len(s)
 			for l >= 1<<7 {
-				data[i] = uint8(uint64(l)&0x7f | 0x80)
+				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
 				l >>= 7
 				i++
 			}
-			data[i] = uint8(l)
+			dAtA[i] = uint8(l)
 			i++
-			i += copy(data[i:], s)
+			i += copy(dAtA[i:], s)
 		}
 	}
 	if len(m.AccountID) > 0 {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.AccountID)))
-		i += copy(data[i:], m.AccountID)
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.AccountID)))
+		i += copy(dAtA[i:], m.AccountID)
 	}
 	return i, nil
 }
 
-func (m *CanAccessResponse) Marshal() (data []byte, err error) {
+func (m *CanAccessResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *CanAccessResponse) MarshalTo(data []byte) (int, error) {
+func (m *CanAccessResponse) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if m.CanAccess {
-		data[i] = 0x8
+		dAtA[i] = 0x8
 		i++
 		if m.CanAccess {
-			data[i] = 1
+			dAtA[i] = 1
 		} else {
-			data[i] = 0
+			dAtA[i] = 0
 		}
 		i++
 	}
 	return i, nil
 }
 
-func encodeFixed64Svc(data []byte, offset int, v uint64) int {
-	data[offset] = uint8(v)
-	data[offset+1] = uint8(v >> 8)
-	data[offset+2] = uint8(v >> 16)
-	data[offset+3] = uint8(v >> 24)
-	data[offset+4] = uint8(v >> 32)
-	data[offset+5] = uint8(v >> 40)
-	data[offset+6] = uint8(v >> 48)
-	data[offset+7] = uint8(v >> 56)
+func encodeFixed64Svc(dAtA []byte, offset int, v uint64) int {
+	dAtA[offset] = uint8(v)
+	dAtA[offset+1] = uint8(v >> 8)
+	dAtA[offset+2] = uint8(v >> 16)
+	dAtA[offset+3] = uint8(v >> 24)
+	dAtA[offset+4] = uint8(v >> 32)
+	dAtA[offset+5] = uint8(v >> 40)
+	dAtA[offset+6] = uint8(v >> 48)
+	dAtA[offset+7] = uint8(v >> 56)
 	return offset + 8
 }
-func encodeFixed32Svc(data []byte, offset int, v uint32) int {
-	data[offset] = uint8(v)
-	data[offset+1] = uint8(v >> 8)
-	data[offset+2] = uint8(v >> 16)
-	data[offset+3] = uint8(v >> 24)
+func encodeFixed32Svc(dAtA []byte, offset int, v uint32) int {
+	dAtA[offset] = uint8(v)
+	dAtA[offset+1] = uint8(v >> 8)
+	dAtA[offset+2] = uint8(v >> 16)
+	dAtA[offset+3] = uint8(v >> 24)
 	return offset + 4
 }
-func encodeVarintSvc(data []byte, offset int, v uint64) int {
+func encodeVarintSvc(dAtA []byte, offset int, v uint64) int {
 	for v >= 1<<7 {
-		data[offset] = uint8(v&0x7f | 0x80)
+		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
-	data[offset] = uint8(v)
+	dAtA[offset] = uint8(v)
 	return offset + 1
 }
 func (m *MIME) Size() (n int) {
@@ -1615,8 +1616,9 @@ func (m *MediaInfosResponse) Size() (n int) {
 			l = 0
 			if v != nil {
 				l = v.Size()
+				l += 1 + sovSvc(uint64(l))
 			}
-			mapEntrySize := 1 + len(k) + sovSvc(uint64(len(k))) + 1 + l + sovSvc(uint64(l))
+			mapEntrySize := 1 + len(k) + sovSvc(uint64(len(k))) + l
 			n += mapEntrySize + 1 + sovSvc(uint64(mapEntrySize))
 		}
 	}
@@ -1889,8 +1891,8 @@ func valueToStringSvc(v interface{}) string {
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("*%v", pv)
 }
-func (m *MIME) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *MIME) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -1902,7 +1904,7 @@ func (m *MIME) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -1930,7 +1932,7 @@ func (m *MIME) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1945,7 +1947,7 @@ func (m *MIME) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Type = string(data[iNdEx:postIndex])
+			m.Type = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -1959,7 +1961,7 @@ func (m *MIME) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1974,11 +1976,11 @@ func (m *MIME) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Subtype = string(data[iNdEx:postIndex])
+			m.Subtype = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -1997,8 +1999,8 @@ func (m *MIME) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *MediaInfo) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *MediaInfo) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -2010,7 +2012,7 @@ func (m *MediaInfo) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -2038,7 +2040,7 @@ func (m *MediaInfo) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2053,7 +2055,7 @@ func (m *MediaInfo) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ID = string(data[iNdEx:postIndex])
+			m.ID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -2067,7 +2069,7 @@ func (m *MediaInfo) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2082,7 +2084,7 @@ func (m *MediaInfo) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.URL = string(data[iNdEx:postIndex])
+			m.URL = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -2096,7 +2098,7 @@ func (m *MediaInfo) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2111,7 +2113,7 @@ func (m *MediaInfo) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ThumbURL = string(data[iNdEx:postIndex])
+			m.ThumbURL = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
@@ -2125,7 +2127,7 @@ func (m *MediaInfo) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2140,7 +2142,7 @@ func (m *MediaInfo) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.OwnerID = string(data[iNdEx:postIndex])
+			m.OwnerID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 5:
 			if wireType != 0 {
@@ -2154,7 +2156,7 @@ func (m *MediaInfo) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.OwnerType |= (MediaOwnerType(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2173,7 +2175,7 @@ func (m *MediaInfo) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.SizeBytes |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2192,7 +2194,7 @@ func (m *MediaInfo) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.DurationNS |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2211,7 +2213,7 @@ func (m *MediaInfo) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2228,7 +2230,7 @@ func (m *MediaInfo) Unmarshal(data []byte) error {
 			if m.MIME == nil {
 				m.MIME = &MIME{}
 			}
-			if err := m.MIME.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.MIME.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -2244,7 +2246,7 @@ func (m *MediaInfo) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2264,7 +2266,7 @@ func (m *MediaInfo) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2279,11 +2281,11 @@ func (m *MediaInfo) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Name = string(data[iNdEx:postIndex])
+			m.Name = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -2302,8 +2304,8 @@ func (m *MediaInfo) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *MediaInfosRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *MediaInfosRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -2315,7 +2317,7 @@ func (m *MediaInfosRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -2343,7 +2345,7 @@ func (m *MediaInfosRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2358,11 +2360,11 @@ func (m *MediaInfosRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.MediaIDs = append(m.MediaIDs, string(data[iNdEx:postIndex]))
+			m.MediaIDs = append(m.MediaIDs, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -2381,8 +2383,8 @@ func (m *MediaInfosRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *MediaInfosResponse) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *MediaInfosResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -2394,7 +2396,7 @@ func (m *MediaInfosResponse) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -2422,7 +2424,7 @@ func (m *MediaInfosResponse) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2444,7 +2446,7 @@ func (m *MediaInfosResponse) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				keykey |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2459,7 +2461,7 @@ func (m *MediaInfosResponse) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLenmapkey |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2474,61 +2476,66 @@ func (m *MediaInfosResponse) Unmarshal(data []byte) error {
 			if postStringIndexmapkey > l {
 				return io.ErrUnexpectedEOF
 			}
-			mapkey := string(data[iNdEx:postStringIndexmapkey])
+			mapkey := string(dAtA[iNdEx:postStringIndexmapkey])
 			iNdEx = postStringIndexmapkey
-			var valuekey uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				valuekey |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			var mapmsglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				mapmsglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if mapmsglen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postmsgIndex := iNdEx + mapmsglen
-			if mapmsglen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			if postmsgIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			mapvalue := &MediaInfo{}
-			if err := mapvalue.Unmarshal(data[iNdEx:postmsgIndex]); err != nil {
-				return err
-			}
-			iNdEx = postmsgIndex
 			if m.MediaInfos == nil {
 				m.MediaInfos = make(map[string]*MediaInfo)
 			}
-			m.MediaInfos[mapkey] = mapvalue
+			if iNdEx < postIndex {
+				var valuekey uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowSvc
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					valuekey |= (uint64(b) & 0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				var mapmsglen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowSvc
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					mapmsglen |= (int(b) & 0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if mapmsglen < 0 {
+					return ErrInvalidLengthSvc
+				}
+				postmsgIndex := iNdEx + mapmsglen
+				if mapmsglen < 0 {
+					return ErrInvalidLengthSvc
+				}
+				if postmsgIndex > l {
+					return io.ErrUnexpectedEOF
+				}
+				mapvalue := &MediaInfo{}
+				if err := mapvalue.Unmarshal(dAtA[iNdEx:postmsgIndex]); err != nil {
+					return err
+				}
+				iNdEx = postmsgIndex
+				m.MediaInfos[mapkey] = mapvalue
+			} else {
+				var mapvalue *MediaInfo
+				m.MediaInfos[mapkey] = mapvalue
+			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -2547,8 +2554,8 @@ func (m *MediaInfosResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *ClaimMediaRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *ClaimMediaRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -2560,7 +2567,7 @@ func (m *ClaimMediaRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -2588,7 +2595,7 @@ func (m *ClaimMediaRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2603,7 +2610,7 @@ func (m *ClaimMediaRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.MediaIDs = append(m.MediaIDs, string(data[iNdEx:postIndex]))
+			m.MediaIDs = append(m.MediaIDs, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
 		case 2:
 			if wireType != 0 {
@@ -2617,7 +2624,7 @@ func (m *ClaimMediaRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.OwnerType |= (MediaOwnerType(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2636,7 +2643,7 @@ func (m *ClaimMediaRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2651,11 +2658,11 @@ func (m *ClaimMediaRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.OwnerID = string(data[iNdEx:postIndex])
+			m.OwnerID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -2674,8 +2681,8 @@ func (m *ClaimMediaRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *ClaimMediaResponse) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *ClaimMediaResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -2687,7 +2694,7 @@ func (m *ClaimMediaResponse) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -2705,7 +2712,7 @@ func (m *ClaimMediaResponse) Unmarshal(data []byte) error {
 		switch fieldNum {
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -2724,8 +2731,8 @@ func (m *ClaimMediaResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *CloneMediaRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *CloneMediaRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -2737,7 +2744,7 @@ func (m *CloneMediaRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -2765,7 +2772,7 @@ func (m *CloneMediaRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2780,7 +2787,7 @@ func (m *CloneMediaRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.MediaID = string(data[iNdEx:postIndex])
+			m.MediaID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 0 {
@@ -2794,7 +2801,7 @@ func (m *CloneMediaRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.OwnerType |= (MediaOwnerType(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2813,7 +2820,7 @@ func (m *CloneMediaRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2828,11 +2835,11 @@ func (m *CloneMediaRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.OwnerID = string(data[iNdEx:postIndex])
+			m.OwnerID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -2851,8 +2858,8 @@ func (m *CloneMediaRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *CloneMediaResponse) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *CloneMediaResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -2864,7 +2871,7 @@ func (m *CloneMediaResponse) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -2892,7 +2899,7 @@ func (m *CloneMediaResponse) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2909,13 +2916,13 @@ func (m *CloneMediaResponse) Unmarshal(data []byte) error {
 			if m.MediaInfo == nil {
 				m.MediaInfo = &MediaInfo{}
 			}
-			if err := m.MediaInfo.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.MediaInfo.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -2934,8 +2941,8 @@ func (m *CloneMediaResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *UpdateMediaRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *UpdateMediaRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -2947,7 +2954,7 @@ func (m *UpdateMediaRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -2975,7 +2982,7 @@ func (m *UpdateMediaRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2990,7 +2997,7 @@ func (m *UpdateMediaRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.MediaID = string(data[iNdEx:postIndex])
+			m.MediaID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 0 {
@@ -3004,7 +3011,7 @@ func (m *UpdateMediaRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3014,7 +3021,7 @@ func (m *UpdateMediaRequest) Unmarshal(data []byte) error {
 			m.Public = bool(v != 0)
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -3033,8 +3040,8 @@ func (m *UpdateMediaRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *UpdateMediaResponse) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *UpdateMediaResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -3046,7 +3053,7 @@ func (m *UpdateMediaResponse) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -3074,7 +3081,7 @@ func (m *UpdateMediaResponse) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3091,13 +3098,13 @@ func (m *UpdateMediaResponse) Unmarshal(data []byte) error {
 			if m.MediaInfo == nil {
 				m.MediaInfo = &MediaInfo{}
 			}
-			if err := m.MediaInfo.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.MediaInfo.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -3116,8 +3123,8 @@ func (m *UpdateMediaResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *CanAccessRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *CanAccessRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -3129,7 +3136,7 @@ func (m *CanAccessRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -3157,7 +3164,7 @@ func (m *CanAccessRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3172,7 +3179,7 @@ func (m *CanAccessRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.MediaIDs = append(m.MediaIDs, string(data[iNdEx:postIndex]))
+			m.MediaIDs = append(m.MediaIDs, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -3186,7 +3193,7 @@ func (m *CanAccessRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3201,11 +3208,11 @@ func (m *CanAccessRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.AccountID = string(data[iNdEx:postIndex])
+			m.AccountID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -3224,8 +3231,8 @@ func (m *CanAccessRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *CanAccessResponse) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *CanAccessResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -3237,7 +3244,7 @@ func (m *CanAccessResponse) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -3265,7 +3272,7 @@ func (m *CanAccessResponse) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3275,7 +3282,7 @@ func (m *CanAccessResponse) Unmarshal(data []byte) error {
 			m.CanAccess = bool(v != 0)
 		default:
 			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
+			skippy, err := skipSvc(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -3294,8 +3301,8 @@ func (m *CanAccessResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func skipSvc(data []byte) (n int, err error) {
-	l := len(data)
+func skipSvc(dAtA []byte) (n int, err error) {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		var wire uint64
@@ -3306,7 +3313,7 @@ func skipSvc(data []byte) (n int, err error) {
 			if iNdEx >= l {
 				return 0, io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -3324,7 +3331,7 @@ func skipSvc(data []byte) (n int, err error) {
 					return 0, io.ErrUnexpectedEOF
 				}
 				iNdEx++
-				if data[iNdEx-1] < 0x80 {
+				if dAtA[iNdEx-1] < 0x80 {
 					break
 				}
 			}
@@ -3341,7 +3348,7 @@ func skipSvc(data []byte) (n int, err error) {
 				if iNdEx >= l {
 					return 0, io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				length |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -3364,7 +3371,7 @@ func skipSvc(data []byte) (n int, err error) {
 					if iNdEx >= l {
 						return 0, io.ErrUnexpectedEOF
 					}
-					b := data[iNdEx]
+					b := dAtA[iNdEx]
 					iNdEx++
 					innerWire |= (uint64(b) & 0x7F) << shift
 					if b < 0x80 {
@@ -3375,7 +3382,7 @@ func skipSvc(data []byte) (n int, err error) {
 				if innerWireType == 4 {
 					break
 				}
-				next, err := skipSvc(data[start:])
+				next, err := skipSvc(dAtA[start:])
 				if err != nil {
 					return 0, err
 				}
@@ -3402,58 +3409,63 @@ var (
 func init() { proto.RegisterFile("svc.proto", fileDescriptorSvc) }
 
 var fileDescriptorSvc = []byte{
-	// 835 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xac, 0x55, 0x4d, 0xaf, 0xdb, 0x44,
-	0x14, 0x7d, 0xe3, 0x7c, 0xd9, 0xd7, 0xaf, 0xaf, 0xce, 0xd0, 0x82, 0x89, 0x54, 0x3b, 0xb8, 0x20,
-	0x52, 0x04, 0xaf, 0x52, 0x60, 0x51, 0x15, 0xa9, 0x92, 0x13, 0x5b, 0xc1, 0xa2, 0x71, 0x50, 0xe2,
-	0xb4, 0x7a, 0x6c, 0x2c, 0xc7, 0x71, 0x5f, 0x2d, 0x5e, 0xec, 0x10, 0xdb, 0x45, 0x41, 0x08, 0xf1,
-	0x13, 0xd8, 0xb2, 0x63, 0x89, 0xc4, 0x1f, 0x61, 0xd9, 0x15, 0x62, 0x15, 0xf1, 0xcc, 0x86, 0x65,
-	0x7f, 0x02, 0x9a, 0xb1, 0x93, 0x38, 0x1f, 0x42, 0x54, 0x62, 0x17, 0x9f, 0x7b, 0xe7, 0xcc, 0x99,
-	0x73, 0xcf, 0x4c, 0x80, 0x8b, 0x5e, 0xb8, 0xe7, 0xf3, 0x45, 0x18, 0x87, 0xb8, 0x32, 0xf3, 0xa6,
-	0xbe, 0xd3, 0xf8, 0xe8, 0xd2, 0x8f, 0x9f, 0x27, 0x93, 0x73, 0x37, 0x9c, 0xdd, 0xbf, 0x0c, 0x2f,
-	0xc3, 0xfb, 0xb4, 0x3a, 0x49, 0x9e, 0xd1, 0x2f, 0xfa, 0x41, 0x7f, 0x65, 0xab, 0x94, 0xf7, 0xa0,
-	0xdc, 0x37, 0xfa, 0x3a, 0x3e, 0x85, 0x72, 0xbc, 0x9c, 0x7b, 0x22, 0x6a, 0xa2, 0x16, 0x87, 0x6f,
-	0x42, 0x2d, 0x4a, 0x26, 0x14, 0x60, 0x08, 0xa0, 0xfc, 0xca, 0x00, 0xd7, 0x27, 0xfc, 0x46, 0xf0,
-	0x2c, 0xc4, 0x18, 0x18, 0x7f, 0x9a, 0xb5, 0x76, 0xaa, 0xe9, 0x4a, 0x66, 0x0c, 0x0d, 0xdf, 0x82,
-	0x52, 0xb2, 0xb8, 0xca, 0xda, 0x3b, 0xb5, 0x74, 0x25, 0x97, 0xc6, 0xc3, 0xc7, 0x58, 0x06, 0x2e,
-	0x7e, 0x9e, 0xcc, 0x26, 0x36, 0xa9, 0x95, 0x68, 0xed, 0x34, 0x5d, 0xc9, 0xac, 0x45, 0x40, 0xd2,
-	0x70, 0x07, 0xd8, 0xf0, 0x9b, 0xc0, 0x5b, 0xd8, 0xfe, 0x54, 0x2c, 0xd3, 0x3a, 0x9f, 0xae, 0xe4,
-	0xda, 0x80, 0x60, 0x86, 0x86, 0x1f, 0x00, 0x64, 0x65, 0xaa, 0xa5, 0xd2, 0x44, 0xad, 0xb3, 0xf6,
-	0xed, 0x73, 0x7a, 0xd2, 0x73, 0xaa, 0x87, 0x36, 0x5a, 0xcb, 0xb9, 0xd7, 0xb9, 0x91, 0xae, 0x64,
-	0x6e, 0xf3, 0x89, 0x31, 0x40, 0xe4, 0x7f, 0xeb, 0xd9, 0x93, 0x65, 0xec, 0x45, 0x62, 0xb5, 0x89,
-	0x5a, 0x65, 0x7c, 0x17, 0xf8, 0x69, 0xb2, 0x70, 0x62, 0x3f, 0x0c, 0xec, 0x20, 0x12, 0x6b, 0x04,
-	0xec, 0x9c, 0xa5, 0x2b, 0x19, 0xb4, 0x1c, 0x36, 0x47, 0xf8, 0x2e, 0x94, 0x67, 0xfe, 0xcc, 0x13,
-	0xd9, 0x26, 0x6a, 0xf1, 0x6d, 0x7e, 0xbd, 0x99, 0xd1, 0xd7, 0x3b, 0x6c, 0xba, 0x92, 0x33, 0xbb,
-	0xce, 0xa0, 0x3a, 0x4f, 0x26, 0x57, 0xbe, 0x2b, 0x72, 0x4d, 0xd4, 0x62, 0x89, 0x7d, 0x81, 0x33,
-	0xf3, 0x44, 0xa0, 0x6e, 0x7d, 0x02, 0xf5, 0x8d, 0x59, 0xd1, 0xd0, 0xfb, 0x3a, 0xf1, 0xa2, 0x98,
-	0x58, 0x41, 0xa9, 0x6c, 0x7f, 0x1a, 0x89, 0xa8, 0x59, 0x5a, 0x5b, 0x91, 0x75, 0x6a, 0x91, 0xf2,
-	0x13, 0x02, 0x5c, 0x5c, 0x16, 0xcd, 0xc3, 0x20, 0xf2, 0xf0, 0x23, 0xe0, 0xf3, 0x75, 0x04, 0xa6,
-	0x2b, 0xf9, 0xf6, 0xbd, 0xa2, 0x07, 0x3b, 0xfd, 0x05, 0x48, 0x0f, 0xe2, 0xc5, 0xb2, 0xd1, 0x85,
-	0x9b, 0x7b, 0x10, 0xe6, 0xa1, 0xf4, 0x95, 0xb7, 0xcc, 0x67, 0x2d, 0x43, 0xe5, 0x85, 0x73, 0x95,
-	0x64, 0x93, 0xe6, 0xdb, 0xc2, 0x3e, 0xf3, 0x43, 0xe6, 0x01, 0x52, 0xbe, 0x87, 0x7a, 0xf7, 0xca,
-	0xf1, 0x67, 0x14, 0xfd, 0xaf, 0x27, 0xc2, 0xf7, 0x76, 0xa6, 0xc7, 0xfc, 0xcb, 0xf4, 0x76, 0x72,
-	0x50, 0x3a, 0xc8, 0x81, 0x72, 0x0b, 0x70, 0x71, 0xff, 0xec, 0xa8, 0xca, 0x77, 0x44, 0x55, 0x18,
-	0x78, 0x3b, 0xaa, 0xee, 0x00, 0xbb, 0x56, 0x95, 0x47, 0x94, 0x32, 0xe5, 0xa2, 0xfe, 0x47, 0x4d,
-	0x0f, 0x89, 0xa6, 0xed, 0xee, 0xf9, 0xb8, 0xde, 0x05, 0xd8, 0x8e, 0x8b, 0x0a, 0x38, 0xe2, 0xa9,
-	0xd2, 0x05, 0x3c, 0x9e, 0x4f, 0x9d, 0xf8, 0xb5, 0xa4, 0x6f, 0x43, 0x47, 0x64, 0xb3, 0xca, 0xa7,
-	0xf0, 0xc6, 0x0e, 0xc9, 0x6b, 0x29, 0x18, 0x83, 0xd0, 0x75, 0x02, 0xd5, 0x75, 0xbd, 0x68, 0x13,
-	0x51, 0x69, 0x67, 0xff, 0xc3, 0x79, 0xbe, 0x03, 0xe0, 0xb8, 0x6e, 0x98, 0x04, 0x31, 0xe9, 0xc8,
-	0xae, 0x3a, 0xbd, 0x76, 0x6a, 0x86, 0x1a, 0x9a, 0xf2, 0x3e, 0xd4, 0x0b, 0xb4, 0xb9, 0x22, 0x0c,
-	0xe0, 0x3a, 0x81, 0xed, 0x50, 0x94, 0x2a, 0x62, 0x3f, 0xf8, 0x19, 0xc1, 0xd9, 0x9e, 0xdf, 0x6f,
-	0x02, 0x1e, 0x3c, 0x35, 0xf5, 0xa1, 0x6d, 0x5d, 0x7c, 0xa1, 0xdb, 0x63, 0xf3, 0x73, 0x73, 0xf0,
-	0xd4, 0x14, 0x4e, 0x30, 0x40, 0x55, 0x37, 0x2d, 0xc3, 0xba, 0x10, 0x10, 0x16, 0xe0, 0x74, 0x30,
-	0xec, 0xa9, 0xa6, 0xf1, 0xa5, 0x6a, 0x19, 0x03, 0x53, 0x60, 0x48, 0xd5, 0xfa, 0x6c, 0xa8, 0xab,
-	0x9a, 0x50, 0xc2, 0x3c, 0xd4, 0xd4, 0x6e, 0x77, 0x30, 0x36, 0x2d, 0xa1, 0x8c, 0x39, 0xa8, 0x3c,
-	0x31, 0x46, 0x86, 0x25, 0x54, 0x70, 0x1d, 0x6e, 0x8c, 0xd4, 0x27, 0xba, 0x66, 0xf7, 0xf5, 0xd1,
-	0x48, 0xed, 0xe9, 0x42, 0x95, 0x2c, 0x7b, 0xac, 0xf7, 0xd4, 0xee, 0x85, 0x50, 0xc3, 0xb7, 0xa1,
-	0x6e, 0x0d, 0x8d, 0x5e, 0x4f, 0x1f, 0x16, 0x5a, 0xd8, 0xf6, 0xef, 0x0c, 0x54, 0xa8, 0x44, 0xfc,
-	0x08, 0xb8, 0xcd, 0xa9, 0xf0, 0x5b, 0xb9, 0x97, 0xfb, 0xf6, 0x35, 0xc4, 0xc3, 0x42, 0x6e, 0x80,
-	0x0a, 0xb0, 0x8d, 0x2f, 0xde, 0xf4, 0xed, 0xdf, 0xa8, 0xc6, 0xdb, 0x47, 0x2a, 0x45, 0x8a, 0x75,
-	0xda, 0x0a, 0x14, 0x7b, 0xf1, 0x2f, 0x50, 0x1c, 0x44, 0x53, 0x05, 0xd8, 0xbe, 0x04, 0x1b, 0x8a,
-	0x83, 0x97, 0x6a, 0x43, 0x71, 0xe4, 0x31, 0xd2, 0x80, 0x2f, 0x44, 0x0e, 0xaf, 0x3b, 0x0f, 0xb3,
-	0xdc, 0x68, 0x1c, 0x2b, 0x65, 0x2c, 0x9d, 0x0f, 0x5f, 0x5e, 0x4b, 0xe8, 0x8f, 0x6b, 0xe9, 0xe4,
-	0xd5, 0xb5, 0x84, 0x7e, 0x48, 0x25, 0xf4, 0x4b, 0x2a, 0xa1, 0xdf, 0x52, 0x09, 0xbd, 0x4c, 0x25,
-	0xf4, 0x67, 0x2a, 0xa1, 0xbf, 0x53, 0xe9, 0xe4, 0x55, 0x2a, 0xa1, 0x1f, 0xff, 0x92, 0x4e, 0x26,
-	0x55, 0xfa, 0x4f, 0xf5, 0xf1, 0x3f, 0x01, 0x00, 0x00, 0xff, 0xff, 0xb9, 0x0b, 0xe3, 0x51, 0xec,
-	0x06, 0x00, 0x00,
+	// 915 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xb4, 0x55, 0x4f, 0x8f, 0xdb, 0x44,
+	0x1c, 0xdd, 0x71, 0xfe, 0xd9, 0xbf, 0xb4, 0x8b, 0x33, 0xd0, 0xc5, 0x8d, 0x54, 0x27, 0xf2, 0x61,
+	0xc9, 0xa2, 0xb2, 0x2b, 0x85, 0x1e, 0x10, 0x87, 0x4a, 0x4e, 0x62, 0x82, 0xa1, 0x71, 0xd0, 0xc4,
+	0x69, 0xb5, 0x5c, 0x22, 0x27, 0x76, 0xb7, 0x16, 0x89, 0x1d, 0x62, 0xbb, 0x28, 0x9c, 0xf8, 0x08,
+	0x5c, 0x91, 0x38, 0x70, 0xe4, 0xca, 0xb7, 0xe0, 0xd8, 0x13, 0xe2, 0x14, 0xb1, 0xe6, 0xc2, 0xb1,
+	0x5f, 0x00, 0x09, 0x79, 0xfc, 0x27, 0x4e, 0xb2, 0x20, 0xb1, 0x52, 0x6f, 0x33, 0xef, 0xf7, 0xe6,
+	0xf9, 0xcd, 0x6f, 0xde, 0x8c, 0x81, 0xf3, 0x5e, 0xce, 0xce, 0x97, 0x2b, 0xd7, 0x77, 0x71, 0x69,
+	0x61, 0x99, 0xb6, 0x51, 0xff, 0xe0, 0xca, 0xf6, 0x5f, 0x04, 0xd3, 0xf3, 0x99, 0xbb, 0xb8, 0xb8,
+	0x72, 0xaf, 0xdc, 0x0b, 0x5a, 0x9d, 0x06, 0xcf, 0xe9, 0x8c, 0x4e, 0xe8, 0x28, 0x5e, 0x25, 0x3d,
+	0x82, 0xe2, 0x40, 0x1d, 0x28, 0x18, 0x43, 0xd1, 0x5f, 0x2f, 0x2d, 0x01, 0x35, 0x51, 0x8b, 0x23,
+	0x74, 0x8c, 0x05, 0xa8, 0x78, 0xc1, 0x94, 0xc2, 0x0c, 0x85, 0xd3, 0xa9, 0xf4, 0x37, 0x03, 0xdc,
+	0x20, 0xfa, 0x9c, 0xea, 0x3c, 0x77, 0xf1, 0x09, 0x30, 0xb6, 0x19, 0xaf, 0xec, 0x94, 0xc3, 0x4d,
+	0x83, 0x51, 0x7b, 0x84, 0xb1, 0x4d, 0x7c, 0x1f, 0x0a, 0xc1, 0x6a, 0x1e, 0xaf, 0xed, 0x54, 0xc2,
+	0x4d, 0xa3, 0x30, 0x26, 0x4f, 0x48, 0x84, 0xe1, 0x33, 0xe0, 0xfc, 0x17, 0xc1, 0x62, 0x3a, 0x89,
+	0x08, 0x05, 0x4a, 0xb8, 0x13, 0x6e, 0x1a, 0xac, 0x1e, 0x81, 0x11, 0x8b, 0xa5, 0xe5, 0xf1, 0x6a,
+	0x8e, 0x4f, 0x81, 0x75, 0xbf, 0x71, 0xac, 0xd5, 0xc4, 0x36, 0x85, 0x22, 0x65, 0x56, 0xc3, 0x4d,
+	0xa3, 0x32, 0x8c, 0x30, 0xb5, 0x47, 0x2a, 0xb4, 0xa8, 0x9a, 0xb8, 0x0b, 0x10, 0xf3, 0xa8, 0xe1,
+	0x52, 0x13, 0xb5, 0x8e, 0xdb, 0xf7, 0xce, 0x69, 0x53, 0xce, 0xa9, 0x57, 0xba, 0x42, 0x5f, 0x2f,
+	0xad, 0xce, 0xdd, 0x70, 0xd3, 0xe0, 0xb2, 0x29, 0xe1, 0xdc, 0x74, 0x88, 0x1f, 0x00, 0x78, 0xf6,
+	0xb7, 0xd6, 0x64, 0xba, 0xf6, 0x2d, 0x4f, 0x28, 0x37, 0x51, 0xab, 0x48, 0xb8, 0x08, 0xe9, 0x44,
+	0x00, 0xbe, 0x80, 0xaa, 0x19, 0xac, 0x0c, 0xdf, 0x76, 0x9d, 0x89, 0xe3, 0x09, 0x95, 0xa8, 0xde,
+	0x39, 0x0e, 0x37, 0x0d, 0xe8, 0x25, 0xb0, 0x36, 0x22, 0x90, 0x52, 0x34, 0x0f, 0x9f, 0x41, 0x71,
+	0x61, 0x2f, 0x2c, 0x81, 0x6d, 0xa2, 0x56, 0xb5, 0x5d, 0x4d, 0xed, 0xa8, 0x03, 0xa5, 0xc3, 0x86,
+	0x9b, 0x06, 0xed, 0x3d, 0xa1, 0x14, 0x7c, 0x02, 0xe5, 0x65, 0x30, 0x9d, 0xdb, 0x33, 0x81, 0x6b,
+	0xa2, 0x16, 0x4b, 0x92, 0x59, 0x74, 0x32, 0x8e, 0xb1, 0xb0, 0x04, 0x88, 0x4f, 0x26, 0x1a, 0x4b,
+	0x8f, 0xa1, 0x96, 0xb5, 0xdf, 0x23, 0xd6, 0xd7, 0x81, 0xe5, 0xf9, 0x51, 0x4f, 0xa9, 0xfc, 0xc4,
+	0x36, 0x3d, 0x01, 0x35, 0x0b, 0x69, 0x4f, 0x63, 0x66, 0xcf, 0x23, 0x2c, 0x2d, 0xab, 0xa6, 0x27,
+	0xfd, 0x82, 0x00, 0xe7, 0x05, 0xbc, 0xa5, 0xeb, 0x78, 0x16, 0xfe, 0x0c, 0xaa, 0x89, 0x42, 0x04,
+	0x53, 0x8d, 0x6a, 0xfb, 0x2c, 0xdf, 0xc3, 0x1d, 0x7e, 0x0e, 0x52, 0x1c, 0x7f, 0xb5, 0x26, 0xb0,
+	0xc8, 0x80, 0xfa, 0x10, 0xde, 0xda, 0x2b, 0x63, 0x1e, 0x0a, 0x5f, 0x59, 0xeb, 0x24, 0x62, 0xd1,
+	0x10, 0x9f, 0x42, 0xe9, 0xa5, 0x31, 0x0f, 0xe2, 0x7c, 0x55, 0xdb, 0xfc, 0xfe, 0xa7, 0x48, 0x5c,
+	0xfe, 0x98, 0xf9, 0x08, 0x49, 0x3f, 0x22, 0xa8, 0x75, 0xe7, 0x86, 0xbd, 0xa0, 0xd5, 0xff, 0xbf,
+	0x69, 0xfc, 0x68, 0x27, 0x20, 0xcc, 0x7f, 0x04, 0x24, 0x9f, 0x88, 0x7c, 0xfc, 0x0a, 0xff, 0x1e,
+	0x3f, 0xe9, 0x1d, 0xc0, 0x79, 0x77, 0x71, 0x87, 0xa4, 0x1f, 0xa8, 0x69, 0xd7, 0xb1, 0x76, 0x4c,
+	0x9f, 0x02, 0x9b, 0x9a, 0x4e, 0xae, 0x0d, 0xd5, 0x4c, 0x3c, 0x93, 0x4a, 0x62, 0xf9, 0x0d, 0x3b,
+	0x56, 0x22, 0xc7, 0x5b, 0x6b, 0x49, 0x06, 0x2e, 0x00, 0xb6, 0x19, 0xa0, 0xee, 0x6e, 0x3a, 0x17,
+	0x2e, 0x3b, 0x69, 0x49, 0x07, 0x3c, 0x5e, 0x9a, 0x86, 0x7f, 0xbb, 0x2d, 0x6e, 0x53, 0xcf, 0xe4,
+	0x53, 0x2f, 0x7d, 0x02, 0x6f, 0xef, 0xa8, 0xde, 0xd6, 0x9d, 0x0d, 0x7c, 0xd7, 0x70, 0xe4, 0xd9,
+	0xcc, 0xf2, 0xb2, 0x8b, 0xf2, 0xde, 0x8e, 0xb7, 0xc3, 0xc8, 0x64, 0xe6, 0x1e, 0x02, 0x18, 0xb3,
+	0x99, 0x1b, 0x38, 0x7e, 0x44, 0x8d, 0xdf, 0x31, 0xfa, 0x76, 0xc8, 0x31, 0xaa, 0xf6, 0x08, 0x97,
+	0x10, 0x54, 0x53, 0x6a, 0x43, 0x2d, 0xf7, 0xa9, 0xc4, 0xf0, 0x03, 0x80, 0x99, 0xe1, 0x4c, 0x0c,
+	0x8a, 0x52, 0xc3, 0x2c, 0xe1, 0x66, 0x29, 0xed, 0xfd, 0x9f, 0x10, 0x1c, 0xef, 0x9e, 0x24, 0x3e,
+	0x01, 0x3c, 0x7c, 0xa6, 0x29, 0x64, 0xa2, 0x5f, 0x7e, 0xa1, 0x4c, 0xc6, 0xda, 0xe7, 0xda, 0xf0,
+	0x99, 0xc6, 0x1f, 0x61, 0x80, 0xb2, 0xa2, 0xe9, 0xaa, 0x7e, 0xc9, 0x23, 0xcc, 0xc3, 0x9d, 0x21,
+	0xe9, 0xcb, 0x9a, 0xfa, 0xa5, 0xac, 0xab, 0x43, 0x8d, 0x67, 0xa2, 0xaa, 0xfe, 0x29, 0x51, 0xe4,
+	0x1e, 0x5f, 0xc0, 0x55, 0xa8, 0xc8, 0xdd, 0xee, 0x70, 0xac, 0xe9, 0x7c, 0x11, 0x73, 0x50, 0x7a,
+	0xaa, 0x8e, 0x54, 0x9d, 0x2f, 0xe1, 0x1a, 0xdc, 0x1d, 0xc9, 0x4f, 0x95, 0xde, 0x64, 0xa0, 0x8c,
+	0x46, 0x72, 0x5f, 0xe1, 0xcb, 0xd1, 0xb2, 0x27, 0x4a, 0x5f, 0xee, 0x5e, 0xf2, 0x15, 0x7c, 0x0f,
+	0x6a, 0x3a, 0x51, 0xfb, 0x7d, 0x85, 0xe4, 0x28, 0x6c, 0xfb, 0x37, 0x06, 0x4a, 0xd4, 0x22, 0x7e,
+	0x0c, 0x5c, 0xb6, 0x41, 0xfc, 0x6e, 0xd2, 0xf5, 0xfd, 0xee, 0xd6, 0x85, 0xc3, 0x42, 0xd2, 0x0b,
+	0x19, 0x60, 0x7b, 0x45, 0x70, 0xc6, 0xdb, 0xbf, 0xd3, 0xf5, 0xfb, 0x37, 0x54, 0xf2, 0x12, 0x69,
+	0x66, 0x73, 0x12, 0x7b, 0x37, 0x2c, 0x27, 0x71, 0x10, 0x70, 0x19, 0x60, 0xfb, 0x30, 0x65, 0x12,
+	0x07, 0xcf, 0x69, 0x26, 0x71, 0xc3, 0x3b, 0xd9, 0x83, 0x6a, 0x2e, 0x9c, 0x38, 0x65, 0x1e, 0x5e,
+	0x83, 0x7a, 0xfd, 0xa6, 0x52, 0xac, 0xd2, 0x79, 0xf8, 0xea, 0x5a, 0x44, 0xbf, 0x5f, 0x8b, 0x47,
+	0xaf, 0xaf, 0x45, 0xf4, 0x5d, 0x28, 0xa2, 0x9f, 0x43, 0x11, 0xfd, 0x1a, 0x8a, 0xe8, 0x55, 0x28,
+	0xa2, 0x3f, 0x42, 0x11, 0xfd, 0x15, 0x8a, 0x47, 0xaf, 0x43, 0x11, 0x7d, 0xff, 0xa7, 0x78, 0x34,
+	0x2d, 0xd3, 0xff, 0xf5, 0x87, 0xff, 0x04, 0x00, 0x00, 0xff, 0xff, 0xc5, 0x4b, 0x16, 0x6d, 0xf2,
+	0x07, 0x00, 0x00,
 }
