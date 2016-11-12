@@ -19,6 +19,7 @@ import (
 	mockmedia "github.com/sprucehealth/backend/svc/media/mock"
 	"github.com/sprucehealth/backend/svc/notification"
 	mocknotification "github.com/sprucehealth/backend/svc/notification/mock"
+	mockpayments "github.com/sprucehealth/backend/svc/payments/mock"
 	"github.com/sprucehealth/backend/svc/settings"
 	mocksettings "github.com/sprucehealth/backend/svc/settings/mock"
 	"github.com/sprucehealth/backend/svc/threading"
@@ -27,6 +28,48 @@ import (
 
 func init() {
 	conc.Testing = true
+}
+
+type serverTest struct {
+	ctx                context.Context
+	clk                *clock.ManagedClock
+	dal                *dalmock.DAL
+	sns                *mock.MockSNSAPI
+	notificationClient *mocknotification.Client
+	directoryClient    *mockdirectory.Client
+	settingsClient     *mocksettings.Client
+	mediaClient        *mockmedia.Client
+	paymentsClient     *mockpayments.Client
+	server             threading.ThreadsServer
+}
+
+func (ts *serverTest) Finish() {
+	mock.FinishAll(ts.dal, ts.sns, ts.notificationClient, ts.directoryClient, ts.settingsClient, ts.mediaClient, ts.paymentsClient)
+}
+
+func newServerTest(t *testing.T) *serverTest {
+	mClk := clock.NewManaged(time.Now())
+	mDAL := dalmock.New(t)
+	mSNS := mock.NewSNSAPI(t)
+	mNotificationClient := mocknotification.New(t)
+	mDirectoryClient := mockdirectory.New(t)
+	mSettingsClient := mocksettings.New(t)
+	mMediaClient := mockmedia.New(t)
+	mPaymentsClient := mockpayments.New(t)
+	return &serverTest{
+		ctx:                context.Background(),
+		clk:                mClk,
+		dal:                mDAL,
+		sns:                mSNS,
+		notificationClient: mNotificationClient,
+		directoryClient:    mDirectoryClient,
+		settingsClient:     mSettingsClient,
+		mediaClient:        mMediaClient,
+		paymentsClient:     mPaymentsClient,
+		server: NewThreadsServer(
+			mClk, mDAL, mSNS, "testSNSTopicARN", mNotificationClient, mDirectoryClient,
+			mSettingsClient, mMediaClient, mPaymentsClient, "testWebDomain"),
+	}
 }
 
 func TestCreateEmptyThread_Team(t *testing.T) {

@@ -21,8 +21,9 @@ enum MediaOwnerType {
 	THREAD = 3;
 	ACCOUNT = 4;
 	VISIT = 5;
-	SAVED_MESSAGE = 6;
+	SAVED_MESSAGE = 6; 
 	LEGACY = 7;
+	TRIGGERED_MESSAGE = 8;
 }
 
 message MediaInfo {

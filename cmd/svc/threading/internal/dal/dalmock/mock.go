@@ -506,6 +506,102 @@ func (dl *DAL) UpdateScheduledMessage(ctx context.Context, id models.ScheduledMe
 	return rets[0].(int64), mock.SafeError(rets[1])
 }
 
+func (dl *DAL) CreateTriggeredMessage(ctx context.Context, model *models.TriggeredMessage) (models.TriggeredMessageID, error) {
+	rets := dl.Expector.Record(model)
+	if len(rets) == 0 {
+		return models.EmptyTriggeredMessageID(), nil
+	}
+	return rets[0].(models.TriggeredMessageID), mock.SafeError(rets[1])
+}
+
+func (dl *DAL) CreateTriggeredMessages(ctx context.Context, models []*models.TriggeredMessage) error {
+	rets := dl.Expector.Record(models)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[0])
+}
+
+func (dl *DAL) TriggeredMessage(ctx context.Context, id models.TriggeredMessageID, opts ...dal.QueryOption) (*models.TriggeredMessage, error) {
+	rets := dl.Expector.Record(id, optsToInterfaces(opts))
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*models.TriggeredMessage), mock.SafeError(rets[1])
+}
+
+func (dl *DAL) TriggeredMessageForKeys(ctx context.Context, triggerKey string, triggerSubkey string, opts ...dal.QueryOption) (*models.TriggeredMessage, error) {
+	rets := dl.Expector.Record(triggerKey, triggerSubkey, optsToInterfaces(opts))
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*models.TriggeredMessage), mock.SafeError(rets[1])
+}
+
+func (dl *DAL) DeleteTriggeredMessage(ctx context.Context, id models.TriggeredMessageID) (int64, error) {
+	rets := dl.Expector.Record(id)
+	if len(rets) == 0 {
+		return 0, nil
+	}
+	return rets[0].(int64), mock.SafeError(rets[1])
+}
+
+func (dl *DAL) UpdateTriggeredMessage(ctx context.Context, id models.TriggeredMessageID, update *models.TriggeredMessageUpdate) (int64, error) {
+	rets := dl.Expector.Record(id)
+	if len(rets) == 0 {
+		return 0, nil
+	}
+	return rets[0].(int64), mock.SafeError(rets[1])
+}
+
+func (dl *DAL) CreateTriggeredMessageItem(ctx context.Context, model *models.TriggeredMessageItem) (models.TriggeredMessageItemID, error) {
+	rets := dl.Expector.Record(model)
+	if len(rets) == 0 {
+		return models.EmptyTriggeredMessageItemID(), nil
+	}
+	return rets[0].(models.TriggeredMessageItemID), mock.SafeError(rets[1])
+}
+
+func (dl *DAL) CreateTriggeredMessageItems(ctx context.Context, models []*models.TriggeredMessageItem) error {
+	rets := dl.Expector.Record(models)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[0])
+}
+
+func (dl *DAL) TriggeredMessageItem(ctx context.Context, id models.TriggeredMessageItemID, opts ...dal.QueryOption) (*models.TriggeredMessageItem, error) {
+	rets := dl.Expector.Record(id, optsToInterfaces(opts))
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*models.TriggeredMessageItem), mock.SafeError(rets[1])
+}
+
+func (dl *DAL) TriggeredMessageItemsForTriggeredMessageID(ctx context.Context, triggeredMessageID models.TriggeredMessageID, opts ...dal.QueryOption) ([]*models.TriggeredMessageItem, error) {
+	rets := dl.Expector.Record(triggeredMessageID, optsToInterfaces(opts))
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].([]*models.TriggeredMessageItem), mock.SafeError(rets[1])
+}
+
+func (dl *DAL) DeleteTriggeredMessageItem(ctx context.Context, id models.TriggeredMessageItemID) (int64, error) {
+	rets := dl.Expector.Record(id)
+	if len(rets) == 0 {
+		return 0, nil
+	}
+	return rets[0].(int64), mock.SafeError(rets[1])
+}
+
+func (dl *DAL) DeleteTriggeredMessageItemsForTriggeredMessage(ctx context.Context, id models.TriggeredMessageID) (int64, error) {
+	rets := dl.Expector.Record(id)
+	if len(rets) == 0 {
+		return 0, nil
+	}
+	return rets[0].(int64), mock.SafeError(rets[1])
+}
+
 func optsToInterfaces(opts []dal.QueryOption) []interface{} {
 	ifs := make([]interface{}, len(opts))
 	for i, o := range opts {

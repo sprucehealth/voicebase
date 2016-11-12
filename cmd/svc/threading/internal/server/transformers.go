@@ -665,3 +665,83 @@ func transformScheduledMessageStatusFromRequest(status threading.ScheduledMessag
 	}
 	return "", errors.Errorf("Unknown scheduled message status %s", status)
 }
+
+func transformTriggeredMessageToResponse(tm *models.TriggeredMessage, tmis []*models.TriggeredMessageItem) (*threading.TriggeredMessage, error) {
+	k, err := transformTriggeredMessageKeyToResponse(tm.TriggerKey)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	rtm := &threading.TriggeredMessage{
+		ID:                   tm.ID.String(),
+		ActorEntityID:        tm.ActorEntityID,
+		OrganizationEntityID: tm.OrganizationEntityID,
+		Enabled:              tm.Enabled,
+		Key: &threading.TriggeredMessageKey{
+			Key:    k,
+			Subkey: tm.TriggerSubkey,
+		},
+		Created:  uint64(tm.Created.Unix()),
+		Modified: uint64(tm.Modified.Unix()),
+	}
+	rtmis, err := transformTriggeredMessageItemsToResponse(tmis)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	rtm.Items = rtmis
+	return rtm, nil
+}
+
+func transformTriggeredMessageKeyToModel(k threading.TriggeredMessageKey_Key) (string, error) {
+	switch k {
+	case threading.TRIGGERED_MESSAGE_KEY_AWAY_MESSAGE:
+		return "AWAY_MESSAGE", nil
+	case threading.TRIGGERED_MESSAGE_KEY_NEW_PATIENT:
+		return "NEW_PATIENT", nil
+	}
+	return "", errors.Errorf("Unhandled Triggered Message Key %s", k)
+}
+
+func transformTriggeredMessageKeyToResponse(k string) (threading.TriggeredMessageKey_Key, error) {
+	switch k {
+	case "AWAY_MESSAGE":
+		return threading.TRIGGERED_MESSAGE_KEY_AWAY_MESSAGE, nil
+	case "NEW_PATIENT":
+		return threading.TRIGGERED_MESSAGE_KEY_NEW_PATIENT, nil
+	}
+	return threading.TRIGGERED_MESSAGE_KEY_INVALID, errors.Errorf("Unhandled Triggered Message Key %s", k)
+}
+
+func transformTriggeredMessageItemsToResponse(tmis []*models.TriggeredMessageItem) ([]*threading.TriggeredMessageItem, error) {
+	rtmis := make([]*threading.TriggeredMessageItem, len(tmis))
+	for i, tmi := range tmis {
+		rtmi, err := transformTriggeredMessageItemToResponse(tmi)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		rtmis[i] = rtmi
+	}
+	return rtmis, nil
+}
+
+func transformTriggeredMessageItemToResponse(tmi *models.TriggeredMessageItem) (*threading.TriggeredMessageItem, error) {
+	rtmi := &threading.TriggeredMessageItem{
+		ID:                 tmi.ID.String(),
+		TriggeredMessageID: tmi.TriggeredMessageID.String(),
+		ActorEntityID:      tmi.ActorEntityID,
+		Internal:           tmi.Internal,
+		Created:            uint64(tmi.Created.Unix()),
+		Modified:           uint64(tmi.Modified.Unix()),
+	}
+	if msg, ok := tmi.Data.(*models.Message); ok {
+		msg, err := TransformMessageToResponse(msg, false)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		rtmi.Content = &threading.TriggeredMessageItem_Message{
+			Message: msg,
+		}
+	} else {
+		return nil, errors.Errorf("Unknown triggered message type %T", tmi.Data)
+	}
+	return rtmi, nil
+}

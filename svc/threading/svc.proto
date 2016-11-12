@@ -757,6 +757,78 @@ message Tag {
 	bool hidden = 2;
 }
 
+message TriggeredMessageKey {
+	enum Key {
+		TRIGGERED_MESSAGE_KEY_INVALID = 0;
+		TRIGGERED_MESSAGE_KEY_NEW_PATIENT = 1;
+		TRIGGERED_MESSAGE_KEY_AWAY_MESSAGE = 2;
+	}
+	
+	Key key = 1;
+	string subkey = 2;
+}
+
+message TriggeredMessageItem {
+	string id = 1 [(gogoproto.customname) = "ID"];
+	string triggered_message_id = 2 [(gogoproto.customname) = "TriggeredMessageID"];
+	string actor_entity_id = 3 [(gogoproto.customname) = "ActorEntityID"];
+	bool internal = 4; // item is internal to the organization (not seen by external entities)
+	int64 ordinal = 5; // leave this signed for manual reordering in the negative space
+	uint64 created = 7;
+	uint64 modified = 8;
+	oneof content {
+		Message message = 9;
+	}
+}
+
+message TriggeredMessage {
+	string id = 1 [(gogoproto.customname) = "ID"];
+	string actor_entity_id = 2 [(gogoproto.customname) = "ActorEntityID"];
+	string organization_entity_id = 3 [(gogoproto.customname) = "OrganizationEntityID"];
+	bool enabled = 4;
+	TriggeredMessageKey key = 5;
+	repeated TriggeredMessageItem items = 6;
+	uint64 created = 7;
+	uint64 modified = 8;
+}
+
+message CreateTriggeredMessageRequest {
+	string actor_entity_id = 1 [(gogoproto.customname) = "ActorEntityID"];
+	string organization_entity_id = 2 [(gogoproto.customname) = "OrganizationEntityID"];
+	TriggeredMessageKey key = 3;
+	repeated MessagePost messages = 4;
+}
+
+message CreateTriggeredMessageResponse {
+	TriggeredMessage triggered_message = 1;
+}
+
+message TriggeredMessagesRequest {
+	oneof lookup_key {
+		TriggeredMessageKey key = 2;
+	}
+}
+
+message TriggeredMessagesResponse {
+	repeated TriggeredMessage triggered_messages = 1;
+}
+
+message DeleteTriggeredMessageRequest {
+	string triggered_message_id = 1 [(gogoproto.customname) = "TriggeredMessageID"]; 
+}
+
+message DeleteTriggeredMessageResponse {}
+
+message UpdateTriggeredMessageRequest {
+	string triggered_message_id = 1 [(gogoproto.customname) = "TriggeredMessageID"];
+	bool enabled = 2;
+	bool update_enabled = 3; 
+}
+
+message UpdateTriggeredMessageResponse {
+	TriggeredMessage triggered_message = 1;
+}
+
 service Threads {
 	// CreateEmptyThread creates a new thread with no messages
 	rpc CreateEmptyThread(CreateEmptyThreadRequest) returns (CreateEmptyThreadResponse);
@@ -766,6 +838,8 @@ service Threads {
 	rpc CreateLinkedThreads(CreateLinkedThreadsRequest) returns (CreateLinkedThreadsResponse);
 	// CreateOnboardingThread create a new scripted onboarding thread.
 	rpc CreateOnboardingThread(CreateOnboardingThreadRequest) returns (CreateOnboardingThreadResponse);
+	// CreateTriggeredMessage creates a new triggered message
+	rpc CreateTriggeredMessage(CreateTriggeredMessageRequest) returns (CreateTriggeredMessageResponse);
 	// CreateSavedMessage creates a new saved message
 	rpc CreateSavedMessage(CreateSavedMessageRequest) returns (CreateSavedMessageResponse);
 	// CreateScheduledMessage creates a new scheduled message
@@ -774,6 +848,8 @@ service Threads {
 	rpc CreateThread(CreateThreadRequest) returns (CreateThreadResponse);
 	// DeleteMessage deletes a message from a thread
 	rpc DeleteMessage(DeleteMessageRequest) returns (DeleteMessageResponse);
+	// DeleteTriggeredMessage deleted triggered messages
+	rpc DeleteTriggeredMessage(DeleteTriggeredMessageRequest) returns (DeleteTriggeredMessageResponse);
 	// DeleteSavedMessage deletes a saved message
 	rpc DeleteSavedMessage(DeleteSavedMessageRequest) returns (DeleteSavedMessageResponse);
 	// DeleteSavedQueries delets the provided list of saved queries
@@ -792,6 +868,8 @@ service Threads {
 	rpc PostMessage(PostMessageRequest) returns (PostMessageResponse);
 	// QueryThreads queries the list of threads in an organization
 	rpc QueryThreads(QueryThreadsRequest) returns (QueryThreadsResponse);
+	// TriggeredMessages queries for triggered messages
+	rpc TriggeredMessages(TriggeredMessagesRequest) returns (TriggeredMessagesResponse);
 	// SavedMessages queries for saved messages
 	rpc SavedMessages(SavedMessagesRequest) returns (SavedMessagesResponse);
 	// ScheduledMessages queries for scheduled messages

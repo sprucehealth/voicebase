@@ -146,6 +146,8 @@ type SavedQueryUpdate struct {
 }
 
 type DAL interface {
+	Transact(context.Context, func(context.Context, DAL) error) error
+
 	AddThreadFollowers(ctx context.Context, threadID models.ThreadID, followerEntityIDs []string) error
 	AddThreadMembers(ctx context.Context, threadID models.ThreadID, memberEntityIDs []string) error
 	AddThreadTags(ctx context.Context, orgID string, threadID models.ThreadID, tags []string) error
@@ -217,8 +219,6 @@ type DAL interface {
 	// UnreadNotificationsCounts returns the number of unread notifications for a set of entities
 	UnreadNotificationsCounts(ctx context.Context, entityIDs []string) (map[string]int, error)
 
-	Transact(context.Context, func(context.Context, DAL) error) error
-
 	// Scheduled Messages
 	CreateScheduledMessage(ctx context.Context, model *models.ScheduledMessage) (models.ScheduledMessageID, error)
 	DeleteScheduledMessage(ctx context.Context, id models.ScheduledMessageID) (int64, error)
@@ -226,6 +226,22 @@ type DAL interface {
 	ScheduledMessages(ctx context.Context, status []models.ScheduledMessageStatus, scheduledForBefore time.Time, opts ...QueryOption) ([]*models.ScheduledMessage, error)
 	ScheduledMessagesForThread(ctx context.Context, threadID models.ThreadID, status []models.ScheduledMessageStatus, opts ...QueryOption) ([]*models.ScheduledMessage, error)
 	UpdateScheduledMessage(ctx context.Context, id models.ScheduledMessageID, update *models.ScheduledMessageUpdate) (int64, error)
+
+	// Triggered Messages
+	CreateTriggeredMessage(ctx context.Context, model *models.TriggeredMessage) (models.TriggeredMessageID, error)
+	CreateTriggeredMessages(ctx context.Context, models []*models.TriggeredMessage) error
+	TriggeredMessage(ctx context.Context, id models.TriggeredMessageID, opts ...QueryOption) (*models.TriggeredMessage, error)
+	TriggeredMessageForKeys(ctx context.Context, triggerKey string, triggerSubkey string, opts ...QueryOption) (*models.TriggeredMessage, error)
+	DeleteTriggeredMessage(ctx context.Context, id models.TriggeredMessageID) (int64, error)
+	UpdateTriggeredMessage(ctx context.Context, id models.TriggeredMessageID, update *models.TriggeredMessageUpdate) (int64, error)
+
+	// Triggered Message Items
+	CreateTriggeredMessageItem(ctx context.Context, model *models.TriggeredMessageItem) (models.TriggeredMessageItemID, error)
+	CreateTriggeredMessageItems(ctx context.Context, models []*models.TriggeredMessageItem) error
+	TriggeredMessageItem(ctx context.Context, id models.TriggeredMessageItemID, opts ...QueryOption) (*models.TriggeredMessageItem, error)
+	TriggeredMessageItemsForTriggeredMessageID(ctx context.Context, triggeredMessageID models.TriggeredMessageID, opts ...QueryOption) ([]*models.TriggeredMessageItem, error)
+	DeleteTriggeredMessageItem(ctx context.Context, id models.TriggeredMessageItemID) (int64, error)
+	DeleteTriggeredMessageItemsForTriggeredMessage(ctx context.Context, id models.TriggeredMessageID) (int64, error)
 }
 
 // New returns an initialized instance of dal

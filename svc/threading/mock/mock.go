@@ -326,3 +326,39 @@ func (c *Client) UpdateMessage(ctx context.Context, in *threading.UpdateMessageR
 	}
 	return rets[0].(*threading.UpdateMessageResponse), mock.SafeError(rets[1])
 }
+
+// CreateTriggeredMessage is a mock
+func (c *Client) CreateTriggeredMessage(ctx context.Context, in *threading.CreateTriggeredMessageRequest, opts ...grpc.CallOption) (*threading.CreateTriggeredMessageResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*threading.CreateTriggeredMessageResponse), mock.SafeError(rets[1])
+}
+
+// TriggeredMessages is a mock
+func (c *Client) TriggeredMessages(ctx context.Context, in *threading.TriggeredMessagesRequest, opts ...grpc.CallOption) (*threading.TriggeredMessagesResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*threading.TriggeredMessagesResponse), mock.SafeError(rets[1])
+}
+
+// DeleteTriggeredMessage is a mock
+func (c *Client) DeleteTriggeredMessage(ctx context.Context, in *threading.DeleteTriggeredMessageRequest, opts ...grpc.CallOption) (*threading.DeleteTriggeredMessageResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*threading.DeleteTriggeredMessageResponse), mock.SafeError(rets[1])
+}
+
+// UpdateTriggeredMessage is a mock
+func (c *Client) UpdateTriggeredMessage(ctx context.Context, in *threading.UpdateTriggeredMessageRequest, opts ...grpc.CallOption) (*threading.UpdateTriggeredMessageResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*threading.UpdateTriggeredMessageResponse), mock.SafeError(rets[1])
+}

@@ -648,3 +648,113 @@ type ScheduledMessageUpdate struct {
 	Status           *ScheduledMessageStatus
 	SentThreadItemID *ThreadItemID
 }
+
+// TriggeredMessageIDPrefix represents the string that is attached to the beginning of these identifiers
+const TriggeredMessageIDPrefix = "trm_"
+
+// NewTriggeredMessageID returns a new TriggeredMessageID.
+func NewTriggeredMessageID() (TriggeredMessageID, error) {
+	id, err := idgen.NewID()
+	if err != nil {
+		return TriggeredMessageID{}, errors.Trace(err)
+	}
+	return TriggeredMessageID{
+		model.ObjectID{
+			Prefix:  TriggeredMessageIDPrefix,
+			Val:     id,
+			IsValid: true,
+		},
+	}, nil
+}
+
+// EmptyTriggeredMessageID returns an empty initialized ID
+func EmptyTriggeredMessageID() TriggeredMessageID {
+	return TriggeredMessageID{
+		model.ObjectID{
+			Prefix:  TriggeredMessageIDPrefix,
+			IsValid: false,
+		},
+	}
+}
+
+// ParseTriggeredMessageID transforms an TriggeredMessageID from it's string representation into the actual ID value
+func ParseTriggeredMessageID(s string) (TriggeredMessageID, error) {
+	id := EmptyTriggeredMessageID()
+	err := id.UnmarshalText([]byte(s))
+	return id, errors.Trace(err)
+}
+
+// TriggeredMessageID is the ID for a TriggeredMessageID object
+type TriggeredMessageID struct {
+	model.ObjectID
+}
+
+// TriggeredMessageItemIDPrefix represents the string that is attached to the beginning of these identifiers
+const TriggeredMessageItemIDPrefix = "trmi_"
+
+// NewTriggeredMessageItemID returns a new TriggeredMessageItemID.
+func NewTriggeredMessageItemID() (TriggeredMessageItemID, error) {
+	id, err := idgen.NewID()
+	if err != nil {
+		return TriggeredMessageItemID{}, errors.Trace(err)
+	}
+	return TriggeredMessageItemID{
+		model.ObjectID{
+			Prefix:  TriggeredMessageItemIDPrefix,
+			Val:     id,
+			IsValid: true,
+		},
+	}, nil
+}
+
+// EmptyTriggeredMessageItemID returns an empty initialized ID
+func EmptyTriggeredMessageItemID() TriggeredMessageItemID {
+	return TriggeredMessageItemID{
+		model.ObjectID{
+			Prefix:  TriggeredMessageItemIDPrefix,
+			IsValid: false,
+		},
+	}
+}
+
+// ParseTriggeredMessageItemID transforms an TriggeredMessageItemID from it's string representation into the actual ID value
+func ParseTriggeredMessageItemID(s string) (TriggeredMessageItemID, error) {
+	id := EmptyTriggeredMessageItemID()
+	err := id.UnmarshalText([]byte(s))
+	return id, errors.Trace(err)
+}
+
+// TriggeredMessageItemID is the ID for a TriggeredMessageItemID object
+type TriggeredMessageItemID struct {
+	model.ObjectID
+}
+
+// TriggeredMessageItem represents a triggered_message_item record
+type TriggeredMessageItem struct {
+	ID                 TriggeredMessageItemID
+	TriggeredMessageID TriggeredMessageID
+	Ordinal            int64
+	ActorEntityID      string
+	Internal           bool
+	Type               string
+	Data               ItemValue
+	Created            time.Time
+	Modified           time.Time
+}
+
+// TriggeredMessage represents a triggered_message record
+type TriggeredMessage struct {
+	ID                   TriggeredMessageID
+	ActorEntityID        string
+	OrganizationEntityID string
+	TriggerKey           string
+	TriggerSubkey        string
+	Enabled              bool
+	Created              time.Time
+	Modified             time.Time
+}
+
+// TriggeredMessageUpdate represents the mutable aspects of a triggered_message record
+type TriggeredMessageUpdate struct {
+	Enabled *bool
+}

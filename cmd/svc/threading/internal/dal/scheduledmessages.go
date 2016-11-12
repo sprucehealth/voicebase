@@ -43,8 +43,11 @@ func (d *dal) CreateScheduledMessage(ctx context.Context, model *models.Schedule
 
 // ScheduledMessage retrieves a scheduled_message record
 func (d *dal) ScheduledMessage(ctx context.Context, id models.ScheduledMessageID, opts ...QueryOption) (*models.ScheduledMessage, error) {
-	row := d.db.QueryRow(
-		selectScheduledMessage+` WHERE id = ?`, id.Val)
+	q := selectScheduledMessage + ` WHERE id = ?`
+	if queryOptions(opts).Has(ForUpdate) {
+		q += ` FOR UPDATE`
+	}
+	row := d.db.QueryRow(q, id)
 	model, err := scanScheduledMessage(ctx, row, "%s", id)
 	return model, errors.Trace(err)
 }
@@ -127,7 +130,7 @@ func (d *dal) UpdateScheduledMessage(ctx context.Context, id models.ScheduledMes
 
 	res, err := d.db.Exec(
 		`UPDATE scheduled_messages
-          SET `+args.ColumnsForUpdate()+` WHERE id = ?`, append(args.Values(), id.Val)...)
+          SET `+args.ColumnsForUpdate()+` WHERE id = ?`, append(args.Values(), id)...)
 	if err != nil {
 		return 0, errors.Trace(err)
 	}
