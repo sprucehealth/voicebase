@@ -25,6 +25,9 @@ var scheduledMessageType = graphql.NewObject(graphql.ObjectConfig{
 })
 
 func getScheduledMessages(ctx context.Context, ram raccess.ResourceAccessor, threadID, organizationID, webDomain, mediaAPIDomain string) ([]*models.ScheduledMessage, error) {
+	if gqlctx.Account(ctx).Type != auth.AccountType_PROVIDER {
+		return nil, nil
+	}
 	resp, err := ram.ScheduledMessages(ctx, &threading.ScheduledMessagesRequest{
 		LookupKey: &threading.ScheduledMessagesRequest_ThreadID{
 			ThreadID: threadID,

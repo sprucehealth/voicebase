@@ -604,11 +604,12 @@ var threadType = graphql.NewObject(
 			},
 			"scheduledMessages": &graphql.Field{
 				Type: graphql.NewList(graphql.NewNonNull(scheduledMessageType)),
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					th := p.Source.(*models.Thread)
-					svc := serviceFromParams(p)
-					return getScheduledMessages(p.Context, raccess.ResourceAccess(p), th.ID, th.OrganizationID, svc.webDomain, svc.mediaAPIDomain)
-				},
+				Resolve: apiaccess.Authenticated(
+					func(p graphql.ResolveParams) (interface{}, error) {
+						th := p.Source.(*models.Thread)
+						svc := serviceFromParams(p)
+						return getScheduledMessages(p.Context, raccess.ResourceAccess(p), th.ID, th.OrganizationID, svc.webDomain, svc.mediaAPIDomain)
+					}),
 			},
 		},
 	},
