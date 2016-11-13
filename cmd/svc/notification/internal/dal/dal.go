@@ -148,21 +148,21 @@ func (d *dal) PushConfig(id PushConfigID) (*PushConfig, error) {
 
 // PushConfigForDeviceID retrieves a push_config record for a specific device id
 func (d *dal) PushConfigForDeviceID(deviceID string) (*PushConfig, error) {
-	row := d.db.QueryRow(selectPushConfig+` WHERE device_id = ?`, deviceID)
+	row := d.db.QueryRow(selectPushConfig+` WHERE device_id = ? AND deleted = 0`, deviceID)
 	pushConfig, err := scanPushConfig(row)
 	return pushConfig, errors.Trace(err)
 }
 
 // PushConfigForDeviceToken retrieves a push_config record for a specific device token
 func (d *dal) PushConfigForDeviceToken(deviceToken string) (*PushConfig, error) {
-	row := d.db.QueryRow(selectPushConfig+` WHERE device_token = ?`, deviceToken)
+	row := d.db.QueryRow(selectPushConfig+` WHERE device_token = ? AND deleted = 0`, deviceToken)
 	pushConfig, err := scanPushConfig(row)
 	return pushConfig, errors.Trace(err)
 }
 
 // PushConfigsForExternalGroupID retrieves the set of push configs that map to the provided external group id
 func (d *dal) PushConfigsForExternalGroupID(externalGroupID string) ([]*PushConfig, error) {
-	rows, err := d.db.Query(selectPushConfig+` WHERE external_group_id = ?`, externalGroupID)
+	rows, err := d.db.Query(selectPushConfig+` WHERE external_group_id = ? AND deleted = 0`, externalGroupID)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -222,8 +222,9 @@ func (d *dal) UpdatePushConfig(id PushConfigID, update *PushConfigUpdate) (int64
 // DeletePushConfig deletes a push_config record
 func (d *dal) DeletePushConfig(id PushConfigID) (int64, error) {
 	res, err := d.db.Exec(
-		`DELETE FROM push_config
-          WHERE id = ?`, id)
+		`UPDATE push_config
+			SET deleted = 1
+          	WHERE id = ?`, id)
 	if err != nil {
 		return 0, errors.Trace(err)
 	}
@@ -235,8 +236,9 @@ func (d *dal) DeletePushConfig(id PushConfigID) (int64, error) {
 // DeletePushConfigForDeviceID deletes a push_config record for the specified device id
 func (d *dal) DeletePushConfigForDeviceID(deviceID string) (int64, error) {
 	res, err := d.db.Exec(
-		`DELETE FROM push_config
-          WHERE device_id = ?`, deviceID)
+		`UPDATE push_config
+			SET deleted = 1
+          	WHERE device_id = ?`, deviceID)
 	if err != nil {
 		return 0, errors.Trace(err)
 	}
