@@ -251,6 +251,7 @@ time (
 ) &
 savepid
 
+checkedwait
 
 # Build for deploy (restapi)
 if [[ "$DEPLOY_TO_S3" != "" ]]; then
