@@ -14,5 +14,5 @@ CREATE INDEX idx_device_id ON push_config (device_id, deleted);
 
 CREATE INDEX idx_device_token ON push_config (device_token, deleted);
 
-CREATE INDEX idx_device_token ON push_config (external_group_id, deleted);
+CREATE INDEX idx_external_group_id ON push_config (external_group_id, deleted);
 
