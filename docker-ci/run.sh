@@ -135,7 +135,7 @@ else
             if [[ "$RET" != "0" ]]; then
                 exit $RET
             fi
-            grep -v .pb.go "$PKG/cover.out" | grep -v "cmd/svc/restapi" | grep -v "cmd/svc/carefinder" | grep -v "cmd/svc/products" > "$PKG/cover.out.2"
+            grep -v .pb.go "$PKG/cover.out" | grep -v "cmd/svc/restapi" | grep -v "cmd/svc/products" > "$PKG/cover.out.2"
             mv "$PKG/cover.out.2" "$PKG/cover.out"
             gocov convert "$PKG/cover.out" | gocov-xml | sed 's=workspace/go/src/github.com/sprucehealth/backend/==g' > "$PKG/coverage.xml"
         fi
@@ -176,7 +176,7 @@ TIME=$(date)
 export TAG="$BRANCH-$BUILD_NUMBER"
 
 if [[ "$DEPLOY_TO_S3" != "" ]]; then
-    SVCS="auth baymaxgraphql carefinder curbside directory excomms invite notification restapi routing threading settings operational deploy layout care media admin payments patientsync"
+    SVCS="auth baymaxgraphql curbside directory excomms invite notification restapi routing threading settings operational deploy layout care media admin payments patientsync"
     for SVC in $SVCS; do
         echo "BUILDING ($SVC)"
         cd $MONOREPO_PATH/cmd/svc/$SVC
@@ -251,16 +251,6 @@ time (
 ) &
 savepid
 
-# Test static resources (carefinder)
-echo "TESTING STATIC RESOURCES (carefinder)"
-time (
-    cd $MONOREPO_PATH/cmd/svc/carefinder
-    ./build_resources.sh
-    flow check
-) &
-savepid
-
-checkedwait
 
 # Build for deploy (restapi)
 if [[ "$DEPLOY_TO_S3" != "" ]]; then
@@ -288,28 +278,6 @@ if [[ "$DEPLOY_TO_S3" != "" ]]; then
     s3cmd --recursive -P --no-preserve -m "text/css" put css/* $STATIC_PREFIX/css/
     s3cmd --recursive -P --no-preserve -m "application/javascript" put js/* $STATIC_PREFIX/js/
     # s3cmd --recursive -P --no-preserve -m "application/x-font-opentype" --add-header "Access-Control-Allow-Origin:*" put fonts/* $STATIC_PREFIX/fonts/
-    s3cmd --recursive -P --no-preserve -m "application/octet-stream" --add-header "Access-Control-Allow-Origin:*" put fonts/*.ttf $STATIC_PREFIX/fonts/
-    s3cmd --recursive -P --no-preserve -m "application/vnd.ms-fontobject" --add-header "Access-Control-Allow-Origin:*" put fonts/*.eot $STATIC_PREFIX/fonts/
-    s3cmd --recursive -P --no-preserve -m "application/font-woff" --add-header "Access-Control-Allow-Origin:*" put fonts/*.woff $STATIC_PREFIX/fonts/
-    s3cmd --recursive -P --no-preserve -m "application/font-woff2" --add-header "Access-Control-Allow-Origin:*" put fonts/*.woff2 $STATIC_PREFIX/fonts/
-    s3cmd --recursive -P --no-preserve -m "image/svg+xml" --add-header "Access-Control-Allow-Origin:*" put fonts/*.svg $STATIC_PREFIX/fonts/
-    s3cmd --recursive -P --no-preserve -M put img/* $STATIC_PREFIX/img/
-fi
-
-# Build for deploy (carefinder)
-if [[ "$DEPLOY_TO_S3" != "" ]]; then
-    echo "DEPLOYING (carefinder)"
-
-    # Copy over the fonts from the shared location
-    LOCAL_CAREFINDER_STATIC_PATH="$MONOREPO_PATH/cmd/svc/carefinder/resources/static"
-    rm -rf $LOCAL_CAREFINDER_STATIC_PATH/fonts
-    mkdir $LOCAL_CAREFINDER_STATIC_PATH/fonts
-    cp $MONOREPO_PATH/resources/static/fonts/* $LOCAL_CAREFINDER_STATIC_PATH/fonts
-
-    cd $LOCAL_CAREFINDER_STATIC_PATH
-    STATIC_PREFIX="s3://spruce-static/carefinder/$BUILD_NUMBER"
-    s3cmd --recursive -P --no-preserve -m "application/javascript" put js/* $STATIC_PREFIX/js/
-    s3cmd --recursive -P --no-preserve -m "text/css" put css/* $STATIC_PREFIX/css/
     s3cmd --recursive -P --no-preserve -m "application/octet-stream" --add-header "Access-Control-Allow-Origin:*" put fonts/*.ttf $STATIC_PREFIX/fonts/
     s3cmd --recursive -P --no-preserve -m "application/vnd.ms-fontobject" --add-header "Access-Control-Allow-Origin:*" put fonts/*.eot $STATIC_PREFIX/fonts/
     s3cmd --recursive -P --no-preserve -m "application/font-woff" --add-header "Access-Control-Allow-Origin:*" put fonts/*.woff $STATIC_PREFIX/fonts/

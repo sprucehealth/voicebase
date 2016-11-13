@@ -50,9 +50,6 @@ var topLevelSiteMapXML = []byte(`<?xml version="1.0" encoding="UTF-8"?>
  <sitemap>
     <loc>https://www.sprucehealth.com/sitemap-main.xml</loc>
  </sitemap>
- <sitemap>
-    <loc>https://www.sprucehealth.com/dermatologist-near-me/sitemap.xml</loc>
- </sitemap>
 </sitemapindex>
 `)
 

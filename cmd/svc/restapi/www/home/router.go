@@ -99,8 +99,10 @@ func SetupRoutes(r *mux.Router, config *Config) {
 	// Referrals
 	r.Handle("/r/{code}", newPromoClaimHandler(config.DataAPI, config.AuthAPI, config.BranchClient, config.AnalyticsLogger, config.TemplateLoader))
 
-	// CareFinder
-	r.PathPrefix("/dermatologist-near-me").Handler(NewCareFinderHandler(config.Cfg))
+	r.PathPrefix("/dermatologist-near-me").Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// indicate that all pages pertaining to carefinder are gone
+		w.WriteHeader(http.StatusGone)
+	}))
 
 	authFilter := func(h http.Handler) http.Handler {
 		return www.AuthRequiredHandler(h, nil, config.AuthAPI)
