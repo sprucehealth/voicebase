@@ -7,7 +7,7 @@ import (
 )
 
 var spamTextPhrases = []string{
-	"(WeChat Verification Code)",
+	"WeChat Verification Code",
 	"Your TALK2 verification code is",
 	"is your verification code for Instanumber",
 	"Your Swytch PIN :",
