@@ -1,10 +1,9 @@
 package dal
 
 import (
+	"context"
 	"testing"
 	"time"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
 	"github.com/sprucehealth/backend/libs/clock"
@@ -12,8 +11,6 @@ import (
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testsql"
 )
-
-const schemaGlob = "schema/*.sql"
 
 func TestIPCalls(t *testing.T) {
 	dt := testsql.Setup(t, schemaGlob)

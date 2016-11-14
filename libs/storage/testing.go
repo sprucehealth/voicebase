@@ -28,7 +28,7 @@ type testStore struct {
 	mu      sync.Mutex
 }
 
-func NewTestStore(objects map[string]*TestObject) DeterministicStore {
+func NewTestStore(objects map[string]*TestObject) Store {
 	if objects == nil {
 		objects = make(map[string]*TestObject)
 	}
@@ -37,11 +37,7 @@ func NewTestStore(objects map[string]*TestObject) DeterministicStore {
 	}
 }
 
-func (s *testStore) IDFromName(name string) string {
-	return name
-}
-
-func (s *testStore) Put(name string, data []byte, contentType string, meta map[string]string) (string, error) {
+func (s *testStore) Put(id string, data []byte, contentType string, meta map[string]string) (string, error) {
 	s.mu.Lock()
 	headers := http.Header{}
 	headers.Set("Content-Length", strconv.Itoa(len(data)))
@@ -49,17 +45,17 @@ func (s *testStore) Put(name string, data []byte, contentType string, meta map[s
 	for k, v := range meta {
 		headers.Set(k, v)
 	}
-	s.objects[name] = &TestObject{data, headers}
+	s.objects[id] = &TestObject{data, headers}
 	s.mu.Unlock()
-	return name, nil
+	return id, nil
 }
 
-func (s *testStore) PutReader(name string, r io.ReadSeeker, size int64, contentType string, meta map[string]string) (string, error) {
+func (s *testStore) PutReader(id string, r io.ReadSeeker, size int64, contentType string, meta map[string]string) (string, error) {
 	data, err := ioutil.ReadAll(r)
 	if err != nil {
 		return "", err
 	}
-	return s.Put(name, data, contentType, meta)
+	return s.Put(id, data, contentType, meta)
 }
 
 func (s *testStore) Get(id string) ([]byte, http.Header, error) {
@@ -93,10 +89,6 @@ func (s *testStore) Delete(id string) error {
 	delete(s.objects, id)
 	s.mu.Unlock()
 	return nil
-}
-
-func (s *testStore) URL(id string) string {
-	return s.IDFromName(id)
 }
 
 func (s *testStore) ExpiringURL(id string, duration time.Duration) (string, error) {

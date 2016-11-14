@@ -344,7 +344,7 @@ func New(conf *Config) (*mux.Router, http.Handler) {
 	authenticationRequired(conf, apipaths.PatienPromoCodeURLPath, promotions.NewPatientPromotionsHandler(conf.DataAPI, conf.AuthAPI, conf.AnalyticsLogger))
 	authenticationRequired(conf, apipaths.ReferralsURLPath, promotions.NewReferralProgramHandler(conf.DataAPI, conf.WebDomain))
 
-	mediaHandler := handlers.NewMedia(conf.DataAPI, conf.MediaStore, conf.Stores.MustGet("media-cache").(storage.DeterministicStore), conf.AuthTokenExpiration, conf.MetricsRegistry.Scope("media/handler"))
+	mediaHandler := handlers.NewMedia(conf.DataAPI, conf.MediaStore, conf.Stores.MustGet("media-cache").(storage.Store), conf.AuthTokenExpiration, conf.MetricsRegistry.Scope("media/handler"))
 	noAuthenticationRequired(conf, apipaths.PhotoURLPath, mediaHandler)
 	noAuthenticationRequired(conf, apipaths.MediaURLPath, mediaHandler)
 	noAuthenticationRequired(conf, apipaths.NotifyMeURLPath,

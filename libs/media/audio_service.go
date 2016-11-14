@@ -12,10 +12,10 @@ import (
 
 // AudioMeta is it's media metadata
 type AudioMeta struct {
+	ID       string
 	MimeType string
 	Duration time.Duration
 	Size     uint64
-	URL      string
 }
 
 // AudioService implements a media storage service.
@@ -25,7 +25,7 @@ type AudioService struct {
 }
 
 // NewAudioService returns a new initialized media service.
-func NewAudioService(store, storeCache storage.DeterministicStore, maxSizeBytes int) *AudioService {
+func NewAudioService(store, storeCache storage.Store, maxSizeBytes int) *AudioService {
 	return &AudioService{
 		mediaStorage: &mediaStorage{store: store, storeCache: storeCache},
 		maxSizeBytes: maxSizeBytes,
@@ -53,25 +53,25 @@ func (s *AudioService) PutReader(id string, r io.ReadSeeker, contentType string)
 		return nil, errors.Trace(err)
 	}
 
-	url, err := s.store.PutReader(id, r, size, contentType, map[string]string{
+	_, err = s.store.PutReader(id, r, size, contentType, map[string]string{
 		durationHeader: strconv.FormatInt(duration.Nanoseconds(), 10),
 	})
 	meta := &AudioMeta{
+		ID:       id,
 		MimeType: contentType,
 		Duration: duration,
 		Size:     uint64(size),
-		URL:      url,
 	}
 	return meta, errors.Trace(err)
 }
 
 // Copy a stored audio file
-func (s *AudioService) Copy(dstID, srcID string) (string, error) {
-	if err := s.store.Copy(s.store.IDFromName(dstID), s.store.IDFromName(srcID)); err != nil {
+func (s *AudioService) Copy(dstID, srcID string) error {
+	if err := s.store.Copy(dstID, srcID); err != nil {
 		if errors.Cause(err) == storage.ErrNoObject {
-			return "", errors.Wrapf(ErrNotFound, "mediaID=%q", srcID)
+			return errors.Wrapf(ErrNotFound, "mediaID=%q", srcID)
 		}
-		return "", errors.Trace(err)
+		return errors.Trace(err)
 	}
-	return s.store.IDFromName(dstID), nil
+	return nil
 }

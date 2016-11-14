@@ -25,7 +25,7 @@ import (
 type mediaHandler struct {
 	dataAPI            api.DataAPI
 	store              *mediastore.Store
-	cacheStore         storage.DeterministicStore
+	cacheStore         storage.Store
 	expirationDuration time.Duration
 	statCacheHit       *metrics.Counter
 	statCacheMiss      *metrics.Counter
@@ -53,7 +53,7 @@ type mediaRequest struct {
 func NewMedia(
 	dataAPI api.DataAPI,
 	store *mediastore.Store,
-	cacheStore storage.DeterministicStore,
+	cacheStore storage.Store,
 	expirationDuration time.Duration,
 	metricsRegistry metrics.Registry,
 ) http.Handler {
@@ -179,7 +179,7 @@ func (h *mediaHandler) get(w http.ResponseWriter, r *http.Request) {
 	cacheKey := fmt.Sprintf("%d-%dx%d", req.MediaID, req.Width, req.Height)
 
 	if h.cacheStore != nil {
-		rc, headers, err := h.cacheStore.GetReader(h.cacheStore.IDFromName(cacheKey))
+		rc, headers, err := h.cacheStore.GetReader(cacheKey)
 		if err == nil {
 			defer rc.Close()
 			h.statCacheHit.Inc(1)

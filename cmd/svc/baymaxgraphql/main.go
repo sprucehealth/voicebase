@@ -380,7 +380,7 @@ func main() {
 		if err != nil {
 			golog.Fatalf("Failed to generate cert cache store from url '%s': %s", *flagCertCacheURL, err)
 		}
-		server.TLSConfig.GetCertificate = boot.LetsEncryptCertManager(certStore.(storage.DeterministicStore), []string{*flagAPIDomain})
+		server.TLSConfig.GetCertificate = boot.LetsEncryptCertManager(certStore.(storage.Store), []string{*flagAPIDomain})
 		go func() {
 			if err := boot.HTTPSListenAndServe(server, *flagProxyProtocol); err != nil {
 				golog.Fatalf(err.Error())

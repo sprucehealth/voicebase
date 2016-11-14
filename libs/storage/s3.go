@@ -2,7 +2,6 @@ package storage
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -49,19 +48,11 @@ func NewS3(awsSession *session.Session, bucket, prefix string) *S3 {
 	}
 }
 
-// IDFromName returns a deterministic ID for a name.
-func (s *S3) IDFromName(name string) string {
-	if strings.HasPrefix(name, "s3://") {
-		return name
-	}
-	return fmt.Sprintf("s3://%s/%s%s%s", *s.s3.Config.Region, s.bucket, s.prefix, name)
+func (s *S3) Put(id string, data []byte, contentType string, meta map[string]string) (string, error) {
+	return s.PutReader(id, bytes.NewReader(data), int64(len(data)), contentType, meta)
 }
 
-func (s *S3) Put(name string, data []byte, contentType string, meta map[string]string) (string, error) {
-	return s.PutReader(name, bytes.NewReader(data), int64(len(data)), contentType, meta)
-}
-
-func (s *S3) PutReader(name string, r io.ReadSeeker, size int64, contentType string, meta map[string]string) (string, error) {
+func (s *S3) PutReader(id string, r io.ReadSeeker, size int64, contentType string, meta map[string]string) (string, error) {
 	var m map[string]*string
 	if len(meta) != 0 {
 		m = make(map[string]*string, len(meta))
@@ -73,7 +64,7 @@ func (s *S3) PutReader(name string, r io.ReadSeeker, size int64, contentType str
 		// TODO: could use the mime package to try to detect type based on extension
 		contentType = "application/binary"
 	}
-	path := s.prefix + name
+	path := s.prefix + id
 	_, err := s.s3.PutObject(&s3.PutObjectInput{
 		Bucket:               &s.bucket,
 		Key:                  &path,
@@ -83,13 +74,14 @@ func (s *S3) PutReader(name string, r io.ReadSeeker, size int64, contentType str
 		ServerSideEncryption: &sseAlgorithm,
 		Metadata:             m,
 	})
-	if err != nil {
-		return "", err
-	}
-	return s.IDFromName(name), nil
+	return id, err
 }
 
 func (s *S3) Get(id string) ([]byte, http.Header, error) {
+	id, err := parseAndValidateS3ID(id)
+	if err != nil {
+		return nil, nil, err
+	}
 	r, headers, err := s.GetReader(id)
 	if err != nil {
 		return nil, nil, err
@@ -103,14 +95,13 @@ func (s *S3) Get(id string) ([]byte, http.Header, error) {
 }
 
 func (s *S3) GetHeader(id string) (http.Header, error) {
-	region, bkt, path, err := s.parseURI(id)
+	id, err := parseAndValidateS3ID(id)
 	if err != nil {
 		return nil, err
 	}
-	_ = region
 	head, err := s.s3.HeadObject(&s3.HeadObjectInput{
-		Bucket: &bkt,
-		Key:    &path,
+		Bucket: &s.bucket,
+		Key:    ptr.String(s.prefix + id),
 	})
 	if e, ok := err.(awsError); ok {
 		if e.StatusCode() == http.StatusNotFound {
@@ -140,15 +131,13 @@ func s3Header(contentType *string, contentLength *int64, metadata map[string]*st
 }
 
 func (s *S3) GetReader(id string) (io.ReadCloser, http.Header, error) {
-	region, bkt, path, err := s.parseURI(id)
+	id, err := parseAndValidateS3ID(id)
 	if err != nil {
 		return nil, nil, err
 	}
-	// TODO(samuel): Support different regions
-	_ = region
 	obj, err := s.s3.GetObject(&s3.GetObjectInput{
-		Bucket: &bkt,
-		Key:    &path,
+		Bucket: &s.bucket,
+		Key:    ptr.String(s.prefix + id),
 	})
 	if e, ok := err.(awsError); ok {
 		if e.StatusCode() == http.StatusNotFound {
@@ -162,47 +151,43 @@ func (s *S3) GetReader(id string) (io.ReadCloser, http.Header, error) {
 }
 
 func (s *S3) Delete(id string) error {
-	region, bkt, path, err := s.parseURI(id)
+	id, err := parseAndValidateS3ID(id)
 	if err != nil {
 		return err
 	}
-	// TODO(samuel): Support different regions
-	_ = region
 	_, err = s.s3.DeleteObject(&s3.DeleteObjectInput{
-		Bucket: &bkt,
-		Key:    &path,
+		Bucket: &s.bucket,
+		Key:    ptr.String(s.prefix + id),
 	})
 	return err
 }
 
 func (s *S3) ExpiringURL(id string, expiration time.Duration) (string, error) {
-	_, bkt, path, err := s.parseURI(id)
+	id, err := parseAndValidateS3ID(id)
 	if err != nil {
 		return "", err
 	}
-
 	req, _ := s.s3.GetObjectRequest(&s3.GetObjectInput{
-		Bucket: &bkt,
-		Key:    &path,
+		Bucket: &s.bucket,
+		Key:    ptr.String(s.prefix + id),
 	})
-
 	return req.Presign(expiration)
 }
 
 func (s *S3) Copy(dstID, srcID string) error {
-	_, _, path, err := s.parseURI(dstID)
+	dstID, err := parseAndValidateS3ID(dstID)
 	if err != nil {
-		return errors.Trace(err)
+		return err
 	}
-	_, srcBkt, srcPath, err := s.parseURI(srcID)
+	srcID, err = parseAndValidateS3ID(srcID)
 	if err != nil {
-		return errors.Trace(err)
+		return err
 	}
 	_, err = s.s3.CopyObject(&s3.CopyObjectInput{
 		Bucket:               &s.bucket,
-		Key:                  &path,
+		Key:                  ptr.String(s.prefix + dstID),
 		ServerSideEncryption: &sseAlgorithm,
-		CopySource:           ptr.String(url.QueryEscape(srcBkt + srcPath)),
+		CopySource:           ptr.String(url.QueryEscape(s.bucket + s.prefix + srcID)),
 	})
 	if e, ok := err.(awsError); ok {
 		if e.StatusCode() == http.StatusNotFound {
@@ -213,14 +198,18 @@ func (s *S3) Copy(dstID, srcID string) error {
 	return nil
 }
 
-func (s *S3) parseURI(uri string) (region string, bucket string, key string, err error) {
-	u, err := url.Parse(uri)
+// parseAndValidateS3ID handles deprecated storage IDs by parsing out the final part of the path
+func parseAndValidateS3ID(id string) (string, error) {
+	if !strings.HasPrefix(id, "s3://") {
+		return id, nil
+	}
+	u, err := url.Parse(id)
 	if err != nil {
-		return "", "", "", err
+		return id, err
 	}
-	p := strings.SplitN(u.Path, "/", 3)
-	if len(p) < 3 {
-		return "", "", "", fmt.Errorf("storage: bad S3 path %s", u.Path)
+	ix := strings.LastIndexByte(u.Path, '/')
+	if ix >= 0 {
+		return u.Path[ix+1:], nil
 	}
-	return u.Host, p[1], "/" + p[2], nil
+	return u.Path, nil
 }

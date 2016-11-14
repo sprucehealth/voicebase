@@ -200,7 +200,7 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 			m.ID = media.ID
 
 			smsItem.SMSItem.Attachments[i] = &excomms.MediaAttachment{
-				MediaID:     media.Location,
+				MediaID:     media.ID,
 				ContentType: m.ContentType,
 			}
 
@@ -273,7 +273,7 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 				Incoming: &excomms.IncomingCallEventItem{
 					Type:                incomingType,
 					DurationInSeconds:   params.RecordingDuration,
-					VoicemailMediaID:    media.Location,
+					VoicemailMediaID:    media.ID,
 					VoicemailDurationNS: uint64(media.Duration.Nanoseconds()),
 					TranscriptionText:   params.TranscriptionText,
 				},
@@ -416,7 +416,7 @@ func (w *IncomingRawMessageWorker) uploadTwilioMediaToS3(contentType, url string
 		return nil, errors.Trace(err)
 	}
 
-	s3Location, err := w.store.Put(id, data, contentType, nil)
+	_, err = w.store.Put(id, data, contentType, nil)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -424,7 +424,6 @@ func (w *IncomingRawMessageWorker) uploadTwilioMediaToS3(contentType, url string
 	return &models.Media{
 		ID:       id,
 		Type:     contentType,
-		Location: s3Location,
 		Duration: duration,
 	}, nil
 }

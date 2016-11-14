@@ -47,13 +47,13 @@ func TLSConfig() *tls.Config {
 
 // LetsEncryptCertManager returns functions that can be set for tls.Config.GetCertificate
 // that uses Let's Encrypt to auto-register and refresh certs.
-func LetsEncryptCertManager(cache storage.DeterministicStore, domains []string) func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
+func LetsEncryptCertManager(cache storage.Store, domains []string) func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
 	var m letsencrypt.Manager
 	m.SetHosts(domains)
 
 	sort.Strings(domains)
 	cacheFilename := strings.Join(domains, ",") + ".cert-cache"
-	b, _, err := cache.Get(cache.IDFromName(cacheFilename))
+	b, _, err := cache.Get(cacheFilename)
 	if err != nil {
 		if errors.Cause(err) != storage.ErrNoObject {
 			golog.Errorf("Failed to load cert cache '%s': %s", cacheFilename, err)

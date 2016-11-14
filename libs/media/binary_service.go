@@ -9,9 +9,9 @@ import (
 
 // BinaryMeta is it's media metadata
 type BinaryMeta struct {
+	ID       string
 	MimeType string
 	Size     uint64
-	URL      string
 }
 
 // BinaryService implements a media storage service.
@@ -21,7 +21,7 @@ type BinaryService struct {
 }
 
 // NewBinaryService returns a new initialized media service.
-func NewBinaryService(store, storeCache storage.DeterministicStore, maxSizeBytes int) *BinaryService {
+func NewBinaryService(store, storeCache storage.Store, maxSizeBytes int) *BinaryService {
 	return &BinaryService{
 		mediaStorage: &mediaStorage{store: store, storeCache: storeCache},
 		maxSizeBytes: maxSizeBytes,
@@ -36,23 +36,23 @@ func (s *BinaryService) PutReader(id string, r io.ReadSeeker, contentType string
 		return nil, errors.Trace(err)
 	}
 
-	url, err := s.store.PutReader(id, r, size, contentType, nil)
+	_, err = s.store.PutReader(id, r, size, contentType, nil)
 	meta := &BinaryMeta{
+		ID:       id,
 		MimeType: contentType,
 		Size:     uint64(size),
-		URL:      url,
 	}
 	return meta, errors.Trace(err)
 }
 
 // Copy a stored binary file
-func (s *BinaryService) Copy(dstID, srcID string) (string, error) {
-	if err := s.store.Copy(s.store.IDFromName(dstID), s.store.IDFromName(srcID)); err != nil {
+func (s *BinaryService) Copy(dstID, srcID string) error {
+	if err := s.store.Copy(dstID, srcID); err != nil {
 		if errors.Cause(err) == storage.ErrNoObject {
-			return "", errors.Wrapf(ErrNotFound, "mediaID=%q", srcID)
+			return errors.Wrapf(ErrNotFound, "mediaID=%q", srcID)
 		}
-		return "", errors.Trace(err)
+		return errors.Trace(err)
 	}
-	return s.store.IDFromName(dstID), nil
+	return nil
 
 }

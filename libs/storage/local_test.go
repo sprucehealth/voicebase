@@ -29,13 +29,11 @@ func TestLocalStore(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	id, err := store.Put("foo", []byte("bar"), "text/plain", nil)
-	if err != nil {
+	if _, err := store.Put("foo", []byte("bar"), "text/plain", nil); err != nil {
 		t.Fatal(err)
 	}
-	t.Logf("ID: %s", id)
 
-	b, _, err := store.Get(id)
+	b, _, err := store.Get("foo")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -43,11 +41,11 @@ func TestLocalStore(t *testing.T) {
 		t.Fatalf("Expected 'bar' got '%s'", string(b))
 	}
 
-	if err := store.Delete(id); err != nil {
+	if err := store.Delete("foo"); err != nil {
 		t.Fatal(err)
 	}
 
-	if _, _, err := store.Get(id); errors.Cause(err) != ErrNoObject {
+	if _, _, err := store.Get("foo"); errors.Cause(err) != ErrNoObject {
 		t.Fatalf("Expected ErrNoObject got %T %+v", errors.Cause(err), err)
 	}
 }

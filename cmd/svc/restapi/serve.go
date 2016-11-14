@@ -129,7 +129,7 @@ func serve(conf *mainConfig, stores storage.StoreMap, hand http.Handler) {
 			if ix := strings.IndexByte(conf.WebDomain, '.'); ix > 0 {
 				domains = append(domains, conf.WebDomain[ix+1:])
 			}
-			tlsServer.TLSConfig.GetCertificate = boot.LetsEncryptCertManager(stores.MustGet("certs").(storage.DeterministicStore), domains)
+			tlsServer.TLSConfig.GetCertificate = boot.LetsEncryptCertManager(stores.MustGet("certs").(storage.Store), domains)
 		}
 
 		golog.Infof("Starting SSL server on %s...", tlsServer.Addr)

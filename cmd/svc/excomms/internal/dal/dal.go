@@ -627,11 +627,11 @@ func (d *dal) StoreMedia(media []*models.Media) error {
 			return errors.Trace(fmt.Errorf("id required for media object"))
 		}
 
-		multiInsert.Append(m.ID, m.Type, m.Location, m.Name)
+		multiInsert.Append(m.ID, m.Type, m.Name)
 		golog.Debugf("Inserting media %+v", m)
 	}
 
-	_, err := d.db.Exec(`INSERT INTO media (id, type, url, name) VALUES `+multiInsert.Query(), multiInsert.Values()...)
+	_, err := d.db.Exec(`INSERT INTO media (id, type, name) VALUES `+multiInsert.Query(), multiInsert.Values()...)
 	if err != nil {
 		return errors.Trace(err)
 	}
@@ -646,7 +646,7 @@ func (d *dal) LookupMedia(ids []string) (map[string]*models.Media, error) {
 	}
 
 	rows, err := d.db.Query(`
-		SELECT id, type, url, name
+		SELECT id, type, name
 		FROM media
 		WHERE id in (`+dbutil.MySQLArgs(len(ids))+`)`, dbutil.AppendStringsToInterfaceSlice(nil, ids)...)
 	if err != nil {
@@ -660,7 +660,6 @@ func (d *dal) LookupMedia(ids []string) (map[string]*models.Media, error) {
 		if err := rows.Scan(
 			&m.ID,
 			&m.Type,
-			&m.Location,
 			&m.Name); err != nil {
 			return nil, errors.Trace(err)
 		}

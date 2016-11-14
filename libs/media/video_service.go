@@ -12,10 +12,10 @@ import (
 
 // VideoMeta is it's media metadata
 type VideoMeta struct {
+	ID       string
 	MimeType string
 	Duration time.Duration
 	Size     uint64
-	URL      string
 }
 
 // VideoService implements a media storage service.
@@ -25,7 +25,7 @@ type VideoService struct {
 }
 
 // NewVideoService returns a new initialized media service.
-func NewVideoService(store, storeCache storage.DeterministicStore, maxSizeBytes int) *VideoService {
+func NewVideoService(store, storeCache storage.Store, maxSizeBytes int) *VideoService {
 	return &VideoService{
 		mediaStorage: &mediaStorage{store: store, storeCache: storeCache},
 		maxSizeBytes: maxSizeBytes,
@@ -53,25 +53,25 @@ func (s *VideoService) PutReader(id string, r io.ReadSeeker, contentType string)
 		return nil, errors.Trace(err)
 	}
 
-	url, err := s.store.PutReader(id, r, size, contentType, map[string]string{
+	_, err = s.store.PutReader(id, r, size, contentType, map[string]string{
 		durationHeader: strconv.FormatInt(duration.Nanoseconds(), 10),
 	})
 	meta := &VideoMeta{
+		ID:       id,
 		MimeType: contentType,
 		Duration: duration,
 		Size:     uint64(size),
-		URL:      url,
 	}
 	return meta, errors.Trace(err)
 }
 
 // Copy a stored video file
-func (s *VideoService) Copy(dstID, srcID string) (string, error) {
-	if err := s.store.Copy(s.store.IDFromName(dstID), s.store.IDFromName(srcID)); err != nil {
+func (s *VideoService) Copy(dstID, srcID string) error {
+	if err := s.store.Copy(dstID, srcID); err != nil {
 		if errors.Cause(err) == storage.ErrNoObject {
-			return "", ErrNotFound
+			return ErrNotFound
 		}
-		return "", errors.Trace(err)
+		return errors.Trace(err)
 	}
-	return s.store.IDFromName(dstID), nil
+	return nil
 }

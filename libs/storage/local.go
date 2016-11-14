@@ -40,22 +40,22 @@ func NewLocalStore(path string) (Store, error) {
 	}, nil
 }
 
-func (s *local) IDFromName(name string) string {
-	if strings.HasPrefix(name, "/") {
-		name = name[1:]
+func (s *local) pathForID(id string) string {
+	if strings.HasPrefix(id, "/") {
+		id = id[1:]
 	}
-	return filepath.Join(s.path, name)
+	return filepath.Join(s.path, id)
 }
 
-func (s *local) Put(name string, data []byte, contentType string, meta map[string]string) (string, error) {
-	return s.PutReader(name, bytes.NewReader(data), int64(len(data)), contentType, meta)
+func (s *local) Put(id string, data []byte, contentType string, meta map[string]string) (string, error) {
+	return s.PutReader(id, bytes.NewReader(data), int64(len(data)), contentType, meta)
 }
 
-func (s *local) PutReader(name string, r io.ReadSeeker, size int64, contentType string, meta map[string]string) (string, error) {
+func (s *local) PutReader(id string, r io.ReadSeeker, size int64, contentType string, meta map[string]string) (string, error) {
 	// TODO: support contentType & meta
-	fullPath := s.IDFromName(name)
+	fullPath := s.pathForID(id)
 	if !strings.HasPrefix(fullPath, s.path) {
-		return "", fmt.Errorf("storage.Local: invalid name '%s'", name)
+		return "", fmt.Errorf("storage.Local: invalid id %q", id)
 	}
 	f, err := os.Create(fullPath)
 	if err != nil {
@@ -82,7 +82,7 @@ func (s *local) PutReader(name string, r io.ReadSeeker, size int64, contentType 
 		os.Remove(fullPath + fsMetaSuffix)
 		return "", err
 	}
-	return fullPath, f.Sync()
+	return id, f.Sync()
 }
 
 func (s *local) Get(id string) ([]byte, http.Header, error) {
@@ -96,13 +96,13 @@ func (s *local) Get(id string) ([]byte, http.Header, error) {
 }
 
 func (s *local) GetHeader(id string) (http.Header, error) {
-	return localHeader(id)
+	return localHeader(s.pathForID(id))
 }
 
-func localHeader(id string) (http.Header, error) {
-	f, err := os.Open(id + fsMetaSuffix)
+func localHeader(path string) (http.Header, error) {
+	f, err := os.Open(path + fsMetaSuffix)
 	if os.IsNotExist(err) {
-		return nil, errors.Wrapf(ErrNoObject, "storageID=%q", id)
+		return nil, errors.Wrapf(ErrNoObject, "path=%q", path)
 	} else if err != nil {
 		return nil, err
 	}
@@ -119,11 +119,12 @@ func localHeader(id string) (http.Header, error) {
 }
 
 func (s *local) GetReader(id string) (io.ReadCloser, http.Header, error) {
-	h, err := localHeader(id)
+	path := s.pathForID(id)
+	h, err := localHeader(path)
 	if err != nil {
 		return nil, nil, err
 	}
-	f, err := os.Open(id)
+	f, err := os.Open(path)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -131,31 +132,34 @@ func (s *local) GetReader(id string) (io.ReadCloser, http.Header, error) {
 }
 
 func (s *local) Delete(id string) error {
-	os.Remove(id + fsMetaSuffix)
-	return os.Remove(id)
+	path := s.pathForID(id)
+	os.Remove(path + fsMetaSuffix)
+	return os.Remove(path)
 }
 
 func (s *local) ExpiringURL(id string, expiration time.Duration) (string, error) {
-	return id, nil
+	return s.pathForID(id), nil
 }
 
 func (s *local) Copy(dstID, srcID string) (err error) {
+	dstPath := s.pathForID(dstID)
+	srcPath := s.pathForID(srcID)
 	defer func() {
 		if err != nil {
-			os.Remove(dstID)
-			os.Remove(dstID + fsMetaSuffix)
+			os.Remove(dstPath)
+			os.Remove(dstPath + fsMetaSuffix)
 		}
 	}()
-	src, err := os.Open(srcID)
+	src, err := os.Open(srcPath)
 	if err != nil {
 		return err
 	}
 	defer src.Close()
-	srcMeta, err := os.Open(srcID + fsMetaSuffix)
+	srcMeta, err := os.Open(srcPath + fsMetaSuffix)
 	if err != nil {
 		return err
 	}
-	dst, err := os.Create(dstID)
+	dst, err := os.Create(dstPath)
 	if err != nil {
 		return err
 	}
@@ -166,7 +170,7 @@ func (s *local) Copy(dstID, srcID string) (err error) {
 	if err := dst.Sync(); err != nil {
 		return err
 	}
-	dstMeta, err := os.Create(dstID + fsMetaSuffix)
+	dstMeta, err := os.Create(dstPath + fsMetaSuffix)
 	if err != nil {
 		return err
 	}

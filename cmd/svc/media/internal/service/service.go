@@ -92,26 +92,20 @@ func (s *service) CopyMedia(ctx context.Context, ownerType dal.MediaOwnerType, o
 		return nil, errors.Trace(err)
 	}
 
-	var url string
 	par := conc.NewParallel()
 	par.Go(func() error {
-		var err error
 		switch mimeType.Type {
 		case "image":
-			url, err = s.imageService.Copy(newID.String(), sourceID.String())
-			return errors.Trace(err)
+			return errors.Trace(s.imageService.Copy(newID.String(), sourceID.String()))
 		case "audio":
-			url, err = s.audioService.Copy(newID.String(), sourceID.String())
-			return errors.Trace(err)
+			return errors.Trace(s.audioService.Copy(newID.String(), sourceID.String()))
 		case "video":
-			url, err = s.videoService.Copy(newID.String(), sourceID.String())
-			return errors.Trace(err)
+			return errors.Trace(s.videoService.Copy(newID.String(), sourceID.String()))
 		}
-		url, err = s.binaryService.Copy(newID.String(), sourceID.String())
-		return errors.Trace(err)
+		return errors.Trace(s.binaryService.Copy(newID.String(), sourceID.String()))
 	})
 	par.Go(func() error {
-		if _, err := s.imageService.Copy(newID.String()+thumbnailSuffix, sourceID.String()+thumbnailSuffix); err != nil && errors.Cause(err) != media.ErrNotFound {
+		if err := s.imageService.Copy(newID.String()+thumbnailSuffix, sourceID.String()+thumbnailSuffix); err != nil && errors.Cause(err) != media.ErrNotFound {
 			return errors.Trace(err)
 		}
 		return nil
@@ -122,7 +116,6 @@ func (s *service) CopyMedia(ctx context.Context, ownerType dal.MediaOwnerType, o
 
 	_, err = s.dal.InsertMedia(&dal.Media{
 		ID:         newID,
-		URL:        url,
 		Name:       med.Name,
 		MimeType:   med.MimeType,
 		OwnerType:  ownerType,
@@ -235,7 +228,6 @@ func (s *service) PutMedia(ctx context.Context, mFile io.ReadSeeker, mFileName s
 	parallel := conc.NewParallel()
 	var size uint64
 	var duration time.Duration
-	var url string
 	parallel.Go(func() error {
 		switch mediaType.Type {
 		case "image":
@@ -244,7 +236,6 @@ func (s *service) PutMedia(ctx context.Context, mFile io.ReadSeeker, mFileName s
 				return errors.Trace(err)
 			}
 			size = im.Size
-			url = im.URL
 			// Trust what the decoder/uploader sent
 			mediaType, err = mime.ParseType(im.MimeType)
 			if err != nil {
@@ -257,7 +248,6 @@ func (s *service) PutMedia(ctx context.Context, mFile io.ReadSeeker, mFileName s
 			}
 			size = am.Size
 			duration = am.Duration
-			url = am.URL
 		case "video":
 			vm, err := s.videoService.PutReader(mediaID.String(), mFile, mediaType.String())
 			if err != nil {
@@ -265,14 +255,12 @@ func (s *service) PutMedia(ctx context.Context, mFile io.ReadSeeker, mFileName s
 			}
 			size = vm.Size
 			duration = vm.Duration
-			url = vm.URL
 		default:
 			bm, err := s.binaryService.PutReader(mediaID.String(), mFile, mediaType.String())
 			if err != nil {
 				return errors.Trace(err)
 			}
 			size = bm.Size
-			url = bm.URL
 		}
 		return nil
 	})
@@ -290,7 +278,6 @@ func (s *service) PutMedia(ctx context.Context, mFile io.ReadSeeker, mFileName s
 	}
 	_, err = s.dal.InsertMedia(&dal.Media{
 		ID:         mediaID,
-		URL:        url,
 		Name:       mFileName,
 		MimeType:   mediaType.String(),
 		OwnerType:  dal.MediaOwnerTypeAccount,
@@ -325,7 +312,6 @@ func (s *service) media(ctx context.Context, id dal.MediaID) (*dal.Media, error)
 	}
 	med = &dal.Media{
 		ID:        id,
-		URL:       meta.URL,
 		Name:      meta.Name,
 		MimeType:  meta.MimeType,
 		SizeBytes: meta.Size,

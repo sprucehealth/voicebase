@@ -39,23 +39,23 @@ type ImageSize struct {
 
 // ImageMeta is is media metadata
 type ImageMeta struct {
+	ID       string
 	Name     string
 	MimeType string
 	Width    int
 	Height   int
 	Size     uint64 // in bytes of the encoded image
-	URL      string
 }
 
 // ImageService implements a media storage service.
 type ImageService struct {
-	store               storage.DeterministicStore
-	storeCache          storage.DeterministicStore
+	store               storage.Store
+	storeCache          storage.Store
 	maxWidth, maxHeight int
 }
 
 // NewImageService returns a new initialized media service.
-func NewImageService(store, storeCache storage.DeterministicStore, maxWidth, maxHeight int) *ImageService {
+func NewImageService(store, storeCache storage.Store, maxWidth, maxHeight int) *ImageService {
 	return &ImageService{
 		store:      store,
 		storeCache: storeCache,
@@ -105,29 +105,29 @@ func (s *ImageService) PutReader(id string, r io.ReadSeeker) (*ImageMeta, error)
 	}
 
 	mimeType := "image/" + imf
-	url, err := s.store.PutReader(id, r, size, mimeType, map[string]string{
+	_, err = s.store.PutReader(id, r, size, mimeType, map[string]string{
 		widthHeader:  strconv.Itoa(cnf.Width),
 		heightHeader: strconv.Itoa(cnf.Height),
 	})
 	meta := &ImageMeta{
+		ID:       id,
 		MimeType: mimeType, // This works for all stdlib decoders but might fail for others. Probably fine though.
 		Width:    cnf.Width,
 		Height:   cnf.Height,
 		Size:     uint64(size),
-		URL:      url,
 	}
 	return meta, errors.Trace(err)
 }
 
 // Copy a stored image
-func (s *ImageService) Copy(dstID, srcID string) (string, error) {
-	if err := s.store.Copy(s.store.IDFromName(dstID), s.store.IDFromName(srcID)); err != nil {
+func (s *ImageService) Copy(dstID, srcID string) error {
+	if err := s.store.Copy(dstID, srcID); err != nil {
 		if errors.Cause(err) == storage.ErrNoObject {
-			return "", errors.Wrapf(ErrNotFound, "mediaID=%q", srcID)
+			return errors.Wrapf(ErrNotFound, "mediaID=%q", srcID)
 		}
-		return "", errors.Trace(err)
+		return errors.Trace(err)
 	}
-	return s.store.IDFromName(dstID), nil
+	return nil
 }
 
 func (s *ImageService) storeOriginal(id string, img image.Image) (*ImageMeta, error) {
@@ -135,16 +135,16 @@ func (s *ImageService) storeOriginal(id string, img image.Image) (*ImageMeta, er
 	if err := jpeg.Encode(buf, img, &jpeg.Options{Quality: imageutil.JPEGQuality}); err != nil {
 		return nil, errors.Trace(err)
 	}
-	url, err := s.store.Put(id, buf.Bytes(), "image/jpeg", imgHeaders(img))
+	_, err := s.store.Put(id, buf.Bytes(), "image/jpeg", imgHeaders(img))
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 	return &ImageMeta{
+		ID:       id,
 		MimeType: "image/jpeg",
 		Width:    img.Bounds().Dx(),
 		Height:   img.Bounds().Dy(),
 		Size:     uint64(buf.Len()),
-		URL:      url,
 	}, nil
 }
 
@@ -160,7 +160,7 @@ func (s *ImageService) Get(id string, size *ImageSize) (image.Image, *ImageMeta,
 
 // GetMeta returns the metadata associated with a media entry
 func (s *ImageService) GetMeta(id string) (*ImageMeta, error) {
-	h, err := s.store.GetHeader(s.store.IDFromName(id))
+	h, err := s.store.GetHeader(id)
 	if err != nil {
 		return nil, errors.Wrapf(err, "mediaID=%q", id)
 	}
@@ -172,7 +172,7 @@ func (s *ImageService) GetMeta(id string) (*ImageMeta, error) {
 func (s *ImageService) GetReader(id string, size *ImageSize) (io.ReadCloser, *ImageMeta, error) {
 	// If requested original then our job is easy.
 	if size == nil || (size.Width <= 0 && size.Height <= 0) {
-		rc, header, err := s.store.GetReader(s.store.IDFromName(id))
+		rc, header, err := s.store.GetReader(id)
 		if errors.Cause(err) == storage.ErrNoObject {
 			return nil, nil, errors.Wrapf(ErrNotFound, "mediaID=%q", id)
 		} else if err != nil {
@@ -183,7 +183,7 @@ func (s *ImageService) GetReader(id string, size *ImageSize) (io.ReadCloser, *Im
 
 	// Check for size class in the store cache
 	sizeID := sizeID(id, size)
-	rc, header, err := s.storeCache.GetReader(s.storeCache.IDFromName(sizeID))
+	rc, header, err := s.storeCache.GetReader(sizeID)
 	if err == nil {
 		return rc, metaFromHeaders(header), nil
 	}
@@ -192,7 +192,7 @@ func (s *ImageService) GetReader(id string, size *ImageSize) (io.ReadCloser, *Im
 	}
 
 	// Fetch the original since we didn't have the requested size already stored
-	rc, header, err = s.store.GetReader(s.store.IDFromName(id))
+	rc, header, err = s.store.GetReader(id)
 	if errors.Cause(err) == storage.ErrNoObject {
 		return nil, nil, errors.Wrapf(ErrNotFound, "mediaID=%q", id)
 	} else if err != nil {
@@ -233,11 +233,6 @@ func (s *ImageService) GetReader(id string, size *ImageSize) (io.ReadCloser, *Im
 	})
 
 	return ioutil.NopCloser(buf), meta, nil
-}
-
-// URL returns the URL from the underlying deterministic storage system
-func (s *ImageService) URL(id string) string {
-	return s.store.IDFromName(id)
 }
 
 func (s *ImageService) isTooLarge(width, height int) bool {

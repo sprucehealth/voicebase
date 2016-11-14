@@ -2,6 +2,8 @@ package server
 
 import (
 	"fmt"
+	"net/url"
+	"strings"
 
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/models"
 	"github.com/sprucehealth/backend/libs/errors"
@@ -366,25 +368,25 @@ func TransformMessageToResponse(m *models.Message, deleted bool) (*threading.Mes
 			at.Data = &threading.Attachment_Audio{
 				Audio: &threading.AudioAttachment{
 					Mimetype:   data.Mimetype,
-					MediaID:    data.MediaID,
+					MediaID:    transformMediaID(data.MediaID),
 					DurationNS: durationNS,
 				},
 			}
 			if at.ContentID == "" {
-				at.ContentID = data.MediaID
+				at.ContentID = transformMediaID(data.MediaID)
 			}
 		case *models.Attachment_Image:
 			data := adata.Image
 			at.Data = &threading.Attachment_Image{
 				Image: &threading.ImageAttachment{
 					Mimetype: data.Mimetype,
-					MediaID:  data.MediaID,
+					MediaID:  transformMediaID(data.MediaID),
 					Width:    data.Width,
 					Height:   data.Height,
 				},
 			}
 			if at.ContentID == "" {
-				at.ContentID = data.MediaID
+				at.ContentID = transformMediaID(data.MediaID)
 			}
 		case *models.Attachment_Generic:
 			data := adata.Generic
@@ -402,12 +404,12 @@ func TransformMessageToResponse(m *models.Message, deleted bool) (*threading.Mes
 			at.Data = &threading.Attachment_Document{
 				Document: &threading.DocumentAttachment{
 					Mimetype: data.Mimetype,
-					MediaID:  data.MediaID,
+					MediaID:  transformMediaID(data.MediaID),
 					Name:     data.Name,
 				},
 			}
 			if at.ContentID == "" {
-				at.ContentID = data.MediaID
+				at.ContentID = transformMediaID(data.MediaID)
 			}
 		case *models.Attachment_Visit:
 			data := adata.Visit
@@ -426,12 +428,12 @@ func TransformMessageToResponse(m *models.Message, deleted bool) (*threading.Mes
 			at.Data = &threading.Attachment_Video{
 				Video: &threading.VideoAttachment{
 					Mimetype:   data.Mimetype,
-					MediaID:    data.MediaID,
+					MediaID:    transformMediaID(data.MediaID),
 					DurationNS: data.DurationNS,
 				},
 			}
 			if at.ContentID == "" {
-				at.ContentID = data.MediaID
+				at.ContentID = transformMediaID(data.MediaID)
 			}
 		case *models.Attachment_CarePlan:
 			data := adata.CarePlan
@@ -744,4 +746,20 @@ func transformTriggeredMessageItemToResponse(tmi *models.TriggeredMessageItem) (
 		return nil, errors.Errorf("Unknown triggered message type %T", tmi.Data)
 	}
 	return rtmi, nil
+}
+
+// transformMediaID converts old s3:// type IDs to just the plain media ID
+func transformMediaID(id string) string {
+	if !strings.HasPrefix(id, "s3://") {
+		return id
+	}
+	u, err := url.Parse(id)
+	if err != nil {
+		return id
+	}
+	ix := strings.LastIndexByte(u.Path, '/')
+	if ix >= 0 {
+		return u.Path[ix+1:]
+	}
+	return u.Path
 }

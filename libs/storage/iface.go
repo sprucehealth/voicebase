@@ -12,21 +12,14 @@ var ErrNoObject = errors.New("storage: no object")
 
 // Store is implemented by storage backends
 type Store interface {
-	Put(name string, data []byte, contentType string, meta map[string]string) (string, error)
-	PutReader(name string, r io.ReadSeeker, size int64, contentType string, meta map[string]string) (string, error)
-	GetHeader(id string) (http.Header, error)
-	Get(id string) ([]byte, http.Header, error)
-	GetReader(id string) (io.ReadCloser, http.Header, error)
+	Copy(destID, sourceID string) error
 	Delete(id string) error
 	ExpiringURL(id string, expiration time.Duration) (string, error)
-}
-
-// DeterministicStore is a version of Store that uses a deterministric
-// value for ID so that it can be generated from the name given to Put(Reader).
-type DeterministicStore interface {
-	Store
-	Copy(dest, source string) error
-	IDFromName(name string) string
+	Get(id string) ([]byte, http.Header, error)
+	GetHeader(id string) (http.Header, error)
+	GetReader(id string) (io.ReadCloser, http.Header, error)
+	Put(id string, data []byte, contentType string, meta map[string]string) (string, error)
+	PutReader(id string, r io.ReadSeeker, size int64, contentType string, meta map[string]string) (string, error)
 }
 
 // StoreMap is a collection of named stores
