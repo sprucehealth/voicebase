@@ -168,7 +168,7 @@ func scanScheduledMessage(ctx context.Context, row dbutil.Scanner, contextFormat
 	err := row.Scan(&m.ActorEntityID, &itemType, &m.ScheduledFor, &m.SentAt, &m.Created, &m.Modified, &m.ID,
 		&m.ThreadID, &m.Internal, &m.Status, &m.SentThreadItemID, &data)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(errors.Annotate(ErrNotFound, "No rows found - threading.scheduled_messages - Context: "+fmt.Sprintf(contextFormat, args...)))
+		return nil, errors.Wrap(ErrNotFound, "No rows found - threading.scheduled_messages - Context: "+fmt.Sprintf(contextFormat, args...))
 	}
 	if err != nil {
 		return nil, errors.Trace(err)

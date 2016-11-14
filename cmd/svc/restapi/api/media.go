@@ -63,12 +63,12 @@ func (d *dataService) claimMedia(db db, mediaID int64, claimerType string, claim
 		INSERT INTO media_claim (media_id, claimer_type, claimer_id)
 		VALUES (?, ?, ?)`,
 		mediaID, claimerType, claimerID)
-	return errors.Trace(errors.Annotatef(err, "media_id=%d, claimer_type=%s, claimer_id=%d", mediaID, claimerType, claimerID))
+	return errors.Wrapf(err, "media_id=%d, claimer_type=%s, claimer_id=%d", mediaID, claimerType, claimerID)
 }
 
 func (d *dataService) unclaimMedia(db db, mediaID int64, claimerType string, claimerID int64) error {
 	_, err := db.Exec(`
 		DELETE FROM media_claim WHERE media_id = ? AND claimer_type = ? AND claimer_id = ?`,
 		mediaID, claimerType, claimerID)
-	return errors.Trace(errors.Annotatef(err, "media_id=%d, claimer_type=%s, claimer_id=%d", mediaID, claimerType, claimerID))
+	return errors.Wrapf(err, "media_id=%d, claimer_type=%s, claimer_id=%d", mediaID, claimerType, claimerID)
 }

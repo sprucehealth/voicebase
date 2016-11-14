@@ -1,12 +1,15 @@
 package errors
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 func TestCause(t *testing.T) {
 	if e := Cause(nil); e != nil {
 		t.Fatal("Cause should return nil for a nil error")
 	}
-	err := New("foo")
+	err := fmt.Errorf("foo")
 	if e := Cause(err); e != err {
 		t.Fatal("Cause for non-aerr should return the error itself")
 	}
@@ -18,7 +21,7 @@ func TestCause(t *testing.T) {
 
 func TestErrorf(t *testing.T) {
 	err := testFuncf1()
-	if ex := "Test 123 [backend/libs/errors/errors_test.go:27]"; err.Error() != ex {
+	if ex := "Test 123 [backend/libs/errors/errors_test.go:30]"; err.Error() != ex {
 		t.Fatalf("Expected '%s' got '%s'", ex, err.Error())
 	}
 }

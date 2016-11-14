@@ -11,13 +11,15 @@ import (
 	"strings"
 )
 
-// New creates a new error with the provided string
-var New = errors.New
-
 type aerr struct {
 	err         error // actual error
 	trace       []string
 	annotations []string
+}
+
+// New creates a new error with the provided string
+func New(msg string) error {
+	return errors.New(msg)
 }
 
 func wrap(err error) aerr {

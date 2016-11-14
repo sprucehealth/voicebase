@@ -1427,7 +1427,7 @@ func scanVendorAccount(row dbutil.Scanner, contextFormat string, args ...interfa
 
 	err := row.Scan(&m.Created, &m.ID, &m.EntityID, &m.AccountType, &m.Lifecycle, &m.ChangeState, &m.Modified, &m.AccessToken, &m.RefreshToken, &m.PublishableKey, &m.ConnectedAccountID, &m.Live, &m.Scope)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(errors.Annotate(ErrNotFound, "No rows found - vendor_account - Context: "+fmt.Sprintf(contextFormat, args...)))
+		return nil, errors.Wrap(ErrNotFound, "No rows found - vendor_account - Context: "+fmt.Sprintf(contextFormat, args...))
 	}
 	return &m, errors.Trace(err)
 }
@@ -1443,7 +1443,7 @@ func scanCustomer(row dbutil.Scanner, contextFormat string, args ...interface{})
 
 	err := row.Scan(&m.ID, &m.StorageType, &m.ChangeState, &m.Lifecycle, &m.Created, &m.Modified, &m.VendorAccountID, &m.EntityID, &m.StorageID)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(errors.Annotate(ErrNotFound, "No rows found - customer - Context: "+fmt.Sprintf(contextFormat, args...)))
+		return nil, errors.Wrap(ErrNotFound, "No rows found - customer - Context: "+fmt.Sprintf(contextFormat, args...))
 	}
 	return &m, errors.Trace(err)
 }
@@ -1460,7 +1460,7 @@ func scanPaymentMethod(row dbutil.Scanner, contextFormat string, args ...interfa
 
 	err := row.Scan(&m.Lifecycle, &m.Created, &m.Modified, &m.CustomerID, &m.EntityID, &m.StorageID, &m.StorageFingerprint, &m.ChangeState, &m.ID, &m.VendorAccountID, &m.StorageType, &m.Type, &m.Brand, &m.Last4, &m.ExpMonth, &m.ExpYear, &m.TokenizationMethod, &m.Default)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(errors.Annotate(ErrNotFound, "No rows found - payment_method - Context: "+fmt.Sprintf(contextFormat, args...)))
+		return nil, errors.Wrap(ErrNotFound, "No rows found - payment_method - Context: "+fmt.Sprintf(contextFormat, args...))
 	}
 	return &m, errors.Trace(err)
 }
@@ -1477,7 +1477,7 @@ func scanPayment(row dbutil.Scanner, contextFormat string, args ...interface{}) 
 
 	err := row.Scan(&m.ID, &m.PaymentMethodID, &m.Lifecycle, &m.VendorAccountID, &m.Currency, &m.Amount, &m.ChangeState, &m.Created, &m.Modified, &m.ThreadID, &m.ProcessorTransactionID, &m.ProcessorStatusMessage)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(errors.Annotate(ErrNotFound, "No rows found - payment - Context: "+fmt.Sprintf(contextFormat, args...)))
+		return nil, errors.Wrap(ErrNotFound, "No rows found - payment - Context: "+fmt.Sprintf(contextFormat, args...))
 	}
 	return &m, errors.Trace(err)
 }

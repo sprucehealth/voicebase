@@ -4,8 +4,9 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-
 	"testing"
+
+	"github.com/sprucehealth/backend/libs/errors"
 )
 
 func TestLocalStore(t *testing.T) {
@@ -46,7 +47,7 @@ func TestLocalStore(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, _, err := store.Get(id); err != ErrNoObject {
-		t.Fatalf("Expected ErrNoObject got %+v", err)
+	if _, _, err := store.Get(id); errors.Cause(err) != ErrNoObject {
+		t.Fatalf("Expected ErrNoObject got %T %+v", errors.Cause(err), err)
 	}
 }

@@ -375,13 +375,13 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 func (w *IncomingRawMessageWorker) uploadTwilioMediaToS3(contentType, url string) (*models.Media, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return nil, errors.Annotatef(errors.Trace(err), "failed to create GET request for url '%s'", url)
+		return nil, errors.Wrapf(err, "failed to create GET request for url %q", url)
 	}
 	req.SetBasicAuth(w.twilioAccountSID, w.twilioAuthToken)
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, errors.Annotatef(errors.Trace(err), "GET failed on url '%s'", url)
+		return nil, errors.Wrapf(err, "GET failed on url %q", url)
 	}
 	defer res.Body.Close()
 

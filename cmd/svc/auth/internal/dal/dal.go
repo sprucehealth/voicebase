@@ -1129,7 +1129,7 @@ func scanAccount(row dbutil.Scanner, contextFormat string, args ...interface{}) 
 
 	err := row.Scan(&m.PrimaryAccountPhoneID, &m.Password, &m.Status, &m.Created, &m.PrimaryAccountEmailID, &m.FirstName, &m.LastName, &m.Modified, &m.ID, &m.Type)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(errors.Annotate(ErrNotFound, "No rows found - account - Context: "+fmt.Sprintf(contextFormat, args...)))
+		return nil, errors.Wrap(ErrNotFound, "No rows found - account - Context: "+fmt.Sprintf(contextFormat, args...))
 	}
 	return &m, errors.Trace(err)
 }
@@ -1144,7 +1144,7 @@ func scanAuthToken(row dbutil.Scanner, contextFormat string, args ...interface{}
 
 	err := row.Scan(&m.Token, &m.ClientEncryptionKey, &m.AccountID, &m.Created, &m.Expires, &m.Shadow, &m.DurationType, &m.DeviceID, &m.Platform)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(errors.Annotate(ErrNotFound, "No rows found - auth_token - Context: "+fmt.Sprintf(contextFormat, args...)))
+		return nil, errors.Wrap(ErrNotFound, "No rows found - auth_token - Context: "+fmt.Sprintf(contextFormat, args...))
 	}
 	return &m, errors.Trace(err)
 }
@@ -1162,7 +1162,7 @@ func scanAccountEvent(row dbutil.Scanner, contextFormat string, args ...interfac
 
 	err := row.Scan(&m.ID, &m.AccountID, &m.AccountEmailID, &m.AccountPhoneID, &m.Event)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(errors.Annotate(ErrNotFound, "No rows found - account_event - Context: "+fmt.Sprintf(contextFormat, args...)))
+		return nil, errors.Wrap(ErrNotFound, "No rows found - account_event - Context: "+fmt.Sprintf(contextFormat, args...))
 	}
 	return &m, errors.Trace(err)
 }
@@ -1178,7 +1178,7 @@ func scanAccountPhone(row dbutil.Scanner, contextFormat string, args ...interfac
 
 	err := row.Scan(&m.AccountID, &m.PhoneNumber, &m.Status, &m.Verified, &m.Created, &m.Modified, &m.ID)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(errors.Annotate(ErrNotFound, "No rows found - account_phone - Context: "+fmt.Sprintf(contextFormat, args...)))
+		return nil, errors.Wrap(ErrNotFound, "No rows found - account_phone - Context: "+fmt.Sprintf(contextFormat, args...))
 	}
 	return &m, errors.Trace(err)
 }
@@ -1194,7 +1194,7 @@ func scanAccountEmail(row dbutil.Scanner, contextFormat string, args ...interfac
 
 	err := row.Scan(&m.Email, &m.Status, &m.Verified, &m.Created, &m.Modified, &m.ID, &m.AccountID)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(errors.Annotate(ErrNotFound, "No rows found - account_email - Context: "+fmt.Sprintf(contextFormat, args...)))
+		return nil, errors.Wrap(ErrNotFound, "No rows found - account_email - Context: "+fmt.Sprintf(contextFormat, args...))
 	}
 	return &m, errors.Trace(err)
 }
@@ -1208,7 +1208,7 @@ func scanVerificationCode(row dbutil.Scanner, contextFormat string, args ...inte
 
 	err := row.Scan(&m.VerifiedValue, &m.Consumed, &m.Created, &m.Expires, &m.Token, &m.Code, &m.VerificationType)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(errors.Annotate(ErrNotFound, "No rows found - verification_code - Context: "+fmt.Sprintf(contextFormat, args...)))
+		return nil, errors.Wrap(ErrNotFound, "No rows found - verification_code - Context: "+fmt.Sprintf(contextFormat, args...))
 	}
 	return &m, errors.Trace(err)
 }
@@ -1223,7 +1223,7 @@ func scanTwoFactorLogin(row dbutil.Scanner, contextFormat string, args ...interf
 
 	err := row.Scan(&m.AccountID, &m.DeviceID, &m.LastLogin)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(errors.Annotate(ErrNotFound, "No rows found - two_factor_login - Context: "+fmt.Sprintf(contextFormat, args...)))
+		return nil, errors.Wrap(ErrNotFound, "No rows found - two_factor_login - Context: "+fmt.Sprintf(contextFormat, args...))
 	}
 	return &m, errors.Trace(err)
 }

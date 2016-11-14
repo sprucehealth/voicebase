@@ -12,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/sprucehealth/backend/libs/errors"
 )
 
 const fsMetaSuffix = ".meta"
@@ -100,7 +102,7 @@ func (s *local) GetHeader(id string) (http.Header, error) {
 func localHeader(id string) (http.Header, error) {
 	f, err := os.Open(id + fsMetaSuffix)
 	if os.IsNotExist(err) {
-		return nil, ErrNoObject
+		return nil, errors.Wrapf(ErrNoObject, "storageID=%q", id)
 	} else if err != nil {
 		return nil, err
 	}

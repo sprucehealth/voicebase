@@ -49,7 +49,7 @@ func (s *BinaryService) PutReader(id string, r io.ReadSeeker, contentType string
 func (s *BinaryService) Copy(dstID, srcID string) (string, error) {
 	if err := s.store.Copy(s.store.IDFromName(dstID), s.store.IDFromName(srcID)); err != nil {
 		if errors.Cause(err) == storage.ErrNoObject {
-			return "", ErrNotFound
+			return "", errors.Wrapf(ErrNotFound, "mediaID=%q", srcID)
 		}
 		return "", errors.Trace(err)
 	}

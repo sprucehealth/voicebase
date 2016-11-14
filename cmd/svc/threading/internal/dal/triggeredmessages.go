@@ -243,7 +243,7 @@ func scanTriggeredMessage(ctx context.Context, row dbutil.Scanner, contextFormat
 
 	err := row.Scan(&m.Created, &m.Modified, &m.ID, &m.ActorEntityID, &m.OrganizationEntityID, &m.TriggerKey, &m.TriggerSubkey, &m.Enabled)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(errors.Annotate(ErrNotFound, "No rows found - threading.TriggeredMessage - Context: "+fmt.Sprintf(contextFormat, args...)))
+		return nil, errors.Wrap(ErrNotFound, "No rows found - threading.TriggeredMessage - Context: "+fmt.Sprintf(contextFormat, args...))
 	}
 	return &m, errors.Trace(err)
 }
@@ -260,7 +260,7 @@ func scanTriggeredMessageItem(ctx context.Context, row dbutil.Scanner, contextFo
 	var data []byte
 	err := row.Scan(&m.Type, &data, &m.Created, &m.Modified, &m.ID, &m.TriggeredMessageID, &m.Ordinal, &m.Internal, &m.ActorEntityID)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(errors.Annotate(ErrNotFound, "No rows found - threading.TriggeredMessageItem - Context: "+fmt.Sprintf(contextFormat, args...)))
+		return nil, errors.Wrap(ErrNotFound, "No rows found - threading.TriggeredMessageItem - Context: "+fmt.Sprintf(contextFormat, args...))
 	}
 	if err != nil {
 		return nil, errors.Trace(err)

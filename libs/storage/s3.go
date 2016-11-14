@@ -111,7 +111,7 @@ func (s *S3) GetHeader(id string) (http.Header, error) {
 	})
 	if e, ok := err.(awsError); ok {
 		if e.StatusCode() == http.StatusNotFound {
-			return nil, ErrNoObject
+			return nil, errors.Wrapf(ErrNoObject, "storageID=%q", id)
 		}
 		return nil, err
 	} else if err != nil {
@@ -149,7 +149,7 @@ func (s *S3) GetReader(id string) (io.ReadCloser, http.Header, error) {
 	})
 	if e, ok := err.(awsError); ok {
 		if e.StatusCode() == http.StatusNotFound {
-			return nil, nil, ErrNoObject
+			return nil, nil, errors.Wrapf(ErrNoObject, "storageID=%q", id)
 		}
 		return nil, nil, err
 	} else if err != nil {
@@ -203,7 +203,7 @@ func (s *S3) Copy(dstID, srcID string) error {
 	})
 	if e, ok := err.(awsError); ok {
 		if e.StatusCode() == http.StatusNotFound {
-			return ErrNoObject
+			return errors.Wrapf(ErrNoObject, "storageID=%q", srcID)
 		}
 		return errors.Trace(err)
 	}

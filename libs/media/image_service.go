@@ -123,7 +123,7 @@ func (s *ImageService) PutReader(id string, r io.ReadSeeker) (*ImageMeta, error)
 func (s *ImageService) Copy(dstID, srcID string) (string, error) {
 	if err := s.store.Copy(s.store.IDFromName(dstID), s.store.IDFromName(srcID)); err != nil {
 		if errors.Cause(err) == storage.ErrNoObject {
-			return "", ErrNotFound
+			return "", errors.Wrapf(ErrNotFound, "mediaID=%q", srcID)
 		}
 		return "", errors.Trace(err)
 	}
@@ -174,7 +174,7 @@ func (s *ImageService) GetReader(id string, size *ImageSize) (io.ReadCloser, *Im
 	if size == nil || (size.Width <= 0 && size.Height <= 0) {
 		rc, header, err := s.store.GetReader(s.store.IDFromName(id))
 		if errors.Cause(err) == storage.ErrNoObject {
-			return nil, nil, errors.Trace(ErrNotFound)
+			return nil, nil, errors.Wrapf(ErrNotFound, "mediaID=%q", id)
 		} else if err != nil {
 			return nil, nil, errors.Trace(err)
 		}
@@ -194,7 +194,7 @@ func (s *ImageService) GetReader(id string, size *ImageSize) (io.ReadCloser, *Im
 	// Fetch the original since we didn't have the requested size already stored
 	rc, header, err = s.store.GetReader(s.store.IDFromName(id))
 	if errors.Cause(err) == storage.ErrNoObject {
-		return nil, nil, errors.Trace(ErrNotFound)
+		return nil, nil, errors.Wrapf(ErrNotFound, "mediaID=%q", id)
 	} else if err != nil {
 		return nil, nil, errors.Trace(err)
 	}
