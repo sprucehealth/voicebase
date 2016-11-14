@@ -60,6 +60,7 @@ var accountType = graphql.NewObject(
 			"email":       &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"phoneNumber": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"entities":    &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(entityType)), Resolve: accountEntitiesResolve},
+			"settings":    &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(settingType)), Resolve: accountSettingsResolve},
 		},
 	})
 
@@ -136,6 +137,13 @@ func entitiesForAccount(ctx context.Context, directoryClient directory.Directory
 		return nil, errors.Trace(err)
 	}
 	return models.TransformEntitiesToModels(resp.Entities), nil
+}
+
+func accountSettingsResolve(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+	account := p.Source.(*models.Account)
+	golog.ContextLogger(ctx).Debugf("Looking up account settings for %s", account.ID)
+	return getNodeSettings(ctx, client.Settings(p), account.ID)
 }
 
 // modifyAccountContact

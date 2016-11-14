@@ -33,8 +33,7 @@ type snsPublisher struct {
 
 // NewSNSPublisher returns a publisher that can be used to publish system events to sns topics
 func NewSNSPublisher(snsAPI snsiface.SNSAPI, awsSession *session.Session) (Publisher, error) {
-
-	accountID, err := getAccountIDFromEC2Metadata(awsSession)
+	accountID, err := getAWSAccountID(awsSession)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

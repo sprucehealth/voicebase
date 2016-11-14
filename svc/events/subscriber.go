@@ -38,7 +38,7 @@ type sqsSubscriber struct {
 
 // NewSQSSubscriber returns a subscriber that subscribes to messages published to an SQS queue
 func NewSQSSubscriber(sqsAPI sqsiface.SQSAPI, snsAPI snsiface.SNSAPI, awsSession *session.Session, serviceName string) (Subscriber, error) {
-	accountID, err := getAccountIDFromEC2Metadata(awsSession)
+	accountID, err := getAWSAccountID(awsSession)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

@@ -30,7 +30,7 @@ var settingType = graphql.NewObject(
 		},
 	})
 
-func getEntitySettings(ctx context.Context, settingsClient settings.SettingsClient, id string) ([]*models.Setting, error) {
+func getNodeSettings(ctx context.Context, settingsClient settings.SettingsClient, id string) ([]*models.Setting, error) {
 	settings, err := settingsClient.GetNodeValues(ctx, &settings.GetNodeValuesRequest{
 		NodeID: id,
 	})

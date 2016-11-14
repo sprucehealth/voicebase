@@ -93,7 +93,7 @@ func resolveEntitySettings(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	entity := p.Source.(*models.Entity)
 	golog.ContextLogger(ctx).Debugf("Looking up entity settings for %s", entity.ID)
-	return getEntitySettings(ctx, client.Settings(p), entity.ID)
+	return getNodeSettings(ctx, client.Settings(p), entity.ID)
 }
 
 func resolveEntityVendorAccounts(p graphql.ResolveParams) (interface{}, error) {
