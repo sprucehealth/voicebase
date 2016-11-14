@@ -51,6 +51,9 @@ func NewS3(awsSession *session.Session, bucket, prefix string) *S3 {
 
 // IDFromName returns a deterministic ID for a name.
 func (s *S3) IDFromName(name string) string {
+	if strings.HasPrefix(name, "s3://") {
+		return name
+	}
 	return fmt.Sprintf("s3://%s/%s%s%s", *s.s3.Config.Region, s.bucket, s.prefix, name)
 }
 

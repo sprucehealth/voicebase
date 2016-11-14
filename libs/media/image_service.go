@@ -162,7 +162,7 @@ func (s *ImageService) Get(id string, size *ImageSize) (image.Image, *ImageMeta,
 func (s *ImageService) GetMeta(id string) (*ImageMeta, error) {
 	h, err := s.store.GetHeader(s.store.IDFromName(id))
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "mediaID=%q", id)
 	}
 	return metaFromHeaders(h), nil
 }

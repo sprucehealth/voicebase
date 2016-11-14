@@ -1,10 +1,9 @@
 package service
 
 import (
+	"context"
 	"io"
 	"time"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/mediactx"
