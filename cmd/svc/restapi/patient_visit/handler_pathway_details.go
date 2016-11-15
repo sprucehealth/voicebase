@@ -13,9 +13,9 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/restapi/careprovider"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/cost"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/internal/httputil"
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/views"
 )
 

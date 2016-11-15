@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -103,7 +104,7 @@ func TestCreateSavedQuery(t *testing.T) {
 			{Value: &threading.Expr_Token{Token: "tooooooke"}},
 		},
 	}
-	res, err := srv.CreateSavedQuery(nil, &threading.CreateSavedQueryRequest{
+	res, err := srv.CreateSavedQuery(context.Background(), &threading.CreateSavedQueryRequest{
 		EntityID:             "entity_1",
 		Title:                "Stuff",
 		Query:                query,
@@ -155,7 +156,7 @@ func TestSavedQuery(t *testing.T) {
 			Modified: now,
 			Type:     models.SavedQueryTypeNotifications,
 		}, nil))
-	res, err := srv.SavedQuery(nil, &threading.SavedQueryRequest{
+	res, err := srv.SavedQuery(context.Background(), &threading.SavedQueryRequest{
 		SavedQueryID: sqID.String(),
 	})
 	test.OK(t, err)

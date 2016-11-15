@@ -4,14 +4,12 @@ import (
 	"context"
 	"testing"
 
-	"google.golang.org/grpc/codes"
-
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/models"
-
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/threading"
+	"google.golang.org/grpc/codes"
 )
 
 func TestCreateTriggeredMessage(t *testing.T) {

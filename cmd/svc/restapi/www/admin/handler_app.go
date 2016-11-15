@@ -6,9 +6,9 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/internal/httputil"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/environment"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type appHandler struct {

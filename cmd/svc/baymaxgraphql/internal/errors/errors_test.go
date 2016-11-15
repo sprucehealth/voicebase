@@ -13,9 +13,8 @@ import (
 
 func TestInternalError(t *testing.T) {
 	ctx := context.Background()
-	rid := uint64(1234)
 	query := "queryString"
-	ctx = httputil.CtxWithRequestID(ctx, rid)
+	ctx = httputil.CtxWithRequestID(ctx, "1234")
 	ctx = gqlctx.WithQuery(ctx, query)
 
 	var entry *golog.Entry
@@ -30,5 +29,5 @@ func TestInternalError(t *testing.T) {
 	ft := golog.LogfmtFormatter()
 	entry.Time = time.Unix(1e9, 0).UTC()
 	s := string(ft.Format(entry))
-	test.Equals(t, "t=2001-09-09T01:46:40+0000 lvl=ERR msg=\"InternalError: test\" src=errors/errors_test.go:29 requestID=1234 query=queryString\n", s)
+	test.Equals(t, "t=2001-09-09T01:46:40+0000 lvl=ERR msg=\"InternalError: test\" src=errors/errors_test.go:28 requestID=1234 query=queryString\n", s)
 }

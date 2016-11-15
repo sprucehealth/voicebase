@@ -13,7 +13,7 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
-	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/internal/httputil"
 )
 
 const (

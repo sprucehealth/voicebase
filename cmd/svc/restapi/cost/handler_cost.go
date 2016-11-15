@@ -6,8 +6,8 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/restapi/analytics"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/internal/httputil"
 	"github.com/sprucehealth/backend/libs/cfg"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type costHandler struct {

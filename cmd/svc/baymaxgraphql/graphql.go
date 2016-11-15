@@ -39,6 +39,7 @@ import (
 	"github.com/sprucehealth/graphql/gqlerrors"
 	"github.com/sprucehealth/graphql/language/parser"
 	"github.com/sprucehealth/graphql/language/source"
+	"google.golang.org/grpc/metadata"
 )
 
 var nodeInterfaceType = graphql.NewInterface(
@@ -251,6 +252,11 @@ func removeAuthCookie(w http.ResponseWriter, domain string) {
 
 func (h *graphQLHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	// Create the gRPC metadata so we can assume it exists and not always have to check.
+	// Note, it is NOT safe to concurrently update the metadata so make sure only to do so
+	// in the synchronous request path.
+	requestID := httputil.RequestID(ctx)
+	ctx = metadata.NewContext(ctx, metadata.Pairs("request_id", requestID))
 
 	h.statRequests.Inc(1)
 	st := time.Now()
@@ -309,28 +315,34 @@ func (h *graphQLHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx = gqlctx.WithAccount(ctx, acc)
 
 	logCtx := []interface{}{
-		"Query", req.Query,
-		"AppType", sHeaders.AppType,
-		"Platform", sHeaders.Platform,
-		"DeviceID", sHeaders.DeviceID,
+		"query", req.Query,
+		"app_type", sHeaders.AppType,
+		"platform", sHeaders.Platform,
+		"device_id", sHeaders.DeviceID,
 	}
+	md, _ := metadata.FromContext(ctx)
+	md["app_type"] = []string{sHeaders.AppType}
+	md["platform"] = []string{sHeaders.Platform.String()}
+	md["device_id"] = []string{sHeaders.DeviceID}
 	if acc != nil {
-		logCtx = append(logCtx, "AccountID", acc.ID)
+		logCtx = append(logCtx, "account_id", acc.ID)
+		md["account_id"] = []string{acc.ID}
 	}
 	if sHeaders.AppVersion != nil {
-		logCtx = append(logCtx, "AppVersion", sHeaders.AppVersion.String())
+		logCtx = append(logCtx, "app_version", sHeaders.AppVersion.String())
+		md["app_version"] = []string{sHeaders.AppVersion.String()}
 	}
 	ctx = golog.WithLogger(ctx, golog.ContextLogger(ctx).Context(logCtx...))
 
 	httputil.CtxLogMap(ctx).Transact(func(m map[interface{}]interface{}) {
-		m["Query"] = req.Query
+		m["query"] = req.Query
 		if acc != nil {
-			m["AccountID"] = acc.ID
+			m["account_id"] = acc.ID
 		}
-		m["AppType"] = sHeaders.AppType
-		m["Platform"] = sHeaders.Platform
+		m["app_type"] = sHeaders.AppType
+		m["platform"] = sHeaders.Platform
 		if sHeaders.AppVersion != nil {
-			m["AppVersion"] = sHeaders.AppVersion.String()
+			m["app_version"] = sHeaders.AppVersion.String()
 		}
 	})
 	// Bootstrap the entity cache

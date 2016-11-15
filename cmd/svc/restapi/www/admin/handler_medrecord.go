@@ -7,9 +7,9 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/diagnosis"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/internal/httputil"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/medrecord"
-	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/sig"
 )
 

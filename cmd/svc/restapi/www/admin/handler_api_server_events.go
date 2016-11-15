@@ -9,8 +9,8 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/restapi/events"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/events/model"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/events/query"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/internal/httputil"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
-	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/schema"
 )
 

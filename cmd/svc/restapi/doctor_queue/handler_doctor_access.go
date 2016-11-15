@@ -8,8 +8,8 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/restapi/analytics"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/internal/httputil"
 	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 // claimPatientCaseAccessHandler is an API handler to grant temporary access to a patient file

@@ -213,7 +213,9 @@ var cloneMessageMutation = &graphql.Field{
 					atypes[i] = fmt.Sprintf("%T", a.Data)
 				}
 			}
-			alerts = []string{"The following attachments are not supported for this thread and have been removed: %s", strings.Join(atypes, ", ")}
+			alerts = []string{
+				fmt.Sprintf("The following attachments are not supported for this thread and have been removed: %s", strings.Join(atypes, ", ")),
+			}
 		}
 
 		rti, err := transformThreadItemToResponse(newItem, "", svc.webDomain, svc.mediaAPIDomain)

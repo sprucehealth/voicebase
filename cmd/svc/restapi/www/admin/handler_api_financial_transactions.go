@@ -7,9 +7,9 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/audit"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/financial"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/internal/httputil"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type incomingFinancialItemsAPIHandler struct {

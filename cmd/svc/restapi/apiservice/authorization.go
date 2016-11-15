@@ -3,7 +3,7 @@ package apiservice
 import (
 	"net/http"
 
-	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/internal/httputil"
 )
 
 // Authorized interface helps ensure that caller of every handler is authorized

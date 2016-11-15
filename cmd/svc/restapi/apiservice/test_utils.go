@@ -3,8 +3,8 @@ package apiservice
 import (
 	"net/http"
 
+	"github.com/sprucehealth/backend/cmd/svc/restapi/internal/httputil"
 	"github.com/sprucehealth/backend/environment"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 const (

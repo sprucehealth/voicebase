@@ -7,11 +7,11 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/internal/httputil"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/tagging"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/tagging/model"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/tagging/response"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
-	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/schema"
 )
 

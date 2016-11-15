@@ -9,10 +9,10 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/app_url"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/internal/httputil"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/tagging"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/tagging/query"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/tagging/response"
-	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/schema"
 )
 

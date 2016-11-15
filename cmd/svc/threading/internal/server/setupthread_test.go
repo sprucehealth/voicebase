@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"testing"
 
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/dal"
@@ -98,7 +99,7 @@ func TestCreateOnboardingThread(t *testing.T) {
 	dl.Expect(mock.NewExpectation(dl.AddItemsToSavedQueryIndex, []*dal.SavedQueryThread{
 		{ThreadID: thid, SavedQueryID: sqid, Timestamp: now}}))
 
-	res, err := srv.CreateOnboardingThread(nil, &threading.CreateOnboardingThreadRequest{
+	res, err := srv.CreateOnboardingThread(context.Background(), &threading.CreateOnboardingThreadRequest{
 		OrganizationID:  "o1",
 		PrimaryEntityID: "e2",
 	})
@@ -150,7 +151,7 @@ func TestOnboardingThreadEvent_PROVISIONED_PHONE(t *testing.T) {
 	dl.Expect(mock.NewExpectation(dl.EntitiesForThread, setupTID).WithReturns([]*models.ThreadEntity{}, nil))
 	dl.Expect(mock.NewExpectation(dl.RemoveThreadFromAllSavedQueryIndexes, setupTID))
 
-	res, err := srv.OnboardingThreadEvent(nil, &threading.OnboardingThreadEventRequest{
+	res, err := srv.OnboardingThreadEvent(context.Background(), &threading.OnboardingThreadEventRequest{
 		LookupByType: threading.ONBOARDING_THREAD_LOOKUP_BY_ENTITY_ID,
 		LookupBy: &threading.OnboardingThreadEventRequest_EntityID{
 			EntityID: "org",
@@ -179,7 +180,7 @@ func TestOnboardingThreadEvent_PROVISIONED_PHONE(t *testing.T) {
 	dl.Expect(mock.NewExpectation(dl.EntitiesForThread, setupTID).WithReturns([]*models.ThreadEntity{}, nil))
 	dl.Expect(mock.NewExpectation(dl.RemoveThreadFromAllSavedQueryIndexes, setupTID))
 
-	res, err = srv.OnboardingThreadEvent(nil, &threading.OnboardingThreadEventRequest{
+	res, err = srv.OnboardingThreadEvent(context.Background(), &threading.OnboardingThreadEventRequest{
 		LookupByType: threading.ONBOARDING_THREAD_LOOKUP_BY_ENTITY_ID,
 		LookupBy: &threading.OnboardingThreadEventRequest_EntityID{
 			EntityID: "org",
@@ -229,7 +230,7 @@ func TestOnboardingThreadEvent_GENERIC_SETUP_eventSetupAnsweringService(t *testi
 	dl.Expect(mock.NewExpectation(dl.EntitiesForThread, setupTID).WithReturns([]*models.ThreadEntity{}, nil))
 	dl.Expect(mock.NewExpectation(dl.RemoveThreadFromAllSavedQueryIndexes, setupTID))
 
-	res, err := srv.OnboardingThreadEvent(nil, &threading.OnboardingThreadEventRequest{
+	res, err := srv.OnboardingThreadEvent(context.Background(), &threading.OnboardingThreadEventRequest{
 		LookupByType: threading.ONBOARDING_THREAD_LOOKUP_BY_ENTITY_ID,
 		LookupBy: &threading.OnboardingThreadEventRequest_EntityID{
 			EntityID: "org",
@@ -279,7 +280,7 @@ func TestOnboardingThreadEvent_GENERIC_SETUP_eventSetupTeamMessaging(t *testing.
 	dl.Expect(mock.NewExpectation(dl.EntitiesForThread, setupTID).WithReturns([]*models.ThreadEntity{}, nil))
 	dl.Expect(mock.NewExpectation(dl.RemoveThreadFromAllSavedQueryIndexes, setupTID))
 
-	res, err := srv.OnboardingThreadEvent(nil, &threading.OnboardingThreadEventRequest{
+	res, err := srv.OnboardingThreadEvent(context.Background(), &threading.OnboardingThreadEventRequest{
 		LookupByType: threading.ONBOARDING_THREAD_LOOKUP_BY_ENTITY_ID,
 		LookupBy: &threading.OnboardingThreadEventRequest_EntityID{
 			EntityID: "org",
@@ -328,7 +329,7 @@ func TestOnboardingThreadEvent_GENERIC_SETUP_eventSetupTelemedicine(t *testing.T
 	dl.Expect(mock.NewExpectation(dl.EntitiesForThread, setupTID).WithReturns([]*models.ThreadEntity{}, nil))
 	dl.Expect(mock.NewExpectation(dl.RemoveThreadFromAllSavedQueryIndexes, setupTID))
 
-	res, err := srv.OnboardingThreadEvent(nil, &threading.OnboardingThreadEventRequest{
+	res, err := srv.OnboardingThreadEvent(context.Background(), &threading.OnboardingThreadEventRequest{
 		LookupByType: threading.ONBOARDING_THREAD_LOOKUP_BY_ENTITY_ID,
 		LookupBy: &threading.OnboardingThreadEventRequest_EntityID{
 			EntityID: "org",

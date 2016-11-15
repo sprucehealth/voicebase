@@ -99,7 +99,7 @@ func (s *threadsServer) CreateOnboardingThread(ctx context.Context, in *threadin
 		return nil, errors.Errorf("thread %s not found", threadID)
 	}
 	if _, err := s.updateSavedQueriesAddThread(ctx, threads[0], []string{in.OrganizationID}); err != nil {
-		golog.Errorf("Failed to updated saved query when adding thread: %s", threads[0].ID)
+		golog.ContextLogger(ctx).Errorf("Failed to updated saved query when adding thread: %s", threads[0].ID)
 	}
 
 	th, err := transformThreadToResponse(threads[0], false)
@@ -165,7 +165,7 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 			supportThreadURL := deeplink.ThreadURLShareable(s.webDomain, setupThread.OrganizationID, supportThread.ID.String())
 			prettyPhone, err := pn.Format(phone.Pretty)
 			if err != nil {
-				golog.Errorf("Failed to format provisioned number '%s' for org %s", pn, setupThread.OrganizationID)
+				golog.ContextLogger(ctx).Errorf("Failed to format provisioned number '%s' for org %s", pn, setupThread.OrganizationID)
 				prettyPhone = pn.String()
 			}
 			msgBML = bml.BML{
@@ -266,7 +266,7 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 	thread := threads[0]
 
 	if _, err := s.updateSavedQueriesForThread(ctx, thread); err != nil {
-		golog.Errorf("Failed to updated saved query for thread %s: %s", thread.ID, err)
+		golog.ContextLogger(ctx).Errorf("Failed to updated saved query for thread %s: %s", thread.ID, err)
 	}
 
 	th, err := transformThreadToResponse(thread, false)

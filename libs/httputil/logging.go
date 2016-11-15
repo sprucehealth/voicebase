@@ -2,18 +2,21 @@ package httputil
 
 import (
 	"context"
+	"encoding/base64"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
 	"runtime"
-	"strconv"
 	"sync"
 	"time"
 
 	"github.com/sprucehealth/backend/libs/conc"
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/idgen"
 )
+
+var rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 var requestEventPool = sync.Pool{
 	New: func() interface{} {
@@ -93,14 +96,14 @@ func (w *loggingResponseWriter) Write(bytes []byte) (int, error) {
 // RequestID returns the request ID for an HTTP request. RequestIDHandler
 // must be used to guarantee that a request ID exists. If a request ID does
 // not exist because a handler has not been wrapped with RequestIDHandler then
-// this returns 0.
-func RequestID(ctx context.Context) uint64 {
-	reqID, _ := ctx.Value(requestIDContextKey{}).(uint64)
+// this returns an empty string.
+func RequestID(ctx context.Context) string {
+	reqID, _ := ctx.Value(requestIDContextKey{}).(string)
 	return reqID
 }
 
 // CtxWithRequestID adds a request ID to the context
-func CtxWithRequestID(ctx context.Context, id uint64) context.Context {
+func CtxWithRequestID(ctx context.Context, id string) context.Context {
 	return context.WithValue(ctx, requestIDContextKey{}, id)
 }
 
@@ -115,15 +118,22 @@ func RequestIDHandler(h http.Handler) http.Handler {
 }
 
 func (h *requestIDHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	requestID, err := idgen.NewID()
+	id, err := newRequestID()
 	if err != nil {
-		requestID = 0
-		golog.Errorf("Failed to generate request ID: %s", err.Error())
+		golog.Errorf("Failed to generate new request ID: %s", err)
 	}
-	w.Header().Set("S-Request-ID", strconv.FormatUint(requestID, 10))
-	logger := golog.ContextLogger(r.Context()).Context("RequestID", requestID)
+	logger := golog.ContextLogger(r.Context()).Context("request_id", id)
 	r = r.WithContext(golog.WithLogger(r.Context(), logger))
-	h.h.ServeHTTP(w, r.WithContext(CtxWithRequestID(r.Context(), requestID)))
+	h.h.ServeHTTP(w, r.WithContext(CtxWithRequestID(r.Context(), id)))
+}
+
+func newRequestID() (string, error) {
+	var b [16]byte
+	n, err := rnd.Read(b[:])
+	if err != nil {
+		return "", errors.Trace(err)
+	}
+	return base64.RawURLEncoding.EncodeToString(b[:n]), nil
 }
 
 // LogFunc is a function that logs http request events. The RequestEvent object is only

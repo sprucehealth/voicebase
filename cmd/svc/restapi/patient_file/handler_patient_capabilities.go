@@ -7,7 +7,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/compat"
-	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/internal/httputil"
 )
 
 type patientCapabilitiesHandler struct {

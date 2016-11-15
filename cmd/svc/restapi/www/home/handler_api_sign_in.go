@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/internal/httputil"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type signInAPIHandler struct {

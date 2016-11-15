@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -64,7 +65,7 @@ func TestCreateSavedMessage(t *testing.T) {
 		},
 	}, nil))
 
-	res, err := srv.CreateSavedMessage(nil, &threading.CreateSavedMessageRequest{
+	res, err := srv.CreateSavedMessage(context.Background(), &threading.CreateSavedMessageRequest{
 		Title:           "foo",
 		OrganizationID:  "org",
 		OwnerEntityID:   "owner",
@@ -115,7 +116,7 @@ func TestDeleteSavedMessage(t *testing.T) {
 
 	dl.Expect(mock.NewExpectation(dl.DeleteSavedMessages, []models.SavedMessageID{smID}))
 
-	res, err := srv.DeleteSavedMessage(nil, &threading.DeleteSavedMessageRequest{
+	res, err := srv.DeleteSavedMessage(context.Background(), &threading.DeleteSavedMessageRequest{
 		SavedMessageID: smID.String(),
 	})
 	test.OK(t, err)
@@ -155,7 +156,7 @@ func TestSavedMessagesByID(t *testing.T) {
 		},
 	}, nil))
 
-	res, err := srv.SavedMessages(nil, &threading.SavedMessagesRequest{
+	res, err := srv.SavedMessages(context.Background(), &threading.SavedMessagesRequest{
 		By: &threading.SavedMessagesRequest_IDs{
 			IDs: &threading.IDList{
 				IDs: []string{smID.String()},
@@ -219,7 +220,7 @@ func TestSavedMessagesByEntityID(t *testing.T) {
 		},
 	}, nil))
 
-	res, err := srv.SavedMessages(nil, &threading.SavedMessagesRequest{
+	res, err := srv.SavedMessages(context.Background(), &threading.SavedMessagesRequest{
 		By: &threading.SavedMessagesRequest_EntityIDs{
 			EntityIDs: &threading.IDList{
 				IDs: []string{"owner"},
@@ -293,7 +294,7 @@ func TestUpdateSavedMessage(t *testing.T) {
 		},
 	}, nil))
 
-	res, err := srv.UpdateSavedMessage(nil, &threading.UpdateSavedMessageRequest{
+	res, err := srv.UpdateSavedMessage(context.Background(), &threading.UpdateSavedMessageRequest{
 		SavedMessageID: smID.String(),
 		Title:          "new title",
 		Content: &threading.UpdateSavedMessageRequest_Message{

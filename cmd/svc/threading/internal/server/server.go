@@ -132,11 +132,11 @@ func (s *threadsServer) CreateSavedQuery(ctx context.Context, in *threading.Crea
 	}
 	sq.ID = id
 	if err := s.rebuildSavedQuery(ctx, sq); err != nil {
-		golog.Errorf("Failed to build new saved query %s: %s", sq.ID, err)
+		golog.ContextLogger(ctx).Errorf("Failed to build new saved query %s: %s", sq.ID, err)
 	}
 	if sq.NotificationsEnabled {
 		if err := s.notifyBadgeCountUpdate(ctx, []string{sq.EntityID}); err != nil {
-			golog.Errorf("Failed to notify entity %s of updated badge count: %s", sq.EntityID, err)
+			golog.ContextLogger(ctx).Errorf("Failed to notify entity %s of updated badge count: %s", sq.EntityID, err)
 		}
 	}
 	sqr, err := transformSavedQueryToResponse(sq)
@@ -246,7 +246,7 @@ func (s *threadsServer) CreateEmptyThread(ctx context.Context, in *threading.Cre
 		return nil, errors.Errorf("thread with id %q just created not found", threadID)
 	}
 	if _, err := s.updateSavedQueriesAddThread(ctx, threads[0], memberEntityIDs); err != nil {
-		golog.Errorf("Failed to updated saved query when adding thread: %s", threadID)
+		golog.ContextLogger(ctx).Errorf("Failed to updated saved query when adding thread: %s", threadID)
 	}
 	th, err := transformThreadToResponse(threads[0], false)
 	if err != nil {
@@ -395,7 +395,7 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 	thread := threads[0]
 	updateResult, err := s.updateSavedQueriesAddThread(ctx, thread, memberEntityIDs)
 	if err != nil {
-		golog.Errorf("Failed to updated saved query when adding thread: %s", threadID)
+		golog.ContextLogger(ctx).Errorf("Failed to updated saved query when adding thread: %s", threadID)
 	}
 	th, err := transformThreadToResponse(thread, !in.Message.Internal)
 	if err != nil {
@@ -533,10 +533,10 @@ func (s *threadsServer) CreateLinkedThreads(ctx context.Context, in *threading.C
 	}
 
 	if _, err := s.updateSavedQueriesAddThread(ctx, threads[0], []string{in.Organization1ID}); err != nil {
-		golog.Errorf("Failed to updated saved query when adding thread: %s", threads[0].ID)
+		golog.ContextLogger(ctx).Errorf("Failed to updated saved query when adding thread: %s", threads[0].ID)
 	}
 	if _, err := s.updateSavedQueriesAddThread(ctx, threads[1], []string{in.Organization2ID}); err != nil {
-		golog.Errorf("Failed to updated saved query when adding thread: %s", threads[1].ID)
+		golog.ContextLogger(ctx).Errorf("Failed to updated saved query when adding thread: %s", threads[1].ID)
 	}
 
 	th1, err := transformThreadToResponse(threads[0], false)
@@ -593,9 +593,9 @@ func (s *threadsServer) DeleteMessage(ctx context.Context, in *threading.DeleteM
 	if deleted {
 		threads, err := s.dal.Threads(ctx, []models.ThreadID{item.ThreadID})
 		if err != nil {
-			golog.Errorf("Failed to fetch thread %s: %s", item.ThreadID, err)
+			golog.ContextLogger(ctx).Errorf("Failed to fetch thread %s: %s", item.ThreadID, err)
 		} else if _, err := s.updateSavedQueriesForThread(ctx, threads[0]); err != nil {
-			golog.Errorf("Failed to updated saved query for thread %s: %s", item.ThreadID, err)
+			golog.ContextLogger(ctx).Errorf("Failed to updated saved query for thread %s: %s", item.ThreadID, err)
 		}
 	}
 	return &threading.DeleteMessageResponse{}, nil
@@ -728,8 +728,6 @@ func (s *threadsServer) MarkThreadsAsRead(ctx context.Context, in *threading.Mar
 		watermarks[w.ThreadID] = w.LastMessageTimestamp
 	}
 
-	golog.Debugf("Marking threads as read for entity %s: %v", in.EntityID, threadIDs)
-
 	sqs, err := s.dal.SavedQueries(ctx, in.EntityID)
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -762,12 +760,6 @@ func (s *threadsServer) MarkThreadsAsRead(ctx context.Context, in *threading.Mar
 		currentUnread := isUnread(thread, threadEntity, externalEntity)
 		newUnread := isUnread(thread, &models.ThreadEntity{LastViewed: &readTime}, externalEntity)
 		if currentUnread == newUnread {
-			var oldTimestamp *time.Time
-			if threadEntity != nil {
-				oldTimestamp = threadEntity.LastViewed
-			}
-			golog.Debugf("Not setting view time on thread %s for %s as unread state is already %t (old timestamp %v, new timestamp %v, last message timestamp %v)",
-				thread.ID, in.EntityID, newUnread, oldTimestamp, readTime, thread.LastMessageTimestamp)
 			continue
 		}
 
@@ -784,7 +776,7 @@ func (s *threadsServer) MarkThreadsAsRead(ctx context.Context, in *threading.Mar
 			}
 		}
 		if !isMember {
-			golog.Errorf("Entity '%s' trying to mark as a read a thread '%s' it is not a member of", in.EntityID, thread.ID)
+			golog.ContextLogger(ctx).Errorf("Entity '%s' trying to mark as a read a thread '%s' it is not a member of", in.EntityID, thread.ID)
 			continue
 		}
 
@@ -848,7 +840,7 @@ func (s *threadsServer) MarkThreadsAsRead(ctx context.Context, in *threading.Mar
 			}
 
 			if ok, err := threadMatchesQuery(sq.Query, thread, threadEntity, externalEntity); err != nil {
-				golog.Errorf("Error matching thread %s against saved query %s: %s", thread.ID, sq.ID, err)
+				golog.ContextLogger(ctx).Errorf("Error matching thread %s against saved query %s: %s", thread.ID, sq.ID, err)
 			} else if ok {
 				timestamp := thread.LastMessageTimestamp
 				if externalEntity {
@@ -883,7 +875,7 @@ func (s *threadsServer) MarkThreadsAsRead(ctx context.Context, in *threading.Mar
 	}
 
 	if err := s.notifyBadgeCountUpdate(ctx, []string{in.EntityID}); err != nil {
-		golog.Errorf("Failed to notify entity %s of updated badge count: %s", in.EntityID, err)
+		golog.ContextLogger(ctx).Errorf("Failed to notify entity %s of updated badge count: %s", in.EntityID, err)
 	}
 
 	return &threading.MarkThreadsAsReadResponse{}, nil
@@ -997,13 +989,13 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 					},
 				})
 				if err != nil {
-					golog.Errorf("Unable to lookup entity for id %s: %s", in.FromEntityID, err.Error())
+					golog.ContextLogger(ctx).Errorf("Unable to lookup entity for id %s: %s", in.FromEntityID, err.Error())
 				} else if len(resp.Entities) != 1 {
-					golog.Errorf("Expected 1 entity for id %s but got %d back", in.FromEntityID, len(resp.Entities))
+					golog.ContextLogger(ctx).Errorf("Expected 1 entity for id %s but got %d back", in.FromEntityID, len(resp.Entities))
 				} else if resp.Entities[0].Type == directory.EntityType_INTERNAL {
 					validBML, err := bml.BML{resp.Entities[0].Info.DisplayName}.Format()
 					if err != nil {
-						golog.Errorf("Unable to escape the display name %s:%s", resp.Entities[0].Info.DisplayName, err.Error())
+						golog.ContextLogger(ctx).Errorf("Unable to escape the display name %s:%s", resp.Entities[0].Info.DisplayName, err.Error())
 					} else {
 						text = validBML + ": " + text
 					}
@@ -1044,7 +1036,7 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 	thread = threads[0]
 	updateResult, err := s.updateSavedQueriesForThread(ctx, thread)
 	if err != nil {
-		golog.Errorf("Failed to updated saved query for thread %s: %s", thread.ID, err)
+		golog.ContextLogger(ctx).Errorf("Failed to updated saved query for thread %s: %s", thread.ID, err)
 	}
 
 	th, err := transformThreadToResponse(thread, !in.Message.Internal)
@@ -1066,11 +1058,11 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 		if err != nil {
 			return nil, errors.Trace(err)
 		} else if len(linkedThreads) == 0 {
-			golog.Errorf("Thread %q that was just posted to was not found", linkedItem.ThreadID)
+			golog.ContextLogger(ctx).Errorf("Thread %q that was just posted to was not found", linkedItem.ThreadID)
 		} else {
 			updateResult, err := s.updateSavedQueriesForThread(ctx, linkedThreads[0])
 			if err != nil {
-				golog.Errorf("Failed to updated saved query for thread %s: %s", linkedThreads[0].ID, err)
+				golog.ContextLogger(ctx).Errorf("Failed to updated saved query for thread %s: %s", linkedThreads[0].ID, err)
 			}
 			if !in.DontNotify && updateResult != nil {
 				s.notifyMembersOfPublishMessage(ctx, linkedThread.OrganizationID, models.EmptySavedQueryID(), linkedThread, linkedItem, linkedItem.ActorEntityID, updateResult.entityShouldBeNotified)
@@ -1174,7 +1166,7 @@ func (s *threadsServer) QueryThreads(ctx context.Context, in *threading.QueryThr
 		HasMore: tc.HasMore,
 	}
 
-	log := golog.Context("viewerEntityID", in.ViewerEntityID)
+	log := golog.ContextLogger(ctx).Context("viewerEntityID", in.ViewerEntityID)
 	if sq != nil {
 		log = log.Context("savedQueryID", sq.ID)
 	}
@@ -1300,7 +1292,6 @@ func (s *threadsServer) SavedQueryTemplates(ctx context.Context, in *threading.S
 
 // Thread looks up and returns a single thread by ID
 func (s *threadsServer) Thread(ctx context.Context, in *threading.ThreadRequest) (*threading.ThreadResponse, error) {
-	golog.Debugf("Querying for thread %s", in.ThreadID)
 	tid, err := models.ParseThreadID(in.ThreadID)
 	if err != nil {
 		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadID '%s'", in.ThreadID)
@@ -1324,7 +1315,6 @@ func (s *threadsServer) Thread(ctx context.Context, in *threading.ThreadRequest)
 		return nil, errors.Trace(err)
 	}
 	if in.ViewerEntityID != "" {
-		golog.Debugf("Populating viewer information for (entity_id, thread) (%s,%s)", in.ViewerEntityID, th.ID)
 		ts, err := s.hydrateThreadForViewer(ctx, []*threading.Thread{th}, in.ViewerEntityID)
 		if err != nil {
 			return nil, errors.Trace(err)
@@ -1336,8 +1326,6 @@ func (s *threadsServer) Thread(ctx context.Context, in *threading.ThreadRequest)
 		// } else if th.Type == threading.THREAD_TYPE_TEAM {
 		// 	// Require a viewer entity for private threads
 		// 	return nil, grpcErrorf(codes.NotFound, "Thread not found")
-	} else {
-		golog.Debugf("No viewer entity information for thread %s", in.ThreadID)
 	}
 	return &threading.ThreadResponse{
 		Thread: th,
@@ -1614,9 +1602,9 @@ func (s *threadsServer) UpdateMessage(ctx context.Context, in *threading.UpdateM
 	}
 	threads, err := s.dal.Threads(ctx, []models.ThreadID{item.ThreadID})
 	if err != nil {
-		golog.Errorf("Failed to fetch thread %s: %s", item.ThreadID, err)
+		golog.ContextLogger(ctx).Errorf("Failed to fetch thread %s: %s", item.ThreadID, err)
 	} else if _, err := s.updateSavedQueriesForThread(ctx, threads[0]); err != nil {
-		golog.Errorf("Failed to updated saved query for thread %s: %s", item.ThreadID, err)
+		golog.ContextLogger(ctx).Errorf("Failed to updated saved query for thread %s: %s", item.ThreadID, err)
 	}
 	return &threading.UpdateMessageResponse{}, nil
 }

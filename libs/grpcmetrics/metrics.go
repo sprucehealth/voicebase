@@ -3,6 +3,7 @@ package grpcmetrics
 import (
 	"context"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/samuel/go-metrics/metrics"
@@ -10,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 )
 
 type handlerMetrics struct {
@@ -50,11 +52,23 @@ func WrapMethods(methods []grpc.MethodDesc) {
 					const size = 64 << 10
 					buf := make([]byte, size)
 					buf = buf[:runtime.Stack(buf, false)]
-					golog.Criticalf("Panic in %s: %v\n%s", methodName, r, buf)
+					golog.ContextLogger(ctx).Criticalf("Panic in %s: %v\n%s", methodName, r, buf)
 					out = nil
 					err = grpc.Errorf(codes.Internal, "Panic in %s: %v\n%s", methodName, r, buf)
 				}
 			}()
+			md, ok := metadata.FromContext(ctx)
+			if ok {
+				logCtx := make([]interface{}, 0, len(md)*2)
+				for k, v := range md {
+					if len(v) > 0 && !strings.HasPrefix(k, ":") {
+						logCtx = append(logCtx, k, v[0])
+					}
+				}
+				if len(logCtx) != 0 {
+					golog.WithLogger(ctx, golog.ContextLogger(ctx).Context(logCtx...))
+				}
+			}
 			sm := serviceMetrics[srv]
 			if sm != nil {
 				hm := sm[methodName]
@@ -71,7 +85,7 @@ func WrapMethods(methods []grpc.MethodDesc) {
 			if err != nil {
 				switch grpc.Code(errors.Cause(err)) {
 				case codes.Unknown, codes.Internal, codes.DataLoss:
-					golog.Errorf("%s: %s", methodName, err)
+					golog.ContextLogger(ctx).Errorf("%s: %s", methodName, err)
 				}
 				// Return an unwrapped error to properly propagate the codes.
 				// Unwrap the error only after the logging so we capture the trace.

@@ -51,9 +51,9 @@ func (s *threadsServer) rebuildSavedQuery(ctx context.Context, sq *models.SavedQ
 			for _, e := range tc.Edges {
 				// Sanity check to make sure the thread should really be included
 				if ok, err := threadMatchesQuery(sq.Query, e.Thread, e.ThreadEntity, forExternal); err != nil {
-					golog.Errorf("Failed to match thread %s against query %s: %s", e.Thread.ID, sq.ID, err)
+					golog.ContextLogger(ctx).Errorf("Failed to match thread %s against query %s: %s", e.Thread.ID, sq.ID, err)
 				} else if !ok {
-					golog.Errorf("Query %s returned non-matching thread %s from database", sq.ID, e.Thread.ID)
+					golog.ContextLogger(ctx).Errorf("Query %s returned non-matching thread %s from database", sq.ID, e.Thread.ID)
 					continue
 				}
 				timestamp := e.Thread.LastMessageTimestamp
@@ -180,7 +180,7 @@ func (s *threadsServer) determineUpdatesToIndexForEntities(
 		te := teMap[e.ID]
 		sqs, err := s.dal.SavedQueries(ctx, e.ID)
 		if err != nil {
-			golog.Errorf("Failed to get saved queries for entity '%s': %s", e.ID, err)
+			golog.ContextLogger(ctx).Errorf("Failed to get saved queries for entity '%s': %s", e.ID, err)
 			continue
 		}
 		// Find the notifications saved query
@@ -198,7 +198,7 @@ func (s *threadsServer) determineUpdatesToIndexForEntities(
 			}
 			matched, err := threadMatchesQuery(sq.Query, thread, te, externalEntity)
 			if err != nil {
-				golog.Errorf("Failed to matched thread %s against saved query %s: %s", thread.ID, sq.ID, err)
+				golog.ContextLogger(ctx).Errorf("Failed to matched thread %s against saved query %s: %s", thread.ID, sq.ID, err)
 				continue
 			}
 			if matched {

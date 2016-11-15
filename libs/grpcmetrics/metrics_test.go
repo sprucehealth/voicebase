@@ -17,7 +17,7 @@ func TestWrapMetricsPanic(t *testing.T) {
 		},
 	}
 	WrapMethods(methods)
-	out, err := methods[0].Handler(nil, nil, nil, nil)
+	out, err := methods[0].Handler(nil, context.Background(), nil, nil)
 	if out != nil {
 		t.Fatalf("Expected out to be nil, got %#v", out)
 	}

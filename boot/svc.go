@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net"
 	"net/http"
 	_ "net/http/pprof" // imported for side-effect of registering HTTP handlers
@@ -38,6 +39,10 @@ import (
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 )
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 type Service struct {
 	MetricsRegistry metrics.Registry

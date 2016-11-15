@@ -7,10 +7,10 @@ import (
 	"strings"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common/config"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/internal/httputil"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/www"
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type demoRequestAPIHandler struct {

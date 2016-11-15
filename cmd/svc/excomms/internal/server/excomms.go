@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
@@ -112,7 +113,7 @@ func NewService(
 		idgen:              idgen,
 		proxyNumberManager: proxyNumberManager,
 		signer:             signer,
-		httpClient:         &httputil.DefaultClient{},
+		httpClient:         http.DefaultClient,
 		notificationClient: notificationClient,
 		genIPCallIdentity:  generateIPCallIdentity,
 	}

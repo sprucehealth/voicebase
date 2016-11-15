@@ -5,8 +5,8 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common/config"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/internal/httputil"
 	"github.com/sprucehealth/backend/device"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type handler struct {

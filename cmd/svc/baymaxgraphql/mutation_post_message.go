@@ -107,8 +107,10 @@ var attachmentInputType = graphql.NewInputObject(
 		Name: "AttachmentInput",
 		Fields: graphql.InputObjectConfigFieldMap{
 			"title": &graphql.InputObjectFieldConfig{Type: graphql.String},
-			// deprecated
-			"mediaID":        &graphql.InputObjectFieldConfig{Type: graphql.String},
+			"mediaID": &graphql.InputObjectFieldConfig{
+				Type:        graphql.String,
+				Description: "DEPRECATED: use attachmentID instead",
+			},
 			"attachmentID":   &graphql.InputObjectFieldConfig{Type: graphql.String},
 			"attachmentType": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(attachmentInputTypeEnum)},
 		},

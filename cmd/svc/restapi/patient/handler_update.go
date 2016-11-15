@@ -7,8 +7,8 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/internal/httputil"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/surescripts"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 // UpdateHandler handles requests related to patient record updates

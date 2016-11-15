@@ -66,7 +66,7 @@ func ErrNotFound(ctx context.Context, resourceID string) error {
 // UserError created a message with user facing content
 func UserError(ctx context.Context, typ ErrorType, m string, a ...interface{}) error {
 	return gqlerrors.FormattedError{
-		Message:     fmt.Sprintf("Request %d", httputil.RequestID(ctx)),
+		Message:     fmt.Sprintf("Request %s", httputil.RequestID(ctx)),
 		Type:        string(typ),
 		UserMessage: fmt.Sprintf(m, a...),
 	}
@@ -85,13 +85,13 @@ func InternalError(ctx context.Context, err error) error {
 	userMessage := "Something went wrong on the server."
 	if !environment.IsProd() {
 		return gqlerrors.FormattedError{
-			Message:     fmt.Sprintf("Internal error [%d]: %s", rid, err),
+			Message:     fmt.Sprintf("Internal error [%s]: %s", rid, err),
 			Type:        string(ErrTypeInternal),
 			UserMessage: userMessage,
 		}
 	}
 	return gqlerrors.FormattedError{
-		Message:     fmt.Sprintf("Internal error [%d]", rid),
+		Message:     fmt.Sprintf("Internal error [%s]", rid),
 		Type:        string(ErrTypeInternal),
 		UserMessage: userMessage,
 	}

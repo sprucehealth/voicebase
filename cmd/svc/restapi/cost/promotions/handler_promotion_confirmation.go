@@ -13,9 +13,9 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/restapi/attribution"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/attribution/model"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/internal/httputil"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/schema"
 )

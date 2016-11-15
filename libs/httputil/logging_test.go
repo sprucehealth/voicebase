@@ -4,14 +4,13 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
-	"strconv"
 	"testing"
 )
 
 func TestRequestID(t *testing.T) {
 	h := RequestIDHandler(http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte(strconv.FormatUint(RequestID(r.Context()), 10)))
+			w.Write([]byte(RequestID(r.Context())))
 		}))
 	r, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
@@ -19,8 +18,8 @@ func TestRequestID(t *testing.T) {
 	}
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, r)
-	if _, err := strconv.ParseUint(w.Body.String(), 10, 64); err != nil {
-		t.Fatal(err)
+	if len(w.Body.String()) != 22 {
+		t.Fatal("Expected request id of length 22")
 	}
 }
 
