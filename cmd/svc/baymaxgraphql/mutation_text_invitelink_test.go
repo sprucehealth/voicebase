@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/device/devicectx"
@@ -30,17 +31,20 @@ func TestTextInviteLink_OrganizationCode(t *testing.T) {
 	g.svc.inviteAPIDomain = "invite.test.com"
 	g.svc.serviceNumber = phone.Number("+11234567890")
 
-	g.inviteC.Expect(mock.NewExpectation(g.inviteC.LookupInvite, &invite.LookupInviteRequest{
-		InviteToken: "token",
-	}).WithReturns(&invite.LookupInviteResponse{
-		Type: invite.LookupInviteResponse_ORGANIZATION_CODE,
-		Invite: &invite.LookupInviteResponse_Organization{
-			Organization: &invite.OrganizationInvite{
-				OrganizationEntityID: "orgID",
-				Token:                "token",
+	gomock.InOrder(
+		// Clean up our invite
+		g.inviteC.EXPECT().LookupInvite(ctx, &invite.LookupInviteRequest{
+			InviteToken: "token",
+		}).Return(&invite.LookupInviteResponse{
+			Type: invite.LookupInviteResponse_ORGANIZATION_CODE,
+			Invite: &invite.LookupInviteResponse_Organization{
+				Organization: &invite.OrganizationInvite{
+					OrganizationEntityID: "orgID",
+					Token:                "token",
+				},
 			},
-		},
-	}, nil))
+		}, nil),
+	)
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
 		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
@@ -104,34 +108,38 @@ func TestTextInviteLink_PatientInvite(t *testing.T) {
 	g.svc.inviteAPIDomain = "invite.test.com"
 	g.svc.serviceNumber = phone.Number("+11234567890")
 
-	g.inviteC.Expect(mock.NewExpectation(g.inviteC.LookupInvite, &invite.LookupInviteRequest{
-		InviteToken: "token",
-	}).WithReturns(&invite.LookupInviteResponse{
-		Type: invite.LookupInviteResponse_PATIENT,
-		Invite: &invite.LookupInviteResponse_Patient{
-			Patient: &invite.PatientInvite{
-				OrganizationEntityID: "orgID",
-				InviterEntityID:      "entityID",
-				Patient: &invite.Patient{
+	gomock.InOrder(
+		// Lookup the invite
+		g.inviteC.EXPECT().LookupInvite(ctx, &invite.LookupInviteRequest{
+			InviteToken: "token",
+		}).Return(&invite.LookupInviteResponse{
+			Type: invite.LookupInviteResponse_PATIENT,
+			Invite: &invite.LookupInviteResponse_Patient{
+				Patient: &invite.PatientInvite{
+					OrganizationEntityID: "orgID",
+					InviterEntityID:      "entityID",
+					Patient: &invite.Patient{
+						FirstName:      "PatientFirstName",
+						PhoneNumber:    "+17348465523",
+						ParkedEntityID: "patientEntityID",
+					},
+				},
+			},
+		}, nil),
+
+		// Resend it to the patient
+		g.inviteC.EXPECT().InvitePatients(ctx, &invite.InvitePatientsRequest{
+			OrganizationEntityID: "orgID",
+			InviterEntityID:      "entityID",
+			Patients: []*invite.Patient{
+				{
 					FirstName:      "PatientFirstName",
 					PhoneNumber:    "+17348465523",
 					ParkedEntityID: "patientEntityID",
 				},
 			},
-		},
-	}, nil))
-
-	g.inviteC.Expect(mock.NewExpectation(g.inviteC.InvitePatients, &invite.InvitePatientsRequest{
-		OrganizationEntityID: "orgID",
-		InviterEntityID:      "entityID",
-		Patients: []*invite.Patient{
-			{
-				FirstName:      "PatientFirstName",
-				PhoneNumber:    "+17348465523",
-				ParkedEntityID: "patientEntityID",
-			},
-		},
-	}))
+		}),
+	)
 
 	res := g.query(ctx, `
 		mutation _ {

@@ -13,6 +13,7 @@ import (
 	branchmock "github.com/sprucehealth/backend/libs/branch/mock"
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/conc"
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
@@ -561,7 +562,7 @@ func TestCreateOrganizationInvite(t *testing.T) {
 				OrganizationEntityID: orgID,
 			},
 			expectedOut: nil,
-			expectedErr: grpcErrorf(codes.Internal, "Expected 1 entity got 0"),
+			expectedErr: errors.Errorf("Expected 1 entity got 0"),
 		},
 		"Err-BranchGenerationFailure": {
 			tserver: func() *tserver {
@@ -632,7 +633,7 @@ func TestCreateOrganizationInvite(t *testing.T) {
 				OrganizationEntityID: orgID,
 			},
 			expectedOut: nil,
-			expectedErr: grpcErrorf(codes.Internal, "Failed to generate branch link and code"),
+			expectedErr: errors.Errorf("Failed to generate branch link and code"),
 		},
 		"Success": {
 			tserver: func() *tserver {
@@ -709,7 +710,7 @@ func TestCreateOrganizationInvite(t *testing.T) {
 
 	for cn, c := range cases {
 		out, err := c.tserver.server.CreateOrganizationInvite(context.Background(), c.in)
-		test.EqualsCase(t, cn, c.expectedErr, err)
+		test.EqualsCase(t, cn, errors.Cause(c.expectedErr), errors.Cause(err))
 		test.EqualsCase(t, cn, c.expectedOut, out)
 		mock.FinishAll(c.tserver.finishers...)
 	}
@@ -731,10 +732,12 @@ func TestLookupOrganizationInvites(t *testing.T) {
 				clk := clock.NewManaged(time.Now())
 				md.Expect(mock.NewExpectation(md.TokensForEntity, orgID).WithReturns([]string{"token1", "token2"}, nil))
 				md.Expect(mock.NewExpectation(md.InviteForToken, "token1").WithReturns(&models.Invite{
+					Type:                 models.OrganizationCodeInvite,
 					Token:                "token1",
 					OrganizationEntityID: orgID,
 				}, nil))
 				md.Expect(mock.NewExpectation(md.InviteForToken, "token2").WithReturns(&models.Invite{
+					Type:                 models.OrganizationCodeInvite,
 					Token:                "token2",
 					OrganizationEntityID: orgID,
 				}, nil))
@@ -769,6 +772,62 @@ func TestLookupOrganizationInvites(t *testing.T) {
 
 	for cn, c := range cases {
 		out, err := c.tserver.server.LookupOrganizationInvites(context.Background(), c.in)
+		test.EqualsCase(t, cn, c.expectedErr, err)
+		test.EqualsCase(t, cn, c.expectedOut, out)
+		mock.FinishAll(c.tserver.finishers...)
+	}
+}
+
+func TestModifyOrganizationInvite(t *testing.T) {
+	token := "token"
+	orgID := "orgID"
+	cases := map[string]struct {
+		tserver     *tserver
+		in          *invite.ModifyOrganizationInviteRequest
+		expectedOut *invite.ModifyOrganizationInviteResponse
+		expectedErr error
+	}{
+		"Success": {
+			tserver: func() *tserver {
+				dc := dirmock.New(t)
+				md := newMockDAL(t)
+				mb := branchmock.New(t)
+				clk := clock.NewManaged(time.Now())
+				md.Expect(mock.NewExpectation(md.UpdateInvite, token, &models.InviteUpdate{
+					Tags: []string{"tag1", "tag2"},
+				}).WithReturns(&models.Invite{
+					Type:                 models.OrganizationCodeInvite,
+					OrganizationEntityID: orgID,
+					Token:                token,
+					Tags:                 []string{"tag1", "tag2"},
+				}, nil))
+				return &tserver{
+					server: &server{
+						dal:             md,
+						directoryClient: dc,
+						branch:          mb,
+						clk:             clk,
+					},
+					finishers: []mock.Finisher{dc, md, mb},
+				}
+			}(),
+			in: &invite.ModifyOrganizationInviteRequest{
+				Token: token,
+				Tags:  []string{"tag1", "tag2"},
+			},
+			expectedOut: &invite.ModifyOrganizationInviteResponse{
+				OrganizationInvite: &invite.OrganizationInvite{
+					OrganizationEntityID: orgID,
+					Token:                token,
+					Tags:                 []string{"tag1", "tag2"},
+				},
+			},
+			expectedErr: nil,
+		},
+	}
+
+	for cn, c := range cases {
+		out, err := c.tserver.server.ModifyOrganizationInvite(context.Background(), c.in)
 		test.EqualsCase(t, cn, c.expectedErr, err)
 		test.EqualsCase(t, cn, c.expectedOut, out)
 		mock.FinishAll(c.tserver.finishers...)

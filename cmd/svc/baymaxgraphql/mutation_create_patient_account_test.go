@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/device/devicectx"
@@ -22,35 +23,33 @@ func TestCreatePatientAccountMutation(t *testing.T) {
 	g := newGQL(t)
 	defer g.finish()
 
-	ctx := context.Background()
-	var acc *auth.Account
-	ctx = gqlctx.WithAccount(ctx, acc)
+	ctx := initGraphQLContext()
 
-	ctx = devicectx.WithSpruceHeaders(ctx, &device.SpruceHeaders{
-		DeviceID: "DevID",
-		Platform: device.Android,
-	})
-
-	g.inviteC.Expect(mock.NewExpectation(g.inviteC.AttributionData, &invite.AttributionDataRequest{
-		DeviceID: "DevID",
-	}).WithReturns(&invite.AttributionDataResponse{
-		Values: []*invite.AttributionValue{
-			{Key: "invite_token", Value: "InviteToken"},
-		},
-	}, nil))
-	g.inviteC.Expect(mock.NewExpectation(g.inviteC.LookupInvite, &invite.LookupInviteRequest{
-		InviteToken: "InviteToken",
-	}).WithReturns(&invite.LookupInviteResponse{
-		Type: invite.LookupInviteResponse_PATIENT,
-		Invite: &invite.LookupInviteResponse_Patient{
-			Patient: &invite.PatientInvite{
-				Patient: &invite.Patient{
-					ParkedEntityID: "parkedEntityID",
-				},
-				OrganizationEntityID: "e_org_inv",
+	gomock.InOrder(
+		// Get attribution data
+		g.inviteC.EXPECT().AttributionData(ctx, &invite.AttributionDataRequest{
+			DeviceID: "DevID",
+		}).Return(&invite.AttributionDataResponse{
+			Values: []*invite.AttributionValue{
+				{Key: "invite_token", Value: "InviteToken"},
 			},
-		},
-	}, nil))
+		}, nil),
+
+		// Get the invite for the token
+		g.inviteC.EXPECT().LookupInvite(ctx, &invite.LookupInviteRequest{
+			InviteToken: "InviteToken",
+		}).Return(&invite.LookupInviteResponse{
+			Type: invite.LookupInviteResponse_PATIENT,
+			Invite: &invite.LookupInviteResponse_Patient{
+				Patient: &invite.PatientInvite{
+					Patient: &invite.Patient{
+						ParkedEntityID: "parkedEntityID",
+					},
+					OrganizationEntityID: "e_org_inv",
+				},
+			},
+		}, nil),
+	)
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
 		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
@@ -78,6 +77,10 @@ func TestCreatePatientAccountMutation(t *testing.T) {
 	// Assert that our email was verified
 	g.ra.Expect(mock.NewExpectation(g.ra.VerifiedValue, "emailToken").WithReturns("someone@somewhere.com", nil))
 
+	account := &auth.Account{
+		ID:   "a_1",
+		Type: auth.AccountType_PATIENT,
+	}
 	// Create account
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateAccount, &auth.CreateAccountRequest{
 		FirstName:   "first",
@@ -90,16 +93,14 @@ func TestCreatePatientAccountMutation(t *testing.T) {
 		DeviceID:    "DevID",
 		Platform:    auth.Platform_ANDROID,
 	}).WithReturns(&auth.CreateAccountResponse{
-		Account: &auth.Account{
-			ID:   "a_1",
-			Type: auth.AccountType_PATIENT,
-		},
+		Account: account,
 		Token: &auth.AuthToken{
 			Value:               "token",
 			ExpirationEpoch:     123123123,
 			ClientEncryptionKey: "supersecretkey",
 		},
 	}, nil))
+	gqlctx.InPlaceWithAccount(ctx, account)
 
 	// Associate the parked account entity
 	g.ra.Expect(mock.NewExpectation(g.ra.UnauthorizedCreateExternalIDs, &directory.CreateExternalIDsRequest{
@@ -157,8 +158,12 @@ func TestCreatePatientAccountMutation(t *testing.T) {
 		SystemTitle:   "first last",
 	}).WithReturns(&threading.UpdateThreadResponse{}, nil))
 
-	// Clean up our invite
-	g.inviteC.Expect(mock.NewExpectation(g.inviteC.MarkInviteConsumed, &invite.MarkInviteConsumedRequest{Token: "InviteToken"}).WithReturns(&invite.MarkInviteConsumedResponse{}, nil))
+	gomock.InOrder(
+		// Clean up our invite
+		g.inviteC.EXPECT().MarkInviteConsumed(ctx, &invite.MarkInviteConsumedRequest{
+			Token: "InviteToken",
+		}).Return(&invite.MarkInviteConsumedResponse{}, nil),
+	)
 
 	// Query the account entity
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
@@ -266,24 +271,30 @@ func TestCreatePatientAccountMutation_PracticeLink(t *testing.T) {
 		Platform: device.Android,
 	})
 
-	g.inviteC.Expect(mock.NewExpectation(g.inviteC.AttributionData, &invite.AttributionDataRequest{
-		DeviceID: "DevID",
-	}).WithReturns(&invite.AttributionDataResponse{
-		Values: []*invite.AttributionValue{
-			{Key: "invite_token", Value: "InviteToken"},
-		},
-	}, nil))
-	g.inviteC.Expect(mock.NewExpectation(g.inviteC.LookupInvite, &invite.LookupInviteRequest{
-		InviteToken: "InviteToken",
-	}).WithReturns(&invite.LookupInviteResponse{
-		Type: invite.LookupInviteResponse_ORGANIZATION_CODE,
-		Invite: &invite.LookupInviteResponse_Organization{
-			Organization: &invite.OrganizationInvite{
-				OrganizationEntityID: "e_org_inv",
-				Token:                "org_token",
+	gomock.InOrder(
+		// Get attribution data
+		g.inviteC.EXPECT().AttributionData(ctx, &invite.AttributionDataRequest{
+			DeviceID: "DevID",
+		}).Return(&invite.AttributionDataResponse{
+			Values: []*invite.AttributionValue{
+				{Key: "invite_token", Value: "InviteToken"},
 			},
-		},
-	}, nil))
+		}, nil),
+
+		// Get the invite for the token
+		g.inviteC.EXPECT().LookupInvite(ctx, &invite.LookupInviteRequest{
+			InviteToken: "InviteToken",
+		}).Return(&invite.LookupInviteResponse{
+			Type: invite.LookupInviteResponse_ORGANIZATION_CODE,
+			Invite: &invite.LookupInviteResponse_Organization{
+				Organization: &invite.OrganizationInvite{
+					OrganizationEntityID: "e_org_inv",
+					Token:                "org_token",
+					Tags:                 []string{"autotag1", "autotag2"},
+				},
+			},
+		}, nil),
+	)
 
 	// Assert that phone was verified
 	g.ra.Expect(mock.NewExpectation(g.ra.VerifiedValue, "phoneToken").WithReturns("+12222222222", nil))
@@ -349,6 +360,7 @@ func TestCreatePatientAccountMutation_PracticeLink(t *testing.T) {
 		},
 	}, nil))
 
+	// Create the empty thread
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateEmptyThread, &threading.CreateEmptyThreadRequest{
 		OrganizationID:  "e_org_inv",
 		PrimaryEntityID: "parkedEntityID",
@@ -357,6 +369,7 @@ func TestCreatePatientAccountMutation_PracticeLink(t *testing.T) {
 		Summary:         "first last",
 		SystemTitle:     "first last",
 		Origin:          threading.THREAD_ORIGIN_ORGANIZATION_CODE,
+		Tags:            []string{"autotag1", "autotag2"},
 	}))
 
 	// update entity

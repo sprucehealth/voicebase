@@ -34,17 +34,7 @@ import (
 var grpcErrf = grpc.Errorf
 
 func grpcErrorf(c codes.Code, format string, a ...interface{}) error {
-	if c == codes.Internal {
-		golog.LogDepthf(1, golog.ERR, "Invite - Internal GRPC Error: %s", fmt.Sprintf(format, a...))
-	}
 	return grpcErrf(c, format, a...)
-}
-
-func grpcError(err error) error {
-	if grpc.Code(err) == codes.Unknown {
-		return grpcErrorf(codes.Internal, err.Error())
-	}
-	return err
 }
 
 var complexTokenGenerator common.TokenGenerator
@@ -480,13 +470,13 @@ func (s *server) getEntity(ctx context.Context, entityID string) (*directory.Ent
 	if err != nil {
 		switch grpc.Code(err) {
 		case codes.NotFound:
-			return nil, grpcErrorf(codes.InvalidArgument, "EntityID %s not found", entityID)
+			return nil, errors.Errorf("EntityID %s not found", entityID)
 		}
 		return nil, errors.Trace(err)
 	}
 	// Sanity check
 	if len(res.Entities) != 1 {
-		return nil, grpcErrorf(codes.Internal, fmt.Sprintf("Expected 1 entity got %d", len(res.Entities)))
+		return nil, errors.Errorf("Expected 1 entity got %d", len(res.Entities))
 	}
 	return res.Entities[0], nil
 }
@@ -494,7 +484,7 @@ func (s *server) getEntity(ctx context.Context, entityID string) (*directory.Ent
 func (s *server) getInternalEntity(ctx context.Context, entityID string) (*directory.Entity, error) {
 	entity, err := s.getEntity(ctx, entityID)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	if entity.Type != directory.EntityType_INTERNAL {
 		return nil, grpcErrorf(codes.InvalidArgument, "entityID %s is not an internal entity", entityID)
@@ -526,13 +516,13 @@ func (s *server) LookupInvite(ctx context.Context, in *invite.LookupInviteReques
 		}
 		inv, err = s.lookupInviteForToken(ctx, token)
 		if err != nil {
-			return nil, grpcError(err)
+			return nil, errors.Trace(err)
 		}
 	case invite.LookupInviteRequest_DEPRECATED_ORGANIZATION_ENTITY_ID:
 		// TODO: Until we can remove this code path just return the first one we find
 		invs, err := s.lookupInvitesForOrganization(ctx, in.GetOrganizationEntityID())
 		if err != nil {
-			return nil, grpcError(err)
+			return nil, errors.Trace(err)
 		}
 		if len(invs) != 0 {
 			inv = invs[0]
@@ -543,7 +533,7 @@ func (s *server) LookupInvite(ctx context.Context, in *invite.LookupInviteReques
 		return nil, grpcErrorf(codes.InvalidArgument, "Unsupported lookup key type %s", in.LookupKeyType.String())
 	}
 	if inv.Type != models.ColleagueInvite && inv.Type != models.PatientInvite && inv.Type != models.OrganizationCodeInvite {
-		return nil, grpcErrorf(codes.Internal, "unsupported invite type "+string(inv.Type))
+		return nil, errors.Errorf("unsupported invite type %s", string(inv.Type))
 	}
 	values := make([]*invite.AttributionValue, 0, len(inv.Values))
 	for k, v := range inv.Values {
@@ -596,7 +586,7 @@ func (s *server) LookupInvites(ctx context.Context, in *invite.LookupInvitesRequ
 	case invite.LookupInvitesRequest_PARKED_ENTITY_ID:
 		invites, err := s.dal.InvitesForParkedEntityID(ctx, in.GetParkedEntityID())
 		if err != nil {
-			return nil, grpcError(err)
+			return nil, errors.Trace(err)
 		}
 		patientInvitesList := invite.PatientInviteList{
 			PatientInvites: make([]*invite.PatientInvite, len(invites)),
@@ -627,14 +617,15 @@ func (s *server) LookupInvites(ctx context.Context, in *invite.LookupInvitesRequ
 func (s *server) LookupOrganizationInvites(ctx context.Context, in *invite.LookupOrganizationInvitesRequest) (*invite.LookupOrganizationInvitesResponse, error) {
 	invs, err := s.lookupInvitesForOrganization(ctx, in.OrganizationEntityID)
 	if err != nil {
-		return nil, grpcError(err)
+		return nil, errors.Trace(err)
 	}
 	orgInvites := make([]*invite.OrganizationInvite, len(invs))
 	for i, inv := range invs {
-		orgInvites[i] = &invite.OrganizationInvite{
-			OrganizationEntityID: inv.OrganizationEntityID,
-			Token:                inv.Token,
+		oi, err := organizationInviteAsResponse(inv)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to transform org invite to response")
 		}
+		orgInvites[i] = oi
 	}
 	return &invite.LookupOrganizationInvitesResponse{OrganizationInvites: orgInvites}, nil
 }
@@ -658,6 +649,26 @@ func (s *server) lookupInvitesForOrganization(ctx context.Context, orgEntityID s
 	return invites, nil
 }
 
+// ModifyOrganizationInvite modifies the specified organization invite
+func (s *server) ModifyOrganizationInvite(ctx context.Context, in *invite.ModifyOrganizationInviteRequest) (*invite.ModifyOrganizationInviteResponse, error) {
+	if in.Token == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "Token required")
+	}
+	inv, err := s.dal.UpdateInvite(ctx, in.Token, &models.InviteUpdate{
+		Tags: in.Tags,
+	})
+	if errors.Cause(err) == dal.ErrNotFound {
+		return nil, grpcErrorf(codes.NotFound, "Invite not found with token %s", in.Token)
+	} else if err != nil {
+		return nil, errors.Wrapf(err, "failed to update invite with code %s", in.Token)
+	}
+	oi, err := organizationInviteAsResponse(inv)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to transform org invite to response")
+	}
+	return &invite.ModifyOrganizationInviteResponse{OrganizationInvite: oi}, nil
+}
+
 func (s *server) lookupInviteForToken(ctx context.Context, token string) (*models.Invite, error) {
 	inv, err := s.dal.InviteForToken(ctx, token)
 	if err != nil {
@@ -673,7 +684,7 @@ func (s *server) lookupInviteForToken(ctx context.Context, token string) (*model
 func (s *server) MarkInviteConsumed(ctx context.Context, in *invite.MarkInviteConsumedRequest) (*invite.MarkInviteConsumedResponse, error) {
 	// TODO: Record consumption metrics
 	if err := s.dal.DeleteInvite(ctx, in.Token); err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 	return &invite.MarkInviteConsumedResponse{}, nil
 }
@@ -688,7 +699,7 @@ func (s *server) DeleteInvite(ctx context.Context, in *invite.DeleteInviteReques
 
 		invites, err := s.dal.InvitesForParkedEntityID(ctx, in.GetParkedEntityID())
 		if err != nil {
-			return nil, grpcErrorf(codes.Internal, "unable to get invites for parkedEntityID %s : %s", in.GetParkedEntityID(), err)
+			return nil, errors.Errorf("unable to get invites for parkedEntityID %s : %s", in.GetParkedEntityID(), err)
 		}
 
 		for _, inv := range invites {
@@ -701,7 +712,7 @@ func (s *server) DeleteInvite(ctx context.Context, in *invite.DeleteInviteReques
 
 	for _, token := range tokens {
 		if err := s.dal.DeleteInvite(ctx, token); err != nil {
-			return nil, grpcErrorf(codes.Internal, "unable to delete invite for token %s : %s", token, err.Error())
+			return nil, errors.Errorf("unable to delete invite for token %s : %s", token, err.Error())
 		}
 	}
 
@@ -732,19 +743,19 @@ func (s *server) CreateOrganizationInvite(ctx context.Context, in *invite.Create
 	// Lookup org to get name
 	org, err := s.getOrg(ctx, in.OrganizationEntityID)
 	if err != nil {
-		return nil, grpcError(err)
+		return nil, errors.Trace(err)
 	}
 
 	inviteClientDataJSON, err := clientdata.PatientInviteClientJSON(org, "", "", "", invite.LookupInviteResponse_ORGANIZATION_CODE)
 	if err != nil {
-		return nil, grpcError(err)
+		return nil, errors.Trace(err)
 	}
 
 	var token string
 	for retry := 0; retry < 5; retry++ {
 		token, err = simpleTokenGenerator.GenerateToken()
 		if err != nil {
-			return nil, grpcErrorf(codes.Internal, "Error while generating org code: %s", err)
+			return nil, errors.Errorf("Error while generating org code: %s", err)
 		}
 		values := map[string]string{
 			"invite_token": token,
@@ -773,7 +784,7 @@ func (s *server) CreateOrganizationInvite(ctx context.Context, in *invite.Create
 			token = ""
 			continue
 		} else if err != nil {
-			return nil, grpcErrorf(codes.Internal, "Failed to insert entity token: %s", err)
+			return nil, errors.Errorf("Failed to insert entity token: %s", err)
 		}
 		err = s.dal.InsertInvite(ctx, &models.Invite{
 			Token:                token,
@@ -789,11 +800,11 @@ func (s *server) CreateOrganizationInvite(ctx context.Context, in *invite.Create
 			token = ""
 			continue
 		} else if err != nil {
-			return nil, grpcErrorf(codes.Internal, "Failed to insert organization invite: %s", err)
+			return nil, errors.Errorf("Failed to insert organization invite: %s", err)
 		}
 	}
 	if token == "" {
-		return nil, grpcErrorf(codes.Internal, "Failed to generate branch link and code")
+		return nil, errors.Errorf("Failed to generate branch link and code")
 	}
 	return &invite.CreateOrganizationInviteResponse{
 		Organization: &invite.OrganizationInvite{

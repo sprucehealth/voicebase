@@ -294,6 +294,7 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 		}, nil
 	}
 	req.PhoneNumber = pn.String()
+
 	if inv.Type == invite.LookupInviteResponse_ORGANIZATION_CODE {
 		// Assert that the phone number was verified
 		if in.PhoneVerificationToken == "" {
@@ -415,6 +416,7 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 	}
 	gqlctx.InPlaceWithAccount(ctx, res.Account)
 
+	var autoTags []string
 	var patientEntity *directory.Entity
 	if inv.Type == invite.LookupInviteResponse_ORGANIZATION_CODE {
 		// If this is an org code then there is no parked entity and we need to create the entity and thread
@@ -441,6 +443,7 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 		}
 		accountEntityID = patientEntity.ID
 		orgID = inv.GetOrganization().OrganizationEntityID
+		autoTags = inv.GetOrganization().Tags
 	}
 
 	// Associate the parked entity with the account
@@ -461,6 +464,7 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 			Summary:         patientEntity.Info.DisplayName,
 			SystemTitle:     patientEntity.Info.DisplayName,
 			Origin:          threading.THREAD_ORIGIN_ORGANIZATION_CODE,
+			Tags:            autoTags,
 		}); err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}

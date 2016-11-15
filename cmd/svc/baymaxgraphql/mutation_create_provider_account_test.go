@@ -1,13 +1,13 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"testing"
 
-	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
-	"github.com/sprucehealth/backend/device"
-	"github.com/sprucehealth/backend/device/devicectx"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+
+	"github.com/golang/mock/gomock"
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
@@ -20,9 +20,14 @@ func TestCreateProviderAccountMutation(t *testing.T) {
 	g := newGQL(t)
 	defer g.finish()
 
-	ctx := context.Background()
-	var acc *auth.Account
-	ctx = gqlctx.WithAccount(ctx, acc)
+	ctx := initGraphQLContext()
+
+	gomock.InOrder(
+		// Get attribution data
+		g.inviteC.EXPECT().AttributionData(ctx, &invite.AttributionDataRequest{
+			DeviceID: "DevID",
+		}).Return(nil, grpc.Errorf(codes.NotFound, "Not Found")),
+	)
 
 	// Verify phone number token
 	g.ra.Expect(mock.NewExpectation(g.ra.VerifiedValue, "validToken").WithReturns("+14155551212", nil))
@@ -36,6 +41,8 @@ func TestCreateProviderAccountMutation(t *testing.T) {
 		Password:    "password",
 		Type:        auth.AccountType_PROVIDER,
 		Duration:    auth.TokenDuration_SHORT,
+		DeviceID:    "DevID",
+		Platform:    auth.Platform_ANDROID,
 	}).WithReturns(&auth.CreateAccountResponse{
 		Account: &auth.Account{
 			ID:   "a_1",
@@ -203,9 +210,14 @@ func TestCreateProviderAccountMutation_InvalidName(t *testing.T) {
 	g := newGQL(t)
 	defer g.finish()
 
-	ctx := context.Background()
-	var acc *auth.Account
-	ctx = gqlctx.WithAccount(ctx, acc)
+	ctx := initGraphQLContext()
+
+	gomock.InOrder(
+		// Get attribution data
+		g.inviteC.EXPECT().AttributionData(ctx, &invite.AttributionDataRequest{
+			DeviceID: "DevID",
+		}).Return(nil, grpc.Errorf(codes.NotFound, "Not Found")),
+	)
 
 	res := g.query(ctx, `
 		mutation _ ($firstName: String!) {
@@ -244,36 +256,34 @@ func TestCreateProviderAccountMutation_InviteColleague(t *testing.T) {
 	g := newGQL(t)
 	defer g.finish()
 
-	ctx := context.Background()
-	var acc *auth.Account
-	ctx = gqlctx.WithAccount(ctx, acc)
-	ctx = devicectx.WithSpruceHeaders(ctx, &device.SpruceHeaders{
-		DeviceID: "DevID",
-		Platform: device.Android,
-	})
+	ctx := initGraphQLContext()
 
-	// Fetch invite info
-	g.inviteC.Expect(mock.NewExpectation(g.inviteC.AttributionData, &invite.AttributionDataRequest{
-		DeviceID: "DevID",
-	}).WithReturns(&invite.AttributionDataResponse{
-		Values: []*invite.AttributionValue{
-			{Key: "invite_token", Value: "InviteToken"},
-		},
-	}, nil))
-	g.inviteC.Expect(mock.NewExpectation(g.inviteC.LookupInvite, &invite.LookupInviteRequest{
-		InviteToken: "InviteToken",
-	}).WithReturns(&invite.LookupInviteResponse{
-		Type: invite.LookupInviteResponse_COLLEAGUE,
-		Invite: &invite.LookupInviteResponse_Colleague{
-			Colleague: &invite.ColleagueInvite{
-				Colleague: &invite.Colleague{
-					Email:       "someone@example.com",
-					PhoneNumber: "+14155551212",
-				},
-				OrganizationEntityID: "e_org_inv",
+	gomock.InOrder(
+		// Get attribution data
+		g.inviteC.EXPECT().AttributionData(ctx, &invite.AttributionDataRequest{
+			DeviceID: "DevID",
+		}).Return(&invite.AttributionDataResponse{
+			Values: []*invite.AttributionValue{
+				{Key: "invite_token", Value: "InviteToken"},
 			},
-		},
-	}, nil))
+		}, nil),
+
+		// Get the invite for the token
+		g.inviteC.EXPECT().LookupInvite(ctx, &invite.LookupInviteRequest{
+			InviteToken: "InviteToken",
+		}).Return(&invite.LookupInviteResponse{
+			Type: invite.LookupInviteResponse_COLLEAGUE,
+			Invite: &invite.LookupInviteResponse_Colleague{
+				Colleague: &invite.ColleagueInvite{
+					Colleague: &invite.Colleague{
+						Email:       "someone@example.com",
+						PhoneNumber: "+14155551212",
+					},
+					OrganizationEntityID: "e_org_inv",
+				},
+			},
+		}, nil),
+	)
 
 	// Verify phone number token
 	g.ra.Expect(mock.NewExpectation(g.ra.VerifiedValue, "validToken").WithReturns("+14155551212", nil))
@@ -351,8 +361,12 @@ func TestCreateProviderAccountMutation_InviteColleague(t *testing.T) {
 		},
 	}, nil))
 
-	// Clean up our invite
-	g.inviteC.Expect(mock.NewExpectation(g.inviteC.MarkInviteConsumed, &invite.MarkInviteConsumedRequest{Token: "InviteToken"}).WithReturns(&invite.MarkInviteConsumedResponse{}, nil))
+	gomock.InOrder(
+		// Clean up our invite
+		g.inviteC.EXPECT().MarkInviteConsumed(ctx, &invite.MarkInviteConsumedRequest{
+			Token: "InviteToken",
+		}).Return(&invite.MarkInviteConsumedResponse{}, nil),
+	)
 
 	// Analytics looks up the organization to get the name for invites
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{

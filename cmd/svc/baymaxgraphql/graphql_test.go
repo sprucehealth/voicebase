@@ -5,15 +5,21 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	ramock "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess/mock"
+	"github.com/sprucehealth/backend/device"
+	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/conc"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
+	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
-	invitemock "github.com/sprucehealth/backend/svc/invite/mock"
+	"github.com/sprucehealth/backend/svc/directory/cache"
+	"github.com/sprucehealth/backend/svc/invite/invitemock"
 	layoutmock "github.com/sprucehealth/backend/svc/layout/mock"
 	notificationmock "github.com/sprucehealth/backend/svc/notification/mock"
 	settingsmock "github.com/sprucehealth/backend/svc/settings/mock"
@@ -25,13 +31,14 @@ import (
 var grpcErrorf = grpc.Errorf
 
 type gql struct {
-	inviteC       *invitemock.Client
+	inviteC       *invitemock.MockInviteClient
 	settingsC     *settingsmock.Client
 	layoutC       *layoutmock.Client
 	notificationC *notificationmock.Client
 	svc           *service
 	ra            *ramock.ResourceAccessor
 	layoutStore   *layoutmock.Store
+	ctrl          *gomock.Controller
 }
 
 func newGQL(t testing.TB) *gql {
@@ -39,7 +46,8 @@ func newGQL(t testing.TB) *gql {
 		t.Parallel()
 	}
 	var g gql
-	g.inviteC = invitemock.New(t)
+	g.ctrl = gomock.NewController(t)
+	g.inviteC = invitemock.NewMockInviteClient(g.ctrl)
 	g.settingsC = settingsmock.New(t)
 	g.notificationC = notificationmock.New(t)
 	g.layoutC = layoutmock.New(t)
@@ -55,6 +63,20 @@ func newGQL(t testing.TB) *gql {
 		layoutStore:  g.layoutStore,
 	}
 	return &g
+}
+
+func initGraphQLContext() context.Context {
+	ctx := context.Background()
+	ctx = devicectx.WithSpruceHeaders(ctx, &device.SpruceHeaders{
+		DeviceID: "DevID",
+		Platform: device.Android,
+	})
+	ctx = httputil.CtxWithRequestID(ctx, "0")
+	var acc *auth.Account
+	ctx = gqlctx.WithAccount(ctx, acc)
+	ctx = gqlctx.WithClientEncryptionKey(ctx, "")
+	ctx = cache.InitEntityCache(ctx)
+	return ctx
 }
 
 func (g *gql) query(ctx context.Context, query string, vars map[string]interface{}) *graphql.Result {
@@ -75,7 +97,7 @@ func (g *gql) query(ctx context.Context, query string, vars map[string]interface
 }
 
 func (g *gql) finish() {
-	g.inviteC.Finish()
+	g.ctrl.Finish()
 	g.settingsC.Finish()
 	g.notificationC.Finish()
 	g.ra.Finish()

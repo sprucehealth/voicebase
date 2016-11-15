@@ -66,10 +66,20 @@ message CreateOrganizationInviteResponse {
 	OrganizationInvite organization = 1;
 }
 
+message ModifyOrganizationInviteRequest {
+	string token = 1;
+	repeated string tags = 2;
+}
+
+message ModifyOrganizationInviteResponse {
+	OrganizationInvite organization_invite = 1;
+}
+
 
 message OrganizationInvite {
 	string organization_entity_id = 1 [(gogoproto.customname) = "OrganizationEntityID"];
 	string token = 2;
+	repeated string tags = 3;
 }
 
 message MarkInviteConsumedRequest {
@@ -201,6 +211,8 @@ service Invite {
 	rpc LookupOrganizationInvites(LookupOrganizationInvitesRequest) returns (LookupOrganizationInvitesResponse);
 	// MarkInviteConsumed deletes the associated invite and records it's consumption
 	rpc MarkInviteConsumed(MarkInviteConsumedRequest) returns (MarkInviteConsumedResponse);
+	// ModifyOrganizationInvite modifies the specified organization invite
+	rpc ModifyOrganizationInvite(ModifyOrganizationInviteRequest) returns (ModifyOrganizationInviteResponse);
 	// SetAttributionData associate attribution data with a device
 	rpc SetAttributionData(SetAttributionDataRequest) returns (SetAttributionDataResponse);
 	// DeleteInvite deletes an invite based on the key.

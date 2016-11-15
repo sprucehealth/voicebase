@@ -175,6 +175,22 @@ func (_mr *_MockInviteClientRecorder) MarkInviteConsumed(arg0, arg1 interface{},
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "MarkInviteConsumed", _s...)
 }
 
+func (_m *MockInviteClient) ModifyOrganizationInvite(_param0 context.Context, _param1 *invite.ModifyOrganizationInviteRequest, _param2 ...grpc.CallOption) (*invite.ModifyOrganizationInviteResponse, error) {
+	_s := []interface{}{_param0, _param1}
+	for _, _x := range _param2 {
+		_s = append(_s, _x)
+	}
+	ret := _m.ctrl.Call(_m, "ModifyOrganizationInvite", _s...)
+	ret0, _ := ret[0].(*invite.ModifyOrganizationInviteResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockInviteClientRecorder) ModifyOrganizationInvite(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+	_s := append([]interface{}{arg0, arg1}, arg2...)
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "ModifyOrganizationInvite", _s...)
+}
+
 func (_m *MockInviteClient) SetAttributionData(_param0 context.Context, _param1 *invite.SetAttributionDataRequest, _param2 ...grpc.CallOption) (*invite.SetAttributionDataResponse, error) {
 	_s := []interface{}{_param0, _param1}
 	for _, _x := range _param2 {

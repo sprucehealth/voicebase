@@ -1,6 +1,7 @@
 package dal
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
@@ -20,16 +21,17 @@ const (
 	createdTimestampKey     = "CreatedTimestamp"
 	deviceIDKey             = "DeviceID"
 	emailKey                = "Email"
+	entityIDKey             = "EntityID"
 	inviterEntityIDKey      = "InviterEntityID"
 	inviteTokenKey          = "InviteToken"
 	isInviteKey             = "IsInvite"
 	organizationEntityIDKey = "OrganizationEntityID"
+	parkedEntityIDKey       = "ParkedEntityID"
 	phoneNumberKey          = "PhoneNumber"
+	tagsKey                 = "Tags"
 	typeKey                 = "Type"
 	urlKey                  = "URL"
-	parkedEntityIDKey       = "ParkedEntityID"
 	valuesKey               = "Values"
-	entityIDKey             = "EntityID"
 )
 
 // ErrNotFound is the error when an object is missing
@@ -48,6 +50,7 @@ type DAL interface {
 	InvitesForParkedEntityID(ctx context.Context, parkedEntityID string) ([]*models.Invite, error)
 	SetAttributionData(ctx context.Context, deviceID string, values map[string]string) error
 	TokensForEntity(ctx context.Context, entityID string) ([]string, error)
+	UpdateInvite(ctx context.Context, token string, update *models.InviteUpdate) (*models.Invite, error)
 }
 
 type dal struct {
@@ -180,6 +183,7 @@ func (d *dal) InsertInvite(ctx context.Context, invite *models.Invite) error {
 		valuesAttr[k] = &dynamodb.AttributeValue{S: ptr.String(v)}
 	}
 	item[valuesKey] = &dynamodb.AttributeValue{M: valuesAttr}
+	item[tagsKey] = &dynamodb.AttributeValue{SS: ptr.Strings(invite.Tags)}
 	_, err := d.db.PutItem(&dynamodb.PutItemInput{
 		TableName:           &d.inviteTable,
 		ConditionExpression: ptr.String("attribute_not_exists(" + inviteTokenKey + ")"),
@@ -192,6 +196,27 @@ func (d *dal) InsertInvite(ctx context.Context, invite *models.Invite) error {
 		return errors.Trace(err)
 	}
 	return nil
+}
+
+func (d *dal) UpdateInvite(ctx context.Context, token string, update *models.InviteUpdate) (*models.Invite, error) {
+	if token == "" {
+		return nil, errors.Errorf("Token required")
+	}
+	res, err := d.db.UpdateItem(&dynamodb.UpdateItemInput{
+		Key:          map[string]*dynamodb.AttributeValue{inviteTokenKey: &dynamodb.AttributeValue{S: &token}},
+		ReturnValues: ptr.String("ALL_NEW"),
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			`:tags`: {SS: ptr.Strings(update.Tags)},
+		},
+		UpdateExpression: ptr.String(fmt.Sprintf("SET %s = :tags", tagsKey)),
+	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	if len(res.Attributes) == 0 {
+		return nil, ErrNotFound
+	}
+	return inviteFromAttributes(res.Attributes), nil
 }
 
 func (d *dal) InviteForToken(ctx context.Context, token string) (*models.Invite, error) {
@@ -270,6 +295,13 @@ func inviteFromAttributes(attributes map[string]*dynamodb.AttributeValue) *model
 	inv.Values = make(map[string]string, len(valuesAttr))
 	for k, v := range valuesAttr {
 		inv.Values[k] = *v.S
+	}
+	tags := attributes[tagsKey]
+	if tags != nil {
+		inv.Tags = make([]string, len(tags.SS))
+		for i, t := range tags.SS {
+			inv.Tags[i] = *t
+		}
 	}
 
 	return inv

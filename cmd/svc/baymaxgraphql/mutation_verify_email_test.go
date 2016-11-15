@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/device/devicectx"
@@ -31,9 +32,12 @@ func TestVerifyEmailForAccountCreationMutation_Invite(t *testing.T) {
 
 	// No invite
 
-	g.inviteC.Expect(mock.NewExpectation(g.inviteC.AttributionData, &invite.AttributionDataRequest{
-		DeviceID: "DevID",
-	}).WithReturns((*invite.AttributionDataResponse)(nil), grpcErrorf(codes.NotFound, "Not Found")))
+	gomock.InOrder(
+		// Get attribution data
+		g.inviteC.EXPECT().AttributionData(ctx, &invite.AttributionDataRequest{
+			DeviceID: "DevID",
+		}).Return(nil, grpcErrorf(codes.NotFound, "Not Found")),
+	)
 
 	res := g.query(ctx, `
 		mutation _ {
@@ -61,26 +65,30 @@ func TestVerifyEmailForAccountCreationMutation_Invite(t *testing.T) {
 
 	// Invite exists
 
-	g.inviteC.Expect(mock.NewExpectation(g.inviteC.AttributionData, &invite.AttributionDataRequest{
-		DeviceID: "DevID",
-	}).WithReturns(&invite.AttributionDataResponse{
-		Values: []*invite.AttributionValue{
-			{Key: "invite_token", Value: "InviteToken"},
-		},
-	}, nil))
+	gomock.InOrder(
+		// Get attribution data
+		g.inviteC.EXPECT().AttributionData(ctx, &invite.AttributionDataRequest{
+			DeviceID: "DevID",
+		}).Return(&invite.AttributionDataResponse{
+			Values: []*invite.AttributionValue{
+				{Key: "invite_token", Value: "InviteToken"},
+			},
+		}, nil),
 
-	g.inviteC.Expect(mock.NewExpectation(g.inviteC.LookupInvite, &invite.LookupInviteRequest{
-		InviteToken: "InviteToken",
-	}).WithReturns(&invite.LookupInviteResponse{
-		Type: invite.LookupInviteResponse_PATIENT,
-		Invite: &invite.LookupInviteResponse_Patient{
-			Patient: &invite.PatientInvite{
-				Patient: &invite.Patient{
-					ParkedEntityID: "parkedEntityID",
+		// Lookup the invite
+		g.inviteC.EXPECT().LookupInvite(ctx, &invite.LookupInviteRequest{
+			InviteToken: "InviteToken",
+		}).Return(&invite.LookupInviteResponse{
+			Type: invite.LookupInviteResponse_PATIENT,
+			Invite: &invite.LookupInviteResponse_Patient{
+				Patient: &invite.PatientInvite{
+					Patient: &invite.Patient{
+						ParkedEntityID: "parkedEntityID",
+					},
 				},
 			},
-		},
-	}, nil))
+		}, nil),
+	)
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
 		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,

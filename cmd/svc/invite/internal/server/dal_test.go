@@ -63,3 +63,8 @@ func (dl *mockDAL) TokensForEntity(ctx context.Context, entityID string) ([]stri
 	r := dl.Expector.Record(entityID)
 	return r[0].([]string), mock.SafeError(r[1])
 }
+
+func (dl *mockDAL) UpdateInvite(ctx context.Context, token string, update *models.InviteUpdate) (*models.Invite, error) {
+	r := dl.Expector.Record(token, update)
+	return r[0].(*models.Invite), mock.SafeError(r[1])
+}

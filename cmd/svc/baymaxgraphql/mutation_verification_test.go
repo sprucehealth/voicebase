@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/device/devicectx"
@@ -29,27 +30,31 @@ func TestVerifyPhoneNumberForAccountCreationMutation_Invite(t *testing.T) {
 
 	// Number differs
 
-	g.inviteC.Expect(mock.NewExpectation(g.inviteC.AttributionData, &invite.AttributionDataRequest{
-		DeviceID: "DevID",
-	}).WithReturns(&invite.AttributionDataResponse{
-		Values: []*invite.AttributionValue{
-			{Key: "invite_token", Value: "InviteToken"},
-		},
-	}, nil))
+	gomock.InOrder(
+		// Get attribution data
+		g.inviteC.EXPECT().AttributionData(ctx, &invite.AttributionDataRequest{
+			DeviceID: "DevID",
+		}).Return(&invite.AttributionDataResponse{
+			Values: []*invite.AttributionValue{
+				{Key: "invite_token", Value: "InviteToken"},
+			},
+		}, nil),
 
-	g.inviteC.Expect(mock.NewExpectation(g.inviteC.LookupInvite, &invite.LookupInviteRequest{
-		InviteToken: "InviteToken",
-	}).WithReturns(&invite.LookupInviteResponse{
-		Type: invite.LookupInviteResponse_COLLEAGUE,
-		Invite: &invite.LookupInviteResponse_Colleague{
-			Colleague: &invite.ColleagueInvite{
-				Colleague: &invite.Colleague{
-					Email:       "someone@example.com",
-					PhoneNumber: "+16305551212",
+		// Lookup the invite
+		g.inviteC.EXPECT().LookupInvite(ctx, &invite.LookupInviteRequest{
+			InviteToken: "InviteToken",
+		}).Return(&invite.LookupInviteResponse{
+			Type: invite.LookupInviteResponse_COLLEAGUE,
+			Invite: &invite.LookupInviteResponse_Colleague{
+				Colleague: &invite.ColleagueInvite{
+					Colleague: &invite.Colleague{
+						Email:       "someone@example.com",
+						PhoneNumber: "+16305551212",
+					},
 				},
 			},
-		},
-	}, nil))
+		}, nil),
+	)
 
 	g.ra.Expect(mock.NewExpectation(g.ra.EntitiesByContact, &directory.LookupEntitiesByContactRequest{
 		ContactValue: "+14155551212",
@@ -87,27 +92,31 @@ func TestVerifyPhoneNumberForAccountCreationMutation_Invite(t *testing.T) {
 
 	// Number matches
 
-	g.inviteC.Expect(mock.NewExpectation(g.inviteC.AttributionData, &invite.AttributionDataRequest{
-		DeviceID: "DevID",
-	}).WithReturns(&invite.AttributionDataResponse{
-		Values: []*invite.AttributionValue{
-			{Key: "invite_token", Value: "InviteToken"},
-		},
-	}, nil))
+	gomock.InOrder(
+		// Get attribution data
+		g.inviteC.EXPECT().AttributionData(ctx, &invite.AttributionDataRequest{
+			DeviceID: "DevID",
+		}).Return(&invite.AttributionDataResponse{
+			Values: []*invite.AttributionValue{
+				{Key: "invite_token", Value: "InviteToken"},
+			},
+		}, nil),
 
-	g.inviteC.Expect(mock.NewExpectation(g.inviteC.LookupInvite, &invite.LookupInviteRequest{
-		InviteToken: "InviteToken",
-	}).WithReturns(&invite.LookupInviteResponse{
-		Type: invite.LookupInviteResponse_COLLEAGUE,
-		Invite: &invite.LookupInviteResponse_Colleague{
-			Colleague: &invite.ColleagueInvite{
-				Colleague: &invite.Colleague{
-					Email:       "someone@example.com",
-					PhoneNumber: "+14155551212",
+		// Lookup the invite
+		g.inviteC.EXPECT().LookupInvite(ctx, &invite.LookupInviteRequest{
+			InviteToken: "InviteToken",
+		}).Return(&invite.LookupInviteResponse{
+			Type: invite.LookupInviteResponse_COLLEAGUE,
+			Invite: &invite.LookupInviteResponse_Colleague{
+				Colleague: &invite.ColleagueInvite{
+					Colleague: &invite.Colleague{
+						Email:       "someone@example.com",
+						PhoneNumber: "+14155551212",
+					},
 				},
 			},
-		},
-	}, nil))
+		}, nil),
+	)
 
 	g.ra.Expect(mock.NewExpectation(g.ra.EntitiesByContact, &directory.LookupEntitiesByContactRequest{
 		ContactValue: "+14155551212",
@@ -235,26 +244,31 @@ func TestVerifyEmailCodeEntityInfo_Invite(t *testing.T) {
 			Value: "email@email.com",
 		}, nil))
 
-	g.inviteC.Expect(mock.NewExpectation(g.inviteC.AttributionData, &invite.AttributionDataRequest{
-		DeviceID: "DevID",
-	}).WithReturns(&invite.AttributionDataResponse{
-		Values: []*invite.AttributionValue{
-			{Key: "invite_token", Value: "InviteToken"},
-		},
-	}, nil))
-	g.inviteC.Expect(mock.NewExpectation(g.inviteC.LookupInvite, &invite.LookupInviteRequest{
-		InviteToken: "InviteToken",
-	}).WithReturns(&invite.LookupInviteResponse{
-		Type: invite.LookupInviteResponse_PATIENT,
-		Invite: &invite.LookupInviteResponse_Patient{
-			Patient: &invite.PatientInvite{
-				Patient: &invite.Patient{
-					ParkedEntityID: "parkedEntityID",
-				},
-				OrganizationEntityID: "e_org_inv",
+	gomock.InOrder(
+		// Get attribution data
+		g.inviteC.EXPECT().AttributionData(ctx, &invite.AttributionDataRequest{
+			DeviceID: "DevID",
+		}).Return(&invite.AttributionDataResponse{
+			Values: []*invite.AttributionValue{
+				{Key: "invite_token", Value: "InviteToken"},
 			},
-		},
-	}, nil))
+		}, nil),
+
+		// Lookup the invite
+		g.inviteC.EXPECT().LookupInvite(ctx, &invite.LookupInviteRequest{
+			InviteToken: "InviteToken",
+		}).Return(&invite.LookupInviteResponse{
+			Type: invite.LookupInviteResponse_PATIENT,
+			Invite: &invite.LookupInviteResponse_Patient{
+				Patient: &invite.PatientInvite{
+					Patient: &invite.Patient{
+						ParkedEntityID: "parkedEntityID",
+					},
+					OrganizationEntityID: "e_org_inv",
+				},
+			},
+		}, nil),
+	)
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
 		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,

@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
@@ -106,20 +107,23 @@ func TestInvitationBannerQuery_Paitent(t *testing.T) {
 			},
 		}, nil))
 
-		g.inviteC.Expect(mock.NewExpectation(g.inviteC.LookupInvites, &invite.LookupInvitesRequest{
-			LookupKeyType: invite.LookupInvitesRequest_PARKED_ENTITY_ID,
-			Key: &invite.LookupInvitesRequest_ParkedEntityID{
-				ParkedEntityID: id,
-			},
-		}).WithReturns(&invite.LookupInvitesResponse{
-			List: &invite.LookupInvitesResponse_PatientInviteList{
-				PatientInviteList: &invite.PatientInviteList{
-					PatientInvites: []*invite.PatientInvite{
-						{},
+		gomock.InOrder(
+			// Lookup the invite
+			g.inviteC.EXPECT().LookupInvites(ctx, &invite.LookupInvitesRequest{
+				LookupKeyType: invite.LookupInvitesRequest_PARKED_ENTITY_ID,
+				Key: &invite.LookupInvitesRequest_ParkedEntityID{
+					ParkedEntityID: id,
+				},
+			}).Return(&invite.LookupInvitesResponse{
+				List: &invite.LookupInvitesResponse_PatientInviteList{
+					PatientInviteList: &invite.PatientInviteList{
+						PatientInvites: []*invite.PatientInvite{
+							{},
+						},
 					},
 				},
-			},
-		}, nil))
+			}, nil),
+		)
 
 		res := g.query(ctx, `
  query _ {

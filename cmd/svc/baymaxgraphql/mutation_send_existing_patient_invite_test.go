@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
@@ -81,17 +82,20 @@ func TestSendExistingPatientInvite(t *testing.T) {
 		},
 	}, nil))
 
-	g.inviteC.Expect(mock.NewExpectation(g.inviteC.InvitePatients, &invite.InvitePatientsRequest{
-		InviterEntityID:      "e_creator",
-		OrganizationEntityID: "e_org",
-		Patients: []*invite.Patient{
-			{
-				FirstName:      "firstName",
-				PhoneNumber:    "+12222222222",
-				ParkedEntityID: patientEntityID,
+	gomock.InOrder(
+		// Send the patient invite
+		g.inviteC.EXPECT().InvitePatients(ctx, &invite.InvitePatientsRequest{
+			InviterEntityID:      "e_creator",
+			OrganizationEntityID: "e_org",
+			Patients: []*invite.Patient{
+				{
+					FirstName:      "firstName",
+					PhoneNumber:    "+12222222222",
+					ParkedEntityID: patientEntityID,
+				},
 			},
-		},
-	}))
+		}),
+	)
 
 	res := g.query(ctx, `
 		mutation _ {

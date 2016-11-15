@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/device/devicectx"
@@ -28,21 +29,24 @@ func TestAssociateInviteMutation(t *testing.T) {
 	sh := &device.SpruceHeaders{DeviceID: "deviceID"}
 	ctx = devicectx.WithSpruceHeaders(ctx, sh)
 
-	g.inviteC.Expect(mock.NewExpectation(g.inviteC.LookupInvite, &invite.LookupInviteRequest{
-		InviteToken: "token",
-	}).WithReturns(&invite.LookupInviteResponse{
-		Type: invite.LookupInviteResponse_COLLEAGUE,
-		Invite: &invite.LookupInviteResponse_Colleague{
-			Colleague: &invite.ColleagueInvite{
-				OrganizationEntityID: "orgID",
-				InviterEntityID:      "inviterID",
-				Colleague: &invite.Colleague{
-					FirstName: "colleagueFirstName",
+	gomock.InOrder(
+		// Lookup the invite
+		g.inviteC.EXPECT().LookupInvite(ctx, &invite.LookupInviteRequest{
+			InviteToken: "token",
+		}).Return(&invite.LookupInviteResponse{
+			Type: invite.LookupInviteResponse_COLLEAGUE,
+			Invite: &invite.LookupInviteResponse_Colleague{
+				Colleague: &invite.ColleagueInvite{
+					OrganizationEntityID: "orgID",
+					InviterEntityID:      "inviterID",
+					Colleague: &invite.Colleague{
+						FirstName: "colleagueFirstName",
+					},
 				},
 			},
-		},
-		Values: []*invite.AttributionValue{{Key: "foo", Value: "bar"}},
-	}, nil))
+			Values: []*invite.AttributionValue{{Key: "foo", Value: "bar"}},
+		}, nil),
+	)
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
 		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
@@ -63,10 +67,14 @@ func TestAssociateInviteMutation(t *testing.T) {
 		&directory.Entity{ID: "inviterID", Info: &directory.EntityInfo{DisplayName: "inviterDisplayName"}},
 		"colleagueFirstName", "", "")
 	test.OK(t, err)
-	g.inviteC.Expect(mock.NewExpectation(g.inviteC.SetAttributionData, &invite.SetAttributionDataRequest{
-		DeviceID: "deviceID",
-		Values:   []*invite.AttributionValue{{Key: "foo", Value: "bar"}, {Key: "client_data", Value: cData}, {Key: "invite_type", Value: "COLLEAGUE"}},
-	}).WithReturns(&invite.SetAttributionDataResponse{}, nil))
+
+	gomock.InOrder(
+		// Set the attribution data
+		g.inviteC.EXPECT().SetAttributionData(ctx, &invite.SetAttributionDataRequest{
+			DeviceID: "deviceID",
+			Values:   []*invite.AttributionValue{{Key: "foo", Value: "bar"}, {Key: "client_data", Value: cData}, {Key: "invite_type", Value: "COLLEAGUE"}},
+		}),
+	)
 
 	g.ra.Expect(mock.NewExpectation(g.ra.MediaInfo, "mediaID").WithReturns(&media.MediaInfo{MIME: &media.MIME{Type: "image", Subtype: "png"}}, nil))
 
@@ -124,9 +132,12 @@ func TestAssociateInviteMutation_NotFound(t *testing.T) {
 	sh := &device.SpruceHeaders{DeviceID: "deviceID"}
 	ctx = devicectx.WithSpruceHeaders(ctx, sh)
 
-	g.inviteC.Expect(mock.NewExpectation(g.inviteC.LookupInvite, &invite.LookupInviteRequest{
-		InviteToken: "token",
-	}).WithReturns(&invite.LookupInviteResponse{}, grpcErrorf(codes.NotFound, "not found")))
+	gomock.InOrder(
+		// Lookup the invite
+		g.inviteC.EXPECT().LookupInvite(ctx, &invite.LookupInviteRequest{
+			InviteToken: "token",
+		}).Return(&invite.LookupInviteResponse{}, grpcErrorf(codes.NotFound, "not found")),
+	)
 
 	res := g.query(ctx, `
 		mutation _ {

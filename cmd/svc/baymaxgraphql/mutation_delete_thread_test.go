@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
@@ -152,13 +153,15 @@ func TestDeleteThread_Secure(t *testing.T) {
 		},
 	}, nil))
 
-	// delete invite
-	g.inviteC.Expect(mock.NewExpectation(g.inviteC.DeleteInvite, &invite.DeleteInviteRequest{
-		DeleteInviteKey: invite.DeleteInviteRequest_PARKED_ENTITY_ID,
-		Key: &invite.DeleteInviteRequest_ParkedEntityID{
-			ParkedEntityID: patientEntID,
-		},
-	}))
+	gomock.InOrder(
+		// delete invite
+		g.inviteC.EXPECT().DeleteInvite(ctx, &invite.DeleteInviteRequest{
+			DeleteInviteKey: invite.DeleteInviteRequest_PARKED_ENTITY_ID,
+			Key: &invite.DeleteInviteRequest_ParkedEntityID{
+				ParkedEntityID: patientEntID,
+			},
+		}),
+	)
 
 	// Delete thread
 	g.ra.Expect(mock.NewExpectation(g.ra.DeleteThread, threadID, entID).WithReturns(nil))

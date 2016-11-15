@@ -16,6 +16,7 @@ const (
 	OrganizationCodeInvite InviteType = "ORGANIZATION_CODE"
 )
 
+// Invite represents an invite into the Baymax system
 type Invite struct {
 	Token                string
 	OrganizationEntityID string
@@ -27,4 +28,10 @@ type Invite struct {
 	ParkedEntityID       string
 	Created              time.Time
 	Values               map[string]string
+	Tags                 []string
+}
+
+// InviteUpdate represents the mutable aspects of an invite
+type InviteUpdate struct {
+	Tags []string
 }

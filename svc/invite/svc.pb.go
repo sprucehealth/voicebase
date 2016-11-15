@@ -20,6 +20,8 @@
 		Organization
 		CreateOrganizationInviteRequest
 		CreateOrganizationInviteResponse
+		ModifyOrganizationInviteRequest
+		ModifyOrganizationInviteResponse
 		OrganizationInvite
 		MarkInviteConsumedRequest
 		MarkInviteConsumedResponse
@@ -90,7 +92,7 @@ var DeleteInviteRequest_DeleteInviteKey_value = map[string]int32{
 }
 
 func (DeleteInviteRequest_DeleteInviteKey) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptorSvc, []int{14, 0}
+	return fileDescriptorSvc, []int{16, 0}
 }
 
 type LookupInviteRequest_LookupKeyType int32
@@ -114,7 +116,7 @@ var LookupInviteRequest_LookupKeyType_value = map[string]int32{
 }
 
 func (LookupInviteRequest_LookupKeyType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptorSvc, []int{16, 0}
+	return fileDescriptorSvc, []int{18, 0}
 }
 
 type LookupInviteResponse_Type int32
@@ -137,7 +139,7 @@ var LookupInviteResponse_Type_value = map[string]int32{
 }
 
 func (LookupInviteResponse_Type) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptorSvc, []int{17, 0}
+	return fileDescriptorSvc, []int{19, 0}
 }
 
 type LookupInvitesRequest_LookupKeyType int32
@@ -157,7 +159,7 @@ var LookupInvitesRequest_LookupKeyType_value = map[string]int32{
 }
 
 func (LookupInvitesRequest_LookupKeyType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptorSvc, []int{18, 0}
+	return fileDescriptorSvc, []int{20, 0}
 }
 
 type LookupInvitesResponse_Type int32
@@ -177,13 +179,13 @@ var LookupInvitesResponse_Type_value = map[string]int32{
 }
 
 func (LookupInvitesResponse_Type) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptorSvc, []int{19, 0}
+	return fileDescriptorSvc, []int{21, 0}
 }
 
 type Colleague struct {
 	Email       string `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
-	PhoneNumber string `protobuf:"bytes,2,opt,name=phone_number,json=phoneNumber,proto3" json:"phone_number,omitempty"`
-	FirstName   string `protobuf:"bytes,3,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
+	PhoneNumber string `protobuf:"bytes,2,opt,name=phone_number,proto3" json:"phone_number,omitempty"`
+	FirstName   string `protobuf:"bytes,3,opt,name=first_name,proto3" json:"first_name,omitempty"`
 }
 
 func (m *Colleague) Reset()                    { *m = Colleague{} }
@@ -191,8 +193,8 @@ func (*Colleague) ProtoMessage()               {}
 func (*Colleague) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{0} }
 
 type InviteColleaguesRequest struct {
-	OrganizationEntityID string       `protobuf:"bytes,1,opt,name=organization_entity_id,json=organizationEntityId,proto3" json:"organization_entity_id,omitempty"`
-	InviterEntityID      string       `protobuf:"bytes,2,opt,name=inviter_entity_id,json=inviterEntityId,proto3" json:"inviter_entity_id,omitempty"`
+	OrganizationEntityID string       `protobuf:"bytes,1,opt,name=organization_entity_id,proto3" json:"organization_entity_id,omitempty"`
+	InviterEntityID      string       `protobuf:"bytes,2,opt,name=inviter_entity_id,proto3" json:"inviter_entity_id,omitempty"`
 	Colleagues           []*Colleague `protobuf:"bytes,3,rep,name=colleagues" json:"colleagues,omitempty"`
 }
 
@@ -215,8 +217,8 @@ func (*InviteColleaguesResponse) ProtoMessage()               {}
 func (*InviteColleaguesResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{2} }
 
 type ColleagueInvite struct {
-	OrganizationEntityID string     `protobuf:"bytes,1,opt,name=organization_entity_id,json=organizationEntityId,proto3" json:"organization_entity_id,omitempty"`
-	InviterEntityID      string     `protobuf:"bytes,2,opt,name=inviter_entity_id,json=inviterEntityId,proto3" json:"inviter_entity_id,omitempty"`
+	OrganizationEntityID string     `protobuf:"bytes,1,opt,name=organization_entity_id,proto3" json:"organization_entity_id,omitempty"`
+	InviterEntityID      string     `protobuf:"bytes,2,opt,name=inviter_entity_id,proto3" json:"inviter_entity_id,omitempty"`
 	Colleague            *Colleague `protobuf:"bytes,3,opt,name=colleague" json:"colleague,omitempty"`
 }
 
@@ -233,10 +235,10 @@ func (m *ColleagueInvite) GetColleague() *Colleague {
 
 type Patient struct {
 	// First name is only used when inviting a patient. It is not stored and not returned by LookupInvite
-	FirstName string `protobuf:"bytes,1,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
+	FirstName string `protobuf:"bytes,1,opt,name=first_name,proto3" json:"first_name,omitempty"`
 	// Phone number is only used when inviting a patient. It is not stored and not returned by LookupInvite
-	PhoneNumber    string `protobuf:"bytes,2,opt,name=phone_number,json=phoneNumber,proto3" json:"phone_number,omitempty"`
-	ParkedEntityID string `protobuf:"bytes,3,opt,name=parked_entity_id,json=parkedEntityId,proto3" json:"parked_entity_id,omitempty"`
+	PhoneNumber    string `protobuf:"bytes,2,opt,name=phone_number,proto3" json:"phone_number,omitempty"`
+	ParkedEntityID string `protobuf:"bytes,3,opt,name=parked_entity_id,proto3" json:"parked_entity_id,omitempty"`
 }
 
 func (m *Patient) Reset()                    { *m = Patient{} }
@@ -244,8 +246,8 @@ func (*Patient) ProtoMessage()               {}
 func (*Patient) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{4} }
 
 type InvitePatientsRequest struct {
-	OrganizationEntityID string     `protobuf:"bytes,1,opt,name=organization_entity_id,json=organizationEntityId,proto3" json:"organization_entity_id,omitempty"`
-	InviterEntityID      string     `protobuf:"bytes,2,opt,name=inviter_entity_id,json=inviterEntityId,proto3" json:"inviter_entity_id,omitempty"`
+	OrganizationEntityID string     `protobuf:"bytes,1,opt,name=organization_entity_id,proto3" json:"organization_entity_id,omitempty"`
+	InviterEntityID      string     `protobuf:"bytes,2,opt,name=inviter_entity_id,proto3" json:"inviter_entity_id,omitempty"`
 	Patients             []*Patient `protobuf:"bytes,3,rep,name=patients" json:"patients,omitempty"`
 }
 
@@ -268,8 +270,8 @@ func (*InvitePatientsResponse) ProtoMessage()               {}
 func (*InvitePatientsResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{6} }
 
 type PatientInvite struct {
-	OrganizationEntityID string   `protobuf:"bytes,1,opt,name=organization_entity_id,json=organizationEntityId,proto3" json:"organization_entity_id,omitempty"`
-	InviterEntityID      string   `protobuf:"bytes,2,opt,name=inviter_entity_id,json=inviterEntityId,proto3" json:"inviter_entity_id,omitempty"`
+	OrganizationEntityID string   `protobuf:"bytes,1,opt,name=organization_entity_id,proto3" json:"organization_entity_id,omitempty"`
+	InviterEntityID      string   `protobuf:"bytes,2,opt,name=inviter_entity_id,proto3" json:"inviter_entity_id,omitempty"`
 	Patient              *Patient `protobuf:"bytes,3,opt,name=patient" json:"patient,omitempty"`
 }
 
@@ -285,7 +287,7 @@ func (m *PatientInvite) GetPatient() *Patient {
 }
 
 type Organization struct {
-	OrganizationEntityID string `protobuf:"bytes,1,opt,name=organization_entity_id,json=organizationEntityId,proto3" json:"organization_entity_id,omitempty"`
+	OrganizationEntityID string `protobuf:"bytes,1,opt,name=organization_entity_id,proto3" json:"organization_entity_id,omitempty"`
 }
 
 func (m *Organization) Reset()                    { *m = Organization{} }
@@ -293,7 +295,7 @@ func (*Organization) ProtoMessage()               {}
 func (*Organization) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{8} }
 
 type CreateOrganizationInviteRequest struct {
-	OrganizationEntityID string `protobuf:"bytes,1,opt,name=organization_entity_id,json=organizationEntityId,proto3" json:"organization_entity_id,omitempty"`
+	OrganizationEntityID string `protobuf:"bytes,1,opt,name=organization_entity_id,proto3" json:"organization_entity_id,omitempty"`
 }
 
 func (m *CreateOrganizationInviteRequest) Reset()      { *m = CreateOrganizationInviteRequest{} }
@@ -319,14 +321,43 @@ func (m *CreateOrganizationInviteResponse) GetOrganization() *OrganizationInvite
 	return nil
 }
 
+type ModifyOrganizationInviteRequest struct {
+	Token string   `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	Tags  []string `protobuf:"bytes,2,rep,name=tags" json:"tags,omitempty"`
+}
+
+func (m *ModifyOrganizationInviteRequest) Reset()      { *m = ModifyOrganizationInviteRequest{} }
+func (*ModifyOrganizationInviteRequest) ProtoMessage() {}
+func (*ModifyOrganizationInviteRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptorSvc, []int{11}
+}
+
+type ModifyOrganizationInviteResponse struct {
+	OrganizationInvite *OrganizationInvite `protobuf:"bytes,1,opt,name=organization_invite" json:"organization_invite,omitempty"`
+}
+
+func (m *ModifyOrganizationInviteResponse) Reset()      { *m = ModifyOrganizationInviteResponse{} }
+func (*ModifyOrganizationInviteResponse) ProtoMessage() {}
+func (*ModifyOrganizationInviteResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptorSvc, []int{12}
+}
+
+func (m *ModifyOrganizationInviteResponse) GetOrganizationInvite() *OrganizationInvite {
+	if m != nil {
+		return m.OrganizationInvite
+	}
+	return nil
+}
+
 type OrganizationInvite struct {
-	OrganizationEntityID string `protobuf:"bytes,1,opt,name=organization_entity_id,json=organizationEntityId,proto3" json:"organization_entity_id,omitempty"`
-	Token                string `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty"`
+	OrganizationEntityID string   `protobuf:"bytes,1,opt,name=organization_entity_id,proto3" json:"organization_entity_id,omitempty"`
+	Token                string   `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty"`
+	Tags                 []string `protobuf:"bytes,3,rep,name=tags" json:"tags,omitempty"`
 }
 
 func (m *OrganizationInvite) Reset()                    { *m = OrganizationInvite{} }
 func (*OrganizationInvite) ProtoMessage()               {}
-func (*OrganizationInvite) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{11} }
+func (*OrganizationInvite) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{13} }
 
 type MarkInviteConsumedRequest struct {
 	Token string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
@@ -334,26 +365,26 @@ type MarkInviteConsumedRequest struct {
 
 func (m *MarkInviteConsumedRequest) Reset()                    { *m = MarkInviteConsumedRequest{} }
 func (*MarkInviteConsumedRequest) ProtoMessage()               {}
-func (*MarkInviteConsumedRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{12} }
+func (*MarkInviteConsumedRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{14} }
 
 type MarkInviteConsumedResponse struct {
 }
 
 func (m *MarkInviteConsumedResponse) Reset()                    { *m = MarkInviteConsumedResponse{} }
 func (*MarkInviteConsumedResponse) ProtoMessage()               {}
-func (*MarkInviteConsumedResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{13} }
+func (*MarkInviteConsumedResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{15} }
 
 type DeleteInviteRequest struct {
 	// Types that are valid to be assigned to Key:
 	//	*DeleteInviteRequest_Token
 	//	*DeleteInviteRequest_ParkedEntityID
 	Key             isDeleteInviteRequest_Key           `protobuf_oneof:"key"`
-	DeleteInviteKey DeleteInviteRequest_DeleteInviteKey `protobuf:"varint,3,opt,name=delete_invite_key,json=deleteInviteKey,proto3,enum=invite.DeleteInviteRequest_DeleteInviteKey" json:"delete_invite_key,omitempty"`
+	DeleteInviteKey DeleteInviteRequest_DeleteInviteKey `protobuf:"varint,3,opt,name=delete_invite_key,proto3,enum=invite.DeleteInviteRequest_DeleteInviteKey" json:"delete_invite_key,omitempty"`
 }
 
 func (m *DeleteInviteRequest) Reset()                    { *m = DeleteInviteRequest{} }
 func (*DeleteInviteRequest) ProtoMessage()               {}
-func (*DeleteInviteRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{14} }
+func (*DeleteInviteRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{16} }
 
 type isDeleteInviteRequest_Key interface {
 	isDeleteInviteRequest_Key()
@@ -366,7 +397,7 @@ type DeleteInviteRequest_Token struct {
 	Token string `protobuf:"bytes,1,opt,name=token,proto3,oneof"`
 }
 type DeleteInviteRequest_ParkedEntityID struct {
-	ParkedEntityID string `protobuf:"bytes,2,opt,name=parked_entity_id,json=parkedEntityId,proto3,oneof"`
+	ParkedEntityID string `protobuf:"bytes,2,opt,name=parked_entity_id,proto3,oneof"`
 }
 
 func (*DeleteInviteRequest_Token) isDeleteInviteRequest_Key()          {}
@@ -464,22 +495,22 @@ type DeleteInviteResponse struct {
 
 func (m *DeleteInviteResponse) Reset()                    { *m = DeleteInviteResponse{} }
 func (*DeleteInviteResponse) ProtoMessage()               {}
-func (*DeleteInviteResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{15} }
+func (*DeleteInviteResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{17} }
 
 type LookupInviteRequest struct {
 	// DEPRECATED - Use LookupInvites instead
-	LookupKeyType LookupInviteRequest_LookupKeyType `protobuf:"varint,1,opt,name=lookup_key_type,json=lookupKeyType,proto3,enum=invite.LookupInviteRequest_LookupKeyType" json:"lookup_key_type,omitempty"`
+	LookupKeyType LookupInviteRequest_LookupKeyType `protobuf:"varint,1,opt,name=lookup_key_type,proto3,enum=invite.LookupInviteRequest_LookupKeyType" json:"lookup_key_type,omitempty"`
 	// Types that are valid to be assigned to LookupKeyOneof:
 	//	*LookupInviteRequest_Token
 	//	*LookupInviteRequest_OrganizationEntityID
 	LookupKeyOneof isLookupInviteRequest_LookupKeyOneof `protobuf_oneof:"lookup_key_oneof"`
 	// The redundency in this name is unfortunate but cant be token and backwards compatible
-	InviteToken string `protobuf:"bytes,4,opt,name=invite_token,json=inviteToken,proto3" json:"invite_token,omitempty"`
+	InviteToken string `protobuf:"bytes,4,opt,name=invite_token,proto3" json:"invite_token,omitempty"`
 }
 
 func (m *LookupInviteRequest) Reset()                    { *m = LookupInviteRequest{} }
 func (*LookupInviteRequest) ProtoMessage()               {}
-func (*LookupInviteRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{16} }
+func (*LookupInviteRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{18} }
 
 type isLookupInviteRequest_LookupKeyOneof interface {
 	isLookupInviteRequest_LookupKeyOneof()
@@ -492,7 +523,7 @@ type LookupInviteRequest_Token struct {
 	Token string `protobuf:"bytes,2,opt,name=token,proto3,oneof"`
 }
 type LookupInviteRequest_OrganizationEntityID struct {
-	OrganizationEntityID string `protobuf:"bytes,3,opt,name=organization_entity_id,json=organizationEntityId,proto3,oneof"`
+	OrganizationEntityID string `protobuf:"bytes,3,opt,name=organization_entity_id,proto3,oneof"`
 }
 
 func (*LookupInviteRequest_Token) isLookupInviteRequest_LookupKeyOneof()                {}
@@ -597,7 +628,7 @@ type LookupInviteResponse struct {
 
 func (m *LookupInviteResponse) Reset()                    { *m = LookupInviteResponse{} }
 func (*LookupInviteResponse) ProtoMessage()               {}
-func (*LookupInviteResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{17} }
+func (*LookupInviteResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{19} }
 
 type isLookupInviteResponse_Invite interface {
 	isLookupInviteResponse_Invite()
@@ -749,7 +780,7 @@ func _LookupInviteResponse_OneofSizer(msg proto.Message) (n int) {
 }
 
 type LookupInvitesRequest struct {
-	LookupKeyType LookupInvitesRequest_LookupKeyType `protobuf:"varint,1,opt,name=lookup_key_type,json=lookupKeyType,proto3,enum=invite.LookupInvitesRequest_LookupKeyType" json:"lookup_key_type,omitempty"`
+	LookupKeyType LookupInvitesRequest_LookupKeyType `protobuf:"varint,1,opt,name=lookup_key_type,proto3,enum=invite.LookupInvitesRequest_LookupKeyType" json:"lookup_key_type,omitempty"`
 	// Types that are valid to be assigned to Key:
 	//	*LookupInvitesRequest_ParkedEntityID
 	Key isLookupInvitesRequest_Key `protobuf_oneof:"key"`
@@ -757,7 +788,7 @@ type LookupInvitesRequest struct {
 
 func (m *LookupInvitesRequest) Reset()                    { *m = LookupInvitesRequest{} }
 func (*LookupInvitesRequest) ProtoMessage()               {}
-func (*LookupInvitesRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{18} }
+func (*LookupInvitesRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{20} }
 
 type isLookupInvitesRequest_Key interface {
 	isLookupInvitesRequest_Key()
@@ -767,7 +798,7 @@ type isLookupInvitesRequest_Key interface {
 }
 
 type LookupInvitesRequest_ParkedEntityID struct {
-	ParkedEntityID string `protobuf:"bytes,2,opt,name=parked_entity_id,json=parkedEntityId,proto3,oneof"`
+	ParkedEntityID string `protobuf:"bytes,2,opt,name=parked_entity_id,proto3,oneof"`
 }
 
 func (*LookupInvitesRequest_ParkedEntityID) isLookupInvitesRequest_Key() {}
@@ -846,7 +877,7 @@ type LookupInvitesResponse struct {
 
 func (m *LookupInvitesResponse) Reset()                    { *m = LookupInvitesResponse{} }
 func (*LookupInvitesResponse) ProtoMessage()               {}
-func (*LookupInvitesResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{19} }
+func (*LookupInvitesResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{21} }
 
 type isLookupInvitesResponse_List interface {
 	isLookupInvitesResponse_List()
@@ -856,7 +887,7 @@ type isLookupInvitesResponse_List interface {
 }
 
 type LookupInvitesResponse_PatientInviteList struct {
-	PatientInviteList *PatientInviteList `protobuf:"bytes,2,opt,name=patient_invite_list,json=patientInviteList,oneof"`
+	PatientInviteList *PatientInviteList `protobuf:"bytes,2,opt,name=patient_invite_list,oneof"`
 }
 
 func (*LookupInvitesResponse_PatientInviteList) isLookupInvitesResponse_List() {}
@@ -931,23 +962,23 @@ func _LookupInvitesResponse_OneofSizer(msg proto.Message) (n int) {
 }
 
 type LookupOrganizationInvitesRequest struct {
-	OrganizationEntityID string `protobuf:"bytes,1,opt,name=organization_entity_id,json=organizationEntityId,proto3" json:"organization_entity_id,omitempty"`
+	OrganizationEntityID string `protobuf:"bytes,1,opt,name=organization_entity_id,proto3" json:"organization_entity_id,omitempty"`
 }
 
 func (m *LookupOrganizationInvitesRequest) Reset()      { *m = LookupOrganizationInvitesRequest{} }
 func (*LookupOrganizationInvitesRequest) ProtoMessage() {}
 func (*LookupOrganizationInvitesRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptorSvc, []int{20}
+	return fileDescriptorSvc, []int{22}
 }
 
 type LookupOrganizationInvitesResponse struct {
-	OrganizationInvites []*OrganizationInvite `protobuf:"bytes,12,rep,name=organization_invites,json=organizationInvites" json:"organization_invites,omitempty"`
+	OrganizationInvites []*OrganizationInvite `protobuf:"bytes,12,rep,name=organization_invites" json:"organization_invites,omitempty"`
 }
 
 func (m *LookupOrganizationInvitesResponse) Reset()      { *m = LookupOrganizationInvitesResponse{} }
 func (*LookupOrganizationInvitesResponse) ProtoMessage() {}
 func (*LookupOrganizationInvitesResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptorSvc, []int{21}
+	return fileDescriptorSvc, []int{23}
 }
 
 func (m *LookupOrganizationInvitesResponse) GetOrganizationInvites() []*OrganizationInvite {
@@ -958,12 +989,12 @@ func (m *LookupOrganizationInvitesResponse) GetOrganizationInvites() []*Organiza
 }
 
 type PatientInviteList struct {
-	PatientInvites []*PatientInvite `protobuf:"bytes,1,rep,name=patient_invites,json=patientInvites" json:"patient_invites,omitempty"`
+	PatientInvites []*PatientInvite `protobuf:"bytes,1,rep,name=patient_invites" json:"patient_invites,omitempty"`
 }
 
 func (m *PatientInviteList) Reset()                    { *m = PatientInviteList{} }
 func (*PatientInviteList) ProtoMessage()               {}
-func (*PatientInviteList) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{22} }
+func (*PatientInviteList) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{24} }
 
 func (m *PatientInviteList) GetPatientInvites() []*PatientInvite {
 	if m != nil {
@@ -979,16 +1010,16 @@ type AttributionValue struct {
 
 func (m *AttributionValue) Reset()                    { *m = AttributionValue{} }
 func (*AttributionValue) ProtoMessage()               {}
-func (*AttributionValue) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{23} }
+func (*AttributionValue) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{25} }
 
 type SetAttributionDataRequest struct {
-	DeviceID string              `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
+	DeviceID string              `protobuf:"bytes,1,opt,name=device_id,proto3" json:"device_id,omitempty"`
 	Values   []*AttributionValue `protobuf:"bytes,2,rep,name=values" json:"values,omitempty"`
 }
 
 func (m *SetAttributionDataRequest) Reset()                    { *m = SetAttributionDataRequest{} }
 func (*SetAttributionDataRequest) ProtoMessage()               {}
-func (*SetAttributionDataRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{24} }
+func (*SetAttributionDataRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{26} }
 
 func (m *SetAttributionDataRequest) GetValues() []*AttributionValue {
 	if m != nil {
@@ -1002,15 +1033,15 @@ type SetAttributionDataResponse struct {
 
 func (m *SetAttributionDataResponse) Reset()                    { *m = SetAttributionDataResponse{} }
 func (*SetAttributionDataResponse) ProtoMessage()               {}
-func (*SetAttributionDataResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{25} }
+func (*SetAttributionDataResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{27} }
 
 type AttributionDataRequest struct {
-	DeviceID string `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
+	DeviceID string `protobuf:"bytes,1,opt,name=device_id,proto3" json:"device_id,omitempty"`
 }
 
 func (m *AttributionDataRequest) Reset()                    { *m = AttributionDataRequest{} }
 func (*AttributionDataRequest) ProtoMessage()               {}
-func (*AttributionDataRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{26} }
+func (*AttributionDataRequest) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{28} }
 
 type AttributionDataResponse struct {
 	Values []*AttributionValue `protobuf:"bytes,1,rep,name=values" json:"values,omitempty"`
@@ -1018,7 +1049,7 @@ type AttributionDataResponse struct {
 
 func (m *AttributionDataResponse) Reset()                    { *m = AttributionDataResponse{} }
 func (*AttributionDataResponse) ProtoMessage()               {}
-func (*AttributionDataResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{27} }
+func (*AttributionDataResponse) Descriptor() ([]byte, []int) { return fileDescriptorSvc, []int{29} }
 
 func (m *AttributionDataResponse) GetValues() []*AttributionValue {
 	if m != nil {
@@ -1039,6 +1070,8 @@ func init() {
 	proto.RegisterType((*Organization)(nil), "invite.Organization")
 	proto.RegisterType((*CreateOrganizationInviteRequest)(nil), "invite.CreateOrganizationInviteRequest")
 	proto.RegisterType((*CreateOrganizationInviteResponse)(nil), "invite.CreateOrganizationInviteResponse")
+	proto.RegisterType((*ModifyOrganizationInviteRequest)(nil), "invite.ModifyOrganizationInviteRequest")
+	proto.RegisterType((*ModifyOrganizationInviteResponse)(nil), "invite.ModifyOrganizationInviteResponse")
 	proto.RegisterType((*OrganizationInvite)(nil), "invite.OrganizationInvite")
 	proto.RegisterType((*MarkInviteConsumedRequest)(nil), "invite.MarkInviteConsumedRequest")
 	proto.RegisterType((*MarkInviteConsumedResponse)(nil), "invite.MarkInviteConsumedResponse")
@@ -1467,6 +1500,74 @@ func (this *CreateOrganizationInviteResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *ModifyOrganizationInviteRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*ModifyOrganizationInviteRequest)
+	if !ok {
+		that2, ok := that.(ModifyOrganizationInviteRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Token != that1.Token {
+		return false
+	}
+	if len(this.Tags) != len(that1.Tags) {
+		return false
+	}
+	for i := range this.Tags {
+		if this.Tags[i] != that1.Tags[i] {
+			return false
+		}
+	}
+	return true
+}
+func (this *ModifyOrganizationInviteResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*ModifyOrganizationInviteResponse)
+	if !ok {
+		that2, ok := that.(ModifyOrganizationInviteResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.OrganizationInvite.Equal(that1.OrganizationInvite) {
+		return false
+	}
+	return true
+}
 func (this *OrganizationInvite) Equal(that interface{}) bool {
 	if that == nil {
 		if this == nil {
@@ -1497,6 +1598,14 @@ func (this *OrganizationInvite) Equal(that interface{}) bool {
 	}
 	if this.Token != that1.Token {
 		return false
+	}
+	if len(this.Tags) != len(that1.Tags) {
+		return false
+	}
+	for i := range this.Tags {
+		if this.Tags[i] != that1.Tags[i] {
+			return false
+		}
 	}
 	return true
 }
@@ -2453,14 +2562,38 @@ func (this *CreateOrganizationInviteResponse) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
-func (this *OrganizationInvite) GoString() string {
+func (this *ModifyOrganizationInviteRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
 	s := make([]string, 0, 6)
+	s = append(s, "&invite.ModifyOrganizationInviteRequest{")
+	s = append(s, "Token: "+fmt.Sprintf("%#v", this.Token)+",\n")
+	s = append(s, "Tags: "+fmt.Sprintf("%#v", this.Tags)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *ModifyOrganizationInviteResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&invite.ModifyOrganizationInviteResponse{")
+	if this.OrganizationInvite != nil {
+		s = append(s, "OrganizationInvite: "+fmt.Sprintf("%#v", this.OrganizationInvite)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *OrganizationInvite) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
 	s = append(s, "&invite.OrganizationInvite{")
 	s = append(s, "OrganizationEntityID: "+fmt.Sprintf("%#v", this.OrganizationEntityID)+",\n")
 	s = append(s, "Token: "+fmt.Sprintf("%#v", this.Token)+",\n")
+	s = append(s, "Tags: "+fmt.Sprintf("%#v", this.Tags)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -2776,6 +2909,8 @@ type InviteClient interface {
 	LookupOrganizationInvites(ctx context.Context, in *LookupOrganizationInvitesRequest, opts ...grpc.CallOption) (*LookupOrganizationInvitesResponse, error)
 	// MarkInviteConsumed deletes the associated invite and records it's consumption
 	MarkInviteConsumed(ctx context.Context, in *MarkInviteConsumedRequest, opts ...grpc.CallOption) (*MarkInviteConsumedResponse, error)
+	// ModifyOrganizationInvite modifies the specified organization invite
+	ModifyOrganizationInvite(ctx context.Context, in *ModifyOrganizationInviteRequest, opts ...grpc.CallOption) (*ModifyOrganizationInviteResponse, error)
 	// SetAttributionData associate attribution data with a device
 	SetAttributionData(ctx context.Context, in *SetAttributionDataRequest, opts ...grpc.CallOption) (*SetAttributionDataResponse, error)
 	// DeleteInvite deletes an invite based on the key.
@@ -2862,6 +2997,15 @@ func (c *inviteClient) MarkInviteConsumed(ctx context.Context, in *MarkInviteCon
 	return out, nil
 }
 
+func (c *inviteClient) ModifyOrganizationInvite(ctx context.Context, in *ModifyOrganizationInviteRequest, opts ...grpc.CallOption) (*ModifyOrganizationInviteResponse, error) {
+	out := new(ModifyOrganizationInviteResponse)
+	err := grpc.Invoke(ctx, "/invite.Invite/ModifyOrganizationInvite", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *inviteClient) SetAttributionData(ctx context.Context, in *SetAttributionDataRequest, opts ...grpc.CallOption) (*SetAttributionDataResponse, error) {
 	out := new(SetAttributionDataResponse)
 	err := grpc.Invoke(ctx, "/invite.Invite/SetAttributionData", in, out, c.cc, opts...)
@@ -2899,6 +3043,8 @@ type InviteServer interface {
 	LookupOrganizationInvites(context.Context, *LookupOrganizationInvitesRequest) (*LookupOrganizationInvitesResponse, error)
 	// MarkInviteConsumed deletes the associated invite and records it's consumption
 	MarkInviteConsumed(context.Context, *MarkInviteConsumedRequest) (*MarkInviteConsumedResponse, error)
+	// ModifyOrganizationInvite modifies the specified organization invite
+	ModifyOrganizationInvite(context.Context, *ModifyOrganizationInviteRequest) (*ModifyOrganizationInviteResponse, error)
 	// SetAttributionData associate attribution data with a device
 	SetAttributionData(context.Context, *SetAttributionDataRequest) (*SetAttributionDataResponse, error)
 	// DeleteInvite deletes an invite based on the key.
@@ -3053,6 +3199,24 @@ func _Invite_MarkInviteConsumed_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Invite_ModifyOrganizationInvite_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ModifyOrganizationInviteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InviteServer).ModifyOrganizationInvite(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/invite.Invite/ModifyOrganizationInvite",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InviteServer).ModifyOrganizationInvite(ctx, req.(*ModifyOrganizationInviteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Invite_SetAttributionData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SetAttributionDataRequest)
 	if err := dec(in); err != nil {
@@ -3124,6 +3288,10 @@ var _Invite_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "MarkInviteConsumed",
 			Handler:    _Invite_MarkInviteConsumed_Handler,
+		},
+		{
+			MethodName: "ModifyOrganizationInvite",
+			Handler:    _Invite_ModifyOrganizationInvite_Handler,
 		},
 		{
 			MethodName: "SetAttributionData",
@@ -3486,6 +3654,73 @@ func (m *CreateOrganizationInviteResponse) MarshalTo(dAtA []byte) (int, error) {
 	return i, nil
 }
 
+func (m *ModifyOrganizationInviteRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ModifyOrganizationInviteRequest) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Token) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintSvc(dAtA, i, uint64(len(m.Token)))
+		i += copy(dAtA[i:], m.Token)
+	}
+	if len(m.Tags) > 0 {
+		for _, s := range m.Tags {
+			dAtA[i] = 0x12
+			i++
+			l = len(s)
+			for l >= 1<<7 {
+				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
+				l >>= 7
+				i++
+			}
+			dAtA[i] = uint8(l)
+			i++
+			i += copy(dAtA[i:], s)
+		}
+	}
+	return i, nil
+}
+
+func (m *ModifyOrganizationInviteResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ModifyOrganizationInviteResponse) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.OrganizationInvite != nil {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintSvc(dAtA, i, uint64(m.OrganizationInvite.Size()))
+		n4, err := m.OrganizationInvite.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n4
+	}
+	return i, nil
+}
+
 func (m *OrganizationInvite) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -3512,6 +3747,21 @@ func (m *OrganizationInvite) MarshalTo(dAtA []byte) (int, error) {
 		i++
 		i = encodeVarintSvc(dAtA, i, uint64(len(m.Token)))
 		i += copy(dAtA[i:], m.Token)
+	}
+	if len(m.Tags) > 0 {
+		for _, s := range m.Tags {
+			dAtA[i] = 0x1a
+			i++
+			l = len(s)
+			for l >= 1<<7 {
+				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
+				l >>= 7
+				i++
+			}
+			dAtA[i] = uint8(l)
+			i++
+			i += copy(dAtA[i:], s)
+		}
 	}
 	return i, nil
 }
@@ -3574,11 +3824,11 @@ func (m *DeleteInviteRequest) MarshalTo(dAtA []byte) (int, error) {
 	var l int
 	_ = l
 	if m.Key != nil {
-		nn4, err := m.Key.MarshalTo(dAtA[i:])
+		nn5, err := m.Key.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += nn4
+		i += nn5
 	}
 	if m.DeleteInviteKey != 0 {
 		dAtA[i] = 0x18
@@ -3643,11 +3893,11 @@ func (m *LookupInviteRequest) MarshalTo(dAtA []byte) (int, error) {
 		i = encodeVarintSvc(dAtA, i, uint64(m.LookupKeyType))
 	}
 	if m.LookupKeyOneof != nil {
-		nn5, err := m.LookupKeyOneof.MarshalTo(dAtA[i:])
+		nn6, err := m.LookupKeyOneof.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += nn5
+		i += nn6
 	}
 	if len(m.InviteToken) > 0 {
 		dAtA[i] = 0x22
@@ -3707,11 +3957,11 @@ func (m *LookupInviteResponse) MarshalTo(dAtA []byte) (int, error) {
 		}
 	}
 	if m.Invite != nil {
-		nn6, err := m.Invite.MarshalTo(dAtA[i:])
+		nn7, err := m.Invite.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += nn6
+		i += nn7
 	}
 	return i, nil
 }
@@ -3722,11 +3972,11 @@ func (m *LookupInviteResponse_Colleague) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0x52
 		i++
 		i = encodeVarintSvc(dAtA, i, uint64(m.Colleague.Size()))
-		n7, err := m.Colleague.MarshalTo(dAtA[i:])
+		n8, err := m.Colleague.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n7
+		i += n8
 	}
 	return i, nil
 }
@@ -3736,11 +3986,11 @@ func (m *LookupInviteResponse_Patient) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0x5a
 		i++
 		i = encodeVarintSvc(dAtA, i, uint64(m.Patient.Size()))
-		n8, err := m.Patient.MarshalTo(dAtA[i:])
+		n9, err := m.Patient.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n8
+		i += n9
 	}
 	return i, nil
 }
@@ -3750,11 +4000,11 @@ func (m *LookupInviteResponse_Organization) MarshalTo(dAtA []byte) (int, error) 
 		dAtA[i] = 0x62
 		i++
 		i = encodeVarintSvc(dAtA, i, uint64(m.Organization.Size()))
-		n9, err := m.Organization.MarshalTo(dAtA[i:])
+		n10, err := m.Organization.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n9
+		i += n10
 	}
 	return i, nil
 }
@@ -3779,11 +4029,11 @@ func (m *LookupInvitesRequest) MarshalTo(dAtA []byte) (int, error) {
 		i = encodeVarintSvc(dAtA, i, uint64(m.LookupKeyType))
 	}
 	if m.Key != nil {
-		nn10, err := m.Key.MarshalTo(dAtA[i:])
+		nn11, err := m.Key.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += nn10
+		i += nn11
 	}
 	return i, nil
 }
@@ -3817,11 +4067,11 @@ func (m *LookupInvitesResponse) MarshalTo(dAtA []byte) (int, error) {
 		i = encodeVarintSvc(dAtA, i, uint64(m.Type))
 	}
 	if m.List != nil {
-		nn11, err := m.List.MarshalTo(dAtA[i:])
+		nn12, err := m.List.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += nn11
+		i += nn12
 	}
 	return i, nil
 }
@@ -3832,11 +4082,11 @@ func (m *LookupInvitesResponse_PatientInviteList) MarshalTo(dAtA []byte) (int, e
 		dAtA[i] = 0x12
 		i++
 		i = encodeVarintSvc(dAtA, i, uint64(m.PatientInviteList.Size()))
-		n12, err := m.PatientInviteList.MarshalTo(dAtA[i:])
+		n13, err := m.PatientInviteList.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n12
+		i += n13
 	}
 	return i, nil
 }
@@ -4243,6 +4493,32 @@ func (m *CreateOrganizationInviteResponse) Size() (n int) {
 	return n
 }
 
+func (m *ModifyOrganizationInviteRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Token)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if len(m.Tags) > 0 {
+		for _, s := range m.Tags {
+			l = len(s)
+			n += 1 + l + sovSvc(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *ModifyOrganizationInviteResponse) Size() (n int) {
+	var l int
+	_ = l
+	if m.OrganizationInvite != nil {
+		l = m.OrganizationInvite.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
 func (m *OrganizationInvite) Size() (n int) {
 	var l int
 	_ = l
@@ -4253,6 +4529,12 @@ func (m *OrganizationInvite) Size() (n int) {
 	l = len(m.Token)
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
+	}
+	if len(m.Tags) > 0 {
+		for _, s := range m.Tags {
+			l = len(s)
+			n += 1 + l + sovSvc(uint64(l))
+		}
 	}
 	return n
 }
@@ -4645,6 +4927,27 @@ func (this *CreateOrganizationInviteResponse) String() string {
 	}, "")
 	return s
 }
+func (this *ModifyOrganizationInviteRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ModifyOrganizationInviteRequest{`,
+		`Token:` + fmt.Sprintf("%v", this.Token) + `,`,
+		`Tags:` + fmt.Sprintf("%v", this.Tags) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ModifyOrganizationInviteResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ModifyOrganizationInviteResponse{`,
+		`OrganizationInvite:` + strings.Replace(fmt.Sprintf("%v", this.OrganizationInvite), "OrganizationInvite", "OrganizationInvite", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func (this *OrganizationInvite) String() string {
 	if this == nil {
 		return "nil"
@@ -4652,6 +4955,7 @@ func (this *OrganizationInvite) String() string {
 	s := strings.Join([]string{`&OrganizationInvite{`,
 		`OrganizationEntityID:` + fmt.Sprintf("%v", this.OrganizationEntityID) + `,`,
 		`Token:` + fmt.Sprintf("%v", this.Token) + `,`,
+		`Tags:` + fmt.Sprintf("%v", this.Tags) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -6095,6 +6399,197 @@ func (m *CreateOrganizationInviteResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+func (m *ModifyOrganizationInviteRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ModifyOrganizationInviteRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ModifyOrganizationInviteRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Token", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Token = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Tags", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Tags = append(m.Tags, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ModifyOrganizationInviteResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ModifyOrganizationInviteResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ModifyOrganizationInviteResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OrganizationInvite", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.OrganizationInvite == nil {
+				m.OrganizationInvite = &OrganizationInvite{}
+			}
+			if err := m.OrganizationInvite.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func (m *OrganizationInvite) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -6181,6 +6676,35 @@ func (m *OrganizationInvite) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.Token = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Tags", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Tags = append(m.Tags, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -7837,91 +8361,88 @@ var (
 func init() { proto.RegisterFile("svc.proto", fileDescriptorSvc) }
 
 var fileDescriptorSvc = []byte{
-	// 1372 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xcc, 0x58, 0x5f, 0x6f, 0x1b, 0x45,
-	0x10, 0xf7, 0x3a, 0x7f, 0x3d, 0x71, 0xe2, 0xcb, 0xc6, 0x49, 0x1d, 0xd3, 0x5e, 0x92, 0x95, 0x2a,
-	0x12, 0x0a, 0x29, 0x35, 0x02, 0x04, 0x42, 0x2d, 0x76, 0x6c, 0x35, 0x27, 0xbb, 0x76, 0xb8, 0xba,
-	0xad, 0x0a, 0x12, 0xd6, 0x25, 0xde, 0xa6, 0xa7, 0xd8, 0x77, 0xee, 0xdd, 0x39, 0xc2, 0x7d, 0x42,
-	0xe2, 0x89, 0x17, 0xc4, 0xc7, 0xe0, 0xa3, 0x20, 0xf5, 0xa5, 0x12, 0x42, 0xe2, 0x85, 0x88, 0x1a,
-	0x90, 0x78, 0xac, 0xf8, 0x04, 0xc8, 0x7b, 0x7b, 0xe7, 0xfb, 0xeb, 0x06, 0xb5, 0x95, 0xfa, 0xe6,
-	0x9d, 0x9d, 0x99, 0x9d, 0xf9, 0xcd, 0xec, 0x6f, 0xe7, 0x0c, 0x29, 0xf3, 0xf4, 0x68, 0xb7, 0x67,
-	0xe8, 0x96, 0x8e, 0x67, 0x55, 0xed, 0x54, 0xb5, 0x68, 0xfe, 0xbd, 0x63, 0xd5, 0x7a, 0xd8, 0x3f,
-	0xdc, 0x3d, 0xd2, 0xbb, 0x57, 0x8f, 0xf5, 0x63, 0xfd, 0x2a, 0xdb, 0x3e, 0xec, 0x3f, 0x60, 0x2b,
-	0xb6, 0x60, 0xbf, 0x6c, 0x33, 0x72, 0x04, 0xa9, 0x3d, 0xbd, 0xd3, 0xa1, 0xca, 0x71, 0x9f, 0xe2,
-	0x2c, 0xcc, 0xd0, 0xae, 0xa2, 0x76, 0x72, 0x68, 0x13, 0x6d, 0xa7, 0x64, 0x7b, 0x81, 0xb7, 0x20,
-	0xdd, 0x7b, 0xa8, 0x6b, 0xb4, 0xa5, 0xf5, 0xbb, 0x87, 0xd4, 0xc8, 0x25, 0xd9, 0xe6, 0x02, 0x93,
-	0xd5, 0x99, 0x08, 0x5f, 0x02, 0x78, 0xa0, 0x1a, 0xa6, 0xd5, 0xd2, 0x94, 0x2e, 0xcd, 0x4d, 0x31,
-	0x85, 0x14, 0x93, 0xd4, 0x95, 0x2e, 0x25, 0xbf, 0x23, 0xb8, 0x20, 0xb1, 0xf0, 0xdc, 0xb3, 0x4c,
-	0x99, 0x3e, 0xea, 0x53, 0xd3, 0xc2, 0x75, 0x58, 0xd3, 0x8d, 0x63, 0x45, 0x53, 0x1f, 0x2b, 0x96,
-	0xaa, 0x6b, 0x2d, 0xaa, 0x59, 0xaa, 0x35, 0x68, 0xa9, 0x6d, 0x3b, 0x88, 0x52, 0x6e, 0x78, 0xb6,
-	0x91, 0x6d, 0x78, 0x34, 0x2a, 0x4c, 0x41, 0x2a, 0xcb, 0x59, 0x3d, 0x2c, 0x6d, 0xe3, 0x1b, 0xb0,
-	0x6c, 0x23, 0x61, 0x78, 0x5c, 0xb1, 0x90, 0x4b, 0x2b, 0xc3, 0xb3, 0x8d, 0x8c, 0x1d, 0x87, 0xe1,
-	0x7a, 0xc9, 0xa8, 0x3e, 0x41, 0x1b, 0x5f, 0x03, 0x38, 0x72, 0xa3, 0xcc, 0x4d, 0x6d, 0x4e, 0x6d,
-	0x2f, 0x14, 0x96, 0x77, 0x6d, 0xad, 0x5d, 0x37, 0x7e, 0xd9, 0xa3, 0x44, 0xf2, 0x90, 0x0b, 0xa7,
-	0x67, 0xf6, 0x74, 0xcd, 0xa4, 0xe4, 0x17, 0x04, 0x19, 0x57, 0x6c, 0x6b, 0xbd, 0x79, 0x39, 0x5f,
-	0x85, 0x94, 0x9b, 0x0e, 0x2b, 0x5f, 0x64, 0xca, 0x63, 0x1d, 0xf2, 0x3d, 0x82, 0xb9, 0x03, 0xc5,
-	0x52, 0xa9, 0x66, 0x05, 0x8a, 0x8f, 0x02, 0xc5, 0x3f, 0x4f, 0xfb, 0x7c, 0x06, 0x42, 0x4f, 0x31,
-	0x4e, 0x68, 0xdb, 0x13, 0x3e, 0x6b, 0xa2, 0x12, 0x1e, 0x9e, 0x6d, 0x2c, 0x1d, 0xb0, 0x3d, 0x37,
-	0xfa, 0xa5, 0x9e, 0x77, 0xdd, 0x26, 0xbf, 0x22, 0x58, 0xb5, 0x33, 0xe4, 0x11, 0xbd, 0xb9, 0xbd,
-	0x75, 0x05, 0xe6, 0x7b, 0x3c, 0x46, 0xde, 0x59, 0x19, 0x07, 0x66, 0x1e, 0xbb, 0xec, 0x2a, 0x90,
-	0x1c, 0xac, 0x05, 0xd3, 0xe2, 0x3d, 0xf5, 0x04, 0xc1, 0x22, 0x17, 0xbe, 0xa9, 0x1d, 0xb5, 0x03,
-	0x73, 0x3c, 0x11, 0xde, 0x4f, 0xa1, 0x44, 0x9d, 0x7d, 0xf2, 0x35, 0xa4, 0xbd, 0x91, 0xbd, 0xea,
-	0x5c, 0xc8, 0x23, 0xd8, 0xd8, 0x33, 0xa8, 0x62, 0x51, 0xaf, 0x8d, 0x9d, 0xc0, 0x6b, 0x6a, 0x14,
-	0x72, 0x08, 0x9b, 0xf1, 0x47, 0xda, 0x45, 0xc4, 0xd7, 0x21, 0xed, 0xb5, 0x65, 0x27, 0x2d, 0x14,
-	0xf2, 0x0e, 0x4c, 0x11, 0x96, 0x3e, 0x7d, 0xf2, 0x18, 0x70, 0x58, 0xe7, 0x95, 0x37, 0x42, 0x16,
-	0x66, 0x2c, 0xfd, 0x84, 0x6a, 0xfc, 0xda, 0xda, 0x0b, 0x72, 0x0d, 0xd6, 0x6f, 0x29, 0xc6, 0x89,
-	0x43, 0x7a, 0x9a, 0xd9, 0xef, 0xd2, 0xb6, 0x03, 0xa6, 0x6b, 0x82, 0xbc, 0x26, 0x17, 0x21, 0x1f,
-	0x65, 0xc2, 0x3b, 0xfa, 0x87, 0x24, 0xac, 0x94, 0x69, 0x87, 0x5a, 0xd4, 0x5f, 0x98, 0x35, 0x9f,
-	0xaf, 0xfd, 0x04, 0xf7, 0x86, 0xaf, 0x47, 0x30, 0x46, 0x32, 0x8e, 0x31, 0xf6, 0x13, 0x41, 0xce,
-	0xc0, 0xf7, 0x60, 0xb9, 0xcd, 0x8e, 0x6b, 0xd9, 0x70, 0xb7, 0x4e, 0xe8, 0x80, 0x35, 0xea, 0x52,
-	0xe1, 0x8a, 0x53, 0x81, 0x88, 0x78, 0x7c, 0xb2, 0x2a, 0x1d, 0xc8, 0x99, 0xb6, 0x5f, 0x40, 0x6e,
-	0x40, 0x26, 0xa0, 0x83, 0x17, 0x60, 0xee, 0x4e, 0xbd, 0x5a, 0x6f, 0xdc, 0xab, 0x0b, 0x09, 0x9c,
-	0x82, 0x99, 0x66, 0xa3, 0x5a, 0xa9, 0x0b, 0x08, 0x67, 0x41, 0x38, 0x28, 0xca, 0xd5, 0x4a, 0xb9,
-	0x55, 0xa9, 0x37, 0xa5, 0xe6, 0xfd, 0x96, 0x54, 0x16, 0x92, 0xa5, 0x19, 0x98, 0x3a, 0xa1, 0x03,
-	0xb2, 0x06, 0x59, 0xff, 0xf9, 0x1c, 0xa8, 0xbf, 0x92, 0xb0, 0x52, 0xd3, 0xf5, 0x93, 0x7e, 0xcf,
-	0x0f, 0xd4, 0x17, 0x90, 0xe9, 0x30, 0xf1, 0x28, 0x93, 0x96, 0x35, 0xe8, 0xd9, 0x4c, 0xbc, 0x54,
-	0xd8, 0x71, 0xd2, 0x89, 0xb0, 0xe2, 0xb2, 0x2a, 0x1d, 0x34, 0x07, 0x3d, 0x2a, 0x2f, 0x76, 0xbc,
-	0xcb, 0x31, 0xf6, 0x49, 0x3f, 0xf6, 0x07, 0xb1, 0x2d, 0x36, 0x35, 0xb9, 0xc5, 0xf6, 0x13, 0x31,
-	0x4d, 0xb6, 0x05, 0x69, 0x5e, 0x06, 0xfb, 0xc0, 0x69, 0xfb, 0x89, 0xb0, 0x65, 0x4d, 0xd6, 0x3e,
-	0xf7, 0x61, 0xd1, 0x17, 0xac, 0x1f, 0xd5, 0x2c, 0x08, 0xe5, 0xca, 0x81, 0x5c, 0xd9, 0x2b, 0x36,
-	0x2b, 0xe5, 0x96, 0x03, 0xf0, 0x65, 0xd8, 0xf2, 0x48, 0x1b, 0xf2, 0xcd, 0x62, 0x5d, 0xfa, 0xb2,
-	0xd8, 0x94, 0x1a, 0x75, 0x1f, 0xe2, 0x18, 0x04, 0x0f, 0x74, 0xba, 0x46, 0xf5, 0x07, 0xe4, 0xdf,
-	0x24, 0x64, 0xfd, 0x80, 0xf1, 0x5b, 0xfb, 0x21, 0x4c, 0x7b, 0xc0, 0xdd, 0x8a, 0x06, 0xd7, 0xd6,
-	0xdd, 0x65, 0xa0, 0x32, 0x75, 0xfc, 0x3e, 0xcc, 0x9e, 0x2a, 0x9d, 0xd1, 0x40, 0x91, 0x64, 0xb4,
-	0x9f, 0x73, 0x0c, 0x8b, 0x96, 0x65, 0xa8, 0x87, 0xfd, 0x11, 0x1c, 0x77, 0x47, 0x0a, 0x32, 0xd7,
-	0xc3, 0x1f, 0x7b, 0x9f, 0x64, 0x60, 0xdc, 0x70, 0x21, 0xf4, 0x24, 0xdb, 0x07, 0xee, 0x27, 0x3c,
-	0x4f, 0x33, 0xbe, 0x36, 0x66, 0xde, 0x05, 0x66, 0xb6, 0x1a, 0x60, 0x5e, 0xd7, 0xc8, 0xd1, 0xc3,
-	0x9f, 0x07, 0xa8, 0x28, 0xfd, 0x22, 0x2a, 0xda, 0x4f, 0x04, 0xc8, 0xe8, 0x13, 0x98, 0x66, 0x55,
-	0x59, 0x84, 0xd4, 0x5e, 0xa3, 0x56, 0xab, 0x14, 0x6f, 0xde, 0xa9, 0x08, 0x89, 0x51, 0x91, 0x0e,
-	0x8a, 0x4d, 0xa9, 0x52, 0x6f, 0x0a, 0x08, 0xaf, 0xc2, 0xb2, 0xaf, 0x06, 0x7b, 0x8d, 0x72, 0x45,
-	0x48, 0x96, 0xe6, 0x81, 0x8f, 0xae, 0xe4, 0x6f, 0xe4, 0x07, 0xdd, 0x7d, 0xc7, 0xe5, 0xb8, 0xe6,
-	0x7e, 0x27, 0x0a, 0x7f, 0xf3, 0x5c, 0xdd, 0xfd, 0x92, 0x0c, 0x42, 0x0a, 0x11, 0x0d, 0x29, 0xd5,
-	0xef, 0x16, 0x6b, 0x52, 0xd9, 0x6e, 0xc8, 0xd0, 0xdd, 0x46, 0xce, 0xdd, 0x7e, 0x82, 0x60, 0x35,
-	0x10, 0x30, 0xef, 0xae, 0x8f, 0x7c, 0xdd, 0x45, 0x62, 0xb2, 0x0b, 0xb7, 0x57, 0x15, 0x56, 0x78,
-	0x2d, 0x1d, 0x3e, 0xeb, 0xa8, 0xa6, 0xc5, 0xf2, 0x59, 0x28, 0xac, 0x47, 0xd6, 0xbf, 0xa6, 0x9a,
-	0xd6, 0x7e, 0x42, 0x5e, 0xee, 0x05, 0x85, 0xe4, 0x32, 0xaf, 0xa5, 0x2f, 0x21, 0x01, 0xd2, 0xbc,
-	0x92, 0xad, 0x9a, 0x74, 0xbb, 0x29, 0xa0, 0xd2, 0x2c, 0x4c, 0x8f, 0x0e, 0x21, 0x06, 0x6c, 0xda,
-	0xf1, 0x85, 0xdb, 0xe4, 0x75, 0x0d, 0x62, 0xc4, 0x80, 0xad, 0x09, 0x67, 0x72, 0x30, 0x6f, 0x81,
-	0xcf, 0x98, 0x23, 0x63, 0xe6, 0xd2, 0xec, 0x06, 0x4e, 0x7a, 0x68, 0x57, 0xf4, 0xb0, 0x5b, 0x72,
-	0x1b, 0x96, 0x43, 0x00, 0xe2, 0xeb, 0x90, 0xf1, 0x03, 0x6f, 0xe6, 0x10, 0x73, 0x1f, 0x7d, 0xe9,
-	0x46, 0x5d, 0xe4, 0x59, 0x9a, 0xe4, 0x53, 0x10, 0x82, 0x0c, 0x80, 0x05, 0xd6, 0x25, 0xfc, 0xf5,
-	0x1c, 0xfd, 0x1c, 0xbd, 0xa8, 0x8c, 0x15, 0x9c, 0x47, 0x98, 0x2d, 0xc8, 0x37, 0xb0, 0x7e, 0x9b,
-	0x5a, 0x1e, 0xf3, 0xb2, 0x62, 0x29, 0x0e, 0xe2, 0x3b, 0x90, 0x6a, 0xd3, 0x53, 0xf5, 0x88, 0x8e,
-	0x41, 0x4e, 0x0f, 0xcf, 0x36, 0xe6, 0xcb, 0x4c, 0x28, 0x95, 0xe5, 0x79, 0x7b, 0x5b, 0x6a, 0xff,
-	0x7f, 0x6e, 0x1a, 0xbd, 0xe5, 0x51, 0x27, 0xf3, 0x27, 0x6a, 0x0f, 0xd6, 0x5e, 0x3a, 0x28, 0x52,
-	0x85, 0x0b, 0x31, 0xfe, 0x3d, 0xf1, 0xa2, 0xf3, 0xc5, 0x5b, 0xf8, 0x6e, 0x0e, 0x66, 0xf9, 0x7c,
-	0x24, 0x43, 0x26, 0xe0, 0x17, 0x8b, 0x11, 0xf6, 0x9e, 0xa8, 0xf3, 0x1b, 0xb1, 0xfb, 0x3c, 0xa0,
-	0x2e, 0xe4, 0xe2, 0xa6, 0x3d, 0xfc, 0xb6, 0xcb, 0xd9, 0x93, 0x47, 0xd0, 0xfc, 0xf6, 0x8b, 0x15,
-	0xf9, 0x71, 0x77, 0x40, 0x08, 0x7e, 0x6d, 0x62, 0x37, 0xc6, 0x98, 0xcf, 0xec, 0xfc, 0x66, 0xbc,
-	0x02, 0x77, 0xdb, 0x80, 0x25, 0xff, 0xe7, 0x06, 0xbe, 0xe4, 0xb7, 0x09, 0x7c, 0x5d, 0xe5, 0xc5,
-	0xb8, 0x6d, 0xee, 0x50, 0x82, 0xb4, 0x97, 0xb8, 0xf0, 0x5b, 0x13, 0x26, 0x91, 0xfc, 0xc5, 0x49,
-	0x2f, 0x29, 0xae, 0x39, 0x64, 0xcb, 0xef, 0x0d, 0xbe, 0x38, 0x89, 0xf8, 0xf3, 0x97, 0x26, 0x12,
-	0x27, 0xee, 0xc1, 0x7a, 0x2c, 0x7b, 0xe0, 0x6d, 0xbf, 0x6d, 0x3c, 0xa9, 0xe5, 0x77, 0xce, 0xa1,
-	0xc9, 0x4f, 0xfc, 0x0a, 0x70, 0x78, 0xf8, 0xc5, 0xee, 0xf4, 0x10, 0x3b, 0x4b, 0xe7, 0xc9, 0x24,
-	0x95, 0xb1, 0xf3, 0xf0, 0x6d, 0x1c, 0x3b, 0x8f, 0xe5, 0x88, 0xb1, 0xf3, 0xf8, 0xcb, 0x3c, 0x2a,
-	0xa2, 0x77, 0x0e, 0x1d, 0x17, 0x31, 0x62, 0x3a, 0x1e, 0x17, 0x31, 0x6a, 0x74, 0x2d, 0xbd, 0xfb,
-	0xf4, 0x99, 0x88, 0x7e, 0x7b, 0x26, 0x26, 0x9e, 0x3f, 0x13, 0xd1, 0xb7, 0x43, 0x11, 0xfd, 0x34,
-	0x14, 0xd1, 0xcf, 0x43, 0x11, 0x3d, 0x1d, 0x8a, 0xe8, 0x8f, 0xa1, 0x88, 0xfe, 0x19, 0x8a, 0x89,
-	0xe7, 0x43, 0x11, 0xfd, 0xf8, 0xa7, 0x98, 0x38, 0x9c, 0x65, 0xff, 0x4f, 0x7d, 0xf0, 0x5f, 0x00,
-	0x00, 0x00, 0xff, 0xff, 0x4c, 0x32, 0xa4, 0x6e, 0xe3, 0x12, 0x00, 0x00,
+	// 1316 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xc4, 0x58, 0x4d, 0x6f, 0x1a, 0x57,
+	0x17, 0x66, 0xc0, 0x1f, 0xe1, 0x18, 0xcc, 0xf8, 0x1a, 0x3b, 0xe3, 0x79, 0x93, 0x01, 0x5f, 0xbd,
+	0x51, 0x49, 0x9a, 0x92, 0x8a, 0x2e, 0x9a, 0x74, 0xd1, 0x0a, 0x18, 0x1a, 0x46, 0x26, 0x60, 0x39,
+	0x24, 0x55, 0xea, 0x56, 0x68, 0x6c, 0xae, 0xc9, 0x08, 0x98, 0xa1, 0xcc, 0x60, 0x89, 0xae, 0xfa,
+	0x13, 0xba, 0xef, 0xaa, 0x52, 0x17, 0x55, 0xbb, 0xeb, 0x4f, 0xe8, 0xa2, 0xea, 0x32, 0xcb, 0xae,
+	0xac, 0x86, 0x4a, 0x55, 0x97, 0x51, 0x7f, 0x41, 0xc5, 0x9d, 0x3b, 0xc3, 0x0c, 0xcc, 0xe0, 0x34,
+	0x91, 0xd2, 0x9d, 0xb9, 0xf7, 0xdc, 0x73, 0x9e, 0xf3, 0x9c, 0xcf, 0x31, 0xc4, 0xcd, 0xf3, 0xd3,
+	0xfc, 0x60, 0x68, 0x58, 0x06, 0x5a, 0xd3, 0xf4, 0x73, 0xcd, 0x22, 0xe2, 0x3b, 0x1d, 0xcd, 0x7a,
+	0x3a, 0x3a, 0xc9, 0x9f, 0x1a, 0xfd, 0x3b, 0x1d, 0xa3, 0x63, 0xdc, 0xa1, 0xd7, 0x27, 0xa3, 0x33,
+	0xfa, 0x8b, 0xfe, 0xa0, 0x7f, 0xd9, 0xcf, 0xb0, 0x0c, 0xf1, 0xb2, 0xd1, 0xeb, 0x11, 0xb5, 0x33,
+	0x22, 0x28, 0x09, 0xab, 0xa4, 0xaf, 0x6a, 0x3d, 0x81, 0xcb, 0x72, 0xb9, 0x38, 0x4a, 0x43, 0x62,
+	0xf0, 0xd4, 0xd0, 0x49, 0x4b, 0x1f, 0xf5, 0x4f, 0xc8, 0x50, 0x88, 0xd2, 0x53, 0x04, 0x70, 0xa6,
+	0x0d, 0x4d, 0xab, 0xa5, 0xab, 0x7d, 0x22, 0xc4, 0xa6, 0x67, 0xf8, 0x07, 0x0e, 0xae, 0x2a, 0xd4,
+	0xbe, 0xab, 0xcc, 0x3c, 0x22, 0x5f, 0x8c, 0x88, 0x69, 0xa1, 0xbb, 0xb0, 0x6b, 0x0c, 0x3b, 0xaa,
+	0xae, 0x7d, 0xa9, 0x5a, 0x9a, 0xa1, 0xb7, 0x88, 0x6e, 0x69, 0xd6, 0xb8, 0xa5, 0xb5, 0x6d, 0x2b,
+	0x25, 0x61, 0x72, 0x91, 0x49, 0x37, 0x3c, 0x12, 0x15, 0x2a, 0xa0, 0xc8, 0x28, 0x0f, 0x5b, 0xb6,
+	0x53, 0x43, 0xcf, 0x23, 0x0a, 0xa2, 0xb4, 0x3d, 0xb9, 0xc8, 0xa4, 0x6c, 0x8b, 0x43, 0x57, 0xfe,
+	0x06, 0xc0, 0xa9, 0x6b, 0x5e, 0x88, 0x65, 0x63, 0xb9, 0x8d, 0xc2, 0x56, 0xde, 0x56, 0x91, 0x77,
+	0x81, 0x61, 0x11, 0x84, 0x45, 0xac, 0xe6, 0xc0, 0xd0, 0x4d, 0x82, 0xbf, 0xe5, 0x20, 0xe5, 0x1e,
+	0xdb, 0x52, 0x6f, 0xd0, 0x81, 0xff, 0x43, 0xdc, 0x75, 0x80, 0x32, 0x1b, 0x88, 0x5f, 0x85, 0xf5,
+	0x43, 0xd5, 0xd2, 0x88, 0x6e, 0xcd, 0xc5, 0x62, 0x59, 0xd4, 0x6e, 0x03, 0x3f, 0x50, 0x87, 0x5d,
+	0xd2, 0xf6, 0x20, 0xa1, 0xb1, 0x2b, 0xa1, 0xc9, 0x45, 0x66, 0xf3, 0x90, 0xde, 0x39, 0x40, 0xf0,
+	0x77, 0x1c, 0xec, 0xd8, 0xe0, 0x98, 0xa5, 0xff, 0x20, 0x9a, 0xfb, 0x70, 0x65, 0xc0, 0x8c, 0xb3,
+	0x58, 0xa6, 0x1c, 0x2e, 0x18, 0x28, 0x2c, 0xc0, 0xee, 0x3c, 0x4a, 0x16, 0xc7, 0x6f, 0x38, 0x48,
+	0xb2, 0xc3, 0x37, 0x1e, 0xc5, 0x2c, 0xac, 0x33, 0xe0, 0x2c, 0x86, 0x0b, 0xb8, 0xab, 0x90, 0xf0,
+	0x5a, 0x7a, 0x75, 0x6c, 0xf8, 0x18, 0x32, 0xe5, 0x21, 0x51, 0x2d, 0xe2, 0xbd, 0xb5, 0x01, 0xbd,
+	0x76, 0xc4, 0x70, 0x13, 0xb2, 0xe1, 0xca, 0x6d, 0xa2, 0xd1, 0xbb, 0x90, 0xf0, 0x6a, 0xa7, 0x3a,
+	0x37, 0x0a, 0xa2, 0xe3, 0xf1, 0xe2, 0x4b, 0xfc, 0x21, 0x64, 0x1e, 0x18, 0x6d, 0xed, 0x6c, 0x1c,
+	0x0e, 0x39, 0x09, 0xab, 0x96, 0xd1, 0x25, 0x3a, 0xcb, 0xe8, 0x04, 0xac, 0x58, 0x6a, 0xc7, 0x14,
+	0xa2, 0xd9, 0x58, 0x2e, 0x8e, 0x8f, 0x21, 0x1b, 0xfe, 0x9e, 0xa1, 0x7a, 0x1f, 0xb6, 0x7d, 0x3e,
+	0xdb, 0x68, 0x5e, 0x02, 0x5c, 0x17, 0xd0, 0xe2, 0xe9, 0x6b, 0xe4, 0x8e, 0xeb, 0x49, 0xd4, 0xe7,
+	0x49, 0x8c, 0x7a, 0x72, 0x0b, 0xf6, 0x1e, 0xa8, 0xc3, 0xae, 0xd3, 0x8c, 0x74, 0x73, 0xd4, 0x27,
+	0xed, 0x60, 0x0e, 0xf0, 0x35, 0x10, 0x83, 0x64, 0x59, 0xba, 0xff, 0xc9, 0xc1, 0xb6, 0x4c, 0x7a,
+	0xc4, 0x22, 0x7e, 0x22, 0x53, 0x3e, 0x25, 0xd5, 0x08, 0xca, 0x07, 0xb4, 0x81, 0x68, 0x58, 0x1b,
+	0xa8, 0x46, 0xd0, 0xc7, 0xb0, 0xd5, 0xa6, 0x7a, 0x19, 0x85, 0xad, 0x2e, 0x19, 0xd3, 0xac, 0xde,
+	0x2c, 0xbc, 0xed, 0xd0, 0x18, 0x60, 0xd8, 0x77, 0x76, 0x40, 0xc6, 0xf8, 0x23, 0x48, 0xcd, 0x1d,
+	0xa1, 0x0d, 0x58, 0x7f, 0x54, 0x3f, 0xa8, 0x37, 0x3e, 0xa9, 0xf3, 0x11, 0x14, 0x87, 0xd5, 0x66,
+	0xe3, 0xa0, 0x52, 0xe7, 0x39, 0x94, 0x06, 0xfe, 0xb0, 0x78, 0x74, 0x50, 0x91, 0x5b, 0x95, 0x7a,
+	0x53, 0x69, 0x3e, 0x69, 0x29, 0x32, 0x1f, 0x2d, 0xad, 0x42, 0xac, 0x4b, 0xc6, 0x78, 0x17, 0xd2,
+	0x7e, 0x73, 0x8c, 0x80, 0x1f, 0xa3, 0xb0, 0x5d, 0x33, 0x8c, 0xee, 0x68, 0xe0, 0x27, 0xa0, 0x04,
+	0xa9, 0x1e, 0x3d, 0x9e, 0x02, 0x6f, 0x59, 0xe3, 0x81, 0x9d, 0x04, 0x9b, 0x85, 0x9b, 0x0e, 0xfa,
+	0x80, 0x57, 0xec, 0xec, 0x80, 0x8c, 0x9b, 0xe3, 0x01, 0x99, 0x91, 0x18, 0x65, 0x24, 0x7e, 0x10,
+	0x9a, 0x0e, 0xb1, 0xe5, 0xe9, 0x50, 0x8d, 0x4c, 0xbb, 0x33, 0x63, 0xd2, 0xd6, 0xb9, 0x42, 0xa3,
+	0xfb, 0x04, 0x92, 0x7e, 0x9b, 0x3e, 0x72, 0xd2, 0xc0, 0xcb, 0x95, 0xc3, 0xa3, 0x4a, 0xb9, 0xd8,
+	0xac, 0xc8, 0x2d, 0x87, 0xa7, 0x1b, 0xb0, 0xef, 0x39, 0x6d, 0x1c, 0xdd, 0x2f, 0xd6, 0x95, 0x4f,
+	0x8b, 0x4d, 0xa5, 0x51, 0xf7, 0x11, 0x87, 0x80, 0xf7, 0x30, 0x60, 0xe8, 0xc4, 0x38, 0xc3, 0x3f,
+	0x47, 0x21, 0xed, 0xf7, 0x9b, 0xd5, 0xcd, 0x1d, 0x58, 0xf1, 0x70, 0xb4, 0x1f, 0xcc, 0x91, 0x2d,
+	0x9b, 0xa7, 0x38, 0x73, 0xb0, 0x76, 0xae, 0xf6, 0xa6, 0xe3, 0x36, 0x4a, 0x5b, 0xb4, 0xe0, 0x3c,
+	0x29, 0x5a, 0xd6, 0x50, 0x3b, 0x19, 0x4d, 0xbd, 0x7f, 0x3c, 0x15, 0x40, 0xb7, 0xbd, 0xb3, 0x0d,
+	0x68, 0x21, 0x5e, 0x5d, 0x98, 0x6d, 0xb6, 0x89, 0x6a, 0x04, 0xe5, 0x66, 0x3d, 0x74, 0x83, 0xca,
+	0xee, 0xcc, 0xf5, 0x50, 0x57, 0xb2, 0x30, 0xd7, 0x80, 0x12, 0x97, 0xd5, 0x78, 0x35, 0x82, 0xef,
+	0xc1, 0x0a, 0x45, 0x9f, 0x84, 0x78, 0xb9, 0x51, 0xab, 0x55, 0x8a, 0xf7, 0x1f, 0x55, 0xf8, 0xc8,
+	0x94, 0xf4, 0xc3, 0x62, 0x53, 0xa9, 0xd4, 0x9b, 0x3c, 0x87, 0x76, 0x60, 0xcb, 0xc7, 0x69, 0xb9,
+	0x21, 0x57, 0xf8, 0x68, 0xe9, 0x0a, 0xb0, 0x45, 0x0b, 0xff, 0xc2, 0xf9, 0x49, 0x74, 0x47, 0x64,
+	0x39, 0x2c, 0xe7, 0x6e, 0x05, 0xf1, 0x69, 0x06, 0x27, 0xdd, 0xbf, 0x2c, 0x54, 0x5c, 0x08, 0xc8,
+	0x20, 0xa5, 0xfe, 0xb8, 0x58, 0x53, 0x64, 0x3b, 0x83, 0x16, 0x6a, 0x8a, 0x73, 0x6a, 0xea, 0x27,
+	0x0e, 0x76, 0xe6, 0x10, 0xb9, 0xcd, 0xdd, 0x9b, 0x0e, 0x38, 0x04, 0xbe, 0x37, 0x1f, 0xee, 0xc2,
+	0x36, 0x8b, 0x9b, 0xd3, 0x30, 0x7a, 0x9a, 0x69, 0x51, 0xe4, 0x1b, 0x85, 0xbd, 0xc0, 0x18, 0xd6,
+	0x34, 0xd3, 0xaa, 0x46, 0xf0, 0x0d, 0x16, 0x13, 0x1f, 0x6e, 0x1e, 0x12, 0x2c, 0x22, 0xad, 0x9a,
+	0xf2, 0xb0, 0xc9, 0x73, 0xa5, 0x35, 0x58, 0x99, 0x6a, 0xc4, 0x9f, 0x41, 0xd6, 0x86, 0xb1, 0x18,
+	0xe0, 0xd7, 0xdf, 0x55, 0xf0, 0xe7, 0xb0, 0xbf, 0x44, 0x3b, 0x63, 0xe7, 0x2e, 0xa4, 0x03, 0x86,
+	0x8c, 0x29, 0x24, 0x68, 0x25, 0x2c, 0x9b, 0x32, 0x65, 0xd8, 0x5a, 0xa0, 0x00, 0xe5, 0x21, 0xe5,
+	0xa7, 0xce, 0x14, 0x38, 0xaa, 0x29, 0x38, 0xf5, 0x71, 0x1e, 0xf8, 0x85, 0x22, 0xdb, 0xa0, 0x11,
+	0x65, 0x63, 0x33, 0x09, 0xab, 0xb4, 0x36, 0xed, 0xbc, 0xc1, 0x67, 0xb0, 0xf7, 0x90, 0x58, 0x9e,
+	0x27, 0xb2, 0x6a, 0xa9, 0x0e, 0x55, 0x19, 0x88, 0xb7, 0xc9, 0xb9, 0x76, 0x4a, 0x66, 0xec, 0x24,
+	0x26, 0x17, 0x99, 0x2b, 0x32, 0x3d, 0x54, 0xe4, 0x97, 0x2f, 0xf4, 0xe9, 0xa4, 0x0a, 0xb2, 0xc3,
+	0x1a, 0xf5, 0x3d, 0xd8, 0x7d, 0x45, 0x08, 0xb8, 0x0c, 0x57, 0x43, 0xb4, 0x7a, 0xd0, 0x71, 0xcb,
+	0xd1, 0x15, 0xfe, 0x5e, 0x87, 0x35, 0x36, 0xd5, 0x8f, 0x20, 0x35, 0xa7, 0x0f, 0x49, 0x01, 0xef,
+	0x3c, 0x18, 0xc5, 0x4c, 0xe8, 0x3d, 0x03, 0xd2, 0x07, 0x21, 0x6c, 0x65, 0x42, 0x6f, 0xb9, 0xed,
+	0x6e, 0xf9, 0xc6, 0x26, 0xe6, 0x2e, 0x17, 0x64, 0xe6, 0x1e, 0x01, 0x3f, 0xff, 0x29, 0x83, 0x5c,
+	0x8c, 0x21, 0x1f, 0x64, 0x62, 0x36, 0x5c, 0x80, 0xa9, 0x6d, 0xc0, 0xa6, 0x7f, 0xaf, 0x46, 0xd7,
+	0xfd, 0x6f, 0xe6, 0xbe, 0x0a, 0x44, 0x29, 0xec, 0x9a, 0x29, 0x54, 0x20, 0xe1, 0x6d, 0x1a, 0xe8,
+	0x7f, 0x4b, 0xa6, 0xaf, 0x78, 0x6d, 0xd9, 0xd8, 0x41, 0x35, 0xa7, 0xd1, 0xb1, 0x72, 0x44, 0xd7,
+	0x96, 0x75, 0x55, 0xf1, 0xfa, 0xd2, 0xa6, 0x85, 0x06, 0xb0, 0x17, 0x5a, 0xe8, 0x28, 0xe7, 0x7f,
+	0x1b, 0xde, 0x69, 0xc4, 0x9b, 0x2f, 0x21, 0xc9, 0x2c, 0x1e, 0x03, 0x5a, 0x5c, 0xe4, 0x90, 0x3b,
+	0x6a, 0x43, 0x17, 0x42, 0x11, 0x2f, 0x13, 0x99, 0xa5, 0x5f, 0xd8, 0x6e, 0x3c, 0x4b, 0xbf, 0x4b,
+	0xb6, 0xef, 0x59, 0xfa, 0x5d, 0xba, 0x66, 0x1f, 0x03, 0x5a, 0x2c, 0xf5, 0x99, 0x2f, 0xa1, 0xed,
+	0x66, 0xe6, 0x4b, 0x78, 0xa7, 0x98, 0xe6, 0x8c, 0x77, 0xd5, 0x9b, 0xe5, 0x4c, 0xc0, 0xbe, 0x39,
+	0xcb, 0x99, 0xa0, 0xed, 0xb0, 0x74, 0xfb, 0xd9, 0x73, 0x89, 0xfb, 0xed, 0xb9, 0x14, 0x79, 0xf1,
+	0x5c, 0xe2, 0xbe, 0x9a, 0x48, 0xdc, 0xf7, 0x13, 0x89, 0xfb, 0x75, 0x22, 0x71, 0xcf, 0x26, 0x12,
+	0xf7, 0xfb, 0x44, 0xe2, 0xfe, 0x9a, 0x48, 0x91, 0x17, 0x13, 0x89, 0xfb, 0xfa, 0x0f, 0x29, 0x72,
+	0xb2, 0x46, 0xff, 0x33, 0xf2, 0xde, 0x3f, 0x01, 0x00, 0x00, 0xff, 0xff, 0xab, 0x03, 0xa1, 0xcd,
+	0x5d, 0x11, 0x00, 0x00,
 }
