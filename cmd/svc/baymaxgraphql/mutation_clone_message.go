@@ -191,7 +191,7 @@ var cloneMessageMutation = &graphql.Field{
 			Summary:  msg.Summary,
 			Title:    msg.Title,
 		}
-		clonedAttachments, unsupportedAttachments, err := cloneAttachments(ctx, ram, ent, msg.Attachments, thread)
+		clonedAttachments, unsupportedAttachments, err := cloneAttachments(ctx, ram, ent, in.OrganizationID, msg.Attachments, thread)
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}
@@ -228,7 +228,7 @@ var cloneMessageMutation = &graphql.Field{
 	}),
 }
 
-func cloneAttachments(ctx context.Context, ram raccess.ResourceAccessor, ent *directory.Entity, attachments []*threading.Attachment, forThread *threading.Thread) (cloned []*threading.Attachment, unsupported []*threading.Attachment, err error) {
+func cloneAttachments(ctx context.Context, ram raccess.ResourceAccessor, ent *directory.Entity, orgID string, attachments []*threading.Attachment, forThread *threading.Thread) (cloned []*threading.Attachment, unsupported []*threading.Attachment, err error) {
 	if ent.AccountID == "" {
 		return nil, nil, errors.Errorf("entity %s missing account ID", ent.ID)
 	}
@@ -303,7 +303,7 @@ func cloneAttachments(ctx context.Context, ram raccess.ResourceAccessor, ent *di
 				}
 				p := pres.Payment
 				res, err := ram.CreatePayment(ctx, &payments.CreatePaymentRequest{
-					RequestingEntityID: ent.ID,
+					RequestingEntityID: orgID,
 					Amount:             p.Amount,
 					Currency:           p.Currency,
 				})
