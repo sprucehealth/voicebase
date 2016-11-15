@@ -232,6 +232,7 @@ func cloneAttachments(ctx context.Context, ram raccess.ResourceAccessor, ent *di
 	if ent.AccountID == "" {
 		return nil, nil, errors.Errorf("entity %s missing account ID", ent.ID)
 	}
+	acc := gqlctx.Account(ctx)
 	newAtts := make([]*threading.Attachment, 0, len(attachments))
 	var unsupportedAttachments []*threading.Attachment
 	par := conc.NewParallel()
@@ -317,7 +318,7 @@ func cloneAttachments(ctx context.Context, ram raccess.ResourceAccessor, ent *di
 				}
 				res, err := ram.CreateCarePlan(ctx, &care.CreateCarePlanRequest{
 					Name:         cp.Name,
-					CreatorID:    ent.ID,
+					CreatorID:    acc.ID,
 					Instructions: cp.Instructions,
 					Treatments:   cp.Treatments,
 				})
