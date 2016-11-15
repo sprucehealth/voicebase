@@ -331,7 +331,7 @@ var attachmentType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "Attachment",
 		Fields: graphql.Fields{
-			"id":            &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+			"dataID":        &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
 			"type":          &graphql.Field{Type: graphql.NewNonNull(attachmentInputTypeEnum)},
 			"originalTitle": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"title":         &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
