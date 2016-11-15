@@ -187,7 +187,7 @@ func (s *ImageService) GetReader(id string, size *ImageSize) (io.ReadCloser, *Im
 	if err == nil {
 		return rc, metaFromHeaders(header), nil
 	}
-	if err != storage.ErrNoObject {
+	if errors.Cause(err) != storage.ErrNoObject {
 		golog.Errorf("media: failed to fetch size '%s': %s", sizeID, err)
 	}
 
