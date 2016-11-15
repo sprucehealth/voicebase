@@ -676,6 +676,24 @@ func processIncomingAttachments(ctx context.Context, ram raccess.ResourceAccesso
 					},
 				},
 			}
+		case attachmentTypeAudio:
+			info, err := ram.MediaInfo(ctx, mAttachment.AttachmentID)
+			if err != nil {
+				return nil, nil, fmt.Errorf("Error while locating media info for %s: %s", mAttachment.AttachmentID, err)
+			}
+			attachment = &threading.Attachment{
+				ContentID: mAttachment.AttachmentID,
+				UserTitle: mAttachment.Title,
+				Title:     mAttachment.Title,
+				URL:       info.ID,
+				Data: &threading.Attachment_Audio{
+					Audio: &threading.AudioAttachment{
+						Mimetype:   info.MIME.Type + "/" + info.MIME.Subtype,
+						MediaID:    info.ID,
+						DurationNS: info.DurationNS,
+					},
+				},
+			}
 		case attachmentTypeVideo:
 			info, err := ram.MediaInfo(ctx, mAttachment.AttachmentID)
 			if err != nil {
