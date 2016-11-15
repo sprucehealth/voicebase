@@ -564,7 +564,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, webDomain, 
 					att.Data = &models.BannerButtonAttachment{
 						Title:   cp.CarePlanName,
 						CTAText: "View Care Plan",
-						TapURL:  a.URL,
+						TapURL:  att.URL,
 						IconURL: "https://dlzz6qy5jmbag.cloudfront.net/caremessenger/icon_careplan.png",
 					}
 				case *threading.Attachment_PaymentRequest:

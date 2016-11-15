@@ -658,7 +658,6 @@ func processIncomingAttachments(ctx context.Context, ram raccess.ResourceAccesso
 			}
 			if thread != nil {
 				attachment.URL = deeplink.CarePlanURL(svc.webDomain, thread.ID, cp.ID)
-
 			}
 		case attachmentTypeImage:
 			info, err := ram.MediaInfo(ctx, mAttachment.AttachmentID)
