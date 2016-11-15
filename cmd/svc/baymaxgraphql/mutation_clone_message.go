@@ -303,7 +303,7 @@ func cloneAttachments(ctx context.Context, ram raccess.ResourceAccessor, ent *di
 				}
 				p := pres.Payment
 				res, err := ram.CreatePayment(ctx, &payments.CreatePaymentRequest{
-					RequestingEntityID: orgID,
+					RequestingEntityID: p.RequestingEntityID,
 					Amount:             p.Amount,
 					Currency:           p.Currency,
 				})
