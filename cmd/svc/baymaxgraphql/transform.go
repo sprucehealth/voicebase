@@ -485,6 +485,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, webDomain, 
 			}
 			for _, a := range m.Attachments {
 				att := &models.Attachment{
+					ID:            a.ContentID + "_attachment",
 					DataID:        a.ContentID,
 					Title:         a.Title,
 					OriginalTitle: a.UserTitle,

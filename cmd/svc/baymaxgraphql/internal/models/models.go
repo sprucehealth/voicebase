@@ -168,6 +168,7 @@ type VerifiedEntityInfo struct {
 }
 
 type Attachment struct {
+	ID            string      `json:"id"`
 	DataID        string      `json:"dataID"`
 	Type          string      `json:"type"`
 	OriginalTitle string      `json:"originalTitle"`
