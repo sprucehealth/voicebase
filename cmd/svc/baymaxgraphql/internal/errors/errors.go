@@ -18,6 +18,7 @@ var (
 	New    = errors.New
 	Trace  = errors.Trace
 	Errorf = errors.Errorf
+	Cause  = errors.Cause
 )
 
 type ErrorType string

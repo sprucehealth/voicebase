@@ -204,7 +204,7 @@ func (d *dal) UpdateInvite(ctx context.Context, token string, update *models.Inv
 	}
 	res, err := d.db.UpdateItem(&dynamodb.UpdateItemInput{
 		Key:          map[string]*dynamodb.AttributeValue{inviteTokenKey: &dynamodb.AttributeValue{S: &token}},
-		ReturnValues: ptr.String("ALL_NEW"),
+		ReturnValues: ptr.String(dynamodb.ReturnValueAllNew),
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 			`:tags`: {SS: ptr.Strings(update.Tags)},
 		},

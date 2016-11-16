@@ -3,13 +3,14 @@ package main
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
-	"github.com/sprucehealth/backend/libs/bml"
 	"github.com/sprucehealth/backend/libs/gqldecode"
+	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 	"github.com/sprucehealth/graphql/gqlerrors"
@@ -187,33 +188,47 @@ func scheduleMessage(ctx context.Context, svc *service, ram raccess.ResourceAcce
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	// Parse text and render as plain text so we can build a summary.
-	textBML, err := bml.Parse(in.Message.Text)
-	if e, ok := err.(bml.ErrParseFailure); ok {
-		return nil, errors.Errorf("failed to parse text at pos %d: %s", e.Offset, e.Reason)
-	} else if err != nil {
-		return nil, errors.Trace(errors.New("text is not valid markup"))
-	}
-	plainText, err := textBML.PlainText()
-	if err != nil {
-		// Shouldn't fail here since the parsing should have done validation
-		return nil, errors.Trace(err)
-	}
-	msg := &threading.MessagePost{
-		Internal: in.Message.Internal,
-		Summary:  summaryForEntityMessage(ent, plainText),
-	}
-	msg.Text, err = textBML.Format()
-	if err != nil {
-		// Shouldn't fail here since the parsing should have done validation
-		return nil, errors.Trace(err)
+
+	// don't allow scheduling of message in the past
+	if time.Now().Unix() > int64(in.ScheduledForTimestamp) {
+		return &scheduleMessageOutput{
+			Success:      false,
+			ErrorCode:    scheduleMessageErrorScheduledMessageError,
+			ErrorMessage: "Cannot schedule a message in the past",
+		}, nil
 	}
 
-	attachments, _, err := processIncomingAttachments(ctx, ram, svc, ent, thread.OrganizationID, in.Message.Attachments, nil)
-	if err != nil {
-		return nil, errors.Trace(err)
+	var primaryEntity *directory.Entity
+	if thread.PrimaryEntityID != "" {
+		primaryEntity, err = raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+				EntityID: thread.PrimaryEntityID,
+			},
+			RequestedInformation: &directory.RequestedInformation{
+				Depth:             0,
+				EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+			},
+			Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		})
+		if err != nil {
+			return nil, errors.InternalError(ctx, err)
+		}
 	}
-	msg.Attachments = attachments
+
+	// TODO: if there are references in the message, we are currently resolving them at the time of the scheduling
+	// of the message rather than at the time of posting. This means there is a possibility for someone to be @paged
+	// that is later removed from the team. While possible, is an edge case but worth fixing in the future.
+	msg, _, err := transformRequestToMessagePost(ctx, svc, ram, in.Message, thread, ent, primaryEntity)
+	if e, ok := err.(errInvalidAttachment); ok {
+		return &scheduleMessageOutput{
+			Success:      false,
+			ErrorCode:    scheduleMessageErrorScheduledMessageError,
+			ErrorMessage: string(e),
+		}, nil
+	} else if err != nil {
+		return nil, errors.InternalError(ctx, err)
+	}
 
 	_, err = ram.CreateScheduledMessage(ctx, &threading.CreateScheduledMessageRequest{
 		ThreadID:      in.ThreadID,
@@ -226,6 +241,7 @@ func scheduleMessage(ctx context.Context, svc *service, ram raccess.ResourceAcce
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
+
 	scheduledMessages, err := getScheduledMessages(ctx, ram, thread.ID, thread.OrganizationID, svc.webDomain, svc.mediaAPIDomain)
 	if err != nil {
 		return nil, errors.Trace(err)

@@ -299,64 +299,15 @@ var postMessageMutation = &graphql.Field{
 			}
 		}
 
-		// Parse text and render as plain text so we can build a summary.
-		textBML, err := bml.Parse(in.Msg.Text)
-		if e, ok := err.(bml.ErrParseFailure); ok {
-			return nil, fmt.Errorf("failed to parse text at pos %d: %s", e.Offset, e.Reason)
-		} else if err != nil {
-			return nil, errors.New("text is not valid markup")
+		req := &threading.PostMessageRequest{
+			ThreadID:     in.ThreadID,
+			FromEntityID: ent.ID,
+			UUID:         in.Msg.UUID,
 		}
 
-		// Validate referenced entities and covert tag to plain text for any that aren't allowed
-		// first make a quick check to make sure there's any refs to avoid lookups
-		hasRefs := false
-		for _, e := range textBML {
-			if _, ok := e.(*bml.Ref); ok {
-				hasRefs = true
-				break
-			}
-		}
-		if hasRefs {
-			threadType, err := transformThreadTypeToResponse(thr.Type)
-			if err != nil {
-				return nil, errors.Trace(err)
-			}
-			refEntities, err := addressableEntitiesForThread(ctx, ram, thr.OrganizationID, thr.ID, threadType)
-			if err != nil {
-				return nil, errors.Trace(err)
-			}
-			refEntitiesMap := make(map[string]*directory.Entity, len(refEntities))
-			for _, e := range refEntities {
-				refEntitiesMap[e.ID] = e
-			}
-			for i, e := range textBML {
-				if r, ok := e.(*bml.Ref); ok {
-					switch r.Type {
-					case bml.EntityRef:
-						e := refEntitiesMap[r.ID]
-						if e == nil {
-							// If the entitiy isn't in the addressable list then replace the tag with plain text
-							textBML[i] = r.Text
-						} else {
-							// Make sure the name of the addressable entity matches what it should
-							r.Text = e.Info.DisplayName
-						}
-					default:
-						return nil, errors.Errorf("unknown reference type %s", r.Type)
-					}
-				}
-			}
-		}
-
-		plainText, err := textBML.PlainText()
-		if err != nil {
-			// Shouldn't fail here since the parsing should have done validation
-			return nil, errors.InternalError(ctx, err)
-		}
-		summary := summaryForEntityMessage(ent, plainText)
-
-		attachments, carePlans, err := processIncomingAttachments(ctx, ram, svc, ent, thr.OrganizationID, in.Msg.Attachments, thr)
-		if e, ok := err.(errInvalidAttachment); ok {
+		var carePlans []*care.CarePlan
+		req.Message, carePlans, err = transformRequestToMessagePost(ctx, svc, ram, &in.Msg, thr, ent, primaryEntity)
+		if e, ok := errors.Cause(err).(errInvalidAttachment); ok {
 			return &postMessageOutput{
 				Success:      false,
 				ErrorCode:    postMessageErrorCodeInvalidAttachment,
@@ -365,58 +316,6 @@ var postMessageMutation = &graphql.Field{
 		} else if err != nil {
 			return nil, err
 		}
-
-		req := &threading.PostMessageRequest{
-			ThreadID:     in.ThreadID,
-			FromEntityID: ent.ID,
-			UUID:         in.Msg.UUID,
-			Message: &threading.MessagePost{
-				Text:     in.Msg.Text,
-				Internal: in.Msg.Internal,
-				Source: &threading.Endpoint{
-					Channel: threading.ENDPOINT_CHANNEL_APP,
-					ID:      ent.ID,
-				},
-				Summary:     summary,
-				Attachments: attachments,
-			},
-		}
-
-		if primaryEntity == nil || primaryEntity.Type == directory.EntityType_ORGANIZATION {
-			req.Message.Internal = false
-		}
-
-		title, err := buildMessageTitleBasedOnDestinations(req, in.Msg.Destinations, thr, ent, primaryEntity)
-		if err != nil {
-			return nil, err
-		}
-
-		if len(title) == 0 {
-			for _, a := range req.Message.Attachments {
-				if _, ok := a.Data.(*threading.Attachment_Visit); ok {
-					title = append(title, "Shared a visit:")
-					break
-				}
-				if _, ok := a.Data.(*threading.Attachment_CarePlan); ok {
-					title = append(title, "Shared a care plan:")
-					break
-				}
-				if _, ok := a.Data.(*threading.Attachment_PaymentRequest); ok {
-					title = append(title, "Requested payment:")
-					break
-				}
-				if _, ok := a.Data.(*threading.Attachment_Document); ok {
-					title = append(title, "Shared a file:")
-					break
-				}
-			}
-		}
-
-		titleStr, err := title.Format()
-		if err != nil {
-			return nil, errors.InternalError(ctx, fmt.Errorf("invalid title BML %+v: %s", title, err))
-		}
-		req.Message.Title = titleStr
 
 		pmres, err := ram.PostMessage(ctx, req)
 		if err != nil {
@@ -453,6 +352,126 @@ var postMessageMutation = &graphql.Field{
 			Thread:           th,
 		}, nil
 	}),
+}
+
+func transformRequestToMessagePost(
+	ctx context.Context,
+	svc *service,
+	ram raccess.ResourceAccessor,
+	in *messageInput,
+	thr *threading.Thread,
+	ent *directory.Entity,
+	primaryEntity *directory.Entity) (
+	*threading.MessagePost, []*care.CarePlan, error) {
+
+	// Parse text and render as plain text so we can build a summary.
+	textBML, err := bml.Parse(in.Text)
+	if e, ok := err.(bml.ErrParseFailure); ok {
+		return nil, nil, fmt.Errorf("failed to parse text at pos %d: %s", e.Offset, e.Reason)
+	} else if err != nil {
+		return nil, nil, errors.New("text is not valid markup")
+	}
+
+	// Validate referenced entities and covert tag to plain text for any that aren't allowed
+	// first make a quick check to make sure there's any refs to avoid lookups
+	hasRefs := false
+	for _, e := range textBML {
+		if _, ok := e.(*bml.Ref); ok {
+			hasRefs = true
+			break
+		}
+	}
+	if hasRefs {
+		threadType, err := transformThreadTypeToResponse(thr.Type)
+		if err != nil {
+			return nil, nil, errors.Trace(err)
+		}
+		refEntities, err := addressableEntitiesForThread(ctx, ram, thr.OrganizationID, thr.ID, threadType)
+		if err != nil {
+			return nil, nil, errors.Trace(err)
+		}
+		refEntitiesMap := make(map[string]*directory.Entity, len(refEntities))
+		for _, e := range refEntities {
+			refEntitiesMap[e.ID] = e
+		}
+		for i, e := range textBML {
+			if r, ok := e.(*bml.Ref); ok {
+				switch r.Type {
+				case bml.EntityRef:
+					e := refEntitiesMap[r.ID]
+					if e == nil {
+						// If the entitiy isn't in the addressable list then replace the tag with plain text
+						textBML[i] = r.Text
+					} else {
+						// Make sure the name of the addressable entity matches what it should
+						r.Text = e.Info.DisplayName
+					}
+				default:
+					return nil, nil, errors.Errorf("unknown reference type %s", r.Type)
+				}
+			}
+		}
+	}
+
+	plainText, err := textBML.PlainText()
+	if err != nil {
+		// Shouldn't fail here since the parsing should have done validation
+		return nil, nil, errors.Trace(err)
+	}
+	summary := summaryForEntityMessage(ent, plainText)
+
+	attachments, carePlans, err := processIncomingAttachments(ctx, ram, svc, ent, thr.OrganizationID, in.Attachments, thr)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	msg := &threading.MessagePost{
+		Text:     in.Text,
+		Internal: in.Internal,
+		Source: &threading.Endpoint{
+			Channel: threading.ENDPOINT_CHANNEL_APP,
+			ID:      ent.ID,
+		},
+		Summary:     summary,
+		Attachments: attachments,
+	}
+
+	if primaryEntity == nil || primaryEntity.Type == directory.EntityType_ORGANIZATION {
+		msg.Internal = false
+	}
+
+	title, err := populateMessageDestinationAndBuildTitle(msg, in.Destinations, thr, ent, primaryEntity)
+	if err != nil {
+		return nil, nil, errors.Trace(err)
+	}
+
+	if len(title) == 0 {
+		for _, a := range msg.Attachments {
+			if _, ok := a.Data.(*threading.Attachment_Visit); ok {
+				title = append(title, "Shared a visit:")
+				break
+			}
+			if _, ok := a.Data.(*threading.Attachment_CarePlan); ok {
+				title = append(title, "Shared a care plan:")
+				break
+			}
+			if _, ok := a.Data.(*threading.Attachment_PaymentRequest); ok {
+				title = append(title, "Requested payment:")
+				break
+			}
+			if _, ok := a.Data.(*threading.Attachment_Document); ok {
+				title = append(title, "Shared a file:")
+				break
+			}
+		}
+	}
+
+	titleStr, err := title.Format()
+	if err != nil {
+		return nil, nil, errors.Errorf("invalid title BML %+v: %s", title, err)
+	}
+	msg.Title = titleStr
+	return msg, carePlans, nil
 }
 
 func trackPostMessage(ctx context.Context, thr *threading.Thread, req *threading.PostMessageRequest) {
@@ -502,8 +521,8 @@ func trackPostMessage(ctx context.Context, thr *threading.Thread, req *threading
 	})
 }
 
-func buildMessageTitleBasedOnDestinations(
-	req *threading.PostMessageRequest,
+func populateMessageDestinationAndBuildTitle(
+	msg *threading.MessagePost,
 	dests []endpointInput,
 	thr *threading.Thread,
 	fromEntity, primaryEntity *directory.Entity,
@@ -511,7 +530,7 @@ func buildMessageTitleBasedOnDestinations(
 	var title bml.BML
 	// For a message to be considered by sending externally it needs to marked as not internal,
 	// sent by someone who is internal, and there needs to be a primary entity on the thread.
-	isExternal := !req.Message.Internal && thr.PrimaryEntityID != "" && fromEntity.Type == directory.EntityType_INTERNAL && primaryEntity.Type == directory.EntityType_EXTERNAL
+	isExternal := !msg.Internal && thr.PrimaryEntityID != "" && fromEntity.Type == directory.EntityType_INTERNAL && primaryEntity.Type == directory.EntityType_EXTERNAL
 	if isExternal && len(dests) != 0 {
 		destSet := make(map[string]struct{}, len(dests))
 		for _, d := range dests {
@@ -541,7 +560,7 @@ func buildMessageTitleBasedOnDestinations(
 			if e == nil {
 				return nil, fmt.Errorf("The provided destination contact info does not belong to the primary entity for this thread: %q, %q", d.Channel, d.ID)
 			}
-			req.Message.Destinations = append(req.Message.Destinations, e)
+			msg.Destinations = append(msg.Destinations, e)
 			switch e.Channel {
 			case threading.ENDPOINT_CHANNEL_SMS:
 				destSet["SMS"] = struct{}{}
@@ -560,7 +579,7 @@ func buildMessageTitleBasedOnDestinations(
 			}
 			title = append(title, d)
 		}
-	} else if req.Message.Internal {
+	} else if msg.Internal {
 		title = append(title[:0], "Internal")
 	}
 	return title, nil
