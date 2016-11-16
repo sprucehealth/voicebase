@@ -603,6 +603,125 @@ func TestCanAccess(t *testing.T) {
 			accountID: "accountID",
 			expected:  nil,
 		},
+		"OwnerSavedMessage-Org": {
+			tservice: func() *tservice {
+				md := mock_directory.New(t)
+				mt := mock_threads.New(t)
+				mv := mock_care.New(t)
+				mdl := mock_dl.New(t)
+
+				mdl.Expect(mock.NewExpectation(mdl.Media, dal.MediaID("mediaID")).WithReturns(
+					&dal.Media{
+						OwnerType: dal.MediaOwnerTypeSavedMessage,
+						OwnerID:   "savedMessageID",
+					}, nil))
+
+				mt.Expect(mock.NewExpectation(mt.SavedMessages, &threading.SavedMessagesRequest{
+					By: &threading.SavedMessagesRequest_IDs{
+						IDs: &threading.IDList{
+							IDs: []string{"savedMessageID"},
+						},
+					},
+				}).WithReturns(&threading.SavedMessagesResponse{
+					SavedMessages: []*threading.SavedMessage{
+						{
+							OwnerEntityID:  "orgID",
+							OrganizationID: "orgID",
+						},
+					},
+				}, nil))
+
+				// ent memberships
+				md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
+					LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
+					LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+						AccountID: "accountID",
+					},
+					RequestedInformation: &directory.RequestedInformation{
+						EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
+					},
+					Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+					RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL, directory.EntityType_PATIENT},
+					ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+				}).WithReturns(
+					&directory.LookupEntitiesResponse{
+						Entities: []*directory.Entity{
+							{Memberships: []*directory.Entity{{ID: "orgID"}}},
+						},
+					}, nil))
+
+				return &tservice{
+					service: &service{
+						directory: md,
+						threads:   mt,
+						care:      mv,
+						dal:       mdl,
+					},
+					finish: []mock.Finisher{md, mt, mdl},
+				}
+			}(),
+			mediaID:   "mediaID",
+			accountID: "accountID",
+			expected:  nil,
+		},
+		"OwnerSavedMessage-OrgMember": {
+			tservice: func() *tservice {
+				md := mock_directory.New(t)
+				mt := mock_threads.New(t)
+				mv := mock_care.New(t)
+				mdl := mock_dl.New(t)
+
+				mdl.Expect(mock.NewExpectation(mdl.Media, dal.MediaID("mediaID")).WithReturns(
+					&dal.Media{
+						OwnerType: dal.MediaOwnerTypeSavedMessage,
+						OwnerID:   "savedMessageID",
+					}, nil))
+
+				mt.Expect(mock.NewExpectation(mt.SavedMessages, &threading.SavedMessagesRequest{
+					By: &threading.SavedMessagesRequest_IDs{
+						IDs: &threading.IDList{
+							IDs: []string{"savedMessageID"},
+						},
+					},
+				}).WithReturns(&threading.SavedMessagesResponse{
+					SavedMessages: []*threading.SavedMessage{
+						{
+							OwnerEntityID:  "entID",
+							OrganizationID: "orgID",
+						},
+					},
+				}, nil))
+
+				// ent memberships
+				md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
+					LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
+					LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+						AccountID: "accountID",
+					},
+					Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+					RootTypes: []directory.EntityType{directory.EntityType_INTERNAL, directory.EntityType_PATIENT},
+				}).WithReturns(
+					&directory.LookupEntitiesResponse{
+
+						Entities: []*directory.Entity{
+							{ID: "entID", Memberships: []*directory.Entity{{ID: "orgID"}}},
+						},
+					}, nil))
+
+				return &tservice{
+					service: &service{
+						directory: md,
+						threads:   mt,
+						care:      mv,
+						dal:       mdl,
+					},
+					finish: []mock.Finisher{md, mt, mdl},
+				}
+			}(),
+			mediaID:   "mediaID",
+			accountID: "accountID",
+			expected:  nil,
+		},
 		"Success-PublicMedia": {
 			tservice: func() *tservice {
 				md := mock_directory.New(t)

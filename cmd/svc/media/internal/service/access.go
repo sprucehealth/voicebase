@@ -39,6 +39,8 @@ func (s *service) CanAccess(ctx context.Context, mediaID dal.MediaID, accountID 
 		return s.canAccessThreadMedia(ctx, media.OwnerID, accountID)
 	case dal.MediaOwnerTypeVisit:
 		return s.canAccessVisitMedia(ctx, media.OwnerID, accountID)
+	case dal.MediaOwnerTypeSavedMessage:
+		return s.canAccessSavedMessageMedia(ctx, media.OwnerID, accountID)
 	case dal.MediaOwnerTypeLegacy:
 		return nil
 	}
@@ -188,4 +190,34 @@ func (s *service) canAccessThreadMedia(ctx context.Context, threadID, accountID 
 		}
 	}
 	return ErrAccessDenied
+}
+
+func (s *service) canAccessSavedMessageMedia(ctx context.Context, savedMessageID, accountID string) error {
+	savedMessagesRes, err := s.threads.SavedMessages(context.Background(), &threading.SavedMessagesRequest{
+		By: &threading.SavedMessagesRequest_IDs{
+			IDs: &threading.IDList{
+				IDs: []string{savedMessageID},
+			},
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	if savedMessagesRes == nil {
+		return ErrAccessDenied
+	}
+
+	savedMessage := savedMessagesRes.SavedMessages[0]
+	if savedMessage.OwnerEntityID == savedMessage.OrganizationID {
+		if err := s.canAccessOrganizationMedia(ctx, savedMessage.OrganizationID, accountID); err != nil {
+			return err
+		}
+	} else {
+		if err := s.canAccessEntityMedia(ctx, savedMessage.OwnerEntityID, accountID); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
