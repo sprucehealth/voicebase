@@ -1,13 +1,12 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/client"
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/dal"
@@ -74,7 +73,7 @@ func (s *server) CreateVisit(ctx context.Context, in *care.CreateVisitRequest) (
 
 	_, err := s.dal.CreateVisit(ctx, visitToCreate)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	optionalTriageValue, err := settings.GetBooleanValue(ctx, s.settings, &settings.GetValuesRequest{
@@ -86,7 +85,7 @@ func (s *server) CreateVisit(ctx context.Context, in *care.CreateVisitRequest) (
 		},
 	})
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	return &care.CreateVisitResponse{
@@ -101,15 +100,15 @@ func (s *server) GetVisit(ctx context.Context, in *care.GetVisitRequest) (*care.
 
 	visitID, err := models.ParseVisitID(in.ID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "unable to parse visit id: %s", err.Error())
+		return nil, grpcErrorf(codes.InvalidArgument, "unable to parse visit id %q: %s", in.ID, err.Error())
 	}
 
 	v, err := s.dal.Visit(ctx, visitID)
 	if err != nil {
 		if errors.Cause(err) == dal.ErrNotFound {
-			return nil, grpcErrorf(codes.NotFound, "visit %s not found", visitID)
+			return nil, grpcErrorf(codes.NotFound, "visit %q not found", visitID)
 		}
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	optionalTriageValue, err := settings.GetBooleanValue(ctx, s.settings, &settings.GetValuesRequest{
@@ -121,7 +120,7 @@ func (s *server) GetVisit(ctx context.Context, in *care.GetVisitRequest) (*care.
 		},
 	})
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	return &care.GetVisitResponse{
@@ -136,7 +135,7 @@ func (s *server) SubmitVisit(ctx context.Context, in *care.SubmitVisitRequest) (
 
 	visitID, err := models.ParseVisitID(in.VisitID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "invalid visit id %s: %s", in.VisitID, err)
+		return nil, grpcErrorf(codes.InvalidArgument, "invalid visit id %q: %s", in.VisitID, err)
 	}
 
 	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
@@ -147,12 +146,12 @@ func (s *server) SubmitVisit(ctx context.Context, in *care.SubmitVisitRequest) (
 		if err != nil {
 			return err
 		} else if rowsUpdated > 1 {
-			return fmt.Errorf("expected just 1 row to be updated for visit %s but %d rows were updated", visitID, rowsUpdated)
+			return errors.Errorf("expected just 1 row to be updated for visit %s but %d rows were updated", visitID, rowsUpdated)
 		}
 
 		return nil
 	}); err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	return &care.SubmitVisitResponse{}, nil
@@ -165,7 +164,7 @@ func (s *server) TriageVisit(ctx context.Context, in *care.TriageVisitRequest) (
 
 	visitID, err := models.ParseVisitID(in.VisitID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "invalid visit id %s: %s", in.VisitID, err)
+		return nil, grpcErrorf(codes.InvalidArgument, "invalid visit id %q: %s", in.VisitID, err)
 	}
 
 	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
@@ -176,11 +175,11 @@ func (s *server) TriageVisit(ctx context.Context, in *care.TriageVisitRequest) (
 		if err != nil {
 			return err
 		} else if rowsUpdated > 1 {
-			return fmt.Errorf("expected just 1 row to be updated for visit %s but %d rows were updated.", visitID, rowsUpdated)
+			return errors.Errorf("expected just 1 row to be updated for visit %s but %d rows were updated", visitID, rowsUpdated)
 		}
 		return nil
 	}); err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	return &care.TriageVisitResponse{}, nil
@@ -197,12 +196,12 @@ func (s *server) CreateVisitAnswers(ctx context.Context, in *care.CreateVisitAns
 
 	visitID, err := models.ParseVisitID(in.VisitID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "unable to parse visit_id %s: %s", in.VisitID, err)
+		return nil, grpcErrorf(codes.InvalidArgument, "unable to parse visit_id %q: %s", in.VisitID, err)
 	}
 
 	visitAnswers, err := client.Decode(in.AnswersJSON)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	visitAnswers.DeleteNilAnswers()
@@ -216,19 +215,19 @@ func (s *server) CreateVisitAnswers(ctx context.Context, in *care.CreateVisitAns
 
 	visit, err := s.dal.Visit(ctx, visitID)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	visitLayoutVersionRes, err := s.layout.GetVisitLayoutVersion(ctx, &layout.GetVisitLayoutVersionRequest{
 		ID: visit.LayoutVersionID,
 	})
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	intake, err := s.layoutStore.GetIntake(visitLayoutVersionRes.VisitLayoutVersion.IntakeLayoutLocation)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	questionInIntakeMap := make(map[string]*layout.Question)
@@ -245,11 +244,11 @@ func (s *server) CreateVisitAnswers(ctx context.Context, in *care.CreateVisitAns
 	for questionID, answer := range visitAnswers.Answers {
 		question, ok := questionInIntakeMap[questionID]
 		if !ok {
-			return nil, grpcErrorf(codes.InvalidArgument, "question %s not in visit intake for %s", questionID, visit.ID)
+			return nil, grpcErrorf(codes.InvalidArgument, "question %q not in visit intake for %q", questionID, visit.ID)
 		}
 
 		if err := answer.Validate(question); err != nil {
-			return nil, grpcErrorf(care.ErrorInvalidAnswer, "invalid answer to question in visit %s : %s", visit.ID, err)
+			return nil, grpcErrorf(care.ErrorInvalidAnswer, "invalid answer to question in visit %q: %s", visit.ID, err)
 		}
 
 		// collect all the mediaIDs to claim it by the visit
@@ -261,7 +260,7 @@ func (s *server) CreateVisitAnswers(ctx context.Context, in *care.CreateVisitAns
 				}
 			}
 			if err != nil {
-				return nil, grpcErrorf(codes.Internal, "unable to claim media for question %s: %s", questionID, err)
+				return nil, grpcErrorf(codes.Internal, "unable to claim media for question %q: %s", questionID, err)
 			}
 		}
 	}
@@ -280,7 +279,7 @@ func (s *server) CreateVisitAnswers(ctx context.Context, in *care.CreateVisitAns
 
 		transformedAnswer, err := transformAnswerToModel(questionID, answer, s.media)
 		if err != nil {
-			return nil, grpcErrorf(codes.Internal, err.Error())
+			return nil, errors.Trace(err)
 		}
 		transformedAnswers = append(transformedAnswers, transformedAnswer)
 	}
@@ -303,7 +302,7 @@ func (s *server) CreateVisitAnswers(ctx context.Context, in *care.CreateVisitAns
 		}
 		return nil
 	}); err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	return &care.CreateVisitAnswersResponse{}, nil
@@ -316,24 +315,24 @@ func (s *server) GetAnswersForVisit(ctx context.Context, in *care.GetAnswersForV
 
 	visitID, err := models.ParseVisitID(in.VisitID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "unable to parse visit_id %s : %s", in.VisitID, err)
+		return nil, grpcErrorf(codes.InvalidArgument, "unable to parse visit_id %q: %s", in.VisitID, err)
 	}
 
 	visit, err := s.dal.Visit(ctx, visitID)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	visitLayoutVersionRes, err := s.layout.GetVisitLayoutVersion(ctx, &layout.GetVisitLayoutVersionRequest{
 		ID: visit.LayoutVersionID,
 	})
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	intake, err := s.layoutStore.GetIntake(visitLayoutVersionRes.VisitLayoutVersion.IntakeLayoutLocation)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	// collect all questions in the intake
@@ -348,7 +347,7 @@ func (s *server) GetAnswersForVisit(ctx context.Context, in *care.GetAnswersForV
 
 	answerMap, err := s.dal.VisitAnswers(ctx, visitID, questionIDs)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	if in.SerializedForPatient {
@@ -356,13 +355,13 @@ func (s *server) GetAnswersForVisit(ctx context.Context, in *care.GetAnswersForV
 		for questionID, answer := range answerMap {
 			transformedAnswerMap[questionID], err = transformAnswerModelToResponse(answer, s.media)
 			if err != nil {
-				return nil, grpcErrorf(codes.Internal, err.Error())
+				return nil, errors.Trace(err)
 			}
 		}
 
 		answerJSONData, err := json.Marshal(transformedAnswerMap)
 		if err != nil {
-			return nil, grpcErrorf(codes.Internal, err.Error())
+			return nil, errors.Trace(err)
 		}
 
 		return &care.GetAnswersForVisitResponse{
@@ -374,7 +373,7 @@ func (s *server) GetAnswersForVisit(ctx context.Context, in *care.GetAnswersForV
 	for questionID, answer := range answerMap {
 		transformedAnswerMap[questionID], err = transformAnswerModelToSVCResponse(answer, s.media)
 		if err != nil {
-			return nil, grpcErrorf(codes.Internal, err.Error())
+			return nil, errors.Trace(err)
 		}
 	}
 
@@ -389,17 +388,17 @@ func (s *server) CarePlan(ctx context.Context, in *care.CarePlanRequest) (*care.
 	}
 	id, err := models.ParseCarePlanID(in.ID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "care plan id is invalid")
+		return nil, grpcErrorf(codes.InvalidArgument, "care plan id %q is invalid", id)
 	}
 	cp, err := s.dal.CarePlan(ctx, id)
 	if errors.Cause(err) == dal.ErrNotFound {
 		return nil, grpcErrorf(codes.NotFound, "care plan %s not found", id)
 	} else if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 	cpr, err := transformCarePlanToResponse(cp)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 	return &care.CarePlanResponse{CarePlan: cpr}, nil
 }
@@ -427,7 +426,7 @@ func (s *server) CreateCarePlan(ctx context.Context, in *care.CreateCarePlanRequ
 		case care.CarePlanTreatment_RX:
 			availability = models.TreatmentAvailabilityRx
 		default:
-			return nil, grpcErrorf(codes.InvalidArgument, "unknown treatment availability '%s'", t.Availability.String())
+			return nil, grpcErrorf(codes.InvalidArgument, "unknown treatment availability %q", t.Availability.String())
 		}
 		cp.Treatments[i] = &models.CarePlanTreatment{
 			EPrescribe:           t.EPrescribe,
@@ -449,16 +448,16 @@ func (s *server) CreateCarePlan(ctx context.Context, in *care.CreateCarePlanRequ
 	}
 	id, err := s.dal.CreateCarePlan(ctx, cp)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 	// Re-query to get actual values for timestamps
 	cp, err = s.dal.CarePlan(ctx, id)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 	cpr, err := transformCarePlanToResponse(cp)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 	return &care.CreateCarePlanResponse{CarePlan: cpr}, nil
 }
@@ -476,7 +475,7 @@ func (s *server) SearchMedications(ctx context.Context, in *care.SearchMedicatio
 
 	names, err := s.doseSpot.GetDrugNamesForDoctor(clinicianID, in.Query)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	medications := make([]*care.Medication, len(names))
@@ -498,7 +497,7 @@ func (s *server) SearchMedications(ctx context.Context, in *care.SearchMedicatio
 				}
 				genName, err := dosespot.ParseGenericName(med)
 				if err != nil {
-					golog.Errorf("Failed to parse generic name '%s': %s", med.GenericProductName, err)
+					golog.ContextLogger(ctx).Errorf("Failed to parse generic name %q: %s", med.GenericProductName, err)
 				}
 				schedule, _ := strconv.ParseUint(med.Schedule, 10, 64)
 				// route and form are the same for each strength, but it's the only place they come down
@@ -532,7 +531,7 @@ func (s *server) SearchMedications(ctx context.Context, in *care.SearchMedicatio
 		})
 	}
 	if err := par.Wait(); err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	return &care.SearchMedicationsResponse{Medications: medications}, nil
@@ -548,7 +547,7 @@ func (s *server) SearchSelfReportedMedications(ctx context.Context, in *care.Sea
 
 	results, err := s.doseSpot.GetDrugNamesForPatient(in.Query)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	return &care.SearchSelfReportedMedicationsResponse{
@@ -566,13 +565,14 @@ func (s *server) SearchAllergyMedications(ctx context.Context, in *care.SearchAl
 
 	results, err := s.doseSpot.SearchForAllergyRelatedMedications(in.Query)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	return &care.SearchAllergyMedicationsResponse{
 		Results: results,
 	}, nil
 }
+
 func (s *server) SubmitCarePlan(ctx context.Context, in *care.SubmitCarePlanRequest) (*care.SubmitCarePlanResponse, error) {
 	if in.ID == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "care plan id is required")
@@ -582,24 +582,24 @@ func (s *server) SubmitCarePlan(ctx context.Context, in *care.SubmitCarePlanRequ
 	}
 	id, err := models.ParseCarePlanID(in.ID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "care plan id is invalid")
+		return nil, grpcErrorf(codes.InvalidArgument, "care plan id %q is invalid", in.ID)
 	}
 	if err := s.dal.SubmitCarePlan(ctx, id, in.ParentID); errors.Cause(err) == dal.ErrNotFound {
 		return nil, grpcErrorf(codes.NotFound, "care plan %s not found", id)
 	} else if errors.Cause(err) == dal.ErrAlreadySubmitted {
 		return nil, grpcErrorf(codes.AlreadyExists, "care plan %s already submitted", id)
 	} else if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 	cp, err := s.dal.CarePlan(ctx, id)
 	if errors.Cause(err) == dal.ErrNotFound {
 		return nil, grpcErrorf(codes.NotFound, "care plan %s not found", id)
 	} else if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 	cpr, err := transformCarePlanToResponse(cp)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 	return &care.SubmitCarePlanResponse{CarePlan: cpr}, nil
 }

@@ -19,7 +19,7 @@ func TestTransformToResponse_MediaSection(t *testing.T) {
 		MediaIDs: []string{"PhotoID1"},
 	}).WithReturns(&media.MediaInfosResponse{
 		MediaInfos: map[string]*media.MediaInfo{
-			"PhotoID1": &media.MediaInfo{
+			"PhotoID1": {
 				ID:       "PhotoID1",
 				URL:      "photo1.url",
 				ThumbURL: "thumbnail1.url",
@@ -164,7 +164,7 @@ func TestTransformToResponse_MultipleChoice(t *testing.T) {
 						ID:       "100",
 						FreeText: "hello",
 						SubAnswers: map[string]*models.Answer{
-							"101": &models.Answer{
+							"101": {
 								QuestionID: "101",
 								Type:       "q_type_free_text",
 								Answer: &models.Answer_FreeText{
@@ -173,7 +173,7 @@ func TestTransformToResponse_MultipleChoice(t *testing.T) {
 									},
 								},
 							},
-							"102": &models.Answer{
+							"102": {
 								QuestionID: "102",
 								Type:       "q_type_segmented_control",
 								Answer: &models.Answer_SegmentedControl{
@@ -242,7 +242,7 @@ func TestTransformToResponse_AutoComplete(t *testing.T) {
 					{
 						Answer: "hello",
 						SubAnswers: map[string]*models.Answer{
-							"101": &models.Answer{
+							"101": {
 								QuestionID: "101",
 								Type:       "q_type_free_text",
 								Answer: &models.Answer_FreeText{
@@ -251,7 +251,7 @@ func TestTransformToResponse_AutoComplete(t *testing.T) {
 									},
 								},
 							},
-							"102": &models.Answer{
+							"102": {
 								QuestionID: "102",
 								Type:       "q_type_segmented_control",
 								Answer: &models.Answer_SegmentedControl{
