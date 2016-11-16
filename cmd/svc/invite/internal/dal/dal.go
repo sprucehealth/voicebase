@@ -178,12 +178,20 @@ func (d *dal) InsertInvite(ctx context.Context, invite *models.Invite) error {
 		return errors.Errorf("Created required")
 	}
 	item[createdTimestampKey] = &dynamodb.AttributeValue{N: ptr.String(strconv.FormatInt(invite.Created.UnixNano(), 10))}
-	valuesAttr := make(map[string]*dynamodb.AttributeValue, len(invite.Values))
-	for k, v := range invite.Values {
-		valuesAttr[k] = &dynamodb.AttributeValue{S: ptr.String(v)}
+
+	if len(invite.Values) > 0 {
+		valuesAttr := make(map[string]*dynamodb.AttributeValue, len(invite.Values))
+		for k, v := range invite.Values {
+			valuesAttr[k] = &dynamodb.AttributeValue{S: ptr.String(v)}
+		}
+		item[valuesKey] = &dynamodb.AttributeValue{M: valuesAttr}
 	}
-	item[valuesKey] = &dynamodb.AttributeValue{M: valuesAttr}
-	item[tagsKey] = &dynamodb.AttributeValue{SS: ptr.Strings(invite.Tags)}
+
+	// Cannot have an empty set in dynamodb
+	if len(invite.Tags) > 0 {
+		item[tagsKey] = &dynamodb.AttributeValue{SS: ptr.Strings(invite.Tags)}
+	}
+
 	_, err := d.db.PutItem(&dynamodb.PutItemInput{
 		TableName:           &d.inviteTable,
 		ConditionExpression: ptr.String("attribute_not_exists(" + inviteTokenKey + ")"),
@@ -202,14 +210,22 @@ func (d *dal) UpdateInvite(ctx context.Context, token string, update *models.Inv
 	if token == "" {
 		return nil, errors.Errorf("Token required")
 	}
-	res, err := d.db.UpdateItem(&dynamodb.UpdateItemInput{
+
+	updateItemInput := &dynamodb.UpdateItemInput{
 		Key:          map[string]*dynamodb.AttributeValue{inviteTokenKey: &dynamodb.AttributeValue{S: &token}},
 		ReturnValues: ptr.String(dynamodb.ReturnValueAllNew),
-		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+	}
+
+	if len(update.Tags) == 0 {
+		updateItemInput.UpdateExpression = ptr.String(fmt.Sprintf("REMOVE %s", tagsKey))
+	} else {
+		updateItemInput.UpdateExpression = ptr.String(fmt.Sprintf("SET %s = :tags", tagsKey))
+		updateItemInput.ExpressionAttributeValues = map[string]*dynamodb.AttributeValue{
 			`:tags`: {SS: ptr.Strings(update.Tags)},
-		},
-		UpdateExpression: ptr.String(fmt.Sprintf("SET %s = :tags", tagsKey)),
-	})
+		}
+	}
+
+	res, err := d.db.UpdateItem(updateItemInput)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
