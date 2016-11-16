@@ -304,19 +304,17 @@ func (s *service) media(ctx context.Context, id dal.MediaID) (*dal.Media, error)
 	if errors.Cause(err) != dal.ErrNotFound {
 		return nil, errors.Trace(err)
 	}
-	// Using the image service here, but it really shouldn't matter at the moment
-	// since all the stores point to the same S3 bucket.
-	meta, err := s.imageService.GetMeta(id.String())
+	meta, err := s.binaryService.GetMeta(id.String())
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 	med = &dal.Media{
-		ID:        id,
-		Name:      meta.Name,
-		MimeType:  meta.MimeType,
-		SizeBytes: meta.Size,
-		OwnerType: dal.MediaOwnerTypeLegacy,
-		// TODO: DurationNS
+		ID:         id,
+		Name:       meta.Name,
+		MimeType:   meta.MimeType,
+		SizeBytes:  meta.Size,
+		OwnerType:  dal.MediaOwnerTypeLegacy,
+		DurationNS: uint64(meta.Duration.Nanoseconds()),
 	}
 	_, err = s.dal.InsertMedia(med)
 	return med, errors.Trace(err)

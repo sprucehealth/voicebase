@@ -416,7 +416,9 @@ func (w *IncomingRawMessageWorker) uploadTwilioMediaToS3(contentType, url string
 		return nil, errors.Trace(err)
 	}
 
-	_, err = w.store.Put(id, data, contentType, nil)
+	_, err = w.store.Put(id, data, contentType, map[string]string{
+		"x-amz-meta-duration-ns": strconv.FormatInt(duration.Nanoseconds(), 10),
+	})
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

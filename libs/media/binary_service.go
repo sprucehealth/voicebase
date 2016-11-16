@@ -2,6 +2,8 @@ package media
 
 import (
 	"io"
+	"strconv"
+	"time"
 
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/storage"
@@ -10,8 +12,13 @@ import (
 // BinaryMeta is it's media metadata
 type BinaryMeta struct {
 	ID       string
+	Name     string
 	MimeType string
 	Size     uint64
+	// The following fields are only available for some media types
+	Width    int
+	Height   int
+	Duration time.Duration
 }
 
 // BinaryService implements a media storage service.
@@ -43,6 +50,26 @@ func (s *BinaryService) PutReader(id string, r io.ReadSeeker, contentType string
 		Size:     uint64(size),
 	}
 	return meta, errors.Trace(err)
+}
+
+// GetMeta returns the metadata associated with a media entry
+func (s *BinaryService) GetMeta(id string) (*BinaryMeta, error) {
+	h, err := s.store.GetHeader(id)
+	if err != nil {
+		return nil, errors.Wrapf(err, "mediaID=%q", id)
+	}
+	width, _ := strconv.Atoi(h.Get(widthHeader))
+	height, _ := strconv.Atoi(h.Get(heightHeader))
+	size, _ := strconv.ParseUint(h.Get(contentLengthHeader), 10, 64)
+	durationNS, _ := strconv.ParseInt(h.Get(durationHeader), 10, 64)
+	return &BinaryMeta{
+		Name:     h.Get(originalNameHeader),
+		MimeType: h.Get(mimeTypeHeader),
+		Width:    width,
+		Height:   height,
+		Size:     size,
+		Duration: time.Duration(durationNS),
+	}, nil
 }
 
 // Copy a stored binary file

@@ -14,5 +14,5 @@ const (
 	originalNameHeader  = "x-amz-meta-original-name"
 	widthHeader         = "x-amz-meta-width"
 	heightHeader        = "x-amz-meta-height"
-	durationHeader      = "duration"
+	durationHeader      = "x-amz-meta-duration-ns"
 )

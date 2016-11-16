@@ -253,12 +253,12 @@ func imgHeaders(img image.Image) map[string]string {
 func metaFromHeaders(h http.Header) *ImageMeta {
 	width, _ := strconv.Atoi(h.Get(widthHeader))
 	height, _ := strconv.Atoi(h.Get(heightHeader))
-	size, _ := strconv.Atoi(h.Get(contentLengthHeader))
+	size, _ := strconv.ParseUint(h.Get(contentLengthHeader), 10, 64)
 	return &ImageMeta{
 		Name:     h.Get(originalNameHeader),
 		MimeType: h.Get(mimeTypeHeader),
 		Width:    width,
 		Height:   height,
-		Size:     uint64(size),
+		Size:     size,
 	}
 }
