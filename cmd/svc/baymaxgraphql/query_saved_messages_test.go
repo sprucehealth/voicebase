@@ -116,7 +116,7 @@ func TestSavedMessagesQuery(t *testing.T) {
 					}
 				]
 			}, {
-				"title": "Team Saved Message",
+				"title": "Team Saved Messages",
 				"messages": [
 					{
 						"id": "sm_1",
