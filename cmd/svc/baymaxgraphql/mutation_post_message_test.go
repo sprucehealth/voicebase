@@ -630,7 +630,7 @@ func TestPostMessageDestinationNotContactOfPrimary(t *testing.T) {
 	"data": null,
 	"errors": [
 		{
-			"message": "The provided destination contact info does not belong to the primary entity for this thread: \"SMS\", \"+1-555-555-1234WRONG\" [cmd/svc/baymaxgraphql/mutation_post_message.go:445]",
+			"message": "The provided destination contact info does not belong to the primary entity for this thread: \"SMS\", \"+1-555-555-1234WRONG\"",
 			"locations": []
 		}
 	]

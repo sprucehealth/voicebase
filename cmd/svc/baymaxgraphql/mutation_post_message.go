@@ -190,6 +190,7 @@ const (
 	postMessageErrorCodeThreadDoesNotExist = "THREAD_DOES_NOT_EXIST"
 	postMessageErrorCodeInternalNotAllowed = "INTERNAL_MESSAGE_NOT_ALLOWED"
 	postMessageErrorCodeInvalidAttachment  = "INVALID_ATTACHMENT"
+	postMessageErrorCodeInvalidContactInfo = "INVALID_CONTACT_INFO"
 )
 
 var postMessageErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
@@ -205,6 +206,10 @@ var postMessageErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
 		},
 		postMessageErrorCodeInvalidAttachment: &graphql.EnumValueConfig{
 			Value:       postMessageErrorCodeInvalidAttachment,
+			Description: "At least one attachment is invalid",
+		},
+		postMessageErrorCodeInvalidContactInfo: &graphql.EnumValueConfig{
+			Value:       postMessageErrorCodeInvalidContactInfo,
 			Description: "At least one attachment is invalid",
 		},
 	},
@@ -311,6 +316,12 @@ var postMessageMutation = &graphql.Field{
 			return &postMessageOutput{
 				Success:      false,
 				ErrorCode:    postMessageErrorCodeInvalidAttachment,
+				ErrorMessage: string(e),
+			}, nil
+		} else if e, ok := errors.Cause(err).(errInvalidContactInfo); ok {
+			return &postMessageOutput{
+				Success:      false,
+				ErrorCode:    postMessageErrorCodeInvalidContactInfo,
 				ErrorMessage: string(e),
 			}, nil
 		} else if err != nil {
@@ -442,7 +453,7 @@ func transformRequestToMessagePost(
 
 	title, err := populateMessageDestinationAndBuildTitle(msg, in.Destinations, thr, ent, primaryEntity)
 	if err != nil {
-		return nil, nil, errors.Trace(err)
+		return nil, nil, err
 	}
 
 	if len(title) == 0 {
@@ -521,6 +532,12 @@ func trackPostMessage(ctx context.Context, thr *threading.Thread, req *threading
 	})
 }
 
+type errInvalidContactInfo string
+
+func (e errInvalidContactInfo) Error() string {
+	return string(e)
+}
+
 func populateMessageDestinationAndBuildTitle(
 	msg *threading.MessagePost,
 	dests []endpointInput,
@@ -558,7 +575,7 @@ func populateMessageDestinationAndBuildTitle(
 				}
 			}
 			if e == nil {
-				return nil, fmt.Errorf("The provided destination contact info does not belong to the primary entity for this thread: %q, %q", d.Channel, d.ID)
+				return nil, errInvalidContactFormat(fmt.Sprintf("The provided destination contact info does not belong to the primary entity for this thread: %q, %q", d.Channel, d.ID))
 			}
 			msg.Destinations = append(msg.Destinations, e)
 			switch e.Channel {
