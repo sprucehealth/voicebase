@@ -85,7 +85,7 @@ var savedMessagesQuery = &graphql.Field{
 
 		sec := []*models.SavedMessageSection{
 			{Title: "Your Saved Messages"},
-			{Title: "Team Saved Message"},
+			{Title: "Team Saved Messages"},
 		}
 
 		sort.Sort(savedMessageByTitle(res.SavedMessages))
