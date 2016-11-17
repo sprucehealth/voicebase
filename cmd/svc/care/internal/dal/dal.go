@@ -22,6 +22,10 @@ type VisitUpdate struct {
 	TriagedTime   *time.Time
 }
 
+type CarePlanUpdate struct {
+	ParentID *string
+}
+
 type DAL interface {
 	Transact(context.Context, func(context.Context, DAL) error) error
 
@@ -30,6 +34,7 @@ type DAL interface {
 	CreateVisit(context.Context, *models.Visit) (models.VisitID, error)
 	CreateVisitAnswer(ctx context.Context, visitID models.VisitID, actoryEntityID string, answer *models.Answer) error
 	SubmitCarePlan(ctx context.Context, id models.CarePlanID, parentID string) error
+	UpdateCarePlan(ctx context.Context, id models.CarePlanID, update *CarePlanUpdate) (int64, error)
 	UpdateVisit(ctx context.Context, id models.VisitID, update *VisitUpdate) (int64, error)
 	Visit(ctx context.Context, id models.VisitID, opts ...QueryOption) (*models.Visit, error)
 	DeleteVisitAnswers(ctx context.Context, visitID models.VisitID, questionIDs []string) (int64, error)
@@ -172,7 +177,7 @@ func (d *dal) UpdateVisit(ctx context.Context, id models.VisitID, update *VisitU
 		return 0, errors.Trace(err)
 	}
 
-	rowsUpdated, err := res.LastInsertId()
+	rowsUpdated, err := res.RowsAffected()
 	if err != nil {
 		return 0, errors.Trace(err)
 	}
@@ -368,4 +373,33 @@ func (d *dal) SubmitCarePlan(ctx context.Context, id models.CarePlanID, parentID
 		return errors.Trace(ErrAlreadySubmitted)
 	}
 	return nil
+}
+
+func (d *dal) UpdateCarePlan(ctx context.Context, id models.CarePlanID, update *CarePlanUpdate) (int64, error) {
+	args := dbutil.MySQLVarArgs()
+	if update == nil {
+		return 0, nil
+	}
+	if update.ParentID != nil {
+		args.Append("parent_id", *update.ParentID)
+	}
+
+	if args.IsEmpty() {
+		return 0, nil
+	}
+
+	res, err := d.db.Exec(`
+		UPDATE care_plan
+		SET `+args.ColumnsForUpdate()+`
+		WHERE id = ?`, append(args.Values(), id)...)
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+
+	rowsUpdated, err := res.RowsAffected()
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+
+	return rowsUpdated, nil
 }

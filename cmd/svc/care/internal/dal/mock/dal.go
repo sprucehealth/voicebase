@@ -61,6 +61,14 @@ func (m *mockDAL) SubmitCarePlan(ctx context.Context, id models.CarePlanID, pare
 	return mock.SafeError(rets[0])
 }
 
+func (m *mockDAL) UpdateCarePlan(ctx context.Context, id models.CarePlanID, update *dal.CarePlanUpdate) (int64, error) {
+	rets := m.Record(id, update)
+	if len(rets) == 0 {
+		return 0, nil
+	}
+	return rets[0].(int64), mock.SafeError(rets[1])
+}
+
 func (m *mockDAL) Visit(ctx context.Context, id models.VisitID, opts ...dal.QueryOption) (*models.Visit, error) {
 	rets := m.Record(id)
 

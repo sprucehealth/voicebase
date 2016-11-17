@@ -8,7 +8,9 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/bml"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/gqldecode"
+	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
@@ -154,14 +156,16 @@ var saveMessageMutation = &graphql.Field{
 			return nil, errors.InternalError(ctx, err)
 		}
 
-		attachments, _, err := processIncomingAttachments(ctx, ram, svc, ent, in.OrganizationID, in.Message.Attachments, nil)
+		attachments, carePlans, err := processIncomingAttachments(ctx, ram, svc, ent, in.OrganizationID, in.Message.Attachments, nil)
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}
+
 		msg.Attachments = attachments
 
+		var savedMessage *threading.SavedMessage
 		if oldMessage != nil {
-			_, err := ram.UpdateSavedMessage(ctx, &threading.UpdateSavedMessageRequest{
+			updateSavedMessageRes, err := ram.UpdateSavedMessage(ctx, &threading.UpdateSavedMessageRequest{
 				SavedMessageID: oldMessage.ID,
 				Title:          in.Title,
 				Content: &threading.UpdateSavedMessageRequest_Message{
@@ -171,6 +175,7 @@ var saveMessageMutation = &graphql.Field{
 			if err != nil {
 				return nil, errors.Trace(err)
 			}
+			savedMessage = updateSavedMessageRes.SavedMessage
 		} else {
 			req := &threading.CreateSavedMessageRequest{
 				OrganizationID:  in.OrganizationID,
@@ -184,8 +189,17 @@ var saveMessageMutation = &graphql.Field{
 			if in.Shared {
 				req.OwnerEntityID = in.OrganizationID
 			}
-			if _, err := ram.CreateSavedMessage(ctx, in.OrganizationID, req); err != nil {
+			if createSavedMessageRes, err := ram.CreateSavedMessage(ctx, in.OrganizationID, req); err != nil {
 				return nil, errors.Trace(err)
+			} else {
+				savedMessage = createSavedMessageRes.SavedMessage
+			}
+		}
+
+		// Flag care plans as submitted and attached to this message
+		for _, cp := range carePlans {
+			if _, err := ram.UpdateCarePlan(ctx, cp, &care.UpdateCarePlanRequest{ID: cp.ID, ParentID: savedMessage.ID}); err != nil {
+				golog.Errorf("Failed to update care plan %s for saved message %s: %s", cp.ID, savedMessage.ID, err)
 			}
 		}
 

@@ -104,6 +104,14 @@ func (c *Client) SubmitCarePlan(ctx context.Context, in *care.SubmitCarePlanRequ
 	return rets[0].(*care.SubmitCarePlanResponse), mock.SafeError(rets[1])
 }
 
+func (c *Client) UpdateCarePlan(ctx context.Context, in *care.UpdateCarePlanRequest, opts ...grpc.CallOption) (*care.UpdateCarePlanResponse, error) {
+	rets := c.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*care.UpdateCarePlanResponse), mock.SafeError(rets[1])
+}
+
 func (c *Client) SubmitVisit(ctx context.Context, in *care.SubmitVisitRequest, opts ...grpc.CallOption) (*care.SubmitVisitResponse, error) {
 	rets := c.Record(in)
 	if len(rets) == 0 {

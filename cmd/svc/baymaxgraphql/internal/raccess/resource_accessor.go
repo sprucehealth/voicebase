@@ -3,6 +3,7 @@ package raccess
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
@@ -149,6 +150,7 @@ type ResourceAccessor interface {
 	SendMessage(ctx context.Context, req *excomms.SendMessageRequest) error
 	SerializedEntityContact(ctx context.Context, entityID string, platform directory.Platform) (*directory.SerializedClientEntityContact, error)
 	SubmitCarePlan(ctx context.Context, cp *care.CarePlan, parentID string) error
+	UpdateCarePlan(ctx context.Context, cp *care.CarePlan, req *care.UpdateCarePlanRequest) (*care.CarePlan, error)
 	SubmitVisit(ctx context.Context, req *care.SubmitVisitRequest) (*care.SubmitVisitResponse, error)
 	Thread(ctx context.Context, threadID, viewerEntityID string) (*threading.Thread, error)
 	Threads(ctx context.Context, req *threading.ThreadsRequest) (*threading.ThreadsResponse, error)
@@ -309,6 +311,7 @@ func (m *resourceAccessor) CarePlan(ctx context.Context, id string) (*care.CareP
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
+
 	if err := m.canAccessCarePlan(ctx, res.CarePlan); err != nil {
 		return nil, err
 	}
@@ -327,8 +330,22 @@ func (m *resourceAccessor) canAccessCarePlan(ctx context.Context, cp *care.CareP
 		return nil
 	}
 
-	// TODO: for now assuming the parent is a thread item as currently that's always the case
-	return m.canAccessResource(ctx, cp.ParentID, m.orgsForThreadItem)
+	if strings.HasPrefix(cp.ParentID, threading.ThreadItemIDPrefix) {
+		return m.canAccessResource(ctx, cp.ParentID, m.orgsForThreadItem)
+	} else if strings.HasPrefix(cp.ParentID, threading.SavedMessageIDPrefix) {
+		savedMessageRes, err := m.threading.SavedMessages(ctx, &threading.SavedMessagesRequest{
+			By: &threading.SavedMessagesRequest_IDs{
+				IDs: &threading.IDList{
+					IDs: []string{cp.ParentID},
+				},
+			},
+		})
+		if err != nil {
+			return err
+		}
+		return m.canAccessResource(ctx, savedMessageRes.SavedMessages[0].OrganizationID, m.orgsForOrganization)
+	}
+	return errors.Errorf("Unknown parentID type '%s' to perform authorization check for care plan '%s'", cp.ParentID, cp.ID)
 }
 
 func (m *resourceAccessor) CheckPasswordResetToken(ctx context.Context, token string) (*auth.CheckPasswordResetTokenResponse, error) {
@@ -789,6 +806,28 @@ func (m *resourceAccessor) SubmitCarePlan(ctx context.Context, cp *care.CarePlan
 	}
 	_, err := m.care.SubmitCarePlan(ctx, &care.SubmitCarePlanRequest{ID: cp.ID, ParentID: parentID})
 	return err
+}
+
+func (m *resourceAccessor) UpdateCarePlan(ctx context.Context, cp *care.CarePlan, req *care.UpdateCarePlanRequest) (*care.CarePlan, error) {
+
+	if cp == nil {
+		cpRes, err := m.care.CarePlan(ctx, &care.CarePlanRequest{
+			ID: req.ID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		cp = cpRes.CarePlan
+	}
+
+	if err := m.canAccessCarePlan(ctx, cp); err != nil {
+		return nil, err
+	}
+	res, err := m.care.UpdateCarePlan(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return res.CarePlan, err
 }
 
 func (m *resourceAccessor) SerializedEntityContact(ctx context.Context, entityID string, platform directory.Platform) (*directory.SerializedClientEntityContact, error) {

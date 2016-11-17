@@ -236,6 +236,15 @@ message SubmitCarePlanResponse {
 	CarePlan care_plan = 1;
 }
 
+message UpdateCarePlanRequest {
+	string id = 1 [(gogoproto.customname) = "ID"];
+	string parent_id = 2 [(gogoproto.customname) = "ParentID"];
+}
+
+message UpdateCarePlanResponse {
+	CarePlan care_plan = 1;
+}
+
 message Medication {
 	string id = 1 [(gogoproto.customname) = "ID"];
 	string name = 2;
@@ -299,6 +308,8 @@ service Care {
 	// SubmitCarePlan submits a care plan and attaches it to a parent, it can only be called once per care plan.
 	// Any Rx attached to the care plan will be submitted at this point.
 	rpc SubmitCarePlan(SubmitCarePlanRequest) returns (SubmitCarePlanResponse);
+	// UpdateCarePlan updates a care plan that has not been submitted yet.
+	rpc UpdateCarePlan(UpdateCarePlanRequest) returns (UpdateCarePlanResponse);
 
 	// Medication and Rx
 

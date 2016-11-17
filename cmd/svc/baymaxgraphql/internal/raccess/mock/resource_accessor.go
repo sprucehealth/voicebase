@@ -459,6 +459,14 @@ func (m *ResourceAccessor) SubmitCarePlan(ctx context.Context, cp *care.CarePlan
 	return mock.SafeError(rets[0])
 }
 
+func (m *ResourceAccessor) UpdateCarePlan(ctx context.Context, cp *care.CarePlan, req *care.UpdateCarePlanRequest) (*care.CarePlan, error) {
+	rets := m.Record(cp, req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*care.CarePlan), mock.SafeError(rets[1])
+}
+
 func (m *ResourceAccessor) Thread(ctx context.Context, threadID, viewerEntityID string) (*threading.Thread, error) {
 	rets := m.Record(threadID, viewerEntityID)
 	if len(rets) == 0 {

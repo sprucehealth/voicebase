@@ -603,3 +603,39 @@ func (s *server) SubmitCarePlan(ctx context.Context, in *care.SubmitCarePlanRequ
 	}
 	return &care.SubmitCarePlanResponse{CarePlan: cpr}, nil
 }
+func (s *server) UpdateCarePlan(ctx context.Context, in *care.UpdateCarePlanRequest) (*care.UpdateCarePlanResponse, error) {
+	if in.ID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "care plan id is required")
+	}
+	if in.ParentID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "care plan parent ID is required")
+	}
+	id, err := models.ParseCarePlanID(in.ID)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "care plan id %s is invalid", in.ID)
+	}
+
+	cp, err := s.dal.CarePlan(ctx, id)
+	if errors.Cause(err) == dal.ErrNotFound {
+		return nil, grpcErrorf(codes.NotFound, "care plan %s not found", id)
+	} else if cp.Submitted != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "care plan %s already submitted and cannot be modified", id)
+	}
+
+	if _, err := s.dal.UpdateCarePlan(ctx, id, &dal.CarePlanUpdate{
+		ParentID: ptr.String(in.ParentID),
+	}); err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	cp, err = s.dal.CarePlan(ctx, id)
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	cpr, err := transformCarePlanToResponse(cp)
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+	return &care.UpdateCarePlanResponse{CarePlan: cpr}, nil
+}
