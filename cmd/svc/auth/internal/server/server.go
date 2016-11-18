@@ -594,8 +594,9 @@ func (s *server) CreatePasswordResetToken(ctx context.Context, rd *auth.CreatePa
 	}
 	if account.Status != dal.AccountStatusActive {
 		// If the account isn't active. Report it as not found and log the attempt
-		golog.ContextLogger(ctx).Infof("CreatePasswordResetToken called for NON ACTIVE account %s - Status: %s", account.ID, account.Status)
-		return nil, grpcErrorf(codes.NotFound, err.Error())
+		msg := fmt.Sprintf("CreatePasswordResetToken called for NON ACTIVE account %s - Status: %s", account.ID, account.Status)
+		golog.ContextLogger(ctx).Infof(msg)
+		return nil, grpcErrorf(codes.NotFound, msg)
 	}
 	verificationCode, err := generateAndInsertVerificationCode(ctx, s.dal, account.ID.String(), auth.VerificationCodeType_PASSWORD_RESET, s.clk)
 	if err != nil {
