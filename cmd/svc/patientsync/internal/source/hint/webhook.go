@@ -1,11 +1,13 @@
 package hint
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
+	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/sync"
@@ -49,10 +51,10 @@ func (h *webhookHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var createPatient bool
 	switch ev.Type {
 	case "patient.created":
-		// if the patient is being updated and we did not create the patient in the first place,
-		// then we will create the patient on the update.
+		createPatient = true
 	case "patient.updated":
 	default:
 		w.WriteHeader(http.StatusOK)
@@ -87,7 +89,45 @@ func (h *webhookHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	syncPatient := transformPatient(&patient)
-	if err := createSyncEvent(syncConfig.OrganizationEntityID, h.syncEventsQueueURL, []*sync.Patient{syncPatient}, h.sqsAPI); err != nil {
+
+	if err := func() error {
+
+		var syncEvent *sync.Event
+		if createPatient {
+			syncEvent = &sync.Event{
+				Source:               sync.SOURCE_HINT,
+				OrganizationEntityID: syncConfig.OrganizationEntityID,
+				Event: &sync.Event_PatientAddEvent{
+					PatientAddEvent: &sync.PatientAddEvent{
+						Patients: []*sync.Patient{syncPatient},
+					},
+				},
+			}
+		} else {
+			syncEvent = &sync.Event{
+				Source:               sync.SOURCE_HINT,
+				OrganizationEntityID: syncConfig.OrganizationEntityID,
+				Event: &sync.Event_PatientUpdateEvent{
+					PatientUpdateEvent: &sync.PatientUpdatedEvent{
+						Patients: []*sync.Patient{syncPatient},
+					},
+				},
+			}
+		}
+
+		data, err := syncEvent.Marshal()
+		if err != nil {
+			return errors.Trace(err)
+		}
+		msg := base64.StdEncoding.EncodeToString(data)
+		if _, err := h.sqsAPI.SendMessage(&sqs.SendMessageInput{
+			MessageBody: &msg,
+			QueueUrl:    &h.syncEventsQueueURL,
+		}); err != nil {
+			return errors.Trace(err)
+		}
+		return nil
+	}(); err != nil {
 		httpError(w, fmt.Sprintf("Unable to create sync event for adding patients for %s : %s", syncConfig.OrganizationEntityID, err.Error()), http.StatusInternalServerError)
 		return
 	}

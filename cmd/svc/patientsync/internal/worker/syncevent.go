@@ -80,12 +80,116 @@ func (s *syncEvent) processSyncEvent(ctx context.Context, data string) error {
 		return errors.Errorf("Unable to look up sync config for org %s : %s", event.OrganizationEntityID, err)
 	}
 
-	switch event.Type {
-	case sync.EVENT_TYPE_PATIENT_ADD:
+	switch event.Event.(type) {
+	case *sync.Event_PatientAddEvent:
 		return s.processPatientAddEvent(ctx, cfg, &event)
+	case *sync.Event_PatientUpdateEvent:
+		return s.processPatientUpdatedEvent(ctx, cfg, &event)
 	}
 
 	return errors.Errorf("Unknown event type %s for org %s", event.Type.String(), event.OrganizationEntityID)
+}
+
+func (s *syncEvent) processPatientUpdatedEvent(ctx context.Context, cfg *sync.Config, event *sync.Event) error {
+	updatedEvent := event.GetPatientUpdateEvent()
+
+	for _, patient := range updatedEvent.GetPatients() {
+		sanitizePatient(patient)
+
+		// check if patient already exists, ignore update if patient deleted
+		res, err := s.directory.LookupEntities(ctx, &directory.LookupEntitiesRequest{
+			LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+			LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+				ExternalID: sync.ExternalIDFromSource(patient.ID, event.Source),
+			},
+			MemberOfEntity: cfg.OrganizationEntityID,
+			RequestedInformation: &directory.RequestedInformation{
+				EntityInformation: []directory.EntityInformation{
+					directory.EntityInformation_CONTACTS,
+					directory.EntityInformation_EXTERNAL_IDS,
+					directory.EntityInformation_MEMBERSHIPS,
+				},
+			},
+			RootTypes:  []directory.EntityType{directory.EntityType_PATIENT, directory.EntityType_EXTERNAL},
+			ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+		})
+		if err != nil && grpc.Code(err) != codes.NotFound {
+			return errors.Errorf("unable to lookup patient %s for org %s: %s", patient.ID, cfg.OrganizationEntityID, err)
+		}
+
+		var patientEntity *directory.Entity
+		var entityDeleted bool
+		if res != nil {
+			for _, entity := range res.Entities {
+				if entity.Status == directory.EntityStatus_DELETED {
+					entityDeleted = true
+					break
+				} else if entity.Status == directory.EntityStatus_ACTIVE {
+					patientEntity = entity
+					break
+				}
+			}
+		}
+
+		if entityDeleted {
+			// if the entity has been deleted, ignore the sync
+			continue
+		}
+
+		// if patient does not exist, create it.
+		if patientEntity == nil {
+			if err := s.createPatientAndThread(ctx, patient, cfg, event); err != nil {
+				return errors.Trace(err)
+			}
+			continue
+		}
+
+		// if patient does exist, check if object differs for the properties that matter
+		if !sync.Differs(patient, patientEntity) {
+			continue
+		}
+
+		patientEntity.Info.FirstName = patient.FirstName
+		patientEntity.Info.LastName = patient.LastName
+		patientEntity.Info.DOB = sync.TransformDOB(patient.DOB)
+		patientEntity.Info.Gender = sync.TransformGender(patient.Gender)
+
+		// if it does, update it.
+		updateRes, err := s.directory.UpdateEntity(ctx, &directory.UpdateEntityRequest{
+			EntityID:         patientEntity.ID,
+			Contacts:         sync.TransformContacts(patient),
+			UpdateContacts:   true,
+			EntityInfo:       patientEntity.Info,
+			UpdateEntityInfo: true,
+		})
+		if err != nil {
+			return errors.Errorf("Unable to update patient information for %s : %s ", patient.ID, err)
+		}
+
+		// update corrresponding threads
+		threadsForMembersRes, err := s.threading.ThreadsForMember(ctx, &threading.ThreadsForMemberRequest{
+			PrimaryOnly: true,
+			EntityID:    patientEntity.ID,
+		})
+		if err != nil {
+			return errors.Errorf("Unable to get threads for members for %s : %s", patient.ID, err)
+		}
+
+		// update the system title for threads
+		for _, thread := range threadsForMembersRes.Threads {
+			if _, err := s.threading.UpdateThread(ctx, &threading.UpdateThreadRequest{
+				ActorEntityID: thread.OrganizationID,
+				ThreadID:      thread.ID,
+				SystemTitle:   updateRes.Entity.Info.DisplayName,
+			}); err != nil {
+				return errors.Errorf("Unable to update system title for thread %s : %s", thread.ID, err)
+			}
+		}
+
+		golog.Debugf("patient update in Hint (%s) triggered an update in Spruce (%s)", patient.ID, patientEntity.ID)
+	}
+
+	return nil
 }
 
 func (s *syncEvent) processPatientAddEvent(ctx context.Context, cfg *sync.Config, event *sync.Event) error {
@@ -96,39 +200,39 @@ func (s *syncEvent) processPatientAddEvent(ctx context.Context, cfg *sync.Config
 
 	// go through the list of patients and create the appropriate threads for each
 	for _, patient := range addEvent.GetPatients() {
-
 		sanitizePatient(patient)
-
-		switch cfg.ThreadCreationType {
-		case sync.THREAD_CREATION_TYPE_STANDARD:
-			if len(patient.PhoneNumbers) == 0 && len(patient.EmailAddresses) == 0 {
-				golog.Warningf("Ignoring patient %s since we don't have at least one valid phone number and email address for the patient", patient.ID)
-				continue
-			}
-
-			if err := s.createThread(ctx, patient, event.Source, event.OrganizationEntityID, threading.THREAD_TYPE_EXTERNAL); err != nil {
-				return errors.Trace(err)
-			}
-		case sync.THREAD_CREATION_TYPE_SECURE:
-
-			// ensure that we have at least one phone number and email address before proceeding
-			if len(patient.PhoneNumbers) == 0 || len(patient.EmailAddresses) == 0 {
-				golog.Warningf("Ignoring patient %s since we dont have at least one valid phone number and email address for the patient", patient.ID)
-				continue
-			}
-
-			if err := s.createThread(ctx, patient, event.Source, event.OrganizationEntityID, threading.THREAD_TYPE_SECURE_EXTERNAL); err != nil {
-				return errors.Trace(err)
-			}
-		default:
-			return errors.Errorf("unknown thread creation type for org %s", event.OrganizationEntityID)
+		if err := s.createPatientAndThread(ctx, patient, cfg, event); err != nil {
+			return errors.Trace(err)
 		}
 	}
 
 	return nil
 }
 
-func (s *syncEvent) createThread(ctx context.Context, patient *sync.Patient, source sync.Source, orgID string, threadType threading.ThreadType) error {
+func (s *syncEvent) createPatientAndThread(ctx context.Context, patient *sync.Patient, cfg *sync.Config, event *sync.Event) error {
+
+	var threadType threading.ThreadType
+	orgID := cfg.OrganizationEntityID
+	source := event.Source
+	switch cfg.ThreadCreationType {
+	case sync.THREAD_CREATION_TYPE_STANDARD:
+		if len(patient.PhoneNumbers) == 0 && len(patient.EmailAddresses) == 0 {
+			golog.Warningf("Ignoring patient %s since we don't have at least one valid phone number and email address for the patient", patient.ID)
+			return nil
+		}
+		threadType = threading.THREAD_TYPE_EXTERNAL
+	case sync.THREAD_CREATION_TYPE_SECURE:
+
+		// ensure that we have at least one phone number and email address before proceeding
+		if len(patient.PhoneNumbers) == 0 || len(patient.EmailAddresses) == 0 {
+			golog.Warningf("Ignoring patient %s since we dont have at least one valid phone number and email address for the patient", patient.ID)
+			return nil
+		}
+
+		threadType = threading.THREAD_TYPE_SECURE_EXTERNAL
+	default:
+		return errors.Errorf("unknown thread creation type for org %s", event.OrganizationEntityID)
+	}
 
 	// check if the patient already exists as an entity based on the patient ID
 	if patient.ID == "" {
@@ -186,10 +290,12 @@ func (s *syncEvent) createThread(ctx context.Context, patient *sync.Patient, sou
 					directory.EntityInformation_MEMBERSHIPS,
 				},
 			},
-			Contacts: sync.ContactsFromPatient(patient),
+			Contacts: sync.TransformContacts(patient),
 			EntityInfo: &directory.EntityInfo{
 				FirstName: patient.FirstName,
 				LastName:  patient.LastName,
+				DOB:       sync.TransformDOB(patient.DOB),
+				Gender:    sync.TransformGender(patient.Gender),
 			},
 		})
 		if err != nil {

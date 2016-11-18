@@ -3,11 +3,13 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"net"
 	"net/http"
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/kms"
+	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/dal"
@@ -22,6 +24,7 @@ import (
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/events"
 	"github.com/sprucehealth/backend/svc/patientsync"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
@@ -72,12 +75,14 @@ func main() {
 		golog.Fatalf("Unable to communicate with directory service: %s", err)
 	}
 	defer directoryConn.Close()
+	directoryCLI := directory.NewDirectoryClient(directoryConn)
 
 	threadingConn, err := bootSvc.DialGRPC(*flagThreadingAddr)
 	if err != nil {
 		golog.Fatalf("Unable to communicate with threading service: %s", err)
 	}
 	defer threadingConn.Close()
+	threadingCLI := threading.NewThreadsClient(threadingConn)
 
 	settingsConn, err := bootSvc.DialGRPC(*flagSettingsAddr)
 	if err != nil {
@@ -101,6 +106,11 @@ func main() {
 		golog.Fatalf("Unable to initialize sqs: %s", err)
 	}
 
+	eSNS, err := awsutil.NewEncryptedSNS(*flagKMSKeyArn, kms.New(awsSession), sns.New(awsSession))
+	if err != nil {
+		golog.Fatalf("Unable to initialize sns: %s", err)
+	}
+
 	db, err := dbutil.ConnectMySQL(&dbutil.DBConfig{
 		User:          *flagDBUsername,
 		Password:      *flagDBPassword,
@@ -114,18 +124,19 @@ func main() {
 	if err != nil {
 		golog.Fatalf(err.Error())
 	}
+	dl := dal.New(db)
 
 	syncEventWorker := worker.NewSyncEvent(
-		dal.New(db),
-		directory.NewDirectoryClient(directoryConn),
-		threading.NewThreadsClient(threadingConn),
+		dl,
+		directoryCLI,
+		threadingCLI,
 		eSQS,
 		*flagSyncEventQueueURL,
 		*flagWebDomain)
 	syncEventWorker.Start()
 
 	initiateSyncWorker := worker.NewInitateSync(
-		dal.New(db),
+		dl,
 		*flagSyncEventQueueURL,
 		*flagInitialSyncQueueURL,
 		eSQS)
@@ -150,6 +161,18 @@ func main() {
 	}
 	cancel()
 
+	subscriber, err := events.NewSQSSubscriber(eSQS, eSNS, awsSession, "patientsync")
+	if err != nil {
+		golog.Fatalf("unable to create subscriber: %s", err)
+	}
+
+	subscriber.Subscribe(
+		fmt.Sprintf("%s-patientsync-events", environment.GetCurrent()),
+		[]events.Unmarshaler{&directory.EntityUpdatedEvent{}},
+		func(u events.Unmarshaler) error {
+			return worker.SyncEntityUpdate(directoryCLI, dl, u.(*directory.EntityUpdatedEvent))
+		})
+
 	srvMetricsRegistry := bootSvc.MetricsRegistry.Scope("server")
 	srv := server.New(dal.New(db), settingsClient, *flagInitialSyncQueueURL, eSQS)
 	patientsync.InitMetrics(srv, srvMetricsRegistry)
@@ -170,6 +193,7 @@ func main() {
 	boot.WaitForTermination()
 	syncEventWorker.Shutdown()
 	initiateSyncWorker.Shutdown()
+	subscriber.Stop()
 }
 
 func serve(handler http.Handler) {

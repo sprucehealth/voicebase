@@ -68,3 +68,14 @@ func OnlyEntity(es []*Entity) (*Entity, error) {
 	}
 	return es[0], nil
 }
+
+// FilterContacts returns a list of contacts that match the defined type
+func FilterContacts(entity *Entity, contactType ContactType) []*Contact {
+	contacts := make([]*Contact, 0, len(entity.Contacts))
+	for _, contact := range entity.Contacts {
+		if contact.ContactType == contactType {
+			contacts = append(contacts, contact)
+		}
+	}
+	return contacts
+}

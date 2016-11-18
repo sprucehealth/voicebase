@@ -99,7 +99,6 @@ func TestInitialSync(t *testing.T) {
 
 	syncPatients := &sync.Event{
 		Source:               sync.SOURCE_HINT,
-		Type:                 sync.EVENT_TYPE_PATIENT_ADD,
 		OrganizationEntityID: "orgID",
 		Event: &sync.Event_PatientAddEvent{
 			PatientAddEvent: &sync.PatientAddEvent{
@@ -117,6 +116,8 @@ func TestInitialSync(t *testing.T) {
 								Number: "+12068773590",
 							},
 						},
+						CreatedTime:      uint64(lastPatientCreatedAt.Unix()),
+						LastModifiedTime: uint64(time.Time{}.Unix()),
 					},
 					{
 						ID:             "pat-test2",
@@ -131,6 +132,8 @@ func TestInitialSync(t *testing.T) {
 								Number: "+13068773590",
 							},
 						},
+						CreatedTime:      uint64(lastPatientCreatedAt.Unix()),
+						LastModifiedTime: uint64(time.Time{}.Unix()),
 					},
 				},
 			},

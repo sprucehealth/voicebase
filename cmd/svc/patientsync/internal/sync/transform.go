@@ -2,9 +2,33 @@ package sync
 
 import "github.com/sprucehealth/backend/svc/directory"
 
-// ContactsFromPatient returns the contact information in a patient
+func TransformDOB(dob *Patient_Date) *directory.Date {
+	if dob == nil {
+		return nil
+	}
+
+	return &directory.Date{
+		Day:   dob.Day,
+		Month: dob.Month,
+		Year:  dob.Year,
+	}
+}
+
+func TransformGender(gender Patient_Gender) directory.EntityInfo_Gender {
+	switch gender {
+	case GENDER_MALE:
+		return directory.EntityInfo_MALE
+	case GENDER_FEMALE:
+		return directory.EntityInfo_FEMALE
+	case GENDER_OTHER:
+		return directory.EntityInfo_OTHER
+	}
+	return directory.EntityInfo_UNKNOWN
+}
+
+// TransformContacts returns the contact information in a patient
 // as a slice of directory contact objects
-func ContactsFromPatient(patient *Patient) []*directory.Contact {
+func TransformContacts(patient *Patient) []*directory.Contact {
 	contacts := make([]*directory.Contact, 0, len(patient.PhoneNumbers)+len(patient.EmailAddresses))
 	for _, pn := range patient.PhoneNumbers {
 		contacts = append(contacts, &directory.Contact{

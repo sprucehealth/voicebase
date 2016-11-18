@@ -72,7 +72,6 @@ func TestWebhookHandler(t *testing.T) {
 
 	syncPatients := &sync.Event{
 		Source:               sync.SOURCE_HINT,
-		Type:                 sync.EVENT_TYPE_PATIENT_ADD,
 		OrganizationEntityID: "orgID",
 		Event: &sync.Event_PatientAddEvent{
 			PatientAddEvent: &sync.PatientAddEvent{
@@ -93,6 +92,8 @@ func TestWebhookHandler(t *testing.T) {
 								Number: "+17348465522",
 							},
 						},
+						CreatedTime:      uint64(patient.CreatedAt.Unix()),
+						LastModifiedTime: uint64(patient.UpdatedAt.Unix()),
 					},
 				},
 			},

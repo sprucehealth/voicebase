@@ -50,16 +50,17 @@ message Initiate {
 
 // Event represents the sync event that our system should process.
 message Event {
-	enum EventType {
+	enum DeprecatedEventType {
 		EVENT_TYPE_UNKNOWN = 0;
 		EVENT_TYPE_PATIENT_ADD = 1;
 	}
 
-	EventType type = 1;
+	DeprecatedEventType type = 1;
 	Source source = 2;
 	string organization_entity_id = 3 [(gogoproto.customname) = "OrganizationEntityID"];
 	oneof event {
 		PatientAddEvent patient_add_event = 4;
+		PatientUpdatedEvent patient_update_event = 5;
 	}
 }
 
@@ -77,6 +78,26 @@ message Patient {
 	repeated string email_addresses = 5;
 	repeated Phone phone_numbers = 6;
 	string external_url = 7 [(gogoproto.customname) = "ExternalURL"];
+	uint64 last_modified_time = 8;
+	uint64 created_time = 9;
+	message Date {
+		uint32 day = 1;
+		uint32 month = 2;
+		uint32 year = 3;
+	}
+	Date dob = 10 [(gogoproto.customname) = "DOB"];
+	enum Gender {
+		GENDER_UNKNOWN = 0;
+		GENDER_MALE = 1;
+		GENDER_FEMALE = 2;
+		GENDER_OTHER = 3;
+	}
+	Gender gender = 11;
+}
+
+// PatientUpdatedEvent represents an event to update a list of existing patients in our system.
+message PatientUpdatedEvent {
+	repeated Patient patients = 1;
 }
 
 message Phone {
