@@ -59,7 +59,7 @@ func (s *snsPublisher) Publish(m Marshaler) error {
 func (s *snsPublisher) PublishAsync(m Marshaler) {
 	conc.Go(func() {
 		if err := s.publish(m); err != nil {
-			golog.Errorf("failed to publish event %s", nameOfEvent(m))
+			golog.Errorf(err.Error())
 		}
 	})
 }
@@ -82,7 +82,7 @@ func (s *snsPublisher) publish(m Marshaler) error {
 		Message:  ptr.String(base64.StdEncoding.EncodeToString(eventData)),
 		TopicArn: ptr.String(topicARN),
 	}); err != nil {
-		return errors.Trace(err)
+		return errors.Errorf("failed to publish event %s to topic %s: %s", eventName, topicARN, err)
 	}
 
 	return nil
