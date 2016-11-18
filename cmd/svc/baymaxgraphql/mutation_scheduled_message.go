@@ -9,7 +9,9 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/gqldecode"
+	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
@@ -219,7 +221,7 @@ func scheduleMessage(ctx context.Context, svc *service, ram raccess.ResourceAcce
 	// TODO: if there are references in the message, we are currently resolving them at the time of the scheduling
 	// of the message rather than at the time of posting. This means there is a possibility for someone to be @paged
 	// that is later removed from the team. While possible, is an edge case but worth fixing in the future.
-	msg, _, err := transformRequestToMessagePost(ctx, svc, ram, in.Message, thread, ent, primaryEntity)
+	msg, carePlans, err := transformRequestToMessagePost(ctx, svc, ram, in.Message, thread, ent, primaryEntity)
 	if e, ok := err.(errInvalidAttachment); ok {
 		return &scheduleMessageOutput{
 			Success:      false,
@@ -230,7 +232,7 @@ func scheduleMessage(ctx context.Context, svc *service, ram raccess.ResourceAcce
 		return nil, errors.InternalError(ctx, err)
 	}
 
-	_, err = ram.CreateScheduledMessage(ctx, &threading.CreateScheduledMessageRequest{
+	createScheduledMessageRes, err := ram.CreateScheduledMessage(ctx, &threading.CreateScheduledMessageRequest{
 		ThreadID:      in.ThreadID,
 		ActorEntityID: ent.ID,
 		ScheduledFor:  uint64(in.ScheduledForTimestamp),
@@ -240,6 +242,13 @@ func scheduleMessage(ctx context.Context, svc *service, ram raccess.ResourceAcce
 	})
 	if err != nil {
 		return nil, errors.Trace(err)
+	}
+
+	// Flag care plans as attached to the saved message
+	for _, cp := range carePlans {
+		if _, err := ram.UpdateCarePlan(ctx, cp, &care.UpdateCarePlanRequest{ID: cp.ID, ParentID: createScheduledMessageRes.ScheduledMessage.ID}); err != nil {
+			golog.Errorf("Failed to update care plan %s for scheduled message %s: %s", cp.ID, createScheduledMessageRes.ScheduledMessage.ID, err)
+		}
 	}
 
 	scheduledMessages, err := getScheduledMessages(ctx, ram, thread.ID, thread.OrganizationID, svc.webDomain, svc.mediaAPIDomain)

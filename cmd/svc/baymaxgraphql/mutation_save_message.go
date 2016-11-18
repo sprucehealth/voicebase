@@ -196,7 +196,7 @@ var saveMessageMutation = &graphql.Field{
 			}
 		}
 
-		// Flag care plans as submitted and attached to this message
+		// Flag care plans as attached to the saved message
 		for _, cp := range carePlans {
 			if _, err := ram.UpdateCarePlan(ctx, cp, &care.UpdateCarePlanRequest{ID: cp.ID, ParentID: savedMessage.ID}); err != nil {
 				golog.Errorf("Failed to update care plan %s for saved message %s: %s", cp.ID, savedMessage.ID, err)
