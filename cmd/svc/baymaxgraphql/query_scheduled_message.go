@@ -128,5 +128,5 @@ type scheduledMessageByScheduledFor []*models.ScheduledMessage
 func (s scheduledMessageByScheduledFor) Len() int      { return len(s) }
 func (s scheduledMessageByScheduledFor) Swap(a, b int) { s[a], s[b] = s[b], s[a] }
 func (s scheduledMessageByScheduledFor) Less(a, b int) bool {
-	return s[a].ScheduledFor > s[b].ScheduledFor
+	return s[a].ScheduledFor < s[b].ScheduledFor
 }
