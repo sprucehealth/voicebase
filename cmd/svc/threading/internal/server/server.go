@@ -1092,7 +1092,7 @@ func (s *threadsServer) QueryThreads(ctx context.Context, in *threading.QueryThr
 	switch in.Type {
 	case threading.QUERY_THREADS_TYPE_ADHOC:
 		if in.GetQuery() == nil {
-			return nil, grpcErrorf(codes.InvalidArgument, "Query quired for ADHOC queries")
+			return nil, grpcErrorf(codes.InvalidArgument, "Query required for ADHOC queries")
 		}
 		var err error
 		query, err = transformQueryFromRequest(in.GetQuery())

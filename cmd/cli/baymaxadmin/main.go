@@ -239,6 +239,7 @@ var commands = map[string]commandNew{
 	"updateverifiedemail":         newUpdateVerifiedEmailCmd,
 	"uploadlayout":                newUploadLayoutCmd,
 	"zerobadges":                  newZeroBadgesCmd,
+	"cleanupspamaccounts":         newCleanupSpamAccountsCmd,
 }
 
 func main() {

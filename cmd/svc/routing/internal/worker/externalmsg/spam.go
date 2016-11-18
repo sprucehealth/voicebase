@@ -20,6 +20,7 @@ var spamTextPhrases = []string{
 	"Jelastic account activation code:",
 	"Your textPlus access code is",
 	"您申请注册微博，验证码",
+	"Your Virtual SIM  verification code",
 }
 
 func isMessageSpam(pem *excomms.PublishedExternalMessage) bool {
