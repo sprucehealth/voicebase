@@ -283,7 +283,9 @@ func cloneAttachments(ctx context.Context, ram raccess.ResourceAccessor, ent *di
 				}
 				newAtt.ContentID = res.MediaInfo.ID
 				newAtt.URL = res.MediaInfo.ID
+				newAtt.Title = res.MediaInfo.Name
 				a.Document.MediaID = res.MediaInfo.ID
+				a.Document.Name = res.MediaInfo.Name
 			case *threading.Attachment_Visit:
 				res, err := ram.Visit(ctx, &care.GetVisitRequest{ID: a.Visit.VisitID})
 				if err != nil {
