@@ -38,7 +38,7 @@ func NewSNSPublisher(snsAPI snsiface.SNSAPI, awsSession *session.Session) (Publi
 		return nil, errors.Trace(err)
 	}
 
-	topicARNPrefix := fmt.Sprintf("arn:aws:sns:%s:%s:", accountID, *awsSession.Config.Region)
+	topicARNPrefix := fmt.Sprintf("arn:aws:sns:%s:%s:", *awsSession.Config.Region, accountID)
 
 	return &snsPublisher{
 		snsAPI:         snsAPI,
