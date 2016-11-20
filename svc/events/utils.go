@@ -56,7 +56,11 @@ func nameOfEvent(m interface{}) string {
 }
 
 func basePackageOfEvent(m interface{}) string {
-	return path.Base(reflect.TypeOf(m).PkgPath())
+	mType := reflect.TypeOf(m)
+	if mType.Kind() == reflect.Ptr {
+		mType = mType.Elem()
+	}
+	return path.Base(mType.PkgPath())
 }
 
 func resourceNameFromEvent(m interface{}) string {
