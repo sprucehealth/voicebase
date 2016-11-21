@@ -344,6 +344,16 @@ func (m *resourceAccessor) canAccessCarePlan(ctx context.Context, cp *care.CareP
 			return err
 		}
 		return m.canAccessResource(ctx, savedMessageRes.SavedMessages[0].OrganizationID, m.orgsForOrganization)
+	} else if strings.HasPrefix(cp.ParentID, threading.ScheduledMessageIDPrefix) {
+		scheduledMessageRes, err := m.threading.ScheduledMessages(ctx, &threading.ScheduledMessagesRequest{
+			LookupKey: &threading.ScheduledMessagesRequest_ScheduledMessageID{
+				ScheduledMessageID: cp.ParentID,
+			},
+		})
+		if err != nil {
+			return err
+		}
+		return m.CanPostMessage(ctx, scheduledMessageRes.ScheduledMessages[0].ThreadID)
 	}
 	return errors.Errorf("Unknown parentID type '%s' to perform authorization check for care plan '%s'", cp.ParentID, cp.ID)
 }
