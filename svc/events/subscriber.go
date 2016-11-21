@@ -2,7 +2,6 @@ package events
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -13,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/worker"
 )
 
@@ -93,19 +93,17 @@ func (s *subscription) processMessage(ctx context.Context, data string) error {
 	if err := json.Unmarshal([]byte(data), &snsMessage); err != nil {
 		return errors.Trace(err)
 	}
+	golog.Infof("SNS message is %#v", snsMessage)
 
 	resourceName, err := resourceNameFromARN(snsMessage.TopicArn)
 	if err != nil {
 		return errors.Trace(err)
 	}
-
-	decodedData, err := base64.StdEncoding.DecodeString(snsMessage.Message)
-	if err != nil {
-		return errors.Trace(err)
-	}
+	golog.Infof("Resource name is: %s", resourceName)
 
 	eventTypeInstance := newInstanceFromType(s.eventTypes[resourceName])
-	if err := json.Unmarshal(decodedData, eventTypeInstance); err != nil {
+	golog.Infof("eventTypeInstance is %T", eventTypeInstance)
+	if err := json.Unmarshal([]byte(snsMessage.Message), eventTypeInstance); err != nil {
 		return errors.Trace(err)
 	}
 
