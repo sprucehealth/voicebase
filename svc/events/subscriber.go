@@ -2,6 +2,7 @@ package events
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -98,8 +99,13 @@ func (s *subscription) processMessage(ctx context.Context, data string) error {
 		return errors.Trace(err)
 	}
 
+	decodedData, err := base64.StdEncoding.DecodeString(snsMessage.Message)
+	if err != nil {
+		return errors.Trace(err)
+	}
+
 	eventTypeInstance := newInstanceFromType(s.eventTypes[resourceName])
-	if err := json.Unmarshal([]byte(snsMessage.Message), eventTypeInstance); err != nil {
+	if err := json.Unmarshal(decodedData, eventTypeInstance); err != nil {
 		return errors.Trace(err)
 	}
 
