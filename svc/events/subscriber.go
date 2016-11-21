@@ -70,6 +70,7 @@ func (s *sqsSubscriber) Subscribe(name string, events []Unmarshaler, fn func(u U
 		eventTypes: eventTypes,
 	}
 	sub.worker = awsutil.NewSQSWorker(s.sqsAPI, s.sqsURLPrefix+name, sub.processMessage)
+	sub.worker.Start()
 
 	s.subscriptions = append(s.subscriptions, sub)
 }
