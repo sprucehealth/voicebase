@@ -126,6 +126,10 @@ func (w *IncomingRawMessageWorker) Start() {
 				golog.Debugf("Process message %s", *item.ReceiptHandle)
 
 				if err := w.process(&notif); err != nil {
+					if errors.Cause(err) == awsutil.ErrMsgNotProcessedYet {
+						continue
+					}
+
 					golog.Errorf("Unable to process notification: " + err.Error())
 					continue
 				}
@@ -239,7 +243,10 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 		mediaMap := make(map[string]*models.Media, 1)
 
 		media, err := w.uploadTwilioMediaToS3("audio/mpeg", params.RecordingURL+".mp3")
-		if err != nil {
+		if e, ok := errors.Cause(err).(errMediaNotFound); ok {
+			golog.Warningf("unable to upload twilio media: %s", e)
+			return awsutil.ErrMsgNotProcessedYet
+		} else if err != nil {
 			return errors.Trace(err)
 		}
 		if media.Duration == 0 {
@@ -372,6 +379,12 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 	return nil
 }
 
+type errMediaNotFound string
+
+func (e errMediaNotFound) Error() string {
+	return string(e)
+}
+
 func (w *IncomingRawMessageWorker) uploadTwilioMediaToS3(contentType, url string) (*models.Media, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -394,6 +407,11 @@ func (w *IncomingRawMessageWorker) uploadTwilioMediaToS3(contentType, url string
 	}
 
 	if res.StatusCode < 200 || res.StatusCode > 299 {
+
+		if res.StatusCode == 404 {
+			return nil, errors.Trace(errMediaNotFound(fmt.Sprintf("twilio media %s not found", url)))
+		}
+
 		// Avoid flooding the log
 		if len(data) > 1000 {
 			data = data[:1000]

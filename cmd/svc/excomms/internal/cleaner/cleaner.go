@@ -2,6 +2,7 @@ package cleaner
 
 import (
 	"encoding/json"
+	"net/http"
 	"time"
 
 	"context"
@@ -105,6 +106,9 @@ func (w *Worker) processEvent(drr *models.DeleteResourceRequest) error {
 		if err != nil {
 			if e, ok := err.(*twilio.Exception); ok && e.Code == twilio.ErrorCodeResourceNotFound {
 				return nil
+			} else if e.Status == http.StatusBadRequest {
+				golog.Warningf("Unable to delete message: %s", err)
+				return awsutil.ErrMsgNotProcessedYet
 			}
 			return errors.Trace(err)
 		}
