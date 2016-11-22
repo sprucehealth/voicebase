@@ -4,6 +4,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/sync"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/go-hint"
 )
@@ -21,7 +22,28 @@ func UpdatePatientIfDiffersFromEntity(patientID string, syncConfig *sync.Config,
 		return nil
 	}
 
+	// re-add any phone numbers that are not parseable in Spruce, back to the hint patient
+	// so that patient information is not 'lost' on hint side
+	var unparseablePhoneNumbers []*hint.Phone
+	for _, phoneItem := range patient.Phones {
+		if _, err := phone.ParseNumber(phoneItem.Number); err != nil {
+			unparseablePhoneNumbers = append(unparseablePhoneNumbers, phoneItem)
+		}
+	}
+
 	hintPatient := transformEntityToHintPatient(patientID, entity)
+
+	if len(unparseablePhoneNumbers) > 0 {
+		hintPatient.Phones = append(hintPatient.Phones, unparseablePhoneNumbers...)
+	}
+
+	// pretty format all phone numbers when adding back to hint
+	for _, phoneItem := range hintPatient.Phones {
+		parsedPhone, err := phone.Format(phoneItem.Number, phone.Pretty)
+		if err == nil {
+			phoneItem.Number = parsedPhone
+		}
+	}
 
 	_, err = hint.UpdatePatient(practiceKey, patientID, &hint.PatientParams{
 		FirstName: hintPatient.FirstName,

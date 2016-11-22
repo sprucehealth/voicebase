@@ -6,7 +6,7 @@ import (
 	"github.com/sprucehealth/backend/libs/validate"
 )
 
-// sanitizeAndValidatePatient cleans out any invalid contact information
+// sanitizePatient cleans out any invalid contact information
 func sanitizePatient(patient *sync.Patient) {
 	phoneNumbers := make([]*sync.Phone, 0, len(patient.PhoneNumbers))
 	for _, phoneNumber := range patient.PhoneNumbers {

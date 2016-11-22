@@ -1,6 +1,9 @@
 package sync
 
-import "github.com/sprucehealth/backend/svc/directory"
+import (
+	"github.com/sprucehealth/backend/libs/phone"
+	"github.com/sprucehealth/backend/svc/directory"
+)
 
 // Differs returns true if there are sync related properties that
 // differ between the patient and entity objects
@@ -29,14 +32,14 @@ func Differs(patient *Patient, entity *directory.Entity) bool {
 
 	// check all email addresses are identical
 	for _, emailAddress := range patient.EmailAddresses {
-		if emailContact := contactForValue(emailAddress, emailContacts); emailContact == nil {
+		if emailContact := contactForValue(emailAddress, directory.ContactType_EMAIL, emailContacts); emailContact == nil {
 			return true
 		}
 	}
 
 	// check all phone numbers and their labels are identical
 	for _, phone := range patient.PhoneNumbers {
-		if phoneContact := contactForValue(phone.Number, phoneContacts); phoneContact == nil {
+		if phoneContact := contactForValue(phone.Number, directory.ContactType_PHONE, phoneContacts); phoneContact == nil {
 			return true
 		} else if labelFromType(phone.Type) != phoneContact.Label {
 			return true
@@ -60,9 +63,25 @@ func Differs(patient *Patient, entity *directory.Entity) bool {
 	return false
 }
 
-func contactForValue(value string, contacts []*directory.Contact) *directory.Contact {
+func contactForValue(value string, contactType directory.ContactType, contacts []*directory.Contact) *directory.Contact {
+
+	var err error
+	if contactType == directory.ContactType_PHONE {
+		value, err = phone.Format(value, phone.E164)
+		if err != nil {
+			return nil
+		}
+	}
+
 	for _, contact := range contacts {
-		if value == contact.Value {
+		contactValue := contact.Value
+		if contact.ContactType == directory.ContactType_PHONE {
+			contactValue, err = phone.Format(contact.Value, phone.E164)
+			if err != nil {
+				continue
+			}
+		}
+		if value == contactValue {
 			return contact
 		}
 	}
