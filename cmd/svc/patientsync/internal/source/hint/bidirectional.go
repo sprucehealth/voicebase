@@ -55,6 +55,6 @@ func UpdatePatientIfDiffersFromEntity(patientID string, syncConfig *sync.Config,
 		return errors.Trace(err)
 	}
 
-	golog.Debugf("patient update in Spruce (%s) triggered an update in Hint (%s)", entity.ID, patientID)
+	golog.Infof("patient update in Spruce (%s) triggered an update in Hint (%s)", entity.ID, patientID)
 	return errors.Trace(err)
 }

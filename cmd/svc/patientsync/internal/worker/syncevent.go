@@ -186,7 +186,7 @@ func (s *syncEvent) processPatientUpdatedEvent(ctx context.Context, cfg *sync.Co
 			}
 		}
 
-		golog.Debugf("patient update in Hint (%s) triggered an update in Spruce (%s)", patient.ID, patientEntity.ID)
+		golog.Infof("patient update in Hint (%s) triggered an update in Spruce (%s)", patient.ID, patientEntity.ID)
 	}
 
 	return nil
