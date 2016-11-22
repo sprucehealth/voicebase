@@ -392,6 +392,8 @@ func threadEmptyStateTextMarkup(ctx context.Context, ram raccess.ResourceAccesso
 					return fmt.Sprintf("We've sent an invitation to %s to download the Spruce application and connect with you. You can message the patient below -- we recommend sending a personal welcome to kick things off.\n\nYou can also make internal notes about the patient’s care. These are not sent to the patient but are visible to you and your teammates.", esm.Info.DisplayName)
 				case threading.THREAD_ORIGIN_ORGANIZATION_CODE:
 					return fmt.Sprintf("%s has signed up for Spruce using your practice’s code. You can message the patient below -- we recommend sending a personal welcome to kick things off. You can also make internal notes about the patient’s care. These are not sent to the patient but are visible to you and your teammates.", esm.Info.DisplayName)
+				case threading.THREAD_ORIGIN_SYNC:
+					return fmt.Sprintf(`Tap "Send Invite" to invite %s to download the Spruce app and connect with your practice.\n\nYou can message the patient below — we recommend sending a personal welcome to kick things off. %s will be able to read the messages after creating an account.\n\nYou can also make internal notes about the patient's care. These are not sent to the patient but are visible to you and your teammates.`, esm.Info.DisplayName, esm.Info.DisplayName)
 				}
 			}
 		} else if viewingAccount.Type == auth.AccountType_PATIENT {
