@@ -51,6 +51,8 @@ func hintPhoneTypeFromEntityLabel(label string) string {
 		return hint.PhoneTypeOffice
 	case "Home":
 		return hint.PhoneTypeHome
+	case "":
+		return hint.PhoneTypeMobile
 	}
 
 	return label
