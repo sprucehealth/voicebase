@@ -149,6 +149,12 @@ func (s *syncEvent) processPatientUpdatedEvent(ctx context.Context, cfg *sync.Co
 			continue
 		}
 
+		// ignore update if the patient was locally updated more recently
+		// than the incoming update
+		if patientEntity.LastModifiedTimestamp > patient.LastModifiedTime {
+			continue
+		}
+
 		patientEntity.Info.FirstName = patient.FirstName
 		patientEntity.Info.LastName = patient.LastName
 		patientEntity.Info.DOB = sync.TransformDOB(patient.DOB)

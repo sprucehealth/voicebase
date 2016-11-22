@@ -22,6 +22,13 @@ func UpdatePatientIfDiffersFromEntity(patientID string, syncConfig *sync.Config,
 		return nil
 	}
 
+	// if the patient in Hint was updated after the patient in Spruce,
+	// then ignore the Spruce update, assuming that the information in Hint is
+	// the latest information
+	if uint64(patient.UpdatedAt.Unix()) > entity.LastModifiedTimestamp {
+		return nil
+	}
+
 	// re-add any phone numbers that are not parseable in Spruce, back to the hint patient
 	// so that patient information is not 'lost' on hint side
 	var unparseablePhoneNumbers []*hint.Phone
