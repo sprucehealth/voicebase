@@ -317,7 +317,11 @@ func (s *service) media(ctx context.Context, id dal.MediaID) (*dal.Media, error)
 		DurationNS: uint64(meta.Duration.Nanoseconds()),
 	}
 	_, err = s.dal.InsertMedia(med)
-	return med, errors.Trace(err)
+	// Ignore duplicate errors as that just means another request got here first
+	if err != nil && errors.Cause(err) != dal.ErrDuplicate {
+		return nil, errors.Trace(err)
+	}
+	return med, nil
 }
 
 const (

@@ -3,6 +3,7 @@ package dal
 import (
 	"testing"
 
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testsql"
 )
@@ -32,4 +33,8 @@ func TestMedia(t *testing.T) {
 	test.OK(t, err)
 	med.Created = m.Created
 	test.Equals(t, med, m)
+
+	// Make sure proper error is returned on duplicate ID
+	_, err = dal.InsertMedia(med)
+	test.Equals(t, ErrDuplicate, errors.Cause(err))
 }

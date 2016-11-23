@@ -13,8 +13,12 @@ import (
 	"github.com/sprucehealth/backend/libs/transactional/tsql"
 )
 
-// ErrNotFound represents when an object cannot be found at the data layer
-var ErrNotFound = errors.New("media/dal: object not found")
+var (
+	// ErrNotFound represents when an object cannot be found at the data layer
+	ErrNotFound = errors.New("media/dal: object not found")
+	// ErrDuplicate is returned when an insert fails a unique key restraint
+	ErrDuplicate = errors.New("media/dal: duplicate object")
+)
 
 // DAL represents the methods required to provide data access layer functionality
 type DAL interface {
@@ -206,7 +210,9 @@ func (d *dal) InsertMedia(model *Media) (MediaID, error) {
 		model.DurationNS,
 		model.Public,
 		model.Name)
-	if err != nil {
+	if dbutil.IsMySQLError(err, dbutil.MySQLDuplicateEntry) {
+		return EmptyMediaID(), errors.Trace(ErrDuplicate)
+	} else if err != nil {
 		return EmptyMediaID(), errors.Trace(err)
 	}
 
