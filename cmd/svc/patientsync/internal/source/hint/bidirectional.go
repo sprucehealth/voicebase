@@ -19,6 +19,7 @@ func UpdatePatientIfDiffersFromEntity(patientID string, syncConfig *sync.Config,
 
 	// nothing to do if the patients do not differ between hint and spruce
 	if !sync.Differs(transformPatient(patient), entity) {
+		golog.Infof("patient %s and entity %s do not differ so nothing to do here", patientID, entity.ID)
 		return nil
 	}
 
@@ -26,6 +27,7 @@ func UpdatePatientIfDiffersFromEntity(patientID string, syncConfig *sync.Config,
 	// then ignore the Spruce update, assuming that the information in Hint is
 	// the latest information
 	if uint64(patient.UpdatedAt.Unix()) > entity.LastModifiedTimestamp {
+		golog.Infof("Ignoring the update of entity %s in spruce since the patient %s was updated after that", entity.ID, patientID)
 		return nil
 	}
 

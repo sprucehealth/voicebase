@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/source/hint"
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/sync"
 	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
 )
 
@@ -31,6 +32,7 @@ func SyncEntityUpdate(dirCLI directory.DirectoryClient, dl dal.DAL, ev *director
 	if err != nil && errors.Cause(err) != directory.ErrEntityNotFound {
 		return errors.Errorf("unable to lookup entity %s : %s", ev.EntityID, err)
 	} else if errors.Cause(err) == directory.ErrEntityNotFound {
+		golog.Warningf("entity %s not found", ev.EntityID)
 		// nothing to do
 		return nil
 	}
@@ -47,6 +49,7 @@ func SyncEntityUpdate(dirCLI directory.DirectoryClient, dl dal.DAL, ev *director
 	}
 
 	if source == sync.SOURCE_UNKNOWN {
+		golog.Warningf("unknown source for entity %s", ev.EntityID)
 		// nothing to do since patient is not linked to an external system
 		return nil
 	}
