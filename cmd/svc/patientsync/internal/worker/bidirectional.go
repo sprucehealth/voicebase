@@ -41,7 +41,7 @@ func SyncEntityUpdate(dirCLI directory.DirectoryClient, dl dal.DAL, ev *director
 	var source sync.Source
 	var entityExternalID string
 	for _, externalID := range entity.ExternalIDs {
-		if ss, err := sync.SourceFromExternalID(externalID); err == nil {
+		if ss, err := sync.SourceFromExternalID(externalID); err == nil && ss != sync.SOURCE_UNKNOWN {
 			source = ss
 			entityExternalID = externalID
 			break
