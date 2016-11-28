@@ -592,7 +592,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, webDomain, 
 						Title:   f.Name,
 						CTAText: "View File",
 						TapURL:  media.URL(mediaAPIDomain, mediaID, f.Mimetype),
-						IconURL: "https://dlzz6qy5jmbag.cloudfront.net/caremessenger/icon_payment.png",
+						IconURL: "https://dlzz6qy5jmbag.cloudfront.net/caremessenger/icon_file.png",
 					}
 				case *threading.Attachment_GenericURL:
 					att.Type = attachmentTypeGenericURL

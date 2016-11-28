@@ -3,12 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
+	segment "github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/libs/analytics"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/gqldecode"
 	"github.com/sprucehealth/backend/svc/care"
@@ -250,6 +253,21 @@ func scheduleMessage(ctx context.Context, svc *service, ram raccess.ResourceAcce
 			golog.Errorf("Failed to update care plan %s for scheduled message %s: %s", cp.ID, createScheduledMessageRes.ScheduledMessage.ID, err)
 		}
 	}
+
+	attachmentProperties := attachmentsIncluded(msg.Attachments)
+	properties := make(map[string]interface{}, len(attachmentProperties)+2)
+
+	properties["organization_id"] = thread.OrganizationID
+	properties["thread_id"] = thread.ID
+	for key, value := range attachmentProperties {
+		properties[key] = value
+	}
+
+	analytics.SegmentTrack(&segment.Track{
+		Event:      fmt.Sprintf("scheduled-message-%s", strings.ToLower(thread.Type.String())),
+		UserId:     ent.AccountID,
+		Properties: properties,
+	})
 
 	scheduledMessages, err := getScheduledMessages(ctx, ram, thread.ID, thread.OrganizationID, svc.webDomain, svc.mediaAPIDomain)
 	if err != nil {

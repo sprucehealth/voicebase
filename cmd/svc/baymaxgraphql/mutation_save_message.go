@@ -3,10 +3,12 @@ package main
 import (
 	"fmt"
 
+	segment "github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/libs/analytics"
 	"github.com/sprucehealth/backend/libs/bml"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/gqldecode"
@@ -202,6 +204,21 @@ var saveMessageMutation = &graphql.Field{
 				golog.Errorf("Failed to update care plan %s for saved message %s: %s", cp.ID, savedMessage.ID, err)
 			}
 		}
+
+		attachmentProperties := attachmentsIncluded(attachments)
+		properties := make(map[string]interface{}, len(attachmentProperties)+2)
+
+		properties["organization_id"] = savedMessage.OrganizationID
+		properties["private"] = savedMessage.OwnerEntityID != savedMessage.OrganizationID
+		for key, value := range attachmentProperties {
+			properties[key] = value
+		}
+
+		analytics.SegmentTrack(&segment.Track{
+			Event:      fmt.Sprintf("saved-message"),
+			UserId:     ent.AccountID,
+			Properties: properties,
+		})
 
 		return &saveMessageOutput{
 			Success: true,

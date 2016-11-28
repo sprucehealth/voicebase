@@ -511,14 +511,45 @@ func trackPostMessage(ctx context.Context, thr *threading.Thread, req *threading
 		}
 	}
 
+	attachmentProperties := attachmentsIncluded(req.Message.Attachments)
+	properties := make(map[string]interface{}, len(attachmentProperties)+3)
+
+	properties["organization_id"] = thr.OrganizationID
+	properties["thread_id"] = req.ThreadID
+	properties["length"] = len(req.Message.Text)
+	for key, value := range attachmentProperties {
+		properties[key] = value
+	}
+
 	analytics.SegmentTrack(&segment.Track{
-		Event:  fmt.Sprintf("posted-message-%s", strings.ToLower(thr.Type.String())),
-		UserId: acc.ID,
-		Properties: map[string]interface{}{
-			"organization_id": thr.OrganizationID,
-			"thread_id":       req.ThreadID,
-		},
+		Event:      fmt.Sprintf("posted-message-%s", strings.ToLower(thr.Type.String())),
+		UserId:     acc.ID,
+		Properties: properties,
 	})
+}
+
+func attachmentsIncluded(attachments []*threading.Attachment) map[string]interface{} {
+	properties := make(map[string]interface{})
+
+	for _, attachment := range attachments {
+		switch attachment.GetData().(type) {
+		case *threading.Attachment_Visit:
+			properties["visit"] = true
+		case *threading.Attachment_CarePlan:
+			properties["care_plan"] = true
+		case *threading.Attachment_Audio:
+			properties["audio"] = true
+		case *threading.Attachment_Document:
+			properties["document"] = true
+		case *threading.Attachment_Video:
+			properties["video"] = true
+		case *threading.Attachment_Image:
+			properties["image"] = true
+		case *threading.Attachment_PaymentRequest:
+			properties["payment_request"] = true
+		}
+	}
+	return properties
 }
 
 func populateMessageDestinationAndBuildTitle(
