@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/libs/smet"
 	"github.com/sprucehealth/backend/svc/threading"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 var sentStatus = models.ScheduledMessageStatusSent
@@ -65,6 +66,10 @@ func (w *Workers) processPendingScheduledMessage() {
 				},
 			})
 			if err != nil {
+				if grpc.Code(err) == codes.NotFound {
+					golog.Warningf("Unable to send scheduled message since thread %s was not found", scheduledMessage.ThreadID)
+					return nil
+				}
 				return errors.Trace(err)
 			}
 			// IF we fail to parse the id of the sent item just log it since we don't want to sent it twice
