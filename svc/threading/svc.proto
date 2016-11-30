@@ -132,7 +132,7 @@ message SavedQuery {
 	string id = 1 [(gogoproto.customname) = "ID"];
 	SavedQueryType type = 2;
 	Query query = 3;
-	string title = 4;
+	string short_title = 4;
 	uint32 unread = 5;
 	uint32 total = 6;
 	int32 ordinal = 7;
@@ -140,6 +140,8 @@ message SavedQuery {
 	bool notifications_enabled = 9;
 	bool hidden = 10;
 	bool template = 11;
+	string long_title = 12;
+	string description = 13;
 }
 
 message Query {
@@ -391,11 +393,13 @@ message CreateSavedQueryRequest {
 	SavedQueryType type = 1;
 	string entity_id = 2 [(gogoproto.customname) = "EntityID"];
 	Query query = 3;
-	string title = 4;
+	string short_title = 4;
 	int32 ordinal = 5;
 	bool notifications_enabled = 6;
 	bool hidden = 7;
 	bool template = 8;
+	string long_title = 9;
+	string description = 10;
 }
 
 message CreateSavedQueryResponse {

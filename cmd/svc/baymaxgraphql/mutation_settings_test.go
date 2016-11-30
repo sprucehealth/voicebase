@@ -832,8 +832,8 @@ func TestModifySetting_PatientBackwardsNotifications(t *testing.T) {
 
 	g.ra.Expect(mock.NewExpectation(g.ra.SavedQueries, nodeID).WithReturns([]*threading.SavedQuery{
 		{
-			ID:    "patientSQID",
-			Title: "patient",
+			ID:         "patientSQID",
+			ShortTitle: "patient",
 		},
 	}, nil))
 
@@ -990,8 +990,8 @@ func TestModifySetting_TeamBackwardsNotifications(t *testing.T) {
 
 	g.ra.Expect(mock.NewExpectation(g.ra.SavedQueries, nodeID).WithReturns([]*threading.SavedQuery{
 		{
-			ID:    "teamSQID",
-			Title: "team",
+			ID:         "teamSQID",
+			ShortTitle: "team",
 		},
 	}, nil))
 

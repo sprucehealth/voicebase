@@ -312,7 +312,9 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 
 		if err = ram.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
 			EntityID:             accEntityID,
-			Title:                savedQueryTemplate.Title,
+			ShortTitle:           savedQueryTemplate.ShortTitle,
+			LongTitle:            savedQueryTemplate.LongTitle,
+			Description:          savedQueryTemplate.Description,
 			Query:                savedQueryTemplate.Query,
 			Ordinal:              savedQueryTemplate.Ordinal,
 			NotificationsEnabled: savedQueryTemplate.NotificationsEnabled,

@@ -107,7 +107,7 @@ func (c *rebuildSavedQueriesCmd) run(args []string) error {
 		}
 		for _, sq := range res.SavedQueries {
 			if sq.Type == threading.SAVED_QUERY_TYPE_NORMAL {
-				fmt.Printf("\t%s %s (%d)\n", sq.ID, sq.Title, sq.Total)
+				fmt.Printf("\t%s %s (%d)\n", sq.ID, sq.ShortTitle, sq.Total)
 				if _, err := c.threadingCli.UpdateSavedQuery(ctx, &threading.UpdateSavedQueryRequest{
 					SavedQueryID: sq.ID,
 					ForceRebuild: true,

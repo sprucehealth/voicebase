@@ -1187,7 +1187,7 @@ func TestSavedQueries(t *testing.T) {
 		Ordinal:              2,
 		EntityID:             "ent",
 		Query:                &models.Query{},
-		Title:                "sq1",
+		ShortTitle:           "sq1",
 		NotificationsEnabled: true,
 		Type:                 models.SavedQueryTypeNormal,
 	}
@@ -1202,7 +1202,7 @@ func TestSavedQueries(t *testing.T) {
 				{Value: &models.Expr_Token{Token: "foo"}},
 			},
 		},
-		Title:                "sq2",
+		ShortTitle:           "sq2",
 		NotificationsEnabled: true,
 		Type:                 models.SavedQueryTypeNormal,
 	}
@@ -1231,7 +1231,7 @@ func TestSavedQueries(t *testing.T) {
 
 	sq, err = dal.SavedQuery(ctx, sq1.ID)
 	test.OK(t, err)
-	test.Equals(t, "new title", sq.Title)
+	test.Equals(t, "new title", sq.ShortTitle)
 	test.Equals(t, 19, sq.Ordinal)
 	test.Equals(t, newQuery, sq.Query)
 

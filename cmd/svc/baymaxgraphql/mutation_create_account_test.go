@@ -89,7 +89,9 @@ func TestCreateAccountMutation(t *testing.T) {
 
 	g.ra.Expect(mock.NewExpectation(g.ra.SavedQueryTemplates, "e_org").WithReturns([]*threading.SavedQuery{
 		{
-			Title:                "Patient",
+			ShortTitle:           "Patient",
+			LongTitle:            "All Patient Conversations",
+			Description:          "Any new activity in a patient conversation",
 			Ordinal:              2000,
 			Query:                &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_PATIENT}}}},
 			Type:                 threading.SAVED_QUERY_TYPE_NORMAL,
@@ -102,7 +104,9 @@ func TestCreateAccountMutation(t *testing.T) {
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateSavedQuery, &threading.CreateSavedQueryRequest{
 		Type:                 threading.SAVED_QUERY_TYPE_NORMAL,
 		EntityID:             "e_int",
-		Title:                "Patient",
+		ShortTitle:           "Patient",
+		LongTitle:            "All Patient Conversations",
+		Description:          "Any new activity in a patient conversation",
 		Ordinal:              2000,
 		Query:                &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_PATIENT}}}},
 		NotificationsEnabled: true,
@@ -326,7 +330,9 @@ func TestCreateAccountMutation_InviteColleague(t *testing.T) {
 
 	g.ra.Expect(mock.NewExpectation(g.ra.SavedQueryTemplates, "e_org_inv").WithReturns([]*threading.SavedQuery{
 		{
-			Title:                "Patient",
+			ShortTitle:           "Patient",
+			LongTitle:            "All Patient Conversations",
+			Description:          "Any new activity in a patient conversation",
 			Ordinal:              2000,
 			Query:                &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_PATIENT}}}},
 			NotificationsEnabled: true,
@@ -339,7 +345,9 @@ func TestCreateAccountMutation_InviteColleague(t *testing.T) {
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateSavedQuery, &threading.CreateSavedQueryRequest{
 		Type:                 threading.SAVED_QUERY_TYPE_NORMAL,
 		EntityID:             "e_int",
-		Title:                "Patient",
+		ShortTitle:           "Patient",
+		LongTitle:            "All Patient Conversations",
+		Description:          "Any new activity in a patient conversation",
 		Ordinal:              2000,
 		Query:                &threading.Query{Expressions: []*threading.Expr{{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_PATIENT}}}},
 		NotificationsEnabled: true,

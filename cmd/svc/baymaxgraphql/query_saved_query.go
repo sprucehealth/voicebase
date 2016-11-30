@@ -25,6 +25,8 @@ var savedThreadQueryType = graphql.NewObject(
 			"title":                           &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"unread":                          &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
 			"total":                           &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+			"notificationSettingsTitle":       &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"notificationSettingsDescription": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"notificationsEnabled":            &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowUpdateNotificationsEnabled": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"threads": &graphql.Field{

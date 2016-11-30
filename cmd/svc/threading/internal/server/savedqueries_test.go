@@ -33,10 +33,10 @@ func TestCreateSavedQuery(t *testing.T) {
 	eid, err := models.NewSavedQueryID()
 	test.OK(t, err)
 	esq := &models.SavedQuery{
-		EntityID: "entity_1",
-		Title:    "Stuff",
-		Ordinal:  2,
-		Type:     models.SavedQueryTypeNormal,
+		EntityID:   "entity_1",
+		ShortTitle: "Stuff",
+		Ordinal:    2,
+		Type:       models.SavedQueryTypeNormal,
 		Query: &models.Query{
 			Expressions: []*models.Expr{
 				{Not: true, Value: &models.Expr_Flag_{Flag: models.EXPR_FLAG_UNREAD}},
@@ -106,7 +106,7 @@ func TestCreateSavedQuery(t *testing.T) {
 	}
 	res, err := srv.CreateSavedQuery(context.Background(), &threading.CreateSavedQueryRequest{
 		EntityID:             "entity_1",
-		Title:                "Stuff",
+		ShortTitle:           "Stuff",
 		Query:                query,
 		Ordinal:              2,
 		NotificationsEnabled: true,
@@ -116,7 +116,7 @@ func TestCreateSavedQuery(t *testing.T) {
 	test.Equals(t, &threading.CreateSavedQueryResponse{
 		SavedQuery: &threading.SavedQuery{
 			ID:                   eid.String(),
-			Title:                "Stuff",
+			ShortTitle:           "Stuff",
 			Query:                query,
 			Ordinal:              2,
 			EntityID:             "entity_1",
@@ -142,11 +142,11 @@ func TestSavedQuery(t *testing.T) {
 
 	dl.Expect(mock.NewExpectation(dl.SavedQuery, sqID).WithReturns(
 		&models.SavedQuery{
-			ID:       sqID,
-			EntityID: entID,
-			Title:    "Foo",
-			Unread:   1,
-			Total:    9,
+			ID:         sqID,
+			EntityID:   entID,
+			ShortTitle: "Foo",
+			Unread:     1,
+			Total:      9,
 			Query: &models.Query{
 				Expressions: []*models.Expr{
 					{Value: &models.Expr_Flag_{Flag: models.EXPR_FLAG_UNREAD_REFERENCE}},
@@ -162,11 +162,11 @@ func TestSavedQuery(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, &threading.SavedQueryResponse{
 		SavedQuery: &threading.SavedQuery{
-			ID:       sqID.String(),
-			Title:    "Foo",
-			Unread:   1,
-			Total:    9,
-			EntityID: entID,
+			ID:         sqID.String(),
+			ShortTitle: "Foo",
+			Unread:     1,
+			Total:      9,
+			EntityID:   entID,
 			Query: &threading.Query{
 				Expressions: []*threading.Expr{
 					{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_UNREAD_REFERENCE}},

@@ -132,7 +132,7 @@ func (c *cleanupSpamAccountsCmd) run(args []string) error {
 		// in the All saved query there should be no more than 4 conversations in total
 		var allSavedQuery *threading.SavedQuery
 		for _, savedQuery := range savedQueriesRes.SavedQueries {
-			if savedQuery.Title == "All" {
+			if savedQuery.ShortTitle == "All" {
 				allSavedQuery = savedQuery
 				break
 			}

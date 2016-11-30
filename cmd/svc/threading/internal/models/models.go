@@ -455,53 +455,67 @@ type SavedMessage struct {
 var DefaultSavedQueries = []*SavedQuery{
 	{
 		Type:                 SavedQueryTypeNormal,
-		Title:                "All",
+		ShortTitle:           "All",
+		LongTitle:            "All Conversations",
+		Description:          "Any new activity in any conversation",
 		Ordinal:              1000,
 		NotificationsEnabled: false,
 		Query:                &Query{},
 	},
 	{
 		Type:                 SavedQueryTypeNormal,
-		Title:                "Patient",
+		ShortTitle:           "Patient",
+		LongTitle:            "All Patient Conversations",
+		Description:          "Any new activity in a patient conversation",
 		Ordinal:              2000,
 		NotificationsEnabled: true,
 		Query:                &Query{Expressions: []*Expr{{Value: &Expr_ThreadType_{ThreadType: EXPR_THREAD_TYPE_PATIENT}}}},
 	},
 	{
 		Type:                 SavedQueryTypeNormal,
-		Title:                "Team",
+		ShortTitle:           "Team",
+		LongTitle:            "Team Conversations",
+		Description:          "New messages in team conversations",
 		Ordinal:              3000,
 		NotificationsEnabled: true,
 		Query:                &Query{Expressions: []*Expr{{Value: &Expr_ThreadType_{ThreadType: EXPR_THREAD_TYPE_TEAM}}}},
 	},
 	{
 		Type:                 SavedQueryTypeNormal,
-		Title:                "@Pages",
+		ShortTitle:           "@Pages",
+		LongTitle:            "@ Pages",
+		Description:          "When you're @ paged in a message",
 		Ordinal:              4000,
 		NotificationsEnabled: true,
 		Query:                &Query{Expressions: []*Expr{{Value: &Expr_Flag_{Flag: EXPR_FLAG_UNREAD_REFERENCE}}}},
 	},
 	{
 		Type:                 SavedQueryTypeNormal,
-		Title:                "Following",
+		ShortTitle:           "Following",
+		LongTitle:            "Patient Conversations You Follow",
+		Description:          "New activity in patient conversations you are currently following",
 		Ordinal:              5000,
 		NotificationsEnabled: true,
 		Query:                &Query{Expressions: []*Expr{{Value: &Expr_Flag_{Flag: EXPR_FLAG_FOLLOWING}}}},
 	},
 	{
 		Type:                 SavedQueryTypeNormal,
-		Title:                "Support",
+		ShortTitle:           "Support",
+		LongTitle:            "Spruce Support",
+		Description:          "New messages in the Spruce Support conversation",
 		Query:                &Query{Expressions: []*Expr{{Value: &Expr_ThreadType_{ThreadType: EXPR_THREAD_TYPE_SUPPORT}}}},
 		Ordinal:              6000,
 		NotificationsEnabled: true,
 		Hidden:               true,
 	},
 	{
-		Type:    SavedQueryTypeNotifications,
-		Title:   "Notifications",
-		Query:   &Query{},
-		Ordinal: 1000000000,
-		Hidden:  true,
+		Type:        SavedQueryTypeNotifications,
+		ShortTitle:  "Notifications",
+		LongTitle:   "Notifications",
+		Description: "Hidden query to populate an accurate count of notifications",
+		Query:       &Query{},
+		Ordinal:     1000000000,
+		Hidden:      true,
 	},
 }
 
@@ -509,7 +523,9 @@ var DefaultSavedQueries = []*SavedQuery{
 type SavedQuery struct {
 	ID                   SavedQueryID
 	Ordinal              int
-	Title                string
+	ShortTitle           string
+	LongTitle            string
+	Description          string
 	EntityID             string
 	Query                *Query
 	Unread               int

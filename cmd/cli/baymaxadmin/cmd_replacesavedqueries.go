@@ -40,7 +40,9 @@ func newReplaceSavedQueriesCmd(cnf *config) (command, error) {
 }
 
 type savedQuery struct {
-	Title                string
+	ShortTitle           string
+	LongTitle            string
+	Description          string
 	NotificationsEnabled bool
 	Ordinal              int
 	Query                string
@@ -143,7 +145,9 @@ func (c *replaceSavedQueriesCmd) run(args []string) error {
 
 		if _, err := c.threadingCli.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
 			EntityID:             *entityID,
-			Title:                savedQuery.Title,
+			ShortTitle:           savedQuery.ShortTitle,
+			LongTitle:            savedQuery.LongTitle,
+			Description:          savedQuery.Description,
 			Template:             savedQuery.Template,
 			Ordinal:              int32(savedQuery.Ordinal),
 			NotificationsEnabled: savedQuery.NotificationsEnabled,
@@ -151,7 +155,7 @@ func (c *replaceSavedQueriesCmd) run(args []string) error {
 			Hidden:               savedQuery.Hidden,
 			Type:                 threading.SavedQueryType(savedQueryType),
 		}); err != nil {
-			return errors.Errorf("Unable to create saved query %s : %s", savedQuery.Title, err)
+			return errors.Errorf("Unable to create saved query %s : %s", savedQuery.ShortTitle, err)
 		}
 
 		golog.Infof("Created saved query %+v", savedQuery)

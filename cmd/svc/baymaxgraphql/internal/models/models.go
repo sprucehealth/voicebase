@@ -310,9 +310,10 @@ type SavedThreadQuery struct {
 	Unread                          int    `json:"unread"`
 	Total                           int    `json:"total"`
 	NotificationsEnabled            bool   `json:"notificationsEnabled"`
+	NotificationSettingsTitle       string `json:"notificationSettingsTitle"`
+	NotificationSettingsDescription string `json:"notificationSettingsDescription"`
 	AllowUpdateNotificationsEnabled bool   `json:"allowUpdateNotificationsEnabled"`
-
-	EntityID string `json:"-"`
+	EntityID                        string `json:"-"`
 }
 
 type Organization struct {

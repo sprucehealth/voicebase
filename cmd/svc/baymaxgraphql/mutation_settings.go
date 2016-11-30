@@ -469,7 +469,7 @@ func handleSavedQueryBackwards(ctx context.Context, ram raccess.ResourceAccessor
 
 func savedQueryFromList(ctx context.Context, savedQueries []*threading.SavedQuery, title string) *threading.SavedQuery {
 	for _, sq := range savedQueries {
-		if strings.EqualFold(sq.Title, title) {
+		if strings.EqualFold(sq.ShortTitle, title) {
 			return sq
 		}
 	}

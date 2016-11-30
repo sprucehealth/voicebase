@@ -165,14 +165,16 @@ func (c *moveEntityCmd) run(args []string) error {
 
 		if _, err := c.threadingCli.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
 			EntityID:             newEntity.ID,
-			Title:                savedQueryTemplate.Title,
+			ShortTitle:           savedQueryTemplate.ShortTitle,
+			LongTitle:            savedQueryTemplate.LongTitle,
+			Description:          savedQueryTemplate.Description,
 			Query:                savedQueryTemplate.Query,
 			Ordinal:              savedQueryTemplate.Ordinal,
 			NotificationsEnabled: savedQueryTemplate.NotificationsEnabled,
 			Hidden:               savedQueryTemplate.Hidden,
 			Type:                 savedQueryTemplate.Type,
 		}); err != nil {
-			golog.Errorf("Failed to create saved query %s : %s", savedQueryTemplate.Title, err)
+			golog.Errorf("Failed to create saved query %s : %s", savedQueryTemplate.ShortTitle, err)
 		}
 	}
 

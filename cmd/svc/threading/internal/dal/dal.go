@@ -309,9 +309,9 @@ func (d *dal) CreateSavedQuery(ctx context.Context, sq *models.SavedQuery) (mode
 		return models.SavedQueryID{}, errors.Trace(err)
 	}
 	_, err = d.db.Exec(`
-		INSERT INTO saved_queries (id, ordinal, entity_id, query, title, unread, total, notifications_enabled, type, hidden, template)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, id, sq.Ordinal, sq.EntityID, queryBlob, sq.Title, sq.Unread, sq.Total, sq.NotificationsEnabled, sq.Type, sq.Hidden, sq.Template)
+		INSERT INTO saved_queries (id, ordinal, entity_id, query, title, long_title, description, unread, total, notifications_enabled, type, hidden, template)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, id, sq.Ordinal, sq.EntityID, queryBlob, sq.ShortTitle, sq.LongTitle, sq.Description, sq.Unread, sq.Total, sq.NotificationsEnabled, sq.Type, sq.Hidden, sq.Template)
 	if err != nil {
 		return models.SavedQueryID{}, errors.Trace(err)
 	}
@@ -951,7 +951,7 @@ func (d *dal) RecordThreadEvent(ctx context.Context, threadID models.ThreadID, a
 
 func (d *dal) SavedQuery(ctx context.Context, id models.SavedQueryID) (*models.SavedQuery, error) {
 	row := d.db.QueryRow(`
-		SELECT id, ordinal, entity_id, query, title, unread, total, notifications_enabled, type, hidden, template
+		SELECT id, ordinal, entity_id, query, title, long_title, description, unread, total, notifications_enabled, type, hidden, template
 		FROM saved_queries
 		WHERE id = ?`, id)
 	sq, err := scanSavedQuery(row)
@@ -960,7 +960,7 @@ func (d *dal) SavedQuery(ctx context.Context, id models.SavedQueryID) (*models.S
 
 func (d *dal) SavedQueries(ctx context.Context, entityID string) ([]*models.SavedQuery, error) {
 	rows, err := d.db.Query(`
-		SELECT id, ordinal, entity_id, query, title, unread, total, notifications_enabled, type, hidden, template
+		SELECT id, ordinal, entity_id, query, title, long_title, description, unread, total, notifications_enabled, type, hidden, template
 		FROM saved_queries
 		WHERE entity_id = ?
 		ORDER BY ordinal`, entityID)
@@ -996,7 +996,7 @@ func (d *dal) DeleteSavedQueries(ctx context.Context, ids []models.SavedQueryID)
 
 func (d *dal) SavedQueryTemplates(ctx context.Context, entityID string) ([]*models.SavedQuery, error) {
 	rows, err := d.db.Query(`
-		SELECT id, ordinal, entity_id, query, title, unread, total, notifications_enabled, type, hidden, template
+		SELECT id, ordinal, entity_id, query, title, long_title, description, unread, total, notifications_enabled, type, hidden, template
 		FROM saved_queries
 		WHERE entity_id = ? AND template = 1
 		ORDER BY ordinal`, entityID)
@@ -1521,7 +1521,7 @@ func scanSavedQuery(row dbutil.Scanner) (*models.SavedQuery, error) {
 	var sq models.SavedQuery
 	var queryBlob []byte
 	sq.ID = models.EmptySavedQueryID()
-	err := row.Scan(&sq.ID, &sq.Ordinal, &sq.EntityID, &queryBlob, &sq.Title, &sq.Unread, &sq.Total, &sq.NotificationsEnabled, &sq.Type, &sq.Hidden, &sq.Template)
+	err := row.Scan(&sq.ID, &sq.Ordinal, &sq.EntityID, &queryBlob, &sq.ShortTitle, &sq.LongTitle, &sq.Description, &sq.Unread, &sq.Total, &sq.NotificationsEnabled, &sq.Type, &sq.Hidden, &sq.Template)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrNotFound)
 	} else if err != nil {

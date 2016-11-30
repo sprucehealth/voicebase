@@ -96,7 +96,7 @@ func (s *threadsServer) CreateSavedQuery(ctx context.Context, in *threading.Crea
 	if in.Query == nil {
 		return nil, grpcErrorf(codes.InvalidArgument, "Query is required")
 	}
-	if in.Title == "" {
+	if in.ShortTitle == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "Title is required")
 	}
 	// TODO: in order to be backwards compatible with clients that don't send the type for now assume the normal type. remove once updated clients are deployed.
@@ -111,7 +111,9 @@ func (s *threadsServer) CreateSavedQuery(ctx context.Context, in *threading.Crea
 
 	sq := &models.SavedQuery{
 		EntityID:             in.EntityID,
-		Title:                in.Title,
+		ShortTitle:           in.ShortTitle,
+		LongTitle:            in.LongTitle,
+		Description:          in.Description,
 		Query:                query,
 		Ordinal:              int(in.Ordinal),
 		NotificationsEnabled: in.NotificationsEnabled,

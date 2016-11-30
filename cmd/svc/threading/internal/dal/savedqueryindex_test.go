@@ -26,7 +26,7 @@ func TestSavedQueryIndex(t *testing.T) {
 				{Value: &models.Expr_Token{Token: "summary"}},
 			},
 		},
-		Title:                "sq1",
+		ShortTitle:           "sq1",
 		NotificationsEnabled: true,
 		Type:                 models.SavedQueryTypeNormal,
 	}
@@ -180,7 +180,7 @@ func TestLargeBatchSavedQueryItems(t *testing.T) {
 				{Value: &models.Expr_Token{Token: "summary"}},
 			},
 		},
-		Title:                "sq1",
+		ShortTitle:           "sq1",
 		NotificationsEnabled: true,
 		Type:                 models.SavedQueryTypeNormal,
 	}
@@ -225,7 +225,7 @@ func TestNotificationsSavedQuery(t *testing.T) {
 				{Value: &models.Expr_Token{Token: "summary"}},
 			},
 		},
-		Title:                "sq1",
+		ShortTitle:           "sq1",
 		NotificationsEnabled: true,
 		Type:                 models.SavedQueryTypeNormal,
 	}
@@ -240,7 +240,7 @@ func TestNotificationsSavedQuery(t *testing.T) {
 				{Value: &models.Expr_Token{Token: "summary"}},
 			},
 		},
-		Title:                "sq1",
+		ShortTitle:           "sq1",
 		NotificationsEnabled: true,
 		Type:                 models.SavedQueryTypeNormal,
 	}
@@ -251,7 +251,7 @@ func TestNotificationsSavedQuery(t *testing.T) {
 		Ordinal:              3,
 		EntityID:             "ent",
 		Query:                &models.Query{},
-		Title:                "nsq",
+		ShortTitle:           "nsq",
 		NotificationsEnabled: false,
 		Type:                 models.SavedQueryTypeNotifications,
 	}

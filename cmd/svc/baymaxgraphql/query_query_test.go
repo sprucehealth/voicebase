@@ -253,10 +253,10 @@ func TestNodeQuery(t *testing.T) {
 		"id": id,
 	}
 	ra.Expect(mock.NewExpectation(ra.SavedQuery, id).WithReturns(&threading.SavedQuery{
-		ID:     id,
-		Title:  "Foo",
-		Unread: 1,
-		Total:  2,
+		ID:         id,
+		ShortTitle: "Foo",
+		Unread:     1,
+		Total:      2,
 		Query: &threading.Query{
 			Expressions: []*threading.Expr{
 				{Value: &threading.Expr_Flag_{Flag: threading.EXPR_FLAG_UNREAD}},
