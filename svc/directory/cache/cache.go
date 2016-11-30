@@ -13,6 +13,8 @@ import (
 	"google.golang.org/grpc"
 )
 
+var _ directory.DirectoryClient = &CachedClient{}
+
 // EntityGroupCache represents a thread safe map of key to entity objects we have encountered that map to that key
 // This cache is intended to be used in conjunction with request context
 type EntityGroupCache struct {
@@ -293,4 +295,8 @@ func (c *CachedClient) DeleteExternalLink(ctx context.Context, in *directory.Del
 
 func (c *CachedClient) LookupExternalLinksForEntity(ctx context.Context, in *directory.LookupExternalLinksForEntityRequest, opts ...grpc.CallOption) (*directory.LookupExternalLinksforEntityResponse, error) {
 	return c.dc.LookupExternalLinksForEntity(ctx, in, opts...)
+}
+
+func (c *CachedClient) Contact(ctx context.Context, in *directory.ContactRequest, opts ...grpc.CallOption) (*directory.ContactResponse, error) {
+	return c.dc.Contact(ctx, in, opts...)
 }

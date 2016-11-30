@@ -207,3 +207,11 @@ func (c *Client) LookupExternalLinksForEntity(ctx context.Context, in *directory
 	}
 	return rets[0].(*directory.LookupExternalLinksforEntityResponse), mock.SafeError(rets[1])
 }
+
+func (c *Client) Contact(ctx context.Context, in *directory.ContactRequest, opts ...grpc.CallOption) (*directory.ContactResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*directory.ContactResponse), mock.SafeError(rets[1])
+}

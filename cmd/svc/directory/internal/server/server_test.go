@@ -1615,7 +1615,7 @@ func TestProfile(t *testing.T) {
 			},
 			dal:              nil,
 			expectedResponse: nil,
-			expectedError:    grpcErrorf(codes.Internal, "Unknown lookup key type %s", directory.ProfileRequest_LookupKeyType(-1).String()),
+			expectedError:    errors.Errorf("Unknown lookup key type %s", directory.ProfileRequest_LookupKeyType(-1).String()),
 		},
 		"LookupEntityID-BadID": {
 			request: &directory.ProfileRequest{
@@ -1735,11 +1735,10 @@ func TestProfile(t *testing.T) {
 	defer publisher.Finish()
 
 	for cn, c := range cases {
-
 		svr := New(c.dal, publisher, metrics.NewRegistry())
 		resp, err := svr.Profile(context.Background(), c.request)
 		test.EqualsCase(t, cn, c.expectedResponse, resp)
-		test.EqualsCase(t, cn, c.expectedError, err)
+		test.EqualsCase(t, cn, errors.Cause(c.expectedError), errors.Cause(err))
 		if c.dal != nil {
 			c.dal.Finish()
 		}
@@ -2053,4 +2052,25 @@ func TestUpdateProfile(t *testing.T) {
 			c.dal.Finish()
 		}
 	}
+}
+
+func TestContact(t *testing.T) {
+	t.Parallel()
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+	publisher := eventsmock.NewPublisher(t)
+	defer publisher.Finish()
+
+	s := New(dl, publisher, metrics.NewRegistry())
+	ecID1, err := dal.NewEntityContactID()
+	test.OK(t, err)
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.EntityContact, ecID1), &dal.EntityContact{ID: ecID1}, nil))
+
+	resp, err := s.Contact(context.Background(), &directory.ContactRequest{
+		ContactID: ecID1.String(),
+	})
+	test.OK(t, err)
+
+	test.AssertNotNil(t, resp.Contact)
+	test.Equals(t, transformEntityContactToResponse(&dal.EntityContact{ID: ecID1}), resp.Contact)
 }

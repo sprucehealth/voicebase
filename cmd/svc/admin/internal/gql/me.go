@@ -13,19 +13,19 @@ var meField = &graphql.Field{
 }
 
 // newMeType is an instance of the Me graphql type
-// TODO: Have this done by a `maker` might be overkill. But idea here is to test out a new pattern to improve testability
 var meType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "Me",
 		Fields: graphql.Fields{
+			// For single query purposes allow entities to be lookedup inside a `me` call
+			"account":      accountField,
+			"entity":       entityField,
+			"contact":      contactField,
+			"practiceLink": practiceLinkField,
 			"username": &graphql.Field{
 				Type:    graphql.NewNonNull(graphql.String),
 				Resolve: meResolve,
 			},
-			// For single query purposes allow entities to be lookedup inside a `me` call
-			"entity":       entityField,
-			"account":      accountField,
-			"practiceLink": practiceLinkField,
 		},
 	},
 )

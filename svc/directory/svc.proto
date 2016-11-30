@@ -367,28 +367,37 @@ message LookupExternalLinksforEntityResponse {
 	repeated ExternalLink links = 1 ;
 }
 
+message ContactRequest {
+	string contact_id = 1 [(gogoproto.customname) = "ContactID"];
+}
+
+message ContactResponse {
+	Contact contact = 1;
+}
+
 
 service Directory {
 	// TODO: 1/22/16 - Remove the single version of this call once this code has been deployed and all callers have been changed and deployed
+	rpc Contact (ContactRequest) returns (ContactResponse);
 	rpc CreateContact (CreateContactRequest) returns (CreateContactResponse);
 	rpc CreateContacts (CreateContactsRequest) returns (CreateContactsResponse);
+	rpc CreateExternalLink (CreateExternalLinkRequest) returns (CreateExternalLinkResponse);
 	rpc CreateEntityDomain (CreateEntityDomainRequest) returns (CreateEntityDomainResponse);
 	rpc CreateEntity (CreateEntityRequest) returns (CreateEntityResponse);
 	rpc CreateExternalIDs (CreateExternalIDsRequest) returns (CreateExternalIDsResponse);
 	rpc CreateMembership (CreateMembershipRequest) returns (CreateMembershipResponse);
 	rpc DeleteContacts (DeleteContactsRequest) returns (DeleteContactsResponse);
 	rpc DeleteEntity (DeleteEntityRequest) returns (DeleteEntityResponse);
+	rpc DeleteExternalLink (DeleteExternalLinkRequest) returns (DeleteExternalLinkResponse);
 	rpc ExternalIDs (ExternalIDsRequest) returns (ExternalIDsResponse);
 	rpc LookupEntities (LookupEntitiesRequest) returns (LookupEntitiesResponse);
 	rpc LookupEntitiesByContact (LookupEntitiesByContactRequest) returns (LookupEntitiesByContactResponse);
 	rpc LookupEntityDomain (LookupEntityDomainRequest) returns (LookupEntityDomainResponse);
+	rpc LookupExternalLinksForEntity (LookupExternalLinksForEntityRequest) returns (LookupExternalLinksforEntityResponse);
 	rpc Profile (ProfileRequest) returns (ProfileResponse);
 	rpc SerializedEntityContact (SerializedEntityContactRequest) returns (SerializedEntityContactResponse);
 	rpc UpdateContacts (UpdateContactsRequest) returns (UpdateContactsResponse);
 	rpc UpdateEntity (UpdateEntityRequest) returns (UpdateEntityResponse);
 	rpc UpdateEntityDomain (UpdateEntityDomainRequest) returns (UpdateEntityDomainResponse);
 	rpc UpdateProfile (UpdateProfileRequest) returns (UpdateProfileResponse);
-	rpc CreateExternalLink (CreateExternalLinkRequest) returns (CreateExternalLinkResponse);
-	rpc DeleteExternalLink (DeleteExternalLinkRequest) returns (DeleteExternalLinkResponse);
-	rpc LookupExternalLinksForEntity (LookupExternalLinksForEntityRequest) returns (LookupExternalLinksforEntityResponse);
 }

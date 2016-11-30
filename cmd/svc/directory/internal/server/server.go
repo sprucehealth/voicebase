@@ -104,34 +104,34 @@ func filterToMembersOnly(pbEntities []*directory.Entity, memberOfEntity string) 
 	return filteredpbEntities
 }
 
-func (s *server) LookupEntities(ctx context.Context, rd *directory.LookupEntitiesRequest) (out *directory.LookupEntitiesResponse, err error) {
+func (s *server) LookupEntities(ctx context.Context, in *directory.LookupEntitiesRequest) (out *directory.LookupEntitiesResponse, err error) {
 	var entityIDs []dal.EntityID
-	switch rd.LookupKeyType {
+	switch in.LookupKeyType {
 	case directory.LookupEntitiesRequest_EXTERNAL_ID, directory.LookupEntitiesRequest_ACCOUNT_ID:
 		var extID string
-		switch rd.LookupKeyType {
+		switch in.LookupKeyType {
 		case directory.LookupEntitiesRequest_EXTERNAL_ID:
-			extID = rd.GetExternalID()
+			extID = in.GetExternalID()
 		// TODO: Actually use the account_id field on the table and don't do this double lookup
 		case directory.LookupEntitiesRequest_ACCOUNT_ID:
-			extID = rd.GetAccountID()
+			extID = in.GetAccountID()
 		}
 		externalEntityIDs, err := s.dl.ExternalEntityIDs(extID)
 		if err != nil {
-			return nil, grpcErrorf(codes.Internal, err.Error())
+			return nil, errors.Trace(err)
 		}
 		entityIDs = make([]dal.EntityID, len(externalEntityIDs))
 		for i, v := range externalEntityIDs {
 			entityIDs[i] = v.EntityID
 		}
 	case directory.LookupEntitiesRequest_ENTITY_ID:
-		entityID, err := dal.ParseEntityID(rd.GetEntityID())
+		entityID, err := dal.ParseEntityID(in.GetEntityID())
 		if err != nil {
 			return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse entity id")
 		}
 		entityIDs = append(entityIDs, entityID)
 	case directory.LookupEntitiesRequest_BATCH_ENTITY_ID:
-		idList := rd.GetBatchEntityID().IDs
+		idList := in.GetBatchEntityID().IDs
 		entityIDs = make([]dal.EntityID, len(idList))
 		for i, id := range idList {
 			eid, err := dal.ParseEntityID(id)
@@ -141,84 +141,84 @@ func (s *server) LookupEntities(ctx context.Context, rd *directory.LookupEntitie
 			entityIDs[i] = eid
 		}
 	default:
-		return nil, grpcErrorf(codes.Internal, "Unknown lookup key type %s", rd.LookupKeyType.String())
+		return nil, errors.Errorf("Unknown lookup key type %s", in.LookupKeyType.String())
 	}
-	statuses, err := transformEntityStatuses(rd.Statuses)
+	statuses, err := transformEntityStatuses(in.Statuses)
 	if err != nil {
 		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
 	}
 
-	rootTypes, err := transformEntityTypes(rd.RootTypes)
+	rootTypes, err := transformEntityTypes(in.RootTypes)
 	if err != nil {
 		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
 	}
 
-	childTypes, err := transformEntityTypes(rd.ChildTypes)
+	childTypes, err := transformEntityTypes(in.ChildTypes)
 	if err != nil {
 		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
 	}
 
 	entities, err := s.dl.Entities(entityIDs, statuses, rootTypes)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 	if len(entities) == 0 {
 		return nil, grpcErrorf(codes.NotFound, "No entities located matching query")
 	}
 
-	if rd.MemberOfEntity != "" {
+	if in.MemberOfEntity != "" {
 		// ensure that memberships is in the requested information
-		if rd.RequestedInformation == nil {
-			rd.RequestedInformation = &directory.RequestedInformation{}
+		if in.RequestedInformation == nil {
+			in.RequestedInformation = &directory.RequestedInformation{}
 		}
 
-		rd.RequestedInformation.EntityInformation = appendMembershipEntityInformation(rd.RequestedInformation.EntityInformation)
+		in.RequestedInformation.EntityInformation = appendMembershipEntityInformation(in.RequestedInformation.EntityInformation)
 	}
 
-	pbEntities, err := getPBEntities(s.dl, entities, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation), statuses, childTypes)
+	pbEntities, err := getPBEntities(s.dl, entities, riEntityInformation(in.RequestedInformation), riDepth(in.RequestedInformation), statuses, childTypes)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 
 	s.statLookupEntitiesEntities.Inc(uint64(len(pbEntities)))
 	return &directory.LookupEntitiesResponse{
-		Entities: filterToMembersOnly(pbEntities, rd.MemberOfEntity),
+		Entities: filterToMembersOnly(pbEntities, in.MemberOfEntity),
 	}, nil
 }
 
-func (s *server) CreateEntity(ctx context.Context, rd *directory.CreateEntityRequest) (out *directory.CreateEntityResponse, err error) {
-	if err := s.validateCreateEntityRequest(rd); err != nil {
+func (s *server) CreateEntity(ctx context.Context, in *directory.CreateEntityRequest) (out *directory.CreateEntityResponse, err error) {
+	if err := s.validateCreateEntityRequest(in); err != nil {
 		return nil, err
 	}
 
-	entityType, err := dal.ParseEntityType(directory.EntityType_name[int32(rd.Type)])
+	entityType, err := dal.ParseEntityType(directory.EntityType_name[int32(in.Type)])
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 	var pbEntity *directory.Entity
 	if err = s.dl.Transact(func(dl dal.DAL) error {
 		var entityGender *dal.EntityGender
-		if rd.EntityInfo.Gender != directory.EntityInfo_UNKNOWN {
-			eg, err := dal.ParseEntityGender(rd.EntityInfo.Gender.String())
+		if in.EntityInfo.Gender != directory.EntityInfo_UNKNOWN {
+			eg, err := dal.ParseEntityGender(in.EntityInfo.Gender.String())
 			if err != nil {
 				return errors.Trace(err)
 			}
 			entityGender = &eg
 		}
 		var dob *encoding.Date
-		if rd.EntityInfo.DOB != nil {
+		if in.EntityInfo.DOB != nil {
 			dob = &encoding.Date{
-				Month: int(rd.EntityInfo.DOB.Month),
-				Day:   int(rd.EntityInfo.DOB.Day),
-				Year:  int(rd.EntityInfo.DOB.Year),
+				Month: int(in.EntityInfo.DOB.Month),
+				Day:   int(in.EntityInfo.DOB.Day),
+				Year:  int(in.EntityInfo.DOB.Year),
 			}
 		}
 
 		var displayName string
-		if rd.EntityInfo.DisplayName != "" {
-			displayName = rd.EntityInfo.DisplayName
+		if in.EntityInfo.DisplayName != "" {
+			displayName = in.EntityInfo.DisplayName
 		} else {
-			displayName = buildDisplayName(rd.EntityInfo, rd.Contacts)
+			displayName = buildDisplayName(in.EntityInfo, in.Contacts)
 			if len(displayName) == 0 {
 				return errors.Trace(errors.New("Not enough information to build the display name for entity"))
 			}
@@ -227,31 +227,31 @@ func (s *server) CreateEntity(ctx context.Context, rd *directory.CreateEntityReq
 		entityID, err := dl.InsertEntity(&dal.Entity{
 			Type:          entityType,
 			Status:        dal.EntityStatusActive,
-			FirstName:     rd.EntityInfo.FirstName,
-			MiddleInitial: rd.EntityInfo.MiddleInitial,
-			LastName:      rd.EntityInfo.LastName,
-			GroupName:     rd.EntityInfo.GroupName,
+			FirstName:     in.EntityInfo.FirstName,
+			MiddleInitial: in.EntityInfo.MiddleInitial,
+			LastName:      in.EntityInfo.LastName,
+			GroupName:     in.EntityInfo.GroupName,
 			DisplayName:   displayName,
-			ShortTitle:    rd.EntityInfo.ShortTitle,
-			LongTitle:     rd.EntityInfo.LongTitle,
+			ShortTitle:    in.EntityInfo.ShortTitle,
+			LongTitle:     in.EntityInfo.LongTitle,
 			Gender:        entityGender,
 			DOB:           dob,
-			AccountID:     rd.AccountID,
-			Note:          rd.EntityInfo.Note,
+			AccountID:     in.AccountID,
+			Note:          in.EntityInfo.Note,
 		})
 		if err != nil {
 			return errors.Trace(err)
 		}
-		if rd.ExternalID != "" {
+		if in.ExternalID != "" {
 			if err := dl.InsertExternalEntityID(&dal.ExternalEntityID{
 				EntityID:   entityID,
-				ExternalID: rd.ExternalID,
+				ExternalID: in.ExternalID,
 			}); err != nil {
 				return errors.Trace(err)
 			}
 		}
-		if rd.InitialMembershipEntityID != "" {
-			targetEntityID, err := dal.ParseEntityID(rd.InitialMembershipEntityID)
+		if in.InitialMembershipEntityID != "" {
+			targetEntityID, err := dal.ParseEntityID(in.InitialMembershipEntityID)
 			if err != nil {
 				return errors.Trace(err)
 			}
@@ -263,7 +263,7 @@ func (s *server) CreateEntity(ctx context.Context, rd *directory.CreateEntityReq
 				return errors.Trace(err)
 			}
 		}
-		for _, contact := range rd.Contacts {
+		for _, contact := range in.Contacts {
 			contactType, err := dal.ParseEntityContactType(directory.ContactType_name[int32(contact.ContactType)])
 			if err != nil {
 				return errors.Trace(err)
@@ -284,7 +284,7 @@ func (s *server) CreateEntity(ctx context.Context, rd *directory.CreateEntityReq
 			return errors.Trace(err)
 		}
 
-		pbEntity, err = getPBEntity(dl, entity, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation), nil, nil)
+		pbEntity, err = getPBEntity(dl, entity, riEntityInformation(in.RequestedInformation), riDepth(in.RequestedInformation), nil, nil)
 		return errors.Trace(err)
 	}); err != nil {
 		return nil, errors.Trace(err)
@@ -294,14 +294,14 @@ func (s *server) CreateEntity(ctx context.Context, rd *directory.CreateEntityReq
 	}, nil
 }
 
-func (s *server) CreateExternalIDs(ctx context.Context, rd *directory.CreateExternalIDsRequest) (out *directory.CreateExternalIDsResponse, err error) {
-	if rd.EntityID == "" {
+func (s *server) CreateExternalIDs(ctx context.Context, in *directory.CreateExternalIDsRequest) (out *directory.CreateExternalIDsResponse, err error) {
+	if in.EntityID == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "EntityID cannot be empty")
 	}
 	if err = s.dl.Transact(func(dl dal.DAL) error {
-		models := make([]*dal.ExternalEntityID, 0, len(rd.ExternalIDs))
-		for _, eID := range rd.ExternalIDs {
-			entityID, err := dal.ParseEntityID(rd.EntityID)
+		models := make([]*dal.ExternalEntityID, 0, len(in.ExternalIDs))
+		for _, eID := range in.ExternalIDs {
+			entityID, err := dal.ParseEntityID(in.EntityID)
 			if err != nil {
 				return grpcErrorf(codes.InvalidArgument, err.Error())
 			}
@@ -319,15 +319,15 @@ func (s *server) CreateExternalIDs(ctx context.Context, rd *directory.CreateExte
 	return &directory.CreateExternalIDsResponse{}, nil
 }
 
-func (s *server) SerializedEntityContact(ctx context.Context, rd *directory.SerializedEntityContactRequest) (out *directory.SerializedEntityContactResponse, err error) {
-	if rd.EntityID == "" {
+func (s *server) SerializedEntityContact(ctx context.Context, in *directory.SerializedEntityContactRequest) (out *directory.SerializedEntityContactResponse, err error) {
+	if in.EntityID == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "entity id required")
 	}
-	entityID, err := dal.ParseEntityID(rd.EntityID)
+	entityID, err := dal.ParseEntityID(in.EntityID)
 	if err != nil {
 		return nil, grpcErrorf(codes.InvalidArgument, "Error parsing entity id: %s", err)
 	}
-	platform, err := dal.ParseSerializedClientEntityContactPlatform(directory.Platform_name[int32(rd.Platform)])
+	platform, err := dal.ParseSerializedClientEntityContactPlatform(directory.Platform_name[int32(in.Platform)])
 	if err != nil {
 		return nil, grpcErrorf(codes.InvalidArgument, "Error parsing platform type: %s", err)
 	}
@@ -335,31 +335,31 @@ func (s *server) SerializedEntityContact(ctx context.Context, rd *directory.Seri
 	if errors.Cause(err) == dal.ErrNotFound {
 		return nil, grpcErrorf(codes.NotFound, "No serialized entity contact exists for entity id %s and platform %s", entityID, platform)
 	} else if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 	return &directory.SerializedEntityContactResponse{
 		SerializedEntityContact: transformSerializedClientEntityContactToResponse(sec),
 	}, nil
 }
 
-func (s *server) validateCreateEntityRequest(rd *directory.CreateEntityRequest) error {
-	if rd.InitialMembershipEntityID != "" {
-		eID, err := dal.ParseEntityID(rd.InitialMembershipEntityID)
+func (s *server) validateCreateEntityRequest(in *directory.CreateEntityRequest) error {
+	if in.InitialMembershipEntityID != "" {
+		eID, err := dal.ParseEntityID(in.InitialMembershipEntityID)
 		if err != nil {
 			return grpcErrorf(codes.InvalidArgument, "Unable to parse entity id")
 		}
 		exists, err := doesEntityExist(s.dl, eID)
 		if err != nil {
-			return grpcErrorf(codes.Internal, err.Error())
+			return errors.Trace(err)
 		}
 		if !exists {
-			return grpcErrorf(codes.NotFound, "Entity not found %s", rd.InitialMembershipEntityID)
+			return grpcErrorf(codes.NotFound, "Entity not found %s", in.InitialMembershipEntityID)
 		}
 	}
-	if rd.EntityInfo == nil {
-		rd.EntityInfo = &directory.EntityInfo{}
+	if in.EntityInfo == nil {
+		in.EntityInfo = &directory.EntityInfo{}
 	}
-	for _, contact := range rd.Contacts {
+	for _, contact := range in.Contacts {
 		if contact.Value == "" {
 			return grpcErrorf(codes.InvalidArgument, "Contact value cannot be empty")
 		}
@@ -370,14 +370,14 @@ func (s *server) validateCreateEntityRequest(rd *directory.CreateEntityRequest) 
 	return nil
 }
 
-func (s *server) UpdateEntity(ctx context.Context, rd *directory.UpdateEntityRequest) (out *directory.UpdateEntityResponse, err error) {
-	oldEnt, err := s.validateUpdateEntityRequest(rd)
+func (s *server) UpdateEntity(ctx context.Context, in *directory.UpdateEntityRequest) (out *directory.UpdateEntityResponse, err error) {
+	oldEnt, err := s.validateUpdateEntityRequest(in)
 	if err != nil {
 		return nil, err
 	}
 	defer oldEnt.Recycle()
 
-	eID, err := dal.ParseEntityID(rd.EntityID)
+	eID, err := dal.ParseEntityID(in.EntityID)
 	if err != nil {
 		return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse entity ID")
 	}
@@ -387,51 +387,51 @@ func (s *server) UpdateEntity(ctx context.Context, rd *directory.UpdateEntityReq
 		entityUpdate := &dal.EntityUpdate{}
 
 		entityInfo := transformEntityToEntityInfoResponse(oldEnt)
-		if rd.UpdateEntityInfo {
-			entityInfo = rd.EntityInfo
-			entityUpdate.FirstName = &rd.EntityInfo.FirstName
-			entityUpdate.MiddleInitial = &rd.EntityInfo.MiddleInitial
-			entityUpdate.LastName = &rd.EntityInfo.LastName
-			entityUpdate.GroupName = &rd.EntityInfo.GroupName
-			entityUpdate.ShortTitle = &rd.EntityInfo.ShortTitle
-			entityUpdate.LongTitle = &rd.EntityInfo.LongTitle
-			entityUpdate.Note = &rd.EntityInfo.Note
+		if in.UpdateEntityInfo {
+			entityInfo = in.EntityInfo
+			entityUpdate.FirstName = &in.EntityInfo.FirstName
+			entityUpdate.MiddleInitial = &in.EntityInfo.MiddleInitial
+			entityUpdate.LastName = &in.EntityInfo.LastName
+			entityUpdate.GroupName = &in.EntityInfo.GroupName
+			entityUpdate.ShortTitle = &in.EntityInfo.ShortTitle
+			entityUpdate.LongTitle = &in.EntityInfo.LongTitle
+			entityUpdate.Note = &in.EntityInfo.Note
 
-			if rd.EntityInfo.Gender != directory.EntityInfo_UNKNOWN {
-				g, err := dal.ParseEntityGender(rd.EntityInfo.Gender.String())
+			if in.EntityInfo.Gender != directory.EntityInfo_UNKNOWN {
+				g, err := dal.ParseEntityGender(in.EntityInfo.Gender.String())
 				if err != nil {
-					return grpcErrorf(codes.InvalidArgument, "Unknown entity gender %s", rd.EntityInfo.Gender.String())
+					return grpcErrorf(codes.InvalidArgument, "Unknown entity gender %s", in.EntityInfo.Gender.String())
 				}
 				entityUpdate.Gender = &g
 			}
-			if rd.EntityInfo.DOB != nil {
+			if in.EntityInfo.DOB != nil {
 				entityUpdate.DOB = &encoding.Date{
-					Month: int(rd.EntityInfo.DOB.Month),
-					Day:   int(rd.EntityInfo.DOB.Day),
-					Year:  int(rd.EntityInfo.DOB.Year),
+					Month: int(in.EntityInfo.DOB.Month),
+					Day:   int(in.EntityInfo.DOB.Day),
+					Year:  int(in.EntityInfo.DOB.Year),
 				}
 			}
 		}
 
-		if rd.UpdateImageMediaID {
-			entityUpdate.ImageMediaID = &rd.ImageMediaID
+		if in.UpdateImageMediaID {
+			entityUpdate.ImageMediaID = &in.ImageMediaID
 		}
 
-		if rd.UpdateAccountID {
-			entityUpdate.AccountID = &rd.AccountID
+		if in.UpdateAccountID {
+			entityUpdate.AccountID = &in.AccountID
 		}
 
 		var contacts []*directory.Contact
-		if rd.UpdateContacts {
+		if in.UpdateContacts {
 			// Delete existing contact info
 			if _, err := dl.DeleteEntityContactsForEntityID(eID); err != nil {
 				return errors.Trace(err)
 			}
 
 			// Insert the new set of contacts
-			if len(rd.Contacts) != 0 {
-				dalContacts := make([]*dal.EntityContact, len(rd.Contacts))
-				for i, contact := range rd.Contacts {
+			if len(in.Contacts) != 0 {
+				dalContacts := make([]*dal.EntityContact, len(in.Contacts))
+				for i, contact := range in.Contacts {
 					contactType, err := dal.ParseEntityContactType(directory.ContactType_name[int32(contact.ContactType)])
 					if err != nil {
 						return errors.Trace(err)
@@ -449,7 +449,7 @@ func (s *server) UpdateEntity(ctx context.Context, rd *directory.UpdateEntityReq
 					return errors.Trace(err)
 				}
 
-				contacts = rd.Contacts
+				contacts = in.Contacts
 			}
 		} else {
 			// For external entities need to fetch the contacts to build the display name
@@ -474,8 +474,8 @@ func (s *server) UpdateEntity(ctx context.Context, rd *directory.UpdateEntityReq
 		}
 
 		// Upsert any serialized entity contact info
-		if rd.UpdateSerializedEntityContacts {
-			for _, sec := range rd.SerializedEntityContacts {
+		if in.UpdateSerializedEntityContacts {
+			for _, sec := range in.SerializedEntityContacts {
 				platform, err := dal.ParseSerializedClientEntityContactPlatform(directory.Platform_name[int32(sec.Platform)])
 				if err != nil {
 					return grpcErrorf(codes.InvalidArgument, "Error parsing platform type: %s", err)
@@ -485,7 +485,7 @@ func (s *server) UpdateEntity(ctx context.Context, rd *directory.UpdateEntityReq
 					Platform:                platform,
 					SerializedEntityContact: sec.SerializedEntityContact,
 				}); err != nil {
-					return grpcErrorf(codes.Internal, err.Error())
+					return errors.Trace(err)
 				}
 			}
 		}
@@ -495,14 +495,14 @@ func (s *server) UpdateEntity(ctx context.Context, rd *directory.UpdateEntityReq
 			return errors.Trace(err)
 		}
 
-		pbEntity, err = getPBEntity(dl, entity, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation), nil, nil)
+		pbEntity, err = getPBEntity(dl, entity, riEntityInformation(in.RequestedInformation), riDepth(in.RequestedInformation), nil, nil)
 		return errors.Trace(err)
 	}); err != nil {
 		return nil, errors.Trace(err)
 	}
 
 	s.publisher.PublishAsync(&directory.EntityUpdatedEvent{
-		EntityID: rd.EntityID,
+		EntityID: in.EntityID,
 	})
 
 	return &directory.UpdateEntityResponse{
@@ -510,8 +510,8 @@ func (s *server) UpdateEntity(ctx context.Context, rd *directory.UpdateEntityReq
 	}, nil
 }
 
-func (s *server) validateUpdateEntityRequest(rd *directory.UpdateEntityRequest) (*dal.Entity, error) {
-	eID, err := dal.ParseEntityID(rd.EntityID)
+func (s *server) validateUpdateEntityRequest(in *directory.UpdateEntityRequest) (*dal.Entity, error) {
+	eID, err := dal.ParseEntityID(in.EntityID)
 	if err != nil {
 		return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse entity ID")
 	}
@@ -519,15 +519,15 @@ func (s *server) validateUpdateEntityRequest(rd *directory.UpdateEntityRequest) 
 	if errors.Cause(err) == dal.ErrNotFound {
 		return nil, grpcErrorf(codes.NotFound, err.Error())
 	} else if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	return ent, nil
 }
 
-func (s *server) ExternalIDs(ctx context.Context, rd *directory.ExternalIDsRequest) (out *directory.ExternalIDsResponse, err error) {
-	ids := make([]dal.EntityID, len(rd.EntityIDs))
-	for i, id := range rd.EntityIDs {
+func (s *server) ExternalIDs(ctx context.Context, in *directory.ExternalIDsRequest) (out *directory.ExternalIDsResponse, err error) {
+	ids := make([]dal.EntityID, len(in.EntityIDs))
+	for i, id := range in.EntityIDs {
 		eID, err := dal.ParseEntityID(id)
 		if err != nil {
 			return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse entity id")
@@ -536,7 +536,7 @@ func (s *server) ExternalIDs(ctx context.Context, rd *directory.ExternalIDsReque
 	}
 	externalIDs, err := s.dl.ExternalEntityIDsForEntities(ids)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 	return &directory.ExternalIDsResponse{
 		ExternalIDs: transformExternalIDs(externalIDs),
@@ -555,28 +555,28 @@ func doesEntityExist(dl dal.DAL, entityID dal.EntityID) (bool, error) {
 	return true, errors.Trace(err)
 }
 
-func (s *server) CreateMembership(ctx context.Context, rd *directory.CreateMembershipRequest) (*directory.CreateMembershipResponse, error) {
-	entityID, err := dal.ParseEntityID(rd.EntityID)
+func (s *server) CreateMembership(ctx context.Context, in *directory.CreateMembershipRequest) (*directory.CreateMembershipResponse, error) {
+	entityID, err := dal.ParseEntityID(in.EntityID)
 	if err != nil {
 		return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse entity id")
 	}
-	targetEntityID, err := dal.ParseEntityID(rd.TargetEntityID)
+	targetEntityID, err := dal.ParseEntityID(in.TargetEntityID)
 	if err != nil {
 		return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse entity id")
 	}
 	exists, err := doesEntityExist(s.dl, entityID)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 	if !exists {
-		return nil, grpcErrorf(codes.NotFound, "Entity not found %s", rd.EntityID)
+		return nil, grpcErrorf(codes.NotFound, "Entity not found %s", in.EntityID)
 	}
 	exists, err = doesEntityExist(s.dl, targetEntityID)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 	if !exists {
-		return nil, grpcErrorf(codes.NotFound, "Entity not found %s", rd.TargetEntityID)
+		return nil, grpcErrorf(codes.NotFound, "Entity not found %s", in.TargetEntityID)
 	}
 
 	if err := s.dl.InsertEntityMembership(&dal.EntityMembership{
@@ -584,29 +584,29 @@ func (s *server) CreateMembership(ctx context.Context, rd *directory.CreateMembe
 		TargetEntityID: targetEntityID,
 		Status:         dal.EntityMembershipStatusActive,
 	}); err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 	entity, err := s.dl.Entity(entityID)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
-	pbEntity, err := getPBEntity(s.dl, entity, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation), nil, nil)
+	pbEntity, err := getPBEntity(s.dl, entity, riEntityInformation(in.RequestedInformation), riDepth(in.RequestedInformation), nil, nil)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 	return &directory.CreateMembershipResponse{
 		Entity: pbEntity,
 	}, nil
 }
 
-func (s *server) LookupEntitiesByContact(ctx context.Context, rd *directory.LookupEntitiesByContactRequest) (out *directory.LookupEntitiesByContactResponse, err error) {
-	entityContacts, err := s.dl.EntityContactsForValue(strings.TrimSpace(rd.ContactValue))
+func (s *server) LookupEntitiesByContact(ctx context.Context, in *directory.LookupEntitiesByContactRequest) (out *directory.LookupEntitiesByContactResponse, err error) {
+	entityContacts, err := s.dl.EntityContactsForValue(strings.TrimSpace(in.ContactValue))
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 	if len(entityContacts) == 0 {
-		return nil, grpcErrorf(codes.NotFound, "Contact with value %s not found", rd.ContactValue)
+		return nil, grpcErrorf(codes.NotFound, "Contact with value %s not found", in.ContactValue)
 	}
 	uniqueEntityIDs := make(map[uint64]struct{})
 	var entityIDs []dal.EntityID
@@ -615,38 +615,38 @@ func (s *server) LookupEntitiesByContact(ctx context.Context, rd *directory.Look
 			entityIDs = append(entityIDs, ec.EntityID)
 		}
 	}
-	statuses, err := transformEntityStatuses(rd.Statuses)
+	statuses, err := transformEntityStatuses(in.Statuses)
 	if err != nil {
 		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
 	}
-	rootTypes, err := transformEntityTypes(rd.RootTypes)
+	rootTypes, err := transformEntityTypes(in.RootTypes)
 	if err != nil {
 		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
 	}
-	childTypes, err := transformEntityTypes(rd.ChildTypes)
+	childTypes, err := transformEntityTypes(in.ChildTypes)
 	if err != nil {
 		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
 	}
 	entities, err := s.dl.Entities(entityIDs, statuses, rootTypes)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
-	if rd.MemberOfEntity != "" {
+	if in.MemberOfEntity != "" {
 		// ensure that memberships is in the requested information
-		if rd.RequestedInformation == nil {
-			rd.RequestedInformation = &directory.RequestedInformation{}
+		if in.RequestedInformation == nil {
+			in.RequestedInformation = &directory.RequestedInformation{}
 		}
 
-		rd.RequestedInformation.EntityInformation = appendMembershipEntityInformation(rd.RequestedInformation.EntityInformation)
+		in.RequestedInformation.EntityInformation = appendMembershipEntityInformation(in.RequestedInformation.EntityInformation)
 	}
 
-	pbEntities, err := getPBEntities(s.dl, entities, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation), statuses, childTypes)
+	pbEntities, err := getPBEntities(s.dl, entities, riEntityInformation(in.RequestedInformation), riDepth(in.RequestedInformation), statuses, childTypes)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 	return &directory.LookupEntitiesByContactResponse{
-		Entities: filterToMembersOnly(pbEntities, rd.MemberOfEntity),
+		Entities: filterToMembersOnly(pbEntities, in.MemberOfEntity),
 	}, nil
 }
 
@@ -656,7 +656,7 @@ func (s *server) LookupEntityDomain(ctx context.Context, in *directory.LookupEnt
 	if in.EntityID != "" {
 		eID, err := dal.ParseEntityID(in.EntityID)
 		if err != nil {
-			return nil, grpcErrorf(codes.Internal, err.Error())
+			return nil, errors.Trace(err)
 		}
 		entityID = &eID
 	}
@@ -665,7 +665,7 @@ func (s *server) LookupEntityDomain(ctx context.Context, in *directory.LookupEnt
 	if errors.Cause(err) == dal.ErrNotFound {
 		return nil, grpcErrorf(codes.NotFound, "entity_domain not found")
 	} else if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	return &directory.LookupEntityDomainResponse{
@@ -685,11 +685,11 @@ func (s *server) CreateEntityDomain(ctx context.Context, in *directory.CreateEnt
 
 	eID, err := dal.ParseEntityID(in.EntityID)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	if err := s.dl.UpsertEntityDomain(eID, strings.ToLower(in.Domain)); err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	return &directory.CreateEntityDomainResponse{}, nil
@@ -706,7 +706,7 @@ func (s *server) UpdateEntityDomain(ctx context.Context, in *directory.UpdateEnt
 
 	eiD, err := dal.ParseEntityID(in.EntityID)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	if err := s.dl.Transact(func(dl dal.DAL) error {
@@ -727,39 +727,39 @@ func (s *server) UpdateEntityDomain(ctx context.Context, in *directory.UpdateEnt
 		}
 		return nil
 	}); err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	return &directory.UpdateEntityDomainResponse{}, nil
 }
 
-func (s *server) CreateContact(ctx context.Context, rd *directory.CreateContactRequest) (out *directory.CreateContactResponse, err error) {
-	entityID, err := dal.ParseEntityID(rd.EntityID)
+func (s *server) CreateContact(ctx context.Context, in *directory.CreateContactRequest) (out *directory.CreateContactResponse, err error) {
+	entityID, err := dal.ParseEntityID(in.EntityID)
 	if err != nil {
 		return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse entity id")
 	}
 	if exists, err := doesEntityExist(s.dl, entityID); err != nil {
 		return nil, errors.Trace(err)
 	} else if !exists {
-		return nil, grpcErrorf(codes.NotFound, "Entity %s not found", rd.EntityID)
+		return nil, grpcErrorf(codes.NotFound, "Entity %s not found", in.EntityID)
 	}
-	if err := validateContact(rd.GetContact()); err != nil {
+	if err := validateContact(in.GetContact()); err != nil {
 		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
 	}
 
-	contactType, err := dal.ParseEntityContactType(directory.ContactType_name[int32(rd.GetContact().ContactType)])
+	contactType, err := dal.ParseEntityContactType(directory.ContactType_name[int32(in.GetContact().ContactType)])
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Unknown contact type: %v", rd.GetContact().ContactType)
+		return nil, grpcErrorf(codes.InvalidArgument, "Unknown contact type: %v", in.GetContact().ContactType)
 	}
 	var pbEntity *directory.Entity
 	if err := s.dl.Transact(func(dl dal.DAL) error {
 		if _, err := dl.InsertEntityContact(&dal.EntityContact{
 			EntityID:    entityID,
 			Type:        contactType,
-			Value:       rd.GetContact().Value,
-			Provisioned: rd.GetContact().Provisioned,
-			Label:       rd.GetContact().Label,
-			Verified:    rd.GetContact().Verified,
+			Value:       in.GetContact().Value,
+			Provisioned: in.GetContact().Provisioned,
+			Label:       in.GetContact().Label,
+			Verified:    in.GetContact().Verified,
 		}); err != nil {
 			return errors.Trace(err)
 		}
@@ -769,7 +769,7 @@ func (s *server) CreateContact(ctx context.Context, rd *directory.CreateContactR
 			return errors.Trace(err)
 		}
 
-		pbEntity, err = getPBEntity(dl, entity, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation), nil, nil)
+		pbEntity, err = getPBEntity(dl, entity, riEntityInformation(in.RequestedInformation), riDepth(in.RequestedInformation), nil, nil)
 		if err != nil {
 			return errors.Trace(err)
 		}
@@ -792,19 +792,19 @@ func (s *server) CreateContact(ctx context.Context, rd *directory.CreateContactR
 	}, nil
 }
 
-func (s *server) CreateContacts(ctx context.Context, rd *directory.CreateContactsRequest) (out *directory.CreateContactsResponse, err error) {
-	entityID, err := dal.ParseEntityID(rd.EntityID)
+func (s *server) CreateContacts(ctx context.Context, in *directory.CreateContactsRequest) (out *directory.CreateContactsResponse, err error) {
+	entityID, err := dal.ParseEntityID(in.EntityID)
 	if err != nil {
 		return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse entity id")
 	}
 	if exists, err := doesEntityExist(s.dl, entityID); err != nil {
 		return nil, errors.Trace(err)
 	} else if !exists {
-		return nil, grpcErrorf(codes.NotFound, "Entity %s not found", rd.EntityID)
+		return nil, grpcErrorf(codes.NotFound, "Entity %s not found", in.EntityID)
 	}
 
-	contacts := make([]*dal.EntityContact, len(rd.Contacts))
-	for i, c := range rd.Contacts {
+	contacts := make([]*dal.EntityContact, len(in.Contacts))
+	for i, c := range in.Contacts {
 		if err := validateContact(c); err != nil {
 			return nil, grpcErrorf(codes.InvalidArgument, err.Error())
 		}
@@ -833,7 +833,7 @@ func (s *server) CreateContacts(ctx context.Context, rd *directory.CreateContact
 			return errors.Trace(err)
 		}
 
-		pbEntity, err = getPBEntity(dl, entity, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation), nil, nil)
+		pbEntity, err = getPBEntity(dl, entity, riEntityInformation(in.RequestedInformation), riDepth(in.RequestedInformation), nil, nil)
 		if err != nil {
 			return errors.Trace(err)
 		}
@@ -868,20 +868,20 @@ func validateContact(contact *directory.Contact) error {
 	return nil
 }
 
-func (s *server) UpdateContacts(ctx context.Context, rd *directory.UpdateContactsRequest) (out *directory.UpdateContactsResponse, err error) {
-	entityID, err := dal.ParseEntityID(rd.EntityID)
+func (s *server) UpdateContacts(ctx context.Context, in *directory.UpdateContactsRequest) (out *directory.UpdateContactsResponse, err error) {
+	entityID, err := dal.ParseEntityID(in.EntityID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse entity id: %s", rd.EntityID)
+		return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse entity id: %s", in.EntityID)
 	}
 	if exists, err := doesEntityExist(s.dl, entityID); err != nil {
 		return nil, errors.Trace(err)
 	} else if !exists {
-		return nil, grpcErrorf(codes.NotFound, "Entity %s not found", rd.EntityID)
+		return nil, grpcErrorf(codes.NotFound, "Entity %s not found", in.EntityID)
 	}
 
 	var pbEntity *directory.Entity
 	if err := s.dl.Transact(func(dl dal.DAL) error {
-		for _, c := range rd.Contacts {
+		for _, c := range in.Contacts {
 			if c.ID == "" {
 				return grpcErrorf(codes.InvalidArgument, "A contact ID must be provided for all contacts being updated")
 			}
@@ -910,7 +910,7 @@ func (s *server) UpdateContacts(ctx context.Context, rd *directory.UpdateContact
 			return errors.Trace(err)
 		}
 
-		pbEntity, err = getPBEntity(dl, entity, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation), nil, nil)
+		pbEntity, err = getPBEntity(dl, entity, riEntityInformation(in.RequestedInformation), riDepth(in.RequestedInformation), nil, nil)
 		if err != nil {
 			return errors.Trace(err)
 		}
@@ -932,20 +932,20 @@ func (s *server) UpdateContacts(ctx context.Context, rd *directory.UpdateContact
 	}, nil
 }
 
-func (s *server) DeleteContacts(ctx context.Context, rd *directory.DeleteContactsRequest) (out *directory.DeleteContactsResponse, err error) {
-	entityID, err := dal.ParseEntityID(rd.EntityID)
+func (s *server) DeleteContacts(ctx context.Context, in *directory.DeleteContactsRequest) (out *directory.DeleteContactsResponse, err error) {
+	entityID, err := dal.ParseEntityID(in.EntityID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse entity id: %s", rd.EntityID)
+		return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse entity id: %s", in.EntityID)
 	}
 	if exists, err := doesEntityExist(s.dl, entityID); err != nil {
 		return nil, errors.Trace(err)
 	} else if !exists {
-		return nil, grpcErrorf(codes.NotFound, "Entity %s not found", rd.EntityID)
+		return nil, grpcErrorf(codes.NotFound, "Entity %s not found", in.EntityID)
 	}
 
 	var pbEntity *directory.Entity
 	if err := s.dl.Transact(func(dl dal.DAL) error {
-		for _, cID := range rd.EntityContactIDs {
+		for _, cID := range in.EntityContactIDs {
 			cID, err := dal.ParseEntityContactID(cID)
 			if err != nil {
 				return grpcErrorf(codes.InvalidArgument, "Unable to parse contact id: %s", cID)
@@ -961,7 +961,7 @@ func (s *server) DeleteContacts(ctx context.Context, rd *directory.DeleteContact
 			return errors.Trace(err)
 		}
 
-		pbEntity, err = getPBEntity(dl, entity, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation), []dal.EntityStatus{}, nil)
+		pbEntity, err = getPBEntity(dl, entity, riEntityInformation(in.RequestedInformation), riDepth(in.RequestedInformation), []dal.EntityStatus{}, nil)
 		if err != nil {
 			return errors.Trace(err)
 		}
@@ -983,26 +983,26 @@ func (s *server) DeleteContacts(ctx context.Context, rd *directory.DeleteContact
 	}, nil
 }
 
-func (s *server) DeleteEntity(ctx context.Context, rd *directory.DeleteEntityRequest) (out *directory.DeleteEntityResponse, err error) {
-	entityID, err := dal.ParseEntityID(rd.EntityID)
+func (s *server) DeleteEntity(ctx context.Context, in *directory.DeleteEntityRequest) (out *directory.DeleteEntityResponse, err error) {
+	entityID, err := dal.ParseEntityID(in.EntityID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse entity id: %s", rd.EntityID)
+		return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse entity id: %s", in.EntityID)
 	}
 	deleted := dal.EntityStatusDeleted
 	if _, err := s.dl.UpdateEntity(entityID, &dal.EntityUpdate{
 		Status: &deleted,
 	}); err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	return &directory.DeleteEntityResponse{}, nil
 }
 
-func (s *server) Profile(ctx context.Context, rd *directory.ProfileRequest) (*directory.ProfileResponse, error) {
+func (s *server) Profile(ctx context.Context, in *directory.ProfileRequest) (*directory.ProfileResponse, error) {
 	var profile *dal.EntityProfile
-	switch rd.LookupKeyType {
+	switch in.LookupKeyType {
 	case directory.ProfileRequest_ENTITY_ID:
-		entID, err := dal.ParseEntityID(rd.GetEntityID())
+		entID, err := dal.ParseEntityID(in.GetEntityID())
 		if err != nil {
 			return nil, grpcError(err)
 		}
@@ -1013,7 +1013,7 @@ func (s *server) Profile(ctx context.Context, rd *directory.ProfileRequest) (*di
 			return nil, grpcError(err)
 		}
 	case directory.ProfileRequest_PROFILE_ID:
-		profileID, err := dal.ParseEntityProfileID(rd.GetProfileID())
+		profileID, err := dal.ParseEntityProfileID(in.GetProfileID())
 		if err != nil {
 			return nil, grpcError(err)
 		}
@@ -1024,10 +1024,10 @@ func (s *server) Profile(ctx context.Context, rd *directory.ProfileRequest) (*di
 			return nil, grpcError(err)
 		}
 	default:
-		return nil, grpcErrorf(codes.Internal, "Unknown lookup key type %s", rd.LookupKeyType.String())
+		return nil, errors.Errorf("Unknown lookup key type %s", in.LookupKeyType.String())
 	}
 	if profile == nil {
-		return nil, grpcError(fmt.Errorf("No profile set after lookup for key type %s", rd.LookupKeyType.String()))
+		return nil, errors.Errorf("No profile set after lookup for key type %s", in.LookupKeyType.String())
 	}
 	return &directory.ProfileResponse{
 		Profile: transformEntityProfileToResponse(profile),
@@ -1035,19 +1035,19 @@ func (s *server) Profile(ctx context.Context, rd *directory.ProfileRequest) (*di
 }
 
 // UpdateProfile creates the profile if one does not exist
-func (s *server) UpdateProfile(ctx context.Context, rd *directory.UpdateProfileRequest) (*directory.UpdateProfileResponse, error) {
+func (s *server) UpdateProfile(ctx context.Context, in *directory.UpdateProfileRequest) (*directory.UpdateProfileResponse, error) {
 	var err error
 	pID := dal.EmptyEntityProfileID()
-	if rd.Profile == nil {
+	if in.Profile == nil {
 		return nil, grpcErrorf(codes.InvalidArgument, "Profile required")
 	}
-	if rd.ProfileID != "" {
-		pID, err = dal.ParseEntityProfileID(rd.ProfileID)
+	if in.ProfileID != "" {
+		pID, err = dal.ParseEntityProfileID(in.ProfileID)
 		if err != nil {
 			return nil, grpcErrorf(codes.InvalidArgument, err.Error())
 		}
 	} else {
-		eID, err := dal.ParseEntityID(rd.Profile.EntityID)
+		eID, err := dal.ParseEntityID(in.Profile.EntityID)
 		if err != nil {
 			return nil, grpcErrorf(codes.InvalidArgument, err.Error())
 		}
@@ -1071,13 +1071,13 @@ func (s *server) UpdateProfile(ctx context.Context, rd *directory.UpdateProfileR
 		}
 
 		// Do not allow profiles to be remapped to different entities
-		if rd.Profile.EntityID != "" && rd.Profile.EntityID != oldProfile.EntityID.String() {
-			return nil, grpcErrorf(codes.PermissionDenied, "The owning entity of a profile cannot be changed - Is: %s, Request Provided: %s", oldProfile.EntityID, rd.Profile.EntityID)
+		if in.Profile.EntityID != "" && in.Profile.EntityID != oldProfile.EntityID.String() {
+			return nil, grpcErrorf(codes.PermissionDenied, "The owning entity of a profile cannot be changed - Is: %s, Request Provided: %s", oldProfile.EntityID, in.Profile.EntityID)
 		}
-		rd.Profile.EntityID = oldProfile.EntityID.String()
+		in.Profile.EntityID = oldProfile.EntityID.String()
 	}
 
-	entID, err := dal.ParseEntityID(rd.Profile.EntityID)
+	entID, err := dal.ParseEntityID(in.Profile.EntityID)
 	if err != nil {
 		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
 	}
@@ -1085,20 +1085,20 @@ func (s *server) UpdateProfile(ctx context.Context, rd *directory.UpdateProfileR
 		pID, err = dl.UpsertEntityProfile(&dal.EntityProfile{
 			ID:       pID,
 			EntityID: entID,
-			Sections: &directory.ProfileSections{Sections: rd.Profile.Sections},
+			Sections: &directory.ProfileSections{Sections: in.Profile.Sections},
 		})
 		if err != nil {
 			return err
 		}
 		var imageMediaID *string
-		if rd.ImageMediaID != "" {
-			imageMediaID = &rd.ImageMediaID
+		if in.ImageMediaID != "" {
+			imageMediaID = &in.ImageMediaID
 		}
 
 		_, err := dl.UpdateEntity(entID, &dal.EntityUpdate{
-			CustomDisplayName: &rd.Profile.DisplayName,
-			FirstName:         &rd.Profile.FirstName,
-			LastName:          &rd.Profile.LastName,
+			CustomDisplayName: &in.Profile.DisplayName,
+			FirstName:         &in.Profile.FirstName,
+			LastName:          &in.Profile.LastName,
 			HasProfile:        ptr.Bool(true),
 			ImageMediaID:      imageMediaID,
 		})
@@ -1149,7 +1149,7 @@ func (s *server) CreateExternalLink(ctx context.Context, in *directory.CreateExt
 	}
 
 	if err := s.dl.InsertExternalLinkForEntity(entityID, in.Name, in.URL); err != nil {
-		return nil, grpcErrorf(codes.Internal, "unable to insert external link (%s, %s) for %s : %s", in.Name, in.URL, entityID, err)
+		return nil, errors.Errorf("unable to insert external link (%s, %s) for %s : %s", in.Name, in.URL, entityID, err)
 	}
 
 	return &directory.CreateExternalLinkResponse{}, nil
@@ -1168,7 +1168,7 @@ func (s *server) DeleteExternalLink(ctx context.Context, in *directory.DeleteExt
 	}
 
 	if err := s.dl.DeleteExternalLinkForEntity(entityID, in.Name); err != nil {
-		return nil, grpcErrorf(codes.Internal, "unable to delete external link (%s, %s) : %s", entityID, in.Name, err)
+		return nil, errors.Errorf("unable to delete external link (%s, %s) : %s", entityID, in.Name, err)
 	}
 
 	return &directory.DeleteExternalLinkResponse{}, nil
@@ -1186,7 +1186,7 @@ func (s *server) LookupExternalLinksForEntity(ctx context.Context, in *directory
 
 	externalLinks, err := s.dl.ExternalLinksForEntity(entityID)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, "unable to get ehr links for %s : %s", entityID, err)
+		return nil, errors.Errorf("unable to get ehr links for %s : %s", entityID, err)
 	}
 
 	transformedExternalLinks := make([]*directory.LookupExternalLinksforEntityResponse_ExternalLink, len(externalLinks))
@@ -1198,6 +1198,25 @@ func (s *server) LookupExternalLinksForEntity(ctx context.Context, in *directory
 	}
 	return &directory.LookupExternalLinksforEntityResponse{
 		Links: transformedExternalLinks,
+	}, nil
+}
+
+func (s *server) Contact(ctx context.Context, in *directory.ContactRequest) (*directory.ContactResponse, error) {
+	if in.ContactID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "contact_id required")
+	}
+	contactID, err := dal.ParseEntityContactID(in.ContactID)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "invalid contact_id %s : %s", in.ContactID, err)
+	}
+	contact, err := s.dl.EntityContact(contactID)
+	if errors.Cause(err) == dal.ErrNotFound {
+		return nil, grpcErrorf(codes.NotFound, "Contact %s NOT FOUND", in.ContactID)
+	} else if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return &directory.ContactResponse{
+		Contact: transformEntityContactToResponse(contact),
 	}, nil
 }
 
