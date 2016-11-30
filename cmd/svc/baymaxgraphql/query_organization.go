@@ -240,6 +240,51 @@ var organizationType = graphql.NewObject(
 						},
 					)),
 			},
+			"supportThreadID": &graphql.Field{
+				Type: graphql.String,
+				Resolve: apiaccess.Provider(func(p graphql.ResolveParams) (interface{}, error) {
+					org := p.Source.(*models.Organization)
+					ctx := p.Context
+					ram := raccess.ResourceAccess(p)
+					acc := gqlctx.Account(ctx)
+
+					if org == nil {
+						return "", nil
+					}
+
+					ent, err := entityInOrgForAccountID(ctx, ram, org.ID, acc)
+					if err != nil {
+						return nil, err
+					}
+
+					queryThreadsRes, err := ram.QueryThreads(ctx, &threading.QueryThreadsRequest{
+						ViewerEntityID: ent.ID,
+						Iterator: &threading.Iterator{
+							Direction: threading.ITERATOR_DIRECTION_FROM_START,
+							Count:     1,
+						},
+						Type: threading.QUERY_THREADS_TYPE_ADHOC,
+						QueryType: &threading.QueryThreadsRequest_Query{
+							Query: &threading.Query{
+								Expressions: []*threading.Expr{
+									{Value: &threading.Expr_ThreadType_{ThreadType: threading.EXPR_THREAD_TYPE_SUPPORT}},
+								},
+							},
+						},
+					})
+					if err != nil {
+						return nil, errors.InternalError(ctx, err)
+					}
+
+					if len(queryThreadsRes.Edges) == 0 {
+						// it is possible for the support thread for an organization to not exist
+						return "", nil
+					}
+
+					supportThread := queryThreadsRes.Edges[0].Thread
+					return supportThread.ID, nil
+				}),
+			},
 		},
 	},
 )
