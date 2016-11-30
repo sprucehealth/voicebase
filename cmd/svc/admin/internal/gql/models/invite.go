@@ -7,9 +7,10 @@ import (
 )
 
 type PracticeLink struct {
-	OrganizationID string `json:"organizationID"`
-	Token          string `json:"token"`
-	URL            string `json:"url"`
+	OrganizationID string   `json:"organizationID"`
+	Token          string   `json:"token"`
+	URL            string   `json:"url"`
+	Tags           []string `json:"tags"`
 }
 
 func TransformPracticeLinksToModel(ctx context.Context, invs []*invite.OrganizationInvite, inviteAPIDomain string) []*PracticeLink {
@@ -25,5 +26,6 @@ func TransformPracticeLinkToModel(ctx context.Context, inv *invite.OrganizationI
 		OrganizationID: inv.OrganizationEntityID,
 		Token:          inv.Token,
 		URL:            invite.OrganizationInviteURL(inviteAPIDomain, inv.Token),
+		Tags:           inv.Tags,
 	}
 }

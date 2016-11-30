@@ -23,8 +23,9 @@ var meType = graphql.NewObject(
 				Resolve: meResolve,
 			},
 			// For single query purposes allow entities to be lookedup inside a `me` call
-			"entity":  entityField,
-			"account": accountField,
+			"entity":       entityField,
+			"account":      accountField,
+			"practiceLink": practiceLinkField,
 		},
 	},
 )

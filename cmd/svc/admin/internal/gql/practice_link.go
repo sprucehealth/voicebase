@@ -16,6 +16,36 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
+// practiceLinkArgumentsConfig represents the config for arguments referencing a practice link
+var practiceLinkArgumentsConfig = graphql.FieldConfigArgument{
+	"id": &graphql.ArgumentConfig{Type: graphql.String},
+}
+
+// practiceLinkArguments represents arguments for referencing an practice link
+type practiceLinkArguments struct {
+	PracticeCode string `json:"practiceCode"`
+}
+
+// PracticeLinkArguments parses the practice link arguments out of requests params
+func parsePracticeLinkArguments(args map[string]interface{}) *practiceLinkArguments {
+	plArgs := &practiceLinkArguments{}
+	if args != nil {
+		if ipl, ok := args["practiceCode"]; ok {
+			if pl, ok := ipl.(string); ok {
+				plArgs.PracticeCode = pl
+			}
+		}
+	}
+	return plArgs
+}
+
+// practiceLinkField returns is a graphql field for Querying an PracticeLink object
+var practiceLinkField = &graphql.Field{
+	Type:    practiceLinkType,
+	Args:    practiceLinkArgumentsConfig,
+	Resolve: practiceLinkResolve,
+}
+
 // practiceLinkType is a type representing an practice link
 var practiceLinkType = graphql.NewObject(
 	graphql.ObjectConfig{
@@ -24,8 +54,34 @@ var practiceLinkType = graphql.NewObject(
 			"organizationID": &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
 			"token":          &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"url":            &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"tags":           &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(graphql.String))},
 		},
 	})
+
+func practiceLinkResolve(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+	args := parsePracticeLinkArguments(p.Args)
+	golog.ContextLogger(ctx).Debugf("Resolving Practice Link with args %+v", args)
+	if args.PracticeCode == "" {
+		return nil, nil
+	}
+	return getPracticeLink(ctx, client.Invite(p), client.Domains(p).InviteAPI, args.PracticeCode)
+}
+
+func getPracticeLink(ctx context.Context, inviteCli invite.InviteClient, inviteAPIDomain, token string) (*models.PracticeLink, error) {
+	resp, err := inviteCli.LookupInvite(ctx, &invite.LookupInviteRequest{
+		LookupKeyOneof: &invite.LookupInviteRequest_Token{
+			Token: token,
+		},
+	})
+	if err != nil {
+		return nil, errors.Errorf("Error while getting practice link: %s", err)
+	}
+	if resp.Type != invite.LookupInviteResponse_ORGANIZATION_CODE {
+		return nil, errors.Errorf("Invite mapped to token %s is not a practice linke. Got: %+v", token, resp.Invite)
+	}
+	return models.TransformPracticeLinkToModel(ctx, resp.GetOrganization(), inviteAPIDomain), nil
+}
 
 func getPracticeLinksForEntity(ctx context.Context, inviteCli invite.InviteClient, inviteAPIDomain, entityID string) ([]*models.PracticeLink, error) {
 	resp, err := inviteCli.LookupOrganizationInvites(ctx, &invite.LookupOrganizationInvitesRequest{
@@ -99,8 +155,17 @@ func createOrganizationLinkResolve(p graphql.ResolveParams) (interface{}, error)
 		return nil, errors.Trace(err)
 	}
 
-	if _, err := client.Settings(p).SetValue(p.Context, &settings.SetValueRequest{
-		NodeID: in.OrganizationID,
+	golog.ContextLogger(p.Context).Debugf("Created organization link %s", orgLink)
+	return &createOrganizationLinkOutput{
+		Success: true,
+		OrgLink: orgLink,
+	}, nil
+}
+
+func createOrganizationLink(ctx context.Context, settingsCli settings.SettingsClient, inviteCli invite.InviteClient, inviteAPIDomain, orgID string) (string, error) {
+	// If we're creating an org link then enable the setting
+	if _, err := settingsCli.SetValue(ctx, &settings.SetValueRequest{
+		NodeID: orgID,
 		Value: &settings.Value{
 			Key: &settings.ConfigKey{
 				Key: invite.ConfigKeyOrganizationCode,
@@ -111,17 +176,9 @@ func createOrganizationLinkResolve(p graphql.ResolveParams) (interface{}, error)
 			},
 		},
 	}); err != nil {
-		return nil, errors.Trace(err)
+		return "", errors.Trace(err)
 	}
 
-	golog.ContextLogger(p.Context).Debugf("Created organization link %s", orgLink)
-	return &createOrganizationLinkOutput{
-		Success: true,
-		OrgLink: orgLink,
-	}, nil
-}
-
-func createOrganizationLink(ctx context.Context, settingsCli settings.SettingsClient, inviteCli invite.InviteClient, inviteAPIDomain, orgID string) (string, error) {
 	resp, err := inviteCli.CreateOrganizationInvite(ctx, &invite.CreateOrganizationInviteRequest{
 		OrganizationEntityID: orgID,
 	})
@@ -129,4 +186,82 @@ func createOrganizationLink(ctx context.Context, settingsCli settings.SettingsCl
 		return "", errors.Errorf("Error while creating org code for organization %s: %s", orgID, err)
 	}
 	return invite.OrganizationInviteURL(inviteAPIDomain, resp.Organization.Token), nil
+}
+
+// modifyPracticeLink
+type modifyPracticeLinkInput struct {
+	PracticeCode string   `gql:"practiceCode,nonempty"`
+	Tags         []string `gql:"tags"`
+}
+
+var modifyPracticeLinkInputType = graphql.NewInputObject(
+	graphql.InputObjectConfig{
+		Name: "ModifyPracticeLinkInput",
+		Fields: graphql.InputObjectConfigFieldMap{
+			"practiceCode": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"tags":         &graphql.InputObjectFieldConfig{Type: graphql.NewList(graphql.NewNonNull(graphql.String))},
+		},
+	},
+)
+
+type modifyPracticeLinkOutput struct {
+	Success      bool                 `json:"success"`
+	ErrorMessage string               `json:"errorMessage,omitempty"`
+	PracticeLink *models.PracticeLink `json:"practiceLink"`
+}
+
+var modifyPracticeLinkOutputType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "ModifyPracticeLinkPayload",
+		Fields: graphql.Fields{
+			"success":      &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"errorMessage": &graphql.Field{Type: graphql.String},
+			"practiceLink": &graphql.Field{Type: graphql.NewNonNull(practiceLinkType)},
+		},
+		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+			_, ok := value.(*modifyPracticeLinkOutput)
+			return ok
+		},
+	},
+)
+
+var modifyPracticeLinkField = &graphql.Field{
+	Type: graphql.NewNonNull(createOrganizationLinkOutputType),
+	Args: graphql.FieldConfigArgument{
+		common.InputFieldName: &graphql.ArgumentConfig{Type: graphql.NewNonNull(modifyPracticeLinkInputType)},
+	},
+	Resolve: modifyPracticeLinkResolve,
+}
+
+func modifyPracticeLinkResolve(p graphql.ResolveParams) (interface{}, error) {
+	var in modifyPracticeLinkInput
+	if err := gqldecode.Decode(p.Args[common.InputFieldName].(map[string]interface{}), &in); err != nil {
+		switch err := err.(type) {
+		case gqldecode.ErrValidationFailed:
+			return nil, errors.Errorf("%s is invalid: %s", err.Field, err.Reason)
+		}
+		return nil, errors.Trace(err)
+	}
+
+	golog.ContextLogger(p.Context).Debugf("Modifying practice link for %+v", in)
+	practiceLink, err := modifyPracticeLink(p.Context, client.Invite(p), &in, client.Domains(p).InviteAPI)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	return &modifyPracticeLinkOutput{
+		Success:      true,
+		PracticeLink: practiceLink,
+	}, nil
+}
+
+func modifyPracticeLink(ctx context.Context, inviteCli invite.InviteClient, in *modifyPracticeLinkInput, inviteAPIDomain string) (*models.PracticeLink, error) {
+	resp, err := inviteCli.ModifyOrganizationInvite(ctx, &invite.ModifyOrganizationInviteRequest{
+		Token: in.PracticeCode,
+		Tags:  in.Tags,
+	})
+	if err != nil {
+		return nil, errors.Errorf("Error while modifying practice link for  %+v", in)
+	}
+	return models.TransformPracticeLinkToModel(ctx, resp.OrganizationInvite, inviteAPIDomain), nil
 }
