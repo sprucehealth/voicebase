@@ -42,7 +42,6 @@ func TestLookupEntitiesByEntityID(t *testing.T) {
 		},
 	}, nil))
 	resp, err := s.LookupEntities(context.Background(), &directory.LookupEntitiesRequest{
-		LookupKeyType:        directory.LookupEntitiesRequest_ENTITY_ID,
 		LookupKeyOneof:       &directory.LookupEntitiesRequest_EntityID{EntityID: eID1.String()},
 		RequestedInformation: &directory.RequestedInformation{},
 	})
@@ -92,7 +91,6 @@ func TestLookupEntitiesByEntityIDNonZeroDepth(t *testing.T) {
 		},
 	}, nil))
 	resp, err := s.LookupEntities(context.Background(), &directory.LookupEntitiesRequest{
-		LookupKeyType:  directory.LookupEntitiesRequest_ENTITY_ID,
 		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{EntityID: eID1.String()},
 		RequestedInformation: &directory.RequestedInformation{
 			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERS, directory.EntityInformation_CONTACTS},
@@ -136,7 +134,6 @@ func TestLookupEntitiesByBatchEntityID(t *testing.T) {
 		},
 	}, nil))
 	resp, err := s.LookupEntities(context.Background(), &directory.LookupEntitiesRequest{
-		LookupKeyType:        directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
 		LookupKeyOneof:       &directory.LookupEntitiesRequest_BatchEntityID{BatchEntityID: &directory.IDList{IDs: []string{eID1.String(), eID2.String()}}},
 		RequestedInformation: &directory.RequestedInformation{},
 	})
@@ -187,7 +184,6 @@ func TestLookupEntitiesByExternalID(t *testing.T) {
 		},
 	}, nil))
 	resp, err := s.LookupEntities(context.Background(), &directory.LookupEntitiesRequest{
-		LookupKeyType:  directory.LookupEntitiesRequest_EXTERNAL_ID,
 		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{ExternalID: externalID},
 	})
 	test.OK(t, err)
@@ -271,7 +267,6 @@ func TestLookupEntitiesByExternalID_MemberOfEntity(t *testing.T) {
 	}, nil))
 
 	resp, err := s.LookupEntities(context.Background(), &directory.LookupEntitiesRequest{
-		LookupKeyType:  directory.LookupEntitiesRequest_EXTERNAL_ID,
 		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{ExternalID: externalID},
 		MemberOfEntity: orgID1.String(),
 	})
@@ -295,7 +290,6 @@ func TestLookupEntitiesNoResults(t *testing.T) {
 	test.OK(t, err)
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{eID1}, []dal.EntityStatus{dal.EntityStatusActive}, []dal.EntityType{}), []*dal.Entity{}, nil))
 	_, err = s.LookupEntities(context.Background(), &directory.LookupEntitiesRequest{
-		LookupKeyType:  directory.LookupEntitiesRequest_ENTITY_ID,
 		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{EntityID: eID1.String()},
 		Statuses:       []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 	})
@@ -1002,7 +996,6 @@ func TestLookupEntitiesAdditionalInformationGraphCrawl(t *testing.T) {
 		},
 	}, nil))
 	resp, err := s.LookupEntities(context.Background(), &directory.LookupEntitiesRequest{
-		LookupKeyType:  directory.LookupEntitiesRequest_ENTITY_ID,
 		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{EntityID: eID1.String()},
 		RequestedInformation: &directory.RequestedInformation{
 			Depth: 2,
@@ -1609,14 +1602,6 @@ func TestProfile(t *testing.T) {
 		expectedResponse *directory.ProfileResponse
 		expectedError    error
 	}{
-		"BadLookupKeyType": {
-			request: &directory.ProfileRequest{
-				LookupKeyType: directory.ProfileRequest_LookupKeyType(-1),
-			},
-			dal:              nil,
-			expectedResponse: nil,
-			expectedError:    errors.Errorf("Unknown lookup key type %s", directory.ProfileRequest_LookupKeyType(-1).String()),
-		},
 		"LookupEntityID-BadID": {
 			request: &directory.ProfileRequest{
 				LookupKeyType: directory.ProfileRequest_ENTITY_ID,
@@ -1628,7 +1613,7 @@ func TestProfile(t *testing.T) {
 			expectedResponse: nil,
 			expectedError: func() error {
 				_, err := dal.ParseEntityID("notAnEntityID")
-				return grpcError(err)
+				return err
 			}(),
 		},
 		"LookupEntityID-NotFound": {
@@ -1684,7 +1669,7 @@ func TestProfile(t *testing.T) {
 			expectedResponse: nil,
 			expectedError: func() error {
 				_, err := dal.ParseEntityProfileID("notAProfileID")
-				return grpcError(err)
+				return err
 			}(),
 		},
 		"LookupProfileID-NotFound": {

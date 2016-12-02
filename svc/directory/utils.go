@@ -1,9 +1,8 @@
 package directory
 
 import (
-	"fmt"
-
 	"context"
+	"fmt"
 
 	"github.com/sprucehealth/backend/libs/errors"
 	"google.golang.org/grpc"
@@ -35,10 +34,13 @@ func SingleEntity(ctx context.Context, client DirectoryClient, req *LookupEntiti
 		return nil, ErrEntityNotFound
 	} else if len(res.Entities) != 1 {
 		var id string
-		if req.LookupKeyType == LookupEntitiesRequest_ENTITY_ID {
-			id = req.GetEntityID()
-		} else if req.LookupKeyType == LookupEntitiesRequest_EXTERNAL_ID {
-			id = req.GetExternalID()
+		switch key := req.LookupKeyOneof.(type) {
+		case *LookupEntitiesRequest_EntityID:
+			id = key.EntityID
+		case *LookupEntitiesRequest_ExternalID:
+			id = key.ExternalID
+		case *LookupEntitiesRequest_AccountID:
+			id = key.AccountID
 		}
 		return nil, fmt.Errorf("expected single entity for %s but got %d", id, len(res.Entities))
 	}

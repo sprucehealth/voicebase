@@ -20,22 +20,7 @@ import (
 )
 
 // go vet doesn't like that the first argument to grpcErrorf is not a string so alias the function with a different name :(
-var grpcErrf = grpc.Errorf
-
-func grpcErrorf(c codes.Code, format string, a ...interface{}) error {
-	if c == codes.Internal {
-		golog.LogDepthf(1, golog.ERR, "Directory - Internal GRPC Error: %s", fmt.Sprintf(format, a...))
-	}
-	return grpcErrf(c, format, a...)
-}
-
-func grpcError(err error) error {
-	if grpc.Code(err) == codes.Unknown {
-		golog.LogDepthf(1, golog.ERR, "Internal Error: "+err.Error())
-		err = grpcErrf(codes.Internal, err.Error())
-	}
-	return err
-}
+var grpcErrorf = grpc.Errorf
 
 var (
 	// ErrNotImplemented is returned from RPC calls that have yet to be implemented
@@ -106,17 +91,10 @@ func filterToMembersOnly(pbEntities []*directory.Entity, memberOfEntity string) 
 
 func (s *server) LookupEntities(ctx context.Context, in *directory.LookupEntitiesRequest) (out *directory.LookupEntitiesResponse, err error) {
 	var entityIDs []dal.EntityID
-	switch in.LookupKeyType {
-	case directory.LookupEntitiesRequest_EXTERNAL_ID, directory.LookupEntitiesRequest_ACCOUNT_ID:
-		var extID string
-		switch in.LookupKeyType {
-		case directory.LookupEntitiesRequest_EXTERNAL_ID:
-			extID = in.GetExternalID()
+	switch key := in.LookupKeyOneof.(type) {
+	case *directory.LookupEntitiesRequest_AccountID:
 		// TODO: Actually use the account_id field on the table and don't do this double lookup
-		case directory.LookupEntitiesRequest_ACCOUNT_ID:
-			extID = in.GetAccountID()
-		}
-		externalEntityIDs, err := s.dl.ExternalEntityIDs(extID)
+		externalEntityIDs, err := s.dl.ExternalEntityIDs(key.AccountID)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
@@ -124,24 +102,32 @@ func (s *server) LookupEntities(ctx context.Context, in *directory.LookupEntitie
 		for i, v := range externalEntityIDs {
 			entityIDs[i] = v.EntityID
 		}
-	case directory.LookupEntitiesRequest_ENTITY_ID:
-		entityID, err := dal.ParseEntityID(in.GetEntityID())
+	case *directory.LookupEntitiesRequest_ExternalID:
+		externalEntityIDs, err := s.dl.ExternalEntityIDs(key.ExternalID)
 		if err != nil {
-			return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse entity id")
+			return nil, errors.Trace(err)
 		}
-		entityIDs = append(entityIDs, entityID)
-	case directory.LookupEntitiesRequest_BATCH_ENTITY_ID:
-		idList := in.GetBatchEntityID().IDs
-		entityIDs = make([]dal.EntityID, len(idList))
-		for i, id := range idList {
+		entityIDs = make([]dal.EntityID, len(externalEntityIDs))
+		for i, v := range externalEntityIDs {
+			entityIDs[i] = v.EntityID
+		}
+	case *directory.LookupEntitiesRequest_EntityID:
+		entityID, err := dal.ParseEntityID(key.EntityID)
+		if err != nil {
+			return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse entity id %q", key.EntityID)
+		}
+		entityIDs = []dal.EntityID{entityID}
+	case *directory.LookupEntitiesRequest_BatchEntityID:
+		entityIDs = make([]dal.EntityID, len(key.BatchEntityID.IDs))
+		for i, id := range key.BatchEntityID.IDs {
 			eid, err := dal.ParseEntityID(id)
 			if err != nil {
-				return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse entity id")
+				return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse entity id %q", id)
 			}
 			entityIDs[i] = eid
 		}
 	default:
-		return nil, errors.Errorf("Unknown lookup key type %s", in.LookupKeyType.String())
+		return nil, errors.Errorf("Unknown lookup key type %T", in.LookupKeyOneof)
 	}
 	statuses, err := transformEntityStatuses(in.Statuses)
 	if err != nil {
@@ -1004,24 +990,24 @@ func (s *server) Profile(ctx context.Context, in *directory.ProfileRequest) (*di
 	case directory.ProfileRequest_ENTITY_ID:
 		entID, err := dal.ParseEntityID(in.GetEntityID())
 		if err != nil {
-			return nil, grpcError(err)
+			return nil, errors.Trace(err)
 		}
 		profile, err = s.dl.EntityProfileForEntity(entID)
 		if errors.Cause(err) == dal.ErrNotFound {
 			return nil, grpcErrorf(codes.NotFound, "Profile for entity id %s not found", entID)
 		} else if err != nil {
-			return nil, grpcError(err)
+			return nil, errors.Trace(err)
 		}
 	case directory.ProfileRequest_PROFILE_ID:
 		profileID, err := dal.ParseEntityProfileID(in.GetProfileID())
 		if err != nil {
-			return nil, grpcError(err)
+			return nil, errors.Trace(err)
 		}
 		profile, err = s.dl.EntityProfile(profileID)
 		if errors.Cause(err) == dal.ErrNotFound {
 			return nil, grpcErrorf(codes.NotFound, "Profile for profile id %s not found", profileID)
 		} else if err != nil {
-			return nil, grpcError(err)
+			return nil, errors.Trace(err)
 		}
 	default:
 		return nil, errors.Errorf("Unknown lookup key type %s", in.LookupKeyType.String())
@@ -1053,7 +1039,7 @@ func (s *server) UpdateProfile(ctx context.Context, in *directory.UpdateProfileR
 		}
 		entP, err := s.dl.EntityProfileForEntity(eID)
 		if err != nil && errors.Cause(err) != dal.ErrNotFound {
-			return nil, grpcError(err)
+			return nil, errors.Trace(err)
 		}
 		// If a profile already exists for this entity ID map it to the profile ID even if one wasn't supplied
 		if entP != nil {
@@ -1067,7 +1053,7 @@ func (s *server) UpdateProfile(ctx context.Context, in *directory.UpdateProfileR
 		if errors.Cause(err) == dal.ErrNotFound {
 			return nil, grpcErrorf(codes.NotFound, "Profile id %s not found", pID)
 		} else if err != nil {
-			return nil, grpcError(err)
+			return nil, errors.Trace(err)
 		}
 
 		// Do not allow profiles to be remapped to different entities
@@ -1104,7 +1090,7 @@ func (s *server) UpdateProfile(ctx context.Context, in *directory.UpdateProfileR
 		})
 		return err
 	}); err != nil {
-		return nil, grpcError(err)
+		return nil, errors.Trace(err)
 	}
 
 	// Reread our profile to get any triggered modified times
@@ -1122,11 +1108,11 @@ func (s *server) UpdateProfile(ctx context.Context, in *directory.UpdateProfileR
 	// Reread out entity to get any triggered modified times
 	ent, err := s.dl.Entity(entID)
 	if err != nil {
-		return nil, grpcError(err)
+		return nil, errors.Trace(err)
 	}
 	entResp, err := transformEntityToResponse(ent)
 	if err != nil {
-		return nil, grpcError(err)
+		return nil, errors.Trace(err)
 	}
 	return &directory.UpdateProfileResponse{
 		Profile: profileResp.Profile,
