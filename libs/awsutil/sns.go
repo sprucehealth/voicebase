@@ -4,11 +4,13 @@ import (
 	"encoding/base64"
 	"fmt"
 
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/kms/kmsiface"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/sprucehealth/backend/libs/crypt"
 	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
 )
 
@@ -69,4 +71,46 @@ func PublishToSNSTopic(snsCLI snsiface.SNSAPI, topic string, m marshaller) error
 	}
 
 	return nil
+}
+
+// CreateSNSTopic returns the ARN of the created topic
+func CreateSNSTopic(snsCLI snsiface.SNSAPI, topicName string) (string, error) {
+	createResp, err := snsCLI.CreateTopic(&sns.CreateTopicInput{
+		Name: &topicName,
+	})
+	if err != nil {
+		return "", errors.Trace(err)
+	}
+	return *createResp.TopicArn, nil
+}
+
+const (
+	// AWSErrCodeSNSTopicNotFound the code returned from AWS when a topic isn't found
+	AWSErrCodeSNSTopicNotFound = "NotFound"
+)
+
+// CreateSNSTopicIfNotExists returns the ARN of the existing or created topic
+func CreateSNSTopicIfNotExists(snsCLI snsiface.SNSAPI, topicARN string) (string, error) {
+	_, err := snsCLI.GetTopicAttributes(&sns.GetTopicAttributesInput{
+		TopicArn: &topicARN,
+	})
+	if aerr, ok := err.(awserr.Error); ok {
+		if aerr.Code() == AWSErrCodeSNSTopicNotFound {
+			topicName, err := ResourceNameFromARN(topicARN)
+			if err != nil {
+				return "", errors.Errorf("topic %s NOT FOUND. Unable to get topic name from ARN to create due to: %s", topicARN, err)
+			}
+			golog.Infof("Topic %s was NOT FOUND. Attempting to create it.", topicARN)
+			topicARN, err = CreateSNSTopic(snsCLI, topicName)
+			if err != nil {
+				return "", errors.Errorf("topic %s NOT FOUND. Failed to create topic due to: %s", topicARN, err)
+			}
+			golog.Infof("Topic %s was successfully created", topicARN)
+		} else {
+			return "", errors.Errorf("failed to get attributes of topic %s: %s", topicARN, err)
+		}
+	} else if err != nil {
+		return "", errors.Errorf("failed to get AWS error for GetTopicAttributes topic %s: %s", topicARN, err)
+	}
+	return topicARN, nil
 }

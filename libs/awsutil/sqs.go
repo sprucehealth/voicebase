@@ -9,6 +9,7 @@ import (
 
 	"context"
 
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/kms/kmsiface"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
@@ -236,4 +237,60 @@ func (e *encryptedSQS) ReceiveMessage(in *sqs.ReceiveMessageInput) (*sqs.Receive
 		}
 	}
 	return resp, nil
+}
+
+// CreateSQSQueue returns the URL of the created queue
+func CreateSQSQueue(sqsCLI sqsiface.SQSAPI, name string) (string, error) {
+	in := &sqs.CreateQueueInput{
+		QueueName: &name,
+	}
+	createResp, err := sqsCLI.CreateQueue(in)
+	if err != nil {
+		return "", errors.Trace(err)
+	}
+	return *createResp.QueueUrl, nil
+}
+
+const (
+	// AWSErrCodeSQSQueueNotFound the code returned from AWS when a queue isn't found
+	AWSErrCodeSQSQueueNotFound = "AWS.SimpleQueueService.NonExistentQueue"
+)
+
+// CreateSQSQueueIfNotExists returns the ARN of the existing or created queue
+func CreateSQSQueueIfNotExists(sqsCLI sqsiface.SQSAPI, queueURL string) (string, error) {
+	requestedAttributed := []*string{ptr.String("QueueArn")}
+	attrResp, err := sqsCLI.GetQueueAttributes(&sqs.GetQueueAttributesInput{
+		QueueUrl:       &queueURL,
+		AttributeNames: requestedAttributed,
+	})
+	if aerr, ok := err.(awserr.Error); ok {
+		if aerr.Code() == AWSErrCodeSQSQueueNotFound {
+			queueName, err := ResourceNameFromSQSURL(queueURL)
+			if err != nil {
+				return "", errors.Errorf("queue %s NOT FOUND. Unable to get queue name from URL to create due to: %s", queueURL, err)
+			}
+			golog.Infof("Queue %s was NOT FOUND. Attempting to create it.", queueName)
+			queueURL, err = CreateSQSQueue(sqsCLI, queueName)
+			if err != nil {
+				return "", errors.Errorf("queue %s NOT FOUND. Failed to create queue due to: %s", queueName, err)
+			}
+			golog.Infof("Queue %s was successfully created", queueName)
+			attrResp, err = sqsCLI.GetQueueAttributes(&sqs.GetQueueAttributesInput{
+				QueueUrl:       &queueURL,
+				AttributeNames: requestedAttributed,
+			})
+			if err != nil {
+				return "", errors.Errorf("failed to get AWS error for GetQueueAttributes queue %s: %s", queueURL, err)
+			}
+		} else {
+			return "", errors.Errorf("failed to get attributes of queue %s: %s", queueURL, err)
+		}
+	} else if err != nil {
+		return "", errors.Errorf("failed to get AWS error for GetQueueAttributes queue %s: %s", queueURL, err)
+	}
+	parn, ok := attrResp.Attributes["QueueArn"]
+	if !ok {
+		return "", errors.Errorf("failed to get Queue ARN out of Attributes response for %s", queueURL)
+	}
+	return *parn, nil
 }

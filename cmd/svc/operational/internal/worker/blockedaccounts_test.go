@@ -5,6 +5,7 @@ import (
 
 	"context"
 
+	"github.com/golang/mock/gomock"
 	dalmock "github.com/sprucehealth/backend/cmd/svc/operational/internal/dal/mock"
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
@@ -14,15 +15,17 @@ import (
 	directorymock "github.com/sprucehealth/backend/svc/directory/mock"
 	excommsmock "github.com/sprucehealth/backend/svc/excomms/mock"
 	"github.com/sprucehealth/backend/svc/operational"
-	threadingmock "github.com/sprucehealth/backend/svc/threading/mock"
+	"github.com/sprucehealth/backend/svc/threading/threadingmock"
 )
 
 func TestBlockAccountWorker(t *testing.T) {
 	md := dalmock.New(t)
 	defer md.Finish()
 
-	mt := threadingmock.New(t)
-	defer mt.Finish()
+	ctx := context.Background()
+	ctrl := gomock.NewController(t)
+	mt := threadingmock.NewMockThreadsClient(ctrl)
+	defer ctrl.Finish()
 
 	mdir := directorymock.New(t)
 	defer mdir.Finish()
@@ -108,7 +111,7 @@ func TestBlockAccountWorker(t *testing.T) {
 	md.Expect(mock.NewExpectation(md.MarkAccountAsBlocked, accountID))
 
 	w := NewBlockAccountWorker(ma, mdir, me, mt, nil, md, "sqs_url", spruceOrgID)
-	test.OK(t, w.processEvent(context.Background(), &operational.BlockAccountRequest{
+	test.OK(t, w.processEvent(ctx, &operational.BlockAccountRequest{
 		AccountID: accountID,
 	}))
 }
@@ -117,8 +120,10 @@ func TestBlockAccountWorker_NoProvisionedPhoneNumber(t *testing.T) {
 	md := dalmock.New(t)
 	defer md.Finish()
 
-	mt := threadingmock.New(t)
-	defer mt.Finish()
+	ctx := context.Background()
+	ctrl := gomock.NewController(t)
+	mt := threadingmock.NewMockThreadsClient(ctrl)
+	defer ctrl.Finish()
 
 	mdir := directorymock.New(t)
 	defer mdir.Finish()
@@ -199,7 +204,7 @@ func TestBlockAccountWorker_NoProvisionedPhoneNumber(t *testing.T) {
 	md.Expect(mock.NewExpectation(md.MarkAccountAsBlocked, accountID))
 
 	w := NewBlockAccountWorker(ma, mdir, me, mt, nil, md, "sqs_url", spruceOrgID)
-	test.OK(t, w.processEvent(context.Background(), &operational.BlockAccountRequest{
+	test.OK(t, w.processEvent(ctx, &operational.BlockAccountRequest{
 		AccountID: accountID,
 	}))
 }

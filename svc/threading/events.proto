@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package threading;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_enum_prefix_all) = true;
+
+message NewThreadEvent {
+	string thread_id = 1 [(gogoproto.customname) = "ThreadID"];
+}

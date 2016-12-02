@@ -26,6 +26,7 @@ import (
 	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/directory/cache"
+	"github.com/sprucehealth/backend/svc/events"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/layout"
@@ -149,6 +150,7 @@ func NewGraphQL(
 	stripeConnectURL string,
 	hintConnectURL string,
 	intercomSecretKey string,
+	publisher events.Publisher,
 ) http.Handler {
 	statRequests := metrics.NewCounter()
 	statResponseErrors := metrics.NewCounter()
@@ -188,6 +190,7 @@ func NewGraphQL(
 			layoutStore:              layoutStore,
 			emailTemplateIDs:         emailTemplateIDs,
 			transactionalEmailSender: transactionalEmailSender,
+			publisher:                publisher,
 		},
 		statRequests:            statRequests,
 		statResponseErrors:      statResponseErrors,

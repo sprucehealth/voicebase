@@ -7,6 +7,7 @@ import (
 
 	"context"
 
+	"github.com/golang/mock/gomock"
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/cmd/svc/directory/internal/dal"
 	mock_dal "github.com/sprucehealth/backend/cmd/svc/directory/internal/dal/test"
@@ -17,7 +18,7 @@ import (
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/directory"
-	eventsmock "github.com/sprucehealth/backend/svc/events/mock"
+	"github.com/sprucehealth/backend/svc/events/eventsmock"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
@@ -27,18 +28,21 @@ func TestLookupEntitiesByEntityID(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
 
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
+	eSrc := &directory.EntitySource{Type: directory.EntitySource_PRACTICE_CODE, Data: "123456"}
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{eID1}, ([]dal.EntityStatus)(nil), []dal.EntityType{}), []*dal.Entity{
 		{
 			ID:          eID1,
 			DisplayName: "entity1",
 			Type:        dal.EntityTypeExternal,
 			Status:      dal.EntityStatusActive,
+			Source:      directory.FlattenEntitySource(eSrc),
 		},
 	}, nil))
 	resp, err := s.LookupEntities(context.Background(), &directory.LookupEntitiesRequest{
@@ -51,14 +55,17 @@ func TestLookupEntitiesByEntityID(t *testing.T) {
 	test.Equals(t, eID1.String(), resp.Entities[0].ID)
 	test.Equals(t, "entity1", resp.Entities[0].Info.DisplayName)
 	test.Equals(t, directory.EntityType_EXTERNAL, resp.Entities[0].Type)
+	test.Equals(t, eSrc, resp.Entities[0].Source)
 }
 
 func TestLookupEntitiesByEntityIDNonZeroDepth(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
@@ -111,8 +118,10 @@ func TestLookupEntitiesByBatchEntityID(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
@@ -152,8 +161,10 @@ func TestLookupEntitiesByExternalID(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	s := New(dl, publisher, metrics.NewRegistry())
 	externalID := "account:12345678"
@@ -201,8 +212,10 @@ func TestLookupEntitiesByExternalID_MemberOfEntity(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	s := New(dl, publisher, metrics.NewRegistry())
 	externalID := "account:12345678"
@@ -281,8 +294,10 @@ func TestLookupEntitiesByExternalID_MemberOfEntity(t *testing.T) {
 func TestLookupEntitiesNoResults(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	defer dl.Finish()
 	s := New(dl, publisher, metrics.NewRegistry())
@@ -302,8 +317,10 @@ func TestLookupEntitiesByContact(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	s := New(dl, publisher, metrics.NewRegistry())
 	contactValue := " 1234567@gmail.com "
@@ -358,8 +375,10 @@ func TestLookupEntitiesByContact_MemberOfEntity(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	s := New(dl, publisher, metrics.NewRegistry())
 	contactValue := " 1234567@gmail.com "
@@ -444,8 +463,10 @@ func TestLookupEntitiesByContactNoResults(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	s := New(dl, publisher, metrics.NewRegistry())
 	contactValue := " 1234567@gmail.com "
@@ -463,8 +484,10 @@ func TestCreateEntityFull(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
@@ -549,8 +572,10 @@ func TestCreateEntityInitialEntityNotFound(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	s := New(dl, publisher, metrics.NewRegistry())
 	eID2, err := dal.NewEntityID()
@@ -589,8 +614,10 @@ func TestCreateEntityEmptyContact(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	s := New(dl, publisher, metrics.NewRegistry())
 	eID2, err := dal.NewEntityID()
@@ -624,8 +651,10 @@ func TestCreateEntityInvalidEmail(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	s := New(dl, publisher, metrics.NewRegistry())
 	eID2, err := dal.NewEntityID()
@@ -659,8 +688,10 @@ func TestCreateEntitySparse(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
@@ -700,8 +731,10 @@ func TestCreateMembership(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
@@ -735,8 +768,10 @@ func TestCreateMembershipEntityNotFound(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
@@ -756,8 +791,10 @@ func TestCreateMembershipTargetEntityNotFound(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
@@ -778,8 +815,10 @@ func TestCreateContact(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
@@ -812,8 +851,10 @@ func TestCreateContact(t *testing.T) {
 func TestCreateContactEntityNotFound(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
@@ -836,8 +877,10 @@ func TestCreateContactInvalidEmail(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
@@ -859,8 +902,10 @@ func TestCreateContactInvalidEmail(t *testing.T) {
 func TestCreateEntityDomain(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
@@ -878,8 +923,10 @@ func TestCreateEntityDomain(t *testing.T) {
 func TestUpdateEntityDomain(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
@@ -900,8 +947,10 @@ func TestUpdateEntityDomain(t *testing.T) {
 func TestLookupEntityDomain(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
@@ -921,8 +970,10 @@ func TestLookupEntitiesAdditionalInformationGraphCrawl(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
@@ -1038,8 +1089,10 @@ func TestCreateContacts(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
@@ -1086,8 +1139,10 @@ func TestCreateContacts(t *testing.T) {
 func TestUpdateContacts(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
@@ -1149,8 +1204,10 @@ func TestDeleteContacts(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
@@ -1186,8 +1243,10 @@ func TestUpdateEntity(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
@@ -1217,9 +1276,11 @@ func TestUpdateEntity(t *testing.T) {
 		Status:      dal.EntityStatusActive,
 	}, nil))
 
-	publisher.Expect(mock.NewExpectation(publisher.PublishAsync, &directory.EntityUpdatedEvent{
-		EntityID: eID1.String(),
-	}))
+	gomock.InOrder(
+		publisher.EXPECT().PublishAsync(&directory.EntityUpdatedEvent{
+			EntityID: eID1.String(),
+		}),
+	)
 
 	resp, err := s.UpdateEntity(context.Background(), &directory.UpdateEntityRequest{
 		EntityID:         eID1.String(),
@@ -1245,8 +1306,10 @@ func TestUpdateEntityWithContacts(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
@@ -1293,9 +1356,11 @@ func TestUpdateEntityWithContacts(t *testing.T) {
 		Status:      dal.EntityStatusActive,
 	}, nil))
 
-	publisher.Expect(mock.NewExpectation(publisher.PublishAsync, &directory.EntityUpdatedEvent{
-		EntityID: eID1.String(),
-	}))
+	gomock.InOrder(
+		publisher.EXPECT().PublishAsync(&directory.EntityUpdatedEvent{
+			EntityID: eID1.String(),
+		}),
+	)
 
 	resp, err := s.UpdateEntity(context.Background(), &directory.UpdateEntityRequest{
 		EntityID:         eID1.String(),
@@ -1332,8 +1397,10 @@ func TestUpdateEntityWithSerializedContacts(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
@@ -1387,9 +1454,11 @@ func TestUpdateEntityWithSerializedContacts(t *testing.T) {
 		Status:      dal.EntityStatusActive,
 	}, nil))
 
-	publisher.Expect(mock.NewExpectation(publisher.PublishAsync, &directory.EntityUpdatedEvent{
-		EntityID: eID1.String(),
-	}))
+	gomock.InOrder(
+		publisher.EXPECT().PublishAsync(&directory.EntityUpdatedEvent{
+			EntityID: eID1.String(),
+		}),
+	)
 
 	resp, err := s.UpdateEntity(context.Background(), &directory.UpdateEntityRequest{
 		EntityID:         eID1.String(),
@@ -1436,8 +1505,10 @@ func TestSerializedEntityContact(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
@@ -1467,8 +1538,10 @@ func TestCreateEHRLink(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
@@ -1492,8 +1565,10 @@ func TestDeleteEHRLink(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
@@ -1515,8 +1590,10 @@ func TestEHRLinksForEntity(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
@@ -1551,8 +1628,10 @@ func TestSerializedEntityContactNotFound(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
@@ -1573,8 +1652,10 @@ func TestDeleteEntity(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	s := New(dl, publisher, metrics.NewRegistry())
 	eID1, err := dal.NewEntityID()
@@ -1716,8 +1797,9 @@ func TestProfile(t *testing.T) {
 		},
 	}
 
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	for cn, c := range cases {
 		svr := New(c.dal, publisher, metrics.NewRegistry())
@@ -2025,8 +2107,9 @@ func TestUpdateProfile(t *testing.T) {
 		},
 	}
 
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	for cn, c := range cases {
 		svr := New(c.dal, publisher, metrics.NewRegistry())
@@ -2043,8 +2126,10 @@ func TestContact(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	publisher := eventsmock.NewPublisher(t)
-	defer publisher.Finish()
+
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
 
 	s := New(dl, publisher, metrics.NewRegistry())
 	ecID1, err := dal.NewEntityContactID()

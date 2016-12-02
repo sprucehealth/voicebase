@@ -347,17 +347,16 @@ func (d *dal) InsertEntityToken(ctx context.Context, entityID, token string) err
 		return errors.Trace(err)
 	}
 	tokens = append(tokens, token)
-
 	item := map[string]*dynamodb.AttributeValue{
 		entityIDKey:         {S: &entityID},
 		inviteTokenKey:      {SS: ptr.Strings(tokens)},
 		createdTimestampKey: {N: ptr.String(strconv.FormatInt(time.Now().UnixNano(), 10))},
 	}
 	if _, err := d.db.PutItem(&dynamodb.PutItemInput{
-		TableName:           &d.entityTokenTable,
-		ConditionExpression: ptr.String("attribute_not_exists(" + entityIDKey + ")"),
-		Item:                item,
+		TableName: &d.entityTokenTable,
+		Item:      item,
 	}); err != nil {
+		fmt.Println(err)
 		if e, ok := err.(awserr.RequestFailure); ok && e.Code() == "ConditionalCheckFailedException" {
 			return ErrDuplicateInviteToken
 		}

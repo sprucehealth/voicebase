@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
+	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -75,13 +77,34 @@ func (s *snsPublisher) publish(m Marshaler) error {
 		return errors.Trace(err)
 	}
 
-	// TODO: The assumption here is that the SNS topic already exists. Add code to programmatically
-	// create the SNS topic if it doesn't already exist.
-
-	if _, err := s.snsAPI.Publish(&sns.PublishInput{
-		Message:  ptr.String(base64.StdEncoding.EncodeToString(eventData)),
-		TopicArn: ptr.String(topicARN),
-	}); err != nil {
+	publishFn := func() error {
+		_, err := s.snsAPI.Publish(&sns.PublishInput{
+			Message:  ptr.String(base64.StdEncoding.EncodeToString(eventData)),
+			TopicArn: ptr.String(topicARN),
+		})
+		return err
+	}
+	err = publishFn()
+	// If we can't find the topic create it. Don't use the CreateSNSTopicIfNotExists helper to avoid an extra call
+	if aerr, ok := err.(awserr.Error); ok {
+		if aerr.Code() == awsutil.AWSErrCodeSNSTopicNotFound {
+			topicName, err := awsutil.ResourceNameFromARN(topicARN)
+			if err != nil {
+				return errors.Errorf("failed to publish event %s to topic since it was NOT FOUND. Unable to get topic name from ARN %s to create due to: %s", eventName, topicARN, err)
+			}
+			golog.Infof("Topic %s was NOT FOUND. Attempting to create it.", topicARN)
+			topicARN, err = awsutil.CreateSNSTopic(s.snsAPI, topicName)
+			if err != nil {
+				return errors.Errorf("failed to publish event %s to topic since it was NOT FOUND. Failed to create topic due to: %s", eventName, err)
+			}
+			golog.Infof("Topic %s was successfully created", topicName)
+			if err := publishFn(); err != nil {
+				return errors.Errorf("failed to publish event %s to topic %s: %s", eventName, topicARN, err)
+			}
+		} else {
+			return errors.Errorf("failed to publish event %s to topic %s: %s", eventName, topicARN, err)
+		}
+	} else if err != nil {
 		return errors.Errorf("failed to publish event %s to topic %s: %s", eventName, topicARN, err)
 	}
 

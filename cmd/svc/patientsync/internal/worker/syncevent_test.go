@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	dalmock "github.com/sprucehealth/backend/cmd/svc/patientsync/internal/dal/mock"
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/sync"
 	"github.com/sprucehealth/backend/libs/test"
@@ -12,7 +13,7 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	directorymock "github.com/sprucehealth/backend/svc/directory/mock"
 	"github.com/sprucehealth/backend/svc/threading"
-	threadingmock "github.com/sprucehealth/backend/svc/threading/mock"
+	"github.com/sprucehealth/backend/svc/threading/threadingmock"
 )
 
 func TestStandardThreadSync(t *testing.T) {
@@ -45,10 +46,14 @@ func TestStandardThreadSync(t *testing.T) {
 		},
 	}
 
-	tmock := threadingmock.New(t)
+	ctx := context.Background()
+	ctrl := gomock.NewController(t)
+	tmock := threadingmock.NewMockThreadsClient(ctrl)
+	defer ctrl.Finish()
+
 	dirmock := directorymock.New(t)
 	dmock := dalmock.New(t)
-	defer mock.FinishAll(dmock, tmock, dirmock)
+	defer mock.FinishAll(dmock, dirmock)
 
 	dmock.Expect(mock.NewExpectation(dmock.SyncConfigForOrg, orgID, "SOURCE_ELATION").WithReturns(&sync.Config{
 		OrganizationEntityID: orgID,
@@ -129,24 +134,26 @@ func TestStandardThreadSync(t *testing.T) {
 		},
 	}, nil))
 
-	tmock.Expect(mock.NewExpectation(tmock.ThreadsForMember, &threading.ThreadsForMemberRequest{
-		PrimaryOnly: true,
-		EntityID:    "ent_1",
-	}))
-	tmock.Expect(mock.NewExpectation(tmock.CreateEmptyThread, &threading.CreateEmptyThreadRequest{
-		OrganizationID:  orgID,
-		PrimaryEntityID: "ent_1",
-		MemberEntityIDs: []string{orgID},
-		Type:            threading.THREAD_TYPE_EXTERNAL,
-		Summary:         "DisplayName1",
-		SystemTitle:     "DisplayName1",
-		Origin:          threading.THREAD_ORIGIN_SYNC,
-	}).WithReturns(&threading.CreateEmptyThreadResponse{
-		Thread: &threading.Thread{
-			ID:             "thread_1",
-			OrganizationID: orgID,
-		},
-	}, nil))
+	gomock.InOrder(
+		tmock.EXPECT().ThreadsForMember(ctx, &threading.ThreadsForMemberRequest{
+			PrimaryOnly: true,
+			EntityID:    "ent_1",
+		}),
+		tmock.EXPECT().CreateEmptyThread(ctx, &threading.CreateEmptyThreadRequest{
+			OrganizationID:  orgID,
+			PrimaryEntityID: "ent_1",
+			MemberEntityIDs: []string{orgID},
+			Type:            threading.THREAD_TYPE_EXTERNAL,
+			Summary:         "DisplayName1",
+			SystemTitle:     "DisplayName1",
+			Origin:          threading.THREAD_ORIGIN_SYNC,
+		}).Return(&threading.CreateEmptyThreadResponse{
+			Thread: &threading.Thread{
+				ID:             "thread_1",
+				OrganizationID: orgID,
+			},
+		}, nil),
+	)
 
 	data, err := event.Marshal()
 	test.OK(t, err)
@@ -184,10 +191,14 @@ func TestStandardThreadSync_EntityExists(t *testing.T) {
 		},
 	}
 
-	tmock := threadingmock.New(t)
+	ctx := context.Background()
+	ctrl := gomock.NewController(t)
+	tmock := threadingmock.NewMockThreadsClient(ctrl)
+	defer ctrl.Finish()
+
 	dirmock := directorymock.New(t)
 	dmock := dalmock.New(t)
-	defer mock.FinishAll(dmock, tmock, dirmock)
+	defer mock.FinishAll(dmock, dirmock)
 
 	dmock.Expect(mock.NewExpectation(dmock.SyncConfigForOrg, orgID, "SOURCE_ELATION").WithReturns(&sync.Config{
 		OrganizationEntityID: orgID,
@@ -253,24 +264,26 @@ func TestStandardThreadSync_EntityExists(t *testing.T) {
 		},
 	}, nil))
 
-	tmock.Expect(mock.NewExpectation(tmock.ThreadsForMember, &threading.ThreadsForMemberRequest{
-		PrimaryOnly: true,
-		EntityID:    "ent_1",
-	}))
-	tmock.Expect(mock.NewExpectation(tmock.CreateEmptyThread, &threading.CreateEmptyThreadRequest{
-		OrganizationID:  orgID,
-		PrimaryEntityID: "ent_1",
-		MemberEntityIDs: []string{orgID},
-		Type:            threading.THREAD_TYPE_EXTERNAL,
-		Summary:         "DisplayName1",
-		SystemTitle:     "DisplayName1",
-		Origin:          threading.THREAD_ORIGIN_SYNC,
-	}).WithReturns(&threading.CreateEmptyThreadResponse{
-		Thread: &threading.Thread{
-			ID:             "thread_1",
-			OrganizationID: orgID,
-		},
-	}, nil))
+	gomock.InOrder(
+		tmock.EXPECT().ThreadsForMember(ctx, &threading.ThreadsForMemberRequest{
+			PrimaryOnly: true,
+			EntityID:    "ent_1",
+		}),
+		tmock.EXPECT().CreateEmptyThread(ctx, &threading.CreateEmptyThreadRequest{
+			OrganizationID:  orgID,
+			PrimaryEntityID: "ent_1",
+			MemberEntityIDs: []string{orgID},
+			Type:            threading.THREAD_TYPE_EXTERNAL,
+			Summary:         "DisplayName1",
+			SystemTitle:     "DisplayName1",
+			Origin:          threading.THREAD_ORIGIN_SYNC,
+		}).Return(&threading.CreateEmptyThreadResponse{
+			Thread: &threading.Thread{
+				ID:             "thread_1",
+				OrganizationID: orgID,
+			},
+		}, nil),
+	)
 
 	data, err := event.Marshal()
 	test.OK(t, err)
@@ -308,10 +321,14 @@ func TestStandardThreadSync_ThreadExists(t *testing.T) {
 		},
 	}
 
-	tmock := threadingmock.New(t)
+	ctx := context.Background()
+	ctrl := gomock.NewController(t)
+	tmock := threadingmock.NewMockThreadsClient(ctrl)
+	defer ctrl.Finish()
+
 	dirmock := directorymock.New(t)
 	dmock := dalmock.New(t)
-	defer mock.FinishAll(dmock, tmock, dirmock)
+	defer mock.FinishAll(dmock, dirmock)
 
 	dmock.Expect(mock.NewExpectation(dmock.SyncConfigForOrg, orgID, "SOURCE_ELATION").WithReturns(&sync.Config{
 		OrganizationEntityID: orgID,
@@ -377,17 +394,19 @@ func TestStandardThreadSync_ThreadExists(t *testing.T) {
 		},
 	}, nil))
 
-	tmock.Expect(mock.NewExpectation(tmock.ThreadsForMember, &threading.ThreadsForMemberRequest{
-		PrimaryOnly: true,
-		EntityID:    "ent_1",
-	}).WithReturns(&threading.ThreadsForMemberResponse{
-		Threads: []*threading.Thread{
-			{
-				ID:             "thread_1",
-				OrganizationID: orgID,
+	gomock.InOrder(
+		tmock.EXPECT().ThreadsForMember(ctx, &threading.ThreadsForMemberRequest{
+			PrimaryOnly: true,
+			EntityID:    "ent_1",
+		}).Return(&threading.ThreadsForMemberResponse{
+			Threads: []*threading.Thread{
+				{
+					ID:             "thread_1",
+					OrganizationID: orgID,
+				},
 			},
-		},
-	}, nil))
+		}, nil),
+	)
 
 	data, err := event.Marshal()
 	test.OK(t, err)
@@ -424,10 +443,14 @@ func TestStandardThreadSync_Update_NoEntity(t *testing.T) {
 		},
 	}
 
-	tmock := threadingmock.New(t)
+	ctx := context.Background()
+	ctrl := gomock.NewController(t)
+	tmock := threadingmock.NewMockThreadsClient(ctrl)
+	defer ctrl.Finish()
+
 	dirmock := directorymock.New(t)
 	dmock := dalmock.New(t)
-	defer mock.FinishAll(dmock, tmock, dirmock)
+	defer mock.FinishAll(dmock, dirmock)
 
 	dmock.Expect(mock.NewExpectation(dmock.SyncConfigForOrg, orgID, "SOURCE_ELATION").WithReturns(&sync.Config{
 		OrganizationEntityID: orgID,
@@ -525,24 +548,26 @@ func TestStandardThreadSync_Update_NoEntity(t *testing.T) {
 		},
 	}, nil))
 
-	tmock.Expect(mock.NewExpectation(tmock.ThreadsForMember, &threading.ThreadsForMemberRequest{
-		PrimaryOnly: true,
-		EntityID:    "ent_1",
-	}))
-	tmock.Expect(mock.NewExpectation(tmock.CreateEmptyThread, &threading.CreateEmptyThreadRequest{
-		OrganizationID:  orgID,
-		PrimaryEntityID: "ent_1",
-		MemberEntityIDs: []string{orgID},
-		Type:            threading.THREAD_TYPE_EXTERNAL,
-		Summary:         "DisplayName1",
-		SystemTitle:     "DisplayName1",
-		Origin:          threading.THREAD_ORIGIN_SYNC,
-	}).WithReturns(&threading.CreateEmptyThreadResponse{
-		Thread: &threading.Thread{
-			ID:             "thread_1",
-			OrganizationID: orgID,
-		},
-	}, nil))
+	gomock.InOrder(
+		tmock.EXPECT().ThreadsForMember(ctx, &threading.ThreadsForMemberRequest{
+			PrimaryOnly: true,
+			EntityID:    "ent_1",
+		}),
+		tmock.EXPECT().CreateEmptyThread(ctx, &threading.CreateEmptyThreadRequest{
+			OrganizationID:  orgID,
+			PrimaryEntityID: "ent_1",
+			MemberEntityIDs: []string{orgID},
+			Type:            threading.THREAD_TYPE_EXTERNAL,
+			Summary:         "DisplayName1",
+			SystemTitle:     "DisplayName1",
+			Origin:          threading.THREAD_ORIGIN_SYNC,
+		}).Return(&threading.CreateEmptyThreadResponse{
+			Thread: &threading.Thread{
+				ID:             "thread_1",
+				OrganizationID: orgID,
+			},
+		}, nil),
+	)
 
 	data, err := event.Marshal()
 	test.OK(t, err)
@@ -579,10 +604,13 @@ func TestStandardThreadSync_Update_EntityExists_NoDifference(t *testing.T) {
 		},
 	}
 
-	tmock := threadingmock.New(t)
+	ctrl := gomock.NewController(t)
+	tmock := threadingmock.NewMockThreadsClient(ctrl)
+	defer ctrl.Finish()
+
 	dirmock := directorymock.New(t)
 	dmock := dalmock.New(t)
-	defer mock.FinishAll(dmock, tmock, dirmock)
+	defer mock.FinishAll(dmock, dirmock)
 
 	dmock.Expect(mock.NewExpectation(dmock.SyncConfigForOrg, orgID, "SOURCE_ELATION").WithReturns(&sync.Config{
 		OrganizationEntityID: orgID,
@@ -683,10 +711,13 @@ func TestStandardThreadSync_Update_EntityExists_Deleted(t *testing.T) {
 		},
 	}
 
-	tmock := threadingmock.New(t)
+	ctrl := gomock.NewController(t)
+	tmock := threadingmock.NewMockThreadsClient(ctrl)
+	defer ctrl.Finish()
+
 	dirmock := directorymock.New(t)
 	dmock := dalmock.New(t)
-	defer mock.FinishAll(dmock, tmock, dirmock)
+	defer mock.FinishAll(dmock, dirmock)
 
 	dmock.Expect(mock.NewExpectation(dmock.SyncConfigForOrg, orgID, "SOURCE_ELATION").WithReturns(&sync.Config{
 		OrganizationEntityID: orgID,
@@ -783,10 +814,14 @@ func TestStandardThreadSync_Update_EntityExists_Differs(t *testing.T) {
 		},
 	}
 
-	tmock := threadingmock.New(t)
+	ctx := context.Background()
+	ctrl := gomock.NewController(t)
+	tmock := threadingmock.NewMockThreadsClient(ctrl)
+	defer ctrl.Finish()
+
 	dirmock := directorymock.New(t)
 	dmock := dalmock.New(t)
-	defer mock.FinishAll(dmock, tmock, dirmock)
+	defer mock.FinishAll(dmock, dirmock)
 
 	dmock.Expect(mock.NewExpectation(dmock.SyncConfigForOrg, orgID, "SOURCE_ELATION").WithReturns(&sync.Config{
 		OrganizationEntityID: orgID,
@@ -904,23 +939,25 @@ func TestStandardThreadSync_Update_EntityExists_Differs(t *testing.T) {
 	}, nil))
 
 	// update thread
-	tmock.Expect(mock.NewExpectation(tmock.ThreadsForMember, &threading.ThreadsForMemberRequest{
-		PrimaryOnly: true,
-		EntityID:    "ent_1",
-	}).WithReturns(&threading.ThreadsForMemberResponse{
-		Threads: []*threading.Thread{
-			{
-				ID:             "thread_1",
-				OrganizationID: orgID,
+	gomock.InOrder(
+		tmock.EXPECT().ThreadsForMember(ctx, &threading.ThreadsForMemberRequest{
+			PrimaryOnly: true,
+			EntityID:    "ent_1",
+		}).Return(&threading.ThreadsForMemberResponse{
+			Threads: []*threading.Thread{
+				{
+					ID:             "thread_1",
+					OrganizationID: orgID,
+				},
 			},
-		},
-	}, nil))
+		}, nil),
 
-	tmock.Expect(mock.NewExpectation(tmock.UpdateThread, &threading.UpdateThreadRequest{
-		ActorEntityID: orgID,
-		SystemTitle:   "DisplayName1",
-		ThreadID:      "thread_1",
-	}))
+		tmock.EXPECT().UpdateThread(ctx, &threading.UpdateThreadRequest{
+			ActorEntityID: orgID,
+			SystemTitle:   "DisplayName1",
+			ThreadID:      "thread_1",
+		}),
+	)
 
 	data, err := event.Marshal()
 	test.OK(t, err)

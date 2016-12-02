@@ -19,6 +19,7 @@ import (
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/textutil"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/events"
 	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/payments"
@@ -55,6 +56,7 @@ type threadsServer struct {
 	settingsClient     settings.SettingsClient
 	mediaClient        media.MediaClient
 	paymentsClient     payments.PaymentsClient
+	publisher          events.Publisher
 	webDomain          string
 }
 
@@ -69,6 +71,7 @@ func NewThreadsServer(
 	settingsClient settings.SettingsClient,
 	mediaClient media.MediaClient,
 	paymentsClient payments.PaymentsClient,
+	publisher events.Publisher,
 	webDomain string,
 ) threading.ThreadsServer {
 	if clk == nil {
@@ -83,8 +86,9 @@ func NewThreadsServer(
 		directoryClient:    directoryClient,
 		settingsClient:     settingsClient,
 		mediaClient:        mediaClient,
-		webDomain:          webDomain,
 		paymentsClient:     paymentsClient,
+		publisher:          publisher,
+		webDomain:          webDomain,
 	}
 }
 
@@ -254,6 +258,8 @@ func (s *threadsServer) CreateEmptyThread(ctx context.Context, in *threading.Cre
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
+	// Publish that we created a new thread
+	s.publisher.PublishAsync(&threading.NewThreadEvent{ThreadID: th.ID})
 	return &threading.CreateEmptyThreadResponse{
 		Thread: th,
 	}, nil
@@ -411,6 +417,8 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 	if !in.DontNotify && updateResult != nil {
 		s.notifyMembersOfPublishMessage(ctx, thread.OrganizationID, models.EmptySavedQueryID(), thread, item, in.FromEntityID, updateResult.entityShouldBeNotified)
 	}
+	// Publish that we created a new thread
+	s.publisher.PublishAsync(&threading.NewThreadEvent{ThreadID: threadID.String()})
 	return &threading.CreateThreadResponse{
 		ThreadID:   threadID.String(),
 		ThreadItem: it,
@@ -908,134 +916,18 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 		}
 	}
 
+	item, linkedItem, err := s.postMessage(ctx, s.dal, in.UUID, threadID, in.FromEntityID, in.DontNotify, in.Message)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
 	threads, err := s.dal.Threads(ctx, []models.ThreadID{threadID})
-	if err != nil {
-		return nil, errors.Trace(err)
-	} else if len(threads) == 0 {
-		return nil, grpcErrorf(codes.NotFound, "Thread %q not found", threadID)
-	}
-	thread := threads[0]
-	prePostLastMessageTimestamp := thread.LastMessageTimestamp
-
-	linkedThread, prependSender, err := s.dal.LinkedThread(ctx, threadID)
-	if err != nil && errors.Cause(err) != dal.ErrNotFound {
-		return nil, errors.Trace(err)
-	}
-
-	var item *models.ThreadItem
-	var linkedItem *models.ThreadItem
-
-	req, err := createPostMessageRequest(ctx, threadID, in.FromEntityID, in.Message)
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
-
-	if err := claimAttachments(ctx, s.mediaClient, s.paymentsClient, threadID, req.Attachments); err != nil {
-		return nil, errors.Trace(err)
-	}
-
-	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
-		item, err = dl.PostMessage(ctx, req)
-		if err != nil {
-			return errors.Trace(err)
-		}
-
-		// Update unread reference status for anyone mentioned
-		for _, r := range req.TextRefs {
-			if err := dl.UpdateThreadEntity(ctx, threadID, r.ID, &dal.ThreadEntityUpdate{
-				LastReferenced: &item.Created,
-			}); err != nil {
-				return errors.Trace(err)
-			}
-		}
-
-		// Lock our membership row while doing this since we might update it
-		tes, err := dl.ThreadEntities(ctx, []models.ThreadID{threadID}, in.FromEntityID, dal.ForUpdate)
-		if err != nil {
-			return errors.Trace(err)
-		}
-
-		var teUpdate *dal.ThreadEntityUpdate
-		if len(tes) > 0 {
-			// Update the last read timestamp on the membership if all other messages have been read
-			lastViewed := tes[threadID.String()].LastViewed
-			if lastViewed == nil {
-				lastViewed = &thread.Created
-			}
-			if !lastViewed.Before(prePostLastMessageTimestamp.Truncate(time.Second)) {
-				teUpdate = &dal.ThreadEntityUpdate{
-					LastViewed: &item.Created,
-				}
-			}
-		}
-		if err := dl.UpdateThreadEntity(ctx, threadID, in.FromEntityID, teUpdate); err != nil {
-			return errors.Trace(err)
-		}
-
-		// Also post in linked thread if there is one
-		if linkedThread != nil && !in.Message.Internal {
-			// TODO: should use primary entity name here
-			summary, err := models.SummaryFromText("Spruce: " + in.Message.Text)
-			if err != nil {
-				return errors.Trace(err)
-			}
-			text := in.Message.Text
-			if prependSender {
-				resp, err := s.directoryClient.LookupEntities(ctx, &directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-						EntityID: in.FromEntityID,
-					},
-					RequestedInformation: &directory.RequestedInformation{
-						Depth: 0,
-					},
-				})
-				if err != nil {
-					golog.ContextLogger(ctx).Errorf("Unable to lookup entity for id %s: %s", in.FromEntityID, err.Error())
-				} else if len(resp.Entities) != 1 {
-					golog.ContextLogger(ctx).Errorf("Expected 1 entity for id %s but got %d back", in.FromEntityID, len(resp.Entities))
-				} else if resp.Entities[0].Type == directory.EntityType_INTERNAL {
-					validBML, err := bml.BML{resp.Entities[0].Info.DisplayName}.Format()
-					if err != nil {
-						golog.ContextLogger(ctx).Errorf("Unable to escape the display name %s:%s", resp.Entities[0].Info.DisplayName, err.Error())
-					} else {
-						text = validBML + ": " + text
-					}
-				}
-			}
-			req := &dal.PostMessageRequest{
-				ThreadID:     linkedThread.ID,
-				FromEntityID: linkedThread.PrimaryEntityID,
-				Text:         text,
-				Title:        in.Message.Title,
-				TextRefs:     req.TextRefs,
-				Summary:      summary,
-				Attachments:  req.Attachments,
-			}
-			if in.Message.Source != nil {
-				req.Source, err = transformEndpointFromRequest(in.Message.Source)
-				if err != nil {
-					return errors.Trace(err)
-				}
-			}
-			linkedItem, err = dl.PostMessage(ctx, req)
-			if err != nil {
-				return errors.Trace(err)
-			}
-		}
-
-		return nil
-	}); err != nil {
-		return nil, errors.Trace(err)
-	}
-
-	threads, err = s.dal.Threads(ctx, []models.ThreadID{threadID})
 	if err != nil {
 		return nil, errors.Trace(err)
 	} else if len(threads) == 0 {
 		return nil, errors.Errorf("Thread %q that was just posted to was not found", threadID)
 	}
-	thread = threads[0]
+	thread := threads[0]
 	updateResult, err := s.updateSavedQueriesForThread(ctx, thread)
 	if err != nil {
 		golog.ContextLogger(ctx).Errorf("Failed to updated saved query for thread %s: %s", thread.ID, err)
@@ -1061,14 +953,14 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 			return nil, errors.Trace(err)
 		} else if len(linkedThreads) == 0 {
 			golog.ContextLogger(ctx).Errorf("Thread %q that was just posted to was not found", linkedItem.ThreadID)
-		} else {
-			updateResult, err := s.updateSavedQueriesForThread(ctx, linkedThreads[0])
-			if err != nil {
-				golog.ContextLogger(ctx).Errorf("Failed to updated saved query for thread %s: %s", linkedThreads[0].ID, err)
-			}
-			if !in.DontNotify && updateResult != nil {
-				s.notifyMembersOfPublishMessage(ctx, linkedThread.OrganizationID, models.EmptySavedQueryID(), linkedThread, linkedItem, linkedItem.ActorEntityID, updateResult.entityShouldBeNotified)
-			}
+		}
+		linkedThread := linkedThreads[0]
+		updateResult, err := s.updateSavedQueriesForThread(ctx, linkedThreads[0])
+		if err != nil {
+			golog.ContextLogger(ctx).Errorf("Failed to updated saved query for thread %s: %s", linkedThreads[0].ID, err)
+		}
+		if !in.DontNotify && updateResult != nil {
+			s.notifyMembersOfPublishMessage(ctx, linkedThread.OrganizationID, models.EmptySavedQueryID(), linkedThread, linkedItem, linkedItem.ActorEntityID, updateResult.entityShouldBeNotified)
 		}
 
 		it2, err := transformThreadItemToResponse(linkedItem, linkedThread.OrganizationID)
@@ -1077,10 +969,242 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 		}
 		s.publishMessage(ctx, linkedThread.OrganizationID, linkedThread.PrimaryEntityID, linkedThread.ID, it2, "")
 	}
+
 	return &threading.PostMessageResponse{
 		Item:   it,
 		Thread: th,
 	}, nil
+}
+
+// PostMessages posts a series of messages into a specified thread
+func (s *threadsServer) PostMessages(ctx context.Context, in *threading.PostMessagesRequest) (*threading.PostMessagesResponse, error) {
+	if in.ThreadID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "ThreadID is required")
+	}
+	threadID, err := models.ParseThreadID(in.ThreadID)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadID '%s'", in.ThreadID)
+	}
+	if in.FromEntityID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "FromEntityID is required")
+	}
+	if len(in.Messages) == 0 {
+		return nil, grpcErrorf(codes.InvalidArgument, "At least 1 message required")
+	}
+
+	items := make([]*models.ThreadItem, len(in.Messages))
+	var linkedItems []*models.ThreadItem
+	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
+		for i, message := range in.Messages {
+			item, linkedItem, err := s.postMessage(ctx, dl, in.UUID, threadID, in.FromEntityID, in.DontNotify, message)
+			if err != nil {
+				return errors.Trace(err)
+			}
+			items[i] = item
+			if linkedItem != nil {
+				linkedItems = append(linkedItems, linkedItem)
+			}
+		}
+		return nil
+	}); err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	threads, err := s.dal.Threads(ctx, []models.ThreadID{threadID})
+	if err != nil {
+		return nil, errors.Trace(err)
+	} else if len(threads) == 0 {
+		return nil, errors.Errorf("Thread %q that was just posted to was not found", threadID)
+	}
+	thread := threads[0]
+	updateResult, err := s.updateSavedQueriesForThread(ctx, thread)
+	if err != nil {
+		golog.ContextLogger(ctx).Errorf("Failed to updated saved query for thread %s: %s", thread.ID, err)
+	}
+
+	// Use the type of last message posted to set the watermark
+	th, err := transformThreadToResponse(thread, !in.Messages[len(in.Messages)-1].Internal)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	its := make([]*threading.ThreadItem, len(items))
+	for i, item := range items {
+		it, err := transformThreadItemToResponse(item, thread.OrganizationID)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		s.publishMessage(ctx, thread.OrganizationID, thread.PrimaryEntityID, threadID, it, in.UUID)
+		if !in.DontNotify && updateResult != nil {
+			s.notifyMembersOfPublishMessage(ctx, thread.OrganizationID, models.EmptySavedQueryID(), thread, item, in.FromEntityID, updateResult.entityShouldBeNotified)
+		}
+		its[i] = it
+	}
+
+	var linkedThread *models.Thread
+	var linkedThreadUpdateResult *savedQueryUpdateResult
+	if len(linkedItems) != 0 {
+		// Requery the linked thread to get updated metadata (e.g. last message timestamp)
+		linkedThreads, err := s.dal.Threads(ctx, []models.ThreadID{linkedItems[0].ThreadID})
+		if err != nil {
+			return nil, errors.Trace(err)
+		} else if len(linkedThreads) == 0 {
+			golog.ContextLogger(ctx).Errorf("Thread %q that was just posted to was not found", linkedItems[0].ThreadID)
+		}
+		linkedThread = linkedThreads[0]
+		linkedThreadUpdateResult, err = s.updateSavedQueriesForThread(ctx, linkedThread)
+		if err != nil {
+			golog.ContextLogger(ctx).Errorf("Failed to updated saved query for thread %s: %s", linkedThreads[0].ID, err)
+		}
+	}
+	for _, litem := range linkedItems {
+		if !in.DontNotify && updateResult != nil {
+			s.notifyMembersOfPublishMessage(ctx, linkedThread.OrganizationID, models.EmptySavedQueryID(), linkedThread, litem, litem.ActorEntityID, linkedThreadUpdateResult.entityShouldBeNotified)
+		}
+		lit, err := transformThreadItemToResponse(litem, linkedThread.OrganizationID)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		s.publishMessage(ctx, linkedThread.OrganizationID, linkedThread.PrimaryEntityID, linkedThread.ID, lit, "")
+	}
+
+	return &threading.PostMessagesResponse{
+		Items:  its,
+		Thread: th,
+	}, nil
+}
+
+func (s *threadsServer) postMessage(
+	ctx context.Context,
+	dl dal.DAL,
+	uuid string,
+	threadID models.ThreadID,
+	fromEntityID string,
+	dontNotify bool,
+	message *threading.MessagePost) (*models.ThreadItem, *models.ThreadItem, error) {
+	threads, err := s.dal.Threads(ctx, []models.ThreadID{threadID})
+	if err != nil {
+		return nil, nil, errors.Trace(err)
+	} else if len(threads) == 0 {
+		return nil, nil, grpcErrorf(codes.NotFound, "Thread %q not found", threadID)
+	}
+	thread := threads[0]
+
+	prePostLastMessageTimestamp := thread.LastMessageTimestamp
+
+	linkedThread, prependSender, err := dl.LinkedThread(ctx, thread.ID)
+	if err != nil && errors.Cause(err) != dal.ErrNotFound {
+		return nil, nil, errors.Trace(err)
+	}
+
+	var item *models.ThreadItem
+	var linkedItem *models.ThreadItem
+
+	req, err := createPostMessageRequest(ctx, threadID, fromEntityID, message)
+	if err != nil {
+		return nil, nil, errors.Trace(err)
+	}
+
+	if err := claimAttachments(ctx, s.mediaClient, s.paymentsClient, threadID, req.Attachments); err != nil {
+		return nil, nil, errors.Trace(err)
+	}
+
+	if err := dl.Transact(ctx, func(ctx context.Context, tdl dal.DAL) error {
+		item, err = dl.PostMessage(ctx, req)
+		if err != nil {
+			return errors.Trace(err)
+		}
+
+		// Update unread reference status for anyone mentioned
+		for _, r := range req.TextRefs {
+			if err := tdl.UpdateThreadEntity(ctx, threadID, r.ID, &dal.ThreadEntityUpdate{
+				LastReferenced: &item.Created,
+			}); err != nil {
+				return errors.Trace(err)
+			}
+		}
+
+		// Lock our membership row while doing this since we might update it
+		tes, err := tdl.ThreadEntities(ctx, []models.ThreadID{threadID}, fromEntityID, dal.ForUpdate)
+		if err != nil {
+			return errors.Trace(err)
+		}
+
+		var teUpdate *dal.ThreadEntityUpdate
+		if len(tes) > 0 {
+			// Update the last read timestamp on the membership if all other messages have been read
+			lastViewed := tes[threadID.String()].LastViewed
+			if lastViewed == nil {
+				lastViewed = &thread.Created
+			}
+			if !lastViewed.Before(prePostLastMessageTimestamp.Truncate(time.Second)) {
+				teUpdate = &dal.ThreadEntityUpdate{
+					LastViewed: &item.Created,
+				}
+			}
+		}
+		if err := tdl.UpdateThreadEntity(ctx, threadID, fromEntityID, teUpdate); err != nil {
+			return errors.Trace(err)
+		}
+
+		// Also post in linked thread if there is one
+		if linkedThread != nil && !message.Internal {
+			// TODO: should use primary entity name here
+			summary, err := models.SummaryFromText("Spruce: " + message.Text)
+			if err != nil {
+				return errors.Trace(err)
+			}
+			text := message.Text
+			if prependSender {
+				resp, err := s.directoryClient.LookupEntities(ctx, &directory.LookupEntitiesRequest{
+					LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+						EntityID: fromEntityID,
+					},
+					RequestedInformation: &directory.RequestedInformation{
+						Depth: 0,
+					},
+				})
+				if err != nil {
+					golog.ContextLogger(ctx).Errorf("Unable to lookup entity for id %s: %s", fromEntityID, err.Error())
+				} else if len(resp.Entities) != 1 {
+					golog.ContextLogger(ctx).Errorf("Expected 1 entity for id %s but got %d back", fromEntityID, len(resp.Entities))
+				} else if resp.Entities[0].Type == directory.EntityType_INTERNAL {
+					validBML, err := bml.BML{resp.Entities[0].Info.DisplayName}.Format()
+					if err != nil {
+						golog.ContextLogger(ctx).Errorf("Unable to escape the display name %s:%s", resp.Entities[0].Info.DisplayName, err.Error())
+					} else {
+						text = validBML + ": " + text
+					}
+				}
+			}
+			req := &dal.PostMessageRequest{
+				ThreadID:     linkedThread.ID,
+				FromEntityID: linkedThread.PrimaryEntityID,
+				Text:         text,
+				Title:        message.Title,
+				TextRefs:     req.TextRefs,
+				Summary:      summary,
+				Attachments:  req.Attachments,
+			}
+			if message.Source != nil {
+				req.Source, err = transformEndpointFromRequest(message.Source)
+				if err != nil {
+					return errors.Trace(err)
+				}
+			}
+			linkedItem, err = tdl.PostMessage(ctx, req)
+			if err != nil {
+				return errors.Trace(err)
+			}
+		}
+
+		return nil
+	}); err != nil {
+		return nil, nil, errors.Trace(err)
+	}
+
+	return item, linkedItem, nil
 }
 
 // QueryThreads queries the list of threads

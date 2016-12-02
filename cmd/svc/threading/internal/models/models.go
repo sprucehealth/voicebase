@@ -774,3 +774,8 @@ type TriggeredMessage struct {
 type TriggeredMessageUpdate struct {
 	Enabled *bool
 }
+
+const (
+	TriggeredMessageKeyNewPatient  = "NEW_PATIENT"
+	TriggeredMessageKeyAwayMessage = "AWAY_MESSAGE"
+)

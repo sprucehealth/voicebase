@@ -122,7 +122,7 @@ func TestCreateTriggeredMessage(t *testing.T) {
 			}))
 
 		st.dal.Expect(mock.NewExpectation(st.dal.TriggeredMessage, tmID, []interface{}{}).WithReturns(tmModel, nil))
-		st.dal.Expect(mock.NewExpectation(st.dal.TriggeredMessageItemsForTriggeredMessageID, tmID, []interface{}{}).WithReturns(
+		st.dal.Expect(mock.NewExpectation(st.dal.TriggeredMessageItemsForTriggeredMessage, tmID, []interface{}{}).WithReturns(
 			[]*models.TriggeredMessageItem{tmiModel1, tmiModel2}, nil))
 
 		rtm, err := transformTriggeredMessageToResponse(tmModel, []*models.TriggeredMessageItem{tmiModel1, tmiModel2})
@@ -184,7 +184,7 @@ func TestCreateTriggeredMessage(t *testing.T) {
 			}))
 
 		st.dal.Expect(mock.NewExpectation(st.dal.TriggeredMessage, tmID, []interface{}{}).WithReturns(tmModel, nil))
-		st.dal.Expect(mock.NewExpectation(st.dal.TriggeredMessageItemsForTriggeredMessageID, tmID, []interface{}{}).WithReturns(
+		st.dal.Expect(mock.NewExpectation(st.dal.TriggeredMessageItemsForTriggeredMessage, tmID, []interface{}{}).WithReturns(
 			[]*models.TriggeredMessageItem{tmiModel1, tmiModel2}, nil))
 
 		rtm, err := transformTriggeredMessageToResponse(tmModel, []*models.TriggeredMessageItem{tmiModel1, tmiModel2})
@@ -263,7 +263,7 @@ func TestTriggeredMessages(t *testing.T) {
 		st.dal.Expect(
 			mock.NewExpectation(st.dal.TriggeredMessageForKeys, "NEW_PATIENT", "subkey", []interface{}{}).WithReturns(
 				tmModel, nil))
-		st.dal.Expect(mock.NewExpectation(st.dal.TriggeredMessageItemsForTriggeredMessageID, tmID, []interface{}{}).WithReturns(
+		st.dal.Expect(mock.NewExpectation(st.dal.TriggeredMessageItemsForTriggeredMessage, tmID, []interface{}{}).WithReturns(
 			[]*models.TriggeredMessageItem{tmiModel1, tmiModel2}, nil))
 		rtm, err := transformTriggeredMessageToResponse(tmModel, []*models.TriggeredMessageItem{tmiModel1, tmiModel2})
 		test.OK(t, err)

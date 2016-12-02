@@ -222,3 +222,19 @@ func (_mr *_MockCareClientRecorder) TriageVisit(arg0, arg1 interface{}, arg2 ...
 	_s := append([]interface{}{arg0, arg1}, arg2...)
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "TriageVisit", _s...)
 }
+
+func (_m *MockCareClient) UpdateCarePlan(_param0 context.Context, _param1 *care.UpdateCarePlanRequest, _param2 ...grpc.CallOption) (*care.UpdateCarePlanResponse, error) {
+	_s := []interface{}{_param0, _param1}
+	for _, _x := range _param2 {
+		_s = append(_s, _x)
+	}
+	ret := _m.ctrl.Call(_m, "UpdateCarePlan", _s...)
+	ret0, _ := ret[0].(*care.UpdateCarePlanResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockCareClientRecorder) UpdateCarePlan(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+	_s := append([]interface{}{arg0, arg1}, arg2...)
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "UpdateCarePlan", _s...)
+}

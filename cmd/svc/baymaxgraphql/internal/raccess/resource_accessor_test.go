@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/device"
@@ -21,37 +22,43 @@ import (
 	psmock "github.com/sprucehealth/backend/svc/patientsync/mock"
 	pmock "github.com/sprucehealth/backend/svc/payments/mock"
 	"github.com/sprucehealth/backend/svc/threading"
-	tmock "github.com/sprucehealth/backend/svc/threading/mock"
+	"github.com/sprucehealth/backend/svc/threading/threadingmock"
 )
 
 type ratest struct {
-	aC  *amock.Client
-	dC  *dmock.Client
-	tC  *tmock.Client
-	eC  *emock.Client
-	lC  *lmock.Client
-	vC  *vmock.Client
-	mC  *mmock.Client
-	pC  *pmock.Client
-	psC *psmock.Client
-	ra  ResourceAccessor
+	aC   *amock.Client
+	dC   *dmock.Client
+	eC   *emock.Client
+	lC   *lmock.Client
+	vC   *vmock.Client
+	mC   *mmock.Client
+	pC   *pmock.Client
+	psC  *psmock.Client
+	tC   *threadingmock.MockThreadsClient
+	ctrl *gomock.Controller
+	ra   ResourceAccessor
 }
 
 func (r *ratest) finish() {
-	mock.FinishAll(r.aC, r.dC, r.eC, r.tC, r.lC, r.vC, r.mC)
+	r.ctrl.Finish()
+	mock.FinishAll(r.aC, r.dC, r.eC, r.lC, r.vC, r.mC)
 }
 
 func new(t *testing.T) *ratest {
 	var rat ratest
+	// testhelpers/mock
 	rat.aC = amock.New(t)
 	rat.dC = dmock.New(t)
-	rat.tC = tmock.New(t)
 	rat.eC = emock.New(t)
 	rat.lC = lmock.New(t)
 	rat.vC = vmock.New(t)
 	rat.mC = mmock.New(t)
 	rat.pC = pmock.New(t)
 	rat.psC = psmock.New(t)
+
+	// gomock
+	rat.ctrl = gomock.NewController(t)
+	rat.tC = threadingmock.NewMockThreadsClient(rat.ctrl)
 	rat.ra = New(rat.aC, rat.dC, rat.tC, rat.eC, rat.lC, rat.vC, rat.mC, rat.pC, rat.psC)
 	return &rat
 }
@@ -278,15 +285,15 @@ func expectOrgsForEntityForExternalID(rat *ratest, externalID, orgID string) {
 	}, nil))
 }
 
-func expectOrgsForThread(rat *ratest, threadID, orgID string) {
-	rat.tC.Expect(mock.NewExpectation(rat.tC.Thread, &threading.ThreadRequest{
+func expectOrgsForThread(rat *ratest, ctx context.Context, threadID, orgID string) {
+	rat.tC.EXPECT().Thread(ctx, &threading.ThreadRequest{
 		ThreadID:       threadID,
 		ViewerEntityID: "",
-	}).WithReturns(&threading.ThreadResponse{
+	}).Return(&threading.ThreadResponse{
 		Thread: &threading.Thread{
 			OrganizationID: orgID,
 		},
-	}, nil))
+	}, nil)
 }
 
 func TestCreateContact(t *testing.T) {
@@ -402,9 +409,9 @@ func TestCreateEmptyThread(t *testing.T) {
 	defer rat.finish()
 
 	expectOrgsForEntityForExternalID(rat, accountID, orgID)
-	rat.tC.Expect(mock.NewExpectation(rat.tC.CreateEmptyThread, &threading.CreateEmptyThreadRequest{
+	gomock.InOrder(rat.tC.EXPECT().CreateEmptyThread(ctx, &threading.CreateEmptyThreadRequest{
 		OrganizationID: orgID,
-	}).WithReturns(&threading.CreateEmptyThreadResponse{Thread: &threading.Thread{ID: "id"}}, nil))
+	}).Return(&threading.CreateEmptyThreadResponse{Thread: &threading.Thread{ID: "id"}}, nil))
 
 	resp, err := rat.ra.CreateEmptyThread(ctx, &threading.CreateEmptyThreadRequest{
 		OrganizationID: orgID,
@@ -527,9 +534,9 @@ func TestCreateSavedQuery(t *testing.T) {
 	rat := new(t)
 	defer rat.finish()
 
-	rat.tC.Expect(mock.NewExpectation(rat.tC.CreateSavedQuery, &threading.CreateSavedQueryRequest{
+	gomock.InOrder(rat.tC.EXPECT().CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
 		EntityID: entityID,
-	}).WithReturns(&threading.CreateSavedQueryResponse{}, nil))
+	}).Return(&threading.CreateSavedQueryResponse{}, nil))
 
 	err := rat.ra.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
 		EntityID: entityID,
@@ -622,14 +629,15 @@ func TestDeleteThread(t *testing.T) {
 	rat := new(t)
 	defer rat.finish()
 
-	expectOrgsForThread(rat, threadID, orgID)
+	expectOrgsForThread(rat, ctx, threadID, orgID)
 	expectOrgsForEntityForExternalID(rat, accountID, orgID)
 	expectOrgsForEntity(rat, entityID, orgID)
 	expectOrgsForEntityForExternalID(rat, accountID, orgID)
-	rat.tC.Expect(mock.NewExpectation(rat.tC.DeleteThread, &threading.DeleteThreadRequest{
+
+	gomock.InOrder(rat.tC.EXPECT().DeleteThread(ctx, &threading.DeleteThreadRequest{
 		ActorEntityID: entityID,
 		ThreadID:      threadID,
-	}).WithReturns(&threading.DeleteThreadResponse{}, nil))
+	}).Return(&threading.DeleteThreadResponse{}, nil))
 
 	err := rat.ra.DeleteThread(ctx, threadID, entityID)
 	test.OK(t, err)
@@ -650,7 +658,7 @@ func TestDeleteThreadNotAuthorizedThread(t *testing.T) {
 	rat := new(t)
 	defer rat.finish()
 
-	expectOrgsForThread(rat, threadID, orgID2)
+	expectOrgsForThread(rat, ctx, threadID, orgID2)
 	expectOrgsForEntityForExternalID(rat, accountID, orgID)
 
 	err := rat.ra.DeleteThread(ctx, threadID, entityID)
@@ -672,7 +680,7 @@ func TestDeleteThreadNotAuthorizedEntity(t *testing.T) {
 	rat := new(t)
 	defer rat.finish()
 
-	expectOrgsForThread(rat, threadID, orgID)
+	expectOrgsForThread(rat, ctx, threadID, orgID)
 	expectOrgsForEntityForExternalID(rat, accountID, orgID)
 	expectOrgsForEntity(rat, entityID, orgID2)
 	expectOrgsForEntityForExternalID(rat, accountID, orgID)
@@ -804,10 +812,10 @@ func TestMarkThreadAsRead(t *testing.T) {
 		},
 	}}, nil))
 
-	rat.tC.Expect(mock.NewExpectation(rat.tC.Threads, &threading.ThreadsRequest{
+	gomock.InOrder(rat.tC.EXPECT().Threads(ctx, &threading.ThreadsRequest{
 		ThreadIDs:      []string{threadID1, threadID2},
 		ViewerEntityID: "",
-	}).WithReturns(&threading.ThreadsResponse{
+	}).Return(&threading.ThreadsResponse{
 		Threads: []*threading.Thread{
 			{
 				OrganizationID: orgID,
@@ -832,7 +840,7 @@ func TestMarkThreadAsRead(t *testing.T) {
 		EntityID: entityID,
 	}
 
-	rat.tC.Expect(mock.NewExpectation(rat.tC.MarkThreadsAsRead, req))
+	gomock.InOrder(rat.tC.EXPECT().MarkThreadsAsRead(ctx, req))
 
 	_, err := rat.ra.MarkThreadsAsRead(ctx, req)
 	test.OK(t, err)
@@ -876,10 +884,10 @@ func TestMarkThreadAsRead_NotAuthorized(t *testing.T) {
 	}}, nil))
 
 	// second thread part of a different organization
-	rat.tC.Expect(mock.NewExpectation(rat.tC.Threads, &threading.ThreadsRequest{
+	gomock.InOrder(rat.tC.EXPECT().Threads(ctx, &threading.ThreadsRequest{
 		ThreadIDs:      []string{threadID1, threadID2},
 		ViewerEntityID: "",
-	}).WithReturns(&threading.ThreadsResponse{
+	}).Return(&threading.ThreadsResponse{
 		Threads: []*threading.Thread{
 			{
 				OrganizationID: orgID,

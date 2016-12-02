@@ -1,8 +1,10 @@
 package workers
 
 import (
+	"context"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/sprucehealth/backend/cmd/svc/payments/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/payments/internal/testutil"
 	"github.com/sprucehealth/backend/libs/bml"
@@ -13,7 +15,7 @@ import (
 	dirmock "github.com/sprucehealth/backend/svc/directory/mock"
 	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/backend/svc/threading"
-	threadmock "github.com/sprucehealth/backend/svc/threading/mock"
+	"github.com/sprucehealth/backend/svc/threading/threadingmock"
 	"github.com/stripe/stripe-go"
 )
 
@@ -102,8 +104,10 @@ func TestPaymentPendingProcessing(t *testing.T) {
 		ProcessorTransactionID: ptr.String("stripeChargeID"),
 	}))
 
-	tmock := threadmock.New(t)
-	defer tmock.Finish()
+	ctx := context.Background()
+	ctrl := gomock.NewController(t)
+	tmock := threadingmock.NewMockThreadsClient(ctrl)
+	defer ctrl.Finish()
 
 	var title bml.BML
 	title = append(title, "Completed Payment: ")
@@ -116,24 +120,26 @@ func TestPaymentPendingProcessing(t *testing.T) {
 	summary, err := title.PlainText()
 	test.OK(t, err)
 
-	tmock.Expect(mock.NewExpectation(tmock.Thread, &threading.ThreadRequest{
-		ThreadID: "threadID",
-	}).WithReturns(&threading.ThreadResponse{
-		Thread: &threading.Thread{
-			ID:             "threadID",
-			OrganizationID: "orgID",
-		},
-	}, nil))
+	gomock.InOrder(
+		tmock.EXPECT().Thread(ctx, &threading.ThreadRequest{
+			ThreadID: "threadID",
+		}).Return(&threading.ThreadResponse{
+			Thread: &threading.Thread{
+				ID:             "threadID",
+				OrganizationID: "orgID",
+			},
+		}, nil),
 
-	tmock.Expect(mock.NewExpectation(tmock.PostMessage, &threading.PostMessageRequest{
-		UUID:         `accept_` + paymentID.String(),
-		ThreadID:     "threadID",
-		FromEntityID: "entityID",
-		Message: &threading.MessagePost{
-			Title:   titleText,
-			Summary: summary,
-		},
-	}))
+		tmock.EXPECT().PostMessage(ctx, &threading.PostMessageRequest{
+			UUID:         `accept_` + paymentID.String(),
+			ThreadID:     "threadID",
+			FromEntityID: "entityID",
+			Message: &threading.MessagePost{
+				Title:   titleText,
+				Summary: summary,
+			},
+		}),
+	)
 
 	w := New(dmock, directorymock, tmock, smock, "", "", "test.com")
 	w.processPaymentPendingProcessing()
@@ -229,8 +235,10 @@ func TestPaymentPendingProcessing_CardDeclined(t *testing.T) {
 		ProcessorStatusMessage: ptr.String("Card was declined"),
 	}))
 
-	tmock := threadmock.New(t)
-	defer tmock.Finish()
+	ctx := context.Background()
+	ctrl := gomock.NewController(t)
+	tmock := threadingmock.NewMockThreadsClient(ctrl)
+	defer ctrl.Finish()
 
 	var title bml.BML
 	title = append(title, "Error Processing Payment: ")
@@ -243,24 +251,26 @@ func TestPaymentPendingProcessing_CardDeclined(t *testing.T) {
 	summary, err := title.PlainText()
 	test.OK(t, err)
 
-	tmock.Expect(mock.NewExpectation(tmock.Thread, &threading.ThreadRequest{
-		ThreadID: "threadID",
-	}).WithReturns(&threading.ThreadResponse{
-		Thread: &threading.Thread{
-			ID:             "threadID",
-			OrganizationID: "orgID",
-		},
-	}, nil))
+	gomock.InOrder(
+		tmock.EXPECT().Thread(ctx, &threading.ThreadRequest{
+			ThreadID: "threadID",
+		}).Return(&threading.ThreadResponse{
+			Thread: &threading.Thread{
+				ID:             "threadID",
+				OrganizationID: "orgID",
+			},
+		}, nil),
 
-	tmock.Expect(mock.NewExpectation(tmock.PostMessage, &threading.PostMessageRequest{
-		UUID:         `error_processing_` + paymentID.String(),
-		ThreadID:     "threadID",
-		FromEntityID: "entityID",
-		Message: &threading.MessagePost{
-			Title:   titleText,
-			Summary: summary,
-		},
-	}))
+		tmock.EXPECT().PostMessage(ctx, &threading.PostMessageRequest{
+			UUID:         `error_processing_` + paymentID.String(),
+			ThreadID:     "threadID",
+			FromEntityID: "entityID",
+			Message: &threading.MessagePost{
+				Title:   titleText,
+				Summary: summary,
+			},
+		}),
+	)
 
 	w := New(dmock, directorymock, tmock, smock, "", "", "test.com")
 	w.processPaymentPendingProcessing()
@@ -356,8 +366,10 @@ func TestPaymentPendingProcessing_UnexpectedError(t *testing.T) {
 		ProcessorStatusMessage: ptr.String("An unexpected error occured while processing the payment. Our engineers have been notified and are investigating the issue."),
 	}))
 
-	tmock := threadmock.New(t)
-	defer tmock.Finish()
+	ctx := context.Background()
+	ctrl := gomock.NewController(t)
+	tmock := threadingmock.NewMockThreadsClient(ctrl)
+	defer ctrl.Finish()
 
 	var title bml.BML
 	title = append(title, "Error Processing Payment: ")
@@ -370,24 +382,26 @@ func TestPaymentPendingProcessing_UnexpectedError(t *testing.T) {
 	summary, err := title.PlainText()
 	test.OK(t, err)
 
-	tmock.Expect(mock.NewExpectation(tmock.Thread, &threading.ThreadRequest{
-		ThreadID: "threadID",
-	}).WithReturns(&threading.ThreadResponse{
-		Thread: &threading.Thread{
-			ID:             "threadID",
-			OrganizationID: "orgID",
-		},
-	}, nil))
+	gomock.InOrder(
+		tmock.EXPECT().Thread(ctx, &threading.ThreadRequest{
+			ThreadID: "threadID",
+		}).Return(&threading.ThreadResponse{
+			Thread: &threading.Thread{
+				ID:             "threadID",
+				OrganizationID: "orgID",
+			},
+		}, nil),
 
-	tmock.Expect(mock.NewExpectation(tmock.PostMessage, &threading.PostMessageRequest{
-		UUID:         `error_processing_` + paymentID.String(),
-		ThreadID:     "threadID",
-		FromEntityID: "entityID",
-		Message: &threading.MessagePost{
-			Title:   titleText,
-			Summary: summary,
-		},
-	}))
+		tmock.EXPECT().PostMessage(ctx, &threading.PostMessageRequest{
+			UUID:         `error_processing_` + paymentID.String(),
+			ThreadID:     "threadID",
+			FromEntityID: "entityID",
+			Message: &threading.MessagePost{
+				Title:   titleText,
+				Summary: summary,
+			},
+		}),
+	)
 
 	w := New(dmock, directorymock, tmock, smock, "", "", "test.com")
 	w.processPaymentPendingProcessing()

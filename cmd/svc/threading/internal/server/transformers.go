@@ -698,18 +698,18 @@ func transformTriggeredMessageToResponse(tm *models.TriggeredMessage, tmis []*mo
 func transformTriggeredMessageKeyToModel(k threading.TriggeredMessageKey_Key) (string, error) {
 	switch k {
 	case threading.TRIGGERED_MESSAGE_KEY_AWAY_MESSAGE:
-		return "AWAY_MESSAGE", nil
+		return models.TriggeredMessageKeyAwayMessage, nil
 	case threading.TRIGGERED_MESSAGE_KEY_NEW_PATIENT:
-		return "NEW_PATIENT", nil
+		return models.TriggeredMessageKeyNewPatient, nil
 	}
 	return "", errors.Errorf("Unhandled Triggered Message Key %s", k)
 }
 
 func transformTriggeredMessageKeyToResponse(k string) (threading.TriggeredMessageKey_Key, error) {
 	switch k {
-	case "AWAY_MESSAGE":
+	case models.TriggeredMessageKeyAwayMessage:
 		return threading.TRIGGERED_MESSAGE_KEY_AWAY_MESSAGE, nil
-	case "NEW_PATIENT":
+	case models.TriggeredMessageKeyNewPatient:
 		return threading.TRIGGERED_MESSAGE_KEY_NEW_PATIENT, nil
 	}
 	return threading.TRIGGERED_MESSAGE_KEY_INVALID, errors.Errorf("Unhandled Triggered Message Key %s", k)

@@ -2,6 +2,7 @@ package events
 
 import (
 	"fmt"
+	"os"
 	"path"
 	"reflect"
 	"strings"
@@ -63,17 +64,20 @@ func basePackageOfEvent(m interface{}) string {
 	return path.Base(mType.PkgPath())
 }
 
-func resourceNameFromEvent(m interface{}) string {
-	return fmt.Sprintf("%s-%s-%s", environment.GetCurrent(), basePackageOfEvent(m), strings.ToLower(nameOfEvent(m)))
+func resourceEnvPrefix() string {
+	env := environment.GetCurrent()
+	if environment.IsLocal() {
+		env += fmt.Sprintf("-%s", os.Getenv("USER"))
+	}
+	return env
 }
 
-func resourceNameFromARN(arn string) (string, error) {
-	idx := strings.LastIndex(arn, ":")
-	if idx == -1 {
-		return "", errors.Errorf("resource name not found in topic arn %s", arn)
-	}
+func resourceNameFromEvent(m interface{}) string {
+	return fmt.Sprintf("%s-%s-%s", resourceEnvPrefix(), basePackageOfEvent(m), strings.ToLower(nameOfEvent(m)))
+}
 
-	return arn[idx+1:], nil
+func resourceNameForName(n string) string {
+	return fmt.Sprintf("%s-%s", resourceEnvPrefix(), n)
 }
 
 func newInstanceFromType(t reflect.Type) interface{} {

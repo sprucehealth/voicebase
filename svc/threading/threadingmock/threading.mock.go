@@ -319,6 +319,22 @@ func (_mr *_MockThreadsClientRecorder) PostMessage(arg0, arg1 interface{}, arg2 
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "PostMessage", _s...)
 }
 
+func (_m *MockThreadsClient) PostMessages(_param0 context.Context, _param1 *threading.PostMessagesRequest, _param2 ...grpc.CallOption) (*threading.PostMessagesResponse, error) {
+	_s := []interface{}{_param0, _param1}
+	for _, _x := range _param2 {
+		_s = append(_s, _x)
+	}
+	ret := _m.ctrl.Call(_m, "PostMessages", _s...)
+	ret0, _ := ret[0].(*threading.PostMessagesResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockThreadsClientRecorder) PostMessages(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+	_s := append([]interface{}{arg0, arg1}, arg2...)
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "PostMessages", _s...)
+}
+
 func (_m *MockThreadsClient) QueryThreads(_param0 context.Context, _param1 *threading.QueryThreadsRequest, _param2 ...grpc.CallOption) (*threading.QueryThreadsResponse, error) {
 	_s := []interface{}{_param0, _param1}
 	for _, _x := range _param2 {

@@ -716,6 +716,7 @@ type Entity struct {
 	AccountID         string
 	ImageMediaID      string
 	HasProfile        bool
+	Source            string
 	Created           time.Time
 	Modified          time.Time
 }
@@ -793,14 +794,14 @@ func (d *dal) InsertEntity(model *Entity) (EntityID, error) {
 		`INSERT INTO entity
           (display_name, first_name, group_name, type, status,
 		   id, middle_initial, last_name, note, short_title,
-		   long_title, gender, dob, account_id, image_media_id)
+		   long_title, gender, dob, account_id, image_media_id, source)
           VALUES
 		  (?, ?, ?, ?, ?,
 		   ?, ?, ?, ?, ?,
-		   ?, ?, ?, ?, ?)`,
+		   ?, ?, ?, ?, ?, ?)`,
 		model.DisplayName, model.FirstName, model.GroupName, model.Type, model.Status,
 		model.ID, model.MiddleInitial, model.LastName, model.Note, model.ShortTitle,
-		model.LongTitle, gender, model.DOB, model.AccountID, model.ImageMediaID)
+		model.LongTitle, gender, model.DOB, model.AccountID, model.ImageMediaID, model.Source)
 	if err != nil {
 		return EmptyEntityID(), errors.Trace(err)
 	}
@@ -1511,7 +1512,7 @@ func scanEvent(row dbutil.Scanner) (*Event, error) {
 }
 
 const selectEntity = `
-    SELECT entity.id, entity.middle_initial, entity.last_name, entity.note, entity.created, entity.modified, entity.display_name, entity.first_name, entity.group_name, entity.type, entity.status, entity.short_title, entity.long_title, entity.gender, entity.dob, entity.account_id, entity.image_media_id, entity.has_profile, entity.custom_display_name
+    SELECT entity.id, entity.middle_initial, entity.last_name, entity.note, entity.created, entity.modified, entity.display_name, entity.first_name, entity.group_name, entity.type, entity.status, entity.short_title, entity.long_title, entity.gender, entity.dob, entity.account_id, entity.image_media_id, entity.has_profile, entity.custom_display_name, entity.source
       FROM entity`
 
 func andEntityStatusIn(ss []EntityStatus) string {
@@ -1542,7 +1543,7 @@ func scanEntity(row dbutil.Scanner) (*Entity, error) {
 	m := entityPool.Get().(*Entity)
 	m.ID = EmptyEntityID()
 
-	err := row.Scan(&m.ID, &m.MiddleInitial, &m.LastName, &m.Note, &m.Created, &m.Modified, &m.DisplayName, &m.FirstName, &m.GroupName, &m.Type, &m.Status, &m.ShortTitle, &m.LongTitle, &m.Gender, &m.DOB, &m.AccountID, &m.ImageMediaID, &m.HasProfile, &m.CustomDisplayName)
+	err := row.Scan(&m.ID, &m.MiddleInitial, &m.LastName, &m.Note, &m.Created, &m.Modified, &m.DisplayName, &m.FirstName, &m.GroupName, &m.Type, &m.Status, &m.ShortTitle, &m.LongTitle, &m.Gender, &m.DOB, &m.AccountID, &m.ImageMediaID, &m.HasProfile, &m.CustomDisplayName, &m.Source)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrNotFound)
 	}

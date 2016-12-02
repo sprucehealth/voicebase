@@ -184,7 +184,7 @@ func (d *dal) TriggeredMessageItem(ctx context.Context, id models.TriggeredMessa
 }
 
 // TriggeredMessageItem retrieves a triggered_message_items record
-func (d *dal) TriggeredMessageItemsForTriggeredMessageID(ctx context.Context, triggeredMessageID models.TriggeredMessageID, opts ...QueryOption) ([]*models.TriggeredMessageItem, error) {
+func (d *dal) TriggeredMessageItemsForTriggeredMessage(ctx context.Context, triggeredMessageID models.TriggeredMessageID, opts ...QueryOption) ([]*models.TriggeredMessageItem, error) {
 	q := selectTriggeredMessageItem + ` WHERE triggered_message_id = ? ORDER BY ordinal ASC`
 	if queryOptions(opts).Has(ForUpdate) {
 		q += ` FOR UPDATE`

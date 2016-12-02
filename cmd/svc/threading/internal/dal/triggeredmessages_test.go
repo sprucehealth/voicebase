@@ -101,7 +101,7 @@ func TestTriggeredMessages(t *testing.T) {
 	test.Assert(t, tmi2.ID.IsValid, "ID should be valid")
 	test.Equals(t, tmiID, tmi2.ID)
 
-	tmis, err := dal.TriggeredMessageItemsForTriggeredMessageID(ctx, tm.ID)
+	tmis, err := dal.TriggeredMessageItemsForTriggeredMessage(ctx, tm.ID)
 	test.OK(t, err)
 	test.Equals(t, 2, len(tmis))
 	test.Equals(t, int64(0), tmis[0].Ordinal)
@@ -111,7 +111,7 @@ func TestTriggeredMessages(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, int64(2), aff)
 
-	tmis, err = dal.TriggeredMessageItemsForTriggeredMessageID(ctx, tm.ID)
+	tmis, err = dal.TriggeredMessageItemsForTriggeredMessage(ctx, tm.ID)
 	test.OK(t, err)
 	test.Equals(t, 0, len(tmis))
 }

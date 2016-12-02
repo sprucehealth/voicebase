@@ -224,6 +224,7 @@ func (s *server) CreateEntity(ctx context.Context, in *directory.CreateEntityReq
 			DOB:           dob,
 			AccountID:     in.AccountID,
 			Note:          in.EntityInfo.Note,
+			Source:        directory.FlattenEntitySource(in.Source),
 		})
 		if err != nil {
 			return errors.Trace(err)

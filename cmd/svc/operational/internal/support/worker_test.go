@@ -6,6 +6,7 @@ import (
 
 	"context"
 
+	"github.com/golang/mock/gomock"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/errors"
@@ -15,7 +16,7 @@ import (
 	directorymock "github.com/sprucehealth/backend/svc/directory/mock"
 	"github.com/sprucehealth/backend/svc/operational"
 	"github.com/sprucehealth/backend/svc/threading"
-	threadingmock "github.com/sprucehealth/backend/svc/threading/mock"
+	"github.com/sprucehealth/backend/svc/threading/threadingmock"
 )
 
 const (
@@ -81,6 +82,7 @@ func TestPostSupportMessage_AfterBusinessHours_Post(t *testing.T) {
 }
 
 func TestPostSupportMessage_AlreadyPosted(t *testing.T) {
+	ctx := context.Background()
 	orgCreatedTime, err := time.ParseInLocation(timeFormat, "Jan 2, 2016 at 3:04am", californiaLocation)
 	test.OK(t, err)
 	mclock := clock.NewManaged(orgCreatedTime.Add(12 * time.Hour))
@@ -93,8 +95,9 @@ func TestPostSupportMessage_AlreadyPosted(t *testing.T) {
 	mdir := directorymock.New(t)
 	defer mdir.Finish()
 
-	mthreading := threadingmock.New(t)
-	defer mthreading.Finish()
+	ctrl := gomock.NewController(t)
+	mthreading := threadingmock.NewMockThreadsClient(ctrl)
+	defer ctrl.Finish()
 
 	w := &Worker{
 		directory: mdir,
@@ -102,16 +105,16 @@ func TestPostSupportMessage_AlreadyPosted(t *testing.T) {
 		clock:     mclock,
 	}
 
-	mthreading.Expect(mock.NewExpectation(mthreading.Thread, &threading.ThreadRequest{
+	mthreading.EXPECT().Thread(ctx, &threading.ThreadRequest{
 		ThreadID: spruceSupportThreadID,
-	}).WithReturns(&threading.ThreadResponse{
+	}).Return(&threading.ThreadResponse{
 		Thread: &threading.Thread{
 			MessageCount:    2,
 			PrimaryEntityID: primaryEntityID,
 		},
-	}, nil))
+	}, nil)
 
-	err = w.processEvent(context.Background(), &operational.NewOrgCreatedEvent{
+	err = w.processEvent(ctx, &operational.NewOrgCreatedEvent{
 		SpruceSupportThreadID:   spruceSupportThreadID,
 		OrgSupportThreadID:      orgSupportThreadID,
 		InitialProviderEntityID: providerEntityID,
@@ -121,6 +124,7 @@ func TestPostSupportMessage_AlreadyPosted(t *testing.T) {
 }
 
 func testWaitToPost(t *testing.T, mclock clock.Clock, orgCreationTime int64) {
+	ctx := context.Background()
 	providerEntityID := "p1"
 	spruceSupportThreadID := "t1"
 	orgSupportThreadID := "t2"
@@ -128,8 +132,9 @@ func testWaitToPost(t *testing.T, mclock clock.Clock, orgCreationTime int64) {
 	mdir := directorymock.New(t)
 	defer mdir.Finish()
 
-	mthreading := threadingmock.New(t)
-	defer mthreading.Finish()
+	ctrl := gomock.NewController(t)
+	mthreading := threadingmock.NewMockThreadsClient(ctrl)
+	defer ctrl.Finish()
 
 	w := &Worker{
 		directory: mdir,
@@ -137,7 +142,7 @@ func testWaitToPost(t *testing.T, mclock clock.Clock, orgCreationTime int64) {
 		clock:     mclock,
 	}
 
-	err := w.processEvent(context.Background(), &operational.NewOrgCreatedEvent{
+	err := w.processEvent(ctx, &operational.NewOrgCreatedEvent{
 		SpruceSupportThreadID:   spruceSupportThreadID,
 		OrgSupportThreadID:      orgSupportThreadID,
 		InitialProviderEntityID: providerEntityID,
@@ -148,6 +153,7 @@ func testWaitToPost(t *testing.T, mclock clock.Clock, orgCreationTime int64) {
 }
 
 func testSuccessfulPost(t *testing.T, mclock clock.Clock, orgCreationTime int64) {
+	ctx := context.Background()
 	providerEntityID := "p1"
 	spruceSupportThreadID := "t1"
 	orgSupportThreadID := "t2"
@@ -156,8 +162,9 @@ func testSuccessfulPost(t *testing.T, mclock clock.Clock, orgCreationTime int64)
 	mdir := directorymock.New(t)
 	defer mdir.Finish()
 
-	mthreading := threadingmock.New(t)
-	defer mthreading.Finish()
+	ctrl := gomock.NewController(t)
+	mthreading := threadingmock.NewMockThreadsClient(ctrl)
+	defer ctrl.Finish()
 
 	w := &Worker{
 		directory: mdir,
@@ -183,25 +190,25 @@ func testSuccessfulPost(t *testing.T, mclock clock.Clock, orgCreationTime int64)
 		},
 	}, nil))
 
-	mthreading.Expect(mock.NewExpectation(mthreading.Thread, &threading.ThreadRequest{
+	mthreading.EXPECT().Thread(ctx, &threading.ThreadRequest{
 		ThreadID: spruceSupportThreadID,
-	}).WithReturns(&threading.ThreadResponse{
+	}).Return(&threading.ThreadResponse{
 		Thread: &threading.Thread{
 			MessageCount:    1,
 			PrimaryEntityID: primaryEntityID,
 		},
-	}, nil))
+	}, nil)
 
-	mthreading.Expect(mock.NewExpectation(mthreading.PostMessage, &threading.PostMessageRequest{
+	mthreading.EXPECT().PostMessage(ctx, &threading.PostMessageRequest{
 		FromEntityID: primaryEntityID,
 		ThreadID:     spruceSupportThreadID,
 		Message: &threading.MessagePost{
 			Text:    `Hi Dr. Jham - I’m reaching out because my job is to help you get the most out of Spruce. What type of practice are you in?`,
 			Summary: "Automated message from Spruce support",
 		},
-	}))
+	})
 
-	err := w.processEvent(context.Background(), &operational.NewOrgCreatedEvent{
+	err := w.processEvent(ctx, &operational.NewOrgCreatedEvent{
 		SpruceSupportThreadID:   spruceSupportThreadID,
 		OrgSupportThreadID:      orgSupportThreadID,
 		InitialProviderEntityID: providerEntityID,

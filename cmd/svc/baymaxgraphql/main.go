@@ -28,6 +28,7 @@ import (
 	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/directory/cache"
+	"github.com/sprucehealth/backend/svc/events"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/layout"
@@ -286,7 +287,12 @@ func main() {
 		golog.Fatalf("Invite API Domain required")
 	}
 	if *flagTransactionalEmailSender == "" {
-		golog.Fatalf("Transactioanl email sender required")
+		golog.Fatalf("Transactional email sender required")
+	}
+
+	publisher, err := events.NewSNSPublisher(eSNS, awsSession)
+	if err != nil {
+		golog.Fatalf("Failed to initialize publisher: %s", err)
 	}
 
 	r := mux.NewRouter()
@@ -322,6 +328,7 @@ func main() {
 		*flagStripeConnectURL,
 		*flagHintConnectURL,
 		*flagIntercomSecretKey,
+		publisher,
 	)
 	r.Handle("/graphql", cors.New(cors.Options{
 		AllowedOrigins:   corsOrigins,

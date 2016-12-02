@@ -370,7 +370,7 @@ func TestCreatePatientAccountMutation_PracticeLink(t *testing.T) {
 		SystemTitle:     "first last",
 		Origin:          threading.THREAD_ORIGIN_ORGANIZATION_CODE,
 		Tags:            []string{"autotag1", "autotag2"},
-	}))
+	}).WithReturns(&threading.Thread{ID: "threadID"}, nil))
 
 	// update entity
 	g.ra.Expect(mock.NewExpectation(g.ra.UpdateEntity, &directory.UpdateEntityRequest{

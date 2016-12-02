@@ -125,7 +125,7 @@ func triggeredMessage(ctx context.Context, id models.TriggeredMessageID, dl dal.
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	tmis, err := dl.TriggeredMessageItemsForTriggeredMessageID(ctx, id)
+	tmis, err := dl.TriggeredMessageItemsForTriggeredMessage(ctx, id)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -164,7 +164,7 @@ func triggeredMessageForKeys(ctx context.Context, key, subkey string, dl dal.DAL
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	tmis, err := dl.TriggeredMessageItemsForTriggeredMessageID(ctx, tm.ID)
+	tmis, err := dl.TriggeredMessageItemsForTriggeredMessage(ctx, tm.ID)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

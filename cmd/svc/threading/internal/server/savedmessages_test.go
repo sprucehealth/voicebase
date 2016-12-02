@@ -26,7 +26,7 @@ func TestCreateSavedMessage(t *testing.T) {
 	dir := mockdirectory.New(t)
 	defer mock.FinishAll(dl, sm, mm, dir)
 
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dir, sm, mm, nil, "WEBDOMAIN")
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dir, sm, mm, nil, nil, "WEBDOMAIN")
 
 	smID, err := models.NewSavedMessageID()
 	test.OK(t, err)
@@ -109,7 +109,7 @@ func TestDeleteSavedMessage(t *testing.T) {
 	dir := mockdirectory.New(t)
 	defer mock.FinishAll(dl, sm, mm, dir)
 
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dir, sm, mm, nil, "WEBDOMAIN")
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dir, sm, mm, nil, nil, "WEBDOMAIN")
 
 	smID, err := models.NewSavedMessageID()
 	test.OK(t, err)
@@ -131,7 +131,7 @@ func TestSavedMessagesByID(t *testing.T) {
 	dir := mockdirectory.New(t)
 	defer mock.FinishAll(dl, sm, mm, dir)
 
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dir, sm, mm, nil, "WEBDOMAIN")
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dir, sm, mm, nil, nil, "WEBDOMAIN")
 
 	smID, err := models.NewSavedMessageID()
 	test.OK(t, err)
@@ -195,7 +195,7 @@ func TestSavedMessagesByEntityID(t *testing.T) {
 	dir := mockdirectory.New(t)
 	defer mock.FinishAll(dl, sm, mm, dir)
 
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dir, sm, mm, nil, "WEBDOMAIN")
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dir, sm, mm, nil, nil, "WEBDOMAIN")
 
 	smID, err := models.NewSavedMessageID()
 	test.OK(t, err)
@@ -259,7 +259,7 @@ func TestUpdateSavedMessage(t *testing.T) {
 	dir := mockdirectory.New(t)
 	defer mock.FinishAll(dl, sm, mm, dir)
 
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dir, sm, mm, nil, "WEBDOMAIN")
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dir, sm, mm, nil, nil, "WEBDOMAIN")
 
 	smID, err := models.NewSavedMessageID()
 	test.OK(t, err)

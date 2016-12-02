@@ -8,18 +8,18 @@ import (
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 )
 
-var _ dal.DAL = &mockDAL{}
+var _ dal.DAL = &MockDAL{}
 
-type mockDAL struct {
+type MockDAL struct {
 	*mock.Expector
 }
 
-// New returns an initialized instance of mockDAL
-func New(t *testing.T) *mockDAL {
-	return &mockDAL{&mock.Expector{T: t}}
+// New returns an initialized instance of MockDAL
+func New(t *testing.T) *MockDAL {
+	return &MockDAL{&mock.Expector{T: t}}
 }
 
-func (dl *mockDAL) InsertMedia(model *dal.Media) (dal.MediaID, error) {
+func (dl *MockDAL) InsertMedia(model *dal.Media) (dal.MediaID, error) {
 	rets := dl.Record(model)
 	if len(rets) == 0 {
 		return dal.MediaID(""), nil
@@ -27,7 +27,7 @@ func (dl *mockDAL) InsertMedia(model *dal.Media) (dal.MediaID, error) {
 	return rets[0].(dal.MediaID), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) Media(id dal.MediaID) (*dal.Media, error) {
+func (dl *MockDAL) Media(id dal.MediaID) (*dal.Media, error) {
 	rets := dl.Record(id)
 	if len(rets) == 0 {
 		return nil, nil
@@ -35,7 +35,7 @@ func (dl *mockDAL) Media(id dal.MediaID) (*dal.Media, error) {
 	return rets[0].(*dal.Media), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) Medias(ids []dal.MediaID) ([]*dal.Media, error) {
+func (dl *MockDAL) Medias(ids []dal.MediaID) ([]*dal.Media, error) {
 	rets := dl.Record(ids)
 	if len(rets) == 0 {
 		return nil, nil
@@ -43,7 +43,7 @@ func (dl *mockDAL) Medias(ids []dal.MediaID) ([]*dal.Media, error) {
 	return rets[0].([]*dal.Media), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) UpdateMedia(id dal.MediaID, update *dal.MediaUpdate) (int64, error) {
+func (dl *MockDAL) UpdateMedia(id dal.MediaID, update *dal.MediaUpdate) (int64, error) {
 	rets := dl.Record(id, update)
 	if len(rets) == 0 {
 		return 0, nil
@@ -51,7 +51,7 @@ func (dl *mockDAL) UpdateMedia(id dal.MediaID, update *dal.MediaUpdate) (int64, 
 	return rets[0].(int64), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) DeleteMedia(id dal.MediaID) (int64, error) {
+func (dl *MockDAL) DeleteMedia(id dal.MediaID) (int64, error) {
 	rets := dl.Record(id)
 	if len(rets) == 0 {
 		return 0, nil
@@ -59,7 +59,7 @@ func (dl *mockDAL) DeleteMedia(id dal.MediaID) (int64, error) {
 	return rets[0].(int64), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) Transact(trans func(dal dal.DAL) error) (err error) {
+func (dl *MockDAL) Transact(trans func(dal dal.DAL) error) (err error) {
 	if err := trans(dl); err != nil {
 		return errors.Trace(err)
 	}

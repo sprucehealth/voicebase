@@ -1,10 +1,12 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
 
+	"github.com/golang/mock/gomock"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	dalmock "github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal/mock"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
@@ -19,7 +21,7 @@ import (
 	"github.com/sprucehealth/backend/svc/notification"
 	notimock "github.com/sprucehealth/backend/svc/notification/mock"
 	"github.com/sprucehealth/backend/svc/threading"
-	threadmock "github.com/sprucehealth/backend/svc/threading/mock"
+	"github.com/sprucehealth/backend/svc/threading/threadingmock"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
@@ -205,10 +207,14 @@ func TestIPCall(t *testing.T) {
 }
 
 func TestIPCall_Timeout(t *testing.T) {
+	ctx := context.Background()
+	ctrl := gomock.NewController(t)
+	thr := threadingmock.NewMockThreadsClient(ctrl)
+	defer ctrl.Finish()
+
 	dl := dalmock.New(t)
-	thr := threadmock.New(t)
 	dir := dirmock.New(t)
-	defer mock.FinishAll(dl, thr, dir)
+	defer mock.FinishAll(dl, dir)
 	conc.Testing = true
 	clk := clock.NewManaged(time.Unix(1e9, 0))
 	svc := NewService("accountSID", "authToken", "appSID", "sigSID", "sig", "vidSID", dl,
@@ -246,25 +252,17 @@ func TestIPCall_Timeout(t *testing.T) {
 	dl.Expect(mock.NewExpectation(dl.UpdateIPCallParticipant, call.ID, "account_1", &dal.IPCallParticipantUpdate{State: models.IPCallStateDeclined.Ptr()}))
 	dl.Expect(mock.NewExpectation(dl.UpdateIPCallParticipant, call.ID, "account_2", &dal.IPCallParticipantUpdate{State: models.IPCallStateDeclined.Ptr()}))
 	dl.Expect(mock.NewExpectation(dl.UpdateIPCall, call.ID, &dal.IPCallUpdate{Pending: ptr.Bool(false)}))
-	thr.Expect(mock.NewExpectation(thr.ThreadsForMember, &threading.ThreadsForMemberRequest{
-		EntityID:    "entity_recipient",
-		PrimaryOnly: true,
-	}).WithReturns(&threading.ThreadsForMemberResponse{
-		Threads: []*threading.Thread{
-			{ID: "thread"},
-		},
-	}, nil))
 
-	thr.Expect(mock.NewExpectation(thr.PostMessage, &threading.PostMessageRequest{
-		UUID:         ipcID.String(),
-		ThreadID:     "thread",
-		FromEntityID: "entity_caller",
-		DontNotify:   true,
-		Message: &threading.MessagePost{
-			Title:   "Video call, no answer",
-			Summary: "Video call, no answer",
-		},
-	}))
+	gomock.InOrder(
+		thr.EXPECT().ThreadsForMember(ctx, &threading.ThreadsForMemberRequest{
+			EntityID:    "entity_recipient",
+			PrimaryOnly: true,
+		}).Return(&threading.ThreadsForMemberResponse{
+			Threads: []*threading.Thread{
+				{ID: "thread"},
+			},
+		}, nil),
+	)
 
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
 		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
@@ -273,7 +271,20 @@ func TestIPCall_Timeout(t *testing.T) {
 		},
 	}).WithReturns(&directory.LookupEntitiesResponse{Entities: []*directory.Entity{{AccountID: "1234"}}}, nil))
 
-	res, err := svc.IPCall(nil, &excomms.IPCallRequest{IPCallID: ipcID.String(), AccountID: "account_1"})
+	gomock.InOrder(
+		thr.EXPECT().PostMessage(ctx, &threading.PostMessageRequest{
+			UUID:         ipcID.String(),
+			ThreadID:     "thread",
+			FromEntityID: "entity_caller",
+			DontNotify:   true,
+			Message: &threading.MessagePost{
+				Title:   "Video call, no answer",
+				Summary: "Video call, no answer",
+			},
+		}),
+	)
+
+	res, err := svc.IPCall(ctx, &excomms.IPCallRequest{IPCallID: ipcID.String(), AccountID: "account_1"})
 	test.OK(t, err)
 	test.Equals(t, &excomms.IPCallResponse{
 		Call: &excomms.IPCall{
@@ -379,10 +390,14 @@ func TestPendingIPCalls(t *testing.T) {
 }
 
 func TestPendingIPCalls_Timeout(t *testing.T) {
+	ctx := context.Background()
+	ctrl := gomock.NewController(t)
+	thr := threadingmock.NewMockThreadsClient(ctrl)
+	defer ctrl.Finish()
+
 	dl := dalmock.New(t)
-	thr := threadmock.New(t)
 	dir := dirmock.New(t)
-	defer mock.FinishAll(dl, thr, dir)
+	defer mock.FinishAll(dl, dir)
 	conc.Testing = true
 
 	clk := clock.NewManaged(time.Unix(1e9, 0))
@@ -426,14 +441,18 @@ func TestPendingIPCalls_Timeout(t *testing.T) {
 	dl.Expect(mock.NewExpectation(dl.UpdateIPCallParticipant, call.ID, "account_1", &dal.IPCallParticipantUpdate{State: models.IPCallStateDeclined.Ptr()}))
 	dl.Expect(mock.NewExpectation(dl.UpdateIPCallParticipant, call.ID, "account_2", &dal.IPCallParticipantUpdate{State: models.IPCallStateDeclined.Ptr()}))
 	dl.Expect(mock.NewExpectation(dl.UpdateIPCall, call.ID, &dal.IPCallUpdate{Pending: ptr.Bool(false)}))
-	thr.Expect(mock.NewExpectation(thr.ThreadsForMember, &threading.ThreadsForMemberRequest{
-		EntityID:    "entity_recipient",
-		PrimaryOnly: true,
-	}).WithReturns(&threading.ThreadsForMemberResponse{
-		Threads: []*threading.Thread{
-			{ID: "thread"},
-		},
-	}, nil))
+
+	gomock.InOrder(
+		thr.EXPECT().ThreadsForMember(ctx, &threading.ThreadsForMemberRequest{
+			EntityID:    "entity_recipient",
+			PrimaryOnly: true,
+		}).Return(&threading.ThreadsForMemberResponse{
+			Threads: []*threading.Thread{
+				{ID: "thread"},
+			},
+		}, nil),
+	)
+
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
 		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
 		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
@@ -441,27 +460,33 @@ func TestPendingIPCalls_Timeout(t *testing.T) {
 		},
 	}).WithReturns(&directory.LookupEntitiesResponse{Entities: []*directory.Entity{{AccountID: "1234"}}}, nil))
 
-	thr.Expect(mock.NewExpectation(thr.PostMessage, &threading.PostMessageRequest{
-		UUID:         ipcID.String(),
-		ThreadID:     "thread",
-		FromEntityID: "entity_caller",
-		DontNotify:   true,
-		Message: &threading.MessagePost{
-			Title:   "Video call, no answer",
-			Summary: "Video call, no answer",
-		},
-	}))
+	gomock.InOrder(
+		thr.EXPECT().PostMessage(ctx, &threading.PostMessageRequest{
+			UUID:         ipcID.String(),
+			ThreadID:     "thread",
+			FromEntityID: "entity_caller",
+			DontNotify:   true,
+			Message: &threading.MessagePost{
+				Title:   "Video call, no answer",
+				Summary: "Video call, no answer",
+			},
+		}),
+	)
 
-	res, err = svc.PendingIPCalls(nil, &excomms.PendingIPCallsRequest{AccountID: "account_1"})
+	res, err = svc.PendingIPCalls(ctx, &excomms.PendingIPCallsRequest{AccountID: "account_1"})
 	test.OK(t, err)
 	test.Equals(t, 0, len(res.Calls))
 }
 
 func TestUpdateIPCall(t *testing.T) {
+	ctx := context.Background()
+	ctrl := gomock.NewController(t)
+	thr := threadingmock.NewMockThreadsClient(ctrl)
+	defer ctrl.Finish()
+
 	dl := dalmock.New(t)
-	thr := threadmock.New(t)
 	dir := dirmock.New(t)
-	defer mock.FinishAll(dl, thr, dir)
+	defer mock.FinishAll(dl, dir)
 
 	clk := clock.NewManaged(time.Unix(1e9, 0))
 	svc := NewService("accountSID", "authToken", "appSID", "sigSID", "sig", "vidSID", dl,
@@ -572,14 +597,18 @@ func TestUpdateIPCall(t *testing.T) {
 		}, nil))
 	dl.Expect(mock.NewExpectation(dl.UpdateIPCallParticipant, ipcid, "account_caller", &dal.IPCallParticipantUpdate{State: models.IPCallStateCompleted.Ptr(), NetworkType: models.NetworkTypeWiFi.Ptr()}))
 	dl.Expect(mock.NewExpectation(dl.UpdateIPCall, ipcid, &dal.IPCallUpdate{Pending: ptr.Bool(false)}))
-	thr.Expect(mock.NewExpectation(thr.ThreadsForMember, &threading.ThreadsForMemberRequest{
-		EntityID:    "entity_recipient",
-		PrimaryOnly: true,
-	}).WithReturns(&threading.ThreadsForMemberResponse{
-		Threads: []*threading.Thread{
-			{ID: "thread"},
-		},
-	}, nil))
+
+	gomock.InOrder(
+		thr.EXPECT().ThreadsForMember(ctx, &threading.ThreadsForMemberRequest{
+			EntityID:    "entity_recipient",
+			PrimaryOnly: true,
+		}).Return(&threading.ThreadsForMemberResponse{
+			Threads: []*threading.Thread{
+				{ID: "thread"},
+			},
+		}, nil),
+	)
+
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
 		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
 		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
@@ -587,18 +616,20 @@ func TestUpdateIPCall(t *testing.T) {
 		},
 	}).WithReturns(&directory.LookupEntitiesResponse{Entities: []*directory.Entity{{AccountID: "1234"}}}, nil))
 
-	thr.Expect(mock.NewExpectation(thr.PostMessage, &threading.PostMessageRequest{
-		UUID:         ipcid.String(),
-		ThreadID:     "thread",
-		FromEntityID: "entity_caller",
-		DontNotify:   true,
-		Message: &threading.MessagePost{
-			Title:   "Video call, 1:30s",
-			Summary: "Video call, 1:30s",
-		},
-	}))
+	gomock.InOrder(
+		thr.EXPECT().PostMessage(ctx, &threading.PostMessageRequest{
+			UUID:         ipcid.String(),
+			ThreadID:     "thread",
+			FromEntityID: "entity_caller",
+			DontNotify:   true,
+			Message: &threading.MessagePost{
+				Title:   "Video call, 1:30s",
+				Summary: "Video call, 1:30s",
+			},
+		}),
+	)
 
-	res, err = svc.UpdateIPCall(nil, &excomms.UpdateIPCallRequest{
+	res, err = svc.UpdateIPCall(ctx, &excomms.UpdateIPCallRequest{
 		IPCallID:    ipcid.String(),
 		AccountID:   "account_caller",
 		State:       excomms.IPCallState_COMPLETED,

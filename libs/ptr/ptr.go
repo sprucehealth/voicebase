@@ -45,7 +45,8 @@ func Time(t time.Time) *time.Time {
 func Strings(ss []string) []*string {
 	pss := make([]*string, len(ss))
 	for i, s := range ss {
-		pss[i] = &s
+		cs := s
+		pss[i] = &cs
 	}
 	return pss
 }

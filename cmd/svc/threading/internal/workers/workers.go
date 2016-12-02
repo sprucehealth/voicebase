@@ -17,7 +17,7 @@ type WorkerThreadClient interface {
 	scheduledMessageThreadClient
 }
 
-// Workers collection of all workers used by the Auth system
+// Workers collection of all workers used by the Threading system
 type Workers struct {
 	worker.Collection
 	dal          dal.DAL
@@ -25,7 +25,7 @@ type Workers struct {
 	threadingCli WorkerThreadClient
 }
 
-// New initializes a collection of all workers used by the Payments system
+// New initializes a collection of all workers used by the Threading system
 func New(
 	dl dal.DAL,
 	sqs sqsiface.SQSAPI,

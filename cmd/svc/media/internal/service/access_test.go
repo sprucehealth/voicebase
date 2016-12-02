@@ -5,6 +5,7 @@ import (
 
 	"context"
 
+	"github.com/golang/mock/gomock"
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/dal"
 	mock_dl "github.com/sprucehealth/backend/cmd/svc/media/internal/dal/test"
 	"github.com/sprucehealth/backend/libs/test"
@@ -14,12 +15,44 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	mock_directory "github.com/sprucehealth/backend/svc/directory/mock"
 	"github.com/sprucehealth/backend/svc/threading"
-	mock_threads "github.com/sprucehealth/backend/svc/threading/mock"
+	"github.com/sprucehealth/backend/svc/threading/threadingmock"
 )
 
 type tservice struct {
 	service *service
+	ctrl    *gomock.Controller
+	md      *mock_directory.Client
+	mdl     *mock_dl.MockDAL
+	mv      *mock_care.Client
+	mt      *threadingmock.MockThreadsClient
 	finish  []mock.Finisher
+}
+
+func (t *tservice) Finish() {
+	t.ctrl.Finish()
+	mock.FinishAll(t.finish...)
+}
+
+func newTService(t *testing.T) *tservice {
+	ctrl := gomock.NewController(t)
+	md := mock_directory.New(t)
+	mt := threadingmock.NewMockThreadsClient(ctrl)
+	mv := mock_care.New(t)
+	mdl := mock_dl.New(t)
+	return &tservice{
+		ctrl: ctrl,
+		md:   md,
+		mt:   mt,
+		mv:   mv,
+		mdl:  mdl,
+		service: &service{
+			directory: md,
+			threads:   mt,
+			dal:       mdl,
+			care:      mv,
+		},
+		finish: []mock.Finisher{md, mdl, mv},
+	}
 }
 
 func TestCanAccess(t *testing.T) {
@@ -32,19 +65,10 @@ func TestCanAccess(t *testing.T) {
 	}{
 		"LegacyMedia-CanAccess": {
 			tservice: func() *tservice {
-				md := mock_directory.New(t)
-				mt := mock_threads.New(t)
-				mdl := mock_dl.New(t)
-				mdl.Expect(mock.NewExpectation(mdl.Media, dal.MediaID("mediaID")).WithReturns(
+				ts := newTService(t)
+				ts.mdl.Expect(mock.NewExpectation(ts.mdl.Media, dal.MediaID("mediaID")).WithReturns(
 					(*dal.Media)(nil), dal.ErrNotFound))
-				return &tservice{
-					service: &service{
-						directory: md,
-						threads:   mt,
-						dal:       mdl,
-					},
-					finish: []mock.Finisher{md, mt, mdl},
-				}
+				return ts
 			}(),
 			mediaID:   "mediaID",
 			accountID: "accountID",
@@ -52,22 +76,13 @@ func TestCanAccess(t *testing.T) {
 		},
 		"OwnerAccountID-AccountIDMatches": {
 			tservice: func() *tservice {
-				md := mock_directory.New(t)
-				mt := mock_threads.New(t)
-				mdl := mock_dl.New(t)
-				mdl.Expect(mock.NewExpectation(mdl.Media, dal.MediaID("mediaID")).WithReturns(
+				ts := newTService(t)
+				ts.mdl.Expect(mock.NewExpectation(ts.mdl.Media, dal.MediaID("mediaID")).WithReturns(
 					&dal.Media{
 						OwnerType: dal.MediaOwnerTypeAccount,
 						OwnerID:   "accountID",
 					}, nil))
-				return &tservice{
-					service: &service{
-						directory: md,
-						threads:   mt,
-						dal:       mdl,
-					},
-					finish: []mock.Finisher{md, mt, mdl},
-				}
+				return ts
 			}(),
 			mediaID:   "mediaID",
 			accountID: "accountID",
@@ -75,22 +90,13 @@ func TestCanAccess(t *testing.T) {
 		},
 		"OwnerAccountID-AccountIDMismatch": {
 			tservice: func() *tservice {
-				md := mock_directory.New(t)
-				mt := mock_threads.New(t)
-				mdl := mock_dl.New(t)
-				mdl.Expect(mock.NewExpectation(mdl.Media, dal.MediaID("mediaID")).WithReturns(
+				ts := newTService(t)
+				ts.mdl.Expect(mock.NewExpectation(ts.mdl.Media, dal.MediaID("mediaID")).WithReturns(
 					&dal.Media{
 						OwnerType: dal.MediaOwnerTypeAccount,
 						OwnerID:   "differentAccountID",
 					}, nil))
-				return &tservice{
-					service: &service{
-						directory: md,
-						threads:   mt,
-						dal:       mdl,
-					},
-					finish: []mock.Finisher{md, mt, mdl},
-				}
+				return ts
 			}(),
 			mediaID:   "mediaID",
 			accountID: "accountID",
@@ -98,17 +104,15 @@ func TestCanAccess(t *testing.T) {
 		},
 		"OwnerEntity-SameEntity": {
 			tservice: func() *tservice {
-				md := mock_directory.New(t)
-				mt := mock_threads.New(t)
-				mdl := mock_dl.New(t)
-				mdl.Expect(mock.NewExpectation(mdl.Media, dal.MediaID("mediaID")).WithReturns(
+				ts := newTService(t)
+				ts.mdl.Expect(mock.NewExpectation(ts.mdl.Media, dal.MediaID("mediaID")).WithReturns(
 					&dal.Media{
 						OwnerType: dal.MediaOwnerTypeEntity,
 						OwnerID:   "entityID",
 					}, nil))
 
 				// entitiesForAccountID
-				md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
+				ts.md.Expect(mock.NewExpectation(ts.md.LookupEntities, &directory.LookupEntitiesRequest{
 					LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
 					LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
 						AccountID: "accountID",
@@ -121,14 +125,7 @@ func TestCanAccess(t *testing.T) {
 							{ID: "entityID"},
 						},
 					}, nil))
-				return &tservice{
-					service: &service{
-						directory: md,
-						threads:   mt,
-						dal:       mdl,
-					},
-					finish: []mock.Finisher{md, mt, mdl},
-				}
+				return ts
 			}(),
 			mediaID:   "mediaID",
 			accountID: "accountID",
@@ -136,17 +133,15 @@ func TestCanAccess(t *testing.T) {
 		},
 		"OwnerEntity-DifferentEntity": {
 			tservice: func() *tservice {
-				md := mock_directory.New(t)
-				mt := mock_threads.New(t)
-				mdl := mock_dl.New(t)
-				mdl.Expect(mock.NewExpectation(mdl.Media, dal.MediaID("mediaID")).WithReturns(
+				ts := newTService(t)
+				ts.mdl.Expect(mock.NewExpectation(ts.mdl.Media, dal.MediaID("mediaID")).WithReturns(
 					&dal.Media{
 						OwnerType: dal.MediaOwnerTypeEntity,
 						OwnerID:   "entityID",
 					}, nil))
 
 				// entitiesForAccountID
-				md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
+				ts.md.Expect(mock.NewExpectation(ts.md.LookupEntities, &directory.LookupEntitiesRequest{
 					LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
 					LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
 						AccountID: "accountID",
@@ -159,14 +154,7 @@ func TestCanAccess(t *testing.T) {
 							{ID: "differentEntityID"},
 						},
 					}, nil))
-				return &tservice{
-					service: &service{
-						directory: md,
-						threads:   mt,
-						dal:       mdl,
-					},
-					finish: []mock.Finisher{md, mt, mdl},
-				}
+				return ts
 			}(),
 			mediaID:   "mediaID",
 			accountID: "accountID",
@@ -174,17 +162,15 @@ func TestCanAccess(t *testing.T) {
 		},
 		"OwnerOrg-OrgMember": {
 			tservice: func() *tservice {
-				md := mock_directory.New(t)
-				mt := mock_threads.New(t)
-				mdl := mock_dl.New(t)
-				mdl.Expect(mock.NewExpectation(mdl.Media, dal.MediaID("mediaID")).WithReturns(
+				ts := newTService(t)
+				ts.mdl.Expect(mock.NewExpectation(ts.mdl.Media, dal.MediaID("mediaID")).WithReturns(
 					&dal.Media{
 						OwnerType: dal.MediaOwnerTypeOrganization,
 						OwnerID:   "orgID",
 					}, nil))
 
 				// ent memberships
-				md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
+				ts.md.Expect(mock.NewExpectation(ts.md.LookupEntities, &directory.LookupEntitiesRequest{
 					LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
 					LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
 						AccountID: "accountID",
@@ -201,14 +187,7 @@ func TestCanAccess(t *testing.T) {
 							{Memberships: []*directory.Entity{{ID: "orgID"}}},
 						},
 					}, nil))
-				return &tservice{
-					service: &service{
-						directory: md,
-						threads:   mt,
-						dal:       mdl,
-					},
-					finish: []mock.Finisher{md, mt, mdl},
-				}
+				return ts
 			}(),
 			mediaID:   "mediaID",
 			accountID: "accountID",
@@ -216,17 +195,15 @@ func TestCanAccess(t *testing.T) {
 		},
 		"OwnerOrg-NotOrgMember": {
 			tservice: func() *tservice {
-				md := mock_directory.New(t)
-				mt := mock_threads.New(t)
-				mdl := mock_dl.New(t)
-				mdl.Expect(mock.NewExpectation(mdl.Media, dal.MediaID("mediaID")).WithReturns(
+				ts := newTService(t)
+				ts.mdl.Expect(mock.NewExpectation(ts.mdl.Media, dal.MediaID("mediaID")).WithReturns(
 					&dal.Media{
 						OwnerType: dal.MediaOwnerTypeOrganization,
 						OwnerID:   "orgID",
 					}, nil))
 
 				// ent memberships
-				md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
+				ts.md.Expect(mock.NewExpectation(ts.md.LookupEntities, &directory.LookupEntitiesRequest{
 					LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
 					LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
 						AccountID: "accountID",
@@ -243,14 +220,7 @@ func TestCanAccess(t *testing.T) {
 							{Memberships: []*directory.Entity{{ID: "differentOrgID"}}},
 						},
 					}, nil))
-				return &tservice{
-					service: &service{
-						directory: md,
-						threads:   mt,
-						dal:       mdl,
-					},
-					finish: []mock.Finisher{md, mt, mdl},
-				}
+				return ts
 			}(),
 			mediaID:   "mediaID",
 			accountID: "accountID",
@@ -258,27 +228,27 @@ func TestCanAccess(t *testing.T) {
 		},
 		"OwnerThread-OrgMember": {
 			tservice: func() *tservice {
-				md := mock_directory.New(t)
-				mt := mock_threads.New(t)
-				mdl := mock_dl.New(t)
-				mdl.Expect(mock.NewExpectation(mdl.Media, dal.MediaID("mediaID")).WithReturns(
+				ts := newTService(t)
+				ts.mdl.Expect(mock.NewExpectation(ts.mdl.Media, dal.MediaID("mediaID")).WithReturns(
 					&dal.Media{
 						OwnerType: dal.MediaOwnerTypeThread,
 						OwnerID:   "threadID",
 					}, nil))
 
 				// thread
-				mt.Expect(mock.NewExpectation(mt.Thread, &threading.ThreadRequest{
-					ThreadID: "threadID",
-				}).WithReturns(&threading.ThreadResponse{
-					Thread: &threading.Thread{
-						Type:           threading.THREAD_TYPE_EXTERNAL,
-						OrganizationID: "orgID",
-					},
-				}, nil))
+				gomock.InOrder(
+					ts.mt.EXPECT().Thread(context.Background(), &threading.ThreadRequest{
+						ThreadID: "threadID",
+					}).Return(&threading.ThreadResponse{
+						Thread: &threading.Thread{
+							Type:           threading.THREAD_TYPE_EXTERNAL,
+							OrganizationID: "orgID",
+						},
+					}, nil),
+				)
 
 				// ent memberships
-				md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
+				ts.md.Expect(mock.NewExpectation(ts.md.LookupEntities, &directory.LookupEntitiesRequest{
 					LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
 					LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
 						AccountID: "accountID",
@@ -295,14 +265,7 @@ func TestCanAccess(t *testing.T) {
 							{Memberships: []*directory.Entity{{ID: "orgID"}}},
 						},
 					}, nil))
-				return &tservice{
-					service: &service{
-						directory: md,
-						threads:   mt,
-						dal:       mdl,
-					},
-					finish: []mock.Finisher{md, mt, mdl},
-				}
+				return ts
 			}(),
 			mediaID:   "mediaID",
 			accountID: "accountID",
@@ -310,27 +273,27 @@ func TestCanAccess(t *testing.T) {
 		},
 		"OwnerThread-NotOrgMember": {
 			tservice: func() *tservice {
-				md := mock_directory.New(t)
-				mt := mock_threads.New(t)
-				mdl := mock_dl.New(t)
-				mdl.Expect(mock.NewExpectation(mdl.Media, dal.MediaID("mediaID")).WithReturns(
+				ts := newTService(t)
+				ts.mdl.Expect(mock.NewExpectation(ts.mdl.Media, dal.MediaID("mediaID")).WithReturns(
 					&dal.Media{
 						OwnerType: dal.MediaOwnerTypeThread,
 						OwnerID:   "threadID",
 					}, nil))
 
 				// thread
-				mt.Expect(mock.NewExpectation(mt.Thread, &threading.ThreadRequest{
-					ThreadID: "threadID",
-				}).WithReturns(&threading.ThreadResponse{
-					Thread: &threading.Thread{
-						Type:           threading.THREAD_TYPE_EXTERNAL,
-						OrganizationID: "orgID",
-					},
-				}, nil))
+				gomock.InOrder(
+					ts.mt.EXPECT().Thread(context.Background(), &threading.ThreadRequest{
+						ThreadID: "threadID",
+					}).Return(&threading.ThreadResponse{
+						Thread: &threading.Thread{
+							Type:           threading.THREAD_TYPE_EXTERNAL,
+							OrganizationID: "orgID",
+						},
+					}, nil),
+				)
 
 				// ent memberships
-				md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
+				ts.md.Expect(mock.NewExpectation(ts.md.LookupEntities, &directory.LookupEntitiesRequest{
 					LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
 					LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
 						AccountID: "accountID",
@@ -347,14 +310,7 @@ func TestCanAccess(t *testing.T) {
 							{Memberships: []*directory.Entity{{ID: "differentOrgID"}}},
 						},
 					}, nil))
-				return &tservice{
-					service: &service{
-						directory: md,
-						threads:   mt,
-						dal:       mdl,
-					},
-					finish: []mock.Finisher{md, mt, mdl},
-				}
+				return ts
 			}(),
 			mediaID:   "mediaID",
 			accountID: "accountID",
@@ -362,33 +318,31 @@ func TestCanAccess(t *testing.T) {
 		},
 		"OwnerThread-TeamThreadThreadMember": {
 			tservice: func() *tservice {
-				md := mock_directory.New(t)
-				mt := mock_threads.New(t)
-				mdl := mock_dl.New(t)
-				mdl.Expect(mock.NewExpectation(mdl.Media, dal.MediaID("mediaID")).WithReturns(
+				ts := newTService(t)
+				ts.mdl.Expect(mock.NewExpectation(ts.mdl.Media, dal.MediaID("mediaID")).WithReturns(
 					&dal.Media{
 						OwnerType: dal.MediaOwnerTypeThread,
 						OwnerID:   "threadID",
 					}, nil))
 
 				// thread
-				mt.Expect(mock.NewExpectation(mt.Thread, &threading.ThreadRequest{
-					ThreadID: "threadID",
-				}).WithReturns(&threading.ThreadResponse{
-					Thread: &threading.Thread{
-						Type: threading.THREAD_TYPE_TEAM,
-					},
-				}, nil))
-
-				// thread members
-				mt.Expect(mock.NewExpectation(mt.ThreadMembers, &threading.ThreadMembersRequest{
-					ThreadID: "threadID",
-				}).WithReturns(&threading.ThreadMembersResponse{
-					Members: []*threading.Member{{EntityID: "entityID"}},
-				}, nil))
+				gomock.InOrder(
+					ts.mt.EXPECT().Thread(context.Background(), &threading.ThreadRequest{
+						ThreadID: "threadID",
+					}).Return(&threading.ThreadResponse{
+						Thread: &threading.Thread{
+							Type: threading.THREAD_TYPE_TEAM,
+						},
+					}, nil),
+					ts.mt.EXPECT().ThreadMembers(context.Background(), &threading.ThreadMembersRequest{
+						ThreadID: "threadID",
+					}).Return(&threading.ThreadMembersResponse{
+						Members: []*threading.Member{{EntityID: "entityID"}},
+					}, nil),
+				)
 
 				// ents for account
-				md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
+				ts.md.Expect(mock.NewExpectation(ts.md.LookupEntities, &directory.LookupEntitiesRequest{
 					LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
 					LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
 						AccountID: "accountID",
@@ -401,14 +355,7 @@ func TestCanAccess(t *testing.T) {
 							{ID: "entityID"},
 						},
 					}, nil))
-				return &tservice{
-					service: &service{
-						directory: md,
-						threads:   mt,
-						dal:       mdl,
-					},
-					finish: []mock.Finisher{md, mt, mdl},
-				}
+				return ts
 			}(),
 			mediaID:   "mediaID",
 			accountID: "accountID",
@@ -416,33 +363,31 @@ func TestCanAccess(t *testing.T) {
 		},
 		"OwnerThread-TeamThreadNotThreadMember": {
 			tservice: func() *tservice {
-				md := mock_directory.New(t)
-				mt := mock_threads.New(t)
-				mdl := mock_dl.New(t)
-				mdl.Expect(mock.NewExpectation(mdl.Media, dal.MediaID("mediaID")).WithReturns(
+				ts := newTService(t)
+				ts.mdl.Expect(mock.NewExpectation(ts.mdl.Media, dal.MediaID("mediaID")).WithReturns(
 					&dal.Media{
 						OwnerType: dal.MediaOwnerTypeThread,
 						OwnerID:   "threadID",
 					}, nil))
 
 				// thread
-				mt.Expect(mock.NewExpectation(mt.Thread, &threading.ThreadRequest{
-					ThreadID: "threadID",
-				}).WithReturns(&threading.ThreadResponse{
-					Thread: &threading.Thread{
-						Type: threading.THREAD_TYPE_TEAM,
-					},
-				}, nil))
-
-				// thread members
-				mt.Expect(mock.NewExpectation(mt.ThreadMembers, &threading.ThreadMembersRequest{
-					ThreadID: "threadID",
-				}).WithReturns(&threading.ThreadMembersResponse{
-					Members: []*threading.Member{{EntityID: "entityID"}},
-				}, nil))
+				gomock.InOrder(
+					ts.mt.EXPECT().Thread(context.Background(), &threading.ThreadRequest{
+						ThreadID: "threadID",
+					}).Return(&threading.ThreadResponse{
+						Thread: &threading.Thread{
+							Type: threading.THREAD_TYPE_TEAM,
+						},
+					}, nil),
+					ts.mt.EXPECT().ThreadMembers(context.Background(), &threading.ThreadMembersRequest{
+						ThreadID: "threadID",
+					}).Return(&threading.ThreadMembersResponse{
+						Members: []*threading.Member{{EntityID: "entityID"}},
+					}, nil),
+				)
 
 				// ents for account
-				md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
+				ts.md.Expect(mock.NewExpectation(ts.md.LookupEntities, &directory.LookupEntitiesRequest{
 					LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
 					LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
 						AccountID: "accountID",
@@ -455,14 +400,7 @@ func TestCanAccess(t *testing.T) {
 							{ID: "differentEntityID"},
 						},
 					}, nil))
-				return &tservice{
-					service: &service{
-						directory: md,
-						threads:   mt,
-						dal:       mdl,
-					},
-					finish: []mock.Finisher{md, mt, mdl},
-				}
+				return ts
 			}(),
 			mediaID:   "mediaID",
 			accountID: "accountID",
@@ -470,27 +408,27 @@ func TestCanAccess(t *testing.T) {
 		},
 		"OwnerSupportThread-LinkedThreadAccess": {
 			tservice: func() *tservice {
-				md := mock_directory.New(t)
-				mt := mock_threads.New(t)
-				mdl := mock_dl.New(t)
-				mdl.Expect(mock.NewExpectation(mdl.Media, dal.MediaID("mediaID")).WithReturns(
+				ts := newTService(t)
+				ts.mdl.Expect(mock.NewExpectation(ts.mdl.Media, dal.MediaID("mediaID")).WithReturns(
 					&dal.Media{
 						OwnerType: dal.MediaOwnerTypeThread,
 						OwnerID:   "threadID",
 					}, nil))
 
 				// thread
-				mt.Expect(mock.NewExpectation(mt.Thread, &threading.ThreadRequest{
-					ThreadID: "threadID",
-				}).WithReturns(&threading.ThreadResponse{
-					Thread: &threading.Thread{
-						Type:           threading.THREAD_TYPE_SUPPORT,
-						OrganizationID: "orgID2",
-					},
-				}, nil))
+				gomock.InOrder(
+					ts.mt.EXPECT().Thread(context.Background(), &threading.ThreadRequest{
+						ThreadID: "threadID",
+					}).Return(&threading.ThreadResponse{
+						Thread: &threading.Thread{
+							Type:           threading.THREAD_TYPE_SUPPORT,
+							OrganizationID: "orgID2",
+						},
+					}, nil),
+				)
 
 				// ent memberships
-				md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
+				ts.md.Expect(mock.NewExpectation(ts.md.LookupEntities, &directory.LookupEntitiesRequest{
 					LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
 					LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
 						AccountID: "accountID",
@@ -509,16 +447,18 @@ func TestCanAccess(t *testing.T) {
 					}, nil))
 
 				// linked thread
-				mt.Expect(mock.NewExpectation(mt.LinkedThread, &threading.LinkedThreadRequest{
-					ThreadID: "threadID",
-				}).WithReturns(&threading.LinkedThreadResponse{
-					Thread: &threading.Thread{
-						Type:           threading.THREAD_TYPE_SUPPORT,
-						OrganizationID: "orgID",
-					},
-				}, nil))
+				gomock.InOrder(
+					ts.mt.EXPECT().LinkedThread(context.Background(), &threading.LinkedThreadRequest{
+						ThreadID: "threadID",
+					}).Return(&threading.LinkedThreadResponse{
+						Thread: &threading.Thread{
+							Type:           threading.THREAD_TYPE_SUPPORT,
+							OrganizationID: "orgID",
+						},
+					}, nil),
+				)
 
-				md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
+				ts.md.Expect(mock.NewExpectation(ts.md.LookupEntities, &directory.LookupEntitiesRequest{
 					LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
 					LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
 						AccountID: "accountID",
@@ -536,14 +476,7 @@ func TestCanAccess(t *testing.T) {
 						},
 					}, nil))
 
-				return &tservice{
-					service: &service{
-						directory: md,
-						threads:   mt,
-						dal:       mdl,
-					},
-					finish: []mock.Finisher{md, mt, mdl},
-				}
+				return ts
 			}(),
 			mediaID:   "mediaID",
 			accountID: "accountID",
@@ -551,18 +484,15 @@ func TestCanAccess(t *testing.T) {
 		},
 		"OwnerVisit-OrgMember": {
 			tservice: func() *tservice {
-				md := mock_directory.New(t)
-				mt := mock_threads.New(t)
-				mv := mock_care.New(t)
-				mdl := mock_dl.New(t)
+				ts := newTService(t)
 
-				mdl.Expect(mock.NewExpectation(mdl.Media, dal.MediaID("mediaID")).WithReturns(
+				ts.mdl.Expect(mock.NewExpectation(ts.mdl.Media, dal.MediaID("mediaID")).WithReturns(
 					&dal.Media{
 						OwnerType: dal.MediaOwnerTypeVisit,
 						OwnerID:   "visitID",
 					}, nil))
 
-				mv.Expect(mock.NewExpectation(mv.GetVisit, &care.GetVisitRequest{
+				ts.mv.Expect(mock.NewExpectation(ts.mv.GetVisit, &care.GetVisitRequest{
 					ID: "visitID",
 				}).WithReturns(&care.GetVisitResponse{
 					Visit: &care.Visit{
@@ -571,7 +501,7 @@ func TestCanAccess(t *testing.T) {
 				}, nil))
 
 				// ent memberships
-				md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
+				ts.md.Expect(mock.NewExpectation(ts.md.LookupEntities, &directory.LookupEntitiesRequest{
 					LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
 					LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
 						AccountID: "accountID",
@@ -589,15 +519,7 @@ func TestCanAccess(t *testing.T) {
 						},
 					}, nil))
 
-				return &tservice{
-					service: &service{
-						directory: md,
-						threads:   mt,
-						care:      mv,
-						dal:       mdl,
-					},
-					finish: []mock.Finisher{md, mt, mdl},
-				}
+				return ts
 			}(),
 			mediaID:   "mediaID",
 			accountID: "accountID",
@@ -605,34 +527,33 @@ func TestCanAccess(t *testing.T) {
 		},
 		"OwnerSavedMessage-Org": {
 			tservice: func() *tservice {
-				md := mock_directory.New(t)
-				mt := mock_threads.New(t)
-				mv := mock_care.New(t)
-				mdl := mock_dl.New(t)
+				ts := newTService(t)
 
-				mdl.Expect(mock.NewExpectation(mdl.Media, dal.MediaID("mediaID")).WithReturns(
+				ts.mdl.Expect(mock.NewExpectation(ts.mdl.Media, dal.MediaID("mediaID")).WithReturns(
 					&dal.Media{
 						OwnerType: dal.MediaOwnerTypeSavedMessage,
 						OwnerID:   "savedMessageID",
 					}, nil))
 
-				mt.Expect(mock.NewExpectation(mt.SavedMessages, &threading.SavedMessagesRequest{
-					By: &threading.SavedMessagesRequest_IDs{
-						IDs: &threading.IDList{
-							IDs: []string{"savedMessageID"},
+				gomock.InOrder(
+					ts.mt.EXPECT().SavedMessages(context.Background(), &threading.SavedMessagesRequest{
+						By: &threading.SavedMessagesRequest_IDs{
+							IDs: &threading.IDList{
+								IDs: []string{"savedMessageID"},
+							},
 						},
-					},
-				}).WithReturns(&threading.SavedMessagesResponse{
-					SavedMessages: []*threading.SavedMessage{
-						{
-							OwnerEntityID:  "orgID",
-							OrganizationID: "orgID",
+					}).Return(&threading.SavedMessagesResponse{
+						SavedMessages: []*threading.SavedMessage{
+							{
+								OwnerEntityID:  "orgID",
+								OrganizationID: "orgID",
+							},
 						},
-					},
-				}, nil))
+					}, nil),
+				)
 
 				// ent memberships
-				md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
+				ts.md.Expect(mock.NewExpectation(ts.md.LookupEntities, &directory.LookupEntitiesRequest{
 					LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
 					LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
 						AccountID: "accountID",
@@ -650,15 +571,7 @@ func TestCanAccess(t *testing.T) {
 						},
 					}, nil))
 
-				return &tservice{
-					service: &service{
-						directory: md,
-						threads:   mt,
-						care:      mv,
-						dal:       mdl,
-					},
-					finish: []mock.Finisher{md, mt, mdl},
-				}
+				return ts
 			}(),
 			mediaID:   "mediaID",
 			accountID: "accountID",
@@ -666,34 +579,33 @@ func TestCanAccess(t *testing.T) {
 		},
 		"OwnerSavedMessage-OrgMember": {
 			tservice: func() *tservice {
-				md := mock_directory.New(t)
-				mt := mock_threads.New(t)
-				mv := mock_care.New(t)
-				mdl := mock_dl.New(t)
+				ts := newTService(t)
 
-				mdl.Expect(mock.NewExpectation(mdl.Media, dal.MediaID("mediaID")).WithReturns(
+				ts.mdl.Expect(mock.NewExpectation(ts.mdl.Media, dal.MediaID("mediaID")).WithReturns(
 					&dal.Media{
 						OwnerType: dal.MediaOwnerTypeSavedMessage,
 						OwnerID:   "savedMessageID",
 					}, nil))
 
-				mt.Expect(mock.NewExpectation(mt.SavedMessages, &threading.SavedMessagesRequest{
-					By: &threading.SavedMessagesRequest_IDs{
-						IDs: &threading.IDList{
-							IDs: []string{"savedMessageID"},
+				gomock.InOrder(
+					ts.mt.EXPECT().SavedMessages(context.Background(), &threading.SavedMessagesRequest{
+						By: &threading.SavedMessagesRequest_IDs{
+							IDs: &threading.IDList{
+								IDs: []string{"savedMessageID"},
+							},
 						},
-					},
-				}).WithReturns(&threading.SavedMessagesResponse{
-					SavedMessages: []*threading.SavedMessage{
-						{
-							OwnerEntityID:  "entID",
-							OrganizationID: "orgID",
+					}).Return(&threading.SavedMessagesResponse{
+						SavedMessages: []*threading.SavedMessage{
+							{
+								OwnerEntityID:  "entID",
+								OrganizationID: "orgID",
+							},
 						},
-					},
-				}, nil))
+					}, nil),
+				)
 
 				// ent memberships
-				md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
+				ts.md.Expect(mock.NewExpectation(ts.md.LookupEntities, &directory.LookupEntitiesRequest{
 					LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
 					LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
 						AccountID: "accountID",
@@ -708,15 +620,7 @@ func TestCanAccess(t *testing.T) {
 						},
 					}, nil))
 
-				return &tservice{
-					service: &service{
-						directory: md,
-						threads:   mt,
-						care:      mv,
-						dal:       mdl,
-					},
-					finish: []mock.Finisher{md, mt, mdl},
-				}
+				return ts
 			}(),
 			mediaID:   "mediaID",
 			accountID: "accountID",
@@ -724,27 +628,16 @@ func TestCanAccess(t *testing.T) {
 		},
 		"Success-PublicMedia": {
 			tservice: func() *tservice {
-				md := mock_directory.New(t)
-				mt := mock_threads.New(t)
-				mv := mock_care.New(t)
-				mdl := mock_dl.New(t)
+				ts := newTService(t)
 
-				mdl.Expect(mock.NewExpectation(mdl.Media, dal.MediaID("mediaID")).WithReturns(
+				ts.mdl.Expect(mock.NewExpectation(ts.mdl.Media, dal.MediaID("mediaID")).WithReturns(
 					&dal.Media{
 						OwnerType: dal.MediaOwnerTypeVisit,
 						OwnerID:   "visitID",
 						Public:    true,
 					}, nil))
 
-				return &tservice{
-					service: &service{
-						directory: md,
-						threads:   mt,
-						care:      mv,
-						dal:       mdl,
-					},
-					finish: []mock.Finisher{md, mt, mdl},
-				}
+				return ts
 			}(),
 			mediaID:   "mediaID",
 			accountID: "accountID",
@@ -756,6 +649,6 @@ func TestCanAccess(t *testing.T) {
 		mID, err := dal.ParseMediaID(c.mediaID)
 		test.OK(t, err)
 		test.EqualsCase(t, cn, c.expected, c.tservice.service.CanAccess(context.Background(), mID, c.accountID))
-		mock.FinishAll(c.tservice.finish...)
+		c.tservice.Finish()
 	}
 }

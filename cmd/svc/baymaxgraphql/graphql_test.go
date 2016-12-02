@@ -19,6 +19,7 @@ import (
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/directory/cache"
+	"github.com/sprucehealth/backend/svc/events/eventsmock"
 	"github.com/sprucehealth/backend/svc/invite/invitemock"
 	layoutmock "github.com/sprucehealth/backend/svc/layout/mock"
 	notificationmock "github.com/sprucehealth/backend/svc/notification/mock"
@@ -31,14 +32,19 @@ import (
 var grpcErrorf = grpc.Errorf
 
 type gql struct {
-	inviteC       *invitemock.MockInviteClient
+	// testhelpers/mock
 	settingsC     *settingsmock.Client
 	layoutC       *layoutmock.Client
 	notificationC *notificationmock.Client
-	svc           *service
-	ra            *ramock.ResourceAccessor
 	layoutStore   *layoutmock.Store
-	ctrl          *gomock.Controller
+
+	// gomock
+	inviteC   *invitemock.MockInviteClient
+	publisher *eventsmock.MockPublisher
+	ctrl      *gomock.Controller
+
+	svc *service
+	ra  *ramock.ResourceAccessor
 }
 
 func newGQL(t testing.TB) *gql {
@@ -46,13 +52,18 @@ func newGQL(t testing.TB) *gql {
 		t.Parallel()
 	}
 	var g gql
-	g.ctrl = gomock.NewController(t)
-	g.inviteC = invitemock.NewMockInviteClient(g.ctrl)
+
+	// testhelpers/mock
 	g.settingsC = settingsmock.New(t)
 	g.notificationC = notificationmock.New(t)
 	g.layoutC = layoutmock.New(t)
 	g.ra = ramock.New(t)
 	g.layoutStore = layoutmock.NewStore(t)
+
+	// gomock
+	g.ctrl = gomock.NewController(t)
+	g.inviteC = invitemock.NewMockInviteClient(g.ctrl)
+	g.publisher = eventsmock.NewMockPublisher(g.ctrl)
 	g.svc = &service{
 		invite:       g.inviteC,
 		settings:     g.settingsC,
@@ -61,6 +72,7 @@ func newGQL(t testing.TB) *gql {
 		sns:          &awsutil.SNS{},
 		layout:       g.layoutC,
 		layoutStore:  g.layoutStore,
+		publisher:    g.publisher,
 	}
 	return &g
 }

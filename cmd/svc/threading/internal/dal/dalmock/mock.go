@@ -578,7 +578,7 @@ func (dl *DAL) TriggeredMessageItem(ctx context.Context, id models.TriggeredMess
 	return rets[0].(*models.TriggeredMessageItem), mock.SafeError(rets[1])
 }
 
-func (dl *DAL) TriggeredMessageItemsForTriggeredMessageID(ctx context.Context, triggeredMessageID models.TriggeredMessageID, opts ...dal.QueryOption) ([]*models.TriggeredMessageItem, error) {
+func (dl *DAL) TriggeredMessageItemsForTriggeredMessage(ctx context.Context, triggeredMessageID models.TriggeredMessageID, opts ...dal.QueryOption) ([]*models.TriggeredMessageItem, error) {
 	rets := dl.Expector.Record(triggeredMessageID, optsToInterfaces(opts))
 	if len(rets) == 0 {
 		return nil, nil

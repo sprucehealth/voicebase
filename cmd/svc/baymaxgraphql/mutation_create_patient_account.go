@@ -456,7 +456,7 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 
 	if inv.Type == invite.LookupInviteResponse_ORGANIZATION_CODE {
 		// Create a thread with the parked patient in the org
-		if _, err := ram.CreateEmptyThread(ctx, &threading.CreateEmptyThreadRequest{
+		_, err := ram.CreateEmptyThread(ctx, &threading.CreateEmptyThreadRequest{
 			OrganizationID:  inv.GetOrganization().OrganizationEntityID,
 			PrimaryEntityID: patientEntity.ID,
 			MemberEntityIDs: []string{inv.GetOrganization().OrganizationEntityID, accountEntityID},
@@ -465,7 +465,8 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 			SystemTitle:     patientEntity.Info.DisplayName,
 			Origin:          threading.THREAD_ORIGIN_ORGANIZATION_CODE,
 			Tags:            autoTags,
-		}); err != nil {
+		})
+		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}
 	}
@@ -506,6 +507,7 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 			}
 		}
 	})
+
 	// Mark the invite as consumed if it's not an org code
 	if inv != nil && inv.Type != invite.LookupInviteResponse_ORGANIZATION_CODE {
 		conc.GoCtx(gqlctx.Clone(ctx), func(ctx context.Context) {

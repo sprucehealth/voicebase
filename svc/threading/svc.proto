@@ -280,6 +280,19 @@ message PostMessageResponse {
 	Thread thread = 2;
 }
 
+message PostMessagesRequest {
+	string uuid = 1 [(gogoproto.customname) = "UUID"];
+	string thread_id = 2 [(gogoproto.customname) = "ThreadID"];
+	string from_entity_id = 3 [(gogoproto.customname) = "FromEntityID"];
+	bool dont_notify = 11;
+	repeated MessagePost messages = 12;
+}
+
+message PostMessagesResponse {
+	repeated ThreadItem items = 1;
+	Thread thread = 2;
+}
+
 message MarkThreadsAsReadRequest {
 	message ThreadWatermark {
 		string thread_id = 1 [(gogoproto.customname) = "ThreadID"];
@@ -870,6 +883,8 @@ service Threads {
 	rpc OnboardingThreadEvent(OnboardingThreadEventRequest) returns (OnboardingThreadEventResponse);
 	// PostMessage posts a message into a specified thread
 	rpc PostMessage(PostMessageRequest) returns (PostMessageResponse);
+	// PostMessages posts a series of messages into a specified thread
+	rpc PostMessages(PostMessagesRequest) returns (PostMessagesResponse);
 	// QueryThreads queries the list of threads in an organization
 	rpc QueryThreads(QueryThreadsRequest) returns (QueryThreadsResponse);
 	// TriggeredMessages queries for triggered messages

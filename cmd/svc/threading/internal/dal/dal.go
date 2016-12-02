@@ -239,7 +239,7 @@ type DAL interface {
 	CreateTriggeredMessageItem(ctx context.Context, model *models.TriggeredMessageItem) (models.TriggeredMessageItemID, error)
 	CreateTriggeredMessageItems(ctx context.Context, models []*models.TriggeredMessageItem) error
 	TriggeredMessageItem(ctx context.Context, id models.TriggeredMessageItemID, opts ...QueryOption) (*models.TriggeredMessageItem, error)
-	TriggeredMessageItemsForTriggeredMessageID(ctx context.Context, triggeredMessageID models.TriggeredMessageID, opts ...QueryOption) ([]*models.TriggeredMessageItem, error)
+	TriggeredMessageItemsForTriggeredMessage(ctx context.Context, triggeredMessageID models.TriggeredMessageID, opts ...QueryOption) ([]*models.TriggeredMessageItem, error)
 	DeleteTriggeredMessageItem(ctx context.Context, id models.TriggeredMessageItemID) (int64, error)
 	DeleteTriggeredMessageItemsForTriggeredMessage(ctx context.Context, id models.TriggeredMessageID) (int64, error)
 }

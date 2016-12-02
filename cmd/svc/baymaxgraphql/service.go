@@ -14,6 +14,7 @@ import (
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/care"
+	"github.com/sprucehealth/backend/svc/events"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/layout"
@@ -42,6 +43,7 @@ type service struct {
 	stripeConnectURL         string
 	hintConnectURL           string
 	intercomSecretKey        string
+	publisher                events.Publisher
 	// TODO: Remove this
 	serviceNumber phone.Number
 	layoutStore   layout.Storage

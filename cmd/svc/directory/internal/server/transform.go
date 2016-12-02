@@ -48,6 +48,13 @@ func transformEntityToResponse(dEntity *dal.Entity) (*directory.Entity, error) {
 	if !ok {
 		return nil, fmt.Errorf("unknown entity status %s when converting to PB format", dEntity.Status)
 	}
+	if len(dEntity.Source) != 0 {
+		entitySource, err := directory.ParseEntitySource(dEntity.Source)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse entity source %s when converting to PB format", dEntity.Source)
+		}
+		entity.Source = entitySource
+	}
 
 	entity.Status = directory.EntityStatus(entityStatus)
 	entity.Info = transformEntityToEntityInfoResponse(dEntity)

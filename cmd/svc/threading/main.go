@@ -20,6 +20,7 @@ import (
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/events"
 	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/payments"
@@ -56,7 +57,8 @@ func init() {
 }
 
 func main() {
-	bootSvc := boot.NewService("threading", nil)
+	serviceName := "threading"
+	bootSvc := boot.NewService(serviceName, nil)
 
 	settingsConn, err := bootSvc.DialGRPC(*flagSettingsAddr)
 	if err != nil {
@@ -127,6 +129,11 @@ func main() {
 	}
 	paymentsClient := payments.NewPaymentsClient(conn)
 
+	publisher, err := events.NewSNSPublisher(eSNS, awsSession)
+	if err != nil {
+		golog.Fatalf("Failed to initialize publisher: %s", err)
+	}
+
 	dl := dal.New(db, clock.New())
 
 	// register the settings with the service
@@ -144,7 +151,18 @@ func main() {
 	}
 	cancel()
 
-	srv := server.NewThreadsServer(clock.New(), dl, eSNS, *flagSNSTopicARN, notificationClient, directoryClient, settingsClient, mediaClient, paymentsClient, *flagWebDomain)
+	srv := server.NewThreadsServer(
+		clock.New(),
+		dl,
+		eSNS,
+		*flagSNSTopicARN,
+		notificationClient,
+		directoryClient,
+		settingsClient,
+		mediaClient,
+		paymentsClient,
+		publisher,
+		*flagWebDomain)
 	threading.InitMetrics(srv, bootSvc.MetricsRegistry.Scope("server"))
 
 	s := bootSvc.GRPCServer()
@@ -154,6 +172,13 @@ func main() {
 	works := workers.New(dl, eSQS, workerClient{srv: srv}, *flagSQSEventsURL)
 	works.Start()
 	defer works.Stop(time.Second * 20)
+
+	golog.Infof("Starting Threads Subscriptions...")
+	subs, err := workers.InitSubscriptions(dl, directoryClient, subscriberClient{srv: srv}, eSQS, eSNS, awsSession, serviceName)
+	if err != nil {
+		golog.Fatalf("failed to start threading subscriptions: %s", err)
+	}
+	defer subs.Stop()
 
 	golog.Infof("Starting Threads service on %s...", *flagListen)
 	ln, err := net.Listen("tcp", *flagListen)
@@ -178,4 +203,14 @@ func (wc workerClient) OnboardingThreadEvent(ctx context.Context, req *threading
 
 func (wc workerClient) PostMessage(ctx context.Context, req *threading.PostMessageRequest, opts ...grpc.CallOption) (*threading.PostMessageResponse, error) {
 	return wc.srv.PostMessage(ctx, req)
+}
+
+// subscriberClient allows using the server directly as a client. avoids the worker from having to make calls out and back in
+// which would introduce a weird start-time dependency due to running in the same process.
+type subscriberClient struct {
+	srv threading.ThreadsServer
+}
+
+func (sc subscriberClient) PostMessages(ctx context.Context, req *threading.PostMessagesRequest, opts ...grpc.CallOption) (*threading.PostMessagesResponse, error) {
+	return sc.srv.PostMessages(ctx, req)
 }

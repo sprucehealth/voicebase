@@ -26,7 +26,7 @@ func TestCreateSavedQuery(t *testing.T) {
 	dir := mockdirectory.New(t)
 	defer mock.FinishAll(dl, sm, mm, dir)
 
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dir, sm, mm, nil, "WEBDOMAIN")
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dir, sm, mm, nil, nil, "WEBDOMAIN")
 
 	tid1, err := models.NewThreadID()
 	test.OK(t, err)
@@ -133,7 +133,7 @@ func TestSavedQuery(t *testing.T) {
 	dm := mockdirectory.New(t)
 	mm := mockmedia.New(t)
 	defer mock.FinishAll(dl, sm, dm, mm)
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dm, sm, mm, nil, "WEBDOMAIN")
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dm, sm, mm, nil, nil, "WEBDOMAIN")
 
 	sqID, err := models.NewSavedQueryID()
 	test.OK(t, err)

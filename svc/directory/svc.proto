@@ -65,6 +65,17 @@ message EntityInfo {
 	Date       dob = 9 [(gogoproto.customname) = "DOB"];
 }
 
+message EntitySource {
+	enum SourceType {
+		UNKNOWN = 0;
+		PRACTICE_CODE = 1;
+		INVITE_CODE = 2;
+	}
+
+	SourceType type = 1;
+	string data = 2;
+}
+
 message Entity {
 	string id = 1 [(gogoproto.customname) = "ID"];
 	EntityType type = 3;
@@ -80,6 +91,7 @@ message Entity {
 	string account_id = 13 [(gogoproto.customname) = "AccountID"];
 	string image_media_id = 14 [(gogoproto.customname) = "ImageMediaID"];
 	bool has_profile = 15;
+	EntitySource source = 16;
 }
 
 message Profile {
@@ -154,12 +166,13 @@ message LookupEntitiesResponse {
 
 message CreateEntityRequest {
 	EntityType type = 2;
-	string     external_id = 3 [(gogoproto.customname) = "ExternalID"];
-	string     initial_membership_entity_id = 4 [(gogoproto.customname) = "InitialMembershipEntityID"];
-	repeated   Contact contacts = 5;
+	string       external_id = 3 [(gogoproto.customname) = "ExternalID"];
+	string       initial_membership_entity_id = 4 [(gogoproto.customname) = "InitialMembershipEntityID"];
+	repeated Contact     contacts = 5;
 	RequestedInformation requested_information = 6;
-	EntityInfo entity_info = 7;
-	string     account_id = 8 [(gogoproto.customname) = "AccountID"];
+	EntityInfo   entity_info = 7;
+	string       account_id = 8 [(gogoproto.customname) = "AccountID"];
+	EntitySource source = 9;
 }
 
 message CreateEntityResponse {

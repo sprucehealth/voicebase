@@ -18,7 +18,7 @@ import (
 
 // practiceLinkArgumentsConfig represents the config for arguments referencing a practice link
 var practiceLinkArgumentsConfig = graphql.FieldConfigArgument{
-	"id": &graphql.ArgumentConfig{Type: graphql.String},
+	"practiceCode": &graphql.ArgumentConfig{Type: graphql.String},
 }
 
 // practiceLinkArguments represents arguments for referencing an practice link

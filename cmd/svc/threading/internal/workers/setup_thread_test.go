@@ -5,32 +5,36 @@ import (
 
 	"context"
 
+	"github.com/golang/mock/gomock"
 	"github.com/sprucehealth/backend/libs/test"
-	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/events"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/threading"
-	tmock "github.com/sprucehealth/backend/svc/threading/mock"
+	"github.com/sprucehealth/backend/svc/threading/threadingmock"
 )
 
 func TestWorker(t *testing.T) {
 	t.Parallel()
 
-	ts := tmock.New(t)
+	ctrl := gomock.NewController(t)
+	ts := threadingmock.NewMockThreadsClient(ctrl)
+	defer ctrl.Finish()
 	w := newSetupThreadWorker(nil, ts, "")
 
-	ts.Expect(mock.NewExpectation(ts.OnboardingThreadEvent, &threading.OnboardingThreadEventRequest{
-		LookupByType: threading.ONBOARDING_THREAD_LOOKUP_BY_ENTITY_ID,
-		LookupBy: &threading.OnboardingThreadEventRequest_EntityID{
-			EntityID: "ent",
-		},
-		EventType: threading.ONBOARDING_THREAD_EVENT_TYPE_PROVISIONED_PHONE,
-		Event: &threading.OnboardingThreadEventRequest_ProvisionedPhone{
-			ProvisionedPhone: &threading.ProvisionedPhoneEvent{
-				PhoneNumber: "+15551112222",
+	gomock.InOrder(
+		ts.EXPECT().OnboardingThreadEvent(context.Background(), &threading.OnboardingThreadEventRequest{
+			LookupByType: threading.ONBOARDING_THREAD_LOOKUP_BY_ENTITY_ID,
+			LookupBy: &threading.OnboardingThreadEventRequest_EntityID{
+				EntityID: "ent",
 			},
-		},
-	}))
+			EventType: threading.ONBOARDING_THREAD_EVENT_TYPE_PROVISIONED_PHONE,
+			Event: &threading.OnboardingThreadEventRequest_ProvisionedPhone{
+				ProvisionedPhone: &threading.ProvisionedPhoneEvent{
+					PhoneNumber: "+15551112222",
+				},
+			},
+		}),
+	)
 
 	test.OK(t, w.processEvent(context.Background(), &events.Envelope{
 		Service: events.Service_EXCOMMS,
