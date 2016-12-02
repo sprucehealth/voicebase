@@ -503,7 +503,7 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 	})
 
 	// Mark the invite as consumed if one was used
-	if inv != nil && !ignorePhoneNumberCheckForInvite(inv) {
+	if inv != nil {
 		conc.GoCtx(gqlctx.Clone(ctx), func(ctx context.Context) {
 			if _, err := svc.invite.MarkInviteConsumed(ctx, &invite.MarkInviteConsumedRequest{Token: attribValues[inviteTokenAttributionKey]}); err != nil {
 				golog.Errorf("Error while marking invite with code %q as consumed: %s", attribValues[inviteTokenAttributionKey], err)

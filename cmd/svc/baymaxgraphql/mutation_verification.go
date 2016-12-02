@@ -7,7 +7,6 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
-	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/validate"
@@ -152,7 +151,7 @@ func makeVerifyPhoneNumberResolve(forAccountCreation bool) func(p graphql.Resolv
 				switch inv.Type {
 				case invite.LookupInviteResponse_COLLEAGUE:
 					col := inv.GetColleague().Colleague
-					if !ignorePhoneNumberCheckForInvite(inv) && col.PhoneNumber != pn.String() {
+					if col.PhoneNumber != pn.String() {
 						return &verifyPhoneNumberOutput{
 							ClientMutationID: mutationID,
 							Success:          false,
@@ -184,32 +183,6 @@ func makeVerifyPhoneNumberResolve(forAccountCreation bool) func(p graphql.Resolv
 			Message:          fmt.Sprintf("A verification code has been sent to %s", nicePhone),
 		}, nil
 	}
-}
-
-// ignorePhoneNumberCheckForOrgs contains a list of orgIDs scoped by
-// environment for which to ignore the phone number match during the invite process.
-var ignorePhoneNumberCheckForOrgs = []string{
-	"staging:entity_0CGGMPGPG1800",
-	"prod:entity_0D6LQNE983O00",
-}
-
-// ignorePhoneNumberCheckForInvite returns true if the phone number check is to be
-// ignored for a particular org such that anyone with a valid link to join an org
-// can do so.
-// TODO: This is a hack to get one of our providers setup to explore the use-case of network-wide chat with a single
-// invite link. Remove this once we have built a better way for invite links to work.
-func ignorePhoneNumberCheckForInvite(inv *invite.LookupInviteResponse) bool {
-	if inv == nil {
-		return true
-	}
-
-	orgKey := environment.GetCurrent() + ":" + inv.GetColleague().OrganizationEntityID
-	for _, o := range ignorePhoneNumberCheckForOrgs {
-		if orgKey == o {
-			return true
-		}
-	}
-	return false
 }
 
 // checkVerificationCode
