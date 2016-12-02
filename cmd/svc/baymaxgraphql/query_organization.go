@@ -240,6 +240,13 @@ var organizationType = graphql.NewObject(
 						},
 					)),
 			},
+			"savedMessageSections": &graphql.Field{
+				Type: graphql.NewList(graphql.NewNonNull(savedMessageSectionType)),
+				Resolve: apiaccess.Provider(func(p graphql.ResolveParams) (interface{}, error) {
+					org := p.Source.(*models.Organization)
+					return savedMessageSections(p, org.ID)
+				}),
+			},
 			"supportThreadID": &graphql.Field{
 				Type: graphql.String,
 				Resolve: apiaccess.Provider(func(p graphql.ResolveParams) (interface{}, error) {

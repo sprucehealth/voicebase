@@ -39,15 +39,13 @@ type savedMessagesQueryInput struct {
 }
 
 var savedMessagesQuery = &graphql.Field{
-	Type: graphql.NewList(graphql.NewNonNull(savedMessageSectionType)),
+	Type:              graphql.NewList(graphql.NewNonNull(savedMessageSectionType)),
+	DeprecationReason: "Query via top root node (organization.savedMessageSections) instead",
 	Args: graphql.FieldConfigArgument{
 		"organizationID": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
 	},
 	Resolve: apiaccess.Provider(func(p graphql.ResolveParams) (interface{}, error) {
 		ctx := p.Context
-		ram := raccess.ResourceAccess(p)
-		acc := gqlctx.Account(ctx)
-		svc := serviceFromParams(p)
 
 		var in savedMessagesQueryInput
 		if err := gqldecode.Decode(p.Args, &in); err != nil {
@@ -58,58 +56,67 @@ var savedMessagesQuery = &graphql.Field{
 			return nil, errors.InternalError(ctx, err)
 		}
 
-		ent, err := raccess.EntityInOrgForAccountID(ctx, ram, &directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
-				ExternalID: acc.ID,
-			},
-			RequestedInformation: &directory.RequestedInformation{
-				Depth:             0,
-				EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
-			},
-			Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
-			RootTypes: []directory.EntityType{directory.EntityType_INTERNAL},
-		}, in.OrganizationID)
-		if err == raccess.ErrNotFound {
-			return nil, errors.ErrNotAuthorized(ctx, in.OrganizationID)
-		} else if err != nil {
-			return nil, errors.InternalError(ctx, err)
-		}
+		return savedMessageSections(p, in.OrganizationID)
+	}),
+}
 
-		res, err := ram.SavedMessages(ctx, &threading.SavedMessagesRequest{By: &threading.SavedMessagesRequest_EntityIDs{
-			EntityIDs: &threading.IDList{IDs: []string{ent.ID, in.OrganizationID}},
-		}})
+func savedMessageSections(p graphql.ResolveParams, organizationID string) ([]*models.SavedMessageSection, error) {
+	ctx := p.Context
+	ram := raccess.ResourceAccess(p)
+	acc := gqlctx.Account(ctx)
+	svc := serviceFromParams(p)
+
+	ent, err := raccess.EntityInOrgForAccountID(ctx, ram, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+			ExternalID: acc.ID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
+		},
+		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes: []directory.EntityType{directory.EntityType_INTERNAL},
+	}, organizationID)
+	if err == raccess.ErrNotFound {
+		return nil, errors.ErrNotAuthorized(ctx, organizationID)
+	} else if err != nil {
+		return nil, errors.InternalError(ctx, err)
+	}
+
+	res, err := ram.SavedMessages(ctx, &threading.SavedMessagesRequest{By: &threading.SavedMessagesRequest_EntityIDs{
+		EntityIDs: &threading.IDList{IDs: []string{ent.ID, organizationID}},
+	}})
+	if err != nil {
+		return nil, errors.InternalError(ctx, err)
+	}
+
+	sec := []*models.SavedMessageSection{
+		{Title: "Your Saved Messages"},
+		{Title: "Team Saved Messages"},
+	}
+
+	sort.Sort(savedMessageByTitle(res.SavedMessages))
+	for _, m := range res.SavedMessages {
+		sm, err := transformSavedMessageToResponse(m, svc.webDomain, svc.mediaAPIDomain)
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}
-
-		sec := []*models.SavedMessageSection{
-			{Title: "Your Saved Messages"},
-			{Title: "Team Saved Messages"},
+		if m.OwnerEntityID == organizationID {
+			sm.Shared = true
+			sec[1].Messages = append(sec[1].Messages, sm)
+		} else {
+			sec[0].Messages = append(sec[0].Messages, sm)
 		}
-
-		sort.Sort(savedMessageByTitle(res.SavedMessages))
-		for _, m := range res.SavedMessages {
-			sm, err := transformSavedMessageToResponse(m, svc.webDomain, svc.mediaAPIDomain)
-			if err != nil {
-				return nil, errors.InternalError(ctx, err)
-			}
-			if m.OwnerEntityID == in.OrganizationID {
-				sm.Shared = true
-				sec[1].Messages = append(sec[1].Messages, sm)
-			} else {
-				sec[0].Messages = append(sec[0].Messages, sm)
-			}
-		}
-		// Remove empty sections
-		if len(sec[1].Messages) == 0 {
-			sec = sec[:1]
-		}
-		if len(sec[0].Messages) == 0 {
-			sec = sec[1:]
-		}
-		return sec, nil
-	}),
+	}
+	// Remove empty sections
+	if len(sec[1].Messages) == 0 {
+		sec = sec[:1]
+	}
+	if len(sec[0].Messages) == 0 {
+		sec = sec[1:]
+	}
+	return sec, nil
 }
 
 func transformSavedMessageToResponse(m *threading.SavedMessage, webDomain, mediaAPIDomain string) (*models.SavedMessage, error) {
