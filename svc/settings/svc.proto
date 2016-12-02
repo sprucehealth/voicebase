@@ -17,6 +17,7 @@ enum ConfigType {
 	STRING_LIST = 2;
 	BOOLEAN = 3;
 	INTEGER = 4;
+	TEXT = 5;
 }
 
 // OwnerType enumerates the possible owners for a particular config
@@ -43,6 +44,7 @@ message Config {
 		SingleSelectConfig single_select = 12;
 		MultiSelectConfig multi_select = 13;
 		IntegerConfig integer = 14;
+		TextConfig text = 15;
 	}
 }
 
@@ -64,6 +66,7 @@ message Value {
 		SingleSelectValue single_select = 12;
 		MultiSelectValue multi_select = 13;
 		IntegerValue integer = 14;
+		TextValue text = 15;
 	}
 }
 
@@ -85,7 +88,7 @@ message StringListValue {
 	repeated string values = 1;
 }
 
-// Int 
+// Int
 
 message IntegerConfig {
 	IntegerValue default = 1;
@@ -94,6 +97,14 @@ message IntegerValue {
 	int64 value = 1;
 }
 
+// Text
+
+message TextConfig {
+	TextValue default = 1;
+}
+message TextValue {
+	string value = 1;
+}
 
 // Single-select and multi-select
 

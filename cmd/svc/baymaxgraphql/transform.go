@@ -868,6 +868,18 @@ func transformBooleanSettingToResponse(config *settings.Config, value *settings.
 	}
 }
 
+func transformTextSettingToResponse(config *settings.Config, value *settings.Value) *models.TextSetting {
+	return &models.TextSetting{
+		Key:         config.Key,
+		Subkey:      value.Key.Subkey,
+		Title:       config.Title,
+		Description: config.Description,
+		Value: &models.TextSettingValue{
+			Value: value.GetText().Value,
+		},
+	}
+}
+
 func transformMultiSelectToResponse(config *settings.Config, value *settings.Value) *models.SelectSetting {
 	ss := &models.SelectSetting{
 		Key:                     config.Key,

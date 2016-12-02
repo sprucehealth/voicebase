@@ -98,31 +98,31 @@ func (r *externalMessageWorker) Start() {
 				WaitTimeSeconds:     ptr.Int64(20),
 			})
 			if err != nil {
-				golog.Errorf("Unable to receive SQS message: " + err.Error())
+				golog.Errorf("Unable to receive SQS message: %s", err)
 				continue
 			}
 
 			for _, item := range sqsRes.Messages {
-				golog := golog.Context("handle", *item.ReceiptHandle)
+				log := golog.Context("handle", *item.ReceiptHandle)
 
 				var m awsutil.SNSSQSMessage
 				if err := json.Unmarshal([]byte(*item.Body), &m); err != nil {
-					golog.Errorf("Unable to unmarshal SQS message: " + err.Error())
+					log.Errorf("Unable to unmarshal SQS message: %s", err)
 					continue
 				}
 
 				data, err := base64.StdEncoding.DecodeString(m.Message)
 				if err != nil {
-					golog.Errorf("Unable to decode base64 encoded string: %s", err.Error())
+					log.Errorf("Unable to decode base64 encoded string: %s", err)
 					return
 				}
 
 				var pem excomms.PublishedExternalMessage
 				if err := pem.Unmarshal(data); err != nil {
-					golog.Errorf("Unable to unmarshal message data: " + err.Error())
+					log.Errorf("Unable to unmarshal message data: %s", err)
 					continue
 				}
-				golog.Debugf("Process message %s.", *item.ReceiptHandle)
+				log.Debugf("Process message %s.", *item.ReceiptHandle)
 
 				status := statusProcessed
 				if err := r.process(&pem); err != nil {
@@ -132,13 +132,13 @@ func (r *externalMessageWorker) Start() {
 					case errLogMessageAsSpam:
 						status = statusSpam
 					default:
-						golog.Errorf("Unable to process message: " + err.Error())
+						log.Errorf("Unable to process message: %s", err)
 						continue
 					}
 				}
 
 				if err := r.dal.LogExternalMessage(data, pem.Type.String(), pem.FromChannelID, pem.ToChannelID, status); err != nil {
-					golog.Errorf("Unable to persist message to database: %s", err.Error())
+					log.Errorf("Unable to persist message to database: %s", err)
 					continue
 				}
 
@@ -150,10 +150,10 @@ func (r *externalMessageWorker) Start() {
 					},
 				)
 				if err != nil {
-					golog.Errorf("ERROR: Unable to delete message: " + err.Error())
+					log.Errorf("ERROR: Unable to delete message: %s", err)
 					continue
 				}
-				golog.Debugf("Delete message %s", *item.ReceiptHandle)
+				log.Debugf("Delete message %s", *item.ReceiptHandle)
 			}
 		}
 	}()
@@ -255,7 +255,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 		if err != nil {
 			return errors.Trace(err)
 		} else if len(fromEntities) != 1 {
-			return errors.Trace(fmt.Errorf("Expected 1 internal/organization entity but got back %d", len(fromEntities)))
+			return errors.Errorf("Expected 1 internal/organization entity but got back %d", len(fromEntities))
 		}
 
 		toEntities, err = lookupEntities(ctx, pem.GetOutgoing().CalleeEntityID, r.directory)
@@ -595,7 +595,7 @@ func (e *externalMessageWorker) determineAccountIDsOfProvidersInOrg(ctx context.
 		if err != nil {
 			return nil, errors.Trace(err)
 		} else if len(orgLookupRes.Entities) != 1 {
-			return nil, errors.Trace(fmt.Errorf("Expected 1 entity but got %d for %s", len(orgLookupRes.Entities), ent.ID))
+			return nil, errors.Errorf("Expected 1 entity but got %d for %s", len(orgLookupRes.Entities), ent.ID)
 		}
 
 		for _, member := range orgLookupRes.Entities[0].Members {

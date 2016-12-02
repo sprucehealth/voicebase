@@ -1,9 +1,8 @@
 package mock
 
 import (
-	"testing"
-
 	"context"
+	"testing"
 
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
@@ -42,8 +41,16 @@ func (m *mockDAL) LookupProvisionedEndpoint(endpoint string, endpiontType models
 	return rets[0].(*models.ProvisionedEndpoint), mock.SafeError(rets[1])
 }
 
-func (m *mockDAL) ProvisionEndpoint(ppn *models.ProvisionedEndpoint) error {
-	rets := m.Record(ppn)
+func (m *mockDAL) LookupProvisionedEndpointByUUID(uuid string) (*models.ProvisionedEndpoint, error) {
+	rets := m.Record(uuid)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*models.ProvisionedEndpoint), mock.SafeError(rets[1])
+}
+
+func (m *mockDAL) ProvisionEndpoint(ppn *models.ProvisionedEndpoint, uuid string) error {
+	rets := m.Record(ppn, uuid)
 	if len(rets) == 0 {
 		return nil
 	}

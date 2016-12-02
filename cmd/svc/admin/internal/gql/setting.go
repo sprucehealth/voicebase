@@ -160,6 +160,10 @@ func modifySettingResolve(p graphql.ResolveParams) (interface{}, error) {
 		setReq.Value.Value = &settings.Value_Integer{
 			Integer: &settings.IntegerValue{Value: i},
 		}
+	case settings.ConfigType_TEXT:
+		setReq.Value.Value = &settings.Value_Text{
+			Text: &settings.TextValue{Value: in.Value},
+		}
 	default:
 		return nil, errors.Errorf("Unsupported config type %s", config.Type)
 	}

@@ -46,7 +46,7 @@ func TestReserveNumber_NewReservation(t *testing.T) {
 
 	manager := NewManager(md, mclock)
 
-	pn, err := manager.ReserveNumber(originatingPhoneNumber, destinationPhoneNumber, destinationEntityID, sourceEntityID, organizationID)
+	pn, err := manager.ReserveNumber(originatingPhoneNumber, destinationPhoneNumber, phone.Number(""), destinationEntityID, sourceEntityID, organizationID)
 	test.OK(t, err)
 	test.Equals(t, proxyPhoneNumber, pn)
 }
@@ -80,7 +80,7 @@ func TestReserveNumber_ExistingReservation(t *testing.T) {
 
 	manager := NewManager(md, mclock)
 
-	pn, err := manager.ReserveNumber(originatingPhoneNumber, destinationPhoneNumber, destinationEntityID, sourceEntityID, organizationID)
+	pn, err := manager.ReserveNumber(originatingPhoneNumber, destinationPhoneNumber, phone.Number(""), destinationEntityID, sourceEntityID, organizationID)
 	test.OK(t, err)
 	test.Equals(t, proxyPhoneNumber, pn)
 }
@@ -126,7 +126,7 @@ func TestReserveNumber_NewReservation_SameSourceDestinationPair(t *testing.T) {
 
 	manager := NewManager(md, mclock)
 
-	pn, err := manager.ReserveNumber(originatingPhoneNumber, destinationPhoneNumber, destinationEntityID, sourceEntityID, organizationID)
+	pn, err := manager.ReserveNumber(originatingPhoneNumber, destinationPhoneNumber, phone.Number(""), destinationEntityID, sourceEntityID, organizationID)
 	test.OK(t, err)
 	test.Equals(t, proxyPhoneNumber, pn)
 }
@@ -174,7 +174,7 @@ func TestReserveNumber_LastReserved(t *testing.T) {
 
 	manager := NewManager(md, mclock)
 
-	pn, err := manager.ReserveNumber(originatingPhoneNumber, destinationPhoneNumber, destinationEntityID, sourceEntityID, organizationID)
+	pn, err := manager.ReserveNumber(originatingPhoneNumber, destinationPhoneNumber, phone.Number(""), destinationEntityID, sourceEntityID, organizationID)
 	test.OK(t, err)
 	test.Equals(t, proxyPhoneNumber1, pn)
 }
@@ -212,7 +212,7 @@ func TestReserveNumber_BeyondGracePeriod(t *testing.T) {
 
 	manager := NewManager(md, mclock)
 
-	pn, err := manager.ReserveNumber(originatingPhoneNumber, destinationPhoneNumber, destinationEntityID, sourceEntityID, organizationID)
+	pn, err := manager.ReserveNumber(originatingPhoneNumber, destinationPhoneNumber, phone.Number(""), destinationEntityID, sourceEntityID, organizationID)
 	test.OK(t, err)
 	test.Equals(t, proxyPhoneNumber1, pn)
 }

@@ -1,10 +1,9 @@
 package twilio
 
 import (
+	"context"
 	"fmt"
 	"time"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/cleaner"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
@@ -25,7 +24,6 @@ import (
 // being called)
 
 func processOutgoingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
-
 	originatingPhoneNumber, err := phone.ParseNumber(params.From)
 	if err != nil {
 		return "", errors.Trace(err)
@@ -79,34 +77,34 @@ func processOutgoingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 				EntityID: ppnr.OrganizationID,
 			},
 			RequestedInformation: &directory.RequestedInformation{
-				Depth: 1,
+				Depth: 0,
 				EntityInformation: []directory.EntityInformation{
-					directory.EntityInformation_MEMBERS,
-					directory.EntityInformation_MEMBERSHIPS,
 					directory.EntityInformation_CONTACTS,
 				},
 			},
-			Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+			RootTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+			Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 		})
 	if err != nil {
 		return "", errors.Trace(err)
 	} else if len(res.Entities) != 1 {
-		return "", errors.Trace(fmt.Errorf("Expected 1 entity. Got %d", len(res.Entities)))
+		return "", errors.Errorf("Expected 1 entity. Got %d", len(res.Entities))
 	}
-
 	orgEntity := res.Entities[0]
-	if orgEntity.Type != directory.EntityType_ORGANIZATION {
-		return "", errors.Trace(fmt.Errorf("Expected entity to be of type %s but got type %s", directory.EntityType_ORGANIZATION.String(), orgEntity.Type.String()))
-	}
 
 	var practicePhoneNumber string
-	for _, c := range orgEntity.Contacts {
-		if c.Provisioned && c.ContactType == directory.ContactType_PHONE {
-			practicePhoneNumber = c.Value
+	if !ppnr.ProvisionedPhoneNumber.IsEmpty() {
+		practicePhoneNumber = ppnr.ProvisionedPhoneNumber.String()
+	} else {
+		for _, c := range orgEntity.Contacts {
+			if c.Provisioned && c.ContactType == directory.ContactType_PHONE {
+				practicePhoneNumber = c.Value
+				break
+			}
 		}
 	}
 	if practicePhoneNumber == "" {
-		return "", errors.Trace(fmt.Errorf("Unable to find practice phone number for org %s", orgEntity.ID))
+		return "", errors.Errorf("Unable to find practice phone number for org %s", orgEntity.ID)
 	}
 
 	if err := eh.proxyNumberManager.CallStarted(originatingPhoneNumber, proxyPhoneNumber); err != nil {
@@ -139,7 +137,7 @@ func processOutgoingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 	if err != nil {
 		return "", errors.Trace(err)
 	} else if len(res.Entities) != 1 {
-		return "", errors.Trace(fmt.Errorf("Expected 1 entity. Got %d", len(res.Entities)))
+		return "", errors.Errorf("Expected 1 entity. Got %d", len(res.Entities))
 	}
 
 	var text string
@@ -191,7 +189,7 @@ func processOutgoingCallStatus(ctx context.Context, params *rawmsg.TwilioParams,
 
 	cr, err := eh.dal.LookupCallRequest(params.ParentCallSID)
 	if errors.Cause(err) == dal.ErrCallRequestNotFound {
-		return "", errors.Trace(fmt.Errorf("No call requeht found for call sid %s", params.ParentCallSID))
+		return "", errors.Errorf("No call requeht found for call sid %s", params.ParentCallSID)
 	} else if err != nil {
 		return "", errors.Trace(err)
 	}

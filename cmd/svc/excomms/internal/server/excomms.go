@@ -13,6 +13,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/proxynumber"
+	exsettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
@@ -28,20 +29,14 @@ import (
 	"github.com/sprucehealth/backend/svc/events"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/notification"
+	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
 
 // go vet doesn't like that the first argument to grpcErrorf is not a string so alias the function with a different name :(
-func grpcErrorf(c codes.Code, format string, a ...interface{}) error {
-	if c == codes.Internal {
-		golog.LogDepthf(1, golog.ERR, "Excomms - Internal GRPC Error: %s", fmt.Sprintf(format, a...))
-	}
-	return grpcErrf(c, format, a...)
-}
-
-var grpcErrf = grpc.Errorf
+var grpcErrorf = grpc.Errorf
 
 type excommsService struct {
 	twilio                   *twilio.Client
@@ -54,6 +49,7 @@ type excommsService struct {
 	apiURL                   string
 	directory                directory.DirectoryClient
 	threading                threading.ThreadsClient
+	settings                 settings.SettingsClient
 	sns                      snsiface.SNSAPI
 	externalMessageTopic     string
 	eventTopic               string
@@ -77,6 +73,7 @@ func NewService(
 	apiURL string,
 	directory directory.DirectoryClient,
 	threading threading.ThreadsClient,
+	settings settings.SettingsClient,
 	sns snsiface.SNSAPI,
 	externalMessageTopic string,
 	eventTopic string,
@@ -102,6 +99,7 @@ func NewService(
 		dal:                      dal,
 		directory:                directory,
 		threading:                threading,
+		settings:                 settings,
 		sns:                      sns,
 		externalMessageTopic:     externalMessageTopic,
 		eventTopic:               eventTopic,
@@ -141,7 +139,7 @@ func (e *excommsService) SearchAvailablePhoneNumbers(ctx context.Context, in *ex
 
 	phoneNumbers, _, err := e.twilio.AvailablePhoneNumbers.ListLocal(params)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	res := &excomms.SearchAvailablePhoneNumbersResponse{
@@ -182,30 +180,26 @@ func containsCapability(capabilities []excomms.PhoneNumberCapability, capability
 
 // ProvisionPhoneNumber provisions the phone number provided for the requester.
 func (e *excommsService) ProvisionPhoneNumber(ctx context.Context, in *excomms.ProvisionPhoneNumberRequest) (*excomms.ProvisionPhoneNumberResponse, error) {
-	// check if a phone number has already been provisioned for this purpose
-	ppn, err := e.dal.LookupProvisionedEndpoint(in.ProvisionFor, models.EndpointTypePhone)
-	if errors.Cause(err) != dal.ErrProvisionedEndpointNotFound && err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
-	}
-
-	// if there exists a provisioned phone number,
-	// return the number if it belongs to the requester
-	// else return error
-	if ppn != nil {
-		if in.GetPhoneNumber() != "" {
-			if in.GetPhoneNumber() == ppn.Endpoint {
-				return &excomms.ProvisionPhoneNumberResponse{
-					PhoneNumber: ppn.Endpoint,
-				}, nil
+	// First make sure the number hasn't yet been provisioned based on UUID.
+	// We'll check again on insert to avoid a race condition, but want to check
+	// early to avoid purchasing a number if we don't have to.
+	if in.UUID != "" {
+		prov, err := e.dal.LookupProvisionedEndpointByUUID(in.UUID)
+		if err == nil {
+			// Just to be safe make sure it's provisioned for the same entity and of the expected type
+			if in.ProvisionFor != prov.ProvisionedFor || prov.EndpointType != models.EndpointTypePhone {
+				return nil, grpcErrorf(codes.AlreadyExists, "A provisioned endpoint %+v found with the same UUID %q but differnt owner %q or type %q", prov, in.UUID, in.ProvisionFor, models.EndpointTypePhone)
 			}
-			return nil, grpcErrorf(codes.AlreadyExists, "a different number has already been provisioned. Provision For: %s, number provisioned: %s", in.ProvisionFor, ppn.Endpoint)
-		} else if in.GetAreaCode() != "" {
-			if strings.HasPrefix(ppn.Endpoint[2:], in.GetAreaCode()) {
-				return &excomms.ProvisionPhoneNumberResponse{
-					PhoneNumber: ppn.Endpoint,
-				}, nil
+			// Sanity check that if provisioning by exact phone number then make sure it matches.
+			if pn := in.GetPhoneNumber(); pn != "" && pn != prov.Endpoint {
+				return nil, grpcErrorf(codes.AlreadyExists, "A provisioned endpoint found with the same UUID %q but different number %s expected %s", in.UUID, prov.Endpoint, pn)
 			}
-			return nil, grpcErrorf(codes.AlreadyExists, "a different number has already been provisioned. Provision For: %s, number provisioned: %s", in.ProvisionFor, ppn.Endpoint)
+			return &excomms.ProvisionPhoneNumberResponse{
+				PhoneNumber: prov.Endpoint,
+			}, nil
+		}
+		if errors.Cause(err) != dal.ErrProvisionedEndpointNotFound {
+			return nil, errors.Wrapf(err, "failed to lookup provisioned endpoint by UUID %q", in.UUID)
 		}
 	}
 
@@ -221,12 +215,12 @@ func (e *excommsService) ProvisionPhoneNumber(ctx context.Context, in *excomms.P
 		if e, ok := err.(*twilio.Exception); ok {
 			switch e.Code {
 			case twilio.ErrorCodeInvalidAreaCode:
-				return nil, grpcErrorf(codes.NotFound, e.Message)
+				return nil, grpc.Errorf(codes.NotFound, e.Message)
 			case twilio.ErrorCodeNoPhoneNumberInAreaCode:
-				return nil, grpcErrorf(codes.InvalidArgument, e.Message)
+				return nil, grpc.Errorf(codes.InvalidArgument, e.Message)
 			}
 		}
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	// record the fact that number has been purchased
@@ -234,8 +228,8 @@ func (e *excommsService) ProvisionPhoneNumber(ctx context.Context, in *excomms.P
 		ProvisionedFor: in.ProvisionFor,
 		Endpoint:       ipn.PhoneNumber,
 		EndpointType:   models.EndpointTypePhone,
-	}); err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+	}, in.UUID); err != nil {
+		return nil, errors.Trace(err)
 	}
 
 	events.Publish(e.sns, e.eventTopic, events.Service_EXCOMMS, &excomms.Event{
@@ -266,12 +260,12 @@ func (e *excommsService) DeprovisionPhoneNumber(ctx context.Context, in *excomms
 		PhoneNumber: in.PhoneNumber,
 	})
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	} else if len(list.IncomingPhoneNumbers) == 0 {
 		// nothing to do if no phone number to deprovision found
 		return &excomms.DeprovisionPhoneNumberResponse{}, nil
 	} else if len(list.IncomingPhoneNumbers) != 1 {
-		return nil, grpcErrorf(codes.Internal, fmt.Sprintf("Expected 1 purchased phone number but got %d for %s", len(list.IncomingPhoneNumbers), in.PhoneNumber))
+		return nil, errors.Errorf("Expected 1 purchased phone number but got %d for %s", len(list.IncomingPhoneNumbers), in.PhoneNumber)
 	}
 
 	numberToDeprovision := list.IncomingPhoneNumbers[0]
@@ -279,7 +273,7 @@ func (e *excommsService) DeprovisionPhoneNumber(ctx context.Context, in *excomms
 	// go ahead and release the number from twilio
 	_, err = e.twilio.IncomingPhoneNumber.Delete(numberToDeprovision.SID)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	// mark the number as deprovisioned
@@ -289,9 +283,9 @@ func (e *excommsService) DeprovisionPhoneNumber(ctx context.Context, in *excomms
 		DeprovisionedReason:    &in.Reason,
 	})
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	} else if rowsUpdated > 1 {
-		return nil, grpcErrorf(codes.Internal, fmt.Sprintf("Expected no more than 1 row to be updated but got %d rows updated when deprovisioning %s", rowsUpdated, in.PhoneNumber))
+		return nil, errors.Errorf("Expected no more than 1 row to be updated but got %d rows updated when deprovisioning %s", rowsUpdated, in.PhoneNumber)
 	}
 
 	return &excomms.DeprovisionPhoneNumberResponse{}, nil
@@ -311,11 +305,11 @@ func (e *excommsService) DeprovisionEmail(ctx context.Context, in *excomms.Depro
 		if err != nil {
 			return err
 		} else if rowsUpdated > 1 {
-			return fmt.Errorf("Expected no morem than 1 row to be updated but got %d rows updated when deprovisioning %s", rowsUpdated, in.Email)
+			return errors.Errorf("Expected no more than 1 row to be updated but got %d rows updated when deprovisioning %s", rowsUpdated, in.Email)
 		}
 		return nil
 	}); err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	return &excomms.DeprovisionEmailResponse{}, nil
@@ -338,7 +332,7 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 	if in.UUID != "" {
 		sm, err := e.dal.LookupSentMessageByUUID(in.UUID, destination)
 		if err != nil && errors.Cause(err) != dal.ErrSentMessageNotFound {
-			return nil, grpcErrorf(codes.Internal, err.Error())
+			return nil, errors.Trace(err)
 		} else if sm != nil {
 			// message already handled
 			return &excomms.SendMessageResponse{}, nil
@@ -364,14 +358,14 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 		// default everything to a max size of 3264x3264
 		mediaID, err := media.ParseMediaID(mID)
 		if err != nil {
-			grpcErrorf(codes.Internal, err.Error())
+			errors.Trace(err)
 		}
 
 		signedURL, err := e.signer.SignedURL(fmt.Sprintf("/media/%s/thumbnail", mediaID), url.Values{
 			"width":  []string{"3264"},
 			"height": []string{"3264"}}, ptr.Time(e.clock.Now().Add(time.Minute*15)))
 		if err != nil {
-			grpcErrorf(codes.Internal, err.Error())
+			errors.Trace(err)
 		}
 		resizedURLs[i] = signedURL
 	}
@@ -392,7 +386,7 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 			})
 		}
 		if err := parallel.Wait(); err != nil {
-			return nil, grpcErrorf(codes.Internal, err.Error())
+			return nil, errors.Trace(err)
 		}
 	}
 
@@ -400,9 +394,10 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 	case excomms.ChannelType_VOICE:
 		return nil, grpcErrorf(codes.Unimplemented, "not implemented")
 	case excomms.ChannelType_SMS:
-		msg, _, err := e.twilio.Messages.Send(in.GetSMS().FromPhoneNumber, in.GetSMS().ToPhoneNumber, twilio.MessageParams{
+		sms := in.GetSMS()
+		msg, _, err := e.twilio.Messages.Send(sms.FromPhoneNumber, sms.ToPhoneNumber, twilio.MessageParams{
 			ApplicationSid: e.twilioApplicationSID,
-			Body:           in.GetSMS().Text,
+			Body:           sms.Text,
 			MediaUrl:       resizedURLs,
 		})
 		if err != nil {
@@ -414,22 +409,22 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 					// that they entered an invalid phone number?
 					return &excomms.SendMessageResponse{}, nil
 				case twilio.ErrorCodeMessageLengthExceeded:
-					return nil, grpcErrorf(excomms.ErrorCodeMessageLengthExceeded, "message length can only be 1600 characters in length, message length was %d characters", len(in.GetSMS().Text))
+					return nil, grpcErrorf(excomms.ErrorCodeMessageLengthExceeded, "message length can only be 1600 characters in length, message length was %d characters", len(sms.Text))
 				case twilio.ErrorCodeNotMessageCapableFromPhoneNumber:
-					return nil, grpcErrorf(excomms.ErrorCodeSMSIncapableFromPhoneNumber, "from phone number %s does not have SMS capabilities", in.GetSMS().FromPhoneNumber)
+					return nil, grpcErrorf(excomms.ErrorCodeSMSIncapableFromPhoneNumber, "from phone number %s does not have SMS capabilities", sms.FromPhoneNumber)
 				case twilio.ErrorNoSMSSupportToNumber:
-					return nil, grpcErrorf(excomms.ErrorCodeMessageDeliveryFailed, "the `to` phone number %s is not reachable via sms or mms", in.GetSMS().ToPhoneNumber)
+					return nil, grpcErrorf(excomms.ErrorCodeMessageDeliveryFailed, "the `to` phone number %s is not reachable via sms or mms", sms.ToPhoneNumber)
 				case twilio.ErrorBlackListRuleViolation:
-					return nil, grpcErrorf(excomms.ErrorCodeMessageDeliveryFailed, "the `to` phone nubmer %s requested to STOP receiving messages from %s so no message can be delivered until subscriber responds with START.", in.GetSMS().ToPhoneNumber, in.GetSMS().FromPhoneNumber)
+					return nil, grpcErrorf(excomms.ErrorCodeMessageDeliveryFailed, "the `to` phone number %s requested to STOP receiving messages from %s so no message can be delivered until subscriber responds with START.", sms.ToPhoneNumber, sms.FromPhoneNumber)
 				}
 			}
-			return nil, grpcErrorf(codes.Internal, err.Error())
+			return nil, errors.Trace(err)
 		}
 		sentMessage.Message = &models.SentMessage_SMSMsg{
 			SMSMsg: &models.SMSMessage{
-				FromPhoneNumber: in.GetSMS().FromPhoneNumber,
-				ToPhoneNumber:   in.GetSMS().ToPhoneNumber,
-				Text:            in.GetSMS().Text,
+				FromPhoneNumber: sms.FromPhoneNumber,
+				ToPhoneNumber:   sms.ToPhoneNumber,
+				Text:            sms.Text,
 				ID:              msg.Sid,
 				DateCreated:     uint64(msg.DateCreated.Unix()),
 				DateSent:        uint64(msg.DateSent.Unix()),
@@ -458,7 +453,7 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 
 		id, err := e.idgen.NewID()
 		if err != nil {
-			return nil, grpcErrorf(codes.Internal, err.Error())
+			return nil, errors.Trace(err)
 		}
 
 		subs := make([]*models.EmailMessage_Substitution, len(in.GetEmail().TemplateSubstitutions))
@@ -467,7 +462,7 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 		}
 		sentMessage.Message = &models.SentMessage_EmailMsg{
 			EmailMsg: &models.EmailMessage{
-				ID:                    strconv.FormatInt(int64(id), 10),
+				ID:                    strconv.FormatUint(id, 10),
 				Subject:               in.GetEmail().Subject,
 				Body:                  in.GetEmail().Body,
 				FromName:              in.GetEmail().FromName,
@@ -482,7 +477,7 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 		sentMessage.ID = id
 
 		if err := ec.SendMessage(sentMessage.GetEmailMsg()); err != nil {
-			return nil, grpcErrorf(codes.Internal, err.Error())
+			return nil, errors.Trace(err)
 		}
 	}
 
@@ -504,19 +499,6 @@ func (e *excommsService) InitiatePhoneCall(ctx context.Context, in *excomms.Init
 		return nil, grpcErrorf(codes.InvalidArgument, "missing organization id")
 	}
 
-	// ensure organization exists
-	_, err := directory.SingleEntity(ctx, e.directory, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-			EntityID: in.OrganizationID,
-		},
-	})
-	if err == directory.ErrEntityNotFound {
-		return nil, grpcErrorf(codes.NotFound, "organization with id %s not found", in.OrganizationID)
-	} else if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
-	}
-
 	// ensure caller belongs to the organization
 	sourceEntity, err := directory.SingleEntity(ctx, e.directory, &directory.LookupEntitiesRequest{
 		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
@@ -524,7 +506,7 @@ func (e *excommsService) InitiatePhoneCall(ctx context.Context, in *excomms.Init
 			EntityID: in.CallerEntityID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
-			Depth: 0,
+			Depth: 1,
 			EntityInformation: []directory.EntityInformation{
 				directory.EntityInformation_CONTACTS,
 				directory.EntityInformation_MEMBERSHIPS,
@@ -536,17 +518,17 @@ func (e *excommsService) InitiatePhoneCall(ctx context.Context, in *excomms.Init
 	if err == directory.ErrEntityNotFound {
 		return nil, grpcErrorf(codes.NotFound, "caller %s not found", in.CallerEntityID)
 	} else if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
-	var organizationFound bool
+	var orgEntity *directory.Entity
 	for _, m := range sourceEntity.Memberships {
 		if m.Type == directory.EntityType_ORGANIZATION && m.ID == in.OrganizationID {
-			organizationFound = true
+			orgEntity = m
 			break
 		}
 	}
-	if !organizationFound {
+	if orgEntity == nil {
 		return nil, grpcErrorf(codes.NotFound, "%s is not the phone number of a caller belonging to the organization.", in.FromPhoneNumber)
 	}
 
@@ -572,7 +554,7 @@ func (e *excommsService) InitiatePhoneCall(ctx context.Context, in *excomms.Init
 	if grpc.Code(err) == codes.NotFound {
 		return nil, grpcErrorf(codes.NotFound, "callee %s not found", in.ToPhoneNumber)
 	} else if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	// find an external entity for the callee
@@ -600,7 +582,7 @@ func (e *excommsService) InitiatePhoneCall(ctx context.Context, in *excomms.Init
 		currentOriginatingPhoneNumber, err := e.dal.CurrentOriginatingNumber(in.CallerEntityID, in.DeviceID)
 		if err != nil {
 			if errors.Cause(err) != dal.ErrOriginatingNumberNotFound {
-				return nil, grpcErrorf(codes.Internal, err.Error())
+				return nil, errors.Trace(err)
 			}
 
 			// use a number associated with the provider's account as the originating number
@@ -608,7 +590,7 @@ func (e *excommsService) InitiatePhoneCall(ctx context.Context, in *excomms.Init
 				if c.ContactType == directory.ContactType_PHONE && !c.Provisioned {
 					originatingPhoneNumber, err = phone.ParseNumber(c.Value)
 					if err != nil {
-						return nil, grpcErrorf(codes.Internal, "phone number %s for entity is of invalid format: %s", c.Value, err.Error())
+						return nil, errors.Errorf("phone number %q for entity is of invalid format: %s", c.Value, err)
 					}
 					break
 				}
@@ -619,7 +601,7 @@ func (e *excommsService) InitiatePhoneCall(ctx context.Context, in *excomms.Init
 	}
 
 	if originatingPhoneNumber.IsEmpty() {
-		return nil, grpcErrorf(codes.Internal, "Unable to find a default phone number for entity %s from which to place the call", sourceEntity.ID)
+		return nil, errors.Errorf("Unable to find a default phone number for entity %s from which to place the call", sourceEntity.ID)
 	}
 
 	// track originating phone number
@@ -631,12 +613,39 @@ func (e *excommsService) InitiatePhoneCall(ctx context.Context, in *excomms.Init
 
 	destinationPhoneNumber, err := phone.ParseNumber(in.ToPhoneNumber)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, "destination phone number %s is of invalid format: %s", in.ToPhoneNumber, err.Error())
+		return nil, errors.Errorf("destination phone number %s is of invalid format: %s", in.ToPhoneNumber, err)
 	}
 
-	proxyPhoneNumber, err := e.proxyNumberManager.ReserveNumber(originatingPhoneNumber, destinationPhoneNumber, destinationEntity.ID, sourceEntity.ID, in.OrganizationID)
+	var provisionedPhoneNumberStr string
+	val, err := settings.GetTextValue(ctx, e.settings, &settings.GetValuesRequest{
+		NodeID: sourceEntity.ID,
+		Keys: []*settings.ConfigKey{
+			{
+				Key: exsettings.ConfigKeyDefaultProvisionedPhoneNumber,
+			},
+		},
+	})
+	if err == nil {
+		provisionedPhoneNumberStr = val.Value
+	} else if errors.Cause(err) != settings.ErrValueNotFound {
+		return nil, errors.Errorf("unable to get default number setting for entity %s: %s", sourceEntity.ID, err)
+	} else {
+		// Use first provisioned number for organization if entity doesn't have a default set
+		for _, c := range orgEntity.Contacts {
+			if c.Provisioned && c.ContactType == directory.ContactType_PHONE {
+				provisionedPhoneNumberStr = c.Value
+				break
+			}
+		}
+	}
+	provisionedPhoneNumber, err := phone.ParseNumber(provisionedPhoneNumberStr)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Errorf("failed to parse number %q for entity %s in org %s: %s", provisionedPhoneNumberStr, sourceEntity.ID, orgEntity.ID, err)
+	}
+
+	proxyPhoneNumber, err := e.proxyNumberManager.ReserveNumber(originatingPhoneNumber, destinationPhoneNumber, provisionedPhoneNumber, destinationEntity.ID, sourceEntity.ID, in.OrganizationID)
+	if err != nil {
+		return nil, errors.Trace(err)
 	}
 	return &excomms.InitiatePhoneCallResponse{
 		ProxyPhoneNumber:       proxyPhoneNumber.String(),
@@ -656,7 +665,7 @@ func (e *excommsService) ProvisionEmailAddress(ctx context.Context, req *excomms
 	provisionedEndpoint, err := e.dal.LookupProvisionedEndpoint(req.ProvisionFor, models.EndpointTypeEmail)
 	if err != nil {
 		if errors.Cause(err) != dal.ErrProvisionedEndpointNotFound {
-			return nil, grpcErrorf(codes.Internal, err.Error())
+			return nil, errors.Trace(err)
 		}
 	} else if provisionedEndpoint.Endpoint == emailAddress {
 		return &excomms.ProvisionEmailAddressResponse{
@@ -671,8 +680,8 @@ func (e *excommsService) ProvisionEmailAddress(ctx context.Context, req *excomms
 		EndpointType:   models.EndpointTypeEmail,
 		ProvisionedFor: req.ProvisionFor,
 		Endpoint:       emailAddress,
-	}); err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+	}, ""); err != nil {
+		return nil, errors.Trace(err)
 	}
 
 	events.Publish(e.sns, e.eventTopic, events.Service_EXCOMMS, &excomms.Event{
@@ -707,18 +716,18 @@ func (e *excommsService) BlockNumber(ctx context.Context, in *excomms.BlockNumbe
 	if errors.Cause(err) == dal.ErrProvisionedEndpointNotFound {
 		return nil, grpcErrorf(codes.NotFound, "provisioned phone number %s not found", in.ProvisionedPhoneNumber)
 	} else if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	} else if pe.Endpoint != provisionedPhoneNumber.String() {
 		return nil, grpcErrorf(codes.InvalidArgument, "phone number %s not owned by %s", in.ProvisionedPhoneNumber, in.OrgID)
 	}
 
 	if err := e.dal.InsertBlockedNumber(ctx, blockedPhoneNumber, provisionedPhoneNumber); err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	blockedNumbers, err := e.dal.LookupBlockedNumbers(ctx, provisionedPhoneNumber)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	return &excomms.BlockNumberResponse{
@@ -738,12 +747,12 @@ func (e *excommsService) UnblockNumber(ctx context.Context, in *excomms.UnblockN
 	}
 
 	if err := e.dal.DeleteBlockedNumber(ctx, blockedPhoneNumber, provisionedPhoneNumber); err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	blockedNumbers, err := e.dal.LookupBlockedNumbers(ctx, provisionedPhoneNumber)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	return &excomms.UnblockNumberResponse{
@@ -758,7 +767,7 @@ func (e *excommsService) ListBlockedNumbers(ctx context.Context, in *excomms.Lis
 
 	blockedNumbers, err := e.dal.LookupBlockedNumbers(ctx, provisionedPhoneNumber)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	return &excomms.ListBlockedNumbersResponse{

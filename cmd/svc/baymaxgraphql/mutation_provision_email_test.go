@@ -20,7 +20,8 @@ func TestProvisionEmail_Organization(t *testing.T) {
 
 	ctx := context.Background()
 	acc := &auth.Account{
-		ID: "account:12345",
+		ID:   "account:12345",
+		Type: auth.AccountType_PROVIDER,
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
 
@@ -168,7 +169,8 @@ func TestProvisionEmail_Internal(t *testing.T) {
 
 	ctx := context.Background()
 	acc := &auth.Account{
-		ID: "account:12345",
+		ID:   "account:12345",
+		Type: auth.AccountType_PROVIDER,
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
 
@@ -313,7 +315,8 @@ func TestProvisionEmail_Organization_DomainExists(t *testing.T) {
 
 	ctx := context.Background()
 	acc := &auth.Account{
-		ID: "account:12345",
+		ID:   "account:12345",
+		Type: auth.AccountType_PROVIDER,
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
 
@@ -461,7 +464,8 @@ func TestProvisionEmail_Organization_DomainInUse(t *testing.T) {
 
 	ctx := context.Background()
 	acc := &auth.Account{
-		ID: "account:12345",
+		ID:   "account:12345",
+		Type: auth.AccountType_PROVIDER,
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
 
@@ -561,7 +565,8 @@ func TestProvisionEmail_Organization_EmailInUse(t *testing.T) {
 
 	ctx := context.Background()
 	acc := &auth.Account{
-		ID: "account:12345",
+		ID:   "account:12345",
+		Type: auth.AccountType_PROVIDER,
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
 

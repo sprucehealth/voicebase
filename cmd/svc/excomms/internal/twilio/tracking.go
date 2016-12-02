@@ -1,10 +1,9 @@
 package twilio
 
 import (
+	"context"
 	"fmt"
 	"strings"
-
-	"context"
 
 	segment "github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/libs/analytics"

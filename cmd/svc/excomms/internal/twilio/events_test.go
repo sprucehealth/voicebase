@@ -1,9 +1,8 @@
 package twilio
 
 import (
-	"encoding/base64"
-
 	"context"
+	"encoding/base64"
 
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"

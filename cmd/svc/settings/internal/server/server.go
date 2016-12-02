@@ -6,6 +6,7 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/settings/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/settings/internal/models"
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/svc/settings"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -32,7 +33,7 @@ func (s *server) RegisterConfigs(ctx context.Context, in *settings.RegisterConfi
 
 	// TODO: Validate incoming config
 	if err := s.dal.SetConfigs(configs); err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 	return &settings.RegisterConfigsResponse{}, nil
 }
@@ -45,7 +46,7 @@ func (s *server) SetValue(ctx context.Context, in *settings.SetValueRequest) (*s
 	// pull up config
 	config, err := s.getConfig(in.Value.Key.Key)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	} else if config == nil {
 		return nil, grpcErrorf(codes.NotFound, "config with key %s not found", in.Value.Key.Key)
 	}
@@ -62,7 +63,7 @@ func (s *server) SetValue(ctx context.Context, in *settings.SetValueRequest) (*s
 	// TODO: Verify entityID is valid?
 	// ensure that entityID is populated
 	if err := s.dal.SetValues(in.NodeID, []*models.Value{transformedValue}); err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	return &settings.SetValueResponse{}, nil
@@ -76,7 +77,7 @@ func (s *server) GetValues(ctx context.Context, in *settings.GetValuesRequest) (
 
 	values, err := s.dal.GetValues(in.NodeID, keys)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	// create a value map to quickly check if data is present
@@ -96,7 +97,7 @@ func (s *server) GetValues(ctx context.Context, in *settings.GetValuesRequest) (
 		// lookup config
 		config, err := s.getConfig(k.Key)
 		if err != nil {
-			return nil, grpcErrorf(codes.Internal, err.Error())
+			return nil, errors.Trace(err)
 		} else if config == nil {
 			return nil, grpcErrorf(codes.NotFound, "config with key %s not found", k.Key)
 		}
@@ -111,33 +112,39 @@ func (s *server) GetValues(ctx context.Context, in *settings.GetValuesRequest) (
 		}
 		switch config.Type {
 		case models.ConfigType_BOOLEAN:
-			if config.GetBoolean().Default != nil {
+			if def := config.GetBoolean().Default; def != nil {
 				val.Value = &models.Value_Boolean{
-					Boolean: config.GetBoolean().Default,
+					Boolean: def,
 				}
 			}
 		case models.ConfigType_SINGLE_SELECT:
-			if config.GetSingleSelect().Default != nil {
+			if def := config.GetSingleSelect().Default; def != nil {
 				val.Value = &models.Value_SingleSelect{
-					SingleSelect: config.GetSingleSelect().Default,
+					SingleSelect: def,
 				}
 			}
 		case models.ConfigType_MULTI_SELECT:
-			if config.GetMultiSelect().Default != nil {
+			if def := config.GetMultiSelect().Default; def != nil {
 				val.Value = &models.Value_MultiSelect{
-					MultiSelect: config.GetMultiSelect().Default,
+					MultiSelect: def,
 				}
 			}
 		case models.ConfigType_STRING_LIST:
-			if config.GetStringList().Default != nil {
+			if def := config.GetStringList().Default; def != nil {
 				val.Value = &models.Value_StringList{
-					StringList: config.GetStringList().Default,
+					StringList: def,
 				}
 			}
 		case models.ConfigType_INTEGER:
-			if config.GetInteger().Default != nil {
+			if def := config.GetInteger().Default; def != nil {
 				val.Value = &models.Value_Integer{
-					Integer: config.GetInteger().Default,
+					Integer: def,
+				}
+			}
+		case models.ConfigType_TEXT:
+			if def := config.GetText().Default; def != nil {
+				val.Value = &models.Value_Text{
+					Text: def,
 				}
 			}
 		default:
@@ -155,12 +162,12 @@ func (s *server) GetValues(ctx context.Context, in *settings.GetValuesRequest) (
 func (s *server) GetNodeValues(ctx context.Context, in *settings.GetNodeValuesRequest) (*settings.GetNodeValuesResponse, error) {
 	configs, err := s.dal.GetAllConfigs()
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	values, err := s.dal.GetNodeValues(in.NodeID)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	// create a value map to quickly check if data is present
@@ -188,33 +195,39 @@ func (s *server) GetNodeValues(ctx context.Context, in *settings.GetNodeValuesRe
 		}
 		switch c.Type {
 		case models.ConfigType_BOOLEAN:
-			if c.GetBoolean().Default != nil {
+			if def := c.GetBoolean().Default; def != nil {
 				val.Value = &models.Value_Boolean{
-					Boolean: c.GetBoolean().Default,
+					Boolean: def,
 				}
 			}
 		case models.ConfigType_SINGLE_SELECT:
-			if c.GetSingleSelect().Default != nil {
+			if def := c.GetSingleSelect().Default; def != nil {
 				val.Value = &models.Value_SingleSelect{
-					SingleSelect: c.GetSingleSelect().Default,
+					SingleSelect: def,
 				}
 			}
 		case models.ConfigType_MULTI_SELECT:
-			if c.GetMultiSelect().Default != nil {
+			if def := c.GetMultiSelect().Default; def != nil {
 				val.Value = &models.Value_MultiSelect{
-					MultiSelect: c.GetMultiSelect().Default,
+					MultiSelect: def,
 				}
 			}
 		case models.ConfigType_STRING_LIST:
-			if c.GetStringList().Default != nil {
+			if def := c.GetStringList().Default; def != nil {
 				val.Value = &models.Value_StringList{
-					StringList: c.GetStringList().Default,
+					StringList: def,
 				}
 			}
 		case models.ConfigType_INTEGER:
-			if c.GetInteger().Default != nil {
+			if def := c.GetInteger().Default; def != nil {
 				val.Value = &models.Value_Integer{
-					Integer: c.GetInteger().Default,
+					Integer: def,
+				}
+			}
+		case models.ConfigType_TEXT:
+			if def := c.GetText().Default; def != nil {
+				val.Value = &models.Value_Text{
+					Text: def,
 				}
 			}
 		default:
@@ -236,7 +249,7 @@ func (s *server) GetNodeValues(ctx context.Context, in *settings.GetNodeValuesRe
 func (s *server) GetConfigs(ctx context.Context, in *settings.GetConfigsRequest) (*settings.GetConfigsResponse, error) {
 	configs, err := s.dal.GetConfigs(in.Keys)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	transformedConfigs := make([]*settings.Config, len(configs))

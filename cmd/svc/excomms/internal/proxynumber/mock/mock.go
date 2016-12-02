@@ -23,8 +23,8 @@ func NewMockManager(t *testing.T) *mockManager {
 	}
 }
 
-func (m *mockManager) ReserveNumber(originatingNumber, destinationNumber phone.Number, destinationEntityID, sourceEntityID, organizationID string) (phone.Number, error) {
-	rets := m.Record(originatingNumber, destinationNumber, destinationEntityID, sourceEntityID, organizationID)
+func (m *mockManager) ReserveNumber(originatingNumber, destinationNumber, provisionedNumber phone.Number, destinationEntityID, sourceEntityID, organizationID string) (phone.Number, error) {
+	rets := m.Record(originatingNumber, destinationNumber, provisionedNumber, destinationEntityID, sourceEntityID, organizationID)
 	if len(rets) == 0 {
 		return phone.Number(""), nil
 	}

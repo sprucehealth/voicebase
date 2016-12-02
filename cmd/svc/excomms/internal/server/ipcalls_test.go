@@ -34,7 +34,7 @@ func TestInitiateIPCall(t *testing.T) {
 
 	clk := clock.NewManaged(time.Unix(1e9, 0))
 	svc := NewService("accountSID", "authToken", "appSID", "sigSID", "sig", "vidSID", dl,
-		"apiURL", dir, nil, nil, "extTopic", "evTopic", clk, "", nil, "", nil, nil, nil, nil, noti)
+		"apiURL", dir, nil, nil, nil, "extTopic", "evTopic", clk, "", nil, "", nil, nil, nil, nil, noti)
 
 	identCounter := 0
 	svc.(*excommsService).genIPCallIdentity = func() (string, error) {
@@ -142,7 +142,7 @@ func TestIPCall(t *testing.T) {
 
 	clk := clock.NewManaged(time.Unix(1e9, 0))
 	svc := NewService("accountSID", "authToken", "appSID", "sigSID", "sig", "vidSID", dl,
-		"apiURL", nil, nil, nil, "extTopic", "evTopic", clk, "", nil, "", nil, nil, nil, nil, nil)
+		"apiURL", nil, nil, nil, nil, "extTopic", "evTopic", clk, "", nil, "", nil, nil, nil, nil, nil)
 
 	ipcID, err := models.NewIPCallID()
 	test.OK(t, err)
@@ -218,7 +218,7 @@ func TestIPCall_Timeout(t *testing.T) {
 	conc.Testing = true
 	clk := clock.NewManaged(time.Unix(1e9, 0))
 	svc := NewService("accountSID", "authToken", "appSID", "sigSID", "sig", "vidSID", dl,
-		"apiURL", dir, thr, nil, "extTopic", "evTopic", clk, "", nil, "", nil, nil, nil, nil, nil)
+		"apiURL", dir, thr, nil, nil, "extTopic", "evTopic", clk, "", nil, "", nil, nil, nil, nil, nil)
 
 	ipcID, err := models.NewIPCallID()
 	test.OK(t, err)
@@ -320,7 +320,7 @@ func TestPendingIPCalls(t *testing.T) {
 
 	clk := clock.NewManaged(time.Unix(1e9, 0))
 	svc := NewService("accountSID", "authToken", "appSID", "sigSID", "sig", "vidSID", dl,
-		"apiURL", nil, nil, nil, "extTopic", "evTopic", clk, "", nil, "", nil, nil, nil, nil, nil)
+		"apiURL", nil, nil, nil, nil, "extTopic", "evTopic", clk, "", nil, "", nil, nil, nil, nil, nil)
 
 	dl.Expect(mock.NewExpectation(dl.PendingIPCallsForAccount, "account_1").WithReturns([]*models.IPCall{}, nil))
 	res, err := svc.PendingIPCalls(nil, &excomms.PendingIPCallsRequest{AccountID: "account_1"})
@@ -402,7 +402,7 @@ func TestPendingIPCalls_Timeout(t *testing.T) {
 
 	clk := clock.NewManaged(time.Unix(1e9, 0))
 	svc := NewService("accountSID", "authToken", "appSID", "sigSID", "sig", "vidSID", dl,
-		"apiURL", dir, thr, nil, "extTopic", "evTopic", clk, "", nil, "", nil, nil, nil, nil, nil)
+		"apiURL", dir, thr, nil, nil, "extTopic", "evTopic", clk, "", nil, "", nil, nil, nil, nil, nil)
 
 	dl.Expect(mock.NewExpectation(dl.PendingIPCallsForAccount, "account_1").WithReturns([]*models.IPCall{}, nil))
 	res, err := svc.PendingIPCalls(nil, &excomms.PendingIPCallsRequest{AccountID: "account_1"})
@@ -490,7 +490,7 @@ func TestUpdateIPCall(t *testing.T) {
 
 	clk := clock.NewManaged(time.Unix(1e9, 0))
 	svc := NewService("accountSID", "authToken", "appSID", "sigSID", "sig", "vidSID", dl,
-		"apiURL", dir, thr, nil, "extTopic", "evTopic", clk, "", nil, "", nil, nil, nil, nil, nil)
+		"apiURL", dir, thr, nil, nil, "extTopic", "evTopic", clk, "", nil, "", nil, nil, nil, nil, nil)
 
 	ipcid, err := models.NewIPCallID()
 	test.OK(t, err)

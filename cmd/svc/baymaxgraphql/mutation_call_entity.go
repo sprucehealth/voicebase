@@ -10,10 +10,12 @@ import (
 	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/libs/analytics"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/gqldecode"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/graphql"
+	"github.com/sprucehealth/graphql/gqlerrors"
 )
 
 // callEntity
@@ -26,7 +28,7 @@ const (
 const (
 	callEntityErrorCodeEntityNotFound     = "ENTITY_NOT_FOUND"
 	callEntityErrorCodeEntityHasNoContact = "ENTITY_HAS_NO_CONTACT"
-	callEntityInvalidPhoneNumber          = "INVALID_PHONE_NUMBER"
+	callEntityErrorCodeInvalidPhoneNumber = "INVALID_PHONE_NUMBER"
 )
 
 type callEntityOutput struct {
@@ -52,10 +54,6 @@ var callEntityTypeEnumType = graphql.NewEnum(graphql.EnumConfig{
 			Value:       callEntityTypeReturnPhoneNumber,
 			Description: "Return a phone number to call",
 		},
-		callEntityInvalidPhoneNumber: &graphql.EnumValueConfig{
-			Value:       callEntityInvalidPhoneNumber,
-			Description: "Invalid phone number",
-		},
 	},
 })
 
@@ -70,6 +68,10 @@ var callEntityErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
 		callEntityErrorCodeEntityHasNoContact: &graphql.EnumValueConfig{
 			Value:       callEntityErrorCodeEntityHasNoContact,
 			Description: "An entity does not have a viable contact",
+		},
+		callEntityErrorCodeInvalidPhoneNumber: &graphql.EnumValueConfig{
+			Value:       callEntityErrorCodeInvalidPhoneNumber,
+			Description: "Invalid phone number",
 		},
 	},
 })
@@ -124,6 +126,14 @@ var callEntityOutputType = graphql.NewObject(graphql.ObjectConfig{
 	},
 })
 
+type callEntityInput struct {
+	ClientMutationID       string `gql:"clientMutationId"`
+	DestinationEntityID    string `gql:"destinationEntityID"`
+	OriginatingPhoneNumber string `gql:"originatingPhoneNumber"`
+	DestinationPhoneNumber string `gql:"destinationPhoneNumber"`
+	Type                   string `gql:"type"`
+}
+
 var callEntityMutation = &graphql.Field{
 	Type: graphql.NewNonNull(callEntityOutputType),
 	Args: graphql.FieldConfigArgument{
@@ -139,51 +149,56 @@ var callEntityMutation = &graphql.Field{
 			return nil, errors.ErrNotAuthenticated(ctx)
 		}
 
-		input := p.Args["input"].(map[string]interface{})
-		mutationID, _ := input["clientMutationId"].(string)
-		originatingPhoneNumber, _ := input["originatingPhoneNumber"].(string)
-		destinationPhoneNumber, _ := input["destinationPhoneNumber"].(string)
-		entityID := input["destinationEntityID"].(string)
+		var in callEntityInput
+		if err := gqldecode.Decode(p.Args["input"].(map[string]interface{}), &in); err != nil {
+			switch err := err.(type) {
+			case gqldecode.ErrValidationFailed:
+				return nil, gqlerrors.FormatError(fmt.Errorf("%s is invalid: %s", err.Field, err.Reason))
+			}
+			return nil, errors.InternalError(p.Context, err)
+		}
 
-		if destinationPhoneNumber == "" {
+		if in.DestinationPhoneNumber == "" {
 			return nil, fmt.Errorf("destination phone number for entity required")
 		}
 
-		// the phone number specified has to be one of the contact values for the external
-		// entity
-		pn, err := phone.ParseNumber(destinationPhoneNumber)
+		// Validate the originating and destination phone numbers
+
+		destinationNumber, err := phone.ParseNumber(in.DestinationPhoneNumber)
 		if err != nil {
 			return &callEntityOutput{
-				ClientMutationID: mutationID,
+				ClientMutationID: in.ClientMutationID,
 				Success:          false,
-				ErrorCode:        callEntityInvalidPhoneNumber,
+				ErrorCode:        callEntityErrorCodeInvalidPhoneNumber,
 				ErrorMessage:     "The destination phone number is not a valid US phone number",
 			}, nil
-		} else if !pn.IsCallable() {
+		} else if !destinationNumber.IsCallable() {
 			return &callEntityOutput{
-				ClientMutationID: mutationID,
+				ClientMutationID: in.ClientMutationID,
 				Success:          false,
-				ErrorCode:        callEntityInvalidPhoneNumber,
+				ErrorCode:        callEntityErrorCodeInvalidPhoneNumber,
 				ErrorMessage:     "The destination phone number cannot be called given that it represents an unavailable phone number.",
 			}, nil
 		}
 
-		if originatingPhoneNumber != "" {
-			_, err := phone.ParseNumber(originatingPhoneNumber)
+		if in.OriginatingPhoneNumber != "" {
+			_, err := phone.ParseNumber(in.OriginatingPhoneNumber)
 			if err != nil {
 				return &callEntityOutput{
-					ClientMutationID: mutationID,
+					ClientMutationID: in.ClientMutationID,
 					Success:          false,
-					ErrorCode:        callEntityInvalidPhoneNumber,
+					ErrorCode:        callEntityErrorCodeInvalidPhoneNumber,
 					ErrorMessage:     "The originating phone number is not a valid US phone number",
 				}, nil
 			}
 		}
 
+		// Lookup the callee entity and make sure the destination phone number is in the contacts
+
 		calleeEnt, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
 			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
 			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-				EntityID: entityID,
+				EntityID: in.DestinationEntityID,
 			},
 			RequestedInformation: &directory.RequestedInformation{
 				Depth:             0,
@@ -198,7 +213,7 @@ var callEntityMutation = &graphql.Field{
 		}
 		if calleeEnt == nil {
 			return &callEntityOutput{
-				ClientMutationID: mutationID,
+				ClientMutationID: in.ClientMutationID,
 				Success:          false,
 				ErrorCode:        callEntityErrorCodeEntityNotFound,
 				ErrorMessage:     "The callee was not found.",
@@ -207,7 +222,7 @@ var callEntityMutation = &graphql.Field{
 
 		numberFound := false
 		for _, contact := range calleeEnt.Contacts {
-			if contact.Value == pn.String() {
+			if contact.Value == destinationNumber.String() {
 				numberFound = true
 				break
 			}
@@ -215,6 +230,8 @@ var callEntityMutation = &graphql.Field{
 		if !numberFound {
 			return nil, fmt.Errorf("phone number specified is not one of entity's contact values")
 		}
+
+		// Lookup the caller in the same org as the callee
 
 		var org *directory.Entity
 		for _, em := range calleeEnt.Memberships {
@@ -225,7 +242,7 @@ var callEntityMutation = &graphql.Field{
 		}
 		if org == nil {
 			return &callEntityOutput{
-				ClientMutationID: mutationID,
+				ClientMutationID: in.ClientMutationID,
 				ErrorCode:        callEntityErrorCodeEntityNotFound,
 				ErrorMessage:     "The callee was not found.",
 			}, nil
@@ -237,20 +254,20 @@ var callEntityMutation = &graphql.Field{
 		}
 		if callerEnt == nil {
 			return &callEntityOutput{
-				ClientMutationID: mutationID,
+				ClientMutationID: in.ClientMutationID,
 				ErrorCode:        callEntityErrorCodeEntityNotFound,
 				ErrorMessage:     "The caller was not found.",
 			}, nil
 		}
 
 		ireq := &excomms.InitiatePhoneCallRequest{
-			FromPhoneNumber: originatingPhoneNumber,
-			ToPhoneNumber:   destinationPhoneNumber,
+			FromPhoneNumber: in.OriginatingPhoneNumber,
+			ToPhoneNumber:   in.DestinationPhoneNumber,
 			CallerEntityID:  callerEnt.ID,
 			OrganizationID:  org.ID,
 			DeviceID:        headers.DeviceID,
 		}
-		switch input["type"].(string) {
+		switch in.Type {
 		case callEntityTypeConnectParties:
 			ireq.CallInitiationType = excomms.InitiatePhoneCallRequest_CONNECT_PARTIES
 		case callEntityTypeReturnPhoneNumber:
@@ -263,12 +280,12 @@ var callEntityMutation = &graphql.Field{
 
 		proxyPhoneNumberDisplayValue, err := phone.Format(ires.ProxyPhoneNumber, phone.Pretty)
 		if err != nil {
-			golog.Errorf("Unable to format proxy phone number %s :%s ", ires.ProxyPhoneNumber, err.Error())
+			golog.ContextLogger(ctx).Errorf("Unable to format proxy phone number %s: %s", ires.ProxyPhoneNumber, err)
 		}
 
 		originatingPhoneNumberDisplayValue, err := phone.Format(ires.OriginatingPhoneNumber, phone.Pretty)
 		if err != nil {
-			golog.Errorf("Unable to format originating phone number %s: %s", ires.OriginatingPhoneNumber, err.Error())
+			golog.ContextLogger(ctx).Errorf("Unable to format originating phone number %s: %s", ires.OriginatingPhoneNumber, err)
 		}
 
 		analytics.SegmentTrack(&segment.Track{
@@ -276,14 +293,14 @@ var callEntityMutation = &graphql.Field{
 			UserId: acc.ID,
 			Properties: map[string]interface{}{
 				"org_id":                   org.ID,
-				"originating_phone_number": originatingPhoneNumber,
+				"originating_phone_number": in.OriginatingPhoneNumber,
 				"proxy_phone_number":       ires.ProxyPhoneNumber,
 				"platform":                 headers.Platform.String(),
 			},
 		})
 
 		return &callEntityOutput{
-			ClientMutationID:                   mutationID,
+			ClientMutationID:                   in.ClientMutationID,
 			Success:                            true,
 			ProxyPhoneNumber:                   ires.ProxyPhoneNumber,
 			ProxyPhoneNumberDisplayValue:       proxyPhoneNumberDisplayValue,

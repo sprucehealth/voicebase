@@ -4,16 +4,18 @@ import (
 	"github.com/sprucehealth/backend/svc/settings"
 )
 
+// Keys for settings
 const (
-	ConfigKeyForwardingList             = "forwarding_list"
-	ConfigKeySendCallsToVoicemail       = "send_calls_to_voicemail"
-	ConfigKeyVoicemailOption            = "voicemail_option"
-	ConfigKeyTranscribeVoicemail        = "transcribe_voicemail"
-	ConfigKeyAfterHoursVociemailEnabled = "afterhours_voicemail_enabled"
-	ConfigKeyForwardingListTimeout      = "forwarding_list_timeout"
-	ConfigKeyPauseBeforeCallConnect     = "pause_before_call_connect"
-	ConfigKeyExposeCaller               = "expose_caller"
-	ConfigKeyCallScreeningEnabled       = "call_screening_enabled"
+	ConfigKeyForwardingList                = "forwarding_list"
+	ConfigKeySendCallsToVoicemail          = "send_calls_to_voicemail"
+	ConfigKeyVoicemailOption               = "voicemail_option"
+	ConfigKeyTranscribeVoicemail           = "transcribe_voicemail"
+	ConfigKeyAfterHoursVociemailEnabled    = "afterhours_voicemail_enabled"
+	ConfigKeyForwardingListTimeout         = "forwarding_list_timeout"
+	ConfigKeyPauseBeforeCallConnect        = "pause_before_call_connect"
+	ConfigKeyExposeCaller                  = "expose_caller"
+	ConfigKeyCallScreeningEnabled          = "call_screening_enabled"
+	ConfigKeyDefaultProvisionedPhoneNumber = "default_provisioned_phone_number"
 )
 
 //
@@ -181,5 +183,16 @@ var TranscribeVoicemailConfig = &settings.Config{
 				Value: false,
 			},
 		},
+	},
+}
+
+var DefaultProvisionedPhoneNumberConfig = &settings.Config{
+	Title:          "Default outgoing provisioned phone number",
+	Key:            ConfigKeyDefaultProvisionedPhoneNumber,
+	PossibleOwners: []settings.OwnerType{settings.OwnerType_INTERNAL_ENTITY},
+	AllowSubkeys:   false,
+	Type:           settings.ConfigType_TEXT,
+	Config: &settings.Config_Text{
+		Text: &settings.TextConfig{},
 	},
 }

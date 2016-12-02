@@ -1,9 +1,8 @@
 package externalmsg
 
 import (
-	"strings"
-
 	"context"
+	"strings"
 
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/phone"

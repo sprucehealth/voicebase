@@ -89,6 +89,10 @@ func validateValueAgainstConfig(value *settings.Value, config *models.Config) (*
 		if transformedValue.GetInteger() == nil {
 			return nil, fmt.Errorf("No integer value specified for %s", transformedValue.Key)
 		}
+	case models.ConfigType_TEXT:
+		if transformedValue.GetText() == nil {
+			return nil, fmt.Errorf("No text value specified for %s", transformedValue.Key)
+		}
 	case models.ConfigType_STRING_LIST:
 		if transformedValue.GetStringList() == nil || len(transformedValue.GetStringList().Values) == 0 {
 			if config.OptionalValue {

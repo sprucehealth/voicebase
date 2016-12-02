@@ -183,6 +183,7 @@ message ProvisionPhoneNumberRequest {
 		string phone_number = 2;
 		string area_code = 3;
 	}
+	string uuid = 4 [(gogoproto.customname) = "UUID"];
 }
 
 message ProvisionPhoneNumberResponse {
@@ -336,9 +337,6 @@ service ExComms {
 	// SearchAvailablephoneNumbers returns a list of available phone numbers based on the search criteria.
 	rpc SearchAvailablePhoneNumbers (SearchAvailablePhoneNumbersRequest) returns (SearchAvailablePhoneNumbersResponse);
 
-	// ProvisionPhoneNumber provisions the phone number provided for the requester.
-	rpc ProvisionPhoneNumber (ProvisionPhoneNumberRequest) returns (ProvisionPhoneNumberResponse);
-
 	// DeprovisionPhoneNumber releases the phone number if one is currently provisioned.
 	rpc DeprovisionPhoneNumber (DeprovisionPhoneNumberRequest) returns (DeprovisionPhoneNumberResponse);
 
@@ -357,6 +355,9 @@ service ExComms {
 
 	// ProvisionEmailAddress provisions an email address for the requester.
 	rpc ProvisionEmailAddress (ProvisionEmailAddressRequest) returns (ProvisionEmailAddressResponse);
+
+	// ProvisionPhoneNumber provisions the phone number provided for the requester.
+	rpc ProvisionPhoneNumber (ProvisionPhoneNumberRequest) returns (ProvisionPhoneNumberResponse);
 
 	// SendMessage sends the message over an external channel as specified in the SendMessageRequest.
 	rpc SendMessage (SendMessageRequest) returns (SendMessageResponse);

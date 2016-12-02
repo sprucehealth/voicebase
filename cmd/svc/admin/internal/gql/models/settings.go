@@ -109,6 +109,8 @@ func transformSettingToModel(ctx context.Context, vc *valueAndConfig) (*Setting,
 		ms.Values = values
 	case settings.ConfigType_INTEGER:
 		ms.Value = fmt.Sprintf("%d", vc.Value.GetInteger().Value)
+	case settings.ConfigType_TEXT:
+		ms.Value = vc.Value.GetText().Value
 	default:
 		golog.Errorf("Unknown setting type %s", vc.Value.Type)
 	}

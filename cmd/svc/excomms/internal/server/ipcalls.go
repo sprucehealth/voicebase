@@ -1,13 +1,12 @@
 package server
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
 	"io"
 	"time"
-
-	"context"
 
 	segment "github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
@@ -68,7 +67,7 @@ func (e *excommsService) InitiateIPCall(ctx context.Context, req *excomms.Initia
 		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 	})
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 	if len(leres.Entities) != len(entityIDs) {
 		return nil, grpcErrorf(codes.InvalidArgument, "Unable to find all entities")
@@ -113,7 +112,7 @@ func (e *excommsService) InitiateIPCall(ctx context.Context, req *excomms.Initia
 		}
 		p.Identity, err = e.genIPCallIdentity()
 		if err != nil {
-			return nil, grpcErrorf(codes.Internal, "Failed to generate identity: %s", err)
+			return nil, errors.Errorf("Failed to generate identity: %s", err)
 		}
 		if ent.ID == req.CallerEntityID {
 			p.Role = models.IPCallParticipantRoleCaller
@@ -132,7 +131,7 @@ func (e *excommsService) InitiateIPCall(ctx context.Context, req *excomms.Initia
 	}
 
 	if err := e.dal.CreateIPCall(ctx, call); err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	notificationMsgs := make(map[string]string, len(req.RecipientEntityIDs))
@@ -148,12 +147,12 @@ func (e *excommsService) InitiateIPCall(ctx context.Context, req *excomms.Initia
 		CollapseKey:      string(notification.IncomingIPCall),
 		ShortMessages:    notificationMsgs,
 	}); err != nil {
-		golog.Errorf("Failed to send notification about new IP call: %s", err)
+		golog.ContextLogger(ctx).Errorf("Failed to send notification about new IP call: %s", err)
 	}
 
 	rcall, err := e.transformIPCallToResponse(call, callerPar)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	return &excomms.InitiateIPCallResponse{Call: rcall}, nil
@@ -165,17 +164,17 @@ func (e *excommsService) IPCall(ctx context.Context, req *excomms.IPCallRequest)
 	}
 	id, err := models.ParseIPCallID(req.IPCallID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid IPCallID")
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid %q IPCallID", req.IPCallID)
 	}
 	call, err := e.dal.IPCall(ctx, id)
 	if errors.Cause(err) == dal.ErrIPCallNotFound {
 		return nil, grpcErrorf(codes.NotFound, "IPCall %s not found", id)
 	} else if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 	if call.Pending && e.clock.Now().Sub(call.InitiatedTime) > ipCallTimeout {
 		if err := e.timeoutIPCall(ctx, call); err != nil {
-			return nil, grpcErrorf(codes.Internal, err.Error())
+			return nil, errors.Trace(err)
 		}
 	}
 	// Find the participating account to be able to generate a proper token
@@ -191,7 +190,7 @@ func (e *excommsService) IPCall(ctx context.Context, req *excomms.IPCallRequest)
 	}
 	rcall, err := e.transformIPCallToResponse(call, par)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 	return &excomms.IPCallResponse{Call: rcall}, nil
 }
@@ -202,7 +201,7 @@ func (e *excommsService) PendingIPCalls(ctx context.Context, req *excomms.Pendin
 	}
 	calls, err := e.dal.PendingIPCallsForAccount(ctx, req.AccountID)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 	res := &excomms.PendingIPCallsResponse{
 		Calls: make([]*excomms.IPCall, 0, len(calls)),
@@ -211,7 +210,7 @@ func (e *excommsService) PendingIPCalls(ctx context.Context, req *excomms.Pendin
 		// Lazily timeout pending calls
 		if e.clock.Now().Sub(c.InitiatedTime) > ipCallTimeout {
 			if err := e.timeoutIPCall(ctx, c); err != nil {
-				return nil, grpcErrorf(codes.Internal, err.Error())
+				return nil, errors.Trace(err)
 			}
 			continue
 		}
@@ -225,11 +224,11 @@ func (e *excommsService) PendingIPCalls(ctx context.Context, req *excomms.Pendin
 		}
 		if par == nil {
 			// Sanity check, this is an internal consistency error since the pending calls should only include calls with the account as a participant
-			return nil, grpcErrorf(codes.Internal, "Participant not found for account %s even though call %s was returned", req.AccountID, c.ID)
+			return nil, errors.Errorf("Participant not found for account %s even though call %s was returned", req.AccountID, c.ID)
 		}
 		call, err := e.transformIPCallToResponse(c, par)
 		if err != nil {
-			return nil, grpcErrorf(codes.Internal, err.Error())
+			return nil, errors.Trace(err)
 		}
 		res.Calls = append(res.Calls, call)
 	}
@@ -245,7 +244,7 @@ func (e *excommsService) UpdateIPCall(ctx context.Context, req *excomms.UpdateIP
 	}
 	callID, err := models.ParseIPCallID(req.IPCallID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "IPCallID is invalid")
+		return nil, grpcErrorf(codes.InvalidArgument, "IPCallID %q is invalid", req.IPCallID)
 	}
 	newState, err := transformIPCallStateToModel(req.State)
 	if err != nil {
@@ -267,7 +266,7 @@ func (e *excommsService) UpdateIPCall(ctx context.Context, req *excomms.UpdateIP
 		if errors.Cause(err) == dal.ErrIPCallNotFound {
 			return grpcErrorf(codes.NotFound, "IPCall %s not found", callID)
 		} else if err != nil {
-			return grpcErrorf(codes.Internal, err.Error())
+			return errors.Trace(err)
 		}
 		for _, p := range call.Participants {
 			if p.AccountID == req.AccountID {
@@ -320,12 +319,12 @@ func (e *excommsService) UpdateIPCall(ctx context.Context, req *excomms.UpdateIP
 		// Post message into thread if the receiving entity is a primary on a thread
 		if err := e.postIPCallMessage(ctx, call); err != nil {
 			// Too late to revert here so just log and move on
-			golog.Errorf("Error creating post for IPCall: %s", err)
+			golog.ContextLogger(ctx).Errorf("Error creating post for IPCall: %s", err)
 		}
 	}
 	rcall, err := e.transformIPCallToResponse(call, par)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 	return &excomms.UpdateIPCallResponse{Call: rcall}, nil
 }
@@ -360,7 +359,7 @@ func (e *excommsService) timeoutIPCall(ctx context.Context, call *models.IPCall)
 	// Post message into thread if the receiving entity is a primary on a thread
 	if err := e.postIPCallMessage(ctx, call); err != nil {
 		// Too late to revert here so just log and move on
-		golog.Errorf("Error creating post for IPCall: %s", err)
+		golog.ContextLogger(ctx).Errorf("Error creating post for IPCall: %s", err)
 	}
 	return nil
 }

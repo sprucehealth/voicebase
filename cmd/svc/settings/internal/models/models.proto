@@ -17,6 +17,7 @@ enum ConfigType {
 	STRING_LIST = 2;
 	BOOLEAN = 3;
 	INTEGER = 4;
+	TEXT = 5;
 }
 
 // OwnerType enumerates the possible owners for a particular config
@@ -26,7 +27,7 @@ enum OwnerType {
 	ACCOUNT = 2;
 }
 
-// Config represents a single setting configuration used for validation of 
+// Config represents a single setting configuration used for validation of
 // a setting value, defaults and description.
 message Config {
 	string title = 1;
@@ -43,8 +44,9 @@ message Config {
 		SingleSelectConfig single_select = 12;
 		MultiSelectConfig multi_select = 13;
 		IntegerConfig integer = 14;
+		TextConfig text = 15;
 	}
-}	
+}
 
 // ConfigKey is a structure used to uniquely identify a setting config/value for a given
 // entity. It is expected that the key,subkey combination is unique if both are specified,
@@ -64,7 +66,8 @@ message Value {
 		SingleSelectValue single_select = 12;
 		MultiSelectValue multi_select = 13;
 		IntegerValue integer = 14;
-	} 
+		TextValue text = 15;
+	}
 }
 
 // Boolean
@@ -76,7 +79,7 @@ message BooleanValue {
 	bool value = 1;
 }
 
-// Int 
+// Int
 
 message IntegerConfig {
 	IntegerValue default = 1;
@@ -85,6 +88,14 @@ message IntegerValue {
 	int64 value = 1;
 }
 
+// Text
+
+message TextConfig {
+	TextValue default = 1;
+}
+message TextValue {
+	string value = 1;
+}
 
 // String list
 

@@ -1,12 +1,11 @@
 package twilio
 
 import (
+	"context"
 	"fmt"
 	"html"
 	"net/url"
 	"time"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"

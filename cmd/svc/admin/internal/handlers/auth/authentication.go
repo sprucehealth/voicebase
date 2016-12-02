@@ -1,16 +1,14 @@
 package auth
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"time"
 
-	"context"
-
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/auth"
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/common"
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/google"
-	"github.com/sprucehealth/backend/cmd/svc/restapi/apiservice"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -38,7 +36,8 @@ func (h *authenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	case httputil.Post:
 		var req authenticationRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			apiservice.WriteBadRequestError(err, w, r)
+			golog.Infof("Failed to decode body: %s", err)
+			http.Error(w, "Bad request", http.StatusBadRequest)
 			return
 		}
 		id, err := h.ap.Authenticate(r.Context(), req.IDToken)

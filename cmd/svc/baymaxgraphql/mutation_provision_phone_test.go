@@ -2,12 +2,10 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	excommssettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
-	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -22,7 +20,8 @@ func TestProvisionPhone(t *testing.T) {
 
 	ctx := context.Background()
 	acc := &auth.Account{
-		ID: "account:12345",
+		ID:   "account:12345",
+		Type: auth.AccountType_PROVIDER,
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
 
@@ -53,6 +52,7 @@ func TestProvisionPhone(t *testing.T) {
 		Number: &excomms.ProvisionPhoneNumberRequest_AreaCode{
 			AreaCode: areaCode,
 		},
+		UUID: "12345:primary",
 	}).WithReturns(&excomms.ProvisionPhoneNumberResponse{
 		PhoneNumber: "+12068773590",
 	}, nil))
@@ -64,6 +64,7 @@ func TestProvisionPhone(t *testing.T) {
 			Value:       "+12068773590",
 			Provisioned: true,
 			Verified:    true,
+			Label:       "Primary",
 		},
 		RequestedInformation: &directory.RequestedInformation{
 			Depth: 0,
@@ -128,26 +129,24 @@ func TestProvisionPhone(t *testing.T) {
 		"organizationId": entityID,
 		"areaCode":       areaCode,
 	})
-	b, err := json.MarshalIndent(res, "", "\t")
-	test.OK(t, err)
-	test.Equals(t, `{
-	"data": {
-		"provisionPhoneNumber": {
-			"clientMutationId": "a1b2c3",
-			"organization": {
-				"contacts": [
-					{
-						"provisioned": true,
-						"type": "PHONE",
-						"value": "+12068773590"
-					}
-				]
-			},
-			"phoneNumber": "(206) 877-3590",
-			"success": true
+	responseEquals(t, `{
+		"data": {
+			"provisionPhoneNumber": {
+				"clientMutationId": "a1b2c3",
+				"organization": {
+					"contacts": [
+						{
+							"provisioned": true,
+							"type": "PHONE",
+							"value": "+12068773590"
+						}
+					]
+				},
+				"phoneNumber": "(206) 877-3590",
+				"success": true
+			}
 		}
-	}
-}`, string(b))
+	}`, res)
 }
 
 func TestProvisionPhone_Unavailable(t *testing.T) {
@@ -156,7 +155,8 @@ func TestProvisionPhone_Unavailable(t *testing.T) {
 
 	ctx := context.Background()
 	acc := &auth.Account{
-		ID: "account:12345",
+		ID:   "account:12345",
+		Type: auth.AccountType_PROVIDER,
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
 
@@ -181,6 +181,7 @@ func TestProvisionPhone_Unavailable(t *testing.T) {
 		Number: &excomms.ProvisionPhoneNumberRequest_AreaCode{
 			AreaCode: areaCode,
 		},
+		UUID: "12345:primary",
 	}).WithReturns(&excomms.ProvisionPhoneNumberResponse{}, grpcErrorf(codes.InvalidArgument, "")))
 
 	res := g.query(ctx, `
@@ -206,17 +207,15 @@ func TestProvisionPhone_Unavailable(t *testing.T) {
 		"organizationId": entityID,
 		"areaCode":       areaCode,
 	})
-	b, err := json.MarshalIndent(res, "", "\t")
-	test.OK(t, err)
-	test.Equals(t, `{
-	"data": {
-		"provisionPhoneNumber": {
-			"clientMutationId": "a1b2c3",
-			"errorCode": "UNAVAILABLE",
-			"organization": null,
-			"phoneNumber": null,
-			"success": false
+	responseEquals(t, `{
+		"data": {
+			"provisionPhoneNumber": {
+				"clientMutationId": "a1b2c3",
+				"errorCode": "UNAVAILABLE",
+				"organization": null,
+				"phoneNumber": null,
+				"success": false
+			}
 		}
-	}
-}`, string(b))
+	}`, res)
 }

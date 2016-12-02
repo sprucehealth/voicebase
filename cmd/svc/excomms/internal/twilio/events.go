@@ -1,6 +1,7 @@
 package twilio
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
@@ -8,9 +9,6 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/proxynumber"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
-
-	"context"
-
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"

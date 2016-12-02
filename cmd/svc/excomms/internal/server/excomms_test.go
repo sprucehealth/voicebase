@@ -11,10 +11,12 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/sns"
+	"github.com/golang/mock/gomock"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	dalmock "github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal/mock"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
 	proxynumber "github.com/sprucehealth/backend/cmd/svc/excomms/internal/proxynumber/mock"
+	exsettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/phone"
@@ -29,6 +31,8 @@ import (
 	dirmock "github.com/sprucehealth/backend/svc/directory/mock"
 	"github.com/sprucehealth/backend/svc/events"
 	"github.com/sprucehealth/backend/svc/excomms"
+	"github.com/sprucehealth/backend/svc/settings"
+	"github.com/sprucehealth/backend/svc/settings/settingsmock"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
@@ -73,42 +77,6 @@ func (m *mockIncomingPhoneNumberService_Excomms) PurchaseLocal(params twilio.Pur
 			Body:       ioutil.NopCloser(&bytes.Reader{}),
 		},
 	}, nil
-}
-
-type mockDAL_Excomms struct {
-	dal.DAL
-	ppn     *models.ProvisionedEndpoint
-	proxies []*models.ProxyPhoneNumber
-	ppnr    *models.ProxyPhoneNumberReservation
-	sm      *models.SentMessage
-	*mock.Expector
-}
-
-func (m *mockDAL_Excomms) LookupProvisionedEndpoint(provisionedFor string, endpointType models.EndpointType) (*models.ProvisionedEndpoint, error) {
-	defer m.Record(provisionedFor, endpointType)
-	if m.ppn == nil {
-		return nil, dal.ErrProvisionedEndpointNotFound
-	}
-	return m.ppn, nil
-}
-func (m *mockDAL_Excomms) ProvisionEndpoint(model *models.ProvisionedEndpoint) error {
-	defer m.Record(model)
-	return nil
-}
-
-func (m *mockDAL_Excomms) Transact(trans func(dal.DAL) error) error {
-	return trans(m)
-}
-func (m *mockDAL_Excomms) CreateSentMessage(sm *models.SentMessage) error {
-	defer m.Record(sm)
-	return nil
-}
-func (m *mockDAL_Excomms) LookupSentMessageByUUID(uuid, destination string) (*models.SentMessage, error) {
-	defer m.Record(uuid, destination)
-	if m.sm == nil {
-		return nil, dal.ErrSentMessageNotFound
-	}
-	return m.sm, nil
 }
 
 type mockMessages_Excomms struct {
@@ -221,11 +189,9 @@ func TestSearchAvailablePhoneNumbers(t *testing.T) {
 }
 
 func TestProvisionPhoneNumber_NotProvisioned_AreaCode(t *testing.T) {
-	md := &mockDAL_Excomms{
-		Expector: &mock.Expector{
-			T: t,
-		},
-	}
+	md := dalmock.New(t)
+	defer md.Finish()
+
 	mi := &mockIncomingPhoneNumberService_Excomms{
 		pn: &twilio.IncomingPhoneNumber{
 			PhoneNumber: "+14152222222",
@@ -234,6 +200,7 @@ func TestProvisionPhoneNumber_NotProvisioned_AreaCode(t *testing.T) {
 			T: t,
 		},
 	}
+	defer mi.Finish()
 
 	snsC := mock.NewSNSAPI(t)
 	es := &excommsService{
@@ -243,16 +210,17 @@ func TestProvisionPhoneNumber_NotProvisioned_AreaCode(t *testing.T) {
 		eventTopic: "eventsTopic",
 	}
 	es.twilio.IncomingPhoneNumber = mi
+
+	md.Expect(mock.NewExpectation(md.LookupProvisionedEndpointByUUID, "abc").WithReturns((*models.ProvisionedEndpoint)(nil), dal.ErrProvisionedEndpointNotFound))
 
 	mi.Expect(mock.NewExpectation(mi.PurchaseLocal, twilio.PurchasePhoneNumberParams{
 		AreaCode: "415",
 	}))
-	md.Expect(mock.NewExpectation(md.LookupProvisionedEndpoint, "test", models.EndpointTypePhone))
 	md.Expect(mock.NewExpectation(md.ProvisionEndpoint, &models.ProvisionedEndpoint{
 		ProvisionedFor: "test",
 		Endpoint:       "+14152222222",
 		EndpointType:   models.EndpointTypePhone,
-	}))
+	}, "abc"))
 
 	eventData, err := events.MarshalEnvelope(events.Service_EXCOMMS, &excomms.Event{
 		Type: excomms.Event_PROVISIONED_ENDPOINT,
@@ -275,20 +243,16 @@ func TestProvisionPhoneNumber_NotProvisioned_AreaCode(t *testing.T) {
 		Number: &excomms.ProvisionPhoneNumberRequest_AreaCode{
 			AreaCode: "415",
 		},
+		UUID: "abc",
 	})
 	test.OK(t, err)
 	test.Equals(t, mi.pn.PhoneNumber, res.PhoneNumber)
-
-	mi.Finish()
-	md.Finish()
 }
 
 func TestProvisionPhoneNumber_NotProvisioned_PhoneNumber(t *testing.T) {
-	md := &mockDAL_Excomms{
-		Expector: &mock.Expector{
-			T: t,
-		},
-	}
+	md := dalmock.New(t)
+	defer md.Finish()
+
 	mi := &mockIncomingPhoneNumberService_Excomms{
 		pn: &twilio.IncomingPhoneNumber{
 			PhoneNumber: "+14152222222",
@@ -297,6 +261,7 @@ func TestProvisionPhoneNumber_NotProvisioned_PhoneNumber(t *testing.T) {
 			T: t,
 		},
 	}
+	defer mi.Finish()
 
 	snsC := mock.NewSNSAPI(t)
 	es := &excommsService{
@@ -307,15 +272,16 @@ func TestProvisionPhoneNumber_NotProvisioned_PhoneNumber(t *testing.T) {
 	}
 	es.twilio.IncomingPhoneNumber = mi
 
+	md.Expect(mock.NewExpectation(md.LookupProvisionedEndpointByUUID, "abc").WithReturns((*models.ProvisionedEndpoint)(nil), dal.ErrProvisionedEndpointNotFound))
+
 	mi.Expect(mock.NewExpectation(mi.PurchaseLocal, twilio.PurchasePhoneNumberParams{
 		PhoneNumber: "+14152222222",
 	}))
-	md.Expect(mock.NewExpectation(md.LookupProvisionedEndpoint, "test", models.EndpointTypePhone))
 	md.Expect(mock.NewExpectation(md.ProvisionEndpoint, &models.ProvisionedEndpoint{
 		ProvisionedFor: "test",
 		Endpoint:       "+14152222222",
 		EndpointType:   models.EndpointTypePhone,
-	}))
+	}, "abc"))
 
 	eventData, err := events.MarshalEnvelope(events.Service_EXCOMMS, &excomms.Event{
 		Type: excomms.Event_PROVISIONED_ENDPOINT,
@@ -338,29 +304,22 @@ func TestProvisionPhoneNumber_NotProvisioned_PhoneNumber(t *testing.T) {
 		Number: &excomms.ProvisionPhoneNumberRequest_PhoneNumber{
 			PhoneNumber: "+14152222222",
 		},
+		UUID: "abc",
 	})
 	test.OK(t, err)
 	test.Equals(t, mi.pn.PhoneNumber, res.PhoneNumber)
-
-	mi.Finish()
-	md.Finish()
 }
 
 func TestProvisionPhoneNumber_Idempotent(t *testing.T) {
-	md := &mockDAL_Excomms{
-		ppn: &models.ProvisionedEndpoint{
-			Endpoint:     "+14156666666",
-			EndpointType: models.EndpointTypePhone,
-		},
-		Expector: &mock.Expector{
-			T: t,
-		},
-	}
+	md := dalmock.New(t)
+	defer md.Finish()
+
 	mi := &mockIncomingPhoneNumberService_Excomms{
 		Expector: &mock.Expector{
 			T: t,
 		},
 	}
+	defer mi.Finish()
 
 	es := &excommsService{
 		twilio: twilio.NewClient("", "", nil),
@@ -368,63 +327,25 @@ func TestProvisionPhoneNumber_Idempotent(t *testing.T) {
 	}
 	es.twilio.IncomingPhoneNumber = mi
 
-	md.Expect(mock.NewExpectation(md.LookupProvisionedEndpoint, "test", models.EndpointTypePhone))
+	md.Expect(mock.NewExpectation(md.LookupProvisionedEndpointByUUID, "abc").WithReturns(
+		&models.ProvisionedEndpoint{
+			ProvisionedFor: "test",
+			EndpointType:   models.EndpointTypePhone,
+			Endpoint:       "+16305551212",
+		}, nil))
 
 	res, err := es.ProvisionPhoneNumber(context.Background(), &excomms.ProvisionPhoneNumberRequest{
 		ProvisionFor: "test",
 		Number: &excomms.ProvisionPhoneNumberRequest_AreaCode{
 			AreaCode: "415",
 		},
+		UUID: "abc",
 	})
 	test.OK(t, err)
-	test.Equals(t, md.ppn.Endpoint, res.PhoneNumber)
-
-	mi.Finish()
-	md.Finish()
-}
-
-func TestProvisionPhoneNumber_AlreadyProvisioned(t *testing.T) {
-	md := &mockDAL_Excomms{
-		ppn: &models.ProvisionedEndpoint{
-			Endpoint:     "+14152222222",
-			EndpointType: models.EndpointTypePhone,
-		},
-		Expector: &mock.Expector{
-			T: t,
-		},
-	}
-	mi := &mockIncomingPhoneNumberService_Excomms{
-		pn: &twilio.IncomingPhoneNumber{
-			PhoneNumber: "+14152222222",
-		},
-		Expector: &mock.Expector{
-			T: t,
-		},
-	}
-
-	es := &excommsService{
-		twilio: twilio.NewClient("", "", nil),
-		dal:    md,
-	}
-	es.twilio.IncomingPhoneNumber = mi
-
-	md.Expect(mock.NewExpectation(md.LookupProvisionedEndpoint, "test", models.EndpointTypePhone))
-
-	_, err := es.ProvisionPhoneNumber(context.Background(), &excomms.ProvisionPhoneNumberRequest{
-		ProvisionFor: "test",
-		Number: &excomms.ProvisionPhoneNumberRequest_PhoneNumber{
-			PhoneNumber: "+14153333333",
-		},
-	})
-	test.Equals(t, true, err != nil)
-	test.Equals(t, codes.AlreadyExists, grpc.Code(err))
-
-	mi.Finish()
-	md.Finish()
+	test.Equals(t, "+16305551212", res.PhoneNumber)
 }
 
 func TestSendMessage_SMS(t *testing.T) {
-	conc.Testing = true
 	mm := &mockMessages_Excomms{
 		Expector: &mock.Expector{
 			T: t,
@@ -456,11 +377,7 @@ func TestSendMessage_SMS(t *testing.T) {
 		MediaUrl:       []string{resizedURL1, resizedURL2},
 	}))
 
-	md := &mockDAL_Excomms{
-		Expector: &mock.Expector{
-			T: t,
-		},
-	}
+	md := dalmock.New(t)
 	md.Expect(mock.NewExpectation(md.LookupSentMessageByUUID, "tag", "+14152222222"))
 	md.Expect(mock.NewExpectation(md.CreateSentMessage, &models.SentMessage{
 		Type: models.SentMessage_SMS,
@@ -508,21 +425,16 @@ func TestSendMessage_SMS(t *testing.T) {
 }
 
 func TestSendMessage_SMSIdempotent(t *testing.T) {
-	conc.Testing = true
 	mm := &mockMessages_Excomms{
 		Expector: &mock.Expector{
 			T: t,
 		},
 		msg: &twilio.Message{},
 	}
+	md := dalmock.New(t)
+	defer mock.FinishAll(mm, md)
 
-	md := &mockDAL_Excomms{
-		Expector: &mock.Expector{
-			T: t,
-		},
-		sm: &models.SentMessage{},
-	}
-	md.Expect(mock.NewExpectation(md.LookupSentMessageByUUID, "tag", "+14152222222"))
+	md.Expect(mock.NewExpectation(md.LookupSentMessageByUUID, "tag", "+14152222222").WithReturns(&models.SentMessage{}, nil))
 
 	es := &excommsService{
 		twilio: twilio.NewClient("", "", nil),
@@ -542,13 +454,9 @@ func TestSendMessage_SMSIdempotent(t *testing.T) {
 		},
 	})
 	test.OK(t, err)
-
-	mm.Finish()
-	md.Finish()
 }
 
 func TestSendMessage_Email(t *testing.T) {
-	conc.Testing = true
 	me := &mockEmail_Excomms{
 		Expector: &mock.Expector{
 			T: t,
@@ -587,11 +495,7 @@ func TestSendMessage_Email(t *testing.T) {
 	}
 	me.Expect(mock.NewExpectation(me.SendMessage, em))
 
-	md := &mockDAL_Excomms{
-		Expector: &mock.Expector{
-			T: t,
-		},
-	}
+	md := dalmock.New(t)
 	md.Expect(mock.NewExpectation(md.LookupSentMessageByUUID, "tag", "patient@example.com"))
 	md.Expect(mock.NewExpectation(md.CreateSentMessage, &models.SentMessage{
 		ID:   1,
@@ -635,20 +539,14 @@ func TestSendMessage_Email(t *testing.T) {
 }
 
 func TestSendMessage_EmailIdempotent(t *testing.T) {
-	conc.Testing = true
 	me := &mockEmail_Excomms{
 		Expector: &mock.Expector{
 			T: t,
 		},
 	}
 
-	md := &mockDAL_Excomms{
-		Expector: &mock.Expector{
-			T: t,
-		},
-		sm: &models.SentMessage{},
-	}
-	md.Expect(mock.NewExpectation(md.LookupSentMessageByUUID, "tag", "patient@example.com"))
+	md := dalmock.New(t)
+	md.Expect(mock.NewExpectation(md.LookupSentMessageByUUID, "tag", "patient@example.com").WithReturns(&models.SentMessage{}, nil))
 
 	es := &excommsService{
 		twilio:      twilio.NewClient("", "", nil),
@@ -677,7 +575,6 @@ func TestSendMessage_EmailIdempotent(t *testing.T) {
 }
 
 func TestSendMessage_VoiceNotSupported(t *testing.T) {
-	conc.Testing = true
 	mm := &mockMessages_Excomms{
 		Expector: &mock.Expector{
 			T: t,
@@ -721,145 +618,14 @@ func TestInitiatePhoneCall_OriginatingNumberSpecified(t *testing.T) {
 	proxyPhoneNumber, err := phone.ParseNumber("+12061111111")
 	test.OK(t, err)
 
-	conc.Testing = true
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
 
 	md := dirmock.New(t)
 	defer md.Finish()
-
-	// organization lookup
-	md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-			EntityID: organizationID,
-		},
-	}).WithReturns(&directory.LookupEntitiesResponse{
-		Entities: []*directory.Entity{
-			{
-				ID:   organizationID,
-				Type: directory.EntityType_ORGANIZATION,
-			},
-		},
-	}, nil))
-
-	// caller lookup
-	md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-			EntityID: callerEntityID,
-		},
-		RequestedInformation: &directory.RequestedInformation{
-			Depth: 0,
-			EntityInformation: []directory.EntityInformation{
-				directory.EntityInformation_CONTACTS,
-				directory.EntityInformation_MEMBERSHIPS,
-			},
-		},
-		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
-		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
-	}).WithReturns(&directory.LookupEntitiesResponse{
-		Entities: []*directory.Entity{
-			{
-				ID:   callerEntityID,
-				Type: directory.EntityType_INTERNAL,
-				Memberships: []*directory.Entity{
-					{
-						ID:   organizationID,
-						Type: directory.EntityType_ORGANIZATION,
-					},
-				},
-			},
-		},
-	}, nil))
-
-	// calee lookup
-	md.Expect(mock.NewExpectation(md.LookupEntitiesByContact, &directory.LookupEntitiesByContactRequest{
-		ContactValue: destinationPhoneNumber.String(),
-		RequestedInformation: &directory.RequestedInformation{
-			Depth:             0,
-			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
-		},
-		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
-		RootTypes:  []directory.EntityType{directory.EntityType_EXTERNAL, directory.EntityType_PATIENT},
-		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
-	}).WithReturns(&directory.LookupEntitiesByContactResponse{
-		Entities: []*directory.Entity{
-			{
-				ID:   destinationEntityID,
-				Type: directory.EntityType_EXTERNAL,
-				Memberships: []*directory.Entity{
-					{
-						ID:   organizationID,
-						Type: directory.EntityType_ORGANIZATION,
-					},
-				},
-			},
-		},
-	}, nil))
-
 	mdal := dalmock.New(t)
 	defer mdal.Finish()
-
-	mdal.Expect(mock.NewExpectation(mdal.SetCurrentOriginatingNumber, originatingNumber, callerEntityID, "deviceID"))
-
-	mproxynumberManager := proxynumber.NewMockManager(t)
-	defer mproxynumberManager.Finish()
-
-	mproxynumberManager.Expect(mock.NewExpectation(mproxynumberManager.ReserveNumber, originatingNumber, destinationPhoneNumber, destinationEntityID, callerEntityID, organizationID).WithReturns(proxyPhoneNumber, nil))
-
-	es := &excommsService{
-		dal:                mdal,
-		directory:          md,
-		clock:              mclock,
-		proxyNumberManager: mproxynumberManager,
-	}
-
-	res, err := es.InitiatePhoneCall(context.Background(), &excomms.InitiatePhoneCallRequest{
-		CallInitiationType: excomms.InitiatePhoneCallRequest_RETURN_PHONE_NUMBER,
-		FromPhoneNumber:    originatingNumber.String(),
-		ToPhoneNumber:      destinationPhoneNumber.String(),
-		OrganizationID:     "1234",
-		CallerEntityID:     callerEntityID,
-		DeviceID:           "deviceID",
-	})
-	test.OK(t, err)
-	test.Equals(t, proxyPhoneNumber.String(), res.ProxyPhoneNumber)
-	test.Equals(t, originatingNumber.String(), res.OriginatingPhoneNumber)
-}
-
-func TestInitiatePhoneCall_OriginatingNumberNotSpecified_ButExists(t *testing.T) {
-	mclock := clock.NewManaged(time.Now())
-	callerEntityID := "e1"
-	destinationEntityID := "d1"
-	organizationID := "1234"
-
-	originatingNumber, err := phone.ParseNumber("+17348465522")
-	test.OK(t, err)
-
-	destinationPhoneNumber, err := phone.ParseNumber("+14152222222")
-	test.OK(t, err)
-
-	proxyPhoneNumber, err := phone.ParseNumber("+12061111111")
-	test.OK(t, err)
-
-	conc.Testing = true
-
-	md := dirmock.New(t)
-	defer md.Finish()
-
-	// organization lookup
-	md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-			EntityID: organizationID,
-		},
-	}).WithReturns(&directory.LookupEntitiesResponse{
-		Entities: []*directory.Entity{
-			{
-				ID:   organizationID,
-				Type: directory.EntityType_ORGANIZATION,
-			},
-		},
-	}, nil))
+	mockSettings := settingsmock.NewMockSettingsClient(mockCtrl)
 
 	// caller lookup
 	md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
@@ -868,7 +634,7 @@ func TestInitiatePhoneCall_OriginatingNumberNotSpecified_ButExists(t *testing.T)
 			EntityID: callerEntityID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
-			Depth: 0,
+			Depth: 1,
 			EntityInformation: []directory.EntityInformation{
 				directory.EntityInformation_CONTACTS,
 				directory.EntityInformation_MEMBERSHIPS,
@@ -883,8 +649,9 @@ func TestInitiatePhoneCall_OriginatingNumberNotSpecified_ButExists(t *testing.T)
 				Type: directory.EntityType_INTERNAL,
 				Memberships: []*directory.Entity{
 					{
-						ID:   organizationID,
-						Type: directory.EntityType_ORGANIZATION,
+						ID:       organizationID,
+						Type:     directory.EntityType_ORGANIZATION,
+						Contacts: nil,
 					},
 				},
 			},
@@ -916,26 +683,168 @@ func TestInitiatePhoneCall_OriginatingNumberNotSpecified_ButExists(t *testing.T)
 		},
 	}, nil))
 
+	mdal.Expect(mock.NewExpectation(mdal.SetCurrentOriginatingNumber, originatingNumber, callerEntityID, "deviceID"))
+
+	ctx := context.Background()
+
+	mockSettings.EXPECT().GetValues(ctx, &settings.GetValuesRequest{
+		NodeID: callerEntityID,
+		Keys: []*settings.ConfigKey{
+			{
+				Key: exsettings.ConfigKeyDefaultProvisionedPhoneNumber,
+			},
+		},
+	}).Return(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Value: &settings.Value_Text{
+					Text: &settings.TextValue{Value: "+14155550001"},
+				},
+			},
+		},
+	}, nil)
+
+	mproxynumberManager := proxynumber.NewMockManager(t)
+	defer mproxynumberManager.Finish()
+
+	mproxynumberManager.Expect(mock.NewExpectation(mproxynumberManager.ReserveNumber, originatingNumber, destinationPhoneNumber, phone.Number("+14155550001"), destinationEntityID, callerEntityID, organizationID).WithReturns(proxyPhoneNumber, nil))
+
+	es := &excommsService{
+		dal:                mdal,
+		directory:          md,
+		settings:           mockSettings,
+		clock:              mclock,
+		proxyNumberManager: mproxynumberManager,
+	}
+
+	res, err := es.InitiatePhoneCall(ctx, &excomms.InitiatePhoneCallRequest{
+		CallInitiationType: excomms.InitiatePhoneCallRequest_RETURN_PHONE_NUMBER,
+		FromPhoneNumber:    originatingNumber.String(),
+		ToPhoneNumber:      destinationPhoneNumber.String(),
+		OrganizationID:     "1234",
+		CallerEntityID:     callerEntityID,
+		DeviceID:           "deviceID",
+	})
+	test.OK(t, err)
+	test.Equals(t, proxyPhoneNumber.String(), res.ProxyPhoneNumber)
+	test.Equals(t, originatingNumber.String(), res.OriginatingPhoneNumber)
+}
+
+func TestInitiatePhoneCall_OriginatingNumberNotSpecified_ButExists(t *testing.T) {
+	mclock := clock.NewManaged(time.Now())
+	callerEntityID := "e1"
+	destinationEntityID := "d1"
+	organizationID := "1234"
+
+	originatingNumber, err := phone.ParseNumber("+17348465522")
+	test.OK(t, err)
+
+	destinationPhoneNumber, err := phone.ParseNumber("+14152222222")
+	test.OK(t, err)
+
+	proxyPhoneNumber, err := phone.ParseNumber("+12061111111")
+	test.OK(t, err)
+
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	md := dirmock.New(t)
+	defer md.Finish()
 	mdal := dalmock.New(t)
 	defer mdal.Finish()
+	mockSettings := settingsmock.NewMockSettingsClient(mockCtrl)
+
+	// caller lookup
+	md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: callerEntityID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth: 1,
+			EntityInformation: []directory.EntityInformation{
+				directory.EntityInformation_CONTACTS,
+				directory.EntityInformation_MEMBERSHIPS,
+			},
+		},
+		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{
+				ID:   callerEntityID,
+				Type: directory.EntityType_INTERNAL,
+				Memberships: []*directory.Entity{
+					{
+						ID:   organizationID,
+						Type: directory.EntityType_ORGANIZATION,
+						Contacts: []*directory.Contact{
+							{
+								ContactType: directory.ContactType_PHONE,
+								Value:       "+14155550002",
+								Provisioned: true,
+							},
+						},
+					},
+				},
+			},
+		},
+	}, nil))
+
+	// callee lookup
+	md.Expect(mock.NewExpectation(md.LookupEntitiesByContact, &directory.LookupEntitiesByContactRequest{
+		ContactValue: destinationPhoneNumber.String(),
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
+		},
+		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes:  []directory.EntityType{directory.EntityType_EXTERNAL, directory.EntityType_PATIENT},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	}).WithReturns(&directory.LookupEntitiesByContactResponse{
+		Entities: []*directory.Entity{
+			{
+				ID:   destinationEntityID,
+				Type: directory.EntityType_EXTERNAL,
+				Memberships: []*directory.Entity{
+					{
+						ID:   organizationID,
+						Type: directory.EntityType_ORGANIZATION,
+					},
+				},
+			},
+		},
+	}, nil))
 
 	mdal.Expect(mock.NewExpectation(mdal.CurrentOriginatingNumber, callerEntityID, "deviceID").WithReturns(originatingNumber, nil))
 
 	mdal.Expect(mock.NewExpectation(mdal.SetCurrentOriginatingNumber, originatingNumber, callerEntityID, "deviceID"))
 
+	ctx := context.Background()
+
+	mockSettings.EXPECT().GetValues(ctx, &settings.GetValuesRequest{
+		NodeID: callerEntityID,
+		Keys: []*settings.ConfigKey{
+			{
+				Key: exsettings.ConfigKeyDefaultProvisionedPhoneNumber,
+			},
+		},
+	}).Return(&settings.GetValuesResponse{Values: nil}, nil)
+
 	mproxynumberManager := proxynumber.NewMockManager(t)
 	defer mproxynumberManager.Finish()
 
-	mproxynumberManager.Expect(mock.NewExpectation(mproxynumberManager.ReserveNumber, originatingNumber, destinationPhoneNumber, destinationEntityID, callerEntityID, organizationID).WithReturns(proxyPhoneNumber, nil))
+	mproxynumberManager.Expect(mock.NewExpectation(mproxynumberManager.ReserveNumber, originatingNumber, destinationPhoneNumber, phone.Number("+14155550002"), destinationEntityID, callerEntityID, organizationID).WithReturns(proxyPhoneNumber, nil))
 
 	es := &excommsService{
 		dal:                mdal,
 		directory:          md,
+		settings:           mockSettings,
 		clock:              mclock,
 		proxyNumberManager: mproxynumberManager,
 	}
 
-	res, err := es.InitiatePhoneCall(context.Background(), &excomms.InitiatePhoneCallRequest{
+	res, err := es.InitiatePhoneCall(ctx, &excomms.InitiatePhoneCallRequest{
 		CallInitiationType: excomms.InitiatePhoneCallRequest_RETURN_PHONE_NUMBER,
 		ToPhoneNumber:      destinationPhoneNumber.String(),
 		OrganizationID:     "1234",
@@ -962,25 +871,14 @@ func TestInitiatePhoneCall_OriginatingNumberNotSpecified_DoesNotExist(t *testing
 	proxyPhoneNumber, err := phone.ParseNumber("+12061111111")
 	test.OK(t, err)
 
-	conc.Testing = true
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
 
 	md := dirmock.New(t)
 	defer md.Finish()
-
-	// organization lookup
-	md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-			EntityID: organizationID,
-		},
-	}).WithReturns(&directory.LookupEntitiesResponse{
-		Entities: []*directory.Entity{
-			{
-				ID:   organizationID,
-				Type: directory.EntityType_ORGANIZATION,
-			},
-		},
-	}, nil))
+	mdal := dalmock.New(t)
+	defer mdal.Finish()
+	mockSettings := settingsmock.NewMockSettingsClient(mockCtrl)
 
 	// caller lookup
 	md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
@@ -989,7 +887,7 @@ func TestInitiatePhoneCall_OriginatingNumberNotSpecified_DoesNotExist(t *testing
 			EntityID: callerEntityID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
-			Depth: 0,
+			Depth: 1,
 			EntityInformation: []directory.EntityInformation{
 				directory.EntityInformation_CONTACTS,
 				directory.EntityInformation_MEMBERSHIPS,
@@ -1043,26 +941,43 @@ func TestInitiatePhoneCall_OriginatingNumberNotSpecified_DoesNotExist(t *testing
 		},
 	}, nil))
 
-	mdal := dalmock.New(t)
-	defer mdal.Finish()
-
 	mdal.Expect(mock.NewExpectation(mdal.CurrentOriginatingNumber, callerEntityID, "deviceID").WithReturns(phone.Number(""), dal.ErrOriginatingNumberNotFound))
 
 	mdal.Expect(mock.NewExpectation(mdal.SetCurrentOriginatingNumber, originatingNumber, callerEntityID, "deviceID"))
 
+	ctx := context.Background()
+
+	mockSettings.EXPECT().GetValues(ctx, &settings.GetValuesRequest{
+		NodeID: callerEntityID,
+		Keys: []*settings.ConfigKey{
+			{
+				Key: exsettings.ConfigKeyDefaultProvisionedPhoneNumber,
+			},
+		},
+	}).Return(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Value: &settings.Value_Text{
+					Text: &settings.TextValue{Value: "+14155550003"},
+				},
+			},
+		},
+	}, nil)
+
 	mproxynumberManager := proxynumber.NewMockManager(t)
 	defer mproxynumberManager.Finish()
 
-	mproxynumberManager.Expect(mock.NewExpectation(mproxynumberManager.ReserveNumber, originatingNumber, destinationPhoneNumber, destinationEntityID, callerEntityID, organizationID).WithReturns(proxyPhoneNumber, nil))
+	mproxynumberManager.Expect(mock.NewExpectation(mproxynumberManager.ReserveNumber, originatingNumber, destinationPhoneNumber, phone.Number("+14155550003"), destinationEntityID, callerEntityID, organizationID).WithReturns(proxyPhoneNumber, nil))
 
 	es := &excommsService{
 		dal:                mdal,
 		directory:          md,
+		settings:           mockSettings,
 		clock:              mclock,
 		proxyNumberManager: mproxynumberManager,
 	}
 
-	res, err := es.InitiatePhoneCall(context.Background(), &excomms.InitiatePhoneCallRequest{
+	res, err := es.InitiatePhoneCall(ctx, &excomms.InitiatePhoneCallRequest{
 		CallInitiationType: excomms.InitiatePhoneCallRequest_RETURN_PHONE_NUMBER,
 		ToPhoneNumber:      destinationPhoneNumber.String(),
 		OrganizationID:     "1234",
@@ -1079,11 +994,7 @@ func TestInitiatePhoneCall_ConnectCallers(t *testing.T) {
 		Expector: &mock.Expector{T: t},
 	}
 
-	mdal := &mockDAL_Excomms{
-		Expector: &mock.Expector{
-			T: t,
-		},
-	}
+	mdal := dalmock.New(t)
 
 	es := &excommsService{
 		dal:       mdal,
@@ -1103,24 +1014,45 @@ func TestInitiatePhoneCall_ConnectCallers(t *testing.T) {
 	mdal.Finish()
 }
 
-func TestInitiatePhoneCall_OrgNotFound(t *testing.T) {
-	md := &mockDirectory_Excomms{
-		Expector: &mock.Expector{T: t},
-		resErr:   grpcErrorf(codes.NotFound, "Not Found"),
-	}
+func TestInitiatePhoneCall_CallerNotInOrg(t *testing.T) {
+	callerEntityID := "e1"
+	md := dirmock.New(t)
+	defer md.Finish()
 
-	md.Expect(mock.NewExpectation(md.LookupEntities, context.Background(), &directory.LookupEntitiesRequest{
+	md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
 		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
 		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-			EntityID: "1234",
+			EntityID: callerEntityID,
 		},
-	}))
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             1,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS, directory.EntityInformation_MEMBERSHIPS},
+		},
+		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{
+				ID:   callerEntityID,
+				Type: directory.EntityType_INTERNAL,
+				Memberships: []*directory.Entity{
+					{
+						ID:   "nooooope",
+						Type: directory.EntityType_ORGANIZATION,
+					},
+				},
+				Contacts: []*directory.Contact{
+					{
+						ContactType: directory.ContactType_PHONE,
+						Value:       "+17348465522",
+					},
+				},
+			},
+		},
+	}, nil))
 
-	mdal := &mockDAL_Excomms{
-		Expector: &mock.Expector{
-			T: t,
-		},
-	}
+	mdal := dalmock.New(t)
+	defer mdal.Finish()
 
 	es := &excommsService{
 		dal:       mdal,
@@ -1131,50 +1063,32 @@ func TestInitiatePhoneCall_OrgNotFound(t *testing.T) {
 		CallInitiationType: excomms.InitiatePhoneCallRequest_RETURN_PHONE_NUMBER,
 		FromPhoneNumber:    "+17348465522",
 		ToPhoneNumber:      "+14152222222",
+		CallerEntityID:     callerEntityID,
 		OrganizationID:     "1234",
 	})
 	test.Equals(t, true, err != nil)
 	test.Equals(t, codes.NotFound, grpc.Code(err))
-	md.Finish()
-	mdal.Finish()
 }
 
 func TestInitiatePhoneCall_InvalidCaller(t *testing.T) {
 	callerEntityID := "e1"
-	organizationID := "1234"
 	md := dirmock.New(t)
 	defer md.Finish()
 
 	md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
 		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
 		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-			EntityID: organizationID,
-		},
-	}).WithReturns(&directory.LookupEntitiesResponse{
-		Entities: []*directory.Entity{
-			{
-				ID: organizationID,
-			},
-		},
-	}, nil))
-	md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: callerEntityID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
-			Depth:             0,
+			Depth:             1,
 			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS, directory.EntityInformation_MEMBERSHIPS},
 		},
 		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
 		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
 	}).WithReturns(&directory.LookupEntitiesResponse{}, grpcErrorf(codes.NotFound, "")))
 
-	mdal := &mockDAL_Excomms{
-		Expector: &mock.Expector{
-			T: t,
-		},
-	}
+	mdal := dalmock.New(t)
 	defer mdal.Finish()
 
 	es := &excommsService{
@@ -1198,25 +1112,14 @@ func TestInitiatePhoneCall_InvalidCallee(t *testing.T) {
 	organizationID := "1234"
 	md := dirmock.New(t)
 	defer md.Finish()
-	md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-			EntityID: organizationID,
-		},
-	}).WithReturns(&directory.LookupEntitiesResponse{
-		Entities: []*directory.Entity{
-			{
-				ID: organizationID,
-			},
-		},
-	}, nil))
+
 	md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
 		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
 		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: callerEntityID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
-			Depth:             0,
+			Depth:             1,
 			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS, directory.EntityInformation_MEMBERSHIPS},
 		},
 		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
@@ -1246,11 +1149,7 @@ func TestInitiatePhoneCall_InvalidCallee(t *testing.T) {
 		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
 	}).WithReturns(&directory.LookupEntitiesByContactResponse{}, grpcErrorf(codes.NotFound, "")))
 
-	mdal := &mockDAL_Excomms{
-		Expector: &mock.Expector{
-			T: t,
-		},
-	}
+	mdal := dalmock.New(t)
 	defer mdal.Finish()
 
 	es := &excommsService{
@@ -1270,11 +1169,7 @@ func TestInitiatePhoneCall_InvalidCallee(t *testing.T) {
 }
 
 func TestProvisionEmailAddress(t *testing.T) {
-	md := &mockDAL_Excomms{
-		Expector: &mock.Expector{
-			T: t,
-		},
-	}
+	md := dalmock.New(t)
 
 	snsC := mock.NewSNSAPI(t)
 	es := &excommsService{
@@ -1284,12 +1179,12 @@ func TestProvisionEmailAddress(t *testing.T) {
 		eventTopic: "eventsTopic",
 	}
 
-	md.Expect(mock.NewExpectation(md.LookupProvisionedEndpoint, "test", models.EndpointTypeEmail))
+	md.Expect(mock.NewExpectation(md.LookupProvisionedEndpoint, "test", models.EndpointTypeEmail).WithReturns((*models.ProvisionedEndpoint)(nil), dal.ErrProvisionedEndpointNotFound))
 	md.Expect(mock.NewExpectation(md.ProvisionEndpoint, &models.ProvisionedEndpoint{
 		ProvisionedFor: "test",
 		Endpoint:       "test@subdomain.domain.com",
 		EndpointType:   models.EndpointTypeEmail,
-	}))
+	}, ""))
 
 	eventData, err := events.MarshalEnvelope(events.Service_EXCOMMS, &excomms.Event{
 		Type: excomms.Event_PROVISIONED_ENDPOINT,
@@ -1316,23 +1211,20 @@ func TestProvisionEmailAddress(t *testing.T) {
 }
 
 func TestProvisionEmailAddress_Idempotent(t *testing.T) {
-	md := &mockDAL_Excomms{
-		Expector: &mock.Expector{
-			T: t,
-		},
-		ppn: &models.ProvisionedEndpoint{
-			ProvisionedFor: "test",
-			Endpoint:       "test@subdomain.domain.com",
-			EndpointType:   models.EndpointTypeEmail,
-		},
-	}
+	md := dalmock.New(t)
+	defer md.Finish()
 
 	es := &excommsService{
 		twilio: twilio.NewClient("", "", nil),
 		dal:    md,
 	}
 
-	md.Expect(mock.NewExpectation(md.LookupProvisionedEndpoint, "test", models.EndpointTypeEmail))
+	md.Expect(mock.NewExpectation(md.LookupProvisionedEndpoint, "test", models.EndpointTypeEmail).WithReturns(
+		&models.ProvisionedEndpoint{
+			ProvisionedFor: "test",
+			Endpoint:       "test@subdomain.domain.com",
+			EndpointType:   models.EndpointTypeEmail,
+		}, nil))
 
 	res, err := es.ProvisionEmailAddress(context.Background(), &excomms.ProvisionEmailAddressRequest{
 		ProvisionFor: "test",
@@ -1343,23 +1235,20 @@ func TestProvisionEmailAddress_Idempotent(t *testing.T) {
 }
 
 func TestProvisionEmailAddress_AlreadyProvisionedWithDifferentAddress(t *testing.T) {
-	md := &mockDAL_Excomms{
-		Expector: &mock.Expector{
-			T: t,
-		},
-		ppn: &models.ProvisionedEndpoint{
-			ProvisionedFor: "test",
-			Endpoint:       "test12345@subdomain.domain.com",
-			EndpointType:   models.EndpointTypeEmail,
-		},
-	}
+	md := dalmock.New(t)
+	defer md.Finish()
 
 	es := &excommsService{
 		twilio: twilio.NewClient("", "", nil),
 		dal:    md,
 	}
 
-	md.Expect(mock.NewExpectation(md.LookupProvisionedEndpoint, "test", models.EndpointTypeEmail))
+	md.Expect(mock.NewExpectation(md.LookupProvisionedEndpoint, "test", models.EndpointTypeEmail).WithReturns(
+		&models.ProvisionedEndpoint{
+			ProvisionedFor: "test",
+			Endpoint:       "test12345@subdomain.domain.com",
+			EndpointType:   models.EndpointTypeEmail,
+		}, nil))
 
 	res, err := es.ProvisionEmailAddress(context.Background(), &excomms.ProvisionEmailAddressRequest{
 		ProvisionFor: "test",

@@ -1,13 +1,12 @@
 package twilio
 
 import (
+	"context"
 	"fmt"
 	"html"
 	"net/url"
 	"testing"
 	"time"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	dalmock "github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal/mock"

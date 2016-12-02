@@ -53,7 +53,7 @@ func GetSingleSelectValue(ctx context.Context, client SettingsClient, req *GetVa
 	} else if len(res.Values) != 1 {
 		return nil, errors.Trace(ErrMoreThanOneValueFound)
 	} else if res.Values[0].GetSingleSelect() == nil {
-		return nil, fmt.Errorf("expected single select but got %T", res.Values[0])
+		return nil, errors.Errorf("expected single select but got %T", res.Values[0])
 	}
 
 	return res.Values[0].GetSingleSelect(), nil
@@ -69,7 +69,7 @@ func GetBooleanValue(ctx context.Context, client SettingsClient, req *GetValuesR
 	} else if len(res.Values) != 1 {
 		return nil, errors.Trace(ErrMoreThanOneValueFound)
 	} else if res.Values[0].GetBoolean() == nil {
-		return nil, errors.Trace(fmt.Errorf("Expected boolean value for revealing sender instead got %T", res.Values[0].Value))
+		return nil, errors.Errorf("Expected boolean value instead got %T", res.Values[0].Value)
 	}
 	return res.Values[0].GetBoolean(), nil
 }
@@ -84,7 +84,7 @@ func GetStringListValue(ctx context.Context, client SettingsClient, req *GetValu
 	} else if len(res.Values) != 1 {
 		return nil, errors.Trace(ErrMoreThanOneValueFound)
 	} else if res.Values[0].GetStringList() == nil {
-		return nil, errors.Trace(fmt.Errorf("Expected string list value for revealing sender instead got %T", res.Values[0].Value))
+		return nil, errors.Errorf("Expected string list instead got %T", res.Values[0].Value)
 	}
 	return res.Values[0].GetStringList(), nil
 }
@@ -99,7 +99,22 @@ func GetIntegerValue(ctx context.Context, client SettingsClient, req *GetValuesR
 	} else if len(res.Values) != 1 {
 		return nil, errors.Trace(ErrMoreThanOneValueFound)
 	} else if res.Values[0].GetInteger() == nil {
-		return nil, errors.Trace(fmt.Errorf("Expected boolean value for revealing sender instead got %T", res.Values[0].Value))
+		return nil, errors.Errorf("Expected integer value instead got %T", res.Values[0].Value)
 	}
 	return res.Values[0].GetInteger(), nil
+}
+
+// GetTextValue is a helper method to return a text value for the provided request.
+func GetTextValue(ctx context.Context, client SettingsClient, req *GetValuesRequest) (*TextValue, error) {
+	res, err := client.GetValues(ctx, req)
+	if err != nil {
+		return nil, errors.Trace(err)
+	} else if len(res.Values) == 0 {
+		return nil, errors.Trace(ErrValueNotFound)
+	} else if len(res.Values) != 1 {
+		return nil, errors.Trace(ErrMoreThanOneValueFound)
+	} else if res.Values[0].GetText() == nil {
+		return nil, errors.Errorf("expected text value instead got %T", res.Values[0].Value)
+	}
+	return res.Values[0].GetText(), nil
 }

@@ -1,13 +1,12 @@
 package dal
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
@@ -87,8 +86,11 @@ type DAL interface {
 	// LookupProvisionedEndpoint returns a provisioned endpoint.
 	LookupProvisionedEndpoint(endpoint string, endpointType models.EndpointType) (*models.ProvisionedEndpoint, error)
 
+	// LookupProvisionedEndpointByUUID returns a provisioned endpoint by its UUID
+	LookupProvisionedEndpointByUUID(uuid string) (*models.ProvisionedEndpoint, error)
+
 	// ProvisionEndpoint provisions the specified endpoint.
-	ProvisionEndpoint(ppn *models.ProvisionedEndpoint) error
+	ProvisionEndpoint(ppn *models.ProvisionedEndpoint, uuid string) error
 
 	// UpdateProvisionedEndpoint updates the mutable and requested fields of the provisioned endpoint row
 	UpdateProvisionedEndpoint(endpoint string, endpointType models.EndpointType, update *ProvisionedEndpointUpdate) (int64, error)
@@ -203,6 +205,8 @@ var (
 	ErrIncomingCallNotFound                = errors.New("incoming_call not found")
 	ErrCallRequestNotFound                 = errors.New("call request not found")
 	ErrIPCallNotFound                      = errors.New("ipcall not found")
+	// ErrExists is returned when trying to insert an object but it already exists (unique constraint)
+	ErrExists = errors.New("object exists")
 )
 
 func (d *dal) LookupProvisionedEndpoint(provisionedFor string, endpointType models.EndpointType) (*models.ProvisionedEndpoint, error) {
@@ -231,13 +235,42 @@ func (d *dal) LookupProvisionedEndpoint(provisionedFor string, endpointType mode
 	return &ppn, nil
 }
 
-func (d *dal) ProvisionEndpoint(ppn *models.ProvisionedEndpoint) error {
+func (d *dal) LookupProvisionedEndpointByUUID(uuid string) (*models.ProvisionedEndpoint, error) {
+	if uuid == "" {
+		return nil, errors.Trace(ErrProvisionedEndpointNotFound)
+	}
+	var ppn models.ProvisionedEndpoint
+	err := d.db.QueryRow(`
+		SELECT endpoint, endpoint_type, provisioned_for, created, deprovisioned, deprovisioned_timestamp, deprovisioned_reason
+		FROM provisioned_endpoint
+		WHERE uuid = ?`, uuid).Scan(
+		&ppn.Endpoint,
+		&ppn.EndpointType,
+		&ppn.ProvisionedFor,
+		&ppn.Provisioned,
+		&ppn.Deprovisioned,
+		&ppn.DeprovisionedTimestamp,
+		&ppn.DeprovisionedReason)
+	if err == sql.ErrNoRows {
+		return nil, errors.Trace(ErrProvisionedEndpointNotFound)
+	}
+	return &ppn, errors.Trace(err)
+}
+
+func (d *dal) ProvisionEndpoint(ppn *models.ProvisionedEndpoint, uuid string) error {
 	if ppn == nil {
 		return nil
 	}
-
+	var uuidPtr *string
+	if uuid != "" {
+		uuidPtr = &uuid
+	}
 	_, err := d.db.Exec(`
-		INSERT INTO provisioned_endpoint (endpoint, endpoint_type, provisioned_for) VALUES (?,?,?)`, ppn.Endpoint, ppn.EndpointType, ppn.ProvisionedFor)
+		INSERT INTO provisioned_endpoint (endpoint, endpoint_type, provisioned_for, uuid) VALUES (?,?,?,?)`,
+		ppn.Endpoint, ppn.EndpointType, ppn.ProvisionedFor, uuidPtr)
+	if dbutil.IsMySQLError(err, dbutil.MySQLDuplicateEntry) {
+		return errors.Trace(ErrExists)
+	}
 	return errors.Trace(err)
 }
 
@@ -366,7 +399,6 @@ func (d *dal) LookupCallRequest(callSID string) (*models.CallRequest, error) {
 }
 
 func (d *dal) AvailableProxyPhoneNumbers(originatingPhoneNumber phone.Number) ([]*models.ProxyPhoneNumber, error) {
-
 	// first, get the authoritative list of proxy phone numbers
 	// even though we are doing a full table scan this table should be fairly small.
 	rows, err := d.db.Query(`
@@ -395,7 +427,7 @@ func (d *dal) AvailableProxyPhoneNumbers(originatingPhoneNumber phone.Number) ([
 	// for each proxy phone number to determine which of them are
 	// currently reserved and exclude that from the list of phone numbers
 	// to return
-	rows2, err := d.db.Query(`
+	rows, err = d.db.Query(`
 		SELECT proxy_phone_number, MAX(expires)
 		FROM proxy_phone_number_reservation
 		WHERE originating_phone_number = ?
@@ -403,16 +435,16 @@ func (d *dal) AvailableProxyPhoneNumbers(originatingPhoneNumber phone.Number) ([
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	defer rows2.Close()
+	defer rows.Close()
 
 	availableProxyNumbers := make([]*models.ProxyPhoneNumber, 0, len(proxyPhoneNumbers))
-	for rows2.Next() {
+	for rows.Next() {
 		var ppn models.ProxyPhoneNumber
-		if err := rows2.Scan(&ppn.PhoneNumber, &ppn.Expires); err != nil {
+		if err := rows.Scan(&ppn.PhoneNumber, &ppn.Expires); err != nil {
 			return nil, errors.Trace(err)
 		}
 
-		if ppn.Expires.Before(time.Now()) {
+		if ppn.Expires.Before(d.clk.Now()) {
 			// ensure that the phone number can still be used as a proxy phone number
 			if _, ok := proxyPhoneNumbersMap[ppn.PhoneNumber.String()]; ok {
 				availableProxyNumbers = append(availableProxyNumbers, &ppn)
@@ -428,18 +460,21 @@ func (d *dal) AvailableProxyPhoneNumbers(originatingPhoneNumber phone.Number) ([
 		availableProxyNumbers = append(availableProxyNumbers, pn)
 	}
 
-	return availableProxyNumbers, errors.Trace(rows2.Err())
+	return availableProxyNumbers, errors.Trace(rows.Err())
 }
 
 func (d *dal) CreateProxyPhoneNumberReservation(model *models.ProxyPhoneNumberReservation) error {
 	_, err := d.db.Exec(`
-		INSERT INTO proxy_phone_number_reservation (proxy_phone_number, originating_phone_number, destination_phone_number, destination_entity_id, owner_entity_id, organization_id, expires)
-		VALUES (?, ?, ?, ?, ?, ?, ?)`, model.ProxyPhoneNumber, model.OriginatingPhoneNumber, model.DestinationPhoneNumber, model.DestinationEntityID, model.OwnerEntityID, model.OrganizationID, model.Expires)
+		INSERT INTO proxy_phone_number_reservation (
+			proxy_phone_number, originating_phone_number, destination_phone_number, provisioned_phone_number,
+			destination_entity_id, owner_entity_id, organization_id, expires)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		model.ProxyPhoneNumber, model.OriginatingPhoneNumber, model.DestinationPhoneNumber, model.ProvisionedPhoneNumber,
+		model.DestinationEntityID, model.OwnerEntityID, model.OrganizationID, model.Expires)
 	return errors.Trace(err)
 }
 
 func (d *dal) ActiveProxyPhoneNumberReservation(originatingPhoneNumber, destinationPhoneNumber, proxyPhoneNumber *phone.Number) (*models.ProxyPhoneNumberReservation, error) {
-
 	where := make([]string, 0, 3)
 	vals := make([]interface{}, 0, 3)
 
@@ -447,7 +482,6 @@ func (d *dal) ActiveProxyPhoneNumberReservation(originatingPhoneNumber, destinat
 		where = append(where, "originating_phone_number = ?")
 		vals = append(vals, *originatingPhoneNumber)
 	}
-
 	if destinationPhoneNumber != nil {
 		where = append(where, "destination_phone_number = ?")
 		vals = append(vals, *destinationPhoneNumber)
@@ -456,20 +490,21 @@ func (d *dal) ActiveProxyPhoneNumberReservation(originatingPhoneNumber, destinat
 		where = append(where, "proxy_phone_number = ?")
 		vals = append(vals, *proxyPhoneNumber)
 	}
-
 	if len(where) == 0 {
-		return nil, errors.Trace(fmt.Errorf("either destination_phone_numer or proxy_phone_number must be specified"))
+		return nil, errors.Errorf("at least one of destination, originating, or proxy phone number must be specified")
 	}
 
 	var ppnr models.ProxyPhoneNumberReservation
 	err := d.db.QueryRow(`
-		SELECT proxy_phone_number, originating_phone_number, destination_phone_number, destination_entity_id, owner_entity_id, organization_id, created, expires
+		SELECT proxy_phone_number, originating_phone_number, destination_phone_number, provisioned_phone_number,
+			destination_entity_id, owner_entity_id, organization_id, created, expires
 		FROM proxy_phone_number_reservation
 		WHERE `+strings.Join(where, " AND ")+`
-		AND expires > ?`, append(vals, time.Now())...).Scan(
+		AND expires > ?`, append(vals, d.clk.Now())...).Scan(
 		&ppnr.ProxyPhoneNumber,
 		&ppnr.OriginatingPhoneNumber,
 		&ppnr.DestinationPhoneNumber,
+		&ppnr.ProvisionedPhoneNumber,
 		&ppnr.DestinationEntityID,
 		&ppnr.OwnerEntityID,
 		&ppnr.OrganizationID,
@@ -502,7 +537,7 @@ func (d *dal) UpdateActiveProxyPhoneNumberReservation(originatingPhoneNumber pho
 		where = append(where, "proxy_phone_number = ?")
 		vals = append(vals, *proxyPhoneNumber)
 	}
-	vals = append(vals, time.Now())
+	vals = append(vals, d.clk.Now())
 
 	vars := dbutil.MySQLVarArgs()
 	if update.Expires != nil {

@@ -1,9 +1,8 @@
 package externalmsg
 
 import (
-	"testing"
-
 	"context"
+	"testing"
 
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/test"

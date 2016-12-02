@@ -121,6 +121,7 @@ type ProxyPhoneNumberReservation struct {
 	ProxyPhoneNumber       phone.Number
 	OriginatingPhoneNumber phone.Number
 	DestinationPhoneNumber phone.Number
+	ProvisionedPhoneNumber phone.Number
 	DestinationEntityID    string
 	OwnerEntityID          string
 	OrganizationID         string
@@ -148,11 +149,9 @@ func (b BlockedNumbers) Includes(pn phone.Number) bool {
 }
 
 func (b BlockedNumbers) ToStringSlice() []string {
-
 	phoneNumbers := make([]string, len(b))
 	for i, blockedNumber := range b {
 		phoneNumbers[i] = blockedNumber.String()
 	}
-
 	return phoneNumbers
 }

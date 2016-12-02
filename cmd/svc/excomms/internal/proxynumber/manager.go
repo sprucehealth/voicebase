@@ -23,7 +23,7 @@ type manager struct {
 type Manager interface {
 
 	// ReserveNumber returns a proxy number that is reserved for the originatingNumber to call the destinationNumber via the proxyPhoneNumber.
-	ReserveNumber(originatingNumber, destinationNumber phone.Number, destinationEntityID, sourceEntityID, organizationID string) (phone.Number, error)
+	ReserveNumber(originatingNumber, destinationNumber, provisionedPhoneNumber phone.Number, destinationEntityID, sourceEntityID, organizationID string) (phone.Number, error)
 
 	ActiveReservation(originatingNumber, proxyNumber phone.Number) (*models.ProxyPhoneNumberReservation, error)
 
@@ -57,7 +57,7 @@ var (
 	ongoingCallThreshold = 5 * time.Hour
 )
 
-func (m *manager) ReserveNumber(originatingPhoneNumber, destinationPhoneNumber phone.Number, destinationEntityID, sourceEntityID, organizationID string) (phone.Number, error) {
+func (m *manager) ReserveNumber(originatingPhoneNumber, destinationPhoneNumber, provisionedPhoneNumber phone.Number, destinationEntityID, sourceEntityID, organizationID string) (phone.Number, error) {
 	var proxyPhoneNumber phone.Number
 	if err := m.dal.Transact(func(dl dal.DAL) error {
 
@@ -66,16 +66,16 @@ func (m *manager) ReserveNumber(originatingPhoneNumber, destinationPhoneNumber p
 		ppnr, err := dl.ActiveProxyPhoneNumberReservation(phone.Ptr(originatingPhoneNumber), phone.Ptr(destinationPhoneNumber), nil)
 		if err != nil && errors.Cause(err) != dal.ErrProxyPhoneNumberReservationNotFound {
 			return errors.Trace(err)
-		} else if ppnr != nil && (ppnr.DestinationEntityID == destinationEntityID && ppnr.OwnerEntityID == sourceEntityID) {
-
+		}
+		if ppnr != nil && ppnr.DestinationEntityID == destinationEntityID && ppnr.OwnerEntityID == sourceEntityID {
 			expiration := m.clock.Now().Add(phoneReservationDuration)
 			// extend the existing reservation rather than creating a new one and return
 			if rowsAffected, err := dl.UpdateActiveProxyPhoneNumberReservation(originatingPhoneNumber, phone.Ptr(destinationPhoneNumber), nil, &dal.ProxyPhoneNumberReservationUpdate{
-				Expires: ptr.Time(expiration),
+				Expires: &expiration,
 			}); err != nil {
 				return errors.Trace(err)
 			} else if rowsAffected > 1 {
-				return errors.Trace(fmt.Errorf("Expected 1 row to be updated, instead %d rows were updated for proxyPhoneNumber %s", rowsAffected, ppnr.ProxyPhoneNumber))
+				return errors.Errorf("Expected 1 row to be updated, instead %d rows were updated for proxyPhoneNumber %s", rowsAffected, ppnr.ProxyPhoneNumber)
 			}
 
 			proxyPhoneNumber = ppnr.ProxyPhoneNumber
@@ -93,21 +93,10 @@ func (m *manager) ReserveNumber(originatingPhoneNumber, destinationPhoneNumber p
 		sort.Sort(models.ByExpiresProxyPhoneNumbers(ppns))
 
 		for _, ppn := range ppns {
-
-			// select number if it has never been used befores
-			if ppn.Expires == nil {
+			// select number if it has never been used before or it is beyond the grace reservation window.
+			if ppn.Expires == nil || ppn.Expires.Before(m.clock.Now()) {
 				proxyPhoneNumber = ppn.PhoneNumber
 				break
-			}
-
-			// check if the proxy phone number is beyond the grace reservation window to
-			// use it again.
-			if ppn.Expires != nil {
-				if ppn.Expires.Before(m.clock.Now()) {
-					proxyPhoneNumber = ppn.PhoneNumber
-					break
-				}
-				continue
 			}
 		}
 
@@ -119,19 +108,16 @@ func (m *manager) ReserveNumber(originatingPhoneNumber, destinationPhoneNumber p
 
 		expiration := m.clock.Now().Add(phoneReservationDuration)
 
-		if err := dl.CreateProxyPhoneNumberReservation(&models.ProxyPhoneNumberReservation{
+		return errors.Trace(dl.CreateProxyPhoneNumberReservation(&models.ProxyPhoneNumberReservation{
 			ProxyPhoneNumber:       proxyPhoneNumber,
 			DestinationPhoneNumber: destinationPhoneNumber,
 			OriginatingPhoneNumber: originatingPhoneNumber,
+			ProvisionedPhoneNumber: provisionedPhoneNumber,
 			DestinationEntityID:    destinationEntityID,
 			OwnerEntityID:          sourceEntityID,
 			OrganizationID:         organizationID,
 			Expires:                expiration,
-		}); err != nil {
-			return errors.Trace(err)
-		}
-
-		return nil
+		}))
 	}); err != nil {
 		return phone.Number(""), err
 	}
@@ -143,7 +129,7 @@ func (m *manager) ActiveReservation(originatingNumber, proxyNumber phone.Number)
 	// look for an active reservation on the proxy phone number
 	ppnr, err := m.dal.ActiveProxyPhoneNumberReservation(phone.Ptr(originatingNumber), nil, phone.Ptr(proxyNumber))
 	if errors.Cause(err) == dal.ErrProxyPhoneNumberReservationNotFound {
-		return nil, errors.Trace(fmt.Errorf("No active reservation found for proxy number: %s, originating number:%s", proxyNumber, originatingNumber))
+		return nil, errors.Errorf("No active reservation found for proxy number: %s, originating number:%s", proxyNumber, originatingNumber)
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -157,7 +143,7 @@ func (m *manager) CallStarted(originatingNumber, proxyNumber phone.Number) error
 	}); err != nil {
 		return err
 	} else if rowsUpdated != 1 {
-		return fmt.Errorf("Expected one row to be updated for active reservation (originatingNumber:%s, proxyNumber:%s) but %d rows were updated", originatingNumber, proxyNumber, rowsUpdated)
+		return errors.Errorf("Expected one row to be updated for active reservation (originatingNumber:%s, proxyNumber:%s) but %d rows were updated", originatingNumber, proxyNumber, rowsUpdated)
 	}
 
 	return nil
@@ -169,7 +155,7 @@ func (m *manager) CallEnded(originatingNumber, proxyNumber phone.Number) error {
 	}); err != nil {
 		return errors.Trace(err)
 	} else if rowsUpdated != 1 {
-		return errors.Trace(fmt.Errorf("Expected 1 reservation to be updated for (originatingNumber: %s, proxyNumber: %s) but got %d row updates", originatingNumber, proxyNumber, rowsUpdated))
+		return errors.Errorf("Expected 1 reservation to be updated for (originatingNumber: %s, proxyNumber: %s) but got %d row updates", originatingNumber, proxyNumber, rowsUpdated)
 	}
 	return nil
 }

@@ -67,6 +67,26 @@ var booleanSettingType = graphql.NewObject(
 	},
 )
 
+var textSettingType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "TextSetting",
+		Interfaces: []*graphql.Interface{
+			settingsInterfaceType,
+		},
+		Fields: graphql.Fields{
+			"key":         &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"subkey":      &graphql.Field{Type: graphql.String},
+			"title":       &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"description": &graphql.Field{Type: graphql.String},
+			"value":       &graphql.Field{Type: graphql.NewNonNull(settingValueInterfaceType)},
+		},
+		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+			_, ok := value.(*models.TextSetting)
+			return ok
+		},
+	},
+)
+
 var selectableItemType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "SelectableItem",
@@ -149,6 +169,23 @@ var booleanSettingValueType = graphql.NewObject(
 	},
 )
 
+var textSettingValueType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "TextSettingValue",
+		Interfaces: []*graphql.Interface{
+			settingValueInterfaceType,
+		},
+		Fields: graphql.Fields{
+			"key":    &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"subkey": &graphql.Field{Type: graphql.String},
+			"set":    &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		},
+		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+			_, ok := value.(*models.TextSettingValue)
+			return ok
+		},
+	},
+)
 var selectableItemValueType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "SelectableItemValue",
@@ -293,6 +330,8 @@ var settingsQuery = &graphql.Field{
 		switch config.Type {
 		case settings.ConfigType_BOOLEAN:
 			setting = transformBooleanSettingToResponse(config, value)
+		case settings.ConfigType_TEXT:
+			setting = transformTextSettingToResponse(config, value)
 		case settings.ConfigType_MULTI_SELECT, settings.ConfigType_SINGLE_SELECT:
 			setting = transformMultiSelectToResponse(config, value)
 		case settings.ConfigType_STRING_LIST:

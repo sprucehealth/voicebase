@@ -3,6 +3,7 @@ package client
 import (
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/backend/svc/settings"
@@ -26,6 +27,9 @@ const (
 
 	// AuthClientParamKey is where in the root object the auth client is stored
 	AuthClientParamKey = "auth_client"
+
+	// ExCommsClientParamKey is where in the root object the excomms client is stored
+	ExCommsClientParamKey = "excomms_client"
 )
 
 // Domains returns the domain sturcture mapped into the request params
@@ -56,6 +60,11 @@ func Invite(p graphql.ResolveParams) invite.InviteClient {
 // Auth returns the invite client mapped into the request params
 func Auth(p graphql.ResolveParams) auth.AuthClient {
 	return p.Info.RootValue.(map[string]interface{})[AuthClientParamKey].(auth.AuthClient)
+}
+
+// ExComms returns the excomms client mapped into the request params
+func ExComms(p graphql.ResolveParams) excomms.ExCommsClient {
+	return p.Info.RootValue.(map[string]interface{})[ExCommsClientParamKey].(excomms.ExCommsClient)
 }
 
 // Domain collects the domains used for url generation

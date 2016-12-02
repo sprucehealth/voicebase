@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	segment "github.com/segmentio/analytics-go"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
@@ -12,14 +13,22 @@ import (
 	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/libs/analytics"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/gqldecode"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/graphql"
+	"github.com/sprucehealth/graphql/gqlerrors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
+
+type provisionPhoneNumberInput struct {
+	ClientMutationID string `gql:"clientMutationId"`
+	OrganizationID   string `gql:"organizationID"`
+	AreaCode         string `gql:"areaCode"`
+}
 
 type provisionPhoneNumberOutput struct {
 	ClientMutationID string               `json:"clientMutationId,omitempty"`
@@ -87,44 +96,46 @@ var provisionPhoneNumberMutation = &graphql.Field{
 	Args: graphql.FieldConfigArgument{
 		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(provisionPhoneNumberInputType)},
 	},
-	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+	Resolve: apiaccess.Provider(func(p graphql.ResolveParams) (interface{}, error) {
 		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
 		svc := serviceFromParams(p)
 		acc := gqlctx.Account(ctx)
 		sh := devicectx.SpruceHeaders(ctx)
 
-		if acc == nil {
-			return nil, errors.ErrNotAuthenticated(ctx)
+		var in provisionPhoneNumberInput
+		if err := gqldecode.Decode(p.Args["input"].(map[string]interface{}), &in); err != nil {
+			switch err := err.(type) {
+			case gqldecode.ErrValidationFailed:
+				return nil, gqlerrors.FormatError(fmt.Errorf("%s is invalid: %s", err.Field, err.Reason))
+			}
+			return nil, errors.InternalError(p.Context, err)
 		}
 
-		input := p.Args["input"].(map[string]interface{})
-		organizationID, _ := input["organizationID"].(string)
-		mutationID, _ := input["clientMutationId"].(string)
-		areaCode, _ := input["areaCode"].(string)
-
-		if organizationID == "" {
-			return nil, fmt.Errorf("organizationID required")
-		} else if areaCode == "" {
-			return nil, fmt.Errorf("areaCode required")
+		if in.OrganizationID == "" {
+			return nil, errors.Errorf("organizationID required")
+		} else if in.AreaCode == "" {
+			return nil, errors.Errorf("areaCode required")
 		}
 
-		entity, err := entityInOrgForAccountID(ctx, ram, organizationID, acc)
+		entity, err := entityInOrgForAccountID(ctx, ram, in.OrganizationID, acc)
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		} else if entity == nil {
-			return nil, fmt.Errorf("No entity found in organization %s", organizationID)
+			return nil, errors.Errorf("No entity found in organization %s", in.OrganizationID)
 		}
 
 		res, err := ram.ProvisionPhoneNumber(ctx, &excomms.ProvisionPhoneNumberRequest{
-			ProvisionFor: organizationID,
+			ProvisionFor: in.OrganizationID,
 			Number: &excomms.ProvisionPhoneNumberRequest_AreaCode{
-				AreaCode: areaCode,
+				AreaCode: in.AreaCode,
 			},
+			// Use the UUID to guarantee that the organization can only provision one number through this mutation.
+			UUID: in.OrganizationID + ":" + "primary",
 		})
 		if grpc.Code(err) == codes.InvalidArgument || grpc.Code(err) == codes.NotFound {
 			return &provisionPhoneNumberOutput{
-				ClientMutationID: mutationID,
+				ClientMutationID: in.ClientMutationID,
 				Success:          false,
 				ErrorCode:        provisionPhoneNumberErrorCodeUnavailable,
 				ErrorMessage:     "No phone number is available for the chosen area code. Please choose another.",
@@ -135,12 +146,13 @@ var provisionPhoneNumberMutation = &graphql.Field{
 
 		// lets go ahead and create a contact for the entity for which the number was provisioned
 		createContactRes, err := ram.CreateContact(ctx, &directory.CreateContactRequest{
-			EntityID: organizationID,
+			EntityID: in.OrganizationID,
 			Contact: &directory.Contact{
 				ContactType: directory.ContactType_PHONE,
 				Provisioned: true,
 				Value:       res.PhoneNumber,
 				Verified:    true,
+				Label:       "Primary",
 			},
 			RequestedInformation: &directory.RequestedInformation{
 				Depth: 0,
@@ -178,7 +190,7 @@ var provisionPhoneNumberMutation = &graphql.Field{
 		// lets go ahead and add the mobile number of the user to the forwarding list
 		// so that there is a number in the forwarding list by default.
 		_, err = svc.settings.SetValue(ctx, &settings.SetValueRequest{
-			NodeID: organizationID,
+			NodeID: in.OrganizationID,
 			Value: &settings.Value{
 				Key: &settings.ConfigKey{
 					Key:    excommssettings.ConfigKeyForwardingList,
@@ -195,7 +207,7 @@ var provisionPhoneNumberMutation = &graphql.Field{
 			},
 		})
 		if err != nil {
-			golog.Errorf("Unable to create forwarding list for the provisioned phone number: %s", err.Error())
+			golog.ContextLogger(ctx).Errorf("Unable to create forwarding list for the provisioned phone number: %s", err)
 		}
 
 		orgRes, err := transformOrganizationToResponse(ctx, svc.staticURLPrefix, createContactRes.Entity, entity, sh, acc)
@@ -209,10 +221,10 @@ var provisionPhoneNumberMutation = &graphql.Field{
 		}
 
 		return &provisionPhoneNumberOutput{
-			ClientMutationID: mutationID,
+			ClientMutationID: in.ClientMutationID,
 			Success:          true,
 			PhoneNumber:      pn,
 			Organization:     orgRes,
 		}, nil
-	},
+	}),
 }

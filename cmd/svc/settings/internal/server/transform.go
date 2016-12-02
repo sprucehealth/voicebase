@@ -37,6 +37,14 @@ func transformConfigToModel(config *settings.Config) *models.Config {
 				},
 			},
 		}
+	case models.ConfigType_TEXT:
+		m.Config = &models.Config_Text{
+			Text: &models.TextConfig{
+				Default: &models.TextValue{
+					Value: config.GetText().GetDefault().Value,
+				},
+			},
+		}
 	case models.ConfigType_MULTI_SELECT:
 		m.Config = &models.Config_MultiSelect{
 			MultiSelect: &models.MultiSelectConfig{
@@ -128,6 +136,14 @@ func transformModelToConfig(config *models.Config) *settings.Config {
 				},
 			},
 		}
+	case models.ConfigType_TEXT:
+		c.Config = &settings.Config_Text{
+			Text: &settings.TextConfig{
+				Default: &settings.TextValue{
+					Value: config.GetText().Default.Value,
+				},
+			},
+		}
 	case models.ConfigType_MULTI_SELECT:
 		c.Config = &settings.Config_MultiSelect{
 			MultiSelect: &settings.MultiSelectConfig{
@@ -201,6 +217,13 @@ func transformModelToValue(value *models.Value) *settings.Value {
 		if value.GetInteger() != nil {
 			v.GetInteger().Value = value.GetInteger().Value
 		}
+	case models.ConfigType_TEXT:
+		v.Value = &settings.Value_Text{
+			Text: &settings.TextValue{},
+		}
+		if w := value.GetText(); w != nil {
+			v.GetText().Value = w.Value
+		}
 	case models.ConfigType_STRING_LIST:
 		v.Value = &settings.Value_StringList{
 			StringList: &settings.StringListValue{},
@@ -260,6 +283,14 @@ func transformValueToModel(value *settings.Value) *models.Value {
 				},
 			}
 		}
+	case settings.ConfigType_TEXT:
+		if w := value.GetText(); w != nil {
+			v.Value = &models.Value_Text{
+				Text: &models.TextValue{
+					Value: w.Value,
+				},
+			}
+		}
 	case settings.ConfigType_MULTI_SELECT:
 		v.Value = &models.Value_MultiSelect{
 			MultiSelect: &models.MultiSelectValue{
@@ -274,12 +305,12 @@ func transformValueToModel(value *settings.Value) *models.Value {
 			}
 		}
 	case settings.ConfigType_SINGLE_SELECT:
-		if value.GetSingleSelect().GetItem() != nil {
+		if item := value.GetSingleSelect().GetItem(); item != nil {
 			v.Value = &models.Value_SingleSelect{
 				SingleSelect: &models.SingleSelectValue{
 					Item: &models.ItemValue{
-						ID:               value.GetSingleSelect().GetItem().ID,
-						FreeTextResponse: value.GetSingleSelect().GetItem().FreeTextResponse,
+						ID:               item.ID,
+						FreeTextResponse: item.FreeTextResponse,
 					},
 				},
 			}

@@ -111,6 +111,7 @@ func runService(bootSvc *boot.Service) {
 			excommsSettings.PauseBeforeCallConnectConfig,
 			excommsSettings.ExposeCallerConfig,
 			excommsSettings.CallScreeningConfig,
+			excommsSettings.DefaultProvisionedPhoneNumberConfig,
 		})
 	if err != nil {
 		golog.Fatalf("Unable to register configs with the settings service: %s", err.Error())
@@ -166,6 +167,7 @@ func runService(bootSvc *boot.Service) {
 		config.excommsAPIURL,
 		directory.NewDirectoryClient(directoryConn),
 		threading.NewThreadsClient(threadingConn),
+		settings.NewSettingsClient(settingsConn),
 		eSNS,
 		config.externalMessageTopic,
 		config.eventTopic,

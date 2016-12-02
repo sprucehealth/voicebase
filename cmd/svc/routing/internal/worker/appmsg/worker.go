@@ -9,6 +9,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
+	exsettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
 	rsettings "github.com/sprucehealth/backend/cmd/svc/routing/internal/settings"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/bml"
@@ -58,7 +59,6 @@ func (a *appMessageWorker) Start() {
 	a.started = true
 	go func() {
 		for {
-
 			sqsRes, err := a.sqsAPI.ReceiveMessage(&sqs.ReceiveMessageInput{
 				QueueUrl:            ptr.String(a.sqsURL),
 				MaxNumberOfMessages: ptr.Int64(1),
@@ -66,36 +66,35 @@ func (a *appMessageWorker) Start() {
 				WaitTimeSeconds:     ptr.Int64(20),
 			})
 			if err != nil {
-				golog.Errorf("Unable to receive message: " + err.Error())
+				golog.Errorf("Unable to receive message: %s", err)
 				continue
 			}
 
 			for _, item := range sqsRes.Messages {
-
-				golog := golog.Context("handle", *item.ReceiptHandle)
+				log := golog.Context("handle", *item.ReceiptHandle)
 
 				var m awsutil.SNSSQSMessage
 				if err := json.Unmarshal([]byte(*item.Body), &m); err != nil {
-					golog.Errorf("Unable to unmarshal SQS message: " + err.Error())
+					log.Errorf("Unable to unmarshal SQS message: %s", err)
 					continue
 				}
 
 				data, err := base64.StdEncoding.DecodeString(m.Message)
 				if err != nil {
-					golog.Errorf("Unable to decode string %s", err.Error())
+					log.Errorf("Unable to decode string %s", err)
 					continue
 				}
 
 				var pti threading.PublishedThreadItem
 				if err := pti.Unmarshal(data); err != nil {
-					golog.Errorf("Unable to unmarshal published thread item: " + err.Error())
+					log.Errorf("Unable to unmarshal published thread item: %s", err)
 					continue
 				}
 
-				golog.Debugf("Process message %s", *item.ReceiptHandle)
+				log.Debugf("Process message %s", *item.ReceiptHandle)
 
 				if err := a.process(&pti); err != nil {
-					golog.Errorf("Unable to process item: " + err.Error())
+					log.Errorf("Unable to process item: %s", err)
 					continue
 				}
 
@@ -107,10 +106,10 @@ func (a *appMessageWorker) Start() {
 					},
 				)
 				if err != nil {
-					golog.Errorf("Unable to delete message: " + err.Error())
+					log.Errorf("Unable to delete message: %s", err)
 				}
 
-				golog.Debugf("Delete message %s", *item.ReceiptHandle)
+				log.Debugf("Delete message %s", *item.ReceiptHandle)
 			}
 		}
 	}()
@@ -169,7 +168,7 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 				EntityID: organizationID,
 			},
 			RequestedInformation: &directory.RequestedInformation{
-				Depth: 1,
+				Depth: 0,
 				EntityInformation: []directory.EntityInformation{
 					directory.EntityInformation_CONTACTS,
 				},
@@ -182,28 +181,7 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 	} else if len(orgLookupRes.Entities) == 0 {
 		return errors.Errorf("Expected organization to exist for id %s", organizationID)
 	}
-
-	// determine external entity that belongs to this organization
-	externalEntityLookupRes, err := a.directory.LookupEntities(
-		ctx,
-		&directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-				EntityID: pti.PrimaryEntityID,
-			},
-			RequestedInformation: &directory.RequestedInformation{
-				Depth: 1,
-				EntityInformation: []directory.EntityInformation{
-					directory.EntityInformation_CONTACTS,
-				},
-			},
-			RootTypes: []directory.EntityType{directory.EntityType_EXTERNAL},
-		})
-	if err != nil {
-		return errors.Trace(err)
-	} else if len(externalEntityLookupRes.Entities) == 0 {
-		return errors.Errorf("Expected external entity to exist for id %s", pti.PrimaryEntityID)
-	}
+	orgEntity := orgLookupRes.Entities[0]
 
 	// Parse text and render as plain text.
 	textBML, err := bml.Parse(msg.Text)
@@ -214,7 +192,7 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 	}
 	plainText, err := textBML.PlainText()
 	if err != nil {
-		golog.Errorf("Unable to render plain text version for message item %s: "+err.Error(), item.ID)
+		golog.Errorf("Unable to render plain text version for message item %s: %s", item.ID, err)
 		// Shouldn't fail here since the parsing should have done validation
 		return errors.Trace(err)
 	}
@@ -229,7 +207,7 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 		},
 	})
 	if err != nil {
-		golog.Errorf("Unable to read settings for reveling sender for organizationID %s: %s", organizationID, err.Error())
+		golog.Errorf("Unable to read settings for reveling sender for organizationID %s: %s", organizationID, err)
 	} else if len(res.Values) == 0 {
 		golog.Errorf("No value specified for revealing sender for %s", organizationID)
 	} else if len(res.Values) != 1 {
@@ -249,18 +227,32 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 	}
 
 	// Perform the outbound operations for any remaining valid destinations
-	orgEntity := orgLookupRes.Entities[0]
 	for _, d := range destinations {
 		switch d.Channel {
 		case threading.ENDPOINT_CHANNEL_APP:
 			// Note: Do nothing in this case since it should already be in the app.
 			// TODO: Remove this case when Endpoint_APP is removed from the system
 		case threading.ENDPOINT_CHANNEL_SMS:
-			// determine org phone number
-			orgContact := determineProvisionedContact(orgEntity, directory.ContactType_PHONE)
-			if orgContact == nil {
-				golog.Errorf("Unable to determine organization provisioned phone number for org %s. Dropping message...", organizationID)
-				return nil
+			var provisionedPhoneNumber string
+			val, err := settings.GetTextValue(ctx, a.settings, &settings.GetValuesRequest{
+				NodeID: item.ActorEntityID,
+				Keys: []*settings.ConfigKey{
+					{
+						Key: exsettings.ConfigKeyDefaultProvisionedPhoneNumber,
+					},
+				},
+			})
+			if err == nil {
+				provisionedPhoneNumber = val.Value
+			} else if errors.Cause(err) != settings.ErrValueNotFound {
+				return errors.Errorf("unable to get default number setting for entity %s: %s", item.ActorEntityID, err)
+			} else {
+				orgContact := determineProvisionedContact(orgEntity, directory.ContactType_PHONE)
+				if orgContact == nil {
+					golog.Errorf("Unable to determine organization provisioned phone number for org %s. Dropping message...", organizationID)
+					return nil
+				}
+				provisionedPhoneNumber = orgContact.Value
 			}
 
 			if revealSender {
@@ -271,14 +263,14 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 				plainText = providerEntity.Info.DisplayName + ": " + plainText
 			}
 
-			_, err := a.excomms.SendMessage(
+			_, err = a.excomms.SendMessage(
 				ctx,
 				&excomms.SendMessageRequest{
 					UUID:    item.ID,
 					Channel: excomms.ChannelType_SMS,
 					Message: &excomms.SendMessageRequest_SMS{
 						SMS: &excomms.SMSMessage{
-							FromPhoneNumber: orgContact.Value,
+							FromPhoneNumber: provisionedPhoneNumber,
 							ToPhoneNumber:   d.ID,
 							Text:            plainText,
 							MediaIDs:        mediaIDs,
@@ -297,9 +289,9 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 					golog.Errorf("Message %s cannot be delivered. Not going to retry as the error is permanent. Manual intervention required by Support team to report issue to customer. Error = '%s", item.ID, err)
 					return nil
 				}
-				return errors.Trace(fmt.Errorf("Unable to send message originating from thread item id : %s: %s", item.ID, err))
+				return errors.Errorf("Unable to send message originating from thread item id %s: %s", item.ID, err)
 			}
-			golog.Debugf("Sent SMS %s → %s. Text %s", orgContact.Value, d.ID, msg.Text)
+			golog.Debugf("Sent SMS %s → %s. Text %s", provisionedPhoneNumber, d.ID, msg.Text)
 		case threading.ENDPOINT_CHANNEL_EMAIL:
 			// determine org email address
 			orgContact := determineProvisionedContact(orgEntity, directory.ContactType_EMAIL)
@@ -339,7 +331,7 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 			}
 			golog.Debugf("Sent Email %s → %s. Text %s", orgContact.Value, d.ID, msg.Text)
 		default:
-			golog.Errorf("Dropping destination %s. Unknown how to send message.", d.Channel.String())
+			golog.Errorf("Dropping destination %s. Unknown how to send message.", d.Channel)
 		}
 	}
 
@@ -380,7 +372,7 @@ func determineActorEntity(ctx context.Context, directoryClient directory.Directo
 	if err != nil {
 		return nil, errors.Trace(err)
 	} else if len(providerLookupRes.Entities) != 1 {
-		return nil, errors.Trace(fmt.Errorf("Expected 1 provider to exist for id %s, but got %d", actorEntityID, len(providerLookupRes.Entities)))
+		return nil, errors.Errorf("Expected 1 provider to exist for id %s, but got %d", actorEntityID, len(providerLookupRes.Entities))
 	}
 	return providerLookupRes.Entities[0], nil
 }
