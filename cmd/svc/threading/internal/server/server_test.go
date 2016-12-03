@@ -25,6 +25,7 @@ import (
 	"github.com/sprucehealth/backend/svc/settings"
 	mocksettings "github.com/sprucehealth/backend/svc/settings/mock"
 	"github.com/sprucehealth/backend/svc/threading"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
 
@@ -3252,7 +3253,7 @@ func TestDeleteThreadPEInternal(t *testing.T) {
 		},
 		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 		RootTypes: []directory.EntityType{directory.EntityType_EXTERNAL, directory.EntityType_PATIENT},
-	}).WithReturns(&directory.LookupEntitiesResponse{}, grpcErrorf(codes.NotFound, "")))
+	}).WithReturns(&directory.LookupEntitiesResponse{}, grpc.Errorf(codes.NotFound, "")))
 	dl.Expect(mock.NewExpectation(dl.DeleteThread, tID).WithReturns(nil))
 	dl.Expect(mock.NewExpectation(dl.RecordThreadEvent, tID, eID, models.ThreadEventDelete).WithReturns(nil))
 	dl.Expect(mock.NewExpectation(dl.RemoveThreadFromAllSavedQueryIndexes, tID))

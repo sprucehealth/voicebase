@@ -266,8 +266,8 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 			_, err = a.excomms.SendMessage(
 				ctx,
 				&excomms.SendMessageRequest{
-					UUID:    item.ID,
-					Channel: excomms.ChannelType_SMS,
+					UUID:              item.ID,
+					DeprecatedChannel: excomms.ChannelType_SMS,
 					Message: &excomms.SendMessageRequest_SMS{
 						SMS: &excomms.SMSMessage{
 							FromPhoneNumber: provisionedPhoneNumber,
@@ -312,8 +312,8 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 			_, err = a.excomms.SendMessage(
 				ctx,
 				&excomms.SendMessageRequest{
-					UUID:    item.ID,
-					Channel: excomms.ChannelType_EMAIL,
+					UUID:              item.ID,
+					DeprecatedChannel: excomms.ChannelType_EMAIL,
 					Message: &excomms.SendMessageRequest_Email{
 						Email: &excomms.EmailMessage{
 							Subject:          fmt.Sprintf("Message from %s", orgEntity.Info.DisplayName),

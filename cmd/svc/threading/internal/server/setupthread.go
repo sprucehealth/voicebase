@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/svc/threading"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
 
@@ -24,7 +25,7 @@ const (
 // CreateOnboardingThread create a new onboarding thread
 func (s *threadsServer) CreateOnboardingThread(ctx context.Context, in *threading.CreateOnboardingThreadRequest) (*threading.CreateOnboardingThreadResponse, error) {
 	if in.OrganizationID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "OrganizationID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "OrganizationID is required")
 	}
 
 	phoneSetupURL := deeplink.OrgSettingsPhoneURL(s.webDomain, in.OrganizationID)
@@ -57,11 +58,11 @@ func (s *threadsServer) CreateOnboardingThread(ctx context.Context, in *threadin
 	}
 	msg, err := msgBML.Format()
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, "Failed to format setup thread BML: %s", err)
+		return nil, grpc.Errorf(codes.Internal, "Failed to format setup thread BML: %s", err)
 	}
 	summary, err := models.SummaryFromText("Setup: " + msg)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, "Failed to generate summary: %s", err)
+		return nil, grpc.Errorf(codes.Internal, "Failed to generate summary: %s", err)
 	}
 
 	var threadID models.ThreadID
@@ -89,7 +90,7 @@ func (s *threadsServer) CreateOnboardingThread(ctx context.Context, in *threadin
 		}
 		return errors.Trace(dl.CreateSetupThreadState(ctx, threadID, in.OrganizationID))
 	}); err != nil {
-		return nil, grpcErrorf(codes.Internal, errors.Trace(err).Error())
+		return nil, grpc.Errorf(codes.Internal, errors.Trace(err).Error())
 	}
 
 	threads, err := s.dal.Threads(ctx, []models.ThreadID{threadID})
@@ -119,24 +120,24 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 	case threading.ONBOARDING_THREAD_LOOKUP_BY_THREAD_ID:
 		id, err := models.ParseThreadID(in.GetThreadID())
 		if err != nil {
-			return nil, grpcErrorf(codes.InvalidArgument, "Invalid thread ID '%s'", in.GetThreadID())
+			return nil, grpc.Errorf(codes.InvalidArgument, "Invalid thread ID '%s'", in.GetThreadID())
 		}
 		state, err = s.dal.SetupThreadState(ctx, id)
 	case threading.ONBOARDING_THREAD_LOOKUP_BY_ENTITY_ID:
 		state, err = s.dal.SetupThreadStateForEntity(ctx, in.GetEntityID())
 	default:
-		return nil, grpcErrorf(codes.InvalidArgument, "Unknown lookup by type %s", in.LookupBy)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Unknown lookup by type %s", in.LookupBy)
 	}
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, "Onboarding state not found")
+		return nil, grpc.Errorf(codes.NotFound, "Onboarding state not found")
 	}
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, grpc.Errorf(codes.Internal, err.Error())
 	}
 
 	threads, err := s.dal.Threads(ctx, []models.ThreadID{state.ThreadID})
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, grpc.Errorf(codes.Internal, err.Error())
 	} else if len(threads) == 0 {
 		return nil, errors.Errorf("thread %s not found", state.ThreadID)
 	}
@@ -144,11 +145,11 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 
 	supportThreads, err := s.dal.ThreadsForOrg(ctx, setupThread.OrganizationID, models.ThreadTypeSupport, 1)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, grpc.Errorf(codes.Internal, err.Error())
 	}
 	// Really should be exactly one, but to not blow up for our own support forum only err when none exist.
 	if len(supportThreads) < 1 {
-		return nil, grpcErrorf(codes.FailedPrecondition, "Expected at least 1 support thread for org %s", setupThread.OrganizationID)
+		return nil, grpc.Errorf(codes.FailedPrecondition, "Expected at least 1 support thread for org %s", setupThread.OrganizationID)
 	}
 	supportThread := supportThreads[0]
 
@@ -160,7 +161,7 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 			// Second phone line
 			pn, err := phone.ParseNumber(in.GetProvisionedPhone().PhoneNumber)
 			if err != nil {
-				return nil, grpcErrorf(codes.InvalidArgument, "Invalid phone number '%s' for org %s", in.GetProvisionedPhone().PhoneNumber, setupThread.OrganizationID)
+				return nil, grpc.Errorf(codes.InvalidArgument, "Invalid phone number '%s' for org %s", in.GetProvisionedPhone().PhoneNumber, setupThread.OrganizationID)
 			}
 			supportThreadURL := deeplink.ThreadURLShareable(s.webDomain, setupThread.OrganizationID, supportThread.ID.String())
 			prettyPhone, err := pn.Format(phone.Pretty)
@@ -215,7 +216,7 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 				newStepBit = 8
 			}
 		default:
-			return nil, grpcErrorf(codes.Internal, "Unhandled onboarding setup event '%s' for org %s", in.Event, setupThread.OrganizationID)
+			return nil, grpc.Errorf(codes.Internal, "Unhandled onboarding setup event '%s' for org %s", in.Event, setupThread.OrganizationID)
 		}
 	default:
 		golog.Debugf("Unhandled onboarding thread event '%s'", in.Event)
@@ -223,13 +224,13 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 	if msgBML != nil {
 		msg, err := msgBML.Format()
 		if err != nil {
-			return nil, grpcErrorf(codes.Internal, "invalid onboarding message BML: %s", err)
+			return nil, grpc.Errorf(codes.Internal, "invalid onboarding message BML: %s", err)
 		}
 		var summary string
 		if msg != "" {
 			summary, err = models.SummaryFromText("Setup: " + msg)
 			if err != nil {
-				return nil, grpcErrorf(codes.Internal, "Failed to generate summary for event %s", in.EventType)
+				return nil, grpc.Errorf(codes.Internal, "Failed to generate summary for event %s", in.EventType)
 			}
 		}
 		if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
@@ -253,15 +254,15 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 			})
 			return errors.Trace(err)
 		}); err != nil {
-			return nil, grpcErrorf(codes.Internal, err.Error())
+			return nil, grpc.Errorf(codes.Internal, err.Error())
 		}
 	}
 
 	threads, err = s.dal.Threads(ctx, []models.ThreadID{state.ThreadID})
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, grpc.Errorf(codes.Internal, err.Error())
 	} else if len(threads) == 0 {
-		return nil, grpcErrorf(codes.NotFound, "thread not found")
+		return nil, grpc.Errorf(codes.NotFound, "thread not found")
 	}
 	thread := threads[0]
 

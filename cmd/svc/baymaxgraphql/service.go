@@ -82,7 +82,7 @@ func createAndSendSMSVerificationCode(ctx context.Context, ram raccess.ResourceA
 	golog.Debugf("Sending code %s to %s for verification", resp.VerificationCode.Code, pn)
 	conc.Go(func() {
 		if err := ram.SendMessage(context.TODO(), &excomms.SendMessageRequest{
-			Channel: excomms.ChannelType_SMS,
+			DeprecatedChannel: excomms.ChannelType_SMS,
 			Message: &excomms.SendMessageRequest_SMS{
 				SMS: &excomms.SMSMessage{
 					Text:            fmt.Sprintf("Your Spruce verification code is %s", resp.VerificationCode.Code),

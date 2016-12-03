@@ -639,7 +639,7 @@ func (e *externalMessageWorker) notifyOfUrgentVoicemail(ctx context.Context, org
 
 		toPhoneNumber := item
 		if _, err := e.excomms.SendMessage(ctx, &excomms.SendMessageRequest{
-			Channel: excomms.ChannelType_SMS,
+			DeprecatedChannel: excomms.ChannelType_SMS,
 			Message: &excomms.SendMessageRequest_SMS{
 				SMS: &excomms.SMSMessage{
 					Text:            fmt.Sprintf("Urgent Spruce voicemail: %s", deeplink.ThreadURLShareable(e.webDomain, orgEntity.ID, thread.ID)),

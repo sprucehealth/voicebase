@@ -142,8 +142,8 @@ func testSendMessageSMS(t *testing.T, revealSender, entityHasDefaultNumber bool)
 		text = "Dr. Smith: Hello"
 	}
 	me.Expect(mock.NewExpectation(me.SendMessage, ctx, &excomms.SendMessageRequest{
-		UUID:    "11000",
-		Channel: excomms.ChannelType_SMS,
+		UUID:              "11000",
+		DeprecatedChannel: excomms.ChannelType_SMS,
 		Message: &excomms.SendMessageRequest_SMS{
 			SMS: &excomms.SMSMessage{
 				FromPhoneNumber: expectedNumber,
@@ -334,8 +334,8 @@ func testSendingEmail(t *testing.T, revealSender bool) {
 		fromName = "Dr. Smith"
 	}
 	me.Expect(mock.NewExpectation(me.SendMessage, ctx, &excomms.SendMessageRequest{
-		UUID:    "11000",
-		Channel: excomms.ChannelType_EMAIL,
+		UUID:              "11000",
+		DeprecatedChannel: excomms.ChannelType_EMAIL,
 		Message: &excomms.SendMessageRequest_Email{
 			Email: &excomms.EmailMessage{
 				Subject:          "Message from Practice Name",
@@ -527,8 +527,8 @@ func TestSendMessage_Multiple(t *testing.T) {
 		},
 	}
 	me.Expect(mock.NewExpectation(me.SendMessage, ctx, &excomms.SendMessageRequest{
-		UUID:    "11000",
-		Channel: excomms.ChannelType_EMAIL,
+		UUID:              "11000",
+		DeprecatedChannel: excomms.ChannelType_EMAIL,
 		Message: &excomms.SendMessageRequest_Email{
 			Email: &excomms.EmailMessage{
 				Subject:          "Message from Practice Name",
@@ -540,8 +540,8 @@ func TestSendMessage_Multiple(t *testing.T) {
 		},
 	}))
 	me.Expect(mock.NewExpectation(me.SendMessage, ctx, &excomms.SendMessageRequest{
-		UUID:    "11000",
-		Channel: excomms.ChannelType_SMS,
+		UUID:              "11000",
+		DeprecatedChannel: excomms.ChannelType_SMS,
 		Message: &excomms.SendMessageRequest_SMS{
 			SMS: &excomms.SMSMessage{
 				FromPhoneNumber: "+17348465522",

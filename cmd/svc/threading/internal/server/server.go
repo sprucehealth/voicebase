@@ -31,9 +31,6 @@ import (
 
 const setupThreadTitle = "Setup"
 
-// go vet doesn't like that the first argument to grpcErrorf is not a string so alias the function with a different name :(
-var grpcErrorf = grpc.Errorf
-
 // maxSummaryLength sets the maximum length for the message summary. This must
 // match what the underlying DAL supports so if updating here make sure the DAL
 // is updated as well (e.g. db schema).
@@ -95,13 +92,13 @@ func NewThreadsServer(
 // CreateSavedQuery saves a query for later use
 func (s *threadsServer) CreateSavedQuery(ctx context.Context, in *threading.CreateSavedQueryRequest) (*threading.CreateSavedQueryResponse, error) {
 	if in.EntityID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "EntityID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "EntityID is required")
 	}
 	if in.Query == nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Query is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "Query is required")
 	}
 	if in.ShortTitle == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "Title is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "Title is required")
 	}
 	// TODO: in order to be backwards compatible with clients that don't send the type for now assume the normal type. remove once updated clients are deployed.
 	if in.Type == threading.SAVED_QUERY_TYPE_INVALID {
@@ -110,7 +107,7 @@ func (s *threadsServer) CreateSavedQuery(ctx context.Context, in *threading.Crea
 
 	query, err := transformQueryFromRequest(in.Query)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Query is invalid: %s", err)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Query is invalid: %s", err)
 	}
 
 	sq := &models.SavedQuery{
@@ -130,7 +127,7 @@ func (s *threadsServer) CreateSavedQuery(ctx context.Context, in *threading.Crea
 	case threading.SAVED_QUERY_TYPE_NOTIFICATIONS:
 		sq.Type = models.SavedQueryTypeNotifications
 	default:
-		return nil, grpcErrorf(codes.InvalidArgument, "Unknown saved query type %s", in.Type)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Unknown saved query type %s", in.Type)
 	}
 	id, err := s.dal.CreateSavedQuery(ctx, sq)
 	if err != nil {
@@ -159,40 +156,40 @@ func (s *threadsServer) CreateEmptyThread(ctx context.Context, in *threading.Cre
 	switch in.Type {
 	case threading.THREAD_TYPE_EXTERNAL, threading.THREAD_TYPE_SECURE_EXTERNAL, threading.THREAD_TYPE_TEAM:
 	default:
-		return nil, grpcErrorf(codes.InvalidArgument, fmt.Sprintf("Type '%s' not allowed for CreateEmptyThread", in.Type.String()))
+		return nil, grpc.Errorf(codes.InvalidArgument, fmt.Sprintf("Type '%s' not allowed for CreateEmptyThread", in.Type.String()))
 	}
 	if in.OrganizationID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "OrganizationID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "OrganizationID is required")
 	}
 	if in.PrimaryEntityID == "" && in.Type != threading.THREAD_TYPE_TEAM && in.Type != threading.THREAD_TYPE_SECURE_EXTERNAL {
-		return nil, grpcErrorf(codes.InvalidArgument, "PrimaryEntityID is required for non app only threads")
+		return nil, grpc.Errorf(codes.InvalidArgument, "PrimaryEntityID is required for non app only threads")
 	}
 	if t, ok := validateTags(in.Tags); !ok {
-		return nil, grpcErrorf(codes.InvalidArgument, "Tag %q is invalid", t)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Tag %q is invalid", t)
 	}
 	if in.Summary == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "Summary is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "Summary is required")
 	}
 	in.Summary = textutil.TruncateUTF8(in.Summary, maxSummaryLength)
 	if in.Type == threading.THREAD_TYPE_TEAM && in.FromEntityID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "FromEntityID is required for TEAM threads")
+		return nil, grpc.Errorf(codes.InvalidArgument, "FromEntityID is required for TEAM threads")
 	}
 	if id, ok := validateEntityIDs(in.MemberEntityIDs); !ok {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid entity ID %s in members list", id)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid entity ID %s in members list", id)
 	}
 
 	if (in.Type == threading.THREAD_TYPE_EXTERNAL || in.Type == threading.THREAD_TYPE_SECURE_EXTERNAL) && in.SystemTitle == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "SystemTitle is required for EXTERNAL and SECURE_EXTERNAL threads")
+		return nil, grpc.Errorf(codes.InvalidArgument, "SystemTitle is required for EXTERNAL and SECURE_EXTERNAL threads")
 	}
 
 	tt, err := transformThreadTypeFromRequest(in.Type)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid thread type '%s'", in.Type)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid thread type '%s'", in.Type)
 	}
 
 	to, err := transformThreadOriginFromRequest(in.Origin)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid thread origin '%s'", in.Origin)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid thread origin '%s'", in.Origin)
 	}
 
 	memberEntityIDs, err := memberEntityIDsForNewThread(in.Type, in.OrganizationID, in.FromEntityID, in.MemberEntityIDs)
@@ -242,7 +239,7 @@ func (s *threadsServer) CreateEmptyThread(ctx context.Context, in *threading.Cre
 		}
 		return nil
 	}); err != nil {
-		return nil, grpcErrorf(codes.Internal, errors.Trace(err).Error())
+		return nil, grpc.Errorf(codes.Internal, errors.Trace(err).Error())
 	}
 	threads, err := s.dal.Threads(ctx, []models.ThreadID{threadID})
 	if err != nil {
@@ -271,34 +268,34 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 	switch in.Type {
 	case threading.THREAD_TYPE_EXTERNAL, threading.THREAD_TYPE_TEAM:
 	default:
-		return nil, grpcErrorf(codes.InvalidArgument, fmt.Sprintf("Type '%s' not allowed for CreateThread", in.Type.String()))
+		return nil, grpc.Errorf(codes.InvalidArgument, fmt.Sprintf("Type '%s' not allowed for CreateThread", in.Type.String()))
 	}
 	if in.OrganizationID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "OrganizationID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "OrganizationID is required")
 	}
 	if in.FromEntityID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "FromEntityID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "FromEntityID is required")
 	}
 	if in.Message == nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Message is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "Message is required")
 	}
 	if in.Type == threading.THREAD_TYPE_EXTERNAL && in.SystemTitle == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "SystemTitle is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "SystemTitle is required")
 	}
 	if id, ok := validateEntityIDs(in.MemberEntityIDs); !ok {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid entity ID %s in members list", id)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid entity ID %s in members list", id)
 	}
 	if t, ok := validateTags(in.Tags); !ok {
-		return nil, grpcErrorf(codes.InvalidArgument, "Tag %q is invalid", t)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Tag %q is invalid", t)
 	}
 
 	tt, err := transformThreadTypeFromRequest(in.Type)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid thread type '%s'", in.Type)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid thread type '%s'", in.Type)
 	}
 	to, err := transformThreadOriginFromRequest(in.Origin)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid thread origin '%s'", in.Origin)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid thread origin '%s'", in.Origin)
 	}
 
 	textRefs, err := processMessagePost(in.Message, false)
@@ -428,37 +425,37 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 
 func (s *threadsServer) CreateLinkedThreads(ctx context.Context, in *threading.CreateLinkedThreadsRequest) (*threading.CreateLinkedThreadsResponse, error) {
 	if in.Type != threading.THREAD_TYPE_SUPPORT {
-		return nil, grpcErrorf(codes.InvalidArgument, "Only threads of type SUPPORT are allowed for linked threads")
+		return nil, grpc.Errorf(codes.InvalidArgument, "Only threads of type SUPPORT are allowed for linked threads")
 	}
 	if in.Organization1ID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "Organization1ID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "Organization1ID is required")
 	}
 	if in.Organization2ID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "Organization2ID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "Organization2ID is required")
 	}
 	if in.PrimaryEntity1ID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "PrimaryEntity1ID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "PrimaryEntity1ID is required")
 	}
 	if in.PrimaryEntity2ID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "PrimaryEntity2ID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "PrimaryEntity2ID is required")
 	}
 	tt, err := transformThreadTypeFromRequest(in.Type)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid thread type '%s'", in.Type)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid thread type '%s'", in.Type)
 	}
 	if in.Summary == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "Summary is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "Summary is required")
 	}
 	in.Summary = textutil.TruncateUTF8(in.Summary, maxSummaryLength)
 	if in.MessageTitle != "" {
 		if _, err := bml.Parse(in.MessageTitle); err != nil {
-			return nil, grpcErrorf(codes.InvalidArgument, fmt.Sprintf("MessageTitle is invalid format: %s", err.Error()))
+			return nil, grpc.Errorf(codes.InvalidArgument, fmt.Sprintf("MessageTitle is invalid format: %s", err.Error()))
 		}
 	}
 	var textRefs []*models.Reference
 	in.Text, textRefs, err = parseRefsAndNormalize(in.Text)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, fmt.Sprintf("Text is invalid format: %s", errors.Cause(err).Error()))
+		return nil, grpc.Errorf(codes.InvalidArgument, fmt.Sprintf("Text is invalid format: %s", errors.Cause(err).Error()))
 	}
 
 	var thread1ID, thread2ID models.ThreadID
@@ -566,14 +563,14 @@ func (s *threadsServer) CreateLinkedThreads(ctx context.Context, in *threading.C
 // DeleteMessage deletes a message from a thread
 func (s *threadsServer) DeleteMessage(ctx context.Context, in *threading.DeleteMessageRequest) (*threading.DeleteMessageResponse, error) {
 	if in.ActorEntityID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "ActorEntityID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "ActorEntityID is required")
 	}
 	if in.ThreadItemID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "ThreadItemID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "ThreadItemID is required")
 	}
 	threadItemID, err := models.ParseThreadItemID(in.ThreadItemID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadItemID '%s'", in.ThreadItemID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid ThreadItemID '%s'", in.ThreadItemID)
 	}
 	var item *models.ThreadItem
 	var deleted bool
@@ -595,7 +592,7 @@ func (s *threadsServer) DeleteMessage(ctx context.Context, in *threading.DeleteM
 		return nil
 	})
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, "Thread item %q not found", in.ThreadItemID)
+		return nil, grpc.Errorf(codes.NotFound, "Thread item %q not found", in.ThreadItemID)
 	}
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -614,14 +611,14 @@ func (s *threadsServer) DeleteMessage(ctx context.Context, in *threading.DeleteM
 // DeleteThread deletes a thread
 func (s *threadsServer) DeleteThread(ctx context.Context, in *threading.DeleteThreadRequest) (*threading.DeleteThreadResponse, error) {
 	if in.ActorEntityID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "ActorEntityID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "ActorEntityID is required")
 	}
 	if in.ThreadID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "ThreadID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "ThreadID is required")
 	}
 	threadID, err := models.ParseThreadID(in.ThreadID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadID '%s'", in.ThreadID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid ThreadID '%s'", in.ThreadID)
 	}
 
 	// If we can't find the thread then just return success
@@ -673,15 +670,15 @@ func (s *threadsServer) DeleteThread(ctx context.Context, in *threading.DeleteTh
 
 func (s *threadsServer) LinkedThread(ctx context.Context, in *threading.LinkedThreadRequest) (*threading.LinkedThreadResponse, error) {
 	if in.ThreadID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "ThreadID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "ThreadID is required")
 	}
 	threadID, err := models.ParseThreadID(in.ThreadID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadID '%s'", in.ThreadID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid ThreadID '%s'", in.ThreadID)
 	}
 	thread, prependSender, err := s.dal.LinkedThread(ctx, threadID)
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, "Linked thread for %q not found", threadID)
+		return nil, grpc.Errorf(codes.NotFound, "Linked thread for %q not found", threadID)
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -698,11 +695,11 @@ func (s *threadsServer) LinkedThread(ctx context.Context, in *threading.LinkedTh
 // MarkThreadsAsRead marks all posts in a thread as read by an entity
 func (s *threadsServer) MarkThreadsAsRead(ctx context.Context, in *threading.MarkThreadsAsReadRequest) (*threading.MarkThreadsAsReadResponse, error) {
 	if len(in.ThreadWatermarks) == 0 {
-		return nil, grpcErrorf(codes.InvalidArgument, "ThreadWatermarks required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "ThreadWatermarks required")
 	}
 
 	if in.EntityID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "EntityID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "EntityID is required")
 	}
 
 	// Make a map of all the entities memberships and itself to be used for validating memberships to the threads
@@ -724,7 +721,7 @@ func (s *threadsServer) MarkThreadsAsRead(ctx context.Context, in *threading.Mar
 	for i, w := range in.ThreadWatermarks {
 		threadID, err := models.ParseThreadID(w.ThreadID)
 		if err != nil {
-			return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadID '%s'", w.ThreadID)
+			return nil, grpc.Errorf(codes.InvalidArgument, "Invalid ThreadID '%s'", w.ThreadID)
 		}
 		threadIDs[i] = threadID
 	}
@@ -895,14 +892,14 @@ func (s *threadsServer) MarkThreadsAsRead(ctx context.Context, in *threading.Mar
 func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessageRequest) (*threading.PostMessageResponse, error) {
 	// TODO: return proper error responses for invalid request
 	if in.ThreadID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "ThreadID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "ThreadID is required")
 	}
 	threadID, err := models.ParseThreadID(in.ThreadID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadID '%s'", in.ThreadID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid ThreadID '%s'", in.ThreadID)
 	}
 	if in.FromEntityID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "FromEntityID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "FromEntityID is required")
 	}
 
 	if in.Message == nil {
@@ -979,17 +976,17 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 // PostMessages posts a series of messages into a specified thread
 func (s *threadsServer) PostMessages(ctx context.Context, in *threading.PostMessagesRequest) (*threading.PostMessagesResponse, error) {
 	if in.ThreadID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "ThreadID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "ThreadID is required")
 	}
 	threadID, err := models.ParseThreadID(in.ThreadID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadID '%s'", in.ThreadID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid ThreadID '%s'", in.ThreadID)
 	}
 	if in.FromEntityID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "FromEntityID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "FromEntityID is required")
 	}
 	if len(in.Messages) == 0 {
-		return nil, grpcErrorf(codes.InvalidArgument, "At least 1 message required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "At least 1 message required")
 	}
 
 	items := make([]*models.ThreadItem, len(in.Messages))
@@ -1086,7 +1083,7 @@ func (s *threadsServer) postMessage(
 	if err != nil {
 		return nil, nil, errors.Trace(err)
 	} else if len(threads) == 0 {
-		return nil, nil, grpcErrorf(codes.NotFound, "Thread %q not found", threadID)
+		return nil, nil, grpc.Errorf(codes.NotFound, "Thread %q not found", threadID)
 	}
 	thread := threads[0]
 
@@ -1210,7 +1207,7 @@ func (s *threadsServer) postMessage(
 // QueryThreads queries the list of threads
 func (s *threadsServer) QueryThreads(ctx context.Context, in *threading.QueryThreadsRequest) (*threading.QueryThreadsResponse, error) {
 	if in.ViewerEntityID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "ViewerEntityID required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "ViewerEntityID required")
 	}
 
 	var sq *models.SavedQuery
@@ -1218,32 +1215,32 @@ func (s *threadsServer) QueryThreads(ctx context.Context, in *threading.QueryThr
 	switch in.Type {
 	case threading.QUERY_THREADS_TYPE_ADHOC:
 		if in.GetQuery() == nil {
-			return nil, grpcErrorf(codes.InvalidArgument, "Query required for ADHOC queries")
+			return nil, grpc.Errorf(codes.InvalidArgument, "Query required for ADHOC queries")
 		}
 		var err error
 		query, err = transformQueryFromRequest(in.GetQuery())
 		if err != nil {
-			return nil, grpcErrorf(codes.InvalidArgument, "Query is not valid: %s", err)
+			return nil, grpc.Errorf(codes.InvalidArgument, "Query is not valid: %s", err)
 		}
 	case threading.QUERY_THREADS_TYPE_SAVED:
 		sqID, err := models.ParseSavedQueryID(in.GetSavedQueryID())
 		if err != nil {
-			return nil, grpcErrorf(codes.InvalidArgument, "Saved query ID %s is not valid", in.GetSavedQueryID())
+			return nil, grpc.Errorf(codes.InvalidArgument, "Saved query ID %s is not valid", in.GetSavedQueryID())
 		}
 		sq, err = s.dal.SavedQuery(ctx, sqID)
 		if errors.Cause(err) == dal.ErrNotFound {
-			return nil, grpcErrorf(codes.NotFound, "Saved query %q not found", sqID)
+			return nil, grpc.Errorf(codes.NotFound, "Saved query %q not found", sqID)
 		} else if err != nil {
 			return nil, errors.Trace(err)
 		}
 		if sq.EntityID != in.ViewerEntityID {
-			return nil, grpcErrorf(codes.InvalidArgument, "Saved query %s not owned by %s", sq.ID, in.ViewerEntityID)
+			return nil, grpc.Errorf(codes.InvalidArgument, "Saved query %s not owned by %s", sq.ID, in.ViewerEntityID)
 		}
 		query = sq.Query
 	case threading.QUERY_THREADS_TYPE_ALL_FOR_VIEWER:
 		query = &models.Query{}
 	default:
-		return nil, grpcErrorf(codes.InvalidArgument, "Unknown query type %s", in.Type)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Unknown query type %s", in.Type)
 	}
 
 	d := dal.FromStart
@@ -1283,7 +1280,7 @@ func (s *threadsServer) QueryThreads(ctx context.Context, in *threading.QueryThr
 		tc, err = s.dal.IterateThreadsInSavedQuery(ctx, sq.ID, in.ViewerEntityID, it)
 	}
 	if e, ok := errors.Cause(err).(dal.ErrInvalidIterator); ok {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid iterator: %s", e)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid iterator: %s", e)
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -1342,11 +1339,11 @@ func (s *threadsServer) QueryThreads(ctx context.Context, in *threading.QueryThr
 func (s *threadsServer) SavedQuery(ctx context.Context, in *threading.SavedQueryRequest) (*threading.SavedQueryResponse, error) {
 	id, err := models.ParseSavedQueryID(in.SavedQueryID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid SavedQueryID '%s'", in.SavedQueryID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid SavedQueryID '%s'", in.SavedQueryID)
 	}
 	query, err := s.dal.SavedQuery(ctx, id)
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, "Saved query %q not found", in.SavedQueryID)
+		return nil, grpc.Errorf(codes.NotFound, "Saved query %q not found", in.SavedQueryID)
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -1420,7 +1417,7 @@ func (s *threadsServer) SavedQueryTemplates(ctx context.Context, in *threading.S
 func (s *threadsServer) Thread(ctx context.Context, in *threading.ThreadRequest) (*threading.ThreadResponse, error) {
 	tid, err := models.ParseThreadID(in.ThreadID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadID '%s'", in.ThreadID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid ThreadID '%s'", in.ThreadID)
 	}
 
 	forExternal, err := s.forExternalViewer(ctx, in.ViewerEntityID)
@@ -1432,7 +1429,7 @@ func (s *threadsServer) Thread(ctx context.Context, in *threading.ThreadRequest)
 	if err != nil {
 		return nil, errors.Trace(err)
 	} else if len(threads) == 0 {
-		return nil, grpcErrorf(codes.NotFound, "Thread %q not found", tid)
+		return nil, grpc.Errorf(codes.NotFound, "Thread %q not found", tid)
 	}
 	thread := threads[0]
 
@@ -1446,12 +1443,12 @@ func (s *threadsServer) Thread(ctx context.Context, in *threading.ThreadRequest)
 			return nil, errors.Trace(err)
 		}
 		if len(ts) == 0 {
-			return nil, grpcErrorf(codes.NotFound, "Thread %q not found", th.ID)
+			return nil, grpc.Errorf(codes.NotFound, "Thread %q not found", th.ID)
 		}
 		// TODO: for now can't require the viewer since the graphql service requests the thread to get the org ID before it can know the entity viewing
 		// } else if th.Type == threading.THREAD_TYPE_TEAM {
 		// 	// Require a viewer entity for private threads
-		// 	return nil, grpcErrorf(codes.NotFound, "Thread not found")
+		// 	return nil, grpc.Errorf(codes.NotFound, "Thread not found")
 	}
 	return &threading.ThreadResponse{
 		Thread: th,
@@ -1492,7 +1489,7 @@ func (s *threadsServer) Threads(ctx context.Context, in *threading.ThreadsReques
 			return nil, errors.Trace(err)
 		}
 		if len(ts) == 0 {
-			return nil, grpcErrorf(codes.NotFound, "Thread not found")
+			return nil, grpc.Errorf(codes.NotFound, "Thread not found")
 		}
 		threadsInResponse = ts
 	}
@@ -1506,12 +1503,12 @@ func (s *threadsServer) Threads(ctx context.Context, in *threading.ThreadsReques
 func (s *threadsServer) ThreadItem(ctx context.Context, in *threading.ThreadItemRequest) (*threading.ThreadItemResponse, error) {
 	tid, err := models.ParseThreadItemID(in.ItemID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ItemID '%s'", in.ItemID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid ItemID '%s'", in.ItemID)
 	}
 
 	item, err := s.dal.ThreadItem(ctx, tid)
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, "Thread item %q not found", tid)
+		return nil, grpc.Errorf(codes.NotFound, "Thread item %q not found", tid)
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -1520,7 +1517,7 @@ func (s *threadsServer) ThreadItem(ctx context.Context, in *threading.ThreadItem
 	if err != nil {
 		return nil, errors.Trace(err)
 	} else if len(threads) == 0 {
-		return nil, grpcErrorf(codes.NotFound, "Thread %q not found", tid)
+		return nil, grpc.Errorf(codes.NotFound, "Thread %q not found", tid)
 	}
 	th := threads[0]
 
@@ -1566,14 +1563,14 @@ func (s *threadsServer) ThreadsForMember(ctx context.Context, in *threading.Thre
 func (s *threadsServer) ThreadItems(ctx context.Context, in *threading.ThreadItemsRequest) (*threading.ThreadItemsResponse, error) {
 	tid, err := models.ParseThreadID(in.ThreadID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadID '%s'", in.ThreadID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid ThreadID '%s'", in.ThreadID)
 	}
 
 	threads, err := s.dal.Threads(ctx, []models.ThreadID{tid})
 	if err != nil {
 		return nil, errors.Trace(err)
 	} else if len(threads) == 0 {
-		return nil, grpcErrorf(codes.NotFound, "Thread %q not found", tid)
+		return nil, grpc.Errorf(codes.NotFound, "Thread %q not found", tid)
 	}
 	th := threads[0]
 
@@ -1593,7 +1590,7 @@ func (s *threadsServer) ThreadItems(ctx context.Context, in *threading.ThreadIte
 		Count:       int(in.Iterator.Count),
 	})
 	if e, ok := errors.Cause(err).(dal.ErrInvalidIterator); ok {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid iterator: "+string(e))
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid iterator: "+string(e))
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -1618,7 +1615,7 @@ func (s *threadsServer) ThreadItems(ctx context.Context, in *threading.ThreadIte
 func (s *threadsServer) ThreadItemViewDetails(ctx context.Context, in *threading.ThreadItemViewDetailsRequest) (*threading.ThreadItemViewDetailsResponse, error) {
 	tiid, err := models.ParseThreadItemID(in.ItemID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ItemID '%s'", in.ItemID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid ItemID '%s'", in.ItemID)
 	}
 
 	tivds, err := s.dal.ThreadItemViewDetails(ctx, tiid)
@@ -1644,7 +1641,7 @@ func (s *threadsServer) ThreadItemViewDetails(ctx context.Context, in *threading
 func (s *threadsServer) ThreadMembers(ctx context.Context, in *threading.ThreadMembersRequest) (*threading.ThreadMembersResponse, error) {
 	tid, err := models.ParseThreadID(in.ThreadID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadID '%s'", in.ThreadID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid ThreadID '%s'", in.ThreadID)
 	}
 	tes, err := s.dal.EntitiesForThread(ctx, tid)
 	if err != nil {
@@ -1668,30 +1665,30 @@ func (s *threadsServer) ThreadMembers(ctx context.Context, in *threading.ThreadM
 // UpdateMessage updates the content of a message
 func (s *threadsServer) UpdateMessage(ctx context.Context, in *threading.UpdateMessageRequest) (*threading.UpdateMessageResponse, error) {
 	if in.ActorEntityID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "ActorEntityID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "ActorEntityID is required")
 	}
 	if in.ThreadItemID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "ThreadItemID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "ThreadItemID is required")
 	}
 	if in.Message == nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Message is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "Message is required")
 	}
 	threadItemID, err := models.ParseThreadItemID(in.ThreadItemID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadItemID %q", in.ThreadItemID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid ThreadItemID %q", in.ThreadItemID)
 	}
 	item, err := s.dal.ThreadItem(ctx, threadItemID)
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, "Thread item %q not found", threadItemID)
+		return nil, grpc.Errorf(codes.NotFound, "Thread item %q not found", threadItemID)
 	}
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 	if item.Deleted {
-		return nil, grpcErrorf(codes.InvalidArgument, "Cannot update deleted message %q", threadItemID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Cannot update deleted message %q", threadItemID)
 	}
 	if _, ok := item.Data.(*models.Message); !ok {
-		return nil, grpcErrorf(codes.InvalidArgument, "Cannot update non-message item %q", threadItemID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Cannot update non-message item %q", threadItemID)
 	}
 
 	req, err := createPostMessageRequest(ctx, item.ThreadID, in.ActorEntityID, in.Message)
@@ -1721,7 +1718,7 @@ func (s *threadsServer) UpdateMessage(ctx context.Context, in *threading.UpdateM
 		}))
 	})
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, "Thread item %q not found", in.ThreadItemID)
+		return nil, grpc.Errorf(codes.NotFound, "Thread item %q not found", in.ThreadItemID)
 	}
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -1739,7 +1736,7 @@ func (s *threadsServer) UpdateMessage(ctx context.Context, in *threading.UpdateM
 func (s *threadsServer) UpdateSavedQuery(ctx context.Context, in *threading.UpdateSavedQueryRequest) (*threading.UpdateSavedQueryResponse, error) {
 	id, err := models.ParseSavedQueryID(in.SavedQueryID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid SavedQueryID '%s'", in.SavedQueryID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid SavedQueryID '%s'", in.SavedQueryID)
 	}
 	rebuild := in.ForceRebuild
 	update := &dal.SavedQueryUpdate{}
@@ -1757,7 +1754,7 @@ func (s *threadsServer) UpdateSavedQuery(ctx context.Context, in *threading.Upda
 		case threading.NOTIFICATIONS_ENABLED_UPDATE_FALSE:
 			update.NotificationsEnabled = ptr.Bool(false)
 		default:
-			return nil, grpcErrorf(codes.InvalidArgument, "Invalid NotificationsEnabled value %s", in.NotificationsEnabled)
+			return nil, grpc.Errorf(codes.InvalidArgument, "Invalid NotificationsEnabled value %s", in.NotificationsEnabled)
 		}
 	}
 	if in.Query != nil {
@@ -1798,7 +1795,7 @@ func (s *threadsServer) UpdateSavedQuery(ctx context.Context, in *threading.Upda
 
 func (s *threadsServer) Tags(ctx context.Context, in *threading.TagsRequest) (*threading.TagsResponse, error) {
 	if in.OrganizationID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "OrganizationID required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "OrganizationID required")
 	}
 	tags, err := s.dal.TagsForOrg(ctx, in.OrganizationID, in.Prefix)
 	if err != nil {
@@ -1810,37 +1807,37 @@ func (s *threadsServer) Tags(ctx context.Context, in *threading.TagsRequest) (*t
 // UpdateThread update thread members and info
 func (s *threadsServer) UpdateThread(ctx context.Context, in *threading.UpdateThreadRequest) (*threading.UpdateThreadResponse, error) {
 	if in.ActorEntityID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "ActorEntityID required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "ActorEntityID required")
 	}
 	if id, ok := validateEntityIDs(in.AddMemberEntityIDs); !ok {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid entity ID %q when adding members", id)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid entity ID %q when adding members", id)
 	}
 	if id, ok := validateEntityIDs(in.RemoveMemberEntityIDs); !ok {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid entity ID %q when removing members", id)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid entity ID %q when removing members", id)
 	}
 	if id, ok := validateEntityIDs(in.AddFollowerEntityIDs); !ok {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid entity ID %q when adding followers", id)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid entity ID %q when adding followers", id)
 	}
 	if id, ok := validateEntityIDs(in.RemoveFollowerEntityIDs); !ok {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid entity ID %q when removing followers", id)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid entity ID %q when removing followers", id)
 	}
 	if tag, ok := validateTags(in.AddTags); !ok {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid tag %q when adding tags", tag)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid tag %q when adding tags", tag)
 	}
 	if tag, ok := validateTags(in.RemoveTags); !ok {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid tag %q when removing tags", tag)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid tag %q when removing tags", tag)
 	}
 
 	tid, err := models.ParseThreadID(in.ThreadID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadID '%s'", in.ThreadID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid ThreadID '%s'", in.ThreadID)
 	}
 
 	threads, err := s.dal.Threads(ctx, []models.ThreadID{tid})
 	if err != nil {
 		return nil, errors.Trace(err)
 	} else if len(threads) == 0 {
-		return nil, grpcErrorf(codes.NotFound, "Thread %q not found", tid)
+		return nil, grpc.Errorf(codes.NotFound, "Thread %q not found", tid)
 	}
 	thread := threads[0]
 
@@ -1856,7 +1853,7 @@ func (s *threadsServer) UpdateThread(ctx context.Context, in *threading.UpdateTh
 			return nil, errors.Trace(err)
 		}
 		if len(actorEntities) == 0 {
-			return nil, grpcErrorf(codes.InvalidArgument, "No entities found for actor")
+			return nil, grpc.Errorf(codes.InvalidArgument, "No entities found for actor")
 		}
 		actorEntityIDs := make(map[string]struct{}, len(actorEntities))
 		for _, e := range actorEntities {
@@ -1874,7 +1871,7 @@ func (s *threadsServer) UpdateThread(ctx context.Context, in *threading.UpdateTh
 			}
 		}
 		if !isMember {
-			return nil, grpcErrorf(codes.PermissionDenied, "Entity is not a member of thread %s", thread.ID)
+			return nil, grpc.Errorf(codes.PermissionDenied, "Entity is not a member of thread %s", thread.ID)
 		}
 	}
 
@@ -1882,11 +1879,11 @@ func (s *threadsServer) UpdateThread(ctx context.Context, in *threading.UpdateTh
 	switch thread.Type {
 	case models.ThreadTypeTeam:
 		if in.SystemTitle != "" {
-			return nil, grpcErrorf(codes.PermissionDenied, "Can only update system title for non-team thread")
+			return nil, grpc.Errorf(codes.PermissionDenied, "Can only update system title for non-team thread")
 		}
 	default:
 		if len(in.RemoveMemberEntityIDs) > 0 || len(in.AddMemberEntityIDs) > 0 {
-			return nil, grpcErrorf(codes.PermissionDenied, "Can only update members for a team thread")
+			return nil, grpc.Errorf(codes.PermissionDenied, "Can only update members for a team thread")
 		}
 	}
 
@@ -2134,7 +2131,7 @@ func (s *threadsServer) forExternalViewer(ctx context.Context, viewerEntityID st
 			},
 		})
 		if grpc.Code(err) == codes.NotFound {
-			return false, grpcErrorf(codes.NotFound, "Viewing entity %q not found", viewerEntityID)
+			return false, grpc.Errorf(codes.NotFound, "Viewing entity %q not found", viewerEntityID)
 		} else if err != nil {
 			return false, errors.Trace(err)
 		}

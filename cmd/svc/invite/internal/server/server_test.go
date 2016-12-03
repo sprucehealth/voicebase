@@ -1,12 +1,11 @@
 package server
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"testing"
 	"time"
-
-	"context"
 
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/sprucehealth/backend/cmd/svc/invite/internal/models"
@@ -24,6 +23,7 @@ import (
 	excommsmock "github.com/sprucehealth/backend/svc/excomms/mock"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/invite/clientdata"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
 
@@ -114,7 +114,7 @@ func TestInviteColleagues(t *testing.T) {
 	}, nil))
 
 	excommsC.Expect(mock.NewExpectation(excommsC.SendMessage, &excomms.SendMessageRequest{
-		Channel: excomms.ChannelType_EMAIL,
+		DeprecatedChannel: excomms.ChannelType_EMAIL,
 		Message: &excomms.SendMessageRequest_Email{
 			Email: &excomms.EmailMessage{
 				Subject:          "Invite to join Orgo on Spruce",
@@ -255,7 +255,7 @@ func TestInvitePatients(t *testing.T) {
 
 	// Send invite sms
 	excommsC.Expect(mock.NewExpectation(excommsC.SendMessage, &excomms.SendMessageRequest{
-		Channel: excomms.ChannelType_SMS,
+		DeprecatedChannel: excomms.ChannelType_SMS,
 		Message: &excomms.SendMessageRequest_SMS{
 			SMS: &excomms.SMSMessage{
 				Text:            "Alfred - Batman Inc has invited you to use Spruce for secure messaging and digital care.",
@@ -266,7 +266,7 @@ func TestInvitePatients(t *testing.T) {
 	}).WithReturns(&excomms.SendMessageResponse{}, nil))
 
 	excommsC.Expect(mock.NewExpectation(excommsC.SendMessage, &excomms.SendMessageRequest{
-		Channel: excomms.ChannelType_SMS,
+		DeprecatedChannel: excomms.ChannelType_SMS,
 		Message: &excomms.SendMessageRequest_SMS{
 			SMS: &excomms.SMSMessage{
 				Text:            "Get the Spruce app now and join them. https://example.com/invite [simpleToken]",
@@ -371,7 +371,7 @@ func TestInvitePatientsNoFirstName(t *testing.T) {
 
 	// Send invite sms
 	excommsC.Expect(mock.NewExpectation(excommsC.SendMessage, &excomms.SendMessageRequest{
-		Channel: excomms.ChannelType_SMS,
+		DeprecatedChannel: excomms.ChannelType_SMS,
 		Message: &excomms.SendMessageRequest_SMS{
 			SMS: &excomms.SMSMessage{
 				Text:            "Batman Inc has invited you to use Spruce for secure messaging and digital care.",
@@ -382,7 +382,7 @@ func TestInvitePatientsNoFirstName(t *testing.T) {
 	}).WithReturns(&excomms.SendMessageResponse{}, nil))
 
 	excommsC.Expect(mock.NewExpectation(excommsC.SendMessage, &excomms.SendMessageRequest{
-		Channel: excomms.ChannelType_SMS,
+		DeprecatedChannel: excomms.ChannelType_SMS,
 		Message: &excomms.SendMessageRequest_SMS{
 			SMS: &excomms.SMSMessage{
 				Text:            "Get the Spruce app now and join them. https://example.com/invite [simpleToken]",
@@ -537,7 +537,7 @@ func TestCreateOrganizationInvite(t *testing.T) {
 			tserver:     &tserver{server: &server{}},
 			in:          &invite.CreateOrganizationInviteRequest{},
 			expectedOut: nil,
-			expectedErr: grpcErrorf(codes.InvalidArgument, "Organization Entity ID is required"),
+			expectedErr: grpc.Errorf(codes.InvalidArgument, "Organization Entity ID is required"),
 		},
 		"Err-OrgNotFound": {
 			tserver: func() *tserver {

@@ -19,6 +19,7 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/idgen"
 	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/ptr"
@@ -317,26 +318,38 @@ func (e *excommsService) DeprovisionEmail(ctx context.Context, in *excomms.Depro
 
 // SendMessage sends the message over an external channel as specified in the SendMessageRequest.
 func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessageRequest) (*excomms.SendMessageResponse, error) {
+	if in.UUID == "" {
+		// TODO: would be nice to require the UUID but for now that's not possible since clients don't include it.. so generate a random one
+		uuid, err := idgen.NewUUID()
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		in.UUID = uuid
+	}
+
 	var msgType models.SentMessage_Type
 	var destination string
-	switch in.Channel {
-	case excomms.ChannelType_SMS:
+	var mediaIDs []string
+	switch msg := in.Message.(type) {
+	case *excomms.SendMessageRequest_SMS:
 		msgType = models.SentMessage_SMS
 		destination = in.GetSMS().ToPhoneNumber
-	case excomms.ChannelType_EMAIL:
+		mediaIDs = msg.SMS.MediaIDs
+	case *excomms.SendMessageRequest_Email:
 		msgType = models.SentMessage_EMAIL
 		destination = in.GetEmail().ToEmailAddress
+		mediaIDs = msg.Email.MediaIDs
+	default:
+		return nil, errors.Errorf("unknown message type %T", in.Message)
 	}
 
 	// don't send the message if it has already been sent
-	if in.UUID != "" {
-		sm, err := e.dal.LookupSentMessageByUUID(in.UUID, destination)
-		if err != nil && errors.Cause(err) != dal.ErrSentMessageNotFound {
-			return nil, errors.Trace(err)
-		} else if sm != nil {
-			// message already handled
-			return &excomms.SendMessageResponse{}, nil
-		}
+	sm, err := e.dal.LookupSentMessageByUUID(in.UUID, destination)
+	if err != nil && errors.Cause(err) != dal.ErrSentMessageNotFound {
+		return nil, errors.Trace(err)
+	} else if sm != nil {
+		// message already handled
+		return &excomms.SendMessageResponse{}, nil
 	}
 
 	sentMessage := &models.SentMessage{
@@ -346,13 +359,6 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 	}
 
 	// Get our internal media information and size and externalize it
-	var mediaIDs []string
-	switch in.Channel {
-	case excomms.ChannelType_SMS:
-		mediaIDs = in.GetSMS().MediaIDs
-	case excomms.ChannelType_EMAIL:
-		mediaIDs = in.GetEmail().MediaIDs
-	}
 	resizedURLs := make([]string, len(mediaIDs))
 	for i, mID := range mediaIDs {
 		// default everything to a max size of 3264x3264
@@ -390,11 +396,9 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 		}
 	}
 
-	switch in.Channel {
-	case excomms.ChannelType_VOICE:
-		return nil, grpcErrorf(codes.Unimplemented, "not implemented")
-	case excomms.ChannelType_SMS:
-		sms := in.GetSMS()
+	switch inMsg := in.Message.(type) {
+	case *excomms.SendMessageRequest_SMS:
+		sms := inMsg.SMS
 		msg, _, err := e.twilio.Messages.Send(sms.FromPhoneNumber, sms.ToPhoneNumber, twilio.MessageParams{
 			ApplicationSid: e.twilioApplicationSID,
 			Body:           sms.Text,
@@ -431,7 +435,8 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 				MediaURLs:       resizedURLs,
 			},
 		}
-	case excomms.ChannelType_EMAIL:
+	case *excomms.SendMessageRequest_Email:
+		email := inMsg.Email
 
 		// ensure that the domain of the sender matches
 		// the domain configuration
@@ -439,16 +444,16 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 		ec := e.emailClient
 		domainToEnforce := e.spruceEmailDomain
 
-		if in.GetEmail().Transactional {
+		if email.Transactional {
 			ec = e.transactionalEmailClient
 			domainToEnforce = e.transactionalEmailDomain
 		}
 
-		domain, err := domainFromEmail(in.GetEmail().FromEmailAddress)
+		domain, err := domainFromEmail(email.FromEmailAddress)
 		if err != nil {
-			return nil, grpcErrorf(codes.InvalidArgument, "Cannot parse domain from email %s: %s", in.GetEmail().FromEmailAddress, err)
+			return nil, grpcErrorf(codes.InvalidArgument, "Cannot parse domain from email %s: %s", email.FromEmailAddress, err)
 		} else if domain != domainToEnforce {
-			return nil, grpcErrorf(codes.InvalidArgument, "Sender (%s) does not match expected domain (%s)", in.GetEmail().FromEmailAddress, domainToEnforce)
+			return nil, grpcErrorf(codes.InvalidArgument, "Sender (%s) does not match expected domain (%s)", email.FromEmailAddress, domainToEnforce)
 		}
 
 		id, err := e.idgen.NewID()
@@ -456,21 +461,21 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 			return nil, errors.Trace(err)
 		}
 
-		subs := make([]*models.EmailMessage_Substitution, len(in.GetEmail().TemplateSubstitutions))
-		for i, s := range in.GetEmail().TemplateSubstitutions {
+		subs := make([]*models.EmailMessage_Substitution, len(email.TemplateSubstitutions))
+		for i, s := range email.TemplateSubstitutions {
 			subs[i] = &models.EmailMessage_Substitution{Key: s.Key, Value: s.Value}
 		}
 		sentMessage.Message = &models.SentMessage_EmailMsg{
 			EmailMsg: &models.EmailMessage{
 				ID:                    strconv.FormatUint(id, 10),
-				Subject:               in.GetEmail().Subject,
-				Body:                  in.GetEmail().Body,
-				FromName:              in.GetEmail().FromName,
-				FromEmail:             in.GetEmail().FromEmailAddress,
-				ToName:                in.GetEmail().ToName,
-				ToEmail:               in.GetEmail().ToEmailAddress,
+				Subject:               email.Subject,
+				Body:                  email.Body,
+				FromName:              email.FromName,
+				FromEmail:             email.FromEmailAddress,
+				ToName:                email.ToName,
+				ToEmail:               email.ToEmailAddress,
 				MediaURLs:             resizedURLs,
-				TemplateID:            in.GetEmail().TemplateID,
+				TemplateID:            email.TemplateID,
 				TemplateSubstitutions: subs,
 			},
 		}
@@ -479,6 +484,8 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 		if err := ec.SendMessage(sentMessage.GetEmailMsg()); err != nil {
 			return nil, errors.Trace(err)
 		}
+	default:
+		return nil, errors.Errorf("unknown message type %T", in.Message)
 	}
 
 	// persist the message that was sent for tracking purposes

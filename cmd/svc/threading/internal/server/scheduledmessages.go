@@ -4,38 +4,38 @@ import (
 	"context"
 	"time"
 
-	"google.golang.org/grpc/codes"
-
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/models"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/svc/threading"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 func (s *threadsServer) CreateScheduledMessage(ctx context.Context, in *threading.CreateScheduledMessageRequest) (*threading.CreateScheduledMessageResponse, error) {
 	if in.ThreadID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "ThreadID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "ThreadID is required")
 	}
 	threadID, err := models.ParseThreadID(in.ThreadID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadID %s", in.ThreadID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid ThreadID %s", in.ThreadID)
 	}
 	if in.ActorEntityID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "ActorEntityID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "ActorEntityID is required")
 	}
 	if in.ScheduledFor == 0 {
-		return nil, grpcErrorf(codes.InvalidArgument, "ScheduledFor is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "ScheduledFor is required")
 	}
 	scheduledFor := time.Unix(int64(in.ScheduledFor), 0)
 	if scheduledFor.Before(s.clk.Now()) {
-		return nil, grpcErrorf(codes.InvalidArgument, "ScheduledFor cannot be in the past")
+		return nil, grpc.Errorf(codes.InvalidArgument, "ScheduledFor cannot be in the past")
 	}
 
 	// Make sure the thread exists
 	if threads, err := s.dal.Threads(ctx, []models.ThreadID{threadID}); err != nil {
 		return nil, errors.Trace(err)
 	} else if len(threads) == 0 {
-		return nil, grpcErrorf(codes.NotFound, "Thread %s not found", threadID)
+		return nil, grpc.Errorf(codes.NotFound, "Thread %s not found", threadID)
 	}
 
 	req, err := createPostMessageRequest(ctx, threadID, in.ActorEntityID, in.GetMessage())
@@ -88,11 +88,11 @@ func (s *threadsServer) CreateScheduledMessage(ctx context.Context, in *threadin
 
 func (s *threadsServer) DeleteScheduledMessage(ctx context.Context, in *threading.DeleteScheduledMessageRequest) (*threading.DeleteScheduledMessageResponse, error) {
 	if in.ScheduledMessageID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "ScheduledMessageID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "ScheduledMessageID is required")
 	}
 	scheduledMessageID, err := models.ParseScheduledMessageID(in.ScheduledMessageID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ScheduledMessageID %s", in.ScheduledMessageID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid ScheduledMessageID %s", in.ScheduledMessageID)
 	}
 	deletedStatus := models.ScheduledMessageStatusDeleted
 	if _, err := s.dal.UpdateScheduledMessage(ctx, scheduledMessageID, &models.ScheduledMessageUpdate{
@@ -108,7 +108,7 @@ func (s *threadsServer) ScheduledMessages(ctx context.Context, in *threading.Sch
 	for i, s := range in.Status {
 		status, err := transformScheduledMessageStatusFromRequest(s)
 		if err != nil {
-			return nil, grpcErrorf(codes.InvalidArgument, "Unknown ScheduledMessage Status %s", s)
+			return nil, grpc.Errorf(codes.InvalidArgument, "Unknown ScheduledMessage Status %s", s)
 		}
 		scheduledMessageStatus[i] = status
 	}
@@ -117,25 +117,25 @@ func (s *threadsServer) ScheduledMessages(ctx context.Context, in *threading.Sch
 	case *threading.ScheduledMessagesRequest_ScheduledMessageID:
 		scheduledMessageID, err := models.ParseScheduledMessageID(in.GetScheduledMessageID())
 		if err != nil {
-			return nil, grpcErrorf(codes.InvalidArgument, "Invalid ScheduledMessageID %s", in.GetScheduledMessageID())
+			return nil, grpc.Errorf(codes.InvalidArgument, "Invalid ScheduledMessageID %s", in.GetScheduledMessageID())
 		}
 		scheduledMessage, err := s.dal.ScheduledMessage(ctx, scheduledMessageID)
 		if errors.Cause(err) == dal.ErrNotFound {
-			return nil, grpcErrorf(codes.NotFound, "Not Found %s", in.GetScheduledMessageID())
+			return nil, grpc.Errorf(codes.NotFound, "Not Found %s", in.GetScheduledMessageID())
 		} else if err != nil {
 			return nil, errors.Trace(err)
 		}
 		scheduledMessages = []*models.ScheduledMessage{scheduledMessage}
 	case *threading.ScheduledMessagesRequest_ThreadID:
 		if in.GetThreadID() == "" {
-			return nil, grpcErrorf(codes.InvalidArgument, "ThreadID is required")
+			return nil, grpc.Errorf(codes.InvalidArgument, "ThreadID is required")
 		}
 		threadID, err := models.ParseThreadID(in.GetThreadID())
 		if err != nil {
-			return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadID %s", in.GetThreadID())
+			return nil, grpc.Errorf(codes.InvalidArgument, "Invalid ThreadID %s", in.GetThreadID())
 		}
 		if _, err := s.dal.Threads(ctx, []models.ThreadID{threadID}); errors.Cause(err) == dal.ErrNotFound {
-			return nil, grpcErrorf(codes.NotFound, "Not Found %s", threadID)
+			return nil, grpc.Errorf(codes.NotFound, "Not Found %s", threadID)
 		} else if err != nil {
 			return nil, errors.Trace(err)
 		}
@@ -144,7 +144,7 @@ func (s *threadsServer) ScheduledMessages(ctx context.Context, in *threading.Sch
 			return nil, errors.Trace(err)
 		}
 	default:
-		return nil, grpcErrorf(codes.InvalidArgument, "Unknown Lookup Key Type %s", in.LookupKey)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Unknown Lookup Key Type %s", in.LookupKey)
 	}
 	rScheduledMessages, err := transformScheduledMessagesToResponse(scheduledMessages)
 	if err != nil {

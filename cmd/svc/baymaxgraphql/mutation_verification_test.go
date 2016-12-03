@@ -136,7 +136,7 @@ func TestVerifyPhoneNumberForAccountCreationMutation_Invite(t *testing.T) {
 		}, nil))
 
 	g.ra.Expect(mock.NewExpectation(g.ra.SendMessage, &excomms.SendMessageRequest{
-		Channel: excomms.ChannelType_SMS,
+		DeprecatedChannel: excomms.ChannelType_SMS,
 		Message: &excomms.SendMessageRequest_SMS{
 			SMS: &excomms.SMSMessage{
 				Text:          "Your Spruce verification code is 123456",

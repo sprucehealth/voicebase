@@ -8,15 +8,16 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/threading"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
 
 func (s *threadsServer) CreateSavedMessage(ctx context.Context, in *threading.CreateSavedMessageRequest) (*threading.CreateSavedMessageResponse, error) {
 	if in.OwnerEntityID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "OwnerEntityID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "OwnerEntityID is required")
 	}
 	if in.CreatorEntityID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "CreatorEntityID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "CreatorEntityID is required")
 	}
 	msg := in.GetMessage()
 	textRefs, err := processMessagePost(msg, true)
@@ -80,7 +81,7 @@ func (s *threadsServer) CreateSavedMessage(ctx context.Context, in *threading.Cr
 func (s *threadsServer) DeleteSavedMessage(ctx context.Context, in *threading.DeleteSavedMessageRequest) (*threading.DeleteSavedMessageResponse, error) {
 	id, err := models.ParseSavedMessageID(in.SavedMessageID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid saved message ID %s", id)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid saved message ID %s", id)
 	}
 	if _, err := s.dal.DeleteSavedMessages(ctx, []models.SavedMessageID{id}); err != nil {
 		return nil, errors.Trace(err)
@@ -93,13 +94,13 @@ func (s *threadsServer) SavedMessages(ctx context.Context, in *threading.SavedMe
 	switch by := in.By.(type) {
 	case *threading.SavedMessagesRequest_IDs:
 		if len(by.IDs.IDs) == 0 {
-			return nil, grpcErrorf(codes.InvalidArgument, "Empty ID list")
+			return nil, grpc.Errorf(codes.InvalidArgument, "Empty ID list")
 		}
 		ids := make([]models.SavedMessageID, len(by.IDs.IDs))
 		for i, strID := range by.IDs.IDs {
 			id, err := models.ParseSavedMessageID(strID)
 			if err != nil {
-				return nil, grpcErrorf(codes.InvalidArgument, "Invalid saved message ID %s", strID)
+				return nil, grpc.Errorf(codes.InvalidArgument, "Invalid saved message ID %s", strID)
 			}
 			ids[i] = id
 		}
@@ -110,7 +111,7 @@ func (s *threadsServer) SavedMessages(ctx context.Context, in *threading.SavedMe
 		}
 	case *threading.SavedMessagesRequest_EntityIDs:
 		if len(by.EntityIDs.IDs) == 0 {
-			return nil, grpcErrorf(codes.InvalidArgument, "Empty entity ID list")
+			return nil, grpc.Errorf(codes.InvalidArgument, "Empty entity ID list")
 		}
 		var err error
 		sms, err = s.dal.SavedMessagesForEntities(ctx, by.EntityIDs.IDs)
@@ -118,7 +119,7 @@ func (s *threadsServer) SavedMessages(ctx context.Context, in *threading.SavedMe
 			return nil, errors.Trace(err)
 		}
 	default:
-		return nil, grpcErrorf(codes.InvalidArgument, "Missing By")
+		return nil, grpc.Errorf(codes.InvalidArgument, "Missing By")
 	}
 	res := &threading.SavedMessagesResponse{
 		SavedMessages: make([]*threading.SavedMessage, len(sms)),
@@ -136,7 +137,7 @@ func (s *threadsServer) SavedMessages(ctx context.Context, in *threading.SavedMe
 func (s *threadsServer) UpdateSavedMessage(ctx context.Context, in *threading.UpdateSavedMessageRequest) (*threading.UpdateSavedMessageResponse, error) {
 	id, err := models.ParseSavedMessageID(in.SavedMessageID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid saved message ID %s", id)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid saved message ID %s", id)
 	}
 	update := &dal.SavedMessageUpdate{}
 	if in.Title != "" {

@@ -89,7 +89,7 @@ message MediaAttachment {
 // SendMessageRequest represents a request to send a message
 // over an external channel.
 message SendMessageRequest {
-	ChannelType channel = 1;
+	ChannelType deprecated_channel = 1;
 	oneof message {
 		EmailMessage email = 2;
 		SMSMessage sms = 3 [(gogoproto.customname) = "SMS"];

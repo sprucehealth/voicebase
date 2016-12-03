@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/threading"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
 
@@ -45,13 +46,13 @@ func TestCreateTriggeredMessage(t *testing.T) {
 	}
 	t.Run("Error-KeyRequired", func(t *testing.T) {
 		st := newServerTest(t)
-		testCreateTriggeredMessage(t, st, &threading.CreateTriggeredMessageRequest{}, nil, grpcErrorf(codes.InvalidArgument, "Key is required"))
+		testCreateTriggeredMessage(t, st, &threading.CreateTriggeredMessageRequest{}, nil, grpc.Errorf(codes.InvalidArgument, "Key is required"))
 	})
 	t.Run("Error-UnknownKey", func(t *testing.T) {
 		st := newServerTest(t)
 		testCreateTriggeredMessage(t, st, &threading.CreateTriggeredMessageRequest{
 			Key: &threading.TriggeredMessageKey{},
-		}, nil, grpcErrorf(codes.InvalidArgument, "Invalid triggered message key %s", threading.TRIGGERED_MESSAGE_KEY_INVALID))
+		}, nil, grpc.Errorf(codes.InvalidArgument, "Invalid triggered message key %s", threading.TRIGGERED_MESSAGE_KEY_INVALID))
 	})
 	t.Run("Error-ActorEntityIDRequired", func(t *testing.T) {
 		st := newServerTest(t)
@@ -59,7 +60,7 @@ func TestCreateTriggeredMessage(t *testing.T) {
 			Key: &threading.TriggeredMessageKey{
 				Key: threading.TRIGGERED_MESSAGE_KEY_NEW_PATIENT,
 			},
-		}, nil, grpcErrorf(codes.InvalidArgument, "ActorEntityID is required"))
+		}, nil, grpc.Errorf(codes.InvalidArgument, "ActorEntityID is required"))
 	})
 	t.Run("Error-OrganizationEntityIDRequired", func(t *testing.T) {
 		st := newServerTest(t)
@@ -68,7 +69,7 @@ func TestCreateTriggeredMessage(t *testing.T) {
 				Key: threading.TRIGGERED_MESSAGE_KEY_NEW_PATIENT,
 			},
 			ActorEntityID: "ActorEntityID",
-		}, nil, grpcErrorf(codes.InvalidArgument, "OrganizationEntityID is required"))
+		}, nil, grpc.Errorf(codes.InvalidArgument, "OrganizationEntityID is required"))
 	})
 	t.Run("Error-NoMessages", func(t *testing.T) {
 		st := newServerTest(t)
@@ -78,7 +79,7 @@ func TestCreateTriggeredMessage(t *testing.T) {
 			},
 			ActorEntityID:        "ActorEntityID",
 			OrganizationEntityID: "OrganizationEntityID",
-		}, nil, grpcErrorf(codes.InvalidArgument, "At least 1 Message is required"))
+		}, nil, grpc.Errorf(codes.InvalidArgument, "At least 1 Message is required"))
 	})
 	t.Run("Success-NoExistingTriggeredMessage", func(t *testing.T) {
 		st := newServerTest(t)
@@ -256,7 +257,7 @@ func TestTriggeredMessages(t *testing.T) {
 					Subkey: "subkey",
 				},
 			},
-		}, nil, grpcErrorf(codes.NotFound, "TriggeredMessage not found for key(s) %s %s", "NEW_PATIENT", "subkey"))
+		}, nil, grpc.Errorf(codes.NotFound, "TriggeredMessage not found for key(s) %s %s", "NEW_PATIENT", "subkey"))
 	})
 	t.Run("Success-KeyLookup", func(t *testing.T) {
 		st := newServerTest(t)
@@ -297,7 +298,7 @@ func TestDeleteTriggeredMessage(t *testing.T) {
 	test.OK(t, err)
 	t.Run("Error-TriggeredMessageIDRequired", func(t *testing.T) {
 		st := newServerTest(t)
-		testDeleteTriggeredMessage(t, st, &threading.DeleteTriggeredMessageRequest{}, nil, grpcErrorf(codes.InvalidArgument, "TriggeredMessageID is required"))
+		testDeleteTriggeredMessage(t, st, &threading.DeleteTriggeredMessageRequest{}, nil, grpc.Errorf(codes.InvalidArgument, "TriggeredMessageID is required"))
 	})
 	t.Run("Success", func(t *testing.T) {
 		st := newServerTest(t)

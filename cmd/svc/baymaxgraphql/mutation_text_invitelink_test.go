@@ -60,7 +60,7 @@ func TestTextInviteLink_OrganizationCode(t *testing.T) {
 	}, nil))
 
 	g.ra.Expect(mock.NewExpectation(g.ra.SendMessage, &excomms.SendMessageRequest{
-		Channel: excomms.ChannelType_SMS,
+		DeprecatedChannel: excomms.ChannelType_SMS,
 		Message: &excomms.SendMessageRequest_SMS{
 			SMS: &excomms.SMSMessage{
 				Text:            "Download the Spruce app now and connect with test org: https://invite.test.com/token [code: token]",

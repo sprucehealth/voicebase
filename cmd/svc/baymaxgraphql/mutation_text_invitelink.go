@@ -147,7 +147,7 @@ var textInviteLinkMutation = &graphql.Field{
 			}
 
 			if err := ram.SendMessage(ctx, &excomms.SendMessageRequest{
-				Channel: excomms.ChannelType_SMS,
+				DeprecatedChannel: excomms.ChannelType_SMS,
 				Message: &excomms.SendMessageRequest_SMS{
 					SMS: &excomms.SMSMessage{
 						Text:            fmt.Sprintf("Download the Spruce app now and connect with %s: %s [code: %s]", org.Info.DisplayName, orgLink, res.GetOrganization().Token),

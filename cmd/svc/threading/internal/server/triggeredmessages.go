@@ -3,31 +3,31 @@ package server
 import (
 	"context"
 
-	"google.golang.org/grpc/codes"
-
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/models"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/threading"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 func (s *threadsServer) CreateTriggeredMessage(ctx context.Context, in *threading.CreateTriggeredMessageRequest) (*threading.CreateTriggeredMessageResponse, error) {
 	if in.Key == nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Key is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "Key is required")
 	}
 	if in.Key.Key == threading.TRIGGERED_MESSAGE_KEY_INVALID {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid triggered message key %s", in.Key.Key)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid triggered message key %s", in.Key.Key)
 	}
 	if in.ActorEntityID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "ActorEntityID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "ActorEntityID is required")
 	}
 	if in.OrganizationEntityID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "OrganizationEntityID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "OrganizationEntityID is required")
 	}
 	if len(in.Messages) == 0 {
-		return nil, grpcErrorf(codes.InvalidArgument, "At least 1 Message is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "At least 1 Message is required")
 	}
 	var rtm *threading.TriggeredMessage
 	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
@@ -146,13 +146,13 @@ func (s *threadsServer) TriggeredMessages(ctx context.Context, in *threading.Tri
 		}
 		rtm, err := triggeredMessageForKeys(ctx, key, lk.Key.Subkey, s.dal)
 		if errors.Cause(err) == dal.ErrNotFound {
-			return nil, grpcErrorf(codes.NotFound, "TriggeredMessage not found for key(s) %s %s", key, lk.Key.Subkey)
+			return nil, grpc.Errorf(codes.NotFound, "TriggeredMessage not found for key(s) %s %s", key, lk.Key.Subkey)
 		} else if err != nil {
 			return nil, errors.Trace(err)
 		}
 		rtms = []*threading.TriggeredMessage{rtm}
 	default:
-		return nil, grpcErrorf(codes.InvalidArgument, "Unknown LookupKey %s", in.LookupKey)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Unknown LookupKey %s", in.LookupKey)
 	}
 	return &threading.TriggeredMessagesResponse{
 		TriggeredMessages: rtms,
@@ -177,11 +177,11 @@ func triggeredMessageForKeys(ctx context.Context, key, subkey string, dl dal.DAL
 
 func (s *threadsServer) DeleteTriggeredMessage(ctx context.Context, in *threading.DeleteTriggeredMessageRequest) (*threading.DeleteTriggeredMessageResponse, error) {
 	if in.TriggeredMessageID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "TriggeredMessageID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "TriggeredMessageID is required")
 	}
 	tmID, err := models.ParseTriggeredMessageID(in.TriggeredMessageID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid TriggeredMessageID %s", in.TriggeredMessageID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid TriggeredMessageID %s", in.TriggeredMessageID)
 	}
 	if err := deleteTriggeredMessage(ctx, tmID, s.dal); err != nil {
 		return nil, errors.Trace(err)
@@ -205,17 +205,17 @@ func deleteTriggeredMessage(ctx context.Context, id models.TriggeredMessageID, d
 
 func (s *threadsServer) UpdateTriggeredMessage(ctx context.Context, in *threading.UpdateTriggeredMessageRequest) (*threading.UpdateTriggeredMessageResponse, error) {
 	if in.TriggeredMessageID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "TriggeredMessageID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "TriggeredMessageID is required")
 	}
 	tmID, err := models.ParseTriggeredMessageID(in.TriggeredMessageID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid TriggeredMessageID %s", in.TriggeredMessageID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid TriggeredMessageID %s", in.TriggeredMessageID)
 	}
 	var rtm *threading.TriggeredMessage
 	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
 		// Make sure it exists and lock the row we're updating
 		if _, err := dl.TriggeredMessage(ctx, tmID, dal.ForUpdate); errors.Cause(err) == dal.ErrNotFound {
-			return grpcErrorf(codes.NotFound, "TriggeredMessage not found %s", tmID)
+			return grpc.Errorf(codes.NotFound, "TriggeredMessage not found %s", tmID)
 		} else if err != nil {
 			return errors.Trace(err)
 		}

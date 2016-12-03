@@ -15,27 +15,28 @@ import (
 	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/backend/svc/threading"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
 
 func processMessagePost(msg *threading.MessagePost, allowEmptySummary bool) ([]*models.Reference, error) {
 	if msg == nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Message is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "Message is required")
 	}
 	if !allowEmptySummary && msg.Summary == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "Summary is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "Summary is required")
 	}
 	msg.Summary = textutil.TruncateUTF8(msg.Summary, maxSummaryLength)
 	if msg.Title != "" {
 		if _, err := bml.Parse(msg.Title); err != nil {
-			return nil, grpcErrorf(codes.InvalidArgument, "Title is invalid format: %s", err.Error())
+			return nil, grpc.Errorf(codes.InvalidArgument, "Title is invalid format: %s", err.Error())
 		}
 	}
 	var err error
 	var textRefs []*models.Reference
 	msg.Text, textRefs, err = parseRefsAndNormalize(msg.Text)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Text is invalid format: %s", errors.Cause(err).Error())
+		return nil, grpc.Errorf(codes.InvalidArgument, "Text is invalid format: %s", errors.Cause(err).Error())
 	}
 	return textRefs, nil
 }
@@ -177,7 +178,7 @@ func memberEntityIDsForNewThread(ttype threading.ThreadType, orgID, fromEntityID
 			memberEntityIDs = appendStringToSet(memberEntityIDs, fromEntityID)
 		}
 	default:
-		return nil, grpcErrorf(codes.Internal, fmt.Sprintf("Unhandled thread type %s", ttype))
+		return nil, grpc.Errorf(codes.Internal, fmt.Sprintf("Unhandled thread type %s", ttype))
 	}
 	return memberEntityIDs, nil
 }

@@ -407,8 +407,7 @@ func TestSendMessage_SMS(t *testing.T) {
 	es.twilio.Messages = mm
 
 	_, err = es.SendMessage(context.Background(), &excomms.SendMessageRequest{
-		UUID:    "tag",
-		Channel: excomms.ChannelType_SMS,
+		UUID: "tag",
 		Message: &excomms.SendMessageRequest_SMS{
 			SMS: &excomms.SMSMessage{
 				FromPhoneNumber: "+17348465522",
@@ -443,8 +442,7 @@ func TestSendMessage_SMSIdempotent(t *testing.T) {
 	es.twilio.Messages = mm
 
 	_, err := es.SendMessage(context.Background(), &excomms.SendMessageRequest{
-		UUID:    "tag",
-		Channel: excomms.ChannelType_SMS,
+		UUID: "tag",
 		Message: &excomms.SendMessageRequest_SMS{
 			SMS: &excomms.SMSMessage{
 				FromPhoneNumber: "+17348465522",
@@ -519,8 +517,7 @@ func TestSendMessage_Email(t *testing.T) {
 	}
 
 	_, err = es.SendMessage(context.Background(), &excomms.SendMessageRequest{
-		UUID:    "tag",
-		Channel: excomms.ChannelType_EMAIL,
+		UUID: "tag",
 		Message: &excomms.SendMessageRequest_Email{
 			Email: &excomms.EmailMessage{
 				Subject:          "Hi",
@@ -556,8 +553,7 @@ func TestSendMessage_EmailIdempotent(t *testing.T) {
 	}
 
 	_, err := es.SendMessage(context.Background(), &excomms.SendMessageRequest{
-		UUID:    "tag",
-		Channel: excomms.ChannelType_EMAIL,
+		UUID: "tag",
 		Message: &excomms.SendMessageRequest_Email{
 			Email: &excomms.EmailMessage{
 				Subject:          "Hi",
@@ -572,35 +568,6 @@ func TestSendMessage_EmailIdempotent(t *testing.T) {
 
 	me.Finish()
 	md.Finish()
-}
-
-func TestSendMessage_VoiceNotSupported(t *testing.T) {
-	mm := &mockMessages_Excomms{
-		Expector: &mock.Expector{
-			T: t,
-		},
-		msg: &twilio.Message{},
-	}
-
-	es := &excommsService{
-		twilio: twilio.NewClient("", "", nil),
-	}
-	es.twilio.Messages = mm
-
-	_, err := es.SendMessage(context.Background(), &excomms.SendMessageRequest{
-		Channel: excomms.ChannelType_VOICE,
-		Message: &excomms.SendMessageRequest_SMS{
-			SMS: &excomms.SMSMessage{
-				FromPhoneNumber: "+17348465522",
-				ToPhoneNumber:   "+14152222222",
-				Text:            "hello",
-			},
-		},
-	})
-	test.Equals(t, true, err != nil)
-	test.Equals(t, codes.Unimplemented, grpc.Code(err))
-
-	mm.Finish()
 }
 
 func TestInitiatePhoneCall_OriginatingNumberSpecified(t *testing.T) {

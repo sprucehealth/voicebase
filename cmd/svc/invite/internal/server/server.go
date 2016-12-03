@@ -1,14 +1,13 @@
 package server
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
 	"io"
 	"net/url"
 	"time"
-
-	"context"
 
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/sprucehealth/backend/cmd/svc/invite/internal/dal"
@@ -29,13 +28,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
-
-// go vet doesn't like that the first argument to grpcErrorf is not a string so alias the function with a different name :(
-var grpcErrf = grpc.Errorf
-
-func grpcErrorf(c codes.Code, format string, a ...interface{}) error {
-	return grpcErrf(c, format, a...)
-}
 
 var complexTokenGenerator common.TokenGenerator
 
@@ -160,7 +152,7 @@ func New(
 func (s *server) AttributionData(ctx context.Context, in *invite.AttributionDataRequest) (*invite.AttributionDataResponse, error) {
 	values, err := s.dal.AttributionData(ctx, in.DeviceID)
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, fmt.Sprintf("No attribution data found for device ID '%s'", in.DeviceID))
+		return nil, grpc.Errorf(codes.NotFound, fmt.Sprintf("No attribution data found for device ID '%s'", in.DeviceID))
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -179,25 +171,25 @@ func (s *server) AttributionData(ctx context.Context, in *invite.AttributionData
 // InviteColleagues sends invites to people to join an organization
 func (s *server) InviteColleagues(ctx context.Context, in *invite.InviteColleaguesRequest) (*invite.InviteColleaguesResponse, error) {
 	if in.OrganizationEntityID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "OrganizationEntityID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "OrganizationEntityID is required")
 	}
 	if in.InviterEntityID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "InviterEntityID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "InviterEntityID is required")
 	}
 	// Validate all colleague information
 	for _, c := range in.Colleagues {
 		if c.Email == "" {
-			return nil, grpcErrorf(codes.InvalidArgument, "Email is required")
+			return nil, grpc.Errorf(codes.InvalidArgument, "Email is required")
 		}
 		if !validate.Email(c.Email) {
-			return nil, grpcErrorf(codes.InvalidArgument, fmt.Sprintf("Email '%s' is invalid", c.Email))
+			return nil, grpc.Errorf(codes.InvalidArgument, fmt.Sprintf("Email '%s' is invalid", c.Email))
 		}
 		if c.PhoneNumber == "" {
-			return nil, grpcErrorf(codes.InvalidArgument, "Phone number is required")
+			return nil, grpc.Errorf(codes.InvalidArgument, "Phone number is required")
 		}
 		pn, err := phone.ParseNumber(c.PhoneNumber)
 		if err != nil {
-			return nil, grpcErrorf(codes.InvalidArgument, fmt.Sprintf("Phone number '%s' is invalid", c.PhoneNumber))
+			return nil, grpc.Errorf(codes.InvalidArgument, fmt.Sprintf("Phone number '%s' is invalid", c.PhoneNumber))
 		}
 		c.PhoneNumber = pn.String()
 	}
@@ -243,19 +235,19 @@ func (s *server) InviteColleagues(ctx context.Context, in *invite.InviteColleagu
 // InvitePatients sends invites to people to join an organization
 func (s *server) InvitePatients(ctx context.Context, in *invite.InvitePatientsRequest) (*invite.InvitePatientsResponse, error) {
 	if in.OrganizationEntityID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "OrganizationEntityID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "OrganizationEntityID is required")
 	}
 	if in.InviterEntityID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "InviterEntityID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "InviterEntityID is required")
 	}
 	// Validate all patient information
 	for _, p := range in.Patients {
 		if p.PhoneNumber == "" {
-			return nil, grpcErrorf(codes.InvalidArgument, "Phone number is required")
+			return nil, grpc.Errorf(codes.InvalidArgument, "Phone number is required")
 		}
 		pn, err := phone.ParseNumber(p.PhoneNumber)
 		if err != nil {
-			return nil, grpcErrorf(codes.InvalidArgument, fmt.Sprintf("Phone number '%s' is invalid", p.PhoneNumber))
+			return nil, grpc.Errorf(codes.InvalidArgument, fmt.Sprintf("Phone number '%s' is invalid", p.PhoneNumber))
 		}
 		p.PhoneNumber = pn.String()
 	}
@@ -339,7 +331,7 @@ func (s *server) proccessInvite(
 		}
 		inviteURL, err = s.branch.URL(attr)
 		if err != nil {
-			golog.Errorf("Failed to generate branch URL: %s", err)
+			golog.ContextLogger(ctx).Errorf("Failed to generate branch URL: %s", err)
 			continue
 		}
 		pn := phoneNumber
@@ -371,7 +363,7 @@ func (s *server) proccessInvite(
 			break
 		}
 		if errors.Cause(err) != dal.ErrDuplicateInviteToken {
-			golog.Errorf("Failed to insert invite: %s", err)
+			golog.ContextLogger(ctx).Errorf("Failed to insert invite: %s", err)
 			return nil
 		}
 	}
@@ -379,23 +371,21 @@ func (s *server) proccessInvite(
 	switch inviteType {
 	case models.ColleagueInvite:
 		if err := s.sendColleagueOutbound(ctx, email, inviteURL, token, org, inviter); err != nil {
-			golog.Errorf("Failed to send colleague invite outbound comms: %s", err)
+			golog.ContextLogger(ctx).Errorf("Failed to send colleague invite outbound comms: %s", err)
 		}
 	case models.PatientInvite:
 		if err := s.sendPatientOutbound(ctx, firstName, phoneNumber, inviteURL, token, org); err != nil {
-			golog.Errorf("Failed to send patient invite outbound comms: %s", err)
+			golog.ContextLogger(ctx).Errorf("Failed to send patient invite outbound comms: %s", err)
 		}
 	default:
-		golog.Errorf("Unknown invite type %s. No outbound message sent.", inviteType)
+		golog.ContextLogger(ctx).Errorf("Unknown invite type %s. No outbound message sent.", inviteType)
 	}
-	golog.Debugf("Invite of type %s created for token %s", inviteType, token)
 	return nil
 }
 
 func (s *server) sendColleagueOutbound(ctx context.Context, email, inviteURL, token string, org, inviter *directory.Entity) error {
-
 	if _, err := s.excommsClient.SendMessage(ctx, &excomms.SendMessageRequest{
-		Channel: excomms.ChannelType_EMAIL,
+		DeprecatedChannel: excomms.ChannelType_EMAIL,
 		Message: &excomms.SendMessageRequest_Email{
 			Email: &excomms.EmailMessage{
 				Subject:          fmt.Sprintf("Invite to join %s on Spruce", org.Info.DisplayName),
@@ -421,13 +411,12 @@ func (s *server) sendColleagueOutbound(ctx context.Context, email, inviteURL, to
 }
 
 func (s *server) sendPatientOutbound(ctx context.Context, firstName, phoneNumber, inviteURL, token string, org *directory.Entity) error {
-	golog.Debugf("Sending outbound patient invite messaging. URL: %s, Token: %s", inviteURL, token)
 	msgText := fmt.Sprintf("%s has invited you to use Spruce for secure messaging and digital care.", org.Info.DisplayName)
 	if firstName != "" {
 		msgText = fmt.Sprintf("%s - ", firstName) + msgText
 	}
 	if _, err := s.excommsClient.SendMessage(ctx, &excomms.SendMessageRequest{
-		Channel: excomms.ChannelType_SMS,
+		DeprecatedChannel: excomms.ChannelType_SMS,
 		Message: &excomms.SendMessageRequest_SMS{
 			SMS: &excomms.SMSMessage{
 				Text:            msgText,
@@ -441,7 +430,7 @@ func (s *server) sendPatientOutbound(ctx context.Context, firstName, phoneNumber
 	conc.AfterFunc(time.Second*1, func() {
 		msgText = fmt.Sprintf("Get the Spruce app now and join them. %s [%s]", inviteURL, token)
 		if _, err := s.excommsClient.SendMessage(context.Background(), &excomms.SendMessageRequest{
-			Channel: excomms.ChannelType_SMS,
+			DeprecatedChannel: excomms.ChannelType_SMS,
 			Message: &excomms.SendMessageRequest_SMS{
 				SMS: &excomms.SMSMessage{
 					Text:            msgText,
@@ -450,7 +439,7 @@ func (s *server) sendPatientOutbound(ctx context.Context, firstName, phoneNumber
 				},
 			},
 		}); err != nil {
-			golog.Errorf("Encountered an error while sending patient invite SMS: %s", err)
+			golog.ContextLogger(ctx).Errorf("Encountered an error while sending patient invite SMS: %s", err)
 		}
 	})
 	return nil
@@ -487,7 +476,7 @@ func (s *server) getInternalEntity(ctx context.Context, entityID string) (*direc
 		return nil, errors.Trace(err)
 	}
 	if entity.Type != directory.EntityType_INTERNAL {
-		return nil, grpcErrorf(codes.InvalidArgument, "entityID %s is not an internal entity", entityID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "entityID %s is not an internal entity", entityID)
 	}
 	return entity, nil
 }
@@ -498,7 +487,7 @@ func (s *server) getOrg(ctx context.Context, orgID string) (*directory.Entity, e
 		return nil, err
 	}
 	if entity.Type != directory.EntityType_ORGANIZATION {
-		return nil, grpcErrorf(codes.InvalidArgument, "OrganizationEntityID %s not an organization", orgID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "OrganizationEntityID %s not an organization", orgID)
 	}
 	return entity, nil
 }
@@ -527,10 +516,10 @@ func (s *server) LookupInvite(ctx context.Context, in *invite.LookupInviteReques
 		if len(invs) != 0 {
 			inv = invs[0]
 		} else {
-			return nil, grpcErrorf(codes.NotFound, "No invites found for org %s", in.GetOrganizationEntityID())
+			return nil, grpc.Errorf(codes.NotFound, "No invites found for org %s", in.GetOrganizationEntityID())
 		}
 	default:
-		return nil, grpcErrorf(codes.InvalidArgument, "Unsupported lookup key type %s", in.LookupKeyType.String())
+		return nil, grpc.Errorf(codes.InvalidArgument, "Unsupported lookup key type %s", in.LookupKeyType.String())
 	}
 	if inv.Type != models.ColleagueInvite && inv.Type != models.PatientInvite && inv.Type != models.OrganizationCodeInvite {
 		return nil, errors.Errorf("unsupported invite type %s", string(inv.Type))
@@ -607,7 +596,7 @@ func (s *server) LookupInvites(ctx context.Context, in *invite.LookupInvitesRequ
 			PatientInviteList: &patientInvitesList,
 		}
 	default:
-		return nil, grpcErrorf(codes.InvalidArgument, "Unsupported lookup key type %s", in.LookupKeyType.String())
+		return nil, grpc.Errorf(codes.InvalidArgument, "Unsupported lookup key type %s", in.LookupKeyType.String())
 	}
 
 	return &res, nil
@@ -634,7 +623,7 @@ func (s *server) lookupInvitesForOrganization(ctx context.Context, orgEntityID s
 	tokens, err := s.dal.TokensForEntity(ctx, orgEntityID)
 	if err != nil {
 		if errors.Cause(err) == dal.ErrNotFound {
-			return nil, grpcErrorf(codes.NotFound, "Invite not found for entity "+orgEntityID)
+			return nil, grpc.Errorf(codes.NotFound, "Invite not found for entity "+orgEntityID)
 		}
 		return nil, errors.Trace(err)
 	}
@@ -652,13 +641,13 @@ func (s *server) lookupInvitesForOrganization(ctx context.Context, orgEntityID s
 // ModifyOrganizationInvite modifies the specified organization invite
 func (s *server) ModifyOrganizationInvite(ctx context.Context, in *invite.ModifyOrganizationInviteRequest) (*invite.ModifyOrganizationInviteResponse, error) {
 	if in.Token == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "Token required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "Token required")
 	}
 	inv, err := s.dal.UpdateInvite(ctx, in.Token, &models.InviteUpdate{
 		Tags: in.Tags,
 	})
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, "Invite not found with token %s", in.Token)
+		return nil, grpc.Errorf(codes.NotFound, "Invite not found with token %s", in.Token)
 	} else if err != nil {
 		return nil, errors.Wrapf(err, "failed to update invite with code %s", in.Token)
 	}
@@ -673,7 +662,7 @@ func (s *server) lookupInviteForToken(ctx context.Context, token string) (*model
 	inv, err := s.dal.InviteForToken(ctx, token)
 	if err != nil {
 		if errors.Cause(err) == dal.ErrNotFound {
-			return nil, grpcErrorf(codes.NotFound, "Invite not found with token "+token)
+			return nil, grpc.Errorf(codes.NotFound, "Invite not found with token "+token)
 		}
 		return nil, errors.Trace(err)
 	}
@@ -707,7 +696,7 @@ func (s *server) DeleteInvite(ctx context.Context, in *invite.DeleteInviteReques
 		}
 
 	default:
-		return nil, grpcErrorf(codes.InvalidArgument, "unknown delete key %s", in.DeleteInviteKey)
+		return nil, grpc.Errorf(codes.InvalidArgument, "unknown delete key %s", in.DeleteInviteKey)
 	}
 
 	for _, token := range tokens {
@@ -722,7 +711,7 @@ func (s *server) DeleteInvite(ctx context.Context, in *invite.DeleteInviteReques
 // SetAttributionData associate attribution data with a device
 func (s *server) SetAttributionData(ctx context.Context, in *invite.SetAttributionDataRequest) (*invite.SetAttributionDataResponse, error) {
 	if in.DeviceID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "DeviceID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "DeviceID is required")
 	}
 	values := make(map[string]string, len(in.Values))
 	for _, v := range in.Values {
@@ -737,7 +726,7 @@ func (s *server) SetAttributionData(ctx context.Context, in *invite.SetAttributi
 // CreateOrganizationInvite creates an invite code for the organization
 func (s *server) CreateOrganizationInvite(ctx context.Context, in *invite.CreateOrganizationInviteRequest) (*invite.CreateOrganizationInviteResponse, error) {
 	if in.OrganizationEntityID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "Organization Entity ID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "Organization Entity ID is required")
 	}
 
 	// Lookup org to get name
@@ -776,7 +765,7 @@ func (s *server) CreateOrganizationInvite(ctx context.Context, in *invite.Create
 		}
 		inviteURL, err := s.branch.URL(attr)
 		if err != nil {
-			golog.Errorf("Failed to generate branch URL: %s", err)
+			golog.ContextLogger(ctx).Errorf("Failed to generate branch URL: %s", err)
 			token = ""
 			continue
 		}

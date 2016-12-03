@@ -121,7 +121,7 @@ func TestVerifyEmailForAccountCreationMutation_Invite(t *testing.T) {
 		}, nil))
 
 	g.ra.Expect(mock.NewExpectation(g.ra.SendMessage, &excomms.SendMessageRequest{
-		Channel: excomms.ChannelType_EMAIL,
+		DeprecatedChannel: excomms.ChannelType_EMAIL,
 		Message: &excomms.SendMessageRequest_Email{
 			Email: &excomms.EmailMessage{
 				Subject:          "Your Email Verification Code",

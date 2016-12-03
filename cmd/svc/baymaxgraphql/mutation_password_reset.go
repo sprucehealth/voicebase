@@ -215,8 +215,9 @@ func createAndSendPasswordResetEmail(ctx context.Context, ram raccess.ResourceAc
 	resetURL := passwordResetURL(webDomain, resp.Token)
 	body := "Your password reset link is: " + resetURL
 	golog.Debugf("Sending password reset email %q to %s", body, email)
+
 	if err := ram.SendMessage(ctx, &excomms.SendMessageRequest{
-		Channel: excomms.ChannelType_EMAIL,
+		DeprecatedChannel: excomms.ChannelType_EMAIL,
 		Message: &excomms.SendMessageRequest_Email{
 			Email: &excomms.EmailMessage{
 				Subject:          "Password Reset",
