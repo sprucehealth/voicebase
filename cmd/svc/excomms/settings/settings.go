@@ -193,6 +193,10 @@ var DefaultProvisionedPhoneNumberConfig = &settings.Config{
 	AllowSubkeys:   false,
 	Type:           settings.ConfigType_TEXT,
 	Config: &settings.Config_Text{
-		Text: &settings.TextConfig{},
+		Text: &settings.TextConfig{
+			Default: &settings.TextValue{
+				Value: "",
+			},
+		},
 	},
 }
