@@ -120,7 +120,7 @@ func (w *SQSWorker) Start() {
 				WaitTimeSeconds:     ptr.Int64(20),
 			})
 			if err != nil {
-				golog.Errorf("Failed to receive message: %s", err.Error())
+				golog.Errorf("SQSError: [QueueURL: %s] - Failed to receive message: %s", w.sqsURL, err)
 				continue
 			}
 
