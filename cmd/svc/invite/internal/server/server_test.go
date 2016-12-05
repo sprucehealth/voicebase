@@ -460,6 +460,43 @@ func TestLookupInvite(t *testing.T) {
 	}, res)
 }
 
+func TestLookupInviteOrgCode(t *testing.T) {
+	dl := newMockDAL(t)
+	snsC := mock.NewSNSAPI(t)
+	defer mock.FinishAll(dl, snsC)
+	srv := New(dl, nil, nil, nil, snsC, nil, "", "", "", "", "")
+
+	dl.Expect(mock.NewExpectation(dl.InviteForToken, "testtoken").WithReturns(
+		&models.Invite{
+			Type:                 models.OrganizationCodeInvite,
+			Token:                "testtoken",
+			OrganizationEntityID: "org",
+			Created:              time.Now(),
+			Values: map[string]string{
+				"foo": "bar",
+			},
+			Tags: []string{"my", "tags"},
+		}, nil))
+	res, err := srv.LookupInvite(nil, &invite.LookupInviteRequest{
+		LookupKeyType: invite.LookupInviteRequest_DEPRECATED_TOKEN,
+		LookupKeyOneof: &invite.LookupInviteRequest_Token{
+			Token: "testtoken",
+		},
+	})
+	test.OK(t, err)
+	test.Equals(t, &invite.LookupInviteResponse{
+		Type: invite.LookupInviteResponse_ORGANIZATION_CODE,
+		Invite: &invite.LookupInviteResponse_Organization{
+			Organization: &invite.OrganizationInvite{
+				OrganizationEntityID: "org",
+				Token:                "testtoken",
+				Tags:                 []string{"my", "tags"},
+			},
+		},
+		Values: []*invite.AttributionValue{{Key: "foo", Value: "bar"}},
+	}, res)
+}
+
 func TestLookupInvites(t *testing.T) {
 	dl := newMockDAL(t)
 	snsC := mock.NewSNSAPI(t)

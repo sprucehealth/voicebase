@@ -559,11 +559,12 @@ func (s *server) LookupInvite(ctx context.Context, in *invite.LookupInviteReques
 		}
 	case models.OrganizationCodeInvite:
 		resp.Type = invite.LookupInviteResponse_ORGANIZATION_CODE
+		orgResp, err := organizationInviteAsResponse(inv)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
 		resp.Invite = &invite.LookupInviteResponse_Organization{
-			Organization: &invite.OrganizationInvite{
-				OrganizationEntityID: inv.OrganizationEntityID,
-				Token:                inv.Token,
-			},
+			Organization: orgResp,
 		}
 	}
 	return resp, nil

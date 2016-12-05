@@ -357,7 +357,6 @@ func (d *dal) InsertEntityToken(ctx context.Context, entityID, token string) err
 		TableName: &d.entityTokenTable,
 		Item:      item,
 	}); err != nil {
-		fmt.Println(err)
 		if e, ok := err.(awserr.RequestFailure); ok && e.Code() == "ConditionalCheckFailedException" {
 			return ErrDuplicateInviteToken
 		}
