@@ -11,6 +11,7 @@ func NewMutationRoot() *graphql.Object {
 				"createOrganizationLink": createOrganizationLinkField,
 				"disableAccount":         disableAccountField,
 				"modifyAccountContact":   modifyAccountContactField,
+				"modifyPracticeLink":     modifyPracticeLinkField,
 				"modifySetting":          modifySettingField,
 				"provisionNumber":        provisionNumberField,
 				"updateVendorAccount":    updateVendorAccountField,

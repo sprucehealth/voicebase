@@ -226,7 +226,7 @@ var modifyPracticeLinkOutputType = graphql.NewObject(
 )
 
 var modifyPracticeLinkField = &graphql.Field{
-	Type: graphql.NewNonNull(createOrganizationLinkOutputType),
+	Type: graphql.NewNonNull(modifyPracticeLinkOutputType),
 	Args: graphql.FieldConfigArgument{
 		common.InputFieldName: &graphql.ArgumentConfig{Type: graphql.NewNonNull(modifyPracticeLinkInputType)},
 	},

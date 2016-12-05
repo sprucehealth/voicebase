@@ -212,6 +212,7 @@ func (d *dal) UpdateInvite(ctx context.Context, token string, update *models.Inv
 	}
 
 	updateItemInput := &dynamodb.UpdateItemInput{
+		TableName:    ptr.String(d.inviteTable),
 		Key:          map[string]*dynamodb.AttributeValue{inviteTokenKey: &dynamodb.AttributeValue{S: &token}},
 		ReturnValues: ptr.String(dynamodb.ReturnValueAllNew),
 	}

@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"net"
 	"net/http"
 	"time"
@@ -167,7 +166,7 @@ func main() {
 	}
 
 	subscriber.Subscribe(
-		fmt.Sprintf("%s-patientsync-events", environment.GetCurrent()),
+		"patientsync-events",
 		[]events.Unmarshaler{&directory.EntityUpdatedEvent{}},
 		func(u events.Unmarshaler) error {
 			return worker.SyncEntityUpdate(directoryCLI, dl, u.(*directory.EntityUpdatedEvent))
