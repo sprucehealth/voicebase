@@ -24,6 +24,7 @@ import (
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/backend/svc/settings"
+	"github.com/sprucehealth/backend/svc/threading"
 )
 
 var (
@@ -45,6 +46,7 @@ var (
 	flagDirectoryAddr = flag.String("directory_addr", "_directory._tcp.service", "Address of the directory service")
 	flagInviteAddr    = flag.String("invite_addr", "_invite._tcp.service", "Address of the invite service")
 	flagPaymentsAddr  = flag.String("payments_addr", "_payments._tcp.service", "Address of the payments service")
+	flagThreadingAddr = flag.String("threading_addr", "_threading._tcp.service", "Address of the threading service")
 	flagSettingsAddr  = flag.String("settings_addr", "_settings._tcp.service", "Address of the settings service")
 )
 
@@ -77,6 +79,11 @@ func main() {
 		golog.Fatalf("Unable to connect to auth service: %s", err)
 	}
 	authCli := auth.NewAuthClient(conn)
+	conn, err = svc.DialGRPC(*flagThreadingAddr)
+	if err != nil {
+		golog.Fatalf("Unable to connect to threading service: %s", err)
+	}
+	threadCli := threading.NewThreadsClient(conn)
 
 	signer, err := sig.NewSigner([][]byte{[]byte(*flagAuthTokenSecret)}, nil)
 	if err != nil {
@@ -101,6 +108,7 @@ func main() {
 		paymentsCli,
 		inviteCli,
 		authCli,
+		threadCli,
 		signer,
 		*flagBehindProxy)
 	r.Handle("/graphql", cors.New(cors.Options{

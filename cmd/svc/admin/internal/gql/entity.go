@@ -61,6 +61,7 @@ func init() {
 			Fields: graphql.Fields{
 				"id":            &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 				"accountID":     &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+				"account":       &graphql.Field{Type: graphql.NewNonNull(accountType)},
 				"contacts":      &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(contactType))},
 				"firstName":     &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 				"middleInitial": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
@@ -75,32 +76,47 @@ func init() {
 				"members":       &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(entityType))},
 				"memberships":   &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(entityType))},
 				"orgLink": &graphql.Field{Type: graphql.NewNonNull(graphql.String),
-					Resolve:           resolvePracticeLink,
+					Resolve:           entityPracticeLinkResolve,
 					DeprecationReason: "DEPRECATED due to practice links becoming plural per org. Use `practiceLinks`",
 				},
-				"practiceLinks":  &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(practiceLinkType)), Resolve: resolvePracticeLinks},
+				"practiceLinks":  &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(practiceLinkType)), Resolve: entityPracticeLinksResolve},
 				"type":           &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 				"status":         &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 				"externalIDs":    &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(graphql.String))},
-				"settings":       &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(settingType)), Resolve: resolveEntitySettings},
-				"vendorAccounts": &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(vendorAccountType)), Resolve: resolveEntityVendorAccounts},
+				"settings":       &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(settingType)), Resolve: entitySettingsResolve},
+				"vendorAccounts": &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(vendorAccountType)), Resolve: entityVendorAccountsResolve},
+				"savedMessages":  &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(savedMessageType)), Resolve: entitySavedMessagesResolve},
 			},
 		},
 	)
 }
 
-func resolveEntitySettings(p graphql.ResolveParams) (interface{}, error) {
+func entitySettingsResolve(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	entity := p.Source.(*models.Entity)
 	golog.ContextLogger(ctx).Debugf("Looking up entity settings for %s", entity.ID)
 	return getNodeSettings(ctx, client.Settings(p), entity.ID)
 }
 
-func resolveEntityVendorAccounts(p graphql.ResolveParams) (interface{}, error) {
+func entityVendorAccountsResolve(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	entity := p.Source.(*models.Entity)
 	golog.ContextLogger(ctx).Debugf("Looking up entity vendor accounts for %s", entity.ID)
 	return getEntityVendorAccounts(ctx, client.Payments(p), entity.ID)
+}
+
+func entityAccountResolve(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+	entity := p.Source.(*models.Entity)
+	golog.ContextLogger(ctx).Debugf("Looking up account for %s", entity.ID)
+	return getAccountByID(ctx, client.Auth(p), entity.AccountID)
+}
+
+func entitySavedMessagesResolve(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+	entity := p.Source.(*models.Entity)
+	golog.ContextLogger(ctx).Debugf("Looking up saved messages for %s", entity.ID)
+	return getSavedMessagesForEntity(ctx, client.Threading(p), entity.ID)
 }
 
 func getEntity(ctx context.Context, dirCli directory.DirectoryClient, id string) (*models.Entity, error) {
@@ -127,8 +143,19 @@ func getEntity(ctx context.Context, dirCli directory.DirectoryClient, id string)
 	return models.TransformEntityToModel(resp.Entities[0]), nil
 }
 
+func entityPracticeLinksResolve(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+	entity := p.Source.(*models.Entity)
+	golog.ContextLogger(ctx).Debugf("Looking up practice links for %s", entity.ID)
+	practiceLinks, err := getPracticeLinksForEntity(ctx, client.Invite(p), client.Domains(p).InviteAPI, entity.ID)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return practiceLinks, nil
+}
+
 // DEPRECATED
-func resolvePracticeLink(p graphql.ResolveParams) (interface{}, error) {
+func entityPracticeLinkResolve(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	entity := p.Source.(*models.Entity)
 	golog.ContextLogger(ctx).Debugf("Looking up practice link for %s", entity.ID)
@@ -142,15 +169,4 @@ func resolvePracticeLink(p graphql.ResolveParams) (interface{}, error) {
 		link = practiceLinks[0].URL
 	}
 	return link, nil
-}
-
-func resolvePracticeLinks(p graphql.ResolveParams) (interface{}, error) {
-	ctx := p.Context
-	entity := p.Source.(*models.Entity)
-	golog.ContextLogger(ctx).Debugf("Looking up practice links for %s", entity.ID)
-	practiceLinks, err := getPracticeLinksForEntity(ctx, client.Invite(p), client.Domains(p).InviteAPI, entity.ID)
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
-	return practiceLinks, nil
 }

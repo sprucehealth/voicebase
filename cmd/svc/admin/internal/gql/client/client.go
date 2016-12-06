@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/backend/svc/settings"
+	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 )
 
@@ -30,6 +31,9 @@ const (
 
 	// ExCommsClientParamKey is where in the root object the excomms client is stored
 	ExCommsClientParamKey = "excomms_client"
+
+	// ThreadingClientParamKey is where in the root object the threading client is stored
+	ThreadingClientParamKey = "threading_client"
 )
 
 // Domains returns the domain sturcture mapped into the request params
@@ -67,6 +71,11 @@ func ExComms(p graphql.ResolveParams) excomms.ExCommsClient {
 	return p.Info.RootValue.(map[string]interface{})[ExCommsClientParamKey].(excomms.ExCommsClient)
 }
 
+// Threading returns the threads client mapped into the request params
+func Threading(p graphql.ResolveParams) threading.ThreadsClient {
+	return p.Info.RootValue.(map[string]interface{})[ThreadingClientParamKey].(threading.ThreadsClient)
+}
+
 // Domain collects the domains used for url generation
 type Domain struct {
 	AdminAPI  string
@@ -81,12 +90,14 @@ func InitRoot(p map[string]interface{},
 	settingsClient settings.SettingsClient,
 	paymentsClient payments.PaymentsClient,
 	inviteClient invite.InviteClient,
-	authClient auth.AuthClient) map[string]interface{} {
+	authClient auth.AuthClient,
+	threadingClient threading.ThreadsClient) map[string]interface{} {
 	p[DirectoryClientParamKey] = directoryClient
 	p[SettingsClientParamKey] = settingsClient
 	p[PaymentsClientParamKey] = paymentsClient
 	p[InviteClientParamKey] = inviteClient
 	p[AuthClientParamKey] = authClient
+	p[ThreadingClientParamKey] = threadingClient
 	p[DomainsKey] = domain
 	return p
 }

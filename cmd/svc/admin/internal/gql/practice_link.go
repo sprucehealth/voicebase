@@ -9,8 +9,10 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/gqldecode"
+	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/settings"
+	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -52,9 +54,11 @@ var practiceLinkType = graphql.NewObject(
 		Name: "PracticeLink",
 		Fields: graphql.Fields{
 			"organizationID": &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+			"organization":   &graphql.Field{Type: graphql.NewNonNull(entityType), Resolve: practiceLinkOrganizationResolve},
 			"token":          &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"url":            &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"tags":           &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(graphql.String))},
+			"welcomeMessage": &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(triggeredMessageType)), Resolve: practiceLinkWelcomeMessageResolve},
 		},
 	})
 
@@ -66,6 +70,25 @@ func practiceLinkResolve(p graphql.ResolveParams) (interface{}, error) {
 		return nil, nil
 	}
 	return getPracticeLink(ctx, client.Invite(p), client.Domains(p).InviteAPI, args.PracticeCode)
+}
+
+func practiceLinkOrganizationResolve(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+	pl := p.Source.(*models.PracticeLink)
+	return getEntity(ctx, client.Directory(p), pl.OrganizationID)
+}
+
+func practiceLinkWelcomeMessageResolve(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+	pl := p.Source.(*models.PracticeLink)
+	return getTriggeredMessage(
+		ctx,
+		client.Threading(p),
+		threading.TRIGGERED_MESSAGE_KEY_NEW_PATIENT,
+		directory.FlattenEntitySource(&directory.EntitySource{
+			Type: directory.EntitySource_PRACTICE_CODE,
+			Data: pl.Token,
+		}))
 }
 
 func getPracticeLink(ctx context.Context, inviteCli invite.InviteClient, inviteAPIDomain, token string) (*models.PracticeLink, error) {

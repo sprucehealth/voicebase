@@ -16,6 +16,7 @@ import (
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/backend/svc/settings"
+	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 	"github.com/sprucehealth/graphql/gqlerrors"
 	"github.com/sprucehealth/graphql/language/parser"
@@ -37,6 +38,7 @@ type gqlHandler struct {
 	paymentsClient  payments.PaymentsClient
 	inviteClient    invite.InviteClient
 	authClient      auth.AuthClient
+	threadingClient threading.ThreadsClient
 }
 
 // New returns an initialized instance of *gqlHandler
@@ -49,6 +51,7 @@ func New(
 	paymentsClient payments.PaymentsClient,
 	inviteClient invite.InviteClient,
 	authClient auth.AuthClient,
+	threadingClient threading.ThreadsClient,
 	signer *sig.Signer,
 	behindProxy bool) (http.Handler, graphql.Schema) {
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
@@ -71,6 +74,7 @@ func New(
 		paymentsClient:  paymentsClient,
 		inviteClient:    inviteClient,
 		authClient:      authClient,
+		threadingClient: threadingClient,
 	}, schema
 }
 
@@ -102,7 +106,8 @@ func (h *gqlHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			h.settingsClient,
 			h.paymentsClient,
 			h.inviteClient,
-			h.authClient),
+			h.authClient,
+			h.threadingClient),
 	})
 
 	if len(response.Errors) != 0 {
