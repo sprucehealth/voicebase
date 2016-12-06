@@ -1053,7 +1053,7 @@ func TestInitiatePhoneCall_InvalidCaller(t *testing.T) {
 		},
 		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
 		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
-	}).WithReturns(&directory.LookupEntitiesResponse{}, grpcErrorf(codes.NotFound, "")))
+	}).WithReturns(&directory.LookupEntitiesResponse{}, grpc.Errorf(codes.NotFound, "")))
 
 	mdal := dalmock.New(t)
 	defer mdal.Finish()
@@ -1114,7 +1114,7 @@ func TestInitiatePhoneCall_InvalidCallee(t *testing.T) {
 		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 		RootTypes:  []directory.EntityType{directory.EntityType_EXTERNAL, directory.EntityType_PATIENT},
 		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
-	}).WithReturns(&directory.LookupEntitiesByContactResponse{}, grpcErrorf(codes.NotFound, "")))
+	}).WithReturns(&directory.LookupEntitiesByContactResponse{}, grpc.Errorf(codes.NotFound, "")))
 
 	mdal := dalmock.New(t)
 	defer mdal.Finish()

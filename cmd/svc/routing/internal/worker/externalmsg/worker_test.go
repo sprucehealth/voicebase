@@ -4,19 +4,20 @@ import (
 	"context"
 	"testing"
 
+	"github.com/golang/mock/gomock"
+	routingsettings "github.com/sprucehealth/backend/cmd/svc/routing/internal/settings"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/directory"
 	dirmock "github.com/sprucehealth/backend/svc/directory/mock"
 	"github.com/sprucehealth/backend/svc/excomms"
+	"github.com/sprucehealth/backend/svc/settings"
+	"github.com/sprucehealth/backend/svc/settings/settingsmock"
 	"github.com/sprucehealth/backend/svc/threading"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
-
-// go vet doesn't like that the first argument to grpcErrorf is not a string so alias the function with a different name :(
-var grpcErrorf = grpc.Errorf
 
 type mockDirectoryService struct {
 	directory.DirectoryClient
@@ -31,22 +32,24 @@ func (s *mockDirectoryService) LookupEntities(ctx context.Context, in *directory
 	if entity != nil {
 		entities = append(entities, entity)
 	} else {
-		return nil, grpcErrorf(codes.NotFound, "")
+		return nil, grpc.Errorf(codes.NotFound, "")
 	}
 
 	return &directory.LookupEntitiesResponse{
 		Entities: entities,
 	}, nil
 }
+
 func (s *mockDirectoryService) CreateEntity(ctx context.Context, in *directory.CreateEntityRequest, opts ...grpc.CallOption) (*directory.CreateEntityResponse, error) {
 	return &directory.CreateEntityResponse{
 		Entity: s.entityToCreate,
 	}, nil
 }
+
 func (s *mockDirectoryService) LookupEntitiesByContact(ctx context.Context, in *directory.LookupEntitiesByContactRequest, opts ...grpc.CallOption) (*directory.LookupEntitiesByContactResponse, error) {
 	entities := s.contactToEntitiesMapping[in.ContactValue]
 	if len(entities) == 0 {
-		return nil, grpcErrorf(codes.NotFound, "")
+		return nil, grpc.Errorf(codes.NotFound, "")
 	}
 
 	return &directory.LookupEntitiesByContactResponse{
@@ -78,8 +81,12 @@ func (t *mockThreadsService) ThreadsForMember(ctx context.Context, in *threading
 }
 
 func TestIncomingSMS_NewUser_SMS(t *testing.T) {
-
 	// Setup
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	mockSettings := settingsmock.NewMockSettingsClient(mockCtrl)
+
 	organizationEntity := &directory.Entity{
 		ID:   "10",
 		Type: directory.EntityType_ORGANIZATION,
@@ -128,9 +135,32 @@ func TestIncomingSMS_NewUser_SMS(t *testing.T) {
 	}
 	mt := &mockThreadsService{}
 
+	ctx := context.Background()
+
+	mockSettings.EXPECT().GetValues(ctx, &settings.GetValuesRequest{
+		NodeID: organizationEntity.ID,
+		Keys: []*settings.ConfigKey{
+			{
+				Key:    routingsettings.ConfigKeyProvisionedEndpointTags,
+				Subkey: "+17348465522",
+			},
+		},
+	}).Return(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Value: &settings.Value_StringList{
+					StringList: &settings.StringListValue{
+						Values: []string{"foo", "bar"},
+					},
+				},
+			},
+		},
+	}, nil)
+
 	e := &externalMessageWorker{
 		directory: md,
 		threading: mt,
+		settings:  mockSettings,
 	}
 
 	pem := &excomms.PublishedExternalMessage{
@@ -150,7 +180,7 @@ func TestIncomingSMS_NewUser_SMS(t *testing.T) {
 		},
 	}
 
-	if err := e.process(pem); err != nil {
+	if err := e.process(ctx, pem); err != nil {
 		t.Fatal(err)
 	}
 
@@ -163,6 +193,7 @@ func TestIncomingSMS_NewUser_SMS(t *testing.T) {
 	test.Equals(t, threadRequested.OrganizationID, organizationEntity.ID)
 	test.Equals(t, threadRequested.Message.Title, "SMS")
 	test.Equals(t, threadRequested.Message.Text, pem.GetSMSItem().Text)
+	test.Equals(t, []string{"foo", "bar"}, threadRequested.Tags)
 	test.Equals(t, len(threadRequested.Message.Attachments), len(pem.GetSMSItem().GetAttachments()))
 
 	// ensure no call to post message to thread
@@ -172,8 +203,12 @@ func TestIncomingSMS_NewUser_SMS(t *testing.T) {
 }
 
 func TestIncomingSMS_NewUser_Email(t *testing.T) {
-
 	// Setup
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	mockSettings := settingsmock.NewMockSettingsClient(mockCtrl)
+
 	organizationEntity := &directory.Entity{
 		ID:   "10",
 		Type: directory.EntityType_ORGANIZATION,
@@ -223,9 +258,24 @@ func TestIncomingSMS_NewUser_Email(t *testing.T) {
 	}
 	mt := &mockThreadsService{}
 
+	ctx := context.Background()
+
+	mockSettings.EXPECT().GetValues(ctx, &settings.GetValuesRequest{
+		NodeID: organizationEntity.ID,
+		Keys: []*settings.ConfigKey{
+			{
+				Key:    routingsettings.ConfigKeyProvisionedEndpointTags,
+				Subkey: "doctor@mypractice.baymax.com",
+			},
+		},
+	}).Return(&settings.GetValuesResponse{
+		Values: []*settings.Value{},
+	}, nil)
+
 	e := &externalMessageWorker{
 		directory: md,
 		threading: mt,
+		settings:  mockSettings,
 	}
 
 	pem := &excomms.PublishedExternalMessage{
@@ -247,7 +297,7 @@ func TestIncomingSMS_NewUser_Email(t *testing.T) {
 		},
 	}
 
-	if err := e.process(pem); err != nil {
+	if err := e.process(ctx, pem); err != nil {
 		t.Fatal(err)
 	}
 
@@ -263,6 +313,7 @@ func TestIncomingSMS_NewUser_Email(t *testing.T) {
 	test.Equals(t, pem.GetEmailItem().Attachments[0].MediaID, threadRequested.Message.Attachments[0].GetImage().MediaID)
 	test.Equals(t, pem.GetEmailItem().Attachments[0].Name, threadRequested.Message.Attachments[0].Title)
 	test.Equals(t, pem.GetEmailItem().Attachments[0].ContentType, threadRequested.Message.Attachments[0].GetImage().Mimetype)
+	test.Equals(t, []string(nil), threadRequested.Tags)
 
 	// ensure no call to post message to thread
 	if len(mt.postMessageRequests) != 0 {
@@ -340,7 +391,7 @@ func TestIncomingEmail_ProviderOrOrgNotFound(t *testing.T) {
 		},
 	}
 
-	test.Equals(t, errLogMessageAsErrored, e.process(pem))
+	test.Equals(t, errLogMessageAsErrored, e.process(context.Background(), pem))
 }
 
 func TestIncomingSMS_ExistingUser_SMS(t *testing.T) {
@@ -422,7 +473,7 @@ func TestIncomingSMS_ExistingUser_SMS(t *testing.T) {
 		},
 	}
 
-	if err := e.process(pem); err != nil {
+	if err := e.process(context.Background(), pem); err != nil {
 		t.Fatal(err)
 	}
 
@@ -517,7 +568,7 @@ func TestIncomingSMS_ExistingUser_Email(t *testing.T) {
 		},
 	}
 
-	if err := e.process(pem); err != nil {
+	if err := e.process(context.Background(), pem); err != nil {
 		t.Fatal(err)
 	}
 
@@ -629,7 +680,7 @@ func TestIncomingSMS_MultipleExistingUsers_Email(t *testing.T) {
 		},
 	}
 
-	if err := e.process(pem); err != nil {
+	if err := e.process(context.Background(), pem); err != nil {
 		t.Fatal(err)
 	}
 
@@ -655,6 +706,11 @@ func TestIncomingSMS_MultipleExistingUsers_Email(t *testing.T) {
 
 func TestIncomingVoicemail_NewUser(t *testing.T) {
 	// Setup
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	mockSettings := settingsmock.NewMockSettingsClient(mockCtrl)
+
 	organizationEntity := &directory.Entity{
 		ID: "10",
 		Info: &directory.EntityInfo{
@@ -706,9 +762,32 @@ func TestIncomingVoicemail_NewUser(t *testing.T) {
 	}
 	mt := &mockThreadsService{}
 
+	ctx := context.Background()
+
+	mockSettings.EXPECT().GetValues(ctx, &settings.GetValuesRequest{
+		NodeID: organizationEntity.ID,
+		Keys: []*settings.ConfigKey{
+			{
+				Key:    routingsettings.ConfigKeyProvisionedEndpointTags,
+				Subkey: "+17348465522",
+			},
+		},
+	}).Return(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Value: &settings.Value_StringList{
+					StringList: &settings.StringListValue{
+						Values: []string{"foo", "bar"},
+					},
+				},
+			},
+		},
+	}, nil)
+
 	e := &externalMessageWorker{
 		directory: md,
 		threading: mt,
+		settings:  mockSettings,
 	}
 
 	pem := &excomms.PublishedExternalMessage{
@@ -725,7 +804,7 @@ func TestIncomingVoicemail_NewUser(t *testing.T) {
 		},
 	}
 
-	if err := e.process(pem); err != nil {
+	if err := e.process(ctx, pem); err != nil {
 		t.Fatal(err)
 	}
 
@@ -740,6 +819,7 @@ func TestIncomingVoicemail_NewUser(t *testing.T) {
 	test.Equals(t, "Voicemail", threadRequested.Message.Title)
 	test.Equals(t, pem.GetIncoming().VoicemailDurationNS, threadRequested.Message.GetAttachments()[0].GetAudio().DurationNS)
 	test.Equals(t, pem.GetIncoming().VoicemailMediaID, threadRequested.Message.GetAttachments()[0].GetAudio().MediaID)
+	test.Equals(t, []string{"foo", "bar"}, threadRequested.Tags)
 
 	// ensure no call to post message to thread
 	if len(mt.postMessageRequests) != 0 {
@@ -827,7 +907,7 @@ func TestOutgoingCallEvent(t *testing.T) {
 		},
 	}
 
-	if err := e.process(pem); err != nil {
+	if err := e.process(context.Background(), pem); err != nil {
 		t.Fatal(err)
 	}
 
@@ -845,6 +925,119 @@ func TestOutgoingCallEvent(t *testing.T) {
 	test.Equals(t, "", mt.postMessageRequests[0].Message.Text)
 	test.Equals(t, "Outbound call", mt.postMessageRequests[0].Message.Title)
 
+}
+
+func TestOutgoingCallEvent_NewUser(t *testing.T) {
+	// Setup
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	mockSettings := settingsmock.NewMockSettingsClient(mockCtrl)
+
+	organizationEntity := &directory.Entity{
+		ID: "10",
+		Info: &directory.EntityInfo{
+			DisplayName: "Spruce Practice",
+		},
+		Type: directory.EntityType_ORGANIZATION,
+		Contacts: []*directory.Contact{
+			{
+				Provisioned: true,
+				Value:       "+12068773590",
+			},
+		},
+	}
+	providerEntity := &directory.Entity{
+		ID: "1",
+		Info: &directory.EntityInfo{
+			DisplayName: "Dr. Craig",
+		},
+		Type: directory.EntityType_INTERNAL,
+		Memberships: []*directory.Entity{
+			organizationEntity,
+		},
+	}
+	externalEntity := &directory.Entity{
+		ID:   "2",
+		Type: directory.EntityType_EXTERNAL,
+		Memberships: []*directory.Entity{
+			organizationEntity,
+		},
+		Contacts: []*directory.Contact{
+			{
+				Value: "+17348465522",
+			},
+		},
+		Info: &directory.EntityInfo{
+			DisplayName: "(206) 877-3590",
+		},
+	}
+
+	fromChannelID := "+12068773590"
+	toChannelID := "+17348465522"
+
+	md := &mockDirectoryService{
+		entityIDToEntityMapping: map[string]*directory.Entity{
+			organizationEntity.ID: organizationEntity,
+			providerEntity.ID:     providerEntity,
+			externalEntity.ID:     externalEntity,
+		},
+		contactToEntitiesMapping: map[string][]*directory.Entity{
+			toChannelID:   {externalEntity},
+			fromChannelID: {providerEntity},
+		},
+	}
+	mt := &mockThreadsService{}
+
+	ctx := context.Background()
+
+	mockSettings.EXPECT().GetValues(ctx, &settings.GetValuesRequest{
+		NodeID: organizationEntity.ID,
+		Keys: []*settings.ConfigKey{
+			{
+				Key:    routingsettings.ConfigKeyProvisionedEndpointTags,
+				Subkey: "+12068773590",
+			},
+		},
+	}).Return(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Value: &settings.Value_StringList{
+					StringList: &settings.StringListValue{
+						Values: []string{"foo", "bar"},
+					},
+				},
+			},
+		},
+	}, nil)
+
+	e := &externalMessageWorker{
+		directory: md,
+		threading: mt,
+		settings:  mockSettings,
+	}
+
+	pem := &excomms.PublishedExternalMessage{
+		FromChannelID: fromChannelID,
+		ToChannelID:   toChannelID,
+		Type:          excomms.PublishedExternalMessage_OUTGOING_CALL_EVENT,
+		Direction:     excomms.PublishedExternalMessage_OUTBOUND,
+		Item: &excomms.PublishedExternalMessage_Outgoing{
+			Outgoing: &excomms.OutgoingCallEventItem{
+				Type:           excomms.OutgoingCallEventItem_PLACED,
+				CallerEntityID: providerEntity.ID,
+				CalleeEntityID: externalEntity.ID,
+			},
+		},
+	}
+
+	if err := e.process(ctx, pem); err != nil {
+		t.Fatal(err)
+	}
+
+	// at this point there should be a new thread created
+	threadRequested := mt.threadCreationRequested
+	test.Equals(t, []string{"foo", "bar"}, threadRequested.Tags)
 }
 
 func TestWeChatSpam(t *testing.T) {
@@ -895,7 +1088,7 @@ func TestWeChatSpam(t *testing.T) {
 			},
 		},
 		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
-	}).WithReturns(&directory.LookupEntitiesByContactResponse{}, grpcErrorf(codes.NotFound, "")))
+	}).WithReturns(&directory.LookupEntitiesByContactResponse{}, grpc.Errorf(codes.NotFound, "")))
 
 	mdir.Expect(mock.NewExpectation(mdir.LookupEntities, &directory.LookupEntitiesRequest{
 		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
@@ -935,7 +1128,7 @@ func TestWeChatSpam(t *testing.T) {
 		snsAPI:    snsAPI,
 		directory: mdir,
 	}
-	test.Equals(t, errLogMessageAsSpam, e.process(&excomms.PublishedExternalMessage{
+	test.Equals(t, errLogMessageAsSpam, e.process(context.Background(), &excomms.PublishedExternalMessage{
 		FromChannelID: fromChannelID,
 		ToChannelID:   toChannelID,
 		Type:          excomms.PublishedExternalMessage_SMS,

@@ -22,6 +22,7 @@ import (
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/threading"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
 
@@ -48,10 +49,10 @@ var validIPCallParicipantStateTransitions = map[ipCallStateTransition]struct{}{
 func (e *excommsService) InitiateIPCall(ctx context.Context, req *excomms.InitiateIPCallRequest) (*excomms.InitiateIPCallResponse, error) {
 	// For now only allow 2 party calls
 	if len(req.RecipientEntityIDs) != 1 {
-		return nil, grpcErrorf(codes.InvalidArgument, "Must provide exactly one participant")
+		return nil, grpc.Errorf(codes.InvalidArgument, "Must provide exactly one participant")
 	}
 	if req.RecipientEntityIDs[0] == req.CallerEntityID {
-		return nil, grpcErrorf(codes.InvalidArgument, "Recipient may not be the same entity as the caller")
+		return nil, grpc.Errorf(codes.InvalidArgument, "Recipient may not be the same entity as the caller")
 	}
 
 	entityIDs := append(req.RecipientEntityIDs, req.CallerEntityID)
@@ -70,7 +71,7 @@ func (e *excommsService) InitiateIPCall(ctx context.Context, req *excomms.Initia
 		return nil, errors.Trace(err)
 	}
 	if len(leres.Entities) != len(entityIDs) {
-		return nil, grpcErrorf(codes.InvalidArgument, "Unable to find all entities")
+		return nil, grpc.Errorf(codes.InvalidArgument, "Unable to find all entities")
 	}
 
 	call := &models.IPCall{Pending: true}
@@ -80,7 +81,7 @@ func (e *excommsService) InitiateIPCall(ctx context.Context, req *excomms.Initia
 	case excomms.IPCallType_AUDIO:
 		call.Type = models.IPCallTypeAudio
 	default:
-		return nil, grpcErrorf(codes.InvalidArgument, "Unknown call type %s", req.Type.String())
+		return nil, grpc.Errorf(codes.InvalidArgument, "Unknown call type %s", req.Type.String())
 	}
 
 	call.Participants = make([]*models.IPCallParticipant, 0, len(leres.Entities))
@@ -95,16 +96,16 @@ func (e *excommsService) InitiateIPCall(ctx context.Context, req *excomms.Initia
 			}
 		}
 		if o == nil {
-			return nil, grpcErrorf(codes.InvalidArgument, "Participant %s does not belong to any organizations", ent.ID)
+			return nil, grpc.Errorf(codes.InvalidArgument, "Participant %s does not belong to any organizations", ent.ID)
 		}
 		if org == nil {
 			org = o
 		} else if org.ID != o.ID {
 			// As a sanity check make sure everyone involved belongs to the same org.
-			return nil, grpcErrorf(codes.InvalidArgument, "All participants must belong to the same organization")
+			return nil, grpc.Errorf(codes.InvalidArgument, "All participants must belong to the same organization")
 		}
 		if ent.AccountID == "" {
-			return nil, grpcErrorf(codes.InvalidArgument, "Participant %s missing account ID", ent.ID)
+			return nil, grpc.Errorf(codes.InvalidArgument, "Participant %s missing account ID", ent.ID)
 		}
 		p := &models.IPCallParticipant{
 			EntityID:  ent.ID,
@@ -120,7 +121,7 @@ func (e *excommsService) InitiateIPCall(ctx context.Context, req *excomms.Initia
 			callerPar = p
 			p.NetworkType, err = transformNetworkTypeToModel(req.NetworkType)
 			if err != nil {
-				return nil, grpcErrorf(codes.InvalidArgument, err.Error())
+				return nil, grpc.Errorf(codes.InvalidArgument, err.Error())
 			}
 		} else {
 			p.Role = models.IPCallParticipantRoleRecipient
@@ -160,15 +161,15 @@ func (e *excommsService) InitiateIPCall(ctx context.Context, req *excomms.Initia
 
 func (e *excommsService) IPCall(ctx context.Context, req *excomms.IPCallRequest) (*excomms.IPCallResponse, error) {
 	if req.IPCallID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "IPCallID required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "IPCallID required")
 	}
 	id, err := models.ParseIPCallID(req.IPCallID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid %q IPCallID", req.IPCallID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid %q IPCallID", req.IPCallID)
 	}
 	call, err := e.dal.IPCall(ctx, id)
 	if errors.Cause(err) == dal.ErrIPCallNotFound {
-		return nil, grpcErrorf(codes.NotFound, "IPCall %s not found", id)
+		return nil, grpc.Errorf(codes.NotFound, "IPCall %s not found", id)
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -186,7 +187,7 @@ func (e *excommsService) IPCall(ctx context.Context, req *excomms.IPCallRequest)
 		}
 	}
 	if par == nil {
-		return nil, grpcErrorf(codes.PermissionDenied, "Account %s is not a participant in call %s", req.AccountID, call.ID)
+		return nil, grpc.Errorf(codes.PermissionDenied, "Account %s is not a participant in call %s", req.AccountID, call.ID)
 	}
 	rcall, err := e.transformIPCallToResponse(call, par)
 	if err != nil {
@@ -197,7 +198,7 @@ func (e *excommsService) IPCall(ctx context.Context, req *excomms.IPCallRequest)
 
 func (e *excommsService) PendingIPCalls(ctx context.Context, req *excomms.PendingIPCallsRequest) (*excomms.PendingIPCallsResponse, error) {
 	if req.AccountID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "AccountID required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "AccountID required")
 	}
 	calls, err := e.dal.PendingIPCallsForAccount(ctx, req.AccountID)
 	if err != nil {
@@ -237,25 +238,25 @@ func (e *excommsService) PendingIPCalls(ctx context.Context, req *excomms.Pendin
 
 func (e *excommsService) UpdateIPCall(ctx context.Context, req *excomms.UpdateIPCallRequest) (*excomms.UpdateIPCallResponse, error) {
 	if req.IPCallID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "IPCallID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "IPCallID is required")
 	}
 	if req.AccountID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "AccountID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "AccountID is required")
 	}
 	callID, err := models.ParseIPCallID(req.IPCallID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "IPCallID %q is invalid", req.IPCallID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "IPCallID %q is invalid", req.IPCallID)
 	}
 	newState, err := transformIPCallStateToModel(req.State)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
+		return nil, grpc.Errorf(codes.InvalidArgument, err.Error())
 	}
 	if newState == models.IPCallStatePending {
-		return nil, grpcErrorf(codes.InvalidArgument, "Cannot transition to the PENDING State")
+		return nil, grpc.Errorf(codes.InvalidArgument, "Cannot transition to the PENDING State")
 	}
 	networkType, err := transformNetworkTypeToModel(req.NetworkType)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
+		return nil, grpc.Errorf(codes.InvalidArgument, err.Error())
 	}
 	var call *models.IPCall
 	var par *models.IPCallParticipant
@@ -264,7 +265,7 @@ func (e *excommsService) UpdateIPCall(ctx context.Context, req *excomms.UpdateIP
 	err = e.dal.Transact(func(dl dal.DAL) error {
 		call, err = dl.IPCall(ctx, callID, dal.ForUpdate)
 		if errors.Cause(err) == dal.ErrIPCallNotFound {
-			return grpcErrorf(codes.NotFound, "IPCall %s not found", callID)
+			return grpc.Errorf(codes.NotFound, "IPCall %s not found", callID)
 		} else if err != nil {
 			return errors.Trace(err)
 		}
@@ -275,7 +276,7 @@ func (e *excommsService) UpdateIPCall(ctx context.Context, req *excomms.UpdateIP
 			}
 		}
 		if par == nil {
-			return grpcErrorf(codes.PermissionDenied, "Account %s not a participant in %s", req.AccountID, callID)
+			return grpc.Errorf(codes.PermissionDenied, "Account %s not a participant in %s", req.AccountID, callID)
 		}
 		if newState == par.State {
 			// Nothing to do
@@ -284,7 +285,7 @@ func (e *excommsService) UpdateIPCall(ctx context.Context, req *excomms.UpdateIP
 		callWasActive := call.Active()
 		// Validate that the new state is a valid transition from the current state
 		if _, ok := validIPCallParicipantStateTransitions[ipCallStateTransition{from: par.State, to: newState}]; !ok {
-			return grpcErrorf(codes.InvalidArgument, "Cannot transition from state %s to %s for %s", par.State, newState, par.EntityID)
+			return grpc.Errorf(codes.InvalidArgument, "Cannot transition from state %s to %s for %s", par.State, newState, par.EntityID)
 		}
 		// Update the participant so we don't have to refetch when returning the response
 		oldState = par.State

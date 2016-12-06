@@ -36,9 +36,6 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
-// go vet doesn't like that the first argument to grpcErrorf is not a string so alias the function with a different name :(
-var grpcErrorf = grpc.Errorf
-
 type excommsService struct {
 	twilio                   *twilio.Client
 	twilioAccountSID         string
@@ -189,11 +186,11 @@ func (e *excommsService) ProvisionPhoneNumber(ctx context.Context, in *excomms.P
 		if err == nil {
 			// Just to be safe make sure it's provisioned for the same entity and of the expected type
 			if in.ProvisionFor != prov.ProvisionedFor || prov.EndpointType != models.EndpointTypePhone {
-				return nil, grpcErrorf(codes.AlreadyExists, "A provisioned endpoint %+v found with the same UUID %q but differnt owner %q or type %q", prov, in.UUID, in.ProvisionFor, models.EndpointTypePhone)
+				return nil, grpc.Errorf(codes.AlreadyExists, "A provisioned endpoint %+v found with the same UUID %q but differnt owner %q or type %q", prov, in.UUID, in.ProvisionFor, models.EndpointTypePhone)
 			}
 			// Sanity check that if provisioning by exact phone number then make sure it matches.
 			if pn := in.GetPhoneNumber(); pn != "" && pn != prov.Endpoint {
-				return nil, grpcErrorf(codes.AlreadyExists, "A provisioned endpoint found with the same UUID %q but different number %s expected %s", in.UUID, prov.Endpoint, pn)
+				return nil, grpc.Errorf(codes.AlreadyExists, "A provisioned endpoint found with the same UUID %q but different number %s expected %s", in.UUID, prov.Endpoint, pn)
 			}
 			return &excomms.ProvisionPhoneNumberResponse{
 				PhoneNumber: prov.Endpoint,
@@ -251,9 +248,9 @@ func (e *excommsService) ProvisionPhoneNumber(ctx context.Context, in *excomms.P
 
 func (e *excommsService) DeprovisionPhoneNumber(ctx context.Context, in *excomms.DeprovisionPhoneNumberRequest) (*excomms.DeprovisionPhoneNumberResponse, error) {
 	if in.PhoneNumber == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "phone number to deprovision required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "phone number to deprovision required")
 	} else if len(in.Reason) > 254 {
-		return nil, grpcErrorf(codes.InvalidArgument, "reason cannot be longer than 254 characters")
+		return nil, grpc.Errorf(codes.InvalidArgument, "reason cannot be longer than 254 characters")
 	}
 
 	// lookup the phone number via twilio
@@ -294,7 +291,7 @@ func (e *excommsService) DeprovisionPhoneNumber(ctx context.Context, in *excomms
 
 func (e *excommsService) DeprovisionEmail(ctx context.Context, in *excomms.DeprovisionEmailRequest) (*excomms.DeprovisionEmailResponse, error) {
 	if in.Email == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "email required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "email required")
 	}
 
 	if err := e.dal.Transact(func(dl dal.DAL) error {
@@ -413,13 +410,13 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 					// that they entered an invalid phone number?
 					return &excomms.SendMessageResponse{}, nil
 				case twilio.ErrorCodeMessageLengthExceeded:
-					return nil, grpcErrorf(excomms.ErrorCodeMessageLengthExceeded, "message length can only be 1600 characters in length, message length was %d characters", len(sms.Text))
+					return nil, grpc.Errorf(excomms.ErrorCodeMessageLengthExceeded, "message length can only be 1600 characters in length, message length was %d characters", len(sms.Text))
 				case twilio.ErrorCodeNotMessageCapableFromPhoneNumber:
-					return nil, grpcErrorf(excomms.ErrorCodeSMSIncapableFromPhoneNumber, "from phone number %s does not have SMS capabilities", sms.FromPhoneNumber)
+					return nil, grpc.Errorf(excomms.ErrorCodeSMSIncapableFromPhoneNumber, "from phone number %s does not have SMS capabilities", sms.FromPhoneNumber)
 				case twilio.ErrorNoSMSSupportToNumber:
-					return nil, grpcErrorf(excomms.ErrorCodeMessageDeliveryFailed, "the `to` phone number %s is not reachable via sms or mms", sms.ToPhoneNumber)
+					return nil, grpc.Errorf(excomms.ErrorCodeMessageDeliveryFailed, "the `to` phone number %s is not reachable via sms or mms", sms.ToPhoneNumber)
 				case twilio.ErrorBlackListRuleViolation:
-					return nil, grpcErrorf(excomms.ErrorCodeMessageDeliveryFailed, "the `to` phone number %s requested to STOP receiving messages from %s so no message can be delivered until subscriber responds with START.", sms.ToPhoneNumber, sms.FromPhoneNumber)
+					return nil, grpc.Errorf(excomms.ErrorCodeMessageDeliveryFailed, "the `to` phone number %s requested to STOP receiving messages from %s so no message can be delivered until subscriber responds with START.", sms.ToPhoneNumber, sms.FromPhoneNumber)
 				}
 			}
 			return nil, errors.Trace(err)
@@ -451,9 +448,9 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 
 		domain, err := domainFromEmail(email.FromEmailAddress)
 		if err != nil {
-			return nil, grpcErrorf(codes.InvalidArgument, "Cannot parse domain from email %s: %s", email.FromEmailAddress, err)
+			return nil, grpc.Errorf(codes.InvalidArgument, "Cannot parse domain from email %s: %s", email.FromEmailAddress, err)
 		} else if domain != domainToEnforce {
-			return nil, grpcErrorf(codes.InvalidArgument, "Sender (%s) does not match expected domain (%s)", email.FromEmailAddress, domainToEnforce)
+			return nil, grpc.Errorf(codes.InvalidArgument, "Sender (%s) does not match expected domain (%s)", email.FromEmailAddress, domainToEnforce)
 		}
 
 		id, err := e.idgen.NewID()
@@ -501,9 +498,9 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 // InitiatePhoneCall initiates a phone call as defined in the InitiatePhoneCallRequest.
 func (e *excommsService) InitiatePhoneCall(ctx context.Context, in *excomms.InitiatePhoneCallRequest) (*excomms.InitiatePhoneCallResponse, error) {
 	if in.CallInitiationType == excomms.InitiatePhoneCallRequest_CONNECT_PARTIES {
-		return nil, grpcErrorf(codes.Unimplemented, "not implemented")
+		return nil, grpc.Errorf(codes.Unimplemented, "not implemented")
 	} else if in.OrganizationID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "missing organization id")
+		return nil, grpc.Errorf(codes.InvalidArgument, "missing organization id")
 	}
 
 	// ensure caller belongs to the organization
@@ -523,7 +520,7 @@ func (e *excommsService) InitiatePhoneCall(ctx context.Context, in *excomms.Init
 		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
 	})
 	if err == directory.ErrEntityNotFound {
-		return nil, grpcErrorf(codes.NotFound, "caller %s not found", in.CallerEntityID)
+		return nil, grpc.Errorf(codes.NotFound, "caller %s not found", in.CallerEntityID)
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -536,12 +533,12 @@ func (e *excommsService) InitiatePhoneCall(ctx context.Context, in *excomms.Init
 		}
 	}
 	if orgEntity == nil {
-		return nil, grpcErrorf(codes.NotFound, "%s is not the phone number of a caller belonging to the organization.", in.FromPhoneNumber)
+		return nil, grpc.Errorf(codes.NotFound, "%s is not the phone number of a caller belonging to the organization.", in.FromPhoneNumber)
 	}
 
 	toPhoneNumber, err := phone.Format(in.ToPhoneNumber, phone.E164)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "phone number %s not formatted: %s", toPhoneNumber, err)
+		return nil, grpc.Errorf(codes.InvalidArgument, "phone number %s not formatted: %s", toPhoneNumber, err)
 	}
 
 	// validate callee
@@ -559,7 +556,7 @@ func (e *excommsService) InitiatePhoneCall(ctx context.Context, in *excomms.Init
 			ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
 		})
 	if grpc.Code(err) == codes.NotFound {
-		return nil, grpcErrorf(codes.NotFound, "callee %s not found", in.ToPhoneNumber)
+		return nil, grpc.Errorf(codes.NotFound, "callee %s not found", in.ToPhoneNumber)
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -576,14 +573,14 @@ func (e *excommsService) InitiatePhoneCall(ctx context.Context, in *excomms.Init
 		}
 	}
 	if destinationEntity == nil {
-		return nil, grpcErrorf(codes.NotFound, "%s is not the phone number of a callee belonging to the organization.", in.ToPhoneNumber)
+		return nil, grpc.Errorf(codes.NotFound, "%s is not the phone number of a callee belonging to the organization.", in.ToPhoneNumber)
 	}
 
 	var originatingPhoneNumber phone.Number
 	if in.FromPhoneNumber != "" {
 		originatingPhoneNumber, err = phone.ParseNumber(in.FromPhoneNumber)
 		if err != nil {
-			return nil, grpcErrorf(codes.InvalidArgument, "%s is not a valid phone number", in.FromPhoneNumber)
+			return nil, grpc.Errorf(codes.InvalidArgument, "%s is not a valid phone number", in.FromPhoneNumber)
 		}
 	} else {
 		currentOriginatingPhoneNumber, err := e.dal.CurrentOriginatingNumber(in.CallerEntityID, in.DeviceID)
@@ -663,7 +660,7 @@ func (e *excommsService) InitiatePhoneCall(ctx context.Context, in *excomms.Init
 func (e *excommsService) ProvisionEmailAddress(ctx context.Context, req *excomms.ProvisionEmailAddressRequest) (*excomms.ProvisionEmailAddressResponse, error) {
 	// validate email
 	if !validate.Email(req.EmailAddress) {
-		return nil, grpcErrorf(codes.InvalidArgument, "%s is an invalid email address", req.EmailAddress)
+		return nil, grpc.Errorf(codes.InvalidArgument, "%s is an invalid email address", req.EmailAddress)
 	}
 
 	emailAddress := strings.ToLower(req.EmailAddress)
@@ -679,7 +676,7 @@ func (e *excommsService) ProvisionEmailAddress(ctx context.Context, req *excomms
 			EmailAddress: emailAddress,
 		}, nil
 	} else {
-		return nil, grpcErrorf(codes.AlreadyExists, "Different email address (%s) provisioned for %s", provisionedEndpoint.Endpoint, req.ProvisionFor)
+		return nil, grpc.Errorf(codes.AlreadyExists, "Different email address (%s) provisioned for %s", provisionedEndpoint.Endpoint, req.ProvisionFor)
 	}
 
 	// if not, provision it
@@ -710,22 +707,22 @@ func (e *excommsService) ProvisionEmailAddress(ctx context.Context, req *excomms
 func (e *excommsService) BlockNumber(ctx context.Context, in *excomms.BlockNumberRequest) (*excomms.BlockNumberResponse, error) {
 	provisionedPhoneNumber, err := phone.ParseNumber(in.ProvisionedPhoneNumber)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "invalid phone number %s: %s", in.ProvisionedPhoneNumber, err)
+		return nil, grpc.Errorf(codes.InvalidArgument, "invalid phone number %s: %s", in.ProvisionedPhoneNumber, err)
 	}
 
 	blockedPhoneNumber, err := phone.ParseNumber(in.Number)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "invalid phone number %s", in.Number, err)
+		return nil, grpc.Errorf(codes.InvalidArgument, "invalid phone number %q: %s", in.Number, err)
 	}
 
 	// ensure that the number is provisioned by the org listed in the request
 	pe, err := e.dal.LookupProvisionedEndpoint(in.OrgID, models.EndpointTypePhone)
 	if errors.Cause(err) == dal.ErrProvisionedEndpointNotFound {
-		return nil, grpcErrorf(codes.NotFound, "provisioned phone number %s not found", in.ProvisionedPhoneNumber)
+		return nil, grpc.Errorf(codes.NotFound, "provisioned phone number %s not found", in.ProvisionedPhoneNumber)
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	} else if pe.Endpoint != provisionedPhoneNumber.String() {
-		return nil, grpcErrorf(codes.InvalidArgument, "phone number %s not owned by %s", in.ProvisionedPhoneNumber, in.OrgID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "phone number %s not owned by %s", in.ProvisionedPhoneNumber, in.OrgID)
 	}
 
 	if err := e.dal.InsertBlockedNumber(ctx, blockedPhoneNumber, provisionedPhoneNumber); err != nil {
@@ -745,12 +742,12 @@ func (e *excommsService) BlockNumber(ctx context.Context, in *excomms.BlockNumbe
 func (e *excommsService) UnblockNumber(ctx context.Context, in *excomms.UnblockNumberRequest) (*excomms.UnblockNumberResponse, error) {
 	provisionedPhoneNumber, err := phone.ParseNumber(in.ProvisionedPhoneNumber)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "invalid phone number %s: %s", in.ProvisionedPhoneNumber, err)
+		return nil, grpc.Errorf(codes.InvalidArgument, "invalid phone number %s: %s", in.ProvisionedPhoneNumber, err)
 	}
 
 	blockedPhoneNumber, err := phone.ParseNumber(in.Number)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "invalid phone number %s", in.Number, err)
+		return nil, grpc.Errorf(codes.InvalidArgument, "invalid phone number %q: %s", in.Number, err)
 	}
 
 	if err := e.dal.DeleteBlockedNumber(ctx, blockedPhoneNumber, provisionedPhoneNumber); err != nil {
@@ -769,7 +766,7 @@ func (e *excommsService) UnblockNumber(ctx context.Context, in *excomms.UnblockN
 func (e *excommsService) ListBlockedNumbers(ctx context.Context, in *excomms.ListBlockedNumbersRequest) (*excomms.ListBlockedNumbersResponse, error) {
 	provisionedPhoneNumber, err := phone.ParseNumber(in.ProvisionedPhoneNumber)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "invalid phone number %s: %s", in.ProvisionedPhoneNumber, err)
+		return nil, grpc.Errorf(codes.InvalidArgument, "invalid phone number %s: %s", in.ProvisionedPhoneNumber, err)
 	}
 
 	blockedNumbers, err := e.dal.LookupBlockedNumbers(ctx, provisionedPhoneNumber)

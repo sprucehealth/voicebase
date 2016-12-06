@@ -15,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 	excommsSettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
 	"github.com/sprucehealth/backend/cmd/svc/routing/internal/dal"
+	routingsettings "github.com/sprucehealth/backend/cmd/svc/routing/internal/settings"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/bml"
 	"github.com/sprucehealth/backend/libs/caremessenger/deeplink"
@@ -124,8 +125,10 @@ func (r *externalMessageWorker) Start() {
 				}
 				log.Debugf("Process message %s.", *item.ReceiptHandle)
 
+				ctx := context.Background()
+
 				status := statusProcessed
-				if err := r.process(&pem); err != nil {
+				if err := r.process(ctx, &pem); err != nil {
 					switch err {
 					case errLogMessageAsErrored:
 						status = statusError
@@ -167,10 +170,8 @@ func (r *externalMessageWorker) Started() bool {
 	return r.started
 }
 
-func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) error {
+func (r *externalMessageWorker) process(ctx context.Context, pem *excomms.PublishedExternalMessage) error {
 	golog.Debugf("Processing incoming external message: %s → %s. Direction: %s", pem.FromChannelID, pem.ToChannelID, pem.Direction.String())
-
-	ctx := context.Background()
 
 	var toEntities, fromEntities, externalEntities []*directory.Entity
 	var orgEntity *directory.Entity
@@ -341,13 +342,16 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 		var urgentVoicemail bool
 		var dontNotify bool
 
+		var internalChannelID string
 		switch pem.Direction {
 		case excomms.PublishedExternalMessage_INBOUND:
+			internalChannelID = pem.ToChannelID
 			fromName = determineDisplayName(pem.FromChannelID, contactType, externalEntity)
 			fromEntity = externalEntity
 			toName = determineDisplayName(pem.ToChannelID, contactType, toEntities[0])
 			toEntity = toEntities[0]
 		case excomms.PublishedExternalMessage_OUTBOUND:
+			internalChannelID = pem.FromChannelID
 			fromName = determineDisplayName(pem.FromChannelID, contactType, fromEntities[0])
 			fromEntity = fromEntities[0]
 			toName = determineDisplayName(pem.ToChannelID, contactType, externalEntity)
@@ -502,6 +506,22 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 		if externalThread == nil {
 			golog.Debugf("External thread for %s not found. Creating...", externalEntity.Contacts[0].Value)
 
+			var tags []string
+			res, err := r.settings.GetValues(ctx, &settings.GetValuesRequest{
+				NodeID: orgEntity.ID,
+				Keys: []*settings.ConfigKey{
+					{
+						Key:    routingsettings.ConfigKeyProvisionedEndpointTags,
+						Subkey: internalChannelID,
+					},
+				},
+			})
+			if err != nil {
+				golog.ContextLogger(ctx).Errorf("Failed to fetch provisioned endpoint tags: %s", err)
+			} else if len(res.Values) == 1 {
+				tags = res.Values[0].GetStringList().Values
+			}
+
 			// create thread if one doesn't exist
 			threadRes, err := r.threading.CreateThread(
 				ctx,
@@ -522,6 +542,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 						Attachments: attachments,
 						Summary:     summary,
 					},
+					Tags: tags,
 				},
 			)
 			if err != nil {
