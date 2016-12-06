@@ -24,12 +24,17 @@ UPDATE saved_queries
 
 UPDATE saved_queries
 	SET long_title = 'Spruce Support',
-	description = 'New messages in the \'Spruce Support\' conversation' 
+	description = 'New messages from the Spruce Team' 
 	WHERE title = 'Support';
 
 UPDATE saved_queries
 	SET long_title = 'Notifications',
 	description = 'Hidden query to populate an accurate count of notifications' 
 	WHERE title = 'Notifications';
+
+UPDATE saved_queries
+	SET long_title = 'Team Conversations',
+	description = 'New messages in team conversations'
+	WHERE title = 'Team';
 
 
