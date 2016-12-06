@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"net/http"
+
 	"github.com/rs/cors"
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/service"
 	"github.com/sprucehealth/backend/environment"
@@ -55,4 +57,7 @@ func InitRoutes(
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"*"},
 	}).Handler(authenticationRequired(authorizationRequired(&thumbnailHandler{svc: svc}, svc), authClient, urlSigner, svc)))
+	r.Handle(`/robots.txt`, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("User-agent: *\nDisallow: /\n"))
+	}))
 }

@@ -106,6 +106,10 @@ func runAPI(bootSvc *boot.Service) {
 	bootSvc.MetricsRegistry.Scope("twilio").Add("errors", statTwilioError)
 	router.Handle("/twilio/error", handlers.NewTwilioErrorHandler(statTwilioError))
 
+	router.Handle(`/robots.txt`, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("User-agent: *\nDisallow: /\n"))
+	}))
+
 	h := httputil.LoggingHandler(router, "excommsapi", config.behindProxy, nil)
 	h = httputil.RequestIDHandler(h)
 	h = httputil.CompressResponse(httputil.DecompressRequest(h))
