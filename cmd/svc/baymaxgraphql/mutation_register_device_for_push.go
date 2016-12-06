@@ -24,18 +24,23 @@ var registerDeviceForPushMutation = &graphql.Field{
 		input := p.Args["input"].(map[string]interface{})
 		mutationID, _ := input["clientMutationId"].(string)
 		deviceToken, _ := input["deviceToken"].(string)
+		var appVersion string
+		if sh.AppVersion != nil {
+			appVersion = sh.AppVersion.String()
+		} else {
+			golog.ContextLogger(ctx).Infof("Missing or bad app version registering for push")
+		}
 		if err := svc.notification.RegisterDeviceForPush(&notification.DeviceRegistrationInfo{
 			ExternalGroupID: acc.ID,
 			DeviceToken:     deviceToken,
 			Platform:        sh.Platform.String(),
 			PlatformVersion: sh.PlatformVersion,
-			AppVersion:      sh.AppVersion.String(),
+			AppVersion:      appVersion,
 			Device:          sh.Device,
 			DeviceModel:     sh.DeviceModel,
 			DeviceID:        sh.DeviceID,
 		}); err != nil {
-			golog.Errorf(err.Error())
-			return nil, errors.New("device registration failed")
+			return nil, errors.Errorf("device push registration failed: %s", err)
 		}
 
 		return &registerDeviceForPushOutput{
