@@ -246,7 +246,8 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 				provisionedPhoneNumber = val.Value
 			} else if errors.Cause(err) != settings.ErrValueNotFound {
 				return errors.Errorf("unable to get default number setting for entity %s: %s", item.ActorEntityID, err)
-			} else {
+			}
+			if provisionedPhoneNumber == "" {
 				orgContact := determineProvisionedContact(orgEntity, directory.ContactType_PHONE)
 				if orgContact == nil {
 					golog.Errorf("Unable to determine organization provisioned phone number for org %s. Dropping message...", organizationID)
