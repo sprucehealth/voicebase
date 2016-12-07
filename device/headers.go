@@ -61,7 +61,7 @@ func ExtractSpruceHeaders(w http.ResponseWriter, r *http.Request) *SpruceHeaders
 			var err error
 			sHeaders.AppVersion, err = encoding.ParseVersion(parts[2])
 			if err != nil {
-				golog.Warningf("Unable to parse app version %s: %s", parts[2], err)
+				golog.ContextLogger(r.Context()).Warningf("Unable to parse app version %s: %s", parts[2], err)
 			}
 		}
 		if len(parts) > 3 {
@@ -76,7 +76,7 @@ func ExtractSpruceHeaders(w http.ResponseWriter, r *http.Request) *SpruceHeaders
 			var err error
 			sHeaders.Platform, err = ParsePlatform(parts[0])
 			if err != nil {
-				golog.Warningf("Unable to determine platfrom from request header %s. Ignoring error for now: %s", parts[0], err)
+				golog.ContextLogger(r.Context()).Warningf("Unable to determine platfrom from request header %s. Ignoring error for now: %s", parts[0], err)
 				sHeaders.Platform = ("")
 			}
 		}
@@ -99,13 +99,13 @@ func ExtractSpruceHeaders(w http.ResponseWriter, r *http.Request) *SpruceHeaders
 		if len(parts) > 2 {
 			sHeaders.ScreenWidth, err = strconv.Atoi(parts[2])
 			if err != nil {
-				golog.Warningf("Unable to parse screen width header value %s to integer type", parts[2])
+				golog.ContextLogger(r.Context()).Warningf("Unable to parse screen width header value %s to integer type", parts[2])
 			}
 		}
 		if len(parts) > 3 {
 			sHeaders.ScreenHeight, err = strconv.Atoi(parts[3])
 			if err != nil {
-				golog.Warningf("Unable to parse screen height header value %s to integer type", parts[3])
+				golog.ContextLogger(r.Context()).Warningf("Unable to parse screen height header value %s to integer type", parts[3])
 			}
 		}
 		if len(parts) > 4 {
@@ -121,7 +121,7 @@ func ExtractSpruceHeaders(w http.ResponseWriter, r *http.Request) *SpruceHeaders
 		if err == http.ErrNoCookie || len(c.Value) < deviceIDLength {
 			sHeaders.DeviceID, err = generateDeviceID()
 			if err != nil {
-				golog.Errorf("Failed to generate device ID: %s", err)
+				golog.ContextLogger(r.Context()).Errorf("Failed to generate device ID: %s", err)
 			} else {
 				domain := r.Host
 				if i := strings.IndexByte(domain, ':'); i > 0 {
