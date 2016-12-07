@@ -118,12 +118,14 @@ type inviteValue struct {
 }
 
 type associateInviteOutput struct {
-	ClientMutationID string        `json:"clientMutationId,omitempty"`
-	Success          bool          `json:"success"`
-	ErrorCode        string        `json:"errorCode,omitempty"`
-	ErrorMessage     string        `json:"errorMessage,omitempty"`
-	InviteType       string        `json:"inviteType"`
-	Values           []inviteValue `json:"values,omitempty"`
+	ClientMutationID            string        `json:"clientMutationId,omitempty"`
+	Success                     bool          `json:"success"`
+	ErrorCode                   string        `json:"errorCode,omitempty"`
+	ErrorMessage                string        `json:"errorMessage,omitempty"`
+	InviteType                  string        `json:"inviteType"`
+	Values                      []inviteValue `json:"values,omitempty"`
+	VerifyPhoneNumber           bool          `json:"verifyPhoneNumber"`
+	PhoneNumberVerificationText string        `json:"phoneNumberVerificationText"`
 }
 
 var associateInviteInputType = graphql.NewInputObject(
@@ -152,11 +154,13 @@ var associateInviteOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "AssociateInvitePayload",
 		Fields: graphql.Fields{
-			"clientMutationId": newClientMutationIDOutputField(),
-			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-			"errorCode":        &graphql.Field{Type: associateInviteErrorCodeEnum},
-			"errorMessage":     &graphql.Field{Type: graphql.String},
-			"inviteType":       &graphql.Field{Type: inviteTypeEnum},
+			"clientMutationId":            newClientMutationIDOutputField(),
+			"success":                     &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"errorCode":                   &graphql.Field{Type: associateInviteErrorCodeEnum},
+			"errorMessage":                &graphql.Field{Type: graphql.String},
+			"inviteType":                  &graphql.Field{Type: inviteTypeEnum},
+			"verifyPhoneNumber":           &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"phoneNumberVerificationText": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"values": &graphql.Field{
 				Type:        graphql.NewList(graphql.NewNonNull(inviteValueType)),
 				Description: "Values is the set of data attached to the invite which matters the attribution data from Branch",
@@ -339,10 +343,12 @@ var associateInviteMutation = &graphql.Field{
 		}
 
 		return &associateInviteOutput{
-			ClientMutationID: mutationID,
-			Success:          true,
-			InviteType:       inviteTypeToEnum(res.Type),
-			Values:           values,
+			ClientMutationID:            mutationID,
+			Success:                     true,
+			InviteType:                  inviteTypeToEnum(res.Type),
+			Values:                      values,
+			VerifyPhoneNumber:           true,
+			PhoneNumberVerificationText: "For security purposes, you'll receive a text message with a verification code.",
 		}, nil
 	},
 }

@@ -58,6 +58,35 @@ var savedThreadQueriesField = &graphql.Field{
 		}),
 }
 
+const (
+	secureConversationCreationRequirementPhone         = "PHONE_REQUIRED"
+	secureConversationCreationRequirementEmail         = "EMAIL_REQUIRED"
+	secureConversationCreationRequirementPhoneAndEmail = "PHONE_AND_EMAIL_REQUIRED"
+	secureConversationCreationRequirementPhoneOrEmail  = "PHONE_OR_EMAIL_REQUIRED"
+)
+
+var secureConversationCreationRequirementEnum = graphql.NewEnum(graphql.EnumConfig{
+	Name: "SecureConversationCreationRequirement",
+	Values: graphql.EnumValueConfigMap{
+		secureConversationCreationRequirementEmail: &graphql.EnumValueConfig{
+			Value:       secureConversationCreationRequirementEmail,
+			Description: "Patient email required for secure conversation creation",
+		},
+		secureConversationCreationRequirementPhone: &graphql.EnumValueConfig{
+			Value:       secureConversationCreationRequirementPhone,
+			Description: "Patient phone required for secure conversation creation",
+		},
+		secureConversationCreationRequirementPhoneAndEmail: &graphql.EnumValueConfig{
+			Value:       secureConversationCreationRequirementPhoneAndEmail,
+			Description: "Paitent email and phone required for secure conversation creation",
+		},
+		secureConversationCreationRequirementPhoneOrEmail: &graphql.EnumValueConfig{
+			Value:       secureConversationCreationRequirementPhoneOrEmail,
+			Description: "Patient email or phone required for secure conversation creation",
+		},
+	},
+})
+
 var organizationType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "Organization",
@@ -291,6 +320,13 @@ var organizationType = graphql.NewObject(
 					supportThread := queryThreadsRes.Edges[0].Thread
 					return supportThread.ID, nil
 				}),
+			},
+			"secureConversationCreationRequirement": &graphql.Field{
+				Type:        graphql.NewNonNull(secureConversationCreationRequirementEnum),
+				Description: "Requirement for creating a secure conversation",
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					return secureConversationCreationRequirementPhoneAndEmail, nil
+				},
 			},
 		},
 	},
