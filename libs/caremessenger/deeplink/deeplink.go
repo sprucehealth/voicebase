@@ -96,11 +96,19 @@ func OrgColleagueInviteURL(webDomain, organizationID string) string {
 
 // VisitURL returns a deeplink compatible URL to the visit
 func VisitURL(webDomain, threadID, visitID string) string {
+	if threadID == "" {
+		return fmt.Sprintf("%s/visit/%s", deepLinkBase(webDomain), visitID)
+	}
+
 	return fmt.Sprintf("%s/thread/%s/visit/%s", deepLinkBase(webDomain), threadID, visitID)
 }
 
 // PaymentURL returns a deeplink compatible URL to the payment
 func PaymentURL(webDomain, orgID, threadID, paymentID string) string {
+	if threadID == "" {
+		return fmt.Sprintf("%s/payment/%s", deepLinkBase(webDomain), paymentID)
+	}
+
 	return fmt.Sprintf("%s/payment/%s", ThreadURLShareable(webDomain, orgID, threadID), paymentID)
 }
 
