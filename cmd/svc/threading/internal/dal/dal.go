@@ -276,8 +276,6 @@ func (d *dal) transact(ctx context.Context, trans func(context.Context, *dal) er
 	// Recover from any inner panics that happened and close the transaction
 	defer func() {
 		if r := recover(); r != nil {
-			tx.Rollback()
-
 			const size = 64 << 10
 			buf := make([]byte, size)
 			buf = buf[:runtime.Stack(buf, false)]
