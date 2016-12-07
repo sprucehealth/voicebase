@@ -590,7 +590,8 @@ func (d *dal) Transact(trans func(DAL) error) (err error) {
 	}
 
 	tdal := &dal{
-		db: tsql.AsSafeTx(tx),
+		db:  tsql.AsSafeTx(tx),
+		clk: d.clk,
 	}
 
 	defer func() {
