@@ -1,23 +1,41 @@
 [[savedQueries]]
-title = "Team"
+title = "Patient"
 notificationsEnabled = true
 ordinal = 2000
+query = "type:patient"
+type = "SAVED_QUERY_TYPE_NORMAL"
+
+[[savedQueries]]
+title = "Team"
+notificationsEnabled = true
+ordinal = 3000
 query = "type:team"
-template = true
 type = "SAVED_QUERY_TYPE_NORMAL"
 
 [[savedQueries]]
 title = "@Pages"
 notificationsEnabled = true
-ordinal = 3000
+ordinal = 4000
 query = "is:unreadreference"
 type = "SAVED_QUERY_TYPE_NORMAL"
-template = true
+
+[[savedQueries]]
+title = "Following"
+notificationsEnabled = true
+ordinal = 5000
+query = "is:following"
+type = "SAVED_QUERY_TYPE_NORMAL"
+
+[[savedQueries]]
+title = "Support"
+hidden = true
+ordinal = 7000
+query = "type:support"
+type = "SAVED_QUERY_TYPE_NORMAL"
 
 [[savedQueries]]
 title = "Notifications"
 hidden = true
-ordinal = 4000
+ordinal = 100000
 query = ""
 type = "SAVED_QUERY_TYPE_NOTIFICATIONS"
-template = true
