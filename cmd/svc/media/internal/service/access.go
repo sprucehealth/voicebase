@@ -204,7 +204,7 @@ func (s *service) canAccessSavedMessageMedia(ctx context.Context, savedMessageID
 		return err
 	}
 
-	if savedMessagesRes == nil {
+	if savedMessagesRes == nil || len(savedMessagesRes.SavedMessages) == 0 {
 		return ErrAccessDenied
 	}
 
