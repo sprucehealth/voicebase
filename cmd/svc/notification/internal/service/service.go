@@ -197,7 +197,11 @@ func (s *service) processPushNotification(ctx context.Context, n *notification.N
 	// Hack: We're getting duplicate notifications in prod. Not sure how this could be happening right now. Dedupe here as an emergency measure
 	dedupedEntityMap := make(map[string]struct{}, len(n.EntitiesToNotify))
 	for _, eID := range n.EntitiesToNotify {
-		dedupedEntityMap[eID] = struct{}{}
+		if eID != "" {
+			dedupedEntityMap[eID] = struct{}{}
+		} else {
+			golog.Errorf("EntitiesToNotify included empty entity ID for type %s", n.Type)
+		}
 	}
 	dedupedEntityList := make([]string, len(dedupedEntityMap))
 	i := 0

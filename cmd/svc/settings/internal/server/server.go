@@ -42,6 +42,9 @@ func (s *server) SetValue(ctx context.Context, in *settings.SetValueRequest) (*s
 	if in.Value.Key == nil || in.Value.Key.Key == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "config key not specified")
 	}
+	if in.NodeID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "NodeID required")
+	}
 
 	// pull up config
 	config, err := s.getConfig(in.Value.Key.Key)
@@ -70,6 +73,10 @@ func (s *server) SetValue(ctx context.Context, in *settings.SetValueRequest) (*s
 }
 
 func (s *server) GetValues(ctx context.Context, in *settings.GetValuesRequest) (*settings.GetValuesResponse, error) {
+	if in.NodeID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "NodeID required")
+	}
+
 	keys := make([]*models.ConfigKey, len(in.Keys))
 	for i, k := range in.Keys {
 		keys[i] = transformKeyToModel(k)

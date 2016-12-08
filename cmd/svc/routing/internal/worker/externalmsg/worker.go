@@ -183,7 +183,7 @@ func (r *externalMessageWorker) process(ctx context.Context, pem *excomms.Publis
 	case excomms.PublishedExternalMessage_EMAIL:
 		contactType = directory.ContactType_EMAIL
 	default:
-		return errors.Trace(fmt.Errorf("Unknown message type %s", pem.Type.String()))
+		return errors.Errorf("Unknown message type %s", pem.Type)
 	}
 
 	switch pem.Direction {
@@ -521,6 +521,7 @@ func (r *externalMessageWorker) process(ctx context.Context, pem *excomms.Publis
 			} else if len(res.Values) == 1 {
 				tags = res.Values[0].GetStringList().Values
 			}
+			golog.Debugf("Tags for org %q channel %q: %v", orgEntity.ID, internalChannelID, tags)
 
 			// create thread if one doesn't exist
 			threadRes, err := r.threading.CreateThread(

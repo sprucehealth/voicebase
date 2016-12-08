@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"runtime"
 	"strings"
 	"time"
 
@@ -589,15 +590,21 @@ func (d *dal) Transact(trans func(DAL) error) (err error) {
 	}
 
 	tdal := &dal{
-		db: tsql.AsSafeTx(tx),
+		db:  tsql.AsSafeTx(tx),
+		clk: d.clk,
 	}
 
 	defer func() {
 		if r := recover(); r != nil {
-			tx.Rollback()
-			errString := fmt.Sprintf("Encountered panic during transaction execution: %v", r)
-			golog.Errorf(errString)
-			err = errors.Trace(errors.New(errString))
+			const size = 64 << 10
+			buf := make([]byte, size)
+			buf = buf[:runtime.Stack(buf, false)]
+
+			if err := tx.Rollback(); err != nil {
+				golog.Errorf("Rollback failed: %s", err)
+			}
+			err = errors.Errorf("Encountered panic during transaction execution: %v", r)
+			golog.Errorf("%s - Stack trace: %s", err, string(buf))
 		}
 	}()
 

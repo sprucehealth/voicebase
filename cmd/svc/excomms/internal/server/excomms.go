@@ -633,7 +633,8 @@ func (e *excommsService) InitiatePhoneCall(ctx context.Context, in *excomms.Init
 		provisionedPhoneNumberStr = val.Value
 	} else if errors.Cause(err) != settings.ErrValueNotFound {
 		return nil, errors.Errorf("unable to get default number setting for entity %s: %s", sourceEntity.ID, err)
-	} else {
+	}
+	if provisionedPhoneNumberStr == "" {
 		// Use first provisioned number for organization if entity doesn't have a default set
 		for _, c := range orgEntity.Contacts {
 			if c.Provisioned && c.ContactType == directory.ContactType_PHONE {

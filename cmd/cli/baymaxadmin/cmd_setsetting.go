@@ -135,6 +135,13 @@ func (c *setSettingCmd) run(args []string) error {
 				Value: b,
 			},
 		}
+	case settings.ConfigType_TEXT:
+		val.Type = settings.ConfigType_TEXT
+		val.Value = &settings.Value_Text{
+			Text: &settings.TextValue{
+				Value: strings.TrimSpace(*value),
+			},
+		}
 	case settings.ConfigType_INTEGER:
 		i, err := strconv.ParseInt(*value, 10, 64)
 		if err != nil {
