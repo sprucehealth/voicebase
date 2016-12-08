@@ -230,8 +230,8 @@ func (s *server) CheckAuthentication(ctx context.Context, rd *auth.CheckAuthenti
 		return nil, errors.Trace(err)
 	}
 
-	var account *dal.Account
 	var authToken *auth.AuthToken
+	var accountID dal.AccountID
 	var authenticated bool
 	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
 		// Lock the row for update to avoid race conditions since we might rotate it
@@ -243,6 +243,7 @@ func (s *server) CheckAuthentication(ctx context.Context, rd *auth.CheckAuthenti
 			return errors.Trace(err)
 		}
 		authenticated = true
+		accountID = aToken.AccountID
 
 		authToken = &auth.AuthToken{
 			Value:               rd.Token,
@@ -261,6 +262,7 @@ func (s *server) CheckAuthentication(ctx context.Context, rd *auth.CheckAuthenti
 			// Since rotated tokens do not have their Created field updated, we check the refresh windows as
 			//   expiration - duration + refresh windows
 			s.clk.Now().After(aToken.Expires.Add(-tokenDurationExpiration).Add(defaultTokenRefreshWindow)) {
+
 			authToken, err = s.rotateAndExtendToken(ctx, dl, aToken, rd.TokenAttributes)
 			if err != nil {
 				return errors.Trace(err)
@@ -269,7 +271,7 @@ func (s *server) CheckAuthentication(ctx context.Context, rd *auth.CheckAuthenti
 
 		// If the token is valid, but it's a shadow token, return their active token
 		if aToken.Shadow {
-			activeToken, err := s.dal.ActiveAuthTokenForAccount(ctx, aToken.AccountID, aToken.DeviceID, aToken.DurationType)
+			activeToken, err := dl.ActiveAuthTokenForAccount(ctx, aToken.AccountID, aToken.DeviceID, aToken.DurationType)
 			if err != nil {
 				// Log the error here but allow the user to continue since their shadow token is still good.
 				golog.Errorf("Encountered an error when attempting to return the active token for account %s: %s", aToken.AccountID, err)
@@ -278,11 +280,6 @@ func (s *server) CheckAuthentication(ctx context.Context, rd *auth.CheckAuthenti
 				authToken.ExpirationEpoch = uint64(activeToken.Expires.Unix())
 				authToken.ClientEncryptionKey = base64.StdEncoding.EncodeToString(activeToken.ClientEncryptionKey)
 			}
-		}
-
-		account, err = s.dal.Account(ctx, aToken.AccountID)
-		if err != nil {
-			return errors.Trace(err)
 		}
 		return nil
 	}); err != nil {
@@ -294,6 +291,10 @@ func (s *server) CheckAuthentication(ctx context.Context, rd *auth.CheckAuthenti
 		return &auth.CheckAuthenticationResponse{
 			IsAuthenticated: false,
 		}, nil
+	}
+	account, err := s.dal.Account(ctx, accountID)
+	if err != nil {
+		return nil, errors.Trace(err)
 	}
 	return &auth.CheckAuthenticationResponse{
 		IsAuthenticated: true,
