@@ -1,9 +1,8 @@
 package server
 
 import (
-	"testing"
-
 	"context"
+	"testing"
 
 	"github.com/sprucehealth/backend/cmd/svc/payments/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/payments/internal/oauth"
@@ -442,7 +441,7 @@ func TestPaymentMethod(t *testing.T) {
 				PaymentMethodID: pmID1.String(),
 			},
 			Expected:    nil,
-			ExpectedErr: grpcErrorf(codes.NotFound, "PaymentMethod %s Not Found", pmID1),
+			ExpectedErr: grpc.Errorf(codes.NotFound, "PaymentMethod %s Not Found", pmID1),
 		},
 		"Success": {
 			Server: func() *tServer {

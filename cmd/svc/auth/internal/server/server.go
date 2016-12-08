@@ -1,14 +1,13 @@
 package server
 
 import (
+	"context"
 	"crypto/sha512"
 	"encoding/base64"
 	"fmt"
 	"sort"
 	"strings"
 	"time"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/auth/internal/dal"
 	authSetting "github.com/sprucehealth/backend/cmd/svc/auth/internal/settings"
@@ -29,13 +28,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
-
-// go vet doesn't like that the first argument to grpcErrorf is not a string so alias the function with a different name :(
-var grpcErrf = grpc.Errorf
-
-func grpcErrorf(c codes.Code, format string, a ...interface{}) error {
-	return grpcErrf(c, format, a...)
-}
 
 type server struct {
 	dal                       dal.DAL
@@ -67,18 +59,18 @@ func New(dl dal.DAL, settings settings.SettingsClient, clientEncryptionKeySecret
 func (s *server) AuthenticateLogin(ctx context.Context, rd *auth.AuthenticateLoginRequest) (*auth.AuthenticateLoginResponse, error) {
 	account, err := s.dal.AccountForEmail(ctx, rd.Email)
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(auth.EmailNotFound, "Unknown email: %s", rd.Email)
+		return nil, grpc.Errorf(auth.EmailNotFound, "Unknown email: %s", rd.Email)
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	} else if account.Status == dal.AccountStatusDeleted {
-		return nil, grpcErrorf(auth.AccountDeleted, "auth: deleted account")
+		return nil, grpc.Errorf(auth.AccountDeleted, "auth: deleted account")
 	} else if account.Status == dal.AccountStatusBlocked {
-		return nil, grpcErrorf(auth.AccountBlocked, "auth: blocked account")
+		return nil, grpc.Errorf(auth.AccountBlocked, "auth: blocked account")
 	} else if account.Status == dal.AccountStatusSuspended {
-		return nil, grpcErrorf(auth.AccountSuspended, "auth: suspended account")
+		return nil, grpc.Errorf(auth.AccountSuspended, "auth: suspended account")
 	}
 	if err := s.hasher.CompareHashAndPassword(account.Password, []byte(rd.Password)); err != nil {
-		return nil, grpcErrorf(auth.BadPassword, "The password does not match the provided account email: %s", rd.Email)
+		return nil, grpc.Errorf(auth.BadPassword, "The password does not match the provided account email: %s", rd.Email)
 	}
 
 	var authToken *auth.AuthToken
@@ -151,23 +143,23 @@ func (s *server) deviceNeeds2FA(ctx context.Context, accountID dal.AccountID, de
 
 func (s *server) AuthenticateLoginWithCode(ctx context.Context, rd *auth.AuthenticateLoginWithCodeRequest) (*auth.AuthenticateLoginWithCodeResponse, error) {
 	if rd.Token == "" {
-		return nil, grpcErrorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
+		return nil, grpc.Errorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
 	}
 
 	verificationCode, err := s.dal.VerificationCode(ctx, rd.Token)
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
+		return nil, grpc.Errorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	} else if verificationCode.VerificationType != dal.VerificationCodeTypeAccount2fa {
-		return nil, grpcErrorf(codes.NotFound, "No 2FA verification code maps to the provided token %q", rd.Token)
+		return nil, grpc.Errorf(codes.NotFound, "No 2FA verification code maps to the provided token %q", rd.Token)
 	}
 
 	// Check that the code matches the token and it is not expired
 	if verificationCode.Code != rd.Code {
-		return nil, grpcErrorf(auth.BadVerificationCode, "The code mapped to the provided token does not match %s", rd.Code)
+		return nil, grpc.Errorf(auth.BadVerificationCode, "The code mapped to the provided token does not match %s", rd.Code)
 	} else if verificationCode.Expires.Before(s.clk.Now()) {
-		return nil, grpcErrorf(auth.VerificationCodeExpired, "The code mapped to the provided token has expired.")
+		return nil, grpc.Errorf(auth.VerificationCodeExpired, "The code mapped to the provided token has expired.")
 	}
 
 	// Since we sucessfully checked the token, mark it as consumed
@@ -312,21 +304,21 @@ func (s *server) CheckAuthentication(ctx context.Context, rd *auth.CheckAuthenti
 
 func (s *server) CheckVerificationCode(ctx context.Context, rd *auth.CheckVerificationCodeRequest) (*auth.CheckVerificationCodeResponse, error) {
 	if rd.Token == "" {
-		return nil, grpcErrorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
+		return nil, grpc.Errorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
 	}
 
 	verificationCode, err := s.dal.VerificationCode(ctx, rd.Token)
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
+		return nil, grpc.Errorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
 
 	// Check that the code matches the token and it is not expired
 	if verificationCode.Code != rd.Code {
-		return nil, grpcErrorf(auth.BadVerificationCode, "The code mapped to the provided token does not match %s", rd.Code)
+		return nil, grpc.Errorf(auth.BadVerificationCode, "The code mapped to the provided token does not match %s", rd.Code)
 	} else if verificationCode.Expires.Before(s.clk.Now()) {
-		return nil, grpcErrorf(auth.VerificationCodeExpired, "The code mapped to the provided token has expired.")
+		return nil, grpc.Errorf(auth.VerificationCodeExpired, "The code mapped to the provided token has expired.")
 	}
 
 	// Since we sucessfully checked the token, mark it as consumed
@@ -360,21 +352,21 @@ func (s *server) CheckVerificationCode(ctx context.Context, rd *auth.CheckVerifi
 
 func (s *server) CheckPasswordResetToken(ctx context.Context, rd *auth.CheckPasswordResetTokenRequest) (*auth.CheckPasswordResetTokenResponse, error) {
 	if rd.Token == "" {
-		return nil, grpcErrorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
+		return nil, grpc.Errorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
 	}
 
 	verificationCode, err := s.dal.VerificationCode(ctx, rd.Token)
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
+		return nil, grpc.Errorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
 
 	// Check that the token is of the appropriate type and is not expired
 	if verificationCode.VerificationType != dal.VerificationCodeTypePasswordReset {
-		return nil, grpcErrorf(codes.InvalidArgument, "The provided token is not a password reset token %s", rd.Token)
+		return nil, grpc.Errorf(codes.InvalidArgument, "The provided token is not a password reset token %s", rd.Token)
 	} else if verificationCode.Expires.Before(s.clk.Now()) {
-		return nil, grpcErrorf(auth.TokenExpired, "The provided token has expired.")
+		return nil, grpc.Errorf(auth.TokenExpired, "The provided token has expired.")
 	}
 
 	// Return the releveant password reset information for the account
@@ -440,7 +432,7 @@ func (s *server) CreateAccount(ctx context.Context, rd *auth.CreateAccountReques
 	}
 	pn, err := phone.ParseNumber(rd.PhoneNumber)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "The provided phone number is not valid: %s", rd.PhoneNumber)
+		return nil, grpc.Errorf(codes.InvalidArgument, "The provided phone number is not valid: %s", rd.PhoneNumber)
 	}
 
 	// TODO: This is check should be coupled with some idempotency changes to actually be correct. Just detecting the duyplicate for now.
@@ -448,7 +440,7 @@ func (s *server) CreateAccount(ctx context.Context, rd *auth.CreateAccountReques
 	if err != nil && errors.Cause(err) != dal.ErrNotFound {
 		return nil, errors.Trace(err)
 	} else if acc != nil {
-		return nil, grpcErrorf(auth.DuplicateEmail, "The email %s is already in use by an account", rd.Email)
+		return nil, grpc.Errorf(auth.DuplicateEmail, "The email %s is already in use by an account", rd.Email)
 	}
 
 	var account *dal.Account
@@ -566,11 +558,11 @@ func (s *server) validateCreateAccountRequest(rd *auth.CreateAccountRequest) err
 		invalidInputMessage = "Password cannot be empty"
 	}
 	if invalidInputMessage != "" {
-		return grpcErrorf(codes.InvalidArgument, invalidInputMessage)
+		return grpc.Errorf(codes.InvalidArgument, invalidInputMessage)
 	}
 
 	if !validate.Email(rd.Email) {
-		return grpcErrorf(auth.InvalidEmail, "The provided email is not valid: %s", rd.Email)
+		return grpc.Errorf(auth.InvalidEmail, "The provided email is not valid: %s", rd.Email)
 	}
 	return nil
 }
@@ -588,7 +580,7 @@ func (s *server) CreateVerificationCode(ctx context.Context, rd *auth.CreateVeri
 func (s *server) CreatePasswordResetToken(ctx context.Context, rd *auth.CreatePasswordResetTokenRequest) (*auth.CreatePasswordResetTokenResponse, error) {
 	account, err := s.dal.AccountForEmail(ctx, rd.Email)
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, err.Error())
+		return nil, grpc.Errorf(codes.NotFound, err.Error())
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -596,7 +588,7 @@ func (s *server) CreatePasswordResetToken(ctx context.Context, rd *auth.CreatePa
 		// If the account isn't active. Report it as not found and log the attempt
 		msg := fmt.Sprintf("CreatePasswordResetToken called for NON ACTIVE account %s - Status: %s", account.ID, account.Status)
 		golog.ContextLogger(ctx).Infof(msg)
-		return nil, grpcErrorf(codes.NotFound, msg)
+		return nil, grpc.Errorf(codes.NotFound, msg)
 	}
 	verificationCode, err := generateAndInsertVerificationCode(ctx, s.dal, account.ID.String(), auth.VerificationCodeType_PASSWORD_RESET, s.clk)
 	if err != nil {
@@ -610,11 +602,11 @@ func (s *server) CreatePasswordResetToken(ctx context.Context, rd *auth.CreatePa
 func (s *server) GetAccount(ctx context.Context, rd *auth.GetAccountRequest) (*auth.GetAccountResponse, error) {
 	id, err := dal.ParseAccountID(rd.AccountID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse provided account ID")
+		return nil, grpc.Errorf(codes.InvalidArgument, "Unable to parse provided account ID")
 	}
 	account, err := s.dal.Account(ctx, id)
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, "Account with ID %s not found", rd.AccountID)
+		return nil, grpc.Errorf(codes.NotFound, "Account with ID %s not found", rd.AccountID)
 	}
 	return &auth.GetAccountResponse{
 		Account: accountAsResponse(account),
@@ -624,15 +616,15 @@ func (s *server) GetAccount(ctx context.Context, rd *auth.GetAccountRequest) (*a
 func (s *server) GetAccountContacts(ctx context.Context, rd *auth.GetAccountContactsRequest) (*auth.GetAccountContactsResponse, error) {
 	id, err := dal.ParseAccountID(rd.AccountID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse provided account ID")
+		return nil, grpc.Errorf(codes.InvalidArgument, "Unable to parse provided account ID")
 	}
 	accountPhone, err := s.dal.AccountPhoneForAccount(ctx, id)
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, "AccountPhone with Account ID %s not found", rd.AccountID)
+		return nil, grpc.Errorf(codes.NotFound, "AccountPhone with Account ID %s not found", rd.AccountID)
 	}
 	accountEmail, err := s.dal.AccountEmailForAccount(ctx, id)
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, "AccountEmail with Account ID %s not found", rd.AccountID)
+		return nil, grpc.Errorf(codes.NotFound, "AccountEmail with Account ID %s not found", rd.AccountID)
 	}
 	return &auth.GetAccountContactsResponse{
 		PhoneNumber: accountPhone.PhoneNumber,
@@ -643,15 +635,15 @@ func (s *server) GetAccountContacts(ctx context.Context, rd *auth.GetAccountCont
 func (s *server) UpdateAccountContacts(ctx context.Context, rd *auth.UpdateAccountContactsRequest) (*auth.UpdateAccountContactsResponse, error) {
 	accountID, err := dal.ParseAccountID(rd.AccountID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse provided account ID")
+		return nil, grpc.Errorf(codes.InvalidArgument, "Unable to parse provided account ID")
 	}
 	accountPhone, err := s.dal.AccountPhoneForAccount(ctx, accountID)
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, "AccountPhone with Account ID %s not found", rd.AccountID)
+		return nil, grpc.Errorf(codes.NotFound, "AccountPhone with Account ID %s not found", rd.AccountID)
 	}
 	accountEmail, err := s.dal.AccountEmailForAccount(ctx, accountID)
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, "AccountEmail with Account ID %s not found", rd.AccountID)
+		return nil, grpc.Errorf(codes.NotFound, "AccountEmail with Account ID %s not found", rd.AccountID)
 	}
 	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
 		if rd.PhoneNumber != "" {
@@ -696,24 +688,24 @@ func (s *server) Unauthenticate(ctx context.Context, rd *auth.UnauthenticateRequ
 
 func (s *server) UpdatePassword(ctx context.Context, rd *auth.UpdatePasswordRequest) (*auth.UpdatePasswordResponse, error) {
 	if rd.Token == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "Token annot be empty", rd.Token)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Token cannot be empty")
 	}
 	if rd.Code == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "Code cannot be empty", rd.Token)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Code cannot be empty")
 	}
 	if rd.NewPassword == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "Password cannot be empty")
+		return nil, grpc.Errorf(codes.InvalidArgument, "Password cannot be empty")
 	}
 
 	verificationCode, err := s.dal.VerificationCode(ctx, rd.Token)
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
+		return nil, grpc.Errorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	} else if verificationCode.Expires.Before(s.clk.Now()) {
-		return nil, grpcErrorf(auth.VerificationCodeExpired, "The code mapped to the provided token has expired.")
+		return nil, grpc.Errorf(auth.VerificationCodeExpired, "The code mapped to the provided token has expired.")
 	} else if verificationCode.Code != rd.Code {
-		return nil, grpcErrorf(auth.BadVerificationCode, "The provided code %q does not match", rd.Code)
+		return nil, grpc.Errorf(auth.BadVerificationCode, "The provided code %q does not match", rd.Code)
 	}
 
 	hashedPassword, err := s.hasher.GenerateFromPassword([]byte(rd.NewPassword))
@@ -752,16 +744,16 @@ func (s *server) UpdatePassword(ctx context.Context, rd *auth.UpdatePasswordRequ
 
 func (s *server) VerifiedValue(ctx context.Context, rd *auth.VerifiedValueRequest) (*auth.VerifiedValueResponse, error) {
 	if rd.Token == "" {
-		return nil, grpcErrorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
+		return nil, grpc.Errorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
 	}
 
 	verificationCode, err := s.dal.VerificationCode(ctx, rd.Token)
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
+		return nil, grpc.Errorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	} else if !verificationCode.Consumed {
-		return nil, grpcErrorf(auth.ValueNotYetVerified, "The value mapped to this token %q has not yet been verified", rd.Token)
+		return nil, grpc.Errorf(auth.ValueNotYetVerified, "The value mapped to this token %q has not yet been verified", rd.Token)
 	}
 
 	return &auth.VerifiedValueResponse{
@@ -771,17 +763,17 @@ func (s *server) VerifiedValue(ctx context.Context, rd *auth.VerifiedValueReques
 
 func (s *server) BlockAccount(ctx context.Context, req *auth.BlockAccountRequest) (*auth.BlockAccountResponse, error) {
 	if req.AccountID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "accountID required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "accountID required")
 	}
 
 	accountID, err := dal.ParseAccountID(req.AccountID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse provided account ID")
+		return nil, grpc.Errorf(codes.InvalidArgument, "Unable to parse provided account ID")
 	}
 
 	account, err := s.dal.Account(ctx, accountID)
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, err.Error())
+		return nil, grpc.Errorf(codes.NotFound, err.Error())
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	} else if account.Status == dal.AccountStatusBlocked {
@@ -819,17 +811,17 @@ func formateDeletedEmail(accountEmail *dal.AccountEmail) string {
 
 func (s *server) DeleteAccount(ctx context.Context, req *auth.DeleteAccountRequest) (*auth.DeleteAccountResponse, error) {
 	if req.AccountID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "AccountID required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "AccountID required")
 	}
 
 	accountID, err := dal.ParseAccountID(req.AccountID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse provided account ID")
+		return nil, grpc.Errorf(codes.InvalidArgument, "Unable to parse provided account ID")
 	}
 
 	account, err := s.dal.Account(ctx, accountID)
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, err.Error())
+		return nil, grpc.Errorf(codes.NotFound, err.Error())
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	} else if account.Status == dal.AccountStatusDeleted {
@@ -894,7 +886,7 @@ func (s *server) DeleteAccount(ctx context.Context, req *auth.DeleteAccountReque
 
 func (s *server) GetLastLoginInfo(ctx context.Context, req *auth.GetLastLoginInfoRequest) (*auth.GetLastLoginInfoResponse, error) {
 	if req.AccountID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "accountID required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "accountID required")
 	}
 
 	accountID, err := dal.ParseAccountID(req.AccountID)
@@ -905,7 +897,7 @@ func (s *server) GetLastLoginInfo(ctx context.Context, req *auth.GetLastLoginInf
 	loginInfo, err := s.dal.LastLogin(ctx, accountID)
 	if err != nil {
 		if errors.Cause(err) == dal.ErrNotFound {
-			return nil, grpcErrorf(codes.NotFound, "login info for %s not found", accountID.String())
+			return nil, grpc.Errorf(codes.NotFound, "login info for %s not found", accountID.String())
 		}
 		return nil, errors.Trace(err)
 	}
@@ -931,14 +923,14 @@ func (s *server) GetLastLoginInfo(ctx context.Context, req *auth.GetLastLoginInf
 
 func (s *server) UpdateAuthToken(ctx context.Context, req *auth.UpdateAuthTokenRequest) (*auth.UpdateAuthTokenResponse, error) {
 	if req.Token == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "token required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "token required")
 	}
 	if req.Duration == auth.TokenDuration_UNKNOWN_TOKEN_DURATION {
 		req.Duration = auth.TokenDuration_SHORT
 	}
 	durationType, err := dal.ParseAuthTokenDurationType(req.Duration.String())
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
+		return nil, grpc.Errorf(codes.InvalidArgument, err.Error())
 	}
 
 	var rAuthToken *auth.AuthToken
@@ -946,7 +938,7 @@ func (s *server) UpdateAuthToken(ctx context.Context, req *auth.UpdateAuthTokenR
 		forUpdate := true
 		authToken, err := dl.AuthToken(ctx, req.Token, s.clk.Now(), forUpdate)
 		if errors.Cause(err) == dal.ErrNotFound {
-			return grpcErrorf(codes.NotFound, "Token %s not found", req.Token)
+			return grpc.Errorf(codes.NotFound, "Token %s not found", req.Token)
 		} else if err != nil {
 			return errors.Trace(err)
 		}

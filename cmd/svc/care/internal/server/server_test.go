@@ -1,10 +1,9 @@
 package server
 
 import (
+	"context"
 	"testing"
 	"time"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/dal"
 	dalmock "github.com/sprucehealth/backend/cmd/svc/care/internal/dal/mock"

@@ -15,6 +15,7 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/invite"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
 
@@ -36,7 +37,7 @@ func TestVerifyEmailForAccountCreationMutation_Invite(t *testing.T) {
 		// Get attribution data
 		g.inviteC.EXPECT().AttributionData(ctx, &invite.AttributionDataRequest{
 			DeviceID: "DevID",
-		}).Return(nil, grpcErrorf(codes.NotFound, "Not Found")),
+		}).Return(nil, grpc.Errorf(codes.NotFound, "Not Found")),
 	)
 
 	res := g.query(ctx, `

@@ -16,6 +16,7 @@ import (
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/invite/clientdata"
 	"github.com/sprucehealth/backend/svc/media"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
 
@@ -136,7 +137,7 @@ func TestAssociateInviteMutation_NotFound(t *testing.T) {
 		// Lookup the invite
 		g.inviteC.EXPECT().LookupInvite(ctx, &invite.LookupInviteRequest{
 			InviteToken: "token",
-		}).Return(&invite.LookupInviteResponse{}, grpcErrorf(codes.NotFound, "not found")),
+		}).Return(&invite.LookupInviteResponse{}, grpc.Errorf(codes.NotFound, "not found")),
 	)
 
 	res := g.query(ctx, `

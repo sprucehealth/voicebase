@@ -25,11 +25,7 @@ import (
 	notificationmock "github.com/sprucehealth/backend/svc/notification/mock"
 	settingsmock "github.com/sprucehealth/backend/svc/settings/mock"
 	"github.com/sprucehealth/graphql"
-	"google.golang.org/grpc"
 )
-
-// go vet doesn't like that the first argument to grpcErrorf is not a string so alias the function with a different name :(
-var grpcErrorf = grpc.Errorf
 
 type gql struct {
 	// testhelpers/mock

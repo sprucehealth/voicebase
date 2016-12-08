@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"testing"
 
 	dalmock "github.com/sprucehealth/backend/cmd/svc/settings/internal/dal/mock"
 	"github.com/sprucehealth/backend/cmd/svc/settings/internal/models"
@@ -10,8 +11,6 @@ import (
 	"github.com/sprucehealth/backend/svc/settings"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-
-	"testing"
 )
 
 func TestRegisterConfig_MultiSelect(t *testing.T) {

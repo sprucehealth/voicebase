@@ -20,6 +20,7 @@ import (
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 	"github.com/sprucehealth/graphql/gqlerrors"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
 
@@ -382,7 +383,7 @@ func TestSubdomainQuery_Available(t *testing.T) {
 	}
 	ra.Expect(mock.NewExpectation(ra.EntityDomain, "", "anotherpractice").WithReturns(
 		&directory.LookupEntityDomainResponse{},
-		grpcErrorf(codes.NotFound, "entity_domain not found")),
+		grpc.Errorf(codes.NotFound, "entity_domain not found")),
 	)
 	res, err := subdomainField.Resolve(p)
 	test.OK(t, err)

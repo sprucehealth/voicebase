@@ -1,8 +1,6 @@
 package server
 
 import (
-	"fmt"
-
 	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/payments/internal/dal"
@@ -15,31 +13,9 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/backend/svc/settings"
-	"github.com/stripe/stripe-go"
+	stripe "github.com/stripe/stripe-go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-)
-
-// go vet doesn't like that the first argument to grpcErrorf is not a string so alias the function with a different name :(
-var grpcErrf = grpc.Errorf
-
-func grpcErrorf(c codes.Code, format string, a ...interface{}) error {
-	if c == codes.Internal {
-		golog.LogDepthf(1, golog.ERR, "Payments - Internal GRPC Error: %s", fmt.Sprintf(format, a...))
-	}
-	return grpcErrf(c, format, a...)
-}
-
-func grpcError(err error) error {
-	if grpc.Code(err) == codes.Unknown {
-		golog.LogDepthf(1, golog.ERR, "Payments - Internal GRPC Error: %s", err)
-	}
-	return err
-}
-
-var (
-	// ErrNotImplemented is returned from RPC calls that have yet to be implemented
-	ErrNotImplemented = errors.New("Not Implemented")
 )
 
 type server struct {
@@ -95,33 +71,33 @@ func validateMasterVendorAccount(dl dal.DAL, masterVendorAccountID dal.VendorAcc
 
 func (s *server) AcceptPayment(ctx context.Context, req *payments.AcceptPaymentRequest) (*payments.AcceptPaymentResponse, error) {
 	if req.PaymentID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "PaymentID required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "PaymentID required")
 	}
 	paymentID, err := dal.ParsePaymentID(req.PaymentID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
+		return nil, grpc.Errorf(codes.InvalidArgument, err.Error())
 	}
 	if req.PaymentMethodID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "PaymentMethodID required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "PaymentMethodID required")
 	}
 	paymentMethodID, err := dal.ParsePaymentMethodID(req.PaymentMethodID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
+		return nil, grpc.Errorf(codes.InvalidArgument, err.Error())
 	}
 
 	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
 		// Lock the row we intend to manipulate
 		payment, err := dl.Payment(ctx, paymentID, dal.ForUpdate)
 		if errors.Cause(err) == dal.ErrNotFound {
-			return grpcErrorf(codes.NotFound, "Payment %s Not Found", paymentID)
+			return grpc.Errorf(codes.NotFound, "Payment %s Not Found", paymentID)
 		} else if err != nil {
-			return grpcError(err)
+			return errors.Trace(err)
 		}
 		paymentMethod, err := dl.PaymentMethod(ctx, paymentMethodID)
 		if errors.Cause(err) == dal.ErrNotFound {
-			return grpcErrorf(codes.NotFound, "PaymentMethod %s Not Found", paymentID)
+			return grpc.Errorf(codes.NotFound, "PaymentMethod %s Not Found", paymentID)
 		} else if err != nil {
-			return grpcError(err)
+			return errors.Trace(err)
 		}
 
 		// Set the default payment method to the one we're accepting this payment with
@@ -147,7 +123,7 @@ func (s *server) AcceptPayment(ctx context.Context, req *payments.AcceptPaymentR
 				Lifecycle:       dal.PaymentLifecycleAccepted,
 				PaymentMethodID: &paymentMethod.ID,
 			}); err != nil {
-				return grpcError(err)
+				return errors.Trace(err)
 			}
 			smet.GetCounter("Server-AcceptPayment-Success").Inc()
 		} else {
@@ -155,12 +131,12 @@ func (s *server) AcceptPayment(ctx context.Context, req *payments.AcceptPaymentR
 		}
 		return nil
 	}); err != nil {
-		return nil, grpcError(err)
+		return nil, errors.Trace(err)
 	}
 
 	resp, err := s.Payment(ctx, &payments.PaymentRequest{PaymentID: req.PaymentID})
 	if err != nil {
-		return nil, grpcError(err)
+		return nil, errors.Trace(err)
 	}
 	return &payments.AcceptPaymentResponse{
 		Payment: resp.Payment,
@@ -169,19 +145,19 @@ func (s *server) AcceptPayment(ctx context.Context, req *payments.AcceptPaymentR
 
 func (s *server) CreatePayment(ctx context.Context, req *payments.CreatePaymentRequest) (*payments.CreatePaymentResponse, error) {
 	if req.RequestingEntityID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "RequestingEntityID required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "RequestingEntityID required")
 	}
 	if req.Amount <= 0 {
-		return nil, grpcErrorf(codes.InvalidArgument, "Positive no zero Amount required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "Positive no zero Amount required")
 	}
 	if req.Currency == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "Currency required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "Currency required")
 	}
 	vendorAccounts, err := s.dal.EntityVendorAccounts(ctx, req.RequestingEntityID)
 	if err != nil {
-		return nil, grpcError(err)
+		return nil, errors.Trace(err)
 	} else if len(vendorAccounts) == 0 {
-		return nil, grpcErrorf(codes.NotFound, "Vendor Account for %s Not Found", req.RequestingEntityID)
+		return nil, grpc.Errorf(codes.NotFound, "Vendor Account for %s Not Found", req.RequestingEntityID)
 	}
 	// For now just assume there will be only 1
 	vendorAccount := vendorAccounts[0]
@@ -196,7 +172,7 @@ func (s *server) CreatePayment(ctx context.Context, req *payments.CreatePaymentR
 
 	resp, err := s.Payment(ctx, &payments.PaymentRequest{PaymentID: paymentID.String()})
 	if err != nil {
-		return nil, grpcError(err)
+		return nil, errors.Trace(err)
 	}
 	smet.GetCounter("Server-CreatePayment-Success").Inc()
 	return &payments.CreatePaymentResponse{
@@ -206,11 +182,11 @@ func (s *server) CreatePayment(ctx context.Context, req *payments.CreatePaymentR
 
 func (s *server) CreatePaymentMethod(ctx context.Context, req *payments.CreatePaymentMethodRequest) (*payments.CreatePaymentMethodResponse, error) {
 	if req.EntityID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "EntityID required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "EntityID required")
 	}
 	customer, err := AddCustomer(ctx, s.masterVendorAccount, req.EntityID, s.dal, s.directoryClient, s.stripeClient)
 	if err != nil {
-		return nil, grpcError(err)
+		return nil, errors.Trace(err)
 	}
 	var token string
 	switch req.StorageType {
@@ -219,14 +195,14 @@ func (s *server) CreatePaymentMethod(ctx context.Context, req *payments.CreatePa
 		case payments.PAYMENT_METHOD_TYPE_CARD:
 			stripeCard := req.GetStripeCard()
 			if stripeCard.Token == "" {
-				return nil, grpcErrorf(codes.InvalidArgument, "Token required")
+				return nil, grpc.Errorf(codes.InvalidArgument, "Token required")
 			}
 			token = stripeCard.Token
 		default:
 			return nil, errors.Errorf("Unhandled payment method type %s for customer %s payment method addition", req.Type, customer.ID)
 		}
 	default:
-		return nil, grpcErrorf(codes.InvalidArgument, "Unhandled payment method storage type %s", req.StorageType)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Unhandled payment method storage type %s", req.StorageType)
 	}
 	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
 		paymentMethod, err := AddPaymentMethod(ctx, s.masterVendorAccount, customer, req.Type, &LiteralTokenSource{T: token}, dl, s.stripeClient)
@@ -239,13 +215,13 @@ func (s *server) CreatePaymentMethod(ctx context.Context, req *payments.CreatePa
 		return nil
 	}); err != nil {
 		if IsPaymentMethodError(errors.Cause(err)) {
-			return nil, grpcErrorf(payments.PaymentMethodError, PaymentMethodErrorMesssage(errors.Cause(err)))
+			return nil, grpc.Errorf(payments.PaymentMethodError, PaymentMethodErrorMesssage(errors.Cause(err)))
 		}
-		return nil, grpcError(err)
+		return nil, errors.Trace(err)
 	}
 	resp, err := s.PaymentMethods(ctx, &payments.PaymentMethodsRequest{EntityID: req.EntityID})
 	if err != nil {
-		return nil, grpcError(err)
+		return nil, errors.Trace(err)
 	}
 	smet.GetCounter("Server-CreatePaymentMethod-Success").Inc()
 	return &payments.CreatePaymentMethodResponse{
@@ -295,7 +271,7 @@ func AddCustomer(
 		}
 		// sanity
 		if newCustomer == nil {
-			return grpcErrorf(codes.Internal, "nil newCustomer, this should never happen")
+			return errors.Errorf("nil newCustomer, this should never happen")
 		}
 		newCustomer.VendorAccountID = vendorAccount.ID
 		newCustomer.EntityID = entityID
@@ -310,7 +286,7 @@ func AddCustomer(
 		golog.Debugf("Customer NOT FOUND - Entity: %s for VendorAccount: %s, ADDED - %+v", entityID, vendorAccount.ID, newCustomer)
 		return nil
 	}); err != nil {
-		return nil, grpcError(err)
+		return nil, errors.Trace(err)
 	}
 	return newCustomer, nil
 }
@@ -386,7 +362,7 @@ func AddPaymentMethod(
 	}
 	// sanity
 	if newPaymentMethod == nil {
-		return nil, grpcErrorf(codes.Internal, "nil newPaymentMethod, this should never happen")
+		return nil, errors.Errorf("nil newPaymentMethod, this should never happen")
 	}
 	newPaymentMethod.VendorAccountID = vendorAccount.ID
 	newPaymentMethod.CustomerID = customer.ID
@@ -427,18 +403,18 @@ func AddPaymentMethod(
 // TODO: Dedupe inserts on account ID in the event of multiple connections from same account
 func (s *server) ConnectVendorAccount(ctx context.Context, req *payments.ConnectVendorAccountRequest) (*payments.ConnectVendorAccountResponse, error) {
 	if req.EntityID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "EntityID required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "EntityID required")
 	}
 	var vendorAccount *dal.VendorAccount
 	switch req.Type {
 	case payments.VENDOR_ACCOUNT_TYPE_STRIPE:
 		stripeReq := req.GetStripeRequest()
 		if stripeReq.Code == "" {
-			return nil, grpcErrorf(codes.InvalidArgument, "Code required")
+			return nil, grpc.Errorf(codes.InvalidArgument, "Code required")
 		}
 		accessTokenResponse, err := s.stripeOAuth.RequestStripeAccessToken(stripeReq.Code)
 		if err != nil {
-			return nil, grpcError(err)
+			return nil, errors.Trace(err)
 		}
 		vendorAccount = &dal.VendorAccount{
 			AccessToken:        accessTokenResponse.AccessToken,
@@ -450,17 +426,17 @@ func (s *server) ConnectVendorAccount(ctx context.Context, req *payments.Connect
 			AccountType:        dal.VendorAccountAccountTypeStripe,
 		}
 	default:
-		return nil, grpcErrorf(codes.InvalidArgument, "Unsupported vendor account type %s", req.Type)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Unsupported vendor account type %s", req.Type)
 	}
 	// sanity
 	if vendorAccount == nil {
-		return nil, grpcErrorf(codes.Internal, "nil vendorAccount, this should never happen")
+		return nil, errors.Errorf("nil vendorAccount, this should never happen")
 	}
 	vendorAccount.Lifecycle = dal.VendorAccountLifecycleConnected
 	vendorAccount.ChangeState = dal.VendorAccountChangeStateNone
 	vendorAccount.EntityID = req.EntityID
 	if _, err := s.dal.InsertVendorAccount(ctx, vendorAccount); err != nil {
-		return nil, grpcError(err)
+		return nil, errors.Trace(err)
 	}
 
 	// Look up the new set of vendor accounts associated with the entity ID now
@@ -479,41 +455,41 @@ func (s *server) ConnectVendorAccount(ctx context.Context, req *payments.Connect
 //	Leave this synchronous for now.
 func (s *server) DeletePaymentMethod(ctx context.Context, req *payments.DeletePaymentMethodRequest) (*payments.DeletePaymentMethodResponse, error) {
 	if req.PaymentMethodID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "PaymentMethodID required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "PaymentMethodID required")
 	}
 	paymentMethodID, err := dal.ParsePaymentMethodID(req.PaymentMethodID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid PaymentMethodID")
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid PaymentMethodID")
 	}
 	paymentMethod, err := s.dal.PaymentMethod(ctx, paymentMethodID)
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, "PaymentMethod %s Not Found", paymentMethodID)
+		return nil, grpc.Errorf(codes.NotFound, "PaymentMethod %s Not Found", paymentMethodID)
 	} else if err != nil {
-		return nil, grpcError(err)
+		return nil, errors.Trace(err)
 	}
 	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
 		if err := s.deletePaymentMethod(ctx, paymentMethod.ID, dl); err != nil {
-			return grpcError(err)
+			return errors.Trace(err)
 		}
 		if paymentMethod.Default {
 			// Payment methods are returned sorted by order created desc, so we should set the first payment method returned as the default
 			paymentMethods, err := dl.EntityPaymentMethods(ctx, paymentMethod.VendorAccountID, paymentMethod.EntityID)
 			if err != nil {
-				return grpcError(err)
+				return errors.Trace(err)
 			}
 			if len(paymentMethods) != 0 {
 				if err := s.setDefaultPaymentMethod(ctx, dl, paymentMethods[0].ID, paymentMethod.EntityID); err != nil {
-					return grpcError(err)
+					return errors.Trace(err)
 				}
 			}
 		}
 		return nil
 	}); err != nil {
-		return nil, grpcError(err)
+		return nil, errors.Trace(err)
 	}
 	resp, err := s.PaymentMethods(ctx, &payments.PaymentMethodsRequest{EntityID: paymentMethod.EntityID})
 	if err != nil {
-		return nil, grpcError(err)
+		return nil, errors.Trace(err)
 	}
 	smet.GetCounter("Server-DeletePaymentMethod-Success").Inc()
 	return &payments.DeletePaymentMethodResponse{
@@ -569,21 +545,21 @@ func (s *server) deletePaymentMethod(ctx context.Context, paymentMethodID dal.Pa
 
 func (s *server) Payment(ctx context.Context, req *payments.PaymentRequest) (*payments.PaymentResponse, error) {
 	if req.PaymentID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "PaymentID required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "PaymentID required")
 	}
 	paymentID, err := dal.ParsePaymentID(req.PaymentID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid PaymentID")
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid PaymentID")
 	}
 	payment, err := s.dal.Payment(ctx, paymentID)
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, "Payment %s Not Found", paymentID)
+		return nil, grpc.Errorf(codes.NotFound, "Payment %s Not Found", paymentID)
 	} else if err != nil {
-		return nil, grpcError(err)
+		return nil, errors.Trace(err)
 	}
 	rPayment, err := transformPaymentToResponse(ctx, payment, s.dal, s.stripeClient)
 	if err != nil {
-		return nil, grpcError(err)
+		return nil, errors.Trace(err)
 	}
 	return &payments.PaymentResponse{
 		Payment: rPayment,
@@ -592,11 +568,11 @@ func (s *server) Payment(ctx context.Context, req *payments.PaymentRequest) (*pa
 
 func (s *server) SubmitPayment(ctx context.Context, req *payments.SubmitPaymentRequest) (*payments.SubmitPaymentResponse, error) {
 	if req.PaymentID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "PaymentID required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "PaymentID required")
 	}
 	paymentID, err := dal.ParsePaymentID(req.PaymentID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid PaymentID")
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid PaymentID")
 	}
 	// Payments don't have to be associated with a thread_id, but if it is track it.
 	var threadID *string
@@ -608,33 +584,33 @@ func (s *server) SubmitPayment(ctx context.Context, req *payments.SubmitPaymentR
 		// Lock the row we intend to manipulate
 		payment, err := dl.Payment(ctx, paymentID, dal.ForUpdate)
 		if errors.Cause(err) == dal.ErrNotFound {
-			return grpcErrorf(codes.NotFound, "Payment %s Not Found", paymentID)
+			return grpc.Errorf(codes.NotFound, "Payment %s Not Found", paymentID)
 		} else if err != nil {
-			return grpcError(err)
+			return errors.Trace(err)
 		}
 		if payment.ChangeState == dal.PaymentChangeStateNone && payment.Lifecycle == dal.PaymentLifecycleSubmitted {
-			golog.Infof("Payment %s is already in the submitted state %s|%s ignoring double submit", paymentID)
+			golog.Infof("Payment %s is already in the submitted state %s|%s ignoring double submit", paymentID, payment.ChangeState, payment.Lifecycle)
 			return nil
 		}
 		if payment.ChangeState == dal.PaymentChangeStatePending && payment.Lifecycle != dal.PaymentLifecycleSubmitted {
-			return grpcErrorf(codes.FailedPrecondition, "Payment %s is in state %s|%s - it cannot be submitted", payment.ChangeState, payment.Lifecycle)
+			return grpc.Errorf(codes.FailedPrecondition, "Payment %s is in state %s|%s - it cannot be submitted", payment.ID, payment.ChangeState, payment.Lifecycle)
 		}
 		if _, err := dl.UpdatePayment(ctx, paymentID, &dal.PaymentUpdate{
 			ChangeState: dal.PaymentChangeStateNone,
 			Lifecycle:   dal.PaymentLifecycleSubmitted,
 			ThreadID:    threadID,
 		}); err != nil {
-			return grpcError(err)
+			return errors.Trace(err)
 		}
 		smet.GetCounter("Server-SubmitPayment-Success").Inc()
 		return nil
 	}); err != nil {
-		return nil, grpcError(err)
+		return nil, errors.Trace(err)
 	}
 
 	resp, err := s.Payment(ctx, &payments.PaymentRequest{PaymentID: req.PaymentID})
 	if err != nil {
-		return nil, grpcError(err)
+		return nil, errors.Trace(err)
 	}
 	return &payments.SubmitPaymentResponse{
 		Payment: resp.Payment,
@@ -643,17 +619,17 @@ func (s *server) SubmitPayment(ctx context.Context, req *payments.SubmitPaymentR
 
 func (s *server) PaymentMethod(ctx context.Context, req *payments.PaymentMethodRequest) (*payments.PaymentMethodResponse, error) {
 	if req.PaymentMethodID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "PaymentMethodID required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "PaymentMethodID required")
 	}
 	paymentMethodID, err := dal.ParsePaymentMethodID(req.PaymentMethodID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid PaymentMethodID")
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid PaymentMethodID")
 	}
 	paymentMethod, err := s.dal.PaymentMethod(ctx, paymentMethodID)
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, "PaymentMethod %s Not Found", req.PaymentMethodID)
+		return nil, grpc.Errorf(codes.NotFound, "PaymentMethod %s Not Found", req.PaymentMethodID)
 	} else if err != nil {
-		return nil, grpcError(err)
+		return nil, errors.Trace(err)
 	}
 
 	return &payments.PaymentMethodResponse{
@@ -663,11 +639,11 @@ func (s *server) PaymentMethod(ctx context.Context, req *payments.PaymentMethodR
 
 func (s *server) PaymentMethods(ctx context.Context, req *payments.PaymentMethodsRequest) (*payments.PaymentMethodsResponse, error) {
 	if req.EntityID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "EntityID required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "EntityID required")
 	}
 	paymentMethods, err := s.dal.EntityPaymentMethods(ctx, s.masterVendorAccount.ID, req.EntityID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Invalid EntityID")
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid EntityID")
 	}
 	return &payments.PaymentMethodsResponse{
 		PaymentMethods: transformPaymentMethodsToResponse(paymentMethods),
@@ -676,26 +652,26 @@ func (s *server) PaymentMethods(ctx context.Context, req *payments.PaymentMethod
 
 func (s *server) UpdateVendorAccount(ctx context.Context, req *payments.UpdateVendorAccountRequest) (*payments.UpdateVendorAccountResponse, error) {
 	if req.VendorAccountID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "VendorAccountID required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "VendorAccountID required")
 	}
 	vendorAccountID, err := dal.ParseVendorAccountID(req.VendorAccountID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
+		return nil, grpc.Errorf(codes.InvalidArgument, err.Error())
 	}
 	lifecycle, err := transformVendorAccountLifecycleToDAL(req.Lifecycle)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
+		return nil, grpc.Errorf(codes.InvalidArgument, err.Error())
 	}
 	changeState, err := transformVendorAccountChangeStateToDAL(req.ChangeState)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
+		return nil, grpc.Errorf(codes.InvalidArgument, err.Error())
 	}
 	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
 		vendorAccount, err := dl.VendorAccount(ctx, vendorAccountID, dal.ForUpdate)
 		if errors.Cause(err) == dal.ErrNotFound {
-			return grpcErrorf(codes.NotFound, "Vendor Account %s Not Found", vendorAccountID)
+			return grpc.Errorf(codes.NotFound, "Vendor Account %s Not Found", vendorAccountID)
 		} else if err != nil {
-			return grpcError(err)
+			return errors.Trace(err)
 		}
 		// If we're already there do nothing
 		if vendorAccount.Lifecycle == lifecycle && vendorAccount.ChangeState == changeState {
@@ -705,22 +681,22 @@ func (s *server) UpdateVendorAccount(ctx context.Context, req *payments.UpdateVe
 			Lifecycle:   lifecycle,
 			ChangeState: changeState,
 		}); err != nil {
-			return grpcError(err)
+			return errors.Trace(err)
 		}
 		return nil
 	}); err != nil {
-		return nil, grpcError(err)
+		return nil, errors.Trace(err)
 	}
 	return &payments.UpdateVendorAccountResponse{}, nil
 }
 
 func (s *server) VendorAccounts(ctx context.Context, req *payments.VendorAccountsRequest) (*payments.VendorAccountsResponse, error) {
 	if req.EntityID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "EntityID required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "EntityID required")
 	}
 	vendorAccounts, err := s.dal.EntityVendorAccounts(ctx, req.EntityID)
 	if err != nil {
-		return nil, grpcError(err)
+		return nil, errors.Trace(err)
 	}
 	return &payments.VendorAccountsResponse{
 		VendorAccounts: transformVendorAccountsToResponse(vendorAccounts),

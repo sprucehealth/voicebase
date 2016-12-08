@@ -1,13 +1,12 @@
 package server
 
 import (
+	"context"
 	"crypto/sha512"
 	"encoding/base64"
 	"fmt"
 	"testing"
 	"time"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/auth/internal/dal"
 	mock_dal "github.com/sprucehealth/backend/cmd/svc/auth/internal/dal/test"

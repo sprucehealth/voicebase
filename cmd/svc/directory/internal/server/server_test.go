@@ -1,11 +1,10 @@
 package server
 
 import (
+	"context"
 	"strings"
 	"testing"
 	"time"
-
-	"context"
 
 	"github.com/golang/mock/gomock"
 	"github.com/samuel/go-metrics/metrics"
@@ -1710,7 +1709,7 @@ func TestProfile(t *testing.T) {
 				return mDAL
 			}(),
 			expectedResponse: nil,
-			expectedError:    grpcErrorf(codes.NotFound, "Profile for entity id %s not found", entityID),
+			expectedError:    grpc.Errorf(codes.NotFound, "Profile for entity id %s not found", entityID),
 		},
 		"LookupEntityID-Found": {
 			request: &directory.ProfileRequest{
@@ -1766,7 +1765,7 @@ func TestProfile(t *testing.T) {
 				return mDAL
 			}(),
 			expectedResponse: nil,
-			expectedError:    grpcErrorf(codes.NotFound, "Profile for profile id %s not found", profileID),
+			expectedError:    grpc.Errorf(codes.NotFound, "Profile for profile id %s not found", profileID),
 		},
 		"LookupProfileID-Found": {
 			request: &directory.ProfileRequest{
@@ -1838,7 +1837,7 @@ func TestUpdateProfile(t *testing.T) {
 			request:          &directory.UpdateProfileRequest{},
 			dal:              nil,
 			expectedResponse: nil,
-			expectedError:    grpcErrorf(codes.InvalidArgument, "Profile required"),
+			expectedError:    grpc.Errorf(codes.InvalidArgument, "Profile required"),
 		},
 		"ProfileID-BadID": {
 			request: &directory.UpdateProfileRequest{
@@ -1849,7 +1848,7 @@ func TestUpdateProfile(t *testing.T) {
 			expectedResponse: nil,
 			expectedError: func() error {
 				_, err := dal.ParseEntityProfileID("notAProfileID")
-				return grpcErrorf(codes.InvalidArgument, err.Error())
+				return grpc.Errorf(codes.InvalidArgument, err.Error())
 			}(),
 		},
 		"EntityID-BadID": {
@@ -1862,7 +1861,7 @@ func TestUpdateProfile(t *testing.T) {
 			expectedResponse: nil,
 			expectedError: func() error {
 				_, err := dal.ParseEntityID("notAnEntityID")
-				return grpcErrorf(codes.InvalidArgument, err.Error())
+				return grpc.Errorf(codes.InvalidArgument, err.Error())
 			}(),
 		},
 		"ProfileID-NotFound": {
@@ -1876,7 +1875,7 @@ func TestUpdateProfile(t *testing.T) {
 				return mDAL
 			}(),
 			expectedResponse: nil,
-			expectedError:    grpcErrorf(codes.NotFound, "Profile id %s not found", profileID),
+			expectedError:    grpc.Errorf(codes.NotFound, "Profile id %s not found", profileID),
 		},
 		"ProfileID-ChangeOwningEntity": {
 			request: &directory.UpdateProfileRequest{
@@ -1893,7 +1892,7 @@ func TestUpdateProfile(t *testing.T) {
 				return mDAL
 			}(),
 			expectedResponse: nil,
-			expectedError:    grpcErrorf(codes.PermissionDenied, "The owning entity of a profile cannot be changed - Is: %s, Request Provided: %s", entityID, newEntityID),
+			expectedError:    grpc.Errorf(codes.PermissionDenied, "The owning entity of a profile cannot be changed - Is: %s, Request Provided: %s", entityID, newEntityID),
 		},
 		"ProfileID-Success": {
 			request: &directory.UpdateProfileRequest{

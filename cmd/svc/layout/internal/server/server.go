@@ -1,10 +1,9 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"strings"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/layout/internal/client"
 	"github.com/sprucehealth/backend/cmd/svc/layout/internal/dal"
@@ -30,21 +29,19 @@ func New(dal dal.DAL, store layout.Storage) layout.LayoutServer {
 	}
 }
 
-var grpcErrorf = grpc.Errorf
-
 func (s *server) ListVisitLayouts(ctx context.Context, in *layout.ListVisitLayoutsRequest) (*layout.ListVisitLayoutsResponse, error) {
 	if in.VisitCategoryID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "visit_category_id required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "visit_category_id required")
 	}
 
 	visitCategoryID, err := models.ParseVisitCategoryID(in.VisitCategoryID)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	visitLayouts, err := s.dal.VisitLayouts(visitCategoryID)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	res := &layout.ListVisitLayoutsResponse{
@@ -61,7 +58,7 @@ func (s *server) ListVisitLayouts(ctx context.Context, in *layout.ListVisitLayou
 func (s *server) ListVisitCategories(context.Context, *layout.ListVisitCategoriesRequest) (*layout.ListVisitCategoriesResponse, error) {
 	categories, err := s.dal.VisitCategories()
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	res := &layout.ListVisitCategoriesResponse{
@@ -78,18 +75,18 @@ func (s *server) ListVisitCategories(context.Context, *layout.ListVisitCategorie
 func (s *server) CreateVisitLayout(ctx context.Context, in *layout.CreateVisitLayoutRequest) (*layout.CreateVisitLayoutResponse, error) {
 	// validate
 	if in.Name == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "visit_layout name required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "visit_layout name required")
 	} else if in.CategoryID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "visit_layout category_id required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "visit_layout category_id required")
 	} else if in.SAML == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "visit_layout saml required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "visit_layout saml required")
 	} else if in.InternalName == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "visit_layout internal name required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "visit_layout internal name required")
 	}
 
 	categoryID, err := models.ParseVisitCategoryID(in.CategoryID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "unable to parse category_id: %s", err.Error())
+		return nil, grpc.Errorf(codes.InvalidArgument, "unable to parse category_id: %s", err.Error())
 	}
 
 	activeVersion, err := s.processSAML(in.SAML)
@@ -118,7 +115,7 @@ func (s *server) CreateVisitLayout(ctx context.Context, in *layout.CreateVisitLa
 
 		return nil
 	}); err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	return &layout.CreateVisitLayoutResponse{
@@ -128,34 +125,34 @@ func (s *server) CreateVisitLayout(ctx context.Context, in *layout.CreateVisitLa
 
 func (s *server) UpdateVisitLayout(ctx context.Context, in *layout.UpdateVisitLayoutRequest) (*layout.UpdateVisitLayoutResponse, error) {
 	if in.VisitLayoutID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "visit_layout_id required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "visit_layout_id required")
 	}
 
 	visitLayoutID, err := models.ParseVisitLayoutID(in.VisitLayoutID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "cannot parse visit_layout_id: %s", err.Error())
+		return nil, grpc.Errorf(codes.InvalidArgument, "cannot parse visit_layout_id: %s", err.Error())
 	}
 
 	update := &dal.VisitLayoutUpdate{}
 	if in.UpdateName {
 		if in.Name == "" {
-			return nil, grpcErrorf(codes.InvalidArgument, "name required for visit layout")
+			return nil, grpc.Errorf(codes.InvalidArgument, "name required for visit layout")
 		}
 		update.Name = &in.Name
 	}
 	if in.UpdateInternalName {
 		if in.InternalName == "" {
-			return nil, grpcErrorf(codes.InvalidArgument, "internal_name required for visit layout")
+			return nil, grpc.Errorf(codes.InvalidArgument, "internal_name required for visit layout")
 		}
 		update.InternalName = &in.InternalName
 	}
 	if in.UpdateCategory {
 		if in.CategoryID == "" {
-			return nil, grpcErrorf(codes.InvalidArgument, "category_id required for visit layout update")
+			return nil, grpc.Errorf(codes.InvalidArgument, "category_id required for visit layout update")
 		}
 		categoryID, err := models.ParseVisitCategoryID(in.CategoryID)
 		if err != nil {
-			return nil, grpcErrorf(codes.InvalidArgument, "unable to parse category id")
+			return nil, grpc.Errorf(codes.InvalidArgument, "unable to parse category id")
 		}
 		update.CategoryID = &categoryID
 	}
@@ -164,7 +161,7 @@ func (s *server) UpdateVisitLayout(ctx context.Context, in *layout.UpdateVisitLa
 
 	if in.UpdateSAML {
 		if in.SAML == "" {
-			return nil, grpcErrorf(codes.InvalidArgument, "saml required for visit layout update")
+			return nil, grpc.Errorf(codes.InvalidArgument, "saml required for visit layout update")
 		}
 
 		layoutVersionToCreate, err = s.processSAML(in.SAML)
@@ -176,9 +173,9 @@ func (s *server) UpdateVisitLayout(ctx context.Context, in *layout.UpdateVisitLa
 	// ensure that visit layout exists
 	if _, err := s.dal.VisitLayout(ctx, visitLayoutID); err != nil {
 		if errors.Cause(err) == dal.ErrNotFound {
-			return nil, grpcErrorf(codes.NotFound, "visit layout does not exist")
+			return nil, grpc.Errorf(codes.NotFound, "visit layout does not exist")
 		}
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
@@ -201,17 +198,17 @@ func (s *server) UpdateVisitLayout(ctx context.Context, in *layout.UpdateVisitLa
 		return nil
 
 	}); err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	visitLayout, err := s.dal.VisitLayout(ctx, visitLayoutID)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	activeVersion, err := s.dal.ActiveVisitLayoutVersion(ctx, visitLayoutID)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	return &layout.UpdateVisitLayoutResponse{
@@ -221,26 +218,26 @@ func (s *server) UpdateVisitLayout(ctx context.Context, in *layout.UpdateVisitLa
 
 func (s *server) GetVisitLayout(ctx context.Context, in *layout.GetVisitLayoutRequest) (*layout.GetVisitLayoutResponse, error) {
 	if in.ID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "visit_layout_id required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "visit_layout_id required")
 	}
 
 	visitLayoutID, err := models.ParseVisitLayoutID(in.ID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "cannot parse visit_layout: %s", err.Error())
+		return nil, grpc.Errorf(codes.InvalidArgument, "cannot parse visit_layout: %s", err.Error())
 	}
 
 	visitLayout, err := s.dal.VisitLayout(ctx, visitLayoutID)
 	if err != nil {
 		if errors.Cause(err) == dal.ErrNotFound {
-			return nil, grpcErrorf(codes.NotFound, "visit_layout with id %s not found", visitLayoutID)
+			return nil, grpc.Errorf(codes.NotFound, "visit_layout with id %s not found", visitLayoutID)
 		}
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	activeVersion, err := s.dal.ActiveVisitLayoutVersion(ctx, visitLayoutID)
 	if err != nil {
 		if errors.Cause(err) != dal.ErrNotFound {
-			return nil, grpcErrorf(codes.Internal, err.Error())
+			return nil, errors.Trace(err)
 		}
 	}
 
@@ -251,29 +248,29 @@ func (s *server) GetVisitLayout(ctx context.Context, in *layout.GetVisitLayoutRe
 
 func (s *server) GetVisitLayoutVersion(ctx context.Context, in *layout.GetVisitLayoutVersionRequest) (*layout.GetVisitLayoutVersionResponse, error) {
 	if in.ID == "" && in.VisitLayoutID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "either id or visit_layout_id required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "either id or visit_layout_id required")
 	}
 
 	var visitLayoutVersion *models.VisitLayoutVersion
 	if in.VisitLayoutID != "" {
 		visitLayoutID, err := models.ParseVisitLayoutID(in.VisitLayoutID)
 		if err != nil {
-			return nil, grpcErrorf(codes.InvalidArgument, "invalid visit_layout_id '%s': '%s'", in.VisitLayoutID, err.Error())
+			return nil, grpc.Errorf(codes.InvalidArgument, "invalid visit_layout_id '%s': '%s'", in.VisitLayoutID, err.Error())
 		}
 
 		visitLayoutVersion, err = s.dal.ActiveVisitLayoutVersion(ctx, visitLayoutID)
 		if err != nil {
-			return nil, grpcErrorf(codes.Internal, err.Error())
+			return nil, errors.Trace(err)
 		}
 	} else {
 		visitLayoutVersionID, err := models.ParseVisitLayoutVersionID(in.ID)
 		if err != nil {
-			return nil, grpcErrorf(codes.InvalidArgument, "invalid visit_layout_version_id '%s' : %s", in.ID, err.Error())
+			return nil, grpc.Errorf(codes.InvalidArgument, "invalid visit_layout_version_id '%s' : %s", in.ID, err.Error())
 		}
 
 		visitLayoutVersion, err = s.dal.VisitLayoutVersion(ctx, visitLayoutVersionID)
 		if err != nil {
-			return nil, grpcErrorf(codes.Internal, err.Error())
+			return nil, errors.Trace(err)
 		}
 	}
 
@@ -284,21 +281,21 @@ func (s *server) GetVisitLayoutVersion(ctx context.Context, in *layout.GetVisitL
 
 func (s *server) DeleteVisitLayout(ctx context.Context, in *layout.DeleteVisitLayoutRequest) (*layout.DeleteVisitLayoutResponse, error) {
 	if in.VisitLayoutID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "visit_layout_id required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "visit_layout_id required")
 	}
 
 	visitLayoutID, err := models.ParseVisitLayoutID(in.VisitLayoutID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
+		return nil, grpc.Errorf(codes.InvalidArgument, err.Error())
 	}
 
 	rowsUpdated, err := s.dal.UpdateVisitLayout(ctx, visitLayoutID, &dal.VisitLayoutUpdate{
 		Deleted: ptr.Bool(true),
 	})
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	} else if rowsUpdated > 1 {
-		return nil, grpcErrorf(codes.Internal, "Expected 1 layout to be deleted for visit layout %s but %d rows were deleted", visitLayoutID, rowsUpdated)
+		return nil, errors.Errorf("Expected 1 layout to be deleted for visit layout %s but %d rows were deleted", visitLayoutID, rowsUpdated)
 	}
 
 	return &layout.DeleteVisitLayoutResponse{}, nil
@@ -306,7 +303,7 @@ func (s *server) DeleteVisitLayout(ctx context.Context, in *layout.DeleteVisitLa
 
 func (s *server) CreateVisitCategory(ctx context.Context, in *layout.CreateVisitCategoryRequest) (*layout.CreateVisitCategoryResponse, error) {
 	if in.Name == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "name required to create visit category")
+		return nil, grpc.Errorf(codes.InvalidArgument, "name required to create visit category")
 	}
 
 	visitCategory := &models.VisitCategory{
@@ -314,7 +311,7 @@ func (s *server) CreateVisitCategory(ctx context.Context, in *layout.CreateVisit
 	}
 
 	if _, err := s.dal.CreateVisitCategory(ctx, visitCategory); err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	return &layout.CreateVisitCategoryResponse{
@@ -324,17 +321,17 @@ func (s *server) CreateVisitCategory(ctx context.Context, in *layout.CreateVisit
 
 func (s *server) GetVisitCategory(ctx context.Context, in *layout.GetVisitCategoryRequest) (*layout.GetVisitCategoryResponse, error) {
 	if in.ID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "visit_category_id required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "visit_category_id required")
 	}
 
 	visitCategoryID, err := models.ParseVisitCategoryID(in.ID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "unable to query visit category id '%s' : %s", in.ID, err.Error())
+		return nil, grpc.Errorf(codes.InvalidArgument, "unable to query visit category id '%s' : %s", in.ID, err.Error())
 	}
 
 	visitCategory, err := s.dal.VisitCategory(ctx, visitCategoryID)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	return &layout.GetVisitCategoryResponse{
@@ -344,37 +341,37 @@ func (s *server) GetVisitCategory(ctx context.Context, in *layout.GetVisitCatego
 
 func (s *server) UpdateVisitCategory(ctx context.Context, in *layout.UpdateVisitCategoryRequest) (*layout.UpdateVisitCategoryResponse, error) {
 	if in.VisitCategoryID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "visit_category_id required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "visit_category_id required")
 	} else if in.Name == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "name required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "name required")
 	}
 
 	categoryID, err := models.ParseVisitCategoryID(in.VisitCategoryID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "unable to parse visit_category_id %s: %s", in.VisitCategoryID, err.Error())
+		return nil, grpc.Errorf(codes.InvalidArgument, "unable to parse visit_category_id %s: %s", in.VisitCategoryID, err.Error())
 	}
 
 	// ensure that category exists
 	_, err = s.dal.VisitCategory(ctx, categoryID)
 	if err != nil {
 		if errors.Cause(err) == dal.ErrNotFound {
-			return nil, grpcErrorf(codes.InvalidArgument, "visit_category with id %s not found", categoryID)
+			return nil, grpc.Errorf(codes.InvalidArgument, "visit_category with id %s not found", categoryID)
 		}
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	rowsUpdated, err := s.dal.UpdateVisitCategory(ctx, categoryID, &dal.VisitCategoryUpdate{
 		Name: ptr.String(in.Name),
 	})
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	} else if rowsUpdated > 1 {
-		return nil, grpcErrorf(codes.Internal, "expected 1 row to be updated for %s but got %s", categoryID, rowsUpdated)
+		return nil, errors.Errorf("expected 1 row to be updated for %q but got %d", categoryID, rowsUpdated)
 	}
 
 	visitCategory, err := s.dal.VisitCategory(ctx, categoryID)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	return &layout.UpdateVisitCategoryResponse{
@@ -384,21 +381,21 @@ func (s *server) UpdateVisitCategory(ctx context.Context, in *layout.UpdateVisit
 
 func (s *server) DeleteVisitCategory(ctx context.Context, in *layout.DeleteVisitCategoryRequest) (*layout.DeleteVisitCategoryResponse, error) {
 	if in.VisitCategoryID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "visit_category_id required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "visit_category_id required")
 	}
 
 	categoryID, err := models.ParseVisitCategoryID(in.VisitCategoryID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
+		return nil, grpc.Errorf(codes.InvalidArgument, err.Error())
 	}
 
 	rowsUpdated, err := s.dal.UpdateVisitCategory(ctx, categoryID, &dal.VisitCategoryUpdate{
 		Deleted: ptr.Bool(true),
 	})
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	} else if rowsUpdated > 1 {
-		return nil, grpcErrorf(codes.Internal, "Expected 1 layout to be deleted for visit category %s but %d rows were deleted", categoryID, rowsUpdated)
+		return nil, errors.Errorf("Expected 1 layout to be deleted for visit category %s but %d rows were deleted", categoryID, rowsUpdated)
 	}
 
 	return &layout.DeleteVisitCategoryResponse{}, nil
@@ -406,28 +403,28 @@ func (s *server) DeleteVisitCategory(ctx context.Context, in *layout.DeleteVisit
 
 func (s *server) GetVisitLayoutByVersion(ctx context.Context, in *layout.GetVisitLayoutByVersionRequest) (*layout.GetVisitLayoutByVersionResponse, error) {
 	if in.VisitLayoutVersionID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "visit_layout_version_id required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "visit_layout_version_id required")
 	}
 
 	visitLayoutVersionID, err := models.ParseVisitLayoutVersionID(in.VisitLayoutVersionID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "unable to parse visit layout version id: %s", err.Error())
+		return nil, grpc.Errorf(codes.InvalidArgument, "unable to parse visit layout version id: %s", err.Error())
 	}
 
 	layoutVersion, err := s.dal.VisitLayoutVersion(ctx, visitLayoutVersionID)
 	if err != nil {
 		if errors.Cause(err) == dal.ErrNotFound {
-			return nil, grpcErrorf(codes.NotFound, "visit layout version %s not found", visitLayoutVersionID)
+			return nil, grpc.Errorf(codes.NotFound, "visit layout version %s not found", visitLayoutVersionID)
 		}
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	visitLayout, err := s.dal.VisitLayout(ctx, layoutVersion.VisitLayoutID)
 	if err != nil {
 		if errors.Cause(err) == dal.ErrNotFound {
-			return nil, grpcErrorf(codes.NotFound, "visit layout %s not found", layoutVersion.VisitLayoutID)
+			return nil, grpc.Errorf(codes.NotFound, "visit layout %s not found", layoutVersion.VisitLayoutID)
 		}
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	return &layout.GetVisitLayoutByVersionResponse{
@@ -439,38 +436,38 @@ func (s *server) processSAML(saml string) (*models.VisitLayoutVersion, error) {
 	// validate SAML
 	intakeSAML, err := samlparser.Parse(strings.NewReader(saml))
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "invalid SAML: %s", err.Error())
+		return nil, grpc.Errorf(codes.InvalidArgument, "invalid SAML: %s", err.Error())
 	}
 
 	// generate intakeLayout and reviewLayout
 	intakeLayout, err := client.GenerateIntakeLayout(intakeSAML)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "unable to generate intake layout from SAML: %s", err.Error())
+		return nil, grpc.Errorf(codes.InvalidArgument, "unable to generate intake layout from SAML: %s", err.Error())
 	}
 
 	reviewLayout, err := client.GenerateReviewLayout(intakeSAML)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "unable to generate review layout from SAML: %s", err.Error())
+		return nil, grpc.Errorf(codes.InvalidArgument, "unable to generate review layout from SAML: %s", err.Error())
 	}
 
 	mediaID, err := media.NewID()
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	samlLocation, err := s.store.PutSAML(mediaID+"-saml", saml)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	intakeLocation, err := s.store.PutIntake(mediaID+"-intake", intakeLayout)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	reviewLocation, err := s.store.PutReview(mediaID+"-review", reviewLayout)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	return &models.VisitLayoutVersion{

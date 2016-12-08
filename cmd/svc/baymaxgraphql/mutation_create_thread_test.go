@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
 
@@ -51,7 +52,7 @@ func TestCreateThreadMutation_NoExistingThreads(t *testing.T) {
 		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 		RootTypes:  []directory.EntityType{directory.EntityType_EXTERNAL},
 		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
-	}).WithReturns(([]*directory.Entity)(nil), grpcErrorf(codes.NotFound, "No entities found")))
+	}).WithReturns(([]*directory.Entity)(nil), grpc.Errorf(codes.NotFound, "No entities found")))
 
 	entityInfo := &directory.EntityInfo{
 		FirstName:     "firstName",

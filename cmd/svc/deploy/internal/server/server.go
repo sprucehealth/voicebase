@@ -1,10 +1,9 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"strconv"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/deploy/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/deploy/internal/deployment"
@@ -13,9 +12,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
-
-// go vet doesn't like that the first argument to grpcErrorf is not a string so alias the function with a different name :(
-var grpcErrorf = grpc.Errorf
 
 var (
 	// ErrNotImplemented is returned from RPC calls that have yet to be implemented
@@ -38,25 +34,25 @@ func New(dl dal.DAL, manager *deployment.Manager) deploy.DeployServer {
 // CreateDeployable creates a single deployable object for a given deployable group
 func (s *server) CreateDeployable(ctx context.Context, in *deploy.CreateDeployableRequest) (*deploy.CreateDeployableResponse, error) {
 	if in.DeployableGroupID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "group id cannot be empty")
+		return nil, grpc.Errorf(codes.InvalidArgument, "group id cannot be empty")
 	}
 	groupID, err := dal.ParseDeployableGroupID(in.DeployableGroupID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "group id %q is invalid", in.DeployableGroupID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "group id %q is invalid", in.DeployableGroupID)
 	}
 	if in.Name == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "name cannot be empty")
+		return nil, grpc.Errorf(codes.InvalidArgument, "name cannot be empty")
 	}
 
 	if _, err := s.dl.DeployableGroup(groupID); err != nil {
 		if errors.Cause(err) == dal.ErrNotFound {
-			return nil, grpcErrorf(codes.NotFound, "Not Found: Deployable Group: %q", groupID)
+			return nil, grpc.Errorf(codes.NotFound, "Not Found: Deployable Group: %q", groupID)
 		}
 		return nil, errors.Trace(err)
 	}
 
 	if _, err := s.dl.DeployableForNameAndGroup(in.Name, groupID); err == nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "name %s is not available for this group", in.Name)
+		return nil, grpc.Errorf(codes.InvalidArgument, "name %s is not available for this group", in.Name)
 	} else if errors.Cause(err) != dal.ErrNotFound {
 		return nil, errors.Trace(err)
 	}
@@ -84,28 +80,28 @@ func (s *server) CreateDeployable(ctx context.Context, in *deploy.CreateDeployab
 // CreateDeployableConfig creates a versioned config set for a given environment/deployable
 func (s *server) CreateDeployableConfig(ctx context.Context, in *deploy.CreateDeployableConfigRequest) (*deploy.CreateDeployableConfigResponse, error) {
 	if in.DeployableID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "deployable id cannot be empty")
+		return nil, grpc.Errorf(codes.InvalidArgument, "deployable id cannot be empty")
 	}
 	depID, err := dal.ParseDeployableID(in.DeployableID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "deployable id %q is invalid", in.DeployableID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "deployable id %q is invalid", in.DeployableID)
 	}
 	if in.EnvironmentID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "environment id cannot be empty")
+		return nil, grpc.Errorf(codes.InvalidArgument, "environment id cannot be empty")
 	}
 	envID, err := dal.ParseEnvironmentID(in.EnvironmentID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "environment id %q is invalid", in.EnvironmentID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "environment id %q is invalid", in.EnvironmentID)
 	}
 	if _, err = s.dl.Deployable(depID); err != nil {
 		if errors.Cause(err) == dal.ErrNotFound {
-			return nil, grpcErrorf(codes.NotFound, "Not Found: Deployable: %q", depID)
+			return nil, grpc.Errorf(codes.NotFound, "Not Found: Deployable: %q", depID)
 		}
 		return nil, errors.Trace(err)
 	}
 	if _, err = s.dl.Environment(envID); err != nil {
 		if errors.Cause(err) == dal.ErrNotFound {
-			return nil, grpcErrorf(codes.NotFound, "Not Found: Environment: %q", envID)
+			return nil, grpc.Errorf(codes.NotFound, "Not Found: Environment: %q", envID)
 		}
 		return nil, errors.Trace(err)
 	}
@@ -118,11 +114,11 @@ func (s *server) CreateDeployableConfig(ctx context.Context, in *deploy.CreateDe
 	if in.SourceConfigID != "" {
 		sourceConfigID, err := dal.ParseDeployableConfigID(in.SourceConfigID)
 		if err != nil {
-			return nil, grpcErrorf(codes.InvalidArgument, "source deployable config id %q is invalid", in.SourceConfigID)
+			return nil, grpc.Errorf(codes.InvalidArgument, "source deployable config id %q is invalid", in.SourceConfigID)
 		}
 		if _, err = s.dl.DeployableConfig(sourceConfigID); err != nil {
 			if errors.Cause(err) == dal.ErrNotFound {
-				return nil, grpcErrorf(codes.NotFound, "Not Found: Deployable Config: %q", sourceConfigID)
+				return nil, grpc.Errorf(codes.NotFound, "Not Found: Deployable Config: %q", sourceConfigID)
 			}
 			return nil, errors.Trace(err)
 		}
@@ -185,11 +181,11 @@ func (s *server) CreateDeployableConfig(ctx context.Context, in *deploy.CreateDe
 // CreateDeployableGroup creates a logical group for encapsulating lets of deployables
 func (s *server) CreateDeployableGroup(ctx context.Context, in *deploy.CreateDeployableGroupRequest) (*deploy.CreateDeployableGroupResponse, error) {
 	if in.Name == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "name cannot be empty")
+		return nil, grpc.Errorf(codes.InvalidArgument, "name cannot be empty")
 	}
 
 	if _, err := s.dl.DeployableGroupForName(in.Name); err == nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "group name %s is not available", in.Name)
+		return nil, grpc.Errorf(codes.InvalidArgument, "group name %s is not available", in.Name)
 	} else if errors.Cause(err) != dal.ErrNotFound {
 		return nil, errors.Trace(err)
 	}
@@ -215,65 +211,65 @@ func (s *server) CreateDeployableGroup(ctx context.Context, in *deploy.CreateDep
 // CreateDeployableVector creates a single deployable vector for a given deployable
 func (s *server) CreateDeployableVector(ctx context.Context, in *deploy.CreateDeployableVectorRequest) (*deploy.CreateDeployableVectorResponse, error) {
 	if in.DeployableID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "deployable id cannot be empty")
+		return nil, grpc.Errorf(codes.InvalidArgument, "deployable id cannot be empty")
 	}
 	depID, err := dal.ParseDeployableID(in.DeployableID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "deployable id %q is invalid", in.DeployableID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "deployable id %q is invalid", in.DeployableID)
 	}
 	if in.TargetEnvironmentID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "target environment id cannot be empty")
+		return nil, grpc.Errorf(codes.InvalidArgument, "target environment id cannot be empty")
 	}
 	targetEnvID, err := dal.ParseEnvironmentID(in.TargetEnvironmentID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "environment id %q is invalid", in.TargetEnvironmentID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "environment id %q is invalid", in.TargetEnvironmentID)
 	}
 	vectorSourceType, err := dal.ParseDeployableVectorSourceType(in.SourceType.String())
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "%q is not a valid deployable vector source type", in.SourceType)
+		return nil, grpc.Errorf(codes.InvalidArgument, "%q is not a valid deployable vector source type", in.SourceType)
 	}
 	var sourceEnvID dal.EnvironmentID
 	if vectorSourceType == dal.DeployableVectorSourceTypeEnvironmentID {
 		if in.GetSourceEnvironmentID() == "" {
-			return nil, grpcErrorf(codes.InvalidArgument, "source environment id cannot be empty for source type %s", vectorSourceType)
+			return nil, grpc.Errorf(codes.InvalidArgument, "source environment id cannot be empty for source type %s", vectorSourceType)
 		}
 		sourceEnvID, err = dal.ParseEnvironmentID(in.GetSourceEnvironmentID())
 		if err != nil {
-			return nil, grpcErrorf(codes.InvalidArgument, "environment id %q is invalid", in.GetSourceEnvironmentID())
+			return nil, grpc.Errorf(codes.InvalidArgument, "environment id %q is invalid", in.GetSourceEnvironmentID())
 		}
 	}
 
 	dep, err := s.dl.Deployable(depID)
 	if err != nil {
 		if errors.Cause(err) == dal.ErrNotFound {
-			return nil, grpcErrorf(codes.NotFound, "Not Found: Deployable: %q", depID)
+			return nil, grpc.Errorf(codes.NotFound, "Not Found: Deployable: %q", depID)
 		}
 		return nil, errors.Trace(err)
 	}
 	tEnv, err := s.dl.Environment(targetEnvID)
 	if err != nil {
 		if errors.Cause(err) == dal.ErrNotFound {
-			return nil, grpcErrorf(codes.NotFound, "Not Found: Environment: %q", targetEnvID)
+			return nil, grpc.Errorf(codes.NotFound, "Not Found: Environment: %q", targetEnvID)
 		}
 		return nil, errors.Trace(err)
 	}
 	if dep.DeployableGroupID != tEnv.DeployableGroupID {
-		return nil, grpcErrorf(codes.InvalidArgument, "this deployable does have access to environment %q", targetEnvID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "this deployable does have access to environment %q", targetEnvID)
 	}
 	if vectorSourceType == dal.DeployableVectorSourceTypeEnvironmentID {
 		sEnv, err := s.dl.Environment(sourceEnvID)
 		if err != nil {
 			if errors.Cause(err) == dal.ErrNotFound {
-				return nil, grpcErrorf(codes.NotFound, "Not Found: Environment: %q", sourceEnvID)
+				return nil, grpc.Errorf(codes.NotFound, "Not Found: Environment: %q", sourceEnvID)
 			}
 			return nil, errors.Trace(err)
 		}
 		if dep.DeployableGroupID != sEnv.DeployableGroupID {
-			return nil, grpcErrorf(codes.InvalidArgument, "this deployable does have access to environment %q", sourceEnvID)
+			return nil, grpc.Errorf(codes.InvalidArgument, "this deployable does have access to environment %q", sourceEnvID)
 		}
 	}
 	if _, err := s.dl.DeployableVectorForDeployableSourceTarget(depID, vectorSourceType, sourceEnvID, targetEnvID); err == nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "deployable vector for deployable %s source type %s source env %s target env %s already exists", depID, vectorSourceType, sourceEnvID, targetEnvID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "deployable vector for deployable %s source type %s source env %s target env %s already exists", depID, vectorSourceType, sourceEnvID, targetEnvID)
 	} else if errors.Cause(err) != dal.ErrNotFound {
 		return nil, errors.Trace(err)
 	}
@@ -301,25 +297,25 @@ func (s *server) CreateDeployableVector(ctx context.Context, in *deploy.CreateDe
 // CreateEnvironment creates a stage for a given deployable group
 func (s *server) CreateEnvironment(ctx context.Context, in *deploy.CreateEnvironmentRequest) (*deploy.CreateEnvironmentResponse, error) {
 	if in.DeployableGroupID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "group id cannot be empty")
+		return nil, grpc.Errorf(codes.InvalidArgument, "group id cannot be empty")
 	}
 	groupID, err := dal.ParseDeployableGroupID(in.DeployableGroupID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "group id %q is invalid", in.DeployableGroupID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "group id %q is invalid", in.DeployableGroupID)
 	}
 	if in.Name == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "name cannot be empty")
+		return nil, grpc.Errorf(codes.InvalidArgument, "name cannot be empty")
 	}
 
 	if _, err = s.dl.DeployableGroup(groupID); err != nil {
 		if errors.Cause(err) == dal.ErrNotFound {
-			return nil, grpcErrorf(codes.NotFound, "Not Found: Deployable Group: %q", groupID)
+			return nil, grpc.Errorf(codes.NotFound, "Not Found: Deployable Group: %q", groupID)
 		}
 		return nil, errors.Trace(err)
 	}
 
 	if _, err := s.dl.EnvironmentForNameAndGroup(in.Name, groupID); err == nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "name %s is not available for this group", in.Name)
+		return nil, grpc.Errorf(codes.InvalidArgument, "name %s is not available for this group", in.Name)
 	} else if errors.Cause(err) != dal.ErrNotFound {
 		return nil, errors.Trace(err)
 	}
@@ -348,16 +344,16 @@ func (s *server) CreateEnvironment(ctx context.Context, in *deploy.CreateEnviron
 // CreateEnvironmentConfig creates a versioned config set for a given environment
 func (s *server) CreateEnvironmentConfig(ctx context.Context, in *deploy.CreateEnvironmentConfigRequest) (*deploy.CreateEnvironmentConfigResponse, error) {
 	if in.EnvironmentID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "environment id cannot be empty")
+		return nil, grpc.Errorf(codes.InvalidArgument, "environment id cannot be empty")
 	}
 	envID, err := dal.ParseEnvironmentID(in.EnvironmentID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "environment id %q is invalid", in.EnvironmentID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "environment id %q is invalid", in.EnvironmentID)
 	}
 	_, err = s.dl.Environment(envID)
 	if err != nil {
 		if errors.Cause(err) == dal.ErrNotFound {
-			return nil, grpcErrorf(codes.NotFound, "Not Found: Environment: %q", envID)
+			return nil, grpc.Errorf(codes.NotFound, "Not Found: Environment: %q", envID)
 		}
 		return nil, errors.Trace(err)
 	}
@@ -370,11 +366,11 @@ func (s *server) CreateEnvironmentConfig(ctx context.Context, in *deploy.CreateE
 	if in.SourceConfigID != "" {
 		sourceConfigID, err := dal.ParseEnvironmentConfigID(in.SourceConfigID)
 		if err != nil {
-			return nil, grpcErrorf(codes.InvalidArgument, "source environment config id %q is invalid", in.SourceConfigID)
+			return nil, grpc.Errorf(codes.InvalidArgument, "source environment config id %q is invalid", in.SourceConfigID)
 		}
 		if _, err = s.dl.EnvironmentConfig(sourceConfigID); err != nil {
 			if errors.Cause(err) == dal.ErrNotFound {
-				return nil, grpcErrorf(codes.NotFound, "Not Found: Environment Config: %q", sourceConfigID)
+				return nil, grpc.Errorf(codes.NotFound, "Not Found: Environment Config: %q", sourceConfigID)
 			}
 			return nil, errors.Trace(err)
 		}
@@ -435,22 +431,22 @@ func (s *server) CreateEnvironmentConfig(ctx context.Context, in *deploy.CreateE
 // DeployableConfigs returns all the deployable configs for a given environment and deployable
 func (s *server) DeployableConfigs(ctx context.Context, in *deploy.DeployableConfigsRequest) (*deploy.DeployableConfigsResponse, error) {
 	if in.DeployableID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "deployable id cannot be empty")
+		return nil, grpc.Errorf(codes.InvalidArgument, "deployable id cannot be empty")
 	}
 	depID, err := dal.ParseDeployableID(in.DeployableID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "deployable id %q is invalid", in.DeployableID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "deployable id %q is invalid", in.DeployableID)
 	}
 	if in.EnvironmentID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "group id cannot be empty")
+		return nil, grpc.Errorf(codes.InvalidArgument, "group id cannot be empty")
 	}
 	envID, err := dal.ParseEnvironmentID(in.EnvironmentID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "environment id %q is invalid", in.EnvironmentID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "environment id %q is invalid", in.EnvironmentID)
 	}
 	status, err := dal.ParseDeployableConfigStatus(in.Status)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "%q is not a valid config status", in.Status)
+		return nil, grpc.Errorf(codes.InvalidArgument, "%q is not a valid config status", in.Status)
 	}
 
 	depConfigs, err := s.dl.DeployableConfigsForStatus(depID, envID, status)
@@ -491,16 +487,16 @@ func (s *server) DeployableGroups(ctx context.Context, in *deploy.DeployableGrou
 // Deployments returns all the deployments for a given deployable group and status
 func (s *server) Deployments(ctx context.Context, in *deploy.DeploymentsRequest) (*deploy.DeploymentsResponse, error) {
 	if in.DeployableID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "deployable id cannot be empty")
+		return nil, grpc.Errorf(codes.InvalidArgument, "deployable id cannot be empty")
 	}
 	depID, err := dal.ParseDeployableID(in.DeployableID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "deployable id %q is invalid", in.DeployableID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "deployable id %q is invalid", in.DeployableID)
 	}
 
 	if _, err = s.dl.Deployable(depID); err != nil {
 		if errors.Cause(err) == dal.ErrNotFound {
-			return nil, grpcErrorf(codes.NotFound, "Not Found: Deployable: %q", depID)
+			return nil, grpc.Errorf(codes.NotFound, "Not Found: Deployable: %q", depID)
 		}
 		return nil, errors.Trace(err)
 	}
@@ -512,7 +508,7 @@ func (s *server) Deployments(ctx context.Context, in *deploy.DeploymentsRequest)
 	default:
 		ds, err := dal.ParseDeploymentStatus(in.Status.String())
 		if err != nil {
-			return nil, grpcErrorf(codes.InvalidArgument, "deployment status %q is invalid", in.Status.String())
+			return nil, grpc.Errorf(codes.InvalidArgument, "deployment status %q is invalid", in.Status.String())
 		}
 		deployments, err = s.dl.DeploymentsForStatus(depID, ds)
 	}
@@ -532,15 +528,15 @@ func (s *server) Deployables(ctx context.Context, in *deploy.DeployablesRequest)
 	switch by := in.By.(type) {
 	case *deploy.DeployablesRequest_DeployableID:
 		if by.DeployableID == "" {
-			return nil, grpcErrorf(codes.InvalidArgument, "deployable id cannot be empty")
+			return nil, grpc.Errorf(codes.InvalidArgument, "deployable id cannot be empty")
 		}
 		depID, err := dal.ParseDeployableID(by.DeployableID)
 		if err != nil {
-			return nil, grpcErrorf(codes.InvalidArgument, "deployable id %q is invalid", by.DeployableID)
+			return nil, grpc.Errorf(codes.InvalidArgument, "deployable id %q is invalid", by.DeployableID)
 		}
 		dep, err := s.dl.Deployable(depID)
 		if errors.Cause(err) == dal.ErrNotFound {
-			return nil, grpcErrorf(codes.NotFound, "deployable id %q not found", by.DeployableID)
+			return nil, grpc.Errorf(codes.NotFound, "deployable id %q not found", by.DeployableID)
 		}
 		if err != nil {
 			return nil, errors.Trace(err)
@@ -550,11 +546,11 @@ func (s *server) Deployables(ctx context.Context, in *deploy.DeployablesRequest)
 		}, nil
 	case *deploy.DeployablesRequest_DeployableGroupID:
 		if by.DeployableGroupID == "" {
-			return nil, grpcErrorf(codes.InvalidArgument, "group id cannot be empty")
+			return nil, grpc.Errorf(codes.InvalidArgument, "group id cannot be empty")
 		}
 		groupID, err := dal.ParseDeployableGroupID(by.DeployableGroupID)
 		if err != nil {
-			return nil, grpcErrorf(codes.InvalidArgument, "group id %q is invalid", by.DeployableGroupID)
+			return nil, grpc.Errorf(codes.InvalidArgument, "group id %q is invalid", by.DeployableGroupID)
 		}
 		deps, err := s.dl.DeployablesForGroup(groupID)
 		if err != nil {
@@ -570,11 +566,11 @@ func (s *server) Deployables(ctx context.Context, in *deploy.DeployablesRequest)
 // DeployableVectors returns all the deployable vectors for a given deployable
 func (s *server) DeployableVectors(ctx context.Context, in *deploy.DeployableVectorsRequest) (*deploy.DeployableVectorsResponse, error) {
 	if in.DeployableID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "deployable id cannot be empty")
+		return nil, grpc.Errorf(codes.InvalidArgument, "deployable id cannot be empty")
 	}
 	depID, err := dal.ParseDeployableID(in.DeployableID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "deployable id %q is invalid", in.DeployableID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "deployable id %q is invalid", in.DeployableID)
 	}
 
 	vectors, err := s.dl.DeployableVectorsForDeployable(depID)
@@ -590,15 +586,15 @@ func (s *server) DeployableVectors(ctx context.Context, in *deploy.DeployableVec
 // EnvironmentConfigs returns all the environment configs for a given environment
 func (s *server) EnvironmentConfigs(ctx context.Context, in *deploy.EnvironmentConfigsRequest) (*deploy.EnvironmentConfigsResponse, error) {
 	if in.EnvironmentID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "group id cannot be empty")
+		return nil, grpc.Errorf(codes.InvalidArgument, "group id cannot be empty")
 	}
 	envID, err := dal.ParseEnvironmentID(in.EnvironmentID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "environment id %q is invalid", in.EnvironmentID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "environment id %q is invalid", in.EnvironmentID)
 	}
 	status, err := dal.ParseEnvironmentConfigStatus(in.Status)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "%q is not a valid config status", in.Status)
+		return nil, grpc.Errorf(codes.InvalidArgument, "%q is not a valid config status", in.Status)
 	}
 
 	envConfigs, err := s.dl.EnvironmentConfigsForStatus(envID, status)
@@ -629,15 +625,15 @@ func (s *server) Environments(ctx context.Context, in *deploy.EnvironmentsReques
 	switch by := in.By.(type) {
 	case *deploy.EnvironmentsRequest_EnvironmentID:
 		if by.EnvironmentID == "" {
-			return nil, grpcErrorf(codes.InvalidArgument, "environment id cannot be empty")
+			return nil, grpc.Errorf(codes.InvalidArgument, "environment id cannot be empty")
 		}
 		envID, err := dal.ParseEnvironmentID(by.EnvironmentID)
 		if err != nil {
-			return nil, grpcErrorf(codes.InvalidArgument, "environment id %q is invalid", by.EnvironmentID)
+			return nil, grpc.Errorf(codes.InvalidArgument, "environment id %q is invalid", by.EnvironmentID)
 		}
 		env, err := s.dl.Environment(envID)
 		if errors.Cause(err) == dal.ErrNotFound {
-			return nil, grpcErrorf(codes.NotFound, "environment id %q not found", by.EnvironmentID)
+			return nil, grpc.Errorf(codes.NotFound, "environment id %q not found", by.EnvironmentID)
 		}
 		if err != nil {
 			return nil, errors.Trace(err)
@@ -647,11 +643,11 @@ func (s *server) Environments(ctx context.Context, in *deploy.EnvironmentsReques
 		}, nil
 	case *deploy.EnvironmentsRequest_DeployableGroupID:
 		if by.DeployableGroupID == "" {
-			return nil, grpcErrorf(codes.InvalidArgument, "group id cannot be empty")
+			return nil, grpc.Errorf(codes.InvalidArgument, "group id cannot be empty")
 		}
 		groupID, err := dal.ParseDeployableGroupID(by.DeployableGroupID)
 		if err != nil {
-			return nil, grpcErrorf(codes.InvalidArgument, "group id %q is invalid", by.DeployableGroupID)
+			return nil, grpc.Errorf(codes.InvalidArgument, "group id %q is invalid", by.DeployableGroupID)
 		}
 		envs, err := s.dl.EnvironmentsForGroup(groupID)
 		if err != nil {
@@ -667,7 +663,7 @@ func (s *server) Environments(ctx context.Context, in *deploy.EnvironmentsReques
 // Promote reports that a deployable or deployable group should be promoted to all available outbound vectors
 func (s *server) Promote(ctx context.Context, in *deploy.PromotionRequest) (*deploy.PromotionResponse, error) {
 	if in.DeploymentID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "deployment id cannot be empty")
+		return nil, grpc.Errorf(codes.InvalidArgument, "deployment id cannot be empty")
 	}
 
 	deploymentIDs, err := s.manager.ProcessPromotionEvent(&deploy.PromotionEvent{
@@ -697,7 +693,7 @@ func (s *server) Promote(ctx context.Context, in *deploy.PromotionRequest) (*dep
 // PromoteGroup reports that all deployments of a deployable group with a given build number should be promoted out of the target environment
 func (s *server) PromoteGroup(ctx context.Context, in *deploy.PromoteGroupRequest) (*deploy.PromoteGroupResponse, error) {
 	if in.DeployableGroupID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "deployable group id cannot be empty")
+		return nil, grpc.Errorf(codes.InvalidArgument, "deployable group id cannot be empty")
 	}
 	depID, err := dal.ParseDeployableGroupID(in.DeployableGroupID)
 	if err != nil {
@@ -711,14 +707,14 @@ func (s *server) PromoteGroup(ctx context.Context, in *deploy.PromoteGroupReques
 	}
 
 	if in.BuildNumber == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "build number cannot be empty")
+		return nil, grpc.Errorf(codes.InvalidArgument, "build number cannot be empty")
 	}
 	if _, err := strconv.ParseInt(in.BuildNumber, 10, 64); err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "cannot parse build number %s: %s", in.BuildNumber, err)
+		return nil, grpc.Errorf(codes.InvalidArgument, "cannot parse build number %s: %s", in.BuildNumber, err)
 	}
 
 	if in.EnvironmentID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "environment id cannot be empty")
+		return nil, grpc.Errorf(codes.InvalidArgument, "environment id cannot be empty")
 	}
 	envID, err := dal.ParseEnvironmentID(in.EnvironmentID)
 	if err != nil {
@@ -736,7 +732,7 @@ func (s *server) PromoteGroup(ctx context.Context, in *deploy.PromoteGroupReques
 		return nil, err
 	}
 	if len(depls) == 0 {
-		return nil, grpcErrorf(codes.FailedPrecondition, "No existing deployments matching the criteria were found")
+		return nil, grpc.Errorf(codes.FailedPrecondition, "No existing deployments matching the criteria were found")
 	}
 
 	var deploymentIDs []dal.DeploymentID
@@ -774,26 +770,26 @@ func (s *server) PromoteGroup(ctx context.Context, in *deploy.PromoteGroupReques
 func (s *server) ReportBuildComplete(ctx context.Context, in *deploy.ReportBuildCompleteRequest) (*deploy.ReportBuildCompleteResponse, error) {
 	ev := &deploy.BuildCompleteEvent{}
 	if in.DeployableID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "deployable id cannot be empty")
+		return nil, grpc.Errorf(codes.InvalidArgument, "deployable id cannot be empty")
 	}
 	ev.DeployableID = in.DeployableID
 	if in.BuildNumber == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "build number cannot be empty")
+		return nil, grpc.Errorf(codes.InvalidArgument, "build number cannot be empty")
 	}
 	ev.GitHash = in.GitHash
 	if in.GitHash == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "git hash cannot be empty")
+		return nil, grpc.Errorf(codes.InvalidArgument, "git hash cannot be empty")
 	}
 	ev.BuildNumber = in.BuildNumber
 
 	switch in.ArtifactType {
 	case deploy.ReportBuildCompleteRequest_DOCKER_IMAGE:
 		if in.GetDockerImage() == "" {
-			return nil, grpcErrorf(codes.InvalidArgument, "image cannot be empty for artifacts of type %s", deploy.ReportBuildCompleteRequest_DOCKER_IMAGE.String())
+			return nil, grpc.Errorf(codes.InvalidArgument, "image cannot be empty for artifacts of type %s", deploy.ReportBuildCompleteRequest_DOCKER_IMAGE)
 		}
 		ev.Image = in.GetDockerImage()
 	default:
-		return nil, grpcErrorf(codes.InvalidArgument, "unknown artifact type", in.ArtifactType.String())
+		return nil, grpc.Errorf(codes.InvalidArgument, "unknown artifact type %q", in.ArtifactType)
 	}
 
 	deploymentIDs, err := s.manager.ProcessBuildCompleteEvent(ev)

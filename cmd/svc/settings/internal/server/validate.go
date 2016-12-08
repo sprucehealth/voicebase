@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/settings/internal/models"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/svc/settings"
+	"google.golang.org/grpc"
 )
 
 func validateValueAgainstConfig(value *settings.Value, config *models.Config) (*models.Value, error) {
@@ -30,7 +31,7 @@ func validateValueAgainstConfig(value *settings.Value, config *models.Config) (*
 			if config.OptionalValue {
 				return transformedValue, nil
 			}
-			return nil, grpcErrorf(settings.InvalidUserValue, "Please select an option")
+			return nil, grpc.Errorf(settings.InvalidUserValue, "Please select an option")
 		}
 
 		// ensure that all options selected in multi-select are from the list of available options
@@ -61,7 +62,7 @@ func validateValueAgainstConfig(value *settings.Value, config *models.Config) (*
 			if config.OptionalValue {
 				return transformedValue, nil
 			}
-			return nil, grpcErrorf(settings.InvalidUserValue, "Please select an option")
+			return nil, grpc.Errorf(settings.InvalidUserValue, "Please select an option")
 		}
 
 		present := false
@@ -98,7 +99,7 @@ func validateValueAgainstConfig(value *settings.Value, config *models.Config) (*
 			if config.OptionalValue {
 				return transformedValue, nil
 			}
-			return nil, grpcErrorf(settings.InvalidUserValue, "Please specify at least one entry")
+			return nil, grpc.Errorf(settings.InvalidUserValue, "Please specify at least one entry")
 		}
 		// ensure that there is at least one valid entry
 		atLeastOneValidEntry := false
@@ -109,7 +110,7 @@ func validateValueAgainstConfig(value *settings.Value, config *models.Config) (*
 			}
 		}
 		if !atLeastOneValidEntry && !config.OptionalValue {
-			return nil, grpcErrorf(settings.InvalidUserValue, "Please specify at least one entry")
+			return nil, grpc.Errorf(settings.InvalidUserValue, "Please specify at least one entry")
 		}
 
 	default:

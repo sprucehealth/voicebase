@@ -239,7 +239,7 @@ func (s *threadsServer) CreateEmptyThread(ctx context.Context, in *threading.Cre
 		}
 		return nil
 	}); err != nil {
-		return nil, grpc.Errorf(codes.Internal, errors.Trace(err).Error())
+		return nil, errors.Trace(err)
 	}
 	threads, err := s.dal.Threads(ctx, []models.ThreadID{threadID})
 	if err != nil {
@@ -268,7 +268,7 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 	switch in.Type {
 	case threading.THREAD_TYPE_EXTERNAL, threading.THREAD_TYPE_TEAM:
 	default:
-		return nil, grpc.Errorf(codes.InvalidArgument, fmt.Sprintf("Type '%s' not allowed for CreateThread", in.Type.String()))
+		return nil, grpc.Errorf(codes.InvalidArgument, fmt.Sprintf("Type %q not allowed for CreateThread", in.Type.String()))
 	}
 	if in.OrganizationID == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "OrganizationID is required")
@@ -283,7 +283,7 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 		return nil, grpc.Errorf(codes.InvalidArgument, "SystemTitle is required")
 	}
 	if id, ok := validateEntityIDs(in.MemberEntityIDs); !ok {
-		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid entity ID %s in members list", id)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid entity ID %q in members list", id)
 	}
 	if t, ok := validateTags(in.Tags); !ok {
 		return nil, grpc.Errorf(codes.InvalidArgument, "Tag %q is invalid", t)
@@ -291,11 +291,11 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 
 	tt, err := transformThreadTypeFromRequest(in.Type)
 	if err != nil {
-		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid thread type '%s'", in.Type)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid thread type %q", in.Type)
 	}
 	to, err := transformThreadOriginFromRequest(in.Origin)
 	if err != nil {
-		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid thread origin '%s'", in.Origin)
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid thread origin %q", in.Origin)
 	}
 
 	textRefs, err := processMessagePost(in.Message, false)

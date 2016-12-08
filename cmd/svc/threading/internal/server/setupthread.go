@@ -58,11 +58,11 @@ func (s *threadsServer) CreateOnboardingThread(ctx context.Context, in *threadin
 	}
 	msg, err := msgBML.Format()
 	if err != nil {
-		return nil, grpc.Errorf(codes.Internal, "Failed to format setup thread BML: %s", err)
+		return nil, errors.Errorf("Failed to format setup thread BML: %s", err)
 	}
 	summary, err := models.SummaryFromText("Setup: " + msg)
 	if err != nil {
-		return nil, grpc.Errorf(codes.Internal, "Failed to generate summary: %s", err)
+		return nil, errors.Errorf("Failed to generate summary: %s", err)
 	}
 
 	var threadID models.ThreadID
@@ -90,7 +90,7 @@ func (s *threadsServer) CreateOnboardingThread(ctx context.Context, in *threadin
 		}
 		return errors.Trace(dl.CreateSetupThreadState(ctx, threadID, in.OrganizationID))
 	}); err != nil {
-		return nil, grpc.Errorf(codes.Internal, errors.Trace(err).Error())
+		return nil, errors.Trace(err)
 	}
 
 	threads, err := s.dal.Threads(ctx, []models.ThreadID{threadID})
@@ -132,20 +132,20 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 		return nil, grpc.Errorf(codes.NotFound, "Onboarding state not found")
 	}
 	if err != nil {
-		return nil, grpc.Errorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	threads, err := s.dal.Threads(ctx, []models.ThreadID{state.ThreadID})
 	if err != nil {
-		return nil, grpc.Errorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	} else if len(threads) == 0 {
-		return nil, errors.Errorf("thread %s not found", state.ThreadID)
+		return nil, errors.Errorf("thread %q not found", state.ThreadID)
 	}
 	setupThread := threads[0]
 
 	supportThreads, err := s.dal.ThreadsForOrg(ctx, setupThread.OrganizationID, models.ThreadTypeSupport, 1)
 	if err != nil {
-		return nil, grpc.Errorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 	// Really should be exactly one, but to not blow up for our own support forum only err when none exist.
 	if len(supportThreads) < 1 {
@@ -216,7 +216,7 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 				newStepBit = 8
 			}
 		default:
-			return nil, grpc.Errorf(codes.Internal, "Unhandled onboarding setup event '%s' for org %s", in.Event, setupThread.OrganizationID)
+			return nil, errors.Errorf("Unhandled onboarding setup event %q for org %s", in.Event, setupThread.OrganizationID)
 		}
 	default:
 		golog.Debugf("Unhandled onboarding thread event '%s'", in.Event)
@@ -224,13 +224,13 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 	if msgBML != nil {
 		msg, err := msgBML.Format()
 		if err != nil {
-			return nil, grpc.Errorf(codes.Internal, "invalid onboarding message BML: %s", err)
+			return nil, errors.Errorf("invalid onboarding message BML: %s", err)
 		}
 		var summary string
 		if msg != "" {
 			summary, err = models.SummaryFromText("Setup: " + msg)
 			if err != nil {
-				return nil, grpc.Errorf(codes.Internal, "Failed to generate summary for event %s", in.EventType)
+				return nil, errors.Errorf("Failed to generate summary for event %s", in.EventType)
 			}
 		}
 		if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
@@ -254,13 +254,13 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 			})
 			return errors.Trace(err)
 		}); err != nil {
-			return nil, grpc.Errorf(codes.Internal, err.Error())
+			return nil, errors.Trace(err)
 		}
 	}
 
 	threads, err = s.dal.Threads(ctx, []models.ThreadID{state.ThreadID})
 	if err != nil {
-		return nil, grpc.Errorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	} else if len(threads) == 0 {
 		return nil, grpc.Errorf(codes.NotFound, "thread not found")
 	}

@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
@@ -178,7 +177,7 @@ func memberEntityIDsForNewThread(ttype threading.ThreadType, orgID, fromEntityID
 			memberEntityIDs = appendStringToSet(memberEntityIDs, fromEntityID)
 		}
 	default:
-		return nil, grpc.Errorf(codes.Internal, fmt.Sprintf("Unhandled thread type %s", ttype))
+		return nil, errors.Errorf("unhandled thread type %s", ttype)
 	}
 	return memberEntityIDs, nil
 }

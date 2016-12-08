@@ -26,8 +26,6 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
-var grpcErrorf = grpc.Errorf
-
 type server struct {
 	layoutStore layout.Storage
 	dal         dal.DAL
@@ -52,15 +50,15 @@ func New(dal dal.DAL, layoutClient layout.LayoutClient, settingsClient settings.
 
 func (s *server) CreateVisit(ctx context.Context, in *care.CreateVisitRequest) (*care.CreateVisitResponse, error) {
 	if in.EntityID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "entity_id required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "entity_id required")
 	} else if in.LayoutVersionID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "layout_version_id required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "layout_version_id required")
 	} else if in.Name == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "name required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "name required")
 	} else if in.OrganizationID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "organization_id required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "organization_id required")
 	} else if in.CreatorID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "creator_id required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "creator_id required")
 	}
 
 	visitToCreate := &models.Visit{
@@ -95,18 +93,18 @@ func (s *server) CreateVisit(ctx context.Context, in *care.CreateVisitRequest) (
 
 func (s *server) GetVisit(ctx context.Context, in *care.GetVisitRequest) (*care.GetVisitResponse, error) {
 	if in.ID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "id required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "id required")
 	}
 
 	visitID, err := models.ParseVisitID(in.ID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "unable to parse visit id %q: %s", in.ID, err.Error())
+		return nil, grpc.Errorf(codes.InvalidArgument, "unable to parse visit id %q: %s", in.ID, err.Error())
 	}
 
 	v, err := s.dal.Visit(ctx, visitID)
 	if err != nil {
 		if errors.Cause(err) == dal.ErrNotFound {
-			return nil, grpcErrorf(codes.NotFound, "visit %q not found", visitID)
+			return nil, grpc.Errorf(codes.NotFound, "visit %q not found", visitID)
 		}
 		return nil, errors.Trace(err)
 	}
@@ -130,12 +128,12 @@ func (s *server) GetVisit(ctx context.Context, in *care.GetVisitRequest) (*care.
 
 func (s *server) SubmitVisit(ctx context.Context, in *care.SubmitVisitRequest) (*care.SubmitVisitResponse, error) {
 	if in.VisitID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "visit_id is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "visit_id is required")
 	}
 
 	visitID, err := models.ParseVisitID(in.VisitID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "invalid visit id %q: %s", in.VisitID, err)
+		return nil, grpc.Errorf(codes.InvalidArgument, "invalid visit id %q: %s", in.VisitID, err)
 	}
 
 	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
@@ -159,12 +157,12 @@ func (s *server) SubmitVisit(ctx context.Context, in *care.SubmitVisitRequest) (
 
 func (s *server) TriageVisit(ctx context.Context, in *care.TriageVisitRequest) (*care.TriageVisitResponse, error) {
 	if in.VisitID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "visit_id is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "visit_id is required")
 	}
 
 	visitID, err := models.ParseVisitID(in.VisitID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "invalid visit id %q: %s", in.VisitID, err)
+		return nil, grpc.Errorf(codes.InvalidArgument, "invalid visit id %q: %s", in.VisitID, err)
 	}
 
 	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
@@ -187,16 +185,16 @@ func (s *server) TriageVisit(ctx context.Context, in *care.TriageVisitRequest) (
 
 func (s *server) CreateVisitAnswers(ctx context.Context, in *care.CreateVisitAnswersRequest) (*care.CreateVisitAnswersResponse, error) {
 	if in.VisitID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "visit_id is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "visit_id is required")
 	} else if in.ActorEntityID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "actory_entity_id is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "actory_entity_id is required")
 	} else if in.AnswersJSON == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "answers_json is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "answers_json is required")
 	}
 
 	visitID, err := models.ParseVisitID(in.VisitID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "unable to parse visit_id %q: %s", in.VisitID, err)
+		return nil, grpc.Errorf(codes.InvalidArgument, "unable to parse visit_id %q: %s", in.VisitID, err)
 	}
 
 	visitAnswers, err := client.Decode(in.AnswersJSON)
@@ -209,7 +207,7 @@ func (s *server) CreateVisitAnswers(ctx context.Context, in *care.CreateVisitAns
 	// ensure that no answer in the clear answers array is also an answer mentioned in the answer dictionary
 	for _, questionID := range visitAnswers.ClearAnswers {
 		if _, ok := visitAnswers.Answers[questionID]; ok {
-			return nil, grpcErrorf(care.ErrorInvalidAnswer, "question %s specified in list to clear answers for as well as in dictionary with answer", questionID)
+			return nil, grpc.Errorf(care.ErrorInvalidAnswer, "question %s specified in list to clear answers for as well as in dictionary with answer", questionID)
 		}
 	}
 
@@ -244,11 +242,11 @@ func (s *server) CreateVisitAnswers(ctx context.Context, in *care.CreateVisitAns
 	for questionID, answer := range visitAnswers.Answers {
 		question, ok := questionInIntakeMap[questionID]
 		if !ok {
-			return nil, grpcErrorf(codes.InvalidArgument, "question %q not in visit intake for %q", questionID, visit.ID)
+			return nil, grpc.Errorf(codes.InvalidArgument, "question %q not in visit intake for %q", questionID, visit.ID)
 		}
 
 		if err := answer.Validate(question); err != nil {
-			return nil, grpcErrorf(care.ErrorInvalidAnswer, "invalid answer to question in visit %q: %s", visit.ID, err)
+			return nil, grpc.Errorf(care.ErrorInvalidAnswer, "invalid answer to question in visit %q: %s", visit.ID, err)
 		}
 
 		// collect all the mediaIDs to claim it by the visit
@@ -260,7 +258,7 @@ func (s *server) CreateVisitAnswers(ctx context.Context, in *care.CreateVisitAns
 				}
 			}
 			if err != nil {
-				return nil, grpcErrorf(codes.Internal, "unable to claim media for question %q: %s", questionID, err)
+				return nil, errors.Errorf("unable to claim media for question %q: %s", questionID, err)
 			}
 		}
 	}
@@ -310,12 +308,12 @@ func (s *server) CreateVisitAnswers(ctx context.Context, in *care.CreateVisitAns
 
 func (s *server) GetAnswersForVisit(ctx context.Context, in *care.GetAnswersForVisitRequest) (*care.GetAnswersForVisitResponse, error) {
 	if in.VisitID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "visit_id required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "visit_id required")
 	}
 
 	visitID, err := models.ParseVisitID(in.VisitID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "unable to parse visit_id %q: %s", in.VisitID, err)
+		return nil, grpc.Errorf(codes.InvalidArgument, "unable to parse visit_id %q: %s", in.VisitID, err)
 	}
 
 	visit, err := s.dal.Visit(ctx, visitID)
@@ -384,15 +382,15 @@ func (s *server) GetAnswersForVisit(ctx context.Context, in *care.GetAnswersForV
 
 func (s *server) CarePlan(ctx context.Context, in *care.CarePlanRequest) (*care.CarePlanResponse, error) {
 	if in.ID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "care plan id is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "care plan id is required")
 	}
 	id, err := models.ParseCarePlanID(in.ID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "care plan id %q is invalid", id)
+		return nil, grpc.Errorf(codes.InvalidArgument, "care plan id %q is invalid", id)
 	}
 	cp, err := s.dal.CarePlan(ctx, id)
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, "care plan %s not found", id)
+		return nil, grpc.Errorf(codes.NotFound, "care plan %s not found", id)
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -405,7 +403,7 @@ func (s *server) CarePlan(ctx context.Context, in *care.CarePlanRequest) (*care.
 
 func (s *server) CreateCarePlan(ctx context.Context, in *care.CreateCarePlanRequest) (*care.CreateCarePlanResponse, error) {
 	if in.Name == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "care plan name is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "care plan name is required")
 	}
 	cp := &models.CarePlan{
 		Name:         in.Name,
@@ -426,7 +424,7 @@ func (s *server) CreateCarePlan(ctx context.Context, in *care.CreateCarePlanRequ
 		case care.CarePlanTreatment_RX:
 			availability = models.TreatmentAvailabilityRx
 		default:
-			return nil, grpcErrorf(codes.InvalidArgument, "unknown treatment availability %q", t.Availability.String())
+			return nil, grpc.Errorf(codes.InvalidArgument, "unknown treatment availability %q", t.Availability.String())
 		}
 		cp.Treatments[i] = &models.CarePlanTreatment{
 			EPrescribe:           t.EPrescribe,
@@ -575,25 +573,25 @@ func (s *server) SearchAllergyMedications(ctx context.Context, in *care.SearchAl
 
 func (s *server) SubmitCarePlan(ctx context.Context, in *care.SubmitCarePlanRequest) (*care.SubmitCarePlanResponse, error) {
 	if in.ID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "care plan id is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "care plan id is required")
 	}
 	if in.ParentID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "care plan parent ID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "care plan parent ID is required")
 	}
 	id, err := models.ParseCarePlanID(in.ID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "care plan id %q is invalid", in.ID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "care plan id %q is invalid", in.ID)
 	}
 	if err := s.dal.SubmitCarePlan(ctx, id, in.ParentID); errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, "care plan %s not found", id)
+		return nil, grpc.Errorf(codes.NotFound, "care plan %s not found", id)
 	} else if errors.Cause(err) == dal.ErrAlreadySubmitted {
-		return nil, grpcErrorf(codes.AlreadyExists, "care plan %s already submitted", id)
+		return nil, grpc.Errorf(codes.AlreadyExists, "care plan %s already submitted", id)
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
 	cp, err := s.dal.CarePlan(ctx, id)
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, "care plan %s not found", id)
+		return nil, grpc.Errorf(codes.NotFound, "care plan %s not found", id)
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -605,21 +603,21 @@ func (s *server) SubmitCarePlan(ctx context.Context, in *care.SubmitCarePlanRequ
 }
 func (s *server) UpdateCarePlan(ctx context.Context, in *care.UpdateCarePlanRequest) (*care.UpdateCarePlanResponse, error) {
 	if in.ID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "care plan id is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "care plan id is required")
 	}
 	if in.ParentID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "care plan parent ID is required")
+		return nil, grpc.Errorf(codes.InvalidArgument, "care plan parent ID is required")
 	}
 	id, err := models.ParseCarePlanID(in.ID)
 	if err != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "care plan id %s is invalid", in.ID)
+		return nil, grpc.Errorf(codes.InvalidArgument, "care plan id %s is invalid", in.ID)
 	}
 
 	cp, err := s.dal.CarePlan(ctx, id)
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpcErrorf(codes.NotFound, "care plan %s not found", id)
+		return nil, grpc.Errorf(codes.NotFound, "care plan %s not found", id)
 	} else if cp.Submitted != nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "care plan %s already submitted and cannot be modified", id)
+		return nil, grpc.Errorf(codes.InvalidArgument, "care plan %s already submitted and cannot be modified", id)
 	}
 
 	if _, err := s.dal.UpdateCarePlan(ctx, id, &dal.CarePlanUpdate{
@@ -630,12 +628,12 @@ func (s *server) UpdateCarePlan(ctx context.Context, in *care.UpdateCarePlanRequ
 
 	cp, err = s.dal.CarePlan(ctx, id)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 
 	cpr, err := transformCarePlanToResponse(cp)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, errors.Trace(err)
 	}
 	return &care.UpdateCarePlanResponse{CarePlan: cpr}, nil
 }
