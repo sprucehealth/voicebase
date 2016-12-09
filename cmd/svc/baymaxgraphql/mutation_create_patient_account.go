@@ -177,6 +177,7 @@ type createPatientAccountInput struct {
 	EmailVerificationToken string     `gql:"emailVerificationToken"`
 	PhoneVerificationToken string     `gql:"phoneVerificationToken"`
 	Duration               string     `gql:"duration"`
+	AccountInviteClientID  string     `gql:"accountInviteClientID"`
 }
 
 var createPatientAccountInputType = graphql.NewInputObject(graphql.InputObjectConfig{
@@ -194,6 +195,7 @@ var createPatientAccountInputType = graphql.NewInputObject(graphql.InputObjectCo
 		"emailVerificationToken": &graphql.InputObjectFieldConfig{Type: graphql.String},
 		"phoneVerificationToken": &graphql.InputObjectFieldConfig{Type: graphql.String},
 		"duration":               &graphql.InputObjectFieldConfig{Type: tokenDurationEnum},
+		"accountInviteClientID":  accountInviteClientInputType,
 	},
 })
 
@@ -241,7 +243,7 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 		return nil, errors.InternalError(ctx, err)
 	}
 
-	inv, atts, err := svc.inviteAndAttributionInfo(ctx)
+	inv, atts, err := svc.inviteAndAttributionInfo(ctx, in.AccountInviteClientID)
 	if err != nil {
 		return nil, errors.InternalError(ctx, err)
 	}

@@ -7,12 +7,14 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/gqldecode"
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/graphql"
+	"github.com/sprucehealth/graphql/gqlerrors"
 )
 
 // verifyEmail
@@ -46,12 +48,19 @@ type verifyEmailOutput struct {
 	Message          string `json:"message"`
 }
 
+type verifyEmailInput struct {
+	ClientMutationID      string `gql:"clientMutationId"`
+	Email                 string `gql:"email"`
+	AccountInviteClientID string `gql:"accountInviteClientID"`
+}
+
 var verifyEmailInputType = graphql.NewInputObject(
 	graphql.InputObjectConfig{
 		Name: "VerifyEmailInput",
 		Fields: graphql.InputObjectConfigFieldMap{
-			"clientMutationId": newClientMutationIDInputField(),
-			"email":            &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"clientMutationId":      newClientMutationIDInputField(),
+			"email":                 &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"accountInviteClientID": accountInviteClientInputType,
 		},
 	},
 )
@@ -105,18 +114,26 @@ func makeVerifyEmailResolve(forAccountCreation bool) func(p graphql.ResolveParam
 		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
 		input := p.Args["input"].(map[string]interface{})
-		mutationID, _ := input["clientMutationId"].(string)
+		var in verifyEmailInput
+		if err := gqldecode.Decode(input, &in); err != nil {
+			switch err := err.(type) {
+			case gqldecode.ErrValidationFailed:
+				return nil, gqlerrors.FormatError(fmt.Errorf("%s is invalid: %s", err.Field, err.Reason))
+			}
+			return nil, errors.InternalError(ctx, err)
+		}
+
 		var email string
 
 		// If here for account creation then we require an invite to be mapped to the device
 		if forAccountCreation {
-			inv, _, err := svc.inviteAndAttributionInfo(ctx)
+			inv, _, err := svc.inviteAndAttributionInfo(ctx, in.AccountInviteClientID)
 			if err != nil {
 				return nil, errors.InternalError(ctx, err)
 			}
 			if inv == nil {
 				return &verifyEmailOutput{
-					ClientMutationID: mutationID,
+					ClientMutationID: in.ClientMutationID,
 					Success:          false,
 					ErrorCode:        verifyEmailErrorCodeInviteRequired,
 					ErrorMessage:     "An invite is required to perform email verification with this device.",
@@ -137,10 +154,10 @@ func makeVerifyEmailResolve(forAccountCreation bool) func(p graphql.ResolveParam
 			}
 			email = invEmail
 		} else {
-			email = input["email"].(string)
+			email = in.Email
 			if !validate.Email(email) {
 				return &verifyEmailOutput{
-					ClientMutationID: mutationID,
+					ClientMutationID: in.ClientMutationID,
 					Success:          false,
 					ErrorCode:        verifyEmailErrorCodeInvalidEmail,
 					ErrorMessage:     "The provided email is invalid.",
@@ -154,7 +171,7 @@ func makeVerifyEmailResolve(forAccountCreation bool) func(p graphql.ResolveParam
 		}
 
 		return &verifyEmailOutput{
-			ClientMutationID: mutationID,
+			ClientMutationID: in.ClientMutationID,
 			Success:          true,
 			Token:            token,
 			Message:          "A verification code has been sent to the invited email.",

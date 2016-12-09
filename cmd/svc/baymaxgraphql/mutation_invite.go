@@ -7,11 +7,13 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/gqldecode"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/invite/clientdata"
 	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/graphql"
+	"github.com/sprucehealth/graphql/gqlerrors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
@@ -104,6 +106,11 @@ var associateAttributionMutation = &graphql.Field{
 
 // associateInvite
 
+var accountInviteClientInputType = &graphql.InputObjectFieldConfig{
+	Type:        graphql.String,
+	Description: "Client provided ID to control the account creation experience via an invite. The ID is combined with the deviceID to enforce global uniqueness.",
+}
+
 var inviteValueType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "InviteValue",
 	Fields: graphql.Fields{
@@ -115,6 +122,12 @@ var inviteValueType = graphql.NewObject(graphql.ObjectConfig{
 type inviteValue struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
+}
+
+type associateInviteInput struct {
+	ClientMutationID      string `gql:"clientMutationId"`
+	Token                 string `gql:"token"`
+	AccountInviteClientID string `gql:"accountInviteClientID"`
 }
 
 type associateInviteOutput struct {
@@ -132,8 +145,9 @@ var associateInviteInputType = graphql.NewInputObject(
 	graphql.InputObjectConfig{
 		Name: "AssociateInviteInput",
 		Fields: graphql.InputObjectConfigFieldMap{
-			"clientMutationId": newClientMutationIDInputField(),
-			"token":            &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"clientMutationId":      newClientMutationIDInputField(),
+			"token":                 &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"accountInviteClientID": accountInviteClientInputType,
 		},
 	},
 )
@@ -218,14 +232,21 @@ var associateInviteMutation = &graphql.Field{
 		}
 
 		input := p.Args["input"].(map[string]interface{})
-		mutationID, _ := input["clientMutationId"].(string)
-		token := input["token"].(string)
+		var in associateInviteInput
+		if err := gqldecode.Decode(input, &in); err != nil {
+			switch err := err.(type) {
+			case gqldecode.ErrValidationFailed:
+				return nil, gqlerrors.FormatError(fmt.Errorf("%s is invalid: %s", err.Field, err.Reason))
+			}
+			return nil, errors.InternalError(ctx, err)
+		}
+
 		res, err := svc.invite.LookupInvite(ctx, &invite.LookupInviteRequest{
-			InviteToken: token,
+			InviteToken: in.Token,
 		})
 		if grpc.Code(err) == codes.NotFound {
 			return &associateInviteOutput{
-				ClientMutationID: mutationID,
+				ClientMutationID: in.ClientMutationID,
 				Success:          false,
 				ErrorCode:        associateInviteErrorCodeInvalidInvite,
 				ErrorMessage:     "Sorry, the invite code you entered is not valid. Please re-enter the code or contact your healthcare provider.",
@@ -334,7 +355,7 @@ var associateInviteMutation = &graphql.Field{
 		}
 
 		if _, err := svc.invite.SetAttributionData(ctx, &invite.SetAttributionDataRequest{
-			DeviceID: sh.DeviceID,
+			DeviceID: sh.DeviceID + in.AccountInviteClientID,
 			Values:   res.Values,
 		}); err != nil {
 			return nil, errors.InternalError(ctx, err)
@@ -346,7 +367,7 @@ var associateInviteMutation = &graphql.Field{
 		}
 
 		return &associateInviteOutput{
-			ClientMutationID:            mutationID,
+			ClientMutationID:            in.ClientMutationID,
 			Success:                     true,
 			InviteType:                  inviteTypeToEnum(res),
 			Values:                      values,

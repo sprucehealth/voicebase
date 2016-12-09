@@ -99,14 +99,14 @@ func createAndSendSMSVerificationCode(ctx context.Context, ram raccess.ResourceA
 
 const inviteTokenAttributionKey = "invite_token"
 
-func (s *service) inviteAndAttributionInfo(ctx context.Context) (*invite.LookupInviteResponse, map[string]string, error) {
+func (s *service) inviteAndAttributionInfo(ctx context.Context, accountInviteClientID string) (*invite.LookupInviteResponse, map[string]string, error) {
 	sh := devicectx.SpruceHeaders(ctx)
 	if sh == nil || sh.DeviceID == "" {
 		return nil, nil, nil
 	}
 
 	res, err := s.invite.AttributionData(ctx, &invite.AttributionDataRequest{
-		DeviceID: sh.DeviceID,
+		DeviceID: sh.DeviceID + accountInviteClientID,
 	})
 	if err != nil {
 		if grpc.Code(err) == codes.NotFound {

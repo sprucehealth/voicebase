@@ -62,6 +62,7 @@ type createProviderAccountInput struct {
 	OrganizationName       string `gql:"organizationName"`
 	PhoneVerificationToken string `gql:"phoneVerificationToken,nonempty"`
 	Duration               string `gql:"duration"`
+	AccountInviteClientID  string `gql:"accountInviteClientID"`
 }
 
 var createProviderAccountInputType = graphql.NewInputObject(graphql.InputObjectConfig{
@@ -79,6 +80,7 @@ var createProviderAccountInputType = graphql.NewInputObject(graphql.InputObjectC
 		"organizationName":       &graphql.InputObjectFieldConfig{Type: graphql.String},
 		"phoneVerificationToken": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 		"duration":               &graphql.InputObjectFieldConfig{Type: tokenDurationEnum},
+		"accountInviteClientID":  accountInviteClientInputType,
 	},
 })
 
@@ -128,7 +130,7 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 		return nil, errors.InternalError(ctx, err)
 	}
 
-	inv, attribValues, err := svc.inviteAndAttributionInfo(ctx)
+	inv, attribValues, err := svc.inviteAndAttributionInfo(ctx, in.AccountInviteClientID)
 	if err != nil {
 		return nil, errors.InternalError(ctx, err)
 	}

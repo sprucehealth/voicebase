@@ -8,12 +8,14 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/gqldecode"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/graphql"
+	"github.com/sprucehealth/graphql/gqlerrors"
 	"google.golang.org/grpc"
 )
 
@@ -48,6 +50,13 @@ type verifyPhoneNumberOutput struct {
 	Message          string `json:"message"`
 }
 
+type verifyPhoneNumberInput struct {
+	ClientMutationID      string `gql:"clientMutationId"`
+	UUID                  string `gql:"uuid"`
+	PhoneNumber           string `gql:"phoneNumber"`
+	AccountInviteClientID string `gql:"accountInviteClientID"`
+}
+
 var verifyPhoneNumberInputType = graphql.NewInputObject(graphql.InputObjectConfig{
 	Name: "VerifyPhoneNumberInput",
 	Fields: graphql.InputObjectConfigFieldMap{
@@ -57,6 +66,7 @@ var verifyPhoneNumberInputType = graphql.NewInputObject(graphql.InputObjectConfi
 			Type:        graphql.NewNonNull(graphql.String),
 			Description: "Specify the phone number to send a verification code to.",
 		},
+		"accountInviteClientID": accountInviteClientInputType,
 	},
 })
 
@@ -105,11 +115,19 @@ func makeVerifyPhoneNumberResolve(forAccountCreation bool) func(p graphql.Resolv
 		ctx := p.Context
 
 		input := p.Args["input"].(map[string]interface{})
-		mutationID, _ := input["clientMutationId"].(string)
-		pn, err := phone.ParseNumber(input["phoneNumber"].(string))
+		var in verifyPhoneNumberInput
+		if err := gqldecode.Decode(input, &in); err != nil {
+			switch err := err.(type) {
+			case gqldecode.ErrValidationFailed:
+				return nil, gqlerrors.FormatError(fmt.Errorf("%s is invalid: %s", err.Field, err.Reason))
+			}
+			return nil, errors.InternalError(ctx, err)
+		}
+
+		pn, err := phone.ParseNumber(in.PhoneNumber)
 		if err != nil {
 			return &verifyPhoneNumberOutput{
-				ClientMutationID: mutationID,
+				ClientMutationID: in.ClientMutationID,
 				Success:          false,
 				ErrorCode:        verifyPhoneNumberErrorCodeInvalidPhone,
 				ErrorMessage:     "Please use a valid U.S. phone number",
@@ -132,7 +150,7 @@ func makeVerifyPhoneNumberResolve(forAccountCreation bool) func(p graphql.Resolv
 			for _, c := range ent.Contacts {
 				if c.Provisioned && c.Value == pn.String() {
 					return &verifyPhoneNumberOutput{
-						ClientMutationID: mutationID,
+						ClientMutationID: in.ClientMutationID,
 						Success:          false,
 						ErrorCode:        verifyPhoneNumberErrorCodeInvalidPhone,
 						ErrorMessage:     "Please use a non-Spruce number to create an account with.",
@@ -143,7 +161,7 @@ func makeVerifyPhoneNumberResolve(forAccountCreation bool) func(p graphql.Resolv
 
 		// Provided phone number must match what was provided during invite if here through invite
 		if forAccountCreation {
-			inv, _, err := svc.inviteAndAttributionInfo(ctx)
+			inv, _, err := svc.inviteAndAttributionInfo(ctx, in.AccountInviteClientID)
 			if err != nil {
 				return nil, errors.InternalError(ctx, err)
 			}
@@ -153,7 +171,7 @@ func makeVerifyPhoneNumberResolve(forAccountCreation bool) func(p graphql.Resolv
 					col := inv.GetColleague().Colleague
 					if col.PhoneNumber != pn.String() {
 						return &verifyPhoneNumberOutput{
-							ClientMutationID: mutationID,
+							ClientMutationID: in.ClientMutationID,
 							Success:          false,
 							ErrorCode:        verifyPhoneNumberErrorCodeInvitePhoneMismatch,
 							ErrorMessage:     "The phone number must match the one that was in your invite.",
@@ -163,7 +181,7 @@ func makeVerifyPhoneNumberResolve(forAccountCreation bool) func(p graphql.Resolv
 					if inv.GetPatient().InviteVerificationRequirement == invite.VERIFICATION_REQUIREMENT_PHONE_MATCH {
 						if inv.GetPatient().Patient.PhoneNumber != pn.String() {
 							return &verifyPhoneNumberOutput{
-								ClientMutationID: mutationID,
+								ClientMutationID: in.ClientMutationID,
 								Success:          false,
 								ErrorCode:        verifyPhoneNumberErrorCodeInvitePhoneMismatch,
 								ErrorMessage:     "The phone number must match the one that was in your invite.",
@@ -188,7 +206,7 @@ func makeVerifyPhoneNumberResolve(forAccountCreation bool) func(p graphql.Resolv
 			return nil, errors.InternalError(ctx, err)
 		}
 		return &verifyPhoneNumberOutput{
-			ClientMutationID: mutationID,
+			ClientMutationID: in.ClientMutationID,
 			Success:          true,
 			Token:            token,
 			Message:          fmt.Sprintf("A verification code has been sent to %s", nicePhone),
@@ -233,13 +251,22 @@ var checkVerificationCodeInputType = graphql.NewInputObject(
 	graphql.InputObjectConfig{
 		Name: "CheckVerificationCodeInput",
 		Fields: graphql.InputObjectConfigFieldMap{
-			"clientMutationId": newClientMutationIDInputField(),
-			"uuid":             newUUIDInputField(),
-			"token":            &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-			"code":             &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"clientMutationId":      newClientMutationIDInputField(),
+			"uuid":                  newUUIDInputField(),
+			"token":                 &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"code":                  &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"accountInviteClientID": accountInviteClientInputType,
 		},
 	},
 )
+
+type CheckVerificationCodeInput struct {
+	ClientMutationID      string `gql:"clientMutationId"`
+	UUID                  string `gql:"uuid"`
+	Token                 string `gql:"token"`
+	Code                  string `gql:"code"`
+	AccountInviteClientID string `gql:"accountInviteClientID"`
+}
 
 var verifiedEntityInfo = graphql.NewObject(
 	graphql.ObjectConfig{
@@ -281,22 +308,27 @@ var checkVerificationCodeMutation = &graphql.Field{
 		ctx := p.Context
 
 		input := p.Args["input"].(map[string]interface{})
-		mutationID, _ := input["clientMutationId"].(string)
-		token := input["token"].(string)
-		code := input["code"].(string)
+		var in CheckVerificationCodeInput
+		if err := gqldecode.Decode(input, &in); err != nil {
+			switch err := err.(type) {
+			case gqldecode.ErrValidationFailed:
+				return nil, gqlerrors.FormatError(fmt.Errorf("%s is invalid: %s", err.Field, err.Reason))
+			}
+			return nil, errors.InternalError(ctx, err)
+		}
 
-		golog.Debugf("Checking token %s against code %s", token, code)
-		resp, err := ram.CheckVerificationCode(ctx, token, code)
+		golog.Debugf("Checking token %s against code %s", in.Token, in.Code)
+		resp, err := ram.CheckVerificationCode(ctx, in.Token, in.Code)
 		if grpc.Code(err) == auth.BadVerificationCode {
 			return &checkVerificationCodeOutput{
-				ClientMutationID: mutationID,
+				ClientMutationID: in.ClientMutationID,
 				Success:          false,
 				ErrorCode:        checkVerificationCodeErrorCodeFailure,
 				ErrorMessage:     "The entered code is incorrect.",
 			}, nil
 		} else if grpc.Code(err) == auth.VerificationCodeExpired {
 			return &checkVerificationCodeOutput{
-				ClientMutationID: mutationID,
+				ClientMutationID: in.ClientMutationID,
 				Success:          false,
 				ErrorCode:        checkVerificationCodeErrorCodeExpired,
 				ErrorMessage:     "The entered code has expired. Please request a new code.",
@@ -310,7 +342,7 @@ var checkVerificationCodeMutation = &graphql.Field{
 		// then send back the parked entity info
 		var verifiedEntityInfo *models.VerifiedEntityInfo
 		if validate.Email(resp.Value) {
-			inv, _, err := svc.inviteAndAttributionInfo(ctx)
+			inv, _, err := svc.inviteAndAttributionInfo(ctx, in.AccountInviteClientID)
 			if err != nil {
 				return nil, errors.InternalError(ctx, err)
 			}
@@ -339,7 +371,7 @@ var checkVerificationCodeMutation = &graphql.Field{
 		}
 
 		return &checkVerificationCodeOutput{
-			ClientMutationID:   mutationID,
+			ClientMutationID:   in.ClientMutationID,
 			Success:            true,
 			Account:            transformAccountToResponse(resp.Account),
 			VerifiedEntityInfo: verifiedEntityInfo,
