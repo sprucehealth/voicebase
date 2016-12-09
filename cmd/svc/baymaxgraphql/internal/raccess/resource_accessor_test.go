@@ -234,8 +234,7 @@ func TestCreateAccount(t *testing.T) {
 
 func expectOrgsForEntity(rat *ratest, entityID, orgID string) {
 	rat.dC.Expect(mock.NewExpectation(rat.dC.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: entityID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -261,8 +260,7 @@ func expectOrgsForEntity(rat *ratest, entityID, orgID string) {
 
 func expectOrgsForEntityForExternalID(rat *ratest, externalID, orgID string) {
 	rat.dC.Expect(mock.NewExpectation(rat.dC.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+		Key: &directory.LookupEntitiesRequest_ExternalID{
 			ExternalID: externalID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -710,8 +708,7 @@ func TestEntity(t *testing.T) {
 	expectOrgsForEntity(rat, entityID, orgID)
 	expectOrgsForEntityForExternalID(rat, accountID, orgID)
 	rat.dC.Expect(mock.NewExpectation(rat.dC.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: entityID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -723,8 +720,7 @@ func TestEntity(t *testing.T) {
 	}}, nil))
 
 	resp, err := Entity(ctx, rat.ra, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: entityID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -759,8 +755,7 @@ func TestEntityNotAuthorized(t *testing.T) {
 	expectOrgsForEntityForExternalID(rat, accountID, orgID2)
 
 	resp, err := Entity(ctx, rat.ra, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: entityID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -789,8 +784,7 @@ func TestMarkThreadAsRead(t *testing.T) {
 	defer rat.finish()
 
 	rat.dC.Expect(mock.NewExpectation(rat.dC.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+		Key: &directory.LookupEntitiesRequest_AccountID{
 			AccountID: accountID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -863,8 +857,7 @@ func TestMarkThreadAsRead_NotAuthorized(t *testing.T) {
 	defer rat.finish()
 
 	rat.dC.Expect(mock.NewExpectation(rat.dC.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+		Key: &directory.LookupEntitiesRequest_AccountID{
 			AccountID: accountID,
 		},
 		RequestedInformation: &directory.RequestedInformation{

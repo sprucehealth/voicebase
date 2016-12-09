@@ -165,8 +165,7 @@ func testSendMessageSMS(t *testing.T, revealSender, entityHasDefaultNumber bool)
 		},
 	}
 	md.Expect(mock.NewExpectation(md.LookupEntities, ctx, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: orgEntity.ID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -180,8 +179,7 @@ func testSendMessageSMS(t *testing.T, revealSender, entityHasDefaultNumber bool)
 
 	if revealSender {
 		md.Expect(mock.NewExpectation(md.LookupEntities, ctx, &directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			Key: &directory.LookupEntitiesRequest_EntityID{
 				EntityID: providerEntity.ID,
 			},
 			RequestedInformation: &directory.RequestedInformation{
@@ -359,8 +357,7 @@ func testSendingEmail(t *testing.T, revealSender bool) {
 		},
 	}
 	md.Expect(mock.NewExpectation(md.LookupEntities, ctx, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: orgEntity.ID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -374,8 +371,7 @@ func testSendingEmail(t *testing.T, revealSender bool) {
 
 	if revealSender {
 		md.Expect(mock.NewExpectation(md.LookupEntities, ctx, &directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			Key: &directory.LookupEntitiesRequest_EntityID{
 				EntityID: providerEntity.ID,
 			},
 			RequestedInformation: &directory.RequestedInformation{
@@ -562,8 +558,7 @@ func TestSendMessage_Multiple(t *testing.T) {
 		},
 	}
 	md.Expect(mock.NewExpectation(md.LookupEntities, ctx, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: orgEntity.ID,
 		},
 		RequestedInformation: &directory.RequestedInformation{

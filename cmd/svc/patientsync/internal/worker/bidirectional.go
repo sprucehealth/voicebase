@@ -15,8 +15,7 @@ import (
 // patient in an external system, and syncs the update from Spruce to the external system
 func SyncEntityUpdate(dirCLI directory.DirectoryClient, dl dal.DAL, ev *directory.EntityUpdatedEvent) error {
 	entity, err := directory.SingleEntity(context.Background(), dirCLI, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: ev.EntityID,
 		},
 		RequestedInformation: &directory.RequestedInformation{

@@ -173,8 +173,7 @@ func testSuccessfulPost(t *testing.T, mclock clock.Clock, orgCreationTime int64)
 	}
 
 	mdir.Expect(mock.NewExpectation(mdir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: providerEntityID,
 		},
 	}).WithReturns(&directory.LookupEntitiesResponse{

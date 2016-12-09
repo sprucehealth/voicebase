@@ -196,8 +196,7 @@ var callEntityMutation = &graphql.Field{
 		// Lookup the callee entity and make sure the destination phone number is in the contacts
 
 		calleeEnt, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			Key: &directory.LookupEntitiesRequest_EntityID{
 				EntityID: in.DestinationEntityID,
 			},
 			RequestedInformation: &directory.RequestedInformation{

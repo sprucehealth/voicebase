@@ -143,8 +143,7 @@ var updateThreadMutation = &graphql.Field{
 		// TODO: currently assuming that the person updating the thread is in the same org as the thread.
 		//       This is safe for now, but possibly may not be true in the future.
 		ent, err := raccess.EntityInOrgForAccountID(ctx, ram, &directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+			Key: &directory.LookupEntitiesRequest_ExternalID{
 				ExternalID: acc.ID,
 			},
 			RequestedInformation: &directory.RequestedInformation{

@@ -555,22 +555,22 @@ func (m *resourceAccessor) Entities(ctx context.Context, req *directory.LookupEn
 			return nil, errors.ErrNotAuthenticated(ctx)
 		}
 
-		switch req.LookupKeyType {
-		case directory.LookupEntitiesRequest_ENTITY_ID:
-			if err := m.canAccessResource(ctx, req.GetEntityID(), m.orgsForEntity); err != nil {
+		switch key := req.Key.(type) {
+		case *directory.LookupEntitiesRequest_EntityID:
+			if err := m.canAccessResource(ctx, key.EntityID, m.orgsForEntity); err != nil {
 				return nil, err
 			}
-		case directory.LookupEntitiesRequest_EXTERNAL_ID:
-			if req.GetExternalID() != acc.ID {
+		case *directory.LookupEntitiesRequest_ExternalID:
+			if key.ExternalID != acc.ID {
 				return nil, errors.ErrNotAuthenticated(ctx)
 			}
-		case directory.LookupEntitiesRequest_ACCOUNT_ID:
-			if req.GetAccountID() != acc.ID {
+		case *directory.LookupEntitiesRequest_AccountID:
+			if key.AccountID != acc.ID {
 				return nil, errors.ErrNotAuthenticated(ctx)
 			}
-		case directory.LookupEntitiesRequest_BATCH_ENTITY_ID:
+		case *directory.LookupEntitiesRequest_BatchEntityID:
 			// ensure that individual requesting can access each of the entities in the request
-			for _, entityID := range req.GetBatchEntityID().IDs {
+			for _, entityID := range key.BatchEntityID.IDs {
 				if err := m.canAccessResource(ctx, entityID, m.orgsForEntity); err != nil {
 					return nil, err
 				}
@@ -616,8 +616,7 @@ func (m *resourceAccessor) MarkThreadsAsRead(ctx context.Context, req *threading
 	}
 
 	entities, err := m.Entities(ctx, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+		Key: &directory.LookupEntitiesRequest_AccountID{
 			AccountID: acc.ID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -709,8 +708,7 @@ func (m *resourceAccessor) Profile(ctx context.Context, req *directory.ProfileRe
 
 	// Leverage the Entity call for cache management
 	owningEnt, err := Entity(ctx, m, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: res.Profile.EntityID,
 		},
 	})
@@ -874,8 +872,7 @@ func (m *resourceAccessor) Threads(ctx context.Context, req *threading.ThreadsRe
 	}
 
 	entities, err := m.Entities(ctx, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+		Key: &directory.LookupEntitiesRequest_AccountID{
 			AccountID: acc.ID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -971,8 +968,7 @@ func (m *resourceAccessor) ThreadFollowers(ctx context.Context, orgID string, re
 		return nil, errors.ErrNotAuthorized(ctx, req.ThreadID)
 	}
 	ent, err := EntityInOrgForAccountID(ctx, m, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+		Key: &directory.LookupEntitiesRequest_ExternalID{
 			ExternalID: acc.ID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -1009,8 +1005,7 @@ func (m *resourceAccessor) ThreadFollowers(ctx context.Context, orgID string, re
 	}
 
 	leres, err := m.directory.LookupEntities(ctx, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
+		Key: &directory.LookupEntitiesRequest_BatchEntityID{
 			BatchEntityID: &directory.IDList{
 				IDs: res.FollowerEntityIDs,
 			},
@@ -1039,8 +1034,7 @@ func (m *resourceAccessor) ThreadMembers(ctx context.Context, orgID string, req 
 		return nil, errors.ErrNotAuthorized(ctx, req.ThreadID)
 	}
 	ent, err := EntityInOrgForAccountID(ctx, m, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+		Key: &directory.LookupEntitiesRequest_ExternalID{
 			ExternalID: acc.ID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -1073,8 +1067,7 @@ func (m *resourceAccessor) ThreadMembers(ctx context.Context, orgID string, req 
 	}
 
 	leres, err := m.directory.LookupEntities(ctx, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
+		Key: &directory.LookupEntitiesRequest_BatchEntityID{
 			BatchEntityID: &directory.IDList{
 				IDs: entIDs,
 			},
@@ -1182,8 +1175,7 @@ func ProfileAllowEdit(ctx context.Context, ram ResourceAccessor, profileEntityID
 		return false
 	}
 	callerEnts, err := ram.Entities(ctx, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+		Key: &directory.LookupEntitiesRequest_AccountID{
 			AccountID: acc.ID,
 		},
 		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
@@ -1203,8 +1195,7 @@ func ProfileAllowEdit(ctx context.Context, ram ResourceAccessor, profileEntityID
 
 	// If we aren't the owner we need to see if the entity is an org and then check membership
 	maybeOrgEnt, err := Entity(ctx, ram, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: profileEntityID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -1237,8 +1228,7 @@ func (m *resourceAccessor) UpdateProfile(ctx context.Context, req *directory.Upd
 	// If no entity ID is provided then lookup the profile so we can authorize the edit
 	if owningEntityID == "" {
 		res, err := m.Profile(ctx, &directory.ProfileRequest{
-			LookupKeyType: directory.ProfileRequest_PROFILE_ID,
-			LookupKeyOneof: &directory.ProfileRequest_ProfileID{
+			Key: &directory.ProfileRequest_ProfileID{
 				ProfileID: req.ProfileID,
 			},
 		})
@@ -1447,8 +1437,7 @@ func (m *resourceAccessor) AssertIsEntity(ctx context.Context, entityID string) 
 		return nil, errors.ErrNotAuthenticated(ctx)
 	}
 	ent, err := directory.SingleEntity(ctx, m.directory, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: entityID,
 		},
 	})
@@ -1518,8 +1507,7 @@ func (m *resourceAccessor) canAccessResource(ctx context.Context, resourceID str
 func (m *resourceAccessor) orgsForEntity(ctx context.Context, entityID string) (map[string]struct{}, error) {
 	// Don't do any status checks. Authorization is for all existing resources
 	res, err := m.directory.LookupEntities(ctx, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: entityID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -1541,8 +1529,7 @@ func (m *resourceAccessor) orgsForEntityForExternalID(ctx context.Context, exter
 	// Don't do any status checks. Authorization is for all existing resources
 
 	res, err := m.directory.LookupEntities(ctx, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+		Key: &directory.LookupEntitiesRequest_ExternalID{
 			ExternalID: externalID,
 		},
 		RequestedInformation: &directory.RequestedInformation{

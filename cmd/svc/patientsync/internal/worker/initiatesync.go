@@ -25,7 +25,7 @@ type initiateSync struct {
 
 // NewInitiateSync returns a worker that is responsible for processing messages
 // to intiate the sync process for a particular organization.
-func NewInitateSync(
+func NewInitiateSync(
 	dl dal.DAL,
 	syncEventsQueueURL, initiateSyncQueueURL string,
 	sqsAPI sqsiface.SQSAPI,

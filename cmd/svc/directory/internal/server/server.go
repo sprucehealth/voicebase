@@ -88,7 +88,7 @@ func filterToMembersOnly(pbEntities []*directory.Entity, memberOfEntity string) 
 
 func (s *server) LookupEntities(ctx context.Context, in *directory.LookupEntitiesRequest) (out *directory.LookupEntitiesResponse, err error) {
 	var entityIDs []dal.EntityID
-	switch key := in.LookupKeyOneof.(type) {
+	switch key := in.Key.(type) {
 	case *directory.LookupEntitiesRequest_AccountID:
 		// TODO: Actually use the account_id field on the table and don't do this double lookup
 		externalEntityIDs, err := s.dl.ExternalEntityIDs(key.AccountID)
@@ -124,7 +124,7 @@ func (s *server) LookupEntities(ctx context.Context, in *directory.LookupEntitie
 			entityIDs[i] = eid
 		}
 	default:
-		return nil, errors.Errorf("Unknown lookup key type %T", in.LookupKeyOneof)
+		return nil, errors.Errorf("Unknown lookup key type %T", in.Key)
 	}
 	statuses, err := transformEntityStatuses(in.Statuses)
 	if err != nil {
@@ -984,9 +984,9 @@ func (s *server) DeleteEntity(ctx context.Context, in *directory.DeleteEntityReq
 
 func (s *server) Profile(ctx context.Context, in *directory.ProfileRequest) (*directory.ProfileResponse, error) {
 	var profile *dal.EntityProfile
-	switch in.LookupKeyType {
-	case directory.ProfileRequest_ENTITY_ID:
-		entID, err := dal.ParseEntityID(in.GetEntityID())
+	switch key := in.Key.(type) {
+	case *directory.ProfileRequest_EntityID:
+		entID, err := dal.ParseEntityID(key.EntityID)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
@@ -996,8 +996,8 @@ func (s *server) Profile(ctx context.Context, in *directory.ProfileRequest) (*di
 		} else if err != nil {
 			return nil, errors.Trace(err)
 		}
-	case directory.ProfileRequest_PROFILE_ID:
-		profileID, err := dal.ParseEntityProfileID(in.GetProfileID())
+	case *directory.ProfileRequest_ProfileID:
+		profileID, err := dal.ParseEntityProfileID(key.ProfileID)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
@@ -1008,10 +1008,10 @@ func (s *server) Profile(ctx context.Context, in *directory.ProfileRequest) (*di
 			return nil, errors.Trace(err)
 		}
 	default:
-		return nil, errors.Errorf("Unknown lookup key type %s", in.LookupKeyType.String())
+		return nil, errors.Errorf("Unknown lookup key type %T", key)
 	}
 	if profile == nil {
-		return nil, errors.Errorf("No profile set after lookup for key type %s", in.LookupKeyType.String())
+		return nil, errors.Errorf("No profile set after lookup for key type %T", in.Key)
 	}
 	return &directory.ProfileResponse{
 		Profile: transformEntityProfileToResponse(profile),
@@ -1093,8 +1093,7 @@ func (s *server) UpdateProfile(ctx context.Context, in *directory.UpdateProfileR
 
 	// Reread our profile to get any triggered modified times
 	profileResp, err := s.Profile(ctx, &directory.ProfileRequest{
-		LookupKeyType: directory.ProfileRequest_PROFILE_ID,
-		LookupKeyOneof: &directory.ProfileRequest_ProfileID{
+		Key: &directory.ProfileRequest_ProfileID{
 			ProfileID: pID.String(),
 		},
 	})

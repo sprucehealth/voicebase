@@ -417,8 +417,7 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 	orgName := organizationName
 	if inv != nil {
 		oe, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			Key: &directory.LookupEntitiesRequest_EntityID{
 				EntityID: orgEntityID,
 			},
 			Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},

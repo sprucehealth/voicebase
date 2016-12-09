@@ -223,8 +223,7 @@ var threadType = graphql.NewObject(
 						return []*models.CallableIdentity{}, nil
 					}
 					ent, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
-						LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-						LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+						Key: &directory.LookupEntitiesRequest_EntityID{
 							EntityID: th.PrimaryEntityID,
 						},
 						RequestedInformation: &directory.RequestedInformation{
@@ -382,8 +381,7 @@ var threadType = graphql.NewObject(
 
 					ram := raccess.ResourceAccess(p)
 					ent, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
-						LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-						LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+						Key: &directory.LookupEntitiesRequest_EntityID{
 							EntityID: th.PrimaryEntityID,
 						},
 						RequestedInformation: &directory.RequestedInformation{
@@ -427,8 +425,7 @@ var threadType = graphql.NewObject(
 					ram := raccess.ResourceAccess(p)
 
 					ent, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
-						LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-						LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+						Key: &directory.LookupEntitiesRequest_EntityID{
 							EntityID: th.PrimaryEntityID,
 						},
 						RequestedInformation: &directory.RequestedInformation{
@@ -492,8 +489,7 @@ var threadType = graphql.NewObject(
 
 					ram := raccess.ResourceAccess(p)
 					pe, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
-						LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-						LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+						Key: &directory.LookupEntitiesRequest_EntityID{
 							EntityID: th.PrimaryEntityID,
 						},
 						RequestedInformation: &directory.RequestedInformation{
@@ -687,8 +683,7 @@ func addressableEntitiesForThread(ctx context.Context, ram raccess.ResourceAcces
 		}
 
 		orgEntity, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			Key: &directory.LookupEntitiesRequest_EntityID{
 				EntityID: orgID,
 			},
 			RequestedInformation: &directory.RequestedInformation{

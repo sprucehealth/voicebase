@@ -107,8 +107,7 @@ func (c *migrateVMSettingCmd) run(args []string) error {
 	sprucePhoneNumbers := make(map[string]string, len(orgIDs))
 	for _, orgID := range orgIDs {
 		entity, err := directory.SingleEntity(context.Background(), c.directoryCli, &directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			Key: &directory.LookupEntitiesRequest_EntityID{
 				EntityID: orgID,
 			},
 			RootTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},

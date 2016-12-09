@@ -113,8 +113,7 @@ var createVideoCallMutation = &graphql.Field{
 		}
 
 		caller, err := raccess.EntityInOrgForAccountID(ctx, ram, &directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+			Key: &directory.LookupEntitiesRequest_ExternalID{
 				ExternalID: acc.ID,
 			},
 			RequestedInformation: &directory.RequestedInformation{
@@ -131,8 +130,7 @@ var createVideoCallMutation = &graphql.Field{
 		}
 
 		recipient, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			Key: &directory.LookupEntitiesRequest_EntityID{
 				EntityID: in.RecipientCallEndpointIDs[0],
 			},
 			Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},

@@ -115,8 +115,7 @@ func TestCreateEmptyThread_Team(t *testing.T) {
 		Type:               models.ThreadTypeTeam,
 	}
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
+		Key: &directory.LookupEntitiesRequest_BatchEntityID{
 			BatchEntityID: &directory.IDList{
 				IDs: []string{"entity_1", "entity_2"},
 			},
@@ -148,8 +147,7 @@ func TestCreateEmptyThread_Team(t *testing.T) {
 	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{thid}).WithReturns([]*models.Thread{th2}, nil))
 
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
+		Key: &directory.LookupEntitiesRequest_BatchEntityID{
 			BatchEntityID: &directory.IDList{
 				IDs: []string{"entity_1", "entity_2"},
 			},
@@ -252,8 +250,7 @@ func TestCreateEmptyThread_SecureExternal(t *testing.T) {
 	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{thid}).WithReturns([]*models.Thread{th2}, nil))
 
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
+		Key: &directory.LookupEntitiesRequest_BatchEntityID{
 			BatchEntityID: &directory.IDList{
 				IDs: []string{"entity_org1"},
 			},
@@ -391,8 +388,7 @@ func TestCreateThread(t *testing.T) {
 	// Update saved query indexes
 
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
+		Key: &directory.LookupEntitiesRequest_BatchEntityID{
 			BatchEntityID: &directory.IDList{
 				IDs: []string{"entity_org1"},
 			},
@@ -568,8 +564,7 @@ func TestPostMessage(t *testing.T) {
 			{ThreadID: th1id, EntityID: "entity_org", Member: true},
 		}, nil))
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
+		Key: &directory.LookupEntitiesRequest_BatchEntityID{
 			BatchEntityID: &directory.IDList{
 				IDs: []string{"entity_org"},
 			},
@@ -882,8 +877,7 @@ func TestPostMessage_Linked_PrependSender(t *testing.T) {
 	}, nil))
 
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: "entity_1",
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -1049,8 +1043,7 @@ func TestCreateLinkedThreads(t *testing.T) {
 	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{th1id, th2id}).WithReturns([]*models.Thread{th1res, th2res}, nil))
 
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
+		Key: &directory.LookupEntitiesRequest_BatchEntityID{
 			BatchEntityID: &directory.IDList{
 				IDs: []string{"entity_org1"},
 			},
@@ -1082,8 +1075,7 @@ func TestCreateLinkedThreads(t *testing.T) {
 		{ThreadID: th1id, SavedQueryID: sqid1, Timestamp: now}}))
 
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
+		Key: &directory.LookupEntitiesRequest_BatchEntityID{
 			BatchEntityID: &directory.IDList{
 				IDs: []string{"o2"},
 			},
@@ -1239,8 +1231,7 @@ func TestQueryThreads(t *testing.T) {
 	// Adhoc query
 
 	dm.Expect(mock.NewExpectation(dm.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: peID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -1427,8 +1418,7 @@ func TestQueryThreads(t *testing.T) {
 	dl.Expect(mock.NewExpectation(dl.SavedQuery, sqID).WithReturns(&models.SavedQuery{ID: sqID, Query: query, EntityID: peID, Total: 11, Unread: 6}, nil))
 
 	dm.Expect(mock.NewExpectation(dm.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: peID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -1588,8 +1578,7 @@ func TestThreadWithViewer(t *testing.T) {
 	created := time.Now()
 
 	dm.Expect(mock.NewExpectation(dm.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: entID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -1659,8 +1648,7 @@ func TestThreadWithViewerNoMembership(t *testing.T) {
 	created := time.Now()
 
 	dm.Expect(mock.NewExpectation(dm.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: entID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -1720,8 +1708,7 @@ func TestThreadWithViewerNoMessages(t *testing.T) {
 	created := time.Now()
 
 	dm.Expect(mock.NewExpectation(dm.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: entID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -1786,8 +1773,7 @@ func TestMarkThreadAsRead(t *testing.T) {
 	srv := NewThreadsServer(clk, dl, nil, "arn", nil, dir, sm, mm, nil, nil, "WEBDOMAIN")
 
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: eID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -1920,8 +1906,7 @@ func TestMarkThreadsAsRead_NotSeen(t *testing.T) {
 	srv := NewThreadsServer(clk, dl, nil, "arn", nil, dir, sm, mm, nil, nil, "WEBDOMAIN")
 
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: eID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -2046,8 +2031,7 @@ func TestMarkThreadAsReadNilLastView(t *testing.T) {
 	srv := NewThreadsServer(clk, dl, nil, "arn", nil, dir, sm, mm, nil, nil, "WEBDOMAIN")
 
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: eID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -2187,8 +2171,7 @@ func TestMarkThreadAsReadExistingMembership(t *testing.T) {
 	srv := NewThreadsServer(clk, dl, nil, "arn", nil, dir, sm, mm, nil, nil, "WEBDOMAIN")
 
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: eID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -2339,8 +2322,7 @@ func expectIsAlertAllMessagesEnabled(sm *mocksettings.Client, entityID string, a
 
 func expectResolveInternalEntities(directoryClient *mockdirectory.Client, entIDs []string, ret *directory.LookupEntitiesResponse, retErr error) {
 	directoryClient.Expect(mock.NewExpectation(directoryClient.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
+		Key: &directory.LookupEntitiesRequest_BatchEntityID{
 			BatchEntityID: &directory.IDList{
 				IDs: entIDs,
 			},
@@ -2820,8 +2802,7 @@ func TestUpdateThread(t *testing.T) {
 	}, nil))
 
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: "entity_1",
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -2848,8 +2829,7 @@ func TestUpdateThread(t *testing.T) {
 	}, nil))
 
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
+		Key: &directory.LookupEntitiesRequest_BatchEntityID{
 			BatchEntityID: &directory.IDList{
 				IDs: []string{"entity_1", "entity_4"},
 			},
@@ -2899,8 +2879,7 @@ func TestUpdateThread(t *testing.T) {
 		{ThreadID: tID, EntityID: "entity_4", Member: true},
 	}, nil))
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
+		Key: &directory.LookupEntitiesRequest_BatchEntityID{
 			BatchEntityID: &directory.IDList{
 				IDs: []string{"entity_1", "entity_4"},
 			},
@@ -3068,8 +3047,7 @@ func TestDeleteThread(t *testing.T) {
 
 	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{tID}).WithReturns([]*models.Thread{{ID: tID, PrimaryEntityID: peID}}, nil))
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: peID,
 		},
 		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
@@ -3247,8 +3225,7 @@ func TestDeleteThreadPEInternal(t *testing.T) {
 
 	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{tID}).WithReturns([]*models.Thread{{ID: tID, PrimaryEntityID: peID}}, nil))
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: peID,
 		},
 		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},

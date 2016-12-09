@@ -57,8 +57,7 @@ func TestTriage(t *testing.T) {
 	}, nil))
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: entityID,
 		},
 		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
@@ -90,8 +89,7 @@ func TestTriage(t *testing.T) {
 	}, nil))
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: orgID,
 		},
 		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
@@ -106,8 +104,7 @@ func TestTriage(t *testing.T) {
 	}, nil))
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: entityID,
 		},
 		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},

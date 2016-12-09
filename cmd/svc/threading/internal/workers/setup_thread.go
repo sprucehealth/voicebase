@@ -1,10 +1,9 @@
 package workers
 
 import (
+	"context"
 	"encoding/json"
 	"time"
-
-	"context"
 
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 	"github.com/sprucehealth/backend/libs/awsutil"

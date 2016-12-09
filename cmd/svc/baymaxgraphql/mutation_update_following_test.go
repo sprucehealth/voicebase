@@ -23,8 +23,7 @@ func TestUpdateFollowingForThreadsMutation(t *testing.T) {
 	ctx = gqlctx.WithAccount(ctx, acc)
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+		Key: &directory.LookupEntitiesRequest_ExternalID{
 			ExternalID: acc.ID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -65,8 +64,7 @@ func TestUpdateFollowingForThreadsMutation(t *testing.T) {
 	}, nil))
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: "org",
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -85,8 +83,7 @@ func TestUpdateFollowingForThreadsMutation(t *testing.T) {
 	}, nil))
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+		Key: &directory.LookupEntitiesRequest_ExternalID{
 			ExternalID: acc.ID,
 		},
 		RequestedInformation: &directory.RequestedInformation{

@@ -132,8 +132,7 @@ func connectVendorStripeAccount(p graphql.ResolveParams, in integrateAccountInpu
 	acc := gqlctx.Account(ctx)
 
 	ent, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: in.EntityID,
 		},
 	})

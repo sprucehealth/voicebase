@@ -55,8 +55,7 @@ func TestScheduleMessage(t *testing.T) {
 
 	// Looking up the primary entity on the thread
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: extEntID,
 		},
 		RequestedInformation: &directory.RequestedInformation{

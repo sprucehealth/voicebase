@@ -59,8 +59,7 @@ func (c *deleteContactCmd) run(args []string) error {
 	}
 
 	req := &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: *entityID,
 		},
 		RequestedInformation: &directory.RequestedInformation{

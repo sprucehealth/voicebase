@@ -253,8 +253,7 @@ var settingsQuery = &graphql.Field{
 		// out in the wild.
 		if key == excommsSettings.ConfigKeySendCallsToVoicemail {
 			entity, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
-				LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-				LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+				Key: &directory.LookupEntitiesRequest_EntityID{
 					EntityID: nodeID,
 				},
 				RequestedInformation: &directory.RequestedInformation{

@@ -49,8 +49,7 @@ func TestNodeQuery(t *testing.T) {
 	}
 
 	ra.Expect(mock.NewExpectation(ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: id,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -107,8 +106,7 @@ func TestNodeQuery(t *testing.T) {
 	}
 
 	ra.Expect(mock.NewExpectation(ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: id,
 		},
 		RequestedInformation: &directory.RequestedInformation{

@@ -111,8 +111,7 @@ func TestProvisionPhone(t *testing.T) {
 	}))
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+		Key: &directory.LookupEntitiesRequest_AccountID{
 			AccountID: acc.ID,
 		},
 		RequestedInformation: &directory.RequestedInformation{

@@ -1,9 +1,8 @@
 package cache
 
 import (
-	"sort"
-
 	"context"
+	"sort"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/samuel/go-metrics/metrics"
@@ -168,8 +167,8 @@ func normalizeLookupEntitiesRequest(r *directory.LookupEntitiesRequest) {
 	if r.RequestedInformation != nil {
 		sort.Sort(EntityInformationSlice(r.RequestedInformation.EntityInformation))
 	}
-	if r.LookupKeyType == directory.LookupEntitiesRequest_BATCH_ENTITY_ID {
-		sort.Strings(r.GetBatchEntityID().IDs)
+	if batch, ok := r.Key.(*directory.LookupEntitiesRequest_BatchEntityID); ok {
+		sort.Strings(batch.BatchEntityID.IDs)
 	}
 }
 

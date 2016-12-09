@@ -1,9 +1,8 @@
 package service
 
 import (
-	"fmt"
-
 	"context"
+	"fmt"
 
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/dal"
 	"github.com/sprucehealth/backend/libs/conc"
@@ -60,8 +59,7 @@ func (s *service) IsPublic(ctx context.Context, mediaID dal.MediaID) (bool, erro
 
 func (s *service) entitiesForAccountID(ctx context.Context, accountID string) ([]*directory.Entity, error) {
 	resp, err := s.directory.LookupEntities(ctx, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+		Key: &directory.LookupEntitiesRequest_AccountID{
 			AccountID: accountID,
 		},
 		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
@@ -99,8 +97,7 @@ func (s *service) canAccessVisitMedia(ctx context.Context, visitID, accountID st
 
 func (s *service) canAccessOrganizationMedia(ctx context.Context, organizationID, accountID string) error {
 	resp, err := s.directory.LookupEntities(ctx, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+		Key: &directory.LookupEntitiesRequest_AccountID{
 			AccountID: accountID,
 		},
 		RequestedInformation: &directory.RequestedInformation{

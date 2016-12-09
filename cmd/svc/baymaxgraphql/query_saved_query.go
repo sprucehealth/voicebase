@@ -43,8 +43,7 @@ var savedThreadQueryType = graphql.NewObject(
 					}
 
 					ent, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
-						LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-						LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+						Key: &directory.LookupEntitiesRequest_EntityID{
 							EntityID: stq.EntityID,
 						},
 						RequestedInformation: &directory.RequestedInformation{},
@@ -107,8 +106,7 @@ var savedThreadQueryType = graphql.NewObject(
 					svc := serviceFromParams(p)
 					ram := raccess.ResourceAccess(p)
 					ent, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
-						LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-						LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+						Key: &directory.LookupEntitiesRequest_EntityID{
 							EntityID: sq.EntityID,
 						},
 						RequestedInformation: &directory.RequestedInformation{

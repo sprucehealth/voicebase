@@ -229,8 +229,7 @@ func transformThreadToResponse(ctx context.Context, ram raccess.ResourceAccessor
 		th.AllowedAttachmentMIMETypes = media.SupportedMIMETypes
 
 		entity, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			Key: &directory.LookupEntitiesRequest_EntityID{
 				EntityID: t.PrimaryEntityID,
 			},
 			Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
@@ -351,8 +350,7 @@ func threadTitle(ctx context.Context, ram raccess.ResourceAccessor, t *threading
 	}
 
 	org, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: t.OrganizationID,
 		},
 		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
@@ -376,8 +374,7 @@ func threadEmptyStateTextMarkup(ctx context.Context, ram raccess.ResourceAccesso
 	case threading.THREAD_TYPE_SECURE_EXTERNAL:
 		if viewingAccount.Type == auth.AccountType_PROVIDER {
 			esm, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
-				LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-				LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+				Key: &directory.LookupEntitiesRequest_EntityID{
 					EntityID: t.PrimaryEntityID,
 				},
 				Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
@@ -402,8 +399,7 @@ You can also make internal notes about the patient's care. These are not sent to
 			}
 		} else if viewingAccount.Type == auth.AccountType_PATIENT {
 			esm, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
-				LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-				LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+				Key: &directory.LookupEntitiesRequest_EntityID{
 					EntityID: t.OrganizationID,
 				},
 				Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
@@ -1135,8 +1131,7 @@ func transformProfileSectionsResponses(pss []*directory.ProfileSection) []*model
 func profileTitle(ctx context.Context, ram raccess.ResourceAccessor, p *directory.Profile) string {
 	// We need the owning entity to get the display title
 	ent, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: p.EntityID,
 		},
 	})

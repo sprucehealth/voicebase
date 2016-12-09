@@ -24,8 +24,7 @@ func TestExternalLinkQuery(t *testing.T) {
 	defer g.finish()
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: id,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -87,8 +86,7 @@ func TestInvitationBannerQuery_Paitent(t *testing.T) {
 		defer g.finish()
 
 		g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			Key: &directory.LookupEntitiesRequest_EntityID{
 				EntityID: id,
 			},
 			RequestedInformation: &directory.RequestedInformation{
@@ -146,8 +144,7 @@ func TestInvitationBannerQuery_Paitent(t *testing.T) {
 		defer g.finish()
 
 		g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			Key: &directory.LookupEntitiesRequest_EntityID{
 				EntityID: id,
 			},
 			RequestedInformation: &directory.RequestedInformation{
@@ -195,8 +192,7 @@ func TestPartnerIntegrations(t *testing.T) {
 	defer g.finish()
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: id,
 		},
 		RequestedInformation: &directory.RequestedInformation{

@@ -12,7 +12,7 @@ func EntityInOrgForAccountID(ctx context.Context, ram ResourceAccessor, req *dir
 	// assert that the lookup entities request is for looking up an entity
 	// via externalID
 	var accountID string
-	switch key := req.LookupKeyOneof.(type) {
+	switch key := req.Key.(type) {
 	case *directory.LookupEntitiesRequest_AccountID:
 		accountID = key.AccountID
 	case *directory.LookupEntitiesRequest_ExternalID:
@@ -49,8 +49,12 @@ func UnauthorizedEntity(ctx context.Context, ram ResourceAccessor, req *director
 
 // Entity returns a single expected entity for the directory request.
 func entity(ctx context.Context, ram ResourceAccessor, req *directory.LookupEntitiesRequest, opts ...EntityQueryOption) (*directory.Entity, error) {
-	if req.LookupKeyType != directory.LookupEntitiesRequest_ENTITY_ID && req.LookupKeyType != directory.LookupEntitiesRequest_EXTERNAL_ID {
-		return nil, errors.Errorf("Expected lookup of type %s but got %s", directory.LookupEntitiesRequest_ENTITY_ID, req.LookupKeyType)
+	switch req.Key.(type) {
+	case *directory.LookupEntitiesRequest_AccountID,
+		*directory.LookupEntitiesRequest_ExternalID,
+		*directory.LookupEntitiesRequest_EntityID:
+	default:
+		return nil, errors.Errorf("Expected lookup key of type AccountID, ExternalID, or EntityID but got %T", req)
 	}
 
 	entities, err := ram.Entities(ctx, req, opts...)

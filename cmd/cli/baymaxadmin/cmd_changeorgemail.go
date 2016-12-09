@@ -104,8 +104,7 @@ func (c *changeOrgEmailCmd) run(args []string) error {
 	// only allow updating of email address and entity if the entityID = org and there are no other provisioned
 	// pieces of contact at the org or member level
 	orgEntity, err := directory.SingleEntity(ctx, c.dirCli, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: *orgEntityID,
 		},
 		RequestedInformation: &directory.RequestedInformation{

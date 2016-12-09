@@ -94,8 +94,8 @@ var deleteThreadMutation = &graphql.Field{
 
 		if thread.Type == threading.THREAD_TYPE_SECURE_EXTERNAL {
 			// ensure that primary entity has not created account yet
-			entity, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-				LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			entity, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+				Key: &directory.LookupEntitiesRequest_EntityID{
 					EntityID: thread.PrimaryEntityID,
 				},
 				Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},

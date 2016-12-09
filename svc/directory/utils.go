@@ -34,7 +34,7 @@ func SingleEntity(ctx context.Context, client DirectoryClient, req *LookupEntiti
 		return nil, ErrEntityNotFound
 	} else if len(res.Entities) != 1 {
 		var id string
-		switch key := req.LookupKeyOneof.(type) {
+		switch key := req.Key.(type) {
 		case *LookupEntitiesRequest_EntityID:
 			id = key.EntityID
 		case *LookupEntitiesRequest_ExternalID:

@@ -37,8 +37,7 @@ func TestDeleteThread(t *testing.T) {
 
 	// Looking up the account's entity for the org
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+		Key: &directory.LookupEntitiesRequest_ExternalID{
 			ExternalID: acc.ID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -112,8 +111,7 @@ func TestDeleteThread_Secure(t *testing.T) {
 
 	// Looking up the account's entity for the org
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+		Key: &directory.LookupEntitiesRequest_ExternalID{
 			ExternalID: acc.ID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -139,8 +137,7 @@ func TestDeleteThread_Secure(t *testing.T) {
 
 	// look up the patient associated with the thread
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: patientEntID,
 		},
 		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
@@ -213,8 +210,7 @@ func TestDeleteThread_Secure_AccountCreated(t *testing.T) {
 
 	// Looking up the account's entity for the org
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+		Key: &directory.LookupEntitiesRequest_ExternalID{
 			ExternalID: acc.ID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -240,8 +236,7 @@ func TestDeleteThread_Secure_AccountCreated(t *testing.T) {
 
 	// look up the patient associated with the thread
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: patientEntID,
 		},
 		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},

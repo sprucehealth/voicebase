@@ -102,8 +102,7 @@ var postEventMutation = &graphql.Field{
 			if orgID == "" {
 				// TODO: for now support the event not including the orgID, eventually this shouldn't be necessary
 				entities, err := ram.Entities(ctx, &directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+					Key: &directory.LookupEntitiesRequest_ExternalID{
 						ExternalID: acc.ID,
 					},
 					RequestedInformation: &directory.RequestedInformation{

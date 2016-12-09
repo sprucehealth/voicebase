@@ -94,8 +94,7 @@ func (c *configureSavedQueriesCmd) run(args []string) error {
 
 	ctx := context.Background()
 	ent, err := directory.SingleEntity(ctx, c.dirCli, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: *entityID,
 		},
 		RootTypes: []directory.EntityType{directory.EntityType_INTERNAL, directory.EntityType_ORGANIZATION},

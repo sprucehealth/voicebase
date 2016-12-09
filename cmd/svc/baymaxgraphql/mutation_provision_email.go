@@ -132,8 +132,7 @@ var provisionEmailMutation = &graphql.Field{
 		var err error
 		if in.EntityID != "" {
 			ent, err = raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
-				LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-				LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+				Key: &directory.LookupEntitiesRequest_EntityID{
 					EntityID: in.EntityID,
 				},
 				RequestedInformation: &directory.RequestedInformation{
@@ -172,8 +171,7 @@ var provisionEmailMutation = &graphql.Field{
 
 		} else if in.OrganizationID != "" {
 			orgEntity, err = raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
-				LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-				LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+				Key: &directory.LookupEntitiesRequest_EntityID{
 					EntityID: in.OrganizationID,
 				},
 				RequestedInformation: &directory.RequestedInformation{

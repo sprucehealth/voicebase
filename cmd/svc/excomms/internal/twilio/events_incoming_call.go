@@ -572,8 +572,7 @@ func processDialedCallStatus(ctx context.Context, params *rawmsg.TwilioParams, e
 		}
 
 		entity, err := directory.SingleEntity(ctx, eh.directory, &directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			Key: &directory.LookupEntitiesRequest_EntityID{
 				EntityID: incomingCall.OrganizationID,
 			},
 			RequestedInformation: &directory.RequestedInformation{

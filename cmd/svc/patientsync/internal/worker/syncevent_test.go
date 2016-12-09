@@ -62,8 +62,7 @@ func TestStandardThreadSync(t *testing.T) {
 	}, nil))
 
 	dirmock.Expect(mock.NewExpectation(dirmock.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+		Key: &directory.LookupEntitiesRequest_ExternalID{
 			ExternalID: "elation_12345",
 		},
 		MemberOfEntity: orgID,
@@ -229,8 +228,7 @@ func TestStandardThreadSync_EntityExists(t *testing.T) {
 	}
 
 	dirmock.Expect(mock.NewExpectation(dirmock.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+		Key: &directory.LookupEntitiesRequest_ExternalID{
 			ExternalID: "elation_12345",
 		},
 		MemberOfEntity: orgID,
@@ -359,8 +357,7 @@ func TestStandardThreadSync_ThreadExists(t *testing.T) {
 	}
 
 	dirmock.Expect(mock.NewExpectation(dirmock.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+		Key: &directory.LookupEntitiesRequest_ExternalID{
 			ExternalID: "elation_12345",
 		},
 		MemberOfEntity: orgID,
@@ -459,8 +456,7 @@ func TestStandardThreadSync_Update_NoEntity(t *testing.T) {
 	}, nil))
 
 	dirmock.Expect(mock.NewExpectation(dirmock.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+		Key: &directory.LookupEntitiesRequest_ExternalID{
 			ExternalID: "elation_12345",
 		},
 		MemberOfEntity: orgID,
@@ -476,8 +472,7 @@ func TestStandardThreadSync_Update_NoEntity(t *testing.T) {
 	}))
 
 	dirmock.Expect(mock.NewExpectation(dirmock.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+		Key: &directory.LookupEntitiesRequest_ExternalID{
 			ExternalID: "elation_12345",
 		},
 		MemberOfEntity: orgID,
@@ -641,8 +636,7 @@ func TestStandardThreadSync_Update_EntityExists_NoDifference(t *testing.T) {
 	}
 
 	dirmock.Expect(mock.NewExpectation(dirmock.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+		Key: &directory.LookupEntitiesRequest_ExternalID{
 			ExternalID: "elation_12345",
 		},
 		MemberOfEntity: orgID,
@@ -748,8 +742,7 @@ func TestStandardThreadSync_Update_EntityExists_Deleted(t *testing.T) {
 	}
 
 	dirmock.Expect(mock.NewExpectation(dirmock.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+		Key: &directory.LookupEntitiesRequest_ExternalID{
 			ExternalID: "elation_12345",
 		},
 		MemberOfEntity: orgID,
@@ -852,8 +845,7 @@ func TestStandardThreadSync_Update_EntityExists_Differs(t *testing.T) {
 	}
 
 	dirmock.Expect(mock.NewExpectation(dirmock.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+		Key: &directory.LookupEntitiesRequest_ExternalID{
 			ExternalID: "elation_12345",
 		},
 		MemberOfEntity: orgID,

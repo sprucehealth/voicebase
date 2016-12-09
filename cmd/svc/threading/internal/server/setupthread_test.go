@@ -67,8 +67,7 @@ func TestCreateOnboardingThread(t *testing.T) {
 	// Update saved query indexes
 
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
+		Key: &directory.LookupEntitiesRequest_BatchEntityID{
 			BatchEntityID: &directory.IDList{
 				IDs: []string{"o1"},
 			},

@@ -1,9 +1,8 @@
 package main
 
 import (
-	"testing"
-
 	"context"
+	"testing"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
@@ -67,8 +66,7 @@ func TestPaymentRequestLookup(t *testing.T) {
 					},
 				}, nil))
 				mra.Expect(mock.NewExpectation(mra.Entities, &directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+					Key: &directory.LookupEntitiesRequest_EntityID{
 						EntityID: requestingEntityID,
 					},
 				}).WithReturns([]*directory.Entity{

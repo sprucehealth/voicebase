@@ -133,8 +133,7 @@ func responseEquals(t *testing.T, expected string, actual *graphql.Result) {
 
 func expectEntityInOrgForAccountID(ra *ramock.ResourceAccessor, accountID string, results []*directory.Entity) {
 	ra.Expect(mock.NewExpectation(ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+		Key: &directory.LookupEntitiesRequest_ExternalID{
 			ExternalID: accountID,
 		},
 		RequestedInformation: &directory.RequestedInformation{

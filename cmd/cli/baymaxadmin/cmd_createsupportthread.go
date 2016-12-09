@@ -69,8 +69,7 @@ func (c *createSupportThreadCmd) run(args []string) error {
 
 	// ensure that the entity specified is that of an organization
 	entity, err := directory.SingleEntity(ctx, c.directoryCli, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: *flagEntityID,
 		},
 		RequestedInformation: &directory.RequestedInformation{

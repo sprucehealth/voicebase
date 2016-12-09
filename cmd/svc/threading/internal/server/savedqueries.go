@@ -231,8 +231,7 @@ func (s *threadsServer) determineUpdatesToIndexForEntities(
 // entityAndMemberships looks up an entity and returns the entity itself and all its memberships
 func (s *threadsServer) entityAndMemberships(ctx context.Context, entityID string, rootTypes []directory.EntityType) ([]*directory.Entity, error) {
 	res, err := s.directoryClient.LookupEntities(ctx, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: entityID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -267,8 +266,7 @@ func (s *threadsServer) entityAndMemberships(ctx context.Context, entityID strin
 // of only and all internal entities.
 func (s *threadsServer) resolveInternalEntities(ctx context.Context, entityIDs []string) ([]*directory.Entity, error) {
 	res, err := s.directoryClient.LookupEntities(ctx, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
+		Key: &directory.LookupEntitiesRequest_BatchEntityID{
 			BatchEntityID: &directory.IDList{
 				IDs: entityIDs,
 			},

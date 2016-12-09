@@ -163,8 +163,7 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 	orgLookupRes, err := a.directory.LookupEntities(
 		ctx,
 		&directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			Key: &directory.LookupEntitiesRequest_EntityID{
 				EntityID: organizationID,
 			},
 			RequestedInformation: &directory.RequestedInformation{
@@ -361,8 +360,7 @@ func determineActorEntity(ctx context.Context, directoryClient directory.Directo
 	providerLookupRes, err := directoryClient.LookupEntities(
 		ctx,
 		&directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			Key: &directory.LookupEntitiesRequest_EntityID{
 				EntityID: actorEntityID,
 			},
 			RequestedInformation: &directory.RequestedInformation{

@@ -64,8 +64,7 @@ func patientThreads(p graphql.ResolveParams, a *models.PatientAccount) (*Connect
 		return nil, errors.ErrNotAuthenticated(ctx)
 	}
 	ent, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+		Key: &directory.LookupEntitiesRequest_ExternalID{
 			ExternalID: a.GetID(),
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -138,8 +137,7 @@ func patientEntity(p graphql.ResolveParams, a *models.PatientAccount) (*models.E
 		return nil, errors.ErrNotAuthenticated(ctx)
 	}
 	entities, err := ram.Entities(ctx, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+		Key: &directory.LookupEntitiesRequest_ExternalID{
 			ExternalID: a.GetID(),
 		},
 		RequestedInformation: &directory.RequestedInformation{

@@ -124,8 +124,7 @@ func accountOrganizations(p graphql.ResolveParams, a models.Account) ([]*models.
 	}
 
 	entities, err := ram.Entities(ctx, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+		Key: &directory.LookupEntitiesRequest_ExternalID{
 			ExternalID: a.GetID(),
 		},
 		RequestedInformation: &directory.RequestedInformation{

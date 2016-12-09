@@ -1,9 +1,8 @@
 package worker
 
 import (
-	"testing"
-
 	"context"
+	"testing"
 
 	"github.com/golang/mock/gomock"
 	dalmock "github.com/sprucehealth/backend/cmd/svc/operational/internal/dal/mock"
@@ -50,8 +49,7 @@ func TestBlockAccountWorker(t *testing.T) {
 	}, nil))
 
 	mdir.Expect(mock.NewExpectation(mdir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+		Key: &directory.LookupEntitiesRequest_ExternalID{
 			ExternalID: accountID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -74,8 +72,7 @@ func TestBlockAccountWorker(t *testing.T) {
 	}, nil))
 
 	mdir.Expect(mock.NewExpectation(mdir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: "o1",
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -148,8 +145,7 @@ func TestBlockAccountWorker_NoProvisionedPhoneNumber(t *testing.T) {
 	}, nil))
 
 	mdir.Expect(mock.NewExpectation(mdir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+		Key: &directory.LookupEntitiesRequest_ExternalID{
 			ExternalID: accountID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -172,8 +168,7 @@ func TestBlockAccountWorker_NoProvisionedPhoneNumber(t *testing.T) {
 	}, nil))
 
 	mdir.Expect(mock.NewExpectation(mdir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: "o1",
 		},
 		RequestedInformation: &directory.RequestedInformation{

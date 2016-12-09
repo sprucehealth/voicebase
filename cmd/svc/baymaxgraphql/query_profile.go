@@ -40,8 +40,7 @@ var profileType = graphql.NewObject(graphql.ObjectConfig{
 				ctx := p.Context
 				profile := p.Source.(*models.Profile)
 				ent, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+					Key: &directory.LookupEntitiesRequest_EntityID{
 						EntityID: profile.EntityID,
 					},
 				})
@@ -74,8 +73,7 @@ var profileType = graphql.NewObject(graphql.ObjectConfig{
 
 func lookupEntityProfile(ctx context.Context, ram raccess.ResourceAccessor, entityID string) (interface{}, error) {
 	profile, err := ram.Profile(ctx, &directory.ProfileRequest{
-		LookupKeyType: directory.ProfileRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.ProfileRequest_EntityID{
+		Key: &directory.ProfileRequest_EntityID{
 			EntityID: entityID,
 		},
 	})
@@ -89,8 +87,7 @@ func lookupEntityProfile(ctx context.Context, ram raccess.ResourceAccessor, enti
 
 func lookupProfile(ctx context.Context, ram raccess.ResourceAccessor, entityProfileID string) (interface{}, error) {
 	profile, err := ram.Profile(ctx, &directory.ProfileRequest{
-		LookupKeyType: directory.ProfileRequest_PROFILE_ID,
-		LookupKeyOneof: &directory.ProfileRequest_ProfileID{
+		Key: &directory.ProfileRequest_ProfileID{
 			ProfileID: entityProfileID,
 		},
 	})

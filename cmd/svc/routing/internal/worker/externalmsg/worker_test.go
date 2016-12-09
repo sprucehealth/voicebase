@@ -1091,8 +1091,7 @@ func TestWeChatSpam(t *testing.T) {
 	}).WithReturns(&directory.LookupEntitiesByContactResponse{}, grpc.Errorf(codes.NotFound, "")))
 
 	mdir.Expect(mock.NewExpectation(mdir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: "e1",
 		},
 		RequestedInformation: &directory.RequestedInformation{

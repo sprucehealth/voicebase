@@ -335,8 +335,7 @@ func contactForParkedEntity(ctx context.Context, ram raccess.ResourceAccessor, p
 	// Since we don't store PHI for patients in the invites, get the email to verify from the parked entity contacts
 	// Make this as an unauthorized call since we have no context around the caller other than token
 	entities, err := ram.Entities(ctx, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: parkedEntityID,
 		},
 		RequestedInformation: &directory.RequestedInformation{

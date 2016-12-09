@@ -229,8 +229,7 @@ func TestOutgoingCallStatus(t *testing.T) {
 	defer mdir.Finish()
 
 	mdir.Expect(mock.NewExpectation(mdir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: "e1",
 		},
 		RequestedInformation: &directory.RequestedInformation{

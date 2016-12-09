@@ -596,8 +596,7 @@ func TestInitiatePhoneCall_OriginatingNumberSpecified(t *testing.T) {
 
 	// caller lookup
 	md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: callerEntityID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -723,8 +722,7 @@ func TestInitiatePhoneCall_OriginatingNumberNotSpecified_ButExists(t *testing.T)
 
 	// caller lookup
 	md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: callerEntityID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -849,8 +847,7 @@ func TestInitiatePhoneCall_OriginatingNumberNotSpecified_DoesNotExist(t *testing
 
 	// caller lookup
 	md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: callerEntityID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -987,8 +984,7 @@ func TestInitiatePhoneCall_CallerNotInOrg(t *testing.T) {
 	defer md.Finish()
 
 	md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: callerEntityID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -1043,8 +1039,7 @@ func TestInitiatePhoneCall_InvalidCaller(t *testing.T) {
 	defer md.Finish()
 
 	md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: callerEntityID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -1081,8 +1076,7 @@ func TestInitiatePhoneCall_InvalidCallee(t *testing.T) {
 	defer md.Finish()
 
 	md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: callerEntityID,
 		},
 		RequestedInformation: &directory.RequestedInformation{

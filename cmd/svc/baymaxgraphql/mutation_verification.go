@@ -317,8 +317,7 @@ var checkVerificationCodeMutation = &graphql.Field{
 			if inv != nil {
 				if _, ok := inv.Invite.(*invite.LookupInviteResponse_Patient); ok {
 					entities, err := ram.Entities(ctx, &directory.LookupEntitiesRequest{
-						LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-						LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+						Key: &directory.LookupEntitiesRequest_EntityID{
 							EntityID: inv.GetPatient().Patient.ParkedEntityID,
 						},
 						RootTypes: []directory.EntityType{directory.EntityType_PATIENT},

@@ -17,8 +17,7 @@ func TestCreateVideoCallMutation(t *testing.T) {
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities,
 		&directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+			Key: &directory.LookupEntitiesRequest_ExternalID{
 				ExternalID: "account_1",
 			},
 			RequestedInformation: &directory.RequestedInformation{
@@ -40,8 +39,7 @@ func TestCreateVideoCallMutation(t *testing.T) {
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities,
 		&directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			Key: &directory.LookupEntitiesRequest_EntityID{
 				EntityID: "entity_2",
 			},
 			Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},

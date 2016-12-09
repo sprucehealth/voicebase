@@ -56,7 +56,7 @@ func TestCachedClientLookupEntities(t *testing.T) {
 				dClient := dmock.New(t)
 				cClient := &CachedClient{dc: dClient}
 				dClient.Expect(mock.NewExpectation(dClient.LookupEntities, &directory.LookupEntitiesRequest{
-					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+					Key: &directory.LookupEntitiesRequest_EntityID{
 						EntityID: "entity1",
 					},
 				}).WithReturns(&directory.LookupEntitiesResponse{Entities: []*directory.Entity{&directory.Entity{ID: "entity1"}}}, nil))
@@ -68,12 +68,12 @@ func TestCachedClientLookupEntities(t *testing.T) {
 			ctx: InitEntityCache(context.Background()),
 			requests: []*directory.LookupEntitiesRequest{
 				&directory.LookupEntitiesRequest{
-					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+					Key: &directory.LookupEntitiesRequest_EntityID{
 						EntityID: "entity1",
 					},
 				},
 				&directory.LookupEntitiesRequest{
-					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+					Key: &directory.LookupEntitiesRequest_EntityID{
 						EntityID: "entity1",
 					},
 				}},
@@ -87,12 +87,12 @@ func TestCachedClientLookupEntities(t *testing.T) {
 				dClient := dmock.New(t)
 				cClient := &CachedClient{dc: dClient}
 				dClient.Expect(mock.NewExpectation(dClient.LookupEntities, &directory.LookupEntitiesRequest{
-					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+					Key: &directory.LookupEntitiesRequest_EntityID{
 						EntityID: "entity1",
 					},
 				}).WithReturns(&directory.LookupEntitiesResponse{Entities: []*directory.Entity{&directory.Entity{ID: "entity1"}}}, nil))
 				dClient.Expect(mock.NewExpectation(dClient.LookupEntities, &directory.LookupEntitiesRequest{
-					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+					Key: &directory.LookupEntitiesRequest_EntityID{
 						EntityID: "entity2",
 					},
 				}).WithReturns(&directory.LookupEntitiesResponse{Entities: []*directory.Entity{&directory.Entity{ID: "entity2"}}}, nil))
@@ -104,12 +104,12 @@ func TestCachedClientLookupEntities(t *testing.T) {
 			ctx: InitEntityCache(context.Background()),
 			requests: []*directory.LookupEntitiesRequest{
 				&directory.LookupEntitiesRequest{
-					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+					Key: &directory.LookupEntitiesRequest_EntityID{
 						EntityID: "entity1",
 					},
 				},
 				&directory.LookupEntitiesRequest{
-					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+					Key: &directory.LookupEntitiesRequest_EntityID{
 						EntityID: "entity2",
 					},
 				}},
@@ -123,8 +123,7 @@ func TestCachedClientLookupEntities(t *testing.T) {
 				dClient := dmock.New(t)
 				cClient := &CachedClient{dc: dClient}
 				dClient.Expect(mock.NewExpectation(dClient.LookupEntities, &directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
+					Key: &directory.LookupEntitiesRequest_BatchEntityID{
 						BatchEntityID: &directory.IDList{IDs: []string{"entity1", "entity2"}},
 					},
 					RequestedInformation: &directory.RequestedInformation{
@@ -142,8 +141,7 @@ func TestCachedClientLookupEntities(t *testing.T) {
 			ctx: InitEntityCache(context.Background()),
 			requests: []*directory.LookupEntitiesRequest{
 				&directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
+					Key: &directory.LookupEntitiesRequest_BatchEntityID{
 						BatchEntityID: &directory.IDList{IDs: []string{"entity1", "entity2"}},
 					},
 					RequestedInformation: &directory.RequestedInformation{
@@ -154,8 +152,7 @@ func TestCachedClientLookupEntities(t *testing.T) {
 					ChildTypes: []directory.EntityType{directory.EntityType_INTERNAL, directory.EntityType_EXTERNAL},
 				},
 				&directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
+					Key: &directory.LookupEntitiesRequest_BatchEntityID{
 						BatchEntityID: &directory.IDList{IDs: []string{"entity2", "entity1"}},
 					},
 					RequestedInformation: &directory.RequestedInformation{
@@ -175,8 +172,7 @@ func TestCachedClientLookupEntities(t *testing.T) {
 				dClient := dmock.New(t)
 				cClient := &CachedClient{dc: dClient}
 				dClient.Expect(mock.NewExpectation(dClient.LookupEntities, &directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
+					Key: &directory.LookupEntitiesRequest_BatchEntityID{
 						BatchEntityID: &directory.IDList{IDs: []string{"entity1", "entity2"}},
 					},
 					RequestedInformation: &directory.RequestedInformation{
@@ -187,8 +183,7 @@ func TestCachedClientLookupEntities(t *testing.T) {
 					ChildTypes: []directory.EntityType{directory.EntityType_INTERNAL},
 				}).WithReturns(&directory.LookupEntitiesResponse{Entities: []*directory.Entity{&directory.Entity{ID: "entity1"}}}, nil))
 				dClient.Expect(mock.NewExpectation(dClient.LookupEntities, &directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
+					Key: &directory.LookupEntitiesRequest_BatchEntityID{
 						BatchEntityID: &directory.IDList{IDs: []string{"entity1", "entity2"}},
 					},
 					RequestedInformation: &directory.RequestedInformation{
@@ -206,8 +201,7 @@ func TestCachedClientLookupEntities(t *testing.T) {
 			ctx: InitEntityCache(context.Background()),
 			requests: []*directory.LookupEntitiesRequest{
 				&directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
+					Key: &directory.LookupEntitiesRequest_BatchEntityID{
 						BatchEntityID: &directory.IDList{IDs: []string{"entity1", "entity2"}},
 					},
 					RequestedInformation: &directory.RequestedInformation{
@@ -218,8 +212,7 @@ func TestCachedClientLookupEntities(t *testing.T) {
 					ChildTypes: []directory.EntityType{directory.EntityType_INTERNAL},
 				},
 				&directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
+					Key: &directory.LookupEntitiesRequest_BatchEntityID{
 						BatchEntityID: &directory.IDList{IDs: []string{"entity2", "entity1"}},
 					},
 					RequestedInformation: &directory.RequestedInformation{

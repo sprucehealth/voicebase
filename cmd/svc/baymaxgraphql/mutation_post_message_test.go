@@ -56,8 +56,7 @@ func TestPostMessage(t *testing.T) {
 
 	// Looking up the primary entity on the thread
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: extEntID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -294,8 +293,7 @@ func TestPostMessage_VisitAttachment(t *testing.T) {
 
 	// Looking up the primary entity on the thread
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: extEntID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -416,8 +414,7 @@ func TestPostMessage_VisitAttachment(t *testing.T) {
 	}, nil))
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: extEntID,
 		},
 		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
@@ -554,8 +551,7 @@ func TestPostMessageDestinationNotContactOfPrimary(t *testing.T) {
 
 	// Looking up the primary entity on the thread
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: extEntID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -677,8 +673,7 @@ func TestPostMessagePatientSecureExternal(t *testing.T) {
 
 	// Looking up the primary entity on the thread
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: extEntID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -780,8 +775,7 @@ func TestPostMessagePatientSecureExternal(t *testing.T) {
 	// Looking up the primary entity on the thread
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: orgID,
 		},
 		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
@@ -797,8 +791,7 @@ func TestPostMessagePatientSecureExternal(t *testing.T) {
 	}, nil))
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: orgID,
 		},
 		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
@@ -813,8 +806,7 @@ func TestPostMessagePatientSecureExternal(t *testing.T) {
 		},
 	}, nil))
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: extEntID,
 		},
 		Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},

@@ -1,10 +1,9 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"strings"
-
-	"context"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
@@ -325,8 +324,7 @@ var modifySettingMutation = &graphql.Field{
 			if key == excommsSettings.ConfigKeySendCallsToVoicemail {
 				if _, ok := node.(*models.Entity); ok {
 					entity, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
-						LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-						LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+						Key: &directory.LookupEntitiesRequest_EntityID{
 							EntityID: nodeID,
 						},
 						RequestedInformation: &directory.RequestedInformation{

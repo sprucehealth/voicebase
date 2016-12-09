@@ -45,7 +45,7 @@ func TestLookupEntitiesByEntityID(t *testing.T) {
 		},
 	}, nil))
 	resp, err := s.LookupEntities(context.Background(), &directory.LookupEntitiesRequest{
-		LookupKeyOneof:       &directory.LookupEntitiesRequest_EntityID{EntityID: eID1.String()},
+		Key:                  &directory.LookupEntitiesRequest_EntityID{EntityID: eID1.String()},
 		RequestedInformation: &directory.RequestedInformation{},
 	})
 	test.OK(t, err)
@@ -97,7 +97,7 @@ func TestLookupEntitiesByEntityIDNonZeroDepth(t *testing.T) {
 		},
 	}, nil))
 	resp, err := s.LookupEntities(context.Background(), &directory.LookupEntitiesRequest{
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{EntityID: eID1.String()},
+		Key: &directory.LookupEntitiesRequest_EntityID{EntityID: eID1.String()},
 		RequestedInformation: &directory.RequestedInformation{
 			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERS, directory.EntityInformation_CONTACTS},
 			Depth:             0,
@@ -142,7 +142,7 @@ func TestLookupEntitiesByBatchEntityID(t *testing.T) {
 		},
 	}, nil))
 	resp, err := s.LookupEntities(context.Background(), &directory.LookupEntitiesRequest{
-		LookupKeyOneof:       &directory.LookupEntitiesRequest_BatchEntityID{BatchEntityID: &directory.IDList{IDs: []string{eID1.String(), eID2.String()}}},
+		Key:                  &directory.LookupEntitiesRequest_BatchEntityID{BatchEntityID: &directory.IDList{IDs: []string{eID1.String(), eID2.String()}}},
 		RequestedInformation: &directory.RequestedInformation{},
 	})
 	test.OK(t, err)
@@ -194,7 +194,7 @@ func TestLookupEntitiesByExternalID(t *testing.T) {
 		},
 	}, nil))
 	resp, err := s.LookupEntities(context.Background(), &directory.LookupEntitiesRequest{
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{ExternalID: externalID},
+		Key: &directory.LookupEntitiesRequest_ExternalID{ExternalID: externalID},
 	})
 	test.OK(t, err)
 
@@ -279,7 +279,7 @@ func TestLookupEntitiesByExternalID_MemberOfEntity(t *testing.T) {
 	}, nil))
 
 	resp, err := s.LookupEntities(context.Background(), &directory.LookupEntitiesRequest{
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{ExternalID: externalID},
+		Key:            &directory.LookupEntitiesRequest_ExternalID{ExternalID: externalID},
 		MemberOfEntity: orgID1.String(),
 	})
 	test.OK(t, err)
@@ -304,8 +304,8 @@ func TestLookupEntitiesNoResults(t *testing.T) {
 	test.OK(t, err)
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{eID1}, []dal.EntityStatus{dal.EntityStatusActive}, []dal.EntityType{}), []*dal.Entity{}, nil))
 	_, err = s.LookupEntities(context.Background(), &directory.LookupEntitiesRequest{
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{EntityID: eID1.String()},
-		Statuses:       []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		Key:      &directory.LookupEntitiesRequest_EntityID{EntityID: eID1.String()},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 	})
 	test.Assert(t, err != nil, "Expected an error")
 
@@ -1046,7 +1046,7 @@ func TestLookupEntitiesAdditionalInformationGraphCrawl(t *testing.T) {
 		},
 	}, nil))
 	resp, err := s.LookupEntities(context.Background(), &directory.LookupEntitiesRequest{
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{EntityID: eID1.String()},
+		Key: &directory.LookupEntitiesRequest_EntityID{EntityID: eID1.String()},
 		RequestedInformation: &directory.RequestedInformation{
 			Depth: 2,
 			EntityInformation: []directory.EntityInformation{
@@ -1684,8 +1684,7 @@ func TestProfile(t *testing.T) {
 	}{
 		"LookupEntityID-BadID": {
 			request: &directory.ProfileRequest{
-				LookupKeyType: directory.ProfileRequest_ENTITY_ID,
-				LookupKeyOneof: &directory.ProfileRequest_EntityID{
+				Key: &directory.ProfileRequest_EntityID{
 					EntityID: "notAnEntityID",
 				},
 			},
@@ -1698,8 +1697,7 @@ func TestProfile(t *testing.T) {
 		},
 		"LookupEntityID-NotFound": {
 			request: &directory.ProfileRequest{
-				LookupKeyType: directory.ProfileRequest_ENTITY_ID,
-				LookupKeyOneof: &directory.ProfileRequest_EntityID{
+				Key: &directory.ProfileRequest_EntityID{
 					EntityID: entityID.String(),
 				},
 			},
@@ -1713,8 +1711,7 @@ func TestProfile(t *testing.T) {
 		},
 		"LookupEntityID-Found": {
 			request: &directory.ProfileRequest{
-				LookupKeyType: directory.ProfileRequest_ENTITY_ID,
-				LookupKeyOneof: &directory.ProfileRequest_EntityID{
+				Key: &directory.ProfileRequest_EntityID{
 					EntityID: entityID.String(),
 				},
 			},
@@ -1740,8 +1737,7 @@ func TestProfile(t *testing.T) {
 		},
 		"LookupProfileID-BadID": {
 			request: &directory.ProfileRequest{
-				LookupKeyType: directory.ProfileRequest_PROFILE_ID,
-				LookupKeyOneof: &directory.ProfileRequest_ProfileID{
+				Key: &directory.ProfileRequest_ProfileID{
 					ProfileID: "notAProfileID",
 				},
 			},
@@ -1754,8 +1750,7 @@ func TestProfile(t *testing.T) {
 		},
 		"LookupProfileID-NotFound": {
 			request: &directory.ProfileRequest{
-				LookupKeyType: directory.ProfileRequest_PROFILE_ID,
-				LookupKeyOneof: &directory.ProfileRequest_ProfileID{
+				Key: &directory.ProfileRequest_ProfileID{
 					ProfileID: profileID.String(),
 				},
 			},
@@ -1769,8 +1764,7 @@ func TestProfile(t *testing.T) {
 		},
 		"LookupProfileID-Found": {
 			request: &directory.ProfileRequest{
-				LookupKeyType: directory.ProfileRequest_PROFILE_ID,
-				LookupKeyOneof: &directory.ProfileRequest_ProfileID{
+				Key: &directory.ProfileRequest_ProfileID{
 					ProfileID: profileID.String(),
 				},
 			},

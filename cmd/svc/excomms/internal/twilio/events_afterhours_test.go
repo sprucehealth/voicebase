@@ -218,8 +218,7 @@ func TestAfterHours_IncomingCallStatus(t *testing.T) {
 	defer mdir.Finish()
 
 	mdir.Expect(mock.NewExpectation(mdir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: orgID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -801,8 +800,7 @@ func TestAfterHours_Voicemail_Process(t *testing.T) {
 	defer mdir.Finish()
 
 	mdir.Expect(mock.NewExpectation(mdir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: "o1",
 		},
 		RequestedInformation: &directory.RequestedInformation{

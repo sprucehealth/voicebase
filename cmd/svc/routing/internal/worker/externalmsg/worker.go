@@ -587,7 +587,6 @@ func (r *externalMessageWorker) process(ctx context.Context, pem *excomms.Publis
 }
 
 func (e *externalMessageWorker) determineAccountIDsOfProvidersInOrg(ctx context.Context, ent *directory.Entity) ([]string, error) {
-
 	var accountIDs []string
 
 	switch ent.Type {
@@ -600,8 +599,7 @@ func (e *externalMessageWorker) determineAccountIDsOfProvidersInOrg(ctx context.
 		orgLookupRes, err := e.directory.LookupEntities(
 			ctx,
 			&directory.LookupEntitiesRequest{
-				LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-				LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+				Key: &directory.LookupEntitiesRequest_EntityID{
 					EntityID: ent.ID,
 				},
 				RequestedInformation: &directory.RequestedInformation{

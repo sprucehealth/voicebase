@@ -1554,8 +1554,7 @@ func TestIncomingCallStatus_CallCompleted(t *testing.T) {
 	defer mdir.Finish()
 
 	mdir.Expect(mock.NewExpectation(mdir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: "o1",
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -1657,8 +1656,7 @@ func TestIncomingCallStatus_MissedCall(t *testing.T) {
 	defer mdir.Finish()
 
 	mdir.Expect(mock.NewExpectation(mdir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: orgID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -1784,8 +1782,7 @@ func TestIncomingCallStatus_MissedCall_SendAllCallsToVoicemail(t *testing.T) {
 	defer mdir.Finish()
 
 	mdir.Expect(mock.NewExpectation(mdir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: orgID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -1894,8 +1891,7 @@ func TestIncomingCallStatus_MissedCall_ShortCall(t *testing.T) {
 	defer mdir.Finish()
 
 	mdir.Expect(mock.NewExpectation(mdir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: orgID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -2016,8 +2012,7 @@ func testDialedCallStatus_Other(t *testing.T, incomingStatus rawmsg.TwilioParams
 	defer md.Finish()
 
 	md.Expect(mock.NewExpectation(md.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: orgID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -2237,8 +2232,7 @@ func TestProcessVoicemail(t *testing.T) {
 	defer mdir.Finish()
 
 	mdir.Expect(mock.NewExpectation(mdir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: "o1",
 		},
 		RequestedInformation: &directory.RequestedInformation{

@@ -92,8 +92,7 @@ func TestVerifyEmailForAccountCreationMutation_Invite(t *testing.T) {
 	)
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: "parkedEntityID",
 		},
 		RequestedInformation: &directory.RequestedInformation{

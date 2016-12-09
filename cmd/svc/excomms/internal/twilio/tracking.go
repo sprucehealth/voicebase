@@ -24,8 +24,7 @@ func trackInboundCall(eh *eventsHandler, callSID, eventSuffix string) {
 		res, err := eh.directory.LookupEntities(
 			context.Background(),
 			&directory.LookupEntitiesRequest{
-				LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-				LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+				Key: &directory.LookupEntitiesRequest_EntityID{
 					EntityID: incomingCall.OrganizationID,
 				},
 				RequestedInformation: &directory.RequestedInformation{
@@ -79,8 +78,7 @@ func trackOutboundCall(eh *eventsHandler, callerEntityID, orgID, destination str
 		res, err := eh.directory.LookupEntities(
 			context.Background(),
 			&directory.LookupEntitiesRequest{
-				LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-				LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+				Key: &directory.LookupEntitiesRequest_EntityID{
 					EntityID: callerEntityID,
 				},
 				RequestedInformation: &directory.RequestedInformation{

@@ -43,8 +43,7 @@ func TestPostEventMutation(t *testing.T) {
 
 	// no org_id
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+		Key: &directory.LookupEntitiesRequest_ExternalID{
 			ExternalID: acc.ID,
 		},
 		RequestedInformation: &directory.RequestedInformation{

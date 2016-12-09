@@ -1,9 +1,8 @@
 package service
 
 import (
-	"testing"
-
 	"context"
+	"testing"
 
 	"github.com/golang/mock/gomock"
 	"github.com/sprucehealth/backend/cmd/svc/media/internal/dal"
@@ -113,8 +112,7 @@ func TestCanAccess(t *testing.T) {
 
 				// entitiesForAccountID
 				ts.md.Expect(mock.NewExpectation(ts.md.LookupEntities, &directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+					Key: &directory.LookupEntitiesRequest_AccountID{
 						AccountID: "accountID",
 					},
 					Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
@@ -142,8 +140,7 @@ func TestCanAccess(t *testing.T) {
 
 				// entitiesForAccountID
 				ts.md.Expect(mock.NewExpectation(ts.md.LookupEntities, &directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+					Key: &directory.LookupEntitiesRequest_AccountID{
 						AccountID: "accountID",
 					},
 					Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
@@ -171,8 +168,7 @@ func TestCanAccess(t *testing.T) {
 
 				// ent memberships
 				ts.md.Expect(mock.NewExpectation(ts.md.LookupEntities, &directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+					Key: &directory.LookupEntitiesRequest_AccountID{
 						AccountID: "accountID",
 					},
 					RequestedInformation: &directory.RequestedInformation{
@@ -204,8 +200,7 @@ func TestCanAccess(t *testing.T) {
 
 				// ent memberships
 				ts.md.Expect(mock.NewExpectation(ts.md.LookupEntities, &directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+					Key: &directory.LookupEntitiesRequest_AccountID{
 						AccountID: "accountID",
 					},
 					RequestedInformation: &directory.RequestedInformation{
@@ -249,8 +244,7 @@ func TestCanAccess(t *testing.T) {
 
 				// ent memberships
 				ts.md.Expect(mock.NewExpectation(ts.md.LookupEntities, &directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+					Key: &directory.LookupEntitiesRequest_AccountID{
 						AccountID: "accountID",
 					},
 					RequestedInformation: &directory.RequestedInformation{
@@ -294,8 +288,7 @@ func TestCanAccess(t *testing.T) {
 
 				// ent memberships
 				ts.md.Expect(mock.NewExpectation(ts.md.LookupEntities, &directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+					Key: &directory.LookupEntitiesRequest_AccountID{
 						AccountID: "accountID",
 					},
 					RequestedInformation: &directory.RequestedInformation{
@@ -343,8 +336,7 @@ func TestCanAccess(t *testing.T) {
 
 				// ents for account
 				ts.md.Expect(mock.NewExpectation(ts.md.LookupEntities, &directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+					Key: &directory.LookupEntitiesRequest_AccountID{
 						AccountID: "accountID",
 					},
 					Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
@@ -388,8 +380,7 @@ func TestCanAccess(t *testing.T) {
 
 				// ents for account
 				ts.md.Expect(mock.NewExpectation(ts.md.LookupEntities, &directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+					Key: &directory.LookupEntitiesRequest_AccountID{
 						AccountID: "accountID",
 					},
 					Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
@@ -429,8 +420,7 @@ func TestCanAccess(t *testing.T) {
 
 				// ent memberships
 				ts.md.Expect(mock.NewExpectation(ts.md.LookupEntities, &directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+					Key: &directory.LookupEntitiesRequest_AccountID{
 						AccountID: "accountID",
 					},
 					RequestedInformation: &directory.RequestedInformation{
@@ -459,8 +449,7 @@ func TestCanAccess(t *testing.T) {
 				)
 
 				ts.md.Expect(mock.NewExpectation(ts.md.LookupEntities, &directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+					Key: &directory.LookupEntitiesRequest_AccountID{
 						AccountID: "accountID",
 					},
 					RequestedInformation: &directory.RequestedInformation{
@@ -502,8 +491,7 @@ func TestCanAccess(t *testing.T) {
 
 				// ent memberships
 				ts.md.Expect(mock.NewExpectation(ts.md.LookupEntities, &directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+					Key: &directory.LookupEntitiesRequest_AccountID{
 						AccountID: "accountID",
 					},
 					RequestedInformation: &directory.RequestedInformation{
@@ -554,8 +542,7 @@ func TestCanAccess(t *testing.T) {
 
 				// ent memberships
 				ts.md.Expect(mock.NewExpectation(ts.md.LookupEntities, &directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+					Key: &directory.LookupEntitiesRequest_AccountID{
 						AccountID: "accountID",
 					},
 					RequestedInformation: &directory.RequestedInformation{
@@ -606,8 +593,7 @@ func TestCanAccess(t *testing.T) {
 
 				// ent memberships
 				ts.md.Expect(mock.NewExpectation(ts.md.LookupEntities, &directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+					Key: &directory.LookupEntitiesRequest_AccountID{
 						AccountID: "accountID",
 					},
 					Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},

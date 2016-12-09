@@ -206,8 +206,7 @@ func scheduleMessage(ctx context.Context, svc *service, ram raccess.ResourceAcce
 	var primaryEntity *directory.Entity
 	if thread.PrimaryEntityID != "" {
 		primaryEntity, err = raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			Key: &directory.LookupEntitiesRequest_EntityID{
 				EntityID: thread.PrimaryEntityID,
 			},
 			RequestedInformation: &directory.RequestedInformation{

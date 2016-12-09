@@ -635,8 +635,7 @@ func (s *threadsServer) DeleteThread(ctx context.Context, in *threading.DeleteTh
 	thread := threads[0]
 	if thread.PrimaryEntityID != "" {
 		entity, err := directory.SingleEntity(ctx, s.directoryClient, &directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			Key: &directory.LookupEntitiesRequest_EntityID{
 				EntityID: thread.PrimaryEntityID,
 			},
 			RootTypes: []directory.EntityType{directory.EntityType_EXTERNAL, directory.EntityType_PATIENT},
@@ -1154,8 +1153,7 @@ func (s *threadsServer) postMessage(
 			text := message.Text
 			if prependSender {
 				resp, err := s.directoryClient.LookupEntities(ctx, &directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+					Key: &directory.LookupEntitiesRequest_EntityID{
 						EntityID: fromEntityID,
 					},
 					RequestedInformation: &directory.RequestedInformation{
@@ -2085,8 +2083,7 @@ func (s *threadsServer) teamThreadSystemTitle(ctx context.Context, orgID string,
 	}
 
 	res, err := s.directoryClient.LookupEntities(ctx, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
+		Key: &directory.LookupEntitiesRequest_BatchEntityID{
 			BatchEntityID: &directory.IDList{
 				IDs: memberEntityIDs,
 			},
@@ -2122,8 +2119,7 @@ func (s *threadsServer) forExternalViewer(ctx context.Context, viewerEntityID st
 	forExternal := true
 	if viewerEntityID != "" {
 		ent, err := directory.SingleEntity(ctx, s.directoryClient, &directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			Key: &directory.LookupEntitiesRequest_EntityID{
 				EntityID: viewerEntityID,
 			},
 			RequestedInformation: &directory.RequestedInformation{

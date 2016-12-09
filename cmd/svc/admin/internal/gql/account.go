@@ -127,8 +127,7 @@ func accountEntitiesResolve(p graphql.ResolveParams) (interface{}, error) {
 func entitiesForAccount(ctx context.Context, directoryClient directory.DirectoryClient, accountID string) ([]*models.Entity, error) {
 	// Collect all the entities mapped to the account
 	resp, err := directoryClient.LookupEntities(ctx, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+		Key: &directory.LookupEntitiesRequest_AccountID{
 			AccountID: accountID,
 		},
 		RootTypes: []directory.EntityType{directory.EntityType_INTERNAL, directory.EntityType_PATIENT},

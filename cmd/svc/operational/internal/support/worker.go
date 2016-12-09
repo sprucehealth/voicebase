@@ -153,8 +153,7 @@ func (w *Worker) postMessage(ctx context.Context, event *operational.NewOrgCreat
 
 	// lookup entity via account id
 	entityLookupRes, err := w.directory.LookupEntities(ctx, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: event.InitialProviderEntityID,
 		},
 	})

@@ -87,8 +87,7 @@ func TestInviteColleagues(t *testing.T) {
 
 	// Lookup organization
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: "org",
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -102,8 +101,7 @@ func TestInviteColleagues(t *testing.T) {
 
 	// Lookup inviter
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: "ent",
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -202,8 +200,7 @@ func TestInvitePatients(t *testing.T) {
 
 	// Lookup organization
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: "org",
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -217,8 +214,7 @@ func TestInvitePatients(t *testing.T) {
 
 	// Lookup inviter
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: "ent",
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -500,8 +496,7 @@ func TestCreateOrganizationInvite(t *testing.T) {
 			tserver: func() *tserver {
 				dc := dirmock.New(t)
 				dc.Expect(mock.NewExpectation(dc.LookupEntities, &directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+					Key: &directory.LookupEntitiesRequest_EntityID{
 						EntityID: orgID,
 					},
 					RequestedInformation: &directory.RequestedInformation{
@@ -525,8 +520,7 @@ func TestCreateOrganizationInvite(t *testing.T) {
 			tserver: func() *tserver {
 				dc := dirmock.New(t)
 				dc.Expect(mock.NewExpectation(dc.LookupEntities, &directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+					Key: &directory.LookupEntitiesRequest_EntityID{
 						EntityID: orgID,
 					},
 					RequestedInformation: &directory.RequestedInformation{
@@ -596,8 +590,7 @@ func TestCreateOrganizationInvite(t *testing.T) {
 			tserver: func() *tserver {
 				dc := dirmock.New(t)
 				dc.Expect(mock.NewExpectation(dc.LookupEntities, &directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+					Key: &directory.LookupEntitiesRequest_EntityID{
 						EntityID: orgID,
 					},
 					RequestedInformation: &directory.RequestedInformation{

@@ -121,8 +121,7 @@ func entitySavedMessagesResolve(p graphql.ResolveParams) (interface{}, error) {
 
 func getEntity(ctx context.Context, dirCli directory.DirectoryClient, id string) (*models.Entity, error) {
 	resp, err := dirCli.LookupEntities(ctx, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: id,
 		},
 		RequestedInformation: &directory.RequestedInformation{

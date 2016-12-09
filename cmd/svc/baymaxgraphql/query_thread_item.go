@@ -392,8 +392,7 @@ var threadItemType = graphql.NewObject(
 
 					ram := raccess.ResourceAccess(p)
 					entity, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
-						LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-						LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+						Key: &directory.LookupEntitiesRequest_EntityID{
 							EntityID: it.ActorEntityID,
 						},
 						RequestedInformation: &directory.RequestedInformation{

@@ -284,8 +284,7 @@ var postMessageMutation = &graphql.Field{
 		var primaryEntity *directory.Entity
 		if thr.PrimaryEntityID != "" {
 			primaryEntity, err = raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
-				LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-				LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+				Key: &directory.LookupEntitiesRequest_EntityID{
 					EntityID: thr.PrimaryEntityID,
 				},
 				RequestedInformation: &directory.RequestedInformation{

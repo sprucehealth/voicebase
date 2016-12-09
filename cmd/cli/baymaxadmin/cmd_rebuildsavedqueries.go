@@ -56,8 +56,7 @@ func (c *rebuildSavedQueriesCmd) run(args []string) error {
 	if !*flagAll {
 		// Verify that the entity is internal
 		res, err := c.directoryCli.LookupEntities(ctx, &directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			Key: &directory.LookupEntitiesRequest_EntityID{
 				EntityID: *flagEntityID,
 			},
 			RequestedInformation: &directory.RequestedInformation{

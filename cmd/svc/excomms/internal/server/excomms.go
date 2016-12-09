@@ -505,8 +505,7 @@ func (e *excommsService) InitiatePhoneCall(ctx context.Context, in *excomms.Init
 
 	// ensure caller belongs to the organization
 	sourceEntity, err := directory.SingleEntity(ctx, e.directory, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: in.CallerEntityID,
 		},
 		RequestedInformation: &directory.RequestedInformation{

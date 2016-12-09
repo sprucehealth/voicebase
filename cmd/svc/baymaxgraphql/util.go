@@ -218,8 +218,7 @@ func dedupeStrings(ss []string) []string {
 
 func entityInOrgForAccountID(ctx context.Context, ram raccess.ResourceAccessor, orgID string, acc *auth.Account) (*directory.Entity, error) {
 	return raccess.EntityInOrgForAccountID(ctx, ram, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+		Key: &directory.LookupEntitiesRequest_ExternalID{
 			ExternalID: acc.ID,
 		},
 		RequestedInformation: &directory.RequestedInformation{

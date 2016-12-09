@@ -309,8 +309,7 @@ var entityQuery = &graphql.Field{
 
 func lookupEntity(ctx context.Context, svc *service, ram raccess.ResourceAccessor, entityID string) (interface{}, error) {
 	em, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: entityID,
 		},
 		RequestedInformation: &directory.RequestedInformation{

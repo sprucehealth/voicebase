@@ -102,8 +102,7 @@ var deleteSavedMessageMutation = &graphql.Field{
 
 		// Make sure the accounts has access to the saved message
 		ent, err := raccess.EntityInOrgForAccountID(ctx, ram, &directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+			Key: &directory.LookupEntitiesRequest_ExternalID{
 				ExternalID: acc.ID,
 			},
 			RequestedInformation: &directory.RequestedInformation{

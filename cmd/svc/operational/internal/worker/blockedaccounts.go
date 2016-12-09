@@ -100,8 +100,7 @@ func (w *BlockAccountWorker) processEvent(ctx context.Context, bar *operational.
 
 	// lookup entity via account id
 	entityLookupRes, err := w.directory.LookupEntities(ctx, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+		Key: &directory.LookupEntitiesRequest_ExternalID{
 			ExternalID: accountID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -127,8 +126,7 @@ func (w *BlockAccountWorker) processEvent(ctx context.Context, bar *operational.
 
 		// if the org only has one member, then deprovision phone number and delete spruce support thread from spruce support org
 		orgLookupRes, err := w.directory.LookupEntities(ctx, &directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			Key: &directory.LookupEntitiesRequest_EntityID{
 				EntityID: organizationID,
 			},
 			RequestedInformation: &directory.RequestedInformation{

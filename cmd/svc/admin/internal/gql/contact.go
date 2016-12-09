@@ -175,8 +175,7 @@ func provisionNumber(ctx context.Context, dirCli directory.DirectoryClient, exco
 
 	// Verify that organization exists
 	org, err := directory.SingleEntity(ctx, dirCli, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: in.OrganizationID,
 		},
 		RootTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},

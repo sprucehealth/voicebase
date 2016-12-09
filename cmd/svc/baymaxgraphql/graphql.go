@@ -364,8 +364,7 @@ func (h *graphQLHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		eres, err := h.ram.Entities(ctx, &directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+			Key: &directory.LookupEntitiesRequest_ExternalID{
 				ExternalID: acc.ID,
 			},
 			RequestedInformation: &directory.RequestedInformation{
@@ -470,8 +469,7 @@ func (h *graphQLHandler) orgToEntityMapForAccount(ctx context.Context, acc *auth
 	}
 
 	entities, err := h.ram.Entities(ctx, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+		Key: &directory.LookupEntitiesRequest_ExternalID{
 			ExternalID: acc.ID,
 		},
 		RequestedInformation: &directory.RequestedInformation{

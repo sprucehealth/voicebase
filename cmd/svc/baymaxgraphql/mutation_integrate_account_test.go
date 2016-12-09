@@ -44,8 +44,7 @@ func TestConnectVendorStripeAccount(t *testing.T) {
 			TestParams: func() *testConnectVendorAccountParams {
 				mra := ramock.New(t)
 				mra.Expect(mock.NewExpectation(mra.Entities, &directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+					Key: &directory.LookupEntitiesRequest_EntityID{
 						EntityID: entityID,
 					},
 				}).WithReturns(([]*directory.Entity)(nil), grpc.Errorf(codes.NotFound, "Not Found")))
@@ -84,8 +83,7 @@ func TestConnectVendorStripeAccount(t *testing.T) {
 			TestParams: func() *testConnectVendorAccountParams {
 				mra := ramock.New(t)
 				mra.Expect(mock.NewExpectation(mra.Entities, &directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+					Key: &directory.LookupEntitiesRequest_EntityID{
 						EntityID: entityID,
 					},
 				}).WithReturns([]*directory.Entity{
@@ -128,8 +126,7 @@ func TestConnectVendorStripeAccount(t *testing.T) {
 			TestParams: func() *testConnectVendorAccountParams {
 				mra := ramock.New(t)
 				mra.Expect(mock.NewExpectation(mra.Entities, &directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+					Key: &directory.LookupEntitiesRequest_EntityID{
 						EntityID: entityID,
 					},
 				}).WithReturns([]*directory.Entity{

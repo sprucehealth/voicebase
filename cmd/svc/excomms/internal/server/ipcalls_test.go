@@ -43,8 +43,7 @@ func TestInitiateIPCall(t *testing.T) {
 	}
 
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
+		Key: &directory.LookupEntitiesRequest_BatchEntityID{
 			BatchEntityID: &directory.IDList{IDs: []string{"entity_2", "entity_1"}},
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -265,8 +264,7 @@ func TestIPCall_Timeout(t *testing.T) {
 	)
 
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: "entity_caller",
 		},
 	}).WithReturns(&directory.LookupEntitiesResponse{Entities: []*directory.Entity{{AccountID: "1234"}}}, nil))
@@ -454,8 +452,7 @@ func TestPendingIPCalls_Timeout(t *testing.T) {
 	)
 
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: "entity_caller",
 		},
 	}).WithReturns(&directory.LookupEntitiesResponse{Entities: []*directory.Entity{{AccountID: "1234"}}}, nil))
@@ -610,8 +607,7 @@ func TestUpdateIPCall(t *testing.T) {
 	)
 
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: "entity_caller",
 		},
 	}).WithReturns(&directory.LookupEntitiesResponse{Entities: []*directory.Entity{{AccountID: "1234"}}}, nil))

@@ -52,8 +52,7 @@ func TestCreatePatientAccountMutation(t *testing.T) {
 	)
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: "parkedEntityID",
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -167,8 +166,7 @@ func TestCreatePatientAccountMutation(t *testing.T) {
 
 	// Query the account entity
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+		Key: &directory.LookupEntitiesRequest_ExternalID{
 			ExternalID: "a_1",
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -419,8 +417,7 @@ func TestCreatePatientAccountMutation_PracticeLink(t *testing.T) {
 
 	// Query the acount entity
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+		Key: &directory.LookupEntitiesRequest_ExternalID{
 			ExternalID: "a_1",
 		},
 		RequestedInformation: &directory.RequestedInformation{

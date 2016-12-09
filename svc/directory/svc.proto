@@ -137,15 +137,7 @@ message IDList {
 }
 
 message LookupEntitiesRequest {
-	enum LookupKeyType {
-		ENTITY_ID = 0;
-		EXTERNAL_ID = 1;
-		BATCH_ENTITY_ID = 2;
-		ACCOUNT_ID = 3;
-	}
-
-	LookupKeyType lookup_key_type = 1;
-	oneof lookup_key_oneof {
+	oneof key {
 		string entity_id = 2 [(gogoproto.customname) = "EntityID"];
 		string external_id = 3 [(gogoproto.customname) = "ExternalID"];
 		// Can't use repeated inside oneof
@@ -324,14 +316,7 @@ message CreateExternalIDsRequest {
 message CreateExternalIDsResponse {}
 
 message ProfileRequest {
-	enum LookupKeyType {
-		LOOKUP_KEY_TYPE_UNKNOWN = 0;
-		PROFILE_ID = 1;
-		ENTITY_ID = 2;
-	}
-
-	LookupKeyType lookup_key_type = 1;
-	oneof lookup_key_oneof {
+	oneof key {
 		string entity_id = 2 [(gogoproto.customname) = "EntityID"];
 		string profile_id = 3 [(gogoproto.customname) = "ProfileID"];
 	}

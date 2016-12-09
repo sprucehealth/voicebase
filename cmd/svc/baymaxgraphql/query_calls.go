@@ -159,8 +159,7 @@ var callParticipantType = graphql.NewObject(graphql.ObjectConfig{
 				acc := gqlctx.Account(p.Context)
 				par := p.Source.(*models.CallParticipant)
 				ent, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+					Key: &directory.LookupEntitiesRequest_EntityID{
 						EntityID: par.EntityID,
 					},
 					RequestedInformation: &directory.RequestedInformation{

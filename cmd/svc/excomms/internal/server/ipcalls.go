@@ -57,8 +57,7 @@ func (e *excommsService) InitiateIPCall(ctx context.Context, req *excomms.Initia
 
 	entityIDs := append(req.RecipientEntityIDs, req.CallerEntityID)
 	leres, err := e.directory.LookupEntities(ctx, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
+		Key: &directory.LookupEntitiesRequest_BatchEntityID{
 			BatchEntityID: &directory.IDList{IDs: entityIDs},
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -422,8 +421,7 @@ func (e *excommsService) postIPCallMessage(ctx context.Context, call *models.IPC
 
 	conc.Go(func() {
 		entity, err := directory.SingleEntity(ctx, e.directory, &directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			Key: &directory.LookupEntitiesRequest_EntityID{
 				EntityID: caller.EntityID,
 			},
 		})

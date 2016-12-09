@@ -90,8 +90,7 @@ func (c *cleanupSpamAccountsCmd) run(args []string) error {
 
 		glog.Infof("Attempting to clean up")
 		orgEntity, err := directory.SingleEntity(context.Background(), c.directoryCLI, &directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			Key: &directory.LookupEntitiesRequest_EntityID{
 				EntityID: orgID,
 			},
 			RequestedInformation: &directory.RequestedInformation{

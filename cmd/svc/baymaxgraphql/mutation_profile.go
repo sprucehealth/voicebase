@@ -677,8 +677,7 @@ func updateProfile(
 	if imageMediaID != "" {
 		if profileUpdate.EntityID == "" {
 			profile, err := ram.Profile(ctx, &directory.ProfileRequest{
-				LookupKeyType: directory.ProfileRequest_PROFILE_ID,
-				LookupKeyOneof: &directory.ProfileRequest_ProfileID{
+				Key: &directory.ProfileRequest_ProfileID{
 					ProfileID: profileID,
 				},
 			})
@@ -688,8 +687,7 @@ func updateProfile(
 			profileUpdate.EntityID = profile.EntityID
 		}
 		entity, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			Key: &directory.LookupEntitiesRequest_EntityID{
 				EntityID: profileUpdate.EntityID,
 			},
 			RequestedInformation: &directory.RequestedInformation{

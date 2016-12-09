@@ -3,8 +3,6 @@ package workers
 import (
 	"context"
 
-	"google.golang.org/grpc"
-
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/server"
@@ -13,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/events"
 	"github.com/sprucehealth/backend/svc/threading"
+	"google.golang.org/grpc"
 )
 
 type newPatientWelcomeMessageThreadClient interface {
@@ -49,8 +48,7 @@ func processNewPatientWelcomeMessage(ctx context.Context, dl dal.DAL, directoryC
 		return nil
 	}
 	entResp, err := directoryClient.LookupEntities(ctx, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: thread.PrimaryEntityID,
 		},
 	})

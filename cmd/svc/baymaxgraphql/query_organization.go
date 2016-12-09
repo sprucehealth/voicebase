@@ -199,8 +199,7 @@ var organizationType = graphql.NewObject(
 
 					// Get the entity for the account
 					ent, err := raccess.EntityInOrgForAccountID(ctx, ram, &directory.LookupEntitiesRequest{
-						LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
-						LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+						Key: &directory.LookupEntitiesRequest_AccountID{
 							AccountID: acc.ID,
 						},
 						RequestedInformation: &directory.RequestedInformation{
@@ -263,8 +262,7 @@ var organizationType = graphql.NewObject(
 							EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERS, directory.EntityInformation_CONTACTS},
 							Depth:             0,
 						},
-						LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-						LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+						Key: &directory.LookupEntitiesRequest_EntityID{
 							EntityID: org.ID,
 						},
 						Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},

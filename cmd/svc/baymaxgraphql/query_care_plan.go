@@ -83,8 +83,7 @@ var carePlanType = graphql.NewObject(
 					}
 
 					ent, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
-						LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-						LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+						Key: &directory.LookupEntitiesRequest_EntityID{
 							EntityID: th.PrimaryEntityID,
 						},
 						RequestedInformation: &directory.RequestedInformation{

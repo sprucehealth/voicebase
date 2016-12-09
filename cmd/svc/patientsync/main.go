@@ -134,7 +134,7 @@ func main() {
 		*flagWebDomain)
 	syncEventWorker.Start()
 
-	initiateSyncWorker := worker.NewInitateSync(
+	initiateSyncWorker := worker.NewInitiateSync(
 		dl,
 		*flagSyncEventQueueURL,
 		*flagInitialSyncQueueURL,

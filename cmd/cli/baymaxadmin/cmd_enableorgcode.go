@@ -57,8 +57,7 @@ func (c *enableOrgCodeCmd) run(args []string) error {
 	}
 
 	resp, err := c.directoryCli.LookupEntities(ctx, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: *entityID,
 		},
 		RootTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},

@@ -68,8 +68,7 @@ func TestAcceptPaymentRequest(t *testing.T) {
 					},
 				}, nil))
 				mra.Expect(mock.NewExpectation(mra.Entities, &directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+					Key: &directory.LookupEntitiesRequest_EntityID{
 						EntityID: requestinEntityID,
 					},
 				}).WithReturns([]*directory.Entity{{ID: requestinEntityID, Info: &directory.EntityInfo{}}}, nil))
@@ -142,8 +141,7 @@ func TestAcceptPaymentRequest(t *testing.T) {
 					Text: payments.FormatAmount(234, "USD"),
 				})
 				mra.Expect(mock.NewExpectation(mra.Entities, &directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+					Key: &directory.LookupEntitiesRequest_EntityID{
 						EntityID: requestinEntityID,
 					},
 				}).WithReturns([]*directory.Entity{{ID: requestinEntityID, Info: &directory.EntityInfo{}}}, nil))

@@ -6,9 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/sync"
@@ -19,6 +16,8 @@ import (
 	"github.com/sprucehealth/backend/libs/worker"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 type Service interface {
@@ -98,8 +97,7 @@ func (s *syncEvent) processPatientUpdatedEvent(ctx context.Context, cfg *sync.Co
 
 		// check if patient already exists, ignore update if patient deleted
 		res, err := s.directory.LookupEntities(ctx, &directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+			Key: &directory.LookupEntitiesRequest_ExternalID{
 				ExternalID: sync.ExternalIDFromSource(patient.ID, event.Source),
 			},
 			MemberOfEntity: cfg.OrganizationEntityID,
@@ -251,8 +249,7 @@ func (s *syncEvent) createPatientAndThread(ctx context.Context, patient *sync.Pa
 	}
 
 	res, err := s.directory.LookupEntities(ctx, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+		Key: &directory.LookupEntitiesRequest_ExternalID{
 			ExternalID: sync.ExternalIDFromSource(patient.ID, source),
 		},
 		MemberOfEntity: orgID,

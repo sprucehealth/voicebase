@@ -71,8 +71,7 @@ func transformPaymentToResponse(ctx context.Context, p *payments.Payment, ram ra
 	account := gqlctx.Account(ctx)
 	// TODO: Where some of this info comes from will change in time, this is just to get something working
 	requestingEntity, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: p.RequestingEntityID,
 		},
 	})

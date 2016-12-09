@@ -175,16 +175,14 @@ func createMembership(client directory.DirectoryClient, entityID, targetEntityID
 
 func lookupEntitiesByIDRequest(entityID string, requestedInformation *directory.RequestedInformation) *directory.LookupEntitiesRequest {
 	return &directory.LookupEntitiesRequest{
-		LookupKeyType:        directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof:       &directory.LookupEntitiesRequest_EntityID{EntityID: entityID},
+		Key:                  &directory.LookupEntitiesRequest_EntityID{EntityID: entityID},
 		RequestedInformation: requestedInformation,
 	}
 }
 
 func lookupEntitiesByExternalIDRequest(externalID string, requestedInformation *directory.RequestedInformation) *directory.LookupEntitiesRequest {
 	return &directory.LookupEntitiesRequest{
-		LookupKeyType:        directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof:       &directory.LookupEntitiesRequest_ExternalID{ExternalID: externalID},
+		Key:                  &directory.LookupEntitiesRequest_ExternalID{ExternalID: externalID},
 		RequestedInformation: requestedInformation,
 	}
 }

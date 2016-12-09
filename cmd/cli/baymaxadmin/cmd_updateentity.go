@@ -55,8 +55,7 @@ func (c *updateEntityCmd) run(args []string) error {
 
 	ctx := context.Background()
 	entity, err := directory.SingleEntity(ctx, c.dirCli, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: *entityID,
 		},
 		RequestedInformation: &directory.RequestedInformation{

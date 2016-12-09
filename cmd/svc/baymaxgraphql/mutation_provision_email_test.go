@@ -36,8 +36,7 @@ func TestProvisionEmail_Organization(t *testing.T) {
 
 	// Looking up the orgnaization entity
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: organizationID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -120,8 +119,7 @@ func TestProvisionEmail_Organization(t *testing.T) {
 	}, nil))
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+		Key: &directory.LookupEntitiesRequest_AccountID{
 			AccountID: acc.ID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -217,8 +215,7 @@ func TestProvisionEmail_Internal(t *testing.T) {
 	emailToProvision := "sup@pup.amdava.com"
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: entityID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -363,8 +360,7 @@ func TestProvisionEmail_Organization_DomainExists(t *testing.T) {
 	emailToProvision := "sup@pup.amdava.com"
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: organizationID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -448,8 +444,7 @@ func TestProvisionEmail_Organization_DomainExists(t *testing.T) {
 	}, nil))
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+		Key: &directory.LookupEntitiesRequest_AccountID{
 			AccountID: acc.ID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -545,8 +540,7 @@ func TestProvisionEmail_Organization_DomainInUse(t *testing.T) {
 
 	// Looking up the orgnaization entity
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: organizationID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
@@ -647,8 +641,7 @@ func TestProvisionEmail_Organization_EmailInUse(t *testing.T) {
 
 	// Looking up the orgnaization entity
 	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+		Key: &directory.LookupEntitiesRequest_EntityID{
 			EntityID: organizationID,
 		},
 		RequestedInformation: &directory.RequestedInformation{

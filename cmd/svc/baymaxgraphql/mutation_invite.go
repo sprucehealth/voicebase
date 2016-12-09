@@ -255,8 +255,7 @@ var associateInviteMutation = &graphql.Field{
 		}
 
 		org, err := raccess.UnauthorizedEntity(ctx, ram, &directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			Key: &directory.LookupEntitiesRequest_EntityID{
 				EntityID: orgID,
 			},
 		})
@@ -290,8 +289,7 @@ var associateInviteMutation = &graphql.Field{
 			}
 		case *invite.LookupInviteResponse_Colleague:
 			inviter, err := raccess.UnauthorizedEntity(ctx, ram, &directory.LookupEntitiesRequest{
-				LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-				LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+				Key: &directory.LookupEntitiesRequest_EntityID{
 					EntityID: res.GetColleague().InviterEntityID,
 				},
 			})

@@ -72,8 +72,7 @@ func processOutgoingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 	res, err := eh.directory.LookupEntities(
 		context.Background(),
 		&directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			Key: &directory.LookupEntitiesRequest_EntityID{
 				EntityID: ppnr.OrganizationID,
 			},
 			RequestedInformation: &directory.RequestedInformation{
@@ -128,8 +127,7 @@ func processOutgoingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 	res, err = eh.directory.LookupEntities(
 		context.Background(),
 		&directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			Key: &directory.LookupEntitiesRequest_EntityID{
 				EntityID: ppnr.DestinationEntityID,
 			},
 			Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},

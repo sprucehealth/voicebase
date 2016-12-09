@@ -142,8 +142,7 @@ var triageVisitMutation = &graphql.Field{
 		}
 
 		entity, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			Key: &directory.LookupEntitiesRequest_EntityID{
 				EntityID: visitRes.Visit.EntityID,
 			},
 			Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
