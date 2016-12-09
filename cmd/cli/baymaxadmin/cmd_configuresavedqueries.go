@@ -15,13 +15,13 @@ import (
 	"github.com/sprucehealth/backend/svc/threading"
 )
 
-type replaceSavedQueriesCmd struct {
+type configureSavedQueriesCmd struct {
 	cnf          *config
 	dirCli       directory.DirectoryClient
 	threadingCli threading.ThreadsClient
 }
 
-func newReplaceSavedQueriesCmd(cnf *config) (command, error) {
+func newConfigureSavedQueriesCmd(cnf *config) (command, error) {
 	dirCli, err := cnf.directoryClient()
 	if err != nil {
 		return nil, err
@@ -32,7 +32,7 @@ func newReplaceSavedQueriesCmd(cnf *config) (command, error) {
 		return nil, err
 	}
 
-	return &replaceSavedQueriesCmd{
+	return &configureSavedQueriesCmd{
 		cnf:          cnf,
 		dirCli:       dirCli,
 		threadingCli: threadingCli,
@@ -55,10 +55,12 @@ type savedQueriesConfig struct {
 	SavedQueries []*savedQuery
 }
 
-func (c *replaceSavedQueriesCmd) run(args []string) error {
-	fs := flag.NewFlagSet("replacesavedqueries", flag.ExitOnError)
+func (c *configureSavedQueriesCmd) run(args []string) error {
+	fs := flag.NewFlagSet("configuresavedqueries", flag.ExitOnError)
 	entityID := fs.String("entity_id", "", "ID of the entity for which to create saved queries")
 	configFile := fs.String("config_toml_file", "", "File containing config in toml form")
+	force := fs.Bool("force", false, "force first deletes the existing saved queries to then create new ones")
+
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -103,36 +105,54 @@ func (c *replaceSavedQueriesCmd) run(args []string) error {
 	}
 
 	var savedQueryIDs []string
+	var savedQueries []*threading.SavedQuery
 	if ent.Type == directory.EntityType_ORGANIZATION {
-		savedQueries, err := c.threadingCli.SavedQueryTemplates(ctx, &threading.SavedQueryTemplatesRequest{
+		savedQueriesRes, err := c.threadingCli.SavedQueryTemplates(ctx, &threading.SavedQueryTemplatesRequest{
 			EntityID: ent.ID,
 		})
 		if err != nil {
 			return errors.Trace(err)
 		}
-		for _, sq := range savedQueries.SavedQueries {
+		for _, sq := range savedQueriesRes.SavedQueries {
 			savedQueryIDs = append(savedQueryIDs, sq.ID)
 		}
+		savedQueries = savedQueriesRes.SavedQueries
 	} else {
-		savedQueries, err := c.threadingCli.SavedQueries(ctx, &threading.SavedQueriesRequest{
+		savedQueriesRes, err := c.threadingCli.SavedQueries(ctx, &threading.SavedQueriesRequest{
 			EntityID: ent.ID,
 		})
 		if err != nil {
 			return errors.Trace(err)
 		}
-		for _, sq := range savedQueries.SavedQueries {
+		for _, sq := range savedQueriesRes.SavedQueries {
 			savedQueryIDs = append(savedQueryIDs, sq.ID)
 		}
+		savedQueries = savedQueriesRes.SavedQueries
 	}
 
-	// delete existing saved thread queries
-	if _, err := c.threadingCli.DeleteSavedQueries(ctx, &threading.DeleteSavedQueriesRequest{
-		SavedQueryIDs: savedQueryIDs,
-	}); err != nil {
-		return errors.Trace(err)
+	existingSavedQueries := make(map[string]struct{})
+	if *force {
+		// delete existing saved thread queries
+		if _, err := c.threadingCli.DeleteSavedQueries(ctx, &threading.DeleteSavedQueriesRequest{
+			SavedQueryIDs: savedQueryIDs,
+		}); err != nil {
+			return errors.Trace(err)
+		}
+	} else {
+		// get a map of existing saved queries by title
+		for _, existingSQ := range savedQueries {
+			existingSavedQueries[existingSQ.ShortTitle] = struct{}{}
+		}
 	}
 
 	for _, savedQuery := range sqc.SavedQueries {
+
+		// don't create if it already exists
+		if _, ok := existingSavedQueries[savedQuery.ShortTitle]; ok {
+			golog.Warningf("Skipping creation saved query with title %s since it already exists", savedQuery.ShortTitle)
+			continue
+		}
+
 		query, err := threading.ParseQuery(savedQuery.Query)
 		if err != nil {
 			return errors.Errorf("Unable to parse query '%s' : %s", savedQuery.Query, err)
