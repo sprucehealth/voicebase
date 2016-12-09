@@ -180,10 +180,9 @@ func (d *dal) InsertInvite(ctx context.Context, invite *models.Invite) error {
 	}
 	item[createdTimestampKey] = &dynamodb.AttributeValue{N: ptr.String(strconv.FormatInt(invite.Created.UnixNano(), 10))}
 
-	if invite.VerificationRequirement == "" {
-		return errors.Errorf("VerificationRequirement required")
+	if invite.VerificationRequirement != "" {
+		item[verificationRequirementKey] = &dynamodb.AttributeValue{S: ptr.String(string(invite.VerificationRequirement))}
 	}
-	item[verificationRequirementKey] = &dynamodb.AttributeValue{S: ptr.String(string(invite.VerificationRequirement))}
 
 	if len(invite.Values) > 0 {
 		valuesAttr := make(map[string]*dynamodb.AttributeValue, len(invite.Values))
@@ -303,6 +302,10 @@ func inviteFromAttributes(attributes map[string]*dynamodb.AttributeValue) *model
 	if pn, ok := attributes[phoneNumberKey]; ok {
 		phoneNumber = *pn.S
 	}
+	var verificationRequirement models.VerificationRequirement
+	if attributes[verificationRequirementKey] != nil {
+		verificationRequirement = models.VerificationRequirement(*attributes[verificationRequirementKey].S)
+	}
 	inv := &models.Invite{
 		Token:                   *attributes[inviteTokenKey].S,
 		Type:                    models.InviteType(*attributes[typeKey].S),
@@ -313,7 +316,7 @@ func inviteFromAttributes(attributes map[string]*dynamodb.AttributeValue) *model
 		URL:                     *attributes[urlKey].S,
 		ParkedEntityID:          parkedEntityID,
 		Created:                 time.Unix(ct/1e9, ct%1e9),
-		VerificationRequirement: models.VerificationRequirement(*attributes[verificationRequirementKey].S),
+		VerificationRequirement: verificationRequirement,
 	}
 	valuesAttr := attributes[valuesKey].M
 	inv.Values = make(map[string]string, len(valuesAttr))
