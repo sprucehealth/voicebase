@@ -11,8 +11,14 @@ import (
 func EntityInOrgForAccountID(ctx context.Context, ram ResourceAccessor, req *directory.LookupEntitiesRequest, orgID string) (*directory.Entity, error) {
 	// assert that the lookup entities request is for looking up an entity
 	// via externalID
-	if req.LookupKeyType != directory.LookupEntitiesRequest_EXTERNAL_ID {
-		return nil, errors.Errorf("Expected lookup of type %s but got %s", directory.LookupEntitiesRequest_EXTERNAL_ID, req.LookupKeyType)
+	var accountID string
+	switch key := req.LookupKeyOneof.(type) {
+	case *directory.LookupEntitiesRequest_AccountID:
+		accountID = key.AccountID
+	case *directory.LookupEntitiesRequest_ExternalID:
+		accountID = key.ExternalID
+	default:
+		return nil, errors.Errorf("Expected lookup key of type AccountID or ExternalID but got %T", req)
 	}
 
 	entities, err := ram.Entities(ctx, req)
@@ -21,14 +27,14 @@ func EntityInOrgForAccountID(ctx context.Context, ram ResourceAccessor, req *dir
 	}
 
 	for _, entity := range entities {
-		for _, member := range entity.GetMemberships() {
+		for _, member := range entity.Memberships {
 			if member.Type == directory.EntityType_ORGANIZATION && member.ID == orgID {
 				return entity, nil
 			}
 		}
 	}
 
-	return nil, errors.Errorf("Did not find entity for account %s and org %s", req.GetExternalID(), orgID)
+	return nil, errors.Errorf("Did not find entity for account %s and org %s", accountID, orgID)
 }
 
 // Entity returns a single expected entity for the directory request.

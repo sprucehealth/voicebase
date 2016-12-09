@@ -92,18 +92,28 @@ message IntegerValue {
 
 message TextConfig {
 	TextValue default = 1;
+	TextRequirements requirements = 2;
 }
 message TextValue {
 	string value = 1;
+}
+message TextRequirements {
+	string match_regexp = 1;
 }
 
 // String list
 
 message StringListConfig {
 	StringListValue default = 1;
+	StringListRequirements requirements = 2;
 }
 message StringListValue {
 	repeated string values = 1;
+}
+message StringListRequirements {
+	TextRequirements text_requirements = 1;
+	int32 min_values = 2; // -1 for no limit
+	int32 max_values = 3; // -1 for no limit
 }
 
 // Single-select and multi-select

@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	baymaxgraphqlsettings "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/settings"
+	exsettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
 	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/libs/caremessenger/deeplink"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -187,7 +188,64 @@ var organizationType = graphql.NewObject(
 				Type:    entityType,
 				Resolve: entityWithinOrg(),
 			},
-			"contacts": &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(contactInfoType))},
+			"contacts": &graphql.Field{
+				Type: graphql.NewList(graphql.NewNonNull(contactInfoType)),
+				Resolve: apiaccess.Provider(func(p graphql.ResolveParams) (interface{}, error) {
+					org := p.Source.(*models.Organization)
+					ram := raccess.ResourceAccess(p)
+					svc := serviceFromParams(p)
+					ctx := p.Context
+					acc := gqlctx.Account(ctx)
+
+					// Get the entity for the account
+					ent, err := raccess.EntityInOrgForAccountID(ctx, ram, &directory.LookupEntitiesRequest{
+						LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
+						LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+							AccountID: acc.ID,
+						},
+						RequestedInformation: &directory.RequestedInformation{
+							Depth:             0,
+							EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
+						},
+						Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+						RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+						ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+					}, org.ID)
+					if err != nil {
+						return nil, errors.Trace(err)
+					}
+
+					// Get the default provisioned number for the entity if one is set
+					var provisionedPhoneNumber string
+					val, err := settings.GetTextValue(ctx, svc.settings, &settings.GetValuesRequest{
+						NodeID: ent.ID,
+						Keys: []*settings.ConfigKey{
+							{
+								Key: exsettings.ConfigKeyDefaultProvisionedPhoneNumber,
+							},
+						},
+					})
+					if err == nil {
+						provisionedPhoneNumber = val.Value
+					} else if errors.Cause(err) != settings.ErrValueNotFound {
+						return nil, errors.Errorf("unable to get default number setting for entity %s: %s", ent.ID, err)
+					}
+
+					// If entity has a default number then order the contacts to have it at the top
+					if provisionedPhoneNumber != "" {
+						for i, c := range org.Contacts {
+							if c.Type == models.ContactTypePhone && c.Provisioned && c.Value == provisionedPhoneNumber {
+								if i != 0 { // if not already at the front then swap
+									org.Contacts[0], org.Contacts[i] = org.Contacts[i], org.Contacts[0]
+								}
+								break
+							}
+						}
+					}
+
+					return org.Contacts, nil
+				}),
+			},
 			"entities": &graphql.Field{
 				Type: graphql.NewList(graphql.NewNonNull(entityType)),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
@@ -284,10 +342,6 @@ var organizationType = graphql.NewObject(
 					ctx := p.Context
 					ram := raccess.ResourceAccess(p)
 					acc := gqlctx.Account(ctx)
-
-					if org == nil {
-						return "", nil
-					}
 
 					ent, err := entityInOrgForAccountID(ctx, ram, org.ID, acc)
 					if err != nil {

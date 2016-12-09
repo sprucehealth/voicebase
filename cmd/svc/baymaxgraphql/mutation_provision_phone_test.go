@@ -28,6 +28,7 @@ func TestProvisionPhone(t *testing.T) {
 
 	entityID := "12345"
 	areaCode := "203"
+	organizationID := "org"
 
 	expectEntityInOrgForAccountID(g.ra, acc.ID, []*directory.Entity{
 		{
@@ -43,23 +44,23 @@ func TestProvisionPhone(t *testing.T) {
 				},
 			},
 			Memberships: []*directory.Entity{
-				{ID: entityID, Type: directory.EntityType_ORGANIZATION},
+				{ID: organizationID, Type: directory.EntityType_ORGANIZATION},
 			},
 		},
 	})
 
 	g.ra.Expect(mock.NewExpectation(g.ra.ProvisionPhoneNumber, &excomms.ProvisionPhoneNumberRequest{
-		ProvisionFor: entityID,
+		ProvisionFor: organizationID,
 		Number: &excomms.ProvisionPhoneNumberRequest_AreaCode{
 			AreaCode: areaCode,
 		},
-		UUID: "12345:primary",
+		UUID: organizationID + ":primary",
 	}).WithReturns(&excomms.ProvisionPhoneNumberResponse{
 		PhoneNumber: "+12068773590",
 	}, nil))
 
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateContact, &directory.CreateContactRequest{
-		EntityID: entityID,
+		EntityID: organizationID,
 		Contact: &directory.Contact{
 			ContactType: directory.ContactType_PHONE,
 			Value:       "+12068773590",
@@ -76,7 +77,7 @@ func TestProvisionPhone(t *testing.T) {
 		},
 	}).WithReturns(&directory.CreateContactResponse{
 		Entity: &directory.Entity{
-			ID:   entityID,
+			ID:   organizationID,
 			Type: directory.EntityType_ORGANIZATION,
 			Info: &directory.EntityInfo{
 				DisplayName: "Schmee",
@@ -92,7 +93,7 @@ func TestProvisionPhone(t *testing.T) {
 	}, nil))
 
 	g.settingsC.Expect(mock.NewExpectation(g.settingsC.SetValue, &settings.SetValueRequest{
-		NodeID: entityID,
+		NodeID: organizationID,
 		Value: &settings.Value{
 			Key: &settings.ConfigKey{
 				Key:    excommssettings.ConfigKeyForwardingList,
@@ -108,6 +109,40 @@ func TestProvisionPhone(t *testing.T) {
 			},
 		},
 	}))
+
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+			AccountID: acc.ID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
+		},
+		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	}).WithReturns([]*directory.Entity{
+		{
+			ID:   entityID,
+			Type: directory.EntityType_ORGANIZATION,
+			Info: &directory.EntityInfo{
+				DisplayName: "Schmee",
+			},
+			Memberships: []*directory.Entity{
+				{
+					ID:   organizationID,
+					Type: directory.EntityType_ORGANIZATION,
+				},
+			},
+		},
+	}, nil))
+
+	g.settingsC.Expect(mock.NewExpectation(g.settingsC.GetValues, &settings.GetValuesRequest{
+		Keys:   []*settings.ConfigKey{{Key: "default_provisioned_phone_number"}},
+		NodeID: entityID,
+	}).WithReturns(&settings.GetValuesResponse{}, nil))
+
 	res := g.query(ctx, `
 		mutation _ ($organizationId: ID!, $areaCode: String!) {
 			provisionPhoneNumber(input: {
@@ -127,7 +162,7 @@ func TestProvisionPhone(t *testing.T) {
 				}
 			}
 		}`, map[string]interface{}{
-		"organizationId": entityID,
+		"organizationId": organizationID,
 		"areaCode":       areaCode,
 	})
 	responseEquals(t, `{

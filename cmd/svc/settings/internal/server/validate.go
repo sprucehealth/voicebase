@@ -2,10 +2,12 @@ package server
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/sprucehealth/backend/cmd/svc/settings/internal/models"
 	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/settings"
 	"google.golang.org/grpc"
 )
@@ -24,8 +26,8 @@ func validateValueAgainstConfig(value *settings.Value, config *models.Config) (*
 	transformedValue := transformValueToModel(value)
 	transformedValue.Config = config
 
-	switch config.Type {
-	case models.ConfigType_MULTI_SELECT:
+	switch cfg := config.Config.(type) {
+	case *models.Config_MultiSelect:
 		// ensure that at least one multi-select option is specified
 		if transformedValue.GetMultiSelect() == nil || len(transformedValue.GetMultiSelect().GetItems()) == 0 {
 			if config.OptionalValue {
@@ -39,7 +41,7 @@ func validateValueAgainstConfig(value *settings.Value, config *models.Config) (*
 			// ensure that id is present in the config
 			present := false
 			var optionSelected *models.Item
-			for _, option := range config.GetMultiSelect().Items {
+			for _, option := range cfg.MultiSelect.Items {
 				if option.ID == item.ID {
 					present = true
 					optionSelected = option
@@ -55,8 +57,7 @@ func validateValueAgainstConfig(value *settings.Value, config *models.Config) (*
 			}
 		}
 
-	case models.ConfigType_SINGLE_SELECT:
-
+	case *models.Config_SingleSelect:
 		// ensure that one singe-select option is specified
 		if transformedValue.GetSingleSelect() == nil || transformedValue.GetSingleSelect().Item == nil {
 			if config.OptionalValue {
@@ -67,7 +68,7 @@ func validateValueAgainstConfig(value *settings.Value, config *models.Config) (*
 
 		present := false
 		var optionSelected *models.Item
-		for _, option := range config.GetSingleSelect().Items {
+		for _, option := range cfg.SingleSelect.Items {
 			if option.ID == transformedValue.GetSingleSelect().Item.ID {
 				present = true
 				optionSelected = option
@@ -82,40 +83,103 @@ func validateValueAgainstConfig(value *settings.Value, config *models.Config) (*
 			return nil, fmt.Errorf("Selection requires free text but no free text set for value %s", transformedValue.Key)
 		}
 
-	case models.ConfigType_BOOLEAN:
+	case *models.Config_Boolean:
 		if transformedValue.GetBoolean() == nil {
 			return nil, fmt.Errorf("No boolean value specified for %s", transformedValue.Key)
 		}
-	case models.ConfigType_INTEGER:
+	case *models.Config_Integer:
 		if transformedValue.GetInteger() == nil {
 			return nil, fmt.Errorf("No integer value specified for %s", transformedValue.Key)
 		}
-	case models.ConfigType_TEXT:
-		if transformedValue.GetText() == nil {
+	case *models.Config_Text:
+		text := transformedValue.GetText()
+		if text == nil {
 			return nil, fmt.Errorf("No text value specified for %s", transformedValue.Key)
 		}
-	case models.ConfigType_STRING_LIST:
+		if err := validateTextRequirements(cfg.Text.Requirements, text.Value); err != nil {
+			if e, ok := errors.Cause(err).(errInvalidValue); ok {
+				return nil, grpc.Errorf(settings.InvalidUserValue, e.Error())
+			}
+			return nil, errors.Trace(err)
+		}
+	case *models.Config_StringList:
 		if transformedValue.GetStringList() == nil || len(transformedValue.GetStringList().Values) == 0 {
 			if config.OptionalValue {
 				return transformedValue, nil
 			}
 			return nil, grpc.Errorf(settings.InvalidUserValue, "Please specify at least one entry")
 		}
-		// ensure that there is at least one valid entry
-		atLeastOneValidEntry := false
-		for _, item := range transformedValue.GetStringList().Values {
-			if len(strings.TrimSpace(item)) != 0 {
-				atLeastOneValidEntry = true
-				break
+		values := transformedValue.GetStringList().Values
+		// remove empty entries
+		nonEmptyValues := make([]string, 0, len(values))
+		for _, v := range values {
+			v = strings.TrimSpace(v)
+			if v != "" {
+				nonEmptyValues = append(nonEmptyValues, v)
 			}
 		}
-		if !atLeastOneValidEntry && !config.OptionalValue {
+		if len(nonEmptyValues) == 0 && !config.OptionalValue {
 			return nil, grpc.Errorf(settings.InvalidUserValue, "Please specify at least one entry")
 		}
 
+		if err := validateStringListRequirements(cfg.StringList.Requirements, nonEmptyValues); err != nil {
+			if e, ok := errors.Cause(err).(errInvalidValue); ok {
+				return nil, grpc.Errorf(settings.InvalidUserValue, e.Error())
+			}
+			return nil, errors.Trace(err)
+		}
 	default:
-		return nil, fmt.Errorf("Unsupported config type %s", config.Type.String())
+		return nil, errors.Errorf("Unsupported config type %T", cfg)
 	}
 
 	return transformedValue, nil
+}
+
+type errInvalidValue struct {
+	value  string
+	reason string
+}
+
+func (e errInvalidValue) Error() string {
+	if e.value != "" {
+		return fmt.Sprintf("The value %q %s", e.value, e.reason)
+	}
+	return fmt.Sprintf("The provided value is invalid, %s", e.reason)
+}
+
+func validateStringListRequirements(req *models.StringListRequirements, values []string) error {
+	if req == nil {
+		return nil
+	}
+
+	if req.MinValues > 0 && len(values) < int(req.MinValues) {
+		return errInvalidValue{reason: fmt.Sprintf("must have at least %d values", req.MinValues)}
+	}
+	if req.MaxValues > 0 && len(values) > int(req.MaxValues) {
+		return errInvalidValue{reason: fmt.Sprintf("must have at most %d values", req.MaxValues)}
+	}
+	if req.TextRequirements != nil {
+		for _, v := range values {
+			if err := validateTextRequirements(req.TextRequirements, v); err != nil {
+				return errors.Trace(err)
+			}
+		}
+	}
+	return nil
+}
+
+func validateTextRequirements(req *models.TextRequirements, text string) error {
+	if req == nil {
+		return nil
+	}
+	if req.MatchRegexp != "" {
+		// The config should have been validated much earlier so the regex compile shouldn't ever fail
+		re, err := regexp.Compile(req.MatchRegexp)
+		if err != nil {
+			golog.Errorf("Regular expression %q is invalid: %s", req.MatchRegexp, err)
+		} else if !re.MatchString(text) {
+			return errInvalidValue{value: text, reason: "does not match expected format"}
+		}
+	}
+	return nil
 }

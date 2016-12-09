@@ -261,6 +261,9 @@ func TestRegisterConfig_Text(t *testing.T) {
 					Default: &models.TextValue{
 						Value: "foo",
 					},
+					Requirements: &models.TextRequirements{
+						MatchRegexp: "abc",
+					},
 				},
 			},
 		},
@@ -280,6 +283,9 @@ func TestRegisterConfig_Text(t *testing.T) {
 					Text: &settings.TextConfig{
 						Default: &settings.TextValue{
 							Value: "foo",
+						},
+						Requirements: &settings.TextRequirements{
+							MatchRegexp: "abc",
 						},
 					},
 				},
@@ -306,6 +312,11 @@ func TestRegisterConfig_StringList(t *testing.T) {
 					Default: &models.StringListValue{
 						Values: []string{"test1", "test2"},
 					},
+					Requirements: &models.StringListRequirements{
+						TextRequirements: &models.TextRequirements{
+							MatchRegexp: "foo",
+						},
+					},
 				},
 			},
 		},
@@ -326,6 +337,11 @@ func TestRegisterConfig_StringList(t *testing.T) {
 						Default: &settings.StringListValue{
 							Values: []string{"test1", "test2"},
 						},
+						Requirements: &settings.StringListRequirements{
+							TextRequirements: &settings.TextRequirements{
+								MatchRegexp: "foo",
+							},
+						},
 					},
 				},
 			},
@@ -333,6 +349,166 @@ func TestRegisterConfig_StringList(t *testing.T) {
 	})
 	test.OK(t, err)
 
+	mock.FinishAll(md)
+}
+
+func TestSetValue_StringList(t *testing.T) {
+	md := dalmock.New(t)
+	md.Expect(mock.NewExpectation(md.GetConfigs, []string{"testingkey"}).WithReturns(
+		[]*models.Config{
+			{
+				Title:        "hello",
+				Description:  "hi",
+				Key:          "testingkey",
+				Type:         models.ConfigType_STRING_LIST,
+				AllowSubkeys: true,
+				Config: &models.Config_StringList{
+					StringList: &models.StringListConfig{
+						Default: &models.StringListValue{},
+						Requirements: &models.StringListRequirements{
+							TextRequirements: &models.TextRequirements{
+								MatchRegexp: `^[0-9]+$`,
+							},
+						},
+					},
+				},
+			},
+		}, nil))
+
+	md.Expect(mock.NewExpectation(md.SetValues, "12345", []*models.Value{
+		{
+			Key: &models.ConfigKey{
+				Key:    "testingkey",
+				Subkey: "22222",
+			},
+			Value: &models.Value_StringList{
+				StringList: &models.StringListValue{
+					Values: []string{"123", "9"},
+				},
+			},
+			Config: &models.Config{
+				Title:        "hello",
+				Description:  "hi",
+				Key:          "testingkey",
+				Type:         models.ConfigType_STRING_LIST,
+				AllowSubkeys: true,
+				Config: &models.Config_StringList{
+					StringList: &models.StringListConfig{
+						Default: &models.StringListValue{},
+						Requirements: &models.StringListRequirements{
+							TextRequirements: &models.TextRequirements{
+								MatchRegexp: `^[0-9]+$`,
+							},
+						},
+					},
+				},
+			},
+		},
+	}))
+
+	server := New(md)
+	_, err := server.SetValue(context.Background(), &settings.SetValueRequest{
+		NodeID: "12345",
+		Value: &settings.Value{
+			Key: &settings.ConfigKey{
+				Key:    "testingkey",
+				Subkey: "22222",
+			},
+			Type: settings.ConfigType_STRING_LIST,
+			Value: &settings.Value_StringList{
+				StringList: &settings.StringListValue{
+					Values: []string{"123", "9"},
+				},
+			},
+		},
+	})
+	test.OK(t, err)
+	mock.FinishAll(md)
+}
+
+func TestSetValue_StringList_FailRegexp(t *testing.T) {
+	md := dalmock.New(t)
+	md.Expect(mock.NewExpectation(md.GetConfigs, []string{"testingkey"}).WithReturns(
+		[]*models.Config{
+			{
+				Title:        "hello",
+				Description:  "hi",
+				Key:          "testingkey",
+				Type:         models.ConfigType_STRING_LIST,
+				AllowSubkeys: true,
+				Config: &models.Config_StringList{
+					StringList: &models.StringListConfig{
+						Default: &models.StringListValue{},
+						Requirements: &models.StringListRequirements{
+							TextRequirements: &models.TextRequirements{
+								MatchRegexp: `^[0-9]+$`,
+							},
+						},
+					},
+				},
+			},
+		}, nil))
+
+	server := New(md)
+	_, err := server.SetValue(context.Background(), &settings.SetValueRequest{
+		NodeID: "12345",
+		Value: &settings.Value{
+			Key: &settings.ConfigKey{
+				Key:    "testingkey",
+				Subkey: "22222",
+			},
+			Type: settings.ConfigType_STRING_LIST,
+			Value: &settings.Value_StringList{
+				StringList: &settings.StringListValue{
+					Values: []string{"123", "abc"},
+				},
+			},
+		},
+	})
+	test.Assert(t, err != nil, "Expected non-nil error")
+	test.Equals(t, "rpc error: code = 100 desc = The value \"abc\" does not match expected format", err.Error())
+	mock.FinishAll(md)
+}
+
+func TestSetValue_StringList_FailMaxValues(t *testing.T) {
+	md := dalmock.New(t)
+	md.Expect(mock.NewExpectation(md.GetConfigs, []string{"testingkey"}).WithReturns(
+		[]*models.Config{
+			{
+				Title:        "hello",
+				Description:  "hi",
+				Key:          "testingkey",
+				Type:         models.ConfigType_STRING_LIST,
+				AllowSubkeys: true,
+				Config: &models.Config_StringList{
+					StringList: &models.StringListConfig{
+						Default: &models.StringListValue{},
+						Requirements: &models.StringListRequirements{
+							MaxValues: 2,
+						},
+					},
+				},
+			},
+		}, nil))
+
+	server := New(md)
+	_, err := server.SetValue(context.Background(), &settings.SetValueRequest{
+		NodeID: "12345",
+		Value: &settings.Value{
+			Key: &settings.ConfigKey{
+				Key:    "testingkey",
+				Subkey: "22222",
+			},
+			Type: settings.ConfigType_STRING_LIST,
+			Value: &settings.Value_StringList{
+				StringList: &settings.StringListValue{
+					Values: []string{"123", "abc", "zzz"},
+				},
+			},
+		},
+	})
+	test.Assert(t, err != nil, "Expected non-nil error")
+	test.Equals(t, "rpc error: code = 100 desc = The provided value is invalid, must have at most 2 values", err.Error())
 	mock.FinishAll(md)
 }
 

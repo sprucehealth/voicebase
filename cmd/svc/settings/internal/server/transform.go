@@ -1,11 +1,14 @@
 package server
 
 import (
+	"regexp"
+
 	"github.com/sprucehealth/backend/cmd/svc/settings/internal/models"
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/svc/settings"
 )
 
-func transformConfigToModel(config *settings.Config) *models.Config {
+func transformConfigToModel(config *settings.Config) (*models.Config, error) {
 	m := &models.Config{
 		Title:          config.Title,
 		Description:    config.Description,
@@ -20,42 +23,47 @@ func transformConfigToModel(config *settings.Config) *models.Config {
 		m.PossibleOwners[i] = models.OwnerType(models.OwnerType_value[po.String()])
 	}
 
-	switch m.Type {
-	case models.ConfigType_BOOLEAN:
+	switch config := config.Config.(type) {
+	case *settings.Config_Boolean:
 		m.Config = &models.Config_Boolean{
 			Boolean: &models.BooleanConfig{
 				Default: &models.BooleanValue{
-					Value: config.GetBoolean().GetDefault().Value,
+					Value: config.Boolean.Default.Value,
 				},
 			},
 		}
-	case models.ConfigType_INTEGER:
+	case *settings.Config_Integer:
 		m.Config = &models.Config_Integer{
 			Integer: &models.IntegerConfig{
 				Default: &models.IntegerValue{
-					Value: config.GetInteger().GetDefault().Value,
+					Value: config.Integer.Default.Value,
 				},
 			},
 		}
-	case models.ConfigType_TEXT:
+	case *settings.Config_Text:
+		req, err := transformTextRequirementsToModel(config.Text.Requirements)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
 		m.Config = &models.Config_Text{
 			Text: &models.TextConfig{
 				Default: &models.TextValue{
-					Value: config.GetText().GetDefault().Value,
+					Value: config.Text.Default.Value,
 				},
+				Requirements: req,
 			},
 		}
-	case models.ConfigType_MULTI_SELECT:
+	case *settings.Config_MultiSelect:
 		m.Config = &models.Config_MultiSelect{
 			MultiSelect: &models.MultiSelectConfig{
-				Items: make([]*models.Item, len(config.GetMultiSelect().Items)),
+				Items: make([]*models.Item, len(config.MultiSelect.Items)),
 				Default: &models.MultiSelectValue{
-					Items: make([]*models.ItemValue, len(config.GetMultiSelect().Default.Items)),
+					Items: make([]*models.ItemValue, len(config.MultiSelect.Default.Items)),
 				},
 			},
 		}
 
-		for i, item := range config.GetMultiSelect().Items {
+		for i, item := range config.MultiSelect.Items {
 			m.GetMultiSelect().Items[i] = &models.Item{
 				ID:               item.ID,
 				Label:            item.Label,
@@ -64,25 +72,25 @@ func transformConfigToModel(config *settings.Config) *models.Config {
 			}
 		}
 
-		for i, item := range config.GetMultiSelect().Default.GetItems() {
+		for i, item := range config.MultiSelect.Default.Items {
 			m.GetMultiSelect().Default.Items[i] = &models.ItemValue{
 				ID:               item.ID,
 				FreeTextResponse: item.FreeTextResponse,
 			}
 		}
-	case models.ConfigType_SINGLE_SELECT:
+	case *settings.Config_SingleSelect:
 		m.Config = &models.Config_SingleSelect{
 			SingleSelect: &models.SingleSelectConfig{
-				Items: make([]*models.Item, len(config.GetSingleSelect().Items)),
+				Items: make([]*models.Item, len(config.SingleSelect.Items)),
 				Default: &models.SingleSelectValue{
 					Item: &models.ItemValue{
-						ID:               config.GetSingleSelect().GetDefault().Item.ID,
-						FreeTextResponse: config.GetSingleSelect().GetDefault().Item.FreeTextResponse,
+						ID:               config.SingleSelect.Default.Item.ID,
+						FreeTextResponse: config.SingleSelect.Default.Item.FreeTextResponse,
 					},
 				},
 			},
 		}
-		for i, item := range config.GetSingleSelect().Items {
+		for i, item := range config.SingleSelect.Items {
 			m.GetSingleSelect().Items[i] = &models.Item{
 				ID:               item.ID,
 				Label:            item.Label,
@@ -90,21 +98,59 @@ func transformConfigToModel(config *settings.Config) *models.Config {
 				FreeTextRequired: item.FreeTextRequired,
 			}
 		}
-	case models.ConfigType_STRING_LIST:
-		m.Config = &models.Config_StringList{
-			StringList: &models.StringListConfig{},
+	case *settings.Config_StringList:
+		req, err := transformStringListRequirementsToModel(config.StringList.Requirements)
+		if err != nil {
+			return nil, errors.Trace(err)
 		}
-		if config.GetStringList().GetDefault() != nil {
+		m.Config = &models.Config_StringList{
+			StringList: &models.StringListConfig{
+				Requirements: req,
+			},
+		}
+		if config.StringList.Default != nil {
 			m.GetStringList().Default = &models.StringListValue{
-				Values: config.GetStringList().GetDefault().Values,
+				Values: config.StringList.Default.Values,
 			}
 		}
+	default:
+		return nil, errors.Errorf("unknown setting config type %T", config)
 	}
-
-	return m
+	return m, nil
 }
 
-func transformModelToConfig(config *models.Config) *settings.Config {
+func transformStringListRequirementsToModel(req *settings.StringListRequirements) (*models.StringListRequirements, error) {
+	if req == nil {
+		return nil, nil
+	}
+	textReq, err := transformTextRequirementsToModel(req.TextRequirements)
+	if err != nil {
+		return nil, err
+	}
+	return &models.StringListRequirements{
+		TextRequirements: textReq,
+		MinValues:        req.MinValues,
+		MaxValues:        req.MaxValues,
+	}, nil
+}
+
+func transformTextRequirementsToModel(req *settings.TextRequirements) (*models.TextRequirements, error) {
+	if req == nil {
+		return nil, nil
+	}
+	// Make sure regexp is valid
+	if req.MatchRegexp != "" {
+		_, err := regexp.Compile(req.MatchRegexp)
+		if err != nil {
+			return nil, errors.Errorf("Regular expression %q is invalid: %s", req.MatchRegexp, err)
+		}
+	}
+	return &models.TextRequirements{
+		MatchRegexp: req.MatchRegexp,
+	}, nil
+}
+
+func transformModelToConfig(config *models.Config) (*settings.Config, error) {
 	c := &settings.Config{
 		Title:          config.Title,
 		Description:    config.Description,
@@ -119,41 +165,42 @@ func transformModelToConfig(config *models.Config) *settings.Config {
 		c.PossibleOwners[i] = settings.OwnerType(settings.OwnerType_value[po.String()])
 	}
 
-	switch config.Type {
-	case models.ConfigType_BOOLEAN:
+	switch config := config.Config.(type) {
+	case *models.Config_Boolean:
 		c.Config = &settings.Config_Boolean{
 			Boolean: &settings.BooleanConfig{
 				Default: &settings.BooleanValue{
-					Value: config.GetBoolean().Default.Value,
+					Value: config.Boolean.Default.Value,
 				},
 			},
 		}
-	case models.ConfigType_INTEGER:
+	case *models.Config_Integer:
 		c.Config = &settings.Config_Integer{
 			Integer: &settings.IntegerConfig{
 				Default: &settings.IntegerValue{
-					Value: config.GetInteger().Default.Value,
+					Value: config.Integer.Default.Value,
 				},
 			},
 		}
-	case models.ConfigType_TEXT:
+	case *models.Config_Text:
 		c.Config = &settings.Config_Text{
 			Text: &settings.TextConfig{
 				Default: &settings.TextValue{
-					Value: config.GetText().Default.Value,
+					Value: config.Text.Default.Value,
 				},
+				Requirements: transformTextRequirementsToResponse(config.Text.Requirements),
 			},
 		}
-	case models.ConfigType_MULTI_SELECT:
+	case *models.Config_MultiSelect:
 		c.Config = &settings.Config_MultiSelect{
 			MultiSelect: &settings.MultiSelectConfig{
-				Items: make([]*settings.Item, len(config.GetMultiSelect().Items)),
+				Items: make([]*settings.Item, len(config.MultiSelect.Items)),
 				Default: &settings.MultiSelectValue{
-					Items: make([]*settings.ItemValue, len(config.GetMultiSelect().Default.Items)),
+					Items: make([]*settings.ItemValue, len(config.MultiSelect.Default.Items)),
 				},
 			},
 		}
-		for i, item := range config.GetMultiSelect().Items {
+		for i, item := range config.MultiSelect.Items {
 			c.GetMultiSelect().Items[i] = &settings.Item{
 				ID:               item.ID,
 				AllowFreeText:    item.AllowFreeText,
@@ -161,25 +208,25 @@ func transformModelToConfig(config *models.Config) *settings.Config {
 				FreeTextRequired: item.FreeTextRequired,
 			}
 		}
-		for i, item := range config.GetMultiSelect().Default.Items {
+		for i, item := range config.MultiSelect.Default.Items {
 			c.GetMultiSelect().Default.Items[i] = &settings.ItemValue{
 				ID:               item.ID,
 				FreeTextResponse: item.FreeTextResponse,
 			}
 		}
-	case models.ConfigType_SINGLE_SELECT:
+	case *models.Config_SingleSelect:
 		c.Config = &settings.Config_SingleSelect{
 			SingleSelect: &settings.SingleSelectConfig{
-				Items: make([]*settings.Item, len(config.GetSingleSelect().Items)),
+				Items: make([]*settings.Item, len(config.SingleSelect.Items)),
 				Default: &settings.SingleSelectValue{
 					Item: &settings.ItemValue{
-						ID:               config.GetSingleSelect().Default.Item.ID,
-						FreeTextResponse: config.GetSingleSelect().Default.Item.FreeTextResponse,
+						ID:               config.SingleSelect.Default.Item.ID,
+						FreeTextResponse: config.SingleSelect.Default.Item.FreeTextResponse,
 					},
 				},
 			},
 		}
-		for i, item := range config.GetSingleSelect().Items {
+		for i, item := range config.SingleSelect.Items {
 			c.GetSingleSelect().Items[i] = &settings.Item{
 				ID:               item.ID,
 				AllowFreeText:    item.AllowFreeText,
@@ -187,10 +234,42 @@ func transformModelToConfig(config *models.Config) *settings.Config {
 				FreeTextRequired: item.FreeTextRequired,
 			}
 		}
-	case models.ConfigType_STRING_LIST:
+	case *models.Config_StringList:
+		c.Config = &settings.Config_StringList{
+			StringList: &settings.StringListConfig{
+				Requirements: transformStringListRequirementsToResponse(config.StringList.Requirements),
+			},
+		}
+		if config.StringList.Default != nil {
+			c.GetStringList().Default = &settings.StringListValue{
+				Values: config.StringList.Default.Values,
+			}
+		}
+	default:
+		return nil, errors.Errorf("unknown config type %T", config)
 	}
 
-	return c
+	return c, nil
+}
+
+func transformStringListRequirementsToResponse(req *models.StringListRequirements) *settings.StringListRequirements {
+	if req == nil {
+		return nil
+	}
+	return &settings.StringListRequirements{
+		TextRequirements: transformTextRequirementsToResponse(req.TextRequirements),
+		MinValues:        req.MinValues,
+		MaxValues:        req.MaxValues,
+	}
+}
+
+func transformTextRequirementsToResponse(req *models.TextRequirements) *settings.TextRequirements {
+	if req == nil {
+		return nil
+	}
+	return &settings.TextRequirements{
+		MatchRegexp: req.MatchRegexp,
+	}
 }
 
 func transformModelToValue(value *models.Value) *settings.Value {

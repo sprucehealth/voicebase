@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
+	"github.com/sprucehealth/backend/svc/settings"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
@@ -117,6 +118,39 @@ func TestProvisionEmail_Organization(t *testing.T) {
 			},
 		},
 	}, nil))
+
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+			AccountID: acc.ID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
+		},
+		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	}).WithReturns([]*directory.Entity{
+		{
+			ID:   entityID,
+			Type: directory.EntityType_ORGANIZATION,
+			Info: &directory.EntityInfo{
+				DisplayName: "Schmee",
+			},
+			Memberships: []*directory.Entity{
+				{
+					ID:   organizationID,
+					Type: directory.EntityType_ORGANIZATION,
+				},
+			},
+		},
+	}, nil))
+
+	g.settingsC.Expect(mock.NewExpectation(g.settingsC.GetValues, &settings.GetValuesRequest{
+		Keys:   []*settings.ConfigKey{{Key: "default_provisioned_phone_number"}},
+		NodeID: entityID,
+	}).WithReturns(&settings.GetValuesResponse{}, nil))
 
 	res := g.query(ctx, `
 		mutation _ ($organizationID: ID!, $localPart: String!, $subdomain: String!) {
@@ -412,6 +446,39 @@ func TestProvisionEmail_Organization_DomainExists(t *testing.T) {
 			},
 		},
 	}, nil))
+
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ACCOUNT_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_AccountID{
+			AccountID: acc.ID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             0,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS},
+		},
+		Statuses:   []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		RootTypes:  []directory.EntityType{directory.EntityType_INTERNAL},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	}).WithReturns([]*directory.Entity{
+		{
+			ID:   entityID,
+			Type: directory.EntityType_ORGANIZATION,
+			Info: &directory.EntityInfo{
+				DisplayName: "Schmee",
+			},
+			Memberships: []*directory.Entity{
+				{
+					ID:   organizationID,
+					Type: directory.EntityType_ORGANIZATION,
+				},
+			},
+		},
+	}, nil))
+
+	g.settingsC.Expect(mock.NewExpectation(g.settingsC.GetValues, &settings.GetValuesRequest{
+		Keys:   []*settings.ConfigKey{{Key: "default_provisioned_phone_number"}},
+		NodeID: "e1",
+	}).WithReturns(&settings.GetValuesResponse{}, nil))
 
 	// Provisioning email address
 

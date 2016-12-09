@@ -1,6 +1,9 @@
 package settings
 
-import "github.com/sprucehealth/backend/svc/settings"
+import (
+	"github.com/sprucehealth/backend/svc/settings"
+	"github.com/sprucehealth/backend/svc/threading"
+)
 
 // Keys used for registering settings
 const (
@@ -32,7 +35,14 @@ var ProvisionedEndpointTagsConfig = &settings.Config{
 	AllowSubkeys:   true,
 	Type:           settings.ConfigType_STRING_LIST,
 	PossibleOwners: []settings.OwnerType{settings.OwnerType_ORGANIZATION},
+	OptionalValue:  true,
 	Config: &settings.Config_StringList{
-		StringList: &settings.StringListConfig{},
+		StringList: &settings.StringListConfig{
+			Requirements: &settings.StringListRequirements{
+				TextRequirements: &settings.TextRequirements{
+					MatchRegexp: threading.RegexpValidTag,
+				},
+			},
+		},
 	},
 }

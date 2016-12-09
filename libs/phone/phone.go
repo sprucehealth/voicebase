@@ -4,14 +4,11 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
-	"regexp"
 	"unicode"
 )
 
-var (
-	matcher          = regexp.MustCompile(`^\+[1-9](\d{4,14})$`)
-	nonDigitsMatcher = regexp.MustCompile(`[^0-9]`)
-)
+// RegexpE164 matches an E164 formatted phone number
+const RegexpE164 = `^\+[1-9](\d{4,14})$`
 
 // NumberFormat represents the format of the phone number representation
 type NumberFormat int
@@ -91,7 +88,6 @@ func (n Number) MarshalText() ([]byte, error) {
 
 // UnmarshalText implements encoding.TextUnmarshaler
 func (n *Number) UnmarshalText(text []byte) error {
-
 	number, err := sanitize(string(text))
 	if err != nil {
 		return err
@@ -159,7 +155,6 @@ func (n Number) IsEmpty() bool {
 // ParseNumber returns a valid Number object if the number is a valid E.164 format
 // and errors if not.
 func ParseNumber(number string) (Number, error) {
-
 	strippedPhone, err := sanitize(number)
 	if err != nil {
 		return Number(""), err
@@ -188,7 +183,6 @@ func Ptr(pn Number) *Number {
 }
 
 func sanitize(str string) (string, error) {
-
 	if digits := handledWordsToDigitsMap[str]; digits != "" {
 		return digits, nil
 	}

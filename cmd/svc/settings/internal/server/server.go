@@ -25,7 +25,11 @@ func New(dal dal.DAL) settings.SettingsServer {
 func (s *server) RegisterConfigs(ctx context.Context, in *settings.RegisterConfigsRequest) (*settings.RegisterConfigsResponse, error) {
 	configs := make([]*models.Config, len(in.Configs))
 	for i, cfg := range in.Configs {
-		configs[i] = transformConfigToModel(cfg)
+		var err error
+		configs[i], err = transformConfigToModel(cfg)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
 	}
 
 	// TODO: Validate incoming config
@@ -258,7 +262,11 @@ func (s *server) GetConfigs(ctx context.Context, in *settings.GetConfigsRequest)
 
 	transformedConfigs := make([]*settings.Config, len(configs))
 	for i, c := range configs {
-		transformedConfigs[i] = transformModelToConfig(c)
+		var err error
+		transformedConfigs[i], err = transformModelToConfig(c)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
 	}
 
 	return &settings.GetConfigsResponse{

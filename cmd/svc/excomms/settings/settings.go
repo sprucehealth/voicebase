@@ -1,6 +1,7 @@
 package settings
 
 import (
+	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/settings"
 )
 
@@ -29,7 +30,13 @@ var NumbersToRingConfig = &settings.Config{
 	AllowSubkeys: true,
 	Type:         settings.ConfigType_STRING_LIST,
 	Config: &settings.Config_StringList{
-		StringList: &settings.StringListConfig{},
+		StringList: &settings.StringListConfig{
+			Requirements: &settings.StringListRequirements{
+				TextRequirements: &settings.TextRequirements{
+					MatchRegexp: phone.RegexpE164,
+				},
+			},
+		},
 	},
 	PossibleOwners: []settings.OwnerType{settings.OwnerType_ORGANIZATION},
 }
@@ -192,10 +199,12 @@ var DefaultProvisionedPhoneNumberConfig = &settings.Config{
 	PossibleOwners: []settings.OwnerType{settings.OwnerType_INTERNAL_ENTITY},
 	AllowSubkeys:   false,
 	Type:           settings.ConfigType_TEXT,
+	OptionalValue:  true,
 	Config: &settings.Config_Text{
 		Text: &settings.TextConfig{
-			Default: &settings.TextValue{
-				Value: "",
+			Default: &settings.TextValue{},
+			Requirements: &settings.TextRequirements{
+				MatchRegexp: phone.RegexpE164,
 			},
 		},
 	},
