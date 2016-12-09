@@ -95,7 +95,7 @@ func (w *setupThreadWorker) processEvent(ctx context.Context, env *events.Envelo
 					},
 				})
 				if err != nil {
-					switch grpc.Code(err) {
+					switch grpc.Code(errors.Cause(err)) {
 					case codes.NotFound:
 						// Nothing to do, no setup thread
 						return nil

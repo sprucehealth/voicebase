@@ -1077,12 +1077,14 @@ func (s *threadsServer) postMessage(
 	threadID models.ThreadID,
 	fromEntityID string,
 	dontNotify bool,
-	message *threading.MessagePost) (*models.ThreadItem, *models.ThreadItem, error) {
+	message *threading.MessagePost,
+) (*models.ThreadItem, *models.ThreadItem, error) {
+
 	threads, err := s.dal.Threads(ctx, []models.ThreadID{threadID})
 	if err != nil {
 		return nil, nil, errors.Trace(err)
 	} else if len(threads) == 0 {
-		return nil, nil, grpc.Errorf(codes.NotFound, "Thread %q not found", threadID)
+		return nil, nil, errors.Trace(grpc.Errorf(codes.NotFound, "Thread %q not found", threadID))
 	}
 	thread := threads[0]
 

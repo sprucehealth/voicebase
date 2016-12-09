@@ -66,7 +66,7 @@ func (w *Workers) processPendingScheduledMessage() {
 				},
 			})
 			if err != nil {
-				if grpc.Code(err) == codes.NotFound {
+				if grpc.Code(errors.Cause(err)) == codes.NotFound {
 					golog.Warningf("Unable to send scheduled message since thread %s was not found", scheduledMessage.ThreadID)
 					return nil
 				}
