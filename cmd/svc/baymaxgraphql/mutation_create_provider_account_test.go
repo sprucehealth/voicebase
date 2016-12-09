@@ -276,7 +276,7 @@ func TestCreateProviderAccountMutation_InviteColleague(t *testing.T) {
 		g.inviteC.EXPECT().LookupInvite(ctx, &invite.LookupInviteRequest{
 			InviteToken: "InviteToken",
 		}).Return(&invite.LookupInviteResponse{
-			Type: invite.LookupInviteResponse_COLLEAGUE,
+			Type: invite.LOOKUP_INVITE_RESPONSE_COLLEAGUE,
 			Invite: &invite.LookupInviteResponse_Colleague{
 				Colleague: &invite.ColleagueInvite{
 					Colleague: &invite.Colleague{

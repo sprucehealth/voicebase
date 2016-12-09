@@ -7,15 +7,14 @@ import (
 	"fmt"
 	"io"
 	"net/url"
-	"time"
 
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/sprucehealth/backend/cmd/svc/invite/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/invite/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/branch"
 	"github.com/sprucehealth/backend/libs/clock"
-	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
@@ -25,6 +24,7 @@ import (
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/invite/clientdata"
+	"github.com/sprucehealth/backend/svc/settings"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
@@ -70,6 +70,7 @@ type server struct {
 	clk                       clock.Clock
 	directoryClient           directory.DirectoryClient
 	excommsClient             excomms.ExCommsClient
+	settingsClient            settings.SettingsClient
 	branch                    branch.Client
 	fromEmail                 string
 	fromNumber                string
@@ -77,6 +78,7 @@ type server struct {
 	sns                       snsiface.SNSAPI
 	webInviteURL              *url.URL
 	colleagueInviteTemplateID string
+	patientInviteTemplateID   string
 }
 
 type popover struct {
@@ -111,16 +113,24 @@ type patientInviteClientData struct {
 	PatientInvite patientInvite `json:"patient_invite"`
 }
 
+type inviteDeliveryChannel string
+
+const (
+	inviteDeliverySMS   inviteDeliveryChannel = "SMS"
+	inviteDeliveryEmail inviteDeliveryChannel = "EMAIL"
+)
+
 // New returns an initialized instance of the invite server
 func New(
 	dal dal.DAL,
 	clk clock.Clock,
 	directoryClient directory.DirectoryClient,
 	excommsClient excomms.ExCommsClient,
+	settingsClient settings.SettingsClient,
 	snsC snsiface.SNSAPI,
 	branch branch.Client,
 	fromEmail, fromNumber, eventsTopic, webInviteURL string,
-	colleagueInviteTemplateID string,
+	colleagueInviteTemplateID, patientInviteTemplateID string,
 ) invite.InviteServer {
 	if clk == nil {
 		clk = clock.New()
@@ -138,6 +148,7 @@ func New(
 		clk:                       clk,
 		directoryClient:           directoryClient,
 		excommsClient:             excommsClient,
+		settingsClient:            settingsClient,
 		sns:                       snsC,
 		branch:                    branch,
 		fromEmail:                 fromEmail,
@@ -145,6 +156,7 @@ func New(
 		eventsTopic:               eventsTopic,
 		webInviteURL:              webURL,
 		colleagueInviteTemplateID: colleagueInviteTemplateID,
+		patientInviteTemplateID:   patientInviteTemplateID,
 	}
 }
 
@@ -211,12 +223,14 @@ func (s *server) InviteColleagues(ctx context.Context, in *invite.InviteColleagu
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-		s.proccessInvite(
+		s.processInvite(
 			ctx,
 			simpleTokenGenerator,
 			org, inviter,
 			"", "", c.Email, c.PhoneNumber, string(inviteClientDataJSON),
-			models.ColleagueInvite, nil)
+			models.ColleagueInvite,
+			invite.VERIFICATION_REQUIREMENT_PHONE_MATCH, []inviteDeliveryChannel{inviteDeliveryEmail},
+			nil)
 	}
 
 	events.Publish(s.sns, s.eventsTopic, events.Service_INVITE, &invite.Event{
@@ -258,6 +272,24 @@ func (s *server) InvitePatients(ctx context.Context, in *invite.InvitePatientsRe
 		return nil, err
 	}
 
+	settingsRes, err := s.settingsClient.GetValues(ctx, &settings.GetValuesRequest{
+		NodeID: in.OrganizationEntityID,
+		Keys: []*settings.ConfigKey{
+			{
+				Key: invite.ConfigKeyTwoFactorVerificationForSecureConversation,
+			},
+			{
+				Key: invite.ConfigKeyPatientInviteChannelPreference,
+			},
+		},
+	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	requirePhoneAndEmailForSecureConversationCreation := settingsRes.Values[0].GetBoolean()
+	inviteDeliveryPreference := settingsRes.Values[1].GetSingleSelect()
+
 	// Lookup inviter to get name
 	var inviter *directory.Entity
 	if in.InviterEntityID != "" {
@@ -268,17 +300,44 @@ func (s *server) InvitePatients(ctx context.Context, in *invite.InvitePatientsRe
 	}
 
 	for _, p := range in.Patients {
-		inviteClientDataJSON, err := clientdata.PatientInviteClientJSON(org, p.FirstName, "", "", invite.LookupInviteResponse_PATIENT)
+		inviteClientDataJSON, err := clientdata.PatientInviteClientJSON(org, "", "", invite.LOOKUP_INVITE_RESPONSE_PATIENT)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
 
-		s.proccessInvite(
+		var deliveryChannels []inviteDeliveryChannel
+		var verificationRequirement invite.InviteVerificationRequirement
+		if requirePhoneAndEmailForSecureConversationCreation.Value {
+			if !environment.IsProd() {
+				deliveryChannels = append(deliveryChannels, inviteDeliveryEmail)
+				verificationRequirement = invite.VERIFICATION_REQUIREMENT_PHONE_MATCH
+			} else {
+				deliveryChannels = append(deliveryChannels, inviteDeliverySMS)
+				verificationRequirement = invite.VERIFICATION_REQUIREMENT_PHONE
+			}
+		} else {
+			verificationRequirement = invite.VERIFICATION_REQUIREMENT_PHONE
+			if p.Email != "" && p.PhoneNumber != "" {
+				if inviteDeliveryPreference.Item.ID == invite.PatientInviteChannelPreferenceEmail {
+					deliveryChannels = append(deliveryChannels, inviteDeliveryEmail)
+				} else if inviteDeliveryPreference.Item.ID == invite.PatientInviteChannelPreferenceSMS {
+					deliveryChannels = append(deliveryChannels, inviteDeliverySMS)
+				}
+			} else if p.Email != "" {
+				deliveryChannels = append(deliveryChannels, invite.PatientInviteChannelPreferenceEmail)
+			} else if p.PhoneNumber != "" {
+				deliveryChannels = append(deliveryChannels, invite.PatientInviteChannelPreferenceSMS)
+			}
+		}
+
+		s.processInvite(
 			ctx,
 			simpleTokenGenerator,
 			org, inviter,
-			p.FirstName, p.ParkedEntityID, "", p.PhoneNumber, string(inviteClientDataJSON),
+			p.FirstName, p.ParkedEntityID, p.Email, p.PhoneNumber, string(inviteClientDataJSON),
 			models.PatientInvite,
+			verificationRequirement,
+			deliveryChannels,
 			nil)
 	}
 
@@ -294,12 +353,14 @@ func (s *server) InvitePatients(ctx context.Context, in *invite.InvitePatientsRe
 	return &invite.InvitePatientsResponse{}, err
 }
 
-func (s *server) proccessInvite(
+func (s *server) processInvite(
 	ctx context.Context,
 	tokenGenerator common.TokenGenerator,
 	org, inviter *directory.Entity,
 	firstName, parkedEntityID, email, phoneNumber, inviteClientDataStr string,
 	inviteType models.InviteType,
+	verificationRequirement invite.InviteVerificationRequirement,
+	deliveryChannels []inviteDeliveryChannel,
 	additionalValues map[string]string) error {
 	// TODO: enqueue invite rather than sending directly
 	var token, inviteURL string
@@ -335,11 +396,12 @@ func (s *server) proccessInvite(
 			continue
 		}
 		pn := phoneNumber
+		emailForInvite := email
 		// We do not store phone numbers or emails for patients in dynamodb since it doesn't support simple encryption at rest
 		if inviteType == models.PatientInvite {
 			// We can't have these being empty attributes so populate them with informative info
 			pn = phiAttributeText
-			email = phiAttributeText
+			emailForInvite = phiAttributeText
 		}
 
 		var inviterID string
@@ -347,17 +409,23 @@ func (s *server) proccessInvite(
 			inviterID = inviter.ID
 		}
 
+		vr, err := verificationRequirementFromRequest(verificationRequirement)
+		if err != nil {
+			return errors.Trace(err)
+		}
+
 		err = s.dal.InsertInvite(ctx, &models.Invite{
-			Token:                token,
-			Type:                 inviteType,
-			OrganizationEntityID: org.ID,
-			InviterEntityID:      inviterID,
-			Email:                email,
-			PhoneNumber:          pn,
-			Created:              s.clk.Now(),
-			URL:                  inviteURL,
-			ParkedEntityID:       parkedEntityID,
-			Values:               values,
+			Token:                   token,
+			Type:                    inviteType,
+			OrganizationEntityID:    org.ID,
+			InviterEntityID:         inviterID,
+			Email:                   emailForInvite,
+			PhoneNumber:             pn,
+			Created:                 s.clk.Now(),
+			URL:                     inviteURL,
+			ParkedEntityID:          parkedEntityID,
+			Values:                  values,
+			VerificationRequirement: vr,
 		})
 		if err == nil {
 			break
@@ -374,7 +442,7 @@ func (s *server) proccessInvite(
 			golog.ContextLogger(ctx).Errorf("Failed to send colleague invite outbound comms: %s", err)
 		}
 	case models.PatientInvite:
-		if err := s.sendPatientOutbound(ctx, firstName, phoneNumber, inviteURL, token, org); err != nil {
+		if err := s.sendPatientOutbound(ctx, phoneNumber, email, inviteURL, token, org, deliveryChannels); err != nil {
 			golog.ContextLogger(ctx).Errorf("Failed to send patient invite outbound comms: %s", err)
 		}
 	default:
@@ -410,38 +478,62 @@ func (s *server) sendColleagueOutbound(ctx context.Context, email, inviteURL, to
 	return nil
 }
 
-func (s *server) sendPatientOutbound(ctx context.Context, firstName, phoneNumber, inviteURL, token string, org *directory.Entity) error {
-	msgText := fmt.Sprintf("%s has invited you to use Spruce for secure messaging and digital care.", org.Info.DisplayName)
-	if firstName != "" {
-		msgText = fmt.Sprintf("%s - ", firstName) + msgText
-	}
-	if _, err := s.excommsClient.SendMessage(ctx, &excomms.SendMessageRequest{
-		DeprecatedChannel: excomms.ChannelType_SMS,
-		Message: &excomms.SendMessageRequest_SMS{
-			SMS: &excomms.SMSMessage{
-				Text:            msgText,
-				FromPhoneNumber: s.fromNumber,
-				ToPhoneNumber:   phoneNumber,
-			},
-		},
-	}); err != nil {
-		return errors.Trace(err)
-	}
-	conc.AfterFunc(time.Second*1, func() {
-		msgText = fmt.Sprintf("Get the Spruce app now and join them. %s [%s]", inviteURL, token)
-		if _, err := s.excommsClient.SendMessage(context.Background(), &excomms.SendMessageRequest{
-			DeprecatedChannel: excomms.ChannelType_SMS,
-			Message: &excomms.SendMessageRequest_SMS{
-				SMS: &excomms.SMSMessage{
-					Text:            msgText,
-					FromPhoneNumber: s.fromNumber,
-					ToPhoneNumber:   phoneNumber,
-				},
-			},
-		}); err != nil {
-			golog.ContextLogger(ctx).Errorf("Encountered an error while sending patient invite SMS: %s", err)
+func (s *server) sendPatientOutbound(
+	ctx context.Context,
+	phoneNumber, email, inviteURL, token string,
+	org *directory.Entity,
+	deliveryChannels []inviteDeliveryChannel) error {
+
+	channelsDeliveredOn := make(map[inviteDeliveryChannel]struct{}, len(deliveryChannels))
+	for _, deliveryChannel := range deliveryChannels {
+
+		if _, ok := channelsDeliveredOn[deliveryChannel]; ok {
+			continue
 		}
-	})
+
+		switch deliveryChannel {
+		case inviteDeliveryEmail:
+			if _, err := s.excommsClient.SendMessage(ctx, &excomms.SendMessageRequest{
+				DeprecatedChannel: excomms.ChannelType_EMAIL,
+				Message: &excomms.SendMessageRequest_Email{
+					Email: &excomms.EmailMessage{
+						Subject:          fmt.Sprintf("Please join %s on Spruce", org.Info.DisplayName),
+						FromName:         "Spruce",
+						FromEmailAddress: s.fromEmail,
+						Body:             fmt.Sprintf("Your invite link is %s [%s]", inviteURL, token),
+						ToEmailAddress:   email,
+						Transactional:    true,
+						TemplateID:       s.patientInviteTemplateID,
+						TemplateSubstitutions: []*excomms.EmailMessage_Substitution{
+							{Key: "{orgname}", Value: org.Info.DisplayName},
+							{Key: "{inviteurl}", Value: inviteURL},
+							{Key: "{invitecode}", Value: token},
+						},
+					},
+				},
+			}); err != nil {
+				return errors.Trace(err)
+			}
+
+		case inviteDeliverySMS:
+			msgText := fmt.Sprintf("%s has invited you to use Spruce Care Messenger. %s [If prompted, your provider code is %s]", org.Info.DisplayName, inviteURL, token)
+			if _, err := s.excommsClient.SendMessage(ctx, &excomms.SendMessageRequest{
+				DeprecatedChannel: excomms.ChannelType_SMS,
+				Message: &excomms.SendMessageRequest_SMS{
+					SMS: &excomms.SMSMessage{
+						Text:            msgText,
+						FromPhoneNumber: s.fromNumber,
+						ToPhoneNumber:   phoneNumber,
+					},
+				},
+			}); err != nil {
+				return errors.Trace(err)
+			}
+		}
+
+		channelsDeliveredOn[deliveryChannel] = struct{}{}
+	}
+
 	return nil
 }
 
@@ -496,10 +588,10 @@ func (s *server) getOrg(ctx context.Context, orgID string) (*directory.Entity, e
 func (s *server) LookupInvite(ctx context.Context, in *invite.LookupInviteRequest) (*invite.LookupInviteResponse, error) {
 	var err error
 	var inv *models.Invite
-	switch in.LookupKeyType {
-	case invite.LookupInviteRequest_DEPRECATED_TOKEN, invite.LookupInviteRequest_UNKNOWN:
+	switch lookupKey := in.LookupKeyOneof.(type) {
+	case *invite.LookupInviteRequest_Token:
 		// Do our backwards compatible mapping till we can get rid of this switch
-		token := in.GetToken()
+		token := lookupKey.Token
 		if in.InviteToken != "" {
 			token = in.InviteToken
 		}
@@ -507,19 +599,19 @@ func (s *server) LookupInvite(ctx context.Context, in *invite.LookupInviteReques
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-	case invite.LookupInviteRequest_DEPRECATED_ORGANIZATION_ENTITY_ID:
+	case *invite.LookupInviteRequest_OrganizationEntityID:
 		// TODO: Until we can remove this code path just return the first one we find
-		invs, err := s.lookupInvitesForOrganization(ctx, in.GetOrganizationEntityID())
+		invs, err := s.lookupInvitesForOrganization(ctx, lookupKey.OrganizationEntityID)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
 		if len(invs) != 0 {
 			inv = invs[0]
 		} else {
-			return nil, grpc.Errorf(codes.NotFound, "No invites found for org %s", in.GetOrganizationEntityID())
+			return nil, grpc.Errorf(codes.NotFound, "No invites found for org %s", lookupKey.OrganizationEntityID)
 		}
 	default:
-		return nil, grpc.Errorf(codes.InvalidArgument, "Unsupported lookup key type %s", in.LookupKeyType.String())
+		return nil, grpc.Errorf(codes.InvalidArgument, "Unsupported lookup key type %T", lookupKey)
 	}
 	if inv.Type != models.ColleagueInvite && inv.Type != models.PatientInvite && inv.Type != models.OrganizationCodeInvite {
 		return nil, errors.Errorf("unsupported invite type %s", string(inv.Type))
@@ -531,10 +623,15 @@ func (s *server) LookupInvite(ctx context.Context, in *invite.LookupInviteReques
 			Value: v,
 		})
 	}
+
+	verificationRequirement, err := verificationRequirementAsResponse(inv.VerificationRequirement)
+	if err != nil {
+		return nil, errors.Errorf("unknown verification requirement for %s: %s", inv.Token, err)
+	}
 	resp := &invite.LookupInviteResponse{Values: values}
 	switch inv.Type {
 	case models.ColleagueInvite:
-		resp.Type = invite.LookupInviteResponse_COLLEAGUE
+		resp.Type = invite.LOOKUP_INVITE_RESPONSE_COLLEAGUE
 		resp.Invite = &invite.LookupInviteResponse_Colleague{
 			Colleague: &invite.ColleagueInvite{
 				OrganizationEntityID: inv.OrganizationEntityID,
@@ -546,7 +643,7 @@ func (s *server) LookupInvite(ctx context.Context, in *invite.LookupInviteReques
 			},
 		}
 	case models.PatientInvite:
-		resp.Type = invite.LookupInviteResponse_PATIENT
+		resp.Type = invite.LOOKUP_INVITE_RESPONSE_PATIENT
 		resp.Invite = &invite.LookupInviteResponse_Patient{
 			Patient: &invite.PatientInvite{
 				OrganizationEntityID: inv.OrganizationEntityID,
@@ -555,10 +652,11 @@ func (s *server) LookupInvite(ctx context.Context, in *invite.LookupInviteReques
 					ParkedEntityID: inv.ParkedEntityID,
 					PhoneNumber:    inv.PhoneNumber,
 				},
+				InviteVerificationRequirement: verificationRequirement,
 			},
 		}
 	case models.OrganizationCodeInvite:
-		resp.Type = invite.LookupInviteResponse_ORGANIZATION_CODE
+		resp.Type = invite.LOOKUP_INVITE_RESPONSE_ORGANIZATION_CODE
 		orgResp, err := organizationInviteAsResponse(inv)
 		if err != nil {
 			return nil, errors.Trace(err)
@@ -572,9 +670,9 @@ func (s *server) LookupInvite(ctx context.Context, in *invite.LookupInviteReques
 
 func (s *server) LookupInvites(ctx context.Context, in *invite.LookupInvitesRequest) (*invite.LookupInvitesResponse, error) {
 	var res invite.LookupInvitesResponse
-	switch in.LookupKeyType {
-	case invite.LookupInvitesRequest_PARKED_ENTITY_ID:
-		invites, err := s.dal.InvitesForParkedEntityID(ctx, in.GetParkedEntityID())
+	switch keyType := in.Key.(type) {
+	case *invite.LookupInvitesRequest_ParkedEntityID:
+		invites, err := s.dal.InvitesForParkedEntityID(ctx, keyType.ParkedEntityID)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
@@ -582,6 +680,12 @@ func (s *server) LookupInvites(ctx context.Context, in *invite.LookupInvitesRequ
 			PatientInvites: make([]*invite.PatientInvite, len(invites)),
 		}
 		for i, inv := range invites {
+
+			verificationRequirement, err := verificationRequirementAsResponse(inv.VerificationRequirement)
+			if err != nil {
+				return nil, errors.Errorf("unknown verfication requirement for invite %s: %s", inv.Token, err)
+			}
+
 			patientInvitesList.PatientInvites[i] = &invite.PatientInvite{
 				OrganizationEntityID: inv.OrganizationEntityID,
 				InviterEntityID:      inv.InviterEntityID,
@@ -589,10 +693,11 @@ func (s *server) LookupInvites(ctx context.Context, in *invite.LookupInvitesRequ
 					ParkedEntityID: inv.ParkedEntityID,
 					PhoneNumber:    inv.PhoneNumber,
 				},
+				InviteVerificationRequirement: verificationRequirement,
 			}
 		}
 
-		res.Type = invite.LookupInvitesResponse_PATIENT_LIST
+		res.Type = invite.LOOKUP_INVITES_RESPONSE_PATIENT_LIST
 		res.List = &invite.LookupInvitesResponse_PatientInviteList{
 			PatientInviteList: &patientInvitesList,
 		}
@@ -682,14 +787,14 @@ func (s *server) MarkInviteConsumed(ctx context.Context, in *invite.MarkInviteCo
 // DeleteInvite deletes an invite based on the key.
 func (s *server) DeleteInvite(ctx context.Context, in *invite.DeleteInviteRequest) (*invite.DeleteInviteResponse, error) {
 	var tokens []string
-	switch in.DeleteInviteKey {
-	case invite.DeleteInviteRequest_TOKEN:
-		tokens = []string{in.GetToken()}
-	case invite.DeleteInviteRequest_PARKED_ENTITY_ID:
+	switch keyType := in.Key.(type) {
+	case *invite.DeleteInviteRequest_Token:
+		tokens = []string{keyType.Token}
+	case *invite.DeleteInviteRequest_ParkedEntityID:
 
-		invites, err := s.dal.InvitesForParkedEntityID(ctx, in.GetParkedEntityID())
+		invites, err := s.dal.InvitesForParkedEntityID(ctx, keyType.ParkedEntityID)
 		if err != nil {
-			return nil, errors.Errorf("unable to get invites for parkedEntityID %s : %s", in.GetParkedEntityID(), err)
+			return nil, errors.Errorf("unable to get invites for parkedEntityID %s : %s", keyType.ParkedEntityID, err)
 		}
 
 		for _, inv := range invites {
@@ -736,7 +841,7 @@ func (s *server) CreateOrganizationInvite(ctx context.Context, in *invite.Create
 		return nil, errors.Trace(err)
 	}
 
-	inviteClientDataJSON, err := clientdata.PatientInviteClientJSON(org, "", "", "", invite.LookupInviteResponse_ORGANIZATION_CODE)
+	inviteClientDataJSON, err := clientdata.PatientInviteClientJSON(org, "", "", invite.LOOKUP_INVITE_RESPONSE_ORGANIZATION_CODE)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

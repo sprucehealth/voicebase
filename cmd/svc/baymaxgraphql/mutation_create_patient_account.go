@@ -246,13 +246,25 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 		return nil, errors.InternalError(ctx, err)
 	}
 
-	if inv == nil || (inv.Type != invite.LookupInviteResponse_PATIENT && inv.Type != invite.LookupInviteResponse_ORGANIZATION_CODE) {
+	inviteValid := inv != nil
+
+	if inv != nil {
+		switch inv.Invite.(type) {
+		case *invite.LookupInviteResponse_Patient, *invite.LookupInviteResponse_Organization:
+			inviteValid = true
+		default:
+			inviteValid = false
+		}
+	}
+
+	if !inviteValid {
 		return &createPatientAccountOutput{
 			ClientMutationID: in.ClientMutationID,
 			Success:          false,
 			ErrorCode:        createPatientAccountErrorCodeInviteRequired,
 			ErrorMessage:     "An invite from a provider is required to create an account with this device.",
 		}, nil
+
 	}
 
 	req := &auth.CreateAccountRequest{
@@ -275,7 +287,7 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 		}, nil
 	}
 	var phoneNumber string
-	if inv.Type == invite.LookupInviteResponse_PATIENT {
+	if _, ok := inv.Invite.(*invite.LookupInviteResponse_Patient); ok {
 		phoneNumber, err = contactForParkedEntity(ctx, ram, inv.GetPatient().Patient.ParkedEntityID, directory.ContactType_PHONE)
 		if err != nil {
 			return nil, errors.InternalError(ctx, fmt.Errorf("Encountered error whil getting parked phone number for account creation: %s", err))
@@ -295,7 +307,7 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 	}
 	req.PhoneNumber = pn.String()
 
-	if inv.Type == invite.LookupInviteResponse_ORGANIZATION_CODE {
+	if _, ok := inv.Invite.(*invite.LookupInviteResponse_Organization); ok {
 		// Assert that the phone number was verified
 		if in.PhoneVerificationToken == "" {
 			return &createPatientAccountOutput{
@@ -354,35 +366,67 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 	// Only do email verification if it was a direct patient invite
 	var accountEntityID string
 	var orgID string
-	switch inv.Type {
-	case invite.LookupInviteResponse_PATIENT:
-		// Assert that the email was verified
-		if in.EmailVerificationToken == "" {
-			return &createPatientAccountOutput{
-				ClientMutationID: in.ClientMutationID,
-				Success:          false,
-				ErrorCode:        createPatientAccountErrorCodeEmailVerificationTokenRequired,
-				ErrorMessage:     "Email verification token required.",
-			}, nil
-		}
+	switch inviteData := inv.Invite.(type) {
+	case *invite.LookupInviteResponse_Patient:
+		patientInvite := inviteData.Patient
 
-		if _, err := ram.VerifiedValue(ctx, in.EmailVerificationToken); err != nil {
-			if grpc.Code(err) == auth.ValueNotYetVerified {
+		// Assert that the email was verified (if verification requirement is unknown then treat as though
+		// email required for backwards compatibility)
+		if patientInvite.InviteVerificationRequirement == invite.VERIFICATION_REQUIREMENT_EMAIL ||
+			patientInvite.InviteVerificationRequirement == invite.VERIFICATION_REQUIREMENT_UNKNOWN {
+			if in.EmailVerificationToken == "" {
 				return &createPatientAccountOutput{
 					ClientMutationID: in.ClientMutationID,
 					Success:          false,
-					ErrorCode:        createPatientAccountErrorCodeEmailNotVerified,
-					ErrorMessage:     "The email associated with this account creation has not been verified.",
+					ErrorCode:        createPatientAccountErrorCodeEmailVerificationTokenRequired,
+					ErrorMessage:     "Email verification token required.",
 				}, nil
 			}
-			return nil, errors.InternalError(ctx, fmt.Errorf("Encountered error while checking if email has been verified: %s", err))
+
+			if _, err := ram.VerifiedValue(ctx, in.EmailVerificationToken); err != nil {
+				if grpc.Code(err) == auth.ValueNotYetVerified {
+					return &createPatientAccountOutput{
+						ClientMutationID: in.ClientMutationID,
+						Success:          false,
+						ErrorCode:        createPatientAccountErrorCodeEmailNotVerified,
+						ErrorMessage:     "The email associated with this account creation has not been verified.",
+					}, nil
+				}
+				return nil, errors.InternalError(ctx, fmt.Errorf("Encountered error while checking if email has been verified: %s", err))
+			}
 		}
-		if inv.GetPatient().Patient.ParkedEntityID == "" {
+
+		if patientInvite.InviteVerificationRequirement == invite.VERIFICATION_REQUIREMENT_PHONE_MATCH ||
+			patientInvite.InviteVerificationRequirement == invite.VERIFICATION_REQUIREMENT_PHONE {
+
+			if in.PhoneVerificationToken == "" {
+				return &createPatientAccountOutput{
+					ClientMutationID: in.ClientMutationID,
+					Success:          false,
+					ErrorCode:        createPatientAccountErrorCodePhoneNumberVerificationTokenRequired,
+					ErrorMessage:     "Phone verification token required.",
+				}, nil
+			}
+
+			if _, err := ram.VerifiedValue(ctx, in.PhoneVerificationToken); err != nil {
+				if grpc.Code(err) == auth.ValueNotYetVerified {
+					return &createPatientAccountOutput{
+						ClientMutationID: in.ClientMutationID,
+						Success:          false,
+						ErrorCode:        createPatientAccountErrorCodePhoneNumberNotVerified,
+						ErrorMessage:     "The phone number associated with this account creation has not been verified.",
+					}, nil
+				}
+				return nil, errors.InternalError(ctx, fmt.Errorf("Encountered error while checking if email has been verified: %s", err))
+			}
+		}
+
+		if patientInvite.Patient.ParkedEntityID == "" {
 			return nil, errors.InternalError(ctx, fmt.Errorf("Unable to find parked entity account associated with invite %+v", inv))
 		}
-		accountEntityID = inv.GetPatient().Patient.ParkedEntityID
-		orgID = inv.GetPatient().OrganizationEntityID
-	case invite.LookupInviteResponse_ORGANIZATION_CODE:
+		accountEntityID = patientInvite.Patient.ParkedEntityID
+		orgID = patientInvite.OrganizationEntityID
+	case *invite.LookupInviteResponse_Organization:
 	default:
 		return nil, errors.InternalError(ctx, fmt.Errorf("Unsupported invite type %s", inv.Type))
 	}
@@ -418,7 +462,7 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 
 	var autoTags []string
 	var patientEntity *directory.Entity
-	if inv.Type == invite.LookupInviteResponse_ORGANIZATION_CODE {
+	if _, ok := inv.Invite.(*invite.LookupInviteResponse_Organization); ok {
 		// If this is an org code then there is no parked entity and we need to create the entity and thread
 		patientEntity, err = ram.CreateEntity(ctx, &directory.CreateEntityRequest{
 			Type: directory.EntityType_PATIENT,
@@ -454,7 +498,7 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 		return nil, errors.InternalError(ctx, err)
 	}
 
-	if inv.Type == invite.LookupInviteResponse_ORGANIZATION_CODE {
+	if _, ok := inv.Invite.(*invite.LookupInviteResponse_Organization); ok {
 		// Create a thread with the parked patient in the org
 		_, err := ram.CreateEmptyThread(ctx, &threading.CreateEmptyThreadRequest{
 			OrganizationID:  inv.GetOrganization().OrganizationEntityID,
@@ -509,12 +553,14 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 	})
 
 	// Mark the invite as consumed if it's not an org code
-	if inv != nil && inv.Type != invite.LookupInviteResponse_ORGANIZATION_CODE {
-		conc.GoCtx(gqlctx.Clone(ctx), func(ctx context.Context) {
-			if _, err := svc.invite.MarkInviteConsumed(ctx, &invite.MarkInviteConsumedRequest{Token: atts[inviteTokenAttributionKey]}); err != nil {
-				golog.Errorf("Error while marking invite with code %q as consumed: %s", atts[inviteTokenAttributionKey], err)
-			}
-		})
+	if inv != nil {
+		if _, ok := inv.Invite.(*invite.LookupInviteResponse_Organization); !ok {
+			conc.GoCtx(gqlctx.Clone(ctx), func(ctx context.Context) {
+				if _, err := svc.invite.MarkInviteConsumed(ctx, &invite.MarkInviteConsumedRequest{Token: atts[inviteTokenAttributionKey]}); err != nil {
+					golog.Errorf("Error while marking invite with code %q as consumed: %s", atts[inviteTokenAttributionKey], err)
+				}
+			})
+		}
 	}
 
 	// Record Analytics

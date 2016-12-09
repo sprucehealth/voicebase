@@ -192,7 +192,7 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 				}
 
 				res, err := svc.invite.LookupInvites(ctx, &invite.LookupInvitesRequest{
-					LookupKeyType: invite.LookupInvitesRequest_PARKED_ENTITY_ID,
+					LookupKeyType: invite.LOOKUP_INVITES_KEY_PARKED_ENTITY_ID,
 					Key: &invite.LookupInvitesRequest_ParkedEntityID{
 						ParkedEntityID: ent.ID,
 					},
@@ -226,7 +226,7 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 				svc := serviceFromParams(p)
 
 				res, err := svc.invite.LookupInvites(ctx, &invite.LookupInvitesRequest{
-					LookupKeyType: invite.LookupInvitesRequest_PARKED_ENTITY_ID,
+					LookupKeyType: invite.LOOKUP_INVITES_KEY_PARKED_ENTITY_ID,
 					Key: &invite.LookupInvitesRequest_ParkedEntityID{
 						ParkedEntityID: ent.ID,
 					},

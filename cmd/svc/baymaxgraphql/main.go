@@ -201,7 +201,6 @@ func main() {
 			baymaxgraphqlsettings.VideoCallingConfig,
 			baymaxgraphqlsettings.PaymentsConfig,
 			baymaxgraphqlsettings.ScheduledMessagesConfig,
-			invite.OrganizationCodeConfig,
 		})
 	if err != nil {
 		golog.Fatalf("Unable to register configs with the settings service: %s", err.Error())

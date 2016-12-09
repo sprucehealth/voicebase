@@ -92,6 +92,7 @@ func TestSendExistingPatientInvite(t *testing.T) {
 					FirstName:      "firstName",
 					PhoneNumber:    "+12222222222",
 					ParkedEntityID: patientEntityID,
+					Email:          "test@example.com",
 				},
 			},
 		}),

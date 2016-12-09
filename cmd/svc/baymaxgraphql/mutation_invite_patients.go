@@ -17,6 +17,7 @@ import (
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/invite"
+	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 )
@@ -49,10 +50,13 @@ var invitePatientsInputType = graphql.NewInputObject(graphql.InputObjectConfig{
 })
 
 const (
-	invitePatientsErrorCodeInvalidFirstName   = "INVALID_FIRST_NAME"
-	invitePatientsErrorCodeInvalidLastName    = "INVALID_LAST_NAME"
-	invitePatientsErrorCodeInvalidEmail       = "INVALID_EMAIL"
-	invitePatientsErrorCodeInvalidPhoneNumber = "INVALID_PHONE_NUMBER"
+	invitePatientsErrorCodeInvalidFirstName    = "INVALID_FIRST_NAME"
+	invitePatientsErrorCodeInvalidLastName     = "INVALID_LAST_NAME"
+	invitePatientsErrorCodeInvalidEmail        = "INVALID_EMAIL"
+	invitePatientsErrorCodeInvalidPhoneNumber  = "INVALID_PHONE_NUMBER"
+	invitePatientsErrorCodeMissingPhoneNumber  = "MISSING_PHONE_NUMBER"
+	invitePatientsErrorCodeMissingEmail        = "MISSING_EMAIL"
+	invitePatientsErrorCodeMissingEmailOrPhone = "MISSING_EMAIL_OR_PHONE_NUMBER"
 )
 
 var invitePatientsErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
@@ -73,6 +77,18 @@ var invitePatientsErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
 		invitePatientsErrorCodeInvalidPhoneNumber: &graphql.EnumValueConfig{
 			Value:       invitePatientsErrorCodeInvalidPhoneNumber,
 			Description: "The provided phone number is invalid",
+		},
+		invitePatientsErrorCodeMissingPhoneNumber: &graphql.EnumValueConfig{
+			Value:       invitePatientsErrorCodeMissingPhoneNumber,
+			Description: "Phone number is required to create invite",
+		},
+		invitePatientsErrorCodeMissingEmail: &graphql.EnumValueConfig{
+			Value:       invitePatientsErrorCodeMissingEmail,
+			Description: "Email is required to create invite",
+		},
+		invitePatientsErrorCodeMissingEmailOrPhone: &graphql.EnumValueConfig{
+			Value:       invitePatientsErrorCodeMissingEmailOrPhone,
+			Description: "Either email or phone number is required to create invite",
 		},
 	},
 })
@@ -119,11 +135,26 @@ var invitePatientsMutation = &graphql.Field{
 					return nil, errors.New("Not a member of the organization")
 				}
 
+				settingsRes, err := svc.settings.GetValues(ctx, &settings.GetValuesRequest{
+					NodeID: orgID,
+					Keys: []*settings.ConfigKey{
+						{
+							Key: invite.ConfigKeyTwoFactorVerificationForSecureConversation,
+						},
+					},
+				})
+				if err != nil {
+					return nil, errors.InternalError(ctx, err)
+				}
+
+				requirePhoneAndEmailForSecureConversationCreation := settingsRes.Values[0].GetBoolean()
+
 				// Do all our validation in 1 pass
 				for _, p := range patientsInput {
 					m := p.(map[string]interface{})
 					email := m["email"].(string)
 					phoneNumber := m["phoneNumber"].(string)
+
 					var firstName string
 					iFirstName, ok := m["firstName"]
 					if ok {
@@ -134,7 +165,8 @@ var invitePatientsMutation = &graphql.Field{
 					if ok {
 						lastName = iLastName.(string)
 					}
-					if !validate.Email(email) {
+
+					if email != "" && !validate.Email(email) {
 						return &invitePatientsOutput{
 							ClientMutationID: mutationID,
 							Success:          false,
@@ -142,16 +174,48 @@ var invitePatientsMutation = &graphql.Field{
 							ErrorMessage:     fmt.Sprintf("The email address '%s' not valid.", email),
 						}, nil
 					}
-					var err error
-					_, err = phone.Format(phoneNumber, phone.E164)
-					if err != nil {
-						return &invitePatientsOutput{
-							ClientMutationID: mutationID,
-							Success:          false,
-							ErrorCode:        invitePatientsErrorCodeInvalidPhoneNumber,
-							ErrorMessage:     fmt.Sprintf("The phone number '%s' not valid.", phoneNumber),
-						}, nil
+
+					if phoneNumber != "" {
+						var err error
+						_, err = phone.Format(phoneNumber, phone.E164)
+						if err != nil {
+							return &invitePatientsOutput{
+								ClientMutationID: mutationID,
+								Success:          false,
+								ErrorCode:        invitePatientsErrorCodeInvalidPhoneNumber,
+								ErrorMessage:     fmt.Sprintf("The phone number '%s' not valid.", phoneNumber),
+							}, nil
+						}
 					}
+
+					if requirePhoneAndEmailForSecureConversationCreation.Value {
+						if phoneNumber == "" {
+							return &invitePatientsOutput{
+								ClientMutationID: mutationID,
+								Success:          false,
+								ErrorCode:        invitePatientsErrorCodeMissingPhoneNumber,
+								ErrorMessage:     fmt.Sprintf("Phone number is required to create invite"),
+							}, nil
+						}
+						if email == "" {
+							return &invitePatientsOutput{
+								ClientMutationID: mutationID,
+								Success:          false,
+								ErrorCode:        invitePatientsErrorCodeMissingEmail,
+								ErrorMessage:     fmt.Sprintf("Email is required to create invite"),
+							}, nil
+						}
+					} else {
+						if phoneNumber == "" && email == "" {
+							return &invitePatientsOutput{
+								ClientMutationID: mutationID,
+								Success:          false,
+								ErrorCode:        invitePatientsErrorCodeMissingEmailOrPhone,
+								ErrorMessage:     fmt.Sprintf("Email or phone number is required to create invite"),
+							}, nil
+						}
+					}
+
 					if firstName != "" && !textutil.IsValidPlane0Unicode(firstName) {
 						return &invitePatientsOutput{
 							ClientMutationID: mutationID,
@@ -195,6 +259,7 @@ var invitePatientsMutation = &graphql.Field{
 					// Can only ignore this err because we checked it above
 					fpn, _ := phone.Format(m["phoneNumber"].(string), phone.E164)
 					pat.PhoneNumber = fpn
+					pat.Email = email
 					patientEntity, err := ram.CreateEntity(ctx, &directory.CreateEntityRequest{
 						Type: directory.EntityType_PATIENT,
 						InitialMembershipEntityID: orgID,

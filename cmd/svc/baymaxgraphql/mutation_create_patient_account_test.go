@@ -39,7 +39,7 @@ func TestCreatePatientAccountMutation(t *testing.T) {
 		g.inviteC.EXPECT().LookupInvite(ctx, &invite.LookupInviteRequest{
 			InviteToken: "InviteToken",
 		}).Return(&invite.LookupInviteResponse{
-			Type: invite.LookupInviteResponse_PATIENT,
+			Type: invite.LOOKUP_INVITE_RESPONSE_PATIENT,
 			Invite: &invite.LookupInviteResponse_Patient{
 				Patient: &invite.PatientInvite{
 					Patient: &invite.Patient{
@@ -285,7 +285,7 @@ func TestCreatePatientAccountMutation_PracticeLink(t *testing.T) {
 		g.inviteC.EXPECT().LookupInvite(ctx, &invite.LookupInviteRequest{
 			InviteToken: "InviteToken",
 		}).Return(&invite.LookupInviteResponse{
-			Type: invite.LookupInviteResponse_ORGANIZATION_CODE,
+			Type: invite.LOOKUP_INVITE_RESPONSE_ORGANIZATION_CODE,
 			Invite: &invite.LookupInviteResponse_Organization{
 				Organization: &invite.OrganizationInvite{
 					OrganizationEntityID: "e_org_inv",

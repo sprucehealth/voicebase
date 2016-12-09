@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"net"
 	"net/http"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -26,6 +28,7 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/invite"
+	"github.com/sprucehealth/backend/svc/settings"
 )
 
 var (
@@ -37,6 +40,7 @@ var (
 	flagKMSKeyARN                 = flag.String("kms_key_arn", "", "the `ARN` of the master key that should be used to encrypt outbound and decrypt inbound data")
 	flagWebInviteURL              = flag.String("web_invite_url", "", "`URL` for the webapp invite page")
 	flagColleagueInviteTemplateID = flag.String("colleague_invite_template_id", "", "`ID` of the colleague invite email template")
+	flagPatientInviteTemplateID   = flag.String("patient_invite_template_id", "", "`ID` of the patient invite email template")
 
 	// REST API
 	flagHTTPListenAddr  = flag.String("http_listen_addr", ":8082", "host:port to listen on for http requests")
@@ -49,6 +53,7 @@ var (
 	// Services
 	flagDirectoryAddr = flag.String("directory_addr", "_directory._tcp.service", "`host:port` of directory service")
 	flagExcommsAddr   = flag.String("excomms_addr", "_excomms._tcp.service", "`host:port` of excomms service")
+	flagSettingsAddr  = flag.String("settings_addr", "_settings._tcp.service", "host:port of settings service")
 )
 
 func main() {
@@ -98,6 +103,12 @@ func main() {
 		exCommsClient = excomms.NewExCommsClient(conn)
 	}
 
+	conn, err = svc.DialGRPC(*flagSettingsAddr)
+	if err != nil {
+		golog.Fatalf("Unable to connect to settings service: %s", err)
+	}
+	settingsClient := settings.NewContextCacheClient(settings.NewSettingsClient(conn))
+
 	branchCli := branch.NewClient(*flagBranchKey)
 
 	eSNS, err := awsutil.NewEncryptedSNS(*flagKMSKeyARN, kms.New(awsSession), sns.New(awsSession))
@@ -106,8 +117,35 @@ func main() {
 		return
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	_, err = settings.RegisterConfigs(
+		ctx,
+		settingsClient,
+		[]*settings.Config{
+			invite.TwoFactorVerificationForSecureConversationConfig,
+			invite.OrganizationCodeConfig,
+			invite.PatientInviteChannelPreferenceConfig,
+		})
+	if err != nil {
+		golog.Fatalf("Unable to register configs with the settings service: %s", err.Error())
+	}
+	cancel()
+
 	dl := dal.New(db, environment.GetCurrent())
-	srv := server.New(dl, nil, directoryClient, exCommsClient, eSNS, branchCli, *flagFromEmail, *flagServiceNumber, *flagEventsTopic, *flagWebInviteURL, *flagColleagueInviteTemplateID)
+	srv := server.New(
+		dl,
+		nil,
+		directoryClient,
+		exCommsClient,
+		settingsClient,
+		eSNS,
+		branchCli,
+		*flagFromEmail,
+		*flagServiceNumber,
+		*flagEventsTopic,
+		*flagWebInviteURL,
+		*flagColleagueInviteTemplateID,
+		*flagPatientInviteTemplateID)
 	invite.InitMetrics(srv, svc.MetricsRegistry.Scope("server"))
 	s := svc.GRPCServer()
 	defer s.Stop()

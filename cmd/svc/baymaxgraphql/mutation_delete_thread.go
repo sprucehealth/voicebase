@@ -113,7 +113,7 @@ var deleteThreadMutation = &graphql.Field{
 			}
 
 			if _, err := svc.invite.DeleteInvite(ctx, &invite.DeleteInviteRequest{
-				DeleteInviteKey: invite.DeleteInviteRequest_PARKED_ENTITY_ID,
+				DeleteInviteKey: invite.DELETE_INVITE_KEY_PARKED_ENTITY_ID,
 				Key: &invite.DeleteInviteRequest_ParkedEntityID{
 					ParkedEntityID: entity.ID,
 				},

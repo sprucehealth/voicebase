@@ -123,14 +123,14 @@ func makeVerifyEmailResolve(forAccountCreation bool) func(p graphql.ResolveParam
 				}, nil
 			}
 			var invEmail string
-			switch inv.Type {
-			case invite.LookupInviteResponse_PATIENT:
+			switch inv.Invite.(type) {
+			case *invite.LookupInviteResponse_Patient:
 				// Since we don't store PHI for patients in the invites, get the email to verify from the parked entity contacts
 				invEmail, err = contactForParkedEntity(ctx, ram, inv.GetPatient().Patient.ParkedEntityID, directory.ContactType_EMAIL)
 				if err != nil {
 					return nil, errors.InternalError(ctx, fmt.Errorf("Encountered error whil getting parked email for verification: %s", err))
 				}
-			case invite.LookupInviteResponse_COLLEAGUE:
+			case *invite.LookupInviteResponse_Colleague:
 				invEmail = inv.GetColleague().Colleague.Email
 			default:
 				golog.Errorf("Unknown invite type %s", inv.Type.String())

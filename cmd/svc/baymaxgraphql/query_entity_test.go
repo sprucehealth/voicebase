@@ -110,7 +110,7 @@ func TestInvitationBannerQuery_Paitent(t *testing.T) {
 		gomock.InOrder(
 			// Lookup the invite
 			g.inviteC.EXPECT().LookupInvites(ctx, &invite.LookupInvitesRequest{
-				LookupKeyType: invite.LookupInvitesRequest_PARKED_ENTITY_ID,
+				LookupKeyType: invite.LOOKUP_INVITES_KEY_PARKED_ENTITY_ID,
 				Key: &invite.LookupInvitesRequest_ParkedEntityID{
 					ParkedEntityID: id,
 				},

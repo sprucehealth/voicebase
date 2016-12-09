@@ -44,7 +44,7 @@ func TestVerifyPhoneNumberForAccountCreationMutation_Invite(t *testing.T) {
 		g.inviteC.EXPECT().LookupInvite(ctx, &invite.LookupInviteRequest{
 			InviteToken: "InviteToken",
 		}).Return(&invite.LookupInviteResponse{
-			Type: invite.LookupInviteResponse_COLLEAGUE,
+			Type: invite.LOOKUP_INVITE_RESPONSE_COLLEAGUE,
 			Invite: &invite.LookupInviteResponse_Colleague{
 				Colleague: &invite.ColleagueInvite{
 					Colleague: &invite.Colleague{
@@ -106,7 +106,7 @@ func TestVerifyPhoneNumberForAccountCreationMutation_Invite(t *testing.T) {
 		g.inviteC.EXPECT().LookupInvite(ctx, &invite.LookupInviteRequest{
 			InviteToken: "InviteToken",
 		}).Return(&invite.LookupInviteResponse{
-			Type: invite.LookupInviteResponse_COLLEAGUE,
+			Type: invite.LOOKUP_INVITE_RESPONSE_COLLEAGUE,
 			Invite: &invite.LookupInviteResponse_Colleague{
 				Colleague: &invite.ColleagueInvite{
 					Colleague: &invite.Colleague{
@@ -258,7 +258,7 @@ func TestVerifyEmailCodeEntityInfo_Invite(t *testing.T) {
 		g.inviteC.EXPECT().LookupInvite(ctx, &invite.LookupInviteRequest{
 			InviteToken: "InviteToken",
 		}).Return(&invite.LookupInviteResponse{
-			Type: invite.LookupInviteResponse_PATIENT,
+			Type: invite.LOOKUP_INVITE_RESPONSE_PATIENT,
 			Invite: &invite.LookupInviteResponse_Patient{
 				Patient: &invite.PatientInvite{
 					Patient: &invite.Patient{

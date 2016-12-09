@@ -134,9 +134,11 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 	}
 
 	// Sanity check to make sure we fail early in case we forgot to handle all new invite types
-	if inv != nil && inv.Type != invite.LookupInviteResponse_COLLEAGUE {
-		golog.Warningf("Device mapped to a %s invite attempting to create a Provider account. Ignoring invite.", inv.Type.String())
-		inv = nil
+	if inv != nil {
+		if _, ok := inv.Invite.(*invite.LookupInviteResponse_Colleague); !ok {
+			golog.Warningf("Device mapped to a %s invite attempting to create a Provider account. Ignoring invite.", inv.Type.String())
+			inv = nil
+		}
 	}
 
 	req := &auth.CreateAccountRequest{

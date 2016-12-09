@@ -201,6 +201,7 @@ var sendExistingPatientInviteMutation = &graphql.Field{
 					Patients: []*invite.Patient{&invite.Patient{
 						FirstName:      patientEntity.Info.FirstName,
 						PhoneNumber:    phoneNumber,
+						Email:          email,
 						ParkedEntityID: patientEntity.ID,
 					}},
 				}); err != nil {

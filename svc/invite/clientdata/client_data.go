@@ -45,12 +45,9 @@ type PatientInviteClientData struct {
 }
 
 // PatientInviteClientJSON creates the invite client JSON required for patient invites
-func PatientInviteClientJSON(org *directory.Entity, firstName, mediaAPIDomain, mimeType string, inviteType invite.LookupInviteResponse_Type) (string, error) {
-	welcomeText := "Welcome!"
-	if firstName != "" {
-		welcomeText = fmt.Sprintf("Welcome, %s!", firstName)
-	}
-	if inviteType == invite.LookupInviteResponse_ORGANIZATION_CODE {
+func PatientInviteClientJSON(org *directory.Entity, mediaAPIDomain, mimeType string, inviteType invite.LookupInviteResponse_Type) (string, error) {
+	welcomeText := "Welcome to Spruce!"
+	if inviteType == invite.LOOKUP_INVITE_RESPONSE_ORGANIZATION_CODE {
 		welcomeText = fmt.Sprintf("You're Joining %s", org.Info.DisplayName)
 	}
 	pcd := PatientInviteClientData{

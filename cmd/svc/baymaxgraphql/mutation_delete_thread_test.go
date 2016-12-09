@@ -156,7 +156,7 @@ func TestDeleteThread_Secure(t *testing.T) {
 	gomock.InOrder(
 		// delete invite
 		g.inviteC.EXPECT().DeleteInvite(ctx, &invite.DeleteInviteRequest{
-			DeleteInviteKey: invite.DeleteInviteRequest_PARKED_ENTITY_ID,
+			DeleteInviteKey: invite.DELETE_INVITE_KEY_PARKED_ENTITY_ID,
 			Key: &invite.DeleteInviteRequest_ParkedEntityID{
 				ParkedEntityID: patientEntID,
 			},

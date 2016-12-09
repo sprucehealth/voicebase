@@ -80,7 +80,7 @@ func TestVerifyEmailForAccountCreationMutation_Invite(t *testing.T) {
 		g.inviteC.EXPECT().LookupInvite(ctx, &invite.LookupInviteRequest{
 			InviteToken: "InviteToken",
 		}).Return(&invite.LookupInviteResponse{
-			Type: invite.LookupInviteResponse_PATIENT,
+			Type: invite.LOOKUP_INVITE_RESPONSE_PATIENT,
 			Invite: &invite.LookupInviteResponse_Patient{
 				Patient: &invite.PatientInvite{
 					Patient: &invite.Patient{

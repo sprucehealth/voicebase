@@ -108,8 +108,8 @@ var textInviteLinkMutation = &graphql.Field{
 			return nil, errors.InternalError(ctx, err)
 		}
 
-		switch res.Type {
-		case invite.LookupInviteResponse_PATIENT:
+		switch res.Invite.(type) {
+		case *invite.LookupInviteResponse_Patient:
 
 			// send invite to phone number in invite
 			// not to the phone number entered
@@ -122,7 +122,7 @@ var textInviteLinkMutation = &graphql.Field{
 				return nil, errors.InternalError(ctx, err)
 			}
 
-		case invite.LookupInviteResponse_ORGANIZATION_CODE:
+		case *invite.LookupInviteResponse_Organization:
 			pn, err := phone.Format(in.PhoneNumber, phone.E164)
 			if err != nil {
 				return &textInviteLinkOutput{

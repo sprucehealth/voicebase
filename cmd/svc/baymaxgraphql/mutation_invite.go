@@ -236,14 +236,19 @@ var associateInviteMutation = &graphql.Field{
 
 		var orgID string
 		var firstName string
-		switch res.Type {
-		case invite.LookupInviteResponse_PATIENT:
+		phoneNumberVerificationText := "For security purposes, you'll receive a text message with a verification code."
+		switch res.Invite.(type) {
+		case *invite.LookupInviteResponse_Patient:
 			firstName = res.GetPatient().Patient.FirstName
 			orgID = res.GetPatient().OrganizationEntityID
-		case invite.LookupInviteResponse_COLLEAGUE:
+			if res.GetPatient().InviteVerificationRequirement == invite.VERIFICATION_REQUIREMENT_PHONE_MATCH {
+				phoneNumberVerificationText = "Please enter the number your provider associated with your account."
+			}
+		case *invite.LookupInviteResponse_Colleague:
 			firstName = res.GetColleague().Colleague.FirstName
 			orgID = res.GetColleague().OrganizationEntityID
-		case invite.LookupInviteResponse_ORGANIZATION_CODE:
+			phoneNumberVerificationText = "Please enter the number your provider associated with your account."
+		case *invite.LookupInviteResponse_Organization:
 			orgID = res.GetOrganization().OrganizationEntityID
 		default:
 			return nil, errors.InternalError(ctx, fmt.Errorf("Unknown invite type %s", res.Type))
@@ -260,8 +265,8 @@ var associateInviteMutation = &graphql.Field{
 		}
 
 		var clientData string
-		switch res.Type {
-		case invite.LookupInviteResponse_PATIENT, invite.LookupInviteResponse_ORGANIZATION_CODE:
+		switch res.Invite.(type) {
+		case *invite.LookupInviteResponse_Patient, *invite.LookupInviteResponse_Organization:
 			var meta *media.MediaInfo
 			if org.ImageMediaID != "" {
 
@@ -279,11 +284,11 @@ var associateInviteMutation = &graphql.Field{
 				mimeType = media.MIMEType(meta.MIME)
 			}
 
-			clientData, err = clientdata.PatientInviteClientJSON(org, firstName, svc.mediaAPIDomain, mimeType, res.Type)
+			clientData, err = clientdata.PatientInviteClientJSON(org, svc.mediaAPIDomain, mimeType, res.Type)
 			if err != nil {
 				golog.Errorf("Error while generating client data for invite to org %s: %s", org.ID, err)
 			}
-		case invite.LookupInviteResponse_COLLEAGUE:
+		case *invite.LookupInviteResponse_Colleague:
 			inviter, err := raccess.UnauthorizedEntity(ctx, ram, &directory.LookupEntitiesRequest{
 				LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
 				LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
@@ -327,7 +332,7 @@ var associateInviteMutation = &graphql.Field{
 			res.Values = append(res.Values, &invite.AttributionValue{Key: "client_data", Value: clientData})
 		}
 		if !foundType {
-			res.Values = append(res.Values, &invite.AttributionValue{Key: "invite_type", Value: res.Type.String()})
+			res.Values = append(res.Values, &invite.AttributionValue{Key: "invite_type", Value: inviteTypeToEnum(res)})
 		}
 
 		if _, err := svc.invite.SetAttributionData(ctx, &invite.SetAttributionDataRequest{
@@ -345,24 +350,24 @@ var associateInviteMutation = &graphql.Field{
 		return &associateInviteOutput{
 			ClientMutationID:            mutationID,
 			Success:                     true,
-			InviteType:                  inviteTypeToEnum(res.Type),
+			InviteType:                  inviteTypeToEnum(res),
 			Values:                      values,
 			VerifyPhoneNumber:           true,
-			PhoneNumberVerificationText: "For security purposes, you'll receive a text message with a verification code.",
+			PhoneNumberVerificationText: phoneNumberVerificationText,
 		}, nil
 	},
 }
 
-func inviteTypeToEnum(t invite.LookupInviteResponse_Type) string {
-	switch t {
-	case invite.LookupInviteResponse_PATIENT:
+func inviteTypeToEnum(inv *invite.LookupInviteResponse) string {
+	switch inv.Invite.(type) {
+	case *invite.LookupInviteResponse_Patient:
 		return inviteTypePatient
-	case invite.LookupInviteResponse_COLLEAGUE:
+	case *invite.LookupInviteResponse_Colleague:
 		return inviteTypeColleague
-	case invite.LookupInviteResponse_ORGANIZATION_CODE:
+	case *invite.LookupInviteResponse_Organization:
 		return inviteTypeOrganizationCode
 	default:
-		golog.Errorf("Unknown invite type %s, returning unknown", t.String())
+		golog.Errorf("Unknown invite type %T, returning unknown", inv.Invite)
 	}
 	return inviteTypeUnknown
 }

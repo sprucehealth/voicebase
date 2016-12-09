@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
@@ -324,9 +325,29 @@ var organizationType = graphql.NewObject(
 			"secureConversationCreationRequirement": &graphql.Field{
 				Type:        graphql.NewNonNull(secureConversationCreationRequirementEnum),
 				Description: "Requirement for creating a secure conversation",
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					return secureConversationCreationRequirementPhoneAndEmail, nil
-				},
+				Resolve: apiaccess.Provider(func(p graphql.ResolveParams) (interface{}, error) {
+					ctx := p.Context
+					svc := serviceFromParams(p)
+					org := p.Source.(*models.Organization)
+
+					twoFactorVerificationForSecureConversation, err := settings.GetBooleanValue(ctx, svc.settings, &settings.GetValuesRequest{
+						NodeID: org.ID,
+						Keys: []*settings.ConfigKey{
+							{
+								Key: invite.ConfigKeyTwoFactorVerificationForSecureConversation,
+							},
+						},
+					})
+					if err != nil {
+						return nil, errors.InternalError(ctx, err)
+					}
+
+					if twoFactorVerificationForSecureConversation.Value {
+						return secureConversationCreationRequirementPhoneAndEmail, nil
+					}
+
+					return secureConversationCreationRequirementPhoneOrEmail, nil
+				}),
 			},
 		},
 	},

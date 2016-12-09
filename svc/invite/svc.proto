@@ -6,7 +6,6 @@ import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
 option (gogoproto.marshaler_all) = true;
 option (gogoproto.unmarshaler_all) = true;
-option (gogoproto.goproto_enum_prefix_all) = true;
 
 message Colleague {
 	string email = 1;
@@ -36,7 +35,16 @@ message Patient {
 	// Phone number is only used when inviting a patient. It is not stored and not returned by LookupInvite
 	string phone_number = 2;
 	string parked_entity_id = 3 [(gogoproto.customname) = "ParkedEntityID"];
+	string email = 5;
 }
+
+enum InviteVerificationRequirement {
+	VERIFICATION_REQUIREMENT_UNKNOWN = 0;
+	VERIFICATION_REQUIREMENT_EMAIL = 1;
+	VERIFICATION_REQUIREMENT_PHONE = 2;
+	VERIFICATION_REQUIREMENT_PHONE_MATCH = 3;
+}
+
 
 message InvitePatientsRequest {
 	string organization_entity_id = 1 [(gogoproto.customname) = "OrganizationEntityID"];
@@ -52,6 +60,7 @@ message PatientInvite {
 	string organization_entity_id = 1 [(gogoproto.customname) = "OrganizationEntityID"];
 	string inviter_entity_id = 2 [(gogoproto.customname) = "InviterEntityID"];
 	Patient patient = 3;
+	InviteVerificationRequirement invite_verification_requirement = 4;
 }
 
 message Organization {
@@ -90,9 +99,9 @@ message MarkInviteConsumedResponse {}
 
 message DeleteInviteRequest {
 	enum DeleteInviteKey {
-		UNKNOWN = 0;
-		TOKEN = 1;
-		PARKED_ENTITY_ID = 2;
+		DELETE_INVITE_KEY_UNKNOWN = 0;
+		DELETE_INVITE_KEY_TOKEN = 1;
+		DELETE_INVITE_KEY_PARKED_ENTITY_ID = 2;
 	}
 	oneof key {
 		string token = 1;
@@ -105,10 +114,10 @@ message DeleteInviteResponse {}
 
 message LookupInviteRequest {
 	enum LookupKeyType {
-		UNKNOWN = 0;
-		DEPRECATED_TOKEN = 1;
+		LOOKUP_INVITE_KEY_UNKNOWN = 0;
+		LOOKUP_INVITE_KEY_DEPRECATED_TOKEN = 1;
 		// DEPRECATED - Use LookupInvites instead
-		DEPRECATED_ORGANIZATION_ENTITY_ID = 2;
+		LOOKUP_INVITE_KEY_DEPRECATED_ORGANIZATION_ENTITY_ID = 2;
 	}
 
 	// DEPRECATED - Use LookupInvites instead
@@ -124,9 +133,9 @@ message LookupInviteRequest {
 
 message LookupInviteResponse {
 	enum Type {
-		COLLEAGUE = 0;
-		PATIENT = 1;
-		ORGANIZATION_CODE = 2;
+		LOOKUP_INVITE_RESPONSE_COLLEAGUE = 0;
+		LOOKUP_INVITE_RESPONSE_PATIENT = 1;
+		LOOKUP_INVITE_RESPONSE_ORGANIZATION_CODE = 2;
 	}
 	Type type = 1;
 	oneof invite {
@@ -139,8 +148,8 @@ message LookupInviteResponse {
 
 message LookupInvitesRequest {
 	enum LookupKeyType {
-		INVALID = 0;
-		PARKED_ENTITY_ID = 1;
+		LOOKUP_INVITES_KEY_INVALID = 0;
+		LOOKUP_INVITES_KEY_PARKED_ENTITY_ID = 1;
 	}
 
 	LookupKeyType lookup_key_type = 1;
@@ -151,8 +160,8 @@ message LookupInvitesRequest {
 
 message LookupInvitesResponse {
 	enum Type {
-		INVALID = 0;
-		PATIENT_LIST = 1;
+		LOOKUP_INVITES_RESPONSE_INVALID = 0;
+		LOOKUP_INVITES_RESPONSE_PATIENT_LIST = 1;
 	}
 
 	Type type = 1;

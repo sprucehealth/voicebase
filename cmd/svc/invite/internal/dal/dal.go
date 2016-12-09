@@ -17,21 +17,22 @@ import (
 )
 
 const (
-	attribValuesKey         = "AttributionValues"
-	createdTimestampKey     = "CreatedTimestamp"
-	deviceIDKey             = "DeviceID"
-	emailKey                = "Email"
-	entityIDKey             = "EntityID"
-	inviterEntityIDKey      = "InviterEntityID"
-	inviteTokenKey          = "InviteToken"
-	isInviteKey             = "IsInvite"
-	organizationEntityIDKey = "OrganizationEntityID"
-	parkedEntityIDKey       = "ParkedEntityID"
-	phoneNumberKey          = "PhoneNumber"
-	tagsKey                 = "Tags"
-	typeKey                 = "Type"
-	urlKey                  = "URL"
-	valuesKey               = "Values"
+	attribValuesKey            = "AttributionValues"
+	createdTimestampKey        = "CreatedTimestamp"
+	deviceIDKey                = "DeviceID"
+	emailKey                   = "Email"
+	entityIDKey                = "EntityID"
+	inviterEntityIDKey         = "InviterEntityID"
+	inviteTokenKey             = "InviteToken"
+	isInviteKey                = "IsInvite"
+	organizationEntityIDKey    = "OrganizationEntityID"
+	parkedEntityIDKey          = "ParkedEntityID"
+	phoneNumberKey             = "PhoneNumber"
+	tagsKey                    = "Tags"
+	typeKey                    = "Type"
+	urlKey                     = "URL"
+	valuesKey                  = "Values"
+	verificationRequirementKey = "VerificationRequirement"
 )
 
 // ErrNotFound is the error when an object is missing
@@ -179,6 +180,11 @@ func (d *dal) InsertInvite(ctx context.Context, invite *models.Invite) error {
 	}
 	item[createdTimestampKey] = &dynamodb.AttributeValue{N: ptr.String(strconv.FormatInt(invite.Created.UnixNano(), 10))}
 
+	if invite.VerificationRequirement == "" {
+		return errors.Errorf("VerificationRequirement required")
+	}
+	item[verificationRequirementKey] = &dynamodb.AttributeValue{S: ptr.String(string(invite.VerificationRequirement))}
+
 	if len(invite.Values) > 0 {
 		valuesAttr := make(map[string]*dynamodb.AttributeValue, len(invite.Values))
 		for k, v := range invite.Values {
@@ -298,15 +304,16 @@ func inviteFromAttributes(attributes map[string]*dynamodb.AttributeValue) *model
 		phoneNumber = *pn.S
 	}
 	inv := &models.Invite{
-		Token:                *attributes[inviteTokenKey].S,
-		Type:                 models.InviteType(*attributes[typeKey].S),
-		OrganizationEntityID: *attributes[organizationEntityIDKey].S,
-		InviterEntityID:      inviterEntityID,
-		Email:                email,
-		PhoneNumber:          phoneNumber,
-		URL:                  *attributes[urlKey].S,
-		ParkedEntityID:       parkedEntityID,
-		Created:              time.Unix(ct/1e9, ct%1e9),
+		Token:                   *attributes[inviteTokenKey].S,
+		Type:                    models.InviteType(*attributes[typeKey].S),
+		OrganizationEntityID:    *attributes[organizationEntityIDKey].S,
+		InviterEntityID:         inviterEntityID,
+		Email:                   email,
+		PhoneNumber:             phoneNumber,
+		URL:                     *attributes[urlKey].S,
+		ParkedEntityID:          parkedEntityID,
+		Created:                 time.Unix(ct/1e9, ct%1e9),
+		VerificationRequirement: models.VerificationRequirement(*attributes[verificationRequirementKey].S),
 	}
 	valuesAttr := attributes[valuesKey].M
 	inv.Values = make(map[string]string, len(valuesAttr))

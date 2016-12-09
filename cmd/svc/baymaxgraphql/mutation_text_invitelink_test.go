@@ -36,7 +36,7 @@ func TestTextInviteLink_OrganizationCode(t *testing.T) {
 		g.inviteC.EXPECT().LookupInvite(ctx, &invite.LookupInviteRequest{
 			InviteToken: "token",
 		}).Return(&invite.LookupInviteResponse{
-			Type: invite.LookupInviteResponse_ORGANIZATION_CODE,
+			Type: invite.LOOKUP_INVITE_RESPONSE_ORGANIZATION_CODE,
 			Invite: &invite.LookupInviteResponse_Organization{
 				Organization: &invite.OrganizationInvite{
 					OrganizationEntityID: "orgID",
@@ -113,7 +113,7 @@ func TestTextInviteLink_PatientInvite(t *testing.T) {
 		g.inviteC.EXPECT().LookupInvite(ctx, &invite.LookupInviteRequest{
 			InviteToken: "token",
 		}).Return(&invite.LookupInviteResponse{
-			Type: invite.LookupInviteResponse_PATIENT,
+			Type: invite.LOOKUP_INVITE_RESPONSE_PATIENT,
 			Invite: &invite.LookupInviteResponse_Patient{
 				Patient: &invite.PatientInvite{
 					OrganizationEntityID: "orgID",

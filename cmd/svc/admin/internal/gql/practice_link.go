@@ -100,7 +100,7 @@ func getPracticeLink(ctx context.Context, inviteCli invite.InviteClient, inviteA
 	if err != nil {
 		return nil, errors.Errorf("Error while getting practice link: %s", err)
 	}
-	if resp.Type != invite.LookupInviteResponse_ORGANIZATION_CODE {
+	if _, ok := resp.Invite.(*invite.LookupInviteResponse_Organization); !ok {
 		return nil, errors.Errorf("Invite mapped to token %s is not a practice linke. Got: %+v", token, resp.Invite)
 	}
 	return models.TransformPracticeLinkToModel(ctx, resp.GetOrganization(), inviteAPIDomain), nil

@@ -148,8 +148,8 @@ func makeVerifyPhoneNumberResolve(forAccountCreation bool) func(p graphql.Resolv
 				return nil, errors.InternalError(ctx, err)
 			}
 			if inv != nil {
-				switch inv.Type {
-				case invite.LookupInviteResponse_COLLEAGUE:
+				switch inv.Invite.(type) {
+				case *invite.LookupInviteResponse_Colleague:
 					col := inv.GetColleague().Colleague
 					if col.PhoneNumber != pn.String() {
 						return &verifyPhoneNumberOutput{
@@ -159,7 +159,18 @@ func makeVerifyPhoneNumberResolve(forAccountCreation bool) func(p graphql.Resolv
 							ErrorMessage:     "The phone number must match the one that was in your invite.",
 						}, nil
 					}
-				case invite.LookupInviteResponse_PATIENT, invite.LookupInviteResponse_ORGANIZATION_CODE:
+				case *invite.LookupInviteResponse_Patient:
+					if inv.GetPatient().InviteVerificationRequirement == invite.VERIFICATION_REQUIREMENT_PHONE_MATCH {
+						if inv.GetPatient().Patient.PhoneNumber != pn.String() {
+							return &verifyPhoneNumberOutput{
+								ClientMutationID: mutationID,
+								Success:          false,
+								ErrorCode:        verifyPhoneNumberErrorCodeInvitePhoneMismatch,
+								ErrorMessage:     "The phone number must match the one that was in your invite.",
+							}, nil
+						}
+					}
+				case *invite.LookupInviteResponse_Organization:
 					// do nothing
 				default:
 					golog.Errorf("Unknown invite type %s", inv.Type.String())
@@ -303,25 +314,27 @@ var checkVerificationCodeMutation = &graphql.Field{
 			if err != nil {
 				return nil, errors.InternalError(ctx, err)
 			}
-			if inv != nil && inv.Type == invite.LookupInviteResponse_PATIENT {
-				entities, err := ram.Entities(ctx, &directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-						EntityID: inv.GetPatient().Patient.ParkedEntityID,
-					},
-					RootTypes: []directory.EntityType{directory.EntityType_PATIENT},
-				}, raccess.EntityQueryOptionUnathorized)
-				if err != nil {
-					return nil, errors.InternalError(ctx, fmt.Errorf("Encountered an error while looking up parked entity %q: %s", inv.GetPatient().Patient.ParkedEntityID, err))
-				} else if len(entities) > 1 {
-					return "", errors.InternalError(ctx, fmt.Errorf("Expected 1 entity to be returned for %s but got back %d", inv.GetPatient().Patient.ParkedEntityID, len(entities)))
-				}
-				parkedEntity := entities[0]
+			if inv != nil {
+				if _, ok := inv.Invite.(*invite.LookupInviteResponse_Patient); ok {
+					entities, err := ram.Entities(ctx, &directory.LookupEntitiesRequest{
+						LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+						LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+							EntityID: inv.GetPatient().Patient.ParkedEntityID,
+						},
+						RootTypes: []directory.EntityType{directory.EntityType_PATIENT},
+					}, raccess.EntityQueryOptionUnathorized)
+					if err != nil {
+						return nil, errors.InternalError(ctx, fmt.Errorf("Encountered an error while looking up parked entity %q: %s", inv.GetPatient().Patient.ParkedEntityID, err))
+					} else if len(entities) > 1 {
+						return "", errors.InternalError(ctx, fmt.Errorf("Expected 1 entity to be returned for %s but got back %d", inv.GetPatient().Patient.ParkedEntityID, len(entities)))
+					}
+					parkedEntity := entities[0]
 
-				verifiedEntityInfo = &models.VerifiedEntityInfo{
-					FirstName: parkedEntity.Info.FirstName,
-					LastName:  parkedEntity.Info.LastName,
-					Email:     resp.Value,
+					verifiedEntityInfo = &models.VerifiedEntityInfo{
+						FirstName: parkedEntity.Info.FirstName,
+						LastName:  parkedEntity.Info.LastName,
+						Email:     resp.Value,
+					}
 				}
 			}
 		}
