@@ -59,6 +59,7 @@ func (s *threadsServer) CreateTriggeredMessage(ctx context.Context, in *threadin
 			OrganizationEntityID: in.OrganizationEntityID,
 			TriggerKey:           k,
 			TriggerSubkey:        in.Key.Subkey,
+			Enabled:              in.Enabled,
 		})
 		if err != nil {
 			return errors.Trace(err)

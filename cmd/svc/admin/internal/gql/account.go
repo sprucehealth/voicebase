@@ -52,7 +52,7 @@ var accountType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "Account",
 		Fields: graphql.Fields{
-			"id":          &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"id":          &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
 			"type":        &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"status":      &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"firstName":   &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
@@ -149,7 +149,7 @@ func accountSettingsResolve(p graphql.ResolveParams) (interface{}, error) {
 // modifyAccountContact
 
 type modifyAccountContactInput struct {
-	AccountID   string `gql:"accountID"`
+	AccountID   string `gql:"accountID,nonempty"`
 	Email       string `gql:"email"`
 	PhoneNumber string `gql:"phoneNumber"`
 }

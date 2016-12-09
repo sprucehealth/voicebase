@@ -154,6 +154,7 @@ func TestCreateTriggeredMessage(t *testing.T) {
 				OrganizationEntityID: "OrganizationEntityID",
 				TriggerKey:           "NEW_PATIENT",
 				TriggerSubkey:        "subkey",
+				Enabled:              true,
 			}).WithReturns(tmID, nil))
 
 		req1, err := createPostMessageRequest(ctx, models.EmptyThreadID(), "ActorEntityID", message1)
@@ -199,6 +200,7 @@ func TestCreateTriggeredMessage(t *testing.T) {
 			ActorEntityID:        "ActorEntityID",
 			OrganizationEntityID: "OrganizationEntityID",
 			Messages:             []*threading.MessagePost{message1, message2},
+			Enabled:              true,
 		}, &threading.CreateTriggeredMessageResponse{
 			TriggeredMessage: rtm,
 		}, nil)

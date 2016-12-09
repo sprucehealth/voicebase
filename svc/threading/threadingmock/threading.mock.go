@@ -638,3 +638,19 @@ func (_mr *_MockThreadsClientRecorder) UpdateThread(arg0, arg1 interface{}, arg2
 	_s := append([]interface{}{arg0, arg1}, arg2...)
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "UpdateThread", _s...)
 }
+
+func (_m *MockThreadsClient) UpdateTriggeredMessage(_param0 context.Context, _param1 *threading.UpdateTriggeredMessageRequest, _param2 ...grpc.CallOption) (*threading.UpdateTriggeredMessageResponse, error) {
+	_s := []interface{}{_param0, _param1}
+	for _, _x := range _param2 {
+		_s = append(_s, _x)
+	}
+	ret := _m.ctrl.Call(_m, "UpdateTriggeredMessage", _s...)
+	ret0, _ := ret[0].(*threading.UpdateTriggeredMessageResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockThreadsClientRecorder) UpdateTriggeredMessage(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+	_s := append([]interface{}{arg0, arg1}, arg2...)
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "UpdateTriggeredMessage", _s...)
+}

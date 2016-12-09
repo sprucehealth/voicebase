@@ -58,7 +58,7 @@ var practiceLinkType = graphql.NewObject(
 			"token":          &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"url":            &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"tags":           &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(graphql.String))},
-			"welcomeMessage": &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(triggeredMessageType)), Resolve: practiceLinkWelcomeMessageResolve},
+			"welcomeMessage": &graphql.Field{Type: triggeredMessageType, Resolve: practiceLinkWelcomeMessageResolve},
 		},
 	})
 
@@ -284,7 +284,7 @@ func modifyPracticeLink(ctx context.Context, inviteCli invite.InviteClient, in *
 		Tags:  in.Tags,
 	})
 	if err != nil {
-		return nil, errors.Errorf("Error while modifying practice link for  %+v", in)
+		return nil, errors.Errorf("Error while modifying practice link for  %+v: %s", in, err)
 	}
 	return models.TransformPracticeLinkToModel(ctx, resp.OrganizationInvite, inviteAPIDomain), nil
 }

@@ -8,11 +8,12 @@ func NewQueryRoot() *graphql.Object {
 		graphql.ObjectConfig{
 			Name: "Query",
 			Fields: graphql.Fields{
-				"account":      accountField,
-				"entity":       entityField,
-				"contact":      contactField,
-				"me":           meField,
-				"practiceLink": practiceLinkField,
+				"account":          accountField,
+				"entity":           entityField,
+				"contact":          contactField,
+				"me":               meField,
+				"practiceLink":     practiceLinkField,
+				"triggeredMessage": triggeredMessageField,
 			},
 		})
 }

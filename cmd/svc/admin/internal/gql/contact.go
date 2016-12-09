@@ -99,6 +99,7 @@ func getContact(ctx context.Context, dirCli directory.DirectoryClient, id string
 	return models.TransformContactToModel(resp.Contact), nil
 }
 
+// provisionNumber
 type provisionNumberInput struct {
 	UUID           string `gql:"uuid"`
 	OrganizationID string `gql:"organizationID"`

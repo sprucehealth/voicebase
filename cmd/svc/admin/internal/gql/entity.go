@@ -59,8 +59,8 @@ func init() {
 		graphql.ObjectConfig{
 			Name: "Entity",
 			Fields: graphql.Fields{
-				"id":            &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"accountID":     &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+				"id":            &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+				"accountID":     &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
 				"account":       &graphql.Field{Type: graphql.NewNonNull(accountType), Resolve: entityAccountResolve},
 				"contacts":      &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(contactType))},
 				"firstName":     &graphql.Field{Type: graphql.NewNonNull(graphql.String)},

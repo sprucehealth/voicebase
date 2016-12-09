@@ -18,10 +18,11 @@ var meType = graphql.NewObject(
 		Name: "Me",
 		Fields: graphql.Fields{
 			// For single query purposes allow entities to be lookedup inside a `me` call
-			"account":      accountField,
-			"entity":       entityField,
-			"contact":      contactField,
-			"practiceLink": practiceLinkField,
+			"account":          accountField,
+			"entity":           entityField,
+			"contact":          contactField,
+			"practiceLink":     practiceLinkField,
+			"triggeredMessage": triggeredMessageField,
 			"username": &graphql.Field{
 				Type:    graphql.NewNonNull(graphql.String),
 				Resolve: meResolve,

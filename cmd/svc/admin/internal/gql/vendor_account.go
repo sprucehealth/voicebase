@@ -66,7 +66,7 @@ var vendorAccountType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "VendorAccount",
 		Fields: graphql.Fields{
-			"id":          &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"id":          &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
 			"type":        &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"accountID":   &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"lifecycle":   &graphql.Field{Type: graphql.NewNonNull(vendorAccountLifecycle)},

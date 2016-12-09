@@ -814,6 +814,7 @@ message CreateTriggeredMessageRequest {
 	string organization_entity_id = 2 [(gogoproto.customname) = "OrganizationEntityID"];
 	TriggeredMessageKey key = 3;
 	repeated MessagePost messages = 4;
+	bool enabled = 5;
 }
 
 message CreateTriggeredMessageResponse {
@@ -921,6 +922,8 @@ service Threads {
 	rpc UpdateSavedMessage(UpdateSavedMessageRequest) returns (UpdateSavedMessageResponse);
 	// UpdateSavedQuery updated a saved query
 	rpc UpdateSavedQuery(UpdateSavedQueryRequest) returns (UpdateSavedQueryResponse);
+	// UpdateTriggeredMessage updates a specified triggered message
+	rpc UpdateTriggeredMessage(UpdateTriggeredMessageRequest) returns (UpdateTriggeredMessageResponse);
 	// UpdateThread updates the thread members and other information
 	rpc UpdateThread(UpdateThreadRequest) returns (UpdateThreadResponse);
 }

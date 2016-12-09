@@ -24,6 +24,7 @@ var savedMessageType = graphql.NewObject(
 			"ownerEntityID":   &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
 			"owner":           &graphql.Field{Type: graphql.NewNonNull(entityType), Resolve: savedMessageOwnerResolve},
 			"internal":        &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"message":         &graphql.Field{Type: graphql.NewNonNull(messageType)},
 			"created":         &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
 		},
 	})
@@ -51,6 +52,20 @@ func getSavedMessagesForEntity(ctx context.Context, threadingCli threading.Threa
 		By: &threading.SavedMessagesRequest_EntityIDs{
 			EntityIDs: &threading.IDList{
 				IDs: []string{entityID},
+			},
+		},
+	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return models.TransformSavedMessagesToModel(resp.SavedMessages), nil
+}
+
+func getSavedMessages(ctx context.Context, threadingCli threading.ThreadsClient, savedMessageIDs []string) ([]*models.SavedMessage, error) {
+	resp, err := threadingCli.SavedMessages(ctx, &threading.SavedMessagesRequest{
+		By: &threading.SavedMessagesRequest_IDs{
+			IDs: &threading.IDList{
+				IDs: savedMessageIDs,
 			},
 		},
 	})
