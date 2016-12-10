@@ -113,21 +113,6 @@ message DeleteInviteRequest {
 message DeleteInviteResponse {}
 
 message LookupInviteRequest {
-	enum LookupKeyType {
-		LOOKUP_INVITE_KEY_UNKNOWN = 0;
-		LOOKUP_INVITE_KEY_DEPRECATED_TOKEN = 1;
-		// DEPRECATED - Use LookupInvites instead
-		LOOKUP_INVITE_KEY_DEPRECATED_ORGANIZATION_ENTITY_ID = 2;
-	}
-
-	// DEPRECATED - Use LookupInvites instead
-	LookupKeyType lookup_key_type = 1;
-	oneof lookup_key_oneof {
-		string token = 2;
-		// DEPRECATED - Use LookupInvites instead
-		string organization_entity_id = 3 [(gogoproto.customname) = "OrganizationEntityID"];
-	}
-	// The redundency in this name is unfortunate but cant be token and backwards compatible
 	string invite_token = 4;
 }
 

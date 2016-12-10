@@ -585,33 +585,11 @@ func (s *server) getOrg(ctx context.Context, orgID string) (*directory.Entity, e
 
 // LookupInvite returns information about an invite by token
 func (s *server) LookupInvite(ctx context.Context, in *invite.LookupInviteRequest) (*invite.LookupInviteResponse, error) {
-	var err error
-	var inv *models.Invite
-	switch lookupKey := in.LookupKeyOneof.(type) {
-	case *invite.LookupInviteRequest_Token:
-		// Do our backwards compatible mapping till we can get rid of this switch
-		token := lookupKey.Token
-		if in.InviteToken != "" {
-			token = in.InviteToken
-		}
-		inv, err = s.lookupInviteForToken(ctx, token)
-		if err != nil {
-			return nil, errors.Trace(err)
-		}
-	case *invite.LookupInviteRequest_OrganizationEntityID:
-		// TODO: Until we can remove this code path just return the first one we find
-		invs, err := s.lookupInvitesForOrganization(ctx, lookupKey.OrganizationEntityID)
-		if err != nil {
-			return nil, errors.Trace(err)
-		}
-		if len(invs) != 0 {
-			inv = invs[0]
-		} else {
-			return nil, grpc.Errorf(codes.NotFound, "No invites found for org %s", lookupKey.OrganizationEntityID)
-		}
-	default:
-		return nil, grpc.Errorf(codes.InvalidArgument, "Unsupported lookup key type %T", lookupKey)
+	inv, err := s.lookupInviteForToken(ctx, in.InviteToken)
+	if err != nil {
+		return nil, errors.Trace(err)
 	}
+
 	if inv.Type != models.ColleagueInvite && inv.Type != models.PatientInvite && inv.Type != models.OrganizationCodeInvite {
 		return nil, errors.Errorf("unsupported invite type %s", string(inv.Type))
 	}

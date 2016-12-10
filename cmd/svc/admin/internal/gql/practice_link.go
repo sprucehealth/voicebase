@@ -93,9 +93,7 @@ func practiceLinkWelcomeMessageResolve(p graphql.ResolveParams) (interface{}, er
 
 func getPracticeLink(ctx context.Context, inviteCli invite.InviteClient, inviteAPIDomain, token string) (*models.PracticeLink, error) {
 	resp, err := inviteCli.LookupInvite(ctx, &invite.LookupInviteRequest{
-		LookupKeyOneof: &invite.LookupInviteRequest_Token{
-			Token: token,
-		},
+		InviteToken: token,
 	})
 	if err != nil {
 		return nil, errors.Errorf("Error while getting practice link: %s", err)
