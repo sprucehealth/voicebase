@@ -12,6 +12,10 @@ import (
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/directory"
 	directorymock "github.com/sprucehealth/backend/svc/directory/mock"
+	"github.com/sprucehealth/backend/svc/invite"
+	"github.com/sprucehealth/backend/svc/invite/invitemock"
+	"github.com/sprucehealth/backend/svc/settings"
+	settingsmock "github.com/sprucehealth/backend/svc/settings/mock"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/backend/svc/threading/threadingmock"
 )
@@ -156,7 +160,186 @@ func TestStandardThreadSync(t *testing.T) {
 
 	data, err := event.Marshal()
 	test.OK(t, err)
-	s := NewSyncEvent(dmock, dirmock, tmock, nil, "", "")
+	s := NewSyncEvent(dmock, dirmock, tmock, nil, nil, nil, "", "")
+	test.OK(t, s.(*syncEvent).processSyncEvent(context.Background(), base64.StdEncoding.EncodeToString(data)))
+}
+
+func TestSecureThreadSync_AutoInvite(t *testing.T) {
+	orgID := "orgID1"
+	event := sync.Event{
+		OrganizationEntityID: orgID,
+		Source:               sync.SOURCE_ELATION,
+		Type:                 sync.EVENT_TYPE_PATIENT_ADD,
+		Event: &sync.Event_PatientAddEvent{
+			PatientAddEvent: &sync.PatientAddEvent{
+				AutoInvitePatients: true,
+				Patients: []*sync.Patient{
+					{
+						ID:        "12345",
+						FirstName: "FirstName1",
+						LastName:  "LastName1",
+						PhoneNumbers: []*sync.Phone{
+							{
+								Type:   sync.PHONE_TYPE_MOBILE,
+								Number: "+12222222222",
+							},
+							{
+								Type:   sync.PHONE_TYPE_MOBILE,
+								Number: "+13333333333",
+							},
+						},
+						EmailAddresses: []string{"test@example.com", "test2@example.com"},
+					},
+				},
+			},
+		},
+	}
+
+	ctx := context.Background()
+	ctrl := gomock.NewController(t)
+	tmock := threadingmock.NewMockThreadsClient(ctrl)
+	imock := invitemock.NewMockInviteClient(ctrl)
+	defer ctrl.Finish()
+
+	dirmock := directorymock.New(t)
+	dmock := dalmock.New(t)
+	smock := settingsmock.New(t)
+
+	defer mock.FinishAll(dmock, dirmock, smock)
+
+	dmock.Expect(mock.NewExpectation(dmock.SyncConfigForOrg, orgID, "SOURCE_ELATION").WithReturns(&sync.Config{
+		OrganizationEntityID: orgID,
+		Source:               sync.SOURCE_ELATION,
+		ThreadCreationType:   sync.THREAD_CREATION_TYPE_SECURE,
+	}, nil))
+
+	smock.Expect(mock.NewExpectation(smock.GetValues, &settings.GetValuesRequest{
+		NodeID: orgID,
+		Keys: []*settings.ConfigKey{
+			{
+				Key: invite.ConfigKeyTwoFactorVerificationForSecureConversation,
+			},
+		},
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: true,
+					},
+				},
+			},
+		},
+	}, nil))
+
+	dirmock.Expect(mock.NewExpectation(dirmock.LookupEntities, &directory.LookupEntitiesRequest{
+		Key: &directory.LookupEntitiesRequest_ExternalID{
+			ExternalID: "elation_12345",
+		},
+		MemberOfEntity: orgID,
+		RequestedInformation: &directory.RequestedInformation{
+			EntityInformation: []directory.EntityInformation{
+				directory.EntityInformation_CONTACTS,
+				directory.EntityInformation_EXTERNAL_IDS,
+				directory.EntityInformation_MEMBERSHIPS,
+			},
+		},
+		RootTypes:  []directory.EntityType{directory.EntityType_PATIENT},
+		ChildTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	}))
+
+	patientContacts := []*directory.Contact{
+		{
+			ContactType: directory.ContactType_PHONE,
+			Value:       "+12222222222",
+			Label:       "Mobile",
+		},
+		{
+			ContactType: directory.ContactType_PHONE,
+			Value:       "+13333333333",
+			Label:       "Mobile",
+		},
+		{
+			ContactType: directory.ContactType_EMAIL,
+			Value:       "test@example.com",
+		},
+
+		{
+			ContactType: directory.ContactType_EMAIL,
+			Value:       "test2@example.com",
+		},
+	}
+
+	dirmock.Expect(mock.NewExpectation(dirmock.CreateEntity, &directory.CreateEntityRequest{
+		Type:                      directory.EntityType_PATIENT,
+		ExternalID:                "elation_12345",
+		InitialMembershipEntityID: orgID,
+		RequestedInformation: &directory.RequestedInformation{
+			EntityInformation: []directory.EntityInformation{
+				directory.EntityInformation_CONTACTS,
+				directory.EntityInformation_EXTERNAL_IDS,
+				directory.EntityInformation_MEMBERSHIPS,
+			},
+		},
+		Contacts: patientContacts,
+		EntityInfo: &directory.EntityInfo{
+			FirstName: "FirstName1",
+			LastName:  "LastName1",
+		},
+	}).WithReturns(&directory.CreateEntityResponse{
+		Entity: &directory.Entity{
+			ID: "ent_1",
+			Info: &directory.EntityInfo{
+				FirstName:   "FirstName1",
+				LastName:    "LastName1",
+				DisplayName: "DisplayName1",
+			},
+			Contacts: patientContacts,
+			Memberships: []*directory.Entity{
+				{
+					ID:   orgID,
+					Type: directory.EntityType_ORGANIZATION,
+				},
+			},
+		},
+	}, nil))
+
+	gomock.InOrder(
+		tmock.EXPECT().ThreadsForMember(ctx, &threading.ThreadsForMemberRequest{
+			PrimaryOnly: true,
+			EntityID:    "ent_1",
+		}),
+		tmock.EXPECT().CreateEmptyThread(ctx, &threading.CreateEmptyThreadRequest{
+			OrganizationID:  orgID,
+			PrimaryEntityID: "ent_1",
+			MemberEntityIDs: []string{orgID, "ent_1"},
+			Type:            threading.THREAD_TYPE_SECURE_EXTERNAL,
+			Summary:         "DisplayName1",
+			SystemTitle:     "DisplayName1",
+			Origin:          threading.THREAD_ORIGIN_SYNC,
+		}).Return(&threading.CreateEmptyThreadResponse{
+			Thread: &threading.Thread{
+				ID:             "thread_1",
+				OrganizationID: orgID,
+			},
+		}, nil),
+	)
+
+	imock.EXPECT().InvitePatients(ctx, &invite.InvitePatientsRequest{
+		OrganizationEntityID: orgID,
+		Patients: []*invite.Patient{
+			{
+				FirstName:      "FirstName1",
+				PhoneNumber:    "+12222222222",
+				Email:          "test@example.com",
+				ParkedEntityID: "ent_1",
+			},
+		},
+	})
+
+	data, err := event.Marshal()
+	test.OK(t, err)
+	s := NewSyncEvent(dmock, dirmock, tmock, smock, imock, nil, "", "")
 	test.OK(t, s.(*syncEvent).processSyncEvent(context.Background(), base64.StdEncoding.EncodeToString(data)))
 }
 
@@ -285,7 +468,7 @@ func TestStandardThreadSync_EntityExists(t *testing.T) {
 
 	data, err := event.Marshal()
 	test.OK(t, err)
-	s := NewSyncEvent(dmock, dirmock, tmock, nil, "", "")
+	s := NewSyncEvent(dmock, dirmock, tmock, nil, nil, nil, "", "")
 	test.OK(t, s.(*syncEvent).processSyncEvent(context.Background(), base64.StdEncoding.EncodeToString(data)))
 }
 
@@ -407,7 +590,7 @@ func TestStandardThreadSync_ThreadExists(t *testing.T) {
 
 	data, err := event.Marshal()
 	test.OK(t, err)
-	s := NewSyncEvent(dmock, dirmock, tmock, nil, "", "")
+	s := NewSyncEvent(dmock, dirmock, tmock, nil, nil, nil, "", "")
 	test.OK(t, s.(*syncEvent).processSyncEvent(context.Background(), base64.StdEncoding.EncodeToString(data)))
 }
 
@@ -566,7 +749,7 @@ func TestStandardThreadSync_Update_NoEntity(t *testing.T) {
 
 	data, err := event.Marshal()
 	test.OK(t, err)
-	s := NewSyncEvent(dmock, dirmock, tmock, nil, "", "")
+	s := NewSyncEvent(dmock, dirmock, tmock, nil, nil, nil, "", "")
 	test.OK(t, s.(*syncEvent).processSyncEvent(context.Background(), base64.StdEncoding.EncodeToString(data)))
 }
 
@@ -672,7 +855,7 @@ func TestStandardThreadSync_Update_EntityExists_NoDifference(t *testing.T) {
 
 	data, err := event.Marshal()
 	test.OK(t, err)
-	s := NewSyncEvent(dmock, dirmock, tmock, nil, "", "")
+	s := NewSyncEvent(dmock, dirmock, tmock, nil, nil, nil, "", "")
 	test.OK(t, s.(*syncEvent).processSyncEvent(context.Background(), base64.StdEncoding.EncodeToString(data)))
 }
 
@@ -778,7 +961,7 @@ func TestStandardThreadSync_Update_EntityExists_Deleted(t *testing.T) {
 
 	data, err := event.Marshal()
 	test.OK(t, err)
-	s := NewSyncEvent(dmock, dirmock, tmock, nil, "", "")
+	s := NewSyncEvent(dmock, dirmock, tmock, nil, nil, nil, "", "")
 	test.OK(t, s.(*syncEvent).processSyncEvent(context.Background(), base64.StdEncoding.EncodeToString(data)))
 }
 
@@ -953,6 +1136,6 @@ func TestStandardThreadSync_Update_EntityExists_Differs(t *testing.T) {
 
 	data, err := event.Marshal()
 	test.OK(t, err)
-	s := NewSyncEvent(dmock, dirmock, tmock, nil, "", "")
+	s := NewSyncEvent(dmock, dirmock, tmock, nil, nil, nil, "", "")
 	test.OK(t, s.(*syncEvent).processSyncEvent(context.Background(), base64.StdEncoding.EncodeToString(data)))
 }

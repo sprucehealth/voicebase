@@ -3,9 +3,10 @@ package settings
 import "github.com/sprucehealth/backend/svc/settings"
 
 const (
-	ThreadTypeOptionStandard  = "thread_type_option_standard"
-	ThreadTypeOptionSecure    = "thread_type_option_secure"
-	ConfigKeyThreadTypeOption = "patient_sync_thread_type"
+	ThreadTypeOptionStandard    = "thread_type_option_standard"
+	ThreadTypeOptionSecure      = "thread_type_option_secure"
+	ConfigKeyThreadTypeOption   = "patient_sync_thread_type"
+	ConfigKeyAutoInvitePatients = "auto_invite_patients_on_sync"
 )
 
 // ThreadTypeOptionConfig specifies the type of threads to create for an organization
@@ -32,6 +33,23 @@ var ThreadTypeOptionConfig = &settings.Config{
 				Item: &settings.ItemValue{
 					ID: ThreadTypeOptionSecure,
 				},
+			},
+		},
+	},
+}
+
+// AutoInvitePatientsOnSyncConfig specifies whether or not to auto invite
+// patients to use Spruce when they are imported into Spruce from external source.
+var AutoInvitePatientsOnSyncConfig = &settings.Config{
+	Title:          "Flag to auto invite patients to Spruce on sync",
+	Key:            ConfigKeyAutoInvitePatients,
+	PossibleOwners: []settings.OwnerType{settings.OwnerType_ORGANIZATION},
+	AllowSubkeys:   false,
+	Type:           settings.ConfigType_BOOLEAN,
+	Config: &settings.Config_Boolean{
+		Boolean: &settings.BooleanConfig{
+			Default: &settings.BooleanValue{
+				Value: false,
 			},
 		},
 	},

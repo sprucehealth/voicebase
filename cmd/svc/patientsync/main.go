@@ -24,6 +24,7 @@ import (
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/events"
+	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/patientsync"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
@@ -41,6 +42,7 @@ var (
 	flagDirectoryAddr = flag.String("directory_addr", "_directory._tcp.service", "host:port of directory service")
 	flagThreadingAddr = flag.String("threading_addr", "_threading._tcp.service", "host:port of threading service")
 	flagSettingsAddr  = flag.String("settings_addr", "_settings._tcp.service", "host:port of settings service")
+	flagInviteAddr    = flag.String("invite_addr", "_invite._tcp.service", "host:port of invite service")
 
 	// database
 	flagDBHost     = flag.String("db_host", "", "database host")
@@ -89,6 +91,12 @@ func main() {
 	}
 	defer settingsConn.Close()
 
+	inviteConn, err := bootSvc.DialGRPC(*flagInviteAddr)
+	if err != nil {
+		golog.Fatalf("Unable to communicate with settings service: %s", err)
+	}
+	defer inviteConn.Close()
+
 	awsSession, err := bootSvc.AWSSession()
 	if err != nil {
 		golog.Fatalf(err.Error())
@@ -99,6 +107,9 @@ func main() {
 	}
 	hintlib.Key = *flagHintPartnerAPIKey
 	hintlib.Testing = !environment.IsProd()
+
+	settingsClient := settings.NewSettingsClient(settingsConn)
+	inviteClient := invite.NewInviteClient(inviteConn)
 
 	eSQS, err := awsutil.NewEncryptedSQS(*flagKMSKeyArn, kms.New(awsSession), sqs.New(awsSession))
 	if err != nil {
@@ -129,6 +140,8 @@ func main() {
 		dl,
 		directoryCLI,
 		threadingCLI,
+		settingsClient,
+		inviteClient,
 		eSQS,
 		*flagSyncEventQueueURL,
 		*flagWebDomain)
@@ -147,7 +160,6 @@ func main() {
 		golog.Fatalf("failed to listen: %v", err)
 	}
 
-	settingsClient := settings.NewSettingsClient(settingsConn)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	_, err = settings.RegisterConfigs(
 		ctx,
@@ -182,7 +194,7 @@ func main() {
 	go s.Serve(lis)
 
 	router := mux.NewRouter().StrictSlash(true)
-	router.Handle("/hint/webhook", hint.NewWebhookHandler(dal.New(db), *flagSyncEventQueueURL, eSQS))
+	router.Handle("/hint/webhook", hint.NewWebhookHandler(dal.New(db), settingsClient, *flagSyncEventQueueURL, eSQS))
 
 	h := httputil.LoggingHandler(router, "patientsyncaapi", *flagBehindProxy, nil)
 	h = httputil.RequestIDHandler(h)

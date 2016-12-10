@@ -13,9 +13,12 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/dal"
 	dalmock "github.com/sprucehealth/backend/cmd/svc/patientsync/internal/dal/mock"
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/sync"
+	patientsyncsettings "github.com/sprucehealth/backend/cmd/svc/patientsync/settings"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
+	"github.com/sprucehealth/backend/svc/settings"
+	settingsmock "github.com/sprucehealth/backend/svc/settings/mock"
 	"github.com/sprucehealth/go-hint"
 )
 
@@ -26,6 +29,9 @@ func TestWebhookHandler(t *testing.T) {
 
 	mocksqsAPI := mock.NewSQSAPI(t)
 	defer mocksqsAPI.Finish()
+
+	smock := settingsmock.New(t)
+	defer smock.Finish()
 
 	patient := &hint.Patient{
 		ID:        "pat-test",
@@ -70,6 +76,25 @@ func TestWebhookHandler(t *testing.T) {
 		Status: dal.SyncStatusConnected,
 	}, nil))
 
+	smock.Expect(mock.NewExpectation(smock.GetValues, &settings.GetValuesRequest{
+		NodeID: "orgID",
+		Keys: []*settings.ConfigKey{
+			{
+				Key: patientsyncsettings.ConfigKeyAutoInvitePatients,
+			},
+		},
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: false,
+					},
+				},
+			},
+		},
+	}, nil))
+
 	syncPatients := &sync.Event{
 		Source:               sync.SOURCE_HINT,
 		OrganizationEntityID: "orgID",
@@ -112,6 +137,7 @@ func TestWebhookHandler(t *testing.T) {
 		dl:                 dmock,
 		syncEventsQueueURL: "queueURL",
 		sqsAPI:             mocksqsAPI,
+		settingsCLI:        smock,
 	}
 
 	recorder := httptest.NewRecorder()

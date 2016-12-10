@@ -11,20 +11,24 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/sync"
+	patientsyncsettings "github.com/sprucehealth/backend/cmd/svc/patientsync/settings"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/go-hint"
 )
 
 type webhookHandler struct {
 	dl                 dal.DAL
+	settingsCLI        settings.SettingsClient
 	syncEventsQueueURL string
 	sqsAPI             sqsiface.SQSAPI
 }
 
-func NewWebhookHandler(dl dal.DAL, syncEventsQueueURL string, sqsAPI sqsiface.SQSAPI) http.Handler {
+func NewWebhookHandler(dl dal.DAL, settingsCLI settings.SettingsClient, syncEventsQueueURL string, sqsAPI sqsiface.SQSAPI) http.Handler {
 	return &webhookHandler{
 		dl:                 dl,
+		settingsCLI:        settingsCLI,
 		syncEventsQueueURL: syncEventsQueueURL,
 		sqsAPI:             sqsAPI,
 	}
@@ -82,6 +86,21 @@ func (h *webhookHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var autoInvitePatients bool
+	val, err := settings.GetBooleanValue(r.Context(), h.settingsCLI, &settings.GetValuesRequest{
+		NodeID: syncConfig.OrganizationEntityID,
+		Keys: []*settings.ConfigKey{
+			{
+				Key: patientsyncsettings.ConfigKeyAutoInvitePatients,
+			},
+		},
+	})
+	if err != nil {
+		golog.Errorf("Unable to get setting for orgID %s : %s", syncConfig.OrganizationEntityID, err)
+	} else {
+		autoInvitePatients = val.Value
+	}
+
 	var patient hint.Patient
 	if err := json.Unmarshal(ev.Object, &patient); err != nil {
 		httpError(w, fmt.Sprintf("Unable to unmarshal json for event object: %s", err), http.StatusInternalServerError)
@@ -99,7 +118,8 @@ func (h *webhookHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				OrganizationEntityID: syncConfig.OrganizationEntityID,
 				Event: &sync.Event_PatientAddEvent{
 					PatientAddEvent: &sync.PatientAddEvent{
-						Patients: []*sync.Patient{syncPatient},
+						Patients:           []*sync.Patient{syncPatient},
+						AutoInvitePatients: autoInvitePatients,
 					},
 				},
 			}
@@ -109,7 +129,8 @@ func (h *webhookHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				OrganizationEntityID: syncConfig.OrganizationEntityID,
 				Event: &sync.Event_PatientUpdateEvent{
 					PatientUpdateEvent: &sync.PatientUpdatedEvent{
-						Patients: []*sync.Patient{syncPatient},
+						Patients:           []*sync.Patient{syncPatient},
+						AutoInvitePatients: autoInvitePatients,
 					},
 				},
 			}

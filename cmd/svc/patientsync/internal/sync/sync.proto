@@ -67,6 +67,7 @@ message Event {
 // PatientAddEvent represents an event to add a list of patients to our system
 message PatientAddEvent {
 	repeated Patient patients = 1;
+	bool auto_invite_patients = 2;
 }
 
 // Patient represents a standard form for a patient from different sources.
@@ -98,6 +99,7 @@ message Patient {
 // PatientUpdatedEvent represents an event to update a list of existing patients in our system.
 message PatientUpdatedEvent {
 	repeated Patient patients = 1;
+	bool auto_invite_patients = 2;
 }
 
 message Phone {

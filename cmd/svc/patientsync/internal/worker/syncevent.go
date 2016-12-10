@@ -15,6 +15,8 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/worker"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/invite"
+	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -29,6 +31,8 @@ type syncEvent struct {
 	dl               dal.DAL
 	directory        directory.DirectoryClient
 	threading        threading.ThreadsClient
+	settings         settings.SettingsClient
+	invite           invite.InviteClient
 	syncEventsWorker worker.Worker
 	webDomain        string
 }
@@ -39,6 +43,8 @@ func NewSyncEvent(
 	dl dal.DAL,
 	directory directory.DirectoryClient,
 	threading threading.ThreadsClient,
+	settings settings.SettingsClient,
+	invite invite.InviteClient,
 	sqsAPI sqsiface.SQSAPI,
 	syncEventsSQSURL, webDomain string,
 ) Service {
@@ -46,7 +52,9 @@ func NewSyncEvent(
 		dl:        dl,
 		directory: directory,
 		threading: threading,
+		settings:  settings,
 		webDomain: webDomain,
+		invite:    invite,
 	}
 	s.syncEventsWorker = awsutil.NewSQSWorker(sqsAPI, syncEventsSQSURL, s.processSyncEvent)
 	return s
@@ -227,8 +235,28 @@ func (s *syncEvent) createPatientAndThread(ctx context.Context, patient *sync.Pa
 		threadType = threading.THREAD_TYPE_EXTERNAL
 	case sync.THREAD_CREATION_TYPE_SECURE:
 
-		// ensure that we have at least one phone number and email address before proceeding
-		if len(patient.PhoneNumbers) == 0 || len(patient.EmailAddresses) == 0 {
+		var requirePhoneAndEmailForSecureConversationCreation bool
+		val, err := settings.GetBooleanValue(ctx, s.settings, &settings.GetValuesRequest{
+			NodeID: orgID,
+			Keys: []*settings.ConfigKey{
+				{
+					Key: invite.ConfigKeyTwoFactorVerificationForSecureConversation,
+				},
+			},
+		})
+		if err != nil {
+			golog.Errorf("Unable to query for setting for org %s: %s", orgID, err)
+		} else {
+			requirePhoneAndEmailForSecureConversationCreation = val.Value
+		}
+
+		if requirePhoneAndEmailForSecureConversationCreation {
+			// ensure that we have at least one phone number and email address before proceeding
+			if len(patient.PhoneNumbers) == 0 || len(patient.EmailAddresses) == 0 {
+				golog.Warningf("Ignoring patient %s since we dont have at least one valid phone number and email address for the patient", patient.ID)
+				return nil
+			}
+		} else if len(patient.PhoneNumbers) == 0 && len(patient.EmailAddresses) == 0 {
 			golog.Warningf("Ignoring patient %s since we dont have at least one valid phone number and email address for the patient", patient.ID)
 			return nil
 		}
@@ -236,6 +264,14 @@ func (s *syncEvent) createPatientAndThread(ctx context.Context, patient *sync.Pa
 		threadType = threading.THREAD_TYPE_SECURE_EXTERNAL
 	default:
 		return errors.Errorf("unknown thread creation type for org %s", event.OrganizationEntityID)
+	}
+
+	var invitePatient bool
+	switch ev := event.Event.(type) {
+	case *sync.Event_PatientAddEvent:
+		invitePatient = ev.PatientAddEvent.AutoInvitePatients && threadType == threading.THREAD_TYPE_SECURE_EXTERNAL
+	case *sync.Event_PatientUpdateEvent:
+		invitePatient = ev.PatientUpdateEvent.AutoInvitePatients && threadType == threading.THREAD_TYPE_SECURE_EXTERNAL
 	}
 
 	// check if the patient already exists as an entity based on the patient ID
@@ -349,6 +385,32 @@ func (s *syncEvent) createPatientAndThread(ctx context.Context, patient *sync.Pa
 			URL:      patient.ExternalURL,
 		}); err != nil {
 			return errors.Errorf("Unable to create external link for entity %s: %s", externalEntity.ID, err)
+		}
+	}
+
+	if invitePatient {
+
+		var phoneNumber string
+		if len(patient.PhoneNumbers) > 0 {
+			phoneNumber = patient.PhoneNumbers[0].Number
+		}
+		var email string
+		if len(patient.EmailAddresses) > 0 {
+			email = patient.EmailAddresses[0]
+		}
+
+		if _, err := s.invite.InvitePatients(ctx, &invite.InvitePatientsRequest{
+			OrganizationEntityID: orgID,
+			Patients: []*invite.Patient{
+				{
+					FirstName:      externalEntity.Info.FirstName,
+					PhoneNumber:    phoneNumber,
+					Email:          email,
+					ParkedEntityID: externalEntity.ID,
+				},
+			},
+		}); err != nil {
+			golog.Errorf("Unable to invite patient %s : %s", externalEntity.ID, err)
 		}
 	}
 
