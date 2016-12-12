@@ -66,7 +66,7 @@ func (s *threadsServer) CreateTriggeredMessage(ctx context.Context, in *threadin
 		}
 		// Insert the associated triggered message item records preserving order
 		for i, m := range in.Messages {
-			req, err := createPostMessageRequest(ctx, models.EmptyThreadID(), in.ActorEntityID, m)
+			req, err := createPostMessageRequest(ctx, models.EmptyThreadID(), in.ActorEntityID, true, m)
 			if err != nil {
 				return errors.Trace(err)
 			}

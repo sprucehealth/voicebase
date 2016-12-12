@@ -272,7 +272,7 @@ func TestIsUnread(t *testing.T) {
 func TestCreatePostMessageRequest(t *testing.T) {
 	threadID, err := models.NewThreadID()
 	test.OK(t, err)
-	req, err := createPostMessageRequest(nil, threadID, "entity_1", &threading.MessagePost{
+	req, err := createPostMessageRequest(nil, threadID, "entity_1", false, &threading.MessagePost{
 		Text:        "Foo",
 		Summary:     "summary",
 		Title:       "title",

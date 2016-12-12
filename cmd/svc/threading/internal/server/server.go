@@ -1098,7 +1098,7 @@ func (s *threadsServer) postMessage(
 	var item *models.ThreadItem
 	var linkedItem *models.ThreadItem
 
-	req, err := createPostMessageRequest(ctx, threadID, fromEntityID, message)
+	req, err := createPostMessageRequest(ctx, threadID, fromEntityID, false, message)
 	if err != nil {
 		return nil, nil, errors.Trace(err)
 	}
@@ -1691,7 +1691,7 @@ func (s *threadsServer) UpdateMessage(ctx context.Context, in *threading.UpdateM
 		return nil, grpc.Errorf(codes.InvalidArgument, "Cannot update non-message item %q", threadItemID)
 	}
 
-	req, err := createPostMessageRequest(ctx, item.ThreadID, in.ActorEntityID, in.Message)
+	req, err := createPostMessageRequest(ctx, item.ThreadID, in.ActorEntityID, false, in.Message)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

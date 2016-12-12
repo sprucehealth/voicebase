@@ -94,13 +94,13 @@ func TestCreateTriggeredMessage(t *testing.T) {
 				TriggerSubkey:        "subkey",
 			}).WithReturns(tmID, nil))
 
-		req1, err := createPostMessageRequest(ctx, models.EmptyThreadID(), "ActorEntityID", message1)
+		req1, err := createPostMessageRequest(ctx, models.EmptyThreadID(), "ActorEntityID", true, message1)
 		test.OK(t, err)
 		threadItem1, err := dal.ThreadItemFromPostMessageRequest(ctx, req1, st.clk)
 		test.OK(t, err)
 		threadItem1.ID = models.EmptyThreadItemID()
 		data1 := threadItem1.Data.(*models.Message)
-		req2, err := createPostMessageRequest(context.Background(), models.EmptyThreadID(), "ActorEntityID", message2)
+		req2, err := createPostMessageRequest(context.Background(), models.EmptyThreadID(), "ActorEntityID", true, message2)
 		test.OK(t, err)
 		threadItem2, err := dal.ThreadItemFromPostMessageRequest(ctx, req2, st.clk)
 		test.OK(t, err)
@@ -157,13 +157,13 @@ func TestCreateTriggeredMessage(t *testing.T) {
 				Enabled:              true,
 			}).WithReturns(tmID, nil))
 
-		req1, err := createPostMessageRequest(ctx, models.EmptyThreadID(), "ActorEntityID", message1)
+		req1, err := createPostMessageRequest(ctx, models.EmptyThreadID(), "ActorEntityID", true, message1)
 		test.OK(t, err)
 		threadItem1, err := dal.ThreadItemFromPostMessageRequest(ctx, req1, st.clk)
 		test.OK(t, err)
 		threadItem1.ID = models.EmptyThreadItemID()
 		data1 := threadItem1.Data.(*models.Message)
-		req2, err := createPostMessageRequest(context.Background(), models.EmptyThreadID(), "ActorEntityID", message2)
+		req2, err := createPostMessageRequest(context.Background(), models.EmptyThreadID(), "ActorEntityID", true, message2)
 		test.OK(t, err)
 		threadItem2, err := dal.ThreadItemFromPostMessageRequest(ctx, req2, st.clk)
 		test.OK(t, err)

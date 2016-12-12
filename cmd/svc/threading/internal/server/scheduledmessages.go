@@ -38,7 +38,7 @@ func (s *threadsServer) CreateScheduledMessage(ctx context.Context, in *threadin
 		return nil, grpc.Errorf(codes.NotFound, "Thread %s not found", threadID)
 	}
 
-	req, err := createPostMessageRequest(ctx, threadID, in.ActorEntityID, in.GetMessage())
+	req, err := createPostMessageRequest(ctx, threadID, in.ActorEntityID, false, in.GetMessage())
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

@@ -293,8 +293,8 @@ func claimAttachments(ctx context.Context, mediaClient media.MediaClient, paymen
 	return nil
 }
 
-func createPostMessageRequest(ctx context.Context, threadID models.ThreadID, fromEntityID string, postMessage *threading.MessagePost) (*dal.PostMessageRequest, error) {
-	textRefs, err := processMessagePost(postMessage, false)
+func createPostMessageRequest(ctx context.Context, threadID models.ThreadID, fromEntityID string, allowEmptySummary bool, postMessage *threading.MessagePost) (*dal.PostMessageRequest, error) {
+	textRefs, err := processMessagePost(postMessage, allowEmptySummary)
 	if err != nil {
 		return nil, err
 	}

@@ -9,7 +9,6 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/auth"
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/common"
 	"github.com/sprucehealth/backend/environment"
-	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/sig"
 )
 
@@ -19,10 +18,6 @@ type authenticatedHandler struct {
 }
 
 func (h *authenticatedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	golog.ContextLogger(r.Context()).Debugf("Cookies: %d", len(r.Cookies()))
-	for _, c := range r.Cookies() {
-		golog.ContextLogger(r.Context()).Debugf("%s: %s", c.Name, c.Value)
-	}
 	if c, err := r.Cookie(common.AuthCookieName); err == nil && c.Value != "" {
 		valid, uid := auth.IsTokenValid(r.Context(), c.Value, h.signer)
 		if !valid {
