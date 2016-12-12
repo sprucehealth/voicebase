@@ -344,7 +344,7 @@ var associateInviteMutation = &graphql.Field{
 				v.Value = clientData
 			case "invite_type":
 				foundType = true
-				v.Value = res.Type.String()
+				v.Value = inviteTypeToEnum(res)
 			}
 		}
 		if !foundClientData {
