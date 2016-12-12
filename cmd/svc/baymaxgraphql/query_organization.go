@@ -350,7 +350,7 @@ var organizationType = graphql.NewObject(
 						ViewerEntityID: ent.ID,
 						Iterator: &threading.Iterator{
 							Direction: threading.ITERATOR_DIRECTION_FROM_START,
-							Count:     1,
+							Count:     2,
 						},
 						Type: threading.QUERY_THREADS_TYPE_ADHOC,
 						QueryType: &threading.QueryThreadsRequest_Query{
@@ -370,8 +370,21 @@ var organizationType = graphql.NewObject(
 						return "", nil
 					}
 
-					supportThread := queryThreadsRes.Edges[0].Thread
-					return supportThread.ID, nil
+					// the support query brings up the support and setup assistant
+					// so identify the support thread instead
+					var supportThread *threading.Thread
+					for _, threadEdge := range queryThreadsRes.Edges {
+						if threadEdge.Thread.Type == threading.THREAD_TYPE_SUPPORT {
+							supportThread = threadEdge.Thread
+							break
+						}
+					}
+
+					if supportThread != nil {
+						return supportThread.ID, nil
+					}
+
+					return "", nil
 				}),
 			},
 			"secureConversationCreationRequirement": &graphql.Field{
