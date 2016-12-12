@@ -236,7 +236,7 @@ func setAuthCookie(w http.ResponseWriter, domain, token string, expires time.Tim
 		Value:    token,
 		Path:     "/",
 		MaxAge:   int(expires.Sub(time.Now()).Nanoseconds() / 1e9),
-		Secure:   !environment.IsDev(),
+		Secure:   !(environment.IsDev() || environment.IsLocal()),
 		HttpOnly: true,
 	})
 }

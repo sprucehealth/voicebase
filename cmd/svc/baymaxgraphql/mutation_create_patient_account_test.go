@@ -338,6 +338,10 @@ func TestCreatePatientAccountMutation_PracticeLink(t *testing.T) {
 			FirstName: "first",
 			LastName:  "last",
 		},
+		Source: &directory.EntitySource{
+			Type: directory.EntitySource_PRACTICE_CODE,
+			Data: "org_token",
+		},
 	}).WithReturns(&directory.Entity{
 		ID: "parkedEntityID",
 		Info: &directory.EntityInfo{

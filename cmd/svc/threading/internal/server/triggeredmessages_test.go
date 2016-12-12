@@ -113,6 +113,7 @@ func TestCreateTriggeredMessage(t *testing.T) {
 				Ordinal:            0,
 				Internal:           false,
 				Data:               data1,
+				ActorEntityID:      "ActorEntityID",
 			}))
 		st.dal.Expect(
 			mock.NewExpectation(st.dal.CreateTriggeredMessageItem, &models.TriggeredMessageItem{
@@ -120,6 +121,7 @@ func TestCreateTriggeredMessage(t *testing.T) {
 				Ordinal:            1,
 				Internal:           false,
 				Data:               data2,
+				ActorEntityID:      "ActorEntityID",
 			}))
 
 		st.dal.Expect(mock.NewExpectation(st.dal.TriggeredMessage, tmID, []interface{}{}).WithReturns(tmModel, nil))
@@ -176,6 +178,7 @@ func TestCreateTriggeredMessage(t *testing.T) {
 				Ordinal:            0,
 				Internal:           false,
 				Data:               data1,
+				ActorEntityID:      "ActorEntityID",
 			}))
 		st.dal.Expect(
 			mock.NewExpectation(st.dal.CreateTriggeredMessageItem, &models.TriggeredMessageItem{
@@ -183,6 +186,7 @@ func TestCreateTriggeredMessage(t *testing.T) {
 				Ordinal:            1,
 				Internal:           false,
 				Data:               data2,
+				ActorEntityID:      "ActorEntityID",
 			}))
 
 		st.dal.Expect(mock.NewExpectation(st.dal.TriggeredMessage, tmID, []interface{}{}).WithReturns(tmModel, nil))

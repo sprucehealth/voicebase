@@ -7,7 +7,6 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/models"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/ptr"
-	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/threading"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -77,31 +76,13 @@ func (s *threadsServer) CreateTriggeredMessage(ctx context.Context, in *threadin
 			threadItem.ID = models.EmptyThreadItemID()
 			data := threadItem.Data.(*models.Message)
 
-			// Get the attachments out of the message
-			attachments, err := transformAttachmentsFromRequest(m.Attachments)
-			if err != nil {
-				return errors.Trace(err)
-			}
-			mediaIDs := mediaIDsFromAttachments(attachments)
-
-			// Claim any media attachments for the message
-			if len(mediaIDs) > 0 {
-				_, err = s.mediaClient.ClaimMedia(ctx, &media.ClaimMediaRequest{
-					MediaIDs:  mediaIDs,
-					OwnerType: media.MediaOwnerType_TRIGGERED_MESSAGE,
-					OwnerID:   tmID.String(),
-				})
-				if err != nil {
-					return errors.Trace(err)
-				}
-			}
-
 			// Insert the triggered message item
 			if _, err := dl.CreateTriggeredMessageItem(ctx, &models.TriggeredMessageItem{
 				TriggeredMessageID: tmID,
 				Ordinal:            int64(i),
 				Internal:           m.Internal,
 				Data:               data,
+				ActorEntityID:      in.ActorEntityID,
 			}); err != nil {
 				return errors.Trace(err)
 			}

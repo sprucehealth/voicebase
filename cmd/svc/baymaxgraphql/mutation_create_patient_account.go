@@ -464,7 +464,7 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 
 	var autoTags []string
 	var patientEntity *directory.Entity
-	if _, ok := inv.Invite.(*invite.LookupInviteResponse_Organization); ok {
+	if oinv, ok := inv.Invite.(*invite.LookupInviteResponse_Organization); ok {
 		// If this is an org code then there is no parked entity and we need to create the entity and thread
 		patientEntity, err = ram.CreateEntity(ctx, &directory.CreateEntityRequest{
 			Type: directory.EntityType_PATIENT,
@@ -482,6 +482,10 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 			EntityInfo: &directory.EntityInfo{
 				FirstName: entityInfo.FirstName,
 				LastName:  entityInfo.LastName,
+			},
+			Source: &directory.EntitySource{
+				Type: directory.EntitySource_PRACTICE_CODE,
+				Data: oinv.Organization.Token,
 			},
 		})
 		if err != nil {

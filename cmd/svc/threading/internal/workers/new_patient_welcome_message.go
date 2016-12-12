@@ -64,7 +64,7 @@ func processNewPatientWelcomeMessage(ctx context.Context, dl dal.DAL, directoryC
 	subkey := directory.FlattenEntitySource(ent.Source)
 	triggeredMessage, err := dl.TriggeredMessageForKeys(ctx, models.TriggeredMessageKeyNewPatient, subkey)
 	if errors.Cause(err) == dal.ErrNotFound {
-		golog.Debugf("No Welcome Message FOUND for Key: %s Subkey: %s", models.TriggeredMessageKeyNewPatient, subkey)
+		golog.Debugf("No Welcome Message found for Key: %s Subkey: %s", models.TriggeredMessageKeyNewPatient, subkey)
 		return nil
 	} else if err != nil {
 		return errors.Trace(err)
@@ -94,13 +94,12 @@ func processNewPatientWelcomeMessage(ctx context.Context, dl dal.DAL, directoryC
 			}
 			fromEntityID = tmi.ActorEntityID
 		}
-		_, err = threadClient.PostMessages(ctx, &threading.PostMessagesRequest{
+		if _, err = threadClient.PostMessages(ctx, &threading.PostMessagesRequest{
 			UUID:         triggeredMessage.ID.String() + ":" + ntev.ThreadID,
 			ThreadID:     ntev.ThreadID,
 			FromEntityID: fromEntityID,
 			Messages:     messages,
-		})
-		if err != nil {
+		}); err != nil {
 			return errors.Trace(err)
 		}
 	} else {
