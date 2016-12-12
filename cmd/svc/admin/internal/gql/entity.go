@@ -61,7 +61,7 @@ func init() {
 			Fields: graphql.Fields{
 				"id":            &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
 				"accountID":     &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
-				"account":       &graphql.Field{Type: graphql.NewNonNull(accountType), Resolve: entityAccountResolve},
+				"account":       &graphql.Field{Type: accountType, Resolve: entityAccountResolve},
 				"contacts":      &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(contactType))},
 				"firstName":     &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 				"middleInitial": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
@@ -109,6 +109,9 @@ func entityAccountResolve(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	entity := p.Source.(*models.Entity)
 	golog.ContextLogger(ctx).Debugf("Looking up account for %s", entity.ID)
+	if entity.AccountID == "" {
+		return nil, nil
+	}
 	return getAccountByID(ctx, client.Auth(p), entity.AccountID)
 }
 
