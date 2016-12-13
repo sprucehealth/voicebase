@@ -313,7 +313,7 @@ func (s *server) InvitePatients(ctx context.Context, in *invite.InvitePatientsRe
 				verificationRequirement = invite.VERIFICATION_REQUIREMENT_PHONE_MATCH
 			} else {
 				deliveryChannels = append(deliveryChannels, inviteDeliverySMS)
-				verificationRequirement = invite.VERIFICATION_REQUIREMENT_PHONE
+				verificationRequirement = invite.VERIFICATION_REQUIREMENT_EMAIL
 			}
 		} else {
 			verificationRequirement = invite.VERIFICATION_REQUIREMENT_PHONE
